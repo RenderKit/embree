@@ -69,7 +69,7 @@ namespace embree
       {
         ptr = root;
         if (ptr == NULL) return true;
-        return atomic_cmpxchg(&root,ptr->next,ptr) == ptr;
+        return atomic_cmpxchg_ptr(&root,ptr->next,ptr) == ptr;
       }
   
     private:
@@ -174,14 +174,14 @@ namespace embree
       if (ptr == NULL) return true;
       item* cur = root;
       ptr->next = cur;
-      return atomic_cmpxchg(&root,ptr,cur) == cur;
+      return atomic_cmpxchg_ptr(&root,ptr,cur) == cur;
     }
 
     __forceinline bool try_take(item*& ptr) 
     {
       ptr = root;
       if (ptr == NULL) return true;
-      return atomic_cmpxchg(&root,ptr->next,ptr) == ptr;
+      return atomic_cmpxchg_ptr(&root,ptr->next,ptr) == ptr;
     }
 
   private:

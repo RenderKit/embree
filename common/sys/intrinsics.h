@@ -219,21 +219,21 @@ __forceinline int32 atomic_cmpxchg( int32 volatile* value, const int32 input, in
 #if defined(__X86_64__)
 
 template<typename T>
-__forceinline T* atomic_xchg( T* volatile* value, const T* input)
+__forceinline T* atomic_xchg_ptr( T* volatile* value, const T* input)
 {  return (T*)atomic_xchg((int64*)value,(int64)input); }
 
 template<typename T>
-__forceinline T* atomic_cmpxchg( T* volatile* value, const T* input, T* comparand )
+__forceinline T* atomic_cmpxchg_ptr( T* volatile* value, const T* input, T* comparand )
 {  return (T*)atomic_cmpxchg((int64*)value,(int64)input,(int64)comparand); }
 
 #else
 
 template<typename T>
-__forceinline T* atomic_xchg( T* volatile* value, const T* input)
+__forceinline T* atomic_xchg_ptr( T* volatile* value, const T* input)
 {  return (T*)atomic_xchg((int32*)value,(int32)input); }
 
 template<typename T>
-__forceinline T* atomic_cmpxchg( T* volatile* value, const T* input, T* comparand )
+__forceinline T* atomic_cmpxchg_ptr( T* volatile* value, const T* input, T* comparand )
 {  return (T*)atomic_cmpxchg((int32*)value,(int32)input,(int32)comparand); }
 
 #endif
