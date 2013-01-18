@@ -62,19 +62,19 @@ namespace embree
       __forceinline PrimInfo () 
         : num(0), numFailed(0), geomBounds(empty), centBounds(empty), duplications(NULL) {}
 
-      __forceinline PrimInfo (size_t num, BBox3f geomBounds) 
+      __forceinline PrimInfo (size_t num, const BBox3f& geomBounds) 
         : num(num), numFailed(0), geomBounds(geomBounds), centBounds(geomBounds) 
       {
         duplications = new Atomic(size_t(duplicationPercentage*double(num)/100.0));
       }
       
-      __forceinline PrimInfo (size_t num, BBox3f geomBounds, BBox3f centBounds)
+      __forceinline PrimInfo (size_t num, const BBox3f& geomBounds, const BBox3f& centBounds)
         : num(num), numFailed(0), geomBounds(geomBounds), centBounds(centBounds) 
       {
         duplications = new Atomic(size_t(duplicationPercentage*double(num)/100.0));
       }
 
-      __forceinline PrimInfo (size_t num, int numFailed, BBox3f geomBounds, BBox3f centBounds, Atomic* duplications) 
+      __forceinline PrimInfo (size_t num, int numFailed, const BBox3f& geomBounds, const BBox3f& centBounds, Atomic* duplications) 
         : num(num), numFailed(numFailed), geomBounds(geomBounds), centBounds(centBounds), duplications(duplications) {}
       
       /*! returns the number of primitives */

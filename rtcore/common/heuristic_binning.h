@@ -46,10 +46,10 @@ namespace embree
       __forceinline PrimInfo () 
         : num(0), geomBounds(empty), centBounds(empty) {}
 
-      __forceinline PrimInfo (size_t num, BBox3f geomBounds) 
+      __forceinline PrimInfo (size_t num, const BBox3f& geomBounds) 
         : num(num), geomBounds(geomBounds), centBounds(geomBounds) {}
       
-      __forceinline PrimInfo (size_t num, BBox3f geomBounds, BBox3f centBounds) 
+      __forceinline PrimInfo (size_t num, const BBox3f& geomBounds, const BBox3f& centBounds) 
         : num(num), geomBounds(geomBounds), centBounds(centBounds) {}
       
       /*! returns the number of primitives */
