@@ -21,12 +21,16 @@
 #include "primrefblock.h"
 
 #include "heuristic_binning.h"
+#include "heuristic_median.h"
 #include "heuristic_spatial.h"
 
 #define INSTANTIATE_TEMPLATE_BY_HEURISTIC(Base)         \
   template class Base<HeuristicBinning<0> >;            \
   template class Base<HeuristicBinning<2> >;         \
   template class Base<HeuristicBinning<3> >;         \
+  template class Base<HeuristicMedian<0> >;            \
+  template class Base<HeuristicMedian<2> >;         \
+  template class Base<HeuristicMedian<3> >;         \
   template class Base<HeuristicSpatial<0> >;         \
   template class Base<HeuristicSpatial<2> >;         \
   template class Base<HeuristicSpatial<3> >;
@@ -35,6 +39,9 @@
   template class Splitter<HeuristicBinning<0>, atomic_set<PrimRefBlock> >; \
   template class Splitter<HeuristicBinning<2>, atomic_set<PrimRefBlock> >; \
   template class Splitter<HeuristicBinning<3>, atomic_set<PrimRefBlock> >; \
+  template class Splitter<HeuristicMedian<0>, atomic_set<PrimRefBlock> >; \
+  template class Splitter<HeuristicMedian<2>, atomic_set<PrimRefBlock> >; \
+  template class Splitter<HeuristicMedian<3>, atomic_set<PrimRefBlock> >; \
   template class Splitter<HeuristicSpatial<0>, atomic_set<PrimRefBlock> >; \
   template class Splitter<HeuristicSpatial<2>, atomic_set<PrimRefBlock> >; \
   template class Splitter<HeuristicSpatial<3>, atomic_set<PrimRefBlock> >;

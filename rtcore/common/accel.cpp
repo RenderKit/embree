@@ -160,6 +160,35 @@ namespace embree
       }
     }
 
+    /* BVH2 with median cut builder */
+    if (accelTy == "bvh2.mediancut") 
+    {
+      if (triTy == "default")
+#ifdef __AVX__
+        return build<BVH2Builder<HeuristicMedian<Triangle8::logBlockSize> > >(Triangle8::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+#else
+        return build<BVH2Builder<HeuristicMedian<Triangle4::logBlockSize> > >(Triangle4::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+#endif
+      else if (triTy == "triangle1i")
+        return build<BVH2Builder<HeuristicMedian<Triangle1i::logBlockSize> > >(Triangle1i::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+      else if (triTy == "triangle4i")
+        return build<BVH2Builder<HeuristicMedian<Triangle4i::logBlockSize> > >(Triangle4i::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+      else if (triTy == "triangle1v")
+        return build<BVH2Builder<HeuristicMedian<Triangle1v::logBlockSize> > >(Triangle1v::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+      else if (triTy == "triangle4v")
+        return build<BVH2Builder<HeuristicMedian<Triangle4v::logBlockSize> > >(Triangle4v::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+      else if (triTy == "triangle1")
+        return build<BVH2Builder<HeuristicMedian<Triangle1::logBlockSize> > >(Triangle1::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+      else if (triTy == "triangle4")
+        return build<BVH2Builder<HeuristicMedian<Triangle4::logBlockSize> > >(Triangle4::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+      else if (triTy == "triangle8")
+        return build<BVH2Builder<HeuristicMedian<Triangle8::logBlockSize> > >(Triangle8::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+      else {
+        throw std::runtime_error("invalid triangle type for bvh2: "+std::string(triTy));
+        return null;
+      }
+    }
+
     /* BVH2 with spatial split builder */
     if (accelTy == "bvh2.spatialsplit") 
     {
@@ -212,6 +241,35 @@ namespace embree
         return build<BVH4Builder<HeuristicBinning<Triangle4::logBlockSize> > >(Triangle4::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
       else if (triTy == "triangle8")
          return build<BVH4Builder<HeuristicBinning<Triangle8::logBlockSize> > >(Triangle8::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+      else {
+        throw std::runtime_error("invalid triangle type for bvh4: "+std::string(triTy));
+        return null;
+      }
+    }
+
+    /* BVH4 with median cut builder */
+    if (accelTy == "bvh4.mediancut") 
+    {
+      if (triTy == "default")
+#ifdef __AVX__
+        return build<BVH4Builder<HeuristicMedian<Triangle8::logBlockSize> > >(Triangle8::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+#else
+        return build<BVH4Builder<HeuristicMedian<Triangle4::logBlockSize> > >(Triangle4::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+#endif
+      else if (triTy == "triangle1i")
+        return build<BVH4Builder<HeuristicMedian<Triangle1i::logBlockSize> > >(Triangle1i::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+      else if (triTy == "triangle4i")
+        return build<BVH4Builder<HeuristicMedian<Triangle4i::logBlockSize> > >(Triangle4i::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+      else if (triTy == "triangle1v")
+        return build<BVH4Builder<HeuristicMedian<Triangle1v::logBlockSize> > >(Triangle1v::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+      else if (triTy == "triangle4v")
+        return build<BVH4Builder<HeuristicMedian<Triangle4v::logBlockSize> > >(Triangle4v::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+      else if (triTy == "triangle1")
+        return build<BVH4Builder<HeuristicMedian<Triangle1::logBlockSize> > >(Triangle1::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+      else if (triTy == "triangle4")
+        return build<BVH4Builder<HeuristicMedian<Triangle4::logBlockSize> > >(Triangle4::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
+      else if (triTy == "triangle8")
+         return build<BVH4Builder<HeuristicMedian<Triangle8::logBlockSize> > >(Triangle8::type,intTy,triangles,numTriangles,vertices,numVertices,bounds,freeData);
       else {
         throw std::runtime_error("invalid triangle type for bvh4: "+std::string(triTy));
         return null;
