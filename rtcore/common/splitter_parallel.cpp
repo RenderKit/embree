@@ -23,9 +23,9 @@ namespace embree
   template<typename Heuristic, typename PrimRefBlockList>
   MultiThreadedSplitter<Heuristic,PrimRefBlockList>::MultiThreadedSplitter(const TaskScheduler::ThreadInfo& thread,
                                                                            PrimRefAlloc* alloc, const BuildTriangle* triangles, const Vec3fa* vertices,
-                                                                           PrimRefBlockList& prims, const PrimInfo& pinfo, const Split& split, 
+                                                                           PrimRefBlockList& prims_i, const PrimInfo& pinfo, const Split& split, 
                                                                            TaskScheduler::completeFunction cfun, void* cptr)
-    : alloc(alloc), prims(prims), pinfo(pinfo), split(split), triangles(triangles), vertices(vertices), cfun(cfun), cptr(cptr)
+    : alloc(alloc), prims(prims_i), pinfo(pinfo), split(split), triangles(triangles), vertices(vertices), cfun(cfun), cptr(cptr)
   {
     /* if split was not successfull enforce some split */
     if (unlikely(split.linfo.size() == 0 || split.rinfo.size() == 0)) {
