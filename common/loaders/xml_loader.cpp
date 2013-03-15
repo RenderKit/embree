@@ -425,6 +425,9 @@ namespace embree
       return material;
     }
 
+    if (xml->parm("id") != "")
+      return materialMap[xml->parm("id")];
+
     Device::RTMaterial material = g_device->rtNewMaterial(load<std::string>(xml->child("code")).c_str());
     loadMaterialParms(material,xml->child("parameters"));
     return material;
