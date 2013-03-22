@@ -30,6 +30,7 @@ ADD_LIBRARY(rtcore STATIC
   common/primrefgen.cpp 
   common/heuristic_binning.cpp 
   common/heuristic_spatial.cpp 
+  common/heuristic_median.cpp 
   common/splitter.cpp 
   common/splitter_parallel.cpp 
   common/splitter_fallback.cpp 

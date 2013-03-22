@@ -218,6 +218,7 @@
     <ClCompile Include="common\accel.cpp" />
     <ClCompile Include="common\alloc.cpp" />
     <ClCompile Include="common\heuristic_binning.cpp" />
+    <ClCompile Include="common\heuristic_median.cpp" />
     <ClCompile Include="common\heuristic_spatial.cpp" />
     <ClCompile Include="common\primrefgen.cpp" />
     <ClCompile Include="common\splitter.cpp" />
@@ -242,6 +243,7 @@
     <ClInclude Include="common\default.h" />
     <ClInclude Include="common\heuristics.h" />
     <ClInclude Include="common\heuristic_binning.h" />
+    <ClInclude Include="common\heuristic_median.h" />
     <ClInclude Include="common\heuristic_spatial.h" />
     <ClInclude Include="common\hit.h" />
     <ClInclude Include="common\intersector.h" />
