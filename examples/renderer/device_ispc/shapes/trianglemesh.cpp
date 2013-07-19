@@ -19,12 +19,6 @@
 
 namespace embree
 {
-#if defined(__MIC__)
-# define ENABLE_OS_MALLOC 0
-#else
-# define ENABLE_OS_MALLOC 0
-#endif
-
   void* ISPCTriangleMesh::create (const Parms& parms)
   {
     int numVertices = 0;
@@ -37,70 +31,54 @@ namespace embree
     
     if (Variant v = parms.getData("positions")) {
       if (!v.data || v.type != Variant::FLOAT3) throw std::runtime_error("wrong position format");
-#if ENABLE_OS_MALLOC == 1
-      position = (Vec3fa*)os_malloc(sizeof(Vec3fa)*v.data->size());
-#else
       position = new Vec3fa[v.data->size()];
-#endif
       for (size_t i=0; i<v.data->size(); i++) position[i] = v.data->getVector3f(i);
       numVertices = v.data->size();
     }
     if (Variant v = parms.getData("motions")) {
       if (!v.data || v.type != Variant::FLOAT3) throw std::runtime_error("wrong motion vector format");
-#if ENABLE_OS_MALLOC == 1
-      motion = (Vec3fa*)os_malloc(sizeof(Vec3fa)*v.data->size());
-#else
       motion = new Vec3fa[v.data->size()];
-#endif
       for (size_t i=0; i<v.data->size(); i++) motion[i] = v.data->getVector3f(i);
     }
     if (Variant v = parms.getData("normals")) {
       if (!v.data || v.type != Variant::FLOAT3) throw std::runtime_error("wrong normal format");
-#if ENABLE_OS_MALLOC == 1
-      normal = (Vec3fa*)os_malloc(sizeof(Vec3fa)*v.data->size());      
-#else
       normal = new Vec3fa[v.data->size()];
-#endif
       for (size_t i=0; i<v.data->size(); i++) normal[i] = v.data->getVector3f(i);
     }
     if (Variant v = parms.getData("texcoords")) {
       if (!v.data || v.type != Variant::FLOAT2) throw std::runtime_error("wrong texcoords0 format");
-#if ENABLE_OS_MALLOC == 1
-      texcoord = (Vec2f*)os_malloc(sizeof(Vec2f)*v.data->size());      
-#else
       texcoord = new Vec2f[v.data->size()];
-#endif
       for (size_t i=0; i<v.data->size(); i++) texcoord[i] = v.data->getVec2f(i);
     }
     if (Variant v = parms.getData("texcoords0")) {
       if (!v.data || v.type != Variant::FLOAT2) throw std::runtime_error("wrong texcoords0 format");
       if (texcoord) delete[] texcoord;
-#if ENABLE_OS_MALLOC == 1
-      texcoord = (Vec2f*)os_malloc(sizeof(Vec2f)*v.data->size());      
-#else
       texcoord = new Vec2f[v.data->size()];
-#endif
       for (size_t i=0; i<v.data->size(); i++) texcoord[i] = v.data->getVec2f(i);
     }
     if (Variant v = parms.getData("indices")) {
       if (!v.data || v.type != Variant::INT3) throw std::runtime_error("wrong triangle format");
-#if ENABLE_OS_MALLOC == 1
-      triangles = (Vec4i*)os_malloc(sizeof(Vec4i)*v.data->size());
-#else
       triangles = new Vec4i[v.data->size()];
-#endif
       for (size_t i=0; i<v.data->size(); i++) {
         Vector3i t = v.data->getVector3i(i);
         triangles[i] = Vec4i(t.x,t.y,t.z,0);
       }
       numTriangles = v.data->size();
     }
-    return  ispc::TriangleMesh__new((ispc::vec3fa*)position,
+
+    void* mesh = ispc::TriangleMesh__new((ispc::vec3fa*)position,
                                     (ispc::vec3fa*)motion,
                                     (ispc::vec3fa*)normal,
                                     (ispc::vec2f*)texcoord,
                                     numVertices,
                                     (ispc::vec4i*)triangles,
                                     numTriangles);
+
+    delete position;
+    delete motion;
+    delete normal;
+    delete texcoord;
+    delete triangles;
+	return mesh;
   }
 }

@@ -198,7 +198,7 @@ void TriangleMesh__Constructor(uniform TriangleMesh* uniform this,
                                uniform vec3fa *uniform motion,
                                uniform vec3fa *uniform normal,
                                uniform vec2f  *uniform texcoord,
-                               uniform int     numPositions,
+                               uniform int     numVertices,
                                uniform vec4i  *uniform triangle,
                                uniform int     numTriangles)
 {
@@ -210,13 +210,43 @@ void TriangleMesh__Constructor(uniform TriangleMesh* uniform this,
                      TriangleMesh__transform,
                      TriangleMesh__extract);
 
-  this->position     = position;
-  this->motion       = motion;
-  this->normal       = normal;
-  this->texcoord     = texcoord;
-  this->numPositions = numPositions;
-  this->triangle     = triangle;
+  this->numPositions = numVertices;
   this->numTriangles = numTriangles;
+  this->position = NULL;
+  this->motion = NULL;
+  this->normal = NULL;
+  this->texcoord = NULL;
+  this->triangle = NULL;
+
+  if (position) {
+    this->position = uniform new uniform vec3fa[numVertices];
+    foreach(i=0 ... numVertices)
+      this->position[i] = position[i];
+  }
+
+  if (motion) {
+    this->motion = uniform new uniform vec3fa[numVertices];
+    foreach(i=0 ... numVertices)
+      this->motion[i] = motion[i];
+  }
+
+  if (normal) {
+    this->normal = uniform new uniform vec3fa[numVertices];
+    foreach(i=0 ... numVertices)
+      this->normal[i] = normal[i];
+  }
+  
+  if (texcoord) {
+    this->texcoord = uniform new uniform vec2f[numVertices];
+    foreach(i=0 ... numVertices)
+      this->texcoord[i] = texcoord[i];
+  }
+
+  if (triangle) {
+    this->triangle = uniform new uniform vec4i[numTriangles];
+    foreach(i=0 ... numTriangles)
+      this->triangle[i] = triangle[i];
+  }    
 }
 
 ///////////////////////////////////////////////////////////////////////////////
