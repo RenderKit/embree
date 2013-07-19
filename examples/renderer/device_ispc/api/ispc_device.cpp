@@ -200,13 +200,13 @@ namespace embree
     if (!strncmp(file,"server:",7)) file += 7;
     Ref<Image> image = loadImage(file);
     if (Ref<Image4f> img = image.dynamicCast<Image4f>())
-      return rtNewImage("RGBA_FLOAT32",img->width,img->height,img->steal_ptr(),false);
+      return rtNewImage("RGBA_FLOAT32",img->width,img->height,img->ptr(),true);
     else if (Ref<Image3f> img = image.dynamicCast<Image3f>())
-      return rtNewImage("RGB_FLOAT32",img->width,img->height,img->steal_ptr(),false);
+      return rtNewImage("RGB_FLOAT32",img->width,img->height,img->ptr(),true);
     else if (Ref<Image4c> img = image.dynamicCast<Image4c>())
-      return rtNewImage("RGBA8",img->width,img->height,img->steal_ptr(),false);
+      return rtNewImage("RGBA8",img->width,img->height,img->ptr(),true);
     else if (Ref<Image3c> img = image.dynamicCast<Image3c>())
-      return rtNewImage("RGB8",img->width,img->height,img->steal_ptr(),false);
+      return rtNewImage("RGB8",img->width,img->height,img->ptr(),true);
     else {
       int c = 0xFFFFFFFF;
       return rtNewImage("RGB8",1,1,&c,true);

@@ -20,6 +20,7 @@ struct Image3f
 {
   Image base;
   vec3f* data;
+  bool owned;
 };
 
 inline uniform vec3f Image3f__get_nearest_uniform(const uniform Image *uniform _this, const uniform int x, const uniform int y) 
@@ -67,11 +68,12 @@ varying vec3f Image3f__get_bilinear_varying(const uniform Image *uniform _this, 
 void Image3f__Destructor(uniform RefCount* uniform _this)
 {
   uniform Image3f* uniform this = (uniform Image3f* uniform) _this;
-  delete[] this->data;
+  if (this->owned) delete[] this->data;
   Image__Destructor(_this);
 }
 
-void Image3f__Constructor(uniform Image3f* uniform this, const uniform vec2ui size, uniform vec3f* uniform data)
+void Image3f__Constructor(uniform Image3f* uniform this, const uniform vec2ui size, 
+						  uniform vec3f* uniform data, uniform bool owned)
 {
   Image__Constructor(&this->base,
                      Image3f__Destructor,size,
@@ -79,6 +81,7 @@ void Image3f__Constructor(uniform Image3f* uniform this, const uniform vec2ui si
                      Image3f__get_nearest_varying,
                      Image3f__get_bilinear_varying);
   this->data = data;
+  this->owned = owned;
 }
 
 export void* uniform Image3f__new(const uniform int size_x, const uniform int size_y, uniform vec3f* uniform data, const uniform bool copy)
@@ -87,9 +90,9 @@ export void* uniform Image3f__new(const uniform int size_x, const uniform int si
   if (copy) {
     uniform vec3f* uniform local = uniform new uniform vec3f[size_x*size_y];
     memcpy(local,data,size_x*size_y*sizeof(uniform vec3f));
-    Image3f__Constructor(this,make_vec2ui(size_x,size_y),local);
+    Image3f__Constructor(this,make_vec2ui(size_x,size_y),local,copy);
   } else {
-    Image3f__Constructor(this,make_vec2ui(size_x,size_y),data);
+    Image3f__Constructor(this,make_vec2ui(size_x,size_y),data,copy);
   }
   return this;
 }

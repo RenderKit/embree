@@ -170,7 +170,8 @@ namespace embree
       network::read(socket, data, bytes);
       
       if (verbose) printf("handle %06d = rtNewImage(%s, %zu, %zu)\n", id, type.c_str(), width, height);
-      set(id, device->rtNewImage(type.c_str(), width, height, data, false));  
+      set(id, device->rtNewImage(type.c_str(), width, height, data, true));  
+	  free(data);
       break;
     }
     

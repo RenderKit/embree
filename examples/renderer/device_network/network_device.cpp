@@ -430,13 +430,13 @@ namespace embree
       Ref<Image> image = loadImage(fileName);
       if (!image) throw std::runtime_error("cannot load image: "+std::string(fileName));
       else if (Ref<Image3c> cimg = image.dynamicCast<Image3c>())
-        return rtNewImage("RGB8",cimg->width,cimg->height,cimg->steal_ptr(),false);
+        return rtNewImage("RGB8",cimg->width,cimg->height,cimg->ptr(),true);
       else if (Ref<Image4c> cimg = image.dynamicCast<Image4c>())
-        return rtNewImage("RGBA8",cimg->width,cimg->height,cimg->steal_ptr(),false);
+        return rtNewImage("RGBA8",cimg->width,cimg->height,cimg->ptr(),true);
       else if (Ref<Image3f> fimg = image.dynamicCast<Image3f>())
-        return rtNewImage("RGB_FLOAT32",fimg->width,fimg->height,fimg->steal_ptr(),false);
+        return rtNewImage("RGB_FLOAT32",fimg->width,fimg->height,fimg->ptr(),true);
       else if (Ref<Image4f> fimg = image.dynamicCast<Image4f>())
-        return rtNewImage("RGBA_FLOAT32",fimg->width,fimg->height,fimg->steal_ptr(),false);
+        return rtNewImage("RGBA_FLOAT32",fimg->width,fimg->height,fimg->ptr(),true);
       else
         throw std::runtime_error("unknown image type");
 #endif
