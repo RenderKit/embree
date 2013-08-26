@@ -14,6 +14,32 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+--- Watertight Ray/Triangle Intersection ---
+
+This is a special branch of Embree that contains an implementation of
+the watertight ray/triangle intersection algorithm presented in the
+paper "Watertight Ray/Triangle Intersection" in the Journal of Computer 
+Graphics Techniques (JCGT), vol. 2, no. 1, 65-82, 2013 
+(http://jcgt.org/published/0002/01/05/).
+
+The implementation of the intersection and modified traversal
+algorithm can be found in the following file:
+
+  rtcore/triangle/triangle1i_intersector1_watertight.h
+  rtcore/bvh4/bvh4_intersector_watertight.cpp
+
+To render an image using the watertight algorithm use the following
+command line:
+
+  ./embree -c ../models/cornell_box.ecs -accel bvh4 -tri triangle1i.watertight  
+
+The Moeller Trumbore intersector can be enabled for comparison the following:
+
+  ./embree -c ../models/cornell_box.ecs -accel bvh4 -tri triangle1i.moeller  
+
+
+--- Embree ---
+
 Embree is a collection of high-performance ray tracing kernels,
 developed at Intel Labs. The kernels are optimized for photo-realistic
 rendering on the latest Intel® processors with support for SSE and AVX
@@ -30,7 +56,6 @@ applications. The kernels can be used to develop new rendering engines
 on top of them, to replace the core of an existing renderer or simply
 as a benchmark. Embree is released as Open Source under the Apache 2.0
 license.
-
 
 --- Supported Platforms ---
 

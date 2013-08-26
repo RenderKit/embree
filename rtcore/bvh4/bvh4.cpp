@@ -17,6 +17,7 @@
 #include "bvh4.h"
 #include "triangle/triangles.h"
 #include "bvh4/bvh4_intersector.h"
+#include "bvh4/bvh4_intersector_watertight.h"
 
 namespace embree
 {
@@ -44,6 +45,7 @@ namespace embree
         if (intTy == "accurate") return new BVH4Intersector<Triangle1iIntersectorPluecker>(this);
         if (intTy == "moeller" ) return new BVH4Intersector<Triangle1iIntersectorMoellerTrumbore>(this);
         if (intTy == "pluecker") return new BVH4Intersector<Triangle1iIntersectorPluecker>(this);
+        if (intTy == "watertight") return new BVH4IntersectorWatertight<Triangle1iIntersectorWatertight>(this);
         throw std::runtime_error("unknown triangle intersector \""+intTy+"\" for triangle1i");
       }
       throw std::runtime_error("unknown triangle intersector interface \""+std::string(name)+"\"");

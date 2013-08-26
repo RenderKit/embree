@@ -29,6 +29,7 @@
 /*! include single ray triangle intersectors */
 #include "triangle1i_intersector1_moeller.h"
 #include "triangle1i_intersector1_pluecker.h"
+#include "triangle1i_intersector1_watertight.h"
 #include "triangle4i_intersector1_moeller.h"
 #include "triangle4i_intersector1_pluecker.h"
 #include "triangle4i_intersector1_moeller_mb.h"

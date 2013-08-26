@@ -40,6 +40,7 @@ ADD_LIBRARY(rtcore STATIC
 
   bvh4/bvh4.cpp   
   bvh4/bvh4_intersector.cpp   
+  bvh4/bvh4_intersector_watertight.cpp   
   bvh4/bvh4_builder.cpp   
 
   bvh4mb/bvh4mb.cpp   

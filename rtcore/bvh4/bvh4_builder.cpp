@@ -34,6 +34,7 @@ namespace embree
     scheduler->stop();
     
     /* start parallel build */
+    bvh->bounds = gen.pinfo.geomBounds;
     scheduler->start();
     recurse(TaskScheduler::ThreadInfo(),bvh->root,1,gen.prims,gen.pinfo,gen.split);
     scheduler->stop();

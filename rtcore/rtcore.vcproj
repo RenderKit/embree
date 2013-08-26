@@ -318,6 +318,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\triangle\triangle1i_intersector1_watertight.h"
+				>
+			</File>
+			<File
 				RelativePath=".\triangle\triangle1v.h"
 				>
 			</File>
@@ -571,6 +575,14 @@
 			</File>
 			<File
 				RelativePath=".\bvh4\bvh4_intersector.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4\bvh4_intersector_watertight.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4\bvh4_intersector_watertight.h"
 				>
 			</File>
 		</Filter>

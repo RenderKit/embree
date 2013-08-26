@@ -126,6 +126,7 @@ namespace embree
     const Vec3fa* vertices;            //!< Pointer to vertex array.
     size_t numVertices;                //!< Number of vertices
     bool freeVertices;                 //!< Should we delete the vertex array?
+    BBox3f bounds;                     //!< bounds of BVH
 
   private:
     float statistics(Base* node, float area, size_t& depth);

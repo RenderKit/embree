@@ -215,6 +215,7 @@
     <ClCompile Include="bvh4\bvh4.cpp" />
     <ClCompile Include="bvh4\bvh4_builder.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector.cpp" />
+    <ClCompile Include="bvh4\bvh4_intersector_watertight.cpp" />
     <ClCompile Include="common\accel.cpp" />
     <ClCompile Include="common\alloc.cpp" />
     <ClCompile Include="common\heuristic_binning.cpp" />
@@ -235,6 +236,7 @@
     <ClInclude Include="bvh4\bvh4.h" />
     <ClInclude Include="bvh4\bvh4_builder.h" />
     <ClInclude Include="bvh4\bvh4_intersector.h" />
+    <ClInclude Include="bvh4\bvh4_intersector_watertight.h" />
     <ClInclude Include="common\accel.h" />
     <ClInclude Include="common\alloc.h" />
     <ClInclude Include="common\atomic_set.h" />
@@ -260,6 +262,7 @@
     <ClInclude Include="triangle\triangle1i.h" />
     <ClInclude Include="triangle\triangle1i_intersector1_moeller.h" />
     <ClInclude Include="triangle\triangle1i_intersector1_pluecker.h" />
+    <ClInclude Include="triangle\triangle1i_intersector1_watertight.h" />
     <ClInclude Include="triangle\triangle1v.h" />
     <ClInclude Include="triangle\triangle1v_intersector1_moeller.h" />
     <ClInclude Include="triangle\triangle1v_intersector1_pluecker.h" />
