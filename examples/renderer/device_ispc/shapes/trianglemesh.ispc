@@ -53,7 +53,7 @@ void TriangleMesh__postIntersect(uniform const Shape *uniform _this,
   const float v = ray.v;
   const float w = 1.0f-u-v;
   const float t = ray.tfar;
-  
+
   dg.P  = add(ray.org, mul(t,ray.dir));
   dg.Ng = normalize(ray.Ng);
   dg.error = max(abs(ray.tfar),reduce_max(abs(dg.P)));

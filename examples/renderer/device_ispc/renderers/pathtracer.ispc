@@ -348,11 +348,13 @@ void PathTracer__initSampler(uniform PathTracer* uniform this, const uniform Sce
 
   this->lightSampleID = PrecomputedSampler__request2D(&this->sampler,1);
   uniform int numAllLights = min(MAX_LIGHTS,scene->num_allLights);
+
   for (uniform int i=0; i<numAllLights; i++) {
     this->precomputedLightSampleID[i] = -1;
     if (scene->allLights[i]->type & TY_PRECOMPUTE_LIGHT_SAMPLES) 
       this->precomputedLightSampleID[i] = PrecomputedSampler__requestLightSample(&this->sampler,this->lightSampleID,scene->allLights[i]);
   }
+
   this->firstScatterSampleID = PrecomputedSampler__request2D(&this->sampler,this->maxDepth);
   this->firstScatterTypeSampleID = PrecomputedSampler__request1D(&this->sampler,this->maxDepth);
   PrecomputedSampler__init(&this->sampler);

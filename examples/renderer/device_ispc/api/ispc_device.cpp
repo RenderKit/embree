@@ -323,6 +323,8 @@ namespace embree
         RTCGeometry* mesh = rtcNewTriangleMesh (numTriangles, numVertices, "default");
         RTCTriangle* triangles = (RTCTriangle*) rtcMapTriangleBuffer(mesh);
         Vec3fa*      vertices  = (Vec3fa*     ) rtcMapPositionBuffer(mesh);
+        numTriangles = 0;
+        numVertices = 0;
         ispc::Shape__extract(shape.ptr,0x7FFFFFFF,
                              (ispc::RTCTriangle*)triangles,(int&)numTriangles,
                              (ispc::RTCVertex  *)vertices ,(int&)numVertices,

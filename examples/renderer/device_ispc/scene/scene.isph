@@ -43,6 +43,7 @@ inline void postIntersect(const uniform Scene *uniform scene,
                           varying DifferentialGeometry &dg)
 {
   if (hadHit(ray))
-    foreach_unique(geomID in ray.id0)
+    foreach_unique(geomID in ray.id0) {
       scene->geometry[geomID]->shape->postIntersect(scene->geometry[geomID]->shape,ray,dg);
+    }
 }
