@@ -61,7 +61,7 @@ namespace embree
     if (width == g_width && height == g_height)
       return;
 
-    delete[] g_pixels;
+    if (g_pixels) alignedFree(g_pixels);
     g_width = width;
     g_height = height;
     g_pixels = (int*) alignedMalloc(g_width*g_height*sizeof(int),64);
