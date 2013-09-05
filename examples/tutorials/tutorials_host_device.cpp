@@ -64,7 +64,7 @@ namespace embree
     delete[] g_pixels;
     g_width = width;
     g_height = height;
-    g_pixels = new int[g_width*g_height];
+    g_pixels = (int*) alignedMalloc(g_width*g_height*sizeof(int),64);
   }
 
   int* render(const float time, const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p)
@@ -86,6 +86,6 @@ namespace embree
   {
     ispc::cleanup();
     delete g_scene; g_scene = NULL;
-    delete[] g_pixels; g_pixels = NULL;
+    alignedFree(g_pixels); g_pixels = NULL;
   }
 }
