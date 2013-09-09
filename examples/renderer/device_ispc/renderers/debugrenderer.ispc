@@ -146,6 +146,8 @@ uniform int DebugRenderer_renderFrame(uniform Renderer* uniform _this,
   uniform int numTiles = numTiles_x * numTiles_y;
   
   launch[numTiles] DebugRenderer__renderTile(this,numTiles_x,camera,scene,SwapChain__get_buffer(swapchain));
+  sync;
+  rtcDebug();
   return swapchain->width*swapchain->height*this->spp;
 }
 

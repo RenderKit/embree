@@ -53,6 +53,12 @@ namespace embree
     CATCH_END;
   }
 
+  extern "C" void rtcISPCDebug() {
+    CATCH_BEGIN;
+    rtcDebug();
+    CATCH_END;
+  }
+
   extern "C" void rtcISPCFreeMemory() {
     CATCH_BEGIN;
     rtcFreeMemory();

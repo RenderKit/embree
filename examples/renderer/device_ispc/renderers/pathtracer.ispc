@@ -384,6 +384,7 @@ uniform int PathTracer_renderFrame(uniform Renderer* uniform _this,
   uniform AccuBuffer* uniform accu = SwapChain__get_accu(swapchain);
   launch[numTiles] PathTracer__renderTile(this,camera,scene,toneMapper,fb,accu,accuMode,numTiles_x);
   sync;
+  rtcDebug();
   this->iteration++;
   return this->numRays;
 }

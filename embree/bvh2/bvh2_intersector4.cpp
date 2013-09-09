@@ -47,9 +47,9 @@ namespace embree
   template<typename TriangleIntersector>
   void BVH2Intersector4Chunk<TriangleIntersector>::intersect(const BVH2Intersector4Chunk* This, Ray4& ray, const __m128 valid_i)
   {
-    STAT3(normal.travs,1,popcnt(valid),4);
     sseb valid = valid_i;
     const BVH2* bvh = This->bvh;
+    STAT3(normal.travs,1,popcnt(valid),4);
 
     struct StackItem {
       NodeRef ptr;
@@ -138,10 +138,10 @@ pop_node:
   template<typename TriangleIntersector>
   __m128 BVH2Intersector4Chunk<TriangleIntersector>::occluded(const BVH2Intersector4Chunk* This, Ray4& ray, const __m128 valid_i)
   {
-    STAT3(shadow.travs,1,popcnt(valid),4);
     sseb valid = valid_i;
     sseb terminated = !valid;
     const BVH2* bvh = This->bvh;
+    STAT3(shadow.travs,1,popcnt(valid),4);
 
     NodeRef stack[1+BVH2::maxDepth]; //!< stack of nodes that still need to get traversed
     NodeRef* stackPtr = stack;                    //!< current stack pointer

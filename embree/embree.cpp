@@ -123,6 +123,14 @@ namespace embree
     initialized = false;
   }
 
+  void rtcDebug() 
+  {
+#if defined(__USE_STAT_COUNTERS__)
+    Stat::print(std::cout);
+    Stat::clear();
+#endif
+  }
+
   void rtcStartThreads(size_t numThreads) {
     TaskScheduler::create(numThreads);
   }

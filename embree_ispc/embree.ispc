@@ -18,6 +18,7 @@
 
 extern "C" void rtcISPCInit();
 extern "C" void rtcISPCExit();
+extern "C" void rtcISPCDebug();
 extern "C" void rtcISPCStartThreads(uniform int numThreads);
 extern "C" void rtcISPCStopThreads();
 extern "C" void rtcISPCFreeMemory();
@@ -57,6 +58,10 @@ void rtcInit() {
 
 void rtcExit() {
   rtcISPCExit();
+}
+
+void rtcDebug() {
+  rtcISPCDebug();
 }
 
 void rtcStartThreads(uniform int numThreads) {

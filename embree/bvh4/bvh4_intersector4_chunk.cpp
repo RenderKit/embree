@@ -25,6 +25,7 @@ namespace embree
     sseb valid = valid_i;
     NodeRef invalid = (NodeRef)1;
     const BVH4* bvh = This->bvh;
+    STAT3(normal.travs,1,popcnt(valid),4);
 
     /* load ray into registers */
     ssef ray_near = select(valid,ray.tnear,pos_inf);
@@ -62,6 +63,8 @@ namespace embree
         /* test if this is a leaf node */
         if (unlikely(curNode.isLeaf())) 
           break;
+
+        STAT3(normal.trav_nodes,1,popcnt(valid),4);
         
         const Node* const node = curNode.node(bvh->nodePtr()); //NodeRef(curNode).node(nodes);
         //prefetch<PFHINT_L1>((ssef*)node + 1); // depth first order prefetch	
@@ -129,6 +132,7 @@ namespace embree
       
       /* decode leaf node */
       size_t num;
+      STAT3(normal.trav_leaves,1,popcnt(valid),4);
       Triangle* tri = (Triangle*) curNode.leaf(bvh->triPtr(),num);
       
       /* intersect triangles */
@@ -146,7 +150,8 @@ namespace embree
     NodeRef invalid = (NodeRef)1;
     sseb terminated = !valid;
     const BVH4* bvh = This->bvh;
-    
+    STAT3(shadow.travs,1,popcnt(valid),4);
+
     /* load ray into registers */
     ssef ray_near = select(valid,ray.tnear,pos_inf);
     ssef ray_far  = select(valid,ray.tfar ,neg_inf);
@@ -183,6 +188,7 @@ namespace embree
         if (unlikely(curNode.isLeaf())) 
           break;
         
+        STAT3(shadow.trav_nodes,1,popcnt(valid),4);
         const Node* const node = curNode.node(bvh->nodePtr()); //NodeRef(curNode).node(nodes);
         //prefetch<PFHINT_L1>((ssef*)node + 1); // depth first order prefetch	
         
@@ -249,6 +255,7 @@ namespace embree
       
       /* decode leaf node */
       size_t num;
+      STAT3(shadow.trav_leaves,1,popcnt(valid),4);
       Triangle* tri = (Triangle*) curNode.leaf(bvh->triPtr(),num);
       
       /* intersect triangles */

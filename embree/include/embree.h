@@ -94,6 +94,9 @@ namespace embree
   /*! Cleanup the ray tracing core. */
   void rtcExit();
 
+  /*! Print debug info. */
+  void rtcDebug();
+
   /*! Frees all unused internal memory. */
   void rtcFreeMemory();
 

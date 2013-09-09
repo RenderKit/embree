@@ -161,7 +161,7 @@ namespace embree
 
     static __forceinline sseb occluded(const sseb& valid, const Ray4& ray, const Triangle1i& tri, const Vec3fa* vertices)
     {
-      STAT3(shadow.trav_tris,1,popcnt(valid_i),4);
+      STAT3(shadow.trav_tris,1,popcnt(valid),4);
       const Vector3f& p0 = vertices[tri.v0];
       const Vector3f& p1 = vertices[tri.v1];
       const Vector3f& p2 = vertices[tri.v2];

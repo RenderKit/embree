@@ -41,10 +41,10 @@ namespace embree
     /*! Intersects a 4 rays with 4 triangles. */
     static __forceinline void intersect(const sseb& valid_i, Ray4& ray, const Triangle4& tri, const Vec3fa* vertices = NULL)
     {
-      STAT3(normal.trav_tris,1,popcnt(valid_i),4);
-
       for (size_t i=0; i<tri.size(); i++)
       {
+        STAT3(normal.trav_tris,1,popcnt(valid_i),4);
+
         /* load edges and geometry normal */
         sseb valid = valid_i;
         const Vector3f p0(tri.v0.x[i],tri.v0.y[i],tri.v0.z[i]);
@@ -97,11 +97,12 @@ namespace embree
     /*! Test for 4 rays if they are occluded by any of the 4 triangle. */
     static __forceinline sseb occluded(const sseb& valid_i, const Ray4& ray, const Triangle4& tri, const Vec3fa* vertices = NULL)
     {
-      STAT3(shadow.trav_tris,1,popcnt(valid_i),4);
       sseb occlusion = !valid_i;
 
       for (size_t i=0; i<tri.size(); i++)
       {
+        STAT3(shadow.trav_tris,1,popcnt(valid_i),4);
+
         /* load edges and geometry normal */
         sseb valid = valid_i;
         const Vector3f p0(tri.v0.x[i],tri.v0.y[i],tri.v0.z[i]);
