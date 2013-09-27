@@ -71,7 +71,7 @@ ENDMACRO( CONFIGURE_SPMD )
 ##############################################################
 
 LINK_DIRECTORIES(${EXECUTABLE_OUTPUT_PATH})
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/embree)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${PROJECT_SOURCE_DIR}/embree) 
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 ##############################################################
@@ -131,3 +131,5 @@ IF (BUILD_ISPC_DEVICE_KNC)
   SET(TARGET_SPMD "knc")
   ADD_SUBDIRECTORY(embree_ispc embree_ispc_knc)
 ENDIF ()
+
+FILE(WRITE "${CMAKE_BINARY_DIR}/CMakeDefines.h" "#define CMAKE_BUILD_DIR \"${CMAKE_BINARY_DIR}\"\n")

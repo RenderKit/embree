@@ -57,6 +57,7 @@ namespace embree
 #if defined(__UNIX__)
 
 #include <dlfcn.h>
+#include <CMakeDefines.h>
 
 namespace embree
 {
@@ -68,10 +69,13 @@ namespace embree
 #else
     std::string fullName = "lib"+file+".so";
 #endif
+    std::string path = std::string(CMAKE_BUILD_DIR) + std::string("/") + fullName;
+    void* lib = dlopen(path.c_str(),RTLD_NOW);
+    if (lib != NULL) return lib_t(lib);
     FileName executable = getExecutableFileName();
-    void* lib = dlopen((executable.path() + fullName).c_str(),RTLD_NOW);
-    if (lib == NULL) throw std::runtime_error(dlerror());
-    return lib_t(lib);
+    lib = dlopen((executable.path() + fullName).c_str(),RTLD_NOW);
+    if (lib != NULL) return lib_t(lib);
+    throw std::runtime_error(dlerror());
   }
 
   /* returns address of a symbol from the library */
