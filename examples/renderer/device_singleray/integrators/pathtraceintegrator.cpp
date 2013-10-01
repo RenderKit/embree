@@ -23,7 +23,7 @@ namespace embree
   {
     maxDepth        = parms.getInt  ("maxDepth"       ,10    );
     minContribution = parms.getFloat("minContribution",0.01f );
-    epsilon         = parms.getFloat("epsilon"        ,8.0f)*float(ulp);
+    epsilon         = parms.getFloat("epsilon"        ,16.0f)*float(ulp);
     backplate       = parms.getImage("backplate");
   }
 
