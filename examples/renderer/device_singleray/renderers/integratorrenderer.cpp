@@ -85,6 +85,7 @@ namespace embree
     TaskScheduler::Task task(&event,_renderTile,this,TaskScheduler::getNumThreads(),_finish,this,"render::tile");
     TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_BACK,&task);
     event.sync();
+    rtcDebug();
 #else
     new (&task) TaskScheduler::Task (NULL,_renderTile,this,TaskScheduler::getNumThreads(),_finish,this,"render::tile");
     TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_BACK,&task);
