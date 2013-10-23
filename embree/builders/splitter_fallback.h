@@ -37,6 +37,12 @@ namespace embree
                       PrimRefBlockList& prims, const PrimInfo& pinfo,
                       PrimRefBlockList& lprims_o, PrimInfo& linfo_o, Split& lsplit_o,
                       PrimRefBlockList& rprims_o, PrimInfo& rinfo_o, Split& rsplit_o);
+
+    /*! enforce some object median split */
+    static void split(size_t threadIndex, PrimRefAlloc* alloc, const RTCGeometry* geom,
+                      PrimRefBlockList& prims, const PrimInfo& pinfo,
+                      PrimRefBlockList& lprims_o, PrimInfo& linfo_o, 
+                      PrimRefBlockList& rprims_o, PrimInfo& rinfo_o);
   };
 }
 

@@ -77,6 +77,48 @@ namespace embree
     rheuristic.best(rsplit);
   }
 
+  template<typename Heuristic, typename PrimRefBlockList>
+  void FallBackSplitter<Heuristic,PrimRefBlockList>::split(size_t threadIndex, PrimRefAlloc* alloc, 
+                                                           const RTCGeometry* geom,
+                                                           PrimRefBlockList& prims, const PrimInfo& pinfo,
+                                                           PrimRefBlockList& lprims, PrimInfo& linfo,
+                                                           PrimRefBlockList& rprims, PrimInfo& rinfo)
+  {
+    /* enforce split */
+    size_t lnum = 0; BBox3f lgeomBounds = empty; BBox3f lcentBounds = empty;
+    size_t rnum = 0; BBox3f rgeomBounds = empty; BBox3f rcentBounds = empty;
+    atomic_set<PrimRefBlock>::item* lblock = lprims.insert(alloc->malloc(threadIndex));
+    atomic_set<PrimRefBlock>::item* rblock = rprims.insert(alloc->malloc(threadIndex));
+    
+    while (atomic_set<PrimRefBlock>::item* block = prims.take()) 
+    {
+      for (size_t i=0; i<block->size(); i++) 
+      {
+        const PrimRef& prim = block->at(i); 
+        const BBox3f bounds = prim.bounds();
+        
+        if ((lnum+rnum)&1) 
+        {
+          lnum++;
+          lgeomBounds.grow(bounds);
+          lcentBounds.grow(center2(bounds));
+          if (likely(lblock->insert(prim))) continue; 
+          lblock = lprims.insert(alloc->malloc(threadIndex));
+          lblock->insert(prim);
+        } else {
+          rnum++;
+          rgeomBounds.grow(bounds);
+          rcentBounds.grow(center2(bounds));
+          if (likely(rblock->insert(prim))) continue;
+          rblock = rprims.insert(alloc->malloc(threadIndex));
+          rblock->insert(prim);
+        }
+      }
+    }
+    new (&linfo) PrimInfo(lnum,lgeomBounds,lcentBounds);
+    new (&rinfo) PrimInfo(rnum,rgeomBounds,rcentBounds);
+  }
+
   /*! explicit template instantiations */
   INSTANTIATE_TEMPLATE_BY_HEURISTIC_AND_PRIMREFLIST(FallBackSplitter);
 }

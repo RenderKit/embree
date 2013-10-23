@@ -49,7 +49,8 @@ namespace embree
       
     /*! Maximal depth of the BVH. */
     static const size_t maxBuildDepth = 32;
-    static const size_t maxDepth = 2*maxBuildDepth; // makes tree rotations of top part of tree safe
+    static const size_t maxBuildDepthLeaves = maxBuildDepth+16;
+    static const size_t maxDepth = maxBuildDepth+maxBuildDepthLeaves; // makes tree rotations of top part of tree safe
     
     /*! Maximal number of triangle blocks in a leaf. */
     static const size_t maxLeafBlocks = items_mask-1;

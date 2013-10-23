@@ -21,6 +21,7 @@
 #include "primrefblock.h"
 #include "primrefgen.h"
 #include "splitter.h"
+#include "splitter_fallback.h"
 #include "splitter_parallel.h"
 #include "../geometry/triangle.h"
 #include "bvh_sort.h"
@@ -108,7 +109,7 @@ namespace embree
     }
 
     /*! creates a leaf node */
-    NodeRef createLeaf(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const PrimInfo& pinfo)
+    NodeRef createLeafNode(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const PrimInfo& pinfo)
     {
       /* allocate leaf node */
       size_t blocks = trity.blocks(pinfo.size());
@@ -117,7 +118,7 @@ namespace embree
       /* insert all triangles */
       atomic_set<PrimRefBlock>::block_iterator_unsafe iter(prims);
       for (size_t i=0; i<blocks; i++) {
-      trity.pack(leaf+i*trity.bytes,iter,geom);
+        trity.pack(leaf+i*trity.bytes,iter,geom);
       }
       assert(!iter);
       
@@ -127,6 +128,28 @@ namespace embree
       
       return BVH::NodeRef::encodeLeaf(bvh->triPtr(),leaf,blocks);
     }
+
+    NodeRef createLeaf(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const PrimInfo& pinfo, size_t depth)
+    {
+#if defined(_DEBUG)
+      if (depth >= BVH::maxBuildDepthLeaves) 
+        throw std::runtime_error("ERROR: BVH too deep.");
+#endif
+      
+      /* create leaf for few primitives */
+      if (pinfo.size() <= maxLeafSize)
+        return createLeafNode(threadIndex,prims,pinfo);
+      
+      /* perform split */
+      atomic_set<PrimRefBlock> cprims[2];
+      PrimInfo                 cinfo[2];
+      FallBackSplitter<Heuristic,atomic_set<PrimRefBlock> >::split(threadIndex,&alloc,geom,prims,pinfo,cprims[0],cinfo[0],cprims[1],cinfo[1]);
+      
+      /*! create an inner node */
+      Node* node = bvh->allocNode(threadIndex);
+      for (size_t i=0; i<2; i++) node->set(i,cinfo[i].geomBounds,createLeaf(threadIndex,cprims[i],cinfo[i],depth+1));
+      return BVH::NodeRef::encodeNode(bvh->nodePtr(),node);
+    }  
 
     /*! Selects between full build and single-threaded split strategy. */
     void recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
@@ -190,7 +213,7 @@ namespace embree
         
         /*! create a leaf node when threshold reached or SAH tells us to stop */
         if (pinfo.size() <= parent->minLeafSize || depth > BVH::maxBuildDepth || (pinfo.size() <= parent->maxLeafSize && leafSAH <= splitSAH)) {
-          return parent->createLeaf(threadIndex,prims,pinfo);
+          return parent->createLeaf(threadIndex,prims,pinfo,depth);
         }
         
         /*! initialize child list */
@@ -271,7 +294,7 @@ namespace embree
         
         /*! create a leaf node when threshold reached or SAH tells us to stop */
         if (pinfo.size() <= parent->minLeafSize || depth > BVH::maxBuildDepth || (pinfo.size() <= parent->maxLeafSize && leafSAH <= splitSAH)) {
-          dst = parent->createLeaf(threadIndex,prims,pinfo); delete this; return;
+          dst = parent->createLeaf(threadIndex,prims,pinfo,depth); delete this; return;
         }
         
         /*! initialize child list */
@@ -349,7 +372,7 @@ namespace embree
         
         /*! create a leaf node when threshold reached or SAH tells us to stop */
         if (pinfo.size() <= parent->minLeafSize || depth > BVH::maxBuildDepth || (pinfo.size() <= parent->maxLeafSize && leafSAH <= splitSAH)) {
-          dst = parent->createLeaf(threadIndex,prims,pinfo); delete this; return;
+          dst = parent->createLeaf(threadIndex,prims,pinfo,depth); delete this; return;
         }
         
         /*! initialize child list */
