@@ -312,13 +312,13 @@ namespace embree
 
     if (g_demo) 
     {
-      double restart_time = 10.0f;
+      double restart_time = 15.0f;
       double dt = getSeconds()-g_demo_t0;
       if (dt > restart_time) {
         dt -= restart_time;
         g_demo_t0 = getSeconds() - dt;
       }
-      float theta = dt * 180.0f / 180.0f * float(pi);
+      float theta = dt * 90.0f / 180.0f * float(pi);
       float phi = 0.0f;
       if (theta >= 2.0f*float(pi)) theta = 2.0f*float(pi);
       
