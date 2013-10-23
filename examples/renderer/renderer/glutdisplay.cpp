@@ -47,6 +47,10 @@ namespace embree
   Handle<Device::RTCamera> createCamera(const AffineSpace3f& space);
   void clearGlobalObjects();
 
+  static Vector3f g_initial_camPos    = Vector3f(0.0f,0.0f,0.0f);
+  static Vector3f g_initial_camLookAt = Vector3f(1.0f,0.0f,0.0f);
+  static Vector3f g_initial_camUp     = Vector3f(0,1,0);
+
   /* orbit camera model */
   static AffineSpace3f g_camSpace;
   static float theta;
@@ -76,6 +80,11 @@ namespace embree
   /* pause mode */
   bool g_pause = false;
 
+  /* demo mode */
+  bool g_demo = false;
+  double g_demo_t0 = getSeconds();
+  static AffineSpace3f g_demo_camSpace;
+
   /* regression testing */
   extern bool g_regression;
 
@@ -88,6 +97,7 @@ namespace embree
   /*                                  Keyboard control                                             */
   /*************************************************************************************************/
 
+  double g_t0 = getSeconds();
   static float g_speed = 1.0f;
 
   void keyboardFunc(unsigned char k, int, int)
@@ -103,6 +113,15 @@ namespace embree
       std::cout << "-vp " << g_camPos.x    << " " << g_camPos.y    << " " << g_camPos.z    << " " << std::endl
                 << "-vi " << g_camLookAt.x << " " << g_camLookAt.y << " " << g_camLookAt.z << " " << std::endl
                 << "-vu " << g_camUp.x     << " " << g_camUp.y     << " " << g_camUp.z     << " " << std::endl;
+      break;
+    }
+    case 'd' : {
+      g_demo_t0 = getSeconds();
+      //g_camPos = g_initial_camPos;
+      //g_camLookAt = g_initial_camLookAt;
+      //g_camUp = g_initial_camUp;
+      g_demo_camSpace = AffineSpace3f::lookAtPoint(g_initial_camPos, g_initial_camLookAt, g_initial_camUp);
+      g_demo = !g_demo;
       break;
     }
     case 'f' : glutFullScreen(); break;
@@ -286,14 +305,45 @@ namespace embree
   /*************************************************************************************************/
 
   const size_t avgFrames = 4;
-  double g_t0 = getSeconds();
   double g_dt[avgFrames] = { 0.0f };
   size_t frameID = 0;
-  
+
   void displayFunc(void)
   {
     if (g_pause)
       return;
+
+    if (g_demo) 
+    {
+      double restart_time = 10.0f;
+      double dt = getSeconds()-g_demo_t0;
+      if (dt > restart_time) {
+        dt -= restart_time;
+        g_demo_t0 = getSeconds() - dt;
+      }
+      float theta = dt * 180.0f / 180.0f * float(pi);
+      float phi = 0.0f;
+      if (theta >= 2.0f*float(pi)) theta = 2.0f*float(pi);
+      
+      const Vector3f viewVec = normalize(g_initial_camLookAt - g_initial_camPos);
+      const float dist = length(g_initial_camLookAt - g_initial_camPos);
+      const Vector3f dX = normalize(cross(viewVec,g_initial_camUp));
+      const Vector3f dY = normalize(cross(viewVec,dX));
+      AffineSpace3f space = g_demo_camSpace;
+      //space = AffineSpace3f::rotate(g_initial_camLookAt,dX,phi  ) * space; 
+      space = AffineSpace3f::rotate(g_initial_camLookAt,dY,theta) * space; 
+      //g_camPos = g_camLookAt-dist*xfmVector(g_camSpace,Vector3f(0,0,1));
+      g_camSpace = space;
+      
+      static int extra_resets = 0;
+      if (theta < 2.0f*float(pi)) {
+        g_resetAccumulation = true;
+        extra_resets = 0;
+      } else if (extra_resets < 2) {
+        g_resetAccumulation = true;
+        extra_resets++;
+      }
+    }
     
     /* create random geometry for regression test */
     if (g_regression)
@@ -373,6 +423,10 @@ namespace embree
 
   void GLUTDisplay(const AffineSpace3f& camera, float s, Handle<Device::RTScene>& scene)
   {
+    g_initial_camPos = g_camPos;
+    g_initial_camLookAt = g_camLookAt;
+    g_initial_camUp = g_camUp;
+
     g_camSpace = camera;
     g_speed = s;
     g_render_scene = scene;
