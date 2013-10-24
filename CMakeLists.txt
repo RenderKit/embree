@@ -34,6 +34,7 @@ MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 ##############################################################
 
 MACRO( CONFIGURE_CPU )
+
   IF (${TARGET_CPU} STREQUAL "xeon")
     SET(__XEON__ ON)
     SET(__XEON_PHI__ OFF)
