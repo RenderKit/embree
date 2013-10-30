@@ -109,7 +109,7 @@ namespace embree
 
 #if !defined(__MIC__) && 0
   template<>
-    struct __align(16) StackItemT<unsigned long>  
+    struct __align__(16) StackItemT<unsigned long>  
   {  
     /*! Sort 2 stack items. */  
     __forceinline friend void sort(StackItemT& a, StackItemT& b)  
@@ -164,7 +164,7 @@ namespace embree
 #if defined(__MIC__)
 
   /*! An item on the stack holds the node and distance. */
-  struct __align(16) StackItem 
+  struct __align__(16) StackItem 
   {
     /*! pointer to the node */
     void* ptr;
@@ -199,7 +199,7 @@ namespace embree
 
 #else
 
-  struct __align(16) StackItem  
+  struct __align__(16) StackItem  
   {  
     /*! Copy operator */  
     StackItem& operator=(const StackItem& other) { all = other.all; return *this; }  
