@@ -117,9 +117,6 @@ namespace embree
     }
     case 'd' : {
       g_demo_t0 = getSeconds();
-      //g_camPos = g_initial_camPos;
-      //g_camLookAt = g_initial_camLookAt;
-      //g_camUp = g_initial_camUp;
       g_demo_camSpace = AffineSpace3f::lookAtPoint(g_initial_camPos, g_initial_camLookAt, g_initial_camUp);
       g_demo = !g_demo;
       break;
@@ -315,20 +312,21 @@ namespace embree
 
     if (g_demo) 
     {
-      double restart_time = 10.0f;
+      double restart_time = 15.0f;
       double dt = getSeconds()-g_demo_t0;
       if (dt > restart_time) {
         dt -= restart_time;
         g_demo_t0 = getSeconds() - dt;
       }
-      float theta = dt * 180.0f / 180.0f * float(pi);
+      float theta = dt * 90.0f / 180.0f * float(pi);
       float phi = 0.0f;
       if (theta >= 2.0f*float(pi)) theta = 2.0f*float(pi);
       
       const Vector3f viewVec = normalize(g_initial_camLookAt - g_initial_camPos);
       const float dist = length(g_initial_camLookAt - g_initial_camPos);
-      const Vector3f dX = normalize(cross(viewVec,g_initial_camUp));
-      const Vector3f dY = normalize(cross(viewVec,dX));
+      //const Vector3f dX = normalize(cross(viewVec,g_initial_camUp));
+      //const Vector3f dY = normalize(cross(viewVec,dX));
+      const Vector3f dY = normalize(g_initial_camUp);
       AffineSpace3f space = g_demo_camSpace;
       //space = AffineSpace3f::rotate(g_initial_camLookAt,dX,phi  ) * space; 
       space = AffineSpace3f::rotate(g_initial_camLookAt,dY,theta) * space; 

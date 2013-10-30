@@ -38,8 +38,9 @@ namespace embree
 
     /*! Maximal depth of the BVH. */
     static const size_t maxBuildDepth = 32;
-    static const size_t maxDepth = 2*maxBuildDepth; // makes tree rotations of top part of tree safe
-       
+    static const size_t maxBuildDepthLeaves = maxBuildDepth+16;
+    static const size_t maxDepth = maxBuildDepth+maxBuildDepthLeaves; // makes tree rotations of top part of tree safe
+         
     /*! Each reference to a node consists of offset (26 bit), 
         is-leaf bit (1 bit), and number of triangle count (5 bits). */
     static const unsigned index_shift = 6;           
