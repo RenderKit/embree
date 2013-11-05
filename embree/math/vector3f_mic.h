@@ -175,28 +175,28 @@ namespace embree
     __m512 b = _mm512_mask_blend_ps(0x8,a.m512,_mm512_set1_ps(0.0f));
     __m512 c = _mm512_add_ps(b, _mm512_swizzle_ps(b, _MM_SWIZ_REG_BADC));
     __m512 d = _mm512_add_ps(c, _mm512_swizzle_ps(c, _MM_SWIZ_REG_CDAB));
-    return _mm512_cvtss_f32(d);
+    return ((float*)&d)[0]; //_mm512_cvtss_f32(d);
   } 
 
   __forceinline float reduce_mul(const Vector3f& a) { 
     __m512 b = _mm512_mask_blend_ps(0x8,a.m512,_mm512_set1_ps(1.0f));
     __m512 c = _mm512_mul_ps(b, _mm512_swizzle_ps(b, _MM_SWIZ_REG_BADC));
     __m512 d = _mm512_mul_ps(c, _mm512_swizzle_ps(c, _MM_SWIZ_REG_CDAB));
-    return _mm512_cvtss_f32(d);
+    return ((float*)&d)[0]; // _mm512_cvtss_f32(d);
   } 
 
   __forceinline float reduce_min(const Vector3f& a) { 
     __m512 b = _mm512_mask_blend_ps(0x8,a.m512,_mm512_set1_ps(pos_inf));
     __m512 c = _mm512_gmin_ps(b, _mm512_swizzle_ps(b, _MM_SWIZ_REG_BADC));
     __m512 d = _mm512_gmin_ps(c, _mm512_swizzle_ps(c, _MM_SWIZ_REG_CDAB));
-    return _mm512_cvtss_f32(d);
+    return ((float*)&d)[0]; // _mm512_cvtss_f32(d);
   } 
 
   __forceinline float reduce_max(const Vector3f& a) { 
     __m512 b = _mm512_mask_blend_ps(0x8,a.m512,_mm512_set1_ps(neg_inf));
     __m512 c = _mm512_gmax_ps(b, _mm512_swizzle_ps(b, _MM_SWIZ_REG_BADC));
     __m512 d = _mm512_gmax_ps(c, _mm512_swizzle_ps(c, _MM_SWIZ_REG_CDAB));
-    return _mm512_cvtss_f32(d);
+    return ((float*)&d)[0]; // _mm512_cvtss_f32(d);
   } 
 
   ////////////////////////////////////////////////////////////////////////////////

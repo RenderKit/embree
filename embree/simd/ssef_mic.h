@@ -288,11 +288,7 @@ namespace embree
   __forceinline const ssef_t vreduce_min(const ssef_t& v) { ssef_t h = min(shuffle<1,0,3,2>(v),v); return min(shuffle<2,3,0,1>(h),h); }
   __forceinline const ssef_t vreduce_max(const ssef_t& v) { ssef_t h = max(shuffle<1,0,3,2>(v),v); return max(shuffle<2,3,0,1>(h),h); }
   __forceinline const ssef_t vreduce_add(const ssef_t& v) { ssef_t h = shuffle<1,0,3,2>(v)   + v ; return shuffle<2,3,0,1>(h)   + h ; }
-  
-  __forceinline float reduce_min(const ssef_t& v) { return _mm512_cvtss_f32(vreduce_min(v)); }
-  __forceinline float reduce_max(const ssef_t& v) { return _mm512_cvtss_f32(vreduce_max(v)); }
-  __forceinline float reduce_add(const ssef_t& v) { return _mm512_cvtss_f32(vreduce_add(v)); }
-  
+    
   __forceinline size_t select_min(const ssef_t& v) { return __bsf(movemask(v == vreduce_min(v))); }
   __forceinline size_t select_max(const ssef_t& v) { return __bsf(movemask(v == vreduce_max(v))); }
   
