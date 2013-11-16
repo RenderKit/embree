@@ -351,6 +351,11 @@ namespace embree
         uint32 v0 = getVertex(vertexMap, positions, normals, texcoords, i0);
         uint32 v1 = getVertex(vertexMap, positions, normals, texcoords, i1);
         uint32 v2 = getVertex(vertexMap, positions, normals, texcoords, i2);
+
+	if (isnan(positions[v0].x) || isnan(positions[v0].y || isnan(positions[v0].z))) continue;
+	if (isnan(positions[v1].x) || isnan(positions[v1].y || isnan(positions[v1].z))) continue;
+	if (isnan(positions[v2].x) || isnan(positions[v2].y || isnan(positions[v2].z))) continue;
+
         triangles.push_back(Vec3i(v0, v1, v2));
       }
     }
