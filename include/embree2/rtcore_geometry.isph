@@ -1,0 +1,109 @@
+// ======================================================================== //
+// Copyright 2009-2013 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+#ifndef __RTCORE_GEOMETRY_ISPH__
+#define __RTCORE_GEOMETRY_ISPH__
+
+/*! invalid geometry ID */
+#define INVALID_GEOMETRY_ID ((uniform unsigned)-1)
+
+/*! Type of buffers */
+enum RTCBufferType {
+  RTC_INDEX_BUFFER    = 0x01000000,
+  RTC_VERTEX_BUFFER   = 0x02000000,
+  RTC_VERTEX_BUFFER0  = 0x02000000,
+  RTC_VERTEX_BUFFER1  = 0x02000001,
+};
+
+/*! Matrix layout */
+enum RTCMatrixType {
+  RTC_MATRIX_ROW_MAJOR = 0,
+  RTC_MATRIX_COLUMN_MAJOR = 1,
+  RTC_MATRIX_COLUMN_MAJOR_ALIGNED16 = 2,
+};
+
+/*! Creates a new scene instance. A scene instance contains a
+ *  reference to a scene to instantiate and the transformation to
+ *  instantiate the scene with. An implementation will typically
+ *  transform the ray with the inverse of the provided transformation
+ *  and continue traversing the ray through the provided scene. If any
+ *  geometry is hit, the instance ID (instID) member of the ray will
+ *  get set to the geometry ID of the instance. */
+uniform unsigned int rtcNewInstance (RTCScene target,           //!< the scene the instance belongs to
+                                     RTCScene source            //!< the geometry to instantiate
+  );
+
+/*! Sets transformation of the instance */
+void rtcSetTransform (RTCScene scene,                                  //!< scene handle
+                      uniform unsigned int geomID,                     //!< ID of geometry
+                      uniform RTCMatrixType layout,                    //!< layout of transformation matrix
+                      uniform float* uniform xfm                       //!< transformation matrix
+                      );
+
+/*! Creates a new triangle mesh. The number of triangles
+ *  (numTriangles), number of vertices (numVertices), and number of
+ *  time steps (1 for normal meshes, and 2 for linear motion blur),
+ *  have to get specified. The triangle indices can be set be mapping
+ *  and writing to the index buffer (RTC_INDEX_BUFFER) and the
+ *  triangle vertices can be set by mapping and writing into the
+ *  vertex buffer (RTC_VERTEX_BUFFER). In case of linear motion blur,
+ *  two vertex buffers have to get filled (RTC_VERTEX_BUFFER0,
+ *  RTC_VERTEX_BUFFER1), one for each time step. */
+uniform unsigned int rtcNewTriangleMesh (RTCScene scene,              //!< the scene the mesh belongs to
+                                     uniform RTCFlags flags,          //!< geometry flags
+                                     uniform size_t numTriangles,     //!< number of triangles
+                                     uniform size_t numVertices,      //!< number of vertices
+                                     uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
+  );
+
+/*! Creates a new collection of quadratic bezier curves. */
+uniform unsigned int rtcNewQuadraticBezierCurves (RTCScene scene,                 //!< the scene the curves belong to
+                                                  uniform RTCFlags flags,         //!< geometry flags    
+                                                  uniform size_t numCurves,       //!< number of curves
+                                                  uniform size_t numVertices,     //!< number of vertices
+                                                  uniform size_t numTimeSteps = 1 //!< number of motion blur time steps
+  );
+
+/*! Sets ray mask. */
+void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
+
+/*! Maps specified buffer. This function can be used to set index and
+ *  vertex buffers of geometries. */
+void* uniform rtcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
+
+/*! Unmaps specified buffer. A buffer has to be unmapped before the
+ *  rtcEnable, rtcDisable, rtcUpdate, or rtcDeleteGeometry calls are
+ *  executed. */
+void rtcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
+
+/*! Enable geometry. Enabled geometry can be hit by a ray. */
+void rtcEnable (RTCScene scene, uniform unsigned int geomID);
+
+/*! Update geometry. This function has to get called, each time the
+ *  user modifies some geometry for dynamic scenes. The function does
+ *  not have to get called after initializing some geometry for the
+ *  first time. */
+void rtcUpdate (RTCScene scene, uniform unsigned int geomID);
+
+/*! Disable geometry. Disabled geometry is not hit by any
+ *  ray. Disabling and enabling geometry gives higher performance than
+ *  deleting and recreating geometry. */
+void rtcDisable (RTCScene scene, uniform unsigned int geomID);
+
+/*! Deletes the geometry again. */
+void rtcDeleteGeometry (RTCScene scene, uniform unsigned int geomID);
+
+#endif

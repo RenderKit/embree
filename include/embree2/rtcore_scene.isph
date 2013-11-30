@@ -1,0 +1,75 @@
+// ======================================================================== //
+// Copyright 2009-2013 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+#ifndef __RTCORE_SCENE_ISPH__
+#define __RTCORE_SCENE_ISPH__
+
+/*! forward declarations for ray structures */
+struct RTCRay1;
+struct RTCRay;
+
+/*! geometry flags */
+enum RTCFlags 
+{
+  /* dynamic type flags */
+  RTC_STATIC     = (0 << 0),    //!< specifies static geometry that will not change
+  RTC_DEFORMABLE = (1 << 0),    //!< specifies dynamic geometry with deformable motion (BVH refit possible)
+  RTC_DYNAMIC    = (2 << 0),    //!< specifies dynamic geometry with arbitrary motion (BVH refit not possible)
+
+  /* acceleration structure flags */
+  RTC_COMPACT    = (1 << 8),    //!< use memory conservative data structures
+  RTC_COHERENT   = (1 << 9),    //!< optimize data structures for coherent rays (disabled by default)
+  RTC_INCOHERENT = (1 << 10),    //!< optimize data structures for in-coherent rays (disabled by default)
+  RTC_HIGH_QUALITY = (1 << 11),  //!< create higher quality data structures (disabled by default)
+
+  /* traversal algorithm flags */
+  RTC_ROBUST     = (1 << 16)     //!< use more robust traversal algorithms
+};
+
+/*! enabled algorithm flags */
+enum RTCAlgorithmFlags 
+{
+  RTC_INTERSECT_UNIFORM = (1 << 0),    //!< enables the uniform rtcIntersect1 and uniform rtcOccluded1 functions for this scene
+  RTC_INTERSECT_VARYING = (1 << 1),    //!< enables the varying rtcIntersect and varying rtcOccluded functions for this scene
+};
+
+/*! Scene type */
+typedef uniform struct __RTCScene {}* uniform RTCScene;
+
+/*! Creates a new scene. */
+RTCScene rtcNewScene (uniform RTCFlags flags, uniform RTCAlgorithmFlags aflags);
+
+/*! Commits the geometry of the scene. After initializing or modifying
+ *  geometries, this function has to get called before tracing
+ *  rays. */
+void rtcCommit (RTCScene scene); 
+
+/*! Intersects a uniform ray with the scene. */
+void rtcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
+
+/*! Intersects a varying ray with the scene. */
+void rtcIntersect (RTCScene scene, varying RTCRay& ray);
+
+/*! Tests if a uniform ray is occluded by the scene. */
+void rtcOccluded1 (RTCScene scene, uniform RTCRay1& ray);
+
+/*! Tests if a varying ray is occluded by the scene. */
+void rtcOccluded (RTCScene scene, varying RTCRay& ray);
+
+/*! Deletes the geometry again. */
+void rtcDeleteScene (RTCScene scene);
+
+#endif
