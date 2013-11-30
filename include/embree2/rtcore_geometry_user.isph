@@ -1,0 +1,73 @@
+// ======================================================================== //
+// Copyright 2009-2013 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+#ifndef __RTCORE_USER_GEOMETRY_ISPH__
+#define __RTCORE_USER_GEOMETRY_ISPH__
+
+/*! Type of intersect function pointer for uniform rays. */
+typedef void (*RTCIntersectFuncUniform)(void* uniform ptr,           /*!< pointer to user data */
+                                        uniform RTCRay1& ray         /*!< ray to intersect */);
+
+/*! Type of intersect function pointer for varying rays. */
+typedef void (*RTCIntersectFuncVarying)(void* uniform ptr,           /*!< pointer to user data */
+                                        varying RTCRay& ray          /*!< ray to intersect */);
+
+/*! Type of occlusion function pointer for uniform rays. */
+typedef uniform bool (*RTCOccludedFuncUniform) (void* uniform ptr,   /*!< pointer to user data */ 
+                                                uniform RTCRay1& ray /*!< ray to test occlusion */);
+
+
+/*! Type of occlusion function pointer for varying rays. */
+typedef varying bool (*RTCOccludedFuncVarying) (void* uniform ptr,   /*!< pointer to user data */ 
+                                                varying RTCRay& ray  /*!< ray to test occlusion */);
+
+/*! Creates a new user geometry object. This feature makes it possible
+ *  to add arbitrary types of geometry to the scene by providing
+ *  appropiate intersect and occluded functions, as well as a bounding
+ *  box of the implemented geometry. As the rtcIntersect and
+ *  rtcOccluded functions support different ray packet sizes, the user
+ *  also has to provide different versions of intersect and occluded
+ *  function pointers for the different packet sized. However, only
+ *  rtcIntersect and rtcOccluded functions of specific packet sizes
+ *  are called, it is sufficient to provide only the corresponding
+ *  function pointer for the user geometry. However, the functions
+ *  provided have to intersect the same geometry. A user data pointer,
+ *  that points to a user specified representation of the geometry, is
+ *  passed to each intersect and occluded function invokation. */
+uniform unsigned int rtcNewUserGeometry (RTCScene scene);
+
+/*! Set bounding box of user defined geometry. The bounding box has to
+    be conservative and should be tight. */
+void rtcSetBounds (RTCScene scene, uniform unsigned int geomID, 
+                   uniform float lower_x, uniform float lower_y, uniform float lower_z,
+                   uniform float upper_x, uniform float upper_y, uniform float upper_z);
+
+/*! Set data pointer for intersect and occluded functions. */
+void rtcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr);
+
+/*! Set intersect function for uniform rays. */
+void rtcSetIntersectFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFuncUniform intersect);
+
+/*! Set intersect function for varying rays. */
+void rtcSetIntersectFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFuncVarying intersect);
+
+/*! Set occlusion function for uniform rays. */
+void rtcSetOccludedFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFuncUniform occluded);
+
+/*! Set occlusion function for varying rays. */
+void rtcSetOccludedFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFuncVarying occluded);
+
+#endif
