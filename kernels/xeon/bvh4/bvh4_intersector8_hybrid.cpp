@@ -107,6 +107,7 @@ namespace embree
           size_t r = bitscan(mask); mask = __btc(mask,r);
           if (likely(mask == 0)) {
             cur = node->child(r);
+            assert(cur != BVH4::emptyNode);
             continue;
           }
           
@@ -114,6 +115,8 @@ namespace embree
           NodeRef c0 = node->child(r); const float d0 = tNear[r];
           r = bitscan(mask); mask = __btc(mask,r);
           NodeRef c1 = node->child(r); const float d1 = tNear[r];
+          assert(c0 != BVH4::emptyNode);
+          assert(c1 != BVH4::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
             if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
@@ -131,6 +134,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = bitscan(mask); mask = __btc(mask,r);
           NodeRef c = node->child(r); float d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          assert(c0 != BVH4::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
             cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -141,6 +145,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = bitscan(mask); mask = __btc(mask,r);
           c = node->child(r); d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          assert(c != BVH4::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
         }
@@ -264,6 +269,7 @@ namespace embree
               assert(sptr_node < stackEnd);
               const avxf childDist = select(lhit,lnearP,inf);
               const NodeRef child = node->children[i];
+              assert(child != BVH4::emptyNode);
               sptr_node++;
               sptr_near++;
               
@@ -376,6 +382,7 @@ namespace embree
           size_t r = bitscan(mask); mask = __btc(mask,r);
           if (likely(mask == 0)) {
             cur = node->child(r);
+            assert(cur != BVH4::emptyNode);
             continue;
           }
           
@@ -383,6 +390,8 @@ namespace embree
           NodeRef c0 = node->child(r); const float d0 = tNear[r];
           r = bitscan(mask); mask = __btc(mask,r);
           NodeRef c1 = node->child(r); const float d1 = tNear[r];
+          assert(c0 != BVH4::emptyNode);
+          assert(c1 != BVH4::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd);
             if (d0 < d1) { *stackPtr = c1; stackPtr++; cur = c0; continue; }
@@ -395,12 +404,14 @@ namespace embree
           
           /*! three children are hit */
           r = bitscan(mask); mask = __btc(mask,r); cur = node->child(r); 
+          assert(cur != BVH4::emptyNode);
           if (likely(mask == 0)) continue;
           assert(stackPtr < stackEnd);
           *stackPtr = cur; stackPtr++;
           
           /*! four children are hit */
           cur = node->child(3);
+          assert(cur != BVH4::emptyNode);
         }
         
         /*! this is a leaf node */
@@ -526,6 +537,7 @@ namespace embree
             if (likely(any(lhit)))
             {
               assert(sptr_node < stackEnd);
+              assert(child != BVH4::emptyNode);
               const avxf childDist = select(lhit,lnearP,inf);
               sptr_node++;
               sptr_near++;
