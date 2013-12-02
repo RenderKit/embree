@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="embree_avx"
-	ProjectGUID="{ED858C9A-C161-4036-8DF7-EB169BCB81BF}"
-	RootNamespace="embree_avx"
+	Name="embree_avx2"
+	ProjectGUID="{2D858C9A-C161-4036-8DF7-EB1694CB81BF}"
+	RootNamespace="embree_avx2"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -21,8 +21,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)AVX"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)AVX"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)AVX2"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
 			>
@@ -89,8 +89,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)AVX"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)AVX"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)AVX2"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
 			>
@@ -158,8 +158,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)AVX"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)AVX"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)AVX2"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
 			WholeProgramOptimization="1"
@@ -226,8 +226,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)AVX"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)AVX"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)AVX2"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
 			WholeProgramOptimization="1"
@@ -317,51 +317,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4i\bvh4i_builder_morton.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh4i\bvh4i_builder_morton.h"
-				>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\bvh4i\bvh4i_builder_morton_enhanced.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh4i\bvh4i_builder_morton_enhanced.h"
-				>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\bvh4i\bvh4i_builder_util.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh4i\bvh4i_builder_util.h"
-				>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath=".\bvh4i\bvh4i_intersector1.cpp"
 				>
 			</File>
@@ -406,40 +361,18 @@
 					/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath=".\bvh4i\bvh4i_intersector8_chunk_avx2.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4i\bvh4i_intersector8_chunk_avx2.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="bvh8i"
 			>
-			<File
-				RelativePath=".\bvh8i\bvh8i.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh8i\bvh8i.h"
-				>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\bvh8i\bvh8i_builder.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh8i\bvh8i_builder.h"
-				>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-			</File>
 			<File
 				RelativePath=".\bvh8i\bvh8i_intersector1.cpp"
 				>
@@ -498,38 +431,10 @@
 				RelativePath=".\geometry\instance_intersector8.h"
 				>
 			</File>
-			<File
-				RelativePath=".\geometry\triangle8.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\geometry\triangle8.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="rtcore"
-			>
-			<File
-				RelativePath=".\rtcore\ispc_wrapper_avx.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\ispc_wrapper_avx.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="bvh4"
 			>
-			<File
-				RelativePath=".\bvh4\bvh4_builder_morton.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh4\bvh4_builder_morton.h"
-				>
-			</File>
 			<File
 				RelativePath=".\bvh4\bvh4_intersector1.cpp"
 				>

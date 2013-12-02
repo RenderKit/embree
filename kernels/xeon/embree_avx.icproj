@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Intel C++ Project"
-	Version="12.1"
+	Version="14.0"
 	Name="embree_avx"
 	ProjectGUID="{6C891227-B162-480E-BEF1-AA567DA852D6}"
 	VCNestedProjectGUID="{ED858C9A-C161-4036-8DF7-EB169BCB81BF}"

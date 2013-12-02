@@ -110,16 +110,15 @@ __forceinline int __btr(int v, int i) {
 #if defined(__X86_64__)
 
 __forceinline size_t __bsf(size_t v) {
-  size_t r = 0; _BitScanForward64((unsigned long*)&r,v); return r;
+  unsigned long r = 0; _BitScanForward64(&r,v); return r;
 }
 
 __forceinline size_t __bsr(size_t v) {
-  size_t r = 0; _BitScanReverse64((unsigned long*)&r,v); return r;
+  unsigned long r = 0; _BitScanReverse64(&r,v); return r;
 }
 
 __forceinline size_t __btc(size_t v, size_t i) {
-  //size_t r = v; _bittestandcomplement64((__int64*)&r,i); return r;
-  return v ^ (size_t(1) << i); // faster than using intrinsics, as intrinsic goes through memory
+  size_t r = v; _bittestandcomplement64((__int64*)&r,i); return r;
 }
 
 __forceinline size_t __bts(size_t v, size_t i) {
