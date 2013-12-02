@@ -41,7 +41,7 @@ namespace embree
   };
 
   /*! spinning mutex */
-  class MutexActive {
+  class __align(64) MutexActive {
   public:
     __forceinline MutexActive( void ) : flag(0) {}
     void lock  ( void );

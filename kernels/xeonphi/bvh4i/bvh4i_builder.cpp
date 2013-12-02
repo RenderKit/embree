@@ -100,10 +100,12 @@ namespace embree
       accel(NULL), 
       size_prims(0) 
   {
+    DBG(PING);
   }
 
   BVH4iBuilder::~BVH4iBuilder()
   {
+    DBG(PING);
     if (prims)  {
       assert(size_prims > 0);
       os_free(prims,size_prims);
@@ -112,6 +114,7 @@ namespace embree
 
   void BVH4iBuilder::allocateData(size_t threadCount)
   {
+    DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = source->size();
     DBG(DBG_PRINT(numPrimitives));
@@ -175,6 +178,8 @@ namespace embree
 
   void BVH4iBuilder::build(size_t threadIndex, size_t threadCount) 
   {
+    DBG(PING);
+
     if (g_verbose >= 1)
       std::cout << "building BVH4i with SAH builder (MIC) ... " << std::endl << std::flush;
 
@@ -1109,6 +1114,8 @@ namespace embree
 
   void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
+    DBG(PING);
+
     TIMER(double msec = 0.0);
 
     //DBG_PRINT(threadIndex);

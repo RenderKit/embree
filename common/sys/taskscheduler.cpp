@@ -21,6 +21,7 @@
 #endif
 #include "sysinfo.h"
 #include "tasklogger.h"
+#include "sys/sync/atomic.h"
 
 #define DBG_THREADS(x)
 
@@ -147,6 +148,7 @@ namespace embree
     for (size_t t=0; t<numThreads; t++) {
       threads.push_back(createThread((thread_func)threadFunction,new Thread(t,numThreads,this),4*1024*1024,t));
     }
+
     //setAffinity(0);
     TaskLogger::init(numThreads);
   }
@@ -155,6 +157,8 @@ namespace embree
   {
     Thread thread = *(Thread*) ptr;
     delete (Thread*) ptr;
+
+    
     thread.scheduler->run(thread.threadIndex,thread.threadCount);
   }
   catch (const Terminate&) {
