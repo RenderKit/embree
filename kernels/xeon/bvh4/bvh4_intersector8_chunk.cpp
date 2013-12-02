@@ -118,6 +118,7 @@ namespace embree
             if (likely(any(lhit)))
             {
               assert(sptr_node < stackEnd);
+              assert(child != BVH4::emptyNode);
               const avxf childDist = select(lhit,lnearP,inf);
               sptr_node++;
               sptr_near++;
@@ -246,6 +247,7 @@ namespace embree
             if (likely(any(lhit)))
             {
               assert(sptr_node < stackEnd);
+              assert(child != BVH4::emptyNode);
               const avxf childDist = select(lhit,lnearP,inf);
               sptr_node++;
               sptr_near++;
