@@ -19,7 +19,7 @@ developed at Intel. The target user of Embree are graphics application
 engineers that want to improve the performance of their application by
 leveraging the optimized ray tracing kernels of Embree. The kernels
 are optimized for photo-realistic rendering on the latest Intel®
-processors with support for SSE, AVX, AVX2, and 16 wide Xeon Phi
+processors with support for SSE, AVX, AVX2, and 16-wide Xeon Phi
 vector instructions. Embree supports runtime code selection to choose
 the traversal kernel that best matches the instruction set of your
 CPU. 
