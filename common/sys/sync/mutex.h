@@ -75,6 +75,7 @@ namespace embree
     __forceinline void lock()
     {
       while(1) {
+        __memory_barrier();
 	while(flag == 1){
 #if !defined(__MIC__)
 	  _mm_pause(); // read without atomic op first
@@ -83,20 +84,27 @@ namespace embree
 	  _mm_delay_32(128); //FIXME: exp falloff
 #endif
 	}
+        __memory_barrier();
 	if ( atomic_cmpxchg(&flag,0,1) == 0) break;
       }
     }
 
     __forceinline void unlock() {
+        __memory_barrier();
       flag = 0;
+      __memory_barrier();
     }
 
     __forceinline void reset(int i = 0) {
+        __memory_barrier();
       flag = i;
+        __memory_barrier();
     }
 
     __forceinline void resetCounter(unsigned int i = 0) {
+        __memory_barrier();
       *(volatile unsigned int*)&m_counter = i;
+        __memory_barrier();
     }
 
     __forceinline unsigned int inc() {
@@ -108,6 +116,7 @@ namespace embree
     }
 
     __forceinline unsigned int val() {
+        __memory_barrier();
       return m_counter;
     };
   };
