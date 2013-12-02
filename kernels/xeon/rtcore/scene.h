@@ -82,8 +82,12 @@ namespace embree
     __forceinline       Geometry* get_locked(size_t i)  { 
 #if !defined(__MIC__)
       Lock<MutexActive> lock(geometriesMutex); 
+      //Lock<MutexSys> lock(mutex);
 #endif
-      assert(i < geometries.size()); return geometries[i]; 
+
+      Geometry *g = geometries[i]; 
+
+      assert(i < geometries.size()); return g; 
     }
 
     /* get triangle mesh by ID */
@@ -218,6 +222,8 @@ namespace embree
     bool needVertices;
     bool is_build;
     MutexSys mutex;
+
+    AtomicMutex tmp_mutex;
 
   public:
     atomic_t numTriangleMeshes;        //!< number of enabled triangle meshes

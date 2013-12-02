@@ -47,7 +47,7 @@ namespace embree
     void lock  ( void );
     void unlock( void );
   protected:
-    atomic32_t flag;
+    volatile int flag;
 
     MutexActive( const MutexActive& );             // don't implement
     MutexActive& operator =( const MutexActive& ); // don't implement
