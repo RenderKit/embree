@@ -52,6 +52,7 @@ namespace embree
 
 #else
     instance = new TaskSchedulerSys; 
+
 #endif
 
 #if 1
