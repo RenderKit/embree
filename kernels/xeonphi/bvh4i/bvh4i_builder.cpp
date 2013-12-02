@@ -25,9 +25,10 @@
 #define BVH_NODE_PREALLOC_FACTOR         1.15f
 #define QBVH_BUILDER_LEAF_ITEM_THRESHOLD   4
 #define THRESHOLD_FOR_SUBTREE_RECURSION   64
-#define BUILD_RECORD_SPLIT_THRESHOLD     512
+#define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 #define SINGLE_THREADED_BUILD_THRESHOLD  1024
 
+#define ENABLE_TASK_STEALING
 
 
 #define TIMER(x) 
@@ -56,21 +57,22 @@ namespace embree
   // =======================================================================================================
 
   static double dt = 0.0f;
-  
-  // __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
-  // 	  {pos_inf,pos_inf,pos_inf,(int)(1 << 31)},
-  // 	  {neg_inf,neg_inf,neg_inf,(int)(1 << 31)},
-  // 	  {pos_inf,pos_inf,pos_inf,(int)(1 << 31)},
-  // 	  {neg_inf,neg_inf,neg_inf,(int)(1 << 31)}
-  // };
 
-#if 0
-  __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
-	  {FLT_MAX_EXP,FLT_MAX_EXP,FLT_MAX_EXP,(int)(1 << 31)},
-	  {FLT_MAX_EXP,FLT_MAX_EXP,FLT_MAX_EXP,(int)(1 << 31)},
-	  {FLT_MAX_EXP,FLT_MAX_EXP,FLT_MAX_EXP,(int)(1 << 31)},
-	  {FLT_MAX_EXP,FLT_MAX_EXP,FLT_MAX_EXP,(int)(1 << 31)}
-  };
+#if 1
+  
+   __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
+   	  {pos_inf,pos_inf,pos_inf,(int)(1 << 31)},
+   	  {neg_inf,neg_inf,neg_inf,(int)(1 << 31)},
+   	  {pos_inf,pos_inf,pos_inf,(int)(1 << 31)},
+   	  {neg_inf,neg_inf,neg_inf,(int)(1 << 31)}
+   };
+
+  // __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
+  // 	  {FLT_MAX_EXP,FLT_MAX_EXP,FLT_MAX_EXP,(int)(1 << 31)},
+  // 	  {FLT_MAX_EXP,FLT_MAX_EXP,FLT_MAX_EXP,(int)(1 << 31)},
+  // 	  {FLT_MAX_EXP,FLT_MAX_EXP,FLT_MAX_EXP,(int)(1 << 31)},
+  // 	  {FLT_MAX_EXP,FLT_MAX_EXP,FLT_MAX_EXP,(int)(1 << 31)}
+  // };
 #else
 
   __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
@@ -141,6 +143,10 @@ namespace embree
 	const size_t size_accel    = numPrims * sizeof(Triangle1) + additional_size;
 	numAllocatedNodes = size_node / sizeof(BVHNode);
       
+	DBG(DBG_PRINT(size_primrefs));
+	DBG(DBG_PRINT(size_node));
+	DBG(DBG_PRINT(size_accel));
+
 	prims = (PrimRef  *) os_malloc(size_primrefs); 
 	node  = (BVHNode  *) os_malloc(size_node);
 	accel = (Triangle1*) os_malloc(size_accel);
@@ -433,7 +439,8 @@ namespace embree
 	    /* get build record from global queue */
 	    if (ID >= global_workStack.size()) break;
 	    br = global_workStack.get(ID);
-	    local_workStack[coreID].push(br);	  
+	    bool success = local_workStack[coreID].push(br);	  
+	    if (!success) FATAL("can't fill local work queues");
 	    ID += numCores;
 	    //recurseSAH(br,FILL_LOCAL_QUEUES,threadID,numThreads); 
 	  }    
@@ -482,18 +489,26 @@ namespace embree
 
 	/* try task stealing */
         bool success = false;
+#if defined(ENABLE_TASK_STEALING)
         for (size_t i=0; i<numThreads; i++)
         {
-	  const unsigned int next_threadID = (threadID+i)%numThreads;
+	  unsigned int next_threadID = (threadID+i);
+	  if (next_threadID >= numThreads) next_threadID -= numThreads;
 	  const unsigned int next_coreID   = next_threadID/4;
+
+	  assert(next_coreID < numCores);
           if (local_workStack[next_coreID].pop_smallest(br)) { 
             success = true;
             break;
           }
         }
-
+#endif
         if (!success) break; 
-	local_workStack[coreID].push(br);	
+
+	local_workStack[coreID].mutex.inc();
+	recurseSAH(br,alloc,RECURSE,threadID,numThreads);
+	local_workStack[coreID].mutex.dec();
+
       }
 
     TIMER(
@@ -826,7 +841,7 @@ namespace embree
 				    const size_t numThreads)
   {
     const unsigned int items = current.end - current.begin;
-    assert(items >= BUILD_RECORD_SPLIT_THRESHOLD);
+    assert(items >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD);
 
 #if defined(DEBUG)
     checkBuildRecord(current);
@@ -902,8 +917,16 @@ namespace embree
 
   __forceinline bool BVH4iBuilder::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
   {
-    if (mode == BUILD_TOP_LEVEL && current.items() >= BUILD_RECORD_SPLIT_THRESHOLD)
-      return splitParallel(current,left,right,threadID,numThreads);		  
+    if (mode == BUILD_TOP_LEVEL)
+      {
+	if (current.items() >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD)
+	  return splitParallel(current,left,right,threadID,numThreads);
+	else
+	  {
+	    std::cout << "WARNING in top-level build: too few items for parallel split " << current.items() << std::endl << std::flush;
+	    return splitSequential(current,left,right);
+	  }
+      }
     else
       return splitSequential(current,left,right);
   }
@@ -1083,6 +1106,10 @@ namespace embree
 
     //DBG_PRINT(threadIndex);
 
+    /* initialize thread-local work stacks */
+    if (threadIndex % 4 == 0)
+      local_workStack[threadIndex].reset();
+
     /* all worker threads enter tasking system */
     if (threadIndex != 0) {
       LockStepTaskScheduler::dispatchTaskMainLoop(threadIndex,threadCount); 
@@ -1115,12 +1142,7 @@ namespace embree
     br.init(global_bounds,0,numPrimitives);
     br.depth = 1;
     br.parentID = 0;
-    
-    /* initialize thread-local work stacks */
-    assert(threadCount/4 < MAX_MIC_CORES);
-    for (size_t i=0;i<threadCount/4;i++) //FIXME: init per thread
-      local_workStack[i].reset();
-    
+        
     /* push initial build record to global work stack */
     global_workStack.reset();
     global_workStack.push_nolock(br);    
