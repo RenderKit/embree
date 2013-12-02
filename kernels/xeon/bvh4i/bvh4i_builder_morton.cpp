@@ -828,9 +828,6 @@ namespace embree
       if (threadIndex == 0) 
         LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); 
       
-      /* wait for all threads to enter task */
-      barrier.wait(threadIndex,threadCount);
-      
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();

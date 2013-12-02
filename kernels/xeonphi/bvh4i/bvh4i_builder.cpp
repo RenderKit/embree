@@ -22,11 +22,15 @@
 
 #include "common/registry_builder.h"
 
-#define BVH_NODE_PREALLOC_FACTOR         1.15f
-#define QBVH_BUILDER_LEAF_ITEM_THRESHOLD   4
-#define THRESHOLD_FOR_SUBTREE_RECURSION   64
+#define BVH_NODE_PREALLOC_FACTOR                 1.15f
+
+#define QBVH_BUILDER_LEAF_ITEM_THRESHOLD         4
+
+#define THRESHOLD_FOR_SUBTREE_RECURSION         64
+
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
-#define SINGLE_THREADED_BUILD_THRESHOLD  1024
+
+#define SINGLE_THREADED_BUILD_THRESHOLD        512
 
 #define ENABLE_TASK_STEALING
 
@@ -58,7 +62,7 @@ namespace embree
 
   static double dt = 0.0f;
 
-#if 1
+#if 0
   
    __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
    	  {pos_inf,pos_inf,pos_inf,(int)(1 << 31)},
@@ -179,35 +183,39 @@ namespace embree
 
     LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); 
 
-#if defined(PROFILE)
-
-    double dt_min = pos_inf;
-    double dt_avg = 0.0f;
-    double dt_max = neg_inf;
-    size_t iterations = 200;
-    for (size_t i=0; i<iterations; i++) 
-    {
-      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
-      dt_min = min(dt_min,dt);
-      dt_avg = dt_avg + dt;
-      dt_max = max(dt_max,dt);
-    }
-    dt_avg /= double(iterations);
-
-    std::cout << "[DONE]" << std::endl;
-    std::cout << "  min = " << 1000.0f*dt_min << "ms (" << source->size()/dt_min*1E-6 << " Mtris/s)" << std::endl;
-    std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << source->size()/dt_avg*1E-6 << " Mtris/s)" << std::endl;
-    std::cout << "  max = " << 1000.0f*dt_max << "ms (" << source->size()/dt_max*1E-6 << " Mtris/s)" << std::endl;
-    std::cout << BVH4iStatistics(bvh).str();
-
-#else
 
     DBG(DBG_PRINT(numPrimitives));
 
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1) )
       {
 	DBG(std::cout << "PARALLEL BUILD" << std::endl);
+
+#if defined(PROFILE)
+
+	double dt_min = pos_inf;
+	double dt_avg = 0.0f;
+	double dt_max = neg_inf;
+	size_t iterations = 200;
+	for (size_t i=0; i<iterations; i++) 
+	  {
+	    TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
+	    dt_min = min(dt_min,dt);
+	    dt_avg = dt_avg + dt;
+	    dt_max = max(dt_max,dt);
+	  }
+	dt_avg /= double(iterations);
+
+	std::cout << "[DONE]" << std::endl;
+	std::cout << "  min = " << 1000.0f*dt_min << "ms (" << source->size()/dt_min*1E-6 << " Mtris/s)" << std::endl;
+	std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << source->size()/dt_avg*1E-6 << " Mtris/s)" << std::endl;
+	std::cout << "  max = " << 1000.0f*dt_max << "ms (" << source->size()/dt_max*1E-6 << " Mtris/s)" << std::endl;
+	std::cout << BVH4iStatistics(bvh).str();
+
+#else
+
 	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
+#endif
+
       }
     else
       {
@@ -238,7 +246,6 @@ namespace embree
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
       std::cout << BVH4iStatistics(bvh).str();
     }
-#endif
 
   }
 
@@ -923,7 +930,7 @@ namespace embree
 	  return splitParallel(current,left,right,threadID,numThreads);
 	else
 	  {
-	    std::cout << "WARNING in top-level build: too few items for parallel split " << current.items() << std::endl << std::flush;
+	    DBG(std::cout << "WARNING in top-level build: too few items for parallel split " << current.items() << std::endl << std::flush);
 	    return splitSequential(current,left,right);
 	  }
       }
