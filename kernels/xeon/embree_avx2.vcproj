@@ -43,7 +43,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/QxCORE-AVX2"
+				AdditionalOptions="/Gs999999"
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
@@ -112,7 +112,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/QxCORE-AVX2"
+				AdditionalOptions="/Gs999999"
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
@@ -181,7 +181,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/QxCORE-AVX2"
+				AdditionalOptions="/Gs999999"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
@@ -250,7 +250,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/QxCORE-AVX2"
+				AdditionalOptions="/Gs999999"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
