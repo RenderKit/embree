@@ -118,8 +118,7 @@ __forceinline size_t __bsr(size_t v) {
 }
 
 __forceinline size_t __btc(size_t v, size_t i) {
-  //size_t r = v; _bittestandcomplement64((__int64*)&r,i); return r;
-  return v ^ (size_t(1) << i); // faster than using intrinsics, as intrinsic goes through memory
+  size_t r = v; _bittestandcomplement64((__int64*)&r,i); return r;
 }
 
 __forceinline size_t __bts(size_t v, size_t i) {
