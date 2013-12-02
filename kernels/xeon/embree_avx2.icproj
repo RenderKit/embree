@@ -2,10 +2,10 @@
 <VisualStudioProject
 	ProjectType="Intel C++ Project"
 	Version="14.0"
-	Name="tutorial04_ispc"
-	ProjectGUID="{067D21D4-2E1A-45F7-9DEE-23638BF2C58F}"
-	VCNestedProjectGUID="{ED848C9A-D431-4036-9DF7-EB16912381EC}"
-	VCNestedProjectFileName="tutorial04_ispc.vcproj"
+	Name="embree_avx2"
+	ProjectGUID="{9759EDD7-BD83-4B0B-8C6E-250D7601B54F}"
+	VCNestedProjectGUID="{2D858C9A-C161-4036-8DF7-EB1694CB81BF}"
+	VCNestedProjectFileName="embree_avx2.vcproj"
 	>
 	<Configurations>
 		<Configuration
@@ -15,10 +15,6 @@
 				Name="CppCmplrTool"
 				InterproceduralOptimization="0"
 			/>
-			<Tool
-				Name="LinkerTool"
-				InterproceduralOptimization="true"
-			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
@@ -26,10 +22,6 @@
 			<Tool
 				Name="CppCmplrTool"
 				InterproceduralOptimization="0"
-			/>
-			<Tool
-				Name="LinkerTool"
-				InterproceduralOptimization="true"
 			/>
 		</Configuration>
 		<Configuration
@@ -39,10 +31,6 @@
 				Name="CppCmplrTool"
 				InterproceduralOptimization="0"
 			/>
-			<Tool
-				Name="LinkerTool"
-				InterproceduralOptimization="true"
-			/>
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
@@ -50,10 +38,6 @@
 			<Tool
 				Name="CppCmplrTool"
 				InterproceduralOptimization="0"
-			/>
-			<Tool
-				Name="LinkerTool"
-				InterproceduralOptimization="true"
 			/>
 		</Configuration>
 	</Configurations>

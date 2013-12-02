@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Intel C++ Project"
-	Version="12.1"
+	Version="14.0"
 	Name="image"
 	ProjectGUID="{8F98B3AB-320B-4BFE-9E19-978F6EE55CBE}"
 	VCNestedProjectGUID="{46A3A15E-AE35-41E9-824A-C542F8BA226E}"

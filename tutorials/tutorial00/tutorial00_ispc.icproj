@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Intel C++ Project"
-	Version="12.1"
+	Version="14.0"
 	Name="tutorial00_ispc"
 	ProjectGUID="{1790DC8D-FE51-42A9-972F-AFD5A36AF94C}"
 	VCNestedProjectGUID="{ED828C9A-D461-4036-9DF7-EB169BCB81BC}"

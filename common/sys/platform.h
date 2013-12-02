@@ -103,6 +103,7 @@
 
 #if defined(__WIN32__) 
 #define __TARGET_AVX__
+#define __TARGET_AVX2__
 //#define __EXIT_ON_ERROR__
 //#define __USE_RAY_MASK__
 //#define __USE_STAT_COUNTERS__
@@ -116,6 +117,7 @@
 #define __SSE__
 #define __SSE2__
 #undef __TARGET_AVX__
+#undef __TARGET_AVX2__
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
