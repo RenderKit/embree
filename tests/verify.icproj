@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioProject
+	ProjectType="Intel C++ Project"
+	Version="12.1"
+	Name="verify"
+	ProjectGUID="{CEB2AAA7-DFB3-4955-B138-7BDF792C3D33}"
+	VCNestedProjectGUID="{C42537A0-DFC4-4D06-B036-1B04D0B32BBA}"
+	VCNestedProjectFileName="verify.vcproj"
+	>
+	<Configurations/>
+	<Files/>
+</VisualStudioProject>
