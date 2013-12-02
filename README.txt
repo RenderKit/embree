@@ -54,17 +54,16 @@ Embree is released as Open Source under the Apache 2.0 license.
 
 To use Embree your CPU has to support at least SSE2.
 
-Embree for SSE and AVX runs on Windows, Linux and MacOSX, each in 32bit and 64bit
-modes. The code compiles with the Intel Compiler, the Microsoft
-Compiler and with GCC. Using the Intel Compiler improves
-performance by approximately 10%. Performance also varies across different 
-operating systems. Embree is optimized for Intel CPUs supporting SSSE3, 
-SSE4.1 and AVX instructions.
+Embree for SSE and AVX runs on Windows, Linux and MacOSX, each in
+32bit and 64bit modes. The code compiles with the Intel Compiler, the
+Microsoft Compiler and with GCC. Using the Intel Compiler improves
+performance by approximately 10%. Performance also varies across
+different operating systems. Embree is optimized for Intel CPUs
+supporting SSSE3, SSE4.1 and AVX instructions.
 
 The Xeon Phi version of Embree only works under Linux in 64bit
-mode. For compilation of the the Xeon Phi code the Intel Compiler is 
-required. The host side code compiles with GCC and the Intel
-Compiler.
+mode. For compilation of the the Xeon Phi code the Intel Compiler is
+required. The host side code compiles with GCC and the Intel Compiler.
 
 --- Compiling Embree on Linux and MacOSX ---
 
@@ -72,9 +71,9 @@ For compilation under Linux and MacOSX you have to install CMake (for
 compilation) the developer version of GLUT (for display) and we
 recommend installing the ImageMagick and OpenEXR developer packages
 (for reading and writing images). When enabling the ISPC renderer or
-tutorials you also have to compile and install ISPC first (see below). To compile 
-the code using CMake create a build directory and execute ccmake .. 
-inside this directory. 
+tutorials you also have to compile and install ISPC first (see
+below). To compile the code using CMake create a build directory and
+execute ccmake ..  inside this directory.
 
    mkdir build
    cd build
