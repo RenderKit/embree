@@ -21,7 +21,8 @@ ENDMACRO ()
 
 IF (NOT __XEON__)
   execute_process(COMMAND which ispc OUTPUT_VARIABLE ISPC_EXECUTABLE)
-  execute_process(COMMAND dirname ${ISPC_EXECUTABLE} OUTPUT_VARIABLE ISPC_DIR)
+  execute_process(COMMAND dirname ${ISPC_EXECUTABLE} OUTPUT_VARIABLE ISPC_DIR_TEMP)
+  STRING(REGEX REPLACE "\n" "" ISPC_DIR "${ISPC_DIR_TEMP}")
 ENDIF ()
 
 MACRO (ispc_compile targets)
