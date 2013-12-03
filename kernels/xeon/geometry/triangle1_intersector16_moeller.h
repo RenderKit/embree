@@ -86,9 +86,9 @@ namespace embree
 	prefetch<PFHINT_L1EX>(&ray.u);      
 	prefetch<PFHINT_L1EX>(&ray.v);      
 	prefetch<PFHINT_L1EX>(&ray.tfar);      
-        const mic_f t = dot(C,Ng) * rcp_den;
 
         if (unlikely(none(valid))) continue;
+        const mic_f t = dot(C,Ng) * rcp_den;
       
         /* perform depth test */
         valid = ge(valid, t,ray.tnear);
