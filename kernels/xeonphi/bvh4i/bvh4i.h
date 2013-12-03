@@ -61,7 +61,7 @@ namespace embree
     /*! Cost of one traversal step. */
     static const int travCost = 1;
 
-    static const size_t hybridSIMDUtilSwitchThreshold = 16; // 8;
+    static const size_t hybridSIMDUtilSwitchThreshold = 8;
 
     /*! References a Node or list of Triangles */
     struct NodeRef

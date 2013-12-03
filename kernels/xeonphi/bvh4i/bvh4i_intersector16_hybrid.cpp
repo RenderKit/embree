@@ -403,7 +403,7 @@ namespace embree
         while (1)
         {
           /* test if this is a leaf node */
-          if (unlikely(curNode.isLeaf())) break;
+          if (unlikely(curNode.isLeaf(leaf_mask))) break;
           
           STAT3(normal.trav_nodes,1,popcnt(ray_tfar > curDist),16);
           const Node* __restrict__ const node = curNode.node(nodes);
@@ -411,7 +411,7 @@ namespace embree
           /* pop of next node */
           sptr_node--;
           sptr_dist--;
-          curNode = *sptr_node; // FIXME: this trick creates issues with stack depth
+          curNode = *sptr_node; 
           curDist = *sptr_dist;
           
 	  prefetch<PFHINT_L1>((mic_f*)node + 1); // depth first order, prefetch		
@@ -419,10 +419,9 @@ namespace embree
 #pragma unroll(4)
           for (unsigned int i=0; i<4; i++)
           {
-            //const NodeRef child = node->children[i];
 	    const NodeRef child = node->lower[i].child;
 
-            if (unlikely(child == BVH4i::emptyNode)) break;
+            //if (unlikely(child == BVH4i::emptyNode)) break;
 
             const mic_f lclipMinX = msub(node->lower[i].x,rdir16.x,org_rdir16.x);
             const mic_f lclipMinY = msub(node->lower[i].y,rdir16.y,org_rdir16.y);
@@ -728,11 +727,14 @@ namespace embree
         while (1)
         {
           /* test if this is a leaf node */
-          if (unlikely(curNode.isLeaf())) break;
+          if (unlikely(curNode.isLeaf(leaf_mask))) break;
           
           STAT3(shadow.trav_nodes,1,popcnt(ray_tfar > curDist),16);
           const Node* __restrict__ const node = curNode.node(nodes);
           
+	  prefetch<PFHINT_L1>((char*)node + 0);
+	  prefetch<PFHINT_L1>((char*)node + 64);
+
           /* pop of next node */
           sptr_node--;
           sptr_dist--;
@@ -745,7 +747,7 @@ namespace embree
             //const NodeRef child = node->children[i];
 	    const NodeRef child = node->lower[i].child;
 
-            if (unlikely(child == BVH4i::emptyNode)) break;
+            //if (unlikely(child == BVH4i::emptyNode)) break;
             
             const mic_f lclipMinX = msub(node->lower[i].x,rdir16.x,org_rdir16.x);
             const mic_f lclipMinY = msub(node->lower[i].y,rdir16.y,org_rdir16.y);
@@ -794,8 +796,8 @@ namespace embree
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
         size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
         terminated |= valid_leaf & TriangleIntersector16::occluded(valid_leaf,ray16,tri,items,bvh->geometry);
-        if (unlikely(all(toMask(terminated)))) break;
         ray_tfar = select(terminated,neg_inf,ray_tfar);
+        if (unlikely(all(toMask(terminated)))) break;
       }
       store16i(m_valid & toMask(terminated),&ray16.geomID,mic_i::zero());
     }

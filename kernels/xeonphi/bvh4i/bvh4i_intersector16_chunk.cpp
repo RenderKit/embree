@@ -88,7 +88,7 @@ namespace embree
             //const NodeRef child = node->children[i];
 	    const NodeRef child = node->lower[i].child;
 
-            if (unlikely(child == BVH4i::emptyNode)) break;
+            //if (unlikely(child == BVH4i::emptyNode)) break;
 	    
             const mic_f lclipMinX = msub(node->lower[i].x,rdir.x,org_rdir.x);
             const mic_f lclipMinY = msub(node->lower[i].y,rdir.y,org_rdir.y);
@@ -137,19 +137,18 @@ namespace embree
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
  
 #if 1
-       size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
+	size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
         TriangleIntersector16::intersect(valid_leaf,ray,tri,items,bvh->geometry);
 #else
+
+	size_t items; 
+	const Triangle1* tris  = (Triangle1*) curNode.leaf(accel,items);
 
 	prefetch<PFHINT_L1>((mic_f*)tris +  0); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  1); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  2); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
 
-	const mic_f zero = mic_f::zero();
-	const mic_f one  = mic_f::one();
-	
-	const Triangle1* tri  = (Triangle1*) curNode.leaf(accel,items);
 
 	for (size_t i=0; i<items; i++) 
 	  {
@@ -171,7 +170,7 @@ namespace embree
 	    const mic3f C =  _v0 - ray.org;
 	    
 	    const mic3f Ng = mic3f(tri.Ng);
-	    const mic_f den = dot(dir,Ng);
+	    const mic_f den = dot(Ng,ray.dir);
 
 	    mic_m valid = valid_leaf;
 
@@ -182,7 +181,7 @@ namespace embree
 
 	    /* perform edge tests */
 	    const mic_f rcp_den = rcp(den);
-	    const mic3f R = cross(dir,C);
+	    const mic3f R = cross(ray.dir,C);
 	    const mic3f _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
 	    const mic_f u = dot(R,_e2)*rcp_den;
 	    const mic3f _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
@@ -259,12 +258,14 @@ namespace embree
 
       while (1)
       {
+	const mic_m m_active = !m_terminated;
+
         /* pop next node from stack */
         NodeRef curNode = *(sptr_node-1);
         mic_f curDist   = *(sptr_dist-1);
         sptr_node--;
         sptr_dist--;
-	const mic_m m_stackDist = ray_tfar > curDist;
+	const mic_m m_stackDist = gt(m_active,ray_tfar,curDist);
 
 	/* stack emppty ? */
         if (unlikely(curNode == BVH4i::invalidNode))  break;
@@ -272,8 +273,6 @@ namespace embree
         /* cull node if behind closest hit point */
         if (unlikely(none(m_stackDist))) continue;
 	
-	const mic_m m_active = !m_terminated;
-
         while (1)
         {
           /* test if this is a leaf node */
@@ -282,6 +281,9 @@ namespace embree
           STAT3(shadow.trav_nodes,1,popcnt(ray_tfar > curDist),16);
           const Node* __restrict__ const node = curNode.node(nodes);
           
+	  prefetch<PFHINT_L1>((mic_f*)node + 0); 
+	  prefetch<PFHINT_L1>((mic_f*)node + 1); 
+
           /* pop of next node */
           sptr_node--;
           sptr_dist--;
@@ -291,10 +293,9 @@ namespace embree
 #pragma unroll(4)
           for (unsigned int i=0; i<4; i++)
           {
-            //const NodeRef child = node->children[i];
 	    const NodeRef child = node->lower[i].child;
 
-            if (unlikely(child == BVH4i::emptyNode)) break;
+            //if (unlikely(child == BVH4i::emptyNode)) break;
             
             const mic_f lclipMinX = msub(node->lower[i].x,rdir.x,org_rdir.x);
             const mic_f lclipMinY = msub(node->lower[i].y,rdir.y,org_rdir.y);
@@ -336,14 +337,83 @@ namespace embree
         }
         
         /* return if stack is empty */
-        if (unlikely(curNode == BVH4i::invalidNode)) 
-          break;
+        if (unlikely(curNode == BVH4i::invalidNode)) break;
         
         /* intersect leaf */
-        const mic_m valid_leaf = gt(m_active,ray_tfar,curDist);
+        mic_m valid_leaf = gt(m_active,ray_tfar,curDist);
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
+#if 1
         size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
         m_terminated |= valid_leaf & TriangleIntersector16::occluded(valid_leaf,ray,tri,items,bvh->geometry);
+#else
+	size_t items; 
+	const Triangle1* tris  = (Triangle1*) curNode.leaf(accel,items);
+
+	prefetch<PFHINT_L1>((mic_f*)tris +  0); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  1); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  2); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
+
+
+	for (size_t i=0; i<items; i++) 
+	  {
+	    const Triangle1& tri = tris[i];
+
+	    prefetch<PFHINT_L1>(&tris[i+1]); 
+
+	    STAT3(normal.trav_prims,1,popcnt(valid_i),16);
+        
+	    /* load vertices and calculate edges */
+	    const mic_f v0 = broadcast4to16f(&tri.v0);
+	    const mic_f v1 = broadcast4to16f(&tri.v1);
+	    const mic_f v2 = broadcast4to16f(&tri.v2);
+	    const mic_f e1 = v0-v1;
+	    const mic_f e2 = v2-v0;
+
+	    /* calculate denominator */
+	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
+	    const mic3f C =  _v0 - ray.org;
+	    
+	    const mic3f Ng = mic3f(tri.Ng);
+	    const mic_f den = dot(Ng,ray.dir);
+
+	    mic_m valid = valid_leaf;
+
+#if defined(__BACKFACE_CULLING__)
+	    
+	    valid &= den > zero;
+#endif
+
+	    /* perform edge tests */
+	    const mic_f rcp_den = rcp(den);
+	    const mic3f R = cross(ray.dir,C);
+	    const mic3f _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
+	    const mic_f u = dot(R,_e2)*rcp_den;
+	    const mic3f _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
+	    const mic_f v = dot(R,_e1)*rcp_den;
+	    valid = ge(valid,u,zero);
+	    valid = ge(valid,v,zero);
+	    valid = le(valid,u+v,one);
+
+	    if (unlikely(none(valid))) continue;
+      
+	    /* perform depth test */
+	    const mic_f t = dot(C,Ng) * rcp_den;
+	    valid = ge(valid, t,ray.tnear);
+	    valid = ge(valid,ray.tfar,t);
+
+	    /* ray masking test */
+#if USE_RAY_MASK
+	    valid &= (tri.mask() & ray.mask) != 0;
+#endif
+	    if (unlikely(none(valid))) continue;
+	    
+	    /* update occlusion */
+	    m_terminated |= valid;
+	    valid_leaf &= ~valid;
+	    if (unlikely(none(valid_leaf))) break;
+	  }
+#endif
         if (unlikely(all(m_terminated))) break;
         ray_tfar = select(m_terminated,neg_inf,ray_tfar);
       }
