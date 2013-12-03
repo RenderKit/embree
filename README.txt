@@ -19,7 +19,7 @@ developed at Intel. The target user of Embree are graphics application
 engineers that want to improve the performance of their application by
 leveraging the optimized ray tracing kernels of Embree. The kernels
 are optimized for photo-realistic rendering on the latest Intel®
-processors with support for SSE, AVX, AVX2, and 16-wide Xeon Phi
+processors with support for SSE, AVX, AVX2, and the 16-wide Xeon Phi
 vector instructions. Embree supports runtime code selection to choose
 the traversal and build algorithms that best matches the instruction
 set of your CPU. Embree is released as Open Source under the Apache
@@ -53,11 +53,9 @@ API is found in embree/include/embree2/rtcore.h
 
 --- Supported Platforms ---
 
-To use Embree your CPU has to support at least SSE2.
-
 Embree supports Windows, Linux and MacOSX, each in 32bit and 64bit
 modes. The code compiles with the Intel Compiler, the Microsoft
-Compiler and with GCC. Using the Intel Compiler improves performance
+Compiler, GCC and CLANG. Using the Intel Compiler improves performance
 by approximately 10%. Performance also varies across different
 operating systems. Embree requires a CPU with at least support for
 SSE2. Embree is optimized for Intel CPUs supporting SSE, AVX, and AVX2
@@ -69,11 +67,16 @@ required. The host side code compiles with GCC and the Intel Compiler.
 
 --- Compiling Embree on Linux and MacOSX ---
 
-For compilation under Linux and MacOSX you have to install ISPC (see
-below), CMake (for compilation) and the developer version of GLUT (for
-display). 
+Embree requires ISPC to compile. We have tested ISPC version 1.5.0,
+but more recent versions of ISPC should also work. You can download
+and install ISPC binaries from ispc.github.com. After installation,
+put ISPC permanently into your PATH:
 
-Under MaxOSX, these dependencies can be installed using MacPorts:
+  export PATH=path-to-ispc:$PATH
+
+You additionally have to install CMake and the developer version of
+GLUT. Under MaxOSX, these dependencies can be installed using
+MacPorts:
 
    sudo port install cmake freeglut
 
@@ -83,155 +86,96 @@ Under Linux you can install the dependencies using yum:
    sudo yum install freeglut.x86_64 freeglut-devel.x86_64
    sudo yum install libXmu.x86_64 libXi.x86_64 libXmu-devel.x86_64 libXi-devel.x86_64
 
-To compile Embree using CMake create a build directory and execute
-"ccmake .." inside this directory.
+Finally you can compile Embree using CMake. Create a build directory
+and execute "ccmake .." inside this directory.
 
    mkdir build
    cd build
    ccmake ..
 
-This will open a configuration dialog where you should set the build
-mode to “Release”, the compiler target to either SSSE3, SSE4.1, SSE4.2, or
-AVX, and possibly enable the ICC compiler for better performance. You
-can also configure which parts of Embree to build:
-
-   BUILD_SINGLE_RAY_DEVICE     : Single ray device for CPU operating on individual rays
-   BUILD_SINGLE_RAY_DEVICE_KNC : Single ray device for Xeon Phi operating on individual rays
-   BUILD_ISPC_DEVICE_SSE       : ISPC CPU device using SSE (ray packets of size 4)
-   BUILD_ISPC_DEVICE_AVX       : ISPC CPU device using AVX (ray packets of size 8)
-   BUILD_ISPC_DEVICE_KNC       : ISPC Xeon Phi device (ray packets of size 16)
-   BUILD_TUTORIALS_SSE         : Compile ISPC tutorials for SSE
-   BUILD_TUTORIALS_AVX         : Compile ISPC tutorials for AVX
-   BUILD_TUTORIALS_KNC         : Compile ISPC tutorials for KNC
-
-For building the AVX tutorials and AVX rendering device you have to
-enable AVX as compilation target.
-
-Press c (for configure) and g (for generate) to generate a Makefile
-and leave the configuration. The code can now be compiled by executing
-make. The executables will be generated in the build folder.
+This will open a configuration dialog where you should set the
+CMAKE_BUILD_TYPE to “Release” and the compiler to"GCC" or "ICC". You
+should also select all targets that you want Embree to generate
+optimized code for. We recommend to enable TARGET_SSE41, TARGET_AVX,
+and TARGET_AVX2 if you want to use Embree on standard CPUs, and you
+have to enable TARGET_XEON_PHI if you want to use Embree on Xeon
+Phi. Now press c (for configure) and g (for generate) to generate a
+Makefile and leave the configuration. The code can be compiled by
+executing make. 
 
       make
 
+The executables will be generated inside the build
+folder. We recommend to finally install the Embree library and header
+files on your system:
+
+  sudo make install
+
 --- Compiling Embree on Windows ---
 
-For compilation under Windows use the Visual Studio
-2008 solution files. Use embree_ispc.sln to compile 
-Embree with ISPC support and embree.sln to compile
-Embree without ISPC support. Inside Visual Studio you 
-can switch between the Microsoft Compiler and the Intel 
-Compiler by right clicking on the solution and then 
-selecting the compiler. The project compiles with both 
-compilers in 32 bit and 64 bit mode. We recommend using 
-64 bit mode and the Intel Compiler for best performance. 
+Embree requires ISPC to compile. We have tested ISPC version 1.5.0,
+but more recent versions of ISPC should also work. You can download
+and install ISPC binaries from ispc.github.com. After installation,
+put the path to ispc.exe permanently into your PATH environment
+variable. You have to restart Visual Studio for this change to take
+effect.
 
-The solution file requires ISPC to be installed properly (see
-below). For compiling the solution without ISPC, simply delete all tutorials,
-device_ispc, and embree_ispc projects from the solution.
-
-When using the Microsoft Compiler, SSE4 is enabled by default in the 
-codebase. Disabling this default setting by removing the __SSE4_1__
-and __SSE4_2__ define in common/sys/platform.h is necessary when SSE4 
-is not supported on your system.
+For compilation under Windows use the Visual Studio 2008 solution file
+embree.sln. The project compiles in 32 bit and 64 bit mode. The
+solution is by default setup to use the Microsoft Compiler. You can
+switch to the Intel Compiler by right clicking onto the solution in the
+Solution Explorer and then selecting the ICC compiler. When switching
+to ICC you have to enable the embree_avx and embree_avx2 projects, by
+right clicking onto them selecting "Reload Project". We recommend
+using 64 bit mode and the Intel Compiler for best performance.
 
 We recommend enabling syntax highlighting for the .ispc source 
 and .isph header files. To do so open Visual Studio 2008, go to 
 Tools -> Options -> Text Editor -> File Extension and add the isph
 and ispc extension for the "Microsoft Visual C++" editor.
 
---- Installing the Intel SPMD Compiler (ISPC) ---
-
-Embree requires ISPC to compile and we have tested ISPC version
-1.5.0. More recent versions of ISPC should also work. You can download
-and install ISPC binaries from ispc.github.com. If you want to use
-Embree with Xeon Phi, you also have to set the ISPC_DIR environment
-variable permanently.
-
-  export ISPC_DIR=path-to-ispc
-
-then compile ISPC using the Visual Studio solution files. Finally put
-the directory containing ispc.exe to your PATH.
-
 --- Folder structure ---
 
-    embree                               embree ray tracing kernels
-    embree/include/                      user API to the ray tracing kernels
-    embree_ispc                          ISPC binding of the ray tracing kernels
-    embree_ispc/include                  ISPC user API to the ray tracing kernels
-    models                               Simple models for testing
-    examples                             Example applications for Embree
-    examples/renderer                    Photo realistic renderer building on Embree
-    examples/renderer/device_singleray   Single ray implementation of renderer
-    examples/renderer/device_ispc        ISPC implementation of renderer
-    examples/renderer/viewer             Viewer frontend for the renderer.
-    examples/tutorialXX                  Simple ISPC tutorials for embree.
+    embree                 Embree ray tracing kernels
+    embree/include/        User API to the ray tracing kernels
+    tutorials              Embree tutorials for
+    tutorials/tutorial00     creating a simple static scene
+    tutorials/tutorial01     creating a dynamic scene
+    tutorials/tutorial02     user defined geometry
+    tutorials/tutorial03     simple OBJ loader
+    tutorials/tutorial04     instancing of geometry
 
---- Running the Embree example renderer ---
+--- Running the Tutorials ---
 
-This section describes how to run the embree example renderer. Execute 
-embree -help for a complete list of parameters. Embree ships with a few simple test
-scenes, each consisting of a scene file (.xml or .obj) and an Embree
-command script file (.ecs). The command script file contains command
-line parameters that set the camera parameters, lights and render
-settings. The following command line will render the Cornell box
-scene with 16 samples per pixel and write the resulting image to the
-file cb.tga in the current directory:
+Some tutorials come as C++ and ISPC version, e.g.:
 
-   renderer -c ../../models/cornell_box.ecs -spp 16 -o cb.tga
+  ./tutorial00
+  ./tutorial00_ispc
 
-To interactively display the same scene, enter the following command:
+You can select an initial camera using the -vp (camera position), -vi
+(camera lookat point), -vu (camera up vector), and -fov (field of
+view) command line parameters:
 
-   renderer -c ../../models/cornell_box.ecs
+  ./tutorial00 -vp 10 10 10 -vi 0 0 0
 
-A window will open and you can control the camera using the mouse and
-keyboard. Pressing c in interactive mode outputs the current camera
-parameters, pressing r enables or disables the progressive refinement
-mode.
+You can select the initial windows size using the -size command line
+parameter, or start the tutorials in fullscreen using the -fullscreen
+parameter:
 
-By default the renderer uses the single ray device. For selecting a
-different device use the -device command line paramater at the very 
-beginning:
+  ./tutorial00 -size 1024 1024
+  ./tutorial00 -fullscreen
 
-  renderer -device singleray -c ../../models/cornell_box.ecs
-  renderer -device ispc -c ../../models/cornell_box.ecs
+Implementation specific parameters can be passed to the ray tracing
+core through the -rtcore command line parameter, e.g.:
 
-Under Linux and MacOSX the ISPC device also carries the instruction
-set it was compiled for:
-
-  renderer -device ispc_sse -c ../../models/cornell_box.ecs
-  renderer -device ispc_avx -c ../../models/cornell_box.ecs
-  renderer -device ispc_knc -c ../../models/cornell_box.ecs
-
-For each of these configurations embree will use the best traversal 
-algorithm automatically.
-
---- Using Embree renderer in network mode ---
-
-For using the network device start the embree server on some machine:
-
-  renderer_server
-
-Make sure that port 8484 is not blocked by the firewall. Now you can 
-connect from a second machine to the network server:
-
-  renderer -connect ip_of_network_server -c ../../models/cornell_box.ecs
-  
---- Navigation ---
+  ./tutorial00 -rtcore verbose=2,threads=1,accel=bvh4.triangle1
 
 The navigation in the interactive display mode follows the camera
 orbit model, where the camera revolves around the current center of
-interest. The camera navigation assumes the y-axis to point
-upwards. If your scene is modelled using the z-axis as up axis we
-recommend rotating the scene.
-
-	LMB: Rotate around center of interest
-	MMB: Pan
-	RMB: Dolly (move camera closer or away from center of interest)
-	Strg+LMB: Pick center of interest
-	Strg+Shift+LMB: Pick focal distance
-	Alt+LMB: Roll camera around view direction
-	L: Decrease lens radius by one world space unit
-	Shift+L: Increase lens radius by one world space unit
+interest. With the left mouse button you can rotate around the center
+of interest (the point initially set with -vi). Holding Control
+pressed while klicking the left mouse button rotates the camera around
+its location. You can also use the arrow keys for navigation.
 
 --- Contact ---
 
