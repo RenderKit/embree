@@ -43,6 +43,9 @@ namespace embree
       const mic_f zero = mic_f::zero();
       const mic_f one  = mic_f::one();
 
+      const mic3f org = ray.org;
+      const mic3f dir = ray.dir;
+
       for (size_t i=0; i<num; i++) 
       {
         const Triangle1& tri = tris[i];
@@ -52,8 +55,6 @@ namespace embree
         STAT3(normal.trav_prims,1,popcnt(valid_i),16);
 
         mic_m valid = valid_i;
-        const mic3f org = ray.org;
-        const mic3f dir = ray.dir;
         
         /* load vertices and calculate edges */
         const mic_f v0 = broadcast4to16f(&tri.v0);
@@ -85,11 +86,11 @@ namespace embree
 	prefetch<PFHINT_L1EX>(&ray.u);      
 	prefetch<PFHINT_L1EX>(&ray.v);      
 	prefetch<PFHINT_L1EX>(&ray.tfar);      
+        const mic_f t = dot(C,Ng) * rcp_den;
 
         if (unlikely(none(valid))) continue;
       
         /* perform depth test */
-        const mic_f t = dot(C,Ng) * rcp_den;
         valid = ge(valid, t,ray.tnear);
 	valid = ge(valid,ray.tfar,t);
 
@@ -129,14 +130,15 @@ namespace embree
       mic_m valid0 = valid_i;
       const mic_f zero = mic_f::zero();
       const mic_f one  = mic_f::one();
+
+      const mic3f org = ray.org;
+      const mic3f dir = ray.dir;
      
       for (size_t i=0; i<num; i++) 
       {
         STAT3(shadow.trav_prims,1,popcnt(valid0),16);
 
         mic_m valid = valid0;
-        const mic3f org = ray.org;
-        const mic3f dir = ray.dir;
         const Triangle1& tri = tris[i];
         
         /* load vertices and calculate edges */

@@ -24,6 +24,8 @@ namespace embree
 {
   namespace isa
   {
+    static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
+
     template<typename TriangleIntersector16>
     void BVH4iIntersector16Chunk<TriangleIntersector16>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
@@ -66,10 +68,12 @@ namespace embree
         /* cull node if behind closest hit point */
         if (unlikely(none(m_stackDist))) continue;
 	        
+	const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+
         while (1)
         {
           /* test if this is a leaf node */
-          if (unlikely(curNode.isLeaf())) break;
+          if (unlikely(curNode.isLeaf(leaf_mask))) break;
           
           STAT3(normal.trav_nodes,1,popcnt(ray_tfar > curDist),16);
           const Node* __restrict__ const node = curNode.node(nodes);
@@ -144,11 +148,16 @@ namespace embree
 	size_t items; 
 	const Triangle1* tris  = (Triangle1*) curNode.leaf(accel,items);
 
+	const mic_f zero = mic_f::zero();
+	const mic_f one  = mic_f::one();
+
 	prefetch<PFHINT_L1>((mic_f*)tris +  0); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  1); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  2); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
 
+        const mic3f org = ray.org;
+        const mic3f dir = ray.dir;
 
 	for (size_t i=0; i<items; i++) 
 	  {
@@ -167,10 +176,10 @@ namespace embree
 
 	    /* calculate denominator */
 	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
-	    const mic3f C =  _v0 - ray.org;
+	    const mic3f C =  _v0 - org;
 	    
 	    const mic3f Ng = mic3f(tri.Ng);
-	    const mic_f den = dot(Ng,ray.dir);
+	    const mic_f den = dot(Ng,dir);
 
 	    mic_m valid = valid_leaf;
 
@@ -181,7 +190,7 @@ namespace embree
 
 	    /* perform edge tests */
 	    const mic_f rcp_den = rcp(den);
-	    const mic3f R = cross(ray.dir,C);
+	    const mic3f R = cross(dir,C);
 	    const mic3f _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
 	    const mic_f u = dot(R,_e2)*rcp_den;
 	    const mic3f _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
@@ -192,11 +201,11 @@ namespace embree
 	    prefetch<PFHINT_L1EX>(&ray.u);      
 	    prefetch<PFHINT_L1EX>(&ray.v);      
 	    prefetch<PFHINT_L1EX>(&ray.tfar);      
+	    const mic_f t = dot(C,Ng) * rcp_den;
 
 	    if (unlikely(none(valid))) continue;
       
 	    /* perform depth test */
-	    const mic_f t = dot(C,Ng) * rcp_den;
 	    valid = ge(valid, t,ray.tnear);
 	    valid = ge(valid,ray.tfar,t);
 
@@ -342,7 +351,7 @@ namespace embree
         /* intersect leaf */
         mic_m valid_leaf = gt(m_active,ray_tfar,curDist);
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
-#if 1
+#if 0
         size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
         m_terminated |= valid_leaf & TriangleIntersector16::occluded(valid_leaf,ray,tri,items,bvh->geometry);
 #else
@@ -354,6 +363,8 @@ namespace embree
 	prefetch<PFHINT_L2>((mic_f*)tris +  2); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
 
+        const mic3f org = ray.org;
+        const mic3f dir = ray.dir;
 
 	for (size_t i=0; i<items; i++) 
 	  {
@@ -372,10 +383,10 @@ namespace embree
 
 	    /* calculate denominator */
 	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
-	    const mic3f C =  _v0 - ray.org;
+	    const mic3f C =  _v0 - org;
 	    
 	    const mic3f Ng = mic3f(tri.Ng);
-	    const mic_f den = dot(Ng,ray.dir);
+	    const mic_f den = dot(Ng,dir);
 
 	    mic_m valid = valid_leaf;
 
@@ -386,7 +397,7 @@ namespace embree
 
 	    /* perform edge tests */
 	    const mic_f rcp_den = rcp(den);
-	    const mic3f R = cross(ray.dir,C);
+	    const mic3f R = cross(dir,C);
 	    const mic3f _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
 	    const mic_f u = dot(R,_e2)*rcp_den;
 	    const mic3f _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
@@ -394,11 +405,11 @@ namespace embree
 	    valid = ge(valid,u,zero);
 	    valid = ge(valid,v,zero);
 	    valid = le(valid,u+v,one);
+	    const mic_f t = dot(C,Ng) * rcp_den;
 
 	    if (unlikely(none(valid))) continue;
       
 	    /* perform depth test */
-	    const mic_f t = dot(C,Ng) * rcp_den;
 	    valid = ge(valid, t,ray.tnear);
 	    valid = ge(valid,ray.tfar,t);
 
