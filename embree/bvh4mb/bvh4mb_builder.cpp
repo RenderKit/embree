@@ -97,7 +97,7 @@ namespace embree
    **********************************************************************************************************************/
 
   template<typename Heuristic>
-  __forceinline BVH4MBBuilder<Heuristic>::BuildTask::BuildTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
+  BVH4MBBuilder<Heuristic>::BuildTask::BuildTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
                                                                BVH4MBBuilder* parent, BVH4MB::Base*& node, size_t depth, 
                                                                atomic_set<PrimRefBlock>& prims, const PrimInfo& pinfo, const Split& split)
     : threadIndex(threadIndex), parent(parent), dst(node), depth(depth), prims(prims), pinfo(pinfo), split(split)
@@ -171,7 +171,7 @@ namespace embree
    **********************************************************************************************************************/
 
   template<typename Heuristic>
-  __forceinline BVH4MBBuilder<Heuristic>::SplitTask::SplitTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event,
+  BVH4MBBuilder<Heuristic>::SplitTask::SplitTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event,
                                                                BVH4MBBuilder* parent, BVH4MB::Base*& node, size_t depth, 
                                                                atomic_set<PrimRefBlock>& prims, const PrimInfo& pinfo, const Split& split)
     : parent(parent), dst(node), depth(depth), prims(prims), pinfo(pinfo), split(split)

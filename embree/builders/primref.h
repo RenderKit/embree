@@ -22,7 +22,7 @@
 namespace embree
 {
   /*! A primitive reference stores the bounds of the primitive and its ID. */
-  struct __align(16) PrimRef 
+  struct __align__(16) PrimRef 
   {
     __forceinline PrimRef () {}
     __forceinline PrimRef (const BBox3f& bounds, size_t id) {

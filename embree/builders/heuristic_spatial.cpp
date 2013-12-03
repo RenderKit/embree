@@ -28,7 +28,7 @@ namespace embree
   const float HeuristicSpatial<logBlockSize>::rightSplitPos = 0.49f;
   
   template<int logBlockSize>
-  __forceinline std::pair<PrimRef,PrimRef> HeuristicSpatial<logBlockSize>::splitPrimRef(const PrimRef& prim, int dim, float pos,
+  std::pair<PrimRef,PrimRef> HeuristicSpatial<logBlockSize>::splitPrimRef(const PrimRef& prim, int dim, float pos,
                                                                                         const TriangleMesh* mesh)
   {
     std::pair<BBox3f,BBox3f> pair(empty,empty);

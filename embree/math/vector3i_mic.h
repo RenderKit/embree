@@ -26,7 +26,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   /*! 3-wide vectors emulated with 16-wide vectors. */
-  struct __align(64) Vector3i 
+  struct __align__(64) Vector3i 
   {
     typedef int Scalar;
     enum { N = 3 }; 

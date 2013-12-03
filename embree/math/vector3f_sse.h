@@ -29,7 +29,7 @@ namespace embree
   struct Vector3f;
 
   /* 3 aligned floats as memory representation */
-  struct __align(16) Vec3fa
+  struct __align__(16) Vec3fa
   {
     typedef float Scalar;
     enum { N = 3 };
@@ -62,7 +62,7 @@ namespace embree
     __forceinline       float& operator []( const size_t index )       { assert(index < 3); return (&x)[index]; }
   };
 
-  struct __align(16) Vector3f
+  struct __align__(16) Vector3f
   {
     typedef float Scalar;
     enum { N = 3 };

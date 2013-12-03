@@ -23,7 +23,7 @@
 #include <immintrin.h>
 #include <zmmintrin.h>
 
-#define MIC_ALIGN __align(64)
+#define MIC_ALIGN __align__(64)
 #define _MM_SHUF_PERM(e3, e2, e1, e0) ((_MM_PERM_ENUM)((e3)*64 + (e2)*16 + (e1)*4 + (e0)))
 #define _MM_SHUF_PERM_NONE _MM_SHUF_PERM(3,2,1,0)
 

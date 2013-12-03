@@ -399,6 +399,26 @@ namespace embree
   // =================================================================
 
 
+  static _INLINE mic_m lt_split2(const AABB *__restrict__ const aabb,
+				const unsigned int dim,
+				const mic_f &c,
+				const mic_f &s,
+				const mic_f &bestSplit_f)
+  {
+    const mic_f b_min = mic_f(aabb->m_min[dim]);
+    const mic_f b_max = mic_f(aabb->m_max[dim]);
+    prefetch<PFHINT_NT>(aabb + 2);
+    const mic_f centroid_2 = b_min + b_max;
+    DBG_PRINT(centroid_2);
+    DBG_PRINT(centroid_2-c);
+
+    const mic_f binID = (centroid_2 - c)*s;
+    DBG_PRINT(binID);
+    DBG_PRINT(bestSplit_f);
+
+    return lt(binID,bestSplit_f);    
+  }
+
   bool ParallelQBVHBuilder::split(BuildRecord &current,
 				  BuildRecord &leftChild,
 				  BuildRecord &rightChild)
@@ -469,13 +489,15 @@ namespace embree
 	    const mic_f min_cost    = set_min16(cost); 
 	    const mic_m m_pos       = eq(min_cost,cost);
 	    const unsigned long pos = bsf64(m_pos);	    
-
 	    assert(pos < 15);
 
-	    bestCost     = cost[pos];
-	    bestSplit    = pos+1;
-	    bestSplitDim = dim;	    
-	    bestNumLeft  = lnum[pos];
+	    if (pos < 15)
+	      {
+		bestCost     = cost[pos];
+		bestSplit    = pos+1;
+		bestSplitDim = dim;	    
+		bestNumLeft  = lnum[pos];
+	      }
 
 	  }
       };
@@ -498,10 +520,15 @@ namespace embree
 
     if (unlikely(current.begin + mid == current.begin || current.begin + mid == current.end)) 
       {
-	std::cout << "warning: mid == current.begin || mid == current.end " << std::endl;
+	LOCK;
+	std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
+	DBG_PRINT(bestNumLeft);
+	DBG_PRINT(bestSplitDim);
+	DBG_PRINT(bestSplit);
+	DBG_PRINT(mic_f(bestSplit));
 	DBG_PRINT(current);
 	DBG_PRINT(mid);
-	exit(0);
+	UNLOCK;
 	goto createLeaf;
       }
 

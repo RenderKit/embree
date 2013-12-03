@@ -31,7 +31,7 @@ namespace embree
    *  components. It contains storage where its BRDF components are
    *  allocated inside. It has to be aligned, because the BRDF
    *  components might use SSE code. */
-  class __align(64) CompositedBRDF
+  class __align__(64) CompositedBRDF
   {
     /*! maximal number of BRDF components */
     enum { maxComponents = 8 };

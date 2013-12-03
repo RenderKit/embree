@@ -21,7 +21,7 @@
 
 namespace embree
 {
-  class __align(4) mic_m
+  class __align__(4) mic_m
   {
   public:
     __mmask v;

@@ -153,7 +153,7 @@ namespace embree
   private:
 
      /*! Per thread structure holding the current memory block. */
-    struct __align(4096) ThreadAllocator 
+    struct __align__(4096) ThreadAllocator 
     {
       ALIGNED_CLASS_(4096);
     public:
@@ -275,7 +275,7 @@ namespace embree
     }
 
     /*! Per thread structure holding the current memory block. */
-    struct __align(64) ThreadAllocator 
+    struct __align__(64) ThreadAllocator 
     {
       ALIGNED_CLASS_(64);
     public:

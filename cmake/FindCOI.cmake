@@ -14,17 +14,17 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-INCLUDE_DIRECTORIES(/opt/intel/mic/coi/include)
-
-FIND_PATH(COI_INCLUDE_PATH source/COIProcess_source.h /opt/intel/mic/coi/include)
+FIND_PATH(COI_INCLUDE_PATH source/COIProcess_source.h /opt/intel/mic/coi/include /usr/include/intel-coi)
 FIND_PATH(COI_HOST_LIBRARY_DIR libcoi_host.so /opt/intel/mic/coi/host-linux-release/lib/)
-FIND_PATH(COI_DEV_LIBRARY_DIR libcoi_device.so /opt/intel/mic/coi/device-linux-release/lib/)
+FIND_PATH(COI_DEV_LIBRARY_DIR libcoi_device.so /opt/intel/mic/coi/device-linux-release/lib/ /opt/mpss/3.1/sysroots/k1om-mpss-linux/usr/lib64/)
 
 IF (COI_INCLUDE_PATH AND COI_HOST_LIBRARY_DIR AND COI_DEV_LIBRARY_DIR)
   SET(COI_FOUND TRUE)
   SET(COI_INCLUDE_PATHS ${COI_INCLUDE_PATH})
   SET(COI_HOST_LIBRARIES ${COI_HOST_LIBRARY_DIR}/libcoi_host.so)
   SET(COI_DEV_LIBRARIES ${COI_DEV_LIBRARY_DIR}/libcoi_device.so)
+ELSE ()
+  MESSAGE(FATAL_ERROR "COI installation not found")
 ENDIF ()
 
 MARK_AS_ADVANCED(COI_INCLUDE_PATH)
