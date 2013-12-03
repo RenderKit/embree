@@ -41,7 +41,7 @@ namespace embree
     __forceinline operator const __m128&( void ) const { return m128; }
     __forceinline operator       __m128&( void )       { return m128; }
 
-    __forceinline explicit ssef( const char* const a ) : m128(_mm_loadu_ps((const float*)a)) {} // FIXME: remove this, use load functions
+    //__forceinline explicit ssef( const char* const a ) : m128(_mm_loadu_ps((const float*)a)) {} // FIXME: remove this, use load functions
     __forceinline ssef           ( float  a ) : m128(_mm_set1_ps(a)) {}
     __forceinline ssef           ( float  a, float  b) : m128(_mm_set_ps(b, a, b, a)) {}
     __forceinline ssef           ( float  a, float  b, float  c, float  d) : m128(_mm_set_ps(d, c, b, a)) {}
@@ -58,6 +58,16 @@ namespace embree
     __forceinline ssef( NegInfTy ) : m128(_mm_set_ps(neg_inf,neg_inf,neg_inf,neg_inf)) {}
     __forceinline ssef( StepTy   ) : m128(_mm_set_ps(3.0f, 2.0f, 1.0f, 0.0f)) {}
     __forceinline ssef( NaNTy    ) : m128(_mm_set1_ps(nan)) {}
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// Loads and Stores
+    ////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__AVX__)
+    static __forceinline ssef broadcast( const void* const a ) { return _mm_broadcast_ss((float*)a); }
+#else
+    static __forceinline ssef broadcast( const void* const a ) { return _mm_set1_ps(*(float*)a); }
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access

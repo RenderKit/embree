@@ -43,10 +43,10 @@ namespace embree
 
         /* load edges and geometry normal */
         sseb valid = valid_i;
-        const sse3f p0(tri.v0.x[i],tri.v0.y[i],tri.v0.z[i]);
-        const sse3f e1(tri.e1.x[i],tri.e1.y[i],tri.e1.z[i]);
-        const sse3f e2(tri.e2.x[i],tri.e2.y[i],tri.e2.z[i]);
-        const sse3f Ng(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
+        const sse3f p0 = broadcast4f(tri.v0,i);
+        const sse3f e1 = broadcast4f(tri.e1,i);
+        const sse3f e2 = broadcast4f(tri.e2,i);
+        const sse3f Ng = broadcast4f(tri.Ng,i);
         
         /* calculate denominator */
         const sse3f C = p0 - ray.org;
@@ -121,10 +121,10 @@ namespace embree
 
         /* load edges and geometry normal */
         sseb valid = valid0;
-        const sse3f p0(tri.v0.x[i],tri.v0.y[i],tri.v0.z[i]);
-        const sse3f e1(tri.e1.x[i],tri.e1.y[i],tri.e1.z[i]);
-        const sse3f e2(tri.e2.x[i],tri.e2.y[i],tri.e2.z[i]);
-        const sse3f Ng(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
+        const sse3f p0 = broadcast4f(tri.v0,i);
+        const sse3f e1 = broadcast4f(tri.e1,i);
+        const sse3f e2 = broadcast4f(tri.e2,i);
+        const sse3f Ng = broadcast4f(tri.Ng,i);
         
         /* calculate denominator */
         const sse3f C = p0 - ray.org;
@@ -190,8 +190,8 @@ namespace embree
     {
       /* calculate denominator */
       STAT3(normal.trav_prims,1,1,1);
-      const sse3f O = sse3f(ray.org.x[k],ray.org.y[k],ray.org.z[k]); // FIXME: optimize this with shuffles
-      const sse3f D = sse3f(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]); // FIXME: optimize this with shuffles
+      const sse3f O = broadcast4f(ray.org,k);
+      const sse3f D = broadcast4f(ray.dir,k);
       const sse3f C = sse3f(tri.v0) - O;
       const sse3f R = cross(D,C);
       const ssef den = dot(sse3f(tri.Ng),D);
@@ -248,8 +248,8 @@ namespace embree
     {
       /* calculate denominator */
       STAT3(shadow.trav_prims,1,1,1);
-      const sse3f O = sse3f(ray.org.x[k],ray.org.y[k],ray.org.z[k]); // FIXME: optimize this with shuffles
-      const sse3f D = sse3f(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]); // FIXME: optimize this with shuffles
+      const sse3f O = broadcast4f(ray.org,k);
+      const sse3f D = broadcast4f(ray.dir,k);
       const sse3f C = sse3f(tri.v0) - O;
       const sse3f R = cross(D,C);
       const ssef den = dot(sse3f(tri.Ng),D);

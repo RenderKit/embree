@@ -43,10 +43,10 @@ namespace embree
 
         /* load edges and geometry normal */
         avxb valid = valid_i;
-        const avx3f p0(tri.v0.x[i],tri.v0.y[i],tri.v0.z[i]);
-        const avx3f e1(tri.e1.x[i],tri.e1.y[i],tri.e1.z[i]);
-        const avx3f e2(tri.e2.x[i],tri.e2.y[i],tri.e2.z[i]);
-        const avx3f Ng(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
+        const avx3f p0 = broadcast8f(tri.v0,i);
+        const avx3f e1 = broadcast8f(tri.e1,i);
+        const avx3f e2 = broadcast8f(tri.e2,i);
+        const avx3f Ng = broadcast8f(tri.Ng,i);
         
         /* calculate denominator */
         const avx3f C = p0 - ray.org;
@@ -120,10 +120,10 @@ namespace embree
 
         /* load edges and geometry normal */
         avxb valid = valid0;
-        const avx3f p0(tri.v0.x[i],tri.v0.y[i],tri.v0.z[i]);
-        const avx3f e1(tri.e1.x[i],tri.e1.y[i],tri.e1.z[i]);
-        const avx3f e2(tri.e2.x[i],tri.e2.y[i],tri.e2.z[i]);
-        const avx3f Ng(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
+        const avx3f p0 = broadcast8f(tri.v0,i);
+        const avx3f e1 = broadcast8f(tri.e1,i);
+        const avx3f e2 = broadcast8f(tri.e2,i);
+        const avx3f Ng = broadcast8f(tri.Ng,i);
 
         /* calculate denominator */
         const avx3f C = p0 - ray.org;
@@ -189,8 +189,8 @@ namespace embree
     {
       /* calculate denominator */
       STAT3(normal.trav_prims,1,1,1);
-      const avx3f O = avx3f(ray.org.x[k],ray.org.y[k],ray.org.z[k]); // FIXME: optimize this with shuffles
-      const avx3f D = avx3f(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]); // FIXME: optimize this with shuffles
+      const avx3f O = broadcast8f(ray.org,k);
+      const avx3f D = broadcast8f(ray.dir,k);
       const avx3f C = avx3f(tri.v0) - O;
       const avx3f R = cross(D,C);
       const avxf den = dot(avx3f(tri.Ng),D);
@@ -250,8 +250,8 @@ namespace embree
     {
       /* calculate denominator */
       STAT3(shadow.trav_prims,1,1,1);
-      const avx3f O = avx3f(ray.org.x[k],ray.org.y[k],ray.org.z[k]); // FIXME: optimize this with shuffles
-      const avx3f D = avx3f(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]); // FIXME: optimize this with shuffles
+      const avx3f O = broadcast8f(ray.org,k);
+      const avx3f D = broadcast8f(ray.dir,k);
       const avx3f C = avx3f(tri.v0) - O;
       const avx3f R = cross(D,C);
       const avxf den = dot(avx3f(tri.Ng),D);
