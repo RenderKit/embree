@@ -27,6 +27,7 @@ namespace embree
     avxb valid = valid_i;
     NodeRef invalid = (NodeRef)1;
     const BVH4* bvh = This->bvh;
+    STAT3(normal.travs,1,popcnt(valid),8);
 
     /* load ray into registers */
     avxf ray_near = select(valid,ray.tnear,pos_inf);
@@ -67,6 +68,8 @@ namespace embree
         
         const Node* const node = curNode.node(bvh->nodePtr()); //NodeRef(curNode).node(nodes);
         //prefetch<PFHINT_L1>((avxf*)node + 1); // depth first order prefetch	
+        const avxb valid_node = ray_far > curDist;
+        STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
         
         /* pop of next node */
         sptr_node--;
@@ -134,6 +137,8 @@ namespace embree
       Triangle* tri = (Triangle*) curNode.leaf(bvh->triPtr(),num);
       
       /* intersect triangles */
+      const avxb valid_leaf = ray_far > curDist;
+      STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
       for (size_t i=0; i<num; i++)
         TriangleIntersector8::intersect(valid,ray,tri[i],bvh->vertices);
       
