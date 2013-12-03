@@ -676,7 +676,7 @@ namespace embree
         }
         
         /* process local work queue */
-        g_threadStack[threadID].push(br);
+	recurseSAH(br,nodeAlloc,leafAlloc,RECURSE_PARALLEL,threadID,numThreads);
         while (g_threadStack[threadID].pop_largest(br))
           recurseSAH(br,nodeAlloc,leafAlloc,RECURSE_PARALLEL,threadID,numThreads);
       }
