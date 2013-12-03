@@ -37,9 +37,9 @@ namespace embree
         sseb valid = valid_i;
         const sse3f O = ray.org;
         const sse3f D = ray.dir;
-        const sse3f v0 = sse3f(tri.v0.x[i],tri.v0.y[i],tri.v0.z[i])-O;
-        const sse3f v1 = sse3f(tri.v1.x[i],tri.v1.y[i],tri.v1.z[i])-O;
-        const sse3f v2 = sse3f(tri.v2.x[i],tri.v2.y[i],tri.v2.z[i])-O;
+        const sse3f v0 = broadcast4f(tri.v0,i)-O;
+        const sse3f v1 = broadcast4f(tri.v1,i)-O;
+        const sse3f v2 = broadcast4f(tri.v2,i)-O;
         
         /* calculate triangle edges */
         const sse3f e0 = v2-v0;
@@ -116,9 +116,9 @@ namespace embree
         sseb valid = valid0;
         const sse3f O = ray.org;
         const sse3f D = ray.dir;
-        const sse3f v0 = sse3f(tri.v0.x[i],tri.v0.y[i],tri.v0.z[i])-O;
-        const sse3f v1 = sse3f(tri.v1.x[i],tri.v1.y[i],tri.v1.z[i])-O;
-        const sse3f v2 = sse3f(tri.v2.x[i],tri.v2.y[i],tri.v2.z[i])-O;
+        const sse3f v0 = broadcast4f(tri.v0,i)-O;
+        const sse3f v1 = broadcast4f(tri.v1,i)-O;
+        const sse3f v2 = broadcast4f(tri.v2,i)-O;
 
         /* calculate triangle edges */
         const sse3f e0 = v2-v0;
@@ -184,8 +184,8 @@ namespace embree
     {
       /* calculate vertices relative to ray origin */
       STAT3(normal.trav_prims,1,1,1);
-      const sse3f O = sse3f(ray.org.x[k],ray.org.y[k],ray.org.z[k]); // FIXME: optimize this with shuffles
-      const sse3f D = sse3f(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]); // FIXME: optimize this with shuffles
+      const sse3f O = broadcast4f(ray.org,k);
+      const sse3f D = broadcast4f(ray.dir,k);
       const sse3f v0 = tri.v0-O;
       const sse3f v1 = tri.v1-O;
       const sse3f v2 = tri.v2-O;
@@ -255,8 +255,8 @@ namespace embree
     {
       /* calculate vertices relative to ray origin */
       STAT3(shadow.trav_prims,1,1,1);
-      const sse3f O = sse3f(ray.org.x[k],ray.org.y[k],ray.org.z[k]); // FIXME: optimize this with shuffles
-      const sse3f D = sse3f(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]); // FIXME: optimize this with shuffles
+      const sse3f O = broadcast4f(ray.org,k);
+      const sse3f D = broadcast4f(ray.dir,k);
       const sse3f v0 = tri.v0-O;
       const sse3f v1 = tri.v1-O;
       const sse3f v2 = tri.v2-O;
