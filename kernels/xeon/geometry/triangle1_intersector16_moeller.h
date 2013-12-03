@@ -121,7 +121,7 @@ namespace embree
 
     static __forceinline mic_m occluded(const mic_m& valid_i, Ray16& ray, const Triangle1* __restrict__ tris, size_t num, const void* geom)
     {
-      prefetch<PFHINT_L1>((mic_f*)tris +  0); 
+      //prefetch<PFHINT_L1>((mic_f*)tris +  0); 
       prefetch<PFHINT_L2>((mic_f*)tris +  1); 
       prefetch<PFHINT_L2>((mic_f*)tris +  2); 
       prefetch<PFHINT_L2>((mic_f*)tris +  3); 
@@ -165,11 +165,11 @@ namespace embree
 	valid = ge(valid,u,zero);
 	valid = ge(valid,v,zero);
 	valid = le(valid,u+v,one); 
+        const mic_f t = dot(C,_Ng) * rcp_den;
 
         if (unlikely(none(valid))) continue;
       
         /* perform depth test */
-        const mic_f t = dot(C,_Ng) * rcp_den;
         valid = ge(valid, t,ray.tnear);
 	valid = ge(valid,ray.tfar,t);
 
