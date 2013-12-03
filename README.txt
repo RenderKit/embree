@@ -105,9 +105,9 @@ executing make.
 
       make
 
-The executables will be generated inside the build
-folder. We recommend to finally install the Embree library and header
-files on your system:
+The executables will be generated inside the build folder. We
+recommend to finally install the Embree library and header files on
+your system:
 
   sudo make install
 
