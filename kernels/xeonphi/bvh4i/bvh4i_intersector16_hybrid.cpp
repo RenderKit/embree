@@ -520,11 +520,12 @@ namespace embree
 	/* switch to single ray mode */
         if (unlikely(countbits(m_stackDist) <= BVH4i::hybridSIMDUtilSwitchThreshold)) 
 	  {
+	    stack_node_single[0] = BVH4i::invalidNode;
+
 	    /* traverse single ray */	  	  
 	    long rayIndex = -1;
 	    while((rayIndex = bitscan64(rayIndex,m_stackDist)) != BITSCAN_NO_BIT_SET_64) 
 	      {	    
-		stack_node_single[0] = BVH4i::invalidNode;
 		stack_node_single[1] = curNode;
 		size_t sindex = 2;
 

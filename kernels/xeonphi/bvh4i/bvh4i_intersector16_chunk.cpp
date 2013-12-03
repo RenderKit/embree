@@ -34,8 +34,7 @@ namespace embree
       /* load ray */
       const mic_m valid0   = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir     = rcp_safe(ray.dir);
-      // const mic3f rdir( rcp_nr(ray.dir.x), rcp_nr(ray.dir.y), rcp_nr(ray.dir.z) );
-
+ 
       const mic3f org_rdir = ray.org * rdir;
       mic_f ray_tnear      = select(valid0,ray.tnear,pos_inf);
       mic_f ray_tfar       = select(valid0,ray.tfar ,neg_inf);
@@ -136,8 +135,97 @@ namespace embree
         /* intersect leaf */
         const mic_m valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
-        size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
+ 
+#if 1
+       size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
         TriangleIntersector16::intersect(valid_leaf,ray,tri,items,bvh->geometry);
+#else
+
+	prefetch<PFHINT_L1>((mic_f*)tris +  0); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  1); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  2); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
+
+	const mic_f zero = mic_f::zero();
+	const mic_f one  = mic_f::one();
+	
+	const Triangle1* tri  = (Triangle1*) curNode.leaf(accel,items);
+
+	for (size_t i=0; i<items; i++) 
+	  {
+	    const Triangle1& tri = tris[i];
+
+	    prefetch<PFHINT_L1>(&tris[i+1]); 
+
+	    STAT3(normal.trav_prims,1,popcnt(valid_i),16);
+        
+	    /* load vertices and calculate edges */
+	    const mic_f v0 = broadcast4to16f(&tri.v0);
+	    const mic_f v1 = broadcast4to16f(&tri.v1);
+	    const mic_f v2 = broadcast4to16f(&tri.v2);
+	    const mic_f e1 = v0-v1;
+	    const mic_f e2 = v2-v0;
+
+	    /* calculate denominator */
+	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
+	    const mic3f C =  _v0 - ray.org;
+	    
+	    const mic3f Ng = mic3f(tri.Ng);
+	    const mic_f den = dot(dir,Ng);
+
+	    mic_m valid = valid_leaf;
+
+#if defined(__BACKFACE_CULLING__)
+	    
+	    valid &= den > zero;
+#endif
+
+	    /* perform edge tests */
+	    const mic_f rcp_den = rcp(den);
+	    const mic3f R = cross(dir,C);
+	    const mic3f _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
+	    const mic_f u = dot(R,_e2)*rcp_den;
+	    const mic3f _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
+	    const mic_f v = dot(R,_e1)*rcp_den;
+	    valid = ge(valid,u,zero);
+	    valid = ge(valid,v,zero);
+	    valid = le(valid,u+v,one);
+	    prefetch<PFHINT_L1EX>(&ray.u);      
+	    prefetch<PFHINT_L1EX>(&ray.v);      
+	    prefetch<PFHINT_L1EX>(&ray.tfar);      
+
+	    if (unlikely(none(valid))) continue;
+      
+	    /* perform depth test */
+	    const mic_f t = dot(C,Ng) * rcp_den;
+	    valid = ge(valid, t,ray.tnear);
+	    valid = ge(valid,ray.tfar,t);
+
+	    const mic_i geomID = tri.geomID();
+	    const mic_i primID = tri.primID();
+	    prefetch<PFHINT_L1EX>(&ray.geomID);      
+	    prefetch<PFHINT_L1EX>(&ray.primID);      
+	    prefetch<PFHINT_L1EX>(&ray.Ng.x);      
+	    prefetch<PFHINT_L1EX>(&ray.Ng.y);      
+	    prefetch<PFHINT_L1EX>(&ray.Ng.z);      
+
+	    /* ray masking test */
+#if USE_RAY_MASK
+	    valid &= (tri.mask() & ray.mask) != 0;
+#endif
+	    if (unlikely(none(valid))) continue;
+        
+	    /* update hit information */
+	    store16f(valid,(float*)&ray.u,u);
+	    store16f(valid,(float*)&ray.v,v);
+	    store16f(valid,(float*)&ray.tfar,t);
+	    store16i(valid,(float*)&ray.geomID,geomID);
+	    store16i(valid,(float*)&ray.primID,primID);
+	    store16f(valid,(float*)&ray.Ng.x,Ng.x);
+	    store16f(valid,(float*)&ray.Ng.y,Ng.y);
+	    store16f(valid,(float*)&ray.Ng.z,Ng.z);
+	  }
+#endif
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
     }
@@ -151,7 +239,7 @@ namespace embree
 
       /* load ray */
       const mic_m valid = *(mic_i*)valid_i != mic_i(0);
-      mic_m terminated = !valid;
+      mic_m m_terminated = !valid;
       const mic3f rdir = rcp_safe(ray.dir);
       const mic3f org_rdir = ray.org * rdir;
       mic_f ray_tnear = select(valid,ray.tnear,pos_inf);
@@ -183,7 +271,9 @@ namespace embree
         
         /* cull node if behind closest hit point */
         if (unlikely(none(m_stackDist))) continue;
-        
+	
+	const mic_m m_active = !m_terminated;
+
         while (1)
         {
           /* test if this is a leaf node */
@@ -197,7 +287,7 @@ namespace embree
           sptr_dist--;
           curNode = *sptr_node; // FIXME: this trick creates issues with stack depth
           curDist = *sptr_dist;
-          
+          	 
 #pragma unroll(4)
           for (unsigned int i=0; i<4; i++)
           {
@@ -215,7 +305,7 @@ namespace embree
 
             const mic_f lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
             const mic_f lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const mic_m lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+            const mic_m lhit   = le(m_active,max(lnearP,ray_tnear),min(lfarP,ray_tfar));      
 	    const mic_f childDist = select(lhit,lnearP,inf);
             const mic_m m_child_dist = childDist < curDist;
             
@@ -229,7 +319,7 @@ namespace embree
               /* push cur node onto stack and continue with hit child */
               if (any(m_child_dist))
               {
-                *(sptr_node-1) = curNode;
+                *(sptr_node-1) = curNode; 
                 *(sptr_dist-1) = curDist; 
                 curDist = childDist;
                 curNode = child;
@@ -250,14 +340,14 @@ namespace embree
           break;
         
         /* intersect leaf */
-        const mic_m valid_leaf = ray_tfar > curDist;
+        const mic_m valid_leaf = gt(m_active,ray_tfar,curDist);
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
         size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
-        terminated |= valid_leaf & TriangleIntersector16::occluded(valid_leaf,ray,tri,items,bvh->geometry);
-        if (all(terminated)) break;
-        ray_tfar = select(terminated,neg_inf,ray_tfar);
+        m_terminated |= valid_leaf & TriangleIntersector16::occluded(valid_leaf,ray,tri,items,bvh->geometry);
+        if (unlikely(all(m_terminated))) break;
+        ray_tfar = select(m_terminated,neg_inf,ray_tfar);
       }
-      store16i(valid & terminated,&ray.geomID,0);
+      store16i(valid & m_terminated,&ray.geomID,0);
     }
     
     // FIXME: convert intersector16 to intersector8 and intersector4
