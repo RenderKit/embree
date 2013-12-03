@@ -151,7 +151,7 @@ namespace embree
 
       /* load ray */
       const mic_m valid = *(mic_i*)valid_i != mic_i(0);
-      mic_m terminated = !valid;
+      mic_m m_terminated = !valid;
       const mic3f rdir = rcp_safe(ray.dir);
       const mic3f org_rdir = ray.org * rdir;
       mic_f ray_tnear = select(valid,ray.tnear,pos_inf);
@@ -183,7 +183,9 @@ namespace embree
         
         /* cull node if behind closest hit point */
         if (unlikely(none(m_stackDist))) continue;
-        
+	
+	const mic_m m_active = !m_terminated;
+
         while (1)
         {
           /* test if this is a leaf node */
@@ -197,7 +199,7 @@ namespace embree
           sptr_dist--;
           curNode = *sptr_node; // FIXME: this trick creates issues with stack depth
           curDist = *sptr_dist;
-          
+          	 
 #pragma unroll(4)
           for (unsigned int i=0; i<4; i++)
           {
@@ -215,7 +217,7 @@ namespace embree
 
             const mic_f lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
             const mic_f lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const mic_m lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+            const mic_m lhit   = le(m_active,max(lnearP,ray_tnear),min(lfarP,ray_tfar));      
 	    const mic_f childDist = select(lhit,lnearP,inf);
             const mic_m m_child_dist = childDist < curDist;
             
@@ -229,7 +231,7 @@ namespace embree
               /* push cur node onto stack and continue with hit child */
               if (any(m_child_dist))
               {
-                *(sptr_node-1) = curNode;
+                *(sptr_node-1) = curNode; 
                 *(sptr_dist-1) = curDist; 
                 curDist = childDist;
                 curNode = child;
@@ -250,14 +252,14 @@ namespace embree
           break;
         
         /* intersect leaf */
-        const mic_m valid_leaf = ray_tfar > curDist;
+        const mic_m valid_leaf = gt(m_active,ray_tfar,curDist);
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
         size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
-        terminated |= valid_leaf & TriangleIntersector16::occluded(valid_leaf,ray,tri,items,bvh->geometry);
-        if (all(terminated)) break;
-        ray_tfar = select(terminated,neg_inf,ray_tfar);
+        m_terminated |= valid_leaf & TriangleIntersector16::occluded(valid_leaf,ray,tri,items,bvh->geometry);
+        if (unlikely(all(m_terminated))) break;
+        ray_tfar = select(m_terminated,neg_inf,ray_tfar);
       }
-      store16i(valid & terminated,&ray.geomID,0);
+      store16i(valid & m_terminated,&ray.geomID,0);
     }
     
     // FIXME: convert intersector16 to intersector8 and intersector4
