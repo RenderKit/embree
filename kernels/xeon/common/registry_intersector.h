@@ -71,28 +71,32 @@ namespace embree
   namespace sse41 { extern Accel::Intersector1 intersector; } \
   namespace avx { extern Accel::Intersector1 intersector; }   \
   namespace avx2 { extern Accel::Intersector1 intersector; }  \
-  Accel::Intersector1 intersector;
+  void intersector##_error() { std::cerr << "Error: intersector " << TOSTRING(intersector) << " not supported no your CPU" << std::endl; } \
+  Accel::Intersector1 intersector((RTCIntersectFunc)intersector##_error,(RTCOccludedFunc)intersector##_error);
 
 #define DECLARE_INTERSECTOR4(intersector) \
   namespace isa { extern Accel::Intersector4 intersector; }   \
   namespace sse41 { extern Accel::Intersector4 intersector; } \
   namespace avx { extern Accel::Intersector4 intersector; }   \
   namespace avx2 { extern Accel::Intersector4 intersector; }  \
-  Accel::Intersector4 intersector;
+  void intersector##_error() { std::cerr << "Error: intersector " << TOSTRING(intersector) << " not supported no your CPU" << std::endl; } \
+  Accel::Intersector4 intersector((RTCIntersectFunc4)intersector##_error,(RTCOccludedFunc4)intersector##_error);
 
 #define DECLARE_INTERSECTOR8(intersector) \
   namespace isa { extern Accel::Intersector8 intersector; }   \
   namespace sse41 { extern Accel::Intersector8 intersector; } \
   namespace avx { extern Accel::Intersector8 intersector; }   \
   namespace avx2 { extern Accel::Intersector8 intersector; }  \
-  Accel::Intersector8 intersector;
+  void intersector##_error() { std::cerr << "Error: intersector " << TOSTRING(intersector) << " not supported no your CPU" << std::endl; } \
+  Accel::Intersector8 intersector((RTCIntersectFunc8)intersector##_error,(RTCOccludedFunc8)intersector##_error);
 
 #define DECLARE_INTERSECTOR16(intersector) \
   namespace isa { extern Accel::Intersector16 intersector; }   \
   namespace sse41 { extern Accel::Intersector16 intersector; } \
   namespace avx { extern Accel::Intersector16 intersector; }   \
   namespace avx2 { extern Accel::Intersector16 intersector; }  \
-  Accel::Intersector16 intersector;
+  void intersector##_error() { std::cerr << "Error: intersector " << TOSTRING(intersector) << " not supported no your CPU" << std::endl; } \
+  Accel::Intersector16 intersector((RTCIntersectFunc16)intersector##_error,(RTCOccludedFunc16)intersector##_error);
 
 #define DEFINE_INTERSECTOR1(symbol,intersector)                        \
   Accel::Intersector1 symbol((RTCIntersectFunc)intersector::intersect, \
