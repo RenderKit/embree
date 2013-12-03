@@ -126,19 +126,19 @@ namespace embree
               sptr_node++;
               sptr_near++;
               
-              /* push hit child onto stack*/
-              if (any(curDist < childDist))
-              {
-                *(sptr_node-1) = child;
-                *(sptr_near-1) = childDist; 
-              }
-              
               /* push cur node onto stack and continue with hit child */
-              else {
+              if (any(childDist < curDist))
+              {
                 *(sptr_node-1) = curNode;
                 *(sptr_near-1) = curDist; 
                 curDist = childDist;
                 curNode = child;
+              }
+              
+              /* push hit child onto stack */
+              else {
+                *(sptr_node-1) = child;
+                *(sptr_near-1) = childDist; 
               }
             }	      
           }
@@ -255,19 +255,19 @@ namespace embree
               sptr_node++;
               sptr_near++;
               
-              /* push hit child onto stack*/
-              if (any(curDist < childDist))
-              {
-                *(sptr_node-1) = child;
-                *(sptr_near-1) = childDist; 
-              }
-              
               /* push cur node onto stack and continue with hit child */
-              else {
+              if (any(childDist < curDist))
+              {
                 *(sptr_node-1) = curNode;
                 *(sptr_near-1) = curDist; 
                 curDist = childDist;
                 curNode = child;
+              }
+              
+              /* push hit child onto stack */
+              else {
+                *(sptr_node-1) = child;
+                *(sptr_near-1) = childDist; 
               }
             }	      
           }
