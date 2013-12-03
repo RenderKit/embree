@@ -1773,7 +1773,6 @@ namespace embree
     rtcInit(g_rtcore.c_str());
 
 #if 1
-
     POSITIVE("empty_static",              rtcore_empty(RTC_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_DYNAMIC));
     POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_STATIC, RTC_STATIC));
@@ -1788,11 +1787,8 @@ namespace embree
     POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
     POSITIVE("update_deformable",         rtcore_update(RTC_DEFORMABLE));
     POSITIVE("update_dynamic",            rtcore_update(RTC_DYNAMIC));
-
     POSITIVE("overlapping_geometry",      rtcore_overlapping(100000));
-
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
-
     POSITIVE("regression_static",         rtcore_regression_static());
 #endif
 
@@ -1818,7 +1814,6 @@ namespace embree
     rtcore_nan("nan_test_8",RTC_STATIC,8);
 #endif
     rtcore_nan("nan_test_16",RTC_STATIC,16);
-
 
     rtcore_inf("inf_test_1",RTC_STATIC,1);
 #if !defined(__MIC__)

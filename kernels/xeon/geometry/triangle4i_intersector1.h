@@ -79,13 +79,23 @@ namespace embree
       if (unlikely(none(valid))) return;
 #endif
 
-      // FIXME: add ray mask
-
       /* update hit information */
       const ssef u = U / absDen;
       const ssef v = V / absDen;
       const ssef t = T / absDen;
-      const size_t i = select_min(valid,t);
+      size_t i = select_min(valid,t);
+
+      /* ray masking test */
+#if USE_RAY_MASK
+      while (true) {
+        int mask = ((Scene*)geom)->getTriangleMesh(tri.geomID[i])->mask;
+        if (mask & ray.mask) break;
+        valid[i] = 0;
+        if (none(valid)) return;
+        i = select_min(valid,t);
+      }
+#endif
+
       ray.tfar = t[i];
       ray.u = u[i];
       ray.v = v[i];
@@ -154,9 +164,17 @@ namespace embree
       if (unlikely(none(valid))) return false;
 #endif
 
-      // FIMXE: add ray mask
-
+      /* ray masking test */
+#if USE_RAY_MASK
+      for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
+      {  
+        int mask = ((Scene*)geom)->getTriangleMesh(tri.geomID[i])->mask;
+        if (mask & ray.mask) return true;
+      }
+      return false;
+#else
       return true;
+#endif
     }
 
     static __forceinline bool occluded(Ray& ray, const Triangle4i* tri, size_t num, const void* geom) 

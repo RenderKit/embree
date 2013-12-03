@@ -84,7 +84,12 @@ namespace embree
         if (unlikely(none(valid))) continue;
 #endif
 
-        // FIXME: add ray mask test
+        /* ray masking test */
+#if USE_RAY_MASK
+        int mask = ((Scene*)geom)->getTriangleMesh(tri.geomID[i])->mask;
+        valid &= (mask & ray.mask) != 0;
+        if (unlikely(none(valid))) continue;
+#endif
         
         /* update hit information for all rays that hit the triangle */
         ray.u   = select(valid,U / absDen,ray.u );
@@ -162,7 +167,12 @@ namespace embree
         if (unlikely(none(valid))) continue;
 #endif
 
-        // FIXME: add ray mask test
+        /* ray masking test */
+#if USE_RAY_MASK
+        int mask = ((Scene*)geom)->getTriangleMesh(tri.geomID[i])->mask;
+        valid &= (mask & ray.mask) != 0;
+        if (unlikely(none(valid))) continue;
+#endif
 
         /* update occlusion */
         valid0 &= !valid;
