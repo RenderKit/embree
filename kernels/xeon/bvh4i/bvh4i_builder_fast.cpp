@@ -312,7 +312,7 @@ namespace embree
         }
         
         /* process local work queue */
-        thread_workStack[threadID].push(br);
+	recurseSAH(br,RECURSE,threadID,numThreads);
         while (thread_workStack[threadID].pop_largest(br))
           recurseSAH(br,RECURSE,threadID,numThreads);
       }
