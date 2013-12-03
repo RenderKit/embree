@@ -20,7 +20,8 @@ MACRO (INCLUDE_DIRECTORIES_ISPC)
 ENDMACRO ()
 
 IF (NOT __XEON__)
-  SET(ISPC_DIR $ENV{ISPC_DIR} CACHE STRING "Path to ISPC root dir.")
+  execute_process(COMMAND which ispc OUTPUT_VARIABLE ISPC_EXECUTABLE)
+  execute_process(COMMAND dirname ${ISPC_EXECUTABLE} OUTPUT_VARIABLE ISPC_DIR)
 ENDIF ()
 
 MACRO (ispc_compile targets)
