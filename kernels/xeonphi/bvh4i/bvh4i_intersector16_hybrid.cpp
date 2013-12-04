@@ -727,10 +727,10 @@ namespace embree
 		    /* intersect one ray against four triangles */
 
 		    const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel);
-		    prefetch<PFHINT_NT>(tptr + 3);
-		    prefetch<PFHINT_NT>(tptr + 2);
-		    prefetch<PFHINT_NT>(tptr + 1);
-		    prefetch<PFHINT_NT>(tptr + 0); 
+		    prefetch<PFHINT_L1>(tptr + 3);
+		    prefetch<PFHINT_L1>(tptr + 2);
+		    prefetch<PFHINT_L1>(tptr + 1);
+		    prefetch<PFHINT_L1>(tptr + 0); 
 
 		    const mic_i and_mask = broadcast4to16i(zlc4);
 	      
