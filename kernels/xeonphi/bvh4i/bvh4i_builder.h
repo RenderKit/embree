@@ -64,6 +64,9 @@ namespace embree
     TASK_FUNCTION(BVH4iBuilder,parallelPartition);
     TASK_RUN_FUNCTION(BVH4iBuilder,build_parallel);
 
+    LOCAL_TASK_FUNCTION(BVH4iBuilder,localParallelBinning);
+    LOCAL_TASK_FUNCTION(BVH4iBuilder,localParallelPartitioning);
+
   public:
 
     /*! build mode */
@@ -99,10 +102,6 @@ namespace embree
 
     __align(64) WorkStack<BuildRecord,SIZE_GLOBAL_WORK_STACK> global_workStack;
     __align(64) WorkStack<BuildRecord,SIZE_LOCAL_WORK_STACK> local_workStack[MAX_MIC_CORES];
-    TaskScheduler::Task task;
-
-    __align(64) LinearBarrierActive global_barrier;
-    ParallelBinner<16> parallelBinner;  
 
   public:
     struct __align(64) SharedBinningPartitionData
@@ -119,8 +118,8 @@ namespace embree
     __align(64) SharedBinningPartitionData sharedData;
 
   protected:
-    PrimRef* prims;
-    BVHNode* node;
+    PrimRef*   prims;
+    BVHNode*   node;
     Triangle1* accel;
 
   protected:
@@ -134,6 +133,9 @@ namespace embree
 
     /*! node allocator */
     AlignedAtomicCounter32  atomicID;
+
+
+    __align(64) LockStepTaskScheduler4ThreadsLocalCore localTaskScheduler[MAX_MIC_CORES];
 
     __forceinline unsigned int allocNode(int size)
     {

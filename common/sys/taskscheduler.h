@@ -205,6 +205,12 @@ namespace embree
   static void task_##Name (void* data, const size_t threadID, const size_t numThreads) { \
     ((Class*)data)->Name(threadID,numThreads);                          \
   }
+
+#define LOCAL_TASK_FUNCTION(Class,Name) \
+  void Name (const size_t localThreadID, const size_t globalThreadID);			\
+  static void task_##Name (void* data, const size_t localThreadID, const size_t globalThreadID) { \
+    ((Class*)data)->Name(localThreadID,globalThreadID);				\
+  }
   
 
   class LockStepTaskScheduler
@@ -259,31 +265,31 @@ namespace embree
   {
   public:
 
-    static const unsigned int CONTROL_THREAD_ID = 0;
     static const unsigned int WAIT_CYCLES       = 256;
     
-    void (* taskPtr)(void* data, const size_t threadID);
+    void (* taskPtr)(void* data, const size_t localThreadID, const size_t globalThreadID);
     void* volatile data;
     volatile unsigned char threadState[2][4];
     volatile unsigned int mode;
 
 
     LockStepTaskScheduler4ThreadsLocalCore();
-    bool dispatchTask(const size_t threadID);
+    bool dispatchTask(const size_t localThreadID, const size_t globalThreadID);
     
-    void dispatchTaskMainLoop(const size_t threadID);
-    void releaseThreads(const size_t numThreads);
+    void dispatchTaskMainLoop(const size_t localThreadID, const size_t globalThreadID);
+    void releaseThreads(const size_t localThreadID, const size_t globalThreadID);
     
-    __forceinline bool dispatchTask(void (* task)(void* data, const size_t threadID),
+    __forceinline bool dispatchTask(void (* task)(void* data, const size_t localThreadID, const size_t globalThreadID),
 				    void* data, 
-				     const size_t threadID)
+				    const size_t localThreadID,
+				    const size_t globalThreadID)
     {
       taskPtr = task;
-      data = data;
-      return dispatchTask(threadID);
+      data    = data;
+      return dispatchTask(localThreadID,globalThreadID);
     }
     
-    void syncThreads(const size_t threadID);
+    void syncThreads(const size_t localThreadID);
 
 
   };

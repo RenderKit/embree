@@ -258,13 +258,13 @@ namespace embree
     mode = 0;
   }
 
-  void LockStepTaskScheduler4ThreadsLocalCore::syncThreads(const size_t threadID) {
+  void LockStepTaskScheduler4ThreadsLocalCore::syncThreads(const size_t localThreadID) {
     const unsigned int m = mode;
 
-    if (threadID == 0)
+    if (localThreadID == 0)
       {		
 	__memory_barrier();
-	threadState[m][threadID % 4] = 1;
+	threadState[m][localThreadID] = 1;
 	__memory_barrier();
 
 	while( (*(volatile unsigned int*)&threadState[m][0]) !=  0x01010101 )
@@ -278,42 +278,42 @@ namespace embree
     else
       {
 	__memory_barrier();
-	threadState[m][threadID % 4] = 1;
+	threadState[m][localThreadID] = 1;
 	__memory_barrier();
 	
-	while (threadState[m][threadID % 4] == 1)
+	while (threadState[m][localThreadID] == 1)
 	  __pause(WAIT_CYCLES);
       }
  
   }
 
 
-  void LockStepTaskScheduler4ThreadsLocalCore::dispatchTaskMainLoop(const size_t threadID)
+  void LockStepTaskScheduler4ThreadsLocalCore::dispatchTaskMainLoop(const size_t localThreadID, const size_t globalThreadID)
   {
     while (true) {
-      bool dispatch = dispatchTask(threadID);
+      bool dispatch = dispatchTask(localThreadID,globalThreadID);
       if (dispatch == true) break;
     }  
   }
 
-  bool LockStepTaskScheduler4ThreadsLocalCore::dispatchTask(const size_t threadID)
+  bool LockStepTaskScheduler4ThreadsLocalCore::dispatchTask(const size_t localThreadID, const size_t globalThreadID)
   {
-    syncThreads(threadID);
+    syncThreads(localThreadID);
 
     if (taskPtr == NULL) 
       return true;
 
-    (*taskPtr)((void*)data,threadID);
-    syncThreads(threadID);
+    (*taskPtr)((void*)data,localThreadID,globalThreadID);
+    syncThreads(localThreadID);
     
     return false;
   }
 
-  void LockStepTaskScheduler4ThreadsLocalCore::releaseThreads(const size_t numThreads)
+  void LockStepTaskScheduler4ThreadsLocalCore::releaseThreads(const size_t localThreadID, const size_t globalThreadID)
   {
     taskPtr = NULL;
     data = NULL;
-    dispatchTask(0);  
+    dispatchTask(localThreadID,globalThreadID);  
   }
 
 }

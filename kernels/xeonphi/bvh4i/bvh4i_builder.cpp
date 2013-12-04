@@ -439,12 +439,7 @@ namespace embree
     const size_t numCores = (numThreads+3)/4;
     const size_t coreID   = threadID/4;
 
-    if (threadID % 4 != 0)
-      {
-	//while(local_workStack[coreID].size() < 4)
-	//__pause(1023);
-      }
-    else
+    if (threadID % 4 == 0)
       {
 	unsigned int ID = coreID; // LockStepTaskScheduler::taskCounter.inc();
 	
@@ -456,38 +451,45 @@ namespace embree
 	    bool success = local_workStack[coreID].push(br);	  
 	    if (!success) FATAL("can't fill local work queues");
 	    ID += numCores;
-	    //recurseSAH(br,FILL_LOCAL_QUEUES,threadID,numThreads); 
 	  }    
-#if 0
-	mtx.lock();
-	DBG_PRINT(coreID);
-	for (size_t i=0;i<local_workStack[coreID].size();i++)
-	  DBG_PRINT(local_workStack[coreID].get(i).items());
-	mtx.unlock();
-#endif
+
       }
-
-
-
   }
 
   void BVH4iBuilder::buildSubTrees(const size_t threadID, const size_t numThreads)
   {
-    double d0 = getSeconds();
-
     NodeAllocator alloc(atomicID,numAllocatedNodes);
     __align(64) BuildRecord br;
     const size_t numCores = (numThreads+3)/4;
-    const size_t coreID   = threadID/4;
+    const size_t globalCoreID   = threadID/4;
+
+#if 0
+    const size_t globalThreadID = threadID;
+    const size_t localThreadID  = threadID % 4;
+    
+    if (localThreadID != 0)
+      {
+	localTaskScheduler[globalCoreID].dispatchTaskMainLoop(localThreadID,globalThreadID);
+      }
+    else
+      {
+	localTaskScheduler[globalCoreID].dispatchTask( task_localParallelBinning, this,localThreadID, globalThreadID );
+	localTaskScheduler[globalCoreID].releaseThreads(localThreadID,globalThreadID);	
+      }
+
+
+#endif
+
+    double d0 = getSeconds();
 
     while(true)
       {
       /* process local work queue */
 	while (1)
 	  {
-	    if (!local_workStack[coreID].pop_largest(br)) 
+	    if (!local_workStack[globalCoreID].pop_largest(br)) 
 	      {
-		if (local_workStack[coreID].mutex.val() > 0)
+		if (local_workStack[globalCoreID].mutex.val() > 0)
 		  {
 		    __pause(1024);
 		    continue;
@@ -495,10 +497,10 @@ namespace embree
 		else
 		  break;
 	      }
-	    local_workStack[coreID].mutex.inc();
+	    local_workStack[globalCoreID].mutex.inc();
 
 	    recurseSAH(br,alloc,RECURSE,threadID,numThreads);
-	    local_workStack[coreID].mutex.dec();
+	    local_workStack[globalCoreID].mutex.dec();
 	  }
 
 	/* try task stealing */
@@ -508,10 +510,10 @@ namespace embree
         {
 	  unsigned int next_threadID = (threadID+i);
 	  if (next_threadID >= numThreads) next_threadID -= numThreads;
-	  const unsigned int next_coreID   = next_threadID/4;
+	  const unsigned int next_globalCoreID   = next_threadID/4;
 
-	  assert(next_coreID < numCores);
-          if (local_workStack[next_coreID].pop_smallest(br)) { 
+	  assert(next_globalCoreID < numCores);
+          if (local_workStack[next_globalCoreID].pop_smallest(br)) { 
             success = true;
             break;
           }
@@ -519,9 +521,9 @@ namespace embree
 #endif
         if (!success) break; 
 
-	local_workStack[coreID].mutex.inc();
+	local_workStack[globalCoreID].mutex.inc();
 	recurseSAH(br,alloc,RECURSE,threadID,numThreads);
-	local_workStack[coreID].mutex.dec();
+	local_workStack[globalCoreID].mutex.dec();
 
       }
 
@@ -1061,6 +1063,31 @@ namespace embree
 	FATAL("check build record");
       }
   }
+  // =======================================================================================================
+  // =======================================================================================================
+  // =======================================================================================================
+
+  void BVH4iBuilder::localParallelBinning(const size_t localThreadID,const size_t globalThreadID)
+  {
+
+    mtx.lock();
+    DBG_PRINT(localThreadID);
+    DBG_PRINT(globalThreadID);
+    mtx.unlock();
+
+    
+  }
+
+
+  void BVH4iBuilder::localParallelPartitioning(const size_t localThreadID,const size_t globalThreadID)
+  {
+    
+  }
+
+
+  // =======================================================================================================
+  // =======================================================================================================
+  // =======================================================================================================
 
 
   void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
