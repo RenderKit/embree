@@ -220,11 +220,7 @@ namespace embree
     //static Barrier taskBarrier;
 #else
 
-#if USE_ACTIVE_BARRIER
-    static LinearBarrierActive taskBarrier;
-#else
-    static BarrierSys taskBarrier;
-#endif
+    static Barrier taskBarrier;
 
 #endif
 

@@ -184,14 +184,9 @@ namespace embree
   __align(64) QuadTreeBarrier LockStepTaskScheduler::taskBarrier;
   //__align(64) Barrier LockStepTaskScheduler::taskBarrier;
 #else
-
-#if USE_ACTIVE_BARRIER
-    __align(64) LinearBarrierActive LockStepTaskScheduler::taskBarrier;
-#else
-  __align(64) BarrierSys LockStepTaskScheduler::taskBarrier;
+  __align(64) Barrier LockStepTaskScheduler::taskBarrier;
 #endif
 
-#endif
   __align(64) AlignedAtomicCounter32 LockStepTaskScheduler::taskCounter;
 
   void LockStepTaskScheduler::init(const size_t numThreads) {

@@ -109,8 +109,7 @@
 //#define __USE_STAT_COUNTERS__
 //#define __BACKFACE_CULLING__
 //#define __FIX_RAYS__
-//#define __SPINLOCKS__ // FIXME: system barrier implementation creates issues under Windows
-#define USE_ACTIVE_BARRIER 0
+//#define __SPINLOCKS__
 #endif
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
