@@ -175,7 +175,7 @@ enum RTCError {
 uniform RTCError rtcGetError();
 
 /*! This function is implementation specific and only for
- *  debugging. */
-void rtcDebug(); // FIXME: remove
+ *  debugging purposes. Do not call it. */
+void rtcDebug(); 
 
 #endif

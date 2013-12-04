@@ -92,6 +92,7 @@ namespace embree
     size_t i = work[taskIndex].startPrim;
     size_t numPrims = work[taskIndex].numPrims;
     size_t numGroupPrims = numPrims ? geom->prims(g) : 0;
+    size_t numAddedPrims = 0;
     
     BBox3f geomBound = empty, centBound = empty;
     typename atomic_set<PrimRefBlock>::item* block = prims.insert(alloc->malloc(threadIndex)); 
@@ -105,6 +106,7 @@ namespace embree
 
       const BBox3f b = geom->bounds(g,i);
       if (b.empty()) continue;
+      numAddedPrims++;
       geomBound.extend(b);
       centBound.extend(center2(b));
       const PrimRef prim = PrimRef(b,g,i);
@@ -116,19 +118,22 @@ namespace embree
     heuristic.bin(block->base(),block->size());
     geomBounds[taskIndex] = geomBound;
     centBounds[taskIndex] = centBound;
+    work[taskIndex].numPrims = numAddedPrims;
   }
   
   template<typename Heuristic>
   void PrimRefGen<Heuristic>::task_gen_parallel_reduce(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) 
   {
     /* reduce geometry and centroid bounds */
+    size_t numAddedPrims = 0;
     BBox3f geomBound = empty;
     BBox3f centBound = empty;
     for (size_t i=0; i<numTasks; i++) {
       geomBound = merge(geomBound,geomBounds[i]);
       centBound = merge(centBound,centBounds[i]);
+      numAddedPrims += work[i].numPrims;
     }
-    new (&pinfo) PrimInfo(numPrimitives,geomBound,centBound,pinfo); // FIXME: numPrimitives should be counted as some could be skipped by empty bounds
+    new (&pinfo) PrimInfo(numAddedPrims,geomBound,centBound,pinfo);
     
     /* reduce heuristic and find best split */
     Heuristic heuristic; 
