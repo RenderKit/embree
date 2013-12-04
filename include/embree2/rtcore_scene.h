@@ -54,35 +54,61 @@ enum RTCAlgorithmFlags
 typedef struct __RTCScene {}* RTCScene;
 
 /*! Creates a new scene. */
-RTCORE_API RTCScene rtcNewScene (RTCFlags flags, RTCAlgorithmFlags aflags); // FIXME: rtcNewStaticScene and rtcNewDynamicScene
+RTCORE_API RTCScene rtcNewScene (RTCFlags flags, RTCAlgorithmFlags aflags);
 
 /*! Commits the geometry of the scene. After initializing or modifying
  *  geometries, this function has to get called before tracing
  *  rays. */
 RTCORE_API void rtcCommit (RTCScene scene);
 
-/*! Intersects a single ray with the scene. */
+/*! Intersects a single ray with the scene. The ray has to be aligned
+ *  to 16 bytes. This function can only be called for scenes with the
+ *  RTC_INTERSECT1 flag set. */
 RTCORE_API void rtcIntersect (RTCScene scene, RTCRay& ray);
 
-/*! Intersects a packet of 4 rays with the scene. */
+/*! Intersects a packet of 4 rays with the scene. The valid mask and
+ *  ray have both to be aligned to 16 bytes. This function can only be
+ *  called for scenes with the RTC_INTERSECT4 flag set. */
 RTCORE_API void rtcIntersect4 (const void* valid, RTCScene scene, RTCRay4& ray);
 
-/*! Intersects a packet of 8 rays with the scene. */
+/*! Intersects a packet of 8 rays with the scene. The valid mask and
+ *  ray have both to be aligned to 32 bytes. This function can only be
+ *  called for scenes with the RTC_INTERSECT8 flag set. For performance
+ *  reasons, the rtcIntersect8 function should only get called if the
+ *  CPU supports AVX. */
 RTCORE_API void rtcIntersect8 (const void* valid, RTCScene scene, RTCRay8& ray);
 
-/*! Intersects a packet of 16 rays with the scene. */
+/*! Intersects a packet of 16 rays with the scene. The valid mask and
+ *  ray have both to be aligned to 64 bytes. This function can only be
+ *  called for scenes with the RTC_INTERSECT16 flag set. For
+ *  performance reasons, the rtcIntersect8 function should only get
+ *  called if the CPU supports the 16-wide Xeon Phi instructions. */
 RTCORE_API void rtcIntersect16 (const void* valid, RTCScene scene, RTCRay16& ray);
 
-/*! Tests if a single ray is occluded by the scene. */
+/*! Tests if a single ray is occluded by the scene. The ray has to be
+ *  aligned to 16 bytes. This function can only be called for scenes
+ *  with the RTC_INTERSECT1 flag set. */
 RTCORE_API void rtcOccluded (RTCScene scene, RTCRay& ray);
 
-/*! Tests if a packet of 4 rays is occluded by the scene. */
+/*! Tests if a packet of 4 rays is occluded by the scene. This
+ *  function can only be called for scenes with the RTC_INTERSECT4
+ *  flag set. The valid mask and ray have both to be aligned to 16
+ *  bytes. */
 RTCORE_API void rtcOccluded4 (const void* valid, RTCScene scene, RTCRay4& ray);
 
-/*! Tests if a packet of 8 rays is occluded by the scene. */
+/*! Tests if a packet of 8 rays is occluded by the scene. The valid
+ *  mask and ray have both to be aligned to 32 bytes. This function
+ *  can only be called for scenes with the RTC_INTERSECT8 flag
+ *  set. For performance reasons, the rtcOccluded8 function should
+ *  only get called if the CPU supports AVX. */
 RTCORE_API void rtcOccluded8 (const void* valid, RTCScene scene, RTCRay8& ray);
 
-/*! Tests if a packet of 16 rays is occluded by the scene. */
+/*! Tests if a packet of 16 rays is occluded by the scene. The valid
+ *  mask and ray have both to be aligned to 64 bytes. This function
+ *  can only be called for scenes with the RTC_INTERSECT16 flag
+ *  set. For performance reasons, the rtcOccluded16 function should
+ *  only get called if the CPU supports the 16-wide Xeon Phi
+ *  instructions. */
 RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray);
 
 /*! Deletes the scene. All contained geometry get also destroyed. */

@@ -76,31 +76,49 @@ RTCORE_API void rtcSetBounds (RTCScene scene, unsigned geomID,
                               float lower_x, float lower_y, float lower_z,
                               float upper_x, float upper_y, float upper_z);
 
-/*! Set data pointer for intersect and occluded functions. */
+/*! Set data pointer for intersect and occluded functions. Invokations
+ *  of the various user intersect and occluded functions get passed
+ *  this data pointer when called. */
 RTCORE_API void rtcSetUserData (RTCScene scene, unsigned geomID, void* ptr);
 
-/*! Set intersect function for single rays. */
+/*! Set intersect function for single rays. The rtcIntersect function
+ *  will call the passed function for intersecting the user
+ *  geometry. */
 RTCORE_API void rtcSetIntersectFunction (RTCScene scene, unsigned geomID, RTCIntersectFunc intersect);
 
-/*! Set intersect function for ray packets of size 4. */
+/*! Set intersect function for ray packets of size 4. The
+ *  rtcIntersect4 function will call the passed function for
+ *  intersecting the user geometry. */
 RTCORE_API void rtcSetIntersectFunction4 (RTCScene scene, unsigned geomID, RTCIntersectFunc4 intersect4);
 
-/*! Set intersect function for ray packets of size 8. */
+/*! Set intersect function for ray packets of size 8. The
+ *  rtcIntersect8 function will call the passed function for
+ *  intersecting the user geometry.*/
 RTCORE_API void rtcSetIntersectFunction8 (RTCScene scene, unsigned geomID, RTCIntersectFunc8 intersect8);
 
-/*! Set intersect function for ray packets of size 16. */
+/*! Set intersect function for ray packets of size 16. The
+ *  rtcIntersect16 function will call the passed function for
+ *  intersecting the user geometry. */
 RTCORE_API void rtcSetIntersectFunction16 (RTCScene scene, unsigned geomID, RTCIntersectFunc16 intersect16);
 
-/*! Set occlusion function for single rays. */
+/*! Set occlusion function for single rays. The rtcOccluded function
+ *  will call the passed function for intersecting the user
+ *  geometry. */
 RTCORE_API void rtcSetOccludedFunction (RTCScene scene, unsigned geomID, RTCOccludedFunc occluded);
 
-/*! Set occlusion function for ray packets of size 4. */
+/*! Set occlusion function for ray packets of size 4. The rtcOccluded4
+ *  function will call the passed function for intersecting the user
+ *  geometry. */
 RTCORE_API void rtcSetOccludedFunction4 (RTCScene scene, unsigned geomID, RTCOccludedFunc4 occluded4);
 
-/*! Set occlusion function for ray packets of size 8. */
+/*! Set occlusion function for ray packets of size 8. The rtcOccluded8
+ *  function will call the passed function for intersecting the user
+ *  geometry. */
 RTCORE_API void rtcSetOccludedFunction8 (RTCScene scene, unsigned geomID, RTCOccludedFunc8 occluded8);
 
-/*! Set occlusion function for ray packets of size 16. */
+/*! Set occlusion function for ray packets of size 16. The
+ *  rtcOccluded16 function will call the passed function for
+ *  intersecting the user geometry. */
 RTCORE_API void rtcSetOccludedFunction16 (RTCScene scene, unsigned geomID, RTCOccludedFunc16 occluded16);
 
 #endif

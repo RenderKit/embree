@@ -24,7 +24,7 @@
 #endif
 
 /*! Ray structure for single rays. */
-RTCORE_ALIGN(16) struct RTCRay1
+RTCORE_ALIGN(16) struct RTCRay1 // FIXME: need to specify alignment to 16 bytes
 {
   /* ray data */
 public:
