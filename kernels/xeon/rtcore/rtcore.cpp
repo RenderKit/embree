@@ -212,8 +212,16 @@ namespace embree
 #if defined(__MIC__)
     SELECT_KNC(features,InstanceIntersector16);
 #endif
-    
-    if (g_verbose) 
+
+    if (g_verbose >= 1)
+    {
+      std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
+      std::cout << "  Compiler : " << getCompilerName() << std::endl;
+      std::cout << "  Platform : " << getPlatformName() << std::endl;
+      std::cout << "  CPU      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
+    }
+
+    if (g_verbose >= 2) 
     {
       PRINT(cfg);
       PRINT(g_numThreads);
@@ -222,7 +230,6 @@ namespace embree
       PRINT(g_tri_accel);
       PRINT(g_builder);
       PRINT(g_traverser);
-      std::cout << "cpu features = " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
       builders.print();
     }
     TaskScheduler::create(g_numThreads);

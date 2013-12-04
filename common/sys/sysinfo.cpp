@@ -16,6 +16,7 @@
 
 #include "sysinfo.h"
 #include "intrinsics.h"
+#include "stl/string.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms
@@ -51,6 +52,28 @@ namespace embree
     return "Unix (64bit)";
 #else
     return "Unknown";
+#endif
+  }
+
+  std::string getCompilerName()
+  {
+#if defined(__INTEL_COMPILER)
+    std::string version = std::stringOf(__INTEL_COMPILER);
+    version.insert(3,".");
+    version.insert(2,".");
+    return "Intel Compiler " + version + " Update " + std::stringOf(__INTEL_COMPILER_UPDATE) + " (" + __VERSION__ + ")";
+#elif defined(__clang__)
+    return "CLANG " __clang_version__;
+#elif defined (__GNUC__)
+    return "GCC " __VERSION__;
+#elif defined(_MSC_VER)
+    std::string version = std::stringOf(_MSC_FULL_VER);
+    version.insert(4,".");
+    version.insert(9,".");
+    version.insert(2,".");
+    return "Visual C++ Compiler " + version;
+#else
+    return "Unknown Compiler";
 #endif
   }
 

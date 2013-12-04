@@ -38,6 +38,9 @@ namespace embree
   /*! return platform name */
   std::string getPlatformName();
 
+  /*! get the full name of the compiler */
+  std::string getCompilerName();
+
   /*! return the name of the CPU */
   std::string getCPUVendor();
 
