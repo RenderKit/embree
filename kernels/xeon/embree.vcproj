@@ -77,6 +77,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalOptions="/ignore:4217"
 				ModuleDefinitionFile="embree.def"
 				ForceSymbolReferences=""
 				GenerateDebugInformation="true"
@@ -158,6 +159,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalOptions="/ignore:4217"
 				ModuleDefinitionFile="embree.def"
 				ForceSymbolReferences=""
 				GenerateDebugInformation="true"
@@ -240,6 +242,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalOptions="/ignore:4217"
 				ModuleDefinitionFile="embree.def"
 				ForceSymbolReferences=""
 			/>
@@ -321,6 +324,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalOptions="/ignore:4217"
 				ModuleDefinitionFile="embree.def"
 				ForceSymbolReferences=""
 			/>
@@ -1087,48 +1091,52 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="embree2"
+			Name="include"
 			>
-			<File
-				RelativePath="..\..\rtcore2\rtcore.h"
+			<Filter
+				Name="embree2"
 				>
-			</File>
-			<File
-				RelativePath="..\..\rtcore2\rtcore.isph"
-				>
-			</File>
-			<File
-				RelativePath="..\..\rtcore2\rtcore_geometry.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\rtcore2\rtcore_geometry.isph"
-				>
-			</File>
-			<File
-				RelativePath="..\..\rtcore2\rtcore_geometry_user.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\rtcore2\rtcore_geometry_user.isph"
-				>
-			</File>
-			<File
-				RelativePath="..\..\rtcore2\rtcore_ray.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\rtcore2\rtcore_ray.isph"
-				>
-			</File>
-			<File
-				RelativePath="..\..\rtcore2\rtcore_scene.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\rtcore2\rtcore_scene.isph"
-				>
-			</File>
+				<File
+					RelativePath="..\..\include\embree2\rtcore.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\include\embree2\rtcore.isph"
+					>
+				</File>
+				<File
+					RelativePath="..\..\include\embree2\rtcore_geometry.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\include\embree2\rtcore_geometry.isph"
+					>
+				</File>
+				<File
+					RelativePath="..\..\include\embree2\rtcore_geometry_user.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\include\embree2\rtcore_geometry_user.isph"
+					>
+				</File>
+				<File
+					RelativePath="..\..\include\embree2\rtcore_ray.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\include\embree2\rtcore_ray.isph"
+					>
+				</File>
+				<File
+					RelativePath="..\..\include\embree2\rtcore_scene.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\include\embree2\rtcore_scene.isph"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\embree.def"

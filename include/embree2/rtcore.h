@@ -21,7 +21,7 @@
 
 #ifndef RTCORE_API
 #ifdef _WIN32
-#  define RTCORE_API extern "C" //__declspec(dllimport) // FIXME
+#  define RTCORE_API extern "C" __declspec(dllimport) 
 #else
 #  define RTCORE_API extern "C"
 #endif
