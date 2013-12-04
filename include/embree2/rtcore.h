@@ -31,7 +31,6 @@
 #include "rtcore_geometry.h"
 #include "rtcore_geometry_user.h"
 
-// FIXME: describe alignment requirements for rays and valid masks
 // FIXME: describe that tnear value has to be > 0
 // FIMXE: intersect8 should only get called if CPU supports AVX, etc.
 // FIXME: user geometry, intersect8 will call intersect8ptr, etc.
@@ -39,13 +38,15 @@
 /* 
 
    This file defines the Embree ray tracing kernel API for C and
-   C++. It is a low level API that supports defining and committing of
-   geometry and tracing of rays. Static and dynamic geometry are both
-   supported, as well as finding the closest intersection of a ray,
-   and testing a ray segment for any intersection with the
-   scene. Single rays, as well as packets of rays in struct of array
-   layout are supported for packet sizes of 1, 4, 8, and 16. Linear
-   motion blur is also supported.
+   C++. The user is supposed to include this file, and alternatively
+   the rtcore_ray.h file, but none of the other .h files in this
+   folder. The API is a low level API that supports defining and
+   committing of geometry and tracing of rays. Static and dynamic
+   geometry are both supported, as well as finding the closest
+   intersection of a ray, and testing a ray segment for any
+   intersection with the scene. Single rays, as well as packets of
+   rays in struct of array layout are supported for packet sizes of 1,
+   4, 8, and 16. Linear motion blur is supported.
 
    Before invoking any API call, the Embree ray tracing core has to
    get initialized through the rtcInit call. Before the application exits
@@ -112,35 +113,38 @@
    of that user defined object.
 
    The API supports finding the closest hit of a ray segment with the
-   scene, and determining if any hit between a ray segment and the
-   scene exists. In the ray packet mode (with packet size of N), the
-   user has to provide a pointer to N 32 bit integers that act as a
-   ray activity mask. If one of these integers is set to 0x00000000
-   the corresponding ray is considered inactive and if the integer is
-   set to 0xFFFFFFFF, the ray is considered active. Rays that are
-   inactive will not update any hit information.
+   scene (rtcIntersect functions), and determining if any hit between
+   a ray segment and the scene exists (rtcOccluded functions). In the
+   ray packet mode (with packet size of N), the user has to provide a
+   pointer to N 32 bit integers that act as a ray activity mask. If
+   one of these integers is set to 0x00000000 the corresponding ray is
+   considered inactive and if the integer is set to 0xFFFFFFFF, the
+   ray is considered active. Rays that are inactive will not update
+   any hit information.
    
    Finding the closest hit distance if done through the rtcIntersect
    functions. These get the activity mask, the scene, and a ray as
-   input. The user has to initialize the ray origin (org), ray
-   direction (dir), and ray segment (tnear, tfar). The geometry ID
-   (geomID member) has to get initialized to INVALID_GEOMETRY_ID
-   (-1). If the scene contains linear motion blur, also the ray time
-   (time) has to get initialized. If the scene contains instances,
-   also the instance ID (instID) has to get initialized. If ray masks
-   are enabled at compile time, also the ray mask (mask) have to get
-   initialized. After tracing the ray, the hit distance (tfar),
-   geometry normal (Ng), local hit coordinates (u,v), geometry ID
-   (geomID), and primitive ID (primID) are set. The geometry ID
-   corresponds to the ID returned at creation time of the hit
-   geometry, and the primitive ID corresponds to the nth primitive of
-   that geometry, e.g. nth triangle.
+   input. Data alignment restrictions apply as decribed for each
+   rtcIntersect function. The user has to initialize the ray origin
+   (org), ray direction (dir), and ray segment (tnear, tfar). The
+   geometry ID (geomID member) has to get initialized to
+   INVALID_GEOMETRY_ID (-1). If the scene contains linear motion blur,
+   also the ray time (time) has to get initialized. If the scene
+   contains instances, also the instance ID (instID) has to get
+   initialized. If ray masks are enabled at compile time, also the ray
+   mask (mask) have to get initialized. After tracing the ray, the hit
+   distance (tfar), geometry normal (Ng), local hit coordinates (u,v),
+   geometry ID (geomID), and primitive ID (primID) are set. The
+   geometry ID corresponds to the ID returned at creation time of the
+   hit geometry, and the primitive ID corresponds to the nth primitive
+   of that geometry, e.g. nth triangle.
 
    Testing if any geometry intersects with the ray segment is done
-   through the rtcOccluded functions. Initialization has to be done as
-   for rtcIntersect. If some geometry got found along the ray segment,
-   the geometry ID (geomID) will get set to 0. No other member of the
-   ray will get updated.
+   through the rtcOccluded functions. Data alignment restrictions
+   apply as decribed for each rtcOccluded function. Initialization has
+   to be done as for rtcIntersect. If some geometry got found along
+   the ray segment, the geometry ID (geomID) will get set to 0. No
+   other member of the ray will get updated.
   
 */
 

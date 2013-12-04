@@ -273,15 +273,6 @@ namespace embree
 	setAffinity(parg->affinity);
 #endif
 
-#if 0 // FIXME: enable this
-#if defined(__LINUX__)
-    if (parg->affinity >= 0) {
-      if (getThreadAffinity(pthread_self()) != parg->affinity)
-        std::cerr << "Thread: setting affinity failed" << std::endl;
-    }
-#endif
-#endif
-
     parg->f(parg->arg);
     delete parg;
     return NULL;

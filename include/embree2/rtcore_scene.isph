@@ -57,16 +57,20 @@ RTCScene rtcNewScene (uniform RTCFlags flags, uniform RTCAlgorithmFlags aflags);
  *  rays. */
 void rtcCommit (RTCScene scene); 
 
-/*! Intersects a uniform ray with the scene. */
+/*! Intersects a uniform ray with the scene. The ray has to be aligned
+ *  to 16 bytes. */
 void rtcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
 
-/*! Intersects a varying ray with the scene. */
+/*! Intersects a varying ray with the scene. The valid mask and ray
+ *  have both to be aligned to sizeof(varing float) bytes. */
 void rtcIntersect (RTCScene scene, varying RTCRay& ray);
 
-/*! Tests if a uniform ray is occluded by the scene. */
+/*! Tests if a uniform ray is occluded by the scene. The ray has to be
+ *  aligned to 16 bytes. */
 void rtcOccluded1 (RTCScene scene, uniform RTCRay1& ray);
 
-/*! Tests if a varying ray is occluded by the scene. */
+/*! Tests if a varying ray is occluded by the scene. The valid mask
+ *  and ray have both to be aligned to sizeof(varing float) bytes. */
 void rtcOccluded (RTCScene scene, varying RTCRay& ray);
 
 /*! Deletes the geometry again. */
