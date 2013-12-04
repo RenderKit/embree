@@ -385,14 +385,14 @@ namespace embree
         const float phif   = phi*float(pi)*rcpNumPhi;
         const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
         Vertex* v = &vertices0[phi*numTheta+theta];
-        const float cosThetaf = cos(thetaf); // FIXME: moving this down triggers ICC bug
+        const float cosThetaf = cos(thetaf);
         v->x = pos.x + r*sin(phif)*sin(thetaf);
         v->y = pos.y + r*cos(phif);
         v->z = pos.z + r*sin(phif)*cosThetaf;
 
         if (vertices1) {
           Vertex* v1 = &vertices1[phi*numTheta+theta];
-          const float cosThetaf = cos(thetaf); // FIXME: moving this down triggers ICC bug
+          const float cosThetaf = cos(thetaf);
           v1->x = motion + pos.x + r*sin(phif)*sin(thetaf);
           v1->y = motion + pos.y + r*cos(phif);
           v1->z = motion + pos.z + r*sin(phif)*cosThetaf;
