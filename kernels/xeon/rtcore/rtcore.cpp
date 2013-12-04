@@ -30,12 +30,6 @@
 #include "common/registry_builder.h"
 #include "common/alloc.h"
 
-#if defined(__EXIT_ON_ERROR__)
-#define VERBOSE 1
-#else
-#define VERBOSE g_verbose
-#endif
-
 #define TRACE(x) //std::cout << #x << std::endl;
 
 namespace embree
@@ -55,6 +49,12 @@ namespace embree
 
 #define VERIFY_HANDLE(handle) \
   if (handle == NULL) {                                                 \
+    if (VERBOSE) std::cerr << "RTCore: invalid argument" << std::endl; \
+    recordError(RTC_INVALID_ARGUMENT);                                  \
+  }
+
+#define VERIFY_GEOMID(id) \
+  if (id == -1) {                                                 \
     if (VERBOSE) std::cerr << "RTCore: invalid argument" << std::endl; \
     recordError(RTC_INVALID_ARGUMENT);                                  \
   }
@@ -323,61 +323,70 @@ namespace embree
     CATCH_END;
   }
   
-  RTCORE_API void rtcIntersect (RTCScene scene, RTCRay& ray) {
+  RTCORE_API void rtcIntersect (RTCScene scene, RTCRay& ray) 
+  {
     TRACE(rtcIntersect);
     STAT3(normal.travs,1,1,1);
     ((Scene*)scene)->intersect(ray);
   }
   
-  RTCORE_API void rtcIntersect4 (const void* valid, RTCScene scene, RTCRay4& ray) {
+  RTCORE_API void rtcIntersect4 (const void* valid, RTCScene scene, RTCRay4& ray) 
+  {
     TRACE(rtcIntersect4);
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,4);
     ((Scene*)scene)->intersect4(valid,ray);
   }
   
-  RTCORE_API void rtcIntersect8 (const void* valid, RTCScene scene, RTCRay8& ray) {
+  RTCORE_API void rtcIntersect8 (const void* valid, RTCScene scene, RTCRay8& ray) 
+  {
     TRACE(rtcIntersect8);
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,8);
     ((Scene*)scene)->intersect8(valid,ray);
   }
   
-  RTCORE_API void rtcIntersect16 (const void* valid, RTCScene scene, RTCRay16& ray) {
+  RTCORE_API void rtcIntersect16 (const void* valid, RTCScene scene, RTCRay16& ray) 
+  {
     TRACE(rtcIntersect16);
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,16);
     ((Scene*)scene)->intersect16(valid,ray);
   }
   
-  RTCORE_API void rtcOccluded (RTCScene scene, RTCRay& ray) {
+  RTCORE_API void rtcOccluded (RTCScene scene, RTCRay& ray) 
+  {
     TRACE(rtcOccluded);
     STAT3(shadow.travs,1,1,1);
     ((Scene*)scene)->occluded(ray);
   }
   
-  RTCORE_API void rtcOccluded4 (const void* valid, RTCScene scene, RTCRay4& ray) {
+  RTCORE_API void rtcOccluded4 (const void* valid, RTCScene scene, RTCRay4& ray) 
+  {
     TRACE(rtcOccluded4);
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,4);
     ((Scene*)scene)->occluded4(valid,ray);
   }
   
-  RTCORE_API void rtcOccluded8 (const void* valid, RTCScene scene, RTCRay8& ray) {
+  RTCORE_API void rtcOccluded8 (const void* valid, RTCScene scene, RTCRay8& ray) 
+  {
     TRACE(rtcOccluded8);
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,8);
     ((Scene*)scene)->occluded8(valid,ray);
   }
   
-  RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray) {
+  RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray) 
+  {
     TRACE(rtcOccluded16);
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,16);
     ((Scene*)scene)->occluded16(valid,ray);
   }
   
-  RTCORE_API void rtcDeleteScene (RTCScene scene) {
+  RTCORE_API void rtcDeleteScene (RTCScene scene) 
+  {
     CATCH_BEGIN;
     TRACE(rtcDeleteScene);
     VERIFY_HANDLE(scene);
@@ -401,6 +410,8 @@ namespace embree
     CATCH_BEGIN;
     TRACE(rtcSetTransform);
     VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
+    VERIFY_HANDLE(xfm);
 
     AffineSpace3f transform = one;
     switch (layout) 
@@ -471,6 +482,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcSetMask);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setMask(mask);
     CATCH_END;
   }
@@ -479,6 +492,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcMapBuffer);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     return ((Scene*)scene)->get_locked(geomID)->map(type);
     CATCH_END;
     return NULL;
@@ -488,6 +503,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcUnmapBuffer);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->unmap(type);
     CATCH_END;
   }
@@ -496,6 +513,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcEnable);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->enable();
     CATCH_END;
   }
@@ -504,6 +523,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcUpdate);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->update();
     CATCH_END;
   }
@@ -512,6 +533,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcDisable);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->disable();
     CATCH_END;
   }
@@ -520,6 +543,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcDeleteGeometry);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->erase();
     CATCH_END;
   }
@@ -530,11 +555,11 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcSetBounds);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     Vec3fa lower = Vec3fa(lower_x,lower_y,lower_z);
     Vec3fa upper = Vec3fa(upper_x,upper_y,upper_z);
-    BBox3f box;
-    box.lower = lower;
-    box.upper = upper;
+    BBox3f box(lower,upper);
     ((Scene*)scene)->get_locked(geomID)->setBounds(box);
     CATCH_END;
   }
@@ -543,6 +568,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcSetUserData);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setUserData(ptr);
     CATCH_END;
   }
@@ -551,6 +578,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcSetIntersectFunction);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setIntersectFunction(intersect);
     CATCH_END;
   }
@@ -559,6 +588,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcSetIntersectFunction4);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setIntersectFunction4(intersect4);
     CATCH_END;
   }
@@ -567,6 +598,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcSetIntersectFunction8);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setIntersectFunction8(intersect8);
     CATCH_END;
   }
@@ -575,6 +608,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcSetIntersectFunction16);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setIntersectFunction16(intersect16);
     CATCH_END;
   }
@@ -583,6 +618,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcSetOccludedFunction);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setOccludedFunction(occluded);
     CATCH_END;
   }
@@ -591,6 +628,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcSetOccludedFunction4);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setOccludedFunction4(occluded4);
     CATCH_END;
   }
@@ -599,6 +638,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcSetOccludedFunction8);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setOccludedFunction8(occluded8);
     CATCH_END;
   }
@@ -607,6 +648,8 @@ namespace embree
   {
     CATCH_BEGIN;
     TRACE(rtcSetOccludedFunction16);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setOccludedFunction16(occluded16);
     CATCH_END;
   }
