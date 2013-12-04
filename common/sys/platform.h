@@ -97,10 +97,6 @@
 /// Configurations
 ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(_MSC_VER)
-#define __restrict__ // FIXME
-#endif
-
 #if defined(__WIN32__) 
 #define __TARGET_AVX__
 #define __TARGET_AVX2__
@@ -137,7 +133,6 @@
 #  define __hidden __attribute__ ((visibility ("hidden")))
 #endif
 
-
 #ifdef __WIN32__
 #undef __noinline
 #define __noinline             __declspec(noinline)
@@ -161,9 +156,13 @@
 #endif
 
 #ifdef __GNUC__
-    #define MAYBE_UNUSED __attribute__((used))
+  #define MAYBE_UNUSED __attribute__((used))
 #else
-    #define MAYBE_UNUSED
+  #define MAYBE_UNUSED
+#endif
+
+#if defined(_MSC_VER)
+  #define __restrict__ __restrict
 #endif
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
