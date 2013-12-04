@@ -279,11 +279,11 @@ namespace embree
     return shuffle<i0,i0,i0,i0>(b);
   }
 
-#if defined (__SSE4_1__)
-  template<size_t i> __forceinline float extract   ( const ssef& a ) { return _mm_cvtss_f32(_mm_extract_ps(a,i)); }
-#else
+//#if defined (__SSE4_1__) // FIXME: not working with GCC!
+//  template<size_t i> __forceinline float extract   ( const ssef& a ) { return _mm_cvtss_f32(_mm_extract_ps(a,i)); }
+//#else
   template<size_t i> __forceinline float extract   ( const ssef& a ) { return _mm_cvtss_f32(shuffle<i,i,i,i>(a)); }
-#endif
+//#endif
   template<>         __forceinline float extract<0>( const ssef& a ) { return _mm_cvtss_f32(a); }
 
 #if defined (__SSE4_1__)
