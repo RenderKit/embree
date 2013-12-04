@@ -38,17 +38,17 @@ namespace embree
     static const size_t N = 4;
 
     /*! Masks the bits that store the number of items per leaf. */
-    static const unsigned offset_mask = 0xFFFFFFFF << 6;
-    static const unsigned barrier_mask = 1<<31;
-    static const unsigned leaf_mask = 1<<5;  
-    static const unsigned items_mask = leaf_mask-1;  
+    static const unsigned int offset_mask = 0xFFFFFFFF << 6;
+    static const unsigned int barrier_mask = 1<<31;
+    static const unsigned int leaf_mask = 1<<5;  
+    static const unsigned int items_mask = leaf_mask-1;  
     
     /*! Empty node */
-    static const unsigned emptyNode = leaf_mask;
+    static const unsigned int emptyNode = leaf_mask;
 
     /*! Invalid node */
     //static const unsigned invalidNode = leaf_mask;
-    static const unsigned invalidNode = 0xFFFFFFE0;
+    static const unsigned int invalidNode = 0xFFFFFFE0;
 
     /*! Maximal depth of the BVH. */
     static const size_t maxBuildDepth = 26;
@@ -89,7 +89,7 @@ namespace embree
       __forceinline const Node* node(const void* base) const { assert(isNode()); return (const Node*)((const char*)base + _id); }
       
       /*! returns leaf pointer */
-      __forceinline const char* leaf(const void* base, size_t& num) const {
+      __forceinline const char* leaf(const void* base, unsigned int& num) const {
         assert(isLeaf());
         num = _id & items_mask;
         return (const char*)base + (_id & offset_mask);

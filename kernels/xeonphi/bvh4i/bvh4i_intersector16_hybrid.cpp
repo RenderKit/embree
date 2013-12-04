@@ -90,6 +90,9 @@ namespace embree
       const Node     * __restrict__ nodes = (Node    *)bvh->nodePtr();
       const Triangle * __restrict__ accel = (Triangle*)bvh->triPtr();
 
+      const mic3f org = ray16.org;
+      const mic3f dir = ray16.dir;
+
       while (1)
       {
         /* pop next node from stack */
@@ -165,6 +168,8 @@ namespace embree
 			const mic_m hitm = le(0x8888,tNear,tFar);
 			const mic_f tNear_pos = select(hitm,tNear,inf);
 
+			// !!!!!!!!!! explicit tNear
+
 			curNode = stack_node_single[sindex]; // early pop of next node
 
 			/* if no child is hit, continue with early popped child */
@@ -209,6 +214,7 @@ namespace embree
         
 			/* continue with closest child and push all others */
 			const mic_f min_dist = set_min_lanes(tNear_pos);
+			const mic_i plower_node = load16i((int*__restrict__)plower);
 			const unsigned old_sindex = sindex;
 			sindex += countbits(hiti) - 1;
 			assert(sindex < 3*BVH4i::maxDepth+1);
@@ -216,10 +222,10 @@ namespace embree
 			const mic_m closest_child = eq(hitm,min_dist,tNear);
 			const unsigned long closest_child_pos = bitscan64(closest_child);
 			const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
-			const mic_i plower_node = load16i((int*)plower);
-			compactustore16i(m_pos,&stack_node_single[old_sindex],plower_node);
 			curNode = ((unsigned int*)plower)[closest_child_pos];
-			compactustore16f(m_pos,&stack_dist_single[old_sindex],tNear);
+
+			compactustore16i(m_pos,&stack_node_single[old_sindex],plower_node);
+			compactustore16f(m_pos,&stack_dist_single[old_sindex],tNear); // FIXME
 		      }
 	  
 	    
@@ -232,7 +238,6 @@ namespace embree
 
 		    const mic_f zero = mic_f::zero();
 		    const mic_f one  = mic_f::one();
-
 
 		    const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel);
 		    prefetch<PFHINT_L1>(tptr + 3);
@@ -468,8 +473,98 @@ namespace embree
         /* intersect leaf */
         const mic_m valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
-        size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
+#if 0
+        unsigned int items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
         TriangleIntersector16::intersect(valid_leaf,ray16,tri,items,bvh->geometry);
+#else
+	unsigned int items; 
+	const Triangle1* tris  = (Triangle1*) curNode.leaf(accel,items);
+
+	const mic_f zero = mic_f::zero();
+	const mic_f one  = mic_f::one();
+
+	prefetch<PFHINT_L1>((mic_f*)tris +  0); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  1); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  2); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
+
+
+	for (size_t i=0; i<items; i++,tris++) 
+	  {
+	    const Triangle1& tri = *tris;
+
+	    prefetch<PFHINT_L1>(tris + 1 ); 
+
+	    STAT3(normal.trav_prims,1,popcnt(valid_i),16);
+        
+	    /* load vertices and calculate edges */
+	    const mic_f v0 = broadcast4to16f(&tri.v0);
+	    const mic_f v1 = broadcast4to16f(&tri.v1);
+	    const mic_f v2 = broadcast4to16f(&tri.v2);
+	    const mic_f e1 = v0-v1;
+	    const mic_f e2 = v2-v0;
+
+	    /* calculate denominator */
+	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
+	    const mic3f C =  _v0 - org;
+	    
+	    const mic3f Ng = mic3f(tri.Ng);
+	    const mic_f den = dot(Ng,dir);
+
+	    mic_m valid = valid_leaf;
+
+#if defined(__BACKFACE_CULLING__)
+	    
+	    valid &= den > zero;
+#endif
+
+	    /* perform edge tests */
+	    const mic_f rcp_den = rcp(den);
+	    const mic3f R = cross(dir,C);
+	    const mic3f _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
+	    const mic_f u = dot(R,_e2)*rcp_den;
+	    const mic3f _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
+	    const mic_f v = dot(R,_e1)*rcp_den;
+	    valid = ge(valid,u,zero);
+	    valid = ge(valid,v,zero);
+	    valid = le(valid,u+v,one);
+	    prefetch<PFHINT_L1EX>(&ray16.u);      
+	    prefetch<PFHINT_L1EX>(&ray16.v);      
+	    prefetch<PFHINT_L1EX>(&ray16.tfar);      
+	    const mic_f t = dot(C,Ng) * rcp_den;
+
+	    if (unlikely(none(valid))) continue;
+      
+	    /* perform depth test */
+	    valid = ge(valid, t,ray16.tnear);
+	    valid = ge(valid,ray16.tfar,t);
+
+	    const mic_i geomID = tri.geomID();
+	    const mic_i primID = tri.primID();
+	    prefetch<PFHINT_L1EX>(&ray16.geomID);      
+	    prefetch<PFHINT_L1EX>(&ray16.primID);      
+	    prefetch<PFHINT_L1EX>(&ray16.Ng.x);      
+	    prefetch<PFHINT_L1EX>(&ray16.Ng.y);      
+	    prefetch<PFHINT_L1EX>(&ray16.Ng.z);      
+
+	    /* ray masking test */
+#if USE_RAY_MASK
+	    valid &= (tri.mask() & ray16.mask) != 0;
+#endif
+	    if (unlikely(none(valid))) continue;
+        
+	    /* update hit information */
+	    store16f(valid,(float*)&ray16.u,u);
+	    store16f(valid,(float*)&ray16.v,v);
+	    store16f(valid,(float*)&ray16.tfar,t);
+	    store16i(valid,(float*)&ray16.geomID,geomID);
+	    store16i(valid,(float*)&ray16.primID,primID);
+	    store16f(valid,(float*)&ray16.Ng.x,Ng.x);
+	    store16f(valid,(float*)&ray16.Ng.y,Ng.y);
+	    store16f(valid,(float*)&ray16.Ng.z,Ng.z);
+	  }
+#endif
+
         ray_tfar = select(valid_leaf,ray16.tfar,ray_tfar);
       }
     }
@@ -798,7 +893,7 @@ namespace embree
         /* intersect leaf */
         mic_m valid_leaf = gt(m_active,ray_tfar,curDist);
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
-        size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
+        unsigned int items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
         m_terminated |= valid_leaf & TriangleIntersector16::occluded(valid_leaf,ray16,tri,items,bvh->geometry);
         ray_tfar = select(m_terminated,neg_inf,ray_tfar);
         if (unlikely(all(m_terminated))) break;
