@@ -34,6 +34,8 @@
 
 #define ENABLE_TASK_STEALING
 
+//#define ENABLE_PER_CORE_SPLITS
+
 
 #define TIMER(x) 
 #define DBG(x) 
@@ -463,7 +465,7 @@ namespace embree
     const size_t numCores = (numThreads+3)/4;
     const size_t globalCoreID   = threadID/4;
 
-#if 0
+#if defined(ENABLE_PER_CORE_SPLITS)
     const size_t globalThreadID = threadID;
     const size_t localThreadID  = threadID % 4;
     
@@ -537,9 +539,9 @@ namespace embree
 			  const size_t childThreadID,
 			  void *ptr)
   {
-    BVH4iBuilder::SharedBinningPartitionData *sharedData = (BVH4iBuilder::SharedBinningPartitionData*)ptr;
-    sharedData->bin16[childThreadID].prefetchL2();
-    sharedData->bin16[currentThreadID].merge(sharedData->bin16[childThreadID]);
+    Bin16 *__restrict__ bin16 = (Bin16*)ptr;
+    bin16[childThreadID].prefetchL2();
+    bin16[currentThreadID].merge(bin16[childThreadID]);
   }
 
   void BVH4iBuilder::parallelBinning(const size_t threadID, const size_t numThreads)
@@ -559,10 +561,10 @@ namespace embree
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
 
-    fastbin_copy(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,sharedData.bin16[threadID]);    
+    fastbin_copy(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
 
     //LockStepTaskScheduler::syncThreads( threadID, numThreads );
-    LockStepTaskScheduler::syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, &sharedData );
+    LockStepTaskScheduler::syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
     
     if (threadID == 0)
       {
@@ -577,7 +579,7 @@ namespace embree
 
 	sharedData.split.cost = items * voxelArea;
 	
-	const Bin16 &bin16 = sharedData.bin16[0];
+	const Bin16 &bin16 = global_bin16[0];
 
 	for (size_t dim=0;dim<3;dim++)
 	  {
@@ -636,7 +638,7 @@ namespace embree
     const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
     const mic_f s = mic_f(scale[bestSplitDim]);
 
-    const mic_i lnum    = prefix_sum(sharedData.bin16[threadID].thread_count[bestSplitDim]);
+    const mic_i lnum    = prefix_sum(global_bin16[threadID].thread_count[bestSplitDim]);
     const unsigned int local_numLeft = lnum[bestSplit-1];
     const unsigned int local_numRight = (endID-startID) - lnum[bestSplit-1];
  
@@ -830,11 +832,11 @@ namespace embree
     return true;
   }
 
-  bool BVH4iBuilder::splitParallel( BuildRecord &current,
-				    BuildRecord &leftChild,
-				    BuildRecord &rightChild,
-				    const size_t threadID,
-				    const size_t numThreads)
+  bool BVH4iBuilder::splitParallelGlobal( BuildRecord &current,
+					  BuildRecord &leftChild,
+					  BuildRecord &rightChild,
+					  const size_t threadID,
+					  const size_t numThreads)
   {
     const unsigned int items = current.end - current.begin;
     assert(items >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD);
@@ -894,7 +896,7 @@ namespace embree
     if (mode == BUILD_TOP_LEVEL)
       {
 	if (current.items() >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD)
-	  return splitParallel(current,left,right,threadID,numThreads);
+	  return splitParallelGlobal(current,left,right,threadID,numThreads);
 	else
 	  {
 	    DBG(std::cout << "WARNING in top-level build: too few items for parallel split " << current.items() << std::endl << std::flush);
