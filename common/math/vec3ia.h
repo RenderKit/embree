@@ -76,7 +76,9 @@ namespace embree
 
   __forceinline const Vec3ia operator +( const Vec3ia& a ) { return a; }
   __forceinline const Vec3ia operator -( const Vec3ia& a ) { return _mm_sub_epi32(_mm_setzero_si128(), a.m128); }
-  //__forceinline const Vec3ia abs       ( const Vec3ia& a ) { return _mm_abs_epi32(a.m128); } // FIXME: linux compile issues
+#if defined(__SSSE3__)
+  __forceinline const Vec3ia abs       ( const Vec3ia& a ) { return _mm_abs_epi32(a.m128); }
+#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators

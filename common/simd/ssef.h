@@ -41,7 +41,6 @@ namespace embree
     __forceinline operator const __m128&( void ) const { return m128; }
     __forceinline operator       __m128&( void )       { return m128; }
 
-    //__forceinline explicit ssef( const char* const a ) : m128(_mm_loadu_ps((const float*)a)) {} // FIXME: remove this, use load functions
     __forceinline ssef           ( float  a ) : m128(_mm_set1_ps(a)) {}
     __forceinline ssef           ( float  a, float  b) : m128(_mm_set_ps(b, a, b, a)) {}
     __forceinline ssef           ( float  a, float  b, float  c, float  d) : m128(_mm_set_ps(d, c, b, a)) {}
@@ -280,7 +279,11 @@ namespace embree
     return shuffle<i0,i0,i0,i0>(b);
   }
 
-  template<size_t i> __forceinline float extract   ( const ssef& a ) { return _mm_cvtss_f32(shuffle<i,i,i,i>(a)); } // FIXME: use extract intrinsic
+#if defined (__SSE4_1__)
+  template<size_t i> __forceinline float extract   ( const ssef& a ) { return _mm_cvtss_f32(_mm_extract_ps(a,i)); }
+#else
+  template<size_t i> __forceinline float extract   ( const ssef& a ) { return _mm_cvtss_f32(shuffle<i,i,i,i>(a)); }
+#endif
   template<>         __forceinline float extract<0>( const ssef& a ) { return _mm_cvtss_f32(a); }
 
 #if defined (__SSE4_1__)
