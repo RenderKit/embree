@@ -222,8 +222,6 @@ namespace embree
       }
       
       /* preallocate arrays */
-      const size_t additional_size = 16 * CACHELINE_SIZE;
-      
       if (numPrimitivesOld != numPrimitives)
       {
         /* free previously allocated memory */
@@ -238,7 +236,7 @@ namespace embree
         size_t numAllocatedNodes = min(size_t(0.6*numPrimBlocks),numPrimitives);
         size_t numAllocatedPrimitives = min(size_t(1.2*numPrimBlocks),numPrimitives);
 
-        bytesMorton = numPrimitives * sizeof(MortonID32Bit) + additional_size; // FIXME: why additional size?
+        bytesMorton = ((numPrimitives+7)&(-8)) * sizeof(MortonID32Bit);
         size_t bytesAllocatedNodes      = numAllocatedNodes * sizeof(BVH4::Node);
         size_t bytesAllocatedPrimitives = numAllocatedPrimitives * bvh->primTy.bytes;
         size_t bytesReservedNodes       = numPrimitives * sizeof(BVH4::Node);

@@ -34,11 +34,15 @@
 
 #define ENABLE_TASK_STEALING
 
+//#define ENABLE_PER_CORE_SPLITS
+
 
 #define TIMER(x) 
 #define DBG(x) 
 
 //#define PROFILE
+
+#define PROFILE_ITERATIONS 200
 
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
@@ -200,7 +204,7 @@ namespace embree
 	double dt_min = pos_inf;
 	double dt_avg = 0.0f;
 	double dt_max = neg_inf;
-	size_t iterations = 200;
+	size_t iterations = PROFILE_ITERATIONS;
 	for (size_t i=0; i<iterations; i++) 
 	  {
 	    TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
@@ -437,12 +441,7 @@ namespace embree
     const size_t numCores = (numThreads+3)/4;
     const size_t coreID   = threadID/4;
 
-    if (threadID % 4 != 0)
-      {
-	//while(local_workStack[coreID].size() < 4)
-	//__pause(1023);
-      }
-    else
+    if (threadID % 4 == 0)
       {
 	unsigned int ID = coreID; // LockStepTaskScheduler::taskCounter.inc();
 	
@@ -454,38 +453,45 @@ namespace embree
 	    bool success = local_workStack[coreID].push(br);	  
 	    if (!success) FATAL("can't fill local work queues");
 	    ID += numCores;
-	    //recurseSAH(br,FILL_LOCAL_QUEUES,threadID,numThreads); 
 	  }    
-#if 0
-	mtx.lock();
-	DBG_PRINT(coreID);
-	for (size_t i=0;i<local_workStack[coreID].size();i++)
-	  DBG_PRINT(local_workStack[coreID].get(i).items());
-	mtx.unlock();
-#endif
+
       }
-
-
-
   }
 
   void BVH4iBuilder::buildSubTrees(const size_t threadID, const size_t numThreads)
   {
-    double d0 = getSeconds();
-
     NodeAllocator alloc(atomicID,numAllocatedNodes);
     __align(64) BuildRecord br;
     const size_t numCores = (numThreads+3)/4;
-    const size_t coreID   = threadID/4;
+    const size_t globalCoreID   = threadID/4;
+
+#if defined(ENABLE_PER_CORE_SPLITS)
+    const size_t globalThreadID = threadID;
+    const size_t localThreadID  = threadID % 4;
+    
+    if (localThreadID != 0)
+      {
+	localTaskScheduler[globalCoreID].dispatchTaskMainLoop(localThreadID,globalThreadID);
+      }
+    else
+      {
+	localTaskScheduler[globalCoreID].dispatchTask( task_localParallelBinning, this,localThreadID, globalThreadID );
+	localTaskScheduler[globalCoreID].releaseThreads(localThreadID,globalThreadID);	
+      }
+
+
+#endif
+
+    double d0 = getSeconds();
 
     while(true)
       {
       /* process local work queue */
 	while (1)
 	  {
-	    if (!local_workStack[coreID].pop_largest(br)) 
+	    if (!local_workStack[globalCoreID].pop_largest(br)) 
 	      {
-		if (local_workStack[coreID].mutex.val() > 0)
+		if (local_workStack[globalCoreID].mutex.val() > 0)
 		  {
 		    __pause(1024);
 		    continue;
@@ -493,10 +499,10 @@ namespace embree
 		else
 		  break;
 	      }
-	    local_workStack[coreID].mutex.inc();
+	    local_workStack[globalCoreID].mutex.inc();
 
 	    recurseSAH(br,alloc,RECURSE,threadID,numThreads);
-	    local_workStack[coreID].mutex.dec();
+	    local_workStack[globalCoreID].mutex.dec();
 	  }
 
 	/* try task stealing */
@@ -506,10 +512,10 @@ namespace embree
         {
 	  unsigned int next_threadID = (threadID+i);
 	  if (next_threadID >= numThreads) next_threadID -= numThreads;
-	  const unsigned int next_coreID   = next_threadID/4;
+	  const unsigned int next_globalCoreID   = next_threadID/4;
 
-	  assert(next_coreID < numCores);
-          if (local_workStack[next_coreID].pop_smallest(br)) { 
+	  assert(next_globalCoreID < numCores);
+          if (local_workStack[next_globalCoreID].pop_smallest(br)) { 
             success = true;
             break;
           }
@@ -517,9 +523,9 @@ namespace embree
 #endif
         if (!success) break; 
 
-	local_workStack[coreID].mutex.inc();
+	local_workStack[globalCoreID].mutex.inc();
 	recurseSAH(br,alloc,RECURSE,threadID,numThreads);
-	local_workStack[coreID].mutex.dec();
+	local_workStack[globalCoreID].mutex.dec();
 
       }
 
@@ -533,9 +539,9 @@ namespace embree
 			  const size_t childThreadID,
 			  void *ptr)
   {
-    BVH4iBuilder::SharedBinningPartitionData *sharedData = (BVH4iBuilder::SharedBinningPartitionData*)ptr;
-    sharedData->bin16[childThreadID].prefetchL2();
-    sharedData->bin16[currentThreadID].merge(sharedData->bin16[childThreadID]);
+    Bin16 *__restrict__ bin16 = (Bin16*)ptr;
+    bin16[childThreadID].prefetchL2();
+    bin16[currentThreadID].merge(bin16[childThreadID]);
   }
 
   void BVH4iBuilder::parallelBinning(const size_t threadID, const size_t numThreads)
@@ -555,10 +561,10 @@ namespace embree
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
 
-    fastbin_copy(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,sharedData.bin16[threadID]);    
+    fastbin_copy(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
 
     //LockStepTaskScheduler::syncThreads( threadID, numThreads );
-    LockStepTaskScheduler::syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, &sharedData );
+    LockStepTaskScheduler::syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
     
     if (threadID == 0)
       {
@@ -573,7 +579,7 @@ namespace embree
 
 	sharedData.split.cost = items * voxelArea;
 	
-	const Bin16 &bin16 = sharedData.bin16[0];
+	const Bin16 &bin16 = global_bin16[0];
 
 	for (size_t dim=0;dim<3;dim++)
 	  {
@@ -632,7 +638,7 @@ namespace embree
     const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
     const mic_f s = mic_f(scale[bestSplitDim]);
 
-    const mic_i lnum    = prefix_sum(sharedData.bin16[threadID].thread_count[bestSplitDim]);
+    const mic_i lnum    = prefix_sum(global_bin16[threadID].thread_count[bestSplitDim]);
     const unsigned int local_numLeft = lnum[bestSplit-1];
     const unsigned int local_numRight = (endID-startID) - lnum[bestSplit-1];
  
@@ -735,24 +741,6 @@ namespace embree
       return false;
     }
     
-#if 0
-    /* calculate binning function */
-    Mapping mapping(current.bounds);
-
-    /* binning of centroids */
-    Binner<16> binner;
-    binner.bin(prims,current.begin,current.end,mapping);
-
-    /* find best split */
-    Split split; 
-    binner.best(split,mapping);
-    /* if we cannot find a valid split, enforce an arbitrary split */
-    if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
-
-    // /* partitioning of items */
-    else binner.partition(prims, current.begin, current.end, split, mapping, leftChild, rightChild);
-
-#else
     const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid.lower);
     const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid.upper);
 
@@ -833,24 +821,22 @@ namespace embree
 
       }
 
-#endif
 
 #if defined(DEBUG)
     checkBuildRecord(leftChild);
     checkBuildRecord(rightChild);
 #endif
-    //DBG_PRINT(split);
 
     if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
     if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();	
     return true;
   }
 
-  bool BVH4iBuilder::splitParallel( BuildRecord &current,
-				    BuildRecord &leftChild,
-				    BuildRecord &rightChild,
-				    const size_t threadID,
-				    const size_t numThreads)
+  bool BVH4iBuilder::splitParallelGlobal( BuildRecord &current,
+					  BuildRecord &leftChild,
+					  BuildRecord &rightChild,
+					  const size_t threadID,
+					  const size_t numThreads)
   {
     const unsigned int items = current.end - current.begin;
     assert(items >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD);
@@ -865,21 +851,6 @@ namespace embree
       return false;
     }
 
-#if 0
-    /* parallel binning of centroids */
-     parallelBinner.bin(current,prims,(PrimRef*)accel,threadID,numThreads);
-
-     /* find best split */
-     Split split; 
-     parallelBinner.best(split);
-     
-     //DBG_PRINT(split);
-     /* if we cannot find a valid split, enforce an arbitrary split */
-     if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
-     
-     /* parallel partitioning of items */
-     else parallelBinner.partition((PrimRef*)accel,prims,split,leftChild,rightChild,threadID,numThreads);
-#else
      sharedData.rec = current;
      sharedData.split.reset();
      sharedData.left.reset();
@@ -910,13 +881,6 @@ namespace embree
 	 
        }
 
-
-
-#endif
-
-     //DBG_PRINT(leftChild);
-     //DBG_PRINT(rightChild);
-
 #if defined(DEBUG)
      checkBuildRecord(leftChild);
      checkBuildRecord(rightChild);
@@ -932,7 +896,7 @@ namespace embree
     if (mode == BUILD_TOP_LEVEL)
       {
 	if (current.items() >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD)
-	  return splitParallel(current,left,right,threadID,numThreads);
+	  return splitParallelGlobal(current,left,right,threadID,numThreads);
 	else
 	  {
 	    DBG(std::cout << "WARNING in top-level build: too few items for parallel split " << current.items() << std::endl << std::flush);
@@ -949,7 +913,6 @@ namespace embree
   
   void BVH4iBuilder::createLeaf(BuildRecord& current, NodeAllocator& alloc,const size_t threadIndex, const size_t threadCount)
   {
-    //PING;
 #if defined(DEBUG)
     if (current.depth > BVH4i::maxBuildDepthLeaf) 
       throw std::runtime_error("ERROR: depth limit reached");
@@ -972,7 +935,6 @@ namespace embree
 
     /* allocate next four nodes */
     size_t numChildren = 4;
-    //const unsigned int currentIndex = allocNode(BVH4i::N);
     const size_t currentIndex = alloc.get(BVH4i::N);
 
     node[current.parentID].createNode(currentIndex,numChildren);
@@ -1004,13 +966,10 @@ namespace embree
   
   void BVH4iBuilder::recurseSAH(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads)
   {
-    //PING;
-
     __align(64) BuildRecord children[BVH4i::N];
 
     /* create leaf node */
     if (current.depth >= BVH4i::maxBuildDepth || current.isLeaf()) {
-      //node[current.parentID].createLeaf(current.begin,current.items());
       createLeaf(current,alloc,threadID,numThreads);
       return;
     }
@@ -1054,13 +1013,11 @@ namespace embree
 
     /* create leaf node if no split is possible */
     if (numChildren == 1) {
-      //node[current.parentID].createLeaf(current.begin,current.items());
       createLeaf(current,alloc,threadID,numThreads);
       return;
     }
 
     /* allocate next four nodes */
-    //const unsigned int currentIndex = allocNode(BVH4i::N);
     const size_t currentIndex = alloc.get(BVH4i::N);
     node[current.parentID].createNode(currentIndex,numChildren);
 
@@ -1074,8 +1031,6 @@ namespace embree
     {
       node[currentIndex+i].lower = (Vec3fa) children[i].bounds.geometry.lower;
       node[currentIndex+i].upper = (Vec3fa) children[i].bounds.geometry.upper;
-      // DBG_PRINT(i);
-      // DBG_PRINT(node[currentIndex+i]);
       children[i].parentID = currentIndex+i;
       recurse(children[i],alloc,mode,threadID,numThreads);
     }
@@ -1110,6 +1065,31 @@ namespace embree
 	FATAL("check build record");
       }
   }
+  // =======================================================================================================
+  // =======================================================================================================
+  // =======================================================================================================
+
+  void BVH4iBuilder::localParallelBinning(const size_t localThreadID,const size_t globalThreadID)
+  {
+
+    mtx.lock();
+    DBG_PRINT(localThreadID);
+    DBG_PRINT(globalThreadID);
+    mtx.unlock();
+
+    
+  }
+
+
+  void BVH4iBuilder::localParallelPartitioning(const size_t localThreadID,const size_t globalThreadID)
+  {
+    
+  }
+
+
+  // =======================================================================================================
+  // =======================================================================================================
+  // =======================================================================================================
 
 
   void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
@@ -1132,7 +1112,10 @@ namespace embree
 
     /* start measurement */
     double t0 = 0.0f;
-    if (g_verbose >= 2) t0 = getSeconds();
+#if !defined(PROFILE)
+    if (g_verbose >= 2) 
+#endif
+      t0 = getSeconds();
 
 
 
@@ -1161,7 +1144,6 @@ namespace embree
     global_workStack.reset();
     global_workStack.push_nolock(br);    
 
-#if 1
     /* work in multithreaded toplevel mode until sufficient subtasks got generated */    
     NodeAllocator alloc(atomicID,numAllocatedNodes);
     const size_t coreCount = threadCount/4;
@@ -1172,8 +1154,6 @@ namespace embree
       if (!global_workStack.pop_nolock_largest(br)) break;
       recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
     }
-
-#endif
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "build_top_level " << 1000. * msec << " ms" << std::endl << std::flush);
@@ -1226,7 +1206,10 @@ namespace embree
     LockStepTaskScheduler::releaseThreads(threadCount);
 
     /* stop measurement */
-    if (g_verbose >= 2) dt = getSeconds()-t0;
+#if !defined(PROFILE)
+    if (g_verbose >= 2) 
+#endif
+      dt = getSeconds()-t0;
   }
 
   void BVH4iBuilderRegister () {

@@ -279,7 +279,7 @@ namespace embree
     return shuffle<i0,i0,i0,i0>(b);
   }
 
-#if defined (__SSE4_1__)
+#if defined (__SSE4_1__) && !defined(__GNUC__)
   template<size_t i> __forceinline float extract   ( const ssef& a ) { return _mm_cvtss_f32(_mm_extract_ps(a,i)); }
 #else
   template<size_t i> __forceinline float extract   ( const ssef& a ) { return _mm_cvtss_f32(shuffle<i,i,i,i>(a)); }

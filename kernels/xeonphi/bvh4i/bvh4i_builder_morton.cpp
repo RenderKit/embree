@@ -27,6 +27,8 @@
 
 //#define PROFILE
 
+#define PROFILE_ITERATIONS 20
+
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
 #endif
@@ -176,7 +178,7 @@ namespace embree
     double dt_min = pos_inf;
     double dt_avg = 0.0f;
     double dt_max = neg_inf;
-    size_t iterations = 20;
+    size_t iterations = PROFILE_ITERATIONS;
     for (size_t i=0; i<iterations; i++) 
     {
       TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,TaskScheduler::getNumThreads(),"build_parallel_morton");
@@ -1345,9 +1347,6 @@ namespace embree
   {
     TIMER(double msec = 0.0);
 
-    /* start measurement */
-    double t0 = 0.0f;
-    if (g_verbose >= 2) t0 = getSeconds();
 
     /* initialize thread state */
     initThreadState(threadIndex,threadCount);
@@ -1358,7 +1357,13 @@ namespace embree
       return;
     }
 
-    if (g_verbose >= 2) t0 = getSeconds();
+    /* start measurement */
+    double t0 = 0.0f;
+
+#if !defined(PROFILE)
+    if (g_verbose >= 2) 
+#endif
+      t0 = getSeconds();
 
     /* performs build of tree */
     build_main(threadIndex,threadCount);
@@ -1377,7 +1382,10 @@ namespace embree
     LockStepTaskScheduler::releaseThreads(threadCount);
     
     /* stop measurement */
-    if (g_verbose >= 2) dt = getSeconds()-t0;
+#if !defined(PROFILE)
+    if (g_verbose >= 2) 
+#endif
+      dt = getSeconds()-t0;
 
   }
 

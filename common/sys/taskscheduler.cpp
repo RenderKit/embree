@@ -177,6 +177,11 @@ namespace embree
     terminateThreads = false;
   }
 
+
+  // ================================================================================
+  // ================================================================================
+  // ================================================================================
+
   __align(64) void* volatile LockStepTaskScheduler::data = NULL;
   __align(64) void (* LockStepTaskScheduler::taskPtr)(void* data, const size_t threadID, const size_t numThreads) = NULL;
 
@@ -239,6 +244,77 @@ namespace embree
     dispatchTask(0,numThreads);  
   }
 
+  // ================================================================================
+  // ================================================================================
+  // ================================================================================
+
+  LockStepTaskScheduler4ThreadsLocalCore::LockStepTaskScheduler4ThreadsLocalCore()
+  {
+    taskPtr = NULL;
+    data = NULL;
+    for (size_t j=0;j<2;j++)
+      for (size_t i=0;i<4;i++)
+	threadState[j][i] = 0;
+    mode = 0;
+  }
+
+  void LockStepTaskScheduler4ThreadsLocalCore::syncThreads(const size_t localThreadID) {
+    const unsigned int m = mode;
+
+    if (localThreadID == 0)
+      {		
+	__memory_barrier();
+	threadState[m][localThreadID] = 1;
+	__memory_barrier();
+
+	while( (*(volatile unsigned int*)&threadState[m][0]) !=  0x01010101 )
+	  __pause(WAIT_CYCLES);
+
+	mode = 1 - mode;
+
+	__memory_barrier();
+	*(volatile unsigned int*)&threadState[m][0] = 0; 
+      }
+    else
+      {
+	__memory_barrier();
+	threadState[m][localThreadID] = 1;
+	__memory_barrier();
+	
+	while (threadState[m][localThreadID] == 1)
+	  __pause(WAIT_CYCLES);
+      }
+ 
+  }
+
+
+  void LockStepTaskScheduler4ThreadsLocalCore::dispatchTaskMainLoop(const size_t localThreadID, const size_t globalThreadID)
+  {
+    while (true) {
+      bool dispatch = dispatchTask(localThreadID,globalThreadID);
+      if (dispatch == true) break;
+    }  
+  }
+
+  bool LockStepTaskScheduler4ThreadsLocalCore::dispatchTask(const size_t localThreadID, const size_t globalThreadID)
+  {
+    syncThreads(localThreadID);
+
+    if (taskPtr == NULL) 
+      return true;
+
+    (*taskPtr)((void*)data,localThreadID,globalThreadID);
+    syncThreads(localThreadID);
+    
+    return false;
+  }
+
+  void LockStepTaskScheduler4ThreadsLocalCore::releaseThreads(const size_t localThreadID, const size_t globalThreadID)
+  {
+    taskPtr = NULL;
+    data = NULL;
+    dispatchTask(localThreadID,globalThreadID);  
+  }
 
 }
 
