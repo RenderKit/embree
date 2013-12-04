@@ -118,8 +118,8 @@ namespace embree
 		  prefetch<PFHINT_L1>((char*)node + 64);
         
 		  /* intersect single ray with 4 bounding boxes */
-		  const mic_f tLowerXYZ = upconv16f(plower) * rdir_xyz - org_rdir_xyz;
-		  const mic_f tUpperXYZ = upconv16f(pupper) * rdir_xyz - org_rdir_xyz;
+		  const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
+		  const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
 		  const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
 		  const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
@@ -306,8 +306,8 @@ namespace embree
 			    {
 			      const unsigned m_num_stack = shift1[sindex] - 1;
 			      const mic_m m_num_stack_low  = toMask(m_num_stack);
-			      const mic_f snear_low  = upconv16f(stack_dist + 0);
-			      const mic_i snode_low  = upconv16i((int*)stack_node + 0);
+			      const mic_f snear_low  = load16f(stack_dist + 0);
+			      const mic_i snode_low  = load16i((int*)stack_node + 0);
 			      const mic_m m_stack_compact_low  = le(m_num_stack_low,snear_low,max_dist_xyz) | (mic_m)1;
 			      compactustore16f_low(m_stack_compact_low,stack_dist + 0,snear_low);
 			      compactustore16i_low(m_stack_compact_low,(int*)stack_node + 0,snode_low);
@@ -317,10 +317,10 @@ namespace embree
 			  else if (likely(sindex < 32))
 			    {
 			      const mic_m m_num_stack_high = toMask(shift1[sindex-16] - 1); 
-			      const mic_f snear_low  = upconv16f(stack_dist + 0);
-			      const mic_f snear_high = upconv16f(stack_dist + 16);
-			      const mic_i snode_low  = upconv16i((int*)stack_node + 0);
-			      const mic_i snode_high = upconv16i((int*)stack_node + 16);
+			      const mic_f snear_low  = load16f(stack_dist + 0);
+			      const mic_f snear_high = load16f(stack_dist + 16);
+			      const mic_i snode_low  = load16i((int*)stack_node + 0);
+			      const mic_i snode_high = load16i((int*)stack_node + 16);
 			      const mic_m m_stack_compact_low  = le(snear_low,max_dist_xyz) | (mic_m)1;
 			      const mic_m m_stack_compact_high = le(m_num_stack_high,snear_high,max_dist_xyz);
 			      compactustore16f(m_stack_compact_low,      stack_dist + 0,snear_low);
@@ -336,12 +336,12 @@ namespace embree
 			    {
 			      const mic_m m_num_stack_32 = toMask(shift1[sindex-32] - 1); 
 
-			      const mic_f snear_0  = upconv16f(stack_dist + 0);
-			      const mic_f snear_16 = upconv16f(stack_dist + 16);
-			      const mic_f snear_32 = upconv16f(stack_dist + 32);
-			      const mic_i snode_0  = upconv16i((int*)stack_node + 0);
-			      const mic_i snode_16 = upconv16i((int*)stack_node + 16);
-			      const mic_i snode_32 = upconv16i((int*)stack_node + 32);
+			      const mic_f snear_0  = load16f(stack_dist + 0);
+			      const mic_f snear_16 = load16f(stack_dist + 16);
+			      const mic_f snear_32 = load16f(stack_dist + 32);
+			      const mic_i snode_0  = load16i((int*)stack_node + 0);
+			      const mic_i snode_16 = load16i((int*)stack_node + 16);
+			      const mic_i snode_32 = load16i((int*)stack_node + 32);
 			      const mic_m m_stack_compact_0  = le(               snear_0 ,max_dist_xyz) | (mic_m)1;
 			      const mic_m m_stack_compact_16 = le(               snear_16,max_dist_xyz);
 			      const mic_m m_stack_compact_32 = le(m_num_stack_32,snear_32,max_dist_xyz);
@@ -417,8 +417,8 @@ namespace embree
 		  prefetch<PFHINT_L1>((char*)node + 64);
         
 		  /* intersect single ray with 4 bounding boxes */
-		  const mic_f tLowerXYZ = upconv16f(plower) * rdir_xyz - org_rdir_xyz;
-		  const mic_f tUpperXYZ = upconv16f(pupper) * rdir_xyz - org_rdir_xyz;
+		  const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
+		  const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
 		  const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
 		  const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 

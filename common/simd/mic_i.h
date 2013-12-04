@@ -310,25 +310,29 @@ namespace embree
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline mic_i upconv1i(const int *const ptr) { 
+  __forceinline mic_i load1i(const int *const ptr) { 
     return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_1X16,_MM_HINT_NONE);
   }
+
+  __forceinline mic_i load16i(const int *const ptr) {
+    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE);
+  }
   
-  __forceinline mic_i upconv1i_uint8(const unsigned char *const ptr) { 
+  __forceinline mic_i load1i_uint8(const unsigned char *const ptr) { 
     return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_UINT8,_MM_BROADCAST_1X16,_MM_HINT_NONE);
   }
-  
-  __forceinline mic_i upconv4i(const int *const ptr) {
-    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_4X16,_MM_HINT_NONE);
-  }
 
+  __forceinline mic_i load16i_uint8(const unsigned char *const ptr) {
+    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_UINT8,_MM_BROADCAST32_NONE,_MM_HINT_NONE);
+  }
+  
   __forceinline mic_i broadcast4to16i(const int *const ptr) {
     return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_4X16,_MM_HINT_NONE);
   }
-  
-  __forceinline mic_i upconv16i(const int *const ptr) {
-    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE);
-  }
+
+  __forceinline mic_i broadcast1to16i(const int *const ptr) {
+    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_1X16,_MM_HINT_NONE);
+  }  
   
   __forceinline mic_i uload16i(const int *const addr) {
     mic_i r = _mm512_undefined_epi32();
@@ -341,23 +345,17 @@ namespace embree
     return _mm512_mask_extloadunpacklo_epi32(v, mask, addr, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
   }
 
-  __forceinline mic_i load16i(const int *const ptr) {
-    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE);
-  }
   
-  __forceinline mic_i upconv16i_uint8(const unsigned char *const ptr) {
-    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_UINT8,_MM_BROADCAST32_NONE,_MM_HINT_NONE);
-  }
 
   __forceinline mic_i gather16i_4i(const int *__restrict__ const ptr0,
                                    const int *__restrict__ const ptr1,
                                    const int *__restrict__ const ptr2,
                                    const int *__restrict__ const ptr3) 
   {
-    mic_i v = upconv4i(ptr0);
-    v = select((mic_m)0xf0  ,upconv4i(ptr1),v);
-    v = select((mic_m)0xf00 ,upconv4i(ptr2),v);
-    v = select((mic_m)0xf000,upconv4i(ptr3),v);
+    mic_i v =  broadcast4to16i(ptr0);
+    v = select((mic_m)0xf0  , broadcast4to16i(ptr1),v);
+    v = select((mic_m)0xf00 , broadcast4to16i(ptr2),v);
+    v = select((mic_m)0xf000, broadcast4to16i(ptr3),v);
     return v;
   }
   
