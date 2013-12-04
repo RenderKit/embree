@@ -141,11 +141,11 @@ namespace embree
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
  
 #if 1
-	size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
+	unsigned int items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
         TriangleIntersector16::intersect(valid_leaf,ray,tri,items,bvh->geometry);
 #else
 
-	size_t items; 
+	unsigned int items; 
 	const Triangle1* tris  = (Triangle1*) curNode.leaf(accel,items);
 
 	const mic_f zero = mic_f::zero();
@@ -352,10 +352,10 @@ namespace embree
         mic_m valid_leaf = gt(m_active,ray_tfar,curDist);
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
 #if 0
-        size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
+        unsigned int items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
         m_terminated |= valid_leaf & TriangleIntersector16::occluded(valid_leaf,ray,tri,items,bvh->geometry);
 #else
-	size_t items; 
+	unsigned int items; 
 	const Triangle1* tris  = (Triangle1*) curNode.leaf(accel,items);
 
 	prefetch<PFHINT_L1>((mic_f*)tris +  0); 

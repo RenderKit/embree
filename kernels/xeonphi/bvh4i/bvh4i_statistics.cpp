@@ -97,7 +97,7 @@ namespace embree
     else
     {
       depth = 0;
-      size_t num; const char* tri = node.leaf(bvh->triPtr(),num);
+      unsigned int num; const char* tri = node.leaf(bvh->triPtr(),num);
       if (!num) return;
       
       numLeaves++;

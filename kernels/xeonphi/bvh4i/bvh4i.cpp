@@ -124,7 +124,7 @@ namespace embree
     }
     else 
     {
-      size_t num; node.leaf(triPtr(),num);
+      unsigned int num; node.leaf(triPtr(),num);
       return f*num;
     }
   }
