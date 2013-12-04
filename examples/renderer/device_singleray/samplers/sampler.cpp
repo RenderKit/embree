@@ -25,7 +25,9 @@ namespace embree
       samplesPerPixel(1), sampleSets(64), samples(NULL)
   {
     samplesPerPixel = parms.getInt("sampler.spp",1);
+    samplesPerPixel = max(1,samplesPerPixel);
     sampleSets      = parms.getInt("sampler.sets",64);
+    sampleSets      = max(1,sampleSets);
   }
 
   SamplerFactory::SamplerFactory(const unsigned samplesPerPixel,
