@@ -158,19 +158,18 @@ namespace embree
 			const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
 			const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
+			sindex--;
+
+			curNode = stack_node_single[sindex]; // early pop of next node
+
 			const Node* __restrict__ const next = curNode.node(nodes);
 			prefetch<PFHINT_L2>((char*)next + 0);
 			prefetch<PFHINT_L2>((char*)next + 64);
 
-			sindex--;
 			const mic_f tNear = vreduce_max4(tLower);
 			const mic_f tFar  = vreduce_min4(tUpper);  
 			const mic_m hitm = le(0x8888,tNear,tFar);
 			const mic_f tNear_pos = select(hitm,tNear,inf);
-
-			// !!!!!!!!!! explicit tNear
-
-			curNode = stack_node_single[sindex]; // early pop of next node
 
 			/* if no child is hit, continue with early popped child */
 			if (unlikely(none(hitm))) continue;
@@ -214,18 +213,18 @@ namespace embree
         
 			/* continue with closest child and push all others */
 			const mic_f min_dist = set_min_lanes(tNear_pos);
-			const mic_i plower_node = load16i((int*__restrict__)plower);
 			const unsigned old_sindex = sindex;
 			sindex += countbits(hiti) - 1;
 			assert(sindex < 3*BVH4i::maxDepth+1);
         
 			const mic_m closest_child = eq(hitm,min_dist,tNear);
 			const unsigned long closest_child_pos = bitscan64(closest_child);
+			const mic_i plower_node = load16i((int*)plower);
 			const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
 			curNode = ((unsigned int*)plower)[closest_child_pos];
 
-			compactustore16i(m_pos,&stack_node_single[old_sindex],plower_node);
 			compactustore16f(m_pos,&stack_dist_single[old_sindex],tNear); // FIXME
+			compactustore16i(m_pos,&stack_node_single[old_sindex],plower_node);
 		      }
 	  
 	    
@@ -235,9 +234,6 @@ namespace embree
 
 
 		    /* intersect one ray against four triangles */
-
-		    const mic_f zero = mic_f::zero();
-		    const mic_f one  = mic_f::one();
 
 		    const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel);
 		    prefetch<PFHINT_L1>(tptr + 3);
@@ -288,10 +284,9 @@ namespace embree
 		    const mic_m m_aperture = le(valid_v,u+v,mic_f::one()); 
 
 		    const mic_f nom = ldot3_zxy(org,normal);
-
+		    const mic_f t = rcp_den*nom;
 		    if (unlikely(none(m_aperture))) continue;
 
-		    const mic_f t = rcp_den*nom;
 		    const mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
 		    max_dist_xyz  = select(m_final,t,max_dist_xyz);		    
@@ -658,17 +653,18 @@ namespace embree
 			const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
 			const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
+			sindex--;
+			curNode = stack_node_single[sindex]; // early pop of next node
+
 			const Node* __restrict__ const next = curNode.node(nodes);
 			prefetch<PFHINT_L2>((char*)next + 0);
 			prefetch<PFHINT_L2>((char*)next + 64);
 
-			sindex--;
 			const mic_f tNear = vreduce_max4(tLower);
 			const mic_f tFar  = vreduce_min4(tUpper);  
 			const mic_m hitm = le(0x8888,tNear,tFar);
 			const mic_f tNear_pos = select(hitm,tNear,inf);
 
-			curNode = stack_node_single[sindex]; // early pop of next node
 
 			/* if no child is hit, continue with early popped child */
 			if (unlikely(none(hitm))) continue;
@@ -729,14 +725,12 @@ namespace embree
 
 
 		    /* intersect one ray against four triangles */
-		    const mic_f zero = mic_f::zero();
-		    const mic_f one  = mic_f::one();
 
 		    const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel);
-		    prefetch<PFHINT_L1>(tptr + 3);
-		    prefetch<PFHINT_L1>(tptr + 2);
-		    prefetch<PFHINT_L1>(tptr + 1);
-		    prefetch<PFHINT_L1>(tptr + 0); 
+		    prefetch<PFHINT_NT>(tptr + 3);
+		    prefetch<PFHINT_NT>(tptr + 2);
+		    prefetch<PFHINT_NT>(tptr + 1);
+		    prefetch<PFHINT_NT>(tptr + 0); 
 
 		    const mic_i and_mask = broadcast4to16i(zlc4);
 	      
@@ -781,10 +775,10 @@ namespace embree
 		    const mic_m m_aperture = le(valid_v,u+v,mic_f::one()); 
 
 		    const mic_f nom = ldot3_zxy(org,normal);
+		    const mic_f t = rcp_den*nom;
 
 		    if (unlikely(none(m_aperture))) continue;
 
-		    const mic_f t = rcp_den*nom;
 		    const mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
 		    /* did the ray hot one of the four triangles? */

@@ -123,17 +123,19 @@ namespace embree
 		  const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
 		  const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
+		  sindex--;
+
+		  curNode = stack_node[sindex]; // early pop of next node
+
 		  const Node* __restrict__ const next = curNode.node(nodes);
 		  prefetch<PFHINT_L2>((char*)next + 0);
 		  prefetch<PFHINT_L2>((char*)next + 64);
 
-		  sindex--;
 		  const mic_f tNear = vreduce_max4(tLower);
 		  const mic_f tFar  = vreduce_min4(tUpper);  
 		  const mic_m hitm = le(0x8888,tNear,tFar);
 		  const mic_f tNear_pos = select(hitm,tNear,inf);
 
-		  curNode = stack_node[sindex]; // early pop of next node
 
 		  /* if no child is hit, continue with early popped child */
 		  if (unlikely(none(hitm))) continue;
