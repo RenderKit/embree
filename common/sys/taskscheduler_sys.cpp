@@ -113,12 +113,12 @@ namespace embree
     mutex.lock();
 
     /*! resize array if too small */
-    if (end-begin == tasks.size())  // FIXME: is this safe?
+    if (end-begin == tasks.size())
     {
       size_t s0 = 1*tasks.size();
       size_t s1 = 2*tasks.size();
       tasks.resize(s1);
-      for (size_t i=begin; i<end; i++)
+      for (size_t i=begin; i!=end; i++)
         tasks[i&(s1-1)] = tasks[i&(s0-1)];
     }
 
