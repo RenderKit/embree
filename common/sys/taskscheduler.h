@@ -254,6 +254,41 @@ namespace embree
 
   };
 
+
+  class __align(64) LockStepTaskScheduler4ThreadsLocalCore
+  {
+  public:
+
+    static const unsigned int CONTROL_THREAD_ID = 0;
+    static const unsigned int WAIT_CYCLES       = 256;
+    
+    void (* taskPtr)(void* data, const size_t threadID);
+    void* volatile data;
+    volatile unsigned char threadState[2][4];
+    volatile unsigned int mode;
+
+
+    LockStepTaskScheduler4ThreadsLocalCore();
+    bool dispatchTask(const size_t threadID);
+    
+    void dispatchTaskMainLoop(const size_t threadID);
+    void releaseThreads(const size_t numThreads);
+    
+    __forceinline bool dispatchTask(void (* task)(void* data, const size_t threadID),
+				    void* data, 
+				     const size_t threadID)
+    {
+      taskPtr = task;
+      data = data;
+      return dispatchTask(threadID);
+    }
+    
+    void syncThreads(const size_t threadID);
+
+
+  };
+
+
 }
 
 #endif

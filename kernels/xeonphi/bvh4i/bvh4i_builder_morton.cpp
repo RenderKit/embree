@@ -27,6 +27,8 @@
 
 //#define PROFILE
 
+#define PROFILE_ITERATIONS 20
+
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
 #endif
@@ -176,7 +178,7 @@ namespace embree
     double dt_min = pos_inf;
     double dt_avg = 0.0f;
     double dt_max = neg_inf;
-    size_t iterations = 20;
+    size_t iterations = PROFILE_ITERATIONS;
     for (size_t i=0; i<iterations; i++) 
     {
       TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,TaskScheduler::getNumThreads(),"build_parallel_morton");

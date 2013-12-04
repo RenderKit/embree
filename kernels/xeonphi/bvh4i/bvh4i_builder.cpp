@@ -40,6 +40,8 @@
 
 //#define PROFILE
 
+#define PROFILE_ITERATIONS 200
+
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
 #endif
@@ -200,7 +202,7 @@ namespace embree
 	double dt_min = pos_inf;
 	double dt_avg = 0.0f;
 	double dt_max = neg_inf;
-	size_t iterations = 200;
+	size_t iterations = PROFILE_ITERATIONS;
 	for (size_t i=0; i<iterations; i++) 
 	  {
 	    TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
@@ -735,24 +737,6 @@ namespace embree
       return false;
     }
     
-#if 0
-    /* calculate binning function */
-    Mapping mapping(current.bounds);
-
-    /* binning of centroids */
-    Binner<16> binner;
-    binner.bin(prims,current.begin,current.end,mapping);
-
-    /* find best split */
-    Split split; 
-    binner.best(split,mapping);
-    /* if we cannot find a valid split, enforce an arbitrary split */
-    if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
-
-    // /* partitioning of items */
-    else binner.partition(prims, current.begin, current.end, split, mapping, leftChild, rightChild);
-
-#else
     const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid.lower);
     const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid.upper);
 
@@ -833,13 +817,11 @@ namespace embree
 
       }
 
-#endif
 
 #if defined(DEBUG)
     checkBuildRecord(leftChild);
     checkBuildRecord(rightChild);
 #endif
-    //DBG_PRINT(split);
 
     if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
     if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();	
@@ -865,21 +847,6 @@ namespace embree
       return false;
     }
 
-#if 0
-    /* parallel binning of centroids */
-     parallelBinner.bin(current,prims,(PrimRef*)accel,threadID,numThreads);
-
-     /* find best split */
-     Split split; 
-     parallelBinner.best(split);
-     
-     //DBG_PRINT(split);
-     /* if we cannot find a valid split, enforce an arbitrary split */
-     if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
-     
-     /* parallel partitioning of items */
-     else parallelBinner.partition((PrimRef*)accel,prims,split,leftChild,rightChild,threadID,numThreads);
-#else
      sharedData.rec = current;
      sharedData.split.reset();
      sharedData.left.reset();
@@ -909,13 +876,6 @@ namespace embree
 
 	 
        }
-
-
-
-#endif
-
-     //DBG_PRINT(leftChild);
-     //DBG_PRINT(rightChild);
 
 #if defined(DEBUG)
      checkBuildRecord(leftChild);
@@ -949,7 +909,6 @@ namespace embree
   
   void BVH4iBuilder::createLeaf(BuildRecord& current, NodeAllocator& alloc,const size_t threadIndex, const size_t threadCount)
   {
-    //PING;
 #if defined(DEBUG)
     if (current.depth > BVH4i::maxBuildDepthLeaf) 
       throw std::runtime_error("ERROR: depth limit reached");
@@ -972,7 +931,6 @@ namespace embree
 
     /* allocate next four nodes */
     size_t numChildren = 4;
-    //const unsigned int currentIndex = allocNode(BVH4i::N);
     const size_t currentIndex = alloc.get(BVH4i::N);
 
     node[current.parentID].createNode(currentIndex,numChildren);
@@ -1004,13 +962,10 @@ namespace embree
   
   void BVH4iBuilder::recurseSAH(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads)
   {
-    //PING;
-
     __align(64) BuildRecord children[BVH4i::N];
 
     /* create leaf node */
     if (current.depth >= BVH4i::maxBuildDepth || current.isLeaf()) {
-      //node[current.parentID].createLeaf(current.begin,current.items());
       createLeaf(current,alloc,threadID,numThreads);
       return;
     }
@@ -1054,13 +1009,11 @@ namespace embree
 
     /* create leaf node if no split is possible */
     if (numChildren == 1) {
-      //node[current.parentID].createLeaf(current.begin,current.items());
       createLeaf(current,alloc,threadID,numThreads);
       return;
     }
 
     /* allocate next four nodes */
-    //const unsigned int currentIndex = allocNode(BVH4i::N);
     const size_t currentIndex = alloc.get(BVH4i::N);
     node[current.parentID].createNode(currentIndex,numChildren);
 
@@ -1074,8 +1027,6 @@ namespace embree
     {
       node[currentIndex+i].lower = (Vec3fa) children[i].bounds.geometry.lower;
       node[currentIndex+i].upper = (Vec3fa) children[i].bounds.geometry.upper;
-      // DBG_PRINT(i);
-      // DBG_PRINT(node[currentIndex+i]);
       children[i].parentID = currentIndex+i;
       recurse(children[i],alloc,mode,threadID,numThreads);
     }
@@ -1164,7 +1115,6 @@ namespace embree
     global_workStack.reset();
     global_workStack.push_nolock(br);    
 
-#if 1
     /* work in multithreaded toplevel mode until sufficient subtasks got generated */    
     NodeAllocator alloc(atomicID,numAllocatedNodes);
     const size_t coreCount = threadCount/4;
@@ -1175,8 +1125,6 @@ namespace embree
       if (!global_workStack.pop_nolock_largest(br)) break;
       recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
     }
-
-#endif
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "build_top_level " << 1000. * msec << " ms" << std::endl << std::flush);
