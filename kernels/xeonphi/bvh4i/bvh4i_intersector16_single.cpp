@@ -255,8 +255,8 @@ namespace embree
 	      const mic_f nom = ldot3_zxy(org,normal);
 
 	      if (unlikely(none(m_aperture))) continue;
-
 	      const mic_f t = rcp_den*nom;
+
 	      const mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
 	      max_dist_xyz  = select(m_final,t,max_dist_xyz);
@@ -545,10 +545,9 @@ namespace embree
 	      const mic_m m_aperture = le(valid_v,u+v,mic_f::one()); 
 
 	      const mic_f nom = ldot3_zxy(org,normal);
-
+	      const mic_f t = rcp_den*nom;
 	      if (unlikely(none(m_aperture))) continue;
 
-	      const mic_f t = rcp_den*nom;
 	      const mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
 	      if (unlikely(any(m_final)))
