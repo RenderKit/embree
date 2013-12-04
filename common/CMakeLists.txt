@@ -14,14 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (TARGET_AVX) # FIXME: required for xgetbv workaround under MacOSX
- ADD_DEFINITIONS(-D__TARGET_AVX__)
-ENDIF()
-
-IF (TARGET_AVX2)
- ADD_DEFINITIONS(-D__TARGET_AVX2__)
-ENDIF()
-
 SET(__XEON__ 1)
 ADD_SUBDIRECTORY(sys)
 ADD_SUBDIRECTORY(simd)

@@ -16,6 +16,14 @@
 
 IF (__XEON__)
 
+IF (TARGET_AVX)
+  ADD_DEFINITIONS(-D__TARGET_AVX__)
+ENDIF()
+
+IF (TARGET_AVX2)
+  ADD_DEFINITIONS(-D__TARGET_AVX2__)
+ENDIF()
+
 ADD_LIBRARY(sys STATIC
   platform.cpp
   sysinfo.cpp

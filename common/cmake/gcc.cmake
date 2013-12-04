@@ -30,7 +30,7 @@ SET(CMAKE_EXE_LINKER_FLAGS "")
 IF (APPLE)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")
   IF (TARGET_AVX OR TARGET_AVX2)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-q") # use clang linker of user needs AVX
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-q") # use clang assembler if user needs AVX
   ENDIF()
 ENDIF (APPLE)
 

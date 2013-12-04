@@ -116,28 +116,31 @@ namespace embree
 
   bool check_xcr0_ymm() 
   {
-    /*! disable test if no AVX nor AVX2 code generated */
-#if !defined(__TARGET_AVX__) && !defined(__TARGET_AVX2__)
-    return false;
-#else
     int xcr0;
-#if defined(_MSC_VER)
-#if (_MSC_FULL_VER >= 160040219) || defined(__INTEL_COMPILER) 
-    xcr0 = (int)_xgetbv(0); /* min VS2010 SP1 compiler is required */
+#if defined (__WIN32__)
+
+#if defined(__INTEL_COMPILER) 
+    xcr0 = (int)_xgetbv(0);
+#elif (defined(_MSC_VER) && (_MSC_FULL_VER >= 160040219)) // min VS2010 SP1 compiler is required
+    xcr0 = (int)_xgetbv(0); 
 #else
 #pragma message ("WARNING: AVX not supported by your compiler.")
     xcr0 = 0;
 #endif
-#elif defined(__INTEL_COMPILER) 
+
+#else
+
+#if defined(__INTEL_COMPILER) 
     __asm__ ("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx" );
-#elif ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
+#elif ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)) && (!defined(__MACOSX__) || defined(__TARGET_AVX__) || defined(__TARGET_AVX2__))
     __asm__ ("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx" );
 #else
 #pragma message ("WARNING: AVX not supported by your compiler.")
     xcr0 = 0;
+#endif
+
 #endif
     return ((xcr0 & 6) == 6); /* checking if xmm and ymm state are enabled in XCR0 */
-#endif
   }
 
   int cpu_features = 0;
