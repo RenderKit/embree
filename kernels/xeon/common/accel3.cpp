@@ -159,8 +159,8 @@ namespace embree
     
     /*! calculate bounds */
     bounds = empty;
-    if (accel0) bounds.grow(accel0->bounds);
-    if (accel1) bounds.grow(accel1->bounds);
-    if (accel2) bounds.grow(accel2->bounds);
+    if (accel0) bounds.extend(accel0->bounds);
+    if (accel1) bounds.extend(accel1->bounds);
+    if (accel2) bounds.extend(accel2->bounds);
   }
 }

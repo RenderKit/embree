@@ -36,9 +36,9 @@ namespace embree
       const BBox3f prim = prims[i].bounds(); const Vec3ia bin = mapping.bin(prim); const Vec3fa center = Vec3fa(center2(prim));
       
       /*! increase bounds for bins for even primitive */
-      const int b0 = bin.x; counts[b0][0]++; geomBounds[b0][0].grow(prim); centBounds[b0][0].grow(center);
-      const int b1 = bin.y; counts[b1][1]++; geomBounds[b1][1].grow(prim); centBounds[b1][1].grow(center);
-      const int b2 = bin.z; counts[b2][2]++; geomBounds[b2][2].grow(prim); centBounds[b2][2].grow(center);
+      const int b0 = bin.x; counts[b0][0]++; geomBounds[b0][0].extend(prim); centBounds[b0][0].extend(center);
+      const int b1 = bin.y; counts[b1][1]++; geomBounds[b1][1].extend(prim); centBounds[b1][1].extend(center);
+      const int b2 = bin.z; counts[b2][2]++; geomBounds[b2][2].extend(prim); centBounds[b2][2].extend(center);
       
       /*! calculate for each dimension if primitive goes to the left and right for spatial splits */
       const Vec3ba left  = mapping.left (prim);
@@ -50,24 +50,24 @@ namespace embree
         /*! Choose better side for primitives that can be put left or right. */
         if (left[maxDim] && right[maxDim]) {
           if (prim.upper[maxDim]-mapping.bright[maxDim] > mapping.bleft[maxDim]-prim.lower[maxDim]) {
-            rgeomBounds[maxDim].grow(prim); rcentBounds[maxDim].grow(center); rcounts[maxDim]++;
+            rgeomBounds[maxDim].extend(prim); rcentBounds[maxDim].extend(center); rcounts[maxDim]++;
           } else {
-            lgeomBounds[maxDim].grow(prim); lcentBounds[maxDim].grow(center); lcounts[maxDim]++;
+            lgeomBounds[maxDim].extend(prim); lcentBounds[maxDim].extend(center); lcounts[maxDim]++;
           }
         }
         /*! These definitely go to the left. */
         else if (left[maxDim]) {
-          lgeomBounds[maxDim].grow(prim); lcentBounds[maxDim].grow(center); lcounts[maxDim]++;
+          lgeomBounds[maxDim].extend(prim); lcentBounds[maxDim].extend(center); lcounts[maxDim]++;
         }
         /*! These definitely go to the right. */
         else if (right[maxDim]) {
-          rgeomBounds[maxDim].grow(prim); rcentBounds[maxDim].grow(center); rcounts[maxDim]++;
+          rgeomBounds[maxDim].extend(prim); rcentBounds[maxDim].extend(center); rcounts[maxDim]++;
         }
         /*! These have to get split and put to left and right. */
         else {
           PrimRef left,right; geom->split(prims[i],maxDim,mapping.center[maxDim],left,right);
-          lgeomBounds[maxDim].grow(left. bounds()); lcentBounds[maxDim].grow(center2(left. bounds())); lcounts[maxDim]++;
-          rgeomBounds[maxDim].grow(right.bounds()); rcentBounds[maxDim].grow(center2(right.bounds())); rcounts[maxDim]++;
+          lgeomBounds[maxDim].extend(left. bounds()); lcentBounds[maxDim].extend(center2(left. bounds())); lcounts[maxDim]++;
+          rgeomBounds[maxDim].extend(right.bounds()); rcentBounds[maxDim].extend(center2(right.bounds())); rcounts[maxDim]++;
         }
       }
     }
@@ -171,13 +171,13 @@ namespace embree
     BBox3f lgeomBounds = empty, rgeomBounds = empty;
     for (size_t i=0; i<pos; i++) {
       numLeft += counts[i][dim];
-      lcentBounds.grow(centBounds[i][dim]);
-      lgeomBounds.grow(geomBounds[i][dim]);
+      lcentBounds.extend(centBounds[i][dim]);
+      lgeomBounds.extend(geomBounds[i][dim]);
     }
     for (size_t i=pos; i<mapping.size(); i++) {
       numRight += counts[i][dim];
-      rcentBounds.grow(centBounds[i][dim]);
-      rgeomBounds.grow(geomBounds[i][dim]);
+      rcentBounds.extend(centBounds[i][dim]);
+      rgeomBounds.extend(geomBounds[i][dim]);
     }
     assert(numLeft + numRight == pinfo.size());
     new (&split.linfo) PrimInfo(numLeft ,pinfo.numFailed,lgeomBounds,lcentBounds,pinfo.duplications);
@@ -215,8 +215,8 @@ namespace embree
       {
         for (size_t dim=0; dim<3; dim++) {
           binner_o.counts    [bin][dim] += binner.counts[bin][dim];
-          binner_o.geomBounds[bin][dim].grow(binner.geomBounds[bin][dim]);
-          binner_o.centBounds[bin][dim].grow(binner.centBounds[bin][dim]);
+          binner_o.geomBounds[bin][dim].extend(binner.geomBounds[bin][dim]);
+          binner_o.centBounds[bin][dim].extend(binner.centBounds[bin][dim]);
         }
       }
 
@@ -224,10 +224,10 @@ namespace embree
       binner_o.rcounts += binner.rcounts;
       for (size_t dim=0; dim<3; dim++) 
       {
-        binner_o.lgeomBounds[dim].grow(binner.lgeomBounds[dim]);
-        binner_o.rgeomBounds[dim].grow(binner.rgeomBounds[dim]);
-        binner_o.lcentBounds[dim].grow(binner.lcentBounds[dim]);
-        binner_o.rcentBounds[dim].grow(binner.rcentBounds[dim]);
+        binner_o.lgeomBounds[dim].extend(binner.lgeomBounds[dim]);
+        binner_o.rgeomBounds[dim].extend(binner.rgeomBounds[dim]);
+        binner_o.lcentBounds[dim].extend(binner.lcentBounds[dim]);
+        binner_o.rcentBounds[dim].extend(binner.rcentBounds[dim]);
       }
     }
   }

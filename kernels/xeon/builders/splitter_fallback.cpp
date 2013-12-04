@@ -42,15 +42,15 @@ namespace embree
         if ((lnum+rnum)&1) 
         {
           lnum++;
-          lgeomBounds.grow(bounds);
-          lcentBounds.grow(center2(bounds));
+          lgeomBounds.extend(bounds);
+          lcentBounds.extend(center2(bounds));
           if (likely(lblock->insert(prim))) continue; 
           lblock = lprims.insert(alloc->malloc(threadIndex));
           lblock->insert(prim);
         } else {
           rnum++;
-          rgeomBounds.grow(bounds);
-          rcentBounds.grow(center2(bounds));
+          rgeomBounds.extend(bounds);
+          rcentBounds.extend(center2(bounds));
           if (likely(rblock->insert(prim))) continue;
           rblock = rprims.insert(alloc->malloc(threadIndex));
           rblock->insert(prim);
@@ -100,15 +100,15 @@ namespace embree
         if ((lnum+rnum)&1) 
         {
           lnum++;
-          lgeomBounds.grow(bounds);
-          lcentBounds.grow(center2(bounds));
+          lgeomBounds.extend(bounds);
+          lcentBounds.extend(center2(bounds));
           if (likely(lblock->insert(prim))) continue; 
           lblock = lprims.insert(alloc->malloc(threadIndex));
           lblock->insert(prim);
         } else {
           rnum++;
-          rgeomBounds.grow(bounds);
-          rcentBounds.grow(center2(bounds));
+          rgeomBounds.extend(bounds);
+          rcentBounds.extend(center2(bounds));
           if (likely(rblock->insert(prim))) continue;
           rblock = rprims.insert(alloc->malloc(threadIndex));
           rblock->insert(prim);

@@ -82,7 +82,7 @@ namespace embree
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
       const Vec3fa v2 = mesh->vertex(tri.v[2]);
       new (&dst) Triangle1v(v0,v1,v2,geomID,primID,mesh->mask);
-      bounds.grow(merge(BBox3f(v0),BBox3f(v1),BBox3f(v2)));
+      bounds.extend(merge(BBox3f(v0),BBox3f(v1),BBox3f(v2)));
     }
     return bounds; 
   }
@@ -130,7 +130,7 @@ namespace embree
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
       const Vec3fa v2 = mesh->vertex(tri.v[2]);
       new (&dst) Triangle1v(v0,v1,v2,geomID,primID,mesh->mask);
-      bounds.grow(merge(BBox3f(v0),BBox3f(v1),BBox3f(v2)));
+      bounds.extend(merge(BBox3f(v0),BBox3f(v1),BBox3f(v2)));
     }
     return bounds; 
   }
@@ -189,8 +189,8 @@ namespace embree
     for (size_t j=0; j<num; j++) 
     {
       const Triangle1vMB& tri = ((Triangle1vMB*) prim)[j];
-      bounds0.grow(merge(BBox3f(tri.v0),BBox3f(tri.v1),BBox3f(tri.v2)));
-      bounds1.grow(merge(BBox3f(tri.v0+tri.d0),BBox3f(tri.v1+tri.d1),BBox3f(tri.v2+tri.d2)));
+      bounds0.extend(merge(BBox3f(tri.v0),BBox3f(tri.v1),BBox3f(tri.v2)));
+      bounds1.extend(merge(BBox3f(tri.v0+tri.d0),BBox3f(tri.v1+tri.d1),BBox3f(tri.v2+tri.d2)));
     }
     return std::pair<BBox3f,BBox3f>(bounds0,bounds1);
   }
@@ -236,8 +236,8 @@ namespace embree
     for (size_t j=0; j<num; j++) 
     {
       const Triangle1vMB& tri = ((Triangle1vMB*) prim)[j];
-      bounds0.grow(merge(BBox3f(tri.v0),BBox3f(tri.v1),BBox3f(tri.v2)));
-      bounds1.grow(merge(BBox3f(tri.v0+tri.d0),BBox3f(tri.v1+tri.d1),BBox3f(tri.v2+tri.d2)));
+      bounds0.extend(merge(BBox3f(tri.v0),BBox3f(tri.v1),BBox3f(tri.v2)));
+      bounds1.extend(merge(BBox3f(tri.v0+tri.d0),BBox3f(tri.v1+tri.d1),BBox3f(tri.v2+tri.d2)));
     }
     return std::pair<BBox3f,BBox3f>(bounds0,bounds1);
   }

@@ -39,13 +39,13 @@ namespace embree
 
     __forceinline void extend(const BBox3f& b) {
       assert(!b.empty());
-      centroid.grow(center(b));
-      geometry.grow(b);
+      centroid.extend(center(b));
+      geometry.extend(b);
     }
 
     __forceinline void extend(const Centroid_Scene_AABB& v) {
-      centroid.grow(v.centroid);
-      geometry.grow(v.geometry);
+      centroid.extend(v.centroid);
+      geometry.extend(v.geometry);
     }
 
     __forceinline void extend_atomic(const Centroid_Scene_AABB& v)

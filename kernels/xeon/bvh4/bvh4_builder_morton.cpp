@@ -744,7 +744,7 @@ namespace embree
         children[i].parent = &node->child(i);
         children[i].depth = current.depth+1;
         BBox3f bounds = createLeaf(children[i],nodeAlloc,leafAlloc,threadID);
-        bounds0.grow(bounds);
+        bounds0.extend(bounds);
         node->set(i,bounds);
       }
       BVH4::compact(node); // move empty nodes to the end
@@ -881,11 +881,11 @@ namespace embree
         
         if (children[i].size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD) {
           BBox3f bounds = createLeaf(children[i],nodeAlloc,leafAlloc,threadID);
-          bounds0.grow(bounds);
+          bounds0.extend(bounds);
           node->set(i,bounds);
         } else {
           BBox3f bounds = recurse(children[i],nodeAlloc,leafAlloc,mode,threadID);
-          bounds0.grow(bounds);
+          bounds0.extend(bounds);
           node->set(i,bounds);
         }
       }
@@ -897,7 +897,7 @@ namespace embree
       BBox3f bounds = empty;
       size_t num; Triangle1* tri = (Triangle1*) ref.leaf(num);
       for (size_t i=0; i<num; i++) 
-        bounds.grow(tri[i].bounds());
+        bounds.extend(tri[i].bounds());
       return bounds;
     }
     
@@ -906,7 +906,7 @@ namespace embree
       BBox3f bounds = empty;
       size_t num; Triangle4* tri = (Triangle4*) ref.leaf(num);
       for (size_t i=0; i<num; i++) 
-        bounds.grow(tri[i].bounds());
+        bounds.extend(tri[i].bounds());
       return bounds;
     }
     
@@ -915,7 +915,7 @@ namespace embree
       BBox3f bounds = empty;
       size_t num; Triangle1v* tri = (Triangle1v*) ref.leaf(num);
       for (size_t i=0; i<num; i++) 
-        bounds.grow(tri[i].bounds());
+        bounds.extend(tri[i].bounds());
       return bounds;
     }
     
@@ -924,7 +924,7 @@ namespace embree
       BBox3f bounds = empty;
       size_t num; Triangle4v* tri = (Triangle4v*) ref.leaf(num);
       for (size_t i=0; i<num; i++) 
-        bounds.grow(tri[i].bounds());
+        bounds.extend(tri[i].bounds());
       return bounds;
     }
     

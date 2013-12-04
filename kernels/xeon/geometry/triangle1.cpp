@@ -79,7 +79,7 @@ namespace embree
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
       const Vec3fa v2 = mesh->vertex(tri.v[2]);
       new (&dst) Triangle1(v0,v1,v2,geomID,primID,mesh->mask);
-      bounds.grow(merge(BBox3f(v0),BBox3f(v1),BBox3f(v2)));
+      bounds.extend(merge(BBox3f(v0),BBox3f(v1),BBox3f(v2)));
     }
     return bounds; 
   }
@@ -127,7 +127,7 @@ namespace embree
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
       const Vec3fa v2 = mesh->vertex(tri.v[2]);
       new (&dst) Triangle1(v0,v1,v2,geomID,primID,mesh->mask);
-      bounds.grow(merge(BBox3f(v0),BBox3f(v1),BBox3f(v2)));
+      bounds.extend(merge(BBox3f(v0),BBox3f(v1),BBox3f(v2)));
     }
     return bounds; 
   }

@@ -33,14 +33,14 @@ namespace embree
       const BBox3f prim1 = prims[i+1].bounds(); const Vec3ia bin1 = mapping.bin(prim1); const Vec3fa center1 = Vec3fa(center2(prim1));
       
       /*! increase bounds for bins for even primitive */
-      const int b00 = bin0.x; counts[b00][0]++; geomBounds[b00][0].grow(prim0); centBounds[b00][0].grow(center0);
-      const int b01 = bin0.y; counts[b01][1]++; geomBounds[b01][1].grow(prim0); centBounds[b01][1].grow(center0);
-      const int b02 = bin0.z; counts[b02][2]++; geomBounds[b02][2].grow(prim0); centBounds[b02][2].grow(center0);
+      const int b00 = bin0.x; counts[b00][0]++; geomBounds[b00][0].extend(prim0); centBounds[b00][0].extend(center0);
+      const int b01 = bin0.y; counts[b01][1]++; geomBounds[b01][1].extend(prim0); centBounds[b01][1].extend(center0);
+      const int b02 = bin0.z; counts[b02][2]++; geomBounds[b02][2].extend(prim0); centBounds[b02][2].extend(center0);
       
       /*! increase bounds of bins for odd primitive */
-      const int b10 = bin1.x; counts[b10][0]++; geomBounds[b10][0].grow(prim1); centBounds[b10][0].grow(center1);
-      const int b11 = bin1.y; counts[b11][1]++; geomBounds[b11][1].grow(prim1); centBounds[b11][1].grow(center1);
-      const int b12 = bin1.z; counts[b12][2]++; geomBounds[b12][2].grow(prim1); centBounds[b12][2].grow(center1);
+      const int b10 = bin1.x; counts[b10][0]++; geomBounds[b10][0].extend(prim1); centBounds[b10][0].extend(center1);
+      const int b11 = bin1.y; counts[b11][1]++; geomBounds[b11][1].extend(prim1); centBounds[b11][1].extend(center1);
+      const int b12 = bin1.z; counts[b12][2]++; geomBounds[b12][2].extend(prim1); centBounds[b12][2].extend(center1);
     }
     
     /*! for uneven number of primitives */
@@ -50,9 +50,9 @@ namespace embree
       const BBox3f prim0 = prims[i].bounds(); const Vec3ia bin0 = mapping.bin(prim0); const Vec3fa center0 = Vec3fa(center2(prim0));
       
       /*! increase bounds of bins */
-      const int b00 = bin0.x; counts[b00][0]++; geomBounds[b00][0].grow(prim0); centBounds[b00][0].grow(center0);
-      const int b01 = bin0.y; counts[b01][1]++; geomBounds[b01][1].grow(prim0); centBounds[b01][1].grow(center0);
-      const int b02 = bin0.z; counts[b02][2]++; geomBounds[b02][2].grow(prim0); centBounds[b02][2].grow(center0);
+      const int b00 = bin0.x; counts[b00][0]++; geomBounds[b00][0].extend(prim0); centBounds[b00][0].extend(center0);
+      const int b01 = bin0.y; counts[b01][1]++; geomBounds[b01][1].extend(prim0); centBounds[b01][1].extend(center0);
+      const int b02 = bin0.z; counts[b02][2]++; geomBounds[b02][2].extend(prim0); centBounds[b02][2].extend(center0);
     }
   }
   
@@ -113,13 +113,13 @@ namespace embree
     BBox3f lgeomBounds = empty, rgeomBounds = empty;
     for (size_t i=0; i<pos; i++) {
       numLeft += counts[i][dim];
-      lcentBounds.grow(centBounds[i][dim]);
-      lgeomBounds.grow(geomBounds[i][dim]);
+      lcentBounds.extend(centBounds[i][dim]);
+      lgeomBounds.extend(geomBounds[i][dim]);
     }
     for (size_t i=pos; i<mapping.size(); i++) {
       numRight += counts[i][dim];
-      rcentBounds.grow(centBounds[i][dim]);
-      rgeomBounds.grow(geomBounds[i][dim]);
+      rcentBounds.extend(centBounds[i][dim]);
+      rgeomBounds.extend(geomBounds[i][dim]);
     }
     assert(numLeft + numRight == pinfo.size());
     new (&split.linfo) PrimInfo(numLeft ,lgeomBounds,lcentBounds);
@@ -136,8 +136,8 @@ namespace embree
       {
         for (size_t dim=0; dim<3; dim++) {
           binner_o.counts    [bin][dim] += binner.counts[bin][dim];
-          binner_o.geomBounds[bin][dim].grow(binner.geomBounds[bin][dim]);
-          binner_o.centBounds[bin][dim].grow(binner.centBounds[bin][dim]);
+          binner_o.geomBounds[bin][dim].extend(binner.geomBounds[bin][dim]);
+          binner_o.centBounds[bin][dim].extend(binner.centBounds[bin][dim]);
         }
       }
     }

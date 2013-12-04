@@ -39,8 +39,8 @@ namespace embree
       size_t numPrims = geom->prims(g);
       for (size_t i=t-s; i<numPrims; i+=dt, t+=dt) {
         BBox3f bounds = geom->bounds(g,i);
-        geomBound.grow(bounds);
-        centBound.grow(center2(bounds));
+        geomBound.extend(bounds);
+        centBound.extend(center2(bounds));
       }
       s += numPrims;
     }
@@ -105,8 +105,8 @@ namespace embree
 
       const BBox3f b = geom->bounds(g,i);
       if (b.empty()) continue;
-      geomBound.grow(b);
-      centBound.grow(center2(b));
+      geomBound.extend(b);
+      centBound.extend(center2(b));
       const PrimRef prim = PrimRef(b,g,i);
       if (likely(block->insert(prim))) continue; 
       heuristic.bin(block->base(),block->size());

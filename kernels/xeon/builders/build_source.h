@@ -68,15 +68,15 @@ namespace embree
       Vec3fa v0 = v1; v1 = v[i];
       float v0d = v0[dim], v1d = v1[dim];
       
-      if (v0d <= pos) left. grow(v0); // this point is on left side
-      if (v0d >= pos) right.grow(v0); // this point is on right side
+      if (v0d <= pos) left. extend(v0); // this point is on left side
+      if (v0d >= pos) right.extend(v0); // this point is on right side
 
       if ((v0d < pos && pos < v1d) || (v1d < pos && pos < v0d)) // the edge crosses the splitting location
       {
         assert((v1d-v0d) != 0.0f);
         Vec3fa c = v0 + (pos-v0d)/(v1d-v0d)*(v1-v0);
-        left.grow(c);
-        right.grow(c);
+        left.extend(c);
+        right.extend(c);
       }
     }
     assert(!left.empty());  // happens if split does not hit triangle

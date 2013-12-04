@@ -38,14 +38,14 @@ namespace embree
         const BBox3f prim1 = prims[i+1].bounds(); const ssei bin1 = mapping.bin(prim1);
         
         /*! increase bounds for bins for even primitive */
-        const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].grow(prim0);
-        const int b01 = bin0[1]; counts[b01][1]++; bounds[b01][1].grow(prim0);
-        const int b02 = bin0[2]; counts[b02][2]++; bounds[b02][2].grow(prim0);
+        const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].extend(prim0);
+        const int b01 = bin0[1]; counts[b01][1]++; bounds[b01][1].extend(prim0);
+        const int b02 = bin0[2]; counts[b02][2]++; bounds[b02][2].extend(prim0);
         
         /*! increase bounds of bins for odd primitive */
-        const int b10 = bin1[0]; counts[b10][0]++; bounds[b10][0].grow(prim1);
-        const int b11 = bin1[1]; counts[b11][1]++; bounds[b11][1].grow(prim1);
-        const int b12 = bin1[2]; counts[b12][2]++; bounds[b12][2].grow(prim1);
+        const int b10 = bin1[0]; counts[b10][0]++; bounds[b10][0].extend(prim1);
+        const int b11 = bin1[1]; counts[b11][1]++; bounds[b11][1].extend(prim1);
+        const int b12 = bin1[2]; counts[b12][2]++; bounds[b12][2].extend(prim1);
       }
       
       /*! for uneven number of primitives */
@@ -55,9 +55,9 @@ namespace embree
         const BBox3f prim0 = prims[i].bounds(); const ssei bin0 = mapping.bin(prim0);
         
         /*! increase bounds of bins */
-        const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].grow(prim0);
-        const int b01 = bin0[1]; counts[b01][1]++; bounds[b01][1].grow(prim0);
-        const int b02 = bin0[2]; counts[b02][2]++; bounds[b02][2].grow(prim0);
+        const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].extend(prim0);
+        const int b01 = bin0[1]; counts[b01][1]++; bounds[b01][1].extend(prim0);
+        const int b02 = bin0[2]; counts[b02][2]++; bounds[b02][2].extend(prim0);
       }
     }
     
@@ -80,14 +80,14 @@ namespace embree
         const BBox3f prim1 = prims[i+1].bounds(); const ssei bin1 = mapping.bin(prim1);
         
         /*! increase bounds for bins for even primitive */
-        const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].grow(prim0);
-        const int b01 = bin0[1]; counts[b01][1]++; bounds[b01][1].grow(prim0);
-        const int b02 = bin0[2]; counts[b02][2]++; bounds[b02][2].grow(prim0);
+        const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].extend(prim0);
+        const int b01 = bin0[1]; counts[b01][1]++; bounds[b01][1].extend(prim0);
+        const int b02 = bin0[2]; counts[b02][2]++; bounds[b02][2].extend(prim0);
         
         /*! increase bounds of bins for odd primitive */
-        const int b10 = bin1[0]; counts[b10][0]++; bounds[b10][0].grow(prim1);
-        const int b11 = bin1[1]; counts[b11][1]++; bounds[b11][1].grow(prim1);
-        const int b12 = bin1[2]; counts[b12][2]++; bounds[b12][2].grow(prim1);
+        const int b10 = bin1[0]; counts[b10][0]++; bounds[b10][0].extend(prim1);
+        const int b11 = bin1[1]; counts[b11][1]++; bounds[b11][1].extend(prim1);
+        const int b12 = bin1[2]; counts[b12][2]++; bounds[b12][2].extend(prim1);
         
         /*! copy to destination */
         dest[i+0] = prims[i+0];
@@ -101,9 +101,9 @@ namespace embree
         const BBox3f prim0 = prims[i].bounds(); const ssei bin0 = mapping.bin(prim0);
         
         /*! increase bounds of bins */
-        const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].grow(prim0);
-        const int b01 = bin0[1]; counts[b01][1]++; bounds[b01][1].grow(prim0);
-        const int b02 = bin0[2]; counts[b02][2]++; bounds[b02][2].grow(prim0);
+        const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].extend(prim0);
+        const int b01 = bin0[1]; counts[b01][1]++; bounds[b01][1].extend(prim0);
+        const int b02 = bin0[2]; counts[b02][2]++; bounds[b02][2].extend(prim0);
         
         /*! copy to destination */
         dest[i+0] = prims[i+0];
@@ -119,9 +119,9 @@ namespace embree
         const Binner2& binner = binners[tid];
         for (size_t bin=0; bin<BINS; bin++) 
         {
-          binner_o.bounds[bin][0].grow(binner.bounds[bin][0]);
-          binner_o.bounds[bin][1].grow(binner.bounds[bin][1]);
-          binner_o.bounds[bin][2].grow(binner.bounds[bin][2]);
+          binner_o.bounds[bin][0].extend(binner.bounds[bin][0]);
+          binner_o.bounds[bin][1].extend(binner.bounds[bin][1]);
+          binner_o.bounds[bin][2].extend(binner.bounds[bin][2]);
           binner_o.counts[bin] += binner.counts[bin];
         }
       }
@@ -139,9 +139,9 @@ namespace embree
       {
         count += counts[i];
         rCounts[i] = count;
-        bx.grow(bounds[i][0]); rAreas[i][0] = area(bx);
-        by.grow(bounds[i][1]); rAreas[i][1] = area(by);
-        bz.grow(bounds[i][2]); rAreas[i][2] = area(bz);
+        bx.extend(bounds[i][0]); rAreas[i][0] = area(bx);
+        by.extend(bounds[i][1]); rAreas[i][1] = area(by);
+        bz.extend(bounds[i][2]); rAreas[i][2] = area(bz);
       }
       
       /* sweep from left to right and compute SAH */
@@ -150,9 +150,9 @@ namespace embree
       for (size_t i=1; i<BINS; i++, ii+=1)
       {
         count += counts[i-1];
-        bx.grow(bounds[i-1][0]); float Ax = area(bx);
-        by.grow(bounds[i-1][1]); float Ay = area(by);
-        bz.grow(bounds[i-1][2]); float Az = area(bz);
+        bx.extend(bounds[i-1][0]); float Ax = area(bx);
+        by.extend(bounds[i-1][1]); float Ay = area(by);
+        bz.extend(bounds[i-1][2]); float Az = area(bz);
         const ssef lArea = ssef(Ax,Ay,Az,Az);
         const ssef rArea = rAreas[i];
         const ssei lCount = (count     +ssei(3)) >> 2;

@@ -110,14 +110,14 @@ namespace embree
   __forceinline const BBox<Vec3fa> xfmBounds(const AffineSpaceT<LinearSpace3<Vec3fa> >& m, const BBox<Vec3fa>& b) 
   { 
     BBox3f dst = empty;
-    const Vec3fa p0(b.lower.x,b.lower.y,b.lower.z); dst.grow(xfmPoint(m,p0));
-    const Vec3fa p1(b.lower.x,b.lower.y,b.upper.z); dst.grow(xfmPoint(m,p1));
-    const Vec3fa p2(b.lower.x,b.upper.y,b.lower.z); dst.grow(xfmPoint(m,p2));
-    const Vec3fa p3(b.lower.x,b.upper.y,b.upper.z); dst.grow(xfmPoint(m,p3));
-    const Vec3fa p4(b.upper.x,b.lower.y,b.lower.z); dst.grow(xfmPoint(m,p4));
-    const Vec3fa p5(b.upper.x,b.lower.y,b.upper.z); dst.grow(xfmPoint(m,p5));
-    const Vec3fa p6(b.upper.x,b.upper.y,b.lower.z); dst.grow(xfmPoint(m,p6));
-    const Vec3fa p7(b.upper.x,b.upper.y,b.upper.z); dst.grow(xfmPoint(m,p7));
+    const Vec3fa p0(b.lower.x,b.lower.y,b.lower.z); dst.extend(xfmPoint(m,p0));
+    const Vec3fa p1(b.lower.x,b.lower.y,b.upper.z); dst.extend(xfmPoint(m,p1));
+    const Vec3fa p2(b.lower.x,b.upper.y,b.lower.z); dst.extend(xfmPoint(m,p2));
+    const Vec3fa p3(b.lower.x,b.upper.y,b.upper.z); dst.extend(xfmPoint(m,p3));
+    const Vec3fa p4(b.upper.x,b.lower.y,b.lower.z); dst.extend(xfmPoint(m,p4));
+    const Vec3fa p5(b.upper.x,b.lower.y,b.upper.z); dst.extend(xfmPoint(m,p5));
+    const Vec3fa p6(b.upper.x,b.upper.y,b.lower.z); dst.extend(xfmPoint(m,p6));
+    const Vec3fa p7(b.upper.x,b.upper.y,b.upper.z); dst.extend(xfmPoint(m,p7));
     return dst;
   }
 

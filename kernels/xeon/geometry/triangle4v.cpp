@@ -110,7 +110,7 @@ namespace embree
         const Vec3fa p0 = mesh->vertex(tri.v[0]);
         const Vec3fa p1 = mesh->vertex(tri.v[1]);
         const Vec3fa p2 = mesh->vertex(tri.v[2]);
-        bounds.grow(merge(BBox3f(p0),BBox3f(p1),BBox3f(p2)));
+        bounds.extend(merge(BBox3f(p0),BBox3f(p1),BBox3f(p2)));
         vgeomID [i] = geomID;
         vprimID [i] = primID;
         vmask   [i] = mesh->mask;
@@ -168,7 +168,7 @@ namespace embree
         const Vec3fa p0 = mesh->vertex(tri.v[0]);
         const Vec3fa p1 = mesh->vertex(tri.v[1]);
         const Vec3fa p2 = mesh->vertex(tri.v[2]);
-        bounds.grow(merge(BBox3f(p0),BBox3f(p1),BBox3f(p2)));
+        bounds.extend(merge(BBox3f(p0),BBox3f(p1),BBox3f(p2)));
         vgeomID [i] = geomID;
         vprimID [i] = primID;
         vmask   [i] = mesh->mask;

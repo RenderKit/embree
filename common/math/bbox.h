@@ -39,14 +39,11 @@ namespace embree
     __forceinline BBox ( const T& lower, const T& upper ) : lower(lower), upper(upper) {}
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// Growing Bounds
+    /// Extending Bounds
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline void grow(const BBox& other) { lower = min(lower,other.lower); upper = max(upper,other.upper); }
-    __forceinline void grow(const T   & other) { lower = min(lower,other      ); upper = max(upper,other      ); }
-
-    __forceinline void extend(const BBox& other) { grow(other); } // FIXME: remove
-    __forceinline void extend(const T   & other) { grow(other); }
+    __forceinline void extend(const BBox& other) { lower = min(lower,other.lower); upper = max(upper,other.upper); }
+    __forceinline void extend(const T   & other) { lower = min(lower,other      ); upper = max(upper,other      ); }
 
     /*! computes the size of the box */
     __forceinline bool empty() const { for (int i=0; i<T::N; i++) if (lower[i] > upper[i]) return true; return false; }

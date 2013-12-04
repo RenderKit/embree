@@ -73,7 +73,7 @@ namespace embree
       void bounds(size_t group, size_t begin, size_t end, BBox3f* bounds_o) const 
       {
         BBox3f b = empty;
-        for (size_t i=begin; i<end; i++) b.grow(bounds(i));
+        for (size_t i=begin; i<end; i++) b.extend(bounds(i));
         *bounds_o = b;
       }
 
