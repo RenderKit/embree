@@ -153,8 +153,8 @@ namespace embree
     CreateMeshData parms;
     parms.numVertices = mesh->v.size();
     parms.numTriangles = mesh->triangles.size();
-    parms.dir = zero; //normalize(Vec3f(drand48(),drand48(),drand48())-Vec3f(0.5f)); // FIXME: windows
-    parms.offset = zero; //5.0f*drand48(); // FIXME
+    parms.dir = normalize(Vec3f(drand48(),drand48(),drand48())-Vec3f(0.5f));
+    parms.offset = 5.0f*drand48();
     COI_ACCESS_FLAGS flags[4] = { COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ };
 
     COIEVENT event;

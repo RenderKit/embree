@@ -64,8 +64,8 @@ namespace embree
     out->triangles = in->triangles.size() ? &in->triangles[0] : NULL;
     out->numVertices = in->v.size();
     out->numTriangles = in->triangles.size();
-    out->dir = zero; //normalize(Vec3f(drand48(),drand48(),drand48())-Vec3f(0.5f));
-    out->offset = 0.0f; //5.0f*drand48(); // FIXME: drand not available under Windows
+    out->dir = normalize(Vec3f(drand48(),drand48(),drand48())-Vec3f(0.5f));
+    out->offset = 5.0f*drand48();
     return out;
   }
 
