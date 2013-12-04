@@ -92,7 +92,6 @@ namespace embree
       /* perform builds that need all threads */
       for (size_t i=0; i<allThreadBuilds.size(); i++) {
         thread_bounds[threadIndex].extend(build(threadIndex,threadCount,allThreadBuilds[i]));
-        for (volatile int i=0; i<100000; i++); // FIXME: disable
       }
       
       allThreadBuilds.clear();
