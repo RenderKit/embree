@@ -31,10 +31,6 @@
 #include "rtcore_geometry.h"
 #include "rtcore_geometry_user.h"
 
-// FIXME: describe that tnear value has to be > 0
-// FIMXE: intersect8 should only get called if CPU supports AVX, etc.
-// FIXME: user geometry, intersect8 will call intersect8ptr, etc.
-
 /* 
 
    This file defines the Embree ray tracing kernel API for C and
@@ -126,8 +122,10 @@
    functions. These get the activity mask, the scene, and a ray as
    input. Data alignment restrictions apply as decribed for each
    rtcIntersect function. The user has to initialize the ray origin
-   (org), ray direction (dir), and ray segment (tnear, tfar). The
-   geometry ID (geomID member) has to get initialized to
+   (org), ray direction (dir), and ray segment (tnear, tfar). The ray
+   segment has to be in the range [0,inf], thus ranges that start
+   behind the ray origin are not valid, but ranges can reach to
+   infinity. The geometry ID (geomID member) has to get initialized to
    INVALID_GEOMETRY_ID (-1). If the scene contains linear motion blur,
    also the ray time (time) has to get initialized. If the scene
    contains instances, also the instance ID (instID) has to get
@@ -145,7 +143,7 @@
    to be done as for rtcIntersect. If some geometry got found along
    the ray segment, the geometry ID (geomID) will get set to 0. No
    other member of the ray will get updated.
-  
+
 */
 
 /*! Initializes the ray tracing core and passed some configuration
@@ -183,7 +181,7 @@ enum RTCError {
 RTCORE_API RTCError rtcGetError();
 
 /*! This function is implementation specific and only for
- *  debugging. */
-RTCORE_API void rtcDebug(); // FIXME: remove
+ *  debugging purposes. Do not call it. */
+RTCORE_API void rtcDebug();
 
 #endif

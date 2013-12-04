@@ -116,18 +116,20 @@
    functions. Data alignment restrictions apply as decribed for each
    rtcIntersect function. These get the activity mask, the scene, and
    a ray as input. The user has to initialize the ray origin (org),
-   ray direction (dir), and ray segment (tnear, tfar). The geometry ID
-   (geomID member) has to get initialized to INVALID_GEOMETRY_ID
-   (-1). If the scene contains linear motion blur, also the ray time
-   (time) has to get initialized. If the scene contains instances,
-   also the instance ID (instID) has to get initialized. If ray masks
-   are enabled at compile time, also the ray mask (mask) have to get
-   initialized. After tracing the ray, the hit distance (tfar),
-   geometry normal (Ng), local hit coordinates (u,v), geometry ID
-   (geomID), and primitive ID (primID) are set. The geometry ID
-   corresponds to the ID returned at creation time of the hit
-   geometry, and the primitive ID corresponds to the nth primitive of
-   that geometry, e.g. nth triangle.
+   ray direction (dir), and ray segment (tnear, tfar). The ray segment
+   has to be in the range [0,inf], thus ranges that start behind the
+   ray origin are not valid, but ranges can reach to infinity. The
+   geometry ID (geomID member) has to get initialized to
+   INVALID_GEOMETRY_ID (-1). If the scene contains linear motion blur,
+   also the ray time (time) has to get initialized. If the scene
+   contains instances, also the instance ID (instID) has to get
+   initialized. If ray masks are enabled at compile time, also the ray
+   mask (mask) have to get initialized. After tracing the ray, the hit
+   distance (tfar), geometry normal (Ng), local hit coordinates (u,v),
+   geometry ID (geomID), and primitive ID (primID) are set. The
+   geometry ID corresponds to the ID returned at creation time of the
+   hit geometry, and the primitive ID corresponds to the nth primitive
+   of that geometry, e.g. nth triangle.
 
    Testing if any geometry intersects with the ray segment is done
    through the rtcOccluded functions. Data alignment restrictions

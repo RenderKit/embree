@@ -55,19 +55,29 @@ void rtcSetBounds (RTCScene scene, uniform unsigned int geomID,
                    uniform float lower_x, uniform float lower_y, uniform float lower_z,
                    uniform float upper_x, uniform float upper_y, uniform float upper_z);
 
-/*! Set data pointer for intersect and occluded functions. */
+/*! Set data pointer for intersect and occluded functions. Invokations
+ *  of the various user intersect and occluded functions get passed
+ *  this data pointer when called. */
 void rtcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr);
 
-/*! Set intersect function for uniform rays. */
+/*! Set intersect function for uniform rays. The rtcIntersect1
+ *  function will call the passed function for intersecting the user
+ *  geometry. */
 void rtcSetIntersectFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFuncUniform intersect);
 
-/*! Set intersect function for varying rays. */
+/*! Set intersect function for varying rays. The rtcIntersect function
+ *  will call the passed function for intersecting the user
+ *  geometry. */
 void rtcSetIntersectFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFuncVarying intersect);
 
-/*! Set occlusion function for uniform rays. */
+/*! Set occlusion function for uniform rays. The rtcOccluded1 function
+ *  will call the passed function for intersecting the user
+ *  geometry. */
 void rtcSetOccludedFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFuncUniform occluded);
 
-/*! Set occlusion function for varying rays. */
+/*! Set occlusion function for varying rays. The rtcOccluded function
+ *  will call the passed function for intersecting the user
+ *  geometry. */
 void rtcSetOccludedFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFuncVarying occluded);
 
 #endif
