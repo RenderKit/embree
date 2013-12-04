@@ -423,16 +423,8 @@ namespace embree
   __forceinline mic_f broadcast4to16f(const void *f) { 
     return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_4X16,0);  
   }
-  
-  __forceinline mic_f upconv1f(const float *const ptr) { 
-    return _mm512_extload_ps(ptr,_MM_UPCONV_PS_NONE,_MM_BROADCAST_1X16,_MM_HINT_NONE);  
-  }
     
-  __forceinline mic_f upconv16f(const float *const ptr) {
-    return _mm512_extload_ps(ptr,_MM_UPCONV_PS_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE);  
-  }
-  
-  __forceinline mic_f upconv16_un8(const unsigned char *const ptr) {
+  __forceinline mic_f load16f_uint8(const unsigned char *const ptr) {
     return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_UINT8,_MM_BROADCAST_16X16,_MM_HINT_NONE),mic_f(1.0f/255.0f));  
   }
 
@@ -470,10 +462,10 @@ namespace embree
     const mic_m m_0f00 = 0x0f00;
     const mic_m m_f000 = 0xf000;
     
-    mic_i v = v_mask & upconv4i((const int*)ptr0);
-    v = mask_and(m_00f0,v,v_mask,upconv4i((const int*)ptr1));
-    v = mask_and(m_0f00,v,v_mask,upconv4i((const int*)ptr2));
-    v = mask_and(m_f000,v,v_mask,upconv4i((const int*)ptr3));
+    mic_i v = v_mask &  broadcast4to16i((const int*)ptr0);
+    v = mask_and(m_00f0,v,v_mask, broadcast4to16i((const int*)ptr1));
+    v = mask_and(m_0f00,v,v_mask, broadcast4to16i((const int*)ptr2));
+    v = mask_and(m_f000,v,v_mask, broadcast4to16i((const int*)ptr3));
     return cast(v);
   }
 
@@ -556,9 +548,9 @@ namespace embree
   __forceinline mic_f loadAOS4to16f(const float& x,const float& y, const float& z)
   {
     mic_f f = mic_f::zero();
-    f = select(0x1111,upconv1f(&x),f);
-    f = select(0x2222,upconv1f(&y),f);
-    f = select(0x4444,upconv1f(&z),f);
+    f = select(0x1111,broadcast1to16f(&x),f);
+    f = select(0x2222,broadcast1to16f(&y),f);
+    f = select(0x4444,broadcast1to16f(&z),f);
     return f;
   }
 
@@ -568,9 +560,9 @@ namespace embree
 				    const mic_f &z)
   {
     mic_f f = mic_f::zero();
-    f = select(0x1111,upconv1f((float*)&x + index),f);
-    f = select(0x2222,upconv1f((float*)&y + index),f);
-    f = select(0x4444,upconv1f((float*)&z + index),f);
+    f = select(0x1111,broadcast1to16f((float*)&x + index),f);
+    f = select(0x2222,broadcast1to16f((float*)&y + index),f);
+    f = select(0x4444,broadcast1to16f((float*)&z + index),f);
     return f;
   }
 
