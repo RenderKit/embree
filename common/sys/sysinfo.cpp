@@ -61,7 +61,7 @@ namespace embree
     std::string version = std::stringOf(__INTEL_COMPILER);
     version.insert(3,".");
     version.insert(2,".");
-    return "Intel Compiler " + version + " Update " + std::stringOf(__INTEL_COMPILER_UPDATE) + " (" + __VERSION__ + ")";
+    return "Intel Compiler " + version + " Update " + std::stringOf(__INTEL_COMPILER_UPDATE);
 #elif defined(__clang__)
     return "CLANG " __clang_version__;
 #elif defined (__GNUC__)
