@@ -88,10 +88,7 @@ namespace embree
   /// Reduction Operations
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline int reduce_and( const mic_m& a ) { return _mm512_kortestc(a,a); }
-  __forceinline int reduce_or ( const mic_m& a ) { return !_mm512_kortestz(a,a); }
-
-  __forceinline int all(const mic_m &a)  { return  _mm512_kortestc(a,a); }
+  __forceinline int all(const mic_m &a)  { return  _mm512_kortestc(a,a) != 0; }
   __forceinline int any(const mic_m &a)  { return  _mm512_kortestz(a,a) == 0; }
   __forceinline int none(const mic_m &a) { return  _mm512_kortestz(a,a) != 0; }
   
