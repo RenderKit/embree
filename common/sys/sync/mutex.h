@@ -26,7 +26,6 @@ namespace embree
   class MutexSys {
     friend struct ConditionImplementation;
   public:
-
     MutexSys( void );
     ~MutexSys( void );
 
@@ -35,22 +34,25 @@ namespace embree
 
   protected:
     void* mutex;
-
-    MutexSys( const MutexSys& );             // don't implement
-    MutexSys& operator =( const MutexSys& ); // don't implement
   };
 
   /*! spinning mutex */
   class __align(64) MutexActive {
   public:
-    __forceinline MutexActive( void ) : flag(0) {}
+    __forceinline MutexActive( void ) 
+      : flag(0) {}
+
+    __forceinline void reset() 
+    {
+      __memory_barrier();
+      flag = 0;
+      __memory_barrier();
+    }
+
     void lock  ( void );
     void unlock( void );
   protected:
     volatile int flag;
-
-    MutexActive( const MutexActive& );             // don't implement
-    MutexActive& operator =( const MutexActive& ); // don't implement
   };
 
   class __align(64) AtomicMutex // FIXME: merge with above class

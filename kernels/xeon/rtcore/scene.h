@@ -223,8 +223,6 @@ namespace embree
     bool is_build;
     MutexSys mutex;
 
-    AtomicMutex tmp_mutex;
-
   public:
     atomic_t numTriangleMeshes;        //!< number of enabled triangle meshes
     atomic_t numTriangleMeshes2;       //!< number of enabled motion blur triangle meshes

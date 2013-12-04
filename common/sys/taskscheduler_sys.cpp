@@ -67,7 +67,7 @@ namespace embree
       mutex.unlock();
 
       TaskScheduler::Event* event = task->event;
-      thread2event[threadIndex] = event; 
+      thread2event[threadIndex].event = event; 
 
       /* run the task */
       while (true) {
@@ -165,7 +165,7 @@ namespace embree
     
     /* run the task */
     TaskScheduler::Event* event = task->event;
-    thread2event[threadIndex] = event; 
+    thread2event[threadIndex].event = event; 
     if (task->run) {
       size_t taskID = TaskLogger::beginTask(threadIndex,task->name,elt);
       task->run(task->runData,threadIndex,threadCount,elt,task->elts,task->event);

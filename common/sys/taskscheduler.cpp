@@ -125,7 +125,7 @@ namespace embree
     if (threadIndex < 0 || threadIndex >= (ssize_t)instance->numThreads)
       throw std::runtime_error("invalid thread index");
 
-    return instance->thread2event[threadIndex];
+    return instance->thread2event[threadIndex].event;
   }
 
   TaskScheduler::TaskScheduler () 
@@ -141,8 +141,8 @@ namespace embree
 #endif
     
     /* this mapping is only required as ISPC does not propagate task groups */
-    thread2event = new Event*[numThreads];
-    memset(thread2event,0,numThreads*sizeof(Event*));
+    thread2event = (ThreadEvent*) alignedMalloc(numThreads*sizeof(ThreadEvent));
+    memset(thread2event,0,numThreads*sizeof(ThreadEvent));
 
     /* generate all threads */
     for (size_t t=0; t<numThreads; t++) {
@@ -173,7 +173,7 @@ namespace embree
     terminate();
     for (size_t i=0; i<threads.size(); i++) join(threads[i]);
     threads.clear();
-    delete[] thread2event; thread2event = NULL;
+    alignedFree(thread2event); thread2event = NULL;
     terminateThreads = false;
   }
 

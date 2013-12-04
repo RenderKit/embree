@@ -193,7 +193,11 @@ namespace embree
     volatile bool terminateThreads;
     std::vector<thread_t> threads;
     size_t numThreads;
-    Event** thread2event; // FIXME: separate cache lines per thread
+    struct __align(64) ThreadEvent { 
+      Event* event; 
+      char align[64-sizeof(Event*)];
+    };
+    ThreadEvent* thread2event;
   };
 
 #define TASK_FUNCTION(Class,Name) \
@@ -219,9 +223,7 @@ namespace embree
     static QuadTreeBarrier taskBarrier;
     //static Barrier taskBarrier;
 #else
-
     static Barrier taskBarrier;
-
 #endif
 
     static bool dispatchTask(const size_t threadID, const size_t numThreads);
