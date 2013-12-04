@@ -29,14 +29,14 @@ namespace embree
     public:
       __forceinline BuildRef () {}
       
-      __forceinline BuildRef (const BBox3f& bounds, BVH4::NodeRef node, size_t id) 
-        : lower(bounds.lower), upper(bounds.upper), node(node), id(id) 
-        {
-          if (node.isLeaf())
-            lower.w = 0.0f;
-          else
-            lower.w = area(this->bounds());
-        }
+      __forceinline BuildRef (const BBox3f& bounds, BVH4::NodeRef node) 
+        : lower(bounds.lower), upper(bounds.upper), node(node)
+      {
+        if (node.isLeaf())
+          lower.w = 0.0f;
+        else
+          lower.w = area(this->bounds());
+      }
       
       __forceinline BBox3f bounds () const {
         return BBox3f(lower,upper);
@@ -50,7 +50,6 @@ namespace embree
       Vec3fa lower;
       Vec3fa upper;
       BVH4::NodeRef node;
-      size_t id;
     };
     
     struct Mapping2

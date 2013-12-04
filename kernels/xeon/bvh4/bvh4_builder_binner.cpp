@@ -277,11 +277,11 @@ namespace embree
         left_centroidMaxAABB = max(left_centroidMaxAABB,l_centroid);
         left_sceneMinAABB    = min(left_sceneMinAABB,l_min);
         left_sceneMaxAABB    = max(left_sceneMaxAABB,l_max);
-        //store4f((float*)&l->lower,l_min);
-        //store4f((float*)&l->upper,l_max);
-        //store4f((float*)&r->lower,r_min);
-        //store4f((float*)&r->upper,r_max);
-        std::swap(*l,*r); // FIXME
+        store4f((float*)&l->lower,l_min);
+        store4f((float*)&l->upper,l_max);
+        store4f((float*)&r->lower,r_min);
+        store4f((float*)&r->upper,r_max);
+        std::swap(l->node,r->node);
         l++; r--;
       }
       

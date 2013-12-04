@@ -214,7 +214,7 @@ namespace embree
       
       /* create build primitive */
       const BBox3f bounds = object->bounds;
-      refs[nextRef++] = BuildRef(bounds,object->root,objectID);
+      refs[nextRef++] = BuildRef(bounds,object->root);
       return bounds;
     }
     
@@ -249,7 +249,7 @@ namespace embree
         BVH4::Node* node = ref.node();
         for (size_t i=0; i<4; i++) {
           if (node->child(i) == BVH4::emptyNode) continue;
-          refs.push_back(BuildRef(node->bounds(i),node->child(i),0));
+          refs.push_back(BuildRef(node->bounds(i),node->child(i)));
           std::push_heap (refs.begin(),refs.end()); 
         }
       }
@@ -313,7 +313,7 @@ namespace embree
           BVH4::Node* node = ref.node();
           for (size_t i=0; i<4; i++) {
             if (node->child(i) == BVH4::emptyNode) continue;
-            prefs1[end++] = BuildRef(node->bounds(i),node->child(i),0);
+            prefs1[end++] = BuildRef(node->bounds(i),node->child(i));
             std::push_heap(&prefs1[start],&prefs1[end]); 
           }
         }
