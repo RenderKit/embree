@@ -1345,9 +1345,6 @@ namespace embree
   {
     TIMER(double msec = 0.0);
 
-    /* start measurement */
-    double t0 = 0.0f;
-    if (g_verbose >= 2) t0 = getSeconds();
 
     /* initialize thread state */
     initThreadState(threadIndex,threadCount);
@@ -1358,7 +1355,13 @@ namespace embree
       return;
     }
 
-    if (g_verbose >= 2) t0 = getSeconds();
+    /* start measurement */
+    double t0 = 0.0f;
+
+#if !defined(PROFILE)
+    if (g_verbose >= 2) 
+#endif
+      t0 = getSeconds();
 
     /* performs build of tree */
     build_main(threadIndex,threadCount);
@@ -1377,7 +1380,10 @@ namespace embree
     LockStepTaskScheduler::releaseThreads(threadCount);
     
     /* stop measurement */
-    if (g_verbose >= 2) dt = getSeconds()-t0;
+#if !defined(PROFILE)
+    if (g_verbose >= 2) 
+#endif
+      dt = getSeconds()-t0;
 
   }
 

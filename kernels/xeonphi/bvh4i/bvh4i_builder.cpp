@@ -1132,7 +1132,10 @@ namespace embree
 
     /* start measurement */
     double t0 = 0.0f;
-    if (g_verbose >= 2) t0 = getSeconds();
+#if !defined(PROFILE)
+    if (g_verbose >= 2) 
+#endif
+      t0 = getSeconds();
 
 
 
@@ -1226,7 +1229,10 @@ namespace embree
     LockStepTaskScheduler::releaseThreads(threadCount);
 
     /* stop measurement */
-    if (g_verbose >= 2) dt = getSeconds()-t0;
+#if !defined(PROFILE)
+    if (g_verbose >= 2) 
+#endif
+      dt = getSeconds()-t0;
   }
 
   void BVH4iBuilderRegister () {
