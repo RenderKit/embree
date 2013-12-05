@@ -37,38 +37,12 @@ namespace embree
   };
 
   /*! spinning mutex */
-  class __align(64) MutexActive {
-  public:
-    __forceinline MutexActive( void ) 
-      : flag(0) {}
-
-    __forceinline void reset() 
-    {
-      __memory_barrier();
-      flag = 0;
-      __memory_barrier();
-    }
-
-    void lock  ( void );
-    void unlock( void );
-  protected:
-    volatile int flag;
-  };
-
-  class __align(64) AtomicMutex // FIXME: merge with above class
+  class __align(64) AtomicMutex
   {
   public:
-    volatile int flag;
-    atomic32_t m_counter;
-    volatile unsigned int index;
-    volatile int data[12]; 
-  
-    AtomicMutex()
-    {
-      flag = 0;
-      m_counter = 0;
-      index = 0;
-    }
+ 
+    AtomicMutex ()
+      : flag(0) {}
 
     __forceinline bool islocked() {
       return flag == 1;
@@ -78,29 +52,47 @@ namespace embree
     {
       while(1) {
         __memory_barrier();
-	while(flag == 1){
+	while (flag == 1) { // read without atomic op first
 #if !defined(__MIC__)
-	  _mm_pause(); // read without atomic op first
+	  _mm_pause(); 
 	  _mm_pause();
 #else
-	  _mm_delay_32(128); //FIXME: exp falloff
+	  _mm_delay_32(128); // FIXME: exp falloff
 #endif
 	}
         __memory_barrier();
-	if ( atomic_cmpxchg(&flag,0,1) == 0) break;
+	if (atomic_cmpxchg(&flag,0,1) == 0) break;
       }
     }
 
-    __forceinline void unlock() {
-        __memory_barrier();
+    __forceinline void unlock() 
+    {
+      __memory_barrier();
       flag = 0;
       __memory_barrier();
     }
 
-    __forceinline void reset(int i = 0) {
-        __memory_barrier();
+    __forceinline void reset(int i = 0) 
+    {
+      __memory_barrier();
       flag = i;
-        __memory_barrier();
+      __memory_barrier();
+    }
+
+  public:
+    volatile int flag;
+  };
+
+  class __align(64) AlignedAtomicMutex : public AtomicMutex
+  {
+  public:
+    volatile unsigned int index;
+    atomic32_t m_counter;
+    volatile char align[64-3*sizeof(int)]; 
+  
+    AlignedAtomicMutex() {
+      m_counter = 0;
+      index = 0;
     }
 
     __forceinline void resetCounter(unsigned int i = 0) {
@@ -118,7 +110,7 @@ namespace embree
     }
 
     __forceinline unsigned int val() {
-        __memory_barrier();
+      __memory_barrier();
       return m_counter;
     };
   };
@@ -130,8 +122,6 @@ namespace embree
     ~Lock() { mutex.unlock(); }
   protected:
     Mutex& mutex;
-    Lock( const Lock& );             // don't implement
-    Lock& operator =( const Lock& ); // don't implement
   };
 }
 

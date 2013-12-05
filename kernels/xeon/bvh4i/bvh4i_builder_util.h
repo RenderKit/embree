@@ -164,7 +164,7 @@ namespace embree
     class WorkStack 
   {
   public:
-    AtomicMutex __align(64) mutex;
+    AlignedAtomicMutex __align(64) mutex;
     __align(64) T t[SIZE];
 
     __forceinline void init() {

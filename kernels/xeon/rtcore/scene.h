@@ -81,7 +81,7 @@ namespace embree
     __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i]; }
     __forceinline       Geometry* get_locked(size_t i)  { 
 #if !defined(__MIC__)
-      Lock<MutexActive> lock(geometriesMutex); 
+      Lock<AtomicMutex> lock(geometriesMutex); 
       //Lock<MutexSys> lock(mutex);
 #endif
 
@@ -209,7 +209,7 @@ namespace embree
 
     
   public:
-    MutexActive geometriesMutex;
+    AtomicMutex geometriesMutex;
     std::vector<int> usedIDs;
     std::vector<Geometry*> geometries; //!< list of all user geometries
     
