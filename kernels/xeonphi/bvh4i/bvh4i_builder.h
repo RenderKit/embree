@@ -75,8 +75,11 @@ namespace embree
     /*! perform sequential binning and splitting */
     bool splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
 
-    /*! perform parallel binning and splitting */
+    /*! perform parallel binning and splitting using all threads on all cores*/
     bool splitParallelGlobal(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t threads);
+
+    /*! perform parallel binning and splitting using only the threads per core*/
+    bool splitParallelLocal(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID);
     
     /*! creates a leaf node */
     void createLeaf(BuildRecord& current, NodeAllocator& alloc, const size_t threadIndex, const size_t threadCount);
@@ -111,8 +114,9 @@ namespace embree
       __align(64) AlignedAtomicCounter32 rCounter;
     };
 
-    __align(64) SharedBinningPartitionData sharedData;
+    __align(64) SharedBinningPartitionData global_sharedData;
     __align(64) Bin16 global_bin16[MAX_MIC_THREADS];
+    __align(64) SharedBinningPartitionData local_sharedData[MAX_MIC_CORES];
 
   protected:
     PrimRef*   prims;
