@@ -133,8 +133,6 @@ namespace embree
   __forceinline const mic_i mask_and(const mic_m& m,mic_i& c, const mic_i& a, const mic_i& b) { return _mm512_mask_and_epi32(c,m,a,b); };
   __forceinline const mic_i mask_or (const mic_m& m,mic_i& c, const mic_i& a, const mic_i& b) { return _mm512_mask_or_epi32(c,m,a,b); };
  
-  __forceinline const mic_i andn(const mic_i& a, const mic_i& b) { return _mm512_andnot_epi32(a, b); } // FIXME: same order as in mic_m?
-  
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////

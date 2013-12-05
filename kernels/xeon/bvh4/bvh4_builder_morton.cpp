@@ -47,12 +47,7 @@ namespace embree
       morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
     {
       needAllThreads = true;
-      if (mesh) {
-        size_t numPrimitives = mesh->numTriangles;
-        needAllThreads = numPrimitives > 50000;
-      }
-	  //needAllThreads = false;
-	  // FIXME: build over scene always runs on all threads
+      if (mesh) needAllThreads = mesh->numTriangles > 50000;
       
       if (&bvh->primTy == &SceneTriangle1::type) {
         createSmallLeaf = createTriangle1Leaf;
