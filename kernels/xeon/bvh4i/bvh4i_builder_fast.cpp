@@ -54,7 +54,7 @@ namespace embree
       /* allocate BVH data */
       allocateData();
       
-      LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); // FIXME: why is this not also in morton builder
+      LockStepTaskScheduler::init(TaskScheduler::getNumThreads());
       
 #if defined(PROFILE)
       

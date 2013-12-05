@@ -52,7 +52,9 @@ namespace embree
       
       /* do some global inits first */
       init();
-      
+
+      LockStepTaskScheduler::init(TaskScheduler::getNumThreads());
+
 #if defined(PROFILE)
       
       double dt_min = pos_inf;

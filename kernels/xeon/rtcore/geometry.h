@@ -50,7 +50,7 @@ namespace embree
 
     __forceinline bool isModified() const { 
       return numPrimitives && ((state == MODIFIED) || (state == ENABLING)); 
-    } // FIXME: correct?
+    }
 
     /* test if this is a static geometry */
     __forceinline bool isStatic() const { return embree::isStatic(flags); }

@@ -158,8 +158,6 @@ namespace embree
     __forceinline bool isLeaf() { return flags == BUILD_RECORD_LEAF; }
   };
 
-
-
   template<class T, unsigned int SIZE>
     class WorkStack 
   {
