@@ -85,8 +85,8 @@ namespace embree
       __forceinline unsigned isNode() const { return (_id & leaf_mask) == 0; }
       
       /*! returns node pointer */
-      __forceinline       Node* node(      void* base) const { assert(isNode()); return (      Node*)((      char*)base + _id); }
-      __forceinline const Node* node(const void* base) const { assert(isNode()); return (const Node*)((const char*)base + _id); }
+      __forceinline       Node* node(      void* base) const { return (      Node*)((      char*)base + _id); }
+      __forceinline const Node* node(const void* base) const { return (const Node*)((const char*)base + _id); }
       
       /*! returns leaf pointer */
       __forceinline const char* leaf(const void* base, unsigned int& num) const {

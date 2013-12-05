@@ -485,22 +485,27 @@ namespace embree
 	while (local_workStack[globalCoreID].size() < 4 && 
 	       local_workStack[globalCoreID].size()+BVH4i::N <= SIZE_LOCAL_WORK_STACK) 
 	  {
+	    DBG_PRINT(local_workStack[globalCoreID].size());
+
 	    BuildRecord br;
 	    if (!local_workStack[globalCoreID].pop_nolock_largest(br)) break;
 
-	    mtx.lock();
 	    DBG_PRINT(br);
-	    mtx.unlock();
 	    
 	    recurseSAH(br,alloc,FILL_LOCAL_QUEUES,threadID,4);
 
 	    for (size_t i=0;i<local_workStack[globalCoreID].size();i++)
-	      std::cout << i << " items " << local_workStack[globalCoreID].get(i).items() << std::endl;
+	      {
+		std::cout << i << " items " << local_workStack[globalCoreID].get(i).items() << std::endl;
+		checkBuildRecord( local_workStack[globalCoreID].get(i) );
+		std::cout << "CHECK DONE" << std::endl << std::flush;
+	      }
 	    
-	    exit(0);
 	  }
 
 	localTaskScheduler[globalCoreID].releaseThreads(localThreadID,globalThreadID);	
+	std::cout << "RELEASE THREADS DONE" << std::endl << std::flush;
+
       }
 
 
@@ -932,8 +937,6 @@ namespace embree
 
     SharedBinningPartitionData &sd = local_sharedData[globalCoreID]; 
 
-    for (size_t i=0;i<2;i++)
-      {
     sd.rec = current;
     sd.split.reset();
     sd.left.reset();
@@ -943,7 +946,7 @@ namespace embree
     localTaskScheduler[globalCoreID].dispatchTask( task_localParallelBinning, this, localThreadID, globalThreadID );
     std::cout << "task_localParallelBinning [done]" << std::endl << std::flush;
     std::cout << sd.split << std::endl << std::flush;
-      }
+
     if (unlikely(sd.split.pos == -1)) 
       split_fallback(prims,current,leftChild,rightChild);
     else
@@ -957,8 +960,9 @@ namespace embree
 	const mic_f centroidDiagonal_2  = (centroidMax-centroidMin) * 2.0f;
 	const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
 
-	sd.left.reset();
-	sd.right.reset();
+	leftChild.bounds.reset();
+	rightChild.bounds.reset();
+
 
 	const unsigned int mid = partitionPrimRefs<L2_PREFETCH_ITEMS>(prims ,
 								      current.begin, 
@@ -970,6 +974,8 @@ namespace embree
 								      leftChild.bounds, 
 								      rightChild.bounds);
 
+	DBG_PRINT(mid);
+
 	assert(area(leftChild.bounds.geometry) >= 0.0f);
 
 	assert(current.begin + mid == current.begin + sd.split.numLeft);
@@ -979,14 +985,17 @@ namespace embree
 	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
 	    DBG_PRINT(sd.split);
 	    DBG_PRINT(current);
-	    DBG_PRINT(mid);
 	    split_fallback(prims,current,leftChild,rightChild);	    
 	  }
 	else
 	  {
 	    const unsigned int current_mid = current.begin + sd.split.numLeft;
+	    DBG_PRINT(current_mid);
 	    leftChild.init(current.begin,current_mid);
 	    rightChild.init(current_mid,current.end);
+	    DBG_PRINT(leftChild);
+	    DBG_PRINT(rightChild);
+
 	  }
 
 #else
@@ -1019,6 +1028,7 @@ namespace embree
 
   __forceinline bool BVH4iBuilder::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
   {
+
     if (unlikely(mode == BUILD_TOP_LEVEL))
       {
 	if (current.items() >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD)
