@@ -469,11 +469,13 @@ namespace embree
     const size_t globalThreadID = threadID;
     const size_t localThreadID  = threadID % 4;
 
-    mtx.lock();
-    PING;
-    DBG_PRINT(globalThreadID);
-    DBG_PRINT(localThreadID);
-    mtx.unlock();
+    DBG(
+	mtx.lock();
+	PING;
+	DBG_PRINT(globalThreadID);
+	DBG_PRINT(localThreadID);
+	mtx.unlock();
+	);
     
     if (localThreadID != 0)
       {
@@ -485,26 +487,24 @@ namespace embree
 	while (local_workStack[globalCoreID].size() < 4 && 
 	       local_workStack[globalCoreID].size()+BVH4i::N <= SIZE_LOCAL_WORK_STACK) 
 	  {
-	    DBG_PRINT(local_workStack[globalCoreID].size());
-
 	    BuildRecord br;
 	    if (!local_workStack[globalCoreID].pop_nolock_largest(br)) break;
 
-	    DBG_PRINT(br);
-	    
 	    recurseSAH(br,alloc,FILL_LOCAL_QUEUES,threadID,4);
 
-	    for (size_t i=0;i<local_workStack[globalCoreID].size();i++)
-	      {
-		std::cout << i << " items " << local_workStack[globalCoreID].get(i).items() << std::endl;
-		checkBuildRecord( local_workStack[globalCoreID].get(i) );
-		std::cout << "CHECK DONE" << std::endl << std::flush;
-	      }
+	    DBG(
+		for (size_t i=0;i<local_workStack[globalCoreID].size();i++)
+		  {
+		    std::cout << i << " items " << local_workStack[globalCoreID].get(i).items() << std::endl;
+		    checkBuildRecord( local_workStack[globalCoreID].get(i) );
+		    std::cout << "CHECK DONE" << std::endl << std::flush;
+		  }
+		);
 	    
 	  }
 
 	localTaskScheduler[globalCoreID].releaseThreads(localThreadID,globalThreadID);	
-	std::cout << "RELEASE THREADS DONE" << std::endl << std::flush;
+	DBG(std::cout << "RELEASE THREADS DONE" << std::endl << std::flush);
 
       }
 
@@ -916,8 +916,6 @@ namespace embree
 					BuildRecord &rightChild,
 					const size_t threadID)
   {
-    PING;
-
     const unsigned int items    = current.end - current.begin;
     const size_t globalCoreID   = threadID / 4;
     const size_t localThreadID  = threadID % 4;
@@ -942,10 +940,10 @@ namespace embree
     sd.left.reset();
     sd.right.reset();
 
-    std::cout << "task_localParallelBinning" << std::endl << std::flush;
+    //std::cout << "task_localParallelBinning" << std::endl << std::flush;
     localTaskScheduler[globalCoreID].dispatchTask( task_localParallelBinning, this, localThreadID, globalThreadID );
-    std::cout << "task_localParallelBinning [done]" << std::endl << std::flush;
-    std::cout << sd.split << std::endl << std::flush;
+    //std::cout << "task_localParallelBinning [done]" << std::endl << std::flush;
+    //std::cout << sd.split << std::endl << std::flush;
 
     if (unlikely(sd.split.pos == -1)) 
       split_fallback(prims,current,leftChild,rightChild);
@@ -974,8 +972,6 @@ namespace embree
 								      leftChild.bounds, 
 								      rightChild.bounds);
 
-	DBG_PRINT(mid);
-
 	assert(area(leftChild.bounds.geometry) >= 0.0f);
 
 	assert(current.begin + mid == current.begin + sd.split.numLeft);
@@ -990,12 +986,8 @@ namespace embree
 	else
 	  {
 	    const unsigned int current_mid = current.begin + sd.split.numLeft;
-	    DBG_PRINT(current_mid);
 	    leftChild.init(current.begin,current_mid);
 	    rightChild.init(current_mid,current.end);
-	    DBG_PRINT(leftChild);
-	    DBG_PRINT(rightChild);
-
 	  }
 
 #else
@@ -1233,18 +1225,19 @@ namespace embree
     const mic_f centroidDiagonal_2  = (centroidMax-centroidMin) * 2.0f;
     const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
 
-    mtx.lock();
-    PING;
-    DBG_PRINT(localThreadID);
-    DBG_PRINT(globalThreadID);
-    DBG_PRINT(globalCoreID);
-    DBG_PRINT((void*)this);
-    DBG_PRINT((void*)&current);
-    DBG_PRINT(items);
-    DBG_PRINT(startID);
-    DBG_PRINT(endID);
-
-    mtx.unlock();
+    DBG(
+	mtx.lock();
+	PING;
+	DBG_PRINT(localThreadID);
+	DBG_PRINT(globalThreadID);
+	DBG_PRINT(globalCoreID);
+	DBG_PRINT((void*)this);
+	DBG_PRINT((void*)&current);
+	DBG_PRINT(items);
+	DBG_PRINT(startID);
+	DBG_PRINT(endID);
+	mtx.unlock();
+	);
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
 
@@ -1258,9 +1251,6 @@ namespace embree
 
 	for (size_t i=1;i<4;i++)
 	  bin16.merge(global_bin16[globalThreadID+i]);
-
-	// DBG_PRINT(bin16);
-	// exit(0);
 
 	const float voxelArea = area(current.bounds.geometry);
 
