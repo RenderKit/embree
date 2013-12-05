@@ -18,7 +18,6 @@
 #define __BVH4I_BUILDER_BINNING_H__
 
 #include "bvh4i.h"
-#include "common/registry_builder.h"
 #include "bvh4i_builder_util.h"
 #include "bvh4i_builder_binner.h"
 

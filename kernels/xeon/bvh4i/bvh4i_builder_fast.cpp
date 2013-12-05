@@ -20,8 +20,6 @@
 #include "bvh4i_builder_util.h"
 #include "bvh4i_builder_binner.h"
 
-#include "common/registry_builder.h"
-
 #define BVH_NODE_PREALLOC_FACTOR 1.0f
 #define QBVH_BUILDER_LEAF_ITEM_THRESHOLD 4
 #define THRESHOLD_FOR_SUBTREE_RECURSION 128
@@ -54,7 +52,7 @@ namespace embree
       /* allocate BVH data */
       allocateData();
       
-      LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); // FIXME: why is this not also in morton builder
+      LockStepTaskScheduler::init(TaskScheduler::getNumThreads());
       
 #if defined(PROFILE)
       

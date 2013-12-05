@@ -298,7 +298,8 @@ namespace embree
   /// Transpose
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline void transpose(const ssef& r0, const ssef& r1, const ssef& r2, const ssef& r3, ssef& c0, ssef& c1, ssef& c2, ssef& c3) {
+  __forceinline void transpose(const ssef& r0, const ssef& r1, const ssef& r2, const ssef& r3, ssef& c0, ssef& c1, ssef& c2, ssef& c3) 
+  {
     ssef l02 = unpacklo(r0,r2);
     ssef h02 = unpackhi(r0,r2);
     ssef l13 = unpacklo(r1,r3);
@@ -309,7 +310,8 @@ namespace embree
     c3 = unpackhi(h02,h13);
   }
 
-  __forceinline void transpose(const ssef& r0, const ssef& r1, const ssef& r2, const ssef& r3, ssef& c0, ssef& c1, ssef& c2) {
+  __forceinline void transpose(const ssef& r0, const ssef& r1, const ssef& r2, const ssef& r3, ssef& c0, ssef& c1, ssef& c2) 
+  {
     ssef l02 = unpacklo(r0,r2);
     ssef h02 = unpackhi(r0,r2);
     ssef l13 = unpacklo(r1,r3);

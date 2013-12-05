@@ -20,7 +20,6 @@
 #include "embree2/rtcore.h"
 #include "rtcore/scene_triangle_mesh.h"
 #include "rtcore/scene_user_geometry.h"
-#include "common/registry_builder.h"
 #include "common/accel.h"
 
 namespace embree

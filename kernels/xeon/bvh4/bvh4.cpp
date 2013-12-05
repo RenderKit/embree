@@ -23,9 +23,6 @@
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
 
-#include "common/registry_builder.h"
-#include "common/registry_intersector.h"
-
 namespace embree
 {
   DECLARE_INTERSECTOR1(BVH4Triangle1Intersector1Moeller);

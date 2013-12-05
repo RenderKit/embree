@@ -217,7 +217,7 @@ namespace embree
   unsigned Scene::add(Geometry* geometry) 
   {
 #if !defined(__MIC__)
-    Lock<MutexActive> lock(geometriesMutex);
+    Lock<AtomicMutex> lock(geometriesMutex);
 #endif
     if (usedIDs.size()) {
       int id = usedIDs.back(); 
@@ -233,7 +233,7 @@ namespace embree
   void Scene::remove(Geometry* geometry) 
   {
 #if !defined(__MIC__)
-    Lock<MutexActive> lock(geometriesMutex);
+    Lock<AtomicMutex> lock(geometriesMutex);
 #endif
     usedIDs.push_back(geometry->id);
     geometries[geometry->id] = NULL;

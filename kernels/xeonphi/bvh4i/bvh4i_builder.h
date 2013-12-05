@@ -17,9 +17,6 @@
 #ifndef __EMBREE_BVHI_BUILDER_MIC_H__
 #define __EMBREE_BVHI_BUILDER_MIC_H__
 
-
-#include "common/registry_builder.h"
-
 #include "kernels/xeonphi/bvh4i/bvh4i.h"
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_binner.h"
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"

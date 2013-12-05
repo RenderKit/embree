@@ -21,14 +21,11 @@
 #endif
 
 #include "common/default.h"
+#include "common/alloc.h"
 #include "embree2/rtcore.h"
 #include "rtcore/scene.h"
 #include "sys/taskscheduler.h"
 #include "sys/thread.h"
-
-#include "common/registry_intersector.h"
-#include "common/registry_builder.h"
-#include "common/alloc.h"
 
 #define TRACE(x) //std::cout << #x << std::endl;
 
@@ -233,8 +230,6 @@ namespace embree
       PRINT(g_tri_accel);
       PRINT(g_builder);
       PRINT(g_traverser);
-
-      builders.print();
     }
 
     TaskScheduler::create(g_numThreads);

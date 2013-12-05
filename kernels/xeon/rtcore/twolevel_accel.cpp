@@ -18,9 +18,6 @@
 #include "virtual_accel.h"
 #include "rtcore/scene.h"
 
-#include "common/registry_builder.h"
-#include "common/registry_intersector.h"
-
 #include "bvh4/bvh4.h"
 #include "bvh4i/bvh4i.h"
 

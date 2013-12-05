@@ -16,9 +16,6 @@
 
 #include "virtual_accel.h"
 
-#include "common/registry_builder.h"
-#include "common/registry_intersector.h"
-
 #include "bvh4/bvh4.h"
 #include "bvh4i/bvh4i.h"
 
@@ -37,6 +34,7 @@ namespace embree
   extern Accel::Intersector16 BVH4iVirtualIntersector16Chunk;
 
   Builder* BVH4BuilderObjectSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
+  Builder* BVH4iBuilderObjectSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
 
   VirtualAccel::VirtualAccel (const std::string& ty, std::vector<Accel*>& accels)
     : source(accels)
@@ -58,7 +56,7 @@ namespace embree
       intersectors.intersector4 = BVH4iVirtualIntersector4Chunk;
       intersectors.intersector8 = BVH4iVirtualIntersector8Chunk;
       intersectors.intersector16 = BVH4iVirtualIntersector16Chunk;
-      builder = embree::builders.get("bvh4i.objectsplit4",accel,&source,&accels);
+      builder = BVH4iBuilderObjectSplit4(accel,&source,&accels,1,inf);
     }
 #endif
     else

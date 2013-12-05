@@ -23,7 +23,6 @@
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 
-#include "common/registry_builder.h"
 #include "sys/tasklogger.h"
 
 #define BVH_NODE_PREALLOC_FACTOR 1.1f
@@ -38,41 +37,16 @@ namespace embree
 {
   namespace isa
   {
-      static const size_t MAX_TOP_LEVEL_BINS = 1024;
-
-    // FIXME: these get instantiated multiple times, once for each ISA
-    //__align(64) LinearBarrierActive g_barrier;
-  __align(64) WorkStack<BVH4BuilderMorton::SmallBuildRecord,MAX_TOP_LEVEL_BINS> g_workStack;
-  
-  size_t g_numBuildRecords;
-  __align(64) BVH4BuilderMorton::SmallBuildRecord g_buildRecords[MAX_TOP_LEVEL_BINS];
-  
-  __align(64) unsigned int g_thread_startGroup[MAX_MIC_THREADS];
-  __align(64) unsigned int g_thread_startGroupOffset[MAX_MIC_THREADS];
-  
-  /*! state for radix sort */
-  static const size_t RADIX_BITS = 11;
-  static const size_t RADIX_BUCKETS = (1 << RADIX_BITS);
-  static const size_t RADIX_BUCKETS_MASK = (RADIX_BUCKETS-1);
-  __align(64) unsigned int g_radixCount[MAX_MIC_THREADS][RADIX_BUCKETS];
-
-    // =======================================================================================================
-    // =======================================================================================================
-    // =======================================================================================================
-    
     static double dt = 0.0f;
+
+    std::auto_ptr<BVH4BuilderMorton::MortonBuilderState> BVH4BuilderMorton::g_state(NULL);
     
     BVH4BuilderMorton::BVH4BuilderMorton (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
     : bvh(bvh), source(source), scene(scene), mesh(mesh), topLevelItemThreshold(0), encodeShift(0), encodeMask(0),
       morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
     {
       needAllThreads = true;
-      if (mesh) {
-        size_t numPrimitives = mesh->numTriangles;
-        needAllThreads = numPrimitives > 50000;
-      }
-	  //needAllThreads = false;
-	  // FIXME: build over scene always runs on all threads
+      if (mesh) needAllThreads = mesh->numTriangles > 50000;
       
       if (&bvh->primTy == &SceneTriangle1::type) {
         createSmallLeaf = createTriangle1Leaf;
@@ -150,7 +124,11 @@ namespace embree
       
 #else
       
-      if (needAllThreads) {
+      if (needAllThreads) 
+      {
+        if (!g_state.get()) 
+          g_state.reset(new MortonBuilderState);
+
         scheduler.init(threadCount);
         TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,threadCount,"build_parallel_morton");
       } else {
@@ -272,8 +250,8 @@ namespace embree
       if (mesh) 
       {
         /* store start group and offset */
-        g_thread_startGroup[threadID] = mesh->id;
-        g_thread_startGroupOffset[threadID] = startID;
+        g_state->startGroup[threadID] = mesh->id;
+        g_state->startGroupOffset[threadID] = startID;
       }
       else
       {
@@ -291,8 +269,8 @@ namespace embree
         }
         
         /* store start group and offset */
-        g_thread_startGroup[threadID] = group;
-        g_thread_startGroupOffset[threadID] = startID - skipped;
+        g_state->startGroup[threadID] = group;
+        g_state->startGroupOffset[threadID] = startID - skipped;
       }
     }
 
@@ -330,9 +308,9 @@ namespace embree
       bounds.reset();
       
       size_t currentID = startID;
-      size_t offset = g_thread_startGroupOffset[threadID];
+      size_t offset = g_state->startGroupOffset[threadID];
       
-      for (size_t group = g_thread_startGroup[threadID]; group<numGroups; group++) 
+      for (size_t group = g_state->startGroup[threadID]; group<numGroups; group++) 
       {       
         Geometry* geom = scene->get(group);
         if (!geom || geom->type != TRIANGLE_MESH) continue;
@@ -417,7 +395,7 @@ namespace embree
       
       /* store the morton codes temporarily in 'node' memory */
       MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)nodeAllocator.data; 
-      computeMortonCodes(startID,endID,g_thread_startGroup[threadID],g_thread_startGroupOffset[threadID],dest);
+      computeMortonCodes(startID,endID,g_state->startGroup[threadID],g_state->startGroupOffset[threadID],dest);
     }
     
     void BVH4BuilderMorton::recreateMortonCodes(SmallBuildRecord& current) const
@@ -487,11 +465,11 @@ namespace embree
         
         /* count how many items go into the buckets */
         for (size_t i=0; i<RADIX_BUCKETS; i++)
-          g_radixCount[threadID][i] = 0;
+          g_state->radixCount[threadID][i] = 0;
         
         for (size_t i=startID; i<endID; i++) {
           const size_t index = src[i].get(shift, mask);
-          g_radixCount[threadID][index]++;
+          g_state->radixCount[threadID][index]++;
         }
         scheduler.syncThreads(threadID,numThreads);
         
@@ -502,7 +480,7 @@ namespace embree
         
         for (size_t i=0; i<numThreads; i++)
           for (size_t j=0; j<RADIX_BUCKETS; j++)
-            total[j] += g_radixCount[i][j];
+            total[j] += g_state->radixCount[i][j];
         
         /* calculate start offset of each bucket */
         __align(64) size_t offset[RADIX_BUCKETS];
@@ -513,7 +491,7 @@ namespace embree
         /* calculate start offset of each bucket for this thread */
         for (size_t j=0; j<RADIX_BUCKETS; j++)
           for (size_t i=0; i<threadID; i++)
-            offset[j] += g_radixCount[i][j];
+            offset[j] += g_state->radixCount[i][j];
         
         /* copy items into their buckets */
         for (size_t i=startID; i<endID; i++) {
@@ -533,12 +511,12 @@ namespace embree
       while (true)
       {
         const unsigned int taskID = scheduler.taskCounter.inc();
-        if (taskID >= g_numBuildRecords) break;
+        if (taskID >= g_state->numBuildRecords) break;
         
         //size_t id = TaskLogger::beginTask(threadID,"BVH4BuilderMorton::subtree",0);
-        recurse(g_buildRecords[taskID],nodeAlloc,leafAlloc,RECURSE,threadID);
-        g_buildRecords[taskID].parent->setBarrier();
-        g_workStack.push(g_buildRecords[taskID]);
+        recurse(g_state->buildRecords[taskID],nodeAlloc,leafAlloc,RECURSE,threadID);
+        g_state->buildRecords[taskID].parent->setBarrier();
+        g_state->workStack.push(g_state->buildRecords[taskID]);
         //TaskLogger::endTask(threadID,id);
       }
     }
@@ -807,7 +785,7 @@ namespace embree
     {
       /* stop toplevel recursion at some number of items */
       if (mode == CREATE_TOP_LEVEL && current.size() <= topLevelItemThreshold) {
-        g_buildRecords[g_numBuildRecords++] = current; // FIXME: can overflow
+        g_state->buildRecords[g_state->numBuildRecords++] = current; // FIXME: can overflow
         return empty;
       }
       
@@ -1023,9 +1001,6 @@ namespace embree
     
     void BVH4BuilderMorton::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t, size_t, TaskScheduler::Event* event) 
     {
-      /* wait for all threads to enter task */
-      //g_barrier.wait(threadIndex,threadCount);
-
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();
@@ -1063,7 +1038,7 @@ namespace embree
 #endif	    
       
       /* build and extract top-level tree */
-      g_numBuildRecords = 0;
+      g_state->numBuildRecords = 0;
       topLevelItemThreshold = (numPrimitives + threadCount-1)/(2*threadCount);
       
       SmallBuildRecord br;
@@ -1079,10 +1054,10 @@ namespace embree
       recurse(br,nodeAlloc,leafAlloc,CREATE_TOP_LEVEL,threadIndex);	    
       
       /* sort all subtasks by size */
-      insertionsort_decending<SmallBuildRecord>(g_buildRecords,g_numBuildRecords);
+      insertionsort_decending<SmallBuildRecord>(g_state->buildRecords,g_state->numBuildRecords);
       
       /* build sub-trees */
-      g_workStack.reset();
+      g_state->workStack.reset();
       scheduler.dispatchTask( task_recurseSubMortonTrees, this, threadIndex, threadCount );
       
       /* refit toplevel part of tree */

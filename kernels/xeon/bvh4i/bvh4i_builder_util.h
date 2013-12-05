@@ -158,13 +158,11 @@ namespace embree
     __forceinline bool isLeaf() { return flags == BUILD_RECORD_LEAF; }
   };
 
-
-
   template<class T, unsigned int SIZE>
     class WorkStack 
   {
   public:
-    AtomicMutex __align(64) mutex;
+    AlignedAtomicMutex __align(64) mutex;
     __align(64) T t[SIZE];
 
     __forceinline void init() {

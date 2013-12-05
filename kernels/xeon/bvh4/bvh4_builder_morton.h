@@ -35,20 +35,25 @@ namespace embree
       
       enum { RECURSE = 1, CREATE_TOP_LEVEL = 2 };
       
-      //static const size_t NODE_BLOCK_SIZE = 64;
+      static const size_t MAX_TOP_LEVEL_BINS = 1024;
+
       static const size_t MORTON_LEAF_THRESHOLD = 4;
       static const size_t LATTICE_BITS_PER_DIM = 10;
       static const size_t LATTICE_SIZE_PER_DIM = size_t(1) << LATTICE_BITS_PER_DIM;
       
+      static const size_t RADIX_BITS = 11;
+      static const size_t RADIX_BUCKETS = (1 << RADIX_BITS);
+      static const size_t RADIX_BUCKETS_MASK = (RADIX_BUCKETS-1);
+
     public:
-      
+  
       class __align(16) SmallBuildRecord 
       {
       public:
         unsigned int begin;
         unsigned int end;
         unsigned int depth;
-        NodeRef* parent;
+        BVH4::NodeRef* parent;
         
         __forceinline unsigned int size() const {
           return end - begin;
@@ -65,7 +70,7 @@ namespace embree
         __forceinline bool operator<(const SmallBuildRecord& br) const { return size() < br.size(); } 
         __forceinline bool operator>(const SmallBuildRecord& br) const { return size() > br.size(); } 
       };
-      
+
       struct __align(8) MortonID32Bit
       {
         unsigned int code;
@@ -86,6 +91,43 @@ namespace embree
         
         __forceinline bool operator<(const MortonID32Bit &m) const { return code < m.code; } 
         __forceinline bool operator>(const MortonID32Bit &m) const { return code > m.code; } 
+      };
+
+      struct MortonBuilderState
+      {
+        ALIGNED_CLASS;
+
+      public:
+
+        MortonBuilderState () 
+        {
+          numBuildRecords = 0;
+          numThreads = getNumberOfLogicalThreads();
+          startGroup = new unsigned int[numThreads];
+          startGroupOffset = new unsigned int[numThreads];
+          radixCount = new unsigned int*[numThreads];
+          for (size_t i=0; i<numThreads; i++)
+            radixCount[i] = (unsigned int*) alignedMalloc(RADIX_BUCKETS*sizeof(unsigned int));
+        }
+
+        ~MortonBuilderState () 
+        {
+          size_t numThreads = getNumberOfLogicalThreads();
+          for (size_t i=0; i<numThreads; i++)
+            alignedFree(radixCount[i]);
+          delete[] radixCount;
+          delete[] startGroupOffset;
+          delete[] startGroup;
+        }
+
+        size_t numThreads;
+        unsigned int* startGroup;
+        unsigned int* startGroupOffset;
+        unsigned int** radixCount;
+        
+        size_t numBuildRecords;
+        __align(64) SmallBuildRecord buildRecords[MAX_TOP_LEVEL_BINS];
+        __align(64) WorkStack<SmallBuildRecord,MAX_TOP_LEVEL_BINS> workStack;
       };
       
       /*! Constructor. */
@@ -177,6 +219,8 @@ namespace embree
       size_t topLevelItemThreshold;
       size_t encodeShift;
       size_t encodeMask;
+
+      static std::auto_ptr<MortonBuilderState> g_state;
             
     protected:
       MortonID32Bit* __restrict__ morton;

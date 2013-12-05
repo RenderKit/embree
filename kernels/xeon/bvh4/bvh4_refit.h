@@ -18,7 +18,6 @@
 #define __EMBREE_BVH_REFIT_H__
 
 #include "bvh4.h"
-#include "common/registry_builder.h"
 
 namespace embree
 {

@@ -35,8 +35,6 @@ ADD_ISPC_LIBRARY(embree SHARED
   common/alloc.cpp 
 
   common/tasksys.cpp 
-  common/registry_builder.cpp		
-  common/registry_intersector.cpp
   common/accel3.cpp
 
   rtcore/rtcore.cpp 
@@ -205,8 +203,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED #  FIXME: build shared library
   common/alloc.cpp 
 
   common/tasksys.cpp 
-  common/registry_builder.cpp		
-  common/registry_intersector.cpp
   common/accel3.cpp
 
   rtcore/rtcore.cpp 
