@@ -21,7 +21,6 @@
 
 #include "bvh8i_builder.h"
 
-#include "common/registry_builder.h"
 #include "limits.h"
 #include "sys/sync/barrier.h"
 

@@ -19,8 +19,6 @@
 #include "bvh4i_statistics.h"
 #include "bvh4i_builder_util.h"
 
-#include "common/registry_builder.h"
-
 #define BVH_NODE_PREALLOC_FACTOR 1.1f
 
 #if defined(__USE_STAT_COUNTERS__)
