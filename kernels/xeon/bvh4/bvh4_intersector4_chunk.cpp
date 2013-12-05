@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "bvh4_intersector4_chunk.h"
-#include "common/registry_intersector.h"
 
 #include "geometry/triangle1_intersector4_moeller.h"
 #include "geometry/triangle4_intersector4_moeller.h"

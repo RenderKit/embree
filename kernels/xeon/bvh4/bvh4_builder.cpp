@@ -20,7 +20,6 @@
 #include "bvh4_rotate.h"
 #include "bvh4_statistics.h"
 
-#include "common/registry_builder.h"
 #include "builders/heuristics.h"
 #include "builders/splitter_fallback.h"
 

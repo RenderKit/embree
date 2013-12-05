@@ -22,9 +22,6 @@
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 
-#include "common/registry_builder.h"
-#include "common/registry_intersector.h"
-
 #include "sys/tasklogger.h"
 
 namespace embree

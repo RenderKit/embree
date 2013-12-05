@@ -18,7 +18,6 @@
 #define __EMBREE_BVH4_BUILDER_FAST_H__
 
 #include "bvh4.h"
-#include "common/registry_builder.h"
 #include "../bvh4i/bvh4i_builder_util.h"
 #include "../bvh4i/bvh4i_builder_binner.h"
 

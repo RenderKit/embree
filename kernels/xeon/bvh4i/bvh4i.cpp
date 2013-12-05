@@ -21,9 +21,6 @@
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 
-#include "common/registry_builder.h"
-#include "common/registry_intersector.h"
-
 namespace embree
 {
  __align(64) Vec3fa initQBVHNode[2] = { 

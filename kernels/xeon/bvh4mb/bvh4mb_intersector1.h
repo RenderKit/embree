@@ -20,7 +20,6 @@
 #include "bvh4mb.h"
 #include "embree2/rtcore.h"
 #include "../common/stack_item.h"
-#include "../common/registry_intersector.h"
 #include "../common/ray.h"
 
 namespace embree

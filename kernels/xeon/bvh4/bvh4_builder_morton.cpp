@@ -23,7 +23,6 @@
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 
-#include "common/registry_builder.h"
 #include "sys/tasklogger.h"
 
 #define BVH_NODE_PREALLOC_FACTOR 1.1f

@@ -24,7 +24,6 @@
 #include "builders/splitter.h"
 #include "builders/splitter_parallel.h"
 #include "../common/primitive.h"
-#include "common/registry_builder.h"
 
 namespace embree
 {

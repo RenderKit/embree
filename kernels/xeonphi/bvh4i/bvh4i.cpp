@@ -25,8 +25,6 @@
 #include "bvh4i_builder_morton.h"
 #include "bvh4i_builder_morton_enhanced.h"
 
-#include "common/registry_intersector.h"
-
 namespace embree
 {
   /*! intersector registration functions */

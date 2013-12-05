@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "bvh4_intersector4_hybrid.h"
-#include "common/registry_intersector.h"
 
 #include "geometry/triangle4_intersector4_moeller.h"
 #if defined (__AVX__)

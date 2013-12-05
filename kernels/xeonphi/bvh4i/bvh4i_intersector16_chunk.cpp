@@ -18,7 +18,6 @@
 
 #include "geometry/triangle1_intersector16_moeller.h"
 #include "geometry/virtual_accel_intersector16.h"
-#include "common/registry_intersector.h"
 
 namespace embree
 {

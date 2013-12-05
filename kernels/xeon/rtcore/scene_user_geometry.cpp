@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "scene_user_geometry.h"
-#include "common/registry_intersector.h"
 #include "scene.h"
 
 namespace embree

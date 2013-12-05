@@ -232,6 +232,10 @@ namespace embree
     FlatTriangleAccelBuildSource flat_triangle_source_1;
     FlatTriangleAccelBuildSource flat_triangle_source_2;
   };
+
+  typedef Builder* (*TriangleMeshBuilderFunc)(void* accel, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize);
+  typedef Builder* (*BuilderFunc)            (void* accel, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize);
+
 }
 
 #endif
