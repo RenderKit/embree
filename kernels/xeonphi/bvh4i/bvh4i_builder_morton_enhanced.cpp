@@ -20,7 +20,6 @@
 #include "kernels/xeonphi/bvh4i/bvh4i_statistics.h"
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
 
-#include "common/registry_builder.h"
 #include "limits.h"
 
 
@@ -37,11 +36,6 @@
 
 namespace embree 
 {
-
-  void BVH4iBuilderMortonEnhancedRegister () {
-    ADD_BUILDER("bvh4i.morton.enhanced",BVH4iBuilderMortonEnhanced::create,1,inf);
-  }
-
   BVH4iBuilderMortonEnhanced::BVH4iBuilderMortonEnhanced (BVH4i* _bvh, BuildSource* _source, void* _geometry, const size_t _minLeafSize, const size_t _maxLeafSize)
     : BVH4iBuilderMorton(_bvh,_source,_geometry,_minLeafSize,_maxLeafSize){}
 

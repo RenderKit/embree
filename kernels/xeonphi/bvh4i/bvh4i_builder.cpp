@@ -20,8 +20,6 @@
 #include "kernels/xeonphi/bvh4i/bvh4i_statistics.h"
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
 
-#include "common/registry_builder.h"
-
 #define BVH_NODE_PREALLOC_FACTOR                 1.15f
 
 #define QBVH_BUILDER_LEAF_ITEM_THRESHOLD         4
@@ -1210,9 +1208,5 @@ namespace embree
     if (g_verbose >= 2) 
 #endif
       dt = getSeconds()-t0;
-  }
-
-  void BVH4iBuilderRegister () {
-    ADD_BUILDER("bvh4i.objectsplit",BVH4iBuilder::create,1,inf);
   }
 };

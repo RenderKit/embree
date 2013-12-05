@@ -19,8 +19,6 @@
 #include "bvh4i_statistics.h"
 #include "bvh4i/bvh4i_builder_util.h"
 
-#include "common/registry_builder.h"
-
 #define BVH_NODE_PREALLOC_FACTOR          1.2f
 #define NUM_MORTON_IDS_PER_BLOCK            8
 #define SINGLE_THREADED_BUILD_THRESHOLD  (MAX_MIC_THREADS*8)
@@ -1387,10 +1385,6 @@ namespace embree
 #endif
       dt = getSeconds()-t0;
 
-  }
-
-  void BVH4iBuilderMortonRegister () {
-    ADD_BUILDER("bvh4i.morton",BVH4iBuilderMorton::create,1,inf);
   }
 }
 
