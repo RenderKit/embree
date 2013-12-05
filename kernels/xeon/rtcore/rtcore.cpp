@@ -213,6 +213,7 @@ namespace embree
     SELECT_KNC(features,InstanceIntersector16);
 #endif
 
+
     if (g_verbose >= 1)
     {
       std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
@@ -223,15 +224,19 @@ namespace embree
 
     if (g_verbose >= 2) 
     {
+#if !defined(__MIC__)    
       PRINT(cfg);
+#endif
       PRINT(g_numThreads);
       PRINT(g_verbose);
       PRINT(g_top_accel);
       PRINT(g_tri_accel);
       PRINT(g_builder);
       PRINT(g_traverser);
+
       builders.print();
     }
+
     TaskScheduler::create(g_numThreads);
 
     CATCH_END;
