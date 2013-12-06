@@ -38,9 +38,9 @@
 #define TIMER(x) 
 #define DBG(x) 
 
-//#define PROFILE
+#define PROFILE
 
-#define PROFILE_ITERATIONS 200
+#define PROFILE_ITERATIONS 20
 
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
@@ -474,6 +474,7 @@ namespace embree
 	PING;
 	DBG_PRINT(globalThreadID);
 	DBG_PRINT(localThreadID);
+	DBG_PRINT(globalCoreID);
 	mtx.unlock();
 	);
     
@@ -490,7 +491,14 @@ namespace embree
 	    BuildRecord br;
 	    if (!local_workStack[globalCoreID].pop_nolock_largest(br)) break;
 
-	    recurseSAH(br,alloc,FILL_LOCAL_QUEUES,threadID,4);
+	    DBG(
+		mtx.lock();
+		DBG_PRINT(br);
+		mtx.unlock();
+		);
+
+	    
+	    recurseSAH(br,alloc,FILL_LOCAL_QUEUES,globalThreadID,4);
 
 	    DBG(
 		for (size_t i=0;i<local_workStack[globalCoreID].size();i++)
@@ -507,6 +515,15 @@ namespace embree
 	DBG(std::cout << "RELEASE THREADS DONE" << std::endl << std::flush);
 
       }
+
+    DBG(
+	mtx.lock();
+	std::cout << "ENTER NORMAL MODE" << std::endl << std::flush;
+	DBG_PRINT(globalThreadID);
+	DBG_PRINT(localThreadID);
+	DBG_PRINT(globalCoreID);
+	mtx.unlock();
+	);
 
 
 #endif
