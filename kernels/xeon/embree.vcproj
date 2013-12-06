@@ -60,7 +60,7 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				StructMemberAlignment="0"
-				EnableEnhancedInstructionSet="2"
+				EnableEnhancedInstructionSet="0"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -77,7 +77,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/ignore:4217"
+				AdditionalOptions="/ignore:4217 /ignore:4049"
 				ModuleDefinitionFile="embree.def"
 				ForceSymbolReferences=""
 				GenerateDebugInformation="true"
@@ -142,7 +142,7 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				StructMemberAlignment="0"
-				EnableEnhancedInstructionSet="2"
+				EnableEnhancedInstructionSet="0"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -159,7 +159,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/ignore:4217"
+				AdditionalOptions="/ignore:4217 /ignore:4049"
 				ModuleDefinitionFile="embree.def"
 				ForceSymbolReferences=""
 				GenerateDebugInformation="true"
@@ -225,7 +225,7 @@
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
 				EnableFunctionLevelLinking="true"
-				EnableEnhancedInstructionSet="2"
+				EnableEnhancedInstructionSet="0"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -242,9 +242,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/ignore:4217"
+				AdditionalOptions="/ignore:4217 /ignore:4049"
 				ModuleDefinitionFile="embree.def"
 				ForceSymbolReferences=""
+				GenerateDebugInformation="false"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -307,7 +308,7 @@
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
 				EnableFunctionLevelLinking="true"
-				EnableEnhancedInstructionSet="2"
+				EnableEnhancedInstructionSet="0"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -324,9 +325,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/ignore:4217"
+				AdditionalOptions="/ignore:4217 /ignore:4049"
 				ModuleDefinitionFile="embree.def"
 				ForceSymbolReferences=""
+				GenerateDebugInformation="false"
 			/>
 			<Tool
 				Name="VCALinkTool"

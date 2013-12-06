@@ -181,7 +181,7 @@ namespace embree
       const ssef inf = ssef(pos_inf);
       
       /* allocate stack and push root node */
-      ssef    stack_near[stackSizeChunk];
+      ssef    stack_near[stackSizeChunk]; 
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH4::invalidNode;
       stack_near[0] = inf;

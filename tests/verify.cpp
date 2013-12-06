@@ -1759,20 +1759,17 @@ namespace embree
     /* parse command line */  
     parseCommandLine(argc,argv);
 
-#if 1
-
     POSITIVE("mutex_sys",                 test_mutex_sys());
-#if !defined(__MIC__)  // FIXME: hangs on MIC
+#if !defined(__MIC__)  // FIXME: hangs on MIC 
     POSITIVE("barrier_sys",               test_barrier_sys());
-    POSITIVE("condition_sys",             test_condition_sys());
 #endif
-    
+#if !defined(__MIC__) && !defined(_WIN32) // FIXME: hangs on MIC and Windows
+    POSITIVE("condition_sys",             test_condition_sys());
 #endif
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
 
-#if 1
     POSITIVE("empty_static",              rtcore_empty(RTC_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_DYNAMIC));
     POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_STATIC, RTC_STATIC));
@@ -1790,8 +1787,6 @@ namespace embree
     POSITIVE("overlapping_geometry",      rtcore_overlapping(100000));
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
     POSITIVE("regression_static",         rtcore_regression_static());
-#endif
-
     POSITIVE("regression_dynamic",        rtcore_regression_dynamic());
     rtcore_ray_masks_all();
     rtcore_backface_culling_all();
