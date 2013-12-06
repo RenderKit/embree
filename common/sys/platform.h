@@ -162,7 +162,7 @@
 #endif
 
 #if defined(_MSC_VER)
-  #define __restrict__ __restrict
+  #define __restrict__
 #endif
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)

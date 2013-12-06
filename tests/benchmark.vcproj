@@ -71,6 +71,8 @@
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				GenerateDebugInformation="true"
 				SubSystem="1"
+				StackReserveSize="4000000"
+				StackCommitSize="4000000"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -147,6 +149,8 @@
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				GenerateDebugInformation="true"
 				SubSystem="1"
+				StackReserveSize="4000000"
+				StackCommitSize="4000000"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -222,6 +226,8 @@
 				Name="VCLinkerTool"
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				SubSystem="1"
+				StackReserveSize="4000000"
+				StackCommitSize="4000000"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -298,6 +304,8 @@
 				Name="VCLinkerTool"
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				SubSystem="1"
+				StackReserveSize="4000000"
+				StackCommitSize="4000000"
 			/>
 			<Tool
 				Name="VCALinkTool"
