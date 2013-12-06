@@ -370,27 +370,18 @@ namespace embree
 
   __forceinline void fastbin_copy(const PrimRef * __restrict__ const aabb,
 				  PrimRef * __restrict__ const tmp_aabb,
-				  const unsigned int start,
-				  const unsigned int end,
+				  const unsigned int thread_start,
+				  const unsigned int thread_end,
 				  const mic_f &centroidBoundsMin_2,
 				  const mic_f &scale,
 				  Bin16 &bin16)
   {
-    const PrimRef * __restrict__ aptr = aabb + start;
 
-    prefetch<PFHINT_NT>(aptr);
-    prefetch<PFHINT_L2>(aptr+2);
-    prefetch<PFHINT_L2>(aptr+4);
-    prefetch<PFHINT_L2>(aptr+6);
-    prefetch<PFHINT_L2>(aptr+8);
+    prefetch<PFHINT_NT>(&aabb[thread_start]);
+    prefetch<PFHINT_NT>(&aabb[thread_end-1]);
 
-    PrimRef * __restrict__ tmp_aptr   = tmp_aabb + start;
-
-    prefetch<PFHINT_NTEX>(aptr);
-    prefetch<PFHINT_L2EX>(aptr+2);
-    prefetch<PFHINT_L2EX>(aptr+4);
-    prefetch<PFHINT_L2EX>(aptr+6);
-    prefetch<PFHINT_L2EX>(aptr+8);
+    prefetch<PFHINT_L1EX>(&tmp_aabb[thread_start]);
+    prefetch<PFHINT_L1EX>(&tmp_aabb[thread_end-1]);
 
     const mic_f init_min = mic_f::inf();
     const mic_f init_max = mic_f::minus_inf();
@@ -428,30 +419,25 @@ namespace embree
     count1 = zero;
     count2 = zero;
 
-    for (unsigned int j = start;j < end;j++,aptr++,tmp_aptr++)
+    unsigned int start = thread_start;
+    unsigned int end   = thread_end;
+
+    if (start % 2 != 0)
       {
-	prefetch<PFHINT_NT>(aptr+2);
-	prefetch<PFHINT_L2>(aptr+8);
-
-	prefetch<PFHINT_NTEX>(tmp_aptr+2);
-	prefetch<PFHINT_L2EX>(tmp_aptr+8);
-
-
-	const mic_f b_min = broadcast4to16f((float*)&aptr->lower);
-	const mic_f b_max = broadcast4to16f((float*)&aptr->upper);    
-
-	const mic_f centroid_2 = b_min + b_max; // FIXME: use sub + upconv?
+	const mic_f b_min = broadcast4to16f((float*)&aabb[start].lower);
+	const mic_f b_max = broadcast4to16f((float*)&aabb[start].upper);    
+	const mic_f centroid_2 = b_min + b_max; 
 	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
-
+	// ------------------------------------------------------------------------      
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
 	assert(0 <= binID[2] && binID[2] < 16);
-
+	// ------------------------------------------------------------------------      
 	const mic_i id = load16i(identity);
 	const mic_m m_update_x = eq(id,swAAAA(binID));
 	const mic_m m_update_y = eq(id,swBBBB(binID));
 	const mic_m m_update_z = eq(id,swCCCC(binID));
-
+	// ------------------------------------------------------------------------      
 	min_x0 = mask_min(m_update_x,min_x0,min_x0,swAAAA(b_min));
 	min_y0 = mask_min(m_update_x,min_y0,min_y0,swBBBB(b_min));
 	min_z0 = mask_min(m_update_x,min_z0,min_z0,swCCCC(b_min));
@@ -479,9 +465,127 @@ namespace embree
 	count0 = mask_add(m_update_x,count0,count0,mic_i::one());
 	count1 = mask_add(m_update_y,count1,count1,mic_i::one());
 	count2 = mask_add(m_update_z,count2,count2,mic_i::one());      
-	//evictL1(aptr-2);
+	tmp_aabb[start] = aabb[start];
+	start++;	
+      }
+    assert(start % 2 == 0);
 
-	*tmp_aptr = *aptr; // FIXME: NGO!
+    if (end % 2 != 0)
+      {
+	const mic_f b_min = broadcast4to16f((float*)&aabb[end-1].lower);
+	const mic_f b_max = broadcast4to16f((float*)&aabb[end-1].upper);    
+	const mic_f centroid_2 = b_min + b_max; 
+	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
+	// ------------------------------------------------------------------------      
+	assert(0 <= binID[0] && binID[0] < 16);
+	assert(0 <= binID[1] && binID[1] < 16);
+	assert(0 <= binID[2] && binID[2] < 16);
+	// ------------------------------------------------------------------------      
+	const mic_i id = load16i(identity);
+	const mic_m m_update_x = eq(id,swAAAA(binID));
+	const mic_m m_update_y = eq(id,swBBBB(binID));
+	const mic_m m_update_z = eq(id,swCCCC(binID));
+	// ------------------------------------------------------------------------      
+	min_x0 = mask_min(m_update_x,min_x0,min_x0,swAAAA(b_min));
+	min_y0 = mask_min(m_update_x,min_y0,min_y0,swBBBB(b_min));
+	min_z0 = mask_min(m_update_x,min_z0,min_z0,swCCCC(b_min));
+	// ------------------------------------------------------------------------      
+	max_x0 = mask_max(m_update_x,max_x0,max_x0,swAAAA(b_max));
+	max_y0 = mask_max(m_update_x,max_y0,max_y0,swBBBB(b_max));
+	max_z0 = mask_max(m_update_x,max_z0,max_z0,swCCCC(b_max));
+	// ------------------------------------------------------------------------
+	min_x1 = mask_min(m_update_y,min_x1,min_x1,swAAAA(b_min));
+	min_y1 = mask_min(m_update_y,min_y1,min_y1,swBBBB(b_min));
+	min_z1 = mask_min(m_update_y,min_z1,min_z1,swCCCC(b_min));      
+	// ------------------------------------------------------------------------      
+	max_x1 = mask_max(m_update_y,max_x1,max_x1,swAAAA(b_max));
+	max_y1 = mask_max(m_update_y,max_y1,max_y1,swBBBB(b_max));
+	max_z1 = mask_max(m_update_y,max_z1,max_z1,swCCCC(b_max));
+	// ------------------------------------------------------------------------
+	min_x2 = mask_min(m_update_z,min_x2,min_x2,swAAAA(b_min));
+	min_y2 = mask_min(m_update_z,min_y2,min_y2,swBBBB(b_min));
+	min_z2 = mask_min(m_update_z,min_z2,min_z2,swCCCC(b_min));
+	// ------------------------------------------------------------------------      
+	max_x2 = mask_max(m_update_z,max_x2,max_x2,swAAAA(b_max));
+	max_y2 = mask_max(m_update_z,max_y2,max_y2,swBBBB(b_max));
+	max_z2 = mask_max(m_update_z,max_z2,max_z2,swCCCC(b_max));
+	// ------------------------------------------------------------------------
+	count0 = mask_add(m_update_x,count0,count0,mic_i::one());
+	count1 = mask_add(m_update_y,count1,count1,mic_i::one());
+	count2 = mask_add(m_update_z,count2,count2,mic_i::one());      
+	tmp_aabb[end-1] = aabb[end-1];
+	end--;	
+      }
+    assert(end % 2 == 0);
+
+    const PrimRef * __restrict__ aptr = aabb + start;
+
+    prefetch<PFHINT_NT>(aptr);
+    prefetch<PFHINT_L2>(aptr+2);
+    prefetch<PFHINT_L2>(aptr+4);
+    prefetch<PFHINT_L2>(aptr+6);
+    prefetch<PFHINT_L2>(aptr+8);
+
+    PrimRef * __restrict__ tmp_aptr   = tmp_aabb + start;
+
+    for (size_t j = start;j < end;j+=2,aptr+=2,tmp_aptr+=2)
+      {
+	const mic_f twoAABBs = load16f(aptr);
+
+	prefetch<PFHINT_NT>(aptr+2);
+	prefetch<PFHINT_L2>(aptr+8);
+
+	tmp_aptr[0] = aptr[0];
+	tmp_aptr[1] = aptr[1];
+
+	store16f_ngo(tmp_aptr,twoAABBs);
+
+#pragma unroll(2)
+	for (size_t i=0;i<2;i++)
+	  {
+	    const mic_f b_min = broadcast4to16f((float*)&aptr[i].lower);
+	    const mic_f b_max = broadcast4to16f((float*)&aptr[i].upper);    
+
+	    const mic_f centroid_2 = b_min + b_max; // FIXME: use sub + upconv?
+	    const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
+
+	    assert(0 <= binID[0] && binID[0] < 16);
+	    assert(0 <= binID[1] && binID[1] < 16);
+	    assert(0 <= binID[2] && binID[2] < 16);
+
+	    const mic_i id = load16i(identity);
+	    const mic_m m_update_x = eq(id,swAAAA(binID));
+	    const mic_m m_update_y = eq(id,swBBBB(binID));
+	    const mic_m m_update_z = eq(id,swCCCC(binID));
+
+	    min_x0 = mask_min(m_update_x,min_x0,min_x0,swAAAA(b_min));
+	    min_y0 = mask_min(m_update_x,min_y0,min_y0,swBBBB(b_min));
+	    min_z0 = mask_min(m_update_x,min_z0,min_z0,swCCCC(b_min));
+	    // ------------------------------------------------------------------------      
+	    max_x0 = mask_max(m_update_x,max_x0,max_x0,swAAAA(b_max));
+	    max_y0 = mask_max(m_update_x,max_y0,max_y0,swBBBB(b_max));
+	    max_z0 = mask_max(m_update_x,max_z0,max_z0,swCCCC(b_max));
+	    // ------------------------------------------------------------------------
+	    min_x1 = mask_min(m_update_y,min_x1,min_x1,swAAAA(b_min));
+	    min_y1 = mask_min(m_update_y,min_y1,min_y1,swBBBB(b_min));
+	    min_z1 = mask_min(m_update_y,min_z1,min_z1,swCCCC(b_min));      
+	    // ------------------------------------------------------------------------      
+	    max_x1 = mask_max(m_update_y,max_x1,max_x1,swAAAA(b_max));
+	    max_y1 = mask_max(m_update_y,max_y1,max_y1,swBBBB(b_max));
+	    max_z1 = mask_max(m_update_y,max_z1,max_z1,swCCCC(b_max));
+	    // ------------------------------------------------------------------------
+	    min_x2 = mask_min(m_update_z,min_x2,min_x2,swAAAA(b_min));
+	    min_y2 = mask_min(m_update_z,min_y2,min_y2,swBBBB(b_min));
+	    min_z2 = mask_min(m_update_z,min_z2,min_z2,swCCCC(b_min));
+	    // ------------------------------------------------------------------------      
+	    max_x2 = mask_max(m_update_z,max_x2,max_x2,swAAAA(b_max));
+	    max_y2 = mask_max(m_update_z,max_y2,max_y2,swBBBB(b_max));
+	    max_z2 = mask_max(m_update_z,max_z2,max_z2,swCCCC(b_max));
+	    // ------------------------------------------------------------------------
+	    count0 = mask_add(m_update_x,count0,count0,mic_i::one());
+	    count1 = mask_add(m_update_y,count1,count1,mic_i::one());
+	    count2 = mask_add(m_update_z,count2,count2,mic_i::one());      
+	  }
       }
 
     bin16.prefetchL2EX();
