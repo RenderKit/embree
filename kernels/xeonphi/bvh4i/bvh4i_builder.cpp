@@ -466,67 +466,30 @@ namespace embree
 
 #if defined(ENABLE_FILL_PER_CORE_WORK_QUEUES)
 
-    const size_t globalThreadID = threadID;
-    const size_t localThreadID  = threadID % 4;
-
-    DBG(
-	mtx.lock();
-	PING;
-	DBG_PRINT(globalThreadID);
-	DBG_PRINT(localThreadID);
-	DBG_PRINT(globalCoreID);
-	mtx.unlock();
-	);
+    if (numThreads > 1)
+      {
+	const size_t globalThreadID = threadID;
+	const size_t localThreadID  = threadID % 4;
     
-    if (localThreadID != 0)
-      {
-	localTaskScheduler[globalCoreID].dispatchTaskMainLoop(localThreadID,globalThreadID);
-      }
-    else
-      {
-
-	while (local_workStack[globalCoreID].size() < 4 && 
-	       local_workStack[globalCoreID].size()+BVH4i::N <= SIZE_LOCAL_WORK_STACK) 
+	if (localThreadID != 0)
 	  {
-	    BuildRecord br;
-	    if (!local_workStack[globalCoreID].pop_largest(br)) break;
-
-	    DBG(
-		mtx.lock();
-		DBG_PRINT(globalThreadID);
-		DBG_PRINT(br);
-		mtx.unlock();
-		);
-
-	    
-	    recurseSAH(br,alloc,FILL_LOCAL_QUEUES,globalThreadID,4);
-
-	    DBG(
-		for (size_t i=0;i<local_workStack[globalCoreID].size();i++)
-		  {
-		    std::cout << i << " items " << local_workStack[globalCoreID].get(i).items() << std::endl;
-		    checkBuildRecord( local_workStack[globalCoreID].get(i) );
-		    std::cout << "CHECK DONE" << std::endl << std::flush;
-		  }
-		);
-	    
+	    localTaskScheduler[globalCoreID].dispatchTaskMainLoop(localThreadID,globalThreadID);
 	  }
+	else
+	  {
 
-	localTaskScheduler[globalCoreID].releaseThreads(localThreadID,globalThreadID);	
-	DBG(std::cout << "RELEASE THREADS DONE" << std::endl << std::flush);
+	    while (local_workStack[globalCoreID].size() < 4 && 
+		   local_workStack[globalCoreID].size()+BVH4i::N <= SIZE_LOCAL_WORK_STACK) 
+	      {
+		BuildRecord br;
+		if (!local_workStack[globalCoreID].pop_largest(br)) break;
 
+		recurseSAH(br,alloc,FILL_LOCAL_QUEUES,globalThreadID,4);
+	      }
+
+	    localTaskScheduler[globalCoreID].releaseThreads(localThreadID,globalThreadID);	
+	  }
       }
-
-    DBG(
-	mtx.lock();
-	std::cout << "ENTER NORMAL MODE" << std::endl << std::flush;
-	DBG_PRINT(globalThreadID);
-	DBG_PRINT(localThreadID);
-	DBG_PRINT(globalCoreID);
-	mtx.unlock();
-	);
-
-
 #endif
 
     double d0 = getSeconds();
@@ -685,14 +648,6 @@ namespace embree
  
     const unsigned int thread_start_left  = global_sharedData.lCounter.add(local_numLeft);
     const unsigned int thread_start_right = global_sharedData.rCounter.add(local_numRight);
-
-    DBG(
-	mtx.lock();
-	DBG_PRINT(threadID);
-	DBG_PRINT(thread_start_left);
-	DBG_PRINT(thread_start_right);
-	mtx.unlock();
-	);
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
 
@@ -1085,15 +1040,6 @@ namespace embree
 
   __forceinline bool BVH4iBuilder::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
   {
-    // DBG(
-    // 	mtx.lock();
-    // 	DBG_PRINT(threadID);
-    // 	DBG_PRINT(current);
-    // 	DBG_PRINT(mode);
-    // 	DBG_PRINT(numThreads);
-    // 	mtx.unlock();
-    // 	);
-
     if (unlikely(mode == BUILD_TOP_LEVEL))
       {
 	if (current.items() >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD)
@@ -1322,22 +1268,9 @@ namespace embree
       {
 	Bin16 &bin16 = global_bin16[globalThreadID];
 
-	DBG(
-	    mtx.lock();
-	    PING;
-	    DBG_PRINT(localThreadID);
-	    DBG_PRINT(globalThreadID);
-	    DBG_PRINT(bin16);
-	    );
-
-
 	for (size_t i=1;i<4;i++)
 	  bin16.merge(global_bin16[globalThreadID+i]);
 
-	DBG(
-	    DBG_PRINT(bin16);
-	    mtx.unlock();
-	    );
 	const float voxelArea = area(current.bounds.geometry);
 
 	local_sharedData[globalCoreID].split.cost = items * voxelArea;	
@@ -1376,14 +1309,6 @@ namespace embree
 		  }
 	      }
 	  }
-	DBG(
-	    mtx.lock();
-	    DBG_PRINT(localThreadID);
-	    DBG_PRINT(globalThreadID);
-	    DBG_PRINT(globalCoreID);
-	    DBG_PRINT(local_sharedData[globalCoreID].split);
-	    mtx.unlock();
-	    );
       }
 
   }
@@ -1404,16 +1329,6 @@ namespace embree
     const unsigned int items = current.items();
     const unsigned int startID = current.begin + ((localThreadID+0)*items/threads);
     const unsigned int endID   = current.begin + ((localThreadID+1)*items/threads);
-
-    DBG(
-	mtx.lock();
-	DBG_PRINT(localThreadID);
-	DBG_PRINT(globalThreadID);
-	DBG_PRINT(globalCoreID);
-	DBG_PRINT(startID);
-	DBG_PRINT(endID);
-	mtx.unlock();
-	);
    
     const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
     const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
@@ -1435,16 +1350,6 @@ namespace embree
  
     const unsigned int thread_start_left  = sd.lCounter.add(local_numLeft);
     const unsigned int thread_start_right = sd.rCounter.add(local_numRight);
-
-    DBG(
-	mtx.lock();
-	DBG_PRINT(localThreadID);
-	DBG_PRINT(globalThreadID);
-	DBG_PRINT(globalCoreID);
-	DBG_PRINT(thread_start_left);
-	DBG_PRINT(thread_start_right);
-	mtx.unlock();
-	);
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
 

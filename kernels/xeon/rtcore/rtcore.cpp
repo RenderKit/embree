@@ -142,6 +142,10 @@ namespace embree
         if (tok == "threads") {
           if (parseSymbol(cfg,'=',pos))
             g_numThreads = parseInt(cfg,pos);
+#if defined(__MIC__)
+	  if (!(g_numThreads == 1 || (g_numThreads % 4) == 0))
+	    FATAL("MIC supports only number of threads % 4 == 0, or threads == 1");
+#endif
         }
         else if (tok == "isa") {
           if (parseSymbol (cfg,'=',pos)) {
