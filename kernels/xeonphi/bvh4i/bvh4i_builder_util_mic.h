@@ -546,7 +546,7 @@ namespace embree
 	    const mic_f b_min = broadcast4to16f((float*)&aptr[i].lower);
 	    const mic_f b_max = broadcast4to16f((float*)&aptr[i].upper);    
 
-	    const mic_f centroid_2 = b_min + b_max; // FIXME: use sub + upconv?
+	    const mic_f centroid_2 = b_min + b_max; 
 	    const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
 
 	    assert(0 <= binID[0] && binID[0] < 16);
