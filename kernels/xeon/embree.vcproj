@@ -410,22 +410,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\common\registry_builder.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\common\registry_builder.h"
-				>
-			</File>
-			<File
-				RelativePath=".\common\registry_intersector.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\common\registry_intersector.h"
-				>
-			</File>
-			<File
 				RelativePath=".\common\stack_item.h"
 				>
 			</File>
