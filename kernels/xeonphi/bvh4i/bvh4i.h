@@ -177,8 +177,11 @@ namespace embree
     ~BVH4i();
 
     /*! BVH4i instantiations */
-    static Accel* BVH4iTriangle1(Scene* scene);
-    static Accel* BVH4iTriangle1(TriangleMeshScene::TriangleMesh* mesh);
+    static Accel* BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene);
+    static Accel* BVH4iTriangle1ObjectSplitBinnedSAH(TriangleMeshScene::TriangleMesh* mesh);
+
+    static Accel* BVH4iTriangle1ObjectSplitMorton(Scene* scene);
+    static Accel* BVH4iTriangle1ObjectSplitMorton(TriangleMeshScene::TriangleMesh* mesh);
 
     /*! initializes the acceleration structure */
     void init(size_t numNodes = 0, size_t numPrimitives = 0);
