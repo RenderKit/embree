@@ -121,6 +121,18 @@ namespace embree
     else return false;
   }
 
+  void InstanceIntersectorsRegister ()
+  {
+    int features = getCPUFeatures();
+    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
+    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
+    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector8);
+    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector16);
+#if defined(__MIC__)
+    SELECT_KNC(features,InstanceIntersector16);
+#endif
+  }
+
   RTCORE_API void rtcInit(const char* cfg) 
   {
     Lock<MutexSys> lock(g_mutex);
@@ -204,16 +216,7 @@ namespace embree
 #if defined(__TARGET_AVX__)
     BVH8iRegister();
 #endif
-
-    int features = getCPUFeatures();
-    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
-    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
-    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector8);
-    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector16);
-#if defined(__MIC__)
-    SELECT_KNC(features,InstanceIntersector16);
-#endif
-
+    InstanceIntersectorsRegister();
 
     if (g_verbose >= 1)
     {
@@ -225,9 +228,7 @@ namespace embree
 
     if (g_verbose >= 2) 
     {
-#if !defined(__MIC__)    
       PRINT(cfg);
-#endif
       PRINT(g_numThreads);
       PRINT(g_verbose);
       PRINT(g_top_accel);
