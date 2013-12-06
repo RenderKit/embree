@@ -98,8 +98,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__WIN32__) 
+#if defined(CONFIG_AVX)
+#define __TARGET_AVX__
+#endif
+#if defined(CONFIG_AVX2)
 #define __TARGET_AVX__
 #define __TARGET_AVX2__
+#endif
 #define __EXIT_ON_ERROR__
 //#define __USE_RAY_MASK__
 //#define __USE_STAT_COUNTERS__
@@ -111,8 +116,6 @@
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
 #define __SSE__
 #define __SSE2__
-#undef __TARGET_AVX__
-#undef __TARGET_AVX2__
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
