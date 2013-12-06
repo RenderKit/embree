@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Intel C++ Project"
-	Version="12.1"
+	Version="14.0"
 	Name="transport_host"
 	ProjectGUID="{7273B899-B26E-44C4-ADB0-B8E3A7F3BD7D}"
 	VCNestedProjectGUID="{898B98E9-4D18-5FB0-9E56-7A610F4F6DA7}"
