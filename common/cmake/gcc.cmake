@@ -34,4 +34,13 @@ IF (APPLE)
   ENDIF()
 ENDIF (APPLE)
 
+#EXECUTE_PROCESS(COMMAND g++ ${FLAGS_AVX2} -c dummy.cpp OUTPUT_VARIABLE GCC_VERSION RESULT_VARIABLE res)
+#MESSAGE("${res}")
+#MESSAGE("${GCC_VERSION}")
+#if(NOT "${res}" STREQUAL "0")
+#  message(FATAL_ERROR "process failed")
+#endif()
+#IF (${GCC_VERSION} GREATER
+#SET
+
 SET(EXT "")

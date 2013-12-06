@@ -37,7 +37,7 @@ namespace embree
   };
 
   /*! spinning mutex */
-  class __align(64) AtomicMutex
+  class AtomicMutex
   {
   public:
  
