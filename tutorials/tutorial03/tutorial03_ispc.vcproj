@@ -117,7 +117,7 @@
 			/>
 			<Tool
 				Name="ISPC"
-				TargetISA="6"
+				TargetISA="5"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -278,7 +278,7 @@
 			/>
 			<Tool
 				Name="ISPC"
-				TargetISA="6"
+				TargetISA="5"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
