@@ -565,13 +565,13 @@ namespace embree
       const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
       const mic_f s = mic_f(scale[bestSplitDim]);
 
-      mic_f left_centroidMinAABB = broadcast4to16f(&local_left.centroid.lower);
-      mic_f left_centroidMaxAABB = broadcast4to16f(&local_left.centroid.upper);
+      mic_f left_centroidMinAABB = broadcast4to16f(&local_left.centroid2.lower);
+      mic_f left_centroidMaxAABB = broadcast4to16f(&local_left.centroid2.upper);
       mic_f left_sceneMinAABB    = broadcast4to16f(&local_left.geometry.lower);
       mic_f left_sceneMaxAABB    = broadcast4to16f(&local_left.geometry.upper);
 
-      mic_f right_centroidMinAABB = broadcast4to16f(&local_right.centroid.lower);
-      mic_f right_centroidMaxAABB = broadcast4to16f(&local_right.centroid.upper);
+      mic_f right_centroidMinAABB = broadcast4to16f(&local_right.centroid2.lower);
+      mic_f right_centroidMaxAABB = broadcast4to16f(&local_right.centroid2.upper);
       mic_f right_sceneMinAABB    = broadcast4to16f(&local_right.geometry.lower);
       mic_f right_sceneMaxAABB    = broadcast4to16f(&local_right.geometry.upper);
 
@@ -584,9 +584,9 @@ namespace embree
 	      {
 		const mic_f b_min = broadcast4to16f((float*)&l->lower);
 		const mic_f b_max = broadcast4to16f((float*)&l->upper);
-		const mic_f centroid = (b_min+b_max) * 0.5f;
-		left_centroidMinAABB = min(left_centroidMinAABB,centroid);
-		left_centroidMaxAABB = max(left_centroidMaxAABB,centroid);
+		const mic_f centroid2 = b_min+b_max;
+		left_centroidMinAABB = min(left_centroidMinAABB,centroid2);
+		left_centroidMaxAABB = max(left_centroidMaxAABB,centroid2);
 		left_sceneMinAABB    = min(left_sceneMinAABB,b_min);
 		left_sceneMaxAABB    = max(left_sceneMaxAABB,b_max);
 	      }
@@ -600,9 +600,9 @@ namespace embree
 	      {
 		const mic_f b_min = broadcast4to16f((float*)&r->lower);
 		const mic_f b_max = broadcast4to16f((float*)&r->upper);
-		const mic_f centroid = (b_min+b_max) * 0.5f;
-		right_centroidMinAABB = min(right_centroidMinAABB,centroid);
-		right_centroidMaxAABB = max(right_centroidMaxAABB,centroid);
+		const mic_f centroid2 = b_min+b_max;
+		right_centroidMinAABB = min(right_centroidMinAABB,centroid2);
+		right_centroidMaxAABB = max(right_centroidMaxAABB,centroid2);
 		right_sceneMinAABB    = min(right_sceneMinAABB,b_min);
 		right_sceneMaxAABB    = max(right_sceneMaxAABB,b_max);
 	      }
@@ -617,9 +617,9 @@ namespace embree
 		{
 		  const mic_f b_min = broadcast4to16f((float*)&r->lower);
 		  const mic_f b_max = broadcast4to16f((float*)&r->upper);
-		  const mic_f centroid = (b_min+b_max) * 0.5f;
-		  right_centroidMinAABB = min(right_centroidMinAABB,centroid);
-		  right_centroidMaxAABB = max(right_centroidMaxAABB,centroid);
+		  const mic_f centroid2 = b_min+b_max;
+		  right_centroidMinAABB = min(right_centroidMinAABB,centroid2);
+		  right_centroidMaxAABB = max(right_centroidMaxAABB,centroid2);
 		  right_sceneMinAABB    = min(right_sceneMinAABB,b_min);
 		  right_sceneMaxAABB    = max(right_sceneMaxAABB,b_max);
 		}	    
@@ -633,13 +633,13 @@ namespace embree
 	  xchg(*l,*r);
 	}
 
-      store4f(&local_left.centroid.lower,left_centroidMinAABB);
-      store4f(&local_left.centroid.upper,left_centroidMaxAABB);
+      store4f(&local_left.centroid2.lower,left_centroidMinAABB);
+      store4f(&local_left.centroid2.upper,left_centroidMaxAABB);
       store4f(&local_left.geometry.lower,left_sceneMinAABB);
       store4f(&local_left.geometry.upper,left_sceneMaxAABB);
 
-      store4f(&local_right.centroid.lower,right_centroidMinAABB);
-      store4f(&local_right.centroid.upper,right_centroidMaxAABB);
+      store4f(&local_right.centroid2.lower,right_centroidMinAABB);
+      store4f(&local_right.centroid2.upper,right_centroidMaxAABB);
       store4f(&local_right.geometry.lower,right_sceneMinAABB);
       store4f(&local_right.geometry.upper,right_sceneMaxAABB);
 

@@ -30,11 +30,11 @@ namespace embree
     
     __forceinline Mapping (const Centroid_Scene_AABB& bounds) 
     {
-      const ssef centroid_lower = *(ssef*)&bounds.centroid.lower;
-      const ssef centroid_upper = *(ssef*)&bounds.centroid.upper;
-      const ssef centroidDiagonal = (centroid_upper-centroid_lower) * 2.0f;
+      const ssef centroid_lower = *(ssef*)&bounds.centroid2.lower;
+      const ssef centroid_upper = *(ssef*)&bounds.centroid2.upper;
+      const ssef centroidDiagonal = centroid_upper-centroid_lower;
       scale = select(centroidDiagonal != 0.0f,rcp(centroidDiagonal) * ssef(16.0f * 0.99f),ssef(0.0f));
-      ofs = (ssef)centroid_lower * 2.0f;
+      ofs = (ssef) centroid_lower;
     }
 
     /*! Computes the bin numbers for each dimension for a box. */

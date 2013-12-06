@@ -242,7 +242,7 @@ namespace embree
           const BBox3f b = mesh->bounds(offset+i);
           const ssef lower = (ssef)b.lower;
           const ssef upper = (ssef)b.upper;
-          const ssef centroid = (lower+upper) * 0.5f;
+          const ssef centroid = lower+upper;
           const ssei binID = ssei((centroid-base)*scale);
           const unsigned int index = (group << encodeShift) | (offset+i);
           ax[slots] = extract<0>(binID);
@@ -300,7 +300,7 @@ namespace embree
         const BBox3f b = scene->getTriangleMesh(geomID)->bounds(primID);
         const ssef lower = (ssef)b.lower;
         const ssef upper = (ssef)b.upper;
-        const ssef centroid = (lower+upper) * 0.5f;
+        const ssef centroid = lower+upper;
         const ssei binID = ssei((centroid-base)*scale);
         const unsigned int bx = extract<0>(binID);
         const unsigned int by = extract<1>(binID);
