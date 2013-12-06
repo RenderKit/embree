@@ -61,9 +61,9 @@ namespace embree
       __forceinline Mapping2 (const Centroid_Scene_AABB& bounds) 
         {
           /* for toplevel builder we have to take geometry bounds here */
-          const ssef geometryDiagonal = (ssef) bounds.geometry.size() * 2.0f; // FIXME: *2.0f is unsafe
+          const ssef geometryDiagonal = 2.0f * (ssef) bounds.geometry.size();
           scale = select(geometryDiagonal != 0.0f,rcp(geometryDiagonal) * ssef(16.0f * 0.99f),ssef(0.0f));
-          ofs = (ssef) bounds.geometry.lower * 2.0f;
+          ofs = 2.0f * (ssef) bounds.geometry.lower;
         }
       
       /*! Computes the bin numbers for each dimension for a box. */

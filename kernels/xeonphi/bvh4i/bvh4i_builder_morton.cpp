@@ -314,17 +314,17 @@ namespace embree
 
 	  const mic_f bmin = min(min(v0,v1),v2);
 	  const mic_f bmax = max(max(v0,v1),v2);
-	  const mic_f centroid = (bmin+bmax)*0.5f;
-	  bounds_centroid_min = min(bounds_centroid_min,centroid);
-	  bounds_centroid_max = max(bounds_centroid_max,centroid);
+	  const mic_f centroid2 = bmin+bmax;
+	  bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	  bounds_centroid_max = max(bounds_centroid_max,centroid2);
 	}
       
       if (unlikely(currentID == endID)) break;
       offset = 0;
     }
 
-    store4f(&bounds.centroid.lower,bounds_centroid_min);
-    store4f(&bounds.centroid.upper,bounds_centroid_max);
+    store4f(&bounds.centroid2.lower,bounds_centroid_min);
+    store4f(&bounds.centroid2.upper,bounds_centroid_max);
     
     global_bounds.extend_centroid_bounds_atomic(bounds); // FIXME: check whether float atomics are fast
   }
@@ -340,10 +340,10 @@ namespace embree
     MortonID32Bit* __restrict__ dest = ((MortonID32Bit*)morton) + startID; 
 
     /* compute mapping from world space into 3D grid */
-    const mic_f base     = broadcast4to16f((float*)&global_bounds.centroid.lower);
-    const mic_f diagonal = \
-      broadcast4to16f((float*)&global_bounds.centroid.upper) - 
-      broadcast4to16f((float*)&global_bounds.centroid.lower);
+    const mic_f base     = broadcast4to16f((float*)&global_bounds.centroid2.lower);
+    const mic_f diagonal = 
+      broadcast4to16f((float*)&global_bounds.centroid2.upper) - 
+      broadcast4to16f((float*)&global_bounds.centroid2.lower);
     const mic_f scale    = select(diagonal != 0, rcp(diagonal) * mic_f(LATTICE_SIZE_PER_DIM * 0.99f),mic_f(0.0f));
 
     size_t currentID = startID;
@@ -385,7 +385,7 @@ namespace embree
 
 	const mic_f bmin  = min(min(v0,v1),v2);
 	const mic_f bmax  = max(max(v0,v1),v2);
-	const mic_f cent  = (bmin+bmax)*mic_f(0.5f);
+	const mic_f cent  = bmin+bmax;
 	const mic_i binID = mic_i((cent-base)*scale);
 
 	mID[2*slot+1] = groupCode | (offset+i);
@@ -456,9 +456,9 @@ namespace embree
      
 	    const mic_f bmin = min(min(v0,v1),v2);
 	    const mic_f bmax = max(max(v0,v1),v2);
-	    const mic_f centroid = (bmin+bmax)*0.5f;
-	    bounds_centroid_min = min(bounds_centroid_min,centroid);
-	    bounds_centroid_max = max(bounds_centroid_max,centroid);
+	    const mic_f centroid2 = bmin+bmax;
+	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
 	  }
       }   
 
@@ -479,9 +479,9 @@ namespace embree
      
 	    const mic_f bmin = min(min(v0,v1),v2);
 	    const mic_f bmax = max(max(v0,v1),v2);
-	    const mic_f centroid = (bmin+bmax)*0.5f;
-	    bounds_centroid_min = min(bounds_centroid_min,centroid);
-	    bounds_centroid_max = max(bounds_centroid_max,centroid);
+	    const mic_f centroid2 = bmin+bmax;
+	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
 	  }
       }
 
@@ -513,7 +513,7 @@ namespace embree
      
 	    const mic_f bmin = min(min(v0,v1),v2);
 	    const mic_f bmax = max(max(v0,v1),v2);
-	    const mic_f centroid = (bmin+bmax)*0.5f;
+	    const mic_f centroid = bmin+bmax;
 	    const mic_i binID = mic_i((centroid-base)*scale);
 
 	    compactustore16i_low(0x1,&binID3_x[2*j+0],binID); 
@@ -543,7 +543,7 @@ namespace embree
      
 	    const mic_f bmin = min(min(v0,v1),v2);
 	    const mic_f bmax = max(max(v0,v1),v2);
-	    const mic_f centroid = (bmin+bmax)*0.5f;
+	    const mic_f centroid = bmin+bmax;
 	    const mic_i binID = mic_i((centroid-base)*scale);
 
 	    compactustore16i_low(0x1,&binID3_x[2*j+0],binID); 

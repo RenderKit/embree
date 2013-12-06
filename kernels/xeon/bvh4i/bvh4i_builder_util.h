@@ -30,21 +30,21 @@ namespace embree
   class __align(64) Centroid_Scene_AABB
   {
   public:
-    BBox3f centroid;
+    BBox3f centroid2;
     BBox3f geometry;
 
     __forceinline void reset() {
-      centroid = geometry = empty;
+      centroid2 = geometry = empty;
     }
 
     __forceinline void extend(const BBox3f& b) {
       assert(!b.empty());
-      centroid.extend(center(b));
+      centroid2.extend(center2(b));
       geometry.extend(b);
     }
 
     __forceinline void extend(const Centroid_Scene_AABB& v) {
-      centroid.extend(v.centroid);
+      centroid2.extend(v.centroid2);
       geometry.extend(v.geometry);
     }
 
@@ -73,8 +73,8 @@ namespace embree
 
     __forceinline void extend_centroid_bounds_atomic(const Centroid_Scene_AABB& v)
     {
-      float *aabb = (float*)&centroid;
-      float *v_aabb = (float*)&v.centroid;
+      float *aabb = (float*)&centroid2;
+      float *v_aabb = (float*)&v.centroid2;
 
       atomic_min_f32(&aabb[0] ,v_aabb[0]);
       atomic_min_f32(&aabb[1] ,v_aabb[1]);
@@ -87,7 +87,7 @@ namespace embree
 
     __forceinline friend std::ostream &operator<<(std::ostream &o, const Centroid_Scene_AABB &cs)
     {
-      o << "centroid = " << cs.centroid << " ";
+      o << "centroid2 = " << cs.centroid2 << " ";
       o << "geometry = " << cs.geometry << " ";
       return o;
     };
@@ -140,7 +140,7 @@ namespace embree
 
     __forceinline friend std::ostream &operator<<(std::ostream &o, const BuildRecord &br)
     {
-      o << "centroid = " << br.bounds.centroid << " ";
+      o << "centroid2 = " << br.bounds.centroid2 << " ";
       o << "geometry = " << br.bounds.geometry << " ";
       o << "begin      " << br.begin << " ";
       o << "end        " << br.end << " ";
