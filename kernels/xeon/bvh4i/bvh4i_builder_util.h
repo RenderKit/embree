@@ -17,7 +17,6 @@
 #ifndef BVH4I_BUILDER_UTIL_H
 #define BVH4I_BUILDER_UTIL_H
 
-//#include "bvh4i.h"
 #include "builders/primref.h"
 #include "geometry/triangle1.h"
 
@@ -34,7 +33,16 @@ namespace embree
     BBox3f geometry;
 
     __forceinline void reset() {
+#if !defined(__MIC__)
       centroid2 = geometry = empty;
+#else
+      const mic_f p_inf( pos_inf );
+      const mic_f n_inf( neg_inf );
+      store4f(&centroid2.lower,p_inf);
+      store4f(&centroid2.upper,n_inf);
+      store4f(&geometry.lower,p_inf);
+      store4f(&geometry.upper,n_inf);
+#endif
     }
 
     __forceinline void extend(const BBox3f& b) {

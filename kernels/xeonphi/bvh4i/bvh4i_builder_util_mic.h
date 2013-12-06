@@ -228,7 +228,7 @@ namespace embree
     __forceinline void prefetchL2()
     {
       const unsigned int size = sizeof(Bin16);
-#pragma unroll(size/64)
+#pragma unroll(8)
       for (size_t i=0;i<size;i+=64)
 	prefetch<PFHINT_L2>(((char*)this) + i);
 	

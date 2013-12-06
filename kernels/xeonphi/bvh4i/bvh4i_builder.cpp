@@ -49,7 +49,8 @@
 // TODO: CHECK     const float voxelArea    = current.cs_AABB.sceneArea();
 //                 const float centroidArea = current.cs_AABB.centroidArea();
 // div size_t
-
+// and-mask for lt_split,gt_split test
+// NGO queues for parallel_split copying
 // < 128 items => NGO stores 
 // build accel in build
 
@@ -1092,7 +1093,7 @@ namespace embree
   // =======================================================================================================
   // =======================================================================================================
   
-  void BVH4iBuilder::createLeaf(BuildRecord& current, NodeAllocator& alloc,const size_t threadIndex, const size_t threadCount)
+  __forceinline void BVH4iBuilder::createLeaf(BuildRecord& current, NodeAllocator& alloc,const size_t threadIndex, const size_t threadCount)
   {
 #if defined(DEBUG)
     if (current.depth > BVH4i::maxBuildDepthLeaf) 
