@@ -36,49 +36,36 @@ namespace embree
   DECLARE_INTERSECTOR4(BVH4Triangle1Intersector4ChunkMoeller);
   DECLARE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoeller);
   DECLARE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoeller);
-#if !defined(__MIC__)
   DECLARE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoeller);
   DECLARE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoeller);
-#endif
   DECLARE_INTERSECTOR4(BVH4Triangle1vIntersector4ChunkPluecker);
   DECLARE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker);
-#if !defined(__MIC__)
   DECLARE_INTERSECTOR4(BVH4Triangle4vIntersector4HybridPluecker);
-#endif
   DECLARE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker);
   DECLARE_INTERSECTOR4(BVH4VirtualIntersector4Chunk);
 
   DECLARE_INTERSECTOR8(BVH4Triangle1Intersector8ChunkMoeller);
   DECLARE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoeller);
   DECLARE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoeller);
-#if !defined(__MIC__)
   DECLARE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoeller);
   DECLARE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoeller);
-#endif
   DECLARE_INTERSECTOR8(BVH4Triangle1vIntersector8ChunkPluecker);
   DECLARE_INTERSECTOR8(BVH4Triangle4vIntersector8ChunkPluecker);
-#if !defined(__MIC__)
   DECLARE_INTERSECTOR8(BVH4Triangle4vIntersector8HybridPluecker);
-#endif
   DECLARE_INTERSECTOR8(BVH4Triangle4iIntersector8ChunkPluecker);
   DECLARE_INTERSECTOR8(BVH4VirtualIntersector8Chunk);
 
   DECLARE_INTERSECTOR16(BVH4Triangle1Intersector16ChunkMoeller);
   DECLARE_INTERSECTOR16(BVH4Triangle4Intersector16ChunkMoeller);
   DECLARE_INTERSECTOR16(BVH4Triangle8Intersector16ChunkMoeller);
-#if !defined(__MIC__)
   DECLARE_INTERSECTOR16(BVH4Triangle4Intersector16HybridMoeller);
   DECLARE_INTERSECTOR16(BVH4Triangle8Intersector16HybridMoeller);
-#endif
   DECLARE_INTERSECTOR16(BVH4Triangle1vIntersector16ChunkPluecker);
   DECLARE_INTERSECTOR16(BVH4Triangle4vIntersector16ChunkPluecker);
-#if !defined(__MIC__)
   DECLARE_INTERSECTOR16(BVH4Triangle4vIntersector16HybridPluecker);
-#endif
   DECLARE_INTERSECTOR16(BVH4Triangle4iIntersector16ChunkPluecker);
   DECLARE_INTERSECTOR16(BVH4VirtualIntersector16Chunk);
 
-#if !defined(__MIC__)
   DECLARE_TOPLEVEL_BUILDER(BVH4BuilderTopLevelFast);
 
   DECLARE_BUILDER(BVH4BuilderObjectSplit4Fast);
@@ -88,7 +75,6 @@ namespace embree
   DECLARE_TRIANGLEMESH_BUILDER(BVH4BuilderMortonTriangleMeshFast);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4BuilderRefitObjectSplit4TriangleMeshFast);
-#endif
 
   Builder* BVH4BuilderObjectSplit1 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
   Builder* BVH4BuilderObjectSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
@@ -101,7 +87,6 @@ namespace embree
   {
     int features = getCPUFeatures();
 
-#if !defined(__MIC__)
     SELECT_DEFAULT_SSE41(features,BVH4BuilderTopLevelFast);
 
     SELECT_DEFAULT(features,BVH4BuilderObjectSplit4Fast);
@@ -111,8 +96,8 @@ namespace embree
     SELECT_DEFAULT_SSE41(features,BVH4BuilderMortonTriangleMeshFast);
     
     SELECT_DEFAULT(features,BVH4BuilderRefitObjectSplit4TriangleMeshFast);
-#endif
 
+    /* select intersectors1 */
     SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle1Intersector1Moeller);
     SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector1Moeller);
     SELECT_AVX_AVX2              (features,BVH4Triangle8Intersector1Moeller);
@@ -121,59 +106,41 @@ namespace embree
     SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4iIntersector1Pluecker);
     SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector1);
 
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4Triangle1Intersector4ChunkMoeller);
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4Triangle4Intersector4ChunkMoeller);
-    SELECT_AVX_AVX2(features,BVH4Triangle8Intersector4ChunkMoeller);
-#if !defined(__MIC__)
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4Triangle4Intersector4HybridMoeller);
-    SELECT_AVX_AVX2(features,BVH4Triangle8Intersector4HybridMoeller);
-#endif
-    SELECT_DEFAULT_AVX     (features,BVH4Triangle1vIntersector4ChunkPluecker);
-    SELECT_DEFAULT_AVX     (features,BVH4Triangle4vIntersector4ChunkPluecker);
-#if !defined(__MIC__)
-    SELECT_DEFAULT_AVX     (features,BVH4Triangle4vIntersector4HybridPluecker);
-#endif
-    SELECT_DEFAULT_AVX     (features,BVH4Triangle4iIntersector4ChunkPluecker);
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4VirtualIntersector4Chunk);
+    /* select intersectors4 */
+    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle1Intersector4ChunkMoeller);
+    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector4ChunkMoeller);
+    SELECT_AVX_AVX2              (features,BVH4Triangle8Intersector4ChunkMoeller);
+    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector4HybridMoeller);
+    SELECT_AVX_AVX2              (features,BVH4Triangle8Intersector4HybridMoeller);
+    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle1vIntersector4ChunkPluecker);
+    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector4ChunkPluecker);
+    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector4HybridPluecker);
+    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4iIntersector4ChunkPluecker);
+    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector4Chunk);
 
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4Triangle1Intersector8ChunkMoeller);
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4Triangle4Intersector8ChunkMoeller);
-    SELECT_AVX_AVX2(features,BVH4Triangle8Intersector8ChunkMoeller);
-#if !defined(__MIC__)
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4Triangle4Intersector8HybridMoeller);
-    SELECT_AVX_AVX2(features,BVH4Triangle8Intersector8HybridMoeller);
-#endif
-    SELECT_DEFAULT_AVX     (features,BVH4Triangle1vIntersector8ChunkPluecker);
-    SELECT_DEFAULT_AVX     (features,BVH4Triangle4vIntersector8ChunkPluecker);
-#if !defined(__MIC__)
-    SELECT_DEFAULT_AVX     (features,BVH4Triangle4vIntersector8HybridPluecker);
-#endif
-    SELECT_DEFAULT_AVX     (features,BVH4Triangle4iIntersector8ChunkPluecker);
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4VirtualIntersector8Chunk);
+    /* select intersectors8 */
+    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle1Intersector8ChunkMoeller);
+    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector8ChunkMoeller);
+    SELECT_AVX_AVX2              (features,BVH4Triangle8Intersector8ChunkMoeller);
+    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector8HybridMoeller);
+    SELECT_AVX_AVX2              (features,BVH4Triangle8Intersector8HybridMoeller);
+    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle1vIntersector8ChunkPluecker);
+    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector8ChunkPluecker);
+    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector8HybridPluecker);
+    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4iIntersector8ChunkPluecker);
+    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector8Chunk);
 
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4Triangle1Intersector16ChunkMoeller);
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4Triangle4Intersector16ChunkMoeller);
-    SELECT_AVX_AVX2(features,BVH4Triangle8Intersector16ChunkMoeller);
-#if !defined(__MIC__)
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4Triangle4Intersector16HybridMoeller);
-    SELECT_AVX_AVX2(features,BVH4Triangle8Intersector16HybridMoeller);
-#endif
-    SELECT_DEFAULT_AVX     (features,BVH4Triangle1vIntersector16ChunkPluecker);
-    SELECT_DEFAULT_AVX     (features,BVH4Triangle4vIntersector16ChunkPluecker);
-#if !defined(__MIC__)
-    SELECT_DEFAULT_AVX     (features,BVH4Triangle4vIntersector16HybridPluecker);
-#endif
-    SELECT_DEFAULT_AVX     (features,BVH4Triangle4iIntersector16ChunkPluecker);
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4VirtualIntersector16Chunk);
-
-#if defined(__MIC__)
-    SELECT_KNC(features,BVH4Triangle1Intersector16ChunkMoeller);
-    SELECT_KNC(features,BVH4Triangle4Intersector16ChunkMoeller);
-    SELECT_KNC(features,BVH4Triangle1vIntersector16ChunkPluecker);
-    SELECT_KNC(features,BVH4Triangle4vIntersector16ChunkPluecker);
-    SELECT_KNC(features,BVH4Triangle4iIntersector16ChunkPluecker);
-    SELECT_KNC(features,BVH4VirtualIntersector16Chunk);
-#endif
+    /* select intersectors16 */
+    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle1Intersector16ChunkMoeller);
+    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector16ChunkMoeller);
+    SELECT_AVX_AVX2              (features,BVH4Triangle8Intersector16ChunkMoeller);
+    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector16HybridMoeller);
+    SELECT_AVX_AVX2              (features,BVH4Triangle8Intersector16HybridMoeller);
+    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle1vIntersector16ChunkPluecker);
+    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector16ChunkPluecker);
+    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector16HybridPluecker);
+    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4iIntersector16ChunkPluecker);
+    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector16Chunk);
   }
 
   BVH4::BVH4 (const PrimitiveType& primTy, void* geometry)
