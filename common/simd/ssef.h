@@ -217,7 +217,7 @@ namespace embree
 #endif
  }
 
-#if defined(__SSE4_1__)
+#if defined(__SSE4_1__) && !defined(__clang__)
   __forceinline const ssef select( const int mask, const ssef& t, const ssef& f ) { 
     return _mm_blend_ps(f, t, mask); 
   }

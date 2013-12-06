@@ -186,7 +186,7 @@ namespace embree
 #endif
   }
 
-#if defined(__SSE4_1__)
+#if defined(__SSE4_1__) && !defined(__clang__)
   __forceinline const ssei select( const int m, const ssei& t, const ssei& f ) { 
     return _mm_castps_si128(_mm_blend_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), m)); 
   }

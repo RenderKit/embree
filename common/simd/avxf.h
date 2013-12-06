@@ -222,9 +222,15 @@ namespace embree
     return _mm256_blendv_ps(f, t, m); 
   }
 
+#if !defined(__clang__)
   __forceinline const avxf select( const int m, const avxf& t, const avxf& f ) { 
     return _mm256_blend_ps(f, t, m);
   }
+#else
+  __forceinline const avxf select( const int m, const avxf& t, const avxf& f ) { 
+    return select(avxb(m),t,f);
+  }
+#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Rounding Functions
