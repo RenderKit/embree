@@ -325,9 +325,9 @@ namespace embree
 	const mic_f bmax = max(max(v0,v1),v2);
 	bounds_scene_min = min(bounds_scene_min,bmin);
 	bounds_scene_max = max(bounds_scene_max,bmax);
-	const mic_f centroid = (bmin+bmax)*0.5f;
-	bounds_centroid_min = min(bounds_centroid_min,centroid);
-	bounds_centroid_max = max(bounds_centroid_max,centroid);
+	const mic_f centroid2 = bmin+bmax;
+	bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	bounds_centroid_max = max(bounds_centroid_max,centroid2);
 
 
 	store4f(&prims[currentID].lower,bmin);
@@ -341,8 +341,8 @@ namespace embree
 
     Centroid_Scene_AABB bounds;
     
-    store4f(&bounds.centroid.lower,bounds_centroid_min);
-    store4f(&bounds.centroid.upper,bounds_centroid_max);
+    store4f(&bounds.centroid2.lower,bounds_centroid_min);
+    store4f(&bounds.centroid2.upper,bounds_centroid_max);
     store4f(&bounds.geometry.lower,bounds_scene_min);
     store4f(&bounds.geometry.upper,bounds_scene_max);
 
@@ -598,11 +598,11 @@ namespace embree
     const unsigned int startID = current.begin + ((threadID+0)*items/numThreads);
     const unsigned int endID   = current.begin + ((threadID+1)*items/numThreads);
 
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid.upper);
+    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
+    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
 
-    const mic_f centroidBoundsMin_2 = centroidMin * 2.0f;
-    const mic_f centroidDiagonal_2  = (centroidMax-centroidMin) * 2.0f;
+    const mic_f centroidBoundsMin_2 = centroidMin;
+    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
     const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
@@ -662,11 +662,11 @@ namespace embree
     const unsigned int startID = current.begin + ((threadID+0)*items/numThreads);
     const unsigned int endID   = current.begin + ((threadID+1)*items/numThreads);
    
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid.upper);
+    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
+    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
 
-    const mic_f centroidBoundsMin_2 = centroidMin * 2.0f;
-    const mic_f centroidDiagonal_2  = (centroidMax-centroidMin) * 2.0f;
+    const mic_f centroidBoundsMin_2 = centroidMin;
+    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
     const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
  
     const unsigned int bestSplitDim     = global_sharedData.split.dim;
@@ -709,7 +709,7 @@ namespace embree
 
 	const mic_f l_min = broadcast4to16f(&l_source->lower);
 	const mic_f l_max = broadcast4to16f(&l_source->upper);
-	const mic_f l_centroid = (l_min + l_max) * mic_f(0.5f);
+	const mic_f l_centroid2 = l_min + l_max;
 
 	if (likely(lt_split(l_source,bestSplitDim,c,s,mic_f(bestSplit))))
 	  {
@@ -719,8 +719,8 @@ namespace embree
 
 	    leftSceneBoundsMin = min(leftSceneBoundsMin,l_min);
 	    leftSceneBoundsMax = max(leftSceneBoundsMax,l_max);
-	    leftCentroidBoundsMin = min(leftCentroidBoundsMin,l_centroid);
-	    leftCentroidBoundsMax = max(leftCentroidBoundsMax,l_centroid);
+	    leftCentroidBoundsMin = min(leftCentroidBoundsMin,l_centroid2);
+	    leftCentroidBoundsMax = max(leftCentroidBoundsMax,l_centroid2);
 	    
 	    *l_dest++ = *l_source++; // optimize
 	    evictL1(l_dest-2);
@@ -734,8 +734,8 @@ namespace embree
 
 	    rightSceneBoundsMin = min(rightSceneBoundsMin,l_min);
 	    rightSceneBoundsMax = max(rightSceneBoundsMax,l_max);
-	    rightCentroidBoundsMin = min(rightCentroidBoundsMin,l_centroid);
-	    rightCentroidBoundsMax = max(rightCentroidBoundsMax,l_centroid);
+	    rightCentroidBoundsMin = min(rightCentroidBoundsMin,l_centroid2);
+	    rightCentroidBoundsMax = max(rightCentroidBoundsMax,l_centroid2);
 
 	    *r_dest++ = *l_source++;
 	    evictL1(r_dest-2);
@@ -749,13 +749,13 @@ namespace embree
     
     store4f(&local_left.geometry.lower,leftSceneBoundsMin);
     store4f(&local_left.geometry.upper,leftSceneBoundsMax);
-    store4f(&local_left.centroid.lower,leftCentroidBoundsMin);
-    store4f(&local_left.centroid.upper,leftCentroidBoundsMax);
+    store4f(&local_left.centroid2.lower,leftCentroidBoundsMin);
+    store4f(&local_left.centroid2.upper,leftCentroidBoundsMax);
 
     store4f(&local_right.geometry.lower,rightSceneBoundsMin);
     store4f(&local_right.geometry.upper,rightSceneBoundsMax);
-    store4f(&local_right.centroid.lower,rightCentroidBoundsMin);
-    store4f(&local_right.centroid.upper,rightCentroidBoundsMax);
+    store4f(&local_right.centroid2.lower,rightCentroidBoundsMin);
+    store4f(&local_right.centroid2.upper,rightCentroidBoundsMax);
 
 
     global_sharedData.left.extend_atomic(local_left); 
@@ -779,11 +779,11 @@ namespace embree
       return false;
     }
     
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid.upper);
+    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
+    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
 
-    const mic_f centroidBoundsMin_2 = centroidMin * 2.0f;
-    const mic_f centroidDiagonal_2  = (centroidMax-centroidMin) * 2.0f;
+    const mic_f centroidBoundsMin_2 = centroidMin;
+    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
     const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
 
     mic_f leftArea[3];
@@ -968,11 +968,11 @@ namespace embree
       {
 
 #if 1
-	const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid.lower);
-	const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid.upper);
+	const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
+	const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
 
-	const mic_f centroidBoundsMin_2 = centroidMin * 2.0f;
-	const mic_f centroidDiagonal_2  = (centroidMax-centroidMin) * 2.0f;
+	const mic_f centroidBoundsMin_2 = centroidMin;
+	const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
 	const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
 
 	leftChild.bounds.reset();
@@ -1235,11 +1235,11 @@ namespace embree
     const unsigned int endID   = current.begin + ((localThreadID+1)*items/4);
     
 
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid.upper);
+    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
+    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
 
-    const mic_f centroidBoundsMin_2 = centroidMin * 2.0f;
-    const mic_f centroidDiagonal_2  = (centroidMax-centroidMin) * 2.0f;
+    const mic_f centroidBoundsMin_2 = centroidMin;
+    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
     const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
 
     DBG(

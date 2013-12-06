@@ -48,10 +48,10 @@ namespace embree
       : m128(_mm_lookupmask_ps[(size_t(b) << 3) | (size_t(a) << 2) | (size_t(b) << 1) | size_t(a)]) {}
     __forceinline sseb           ( bool  a, bool  b, bool  c, bool  d)
       : m128(_mm_lookupmask_ps[(size_t(d) << 3) | (size_t(c) << 2) | (size_t(b) << 1) | size_t(a)]) {}
-	__forceinline sseb(int mask) {
-		assert(mask >= 0 && mask < 16);
-		m128 = _mm_lookupmask_ps[mask];
-	}
+    __forceinline sseb(int mask) {
+      assert(mask >= 0 && mask < 16);
+      m128 = _mm_lookupmask_ps[mask];
+    }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
