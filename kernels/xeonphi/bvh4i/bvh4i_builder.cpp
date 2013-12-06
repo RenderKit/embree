@@ -896,7 +896,7 @@ namespace embree
 
 	 const unsigned int mid = current.begin + global_sharedData.split.numLeft;
 
-	if (unlikely(current.begin + mid == current.begin || current.begin + mid == current.end)) 
+	if (unlikely(current.begin == mid || mid == current.end)) 
 	  {
 	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
 	    DBG_PRINT(global_sharedData.split);
@@ -1010,7 +1010,7 @@ namespace embree
 
 	 const unsigned int mid = current.begin + sd.split.numLeft;
 
-	 if (unlikely(current.begin + mid == current.begin || current.begin + mid == current.end)) 
+	 if (unlikely(mid == current.begin || mid == current.end)) 
 	   {
 	     std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
 	     DBG_PRINT(sd.split);
