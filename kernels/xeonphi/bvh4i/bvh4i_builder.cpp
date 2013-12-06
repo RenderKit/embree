@@ -40,7 +40,7 @@
 
 //#define PROFILE
 
-#define PROFILE_ITERATIONS 200
+#define PROFILE_ITERATIONS 20
 
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
@@ -474,6 +474,7 @@ namespace embree
 	PING;
 	DBG_PRINT(globalThreadID);
 	DBG_PRINT(localThreadID);
+	DBG_PRINT(globalCoreID);
 	mtx.unlock();
 	);
     
@@ -490,7 +491,15 @@ namespace embree
 	    BuildRecord br;
 	    if (!local_workStack[globalCoreID].pop_nolock_largest(br)) break;
 
-	    recurseSAH(br,alloc,FILL_LOCAL_QUEUES,threadID,4);
+	    DBG(
+		mtx.lock();
+		DBG_PRINT(globalThreadID);
+		DBG_PRINT(br);
+		mtx.unlock();
+		);
+
+	    
+	    recurseSAH(br,alloc,FILL_LOCAL_QUEUES,globalThreadID,4);
 
 	    DBG(
 		for (size_t i=0;i<local_workStack[globalCoreID].size();i++)
@@ -507,6 +516,15 @@ namespace embree
 	DBG(std::cout << "RELEASE THREADS DONE" << std::endl << std::flush);
 
       }
+
+    DBG(
+	mtx.lock();
+	std::cout << "ENTER NORMAL MODE" << std::endl << std::flush;
+	DBG_PRINT(globalThreadID);
+	DBG_PRINT(localThreadID);
+	DBG_PRINT(globalCoreID);
+	mtx.unlock();
+	);
 
 
 #endif
@@ -665,6 +683,14 @@ namespace embree
  
     const unsigned int thread_start_left  = global_sharedData.lCounter.add(local_numLeft);
     const unsigned int thread_start_right = global_sharedData.rCounter.add(local_numRight);
+
+    DBG(
+	mtx.lock();
+	DBG_PRINT(threadID);
+	DBG_PRINT(thread_start_left);
+	DBG_PRINT(thread_start_right);
+	mtx.unlock();
+	);
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
 
@@ -889,6 +915,7 @@ namespace embree
 	 global_sharedData.lCounter.reset(0);
 	 global_sharedData.rCounter.reset(0); 
 
+	 DBG(DBG_PRINT(global_bin16[0]));
 	 LockStepTaskScheduler::dispatchTask( task_parallelPartition, this, threadID, numThreads );
 
 	 const unsigned int mid = current.begin + global_sharedData.split.numLeft;
@@ -919,8 +946,8 @@ namespace embree
     const unsigned int items    = current.end - current.begin;
     const size_t globalCoreID   = threadID / 4;
     const size_t localThreadID  = threadID % 4;
-    const size_t globalThreadID = globalThreadID;
-
+    const size_t globalThreadID = threadID;
+    
     assert(items >= THRESHOLD_FOR_SUBTREE_RECURSION);
 
 #if defined(DEBUG)
@@ -950,7 +977,7 @@ namespace embree
     else
       {
 
-#if 1
+#if 0
 	const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
 	const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
 
@@ -997,7 +1024,7 @@ namespace embree
 	 sd.lCounter.reset(0);
 	 sd.rCounter.reset(0); 
 
-	 LockStepTaskScheduler::dispatchTask( task_parallelPartition, this, threadID, numThreads );
+	 localTaskScheduler[globalCoreID].dispatchTask( task_localParallelPartitioning, this, localThreadID, globalThreadID );
 
 	 const unsigned int mid = current.begin + sd.split.numLeft;
 
@@ -1008,8 +1035,8 @@ namespace embree
        }
 
 #if defined(DEBUG)
-     checkBuildRecord(leftChild);
-     checkBuildRecord(rightChild);
+    checkBuildRecord(leftChild);
+    checkBuildRecord(rightChild);
 #endif
      
      if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
@@ -1020,6 +1047,14 @@ namespace embree
 
   __forceinline bool BVH4iBuilder::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
   {
+    // DBG(
+    // 	mtx.lock();
+    // 	DBG_PRINT(threadID);
+    // 	DBG_PRINT(current);
+    // 	DBG_PRINT(mode);
+    // 	DBG_PRINT(numThreads);
+    // 	mtx.unlock();
+    // 	);
 
     if (unlikely(mode == BUILD_TOP_LEVEL))
       {
@@ -1228,10 +1263,10 @@ namespace embree
     DBG(
 	mtx.lock();
 	PING;
+	DBG_PRINT(current);
 	DBG_PRINT(localThreadID);
 	DBG_PRINT(globalThreadID);
 	DBG_PRINT(globalCoreID);
-	DBG_PRINT((void*)this);
 	DBG_PRINT((void*)&current);
 	DBG_PRINT(items);
 	DBG_PRINT(startID);
@@ -1249,9 +1284,22 @@ namespace embree
       {
 	Bin16 &bin16 = global_bin16[globalThreadID];
 
+	DBG(
+	    mtx.lock();
+	    PING;
+	    DBG_PRINT(localThreadID);
+	    DBG_PRINT(globalThreadID);
+	    DBG_PRINT(bin16);
+	    );
+
+
 	for (size_t i=1;i<4;i++)
 	  bin16.merge(global_bin16[globalThreadID+i]);
 
+	DBG(
+	    DBG_PRINT(bin16);
+	    mtx.unlock();
+	    );
 	const float voxelArea = area(current.bounds.geometry);
 
 	local_sharedData[globalCoreID].split.cost = items * voxelArea;	
@@ -1288,6 +1336,14 @@ namespace embree
 		local_sharedData[globalCoreID].split.numLeft = lnum[pos];
 	      }
 	  }
+	DBG(
+	    mtx.lock();
+	    DBG_PRINT(localThreadID);
+	    DBG_PRINT(globalThreadID);
+	    DBG_PRINT(globalCoreID);
+	    DBG_PRINT(local_sharedData[globalCoreID].split);
+	    mtx.unlock();
+	    );
       }
 
   }
@@ -1295,6 +1351,136 @@ namespace embree
 
   void BVH4iBuilder::localParallelPartitioning(const size_t localThreadID,const size_t globalThreadID)
   {
+    const size_t threads = 4;
+    const size_t globalCoreID = globalThreadID/threads;
+
+
+    SharedBinningPartitionData &sd = local_sharedData[globalCoreID];    
+    BuildRecord &current = sd.rec;
+    Bin16 &bin16 = global_bin16[globalThreadID];
+
+    // ----------------------------------------------
+
+    const unsigned int items = current.items();
+    const unsigned int startID = current.begin + ((localThreadID+0)*items/threads);
+    const unsigned int endID   = current.begin + ((localThreadID+1)*items/threads);
+
+    DBG(
+	mtx.lock();
+	DBG_PRINT(localThreadID);
+	DBG_PRINT(globalThreadID);
+	DBG_PRINT(globalCoreID);
+	DBG_PRINT(startID);
+	DBG_PRINT(endID);
+	mtx.unlock();
+	);
+   
+    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
+    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
+
+    const mic_f centroidBoundsMin_2 = centroidMin;
+    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
+    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+ 
+    const unsigned int bestSplitDim     = sd.split.dim;
+    const unsigned int bestSplit        = sd.split.pos;
+    const unsigned int bestSplitNumLeft = sd.split.numLeft;
+
+    const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
+    const mic_f s = mic_f(scale[bestSplitDim]);
+
+    const mic_i lnum    = prefix_sum(bin16.thread_count[bestSplitDim]);
+    const unsigned int local_numLeft = lnum[bestSplit-1];
+    const unsigned int local_numRight = (endID-startID) - lnum[bestSplit-1];
+ 
+    const unsigned int thread_start_left  = sd.lCounter.add(local_numLeft);
+    const unsigned int thread_start_right = sd.rCounter.add(local_numRight);
+
+    DBG(
+	mtx.lock();
+	DBG_PRINT(localThreadID);
+	DBG_PRINT(globalThreadID);
+	DBG_PRINT(globalCoreID);
+	DBG_PRINT(thread_start_left);
+	DBG_PRINT(thread_start_right);
+	mtx.unlock();
+	);
+
+    PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
+
+    PrimRef * __restrict__ l_source = tmp_prims + startID;
+    PrimRef * __restrict__ r_source = tmp_prims + endID;
+
+    PrimRef * __restrict__ l_dest     = prims + current.begin + thread_start_left;
+    PrimRef * __restrict__ r_dest     = prims + current.begin + thread_start_right + bestSplitNumLeft;
+
+    mic_f leftSceneBoundsMin((float)pos_inf);
+    mic_f leftSceneBoundsMax((float)neg_inf);
+    mic_f leftCentroidBoundsMin((float)pos_inf);
+    mic_f leftCentroidBoundsMax((float)neg_inf);
+
+    mic_f rightSceneBoundsMin((float)pos_inf);
+    mic_f rightSceneBoundsMax((float)neg_inf);
+    mic_f rightCentroidBoundsMin((float)pos_inf);
+    mic_f rightCentroidBoundsMax((float)neg_inf);
+
+
+    for (;l_source<r_source;)
+      {
+	prefetch<PFHINT_NT>(l_source+2);
+	prefetch<PFHINT_L2>(l_source + L2_PREFETCH_ITEMS);
+
+	const mic_f l_min = broadcast4to16f(&l_source->lower);
+	const mic_f l_max = broadcast4to16f(&l_source->upper);
+	const mic_f l_centroid2 = l_min + l_max;
+
+	if (likely(lt_split(l_source,bestSplitDim,c,s,mic_f(bestSplit))))
+	  {
+	    prefetch<PFHINT_L1EX>(l_dest+2);
+	    prefetch<PFHINT_L2EX>(l_dest + L2_PREFETCH_ITEMS);
+
+	    leftSceneBoundsMin = min(leftSceneBoundsMin,l_min);
+	    leftSceneBoundsMax = max(leftSceneBoundsMax,l_max);
+	    leftCentroidBoundsMin = min(leftCentroidBoundsMin,l_centroid2);
+	    leftCentroidBoundsMax = max(leftCentroidBoundsMax,l_centroid2);
+	    
+	    *l_dest++ = *l_source++; // optimize
+	    evictL1(l_dest-2);
+	    evictL1(l_source-2);
+	  }
+	else
+	  {
+	    prefetch<PFHINT_L1EX>(r_dest+2);
+	    prefetch<PFHINT_L2EX>(r_dest + L2_PREFETCH_ITEMS);
+
+	    rightSceneBoundsMin = min(rightSceneBoundsMin,l_min);
+	    rightSceneBoundsMax = max(rightSceneBoundsMax,l_max);
+	    rightCentroidBoundsMin = min(rightCentroidBoundsMin,l_centroid2);
+	    rightCentroidBoundsMax = max(rightCentroidBoundsMax,l_centroid2);
+
+	    *r_dest++ = *l_source++;
+	    evictL1(r_dest-2);
+	    evictL1(l_source-2);
+
+	  }
+      }
+
+    __align(64) Centroid_Scene_AABB local_left;
+    __align(64) Centroid_Scene_AABB local_right; // just one local
+    
+    store4f(&local_left.geometry.lower,leftSceneBoundsMin);
+    store4f(&local_left.geometry.upper,leftSceneBoundsMax);
+    store4f(&local_left.centroid2.lower,leftCentroidBoundsMin);
+    store4f(&local_left.centroid2.upper,leftCentroidBoundsMax);
+
+    store4f(&local_right.geometry.lower,rightSceneBoundsMin);
+    store4f(&local_right.geometry.upper,rightSceneBoundsMax);
+    store4f(&local_right.centroid2.lower,rightCentroidBoundsMin);
+    store4f(&local_right.centroid2.upper,rightCentroidBoundsMax);
+
+
+    sd.left.extend_atomic(local_left); 
+    sd.right.extend_atomic(local_right);  
     
   }
 
@@ -1306,8 +1492,6 @@ namespace embree
 
   void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
-    DBG(PING);
-
     TIMER(double msec = 0.0);
 
     //DBG_PRINT(threadIndex);
@@ -1359,7 +1543,7 @@ namespace embree
     /* work in multithreaded toplevel mode until sufficient subtasks got generated */    
     NodeAllocator alloc(atomicID,numAllocatedNodes);
     const size_t coreCount = (threadCount+3)/4;
-    while (global_workStack.size() < coreCount && 
+    while (global_workStack.size() < coreCount &&
 	   global_workStack.size()+BVH4i::N <= SIZE_GLOBAL_WORK_STACK) 
     {
       BuildRecord br;
