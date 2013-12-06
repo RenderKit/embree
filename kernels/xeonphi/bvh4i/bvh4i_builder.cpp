@@ -38,7 +38,7 @@
 #define TIMER(x) 
 #define DBG(x) 
 
-//#define PROFILE
+#define PROFILE
 
 #define PROFILE_ITERATIONS 20
 
@@ -49,7 +49,6 @@
 // TODO: CHECK     const float voxelArea    = current.cs_AABB.sceneArea();
 //                 const float centroidArea = current.cs_AABB.centroidArea();
 // div size_t
-// build record operator=
 
 // < 128 items => NGO stores 
 // build accel in build

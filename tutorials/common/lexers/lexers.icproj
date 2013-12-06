@@ -40,6 +40,38 @@
 				InterproceduralOptimization="0"
 			/>
 		</Configuration>
+		<Configuration
+			Name="ReleaseAVX|Win32"
+			>
+			<Tool
+				Name="CppCmplrTool"
+				InterproceduralOptimization="0"
+			/>
+		</Configuration>
+		<Configuration
+			Name="ReleaseAVX|x64"
+			>
+			<Tool
+				Name="CppCmplrTool"
+				InterproceduralOptimization="0"
+			/>
+		</Configuration>
+		<Configuration
+			Name="ReleaseAVX2|Win32"
+			>
+			<Tool
+				Name="CppCmplrTool"
+				InterproceduralOptimization="0"
+			/>
+		</Configuration>
+		<Configuration
+			Name="ReleaseAVX2|x64"
+			>
+			<Tool
+				Name="CppCmplrTool"
+				InterproceduralOptimization="0"
+			/>
+		</Configuration>
 	</Configurations>
 	<Files/>
 </VisualStudioProject>

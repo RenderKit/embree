@@ -112,6 +112,11 @@ namespace embree
     float sArea;
     size_t parentNode; 
 
+    BuildRecord()
+      {
+	assert(sizeof(BuildRecord) == 128);
+      }
+
     __forceinline void init(const unsigned int _begin, const unsigned int _end)
     {
       begin  = _begin;
@@ -137,6 +142,17 @@ namespace embree
 
     __forceinline bool operator<(const BuildRecord &br) const { return items() < br.items(); } 
     __forceinline bool operator>(const BuildRecord &br) const { return items() > br.items(); } 
+
+
+#if defined(__MIC__)
+    __forceinline void operator=(const BuildRecord& v) { 
+      assert(sizeof(BuildRecord) == 128);
+      const mic_f b0 = load16f((float*)&v);
+      const mic_f b1 = load16f((float*)&v + 16);
+      store16f((float*)this +  0, b0);
+      store16f((float*)this + 16, b1);
+    };
+#endif
 
     __forceinline friend std::ostream &operator<<(std::ostream &o, const BuildRecord &br)
     {
