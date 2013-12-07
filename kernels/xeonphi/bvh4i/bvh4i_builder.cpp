@@ -38,7 +38,7 @@
 #define TIMER(x) 
 #define DBG(x) 
 
-//#define PROFILE
+#define PROFILE
 
 #define PROFILE_ITERATIONS 20
 
@@ -49,7 +49,6 @@
 // TODO: CHECK     const float voxelArea    = current.cs_AABB.sceneArea();
 //                 const float centroidArea = current.cs_AABB.centroidArea();
 // div size_t
-// and-mask for lt_split,gt_split test
 // NGO queues for parallel_split copying
 // < 128 items => NGO stores 
 // build accel in build
@@ -200,6 +199,7 @@ namespace embree
 
 #if defined(PROFILE)
 
+	std::cout << "STARTING PROFILE MODE" << std::endl << std::flush;
 	double dt_min = pos_inf;
 	double dt_avg = 0.0f;
 	double dt_max = neg_inf;
@@ -787,7 +787,7 @@ namespace embree
     Split split;
     split.cost = items * voxelArea;
 
-    for (unsigned int dim = 0;dim < 3;dim++) 
+    for (size_t dim = 0;dim < 3;dim++) 
       {
 	if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
 
@@ -1398,7 +1398,7 @@ namespace embree
     mic_f rightCentroidBoundsMax((float)neg_inf);
 
 
-    for (;l_source<r_source;)
+    for (;l_source<r_source;) 
       {
 	prefetch<PFHINT_NT>(l_source+2);
 	prefetch<PFHINT_L2>(l_source + L2_PREFETCH_ITEMS);

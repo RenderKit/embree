@@ -47,6 +47,7 @@ namespace embree
     __forceinline mic_m( FalseTy ) : v(0x0000) {}
     __forceinline mic_m( TrueTy  ) : v(0xffff) {}
 
+    static unsigned int shift1[32];
   };
 
   ////////////////////////////////////////////////////////////////////////////////
