@@ -40,7 +40,7 @@
 
 #define PROFILE
 
-#define PROFILE_ITERATIONS 20
+#define PROFILE_ITERATIONS 100
 
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
@@ -688,6 +688,7 @@ namespace embree
     for (;l_source<r_source;)
       {
 	evictL1(l_source-2);	
+	    
 	prefetch<PFHINT_NT>(l_source+2);
 	prefetch<PFHINT_L2>(l_source + L2_PREFETCH_ITEMS + 4);
 
@@ -704,6 +705,7 @@ namespace embree
 
 	    leftSceneBoundsMin = min(leftSceneBoundsMin,b_min);
 	    leftSceneBoundsMax = max(leftSceneBoundsMax,b_max);
+
 	    leftCentroidBoundsMin = min(leftCentroidBoundsMin,b_centroid2);
 	    leftCentroidBoundsMax = max(leftCentroidBoundsMax,b_centroid2);
 	    
