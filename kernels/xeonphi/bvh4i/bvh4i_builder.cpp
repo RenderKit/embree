@@ -55,7 +55,6 @@
 namespace embree
 {
   AtomicMutex mtx;
-  __align(64) double threadTime[MAX_MIC_THREADS]; //FIXME
 
   // =======================================================================================================
   // =======================================================================================================
@@ -65,19 +64,13 @@ namespace embree
 
 #if 0
   
-   __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
-   	  {pos_inf,pos_inf,pos_inf,(int)(1 << 31)},
-   	  {neg_inf,neg_inf,neg_inf,(int)(1 << 31)},
-   	  {pos_inf,pos_inf,pos_inf,(int)(1 << 31)},
-   	  {neg_inf,neg_inf,neg_inf,(int)(1 << 31)}
-   };
 
-  // __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
-  // 	  {FLT_MAX_EXP,FLT_MAX_EXP,FLT_MAX_EXP,(int)(1 << 31)},
-  // 	  {FLT_MAX_EXP,FLT_MAX_EXP,FLT_MAX_EXP,(int)(1 << 31)},
-  // 	  {FLT_MAX_EXP,FLT_MAX_EXP,FLT_MAX_EXP,(int)(1 << 31)},
-  // 	  {FLT_MAX_EXP,FLT_MAX_EXP,FLT_MAX_EXP,(int)(1 << 31)}
-  // };
+  __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
+  	  { FLT_MIN_EXP, FLT_MIN_EXP, FLT_MIN_EXP,(int)(1 << 31)},
+  	  {-FLT_MIN_EXP,-FLT_MIN_EXP,-FLT_MIN_EXP,(int)(1 << 31)},
+  	  { FLT_MIN_EXP, FLT_MIN_EXP, FLT_MIN_EXP,(int)(1 << 31)},
+  	  {-FLT_MIN_EXP,-FLT_MIN_EXP,-FLT_MIN_EXP,(int)(1 << 31)}
+  };
 #else
 
   __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
@@ -511,8 +504,6 @@ namespace embree
       }
 #endif
 
-    double d0 = getSeconds();
-
     while(true)
       {
       /* process local work queue */
@@ -558,10 +549,6 @@ namespace embree
 
       }
 
-    TIMER(
-	  d0 = getSeconds() - d0;
-	  threadTime[threadID] = d0;
-	  );
   }
 
   void reduceBinsParallel(const size_t currentThreadID,
@@ -1472,11 +1459,6 @@ namespace embree
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
-
-#if 0
-    for (size_t i=0;i<threadCount;i++)
-      std::cout << i << " time " <<  1000. * threadTime[i] << " ms " << std::endl;
-#endif
 
     /* create triangle acceleration structure */
     TIMER(msec = getSeconds());        
