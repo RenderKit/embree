@@ -40,7 +40,7 @@
 
 #define PROFILE
 
-#define PROFILE_ITERATIONS 20
+#define PROFILE_ITERATIONS 10
 
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
@@ -337,7 +337,7 @@ namespace embree
 	local_prims[numLocalPrims].lower.a = g;
 	local_prims[numLocalPrims].upper.a = i;
 	numLocalPrims++;
-	if (unlikely(numLocalPrims == 1 && ((size_t)dest % 64) != 0))
+	if (unlikely(((size_t)dest % 64) != 0) && numLocalPrims == 1)
 	  {
 	    *dest = local_prims[0];
 	    dest++;
@@ -345,9 +345,9 @@ namespace embree
 	  }
 	else
 	  {
+	    const mic_f twoAABBs = load16f(local_prims);
 	    if (numLocalPrims == 2)
 	      {
-		const mic_f twoAABBs = load16f(local_prims);
 		numLocalPrims = 0;
 		store16f_ngo(dest,twoAABBs);
 		dest+=2;
@@ -691,48 +691,91 @@ namespace embree
     mic_f rightCentroidBoundsMin((float)pos_inf);
     mic_f rightCentroidBoundsMax((float)neg_inf);
 
+    /* local queues for NGO stores */
+    __align(64) PrimRef local_left_queue[2];
+    __align(64) PrimRef local_right_queue[2];
+    size_t num_local_left  = 0;
+    size_t num_local_right = 0;
+
+    const mic_m dim_mask = mic_m::shift1[bestSplitDim];
 
     for (;l_source<r_source;)
       {
 	prefetch<PFHINT_NT>(l_source+2);
 	prefetch<PFHINT_L2>(l_source + L2_PREFETCH_ITEMS);
 
-	const mic_f l_min = broadcast4to16f(&l_source->lower);
-	const mic_f l_max = broadcast4to16f(&l_source->upper);
-	const mic_f l_centroid2 = l_min + l_max;
+	const mic_f b_min = broadcast4to16f(&l_source->lower);
+	const mic_f b_max = broadcast4to16f(&l_source->upper);
+	const mic_f b_centroid2 = b_min + b_max;
 
-	if (likely(lt_split(l_source,bestSplitDim,c,s,mic_f(bestSplit))))
+	if (likely(lt_split(b_min,b_max,dim_mask,c,s,mic_f(bestSplit)))) 
 	  {
-	    prefetch<PFHINT_L1EX>(l_dest+2);
-	    prefetch<PFHINT_L2EX>(l_dest + L2_PREFETCH_ITEMS);
-	    //local_left.extend(*l_source); 	    
+	    store4f(&local_left_queue[num_local_left].lower,b_min);
+	    store4f(&local_left_queue[num_local_left].upper,b_max);
+	    num_local_left++;
+	    l_source++;
 
-	    leftSceneBoundsMin = min(leftSceneBoundsMin,l_min);
-	    leftSceneBoundsMax = max(leftSceneBoundsMax,l_max);
-	    leftCentroidBoundsMin = min(leftCentroidBoundsMin,l_centroid2);
-	    leftCentroidBoundsMax = max(leftCentroidBoundsMax,l_centroid2);
+	    leftSceneBoundsMin = min(leftSceneBoundsMin,b_min);
+	    leftSceneBoundsMax = max(leftSceneBoundsMax,b_max);
+	    leftCentroidBoundsMin = min(leftCentroidBoundsMin,b_centroid2);
+	    leftCentroidBoundsMax = max(leftCentroidBoundsMax,b_centroid2);
 	    
-	    *l_dest++ = *l_source++; // optimize
-	    evictL1(l_dest-2);
+	    if (unlikely(((size_t)l_dest % 64) != 0) && num_local_left == 1) 
+	      {
+		*l_dest++ = local_left_queue[0];
+		num_local_left--;
+	      }
+	    else
+	      {
+		if (num_local_left == 2)
+		  {
+		    const mic_f twoAABBs = load16f(local_left_queue);
+		    num_local_left = 0;
+		    store16f_ngo(l_dest,twoAABBs);
+		    l_dest+=2;
+		  }
+	      }	
+
 	    evictL1(l_source-2);
 	  }
 	else
 	  {
-	    prefetch<PFHINT_L1EX>(r_dest+2);
-	    prefetch<PFHINT_L2EX>(r_dest + L2_PREFETCH_ITEMS);
-	    //local_right.extend(*l_source); 
+	    store4f(&local_right_queue[num_local_right].lower,b_min);
+	    store4f(&local_right_queue[num_local_right].upper,b_max);
+	    num_local_right++;
+	    l_source++;
 
-	    rightSceneBoundsMin = min(rightSceneBoundsMin,l_min);
-	    rightSceneBoundsMax = max(rightSceneBoundsMax,l_max);
-	    rightCentroidBoundsMin = min(rightCentroidBoundsMin,l_centroid2);
-	    rightCentroidBoundsMax = max(rightCentroidBoundsMax,l_centroid2);
-
-	    *r_dest++ = *l_source++;
-	    evictL1(r_dest-2);
+	    rightSceneBoundsMin = min(rightSceneBoundsMin,b_min);
+	    rightSceneBoundsMax = max(rightSceneBoundsMax,b_max);
+	    rightCentroidBoundsMin = min(rightCentroidBoundsMin,b_centroid2);
+	    rightCentroidBoundsMax = max(rightCentroidBoundsMax,b_centroid2);
+	    
+	    if (unlikely(((size_t)r_dest % 64) != 0) && num_local_right == 1)
+	      {
+		*r_dest++ = local_right_queue[0];
+		num_local_right--;
+	      }
+	    else
+	      {
+		if (num_local_right == 2)
+		  {
+		    const mic_f twoAABBs = load16f(local_right_queue);
+		    num_local_right = 0;
+		    store16f_ngo(r_dest,twoAABBs);
+		    r_dest+=2;
+		  }
+	      }	
 	    evictL1(l_source-2);
-
 	  }
       }
+
+    /* flush local queues */
+
+    if (num_local_left % 2 != 0)
+      *l_dest = local_left_queue[0];
+
+    if (num_local_right % 2 != 0)
+      *r_dest = local_right_queue[0];
 
     __align(64) Centroid_Scene_AABB local_left;
     __align(64) Centroid_Scene_AABB local_right; // just one local

@@ -707,7 +707,6 @@ namespace embree
 
       const mic_f bestSplit_f = mic_f(bestSplit);
 
-#if 1
       const mic_m dim_mask = mic_m::shift1[bestSplitDim];
 
       while(1)
@@ -760,57 +759,7 @@ namespace embree
 	  xchg(*l,*r);
 	}
 
-#else
-      while(1)
-	{
-	  while (likely(l < r)) 
-	    {
-	      prefetch<PFHINT_L1EX>(l+2);	  
-	      if (unlikely(!lt_split(l,bestSplitDim,c,s,bestSplit_f))) break;
-	      prefetch<PFHINT_L2EX>(l + DISTANCE + 4);	  
-	      const mic_f b_min = broadcast4to16f((float*)&l->lower);
-	      const mic_f b_max = broadcast4to16f((float*)&l->upper);
-	      const mic_f centroid2 = b_min+b_max;
-	      left_centroidMinAABB = min(left_centroidMinAABB,centroid2);
-	      left_centroidMaxAABB = max(left_centroidMaxAABB,centroid2);
-	      left_sceneMinAABB    = min(left_sceneMinAABB,b_min);
-	      left_sceneMaxAABB    = max(left_sceneMaxAABB,b_max);
-	      ++l;
-	    }
-	  while (likely(l < r)) 
-	    {
-	      prefetch<PFHINT_L1EX>(r-2);	  
-	      if (unlikely(!ge_split(r,bestSplitDim,c,s,bestSplit_f))) break;
-	      prefetch<PFHINT_L2EX>(r - DISTANCE - 4);
-	      const mic_f b_min = broadcast4to16f((float*)&r->lower);
-	      const mic_f b_max = broadcast4to16f((float*)&r->upper);
-	      const mic_f centroid2 = b_min+b_max;
-	      right_centroidMinAABB = min(right_centroidMinAABB,centroid2);
-	      right_centroidMaxAABB = max(right_centroidMaxAABB,centroid2);
-	      right_sceneMinAABB    = min(right_sceneMinAABB,b_min);
-	      right_sceneMaxAABB    = max(right_sceneMaxAABB,b_max);
-	      --r;
-	    }
 
-	  if (unlikely(l == r)) {
-	    if ( ge_split(r,bestSplitDim,c,s,bestSplit_f))
-	      {
-		const mic_f b_min = broadcast4to16f((float*)&r->lower);
-		const mic_f b_max = broadcast4to16f((float*)&r->upper);
-		const mic_f centroid2 = b_min+b_max;
-		right_centroidMinAABB = min(right_centroidMinAABB,centroid2);
-		right_centroidMaxAABB = max(right_centroidMaxAABB,centroid2);
-		right_sceneMinAABB    = min(right_sceneMinAABB,b_min);
-		right_sceneMaxAABB    = max(right_sceneMaxAABB,b_max);
-	      }
-	    else 
-	      l++; 
-	    break;
-	  }
-
-	  xchg(*l,*r);
-	}
-#endif
       store4f(&local_left.centroid2.lower,left_centroidMinAABB);
       store4f(&local_left.centroid2.upper,left_centroidMaxAABB);
       store4f(&local_left.geometry.lower,left_sceneMinAABB);
