@@ -40,7 +40,7 @@
 
 #define PROFILE
 
-#define PROFILE_ITERATIONS 10
+#define PROFILE_ITERATIONS 20
 
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
@@ -501,8 +501,8 @@ namespace embree
 	  }
 	else
 	  {
-
-	    while (local_workStack[globalCoreID].size() < 4 && 
+	    local_workStack[globalCoreID].mutex.inc();
+	    while (local_workStack[globalCoreID].size() < 8 && 
 		   local_workStack[globalCoreID].size()+BVH4i::N <= SIZE_LOCAL_WORK_STACK) 
 	      {
 		BuildRecord br;
@@ -512,6 +512,7 @@ namespace embree
 	      }
 
 	    localTaskScheduler[globalCoreID].releaseThreads(localThreadID,globalThreadID);	
+	    local_workStack[globalCoreID].mutex.dec();
 	  }
       }
 #endif
@@ -686,8 +687,9 @@ namespace embree
 
     for (;l_source<r_source;)
       {
+	evictL1(l_source-2);	
 	prefetch<PFHINT_NT>(l_source+2);
-	prefetch<PFHINT_L2>(l_source + L2_PREFETCH_ITEMS);
+	prefetch<PFHINT_L2>(l_source + L2_PREFETCH_ITEMS + 4);
 
 	const mic_f b_min = broadcast4to16f(&l_source->lower);
 	const mic_f b_max = broadcast4to16f(&l_source->upper);
@@ -721,7 +723,6 @@ namespace embree
 		  }
 	      }	
 
-	    evictL1(l_source-2);
 	  }
 	else
 	  {
@@ -750,7 +751,6 @@ namespace embree
 		    r_dest+=2;
 		  }
 	      }	
-	    evictL1(l_source-2);
 	  }
       }
 
@@ -1044,47 +1044,6 @@ namespace embree
     else
       {
 
-#if 0
-	const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-	const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
-
-	const mic_f centroidBoundsMin_2 = centroidMin;
-	const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-	const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
-
-	leftChild.bounds.reset();
-	rightChild.bounds.reset();
-
-
-	const unsigned int mid = partitionPrimRefs<L2_PREFETCH_ITEMS>(prims ,
-								      current.begin, 
-								      current.end-1, 
-								      sd.split.pos, 
-								      sd.split.dim, 
-								      centroidBoundsMin_2, 
-								      scale, 
-								      leftChild.bounds, 
-								      rightChild.bounds);
-
-	assert(area(leftChild.bounds.geometry) >= 0.0f);
-
-	assert(current.begin + mid == current.begin + sd.split.numLeft);
-
-	if (unlikely(current.begin + mid == current.begin || current.begin + mid == current.end)) 
-	  {
-	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
-	    DBG_PRINT(sd.split);
-	    DBG_PRINT(current);
-	    split_fallback(prims,current,leftChild,rightChild);	    
-	  }
-	else
-	  {
-	    const unsigned int current_mid = current.begin + sd.split.numLeft;
-	    leftChild.init(current.begin,current_mid);
-	    rightChild.init(current_mid,current.end);
-	  }
-
-#else
 	 sd.left.reset();
 	 sd.right.reset();
 
@@ -1108,7 +1067,6 @@ namespace embree
 	     leftChild.init(sd.left,current.begin,mid);
 	     rightChild.init(sd.right,mid,current.end);
 	   }
-#endif
 	 
        }
 

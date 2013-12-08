@@ -240,7 +240,7 @@ namespace embree
 
     for (size_t j = start;j < end;j+=2,aptr+=2)
       {
-	prefetch<PFHINT_NT>(aptr+2);
+	prefetch<PFHINT_L1>(aptr+2);
 	prefetch<PFHINT_L2>(aptr+12);
 	
 #pragma unroll(2)
