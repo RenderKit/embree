@@ -38,7 +38,7 @@
 #define TIMER(x) 
 #define DBG(x) 
 
-//#define PROFILE
+#define PROFILE
 
 #define PROFILE_ITERATIONS 10
 
@@ -453,6 +453,7 @@ namespace embree
 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
 	computeAccelerationData(bptr->geomID(),bptr->primID(),(Scene*)geometry,acc);
+	//evictL2(bptr-2);
       }
   }
 

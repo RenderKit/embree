@@ -151,10 +151,10 @@ namespace embree
 			const unsigned long pos_second = bitscan64(pos_first,hiti);
 			if (likely(num_hitm == 2))
 			  {
-			    const unsigned dist_first  = ((unsigned int*)&tNear)[pos_first];
-			    const unsigned dist_second = ((unsigned int*)&tNear)[pos_second];
-			    const unsigned node_first  = curNode;
-			    const unsigned node_second = ((unsigned int*)plower)[pos_second];
+			    const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
+			    const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
+			    const unsigned int node_first  = curNode;
+			    const unsigned int node_second = ((unsigned int*)plower)[pos_second];
           
 			    if (dist_first <= dist_second)
 			      {
@@ -177,7 +177,7 @@ namespace embree
         
 			/* continue with closest child and push all others */
 			const mic_f min_dist = set_min_lanes(tNear_pos);
-			const unsigned old_sindex = sindex;
+			const unsigned int old_sindex = sindex;
 			sindex += countbits(hiti) - 1;
 			assert(sindex < 3*BVH4i::maxDepth+1);
         
@@ -296,7 +296,7 @@ namespace embree
 			      {
 				if (likely(sindex < 16))
 				  {
-				    const unsigned m_num_stack = mic_m::shift1[sindex] - 1;
+				    const unsigned int m_num_stack = mic_m::shift1[sindex] - 1;
 				    const mic_m m_num_stack_low  = toMask(m_num_stack);
 				    const mic_f snear_low  = load16f(stack_dist_single + 0);
 				    const mic_i snode_low  = load16i((int*)stack_node_single + 0);
@@ -646,10 +646,10 @@ namespace embree
 			const unsigned long pos_second = bitscan64(pos_first,hiti);
 			if (likely(num_hitm == 2))
 			  {
-			    const unsigned dist_first  = ((unsigned int*)&tNear)[pos_first];
-			    const unsigned dist_second = ((unsigned int*)&tNear)[pos_second];
-			    const unsigned node_first  = curNode;
-			    const unsigned node_second = ((unsigned int*)plower)[pos_second];
+			    const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
+			    const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
+			    const unsigned int node_first  = curNode;
+			    const unsigned int node_second = ((unsigned int*)plower)[pos_second];
           
 			    if (dist_first <= dist_second)
 			      {
@@ -670,7 +670,7 @@ namespace embree
         
 			/* continue with closest child and push all others */
 			const mic_f min_dist = set_min_lanes(tNear_pos);
-			const unsigned old_sindex = sindex;
+			const unsigned int old_sindex = sindex;
 			sindex += countbits(hiti) - 1;
 			assert(sindex < 3*BVH4i::maxDepth+1);
         
