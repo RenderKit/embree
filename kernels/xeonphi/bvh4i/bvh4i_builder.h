@@ -57,12 +57,11 @@ namespace embree
     TASK_FUNCTION(BVH4iBuilder,buildSubTrees);
     TASK_FUNCTION(BVH4iBuilder,createTriangle1);
     TASK_FUNCTION(BVH4iBuilder,convertToSOALayout);
-    TASK_FUNCTION(BVH4iBuilder,parallelBinning);
-    TASK_FUNCTION(BVH4iBuilder,parallelPartition);
+    TASK_FUNCTION(BVH4iBuilder,parallelBinningGlobal);
+    TASK_FUNCTION(BVH4iBuilder,parallelPartitioningGlobal);
     TASK_RUN_FUNCTION(BVH4iBuilder,build_parallel);
-
-    LOCAL_TASK_FUNCTION(BVH4iBuilder,localParallelBinning);
-    LOCAL_TASK_FUNCTION(BVH4iBuilder,localParallelPartitioning);
+    LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelBinningLocal);
+    LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelPartitioningLocal);
 
   public:
 
@@ -75,6 +74,7 @@ namespace embree
     /*! perform sequential binning and splitting */
     bool splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
 
+    /*! perform parallel splitting */
     void parallelPartitioning(BuildRecord& current,
 			      PrimRef * __restrict__ l_source,
 			      PrimRef * __restrict__ r_source,

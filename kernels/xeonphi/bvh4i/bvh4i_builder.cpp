@@ -38,7 +38,7 @@
 #define TIMER(x) 
 #define DBG(x) 
 
-#define PROFILE
+//#define PROFILE
 
 #define PROFILE_ITERATIONS 100
 
@@ -326,11 +326,6 @@ namespace embree
 	bounds_centroid_min = min(bounds_centroid_min,centroid2);
 	bounds_centroid_max = max(bounds_centroid_max,centroid2);
 
-// 	store4f(&prims[currentID].lower,bmin);
-// 	store4f(&prims[currentID].upper,bmax);	
-// 	prims[currentID].lower.a = g;
-// 	prims[currentID].upper.a = i;
-
 	store4f(&local_prims[numLocalPrims].lower,bmin);
 	store4f(&local_prims[numLocalPrims].upper,bmax);	
 	local_prims[numLocalPrims].lower.a = g;
@@ -453,7 +448,6 @@ namespace embree
 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
 	computeAccelerationData(bptr->geomID(),bptr->primID(),(Scene*)geometry,acc);
-	//evictL2(bptr-2);
       }
   }
 
@@ -579,7 +573,7 @@ namespace embree
     bin16[currentThreadID].merge(bin16[childThreadID]);
   }
 
-  void BVH4iBuilder::parallelBinning(const size_t threadID, const size_t numThreads)
+  void BVH4iBuilder::parallelBinningGlobal(const size_t threadID, const size_t numThreads)
   {
     BuildRecord &current = global_sharedData.rec;
 
@@ -777,7 +771,7 @@ namespace embree
 
   }
 
-  void BVH4iBuilder::parallelPartition(const size_t threadID, const size_t numThreads)
+  void BVH4iBuilder::parallelPartitioningGlobal(const size_t threadID, const size_t numThreads)
   {
     BuildRecord &current = global_sharedData.rec;
 
@@ -967,7 +961,7 @@ namespace embree
      global_sharedData.left.reset();
      global_sharedData.right.reset();
      
-     LockStepTaskScheduler::dispatchTask( task_parallelBinning, this, threadID, numThreads );
+     LockStepTaskScheduler::dispatchTask( task_parallelBinningGlobal, this, threadID, numThreads );
 
      if (unlikely(global_sharedData.split.pos == -1)) 
        split_fallback(prims,current,leftChild,rightChild);
@@ -979,7 +973,7 @@ namespace embree
 	 global_sharedData.lCounter.reset(0);
 	 global_sharedData.rCounter.reset(0); 
 
-	 LockStepTaskScheduler::dispatchTask( task_parallelPartition, this, threadID, numThreads );
+	 LockStepTaskScheduler::dispatchTask( task_parallelPartitioningGlobal, this, threadID, numThreads );
 
 	 const unsigned int mid = current.begin + global_sharedData.split.numLeft;
 
@@ -1039,7 +1033,7 @@ namespace embree
     sd.left.reset();
     sd.right.reset();
 
-    localTaskScheduler[globalCoreID].dispatchTask( task_localParallelBinning, this, localThreadID, globalThreadID );
+    localTaskScheduler[globalCoreID].dispatchTask( task_parallelBinningLocal, this, localThreadID, globalThreadID );
 
     if (unlikely(sd.split.pos == -1)) 
       split_fallback(prims,current,leftChild,rightChild);
@@ -1052,7 +1046,7 @@ namespace embree
 	 sd.lCounter.reset(0);
 	 sd.rCounter.reset(0); 
 
-	 localTaskScheduler[globalCoreID].dispatchTask( task_localParallelPartitioning, this, localThreadID, globalThreadID );
+	 localTaskScheduler[globalCoreID].dispatchTask( task_parallelPartitioningLocal, this, localThreadID, globalThreadID );
 
 	 const unsigned int mid = current.begin + sd.split.numLeft;
 
@@ -1272,7 +1266,7 @@ namespace embree
   // =======================================================================================================
   // =======================================================================================================
 
-  void BVH4iBuilder::localParallelBinning(const size_t localThreadID,const size_t globalThreadID)
+  void BVH4iBuilder::parallelBinningLocal(const size_t localThreadID,const size_t globalThreadID)
   {
     const size_t globalCoreID = globalThreadID/4;
     BuildRecord &current = local_sharedData[globalCoreID].rec;
@@ -1344,7 +1338,7 @@ namespace embree
   }
 
 
-  void BVH4iBuilder::localParallelPartitioning(const size_t localThreadID,const size_t globalThreadID)
+  void BVH4iBuilder::parallelPartitioningLocal(const size_t localThreadID,const size_t globalThreadID)
   {
     const size_t threads = 4;
     const size_t globalCoreID = globalThreadID/threads;
@@ -1416,8 +1410,6 @@ namespace embree
     if (g_verbose >= 2) 
 #endif
       t0 = getSeconds();
-
-
 
     TIMER(msec = getSeconds());
     
