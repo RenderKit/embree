@@ -25,11 +25,11 @@
 
 #define SINGLE_THREADED_BUILD_THRESHOLD  (MAX_MIC_THREADS*8)
 
-#define DIAG_FACTOR 0.1f
+#define DIAG_FACTOR 0.15f
 #define MAX_REBUILD_NODES numPrimitives
 #define PROFILE_ITERATIONS 20
 
-#define TIMER(x) 
+#define TIMER(x) x
 
 //#define PROFILE
 //#define TEST_BUILD_PERFORMANCE
