@@ -17,6 +17,9 @@
 #ifndef __RTCORE_GEOMETRY_ISPH__
 #define __RTCORE_GEOMETRY_ISPH__
 
+/*! \ingroup embree_kernel_api_ispc */
+/*! \{ */
+
 /*! invalid geometry ID */
 #define INVALID_GEOMETRY_ID ((uniform unsigned)-1)
 
@@ -105,5 +108,7 @@ void rtcDisable (RTCScene scene, uniform unsigned int geomID);
 
 /*! Deletes the geometry again. */
 void rtcDeleteGeometry (RTCScene scene, uniform unsigned int geomID);
+
+/*! @} */
 
 #endif

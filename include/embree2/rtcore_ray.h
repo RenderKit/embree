@@ -17,14 +17,22 @@
 #ifndef __RTCORE_RAY_H__
 #define __RTCORE_RAY_H__
 
+/*! \ingroup embree_kernel_api */
+/*! \{ */
+
 #ifdef _WIN32
 #  define RTCORE_ALIGN(...) __declspec(align(__VA_ARGS__))
 #else
 #  define RTCORE_ALIGN(...) __attribute__((aligned(__VA_ARGS__)))
 #endif
 
-/*! Ray structure for single rays. */
-struct RTCORE_ALIGN(16) RTCRay
+/*! \brief Macro that allows flagging respective class to be 16-byte alligned */
+#define __RTCORE_ALIGN16 RTCORE_ALIGN(16) 
+/*! \brief Macro that allows flagging respective class to be 64-byte alligned */
+#define __RTCORE_ALIGN64 RTCORE_ALIGN(64) 
+
+/*! \brief Ray structure for an individual ray */
+struct RTCRay
 {
   /* ray data */
 public:
@@ -54,7 +62,7 @@ public:
 };
 
 /*! Ray structure for packets of 4 rays. */
-struct RTCORE_ALIGN(16) RTCRay4
+struct __RTCORE_ALIGN16 RTCRay4
 {
   /* ray data */
 public:
@@ -119,8 +127,8 @@ public:
   int32 instID[8];  //!< instance ID
 };
 
-/*! Ray structure for packets of 16 rays. */
-struct RTCORE_ALIGN(64) RTCRay16
+/*! \brief Ray structure for packets of 16 rays. */
+struct __RTCORE_ALIGN64 RTCRay16
 {
   /* ray data */
 public:
@@ -151,5 +159,7 @@ public:
   int32 primID[16];  //!< primitive ID
   int32 instID[16];  //!< instance ID
 };
+
+/*! @} */
 
 #endif

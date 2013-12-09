@@ -17,6 +17,7 @@
 #ifndef __EMBREE_ISPC_VEC2F_H__
 #define __EMBREE_ISPC_VEC2F_H__
 
+/*! \brief ISPC Two-float vector class */
 struct vec2f 
 {
   float x;

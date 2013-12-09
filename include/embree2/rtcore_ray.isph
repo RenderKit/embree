@@ -17,22 +17,26 @@
 #ifndef __RTCORE_RAY_ISPH__
 #define __RTCORE_RAY_ISPH__
 
+/*! \ingroup embree_kernel_api_ispc */
+/*! \{ */
+
 #ifdef _WIN32
 #  define RTCORE_ALIGN(...) 
 #else
 #  define RTCORE_ALIGN(...) 
 #endif
 
-/*! Ray structure for single rays. */
-RTCORE_ALIGN(16) struct RTCRay1 // FIXME: need to specify alignment to 16 bytes
+RTCORE_ALIGN(16) 
+/*! Ray structure for uniform (single) rays. */
+struct RTCRay1 // FIXME: need to specify alignment to 16 bytes
 {
   /* ray data */
 public:
   float org[3];      //!< Ray origin
-  float align0;
+  float align0;      //!< unused member to force alignment of following members
   
   float dir[3];      //!< Ray direction
-  float align1;
+  float align1;      //!< unused member to force alignment of following members
   
   float tnear;       //!< Start of ray segment
   float tfar;        //!< End of ray segment (set to hit distance)
@@ -83,5 +87,8 @@ public:
   int primID;     //!< primitive ID
   int instID;     //!< instance ID
 };
+
+
+/*! @} */
 
 #endif
