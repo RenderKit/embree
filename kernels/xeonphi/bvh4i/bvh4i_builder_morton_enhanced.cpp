@@ -23,15 +23,13 @@
 #include "limits.h"
 
 
-#define TREE_BRANCHING_FACTOR 4
-#define QBVH_BUILDER_LEAF_ITEM_THRESHOLD 4
 #define SINGLE_THREADED_BUILD_THRESHOLD  (MAX_MIC_THREADS*8)
 
-#define DIAG_FACTOR 0.2f
-#define MAX_REBUILD_NODES 1024*2
+#define DIAG_FACTOR 0.1f
+#define MAX_REBUILD_NODES numPrimitives
 #define PROFILE_ITERATIONS 20
 
-#define TIMER(x) x
+#define TIMER(x) 
 
 //#define PROFILE
 //#define TEST_BUILD_PERFORMANCE
@@ -40,6 +38,7 @@
 
 namespace embree 
 {
+  AtomicMutex mtx;
   __align(64) static double dt = 0.0f;
 
   BVH4iBuilderMortonEnhanced::BVH4iBuilderMortonEnhanced (BVH4i* _bvh, BuildSource* _source, void* _geometry, const size_t _minLeafSize, const size_t _maxLeafSize)
@@ -118,15 +117,116 @@ namespace embree
     // TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton_enhanced,this,TaskScheduler::getNumThreads(),"build_parallel_morton_enhanced");
   }
 
-  bool splitSAH(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+  bool splitSAH(PrimRef * __restrict__ const prims, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
   {
+    const unsigned int items = current.items();
+
     /* mark as leaf if leaf threshold reached */
-    const unsigned int items = current.end - current.begin;
-    if (items <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
+    if (items <= BVH4i::N) {
       current.createLeaf();
       return false;
     }
     
+#if 1
+
+    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
+    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
+
+    const mic_f centroidBoundsMin_2 = centroidMin;
+    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
+    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+
+    mic_f leftArea[3];
+    mic_f rightArea[3];
+    mic_i leftNum[3];
+
+    fastbin(prims,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+
+    const float voxelArea = area(current.bounds.geometry);
+    Split split;
+    split.cost = items * voxelArea;
+
+    for (size_t dim = 0;dim < 3;dim++) 
+      {
+	if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
+
+	const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
+	const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
+	const mic_i lnum    = leftNum[dim];   // bin16.prefix_count(dim);
+
+	const mic_i rnum    = mic_i(items) - lnum;
+	const mic_i lblocks = (lnum + mic_i(3)) >> 2;
+	const mic_i rblocks = (rnum + mic_i(3)) >> 2;
+	const mic_m m_lnum  = lnum == 0;
+	const mic_m m_rnum  = rnum == 0;
+	const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
+
+	if (lt(cost,mic_f(split.cost)))
+	  {
+
+	    const mic_f min_cost    = vreduce_min(cost); 
+	    const mic_m m_pos       = min_cost == cost;
+	    const unsigned long pos = bitscan64(m_pos);	    
+
+	    assert(pos < 15);
+
+	    if (pos < 15)
+	      {
+		split.cost    = cost[pos];
+		split.pos     = pos+1;
+		split.dim     = dim;	    
+		split.numLeft = lnum[pos];
+	      }
+	  }
+      };
+
+    if (unlikely(split.pos == -1)) 
+      split_fallback(prims,current,leftChild,rightChild);
+    // /* partitioning of items */
+    else 
+      {
+	leftChild.bounds.reset();
+	rightChild.bounds.reset();
+
+	const unsigned int mid = partitionPrimRefs<L2_PREFETCH_ITEMS>(prims ,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
+
+	assert(area(leftChild.bounds.geometry) >= 0.0f);
+
+#if defined(DEBUG)
+	if (current.begin + mid != current.begin + split.numLeft)
+	  {
+	    mtx.lock();	    
+	    DBG_PRINT(current);
+	    DBG_PRINT(mid);
+	    DBG_PRINT(split);
+	    DBG_PRINT(leftNum[0]);
+	    DBG_PRINT(leftNum[1]);
+	    DBG_PRINT(leftNum[2]);	    
+	    mtx.unlock();
+	  }
+#endif
+
+	assert(current.begin + mid == current.begin + split.numLeft);
+
+	if (unlikely(current.begin + mid == current.begin || current.begin + mid == current.end)) 
+	  {
+	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
+	    DBG_PRINT(split);
+	    DBG_PRINT(current);
+	    DBG_PRINT(mid);
+	    split_fallback(prims,current,leftChild,rightChild);	    
+	  }
+	else
+	  {
+	    const unsigned int current_mid = current.begin + split.numLeft;
+	    leftChild.init(current.begin,current_mid);
+	    rightChild.init(current_mid,current.end);
+	  }
+
+      }
+
+#else
+
     /* calculate binning function */
     Mapping mapping(current.bounds);
 
@@ -144,8 +244,11 @@ namespace embree
 
     /* partitioning of items */
     binner.partition(primref, current.begin, current.end, split, mapping, leftChild, rightChild);
-    if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
-    if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();	
+
+#endif
+
+    if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
+    if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();	
     return true;
   }
 
@@ -211,7 +314,7 @@ namespace embree
     }
 #endif      
 
-    BuildRecord record[TREE_BRANCHING_FACTOR];
+    BuildRecord record[BVH4i::N];
     BuildRecord left, right;
 
     unsigned int numSplits = 1;
@@ -220,7 +323,7 @@ namespace embree
     while(1)
       {
 	bool couldSplit = false;
-	if (numSplits < TREE_BRANCHING_FACTOR)
+	if (numSplits < BVH4i::N)
 	  {
 	    int index = -1;
 	    float maxArea = -1.0f;
@@ -238,9 +341,9 @@ namespace embree
 		  }
 	      }
 
-	    assert(index < TREE_BRANCHING_FACTOR);
 	    if (index != -1)
 	      {
+		assert(index < BVH4i::N);
 		bool s = splitSAH((PrimRef*)local_node,record[index],left,right);  
 
 		assert(numSplits > 0);
@@ -278,7 +381,7 @@ namespace embree
 	current = record[0];
 	DBG(std::cout << "CREATING LOCAL NODE LEAF WITH " << current.items() << " NODES" << std::endl);
 	assert(current.isLeaf());
-	if(current.items() > QBVH_BUILDER_LEAF_ITEM_THRESHOLD) 
+	if(current.items() > BVH4i::N) 
 	  {
 	    std::cout << "WARNING UNSPLITABLE LEAF " << std::endl;
 	    FATAL("SHOULD NOT HAPPEN FOR TOP-LEVEL TREE");
@@ -297,7 +400,7 @@ namespace embree
 	      }
 	    assert(current.items() > 1);
 
-	    const unsigned int currentIndex = this->atomicID.add(TREE_BRANCHING_FACTOR);
+	    const unsigned int currentIndex = this->atomicID.add(BVH4i::N);
 	    if (unlikely(currentIndex >= this->numAllocatedNodes))
 	      {
 		DBG_PRINT(this->numAllocatedNodes);
@@ -325,10 +428,10 @@ namespace embree
 	  }
       }
 
-    assert(numSplits >= 2 && numSplits <= TREE_BRANCHING_FACTOR);
+    assert(numSplits >= 2 && numSplits <= BVH4i::N);
 
     // ==== aquire next four nodes ====
-    const unsigned int currentIndex = this->atomicID.add(TREE_BRANCHING_FACTOR);
+    const unsigned int currentIndex = this->atomicID.add(BVH4i::N);
     if (unlikely(currentIndex >= this->numAllocatedNodes))
       {
 	DBG_PRINT(this->numAllocatedNodes);
@@ -393,21 +496,26 @@ namespace embree
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "build morton tree " << 1000. * msec << " ms" << std::endl << std::flush);
 
-      // ==============================        
-      // === rebuild top level tree ===
-      // ==============================
+    // ==============================        
+    // === extract top level tree ===
+    // ==============================
+
 
     TIMER(msec = getSeconds());
 
     const Vec3fa rootDiag = this->node[0].upper - this->node[0].lower;
-
-    __align(64) BVHNode local_node[MAX_REBUILD_NODES];
+    BVHNode * __restrict__ local_node = (BVHNode*)morton;
     size_t nodes = 0;
     extractTopLevelTree(0,rootDiag,local_node,nodes);
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "extract top-level nodes " << 1000. * msec << " ms" << std::endl << std::flush);
 
+    TIMER(DBG_PRINT(nodes));
+
+    // ==============================        
+    // === rebuild top level tree ===
+    // ==============================
 
     TIMER(msec = getSeconds());    
     BuildRecord topLevelBuildRecord;
