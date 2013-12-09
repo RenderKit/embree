@@ -251,6 +251,15 @@ namespace embree
 		  if (1)
 #endif
 		    {
+		      prefetch<PFHINT_L1EX>(&ray16.tfar);  
+		      prefetch<PFHINT_L1EX>(&ray16.u);
+		      prefetch<PFHINT_L1EX>(&ray16.v);
+		      prefetch<PFHINT_L1EX>(&ray16.Ng.x); 
+		      prefetch<PFHINT_L1EX>(&ray16.Ng.y); 
+		      prefetch<PFHINT_L1EX>(&ray16.Ng.z); 
+		      prefetch<PFHINT_L1EX>(&ray16.geomID);
+		      prefetch<PFHINT_L1EX>(&ray16.primID);
+
 		      max_dist_xyz = min_dist;
 		  
 		      compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
