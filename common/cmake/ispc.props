@@ -25,8 +25,8 @@
       <MathLibrary>0</MathLibrary>
       <Opt>1</Opt>
       <CommandLineTemplate>ispc.exe [AllOptions] [AdditionalOptions] [Inputs]</CommandLineTemplate>
-      <Outputs>$(IntDir)%(Filename).ispc.obj</Outputs>
-      <ExecutionDescription>Compiling %(Filename)%(Extension) ...</ExecutionDescription>
+      <Outputs>$(IntDir)%(Filename).ispc*.obj</Outputs>
+      <ExecutionDescription>Compiling %(Filename)%(Extension)  ...</ExecutionDescription>
     </ISPC>
   </ItemDefinitionGroup>
 </Project>
