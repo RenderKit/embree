@@ -51,7 +51,7 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				StructMemberAlignment="0"
-				EnableEnhancedInstructionSet="2"
+				EnableEnhancedInstructionSet="0"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -71,6 +71,8 @@
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				GenerateDebugInformation="true"
 				SubSystem="1"
+				StackReserveSize="4000000"
+				StackCommitSize="4000000"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -127,7 +129,7 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				StructMemberAlignment="0"
-				EnableEnhancedInstructionSet="2"
+				EnableEnhancedInstructionSet="0"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -147,6 +149,8 @@
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				GenerateDebugInformation="true"
 				SubSystem="1"
+				StackReserveSize="4000000"
+				StackCommitSize="4000000"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -172,7 +176,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="0"
@@ -203,7 +207,7 @@
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
 				EnableFunctionLevelLinking="true"
-				EnableEnhancedInstructionSet="2"
+				EnableEnhancedInstructionSet="0"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -221,7 +225,10 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				GenerateDebugInformation="false"
 				SubSystem="1"
+				StackReserveSize="4000000"
+				StackCommitSize="4000000"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -247,7 +254,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="0"
@@ -279,7 +286,7 @@
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
 				EnableFunctionLevelLinking="true"
-				EnableEnhancedInstructionSet="2"
+				EnableEnhancedInstructionSet="0"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -297,7 +304,326 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				GenerateDebugInformation="false"
 				SubSystem="1"
+				StackReserveSize="4000000"
+				StackCommitSize="4000000"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="ReleaseAVX|Win32"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="0"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				EnableIntrinsicFunctions="true"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
+				RuntimeLibrary="0"
+				StructMemberAlignment="0"
+				EnableFunctionLevelLinking="true"
+				EnableEnhancedInstructionSet="0"
+				FloatingPointModel="2"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				GenerateDebugInformation="false"
+				SubSystem="1"
+				StackReserveSize="4000000"
+				StackCommitSize="4000000"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="ReleaseAVX|x64"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="0"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				EnableIntrinsicFunctions="true"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;INTEL_SUITE_VERSION=PE120_196"
+				RuntimeLibrary="0"
+				StructMemberAlignment="0"
+				EnableFunctionLevelLinking="true"
+				EnableEnhancedInstructionSet="0"
+				FloatingPointModel="2"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				GenerateDebugInformation="false"
+				SubSystem="1"
+				StackReserveSize="4000000"
+				StackCommitSize="4000000"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="ReleaseAVX2|Win32"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="0"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				EnableIntrinsicFunctions="true"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
+				RuntimeLibrary="0"
+				StructMemberAlignment="0"
+				EnableFunctionLevelLinking="true"
+				EnableEnhancedInstructionSet="0"
+				FloatingPointModel="2"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				GenerateDebugInformation="false"
+				SubSystem="1"
+				StackReserveSize="4000000"
+				StackCommitSize="4000000"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="ReleaseAVX2|x64"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="0"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				EnableIntrinsicFunctions="true"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;INTEL_SUITE_VERSION=PE120_196"
+				RuntimeLibrary="0"
+				StructMemberAlignment="0"
+				EnableFunctionLevelLinking="true"
+				EnableEnhancedInstructionSet="0"
+				FloatingPointModel="2"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				GenerateDebugInformation="false"
+				SubSystem="1"
+				StackReserveSize="4000000"
+				StackCommitSize="4000000"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"

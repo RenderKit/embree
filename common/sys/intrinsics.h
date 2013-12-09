@@ -52,6 +52,11 @@
 #define _tzcnt_u64 __tzcnt_u64
 #endif
 
+#if defined(__LZCNT__)
+#define _lzcnt_u32 __lzcnt32
+#define _lzcnt_u64 __lzcnt64
+#endif
+
 #if defined(__MIC__)
 #include <immintrin.h>
 #endif

@@ -17,9 +17,6 @@
 #ifndef __EMBREE_BVHI_BUILDER_MIC_H__
 #define __EMBREE_BVHI_BUILDER_MIC_H__
 
-
-#include "common/registry_builder.h"
-
 #include "kernels/xeonphi/bvh4i/bvh4i.h"
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_binner.h"
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
@@ -60,12 +57,11 @@ namespace embree
     TASK_FUNCTION(BVH4iBuilder,buildSubTrees);
     TASK_FUNCTION(BVH4iBuilder,createTriangle1);
     TASK_FUNCTION(BVH4iBuilder,convertToSOALayout);
-    TASK_FUNCTION(BVH4iBuilder,parallelBinning);
-    TASK_FUNCTION(BVH4iBuilder,parallelPartition);
+    TASK_FUNCTION(BVH4iBuilder,parallelBinningGlobal);
+    TASK_FUNCTION(BVH4iBuilder,parallelPartitioningGlobal);
     TASK_RUN_FUNCTION(BVH4iBuilder,build_parallel);
-
-    LOCAL_TASK_FUNCTION(BVH4iBuilder,localParallelBinning);
-    LOCAL_TASK_FUNCTION(BVH4iBuilder,localParallelPartitioning);
+    LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelBinningLocal);
+    LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelPartitioningLocal);
 
   public:
 
@@ -78,8 +74,21 @@ namespace embree
     /*! perform sequential binning and splitting */
     bool splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
 
-    /*! perform parallel binning and splitting */
+    /*! perform parallel splitting */
+    void parallelPartitioning(BuildRecord& current,
+			      PrimRef * __restrict__ l_source,
+			      PrimRef * __restrict__ r_source,
+			      PrimRef * __restrict__ l_dest,
+			      PrimRef * __restrict__ r_dest,
+			      const Split &split,
+			      Centroid_Scene_AABB &local_left,
+			      Centroid_Scene_AABB &local_right);			      
+			      
+    /*! perform parallel binning and splitting using all threads on all cores*/
     bool splitParallelGlobal(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t threads);
+
+    /*! perform parallel binning and splitting using only the threads per core*/
+    bool splitParallelLocal(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID);
     
     /*! creates a leaf node */
     void createLeaf(BuildRecord& current, NodeAllocator& alloc, const size_t threadIndex, const size_t threadCount);
@@ -114,8 +123,9 @@ namespace embree
       __align(64) AlignedAtomicCounter32 rCounter;
     };
 
-    __align(64) SharedBinningPartitionData sharedData;
+    __align(64) SharedBinningPartitionData global_sharedData;
     __align(64) Bin16 global_bin16[MAX_MIC_THREADS];
+    __align(64) SharedBinningPartitionData local_sharedData[MAX_MIC_CORES];
 
   protected:
     PrimRef*   prims;

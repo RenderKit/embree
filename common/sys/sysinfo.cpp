@@ -161,6 +161,8 @@ namespace embree
     __asm__ ("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx" );
 #elif ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)) && (!defined(__MACOSX__) || defined(__TARGET_AVX__) || defined(__TARGET_AVX2__))
     __asm__ ("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx" );
+#elif ((__clang_major__ > 3) || (__clang_major__ == 3 && __clang_minor__ >= 1))
+    __asm__ ("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx" );
 #else
 #pragma message ("WARNING: AVX not supported by your compiler.")
     xcr0 = 0;

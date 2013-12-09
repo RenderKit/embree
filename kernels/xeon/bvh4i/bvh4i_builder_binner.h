@@ -18,7 +18,6 @@
 #define __BVH4I_BUILDER_BINNING_H__
 
 #include "bvh4i.h"
-#include "common/registry_builder.h"
 #include "bvh4i_builder_util.h"
 #include "bvh4i_builder_binner.h"
 
@@ -34,9 +33,9 @@ namespace embree
       
       __forceinline Mapping (const Centroid_Scene_AABB& bounds) 
         {
-          const ssef centroidDiagonal = (ssef) bounds.centroid.size() * 2.0f; // FIXME: * 2.0f is unsafe, fix everywhere
+          const ssef centroidDiagonal = (ssef) bounds.centroid2.size();
           scale = select(centroidDiagonal != 0.0f,rcp(centroidDiagonal) * ssef(16.0f * 0.99f),ssef(0.0f));
-          ofs = (ssef)bounds.centroid.lower * 2.0f;
+          ofs = (ssef) bounds.centroid2.lower;
         }
       
       /*! Computes the bin numbers for each dimension for a box. */

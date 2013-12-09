@@ -18,7 +18,6 @@
 #define __EMBREE_BVH8I_BUILDER_H__
 
 #include "bvh4i/bvh4i.h"
-#include "common/registry_builder.h"
 #include "bvh4i/bvh4i_builder_fast.h"
 #include "geometry/triangle4.h"
 

@@ -28,6 +28,25 @@ namespace embree
   public:
     bool needAllThreads;
   };
+
+#define ADD_BUILDER(NAME,BUILDER,LEAFMIN,LEAFMAX)              \
+  builders.add(ISA,NAME,BUILDER,LEAFMIN,LEAFMAX);
+
+#define DECLARE_TRIANGLEMESH_BUILDER(symbol)                            \
+  namespace isa   { extern Builder* symbol(void* accel, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
+  namespace sse41 { extern Builder* symbol(void* accel, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
+  namespace avx   { extern Builder* symbol(void* accel, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
+  namespace avx2  { extern Builder* symbol(void* accel, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
+  void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
+  TriangleMeshBuilderFunc symbol = (TriangleMeshBuilderFunc) symbol##_error;
+  
+#define DECLARE_BUILDER(symbol)                                         \
+  namespace isa   { extern Builder* symbol(void* accel, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize); } \
+  namespace sse41 { extern Builder* symbol(void* accel, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize); } \
+  namespace avx   { extern Builder* symbol(void* accel, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize); } \
+  namespace avx2  { extern Builder* symbol(void* accel, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize); } \
+  void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
+  BuilderFunc symbol = (BuilderFunc) symbol##_error;
 }
 
 #endif

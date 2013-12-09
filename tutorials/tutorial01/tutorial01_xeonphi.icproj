@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Intel C++ Project"
-	Version="12.1"
+	Version="14.0"
 	Name="tutorial01_xeonphi"
 	ProjectGUID="{1562EE66-4241-4FBC-BF14-99C498A20092}"
 	VCNestedProjectGUID="{FD848C9A-D481-4036-9DF7-EB16922181BC}"

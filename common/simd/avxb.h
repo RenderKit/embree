@@ -42,6 +42,20 @@ namespace embree
     __forceinline operator const __m256&( void ) const { return m256; }
     __forceinline operator const __m256i( void ) const { return _mm256_castps_si256(m256); }
     __forceinline operator const __m256d( void ) const { return _mm256_castps_pd(m256); }
+
+    __forceinline avxb ( const int a ) 
+    {
+#if defined (__AVX2__)
+      const __m256i mask = _mm256_set_epi32(0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1);
+      const __m256i b = _mm256_set1_epi32(a);
+      const __m256i c = _mm256_and_si256(b,mask);
+      m256 = _mm256_castsi256_ps(_mm256_cmpeq_epi32(c,mask));
+#else
+      assert(a >= 0 && a < 32);
+      l = _mm_lookupmask_ps[a & 0xF];
+      h = _mm_lookupmask_ps[a >> 4];
+#endif
+    }
     
     __forceinline avxb ( const  sseb& a                ) : m256(_mm256_insertf128_ps(_mm256_castps128_ps256(a),a,1)) {}
     __forceinline avxb ( const  sseb& a, const  sseb& b) : m256(_mm256_insertf128_ps(_mm256_castps128_ps256(a),b,1)) {}
@@ -142,16 +156,6 @@ namespace embree
   __forceinline bool any       ( const avxb& a ) { return !_mm256_testz_ps(a,a); }
 
   __forceinline size_t movemask( const avxb& a ) { return _mm256_movemask_ps(a); }
-
-#if defined (__AVX2__)
-  __forceinline avxb r_movemask( const unsigned int a ) 
-  { 
-    const __m256i mask = _mm256_set_epi32(0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1);
-    const __m256i b = _mm256_set1_epi32(a);
-    const __m256i c = _mm256_and_si256(b,mask);
-    return _mm256_castsi256_ps(_mm256_cmpeq_epi32(c,mask));
-  }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators

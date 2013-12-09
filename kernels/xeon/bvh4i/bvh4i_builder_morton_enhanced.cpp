@@ -19,7 +19,6 @@
 #include "bvh4i_builder_binner.h"
 #include "bvh4i_statistics.h"
 
-#include "common/registry_builder.h"
 #include "bvh4i_builder_util.h"
 #include "limits.h"
 #include "sys/sync/barrier.h"

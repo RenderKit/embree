@@ -24,8 +24,6 @@
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 
-#include "common/registry_builder.h"
-
 #define BVH_NODE_PREALLOC_FACTOR 1.0f
 #define QBVH_BUILDER_LEAF_ITEM_THRESHOLD 4
 #define THRESHOLD_FOR_SUBTREE_RECURSION 128

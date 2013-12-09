@@ -19,8 +19,6 @@
 #include "bvh4i_statistics.h"
 #include "bvh4i_builder_util.h"
 
-#include "common/registry_builder.h"
-
 #define BVH_NODE_PREALLOC_FACTOR 1.1f
 
 #if defined(__USE_STAT_COUNTERS__)
@@ -52,7 +50,9 @@ namespace embree
       
       /* do some global inits first */
       init();
-      
+
+      LockStepTaskScheduler::init(TaskScheduler::getNumThreads());
+
 #if defined(PROFILE)
       
       double dt_min = pos_inf;
@@ -217,8 +217,8 @@ namespace embree
       MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)node; 
       
       /* compute mapping from world space into 3D grid */
-      const ssef base     = (ssef)global_bounds.centroid.lower;
-      const ssef diagonal = (ssef)global_bounds.centroid.upper - (ssef)global_bounds.centroid.lower;
+      const ssef base     = (ssef)global_bounds.centroid2.lower;
+      const ssef diagonal = (ssef)global_bounds.centroid2.upper - (ssef)global_bounds.centroid2.lower;
       const ssef scale    = select(diagonal != 0, rcp(diagonal) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
       
       size_t currentID = startID;
@@ -242,8 +242,8 @@ namespace embree
           const BBox3f b = mesh->bounds(offset+i);
           const ssef lower = (ssef)b.lower;
           const ssef upper = (ssef)b.upper;
-          const ssef centroid = (lower+upper) * 0.5f;
-          const ssei binID = ssei((centroid-base)*scale);
+          const ssef centroid2 = lower+upper;
+          const ssei binID = ssei((centroid2-base)*scale);
           const unsigned int index = (group << encodeShift) | (offset+i);
           ax[slots] = extract<0>(binID);
           ay[slots] = extract<1>(binID);
@@ -288,8 +288,8 @@ namespace embree
       }
       
       /* compute mapping from world space into 3D grid */
-      const ssef base     = (ssef)global_bounds.centroid.lower;
-      const ssef diagonal = (ssef)global_bounds.centroid.upper - (ssef)global_bounds.centroid.lower;
+      const ssef base     = (ssef)global_bounds.centroid2.lower;
+      const ssef diagonal = (ssef)global_bounds.centroid2.upper - (ssef)global_bounds.centroid2.lower;
       const ssef scale    = select(diagonal != 0,rcp(diagonal) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
       
       for (size_t i=current.begin; i<current.end; i++)
@@ -300,8 +300,8 @@ namespace embree
         const BBox3f b = scene->getTriangleMesh(geomID)->bounds(primID);
         const ssef lower = (ssef)b.lower;
         const ssef upper = (ssef)b.upper;
-        const ssef centroid = (lower+upper) * 0.5f;
-        const ssei binID = ssei((centroid-base)*scale);
+        const ssef centroid2 = lower+upper;
+        const ssei binID = ssei((centroid2-base)*scale);
         const unsigned int bx = extract<0>(binID);
         const unsigned int by = extract<1>(binID);
         const unsigned int bz = extract<2>(binID);

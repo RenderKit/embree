@@ -107,7 +107,11 @@
 							Switch="--target=sse2,sse4,avx"
 							DisplayName="SSE2,SSE4,AVX"
 						/>
-						
+						<EnumValue
+							Value="7"
+							Switch="--target=sse2,sse4,avx,avx2"
+							DisplayName="SSE2,SSE4,AVX,AVX2"
+						/>
 					</Values>
 				</EnumProperty>
 				<StringProperty

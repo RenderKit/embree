@@ -272,6 +272,8 @@ namespace embree
     volatile unsigned char threadState[2][4];
     volatile unsigned int mode;
 
+    __align(64) AtomicMutex mutex;
+
 
     LockStepTaskScheduler4ThreadsLocalCore();
     bool dispatchTask(const size_t localThreadID, const size_t globalThreadID);
@@ -280,12 +282,12 @@ namespace embree
     void releaseThreads(const size_t localThreadID, const size_t globalThreadID);
     
     __forceinline bool dispatchTask(void (* task)(void* data, const size_t localThreadID, const size_t globalThreadID),
-				    void* data, 
+				    void* _data, 
 				    const size_t localThreadID,
 				    const size_t globalThreadID)
     {
       taskPtr = task;
-      data    = data;
+      data    = _data;
       return dispatchTask(localThreadID,globalThreadID);
     }
     

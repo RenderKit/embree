@@ -19,8 +19,6 @@
 #include "bvh4i_statistics.h"
 #include "bvh4i/bvh4i_builder_util.h"
 
-#include "common/registry_builder.h"
-
 #define BVH_NODE_PREALLOC_FACTOR          1.2f
 #define NUM_MORTON_IDS_PER_BLOCK            8
 #define SINGLE_THREADED_BUILD_THRESHOLD  (MAX_MIC_THREADS*8)
@@ -174,6 +172,7 @@ namespace embree
     initEncodingAllocateData(TaskScheduler::getNumThreads());
 
 #if defined(PROFILE)
+    std::cout << "STARTING PROFILE MODE" << std::endl << std::flush;
 
     double dt_min = pos_inf;
     double dt_avg = 0.0f;
@@ -316,17 +315,17 @@ namespace embree
 
 	  const mic_f bmin = min(min(v0,v1),v2);
 	  const mic_f bmax = max(max(v0,v1),v2);
-	  const mic_f centroid = (bmin+bmax)*0.5f;
-	  bounds_centroid_min = min(bounds_centroid_min,centroid);
-	  bounds_centroid_max = max(bounds_centroid_max,centroid);
+	  const mic_f centroid2 = bmin+bmax;
+	  bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	  bounds_centroid_max = max(bounds_centroid_max,centroid2);
 	}
       
       if (unlikely(currentID == endID)) break;
       offset = 0;
     }
 
-    store4f(&bounds.centroid.lower,bounds_centroid_min);
-    store4f(&bounds.centroid.upper,bounds_centroid_max);
+    store4f(&bounds.centroid2.lower,bounds_centroid_min);
+    store4f(&bounds.centroid2.upper,bounds_centroid_max);
     
     global_bounds.extend_centroid_bounds_atomic(bounds); // FIXME: check whether float atomics are fast
   }
@@ -342,10 +341,10 @@ namespace embree
     MortonID32Bit* __restrict__ dest = ((MortonID32Bit*)morton) + startID; 
 
     /* compute mapping from world space into 3D grid */
-    const mic_f base     = broadcast4to16f((float*)&global_bounds.centroid.lower);
-    const mic_f diagonal = \
-      broadcast4to16f((float*)&global_bounds.centroid.upper) - 
-      broadcast4to16f((float*)&global_bounds.centroid.lower);
+    const mic_f base     = broadcast4to16f((float*)&global_bounds.centroid2.lower);
+    const mic_f diagonal = 
+      broadcast4to16f((float*)&global_bounds.centroid2.upper) - 
+      broadcast4to16f((float*)&global_bounds.centroid2.lower);
     const mic_f scale    = select(diagonal != 0, rcp(diagonal) * mic_f(LATTICE_SIZE_PER_DIM * 0.99f),mic_f(0.0f));
 
     size_t currentID = startID;
@@ -387,7 +386,7 @@ namespace embree
 
 	const mic_f bmin  = min(min(v0,v1),v2);
 	const mic_f bmax  = max(max(v0,v1),v2);
-	const mic_f cent  = (bmin+bmax)*mic_f(0.5f);
+	const mic_f cent  = bmin+bmax;
 	const mic_i binID = mic_i((cent-base)*scale);
 
 	mID[2*slot+1] = groupCode | (offset+i);
@@ -458,9 +457,9 @@ namespace embree
      
 	    const mic_f bmin = min(min(v0,v1),v2);
 	    const mic_f bmax = max(max(v0,v1),v2);
-	    const mic_f centroid = (bmin+bmax)*0.5f;
-	    bounds_centroid_min = min(bounds_centroid_min,centroid);
-	    bounds_centroid_max = max(bounds_centroid_max,centroid);
+	    const mic_f centroid2 = bmin+bmax;
+	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
 	  }
       }   
 
@@ -481,9 +480,9 @@ namespace embree
      
 	    const mic_f bmin = min(min(v0,v1),v2);
 	    const mic_f bmax = max(max(v0,v1),v2);
-	    const mic_f centroid = (bmin+bmax)*0.5f;
-	    bounds_centroid_min = min(bounds_centroid_min,centroid);
-	    bounds_centroid_max = max(bounds_centroid_max,centroid);
+	    const mic_f centroid2 = bmin+bmax;
+	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
 	  }
       }
 
@@ -515,7 +514,7 @@ namespace embree
      
 	    const mic_f bmin = min(min(v0,v1),v2);
 	    const mic_f bmax = max(max(v0,v1),v2);
-	    const mic_f centroid = (bmin+bmax)*0.5f;
+	    const mic_f centroid = bmin+bmax;
 	    const mic_i binID = mic_i((centroid-base)*scale);
 
 	    compactustore16i_low(0x1,&binID3_x[2*j+0],binID); 
@@ -545,7 +544,7 @@ namespace embree
      
 	    const mic_f bmin = min(min(v0,v1),v2);
 	    const mic_f bmax = max(max(v0,v1),v2);
-	    const mic_f centroid = (bmin+bmax)*0.5f;
+	    const mic_f centroid = bmin+bmax;
 	    const mic_i binID = mic_i((centroid-base)*scale);
 
 	    compactustore16i_low(0x1,&binID3_x[2*j+0],binID); 
@@ -904,6 +903,11 @@ namespace embree
     //const unsigned int currentIndex = allocNode(BVH4i::N);
     const size_t currentIndex = alloc.get(BVH4i::N);
    
+    /* init used/unused nodes */
+    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    store16f_ngo((float*)&node[currentIndex+0],init_node);
+    store16f_ngo((float*)&node[currentIndex+2],init_node);
+
     BBox3f bounds; 
     bounds = empty;
     /* recurse into each child */
@@ -1031,8 +1035,14 @@ namespace embree
 
     /* allocate next four nodes and prefetch them */
     const size_t currentIndex = allocNode(BVH4i::N);    
-    prefetch<PFHINT_L2EX>((float*)&node[currentIndex+0]);
-    prefetch<PFHINT_L2EX>((float*)&node[currentIndex+2]);
+
+    /* init used/unused nodes */
+    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    store16f_ngo((float*)&node[currentIndex+0],init_node);
+    store16f_ngo((float*)&node[currentIndex+2],init_node);
+
+    // prefetch<PFHINT_L2EX>((float*)&node[currentIndex+0]);
+    // prefetch<PFHINT_L2EX>((float*)&node[currentIndex+2]);
 
     /* recurse into each child */
     for (size_t i=0; i<numChildren; i++) 
@@ -1041,9 +1051,9 @@ namespace embree
       }
 
     /* init used/unused nodes */
-    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-    store16f((float*)&node[currentIndex+0],init_node);
-    store16f((float*)&node[currentIndex+2],init_node);
+    // const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    // store16f((float*)&node[currentIndex+0],init_node);
+    // store16f((float*)&node[currentIndex+2],init_node);
 
     node[current.parentID].createNode(currentIndex,numChildren);
     return numChildren;
@@ -1119,9 +1129,11 @@ namespace embree
 
     /* allocate next four nodes and prefetch them */
     const size_t currentIndex = alloc.get(BVH4i::N);    
-    prefetch<PFHINT_L2EX>((float*)&node[currentIndex+0]);
-    prefetch<PFHINT_L2EX>((float*)&node[currentIndex+2]);
 
+    /* init used/unused nodes */
+    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    store16f_ngo((float*)&node[currentIndex+0],init_node);
+    store16f_ngo((float*)&node[currentIndex+2],init_node);
 
     /* recurse into each child */
     BBox3f bounds;
@@ -1138,15 +1150,15 @@ namespace embree
 	bounds.extend( recurse(children[i],alloc,mode,numThreads) );
     }
 
-    /* init used/unused nodes */
-    const mic_f init_node_lower = broadcast4to16f((float*)&BVH4i::initQBVHNode[0]);
-    const mic_f init_node_upper = broadcast4to16f((float*)&BVH4i::initQBVHNode[1]);
+    // /* init used/unused nodes */
+    // const mic_f init_node_lower = broadcast4to16f((float*)&BVH4i::initQBVHNode[0]);
+    // const mic_f init_node_upper = broadcast4to16f((float*)&BVH4i::initQBVHNode[1]);
 
-    for (size_t i=numChildren; i<BVH4i::N; i++) 
-      {
-	store4f_nt((float*)&node[currentIndex+i].lower,init_node_lower);
-	store4f_nt((float*)&node[currentIndex+i].upper,init_node_upper);
-      }
+    // for (size_t i=numChildren; i<BVH4i::N; i++) 
+    //   {
+    // 	store4f_nt((float*)&node[currentIndex+i].lower,init_node_lower);
+    // 	store4f_nt((float*)&node[currentIndex+i].upper,init_node_upper);
+    //   }
 
 
     node[current.parentID].lower = bounds.lower;
@@ -1387,10 +1399,6 @@ namespace embree
 #endif
       dt = getSeconds()-t0;
 
-  }
-
-  void BVH4iBuilderMortonRegister () {
-    ADD_BUILDER("bvh4i.morton",BVH4iBuilderMorton::create,1,inf);
   }
 }
 

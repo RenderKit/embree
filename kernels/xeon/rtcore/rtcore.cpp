@@ -21,14 +21,11 @@
 #endif
 
 #include "common/default.h"
+#include "common/alloc.h"
 #include "embree2/rtcore.h"
 #include "rtcore/scene.h"
 #include "sys/taskscheduler.h"
 #include "sys/thread.h"
-
-#include "common/registry_intersector.h"
-#include "common/registry_builder.h"
-#include "common/alloc.h"
 
 #define TRACE(x) //std::cout << #x << std::endl;
 
@@ -124,6 +121,18 @@ namespace embree
     else return false;
   }
 
+  void InstanceIntersectorsRegister ()
+  {
+    int features = getCPUFeatures();
+    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
+    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
+    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector8);
+    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector16);
+#if defined(__MIC__)
+    SELECT_KNC(features,InstanceIntersector16);
+#endif
+  }
+
   RTCORE_API void rtcInit(const char* cfg) 
   {
     Lock<MutexSys> lock(g_mutex);
@@ -145,6 +154,10 @@ namespace embree
         if (tok == "threads") {
           if (parseSymbol(cfg,'=',pos))
             g_numThreads = parseInt(cfg,pos);
+#if defined(__MIC__)
+	  if (!(g_numThreads == 1 || (g_numThreads % 4) == 0))
+	    FATAL("MIC supports only number of threads % 4 == 0, or threads == 1");
+#endif
         }
         else if (tok == "isa") {
           if (parseSymbol (cfg,'=',pos)) {
@@ -203,15 +216,7 @@ namespace embree
 #if defined(__TARGET_AVX__)
     BVH8iRegister();
 #endif
-
-    int features = getCPUFeatures();
-    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
-    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
-    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector8);
-    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector16);
-#if defined(__MIC__)
-    SELECT_KNC(features,InstanceIntersector16);
-#endif
+    InstanceIntersectorsRegister();
 
     if (g_verbose >= 1)
     {
@@ -230,8 +235,8 @@ namespace embree
       PRINT(g_tri_accel);
       PRINT(g_builder);
       PRINT(g_traverser);
-      builders.print();
     }
+
     TaskScheduler::create(g_numThreads);
 
     CATCH_END;

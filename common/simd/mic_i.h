@@ -133,8 +133,6 @@ namespace embree
   __forceinline const mic_i mask_and(const mic_m& m,mic_i& c, const mic_i& a, const mic_i& b) { return _mm512_mask_and_epi32(c,m,a,b); };
   __forceinline const mic_i mask_or (const mic_m& m,mic_i& c, const mic_i& a, const mic_i& b) { return _mm512_mask_or_epi32(c,m,a,b); };
  
-  __forceinline const mic_i andn(const mic_i& a, const mic_i& b) { return _mm512_andnot_epi32(a, b); } // FIXME: same order as in mic_m?
-  
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -376,13 +374,14 @@ namespace embree
     _mm512_extpackstorehi_epi32((int*)addr+16 ,reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
   }
   
-  __forceinline void compactustore16i(const mic_m mask,void * addr, const mic_i& reg) {
+  /* pass by value to avoid compiler generating inefficient code */
+  __forceinline void compactustore16i(const mic_m mask,void * addr, const mic_i reg) {
     _mm512_mask_extpackstorelo_epi32((int*)addr+0  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
     _mm512_mask_extpackstorehi_epi32((int*)addr+16 ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
   }
 
-  
-  __forceinline void compactustore16i_low(const mic_m mask, void *addr, const mic_i& reg) {
+
+  __forceinline void compactustore16i_low(const mic_m mask, void *addr, const mic_i &reg) {
     _mm512_mask_extpackstorelo_epi32((int*)addr+0  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
   }
 

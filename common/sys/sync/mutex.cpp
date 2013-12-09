@@ -68,22 +68,3 @@ namespace embree
   }
 }
 #endif
-
-namespace embree
-{
-  void MutexActive::lock () 
-  {
-    __memory_barrier();  // compiler must not schedule loads and stores around this point
-    while (1) {
-      while (flag == 1) __pause(2048); // read without atomic op first
-      if (atomic_cmpxchg(&flag, 0, 1) == 0) break;
-    }
-    __memory_barrier();  // compiler must not schedule loads and stores around this point
-  }
-
-  void MutexActive::unlock () { 
-    __memory_barrier();  // compiler must not schedule loads and stores around this point
-    flag = 0; 
-    __memory_barrier();  // compiler must not schedule loads and stores around this point
-  }
-}

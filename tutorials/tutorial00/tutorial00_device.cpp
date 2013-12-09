@@ -341,8 +341,6 @@ extern "C" void device_render (int* pixels,
   TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
   event.sync();
 
-  //for (size_t i=0; i<numTilesX*numTilesY; i++) // FIXME: should be multithreaded
-      //renderTile(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
   rtcDebug();
 }
 

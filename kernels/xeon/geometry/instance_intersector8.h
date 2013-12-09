@@ -18,7 +18,6 @@
 #define __EMBREE_INSTANCE_INTERSECTOR8_H__
 
 #include "rtcore/scene_user_geometry.h"
-#include "common/registry_intersector.h"
 #include "common/ray8.h"
 
 namespace embree

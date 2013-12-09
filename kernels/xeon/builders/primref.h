@@ -22,7 +22,7 @@
 namespace embree
 {
   /*! A primitive reference stores the bounds of the primitive and its ID. */
-  struct __align(16) PrimRef 
+  struct __align(32) PrimRef 
   {
     __forceinline PrimRef () {}
     __forceinline PrimRef (const BBox3f& bounds, unsigned geomID, unsigned primID) {
@@ -42,6 +42,13 @@ namespace embree
       return upper.a;
     }
     
+#if defined(__MIC__)
+    __forceinline void operator=(const PrimRef& v) { 
+      const mic_f p = uload16f_low((float*)&v.lower);
+      compactustore16f_low(0xff,(float*)this,p);            
+    };
+#endif
+
   public:
     Vec3fa lower;
     Vec3fa upper;

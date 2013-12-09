@@ -33,5 +33,3 @@ IF (APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-q") # use clang assembler if user needs AVX
   ENDIF()
 ENDIF (APPLE)
-
-SET(EXT "")

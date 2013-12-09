@@ -17,7 +17,6 @@
 #ifndef BVH4I_BUILDER_UTIL_H
 #define BVH4I_BUILDER_UTIL_H
 
-//#include "bvh4i.h"
 #include "builders/primref.h"
 #include "geometry/triangle1.h"
 
@@ -30,21 +29,30 @@ namespace embree
   class __align(64) Centroid_Scene_AABB
   {
   public:
-    BBox3f centroid;
+    BBox3f centroid2;
     BBox3f geometry;
 
     __forceinline void reset() {
-      centroid = geometry = empty;
+#if !defined(__MIC__)
+      centroid2 = geometry = empty;
+#else
+      const mic_f p_inf( pos_inf );
+      const mic_f n_inf( neg_inf );
+      store4f(&centroid2.lower,p_inf);
+      store4f(&centroid2.upper,n_inf);
+      store4f(&geometry.lower,p_inf);
+      store4f(&geometry.upper,n_inf);
+#endif
     }
 
     __forceinline void extend(const BBox3f& b) {
       assert(!b.empty());
-      centroid.extend(center(b));
+      centroid2.extend(center2(b));
       geometry.extend(b);
     }
 
     __forceinline void extend(const Centroid_Scene_AABB& v) {
-      centroid.extend(v.centroid);
+      centroid2.extend(v.centroid2);
       geometry.extend(v.geometry);
     }
 
@@ -73,8 +81,8 @@ namespace embree
 
     __forceinline void extend_centroid_bounds_atomic(const Centroid_Scene_AABB& v)
     {
-      float *aabb = (float*)&centroid;
-      float *v_aabb = (float*)&v.centroid;
+      float *aabb = (float*)&centroid2;
+      float *v_aabb = (float*)&v.centroid2;
 
       atomic_min_f32(&aabb[0] ,v_aabb[0]);
       atomic_min_f32(&aabb[1] ,v_aabb[1]);
@@ -87,7 +95,7 @@ namespace embree
 
     __forceinline friend std::ostream &operator<<(std::ostream &o, const Centroid_Scene_AABB &cs)
     {
-      o << "centroid = " << cs.centroid << " ";
+      o << "centroid2 = " << cs.centroid2 << " ";
       o << "geometry = " << cs.geometry << " ";
       return o;
     };
@@ -111,6 +119,11 @@ namespace embree
     unsigned int flags;
     float sArea;
     size_t parentNode; 
+
+    BuildRecord()
+      {
+	assert(sizeof(BuildRecord) == 128);
+      }
 
     __forceinline void init(const unsigned int _begin, const unsigned int _end)
     {
@@ -138,9 +151,20 @@ namespace embree
     __forceinline bool operator<(const BuildRecord &br) const { return items() < br.items(); } 
     __forceinline bool operator>(const BuildRecord &br) const { return items() > br.items(); } 
 
+
+#if defined(__MIC__)
+    __forceinline void operator=(const BuildRecord& v) { 
+      assert(sizeof(BuildRecord) == 128);
+      const mic_f b0 = load16f((float*)&v);
+      const mic_f b1 = load16f((float*)&v + 16);
+      store16f((float*)this +  0, b0);
+      store16f((float*)this + 16, b1);
+    };
+#endif
+
     __forceinline friend std::ostream &operator<<(std::ostream &o, const BuildRecord &br)
     {
-      o << "centroid = " << br.bounds.centroid << " ";
+      o << "centroid2 = " << br.bounds.centroid2 << " ";
       o << "geometry = " << br.bounds.geometry << " ";
       o << "begin      " << br.begin << " ";
       o << "end        " << br.end << " ";
@@ -158,13 +182,11 @@ namespace embree
     __forceinline bool isLeaf() { return flags == BUILD_RECORD_LEAF; }
   };
 
-
-
   template<class T, unsigned int SIZE>
     class WorkStack 
   {
   public:
-    AtomicMutex __align(64) mutex;
+    AlignedAtomicMutex __align(64) mutex;
     __align(64) T t[SIZE];
 
     __forceinline void init() {

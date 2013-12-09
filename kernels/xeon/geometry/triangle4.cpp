@@ -33,7 +33,7 @@ namespace embree
   TriangleMeshTriangle8 TriangleMeshTriangle8::type;
 
   Triangle8Type::Triangle8Type () 
-  : PrimitiveType("triangle8",2*sizeof(Triangle4),8,false,1) {} // FIXME: 2*sizeof(Triangle4) is dangerous!
+  : PrimitiveType("triangle8",2*sizeof(Triangle4),8,false,1) {}
 #endif
   
   size_t Triangle4Type::blocks(size_t x) const {

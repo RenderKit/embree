@@ -55,7 +55,7 @@ namespace embree
     return aabb;
   }
 
-
+#if 0 // FIXME: remove
   size_t handleNonSplitableLeaves(BuildRecord &current, // FIXME: fails for very large leaves
 				  BuildRecord *record)
   {
@@ -104,6 +104,7 @@ namespace embree
 
     return numSplits;  
   }
+#endif
 
   //#include <pthread.h> 
 

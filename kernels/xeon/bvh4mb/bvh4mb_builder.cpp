@@ -17,8 +17,6 @@
 #include "bvh4mb.h"
 #include "bvh4mb_builder.h"
 //#include "bvh4mb_statistics.h"
-
-#include "common/registry_builder.h"
 #include "builders/heuristics.h"
 //#include "builders/splitter_fallback.h" // FIXME: implement big leaf fallback
 

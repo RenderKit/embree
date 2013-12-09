@@ -18,8 +18,9 @@
 #define __EMBREE_VIRTUAL_ACCEL_H__
 
 #include "embree2/rtcore.h"
-#include "common/registry_builder.h"
 #include "common/accel.h"
+#include "builders/build_source.h"
+#include "common/primitive.h"
 
 namespace embree
 {

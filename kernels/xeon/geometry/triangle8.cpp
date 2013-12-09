@@ -19,6 +19,15 @@
 
 namespace embree
 {
+  /* The following lines are in triangle4.cpp as they need to be
+     compiled without the AVX flag. */
+
+  //SceneTriangle8 SceneTriangle8::type;
+  //TriangleMeshTriangle8 TriangleMeshTriangle8::type;
+
+  //Triangle8Type::Triangle8Type () 
+  //  : PrimitiveType("triangle8",sizeof(Triangle8),8,false,1) {} 
+
   size_t Triangle8Type::blocks(size_t x) const {
     return (x+7)/8;
   }

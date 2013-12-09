@@ -36,12 +36,7 @@ namespace embree
 
   Accel* createTriangleMeshAccel(TriangleMeshScene::TriangleMesh* mesh)
   {
-    if (mesh->numTimeSteps == 1)
-      return BVH4i::BVH4iTriangle1(mesh);
-    else if (mesh->numTimeSteps == 2)
-      return BVH4MB::BVH4MBTriangle1vObjectSplit(mesh);
-    else
-      throw std::runtime_error("internal error");
+    return BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(mesh);
   }
 
 #else
@@ -81,10 +76,40 @@ namespace embree
       flat_triangle_source_1(this,1), flat_triangle_source_2(this,2)
   {
 #if defined(__MIC__)
-    accels.accel0 = BVH4i::BVH4iTriangle1(this);
-    //accels.accel0 = BVH4::BVH4Triangle4(this);
-    accels.accel1 = NULL; // BVH4MB::BVH4MBTriangle1v(this);
-    accels.accel2 = NULL; // BVH4i::BVH4iTriangle1(this); // new TwoLevelAccel("bvh4",this,NULL,true);
+    accels.accel0 = NULL; 
+    accels.accel1 = NULL; 
+    accels.accel2 = NULL;
+ 
+    if (g_builder == "default") 
+      {
+	if (isStatic())
+	  {
+	    if (g_verbose >= 1) std::cout << "STATIC BUILDER MODE" << std::endl;
+	    accels.accel0 = BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this);
+	  }
+	else
+	  {
+	    if (g_verbose >= 1) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
+	    accels.accel0 = BVH4i::BVH4iTriangle1ObjectSplitMorton(this);
+	  }
+      }
+    else
+      {
+	if (g_builder == "sah" || g_builder == "objectsplit")
+	  {
+	    accels.accel0 = BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this);
+	  }
+	else if (g_builder == "fast" || g_builder == "morton")
+	  {
+	    accels.accel0 = BVH4i::BVH4iTriangle1ObjectSplitMorton(this);
+	  }
+	else if (g_builder == "fast_enhanced" || g_builder == "morton.enhanced")
+	  {
+	    accels.accel0 = BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this);
+	  }
+	else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
+
+      }
 #else
 
     /* create default acceleration structure */
@@ -217,7 +242,7 @@ namespace embree
   unsigned Scene::add(Geometry* geometry) 
   {
 #if !defined(__MIC__)
-    Lock<MutexActive> lock(geometriesMutex);
+    Lock<AtomicMutex> lock(geometriesMutex);
 #endif
     if (usedIDs.size()) {
       int id = usedIDs.back(); 
@@ -233,7 +258,7 @@ namespace embree
   void Scene::remove(Geometry* geometry) 
   {
 #if !defined(__MIC__)
-    Lock<MutexActive> lock(geometriesMutex);
+    Lock<AtomicMutex> lock(geometriesMutex);
 #endif
     usedIDs.push_back(geometry->id);
     geometries[geometry->id] = NULL;

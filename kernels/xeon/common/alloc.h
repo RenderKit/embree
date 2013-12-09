@@ -218,7 +218,6 @@ namespace embree
     {
       thread = new ThreadAllocator[getNumberOfLogicalThreads()];
       ptr = NULL;
-      init(1<<30); // FIXME: reserves 1GB
     }
 
     /*! Allocator destructor. */

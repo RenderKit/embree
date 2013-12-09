@@ -47,6 +47,7 @@ namespace embree
     __forceinline mic_m( FalseTy ) : v(0x0000) {}
     __forceinline mic_m( TrueTy  ) : v(0xffff) {}
 
+    static unsigned int shift1[32];
   };
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -63,7 +64,7 @@ namespace embree
   __forceinline mic_m operator|(const mic_m &a, const mic_m &b) { return _mm512_kor(a,b); };
   __forceinline mic_m operator^(const mic_m &a, const mic_m &b) { return _mm512_kxor(a,b); };
 
-  __forceinline mic_m andn(const mic_m &a, const mic_m &b) { return _mm512_kandn(b,a); } // FIXME: same order as in mic_i?
+    __forceinline mic_m andn(const mic_m &a, const mic_m &b) { return _mm512_kandn(b,a); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators

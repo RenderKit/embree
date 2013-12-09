@@ -18,6 +18,6 @@ IF (__XEON__)
   ADD_LIBRARY(simd STATIC sse.cpp)
 ELSE ()
   INCLUDE(icc_xeonphi)
-  ADD_LIBRARY(simd_xeonphi STATIC mic_i.cpp mic_f.cpp)
+  ADD_LIBRARY(simd_xeonphi STATIC mic_i.cpp mic_f.cpp mic_m.cpp)
 ENDIF ()
 

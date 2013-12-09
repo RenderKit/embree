@@ -35,8 +35,6 @@ ADD_ISPC_LIBRARY(embree SHARED
   common/alloc.cpp 
 
   common/tasksys.cpp 
-  common/registry_builder.cpp		
-  common/registry_intersector.cpp
   common/accel3.cpp
 
   rtcore/rtcore.cpp 
@@ -98,12 +96,12 @@ ADD_ISPC_LIBRARY(embree SHARED
 
 IF (TARGET_SSE41) 
   ADD_LIBRARY(embree_sse41 STATIC
-
-    bvh4/bvh4_intersector1.cpp   
-    bvh4/bvh4_builder_morton.cpp
-
     bvh4/bvh4_builder_binner.cpp
     bvh4/bvh4_builder_toplevel.cpp
+    bvh4/bvh4_intersector1.cpp   
+    bvh4/bvh4_intersector4_chunk.cpp
+    bvh4/bvh4_intersector4_hybrid.cpp
+    bvh4/bvh4_builder_morton.cpp
   )
   SET_TARGET_PROPERTIES(embree_sse41 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE41}")
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse41)
@@ -205,8 +203,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED #  FIXME: build shared library
   common/alloc.cpp 
 
   common/tasksys.cpp 
-  common/registry_builder.cpp		
-  common/registry_intersector.cpp
   common/accel3.cpp
 
   rtcore/rtcore.cpp 

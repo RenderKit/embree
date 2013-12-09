@@ -94,14 +94,15 @@ and execute "ccmake .." inside this directory.
    ccmake ..
 
 This will open a configuration dialog where you should set the
-CMAKE_BUILD_TYPE to “Release” and the compiler to"GCC" or "ICC". You
-should also select all targets that you want Embree to generate
-optimized code for. We recommend to enable TARGET_SSE41, TARGET_AVX,
-and TARGET_AVX2 if you want to use Embree on standard CPUs, and you
-have to enable TARGET_XEON_PHI if you want to use Embree on Xeon
-Phi. Now press c (for configure) and g (for generate) to generate a
-Makefile and leave the configuration. The code can be compiled by
-executing make. 
+CMAKE_BUILD_TYPE to “Release” and the compiler to "GCC", "CLANG" or
+"ICC". You should also select all targets that you want Embree to
+generate optimized code for. We recommend to enable TARGET_SSE41,
+TARGET_AVX, and TARGET_AVX2 if you want to use Embree on standard
+CPUs, and you have to enable TARGET_XEON_PHI if you want to use Embree
+on Xeon Phi. You need at least ICC 11.1 or GCC 4.4 to enable AVX and
+ICC 12.1 or GCC 4.7 to enable AVX2. Now press c (for configure) and g
+(for generate) to generate a Makefile and leave the configuration. The
+code can be compiled by executing make.
 
       make
 
