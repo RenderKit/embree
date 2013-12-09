@@ -1,4 +1,4 @@
-/*! \subpage building_embree Building Embree
+/*! \page building_embree Building Embree
 
 \section building_linux_macos Compiling Embree on Linux and MacOSX 
 
@@ -13,20 +13,26 @@ You additionally have to install CMake and the developer version of
 GLUT. Under MaxOSX, these dependencies can be installed using
 MacPorts:
 
+<code>
    sudo port install cmake freeglut
+</code>
 
 Under Linux you can install the dependencies using yum:
 
+<code>
    sudo yum install cmake.x86_64
    sudo yum install freeglut.x86_64 freeglut-devel.x86_64
    sudo yum install libXmu.x86_64 libXi.x86_64 libXmu-devel.x86_64 libXi-devel.x86_64
+</code>
 
 Finally you can compile Embree using CMake. Create a build directory
 and execute "ccmake .." inside this directory.
 
+<code>
    mkdir build
    cd build
    ccmake ..
+</code>
 
 This will open a configuration dialog where you should set the
 CMAKE_BUILD_TYPE to “Release” and the compiler to"GCC" or "ICC". You
@@ -38,13 +44,17 @@ Phi. Now press c (for configure) and g (for generate) to generate a
 Makefile and leave the configuration. The code can be compiled by
 executing make. 
 
+<code>
       make
+</code>
 
 The executables will be generated inside the build folder. We
 recommend to finally install the Embree library and header files on
 your system:
 
+<code>
   sudo make install
+</code>
 
 \section building_windows Compiling Embree on Windows 
 

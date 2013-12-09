@@ -1,4 +1,4 @@
-/*! \subpage embree_tutorials Embree Tutorials 
+/*! \page embree_tutorials Embree Tutorials 
 
 \section tutorials_intro Introduction
 
@@ -27,26 +27,34 @@ dialog when building embree (see \ref building_embree).
 
 Some tutorials come as C++ and ISPC version, e.g.:
 
+<code>
   ./tutorial00
   ./tutorial00_ispc
+</code>
 
 You can select an initial camera using the -vp (camera position), -vi
 (camera lookat point), -vu (camera up vector), and -fov (field of
 view) command line parameters:
 
+<code>
   ./tutorial00 -vp 10 10 10 -vi 0 0 0
+</code>
 
 You can select the initial windows size using the -size command line
 parameter, or start the tutorials in fullscreen using the -fullscreen
 parameter:
 
+<code>
   ./tutorial00 -size 1024 1024
   ./tutorial00 -fullscreen
+</code>
 
 Implementation specific parameters can be passed to the ray tracing
 core through the -rtcore command line parameter, e.g.:
 
+<code>
   ./tutorial00 -rtcore verbose=2,threads=1,accel=bvh4.triangle1
+</code>
 
 The navigation in the interactive display mode follows the camera
 orbit model, where the camera revolves around the current center of
