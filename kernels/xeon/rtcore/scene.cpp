@@ -103,6 +103,10 @@ namespace embree
 	  {
 	    accels.accel0 = BVH4i::BVH4iTriangle1ObjectSplitMorton(this);
 	  }
+	else if (g_builder == "fast_enhanced" || g_builder == "morton.enhanced")
+	  {
+	    accels.accel0 = BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this);
+	  }
 	else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
 
       }
