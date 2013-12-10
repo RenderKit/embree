@@ -53,6 +53,7 @@ namespace embree
 
   public:
     TASK_FUNCTION(BVH4iBuilder,computePrimRefs);
+    TASK_FUNCTION(BVH4iBuilder,computePrimRefsVirtual);
     TASK_FUNCTION(BVH4iBuilder,fillLocalWorkQueues);
     TASK_FUNCTION(BVH4iBuilder,buildSubTrees);
     TASK_FUNCTION(BVH4iBuilder,createTriangle1);

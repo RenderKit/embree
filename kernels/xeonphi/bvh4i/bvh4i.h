@@ -186,6 +186,8 @@ namespace embree
     static Accel* BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene);
     static Accel* BVH4iTriangle1ObjectSplitEnhancedMorton(TriangleMeshScene::TriangleMesh* mesh);
 
+    static Accel* BVH4iVirtualIntersectors(Scene* scene);
+
     /*! initializes the acceleration structure */
     void init(size_t numNodes = 0, size_t numPrimitives = 0);
 

@@ -264,8 +264,8 @@ namespace embree
           TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
           if (mesh->numTimeSteps != 1) continue;
           const size_t numTriangles = mesh->numTriangles;
-          if (skipped + numTriangles > startID) break;
-          skipped += numTriangles;
+          if (skipped + numTriangles > startID) break; 
+         skipped += numTriangles;
         }
         
         /* store start group and offset */

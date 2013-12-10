@@ -32,6 +32,8 @@ namespace embree
   DECLARE_INTERSECTOR16(BVH4iTriangle1Intersector16ChunkMoeller);
   DECLARE_INTERSECTOR16(BVH4iTriangle1Intersector16SingleMoeller);
   DECLARE_INTERSECTOR16(BVH4iTriangle1Intersector16HybridMoeller);
+  DECLARE_INTERSECTOR16(BVH4iVirtualIntersector16);
+
 
   void BVH4iRegister () 
   {
@@ -42,6 +44,7 @@ namespace embree
     SELECT_KNC(features,BVH4iTriangle1Intersector16ChunkMoeller);
     SELECT_KNC(features,BVH4iTriangle1Intersector16SingleMoeller);
     SELECT_KNC(features,BVH4iTriangle1Intersector16HybridMoeller);
+    SELECT_KNC(features,BVH4iVirtualIntersector16);
   }
 
 
@@ -55,6 +58,16 @@ namespace embree
     else if (g_traverser == "chunk"  ) intersectors.intersector16 = BVH4iTriangle1Intersector16ChunkMoeller;
     else if (g_traverser == "single" ) intersectors.intersector16 = BVH4iTriangle1Intersector16SingleMoeller;
     else throw std::runtime_error("unknown builder "+g_traverser+" for BVH4i<Triangle1>");      
+    return intersectors;
+  }
+
+
+  Accel::Intersectors BVH4iVirtualIntersectors(BVH4i* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = NULL;
+    intersectors.intersector16  = BVH4iVirtualIntersector16;
     return intersectors;
   }
 
