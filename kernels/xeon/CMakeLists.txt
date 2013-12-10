@@ -213,8 +213,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED #  FIXME: build shared library
   rtcore/scene_triangle_mesh.cpp
   rtcore/scene_quadratic_bezier_curves.cpp
   rtcore/geometry.cpp
-#  rtcore/virtual_accel.cpp
-#  rtcore/twolevel_accel.cpp
   rtcore/ispc_wrapper_knc.cpp
 
 
@@ -245,6 +243,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED #  FIXME: build shared library
   ../xeonphi/bvh4i/bvh4i_intersector16_chunk.cpp
   ../xeonphi/bvh4i/bvh4i_intersector16_single.cpp
   ../xeonphi/bvh4i/bvh4i_intersector16_hybrid.cpp
+  ../xeonphi/bvh4i/bvh4i_intersector16_virtual.cpp
   ../xeonphi/bvh4i/bvh4i_intersector1.cpp
   ../xeonphi/bvh4i/bvh4i_statistics.cpp
 
