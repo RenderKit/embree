@@ -31,14 +31,23 @@
 #include "rtcore_geometry.h"
 #include "rtcore_geometry_user.h"
 
-/* 
+/*! \file rtcore.h Defines the Embree Ray Tracing Kernel API for C and C++ 
 
    This file defines the Embree ray tracing kernel API for C and
    C++. The user is supposed to include this file, and alternatively
    the rtcore_ray.h file, but none of the other .h files in this
-   folder. 
+   folder. */
 
-   The Embree API is a low level API that supports defining and
+/*! \defgroup embree_kernel_api The Embree Ray Tracing Kernel API (for C/C++) 
+
+  \brief The Embree Ray Tracing Kernel API allows C/C++ based applications to
+  use the Embree library for building data structures and tracing rays
+  without having to understand all of the actual kernels for whatever
+  hardware they are running on.
+  
+  \description
+
+   The API is a low level API that supports defining and
    committing of geometry and tracing of rays. Static and dynamic
    geometry are both supported, as well as finding the closest
    intersection of a ray, and testing a ray segment for any
@@ -148,7 +157,12 @@
 
 */
 
-/*! Initializes the ray tracing core and passed some configuration
+
+/*! \{ */
+
+/*! \brief Initializes the Embree ray tracing core
+
+  Initializes the ray tracing core and passed some configuration
   string. The configuration string allows to configure implementation
   specific parameters. If this string is NULL, a default configuration
   is used. The following configuration flags are supported by the
@@ -160,14 +174,16 @@
 */
 RTCORE_API void rtcInit(const char* cfg = NULL);
 
-/*! Shuts down the ray tracing core. After shutdown, all scene handles
- *  are invalid, and invoking any API call except rtcInit is not
- *  allowed. The application should invoke this call before
- *  terminating. It is safe to call rtcInit again after an rtcExit
- *  call. */
+/*! \brief Shuts down Embree. 
+
+  Shuts down the ray tracing core. After shutdown, all scene handles
+  are invalid, and invoking any API call except rtcInit is not
+  allowed. The application should invoke this call before
+  terminating. It is safe to call rtcInit again after an rtcExit
+  call. */
 RTCORE_API void rtcExit();
 
-/*! Error codes returned by the rtcGetError function. */
+/*! \brief Error codes returned by the rtcGetError function. */
 enum RTCError {
   RTC_NO_ERROR = 0,          //!< No error has been recorded.
   RTC_UNKNOWN_ERROR = 1,     //!< An unknown error has occured.
@@ -176,14 +192,19 @@ enum RTCError {
   RTC_OUT_OF_MEMORY = 4      //!< There is not enough memory left to execute the command.
 };
 
-/*! Returns the value of the per-thread error flag. If an error occurs
- *  this flag is set to an error code if it stores no previous
- *  error. The rtcGetError function reads and returns the currently
- *  stored error and clears the error flag again. */
+/*! \brief Returns the value of the per-thread error flag. 
+
+  If an error occurs this flag is set to an error code if it stores no
+  previous error. The rtcGetError function reads and returns the
+  currently stored error and clears the error flag again. */
 RTCORE_API RTCError rtcGetError();
 
-/*! This function is implementation specific and only for
- *  debugging purposes. Do not call it. */
+/*! \brief Implementation specific (do not call).
+
+  This function is implementation specific and only for debugging
+  purposes. Do not call it. */
 RTCORE_API void rtcDebug();
+
+/*! \} */
 
 #endif

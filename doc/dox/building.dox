@@ -1,0 +1,85 @@
+/*! \page building_embree Building Embree
+
+\section building_linux_macos Compiling Embree on Linux and MacOSX 
+
+Embree requires ISPC to compile. We have tested ISPC version 1.5.0,
+but more recent versions of ISPC should also work. You can download
+and install ISPC binaries from ispc.github.com. After installation,
+put ISPC permanently into your PATH:
+
+<code>  export PATH=path-to-ispc:$PATH</code>
+
+You additionally have to install CMake and the developer version of
+GLUT. Under MaxOSX, these dependencies can be installed using
+MacPorts:
+
+<code>
+   sudo port install cmake freeglut
+</code>
+
+Under Linux you can install the dependencies using yum:
+
+<code>
+   sudo yum install cmake.x86_64
+   sudo yum install freeglut.x86_64 freeglut-devel.x86_64
+   sudo yum install libXmu.x86_64 libXi.x86_64 libXmu-devel.x86_64 libXi-devel.x86_64
+</code>
+
+Finally you can compile Embree using CMake. Create a build directory
+and execute "ccmake .." inside this directory.
+
+<code>
+   mkdir build
+   cd build
+   ccmake ..
+</code>
+
+This will open a configuration dialog where you should set the
+CMAKE_BUILD_TYPE to “Release” and the compiler to"GCC" or "ICC". You
+should also select all targets that you want Embree to generate
+optimized code for. We recommend to enable TARGET_SSE41, TARGET_AVX,
+and TARGET_AVX2 if you want to use Embree on standard CPUs, and you
+have to enable TARGET_XEON_PHI if you want to use Embree on Xeon
+Phi. Now press c (for configure) and g (for generate) to generate a
+Makefile and leave the configuration. The code can be compiled by
+executing make. 
+
+<code>
+      make
+</code>
+
+The executables will be generated inside the build folder. We
+recommend to finally install the Embree library and header files on
+your system:
+
+<code>
+  sudo make install
+</code>
+
+\section building_windows Compiling Embree on Windows 
+
+Embree requires ISPC to compile. We have tested ISPC version 1.5.0,
+but more recent versions of ISPC should also work. You can download
+and install ISPC binaries from ispc.github.com. After installation,
+put the path to ispc.exe permanently into your PATH environment
+variable. You have to restart Visual Studio for this change to take
+effect.
+
+For compilation under Windows use the Visual Studio 2008 solution file
+embree.sln. The project compiles in 32 bit and 64 bit mode. The
+solution is by default setup to use the Microsoft Compiler. You can
+switch to the Intel Compiler by right clicking onto the solution in the
+Solution Explorer and then selecting the ICC compiler. When switching
+to ICC you have to enable the embree_avx and embree_avx2 projects, by
+right clicking onto them selecting "Reload Project". We recommend
+using 64 bit mode and the Intel Compiler for best performance.
+
+We recommend enabling syntax highlighting for the .ispc source 
+and .isph header files. To do so open Visual Studio 2008, go to 
+Tools -> Options -> Text Editor -> File Extension and add the isph
+and ispc extension for the "Microsoft Visual C++" editor.
+
+
+
+
+ */

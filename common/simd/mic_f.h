@@ -489,12 +489,13 @@ namespace embree
     _mm512_extpackstorehi_ps(addr+16 ,reg, _MM_DOWNCONV_PS_NONE , 0);
   }
   
-  __forceinline void compactustore16f(const mic_m& mask, float *addr, const mic_f& reg) {
+  /* pass by value to avoid compiler generating inefficient code */
+  __forceinline void compactustore16f(const mic_m& mask, float *addr, const mic_f reg) {
     _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
     _mm512_mask_extpackstorehi_ps(addr+16 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
   }
   
-  __forceinline void compactustore16f_low(const mic_m& mask, float * addr, const mic_f& reg) {
+  __forceinline void compactustore16f_low(const mic_m& mask, float * addr, const mic_f &reg) {
     _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
   }
   

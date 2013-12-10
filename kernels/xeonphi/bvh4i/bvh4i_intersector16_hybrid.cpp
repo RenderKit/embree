@@ -258,6 +258,15 @@ namespace embree
 		    /* did the ray hot one of the four triangles? */
 		    if (unlikely(any(m_final)))
 		      {
+			prefetch<PFHINT_L1EX>(&ray16.tfar);  
+			prefetch<PFHINT_L1EX>(&ray16.u);
+			prefetch<PFHINT_L1EX>(&ray16.v);
+			prefetch<PFHINT_L1EX>(&ray16.Ng.x); 
+			prefetch<PFHINT_L1EX>(&ray16.Ng.y); 
+			prefetch<PFHINT_L1EX>(&ray16.Ng.z); 
+			prefetch<PFHINT_L1EX>(&ray16.geomID);
+			prefetch<PFHINT_L1EX>(&ray16.primID);
+
 			const mic_f min_dist = vreduce_min(max_dist_xyz);
 			const mic_m m_dist = eq(min_dist,max_dist_xyz);
 
@@ -801,6 +810,7 @@ namespace embree
 #pragma unroll(4)
           for (unsigned int i=0; i<4; i++)
           {
+
             //const NodeRef child = node->children[i];
 	    const NodeRef child = node->lower[i].child;
 

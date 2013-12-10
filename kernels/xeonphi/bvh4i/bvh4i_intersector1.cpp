@@ -224,6 +224,9 @@ namespace embree
 	      const mic_f min_dist = vreduce_min(max_dist_xyz);
 	      const mic_m m_dist = eq(min_dist,max_dist_xyz);
 
+	      prefetch<PFHINT_L1EX>((mic_f*)&ray + 0);
+	      prefetch<PFHINT_L1EX>((mic_f*)&ray + 1);
+
 	      const size_t vecIndex = bitscan(toInt(m_dist));
 	      const size_t triIndex = vecIndex >> 2;
 

@@ -22,8 +22,6 @@
 
 #define BVH_NODE_PREALLOC_FACTOR                 1.15f
 
-#define QBVH_BUILDER_LEAF_ITEM_THRESHOLD         4
-
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
 
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
@@ -808,7 +806,7 @@ namespace embree
 #endif
 
     /* mark as leaf if leaf threshold reached */
-    if (current.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
+    if (current.items() <= BVH4i::N) {
       current.createLeaf();
       return false;
     }
@@ -919,8 +917,8 @@ namespace embree
     checkBuildRecord(rightChild);
 #endif
 
-    if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
-    if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();	
+    if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
+    if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();	
     return true;
   }
 
@@ -938,7 +936,7 @@ namespace embree
 #endif
   
     /* mark as leaf if leaf threshold reached */
-    if (items <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
+    if (items <= BVH4i::N) {
       current.createLeaf();
       return false;
     }
@@ -984,8 +982,8 @@ namespace embree
      checkBuildRecord(rightChild);
 #endif
      
-     if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
-     if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();
+     if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
+     if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();
      return true;
   }
 
@@ -1008,7 +1006,7 @@ namespace embree
 #endif
   
     /* mark as leaf if leaf threshold reached */
-    if (items <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
+    if (items <= BVH4i::N) {
       current.createLeaf();
       return false;
     }
@@ -1058,8 +1056,8 @@ namespace embree
     checkBuildRecord(rightChild);
 #endif
      
-     if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
-     if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();
+     if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
+     if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();
      return true;
   }
 
@@ -1103,7 +1101,7 @@ namespace embree
 #endif
     
     /* create leaf for few primitives */
-    if (current.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
+    if (current.items() <= BVH4i::N) {
       node[current.parentID].createLeaf(current.begin,current.items());
       return;
     }

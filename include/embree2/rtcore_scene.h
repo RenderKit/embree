@@ -17,6 +17,9 @@
 #ifndef __RTCORE_SCENE_H__
 #define __RTCORE_SCENE_H__
 
+/*! \ingroup embree_kernel_api */
+/*! \{ */
+
 /*! forward declarations for ray structures */
 struct RTCRay;
 struct RTCRay4;
@@ -50,7 +53,7 @@ enum RTCAlgorithmFlags
   RTC_INTERSECT16 = (1 << 3),   //!< enables the rtcIntersect16 and rtcOccluded16 functions for this scene
 };
 
-/*! Scene type */
+/*! \brief Defines an opaque scene type */
 typedef struct __RTCScene {}* RTCScene;
 
 /*! Creates a new scene. */
@@ -113,5 +116,7 @@ RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray)
 
 /*! Deletes the scene. All contained geometry get also destroyed. */
 RTCORE_API void rtcDeleteScene (RTCScene scene);
+
+/*! @} */
 
 #endif

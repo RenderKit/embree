@@ -17,6 +17,9 @@
 #ifndef __RTCORE_USER_GEOMETRY_H__
 #define __RTCORE_USER_GEOMETRY_H__
 
+/*! \ingroup embree_kernel_api */
+/*! \{ */
+
 /*! Type of intersect function pointer for single rays. */
 typedef void (*RTCIntersectFunc)(void* ptr,           /*!< pointer to user data */
                                  RTCRay& ray          /*!< ray to intersect */);
@@ -120,5 +123,7 @@ RTCORE_API void rtcSetOccludedFunction8 (RTCScene scene, unsigned geomID, RTCOcc
  *  rtcOccluded16 function will call the passed function for
  *  intersecting the user geometry. */
 RTCORE_API void rtcSetOccludedFunction16 (RTCScene scene, unsigned geomID, RTCOccludedFunc16 occluded16);
+
+/*! @} */
 
 #endif

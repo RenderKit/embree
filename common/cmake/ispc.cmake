@@ -26,7 +26,6 @@ IF (NOT __XEON__)
 ENDIF ()
 
 MACRO (ispc_compile targets)
-
   IF (__XEON__)
     SET (ISPC_TARGET_EXT o)
   ELSE()
@@ -48,7 +47,7 @@ MACRO (ispc_compile targets)
   SET(ISPC_OBJECTS "")
 
   FOREACH(src ${ARGN})
-
+		message("src "${src})
     GET_FILENAME_COMPONENT(fname ${src} NAME_WE)
     GET_FILENAME_COMPONENT(dir ${src} PATH)
 
@@ -73,7 +72,7 @@ MACRO (ispc_compile targets)
     ENDIF ()
 
     SET(results "${outdir}/${fname}.dev.${ISPC_TARGET_EXT}")
-
+		message("results ${outdir}/${fname}.dev.${ISPC_TARGET_EXT}")
     # if we have multiple targets add additional object files
     IF (__XEON__)
       IF (${targets} MATCHES ".*,.*")

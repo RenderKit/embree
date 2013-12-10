@@ -17,10 +17,13 @@
 #ifndef __RTCORE_GEOMETRY_H__
 #define __RTCORE_GEOMETRY_H__
 
+/*! \ingroup embree_kernel_api */
+/*! \{ */
+
 /*! invalid geometry ID */
 #define INVALID_GEOMETRY_ID ((unsigned)-1)
 
-/*! Type of buffers */
+/*! \brief Specifies the type of buffers when mapping buffers */
 enum RTCBufferType {
   RTC_INDEX_BUFFER    = 0x01000000,
   RTC_VERTEX_BUFFER   = 0x02000000,
@@ -28,40 +31,42 @@ enum RTCBufferType {
   RTC_VERTEX_BUFFER1  = 0x02000001,
 };
 
-/*! Matrix layout */
+/*! \brief Supported types of matrix layout for functions involving matrices */
 enum RTCMatrixType {
   RTC_MATRIX_ROW_MAJOR = 0,
   RTC_MATRIX_COLUMN_MAJOR = 1,
   RTC_MATRIX_COLUMN_MAJOR_ALIGNED16 = 2,
 };
 
-/*! Creates a new scene instance. A scene instance contains a
- *  reference to a scene to instantiate and the transformation to
- *  instantiate the scene with. An implementation will typically
- *  transform the ray with the inverse of the provided transformation
- *  and continue traversing the ray through the provided scene. If any
- *  geometry is hit, the instance ID (instID) member of the ray will
- *  get set to the geometry ID of the instance. */
+/*! \brief Creates a new scene instance. 
+
+  A scene instance contains a reference to a scene to instantiate and
+  the transformation to instantiate the scene with. An implementation
+  will typically transform the ray with the inverse of the provided
+  transformation and continue traversing the ray through the provided
+  scene. If any geometry is hit, the instance ID (instID) member of
+  the ray will get set to the geometry ID of the instance. */
 RTCORE_API unsigned rtcNewInstance (RTCScene target,                  //!< the scene the instance belongs to
                                     RTCScene source                   //!< the scene to instantiate
   );
 
-/*! Sets transformation of the instance */
+/*! \brief Sets transformation of the instance */
 RTCORE_API void rtcSetTransform (RTCScene scene,                          //!< scene handle
                                  unsigned geomID,                         //!< ID of geometry
                                  RTCMatrixType layout,                    //!< layout of transformation matrix
                                  float* xfm                               //!< transformation matrix
                                  );
 
-/*! Creates a new triangle mesh. The number of triangles
- *  (numTriangles), number of vertices (numVertices), and number of
- *  time steps (1 for normal meshes, and 2 for linear motion blur),
- *  have to get specified. The triangle indices can be set be mapping
- *  and writing to the index buffer (RTC_INDEX_BUFFER) and the
- *  triangle vertices can be set by mapping and writing into the
- *  vertex buffer (RTC_VERTEX_BUFFER). In case of linear motion blur,
- *  two vertex buffers have to get filled (RTC_VERTEX_BUFFER0,
- *  RTC_VERTEX_BUFFER1), one for each time step. */
+/*! \brief Creates a new triangle mesh. 
+
+  The number of triangles (numTriangles), number of vertices
+  (numVertices), and number of time steps (1 for normal meshes, and 2
+  for linear motion blur), have to get specified. The triangle indices
+  can be set be mapping and writing to the index buffer
+  (RTC_INDEX_BUFFER) and the triangle vertices can be set by mapping
+  and writing into the vertex buffer (RTC_VERTEX_BUFFER). In case of
+  linear motion blur, two vertex buffers have to get filled
+  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1), one for each time step. */
 RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene,                    //!< the scene the mesh belongs to
                                         RTCFlags flags,                    //!< geometry flags
                                         size_t numTriangles,               //!< number of triangles
@@ -69,7 +74,7 @@ RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene,                    //!< 
                                         size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
 
-/*! Creates a new collection of quadratic bezier curves. */
+/*! \brief Creates a new collection of quadratic bezier curves. */
 RTCORE_API unsigned rtcNewQuadraticBezierCurves (RTCScene scene,            //!< the scene the curves belong to
                                                  RTCFlags flags,            //!< geometry flags
                                                  size_t numCurves,          //!< number of curves
@@ -77,33 +82,39 @@ RTCORE_API unsigned rtcNewQuadraticBezierCurves (RTCScene scene,            //!<
                                                  size_t numTimeSteps = 1    //!< number of motion blur time steps
   );
 
-/*! Sets ray mask. */
+/*! \brief Sets ray mask. */
 RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask);
 
-/*! Maps specified buffer. This function can be used to set index and
+/*! \brief Maps specified buffer. This function can be used to set index and
  *  vertex buffers of geometries. */
 RTCORE_API void* rtcMapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type);
 
-/*! Unmaps specified buffer. A buffer has to be unmapped before the
- *  rtcEnable, rtcDisable, rtcUpdate, or rtcDeleteGeometry calls are
- *  executed. */
+/*! \brief Unmaps specified buffer. 
+
+  A buffer has to be unmapped before the rtcEnable, rtcDisable,
+  rtcUpdate, or rtcDeleteGeometry calls are executed. */
 RTCORE_API void rtcUnmapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type);
 
-/*! Enable geometry. Enabled geometry can be hit by a ray. */
+/*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnable (RTCScene scene, unsigned geomID);
 
-/*! Update geometry. This function has to get called, each time the
- *  user modifies some geometry for dynamic scenes. The function does
- *  not have to get called after initializing some geometry for the
- *  first time. */
+/*! \brief Update geometry. 
+
+  This function has to get called, each time the user modifies some
+  geometry for dynamic scenes. The function does not have to get
+  called after initializing some geometry for the first time. */
 RTCORE_API void rtcUpdate (RTCScene scene, unsigned geomID);
 
-/*! Disable geometry. Disabled geometry is not hit by any
- *  ray. Disabling and enabling geometry gives higher performance than
- *  deleting and recreating geometry. */
+/*! \brief Disable geometry. 
+
+  Disabled geometry is not hit by any ray. Disabling and enabling
+  geometry gives higher performance than deleting and recreating
+  geometry. */
 RTCORE_API void rtcDisable (RTCScene scene, unsigned geomID);
 
-/*! Deletes the geometry. */
+/*! \brief Deletes the geometry. */
 RTCORE_API void rtcDeleteGeometry (RTCScene scene, unsigned geomID);
+
+/*! @} */
 
 #endif

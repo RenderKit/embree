@@ -1,0 +1,34 @@
+/*! \subpage embree_path_tracer Embree's Sample Path Tracer
+
+  \section path_tracer_intro Introduction
+
+  In ealier versions Embree came with an exemplary but nevertheless
+  rather sophisticated sample path tracer to show how embree can be
+  used, and to provide a non-trivial workload with incoherent ray
+  distributions for the kernels. In fact, this path tracer was
+  initially rather tightly coupled to the embree kernels, and has over
+  time evolved into something that eventually became bigger than the
+  kernels themselves.
+
+  In the process of re-focusing embree on the actual kernels (that
+  most users' interest is in)--and to make it easier to use the
+  kernels without having to understand the whole project--starting in
+  version 2.1 we have created a stricter separation between the actual
+  kernels and the sample codes that use those kernels.
+
+  In the process of doing so we have moved the Sample Path Tracer into
+  a separate branch dedicated to this path tracer. This path tracer is
+  still being maintained, and is still kept in sync with the embree
+  kernels; but it has to be checked out and built separately from the kernels.
+
+  \section path_tracer_getting Checking out the Sample Path Tracer 
+
+  The path tracer is now located in branch 'xxx' in the original github
+  repository at https://github.com/embree/embree .
+
+  \section path_tracer_building Building the Sample Path Tracer 
+
+  To build the sample path tracer, please refer to the documentation
+  inside the path tracer branch.
+
+ */

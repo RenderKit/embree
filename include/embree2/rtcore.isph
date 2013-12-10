@@ -27,6 +27,11 @@
 #include "rtcore_geometry.isph"
 #include "rtcore_geometry_user.isph"
 
+/*! \defgroup embree_kernel_api_ispc Embree Ray Tracing Kernel API (for ISPC) */
+
+/*! \ingroup embree_kernel_api_ispc */
+/*! \{ */
+
 /* 
 
    This file defines the Embree ray tracing kernel API for ISPC. The
@@ -177,5 +182,7 @@ uniform RTCError rtcGetError();
 /*! This function is implementation specific and only for
  *  debugging purposes. Do not call it. */
 void rtcDebug(); 
+
+/*! @} */
 
 #endif

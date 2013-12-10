@@ -1,0 +1,66 @@
+/*! \page embree_tutorials Embree Tutorials 
+
+\section tutorials_intro Introduction
+
+Embree comes with a (currently still relatively small) set of
+tutorials aimed at helping users understand how embree can be used,
+and extended.
+
+Currently embree comes with the following tutorials (each tutorial
+located in the given folder):
+<dl>
+    <dt>tutorials</dt>              <dd>Root directory for all tutorials
+    <dt>tutorials/tutorial00</dt>     <dd>Creates a simple static scene</dd>
+    <dt>tutorials/tutorial01</dt>     <dd>Creates a dynamic scene</dd>
+    <dt>tutorials/tutorial02</dt>     <dd>Shows how to use "user-defined geometry" (ie, how to add a new geometric primitive to embree</dd>
+    <dt>tutorials/tutorial03</dt>     <dd>A simple OBJ loader/viewer using embree</dd>
+    <dt>tutorials/tutorial04</dt>     <dd>Demonstrates how to do instancing of geometry</dd>
+</dl>
+
+
+\section tutorials_building Building the Tutorials
+
+To build the tutorials, simply enable 'BUILD_TUTORIALS' in the cmake
+dialog when building embree (see \ref building_embree).
+
+\section running_tutorials Running the Tutorials
+
+Some tutorials come as C++ and ISPC version, e.g.:
+
+<code>
+  ./tutorial00
+  ./tutorial00_ispc
+</code>
+
+You can select an initial camera using the -vp (camera position), -vi
+(camera lookat point), -vu (camera up vector), and -fov (field of
+view) command line parameters:
+
+<code>
+  ./tutorial00 -vp 10 10 10 -vi 0 0 0
+</code>
+
+You can select the initial windows size using the -size command line
+parameter, or start the tutorials in fullscreen using the -fullscreen
+parameter:
+
+<code>
+  ./tutorial00 -size 1024 1024
+  ./tutorial00 -fullscreen
+</code>
+
+Implementation specific parameters can be passed to the ray tracing
+core through the -rtcore command line parameter, e.g.:
+
+<code>
+  ./tutorial00 -rtcore verbose=2,threads=1,accel=bvh4.triangle1
+</code>
+
+The navigation in the interactive display mode follows the camera
+orbit model, where the camera revolves around the current center of
+interest. With the left mouse button you can rotate around the center
+of interest (the point initially set with -vi). Holding Control
+pressed while klicking the left mouse button rotates the camera around
+its location. You can also use the arrow keys for navigation.
+
+*/

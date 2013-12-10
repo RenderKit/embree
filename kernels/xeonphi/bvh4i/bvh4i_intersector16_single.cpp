@@ -146,14 +146,14 @@ namespace embree
 		  const unsigned int old_sindex = sindex;
 		  sindex += countbits(hiti) - 1;
 		  assert(sindex < 3*BVH4i::maxDepth+1);
+		  const mic_i plower_node = load16i((int*)plower);
         
 		  const mic_m closest_child = eq(hitm,min_dist,tNear);
 		  const unsigned long closest_child_pos = bitscan64(closest_child);
 		  const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
-		  const mic_i plower_node = load16i((int*)plower);
-		  compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
 		  curNode = ((unsigned int*)plower)[closest_child_pos];
 		  compactustore16f(m_pos,&stack_dist[old_sindex],tNear);
+		  compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
 		}
 	  
 	    
@@ -251,6 +251,15 @@ namespace embree
 		  if (1)
 #endif
 		    {
+		      prefetch<PFHINT_L1EX>(&ray16.tfar);  
+		      prefetch<PFHINT_L1EX>(&ray16.u);
+		      prefetch<PFHINT_L1EX>(&ray16.v);
+		      prefetch<PFHINT_L1EX>(&ray16.Ng.x); 
+		      prefetch<PFHINT_L1EX>(&ray16.Ng.y); 
+		      prefetch<PFHINT_L1EX>(&ray16.Ng.z); 
+		      prefetch<PFHINT_L1EX>(&ray16.geomID);
+		      prefetch<PFHINT_L1EX>(&ray16.primID);
+
 		      max_dist_xyz = min_dist;
 		  
 		      compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);

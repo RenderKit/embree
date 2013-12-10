@@ -172,6 +172,7 @@ namespace embree
     initEncodingAllocateData(TaskScheduler::getNumThreads());
 
 #if defined(PROFILE)
+    std::cout << "STARTING PROFILE MODE" << std::endl << std::flush;
 
     double dt_min = pos_inf;
     double dt_avg = 0.0f;
@@ -902,6 +903,11 @@ namespace embree
     //const unsigned int currentIndex = allocNode(BVH4i::N);
     const size_t currentIndex = alloc.get(BVH4i::N);
    
+    /* init used/unused nodes */
+    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    store16f_ngo((float*)&node[currentIndex+0],init_node);
+    store16f_ngo((float*)&node[currentIndex+2],init_node);
+
     BBox3f bounds; 
     bounds = empty;
     /* recurse into each child */
@@ -1029,8 +1035,14 @@ namespace embree
 
     /* allocate next four nodes and prefetch them */
     const size_t currentIndex = allocNode(BVH4i::N);    
-    prefetch<PFHINT_L2EX>((float*)&node[currentIndex+0]);
-    prefetch<PFHINT_L2EX>((float*)&node[currentIndex+2]);
+
+    /* init used/unused nodes */
+    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    store16f_ngo((float*)&node[currentIndex+0],init_node);
+    store16f_ngo((float*)&node[currentIndex+2],init_node);
+
+    // prefetch<PFHINT_L2EX>((float*)&node[currentIndex+0]);
+    // prefetch<PFHINT_L2EX>((float*)&node[currentIndex+2]);
 
     /* recurse into each child */
     for (size_t i=0; i<numChildren; i++) 
@@ -1039,9 +1051,9 @@ namespace embree
       }
 
     /* init used/unused nodes */
-    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-    store16f((float*)&node[currentIndex+0],init_node);
-    store16f((float*)&node[currentIndex+2],init_node);
+    // const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    // store16f((float*)&node[currentIndex+0],init_node);
+    // store16f((float*)&node[currentIndex+2],init_node);
 
     node[current.parentID].createNode(currentIndex,numChildren);
     return numChildren;
@@ -1117,9 +1129,11 @@ namespace embree
 
     /* allocate next four nodes and prefetch them */
     const size_t currentIndex = alloc.get(BVH4i::N);    
-    prefetch<PFHINT_L2EX>((float*)&node[currentIndex+0]);
-    prefetch<PFHINT_L2EX>((float*)&node[currentIndex+2]);
 
+    /* init used/unused nodes */
+    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    store16f_ngo((float*)&node[currentIndex+0],init_node);
+    store16f_ngo((float*)&node[currentIndex+2],init_node);
 
     /* recurse into each child */
     BBox3f bounds;
@@ -1136,15 +1150,15 @@ namespace embree
 	bounds.extend( recurse(children[i],alloc,mode,numThreads) );
     }
 
-    /* init used/unused nodes */
-    const mic_f init_node_lower = broadcast4to16f((float*)&BVH4i::initQBVHNode[0]);
-    const mic_f init_node_upper = broadcast4to16f((float*)&BVH4i::initQBVHNode[1]);
+    // /* init used/unused nodes */
+    // const mic_f init_node_lower = broadcast4to16f((float*)&BVH4i::initQBVHNode[0]);
+    // const mic_f init_node_upper = broadcast4to16f((float*)&BVH4i::initQBVHNode[1]);
 
-    for (size_t i=numChildren; i<BVH4i::N; i++) 
-      {
-	store4f_nt((float*)&node[currentIndex+i].lower,init_node_lower);
-	store4f_nt((float*)&node[currentIndex+i].upper,init_node_upper);
-      }
+    // for (size_t i=numChildren; i<BVH4i::N; i++) 
+    //   {
+    // 	store4f_nt((float*)&node[currentIndex+i].lower,init_node_lower);
+    // 	store4f_nt((float*)&node[currentIndex+i].upper,init_node_upper);
+    //   }
 
 
     node[current.parentID].lower = bounds.lower;

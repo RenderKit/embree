@@ -17,6 +17,9 @@
 #ifndef __RTCORE_USER_GEOMETRY_ISPH__
 #define __RTCORE_USER_GEOMETRY_ISPH__
 
+/*! \ingroup embree_kernel_api_ispc */
+/*! \{ */
+
 /*! Type of intersect function pointer for uniform rays. */
 typedef void (*RTCIntersectFuncUniform)(void* uniform ptr,           /*!< pointer to user data */
                                         uniform RTCRay1& ray         /*!< ray to intersect */);
@@ -79,5 +82,7 @@ void rtcSetOccludedFunction1 (RTCScene scene, uniform unsigned int geomID, unifo
  *  will call the passed function for intersecting the user
  *  geometry. */
 void rtcSetOccludedFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCOccludedFuncVarying occluded);
+
+/*! @} */
 
 #endif
