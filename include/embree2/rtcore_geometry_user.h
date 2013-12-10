@@ -64,13 +64,12 @@ typedef void (*RTCOccludedFunc16) (const void* valid, /*! pointer to valid mask 
  *  box of the implemented geometry. As the rtcIntersect and
  *  rtcOccluded functions support different ray packet sizes, the user
  *  also has to provide different versions of intersect and occluded
- *  function pointers for the different packet sized. However, only
- *  rtcIntersect and rtcOccluded functions of specific packet sizes
- *  are called, it is sufficient to provide only the corresponding
- *  function pointer for the user geometry. However, the functions
- *  provided have to intersect the same geometry. A user data pointer,
- *  that points to a user specified representation of the geometry, is
- *  passed to each intersect and occluded function invokation. */
+ *  function pointers for these packet sizes. However, the ray packet
+ *  size of the called function pointer always matches the packet size
+ *  of the originally invoked rtcIntersect and rtcOccluded
+ *  functions. A user data pointer, that points to a user specified
+ *  representation of the geometry, is passed to each intersect and
+ *  occluded function invokation. */
 RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene);
 
 /*! Set bounding box of user defined geometry. The bounding box has to
