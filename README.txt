@@ -99,10 +99,11 @@ CMAKE_BUILD_TYPE to “Release” and the compiler to "GCC", "CLANG" or
 generate optimized code for. We recommend to enable TARGET_SSE41,
 TARGET_AVX, and TARGET_AVX2 if you want to use Embree on standard
 CPUs, and you have to enable TARGET_XEON_PHI if you want to use Embree
-on Xeon Phi. You need at least ICC 11.1 or GCC 4.4 to enable AVX and
-ICC 12.1 or GCC 4.7 to enable AVX2. Now press c (for configure) and g
-(for generate) to generate a Makefile and leave the configuration. The
-code can be compiled by executing make.
+on Xeon Phi. You need at least Intel Compiler 11.1 or GCC 4.4 to
+enable AVX and Intel Compiler 12.1 or GCC 4.7 to enable AVX2. Now
+press c (for configure) and g (for generate) to generate a Makefile
+and leave the configuration. The code can be compiled by executing
+make.
 
       make
 
@@ -122,13 +123,24 @@ variable. You have to restart Visual Studio for this change to take
 effect.
 
 For compilation under Windows use the Visual Studio 2008 solution file
-embree.sln. The project compiles in 32 bit and 64 bit mode. The
+embree_vs2008.sln or Visual Studio 2010 solution file
+embree_vs2010. The project compiles in 32 bit and 64 bit mode. The
 solution is by default setup to use the Microsoft Compiler. You can
-switch to the Intel Compiler by right clicking onto the solution in the
-Solution Explorer and then selecting the ICC compiler. When switching
-to ICC you have to enable the embree_avx and embree_avx2 projects, by
-right clicking onto them selecting "Reload Project". We recommend
-using 64 bit mode and the Intel Compiler for best performance.
+switch to the Intel Compiler by right clicking onto the solution in
+the Solution Explorer and then selecting the Intel Compiler. We
+recommend using 64 bit mode and the Intel Compiler for best
+performance.
+
+In Visual Studio, you will find 4 build configurations, Debug (for
+SSE2 debug mode), Release (for SSE2 release mode), ReleaseAVX (for
+AVX), and ReleaseAVX2 (for AVX2). When using Microsoft Compiler you
+can only use the Debug and Release configuration. For enabling the
+ReleaseAVX target you need Intel Compiler 11.1 and and for the
+ReleaseAVX2 target you need at least Intel Compiler 12.1.
+
+There is an issue with compiling the ISPC files in Visual Studio 2010,
+resulting in link errors for the first builds. Please rebuild the
+project multiple times until it links properly.
 
 We recommend enabling syntax highlighting for the .ispc source 
 and .isph header files. To do so open Visual Studio 2008, go to 

@@ -36,7 +36,9 @@
    This file defines the Embree ray tracing kernel API for C and
    C++. The user is supposed to include this file, and alternatively
    the rtcore_ray.h file, but none of the other .h files in this
-   folder. The API is a low level API that supports defining and
+   folder. 
+
+   The Embree API is a low level API that supports defining and
    committing of geometry and tracing of rays. Static and dynamic
    geometry are both supported, as well as finding the closest
    intersection of a ray, and testing a ray segment for any
