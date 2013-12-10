@@ -237,6 +237,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED #  FIXME: build shared library
 
   ../xeonphi/bvh4i/bvh4i.cpp
   ../xeonphi/bvh4i/bvh4i_builder.cpp
+  ../xeonphi/bvh4i/bvh4i_builder_ext.cpp
   ../xeonphi/bvh4i/bvh4i_builder_binner.cpp
   ../xeonphi/bvh4i/bvh4i_builder_morton.cpp
   ../xeonphi/bvh4i/bvh4i_builder_morton_enhanced.cpp
@@ -251,8 +252,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED #  FIXME: build shared library
   bvh4mb/bvh4mb_builder.cpp
   bvh4mb/bvh4mb_intersector1.cpp   
   bvh4mb/bvh4mb_intersector4.cpp
-
-#  bvh8i/bvh8i.cpp
 )
 
 TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi)
