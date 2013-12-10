@@ -36,7 +36,7 @@
 
 
 
-#define TIMER(x) 
+#define TIMER(x) x
 #define DBG(x) 
 
 //#define PROFILE
@@ -422,6 +422,8 @@ namespace embree
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
 
+    const Scene* __restrict__ const scene = (Scene*)geometry;
+
     Triangle1    * __restrict__  acc  = accel + startID;
     const PrimRef* __restrict__  bptr = prims + startID;
 
@@ -429,6 +431,9 @@ namespace embree
       {
 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
+	assert(bptr->geomID() < source->groups() );
+	assert(bptr->primID() < scene->get( bptr->geomID() )->numPrimitives );
+
 	computeAccelerationData(bptr->geomID(),bptr->primID(),(Scene*)geometry,acc);
       }
   }
@@ -1230,6 +1235,8 @@ namespace embree
 	    FATAL("check build record => subset");
 	  }
       }
+
+    if (enablePreSplits) return;
     if (!(subset(check_box,box) && subset(box,check_box))) 
       {
 	DBG_PRINT(current);
@@ -1395,9 +1402,14 @@ namespace embree
     if (likely(!enablePreSplits))
       LockStepTaskScheduler::dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
     else
-      LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
-    DBG_PRINT(atomicID - numPrimitives);
-    //numPrimitives = atomicID;
+      {
+	LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
+
+	// for (size_t i=numPrimitives;i<atomicID;i++)
+	//        DBG_PRINT(prims[i]);
+	DBG_PRINT(atomicID - numPrimitives);
+	numPrimitives = atomicID;
+      }
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computePrimRefs " << 1000. * msec << " ms" << std::endl << std::flush);

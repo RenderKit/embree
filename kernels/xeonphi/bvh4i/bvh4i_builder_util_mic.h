@@ -906,7 +906,6 @@ namespace embree
     return ge(dim_mask,binID,bestSplit_f);    
   }
 
-  // FIXME: L1 prefetches !!
   template<unsigned int DISTANCE>
     __forceinline unsigned int partitionPrimRefs(PrimRef *__restrict__ aabb,
 						 const unsigned int begin,

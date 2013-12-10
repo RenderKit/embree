@@ -94,30 +94,78 @@ namespace embree
 	const mic_f v1 = broadcast4to16f(vptr1);
 	const mic_f v2 = broadcast4to16f(vptr2);
 
-	const mic_f bmin = min(min(v0,v1),v2);
-	const mic_f bmax = max(max(v0,v1),v2);
+	mic_f bmin = min(min(v0,v1),v2);
+	mic_f bmax = max(max(v0,v1),v2);
+
 
 	const mic_f area_tri = tri_sah(v0,v1,v2);
 	const mic_f area_box = box_sah(bmin,bmax);
 	const mic_f factor = area_box * rcp(area_tri);
-	if (any(factor > mic_f(20.0f))) atomicID.inc();
+
 #if 0
 	DBG_PRINT(area_tri);
 	DBG_PRINT(area_box);
 	DBG_PRINT(factor);
 #endif
 
+	if (any(factor > mic_f(80.0f))) 
+	  {
+	    const mic_f v01 = (v0 + v1) * 0.5f;
+	    const mic_f v12 = (v1 + v2) * 0.5f;
+	    const mic_f v20 = (v2 + v0) * 0.5f;
+
+	    bmin = min(bmin,min(min(v01,v12),v20));
+	    bmax = min(bmax,max(max(v01,v12),v20));
+
+	    const mic_f bminA = min(min(v0,v01),v20);
+	    const mic_f bmaxA = max(max(v0,v01),v20);
+
+	    const mic_f bminB = min(min(v01,v1),v12);
+	    const mic_f bmaxB = max(max(v01,v1),v12);
+
+	    const mic_f bminC = min(min(v20,v12),v2);
+	    const mic_f bmaxC = max(max(v20,v12),v2);
+
+	    const mic_f bminD = min(min(v01,v12),v20);
+	    const mic_f bmaxD = max(max(v01,v12),v20);
+
+	    unsigned int preSplitIndex = atomicID.add(3);
+
+	    store4f(&dest->lower,bminA);
+	    store4f(&dest->upper,bmaxA);	
+	    dest->lower.a = g; dest->upper.a = i;
+	    dest++;
+
+	    store4f(&prims[preSplitIndex+0].lower,bminB);
+	    store4f(&prims[preSplitIndex+0].upper,bmaxB);
+	    prims[preSplitIndex+0].lower.a = g; 
+	    prims[preSplitIndex+0].upper.a = i;
+
+	    store4f(&prims[preSplitIndex+1].lower,bminC);
+	    store4f(&prims[preSplitIndex+1].upper,bmaxC);
+	    prims[preSplitIndex+1].lower.a = g; 
+	    prims[preSplitIndex+1].upper.a = i;
+
+	    store4f(&prims[preSplitIndex+2].lower,bminD);
+	    store4f(&prims[preSplitIndex+2].upper,bmaxD);
+	    prims[preSplitIndex+2].lower.a = g; 
+	    prims[preSplitIndex+2].upper.a = i;
+	  }
+	else
+	  {       
+	    store4f(&dest->lower,bmin);
+	    store4f(&dest->upper,bmax);	
+	    dest->lower.a = g;
+	    dest->upper.a = i;
+	    dest++;
+	  }
+
 	bounds_scene_min = min(bounds_scene_min,bmin);
 	bounds_scene_max = max(bounds_scene_max,bmax);
 	const mic_f centroid2 = bmin+bmax;
 	bounds_centroid_min = min(bounds_centroid_min,centroid2);
 	bounds_centroid_max = max(bounds_centroid_max,centroid2);
-       
-	store4f(&dest->lower,bmin);
-	store4f(&dest->upper,bmax);	
-	dest->lower.a = g;
-	dest->upper.a = i;
-	dest++;
+
       }
       if (currentID == endID) break;
       offset = 0;
