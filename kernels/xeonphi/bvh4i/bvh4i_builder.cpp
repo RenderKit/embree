@@ -36,10 +36,10 @@
 
 
 
-#define TIMER(x) x
+#define TIMER(x) 
 #define DBG(x) 
 
-//#define PROFILE
+#define PROFILE
 
 #define PROFILE_ITERATIONS 100
 
@@ -101,7 +101,7 @@ namespace embree
     if (numPrimitivesOld != numPrimitives || numPrimitives == 0)
       {
 	const size_t preSplitPrims = enablePreSplits ? (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR) : 0;
-	DBG_PRINT(preSplitPrims);
+	//DBG_PRINT(preSplitPrims);
 	const size_t numPrims = numPrimitives+4+preSplitPrims;
 	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
 	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
