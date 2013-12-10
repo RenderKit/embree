@@ -74,7 +74,7 @@ RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene,                    //!< 
                                         size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
 
-/*! \brief Sets ray mask. */
+/*! \brief Sets 30 bit ray mask. */
 RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask);
 
 /*! \brief Maps specified buffer. This function can be used to set index and

@@ -72,7 +72,7 @@ uniform unsigned int rtcNewTriangleMesh (RTCScene scene,              //!< the s
                                      uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
   );
 
-/*! Sets ray mask. */
+/*! Sets 30 bit ray mask. */
 void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
 
 /*! Maps specified buffer. This function can be used to set index and
