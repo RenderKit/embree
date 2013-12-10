@@ -37,13 +37,13 @@ namespace embree
   public:
 
     /*! Constructor. */
-    BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+    BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry, bool enablePreSplits = false);
 
     ~BVH4iBuilder();
 
     /*! creates the builder */
-    static Builder* create (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize = inf, const size_t maxLeafSize = inf) { 
-      return new BVH4iBuilder((BVH4i*)accel,source,geometry,minLeafSize,maxLeafSize);
+    static Builder* create (void* accel, BuildSource* source, void* geometry, bool enablePreSplits = false) { 
+      return new BVH4iBuilder((BVH4i*)accel,source,geometry,enablePreSplits);
     }
 
     /* build function */
@@ -54,6 +54,7 @@ namespace embree
   public:
     TASK_FUNCTION(BVH4iBuilder,computePrimRefs);
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsVirtual);
+    TASK_FUNCTION(BVH4iBuilder,computePrimRefsPreSplits);
     TASK_FUNCTION(BVH4iBuilder,fillLocalWorkQueues);
     TASK_FUNCTION(BVH4iBuilder,buildSubTrees);
     TASK_FUNCTION(BVH4iBuilder,createTriangle1);
@@ -104,6 +105,7 @@ namespace embree
     BuildSource* source;          //!< input geometry
     void* geometry;               //!< input geometry
     BVH4i* bvh;                   //!< Output BVH
+    const bool enablePreSplits;
 
     /* work record handling */
   protected:

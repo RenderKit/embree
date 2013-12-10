@@ -28,9 +28,12 @@
 
 #define SINGLE_THREADED_BUILD_THRESHOLD        512
 
+#define PRESPLIT_SPACE_FACTOR                   0.1f
+
 #define ENABLE_TASK_STEALING
 
 #define ENABLE_FILL_PER_CORE_WORK_QUEUES
+
 
 
 #define TIMER(x) 
@@ -46,41 +49,21 @@
 
 // TODO: CHECK     const float voxelArea    = current.cs_AABB.sceneArea();
 //                 const float centroidArea = current.cs_AABB.centroidArea();
-// div size_t
-// < 128 items => NGO stores 
-// build accel in build
 
 namespace embree
 {
-  AtomicMutex mtx;
-
-  // =======================================================================================================
-  // =======================================================================================================
-  // =======================================================================================================
+#if defined(DEBUG)
+  static AtomicMutex mtx;
+#endif
 
   static double dt = 0.0f;
 
-#if 0
-  
+  // =======================================================================================================
+  // =======================================================================================================
+  // =======================================================================================================
 
-  __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
-  	  { FLT_MIN_EXP, FLT_MIN_EXP, FLT_MIN_EXP,(int)(1 << 31)},
-  	  {-FLT_MIN_EXP,-FLT_MIN_EXP,-FLT_MIN_EXP,(int)(1 << 31)},
-  	  { FLT_MIN_EXP, FLT_MIN_EXP, FLT_MIN_EXP,(int)(1 << 31)},
-  	  {-FLT_MIN_EXP,-FLT_MIN_EXP,-FLT_MIN_EXP,(int)(1 << 31)}
-  };
-#else
 
-  __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
-	  {1E14f,1E14f,1E14f,(int)(1 << 31)},
-	  {1E14f,1E14f,1E14f,(int)(1 << 31)},
-	  {1E14f,1E14f,1E14f,(int)(1 << 31)},
-	  {1E14f,1E14f,1E14f,(int)(1 << 31)}
-  };
-
-#endif
-
-  BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize)
+  BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry, bool preSplits)
     : source(source), 
       geometry(geometry), 
       bvh(bvh), 
@@ -90,7 +73,8 @@ namespace embree
       prims(NULL), 
       node(NULL), 
       accel(NULL), 
-      size_prims(0) 
+      size_prims(0),
+      enablePreSplits(preSplits)
   {
     DBG(PING);
   }
@@ -116,9 +100,11 @@ namespace embree
 
     if (numPrimitivesOld != numPrimitives || numPrimitives == 0)
       {
-	const size_t minAllocNodes = numPrimitives ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
-	const size_t numPrims = numPrimitives+4;
-	const size_t numNodes = max((size_t)(numPrimitives * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+	const size_t preSplitPrims = enablePreSplits ? (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR) : 0;
+	DBG_PRINT(preSplitPrims);
+	const size_t numPrims = numPrimitives+4+preSplitPrims;
+	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
+	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
 	bvh->init(numNodes,numPrims);
 
 	// === free previously allocated memory ===
@@ -173,7 +159,12 @@ namespace embree
     DBG(PING);
 
     if (g_verbose >= 1)
-      std::cout << "building BVH4i with SAH builder (MIC) ... " << std::endl << std::flush;
+      {
+	if (!enablePreSplits)
+	  std::cout << "building BVH4i with SAH builder (MIC) ... " << std::endl;
+	else
+	  std::cout << "building BVH4i with PreSplits-SAH builder (MIC) ... " << std::endl;
+      }
 
     /* allocate BVH data */
     allocateData(TaskScheduler::getNumThreads());
@@ -358,6 +349,111 @@ namespace embree
     global_bounds.extend_atomic(bounds);    
   }
 
+  void BVH4iBuilder::computePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
+  {
+    const size_t numGroups = source->groups();
+    const size_t startID = (threadID+0)*numPrimitives/numThreads;
+    const size_t endID   = (threadID+1)*numPrimitives/numThreads;
+    
+    const Scene* __restrict__ const scene = (Scene*)geometry;
+    PrimRef *__restrict__ const prims     = this->prims;
+
+    // === find first group containing startID ===
+    unsigned int g=0, numSkipped = 0;
+    for (; g<numGroups; g++) {       
+      if (unlikely(scene->get(g) == NULL)) continue;
+      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+      const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+      if (unlikely(!mesh->isEnabled())) continue;
+
+      const size_t numTriangles = mesh->numTriangles;
+      if (numSkipped + numTriangles > startID) break;
+      numSkipped += numTriangles;
+    }
+
+    // === start with first group containing startID ===
+    mic_f bounds_scene_min((float)pos_inf);
+    mic_f bounds_scene_max((float)neg_inf);
+    mic_f bounds_centroid_min((float)pos_inf);
+    mic_f bounds_centroid_max((float)neg_inf);
+
+    unsigned int num = 0;
+    unsigned int currentID = startID;
+    unsigned int offset = startID - numSkipped;
+
+    __align(64) PrimRef local_prims[2];
+    size_t numLocalPrims = 0;
+    PrimRef *__restrict__ dest = &prims[currentID];
+
+    for (; g<numGroups; g++) 
+    {
+      if (unlikely(scene->get(g) == NULL)) continue;
+      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+      const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+      if (unlikely(!mesh->isEnabled())) continue;
+
+      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
+      { 			    
+	const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(i);
+	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
+	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
+
+	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
+	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
+	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+
+	const mic_f v0 = broadcast4to16f(vptr0);
+	const mic_f v1 = broadcast4to16f(vptr1);
+	const mic_f v2 = broadcast4to16f(vptr2);
+
+	const mic_f bmin = min(min(v0,v1),v2);
+	const mic_f bmax = max(max(v0,v1),v2);
+	bounds_scene_min = min(bounds_scene_min,bmin);
+	bounds_scene_max = max(bounds_scene_max,bmax);
+	const mic_f centroid2 = bmin+bmax;
+	bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	bounds_centroid_max = max(bounds_centroid_max,centroid2);
+
+	store4f(&local_prims[numLocalPrims].lower,bmin);
+	store4f(&local_prims[numLocalPrims].upper,bmax);	
+	local_prims[numLocalPrims].lower.a = g;
+	local_prims[numLocalPrims].upper.a = i;
+	numLocalPrims++;
+	if (unlikely(((size_t)dest % 64) != 0) && numLocalPrims == 1)
+	  {
+	    *dest = local_prims[0];
+	    dest++;
+	    numLocalPrims--;
+	  }
+	else
+	  {
+	    const mic_f twoAABBs = load16f(local_prims);
+	    if (numLocalPrims == 2)
+	      {
+		numLocalPrims = 0;
+		store16f_ngo(dest,twoAABBs);
+		dest+=2;
+	      }
+	  }	
+      }
+      if (currentID == endID) break;
+      offset = 0;
+    }
+
+    /* is there anything left in the local queue? */
+    if (numLocalPrims % 2 != 0)
+      *dest = local_prims[0];
+
+    /* update global bounds */
+    Centroid_Scene_AABB bounds;
+    
+    store4f(&bounds.centroid2.lower,bounds_centroid_min);
+    store4f(&bounds.centroid2.upper,bounds_centroid_max);
+    store4f(&bounds.geometry.lower,bounds_scene_min);
+    store4f(&bounds.geometry.upper,bounds_scene_max);
+
+    global_bounds.extend_atomic(bounds);    
+  }
 
   void BVH4iBuilder::computePrimRefsVirtual(const size_t threadID, const size_t numThreads) 
   {
@@ -1503,8 +1599,13 @@ namespace embree
     TIMER(msec = getSeconds());
     
     /* calculate list of primrefs */
+    atomicID.reset(numPrimitives);
     global_bounds.reset();
-    LockStepTaskScheduler::dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
+    if (likely(!enablePreSplits))
+      LockStepTaskScheduler::dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
+    else
+      LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
+    numPrimitives = atomicID;
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computePrimRefs " << 1000. * msec << " ms" << std::endl << std::flush);

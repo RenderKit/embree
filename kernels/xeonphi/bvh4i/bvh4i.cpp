@@ -27,6 +27,25 @@
 
 namespace embree
 {
+#if 0  
+
+  __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
+    { FLT_MIN_EXP, FLT_MIN_EXP, FLT_MIN_EXP,(int)(1 << 31)},
+    {-FLT_MIN_EXP,-FLT_MIN_EXP,-FLT_MIN_EXP,(int)(1 << 31)},
+    { FLT_MIN_EXP, FLT_MIN_EXP, FLT_MIN_EXP,(int)(1 << 31)},
+    {-FLT_MIN_EXP,-FLT_MIN_EXP,-FLT_MIN_EXP,(int)(1 << 31)}
+  };
+#else
+
+  __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
+    {1E14f,1E14f,1E14f,(int)(1 << 31)},
+    {1E14f,1E14f,1E14f,(int)(1 << 31)},
+    {1E14f,1E14f,1E14f,(int)(1 << 31)},
+    {1E14f,1E14f,1E14f,(int)(1 << 31)}
+  };
+
+#endif
+
   /*! intersector registration functions */
   DECLARE_INTERSECTOR1(BVH4iTriangle1Intersector1);
   DECLARE_INTERSECTOR16(BVH4iTriangle1Intersector16ChunkMoeller);
@@ -75,7 +94,7 @@ namespace embree
   { 
     BVH4i* accel = new BVH4i(SceneTriangle1::type);
     
-    Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,1,inf);
+    Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene);
 
     // if      (g_builder == "default"         ) builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,1,inf);
     // else if (g_builder == "objectsplit"     ) builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,1,inf);
@@ -91,11 +110,11 @@ namespace embree
   Accel* BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(TriangleMeshScene::TriangleMesh* mesh)
   {
     BVH4i* accel = new BVH4i(TriangleMeshTriangle1::type);
-    Builder* builder = BVH4iBuilder::create(accel,mesh,mesh,1,inf);
+    Builder* builder = BVH4iBuilder::create(accel,mesh,mesh);
 
     // Builder* builder = NULL;
-    // if      (g_builder == "default"     ) builder = BVH4iBuilder::create(accel,mesh,mesh,1,inf);
-    // else if (g_builder == "objectsplit" ) builder = BVH4iBuilder::create(accel,mesh,mesh,1,inf);
+    // if      (g_builder == "default"     ) builder = BVH4iBuilder::create(accel,mesh,mesh);
+    // else if (g_builder == "objectsplit" ) builder = BVH4iBuilder::create(accel,mesh,mesh);
     // else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
 
     Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
@@ -140,6 +159,17 @@ namespace embree
 
     Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
+  }
+
+
+  Accel* BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene)
+  {
+    BVH4i* accel = new BVH4i(SceneTriangle1::type);
+    
+    Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,true);
+    
+    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
+    return new AccelInstance(accel,builder,intersectors);    
   }
 
   void BVH4i::init(size_t numNodes, size_t numPrimitives)

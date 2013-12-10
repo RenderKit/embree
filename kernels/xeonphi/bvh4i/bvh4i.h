@@ -55,9 +55,6 @@ namespace embree
     static const size_t maxBuildDepthLeaf = maxBuildDepth+6;
     static const size_t maxDepth = maxBuildDepth + maxBuildDepthLeaf;
     
-    /*! Maximal number of triangle blocks in a leaf. */
-    static const size_t maxLeafBlocks = items_mask-1;
-
     /*! Cost of one traversal step. */
     static const int travCost = 1;
 
@@ -165,7 +162,6 @@ namespace embree
     BVH4i (const PrimitiveType& primTy, void* geometry = NULL)
       : primTy(primTy), 
       geometry(geometry), 
-      maxLeafPrims(maxLeafBlocks*primTy.blockSize), 
       root(emptyNode), 
       qbvh(NULL), 
       accel(NULL),
@@ -188,6 +184,8 @@ namespace embree
 
     static Accel* BVH4iVirtualIntersectors(Scene* scene);
 
+    static Accel* BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene);
+
     /*! initializes the acceleration structure */
     void init(size_t numNodes = 0, size_t numPrimitives = 0);
 
@@ -196,7 +194,7 @@ namespace embree
 
     /*! Data of the BVH */
   public:
-    const size_t maxLeafPrims;          //!< maximal number of triangles per leaf
+    //const size_t maxLeafPrims;          //!< maximal number of triangles per leaf
     NodeRef root;                      //!< Root node (can also be a leaf).
 
     const PrimitiveType& primTy;   //!< triangle type stored in BVH
