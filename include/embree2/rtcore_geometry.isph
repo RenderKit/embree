@@ -72,14 +72,6 @@ uniform unsigned int rtcNewTriangleMesh (RTCScene scene,              //!< the s
                                      uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
   );
 
-/*! Creates a new collection of quadratic bezier curves. */
-uniform unsigned int rtcNewQuadraticBezierCurves (RTCScene scene,                 //!< the scene the curves belong to
-                                                  uniform RTCFlags flags,         //!< geometry flags    
-                                                  uniform size_t numCurves,       //!< number of curves
-                                                  uniform size_t numVertices,     //!< number of vertices
-                                                  uniform size_t numTimeSteps = 1 //!< number of motion blur time steps
-  );
-
 /*! Sets ray mask. */
 void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
 

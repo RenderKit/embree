@@ -74,14 +74,6 @@ RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene,                    //!< 
                                         size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
 
-/*! \brief Creates a new collection of quadratic bezier curves. */
-RTCORE_API unsigned rtcNewQuadraticBezierCurves (RTCScene scene,            //!< the scene the curves belong to
-                                                 RTCFlags flags,            //!< geometry flags
-                                                 size_t numCurves,          //!< number of curves
-                                                 size_t numVertices,        //!< number of vertices
-                                                 size_t numTimeSteps = 1    //!< number of motion blur time steps
-  );
-
 /*! \brief Sets ray mask. */
 RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask);
 

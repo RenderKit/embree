@@ -18,7 +18,7 @@ rtcDeleteScene___un_3C_s[un__RTCScene]_3E_sse4
 rtcNewInstance___un_3C_s[un__RTCScene]_3E_un_3C_s[un__RTCScene]_3E_sse4
 rtcSetTransform___un_3C_s[un__RTCScene]_3E_unuunenum[RTCMatrixType]un_3C_unf_3E_sse4
 rtcNewTriangleMesh___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunusse4
-rtcNewQuadraticBezierCurves___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunusse4
+;rtcNewQuadraticBezierCurves___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunusse4
 rtcSetMask___un_3C_s[un__RTCScene]_3E_unuunisse4
 rtcMapBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]sse4
 rtcUnmapBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]sse4
@@ -47,7 +47,7 @@ rtcDeleteScene___un_3C_s[un__RTCScene]_3E_sse2
 rtcNewInstance___un_3C_s[un__RTCScene]_3E_un_3C_s[un__RTCScene]_3E_sse2
 rtcSetTransform___un_3C_s[un__RTCScene]_3E_unuunenum[RTCMatrixType]un_3C_unf_3E_sse2
 rtcNewTriangleMesh___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunusse2
-rtcNewQuadraticBezierCurves___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunusse2
+;rtcNewQuadraticBezierCurves___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunusse2
 rtcSetMask___un_3C_s[un__RTCScene]_3E_unuunisse2
 rtcMapBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]sse2
 rtcUnmapBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]sse2
@@ -76,7 +76,7 @@ rtcDeleteScene___un_3C_s[un__RTCScene]_3E_avx
 rtcNewInstance___un_3C_s[un__RTCScene]_3E_un_3C_s[un__RTCScene]_3E_avx
 rtcSetTransform___un_3C_s[un__RTCScene]_3E_unuunenum[RTCMatrixType]un_3C_unf_3E_avx
 rtcNewTriangleMesh___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunuavx
-rtcNewQuadraticBezierCurves___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunuavx
+;rtcNewQuadraticBezierCurves___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunuavx
 rtcSetMask___un_3C_s[un__RTCScene]_3E_unuuniavx
 rtcMapBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]avx
 rtcUnmapBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]avx
@@ -111,7 +111,7 @@ rtcNewInstance
 rtcSetTransform
 rtcNewUserGeometry
 rtcNewTriangleMesh
-rtcNewQuadraticBezierCurves
+;rtcNewQuadraticBezierCurves
 rtcSetMask
 rtcMapBuffer
 rtcUnmapBuffer
@@ -139,7 +139,7 @@ rtcNewInstance
 rtcSetTransform
 rtcNewUserGeometry
 rtcNewTriangleMesh
-rtcNewQuadraticBezierCurves
+;rtcNewQuadraticBezierCurves
 rtcSetMask
 rtcMapBuffer
 rtcUnmapBuffer
