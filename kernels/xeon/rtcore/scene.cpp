@@ -77,7 +77,7 @@ namespace embree
   {
 #if defined(__MIC__)
     accels.accel0 = NULL; 
-    accels.accel1 = NULL; 
+    accels.accel1 = BVH4i::BVH4iVirtualGeometryBinnedSAH(this);; 
     accels.accel2 = NULL;
  
     if (g_builder == "default") 

@@ -42,6 +42,7 @@ namespace embree
   void BVH4iBuilder::computePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
   {
     const size_t numGroups = source->groups();
+
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
     
@@ -182,62 +183,74 @@ namespace embree
     global_bounds.extend_atomic(bounds);    
   }
 
-  void BVH4iBuilder::computePrimRefsVirtual(const size_t threadID, const size_t numThreads) 
+  void BVH4iBuilder::computePrimRefsVirtualGeometry(const size_t threadID, const size_t numThreads) 
   {
-    const size_t numGroups = source->groups();
-    const size_t startID   = (threadID+0)*numGroups/numThreads;
-    const size_t endID     = (threadID+1)*numGroups/numThreads;
-    
+    const size_t numTotalGroups = source->groups();
     const Scene* __restrict__ const scene = (Scene*)geometry;
+
+    /* count total number of virtual objects */
+    size_t numVirtualObjects = 0;
+    for (size_t i=0;i<numTotalGroups;i++)
+      {
+	if (unlikely(scene->get(i) == NULL)) continue;
+	if (unlikely(scene->get(i)->type != USER_GEOMETRY)) continue;
+	if (unlikely(!scene->get(i)->isEnabled())) continue;
+	numVirtualObjects++;
+      }
+
+
+    const size_t startID   = (threadID+0)*numVirtualObjects/numThreads;
+    const size_t endID     = (threadID+1)*numVirtualObjects/numThreads;
+
+    DBG_PRINT(numTotalGroups);
+    DBG_PRINT(numVirtualObjects);
+    DBG_PRINT(startID);
+    DBG_PRINT(endID);
+    
     PrimRef *__restrict__ const prims     = this->prims;
 
-    // === find first group containing startID ===
-    unsigned int g=0, numSkipped = 0;
-    for (; g<numGroups; g++) {       
+    /* find group == startID */
+    unsigned int  g=0;
+    for (; g<numTotalGroups; g++) {       
       if (unlikely(scene->get(g) == NULL)) continue;
       if (unlikely(scene->get(g)->type != USER_GEOMETRY)) continue;
       if (unlikely(!scene->get(g)->isEnabled())) continue;
-
-      // const size_t numPrimitives = scene->get(g)->numPrimitives;
-      // if (numSkipped + numPrimitives > startID) break;
-      // numSkipped += numPrimitives;
+      if (g == startID) break;
     }
 
-    // === start with first group containing startID ===
+    /* start with first group containing startID */
     mic_f bounds_scene_min((float)pos_inf);
     mic_f bounds_scene_max((float)neg_inf);
     mic_f bounds_centroid_min((float)pos_inf);
     mic_f bounds_centroid_max((float)neg_inf);
 
-    unsigned int num = 0;
-    unsigned int currentID = startID;
-    unsigned int offset = startID - numSkipped;
+    size_t currentID = startID;
 
-    for (; g<numGroups; g++) 
-    {
-      if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely(scene->get(g)->type != USER_GEOMETRY )) continue;
-      if (unlikely(!scene->get(g)->isEnabled())) continue;
-      const UserGeometryScene::Base *virtual_geometry = (UserGeometryScene::Base *)scene->get(g);
+    for (; g<numTotalGroups; g++) 
+      {
+	if (unlikely(scene->get(g) == NULL)) continue;
+	if (unlikely(scene->get(g)->type != USER_GEOMETRY )) continue;
+	if (unlikely(!scene->get(g)->isEnabled())) continue;
 
-      const mic_f bmin = broadcast4to16f(&virtual_geometry->bounds.lower);
-      const mic_f bmax = broadcast4to16f(&virtual_geometry->bounds.upper);
+	const UserGeometryScene::Base *virtual_geometry = (UserGeometryScene::Base *)scene->get(g);
+
+	const mic_f bmin = broadcast4to16f(&virtual_geometry->bounds.lower);
+	const mic_f bmax = broadcast4to16f(&virtual_geometry->bounds.upper);
       
-      bounds_scene_min = min(bounds_scene_min,bmin);
-      bounds_scene_max = max(bounds_scene_max,bmax);
-      const mic_f centroid2 = bmin+bmax;
-      bounds_centroid_min = min(bounds_centroid_min,centroid2);
-      bounds_centroid_max = max(bounds_centroid_max,centroid2);
+	bounds_scene_min = min(bounds_scene_min,bmin);
+	bounds_scene_max = max(bounds_scene_max,bmax);
+	const mic_f centroid2 = bmin+bmax;
+	bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	bounds_centroid_max = max(bounds_centroid_max,centroid2);
 
-      store4f(&prims[currentID].lower,bmin);
-      store4f(&prims[currentID].upper,bmax);	
-      prims[currentID].lower.a = g;
-      prims[currentID].upper.a = 0;
-      currentID++;
+	store4f(&prims[currentID].lower,bmin);
+	store4f(&prims[currentID].upper,bmax);	
+	prims[currentID].lower.a = g;
+	prims[currentID].upper.a = 0;
+	currentID++;
 
-      if (currentID == endID) break;
-      offset = 0;
-    }
+	if (currentID == endID) break;
+      }
 
     /* update global bounds */
     Centroid_Scene_AABB bounds;
@@ -248,6 +261,28 @@ namespace embree
     store4f(&bounds.geometry.upper,bounds_scene_max);
 
     global_bounds.extend_atomic(bounds);    
+  }
+
+
+  void BVH4iBuilder::createVirtualGeometryAccel(const size_t threadID, const size_t numThreads)
+  {
+    const size_t startID = (threadID+0)*numPrimitives/numThreads;
+    const size_t endID   = (threadID+1)*numPrimitives/numThreads;
+
+    const Scene* __restrict__ const scene = (Scene*)geometry;
+
+    Triangle1    * __restrict__  acc  = accel + startID;
+    const PrimRef* __restrict__  bptr = prims + startID;
+
+    for (size_t j=startID; j<endID; j++, bptr++, acc++)
+      {
+	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
+	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
+	assert(bptr->geomID() < source->groups() );
+	assert(bptr->primID() < scene->get( bptr->geomID() )->numPrimitives );
+
+	//computeAccelerationData(bptr->geomID(),bptr->primID(),(Scene*)geometry,acc);
+      }
   }
 
 };

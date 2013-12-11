@@ -63,7 +63,7 @@ namespace embree
   // =======================================================================================================
 
 
-  BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry, bool preSplits)
+  BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry, bool preSplits, bool virtualGeometry)
     : source(source), 
       geometry(geometry), 
       bvh(bvh), 
@@ -74,7 +74,9 @@ namespace embree
       node(NULL), 
       accel(NULL), 
       size_prims(0),
-      enablePreSplits(preSplits)
+      enablePreSplits(preSplits),
+      enableVirtualGeometry(virtualGeometry)
+
   {
     DBG(PING);
   }
@@ -160,10 +162,12 @@ namespace embree
 
     if (g_verbose >= 1)
       {
-	if (!enablePreSplits)
-	  std::cout << "building BVH4i with SAH builder (MIC) ... " << std::endl;
+	if (unlikely(enablePreSplits))
+	  std::cout << "building BVH4i with (pre-splits-based) SAH builder (MIC) ... " << std::endl;
+	else if (unlikely(enableVirtualGeometry))
+	  std::cout << "building BVH4i with Virtual Geometry SAH builder (MIC) ... " << std::endl;
 	else
-	  std::cout << "building BVH4i with PreSplits-SAH builder (MIC) ... " << std::endl;
+	  std::cout << "building BVH4i with SAH builder (MIC) ... " << std::endl;
       }
 
     /* allocate BVH data */
@@ -417,7 +421,7 @@ namespace embree
     store16f_ngo(acc,tri_accel);
   }
 
-  void BVH4iBuilder::createTriangle1(const size_t threadID, const size_t numThreads)
+  void BVH4iBuilder::createTriangle1Accel(const size_t threadID, const size_t numThreads)
   {
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -1399,17 +1403,20 @@ namespace embree
     /* calculate list of primrefs */
     atomicID.reset(numPrimitives);
     global_bounds.reset();
-    if (likely(!enablePreSplits))
-      LockStepTaskScheduler::dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
-    else
+
+    if (unlikely(enablePreSplits))
       {
 	LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
-
-	// for (size_t i=numPrimitives;i<atomicID;i++)
-	//        DBG_PRINT(prims[i]);
+	// for (size_t i=numPrimitives;i<atomicID;i++) DBG_PRINT(prims[i]);
 	DBG_PRINT(atomicID - numPrimitives);
 	numPrimitives = atomicID;
       }
+    else if (unlikely(enableVirtualGeometry))
+      {
+	LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
+      }
+    else
+      LockStepTaskScheduler::dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computePrimRefs " << 1000. * msec << " ms" << std::endl << std::flush);
@@ -1469,7 +1476,10 @@ namespace embree
 
     /* create triangle acceleration structure */
     TIMER(msec = getSeconds());        
-    LockStepTaskScheduler::dispatchTask( task_createTriangle1, this, threadIndex, threadCount );
+    if (unlikely(enableVirtualGeometry))      
+      LockStepTaskScheduler::dispatchTask( task_createVirtualGeometryAccel, this, threadIndex, threadCount );
+    else
+      LockStepTaskScheduler::dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_createTriangle1 " << 1000. * msec << " ms" << std::endl << std::flush);
     

@@ -37,13 +37,13 @@ namespace embree
   public:
 
     /*! Constructor. */
-    BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry, bool enablePreSplits = false);
+    BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry, bool enablePreSplits = false, bool enableVirtualGeometry = false);
 
     ~BVH4iBuilder();
 
     /*! creates the builder */
-    static Builder* create (void* accel, BuildSource* source, void* geometry, bool enablePreSplits = false) { 
-      return new BVH4iBuilder((BVH4i*)accel,source,geometry,enablePreSplits);
+    static Builder* create (void* accel, BuildSource* source, void* geometry, bool enablePreSplits = false, bool enableVirtualGeometry = false) { 
+      return new BVH4iBuilder((BVH4i*)accel,source,geometry,enablePreSplits,enableVirtualGeometry);
     }
 
     /* build function */
@@ -53,17 +53,20 @@ namespace embree
 
   public:
     TASK_FUNCTION(BVH4iBuilder,computePrimRefs);
-    TASK_FUNCTION(BVH4iBuilder,computePrimRefsVirtual);
-    TASK_FUNCTION(BVH4iBuilder,computePrimRefsPreSplits);
     TASK_FUNCTION(BVH4iBuilder,fillLocalWorkQueues);
     TASK_FUNCTION(BVH4iBuilder,buildSubTrees);
-    TASK_FUNCTION(BVH4iBuilder,createTriangle1);
+    TASK_FUNCTION(BVH4iBuilder,createTriangle1Accel);
     TASK_FUNCTION(BVH4iBuilder,convertToSOALayout);
     TASK_FUNCTION(BVH4iBuilder,parallelBinningGlobal);
     TASK_FUNCTION(BVH4iBuilder,parallelPartitioningGlobal);
     TASK_RUN_FUNCTION(BVH4iBuilder,build_parallel);
     LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelBinningLocal);
     LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelPartitioningLocal);
+
+    /* support for extended modes */
+    TASK_FUNCTION(BVH4iBuilder,computePrimRefsPreSplits);
+    TASK_FUNCTION(BVH4iBuilder,createVirtualGeometryAccel);
+    TASK_FUNCTION(BVH4iBuilder,computePrimRefsVirtualGeometry);
 
   public:
 
@@ -106,6 +109,7 @@ namespace embree
     void* geometry;               //!< input geometry
     BVH4i* bvh;                   //!< Output BVH
     const bool enablePreSplits;
+    const bool enableVirtualGeometry;
 
     /* work record handling */
   protected:

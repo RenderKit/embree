@@ -81,7 +81,7 @@ namespace embree
   }
 
 
-  Accel::Intersectors BVH4iVirtualIntersectors(BVH4i* bvh)
+  Accel::Intersectors BVH4iVirtualGeometryIntersectors(BVH4i* bvh)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
@@ -169,6 +169,17 @@ namespace embree
     Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,true);
     
     Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
+    return new AccelInstance(accel,builder,intersectors);    
+  }
+
+  Accel* BVH4i::BVH4iVirtualGeometryBinnedSAH(Scene* scene)
+  {
+    BVH4i* accel = new BVH4i(SceneTriangle1::type);
+    
+    Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,false,true);
+    
+    Accel::Intersectors intersectors = BVH4iVirtualGeometryIntersectors(accel);
+
     return new AccelInstance(accel,builder,intersectors);    
   }
 
