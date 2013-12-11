@@ -108,8 +108,14 @@ namespace embree
       double dt_max = neg_inf;
       for (size_t i=0; i<200; i++) 
       {
-        scheduler.init(threadCount);
-        TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,threadCount,"build_parallel_morton");
+        if (needAllThreads) 
+        {
+          if (!g_state.get()) g_state.reset(new MortonBuilderState);
+          scheduler.init(threadCount);
+          TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,threadCount,"build_parallel_morton");
+        } else {
+          build_sequential_morton(threadIndex,threadCount);
+        }
         dt_min = min(dt_min,dt);
         dt_avg = dt_avg + dt;
         dt_max = max(dt_max,dt);
@@ -126,9 +132,7 @@ namespace embree
       
       if (needAllThreads) 
       {
-        if (!g_state.get()) 
-          g_state.reset(new MortonBuilderState);
-
+        if (!g_state.get()) g_state.reset(new MortonBuilderState);
         scheduler.init(threadCount);
         TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,threadCount,"build_parallel_morton");
       } else {
@@ -452,6 +456,7 @@ namespace embree
       mortonID[0] = (MortonID32Bit*) morton; 
       //mortonID[1] = (MortonID32Bit*) node;
       mortonID[1] = (MortonID32Bit*) nodeAllocator.data;
+      MortonBuilderState::ThreadRadixCountTy* radixCount = g_state->radixCount;
       
       /* we need 3 iterations to process all 32 bits */
       for (size_t b=0; b<3; b++)
@@ -465,11 +470,11 @@ namespace embree
         
         /* count how many items go into the buckets */
         for (size_t i=0; i<RADIX_BUCKETS; i++)
-          g_state->radixCount[threadID][i] = 0;
+          radixCount[threadID][i] = 0;
         
         for (size_t i=startID; i<endID; i++) {
           const size_t index = src[i].get(shift, mask);
-          g_state->radixCount[threadID][index]++;
+          radixCount[threadID][index]++;
         }
         scheduler.syncThreads(threadID,numThreads);
         
@@ -480,7 +485,7 @@ namespace embree
         
         for (size_t i=0; i<numThreads; i++)
           for (size_t j=0; j<RADIX_BUCKETS; j++)
-            total[j] += g_state->radixCount[i][j];
+            total[j] += radixCount[i][j];
         
         /* calculate start offset of each bucket */
         __align(64) size_t offset[RADIX_BUCKETS];
@@ -491,7 +496,7 @@ namespace embree
         /* calculate start offset of each bucket for this thread */
         for (size_t j=0; j<RADIX_BUCKETS; j++)
           for (size_t i=0; i<threadID; i++)
-            offset[j] += g_state->radixCount[i][j];
+            offset[j] += radixCount[i][j];
         
         /* copy items into their buckets */
         for (size_t i=startID; i<endID; i++) {
@@ -559,7 +564,7 @@ namespace embree
         store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID)));
         store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
         store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),0)));
-        store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0))); // FIXME: use nt stores also for nodes
+        store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0)));
       }
       box_o = BBox3f((Vec3fa)lower,(Vec3fa)upper);
     }
@@ -865,6 +870,7 @@ namespace embree
           node->set(i,bounds);
         }
       }
+      //node->evict();
       return bounds0;
     }
     
@@ -1001,6 +1007,9 @@ namespace embree
     
     void BVH4BuilderMorton::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t, size_t, TaskScheduler::Event* event) 
     {
+      /* wait for all threads to enter */
+      g_state->barrier.wait(threadIndex,threadCount);
+
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();

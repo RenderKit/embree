@@ -37,31 +37,17 @@
 
 namespace embree
 {
-  static const size_t SIZE_WORK_STACK = 64;
-  WorkStack<BuildRecord,SIZE_WORK_STACK> g_workStack;
-  WorkStack<BuildRecord,SIZE_WORK_STACK> g_threadStack[MAX_MIC_THREADS]; // FIXME: MAX_MIC_THREADS
-  //LinearBarrierActive g_barrier;
-  LockStepTaskScheduler g_scheduler;
-
   namespace isa
   {
-    ParallelBinner<16> g_parallelBinner;  
-
-    // =======================================================================================================
-    // =======================================================================================================
-    // =======================================================================================================
-    
     static double dt = 0.0f;
+
+    std::auto_ptr<BVH4BuilderFast::GlobalState> BVH4BuilderFast::g_state(NULL);
     
     BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
     : source(source), scene(scene), mesh(mesh), primTy(bvh->primTy), bvh(bvh), numGroups(0), numPrimitives(0), prims(NULL), bytesPrims(0), createSmallLeaf(NULL)
     {
       needAllThreads = true;
-      if (mesh) {
-        size_t numPrimitives = mesh->numTriangles;
-        needAllThreads = numPrimitives > 50000;
-      }
-      // FIXME: build over scene always runs on all threads
+      if (mesh) needAllThreads = mesh->numTriangles > 50000;
 
       if      (&bvh->primTy == &SceneTriangle1::type ) createSmallLeaf = createTriangle1Leaf;
       else if (&bvh->primTy == &SceneTriangle4::type ) createSmallLeaf = createTriangle4Leaf;
@@ -100,8 +86,13 @@ namespace embree
       {
         if (!needAllThreads) {
           build_sequential(threadIndex,threadCount);
-        } else {
-          g_scheduler.init(threadCount);
+        } 
+        else 
+        {
+          if (!g_state.get()) 
+            g_state.reset(new GlobalState(threadCount));
+
+          g_state->scheduler.init(threadCount);
           TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
         }
         dt_min = min(dt_min,dt);
@@ -128,8 +119,13 @@ namespace embree
       
         if (!needAllThreads) {
           build_sequential(threadIndex,threadCount);
-        } else {
-          g_scheduler.init(threadCount);
+        } 
+        else 
+        {
+          if (!g_state.get()) 
+            g_state.reset(new GlobalState(threadCount));
+
+          g_state->scheduler.init(threadCount);
           TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
         }
       
@@ -194,13 +190,14 @@ namespace embree
         bytesPrims = numPrimitives * sizeof(PrimRef);
         size_t bytesAllocatedNodes      = numAllocatedNodes * sizeof(BVH4::Node);
         size_t bytesAllocatedPrimitives = numAllocatedPrimitives * bvh->primTy.bytes;
+        bytesAllocatedPrimitives        = max(bytesAllocatedPrimitives,bytesPrims); // required as we store prims into primitive array for parallel splits
         size_t bytesReservedNodes       = numPrimitives * sizeof(BVH4::Node);
         size_t bytesReservedPrimitives  = numPrimitives * bvh->primTy.bytes;
         size_t blocksReservedNodes      = (bytesReservedNodes     +Allocator::blockSize-1)/Allocator::blockSize;
         size_t blocksReservedPrimitives = (bytesReservedPrimitives+Allocator::blockSize-1)/Allocator::blockSize;
         bytesReservedNodes      = Allocator::blockSize*(2*blocksReservedNodes      + additionalBlocks);
         bytesReservedPrimitives = Allocator::blockSize*(2*blocksReservedPrimitives + additionalBlocks);
-
+        
         /* allocated memory for primrefs, nodes, and primitives */
         prims = (PrimRef* ) os_malloc(bytesPrims);  memset(prims,0,bytesPrims);
         nodeAllocator.init(bytesAllocatedNodes,bytesReservedNodes);
@@ -351,7 +348,7 @@ namespace embree
         store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID)));
         store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
         store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),0)));
-        store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0))); // FIXME: use nt stores also for nodes
+        store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0)));
       }
     }
     
@@ -463,7 +460,7 @@ namespace embree
       }
       
       /* calculate binning function */
-      Mapping mapping(current.bounds);
+      Mapping<16> mapping(current.bounds);
       
       /* binning of centroids */
       Binner<16> binner;
@@ -486,9 +483,6 @@ namespace embree
     
     bool BVH4BuilderFast::splitParallel(BuildRecord &current, BuildRecord &leftChild, BuildRecord &rightChild, const size_t threadID, const size_t numThreads)
     {
-      PING; // FIXME
-      return true;
-#if 0
       const unsigned int items = current.end - current.begin;
       assert(items >= BUILD_RECORD_SPLIT_THRESHOLD);
       
@@ -498,31 +492,33 @@ namespace embree
         return false;
       }
       
+      /* use primitive array temporarily for parallel splits */
+      PrimRef* tmp = (PrimRef*) primAllocator.base();
+
       /* parallel binning of centroids */
-      g_parallelBinner.bin(current,prims,(PrimRef*)accel,threadID,numThreads);
+      g_state->parallelBinner.bin(current,prims,tmp,threadID,numThreads);
       
       /* find best split */
       Split split; 
-      g_parallelBinner.best(split);
+      g_state->parallelBinner.best(split);
       
       /* if we cannot find a valid split, enforce an arbitrary split */
       if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
       
       /* parallel partitioning of items */
-      else g_parallelBinner.partition((PrimRef*)accel,prims,split,leftChild,rightChild,threadID,numThreads);
+      else g_state->parallelBinner.partition(tmp,prims,split,leftChild,rightChild,threadID,numThreads);
       
       if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
       if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();
       return true;
-#endif
     }
     
     __forceinline bool BVH4BuilderFast::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
     {
-      //if (mode == BUILD_TOP_LEVEL && current.items() >= BUILD_RECORD_SPLIT_THRESHOLD)
-      //  return splitParallel(current,left,right,threadID,numThreads);		  
-      //else // FIXME !!!!!!!!
-      return splitSequential(current,left,right);
+      if (mode == BUILD_TOP_LEVEL && current.items() >= BUILD_RECORD_SPLIT_THRESHOLD)
+        return splitParallel(current,left,right,threadID,numThreads);		  
+      else
+        return splitSequential(current,left,right);
     }
     
     // =======================================================================================================
@@ -564,15 +560,16 @@ namespace embree
         createLeaf(children[i],nodeAlloc,leafAlloc,threadIndex,threadCount);
       }
       BVH4::compact(node); // move empty nodes to the end
-    }  
+      node->evict();
+    }
     
     __forceinline void BVH4BuilderFast::recurse(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads)
     {
       if (mode == BUILD_TOP_LEVEL) {
-        g_workStack.push_nolock(current);
+        g_state->workStack.push_nolock(current);
       }
       else if (mode == RECURSE_PARALLEL && current.items() > THRESHOLD_FOR_SUBTREE_RECURSION) {
-        if (!g_threadStack[threadID].push(current))
+        if (!g_state->threadStack[threadID].push(current))
           recurseSAH(current,nodeAlloc,leafAlloc,RECURSE_SEQUENTIAL,threadID,numThreads);
       }
       else
@@ -585,6 +582,7 @@ namespace embree
       
       /* create leaf node */
       if (current.depth >= BVH4::maxBuildDepth || current.isLeaf()) {
+        assert(mode != BUILD_TOP_LEVEL);
         createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
         return;
       }
@@ -628,6 +626,7 @@ namespace embree
 
       /* create leaf node if no split is possible */
       if (numChildren == 1) {
+        assert(mode != BUILD_TOP_LEVEL);
         createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
         return;
       }
@@ -644,6 +643,7 @@ namespace embree
         children[i].depth = current.depth+1;
         recurse(children[i],nodeAlloc,leafAlloc,mode,threadID,numThreads);
       }
+      node->evict();
     }
     
     // =======================================================================================================
@@ -658,13 +658,13 @@ namespace embree
       while (true) 
       {
         BuildRecord br;
-        if (!g_workStack.pop_largest(br)) // FIXME: might loose threads during build
+        if (!g_state->workStack.pop_largest(br)) // FIXME: might loose threads during build
         {
           /* global work queue empty => try to steal from neighboring queues */	  
           bool success = false;
           for (size_t i=0; i<numThreads; i++)
           {
-            if (g_threadStack[(threadID+i)%numThreads].pop_smallest(br)) {
+            if (g_state->threadStack[(threadID+i)%numThreads].pop_smallest(br)) {
               success = true;
               break;
             }
@@ -675,7 +675,7 @@ namespace embree
         
         /* process local work queue */
 	recurseSAH(br,nodeAlloc,leafAlloc,RECURSE_PARALLEL,threadID,numThreads);
-        while (g_threadStack[threadID].pop_largest(br))
+        while (g_state->threadStack[threadID].pop_largest(br))
           recurseSAH(br,nodeAlloc,leafAlloc,RECURSE_PARALLEL,threadID,numThreads);
       }
     }
@@ -713,7 +713,7 @@ namespace embree
     void BVH4BuilderFast::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
       /* wait for all threads to enter */
-      //g_barrier.wait(threadIndex,threadCount);
+      g_state->barrier.wait(threadIndex,threadCount);
       
       /* start measurement */
       double t0 = 0.0f;
@@ -721,13 +721,13 @@ namespace embree
       
       /* all worker threads enter tasking system */
       if (threadIndex != 0) {
-        g_scheduler.dispatchTaskMainLoop(threadIndex,threadCount); 
+        g_state->scheduler.dispatchTaskMainLoop(threadIndex,threadCount); 
         return;
       }
       
       /* calculate list of primrefs */
       global_bounds.reset();
-      g_scheduler.dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
+      g_state->scheduler.dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
       bvh->bounds = global_bounds.geometry;
       
       /* initialize node and leaf allocator */
@@ -744,25 +744,33 @@ namespace embree
       
       /* initialize thread-local work stacks */
       for (size_t i=0; i<threadCount; i++)
-        g_threadStack[i].reset();
+        g_state->threadStack[i].reset();
       
       /* push initial build record to global work stack */
-      g_workStack.reset();
-      g_workStack.push_nolock(br);    
+      g_state->workStack.reset();
+      g_state->workStack.push_nolock(br);    
       
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (g_workStack.size() < 4*threadCount && g_workStack.size()+BVH4::N <= SIZE_WORK_STACK) 
+      while (g_state->workStack.size() < 4*threadCount && g_state->workStack.size()+BVH4::N <= SIZE_WORK_STACK) 
       {
         BuildRecord br;
-        if (!g_workStack.pop_nolock_largest(br)) break;
+
+        /* pop largest item for better load balancing */
+        if (!g_state->workStack.pop_nolock_largest(br)) 
+          break;
+        
+        /* guarantees to create no leaves in this stage */
+        if (br.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD)
+          break;
+
         recurseSAH(br,nodeAlloc,leafAlloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
       }
       
       /* now process all created subtasks on multiple threads */
-      g_scheduler.dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
+      g_state->scheduler.dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
       
       /* release all threads again */
-      g_scheduler.releaseThreads(threadCount);
+      g_state->scheduler.releaseThreads(threadCount);
       
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;

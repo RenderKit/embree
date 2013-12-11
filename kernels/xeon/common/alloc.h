@@ -372,6 +372,9 @@ namespace embree
       if (bytesAllocated == bytesAllocate && bytesReserved == bytesReserve)
         return;
       
+      if (bytesAllocate > bytesReserve)
+        bytesReserve = bytesAllocate;
+
       if (data) os_free(data,bytesReserved);
       
       data = (char*) os_reserve(bytesReserve);
@@ -406,7 +409,11 @@ namespace embree
       }
       return &data[n];
     }
-    
+
+    __forceinline void* base() {
+      return data;
+    }
+
   public:
     atomic_t next;
     char* data;

@@ -26,7 +26,7 @@ namespace embree
     void Binner<BINS>::bin(const PrimRef * __restrict__ const prims,
                            const size_t begin,
                            const size_t end,
-                           const Mapping& mapping)
+                           const Mapping<BINS>& mapping)
     {
       reset();
       if (end-begin == 0) return;
@@ -67,7 +67,7 @@ namespace embree
     void Binner<BINS>::bin_copy(const PrimRef* __restrict__ const prims,
                                 const size_t begin,
                                 const size_t end,
-                                const Mapping& mapping,
+                                const Mapping<BINS>& mapping,
                                 PrimRef* __restrict__ const dest)
     {
       reset();
@@ -130,7 +130,7 @@ namespace embree
     }
     
     template<int BINS>
-    void Binner<BINS>::best(Split& split, const Mapping& mapping)
+    void Binner<BINS>::best(Split& split, const Mapping<BINS>& mapping)
     {
       ssef rAreas[BINS];
       ssei rCounts[BINS];
@@ -216,7 +216,7 @@ namespace embree
                                  const size_t begin,
                                  const size_t end,
                                  const Split& split,
-                                 const Mapping& mapping,
+                                 const Mapping<BINS>& mapping,
                                  BuildRecord& left,
                                  BuildRecord& right)
     {
@@ -348,7 +348,7 @@ namespace embree
     void ParallelBinner<BINS>::bin(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads) 
     {
       rec = current;
-      mapping = Mapping(current.bounds);
+      mapping = Mapping<BINS>(current.bounds);
       left.reset();
       right.reset();
       this->src = src;
