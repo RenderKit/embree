@@ -185,6 +185,7 @@ namespace embree
   template<class T, unsigned int SIZE>
     class WorkStack 
   {
+    ALIGNED_CLASS;
   public:
     AlignedAtomicMutex __align(64) mutex;
     __align(64) T t[SIZE];

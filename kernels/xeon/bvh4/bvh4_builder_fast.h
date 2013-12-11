@@ -31,7 +31,33 @@ namespace embree
       typedef BVH4::Node Node;
       typedef BVH4::NodeRef NodeRef;
       typedef GlobalAllocator::ThreadAllocator Allocator;
-      
+      static const size_t SIZE_WORK_STACK = 64;
+
+    public:
+      struct GlobalState
+      {
+        ALIGNED_CLASS;
+
+      public:
+
+        GlobalState (size_t numThreads) {
+          threadStack = new WorkStack<BuildRecord,SIZE_WORK_STACK>[numThreads];
+        }
+        
+        ~GlobalState () {
+          delete[] threadStack;
+        }
+
+      public:
+        __align(64) WorkStack<BuildRecord,SIZE_WORK_STACK> workStack;
+        __align(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* threadStack;
+        ParallelBinner<16> parallelBinner;    
+        LockStepTaskScheduler scheduler;
+        LinearBarrierActive barrier;
+      };
+
+      static std::auto_ptr<GlobalState> g_state;
+
     public:
       
       /*! Constructor. */

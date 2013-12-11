@@ -112,7 +112,6 @@ namespace embree
 
         ~MortonBuilderState () 
         {
-          size_t numThreads = getNumberOfLogicalThreads();
           for (size_t i=0; i<numThreads; i++)
             alignedFree(radixCount[i]);
           delete[] radixCount;
