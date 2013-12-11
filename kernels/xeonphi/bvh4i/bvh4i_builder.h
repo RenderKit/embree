@@ -49,7 +49,7 @@ namespace embree
     /* build function */
     void build(size_t threadIndex, size_t threadCount);
 
-    void allocateData(size_t threadCount);
+    void allocateData(size_t threadCount,size_t newNumPrimitives);
 
   public:
     TASK_FUNCTION(BVH4iBuilder,computePrimRefs);
@@ -110,6 +110,8 @@ namespace embree
     BVH4i* bvh;                   //!< Output BVH
     const bool enablePreSplits;
     const bool enableVirtualGeometry;
+
+    size_t getNumPrimitives();
 
     /* work record handling */
   protected:

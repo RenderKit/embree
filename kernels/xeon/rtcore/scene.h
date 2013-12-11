@@ -80,9 +80,9 @@ namespace embree
     __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i]; }
     __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i]; }
     __forceinline       Geometry* get_locked(size_t i)  { 
+
 #if !defined(__MIC__)
       Lock<AtomicMutex> lock(geometriesMutex); 
-      //Lock<MutexSys> lock(mutex);
 #endif
 
       Geometry *g = geometries[i]; 

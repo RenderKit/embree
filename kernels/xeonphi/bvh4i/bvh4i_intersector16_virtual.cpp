@@ -16,6 +16,7 @@
 
 #include "bvh4i_intersector16_virtual.h"
 #include "geometry/virtual_accel_intersector16.h"
+#include "geometry/triangle1_intersector16_moeller.h"
 
 namespace embree
 {
@@ -23,9 +24,11 @@ namespace embree
   {
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
 
-    template<typename TriangleIntersector16>
-    void BVH4iIntersector16Virtual<TriangleIntersector16>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
+    template<typename VirtualGeometryIntersector16>
+    void BVH4iIntersector16Virtual<VirtualGeometryIntersector16>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
+      PING;
+
       /* near and node stack */
       __align(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
@@ -47,8 +50,8 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       mic_f*   __restrict__ sptr_dist = stack_dist + 2;
       
-      const Node     * __restrict__ nodes = (Node    *)bvh->nodePtr();
-      const Triangle * __restrict__ accel = (Triangle*)bvh->triPtr();
+      const Node     * __restrict__ nodes  = (Node    *)bvh->nodePtr();
+      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
 
       while (1)
       {
@@ -137,14 +140,25 @@ namespace embree
         const mic_m valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
  
-	unsigned int items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
-        TriangleIntersector16::intersect(valid_leaf,ray,tri,items,bvh->geometry);
+	unsigned int items; const Triangle1* tri  = (Triangle1*) curNode.leaf(accel,items);
+	Accel *accel_ptr[4];
+	accel_ptr[0] = (Accel*)&accel[0];
+	accel_ptr[1] = (Accel*)&accel[1];
+	accel_ptr[2] = (Accel*)&accel[2];
+	accel_ptr[3] = (Accel*)&accel[3];
+
+	DBG_PRINT(accel_ptr[0]);
+	DBG_PRINT(accel_ptr[1]);
+	DBG_PRINT(accel_ptr[2]);
+	DBG_PRINT(accel_ptr[3]);
+
+        VirtualGeometryIntersector16::intersect(valid_leaf,ray,accel_ptr,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
     }
     
-    template<typename TriangleIntersector16>
-    void BVH4iIntersector16Virtual<TriangleIntersector16>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
+    template<typename VirtualGeometryIntersector16>
+    void BVH4iIntersector16Virtual<VirtualGeometryIntersector16>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
       /* allocate stack */
       __align(64) mic_f    stack_dist[3*BVH4i::maxDepth+1];
@@ -168,7 +182,7 @@ namespace embree
       mic_f*   __restrict__ sptr_dist = stack_dist + 2;
       
       const Node     * __restrict__ nodes = (Node    *)bvh->nodePtr();
-      const Triangle * __restrict__ accel = (Triangle*)bvh->triPtr();
+      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
 
       while (1)
       {
@@ -257,14 +271,26 @@ namespace embree
         mic_m valid_leaf = gt(m_active,ray_tfar,curDist);
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
 
-        unsigned int items; const Triangle* tri  = (Triangle*) curNode.leaf(accel,items);
-        m_terminated |= valid_leaf & TriangleIntersector16::occluded(valid_leaf,ray,tri,items,bvh->geometry);
+        unsigned int items; const Triangle1* tri  = (Triangle1*) curNode.leaf(accel,items);
+
+	Accel *accel_ptr[4];
+	accel_ptr[0] = (Accel*)&tri[0];
+	accel_ptr[1] = (Accel*)&tri[1];
+	accel_ptr[2] = (Accel*)&tri[2];
+	accel_ptr[3] = (Accel*)&tri[3];
+
+	DBG_PRINT(accel_ptr[0]);
+	DBG_PRINT(accel_ptr[1]);
+	DBG_PRINT(accel_ptr[2]);
+	DBG_PRINT(accel_ptr[3]);
+
+        m_terminated |= valid_leaf & VirtualGeometryIntersector16::occluded(valid_leaf,ray,accel_ptr,items,bvh->geometry);
         if (unlikely(all(m_terminated))) break;
         ray_tfar = select(m_terminated,neg_inf,ray_tfar);
       }
       store16i(valid & m_terminated,&ray.geomID,0);
     }
     
-    DEFINE_INTERSECTOR16    (BVH4iVirtualIntersector16, BVH4iIntersector16Virtual<VirtualAccelIntersector16>);
+    DEFINE_INTERSECTOR16    (BVH4iVirtualGeometryIntersector16, BVH4iIntersector16Virtual<VirtualAccelIntersector16>);
   }
 }

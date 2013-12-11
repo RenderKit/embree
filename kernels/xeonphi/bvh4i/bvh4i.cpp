@@ -176,7 +176,8 @@ namespace embree
   {
     BVH4i* accel = new BVH4i(SceneTriangle1::type);
     
-    Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,false,true);
+    //Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,false,true);
+    Builder* builder = BVH4iBuilder::create(accel,NULL,scene,false,true);
     
     Accel::Intersectors intersectors = BVH4iVirtualGeometryIntersectors(accel);
 

@@ -185,20 +185,12 @@ namespace embree
 
   void BVH4iBuilder::computePrimRefsVirtualGeometry(const size_t threadID, const size_t numThreads) 
   {
-    const size_t numTotalGroups = source->groups();
     const Scene* __restrict__ const scene = (Scene*)geometry;
+    const size_t numTotalGroups = scene->size();
+    DBG_PRINT(numTotalGroups);
 
     /* count total number of virtual objects */
-    size_t numVirtualObjects = 0;
-    for (size_t i=0;i<numTotalGroups;i++)
-      {
-	if (unlikely(scene->get(i) == NULL)) continue;
-	if (unlikely(scene->get(i)->type != USER_GEOMETRY)) continue;
-	if (unlikely(!scene->get(i)->isEnabled())) continue;
-	numVirtualObjects++;
-      }
-
-
+    const size_t numVirtualObjects = numPrimitives;
     const size_t startID   = (threadID+0)*numVirtualObjects/numThreads;
     const size_t endID     = (threadID+1)*numVirtualObjects/numThreads;
 
@@ -236,7 +228,11 @@ namespace embree
 
 	const mic_f bmin = broadcast4to16f(&virtual_geometry->bounds.lower);
 	const mic_f bmax = broadcast4to16f(&virtual_geometry->bounds.upper);
-      
+
+	DBG_PRINT(currentID);
+	DBG_PRINT(bmin);
+	DBG_PRINT(bmax);
+
 	bounds_scene_min = min(bounds_scene_min,bmin);
 	bounds_scene_max = max(bounds_scene_max,bmax);
 	const mic_f centroid2 = bmin+bmax;
@@ -266,9 +262,9 @@ namespace embree
 
   void BVH4iBuilder::createVirtualGeometryAccel(const size_t threadID, const size_t numThreads)
   {
+    PING;
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
-
     const Scene* __restrict__ const scene = (Scene*)geometry;
 
     Triangle1    * __restrict__  acc  = accel + startID;
@@ -279,9 +275,7 @@ namespace embree
 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
 	assert(bptr->geomID() < source->groups() );
-	assert(bptr->primID() < scene->get( bptr->geomID() )->numPrimitives );
-
-	//computeAccelerationData(bptr->geomID(),bptr->primID(),(Scene*)geometry,acc);
+	*(void**)acc = (void*)scene->get( bptr->geomID() );
       }
   }
 

@@ -90,15 +90,35 @@ namespace embree
     }    
   }
 
-  void BVH4iBuilder::allocateData(size_t threadCount)
+  size_t BVH4iBuilder::getNumPrimitives()
+  {
+
+    if (enableVirtualGeometry)
+      {
+	/* count total number of virtual objects */
+	const Scene* __restrict__ const scene = (Scene*)geometry;
+	size_t numVirtualObjects = 0;       
+	for (size_t i=0;i<scene->size();i++)
+	  {
+	    if (unlikely(scene->get(i) == NULL)) continue;
+	    if (unlikely(scene->get(i)->type != USER_GEOMETRY)) continue;
+	    if (unlikely(!scene->get(i)->isEnabled())) continue;
+	    numVirtualObjects++;
+	  }
+	return numVirtualObjects;	
+      }
+    return source->size();
+  }
+
+
+  void BVH4iBuilder::allocateData(size_t threadCount,size_t totalNumPrimitives)
   {
     DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
-    numPrimitives = source->size();
+    numPrimitives = totalNumPrimitives;
     DBG(DBG_PRINT(numPrimitives));
 
     const size_t additional_size = 16 * CACHELINE_SIZE;
-    const size_t numPrimitives = this->numPrimitives;
 
     if (numPrimitivesOld != numPrimitives || numPrimitives == 0)
       {
@@ -160,6 +180,21 @@ namespace embree
   {
     DBG(PING);
 
+    const size_t totalNumPrimitives = getNumPrimitives();
+
+#if defined(DEBUG)
+    DBG_PRINT(totalNumPrimitives);
+    DBG_PRINT(enablePreSplits);
+    DBG_PRINT(enableVirtualGeometry);
+#endif
+
+    if (!totalNumPrimitives) 
+      {
+	bvh->root = 0;
+	bvh->bounds = empty;
+	return;
+      }
+
     if (g_verbose >= 1)
       {
 	if (unlikely(enablePreSplits))
@@ -171,7 +206,7 @@ namespace embree
       }
 
     /* allocate BVH data */
-    allocateData(TaskScheduler::getNumThreads());
+    allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
 
     LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); 
 
@@ -249,11 +284,11 @@ namespace embree
 
   void BVH4iBuilder::computePrimRefs(const size_t threadID, const size_t numThreads) 
   {
-    const size_t numGroups = source->groups();
+    const Scene* __restrict__ const scene = (Scene*)geometry;
+    const size_t numGroups = scene->size();
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
     
-    const Scene* __restrict__ const scene = (Scene*)geometry;
     PrimRef *__restrict__ const prims     = this->prims;
 
     // === find first group containing startID ===
@@ -435,7 +470,7 @@ namespace embree
       {
 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
-	assert(bptr->geomID() < source->groups() );
+	assert(bptr->geomID() < scene->size() );
 	assert(bptr->primID() < scene->get( bptr->geomID() )->numPrimitives );
 
 	computeAccelerationData(bptr->geomID(),bptr->primID(),(Scene*)geometry,acc);
@@ -1401,11 +1436,11 @@ namespace embree
     TIMER(msec = getSeconds());
     
     /* calculate list of primrefs */
-    atomicID.reset(numPrimitives);
     global_bounds.reset();
 
     if (unlikely(enablePreSplits))
       {
+	atomicID.reset(numPrimitives);
 	LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
 	// for (size_t i=numPrimitives;i<atomicID;i++) DBG_PRINT(prims[i]);
 	DBG_PRINT(atomicID - numPrimitives);
@@ -1416,7 +1451,9 @@ namespace embree
 	LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
       }
     else
-      LockStepTaskScheduler::dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
+      {
+	LockStepTaskScheduler::dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
+      }
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computePrimRefs " << 1000. * msec << " ms" << std::endl << std::flush);
@@ -1481,7 +1518,7 @@ namespace embree
     else
       LockStepTaskScheduler::dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "task_createTriangle1 " << 1000. * msec << " ms" << std::endl << std::flush);
+    TIMER(std::cout << "task_createAccel " << 1000. * msec << " ms" << std::endl << std::flush);
     
     /* convert to SOA node layout */
     TIMER(msec = getSeconds());        
