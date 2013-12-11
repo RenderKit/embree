@@ -194,13 +194,14 @@ namespace embree
         bytesPrims = numPrimitives * sizeof(PrimRef);
         size_t bytesAllocatedNodes      = numAllocatedNodes * sizeof(BVH4::Node);
         size_t bytesAllocatedPrimitives = numAllocatedPrimitives * bvh->primTy.bytes;
+        bytesAllocatedPrimitives        = max(bytesAllocatedPrimitives,bytesPrims); // required as we store prims into primitive array for parallel splits
         size_t bytesReservedNodes       = numPrimitives * sizeof(BVH4::Node);
         size_t bytesReservedPrimitives  = numPrimitives * bvh->primTy.bytes;
         size_t blocksReservedNodes      = (bytesReservedNodes     +Allocator::blockSize-1)/Allocator::blockSize;
         size_t blocksReservedPrimitives = (bytesReservedPrimitives+Allocator::blockSize-1)/Allocator::blockSize;
         bytesReservedNodes      = Allocator::blockSize*(2*blocksReservedNodes      + additionalBlocks);
         bytesReservedPrimitives = Allocator::blockSize*(2*blocksReservedPrimitives + additionalBlocks);
-
+        
         /* allocated memory for primrefs, nodes, and primitives */
         prims = (PrimRef* ) os_malloc(bytesPrims);  memset(prims,0,bytesPrims);
         nodeAllocator.init(bytesAllocatedNodes,bytesReservedNodes);
@@ -486,9 +487,6 @@ namespace embree
     
     bool BVH4BuilderFast::splitParallel(BuildRecord &current, BuildRecord &leftChild, BuildRecord &rightChild, const size_t threadID, const size_t numThreads)
     {
-      PING; // FIXME
-      return true;
-#if 0
       const unsigned int items = current.end - current.begin;
       assert(items >= BUILD_RECORD_SPLIT_THRESHOLD);
       
@@ -498,8 +496,11 @@ namespace embree
         return false;
       }
       
+      /* use primitive array temporarily for parallel splits */
+      PrimRef* tmp = (PrimRef*) primAllocator.base();
+
       /* parallel binning of centroids */
-      g_parallelBinner.bin(current,prims,(PrimRef*)accel,threadID,numThreads);
+      g_parallelBinner.bin(current,prims,tmp,threadID,numThreads);
       
       /* find best split */
       Split split; 
@@ -509,20 +510,19 @@ namespace embree
       if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
       
       /* parallel partitioning of items */
-      else g_parallelBinner.partition((PrimRef*)accel,prims,split,leftChild,rightChild,threadID,numThreads);
+      else g_parallelBinner.partition(tmp,prims,split,leftChild,rightChild,threadID,numThreads);
       
       if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
       if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();
       return true;
-#endif
     }
     
     __forceinline bool BVH4BuilderFast::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
     {
-      //if (mode == BUILD_TOP_LEVEL && current.items() >= BUILD_RECORD_SPLIT_THRESHOLD)
-      //  return splitParallel(current,left,right,threadID,numThreads);		  
-      //else // FIXME !!!!!!!!
-      return splitSequential(current,left,right);
+      if (mode == BUILD_TOP_LEVEL && current.items() >= BUILD_RECORD_SPLIT_THRESHOLD)
+        return splitParallel(current,left,right,threadID,numThreads);		  
+      else
+        return splitSequential(current,left,right);
     }
     
     // =======================================================================================================
@@ -585,6 +585,7 @@ namespace embree
       
       /* create leaf node */
       if (current.depth >= BVH4::maxBuildDepth || current.isLeaf()) {
+        assert(mode != BUILD_TOP_LEVEL);
         createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
         return;
       }
@@ -628,6 +629,7 @@ namespace embree
 
       /* create leaf node if no split is possible */
       if (numChildren == 1) {
+        assert(mode != BUILD_TOP_LEVEL);
         createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
         return;
       }
@@ -754,7 +756,15 @@ namespace embree
       while (g_workStack.size() < 4*threadCount && g_workStack.size()+BVH4::N <= SIZE_WORK_STACK) 
       {
         BuildRecord br;
-        if (!g_workStack.pop_nolock_largest(br)) break;
+
+        /* pop largest item for better load balancing */
+        if (!g_workStack.pop_nolock_largest(br)) 
+          break;
+        
+        /* guarantees to create no leaves in this stage */
+        if (br.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD)
+          break;
+
         recurseSAH(br,nodeAlloc,leafAlloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
       }
       
