@@ -160,6 +160,7 @@ namespace embree
     template<typename VirtualGeometryIntersector16>
     void BVH4iIntersector16Virtual<VirtualGeometryIntersector16>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
+      PING;
       /* allocate stack */
       __align(64) mic_f    stack_dist[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];

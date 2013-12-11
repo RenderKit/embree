@@ -243,7 +243,6 @@ namespace embree
 
 	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
 #endif
-
       }
     else
       {
@@ -270,7 +269,7 @@ namespace embree
 
 
     if (g_verbose >= 2) {
-      double perf = source->size()/dt*1E-6;
+      double perf = totalNumPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
       std::cout << BVH4iStatistics(bvh).str();
     }
@@ -1449,6 +1448,8 @@ namespace embree
     else if (unlikely(enableVirtualGeometry))
       {
 	LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
+
+	DBG_PRINT( global_bounds );
       }
     else
       {

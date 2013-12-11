@@ -202,12 +202,13 @@ namespace embree
     PrimRef *__restrict__ const prims     = this->prims;
 
     /* find group == startID */
-    unsigned int  g=0;
-    for (; g<numTotalGroups; g++) {       
-      if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely(scene->get(g)->type != USER_GEOMETRY)) continue;
-      if (unlikely(!scene->get(g)->isEnabled())) continue;
+    unsigned int g=0;
+    for (size_t i=0; i<numTotalGroups; i++) {       
+      if (unlikely(scene->get(i) == NULL)) continue;
+      if (unlikely(scene->get(i)->type != USER_GEOMETRY)) continue;
+      if (unlikely(!scene->get(i)->isEnabled())) continue;
       if (g == startID) break;
+      g++;
     }
 
     /* start with first group containing startID */
@@ -262,7 +263,6 @@ namespace embree
 
   void BVH4iBuilder::createVirtualGeometryAccel(const size_t threadID, const size_t numThreads)
   {
-    PING;
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
     const Scene* __restrict__ const scene = (Scene*)geometry;
