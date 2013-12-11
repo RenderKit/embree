@@ -38,6 +38,14 @@ enum RTCMatrixType {
   RTC_MATRIX_COLUMN_MAJOR_ALIGNED16 = 2,
 };
 
+/*! \brief Supported geometry flags to specify handling in dynamic scenes. */
+enum RTCGeometryFlags 
+{
+  RTC_GEOMETRY_STATIC     = 0,    //!< specifies static geometry that will change rarely
+  RTC_GEOMETRY_DEFORMABLE = 1,    //!< specifies dynamic geometry with deformable motion (BVH refit possible)
+  RTC_GEOMETRY_DYNAMIC    = 2,    //!< specifies dynamic geometry with arbitrary motion (BVH refit not possible)
+};
+
 /*! \brief Creates a new scene instance. 
 
   A scene instance contains a reference to a scene to instantiate and
@@ -68,7 +76,7 @@ RTCORE_API void rtcSetTransform (RTCScene scene,                          //!< s
   linear motion blur, two vertex buffers have to get filled
   (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1), one for each time step. */
 RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene,                    //!< the scene the mesh belongs to
-                                        RTCFlags flags,                    //!< geometry flags
+                                        RTCGeometryFlags flags,            //!< geometry flags
                                         size_t numTriangles,               //!< number of triangles
                                         size_t numVertices,                //!< number of vertices
                                         size_t numTimeSteps = 1            //!< number of motion blur time steps

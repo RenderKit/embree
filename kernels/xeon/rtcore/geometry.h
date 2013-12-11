@@ -38,7 +38,7 @@ namespace embree
   public:
     
     /*! Geometry constructor */
-    Geometry (Scene* scene, GeometryTy type, size_t numPrimitives, RTCFlags flags);
+    Geometry (Scene* scene, GeometryTy type, size_t numPrimitives, RTCGeometryFlags flags);
 
     /*! Virtual destructor */
     virtual ~Geometry() {}
@@ -53,13 +53,13 @@ namespace embree
     }
 
     /* test if this is a static geometry */
-    __forceinline bool isStatic() const { return embree::isStatic(flags); }
+    __forceinline bool isStatic() const { return flags == RTC_GEOMETRY_STATIC; }
 
     /* test if this is a deformable geometry */
-    __forceinline bool isDeformable() const { return embree::isDeformable(flags); }
+    __forceinline bool isDeformable() const { return flags == RTC_GEOMETRY_DEFORMABLE; }
 
     /* test if this is a dynamic geometry */
-    __forceinline bool isDynamic() const { return embree::isDynamic(flags); }
+    __forceinline bool isDynamic() const { return flags == RTC_GEOMETRY_DYNAMIC; }
 
     /*! for all geometries */
   public:
@@ -173,7 +173,7 @@ namespace embree
     GeometryTy type;
     ssize_t numPrimitives;    //!< number of primitives of this geometry
     unsigned id;       //!< internal geometry ID
-    RTCFlags flags;    //!< flags of geometry
+    RTCGeometryFlags flags;    //!< flags of geometry
     State state;       //!< state of the geometry 
   };
 

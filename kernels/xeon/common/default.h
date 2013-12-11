@@ -74,20 +74,19 @@ namespace embree
   void recordError(RTCError error);
 
   /*! decoding of geometry flags */
-  __forceinline int  dynamicLevel(RTCFlags flags) { return flags & 3; }
-  __forceinline bool isStatic    (RTCFlags flags) { return (flags & 3) == RTC_STATIC; }
-  __forceinline bool isDynamic   (RTCFlags flags) { return (flags & 3) != RTC_STATIC; }
-  __forceinline bool isDeformable(RTCFlags flags) { return (flags & 3) == RTC_DEFORMABLE; }
+  //__forceinline int  dynamicLevel(RTCSceneFlags flags) { return flags & 3; } // FIMXE: remove
+  __forceinline bool isStatic    (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_STATIC; }
+  __forceinline bool isDynamic   (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_DYNAMIC; }
 
-  __forceinline bool isCompact   (RTCFlags flags) { return flags & RTC_COMPACT; }
-  __forceinline bool isRobust    (RTCFlags flags) { return flags & RTC_ROBUST; }
-  __forceinline bool isCoherent  (RTCFlags flags) { return flags & RTC_COHERENT; }
-  __forceinline bool isIncoherent(RTCFlags flags) { return flags & RTC_INCOHERENT; }
-  __forceinline bool isHighQuality(RTCFlags flags) { return flags & RTC_HIGH_QUALITY; }
+  __forceinline bool isCompact   (RTCSceneFlags flags) { return flags & RTC_SCENE_COMPACT; }
+  __forceinline bool isRobust    (RTCSceneFlags flags) { return flags & RTC_SCENE_ROBUST; }
+  __forceinline bool isCoherent  (RTCSceneFlags flags) { return flags & RTC_SCENE_COHERENT; }
+  __forceinline bool isIncoherent(RTCSceneFlags flags) { return flags & RTC_SCENE_INCOHERENT; }
+  __forceinline bool isHighQuality(RTCSceneFlags flags) { return flags & RTC_SCENE_HIGH_QUALITY; }
 
-  __forceinline RTCFlags inherit_flags(RTCFlags a, RTCFlags b) {
-    return (RTCFlags) (a | (b & -3)); // do not inherit dynamic flags
-  }
+  //__forceinline RTCFlags inherit_flags(RTCFlags a, RTCFlags b) { // FIXME: remove
+  //  return (RTCFlags) (a | (b & -3)); // do not inherit dynamic flags
+  //}
   
   /*! CPU features */
   static const int SSE   = CPU_FEATURE_SSE; 

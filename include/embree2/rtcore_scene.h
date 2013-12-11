@@ -26,22 +26,21 @@ struct RTCRay4;
 struct RTCRay8;
 struct RTCRay16;
 
-/*! geometry flags */
-enum RTCFlags 
+/*! scene flags */
+enum RTCSceneFlags 
 {
   /* dynamic type flags */
-  RTC_STATIC     = (0 << 0),    //!< specifies static geometry that will not change
-  RTC_DEFORMABLE = (1 << 0),    //!< specifies dynamic geometry with deformable motion (BVH refit possible)
-  RTC_DYNAMIC    = (2 << 0),    //!< specifies dynamic geometry with arbitrary motion (BVH refit not possible)
+  RTC_SCENE_STATIC     = (0 << 0),    //!< specifies static scene
+  RTC_SCENE_DYNAMIC    = (1 << 0),    //!< specifies dynamic scene
 
   /* acceleration structure flags */
-  RTC_COMPACT    = (1 << 8),    //!< use memory conservative data structures
-  RTC_COHERENT   = (1 << 9),    //!< optimize data structures for coherent rays (disabled by default)
-  RTC_INCOHERENT = (1 << 10),    //!< optimize data structures for in-coherent rays (disabled by default)
-  RTC_HIGH_QUALITY = (1 << 11),  //!< create higher quality data structures (disabled by default)
+  RTC_SCENE_COMPACT    = (1 << 8),    //!< use memory conservative data structures
+  RTC_SCENE_COHERENT   = (1 << 9),    //!< optimize data structures for coherent rays
+  RTC_SCENE_INCOHERENT = (1 << 10),    //!< optimize data structures for in-coherent rays (enabled by default)
+  RTC_SCENE_HIGH_QUALITY = (1 << 11),  //!< create higher quality data structures
 
   /* traversal algorithm flags */
-  RTC_ROBUST     = (1 << 16)     //!< use more robust traversal algorithms
+  RTC_SCENE_ROBUST     = (1 << 16)     //!< use more robust traversal algorithms
 };
 
 /*! enabled algorithm flags */
@@ -57,7 +56,7 @@ enum RTCAlgorithmFlags
 typedef struct __RTCScene {}* RTCScene;
 
 /*! Creates a new scene. */
-RTCORE_API RTCScene rtcNewScene (RTCFlags flags, RTCAlgorithmFlags aflags);
+RTCORE_API RTCScene rtcNewScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags);
 
 /*! Commits the geometry of the scene. After initializing or modifying
  *  geometries, this function has to get called before tracing

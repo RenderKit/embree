@@ -312,15 +312,11 @@ namespace embree
 #endif
   }
   
-  RTCORE_API RTCScene rtcNewScene (RTCFlags flags, RTCAlgorithmFlags aflags) 
+  RTCORE_API RTCScene rtcNewScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags) 
   {
     CATCH_BEGIN;
     TRACE(rtcNewScene);
-    if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCFlags(flags | RTC_INCOHERENT);
-    if (isDeformable(flags)) {
-      recordError(RTC_INVALID_ARGUMENT);
-      return NULL;
-    }
+    if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_INCOHERENT);
     return (RTCScene) new Scene(flags,aflags);
     CATCH_END;
     return NULL;
@@ -468,23 +464,21 @@ namespace embree
     return -1;
   }
 
-  RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene, RTCFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
+  RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
   {
     CATCH_BEGIN;
     TRACE(rtcNewTriangleMesh);
     VERIFY_HANDLE(scene);
-    if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCFlags(flags |  RTC_INCOHERENT);
     return ((Scene*)scene)->newTriangleMesh(flags,numTriangles,numVertices,numTimeSteps);
     CATCH_END;
     return -1;
   }
 
-/*  RTCORE_API unsigned rtcNewQuadraticBezierCurves (RTCScene scene, RTCFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+/*  RTCORE_API unsigned rtcNewQuadraticBezierCurves (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     CATCH_BEGIN;
     TRACE(rtcNewQuadraticBezierCurves);
     VERIFY_HANDLE(scene);
-    if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCFlags(flags | RTC_INCOHERENT);
     return ((Scene*)scene)->newQuadraticBezierCurves(flags,numCurves,numVertices,numTimeSteps);
     CATCH_END;
     return -1;

@@ -26,7 +26,7 @@ const uniform int numTheta = 2*numPhi;
 uniform unsigned int createTriangulatedSphere (RTCScene scene, uniform vec3f p, uniform float r)
 {
   /* create triangle mesh */
-  uniform unsigned int mesh = rtcNewTriangleMesh (scene, RTC_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
+  uniform unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
   
   /* map triangle and vertex buffers */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
@@ -81,7 +81,7 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, uniform vec3f p, 
 uniform unsigned int createGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  uniform unsigned int mesh = rtcNewTriangleMesh (scene, RTC_STATIC, 2, 4);
+  uniform unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
@@ -118,10 +118,10 @@ export void device_init (uniform int8* uniform cfg)
   rtcInit(cfg);
 
   /* create scene */
-  g_scene = rtcNewScene(RTC_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* create scene with 4 triangulated spheres */
-  g_scene1 = rtcNewScene(RTC_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  g_scene1 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
   createTriangulatedSphere(g_scene1,make_vec3f( 0, 0,+1),0.5);
   createTriangulatedSphere(g_scene1,make_vec3f(+1, 0, 0),0.5);
   createTriangulatedSphere(g_scene1,make_vec3f( 0, 0,-1),0.5);

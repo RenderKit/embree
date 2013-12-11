@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  Geometry::Geometry (Scene* parent, GeometryTy type, size_t numPrimitives, RTCFlags flags) 
+  Geometry::Geometry (Scene* parent, GeometryTy type, size_t numPrimitives, RTCGeometryFlags flags) 
     : parent(parent), type(type), numPrimitives(numPrimitives), id(0), flags(flags), state(ENABLING) 
   {
     id = parent->add(this);

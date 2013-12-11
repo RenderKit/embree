@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  QuadraticBezierCurvesScene::QuadraticBezierCurves::QuadraticBezierCurves (Scene* parent, RTCFlags flags, size_t numCurves, size_t numVertices) 
+  QuadraticBezierCurvesScene::QuadraticBezierCurves::QuadraticBezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices) 
     : Geometry(parent,QUADRATIC_BEZIER_CURVES,numCurves,flags), mask(-1), built(false),
       curves(NULL), numCurves(numCurves), mappedCurves(false), 
       vertices(NULL), numVertices(numVertices), mappedVertices(false)

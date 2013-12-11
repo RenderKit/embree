@@ -45,17 +45,17 @@ namespace embree
   {
     if (mesh->numTimeSteps == 1)
     {
-      if (isDeformable(mesh->flags)) {
+      if (mesh->isDeformable()) {
         return BVH4::BVH4Triangle4Refit(mesh);
       }
-      else if (isCoherent(mesh->flags)) {
-        if (isRobust(mesh->flags)) {
+      else if (isCoherent(mesh->parent->flags)) {
+        if (isRobust(mesh->parent->flags)) {
           return BVH4::BVH4Triangle1vObjectSplit(mesh);
         } else {
           return BVH4::BVH4Triangle1ObjectSplit(mesh);
         }
       } else {
-        if (isRobust(mesh->flags)) {
+        if (isRobust(mesh->parent->flags)) {
           return BVH4::BVH4Triangle4vObjectSplit(mesh);
         } else {
           return BVH4::BVH4Triangle4ObjectSplit(mesh);
@@ -70,7 +70,7 @@ namespace embree
   }
 #endif
 
-  Scene::Scene (RTCFlags flags, RTCAlgorithmFlags aflags)
+  Scene::Scene (RTCSceneFlags flags, RTCAlgorithmFlags aflags)
     : flags(flags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
       numTriangleMeshes(0), numTriangleMeshes2(0), numUserGeometries(0),
       flat_triangle_source_1(this,1), flat_triangle_source_2(this,2)
@@ -216,9 +216,9 @@ namespace embree
     return geom->id;
   }
 
-  unsigned Scene::newTriangleMesh (RTCFlags flags_i, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
+  unsigned Scene::newTriangleMesh (RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
   {
-    if (dynamicLevel(flags) < dynamicLevel(flags_i)) {
+    if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       recordError(RTC_INVALID_OPERATION);
       return -1;
     }
@@ -228,18 +228,18 @@ namespace embree
       return -1;
     }
     
-    Geometry* geom = new TriangleMeshScene::TriangleMesh(this,inherit_flags(flags_i,flags),numTriangles,numVertices,numTimeSteps);
+    Geometry* geom = new TriangleMeshScene::TriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps);
     return geom->id;
   }
 
-  unsigned Scene::newQuadraticBezierCurves (RTCFlags flags_i, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  unsigned Scene::newQuadraticBezierCurves (RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
-    if (dynamicLevel(flags) < dynamicLevel(flags_i)) {
+    if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       recordError(RTC_INVALID_OPERATION);
       return -1;
     }
     
-    Geometry* geom = new QuadraticBezierCurvesScene::QuadraticBezierCurves(this,inherit_flags(flags_i,flags),numCurves,numVertices);
+    Geometry* geom = new QuadraticBezierCurvesScene::QuadraticBezierCurves(this,gflags,numCurves,numVertices);
     return geom->id;
   }
 

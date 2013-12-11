@@ -26,7 +26,7 @@ Vec3fa* colors = NULL;
 unsigned addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
-  unsigned mesh = rtcNewTriangleMesh (scene_i, RTC_STATIC, 12, 8);
+  unsigned mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 12, 8);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
@@ -79,7 +79,7 @@ unsigned addCube (RTCScene scene_i)
 unsigned addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  unsigned mesh = rtcNewTriangleMesh (scene_i, RTC_STATIC, 2, 4);
+  unsigned mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
@@ -105,7 +105,7 @@ extern "C" void device_init (const char* cfg)
   rtcInit(cfg);
 
   /* create scene */
-  scene = rtcNewScene(RTC_STATIC, RTC_INTERSECT1);
+  scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
 
   /* add cube */
   addCube(scene);

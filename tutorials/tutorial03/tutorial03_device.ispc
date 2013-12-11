@@ -80,7 +80,7 @@ export void device_init (uniform int8* uniform cfg)
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 {
   /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* add all meshes to the scene */
   for (uniform int i=0; i<scene_in->numMeshes; i++)
@@ -89,7 +89,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
 
     /* create a triangle mesh */
-    uniform unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_STATIC, mesh->numTriangles, mesh->numVertices);
+    uniform unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
     
     /* set vertices */
     uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
