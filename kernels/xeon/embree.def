@@ -8,7 +8,7 @@
 LIBRARY	"embree"
 
 EXPORTS
-rtcNewScene___unenum[RTCFlags]unenum[RTCAlgorithmFlags]sse4
+rtcNewScene___unenum[RTCSceneFlags]unenum[RTCAlgorithmFlags]sse4
 rtcCommit___un_3C_s[un__RTCScene]_3E_sse4
 rtcIntersect1___un_3C_s[un__RTCScene]_3E_REFs[unRTCRay1]sse4
 rtcIntersect___un_3C_s[un__RTCScene]_3E_REFs[vyRTCRay]sse4
@@ -17,8 +17,8 @@ rtcOccluded___un_3C_s[un__RTCScene]_3E_REFs[vyRTCRay]sse4
 rtcDeleteScene___un_3C_s[un__RTCScene]_3E_sse4
 rtcNewInstance___un_3C_s[un__RTCScene]_3E_un_3C_s[un__RTCScene]_3E_sse4
 rtcSetTransform___un_3C_s[un__RTCScene]_3E_unuunenum[RTCMatrixType]un_3C_unf_3E_sse4
-rtcNewTriangleMesh___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunusse4
-;rtcNewQuadraticBezierCurves___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunusse4
+rtcNewTriangleMesh___un_3C_s[un__RTCScene]_3E_unenum[RTCGeometryFlags]unuunuunusse4
+;rtcNewQuadraticBezierCurves___un_3C_s[un__RTCScene]_3E_unenum[RTCGeometryFlags]unuunuunusse4
 rtcSetMask___un_3C_s[un__RTCScene]_3E_unuunisse4
 rtcMapBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]sse4
 rtcUnmapBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]sse4
@@ -37,7 +37,7 @@ rtcInit___un_3C_Cunt_3E_sse4
 rtcExit___sse4
 rtcGetError___sse4
 rtcDebug___sse4
-rtcNewScene___unenum[RTCFlags]unenum[RTCAlgorithmFlags]sse2
+rtcNewScene___unenum[RTCSceneFlags]unenum[RTCAlgorithmFlags]sse2
 rtcCommit___un_3C_s[un__RTCScene]_3E_sse2
 rtcIntersect1___un_3C_s[un__RTCScene]_3E_REFs[unRTCRay1]sse2
 rtcIntersect___un_3C_s[un__RTCScene]_3E_REFs[vyRTCRay]sse2
@@ -46,8 +46,8 @@ rtcOccluded___un_3C_s[un__RTCScene]_3E_REFs[vyRTCRay]sse2
 rtcDeleteScene___un_3C_s[un__RTCScene]_3E_sse2
 rtcNewInstance___un_3C_s[un__RTCScene]_3E_un_3C_s[un__RTCScene]_3E_sse2
 rtcSetTransform___un_3C_s[un__RTCScene]_3E_unuunenum[RTCMatrixType]un_3C_unf_3E_sse2
-rtcNewTriangleMesh___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunusse2
-;rtcNewQuadraticBezierCurves___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunusse2
+rtcNewTriangleMesh___un_3C_s[un__RTCScene]_3E_unenum[RTCGeometryFlags]unuunuunusse2
+;rtcNewQuadraticBezierCurves___un_3C_s[un__RTCScene]_3E_unenum[RTCGeometryFlags]unuunuunusse2
 rtcSetMask___un_3C_s[un__RTCScene]_3E_unuunisse2
 rtcMapBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]sse2
 rtcUnmapBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]sse2
@@ -66,7 +66,7 @@ rtcInit___un_3C_Cunt_3E_sse2
 rtcExit___sse2
 rtcGetError___sse2
 rtcDebug___sse2
-rtcNewScene___unenum[RTCFlags]unenum[RTCAlgorithmFlags]avx
+rtcNewScene___unenum[RTCSceneFlags]unenum[RTCAlgorithmFlags]avx
 rtcCommit___un_3C_s[un__RTCScene]_3E_avx
 rtcIntersect1___un_3C_s[un__RTCScene]_3E_REFs[unRTCRay1]avx
 rtcIntersect___un_3C_s[un__RTCScene]_3E_REFs[vyRTCRay]avx
@@ -75,8 +75,8 @@ rtcOccluded___un_3C_s[un__RTCScene]_3E_REFs[vyRTCRay]avx
 rtcDeleteScene___un_3C_s[un__RTCScene]_3E_avx
 rtcNewInstance___un_3C_s[un__RTCScene]_3E_un_3C_s[un__RTCScene]_3E_avx
 rtcSetTransform___un_3C_s[un__RTCScene]_3E_unuunenum[RTCMatrixType]un_3C_unf_3E_avx
-rtcNewTriangleMesh___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunuavx
-;rtcNewQuadraticBezierCurves___un_3C_s[un__RTCScene]_3E_unenum[RTCFlags]unuunuunuavx
+rtcNewTriangleMesh___un_3C_s[un__RTCScene]_3E_unenum[RTCGeometryFlags]unuunuunuavx
+;rtcNewQuadraticBezierCurves___un_3C_s[un__RTCScene]_3E_unenum[RTCGeometryFlags]unuunuunuavx
 rtcSetMask___un_3C_s[un__RTCScene]_3E_unuuniavx
 rtcMapBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]avx
 rtcUnmapBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]avx
