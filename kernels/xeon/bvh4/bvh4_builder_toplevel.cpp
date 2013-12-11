@@ -358,7 +358,7 @@ namespace embree
     void BVH4BuilderTopLevel::split_sequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
     {
       /* calculate binning function */
-      Mapping2 mapping(current.bounds);
+      Mapping2<16> mapping(current.bounds);
       
       /* binning of centroids */
       Binner2<16> binner;

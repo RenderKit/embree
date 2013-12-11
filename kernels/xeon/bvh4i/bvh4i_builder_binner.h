@@ -25,6 +25,8 @@ namespace embree
 {
   namespace isa
   {
+
+    template<int BINS>
     struct Mapping
     {
     public:
@@ -34,7 +36,7 @@ namespace embree
       __forceinline Mapping (const Centroid_Scene_AABB& bounds) 
         {
           const ssef centroidDiagonal = (ssef) bounds.centroid2.size();
-          scale = select(centroidDiagonal != 0.0f,rcp(centroidDiagonal) * ssef(16.0f * 0.99f),ssef(0.0f));
+          scale = select(centroidDiagonal != 0.0f,rcp(centroidDiagonal) * ssef(BINS * 0.99f),ssef(0.0f));
           ofs = (ssef) bounds.centroid2.lower;
         }
       
@@ -46,12 +48,12 @@ namespace embree
       /*! Computes the bin numbers for each dimension for a box. */
       __forceinline ssei bin(const BBox3f& box) const {
 #if defined (__SSE4_1__)
-        return clamp(bin_unsafe(box),ssei(0),ssei(15)); // FIXME: hardcoded number of bins
+        return clamp(bin_unsafe(box),ssei(0),ssei(BINS-1));
 #else
-        ssei b = bin_unsafe(box); // FIXME: hardcoded number of bins
-        assert(b[0] >=0 && b[0] < 16);
-        assert(b[1] >=0 && b[1] < 16);
-        assert(b[2] >=0 && b[2] < 16);
+        ssei b = bin_unsafe(box);
+        assert(b[0] >=0 && b[0] < BINS);
+        assert(b[1] >=0 && b[1] < BINS);
+        assert(b[2] >=0 && b[2] < BINS);
         return b;
 #endif
       }
@@ -100,23 +102,23 @@ namespace embree
       }
       
       /*! bin an array of primitives */
-      void bin(const PrimRef* __restrict__ const prims, const size_t begin, const size_t end, const Mapping& mapping);
+      void bin(const PrimRef* __restrict__ const prims, const size_t begin, const size_t end, const Mapping<BINS>& mapping);
       
       /*! bin an array of primitives and copy to destination array */
-      void bin_copy(const PrimRef* __restrict__ const prims, const size_t begin, const size_t end, const Mapping& mapping, PrimRef* __restrict__ const dst);
+      void bin_copy(const PrimRef* __restrict__ const prims, const size_t begin, const size_t end, const Mapping<BINS>& mapping, PrimRef* __restrict__ const dst);
       
       /*! merge multiple binning infos into one */
       static void reduce(const Binner binners[], size_t num, Binner& binner_o);
       
       /*! calculate the best possible split */
-      void best(Split& split, const Mapping& mapping);
+      void best(Split& split, const Mapping<BINS>& mapping);
       
       /* inplace partitioning of a list of primitives */
       void partition(PrimRef*__restrict__ const prims,
                      const size_t begin,
                      const size_t end,
                      const Split& split,
-                     const Mapping& mapping,
+                     const Mapping<BINS>& mapping,
                      BuildRecord& left,
                      BuildRecord& right);
       
@@ -153,7 +155,7 @@ namespace embree
         BuildRecord rec;
         Centroid_Scene_AABB left;
         Centroid_Scene_AABB right;
-        Mapping mapping;
+        Mapping<BINS> mapping;
         Split split;
         const PrimRef* src;
         PrimRef* dst;

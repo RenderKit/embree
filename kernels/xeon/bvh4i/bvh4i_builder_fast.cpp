@@ -329,7 +329,7 @@ namespace embree
       }
       
       /* calculate binning function */
-      Mapping mapping(current.bounds);
+      Mapping<16> mapping(current.bounds);
       
       /* binning of centroids */
       Binner<16> binner;
