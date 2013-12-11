@@ -41,12 +41,10 @@ namespace embree
 
   void BVH4iBuilder::computePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
   {
-    const size_t numGroups = source->groups();
-
+    const size_t numGroups = source->size();
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
     
-    const Scene* __restrict__ const scene = (Scene*)geometry;
     PrimRef *__restrict__ const prims     = this->prims;
 
     // === find first group containing startID ===
@@ -185,7 +183,6 @@ namespace embree
 
   void BVH4iBuilder::computePrimRefsVirtualGeometry(const size_t threadID, const size_t numThreads) 
   {
-    const Scene* __restrict__ const scene = (Scene*)geometry;
     const size_t numTotalGroups = scene->size();
     DBG_PRINT(numTotalGroups);
 
@@ -265,7 +262,6 @@ namespace embree
   {
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
-    const Scene* __restrict__ const scene = (Scene*)geometry;
 
     Triangle1    * __restrict__  acc  = accel + startID;
     const PrimRef* __restrict__  bptr = prims + startID;

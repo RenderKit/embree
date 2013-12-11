@@ -89,7 +89,6 @@ namespace embree
   void TaskScheduler::executeTask(size_t threadIndex, size_t threadCount,  
                                   runFunction run, void* runData, size_t elts, const char* name)
   {
-    //PING; DBG_PRINT(name);
     TaskScheduler::Event event;
     TaskScheduler::Task task(&event,run,runData,elts,NULL,NULL,name);
     instance->add(threadIndex,TaskScheduler::GLOBAL_FRONT,&task);

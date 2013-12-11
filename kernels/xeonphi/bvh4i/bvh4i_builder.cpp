@@ -39,7 +39,7 @@
 #define TIMER(x) 
 #define DBG(x) 
 
-//#define PROFILE
+#define PROFILE
 
 #define PROFILE_ITERATIONS 100
 
@@ -65,7 +65,7 @@ namespace embree
 
   BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry, bool preSplits, bool virtualGeometry)
     : source(source), 
-      geometry(geometry), 
+      scene((Scene*)geometry), 
       bvh(bvh), 
       numPrimitives(0), 
       numNodes(0), 
@@ -96,7 +96,6 @@ namespace embree
     if (enableVirtualGeometry)
       {
 	/* count total number of virtual objects */
-	const Scene* __restrict__ const scene = (Scene*)geometry;
 	size_t numVirtualObjects = 0;       
 	for (size_t i=0;i<scene->size();i++)
 	  {
@@ -281,9 +280,8 @@ namespace embree
   // =======================================================================================================
   // =======================================================================================================
 
-  void BVH4iBuilder::computePrimRefs(const size_t threadID, const size_t numThreads) 
+  void BVH4iBuilder::computePrimRefsTriangles(const size_t threadID, const size_t numThreads) 
   {
-    const Scene* __restrict__ const scene = (Scene*)geometry;
     const size_t numGroups = scene->size();
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -460,8 +458,6 @@ namespace embree
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
 
-    const Scene* __restrict__ const scene = (Scene*)geometry;
-
     Triangle1    * __restrict__  acc  = accel + startID;
     const PrimRef* __restrict__  bptr = prims + startID;
 
@@ -472,7 +468,7 @@ namespace embree
 	assert(bptr->geomID() < scene->size() );
 	assert(bptr->primID() < scene->get( bptr->geomID() )->numPrimitives );
 
-	computeAccelerationData(bptr->geomID(),bptr->primID(),(Scene*)geometry,acc);
+	computeAccelerationData(bptr->geomID(),bptr->primID(),scene,acc);
       }
   }
 
@@ -1408,12 +1404,31 @@ namespace embree
   // =======================================================================================================
   // =======================================================================================================
 
+  void BVH4iBuilder::computePrimRefs(size_t threadIndex, size_t threadCount)
+  {
+    if (unlikely(enablePreSplits))
+      {
+	atomicID.reset(numPrimitives);
+	LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
+	// for (size_t i=numPrimitives;i<atomicID;i++) DBG_PRINT(prims[i]);
+	DBG_PRINT(atomicID - numPrimitives);
+	numPrimitives = atomicID;
+      }
+    else if (unlikely(enableVirtualGeometry))
+      {
+	LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
+
+	DBG_PRINT( global_bounds );
+      }
+    else
+      {
+	LockStepTaskScheduler::dispatchTask( task_computePrimRefsTriangles, this, threadIndex, threadCount );
+      }    
+  }
 
   void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
     TIMER(double msec = 0.0);
-
-    //DBG_PRINT(threadIndex);
 
     /* initialize thread-local work stacks */
     if (threadIndex % 4 == 0)
@@ -1437,24 +1452,7 @@ namespace embree
     /* calculate list of primrefs */
     global_bounds.reset();
 
-    if (unlikely(enablePreSplits))
-      {
-	atomicID.reset(numPrimitives);
-	LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
-	// for (size_t i=numPrimitives;i<atomicID;i++) DBG_PRINT(prims[i]);
-	DBG_PRINT(atomicID - numPrimitives);
-	numPrimitives = atomicID;
-      }
-    else if (unlikely(enableVirtualGeometry))
-      {
-	LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
-
-	DBG_PRINT( global_bounds );
-      }
-    else
-      {
-	LockStepTaskScheduler::dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
-      }
+    computePrimRefs(threadIndex,threadCount);
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computePrimRefs " << 1000. * msec << " ms" << std::endl << std::flush);

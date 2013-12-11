@@ -49,10 +49,11 @@ namespace embree
     /* build function */
     void build(size_t threadIndex, size_t threadCount);
 
-    void allocateData(size_t threadCount,size_t newNumPrimitives);
+    virtual void allocateData(size_t threadCount,size_t newNumPrimitives);
+    virtual void computePrimRefs(size_t threadIndex, size_t threadCount);
 
   public:
-    TASK_FUNCTION(BVH4iBuilder,computePrimRefs);
+    TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
     TASK_FUNCTION(BVH4iBuilder,fillLocalWorkQueues);
     TASK_FUNCTION(BVH4iBuilder,buildSubTrees);
     TASK_FUNCTION(BVH4iBuilder,createTriangle1Accel);
@@ -106,7 +107,7 @@ namespace embree
 
   protected:
     BuildSource* source;          //!< input geometry
-    void* geometry;               //!< input geometry
+    Scene* scene;               //!< input geometry
     BVH4i* bvh;                   //!< Output BVH
     const bool enablePreSplits;
     const bool enableVirtualGeometry;
