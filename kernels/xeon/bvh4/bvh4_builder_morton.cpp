@@ -456,6 +456,7 @@ namespace embree
       mortonID[0] = (MortonID32Bit*) morton; 
       //mortonID[1] = (MortonID32Bit*) node;
       mortonID[1] = (MortonID32Bit*) nodeAllocator.data;
+      MortonBuilderState::ThreadRadixCountTy* radixCount = g_state->radixCount;
       
       /* we need 3 iterations to process all 32 bits */
       for (size_t b=0; b<3; b++)
@@ -469,11 +470,11 @@ namespace embree
         
         /* count how many items go into the buckets */
         for (size_t i=0; i<RADIX_BUCKETS; i++)
-          g_state->radixCount[threadID][i] = 0;
+          radixCount[threadID][i] = 0;
         
         for (size_t i=startID; i<endID; i++) {
           const size_t index = src[i].get(shift, mask);
-          g_state->radixCount[threadID][index]++;
+          radixCount[threadID][index]++;
         }
         scheduler.syncThreads(threadID,numThreads);
         
@@ -484,7 +485,7 @@ namespace embree
         
         for (size_t i=0; i<numThreads; i++)
           for (size_t j=0; j<RADIX_BUCKETS; j++)
-            total[j] += g_state->radixCount[i][j];
+            total[j] += radixCount[i][j];
         
         /* calculate start offset of each bucket */
         __align(64) size_t offset[RADIX_BUCKETS];
@@ -495,7 +496,7 @@ namespace embree
         /* calculate start offset of each bucket for this thread */
         for (size_t j=0; j<RADIX_BUCKETS; j++)
           for (size_t i=0; i<threadID; i++)
-            offset[j] += g_state->radixCount[i][j];
+            offset[j] += radixCount[i][j];
         
         /* copy items into their buckets */
         for (size_t i=startID; i<endID; i++) {
@@ -869,7 +870,7 @@ namespace embree
           node->set(i,bounds);
         }
       }
-      node->evict();
+      //node->evict();
       return bounds0;
     }
     

@@ -99,22 +99,20 @@ namespace embree
 
       public:
 
+        typedef unsigned int ThreadRadixCountTy[RADIX_BUCKETS];
+
         MortonBuilderState () 
         {
           numBuildRecords = 0;
           numThreads = getNumberOfLogicalThreads();
           startGroup = new unsigned int[numThreads];
           startGroupOffset = new unsigned int[numThreads];
-          radixCount = new unsigned int*[numThreads];
-          for (size_t i=0; i<numThreads; i++)
-            radixCount[i] = (unsigned int*) alignedMalloc(RADIX_BUCKETS*sizeof(unsigned int));
+          radixCount = (ThreadRadixCountTy*) alignedMalloc(numThreads*sizeof(ThreadRadixCountTy));
         }
 
         ~MortonBuilderState () 
         {
-          for (size_t i=0; i<numThreads; i++)
-            alignedFree(radixCount[i]);
-          delete[] radixCount;
+          alignedFree(radixCount);
           delete[] startGroupOffset;
           delete[] startGroup;
         }
@@ -122,7 +120,7 @@ namespace embree
         size_t numThreads;
         unsigned int* startGroup;
         unsigned int* startGroupOffset;
-        unsigned int** radixCount;
+        ThreadRadixCountTy* radixCount;
         
         size_t numBuildRecords;
         __align(64) SmallBuildRecord buildRecords[MAX_TOP_LEVEL_BINS];
