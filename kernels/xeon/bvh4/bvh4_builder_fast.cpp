@@ -348,7 +348,7 @@ namespace embree
         store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID)));
         store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
         store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),0)));
-        store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0))); // FIXME: use nt stores also for nodes
+        store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0)));
       }
     }
     
@@ -560,6 +560,7 @@ namespace embree
         createLeaf(children[i],nodeAlloc,leafAlloc,threadIndex,threadCount);
       }
       BVH4::compact(node); // move empty nodes to the end
+      node->evict();
     }
     
     __forceinline void BVH4BuilderFast::recurse(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads)
@@ -642,6 +643,7 @@ namespace embree
         children[i].depth = current.depth+1;
         recurse(children[i],nodeAlloc,leafAlloc,mode,threadID,numThreads);
       }
+      node->evict();
     }
     
     // =======================================================================================================
@@ -711,7 +713,7 @@ namespace embree
     void BVH4BuilderFast::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
       /* wait for all threads to enter */
-      //g_state->barrier.wait(threadIndex,threadCount);
+      g_state->barrier.wait(threadIndex,threadCount);
       
       /* start measurement */
       double t0 = 0.0f;

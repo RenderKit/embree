@@ -108,8 +108,14 @@ namespace embree
       double dt_max = neg_inf;
       for (size_t i=0; i<200; i++) 
       {
-        scheduler.init(threadCount);
-        TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,threadCount,"build_parallel_morton");
+        if (needAllThreads) 
+        {
+          if (!g_state.get()) g_state.reset(new MortonBuilderState);
+          scheduler.init(threadCount);
+          TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,threadCount,"build_parallel_morton");
+        } else {
+          build_sequential_morton(threadIndex,threadCount);
+        }
         dt_min = min(dt_min,dt);
         dt_avg = dt_avg + dt;
         dt_max = max(dt_max,dt);
@@ -126,9 +132,7 @@ namespace embree
       
       if (needAllThreads) 
       {
-        if (!g_state.get()) 
-          g_state.reset(new MortonBuilderState);
-
+        if (!g_state.get()) g_state.reset(new MortonBuilderState);
         scheduler.init(threadCount);
         TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,threadCount,"build_parallel_morton");
       } else {
@@ -559,7 +563,7 @@ namespace embree
         store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID)));
         store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
         store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),0)));
-        store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0))); // FIXME: use nt stores also for nodes
+        store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0)));
       }
       box_o = BBox3f((Vec3fa)lower,(Vec3fa)upper);
     }
@@ -865,6 +869,7 @@ namespace embree
           node->set(i,bounds);
         }
       }
+      node->evict();
       return bounds0;
     }
     
@@ -1001,6 +1006,9 @@ namespace embree
     
     void BVH4BuilderMorton::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t, size_t, TaskScheduler::Event* event) 
     {
+      /* wait for all threads to enter */
+      g_state->barrier.wait(threadIndex,threadCount);
+
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();

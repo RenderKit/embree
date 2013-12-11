@@ -127,6 +127,7 @@ namespace embree
         size_t numBuildRecords;
         __align(64) SmallBuildRecord buildRecords[MAX_TOP_LEVEL_BINS];
         __align(64) WorkStack<SmallBuildRecord,MAX_TOP_LEVEL_BINS> workStack;
+        LinearBarrierActive barrier;
       };
       
       /*! Constructor. */
