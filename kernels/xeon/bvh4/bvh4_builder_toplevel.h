@@ -37,7 +37,34 @@ namespace embree
       /*! Type shortcuts */
       typedef BVH4::Node    Node;
       typedef BVH4::NodeRef NodeRef;
-            
+      static const size_t SIZE_WORK_STACK = 64;
+
+      struct GlobalState
+      {
+        ALIGNED_CLASS;
+              
+      public:
+
+        GlobalState (size_t numThreads) {
+          thread_workStack = new WorkStack<BuildRecord,SIZE_WORK_STACK>[numThreads];
+          thread_bounds = new Centroid_Scene_AABB[numThreads];
+        }
+        
+        ~GlobalState () {
+          delete[] thread_workStack;
+          delete[] thread_bounds;
+        }
+
+      public:
+        __align(64) WorkStack<BuildRecord,SIZE_WORK_STACK> global_workStack;
+        __align(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* thread_workStack;
+        LinearBarrierActive global_barrier;
+        ParallelBinner2<16> parallelBinner;  
+        Centroid_Scene_AABB* thread_bounds;
+      };
+
+      static std::auto_ptr<GlobalState> g_state;
+
     public:
       
       /*! Constructor. */
@@ -92,14 +119,7 @@ namespace embree
       volatile atomic_t global_dest;
       volatile float global_max_volume;
       AlignedAtomicCounter32 nextRef;
-      Centroid_Scene_AABB thread_bounds[MAX_MIC_THREADS]; // FIXME: max threads!!
       Barrier barrier;
-      
-      static const size_t SIZE_WORK_STACK = 64;
-      WorkStack<BuildRecord,SIZE_WORK_STACK> global_workStack;
-      WorkStack<BuildRecord,SIZE_WORK_STACK> thread_workStack[MAX_MIC_THREADS];
-      LinearBarrierActive global_barrier;
-      ParallelBinner2<16> parallelBinner;  
     };
   }
 }

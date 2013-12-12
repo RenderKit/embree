@@ -16,11 +16,14 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-//const uniform int numSpheres = 1;
-//const uniform int numPhi = 5; 
+#if 0
+const uniform int numSpheres = 1000;
+const uniform int numPhi = 5; 
+#else
 const uniform int numSpheres = 20;
 const uniform int numPhi = 120; 
 //const uniform int numPhi = 400; 
+#endif
 const uniform int numTheta = 2*numPhi;
 
 /* scene data */
