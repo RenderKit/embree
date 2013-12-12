@@ -32,8 +32,8 @@
 #define ENABLE_FILL_PER_CORE_WORK_QUEUES
 
 
-#define TIMER(x) x 
-#define DBG(x) x
+#define TIMER(x) 
+#define DBG(x) 
 
 //#define PROFILE
 

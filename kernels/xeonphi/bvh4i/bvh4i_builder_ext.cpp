@@ -19,7 +19,7 @@
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
 
 #define PRESPLIT_SPACE_FACTOR                   0.1f
-#define DBG(x) x
+#define DBG(x) 
 
 namespace embree
 {
@@ -307,17 +307,18 @@ namespace embree
   void BVH4iBuilderVirtualGeometry::computePrimRefsVirtualGeometry(const size_t threadID, const size_t numThreads) 
   {
     const size_t numTotalGroups = scene->size();
-    DBG_PRINT(numTotalGroups);
 
     /* count total number of virtual objects */
     const size_t numVirtualObjects = numPrimitives;
     const size_t startID   = (threadID+0)*numVirtualObjects/numThreads;
     const size_t endID     = (threadID+1)*numVirtualObjects/numThreads;
 
-    DBG_PRINT(numTotalGroups);
-    DBG_PRINT(numVirtualObjects);
-    DBG_PRINT(startID);
-    DBG_PRINT(endID);
+    DBG(
+	DBG_PRINT(numTotalGroups);
+	DBG_PRINT(numVirtualObjects);
+	DBG_PRINT(startID);
+	DBG_PRINT(endID);
+	);
     
     PrimRef *__restrict__ const prims     = this->prims;
 
@@ -350,9 +351,11 @@ namespace embree
 	const mic_f bmin = broadcast4to16f(&virtual_geometry->bounds.lower);
 	const mic_f bmax = broadcast4to16f(&virtual_geometry->bounds.upper);
 
-	DBG_PRINT(currentID);
-	DBG_PRINT(bmin);
-	DBG_PRINT(bmax);
+	DBG(
+	    DBG_PRINT(currentID);
+	    DBG_PRINT(bmin);
+	    DBG_PRINT(bmax);
+	    );
 
 	bounds_scene_min = min(bounds_scene_min,bmin);
 	bounds_scene_max = max(bounds_scene_max,bmax);
@@ -391,25 +394,13 @@ namespace embree
     Triangle1    * __restrict__  acc  = accel + startID;
     const PrimRef* __restrict__  bptr = prims + startID;
 
-    DBG(DBG_PRINT(accel));
-    DBG(DBG_PRINT(startID));
-    DBG(DBG_PRINT(endID));
-
-
     for (size_t j=startID; j<endID; j++, bptr++, acc++)
       {
 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
 	assert(bptr->geomID() < scene->size() );
-	DBG(DBG_PRINT( bptr->geomID() ));
-
 	Accel *tmp = (Accel*)(UserGeometryScene::Base *)(scene->get( bptr->geomID() ));
-	DBG_PRINT(tmp);
-	DBG_PRINT((void*)tmp);
-
-	DBG_PRINT( (void*) tmp->intersectors.intersector16.intersect );
 	*(void**)acc = tmp;
-	DBG (DBG_PRINT(*(void**)acc));
       }
   }
 
