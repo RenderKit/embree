@@ -16,11 +16,14 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-//const uniform int numSpheres = 1;
-//const uniform int numPhi = 5; 
+#if 0
+const uniform int numSpheres = 1000;
+const uniform int numPhi = 5; 
+#else
 const uniform int numSpheres = 20;
 const uniform int numPhi = 120; 
 //const uniform int numPhi = 400; 
+#endif
 const uniform int numTheta = 2*numPhi;
 
 /* scene data */
@@ -33,7 +36,7 @@ uniform int disabledID = -1;
 vec3f renderPixelNormal(int x, int y, const uniform vec3f& vx, const uniform vec3f& vy, const uniform vec3f& vz, const uniform vec3f& p);
 vec3f (* uniform renderPixel)(int x, int y, const uniform vec3f& vx, const uniform vec3f& vy, const uniform vec3f& vz, const uniform vec3f& p);
 
-uniform unsigned int createSphere (uniform RTCFlags flags, const uniform vec3f pos, const uniform float r)
+uniform unsigned int createSphere (uniform RTCGeometryFlags flags, const uniform vec3f pos, const uniform float r)
 {
   /* create a triangulated sphere */
   uniform unsigned int mesh = rtcNewTriangleMesh (scene, flags, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
@@ -94,7 +97,7 @@ export void device_init (uniform int8* uniform cfg)
   rtcInit(cfg);
 
   /* create scene */
-  scene = rtcNewScene(RTC_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* create some triangulated spheres */
   for (uniform int i=0; i<numSpheres; i++)
@@ -102,8 +105,8 @@ export void device_init (uniform int8* uniform cfg)
     const uniform float phi = i*2.0f*pi/numSpheres;
     const uniform float r = 2.0f*pi/numSpheres;
     const uniform vec3f p = mul(2.0f,make_vec3f(sin(phi),0.0f,-cos(phi)));
-    uniform RTCFlags flags = i%2 ? RTC_DEFORMABLE : RTC_DYNAMIC;
-    //uniform RTCFlags flags = RTC_DEFORMABLE;
+    uniform RTCGeometryFlags flags = i%2 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
+    //uniform RTCGeometryFlags flags = RTC_GEOMETRY_DEFORMABLE;
     uniform int id = createSphere(flags,p,r);
     position[id] = p;
     radius[id] = r;

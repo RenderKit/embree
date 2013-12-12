@@ -135,6 +135,7 @@ namespace embree
     __forceinline BBox3f BVH4Refit::leaf_bounds(NodeRef& ref)
     {
       size_t num; char* tri = ref.leaf(num);
+      if (unlikely(num == 0)) return empty;
       return bvh->primTy.update(tri,num,mesh);
     }
     
@@ -148,10 +149,6 @@ namespace embree
     
     BBox3f BVH4Refit::recurse_bottom(NodeRef& ref)
     {
-      /* return point bound for empty nodes */
-      if (unlikely(ref == BVH4::emptyNode)) // FIXME: can be removed?
-        return BBox3f(empty);
-      
       /* this is a leaf node */
       if (unlikely(ref.isLeaf()))
         return leaf_bounds(ref);
@@ -189,10 +186,6 @@ namespace embree
     
     BBox3f BVH4Refit::recurse_top(NodeRef& ref)
     {
-      /* return point bound for empty nodes */
-      if (ref == BVH4::emptyNode) // FIXME: can be removed?
-        return BBox3f(empty);
-      
       /* stop here if we encounter a barrier */
       if (unlikely(ref.isBarrier())) {
         ref.clearBarrier();

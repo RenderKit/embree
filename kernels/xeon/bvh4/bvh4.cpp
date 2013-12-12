@@ -398,36 +398,48 @@ namespace embree
   {
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle1::type);
-    if (isStatic(mesh->flags))          builder = BVH4BuilderObjectSplit4TriangleMeshFast(accel,mesh,4,inf);
-    else if (isDeformable(mesh->flags)) builder = BVH4BuilderRefitObjectSplit4TriangleMeshFast(accel,mesh,4,inf);
-    else                                builder = BVH4BuilderMortonTriangleMeshFast(accel,mesh,4,inf);
+    switch (mesh->flags) {
+    case RTC_GEOMETRY_STATIC:     builder = BVH4BuilderObjectSplit4TriangleMeshFast(accel,mesh,4,inf); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4BuilderRefitObjectSplit4TriangleMeshFast(accel,mesh,4,inf); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4BuilderMortonTriangleMeshFast(accel,mesh,4,inf); break;
+    default: throw std::runtime_error("internal error"); 
+    }
   } 
 
   void createTriangleMeshTriangle4(TriangleMeshScene::TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle4::type);
-    if (isStatic(mesh->flags))          builder = BVH4BuilderObjectSplit4TriangleMeshFast(accel,mesh,4,inf);
-    else if (isDeformable(mesh->flags)) builder = BVH4BuilderRefitObjectSplit4TriangleMeshFast(accel,mesh,4,inf);
-    else                                builder = BVH4BuilderMortonTriangleMeshFast(accel,mesh,4,inf);
+    switch (mesh->flags) {
+    case RTC_GEOMETRY_STATIC:     builder = BVH4BuilderObjectSplit4TriangleMeshFast(accel,mesh,4,inf); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4BuilderRefitObjectSplit4TriangleMeshFast(accel,mesh,4,inf); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4BuilderMortonTriangleMeshFast(accel,mesh,4,inf); break;
+    default: throw std::runtime_error("internal error"); 
+    }
   } 
 
   void createTriangleMeshTriangle1v(TriangleMeshScene::TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle1v::type);
-    if (isStatic(mesh->flags))          builder = BVH4BuilderObjectSplit4TriangleMeshFast(accel,mesh,4,inf);
-    else if (isDeformable(mesh->flags)) builder = BVH4BuilderRefitObjectSplit4TriangleMeshFast(accel,mesh,4,inf);
-    else                                builder = BVH4BuilderMortonTriangleMeshFast(accel,mesh,4,inf);
+    switch (mesh->flags) {
+    case RTC_GEOMETRY_STATIC:     builder = BVH4BuilderObjectSplit4TriangleMeshFast(accel,mesh,4,inf); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4BuilderRefitObjectSplit4TriangleMeshFast(accel,mesh,4,inf); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4BuilderMortonTriangleMeshFast(accel,mesh,4,inf); break;
+    default: throw std::runtime_error("internal error"); 
+    }
   } 
 
   void createTriangleMeshTriangle4v(TriangleMeshScene::TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle4v::type);
-    if (isStatic(mesh->flags))          builder = BVH4BuilderObjectSplit4TriangleMeshFast(accel,mesh,4,inf);
-    else if (isDeformable(mesh->flags)) builder = BVH4BuilderRefitObjectSplit4TriangleMeshFast(accel,mesh,4,inf);
-    else                                builder = BVH4BuilderMortonTriangleMeshFast(accel,mesh,4,inf);
+    switch (mesh->flags) {
+    case RTC_GEOMETRY_STATIC:     builder = BVH4BuilderObjectSplit4TriangleMeshFast(accel,mesh,4,inf); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4BuilderRefitObjectSplit4TriangleMeshFast(accel,mesh,4,inf); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4BuilderMortonTriangleMeshFast(accel,mesh,4,inf); break;
+    default: throw std::runtime_error("internal error"); 
+    }
   } 
 
 #if !defined(__MIC__)
@@ -596,6 +608,7 @@ namespace embree
   void BVH4::clear () 
   {
     root = emptyNode;
+    bounds = empty;
     AllocatorPerThread::clear();
   }
 

@@ -71,6 +71,9 @@ namespace embree
     /*! creates a leaf node */
     BVH4MB::Base* createLeaf(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const PrimInfo& pinfo);
 
+    /*! creates a large leaf by adding additional internal nodes */
+    BVH4MB::Base* createLargeLeaf(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const PrimInfo& pinfo, size_t depth);
+
     /*! Selects between full build and single-threaded split strategy. */
     void recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* group, 
                  BVH4MB::Base*& node, size_t depth, atomic_set<PrimRefBlock>& prims, const PrimInfo& pinfo, const Split& split);

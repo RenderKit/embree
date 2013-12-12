@@ -51,7 +51,6 @@ namespace embree
 
   __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) {
     if (*taskPtr == NULL) *taskPtr = new TaskScheduler::EventSync;
-    //if (*taskPtr == NULL) *taskPtr = new TaskScheduler::Event;
     return (char*)_mm_malloc(size,alignment);
   }
 
@@ -61,8 +60,6 @@ namespace embree
   }
   
   __dllexport void ISPCSync(void* task) { // FIXME: for join other tasks would need threadIndex here
-    //TaskScheduler::waitForEvent((TaskScheduler::Event*)task);
-    //delete (TaskScheduler::Event*)task;
     ((TaskScheduler::EventSync*)task)->sync(); 
     delete (TaskScheduler::EventSync*)task;
   }

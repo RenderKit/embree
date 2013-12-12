@@ -74,18 +74,12 @@ namespace embree
   BVH4iBuilder<Heuristic>::BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize)
     : source(source), geometry(geometry), primTy(bvh->primTy),
       minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-      //taskQueue(Heuristic::depthFirst ? TaskScheduler::GLOBAL_BACK : TaskScheduler::GLOBAL_FRONT), // FIXME: problem with fast task scheduler when inserting at the front
       taskQueue(TaskScheduler::GLOBAL_BACK),
       bvh(bvh)
   {
     size_t maxLeafPrims = BVH4i::maxLeafBlocks*primTy.blockSize;
     if (maxLeafPrims < this->maxLeafSize) 
       this->maxLeafSize = maxLeafPrims;
-    
-    /* calculate required memory */
-    //size_t tris  = bvh->geom->size();
-    //size_t prims = 2*bvh->primTy.blocks(tris); // reserve more memory than typically needed
-    //size_t nodes = 4*(prims+BVH4i::N-1)/BVH4i::N; // reserve more memory than typically needed
   }
   
   template<typename Heuristic>

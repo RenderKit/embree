@@ -219,7 +219,7 @@ namespace embree
     if (info7[1] & CPU_FEATURE_BIT_BMI2) cpu_features |= CPU_FEATURE_BMI2;
 
 #if defined(__MIC__)
-    cpu_features |= CPU_FEATURE_KNC; // FIXME: read from cpuid
+    cpu_features |= CPU_FEATURE_KNC;
 #endif
     return cpu_features;
   }

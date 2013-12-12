@@ -38,7 +38,7 @@ namespace embree
     typedef TriangleMeshScene::TriangleMesh TriangleMesh;
     
     /*! Scene construction */
-    Scene (RTCFlags flags, RTCAlgorithmFlags aflags);
+    Scene (RTCSceneFlags flags, RTCAlgorithmFlags aflags);
 
     /*! Scene destruction */
     ~Scene ();
@@ -50,10 +50,10 @@ namespace embree
     unsigned newInstance (Scene* scene);
 
     /*! Creates a new triangle mesh. */
-    unsigned newTriangleMesh (RTCFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
+    unsigned newTriangleMesh (RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new collection of quadratic bezier curves. */
-    unsigned newQuadraticBezierCurves (RTCFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
+    unsigned newQuadraticBezierCurves (RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
 
     /*! Builds acceleration structure for the scene. */
     void build ();
@@ -80,9 +80,9 @@ namespace embree
     __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i]; }
     __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i]; }
     __forceinline       Geometry* get_locked(size_t i)  { 
+
 #if !defined(__MIC__)
       Lock<AtomicMutex> lock(geometriesMutex); 
-      //Lock<MutexSys> lock(mutex);
 #endif
 
       Geometry *g = geometries[i]; 
@@ -216,7 +216,7 @@ namespace embree
   public:
     Accel3 accels;
     atomic_t numMappedBuffers;         //!< number of mapped buffers
-    RTCFlags flags;
+    RTCSceneFlags flags;
     RTCAlgorithmFlags aflags;
     bool needTriangles;
     bool needVertices;

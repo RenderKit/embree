@@ -64,9 +64,9 @@ namespace embree
     rtcDebug();
   }
   
-  extern "C" RTCScene ispcNewScene (RTCFlags flags, RTCAlgorithmFlags aflags) 
+  extern "C" RTCScene ispcNewScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags) 
   {
-    if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCFlags(flags | RTC_COHERENT);
+    if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_COHERENT);
     return rtcNewScene(flags,aflags);
   }
   
@@ -122,15 +122,11 @@ namespace embree
     return rtcNewUserGeometry(scene);
   }
   
-  extern "C" unsigned ispcNewTriangleMesh (RTCScene scene, RTCFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
-  {
-    if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCFlags(flags | RTC_COHERENT);
+  extern "C" unsigned ispcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) {
     return rtcNewTriangleMesh((RTCScene)scene,flags,numTriangles,numVertices,numTimeSteps);
   }
   
-/*  extern "C" unsigned ispcNewQuadraticBezierCurves (RTCScene scene, RTCFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
-  {
-    if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCFlags(flags | RTC_COHERENT);
+/*  extern "C" unsigned ispcNewQuadraticBezierCurves (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
     return rtcNewQuadraticBezierCurves(scene,flags,numCurves,numVertices,numTimeSteps);
     }*/
   

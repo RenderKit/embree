@@ -66,7 +66,7 @@ namespace embree
       if (likely(none(valid))) return;
 
       /* ray masking test */
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
       valid &= (tri.mask & ray.mask) != 0;
       if (unlikely(none(valid))) return;
 #endif
@@ -125,7 +125,7 @@ namespace embree
 #endif
 
       /* ray masking test */
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
       valid &= (tri.mask & ray.mask) != 0;
       if (unlikely(none(valid))) return false;
 #endif

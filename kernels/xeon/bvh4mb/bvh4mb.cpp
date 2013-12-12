@@ -17,21 +17,13 @@
 #include "bvh4mb.h"
 
 #include "geometry/triangle1v.h"
-#include "geometry/triangle4v.h"
 
 namespace embree
 {
   DECLARE_INTERSECTOR1(BVH4MBTriangle1vIntersector1Moeller);
-  //DECLARE_INTERSECTOR1(BVH4MBTriangle4vIntersector1Moeller);
-
   DECLARE_INTERSECTOR4(BVH4MBTriangle1vIntersector4ChunkMoeller);
-  //DECLARE_INTERSECTOR4(BVH4MBTriangle4vIntersector4ChunkMoeller);
-
   DECLARE_INTERSECTOR8(BVH4MBTriangle1vIntersector8ChunkMoeller);
-  //DECLARE_INTERSECTOR8(BVH4MBTriangle4vIntersector8ChunkMoeller);
-
   DECLARE_INTERSECTOR16(BVH4MBTriangle1vIntersector16ChunkMoeller);
-  //DECLARE_INTERSECTOR16(BVH4MBTriangle4vIntersector16ChunkMoeller);
 
   Builder* BVH4MBBuilderObjectSplit1 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
   Builder* BVH4MBBuilderObjectSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
@@ -41,16 +33,9 @@ namespace embree
     int features = getCPUFeatures();
 
     SELECT_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector1Moeller);
-    //SELECT_DEFAULT_AVX_AVX2(features,BVH4MBTriangle4vIntersector1Moeller);
-    
     SELECT_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector4ChunkMoeller);
-    //SELECT_DEFAULT_AVX_AVX2(features,BVH4MBTriangle4vIntersector4ChunkMoeller);
-    
     SELECT_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector8ChunkMoeller);
-    //SELECT_DEFAULT_AVX_AVX2(features,BVH4MBTriangle4vIntersector8ChunkMoeller);
-    
     SELECT_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector16ChunkMoeller);
-    //SELECT_DEFAULT_AVX_AVX2(features,BVH4MBTriangle4vIntersector16ChunkMoeller);
   }
 
   Accel* BVH4MB::BVH4MBTriangle1v(Scene* scene)
@@ -72,27 +57,6 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-#if 0 // FIXME
-  Accel* BVH4MB::BVH4MBTriangle4v(Scene* scene)
-  { 
-    BVH4MB* accel = new BVH4MB(SceneTriangle4vMB::type);
-
-    Builder* builder = NULL;
-    if      (g_builder == "default"     ) builder = BVH4MBBuilderObjectSplit4(accel,&scene->flat_triangle_source_2,scene,1,inf);
-    else if (g_builder == "objectsplit" ) builder = BVH4MBBuilderObjectSplit4(accel,&scene->flat_triangle_source_2,scene,1,inf);
-    else throw std::runtime_error("unknown builder "+g_builder+" for BVH4MB<Triangle4v>");
-    
-    Accel::Intersectors intersectors;
-    intersectors.ptr = accel;
-    intersectors.intersector1 = BVH4MBTriangle4vIntersector1Moeller;
-    intersectors.intersector4 = BVH4MBTriangle4vIntersector4ChunkMoeller;
-    intersectors.intersector8 = BVH4MBTriangle4vIntersector8ChunkMoeller;
-    intersectors.intersector16 = BVH4MBTriangle4vIntersector16ChunkMoeller;
-
-    return new AccelInstance(accel,builder,intersectors);
-  }
-#endif
-
   Accel* BVH4MB::BVH4MBTriangle1vObjectSplit(TriangleMeshScene::TriangleMesh* mesh)
   {
     BVH4MB* accel = new BVH4MB(TriangleMeshTriangle1vMB::type);
@@ -108,8 +72,10 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }  
 
-  void BVH4MB::clear() {
-    root = NULL;
+  void BVH4MB::clear() 
+  {
+    root = (Base*)Base::empty;
+    bounds = empty;
     alloc.clear();
   }
 

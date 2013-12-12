@@ -28,7 +28,7 @@ vec3f (* uniform renderPixel)(int x, int y, const uniform vec3f& vx, const unifo
 uniform unsigned int addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
-  uniform unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_STATIC, 12, 8);
+  uniform unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 12, 8);
 
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
@@ -82,7 +82,7 @@ uniform unsigned int addCube (RTCScene scene_i)
 uniform unsigned int addGroundPlane (RTCScene scene_i)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  uniform unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_STATIC, 2, 4);
+  uniform unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
@@ -108,7 +108,7 @@ export void device_init (uniform int8* uniform cfg)
   rtcInit(cfg);
 
   /* create scene */
-  scene = rtcNewScene(RTC_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* add cube */
   addCube(scene);

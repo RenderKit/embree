@@ -96,7 +96,7 @@ namespace embree
     void BVH4BuilderMorton::build(size_t threadIndex, size_t threadCount) 
     {
       if (g_verbose >= 2)
-        std::cout << "building BVH4 with Morton builder ... " << std::flush;
+        std::cout << "building BVH4 with " << TOSTRING(isa) << "::BVH4BuilderMorton ... " << std::flush;
       
       /* do some global inits first */
       init(threadIndex,threadCount);
@@ -108,8 +108,14 @@ namespace embree
       double dt_max = neg_inf;
       for (size_t i=0; i<200; i++) 
       {
-        scheduler.init(threadCount);
-        TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,threadCount,"build_parallel_morton");
+        if (needAllThreads) 
+        {
+          if (!g_state.get()) g_state.reset(new MortonBuilderState);
+          scheduler.init(threadCount);
+          TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,threadCount,"build_parallel_morton");
+        } else {
+          build_sequential_morton(threadIndex,threadCount);
+        }
         dt_min = min(dt_min,dt);
         dt_avg = dt_avg + dt;
         dt_max = max(dt_max,dt);
@@ -126,9 +132,7 @@ namespace embree
       
       if (needAllThreads) 
       {
-        if (!g_state.get()) 
-          g_state.reset(new MortonBuilderState);
-
+        if (!g_state.get()) g_state.reset(new MortonBuilderState);
         scheduler.init(threadCount);
         TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,threadCount,"build_parallel_morton");
       } else {
@@ -452,6 +456,7 @@ namespace embree
       mortonID[0] = (MortonID32Bit*) morton; 
       //mortonID[1] = (MortonID32Bit*) node;
       mortonID[1] = (MortonID32Bit*) nodeAllocator.data;
+      MortonBuilderState::ThreadRadixCountTy* radixCount = g_state->radixCount;
       
       /* we need 3 iterations to process all 32 bits */
       for (size_t b=0; b<3; b++)
@@ -465,11 +470,11 @@ namespace embree
         
         /* count how many items go into the buckets */
         for (size_t i=0; i<RADIX_BUCKETS; i++)
-          g_state->radixCount[threadID][i] = 0;
+          radixCount[threadID][i] = 0;
         
         for (size_t i=startID; i<endID; i++) {
           const size_t index = src[i].get(shift, mask);
-          g_state->radixCount[threadID][index]++;
+          radixCount[threadID][index]++;
         }
         scheduler.syncThreads(threadID,numThreads);
         
@@ -480,7 +485,7 @@ namespace embree
         
         for (size_t i=0; i<numThreads; i++)
           for (size_t j=0; j<RADIX_BUCKETS; j++)
-            total[j] += g_state->radixCount[i][j];
+            total[j] += radixCount[i][j];
         
         /* calculate start offset of each bucket */
         __align(64) size_t offset[RADIX_BUCKETS];
@@ -491,7 +496,7 @@ namespace embree
         /* calculate start offset of each bucket for this thread */
         for (size_t j=0; j<RADIX_BUCKETS; j++)
           for (size_t i=0; i<threadID; i++)
-            offset[j] += g_state->radixCount[i][j];
+            offset[j] += radixCount[i][j];
         
         /* copy items into their buckets */
         for (size_t i=startID; i<endID; i++) {
@@ -558,8 +563,8 @@ namespace embree
         
         store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID)));
         store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
-        store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),0)));
-        store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0))); // FIXME: use nt stores also for nodes
+        store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),mesh->mask)));
+        store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0)));
       }
       box_o = BBox3f((Vec3fa)lower,(Vec3fa)upper);
     }
@@ -636,7 +641,7 @@ namespace embree
         
         store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID)));
         store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
-        store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),0)));
+        store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),mesh->mask)));
       }
       box_o = BBox3f((Vec3fa)lower,(Vec3fa)upper);
     }
@@ -727,15 +732,10 @@ namespace embree
       return bounds0;
     }  
     
-    __forceinline bool BVH4BuilderMorton::split(SmallBuildRecord& current,
+    __forceinline void BVH4BuilderMorton::split(SmallBuildRecord& current,
                                                 SmallBuildRecord& left,
                                                 SmallBuildRecord& right) const
     {
-      /* mark as leaf if leaf threshold reached */
-      if (unlikely(current.size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD)) {
-        return false; 
-      }
-      
       const unsigned int code_start = morton[current.begin].code;
       const unsigned int code_end   = morton[current.end-1].code;
       unsigned int bitpos = clz(code_start^code_end);
@@ -754,7 +754,7 @@ namespace embree
           size_t center = (current.begin + current.end)/2; 
           left.init(current.begin,center);
           right.init(center,current.end);
-          return true;
+          return;
         }
       }
       
@@ -778,26 +778,22 @@ namespace embree
       
       left.init(current.begin,center);
       right.init(center,current.end);
-      return true;
     }
     
     BBox3f BVH4BuilderMorton::recurse(SmallBuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID) 
     {
       /* stop toplevel recursion at some number of items */
-      if (mode == CREATE_TOP_LEVEL && current.size() <= topLevelItemThreshold) {
-        g_state->buildRecords[g_state->numBuildRecords++] = current; // FIXME: can overflow
+      if (mode == CREATE_TOP_LEVEL && (current.size() <= topLevelItemThreshold || g_state->numBuildRecords >= MAX_TOP_LEVEL_BINS)) 
+      {
+        assert(g_state->numBuildRecords < NUM_TOP_LEVEL_BINS);
+        g_state->buildRecords[g_state->numBuildRecords++] = current;
         return empty;
       }
       
       __align(64) SmallBuildRecord children[BVH4::N];
       
       /* create leaf node */
-      if (unlikely(current.size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD)) {
-        BBox3f bounds;
-        createSmallLeaf(this,current,leafAlloc,threadID,bounds);
-        return bounds;
-      }
-      if (unlikely(current.depth >= BVH4::maxBuildDepth)) {
+      if (unlikely(current.depth >= BVH4::maxBuildDepth || current.size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD)) {
         return createLeaf(current,nodeAlloc,leafAlloc,threadID);
       }
       
@@ -826,9 +822,8 @@ namespace embree
         
         /*! split best child into left and right child */
         __align(64) SmallBuildRecord left, right;
-        if (!split(children[bestChild],left,right))
-          continue;
-        
+        split(children[bestChild],left,right);
+                
         /* add new children left and right */
         left.depth = right.depth = current.depth+1;
         children[bestChild] = children[numChildren-1];
@@ -840,9 +835,7 @@ namespace embree
       
       /* create leaf node if no split is possible */
       if (unlikely(numChildren == 1)) {
-        BBox3f bounds;
-        createSmallLeaf(this,current,leafAlloc,threadID,bounds);
-        return bounds;
+        BBox3f bounds; createSmallLeaf(this,current,leafAlloc,threadID,bounds); return bounds;
       }
       
       /* allocate node */
@@ -856,11 +849,11 @@ namespace embree
         children[i].parent = &node->child(i);
         
         if (children[i].size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD) {
-          BBox3f bounds = createLeaf(children[i],nodeAlloc,leafAlloc,threadID);
+          const BBox3f bounds = createLeaf(children[i],nodeAlloc,leafAlloc,threadID);
           bounds0.extend(bounds);
           node->set(i,bounds);
         } else {
-          BBox3f bounds = recurse(children[i],nodeAlloc,leafAlloc,mode,threadID);
+          const BBox3f bounds = recurse(children[i],nodeAlloc,leafAlloc,mode,threadID);
           bounds0.extend(bounds);
           node->set(i,bounds);
         }
@@ -1001,6 +994,9 @@ namespace embree
     
     void BVH4BuilderMorton::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t, size_t, TaskScheduler::Event* event) 
     {
+      /* wait for all threads to enter */
+      g_state->barrier.wait(threadIndex,threadCount);
+
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();

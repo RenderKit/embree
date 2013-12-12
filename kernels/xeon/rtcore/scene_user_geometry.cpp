@@ -35,7 +35,7 @@ namespace embree
 #endif
 
   UserGeometryScene::Base::Base (Scene* parent, GeometryTy ty)
-    : Geometry(parent,ty,1,RTC_STATIC) 
+    : Geometry(parent,ty,1,RTC_GEOMETRY_STATIC) 
   {
     enabling();
   }

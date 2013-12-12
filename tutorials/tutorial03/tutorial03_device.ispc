@@ -46,8 +46,6 @@ struct ISPCMesh
   uniform ISPCTriangle* triangles;  //!< list of triangles
   int numVertices;
   int numTriangles;
-  vec3f dir;
-  float offset;
 };
 
 struct ISPCScene
@@ -56,7 +54,6 @@ struct ISPCScene
   uniform ISPCMaterial* materials;  //!< material list
   int numMeshes;
   int numMaterials;
-  int8 animate;
 };
 
 /* scene data */
@@ -80,7 +77,7 @@ export void device_init (uniform int8* uniform cfg)
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 {
   /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* add all meshes to the scene */
   for (uniform int i=0; i<scene_in->numMeshes; i++)
@@ -89,7 +86,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
 
     /* create a triangle mesh */
-    uniform unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_STATIC, mesh->numTriangles, mesh->numVertices);
+    uniform unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
     
     /* set vertices */
     uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
@@ -114,33 +111,6 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   rtcCommit (scene_out);
   return scene_out;
 }
-
-#if 0 // FIXME: remove
-/* task that animates objects in the scene */
-task void animateTask(const uniform float time)
-{
-  uniform int i = taskIndex;
-  if (i % 2) return;
-
-  /* get ith mesh */
-  uniform unsigned int geometry = i;
-  uniform ISPCMesh* uniform mesh = g_ispc_scene->meshes[i];
-  uniform vec3f dir = mesh->dir;
-  uniform float offset = 10.0f*sin(time+mesh->offset);
-  
-  /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene,geometry,RTC_VERTEX_BUFFER); 
-  for (uniform int j=0; j<mesh->numVertices; j++) {
-    vertices[j].x = offset*dir.x + mesh->positions[j].x;
-    vertices[j].y = offset*dir.y + mesh->positions[j].y;
-    vertices[j].z = offset*dir.z + mesh->positions[j].z;
-  }
-  rtcUnmapBuffer(scene,geometry,RTC_VERTEX_BUFFER);
-
-  /* update geometry */
-  rtcUpdate (scene,geometry);
-}
-#endif
 
 /* task that renders a single screen tile */
 vec3f renderPixelNormal(int x, int y, const uniform vec3f& vx, const uniform vec3f& vy, const uniform vec3f& vz, const uniform vec3f& p)
@@ -350,19 +320,6 @@ export void device_render (uniform int* uniform pixels,
   /* create scene */
   if (scene == NULL)
     scene = convertScene(g_ispc_scene);
-
-#if 0 // FIXME: remove
-  /* animate some meshes if enabled */
-  if (g_ispc_scene->animate)
-  {
-    /* animate meshes */
-    uniform int numMeshes = g_ispc_scene->numMeshes;
-    launch[numMeshes] animateTask(time); sync;
-    
-    /* commit changes to scene */
-    rtcCommit (scene);
-  }
-#endif
 
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

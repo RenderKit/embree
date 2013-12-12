@@ -29,7 +29,7 @@
 #define MAX_REBUILD_NODES numPrimitives
 #define PROFILE_ITERATIONS 20
 
-#define TIMER(x) x
+#define TIMER(x) 
 
 //#define PROFILE
 //#define TEST_BUILD_PERFORMANCE
@@ -41,8 +41,8 @@ namespace embree
   AtomicMutex mtx;
   __align(64) static double dt = 0.0f;
 
-  BVH4iBuilderMortonEnhanced::BVH4iBuilderMortonEnhanced (BVH4i* _bvh, BuildSource* _source, void* _geometry, const size_t _minLeafSize, const size_t _maxLeafSize)
-    : BVH4iBuilderMorton(_bvh,_source,_geometry,_minLeafSize,_maxLeafSize){}
+  BVH4iBuilderMortonEnhanced::BVH4iBuilderMortonEnhanced (BVH4i* _bvh, BuildSource* _source, void* _geometry)
+    : BVH4iBuilderMorton(_bvh,_source,_geometry){}
 
   void BVH4iBuilderMortonEnhanced::build(size_t threadIndex, size_t threadCount) 
   {
@@ -114,7 +114,6 @@ namespace embree
     }
 #endif
 
-    // TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton_enhanced,this,TaskScheduler::getNumThreads(),"build_parallel_morton_enhanced");
   }
 
   bool splitSAH(PrimRef * __restrict__ const prims, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
@@ -127,8 +126,6 @@ namespace embree
       return false;
     }
     
-#if 1
-
     const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
     const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
 
@@ -225,28 +222,6 @@ namespace embree
 
       }
 
-#else
-
-    /* calculate binning function */
-    Mapping mapping(current.bounds);
-
-    /* binning of centroids */
-    Binner<16> binner;
-    binner.bin(primref,current.begin,current.end,mapping);
-
-    /* find best split */
-    Split split; 
-    binner.best(split,mapping);
-
-    /* if we cannot find a valid split, enforce an arbitrary split */
-    if (unlikely(split.pos == -1)) 
-      return split_fallback(primref,current,leftChild,rightChild);
-
-    /* partitioning of items */
-    binner.partition(primref, current.begin, current.end, split, mapping, leftChild, rightChild);
-
-#endif
-
     if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
     if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();	
     return true;
@@ -271,7 +246,6 @@ namespace embree
 	    diag.z < DIAG_FACTOR * root_diag.z)
 	  {
 	    if (unlikely(nodes >= MAX_REBUILD_NODES)) FATAL("too many subtrees");
-	    //subTreeIDs[subTrees++] = index;	      	      
 	    local_node[nodes++] = entry;
 	    assert(nodes < MAX_REBUILD_NODES);
 	    return;
@@ -288,7 +262,6 @@ namespace embree
     else
       {
 	if (unlikely(nodes >= MAX_REBUILD_NODES)) FATAL("too many subtrees");
-	//subTreeIDs[subTrees++] = index;	      	      
 	local_node[nodes++] = entry;
 	assert(nodes < MAX_REBUILD_NODES);
       }     
@@ -305,12 +278,10 @@ namespace embree
 #ifdef DEBUG
     {
       PrimRef tmp;
-      tmp.lower = current.bounds.geometry.lower;//storeSceneAABB((float*)&tmp);
+      tmp.lower = current.bounds.geometry.lower;
       tmp.upper = current.bounds.geometry.upper;
       for (size_t i=0;i<current.items();i++)
 	assert(subset(*(PrimRef*)&local_node[current.begin+i],tmp) == true);
-      // for (size_t i=0;i<current.items();i++)
-      //   cout << i << " " << local_node[current.begin+i] << endl;
     }
 #endif      
 
@@ -443,17 +414,9 @@ namespace embree
     store16f((float*)&node[currentIndex+2],init_node);
 
     parent.createNode(currentIndex,numSplits);
-    //current.childrenID = currentIndex;
-    //assert(current.childrenID > 0);
-
-
-    //node[current.parentID].createNode(current.childrenID,numSplits);
-
-
     for (unsigned int i=0;i<numSplits;i++)
       {
 	DBG(DBG_PRINT(currentIndex+i));
-	//record[i].bounds.storeSceneAABB((float*)&this->node[currentIndex+i]);
         this->node[currentIndex+i].lower = record[i].bounds.geometry.lower;
         this->node[currentIndex+i].upper = record[i].bounds.geometry.upper;
 	buildTopLevelSAHTree(this->node[currentIndex+i],record[i],local_node);

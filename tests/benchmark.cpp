@@ -195,10 +195,10 @@ namespace embree
     }
   }
 
-  unsigned addSphere (RTCScene scene, RTCFlags flag, const Vec3f pos, const float r, size_t numPhi)
+  unsigned addSphere (RTCScene scene, RTCGeometryFlags flag, const Vec3f pos, const float r, size_t numPhi)
   {
     Mesh mesh; createSphereMesh (pos, r, numPhi, mesh);
-    unsigned geom = rtcNewTriangleMesh (scene, RTC_STATIC, mesh.triangles.size(), mesh.vertices.size());
+    unsigned geom = rtcNewTriangleMesh (scene, flag, mesh.triangles.size(), mesh.vertices.size());
     memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &mesh.vertices[0], mesh.vertices.size()*sizeof(Vertex));
     memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &mesh.triangles[0], mesh.triangles.size()*sizeof(Triangle));
     rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
@@ -206,16 +206,16 @@ namespace embree
     return geom;
   }
 
-  double rtcore_create_geometry(RTCFlags flags0, RTCFlags flags1, size_t numPhi, size_t numMeshes)
+  double rtcore_create_geometry(RTCSceneFlags sflags, RTCGeometryFlags gflags, size_t numPhi, size_t numMeshes)
   {
     Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
 
     double t0 = getSeconds();
-    RTCScene scene = rtcNewScene(flags0,aflags);
+    RTCScene scene = rtcNewScene(sflags,aflags);
 
     for (size_t i=0; i<numMeshes; i++) 
     {
-      unsigned geom = rtcNewTriangleMesh (scene, flags1, mesh.triangles.size(), mesh.vertices.size());
+      unsigned geom = rtcNewTriangleMesh (scene, gflags, mesh.triangles.size(), mesh.vertices.size());
       memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &mesh.vertices[0], mesh.vertices.size()*sizeof(Vertex));
       memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &mesh.triangles[0], mesh.triangles.size()*sizeof(Triangle));
       rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
@@ -234,10 +234,10 @@ namespace embree
     return double(numTriangles)/(t1-t0);
   }
   
-  double rtcore_update_geometry(RTCFlags flags, size_t numPhi, size_t numMeshes)
+  double rtcore_update_geometry(RTCGeometryFlags flags, size_t numPhi, size_t numMeshes)
   {
     Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
-    RTCScene scene = rtcNewScene(RTC_DYNAMIC,aflags);
+    RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
 
     for (size_t i=0; i<numMeshes; i++) 
     {
@@ -422,10 +422,10 @@ namespace embree
 	fflush(stdout);
   }
 
-  void rtcore_intersect_benchmark(RTCFlags flags, size_t numPhi)
+  void rtcore_intersect_benchmark(RTCSceneFlags flags, size_t numPhi)
   {
     RTCScene scene = rtcNewScene(flags,aflags);
-    addSphere (scene, flags, zero, 1, numPhi);
+    addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
     rtcCommit (scene);
 
     rtcore_coherent_intersect1(scene);
@@ -465,47 +465,47 @@ namespace embree
     /* perform tests */
     rtcInit(g_rtcore.c_str());
     
-    rtcore_intersect_benchmark(RTC_STATIC, 501);
+    rtcore_intersect_benchmark(RTC_SCENE_STATIC, 501);
 
-    BUILD   ("create_static_geometry_120",       rtcore_create_geometry(RTC_STATIC,RTC_STATIC,6,1));
-    BUILD   ("create_static_geometry_1k",        rtcore_create_geometry(RTC_STATIC,RTC_STATIC,17,1));
-    BUILD   ("create_static_geometry_10k",       rtcore_create_geometry(RTC_STATIC,RTC_STATIC,51,1));
-    BUILD   ("create_static_geometry_100k",      rtcore_create_geometry(RTC_STATIC,RTC_STATIC,159,1));
-    BUILD   ("create_static_geometry_1000k_1",   rtcore_create_geometry(RTC_STATIC,RTC_STATIC,501,1));
-    BUILD   ("create_static_geometry_100k_10",   rtcore_create_geometry(RTC_STATIC,RTC_STATIC,159,10));
-    BUILD   ("create_static_geometry_10k_100",   rtcore_create_geometry(RTC_STATIC,RTC_STATIC,51,100));
-    BUILD   ("create_static_geometry_1k_1000",   rtcore_create_geometry(RTC_STATIC,RTC_STATIC,17,1000));
-    BUILD   ("create_static_geometry_120_10000", rtcore_create_geometry(RTC_STATIC,RTC_STATIC,6,8334));
+    BUILD   ("create_static_geometry_120",       rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,6,1));
+    BUILD   ("create_static_geometry_1k",        rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,17,1));
+    BUILD   ("create_static_geometry_10k",       rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,51,1));
+    BUILD   ("create_static_geometry_100k",      rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,159,1));
+    BUILD   ("create_static_geometry_1000k_1",   rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,501,1));
+    BUILD   ("create_static_geometry_100k_10",   rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,159,10));
+    BUILD   ("create_static_geometry_10k_100",   rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,51,100));
+    BUILD   ("create_static_geometry_1k_1000",   rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,17,1000));
+    BUILD   ("create_static_geometry_120_10000", rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,6,8334));
 
-    BUILD   ("create_dynamic_geometry_120",       rtcore_create_geometry(RTC_DYNAMIC,RTC_STATIC,6,1));
-    BUILD   ("create_dynamic_geometry_1k",        rtcore_create_geometry(RTC_DYNAMIC,RTC_STATIC,17,1));
-    BUILD   ("create_dynamic_geometry_10k",       rtcore_create_geometry(RTC_DYNAMIC,RTC_STATIC,51,1));
-    BUILD   ("create_dynamic_geometry_100k",      rtcore_create_geometry(RTC_DYNAMIC,RTC_STATIC,159,1));
-    BUILD   ("create_dynamic_geometry_1000k_1",   rtcore_create_geometry(RTC_DYNAMIC,RTC_STATIC,501,1));
-    BUILD   ("create_dynamic_geometry_100k_10",   rtcore_create_geometry(RTC_DYNAMIC,RTC_STATIC,159,10));
-    BUILD   ("create_dynamic_geometry_10k_100",   rtcore_create_geometry(RTC_DYNAMIC,RTC_STATIC,51,100));
-    BUILD   ("create_dynamic_geometry_1k_1000",   rtcore_create_geometry(RTC_DYNAMIC,RTC_STATIC,17,1000));
-    BUILD   ("create_dynamic_geometry_120_10000", rtcore_create_geometry(RTC_DYNAMIC,RTC_STATIC,6,8334));
+    BUILD   ("create_dynamic_geometry_120",       rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,6,1));
+    BUILD   ("create_dynamic_geometry_1k",        rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,17,1));
+    BUILD   ("create_dynamic_geometry_10k",       rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,51,1));
+    BUILD   ("create_dynamic_geometry_100k",      rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,159,1));
+    BUILD   ("create_dynamic_geometry_1000k_1",   rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,501,1));
+    BUILD   ("create_dynamic_geometry_100k_10",   rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,159,10));
+    BUILD   ("create_dynamic_geometry_10k_100",   rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,51,100));
+    BUILD   ("create_dynamic_geometry_1k_1000",   rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,17,1000));
+    BUILD   ("create_dynamic_geometry_120_10000", rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,6,8334));
 
-    BUILD   ("refit_geometry_120",        rtcore_update_geometry(RTC_DEFORMABLE,6,1));
-    BUILD   ("refit_geometry_1k",         rtcore_update_geometry(RTC_DEFORMABLE,17,1));
-    BUILD   ("refit_geometry_10k",        rtcore_update_geometry(RTC_DEFORMABLE,51,1));
-    BUILD   ("refit_geometry_100k",       rtcore_update_geometry(RTC_DEFORMABLE,159,1));
-    BUILD   ("refit_geometry_1000k_1",    rtcore_update_geometry(RTC_DEFORMABLE,501,1));
-    BUILD   ("refit_geometry_100k_10",    rtcore_update_geometry(RTC_DEFORMABLE,159,10));
-    BUILD   ("refit_geometry_10k_100",    rtcore_update_geometry(RTC_DEFORMABLE,51,100));
-    BUILD   ("refit_geometry_1k_1000",    rtcore_update_geometry(RTC_DEFORMABLE,17,1000));
-    BUILD   ("refit_geometry_120_10000",  rtcore_update_geometry(RTC_DEFORMABLE,6,8334));
+    BUILD   ("refit_geometry_120",        rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,6,1));
+    BUILD   ("refit_geometry_1k",         rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,17,1));
+    BUILD   ("refit_geometry_10k",        rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,51,1));
+    BUILD   ("refit_geometry_100k",       rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,159,1));
+    BUILD   ("refit_geometry_1000k_1",    rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,501,1));
+    BUILD   ("refit_geometry_100k_10",    rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,159,10));
+    BUILD   ("refit_geometry_10k_100",    rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,51,100));
+    BUILD   ("refit_geometry_1k_1000",    rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,17,1000));
+    BUILD   ("refit_geometry_120_10000",  rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,6,8334));
 
-    BUILD   ("update_geometry_120",        rtcore_update_geometry(RTC_DYNAMIC,6,1));
-    BUILD   ("update_geometry_1k",         rtcore_update_geometry(RTC_DYNAMIC,17,1));
-    BUILD   ("update_geometry_10k",        rtcore_update_geometry(RTC_DYNAMIC,51,1));
-    BUILD   ("update_geometry_100k",       rtcore_update_geometry(RTC_DYNAMIC,159,1));
-    BUILD   ("update_geometry_1000k_1",    rtcore_update_geometry(RTC_DYNAMIC,501,1));
-    BUILD   ("update_geometry_100k_10",    rtcore_update_geometry(RTC_DYNAMIC,159,10));
-    BUILD   ("update_geometry_10k_100",    rtcore_update_geometry(RTC_DYNAMIC,51,100));
-    BUILD   ("update_geometry_1k_1000",    rtcore_update_geometry(RTC_DYNAMIC,17,1000));
-    BUILD   ("update_geometry_120_10000",  rtcore_update_geometry(RTC_DYNAMIC,6,8334));
+    BUILD   ("update_geometry_120",        rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,6,1));
+    BUILD   ("update_geometry_1k",         rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,17,1));
+    BUILD   ("update_geometry_10k",        rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,51,1));
+    BUILD   ("update_geometry_100k",       rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,159,1));
+    BUILD   ("update_geometry_1000k_1",    rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,501,1));
+    BUILD   ("update_geometry_100k_10",    rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,159,10));
+    BUILD   ("update_geometry_10k_100",    rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,51,100));
+    BUILD   ("update_geometry_1k_1000",    rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,17,1000));
+    BUILD   ("update_geometry_120_10000",  rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,6,8334));
 
     rtcExit();
 

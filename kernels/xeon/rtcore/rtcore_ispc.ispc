@@ -22,7 +22,7 @@ extern "C" void ispcInit(const uniform int8* uniform cfg);
 extern "C" void ispcExit();
 extern "C" uniform RTCError ispcGetError ();
 extern "C" void ispcDebug();
-extern "C" RTCScene ispcNewScene (uniform RTCFlags flags, uniform RTCAlgorithmFlags aflags);
+extern "C" RTCScene ispcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 extern "C" void ispcCommitScene (RTCScene scene);
 extern "C" void ispcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
 extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, void* uniform ray);
@@ -37,12 +37,12 @@ extern "C" uniform unsigned int ispcNewInstance (RTCScene target, RTCScene sourc
 extern "C" void ispcSetTransform (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, uniform float* uniform xfm);
 extern "C" uniform unsigned int ispcNewUserGeometry (RTCScene scene);
 extern "C" uniform unsigned int ispcNewTriangleMesh (RTCScene scene,
-                                                 uniform RTCFlags flags,
+                                                 uniform RTCGeometryFlags flags,
                                                  uniform size_tt numTriangles,
                                                  uniform size_tt numVertices,
                                                  uniform size_tt numTimeSteps);
 /*extern "C" uniform unsigned int ispcNewQuadraticBezierCurves (RTCScene scene,
-                                                          uniform RTCFlags flags,
+                                                          uniform RTCGeometryFlags flags,
                                                           uniform size_tt numCurves,
                                                           uniform size_tt numVertices,
                                                           uniform size_tt numTimeSteps);*/
@@ -83,7 +83,7 @@ void rtcDebug() {
   ispcDebug();
 }
 
-RTCScene rtcNewScene (uniform RTCFlags flags, uniform RTCAlgorithmFlags aflags) 
+RTCScene rtcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags) 
 {  
   if (aflags & RTC_INTERSECT_VARYING) {
     if (sizeof(varying float) == 16)
@@ -155,19 +155,19 @@ uniform unsigned int rtcNewUserGeometry (RTCScene scene) {
 }
 
 uniform unsigned int rtcNewTriangleMesh (RTCScene scene,
-                                     uniform RTCFlags flags,
-                                     uniform size_t numTriangles,
-                                     uniform size_t numVertices,
-                                     uniform size_t numTimeSteps)
+                                         uniform RTCGeometryFlags flags,
+                                         uniform size_t numTriangles,
+                                         uniform size_t numVertices,
+                                         uniform size_t numTimeSteps)
 {
   return ispcNewTriangleMesh(scene,flags,numTriangles,numVertices,numTimeSteps);
 }
 
 /*uniform unsigned int rtcNewQuadraticBezierCurves (RTCScene scene,
-                                              uniform RTCFlags flags,
-                                              uniform size_t numCurves,
-                                              uniform size_t numVertices,
-                                              uniform size_t numTimeSteps)
+  uniform RTCGeometryFlags flags,
+  uniform size_t numCurves,
+  uniform size_t numVertices,
+  uniform size_t numTimeSteps)
 {
   return ispcNewQuadraticBezierCurves (scene,flags,numCurves,numVertices,numTimeSteps);
   }*/

@@ -25,11 +25,10 @@ namespace embree
   namespace isa
   {
     /*! BVH4i Traverser. Packet traversal implementation for a Quad BVH. */
-    template<typename TriangleIntersector>
+    template<typename VirtualGeometryIntersector16>
       class BVH4iIntersector16Virtual
     {
       /* shortcuts for frequently used types */
-      typedef typename TriangleIntersector::Primitive Triangle;
       typedef typename BVH4i::NodeRef NodeRef;
       typedef typename BVH4i::Node Node;
       

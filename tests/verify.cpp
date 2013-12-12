@@ -74,16 +74,16 @@ namespace embree
 
   const size_t numSceneFlags = 64;
 
-  RTCFlags getSceneFlag(size_t i) 
+  RTCSceneFlags getSceneFlag(size_t i) 
   {
     int flag = 0;                               
-    if (i & 1) flag |= RTC_DYNAMIC;
-    if (i & 2) flag |= RTC_COMPACT;
-    if (i & 4) flag |= RTC_COHERENT;
-    if (i & 8) flag |= RTC_INCOHERENT;
-    if (i & 16) flag |= RTC_HIGH_QUALITY;
-    if (i & 32) flag |= RTC_ROBUST;
-    return (RTCFlags) flag;
+    if (i & 1) flag |= RTC_SCENE_DYNAMIC;
+    if (i & 2) flag |= RTC_SCENE_COMPACT;
+    if (i & 4) flag |= RTC_SCENE_COHERENT;
+    if (i & 8) flag |= RTC_SCENE_INCOHERENT;
+    if (i & 16) flag |= RTC_SCENE_HIGH_QUALITY;
+    if (i & 32) flag |= RTC_SCENE_ROBUST;
+    return (RTCSceneFlags) flag;
   }
 
   RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir) 
@@ -328,7 +328,7 @@ namespace embree
     }
   }
 
-  unsigned addPlane (RTCScene scene, RTCFlags flag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy)
+  unsigned addPlane (RTCScene scene, RTCGeometryFlags flag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy)
   {
     unsigned mesh = rtcNewTriangleMesh (scene, flag, 2*num*num, (num+1)*(num+1));
     Vertex*   vertices  = (Vertex*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
@@ -358,7 +358,7 @@ namespace embree
     return mesh;
   }
 
-  unsigned addSphere (RTCScene scene, RTCFlags flag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, float motion = 0.0f)
+  unsigned addSphere (RTCScene scene, RTCGeometryFlags flag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, float motion = 0.0f)
   {
     /* create a triangulated sphere */
     size_t numTheta = 2*numPhi;
@@ -666,7 +666,7 @@ namespace embree
     return g_counter == 10000*numThreads;
   }
 
-  bool rtcore_empty(RTCFlags flags)
+  bool rtcore_empty(RTCSceneFlags flags)
   {
     RTCScene scene = rtcNewScene(flags,aflags);
     AssertNoError();
@@ -677,7 +677,7 @@ namespace embree
     return true;
   }
 
-  bool rtcore_dynamic_flag(RTCFlags sceneFlag, RTCFlags geomFlag)
+  bool rtcore_dynamic_flag(RTCSceneFlags sceneFlag, RTCGeometryFlags geomFlag)
   {
     RTCScene scene = rtcNewScene(sceneFlag,aflags);
     AssertNoError();
@@ -692,9 +692,9 @@ namespace embree
 
   bool rtcore_static_scene()
   {
-    RTCScene scene = rtcNewScene(RTC_STATIC,aflags);
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,aflags);
     AssertNoError();
-    unsigned geom = addSphere(scene,RTC_STATIC,zero,1.0f,50);
+    unsigned geom = addSphere(scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
     AssertNoError();
     rtcCommit (scene);
     AssertNoError();
@@ -711,9 +711,9 @@ namespace embree
 
   bool rtcore_deformable_geometry()
   {
-    RTCScene scene = rtcNewScene(RTC_DYNAMIC,aflags);
+    RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
     AssertNoError();
-    unsigned geom = addSphere(scene,RTC_DEFORMABLE,zero,1.0f,50);
+    unsigned geom = addSphere(scene,RTC_GEOMETRY_DEFORMABLE,zero,1.0f,50);
     AssertNoError();
     rtcCommit (scene);
     AssertNoError();
@@ -737,10 +737,10 @@ namespace embree
   bool rtcore_unmapped_before_commit()
   {
 #if !defined(__EXIT_ON_ERROR__)
-    RTCScene scene = rtcNewScene(RTC_STATIC,aflags);
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,aflags);
     AssertNoError();
-    unsigned geom0 = addSphere(scene,RTC_STATIC,zero,1.0f,50);
-    unsigned geom1 = addSphere(scene,RTC_STATIC,zero,1.0f,50);
+    unsigned geom0 = addSphere(scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
+    unsigned geom1 = addSphere(scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
     AssertNoError();
     rtcMapBuffer(scene,geom0,RTC_INDEX_BUFFER);
     rtcMapBuffer(scene,geom0,RTC_VERTEX_BUFFER);
@@ -755,12 +755,12 @@ namespace embree
 
   bool rtcore_dynamic_enable_disable()
   {
-    RTCScene scene = rtcNewScene(RTC_DYNAMIC,aflags);
+    RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
     AssertNoError();
-    unsigned geom0 = addSphere(scene,RTC_STATIC,Vec3fa(-1,0,-1),1.0f,50);
-    unsigned geom1 = addSphere(scene,RTC_STATIC,Vec3fa(-1,0,+1),1.0f,50);
-    unsigned geom2 = addSphere(scene,RTC_STATIC,Vec3fa(+1,0,-1),1.0f,50);
-    unsigned geom3 = addSphere(scene,RTC_STATIC,Vec3fa(+1,0,+1),1.0f,50);
+    unsigned geom0 = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50);
+    unsigned geom1 = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,50);
+    unsigned geom2 = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,-1),1.0f,50);
+    unsigned geom3 = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,50);
     AssertNoError();
 
     for (size_t i=0; i<16; i++) 
@@ -801,9 +801,9 @@ namespace embree
     rtcUpdate(scene,mesh);
   }
   
-  bool rtcore_update(RTCFlags flags)
+  bool rtcore_update(RTCGeometryFlags flags)
   {
-    RTCScene scene = rtcNewScene(RTC_DYNAMIC,aflags);
+    RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
     AssertNoError();
     size_t numPhi = 50;
     size_t numVertices = 2*numPhi*(numPhi+1);
@@ -886,15 +886,15 @@ namespace embree
     return true;
   }
 
-  bool rtcore_ray_masks_intersect(RTCFlags flags)
+  bool rtcore_ray_masks_intersect(RTCSceneFlags sflags, RTCGeometryFlags gflags)
   {
     bool passed = true;
 
-    RTCScene scene = rtcNewScene(flags,aflags);
-    unsigned geom0 = addSphere(scene,flags,Vec3fa(-1,0,-1),1.0f,50);
-    unsigned geom1 = addSphere(scene,flags,Vec3fa(-1,0,+1),1.0f,50);
-    unsigned geom2 = addSphere(scene,flags,Vec3fa(+1,0,-1),1.0f,50);
-    unsigned geom3 = addSphere(scene,flags,Vec3fa(+1,0,+1),1.0f,50);
+    RTCScene scene = rtcNewScene(sflags,aflags);
+    unsigned geom0 = addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50);
+    unsigned geom1 = addSphere(scene,gflags,Vec3fa(-1,0,+1),1.0f,50);
+    unsigned geom2 = addSphere(scene,gflags,Vec3fa(+1,0,-1),1.0f,50);
+    unsigned geom3 = addSphere(scene,gflags,Vec3fa(+1,0,+1),1.0f,50);
     rtcSetMask(scene,geom0,1);
     rtcSetMask(scene,geom1,2);
     rtcSetMask(scene,geom2,4);
@@ -967,14 +967,14 @@ namespace embree
     return passed;
   }
 
-  bool rtcore_ray_masks_occluded(RTCFlags flags)
+  bool rtcore_ray_masks_occluded(RTCSceneFlags sflags, RTCGeometryFlags gflags)
   {
     bool passed = true;
-    RTCScene scene = rtcNewScene(flags,aflags);
-    unsigned geom0 = addSphere(scene,flags,Vec3fa(-1,0,-1),1.0f,50);
-    unsigned geom1 = addSphere(scene,flags,Vec3fa(-1,0,+1),1.0f,50);
-    unsigned geom2 = addSphere(scene,flags,Vec3fa(+1,0,-1),1.0f,50);
-    unsigned geom3 = addSphere(scene,flags,Vec3fa(+1,0,+1),1.0f,50);
+    RTCScene scene = rtcNewScene(sflags,aflags);
+    unsigned geom0 = addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50);
+    unsigned geom1 = addSphere(scene,gflags,Vec3fa(-1,0,+1),1.0f,50);
+    unsigned geom2 = addSphere(scene,gflags,Vec3fa(+1,0,-1),1.0f,50);
+    unsigned geom3 = addSphere(scene,gflags,Vec3fa(+1,0,+1),1.0f,50);
     rtcSetMask(scene,geom0,1);
     rtcSetMask(scene,geom1,2);
     rtcSetMask(scene,geom2,4);
@@ -1053,12 +1053,12 @@ namespace embree
     bool passed = true;
     for (int i=0; i<numSceneFlags; i++) 
     {
-      RTCFlags flag = getSceneFlag(i);
-      bool ok0 = rtcore_ray_masks_intersect(flag);
+      RTCSceneFlags flag = getSceneFlag(i);
+      bool ok0 = rtcore_ray_masks_intersect(flag,RTC_GEOMETRY_STATIC);
       if (ok0) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
       passed &= ok0;
 
-      bool ok1 = rtcore_ray_masks_occluded(flag);
+      bool ok1 = rtcore_ray_masks_occluded(flag,RTC_GEOMETRY_STATIC);
       if (ok1) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
       passed &= ok1;
     }
@@ -1066,11 +1066,11 @@ namespace embree
 	fflush(stdout);
   }
 
-  bool rtcore_packet_write_test(RTCFlags flags)
+  bool rtcore_packet_write_test(RTCSceneFlags sflags, RTCGeometryFlags gflags)
   {
     bool passed = true;
-    RTCScene scene = rtcNewScene(flags,aflags);
-    addSphere(scene,flags,Vec3fa(-1,0,-1),1.0f,50);
+    RTCScene scene = rtcNewScene(sflags,aflags);
+    addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50);
     rtcCommit (scene);
     
     for (size_t i=0; i<4; i++) 
@@ -1127,8 +1127,8 @@ namespace embree
     bool passed = true;
     for (int i=0; i<numSceneFlags; i++) 
     {
-      RTCFlags flag = getSceneFlag(i);
-      bool ok0 = rtcore_packet_write_test(flag);
+      RTCSceneFlags flag = getSceneFlag(i);
+      bool ok0 = rtcore_packet_write_test(flag,RTC_GEOMETRY_STATIC);
       if (ok0) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
       passed &= ok0;
     }
@@ -1138,8 +1138,8 @@ namespace embree
 
   void rtcore_watertight_sphere1(float pos)
   {
-    RTCScene scene = rtcNewScene(RTCFlags(RTC_STATIC | RTC_ROBUST),aflags);
-    unsigned geom = addSphere(scene,RTC_STATIC,Vec3fa(pos,0.0f,0.0f),2.0f,1000);
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
+    unsigned geom = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(pos,0.0f,0.0f),2.0f,1000);
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i++) {
@@ -1159,8 +1159,8 @@ namespace embree
 #if !defined(__MIC__)
   void rtcore_watertight_sphere4(float pos)
   {
-    RTCScene scene = rtcNewScene(RTCFlags(RTC_STATIC | RTC_ROBUST),aflags);
-    unsigned geom = addSphere(scene,RTC_STATIC,Vec3fa(pos,0.0f,0.0f),2.0f,1000);
+    RTCScene scene = rtcNewScene(RTCSceneFlags(RTC_SCENE_STATIC | RTC_SCENE_ROBUST),aflags);
+    unsigned geom = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(pos,0.0f,0.0f),2.0f,1000);
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=4) {
@@ -1184,8 +1184,8 @@ namespace embree
 
   void rtcore_watertight_sphere8(float pos)
   {
-    RTCScene scene = rtcNewScene(RTCFlags(RTC_STATIC | RTC_ROBUST),aflags);
-    unsigned geom = addSphere(scene,RTC_STATIC,Vec3fa(pos,0.0f,0.0f),2.0f,1000);
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
+    unsigned geom = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(pos,0.0f,0.0f),2.0f,1000);
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=8) {
@@ -1210,8 +1210,8 @@ namespace embree
 
   void rtcore_watertight_sphere16(float pos)
   {
-    RTCScene scene = rtcNewScene(RTCFlags(RTC_STATIC | RTC_ROBUST),aflags);
-    unsigned geom = addSphere(scene,RTC_STATIC,Vec3fa(pos,0.0f,0.0f),2.0f,1000);
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
+    unsigned geom = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(pos,0.0f,0.0f),2.0f,1000);
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=16) {
@@ -1235,8 +1235,8 @@ namespace embree
   
   void rtcore_watertight_plane1(float pos)
   {
-    RTCScene scene = rtcNewScene(RTCFlags(RTC_STATIC | RTC_ROBUST),aflags);
-    unsigned geom = addPlane(scene,RTC_STATIC,1000,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
+    unsigned geom = addPlane(scene,RTC_GEOMETRY_STATIC,1000,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i++) {
@@ -1255,8 +1255,8 @@ namespace embree
 #if !defined(__MIC__)
   void rtcore_watertight_plane4(float pos)
   {
-    RTCScene scene = rtcNewScene(RTCFlags(RTC_STATIC | RTC_ROBUST),aflags);
-    unsigned geom = addPlane(scene,RTC_STATIC,1000,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
+    unsigned geom = addPlane(scene,RTC_GEOMETRY_STATIC,1000,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=4) {
@@ -1281,8 +1281,8 @@ namespace embree
 
   void rtcore_watertight_plane8(float pos)
   {
-    RTCScene scene = rtcNewScene(RTCFlags(RTC_STATIC | RTC_ROBUST),aflags);
-    unsigned geom = addPlane(scene,RTC_STATIC,1000,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
+    unsigned geom = addPlane(scene,RTC_GEOMETRY_STATIC,1000,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=8) {
@@ -1306,8 +1306,8 @@ namespace embree
 
   void rtcore_watertight_plane16(float pos)
   {
-    RTCScene scene = rtcNewScene(RTCFlags(RTC_STATIC | RTC_ROBUST),aflags);
-    unsigned geom = addPlane(scene,RTC_STATIC,1000,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
+    unsigned geom = addPlane(scene,RTC_GEOMETRY_STATIC,1000,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=16) {
@@ -1329,11 +1329,11 @@ namespace embree
 	fflush(stdout);
   }
 
-  void rtcore_nan(const char* name, RTCFlags flags, int N)
+  void rtcore_nan(const char* name, RTCSceneFlags sflags, RTCGeometryFlags gflags, int N)
   {
     size_t count = 1000/N;
-    RTCScene scene = rtcNewScene(flags,aflags);
-    unsigned geom = addSphere(scene,flags,zero,2.0f,100);
+    RTCScene scene = rtcNewScene(sflags,aflags);
+    unsigned geom = addSphere(scene,gflags,zero,2.0f,100);
     rtcCommit (scene);
     size_t numFailures = 0;
     //size_t c0 = __rdtsc();
@@ -1387,11 +1387,11 @@ namespace embree
    	fflush(stdout);
   }
   
-  void rtcore_inf(const char* name, RTCFlags flags, int N)
+  void rtcore_inf(const char* name, RTCSceneFlags sflags, RTCGeometryFlags gflags, int N)
   {
     size_t count = 1000/N;
-    RTCScene scene = rtcNewScene(flags,aflags);
-    unsigned geom = addSphere(scene,flags,zero,2.0f,100);
+    RTCScene scene = rtcNewScene(sflags,aflags);
+    unsigned geom = addSphere(scene,gflags,zero,2.0f,100);
     rtcCommit (scene);
     size_t numFailures = 0;
     //size_t c0 = __rdtsc();
@@ -1462,9 +1462,9 @@ namespace embree
 
   bool rtcore_overlapping(size_t numTriangles)
   {
-    RTCScene scene = rtcNewScene(RTC_STATIC,aflags);
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,aflags);
     AssertNoError();
-    rtcNewTriangleMesh (scene, RTC_STATIC, numTriangles, 3);
+    rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, numTriangles, 3);
     AssertNoError();
 
     Vertex* vertices = (Vertex*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
@@ -1489,12 +1489,12 @@ namespace embree
     return true;
   }
 
-  bool rtcore_backface_culling (RTCFlags flags)
+  bool rtcore_backface_culling (RTCSceneFlags sflags, RTCGeometryFlags gflags)
   {
     /* create triangle that is front facing for a right handed 
      coordinate system if looking along the z direction */
-    RTCScene scene = rtcNewScene(flags,aflags);
-    unsigned mesh = rtcNewTriangleMesh (scene, flags, 1, 3);
+    RTCScene scene = rtcNewScene(sflags,aflags);
+    unsigned mesh = rtcNewTriangleMesh (scene, gflags, 1, 3);
     Vertex*   vertices  = (Vertex*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
     vertices[0].x = 0; vertices[0].y = 0; vertices[0].z = 0;
@@ -1547,8 +1547,8 @@ namespace embree
     bool passed = true;
     for (int i=0; i<numSceneFlags; i++) 
     {
-      RTCFlags flag = getSceneFlag(i);
-      bool ok0 = rtcore_backface_culling(flag);
+      RTCSceneFlags flag = getSceneFlag(i);
+      bool ok0 = rtcore_backface_culling(flag,RTC_GEOMETRY_STATIC);
       if (ok0) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
       passed &= ok0;
     }
@@ -1558,7 +1558,7 @@ namespace embree
 
   bool rtcore_new_delete_geometry()
   {
-    RTCScene scene = rtcNewScene(RTC_DYNAMIC,aflags);
+    RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
     AssertNoError();
     int geom[1024];
     for (size_t i=0; i<1024; i++) 
@@ -1569,7 +1569,7 @@ namespace embree
         int index = rand()%1024;
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
         if (geom[index] == -1) {
-          geom[index] = addSphere(scene,RTC_STATIC,pos,2.0f,10);
+          geom[index] = addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,10);
           AssertNoError();
         }
         else { 
@@ -1640,7 +1640,7 @@ namespace embree
     {
       if (i%20 == 0) std::cout << "." << std::flush;
 
-      RTCScene scene = rtcNewScene(RTC_STATIC,aflags);
+      RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,aflags);
       AssertNoError();
 
       for (size_t j=0; j<20; j++) 
@@ -1650,8 +1650,8 @@ namespace embree
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
         numTriangles = rand()%(numTriangles+1);
         switch (rand()%3) {
-        case 0: addSphere(scene,RTC_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-        case 1: addSphere(scene,RTC_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+        case 0: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+        case 1: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
         case 2: addUserGeometryEmpty(scene,pos,2.0f); break;
         }
         AssertNoError();
@@ -1671,7 +1671,7 @@ namespace embree
 
   bool rtcore_regression_dynamic()
   {
-    RTCScene scene = rtcNewScene(RTC_DYNAMIC,aflags);
+    RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
     AssertNoError();
     int geom[1024];
     int types[1024];
@@ -1699,13 +1699,13 @@ namespace embree
           types[index] = type;
           numVertices[index] = 2*numPhi*(numPhi+1);
           switch (type) {
-          case 0: geom[index] = addSphere(scene,RTC_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 1: geom[index] = addSphere(scene,RTC_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 2: geom[index] = addSphere(scene,RTC_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 0: geom[index] = addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 1: geom[index] = addSphere(scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 2: geom[index] = addSphere(scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
 
-          case 3: geom[index] = addSphere(scene,RTC_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 4: geom[index] = addSphere(scene,RTC_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 5: geom[index] = addSphere(scene,RTC_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 3: geom[index] = addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 4: geom[index] = addSphere(scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 5: geom[index] = addSphere(scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
             
           case 6: geom[index] = addUserGeometryEmpty(scene,pos,2.0f); break;
           }; 
@@ -1781,20 +1781,20 @@ namespace embree
     /* perform tests */
     rtcInit(g_rtcore.c_str());
 
-    POSITIVE("empty_static",              rtcore_empty(RTC_STATIC));
-    POSITIVE("empty_dynamic",             rtcore_empty(RTC_DYNAMIC));
-    POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_STATIC, RTC_STATIC));
-    NEGATIVE("flags_static_deformable",   rtcore_dynamic_flag(RTC_STATIC, RTC_DEFORMABLE));
-    NEGATIVE("flags_static_dynamic",      rtcore_dynamic_flag(RTC_STATIC, RTC_DYNAMIC));
-    POSITIVE("flags_dynamic_static",      rtcore_dynamic_flag(RTC_DYNAMIC,RTC_STATIC));
-    POSITIVE("flags_dynamic_deformable",  rtcore_dynamic_flag(RTC_DYNAMIC,RTC_DEFORMABLE));
-    POSITIVE("flags_dynamic_dynamic",     rtcore_dynamic_flag(RTC_DYNAMIC,RTC_DYNAMIC));
+    POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
+    POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
+    POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
+    NEGATIVE("flags_static_deformable",   rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
+    NEGATIVE("flags_static_dynamic",      rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));
+    POSITIVE("flags_dynamic_static",      rtcore_dynamic_flag(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC));
+    POSITIVE("flags_dynamic_deformable",  rtcore_dynamic_flag(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
+    POSITIVE("flags_dynamic_dynamic",     rtcore_dynamic_flag(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
     POSITIVE("static_scene",              rtcore_static_scene());
     POSITIVE("deformable_geometry",       rtcore_deformable_geometry());
     POSITIVE("unmapped_before_commit",    rtcore_unmapped_before_commit());
     POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
-    POSITIVE("update_deformable",         rtcore_update(RTC_DEFORMABLE));
-    POSITIVE("update_dynamic",            rtcore_update(RTC_DYNAMIC));
+    POSITIVE("update_deformable",         rtcore_update(RTC_GEOMETRY_DEFORMABLE));
+    POSITIVE("update_dynamic",            rtcore_update(RTC_GEOMETRY_DYNAMIC));
     POSITIVE("overlapping_geometry",      rtcore_overlapping(100000));
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
     POSITIVE("regression_static",         rtcore_regression_static());
@@ -1814,19 +1814,19 @@ namespace embree
     rtcore_watertight_plane8(100000);
 #endif
     rtcore_watertight_plane16(100000);
-    rtcore_nan("nan_test_1",RTC_STATIC,1);
+    rtcore_nan("nan_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1);
 #if !defined(__MIC__)
-    rtcore_nan("nan_test_4",RTC_STATIC,4);
-    rtcore_nan("nan_test_8",RTC_STATIC,8);
+    rtcore_nan("nan_test_4",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,4);
+    rtcore_nan("nan_test_8",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,8);
 #endif
-    rtcore_nan("nan_test_16",RTC_STATIC,16);
+    rtcore_nan("nan_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
 
-    rtcore_inf("inf_test_1",RTC_STATIC,1);
+    rtcore_inf("inf_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1);
 #if !defined(__MIC__)
-    rtcore_inf("inf_test_4",RTC_STATIC,4);
-    rtcore_inf("inf_test_8",RTC_STATIC,8);
+    rtcore_inf("inf_test_4",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,4);
+    rtcore_inf("inf_test_8",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,8);
 #endif
-    rtcore_inf("inf_test_16",RTC_STATIC,16);
+    rtcore_inf("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
 
     rtcExit();
 

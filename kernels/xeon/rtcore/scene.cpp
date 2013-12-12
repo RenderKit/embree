@@ -16,68 +16,30 @@
 
 #include "scene.h"
 
-#include "rtcore/twolevel_accel.h"
 
-#include "bvh4/bvh4.h"
-#include "bvh4mb/bvh4mb.h"
 
 #if !defined(__MIC__)
+#include "rtcore/twolevel_accel.h"
 #include "bvh4/bvh4_builder_toplevel.h"
 #include "bvh4/bvh4.h"
 #include "bvh4i/bvh4i.h"
 #include "bvh8i/bvh8i.h"
+#include "bvh4mb/bvh4mb.h"
 #else
 #include "../xeonphi/bvh4i/bvh4i.h"
 #endif
 
 namespace embree
 {
-#if defined(__MIC__)
-
-  Accel* createTriangleMeshAccel(TriangleMeshScene::TriangleMesh* mesh)
-  {
-    return BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(mesh);
-  }
-
-#else
-
-  Accel* createTriangleMeshAccel(TriangleMeshScene::TriangleMesh* mesh)
-  {
-    if (mesh->numTimeSteps == 1)
-    {
-      if (isDeformable(mesh->flags)) {
-        return BVH4::BVH4Triangle4Refit(mesh);
-      }
-      else if (isCoherent(mesh->flags)) {
-        if (isRobust(mesh->flags)) {
-          return BVH4::BVH4Triangle1vObjectSplit(mesh);
-        } else {
-          return BVH4::BVH4Triangle1ObjectSplit(mesh);
-        }
-      } else {
-        if (isRobust(mesh->flags)) {
-          return BVH4::BVH4Triangle4vObjectSplit(mesh);
-        } else {
-          return BVH4::BVH4Triangle4ObjectSplit(mesh);
-        }
-      }
-    } 
-    else if (mesh->numTimeSteps == 2) {
-      return BVH4MB::BVH4MBTriangle1vObjectSplit(mesh);
-    }
-    else
-      throw std::runtime_error("internal error");
-  }
-#endif
-
-  Scene::Scene (RTCFlags flags, RTCAlgorithmFlags aflags)
+  Scene::Scene (RTCSceneFlags flags, RTCAlgorithmFlags aflags)
     : flags(flags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
       numTriangleMeshes(0), numTriangleMeshes2(0), numUserGeometries(0),
       flat_triangle_source_1(this,1), flat_triangle_source_2(this,2)
   {
 #if defined(__MIC__)
+
     accels.accel0 = NULL; 
-    accels.accel1 = NULL; 
+    accels.accel1 = BVH4i::BVH4iVirtualGeometryBinnedSAH(this);
     accels.accel2 = NULL;
  
     if (g_builder == "default") 
@@ -122,17 +84,21 @@ namespace embree
       if (isStatic()) {
         int mode =  4*(int)isCoherent() + 2*(int)isCompact() + 1*(int)isRobust();
         switch (mode) {
-/*#if defined (__TARGET_AVX__) // FIXME: Triangle8 is slower for conference on SNB, maybe only enable on HSW
-        case 0b000 0: 
-          if (has_feature(AVX)) accels.accel0 = BVH4::BVH4Triangle8SpatialSplit(this); 
-          else                  accels.accel0 = BVH4::BVH4Triangle4SpatialSplit(this); 
-          break;
-          #else*/
         case /*0b000*/ 0: 
-          if (isHighQuality()) accels.accel0 = BVH4::BVH4Triangle4SpatialSplit(this);
-          else                 accels.accel0 = BVH4::BVH4Triangle4ObjectSplit(this); 
+#if defined (__TARGET_AVX__)
+          if (has_feature(AVX2) && aflags == RTC_INTERSECT1) 
+          {
+            if (isHighQuality()) accels.accel0 = BVH4::BVH4Triangle8SpatialSplit(this); 
+            else                 accels.accel0 = BVH4::BVH4Triangle8ObjectSplit(this); 
+          }
+          else 
+#endif
+          {
+            if (isHighQuality()) accels.accel0 = BVH4::BVH4Triangle4SpatialSplit(this);
+            else                 accels.accel0 = BVH4::BVH4Triangle4ObjectSplit(this); 
+          }
           break;
-//#endif
+
         case /*0b001*/ 1: accels.accel0 = BVH4::BVH4Triangle4vObjectSplit(this); break;
         case /*0b010*/ 2: accels.accel0 = BVH4::BVH4Triangle4iObjectSplit(this); break;
         case /*0b011*/ 3: accels.accel0 = BVH4::BVH4Triangle4iObjectSplit(this); break;
@@ -145,7 +111,7 @@ namespace embree
         case /*0b111*/ 7: accels.accel0 = BVH4::BVH4Triangle4iObjectSplit(this); break;
         }
         accels.accel1 = BVH4MB::BVH4MBTriangle1v(this); 
-        accels.accel2 = new TwoLevelAccel("bvh4",this,NULL,true); 
+        accels.accel2 = new TwoLevelAccel("bvh4",this); 
       } else {
         int mode =  4*(int)isCoherent() + 2*(int)isCompact() + 1*(int)isRobust();
         switch (mode) {
@@ -159,7 +125,7 @@ namespace embree
         case /*0b111*/ 7: accels.accel0 = BVH4::BVH4BVH4Triangle1vObjectSplit(this); break;
         }
         accels.accel1 = BVH4MB::BVH4MBTriangle1v(this);
-        accels.accel2 = new TwoLevelAccel("bvh4",this,NULL,true);
+        accels.accel2 = new TwoLevelAccel("bvh4",this);
       }
     }
 
@@ -190,10 +156,10 @@ namespace embree
 #endif
       else throw std::runtime_error("unknown triangle acceleration structure "+g_tri_accel);
 
-      accels.accel1 = new TwoLevelAccel(g_top_accel,this,NULL,true);
+      accels.accel1 = new TwoLevelAccel(g_top_accel,this);
     }
     else {
-      accels.accel0 = new TwoLevelAccel(g_top_accel,this,createTriangleMeshAccel,true);
+      accels.accel0 = new TwoLevelAccel(g_top_accel,this);
       accels.accel1 = NULL;
     }
 #endif
@@ -216,9 +182,9 @@ namespace embree
     return geom->id;
   }
 
-  unsigned Scene::newTriangleMesh (RTCFlags flags_i, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
+  unsigned Scene::newTriangleMesh (RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
   {
-    if (dynamicLevel(flags) < dynamicLevel(flags_i)) {
+    if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       recordError(RTC_INVALID_OPERATION);
       return -1;
     }
@@ -228,18 +194,18 @@ namespace embree
       return -1;
     }
     
-    Geometry* geom = new TriangleMeshScene::TriangleMesh(this,inherit_flags(flags_i,flags),numTriangles,numVertices,numTimeSteps);
+    Geometry* geom = new TriangleMeshScene::TriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps);
     return geom->id;
   }
 
-  unsigned Scene::newQuadraticBezierCurves (RTCFlags flags_i, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  unsigned Scene::newQuadraticBezierCurves (RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
-    if (dynamicLevel(flags) < dynamicLevel(flags_i)) {
+    if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       recordError(RTC_INVALID_OPERATION);
       return -1;
     }
     
-    Geometry* geom = new QuadraticBezierCurvesScene::QuadraticBezierCurves(this,inherit_flags(flags_i,flags),numCurves,numVertices);
+    Geometry* geom = new QuadraticBezierCurvesScene::QuadraticBezierCurves(this,gflags,numCurves,numVertices);
     return geom->id;
   }
 

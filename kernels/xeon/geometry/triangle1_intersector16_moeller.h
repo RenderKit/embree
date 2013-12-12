@@ -103,7 +103,7 @@ namespace embree
 	prefetch<PFHINT_L1EX>(&ray.Ng.z);      
 
         /* ray masking test */
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
         valid &= (tri.mask() & ray.mask) != 0;
 #endif
         if (unlikely(none(valid))) continue;
@@ -176,7 +176,7 @@ namespace embree
 	valid = ge(valid,ray.tfar,t);
 
         /* ray masking test */
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
         valid &= (tri.mask() & ray.mask) != 0;
 #endif
         if (unlikely(none(valid))) continue;

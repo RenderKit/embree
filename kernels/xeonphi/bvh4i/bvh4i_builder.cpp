@@ -20,7 +20,6 @@
 #include "kernels/xeonphi/bvh4i/bvh4i_statistics.h"
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
 
-#define BVH_NODE_PREALLOC_FACTOR                 1.15f
 
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
 
@@ -28,12 +27,9 @@
 
 #define SINGLE_THREADED_BUILD_THRESHOLD        512
 
-#define PRESPLIT_SPACE_FACTOR                   0.1f
-
 #define ENABLE_TASK_STEALING
 
 #define ENABLE_FILL_PER_CORE_WORK_QUEUES
-
 
 
 #define TIMER(x) 
@@ -58,14 +54,39 @@ namespace embree
 
   static double dt = 0.0f;
 
+  Builder* BVH4iBuilder::create (void* accel, BuildSource* source, void* geometry, size_t mode ) 
+  { 
+    Builder* builder = NULL;
+
+    switch( mode )
+      {
+
+      case BVH4I_BUILDER_DEFAULT:
+	builder = new BVH4iBuilder((BVH4i*)accel,source,geometry);
+	break;
+
+      case BVH4I_BUILDER_PRESPLITS:
+	builder = new BVH4iBuilderPreSplits((BVH4i*)accel,source,geometry);
+	break;
+
+      case BVH4I_BUILDER_VIRTUAL_GEOMETRY:
+	builder = new BVH4iBuilderVirtualGeometry((BVH4i*)accel,source,geometry);
+	break;
+
+      default:
+	throw std::runtime_error("ERROR: unknown BVH4iBuilder mode selected");	
+      }
+    return builder;
+  }
+
   // =======================================================================================================
   // =======================================================================================================
   // =======================================================================================================
 
 
-  BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry, bool preSplits)
+  BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry)
     : source(source), 
-      geometry(geometry), 
+      scene((Scene*)geometry), 
       bvh(bvh), 
       numPrimitives(0), 
       numNodes(0), 
@@ -73,8 +94,8 @@ namespace embree
       prims(NULL), 
       node(NULL), 
       accel(NULL), 
-      size_prims(0),
-      enablePreSplits(preSplits)
+      size_prims(0)     
+
   {
     DBG(PING);
   }
@@ -88,21 +109,24 @@ namespace embree
     }    
   }
 
-  void BVH4iBuilder::allocateData(size_t threadCount)
+  size_t BVH4iBuilder::getNumPrimitives()
+  {
+    return source->size();
+  }
+
+
+  void BVH4iBuilder::allocateData(size_t threadCount,size_t totalNumPrimitives)
   {
     DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
-    numPrimitives = source->size();
+    numPrimitives = totalNumPrimitives;
     DBG(DBG_PRINT(numPrimitives));
 
     const size_t additional_size = 16 * CACHELINE_SIZE;
-    const size_t numPrimitives = this->numPrimitives;
 
     if (numPrimitivesOld != numPrimitives || numPrimitives == 0)
       {
-	const size_t preSplitPrims = enablePreSplits ? (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR) : 0;
-	//DBG_PRINT(preSplitPrims);
-	const size_t numPrims = numPrimitives+4+preSplitPrims;
+	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
 	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
 	bvh->init(numNodes,numPrims);
@@ -158,16 +182,27 @@ namespace embree
   {
     DBG(PING);
 
+    const size_t totalNumPrimitives = getNumPrimitives();
+
+    if (!totalNumPrimitives) 
+      {
+	bvh->root = 0;
+	bvh->bounds = empty;
+	return;
+      }
+
     if (g_verbose >= 1)
       {
-	if (!enablePreSplits)
+	// if (unlikely(enablePreSplits))
+	//   std::cout << "building BVH4i with (pre-splits-based) SAH builder (MIC) ... " << std::endl;
+	// else if (unlikely(enableVirtualGeometry))
+	//   std::cout << "building BVH4i with Virtual Geometry SAH builder (MIC) ... " << std::endl;
+	// else
 	  std::cout << "building BVH4i with SAH builder (MIC) ... " << std::endl;
-	else
-	  std::cout << "building BVH4i with PreSplits-SAH builder (MIC) ... " << std::endl;
       }
 
     /* allocate BVH data */
-    allocateData(TaskScheduler::getNumThreads());
+    allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
 
     LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); 
 
@@ -204,7 +239,6 @@ namespace embree
 
 	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
 #endif
-
       }
     else
       {
@@ -231,7 +265,7 @@ namespace embree
 
 
     if (g_verbose >= 2) {
-      double perf = source->size()/dt*1E-6;
+      double perf = totalNumPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
       std::cout << BVH4iStatistics(bvh).str();
     }
@@ -243,13 +277,13 @@ namespace embree
   // =======================================================================================================
   // =======================================================================================================
 
-  void BVH4iBuilder::computePrimRefs(const size_t threadID, const size_t numThreads) 
+  void BVH4iBuilder::computePrimRefsTriangles(const size_t threadID, const size_t numThreads) 
   {
-    const size_t numGroups = source->groups();
+    DBG(PING);
+    const size_t numGroups = scene->size();
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
     
-    const Scene* __restrict__ const scene = (Scene*)geometry;
     PrimRef *__restrict__ const prims     = this->prims;
 
     // === find first group containing startID ===
@@ -417,12 +451,16 @@ namespace embree
     store16f_ngo(acc,tri_accel);
   }
 
-  void BVH4iBuilder::createTriangle1(const size_t threadID, const size_t numThreads)
+  void BVH4iBuilder::createAccel(size_t threadIndex, size_t threadCount)
+  {
+    DBG(PING);
+    LockStepTaskScheduler::dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );   
+  }
+
+  void BVH4iBuilder::createTriangle1Accel(const size_t threadID, const size_t numThreads)
   {
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
-
-    const Scene* __restrict__ const scene = (Scene*)geometry;
 
     Triangle1    * __restrict__  acc  = accel + startID;
     const PrimRef* __restrict__  bptr = prims + startID;
@@ -431,10 +469,10 @@ namespace embree
       {
 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
-	assert(bptr->geomID() < source->groups() );
+	assert(bptr->geomID() < scene->size() );
 	assert(bptr->primID() < scene->get( bptr->geomID() )->numPrimitives );
 
-	computeAccelerationData(bptr->geomID(),bptr->primID(),(Scene*)geometry,acc);
+	computeAccelerationData(bptr->geomID(),bptr->primID(),scene,acc);
       }
   }
 
@@ -1236,7 +1274,7 @@ namespace embree
 	  }
       }
 
-    if (enablePreSplits) return;
+    //if (enablePreSplits) return;
     if (!(subset(check_box,box) && subset(box,check_box))) 
       {
 	DBG_PRINT(current);
@@ -1245,9 +1283,6 @@ namespace embree
 	FATAL("check build record");
       }
   }
-  // =======================================================================================================
-  // =======================================================================================================
-  // =======================================================================================================
 
   void BVH4iBuilder::parallelBinningLocal(const size_t localThreadID,const size_t globalThreadID)
   {
@@ -1365,6 +1400,11 @@ namespace embree
     
   }
 
+  void BVH4iBuilder::computePrimRefs(size_t threadIndex, size_t threadCount)
+  {
+    LockStepTaskScheduler::dispatchTask( task_computePrimRefsTriangles, this, threadIndex, threadCount );
+  }
+
 
   // =======================================================================================================
   // =======================================================================================================
@@ -1374,8 +1414,6 @@ namespace embree
   void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
     TIMER(double msec = 0.0);
-
-    //DBG_PRINT(threadIndex);
 
     /* initialize thread-local work stacks */
     if (threadIndex % 4 == 0)
@@ -1397,19 +1435,9 @@ namespace embree
     TIMER(msec = getSeconds());
     
     /* calculate list of primrefs */
-    atomicID.reset(numPrimitives);
     global_bounds.reset();
-    if (likely(!enablePreSplits))
-      LockStepTaskScheduler::dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
-    else
-      {
-	LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
 
-	// for (size_t i=numPrimitives;i<atomicID;i++)
-	//        DBG_PRINT(prims[i]);
-	DBG_PRINT(atomicID - numPrimitives);
-	numPrimitives = atomicID;
-      }
+    computePrimRefs(threadIndex,threadCount);
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computePrimRefs " << 1000. * msec << " ms" << std::endl << std::flush);
@@ -1444,16 +1472,7 @@ namespace embree
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "build_top_level " << 1000. * msec << " ms" << std::endl << std::flush);
 
-#if 0
-    DBG_PRINT(atomicID);
-    DBG_PRINT(numAllocatedNodes);
-    DBG_PRINT(global_bounds);
-    DBG_PRINT(global_workStack.size());
-    for (size_t i=0;i<global_workStack.size();i++)
-      std::cout << i << " items " << global_workStack.get(i).items() << std::endl;
-#endif
-
-    /* fill per core qork queues */    
+    /* fill per core work queues */    
     TIMER(msec = getSeconds());    
     LockStepTaskScheduler::dispatchTask(task_fillLocalWorkQueues, this, threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
@@ -1463,15 +1482,14 @@ namespace embree
     TIMER(msec = getSeconds());    
     LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
     numNodes = atomicID >> 2;
-
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
     /* create triangle acceleration structure */
     TIMER(msec = getSeconds());        
-    LockStepTaskScheduler::dispatchTask( task_createTriangle1, this, threadIndex, threadCount );
+    createAccel(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "task_createTriangle1 " << 1000. * msec << " ms" << std::endl << std::flush);
+    TIMER(std::cout << "task_createAccel " << 1000. * msec << " ms" << std::endl << std::flush);
     
     /* convert to SOA node layout */
     TIMER(msec = getSeconds());        

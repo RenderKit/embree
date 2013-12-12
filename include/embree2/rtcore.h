@@ -205,6 +205,21 @@ RTCORE_API RTCError rtcGetError();
   purposes. Do not call it. */
 RTCORE_API void rtcDebug();
 
+/*! \brief Helper to easily combing scene flags */
+inline RTCSceneFlags operator|(const RTCSceneFlags a, const RTCSceneFlags b) {
+  return (RTCSceneFlags)((size_t)a | (size_t)b);
+}
+
+/*! \brief Helper to easily combing algorithm flags */
+inline RTCAlgorithmFlags operator|(const RTCAlgorithmFlags a, const RTCAlgorithmFlags b) {
+  return (RTCAlgorithmFlags)((size_t)a | (size_t)b);
+}
+
+/*! \brief Helper to easily combing geometry flags */
+inline RTCGeometryFlags operator|(const RTCGeometryFlags a, const RTCGeometryFlags b) {
+  return (RTCGeometryFlags)((size_t)a | (size_t)b);
+}
+
 /*! \} */
 
 #endif

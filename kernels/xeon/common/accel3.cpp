@@ -54,6 +54,7 @@ namespace embree
   void Accel3::intersect16 (const void* valid, void* ptr, RTCRay16& ray) 
   {
     Accel3* This = (Accel3*)ptr;
+
     if (This->accel0) This->accel0->intersect16(valid,ray);
     if (This->accel1) This->accel1->intersect16(valid,ray);
     if (This->accel2) This->accel2->intersect16(valid,ray);

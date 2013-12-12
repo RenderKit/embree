@@ -197,7 +197,7 @@ IF (TARGET_XEON_PHI)
  ADD_DEFINITIONS(-D__TARGET_XEON_PHI__)
 ENDIF()
 
-ADD_ISPC_LIBRARY(embree_xeonphi SHARED #  FIXME: build shared library
+ADD_ISPC_LIBRARY(embree_xeonphi SHARED
 
   common/stat.cpp 
   common/alloc.cpp 

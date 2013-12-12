@@ -36,7 +36,7 @@ namespace embree
       };
 
     public:
-      QuadraticBezierCurves (Scene* parent, RTCFlags flags, size_t numCurves, size_t numVertices); 
+      QuadraticBezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices); 
       ~QuadraticBezierCurves ();
       
     public:

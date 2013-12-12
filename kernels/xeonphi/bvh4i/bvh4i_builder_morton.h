@@ -58,14 +58,8 @@ namespace embree
         parentID = 0;
       }
       
-#if 1
       __forceinline bool operator<(const SmallBuildRecord& br) const { return size() < br.size(); } 
       __forceinline bool operator>(const SmallBuildRecord& br) const { return size() > br.size(); } 
-#else
-      __forceinline bool operator<(const SmallBuildRecord& br) const { return begin > br.begin; } 
-      __forceinline bool operator>(const SmallBuildRecord& br) const { return begin < br.begin; } 
-
-#endif
 
     __forceinline friend std::ostream &operator<<(std::ostream &o, const SmallBuildRecord &br)
       {
@@ -106,14 +100,14 @@ namespace embree
     };
 
     /*! Constructor. */
-    BVH4iBuilderMorton (BVH4i* bvh, BuildSource* source, void* geometry, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+    BVH4iBuilderMorton (BVH4i* bvh, BuildSource* source, void* geometry);
 
     /*! Destructor. */
     ~BVH4iBuilderMorton();
 
     /*! creates the builder */
-    static Builder* create (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize = inf, const size_t maxLeafSize = inf) { 
-      return new BVH4iBuilderMorton((BVH4i*)accel,source,geometry,minLeafSize,maxLeafSize);
+    static Builder* create (void* accel, BuildSource* source, void* geometry) { 
+      return new BVH4iBuilderMorton((BVH4i*)accel,source,geometry);
     }
 
     /* build function */
@@ -185,7 +179,7 @@ namespace embree
     void recreateMortonCodes(SmallBuildRecord& current) const;
 
   public:
-    BVH4i      * bvh;               //!< Output BVH
+    BVH4i      * bvh;         //!< Output BVH
     BuildSource* source;      //!< input geometry
     Scene      * scene;
 

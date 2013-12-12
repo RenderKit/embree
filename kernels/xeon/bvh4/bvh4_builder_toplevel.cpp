@@ -31,7 +31,9 @@ namespace embree
 #define BUILD_RECORD_SPLIT_THRESHOLD 512
 #define THRESHOLD_FOR_SUBTREE_RECURSION 128
 #define MIN_OPEN_SIZE 2000
-    
+
+    std::auto_ptr<BVH4BuilderTopLevel::GlobalState> BVH4BuilderTopLevel::g_state(NULL);
+
     BVH4BuilderTopLevel::BVH4BuilderTopLevel (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) 
       : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel) {}
     
@@ -58,6 +60,10 @@ namespace embree
       frameID++;
 #endif
 
+      /* create global state */
+      if (!g_state.get()) 
+        g_state.reset(new GlobalState(threadCount));
+
       /* delete some objects */
       size_t N = scene->size();
       for (size_t i=N; i<objects.size(); i++) {
@@ -80,15 +86,15 @@ namespace embree
       
       /* reset bounds of each thread */
       for (size_t i=0; i<threadCount; i++)
-        thread_bounds[i].reset();
+        g_state->thread_bounds[i].reset();
       
       /* parallel build of acceleration structures */
       if (N) TaskScheduler::executeTask(threadIndex,threadCount,_task_build_parallel,this,N,"toplevel_build_parallel");
-      //for (size_t i=0; i<N; i++) thread_bounds[threadIndex].extend(build(threadIndex,threadCount,i));
+      //for (size_t i=0; i<N; i++) g_state->thread_bounds[threadIndex].extend(build(threadIndex,threadCount,i));
       
       /* perform builds that need all threads */
       for (size_t i=0; i<allThreadBuilds.size(); i++) {
-        thread_bounds[threadIndex].extend(build(threadIndex,threadCount,allThreadBuilds[i]));
+        g_state->thread_bounds[threadIndex].extend(build(threadIndex,threadCount,allThreadBuilds[i]));
       }
       
       allThreadBuilds.clear();
@@ -102,7 +108,7 @@ namespace embree
       /* calculate scene bounds */
       Centroid_Scene_AABB bounds; bounds.reset();
       for (size_t i=0; i<threadCount; i++)
-        bounds.extend(thread_bounds[i]);
+        bounds.extend(g_state->thread_bounds[i]);
       
       /* ignore empty scenes */
       bvh->clear();
@@ -138,17 +144,17 @@ namespace embree
       
       /* initialize thread-local work stacks */
       for (size_t i=0; i<threadCount; i++)
-        thread_workStack[i].reset();
+        g_state->thread_workStack[i].reset();
       
       /* push initial build record to global work stack */
-      global_workStack.reset();
-      global_workStack.push_nolock(task);    
+      g_state->global_workStack.reset();
+      g_state->global_workStack.push_nolock(task);    
       
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (global_workStack.size() < 4*threadCount && global_workStack.size()+BVH4::N <= SIZE_WORK_STACK) 
+      while (g_state->global_workStack.size() < 4*threadCount && g_state->global_workStack.size()+BVH4::N <= SIZE_WORK_STACK) 
       {
         BuildRecord br;
-        if (!global_workStack.pop_nolock_largest(br)) break;
+        if (!g_state->global_workStack.pop_nolock_largest(br)) break;
         recurseSAH(0,br,BUILD_TOP_LEVEL,threadIndex,threadCount);
       }
       
@@ -226,7 +232,7 @@ namespace embree
       /* build all other meshes */
       BBox3f bounds = build(threadIndex,threadCount,objectID);
       if (!bounds.empty()) 
-        thread_bounds[threadIndex].extend(bounds);
+        g_state->thread_bounds[threadIndex].extend(bounds);
     }
     
     void BVH4BuilderTopLevel::open_sequential()
@@ -329,13 +335,13 @@ namespace embree
       while (true) 
       {
         BuildRecord br;
-        if (!global_workStack.pop_largest(br)) // FIXME: might loose threads during build
+        if (!g_state->global_workStack.pop_largest(br)) // FIXME: might loose threads during build
         {
           /* global work queue empty => try to steal from neighboring queues */	  
           bool success = false;
           for (size_t i=0; i<threadCount; i++)
           {
-            if (thread_workStack[(threadIndex+i)%threadCount].pop_smallest(br)) {
+            if (g_state->thread_workStack[(threadIndex+i)%threadCount].pop_smallest(br)) {
               success = true;
               break;
             }
@@ -345,8 +351,8 @@ namespace embree
         }
         
         /* process local work queue */
-        thread_workStack[threadIndex].push(br);
-        while (thread_workStack[threadIndex].pop_largest(br))
+        g_state->thread_workStack[threadIndex].push(br);
+        while (g_state->thread_workStack[threadIndex].pop_largest(br))
           recurseSAH(0,br,RECURSE,threadIndex,threadCount);
       }
     }
@@ -358,7 +364,7 @@ namespace embree
     void BVH4BuilderTopLevel::split_sequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
     {
       /* calculate binning function */
-      Mapping2 mapping(current.bounds);
+      Mapping2<16> mapping(current.bounds);
       
       /* binning of centroids */
       Binner2<16> binner;
@@ -382,17 +388,17 @@ namespace embree
                                               const size_t numThreads)
     {
       /* parallel binning of centroids */
-      parallelBinner.bin(current,&refs[0],&refs1[0],threadID,numThreads);
+      g_state->parallelBinner.bin(current,&refs[0],&refs1[0],threadID,numThreads);
       
       /* find best split */
       Split2 split; 
-      parallelBinner.best(split);
+      g_state->parallelBinner.best(split);
       
       /* if we cannot find a valid split, enforce an arbitrary split */
       if (unlikely(split.pos == -1)) split_fallback2(&refs[0],current,leftChild,rightChild);
       
       /* parallel partitioning of items */
-      else parallelBinner.partition(&refs1[0],&refs[0],split,leftChild,rightChild,threadID,numThreads);
+      else g_state->parallelBinner.partition(&refs1[0],&refs[0],split,leftChild,rightChild,threadID,numThreads);
     }
     
     void BVH4BuilderTopLevel::createLeaf(BuildRecord& current, size_t threadIndex, size_t threadCount)
@@ -449,10 +455,10 @@ namespace embree
     __forceinline void BVH4BuilderTopLevel::recurse(size_t depth, BuildRecord& current, const size_t mode, const size_t threadID, const size_t numThreads)
     {
       if (mode == BUILD_TOP_LEVEL) {
-        global_workStack.push_nolock(current);
+        g_state->global_workStack.push_nolock(current);
       }
       else if (current.items() > THRESHOLD_FOR_SUBTREE_RECURSION) {
-        if (!thread_workStack[threadID].push(current))
+        if (!g_state->thread_workStack[threadID].push(current))
           recurseSAH(depth,current,RECURSE,threadID,numThreads);
       }
       else

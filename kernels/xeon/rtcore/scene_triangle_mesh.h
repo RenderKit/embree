@@ -34,7 +34,7 @@ namespace embree
       };
 
     public:
-      TriangleMesh (Scene* parent, RTCFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps); 
+      TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps); 
       ~TriangleMesh ();
       
     public:

@@ -18,8 +18,92 @@
 #include "kernels/xeonphi/bvh4i/bvh4i_builder.h"
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
 
+#define PRESPLIT_SPACE_FACTOR                   0.1f
+#define DBG(x) 
+
 namespace embree
 {
+
+  /* =================================================================================== */
+  /* =================================================================================== */
+  /* =================================================================================== */
+
+  void BVH4iBuilderPreSplits::allocateData(size_t threadCount,size_t totalNumPrimitives)
+  {
+#if defined(DEBUG)
+    PING;
+#endif    
+
+    DBG(PING);
+    size_t numPrimitivesOld = numPrimitives;
+    numPrimitives = totalNumPrimitives;
+    DBG(DBG_PRINT(numPrimitives));
+
+    const size_t additional_size = 16 * CACHELINE_SIZE;
+
+    if (numPrimitivesOld != numPrimitives || numPrimitives == 0)
+      {
+	const size_t preSplitPrims = (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR);
+	const size_t numPrims = numPrimitives+4+preSplitPrims;
+	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
+	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+	bvh->init(numNodes,numPrims);
+
+	// === free previously allocated memory ===
+
+	if (prims)  {
+	  assert(size_prims > 0);
+	  os_free(prims,size_prims);
+	}
+	if (node  ) {
+	  assert(bvh->size_node > 0);
+	  os_free(node ,bvh->size_node);
+	}
+	if (accel ) {
+	  assert(bvh->size_accel > 0);
+	  os_free(accel,bvh->size_accel);
+	}
+      
+	// === allocated memory for primrefs,nodes, and accel ===
+	const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
+	const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeof(BVHNode) + additional_size;
+	const size_t size_accel    = numPrims * sizeof(Triangle1) + additional_size;
+	numAllocatedNodes = size_node / sizeof(BVHNode);
+      
+	DBG(DBG_PRINT(size_primrefs));
+	DBG(DBG_PRINT(size_node));
+	DBG(DBG_PRINT(size_accel));
+
+	prims = (PrimRef  *) os_malloc(size_primrefs); 
+	node  = (BVHNode  *) os_malloc(size_node);
+	accel = (Triangle1*) os_malloc(size_accel);
+
+	assert(prims  != 0);
+	assert(node   != 0);
+	assert(accel  != 0);
+
+	memset(prims,0,size_primrefs);
+	memset(node,0,size_node);
+	memset(accel,0,size_accel);
+
+	bvh->accel = accel;
+	bvh->qbvh  = (BVH4i::Node*)node;
+	bvh->size_node  = size_node;
+	bvh->size_accel = size_accel;
+
+	size_prims = size_primrefs;
+      }    
+  }
+
+  void BVH4iBuilderPreSplits::computePrimRefs(size_t threadIndex, size_t threadCount)
+  {
+    atomicID.reset(numPrimitives);
+    LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
+    // for (size_t i=numPrimitives;i<atomicID;i++) DBG_PRINT(prims[i]);
+    DBG_PRINT(atomicID - numPrimitives);
+    numPrimitives = atomicID;    
+  }
+
 
   __forceinline mic_f box_sah( const mic_f &b_min,
 			       const mic_f &b_max) 
@@ -39,13 +123,12 @@ namespace embree
     return sqrt(ldot3_xyz(n,n)) * 0.5f;
   }
 
-  void BVH4iBuilder::computePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
+  void BVH4iBuilderPreSplits::computePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
   {
-    const size_t numGroups = source->groups();
+    const size_t numGroups = source->size();
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
     
-    const Scene* __restrict__ const scene = (Scene*)geometry;
     PrimRef *__restrict__ const prims     = this->prims;
 
     // === find first group containing startID ===
@@ -182,96 +265,101 @@ namespace embree
     global_bounds.extend_atomic(bounds);    
   }
 
-  void BVH4iBuilder::computePrimRefsVirtual(const size_t threadID, const size_t numThreads) 
+  /* =================================================================================== */
+  /* =================================================================================== */
+  /* =================================================================================== */
+
+  size_t BVH4iBuilderVirtualGeometry::getNumPrimitives()
   {
-    const size_t numGroups = source->groups();
-    const size_t startID = (threadID+0)*numPrimitives/numThreads;
-    const size_t endID   = (threadID+1)*numPrimitives/numThreads;
+#if defined(DEBUG)
+    PING;
+#endif    
+    /* count total number of virtual objects */
+    size_t numVirtualObjects = 0;       
+    for (size_t i=0;i<scene->size();i++)
+      {
+	if (unlikely(scene->get(i) == NULL)) continue;
+	if (unlikely(scene->get(i)->type != USER_GEOMETRY)) continue;
+	if (unlikely(!scene->get(i)->isEnabled())) continue;
+	numVirtualObjects++;
+      }
+    return numVirtualObjects;	
+  }
+
+  void BVH4iBuilderVirtualGeometry::computePrimRefs(size_t threadIndex, size_t threadCount)
+  {
+    LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
+  }
+
+  void BVH4iBuilderVirtualGeometry::createAccel(size_t threadIndex, size_t threadCount)
+  {
+    LockStepTaskScheduler::dispatchTask( task_createVirtualGeometryAccel, this, threadIndex, threadCount );
+  }
+
+  void BVH4iBuilderVirtualGeometry::computePrimRefsVirtualGeometry(const size_t threadID, const size_t numThreads) 
+  {
+    const size_t numTotalGroups = scene->size();
+    DBG_PRINT(numTotalGroups);
+
+    /* count total number of virtual objects */
+    const size_t numVirtualObjects = numPrimitives;
+    const size_t startID   = (threadID+0)*numVirtualObjects/numThreads;
+    const size_t endID     = (threadID+1)*numVirtualObjects/numThreads;
+
+    DBG_PRINT(numTotalGroups);
+    DBG_PRINT(numVirtualObjects);
+    DBG_PRINT(startID);
+    DBG_PRINT(endID);
     
-    const Scene* __restrict__ const scene = (Scene*)geometry;
     PrimRef *__restrict__ const prims     = this->prims;
 
-    // === find first group containing startID ===
-    unsigned int g=0, numSkipped = 0;
-    for (; g<numGroups; g++) {       
-      if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely(scene->get(g)->type != USER_GEOMETRY)) continue;
-      if (unlikely(!scene->get(g)->isEnabled())) continue;
-
-      const size_t numPrimitives = scene->get(g)->numPrimitives;
-      if (numSkipped + numPrimitives > startID) break;
-      numSkipped += numPrimitives;
+    /* find group == startID */
+    unsigned int g=0;
+    for (size_t i=0; i<numTotalGroups; i++) {       
+      if (unlikely(scene->get(i) == NULL)) continue;
+      if (unlikely(scene->get(i)->type != USER_GEOMETRY)) continue;
+      if (unlikely(!scene->get(i)->isEnabled())) continue;
+      if (g == startID) break;
+      g++;
     }
 
-    // === start with first group containing startID ===
+    /* start with first group containing startID */
     mic_f bounds_scene_min((float)pos_inf);
     mic_f bounds_scene_max((float)neg_inf);
     mic_f bounds_centroid_min((float)pos_inf);
     mic_f bounds_centroid_max((float)neg_inf);
 
-    unsigned int num = 0;
-    unsigned int currentID = startID;
-    unsigned int offset = startID - numSkipped;
+    size_t currentID = startID;
 
-    __align(64) PrimRef local_prims[2];
-    size_t numLocalPrims = 0;
-    PrimRef *__restrict__ dest = &prims[currentID];
+    for (; g<numTotalGroups; g++) 
+      {
+	if (unlikely(scene->get(g) == NULL)) continue;
+	if (unlikely(scene->get(g)->type != USER_GEOMETRY )) continue;
+	if (unlikely(!scene->get(g)->isEnabled())) continue;
 
-    for (; g<numGroups; g++) 
-    {
-      if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely(scene->get(g)->type != USER_GEOMETRY )) continue;
-      if (unlikely(!scene->get(g)->isEnabled())) continue;
-      const Geometry *geometry = scene->get(g);
-      for (unsigned int i=offset; i<geometry->numPrimitives && currentID < endID; i++, currentID++)	 
-      { 			    
-	// const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(i);
-	// prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
-	// prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
+	const UserGeometryScene::Base *virtual_geometry = (UserGeometryScene::Base *)scene->get(g);
 
-	// const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
-	// const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
-	// const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+	const mic_f bmin = broadcast4to16f(&virtual_geometry->bounds.lower);
+	const mic_f bmax = broadcast4to16f(&virtual_geometry->bounds.upper);
 
-	// const mic_f v0 = broadcast4to16f(vptr0);
-	// const mic_f v1 = broadcast4to16f(vptr1);
-	// const mic_f v2 = broadcast4to16f(vptr2);
+	DBG_PRINT(currentID);
+	DBG_PRINT(bmin);
+	DBG_PRINT(bmax);
 
-	// const mic_f bmin = min(min(v0,v1),v2);
-	// const mic_f bmax = max(max(v0,v1),v2);
-	// bounds_scene_min = min(bounds_scene_min,bmin);
-	// bounds_scene_max = max(bounds_scene_max,bmax);
-	// const mic_f centroid2 = bmin+bmax;
-	// bounds_centroid_min = min(bounds_centroid_min,centroid2);
-	// bounds_centroid_max = max(bounds_centroid_max,centroid2);
+	bounds_scene_min = min(bounds_scene_min,bmin);
+	bounds_scene_max = max(bounds_scene_max,bmax);
+	const mic_f centroid2 = bmin+bmax;
+	bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	bounds_centroid_max = max(bounds_centroid_max,centroid2);
 
-	// store4f(&local_prims[numLocalPrims].lower,bmin);
-	// store4f(&local_prims[numLocalPrims].upper,bmax);	
-	// local_prims[numLocalPrims].lower.a = g;
-	// local_prims[numLocalPrims].upper.a = i;
-	// numLocalPrims++;
-	// if (unlikely(((size_t)dest % 64) != 0) && numLocalPrims == 1)
-	//   {
-	//     *dest = local_prims[0];
-	//     dest++;
-	//     numLocalPrims--;
-	//   }
-	// else
-	//   {
-	//     const mic_f twoAABBs = load16f(local_prims);
-	//     if (numLocalPrims == 2)
-	//       {
-	// 	numLocalPrims = 0;
-	// 	store16f_ngo(dest,twoAABBs);
-	// 	dest+=2;
-	//       }
-	//   }	
+	store4f(&prims[currentID].lower,bmin);
+	store4f(&prims[currentID].upper,bmax);	
+	prims[currentID].lower.a = g;
+	prims[currentID].upper.a = 0;
+	currentID++;
+
+	if (currentID == endID) break;
       }
-      if (currentID == endID) break;
-      offset = 0;
-    }
-
-    /* is there anything left in the local queue? */
 
     /* update global bounds */
     Centroid_Scene_AABB bounds;
@@ -282,6 +370,24 @@ namespace embree
     store4f(&bounds.geometry.upper,bounds_scene_max);
 
     global_bounds.extend_atomic(bounds);    
+  }
+
+
+  void BVH4iBuilderVirtualGeometry::createVirtualGeometryAccel(const size_t threadID, const size_t numThreads)
+  {
+    const size_t startID = (threadID+0)*numPrimitives/numThreads;
+    const size_t endID   = (threadID+1)*numPrimitives/numThreads;
+
+    Triangle1    * __restrict__  acc  = accel + startID;
+    const PrimRef* __restrict__  bptr = prims + startID;
+
+    for (size_t j=startID; j<endID; j++, bptr++, acc++)
+      {
+	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
+	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
+	assert(bptr->geomID() < source->groups() );
+	*(void**)acc = (void*)scene->get( bptr->geomID() );
+      }
   }
 
 };
