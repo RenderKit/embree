@@ -28,7 +28,7 @@ namespace embree
     void BVH4iIntersector16Virtual<VirtualGeometryIntersector16>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
       PING;
-
+      return;
       /* near and node stack */
       __align(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
@@ -161,6 +161,7 @@ namespace embree
     void BVH4iIntersector16Virtual<VirtualGeometryIntersector16>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
       PING;
+      return;
       /* allocate stack */
       __align(64) mic_f    stack_dist[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
@@ -291,7 +292,298 @@ namespace embree
       }
       store16i(valid & m_terminated,&ray.geomID,0);
     }
+
+    void BVH4iIntersector1Virtual::intersect(BVH4i* bvh, Ray& ray)
+    {
+      PING;
+      return;
+      /* near and node stack */
+      __align(64) float   stack_dist[3*BVH4i::maxDepth+1];
+      __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+
+      /* setup */
+      //const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
+      const mic3f rdir16     = rcp_safe(mic3f(mic_f(ray.dir.x),mic_f(ray.dir.y),mic_f(ray.dir.z)));
+      const mic_f inf        = mic_f(pos_inf);
+      const mic_f zero       = mic_f::zero();
+
+      store16f(stack_dist,inf);
+
+      const Node      * __restrict__ nodes = (Node    *)bvh->nodePtr();
+      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+
+      stack_node[0] = BVH4i::invalidNode;      
+      stack_node[1] = bvh->root;
+
+      size_t sindex = 2;
+
+      const mic_f org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
+      const mic_f dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
+      const mic_f rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
+      const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+      const mic_f min_dist_xyz = broadcast1to16f(&ray.tnear);
+      mic_f       max_dist_xyz = broadcast1to16f(&ray.tfar);
+	  
+      const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+	  
+      while (1)
+	{
+	  NodeRef curNode = stack_node[sindex-1];
+	  sindex--;
+            
+	  while (1) 
+	    {
+	      /* test if this is a leaf node */
+	      if (unlikely(curNode.isLeaf(leaf_mask))) break;
+        
+	      const Node* __restrict__ const node = curNode.node(nodes);	      
+	      const float* __restrict const plower = (float*)node->lower;
+	      const float* __restrict const pupper = (float*)node->upper;
+
+	      
+	      prefetch<PFHINT_L1>((char*)node + 0);
+	      prefetch<PFHINT_L1>((char*)node + 64);
+        
+	      /* intersect single ray with 4 bounding boxes */
+	      const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
+	      const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+	      const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
+	      const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
+
+	      sindex--;
+	      curNode = stack_node[sindex]; // early pop of next node
+
+	      const Node* __restrict__ const next = curNode.node(nodes);
+	      prefetch<PFHINT_L2>((char*)next + 0);
+	      prefetch<PFHINT_L2>((char*)next + 64);
+
+	      const mic_f tNear = vreduce_max4(tLower);
+	      const mic_f tFar  = vreduce_min4(tUpper);  
+	      const mic_m hitm = le(0x8888,tNear,tFar);
+	      const mic_f tNear_pos = select(hitm,tNear,inf);
+
+
+	      /* if no child is hit, continue with early popped child */
+	      if (unlikely(none(hitm))) continue;
+	      sindex++;
+        
+	      const unsigned long hiti = toInt(hitm);
+	      const unsigned long pos_first = bitscan64(hiti);
+	      const unsigned long num_hitm = countbits(hiti); 
+        
+	      /* if a single child is hit, continue with that child */
+	      curNode = ((unsigned int *)plower)[pos_first];
+	      if (likely(num_hitm == 1)) continue;
+        
+	      /* if two children are hit, push in correct order */
+	      const unsigned long pos_second = bitscan64(pos_first,hiti);
+	      if (likely(num_hitm == 2))
+		{
+		  const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
+		  const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
+		  const unsigned int node_first  = curNode;
+		  const unsigned int node_second = ((unsigned int*)plower)[pos_second];
+          
+		  if (dist_first <= dist_second)
+		    {
+		      stack_node[sindex] = node_second;
+		      ((unsigned int*)stack_dist)[sindex] = dist_second;                      
+		      sindex++;
+		      assert(sindex < 3*BVH4i::maxDepth+1);
+		      continue;
+		    }
+		  else
+		    {
+		      stack_node[sindex] = curNode;
+		      ((unsigned int*)stack_dist)[sindex] = dist_first;
+		      curNode = node_second;
+		      sindex++;
+		      assert(sindex < 3*BVH4i::maxDepth+1);
+		      continue;
+		    }
+		}
+        
+	      /* continue with closest child and push all others */
+	      const mic_f min_dist = set_min_lanes(tNear_pos);
+	      const unsigned int old_sindex = sindex;
+	      sindex += countbits(hiti) - 1;
+	      assert(sindex < 3*BVH4i::maxDepth+1);
+        
+	      const mic_m closest_child = eq(hitm,min_dist,tNear);
+	      const unsigned long closest_child_pos = bitscan64(closest_child);
+	      const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
+	      const mic_i plower_node = load16i((int*)plower);
+	      compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
+	      curNode = ((unsigned int*)plower)[closest_child_pos];
+	      compactustore16f(m_pos,&stack_dist[old_sindex],tNear);
+	    }
+	  
+	    
+
+	  /* return if stack is empty */
+	  if (unlikely(curNode == BVH4i::invalidNode)) break;
+
+
+	  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+	}	  
+    }
+
+
+    void BVH4iIntersector1Virtual::occluded(BVH4i* bvh, Ray& ray)
+    {
+      PING;
+      return;
+      /* near and node stack */
+      __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+
+      /* setup */
+      const mic3f rdir16      = rcp_safe(mic3f(ray.dir.x,ray.dir.y,ray.dir.z));
+      const mic_f inf         = mic_f(pos_inf);
+      const mic_f zero        = mic_f::zero();
+
+      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+
+      stack_node[0] = BVH4i::invalidNode;
+      stack_node[1] = bvh->root;
+      size_t sindex = 2;
+
+      const mic_f org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
+      const mic_f dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
+      const mic_f rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
+      const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+      const mic_f min_dist_xyz = broadcast1to16f(&ray.tnear);
+      const mic_f max_dist_xyz = broadcast1to16f(&ray.tfar);
+
+      const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+	  
+      while (1)
+	{
+	  NodeRef curNode = stack_node[sindex-1];
+	  sindex--;
+            
+	  while (1) 
+	    {
+	      /* test if this is a leaf node */
+	      if (unlikely(curNode.isLeaf(leaf_mask))) break;
+        
+	      const Node* __restrict__ const node = curNode.node(nodes);
+	      const float* __restrict const plower = (float*)node->lower;
+	      const float* __restrict const pupper = (float*)node->upper;
+
+	      prefetch<PFHINT_L1>((char*)node + 0);
+	      prefetch<PFHINT_L1>((char*)node + 64);
+        
+	      /* intersect single ray with 4 bounding boxes */
+	      const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
+	      const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+	      const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
+	      const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
+
+	      sindex--;
+	      curNode = stack_node[sindex]; 
+
+	      const Node* __restrict__ const next = curNode.node(nodes);
+	      prefetch<PFHINT_L2>((char*)next + 0);
+	      prefetch<PFHINT_L2>((char*)next + 64);
+
+	      const mic_f tNear = vreduce_max4(tLower);
+	      const mic_f tFar  = vreduce_min4(tUpper);  
+	      const mic_m hitm = le(0x8888,tNear,tFar);
+	      const mic_f tNear_pos = select(hitm,tNear,inf);
+
+
+	      /* if no child is hit, continue with early popped child */
+	      if (unlikely(none(hitm))) continue;
+	      sindex++;
+        
+	      const unsigned long hiti = toInt(hitm);
+	      const unsigned long pos_first = bitscan64(hiti);
+	      const unsigned long num_hitm = countbits(hiti); 
+        
+	      /* if a single child is hit, continue with that child */
+	      curNode = ((unsigned int *)plower)[pos_first];
+	      if (likely(num_hitm == 1)) continue;
+        
+	      /* if two children are hit, push in correct order */
+	      const unsigned long pos_second = bitscan64(pos_first,hiti);
+	      if (likely(num_hitm == 2))
+		{
+		  const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
+		  const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
+		  const unsigned int node_first  = curNode;
+		  const unsigned int node_second = ((unsigned int*)plower)[pos_second];
+          
+		  if (dist_first <= dist_second)
+		    {
+		      stack_node[sindex] = node_second;
+		      sindex++;
+		      assert(sindex < 3*BVH4i::maxDepth+1);
+		      continue;
+		    }
+		  else
+		    {
+		      stack_node[sindex] = curNode;
+		      curNode = node_second;
+		      sindex++;
+		      assert(sindex < 3*BVH4i::maxDepth+1);
+		      continue;
+		    }
+		}
+        
+	      /* continue with closest child and push all others */
+	      const mic_f min_dist = set_min_lanes(tNear_pos);
+	      const unsigned old_sindex = sindex;
+	      sindex += countbits(hiti) - 1;
+	      assert(sindex < 3*BVH4i::maxDepth+1);
+        
+	      const mic_m closest_child = eq(hitm,min_dist,tNear);
+	      const unsigned long closest_child_pos = bitscan64(closest_child);
+	      const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
+	      const mic_i plower_node = load16i((int*)plower);
+	      curNode = ((unsigned int*)plower)[closest_child_pos];
+	      compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
+	    }
+	  
+	    
+
+	  /* return if stack is empty */
+	  if (unlikely(curNode == BVH4i::invalidNode)) break;
+
+
+	  /* intersect one ray against four triangles */
+
+	  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+	  const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel);
+
+// 	  if (unlikely(any(m_final)))
+// 	    {
+// #if defined(__USE_RAY_MASK__)
+// 	      const mic_i rayMask(ray.mask);
+// 	      const mic_i triMask = gather16i_4i((int*)&tptr[0].Ng,
+// 						 (int*)&tptr[1].Ng,
+// 						 (int*)&tptr[2].Ng,
+// 						 (int*)&tptr[3].Ng);
+// 	      const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
+		    
+// 	      if ( any(m_final & m_ray_mask) )
+// #endif
+
+// 		{
+// 		  ray.geomID = 0;
+// 		  return;
+// 		}
+// 	    }
+	  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+	}
+    }
     
-    DEFINE_INTERSECTOR16    (BVH4iVirtualGeometryIntersector16, BVH4iIntersector16Virtual<VirtualAccelIntersector16>);
+    
+    DEFINE_INTERSECTOR16   (BVH4iVirtualGeometryIntersector16, BVH4iIntersector16Virtual<VirtualAccelIntersector16>);
+    DEFINE_INTERSECTOR1    (BVH4iVirtualGeometryIntersector1, BVH4iIntersector1Virtual);
+
   }
 }

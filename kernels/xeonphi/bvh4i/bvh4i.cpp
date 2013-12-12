@@ -51,6 +51,7 @@ namespace embree
   DECLARE_INTERSECTOR16(BVH4iTriangle1Intersector16ChunkMoeller);
   DECLARE_INTERSECTOR16(BVH4iTriangle1Intersector16SingleMoeller);
   DECLARE_INTERSECTOR16(BVH4iTriangle1Intersector16HybridMoeller);
+  DECLARE_INTERSECTOR1(BVH4iVirtualGeometryIntersector1);
   DECLARE_INTERSECTOR16(BVH4iVirtualGeometryIntersector16);
 
 
@@ -63,6 +64,7 @@ namespace embree
     SELECT_KNC(features,BVH4iTriangle1Intersector16ChunkMoeller);
     SELECT_KNC(features,BVH4iTriangle1Intersector16SingleMoeller);
     SELECT_KNC(features,BVH4iTriangle1Intersector16HybridMoeller);
+    SELECT_KNC(features,BVH4iVirtualGeometryIntersector1);
     SELECT_KNC(features,BVH4iVirtualGeometryIntersector16);
   }
 
@@ -85,8 +87,8 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1  = NULL;
-    intersectors.intersector16  = BVH4iVirtualGeometryIntersector16;
+    intersectors.intersector1  = BVH4iVirtualGeometryIntersector1;
+    intersectors.intersector16 = BVH4iVirtualGeometryIntersector16;
     return intersectors;
   }
 
