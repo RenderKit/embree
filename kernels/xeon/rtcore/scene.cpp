@@ -85,8 +85,8 @@ namespace embree
         int mode =  4*(int)isCoherent() + 2*(int)isCompact() + 1*(int)isRobust();
         switch (mode) {
         case /*0b000*/ 0: 
-#if defined (__TARGET_AVX__) // FIXME: Triangle8 is slower for conference on SNB, maybe only enable on HSW
-          if (has_feature(AVX) && aflags == RTC_INTERSECT1) 
+#if defined (__TARGET_AVX__)
+          if (has_feature(AVX2) && aflags == RTC_INTERSECT1) 
           {
             if (isHighQuality()) accels.accel0 = BVH4::BVH4Triangle8SpatialSplit(this); 
             else                 accels.accel0 = BVH4::BVH4Triangle8ObjectSplit(this); 
