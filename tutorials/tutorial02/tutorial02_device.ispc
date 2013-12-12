@@ -358,7 +358,7 @@ vec3f renderPixelNormal(int x, int y, const uniform vec3f& vx, const uniform vec
   ray.time = 0;
   
   /* intersect ray with scene */
-  rtcIntersect(g_scene0,ray);
+  rtcIntersect(g_scene,ray);
   
   /* shade pixels */
   vec3f color = make_vec3f(0.0f);
@@ -380,7 +380,7 @@ vec3f renderPixelNormal(int x, int y, const uniform vec3f& vx, const uniform vec
     shadow.time = 0;
     
     /* trace shadow ray */
-    rtcOccluded(g_scene0,shadow);
+    rtcOccluded(g_scene,shadow);
     
     /* add light contribution */
     if (shadow.geomID)
