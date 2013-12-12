@@ -30,8 +30,8 @@ namespace embree
   void BVH4MBBuilder<Heuristic>::build(size_t threadIndex, size_t threadCount) 
   {
     bvh->clear();
-    /*if (source->isEmpty()) // FIXME: this is buggy
-      return;*/
+    if (source->isEmpty())
+      return;
 
     if (g_verbose >= 2) 
       std::cout << "building BVH4MB<" << bvh->primTy.name << "> with " << Heuristic::name() << " SAH builder ... " << std::flush;

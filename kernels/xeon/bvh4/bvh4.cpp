@@ -608,6 +608,7 @@ namespace embree
   void BVH4::clear () 
   {
     root = emptyNode;
+    bounds = empty;
     AllocatorPerThread::clear();
   }
 

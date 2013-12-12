@@ -72,8 +72,10 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }  
 
-  void BVH4MB::clear() {
-    root = NULL;
+  void BVH4MB::clear() 
+  {
+    root = (Base*)Base::empty;
+    bounds = empty;
     alloc.clear();
   }
 
