@@ -28,16 +28,14 @@ namespace embree
     __forceinline ConditionImplementation ()
       : count(0)
     {
-      mutex = CreateMutex(NULL,FALSE,NULL);
+      //mutex = CreateMutex(NULL,FALSE,NULL);
       event = CreateEvent(NULL,TRUE,FALSE,NULL);
-      noThreadWaitingEvent = CreateEvent(NULL,FALSE,FALSE,NULL);
     }
 
     __forceinline ~ConditionImplementation ()
     {
-      CloseHandle(mutex);
+      //CloseHandle(mutex);
       CloseHandle(event);
-      CloseHandle(noThreadWaitingEvent);
     }
 
     __forceinline void wait(MutexSys& mutex_in)
@@ -45,23 +43,27 @@ namespace embree
       mutex_in.unlock();
 
       /* atomically increment thread count */
-      WaitForSingleObject(mutex,INFINITE);
+      //WaitForSingleObject(mutex,INFINITE);
+	  mutex.lock();
       ssize_t cnt0 = atomic_add(&count,+1);
-      ReleaseMutex(mutex);
-
+	  mutex.unlock();
+      //ReleaseMutex(mutex);
+	  
       /* all threads except the last one are wait in the barrier */
       if (WaitForSingleObject(event, INFINITE) != WAIT_OBJECT_0)
         throw std::runtime_error("WaitForSingleObject failed");
 
       /* atomically decrement thread count */
+  	  //WaitForSingleObject(mutex,INFINITE);
+	  mutex.lock();
       ssize_t cnt1 = atomic_add(&count,-1);
+	  mutex.unlock();
+      //ReleaseMutex(mutex);
 
       /* the last thread that left the barrier resets the event again */
       if (cnt1 == 1) {
         if (ResetEvent(event) == 0)
           throw std::runtime_error("ResetEvent failed");
-        if (SetEvent(noThreadWaitingEvent) == 0)
-          throw std::runtime_error("SetEvent failed");
       }
 
       mutex_in.lock();
@@ -70,26 +72,24 @@ namespace embree
     __forceinline void broadcast() 
     {
       /* we support only one broadcast at a given time */
-      WaitForSingleObject(mutex,INFINITE);
+      //WaitForSingleObject(mutex,INFINITE);
+	  mutex.lock();
+	  bool hasWaiters = count > 0;
+	  mutex.unlock();
+	  //ReleaseMutex(mutex);
 
       /* if threads are waiting, let them continue */
-      if (count > 0) 
+      if (hasWaiters) 
       {
         if (SetEvent(event) == 0)
           throw std::runtime_error("SetEvent failed");
-
-        if (WaitForSingleObject(noThreadWaitingEvent, INFINITE) != WAIT_OBJECT_0)
-          throw std::runtime_error("WaitForSingleObject failed");
       }
-
-      /* allow further broadcasts */
-      ReleaseMutex(mutex);
     }
 
   public:
-    HANDLE mutex;
+    //HANDLE mutex;
+    AtomicMutex mutex;
     HANDLE event;
-    HANDLE noThreadWaitingEvent;
     volatile atomic_t count;
   };
 }

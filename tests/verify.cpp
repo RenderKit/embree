@@ -54,6 +54,7 @@ namespace embree
     printf("%30s ...",name);                                            \
     bool ok = test;                                                     \
     printf(" %s\n",ok ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");          \
+	fflush(stdout);\
   }
 #if defined(__EXIT_ON_ERROR__)
 #define NEGATIVE(name,test)
@@ -62,15 +63,13 @@ namespace embree
     printf("%30s ... ",name);                                           \
     bool notok = test;                                                  \
     printf(" %s\n",notok ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m"); \
+	fflush(stdout);\
   }
 #endif
 #define COUNT(name,test) {                                              \
     size_t notok = test;                                                \
     printf("%30s ... %s (%f%%)\n",name,notok ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)notok/(double)testN); \
-  }
-#define BUILD(name,test) {                                              \
-    double perf = test;                                                \
-    printf("%30s ... %f Mtris/s\n",name,perf*1E-6);                                 \
+	fflush(stdout);\
   }
 
   const size_t numSceneFlags = 64;
@@ -1064,6 +1063,7 @@ namespace embree
       passed &= ok1;
     }
     printf(" %s\n",passed ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");
+	fflush(stdout);
   }
 
   bool rtcore_packet_write_test(RTCFlags flags)
@@ -1133,6 +1133,7 @@ namespace embree
       passed &= ok0;
     }
     printf(" %s\n",passed ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");
+	fflush(stdout);
   }
 
   void rtcore_watertight_sphere1(float pos)
@@ -1152,6 +1153,7 @@ namespace embree
 
     printf("%30s ... %s (%f%%)\n","watertight_sphere1",
            numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
+	fflush(stdout);
   }
   
 #if !defined(__MIC__)
@@ -1177,6 +1179,7 @@ namespace embree
     rtcDeleteScene (scene);
     printf("%30s ... %s (%f%%)\n","watertight_sphere4",
            numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
+	fflush(stdout);
   }
 
   void rtcore_watertight_sphere8(float pos)
@@ -1201,6 +1204,7 @@ namespace embree
     rtcDeleteScene (scene);
     printf("%30s ... %s (%f%%)\n","watertight_sphere8",
            numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
+	fflush(stdout);
   }
 #endif
 
@@ -1226,6 +1230,7 @@ namespace embree
     rtcDeleteScene (scene);
     printf("%30s ... %s (%f%%)\n","watertight_sphere16",
            numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
+	fflush(stdout);
   }
   
   void rtcore_watertight_plane1(float pos)
@@ -1244,6 +1249,7 @@ namespace embree
     rtcDeleteScene (scene);
     printf("%30s ... %s (%f%%)\n","watertight_plane1",
            numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
+	fflush(stdout);
   }
 
 #if !defined(__MIC__)
@@ -1269,6 +1275,7 @@ namespace embree
     rtcDeleteScene (scene);
     printf("%30s ... %s (%f%%)\n","watertight_plane4",
            numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
+	fflush(stdout);
   }
 #endif
 
@@ -1294,6 +1301,7 @@ namespace embree
     rtcDeleteScene (scene);
     printf("%30s ... %s (%f%%)\n","watertight_plane8",
            numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
+	fflush(stdout);
   }
 
   void rtcore_watertight_plane16(float pos)
@@ -1318,6 +1326,7 @@ namespace embree
     rtcDeleteScene (scene);
     printf("%30s ... %s (%f%%)\n","watertight_plane16",
            numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
+	fflush(stdout);
   }
 
   void rtcore_nan(const char* name, RTCFlags flags, int N)
@@ -1375,7 +1384,7 @@ namespace embree
     bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);
     float f = max(d2/d1,d3/d1,d4/d1);
     printf("%30s ... %s (%3.2fx)\n",name,ok ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m",f);
-    
+   	fflush(stdout);
   }
   
   void rtcore_inf(const char* name, RTCFlags flags, int N)
@@ -1448,6 +1457,7 @@ namespace embree
     bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1) && (d5 < 2.5*d1);
     float f = max(d2/d1,d3/d1,d4/d1,d5/d1);
     printf("%30s ... %s (%3.2fx)\n",name,ok ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m",f);
+	fflush(stdout);
   }
 
   bool rtcore_overlapping(size_t numTriangles)
@@ -1543,6 +1553,7 @@ namespace embree
       passed &= ok0;
     }
     printf(" %s\n",passed ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");
+	fflush(stdout);
   }
 
   bool rtcore_new_delete_geometry()
