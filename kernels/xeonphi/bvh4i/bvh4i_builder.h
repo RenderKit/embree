@@ -56,6 +56,8 @@ namespace embree
 
   protected:
 
+    void allocateMemoryPools(const size_t numPrims, const size_t numNodes);
+
     void checkBuildRecord(const BuildRecord &current);
 
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
@@ -190,6 +192,8 @@ namespace embree
     virtual void printBuilderName();
 
   protected:
+    size_t numMaximumPrimitives;
+
     TASK_FUNCTION(BVH4iBuilderPreSplits,computePrimRefsPreSplits);
     
   };

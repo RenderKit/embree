@@ -136,10 +136,6 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);    
   }
 
-  void BVH4i::init(size_t numNodes, size_t numPrimitives)
-  {
-  }
-
   BVH4i::~BVH4i()
   {
     if (qbvh)  os_free(qbvh,size_node);

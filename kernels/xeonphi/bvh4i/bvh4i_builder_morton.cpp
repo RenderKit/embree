@@ -61,8 +61,6 @@ namespace embree
 
   void BVH4iBuilderMorton::initEncodingAllocateData(size_t threadCount)
   {
-    bvh->init();
-
     /* calculate total number of primrefs */
     size_t numPrimitivesOld = numPrimitives;
     numGroups     = source->groups();
@@ -129,7 +127,6 @@ namespace embree
       const size_t minAllocNodes = numPrimitives ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
       const size_t numPrims      = numPrimitives+4;
       const size_t numNodes      = max((size_t)(numPrimitives * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
-      bvh->init(numNodes,numPrims);
 
       const size_t size_morton_tmp = numPrims * sizeof(MortonID32Bit) + additional_size;
       const size_t size_node       = numNodes * sizeof(BVHNode) + additional_size;

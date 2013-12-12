@@ -180,9 +180,6 @@ namespace embree
     static Accel* BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene);
     static Accel* BVH4iVirtualGeometryBinnedSAH(Scene* scene);
 
-    /*! initializes the acceleration structure */
-    void init(size_t numNodes = 0, size_t numPrimitives = 0);
-
     /*! Calculates the SAH of the BVH */
     float sah ();
 
