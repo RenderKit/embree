@@ -18,8 +18,12 @@
 #include "kernels/xeonphi/bvh4i/bvh4i_builder.h"
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
 
-#define PRESPLIT_SPACE_FACTOR                   0.1f
+#define PRESPLIT_SPACE_FACTOR     0.5f
+#define PRESPLIT_AREA_THRESHOLD  12.0f
+#define PRESPLIT_MIN_AREA         0.001f
+
 #define DBG(x) 
+
 
 namespace embree
 {
@@ -47,20 +51,15 @@ namespace embree
 	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
 	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
 
-	numMaximumPrimitives = numPrims;
+	numMaxPrimitives = numPrims;
+	numMaxPreSplits  = numPrims - numPrimitives;
+
+	DBG_PRINT(numPrimitives);
+	DBG_PRINT(numMaxPrimitives);
+	DBG_PRINT(numMaxPreSplits);
 
 	allocateMemoryPools(numPrims,numNodes);
       }    
-  }
-
-  void BVH4iBuilderPreSplits::computePrimRefs(size_t threadIndex, size_t threadCount)
-  {
-    DBG(PING);
-    atomicID.reset(numPrimitives);
-    LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
-    // for (size_t i=numPrimitives;i<atomicID;i++) DBG_PRINT(prims[i]);
-    DBG_PRINT(atomicID - numPrimitives);
-    numPrimitives = atomicID;    
   }
 
 
@@ -73,6 +72,155 @@ namespace embree
     const mic_f d_z = swCCCC(d);
     return (d_x*(d_y+d_z)+d_y*d_z)*2.0f; 
   }
+
+  __forceinline mic_f box_sah( const PrimRef &r) 
+  { 
+    const mic_f bmin = broadcast4to16f(&r.lower);
+    const mic_f bmax = broadcast4to16f(&r.upper);
+    return box_sah(bmin,bmax);
+  }
+  
+  void quicksort_ascending_primrefs(PrimRef *__restrict__ t, 
+				    const ssize_t begin, 
+				    const ssize_t end)
+  {
+    if (likely(begin < end)) 
+    {      
+      const PrimRef pivotvalue = t[begin];
+      ssize_t left  = begin - 1;
+      ssize_t right = end   + 1;
+      
+      while(1) 
+      {
+        while (box_sah(t[--right]) > box_sah(pivotvalue));
+        while (box_sah(t[++left]) < box_sah(pivotvalue));
+        
+        if (left >= right) break;
+        
+        const PrimRef temp = t[right];
+        t[right] = t[left];
+        t[left] = temp;
+      }
+      
+      const int pivot = right;
+      quicksort_ascending_primrefs(t, begin, pivot);
+      quicksort_ascending_primrefs(t, pivot + 1, end);
+    }
+  }
+
+
+  void BVH4iBuilderPreSplits::computePrimRefs(size_t threadIndex, size_t threadCount)
+  {
+    DBG(PING);
+
+    dest0.reset(0);
+    dest1.reset(numPrimitives-1);
+
+    LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
+
+    const size_t startFactor = dest0;
+    const size_t numFactorTris = numPrimitives - startFactor;
+
+    DBG_PRINT( startFactor );
+    DBG_PRINT( numFactorTris );
+
+    quicksort_ascending_primrefs(prims,startFactor, numPrimitives-1);
+
+#if 0
+    for (size_t i=dest1 + 1;i<numPrimitives;i++)
+      {
+	DBG_PRINT(i);
+	DBG_PRINT( prims[i] );
+	DBG_PRINT(box_sah( prims[i] ));
+      }
+#endif
+    
+    PrimRef *presplits = (PrimRef*)accel;
+
+    const size_t step = (numMaxPreSplits+3) / 4;
+
+    DBG_PRINT(step);
+
+    const size_t startPreSplits = numPrimitives - step;
+    dest0 = startPreSplits;
+
+    DBG_PRINT(dest0);
+    DBG_PRINT(numPrimitives);
+
+    dest1.reset(0);
+
+
+    for (size_t i=dest0;i<numPrimitives;i++)
+      {
+	const size_t geomID = prims[i].geomID();
+	const size_t primID = prims[i].primID();
+
+	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	const TriangleMeshScene::TriangleMesh::Triangle & tri = mesh->triangle(primID);
+
+	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
+	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
+	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+
+	const mic_f v0 = broadcast4to16f(vptr0);
+	const mic_f v1 = broadcast4to16f(vptr1);
+	const mic_f v2 = broadcast4to16f(vptr2);
+	
+	const unsigned int dest_index = dest1.add(4);
+
+	const mic_f v01 = (v0 + v1) * 0.5f;
+	const mic_f v12 = (v1 + v2) * 0.5f;
+	const mic_f v20 = (v2 + v0) * 0.5f;
+
+	const mic_f bminA = min(min(v0,v01),v20);
+	const mic_f bmaxA = max(max(v0,v01),v20);
+
+	const mic_f bminB = min(min(v01,v1),v12);
+	const mic_f bmaxB = max(max(v01,v1),v12);
+
+	const mic_f bminC = min(min(v20,v12),v2);
+	const mic_f bmaxC = max(max(v20,v12),v2);
+
+	const mic_f bminD = min(min(v01,v12),v20);
+	const mic_f bmaxD = max(max(v01,v12),v20);
+
+	PrimRef &refA = presplits[dest_index+0];
+	PrimRef &refB = presplits[dest_index+1];
+	PrimRef &refC = presplits[dest_index+2];
+	PrimRef &refD = presplits[dest_index+3];
+
+	store4f(&refA.lower,bminA);
+	store4f(&refA.upper,bmaxA);
+	refA.lower.a = geomID; 
+	refA.upper.a = primID;
+
+	store4f(&refB.lower,bminB);
+	store4f(&refB.upper,bmaxB);
+	refB.lower.a = geomID; 
+	refB.upper.a = primID;
+
+	store4f(&refC.lower,bminC);
+	store4f(&refC.upper,bmaxC);
+	refC.lower.a = geomID; 
+	refC.upper.a = primID;
+
+	store4f(&refD.lower,bminD);
+	store4f(&refD.upper,bmaxD);
+	refD.lower.a = geomID; 
+	refD.upper.a = primID;
+	
+      }
+
+    assert( startPreSplits + dest1 < numMaxPrimitives);
+
+    for (size_t i=0;i<dest1;i++)
+      prims[startPreSplits + i] = presplits[i];
+
+    numPrimitives = dest1 + startPreSplits;    
+    DBG_PRINT( dest1 + startPreSplits );
+  }
+
+
 
   __forceinline mic_f tri_sah( const mic_f &v0,
 			       const mic_f &v1,
@@ -114,8 +262,6 @@ namespace embree
     unsigned int currentID = startID;
     unsigned int offset = startID - numSkipped;
 
-    PrimRef *__restrict__ dest = &prims[currentID];
-
     for (; g<numGroups; g++) 
     {
       if (unlikely(scene->get(g) == NULL)) continue;
@@ -150,57 +296,24 @@ namespace embree
 	DBG_PRINT(area_box);
 	DBG_PRINT(factor);
 #endif
+	const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
+	const mic_m m_sah_zero = area_box > PRESPLIT_MIN_AREA;
 
-	if (any(factor > mic_f(80.0f))) 
+	if (any(m_factor & m_sah_zero)) 
 	  {
-	    const mic_f v01 = (v0 + v1) * 0.5f;
-	    const mic_f v12 = (v1 + v2) * 0.5f;
-	    const mic_f v20 = (v2 + v0) * 0.5f;
-
-	    bmin = min(bmin,min(min(v01,v12),v20));
-	    bmax = min(bmax,max(max(v01,v12),v20));
-
-	    const mic_f bminA = min(min(v0,v01),v20);
-	    const mic_f bmaxA = max(max(v0,v01),v20);
-
-	    const mic_f bminB = min(min(v01,v1),v12);
-	    const mic_f bmaxB = max(max(v01,v1),v12);
-
-	    const mic_f bminC = min(min(v20,v12),v2);
-	    const mic_f bmaxC = max(max(v20,v12),v2);
-
-	    const mic_f bminD = min(min(v01,v12),v20);
-	    const mic_f bmaxD = max(max(v01,v12),v20);
-
-	    unsigned int preSplitIndex = atomicID.add(3);
-
-	    store4f(&dest->lower,bminA);
-	    store4f(&dest->upper,bmaxA);	
-	    dest->lower.a = g; dest->upper.a = i;
-	    dest++;
-
-	    store4f(&prims[preSplitIndex+0].lower,bminB);
-	    store4f(&prims[preSplitIndex+0].upper,bmaxB);
-	    prims[preSplitIndex+0].lower.a = g; 
-	    prims[preSplitIndex+0].upper.a = i;
-
-	    store4f(&prims[preSplitIndex+1].lower,bminC);
-	    store4f(&prims[preSplitIndex+1].upper,bmaxC);
-	    prims[preSplitIndex+1].lower.a = g; 
-	    prims[preSplitIndex+1].upper.a = i;
-
-	    store4f(&prims[preSplitIndex+2].lower,bminD);
-	    store4f(&prims[preSplitIndex+2].upper,bmaxD);
-	    prims[preSplitIndex+2].lower.a = g; 
-	    prims[preSplitIndex+2].upper.a = i;
+	    const unsigned int d_index = dest1.dec();
+	    store4f(&prims[d_index].lower,bmin);
+	    store4f(&prims[d_index].upper,bmax);	
+	    prims[d_index].lower.a = g; 
+	    prims[d_index].upper.a = i;
 	  }
 	else
 	  {       
-	    store4f(&dest->lower,bmin);
-	    store4f(&dest->upper,bmax);	
-	    dest->lower.a = g;
-	    dest->upper.a = i;
-	    dest++;
+	    const unsigned int d_index = dest0.inc();
+	    store4f(&prims[d_index].lower,bmin);
+	    store4f(&prims[d_index].upper,bmax);	
+	    prims[d_index].lower.a = g; 
+	    prims[d_index].upper.a = i;
 	  }
 
 	bounds_scene_min = min(bounds_scene_min,bmin);

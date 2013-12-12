@@ -181,9 +181,6 @@ namespace embree
   public:
   BVH4iBuilderPreSplits(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
       {
-#if defined(DEBUG)
-	PING;
-#endif
       }
 
 
@@ -192,7 +189,11 @@ namespace embree
     virtual void printBuilderName();
 
   protected:
-    size_t numMaximumPrimitives;
+    size_t numMaxPrimitives;
+    size_t numMaxPreSplits;
+
+    __align(64) AlignedAtomicCounter32 dest0;
+    __align(64) AlignedAtomicCounter32 dest1;
 
     TASK_FUNCTION(BVH4iBuilderPreSplits,computePrimRefsPreSplits);
     
@@ -205,9 +206,6 @@ namespace embree
   public:
   BVH4iBuilderVirtualGeometry(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
       {
-#if defined(DEBUG)
-	PING;
-#endif
       }
 
     virtual size_t getNumPrimitives();
