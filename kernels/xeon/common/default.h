@@ -47,12 +47,6 @@
 #define ERROR(x) \
   throw std::runtime_error(x)
 
-#if defined(__USE_RAY_MASK__) // FIXME: remove
-#define USE_RAY_MASK 1
-#else
-#define USE_RAY_MASK 0
-#endif
-
 #if defined(__EXIT_ON_ERROR__)
 #define VERBOSE 1
 #else

@@ -281,7 +281,7 @@ namespace embree
 			const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
 			const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
 		  
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
 			if ( (tri_ptr->mask() & ray16.mask[rayIndex]) != 0 )
 #else
 			if (1)
@@ -516,7 +516,7 @@ namespace embree
 	    prefetch<PFHINT_L1EX>(&ray16.Ng.z);      
 
 	    /* ray masking test */
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
 	    valid &= (tri.mask() & ray16.mask) != 0;
 #endif
 	    if (unlikely(none(valid))) continue;
@@ -757,7 +757,7 @@ namespace embree
 		    /* did the ray hot one of the four triangles? */
 		    if (unlikely(any(m_final)))
 		      {
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
 			const mic_i rayMask(ray16.mask[rayIndex]);
 			const mic_i triMask = gather16i_4i((int*)&tptr[0].Ng,
 							   (int*)&tptr[1].Ng,

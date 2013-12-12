@@ -80,7 +80,7 @@ namespace embree
         if (unlikely(none(valid))) continue;
         
         /* ray masking test */
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
         valid &= (tri.mask() & ray.mask) != 0;
         if (unlikely(none(valid))) continue;
 #endif
@@ -147,7 +147,7 @@ namespace embree
         if (unlikely(none(valid))) continue;
 
         /* ray masking test */
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
         valid &= (tri.mask() & ray.mask) != 0;
         if (unlikely(none(valid))) continue;
 #endif

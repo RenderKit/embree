@@ -37,7 +37,7 @@ namespace embree
     __forceinline Triangle8 (const avx3f& v0, const avx3f& v1, const avx3f& v2, const avxi& geomID, const avxi& primID, const avxi& mask)
       : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomID(geomID), primID(primID)
     {
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
       this->mask = mask;
 #endif
     }
@@ -86,7 +86,7 @@ namespace embree
       store8f_nt(&dst->Ng.z,src.Ng.z);
       store8i_nt(&dst->geomID,src.geomID);
       store8i_nt(&dst->primID,src.primID);
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
       store8i_nt(&dst->mask,src.mask);
 #endif
     }
@@ -98,7 +98,7 @@ namespace embree
     avx3f Ng;      //!< Geometry normal of the triangles.
     avxi geomID;   //!< user geometry ID
     avxi primID;   //!< primitive ID
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
     avxi mask;     //!< geometry mask
 #endif
   };

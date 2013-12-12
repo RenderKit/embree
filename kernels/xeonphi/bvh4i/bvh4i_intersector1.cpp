@@ -238,7 +238,7 @@ namespace embree
 	      const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
 	      const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
 
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
 	      if ( (tri_ptr->mask() & ray.mask) != 0 )
 #else
 	      if (1)
@@ -504,7 +504,7 @@ namespace embree
 
 	  if (unlikely(any(m_final)))
 	    {
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
 	      const mic_i rayMask(ray.mask);
 	      const mic_i triMask = gather16i_4i((int*)&tptr[0].Ng,
 						 (int*)&tptr[1].Ng,

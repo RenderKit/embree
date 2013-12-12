@@ -35,7 +35,7 @@ namespace embree
     __forceinline Triangle4 (const sse3f& v0, const sse3f& v1, const sse3f& v2, const ssei& geomID, const ssei& primID, const ssei& mask)
       : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomID(geomID), primID(primID)
     {
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
       this->mask = mask;
 #endif
     }
@@ -84,7 +84,7 @@ namespace embree
       store4f_nt(&dst->Ng.z,src.Ng.z);
       store4i_nt(&dst->geomID,src.geomID);
       store4i_nt(&dst->primID,src.primID);
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
       store4i_nt(&dst->mask,src.mask);
 #endif
     }
@@ -96,7 +96,7 @@ namespace embree
     sse3f Ng;      //!< Geometry normal of the triangles.
     ssei geomID;   //!< user geometry ID
     ssei primID;   //!< primitive ID
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
     ssei mask;     //!< geometry mask
 #endif
   };

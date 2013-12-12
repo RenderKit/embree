@@ -32,7 +32,6 @@
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
 #endif
-#define PROFILE
 
 namespace embree 
 {

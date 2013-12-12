@@ -86,7 +86,7 @@ namespace embree
       size_t i = select_min(valid,t);
 
       /* ray masking test */
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
       while (true) {
         int mask = ((Scene*)geom)->getTriangleMesh(tri.geomID[i])->mask;
         if (mask & ray.mask) break;
@@ -165,7 +165,7 @@ namespace embree
 #endif
 
       /* ray masking test */
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
       for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
       {  
         int mask = ((Scene*)geom)->getTriangleMesh(tri.geomID[i])->mask;

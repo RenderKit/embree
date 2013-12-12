@@ -85,7 +85,7 @@ namespace embree
 #endif
 
         /* ray masking test */
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
         int mask = ((Scene*)geom)->getTriangleMesh(tri.geomID[i])->mask;
         valid &= (mask & ray.mask) != 0;
         if (unlikely(none(valid))) continue;
@@ -168,7 +168,7 @@ namespace embree
 #endif
 
         /* ray masking test */
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
         int mask = ((Scene*)geom)->getTriangleMesh(tri.geomID[i])->mask;
         valid &= (mask & ray.mask) != 0;
         if (unlikely(none(valid))) continue;

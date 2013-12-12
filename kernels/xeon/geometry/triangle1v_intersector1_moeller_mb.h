@@ -77,7 +77,7 @@ namespace embree
 #endif
 
       /* ray masking test */
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
       if (unlikely((tri.mask() & ray.mask) == 0)) return;
 #endif
 
@@ -139,7 +139,7 @@ namespace embree
 #endif
 
       /* ray masking test */
-#if USE_RAY_MASK
+#if defined(__USE_RAY_MASK__)
       if (unlikely((tri.mask() & ray.mask) == 0)) return false;
 #endif
       return true;
