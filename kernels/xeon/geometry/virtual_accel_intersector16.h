@@ -35,7 +35,9 @@ namespace embree
     static __forceinline void intersect(const mic_m& valid, Ray16& ray, const Primitive* tri, size_t num, const void* geom)
     {
       for (size_t i=0; i<num; i++)
-        intersect(valid,ray,tri[i],geom);
+	{
+	  intersect(valid,ray,tri[i],geom);
+	}
     }
 
     static __forceinline mic_m occluded(const mic_m& valid_i, const Ray16& ray, const Primitive& mesh, const void* geom) 

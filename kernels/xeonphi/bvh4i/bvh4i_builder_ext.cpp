@@ -391,6 +391,7 @@ namespace embree
     Triangle1    * __restrict__  acc  = accel + startID;
     const PrimRef* __restrict__  bptr = prims + startID;
 
+    DBG(DBG_PRINT(accel));
     DBG(DBG_PRINT(startID));
     DBG(DBG_PRINT(endID));
 
@@ -402,8 +403,13 @@ namespace embree
 	assert(bptr->geomID() < scene->size() );
 	DBG(DBG_PRINT( bptr->geomID() ));
 
-	*(void**)acc = (void*)(scene->get( bptr->geomID() ));
-	DBG (DBG_PRINT((void**)acc));
+	Accel *tmp = (Accel*)(UserGeometryScene::Base *)(scene->get( bptr->geomID() ));
+	DBG_PRINT(tmp);
+	DBG_PRINT((void*)tmp);
+
+	DBG_PRINT( (void*) tmp->intersectors.intersector16.intersect );
+	*(void**)acc = tmp;
+	DBG (DBG_PRINT(*(void**)acc));
       }
   }
 
