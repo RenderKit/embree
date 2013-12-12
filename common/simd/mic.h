@@ -53,7 +53,7 @@ namespace embree
 #define PFHINT_NTEX 5
 
   template<const unsigned int mode>
-    __forceinline void prefetch(const void * __restrict__ const m) // FIXME
+    __forceinline void prefetch(const void * __restrict__ const m)
   {
     if (mode == PFHINT_L1)
       _mm_prefetch((const char*)m,_MM_HINT_T0); 

@@ -201,7 +201,7 @@ namespace embree
       if (triangles) alignedFree(triangles); triangles = NULL;
     }
     if (freeVertices) {
-      if (vertices_[0]) alignedFree(vertices_[0]); vertices_[0] = NULL; // FIXME: on KNC this does not call our own alignedFree but some other function !!!!!!
+      if (vertices_[0]) alignedFree(vertices_[0]); vertices_[0] = NULL;
       if (vertices_[1]) alignedFree(vertices_[1]); vertices_[1] = NULL;
     }
   }
