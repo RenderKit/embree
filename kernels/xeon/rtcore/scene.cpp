@@ -84,17 +84,21 @@ namespace embree
       if (isStatic()) {
         int mode =  4*(int)isCoherent() + 2*(int)isCompact() + 1*(int)isRobust();
         switch (mode) {
-/*#if defined (__TARGET_AVX__) // FIXME: Triangle8 is slower for conference on SNB, maybe only enable on HSW
-        case 0b000 0: 
-          if (has_feature(AVX)) accels.accel0 = BVH4::BVH4Triangle8SpatialSplit(this); 
-          else                  accels.accel0 = BVH4::BVH4Triangle4SpatialSplit(this); 
-          break;
-          #else*/
         case /*0b000*/ 0: 
-          if (isHighQuality()) accels.accel0 = BVH4::BVH4Triangle4SpatialSplit(this);
-          else                 accels.accel0 = BVH4::BVH4Triangle4ObjectSplit(this); 
+#if defined (__TARGET_AVX__) // FIXME: Triangle8 is slower for conference on SNB, maybe only enable on HSW
+          if (has_feature(AVX) && aflags == RTC_INTERSECT1) 
+          {
+            if (isHighQuality()) accels.accel0 = BVH4::BVH4Triangle8SpatialSplit(this); 
+            else                 accels.accel0 = BVH4::BVH4Triangle8ObjectSplit(this); 
+          }
+          else 
+#endif
+          {
+            if (isHighQuality()) accels.accel0 = BVH4::BVH4Triangle4SpatialSplit(this);
+            else                 accels.accel0 = BVH4::BVH4Triangle4ObjectSplit(this); 
+          }
           break;
-//#endif
+
         case /*0b001*/ 1: accels.accel0 = BVH4::BVH4Triangle4vObjectSplit(this); break;
         case /*0b010*/ 2: accels.accel0 = BVH4::BVH4Triangle4iObjectSplit(this); break;
         case /*0b011*/ 3: accels.accel0 = BVH4::BVH4Triangle4iObjectSplit(this); break;
