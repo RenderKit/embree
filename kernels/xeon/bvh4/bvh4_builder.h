@@ -71,7 +71,7 @@ namespace embree
     NodeRef createLeaf(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const PrimInfo& pinfo);
 
     /*! creates a large leaf by adding additional internal nodes */
-    NodeRef createLargeLeaf(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const PrimInfo& pinfo, size_t depth = 0);
+    NodeRef createLargeLeaf(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const PrimInfo& pinfo, size_t depth);
 
     /*! Selects between full build and single-threaded split strategy. */
     void recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 

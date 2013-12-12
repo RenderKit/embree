@@ -16,9 +16,8 @@
 
 #include "bvh4mb.h"
 #include "bvh4mb_builder.h"
-//#include "bvh4mb_statistics.h"
 #include "builders/heuristics.h"
-//#include "builders/splitter_fallback.h" // FIXME: implement big leaf fallback
+#include "builders/splitter_fallback.h"
 
 #define ROTATE_TREE 1
 
@@ -84,7 +83,6 @@ namespace embree
   void BVH4MBBuilder<Heuristic>::finish(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) {
     bvh->refit(geometry,bvh->root);
     bvh->bounds = initStage.pinfo.geomBounds;
-    //delete this;
   }
 
   template<typename Heuristic>
@@ -127,6 +125,35 @@ namespace embree
     return BVH4MB::Base::encodeLeaf(leaf,blocks);
   }
 
+  template<typename Heuristic>
+  BVH4MB::Base* BVH4MBBuilder<Heuristic>::createLargeLeaf(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const PrimInfo& pinfo, size_t depth)
+  {
+#if defined(_DEBUG)
+    if (depth >= BVH4MB::maxBuildDepthLeaf) 
+      throw std::runtime_error("ERROR: Loosing primitives during build.");
+#endif
+    
+    /* create leaf for few primitives */
+    if (pinfo.size() <= maxLeafSize)
+      return createLeaf(threadIndex,prims,pinfo);
+
+    /* first level */
+    atomic_set<PrimRefBlock> prims0, prims1;
+    PrimInfo                 cinfo0, cinfo1;
+    FallBackSplitter<Heuristic>::split(threadIndex,&alloc,source,prims,pinfo,prims0,cinfo0,prims1,cinfo1);
+
+    /* second level */
+    atomic_set<PrimRefBlock> cprims[4];
+    PrimInfo                 cinfo[4];
+    FallBackSplitter<Heuristic>::split(threadIndex,&alloc,source,prims0,cinfo0,cprims[0],cinfo[0],cprims[1],cinfo[1]);
+    FallBackSplitter<Heuristic>::split(threadIndex,&alloc,source,prims1,cinfo1,cprims[2],cinfo[2],cprims[3],cinfo[3]);
+
+    /*! create an inner node */
+    BVH4MB::Node* node = (BVH4MB::Node*) bvh->alloc.malloc(threadIndex,sizeof(BVH4MB::Node),1 << BVH4MB::alignment); node->clear();
+    for (size_t i=0; i<4; i++) node->set(i,cinfo[i].geomBounds,createLargeLeaf(threadIndex,cprims[i],cinfo[i],depth+1));
+    return BVH4MB::Base::encodeNode(node);
+  }  
+
   /***********************************************************************************************************************
    *                                         Full Recursive Build Task
    **********************************************************************************************************************/
@@ -161,8 +188,8 @@ namespace embree
     assert(pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
     
     /*! create a leaf node when threshold reached or SAH tells us to stop */
-    if (pinfo.size() <= parent->minLeafSize || depth > BVH4MB::maxDepth || (pinfo.size() <= parent->maxLeafSize && leafSAH <= splitSAH)) {
-      return parent->createLeaf(threadIndex,prims,pinfo);
+    if (pinfo.size() <= parent->minLeafSize || depth > BVH4MB::maxBuildDepth || (pinfo.size() <= parent->maxLeafSize && leafSAH <= splitSAH)) {
+      return parent->createLargeLeaf(threadIndex,prims,pinfo,depth+1);
     }
 
     /*! initialize child list */
@@ -224,8 +251,8 @@ namespace embree
     assert(pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
 
     /*! create a leaf node when threshold reached or SAH tells us to stop */
-    if (pinfo.size() <= parent->minLeafSize || depth > BVH4MB::maxDepth || (pinfo.size() <= parent->maxLeafSize && leafSAH <= splitSAH)) {
-      dst = parent->createLeaf(threadIndex,prims,pinfo); delete this; return;
+    if (pinfo.size() <= parent->minLeafSize || depth > BVH4MB::maxBuildDepth || (pinfo.size() <= parent->maxLeafSize && leafSAH <= splitSAH)) {
+      dst = parent->createLargeLeaf(threadIndex,prims,pinfo,depth+1); delete this; return;
     }
 
     /*! initialize child list */
@@ -284,8 +311,8 @@ namespace embree
     assert(pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
 
     /*! create a leaf node when threshold reached or SAH tells us to stop */
-    if (pinfo.size() <= parent->minLeafSize || depth > BVH4MB::maxDepth || (pinfo.size() <= parent->maxLeafSize && leafSAH <= splitSAH)) {
-      dst = parent->createLeaf(threadIndex,prims,pinfo); delete this; return;
+    if (pinfo.size() <= parent->minLeafSize || depth > BVH4MB::maxBuildDepth || (pinfo.size() <= parent->maxLeafSize && leafSAH <= splitSAH)) {
+      dst = parent->createLargeLeaf(threadIndex,prims,pinfo,depth+1); delete this; return;
     }
 
     /*! initialize child list */

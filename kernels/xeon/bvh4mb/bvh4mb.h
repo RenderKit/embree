@@ -106,7 +106,9 @@ namespace embree
     typedef BaseNode<Node,alignment> Base;
 
     /*! Maximal depth of the BVH. */
-    static const size_t maxDepth = 32;                     
+    static const size_t maxBuildDepth = 32;
+    static const size_t maxBuildDepthLeaf = maxBuildDepth+16;
+    static const size_t maxDepth = maxBuildDepthLeaf+maxBuildDepthLeaf+maxBuildDepth;
     
     /*! Maximal number of triangle blocks in a leaf. */
     static const size_t maxLeafBlocks = Base::maxLeafBlocks;    
