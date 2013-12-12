@@ -91,21 +91,6 @@ namespace embree
 
   size_t BVH4iBuilder::getNumPrimitives()
   {
-#if 0
-    if (enableVirtualGeometry)
-      {
-	/* count total number of virtual objects */
-	size_t numVirtualObjects = 0;       
-	for (size_t i=0;i<scene->size();i++)
-	  {
-	    if (unlikely(scene->get(i) == NULL)) continue;
-	    if (unlikely(scene->get(i)->type != USER_GEOMETRY)) continue;
-	    if (unlikely(!scene->get(i)->isEnabled())) continue;
-	    numVirtualObjects++;
-	  }
-	return numVirtualObjects;	
-      }
-#endif
     return source->size();
   }
 
@@ -453,9 +438,6 @@ namespace embree
   void BVH4iBuilder::createAccel(size_t threadIndex, size_t threadCount)
   {
     DBG(PING);
-    // if (unlikely(enableVirtualGeometry))      
-    //   LockStepTaskScheduler::dispatchTask( task_createVirtualGeometryAccel, this, threadIndex, threadCount );
-    // else
     LockStepTaskScheduler::dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );   
   }
 
@@ -1285,9 +1267,6 @@ namespace embree
 	FATAL("check build record");
       }
   }
-  // =======================================================================================================
-  // =======================================================================================================
-  // =======================================================================================================
 
   void BVH4iBuilder::parallelBinningLocal(const size_t localThreadID,const size_t globalThreadID)
   {
@@ -1405,17 +1384,16 @@ namespace embree
     
   }
 
-
-  // =======================================================================================================
-  // =======================================================================================================
-  // =======================================================================================================
-
   void BVH4iBuilder::computePrimRefs(size_t threadIndex, size_t threadCount)
   {
-    //LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
-
     LockStepTaskScheduler::dispatchTask( task_computePrimRefsTriangles, this, threadIndex, threadCount );
   }
+
+
+  // =======================================================================================================
+  // =======================================================================================================
+  // =======================================================================================================
+
 
   void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
@@ -1478,16 +1456,7 @@ namespace embree
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "build_top_level " << 1000. * msec << " ms" << std::endl << std::flush);
 
-#if 0
-    DBG_PRINT(atomicID);
-    DBG_PRINT(numAllocatedNodes);
-    DBG_PRINT(global_bounds);
-    DBG_PRINT(global_workStack.size());
-    for (size_t i=0;i<global_workStack.size();i++)
-      std::cout << i << " items " << global_workStack.get(i).items() << std::endl;
-#endif
-
-    /* fill per core qork queues */    
+    /* fill per core work queues */    
     TIMER(msec = getSeconds());    
     LockStepTaskScheduler::dispatchTask(task_fillLocalWorkQueues, this, threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    

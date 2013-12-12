@@ -24,6 +24,9 @@
 namespace embree
 {
 
+  /* =================================================================================== */
+  /* =================================================================================== */
+  /* =================================================================================== */
 
   void BVH4iBuilderPreSplits::allocateData(size_t threadCount,size_t totalNumPrimitives)
   {
@@ -258,7 +261,35 @@ namespace embree
     global_bounds.extend_atomic(bounds);    
   }
 
-  void BVH4iBuilder::computePrimRefsVirtualGeometry(const size_t threadID, const size_t numThreads) 
+  /* =================================================================================== */
+  /* =================================================================================== */
+  /* =================================================================================== */
+
+  size_t BVH4iBuilderVirtualGeometry::getNumPrimitives()
+  {
+    /* count total number of virtual objects */
+    size_t numVirtualObjects = 0;       
+    for (size_t i=0;i<scene->size();i++)
+      {
+	if (unlikely(scene->get(i) == NULL)) continue;
+	if (unlikely(scene->get(i)->type != USER_GEOMETRY)) continue;
+	if (unlikely(!scene->get(i)->isEnabled())) continue;
+	numVirtualObjects++;
+      }
+    return numVirtualObjects;	
+  }
+
+  void BVH4iBuilderVirtualGeometry::computePrimRefs(size_t threadIndex, size_t threadCount)
+  {
+    LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
+  }
+
+  void BVH4iBuilderVirtualGeometry::createAccel(size_t threadIndex, size_t threadCount)
+  {
+    LockStepTaskScheduler::dispatchTask( task_createVirtualGeometryAccel, this, threadIndex, threadCount );
+  }
+
+  void BVH4iBuilderVirtualGeometry::computePrimRefsVirtualGeometry(const size_t threadID, const size_t numThreads) 
   {
     const size_t numTotalGroups = scene->size();
     DBG_PRINT(numTotalGroups);
@@ -335,7 +366,7 @@ namespace embree
   }
 
 
-  void BVH4iBuilder::createVirtualGeometryAccel(const size_t threadID, const size_t numThreads)
+  void BVH4iBuilderVirtualGeometry::createVirtualGeometryAccel(const size_t threadID, const size_t numThreads)
   {
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;

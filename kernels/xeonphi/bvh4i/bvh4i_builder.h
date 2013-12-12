@@ -32,10 +32,7 @@ namespace embree
   protected:
 
     static const size_t ALLOCATOR_NODE_BLOCK_SIZE = 64;
-    typedef AtomicIDBlock<ALLOCATOR_NODE_BLOCK_SIZE> NodeAllocator;
-
-    
-    void checkBuildRecord(const BuildRecord &current);
+    typedef AtomicIDBlock<ALLOCATOR_NODE_BLOCK_SIZE> NodeAllocator;    
 
   public:
 
@@ -55,7 +52,10 @@ namespace embree
     virtual void createAccel(size_t threadIndex, size_t threadCount);
     virtual size_t getNumPrimitives();
 
-  public:
+  protected:
+
+    void checkBuildRecord(const BuildRecord &current);
+
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
     TASK_FUNCTION(BVH4iBuilder,fillLocalWorkQueues);
     TASK_FUNCTION(BVH4iBuilder,buildSubTrees);
@@ -66,10 +66,6 @@ namespace embree
     TASK_RUN_FUNCTION(BVH4iBuilder,build_parallel);
     LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelBinningLocal);
     LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelPartitioningLocal);
-
-    /* support for extended modes */
-    TASK_FUNCTION(BVH4iBuilder,createVirtualGeometryAccel);
-    TASK_FUNCTION(BVH4iBuilder,computePrimRefsVirtualGeometry);
 
   public:
 
@@ -168,16 +164,35 @@ namespace embree
 
   };
 
-
+  
   class BVH4iBuilderPreSplits : public BVH4iBuilder
   {
   public:
-  BVH4iBuilderPreSplits(BVH4i* bvh, BuildSource* source, void* geometry, bool enablePreSplits = false, bool enableVirtualGeometry = false) : BVH4iBuilder(bvh,source,geometry) {}
+  BVH4iBuilderPreSplits(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) {}
 
-    TASK_FUNCTION(BVH4iBuilderPreSplits,computePrimRefsPreSplits);
 
     virtual void allocateData(size_t threadCount,size_t newNumPrimitives);
     virtual void computePrimRefs(size_t threadIndex, size_t threadCount);
+
+  protected:
+    TASK_FUNCTION(BVH4iBuilderPreSplits,computePrimRefsPreSplits);
+    
+  };
+
+
+  class BVH4iBuilderVirtualGeometry : public BVH4iBuilder
+  {
+  public:
+  BVH4iBuilderVirtualGeometry(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) {}
+
+    virtual size_t getNumPrimitives();
+    virtual void computePrimRefs(size_t threadIndex, size_t threadCount);
+    virtual void createAccel(size_t threadIndex, size_t threadCount);
+
+  protected:
+    TASK_FUNCTION(BVH4iBuilderVirtualGeometry,computePrimRefsVirtualGeometry);
+    TASK_FUNCTION(BVH4iBuilderVirtualGeometry,createVirtualGeometryAccel);
+
     
   };
 
