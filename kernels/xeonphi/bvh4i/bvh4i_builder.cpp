@@ -32,8 +32,8 @@
 #define ENABLE_FILL_PER_CORE_WORK_QUEUES
 
 
-#define TIMER(x) 
-#define DBG(x) 
+#define TIMER(x) x 
+#define DBG(x) x
 
 //#define PROFILE
 
@@ -177,6 +177,11 @@ namespace embree
       }
   }
 
+  void BVH4iBuilder::printBuilderName()
+  {
+    std::cout << "building BVH4i with SAH builder (MIC) ... " << std::endl;    
+  }
+
 
   void BVH4iBuilder::build(size_t threadIndex, size_t threadCount) 
   {
@@ -184,30 +189,21 @@ namespace embree
 
     const size_t totalNumPrimitives = getNumPrimitives();
 
-    if (!totalNumPrimitives) 
+    /* no primitives? */
+    if (unlikely(!totalNumPrimitives)) 
       {
 	bvh->root = 0;
 	bvh->bounds = empty;
 	return;
       }
 
-    if (g_verbose >= 1)
-      {
-	// if (unlikely(enablePreSplits))
-	//   std::cout << "building BVH4i with (pre-splits-based) SAH builder (MIC) ... " << std::endl;
-	// else if (unlikely(enableVirtualGeometry))
-	//   std::cout << "building BVH4i with Virtual Geometry SAH builder (MIC) ... " << std::endl;
-	// else
-	  std::cout << "building BVH4i with SAH builder (MIC) ... " << std::endl;
-      }
+    /* print builder name */
+    if (unlikely(g_verbose >= 1)) printBuilderName();
 
     /* allocate BVH data */
     allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
 
     LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); 
-
-
-    DBG(DBG_PRINT(numPrimitives));
 
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1) )
       {

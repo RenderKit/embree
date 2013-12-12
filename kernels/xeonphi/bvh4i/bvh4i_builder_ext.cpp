@@ -19,7 +19,7 @@
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
 
 #define PRESPLIT_SPACE_FACTOR                   0.1f
-#define DBG(x) 
+#define DBG(x) x
 
 namespace embree
 {
@@ -28,12 +28,13 @@ namespace embree
   /* =================================================================================== */
   /* =================================================================================== */
 
+  void BVH4iBuilderPreSplits::printBuilderName()
+  {
+    std::cout << "building BVH4i with presplits-based SAH builder (MIC) ... " << std::endl;    
+  }
+
   void BVH4iBuilderPreSplits::allocateData(size_t threadCount,size_t totalNumPrimitives)
   {
-#if defined(DEBUG)
-    PING;
-#endif    
-
     DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
@@ -97,6 +98,7 @@ namespace embree
 
   void BVH4iBuilderPreSplits::computePrimRefs(size_t threadIndex, size_t threadCount)
   {
+    DBG(PING);
     atomicID.reset(numPrimitives);
     LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
     // for (size_t i=numPrimitives;i<atomicID;i++) DBG_PRINT(prims[i]);
@@ -125,6 +127,7 @@ namespace embree
 
   void BVH4iBuilderPreSplits::computePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
   {
+    DBG(PING);
     const size_t numGroups = source->size();
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -269,11 +272,14 @@ namespace embree
   /* =================================================================================== */
   /* =================================================================================== */
 
+  void BVH4iBuilderVirtualGeometry::printBuilderName()
+  {
+    std::cout << "building BVH4i with Virtual Geometry SAH builder (MIC) ... " << std::endl;    
+  }
+
   size_t BVH4iBuilderVirtualGeometry::getNumPrimitives()
   {
-#if defined(DEBUG)
-    PING;
-#endif    
+    DBG(PING);
     /* count total number of virtual objects */
     size_t numVirtualObjects = 0;       
     for (size_t i=0;i<scene->size();i++)
@@ -288,11 +294,13 @@ namespace embree
 
   void BVH4iBuilderVirtualGeometry::computePrimRefs(size_t threadIndex, size_t threadCount)
   {
+    DBG(PING);
     LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
   }
 
   void BVH4iBuilderVirtualGeometry::createAccel(size_t threadIndex, size_t threadCount)
   {
+    DBG(PING);
     LockStepTaskScheduler::dispatchTask( task_createVirtualGeometryAccel, this, threadIndex, threadCount );
   }
 
@@ -375,18 +383,27 @@ namespace embree
 
   void BVH4iBuilderVirtualGeometry::createVirtualGeometryAccel(const size_t threadID, const size_t numThreads)
   {
+    DBG(PING);
+
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
 
     Triangle1    * __restrict__  acc  = accel + startID;
     const PrimRef* __restrict__  bptr = prims + startID;
 
+    DBG(DBG_PRINT(startID));
+    DBG(DBG_PRINT(endID));
+
+
     for (size_t j=startID; j<endID; j++, bptr++, acc++)
       {
 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
-	assert(bptr->geomID() < source->groups() );
-	*(void**)acc = (void*)scene->get( bptr->geomID() );
+	assert(bptr->geomID() < scene->size() );
+	DBG(DBG_PRINT( bptr->geomID() ));
+
+	*(void**)acc = (void*)(scene->get( bptr->geomID() ));
+	DBG (DBG_PRINT((void**)acc));
       }
   }
 

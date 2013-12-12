@@ -97,9 +97,12 @@ namespace embree
   {
     if (ispc) {
 #if defined(__MIC__)
+      PING;
+      sleep(1);
       intersectors.ptr = this;
       intersectors.intersector16.intersect = ispcWrapperIntersect16;
       ispcIntersect16 = (void*) intersect16;
+      DBG_PRINT( (void*) intersectors.intersector16.intersect );
 #endif
     } else {
       intersectors.intersector16.intersect = intersect16;

@@ -27,8 +27,6 @@ namespace embree
     template<typename VirtualGeometryIntersector16>
     void BVH4iIntersector16Virtual<VirtualGeometryIntersector16>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
-      PING;
-      return;
       /* near and node stack */
       __align(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
@@ -152,6 +150,8 @@ namespace embree
 	DBG_PRINT(accel_ptr[2]);
 	DBG_PRINT(accel_ptr[3]);
 
+	sleep(1);
+
         VirtualGeometryIntersector16::intersect(valid_leaf,ray,accel_ptr,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
@@ -160,7 +160,6 @@ namespace embree
     template<typename VirtualGeometryIntersector16>
     void BVH4iIntersector16Virtual<VirtualGeometryIntersector16>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
-      PING;
       return;
       /* allocate stack */
       __align(64) mic_f    stack_dist[3*BVH4i::maxDepth+1];
@@ -295,7 +294,6 @@ namespace embree
 
     void BVH4iIntersector1Virtual::intersect(BVH4i* bvh, Ray& ray)
     {
-      PING;
       return;
       /* near and node stack */
       __align(64) float   stack_dist[3*BVH4i::maxDepth+1];
@@ -432,7 +430,6 @@ namespace embree
 
     void BVH4iIntersector1Virtual::occluded(BVH4i* bvh, Ray& ray)
     {
-      PING;
       return;
       /* near and node stack */
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];

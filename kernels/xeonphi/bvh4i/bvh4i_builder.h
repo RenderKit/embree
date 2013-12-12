@@ -52,6 +52,7 @@ namespace embree
     virtual void computePrimRefs(size_t threadIndex, size_t threadCount);
     virtual void createAccel(size_t threadIndex, size_t threadCount);
     virtual size_t getNumPrimitives();
+    virtual void printBuilderName();
 
   protected:
 
@@ -186,6 +187,7 @@ namespace embree
 
     virtual void allocateData(size_t threadCount,size_t newNumPrimitives);
     virtual void computePrimRefs(size_t threadIndex, size_t threadCount);
+    virtual void printBuilderName();
 
   protected:
     TASK_FUNCTION(BVH4iBuilderPreSplits,computePrimRefsPreSplits);
@@ -207,6 +209,7 @@ namespace embree
     virtual size_t getNumPrimitives();
     virtual void computePrimRefs(size_t threadIndex, size_t threadCount);
     virtual void createAccel(size_t threadIndex, size_t threadCount);
+    virtual void printBuilderName();
 
   protected:
     TASK_FUNCTION(BVH4iBuilderVirtualGeometry,computePrimRefsVirtualGeometry);

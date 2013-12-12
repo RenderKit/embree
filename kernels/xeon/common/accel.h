@@ -260,7 +260,7 @@ namespace embree
     /*! Intersects a packet of 16 rays with the scene. */
     __forceinline void intersect16 (const void* valid, RTCRay16& ray) {
 	  assert(intersectors.intersector16.intersect);
-      intersectors.intersector16.intersect(valid,intersectors.ptr,ray);
+	  intersectors.intersector16.intersect(valid,intersectors.ptr,ray);
     }
 
     /*! Tests if single ray is occluded by the scene. */
