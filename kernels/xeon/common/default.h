@@ -68,7 +68,6 @@ namespace embree
   void recordError(RTCError error);
 
   /*! decoding of geometry flags */
-  //__forceinline int  dynamicLevel(RTCSceneFlags flags) { return flags & 3; } // FIMXE: remove
   __forceinline bool isStatic    (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_STATIC; }
   __forceinline bool isDynamic   (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_DYNAMIC; }
 
@@ -78,10 +77,6 @@ namespace embree
   __forceinline bool isIncoherent(RTCSceneFlags flags) { return flags & RTC_SCENE_INCOHERENT; }
   __forceinline bool isHighQuality(RTCSceneFlags flags) { return flags & RTC_SCENE_HIGH_QUALITY; }
 
-  //__forceinline RTCFlags inherit_flags(RTCFlags a, RTCFlags b) { // FIXME: remove
-  //  return (RTCFlags) (a | (b & -3)); // do not inherit dynamic flags
-  //}
-  
   /*! CPU features */
   static const int SSE   = CPU_FEATURE_SSE; 
   static const int SSE2  = SSE | CPU_FEATURE_SSE2;

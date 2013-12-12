@@ -26,25 +26,19 @@ namespace embree
 {
   struct TwoLevelAccel : public Accel
   {
-    typedef Accel* (*createTriangleMeshAccelTy)(TriangleMeshScene::TriangleMesh*);
-
   public:
-    TwoLevelAccel (const std::string topAccel, Scene* scene, createTriangleMeshAccelTy createTriangleMeshAccel, bool buildUserGeometryAccel);
+    TwoLevelAccel (const std::string topAccel, Scene* scene);
     ~TwoLevelAccel ();
 
   public:
     void build(size_t threadIndex, size_t threadCount);
-    void buildTriangleAccels(size_t threadIndex, size_t threadCount);
     void buildUserGeometryAccels(size_t threadIndex, size_t threadCount);
 
   public:
     Scene* scene;
-    createTriangleMeshAccelTy createTriangleMeshAccel;
-    bool buildUserGeometryAccel;
-
+    
   public:
     Accel* accel;
-    std::vector<Accel*> triangle_accels;
     std::vector<Accel*> enabled_accels;
   };
 }

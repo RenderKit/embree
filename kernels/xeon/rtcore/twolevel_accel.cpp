@@ -23,52 +23,11 @@
 
 namespace embree
 {
-  TwoLevelAccel::TwoLevelAccel (const std::string topAccel, Scene* scene, createTriangleMeshAccelTy createTriangleMeshAccel, bool buildUserGeometryAccel)
-    : scene(scene), createTriangleMeshAccel(createTriangleMeshAccel), buildUserGeometryAccel(buildUserGeometryAccel),
-      accel(new VirtualAccel(topAccel,enabled_accels)) {}
+  TwoLevelAccel::TwoLevelAccel (const std::string topAccel, Scene* scene)
+    : scene(scene), accel(new VirtualAccel(topAccel,enabled_accels)) {}
 
-  TwoLevelAccel::~TwoLevelAccel () 
-  {
+  TwoLevelAccel::~TwoLevelAccel () {
     delete accel;
-    for (size_t i=0; i<triangle_accels.size(); i++)
-      delete triangle_accels[i];
-  }
-
-  void TwoLevelAccel::buildTriangleAccels(size_t threadIndex, size_t threadCount) // FIXME: no longer used
-  {
-    size_t N = scene->size();
-    
-    for (size_t i=N; i<triangle_accels.size(); i++)
-      delete triangle_accels[i];
-
-    if (triangle_accels.size() < N) 
-      triangle_accels.resize(N);
-      
-    /* build bottom level accel */
-    for (size_t i=0; i<N; i++) 
-    {
-      TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMeshSafe(i);
-      if (mesh == NULL) {
-        if (triangle_accels[i]) {
-          delete triangle_accels[i];
-          triangle_accels[i] = NULL;
-        }
-        continue;
-      }
-      
-      if (triangle_accels[i] == NULL) {
-        triangle_accels[i] = createTriangleMeshAccel(mesh);
-      }
-
-      if (mesh->isEnabled()) {
-        enabled_accels.push_back(triangle_accels[i]);
-      }
-
-      if (mesh->isModified()) {
-        triangle_accels[i]->build(threadIndex,threadCount);
-        mesh->state = Geometry::ENABLED;
-      }
-    }
   }
 
   void TwoLevelAccel::buildUserGeometryAccels(size_t threadIndex, size_t threadCount)
@@ -98,8 +57,7 @@ namespace embree
   {
     /* build all object accels */
     enabled_accels.clear();
-    if (createTriangleMeshAccel) buildTriangleAccels(threadIndex,threadCount);
-    if (buildUserGeometryAccel) buildUserGeometryAccels(threadIndex,threadCount);
+    buildUserGeometryAccels(threadIndex,threadCount);
 
     /* no top-level accel required for single geometry */
     if (enabled_accels.size() == 1) {

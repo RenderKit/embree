@@ -32,44 +32,6 @@
 
 namespace embree
 {
-#if defined(__MIC__)
-
-  Accel* createTriangleMeshAccel(TriangleMeshScene::TriangleMesh* mesh)
-  {
-    return BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(mesh);
-  }
-
-#else
-
-  Accel* createTriangleMeshAccel(TriangleMeshScene::TriangleMesh* mesh)
-  {
-    if (mesh->numTimeSteps == 1)
-    {
-      if (mesh->isDeformable()) {
-        return BVH4::BVH4Triangle4Refit(mesh);
-      }
-      else if (isCoherent(mesh->parent->flags)) {
-        if (isRobust(mesh->parent->flags)) {
-          return BVH4::BVH4Triangle1vObjectSplit(mesh);
-        } else {
-          return BVH4::BVH4Triangle1ObjectSplit(mesh);
-        }
-      } else {
-        if (isRobust(mesh->parent->flags)) {
-          return BVH4::BVH4Triangle4vObjectSplit(mesh);
-        } else {
-          return BVH4::BVH4Triangle4ObjectSplit(mesh);
-        }
-      }
-    } 
-    else if (mesh->numTimeSteps == 2) {
-      return BVH4MB::BVH4MBTriangle1vObjectSplit(mesh);
-    }
-    else
-      throw std::runtime_error("internal error");
-  }
-#endif
-
   Scene::Scene (RTCSceneFlags flags, RTCAlgorithmFlags aflags)
     : flags(flags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
       numTriangleMeshes(0), numTriangleMeshes2(0), numUserGeometries(0),
@@ -145,7 +107,7 @@ namespace embree
         case /*0b111*/ 7: accels.accel0 = BVH4::BVH4Triangle4iObjectSplit(this); break;
         }
         accels.accel1 = BVH4MB::BVH4MBTriangle1v(this); 
-        accels.accel2 = new TwoLevelAccel("bvh4",this,NULL,true); 
+        accels.accel2 = new TwoLevelAccel("bvh4",this); 
       } else {
         int mode =  4*(int)isCoherent() + 2*(int)isCompact() + 1*(int)isRobust();
         switch (mode) {
@@ -159,7 +121,7 @@ namespace embree
         case /*0b111*/ 7: accels.accel0 = BVH4::BVH4BVH4Triangle1vObjectSplit(this); break;
         }
         accels.accel1 = BVH4MB::BVH4MBTriangle1v(this);
-        accels.accel2 = new TwoLevelAccel("bvh4",this,NULL,true);
+        accels.accel2 = new TwoLevelAccel("bvh4",this);
       }
     }
 
@@ -190,10 +152,10 @@ namespace embree
 #endif
       else throw std::runtime_error("unknown triangle acceleration structure "+g_tri_accel);
 
-      accels.accel1 = new TwoLevelAccel(g_top_accel,this,NULL,true);
+      accels.accel1 = new TwoLevelAccel(g_top_accel,this);
     }
     else {
-      accels.accel0 = new TwoLevelAccel(g_top_accel,this,createTriangleMeshAccel,true);
+      accels.accel0 = new TwoLevelAccel(g_top_accel,this);
       accels.accel1 = NULL;
     }
 #endif
