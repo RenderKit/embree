@@ -790,20 +790,16 @@ namespace embree
     BBox3f BVH4BuilderMorton::recurse(SmallBuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID) 
     {
       /* stop toplevel recursion at some number of items */
-      if (mode == CREATE_TOP_LEVEL && current.size() <= topLevelItemThreshold) {
-        g_state->buildRecords[g_state->numBuildRecords++] = current; // FIXME: can overflow
+      if (mode == CREATE_TOP_LEVEL && (current.size() <= topLevelItemThreshold || g_state->numBuildRecords >= MAX_TOP_LEVEL_BINS)) {
+        assert(g_state->numBuildRecords < NUM_TOP_LEVEL_BINS);
+        g_state->buildRecords[g_state->numBuildRecords++] = current;
         return empty;
       }
       
       __align(64) SmallBuildRecord children[BVH4::N];
       
       /* create leaf node */
-      if (unlikely(current.size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD)) {
-        BBox3f bounds;
-        createSmallLeaf(this,current,leafAlloc,threadID,bounds);
-        return bounds;
-      }
-      if (unlikely(current.depth >= BVH4::maxBuildDepth)) {
+      if (unlikely(current.depth >= BVH4::maxBuildDepth || current.size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD)) {
         return createLeaf(current,nodeAlloc,leafAlloc,threadID);
       }
       

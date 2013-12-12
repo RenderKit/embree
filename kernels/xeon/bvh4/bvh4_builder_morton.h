@@ -36,6 +36,7 @@ namespace embree
       enum { RECURSE = 1, CREATE_TOP_LEVEL = 2 };
       
       static const size_t MAX_TOP_LEVEL_BINS = 1024;
+      static const size_t NUM_TOP_LEVEL_BINS = 1024 + 4*BVH4::maxBuildDepth;
 
       static const size_t MORTON_LEAF_THRESHOLD = 4;
       static const size_t LATTICE_BITS_PER_DIM = 10;
@@ -123,8 +124,8 @@ namespace embree
         ThreadRadixCountTy* radixCount;
         
         size_t numBuildRecords;
-        __align(64) SmallBuildRecord buildRecords[MAX_TOP_LEVEL_BINS];
-        __align(64) WorkStack<SmallBuildRecord,MAX_TOP_LEVEL_BINS> workStack;
+        __align(64) SmallBuildRecord buildRecords[NUM_TOP_LEVEL_BINS];
+        __align(64) WorkStack<SmallBuildRecord,NUM_TOP_LEVEL_BINS> workStack;
         LinearBarrierActive barrier;
       };
       
