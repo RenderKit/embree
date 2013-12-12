@@ -179,7 +179,7 @@ namespace embree
     void recreateMortonCodes(SmallBuildRecord& current) const;
 
   public:
-    BVH4i      * bvh;               //!< Output BVH
+    BVH4i      * bvh;         //!< Output BVH
     BuildSource* source;      //!< input geometry
     Scene      * scene;
 

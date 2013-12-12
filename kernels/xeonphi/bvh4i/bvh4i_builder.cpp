@@ -184,10 +184,6 @@ namespace embree
 
     const size_t totalNumPrimitives = getNumPrimitives();
 
-#if defined(DEBUG)
-    DBG_PRINT(totalNumPrimitives);
-#endif
-
     if (!totalNumPrimitives) 
       {
 	bvh->root = 0;

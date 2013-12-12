@@ -30,6 +30,10 @@ namespace embree
 
   void BVH4iBuilderPreSplits::allocateData(size_t threadCount,size_t totalNumPrimitives)
   {
+#if defined(DEBUG)
+    PING;
+#endif    
+
     DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
@@ -267,6 +271,9 @@ namespace embree
 
   size_t BVH4iBuilderVirtualGeometry::getNumPrimitives()
   {
+#if defined(DEBUG)
+    PING;
+#endif    
     /* count total number of virtual objects */
     size_t numVirtualObjects = 0;       
     for (size_t i=0;i<scene->size();i++)

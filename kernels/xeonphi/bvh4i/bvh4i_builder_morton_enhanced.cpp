@@ -29,7 +29,7 @@
 #define MAX_REBUILD_NODES numPrimitives
 #define PROFILE_ITERATIONS 20
 
-#define TIMER(x) x
+#define TIMER(x) 
 
 //#define PROFILE
 //#define TEST_BUILD_PERFORMANCE

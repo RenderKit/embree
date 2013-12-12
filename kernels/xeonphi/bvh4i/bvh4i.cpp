@@ -27,7 +27,7 @@
 
 namespace embree
 {
-#if 0  
+#if 0 //FIXME
 
   __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
     { FLT_MIN_EXP, FLT_MIN_EXP, FLT_MIN_EXP,(int)(1 << 31)},
@@ -105,7 +105,6 @@ namespace embree
     Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
-
 
   Accel* BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene)
   { 

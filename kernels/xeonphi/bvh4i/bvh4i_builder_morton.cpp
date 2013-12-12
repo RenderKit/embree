@@ -38,7 +38,6 @@
 
 namespace embree 
 {
-  AtomicMutex mtx;
   // =======================================================================================================
   // =======================================================================================================
   // =======================================================================================================
@@ -731,42 +730,10 @@ namespace embree
       TIMER(items += br.size());
     }    
 
-#if 0
-    TIMER(msec = getSeconds()-msec);    
-    TIMER(mtx.lock());
-    TIMER(std::cout << "threadID " << threadID << " items "<< items << " " << 1000. * msec << " ms => " << (double)items / (1000. * msec) << " items/ms " << std::endl << std::flush);
-    TIMER(mtx.unlock());
-#endif
   }
 
   __forceinline void convertToBVH4Layout(BVHNode *__restrict__ const bptr)
   {
-#if 0
-    BVH4i::Node tmp;
-    for (int i=0;i<4;i++)
-      {
-	tmp.lower[i].x = bptr[i].lower.x;
-	tmp.lower[i].y = bptr[i].lower.y;
-	tmp.lower[i].z = bptr[i].lower.z;
-
-	tmp.upper[i].x = bptr[i].upper.x;
-	tmp.upper[i].y = bptr[i].upper.y;
-	tmp.upper[i].z = bptr[i].upper.z;
-	tmp.upper[i].child = bptr[i].upper.a;
-
-	if (!bvhLeaf(bptr[i].lower.a))
-	  {
-	    tmp.lower[i].child = qbvhCreateNode(bvhChildID(bptr[i].lower.a)>>2,0); // bvhChildren(bptr[i].ext_min.t)
-	  }
-	else
-	  {
-	    tmp.lower[i].child = (bptr[i].lower.a ^ BVH_LEAF_MASK) | QBVH_LEAF_MASK;
-	  }	  
-      }
-
-    BVH4i::Node * __restrict__  qptr = (BVH4i::Node*)bptr;
-    *qptr = tmp;
-#else
     const mic_i box01 = load16i((int*)(bptr + 0));
     const mic_i box23 = load16i((int*)(bptr + 2));
 
@@ -787,8 +754,6 @@ namespace embree
     const mic_i bvh4_max   = box_max0123;
     store16i_nt((int*)(bptr + 0),bvh4_min);
     store16i_nt((int*)(bptr + 2),bvh4_max);
-#endif
-    
   }
 
   void BVH4iBuilderMorton::convertToSOALayout(const size_t threadID, const size_t numThreads)
@@ -1041,19 +1006,11 @@ namespace embree
     store16f_ngo((float*)&node[currentIndex+0],init_node);
     store16f_ngo((float*)&node[currentIndex+2],init_node);
 
-    // prefetch<PFHINT_L2EX>((float*)&node[currentIndex+0]);
-    // prefetch<PFHINT_L2EX>((float*)&node[currentIndex+2]);
-
     /* recurse into each child */
     for (size_t i=0; i<numChildren; i++) 
       {
 	children[i].parentID = currentIndex+i;
       }
-
-    /* init used/unused nodes */
-    // const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-    // store16f((float*)&node[currentIndex+0],init_node);
-    // store16f((float*)&node[currentIndex+2],init_node);
 
     node[current.parentID].createNode(currentIndex,numChildren);
     return numChildren;
@@ -1149,17 +1106,6 @@ namespace embree
       else
 	bounds.extend( recurse(children[i],alloc,mode,numThreads) );
     }
-
-    // /* init used/unused nodes */
-    // const mic_f init_node_lower = broadcast4to16f((float*)&BVH4i::initQBVHNode[0]);
-    // const mic_f init_node_upper = broadcast4to16f((float*)&BVH4i::initQBVHNode[1]);
-
-    // for (size_t i=numChildren; i<BVH4i::N; i++) 
-    //   {
-    // 	store4f_nt((float*)&node[currentIndex+i].lower,init_node_lower);
-    // 	store4f_nt((float*)&node[currentIndex+i].upper,init_node_upper);
-    //   }
-
 
     node[current.parentID].lower = bounds.lower;
     node[current.parentID].upper = bounds.upper;
@@ -1327,11 +1273,6 @@ namespace embree
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "create top level " << 1000. * msec << " ms" << std::endl << std::flush);
     TIMER(DBG_PRINT(numBuildRecords));
-
-    // for (size_t i = 0;i<numBuildRecords;i++)
-    //   std::cout << i << " " << buildRecords[i] << std::endl;    
-    // exit(0);
-
 
     TIMER(msec = getSeconds());
     

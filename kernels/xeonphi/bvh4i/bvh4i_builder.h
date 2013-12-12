@@ -176,7 +176,12 @@ namespace embree
   class BVH4iBuilderPreSplits : public BVH4iBuilder
   {
   public:
-  BVH4iBuilderPreSplits(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) {}
+  BVH4iBuilderPreSplits(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
+      {
+#if defined(DEBUG)
+	PING;
+#endif
+      }
 
 
     virtual void allocateData(size_t threadCount,size_t newNumPrimitives);
@@ -192,7 +197,12 @@ namespace embree
   class BVH4iBuilderVirtualGeometry : public BVH4iBuilder
   {
   public:
-  BVH4iBuilderVirtualGeometry(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) {}
+  BVH4iBuilderVirtualGeometry(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
+      {
+#if defined(DEBUG)
+	PING;
+#endif
+      }
 
     virtual size_t getNumPrimitives();
     virtual void computePrimRefs(size_t threadIndex, size_t threadCount);
