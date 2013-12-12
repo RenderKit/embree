@@ -22,35 +22,38 @@
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
 #include "kernels/xeon/bvh4i/bvh4i_builder_util.h"
 
+#define BVH_NODE_PREALLOC_FACTOR                 1.15f
+
 namespace embree
 {
   class BVH4iBuilder : public Builder
   {
     ALIGNED_CLASS;
+  protected:
+
     static const size_t ALLOCATOR_NODE_BLOCK_SIZE = 64;
     typedef AtomicIDBlock<ALLOCATOR_NODE_BLOCK_SIZE> NodeAllocator;
 
-  private:
     
     void checkBuildRecord(const BuildRecord &current);
 
   public:
 
     /*! Constructor. */
-    BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry, bool enablePreSplits = false, bool enableVirtualGeometry = false);
-
-    ~BVH4iBuilder();
+    BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry);
+    virtual ~BVH4iBuilder();
 
     /*! creates the builder */
-    static Builder* create (void* accel, BuildSource* source, void* geometry, bool enablePreSplits = false, bool enableVirtualGeometry = false) { 
-      return new BVH4iBuilder((BVH4i*)accel,source,geometry,enablePreSplits,enableVirtualGeometry);
-    }
+    static Builder* create (void* accel, BuildSource* source, void* geometry, 
+			    bool enablePreSplits = false, bool enableVirtualGeometry = false);
 
     /* build function */
     void build(size_t threadIndex, size_t threadCount);
 
     virtual void allocateData(size_t threadCount,size_t newNumPrimitives);
     virtual void computePrimRefs(size_t threadIndex, size_t threadCount);
+    virtual void createAccel(size_t threadIndex, size_t threadCount);
+    virtual size_t getNumPrimitives();
 
   public:
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
@@ -65,7 +68,6 @@ namespace embree
     LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelPartitioningLocal);
 
     /* support for extended modes */
-    TASK_FUNCTION(BVH4iBuilder,computePrimRefsPreSplits);
     TASK_FUNCTION(BVH4iBuilder,createVirtualGeometryAccel);
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsVirtualGeometry);
 
@@ -109,10 +111,7 @@ namespace embree
     BuildSource* source;          //!< input geometry
     Scene* scene;               //!< input geometry
     BVH4i* bvh;                   //!< Output BVH
-    const bool enablePreSplits;
-    const bool enableVirtualGeometry;
 
-    size_t getNumPrimitives();
 
     /* work record handling */
   protected:
@@ -151,12 +150,13 @@ namespace embree
     /*! bounds shared among threads */    
     Centroid_Scene_AABB global_bounds;
 
-    /*! node allocator */
+    /*! global node allocator */
     AlignedAtomicCounter32  atomicID;
 
-
+    /*! per core lock-step task scheduler */
     __align(64) LockStepTaskScheduler4ThreadsLocalCore localTaskScheduler[MAX_MIC_CORES];
 
+    /*! node allocation */
     __forceinline unsigned int allocNode(int size)
     {
       const unsigned int currentIndex = atomicID.add(size);
@@ -165,7 +165,22 @@ namespace embree
       }
       return currentIndex;
     }
+
   };
+
+
+  class BVH4iBuilderPreSplits : public BVH4iBuilder
+  {
+  public:
+  BVH4iBuilderPreSplits(BVH4i* bvh, BuildSource* source, void* geometry, bool enablePreSplits = false, bool enableVirtualGeometry = false) : BVH4iBuilder(bvh,source,geometry) {}
+
+    TASK_FUNCTION(BVH4iBuilderPreSplits,computePrimRefsPreSplits);
+
+    virtual void allocateData(size_t threadCount,size_t newNumPrimitives);
+    virtual void computePrimRefs(size_t threadIndex, size_t threadCount);
+    
+  };
+
 }
 
 #endif
