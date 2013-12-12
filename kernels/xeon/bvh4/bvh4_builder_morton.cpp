@@ -563,7 +563,7 @@ namespace embree
         
         store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID)));
         store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
-        store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),0)));
+        store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),mesh->mask)));
         store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0)));
       }
       box_o = BBox3f((Vec3fa)lower,(Vec3fa)upper);
@@ -641,7 +641,7 @@ namespace embree
         
         store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID)));
         store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
-        store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),0)));
+        store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),mesh->mask)));
       }
       box_o = BBox3f((Vec3fa)lower,(Vec3fa)upper);
     }
