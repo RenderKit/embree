@@ -32,6 +32,7 @@
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
 #endif
+#define PROFILE
 
 namespace embree 
 {
@@ -96,7 +97,7 @@ namespace embree
     void BVH4BuilderMorton::build(size_t threadIndex, size_t threadCount) 
     {
       if (g_verbose >= 2)
-        std::cout << "building BVH4 with Morton builder ... " << std::flush;
+        std::cout << "building BVH4 with " << TOSTRING(isa) << "::BVH4BuilderMorton ... " << std::flush;
       
       /* do some global inits first */
       init(threadIndex,threadCount);
@@ -870,7 +871,6 @@ namespace embree
           node->set(i,bounds);
         }
       }
-      //node->evict();
       return bounds0;
     }
     

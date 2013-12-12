@@ -560,7 +560,6 @@ namespace embree
         createLeaf(children[i],nodeAlloc,leafAlloc,threadIndex,threadCount);
       }
       BVH4::compact(node); // move empty nodes to the end
-      node->evict();
     }
     
     __forceinline void BVH4BuilderFast::recurse(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads)
@@ -643,7 +642,6 @@ namespace embree
         children[i].depth = current.depth+1;
         recurse(children[i],nodeAlloc,leafAlloc,mode,threadID,numThreads);
       }
-      node->evict();
     }
     
     // =======================================================================================================

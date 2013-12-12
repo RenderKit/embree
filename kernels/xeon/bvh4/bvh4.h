@@ -129,20 +129,6 @@ namespace embree
         children[i] = childID;
       }
 
-      /*! evict node to memory */
-      __forceinline void evict() {
-        _mm_stream_ps((float*)&lower_x,_mm_load_ps((float*)&lower_x));
-        _mm_stream_ps((float*)&upper_x,_mm_load_ps((float*)&upper_x));
-        _mm_stream_ps((float*)&lower_y,_mm_load_ps((float*)&lower_y));
-        _mm_stream_ps((float*)&upper_y,_mm_load_ps((float*)&upper_y));
-        _mm_stream_ps((float*)&lower_z,_mm_load_ps((float*)&lower_z));
-        _mm_stream_ps((float*)&upper_z,_mm_load_ps((float*)&upper_z));
-        _mm_stream_ps((float*)&children[0],_mm_load_ps((float*)&children[0]));
-#if defined(__X86_64__)
-        _mm_stream_ps((float*)&children[2],_mm_load_ps((float*)&children[2]));
-#endif
-      }
-
       /*! Returns bounds of node. */
       __forceinline BBox3f bounds() const {
         const Vec3fa lower(reduce_min(lower_x),reduce_min(lower_y),reduce_min(lower_z));
