@@ -186,7 +186,7 @@ namespace embree
       void split_fallback(SmallBuildRecord& current, SmallBuildRecord& leftChild, SmallBuildRecord& rightChild) const;
       
       /*! split a build record into two */
-      bool split(SmallBuildRecord& current, SmallBuildRecord& left, SmallBuildRecord& right) const;
+      void split(SmallBuildRecord& current, SmallBuildRecord& left, SmallBuildRecord& right) const;
       
       /*! main recursive build function */
       BBox3f recurse(SmallBuildRecord& current, 

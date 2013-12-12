@@ -733,15 +733,10 @@ namespace embree
       return bounds0;
     }  
     
-    __forceinline bool BVH4BuilderMorton::split(SmallBuildRecord& current,
+    __forceinline void BVH4BuilderMorton::split(SmallBuildRecord& current,
                                                 SmallBuildRecord& left,
                                                 SmallBuildRecord& right) const
     {
-      /* mark as leaf if leaf threshold reached */
-      if (unlikely(current.size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD)) {
-        return false; 
-      }
-      
       const unsigned int code_start = morton[current.begin].code;
       const unsigned int code_end   = morton[current.end-1].code;
       unsigned int bitpos = clz(code_start^code_end);
@@ -760,7 +755,7 @@ namespace embree
           size_t center = (current.begin + current.end)/2; 
           left.init(current.begin,center);
           right.init(center,current.end);
-          return true;
+          return;
         }
       }
       
@@ -784,13 +779,13 @@ namespace embree
       
       left.init(current.begin,center);
       right.init(center,current.end);
-      return true;
     }
     
     BBox3f BVH4BuilderMorton::recurse(SmallBuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID) 
     {
       /* stop toplevel recursion at some number of items */
-      if (mode == CREATE_TOP_LEVEL && (current.size() <= topLevelItemThreshold || g_state->numBuildRecords >= MAX_TOP_LEVEL_BINS)) {
+      if (mode == CREATE_TOP_LEVEL && (current.size() <= topLevelItemThreshold || g_state->numBuildRecords >= MAX_TOP_LEVEL_BINS)) 
+      {
         assert(g_state->numBuildRecords < NUM_TOP_LEVEL_BINS);
         g_state->buildRecords[g_state->numBuildRecords++] = current;
         return empty;
@@ -828,9 +823,8 @@ namespace embree
         
         /*! split best child into left and right child */
         __align(64) SmallBuildRecord left, right;
-        if (!split(children[bestChild],left,right))
-          continue;
-        
+        split(children[bestChild],left,right);
+                
         /* add new children left and right */
         left.depth = right.depth = current.depth+1;
         children[bestChild] = children[numChildren-1];
@@ -842,9 +836,7 @@ namespace embree
       
       /* create leaf node if no split is possible */
       if (unlikely(numChildren == 1)) {
-        BBox3f bounds;
-        createSmallLeaf(this,current,leafAlloc,threadID,bounds);
-        return bounds;
+        BBox3f bounds; createSmallLeaf(this,current,leafAlloc,threadID,bounds); return bounds;
       }
       
       /* allocate node */
@@ -858,11 +850,11 @@ namespace embree
         children[i].parent = &node->child(i);
         
         if (children[i].size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD) {
-          BBox3f bounds = createLeaf(children[i],nodeAlloc,leafAlloc,threadID);
+          const BBox3f bounds = createLeaf(children[i],nodeAlloc,leafAlloc,threadID);
           bounds0.extend(bounds);
           node->set(i,bounds);
         } else {
-          BBox3f bounds = recurse(children[i],nodeAlloc,leafAlloc,mode,threadID);
+          const BBox3f bounds = recurse(children[i],nodeAlloc,leafAlloc,mode,threadID);
           bounds0.extend(bounds);
           node->set(i,bounds);
         }
