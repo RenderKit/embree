@@ -25,7 +25,6 @@ namespace embree
 
   /* configuration */
   static std::string g_rtcore = "";
-  static bool g_animate = false;
 
   /* output settings */
   static size_t g_width = 512;
@@ -42,8 +41,6 @@ namespace embree
     OBJScene::Triangle* triangles;  //!< list of triangles
     int numVertices;
     int numTriangles;
-    Vec3f dir;
-    float offset;
   };
 
   /* ISPC compatible scene */
@@ -53,7 +50,6 @@ namespace embree
     OBJScene::Material* materials;  //!< material list
     int numMeshes;
     int numMaterials;
-    bool animate;
   };
 
   /* scene */
@@ -102,10 +98,6 @@ namespace embree
       /* number of threads to use */
       else if (tag == "-threads")
         g_numThreads = cin->getInt();
-
-      /* animation mode */
-      else if (tag == "-animate")
-        g_animate = true;
 
       /* skip unknown command line parameter */
       else {
