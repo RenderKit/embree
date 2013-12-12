@@ -55,59 +55,6 @@ namespace embree
     return aabb;
   }
 
-#if 0 // FIXME: remove
-  size_t handleNonSplitableLeaves(BuildRecord &current, // FIXME: fails for very large leaves
-				  BuildRecord *record)
-  {
-    size_t numSplits = 1;
-    const size_t items  = current.items();
-
-    for (size_t i=0;i<TREE_BRANCHING_FACTOR;i++)
-      {
-	record[i] = current;
-	record[i].createLeaf();
-      }
-
-    record[0].end   = record[0].begin+4;
-    record[1].begin = record[0].end;
-
-    if (current.items() <= 8)
-      {
-	record[1].end   = record[1].begin + items - 4;
-	numSplits = 2;
-      }
-    else if (current.items() <= 12)
-      {
-	record[1].end   = record[1].begin+4;
-	record[2].begin = record[1].end;
-	record[2].end   = record[2].begin + items - 8;
-	numSplits = 3;
-      }
-    else if (current.items() <= 16)
-      {
-	record[1].end   = record[1].begin+4;
-	record[2].begin = record[1].end;
-	record[2].end   = record[2].begin+4;
-	record[3].begin = record[2].end;
-	record[3].end   = record[3].begin + items - 12;
-	numSplits = 4;
-      }
-    else // current.items() > 16, should be very rare
-      {
-	record[1].end   = record[1].begin+4;
-	record[2].begin = record[1].end;
-	record[2].end   = record[2].begin+4;
-	numSplits = 4;
-	record[3].createNode();
-	record[3].begin = record[2].begin+4;
-      }
-
-    return numSplits;  
-  }
-#endif
-
-  //#include <pthread.h> 
-
 #define DBG_THREADS(x) 
 
 

@@ -215,16 +215,16 @@ namespace embree
 #if defined(__SSE4_1__)
           const ssef tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
           const ssef tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
-          //const sseb vmask = _mm_castsi128_ps(_mm_cmplt_epi32(_mm_castps_si128(tNear),_mm_castps_si128(tFar))); // FIXME: need _mm_cmple_epi32
-          const sseb vmask = ssei(_mm_castps_si128(tNear)) <= ssei(_mm_castps_si128(tFar));
+          const sseb vmask = cast(tNear) > cast(tFar);
+          size_t mask = movemask(vmask)^0xf;
 #else
           const ssef tNear = max(tNearX,tNearY,tNearZ,rayNear);
           const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
           const sseb vmask = tNear <= tFar;
+          size_t mask = movemask(vmask);
 #endif
           
           /*! if no child is hit, pop next node */
-          size_t mask = movemask(vmask);
           if (unlikely(mask == 0))
             goto pop;
           

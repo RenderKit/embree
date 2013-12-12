@@ -334,7 +334,7 @@ namespace embree
 	// === build QBVH tree ===
 	// =======================
         
-	atomicID.reset(4); // FIXME: not 8??
+	atomicID.reset(4);
 	//global_bounds.storeSceneAABB((float*)&this->node[0]);
         this->node[0].lower = global_bounds.geometry.lower;
         this->node[0].upper = global_bounds.geometry.upper;
