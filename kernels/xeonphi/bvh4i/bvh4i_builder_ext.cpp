@@ -18,8 +18,88 @@
 #include "kernels/xeonphi/bvh4i/bvh4i_builder.h"
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
 
+#define PRESPLIT_SPACE_FACTOR                   0.1f
+#define DBG(x) 
+
 namespace embree
 {
+
+  /* =================================================================================== */
+  /* =================================================================================== */
+  /* =================================================================================== */
+
+  void BVH4iBuilderPreSplits::allocateData(size_t threadCount,size_t totalNumPrimitives)
+  {
+    DBG(PING);
+    size_t numPrimitivesOld = numPrimitives;
+    numPrimitives = totalNumPrimitives;
+    DBG(DBG_PRINT(numPrimitives));
+
+    const size_t additional_size = 16 * CACHELINE_SIZE;
+
+    if (numPrimitivesOld != numPrimitives || numPrimitives == 0)
+      {
+	const size_t preSplitPrims = (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR);
+	const size_t numPrims = numPrimitives+4+preSplitPrims;
+	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
+	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+	bvh->init(numNodes,numPrims);
+
+	// === free previously allocated memory ===
+
+	if (prims)  {
+	  assert(size_prims > 0);
+	  os_free(prims,size_prims);
+	}
+	if (node  ) {
+	  assert(bvh->size_node > 0);
+	  os_free(node ,bvh->size_node);
+	}
+	if (accel ) {
+	  assert(bvh->size_accel > 0);
+	  os_free(accel,bvh->size_accel);
+	}
+      
+	// === allocated memory for primrefs,nodes, and accel ===
+	const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
+	const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeof(BVHNode) + additional_size;
+	const size_t size_accel    = numPrims * sizeof(Triangle1) + additional_size;
+	numAllocatedNodes = size_node / sizeof(BVHNode);
+      
+	DBG(DBG_PRINT(size_primrefs));
+	DBG(DBG_PRINT(size_node));
+	DBG(DBG_PRINT(size_accel));
+
+	prims = (PrimRef  *) os_malloc(size_primrefs); 
+	node  = (BVHNode  *) os_malloc(size_node);
+	accel = (Triangle1*) os_malloc(size_accel);
+
+	assert(prims  != 0);
+	assert(node   != 0);
+	assert(accel  != 0);
+
+	memset(prims,0,size_primrefs);
+	memset(node,0,size_node);
+	memset(accel,0,size_accel);
+
+	bvh->accel = accel;
+	bvh->qbvh  = (BVH4i::Node*)node;
+	bvh->size_node  = size_node;
+	bvh->size_accel = size_accel;
+
+	size_prims = size_primrefs;
+      }    
+  }
+
+  void BVH4iBuilderPreSplits::computePrimRefs(size_t threadIndex, size_t threadCount)
+  {
+    atomicID.reset(numPrimitives);
+    LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
+    // for (size_t i=numPrimitives;i<atomicID;i++) DBG_PRINT(prims[i]);
+    DBG_PRINT(atomicID - numPrimitives);
+    numPrimitives = atomicID;    
+  }
+
 
   __forceinline mic_f box_sah( const mic_f &b_min,
 			       const mic_f &b_max) 
@@ -39,7 +119,7 @@ namespace embree
     return sqrt(ldot3_xyz(n,n)) * 0.5f;
   }
 
-  void BVH4iBuilder::computePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
+  void BVH4iBuilderPreSplits::computePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
   {
     const size_t numGroups = source->size();
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
@@ -181,7 +261,35 @@ namespace embree
     global_bounds.extend_atomic(bounds);    
   }
 
-  void BVH4iBuilder::computePrimRefsVirtualGeometry(const size_t threadID, const size_t numThreads) 
+  /* =================================================================================== */
+  /* =================================================================================== */
+  /* =================================================================================== */
+
+  size_t BVH4iBuilderVirtualGeometry::getNumPrimitives()
+  {
+    /* count total number of virtual objects */
+    size_t numVirtualObjects = 0;       
+    for (size_t i=0;i<scene->size();i++)
+      {
+	if (unlikely(scene->get(i) == NULL)) continue;
+	if (unlikely(scene->get(i)->type != USER_GEOMETRY)) continue;
+	if (unlikely(!scene->get(i)->isEnabled())) continue;
+	numVirtualObjects++;
+      }
+    return numVirtualObjects;	
+  }
+
+  void BVH4iBuilderVirtualGeometry::computePrimRefs(size_t threadIndex, size_t threadCount)
+  {
+    LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
+  }
+
+  void BVH4iBuilderVirtualGeometry::createAccel(size_t threadIndex, size_t threadCount)
+  {
+    LockStepTaskScheduler::dispatchTask( task_createVirtualGeometryAccel, this, threadIndex, threadCount );
+  }
+
+  void BVH4iBuilderVirtualGeometry::computePrimRefsVirtualGeometry(const size_t threadID, const size_t numThreads) 
   {
     const size_t numTotalGroups = scene->size();
     DBG_PRINT(numTotalGroups);
@@ -258,7 +366,7 @@ namespace embree
   }
 
 
-  void BVH4iBuilder::createVirtualGeometryAccel(const size_t threadID, const size_t numThreads)
+  void BVH4iBuilderVirtualGeometry::createVirtualGeometryAccel(const size_t threadID, const size_t numThreads)
   {
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
