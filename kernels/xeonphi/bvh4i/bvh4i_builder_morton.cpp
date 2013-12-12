@@ -45,7 +45,7 @@ namespace embree
 
   __align(64) static double dt = 0.0f;
 
-  BVH4iBuilderMorton::BVH4iBuilderMorton (BVH4i* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize)
+  BVH4iBuilderMorton::BVH4iBuilderMorton (BVH4i* bvh, BuildSource* source, void* geometry)
   : bvh(bvh), source(source), scene((Scene*)geometry), topLevelItemThreshold(0), encodeShift(0), encodeMask(0), numBuildRecords(0), 
     morton(NULL), node(NULL), accel(NULL), numGroups(0), numPrimitives(0), numNodes(0), numAllocatedNodes(0), size_morton(0)
   {

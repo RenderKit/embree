@@ -27,11 +27,11 @@ namespace embree
   public:
 
     /*! Constructor. */
-    BVH4iBuilderMortonEnhanced (BVH4i* bvh, BuildSource* source, void* geometry, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+    BVH4iBuilderMortonEnhanced (BVH4i* bvh, BuildSource* source, void* geometry);
 
     /*! creates the builder */
-    static Builder* create (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize = inf, const size_t maxLeafSize = inf) { 
-      return new BVH4iBuilderMortonEnhanced((BVH4i*)accel,source,geometry,minLeafSize,maxLeafSize);
+    static Builder* create (void* accel, BuildSource* source, void* geometry) { 
+      return new BVH4iBuilderMortonEnhanced((BVH4i*)accel,source,geometry);
     }
 
     /*! parallel task to iterate over the triangles */
@@ -42,30 +42,20 @@ namespace embree
 
   protected:
 
-    /* static size_t recurseMortonIDWithSAHSubTrees(SmallBuildRecord &current,  */
-    /* 						 const size_t mode,  */
-    /* 						 const size_t threadID); */
-    
-    /* static void buildLocalSAHSubTree(SmallBuildRecord &current, */
-    /* 				     BVHNode &parent, */
-    /* 				     BVHNode *bvh); */
-
     void buildLocalSAHSubTree(BVHNode &parent,
-				     BuildRecord &current,
-				     PrimRef *__restrict__ local_node,
-				     const unsigned int offset_accel);
-    
-    /* static void thread_recurseSubMortonSAHTrees(void* data, const size_t threadID, const size_t numThreads); */
-
+			      BuildRecord &current,
+			      PrimRef *__restrict__ local_node,
+			      const unsigned int offset_accel);
+   
 
     void extractTopLevelTree(const size_t index,
-				    const Vec3fa &root_diag,
-				    BVHNode *__restrict__ const local_node,
-				    size_t &nodes);
+			     const Vec3fa &root_diag,
+			     BVHNode *__restrict__ const local_node,
+			     size_t &nodes);
 
     void buildTopLevelSAHTree(BVHNode &parent,
-				     BuildRecord &current,
-				     BVHNode *__restrict__ local_node);
+			      BuildRecord &current,
+			      BVHNode *__restrict__ local_node);
 
 
   };

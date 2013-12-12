@@ -92,54 +92,20 @@ namespace embree
 
   Accel* BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene)
   { 
-    BVH4i* accel = new BVH4i(SceneTriangle1::type);
-    
-    Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene);
-
-    // if      (g_builder == "default"         ) builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,1,inf);
-    // else if (g_builder == "objectsplit"     ) builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,1,inf);
-    // else if (g_builder == "morton"          ) builder = BVH4iBuilderMorton::create(accel,&scene->flat_triangle_source_1,scene);
-    // else if (g_builder == "morton.enhanced" ) builder = BVH4iBuilderMortonEnhanced::create(accel,&scene->flat_triangle_source_1,scene);
-    // else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
-    
-    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
-    
-  Accel* BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(TriangleMeshScene::TriangleMesh* mesh)
-  {
-    BVH4i* accel = new BVH4i(TriangleMeshTriangle1::type);
-    Builder* builder = BVH4iBuilder::create(accel,mesh,mesh);
-
-    // Builder* builder = NULL;
-    // if      (g_builder == "default"     ) builder = BVH4iBuilder::create(accel,mesh,mesh);
-    // else if (g_builder == "objectsplit" ) builder = BVH4iBuilder::create(accel,mesh,mesh);
-    // else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
-
+    BVH4i* accel = new BVH4i(SceneTriangle1::type);   
+    Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,BVH4iBuilder::BVH4I_BUILDER_DEFAULT);    
     Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
 
   Accel* BVH4i::BVH4iTriangle1ObjectSplitMorton(Scene* scene)
   { 
-    BVH4i* accel = new BVH4i(SceneTriangle1::type);
-    
-    Builder* builder = BVH4iBuilderMorton::create(accel,&scene->flat_triangle_source_1,scene);
-    
+    BVH4i* accel = new BVH4i(SceneTriangle1::type);   
+    Builder* builder = BVH4iBuilderMorton::create(accel,&scene->flat_triangle_source_1,scene);  
     Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
 
-
-  Accel* BVH4i::BVH4iTriangle1ObjectSplitMorton(TriangleMeshScene::TriangleMesh* mesh)
-  {
-    BVH4i* accel = new BVH4i(TriangleMeshTriangle1::type);
-    Builder* builder = BVH4iBuilderMorton::create(accel,mesh,mesh,1,inf);
-
-    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
-    return new AccelInstance(accel,builder,intersectors);
-  }
 
   Accel* BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene)
   { 
@@ -151,22 +117,11 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-
-  Accel* BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(TriangleMeshScene::TriangleMesh* mesh)
-  {
-    BVH4i* accel = new BVH4i(TriangleMeshTriangle1::type);
-    Builder* builder = BVH4iBuilderMortonEnhanced::create(accel,mesh,mesh,1,inf);
-
-    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
-
   Accel* BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene)
   {
     BVH4i* accel = new BVH4i(SceneTriangle1::type);
     
-    Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,true);
+    Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,BVH4iBuilder::BVH4I_BUILDER_PRESPLITS);
     
     Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);    
@@ -175,9 +130,8 @@ namespace embree
   Accel* BVH4i::BVH4iVirtualGeometryBinnedSAH(Scene* scene)
   {
     BVH4i* accel = new BVH4i(SceneTriangle1::type);    
-    Builder* builder = BVH4iBuilder::create(accel,NULL,scene,false,true);   
+    Builder* builder = BVH4iBuilder::create(accel,NULL,scene,BVH4iBuilder::BVH4I_BUILDER_VIRTUAL_GEOMETRY);   
     Accel::Intersectors intersectors = BVH4iVirtualGeometryIntersectors(accel);
-    //DBG_PRINT( (void*)intersectors.intersector16.intersect );
     return new AccelInstance(accel,builder,intersectors);    
   }
 

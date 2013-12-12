@@ -54,14 +54,34 @@ namespace embree
 
   static double dt = 0.0f;
 
-  // =======================================================================================================
-  // =======================================================================================================
-  // =======================================================================================================
-
-  Builder* BVH4iBuilder::create (void* accel, BuildSource* source, void* geometry, bool enablePreSplits , bool enableVirtualGeometry ) 
+  Builder* BVH4iBuilder::create (void* accel, BuildSource* source, void* geometry, size_t mode ) 
   { 
-    return new BVH4iBuilder((BVH4i*)accel,source,geometry);
+    Builder* builder = NULL;
+
+    switch( mode )
+      {
+
+      case BVH4I_BUILDER_DEFAULT:
+	builder = new BVH4iBuilder((BVH4i*)accel,source,geometry);
+	break;
+
+      case BVH4I_BUILDER_PRESPLITS:
+	builder = new BVH4iBuilderPreSplits((BVH4i*)accel,source,geometry);
+	break;
+
+      case BVH4I_BUILDER_VIRTUAL_GEOMETRY:
+	builder = new BVH4iBuilderVirtualGeometry((BVH4i*)accel,source,geometry);
+	break;
+
+      default:
+	throw std::runtime_error("ERROR: unknown BVH4iBuilder mode selected");	
+      }
+    return builder;
   }
+
+  // =======================================================================================================
+  // =======================================================================================================
+  // =======================================================================================================
 
 
   BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry)

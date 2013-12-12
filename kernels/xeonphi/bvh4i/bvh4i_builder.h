@@ -36,13 +36,14 @@ namespace embree
 
   public:
 
+    enum { BVH4I_BUILDER_DEFAULT, BVH4I_BUILDER_PRESPLITS, BVH4I_BUILDER_VIRTUAL_GEOMETRY };
+ 
     /*! Constructor. */
     BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry);
     virtual ~BVH4iBuilder();
 
     /*! creates the builder */
-    static Builder* create (void* accel, BuildSource* source, void* geometry, 
-			    bool enablePreSplits = false, bool enableVirtualGeometry = false);
+    static Builder* create (void* accel, BuildSource* source, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
 
     /* build function */
     void build(size_t threadIndex, size_t threadCount);
@@ -118,6 +119,8 @@ namespace embree
     __align(64) WorkStack<BuildRecord,SIZE_LOCAL_WORK_STACK> local_workStack[MAX_MIC_CORES];
 
   public:
+
+    /* shared structure for multi-threaded binning and partitioning */
     struct __align(64) SharedBinningPartitionData
     {
       __align(64) BuildRecord rec;
@@ -128,8 +131,13 @@ namespace embree
       __align(64) AlignedAtomicCounter32 rCounter;
     };
 
+    /* single structure for all worker threads */
     __align(64) SharedBinningPartitionData global_sharedData;
+
+    /* one 16-bins structure per thread */
     __align(64) Bin16 global_bin16[MAX_MIC_THREADS];
+
+    /* one shared binning/partitoning structure per core */
     __align(64) SharedBinningPartitionData local_sharedData[MAX_MIC_CORES];
 
   protected:
@@ -164,7 +172,7 @@ namespace embree
 
   };
 
-  
+  /*! derived binned-SAH builder supporting triangle pre-splits */  
   class BVH4iBuilderPreSplits : public BVH4iBuilder
   {
   public:
@@ -180,6 +188,7 @@ namespace embree
   };
 
 
+  /*! derived binned-SAH builder supporting virtual geometry */  
   class BVH4iBuilderVirtualGeometry : public BVH4iBuilder
   {
   public:
