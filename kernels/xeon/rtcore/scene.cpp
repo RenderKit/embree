@@ -16,16 +16,15 @@
 
 #include "scene.h"
 
-#include "rtcore/twolevel_accel.h"
 
-#include "bvh4/bvh4.h"
-#include "bvh4mb/bvh4mb.h"
 
 #if !defined(__MIC__)
+#include "rtcore/twolevel_accel.h"
 #include "bvh4/bvh4_builder_toplevel.h"
 #include "bvh4/bvh4.h"
 #include "bvh4i/bvh4i.h"
 #include "bvh8i/bvh8i.h"
+#include "bvh4mb/bvh4mb.h"
 #else
 #include "../xeonphi/bvh4i/bvh4i.h"
 #endif

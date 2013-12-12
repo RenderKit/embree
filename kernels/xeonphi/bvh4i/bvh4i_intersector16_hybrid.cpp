@@ -869,8 +869,6 @@ namespace embree
       store16i(m_valid & m_terminated,&ray16.geomID,mic_i::zero());
     }
     
-    // FIXME: convert intersector16 to intersector8 and intersector4
     DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16HybridMoeller, BVH4iIntersector16Hybrid<Triangle1Intersector16MoellerTrumbore>);
-    DEFINE_INTERSECTOR16    (BVH4iVirtualIntersector16, BVH4iIntersector16Hybrid<VirtualAccelIntersector16>);
   }
 }
