@@ -72,7 +72,6 @@ namespace embree
 
   void TaskScheduler::addTask(ssize_t threadIndex, QUEUE queue, Task* task)
   {
-    //PING; if (task->name) DBG_PRINT(task->name);
     if (!instance) throw std::runtime_error("Embree tasks not running.");
     instance->add(threadIndex,queue,task);
   }

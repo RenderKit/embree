@@ -92,7 +92,7 @@ MACRO (ispc_compile targets)
       --target=${ISPC_TARGETS}
       --wno-perf
       --opt=fast-math
-#      --opt=force-aligned-memory # FIXME: causes issues in framebuffer write
+#      --opt=force-aligned-memory
       -h ${outdirh}/${fname}_ispc.h
       -MMM  ${outdir}/${fname}.dev.idep 
       -o ${outdir}/${fname}.dev.${ISPC_TARGET_EXT}

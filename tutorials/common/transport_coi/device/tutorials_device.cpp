@@ -178,6 +178,7 @@ namespace embree
                              void*            in_pReturnValue,
                              uint16_t         in_ReturnValueLength)
   {
+    //double t0 = getSeconds();
     device_render((int*)in_ppBufferPointers[0],
                   in_pMiscData->width,
                   in_pMiscData->height,
@@ -186,8 +187,8 @@ namespace embree
                   in_pMiscData->vy, 
                   in_pMiscData->vz,
                   in_pMiscData->p);
-
-
+    //double dt = getSeconds() - t0;
+    //printf("render %3.2f fps, %.2f ms\n",1.0f/dt,dt*1000.0f); flush(std::cout);
   }
 
   extern "C" void run_cleanup(uint32_t         in_BufferCount,
