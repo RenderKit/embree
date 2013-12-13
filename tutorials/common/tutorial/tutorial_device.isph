@@ -52,5 +52,6 @@ extern "C" uniform int64 get_tsc();
 typedef Vec3f (* uniform renderPixelFunc)(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
 
 Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
+Vec3f renderPixelUV(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
 
 #endif

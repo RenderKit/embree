@@ -50,7 +50,7 @@ namespace embree
     };
     
     /* ray/box intersection */
-    __forceinline size_t intersectBox(const Ray4& ray, const sse3f& rdir, const BVH4MB::Node* node, const int i, ssef& dist) 
+    __forceinline size_t intersectBox(const Ray4& ray, const ssef& ray_tfar, const sse3f& rdir, const BVH4MB::Node* node, const int i, ssef& dist) 
     {
       if (unlikely(node->child[i]->isEmptyLeaf())) return 0;
       
@@ -77,7 +77,7 @@ namespace embree
       const ssef dupperz = max(dminz,dmaxz);
       
       const ssef near = max(dlowerx,dlowery,dlowerz,ray.tnear);
-      const ssef far  = min(dupperx,duppery,dupperz,ray.tfar );
+      const ssef far  = min(dupperx,duppery,dupperz,ray_tfar );
       dist = near;
       
       return movemask(near <= far);
@@ -96,7 +96,7 @@ namespace embree
       
       /* let inactive rays miss all boxes */
       sse3f rdir = rcp_safe(ray.dir);
-      ray.tfar = select(valid,ray.tfar,ssef(neg_inf));
+      ssef ray_tfar = select(valid,ray.tfar,ssef(neg_inf));
       
       while (true)
       {
@@ -118,10 +118,10 @@ namespace embree
           
           /* intersect packet with all boxes */
           const BVH4MB::Node* node = cur->node();
-          ssef dist0; size_t hit0 = intersectBox(ray,rdir,node,0,dist0);
-          ssef dist1; size_t hit1 = intersectBox(ray,rdir,node,1,dist1);
-          ssef dist2; size_t hit2 = intersectBox(ray,rdir,node,2,dist2);
-          ssef dist3; size_t hit3 = intersectBox(ray,rdir,node,3,dist3);
+          ssef dist0; size_t hit0 = intersectBox(ray,ray_tfar,rdir,node,0,dist0);
+          ssef dist1; size_t hit1 = intersectBox(ray,ray_tfar,rdir,node,1,dist1);
+          ssef dist2; size_t hit2 = intersectBox(ray,ray_tfar,rdir,node,2,dist2);
+          ssef dist3; size_t hit3 = intersectBox(ray,ray_tfar,rdir,node,3,dist3);
           
           /* push hit nodes onto stack */
           size_t cnt = 0;
@@ -166,6 +166,7 @@ namespace embree
           STAT3(normal.trav_leaves,1,popcnt(valid),8);
           size_t num; Triangle* tri = (Triangle*) cur->leaf(num);
           TriangleIntersector::intersect(valid,ray,tri,num,bvh->geometry);
+          ray_tfar = select(valid,ray.tfar,ssef(neg_inf));
         }
       }
     }

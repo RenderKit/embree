@@ -33,8 +33,7 @@ namespace embree
   extern Accel::Intersector8 BVH4iVirtualIntersector8Chunk;
   extern Accel::Intersector16 BVH4iVirtualIntersector16Chunk;
 
-  Builder* BVH4BuilderObjectSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
-  Builder* BVH4iBuilderObjectSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
+  Builder* BVH4BuilderObjectSplit1 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
 
   VirtualAccel::VirtualAccel (const std::string& ty, std::vector<Accel*>& accels)
     : source(accels)
@@ -46,19 +45,8 @@ namespace embree
       intersectors.intersector4 = BVH4VirtualIntersector4Chunk;
       intersectors.intersector8 = BVH4VirtualIntersector8Chunk;
       intersectors.intersector16 = BVH4VirtualIntersector16Chunk;
-      builder = BVH4BuilderObjectSplit4(accel,&source,&accels,1,inf);
+      builder = BVH4BuilderObjectSplit1(accel,&source,&accels,1,1);
     }
-#if !defined(__MIC__)
-    else if (ty == "bvh4i")
-    {
-      intersectors.ptr = accel = new BVH4(virtual_accel_object_type);
-      intersectors.intersector1 = BVH4iVirtualIntersector1;
-      intersectors.intersector4 = BVH4iVirtualIntersector4Chunk;
-      intersectors.intersector8 = BVH4iVirtualIntersector8Chunk;
-      intersectors.intersector16 = BVH4iVirtualIntersector16Chunk;
-      builder = BVH4iBuilderObjectSplit4(accel,&source,&accels,1,inf);
-    }
-#endif
     else
       throw std::runtime_error("unknown acceleration structure: \"" + ty + "\"");
   }
