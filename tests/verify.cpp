@@ -1070,7 +1070,10 @@ namespace embree
   {
     bool passed = true;
     RTCScene scene = rtcNewScene(sflags,aflags);
-    addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50);
+    addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,0.0f);
+#if !defined(__MIC__)
+    addSphere(scene,gflags,Vec3fa(+1,0,+1),1.0f,50,0.1f);
+#endif
     rtcCommit (scene);
     
     for (size_t i=0; i<4; i++) 
@@ -1797,8 +1800,6 @@ namespace embree
     POSITIVE("update_dynamic",            rtcore_update(RTC_GEOMETRY_DYNAMIC));
     POSITIVE("overlapping_geometry",      rtcore_overlapping(100000));
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
-    POSITIVE("regression_static",         rtcore_regression_static());
-    POSITIVE("regression_dynamic",        rtcore_regression_dynamic());
     rtcore_ray_masks_all();
     rtcore_backface_culling_all();
     rtcore_packet_write_test_all();
@@ -1827,6 +1828,9 @@ namespace embree
     rtcore_inf("inf_test_8",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,8);
 #endif
     rtcore_inf("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
+
+    POSITIVE("regression_static",         rtcore_regression_static());
+    POSITIVE("regression_dynamic",        rtcore_regression_dynamic());
 
     rtcExit();
 
