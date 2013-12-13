@@ -17,7 +17,7 @@
 #ifndef __EMBREE_ISPC_VEC4F_H__
 #define __EMBREE_ISPC_VEC4F_H__
 
-struct vec4f 
+struct Vec4f 
 {
   float x;
   float y;
@@ -29,50 +29,50 @@ struct vec4f
 /// Constructors
 ////////////////////////////////////////////////////////////////////////////////
 
-inline uniform vec4f make_vec4f(const uniform float a) { uniform vec4f v; v.x = a; v.y = a; v.z = a; v.w = a; return v; }
-inline varying vec4f make_vec4f(const varying float a) { varying vec4f v; v.x = a; v.y = a; v.z = a; v.w = a; return v; }
+inline uniform Vec4f make_Vec4f(const uniform float a) { uniform Vec4f v; v.x = a; v.y = a; v.z = a; v.w = a; return v; }
+inline varying Vec4f make_Vec4f(const varying float a) { varying Vec4f v; v.x = a; v.y = a; v.z = a; v.w = a; return v; }
 
-inline uniform vec4f make_vec4f(const uniform float x, const uniform float y, const uniform float z, const uniform float w) { 
-  uniform vec4f v; v.x = x; v.y = y; v.z = z; v.w = w; return v;
+inline uniform Vec4f make_Vec4f(const uniform float x, const uniform float y, const uniform float z, const uniform float w) { 
+  uniform Vec4f v; v.x = x; v.y = y; v.z = z; v.w = w; return v;
 }
 
-inline varying vec4f make_vec4f(const varying float x, const varying float y, const varying float z, const varying float w) { 
-  varying vec4f v; v.x = x; v.y = y; v.z = z; v.w = w; return v;
+inline varying Vec4f make_Vec4f(const varying float x, const varying float y, const varying float z, const varying float w) { 
+  varying Vec4f v; v.x = x; v.y = y; v.z = z; v.w = w; return v;
 }
 
-inline uniform vec4f make_vec4f(const uniform vec3f a) { uniform vec4f v; v.x = a.x; v.y = a.y; v.z = a.z; v.w = 0.f; return v; }
-inline varying vec4f make_vec4f(const varying vec3f a) { varying vec4f v; v.x = a.x; v.y = a.y; v.z = a.z; v.w = 0.f; return v; }
+inline uniform Vec4f make_Vec4f(const uniform Vec3f a) { uniform Vec4f v; v.x = a.x; v.y = a.y; v.z = a.z; v.w = 0.f; return v; }
+inline varying Vec4f make_Vec4f(const varying Vec3f a) { varying Vec4f v; v.x = a.x; v.y = a.y; v.z = a.z; v.w = 0.f; return v; }
 
-inline uniform vec3f make_vec3f(const uniform vec4f a) { uniform vec3f v; v.x = a.x; v.y = a.y; v.z = a.z; return v; }
-inline varying vec3f make_vec3f(const varying vec4f a) { varying vec3f v; v.x = a.x; v.y = a.y; v.z = a.z; return v; }
+inline uniform Vec3f make_Vec3f(const uniform Vec4f a) { uniform Vec3f v; v.x = a.x; v.y = a.y; v.z = a.z; return v; }
+inline varying Vec3f make_Vec3f(const varying Vec4f a) { varying Vec3f v; v.x = a.x; v.y = a.y; v.z = a.z; return v; }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Unary Operators
 ////////////////////////////////////////////////////////////////////////////////
 
-inline uniform vec4f neg(const uniform vec4f a) { return make_vec4f(-a.x,-a.y,-a.z,-a.w); }
-inline varying vec4f neg(const varying vec4f a) { return make_vec4f(-a.x,-a.y,-a.z,-a.w); }
+inline uniform Vec4f neg(const uniform Vec4f a) { return make_Vec4f(-a.x,-a.y,-a.z,-a.w); }
+inline varying Vec4f neg(const varying Vec4f a) { return make_Vec4f(-a.x,-a.y,-a.z,-a.w); }
 
-inline uniform vec4f abs(const uniform vec4f a) { return make_vec4f(abs(a.x),abs(a.y),abs(a.z),abs(a.w)); }
-inline varying vec4f abs(const varying vec4f a) { return make_vec4f(abs(a.x),abs(a.y),abs(a.z),abs(a.w)); }
+inline uniform Vec4f abs(const uniform Vec4f a) { return make_Vec4f(abs(a.x),abs(a.y),abs(a.z),abs(a.w)); }
+inline varying Vec4f abs(const varying Vec4f a) { return make_Vec4f(abs(a.x),abs(a.y),abs(a.z),abs(a.w)); }
 
-inline uniform vec4f rcp(const uniform vec4f a) { return make_vec4f(rcp(a.x),rcp(a.y),rcp(a.z),rcp(a.w)); }
-inline varying vec4f rcp(const varying vec4f a) { return make_vec4f(rcp(a.x),rcp(a.y),rcp(a.z),rcp(a.w)); }
+inline uniform Vec4f rcp(const uniform Vec4f a) { return make_Vec4f(rcp(a.x),rcp(a.y),rcp(a.z),rcp(a.w)); }
+inline varying Vec4f rcp(const varying Vec4f a) { return make_Vec4f(rcp(a.x),rcp(a.y),rcp(a.z),rcp(a.w)); }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Binary Operators
 ////////////////////////////////////////////////////////////////////////////////
 
-inline uniform vec4f add(const uniform vec4f a, const uniform vec4f b) { uniform vec4f v; v.x = a.x+b.x; v.y = a.y+b.y; v.z = a.z+b.z; v.w = a.w+b.w; return v; }
-inline varying vec4f add(const varying vec4f a, const varying vec4f b) { varying vec4f v; v.x = a.x+b.x; v.y = a.y+b.y; v.z = a.z+b.z; v.w = a.w+b.w; return v; }
+inline uniform Vec4f add(const uniform Vec4f a, const uniform Vec4f b) { uniform Vec4f v; v.x = a.x+b.x; v.y = a.y+b.y; v.z = a.z+b.z; v.w = a.w+b.w; return v; }
+inline varying Vec4f add(const varying Vec4f a, const varying Vec4f b) { varying Vec4f v; v.x = a.x+b.x; v.y = a.y+b.y; v.z = a.z+b.z; v.w = a.w+b.w; return v; }
 
-inline uniform vec4f mul(const uniform float a, const uniform vec4f b) { uniform vec4f v; v.x = a*b.x; v.y = a*b.y; v.z = a*b.z; v.w = a*b.w; return v; }
-inline varying vec4f mul(const varying float a, const varying vec4f b) { varying vec4f v; v.x = a*b.x; v.y = a*b.y; v.z = a*b.z; v.w = a*b.w; return v; }
+inline uniform Vec4f mul(const uniform float a, const uniform Vec4f b) { uniform Vec4f v; v.x = a*b.x; v.y = a*b.y; v.z = a*b.z; v.w = a*b.w; return v; }
+inline varying Vec4f mul(const varying float a, const varying Vec4f b) { varying Vec4f v; v.x = a*b.x; v.y = a*b.y; v.z = a*b.z; v.w = a*b.w; return v; }
 
-inline uniform vec4f mul(const uniform vec4f a, const uniform float b) { uniform vec4f v; v.x = a.x*b; v.y = a.y*b; v.z = a.z*b; v.w = a.w*b; return v; }
-inline varying vec4f mul(const varying vec4f a, const varying float b) { varying vec4f v; v.x = a.x*b; v.y = a.y*b; v.z = a.z*b; v.w = a.w*b; return v; }
+inline uniform Vec4f mul(const uniform Vec4f a, const uniform float b) { uniform Vec4f v; v.x = a.x*b; v.y = a.y*b; v.z = a.z*b; v.w = a.w*b; return v; }
+inline varying Vec4f mul(const varying Vec4f a, const varying float b) { varying Vec4f v; v.x = a.x*b; v.y = a.y*b; v.z = a.z*b; v.w = a.w*b; return v; }
 
-inline uniform vec4f mul(const uniform vec4f a, const uniform vec4f b) { uniform vec4f v; v.x = a.x*b.x; v.y = a.y*b.y; v.z = a.z*b.z; v.w = a.w*b.w; return v; }
-inline varying vec4f mul(const varying vec4f a, const varying vec4f b) { varying vec4f v; v.x = a.x*b.x; v.y = a.y*b.y; v.z = a.z*b.z; v.w = a.w*b.w; return v; }
+inline uniform Vec4f mul(const uniform Vec4f a, const uniform Vec4f b) { uniform Vec4f v; v.x = a.x*b.x; v.y = a.y*b.y; v.z = a.z*b.z; v.w = a.w*b.w; return v; }
+inline varying Vec4f mul(const varying Vec4f a, const varying Vec4f b) { varying Vec4f v; v.x = a.x*b.x; v.y = a.y*b.y; v.z = a.z*b.z; v.w = a.w*b.w; return v; }
 
 #endif

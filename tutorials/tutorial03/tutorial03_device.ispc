@@ -32,17 +32,17 @@ struct ISPCMaterial
   float Ns;              /*< specular exponent */
   float Ni;              /*< optical density for the surface (index of refraction) */
   
-  vec3f Ka;              /*< ambient reflectivity */
-  vec3f Kd;              /*< diffuse reflectivity */
-  vec3f Ks;              /*< specular reflectivity */
-  vec3f Tf;              /*< transmission filter */
+  Vec3f Ka;              /*< ambient reflectivity */
+  Vec3f Kd;              /*< diffuse reflectivity */
+  Vec3f Ks;              /*< specular reflectivity */
+  Vec3f Tf;              /*< transmission filter */
 };
 
 struct ISPCMesh
 {
-  uniform vec3fa* positions;    //!< vertex position array
-  uniform vec3fa* normals;       //!< vertex normal array
-  uniform vec2f* texcoords;     //!< vertex texcoord array
+  uniform Vec3fa* positions;    //!< vertex position array
+  uniform Vec3fa* normals;       //!< vertex normal array
+  uniform Vec2f* texcoords;     //!< vertex texcoord array
   uniform ISPCTriangle* triangles;  //!< list of triangles
   int numVertices;
   int numTriangles;
@@ -61,8 +61,8 @@ extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene scene = NULL;
 
 /* render function to use */
-vec3f renderPixelNormal(int x, int y, const uniform vec3f& vx, const uniform vec3f& vy, const uniform vec3f& vz, const uniform vec3f& p);
-vec3f (* uniform renderPixel)(int x, int y, const uniform vec3f& vx, const uniform vec3f& vy, const uniform vec3f& vz, const uniform vec3f& p);
+Vec3f renderPixelNormal(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
+Vec3f (* uniform renderPixel)(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
 
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
@@ -113,7 +113,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 }
 
 /* task that renders a single screen tile */
-vec3f renderPixelNormal(int x, int y, const uniform vec3f& vx, const uniform vec3f& vy, const uniform vec3f& vz, const uniform vec3f& p)
+Vec3f renderPixelNormal(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -130,10 +130,10 @@ vec3f renderPixelNormal(int x, int y, const uniform vec3f& vx, const uniform vec
   rtcIntersect(scene,ray);
   
   /* shade background black */
-  if (ray.geomID == -1) return make_vec3f(0.0f);
+  if (ray.geomID == -1) return make_Vec3f(0.0f);
   
   /* shade all rays that hit something */
-  vec3f color = make_vec3f(0.0f);
+  Vec3f color = make_Vec3f(0.0f);
 #if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
   int materialID = g_ispc_scene->meshes[ray.geomID]->triangles[ray.primID].materialID; 
 #else
@@ -147,14 +147,14 @@ vec3f renderPixelNormal(int x, int y, const uniform vec3f& vx, const uniform vec
   color = material->Kd;
   
   /* apply ambient light */
-  vec3f Ng = normalize(ray.Ng);
-  vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
+  Vec3f Ng = normalize(ray.Ng);
+  Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
   color = mul(color,abs(dot(ray.dir,Ng)));    
   return color;
 }
 
 /* renders a single pixel with UV shading */
-vec3f renderPixelUV(int x, int y, const uniform vec3f& vx, const uniform vec3f& vy, const uniform vec3f& vz, const uniform vec3f& p)
+Vec3f renderPixelUV(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -171,12 +171,12 @@ vec3f renderPixelUV(int x, int y, const uniform vec3f& vx, const uniform vec3f& 
   rtcIntersect(scene,ray);
 
   /* shade pixel */
-  if (ray.geomID == -1) return make_vec3f(0.0f);
-  else return make_vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
+  if (ray.geomID == -1) return make_Vec3f(0.0f);
+  else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
 }
 
 /* renders a single pixel with geomID shading */
-vec3f renderPixelGeomID(int x, int y, const uniform vec3f& vx, const uniform vec3f& vy, const uniform vec3f& vz, const uniform vec3f& p)
+Vec3f renderPixelGeomID(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -197,13 +197,13 @@ vec3f renderPixelGeomID(int x, int y, const uniform vec3f& vx, const uniform vec
   float r = (3453*ray.geomID % 124) / 124.0f;
   float g = (3453*ray.geomID % 224) / 224.0f;
   float b = (3453*ray.geomID % 54) / 54.0f;
-  return make_vec3f(r,g,b);
+  return make_Vec3f(r,g,b);
 }
 
 /* vizualizes the traversal cost of a pixel */
 uniform float scale = 0.0001f;
 
-vec3f renderPixelCycles(int x, int y, const uniform vec3f& vx, const uniform vec3f& vy, const uniform vec3f& vz, const uniform vec3f& p)
+Vec3f renderPixelCycles(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -222,7 +222,7 @@ vec3f renderPixelCycles(int x, int y, const uniform vec3f& vx, const uniform vec
   uniform int64 c1 = get_tsc();
   
   /* shade pixel */
-  return make_vec3f((uniform float)(c1-c0)*scale,0.0f,0.0f);
+  return make_Vec3f((uniform float)(c1-c0)*scale,0.0f,0.0f);
 }
 
 /* called when a key is pressed */
@@ -244,11 +244,11 @@ export void device_key_pressed(uniform int key)
 /* returns the point seen through specified pixel */
 export uniform bool device_pick(const uniform float x,
                                 const uniform float y, 
-                                const uniform vec3f& vx, 
-                                const uniform vec3f& vy, 
-                                const uniform vec3f& vz, 
-                                const uniform vec3f& p,
-                                uniform vec3f& hitPos)
+                                const uniform Vec3f& vx, 
+                                const uniform Vec3f& vy, 
+                                const uniform Vec3f& vz, 
+                                const uniform Vec3f& p,
+                                uniform Vec3f& hitPos)
 {
   /* initialize ray */
   uniform RTCRay1 ray;
@@ -266,7 +266,7 @@ export uniform bool device_pick(const uniform float x,
 
   /* shade pixel */
   if (ray.geomID == -1) {
-    hitPos = make_vec3f(0.0f,0.0f,0.0f);
+    hitPos = make_Vec3f(0.0f,0.0f,0.0f);
     return false;
   }
   else {
@@ -280,10 +280,10 @@ task void renderTile(uniform int* uniform pixels,
                      const uniform int width,
                      const uniform int height, 
                      const uniform float time,
-                     const uniform vec3f& vx, 
-                     const uniform vec3f& vy, 
-                     const uniform vec3f& vz, 
-                     const uniform vec3f& p,
+                     const uniform Vec3f& vx, 
+                     const uniform Vec3f& vy, 
+                     const uniform Vec3f& vz, 
+                     const uniform Vec3f& p,
                      const uniform int numTilesX, 
                      const uniform int numTilesY)
 {
@@ -297,7 +297,7 @@ task void renderTile(uniform int* uniform pixels,
   foreach (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0,1));
@@ -312,10 +312,10 @@ export void device_render (uniform int* uniform pixels,
                            const uniform int width,
                            const uniform int height, 
                            const uniform float time,
-                           const uniform vec3f& vx, 
-                           const uniform vec3f& vy, 
-                           const uniform vec3f& vz, 
-                           const uniform vec3f& p)
+                           const uniform Vec3f& vx, 
+                           const uniform Vec3f& vy, 
+                           const uniform Vec3f& vz, 
+                           const uniform Vec3f& p)
 {
   /* create scene */
   if (scene == NULL)

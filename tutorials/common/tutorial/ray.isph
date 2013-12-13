@@ -20,15 +20,15 @@
 
 struct RTCRay1
 {
-  uniform vec3f org;     //!< Ray origin
+  uniform Vec3f org;     //!< Ray origin
   uniform float align0;
-  uniform vec3f dir;     //!< Ray direction
+  uniform Vec3f dir;     //!< Ray direction
   uniform float align1;
   uniform float tnear;   //!< Start of ray segment
   uniform float tfar;    //!< End of ray segment
   uniform float time;    //!< Time of this ray for motion blur.
   uniform int mask;      //!< used to mask out objects during traversal
-  uniform vec3f Ng;      //!< Geometric normal.
+  uniform Vec3f Ng;      //!< Geometric normal.
   uniform float align2;
   uniform float u;       //!< Barycentric u coordinate of hit
   uniform float v;       //!< Barycentric v coordinate of hit
@@ -41,13 +41,13 @@ struct RTCRay1
  *  precomputed reciprocal direction. */
 struct RTCRay
 {
-  vec3f org;     //!< Ray origin
-  vec3f dir;     //!< Ray direction
+  Vec3f org;     //!< Ray origin
+  Vec3f dir;     //!< Ray direction
   float tnear;   //!< Start of ray segment
   float tfar;    //!< End of ray segment
   float time;    //!< Time of this ray for motion blur.
   int mask;      //!< used to mask out objects during traversal
-  vec3f Ng;      //!< Geometric normal.
+  Vec3f Ng;      //!< Geometric normal.
   float u;       //!< Barycentric u coordinate of hit
   float v;       //!< Barycentric v coordinate of hit
   int geomID;    //!< geometry ID
@@ -57,8 +57,8 @@ struct RTCRay
 
 /*! Constructs a ray from origin, direction, and ray segment. Near
  *  has to be smaller than far. */
-inline RTCRay make_Ray(const vec3f org, 
-                       const vec3f dir, 
+inline RTCRay make_Ray(const Vec3f org, 
+                       const Vec3f dir, 
                        const float tnear, 
                        const float tfar)
 {
@@ -77,8 +77,8 @@ inline RTCRay make_Ray(const vec3f org,
 
 /*! Constructs a ray from origin, direction, and ray segment. Near
  *  has to be smaller than far. */
-inline RTCRay make_Ray(const vec3f org, 
-                    const vec3f dir)
+inline RTCRay make_Ray(const Vec3f org, 
+                    const Vec3f dir)
 {
   RTCRay ray;
   ray.org  = org;
@@ -94,8 +94,8 @@ inline RTCRay make_Ray(const vec3f org,
 }
 
 inline void init_Ray(RTCRay &ray,
-                     const vec3f org, 
-                     const vec3f dir, 
+                     const Vec3f org, 
+                     const Vec3f dir, 
                      const float tnear, 
                      const float tfar)
 {
@@ -111,8 +111,8 @@ inline void init_Ray(RTCRay &ray,
 }
 
 inline void init_Ray(RTCRay &ray,
-                     const vec3f org, 
-                     const vec3f dir)
+                     const Vec3f org, 
+                     const Vec3f dir)
 {
   ray.org = org;
   ray.dir = dir;
