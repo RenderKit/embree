@@ -16,12 +16,12 @@
 
 IF (__XEON__ AND BUILD_TUTORIALS)
  ADD_EXECUTABLE(tutorial01 tutorial01.cpp tutorial01_device.cpp)
- TARGET_LINK_LIBRARIES(tutorial01 embree tutorial tutorial_device transport)
+ TARGET_LINK_LIBRARIES(tutorial01 embree tutorial transport tutorial_device)
 ENDIF()
 
 IF (__XEON__ AND BUILD_TUTORIALS_ISPC)
   ADD_ISPC_EXECUTABLE(tutorial01_ispc tutorial01.cpp tutorial01_device.ispc)
-  TARGET_LINK_LIBRARIES(tutorial01_ispc embree tutorial tutorial_device_ispc transport)
+  TARGET_LINK_LIBRARIES(tutorial01_ispc embree tutorial transport tutorial_device_ispc)
 ENDIF()
 
 IF (NOT __XEON__ AND __HOST__)
@@ -32,6 +32,6 @@ ENDIF()
 IF (NOT __XEON__ AND NOT __HOST__)
   INCLUDE (icc_xeonphi)
   ADD_ISPC_EXECUTABLE(tutorial01_xeonphi_device tutorial01_device.ispc)
-  TARGET_LINK_LIBRARIES(tutorial01_xeonphi_device embree_xeonphi.so tutorial_xeonphi_device_ispc transport_device)
+  TARGET_LINK_LIBRARIES(tutorial01_xeonphi_device embree_xeonphi.so transport_device tutorial_xeonphi_device_ispc)
   ADD_DEPENDENCIES(tutorial01_xeonphi_device embree_xeonphi)
 ENDIF()

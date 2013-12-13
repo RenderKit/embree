@@ -25,7 +25,7 @@ ADD_LIBRARY(tutorial STATIC
 TARGET_LINK_LIBRARIES(tutorial sys lexers ${OPENGL_LIBRARY} ${GLUT_LIBRARY})
 
 IF (BUILD_TUTORIALS)
-  ADD_ISPC_LIBRARY(tutorial_device STATIC tutorial_device.cpp)
+  ADD_LIBRARY(tutorial_device STATIC tutorial_device.cpp)
 ENDIF()
 
 IF (BUILD_TUTORIALS_ISPC)
