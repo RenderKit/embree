@@ -139,13 +139,7 @@ namespace embree
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
  
 	unsigned int items; const Triangle1* tri  = (Triangle1*) curNode.leaf(accel,items);
-	Accel *accel_ptr[4];
-
-	accel_ptr[0] = *(Accel**)&tri[0];
-	accel_ptr[1] = *(Accel**)&tri[1];
-	accel_ptr[2] = *(Accel**)&tri[2];
-	accel_ptr[3] = *(Accel**)&tri[3];
-
+	Accel **accel_ptr = (Accel**)tri;
         VirtualGeometryIntersector16::intersect(valid_leaf,ray,accel_ptr,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
@@ -266,13 +260,7 @@ namespace embree
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
 
         unsigned int items; const Triangle1* tri  = (Triangle1*) curNode.leaf(accel,items);
-
-	Accel *accel_ptr[4];
-
-	accel_ptr[0] = *(Accel**)&tri[0];
-	accel_ptr[1] = *(Accel**)&tri[1];
-	accel_ptr[2] = *(Accel**)&tri[2];
-	accel_ptr[3] = *(Accel**)&tri[3];
+	Accel **accel_ptr = (Accel**)tri;
 
         m_terminated |= valid_leaf & VirtualGeometryIntersector16::occluded(valid_leaf,ray,accel_ptr,items,bvh->geometry);
         if (unlikely(all(m_terminated))) break;
