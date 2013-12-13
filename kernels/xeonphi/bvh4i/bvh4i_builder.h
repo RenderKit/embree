@@ -48,9 +48,11 @@ namespace embree
     /* build function */
     void build(size_t threadIndex, size_t threadCount);
 
-    virtual void allocateData(size_t threadCount,size_t newNumPrimitives);
-    virtual void computePrimRefs(size_t threadIndex, size_t threadCount);
-    virtual void createAccel(size_t threadIndex, size_t threadCount);
+    virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives);
+    virtual void computePrimRefs  (const size_t threadIndex, const size_t threadCount);
+    virtual void createAccel      (const size_t threadIndex, const size_t threadCount);
+    virtual void convertQBVHLayout(const size_t threadIndex, const size_t threadCount);
+
     virtual size_t getNumPrimitives();
     virtual void printBuilderName();
 
@@ -179,13 +181,13 @@ namespace embree
   class BVH4iBuilderPreSplits : public BVH4iBuilder
   {
   public:
+
   BVH4iBuilderPreSplits(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
       {
       }
 
-
-    virtual void allocateData(size_t threadCount,size_t newNumPrimitives);
-    virtual void computePrimRefs(size_t threadIndex, size_t threadCount);
+    virtual void allocateData   (const size_t threadCount, const size_t newNumPrimitives);
+    virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
     virtual void printBuilderName();
 
   protected:
@@ -209,14 +211,13 @@ namespace embree
       }
 
     virtual size_t getNumPrimitives();
-    virtual void computePrimRefs(size_t threadIndex, size_t threadCount);
-    virtual void createAccel(size_t threadIndex, size_t threadCount);
+    virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
+    virtual void createAccel    (const size_t threadIndex, const size_t threadCount);
     virtual void printBuilderName();
 
   protected:
     TASK_FUNCTION(BVH4iBuilderVirtualGeometry,computePrimRefsVirtualGeometry);
     TASK_FUNCTION(BVH4iBuilderVirtualGeometry,createVirtualGeometryAccel);
-
     
   };
 

@@ -37,7 +37,7 @@ namespace embree
     std::cout << "building BVH4i with presplits-based SAH builder (MIC) ... " << std::endl;    
   }
 
-  void BVH4iBuilderPreSplits::allocateData(size_t threadCount,size_t totalNumPrimitives)
+  void BVH4iBuilderPreSplits::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
     DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
@@ -109,7 +109,7 @@ namespace embree
   }
 
 
-  void BVH4iBuilderPreSplits::computePrimRefs(size_t threadIndex, size_t threadCount)
+  void BVH4iBuilderPreSplits::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
     DBG(PING);
 
@@ -361,12 +361,12 @@ namespace embree
     return numVirtualObjects;	
   }
 
-  void BVH4iBuilderVirtualGeometry::computePrimRefs(size_t threadIndex, size_t threadCount)
+  void BVH4iBuilderVirtualGeometry::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
     LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
   }
 
-  void BVH4iBuilderVirtualGeometry::createAccel(size_t threadIndex, size_t threadCount)
+  void BVH4iBuilderVirtualGeometry::createAccel(const size_t threadIndex, const size_t threadCount)
   {
     LockStepTaskScheduler::dispatchTask( task_createVirtualGeometryAccel, this, threadIndex, threadCount );
   }

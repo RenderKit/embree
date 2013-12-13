@@ -163,7 +163,7 @@ namespace embree
     size_prims = size_primrefs;    
   }
   
-  void BVH4iBuilder::allocateData(size_t threadCount,size_t totalNumPrimitives)
+  void BVH4iBuilder::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
     DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
@@ -424,6 +424,11 @@ namespace embree
       }
   }
 
+  void BVH4iBuilder::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
+  {
+    LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );    
+  }
+
   __forceinline void computeAccelerationData(const unsigned int &geomID,
 					     const unsigned int &primID,     
 					     const Scene *__restrict__ const scene,
@@ -450,9 +455,8 @@ namespace embree
     store16f_ngo(acc,tri_accel);
   }
 
-  void BVH4iBuilder::createAccel(size_t threadIndex, size_t threadCount)
+  void BVH4iBuilder::createAccel(const size_t threadIndex, const size_t threadCount)
   {
-    DBG(PING);
     LockStepTaskScheduler::dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );   
   }
 
@@ -1399,7 +1403,7 @@ namespace embree
     
   }
 
-  void BVH4iBuilder::computePrimRefs(size_t threadIndex, size_t threadCount)
+  void BVH4iBuilder::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
     LockStepTaskScheduler::dispatchTask( task_computePrimRefsTriangles, this, threadIndex, threadCount );
   }
@@ -1491,8 +1495,8 @@ namespace embree
     TIMER(std::cout << "task_createAccel " << 1000. * msec << " ms" << std::endl << std::flush);
     
     /* convert to SOA node layout */
-    TIMER(msec = getSeconds());        
-    LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );
+    TIMER(msec = getSeconds());     
+    convertQBVHLayout(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_convertToSOALayout " << 1000. * msec << " ms" << std::endl << std::flush);
     

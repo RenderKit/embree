@@ -17,6 +17,7 @@
 #include "bvh4i_intersector16_virtual.h"
 #include "geometry/virtual_accel_intersector16.h"
 #include "geometry/triangle1_intersector16_moeller.h"
+#include "geometry/virtual_accel_intersector1.h"
 
 namespace embree
 {
@@ -138,9 +139,15 @@ namespace embree
         const mic_m valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
  
-	unsigned int items; const Triangle1* tri  = (Triangle1*) curNode.leaf(accel,items);
-	Accel **accel_ptr = (Accel**)tri;
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+
+	unsigned int items = curNode.items();
+	unsigned int index = (curNode.offset() >> 6) << 3; /* array of pointers */
+	Accel **accel_ptr = (Accel**)accel + index;
+
         VirtualGeometryIntersector16::intersect(valid_leaf,ray,accel_ptr,items,bvh->geometry);
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
     }
@@ -259,25 +266,30 @@ namespace embree
         mic_m valid_leaf = gt(m_active,ray_tfar,curDist);
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
 
-        unsigned int items; const Triangle1* tri  = (Triangle1*) curNode.leaf(accel,items);
-	Accel **accel_ptr = (Accel**)tri;
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+
+	unsigned int items = curNode.items();
+	unsigned int index = (curNode.offset() >> 6) << 3; /* array of pointers */
+	Accel **accel_ptr = (Accel**)accel + index;
 
         m_terminated |= valid_leaf & VirtualGeometryIntersector16::occluded(valid_leaf,ray,accel_ptr,items,bvh->geometry);
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+
         if (unlikely(all(m_terminated))) break;
         ray_tfar = select(m_terminated,neg_inf,ray_tfar);
       }
       store16i(valid & m_terminated,&ray.geomID,0);
     }
 
-    void BVH4iIntersector1Virtual::intersect(BVH4i* bvh, Ray& ray)
+    template<typename TriangleIntersector1>
+    void BVH4iIntersector1Virtual<TriangleIntersector1>::intersect(BVH4i* bvh, Ray& ray)
     {
-      return;
       /* near and node stack */
       __align(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
-      //const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir16     = rcp_safe(mic3f(mic_f(ray.dir.x),mic_f(ray.dir.y),mic_f(ray.dir.z)));
       const mic_f inf        = mic_f(pos_inf);
       const mic_f zero       = mic_f::zero();
@@ -392,22 +404,93 @@ namespace embree
 	      curNode = ((unsigned int*)plower)[closest_child_pos];
 	      compactustore16f(m_pos,&stack_dist[old_sindex],tNear);
 	    }
-	  
-	    
+	  	    
 
 	  /* return if stack is empty */
 	  if (unlikely(curNode == BVH4i::invalidNode)) break;
 
+	  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+	  unsigned int items = curNode.items();
+	  unsigned int index = (curNode.offset() >> 6) << 3; /* array of pointers */
+	  Accel **accel_ptr = (Accel**)accel + index;
+
+	  TriangleIntersector1::intersect(ray,accel_ptr,items,bvh->geometry);
+
+	  if (unlikely(any(max_dist_xyz != broadcast1to16f(&ray.tfar))))
+	    {
+	      max_dist_xyz = broadcast1to16f(&ray.tfar);
+
+	      /* compact the stack if size of stack >= 2 */
+	      if (likely(sindex >= 2))
+		{
+		  if (likely(sindex < 16))
+		    {
+		      const unsigned int m_num_stack = mic_m::shift1[sindex] - 1;
+		      const mic_m m_num_stack_low  = toMask(m_num_stack);
+		      const mic_f snear_low  = load16f(stack_dist + 0);
+		      const mic_i snode_low  = load16i((int*)stack_node + 0);
+		      const mic_m m_stack_compact_low  = le(m_num_stack_low,snear_low,max_dist_xyz) | (mic_m)1;
+		      compactustore16f_low(m_stack_compact_low,stack_dist + 0,snear_low);
+		      compactustore16i_low(m_stack_compact_low,(int*)stack_node + 0,snode_low);
+		      sindex = countbits(m_stack_compact_low);
+		      assert(sindex < 16);
+		    }
+		  else if (likely(sindex < 32))
+		    {
+		      const mic_m m_num_stack_high = toMask(mic_m::shift1[sindex-16] - 1); 
+		      const mic_f snear_low  = load16f(stack_dist + 0);
+		      const mic_f snear_high = load16f(stack_dist + 16);
+		      const mic_i snode_low  = load16i((int*)stack_node + 0);
+		      const mic_i snode_high = load16i((int*)stack_node + 16);
+		      const mic_m m_stack_compact_low  = le(snear_low,max_dist_xyz) | (mic_m)1;
+		      const mic_m m_stack_compact_high = le(m_num_stack_high,snear_high,max_dist_xyz);
+		      compactustore16f(m_stack_compact_low,      stack_dist + 0,snear_low);
+		      compactustore16i(m_stack_compact_low,(int*)stack_node + 0,snode_low);
+		      compactustore16f(m_stack_compact_high,      stack_dist + countbits(m_stack_compact_low),snear_high);
+		      compactustore16i(m_stack_compact_high,(int*)stack_node + countbits(m_stack_compact_low),snode_high);
+		      sindex = countbits(m_stack_compact_low) + countbits(m_stack_compact_high);
+		      assert ((unsigned int)m_num_stack_high == ((mic_m::shift1[sindex] - 1) >> 16));
+		      assert(sindex < 32);
+		    }
+		  else
+		    {
+		      const mic_m m_num_stack_32 = toMask(mic_m::shift1[sindex-32] - 1); 
+
+		      const mic_f snear_0  = load16f(stack_dist + 0);
+		      const mic_f snear_16 = load16f(stack_dist + 16);
+		      const mic_f snear_32 = load16f(stack_dist + 32);
+		      const mic_i snode_0  = load16i((int*)stack_node + 0);
+		      const mic_i snode_16 = load16i((int*)stack_node + 16);
+		      const mic_i snode_32 = load16i((int*)stack_node + 32);
+		      const mic_m m_stack_compact_0  = le(               snear_0 ,max_dist_xyz) | (mic_m)1;
+		      const mic_m m_stack_compact_16 = le(               snear_16,max_dist_xyz);
+		      const mic_m m_stack_compact_32 = le(m_num_stack_32,snear_32,max_dist_xyz);
+
+		      sindex = 0;
+		      compactustore16f(m_stack_compact_0,      stack_dist + sindex,snear_0);
+		      compactustore16i(m_stack_compact_0,(int*)stack_node + sindex,snode_0);
+		      sindex += countbits(m_stack_compact_0);
+		      compactustore16f(m_stack_compact_16,      stack_dist + sindex,snear_16);
+		      compactustore16i(m_stack_compact_16,(int*)stack_node + sindex,snode_16);
+		      sindex += countbits(m_stack_compact_16);
+		      compactustore16f(m_stack_compact_32,      stack_dist + sindex,snear_32);
+		      compactustore16i(m_stack_compact_32,(int*)stack_node + sindex,snode_32);
+		      sindex += countbits(m_stack_compact_32);
+
+		      assert(sindex < 48);		  
+		    }
+		} // sindex
+	    }
 
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	}	  
     }
 
-
-    void BVH4iIntersector1Virtual::occluded(BVH4i* bvh, Ray& ray)
+    template<typename TriangleIntersector1>
+    void BVH4iIntersector1Virtual<TriangleIntersector1>::occluded(BVH4i* bvh, Ray& ray)
     {
-      return;
       /* near and node stack */
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
@@ -526,30 +609,18 @@ namespace embree
 	  if (unlikely(curNode == BVH4i::invalidNode)) break;
 
 
-	  /* intersect one ray against four triangles */
 
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	  const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel);
+	  unsigned int items = curNode.items();
+	  unsigned int index = (curNode.offset() >> 6) << 3; /* array of pointers */
+	  Accel **accel_ptr = (Accel**)accel + index;
 
-// 	  if (unlikely(any(m_final)))
-// 	    {
-// #if defined(__USE_RAY_MASK__)
-// 	      const mic_i rayMask(ray.mask);
-// 	      const mic_i triMask = gather16i_4i((int*)&tptr[0].Ng,
-// 						 (int*)&tptr[1].Ng,
-// 						 (int*)&tptr[2].Ng,
-// 						 (int*)&tptr[3].Ng);
-// 	      const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
-		    
-// 	      if ( any(m_final & m_ray_mask) )
-// #endif
+	  if (TriangleIntersector1::occluded(ray,accel_ptr,items,bvh->geometry)) {
+	    ray.geomID = 0;
+	    return;
+	  }
 
-// 		{
-// 		  ray.geomID = 0;
-// 		  return;
-// 		}
-// 	    }
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	}
@@ -557,7 +628,7 @@ namespace embree
     
     
     DEFINE_INTERSECTOR16   (BVH4iVirtualGeometryIntersector16, BVH4iIntersector16Virtual<VirtualAccelIntersector16>);
-    DEFINE_INTERSECTOR1    (BVH4iVirtualGeometryIntersector1, BVH4iIntersector1Virtual);
+    DEFINE_INTERSECTOR1    (BVH4iVirtualGeometryIntersector1, BVH4iIntersector1Virtual<VirtualAccelIntersector1>);
 
   }
 }

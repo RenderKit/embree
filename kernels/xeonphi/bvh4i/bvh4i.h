@@ -101,6 +101,10 @@ namespace embree
       __forceinline unsigned int offset() const {
         return _id & offset_mask;
       }
+
+      __forceinline unsigned int items() const {
+        return _id & items_mask;
+      }
       
       __forceinline unsigned int &id() { return _id; }
     private:

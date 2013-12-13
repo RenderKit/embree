@@ -37,7 +37,8 @@ namespace embree
       static void occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
     };
 
-    class BVH4iIntersector1Virtual
+    template<typename TriangleIntersector1>
+      class BVH4iIntersector1Virtual
     {
       /* shortcuts for frequently used types */
       typedef typename BVH4i::NodeRef NodeRef;
