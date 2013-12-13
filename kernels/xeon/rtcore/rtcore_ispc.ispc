@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../../../include/embree2/rtcore.isph" // FIXME: fix include dir support in ispc.rules file
+#include "../../../include/embree2/rtcore.isph" 
 
 #define size_tt int // FIXME: workaround of ISPC bug
 

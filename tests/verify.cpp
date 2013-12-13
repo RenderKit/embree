@@ -498,7 +498,7 @@ namespace embree
   {
     size_t numThreads = getNumberOfLogicalThreads();
 #if defined (__MIC__)
-    numThreads -= 4; // FIXME
+    numThreads -= 4;
 #endif
     g_barrier.init(numThreads);
     g_atomic0 = 0;
@@ -590,7 +590,7 @@ namespace embree
   {
     size_t numThreads = getNumberOfLogicalThreads();
 #if defined (__MIC__)
-    numThreads -= 4; // FIXME
+    numThreads -= 4;
 #endif
     g_cond_barrier.init(numThreads);
     g_atomic0 = 0;
@@ -643,7 +643,7 @@ namespace embree
   {
     size_t numThreads = getNumberOfLogicalThreads();
 #if defined (__MIC__)
-    numThreads -= 4; // FIXME
+    numThreads -= 4;
 #endif
     g_barrier.init(numThreads);
     g_counter = 0;

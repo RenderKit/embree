@@ -14,14 +14,14 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-#IF (__XEON__ AND BUILD_TUTORIALS)
-#  ADD_EXECUTABLE(tutorial04 tutorial04.cpp tutorial04_device.cpp)
-#  TARGET_LINK_LIBRARIES(tutorial04 embree tutorial transport)
-#ENDIF()
+IF (__XEON__ AND BUILD_TUTORIALS)
+  ADD_EXECUTABLE(tutorial04 tutorial04.cpp tutorial04_device.cpp)
+  TARGET_LINK_LIBRARIES(tutorial04 embree tutorial transport tutorial_device)
+ENDIF()
 
 IF (__XEON__ AND BUILD_TUTORIALS_ISPC)
   ADD_ISPC_EXECUTABLE(tutorial04_ispc tutorial04.cpp tutorial04_device.ispc)
-  TARGET_LINK_LIBRARIES(tutorial04_ispc embree tutorial transport)
+  TARGET_LINK_LIBRARIES(tutorial04_ispc embree tutorial transport tutorial_device_ispc)
 ENDIF()
 
 IF (NOT __XEON__ AND __HOST__)
@@ -32,6 +32,6 @@ ENDIF()
 IF (NOT __XEON__ AND NOT __HOST__)
   INCLUDE (icc_xeonphi)
   ADD_ISPC_EXECUTABLE(tutorial04_xeonphi_device tutorial04_device.ispc)
-  TARGET_LINK_LIBRARIES(tutorial04_xeonphi_device embree_xeonphi.so transport_device)
+  TARGET_LINK_LIBRARIES(tutorial04_xeonphi_device embree_xeonphi.so transport_device tutorial_xeonphi_device_ispc)
   ADD_DEPENDENCIES(tutorial04_xeonphi_device embree_xeonphi)
 ENDIF()
