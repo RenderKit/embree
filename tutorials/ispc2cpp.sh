@@ -8,11 +8,13 @@ sed -i .backup  's/uniform //g' $2
 sed -i .backup  's/ uniform//g' $2
 sed -i .backup  's/varying //g' $2
 sed -i .backup  's/ varying//g' $2
+sed -i .backup  's/extern/extern \"C\"/g' $2
 sed -i .backup  's/export/extern \"C\"/g' $2
 sed -i .backup  's/launch\[numTilesX\*numTilesY\] renderTile(/launch_renderTile(numTilesX\*numTilesY,/g' $2
 sed -i .backup  's/launch\[numPhi+1\] animateSphere(/launch_animateSphere(numPhi+1,/g' $2
 sed -i .backup  's/\*pi\*/\*float(pi)\*/g' $2
 sed -i .backup  's/\*pi\//\*float(pi)\//g' $2
+sed -i .backup  's/RTC_MATRIX_COLUMN_MAJOR/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
 sed -i .backup  's/sync;//g' $2
 sed -i .backup  's/make_//g' $2
 sed -i .backup  's/\#if 0 \/\/ FIXME: pointer gather/\#if 1 \/\/ FIXME: pointer gather/g' $2
