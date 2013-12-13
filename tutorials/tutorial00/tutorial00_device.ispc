@@ -17,12 +17,11 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* scene data */
-RTCScene scene = NULL;
+RTCScene g_scene = NULL;
 uniform Vec3f* uniform colors = NULL;
 
 /* render function to use */
-Vec3f renderPixelNormal(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
-Vec3f (* uniform renderPixel)(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
+renderPixelFunc renderPixel;
 
 /* adds a cube to the scene */
 uniform unsigned int addCube (RTCScene scene_i)
@@ -108,23 +107,23 @@ export void device_init (uniform int8* uniform cfg)
   rtcInit(cfg);
 
   /* create scene */
-  scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* add cube */
-  addCube(scene);
+  addCube(g_scene);
 
   /* add ground plane */
-  addGroundPlane(scene);
+  addGroundPlane(g_scene);
 
   /* commit changes to scene */
-  rtcCommit (scene);
+  rtcCommit (g_scene);
 
   /* set start render mode */
-  renderPixel = renderPixelNormal;
+  renderPixel = renderPixelStandard;
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelNormal(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -138,7 +137,7 @@ Vec3f renderPixelNormal(int x, int y, const uniform Vec3f& vx, const uniform Vec
   ray.time = 0;
   
   /* intersect ray with scene */
-  rtcIntersect(scene,ray);
+  rtcIntersect(g_scene,ray);
   
   /* shade pixels */
   Vec3f color = make_Vec3f(0.0f);
@@ -160,109 +159,13 @@ Vec3f renderPixelNormal(int x, int y, const uniform Vec3f& vx, const uniform Vec
     shadow.time = 0;
     
     /* trace shadow ray */
-    rtcOccluded(scene,shadow);
+    rtcOccluded(g_scene,shadow);
     
     /* add light contribution */
     if (shadow.geomID)
-      color = add(color,mul(diffuse,clamp(-dot(lightDir,normalize(ray.Ng)),0,1)));
+      color = add(color,mul(diffuse,clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
   }
   return color;
-}
-
-/* renders a single pixel with UV shading */
-Vec3f renderPixelUV(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
-{
-  /* initialize ray */
-  RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
-  ray.mask = -1;
-  ray.time = 0;
-
-  /* intersect ray with scene */
-  rtcIntersect(scene,ray);
-
-  /* shade pixel */
-  if (ray.geomID == -1) return make_Vec3f(0.0f);
-  else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
-}
-
-/* vizualizes the traversal cost of a pixel */
-uniform float scale = 0.001f;
-
-Vec3f renderPixelCycles(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
-{
-  /* initialize ray */
-  RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
-  ray.mask = -1;
-  ray.time = 0;
-
-  /* intersect ray with scene */
-  uniform int64 c0 = get_tsc();
-  rtcIntersect(scene,ray);
-  uniform int64 c1 = get_tsc();
-  
-  /* shade pixel */
-  return make_Vec3f((uniform float)(c1-c0)*scale,0.0f,0.0f);
-}
-
-/* called when a key is pressed */
-export void device_key_pressed(uniform int key)
-{
-  if      (key == GLUT_KEY_F1) renderPixel = renderPixelNormal;
-  else if (key == GLUT_KEY_F2) renderPixel = renderPixelUV;
-  else if (key == GLUT_KEY_F3) {
-    if (renderPixel == renderPixelCycles) scale *= 1.1f;
-    renderPixel = renderPixelCycles;
-  }
-  else if (key == GLUT_KEY_F4) {
-    if (renderPixel == renderPixelCycles) scale *= 0.9f;
-    renderPixel = renderPixelCycles;
-  }
-}
-
-/* returns the point seen through specified pixel */
-export uniform bool device_pick(const uniform float x,
-                                const uniform float y, 
-                                const uniform Vec3f& vx, 
-                                const uniform Vec3f& vy, 
-                                const uniform Vec3f& vz, 
-                                const uniform Vec3f& p,
-                                uniform Vec3f& hitPos)
-{
-  /* initialize ray */
-  uniform RTCRay1 ray;
-  ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
-  ray.mask = -1;
-  ray.time = 0;
-
-  /* intersect ray with scene */
-  rtcIntersect1(scene,ray);
-
-  /* shade pixel */
-  if (ray.geomID == -1) {
-    hitPos = make_Vec3f(0.0f,0.0f,0.0f);
-    return false;
-  }
-  else {
-    hitPos = add(ray.org,mul(ray.tfar,ray.dir));
-    return true;
-  }
 }
 
 /* task that renders a single screen tile */
@@ -290,9 +193,9 @@ task void renderTile(uniform int* uniform pixels,
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0,1));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0,1));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0,1));
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 }
@@ -316,7 +219,7 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  rtcDeleteScene (scene);
+  rtcDeleteScene (g_scene);
   delete[] colors;
   rtcExit();
 }

@@ -17,8 +17,7 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* render function to use */
-Vec3f renderPixelNormal(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
-Vec3f (* uniform renderPixel)(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
+renderPixelFunc renderPixel;
 
 const uniform int numPhi = 5;
 const uniform int numTheta = 2*numPhi;
@@ -34,8 +33,8 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, uniform Vec3f p, 
   
   /* create sphere */
   uniform int tri = 0;
-  const uniform float rcpNumTheta = rcp(numTheta);
-  const uniform float rcpNumPhi   = rcp(numPhi);
+  const uniform float rcpNumTheta = rcp((uniform float)numTheta);
+  const uniform float rcpNumPhi   = rcp((uniform float)numPhi);
   for (uniform int phi=0; phi<=numPhi; phi++)
   {
     for (uniform int theta=0; theta<numTheta; theta++)
@@ -157,11 +156,11 @@ export void device_init (uniform int8* uniform cfg)
   colors[3][3] = make_Vec3f(1.00,1.00,0);
 
   /* set start render mode */
-  renderPixel = renderPixelNormal;
+  renderPixel = renderPixelStandard;
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelNormal(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -204,105 +203,9 @@ Vec3f renderPixelNormal(int x, int y, const uniform Vec3f& vx, const uniform Vec
 
     /* add light contribution */
     if (shadow.geomID)
-      color = add(color,mul(diffuse,clamp(-dot(lightDir,normalize(ray.Ng)),0,1)));
+      color = add(color,mul(diffuse,clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
   }
   return color;
-}
-
-/* renders a single pixel with UV shading */
-Vec3f renderPixelUV(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
-{
-  /* initialize ray */
-  RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
-  ray.mask = -1;
-  ray.time = 0;
-
-  /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
-
-  /* shade pixel */
-  if (ray.geomID == -1) return make_Vec3f(0.0f);
-  else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
-}
-
-/* vizualizes the traversal cost of a pixel */
-uniform float scale = 0.0001f;
-
-Vec3f renderPixelCycles(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
-{
-  /* initialize ray */
-  RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
-  ray.mask = -1;
-  ray.time = 0;
-
-  /* intersect ray with scene */
-  uniform int64 c0 = get_tsc();
-  rtcIntersect(g_scene,ray);
-  uniform int64 c1 = get_tsc();
-  
-  /* shade pixel */
-  return make_Vec3f((uniform float)(c1-c0)*scale,0.0f,0.0f);
-}
-
-/* called when a key is pressed */
-export void device_key_pressed(uniform int key)
-{
-  if      (key == GLUT_KEY_F1) renderPixel = renderPixelNormal;
-  else if (key == GLUT_KEY_F2) renderPixel = renderPixelUV;
-  else if (key == GLUT_KEY_F3) {
-    if (renderPixel == renderPixelCycles) scale *= 1.1f;
-    renderPixel = renderPixelCycles;
-  }
-  else if (key == GLUT_KEY_F4) {
-    if (renderPixel == renderPixelCycles) scale *= 0.9f;
-    renderPixel = renderPixelCycles;
-  }
-}
-
-/* returns the point seen through specified pixel */
-export uniform bool device_pick(const uniform float x,
-                                const uniform float y, 
-                                const uniform Vec3f& vx, 
-                                const uniform Vec3f& vy, 
-                                const uniform Vec3f& vz, 
-                                const uniform Vec3f& p,
-                                uniform Vec3f& hitPos)
-{
-  /* initialize ray */
-  uniform RTCRay1 ray;
-  ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
-  ray.mask = -1;
-  ray.time = 0;
-
-  /* intersect ray with scene */
-  rtcIntersect1(g_scene,ray);
-
-  /* shade pixel */
-  if (ray.geomID == -1) {
-    hitPos = make_Vec3f(0.0f,0.0f,0.0f);
-    return false;
-  }
-  else {
-    hitPos = add(ray.org,mul(ray.tfar,ray.dir));
-    return true;
-  }
 }
 
 /* task that renders a single screen tile */
@@ -330,9 +233,9 @@ task void renderTile(uniform int* uniform pixels,
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0,1));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0,1));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0,1));
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 }

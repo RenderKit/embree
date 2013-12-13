@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../common/tutorial/tutorial_device.isph"
+#include "../common/tutorial/tutorial_device.h"
 
 struct ISPCTriangle 
 {
@@ -40,31 +40,31 @@ struct ISPCMaterial
 
 struct ISPCMesh
 {
-  uniform Vec3fa* positions;    //!< vertex position array
-  uniform Vec3fa* normals;       //!< vertex normal array
-  uniform Vec2f* texcoords;     //!< vertex texcoord array
-  uniform ISPCTriangle* triangles;  //!< list of triangles
+  Vec3fa* positions;    //!< vertex position array
+  Vec3fa* normals;       //!< vertex normal array
+  Vec2f* texcoords;     //!< vertex texcoord array
+  ISPCTriangle* triangles;  //!< list of triangles
   int numVertices;
   int numTriangles;
 };
 
 struct ISPCScene
 {
-  uniform ISPCMesh* uniform* meshes;         //!< list of meshes
-  uniform ISPCMaterial* materials;  //!< material list
+  ISPCMesh** meshes;         //!< list of meshes
+  ISPCMaterial* materials;  //!< material list
   int numMeshes;
   int numMaterials;
 };
 
 /* scene data */
-extern uniform ISPCScene* uniform g_ispc_scene;
+extern ISPCScene* g_ispc_scene;
 RTCScene g_scene = NULL;
 
 /* render function to use */
 renderPixelFunc renderPixel;
 
 /* called by the C++ code for initialization */
-export void device_init (uniform int8* uniform cfg)
+extern "C" void device_init (int8* cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
@@ -73,31 +73,31 @@ export void device_init (uniform int8* uniform cfg)
   renderPixel = renderPixelStandard;
 }
 
-RTCScene convertScene(uniform ISPCScene* uniform scene_in)
+RTCScene convertScene(ISPCScene* scene_in)
 {
   /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
 
   /* add all meshes to the scene */
-  for (uniform int i=0; i<scene_in->numMeshes; i++)
+  for (int i=0; i<scene_in->numMeshes; i++)
   {
     /* get ith mesh */
-    uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
+    ISPCMesh* mesh = scene_in->meshes[i];
 
     /* create a triangle mesh */
-    uniform unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
+    unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
     
     /* set vertices */
-    uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
-    for (uniform int j=0; j<mesh->numVertices; j++) {
+    Vertex* vertices = (Vertex*) rtcMapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
+    for (int j=0; j<mesh->numVertices; j++) {
       vertices[j].x = mesh->positions[j].x;
       vertices[j].y = mesh->positions[j].y;
       vertices[j].z = mesh->positions[j].z;
     }
 
     /* set triangles */
-    uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
-    for (uniform int j=0; j<mesh->numTriangles; j++) {
+    Triangle* triangles = (Triangle*) rtcMapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+    for (int j=0; j<mesh->numTriangles; j++) {
       triangles[j].v0 = mesh->triangles[j].v0;
       triangles[j].v1 = mesh->triangles[j].v1;
       triangles[j].v2 = mesh->triangles[j].v2;
@@ -112,7 +112,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -129,20 +129,20 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
   rtcIntersect(g_scene,ray);
   
   /* shade background black */
-  if (ray.geomID == -1) return make_Vec3f(0.0f);
+  if (ray.geomID == -1) return Vec3f(0.0f);
   
   /* shade all rays that hit something */
-  Vec3f color = make_Vec3f(0.0f);
-#if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
+  Vec3f color = Vec3f(0.0f);
+#if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
   int materialID = g_ispc_scene->meshes[ray.geomID]->triangles[ray.primID].materialID; 
 #else
   int materialID = 0;
   foreach_unique (geomID in ray.geomID) {
-    uniform ISPCMesh* uniform mesh = g_ispc_scene->meshes[geomID];
+    ISPCMesh* mesh = g_ispc_scene->meshes[geomID];
     materialID = mesh->triangles[ray.primID].materialID;
   }
 #endif
-  uniform ISPCMaterial* material = &g_ispc_scene->materials[materialID];
+  ISPCMaterial* material = &g_ispc_scene->materials[materialID];
   color = material->Kd;
   
   /* apply ambient light */
@@ -153,25 +153,25 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
 }
 
 /* task that renders a single screen tile */
-task void renderTile(uniform int* uniform pixels,
-                     const uniform int width,
-                     const uniform int height, 
-                     const uniform float time,
-                     const uniform Vec3f& vx, 
-                     const uniform Vec3f& vy, 
-                     const uniform Vec3f& vz, 
-                     const uniform Vec3f& p,
-                     const uniform int numTilesX, 
-                     const uniform int numTilesY)
+void renderTile(int taskIndex, int* pixels,
+                     const int width,
+                     const int height, 
+                     const float time,
+                     const Vec3f& vx, 
+                     const Vec3f& vy, 
+                     const Vec3f& vz, 
+                     const Vec3f& p,
+                     const int numTilesX, 
+                     const int numTilesY)
 {
-  const uniform int tileY = taskIndex / numTilesX;
-  const uniform int tileX = taskIndex - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
+  const int x0 = tileX * TILE_SIZE_X;
+  const int x1 = min(x0+TILE_SIZE_X,width);
+  const int y0 = tileY * TILE_SIZE_Y;
+  const int y1 = min(y0+TILE_SIZE_Y,height);
 
-  foreach (y = y0 ... y1, x = x0 ... x1)
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);
@@ -185,28 +185,28 @@ task void renderTile(uniform int* uniform pixels,
 }
 
 /* called by the C++ code to render */
-export void device_render (uniform int* uniform pixels,
-                           const uniform int width,
-                           const uniform int height, 
-                           const uniform float time,
-                           const uniform Vec3f& vx, 
-                           const uniform Vec3f& vy, 
-                           const uniform Vec3f& vz, 
-                           const uniform Vec3f& p)
+extern "C" void device_render (int* pixels,
+                           const int width,
+                           const int height, 
+                           const float time,
+                           const Vec3f& vx, 
+                           const Vec3f& vy, 
+                           const Vec3f& vz, 
+                           const Vec3f& p)
 {
   /* create scene */
   if (g_scene == NULL)
     g_scene = convertScene(g_ispc_scene);
 
   /* render image */
-  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
+  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
   rtcDebug();
 }
 
 /* called by the C++ code for cleanup */
-export void device_cleanup ()
+extern "C" void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
   rtcExit();
