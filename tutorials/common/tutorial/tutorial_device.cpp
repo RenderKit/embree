@@ -47,7 +47,7 @@ Vec3fa renderPixelEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
 
   /* shade pixel */
   if (ray.geomID == -1) return Vec3fa(0.0f);
-  else return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+  else return Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
 /* renders a single pixel with ambient occlusion shading */

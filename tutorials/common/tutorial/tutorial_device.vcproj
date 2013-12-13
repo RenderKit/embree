@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="tutorial"
-	ProjectGUID="{898B98E9-4D18-4FB0-9E56-7A600F4F6DA7}"
-	RootNamespace="tutorials"
+	Name="tutorial_device"
+	ProjectGUID="{898B92E9-4118-4FB0-9E56-7A600F4F6DB7}"
+	RootNamespace="tutorial_device"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -45,7 +45,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -114,7 +114,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -184,7 +184,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -254,7 +254,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;INTEL_SUITE_VERSION=PE120_196"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -323,7 +323,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -393,7 +393,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;INTEL_SUITE_VERSION=PE120_196"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -462,7 +462,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -532,7 +532,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;INTEL_SUITE_VERSION=PE120_196"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -578,31 +578,11 @@
 	</References>
 	<Files>
 		<File
-			RelativePath=".\camera.h"
+			RelativePath=".\tutorial_device.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\glutdisplay.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\glutdisplay.h"
-			>
-		</File>
-		<File
-			RelativePath=".\obj_loader.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\obj_loader.h"
-			>
-		</File>
-		<File
-			RelativePath=".\ray.h"
-			>
-		</File>
-		<File
-			RelativePath=".\tutorial.h"
+			RelativePath=".\tutorial_device.h"
 			>
 		</File>
 	</Files>

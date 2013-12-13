@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioProject
+	ProjectType="Intel C++ Project"
+	Version="14.0"
+	Name="tutorial04"
+	ProjectGUID="{A9A64E0C-B0CC-46AD-BB4C-03692C53160E}"
+	VCNestedProjectGUID="{C41637AE-D2F4-4D26-BF36-1B04D1B32ABF}"
+	VCNestedProjectFileName="tutorial04.vcproj"
+	>
+	<Configurations/>
+	<Files/>
+</VisualStudioProject>

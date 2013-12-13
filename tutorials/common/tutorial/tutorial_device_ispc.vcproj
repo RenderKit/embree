@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="tutorial"
-	ProjectGUID="{898B98E9-4D18-4FB0-9E56-7A600F4F6DA7}"
-	RootNamespace="tutorials"
+	Name="tutorial_device_ispc"
+	ProjectGUID="{A98B98E9-4D18-41B0-9E56-7A600F4F6D47}"
+	RootNamespace="tutorial_device_ispc"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -17,6 +17,9 @@
 		/>
 	</Platforms>
 	<ToolFiles>
+		<ToolFile
+			RelativePath="..\..\..\common\cmake\ispc.rules"
+		/>
 	</ToolFiles>
 	<Configurations>
 		<Configuration
@@ -31,6 +34,11 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="ISPC"
+				Architecture="0"
+				TargetISA="5"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -99,6 +107,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="ISPC"
+				TargetISA="5"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -171,6 +183,11 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="ISPC"
+				Architecture="0"
+				TargetISA="5"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -238,6 +255,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="ISPC"
+				TargetISA="5"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -310,6 +331,11 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="ISPC"
+				Architecture="0"
+				TargetISA="6"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -377,6 +403,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="ISPC"
+				TargetISA="6"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -449,6 +479,11 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="ISPC"
+				Architecture="0"
+				TargetISA="6"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -518,6 +553,10 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="ISPC"
+				TargetISA="6"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -578,31 +617,11 @@
 	</References>
 	<Files>
 		<File
-			RelativePath=".\camera.h"
+			RelativePath=".\tutorial_device.ispc"
 			>
 		</File>
 		<File
-			RelativePath=".\glutdisplay.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\glutdisplay.h"
-			>
-		</File>
-		<File
-			RelativePath=".\obj_loader.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\obj_loader.h"
-			>
-		</File>
-		<File
-			RelativePath=".\ray.h"
-			>
-		</File>
-		<File
-			RelativePath=".\tutorial.h"
+			RelativePath=".\tutorial_device.isph"
 			>
 		</File>
 	</Files>

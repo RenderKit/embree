@@ -57,7 +57,7 @@ struct ISPCScene
 };
 
 /* scene data */
-extern ISPCScene* g_ispc_scene;
+extern "C" ISPCScene* g_ispc_scene;
 RTCScene g_scene = NULL;
 
 /* render function to use */

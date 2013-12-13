@@ -65,6 +65,7 @@ namespace embree
   __forceinline float rsqrt( const float x ) { return 1.0f/sqrtf(x); }
 #endif
 
+#if !defined(__WIN32__)
   __forceinline float abs  ( const float x ) { return ::fabsf(x); }
   __forceinline float acos ( const float x ) { return ::acosf (x); }
   __forceinline float asin ( const float x ) { return ::asinf (x); }
@@ -84,6 +85,7 @@ namespace embree
   __forceinline float tanh ( const float x ) { return ::tanhf (x); }
   __forceinline float floor( const float x ) { return ::floorf (x); }
   __forceinline float ceil ( const float x ) { return ::ceilf (x); }
+#endif
 
   __forceinline double abs  ( const double x ) { return ::fabs(x); }
   __forceinline double sign ( const double x ) { return x<0?-1.0:1.0; }
