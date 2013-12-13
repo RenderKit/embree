@@ -17,13 +17,12 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* render function to use */
-vec3f renderPixelNormal(int x, int y, const uniform vec3f& vx, const uniform vec3f& vy, const uniform vec3f& vz, const uniform vec3f& p);
-vec3f (* uniform renderPixel)(int x, int y, const uniform vec3f& vx, const uniform vec3f& vy, const uniform vec3f& vz, const uniform vec3f& p);
+renderPixelFunc renderPixel;
 
 const uniform int numPhi = 5;
 const uniform int numTheta = 2*numPhi;
 
-uniform unsigned int createTriangulatedSphere (RTCScene scene, uniform vec3f p, uniform float r)
+uniform unsigned int createTriangulatedSphere (RTCScene scene, uniform Vec3f p, uniform float r)
 {
   /* create triangle mesh */
   uniform unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
@@ -34,8 +33,8 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, uniform vec3f p, 
   
   /* create sphere */
   uniform int tri = 0;
-  const uniform float rcpNumTheta = rcp(numTheta);
-  const uniform float rcpNumPhi   = rcp(numPhi);
+  const uniform float rcpNumTheta = rcp((uniform float)numTheta);
+  const uniform float rcpNumPhi   = rcp((uniform float)numPhi);
   for (uniform int phi=0; phi<=numPhi; phi++)
   {
     for (uniform int theta=0; theta<numTheta; theta++)
@@ -109,7 +108,7 @@ uniform unsigned int g_instance1 = -1;
 uniform unsigned int g_instance2 = -1;
 uniform unsigned int g_instance3 = -1;
 
-uniform vec3f colors[4][4];
+uniform Vec3f colors[4][4];
 
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
@@ -122,10 +121,10 @@ export void device_init (uniform int8* uniform cfg)
 
   /* create scene with 4 triangulated spheres */
   g_scene1 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
-  createTriangulatedSphere(g_scene1,make_vec3f( 0, 0,+1),0.5);
-  createTriangulatedSphere(g_scene1,make_vec3f(+1, 0, 0),0.5);
-  createTriangulatedSphere(g_scene1,make_vec3f( 0, 0,-1),0.5);
-  createTriangulatedSphere(g_scene1,make_vec3f(-1, 0, 0),0.5);
+  createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,+1),0.5);
+  createTriangulatedSphere(g_scene1,make_Vec3f(+1, 0, 0),0.5);
+  createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,-1),0.5);
+  createTriangulatedSphere(g_scene1,make_Vec3f(-1, 0, 0),0.5);
   rtcCommit(g_scene1);
 
   /* instantiate geometry */
@@ -136,32 +135,32 @@ export void device_init (uniform int8* uniform cfg)
   createGroundPlane(g_scene);
 
   /* set all colors */
-  colors[0][0] = make_vec3f(0.25,0,0);
-  colors[0][1] = make_vec3f(0.50,0,0);
-  colors[0][2] = make_vec3f(0.75,0,0);
-  colors[0][3] = make_vec3f(1.00,0,0);
+  colors[0][0] = make_Vec3f(0.25,0,0);
+  colors[0][1] = make_Vec3f(0.50,0,0);
+  colors[0][2] = make_Vec3f(0.75,0,0);
+  colors[0][3] = make_Vec3f(1.00,0,0);
 
-  colors[1][0] = make_vec3f(0,0.25,0);
-  colors[1][1] = make_vec3f(0,0.50,0);
-  colors[1][2] = make_vec3f(0,0.75,0);
-  colors[1][3] = make_vec3f(0,1.00,0);
+  colors[1][0] = make_Vec3f(0,0.25,0);
+  colors[1][1] = make_Vec3f(0,0.50,0);
+  colors[1][2] = make_Vec3f(0,0.75,0);
+  colors[1][3] = make_Vec3f(0,1.00,0);
 
-  colors[2][0] = make_vec3f(0,0,0.25);
-  colors[2][1] = make_vec3f(0,0,0.50);
-  colors[2][2] = make_vec3f(0,0,0.75);
-  colors[2][3] = make_vec3f(0,0,1.00);
+  colors[2][0] = make_Vec3f(0,0,0.25);
+  colors[2][1] = make_Vec3f(0,0,0.50);
+  colors[2][2] = make_Vec3f(0,0,0.75);
+  colors[2][3] = make_Vec3f(0,0,1.00);
 
-  colors[3][0] = make_vec3f(0.25,0.25,0);
-  colors[3][1] = make_vec3f(0.50,0.50,0);
-  colors[3][2] = make_vec3f(0.75,0.75,0);
-  colors[3][3] = make_vec3f(1.00,1.00,0);
+  colors[3][0] = make_Vec3f(0.25,0.25,0);
+  colors[3][1] = make_Vec3f(0.50,0.50,0);
+  colors[3][2] = make_Vec3f(0.75,0.75,0);
+  colors[3][3] = make_Vec3f(1.00,1.00,0);
 
   /* set start render mode */
-  renderPixel = renderPixelNormal;
+  renderPixel = renderPixelStandard;
 }
 
 /* task that renders a single screen tile */
-vec3f renderPixelNormal(int x, int y, const uniform vec3f& vx, const uniform vec3f& vy, const uniform vec3f& vz, const uniform vec3f& p)
+Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -179,14 +178,14 @@ vec3f renderPixelNormal(int x, int y, const uniform vec3f& vx, const uniform vec
   rtcIntersect(g_scene,ray);
   
   /* shade pixels */
-  vec3f color = make_vec3f(0.0f);
+  Vec3f color = make_Vec3f(0.0f);
   if (ray.geomID != -1) 
   {
-    vec3f diffuse = make_vec3f(1,1,1);
+    Vec3f diffuse = make_Vec3f(1,1,1);
     if (ray.instID != -1)
       diffuse = colors[ray.instID][ray.geomID];
     color = add(color,mul(diffuse,0.5));
-    vec3f lightDir = normalize(make_vec3f(-1,-1,-1));
+    Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     
     /* initialize shadow ray */
     RTCRay shadow;
@@ -204,105 +203,9 @@ vec3f renderPixelNormal(int x, int y, const uniform vec3f& vx, const uniform vec
 
     /* add light contribution */
     if (shadow.geomID)
-      color = add(color,mul(diffuse,clamp(-dot(lightDir,normalize(ray.Ng)),0,1)));
+      color = add(color,mul(diffuse,clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
   }
   return color;
-}
-
-/* renders a single pixel with UV shading */
-vec3f renderPixelUV(int x, int y, const uniform vec3f& vx, const uniform vec3f& vy, const uniform vec3f& vz, const uniform vec3f& p)
-{
-  /* initialize ray */
-  RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
-  ray.mask = -1;
-  ray.time = 0;
-
-  /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
-
-  /* shade pixel */
-  if (ray.geomID == -1) return make_vec3f(0.0f);
-  else return make_vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
-}
-
-/* vizualizes the traversal cost of a pixel */
-uniform float scale = 0.0001f;
-
-vec3f renderPixelCycles(int x, int y, const uniform vec3f& vx, const uniform vec3f& vy, const uniform vec3f& vz, const uniform vec3f& p)
-{
-  /* initialize ray */
-  RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
-  ray.mask = -1;
-  ray.time = 0;
-
-  /* intersect ray with scene */
-  uniform int64 c0 = get_tsc();
-  rtcIntersect(g_scene,ray);
-  uniform int64 c1 = get_tsc();
-  
-  /* shade pixel */
-  return make_vec3f((uniform float)(c1-c0)*scale,0.0f,0.0f);
-}
-
-/* called when a key is pressed */
-export void device_key_pressed(uniform int key)
-{
-  if      (key == GLUT_KEY_F1) renderPixel = renderPixelNormal;
-  else if (key == GLUT_KEY_F2) renderPixel = renderPixelUV;
-  else if (key == GLUT_KEY_F3) {
-    if (renderPixel == renderPixelCycles) scale *= 1.1f;
-    renderPixel = renderPixelCycles;
-  }
-  else if (key == GLUT_KEY_F4) {
-    if (renderPixel == renderPixelCycles) scale *= 0.9f;
-    renderPixel = renderPixelCycles;
-  }
-}
-
-/* returns the point seen through specified pixel */
-export uniform bool device_pick(const uniform float x,
-                                const uniform float y, 
-                                const uniform vec3f& vx, 
-                                const uniform vec3f& vy, 
-                                const uniform vec3f& vz, 
-                                const uniform vec3f& p,
-                                uniform vec3f& hitPos)
-{
-  /* initialize ray */
-  uniform RTCRay1 ray;
-  ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
-  ray.mask = -1;
-  ray.time = 0;
-
-  /* intersect ray with scene */
-  rtcIntersect1(g_scene,ray);
-
-  /* shade pixel */
-  if (ray.geomID == -1) {
-    hitPos = make_vec3f(0.0f,0.0f,0.0f);
-    return false;
-  }
-  else {
-    hitPos = add(ray.org,mul(ray.tfar,ray.dir));
-    return true;
-  }
 }
 
 /* task that renders a single screen tile */
@@ -310,10 +213,10 @@ task void renderTile(uniform int* uniform pixels,
                      const uniform int width,
                      const uniform int height, 
                      const uniform float time,
-                     const uniform vec3f& vx, 
-                     const uniform vec3f& vy, 
-                     const uniform vec3f& vz, 
-                     const uniform vec3f& p,
+                     const uniform Vec3f& vx, 
+                     const uniform Vec3f& vy, 
+                     const uniform Vec3f& vz, 
+                     const uniform Vec3f& p,
                      const uniform int numTilesX, 
                      const uniform int numTilesY)
 {
@@ -327,12 +230,12 @@ task void renderTile(uniform int* uniform pixels,
   foreach (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0,1));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0,1));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0,1));
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 }
@@ -342,27 +245,27 @@ export void device_render (uniform int* uniform pixels,
                            const uniform int width,
                            const uniform int height, 
                            const uniform float time,
-                           const uniform vec3f& vx, 
-                           const uniform vec3f& vy, 
-                           const uniform vec3f& vz, 
-                           const uniform vec3f& p)
+                           const uniform Vec3f& vx, 
+                           const uniform Vec3f& vy, 
+                           const uniform Vec3f& vz, 
+                           const uniform Vec3f& p)
 {
   /* create identity matrix */
   uniform AffineSpace3f xfm;
-  xfm.l.vx = make_vec3f(1,0,0);
-  xfm.l.vy = make_vec3f(0,1,0);
-  xfm.l.vz = make_vec3f(0,0,1);
-  xfm.p    = make_vec3f(0,0,0);
+  xfm.l.vx = make_Vec3f(1,0,0);
+  xfm.l.vy = make_Vec3f(0,1,0);
+  xfm.l.vz = make_Vec3f(0,0,1);
+  xfm.p    = make_Vec3f(0,0,0);
   uniform float t = 0.7f*time;
 
   /* move instances */
-  xfm.p = mul(2.0f,make_vec3f(+cos(t),0.0f,+sin(t)));
+  xfm.p = mul(2.0f,make_Vec3f(+cos(t),0.0f,+sin(t)));
   rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm);
-  xfm.p = mul(2.0f,make_vec3f(-cos(t),0.0f,-sin(t)));
+  xfm.p = mul(2.0f,make_Vec3f(-cos(t),0.0f,-sin(t)));
   rtcSetTransform(g_scene,g_instance1,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm);
-  xfm.p = mul(2.0f,make_vec3f(-sin(t),0.0f,+cos(t)));
+  xfm.p = mul(2.0f,make_Vec3f(-sin(t),0.0f,+cos(t)));
   rtcSetTransform(g_scene,g_instance2,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm);
-  xfm.p = mul(2.0f,make_vec3f(+sin(t),0.0f,-cos(t)));
+  xfm.p = mul(2.0f,make_Vec3f(+sin(t),0.0f,-cos(t)));
   rtcSetTransform(g_scene,g_instance3,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm);
 
   /* update scene */

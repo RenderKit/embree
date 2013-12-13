@@ -36,6 +36,19 @@ namespace embree
       static void intersect(mic_i* valid, BVH4i* bvh, Ray16& ray);
       static void occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
     };
+
+    class BVH4iIntersector1Virtual
+    {
+      /* shortcuts for frequently used types */
+      typedef typename BVH4i::NodeRef NodeRef;
+      typedef typename BVH4i::Node Node;
+      
+    public:
+      static void intersect(BVH4i* bvh, Ray& ray);
+      static void occluded(BVH4i* bvh, Ray& ray);
+
+    };
+
   }
 }
 

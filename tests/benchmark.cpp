@@ -39,25 +39,10 @@ namespace embree
   if (rtcGetError() == RTC_NO_ERROR) return false;
 #define AssertError(code) \
   if (rtcGetError() != code) return false;
-#define POSITIVE(name,test) {                                               \
-    bool ok = test;                                                     \
-    printf("%30s ... %s\n",name,ok ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");          \
-  }
-#if defined(__EXIT_ON_ERROR__)
-#define NEGATIVE(name,test)
-#else
-#define NEGATIVE(name,test) {                                           \
-    bool notok = test;                                                  \
-    printf("%30s ... %s\n",name,notok ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m");       \
-  }
-#endif
-#define COUNT(name,test) {                                              \
-    size_t notok = test;                                                \
-    printf("%30s ... %s (%f%%)\n",name,notok ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)notok/(double)testN); \
-  }
 #define BUILD(name,test) {                                              \
     double perf = test;                                                \
     printf("%30s ... %f Mtris/s\n",name,perf*1E-6);                                 \
+	fflush(stdout);\
   }
 
   RTCRay makeRay(Vec3f org, Vec3f dir) 
@@ -295,6 +280,7 @@ namespace embree
     double t1 = getSeconds();
 
     printf("%30s ... %f Mrps\n","coherent_intersect1",1E-6*(double)(width*height)/(t1-t0));
+	fflush(stdout);
   }
 
   void rtcore_coherent_intersect4(RTCScene scene)
@@ -319,6 +305,7 @@ namespace embree
     double t1 = getSeconds();
 
     printf("%30s ... %f Mrps\n","coherent_intersect4",1E-6*(double)(width*height)/(t1-t0));
+	fflush(stdout);
   }
 
   void rtcore_coherent_intersect8(RTCScene scene)
@@ -343,6 +330,7 @@ namespace embree
     double t1 = getSeconds();
 
     printf("%30s ... %f Mrps\n","coherent_intersect8",1E-6*(double)(width*height)/(t1-t0));
+	fflush(stdout);
   }
 
   void rtcore_coherent_intersect16(RTCScene scene)
@@ -367,6 +355,7 @@ namespace embree
     double t1 = getSeconds();
 
     printf("%30s ... %f Mrps\n","coherent_intersect16",1E-6*(double)(width*height)/(t1-t0));
+	fflush(stdout);
   }
 
   void rtcore_incoherent_intersect1(RTCScene scene, Vec3f* numbers, size_t N)
@@ -379,6 +368,7 @@ namespace embree
     double t1 = getSeconds();
 
     printf("%30s ... %f Mrps\n","incoherent_intersect1",1E-6*(double)N/(t1-t0));
+	fflush(stdout);
   }
 
   void rtcore_incoherent_intersect4(RTCScene scene, Vec3f* numbers, size_t N)
@@ -395,6 +385,7 @@ namespace embree
     double t1 = getSeconds();
 
     printf("%30s ... %f Mrps\n","incoherent_intersect4",1E-6*(double)N/(t1-t0));
+	fflush(stdout);
   }
 
   void rtcore_incoherent_intersect8(RTCScene scene, Vec3f* numbers, size_t N)
@@ -411,6 +402,7 @@ namespace embree
     double t1 = getSeconds();
 
     printf("%30s ... %f Mrps\n","incoherent_intersect8",1E-6*(double)N/(t1-t0));
+	fflush(stdout);
   }
 
   void rtcore_incoherent_intersect16(RTCScene scene, Vec3f* numbers, size_t N)
@@ -427,6 +419,7 @@ namespace embree
     double t1 = getSeconds();
 
     printf("%30s ... %f Mrps\n","incoherent_intersect16",1E-6*(double)N/(t1-t0));
+	fflush(stdout);
   }
 
   void rtcore_intersect_benchmark(RTCSceneFlags flags, size_t numPhi)

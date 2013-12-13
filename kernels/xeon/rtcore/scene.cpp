@@ -16,16 +16,15 @@
 
 #include "scene.h"
 
-#include "rtcore/twolevel_accel.h"
 
-#include "bvh4/bvh4.h"
-#include "bvh4mb/bvh4mb.h"
 
 #if !defined(__MIC__)
+#include "rtcore/twolevel_accel.h"
 #include "bvh4/bvh4_builder_toplevel.h"
 #include "bvh4/bvh4.h"
 #include "bvh4i/bvh4i.h"
 #include "bvh8i/bvh8i.h"
+#include "bvh4mb/bvh4mb.h"
 #else
 #include "../xeonphi/bvh4i/bvh4i.h"
 #endif
@@ -38,6 +37,7 @@ namespace embree
       flat_triangle_source_1(this,1), flat_triangle_source_2(this,2)
   {
 #if defined(__MIC__)
+
     accels.accel0 = NULL; 
     accels.accel1 = BVH4i::BVH4iVirtualGeometryBinnedSAH(this);
     accels.accel2 = NULL;

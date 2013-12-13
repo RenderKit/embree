@@ -27,6 +27,8 @@ struct Triangle { int v0, v1, v2; };
 
 #include "embree2/rtcore.h"
 #include "ray.h"
+#include "sys/taskscheduler.h"
+using namespace embree;
 
 /* returns time stamp counter */
 extern "C" int64 get_tsc();
@@ -36,5 +38,34 @@ extern "C" int64 get_tsc();
 #define GLUT_KEY_F2 2
 #define GLUT_KEY_F3 3
 #define GLUT_KEY_F4 4
+#define GLUT_KEY_F5 5
+#define GLUT_KEY_F6 6
+#define GLUT_KEY_F7 7
+#define GLUT_KEY_F8 8
+#define GLUT_KEY_F9 9
+
+/* standard shading function */
+typedef Vec3fa (* renderPixelFunc)(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
+
+Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
+
+__forceinline Vec3fa neg(const Vec3fa& a) { return -a; }
+__forceinline Vec3fa mul(const Vec3fa& a, const Vec3fa& b) { return a*b; }
+__forceinline Vec3fa add(const Vec3fa& a, const Vec3fa& b) { return a+b; }
+__forceinline Vec3fa sub(const Vec3fa& a, const Vec3fa& b) { return a-b; }
+__forceinline Vec3fa add(const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return a+b+c; }
+
+__forceinline Vec3f sub(const Vec3fa& a, const Vec3f& b) { return a-b; }
+
+__forceinline Vec3f neg(const Vec3f& a) { return -a; }
+__forceinline Vec3f mul(const Vec3f& a, const Vec3f& b) { return a*b; }
+__forceinline Vec3f add(const Vec3f& a, const Vec3f& b) { return a+b; }
+__forceinline Vec3f sub(const Vec3f& a, const Vec3f& b) { return a-b; }
+__forceinline Vec3f add(const Vec3f& a, const Vec3f& b, const Vec3f& c) { return a+b+c; }
+
+/* parallel invokation of renderTile function */
+void launch_renderTile (int numTiles, 
+                        int* pixels, const int width, const int height, const float time, 
+                        const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p, const int numTilesX, const int numTilesY);
 
 #endif

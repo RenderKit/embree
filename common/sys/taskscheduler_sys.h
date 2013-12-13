@@ -40,7 +40,7 @@ namespace embree
     void wait(size_t threadIndex, size_t threadCount, Event* event);
 
     /*! processes next task */
-    void work(size_t threadIndex, size_t threadCount, bool wait = true);
+    void work(size_t threadIndex, size_t threadCount, bool wait);
 
     /*! thread function */
     void run(size_t threadIndex, size_t threadCount);

@@ -17,7 +17,7 @@
 #ifndef __EMBREE_ISPC_VEC3FA_H__
 #define __EMBREE_ISPC_VEC3FA_H__
 
-struct vec3fa 
+struct Vec3fa 
 {
   float x;
   float y;
@@ -29,16 +29,16 @@ struct vec3fa
 /// Constructors
 ////////////////////////////////////////////////////////////////////////////////
 
-inline uniform vec3fa make_vec3fa(const uniform float a) { uniform vec3fa r; r.x = a; r.y = a; r.z = a; r.a = 0.0f; return r; }
-inline varying vec3fa make_vec3fa(const varying float a) { varying vec3fa r; r.x = a; r.y = a; r.z = a; r.a = 0.0f; return r; }  
+inline uniform Vec3fa make_Vec3fa(const uniform float a) { uniform Vec3fa r; r.x = a; r.y = a; r.z = a; r.a = 0.0f; return r; }
+inline varying Vec3fa make_Vec3fa(const varying float a) { varying Vec3fa r; r.x = a; r.y = a; r.z = a; r.a = 0.0f; return r; }  
 
-inline uniform vec3fa make_vec3fa(const uniform float x, const uniform float y, const uniform float z) { uniform vec3fa r; r.x = x; r.y = y; r.z = z; r.a = 0.0f; return r; }
-inline varying vec3fa make_vec3fa(const varying float x, const varying float y, const varying float z) { varying vec3fa r; r.x = x; r.y = y; r.z = z; r.a = 0.0f; return r; }  
+inline uniform Vec3fa make_Vec3fa(const uniform float x, const uniform float y, const uniform float z) { uniform Vec3fa r; r.x = x; r.y = y; r.z = z; r.a = 0.0f; return r; }
+inline varying Vec3fa make_Vec3fa(const varying float x, const varying float y, const varying float z) { varying Vec3fa r; r.x = x; r.y = y; r.z = z; r.a = 0.0f; return r; }  
 
-inline uniform vec3fa make_vec3fa(uniform vec3f a) { return make_vec3fa(a.x,a.y,a.z); }
-inline varying vec3fa make_vec3fa(varying vec3f a) { return make_vec3fa(a.x,a.y,a.z); }
+inline uniform Vec3fa make_Vec3fa(uniform Vec3f a) { return make_Vec3fa(a.x,a.y,a.z); }
+inline varying Vec3fa make_Vec3fa(varying Vec3f a) { return make_Vec3fa(a.x,a.y,a.z); }
 
-inline uniform vec3f make_vec3f(uniform vec3fa a) { return make_vec3f(a.x,a.y,a.z); }
-inline varying vec3f make_vec3f(varying vec3fa a) { return make_vec3f(a.x,a.y,a.z); }
+inline uniform Vec3f make_Vec3f(uniform Vec3fa a) { return make_Vec3f(a.x,a.y,a.z); }
+inline varying Vec3f make_Vec3f(varying Vec3fa a) { return make_Vec3f(a.x,a.y,a.z); }
 
 #endif

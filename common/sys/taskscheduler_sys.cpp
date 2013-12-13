@@ -186,7 +186,7 @@ namespace embree
   void TaskSchedulerSys::run(size_t threadIndex, size_t threadCount)
   {
     while (true)
-      work(threadIndex,threadCount);
+      work(threadIndex,threadCount,true);
   }
 
   void TaskSchedulerSys::terminate() 

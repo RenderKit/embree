@@ -45,5 +45,12 @@ extern "C" uniform int64 get_tsc();
 #define GLUT_KEY_F5 5
 #define GLUT_KEY_F6 6
 #define GLUT_KEY_F7 7
+#define GLUT_KEY_F8 8
+#define GLUT_KEY_F9 9
+
+/* standard shading function */
+typedef Vec3f (* uniform renderPixelFunc)(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
+
+Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
 
 #endif

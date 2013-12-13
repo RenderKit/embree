@@ -20,7 +20,6 @@
 #include "kernels/xeonphi/bvh4i/bvh4i_statistics.h"
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
 
-#define BVH_NODE_PREALLOC_FACTOR                 1.15f
 
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
 
@@ -28,18 +27,15 @@
 
 #define SINGLE_THREADED_BUILD_THRESHOLD        512
 
-#define PRESPLIT_SPACE_FACTOR                   0.1f
-
 #define ENABLE_TASK_STEALING
 
 #define ENABLE_FILL_PER_CORE_WORK_QUEUES
 
 
+#define TIMER(x) x 
+#define DBG(x) x
 
-#define TIMER(x) 
-#define DBG(x) 
-
-#define PROFILE
+//#define PROFILE
 
 #define PROFILE_ITERATIONS 100
 
@@ -58,12 +54,37 @@ namespace embree
 
   static double dt = 0.0f;
 
+  Builder* BVH4iBuilder::create (void* accel, BuildSource* source, void* geometry, size_t mode ) 
+  { 
+    Builder* builder = NULL;
+
+    switch( mode )
+      {
+
+      case BVH4I_BUILDER_DEFAULT:
+	builder = new BVH4iBuilder((BVH4i*)accel,source,geometry);
+	break;
+
+      case BVH4I_BUILDER_PRESPLITS:
+	builder = new BVH4iBuilderPreSplits((BVH4i*)accel,source,geometry);
+	break;
+
+      case BVH4I_BUILDER_VIRTUAL_GEOMETRY:
+	builder = new BVH4iBuilderVirtualGeometry((BVH4i*)accel,source,geometry);
+	break;
+
+      default:
+	throw std::runtime_error("ERROR: unknown BVH4iBuilder mode selected");	
+      }
+    return builder;
+  }
+
   // =======================================================================================================
   // =======================================================================================================
   // =======================================================================================================
 
 
-  BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry, bool preSplits, bool virtualGeometry)
+  BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry)
     : source(source), 
       scene((Scene*)geometry), 
       bvh(bvh), 
@@ -73,9 +94,7 @@ namespace embree
       prims(NULL), 
       node(NULL), 
       accel(NULL), 
-      size_prims(0),
-      enablePreSplits(preSplits),
-      enableVirtualGeometry(virtualGeometry)
+      size_prims(0)     
 
   {
     DBG(PING);
@@ -92,20 +111,6 @@ namespace embree
 
   size_t BVH4iBuilder::getNumPrimitives()
   {
-
-    if (enableVirtualGeometry)
-      {
-	/* count total number of virtual objects */
-	size_t numVirtualObjects = 0;       
-	for (size_t i=0;i<scene->size();i++)
-	  {
-	    if (unlikely(scene->get(i) == NULL)) continue;
-	    if (unlikely(scene->get(i)->type != USER_GEOMETRY)) continue;
-	    if (unlikely(!scene->get(i)->isEnabled())) continue;
-	    numVirtualObjects++;
-	  }
-	return numVirtualObjects;	
-      }
     return source->size();
   }
 
@@ -121,9 +126,7 @@ namespace embree
 
     if (numPrimitivesOld != numPrimitives || numPrimitives == 0)
       {
-	const size_t preSplitPrims = enablePreSplits ? (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR) : 0;
-	//DBG_PRINT(preSplitPrims);
-	const size_t numPrims = numPrimitives+4+preSplitPrims;
+	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
 	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
 	bvh->init(numNodes,numPrims);
@@ -174,6 +177,11 @@ namespace embree
       }
   }
 
+  void BVH4iBuilder::printBuilderName()
+  {
+    std::cout << "building BVH4i with SAH builder (MIC) ... " << std::endl;    
+  }
+
 
   void BVH4iBuilder::build(size_t threadIndex, size_t threadCount) 
   {
@@ -181,36 +189,21 @@ namespace embree
 
     const size_t totalNumPrimitives = getNumPrimitives();
 
-#if defined(DEBUG)
-    DBG_PRINT(totalNumPrimitives);
-    DBG_PRINT(enablePreSplits);
-    DBG_PRINT(enableVirtualGeometry);
-#endif
-
-    if (!totalNumPrimitives) 
+    /* no primitives? */
+    if (unlikely(!totalNumPrimitives)) 
       {
 	bvh->root = 0;
 	bvh->bounds = empty;
 	return;
       }
 
-    if (g_verbose >= 1)
-      {
-	if (unlikely(enablePreSplits))
-	  std::cout << "building BVH4i with (pre-splits-based) SAH builder (MIC) ... " << std::endl;
-	else if (unlikely(enableVirtualGeometry))
-	  std::cout << "building BVH4i with Virtual Geometry SAH builder (MIC) ... " << std::endl;
-	else
-	  std::cout << "building BVH4i with SAH builder (MIC) ... " << std::endl;
-      }
+    /* print builder name */
+    if (unlikely(g_verbose >= 1)) printBuilderName();
 
     /* allocate BVH data */
     allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
 
     LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); 
-
-
-    DBG(DBG_PRINT(numPrimitives));
 
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1) )
       {
@@ -282,6 +275,7 @@ namespace embree
 
   void BVH4iBuilder::computePrimRefsTriangles(const size_t threadID, const size_t numThreads) 
   {
+    DBG(PING);
     const size_t numGroups = scene->size();
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -451,6 +445,12 @@ namespace embree
 
     const mic_f tri_accel = initTriangle1(v0,v1,v2,gID,pID,mic_i::zero());
     store16f_ngo(acc,tri_accel);
+  }
+
+  void BVH4iBuilder::createAccel(size_t threadIndex, size_t threadCount)
+  {
+    DBG(PING);
+    LockStepTaskScheduler::dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );   
   }
 
   void BVH4iBuilder::createTriangle1Accel(const size_t threadID, const size_t numThreads)
@@ -1270,7 +1270,7 @@ namespace embree
 	  }
       }
 
-    if (enablePreSplits) return;
+    //if (enablePreSplits) return;
     if (!(subset(check_box,box) && subset(box,check_box))) 
       {
 	DBG_PRINT(current);
@@ -1279,9 +1279,6 @@ namespace embree
 	FATAL("check build record");
       }
   }
-  // =======================================================================================================
-  // =======================================================================================================
-  // =======================================================================================================
 
   void BVH4iBuilder::parallelBinningLocal(const size_t localThreadID,const size_t globalThreadID)
   {
@@ -1399,32 +1396,16 @@ namespace embree
     
   }
 
-
-  // =======================================================================================================
-  // =======================================================================================================
-  // =======================================================================================================
-
   void BVH4iBuilder::computePrimRefs(size_t threadIndex, size_t threadCount)
   {
-    if (unlikely(enablePreSplits))
-      {
-	atomicID.reset(numPrimitives);
-	LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
-	// for (size_t i=numPrimitives;i<atomicID;i++) DBG_PRINT(prims[i]);
-	DBG_PRINT(atomicID - numPrimitives);
-	numPrimitives = atomicID;
-      }
-    else if (unlikely(enableVirtualGeometry))
-      {
-	LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
-
-	DBG_PRINT( global_bounds );
-      }
-    else
-      {
-	LockStepTaskScheduler::dispatchTask( task_computePrimRefsTriangles, this, threadIndex, threadCount );
-      }    
+    LockStepTaskScheduler::dispatchTask( task_computePrimRefsTriangles, this, threadIndex, threadCount );
   }
+
+
+  // =======================================================================================================
+  // =======================================================================================================
+  // =======================================================================================================
+
 
   void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
@@ -1487,16 +1468,7 @@ namespace embree
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "build_top_level " << 1000. * msec << " ms" << std::endl << std::flush);
 
-#if 0
-    DBG_PRINT(atomicID);
-    DBG_PRINT(numAllocatedNodes);
-    DBG_PRINT(global_bounds);
-    DBG_PRINT(global_workStack.size());
-    for (size_t i=0;i<global_workStack.size();i++)
-      std::cout << i << " items " << global_workStack.get(i).items() << std::endl;
-#endif
-
-    /* fill per core qork queues */    
+    /* fill per core work queues */    
     TIMER(msec = getSeconds());    
     LockStepTaskScheduler::dispatchTask(task_fillLocalWorkQueues, this, threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
@@ -1506,16 +1478,12 @@ namespace embree
     TIMER(msec = getSeconds());    
     LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
     numNodes = atomicID >> 2;
-
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
     /* create triangle acceleration structure */
     TIMER(msec = getSeconds());        
-    if (unlikely(enableVirtualGeometry))      
-      LockStepTaskScheduler::dispatchTask( task_createVirtualGeometryAccel, this, threadIndex, threadCount );
-    else
-      LockStepTaskScheduler::dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );
+    createAccel(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_createAccel " << 1000. * msec << " ms" << std::endl << std::flush);
     
