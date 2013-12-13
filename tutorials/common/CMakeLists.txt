@@ -22,7 +22,7 @@ ADD_SUBDIRECTORY(tutorial)
 
 IF (TARGET_XEON_PHI AND BUILD_TUTORIALS_ISPC)
   SET (__XEON__ 0)
-  ADD_SUBDIRECTORY(tutorial)
+  ADD_SUBDIRECTORY(tutorial tutorial_xeonphi)
   ADD_SUBDIRECTORY(transport_coi/host)
   ADD_SUBDIRECTORY(transport_coi/device)
 ENDIF()
