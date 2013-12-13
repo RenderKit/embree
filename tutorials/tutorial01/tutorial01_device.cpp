@@ -29,6 +29,7 @@ const int numTheta = 2*numPhi;
 /* scene data */
 RTCScene g_scene = NULL;
 Vec3f position[numSpheres];
+Vec3f colors[numSpheres+1];
 float radius[numSpheres];
 int disabledID = -1;
 
@@ -90,6 +91,29 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3f pos, const float 
   return mesh;
 }
 
+/* adds a ground plane to the scene */
+unsigned int addGroundPlane (RTCScene scene_i)
+{
+  /* create a triangulated plane with 2 triangles and 4 vertices */
+  unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
+
+  /* set vertices */
+  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
+  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
+  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
+  vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
+  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+
+  /* set triangles */
+  Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+  triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
+  triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
+  rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+
+  return mesh;
+}
+
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
 {
@@ -110,7 +134,14 @@ extern "C" void device_init (int8* cfg)
     int id = createSphere(flags,p,r);
     position[id] = p;
     radius[id] = r;
+    colors[id].x = (i%16+1)/17.0f;
+    colors[id].y = (i%8+1)/9.0f;
+    colors[id].z = (i%4+1)/5.0f;
   }
+
+  /* add ground plane to scene */
+  int id = addGroundPlane(g_scene);
+  colors[id] = Vec3f(1.0f,1.0f,1.0f);
 
   /* commit changes to scene */
   rtcCommit (g_scene);
@@ -157,8 +188,32 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   rtcIntersect(g_scene,ray);
   
   /* shade pixels */
-  if (ray.geomID == -1) return Vec3f(0.0f);
-  else return Vec3f(abs(dot(normalize(ray.Ng),ray.dir)));
+  Vec3f color = Vec3f(0.0f);
+  if (ray.geomID != -1) 
+  {
+    Vec3f diffuse = colors[ray.geomID];
+    color = add(color,mul(diffuse,0.1f));
+    Vec3f lightDir = normalize(Vec3f(-1,-1,-1));
+    
+    /* initialize shadow ray */
+    RTCRay shadow;
+    shadow.org = add(ray.org,mul(ray.tfar,ray.dir));
+    shadow.dir = neg(lightDir);
+    shadow.tnear = 0.001f;
+    shadow.tfar = inf;
+    shadow.geomID = 1;
+    shadow.primID = 0;
+    shadow.mask = -1;
+    shadow.time = 0;
+    
+    /* trace shadow ray */
+    rtcOccluded(g_scene,shadow);
+    
+    /* add light contribution */
+    if (shadow.geomID)
+      color = add(color,mul(diffuse,clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
+  }
+  return color;
 }
 
 /* task that renders a single screen tile */
