@@ -30,6 +30,7 @@ ENDIF()
 
 IF (BUILD_TUTORIALS_ISPC)
   ADD_ISPC_LIBRARY(tutorial_device_ispc STATIC tutorial_device.ispc)
+  SET_TARGET_PROPERTIES(tutorial_device_ispc PROPERTIES LINKER_LANGUAGE C)
 ENDIF()
 
 ELSE ()
