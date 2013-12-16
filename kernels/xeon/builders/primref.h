@@ -85,6 +85,13 @@ namespace embree
     return true; 
   }
 
+
+  __forceinline float area( const PrimRef& a ) 
+  { 
+    const Vec3fa d = a.upper - a.lower; 
+    return 2.0f*(d.x*(d.y+d.z)+d.y*d.z); 
+  }
+
 }
 #endif
 

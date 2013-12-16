@@ -18,14 +18,13 @@
 #include "kernels/xeonphi/bvh4i/bvh4i_builder.h"
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
 
-#define PRESPLIT_SPACE_FACTOR         0.5f
-#define PRESPLIT_AREA_THRESHOLD      12.0f
+#define PRESPLIT_SPACE_FACTOR         0.1f
+#define PRESPLIT_AREA_THRESHOLD      20.0f
 #define PRESPLIT_MIN_AREA             0.001f
-#define NUM_PRESPLITS_PER_TRIANGLE    4
-#define NUM_PRESPLITS_QUADTREE_DEPTH  1
+#define NUM_PRESPLITS_PER_TRIANGLE    8
+#define PRESPLITS_TREE_DEPTH          3
 
 #define DBG(x) 
-
 
 namespace embree
 {
@@ -56,16 +55,54 @@ namespace embree
 	numMaxPrimitives = numPrims;
 	numMaxPreSplits  = numPrims - numPrimitives;
 
-	DBG(
+	if (1 || g_verbose >= 2)
+	  {
 	    DBG_PRINT(numPrimitives);
 	    DBG_PRINT(numMaxPrimitives);
 	    DBG_PRINT(numMaxPreSplits);
-	    );
+	  };
 
 	allocateMemoryPools(numPrims,numNodes);
       }    
   }
 
+
+  __forceinline void splitTri(const PrimRef& prim, int dim, float pos, const Vec3fa& a, const Vec3fa& b, const Vec3fa& c, PrimRef& left_o, PrimRef& right_o)
+  {
+    BBox3f left = empty, right = empty;
+    const Vec3fa v[3] = { a,b,c };
+
+    /* clip triangle to left and right box by processing all edges */
+    Vec3fa v1 = v[2];
+    for (size_t i=0; i<3; i++)
+      {
+	Vec3fa v0 = v1; v1 = v[i];
+	float v0d = v0[dim], v1d = v1[dim];
+      
+	if (v0d <= pos) left. extend(v0); // this point is on left side
+	if (v0d >= pos) right.extend(v0); // this point is on right side
+
+	if ((v0d < pos && pos < v1d) || (v1d < pos && pos < v0d)) // the edge crosses the splitting location
+	  {
+	    assert((v1d-v0d) != 0.0f);
+	    Vec3fa c = v0 + (pos-v0d)/(v1d-v0d)*(v1-v0);
+	    left.extend(c);
+	    right.extend(c);
+	  }
+      }
+    assert(!left.empty());  // happens if split does not hit triangle
+    assert(!right.empty()); // happens if split does not hit triangle
+
+    /* safe clip against current bounds */
+    BBox3f bounds = prim.bounds();
+    BBox3f cleft(min(max(left.lower,bounds.lower),bounds.upper),
+                 max(min(left.upper,bounds.upper),bounds.lower));
+    BBox3f cright(min(max(right.lower,bounds.lower),bounds.upper),
+                  max(min(right.upper,bounds.upper),bounds.lower));
+
+    left_o  = PrimRef(cleft, prim.geomID(), prim.primID());
+    right_o = PrimRef(cright,prim.geomID(), prim.primID());
+  }
 
   __forceinline mic_f box_sah( const mic_f &b_min,
 			       const mic_f &b_max) 
@@ -82,6 +119,14 @@ namespace embree
     const mic_f bmin = broadcast4to16f(&r.lower);
     const mic_f bmax = broadcast4to16f(&r.upper);
     return box_sah(bmin,bmax);
+  }
+
+  __forceinline mic_f tri_sah( const mic_f &v0,
+			       const mic_f &v1,
+			       const mic_f &v2) 
+  {
+    const mic_f n = lcross_xyz(v1-v0,v2-v0);
+    return sqrt(ldot3_xyz(n,n)) * 0.5f;
   }
   
   void quicksort_ascending_primrefs(PrimRef *__restrict__ t, 
@@ -112,39 +157,44 @@ namespace embree
     }
   }
 
-  void subdivideTriangle(const mic_f& v0,
-			 const mic_f& v1,
-			 const mic_f& v2,
+  __forceinline size_t getMaxDim(const PrimRef &p)
+  {
+    Vec3fa diag = p.upper - p.lower;
+    size_t index = 0;
+    for (size_t i=1;i<3;i++)
+      if (diag[i] > diag[index])
+	index = i;
+    return index;
+  }
+
+  void subdivideTriangle(const PrimRef &primBounds,
+			 const Vec3fa& vtxA,
+			 const Vec3fa& vtxB,
+			 const Vec3fa& vtxC,
 			 const size_t depth,
-			 size_t &index,
-			 PrimRef *__restrict__ prims,
-			 const unsigned int geomID,
-			 const unsigned int primID)
+			 AlignedAtomicCounter32 &counter,
+			 PrimRef *__restrict__ prims)
   {
     if (depth == 0) 
-      {
-	const mic_f bmin = min(min(v0,v1),v2);
-	const mic_f bmax = max(max(v0,v1),v2);
-	
-	store4f(&prims[index].lower,bmin);
-	store4f(&prims[index].upper,bmax);
-	prims[index].lower.a = geomID; 
-	prims[index].upper.a = primID;
-	index++;
+      {	    
+	const unsigned int index = counter.inc();
+	prims[index] = primBounds;
       }
     else
       {
-	const mic_f v01 = (v0 + v1) * 0.5f;
-	const mic_f v12 = (v1 + v2) * 0.5f;
-	const mic_f v20 = (v2 + v0) * 0.5f;	
+	const size_t dim = getMaxDim(primBounds);
+	
+	const float pos = (primBounds.upper[dim] + primBounds.lower[dim]) * 0.5f;
+	if (unlikely(pos == primBounds.upper[dim] || pos == primBounds.lower[dim])) return;
 
-	subdivideTriangle( v0,v01,v20,depth-1,index,prims,geomID,primID);
-	subdivideTriangle(v01, v1,v12,depth-1,index,prims,geomID,primID);
-	subdivideTriangle(v20,v12, v2,depth-1,index,prims,geomID,primID);
-	subdivideTriangle(v01,v12,v20,depth-1,index,prims,geomID,primID);
+	PrimRef left,right;
+	splitTri(primBounds,dim,pos,vtxA,vtxB,vtxC,left,right);
+	subdivideTriangle( left ,vtxA,vtxB,vtxC, depth-1,counter,prims);
+	subdivideTriangle( right,vtxA,vtxB,vtxC, depth-1,counter,prims);
       }
   }
 
+  
   void BVH4iBuilderPreSplits::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
     DBG(PING);
@@ -205,10 +255,24 @@ namespace embree
 	const mic_f v0 = broadcast4to16f(vptr0);
 	const mic_f v1 = broadcast4to16f(vptr1);
 	const mic_f v2 = broadcast4to16f(vptr2);
+
+	mic_f bmin = min(min(v0,v1),v2);
+	mic_f bmax = max(max(v0,v1),v2);	
+
+	const mic_f area_box = box_sah(bmin,bmax);
+
+	Vec3fa vtxA = *(Vec3fa*)vptr0;
+	Vec3fa vtxB = *(Vec3fa*)vptr1;
+	Vec3fa vtxC = *(Vec3fa*)vptr2;
 	
-	const unsigned int dest_index = dest1.add(NUM_PRESPLITS_PER_TRIANGLE);
-	size_t index = dest_index;
-	subdivideTriangle(v0,v1,v2,NUM_PRESPLITS_QUADTREE_DEPTH,index,presplits,geomID,primID);
+	BBox3f bounds = empty;
+	bounds.extend(vtxA);
+	bounds.extend(vtxB);
+	bounds.extend(vtxC);
+	PrimRef primBounds = PrimRef(bounds,geomID,primID);
+
+	subdivideTriangle(primBounds,vtxA,vtxB,vtxC,PRESPLITS_TREE_DEPTH,dest1,presplits);
+	
       }
 
     assert( startPreSplits + dest1 < numMaxPrimitives);
@@ -217,18 +281,12 @@ namespace embree
       prims[startPreSplits + i] = presplits[i];
 
     numPrimitives = dest1 + startPreSplits;    
+    //numPrimitives = startPreSplits;    
+
     DBG(DBG_PRINT( dest1 + startPreSplits ));
   }
 
 
-
-  __forceinline mic_f tri_sah( const mic_f &v0,
-			       const mic_f &v1,
-			       const mic_f &v2) 
-  {
-    const mic_f n = lcross_xyz(v1-v0,v2-v0);
-    return sqrt(ldot3_xyz(n,n)) * 0.5f;
-  }
 
   void BVH4iBuilderPreSplits::computePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
   {
