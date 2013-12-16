@@ -61,7 +61,7 @@ uniform unsigned int rtcNewInstance (RTCScene target,           //!< the scene t
 void rtcSetTransform (RTCScene scene,                                  //!< scene handle
                       uniform unsigned int geomID,                     //!< ID of geometry
                       uniform RTCMatrixType layout,                    //!< layout of transformation matrix
-                      uniform float* uniform xfm                       //!< transformation matrix
+                      const uniform float* uniform xfm                       //!< transformation matrix
                       );
 
 /*! Creates a new triangle mesh. The number of triangles

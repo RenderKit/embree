@@ -62,7 +62,7 @@ RTCORE_API unsigned rtcNewInstance (RTCScene target,                  //!< the s
 RTCORE_API void rtcSetTransform (RTCScene scene,                          //!< scene handle
                                  unsigned geomID,                         //!< ID of geometry
                                  RTCMatrixType layout,                    //!< layout of transformation matrix
-                                 float* xfm                               //!< transformation matrix
+                                 const float* xfm                         //!< transformation matrix
                                  );
 
 /*! \brief Creates a new triangle mesh. 

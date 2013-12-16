@@ -114,7 +114,7 @@ namespace embree
     return rtcNewInstance(target,source);
   }
   
-  extern "C" void ispcSetTransform (RTCScene scene, unsigned geomID, RTCMatrixType layout, float* xfm) {
+  extern "C" void ispcSetTransform (RTCScene scene, unsigned geomID, RTCMatrixType layout, const float* xfm) {
     return rtcSetTransform(scene,geomID,layout,xfm);
   }
   
