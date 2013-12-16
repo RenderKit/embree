@@ -356,7 +356,8 @@ namespace embree
 	if (unlikely(scene->get(i) == NULL)) continue;
 	if (unlikely(scene->get(i)->type != USER_GEOMETRY)) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
-	numVirtualObjects++;
+        SceneUserGeometry::Base* geom = (SceneUserGeometry::Base*) scene->get(i);
+	numVirtualObjects += geom->size();
       }
     return numVirtualObjects;	
   }
@@ -389,6 +390,7 @@ namespace embree
     
     PrimRef *__restrict__ const prims     = this->prims;
 
+#if 0
     /* find group == startID */
     unsigned int g=0;
     for (size_t i=0; i<numTotalGroups; i++) {       
@@ -398,6 +400,19 @@ namespace embree
       if (g == startID) break;
       g++;
     }
+#else
+    // === find first group containing startID ===
+    unsigned int g=0, numSkipped = 0;
+    for (; g<numTotalGroups; g++) {       
+      if (unlikely(scene->get(g) == NULL)) continue;
+      if (unlikely(scene->get(g)->type != USER_GEOMETRY)) continue;
+      if (unlikely(!scene->get(g)->isEnabled())) continue;
+      const UserGeometryScene::Base* const geom = (UserGeometryScene::Base*) scene->get(g);
+      const size_t numPrims = geom->size();
+      if (numSkipped + numPrims > startID) break;
+      numSkipped += numPrims;
+    }
+#endif
 
     /* start with first group containing startID */
     mic_f bounds_scene_min((float)pos_inf);
@@ -405,7 +420,9 @@ namespace embree
     mic_f bounds_centroid_min((float)pos_inf);
     mic_f bounds_centroid_max((float)neg_inf);
 
-    size_t currentID = startID;
+    unsigned int num = 0;
+    unsigned int currentID = startID;
+    unsigned int offset = startID - numSkipped;
 
     for (; g<numTotalGroups; g++) 
       {
@@ -415,28 +432,32 @@ namespace embree
 
 	const UserGeometryScene::Base *virtual_geometry = (UserGeometryScene::Base *)scene->get(g);
 
-	const mic_f bmin = broadcast4to16f(&virtual_geometry->bounds.lower);
-	const mic_f bmax = broadcast4to16f(&virtual_geometry->bounds.upper);
+        for (unsigned int i=offset; i<virtual_geometry->size() && currentID < endID; i++, currentID++)	 
+        { 			    
+          const BBox3f bounds = virtual_geometry->bounds(i);
+          const mic_f bmin = broadcast4to16f(&bounds.lower); // FIXME: do not reload from memory
+          const mic_f bmax = broadcast4to16f(&bounds.upper);
 
-	DBG(
+          DBG(
 	    DBG_PRINT(currentID);
 	    DBG_PRINT(bmin);
 	    DBG_PRINT(bmax);
 	    );
+          
+          bounds_scene_min = min(bounds_scene_min,bmin);
+          bounds_scene_max = max(bounds_scene_max,bmax);
+          const mic_f centroid2 = bmin+bmax;
+          bounds_centroid_min = min(bounds_centroid_min,centroid2);
+          bounds_centroid_max = max(bounds_centroid_max,centroid2);
 
-	bounds_scene_min = min(bounds_scene_min,bmin);
-	bounds_scene_max = max(bounds_scene_max,bmax);
-	const mic_f centroid2 = bmin+bmax;
-	bounds_centroid_min = min(bounds_centroid_min,centroid2);
-	bounds_centroid_max = max(bounds_centroid_max,centroid2);
-
-	store4f(&prims[currentID].lower,bmin);
-	store4f(&prims[currentID].upper,bmax);	
-	prims[currentID].lower.a = g;
-	prims[currentID].upper.a = 0;
-	currentID++;
-
-	if (currentID == endID) break;
+          store4f(&prims[currentID].lower,bmin);
+          store4f(&prims[currentID].upper,bmax);	
+          prims[currentID].lower.a = g;
+          prims[currentID].upper.a = i;
+          currentID++;
+        }
+        if (currentID == endID) break;
+        offset = 0;
       }
 
     /* update global bounds */
@@ -456,7 +477,7 @@ namespace embree
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
 
-    Accel **acc = (Accel**)accel + startID;
+    AccelSetItem **acc = (AccelSetItem**)accel + startID;
 
     const PrimRef* __restrict__  bptr = prims + startID;
 
@@ -465,7 +486,9 @@ namespace embree
 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
 	assert(bptr->geomID() < scene->size() );
-	*acc = (Accel*)(UserGeometryScene::Base *)(scene->get( bptr->geomID() ));
+        Accel* accel = (Accel*)(UserGeometryScene::Base *) scene->get( bptr->geomID() );
+	acc->accel = accel;
+        acc->item = bptr->primID();
       }
   }
 
