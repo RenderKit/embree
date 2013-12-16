@@ -125,12 +125,15 @@ namespace embree
   void InstanceIntersectorsRegister ()
   {
     int features = getCPUFeatures();
+#if defined(__MIC__)
+    SELECT_KNC(features,InstanceBoundsFunc);
+    SELECT_KNC(features,InstanceIntersector1);
+    SELECT_KNC(features,InstanceIntersector16);
+#else
     SELECT_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
     SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
     SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
     SELECT_AVX_AVX2(features,InstanceIntersector8);
-#if defined(__MIC__)
-    SELECT_KNC(features,InstanceIntersector16);
 #endif
   }
 

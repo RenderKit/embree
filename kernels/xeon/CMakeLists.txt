@@ -224,7 +224,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   builders/primrefgen.cpp
   
   geometry/instance_intersector1.cpp
-  geometry/instance_intersector4.cpp
   geometry/instance_intersector16.cpp
   
   geometry/triangle1.cpp

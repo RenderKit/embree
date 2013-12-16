@@ -354,7 +354,7 @@ namespace embree
     for (size_t i=0;i<scene->size();i++)
       {
 	if (unlikely(scene->get(i) == NULL)) continue;
-	if (unlikely(scene->get(i)->type != USER_GEOMETRY)) continue;
+	if (unlikely((scene->get(i)->type != USER_GEOMETRY) && (scene->get(i)->type != INSTANCES))) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
         UserGeometryScene::Base* geom = (UserGeometryScene::Base*) scene->get(i);
 	numVirtualObjects += geom->size();
@@ -390,29 +390,17 @@ namespace embree
     
     PrimRef *__restrict__ const prims     = this->prims;
 
-#if 0
-    /* find group == startID */
-    unsigned int g=0;
-    for (size_t i=0; i<numTotalGroups; i++) {       
-      if (unlikely(scene->get(i) == NULL)) continue;
-      if (unlikely(scene->get(i)->type != USER_GEOMETRY)) continue;
-      if (unlikely(!scene->get(i)->isEnabled())) continue;
-      if (g == startID) break;
-      g++;
-    }
-#else
     // === find first group containing startID ===
     unsigned int g=0, numSkipped = 0;
     for (; g<numTotalGroups; g++) {       
       if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely(scene->get(g)->type != USER_GEOMETRY)) continue;
+      if (unlikely((scene->get(g)->type != USER_GEOMETRY) && (scene->get(g)->type != INSTANCES))) continue;
       if (unlikely(!scene->get(g)->isEnabled())) continue;
       const UserGeometryScene::Base* const geom = (UserGeometryScene::Base*) scene->get(g);
       const size_t numPrims = geom->size();
       if (numSkipped + numPrims > startID) break;
       numSkipped += numPrims;
     }
-#endif
 
     /* start with first group containing startID */
     mic_f bounds_scene_min((float)pos_inf);
@@ -427,7 +415,7 @@ namespace embree
     for (; g<numTotalGroups; g++) 
       {
 	if (unlikely(scene->get(g) == NULL)) continue;
-	if (unlikely(scene->get(g)->type != USER_GEOMETRY )) continue;
+	if (unlikely((scene->get(g)->type != USER_GEOMETRY ) && (scene->get(g)->type != INSTANCES))) continue;
 	if (unlikely(!scene->get(g)->isEnabled())) continue;
 
 	UserGeometryScene::Base *virtual_geometry = (UserGeometryScene::Base *)scene->get(g);
