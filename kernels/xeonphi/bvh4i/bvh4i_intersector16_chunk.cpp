@@ -23,8 +23,7 @@ namespace embree
   {
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
 
-    template<typename TriangleIntersector16>
-    void BVH4iIntersector16Chunk<TriangleIntersector16>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
+    void BVH4iIntersector16Chunk::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
       /* near and node stack */
       __align(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
@@ -47,8 +46,8 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       mic_f*   __restrict__ sptr_dist = stack_dist + 2;
       
-      const Node     * __restrict__ nodes = (Node    *)bvh->nodePtr();
-      const Triangle * __restrict__ accel = (Triangle*)bvh->triPtr();
+      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
 
       while (1)
       {
@@ -226,8 +225,7 @@ namespace embree
       }
     }
     
-    template<typename TriangleIntersector16>
-    void BVH4iIntersector16Chunk<TriangleIntersector16>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
+    void BVH4iIntersector16Chunk::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
       /* allocate stack */
       __align(64) mic_f    stack_dist[3*BVH4i::maxDepth+1];
@@ -250,8 +248,8 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       mic_f*   __restrict__ sptr_dist = stack_dist + 2;
       
-      const Node     * __restrict__ nodes = (Node    *)bvh->nodePtr();
-      const Triangle * __restrict__ accel = (Triangle*)bvh->triPtr();
+      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
 
       while (1)
       {
@@ -413,6 +411,6 @@ namespace embree
       store16i(valid & m_terminated,&ray.geomID,0);
     }
     
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16ChunkMoeller, BVH4iIntersector16Chunk<Triangle1Intersector16MoellerTrumbore>);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16ChunkMoeller, BVH4iIntersector16Chunk);
   }
 }
