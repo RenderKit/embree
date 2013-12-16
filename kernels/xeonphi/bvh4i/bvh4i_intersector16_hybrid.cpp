@@ -551,6 +551,7 @@ namespace embree
       mic_f ray_tnear         = select(m_valid,ray16.tnear,pos_inf);
       mic_f ray_tfar          = select(m_valid,ray16.tfar ,neg_inf);
       const mic_f inf = mic_f(pos_inf);
+
       
       /* push root node */
       stack_node[0] = BVH4i::invalidNode;
@@ -863,11 +864,13 @@ namespace embree
 	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
 
 	mic_m valid0 = valid_leaf;
-	const mic_f zero = mic_f::zero();
-	const mic_f one  = mic_f::one();
 
 	const mic3f org = ray16.org;
 	const mic3f dir = ray16.dir;
+
+	const mic_f zero = mic_f::zero();
+	const mic_f one  = mic_f::one();
+
      
 	for (size_t i=0; i<items; i++,tris++) 
 	  {
@@ -884,10 +887,13 @@ namespace embree
 	    const mic_f v2 = broadcast4to16f(&tri.v2);
 	    const mic_f e1 = v0-v1;
 	    const mic_f e2 = v2-v0;
+
+
         
 	    /* calculate denominator */
 	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
 	    const mic3f C =  _v0 - org;
+
 	    const mic_f Ng = broadcast4to16f(&tri.Ng);
 	    const mic3f _Ng = mic3f(swizzle<0>(Ng),swizzle<1>(Ng),swizzle<2>(Ng));
 	    const mic_f den = dot(dir,_Ng);
@@ -905,7 +911,7 @@ namespace embree
 	    valid = ge(valid,v,zero);
 	    valid = le(valid,u+v,one); 
 	    const mic_f t = dot(C,_Ng) * rcp_den;
-
+	    evictL1(tris);
 	    if (unlikely(none(valid))) continue;
       
 	    /* perform depth test */
