@@ -66,7 +66,8 @@ typedef void (*RTCOccludedFuncVarying) (void* uniform ptr,       /*!< pointer to
  *  provided have to intersect the same geometry. A user data pointer,
  *  that points to a user specified representation of the geometry, is
  *  passed to each intersect and occluded function invokation. */
-uniform unsigned int rtcNewUserGeometry (RTCScene scene, uniform size_t numItems);
+uniform unsigned int rtcNewUserGeometry (RTCScene scene,                  /*!< the scene the user geometry set is created in */
+                                         uniform size_t numGeometries     /*!< the number of geometries contained in the set */);
 
 /*! Set data pointer for intersect and occluded functions. Invokations
  *  of the various user intersect and occluded functions get passed

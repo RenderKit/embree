@@ -80,17 +80,19 @@ typedef void (*RTCOccludedFunc16) (const void* valid, /*! pointer to valid mask 
 
 /*! Creates a new user geometry object. This feature makes it possible
  *  to add arbitrary types of geometry to the scene by providing
- *  appropiate intersect and occluded functions, as well as a bounding
- *  box of the implemented geometry. As the rtcIntersect and
- *  rtcOccluded functions support different ray packet sizes, the user
- *  also has to provide different versions of intersect and occluded
- *  function pointers for these packet sizes. However, the ray packet
- *  size of the called function pointer always matches the packet size
- *  of the originally invoked rtcIntersect and rtcOccluded
+ *  appropiate bounding, intersect and occluded functions. A user
+ *  geometry object is a set of user geometries. As the rtcIntersect
+ *  and rtcOccluded functions support different ray packet sizes, the
+ *  user also has to provide different versions of intersect and
+ *  occluded function pointers for these packet sizes. However, the
+ *  ray packet size of the called function pointer always matches the
+ *  packet size of the originally invoked rtcIntersect and rtcOccluded
  *  functions. A user data pointer, that points to a user specified
  *  representation of the geometry, is passed to each intersect and
- *  occluded function invokation. */
-RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene, size_t numItems);
+ *  occluded function invokation, as well as the index of the geometry
+ *  of the set to intersect. */
+RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene,        /*!< the scene the user geometry set is created in */
+                                        size_t numGeometries   /*!< the number of geometries contained in the set */);
 
 /*! Set data pointer for intersect and occluded functions. Invokations
  *  of the various user intersect and occluded functions get passed
