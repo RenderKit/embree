@@ -912,6 +912,7 @@ namespace embree
 	    valid = le(valid,u+v,one); 
 	    const mic_f t = dot(C,_Ng) * rcp_den;
 	    evictL1(tris);
+
 	    if (unlikely(none(valid))) continue;
       
 	    /* perform depth test */

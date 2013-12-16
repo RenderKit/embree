@@ -18,9 +18,11 @@
 #include "kernels/xeonphi/bvh4i/bvh4i_builder.h"
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
 
-#define PRESPLIT_SPACE_FACTOR     0.5f
-#define PRESPLIT_AREA_THRESHOLD  12.0f
-#define PRESPLIT_MIN_AREA         0.001f
+#define PRESPLIT_SPACE_FACTOR         0.5f
+#define PRESPLIT_AREA_THRESHOLD      12.0f
+#define PRESPLIT_MIN_AREA             0.001f
+#define NUM_PRESPLITS_PER_TRIANGLE    4
+#define NUM_PRESPLITS_QUADTREE_DEPTH  1
 
 #define DBG(x) 
 
@@ -54,9 +56,11 @@ namespace embree
 	numMaxPrimitives = numPrims;
 	numMaxPreSplits  = numPrims - numPrimitives;
 
-	DBG_PRINT(numPrimitives);
-	DBG_PRINT(numMaxPrimitives);
-	DBG_PRINT(numMaxPreSplits);
+	DBG(
+	    DBG_PRINT(numPrimitives);
+	    DBG_PRINT(numMaxPrimitives);
+	    DBG_PRINT(numMaxPreSplits);
+	    );
 
 	allocateMemoryPools(numPrims,numNodes);
       }    
@@ -108,6 +112,38 @@ namespace embree
     }
   }
 
+  void subdivideTriangle(const mic_f& v0,
+			 const mic_f& v1,
+			 const mic_f& v2,
+			 const size_t depth,
+			 size_t &index,
+			 PrimRef *__restrict__ prims,
+			 const unsigned int geomID,
+			 const unsigned int primID)
+  {
+    if (depth == 0) 
+      {
+	const mic_f bmin = min(min(v0,v1),v2);
+	const mic_f bmax = max(max(v0,v1),v2);
+	
+	store4f(&prims[index].lower,bmin);
+	store4f(&prims[index].upper,bmax);
+	prims[index].lower.a = geomID; 
+	prims[index].upper.a = primID;
+	index++;
+      }
+    else
+      {
+	const mic_f v01 = (v0 + v1) * 0.5f;
+	const mic_f v12 = (v1 + v2) * 0.5f;
+	const mic_f v20 = (v2 + v0) * 0.5f;	
+
+	subdivideTriangle( v0,v01,v20,depth-1,index,prims,geomID,primID);
+	subdivideTriangle(v01, v1,v12,depth-1,index,prims,geomID,primID);
+	subdivideTriangle(v20,v12, v2,depth-1,index,prims,geomID,primID);
+	subdivideTriangle(v01,v12,v20,depth-1,index,prims,geomID,primID);
+      }
+  }
 
   void BVH4iBuilderPreSplits::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
@@ -121,8 +157,10 @@ namespace embree
     const size_t startFactor = dest0;
     const size_t numFactorTris = numPrimitives - startFactor;
 
-    DBG_PRINT( startFactor );
-    DBG_PRINT( numFactorTris );
+    DBG(
+	DBG_PRINT( startFactor );
+	DBG_PRINT( numFactorTris );
+	);
 
     quicksort_ascending_primrefs(prims,startFactor, numPrimitives-1);
 
@@ -137,15 +175,17 @@ namespace embree
     
     PrimRef *presplits = (PrimRef*)accel;
 
-    const size_t step = (numMaxPreSplits+3) / 4;
+    const size_t step = (numMaxPreSplits+NUM_PRESPLITS_PER_TRIANGLE-1) / NUM_PRESPLITS_PER_TRIANGLE;
 
-    DBG_PRINT(step);
 
     const size_t startPreSplits = numPrimitives - step;
     dest0 = startPreSplits;
 
-    DBG_PRINT(dest0);
-    DBG_PRINT(numPrimitives);
+    DBG(
+	DBG_PRINT(step);
+	DBG_PRINT(dest0);
+	DBG_PRINT(numPrimitives);
+	);
 
     dest1.reset(0);
 
@@ -166,49 +206,9 @@ namespace embree
 	const mic_f v1 = broadcast4to16f(vptr1);
 	const mic_f v2 = broadcast4to16f(vptr2);
 	
-	const unsigned int dest_index = dest1.add(4);
-
-	const mic_f v01 = (v0 + v1) * 0.5f;
-	const mic_f v12 = (v1 + v2) * 0.5f;
-	const mic_f v20 = (v2 + v0) * 0.5f;
-
-	const mic_f bminA = min(min(v0,v01),v20);
-	const mic_f bmaxA = max(max(v0,v01),v20);
-
-	const mic_f bminB = min(min(v01,v1),v12);
-	const mic_f bmaxB = max(max(v01,v1),v12);
-
-	const mic_f bminC = min(min(v20,v12),v2);
-	const mic_f bmaxC = max(max(v20,v12),v2);
-
-	const mic_f bminD = min(min(v01,v12),v20);
-	const mic_f bmaxD = max(max(v01,v12),v20);
-
-	PrimRef &refA = presplits[dest_index+0];
-	PrimRef &refB = presplits[dest_index+1];
-	PrimRef &refC = presplits[dest_index+2];
-	PrimRef &refD = presplits[dest_index+3];
-
-	store4f(&refA.lower,bminA);
-	store4f(&refA.upper,bmaxA);
-	refA.lower.a = geomID; 
-	refA.upper.a = primID;
-
-	store4f(&refB.lower,bminB);
-	store4f(&refB.upper,bmaxB);
-	refB.lower.a = geomID; 
-	refB.upper.a = primID;
-
-	store4f(&refC.lower,bminC);
-	store4f(&refC.upper,bmaxC);
-	refC.lower.a = geomID; 
-	refC.upper.a = primID;
-
-	store4f(&refD.lower,bminD);
-	store4f(&refD.upper,bmaxD);
-	refD.lower.a = geomID; 
-	refD.upper.a = primID;
-	
+	const unsigned int dest_index = dest1.add(NUM_PRESPLITS_PER_TRIANGLE);
+	size_t index = dest_index;
+	subdivideTriangle(v0,v1,v2,NUM_PRESPLITS_QUADTREE_DEPTH,index,presplits,geomID,primID);
       }
 
     assert( startPreSplits + dest1 < numMaxPrimitives);
@@ -217,7 +217,7 @@ namespace embree
       prims[startPreSplits + i] = presplits[i];
 
     numPrimitives = dest1 + startPreSplits;    
-    DBG_PRINT( dest1 + startPreSplits );
+    DBG(DBG_PRINT( dest1 + startPreSplits ));
   }
 
 
