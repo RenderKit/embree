@@ -39,7 +39,7 @@ namespace embree
     
   public:
     Accel* accel;
-    std::vector<Accel*> enabled_accels;
+    std::vector<AccelSet*> enabled_accels;
   };
 }
 

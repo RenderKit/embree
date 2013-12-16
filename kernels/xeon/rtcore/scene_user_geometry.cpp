@@ -20,18 +20,18 @@
 namespace embree
 {
 #if !defined (__MIC__)
-  extern RTCIntersectFunc4 ispcWrapperIntersect4;
-  extern RTCOccludedFunc4 ispcWrapperOccluded4;
+  extern IntersectSetFunc4 ispcWrapperIntersect4;
+  extern OccludedSetFunc4 ispcWrapperOccluded4;
 #endif
 
 #if defined(__TARGET_AVX__)
-  extern RTCIntersectFunc8 ispcWrapperIntersect8;
-  extern RTCOccludedFunc8 ispcWrapperOccluded8;
+  extern IntersectSetFunc8 ispcWrapperIntersect8;
+  extern OccludedSetFunc8 ispcWrapperOccluded8;
 #endif
 
 #if defined(__MIC__)
-  extern RTCIntersectFunc16 ispcWrapperIntersect16;
-  extern RTCOccludedFunc16 ispcWrapperOccluded16;
+  extern IntersectSetFunc16 ispcWrapperIntersect16;
+  extern OccludedSetFunc16 ispcWrapperOccluded16;
 #endif
 
   UserGeometryScene::Base::Base (Scene* parent, GeometryTy ty)
@@ -149,10 +149,10 @@ namespace embree
     }
   }
 
-  extern Accel::Intersector1 InstanceIntersector1;
-  extern Accel::Intersector4 InstanceIntersector4;
-  extern Accel::Intersector8 InstanceIntersector8;
-  extern Accel::Intersector16 InstanceIntersector16;
+  extern AccelSet::Intersector1 InstanceIntersector1;
+  extern AccelSet::Intersector4 InstanceIntersector4;
+  extern AccelSet::Intersector8 InstanceIntersector8;
+  extern AccelSet::Intersector16 InstanceIntersector16;
 
   UserGeometryScene::Instance::Instance (Scene* parent, Accel* object) 
     : Base(parent,INSTANCES), local2world(one), world2local(one), object(object)

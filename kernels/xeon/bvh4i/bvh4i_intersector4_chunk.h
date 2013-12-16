@@ -37,7 +37,7 @@ namespace embree
     public:
       
       static Accel::Intersector4 create() { 
-        return Accel::Intersector4((RTCIntersectFunc4)intersect, (RTCOccludedFunc4)occluded);
+        return Accel::Intersector4((IntersectFunc4)intersect, (OccludedFunc4)occluded);
       }
       
       static void intersect(sseb* valid, BVH4i* bvh, Ray4& ray);

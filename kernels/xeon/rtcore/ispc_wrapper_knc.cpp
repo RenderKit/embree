@@ -35,6 +35,6 @@ namespace embree
     ((ISPCOccludedFunc16)geom->ispcOccluded16)(geom->ispcPtr,ray,mask);
   }
 
-  RTCIntersectFunc16 ispcWrapperIntersect16 = (RTCIntersectFunc16) ISPCWrapperKNC::intersect;
-  RTCOccludedFunc16 ispcWrapperOccluded16 = (RTCOccludedFunc16) ISPCWrapperKNC::occluded;
+  IntersectSetFunc16 ispcWrapperIntersect16 = (IntersectSetFunc16) ISPCWrapperKNC::intersect;
+  OccludedSetFunc16 ispcWrapperOccluded16 = (OccludedSetFunc16) ISPCWrapperKNC::occluded;
 }

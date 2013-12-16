@@ -28,7 +28,7 @@ namespace embree
   {
     struct VirtualBuildSource : public BuildSource
     {
-      VirtualBuildSource (std::vector<Accel*>& accels) 
+      VirtualBuildSource (std::vector<AccelSet*>& accels) 
         : accels(accels) {}
       
       bool isEmpty () const { 
@@ -52,13 +52,13 @@ namespace embree
         *bounds_o = accels[group]->bounds;
       }
       
-      std::vector<Accel*>& accels;
+      std::vector<AccelSet*>& accels;
     };
     
     struct VirtualAccelObjectType : public PrimitiveType
     {
       VirtualAccelObjectType () 
-        : PrimitiveType("object",sizeof(Accel*),1,false,1) {} 
+        : PrimitiveType("object",sizeof(AccelSet*),1,false,1) {} 
       
       size_t blocks(size_t x) const {
         return x;
@@ -71,14 +71,14 @@ namespace embree
       void pack(char* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const 
       {
         const PrimRef& prim = *prims;
-        std::vector<Accel*>* accels = (std::vector<Accel*>*) geom;
-        *((Accel**)This) = (*accels)[prim.geomID()];
+        std::vector<AccelSet*>* accels = (std::vector<AccelSet*>*) geom;
+        *((AccelSet**)This) = (*accels)[prim.geomID()];
         prims++;
       }
     };
     
   public:
-    VirtualAccel (const std::string& ty, std::vector<Accel*>& accels);
+    VirtualAccel (const std::string& ty, std::vector<AccelSet*>& accels);
     ~VirtualAccel ();
     
   public:

@@ -25,9 +25,9 @@ namespace embree
 {
   namespace UserGeometryScene
   {
-
-    struct Base : public Geometry , public Accel
+    struct Base : public Geometry, public AccelSet
     {
+
     public:
       Base (Scene* parent, GeometryTy ty);
       

@@ -40,7 +40,7 @@ namespace embree
     {
       Geometry* geom = scene->getUserGeometrySafe(i);
       if (geom == NULL) continue;
-      Accel* accel = scene->getUserGeometrySafe(i);
+      AccelSet* accel = scene->getUserGeometrySafe(i);
 
       if (geom->isEnabled()) {
         enabled_accels.push_back(accel);
@@ -59,17 +59,9 @@ namespace embree
     enabled_accels.clear();
     buildUserGeometryAccels(threadIndex,threadCount);
 
-    /* no top-level accel required for single geometry */
-    if (enabled_accels.size() == 1) {
-      bounds = enabled_accels[0]->bounds;
-      intersectors = enabled_accels[0]->intersectors;
-    }
-
     /* build toplevel accel */
-    else {
-      accel->build(threadIndex,threadCount);
-      bounds = accel->bounds;
-      intersectors = accel->intersectors;
-    }
+    accel->build(threadIndex,threadCount);
+    bounds = accel->bounds;
+    intersectors = accel->intersectors;
   }
 }

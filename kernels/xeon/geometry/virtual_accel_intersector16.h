@@ -24,7 +24,7 @@ namespace embree
 {
   struct VirtualAccelIntersector16
   {
-    typedef Accel* Primitive;
+    typedef AccelSet* Primitive;
 
     static __forceinline void intersect(const mic_m& valid_i, Ray16& ray, const Primitive& mesh, const void* geom) 
     {

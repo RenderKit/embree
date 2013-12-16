@@ -29,13 +29,13 @@ typedef void (*RTCIntersectFuncVarying)(void* uniform ptr,           /*!< pointe
                                         varying RTCRay& ray          /*!< ray to intersect */);
 
 /*! Type of occlusion function pointer for uniform rays. */
-typedef uniform bool (*RTCOccludedFuncUniform) (void* uniform ptr,   /*!< pointer to user data */ 
-                                                uniform RTCRay1& ray /*!< ray to test occlusion */);
+typedef void (*RTCOccludedFuncUniform) (void* uniform ptr,   /*!< pointer to user data */ 
+                                        uniform RTCRay1& ray /*!< ray to test occlusion */);
 
 
 /*! Type of occlusion function pointer for varying rays. */
-typedef varying bool (*RTCOccludedFuncVarying) (void* uniform ptr,   /*!< pointer to user data */ 
-                                                varying RTCRay& ray  /*!< ray to test occlusion */);
+typedef void (*RTCOccludedFuncVarying) (void* uniform ptr,   /*!< pointer to user data */ 
+                                        varying RTCRay& ray  /*!< ray to test occlusion */);
 
 /*! Creates a new user geometry object. This feature makes it possible
  *  to add arbitrary types of geometry to the scene by providing
