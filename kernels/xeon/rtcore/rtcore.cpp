@@ -63,10 +63,11 @@ namespace embree
   void BVH4MBRegister();
 
   /*! intersector registration functions */
-  DECLARE_INTERSECTOR1(InstanceIntersector1);
-  DECLARE_INTERSECTOR4(InstanceIntersector4);
-  DECLARE_INTERSECTOR8(InstanceIntersector8);
-  DECLARE_INTERSECTOR16(InstanceIntersector16);
+  DECLARE_BOUNDS_FUNC(InstanceBoundsFunc);
+  DECLARE_SET_INTERSECTOR1(InstanceIntersector1);
+  DECLARE_SET_INTERSECTOR4(InstanceIntersector4);
+  DECLARE_SET_INTERSECTOR8(InstanceIntersector8);
+  DECLARE_SET_INTERSECTOR16(InstanceIntersector16);
   
   /* global settings */
   std::string g_top_accel = "default";    //!< toplevel acceleration structure to use
@@ -124,12 +125,15 @@ namespace embree
   void InstanceIntersectorsRegister ()
   {
     int features = getCPUFeatures();
+#if defined(__MIC__)
+    SELECT_KNC(features,InstanceBoundsFunc);
+    SELECT_KNC(features,InstanceIntersector1);
+    SELECT_KNC(features,InstanceIntersector16);
+#else
+    SELECT_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
     SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
     SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
-    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector8);
-    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector16);
-#if defined(__MIC__)
-    SELECT_KNC(features,InstanceIntersector16);
+    SELECT_AVX_AVX2(features,InstanceIntersector8);
 #endif
   }
 
@@ -454,12 +458,12 @@ namespace embree
     CATCH_END;
   }
 
-  RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene) 
+  RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene, size_t numItems) 
   {
     CATCH_BEGIN;
     TRACE(rtcNewUserGeometry);
     VERIFY_HANDLE(scene);
-    return ((Scene*)scene)->newUserGeometry();
+    return ((Scene*)scene)->newUserGeometry(numItems);
     CATCH_END;
     return -1;
   }
@@ -555,21 +559,6 @@ namespace embree
     CATCH_END;
   }
 
-  RTCORE_API void rtcSetBounds (RTCScene scene, unsigned geomID, 
-                                float lower_x, float lower_y, float lower_z,
-                                float upper_x, float upper_y, float upper_z)
-  {
-    CATCH_BEGIN;
-    TRACE(rtcSetBounds);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
-    Vec3fa lower = Vec3fa(lower_x,lower_y,lower_z);
-    Vec3fa upper = Vec3fa(upper_x,upper_y,upper_z);
-    BBox3f box(lower,upper);
-    ((Scene*)scene)->get_locked(geomID)->setBounds(box);
-    CATCH_END;
-  }
-
   RTCORE_API void rtcSetUserData (RTCScene scene, unsigned geomID, void* ptr) 
   {
     CATCH_BEGIN;
@@ -577,6 +566,16 @@ namespace embree
     VERIFY_HANDLE(scene);
     VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setUserData(ptr);
+    CATCH_END;
+  }
+
+  RTCORE_API void rtcSetBoundsFunction (RTCScene scene, unsigned geomID, RTCBoundsFunc bounds)
+  {
+    CATCH_BEGIN;
+    TRACE(rtcSetBoundsFunction);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get_locked(geomID)->setBoundsFunction(bounds);
     CATCH_END;
   }
 

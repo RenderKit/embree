@@ -118,13 +118,13 @@ namespace embree
     /*! user geometry only */
   public:
 
-    /*! Set bounding box. */
-    virtual void setBounds (const BBox3f& bounds) { 
+    /*! Set user data for intersect and occluded functions. */
+    virtual void setUserData (void* ptr, bool ispc = false) { 
       recordError(RTC_INVALID_OPERATION); 
     }
 
-    /*! Set user data for intersect and occluded functions. */
-    virtual void setUserData (void* ptr, bool ispc = false) { 
+    /*! Set bounds function. */
+    virtual void setBoundsFunction (RTCBoundsFunc bounds) { 
       recordError(RTC_INVALID_OPERATION); 
     }
     

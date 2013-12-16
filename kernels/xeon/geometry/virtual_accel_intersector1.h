@@ -24,31 +24,31 @@ namespace embree
 {
   struct VirtualAccelIntersector1
   {
-    typedef Accel* Primitive;
+    typedef AccelSetItem Primitive;
 
-    static __forceinline void intersect(Ray& ray, const Primitive& mesh, const void* geom) 
+    static __forceinline void intersect(Ray& ray, const Primitive& prim, const void* geom) 
     {
       AVX_ZERO_UPPER();
-      mesh->intersect((RTCRay&)ray);
+      prim.accel->intersect((RTCRay&)ray,prim.item);
     }
 
-    static __forceinline void intersect(Ray& ray, const Primitive* mesh, size_t num, const void* geom) 
+    static __forceinline void intersect(Ray& ray, const Primitive* prim, size_t num, const void* geom) 
     {
       for (size_t i=0; i<num; i++) 
-        intersect(ray,mesh[i],geom);
+        intersect(ray,prim[i],geom);
     }
 
-    static __forceinline bool occluded(Ray& ray, const Primitive& mesh, const void* geom) 
+    static __forceinline bool occluded(Ray& ray, const Primitive& prim, const void* geom) 
     {
       AVX_ZERO_UPPER();
-      mesh->occluded((RTCRay&)ray);
+      prim.accel->occluded((RTCRay&)ray,prim.item);
       return ray.geomID == 0;
     }
 
-    static __forceinline bool occluded(Ray& ray, const Primitive* mesh, size_t num, const void* geom) 
+    static __forceinline bool occluded(Ray& ray, const Primitive* prim, size_t num, const void* geom) 
     {
       for (size_t i=0; i<num; i++) 
-        if (occluded(ray,mesh[i],geom))
+        if (occluded(ray,prim[i],geom))
           return true;
 
       return false;

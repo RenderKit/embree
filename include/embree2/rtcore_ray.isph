@@ -21,14 +21,13 @@
 /*! \{ */
 
 #ifdef _WIN32
-#  define RTCORE_ALIGN(...) 
+#  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
 #else
-#  define RTCORE_ALIGN(...) 
+#  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
 #endif
 
-RTCORE_ALIGN(16) 
 /*! Ray structure for uniform (single) rays. */
-struct RTCRay1 // FIXME: need to specify alignment to 16 bytes
+RTCORE_ALIGN(16) struct RTCRay1 
 {
   /* ray data */
 public:

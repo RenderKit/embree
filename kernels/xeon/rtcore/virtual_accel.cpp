@@ -35,7 +35,7 @@ namespace embree
 
   Builder* BVH4BuilderObjectSplit1 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
 
-  VirtualAccel::VirtualAccel (const std::string& ty, std::vector<Accel*>& accels)
+  VirtualAccel::VirtualAccel (const std::string& ty, std::vector<AccelSet*>& accels)
     : source(accels)
   {
     if (ty == "bvh4" || ty == "default")

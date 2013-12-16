@@ -22,7 +22,7 @@ namespace embree
   {
     typedef AffineSpaceT<LinearSpace3<avx3f> > AffineSpace3fAVX;
     
-    void FastInstanceIntersector8::intersect(avxb* valid, const UserGeometryScene::Instance* instance, Ray8& ray)
+    void FastInstanceIntersector8::intersect(avxb* valid, const UserGeometryScene::Instance* instance, Ray8& ray, size_t item)
     {
       const avx3f ray_org = ray.org;
       const avx3f ray_dir = ray.dir;
@@ -39,7 +39,7 @@ namespace embree
       ray.instID = select(nohit,ray.instID,instance->id);
     }
     
-    void FastInstanceIntersector8::occluded (avxb* valid, const UserGeometryScene::Instance* instance, Ray8& ray)
+    void FastInstanceIntersector8::occluded (avxb* valid, const UserGeometryScene::Instance* instance, Ray8& ray, size_t item)
     {
       const avx3f ray_org = ray.org;
       const avx3f ray_dir = ray.dir;
@@ -52,7 +52,6 @@ namespace embree
       ray.dir = ray_dir;
     }
 
-    DEFINE_INTERSECTOR8    (InstanceIntersector8,FastInstanceIntersector8);
-    DEFINE_INTERSECTOR8TO16(InstanceIntersector16,FastInstanceIntersector8,UserGeometryScene::Instance);
+    DEFINE_SET_INTERSECTOR8(InstanceIntersector8,FastInstanceIntersector8);
   }
 }

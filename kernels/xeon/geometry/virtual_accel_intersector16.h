@@ -24,26 +24,24 @@ namespace embree
 {
   struct VirtualAccelIntersector16
   {
-    typedef Accel* Primitive;
+    typedef AccelSetItem Primitive;
 
-    static __forceinline void intersect(const mic_m& valid_i, Ray16& ray, const Primitive& mesh, const void* geom) 
+    static __forceinline void intersect(const mic_m& valid_i, Ray16& ray, const Primitive& prim, const void* geom) 
     {
       mic_i maski = select(valid_i,mic_i(-1),mic_i(0));
-      mesh->intersect16(&maski,(RTCRay16&)ray);
+      prim.accel->intersect16(&maski,(RTCRay16&)ray,prim.item);
     }
 
     static __forceinline void intersect(const mic_m& valid, Ray16& ray, const Primitive* tri, size_t num, const void* geom)
     {
       for (size_t i=0; i<num; i++)
-	{
-	  intersect(valid,ray,tri[i],geom);
-	}
+        intersect(valid,ray,tri[i],geom);
     }
 
-    static __forceinline mic_m occluded(const mic_m& valid_i, const Ray16& ray, const Primitive& mesh, const void* geom) 
+    static __forceinline mic_m occluded(const mic_m& valid_i, const Ray16& ray, const Primitive& prim, const void* geom) 
     {
       mic_i maski = select(valid_i,mic_i(-1),mic_i(0));
-      mesh->occluded16(&maski,(RTCRay16&)ray);
+      prim.accel->occluded16(&maski,(RTCRay16&)ray,prim.item);
       return ray.geomID == 0;
     }
 

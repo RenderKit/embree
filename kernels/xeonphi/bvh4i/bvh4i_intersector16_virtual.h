@@ -29,6 +29,7 @@ namespace embree
       class BVH4iIntersector16Virtual
     {
       /* shortcuts for frequently used types */
+      typedef typename VirtualGeometryIntersector16::Primitive Primitive;
       typedef typename BVH4i::NodeRef NodeRef;
       typedef typename BVH4i::Node Node;
       
@@ -41,6 +42,7 @@ namespace embree
       class BVH4iIntersector1Virtual
     {
       /* shortcuts for frequently used types */
+      typedef typename TriangleIntersector1::Primitive Primitive;
       typedef typename BVH4i::NodeRef NodeRef;
       typedef typename BVH4i::Node Node;
       

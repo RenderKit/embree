@@ -20,22 +20,38 @@
 /*! \ingroup embree_kernel_api_ispc */
 /*! \{ */
 
+/*! Axis aligned bounding box representation */
+RTCORE_ALIGN(16) struct RTCBounds
+{
+  float lower_x, lower_y, lower_z, align0;
+  float upper_x, upper_y, upper_z, align1;
+};
+
+/*! Type of bounding function. */
+typedef void (*RTCBoundsFunc)(void* uniform ptr,                 /*!< pointer to user data */
+                              uniform size_t item,               /*!< item to calculate bounds for */
+                              uniform RTCBounds& bounds_o        /*!< returns calculated bounds */);
+
 /*! Type of intersect function pointer for uniform rays. */
-typedef void (*RTCIntersectFuncUniform)(void* uniform ptr,           /*!< pointer to user data */
-                                        uniform RTCRay1& ray         /*!< ray to intersect */);
+typedef void (*RTCIntersectFuncUniform)(void* uniform ptr,       /*!< pointer to user data */
+                                        uniform RTCRay1& ray,    /*!< ray to intersect */
+                                        uniform size_t item      /*< item to intersect */);
 
 /*! Type of intersect function pointer for varying rays. */
-typedef void (*RTCIntersectFuncVarying)(void* uniform ptr,           /*!< pointer to user data */
-                                        varying RTCRay& ray          /*!< ray to intersect */);
+typedef void (*RTCIntersectFuncVarying)(void* uniform ptr,       /*!< pointer to user data */
+                                        varying RTCRay& ray,     /*!< ray to intersect */
+                                        uniform size_t item      /*< item to intersect */);
 
 /*! Type of occlusion function pointer for uniform rays. */
-typedef uniform bool (*RTCOccludedFuncUniform) (void* uniform ptr,   /*!< pointer to user data */ 
-                                                uniform RTCRay1& ray /*!< ray to test occlusion */);
+typedef void (*RTCOccludedFuncUniform) (void* uniform ptr,       /*!< pointer to user data */ 
+                                        uniform RTCRay1& ray,    /*!< ray to test occlusion */
+                                        uniform size_t item      /*< item to test for occlusion */);
 
 
 /*! Type of occlusion function pointer for varying rays. */
-typedef varying bool (*RTCOccludedFuncVarying) (void* uniform ptr,   /*!< pointer to user data */ 
-                                                varying RTCRay& ray  /*!< ray to test occlusion */);
+typedef void (*RTCOccludedFuncVarying) (void* uniform ptr,       /*!< pointer to user data */ 
+                                        varying RTCRay& ray,     /*!< ray to test occlusion */
+                                        uniform size_t item      /*< item to test for occlusion */);
 
 /*! Creates a new user geometry object. This feature makes it possible
  *  to add arbitrary types of geometry to the scene by providing
@@ -50,18 +66,18 @@ typedef varying bool (*RTCOccludedFuncVarying) (void* uniform ptr,   /*!< pointe
  *  provided have to intersect the same geometry. A user data pointer,
  *  that points to a user specified representation of the geometry, is
  *  passed to each intersect and occluded function invokation. */
-uniform unsigned int rtcNewUserGeometry (RTCScene scene);
-
-/*! Set bounding box of user defined geometry. The bounding box has to
-    be conservative and should be tight. */
-void rtcSetBounds (RTCScene scene, uniform unsigned int geomID, 
-                   uniform float lower_x, uniform float lower_y, uniform float lower_z,
-                   uniform float upper_x, uniform float upper_y, uniform float upper_z);
+uniform unsigned int rtcNewUserGeometry (RTCScene scene, uniform size_t numItems);
 
 /*! Set data pointer for intersect and occluded functions. Invokations
  *  of the various user intersect and occluded functions get passed
  *  this data pointer when called. */
 void rtcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr);
+
+/*! Sets the bounding function to calculate bounding boxes of the user
+ *  geometry items when building spatial index structures. The
+ *  calculated bounding box have to be conservative and should be
+ *  tight.*/
+void rtcSetBoundsFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCBoundsFunc bounds);
 
 /*! Set intersect function for uniform rays. The rtcIntersect1
  *  function will call the passed function for intersecting the user

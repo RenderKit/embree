@@ -18,23 +18,23 @@
 
 namespace embree
 {
-  typedef void (*ISPCIntersectFunc16)(void* ptr, RTCRay16& ray, __mmask16 valid);
-  typedef void (*ISPCOccludedFunc16 )(void* ptr, RTCRay16& ray, __mmask16 valid);
+  typedef void (*ISPCIntersectFunc16)(void* ptr, RTCRay16& ray, size_t item, __mmask16 valid);
+  typedef void (*ISPCOccludedFunc16 )(void* ptr, RTCRay16& ray, size_t item, __mmask16 valid);
 
-  void ISPCWrapperKNC::intersect(const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay16& ray) 
+  void ISPCWrapperKNC::intersect(const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay16& ray, size_t item) 
   {
     mic_i maski = *(mic_i*)valid;
     __mmask16 mask = maski != mic_i(0);
-    ((ISPCIntersectFunc16)geom->ispcIntersect16)(geom->ispcPtr,ray,mask);
+    ((ISPCIntersectFunc16)geom->ispcIntersect16)(geom->ispcPtr,ray,item,mask);
   }
 
-  void ISPCWrapperKNC::occluded (const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay16& ray) 
+  void ISPCWrapperKNC::occluded (const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay16& ray, size_t item) 
   {
     mic_i maski = *(mic_i*)valid;
     __mmask16 mask = maski != mic_i(0);
-    ((ISPCOccludedFunc16)geom->ispcOccluded16)(geom->ispcPtr,ray,mask);
+    ((ISPCOccludedFunc16)geom->ispcOccluded16)(geom->ispcPtr,ray,item,mask);
   }
 
-  RTCIntersectFunc16 ispcWrapperIntersect16 = (RTCIntersectFunc16) ISPCWrapperKNC::intersect;
-  RTCOccludedFunc16 ispcWrapperOccluded16 = (RTCOccludedFunc16) ISPCWrapperKNC::occluded;
+  IntersectSetFunc16 ispcWrapperIntersect16 = (IntersectSetFunc16) ISPCWrapperKNC::intersect;
+  OccludedSetFunc16 ispcWrapperOccluded16 = (OccludedSetFunc16) ISPCWrapperKNC::occluded;
 }

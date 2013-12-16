@@ -27,6 +27,12 @@
 #endif
 #endif
 
+#ifdef _WIN32
+#  define RTCORE_ALIGN(...) __declspec(align(__VA_ARGS__))
+#else
+#  define RTCORE_ALIGN(...) __attribute__((aligned(__VA_ARGS__)))
+#endif
+
 #include "rtcore_scene.h"
 #include "rtcore_geometry.h"
 #include "rtcore_geometry_user.h"

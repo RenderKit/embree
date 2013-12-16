@@ -18,19 +18,19 @@
 
 namespace embree
 {
-  typedef void (*ISPCIntersectFunc8)(void* ptr, RTCRay8& ray, __m256 valid);
-  typedef void (*ISPCOccludedFunc8 )(void* ptr, RTCRay8& ray, __m256 valid);
+  typedef void (*ISPCIntersectFunc8)(void* ptr, RTCRay8& ray, size_t item, __m256 valid);
+  typedef void (*ISPCOccludedFunc8 )(void* ptr, RTCRay8& ray, size_t item, __m256 valid);
 
-  void ISPCWrapperAVX::intersect(const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay8& ray) {
+  void ISPCWrapperAVX::intersect(const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay8& ray, size_t item) {
     assert(geom->ispcIntersect8);
-    ((ISPCIntersectFunc8)geom->ispcIntersect8)(geom->ispcPtr,ray,*(__m256*)valid);
+    ((ISPCIntersectFunc8)geom->ispcIntersect8)(geom->ispcPtr,ray,item,*(__m256*)valid);
   }
 
-  void ISPCWrapperAVX::occluded (const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay8& ray) {
+  void ISPCWrapperAVX::occluded (const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay8& ray, size_t item) {
     assert(geom->ispcOccluded8);
-    ((ISPCOccludedFunc8)geom->ispcOccluded8)(geom->ispcPtr,ray,*(__m256*)valid);
+    ((ISPCOccludedFunc8)geom->ispcOccluded8)(geom->ispcPtr,ray,item,*(__m256*)valid);
   }
 
-  RTCIntersectFunc8 ispcWrapperIntersect8 = (RTCIntersectFunc8) ISPCWrapperAVX::intersect;
-  RTCOccludedFunc8 ispcWrapperOccluded8 = (RTCOccludedFunc8) ISPCWrapperAVX::occluded;
+  IntersectSetFunc8 ispcWrapperIntersect8 = (IntersectSetFunc8) ISPCWrapperAVX::intersect;
+  OccludedSetFunc8 ispcWrapperOccluded8 = (OccludedSetFunc8) ISPCWrapperAVX::occluded;
 }

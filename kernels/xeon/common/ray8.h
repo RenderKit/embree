@@ -143,7 +143,7 @@ namespace embree
   struct Intersector8To16
   {
     static Accel::Intersector16 create () { 
-      return Accel::Intersector16((RTCIntersectFunc16)intersect16, (RTCOccludedFunc16)occluded16); 
+      return Accel::Intersector16((IntersectFunc16)intersect16, (OccludedFunc16)occluded16); 
     }
 
     static void intersect16(avxb* valid, BVH* bvh, Ray8x<2>& ray16)

@@ -20,22 +20,22 @@
 namespace embree
 {
 #if !defined (__MIC__)
-  extern RTCIntersectFunc4 ispcWrapperIntersect4;
-  extern RTCOccludedFunc4 ispcWrapperOccluded4;
+  extern IntersectSetFunc4 ispcWrapperIntersect4;
+  extern OccludedSetFunc4 ispcWrapperOccluded4;
 #endif
 
 #if defined(__TARGET_AVX__)
-  extern RTCIntersectFunc8 ispcWrapperIntersect8;
-  extern RTCOccludedFunc8 ispcWrapperOccluded8;
+  extern IntersectSetFunc8 ispcWrapperIntersect8;
+  extern OccludedSetFunc8 ispcWrapperOccluded8;
 #endif
 
 #if defined(__MIC__)
-  extern RTCIntersectFunc16 ispcWrapperIntersect16;
-  extern RTCOccludedFunc16 ispcWrapperOccluded16;
+  extern IntersectSetFunc16 ispcWrapperIntersect16;
+  extern OccludedSetFunc16 ispcWrapperOccluded16;
 #endif
 
-  UserGeometryScene::Base::Base (Scene* parent, GeometryTy ty)
-    : Geometry(parent,ty,1,RTC_GEOMETRY_STATIC) 
+  UserGeometryScene::Base::Base (Scene* parent, GeometryTy ty, size_t items)
+    : Geometry(parent,ty,1,RTC_GEOMETRY_STATIC), AccelSet(items)
   {
     enabling();
   }
@@ -48,21 +48,23 @@ namespace embree
     atomic_add(&parent->numUserGeometries,-1); 
   }
 
-  UserGeometryScene::UserGeometry::UserGeometry (Scene* parent) 
-    : Base(parent,USER_GEOMETRY),
+  UserGeometryScene::UserGeometry::UserGeometry (Scene* parent, size_t items) 
+    : Base(parent,USER_GEOMETRY,items),
       ispcPtr(NULL),
       ispcIntersect1(NULL), ispcIntersect4(NULL), ispcIntersect8(NULL), ispcIntersect16(NULL),
       ispcOccluded1(NULL), ispcOccluded4(NULL), ispcOccluded8(NULL), ispcOccluded16(NULL) {}
   
-  void UserGeometryScene::UserGeometry::setBounds (const BBox3f& bounds) {
-    this->bounds = bounds;
-  }
-
-  void UserGeometryScene::UserGeometry::setUserData (void* ptr, bool ispc) {
+  void UserGeometryScene::UserGeometry::setUserData (void* ptr, bool ispc) 
+  {
     if (ispc) ispcPtr = ptr;
     else intersectors.ptr = ptr;
+    intersectors.boundsPtr = ptr;
   }
   
+  void UserGeometryScene::UserGeometry::setBoundsFunction (RTCBoundsFunc bounds) {
+    this->boundsFunc = bounds;
+  }
+
   void UserGeometryScene::UserGeometry::setIntersectFunction (RTCIntersectFunc intersect1, bool ispc) {
     intersectors.intersector1.intersect = intersect1;
   }
@@ -149,15 +151,18 @@ namespace embree
     }
   }
 
-  extern Accel::Intersector1 InstanceIntersector1;
-  extern Accel::Intersector4 InstanceIntersector4;
-  extern Accel::Intersector8 InstanceIntersector8;
-  extern Accel::Intersector16 InstanceIntersector16;
+  extern RTCBoundsFunc InstanceBoundsFunc;
+  extern AccelSet::Intersector1 InstanceIntersector1;
+  extern AccelSet::Intersector4 InstanceIntersector4;
+  extern AccelSet::Intersector8 InstanceIntersector8;
+  extern AccelSet::Intersector16 InstanceIntersector16;
 
   UserGeometryScene::Instance::Instance (Scene* parent, Accel* object) 
-    : Base(parent,INSTANCES), local2world(one), world2local(one), object(object)
+    : Base(parent,INSTANCES,1), local2world(one), world2local(one), object(object)
   {
     intersectors.ptr = this;
+    intersectors.boundsPtr = this;
+    boundsFunc = InstanceBoundsFunc;
     intersectors.intersector1 = InstanceIntersector1;
     intersectors.intersector4 = InstanceIntersector4; 
     intersectors.intersector8 = InstanceIntersector8; 
@@ -168,21 +173,5 @@ namespace embree
   {
     local2world = xfm;
     world2local = rcp(xfm);
-  }
-
-  void UserGeometryScene::Instance::build (size_t threadIndex, size_t threadCount)
-  {
-    Vec3fa lower = object->bounds.lower;
-    Vec3fa upper = object->bounds.upper;
-    Vec3fa p000 = xfmPoint(local2world,Vec3fa(lower.x,lower.y,lower.z));
-    Vec3fa p001 = xfmPoint(local2world,Vec3fa(lower.x,lower.y,upper.z));
-    Vec3fa p010 = xfmPoint(local2world,Vec3fa(lower.x,upper.y,lower.z));
-    Vec3fa p011 = xfmPoint(local2world,Vec3fa(lower.x,upper.y,upper.z));
-    Vec3fa p100 = xfmPoint(local2world,Vec3fa(upper.x,lower.y,lower.z));
-    Vec3fa p101 = xfmPoint(local2world,Vec3fa(upper.x,lower.y,upper.z));
-    Vec3fa p110 = xfmPoint(local2world,Vec3fa(upper.x,upper.y,lower.z));
-    Vec3fa p111 = xfmPoint(local2world,Vec3fa(upper.x,upper.y,upper.z));
-    bounds.lower = min(min(min(p000,p001),min(p010,p011)),min(min(p100,p101),min(p110,p111)));
-    bounds.upper = max(max(max(p000,p001),max(p010,p011)),max(max(p100,p101),max(p110,p111)));
   }
 }

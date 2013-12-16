@@ -118,8 +118,8 @@ namespace embree
     return rtcSetTransform(scene,geomID,layout,xfm);
   }
   
-  extern "C" unsigned ispcNewUserGeometry (RTCScene scene) {
-    return rtcNewUserGeometry(scene);
+  extern "C" unsigned ispcNewUserGeometry (RTCScene scene, size_t numItems) {
+    return rtcNewUserGeometry(scene,numItems);
   }
   
   extern "C" unsigned ispcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) {
@@ -157,14 +157,7 @@ namespace embree
   extern "C" void ispcDeleteGeometry (RTCScene scene, unsigned geomID) {
     rtcDeleteGeometry(scene,geomID);
   }
-  
-  extern "C" void ispcSetBounds (RTCScene scene, unsigned geomID, 
-                                 float lower_x, float lower_y, float lower_z,
-                                 float upper_x, float upper_y, float upper_z)
-  {
-    rtcSetBounds(scene,geomID,lower_x,lower_y,lower_z,upper_x,upper_y,upper_z);
-  }
-  
+    
   extern "C" void ispcSetUserData (RTCScene scene, unsigned geomID, void* ptr) 
   {
     CATCH_BEGIN;
@@ -175,6 +168,10 @@ namespace embree
     CATCH_END;
   }
   
+  extern "C" void ispcSetBoundsFunction (RTCScene scene, unsigned geomID, RTCBoundsFunc bounds) {
+    rtcSetBoundsFunction(scene,geomID,bounds);
+  }
+
   extern "C" void ispcSetIntersectFunction1 (RTCScene scene, unsigned geomID, RTCIntersectFunc intersect) 
   {
     CATCH_BEGIN;

@@ -24,12 +24,12 @@ namespace embree
 {
   struct VirtualAccelIntersector8
   {
-    typedef Accel* Primitive;
+    typedef AccelSetItem Primitive;
 
-    static __forceinline void intersect(const avxb& valid_i, Ray8& ray, const Primitive& mesh, const void* geom) 
+    static __forceinline void intersect(const avxb& valid_i, Ray8& ray, const Primitive& prim, const void* geom) 
     {
       AVX_ZERO_UPPER();
-      mesh->intersect8(&valid_i,(RTCRay8&)ray);
+      prim.accel->intersect8(&valid_i,(RTCRay8&)ray,prim.item);
     }
 
     static __forceinline void intersect(const avxb& valid, Ray8& ray, const Primitive* tri, size_t num, const void* geom)
@@ -38,10 +38,10 @@ namespace embree
         intersect(valid,ray,tri[i],geom);
     }
 
-    static __forceinline avxb occluded(const avxb& valid_i, const Ray8& ray, const Primitive& mesh, const void* geom) 
+    static __forceinline avxb occluded(const avxb& valid_i, const Ray8& ray, const Primitive& prim, const void* geom) 
     {
       AVX_ZERO_UPPER();
-      mesh->occluded8(&valid_i,(RTCRay8&)ray);
+      prim.accel->occluded8(&valid_i,(RTCRay8&)ray,prim.item);
       return ray.geomID == 0;
     }
 
@@ -58,15 +58,15 @@ namespace embree
 
   struct VirtualAccelIntersector8To16
   {
-    typedef Accel* Primitive;
+    typedef AccelSetItem Primitive;
 
-    static __forceinline void intersect(const avxb& valid_i, Ray8& ray, const Primitive& mesh, const void* geom) 
+    static __forceinline void intersect(const avxb& valid_i, Ray8& ray, const Primitive& prim, const void* geom) 
     {
       AVX_ZERO_UPPER();
       __align(64) Ray8x<2> ray16;
       ray16.set(0,ray);
       __align(64) avxb valid_i16[2] = { valid_i, false };
-      mesh->intersect16(valid_i16,(RTCRay16&)ray16);
+      prim.accel->intersect16(valid_i16,(RTCRay16&)ray16,prim.item);
       ray16.get(0,ray);
     }
 
@@ -76,13 +76,13 @@ namespace embree
         intersect(valid,ray,tri[i],geom);
     }
 
-    static __forceinline avxb occluded(const avxb& valid_i, Ray8& ray, const Primitive& mesh, const void* geom) 
+    static __forceinline avxb occluded(const avxb& valid_i, Ray8& ray, const Primitive& prim, const void* geom) 
     {
       AVX_ZERO_UPPER();
       __align(64) Ray8x<2> ray16;
       ray16.set(0,ray);
       __align(64) avxb valid_i16[2] = { valid_i, false };
-      mesh->occluded16(valid_i16,(RTCRay16&)ray16);
+      prim.accel->occluded16(valid_i16,(RTCRay16&)ray16,prim.item);
       ray16.get(0,ray);
       return ray.geomID == 0;
     }

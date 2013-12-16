@@ -23,6 +23,12 @@
 #  define RTCORE_API extern "C"
 #endif
 
+#ifdef _WIN32
+#  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
+#else
+#  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
+#endif
+
 #include "rtcore_scene.isph"
 #include "rtcore_geometry.isph"
 #include "rtcore_geometry_user.isph"
