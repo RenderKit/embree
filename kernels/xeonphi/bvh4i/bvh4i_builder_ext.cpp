@@ -356,7 +356,7 @@ namespace embree
 	if (unlikely(scene->get(i) == NULL)) continue;
 	if (unlikely(scene->get(i)->type != USER_GEOMETRY)) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
-        SceneUserGeometry::Base* geom = (SceneUserGeometry::Base*) scene->get(i);
+        UserGeometryScene::Base* geom = (UserGeometryScene::Base*) scene->get(i);
 	numVirtualObjects += geom->size();
       }
     return numVirtualObjects;	
@@ -379,7 +379,7 @@ namespace embree
     /* count total number of virtual objects */
     const size_t numVirtualObjects = numPrimitives;
     const size_t startID   = (threadID+0)*numVirtualObjects/numThreads;
-    const size_t endID     = (threadID+1)*numVirtualObjects/numThreads;
+    const size_t endID     = (threadID+1)*numVirtualObjects/numThreads; 
 
     DBG(
 	DBG_PRINT(numTotalGroups);
@@ -430,9 +430,10 @@ namespace embree
 	if (unlikely(scene->get(g)->type != USER_GEOMETRY )) continue;
 	if (unlikely(!scene->get(g)->isEnabled())) continue;
 
-	const UserGeometryScene::Base *virtual_geometry = (UserGeometryScene::Base *)scene->get(g);
+	UserGeometryScene::Base *virtual_geometry = (UserGeometryScene::Base *)scene->get(g);
 
-        for (unsigned int i=offset; i<virtual_geometry->size() && currentID < endID; i++, currentID++)	 
+        size_t N = virtual_geometry->size();
+        for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
         { 			    
           const BBox3f bounds = virtual_geometry->bounds(i);
           const mic_f bmin = broadcast4to16f(&bounds.lower); // FIXME: do not reload from memory
@@ -454,7 +455,6 @@ namespace embree
           store4f(&prims[currentID].upper,bmax);	
           prims[currentID].lower.a = g;
           prims[currentID].upper.a = i;
-          currentID++;
         }
         if (currentID == endID) break;
         offset = 0;
@@ -477,7 +477,7 @@ namespace embree
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
 
-    AccelSetItem **acc = (AccelSetItem**)accel + startID;
+    AccelSetItem *acc = (AccelSetItem*)accel + startID;
 
     const PrimRef* __restrict__  bptr = prims + startID;
 
@@ -486,7 +486,7 @@ namespace embree
 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
 	assert(bptr->geomID() < scene->size() );
-        Accel* accel = (Accel*)(UserGeometryScene::Base *) scene->get( bptr->geomID() );
+        AccelSet* accel = (AccelSet*)(UserGeometryScene::Base *) scene->get( bptr->geomID() );
 	acc->accel = accel;
         acc->item = bptr->primID();
       }

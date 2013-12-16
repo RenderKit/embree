@@ -29,7 +29,7 @@ namespace embree
     static __forceinline void intersect(const mic_m& valid_i, Ray16& ray, const Primitive& prim, const void* geom) 
     {
       mic_i maski = select(valid_i,mic_i(-1),mic_i(0));
-      prim.accel->intersect16(&maski,(RTCRay16&)ray,accel.item);
+      prim.accel->intersect16(&maski,(RTCRay16&)ray,prim.item);
     }
 
     static __forceinline void intersect(const mic_m& valid, Ray16& ray, const Primitive* tri, size_t num, const void* geom)
