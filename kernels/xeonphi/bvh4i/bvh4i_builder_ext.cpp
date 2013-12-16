@@ -18,11 +18,11 @@
 #include "kernels/xeonphi/bvh4i/bvh4i_builder.h"
 #include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
 
-#define PRESPLIT_SPACE_FACTOR         0.1f
+#define PRESPLIT_SPACE_FACTOR         0.45f
 #define PRESPLIT_AREA_THRESHOLD      20.0f
-#define PRESPLIT_MIN_AREA             0.001f
-#define NUM_PRESPLITS_PER_TRIANGLE    8
-#define PRESPLITS_TREE_DEPTH          3
+#define PRESPLIT_MIN_AREA             0.01f
+#define NUM_PRESPLITS_PER_TRIANGLE    16
+#define PRESPLITS_TREE_DEPTH          4
 
 #define DBG(x) 
 
@@ -55,7 +55,7 @@ namespace embree
 	numMaxPrimitives = numPrims;
 	numMaxPreSplits  = numPrims - numPrimitives;
 
-	if (1 || g_verbose >= 2)
+	if (g_verbose >= 2)
 	  {
 	    DBG_PRINT(numPrimitives);
 	    DBG_PRINT(numMaxPrimitives);
@@ -175,6 +175,11 @@ namespace embree
 			 AlignedAtomicCounter32 &counter,
 			 PrimRef *__restrict__ prims)
   {
+    DBG(
+	DBG_PRINT(primBounds);
+	DBG_PRINT(depth);
+	);
+
     if (depth == 0) 
       {	    
 	const unsigned int index = counter.inc();
@@ -184,11 +189,16 @@ namespace embree
       {
 	const size_t dim = getMaxDim(primBounds);
 	
-	const float pos = (primBounds.upper[dim] + primBounds.lower[dim]) * 0.5f;
-	if (unlikely(pos == primBounds.upper[dim] || pos == primBounds.lower[dim])) return;
-
 	PrimRef left,right;
+
+	const float pos = (primBounds.upper[dim] + primBounds.lower[dim]) * 0.5f;
 	splitTri(primBounds,dim,pos,vtxA,vtxB,vtxC,left,right);
+
+	DBG(
+	    DBG_PRINT(left);
+	    DBG_PRINT(right);
+	    );
+
 	subdivideTriangle( left ,vtxA,vtxB,vtxC, depth-1,counter,prims);
 	subdivideTriangle( right,vtxA,vtxB,vtxC, depth-1,counter,prims);
       }
@@ -261,10 +271,17 @@ namespace embree
 
 	const mic_f area_box = box_sah(bmin,bmax);
 
+#if 1
 	Vec3fa vtxA = *(Vec3fa*)vptr0;
 	Vec3fa vtxB = *(Vec3fa*)vptr1;
 	Vec3fa vtxC = *(Vec3fa*)vptr2;
-	
+#else
+
+	Vec3fa vtxA(0,0,0);
+	Vec3fa vtxB(0,5,0);
+	Vec3fa vtxC(15,5,0);
+
+#endif	
 	BBox3f bounds = empty;
 	bounds.extend(vtxA);
 	bounds.extend(vtxB);
