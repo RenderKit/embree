@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4i_intersector16_chunk.h"
-#include "geometry/triangle1_intersector16_moeller.h"
+#include "geometry/triangle1.h"
 
 namespace embree
 {

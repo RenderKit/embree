@@ -15,9 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4i_intersector16_single.h"
-
-#include "geometry/triangle1_intersector16_moeller.h"
-#include "geometry/virtual_accel_intersector16.h"
+#include "geometry/triangle1.h"
 
 namespace embree
 {
@@ -28,8 +26,7 @@ namespace embree
 
     static __align(64) int zlc4[4] = {0xffffffff,0xffffffff,0xffffffff,0};
 
-    template<typename TriangleIntersector16>
-    void BVH4iIntersector16Single<TriangleIntersector16>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    void BVH4iIntersector16Single::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __align(64) float   stack_dist[3*BVH4i::maxDepth+1];
@@ -43,8 +40,8 @@ namespace embree
 
       store16f(stack_dist,inf);
 
-      const Node     * __restrict__ nodes = (Node    *)bvh->nodePtr();
-      const Triangle * __restrict__ accel = (Triangle*)bvh->triPtr();
+      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
 
       stack_node[0] = BVH4i::invalidNode;
       
@@ -339,8 +336,7 @@ namespace embree
 	}
     }
     
-    template<typename TriangleIntersector16>
-    void BVH4iIntersector16Single<TriangleIntersector16>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    void BVH4iIntersector16Single::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
@@ -352,8 +348,8 @@ namespace embree
       const mic_f inf         = mic_f(pos_inf);
       const mic_f zero        = mic_f::zero();
 
-      const Node     * __restrict__ nodes = (Node    *)bvh->nodePtr();
-      const Triangle * __restrict__ accel = (Triangle*)bvh->triPtr();
+      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
 
       stack_node[0] = BVH4i::invalidNode;
 
@@ -553,8 +549,7 @@ namespace embree
       store16i(m_valid & toMask(terminated),&ray16.geomID,0);
     }
     
-    // FIXME: convert intersector16 to intersector8 and intersector4
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16SingleMoeller, BVH4iIntersector16Single<Triangle1Intersector16MoellerTrumbore>);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16SingleMoeller, BVH4iIntersector16Single);
 
   }
 }
