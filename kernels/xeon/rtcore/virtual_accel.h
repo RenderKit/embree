@@ -41,15 +41,15 @@ namespace embree
       
       size_t prims (size_t group, size_t* pNumVertices) const {
         if (pNumVertices) *pNumVertices = 0;
-        return 1;
+        return accels[group]->size();
       }
       
       const BBox3f bounds(size_t group, size_t prim) const {
-        return accels[group]->bounds;
+        return accels[group]->bounds(prim);
       }
 
       void bounds(size_t group, size_t begin, size_t end, BBox3f* bounds_o) const {
-        *bounds_o = accels[group]->bounds;
+        assert(false); // FIXME
       }
       
       std::vector<AccelSet*>& accels;
@@ -58,7 +58,7 @@ namespace embree
     struct VirtualAccelObjectType : public PrimitiveType
     {
       VirtualAccelObjectType () 
-        : PrimitiveType("object",sizeof(AccelSet*),1,false,1) {} 
+        : PrimitiveType("object",sizeof(AccelSetItem),1,false,1) {} 
       
       size_t blocks(size_t x) const {
         return x;
@@ -72,7 +72,9 @@ namespace embree
       {
         const PrimRef& prim = *prims;
         std::vector<AccelSet*>* accels = (std::vector<AccelSet*>*) geom;
-        *((AccelSet**)This) = (*accels)[prim.geomID()];
+        AccelSetItem* dst = (AccelSetItem*)This;
+        dst->accel = (*accels)[prim.geomID()];
+        dst->item = prim.primID();
         prims++;
       }
     };

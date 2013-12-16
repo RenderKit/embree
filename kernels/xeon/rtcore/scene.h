@@ -44,7 +44,7 @@ namespace embree
     ~Scene ();
 
     /*! Creates new user geometry. */
-    unsigned newUserGeometry ();
+    unsigned newUserGeometry (size_t items);
 
     /*! Creates a new scene instance. */
     unsigned newInstance (Scene* scene);

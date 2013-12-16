@@ -24,12 +24,12 @@ namespace embree
 {
   struct VirtualAccelIntersector4
   {
-    typedef AccelSet* Primitive;
+    typedef AccelSetItem Primitive;
 
-    static __forceinline void intersect(const sseb& valid_i, Ray4& ray, const Primitive& mesh, const void* geom) 
+    static __forceinline void intersect(const sseb& valid_i, Ray4& ray, const Primitive& prim, const void* geom) 
     {
       AVX_ZERO_UPPER();
-      mesh->intersect4(&valid_i,(RTCRay4&)ray);
+      prim.accel->intersect4(&valid_i,(RTCRay4&)ray,prim.item);
     }
 
     static __forceinline void intersect(const sseb& valid, Ray4& ray, const Primitive* tri, size_t num, const void* geom)
@@ -38,10 +38,10 @@ namespace embree
         intersect(valid,ray,tri[i],geom);
     }
 
-    static __forceinline sseb occluded(const sseb& valid_i, const Ray4& ray, const Primitive& mesh, const void* geom) 
+    static __forceinline sseb occluded(const sseb& valid_i, const Ray4& ray, const Primitive& prim, const void* geom) 
     {
       AVX_ZERO_UPPER();
-      mesh->occluded4(&valid_i,(RTCRay4&)ray);
+      prim.accel->occluded4(&valid_i,(RTCRay4&)ray,prim.item);
       return ray.geomID == 0;
     }
 
@@ -58,15 +58,15 @@ namespace embree
 
   struct VirtualAccelIntersector4To8
   {
-    typedef Accel* Primitive;
+    typedef AccelSetItem Primitive;
 
-    static __forceinline void intersect(const sseb& valid_i, Ray4& ray, const Primitive& mesh, const void* geom) 
+    static __forceinline void intersect(const sseb& valid_i, Ray4& ray, const Primitive& prim, const void* geom) 
     {
       AVX_ZERO_UPPER();
       __align(32) Ray4x<2> ray8;
       ray8.set(0,ray);
       __align(32) sseb valid_i8[2] = { valid_i, false };
-      mesh->intersect8(valid_i8,(RTCRay8&)ray8);
+      prim.accel->intersect8(valid_i8,(RTCRay8&)ray8,prim.item);
       ray8.get(0,ray);
     }
 
@@ -76,13 +76,13 @@ namespace embree
         intersect(valid,ray,tri[i],geom);
     }
 
-    static __forceinline sseb occluded(const sseb& valid_i, Ray4& ray, const Primitive& mesh, const void* geom) 
+    static __forceinline sseb occluded(const sseb& valid_i, Ray4& ray, const Primitive& prim, const void* geom) 
     {
       AVX_ZERO_UPPER();
       __align(32) Ray4x<2> ray8;
       ray8.set(0,ray);
       __align(32) sseb valid_i8[2] = { valid_i, false };
-      mesh->occluded8(valid_i8,(RTCRay8&)ray8);
+      prim.accel->occluded8(valid_i8,(RTCRay8&)ray8,prim.item);
       ray8.get(0,ray);
       return ray.geomID == 0;
     }
@@ -100,15 +100,15 @@ namespace embree
 
   struct VirtualAccelIntersector4To16
   {
-    typedef Accel* Primitive;
+    typedef AccelSetItem Primitive;
 
-    static __forceinline void intersect(const sseb& valid_i, Ray4& ray, const Primitive& mesh, const void* geom) 
+    static __forceinline void intersect(const sseb& valid_i, Ray4& ray, const Primitive& prim, const void* geom) 
     {
       AVX_ZERO_UPPER();
       __align(64) Ray4x<4> ray16;
       ray16.set(0,ray);
       __align(64) sseb valid_i16[4] = { valid_i, false, false, false };
-      mesh->intersect16(valid_i16,(RTCRay16&)ray16);
+      prim.accel->intersect16(valid_i16,(RTCRay16&)ray16,prim.item);
       ray16.get(0,ray);
     }
 
@@ -118,13 +118,13 @@ namespace embree
         intersect(valid,ray,tri[i],geom);
     }
 
-    static __forceinline sseb occluded(const sseb& valid_i, Ray4& ray, const Primitive& mesh, const void* geom) 
+    static __forceinline sseb occluded(const sseb& valid_i, Ray4& ray, const Primitive& prim, const void* geom) 
     {
       AVX_ZERO_UPPER();
       __align(64) Ray4x<4> ray16;
       ray16.set(0,ray);
       __align(64) sseb valid_i16[4] = { valid_i, false, false, false };
-      mesh->occluded16(valid_i16,(RTCRay16&)ray16);
+      prim.accel->occluded16(valid_i16,(RTCRay16&)ray16,prim.item);
       ray16.get(0,ray);
       return ray.geomID == 0;
     }

@@ -171,9 +171,9 @@ namespace embree
       delete geometries[i];
   }
 
-  unsigned Scene::newUserGeometry () 
+  unsigned Scene::newUserGeometry (size_t items) 
   {
-    Geometry* geom = new UserGeometryScene::UserGeometry(this);
+    Geometry* geom = new UserGeometryScene::UserGeometry(this,items);
     return geom->id;
   }
   

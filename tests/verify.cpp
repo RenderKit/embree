@@ -432,38 +432,54 @@ namespace embree
     return mesh;
   }
 
-  void IntersectFunc(void* ptr, RTCRay& ray) {
+  struct Sphere
+  {
+    Vec3fa pos;
+    float r;
+  };
+
+  void BoundsFunc(Sphere* sphere, size_t index, BBox3f* bounds_o)
+  {
+    bounds_o->lower.x = sphere->pos.x-sphere->r;
+    bounds_o->lower.y = sphere->pos.y-sphere->r;
+    bounds_o->lower.z = sphere->pos.z-sphere->r;
+    bounds_o->upper.x = sphere->pos.x+sphere->r;
+    bounds_o->upper.y = sphere->pos.y+sphere->r;
+    bounds_o->upper.z = sphere->pos.z+sphere->r;
   }
 
-  void IntersectFunc4(const void* valid, void* ptr, RTCRay4& ray) {
+  void IntersectFunc(void* ptr, RTCRay& ray, size_t item) {
   }
 
-  void IntersectFunc8(const void* valid, void* ptr, RTCRay8& ray) {
+  void IntersectFunc4(const void* valid, void* ptr, RTCRay4& ray, size_t item) {
   }
 
-  void IntersectFunc16(const void* valid, void* ptr, RTCRay16& ray) {
+  void IntersectFunc8(const void* valid, void* ptr, RTCRay8& ray, size_t item) {
   }
 
-  void OccludedFunc (void* ptr, RTCRay& ray) {
+  void IntersectFunc16(const void* valid, void* ptr, RTCRay16& ray, size_t item) {
   }
 
-  void OccludedFunc4 (const void* valid, void* ptr, RTCRay4& ray) {
+  void OccludedFunc (void* ptr, RTCRay& ray, size_t item) {
   }
 
-  void OccludedFunc8 (const void* valid, void* ptr, RTCRay8& ray) {
+  void OccludedFunc4 (const void* valid, void* ptr, RTCRay4& ray, size_t item) {
   }
 
-  void OccludedFunc16 (const void* valid, void* ptr, RTCRay16& ray) {
+  void OccludedFunc8 (const void* valid, void* ptr, RTCRay8& ray, size_t item) {
+  }
+
+  void OccludedFunc16 (const void* valid, void* ptr, RTCRay16& ray, size_t item) {
   }
 
   unsigned addUserGeometryEmpty (RTCScene scene, const Vec3fa& pos, const float r)
   {
     BBox3f bounds(pos-Vec3fa(r),pos+Vec3fa(r));
-    unsigned geom = rtcNewUserGeometry (scene);
-    rtcSetBounds(scene,geom,
-                 bounds.lower.x,bounds.lower.y,bounds.lower.z,
-                 bounds.upper.x,bounds.upper.y,bounds.upper.z);
-    rtcSetUserData(scene,geom,NULL);
+    unsigned geom = rtcNewUserGeometry (scene,1);
+    Sphere* sphere = new Sphere; // FIXME: get never deleted
+    sphere->pos = pos; sphere->r = r;
+    rtcSetBoundsFunction(scene,geom,(RTCBoundsFunc)BoundsFunc);
+    rtcSetUserData(scene,geom,sphere);
     rtcSetIntersectFunction(scene,geom,IntersectFunc);
     rtcSetIntersectFunction4(scene,geom,IntersectFunc4);
     rtcSetIntersectFunction8(scene,geom,IntersectFunc8);

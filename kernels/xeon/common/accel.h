@@ -22,6 +22,46 @@
 
 namespace embree
 {
+#define DECLARE_BOUNDS_FUNC(bounds) \
+  namespace isa { extern RTCBoundsFunc bounds; }   \
+  namespace sse41 { extern RTCBoundsFunc bounds; } \
+  namespace avx { extern RTCBoundsFunc bounds; }   \
+  namespace avx2 { extern RTCBoundsFunc bounds; }  \
+  void bounds##_error() { std::cerr << "Error: bounds " << TOSTRING(bounds) << " not supported no your CPU" << std::endl; } \
+  RTCBoundsFunc bounds((RTCBoundsFunc)bounds##_error);
+
+#define DECLARE_SET_INTERSECTOR1(intersector) \
+  namespace isa { extern AccelSet::Intersector1 intersector; }   \
+  namespace sse41 { extern AccelSet::Intersector1 intersector; } \
+  namespace avx { extern AccelSet::Intersector1 intersector; }   \
+  namespace avx2 { extern AccelSet::Intersector1 intersector; }  \
+  void intersector##_error() { std::cerr << "Error: intersector " << TOSTRING(intersector) << " not supported no your CPU" << std::endl; } \
+  AccelSet::Intersector1 intersector((IntersectSetFunc)intersector##_error,(OccludedSetFunc)intersector##_error);
+
+#define DECLARE_SET_INTERSECTOR4(intersector) \
+  namespace isa { extern AccelSet::Intersector4 intersector; }   \
+  namespace sse41 { extern AccelSet::Intersector4 intersector; } \
+  namespace avx { extern AccelSet::Intersector4 intersector; }   \
+  namespace avx2 { extern AccelSet::Intersector4 intersector; }  \
+  void intersector##_error() { std::cerr << "Error: intersector " << TOSTRING(intersector) << " not supported no your CPU" << std::endl; } \
+  AccelSet::Intersector4 intersector((IntersectSetFunc4)intersector##_error,(OccludedSetFunc4)intersector##_error);
+
+#define DECLARE_SET_INTERSECTOR8(intersector) \
+  namespace isa { extern AccelSet::Intersector8 intersector; }   \
+  namespace sse41 { extern AccelSet::Intersector8 intersector; } \
+  namespace avx { extern AccelSet::Intersector8 intersector; }   \
+  namespace avx2 { extern AccelSet::Intersector8 intersector; }  \
+  void intersector##_error() { std::cerr << "Error: intersector " << TOSTRING(intersector) << " not supported no your CPU" << std::endl; } \
+  AccelSet::Intersector8 intersector((IntersectSetFunc8)intersector##_error,(OccludedSetFunc8)intersector##_error);
+
+#define DECLARE_SET_INTERSECTOR16(intersector) \
+  namespace isa { extern AccelSet::Intersector16 intersector; }   \
+  namespace sse41 { extern AccelSet::Intersector16 intersector; } \
+  namespace avx { extern AccelSet::Intersector16 intersector; }   \
+  namespace avx2 { extern AccelSet::Intersector16 intersector; }  \
+  void intersector##_error() { std::cerr << "Error: intersector " << TOSTRING(intersector) << " not supported no your CPU" << std::endl; } \
+  AccelSet::Intersector16 intersector((IntersectSetFunc16)intersector##_error,(OccludedSetFunc16)intersector##_error);
+
 #define DECLARE_INTERSECTOR1(intersector) \
   namespace isa { extern Accel::Intersector1 intersector; }   \
   namespace sse41 { extern Accel::Intersector1 intersector; } \
@@ -53,6 +93,26 @@ namespace embree
   namespace avx2 { extern Accel::Intersector16 intersector; }  \
   void intersector##_error() { std::cerr << "Error: intersector " << TOSTRING(intersector) << " not supported no your CPU" << std::endl; } \
   Accel::Intersector16 intersector((IntersectFunc16)intersector##_error,(OccludedFunc16)intersector##_error);
+
+#define DEFINE_SET_INTERSECTOR1(symbol,intersector)                        \
+  AccelSet::Intersector1 symbol((IntersectSetFunc)intersector::intersect, \
+                                (OccludedSetFunc )intersector::occluded, \
+                                TOSTRING(isa) "::" TOSTRING(symbol));
+
+#define DEFINE_SET_INTERSECTOR4(symbol,intersector)                         \
+  AccelSet::Intersector4 symbol((IntersectSetFunc4)intersector::intersect, \
+                                (OccludedSetFunc4)intersector::occluded, \
+                                TOSTRING(isa) "::" TOSTRING(symbol));
+
+#define DEFINE_SET_INTERSECTOR8(symbol,intersector)                         \
+  AccelSet::Intersector8 symbol((IntersectSetFunc8)intersector::intersect, \
+                                (OccludedSetFunc8)intersector::occluded, \
+                                TOSTRING(isa) "::" TOSTRING(symbol));
+
+#define DEFINE_SET_INTERSECTOR16(symbol,intersector)                         \
+  AccelSet::Intersector16 symbol((IntersectSetFunc16)intersector::intersect, \
+                                 (OccludedSetFunc16)intersector::occluded, \
+                                 TOSTRING(isa) "::" TOSTRING(symbol));
 
 #define DEFINE_INTERSECTOR1(symbol,intersector)                        \
   Accel::Intersector1 symbol((IntersectFunc)intersector::intersect, \
@@ -362,7 +422,7 @@ namespace embree
   typedef RTCOccludedFunc16 OccludedSetFunc16;
 
   /*! Base class for set of acceleration structures. */
-  class AccelSet : public Bounded
+  class AccelSet : public RefCount 
   {
     ALIGNED_CLASS;
   public:
@@ -425,7 +485,10 @@ namespace embree
     public:
       
       /*! Construction */
-      AccelSet () { intersectors.ptr = NULL; }
+      AccelSet (size_t numItems) : numItems(numItems) {
+        intersectors.ptr = NULL; 
+        intersectors.boundsPtr = NULL;
+      }
       
       /*! Virtual destructor */
       virtual ~AccelSet() {}
@@ -435,65 +498,87 @@ namespace embree
       
       /*! build accel */
       virtual void build (size_t threadIndex, size_t threadCount) = 0;
+
+      /*! return number of items in set */
+      __forceinline size_t size() const {
+        return numItems;
+      }
+
+      /*! Calculates the bounds of an item */
+      __forceinline BBox3f bounds (size_t item) 
+      {
+        BBox3f box; 
+        boundsFunc(intersectors.boundsPtr,item,(RTCBounds&)box);
+        return box;
+      }
       
       /*! Intersects a single ray with the scene. */
-      __forceinline void intersect (RTCRay& ray) {
+      __forceinline void intersect (RTCRay& ray, size_t item) {
         assert(intersectors.intersector1.intersect);
-        intersectors.intersector1.intersect(intersectors.ptr,ray);
+        intersectors.intersector1.intersect(intersectors.ptr,ray,item);
       }
       
       /*! Intersects a packet of 4 rays with the scene. */
-      __forceinline void intersect4 (const void* valid, RTCRay4& ray) {
+      __forceinline void intersect4 (const void* valid, RTCRay4& ray, size_t item) {
         assert(intersectors.intersector4.intersect);
-        intersectors.intersector4.intersect(valid,intersectors.ptr,ray);
+        intersectors.intersector4.intersect(valid,intersectors.ptr,ray,item);
       }
       
       /*! Intersects a packet of 8 rays with the scene. */
-      __forceinline void intersect8 (const void* valid, RTCRay8& ray) {
+      __forceinline void intersect8 (const void* valid, RTCRay8& ray, size_t item) {
         assert(intersectors.intersector8.intersect);
-        intersectors.intersector8.intersect(valid,intersectors.ptr,ray);
+        intersectors.intersector8.intersect(valid,intersectors.ptr,ray,item);
       }
 
       /*! Intersects a packet of 16 rays with the scene. */
-      __forceinline void intersect16 (const void* valid, RTCRay16& ray) {
+      __forceinline void intersect16 (const void* valid, RTCRay16& ray, size_t item) {
         assert(intersectors.intersector16.intersect);
-        intersectors.intersector16.intersect(valid,intersectors.ptr,ray);
+        intersectors.intersector16.intersect(valid,intersectors.ptr,ray,item);
       }
       
       /*! Tests if single ray is occluded by the scene. */
-      __forceinline void occluded (RTCRay& ray) {
+      __forceinline void occluded (RTCRay& ray, size_t item) {
         assert(intersectors.intersector1.occluded);
-        intersectors.intersector1.occluded(intersectors.ptr,ray);
+        intersectors.intersector1.occluded(intersectors.ptr,ray,item);
       }
       
       /*! Tests if a packet of 4 rays is occluded by the scene. */
-      __forceinline void occluded4 (const void* valid, RTCRay4& ray) {
+      __forceinline void occluded4 (const void* valid, RTCRay4& ray, size_t item) {
         assert(intersectors.intersector4.occluded);
-        intersectors.intersector4.occluded(valid,intersectors.ptr,ray);
+        intersectors.intersector4.occluded(valid,intersectors.ptr,ray,item);
       }
       
       /*! Tests if a packet of 8 rays is occluded by the scene. */
-      __forceinline void occluded8 (const void* valid, RTCRay8& ray) {
+      __forceinline void occluded8 (const void* valid, RTCRay8& ray, size_t item) {
         assert(intersectors.intersector8.occluded);
-        intersectors.intersector8.occluded(valid,intersectors.ptr,ray);
+        intersectors.intersector8.occluded(valid,intersectors.ptr,ray,item);
       }
       
       /*! Tests if a packet of 16 rays is occluded by the scene. */
-      __forceinline void occluded16 (const void* valid, RTCRay16& ray) {
+      __forceinline void occluded16 (const void* valid, RTCRay16& ray, size_t item) {
         assert(intersectors.intersector16.occluded);
-        intersectors.intersector16.occluded(valid,intersectors.ptr,ray);
+        intersectors.intersector16.occluded(valid,intersectors.ptr,ray,item);
       }
       
     public:
+      size_t numItems;
+      RTCBoundsFunc boundsFunc;
+
       struct Intersectors 
       {
       public:
         void* ptr;
+        void* boundsPtr;
         Intersector1 intersector1;
         Intersector4 intersector4;
         Intersector8 intersector8;
         Intersector16 intersector16;
       } intersectors;
+  };
+
+  struct AccelSetItem {
+    AccelSet* accel;
+    size_t item;
   };
 
   class AccelInstance : public Accel

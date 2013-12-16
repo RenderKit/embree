@@ -29,7 +29,7 @@ namespace embree
     {
 
     public:
-      Base (Scene* parent, GeometryTy ty);
+      Base (Scene* parent, GeometryTy ty, size_t items);
       
       void enabling ();
       void disabling();
@@ -38,9 +38,9 @@ namespace embree
     struct UserGeometry : public Base
     {
     public:
-      UserGeometry (Scene* parent); 
-      virtual void setBounds (const BBox3f& bounds);
+      UserGeometry (Scene* parent, size_t items); 
       virtual void setUserData (void* ptr, bool ispc);
+      virtual void setBoundsFunction (RTCBoundsFunc bounds);
       virtual void setIntersectFunction (RTCIntersectFunc intersect, bool ispc);
       virtual void setIntersectFunction4 (RTCIntersectFunc4 intersect4, bool ispc);
       virtual void setIntersectFunction8 (RTCIntersectFunc8 intersect8, bool ispc);
@@ -50,6 +50,7 @@ namespace embree
       virtual void setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc);
       virtual void setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc);
       virtual void build(size_t threadIndex, size_t threadCount) {}
+
     public:
       void* ispcPtr;
       void* ispcIntersect1;
@@ -67,7 +68,7 @@ namespace embree
     public:
       Instance (Scene* parent, Accel* object); 
       virtual void setTransform(AffineSpace3f& local2world);
-      virtual void build(size_t threadIndex, size_t threadCount);
+      virtual void build(size_t threadIndex, size_t threadCount) {}
     
     public:
       AffineSpace3f local2world;
