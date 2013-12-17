@@ -44,22 +44,22 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -70,22 +70,22 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -173,7 +173,7 @@
       <AdditionalOptions>/Gs999999 %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -210,7 +210,7 @@
       <AdditionalOptions>/Gs999999 %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -246,7 +246,7 @@
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -284,7 +284,7 @@
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -320,7 +320,7 @@
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CONFIG_AVX;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -331,7 +331,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <InterproceduralOptimization>No</InterproceduralOptimization>
+      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -357,7 +357,7 @@
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CONFIG_AVX;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -368,7 +368,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <InterproceduralOptimization>No</InterproceduralOptimization>
+      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -393,7 +393,7 @@
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CONFIG_AVX2;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -404,7 +404,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <InterproceduralOptimization>No</InterproceduralOptimization>
+      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -430,7 +430,7 @@
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CONFIG_AVX2;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -441,7 +441,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <InterproceduralOptimization>No</InterproceduralOptimization>
+      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -457,19 +457,28 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="common\accel.h" />
-    <ClInclude Include="common\accel3.h" />
-    <ClInclude Include="common\alloc.h" />
-    <ClInclude Include="common\allocator.h" />
-    <ClInclude Include="common\atomic_set.h" />
-    <ClInclude Include="common\default.h" />
-    <ClInclude Include="common\primitive.h" />
-    <ClInclude Include="common\ray.h" />
-    <ClInclude Include="common\ray16.h" />
-    <ClInclude Include="common\ray4.h" />
-    <ClInclude Include="common\ray8.h" />
-    <ClInclude Include="common\stack_item.h" />
-    <ClInclude Include="common\stat.h" />
+    <ClInclude Include="..\common\accel.h" />
+    <ClInclude Include="..\common\accel3.h" />
+    <ClInclude Include="..\common\accelinstance.h" />
+    <ClInclude Include="..\common\accelset.h" />
+    <ClInclude Include="..\common\alloc.h" />
+    <ClInclude Include="..\common\allocator.h" />
+    <ClInclude Include="..\common\atomic_set.h" />
+    <ClInclude Include="..\common\builder.h" />
+    <ClInclude Include="..\common\buildsource.h" />
+    <ClInclude Include="..\common\default.h" />
+    <ClInclude Include="..\common\geometry.h" />
+    <ClInclude Include="..\common\primref.h" />
+    <ClInclude Include="..\common\ray.h" />
+    <ClInclude Include="..\common\ray16.h" />
+    <ClInclude Include="..\common\ray4.h" />
+    <ClInclude Include="..\common\ray8.h" />
+    <ClInclude Include="..\common\scene.h" />
+    <ClInclude Include="..\common\scene_quadratic_bezier_curves.h" />
+    <ClInclude Include="..\common\scene_triangle_mesh.h" />
+    <ClInclude Include="..\common\scene_user_geometry.h" />
+    <ClInclude Include="..\common\stack_item.h" />
+    <ClInclude Include="..\common\stat.h" />
     <ClInclude Include="bvh4\bvh4.h" />
     <ClInclude Include="bvh4\bvh4_builder.h" />
     <ClInclude Include="bvh4\bvh4_builder_binner.h" />
@@ -482,16 +491,15 @@
     <ClInclude Include="bvh4\bvh4_refit.h" />
     <ClInclude Include="bvh4\bvh4_rotate.h" />
     <ClInclude Include="bvh4\bvh4_statistics.h" />
+    <ClInclude Include="bvh4\twolevel_accel.h" />
+    <ClInclude Include="bvh4\virtual_accel.h" />
     <ClInclude Include="bvh4mb\bvh4mb.h" />
     <ClInclude Include="bvh4mb\bvh4mb_builder.h" />
     <ClInclude Include="bvh4mb\bvh4mb_intersector1.h" />
     <ClInclude Include="bvh4mb\bvh4mb_intersector4.h" />
-    <ClInclude Include="builders\build_source.h" />
-    <ClInclude Include="builders\builder.h" />
     <ClInclude Include="builders\heuristic_binning.h" />
     <ClInclude Include="builders\heuristic_spatial.h" />
     <ClInclude Include="builders\heuristics.h" />
-    <ClInclude Include="builders\primref.h" />
     <ClInclude Include="builders\primrefalloc.h" />
     <ClInclude Include="builders\primrefblock.h" />
     <ClInclude Include="builders\primrefgen.h" />
@@ -501,18 +509,11 @@
     <ClInclude Include="bvh4i\bvh4i.h" />
     <ClInclude Include="bvh4i\bvh4i_builder.h" />
     <ClInclude Include="bvh4i\bvh4i_builder_binner.h" />
+    <ClInclude Include="bvh4i\bvh4i_builder_util.h" />
     <ClInclude Include="bvh4i\bvh4i_intersector1.h" />
     <ClInclude Include="bvh4i\bvh4i_intersector4_chunk.h" />
     <ClInclude Include="bvh4i\bvh4i_rotate.h" />
     <ClInclude Include="bvh4i\bvh4i_statistics.h" />
-    <ClInclude Include="rtcore\geometry.h" />
-    <ClInclude Include="rtcore\ispc_wrapper_sse.h" />
-    <ClInclude Include="rtcore\scene.h" />
-    <ClInclude Include="rtcore\scene_quadratic_bezier_curves.h" />
-    <ClInclude Include="rtcore\scene_triangle_mesh.h" />
-    <ClInclude Include="rtcore\scene_user_geometry.h" />
-    <ClInclude Include="rtcore\twolevel_accel.h" />
-    <ClInclude Include="rtcore\virtual_accel.h" />
     <ClInclude Include="..\..\common\math\affinespace.h" />
     <ClInclude Include="..\..\common\math\bbox.h" />
     <ClInclude Include="..\..\common\math\col3.h" />
@@ -543,37 +544,27 @@
     <ClInclude Include="..\..\common\simd\ssei.h" />
     <ClInclude Include="geometry\instance_intersector1.h" />
     <ClInclude Include="geometry\instance_intersector4.h" />
+    <ClInclude Include="geometry\ispc_wrapper_sse.h" />
+    <ClInclude Include="geometry\primitive.h" />
     <ClInclude Include="geometry\triangle1.h" />
-    <ClInclude Include="geometry\triangle1_intersector16_moeller.h" />
     <ClInclude Include="geometry\triangle1_intersector1_moeller.h" />
     <ClInclude Include="geometry\triangle1_intersector4_moeller.h" />
-    <ClInclude Include="geometry\triangle1_intersector8_moeller.h" />
     <ClInclude Include="geometry\triangle1v.h" />
     <ClInclude Include="geometry\triangle1v_intersector1_moeller_mb.h" />
     <ClInclude Include="geometry\triangle1v_intersector1_pluecker.h" />
     <ClInclude Include="geometry\triangle1v_intersector4_moeller_mb.h" />
     <ClInclude Include="geometry\triangle1v_intersector4_pluecker.h" />
-    <ClInclude Include="geometry\triangle1v_intersector8_moeller_mb.h" />
-    <ClInclude Include="geometry\triangle1v_intersector8_pluecker.h" />
     <ClInclude Include="geometry\triangle4.h" />
     <ClInclude Include="geometry\triangle4_intersector1_moeller.h" />
     <ClInclude Include="geometry\triangle4_intersector4_moeller.h" />
-    <ClInclude Include="geometry\triangle4_intersector8_moeller.h" />
     <ClInclude Include="geometry\triangle4i.h" />
     <ClInclude Include="geometry\triangle4i_intersector1.h" />
     <ClInclude Include="geometry\triangle4i_intersector4.h" />
-    <ClInclude Include="geometry\triangle4i_intersector8.h" />
     <ClInclude Include="geometry\triangle4v.h" />
     <ClInclude Include="geometry\triangle4v_intersector1_pluecker.h" />
     <ClInclude Include="geometry\triangle4v_intersector4_pluecker.h" />
-    <ClInclude Include="geometry\triangle4v_intersector8_pluecker.h" />
-    <ClInclude Include="geometry\triangle8_intersector1_moeller.h" />
-    <ClInclude Include="geometry\triangle8_intersector4_moeller.h" />
-    <ClInclude Include="geometry\triangle8_intersector8_moeller.h" />
     <ClInclude Include="geometry\virtual_accel_intersector1.h" />
-    <ClInclude Include="geometry\virtual_accel_intersector16.h" />
     <ClInclude Include="geometry\virtual_accel_intersector4.h" />
-    <ClInclude Include="geometry\virtual_accel_intersector8.h" />
     <ClInclude Include="..\..\include\embree2\rtcore.h" />
     <ClInclude Include="..\..\include\embree2\rtcore_geometry.h" />
     <ClInclude Include="..\..\include\embree2\rtcore_geometry_user.h" />
@@ -581,29 +572,31 @@
     <ClInclude Include="..\..\include\embree2\rtcore_scene.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="common\accel3.cpp" />
-    <ClCompile Include="common\alloc.cpp" />
-    <ClCompile Include="common\stat.cpp" />
-    <ClCompile Include="common\tasksys.cpp" />
+    <ClCompile Include="..\common\accel3.cpp" />
+    <ClCompile Include="..\common\alloc.cpp" />
+    <ClCompile Include="..\common\geometry.cpp" />
+    <ClCompile Include="..\common\rtcore.cpp" />
+    <ClCompile Include="..\common\rtcore_ispc.cpp" />
+    <ClCompile Include="..\common\scene.cpp" />
+    <ClCompile Include="..\common\scene_quadratic_bezier_curves.cpp" />
+    <ClCompile Include="..\common\scene_triangle_mesh.cpp" />
+    <ClCompile Include="..\common\scene_user_geometry.cpp" />
+    <ClCompile Include="..\common\stat.cpp" />
+    <ClCompile Include="..\common\tasksys.cpp" />
     <ClCompile Include="bvh4\bvh4.cpp" />
     <ClCompile Include="bvh4\bvh4_builder.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_binner.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_fast.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_morton.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_toplevel.cpp" />
-    <ClCompile Include="bvh4\bvh4_intersector1.cpp">
-      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'">
-      </AssemblerOutput>
-      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|x64'">
-      </AssemblerOutput>
-      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </AssemblerOutput>
-    </ClCompile>
+    <ClCompile Include="bvh4\bvh4_intersector1.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector4_chunk.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector4_hybrid.cpp" />
     <ClCompile Include="bvh4\bvh4_refit.cpp" />
     <ClCompile Include="bvh4\bvh4_rotate.cpp" />
     <ClCompile Include="bvh4\bvh4_statistics.cpp" />
+    <ClCompile Include="bvh4\twolevel_accel.cpp" />
+    <ClCompile Include="bvh4\virtual_accel.cpp" />
     <ClCompile Include="bvh4mb\bvh4mb.cpp" />
     <ClCompile Include="bvh4mb\bvh4mb_builder.cpp" />
     <ClCompile Include="bvh4mb\bvh4mb_intersector1.cpp" />
@@ -621,27 +614,15 @@
     <ClCompile Include="bvh4i\bvh4i_intersector4_chunk.cpp" />
     <ClCompile Include="bvh4i\bvh4i_rotate.cpp" />
     <ClCompile Include="bvh4i\bvh4i_statistics.cpp" />
-    <ClCompile Include="rtcore\geometry.cpp" />
-    <ClCompile Include="rtcore\ispc_wrapper_sse.cpp" />
-    <ClCompile Include="rtcore\rtcore.cpp" />
-    <ClCompile Include="rtcore\rtcore_ispc.cpp" />
-    <ClCompile Include="rtcore\scene.cpp" />
-    <ClCompile Include="rtcore\scene_quadratic_bezier_curves.cpp" />
-    <ClCompile Include="rtcore\scene_triangle_mesh.cpp" />
-    <ClCompile Include="rtcore\scene_user_geometry.cpp" />
-    <ClCompile Include="rtcore\twolevel_accel.cpp" />
-    <ClCompile Include="rtcore\virtual_accel.cpp" />
     <ClCompile Include="..\..\common\simd\sse.cpp" />
     <ClCompile Include="geometry\instance_intersector1.cpp" />
     <ClCompile Include="geometry\instance_intersector4.cpp" />
+    <ClCompile Include="geometry\ispc_wrapper_sse.cpp" />
     <ClCompile Include="geometry\triangle1.cpp" />
     <ClCompile Include="geometry\triangle1v.cpp" />
     <ClCompile Include="geometry\triangle4.cpp" />
     <ClCompile Include="geometry\triangle4i.cpp" />
     <ClCompile Include="geometry\triangle4v.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ISPC Include="rtcore\rtcore_ispc.ispc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\include\embree2\rtcore.isph" />
@@ -660,6 +641,9 @@
       <Project>{ed858c9a-c161-4036-8df7-eb169bcb81bf}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ISPC Include="..\common\rtcore_ispc.ispc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
