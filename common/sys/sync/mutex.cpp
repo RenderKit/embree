@@ -23,15 +23,17 @@
 
 namespace embree
 {
-  //MutexSys::MutexSys( void ) { mutex = new CRITICAL_SECTION; InitializeCriticalSection((CRITICAL_SECTION*)mutex); }
-  //MutexSys::~MutexSys( void ) { DeleteCriticalSection((CRITICAL_SECTION*)mutex); delete (CRITICAL_SECTION*)mutex; }
-  //void MutexSys::lock( void ) { EnterCriticalSection((CRITICAL_SECTION*)mutex); }
-  //void MutexSys::unlock( void ) { LeaveCriticalSection((CRITICAL_SECTION*)mutex); }
-
-  MutexSys::MutexSys( void ) { mutex = (void*) CreateMutex(NULL,FALSE,NULL); }
+#if 1
+  MutexSys::MutexSys( void ) { mutex = new CRITICAL_SECTION; InitializeCriticalSection((CRITICAL_SECTION*)mutex); }
+  MutexSys::~MutexSys( void ) { DeleteCriticalSection((CRITICAL_SECTION*)mutex); delete (CRITICAL_SECTION*)mutex; }
+  void MutexSys::lock( void ) { EnterCriticalSection((CRITICAL_SECTION*)mutex); }
+  void MutexSys::unlock( void ) { LeaveCriticalSection((CRITICAL_SECTION*)mutex); }
+#else
+  MutexSys::MutexSys( void ) { mutex = (void*) CreateMutex(NULL,FALSE,NULL); } // Mutex is very slow under Windows
   MutexSys::~MutexSys( void ) { CloseHandle((HANDLE)mutex); }
   void MutexSys::lock( void ) { WaitForSingleObject((HANDLE)mutex,INFINITE); }
   void MutexSys::unlock( void ) { ReleaseMutex((HANDLE)mutex); }
+#endif
 }
 #endif
 
