@@ -211,14 +211,22 @@ namespace embree
 
       void print(size_t ident) 
       {
-        for (size_t i=0; i<ident; i++) std::cout << " ";
-        std::cout << "intersector1  = " << intersector1.name << std::endl;
-        for (size_t i=0; i<ident; i++) std::cout << " ";
-        std::cout << "intersector4  = " << intersector4.name << std::endl;
-        for (size_t i=0; i<ident; i++) std::cout << " ";
-        std::cout << "intersector8  = " << intersector8.name << std::endl;
-        for (size_t i=0; i<ident; i++) std::cout << " ";
-        std::cout << "intersector16 = " << intersector16.name << std::endl;
+        if (intersector1.name) {
+          for (size_t i=0; i<ident; i++) std::cout << " ";
+          std::cout << "intersector1  = " << intersector1.name << std::endl;
+        }
+        if (intersector4.name) {
+          for (size_t i=0; i<ident; i++) std::cout << " ";
+          std::cout << "intersector4  = " << intersector4.name << std::endl;
+        }
+        if (intersector8.name) {
+          for (size_t i=0; i<ident; i++) std::cout << " ";
+          std::cout << "intersector8  = " << intersector8.name << std::endl;
+        }
+        if (intersector16.name) {
+          for (size_t i=0; i<ident; i++) std::cout << " ";
+          std::cout << "intersector16 = " << intersector16.name << std::endl;
+        }
       }
 
     public:
