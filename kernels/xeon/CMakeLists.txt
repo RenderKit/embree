@@ -125,7 +125,6 @@ IF (TARGET_AVX)
 
    bvh4i/bvh4i_builder_fast.cpp
    bvh4i/bvh4i_builder_binner.cpp
-   bvh4i/bvh4i_builder_util.cpp
    bvh4i/bvh4i_builder_morton.cpp
    bvh4i/bvh4i_builder_morton_enhanced.cpp
 
