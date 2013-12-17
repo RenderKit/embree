@@ -27,30 +27,19 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../common/alloc.cpp 
   ../common/tasksys.cpp 
   ../common/accel3.cpp
-
   ../common/rtcore.cpp 
   ../common/rtcore_ispc.cpp 
   ../common/rtcore_ispc.ispc 
   ../common/scene.cpp
+  ../common/geometry.cpp
   ../common/scene_user_geometry.cpp
   ../common/scene_triangle_mesh.cpp
   ../common/scene_quadratic_bezier_curves.cpp
-  ../common/geometry.cpp
-  
-  ../xeon/builders/heuristic_binning.cpp
-  ../xeon/builders/heuristic_spatial.cpp
-  ../xeon/builders/splitter.cpp
-  ../xeon/builders/splitter_fallback.cpp
-  ../xeon/builders/splitter_parallel.cpp
-  ../xeon/builders/primrefgen.cpp
-  
-  geometry/instance_intersector1.cpp
-  geometry/instance_intersector16.cpp
   
   geometry/triangle1.cpp
   geometry/ispc_wrapper_knc.cpp
-
-  ../xeon/bvh4i/bvh4i_builder_util.cpp
+  geometry/instance_intersector1.cpp
+  geometry/instance_intersector16.cpp
 
   bvh4i/bvh4i.cpp
   bvh4i/bvh4i_builder.cpp
