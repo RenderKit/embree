@@ -1812,6 +1812,7 @@ namespace embree
     /* perform tests */
     rtcInit(g_rtcore.c_str());
 
+#if 1
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
     POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
@@ -1823,6 +1824,8 @@ namespace embree
     POSITIVE("static_scene",              rtcore_static_scene());
     POSITIVE("deformable_geometry",       rtcore_deformable_geometry());
     POSITIVE("unmapped_before_commit",    rtcore_unmapped_before_commit());
+#endif
+
     POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
     POSITIVE("update_deformable",         rtcore_update(RTC_GEOMETRY_DEFORMABLE));
     POSITIVE("update_dynamic",            rtcore_update(RTC_GEOMETRY_DYNAMIC));
