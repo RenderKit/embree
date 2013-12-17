@@ -213,8 +213,8 @@ namespace embree
 
 #if !defined(__MIC__)
     BVH4Register();
-#endif
     BVH4MBRegister();
+#endif
     BVH4iRegister();
     
 #if defined(__TARGET_AVX__)

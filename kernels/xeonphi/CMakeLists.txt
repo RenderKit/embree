@@ -48,10 +48,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   geometry/instance_intersector16.cpp
   
   geometry/triangle1.cpp
-  ../xeon/geometry/triangle4.cpp
-  ../xeon/geometry/triangle1v.cpp
-  ../xeon/geometry/triangle4v.cpp
-  ../xeon/geometry/triangle4i.cpp
   geometry/ispc_wrapper_knc.cpp
 
   ../xeon/bvh4i/bvh4i_builder_util.cpp
@@ -68,11 +64,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   bvh4i/bvh4i_intersector16_virtual.cpp
   bvh4i/bvh4i_intersector1.cpp
   bvh4i/bvh4i_statistics.cpp
-
-  ../xeon/bvh4mb/bvh4mb.cpp
-  ../xeon/bvh4mb/bvh4mb_builder.cpp
-  ../xeon/bvh4mb/bvh4mb_intersector1.cpp   
-  ../xeon/bvh4mb/bvh4mb_intersector4.cpp
 )
 
 TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi)
