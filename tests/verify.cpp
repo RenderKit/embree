@@ -1833,7 +1833,11 @@ namespace embree
     POSITIVE("update_dynamic",            rtcore_update(RTC_GEOMETRY_DYNAMIC));
     POSITIVE("overlapping_geometry",      rtcore_overlapping(100000));
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
+
     rtcore_ray_masks_all();
+
+#endif
+
     rtcore_backface_culling_all();
 
     rtcore_packet_write_test_all();
@@ -1866,7 +1870,6 @@ namespace embree
 #endif
     rtcore_inf("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
 
-#endif
 
     POSITIVE("regression_static",         rtcore_regression_static());
     POSITIVE("regression_dynamic",        rtcore_regression_dynamic());

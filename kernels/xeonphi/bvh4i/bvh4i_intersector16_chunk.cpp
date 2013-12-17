@@ -207,7 +207,7 @@ namespace embree
 
 	    /* ray masking test */
 #if defined(__USE_RAY_MASK__)
-	    valid &= (tri.mask() & ray.mask) != 0;
+	    valid &= (mic_i(tri.mask()) & ray.mask) != 0;
 #endif
 	    if (unlikely(none(valid))) continue;
         
@@ -346,6 +346,7 @@ namespace embree
 
         const mic3f org = ray.org;
         const mic3f dir = ray.dir;
+	const mic_f zero = mic_f::zero();
 
 	for (size_t i=0; i<items; i++) 
 	  {
@@ -396,7 +397,7 @@ namespace embree
 
 	    /* ray masking test */
 #if defined(__USE_RAY_MASK__)
-	    valid &= (tri.mask() & ray.mask) != 0;
+	    valid &= (mic_i(tri.mask()) & ray.mask) != 0;
 #endif
 	    if (unlikely(none(valid))) continue;
 	    

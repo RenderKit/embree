@@ -32,8 +32,6 @@ namespace embree
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node_single[3*BVH4i::maxDepth+1]; // FIXME: remove but need unaligned stores
 
-      if (unlikely(bvh == NULL)) return;
-
       /* load ray */
       const mic_m valid0     = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir16     = rcp_safe(ray16.dir);
@@ -194,6 +192,7 @@ namespace embree
 
 
 		    /* intersect one ray against four triangles */
+		    const mic_f zero = mic_f::zero();
 
 		    const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel);
 		    prefetch<PFHINT_L1>(tptr + 3);
@@ -544,8 +543,6 @@ namespace embree
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node_single[3*BVH4i::maxDepth+1];
 
-      if (unlikely(bvh == NULL)) return;
-
       /* load ray */
       const mic_m m_valid     = *(mic_i*)valid_i != mic_i(0);
       mic_m m_terminated      = !m_valid;
@@ -698,6 +695,7 @@ namespace embree
 		    /* return if stack is empty */
 		    if (unlikely(curNode == BVH4i::invalidNode)) break;
 
+		    const mic_f zero = mic_f::zero();
 
 		    /* intersect one ray against four triangles */
 
@@ -924,7 +922,7 @@ namespace embree
 
 	    /* ray masking test */
 #if defined(__USE_RAY_MASK__)
-	    valid &= (tri.mask() & ray.mask) != 0;
+	    valid &= (tri.mask() & ray16.mask) != 0;
 #endif
 	    if (unlikely(none(valid))) continue;
 
