@@ -23,11 +23,10 @@ ADD_DEFINITIONS(-D__TARGET_XEON_PHI__)
 
 ADD_ISPC_LIBRARY(embree_xeonphi SHARED
 
-  ../xeon/common/stat.cpp 
-  ../xeon/common/alloc.cpp 
-
-  ../xeon/common/tasksys.cpp 
-  ../xeon/common/accel3.cpp
+  ../common/stat.cpp 
+  ../common/alloc.cpp 
+  ../common/tasksys.cpp 
+  ../common/accel3.cpp
 
   ../xeon/rtcore/rtcore.cpp 
   ../xeon/rtcore/rtcore_ispc.cpp 

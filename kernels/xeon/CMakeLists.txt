@@ -29,11 +29,11 @@ IF (TARGET_AVX2)
 ENDIF()
 
 ADD_ISPC_LIBRARY(embree SHARED   
-  common/stat.cpp 
-  common/alloc.cpp 
 
-  common/tasksys.cpp 
-  common/accel3.cpp
+  ../common/stat.cpp 
+  ../common/alloc.cpp 
+  ../common/tasksys.cpp 
+  ../common/accel3.cpp
 
   rtcore/rtcore.cpp 
   rtcore/rtcore_ispc.cpp 

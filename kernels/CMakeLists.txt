@@ -14,6 +14,8 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+
 ADD_SUBDIRECTORY(xeon)
 
 IF (TARGET_XEON_PHI)

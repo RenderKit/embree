@@ -17,8 +17,8 @@
 #ifndef __EMBREE_ACCEL_PRIMITIVE_H__
 #define __EMBREE_ACCEL_PRIMITIVE_H__
 
-#include "../common/default.h"
-#include "../builders/primrefblock.h"
+#include "common/default.h"
+#include "builders/primrefblock.h"
 
 namespace embree
 {
