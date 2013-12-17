@@ -799,10 +799,67 @@
 				RelativePath="..\common\rtcore_ispc.ispc"
 				>
 				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="ISPC"
+						TargetISA="7"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="ISPC"
+						TargetISA="7"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="ISPC"
+						TargetISA="7"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="ISPC"
+						TargetISA="7"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="ReleaseAVX|Win32"
+					>
+					<Tool
+						Name="ISPC"
+						TargetISA="7"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="ReleaseAVX|x64"
+					>
+					<Tool
+						Name="ISPC"
+						TargetISA="7"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="ReleaseAVX2|Win32"
+					>
+					<Tool
+						Name="ISPC"
+						TargetISA="7"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="ReleaseAVX2|x64"
 					>
 					<Tool
 						Name="ISPC"
+						TargetISA="7"
 					/>
 				</FileConfiguration>
 			</File>
