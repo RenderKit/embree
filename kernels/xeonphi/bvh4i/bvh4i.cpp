@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "kernels/xeonphi/bvh4i/bvh4i.h"
+#include "bvh4i.h"
 
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"

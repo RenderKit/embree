@@ -17,10 +17,10 @@
 #ifndef __EMBREE_BVHI_BUILDER_MIC_H__
 #define __EMBREE_BVHI_BUILDER_MIC_H__
 
-#include "kernels/xeonphi/bvh4i/bvh4i.h"
-#include "kernels/xeonphi/bvh4i/bvh4i_builder_binner.h"
-#include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
-#include "kernels/xeon/bvh4i/bvh4i_builder_util.h"
+#include "bvh4i/bvh4i.h"
+#include "bvh4i/bvh4i_builder_binner.h"
+#include "bvh4i/bvh4i_builder_util_mic.h"
+#include "bvh4i/bvh4i_builder_util.h"
 
 #define BVH_NODE_PREALLOC_FACTOR                 1.15f
 

@@ -14,9 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "kernels/xeonphi/bvh4i/bvh4i.h"
-#include "kernels/xeonphi/bvh4i/bvh4i_builder.h"
-#include "kernels/xeonphi/bvh4i/bvh4i_builder_util_mic.h"
+#include "bvh4i/bvh4i.h"
+#include "bvh4i/bvh4i_builder.h"
+#include "bvh4i/bvh4i_builder_util_mic.h"
 
 #define PRESPLIT_SPACE_FACTOR         0.45f
 #define PRESPLIT_AREA_THRESHOLD      20.0f
