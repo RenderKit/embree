@@ -17,7 +17,7 @@
 #ifndef __EMBREE_PRIMREFGENBIN_H__
 #define __EMBREE_PRIMREFGENBIN_H__
 
-#include "build_source.h"
+#include "common/buildsource.h"
 #include "primrefalloc.h"
 #include "primrefblock.h"
 

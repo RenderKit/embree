@@ -17,7 +17,7 @@
 #ifndef __EMBREE_HEURISTICS_H__
 #define __EMBREE_HEURISTICS_H__
 
-#include "primref.h"
+#include "common/primref.h"
 #include "primrefblock.h"
 
 #include "heuristic_binning.h"

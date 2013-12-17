@@ -18,7 +18,7 @@
 #define __EMBREE_ACCEL_H__
 
 #include "common/default.h"
-#include "xeon/builders/builder.h" // FIXME: do not include on xeonphi
+#include "common/builder.h"
 
 namespace embree
 {

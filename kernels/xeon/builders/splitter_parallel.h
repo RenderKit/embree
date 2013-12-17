@@ -18,7 +18,7 @@
 #define __EMBREE_SPLITTER_PARALLEL_H__
 
 #include "sys/taskscheduler.h"
-#include "build_source.h"
+#include "common/buildsource.h"
 #include "primrefalloc.h"
 #include "primrefblock.h"
 

@@ -17,7 +17,7 @@
 #ifndef BVH4I_BUILDER_UTIL_H
 #define BVH4I_BUILDER_UTIL_H
 
-#include "builders/primref.h"
+#include "common/primref.h"
 #include "geometry/triangle1.h"
 
 namespace embree

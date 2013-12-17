@@ -17,8 +17,8 @@
 #ifndef __EMBREE_HEURISTIC_SPATIAL_H__
 #define __EMBREE_HEURISTIC_SPATIAL_H__
 
-#include "build_source.h"
-#include "primref.h"
+#include "common/buildsource.h"
+#include "common/primref.h"
 
 namespace embree
 {

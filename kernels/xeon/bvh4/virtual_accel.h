@@ -19,7 +19,7 @@
 
 #include "embree2/rtcore.h"
 #include "common/accel.h"
-#include "builders/build_source.h"
+#include "common/buildsource.h"
 #include "geometry/primitive.h"
 
 namespace embree

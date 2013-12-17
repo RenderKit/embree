@@ -25,7 +25,7 @@
 
 #include "common/accel3.h"
 #include "geometry.h"
-#include "xeon/builders/build_source.h"
+#include "common/buildsource.h"
 
 namespace embree
 {

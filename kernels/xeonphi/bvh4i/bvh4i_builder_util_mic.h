@@ -18,7 +18,7 @@
 #define BVH4I_BUILDER_UTIL_MIC_H
 
 #include "bvh4i.h"
-#include "xeon/builders/primref.h"
+#include "common/primref.h"
 #include "geometry/triangle1.h"
 
 namespace embree

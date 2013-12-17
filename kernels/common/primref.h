@@ -17,7 +17,7 @@
 #ifndef __EMBREE_PRIM_REF_H__
 #define __EMBREE_PRIM_REF_H__
 
-#include "../common/default.h"
+#include "common/default.h"
 
 namespace embree
 {

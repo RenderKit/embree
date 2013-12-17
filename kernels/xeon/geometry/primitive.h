@@ -18,7 +18,7 @@
 #define __EMBREE_ACCEL_PRIMITIVE_H__
 
 #include "common/default.h"
-#include "xeon/builders/primrefblock.h"
+#include "builders/primrefblock.h"
 
 namespace embree
 {
