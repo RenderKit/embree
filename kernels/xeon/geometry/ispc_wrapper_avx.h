@@ -17,7 +17,7 @@
 #ifndef __EMBREE_ISPC_WRAPPER_AVX_H__
 #define __EMBREE_ISPC_WRAPPER_AVX_H__
 
-#include "rtcore/scene_user_geometry.h"
+#include "common/scene_user_geometry.h"
 
 namespace embree
 {
