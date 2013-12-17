@@ -1827,6 +1827,7 @@ namespace embree
     POSITIVE("static_scene",              rtcore_static_scene());
     POSITIVE("deformable_geometry",       rtcore_deformable_geometry());
     POSITIVE("unmapped_before_commit",    rtcore_unmapped_before_commit());
+#endif
 
     POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
     POSITIVE("update_deformable",         rtcore_update(RTC_GEOMETRY_DEFORMABLE));
@@ -1835,7 +1836,6 @@ namespace embree
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
     rtcore_ray_masks_all();
     rtcore_backface_culling_all();
-#endif
 
     rtcore_packet_write_test_all();
 

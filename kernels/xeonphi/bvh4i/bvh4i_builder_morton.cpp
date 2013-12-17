@@ -217,7 +217,7 @@ namespace embree
 	      bvh->qbvh[1].setInvalid(i);
 	    bvh->qbvh[0].lower[0].child = BVH4i::NodeRef(128);
 	    bvh->root = bvh->qbvh[0].lower[0].child; 
-	    bvh->bounds = BBox3f(*(Vec3fa*)&bvh->qbvh->lower[0],*(Vec3fa*)&bvh->qbvh->upper[0]);	    
+	    bvh->bounds = empty;
 	  }
       }
 

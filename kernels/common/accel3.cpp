@@ -139,7 +139,7 @@ namespace embree
 
     size_t num = has_accel0 + has_accel1 + has_accel2;
         
-    if (num <= 1) /* all three could be empty */
+    if (num == 1)
     {
       if (has_accel0)
         intersectors = accel0->intersectors;
