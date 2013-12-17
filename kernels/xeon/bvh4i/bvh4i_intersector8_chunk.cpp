@@ -283,11 +283,5 @@ namespace embree
     DEFINE_INTERSECTOR8(BVH4iTriangle1vIntersector8ChunkPluecker, BVH4iIntersector8Chunk<Triangle1vIntersector8Pluecker>);
     DEFINE_INTERSECTOR8(BVH4iTriangle4vIntersector8ChunkPluecker, BVH4iIntersector8Chunk<Triangle4vIntersector8Pluecker>);
     DEFINE_INTERSECTOR8(BVH4iVirtualIntersector8Chunk, BVH4iIntersector8Chunk<VirtualAccelIntersector8>);
-
-    DEFINE_INTERSECTOR8TO16(BVH4iTriangle1Intersector16ChunkMoeller,BVH4iIntersector8Chunk<Triangle1Intersector8MoellerTrumbore>,BVH4i);
-    DEFINE_INTERSECTOR8TO16(BVH4iTriangle4Intersector16ChunkMoeller,BVH4iIntersector8Chunk<Triangle4Intersector8MoellerTrumbore>,BVH4i);
-    DEFINE_INTERSECTOR8TO16(BVH4iTriangle1vIntersector16ChunkPluecker,BVH4iIntersector8Chunk<Triangle1vIntersector8Pluecker>,BVH4i);
-    DEFINE_INTERSECTOR8TO16(BVH4iTriangle4vIntersector16ChunkPluecker,BVH4iIntersector8Chunk<Triangle4vIntersector8Pluecker>,BVH4i);
-    DEFINE_INTERSECTOR8TO16(BVH4iVirtualIntersector16Chunk,BVH4iIntersector8Chunk<VirtualAccelIntersector8>,BVH4i);
   }
 }

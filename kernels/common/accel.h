@@ -124,25 +124,10 @@ namespace embree
                              (OccludedFunc4)intersector::occluded,   \
                              TOSTRING(isa) "::" TOSTRING(symbol));
 
-#define DEFINE_INTERSECTOR4TO8(symbol,intersector,BVH)                  \
-  Accel::Intersector8 symbol((IntersectFunc8)Intersector4To8<BVH,intersector >::intersect8, \
-                             (OccludedFunc8 )Intersector4To8<BVH,intersector >::occluded8, \
-                             TOSTRING(isa) "::" TOSTRING(symbol));
-
-#define DEFINE_INTERSECTOR4TO16(symbol,intersector,BVH)                 \
-  Accel::Intersector16 symbol((IntersectFunc16)Intersector4To16<BVH,intersector >::intersect16, \
-                              (OccludedFunc16 )Intersector4To16<BVH,intersector >::occluded16, \
-                              TOSTRING(isa) "::" TOSTRING(symbol));
-
 #define DEFINE_INTERSECTOR8(symbol,intersector)                         \
   Accel::Intersector8 symbol((IntersectFunc8)intersector::intersect, \
                              (OccludedFunc8)intersector::occluded,   \
                              TOSTRING(isa) "::" TOSTRING(symbol));
-
-#define DEFINE_INTERSECTOR8TO16(symbol,intersector,BVH)                 \
-  Accel::Intersector16 symbol((IntersectFunc16)Intersector8To16<BVH,intersector >::intersect16, \
-                              (OccludedFunc16 )Intersector8To16<BVH,intersector >::occluded16, \
-                              TOSTRING(isa) "::" TOSTRING(symbol));
 
 #define DEFINE_INTERSECTOR16(symbol,intersector)                         \
   Accel::Intersector16 symbol((IntersectFunc16)intersector::intersect, \

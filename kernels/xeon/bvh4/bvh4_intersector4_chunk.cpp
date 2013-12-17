@@ -307,21 +307,5 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<Triangle4vIntersector4Pluecker>);
     DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<Triangle4iIntersector4Pluecker>);
     DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4Intersector4Chunk<VirtualAccelIntersector4>);
-
-#if !defined(__AVX__)
-    DEFINE_INTERSECTOR4TO8(BVH4Triangle1Intersector8ChunkMoeller, BVH4Intersector4Chunk<Triangle1Intersector4MoellerTrumbore>,BVH4);
-    DEFINE_INTERSECTOR4TO8(BVH4Triangle4Intersector8ChunkMoeller, BVH4Intersector4Chunk<Triangle4Intersector4MoellerTrumbore>,BVH4);
-    DEFINE_INTERSECTOR4TO8(BVH4Triangle1vIntersector8ChunkPluecker, BVH4Intersector4Chunk<Triangle1vIntersector4Pluecker>,BVH4);
-    DEFINE_INTERSECTOR4TO8(BVH4Triangle4vIntersector8ChunkPluecker, BVH4Intersector4Chunk<Triangle4vIntersector4Pluecker>,BVH4);
-    DEFINE_INTERSECTOR4TO8(BVH4Triangle4iIntersector8ChunkPluecker, BVH4Intersector4Chunk<Triangle4iIntersector4Pluecker>,BVH4);
-    DEFINE_INTERSECTOR4TO8(BVH4VirtualIntersector8Chunk, BVH4Intersector4Chunk<VirtualAccelIntersector4To8>,BVH4);
-
-    DEFINE_INTERSECTOR4TO16(BVH4Triangle1Intersector16ChunkMoeller,BVH4Intersector4Chunk<Triangle1Intersector4MoellerTrumbore>,BVH4);
-    DEFINE_INTERSECTOR4TO16(BVH4Triangle4Intersector16ChunkMoeller,BVH4Intersector4Chunk<Triangle4Intersector4MoellerTrumbore>,BVH4);
-    DEFINE_INTERSECTOR4TO16(BVH4Triangle1vIntersector16ChunkPluecker,BVH4Intersector4Chunk<Triangle1vIntersector4Pluecker>,BVH4);
-    DEFINE_INTERSECTOR4TO16(BVH4Triangle4vIntersector16ChunkPluecker,BVH4Intersector4Chunk<Triangle4vIntersector4Pluecker>,BVH4);
-    DEFINE_INTERSECTOR4TO16(BVH4Triangle4iIntersector16ChunkPluecker,BVH4Intersector4Chunk<Triangle4iIntersector4Pluecker>,BVH4);
-    DEFINE_INTERSECTOR4TO16(BVH4VirtualIntersector16Chunk,BVH4Intersector4Chunk<VirtualAccelIntersector4To16>,BVH4);
-#endif
   }
 }

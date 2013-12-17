@@ -23,7 +23,6 @@ namespace embree
   DECLARE_INTERSECTOR1(BVH4MBTriangle1vIntersector1Moeller);
   DECLARE_INTERSECTOR4(BVH4MBTriangle1vIntersector4ChunkMoeller);
   DECLARE_INTERSECTOR8(BVH4MBTriangle1vIntersector8ChunkMoeller);
-  DECLARE_INTERSECTOR16(BVH4MBTriangle1vIntersector16ChunkMoeller);
 
   Builder* BVH4MBBuilderObjectSplit1 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
   Builder* BVH4MBBuilderObjectSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
@@ -34,8 +33,7 @@ namespace embree
 
     SELECT_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector1Moeller);
     SELECT_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector4ChunkMoeller);
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector8ChunkMoeller);
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector16ChunkMoeller);
+    SELECT_AVX_AVX2(features,BVH4MBTriangle1vIntersector8ChunkMoeller);
   }
 
   Accel* BVH4MB::BVH4MBTriangle1v(Scene* scene)
@@ -52,7 +50,7 @@ namespace embree
     intersectors.intersector1 = BVH4MBTriangle1vIntersector1Moeller;
     intersectors.intersector4 = BVH4MBTriangle1vIntersector4ChunkMoeller;
     intersectors.intersector8 = BVH4MBTriangle1vIntersector8ChunkMoeller;
-    intersectors.intersector16 = BVH4MBTriangle1vIntersector16ChunkMoeller;
+    intersectors.intersector16 = NULL;
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -67,7 +65,7 @@ namespace embree
     intersectors.intersector1 = BVH4MBTriangle1vIntersector1Moeller;
     intersectors.intersector4 = BVH4MBTriangle1vIntersector4ChunkMoeller;
     intersectors.intersector8 = BVH4MBTriangle1vIntersector8ChunkMoeller;
-    intersectors.intersector16 = BVH4MBTriangle1vIntersector16ChunkMoeller;
+    intersectors.intersector16 = NULL;
 
     return new AccelInstance(accel,builder,intersectors);
   }  

@@ -31,7 +31,6 @@ namespace embree
   extern Accel::Intersector1 BVH4iVirtualIntersector1;
   extern Accel::Intersector4 BVH4iVirtualIntersector4Chunk;
   extern Accel::Intersector8 BVH4iVirtualIntersector8Chunk;
-  extern Accel::Intersector16 BVH4iVirtualIntersector16Chunk;
 
   Builder* BVH4BuilderObjectSplit1 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
 
@@ -44,7 +43,7 @@ namespace embree
       intersectors.intersector1 = BVH4VirtualIntersector1;
       intersectors.intersector4 = BVH4VirtualIntersector4Chunk;
       intersectors.intersector8 = BVH4VirtualIntersector8Chunk;
-      intersectors.intersector16 = BVH4VirtualIntersector16Chunk;
+      intersectors.intersector16 = NULL;
       builder = BVH4BuilderObjectSplit1(accel,&source,&accels,1,1);
     }
     else

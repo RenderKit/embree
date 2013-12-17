@@ -253,16 +253,5 @@ namespace embree
     }
     
     DEFINE_INTERSECTOR4(BVH4MBTriangle1vIntersector4ChunkMoeller, BVH4MBIntersector4Chunk<Triangle1vIntersector4MoellerTrumboreMB>);
-    //DEFINE_INTERSECTOR4(BVH4MBTriangle4vIntersector4ChunkMoeller, BVH4MBIntersector4Chunk<Triangle4vIntersector4MoellerTrumboreMB>);
-
-#if !defined(__AVX__)
-    DEFINE_INTERSECTOR4TO8(BVH4MBTriangle1vIntersector8ChunkMoeller, BVH4MBIntersector4Chunk<Triangle1vIntersector4MoellerTrumboreMB>,BVH4MB);
-    //DEFINE_INTERSECTOR4TO8(BVH4MBTriangle4vIntersector8ChunkMoeller, BVH4MBIntersector4Chunk<Triangle4vIntersector4MoellerTrumboreMB>,BVH4MB);
-#endif
-
-#if !defined(__AVX__)
-    DEFINE_INTERSECTOR4TO16(BVH4MBTriangle1vIntersector16ChunkMoeller,BVH4MBIntersector4Chunk<Triangle1vIntersector4MoellerTrumboreMB>,BVH4MB);
-    //DEFINE_INTERSECTOR4TO16(BVH4MBTriangle4vIntersector16ChunkMoeller,BVH4MBIntersector4Chunk<Triangle4vIntersector4MoellerTrumboreMB>,BVH4MB);
-#endif
   }
 }

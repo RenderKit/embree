@@ -55,17 +55,6 @@ namespace embree
   DECLARE_INTERSECTOR8(BVH4Triangle4iIntersector8ChunkPluecker);
   DECLARE_INTERSECTOR8(BVH4VirtualIntersector8Chunk);
 
-  DECLARE_INTERSECTOR16(BVH4Triangle1Intersector16ChunkMoeller);
-  DECLARE_INTERSECTOR16(BVH4Triangle4Intersector16ChunkMoeller);
-  DECLARE_INTERSECTOR16(BVH4Triangle8Intersector16ChunkMoeller);
-  DECLARE_INTERSECTOR16(BVH4Triangle4Intersector16HybridMoeller);
-  DECLARE_INTERSECTOR16(BVH4Triangle8Intersector16HybridMoeller);
-  DECLARE_INTERSECTOR16(BVH4Triangle1vIntersector16ChunkPluecker);
-  DECLARE_INTERSECTOR16(BVH4Triangle4vIntersector16ChunkPluecker);
-  DECLARE_INTERSECTOR16(BVH4Triangle4vIntersector16HybridPluecker);
-  DECLARE_INTERSECTOR16(BVH4Triangle4iIntersector16ChunkPluecker);
-  DECLARE_INTERSECTOR16(BVH4VirtualIntersector16Chunk);
-
   DECLARE_TOPLEVEL_BUILDER(BVH4BuilderTopLevelFast);
 
   DECLARE_BUILDER(BVH4BuilderObjectSplit4Fast);
@@ -119,28 +108,16 @@ namespace embree
     SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector4Chunk);
 
     /* select intersectors8 */
-    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle1Intersector8ChunkMoeller);
-    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector8ChunkMoeller);
-    SELECT_AVX_AVX2              (features,BVH4Triangle8Intersector8ChunkMoeller);
-    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector8HybridMoeller);
-    SELECT_AVX_AVX2              (features,BVH4Triangle8Intersector8HybridMoeller);
-    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle1vIntersector8ChunkPluecker);
-    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector8ChunkPluecker);
-    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector8HybridPluecker);
-    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4iIntersector8ChunkPluecker);
-    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector8Chunk);
-
-    /* select intersectors16 */
-    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle1Intersector16ChunkMoeller);
-    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector16ChunkMoeller);
-    SELECT_AVX_AVX2              (features,BVH4Triangle8Intersector16ChunkMoeller);
-    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector16HybridMoeller);
-    SELECT_AVX_AVX2              (features,BVH4Triangle8Intersector16HybridMoeller);
-    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle1vIntersector16ChunkPluecker);
-    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector16ChunkPluecker);
-    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector16HybridPluecker);
-    SELECT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4iIntersector16ChunkPluecker);
-    SELECT_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector16Chunk);
+    SELECT_AVX_AVX2(features,BVH4Triangle1Intersector8ChunkMoeller);
+    SELECT_AVX_AVX2(features,BVH4Triangle4Intersector8ChunkMoeller);
+    SELECT_AVX_AVX2(features,BVH4Triangle8Intersector8ChunkMoeller);
+    SELECT_AVX_AVX2(features,BVH4Triangle4Intersector8HybridMoeller);
+    SELECT_AVX_AVX2(features,BVH4Triangle8Intersector8HybridMoeller);
+    SELECT_AVX     (features,BVH4Triangle1vIntersector8ChunkPluecker);
+    SELECT_AVX     (features,BVH4Triangle4vIntersector8ChunkPluecker);
+    SELECT_AVX     (features,BVH4Triangle4vIntersector8HybridPluecker);
+    SELECT_AVX     (features,BVH4Triangle4iIntersector8ChunkPluecker);
+    SELECT_AVX_AVX2(features,BVH4VirtualIntersector8Chunk);
   }
 
   BVH4::BVH4 (const PrimitiveType& primTy, void* geometry)
@@ -161,7 +138,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle1Intersector1Moeller;
     intersectors.intersector4 = BVH4Triangle1Intersector4ChunkMoeller;
     intersectors.intersector8 = BVH4Triangle1Intersector8ChunkMoeller;
-    intersectors.intersector16 = BVH4Triangle1Intersector16ChunkMoeller;
+    intersectors.intersector16 = NULL;
     return intersectors;
   }
 
@@ -172,7 +149,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle4Intersector1Moeller;
     intersectors.intersector4 = BVH4Triangle4Intersector4ChunkMoeller;
     intersectors.intersector8 = BVH4Triangle4Intersector8ChunkMoeller;
-    intersectors.intersector16 = BVH4Triangle4Intersector16ChunkMoeller;
+    intersectors.intersector16 = NULL;
     return intersectors;
   }
 
@@ -183,7 +160,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle4Intersector1Moeller;
     intersectors.intersector4 = BVH4Triangle4Intersector4HybridMoeller;
     intersectors.intersector8 = BVH4Triangle4Intersector8HybridMoeller;
-    intersectors.intersector16 = BVH4Triangle4Intersector16HybridMoeller;
+    intersectors.intersector16 = NULL;
     return intersectors;
   }
 
@@ -194,7 +171,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle8Intersector1Moeller;
     intersectors.intersector4 = BVH4Triangle8Intersector4ChunkMoeller;
     intersectors.intersector8 = BVH4Triangle8Intersector8ChunkMoeller;
-    intersectors.intersector16 = BVH4Triangle8Intersector16ChunkMoeller;
+    intersectors.intersector16 = NULL;
     return intersectors;
   }
 
@@ -205,7 +182,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle8Intersector1Moeller;
     intersectors.intersector4 = BVH4Triangle8Intersector4HybridMoeller;
     intersectors.intersector8 = BVH4Triangle8Intersector8HybridMoeller;
-    intersectors.intersector16 = BVH4Triangle8Intersector16HybridMoeller;
+    intersectors.intersector16 = NULL;
     return intersectors;
   }
 
@@ -216,7 +193,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle1vIntersector1Pluecker;
     intersectors.intersector4 = BVH4Triangle1vIntersector4ChunkPluecker;
     intersectors.intersector8 = BVH4Triangle1vIntersector8ChunkPluecker;
-    intersectors.intersector16 = BVH4Triangle1vIntersector16ChunkPluecker;
+    intersectors.intersector16 = NULL;
     return intersectors;
   }
 
@@ -227,7 +204,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle4vIntersector1Pluecker;
     intersectors.intersector4 = BVH4Triangle4vIntersector4ChunkPluecker;
     intersectors.intersector8 = BVH4Triangle4vIntersector8ChunkPluecker;
-    intersectors.intersector16 = BVH4Triangle4vIntersector16ChunkPluecker;
+    intersectors.intersector16 = NULL;
     return intersectors;
   }
 
@@ -238,7 +215,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle4vIntersector1Pluecker;
     intersectors.intersector4 = BVH4Triangle4vIntersector4HybridPluecker;
     intersectors.intersector8 = BVH4Triangle4vIntersector8HybridPluecker;
-    intersectors.intersector16 = BVH4Triangle4vIntersector16HybridPluecker;
+    intersectors.intersector16 = NULL;
     return intersectors;
   }
 
@@ -249,7 +226,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle4iIntersector1Pluecker;
     intersectors.intersector4 = BVH4Triangle4iIntersector4ChunkPluecker;
     intersectors.intersector8 = BVH4Triangle4iIntersector8ChunkPluecker;
-    intersectors.intersector16 = BVH4Triangle4iIntersector16ChunkPluecker;
+    intersectors.intersector16 = NULL;
     return intersectors;
   }
 

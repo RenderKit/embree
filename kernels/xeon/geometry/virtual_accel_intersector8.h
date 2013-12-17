@@ -55,48 +55,6 @@ namespace embree
       return terminated;
     }
   };
-
-  struct VirtualAccelIntersector8To16
-  {
-    typedef AccelSetItem Primitive;
-
-    static __forceinline void intersect(const avxb& valid_i, Ray8& ray, const Primitive& prim, const void* geom) 
-    {
-      AVX_ZERO_UPPER();
-      __align(64) Ray8x<2> ray16;
-      ray16.set(0,ray);
-      __align(64) avxb valid_i16[2] = { valid_i, false };
-      prim.accel->intersect16(valid_i16,(RTCRay16&)ray16,prim.item);
-      ray16.get(0,ray);
-    }
-
-    static __forceinline void intersect(const avxb& valid, Ray8& ray, const Primitive* tri, size_t num, const void* geom)
-    {
-      for (size_t i=0; i<num; i++)
-        intersect(valid,ray,tri[i],geom);
-    }
-
-    static __forceinline avxb occluded(const avxb& valid_i, Ray8& ray, const Primitive& prim, const void* geom) 
-    {
-      AVX_ZERO_UPPER();
-      __align(64) Ray8x<2> ray16;
-      ray16.set(0,ray);
-      __align(64) avxb valid_i16[2] = { valid_i, false };
-      prim.accel->occluded16(valid_i16,(RTCRay16&)ray16,prim.item);
-      ray16.get(0,ray);
-      return ray.geomID == 0;
-    }
-
-    static __forceinline avxb occluded(const avxb& valid, Ray8& ray, const Primitive* tri, size_t num, void* geom)
-    {
-      avxb terminated = !valid;
-      for (size_t i=0; i<num; i++) {
-        terminated |= occluded(!terminated,ray,tri[i],geom);
-        if (all(terminated)) return terminated;
-      }
-      return terminated;
-    }
-  };
 }
 
 #endif

@@ -594,13 +594,5 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoeller, BVH4Intersector4Hybrid<Triangle8Intersector4MoellerTrumbore>);
 #endif
     DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4HybridPluecker, BVH4Intersector4Hybrid<Triangle4vIntersector4Pluecker>);
-
-#if !defined(__AVX__)
-    DEFINE_INTERSECTOR4TO8(BVH4Triangle4Intersector8HybridMoeller, BVH4Intersector4Hybrid<Triangle4Intersector4MoellerTrumbore>,BVH4);
-    DEFINE_INTERSECTOR4TO8(BVH4Triangle4vIntersector8HybridPluecker, BVH4Intersector4Hybrid<Triangle4vIntersector4Pluecker>,BVH4);
-
-    DEFINE_INTERSECTOR4TO16(BVH4Triangle4Intersector16HybridMoeller, BVH4Intersector4Hybrid<Triangle4Intersector4MoellerTrumbore>,BVH4);
-    DEFINE_INTERSECTOR4TO16(BVH4Triangle4vIntersector16HybridPluecker, BVH4Intersector4Hybrid<Triangle4vIntersector4Pluecker>,BVH4);
-#endif
   }
 }
