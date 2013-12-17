@@ -180,17 +180,10 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-#if !defined(__MIC__)
     intersectors.intersector1 = BVH4Triangle4Intersector1Moeller;
     intersectors.intersector4 = BVH4Triangle4Intersector4HybridMoeller;
     intersectors.intersector8 = BVH4Triangle4Intersector8HybridMoeller;
     intersectors.intersector16 = BVH4Triangle4Intersector16HybridMoeller;
-#else
-    intersectors.intersector1 = BVH4Triangle4Intersector1Moeller;
-    intersectors.intersector4 = BVH4Triangle4Intersector4ChunkMoeller;
-    intersectors.intersector8 = BVH4Triangle4Intersector8ChunkMoeller;
-    intersectors.intersector16 = BVH4Triangle4Intersector16ChunkMoeller;
-#endif
     return intersectors;
   }
 
@@ -209,17 +202,10 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-#if !defined(__MIC__)
     intersectors.intersector1 = BVH4Triangle8Intersector1Moeller;
     intersectors.intersector4 = BVH4Triangle8Intersector4HybridMoeller;
     intersectors.intersector8 = BVH4Triangle8Intersector8HybridMoeller;
     intersectors.intersector16 = BVH4Triangle8Intersector16HybridMoeller;
-#else
-    intersectors.intersector1 = BVH4Triangle8Intersector1Moeller;
-    intersectors.intersector4 = BVH4Triangle8Intersector4ChunkMoeller;
-    intersectors.intersector8 = BVH4Triangle8Intersector8ChunkMoeller;
-    intersectors.intersector16 = BVH4Triangle8Intersector16ChunkMoeller;
-#endif
     return intersectors;
   }
 
@@ -249,17 +235,10 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-#if !defined(__MIC__)
     intersectors.intersector1 = BVH4Triangle4vIntersector1Pluecker;
     intersectors.intersector4 = BVH4Triangle4vIntersector4HybridPluecker;
     intersectors.intersector8 = BVH4Triangle4vIntersector8HybridPluecker;
     intersectors.intersector16 = BVH4Triangle4vIntersector16HybridPluecker;
-#else
-    intersectors.intersector1 = BVH4Triangle4vIntersector1Pluecker;
-    intersectors.intersector4 = BVH4Triangle4vIntersector4ChunkPluecker;
-    intersectors.intersector8 = BVH4Triangle4vIntersector8ChunkPluecker;
-    intersectors.intersector16 = BVH4Triangle4vIntersector16ChunkPluecker;
-#endif
     return intersectors;
   }
 
@@ -442,7 +421,6 @@ namespace embree
     }
   } 
 
-#if !defined(__MIC__)
   Accel* BVH4::BVH4BVH4Triangle1Morton(Scene* scene)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle1::type);
@@ -482,7 +460,6 @@ namespace embree
     Builder* builder = BVH4BuilderTopLevelFast(accel,scene,&createTriangleMeshTriangle4v);
     return new AccelInstance(accel,builder,intersectors);
   }
-#endif
 
   Accel* BVH4::BVH4Triangle1SpatialSplit(Scene* scene)
   {

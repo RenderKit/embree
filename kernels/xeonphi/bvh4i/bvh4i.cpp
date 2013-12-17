@@ -17,9 +17,6 @@
 #include "bvh4i.h"
 
 #include "geometry/triangle1.h"
-#include "geometry/triangle4.h"
-#include "geometry/triangle1v.h"
-#include "geometry/triangle4v.h"
 
 #include "bvh4i_builder.h"
 #include "bvh4i_builder_morton.h"

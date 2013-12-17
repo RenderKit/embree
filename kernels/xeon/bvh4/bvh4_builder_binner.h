@@ -189,10 +189,10 @@ namespace embree
         __align(64) AlignedAtomicCounter32 lCounter;
         __align(64) AlignedAtomicCounter32 rCounter;
         Binner2<BINS> bin16;
-        __align(64) Binner2<BINS> global_bin16[MAX_MIC_THREADS];
+        __align(64) Binner2<BINS> global_bin16[MAX_MIC_THREADS]; // FIXME: hardcoded number of threads
       };
   };
 }
 
 #endif
-  
+

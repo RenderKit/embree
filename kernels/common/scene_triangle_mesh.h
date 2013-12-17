@@ -19,7 +19,7 @@
 
 #include "common/default.h"
 #include "common/geometry.h"
-#include "builders/build_source.h"
+#include "xeon/builders/build_source.h"
 
 namespace embree
 {

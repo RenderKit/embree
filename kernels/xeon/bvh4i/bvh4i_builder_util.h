@@ -33,16 +33,7 @@ namespace embree
     BBox3f geometry;
 
     __forceinline void reset() {
-#if !defined(__MIC__)
       centroid2 = geometry = empty;
-#else
-      const mic_f p_inf( pos_inf );
-      const mic_f n_inf( neg_inf );
-      store4f(&centroid2.lower,p_inf);
-      store4f(&centroid2.upper,n_inf);
-      store4f(&geometry.lower,p_inf);
-      store4f(&geometry.upper,n_inf);
-#endif
     }
 
     __forceinline void extend(const BBox3f& b) {
@@ -150,17 +141,6 @@ namespace embree
 
     __forceinline bool operator<(const BuildRecord &br) const { return items() < br.items(); } 
     __forceinline bool operator>(const BuildRecord &br) const { return items() > br.items(); } 
-
-
-#if defined(__MIC__)
-    __forceinline void operator=(const BuildRecord& v) { 
-      assert(sizeof(BuildRecord) == 128);
-      const mic_f b0 = load16f((float*)&v);
-      const mic_f b1 = load16f((float*)&v + 16);
-      store16f((float*)this +  0, b0);
-      store16f((float*)this + 16, b1);
-    };
-#endif
 
     __forceinline friend std::ostream &operator<<(std::ostream &o, const BuildRecord &br)
     {
