@@ -43,10 +43,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   rtcore/scene_triangle_mesh.cpp
   rtcore/scene_quadratic_bezier_curves.cpp
   rtcore/geometry.cpp
-  rtcore/virtual_accel.cpp
-  rtcore/twolevel_accel.cpp
-  rtcore/ispc_wrapper_sse.cpp
-
+  
   builders/heuristic_binning.cpp
   builders/heuristic_spatial.cpp
   builders/splitter.cpp
@@ -62,6 +59,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   geometry/triangle1v.cpp
   geometry/triangle4v.cpp
   geometry/triangle4i.cpp
+  geometry/ispc_wrapper_sse.cpp
 
   bvh4/bvh4.cpp
   bvh4/bvh4_rotate.cpp
@@ -75,6 +73,8 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4/bvh4_intersector4_chunk.cpp
   bvh4/bvh4_intersector4_hybrid.cpp
   bvh4/bvh4_statistics.cpp
+  bvh4/virtual_accel.cpp
+  bvh4/twolevel_accel.cpp
 
   bvh4i/bvh4i.cpp
   bvh4i/bvh4i_statistics.cpp
@@ -107,9 +107,9 @@ ENDIF ()
 
 IF (TARGET_AVX) 
   ADD_LIBRARY(embree_avx STATIC
-   rtcore/ispc_wrapper_avx.cpp
-
+   
    geometry/triangle8.cpp
+   geometry/ispc_wrapper_avx.cpp
 
    geometry/instance_intersector1.cpp
    geometry/instance_intersector4.cpp

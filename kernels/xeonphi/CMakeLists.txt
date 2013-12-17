@@ -36,8 +36,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../xeon/rtcore/scene_triangle_mesh.cpp
   ../xeon/rtcore/scene_quadratic_bezier_curves.cpp
   ../xeon/rtcore/geometry.cpp
-  ../xeon/rtcore/ispc_wrapper_knc.cpp
-
+  
   ../xeon/builders/heuristic_binning.cpp
   ../xeon/builders/heuristic_spatial.cpp
   ../xeon/builders/splitter.cpp
@@ -53,6 +52,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../xeon/geometry/triangle1v.cpp
   ../xeon/geometry/triangle4v.cpp
   ../xeon/geometry/triangle4i.cpp
+  geometry/ispc_wrapper_knc.cpp
 
   ../xeon/bvh4i/bvh4i_builder_util.cpp
 
