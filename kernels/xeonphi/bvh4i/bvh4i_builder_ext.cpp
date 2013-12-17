@@ -223,15 +223,6 @@ namespace embree
 	);
 
     quicksort_ascending_primrefs(prims,startFactor, numPrimitives-1);
-
-#if 0
-    for (size_t i=dest1 + 1;i<numPrimitives;i++)
-      {
-	DBG_PRINT(i);
-	DBG_PRINT( prims[i] );
-	DBG_PRINT(box_sah( prims[i] ));
-      }
-#endif
     
     PrimRef *presplits = (PrimRef*)accel;
 
@@ -262,26 +253,10 @@ namespace embree
 	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
 	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
 
-	const mic_f v0 = broadcast4to16f(vptr0);
-	const mic_f v1 = broadcast4to16f(vptr1);
-	const mic_f v2 = broadcast4to16f(vptr2);
-
-	mic_f bmin = min(min(v0,v1),v2);
-	mic_f bmax = max(max(v0,v1),v2);	
-
-	const mic_f area_box = box_sah(bmin,bmax);
-
-#if 1
 	Vec3fa vtxA = *(Vec3fa*)vptr0;
 	Vec3fa vtxB = *(Vec3fa*)vptr1;
 	Vec3fa vtxC = *(Vec3fa*)vptr2;
-#else
 
-	Vec3fa vtxA(0,0,0);
-	Vec3fa vtxB(0,5,0);
-	Vec3fa vtxC(15,5,0);
-
-#endif	
 	BBox3f bounds = empty;
 	bounds.extend(vtxA);
 	bounds.extend(vtxB);
@@ -300,7 +275,6 @@ namespace embree
     numPrimitives = dest1 + startPreSplits;    
     //numPrimitives = startPreSplits;    
 
-    DBG(DBG_PRINT( dest1 + startPreSplits ));
   }
 
 
@@ -366,11 +340,12 @@ namespace embree
 	const mic_f area_box = box_sah(bmin,bmax);
 	const mic_f factor = area_box * rcp(area_tri);
 
-#if 0
-	DBG_PRINT(area_tri);
-	DBG_PRINT(area_box);
-	DBG_PRINT(factor);
-#endif
+	DBG(
+	    DBG_PRINT(area_tri);
+	    DBG_PRINT(area_box);
+	    DBG_PRINT(factor);
+	    );
+
 	const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
 	const mic_m m_sah_zero = area_box > PRESPLIT_MIN_AREA;
 

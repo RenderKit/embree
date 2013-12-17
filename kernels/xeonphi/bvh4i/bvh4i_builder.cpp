@@ -189,8 +189,9 @@ namespace embree
   void BVH4iBuilder::build(size_t threadIndex, size_t threadCount) 
   {
     DBG(PING);
-
     const size_t totalNumPrimitives = getNumPrimitives();
+
+    DBG(DBG_PRINT(totalNumPrimitives));
 
     /* no primitives? */
     if (unlikely(!totalNumPrimitives)) 

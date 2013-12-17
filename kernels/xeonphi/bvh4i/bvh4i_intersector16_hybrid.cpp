@@ -32,6 +32,8 @@ namespace embree
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node_single[3*BVH4i::maxDepth+1]; // FIXME: remove but need unaligned stores
 
+      if (unlikely(bvh == NULL)) return;
+
       /* load ray */
       const mic_m valid0     = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir16     = rcp_safe(ray16.dir);
@@ -50,7 +52,6 @@ namespace embree
       
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
-
 
       while (1)
       {
@@ -542,6 +543,8 @@ namespace embree
       __align(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node_single[3*BVH4i::maxDepth+1];
+
+      if (unlikely(bvh == NULL)) return;
 
       /* load ray */
       const mic_m m_valid     = *(mic_i*)valid_i != mic_i(0);

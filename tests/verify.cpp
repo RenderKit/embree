@@ -366,13 +366,14 @@ namespace embree
     size_t numTheta = 2*numPhi;
     size_t numTriangles = min(maxTriangles,2*numTheta*(numPhi-1));
     size_t numTimeSteps = motion == 0.0f ? 1 : 2;
+
     unsigned mesh = rtcNewTriangleMesh (scene, flag, numTriangles, numTheta*(numPhi+1),numTimeSteps);
     
     /* map triangle and vertex buffer */
     Vertex* vertices0 = NULL;
     Vertex* vertices1 = NULL;
     vertices0 = (Vertex*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-    if (numTimeSteps) vertices1 = (Vertex*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
+    if (numTimeSteps == 2) vertices1 = (Vertex*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
     /* create sphere geometry */
@@ -429,7 +430,7 @@ namespace embree
     }
 
     rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-    if (numTimeSteps) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
+    if (numTimeSteps == 2) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
     rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
     return mesh;
   }
@@ -1093,9 +1094,11 @@ namespace embree
   {
     bool passed = true;
     RTCScene scene = rtcNewScene(sflags,aflags);
-    addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,0.0f);
+
+    addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.0f);
+
 #if !defined(__MIC__)
-    addSphere(scene,gflags,Vec3fa(+1,0,+1),1.0f,50,0.1f);
+    addSphere(scene,gflags,Vec3fa(+1,0,+1),1.0f,50,-1,0.1f);
 #endif
     rtcCommit (scene);
     
@@ -1132,7 +1135,7 @@ namespace embree
 
 #else
  
-      RTCRay16 ray16; 
+      __align(64) RTCRay16 ray16; 
       memset(&ray16,-1,sizeof(RTCRay16));
       setRay(ray16,i,ray);
       __align(64) int valid16[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
@@ -1824,7 +1827,6 @@ namespace embree
     POSITIVE("static_scene",              rtcore_static_scene());
     POSITIVE("deformable_geometry",       rtcore_deformable_geometry());
     POSITIVE("unmapped_before_commit",    rtcore_unmapped_before_commit());
-#endif
 
     POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
     POSITIVE("update_deformable",         rtcore_update(RTC_GEOMETRY_DEFORMABLE));
@@ -1833,7 +1835,10 @@ namespace embree
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
     rtcore_ray_masks_all();
     rtcore_backface_culling_all();
+#endif
+
     rtcore_packet_write_test_all();
+
     rtcore_watertight_sphere1(100000);
 #if !defined(__MIC__)
     rtcore_watertight_sphere4(100000);
