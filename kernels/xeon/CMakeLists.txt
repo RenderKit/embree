@@ -16,8 +16,6 @@
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
-IF (__XEON__)
-
 IF (TARGET_SSE41)
  ADD_DEFINITIONS(-D__TARGET_SSE41__)
 ENDIF()
@@ -182,79 +180,3 @@ ENDIF()
 TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd)
 SET_TARGET_PROPERTIES(embree PROPERTIES VERSION 2.1.0 SOVERSION 2)
 INSTALL(TARGETS embree DESTINATION lib)
-
-##############################################################
-##############################################################
-##############################################################
-##############################################################
-##############################################################
-
-ELSE ()
-
-INCLUDE(icc_xeonphi)
-
-IF (TARGET_XEON_PHI)
- ADD_DEFINITIONS(-D__TARGET_XEON_PHI__)
-ENDIF()
-
-ADD_ISPC_LIBRARY(embree_xeonphi SHARED
-
-  common/stat.cpp 
-  common/alloc.cpp 
-
-  common/tasksys.cpp 
-  common/accel3.cpp
-
-  rtcore/rtcore.cpp 
-  rtcore/rtcore_ispc.cpp 
-  rtcore/rtcore_ispc.ispc 
-  rtcore/scene.cpp
-  rtcore/scene_user_geometry.cpp
-  rtcore/scene_triangle_mesh.cpp
-  rtcore/scene_quadratic_bezier_curves.cpp
-  rtcore/geometry.cpp
-  rtcore/ispc_wrapper_knc.cpp
-
-
-  builders/heuristic_binning.cpp
-  builders/heuristic_spatial.cpp
-  builders/splitter.cpp
-  builders/splitter_fallback.cpp
-  builders/splitter_parallel.cpp
-  builders/primrefgen.cpp
-  
-  geometry/instance_intersector1.cpp
-  geometry/instance_intersector16.cpp
-  
-  geometry/triangle1.cpp
-  geometry/triangle4.cpp
-  geometry/triangle1v.cpp
-  geometry/triangle4v.cpp
-  geometry/triangle4i.cpp
-
-  bvh4i/bvh4i_builder_util.cpp
-
-  ../xeonphi/bvh4i/bvh4i.cpp
-  ../xeonphi/bvh4i/bvh4i_builder.cpp
-  ../xeonphi/bvh4i/bvh4i_builder_ext.cpp
-  ../xeonphi/bvh4i/bvh4i_builder_binner.cpp
-  ../xeonphi/bvh4i/bvh4i_builder_morton.cpp
-  ../xeonphi/bvh4i/bvh4i_builder_morton_enhanced.cpp
-  ../xeonphi/bvh4i/bvh4i_intersector16_chunk.cpp
-  ../xeonphi/bvh4i/bvh4i_intersector16_single.cpp
-  ../xeonphi/bvh4i/bvh4i_intersector16_hybrid.cpp
-  ../xeonphi/bvh4i/bvh4i_intersector16_virtual.cpp
-  ../xeonphi/bvh4i/bvh4i_intersector1.cpp
-  ../xeonphi/bvh4i/bvh4i_statistics.cpp
-
-  bvh4mb/bvh4mb.cpp
-  bvh4mb/bvh4mb_builder.cpp
-  bvh4mb/bvh4mb_intersector1.cpp   
-  bvh4mb/bvh4mb_intersector4.cpp
-)
-
-TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi)
-SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES VERSION 2.1.0 SOVERSION 2)
-INSTALL(TARGETS embree_xeonphi DESTINATION lib)
-
-ENDIF ()

@@ -14,11 +14,8 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (TARGET_XEON_PHI)
-SET (__XEON__ 0)
-ADD_SUBDIRECTORY(xeon xeonphi)
-ENDIF()
-
-SET (__XEON__ 1)
 ADD_SUBDIRECTORY(xeon)
 
+IF (TARGET_XEON_PHI)
+  ADD_SUBDIRECTORY(xeonphi)
+ENDIF()
