@@ -47,7 +47,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   geometry/instance_intersector1.cpp
   geometry/instance_intersector16.cpp
   
-  ../xeon/geometry/triangle1.cpp
+  geometry/triangle1.cpp
   ../xeon/geometry/triangle4.cpp
   ../xeon/geometry/triangle1v.cpp
   ../xeon/geometry/triangle4v.cpp
