@@ -414,16 +414,20 @@ namespace embree
 
   void BVH4iBuilderVirtualGeometry::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
+    DBG(PING);
     LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
   }
 
   void BVH4iBuilderVirtualGeometry::createAccel(const size_t threadIndex, const size_t threadCount)
   {
+    DBG(PING);
     LockStepTaskScheduler::dispatchTask( task_createVirtualGeometryAccel, this, threadIndex, threadCount );
   }
 
   void BVH4iBuilderVirtualGeometry::computePrimRefsVirtualGeometry(const size_t threadID, const size_t numThreads) 
   {
+    DBG(PING);
+
     const size_t numTotalGroups = scene->size();
 
     /* count total number of virtual objects */
@@ -512,6 +516,8 @@ namespace embree
 
   void BVH4iBuilderVirtualGeometry::createVirtualGeometryAccel(const size_t threadID, const size_t numThreads)
   {
+    DBG(PING);
+
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
 
@@ -524,8 +530,8 @@ namespace embree
 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
 	assert(bptr->geomID() < scene->size() );
-        AccelSet* accel = (AccelSet*)(UserGeometryScene::Base *) scene->get( bptr->geomID() );
-	acc->accel = accel;
+        AccelSet* _accel = (AccelSet*)(UserGeometryScene::Base *) scene->get( bptr->geomID() );
+	acc->accel = _accel;
         acc->item = bptr->primID();
       }
   }

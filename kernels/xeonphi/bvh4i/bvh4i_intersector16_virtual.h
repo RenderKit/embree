@@ -19,6 +19,7 @@
 
 #include "bvh4i.h"
 #include "common/ray16.h" 
+#include "common/accelset.h"
 
 namespace embree
 {
@@ -38,11 +39,11 @@ namespace embree
       static void occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
     };
 
-    template<typename TriangleIntersector1>
+    template<typename VirtualGeometryIntersector1>
       class BVH4iIntersector1Virtual
     {
       /* shortcuts for frequently used types */
-      typedef typename TriangleIntersector1::Primitive Primitive;
+      typedef typename VirtualGeometryIntersector1::Primitive Primitive;
       typedef typename BVH4i::NodeRef NodeRef;
       typedef typename BVH4i::Node Node;
       

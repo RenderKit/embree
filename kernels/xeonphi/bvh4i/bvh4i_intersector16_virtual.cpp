@@ -146,7 +146,7 @@ namespace embree
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 
 	unsigned int items = curNode.items();
-	unsigned int index = (curNode.offset() >> 6) << 3; /* array of pointers */
+	unsigned int index = (curNode.offset() >> 6); /* array of AccelSetItems */
 	Primitive *accel_ptr = (Primitive*)accel + index;
 
         VirtualGeometryIntersector16::intersect(valid_leaf,ray,accel_ptr,items,bvh->geometry);
@@ -277,7 +277,7 @@ namespace embree
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 
 	unsigned int items = curNode.items();
-	unsigned int index = (curNode.offset() >> 6) << 3; /* array of pointers */
+	unsigned int index = (curNode.offset() >> 6); /* array of AccelSetItems */
 	Primitive *accel_ptr = (Primitive *)accel + index;
 
         m_terminated |= valid_leaf & VirtualGeometryIntersector16::occluded(valid_leaf,ray,accel_ptr,items,bvh->geometry);
@@ -290,8 +290,8 @@ namespace embree
       store16i(valid & m_terminated,&ray.geomID,0);
     }
 
-    template<typename TriangleIntersector1>
-    void BVH4iIntersector1Virtual<TriangleIntersector1>::intersect(BVH4i* bvh, Ray& ray)
+    template<typename VirtualGeometryIntersector1>
+    void BVH4iIntersector1Virtual<VirtualGeometryIntersector1>::intersect(BVH4i* bvh, Ray& ray)
     {
       /* near and node stack */
       __align(64) float   stack_dist[3*BVH4i::maxDepth+1];
@@ -424,10 +424,10 @@ namespace embree
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	  unsigned int items = curNode.items();
-	  unsigned int index = (curNode.offset() >> 6) << 3; /* array of pointers */
+	  unsigned int index = (curNode.offset() >> 6); /* array of AccelSetItems */
 	  Primitive *accel_ptr = (Primitive *)accel + index;
 
-	  TriangleIntersector1::intersect(ray,accel_ptr,items,bvh->geometry);
+	  VirtualGeometryIntersector1::intersect(ray,accel_ptr,items,bvh->geometry);
 
 	  if (unlikely(any(max_dist_xyz != broadcast1to16f(&ray.tfar))))
 	    {
@@ -500,8 +500,8 @@ namespace embree
 	}	  
     }
 
-    template<typename TriangleIntersector1>
-    void BVH4iIntersector1Virtual<TriangleIntersector1>::occluded(BVH4i* bvh, Ray& ray)
+    template<typename VirtualGeometryIntersector1>
+    void BVH4iIntersector1Virtual<VirtualGeometryIntersector1>::occluded(BVH4i* bvh, Ray& ray)
     {
       /* near and node stack */
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
@@ -629,10 +629,10 @@ namespace embree
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	  unsigned int items = curNode.items();
-	  unsigned int index = (curNode.offset() >> 6) << 3; /* array of pointers */
+	  unsigned int index = (curNode.offset() >> 6); /* array of AccelSetItems */
 	  Primitive *accel_ptr = (Primitive *)accel + index;
 
-	  if (TriangleIntersector1::occluded(ray,accel_ptr,items,bvh->geometry)) {
+	  if (VirtualGeometryIntersector1::occluded(ray,accel_ptr,items,bvh->geometry)) {
 	    ray.geomID = 0;
 	    return;
 	  }
