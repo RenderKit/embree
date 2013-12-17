@@ -206,7 +206,8 @@ namespace embree
   public:
     struct Intersectors 
     {
-      Intersectors () {}
+      Intersectors() 
+        : ptr(NULL) {}
 
       void print(size_t ident) 
       {

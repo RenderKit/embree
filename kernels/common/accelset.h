@@ -190,6 +190,8 @@ namespace embree
 
       struct Intersectors 
       {
+        Intersectors() 
+          : ptr(NULL), boundsPtr(NULL) {}
       public:
         void* ptr;
         void* boundsPtr;

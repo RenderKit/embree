@@ -54,7 +54,7 @@
 				AdditionalOptions="/Gs999999"
 				Optimization="0"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -138,7 +138,7 @@
 				AdditionalOptions="/Gs999999"
 				Optimization="0"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -224,7 +224,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -310,7 +310,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -396,7 +396,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="CONFIG_AVX;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -481,7 +481,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="CONFIG_AVX;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -567,7 +567,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="CONFIG_AVX2;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -652,7 +652,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="CONFIG_AVX2;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -712,71 +712,146 @@
 			Name="common"
 			>
 			<File
-				RelativePath=".\common\accel.h"
+				RelativePath="..\common\accel.h"
 				>
 			</File>
 			<File
-				RelativePath=".\common\accel3.cpp"
+				RelativePath="..\common\accel3.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\common\accel3.h"
+				RelativePath="..\common\accel3.h"
 				>
 			</File>
 			<File
-				RelativePath=".\common\alloc.cpp"
+				RelativePath="..\common\accelinstance.h"
 				>
 			</File>
 			<File
-				RelativePath=".\common\alloc.h"
+				RelativePath="..\common\accelset.h"
 				>
 			</File>
 			<File
-				RelativePath=".\common\allocator.h"
+				RelativePath="..\common\alloc.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\common\atomic_set.h"
+				RelativePath="..\common\alloc.h"
 				>
 			</File>
 			<File
-				RelativePath=".\common\default.h"
+				RelativePath="..\common\allocator.h"
 				>
 			</File>
 			<File
-				RelativePath=".\common\primitive.h"
+				RelativePath="..\common\atomic_set.h"
 				>
 			</File>
 			<File
-				RelativePath=".\common\ray.h"
+				RelativePath="..\common\builder.h"
 				>
 			</File>
 			<File
-				RelativePath=".\common\ray16.h"
+				RelativePath="..\common\buildsource.h"
 				>
 			</File>
 			<File
-				RelativePath=".\common\ray4.h"
+				RelativePath="..\common\default.h"
 				>
 			</File>
 			<File
-				RelativePath=".\common\ray8.h"
+				RelativePath="..\common\geometry.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\common\stack_item.h"
+				RelativePath="..\common\geometry.h"
 				>
 			</File>
 			<File
-				RelativePath=".\common\stat.cpp"
+				RelativePath="..\common\primref.h"
 				>
 			</File>
 			<File
-				RelativePath=".\common\stat.h"
+				RelativePath="..\common\ray.h"
 				>
 			</File>
 			<File
-				RelativePath=".\common\tasksys.cpp"
+				RelativePath="..\common\ray16.h"
+				>
+			</File>
+			<File
+				RelativePath="..\common\ray4.h"
+				>
+			</File>
+			<File
+				RelativePath="..\common\ray8.h"
+				>
+			</File>
+			<File
+				RelativePath="..\common\rtcore.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\common\rtcore_ispc.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\common\rtcore_ispc.ispc"
+				>
+				<FileConfiguration
+					Name="ReleaseAVX2|x64"
+					>
+					<Tool
+						Name="ISPC"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\common\scene.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\common\scene.h"
+				>
+			</File>
+			<File
+				RelativePath="..\common\scene_quadratic_bezier_curves.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\common\scene_quadratic_bezier_curves.h"
+				>
+			</File>
+			<File
+				RelativePath="..\common\scene_triangle_mesh.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\common\scene_triangle_mesh.h"
+				>
+			</File>
+			<File
+				RelativePath="..\common\scene_user_geometry.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\common\scene_user_geometry.h"
+				>
+			</File>
+			<File
+				RelativePath="..\common\stack_item.h"
+				>
+			</File>
+			<File
+				RelativePath="..\common\stat.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\common\stat.h"
+				>
+			</File>
+			<File
+				RelativePath="..\common\tasksys.cpp"
 				>
 			</File>
 		</Filter>
@@ -834,30 +909,6 @@
 			<File
 				RelativePath=".\bvh4\bvh4_intersector1.cpp"
 				>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AssemblerOutput="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="ReleaseAVX|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AssemblerOutput="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="ReleaseAVX2|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AssemblerOutput="0"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\bvh4\bvh4_intersector1.h"
@@ -903,6 +954,22 @@
 				RelativePath=".\bvh4\bvh4_statistics.h"
 				>
 			</File>
+			<File
+				RelativePath=".\bvh4\twolevel_accel.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4\twolevel_accel.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4\virtual_accel.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4\virtual_accel.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="bvh4mb"
@@ -944,14 +1011,6 @@
 			Name="builders"
 			>
 			<File
-				RelativePath=".\builders\build_source.h"
-				>
-			</File>
-			<File
-				RelativePath=".\builders\builder.h"
-				>
-			</File>
-			<File
 				RelativePath=".\builders\heuristic_binning.cpp"
 				>
 			</File>
@@ -969,10 +1028,6 @@
 			</File>
 			<File
 				RelativePath=".\builders\heuristics.h"
-				>
-			</File>
-			<File
-				RelativePath=".\builders\primref.h"
 				>
 			</File>
 			<File
@@ -1044,6 +1099,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\bvh4i\bvh4i_builder_util.h"
+				>
+			</File>
+			<File
 				RelativePath=".\bvh4i\bvh4i_intersector1.cpp"
 				>
 			</File>
@@ -1073,86 +1132,6 @@
 			</File>
 			<File
 				RelativePath=".\bvh4i\bvh4i_statistics.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="rtcore"
-			>
-			<File
-				RelativePath=".\rtcore\geometry.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\geometry.h"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\ispc_wrapper_sse.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\ispc_wrapper_sse.h"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\rtcore.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\rtcore_ispc.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\rtcore_ispc.ispc"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\scene.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\scene.h"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\scene_quadratic_bezier_curves.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\scene_quadratic_bezier_curves.h"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\scene_triangle_mesh.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\scene_triangle_mesh.h"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\scene_user_geometry.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\scene_user_geometry.h"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\twolevel_accel.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\twolevel_accel.h"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\virtual_accel.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\virtual_accel.h"
 				>
 			</File>
 		</Filter>
@@ -1300,6 +1279,18 @@
 				>
 			</File>
 			<File
+				RelativePath=".\geometry\ispc_wrapper_sse.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\ispc_wrapper_sse.h"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\primitive.h"
+				>
+			</File>
+			<File
 				RelativePath=".\geometry\triangle1.cpp"
 				>
 			</File>
@@ -1308,19 +1299,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\geometry\triangle1_intersector16_moeller.h"
-				>
-			</File>
-			<File
 				RelativePath=".\geometry\triangle1_intersector1_moeller.h"
 				>
 			</File>
 			<File
 				RelativePath=".\geometry\triangle1_intersector4_moeller.h"
-				>
-			</File>
-			<File
-				RelativePath=".\geometry\triangle1_intersector8_moeller.h"
 				>
 			</File>
 			<File
@@ -1348,14 +1331,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\geometry\triangle1v_intersector8_moeller_mb.h"
-				>
-			</File>
-			<File
-				RelativePath=".\geometry\triangle1v_intersector8_pluecker.h"
-				>
-			</File>
-			<File
 				RelativePath=".\geometry\triangle4.cpp"
 				>
 			</File>
@@ -1369,10 +1344,6 @@
 			</File>
 			<File
 				RelativePath=".\geometry\triangle4_intersector4_moeller.h"
-				>
-			</File>
-			<File
-				RelativePath=".\geometry\triangle4_intersector8_moeller.h"
 				>
 			</File>
 			<File
@@ -1392,10 +1363,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\geometry\triangle4i_intersector8.h"
-				>
-			</File>
-			<File
 				RelativePath=".\geometry\triangle4v.cpp"
 				>
 			</File>
@@ -1412,35 +1379,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\geometry\triangle4v_intersector8_pluecker.h"
-				>
-			</File>
-			<File
-				RelativePath=".\geometry\triangle8_intersector1_moeller.h"
-				>
-			</File>
-			<File
-				RelativePath=".\geometry\triangle8_intersector4_moeller.h"
-				>
-			</File>
-			<File
-				RelativePath=".\geometry\triangle8_intersector8_moeller.h"
-				>
-			</File>
-			<File
 				RelativePath=".\geometry\virtual_accel_intersector1.h"
 				>
 			</File>
 			<File
-				RelativePath=".\geometry\virtual_accel_intersector16.h"
-				>
-			</File>
-			<File
 				RelativePath=".\geometry\virtual_accel_intersector4.h"
-				>
-			</File>
-			<File
-				RelativePath=".\geometry\virtual_accel_intersector8.h"
 				>
 			</File>
 		</Filter>

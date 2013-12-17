@@ -47,7 +47,7 @@
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
@@ -117,7 +117,7 @@
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
@@ -187,7 +187,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -257,7 +257,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -326,7 +326,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="CONFIG_AVX;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -396,7 +396,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="CONFIG_AVX;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -465,7 +465,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="CONFIG_AVX2;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -535,7 +535,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/common;$(SolutionDir)/include"
+				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
 				PreprocessorDefinitions="CONFIG_AVX2;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
@@ -837,10 +837,6 @@
 						Name="VCCustomBuildTool"
 					/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\bvh4i\bvh4i_builder_util.cpp"
-				>
 			</File>
 			<File
 				RelativePath=".\bvh4i\bvh4i_builder_util.h"
@@ -1551,79 +1547,19 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\geometry\ispc_wrapper_avx.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\ispc_wrapper_avx.h"
+				>
+			</File>
+			<File
 				RelativePath=".\geometry\triangle8.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\geometry\triangle8.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="ReleaseAVX|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="ReleaseAVX|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="ReleaseAVX2|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="ReleaseAVX2|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-			</File>
-		</Filter>
-		<Filter
-			Name="rtcore"
-			>
-			<File
-				RelativePath=".\rtcore\ispc_wrapper_avx.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rtcore\ispc_wrapper_avx.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
