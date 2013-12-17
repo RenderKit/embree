@@ -21,26 +21,6 @@
 
 namespace embree
 {
-#define DEFINE_INTERSECTOR1(symbol,intersector)                        \
-  Accel::Intersector1 symbol((IntersectFunc)intersector::intersect, \
-                             (OccludedFunc )intersector::occluded,  \
-                             TOSTRING(isa) "::" TOSTRING(symbol));
-
-#define DEFINE_INTERSECTOR4(symbol,intersector)                         \
-  Accel::Intersector4 symbol((IntersectFunc4)intersector::intersect, \
-                             (OccludedFunc4)intersector::occluded,   \
-                             TOSTRING(isa) "::" TOSTRING(symbol));
-
-#define DEFINE_INTERSECTOR8(symbol,intersector)                         \
-  Accel::Intersector8 symbol((IntersectFunc8)intersector::intersect, \
-                             (OccludedFunc8)intersector::occluded,   \
-                             TOSTRING(isa) "::" TOSTRING(symbol));
-
-#define DEFINE_INTERSECTOR16(symbol,intersector)                         \
-  Accel::Intersector16 symbol((IntersectFunc16)intersector::intersect, \
-                              (OccludedFunc16)intersector::occluded,\
-                              TOSTRING(isa) "::" TOSTRING(symbol));
-
   /*! Base class for bounded geometry. */
   class Bounded : public RefCount {
   public:
@@ -49,49 +29,50 @@ namespace embree
     BBox3f bounds;
   };
 
-  /*! Type of intersect function pointer for single rays. */
-  typedef void (*IntersectFunc)(void* ptr,           /*!< pointer to user data */
-                                RTCRay& ray          /*!< ray to intersect */);
-  
-  /*! Type of intersect function pointer for ray packets of size 4. */
-  typedef void (*IntersectFunc4)(const void* valid,  /*!< pointer to valid mask */
-                                 void* ptr,          /*!< pointer to user data */
-                                 RTCRay4& ray        /*!< ray packet to intersect */);
-  
-  /*! Type of intersect function pointer for ray packets of size 8. */
-  typedef void (*IntersectFunc8)(const void* valid,  /*!< pointer to valid mask */
-                                 void* ptr,          /*!< pointer to user data */
-                                 RTCRay8& ray        /*!< ray packet to intersect */);
-  
-  /*! Type of intersect function pointer for ray packets of size 16. */
-  typedef void (*IntersectFunc16)(const void* valid, /*!< pointer to valid mask */
-                                  void* ptr,         /*!< pointer to user data */
-                                  RTCRay16& ray      /*!< ray packet to intersect */);
-  
-  /*! Type of occlusion function pointer for single rays. */
-  typedef void (*OccludedFunc) (void* ptr,           /*!< pointer to user data */ 
-                                RTCRay& ray          /*!< ray to test occlusion */);
-  
-  /*! Type of occlusion function pointer for ray packets of size 4. */
-  typedef void (*OccludedFunc4) (const void* valid,  /*! pointer to valid mask */
-                                 void* ptr,          /*!< pointer to user data */
-                                 RTCRay4& ray        /*!< Ray packet to test occlusion. */);
-  
-  /*! Type of occlusion function pointer for ray packets of size 8. */
-  typedef void (*OccludedFunc8) (const void* valid,  /*! pointer to valid mask */
-                                 void* ptr,          /*!< pointer to user data */
-                                 RTCRay8& ray        /*!< Ray packet to test occlusion. */);
-  
-  /*! Type of occlusion function pointer for ray packets of size 16. */
-  typedef void (*OccludedFunc16) (const void* valid, /*! pointer to valid mask */
-                                  void* ptr,         /*!< pointer to user data */
-                                  RTCRay16& ray      /*!< Ray packet to test occlusion. */);
-  
   /*! Base class for all intersectable and buildable acceleration structures. */
   class Accel : public Bounded
   {
     ALIGNED_CLASS;
   public:
+
+    /*! Type of intersect function pointer for single rays. */
+    typedef void (*IntersectFunc)(void* ptr,           /*!< pointer to user data */
+                                  RTCRay& ray          /*!< ray to intersect */);
+    
+    /*! Type of intersect function pointer for ray packets of size 4. */
+    typedef void (*IntersectFunc4)(const void* valid,  /*!< pointer to valid mask */
+                                   void* ptr,          /*!< pointer to user data */
+                                   RTCRay4& ray        /*!< ray packet to intersect */);
+    
+    /*! Type of intersect function pointer for ray packets of size 8. */
+    typedef void (*IntersectFunc8)(const void* valid,  /*!< pointer to valid mask */
+                                   void* ptr,          /*!< pointer to user data */
+                                   RTCRay8& ray        /*!< ray packet to intersect */);
+    
+    /*! Type of intersect function pointer for ray packets of size 16. */
+    typedef void (*IntersectFunc16)(const void* valid, /*!< pointer to valid mask */
+                                    void* ptr,         /*!< pointer to user data */
+                                    RTCRay16& ray      /*!< ray packet to intersect */);
+    
+    /*! Type of occlusion function pointer for single rays. */
+    typedef void (*OccludedFunc) (void* ptr,           /*!< pointer to user data */ 
+                                  RTCRay& ray          /*!< ray to test occlusion */);
+    
+    /*! Type of occlusion function pointer for ray packets of size 4. */
+    typedef void (*OccludedFunc4) (const void* valid,  /*! pointer to valid mask */
+                                   void* ptr,          /*!< pointer to user data */
+                                   RTCRay4& ray        /*!< Ray packet to test occlusion. */);
+    
+    /*! Type of occlusion function pointer for ray packets of size 8. */
+    typedef void (*OccludedFunc8) (const void* valid,  /*! pointer to valid mask */
+                                   void* ptr,          /*!< pointer to user data */
+                                   RTCRay8& ray        /*!< Ray packet to test occlusion. */);
+    
+    /*! Type of occlusion function pointer for ray packets of size 16. */
+    typedef void (*OccludedFunc16) (const void* valid, /*! pointer to valid mask */
+                                    void* ptr,         /*!< pointer to user data */
+                                    RTCRay16& ray      /*!< Ray packet to test occlusion. */);
+  
     struct Intersector1
     {
       Intersector1 (ErrorFunc error = NULL) 
@@ -247,6 +228,26 @@ namespace embree
       Intersector16 intersector16;
     } intersectors;
   };
+
+#define DEFINE_INTERSECTOR1(symbol,intersector)                        \
+  Accel::Intersector1 symbol((Accel::IntersectFunc)intersector::intersect, \
+                             (Accel::OccludedFunc )intersector::occluded,  \
+                             TOSTRING(isa) "::" TOSTRING(symbol));
+
+#define DEFINE_INTERSECTOR4(symbol,intersector)                         \
+  Accel::Intersector4 symbol((Accel::IntersectFunc4)intersector::intersect, \
+                             (Accel::OccludedFunc4)intersector::occluded,   \
+                             TOSTRING(isa) "::" TOSTRING(symbol));
+
+#define DEFINE_INTERSECTOR8(symbol,intersector)                         \
+  Accel::Intersector8 symbol((Accel::IntersectFunc8)intersector::intersect, \
+                             (Accel::OccludedFunc8)intersector::occluded,   \
+                             TOSTRING(isa) "::" TOSTRING(symbol));
+
+#define DEFINE_INTERSECTOR16(symbol,intersector)                         \
+  Accel::Intersector16 symbol((Accel::IntersectFunc16)intersector::intersect, \
+                              (Accel::OccludedFunc16)intersector::occluded,\
+                              TOSTRING(isa) "::" TOSTRING(symbol));
 }
 
 #endif

@@ -20,18 +20,18 @@
 namespace embree
 {
 #if !defined (__MIC__)
-  extern IntersectSetFunc4 ispcWrapperIntersect4;
-  extern OccludedSetFunc4 ispcWrapperOccluded4;
+  extern AccelSet::IntersectFunc4 ispcWrapperIntersect4;
+  extern AccelSet::OccludedFunc4 ispcWrapperOccluded4;
 #endif
 
 #if defined(__TARGET_AVX__)
-  extern IntersectSetFunc8 ispcWrapperIntersect8;
-  extern OccludedSetFunc8 ispcWrapperOccluded8;
+  extern AccelSet::IntersectFunc8 ispcWrapperIntersect8;
+  extern AccelSet::OccludedFunc8 ispcWrapperOccluded8;
 #endif
 
 #if defined(__MIC__)
-  extern IntersectSetFunc16 ispcWrapperIntersect16;
-  extern OccludedSetFunc16 ispcWrapperOccluded16;
+  extern AccelSet::IntersectFunc16 ispcWrapperIntersect16;
+  extern AccelSet::OccludedFunc16 ispcWrapperOccluded16;
 #endif
 
   UserGeometryScene::Base::Base (Scene* parent, GeometryTy ty, size_t items)

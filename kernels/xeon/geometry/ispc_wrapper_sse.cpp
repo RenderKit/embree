@@ -31,7 +31,7 @@ namespace embree
     ((ISPCOccludedFunc4)geom->ispcOccluded4)(geom->ispcPtr,ray,item,*(__m128*)valid);
   }
 
-  IntersectSetFunc4 ispcWrapperIntersect4 = (IntersectSetFunc4) ISPCWrapperSSE::intersect;
-  OccludedSetFunc4 ispcWrapperOccluded4 = (OccludedSetFunc4) ISPCWrapperSSE::occluded;
+  AccelSet::IntersectFunc4 ispcWrapperIntersect4 = (AccelSet::IntersectFunc4) ISPCWrapperSSE::intersect;
+  AccelSet::OccludedFunc4  ispcWrapperOccluded4  = (AccelSet::OccludedFunc4 ) ISPCWrapperSSE::occluded;
 }
 

@@ -22,47 +22,28 @@
 
 namespace embree
 {
-#define DEFINE_SET_INTERSECTOR1(symbol,intersector)                     \
-  AccelSet::Intersector1 symbol((IntersectSetFunc)intersector::intersect, \
-                                (OccludedSetFunc )intersector::occluded, \
-                                TOSTRING(isa) "::" TOSTRING(symbol));
-
-#define DEFINE_SET_INTERSECTOR4(symbol,intersector)                         \
-  AccelSet::Intersector4 symbol((IntersectSetFunc4)intersector::intersect, \
-                                (OccludedSetFunc4)intersector::occluded, \
-                                TOSTRING(isa) "::" TOSTRING(symbol));
-
-#define DEFINE_SET_INTERSECTOR8(symbol,intersector)                         \
-  AccelSet::Intersector8 symbol((IntersectSetFunc8)intersector::intersect, \
-                                (OccludedSetFunc8)intersector::occluded, \
-                                TOSTRING(isa) "::" TOSTRING(symbol));
-
-#define DEFINE_SET_INTERSECTOR16(symbol,intersector)                         \
-  AccelSet::Intersector16 symbol((IntersectSetFunc16)intersector::intersect, \
-                                 (OccludedSetFunc16)intersector::occluded, \
-                                 TOSTRING(isa) "::" TOSTRING(symbol));  
-
-  typedef RTCIntersectFunc IntersectSetFunc;
-  typedef RTCIntersectFunc4 IntersectSetFunc4;
-  typedef RTCIntersectFunc8 IntersectSetFunc8;
-  typedef RTCIntersectFunc16 IntersectSetFunc16;
-
-  typedef RTCOccludedFunc OccludedSetFunc;
-  typedef RTCOccludedFunc4 OccludedSetFunc4;
-  typedef RTCOccludedFunc8 OccludedSetFunc8;
-  typedef RTCOccludedFunc16 OccludedSetFunc16;
-
   /*! Base class for set of acceleration structures. */
   class AccelSet : public RefCount 
   {
     ALIGNED_CLASS;
   public:
+
+    typedef RTCIntersectFunc IntersectFunc;
+    typedef RTCIntersectFunc4 IntersectFunc4;
+    typedef RTCIntersectFunc8 IntersectFunc8;
+    typedef RTCIntersectFunc16 IntersectFunc16;
+    
+    typedef RTCOccludedFunc OccludedFunc;
+    typedef RTCOccludedFunc4 OccludedFunc4;
+    typedef RTCOccludedFunc8 OccludedFunc8;
+    typedef RTCOccludedFunc16 OccludedFunc16;
+
     struct Intersector1
     {
       Intersector1 (ErrorFunc error = NULL) 
-      : intersect((IntersectSetFunc)error), occluded((OccludedSetFunc)error), name(NULL) {}
+      : intersect((IntersectFunc)error), occluded((OccludedFunc)error), name(NULL) {}
 
-      Intersector1 (IntersectSetFunc intersect, OccludedSetFunc occluded, const char* name)
+      Intersector1 (IntersectFunc intersect, OccludedFunc occluded, const char* name)
       : intersect(intersect), occluded(occluded), name(name) {}
       
         operator bool() const { return name; }
@@ -70,16 +51,16 @@ namespace embree
       public:
         static const char* type;
         const char* name;
-        IntersectSetFunc intersect;
-        OccludedSetFunc occluded;  
+        IntersectFunc intersect;
+        OccludedFunc occluded;  
       };
       
       struct Intersector4 
       {
         Intersector4 (ErrorFunc error = NULL) 
-        : intersect((IntersectSetFunc4)error), occluded((OccludedSetFunc4)error), name(NULL) {}
+        : intersect((IntersectFunc4)error), occluded((OccludedFunc4)error), name(NULL) {}
 
-        Intersector4 (IntersectSetFunc4 intersect, OccludedSetFunc4 occluded, const char* name)
+        Intersector4 (IntersectFunc4 intersect, OccludedFunc4 occluded, const char* name)
         : intersect(intersect), occluded(occluded), name(name) {}
         
         operator bool() const { return name; }
@@ -87,16 +68,16 @@ namespace embree
       public:
         static const char* type;
         const char* name;
-        IntersectSetFunc4 intersect;
-        OccludedSetFunc4 occluded;
+        IntersectFunc4 intersect;
+        OccludedFunc4 occluded;
       };
       
       struct Intersector8 
       {
         Intersector8 (ErrorFunc error = NULL) 
-        : intersect((IntersectSetFunc8)error), occluded((OccludedSetFunc8)error), name(NULL) {}
+        : intersect((IntersectFunc8)error), occluded((OccludedFunc8)error), name(NULL) {}
 
-        Intersector8 (IntersectSetFunc8 intersect, OccludedSetFunc8 occluded, const char* name)
+        Intersector8 (IntersectFunc8 intersect, OccludedFunc8 occluded, const char* name)
         : intersect(intersect), occluded(occluded), name(name) {}
         
         operator bool() const { return name; }
@@ -104,16 +85,16 @@ namespace embree
       public:
         static const char* type;
         const char* name;
-        IntersectSetFunc8 intersect;
-        OccludedSetFunc8 occluded;
+        IntersectFunc8 intersect;
+        OccludedFunc8 occluded;
       };
       
       struct Intersector16 
       {
         Intersector16 (ErrorFunc error = NULL) 
-        : intersect((IntersectSetFunc16)error), occluded((OccludedSetFunc16)error), name(NULL) {}
+        : intersect((IntersectFunc16)error), occluded((OccludedFunc16)error), name(NULL) {}
 
-        Intersector16 (IntersectSetFunc16 intersect, OccludedSetFunc16 occluded, const char* name)
+        Intersector16 (IntersectFunc16 intersect, OccludedFunc16 occluded, const char* name)
         : intersect(intersect), occluded(occluded), name(name) {}
         
         operator bool() const { return name; }
@@ -121,8 +102,8 @@ namespace embree
       public:
         static const char* type;
         const char* name;
-        IntersectSetFunc16 intersect;
-        OccludedSetFunc16 occluded;
+        IntersectFunc16 intersect;
+        OccludedFunc16 occluded;
       };
       
     public:
@@ -223,6 +204,26 @@ namespace embree
     AccelSet* accel;
     size_t item;
   };
+
+#define DEFINE_SET_INTERSECTOR1(symbol,intersector)                     \
+  AccelSet::Intersector1 symbol((AccelSet::IntersectFunc)intersector::intersect, \
+                                (AccelSet::OccludedFunc )intersector::occluded, \
+                                TOSTRING(isa) "::" TOSTRING(symbol));
+
+#define DEFINE_SET_INTERSECTOR4(symbol,intersector)                         \
+  AccelSet::Intersector4 symbol((AccelSet::IntersectFunc4)intersector::intersect, \
+                                (AccelSet::OccludedFunc4)intersector::occluded, \
+                                TOSTRING(isa) "::" TOSTRING(symbol));
+
+#define DEFINE_SET_INTERSECTOR8(symbol,intersector)                         \
+  AccelSet::Intersector8 symbol((AccelSet::IntersectFunc8)intersector::intersect, \
+                                (AccelSet::OccludedFunc8)intersector::occluded, \
+                                TOSTRING(isa) "::" TOSTRING(symbol));
+
+#define DEFINE_SET_INTERSECTOR16(symbol,intersector)                         \
+  AccelSet::Intersector16 symbol((AccelSet::IntersectFunc16)intersector::intersect, \
+                                 (AccelSet::OccludedFunc16)intersector::occluded, \
+                                 TOSTRING(isa) "::" TOSTRING(symbol));  
 }
 
 #endif
