@@ -18,9 +18,9 @@
 #define __EMBREE_BVH4MB_H__
 
 #include "common/alloc.h"
-#include "common/primitive.h"
 #include "common/accel.h"
 #include "common/scene.h"
+#include "geometry/primitive.h"
 
 namespace embree
 {

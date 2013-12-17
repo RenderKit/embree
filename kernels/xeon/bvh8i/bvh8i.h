@@ -17,10 +17,10 @@
 #ifndef __EMBREE_BVH8I_H__
 #define __EMBREE_BVH8I_H__
 
-#include "common/alloc.h"
-#include "common/primitive.h"
-#include "common/accel.h"
 #include "bvh4i/bvh4i.h"
+#include "common/alloc.h"
+#include "common/accel.h"
+#include "geometry/primitive.h"
 #include "geometry/triangle4.h"
 
 namespace embree

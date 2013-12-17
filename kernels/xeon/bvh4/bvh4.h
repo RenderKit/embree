@@ -19,9 +19,9 @@
 
 #include "embree2/rtcore.h"
 #include "common/alloc.h"
-#include "common/primitive.h"
 #include "common/accel.h"
 #include "common/scene.h"
+#include "geometry/primitive.h"
 
 namespace embree
 {

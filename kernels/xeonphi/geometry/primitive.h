@@ -14,22 +14,32 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "triangle1.h"
-#include "common/scene.h"
+#ifndef __EMBREE_ACCEL_PRIMITIVE_H__
+#define __EMBREE_ACCEL_PRIMITIVE_H__
+
+#include "common/default.h"
 
 namespace embree
 {
-  SceneTriangle1 SceneTriangle1::type;
-  TriangleMeshTriangle1 TriangleMeshTriangle1::type;
+  struct PrimitiveType
+  {
+    /*! constructs the triangle type */
+    PrimitiveType (const char* name, size_t bytes, size_t blockSize, bool needVertices, int intCost) 
+      : name(name), bytes(bytes), blockSize(blockSize), needVertices(needVertices), intCost(intCost) {}
 
-  Triangle1Type::Triangle1Type () 
-      : PrimitiveType("triangle1",sizeof(Triangle1),1,false,1) {} 
-  
-  size_t Triangle1Type::blocks(size_t x) const {
-    return x;
-  }
-    
-  size_t Triangle1Type::size(const char* This) const {
-    return 1;
-  }
+    /*! Computes the number of blocks required to store a number of triangles. */
+    virtual size_t blocks(size_t x) const = 0;
+
+    /*! Returns the number of stored primitives in a block. */
+    virtual size_t size(const char* This) const = 0;
+
+  public:
+    std::string name;       //!< name of this primitive type
+    size_t bytes;           //!< number of bytes of the triangle data
+    size_t blockSize;       //!< block size
+    bool   needVertices;    //!< determines if we need the vertex array
+    int    intCost;         //!< cost of one ray/primitive intersection
+  };
 }
+
+#endif

@@ -17,7 +17,7 @@
 #ifndef __EMBREE_ACCEL_TRIANGLE1V_H__
 #define __EMBREE_ACCEL_TRIANGLE1V_H__
 
-#include "../common/primitive.h"
+#include "primitive.h"
 
 namespace embree
 {

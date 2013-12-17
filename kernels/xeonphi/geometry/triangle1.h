@@ -17,7 +17,7 @@
 #ifndef __EMBREE_ACCEL_TRIANGLE1_H__
 #define __EMBREE_ACCEL_TRIANGLE1_H__
 
-#include "../common/primitive.h"
+#include "primitive.h"
 
 namespace embree
 {
@@ -58,17 +58,11 @@ namespace embree
   struct SceneTriangle1 : public Triangle1Type
   {
     static SceneTriangle1 type;
-    void pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const; 
-    void pack(char* dst, const PrimRef* prims, size_t num, void* geom) const;
-    BBox3f update(char* prim, size_t num, void* geom) const;
   };
 
   struct TriangleMeshTriangle1 : public Triangle1Type
   {
     static TriangleMeshTriangle1 type;
-    void pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const;
-    void pack(char* dst, const PrimRef* prims, size_t num, void* geom) const;
-    BBox3f update(char* prim, size_t num, void* geom) const;
   };
 }
 

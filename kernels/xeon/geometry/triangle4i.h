@@ -17,7 +17,7 @@
 #ifndef __EMBREE_TRIANGLE4I_H__
 #define __EMBREE_TRIANGLE4I_H__
 
-#include "../common/primitive.h"
+#include "primitive.h"
 
 namespace embree
 {

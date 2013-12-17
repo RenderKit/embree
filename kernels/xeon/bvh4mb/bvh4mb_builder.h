@@ -23,7 +23,7 @@
 #include "builders/primrefgen.h"
 #include "builders/splitter.h"
 #include "builders/splitter_parallel.h"
-#include "../common/primitive.h"
+#include "geometry/primitive.h"
 
 namespace embree
 {
