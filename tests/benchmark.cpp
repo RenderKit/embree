@@ -432,8 +432,9 @@ namespace embree
 #if !defined(__MIC__)
     rtcore_coherent_intersect4(scene);
     rtcore_coherent_intersect8(scene);
-#endif
+#else
     rtcore_coherent_intersect16(scene);
+#endif
 
     size_t N = 1024*1024;
     Vec3f* numbers = new Vec3f[N];
@@ -448,8 +449,9 @@ namespace embree
 #if !defined(__MIC__)
     rtcore_incoherent_intersect4(scene,numbers,N);
     rtcore_incoherent_intersect8(scene,numbers,N);
-#endif
+#else
     rtcore_incoherent_intersect16(scene,numbers,N);
+#endif
 
     delete numbers;
 

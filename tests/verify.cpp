@@ -30,7 +30,7 @@
 namespace embree
 {
 #if !defined(__MIC__)
-  RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
+  RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8);
 #else
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);
 #endif
@@ -258,7 +258,7 @@ namespace embree
       ray = getRay(ray8,0);
       break;
     }
-#endif
+#else
     case 16: {
       RTCRay16 ray16;
       for (size_t i=0; i<16; i++) setRay(ray16,i,ray);
@@ -267,6 +267,7 @@ namespace embree
       ray = getRay(ray16,0);
       break;
     }
+#endif
     default: break;
     }
   }
@@ -295,7 +296,7 @@ namespace embree
       ray.geomID = ray8.geomID[0];
       break;
     }
-#endif
+#else
     case 16: {
       RTCRay16 ray16;
       for (size_t i=0; i<16; i++) setRay(ray16,i,ray);
@@ -304,6 +305,7 @@ namespace embree
       ray.geomID = ray16.geomID[0];
       break;
     }
+#endif
     default: break;
     }
   }
@@ -881,7 +883,7 @@ namespace embree
             ray8.geomID[1] != 1 || 
             ray8.geomID[2] != 2 || 
             ray8.geomID[3] != 3) return false;
-#endif
+#else
 
         RTCRay16 ray16; 
         setRay(ray16,0,ray0);
@@ -895,6 +897,7 @@ namespace embree
             ray16.geomID[1] != 1 || 
             ray16.geomID[2] != 2 || 
             ray16.geomID[3] != 3) return false;
+#endif
       }
     }
     rtcDeleteScene (scene);
@@ -964,7 +967,8 @@ namespace embree
       bool ok8c = mask2 & 4 ? ray8.geomID[2] == 2 : ray8.geomID[2] == -1;
       bool ok8d = mask3 & 8 ? ray8.geomID[3] == 3 : ray8.geomID[3] == -1;
       if (!ok8a || !ok8b || !ok8c || !ok8d) passed = false;
-#endif
+
+#else
 
       RTCRay16 ray16;
       setRay(ray16,0,ray0);
@@ -978,6 +982,7 @@ namespace embree
       bool ok16c = mask2 & 4 ? ray16.geomID[2] == 2 : ray16.geomID[2] == -1;
       bool ok16d = mask3 & 8 ? ray16.geomID[3] == 3 : ray16.geomID[3] == -1;
       if (!ok16a || !ok16b || !ok16c || !ok16d) passed = false;
+#endif
     }
     rtcDeleteScene (scene);
     return passed;
@@ -1044,7 +1049,8 @@ namespace embree
       bool ok8c = mask2 & 4 ? ray8.geomID[2] == 0 : ray8.geomID[2] == -1;
       bool ok8d = mask3 & 8 ? ray8.geomID[3] == 0 : ray8.geomID[3] == -1;
       if (!ok8a || !ok8b || !ok8c || !ok8d) passed = false;
-#endif
+
+#else
 
       RTCRay16 ray16;
       setRay(ray16,0,ray0);
@@ -1058,6 +1064,7 @@ namespace embree
       bool ok16c = mask2 & 4 ? ray16.geomID[2] == 0 : ray16.geomID[2] == -1;
       bool ok16d = mask3 & 8 ? ray16.geomID[3] == 0 : ray16.geomID[3] == -1;
       if (!ok16a || !ok16b || !ok16c || !ok16d) passed = false;
+#endif
     }
     rtcDeleteScene (scene);
     return passed;
@@ -1122,7 +1129,8 @@ namespace embree
         if ((j%8) == i) continue;
         passed &= ((int*)&ray8)[j] == -1;
       }
-#endif
+
+#else
  
       RTCRay16 ray16; 
       memset(&ray16,-1,sizeof(RTCRay16));
@@ -1136,6 +1144,7 @@ namespace embree
         if ((j%16) == i) continue;
         passed &= ((int*)&ray16)[j] == -1;
       }
+#endif
     }
     return passed;
   }
@@ -1225,7 +1234,7 @@ namespace embree
            numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
 	fflush(stdout);
   }
-#endif
+#else
 
   void rtcore_watertight_sphere16(float pos)
   {
@@ -1251,6 +1260,7 @@ namespace embree
            numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
 	fflush(stdout);
   }
+#endif
   
   void rtcore_watertight_plane1(float pos)
   {
@@ -1639,7 +1649,8 @@ namespace embree
     __align(16) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
     rtcOccluded8(valid8,scene,ray8);
     rtcIntersect8(valid8,scene,ray8);
-#endif
+
+#else
 
     RTCRay16 ray16;
     for (size_t j=0; j<16; j++) {
@@ -1651,6 +1662,7 @@ namespace embree
     __align(16) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
     rtcOccluded16(valid16,scene,ray16);
     rtcIntersect16(valid16,scene,ray16);
+#endif
   }
 
   bool rtcore_regression_static()
@@ -1823,14 +1835,16 @@ namespace embree
 #if !defined(__MIC__)
     rtcore_watertight_sphere4(100000);
     rtcore_watertight_sphere8(100000);
-#endif
+#else
     rtcore_watertight_sphere16(100000);
+#endif
     rtcore_watertight_plane1(100000);
 #if !defined(__MIC__)
     rtcore_watertight_plane4(100000);
     rtcore_watertight_plane8(100000);
-#endif
+#else
     rtcore_watertight_plane16(100000);
+#endif
     rtcore_nan("nan_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1);
 #if !defined(__MIC__)
     rtcore_nan("nan_test_4",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,4);

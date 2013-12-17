@@ -35,11 +35,6 @@ namespace embree
       typedef typename BVH4i::Node Node;
       
     public:
-      
-      static Accel::Intersector4 create() { 
-        return Accel::Intersector4((IntersectFunc4)intersect, (OccludedFunc4)occluded);
-      }
-      
       static void intersect(sseb* valid, BVH4i* bvh, Ray4& ray);
       static void occluded (sseb* valid, BVH4i* bvh, Ray4& ray);
     };
