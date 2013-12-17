@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="tutorial_device_ispc"
 	ProjectGUID="{A98B98E9-4D18-41B0-9E56-7A600F4F6D47}"
 	RootNamespace="tutorial_device_ispc"
@@ -25,7 +25,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\ISPC\"
 			ConfigurationType="4"
 			CharacterSet="0"
 			>
@@ -98,7 +98,7 @@
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\ISPC\"
 			ConfigurationType="4"
 			CharacterSet="0"
 			>
@@ -171,7 +171,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\ISPC\"
 			ConfigurationType="4"
 			CharacterSet="0"
 			WholeProgramOptimization="1"
@@ -245,7 +245,7 @@
 		<Configuration
 			Name="Release|x64"
 			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\ISPC\"
 			ConfigurationType="4"
 			CharacterSet="0"
 			WholeProgramOptimization="1"
@@ -319,7 +319,7 @@
 		<Configuration
 			Name="ReleaseAVX|Win32"
 			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\ISPC\"
 			ConfigurationType="4"
 			CharacterSet="0"
 			WholeProgramOptimization="1"
@@ -393,7 +393,7 @@
 		<Configuration
 			Name="ReleaseAVX|x64"
 			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\ISPC\"
 			ConfigurationType="4"
 			CharacterSet="0"
 			WholeProgramOptimization="1"
@@ -467,7 +467,7 @@
 		<Configuration
 			Name="ReleaseAVX2|Win32"
 			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\ISPC\"
 			ConfigurationType="4"
 			CharacterSet="0"
 			WholeProgramOptimization="1"
@@ -541,7 +541,7 @@
 		<Configuration
 			Name="ReleaseAVX2|x64"
 			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\ISPC\"
 			ConfigurationType="4"
 			CharacterSet="0"
 			WholeProgramOptimization="1"

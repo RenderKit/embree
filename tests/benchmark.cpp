@@ -27,8 +27,7 @@ namespace embree
 
   /* configuration */
   static std::string g_rtcore = "";
-  static size_t testN = 100000;
-
+  
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
   struct Triangle { int v0, v1, v2; };

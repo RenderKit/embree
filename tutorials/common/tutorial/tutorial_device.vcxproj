@@ -35,60 +35,60 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C42537AE-DFC4-4D06-BF36-1B04D0B32BBA}</ProjectGuid>
-    <RootNamespace>tutorial00</RootNamespace>
+    <ProjectGuid>{898B92E9-4118-4FB0-9E56-7A600F4F6DB7}</ProjectGuid>
+    <RootNamespace>tutorial_device</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
     <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
     <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
     <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
     <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
     <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
     <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
@@ -167,7 +167,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -181,12 +181,10 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
-    <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Console</SubSystem>
-      <InterproceduralOptimization>true</InterproceduralOptimization>
-    </Link>
+    <PostBuildEvent>
+      <Message>Copy FreeGlut DLL</Message>
+      <Command>copy "$(SolutionDir)\tutorials\common\freeglut\$(Platform)\freeglut.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
@@ -195,7 +193,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -209,19 +207,17 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
-    <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Console</SubSystem>
-      <InterproceduralOptimization>true</InterproceduralOptimization>
-    </Link>
+    <PostBuildEvent>
+      <Message>Copy FreeGlut DLL</Message>
+      <Command>copy "$(SolutionDir)\tutorials\common\freeglut\$(Platform)\freeglut.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -234,11 +230,10 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
-    <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <SubSystem>Console</SubSystem>
-      <InterproceduralOptimization>true</InterproceduralOptimization>
-    </Link>
+    <PostBuildEvent>
+      <Message>Copy FreeGlut DLL</Message>
+      <Command>copy "$(SolutionDir)\tutorials\common\freeglut\$(Platform)\freeglut.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
@@ -248,7 +243,7 @@
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -261,18 +256,17 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
-    <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <SubSystem>Console</SubSystem>
-      <InterproceduralOptimization>true</InterproceduralOptimization>
-    </Link>
+    <PostBuildEvent>
+      <Message>Copy FreeGlut DLL</Message>
+      <Command>copy "$(SolutionDir)\tutorials\common\freeglut\$(Platform)\freeglut.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|Win32'">
     <ClCompile>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -285,11 +279,10 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
-    <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <SubSystem>Console</SubSystem>
-      <InterproceduralOptimization>true</InterproceduralOptimization>
-    </Link>
+    <PostBuildEvent>
+      <Message>Copy FreeGlut DLL</Message>
+      <Command>copy "$(SolutionDir)\tutorials\common\freeglut\$(Platform)\freeglut.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|x64'">
     <Midl>
@@ -299,7 +292,7 @@
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -312,19 +305,17 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
-    <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <SubSystem>Console</SubSystem>
-      <TargetMachine>MachineX64</TargetMachine>
-      <InterproceduralOptimization>true</InterproceduralOptimization>
-    </Link>
+    <PostBuildEvent>
+      <Message>Copy FreeGlut DLL</Message>
+      <Command>copy "$(SolutionDir)\tutorials\common\freeglut\$(Platform)\freeglut.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|Win32'">
     <ClCompile>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -337,11 +328,10 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
-    <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <SubSystem>Console</SubSystem>
-      <InterproceduralOptimization>true</InterproceduralOptimization>
-    </Link>
+    <PostBuildEvent>
+      <Message>Copy FreeGlut DLL</Message>
+      <Command>copy "$(SolutionDir)\tutorials\common\freeglut\$(Platform)\freeglut.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'">
     <Midl>
@@ -351,7 +341,7 @@
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir);$(SolutionDir)/include;$(SolutionDir)/common;$(SolutionDir)/tutorials/common;$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -364,40 +354,24 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
-    <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <SubSystem>Console</SubSystem>
-      <TargetMachine>MachineX64</TargetMachine>
-      <InterproceduralOptimization>true</InterproceduralOptimization>
-    </Link>
+    <PostBuildEvent>
+      <Message>Copy FreeGlut DLL</Message>
+      <Command>copy "$(SolutionDir)\tutorials\common\freeglut\$(Platform)\freeglut.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="tutorial00.cpp" />
-    <ClCompile Include="tutorial00_device.cpp" />
+    <ClCompile Include="tutorial_device.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\common\sys\sys.vcxproj">
+    <ClInclude Include="tutorial_device.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\common\sys\sys.vcxproj">
       <Project>{b118ab3d-ab5b-4d86-90c2-8e91e8457710}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\..\kernels\xeon\embree.vcxproj">
+    <ProjectReference Include="..\..\..\kernels\xeon\embree.vcxproj">
       <Project>{ed858c9a-c161-4036-8df7-eb169bcb81bc}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\common\lexers\lexers.vcxproj">
-      <Project>{47a3a15e-ae35-41e9-824a-c542f8ba226e}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\common\transport\transport.vcxproj">
-      <Project>{898ba8e9-4d18-4fb0-9e55-7a600f4f6da7}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\common\tutorial\tutorial.vcxproj">
-      <Project>{898b98e9-4d18-4fb0-9e56-7a600f4f6da7}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\common\tutorial\tutorial_device.vcxproj">
-      <Project>{898b92e9-4118-4fb0-9e56-7a600f4f6db7}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
