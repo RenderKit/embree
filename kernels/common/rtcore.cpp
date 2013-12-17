@@ -344,26 +344,41 @@ namespace embree
   
   RTCORE_API void rtcIntersect4 (const void* valid, RTCScene scene, RTCRay4& ray) 
   {
+#if defined(__MIC__)
+    if (VERBOSE) std::cerr << "RTCore: rtcIntersect4 not supported" << std::endl;    
+    recordError(RTC_INVALID_OPERATION);    
+#else
     TRACE(rtcIntersect4);
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,4);
     ((Scene*)scene)->intersect4(valid,ray);
+#endif
   }
   
   RTCORE_API void rtcIntersect8 (const void* valid, RTCScene scene, RTCRay8& ray) 
   {
     TRACE(rtcIntersect8);
+#if !defined(__TARGET_AVX__) && !defined(__TARGET_AVX2__)
+    if (VERBOSE) std::cerr << "RTCore: rtcIntersect8 not supported" << std::endl;    
+    recordError(RTC_INVALID_OPERATION);                                    
+#else
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,8);
     ((Scene*)scene)->intersect8(valid,ray);
+#endif
   }
   
   RTCORE_API void rtcIntersect16 (const void* valid, RTCScene scene, RTCRay16& ray) 
   {
     TRACE(rtcIntersect16);
+#if !defined(__TARGET_XEON_PHI__)
+    if (VERBOSE) std::cerr << "RTCore: rtcIntersect16 not supported" << std::endl;    
+    recordError(RTC_INVALID_OPERATION);                                    
+#else
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,16);
     ((Scene*)scene)->intersect16(valid,ray);
+#endif
   }
   
   RTCORE_API void rtcOccluded (RTCScene scene, RTCRay& ray) 
@@ -376,25 +391,40 @@ namespace embree
   RTCORE_API void rtcOccluded4 (const void* valid, RTCScene scene, RTCRay4& ray) 
   {
     TRACE(rtcOccluded4);
+#if defined(__MIC__)
+    if (VERBOSE) std::cerr << "RTCore: rtcOccluded4 not supported" << std::endl;    
+    recordError(RTC_INVALID_OPERATION);    
+#else
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,4);
     ((Scene*)scene)->occluded4(valid,ray);
+#endif
   }
   
   RTCORE_API void rtcOccluded8 (const void* valid, RTCScene scene, RTCRay8& ray) 
   {
     TRACE(rtcOccluded8);
+#if !defined(__TARGET_AVX__) && !defined(__TARGET_AVX2__)
+    if (VERBOSE) std::cerr << "RTCore: rtcOccluded8 not supported" << std::endl;    
+    recordError(RTC_INVALID_OPERATION);                                    
+#else
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,8);
     ((Scene*)scene)->occluded8(valid,ray);
+#endif
   }
   
   RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray) 
   {
     TRACE(rtcOccluded16);
+#if !defined(__TARGET_XEON_PHI__)
+    if (VERBOSE) std::cerr << "RTCore: rtcOccluded16 not supported" << std::endl;    
+    recordError(RTC_INVALID_OPERATION);                                    
+#else
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,16);
     ((Scene*)scene)->occluded16(valid,ray);
+#endif
   }
   
   RTCORE_API void rtcDeleteScene (RTCScene scene) 
