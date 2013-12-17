@@ -21,10 +21,12 @@
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 
+#include "common/accelinstance.h"
+
 namespace embree
 {
-  DECLARE_INTERSECTOR1(BVH8iTriangle1Intersector1Moeller);
-  DECLARE_INTERSECTOR8(BVH8iTriangle1Intersector8ChunkMoeller);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH8iTriangle1Intersector1Moeller);
+  DECLARE_SYMBOL(Accel::Intersector8,BVH8iTriangle1Intersector8ChunkMoeller);
 
   DECLARE_BUILDER(BVH8iTriangle1BuilderObjectSplit4);
 
@@ -32,13 +34,13 @@ namespace embree
   {
     int features = getCPUFeatures();
     
-    SELECT_AVX(features,BVH8iTriangle1Intersector1Moeller);
-    SELECT_AVX2(features,BVH8iTriangle1Intersector1Moeller);
+    SELECT_SYMBOL_AVX(features,BVH8iTriangle1Intersector1Moeller);
+    SELECT_SYMBOL_AVX2(features,BVH8iTriangle1Intersector1Moeller);
 
-    SELECT_AVX(features,BVH8iTriangle1Intersector8ChunkMoeller);
-    SELECT_AVX2(features,BVH8iTriangle1Intersector8ChunkMoeller);
+    SELECT_SYMBOL_AVX(features,BVH8iTriangle1Intersector8ChunkMoeller);
+    SELECT_SYMBOL_AVX2(features,BVH8iTriangle1Intersector8ChunkMoeller);
     
-    SELECT_AVX(features,BVH8iTriangle1BuilderObjectSplit4);
+    SELECT_SYMBOL_AVX(features,BVH8iTriangle1BuilderObjectSplit4);
   }
 
   Accel* BVH8i::BVH8iTriangle1(Scene* scene)

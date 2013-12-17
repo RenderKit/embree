@@ -175,6 +175,83 @@ namespace embree
   typedef Vec2<mic_f> mic2f;
   typedef Vec3<mic_f> mic3f;
 #endif
+
+typedef void (*ErrorFunc) ();
+
+#define DECLARE_SYMBOL(type,name)                  \
+  namespace isa   { extern type name; }            \
+  namespace sse41 { extern type name; }                                 \
+  namespace avx   { extern type name; }                                 \
+  namespace avx2  { extern type name; }                                 \
+  void name##_error() { std::cerr << "Error: " << TOSTRING(name) << " not supported by your CPU" << std::endl; } \
+  type name((type)name##_error);
+
+#define SELECT_SYMBOL_DEFAULT(features,intersector) \
+  intersector = isa::intersector;
+
+#if defined(__TARGET_SSE41__)
+#define SELECT_SYMBOL_SSE41(features,intersector) \
+  if ((features & SSE41) == SSE41) intersector = sse41::intersector;
+#else
+#define SELECT_SYMBOL_SSE41(features,intersector)
+#endif
+
+#if defined(__TARGET_AVX__)
+#define SELECT_SYMBOL_AVX(features,intersector) \
+  if ((features & AVX) == AVX) intersector = avx::intersector;
+#else
+#define SELECT_SYMBOL_AVX(features,intersector)
+#endif
+
+#if defined(__TARGET_AVX2__)
+#define SELECT_SYMBOL_AVX2(features,intersector) \
+  if ((features & AVX2) == AVX2) intersector = avx2::intersector;
+#else
+#define SELECT_SYMBOL_AVX2(features,intersector)
+#endif
+
+#if defined(__MIC__)
+#define SELECT_SYMBOL_KNC(features,intersector) \
+  intersector = knc::intersector;
+#else
+#define SELECT_SYMBOL_KNC(features,intersector)
+#endif
+
+#define SELECT_SYMBOL_TEST(intersector)                               \
+  if (!intersector) printf("WARNING: could not select code for " TOSTRING(intersector) "\n")
+  
+#define SELECT_SYMBOL_DEFAULT_SSE41(features,intersector) \
+  SELECT_SYMBOL_DEFAULT(features,intersector);                                 \
+  SELECT_SYMBOL_SSE41(features,intersector);                                   \
+  SELECT_SYMBOL_TEST(intersector);
+
+#define SELECT_SYMBOL_DEFAULT_AVX(features,intersector) \
+  SELECT_SYMBOL_DEFAULT(features,intersector);                     \
+  SELECT_SYMBOL_AVX(features,intersector);                         \
+  SELECT_SYMBOL_TEST(intersector);
+
+#define SELECT_SYMBOL_AVX_AVX2(features,intersector) \
+  SELECT_SYMBOL_AVX(features,intersector);                         \
+  SELECT_SYMBOL_AVX2(features,intersector);
+
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,intersector) \
+  SELECT_SYMBOL_DEFAULT(features,intersector);                     \
+  SELECT_SYMBOL_AVX(features,intersector);                         \
+  SELECT_SYMBOL_AVX2(features,intersector);                        \
+  SELECT_SYMBOL_TEST(intersector);
+
+#define SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,intersector) \
+  SELECT_SYMBOL_DEFAULT(features,intersector);                     \
+  SELECT_SYMBOL_SSE41(features,intersector);                       \
+  SELECT_SYMBOL_AVX(features,intersector);                         \
+  SELECT_SYMBOL_AVX2(features,intersector);                        \
+  SELECT_SYMBOL_TEST(intersector);
+
+#define SELECT_SYMBOL_DEFAULT_SSE41_AVX(features,intersector) \
+  SELECT_SYMBOL_DEFAULT(features,intersector);                     \
+  SELECT_SYMBOL_SSE41(features,intersector);                       \
+  SELECT_SYMBOL_AVX(features,intersector);                         \
+  SELECT_SYMBOL_TEST(intersector);
 }
 
 #endif

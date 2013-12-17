@@ -19,6 +19,7 @@
 
 #include "common/default.h"
 #include "common/accel.h"
+#include "common/accelset.h"
 #include "common/geometry.h"
 
 namespace embree

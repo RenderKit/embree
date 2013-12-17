@@ -63,11 +63,11 @@ namespace embree
   void BVH4MBRegister();
 
   /*! intersector registration functions */
-  DECLARE_BOUNDS_FUNC(InstanceBoundsFunc);
-  DECLARE_SET_INTERSECTOR1(InstanceIntersector1);
-  DECLARE_SET_INTERSECTOR4(InstanceIntersector4);
-  DECLARE_SET_INTERSECTOR8(InstanceIntersector8);
-  DECLARE_SET_INTERSECTOR16(InstanceIntersector16);
+  DECLARE_SYMBOL(RTCBoundsFunc,InstanceBoundsFunc);
+  DECLARE_SYMBOL(AccelSet::Intersector1,InstanceIntersector1);
+  DECLARE_SYMBOL(AccelSet::Intersector4,InstanceIntersector4);
+  DECLARE_SYMBOL(AccelSet::Intersector8,InstanceIntersector8);
+  DECLARE_SYMBOL(AccelSet::Intersector16,InstanceIntersector16);
   
   /* global settings */
   std::string g_top_accel = "default";    //!< toplevel acceleration structure to use
@@ -126,14 +126,14 @@ namespace embree
   {
     int features = getCPUFeatures();
 #if defined(__MIC__)
-    SELECT_KNC(features,InstanceBoundsFunc);
-    SELECT_KNC(features,InstanceIntersector1);
-    SELECT_KNC(features,InstanceIntersector16);
+    SELECT_SYMBOL_KNC(features,InstanceBoundsFunc);
+    SELECT_SYMBOL_KNC(features,InstanceIntersector1);
+    SELECT_SYMBOL_KNC(features,InstanceIntersector16);
 #else
-    SELECT_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
-    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
-    SELECT_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
-    SELECT_AVX_AVX2(features,InstanceIntersector8);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
+    SELECT_SYMBOL_AVX_AVX2(features,InstanceIntersector8);
 #endif
   }
 

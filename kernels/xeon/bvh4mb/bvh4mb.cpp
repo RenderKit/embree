@@ -15,14 +15,14 @@
 // ======================================================================== //
 
 #include "bvh4mb.h"
-
 #include "geometry/triangle1v.h"
+#include "common/accelinstance.h"
 
 namespace embree
 {
-  DECLARE_INTERSECTOR1(BVH4MBTriangle1vIntersector1Moeller);
-  DECLARE_INTERSECTOR4(BVH4MBTriangle1vIntersector4ChunkMoeller);
-  DECLARE_INTERSECTOR8(BVH4MBTriangle1vIntersector8ChunkMoeller);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4MBTriangle1vIntersector1Moeller);
+  DECLARE_SYMBOL(Accel::Intersector4,BVH4MBTriangle1vIntersector4ChunkMoeller);
+  DECLARE_SYMBOL(Accel::Intersector8,BVH4MBTriangle1vIntersector8ChunkMoeller);
 
   Builder* BVH4MBBuilderObjectSplit1 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
   Builder* BVH4MBBuilderObjectSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
@@ -31,9 +31,9 @@ namespace embree
   {
     int features = getCPUFeatures();
 
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector1Moeller);
-    SELECT_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector4ChunkMoeller);
-    SELECT_AVX_AVX2(features,BVH4MBTriangle1vIntersector8ChunkMoeller);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector1Moeller);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector4ChunkMoeller);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH4MBTriangle1vIntersector8ChunkMoeller);
   }
 
   Accel* BVH4MB::BVH4MBTriangle1v(Scene* scene)
