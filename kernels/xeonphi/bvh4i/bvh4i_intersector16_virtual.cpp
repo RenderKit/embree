@@ -32,6 +32,8 @@ namespace embree
       __align(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
+      if (unlikely(bvh == NULL)) return;
+
       /* load ray */
       const mic_m valid0   = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir     = rcp_safe(ray.dir);
@@ -51,6 +53,8 @@ namespace embree
       
       const Node     * __restrict__ nodes  = (Node    *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+
+      if (unlikely(accel == NULL)) return;
 
       while (1)
       {
@@ -159,6 +163,8 @@ namespace embree
       __align(64) mic_f    stack_dist[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
+      if (unlikely(bvh == NULL)) return;
+
       /* load ray */
       const mic_m valid = *(mic_i*)valid_i != mic_i(0);
       mic_m m_terminated = !valid;
@@ -178,6 +184,8 @@ namespace embree
       
       const Node     * __restrict__ nodes = (Node    *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+
+      if (unlikely(accel == NULL)) return;
 
       while (1)
       {
@@ -289,6 +297,8 @@ namespace embree
       __align(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
+      if (unlikely(bvh == NULL)) return;
+
       /* setup */
       const mic3f rdir16     = rcp_safe(mic3f(mic_f(ray.dir.x),mic_f(ray.dir.y),mic_f(ray.dir.z)));
       const mic_f inf        = mic_f(pos_inf);
@@ -298,6 +308,8 @@ namespace embree
 
       const Node      * __restrict__ nodes = (Node    *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+
+      if (unlikely(accel == NULL)) return;
 
       stack_node[0] = BVH4i::invalidNode;      
       stack_node[1] = bvh->root;
@@ -494,6 +506,8 @@ namespace embree
       /* near and node stack */
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
+      if (unlikely(bvh == NULL)) return;
+
       /* setup */
       const mic3f rdir16      = rcp_safe(mic3f(ray.dir.x,ray.dir.y,ray.dir.z));
       const mic_f inf         = mic_f(pos_inf);
@@ -501,6 +515,8 @@ namespace embree
 
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+
+      if (unlikely(accel == NULL)) return;
 
       stack_node[0] = BVH4i::invalidNode;
       stack_node[1] = bvh->root;
