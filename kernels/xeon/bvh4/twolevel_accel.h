@@ -18,8 +18,8 @@
 #define __EMBREE_TWOLEVEL_ACCEL_H__
 
 #include "embree2/rtcore.h"
-#include "rtcore/scene_triangle_mesh.h"
-#include "rtcore/scene_user_geometry.h"
+#include "common/scene_triangle_mesh.h"
+#include "common/scene_user_geometry.h"
 #include "common/accel.h"
 
 namespace embree

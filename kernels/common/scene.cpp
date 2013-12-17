@@ -16,10 +16,8 @@
 
 #include "scene.h"
 
-
-
 #if !defined(__MIC__)
-#include "rtcore/twolevel_accel.h"
+#include "bvh4/twolevel_accel.h"
 #include "bvh4/bvh4_builder_toplevel.h"
 #include "bvh4/bvh4.h"
 #include "bvh4i/bvh4i.h"

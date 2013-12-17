@@ -17,7 +17,7 @@
 #ifndef __EMBREE_INSTANCE_INTERSECTOR16_H__
 #define __EMBREE_INSTANCE_INTERSECTOR16_H__
 
-#include "rtcore/scene_user_geometry.h"
+#include "common/scene_user_geometry.h"
 #include "common/ray16.h"
 
 namespace embree

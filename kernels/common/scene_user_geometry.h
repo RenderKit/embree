@@ -19,7 +19,7 @@
 
 #include "common/default.h"
 #include "common/accel.h"
-#include "rtcore/geometry.h"
+#include "common/geometry.h"
 
 namespace embree
 {

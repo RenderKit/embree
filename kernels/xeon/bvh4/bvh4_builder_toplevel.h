@@ -20,7 +20,7 @@
 #include "bvh4.h"
 #include "../bvh4i/bvh4i_builder_util.h"
 #include "bvh4_builder_binner.h"
-#include "rtcore/scene_triangle_mesh.h"
+#include "common/scene_triangle_mesh.h"
 
 namespace embree
 {

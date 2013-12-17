@@ -21,7 +21,7 @@
 #include "common/alloc.h"
 #include "common/primitive.h"
 #include "common/accel.h"
-#include "rtcore/scene.h"
+#include "common/scene.h"
 
 namespace embree
 {

@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "triangle4i.h"
-#include "rtcore/scene.h"
+#include "common/scene.h"
 
 namespace embree
 {

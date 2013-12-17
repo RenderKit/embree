@@ -35,14 +35,14 @@ ADD_ISPC_LIBRARY(embree SHARED
   ../common/tasksys.cpp 
   ../common/accel3.cpp
 
-  rtcore/rtcore.cpp 
-  rtcore/rtcore_ispc.cpp 
-  rtcore/rtcore_ispc.ispc 
-  rtcore/scene.cpp
-  rtcore/scene_user_geometry.cpp
-  rtcore/scene_triangle_mesh.cpp
-  rtcore/scene_quadratic_bezier_curves.cpp
-  rtcore/geometry.cpp
+  ../common/rtcore.cpp 
+  ../common/rtcore_ispc.cpp 
+  ../common/rtcore_ispc.ispc 
+  ../common/scene.cpp
+  ../common/scene_user_geometry.cpp
+  ../common/scene_triangle_mesh.cpp
+  ../common/scene_quadratic_bezier_curves.cpp
+  ../common/geometry.cpp
   
   builders/heuristic_binning.cpp
   builders/heuristic_spatial.cpp
@@ -51,16 +51,15 @@ ADD_ISPC_LIBRARY(embree SHARED
   builders/splitter_parallel.cpp
   builders/primrefgen.cpp
   
-  geometry/instance_intersector1.cpp
-  geometry/instance_intersector4.cpp
-  
   geometry/triangle1.cpp
   geometry/triangle4.cpp
   geometry/triangle1v.cpp
   geometry/triangle4v.cpp
   geometry/triangle4i.cpp
   geometry/ispc_wrapper_sse.cpp
-
+  geometry/instance_intersector1.cpp
+  geometry/instance_intersector4.cpp
+  
   bvh4/bvh4.cpp
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp

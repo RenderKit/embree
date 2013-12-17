@@ -16,7 +16,7 @@
 
 #include "twolevel_accel.h"
 #include "virtual_accel.h"
-#include "rtcore/scene.h"
+#include "common/scene.h"
 
 #include "bvh4/bvh4.h"
 #include "bvh4i/bvh4i.h"

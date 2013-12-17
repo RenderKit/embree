@@ -18,7 +18,7 @@
 #define __EMBREE_QUADRATIC_BEZIER_CURVES_SCENE_H__
 
 #include "common/default.h"
-#include "rtcore/geometry.h"
+#include "common/geometry.h"
 
 namespace embree
 {

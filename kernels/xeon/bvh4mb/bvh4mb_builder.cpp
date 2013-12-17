@@ -21,7 +21,7 @@
 
 #define ROTATE_TREE 1
 
-#include "../rtcore/scene_triangle_mesh.h"
+#include "common/scene_triangle_mesh.h"
 
 namespace embree
 {

@@ -28,14 +28,14 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../common/tasksys.cpp 
   ../common/accel3.cpp
 
-  ../xeon/rtcore/rtcore.cpp 
-  ../xeon/rtcore/rtcore_ispc.cpp 
-  ../xeon/rtcore/rtcore_ispc.ispc 
-  ../xeon/rtcore/scene.cpp
-  ../xeon/rtcore/scene_user_geometry.cpp
-  ../xeon/rtcore/scene_triangle_mesh.cpp
-  ../xeon/rtcore/scene_quadratic_bezier_curves.cpp
-  ../xeon/rtcore/geometry.cpp
+  ../common/rtcore.cpp 
+  ../common/rtcore_ispc.cpp 
+  ../common/rtcore_ispc.ispc 
+  ../common/scene.cpp
+  ../common/scene_user_geometry.cpp
+  ../common/scene_triangle_mesh.cpp
+  ../common/scene_quadratic_bezier_curves.cpp
+  ../common/geometry.cpp
   
   ../xeon/builders/heuristic_binning.cpp
   ../xeon/builders/heuristic_spatial.cpp
@@ -44,8 +44,8 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../xeon/builders/splitter_parallel.cpp
   ../xeon/builders/primrefgen.cpp
   
-  ../xeon/geometry/instance_intersector1.cpp
-  ../xeon/geometry/instance_intersector16.cpp
+  geometry/instance_intersector1.cpp
+  geometry/instance_intersector16.cpp
   
   ../xeon/geometry/triangle1.cpp
   ../xeon/geometry/triangle4.cpp

@@ -18,7 +18,7 @@
 #if defined(__TARGET_AVX__)
 #include "triangle8.h"
 #endif
-#include "rtcore/scene.h"
+#include "common/scene.h"
 
 namespace embree
 {

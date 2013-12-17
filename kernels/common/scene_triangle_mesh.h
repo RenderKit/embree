@@ -18,7 +18,7 @@
 #define __EMBREE_TRIANGLE_MESH_SCENE_H__
 
 #include "common/default.h"
-#include "rtcore/geometry.h"
+#include "common/geometry.h"
 #include "builders/build_source.h"
 
 namespace embree
