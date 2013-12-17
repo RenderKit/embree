@@ -34,25 +34,25 @@ namespace embree
 #define CATCH_BEGIN try {
 #define CATCH_END                                                       \
   } catch (std::bad_alloc&) {                                         \
-  if (VERBOSE) std::cerr << "RTCore: Out of memory" << std::endl;     \
+  if (VERBOSE) std::cerr << "Embree: Out of memory" << std::endl;     \
   recordError(RTC_OUT_OF_MEMORY);                                       \
  } catch (std::exception& e) {                                          \
-  if (VERBOSE) std::cerr << "RTCore: " << e.what() << std::endl;      \
+  if (VERBOSE) std::cerr << "Embree: " << e.what() << std::endl;      \
   recordError(RTC_UNKNOWN_ERROR);                                       \
  } catch (...) {                                                        \
-  if (VERBOSE) std::cerr << "RTCore: Unknown exception caught." << std::endl; \
+  if (VERBOSE) std::cerr << "Embree: Unknown exception caught." << std::endl; \
   recordError(RTC_UNKNOWN_ERROR);                                       \
  }
 
 #define VERIFY_HANDLE(handle) \
   if (handle == NULL) {                                                 \
-    if (VERBOSE) std::cerr << "RTCore: invalid argument" << std::endl; \
+    if (VERBOSE) std::cerr << "Embree: invalid argument" << std::endl; \
     recordError(RTC_INVALID_ARGUMENT);                                  \
   }
 
 #define VERIFY_GEOMID(id) \
   if (id == -1) {                                                 \
-    if (VERBOSE) std::cerr << "RTCore: invalid argument" << std::endl; \
+    if (VERBOSE) std::cerr << "Embree: invalid argument" << std::endl; \
     recordError(RTC_INVALID_ARGUMENT);                                  \
   }
   
@@ -281,11 +281,11 @@ namespace embree
     if (VERBOSE) 
     {
       switch (error) {
-      case RTC_NO_ERROR         : std::cerr << "RTCore: No error" << std::endl; break;
-      case RTC_UNKNOWN_ERROR    : std::cerr << "RTCore: Unknown error" << std::endl; break;
-      case RTC_INVALID_ARGUMENT : std::cerr << "RTCore: Invalid argument" << std::endl; break;
-      case RTC_INVALID_OPERATION: std::cerr << "RTCore: Invalid operation" << std::endl; break;
-      case RTC_OUT_OF_MEMORY    : std::cerr << "RTCore: Out of memory" << std::endl; break;
+      case RTC_NO_ERROR         : std::cerr << "Embree: No error" << std::endl; break;
+      case RTC_UNKNOWN_ERROR    : std::cerr << "Embree: Unknown error" << std::endl; break;
+      case RTC_INVALID_ARGUMENT : std::cerr << "Embree: Invalid argument" << std::endl; break;
+      case RTC_INVALID_OPERATION: std::cerr << "Embree: Invalid operation" << std::endl; break;
+      case RTC_OUT_OF_MEMORY    : std::cerr << "Embree: Out of memory" << std::endl; break;
       };
     }
     if (*stored_error == RTC_NO_ERROR)
@@ -345,7 +345,7 @@ namespace embree
   RTCORE_API void rtcIntersect4 (const void* valid, RTCScene scene, RTCRay4& ray) 
   {
 #if defined(__MIC__)
-    if (VERBOSE) std::cerr << "RTCore: rtcIntersect4 not supported" << std::endl;    
+    if (VERBOSE) std::cerr << "Embree: rtcIntersect4 not supported" << std::endl;    
     recordError(RTC_INVALID_OPERATION);    
 #else
     TRACE(rtcIntersect4);
@@ -359,7 +359,7 @@ namespace embree
   {
     TRACE(rtcIntersect8);
 #if !defined(__TARGET_AVX__) && !defined(__TARGET_AVX2__)
-    if (VERBOSE) std::cerr << "RTCore: rtcIntersect8 not supported" << std::endl;    
+    if (VERBOSE) std::cerr << "Embree: rtcIntersect8 not supported" << std::endl;    
     recordError(RTC_INVALID_OPERATION);                                    
 #else
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
@@ -372,7 +372,7 @@ namespace embree
   {
     TRACE(rtcIntersect16);
 #if !defined(__TARGET_XEON_PHI__)
-    if (VERBOSE) std::cerr << "RTCore: rtcIntersect16 not supported" << std::endl;    
+    if (VERBOSE) std::cerr << "Embree: rtcIntersect16 not supported" << std::endl;    
     recordError(RTC_INVALID_OPERATION);                                    
 #else
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
@@ -392,7 +392,7 @@ namespace embree
   {
     TRACE(rtcOccluded4);
 #if defined(__MIC__)
-    if (VERBOSE) std::cerr << "RTCore: rtcOccluded4 not supported" << std::endl;    
+    if (VERBOSE) std::cerr << "Embree: rtcOccluded4 not supported" << std::endl;    
     recordError(RTC_INVALID_OPERATION);    
 #else
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
@@ -405,7 +405,7 @@ namespace embree
   {
     TRACE(rtcOccluded8);
 #if !defined(__TARGET_AVX__) && !defined(__TARGET_AVX2__)
-    if (VERBOSE) std::cerr << "RTCore: rtcOccluded8 not supported" << std::endl;    
+    if (VERBOSE) std::cerr << "Embree: rtcOccluded8 not supported" << std::endl;    
     recordError(RTC_INVALID_OPERATION);                                    
 #else
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
@@ -418,7 +418,7 @@ namespace embree
   {
     TRACE(rtcOccluded16);
 #if !defined(__TARGET_XEON_PHI__)
-    if (VERBOSE) std::cerr << "RTCore: rtcOccluded16 not supported" << std::endl;    
+    if (VERBOSE) std::cerr << "Embree: rtcOccluded16 not supported" << std::endl;    
     recordError(RTC_INVALID_OPERATION);                                    
 #else
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);

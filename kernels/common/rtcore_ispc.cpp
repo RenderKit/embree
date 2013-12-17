@@ -24,25 +24,25 @@ namespace embree
 #define CATCH_BEGIN try {
 #define CATCH_END                                                       \
   } catch (std::bad_alloc&) {                                         \
-  if (VERBOSE) std::cerr << "RTCore: Out of memory" << std::endl;     \
+  if (VERBOSE) std::cerr << "Embree: Out of memory" << std::endl;     \
   recordError(RTC_OUT_OF_MEMORY);                                       \
  } catch (std::exception& e) {                                          \
-  if (VERBOSE) std::cerr << "RTCore: " << e.what() << std::endl;      \
+  if (VERBOSE) std::cerr << "Embree: " << e.what() << std::endl;      \
   recordError(RTC_UNKNOWN_ERROR);                                       \
  } catch (...) {                                                        \
-  if (VERBOSE) std::cerr << "RTCore: Unknown exception caught." << std::endl; \
+  if (VERBOSE) std::cerr << "Embree: Unknown exception caught." << std::endl; \
   recordError(RTC_UNKNOWN_ERROR);                                       \
  }
 
 #define VERIFY_HANDLE(handle) \
   if (handle == NULL) {                                                 \
-    if (VERBOSE) std::cerr << "RTCore: invalid argument" << std::endl; \
+    if (VERBOSE) std::cerr << "Embree: invalid argument" << std::endl; \
     recordError(RTC_INVALID_ARGUMENT);                                  \
   }
 
 #define VERIFY_GEOMID(id) \
   if (id == -1) {                                                 \
-    if (VERBOSE) std::cerr << "RTCore: invalid argument" << std::endl; \
+    if (VERBOSE) std::cerr << "Embree: invalid argument" << std::endl; \
     recordError(RTC_INVALID_ARGUMENT);                                  \
   }
 

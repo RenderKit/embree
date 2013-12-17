@@ -257,7 +257,7 @@ namespace embree
     for (size_t i=0; i<geometries.size(); i++) {
       if (geometries[i]) {
         if (!geometries[i]->verify()) {
-          std::cerr << "RTCore: invalid geometry specified" << std::endl;
+          std::cerr << "Embree: invalid geometry specified" << std::endl;
           throw std::runtime_error("invalid geometry");
         }
       }
