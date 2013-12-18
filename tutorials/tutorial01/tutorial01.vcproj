@@ -221,6 +221,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				GenerateDebugInformation="false"
 				SubSystem="1"
 			/>
 			<Tool

@@ -28,6 +28,7 @@ namespace embree
 
   class __align(64) Centroid_Scene_AABB
   {
+    ALIGNED_CLASS;
   public:
     BBox3f centroid2;
     BBox3f geometry;
