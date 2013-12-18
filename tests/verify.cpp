@@ -1815,7 +1815,6 @@ namespace embree
     /* perform tests */
     rtcInit(g_rtcore.c_str());
 
-#if 1
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
     POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
@@ -1834,11 +1833,13 @@ namespace embree
     POSITIVE("overlapping_geometry",      rtcore_overlapping(100000));
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
 
+#if defined(__USE_RAY_MASK__)
     rtcore_ray_masks_all();
-
 #endif
 
+#if defined(__BACKFACE_CULLING__)
     rtcore_backface_culling_all();
+#endif
 
     rtcore_packet_write_test_all();
 
@@ -1856,6 +1857,8 @@ namespace embree
 #else
     rtcore_watertight_plane16(100000);
 #endif
+
+#if defined(__FIX_RAYS__)
     rtcore_nan("nan_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1);
 #if !defined(__MIC__)
     rtcore_nan("nan_test_4",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,4);
@@ -1869,7 +1872,7 @@ namespace embree
     rtcore_inf("inf_test_8",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,8);
 #endif
     rtcore_inf("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
-
+#endif
 
     POSITIVE("regression_static",         rtcore_regression_static());
     POSITIVE("regression_dynamic",        rtcore_regression_dynamic());
