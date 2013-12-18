@@ -119,7 +119,9 @@ void updateInstance (RTCScene scene, Instance* instance)
 
 struct Sphere
 {
-  Vec3f p;                      //!< position of the sphere
+  ALIGNED_CLASS;
+public:
+  Vec3fa p;                      //!< position of the sphere
   float r;                      //!< radius of the sphere
   unsigned int geomID;
 };

@@ -221,8 +221,8 @@ namespace embree
         size_t numReservedNodes = 2*numPrimitives;
         size_t numReservedPrimitives = 2*numPrimitives;
 #else
-        size_t numReservedNodes = 1.2*numAllocatedNodes;
-        size_t numReservedPrimitives = 1.2*numAllocatedPrimitives;
+        size_t numReservedNodes = 1.5*numAllocatedNodes;
+        size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
 #endif
         bytesMorton = ((numPrimitives+7)&(-8)) * sizeof(MortonID32Bit);
         size_t bytesAllocatedNodes      = numAllocatedNodes * sizeof(BVH4::Node);
