@@ -444,7 +444,7 @@ namespace embree
     const mic_f v1 = broadcast4to16f(vptr1);
     const mic_f v2 = broadcast4to16f(vptr2);
 
-    const mic_f tri_accel = initTriangle1(v0,v1,v2,gID,pID,mic_i::zero());
+    const mic_f tri_accel = initTriangle1(v0,v1,v2,gID,pID,mic_i(mesh->mask));
     store16f_ngo(acc,tri_accel);
   }
 

@@ -759,10 +759,11 @@ namespace embree
 		      {
 #if defined(__USE_RAY_MASK__)
 			const mic_i rayMask(ray16.mask[rayIndex]);
-			const mic_i triMask = gather16i_4i((int*)&tptr[0].Ng,
-							   (int*)&tptr[1].Ng,
-							   (int*)&tptr[2].Ng,
-							   (int*)&tptr[3].Ng);
+			const mic_i triMask = swDDDD(gather16i_4i((int*)&tptr[0].v2,
+								  (int*)&tptr[1].v2,
+								  (int*)&tptr[2].v2,
+								  (int*)&tptr[3].v2));
+
 			const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
 			
 			if ( any(m_final & m_ray_mask) )
