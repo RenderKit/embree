@@ -22,7 +22,7 @@
 
 //#define PROFILE
 
-#define PROFILE_ITERATIONS 20
+#define PROFILE_ITERATIONS 200
 
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE

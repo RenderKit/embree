@@ -25,6 +25,9 @@
 #define MAX_REBUILD_NODES numPrimitives
 #define PROFILE_ITERATIONS 20
 
+#define L1_PREFETCH_ITEMS 2
+#define L2_PREFETCH_ITEMS 16
+
 #define TIMER(x) 
 
 //#define PROFILE
