@@ -440,7 +440,7 @@ namespace embree
     prefetch<PFHINT_L1>(vptr1);
     prefetch<PFHINT_L1>(vptr2);
 
-    const mic_f v0 = broadcast4to16f(vptr0); //FIXME: zero last component
+    const mic_f v0 = broadcast4to16f(vptr0); //WARNING: zero last component
     const mic_f v1 = broadcast4to16f(vptr1);
     const mic_f v2 = broadcast4to16f(vptr2);
 
@@ -1405,6 +1405,23 @@ namespace embree
   // =======================================================================================================
   // =======================================================================================================
   // =======================================================================================================
+
+  bool split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+  {
+    const unsigned int center = (current.begin + current.end)/2;
+    
+    Centroid_Scene_AABB left; left.reset();
+    for (size_t i=current.begin; i<center; i++)
+      left.extend(primref[i].bounds());
+    leftChild.init(left,current.begin,center);
+    
+    Centroid_Scene_AABB right; right.reset();
+    for (size_t i=center; i<current.end; i++)
+      right.extend(primref[i].bounds());	
+    rightChild.init(right,center,current.end);
+    
+    return true;
+  }
 
 
   void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 

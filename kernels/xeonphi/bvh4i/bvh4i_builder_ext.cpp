@@ -478,7 +478,7 @@ namespace embree
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
         { 			    
           const BBox3f bounds = virtual_geometry->bounds(i);
-          const mic_f bmin = broadcast4to16f(&bounds.lower); // FIXME: do not reload from memory
+          const mic_f bmin = broadcast4to16f(&bounds.lower); 
           const mic_f bmax = broadcast4to16f(&bounds.upper);
 
           DBG(

@@ -875,6 +875,41 @@ namespace embree
       return l - (aabb + begin);
     }
 
+  struct Split 
+  {
+    __forceinline void reset()
+    {
+      dim = -1;
+      pos = -1;
+      numLeft = -1;
+      cost = pos_inf;
+    }
+
+    __forceinline Split () 
+    {
+      reset();
+    }
+    
+    /*! stream output */
+    friend std::ostream& operator<<(std::ostream& cout, const Split& split) {
+      return cout << "Split { " << 
+        "dim = " << split.dim << 
+        ", pos = " << split.pos << 
+        ", numLeft = " << split.numLeft <<
+        ", sah = " << split.cost << "}";
+    }
+
+  public:
+    int dim;
+    int pos;
+    int numLeft;
+    float cost;
+  };
+
+  bool split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
+
+
+
 };
 
 #endif

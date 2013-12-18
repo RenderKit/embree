@@ -24,15 +24,12 @@
 
 namespace embree
 {
-#if 0 //FIXME
-
-  __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
-    { FLT_MIN_EXP, FLT_MIN_EXP, FLT_MIN_EXP,(int)(1 << 31)},
-    {-FLT_MIN_EXP,-FLT_MIN_EXP,-FLT_MIN_EXP,(int)(1 << 31)},
-    { FLT_MIN_EXP, FLT_MIN_EXP, FLT_MIN_EXP,(int)(1 << 31)},
-    {-FLT_MIN_EXP,-FLT_MIN_EXP,-FLT_MIN_EXP,(int)(1 << 31)}
-  };
-#else
+  // __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
+  //   { FLT_MAX_EXP, FLT_MAX_EXP, FLT_MAX_EXP,(int)(1 << 31)},
+  //   { FLT_MAX_EXP, FLT_MAX_EXP, FLT_MAX_EXP,(int)(1 << 31)},
+  //   { FLT_MAX_EXP, FLT_MAX_EXP, FLT_MAX_EXP,(int)(1 << 31)},
+  //   { FLT_MAX_EXP, FLT_MAX_EXP, FLT_MAX_EXP,(int)(1 << 31)}
+  // };
 
   __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
     {1E14f,1E14f,1E14f,(int)(1 << 31)},
@@ -40,8 +37,6 @@ namespace embree
     {1E14f,1E14f,1E14f,(int)(1 << 31)},
     {1E14f,1E14f,1E14f,(int)(1 << 31)}
   };
-
-#endif
 
   /*! intersector registration functions */
   DECLARE_SYMBOL(Accel::Intersector1,BVH4iTriangle1Intersector1);

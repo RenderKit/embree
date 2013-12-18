@@ -20,6 +20,8 @@
 #include "bvh4i.h"
 #include "bvh4i/bvh4i_builder_util.h"
 
+#if 0
+
 namespace embree
 {
   struct Mapping
@@ -54,36 +56,6 @@ namespace embree
     ssef scale;      //!< scaling factor to compute bin
   };
 
-  struct Split 
-  {
-    __forceinline void reset()
-    {
-      dim = -1;
-      pos = -1;
-      numLeft = -1;
-      cost = pos_inf;
-    }
-
-    __forceinline Split () 
-      {
-	reset();
-      }
-    
-    /*! stream output */
-    friend std::ostream& operator<<(std::ostream& cout, const Split& split) {
-      return cout << "Split { " << 
-        "dim = " << split.dim << 
-        ", pos = " << split.pos << 
-        ", numLeft = " << split.numLeft <<
-        ", sah = " << split.cost << "}";
-    }
-
-  public:
-    int dim;
-    int pos;
-    int numLeft;
-    float cost;
-  };
 
   template<int BINS>
     class Binner
@@ -128,7 +100,6 @@ namespace embree
     ssei   counts[BINS];
   };
 
-  bool split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
 
   template<int BINS>
     struct ParallelBinner
@@ -166,5 +137,7 @@ namespace embree
     __align(64) Binner<BINS> global_bin16[MAX_MIC_THREADS];
   };
 };
+
+#endif
 
 #endif

@@ -84,7 +84,7 @@ namespace embree
           /* pop of next node */
           sptr_node--;
           sptr_dist--;
-          curNode = *sptr_node; // FIXME: this trick creates issues with stack depth
+          curNode = *sptr_node; 
           curDist = *sptr_dist;
           
 	  prefetch<PFHINT_L1>((mic_f*)node + 1); // depth first order, prefetch		
@@ -218,7 +218,7 @@ namespace embree
           /* pop of next node */
           sptr_node--;
           sptr_dist--;
-          curNode = *sptr_node; // FIXME: this trick creates issues with stack depth
+          curNode = *sptr_node; 
           curDist = *sptr_dist;
           	 
 #pragma unroll(4)
