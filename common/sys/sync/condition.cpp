@@ -40,24 +40,24 @@ namespace embree
 
     __forceinline void wait(MutexSys& mutex_in)
     {
-      mutex_in.unlock();
-
       /* atomically increment thread count */
       //WaitForSingleObject(mutex,INFINITE);
-	  mutex.lock();
+	    //mutex.lock();
       ssize_t cnt0 = atomic_add(&count,+1);
-	  mutex.unlock();
+	    //mutex.unlock();
       //ReleaseMutex(mutex);
-	  
+      mutex_in.unlock();
+
       /* all threads except the last one are wait in the barrier */
       if (WaitForSingleObject(event, INFINITE) != WAIT_OBJECT_0)
         throw std::runtime_error("WaitForSingleObject failed");
 
       /* atomically decrement thread count */
+      mutex_in.lock();
   	  //WaitForSingleObject(mutex,INFINITE);
-	  mutex.lock();
+	    mutex.lock();
       ssize_t cnt1 = atomic_add(&count,-1);
-	  mutex.unlock();
+	    mutex.unlock();
       //ReleaseMutex(mutex);
 
       /* the last thread that left the barrier resets the event again */
@@ -65,18 +65,16 @@ namespace embree
         if (ResetEvent(event) == 0)
           throw std::runtime_error("ResetEvent failed");
       }
-
-      mutex_in.lock();
     }
 
     __forceinline void broadcast() 
     {
       /* we support only one broadcast at a given time */
       //WaitForSingleObject(mutex,INFINITE);
-	  mutex.lock();
-	  bool hasWaiters = count > 0;
-	  mutex.unlock();
-	  //ReleaseMutex(mutex);
+	    //mutex.lock();
+	    bool hasWaiters = count > 0;
+	    //mutex.unlock();
+	    //ReleaseMutex(mutex);
 
       /* if threads are waiting, let them continue */
       if (hasWaiters) 
