@@ -174,7 +174,7 @@ namespace embree
       TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
       
       /* verify meshes got deleted properly */
-      if (mesh == NULL) {
+      if (mesh == NULL || mesh->numTimeSteps != 1) {
         assert(objectID < objects.size() && objects[objectID] == NULL);
         assert(objectID < builders.size() && builders[objectID] == NULL);
         return;
@@ -200,7 +200,7 @@ namespace embree
     {
       /* ignore if no triangle mesh or not enabled */
       TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
-      if (mesh == NULL || !mesh->isEnabled()) 
+      if (mesh == NULL || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
         return empty;
       
       BVH4*    object  = objects [objectID];
