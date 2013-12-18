@@ -14,10 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4i.h"
 #include "bvh4i_builder_morton.h"
-#include "bvh4i_statistics.h"
-#include "bvh4i/bvh4i_builder_util.h"
 
 #define BVH_NODE_PREALLOC_FACTOR          1.2f
 #define NUM_MORTON_IDS_PER_BLOCK            8

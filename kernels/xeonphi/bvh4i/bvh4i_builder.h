@@ -18,9 +18,9 @@
 #define __EMBREE_BVHI_BUILDER_MIC_H__
 
 #include "bvh4i/bvh4i.h"
-#include "bvh4i/bvh4i_builder_binner.h"
-#include "bvh4i/bvh4i_builder_util_mic.h"
 #include "bvh4i/bvh4i_builder_util.h"
+#include "bvh4i/bvh4i_builder_util_mic.h"
+#include "bvh4i_statistics.h"
 
 #define BVH_NODE_PREALLOC_FACTOR                 1.15f
 

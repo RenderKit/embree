@@ -16,9 +16,7 @@
 
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder.h"
-#include "bvh4i/bvh4i_builder_binner.h"
 #include "bvh4i/bvh4i_statistics.h"
-#include "bvh4i/bvh4i_builder_util_mic.h"
 
 
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
