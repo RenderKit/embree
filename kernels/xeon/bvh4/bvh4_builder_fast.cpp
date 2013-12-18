@@ -186,17 +186,24 @@ namespace embree
         size_t numPrimBlocks = bvh->primTy.blocks(numPrimitives);
         size_t numAllocatedNodes = min(size_t(0.6*numPrimBlocks),numPrimitives);
         size_t numAllocatedPrimitives = min(size_t(1.2*numPrimBlocks),numPrimitives);
+#if defined(__X86_64__)
+        size_t numReservedNodes = 2*numPrimitives;
+        size_t numReservedPrimitives = 2*numPrimitives;
+#else
+        size_t numReservedNodes = 1.2*numAllocatedNodes;
+        size_t numReservedPrimitives = 1.2*numAllocatedPrimitives;
+#endif
 
         bytesPrims = numPrimitives * sizeof(PrimRef);
         size_t bytesAllocatedNodes      = numAllocatedNodes * sizeof(BVH4::Node);
         size_t bytesAllocatedPrimitives = numAllocatedPrimitives * bvh->primTy.bytes;
         bytesAllocatedPrimitives        = max(bytesAllocatedPrimitives,bytesPrims); // required as we store prims into primitive array for parallel splits
-        size_t bytesReservedNodes       = numPrimitives * sizeof(BVH4::Node);
-        size_t bytesReservedPrimitives  = numPrimitives * bvh->primTy.bytes;
+        size_t bytesReservedNodes       = numReservedNodes * sizeof(BVH4::Node);
+        size_t bytesReservedPrimitives  = numReservedPrimitives * bvh->primTy.bytes;
         size_t blocksReservedNodes      = (bytesReservedNodes     +Allocator::blockSize-1)/Allocator::blockSize;
         size_t blocksReservedPrimitives = (bytesReservedPrimitives+Allocator::blockSize-1)/Allocator::blockSize;
-        bytesReservedNodes      = Allocator::blockSize*(2*blocksReservedNodes      + additionalBlocks);
-        bytesReservedPrimitives = Allocator::blockSize*(2*blocksReservedPrimitives + additionalBlocks);
+        bytesReservedNodes      = Allocator::blockSize*(blocksReservedNodes      + additionalBlocks);
+        bytesReservedPrimitives = Allocator::blockSize*(blocksReservedPrimitives + additionalBlocks);
         
         /* allocated memory for primrefs, nodes, and primitives */
         prims = (PrimRef* ) os_malloc(bytesPrims);  memset(prims,0,bytesPrims);
