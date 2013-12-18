@@ -28,6 +28,8 @@ renderPixelFunc renderPixel;
 
 struct Instance 
 {
+  ALIGNED_CLASS;
+public:
   unsigned int geometry;
   RTCScene object;
   int userID;
