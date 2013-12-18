@@ -210,6 +210,7 @@ namespace embree
           continue;
         
         /* switch to single ray traversal */
+#if !defined(__WIN32__) || defined(__X86_64__)
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
@@ -218,6 +219,7 @@ namespace embree
           ray_tfar = ray.tfar;
           continue;
         }
+#endif
         
         while (1)
         {
@@ -483,6 +485,7 @@ namespace embree
           continue;
         
         /* switch to single ray traversal */
+#if !defined(__WIN32__) || defined(__X86_64__)
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
@@ -493,7 +496,8 @@ namespace embree
           ray_tfar = select(terminated,ssef(neg_inf),ray_tfar);
           continue;
         }
-                
+#endif
+
         while (1)
         {
           /* test if this is a leaf node */

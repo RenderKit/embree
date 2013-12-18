@@ -217,7 +217,7 @@ namespace embree
 #endif
     BVH4iRegister();
     
-#if defined(__TARGET_AVX__)
+#if !defined(__WIN32__) && defined(__TARGET_AVX__)
     BVH8iRegister();
 #endif
     InstanceIntersectorsRegister();
