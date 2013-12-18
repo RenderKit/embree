@@ -822,7 +822,7 @@ namespace embree
 	const mic_f v1 = broadcast4to16f(vptr1);
 	const mic_f v2 = broadcast4to16f(vptr2);
 
-	const mic_f tri_accel = initTriangle1(v0,v1,v2,morton_geomID,morton_primID,mic_i::zero());
+	const mic_f tri_accel = initTriangle1(v0,v1,v2,morton_geomID,morton_primID,mic_i(mesh->mask));
 
 	bounds_min = min(bounds_min,min(v0,min(v1,v2)));
 	bounds_max = max(bounds_max,max(v0,max(v1,v2)));

@@ -939,64 +939,90 @@ namespace embree
       int mask2 = i+2;
       int mask3 = i+3;
 
-      RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
-      RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
-      RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
-      RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
-      rtcIntersect(scene,ray0);
-      rtcIntersect(scene,ray1);
-      rtcIntersect(scene,ray2);
-      rtcIntersect(scene,ray3);
-      bool ok0 = mask0 & 1 ? ray0.geomID == 0 : ray0.geomID == -1;
-      bool ok1 = mask1 & 2 ? ray1.geomID == 1 : ray1.geomID == -1;
-      bool ok2 = mask2 & 4 ? ray2.geomID == 2 : ray2.geomID == -1;
-      bool ok3 = mask3 & 8 ? ray3.geomID == 3 : ray3.geomID == -1;
-      if (!ok0 || !ok1 || !ok2 || !ok3) passed = false;
+      {
+	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+	rtcIntersect(scene,ray0);
+	rtcIntersect(scene,ray1);
+	rtcIntersect(scene,ray2);
+	rtcIntersect(scene,ray3);
+	bool ok0 = mask0 & 1 ? ray0.geomID == 0 : ray0.geomID == -1;
+	bool ok1 = mask1 & 2 ? ray1.geomID == 1 : ray1.geomID == -1;
+	bool ok2 = mask2 & 4 ? ray2.geomID == 2 : ray2.geomID == -1;
+	bool ok3 = mask3 & 8 ? ray3.geomID == 3 : ray3.geomID == -1;
+	if (!ok0 || !ok1 || !ok2 || !ok3) passed = false;
+      }
 
 #if !defined(__MIC__)
-      RTCRay4 ray4;
-      setRay(ray4,0,ray0);
-      setRay(ray4,1,ray1);
-      setRay(ray4,2,ray2);
-      setRay(ray4,3,ray3);
-      __align(16) int valid4[4] = { -1,-1,-1,-1 };
-      rtcIntersect4(valid4,scene,ray4);
-      bool ok4a = mask0 & 1 ? ray4.geomID[0] == 0 : ray4.geomID[0] == -1;
-      bool ok4b = mask1 & 2 ? ray4.geomID[1] == 1 : ray4.geomID[1] == -1;
-      bool ok4c = mask2 & 4 ? ray4.geomID[2] == 2 : ray4.geomID[2] == -1;
-      bool ok4d = mask3 & 8 ? ray4.geomID[3] == 3 : ray4.geomID[3] == -1;
-      if (!ok4a || !ok4b || !ok4c || !ok4d) passed = false;
-#endif
+      {
+	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+
+	RTCRay4 ray4;
+	setRay(ray4,0,ray0);
+	setRay(ray4,1,ray1);
+	setRay(ray4,2,ray2);
+	setRay(ray4,3,ray3);
+	__align(16) int valid4[4] = { -1,-1,-1,-1 };
+	rtcIntersect4(valid4,scene,ray4);
+	bool ok4a = mask0 & 1 ? ray4.geomID[0] == 0 : ray4.geomID[0] == -1;
+	bool ok4b = mask1 & 2 ? ray4.geomID[1] == 1 : ray4.geomID[1] == -1;
+	bool ok4c = mask2 & 4 ? ray4.geomID[2] == 2 : ray4.geomID[2] == -1;
+	bool ok4d = mask3 & 8 ? ray4.geomID[3] == 3 : ray4.geomID[3] == -1;
+	if (!ok4a || !ok4b || !ok4c || !ok4d) passed = false;
+      }
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-      RTCRay8 ray8;
-      setRay(ray8,0,ray0);
-      setRay(ray8,1,ray1);
-      setRay(ray8,2,ray2);
-      setRay(ray8,3,ray3);
-      __align(32) int valid8[8] = { -1,-1,-1,-1,0,0,0,0 };
-      rtcIntersect8(valid8,scene,ray8);
-      bool ok8a = mask0 & 1 ? ray8.geomID[0] == 0 : ray8.geomID[0] == -1;
-      bool ok8b = mask1 & 2 ? ray8.geomID[1] == 1 : ray8.geomID[1] == -1;
-      bool ok8c = mask2 & 4 ? ray8.geomID[2] == 2 : ray8.geomID[2] == -1;
-      bool ok8d = mask3 & 8 ? ray8.geomID[3] == 3 : ray8.geomID[3] == -1;
-      if (!ok8a || !ok8b || !ok8c || !ok8d) passed = false;
+      {
+	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+
+	RTCRay8 ray8;
+	setRay(ray8,0,ray0);
+	setRay(ray8,1,ray1);
+	setRay(ray8,2,ray2);
+	setRay(ray8,3,ray3);
+	__align(32) int valid8[8] = { -1,-1,-1,-1,0,0,0,0 };
+	rtcIntersect8(valid8,scene,ray8);
+	bool ok8a = mask0 & 1 ? ray8.geomID[0] == 0 : ray8.geomID[0] == -1;
+	bool ok8b = mask1 & 2 ? ray8.geomID[1] == 1 : ray8.geomID[1] == -1;
+	bool ok8c = mask2 & 4 ? ray8.geomID[2] == 2 : ray8.geomID[2] == -1;
+	bool ok8d = mask3 & 8 ? ray8.geomID[3] == 3 : ray8.geomID[3] == -1;
+	if (!ok8a || !ok8b || !ok8c || !ok8d) passed = false;
+      }
+#endif
+
 #endif
 
 #if defined(__MIC__)
-      RTCRay16 ray16;
-      setRay(ray16,0,ray0);
-      setRay(ray16,1,ray1);
-      setRay(ray16,2,ray2);
-      setRay(ray16,3,ray3);
-      __align(64) int valid16[16] = { -1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0 };
-      rtcIntersect16(valid16,scene,ray16);
-      bool ok16a = mask0 & 1 ? ray16.geomID[0] == 0 : ray16.geomID[0] == -1;
-      bool ok16b = mask1 & 2 ? ray16.geomID[1] == 1 : ray16.geomID[1] == -1;
-      bool ok16c = mask2 & 4 ? ray16.geomID[2] == 2 : ray16.geomID[2] == -1;
-      bool ok16d = mask3 & 8 ? ray16.geomID[3] == 3 : ray16.geomID[3] == -1;
-      if (!ok16a || !ok16b || !ok16c || !ok16d) passed = false;
+      {
+	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+
+	RTCRay16 ray16;
+	setRay(ray16,0,ray0);
+	setRay(ray16,1,ray1);
+	setRay(ray16,2,ray2);
+	setRay(ray16,3,ray3);
+	__align(64) int valid16[16] = { -1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0 };
+	rtcIntersect16(valid16,scene,ray16);
+	bool ok16a = mask0 & 1 ? ray16.geomID[0] == 0 : ray16.geomID[0] == -1;
+	bool ok16b = mask1 & 2 ? ray16.geomID[1] == 1 : ray16.geomID[1] == -1;
+	bool ok16c = mask2 & 4 ? ray16.geomID[2] == 2 : ray16.geomID[2] == -1;
+	bool ok16d = mask3 & 8 ? ray16.geomID[3] == 3 : ray16.geomID[3] == -1;
+	if (!ok16a || !ok16b || !ok16c || !ok16d) passed = false;
+      }
 #endif
+
+
     }
     rtcDeleteScene (scene);
     return passed;
@@ -1023,63 +1049,91 @@ namespace embree
       int mask2 = i+2;
       int mask3 = i+3;
 
-      RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
-      RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
-      RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
-      RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
-      rtcOccluded(scene,ray0);
-      rtcOccluded(scene,ray1);
-      rtcOccluded(scene,ray2);
-      rtcOccluded(scene,ray3);
-      bool ok0 = mask0 & 1 ? ray0.geomID == 0 : ray0.geomID == -1;
-      bool ok1 = mask1 & 2 ? ray1.geomID == 0 : ray1.geomID == -1;
-      bool ok2 = mask2 & 4 ? ray2.geomID == 0 : ray2.geomID == -1;
-      bool ok3 = mask3 & 8 ? ray3.geomID == 0 : ray3.geomID == -1;
-      if (!ok0 || !ok1 || !ok2 || !ok3) passed = false;
+      {
+	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+	rtcOccluded(scene,ray0);
+	rtcOccluded(scene,ray1);
+	rtcOccluded(scene,ray2);
+	rtcOccluded(scene,ray3);
+	bool ok0 = mask0 & 1 ? ray0.geomID == 0 : ray0.geomID == -1;
+	bool ok1 = mask1 & 2 ? ray1.geomID == 0 : ray1.geomID == -1;
+	bool ok2 = mask2 & 4 ? ray2.geomID == 0 : ray2.geomID == -1;
+	bool ok3 = mask3 & 8 ? ray3.geomID == 0 : ray3.geomID == -1;
+
+	if (!ok0 || !ok1 || !ok2 || !ok3) passed = false;
+      }
 
 #if !defined(__MIC__)
-      RTCRay4 ray4;
-      setRay(ray4,0,ray0);
-      setRay(ray4,1,ray1);
-      setRay(ray4,2,ray2);
-      setRay(ray4,3,ray3);
-      __align(16) int valid4[4] = { -1,-1,-1,-1 };
-      rtcOccluded4(valid4,scene,ray4);
-      bool ok4a = mask0 & 1 ? ray4.geomID[0] == 0 : ray4.geomID[0] == -1;
-      bool ok4b = mask1 & 2 ? ray4.geomID[1] == 0 : ray4.geomID[1] == -1;
-      bool ok4c = mask2 & 4 ? ray4.geomID[2] == 0 : ray4.geomID[2] == -1;
-      bool ok4d = mask3 & 8 ? ray4.geomID[3] == 0 : ray4.geomID[3] == -1;
-      if (!ok4a || !ok4b || !ok4c || !ok4d) passed = false;
-#endif
+      {
+	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+
+	RTCRay4 ray4;
+	setRay(ray4,0,ray0);
+	setRay(ray4,1,ray1);
+	setRay(ray4,2,ray2);
+	setRay(ray4,3,ray3);
+	__align(16) int valid4[4] = { -1,-1,-1,-1 };
+	rtcOccluded4(valid4,scene,ray4);
+	bool ok4a = mask0 & 1 ? ray4.geomID[0] == 0 : ray4.geomID[0] == -1;
+	bool ok4b = mask1 & 2 ? ray4.geomID[1] == 0 : ray4.geomID[1] == -1;
+	bool ok4c = mask2 & 4 ? ray4.geomID[2] == 0 : ray4.geomID[2] == -1;
+	bool ok4d = mask3 & 8 ? ray4.geomID[3] == 0 : ray4.geomID[3] == -1;
+	if (!ok4a || !ok4b || !ok4c || !ok4d) passed = false;
+      }
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-      RTCRay8 ray8;
-      setRay(ray8,0,ray0);
-      setRay(ray8,1,ray1);
-      setRay(ray8,2,ray2);
-      setRay(ray8,3,ray3);
-      __align(32) int valid8[8] = { -1,-1,-1,-1,0,0,0,0 };
-      rtcOccluded8(valid8,scene,ray8);
-      bool ok8a = mask0 & 1 ? ray8.geomID[0] == 0 : ray8.geomID[0] == -1;
-      bool ok8b = mask1 & 2 ? ray8.geomID[1] == 0 : ray8.geomID[1] == -1;
-      bool ok8c = mask2 & 4 ? ray8.geomID[2] == 0 : ray8.geomID[2] == -1;
-      bool ok8d = mask3 & 8 ? ray8.geomID[3] == 0 : ray8.geomID[3] == -1;
-      if (!ok8a || !ok8b || !ok8c || !ok8d) passed = false;
+      {
+	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+
+	RTCRay8 ray8;
+	setRay(ray8,0,ray0);
+	setRay(ray8,1,ray1);
+	setRay(ray8,2,ray2);
+	setRay(ray8,3,ray3);
+	__align(32) int valid8[8] = { -1,-1,-1,-1,0,0,0,0 };
+	rtcOccluded8(valid8,scene,ray8);
+	bool ok8a = mask0 & 1 ? ray8.geomID[0] == 0 : ray8.geomID[0] == -1;
+	bool ok8b = mask1 & 2 ? ray8.geomID[1] == 0 : ray8.geomID[1] == -1;
+	bool ok8c = mask2 & 4 ? ray8.geomID[2] == 0 : ray8.geomID[2] == -1;
+	bool ok8d = mask3 & 8 ? ray8.geomID[3] == 0 : ray8.geomID[3] == -1;
+	if (!ok8a || !ok8b || !ok8c || !ok8d) passed = false;
+      }
+#endif
+
 #endif
 
 #if defined(__MIC__)
-      RTCRay16 ray16;
-      setRay(ray16,0,ray0);
-      setRay(ray16,1,ray1);
-      setRay(ray16,2,ray2);
-      setRay(ray16,3,ray3);
-      __align(64) int valid16[16] = { -1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0 };
-      rtcOccluded16(valid16,scene,ray16);
-      bool ok16a = mask0 & 1 ? ray16.geomID[0] == 0 : ray16.geomID[0] == -1;
-      bool ok16b = mask1 & 2 ? ray16.geomID[1] == 0 : ray16.geomID[1] == -1;
-      bool ok16c = mask2 & 4 ? ray16.geomID[2] == 0 : ray16.geomID[2] == -1;
-      bool ok16d = mask3 & 8 ? ray16.geomID[3] == 0 : ray16.geomID[3] == -1;
-      if (!ok16a || !ok16b || !ok16c || !ok16d) passed = false;
+      {
+	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+
+	RTCRay16 ray16;
+	setRay(ray16,0,ray0);
+	setRay(ray16,1,ray1);
+	setRay(ray16,2,ray2);
+	setRay(ray16,3,ray3);
+	__align(64) int valid16[16] = { -1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0 };
+
+	rtcOccluded16(valid16,scene,ray16);
+
+	bool ok16a = mask0 & 1 ? ray16.geomID[0] == 0 : ray16.geomID[0] == -1;
+	bool ok16b = mask1 & 2 ? ray16.geomID[1] == 0 : ray16.geomID[1] == -1;
+	bool ok16c = mask2 & 4 ? ray16.geomID[2] == 0 : ray16.geomID[2] == -1;
+	bool ok16d = mask3 & 8 ? ray16.geomID[3] == 0 : ray16.geomID[3] == -1;
+	if (!ok16a || !ok16b || !ok16c || !ok16d) passed = false;
+      }
+
 #endif
     }
     rtcDeleteScene (scene);
@@ -1096,7 +1150,6 @@ namespace embree
       bool ok0 = rtcore_ray_masks_intersect(flag,RTC_GEOMETRY_STATIC);
       if (ok0) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
       passed &= ok0;
-
       bool ok1 = rtcore_ray_masks_occluded(flag,RTC_GEOMETRY_STATIC);
       if (ok1) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
       passed &= ok1;
