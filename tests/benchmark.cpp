@@ -430,8 +430,13 @@ namespace embree
     rtcore_coherent_intersect1(scene);
 #if !defined(__MIC__)
     rtcore_coherent_intersect4(scene);
+#endif
+
+#if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
     rtcore_coherent_intersect8(scene);
-#else
+#endif
+
+#if defined(__MIC__)
     rtcore_coherent_intersect16(scene);
 #endif
 
@@ -447,8 +452,13 @@ namespace embree
     rtcore_incoherent_intersect1(scene,numbers,N);
 #if !defined(__MIC__)
     rtcore_incoherent_intersect4(scene,numbers,N);
+#endif
+
+#if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
     rtcore_incoherent_intersect8(scene,numbers,N);
-#else
+#endif
+
+#if defined(__MIC__)
     rtcore_incoherent_intersect16(scene,numbers,N);
 #endif
 
