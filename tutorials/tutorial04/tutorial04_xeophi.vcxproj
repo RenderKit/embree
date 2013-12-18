@@ -29,8 +29,8 @@
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <InterproceduralOptimization>true</InterproceduralOptimization>
     <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <InterproceduralOptimization>true</InterproceduralOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -41,8 +41,8 @@
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <InterproceduralOptimization>true</InterproceduralOptimization>
     <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <InterproceduralOptimization>true</InterproceduralOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -108,7 +108,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
+      <InterproceduralOptimization>No</InterproceduralOptimization>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -136,7 +136,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
+      <InterproceduralOptimization>No</InterproceduralOptimization>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -161,7 +161,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
+      <InterproceduralOptimization>No</InterproceduralOptimization>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -188,7 +188,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
+      <InterproceduralOptimization>No</InterproceduralOptimization>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)/tutorials/common/freeglut/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

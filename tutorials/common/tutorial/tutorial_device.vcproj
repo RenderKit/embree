@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="tutorial_device"
 	ProjectGUID="{898B92E9-4118-4FB0-9E56-7A600F4F6DB7}"
 	RootNamespace="tutorial_device"
