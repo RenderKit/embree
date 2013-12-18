@@ -1806,6 +1806,9 @@ namespace embree
     /* parse command line */  
     parseCommandLine(argc,argv);
 
+    /* perform tests */
+    rtcInit(g_rtcore.c_str());
+
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
     POSITIVE("barrier_sys",               test_barrier_sys());
@@ -1813,9 +1816,6 @@ namespace embree
 #if !defined(__MIC__) && !defined(_WIN32) // FIXME: hangs on MIC and Windows
     POSITIVE("condition_sys",             test_condition_sys());
 #endif
-
-    /* perform tests */
-    rtcInit(g_rtcore.c_str());
 
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
