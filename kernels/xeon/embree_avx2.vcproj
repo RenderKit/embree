@@ -160,7 +160,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
@@ -229,7 +229,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
@@ -299,7 +299,7 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseAVX|Win32"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
@@ -368,7 +368,7 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseAVX|x64"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
@@ -438,7 +438,7 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseAVX2|Win32"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
@@ -507,7 +507,7 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseAVX2|x64"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
