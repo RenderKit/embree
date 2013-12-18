@@ -443,6 +443,8 @@ namespace embree
 
   struct Sphere
   {
+    ALIGNED_CLASS;
+  public:
     Vec3fa pos;
     float r;
   };
