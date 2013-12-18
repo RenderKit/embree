@@ -129,8 +129,8 @@ namespace embree
     default          : throw std::runtime_error("invalid task queue");
     }
     
-    mutex.unlock();
     condition.broadcast();
+    mutex.unlock();
   }
 
   void TaskSchedulerSys::wait(size_t threadIndex, size_t threadCount, Event* event)
@@ -193,8 +193,8 @@ namespace embree
   {
     mutex.lock();
     terminateThreads = true;
-    mutex.unlock();
     condition.broadcast(); 
+    mutex.unlock();
   }
 }
 
