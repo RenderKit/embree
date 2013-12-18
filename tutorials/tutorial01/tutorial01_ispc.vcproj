@@ -676,6 +676,14 @@
 			RelativePath=".\tutorial01_device.ispc"
 			>
 		</File>
+		<File
+			RelativePath="..\common\tutorial\tutorial_device.ispc"
+			>
+		</File>
+		<File
+			RelativePath="..\common\tutorial\tutorial_device.isph"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
