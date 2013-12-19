@@ -78,7 +78,8 @@ namespace embree
 
   template<typename Heuristic>
   BVH4Builder<Heuristic>::BVH4Builder (BVH4* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize)
-    : source(source), geometry(geometry), primTy(bvh->primTy), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), bvh(bvh)
+    : source(source), geometry(geometry), primTy(bvh->primTy), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), bvh(bvh),
+      taskQueue(Heuristic::depthFirst ? TaskScheduler::GLOBAL_BACK : TaskScheduler::GLOBAL_FRONT)
   {
     size_t maxLeafPrims = BVH4::maxLeafBlocks*primTy.blockSize;
     if (maxLeafPrims < this->maxLeafSize) 
@@ -164,7 +165,7 @@ namespace embree
     : threadIndex(threadIndex), parent(parent), dst(node), depth(depth), prims(prims), pinfo(pinfo), split(split)
   {
     new (&task) TaskScheduler::Task(event,_run,this,"build::full");
-    TaskScheduler::addTask(threadIndex,TaskScheduler::GLOBAL_BACK,&task);
+    TaskScheduler::addTask(threadIndex,parent->taskQueue,&task);
   }
   
   template<typename Heuristic>
@@ -236,7 +237,7 @@ namespace embree
     : parent(parent), dst(node), depth(depth), prims(prims), pinfo(pinfo), split(split)
   {
     new (&task) TaskScheduler::Task(event,_recurse,this,"build::split");
-    TaskScheduler::addTask(threadIndex,TaskScheduler::GLOBAL_BACK,&task);
+    TaskScheduler::addTask(threadIndex,parent->taskQueue,&task);
   }
   
   template<typename Heuristic>

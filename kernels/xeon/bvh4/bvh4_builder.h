@@ -178,6 +178,7 @@ namespace embree
     size_t maxLeafSize;                 //!< maximal size of a leaf
     PrimRefAlloc alloc;                 //!< Allocator for primitive blocks
     PrimRefGenNormal initStage;               //!< job to generate build primitives
+    TaskScheduler::QUEUE taskQueue;     //!< Task queue to use
 
   public:
     BVH4* bvh;                      //!< Output BVH4
