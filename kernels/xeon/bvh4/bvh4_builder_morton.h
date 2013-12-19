@@ -74,15 +74,20 @@ namespace embree
 
       struct __align(8) MortonID32Bit
       {
-        unsigned int code;
-        unsigned int index;
+        union {
+          struct {
+            unsigned int code;
+            unsigned int index;
+          };
+          int64 all;
+        };
         
         __forceinline unsigned int get(const unsigned int shift, const unsigned and_mask) const {
           return (code >> shift) & and_mask;
         }
         
         __forceinline void operator=(const MortonID32Bit& v) {   
-          *(int64*)this = *(int64*)&v; 
+          all = v.all; 
         };  
         
         __forceinline friend std::ostream &operator<<(std::ostream &o, const MortonID32Bit& mc) {
