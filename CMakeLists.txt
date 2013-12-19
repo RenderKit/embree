@@ -39,7 +39,7 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/common/cmake ${CMAKE_MODULE_PA
 # Embree configuration
 ##############################################################
 
-SET(RTCORE_EXIT_ON_ERROR ON CACHE BOOL "Exits the application if an error occurs.")
+SET(RTCORE_EXIT_ON_ERROR OFF CACHE BOOL "Exits the application if an error occurs.")
 IF (RTCORE_EXIT_ON_ERROR)
  ADD_DEFINITIONS(-D__EXIT_ON_ERROR__)
 ENDIF()
@@ -64,7 +64,12 @@ IF (RTCORE_FIX_RAYS)
  ADD_DEFINITIONS(-D__FIX_RAYS__)
 ENDIF()
 
-SET(RTCORE_ENABLE_SPINLOCKS ON CACHE BOOL "Use spinning locks.")
+IF (APPLE)
+  SET(RTCORE_ENABLE_SPINLOCKS OFF CACHE BOOL "Use spinning locks.")
+ELSE()
+  SET(RTCORE_ENABLE_SPINLOCKS ON CACHE BOOL "Use spinning locks.")
+ENDIF()
+
 IF (RTCORE_ENABLE_SPINLOCKS)
  ADD_DEFINITIONS(-D__SPINLOCKS__)
 ENDIF()
