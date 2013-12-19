@@ -19,7 +19,7 @@
 #include "embree2/rtcore.h"
 #include "embree2/rtcore_ray.h"
 #include "math/vec3.h"
-#include "kernels/common/default.h"
+#include "../kernels/common/default.h"
 #include <vector>
 
 namespace embree
