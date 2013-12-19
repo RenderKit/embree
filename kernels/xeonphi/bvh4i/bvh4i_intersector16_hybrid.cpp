@@ -30,7 +30,7 @@ namespace embree
       /* near and node stack */
       __align(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
-      __align(64) NodeRef stack_node_single[3*BVH4i::maxDepth+1]; // FIXME: remove but need unaligned stores
+      __align(64) NodeRef stack_node_single[3*BVH4i::maxDepth+1]; 
 
       /* load ray */
       const mic_m valid0     = *(mic_i*)valid_i != mic_i(0);
@@ -181,7 +181,7 @@ namespace embree
 			const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
 			curNode = ((unsigned int*)plower)[closest_child_pos];
 
-			compactustore16f(m_pos,&stack_dist_single[old_sindex],tNear); // FIXME
+			compactustore16f(m_pos,&stack_dist_single[old_sindex],tNear); 
 			compactustore16i(m_pos,&stack_node_single[old_sindex],plower_node);
 		      }
 	  
@@ -759,10 +759,11 @@ namespace embree
 		      {
 #if defined(__USE_RAY_MASK__)
 			const mic_i rayMask(ray16.mask[rayIndex]);
-			const mic_i triMask = gather16i_4i((int*)&tptr[0].Ng,
-							   (int*)&tptr[1].Ng,
-							   (int*)&tptr[2].Ng,
-							   (int*)&tptr[3].Ng);
+			const mic_i triMask = swDDDD(gather16i_4i((int*)&tptr[0].v2,
+								  (int*)&tptr[1].v2,
+								  (int*)&tptr[2].v2,
+								  (int*)&tptr[3].v2));
+
 			const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
 			
 			if ( any(m_final & m_ray_mask) )

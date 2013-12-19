@@ -16,21 +16,18 @@
 
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder.h"
-#include "bvh4i/bvh4i_builder_binner.h"
 #include "bvh4i/bvh4i_statistics.h"
-#include "bvh4i/bvh4i_builder_util_mic.h"
 
 
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
-
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
-
 #define SINGLE_THREADED_BUILD_THRESHOLD        512
-
 #define ENABLE_TASK_STEALING
-
 #define ENABLE_FILL_PER_CORE_WORK_QUEUES
 
+
+#define L1_PREFETCH_ITEMS 2
+#define L2_PREFETCH_ITEMS 16
 
 #define TIMER(x) 
 #define DBG(x) 
@@ -440,11 +437,11 @@ namespace embree
     prefetch<PFHINT_L1>(vptr1);
     prefetch<PFHINT_L1>(vptr2);
 
-    const mic_f v0 = broadcast4to16f(vptr0); //FIXME: zero last component
+    const mic_f v0 = broadcast4to16f(vptr0); //WARNING: zero last component
     const mic_f v1 = broadcast4to16f(vptr1);
     const mic_f v2 = broadcast4to16f(vptr2);
 
-    const mic_f tri_accel = initTriangle1(v0,v1,v2,gID,pID,mic_i::zero());
+    const mic_f tri_accel = initTriangle1(v0,v1,v2,gID,pID,mic_i(mesh->mask));
     store16f_ngo(acc,tri_accel);
   }
 
@@ -1405,6 +1402,23 @@ namespace embree
   // =======================================================================================================
   // =======================================================================================================
   // =======================================================================================================
+
+  bool split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+  {
+    const unsigned int center = (current.begin + current.end)/2;
+    
+    Centroid_Scene_AABB left; left.reset();
+    for (size_t i=current.begin; i<center; i++)
+      left.extend(primref[i].bounds());
+    leftChild.init(left,current.begin,center);
+    
+    Centroid_Scene_AABB right; right.reset();
+    for (size_t i=center; i<current.end; i++)
+      right.extend(primref[i].bounds());	
+    rightChild.init(right,center,current.end);
+    
+    return true;
+  }
 
 
   void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 

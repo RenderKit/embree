@@ -28,6 +28,8 @@ renderPixelFunc renderPixel;
 
 struct Instance 
 {
+  ALIGNED_CLASS;
+public:
   unsigned int geometry;
   RTCScene object;
   int userID;
@@ -117,7 +119,9 @@ void updateInstance (RTCScene scene, Instance* instance)
 
 struct Sphere
 {
-  Vec3f p;                      //!< position of the sphere
+  ALIGNED_CLASS;
+public:
+  Vec3fa p;                      //!< position of the sphere
   float r;                      //!< radius of the sphere
   unsigned int geomID;
 };
@@ -146,7 +150,7 @@ void sphereIntersectFunc(const Sphere* spheres, RTCRay& ray, size_t item)
   const float rcpA = rcp(A);
   const float t0 = 0.5f*rcpA*(-B-Q);
   const float t1 = 0.5f*rcpA*(-B+Q);
-  if (ray.tnear < t0 & t0 < ray.tfar) {
+  if ((ray.tnear < t0) & (t0 < ray.tfar)) {
     ray.u = 0.0f;
     ray.v = 0.0f;
     ray.tfar = t0;
@@ -154,7 +158,7 @@ void sphereIntersectFunc(const Sphere* spheres, RTCRay& ray, size_t item)
     ray.primID = item;
     ray.Ng = sub(add(ray.org,mul(t0,ray.dir)),sphere.p);
   }
-  if (ray.tnear < t1 & t1 < ray.tfar) {
+  if ((ray.tnear < t1) & (t1 < ray.tfar)) {
     ray.u = 0.0f;
     ray.v = 0.0f;
     ray.tfar = t1;
@@ -177,10 +181,10 @@ void sphereOccludedFunc(const Sphere* spheres, RTCRay& ray, size_t item)
   const float rcpA = rcp(A);
   const float t0 = 0.5f*rcpA*(-B-Q);
   const float t1 = 0.5f*rcpA*(-B+Q);
-  if (ray.tnear < t0 & t0 < ray.tfar) {
+  if ((ray.tnear < t0) & (t0 < ray.tfar)) {
     ray.geomID = 0;
   }
-  if (ray.tnear < t1 & t1 < ray.tfar) {
+  if ((ray.tnear < t1) & (t1 < ray.tfar)) {
     ray.geomID = 0;
   }
 }

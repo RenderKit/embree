@@ -19,6 +19,8 @@
 
 #include "bvh4i.h"
 #include "bvh4i/bvh4i_builder_util.h"
+#include "bvh4i/bvh4i_builder_util_mic.h"
+#include "bvh4i_statistics.h"
 
 namespace embree
 {
@@ -122,9 +124,6 @@ namespace embree
     /*! main build task */
     TASK_RUN_FUNCTION(BVH4iBuilderMorton,build_parallel_morton);
     TaskScheduler::Task task;
-
-    /*! test */
-    TASK_FUNCTION(BVH4iBuilderMorton,barrierTest);
     
     /*! task that calculates the bounding box of the scene */
     TASK_FUNCTION(BVH4iBuilderMorton,computeBounds);
@@ -190,7 +189,7 @@ namespace embree
 
     __align(64) LinearBarrierActive barrier;
     __align(64) SmallBuildRecord buildRecords[MAX_TOP_LEVEL_BINS];    
-    __align(64) unsigned int thread_startGroup[MAX_MIC_THREADS];      // FIXME: combine
+    __align(64) unsigned int thread_startGroup[MAX_MIC_THREADS];      
     __align(64) unsigned int thread_startGroupOffset[MAX_MIC_THREADS];
 
 

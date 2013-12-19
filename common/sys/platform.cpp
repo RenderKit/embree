@@ -52,12 +52,12 @@ namespace embree
     if (bytesNew & (pageSize-1)) 
       bytesNew = (bytesNew+pageSize) & (pageSize-1);
 
-    os_free((char*)ptr+bytesNew,bytesOld-bytesNew);
+    VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT);
   }
 
   void os_free(void* ptr, size_t bytes) {
     if (bytes == 0) return;
-    VirtualFree(ptr,bytes,MEM_RELEASE);
+    VirtualFree(ptr,0,MEM_RELEASE);
   }
 
   double getSeconds() {

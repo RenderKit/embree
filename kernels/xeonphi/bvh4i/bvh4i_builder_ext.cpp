@@ -16,7 +16,6 @@
 
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder.h"
-#include "bvh4i/bvh4i_builder_util_mic.h"
 
 #define PRESPLIT_SPACE_FACTOR         0.45f
 #define PRESPLIT_AREA_THRESHOLD      20.0f
@@ -25,6 +24,9 @@
 #define PRESPLITS_TREE_DEPTH          4
 
 #define DBG(x) 
+
+#define L1_PREFETCH_ITEMS 2
+#define L2_PREFETCH_ITEMS 16
 
 namespace embree
 {
@@ -478,7 +480,7 @@ namespace embree
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
         { 			    
           const BBox3f bounds = virtual_geometry->bounds(i);
-          const mic_f bmin = broadcast4to16f(&bounds.lower); // FIXME: do not reload from memory
+          const mic_f bmin = broadcast4to16f(&bounds.lower); 
           const mic_f bmax = broadcast4to16f(&bounds.upper);
 
           DBG(

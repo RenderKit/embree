@@ -486,7 +486,9 @@ namespace embree
     BUILD   ("create_static_geometry_100k_10",   rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,159,10));
     BUILD   ("create_static_geometry_10k_100",   rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,51,100));
     BUILD   ("create_static_geometry_1k_1000",   rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,17,1000));
+#if defined(__X86_64__)
     BUILD   ("create_static_geometry_120_10000", rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,6,8334));
+#endif
 
     BUILD   ("create_dynamic_geometry_120",       rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,6,1));
     BUILD   ("create_dynamic_geometry_1k",        rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,17,1));
@@ -496,7 +498,9 @@ namespace embree
     BUILD   ("create_dynamic_geometry_100k_10",   rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,159,10));
     BUILD   ("create_dynamic_geometry_10k_100",   rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,51,100));
     BUILD   ("create_dynamic_geometry_1k_1000",   rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,17,1000));
+#if defined(__X86_64__)
     BUILD   ("create_dynamic_geometry_120_10000", rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,6,8334));
+#endif
 
     BUILD   ("refit_geometry_120",        rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,6,1));
     BUILD   ("refit_geometry_1k",         rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,17,1));
@@ -506,7 +510,9 @@ namespace embree
     BUILD   ("refit_geometry_100k_10",    rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,159,10));
     BUILD   ("refit_geometry_10k_100",    rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,51,100));
     BUILD   ("refit_geometry_1k_1000",    rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,17,1000));
+#if defined(__X86_64__)
     BUILD   ("refit_geometry_120_10000",  rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,6,8334));
+#endif
 
     BUILD   ("update_geometry_120",        rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,6,1));
     BUILD   ("update_geometry_1k",         rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,17,1));
@@ -516,7 +522,9 @@ namespace embree
     BUILD   ("update_geometry_100k_10",    rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,159,10));
     BUILD   ("update_geometry_10k_100",    rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,51,100));
     BUILD   ("update_geometry_1k_1000",    rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,17,1000));
+#if defined(__X86_64__)
     BUILD   ("update_geometry_120_10000",  rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,6,8334));
+#endif
 
     rtcExit();
 

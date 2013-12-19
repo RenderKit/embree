@@ -217,16 +217,22 @@ namespace embree
         size_t numPrimBlocks = bvh->primTy.blocks(numPrimitives);
         size_t numAllocatedNodes = min(size_t(0.6*numPrimBlocks),numPrimitives);
         size_t numAllocatedPrimitives = min(size_t(1.2*numPrimBlocks),numPrimitives);
-
+#if defined(__X86_64__)
+        size_t numReservedNodes = 2*numPrimitives;
+        size_t numReservedPrimitives = 2*numPrimitives;
+#else
+        size_t numReservedNodes = 1.5*numAllocatedNodes;
+        size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
+#endif
         bytesMorton = ((numPrimitives+7)&(-8)) * sizeof(MortonID32Bit);
         size_t bytesAllocatedNodes      = numAllocatedNodes * sizeof(BVH4::Node);
         size_t bytesAllocatedPrimitives = numAllocatedPrimitives * bvh->primTy.bytes;
-        size_t bytesReservedNodes       = numPrimitives * sizeof(BVH4::Node);
-        size_t bytesReservedPrimitives  = numPrimitives * bvh->primTy.bytes;
+        size_t bytesReservedNodes       = numReservedNodes * sizeof(BVH4::Node);
+        size_t bytesReservedPrimitives  = numReservedPrimitives * bvh->primTy.bytes;
         size_t blocksReservedNodes      = (bytesReservedNodes     +Allocator::blockSize-1)/Allocator::blockSize;
         size_t blocksReservedPrimitives = (bytesReservedPrimitives+Allocator::blockSize-1)/Allocator::blockSize;
-        bytesReservedNodes      = Allocator::blockSize*(2*blocksReservedNodes      + additionalBlocks);
-        bytesReservedPrimitives = Allocator::blockSize*(2*blocksReservedPrimitives + additionalBlocks);
+        bytesReservedNodes      = Allocator::blockSize*(blocksReservedNodes      + additionalBlocks);
+        bytesReservedPrimitives = Allocator::blockSize*(blocksReservedPrimitives + additionalBlocks);
         bytesAllocatedNodes = max(bytesAllocatedNodes,bytesMorton); 
         bytesReservedNodes  = max(bytesReservedNodes,bytesMorton); 
 

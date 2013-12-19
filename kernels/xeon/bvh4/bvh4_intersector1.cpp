@@ -45,6 +45,7 @@ namespace embree
       const size_t nearY = ray.dir.y >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
       const size_t nearZ = ray.dir.z >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
       
+#if 0 // FIXME: why is this slower
       /*! load the ray */
       Vec3fa ray_org = ray.org;
       Vec3fa ray_dir = ray.dir;
@@ -59,6 +60,16 @@ namespace embree
       const Vec3fa ray_rdir = rcp_safe(ray_dir);
       const sse3f org(ray_org), dir(ray_dir);
       const sse3f norg(-ray_org), rdir(ray_rdir), org_rdir(ray_org*ray_rdir);
+#else
+      /*! load the ray into SIMD registers */
+      const sse3f norg(-ray.org.x,-ray.org.y,-ray.org.z);
+      const Vec3fa ray_rdir = rcp_safe(ray.dir);
+      const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+      const Vec3fa ray_org_rdir = ray.org*ray_rdir;
+      const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+      const ssef  ray_near(ray.tnear);
+      ssef ray_far(ray.tfar);
+#endif
 
       /* pop loop */
       while (true) pop:
@@ -184,6 +195,7 @@ namespace embree
       const size_t nearY = ray.dir.y >= 0 ? 2*sizeof(ssef) : 3*sizeof(ssef);
       const size_t nearZ = ray.dir.z >= 0 ? 4*sizeof(ssef) : 5*sizeof(ssef);
       
+#if 0 // FIXME: why is this slower
       /*! load the ray */
       Vec3fa ray_org = ray.org;
       Vec3fa ray_dir = ray.dir;
@@ -198,6 +210,16 @@ namespace embree
       const Vec3fa ray_rdir = rcp_safe(ray_dir);
       const sse3f org(ray_org), dir(ray_dir);
       const sse3f norg(-ray_org), rdir(ray_rdir), org_rdir(ray_org*ray_rdir);
+#else
+      /*! load the ray into SIMD registers */
+      const sse3f norg(-ray.org.x,-ray.org.y,-ray.org.z);
+      const Vec3fa ray_rdir = rcp_safe(ray.dir);
+      const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+      const Vec3fa ray_org_rdir = ray.org*ray_rdir;
+      const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+      const ssef  ray_near(ray.tnear);
+      ssef ray_far(ray.tfar);
+#endif
       
       /* pop loop */
       while (true) pop:

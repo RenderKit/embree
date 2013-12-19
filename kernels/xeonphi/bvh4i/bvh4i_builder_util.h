@@ -175,7 +175,6 @@ namespace embree
       return o;
     };
 
-    /* FIXME: this can be removed */
     enum { BUILD_RECORD_INIT  = 0, BUILD_RECORD_NODE  = 1, BUILD_RECORD_LEAF  = 2 };
     __forceinline void createNode() { flags = BUILD_RECORD_NODE; }
     __forceinline void createLeaf() { flags = BUILD_RECORD_LEAF; }

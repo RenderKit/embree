@@ -16,10 +16,6 @@
 
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder_morton_enhanced.h"
-#include "bvh4i/bvh4i_builder_binner.h"
-#include "bvh4i/bvh4i_statistics.h"
-#include "bvh4i/bvh4i_builder_util_mic.h"
-
 #include "limits.h"
 
 
@@ -28,6 +24,9 @@
 #define DIAG_FACTOR 0.15f
 #define MAX_REBUILD_NODES numPrimitives
 #define PROFILE_ITERATIONS 20
+
+#define L1_PREFETCH_ITEMS 2
+#define L2_PREFETCH_ITEMS 16
 
 #define TIMER(x) 
 

@@ -160,7 +160,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
@@ -229,7 +229,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
@@ -299,7 +299,7 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseAVX|Win32"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
@@ -368,7 +368,7 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseAVX|x64"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
@@ -438,7 +438,7 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseAVX2|Win32"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
@@ -507,7 +507,7 @@
 		</Configuration>
 		<Configuration
 			Name="ReleaseAVX2|x64"
-			OutputDirectory="$(SolutionDir)\$(PlatformName)\Release"
+			OutputDirectory="$(SolutionDir)\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\AVX2"
 			ConfigurationType="4"
 			CharacterSet="0"
@@ -908,138 +908,6 @@
 			</File>
 			<File
 				RelativePath=".\bvh4i\bvh4i_intersector8_chunk_avx2.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="ReleaseAVX|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="ReleaseAVX|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="ReleaseAVX2|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="ReleaseAVX2|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-			</File>
-		</Filter>
-		<Filter
-			Name="bvh8i"
-			>
-			<File
-				RelativePath=".\bvh8i\bvh8i_intersector1.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh8i\bvh8i_intersector1.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="ReleaseAVX|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="ReleaseAVX|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="ReleaseAVX2|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="ReleaseAVX2|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\bvh8i\bvh8i_intersector8_chunk.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh8i\bvh8i_intersector8_chunk.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"

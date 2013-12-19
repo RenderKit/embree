@@ -14,10 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4i.h"
 #include "bvh4i_builder_morton.h"
-#include "bvh4i_statistics.h"
-#include "bvh4i/bvh4i_builder_util.h"
 
 #define BVH_NODE_PREALLOC_FACTOR          1.2f
 #define NUM_MORTON_IDS_PER_BLOCK            8
@@ -25,7 +22,7 @@
 
 //#define PROFILE
 
-#define PROFILE_ITERATIONS 20
+#define PROFILE_ITERATIONS 200
 
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
@@ -260,12 +257,8 @@ namespace embree
     thread_startGroupOffset[threadID] = startID - skipped;
   }
 
-  void BVH4iBuilderMorton::barrierTest(const size_t threadID, const size_t numThreads) // FIXME: why is computePrimRefs faster...
-  {
-  }
 
-
-  void BVH4iBuilderMorton::computeBounds(const size_t threadID, const size_t numThreads) // FIXME: why is computePrimRefs faster...
+  void BVH4iBuilderMorton::computeBounds(const size_t threadID, const size_t numThreads) 
   {
     const size_t numBlocks = (numPrimitives+NUM_MORTON_IDS_PER_BLOCK-1) / NUM_MORTON_IDS_PER_BLOCK;
     const size_t startID   =      ((threadID+0)*numBlocks/numThreads) * NUM_MORTON_IDS_PER_BLOCK;
@@ -323,7 +316,7 @@ namespace embree
     store4f(&bounds.centroid2.lower,bounds_centroid_min);
     store4f(&bounds.centroid2.upper,bounds_centroid_max);
     
-    global_bounds.extend_centroid_bounds_atomic(bounds); // FIXME: check whether float atomics are fast
+    global_bounds.extend_centroid_bounds_atomic(bounds); 
   }
 
   void BVH4iBuilderMorton::computeMortonCodes(const size_t threadID, const size_t numThreads)
@@ -818,11 +811,11 @@ namespace embree
 	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
 	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
 
-	const mic_f v0 = broadcast4to16f(vptr0); //FIXME: zero last component
+	const mic_f v0 = broadcast4to16f(vptr0); //WARNING: zero last component
 	const mic_f v1 = broadcast4to16f(vptr1);
 	const mic_f v2 = broadcast4to16f(vptr2);
 
-	const mic_f tri_accel = initTriangle1(v0,v1,v2,morton_geomID,morton_primID,mic_i::zero());
+	const mic_f tri_accel = initTriangle1(v0,v1,v2,morton_geomID,morton_primID,mic_i(mesh->mask));
 
 	bounds_min = min(bounds_min,min(v0,min(v1,v2)));
 	bounds_max = max(bounds_max,max(v0,max(v1,v2)));
@@ -1024,7 +1017,7 @@ namespace embree
       {
 	if (current.size()  <= topLevelItemThreshold &&
 	    numBuildRecords >= numThreads) {
-	  buildRecords[numBuildRecords++] = current; // FIXME: can overflow
+	  buildRecords[numBuildRecords++] = current;
 	  return empty;
 	}
       }

@@ -132,7 +132,7 @@ namespace embree
 
     while(active_mask)
       {
-	const size_t rayIndex = bitscan64(active_mask); 
+	const size_t rayIndex = bitscan(active_mask); 
 	active_mask &= active_mask-1;
 
 	stack[START_SINDEX-1].node = qbvh[0].min_d[0];
@@ -200,7 +200,7 @@ namespace embree
 		size_t i_lr_hit = m_near_far;
 		//const size_t num_m_lr_hit = _popcnt64(i_lr_hit); 
 		sindex++;
-		const size_t pos_first = bitscan64(i_lr_hit);
+		const size_t pos_first = bitscan(i_lr_hit);
 		curNode = qptr->min_d[pos_first];
 		i_lr_hit &= i_lr_hit-1;
 		if (likely(i_lr_hit == 0)) continue; // == 1 == 
@@ -209,7 +209,7 @@ namespace embree
 #if 1
 		while(1)
 		  {
-		    const size_t posN = bitscan64(i_lr_hit);
+		    const size_t posN = bitscan(i_lr_hit);
 		    // DBG(DBG_PRINT(posN));
 		    // std::cout << std::endl;
 		    // for (size_t i=0;i<sindex;i++)
@@ -289,7 +289,7 @@ namespace embree
 		  {
 		
 
-		    const size_t posN = bitscan64(i_lr_hit);
+		    const size_t posN = bitscan(i_lr_hit);
 		    DBG(DBG_PRINT(posN));
 
 
@@ -898,7 +898,7 @@ namespace embree
 // #if 0
 // 		i_lr_hit &= i_lr_hit-1;
 	      
-// 		const size_t pos_sec = bitscan64(i_lr_hit);
+// 		const size_t pos_sec = bitscan(i_lr_hit);
 
 // 		DBG(DBG_PRINT(pos_sec));
 

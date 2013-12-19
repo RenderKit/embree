@@ -149,7 +149,7 @@ namespace embree
       else if (g_tri_accel == "bvh4i.triangle1.v2")     accels.accel0 = BVH4i::BVH4iTriangle1_v2(this);
       else if (g_tri_accel == "bvh4i.triangle1.morton") accels.accel0 = BVH4i::BVH4iTriangle1_morton(this);
       else if (g_tri_accel == "bvh4i.triangle1.morton.enhanced") accels.accel0 = BVH4i::BVH4iTriangle1_morton_enhanced(this);
-#if defined (__TARGET_AVX__)
+#if !defined(__WIN32__) && defined (__TARGET_AVX__)
       else if (g_tri_accel == "bvh8i.triangle1")        accels.accel0 = BVH8i::BVH8iTriangle1(this);
 #endif
       else throw std::runtime_error("unknown triangle acceleration structure "+g_tri_accel);
