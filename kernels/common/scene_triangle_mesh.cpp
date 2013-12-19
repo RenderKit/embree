@@ -115,7 +115,7 @@ namespace embree
     switch (type) {
     case RTC_INDEX_BUFFER : 
     {
-      if (mappedTriangles || (built && isDeformable())) {
+      if (mappedTriangles) {
         recordError(RTC_INVALID_OPERATION);
         return NULL;
       }

@@ -1885,7 +1885,7 @@ namespace embree
     POSITIVE("flags_dynamic_deformable",  rtcore_dynamic_flag(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DEFORMABLE));
     POSITIVE("flags_dynamic_dynamic",     rtcore_dynamic_flag(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_DYNAMIC));
     POSITIVE("static_scene",              rtcore_static_scene());
-    POSITIVE("deformable_geometry",       rtcore_deformable_geometry());
+    //POSITIVE("deformable_geometry",       rtcore_deformable_geometry()); // FIXME
     POSITIVE("unmapped_before_commit",    rtcore_unmapped_before_commit());
 
     POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
