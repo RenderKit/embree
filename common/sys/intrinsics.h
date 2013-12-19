@@ -176,6 +176,17 @@ __forceinline int32 atomic_cmpxchg(volatile int32* p, const int32 c, const int32
 
 #else
 
+#if 1
+__forceinline void __cpuid(int out[4], int op) {
+  asm volatile ("cpuid" : "=a"(out[0]), "=b"(out[1]), "=c"(out[2]), "=d"(out[3]) : "a"(op)); 
+}
+
+__forceinline void __cpuid_count(int out[4], int op1, int op2) {
+  asm volatile ("cpuid" : "=a"(out[0]), "=b"(out[1]), "=c"(out[2]), "=d"(out[3]) : "a"(op1), "c"(op2)); 
+}
+
+#else // FIXME: these are buggy, compiler does not know that ebx is used
+
 __forceinline void __cpuid(int out[4], int op) 
 {
   asm volatile ("xchg{l} {%%}ebx, %1\n cpuid\n xchg{l} {%%}ebx, %1" : 
@@ -187,6 +198,7 @@ __forceinline void __cpuid_count(int out[4], int op1, int op2)
   asm volatile ("xchg{l} {%%}ebx, %1\n cpuid\n xchg{l} {%%}ebx, %1" : 
                 "=a"(out[0]), "=r"(out[1]), "=c"(out[2]), "=d"(out[3]) : "a"(op1), "c"(op2)); 
 }
+#endif
 
 __forceinline uint64 __rdtsc()  {
   uint32 high,low;

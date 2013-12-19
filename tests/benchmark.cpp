@@ -19,6 +19,7 @@
 #include "embree2/rtcore.h"
 #include "embree2/rtcore_ray.h"
 #include "math/vec3.h"
+#include "kernels/common/default.h"
 #include <vector>
 
 namespace embree
@@ -433,7 +434,9 @@ namespace embree
 #endif
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-    rtcore_coherent_intersect8(scene);
+    if (has_feature(AVX)) {
+      rtcore_coherent_intersect8(scene);
+    }
 #endif
 
 #if defined(__MIC__)
@@ -455,7 +458,9 @@ namespace embree
 #endif
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-    rtcore_incoherent_intersect8(scene,numbers,N);
+    if (has_feature(AVX)) {
+      rtcore_incoherent_intersect8(scene,numbers,N);
+    }
 #endif
 
 #if defined(__MIC__)
