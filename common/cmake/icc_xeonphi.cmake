@@ -15,9 +15,9 @@
 ## ======================================================================== ##
 
 SET (CMAKE_CXX_COMPILER icpc)
-SET (CMAKE_CXX_FLAGS "-mmic -restrict -g -Wall -fasm-blocks -fPIC")
-SET (CMAKE_CXX_FLAGS_NOOPT "-O0 -DDEBUG")
-SET (CMAKE_CXX_FLAGS_DEBUG "-w1 -O2 -DDEBUG ")
+SET (CMAKE_CXX_FLAGS "-mmic -restrict -Wall -fasm-blocks -fPIC")
+SET (CMAKE_CXX_FLAGS_NOOPT "-g -O0 -DDEBUG")
+SET (CMAKE_CXX_FLAGS_DEBUG "-g -w1 -O2 -DDEBUG ")
 
 #--no-exceptions --no-rtti  
 # -ansi-alias # ISPC not working with ansi-alias flag
