@@ -196,8 +196,8 @@ ENDIF ()
 # Install Headers
 ##############################################################
 
-INSTALL(DIRECTORY embree2 DESTINATION include FILES_MATCHING PATTERN "*.h")
-INSTALL(DIRECTORY embree2 DESTINATION include FILES_MATCHING PATTERN "*.isph")
+INSTALL(DIRECTORY include/embree2 DESTINATION include FILES_MATCHING PATTERN "*.h")
+INSTALL(DIRECTORY include/embree2 DESTINATION include FILES_MATCHING PATTERN "*.isph")
 
 
 # ##################################################################
