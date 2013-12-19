@@ -48,9 +48,10 @@ platform. Embree also supports dynamic scenes by implementing high
 performance two-level spatial index structure construction algorithms.
         
 In addition to the ray tracing kernels, Embree provides some tutorials
-to demonstrate how to use the Embree API. The example photorealistic
-renderer that was originally included in the Embree kernel package is
-now available in a separate GIT repository.
+to demonstrate how to use the Embree API. Documentation on the Embree
+API can be found in embree/doc/embree_api.pdf. The example
+photorealistic renderer that was originally included in the Embree
+kernel package is now available in a separate GIT repository.
 
 --- Supported Platforms ---
 
