@@ -17,7 +17,7 @@
 #ifndef __RTCORE_SCENE_ISPH__
 #define __RTCORE_SCENE_ISPH__
 
-/*! \ingroup embree_kernel_api_ispc */
+/*! \ingroup embree_kernel_api */
 /*! \{ */
 
 /*! forward declarations for ray structures */
@@ -48,7 +48,7 @@ enum RTCAlgorithmFlags
   RTC_INTERSECT_VARYING = (1 << 1),    //!< enables the varying rtcIntersect and varying rtcOccluded functions for this scene
 };
 
-/*! Scene type */
+/*! \brief Defines an opaque scene type */
 typedef uniform struct __RTCScene {}* uniform RTCScene;
 
 /*! Creates a new scene. */
