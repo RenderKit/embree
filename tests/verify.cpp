@@ -1706,7 +1706,7 @@ namespace embree
       RTCRay ray = makeRay(org,dir); 
       setRay(ray8,j,ray);
     }
-    __align(16) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+    __align(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
     rtcOccluded8(valid8,scene,ray8);
     rtcIntersect8(valid8,scene,ray8);
 #endif
