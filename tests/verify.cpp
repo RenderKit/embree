@@ -1861,6 +1861,10 @@ namespace embree
     /* parse command line */  
     parseCommandLine(argc,argv);
 
+    /* print Embree version */
+    rtcInit("verbose=1");
+    rtcExit();
+
     /* perform tests */
     rtcInit(g_rtcore.c_str());
 

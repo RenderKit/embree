@@ -147,7 +147,16 @@ namespace embree
       recordError(RTC_INVALID_OPERATION);
       return;
     }
+
+    /* reset global state */
     g_initialized = true;
+    g_top_accel = "default";
+    g_tri_accel = "default";
+    g_builder = "default";
+    g_traverser = "default";
+    g_verbose = 0;
+    g_numThreads = 0;
+    g_benchmark = 0;
 
     if (cfg != NULL) 
     {
@@ -259,6 +268,7 @@ namespace embree
       delete g_errors[i];
     destroyTls(g_error);
     Alloc::global.clear();
+    g_initialized = false;
     CATCH_END;
   }
 
