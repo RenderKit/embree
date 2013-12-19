@@ -18,94 +18,117 @@ Embree is a collection of high-performance ray tracing kernels,
 developed at Intel. The target user of Embree are graphics application
 engineers that want to improve the performance of their application by
 leveraging the optimized ray tracing kernels of Embree. The kernels
-are optimized for photo-realistic rendering on the latest Intel®
-processors with support for SSE, AVX, AVX2, and the 16-wide Xeon Phi
-vector instructions. Embree supports runtime code selection to choose
-the traversal and build algorithms that best matches the instruction
-set of your CPU. Embree is released as Open Source under the Apache
-2.0 license.
+are optimized for photo-realistic rendering on the latest Intel(R)
+processors with support for SSE, AVX, AVX2, and the 16-wide Xeon
+Phi(TM) vector instructions. Embree supports runtime code selection to
+choose the traversal and build algorithms that best matches the
+instruction set of your CPU. We recommend using Embree through its API
+to get the highest benefit from future improvements. Embree is
+released as Open Source under the Apache 2.0 license.
 
 Embree supports applications written with the Intel SPMD Programm
-Compiler (ISPC, http://ispc.github.com) by providing an ISPC interface
-to the core ray tracing algorithms. This makes it possible to write a
-renderer in ISPC that leverages SSE, AVX, AVX2, and Xeon Phi
-instructions without any code change. ISPC also supports runtime code
-selection using the multi-target feature. This way it is possible to
-let ISPC select at runtime the best code path for your application,
-while Embree selects the optimal code path for the ray tracing
-algorithms.
+Compiler (ISPC, http://ispc.github.com) by also providing an ISPC
+interface to the core ray tracing algorithms. This makes it possible
+to write a renderer in ISPC that leverages SSE, AVX, AVX2, and Xeon
+Phi(TM) instructions without any code change. ISPC also supports
+runtime code selection, thus ISPC will select the best code path for
+your application, while Embree selects the optimal code path for the
+ray tracing algorithms.
 
 Embree contains algorithms optimized for incoherent workloads (e.g.
 Monte Carlo ray tracing algorithms) and coherent workloads
 (e.g. primary visibility and hard shadow rays). For standard CPUs, the
 single-ray traversal kernels in Embree provide the best performance
 for incoherent workloads and are very easy to integrate into existing
-rendering applications. For Xeon Phi, a renderer written in ISPC using
-the optimized hybrid ray/packet traversal algorithms have shown to
-perform best and requires writing the renderer in ISPC. In general for
-coherent workloads, ISPC outperforms the single ray mode on each
+rendering applications. For Xeon Phi(TM), a renderer written in ISPC
+using the default hybrid ray/packet traversal algorithms have shown to
+perform best, but requires writing the renderer in ISPC. In general
+for coherent workloads, ISPC outperforms the single ray mode on each
 platform. Embree also supports dynamic scenes by implementing high
-performance spatial index structure construction algorithms.
-
+performance two-level spatial index structure construction algorithms.
+        
 In addition to the ray tracing kernels, Embree provides some tutorials
-to demonstrate how to use the Embree API. More documentation about the
-API is found in embree/include/embree2/rtcore.h
+to demonstrate how to use the Embree API. The example photorealistic
+renderer that was originally included in the Embree kernel package is
+now available in a separate GIT repository.
 
 --- Supported Platforms ---
 
-Embree supports Windows, Linux and MacOSX, each in 32bit and 64bit
+Embree supports Windows, Linux and MacOS, each in 32bit and 64bit
 modes. The code compiles with the Intel Compiler, the Microsoft
 Compiler, GCC and CLANG. Using the Intel Compiler improves performance
 by approximately 10%. Performance also varies across different
-operating systems. Embree requires a CPU with at least support for
-SSE2. Embree is optimized for Intel CPUs supporting SSE, AVX, and AVX2
-instructions.
+operating systems. Embree is optimized for Intel CPUs supporting SSE,
+AVX, and AVX2 instructions, and requires at least a CPU with support
+for SSE2.
 
-The Xeon Phi version of Embree only works under Linux in 64bit
-mode. For compilation of the the Xeon Phi code the Intel Compiler is
-required. The host side code compiles with GCC and the Intel Compiler.
+The Xeon Phi(TM) version of Embree only works under Linux in 64bit
+mode. For compilation of the the Xeon Phi(TM) code the Intel Compiler
+is required. The host side code compiles with GCC, CLANG, and the
+Intel Compiler.
 
---- Compiling Embree on Linux and MacOSX ---
+--- Folder Structure ---
 
-Embree requires ISPC to compile. We have tested ISPC version 1.5.0,
-but more recent versions of ISPC should also work. You can download
-and install ISPC binaries from ispc.github.com. After installation,
-put ISPC permanently into your PATH:
+Once you downloaded or checked out Embree you will see the following
+folder structure:
+      
+embree                  Embree root folder
+embree/include          User API to the ray tracing kernels
+embree/kernels          Embree ray tracing kernels implementation
+embree/kernels/xeon     Embree kernels for Intel(R) Xeon(R) CPUs
+embree/kernels/xeonphi  Embree kernels for Intel(R) Xeon Phi(TM) Accelerators
+embree/tutorials        Embree tutorials
 
+As of version 2.1, the Embree example renderer that used to come with
+earlier versions of Embree is no longer included in the main branch
+used for the kernels, and has been moved to a separate branch
+dedicated to this path tracer.
+
+--- Compiling Embree on Linux and MacOS ---
+
+Embree requires the Intel SPMD Compiler (ISPC) to compile. We have
+tested ISPC version 1.5.0, but more recent versions of ISPC should
+also work. You can download and install the ISPC binaries from
+http://ispc.github.com/downloads.html. After installation, put the
+path to the ispc executable permanently into your PATH.
+      
   export PATH=path-to-ispc:$PATH
 
 You additionally have to install CMake and the developer version of
-GLUT. Under MaxOSX, these dependencies can be installed using
-MacPorts:
+GLUT. Under MaxOS, these dependencies can be installed using MacPorts:
 
-   sudo port install cmake freeglut
+  sudo port install cmake freeglut
 
-Under Linux you can install the dependencies using yum:
+Under Linux you can install these dependencies using yum. Depending
+on your Linux distribution, some of these packages might already be
+installed or might have slightly different names.
 
-   sudo yum install cmake.x86_64
-   sudo yum install freeglut.x86_64 freeglut-devel.x86_64
-   sudo yum install libXmu.x86_64 libXi.x86_64 libXmu-devel.x86_64 libXi-devel.x86_64
-
+  sudo yum install cmake.x86_64
+  sudo yum install freeglut.x86_64 freeglut-devel.x86_64
+  sudo yum install libXmu.x86_64 libXi.x86_64 
+  sudo yum install libXmu-devel.x86_64 libXi-devel.x86_64
+        
 Finally you can compile Embree using CMake. Create a build directory
 and execute "ccmake .." inside this directory.
-
-   mkdir build
-   cd build
-   ccmake ..
+        
+  mkdir build
+  cd build
+  cmake ..
+  make
 
 This will open a configuration dialog where you should set the
-CMAKE_BUILD_TYPE to “Release” and the compiler to "GCC", "CLANG" or
+CMAKE_BUILD_TYPE to "Release" and the compiler to "GCC", "CLANG" or
 "ICC". You should also select all targets that you want Embree to
 generate optimized code for. We recommend to enable TARGET_SSE41,
 TARGET_AVX, and TARGET_AVX2 if you want to use Embree on standard
 CPUs, and you have to enable TARGET_XEON_PHI if you want to use Embree
-on Xeon Phi. You need at least Intel Compiler 11.1 or GCC 4.4 to
+on Xeon Phi(TM). You need at least Intel Compiler 11.1 or GCC 4.4 to
 enable AVX and Intel Compiler 12.1 or GCC 4.7 to enable AVX2. Now
 press c (for configure) and g (for generate) to generate a Makefile
 and leave the configuration. The code can be compiled by executing
 make.
 
-      make
+  make
 
 The executables will be generated inside the build folder. We
 recommend to finally install the Embree library and header files on
@@ -115,48 +138,38 @@ your system:
 
 --- Compiling Embree on Windows ---
 
-Embree requires ISPC to compile. We have tested ISPC version 1.5.0,
-but more recent versions of ISPC should also work. You can download
-and install ISPC binaries from ispc.github.com. After installation,
-put the path to ispc.exe permanently into your PATH environment
-variable. You have to restart Visual Studio for this change to take
-effect.
-
-For compilation under Windows use the Visual Studio 2008 solution file
-embree_vs2008.sln or Visual Studio 2010 solution file
-embree_vs2010. The project compiles in 32 bit and 64 bit mode. The
+Embree requires the Intel SPMD Compiler (ISPC) to compile. We have
+tested ISPC version 1.5.0, but more recent versions of ISPC should
+also work. You can download and install the ISPC binaries from
+http://ispc.github.com/downloads.html. After installation, put the
+path to ispc.exe permanently into your PATH environment variable. You
+have to restart Visual Studio for this change to take effect.
+      
+For compilation of Embree under Windows use the Visual Studio 2008
+solution file embree_vs2008.sln or Visual Studio 2010 solution file
+embree_vs2010.sln. The project compiles in 32 bit and 64 bit mode. The
 solution is by default setup to use the Microsoft Compiler. You can
 switch to the Intel Compiler by right clicking onto the solution in
 the Solution Explorer and then selecting the Intel Compiler. We
 recommend using 64 bit mode and the Intel Compiler for best
 performance.
-
+      
 In Visual Studio, you will find 4 build configurations, Debug (for
-SSE2 debug mode), Release (for SSE2 release mode), ReleaseAVX (for
-AVX), and ReleaseAVX2 (for AVX2). When using Microsoft Compiler you
-can only use the Debug and Release configuration. For enabling the
-ReleaseAVX target you need Intel Compiler 11.1 and and for the
-ReleaseAVX2 target you need at least Intel Compiler 12.1.
+SSE2 debug mode), Release (for SSE2 release mode), ReleaseAVX (for AVX
+release mode), and ReleaseAVX2 (for AVX2 release mode). When using the
+Microsoft Compiler you can only use the Debug and Release
+configuration. For enabling the ReleaseAVX configuration you need at
+least Intel Compiler 11.1 and for the ReleaseAVX2 configuration you
+need at least Intel Compiler 12.1.
 
-There is an issue with compiling the ISPC files in Visual Studio 2010,
-resulting in link errors for the first builds. Please rebuild the
-project multiple times until it links properly.
+There is a known issue with compiling the ISPC files in Visual Studio
+2010, resulting in link errors for the first build. Build the project
+a second time (no rebuild) for it to link properly.
 
-We recommend enabling syntax highlighting for the .ispc source 
-and .isph header files. To do so open Visual Studio 2008, go to 
-Tools -> Options -> Text Editor -> File Extension and add the isph
-and ispc extension for the "Microsoft Visual C++" editor.
-
---- Folder structure ---
-
-    embree                 Embree ray tracing kernels
-    embree/include/        User API to the ray tracing kernels
-    tutorials              Embree tutorials for
-    tutorials/tutorial00     creating a simple static scene
-    tutorials/tutorial01     creating a dynamic scene
-    tutorials/tutorial02     user defined geometry
-    tutorials/tutorial03     simple OBJ loader
-    tutorials/tutorial04     instancing of geometry
+We recommend enabling syntax highlighting for the .ispc source and
+.isph header files. To do so open Visual Studio 2008, go to Tools ->
+Options -> Text Editor -> File Extension and add the isph and ispc
+extension for the "Microsoft Visual C++" editor.
 
 --- Running the Tutorials ---
 
