@@ -247,6 +247,12 @@
 					Switch="-h &quot;[value]&quot;"
 					DefaultValue="$(IntDir)\$(InputName)_ispc.h"
 				/>
+				<BooleanProperty
+					Name="NoWarnings"
+					DisplayName="Disable Warnings"
+					Description="Disable Warnings"
+					Switch="--woff"
+				/>
 			</Properties>
 		</CustomBuildRule>
 	</Rules>

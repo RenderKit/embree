@@ -39,6 +39,7 @@
 				Name="ISPC"
 				Architecture="0"
 				TargetISA="5"
+				NoWarnings="true"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -118,6 +119,7 @@
 			<Tool
 				Name="ISPC"
 				TargetISA="5"
+				NoWarnings="true"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -200,6 +202,7 @@
 				Name="ISPC"
 				Architecture="0"
 				TargetISA="5"
+				NoWarnings="true"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -279,6 +282,7 @@
 			<Tool
 				Name="ISPC"
 				TargetISA="5"
+				NoWarnings="true"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -360,6 +364,7 @@
 				Name="ISPC"
 				Architecture="0"
 				TargetISA="6"
+				NoWarnings="true"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -439,6 +444,7 @@
 			<Tool
 				Name="ISPC"
 				TargetISA="6"
+				NoWarnings="true"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -521,6 +527,7 @@
 				Name="ISPC"
 				Architecture="0"
 				TargetISA="6"
+				NoWarnings="true"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -600,6 +607,7 @@
 			<Tool
 				Name="ISPC"
 				TargetISA="6"
+				NoWarnings="true"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"

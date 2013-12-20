@@ -67,6 +67,12 @@
       DisplayName="Treat Warnings as Errors"
       Description="Treat Warnings as Errors."
       Switch="--werror" />
+    <BoolProperty
+      Name="NoWarnings"
+      HelpContext="0"
+      DisplayName="Disable Warnings"
+      Description="Disable Warnings"
+      Switch="--woff" />
     <StringProperty
       Name="ObjectFileName"
       Category="Output"

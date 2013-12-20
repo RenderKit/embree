@@ -16,6 +16,7 @@
       <Aligned>False</Aligned>
       <PIC>False</PIC>
       <WarningsAsErrors>False</WarningsAsErrors>
+      <NoWarnings>False</NoWarnings>
       <ObjectFileName>$(IntDir)%(Filename).ispc.obj</ObjectFileName>
       <HeaderFile>$(IntDir)%(Filename)_ispc.h</HeaderFile>
       <Architecture>1</Architecture>
