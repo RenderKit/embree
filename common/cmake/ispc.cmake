@@ -90,7 +90,8 @@ MACRO (ispc_compile targets)
       --pic
       -O3
       --target=${ISPC_TARGETS}
-      --wno-perf
+      --woff
+#      --wno-perf
       --opt=fast-math
 #      --opt=force-aligned-memory
       -h ${outdirh}/${fname}_ispc.h
