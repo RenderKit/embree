@@ -148,6 +148,8 @@ namespace embree
       return;
     }
 
+
+
     /* reset global state */
     g_initialized = true;
     g_top_accel = "default";
@@ -217,6 +219,7 @@ namespace embree
         
       } while (findNext (cfg,',',pos));
     }
+
 
     g_error = createTls();
 
