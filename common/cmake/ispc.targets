@@ -50,6 +50,7 @@
       Aligned="%(ISPC.Aligned)"
       PIC="%(ISPC.PIC)"
       WarningsAsErrors="%(ISPC.WarningsAsErrors)"
+      NoWarnings="%(ISPC.NoWarnings)"
       ObjectFileName="%(ISPC.ObjectFileName)"
       PreprocessorDefinitions="%(ISPC.PreprocessorDefinitions)"
       IncludePaths="%(ISPC.IncludePaths)"
