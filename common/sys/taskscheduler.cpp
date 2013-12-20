@@ -139,7 +139,9 @@ namespace embree
 #endif
     
     /* this mapping is only required as ISPC does not propagate task groups */
+
     thread2event = (ThreadEvent*) alignedMalloc(numThreads*sizeof(ThreadEvent));
+
     memset(thread2event,0,numThreads*sizeof(ThreadEvent));
 
     /* generate all threads */
