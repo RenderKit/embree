@@ -27,6 +27,8 @@
 
 #define DBG(x) 
 
+//#define PROFILE
+
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
 #endif
@@ -55,7 +57,7 @@ namespace embree
       LockStepTaskScheduler::init(TaskScheduler::getNumThreads());
       
 #if defined(PROFILE)
-      
+      PING;
       double dt_min = pos_inf;
       double dt_avg = 0.0f;
       double dt_max = neg_inf;
