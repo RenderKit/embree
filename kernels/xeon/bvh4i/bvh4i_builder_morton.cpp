@@ -21,6 +21,8 @@
 
 #define BVH_NODE_PREALLOC_FACTOR 1.1f
 
+//#define PROFILE
+
 #if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
 #endif
@@ -54,7 +56,8 @@ namespace embree
       LockStepTaskScheduler::init(TaskScheduler::getNumThreads());
 
 #if defined(PROFILE)
-      
+      PING;
+      DBG_PRINT(source->size());
       double dt_min = pos_inf;
       double dt_avg = 0.0f;
       double dt_max = neg_inf;
