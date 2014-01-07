@@ -383,7 +383,8 @@ namespace embree
           curNode = *sptr_node; 
           curDist = *sptr_dist;
           
-	  prefetch<PFHINT_L1>((mic_f*)node + 1); // depth first order, prefetch		
+	  prefetch<PFHINT_L1>((mic_f*)node + 0); 
+	  prefetch<PFHINT_L1>((mic_f*)node + 1); 
 
 #pragma unroll(4)
           for (unsigned int i=0; i<4; i++)
