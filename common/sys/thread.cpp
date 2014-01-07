@@ -336,18 +336,24 @@ namespace embree
   }
 
   /*! return the thread local storage pointer */
-  void* getTls(tls_t tls) {
+  void* getTls(tls_t tls) 
+  {
+    assert(tls);
     return pthread_getspecific(*(pthread_key_t*)tls);
   }
 
   /*! set the thread local storage pointer */
-  void setTls(tls_t tls, void* const ptr) {
+  void setTls(tls_t tls, void* const ptr) 
+  {
+    assert(tls);
     if (pthread_setspecific(*(pthread_key_t*)tls, ptr) != 0)
       throw std::runtime_error("pthread_setspecific");
   }
 
   /*! destroys thread local storage identifier */
-  void destroyTls(tls_t tls) {
+  void destroyTls(tls_t tls) 
+  {
+    assert(tls);
     if (pthread_key_delete(*(pthread_key_t*)tls) != 0)
       throw std::runtime_error("pthread_key_delete");
     delete (pthread_key_t*)tls;
