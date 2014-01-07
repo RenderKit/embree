@@ -176,7 +176,28 @@ __forceinline int32 atomic_cmpxchg(volatile int32* p, const int32 c, const int32
 
 #else
 
-#if 1
+#if defined(__i386__) && defined(__PIC__)
+
+__forceinline void __cpuid(int out[4], int op) 
+{
+  asm volatile ("xchg{l}\t{%%}ebx, %1\n\t"
+                "cpuid\n\t"
+                "xchg{l}\t{%%}ebx, %1\n\t"
+                : "=a"(out[0]), "=r"(out[1]), "=c"(out[2]), "=d"(out[3]) 
+                : "0"(op)); 
+}
+
+__forceinline void __cpuid_count(int out[4], int op1, int op2) 
+{
+  asm volatile ("xchg{l}\t{%%}ebx, %1\n\t"
+                "cpuid\n\t"
+                "xchg{l}\t{%%}ebx, %1\n\t"
+                : "=a" (out[0]), "=r" (out[1]), "=c" (out[2]), "=d" (out[3])
+                : "0" (op1), "2" (op2)); 
+}
+
+#else
+
 __forceinline void __cpuid(int out[4], int op) {
   asm volatile ("cpuid" : "=a"(out[0]), "=b"(out[1]), "=c"(out[2]), "=d"(out[3]) : "a"(op)); 
 }
@@ -185,19 +206,6 @@ __forceinline void __cpuid_count(int out[4], int op1, int op2) {
   asm volatile ("cpuid" : "=a"(out[0]), "=b"(out[1]), "=c"(out[2]), "=d"(out[3]) : "a"(op1), "c"(op2)); 
 }
 
-#else // FIXME: these are buggy, compiler does not know that ebx is used
-
-__forceinline void __cpuid(int out[4], int op) 
-{
-  asm volatile ("xchg{l} {%%}ebx, %1\n cpuid\n xchg{l} {%%}ebx, %1" : 
-                "=a"(out[0]), "=r"(out[1]), "=c"(out[2]), "=d"(out[3]) : "a"(op)); 
-}
-
-__forceinline void __cpuid_count(int out[4], int op1, int op2) 
-{
-  asm volatile ("xchg{l} {%%}ebx, %1\n cpuid\n xchg{l} {%%}ebx, %1" : 
-                "=a"(out[0]), "=r"(out[1]), "=c"(out[2]), "=d"(out[3]) : "a"(op1), "c"(op2)); 
-}
 #endif
 
 __forceinline uint64 __rdtsc()  {
@@ -428,7 +436,11 @@ __forceinline unsigned int bitscan(unsigned int v) {
 
 __forceinline size_t bitscan64(size_t v) {
 #if defined(__AVX2__)
+#if defined(__X86_64__)
   return _tzcnt_u64(v);
+#else
+  return _tzcnt_u32(v);
+#endif
 #elif defined(__MIC__)
   return _mm_tzcnt_64(v); 
 #else
@@ -472,7 +484,11 @@ __forceinline size_t __btc(size_t v, size_t i) {
 }
 
 __forceinline size_t __bsr(size_t v) {
+#if defined(__X86_64__)
   return 63 - _lzcnt_u64(v); 
+#else
+  return 63 - _lzcnt_u32(v); 
+#endif
 }
 
 __forceinline unsigned int __bsr(unsigned int v) {
@@ -484,11 +500,19 @@ __forceinline unsigned int bitscan(const int index,const unsigned int v) {
 };
 
 __forceinline size_t bitscan64(const ssize_t index,const size_t v) { 
+#if defined(__X86_64__)
   return _mm_tzcnti_64(index,v); 
+#else
+  return _mm_tzcnti_32(index,v); 
+#endif
 };
 
 __forceinline size_t countbits64(size_t v) { 
+#if defined(__X86_64__)
   return _mm_countbits_64(v); 
+#else
+  return _mm_countbits_32(v); 
+#endif
 };
 
 __forceinline unsigned int countbits(unsigned int v) {
@@ -504,7 +528,11 @@ __forceinline int __popcnt(int v) {
 }
 
 __forceinline size_t __popcnt(size_t v) {
+#if defined(__X86_64__)
   return _mm_countbits_64(v); 
+#else
+  return _mm_countbits_32(v); 
+#endif
 }
 
 

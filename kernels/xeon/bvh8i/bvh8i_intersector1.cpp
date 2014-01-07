@@ -23,7 +23,11 @@ namespace embree
   namespace isa
   {
 #if defined(__AVX2__)
+#if defined(__X86_64__)
     __forceinline size_t bitscan(size_t mask) { return _tzcnt_u64(mask); }
+#else
+    __forceinline size_t bitscan(size_t mask) { return _tzcnt_u32(mask); }
+#endif
 #else
     __forceinline size_t bitscan(size_t mask) { return __bsf(mask); }
 #endif

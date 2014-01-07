@@ -33,6 +33,12 @@ MACRO (ispc_compile targets)
     SET (ISPC_TARGET_ALIGNED_MEMORY --opt=force-aligned-memory)
   ENDIF()
 
+  IF (CMAKE_OSX_ARCHITECTURES STREQUAL "i386")
+    SET(ISPC_ARCHITECTURE "x86")
+  ELSE()
+    SET(ISPC_ARCHITECTURE "x86-64")
+  ENDIF()
+  
   SET(ISPC_TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR})
   INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} ${ISPC_TARGET_DIR})
 
@@ -91,6 +97,7 @@ MACRO (ispc_compile targets)
       COMMAND mkdir -p ${outdir} \; ispc  
       -I ${CMAKE_CURRENT_SOURCE_DIR} 
       ${ISPC_INCLUDE_DIR_PARMS}
+      --arch=${ISPC_ARCHITECTURE}
       --pic
       -O3
       --target=${ISPC_TARGETS}
