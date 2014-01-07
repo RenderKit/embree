@@ -36,7 +36,10 @@ MACRO (ispc_compile targets)
   SET(ISPC_TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR})
   INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} ${ISPC_TARGET_DIR})
 
-  STRING(REGEX REPLACE ";" ";-I;" ISPC_INCLUDE_DIR_PARMS "${ISPC_INCLUDE_DIR}")
+  IF(ISPC_INCLUDE_DIR)
+    STRING(REGEX REPLACE ";" ";-I;" ISPC_INCLUDE_DIR_PARMS "${ISPC_INCLUDE_DIR}")
+    SET(ISPC_INCLUDE_DIR_PARMS "-I" ${ISPC_INCLUDE_DIR_PARMS}) 
+  ENDIF()
 
   IF (__XEON__)
     STRING(REGEX REPLACE "," ";" target_list "${targets}")
@@ -87,7 +90,7 @@ MACRO (ispc_compile targets)
       OUTPUT ${results} ${outdirh}/${fname}_ispc.h
       COMMAND mkdir -p ${outdir} \; ispc  
       -I ${CMAKE_CURRENT_SOURCE_DIR} 
-      -I ${ISPC_INCLUDE_DIR_PARMS}
+      ${ISPC_INCLUDE_DIR_PARMS}
       --pic
       -O3
       --target=${ISPC_TARGETS}
