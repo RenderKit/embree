@@ -30,6 +30,7 @@ MACRO (ispc_compile targets)
     SET (ISPC_TARGET_EXT o)
   ELSE()
     SET (ISPC_TARGET_EXT cpp)
+    SET (ISPC_TARGET_ALIGNED_MEMORY --opt=force-aligned-memory)
   ENDIF()
 
   SET(ISPC_TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -93,6 +94,7 @@ MACRO (ispc_compile targets)
       --woff
 #      --wno-perf
       --opt=fast-math
+      ${ISPC_TARGET_ALIGNED_MEMORY}
 #      --opt=force-aligned-memory
       -h ${outdirh}/${fname}_ispc.h
       -MMM  ${outdir}/${fname}.dev.idep 

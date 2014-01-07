@@ -205,6 +205,7 @@ namespace embree
 #if defined(PROFILE)
 
 	std::cout << "STARTING PROFILE MODE" << std::endl << std::flush;
+	std::cout << "primitives = " << source->size() << std::endl;
 	double dt_min = pos_inf;
 	double dt_avg = 0.0f;
 	double dt_max = neg_inf;
