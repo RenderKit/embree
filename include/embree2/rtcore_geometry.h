@@ -21,7 +21,7 @@
 /*! \{ */
 
 /*! invalid geometry ID */
-#define INVALID_GEOMETRY_ID ((unsigned)-1)
+#define RTC_INVALID_GEOMETRY_ID ((unsigned)-1)
 
 /*! \brief Specifies the type of buffers when mapping buffers */
 enum RTCBufferType {
