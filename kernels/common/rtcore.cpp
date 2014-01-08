@@ -74,6 +74,7 @@ namespace embree
   std::string g_tri_accel = "default";    //!< triangle acceleration structure to use
   std::string g_builder = "default";      //!< builder to use
   std::string g_traverser = "default";    //!< traverser to use
+  int g_scene_flags = -1;       //!< scene flags to use
   size_t g_verbose = 0;                   //!< verbosity of output
   size_t g_numThreads = 0;                //!< number of threads to use in builders
   size_t g_benchmark = 0;
@@ -148,14 +149,13 @@ namespace embree
       return;
     }
 
-
-
     /* reset global state */
     g_initialized = true;
     g_top_accel = "default";
     g_tri_accel = "default";
     g_builder = "default";
     g_traverser = "default";
+    g_scene_flags = -1;
     g_verbose = 0;
     g_numThreads = 0;
     g_benchmark = 0;
@@ -216,10 +216,24 @@ namespace embree
           if (parseSymbol (cfg,'=',pos))
             g_benchmark = parseInt (cfg,pos);
         }
+        else if (tok == "flags") {
+          g_scene_flags = 0;
+          if (parseSymbol (cfg,'=',pos)) {
+            do {
+              std::string flag = parseIdentifier (cfg,pos);
+              if      (flag == "static" ) g_scene_flags |= RTC_SCENE_STATIC;
+              else if (flag == "dynamic") g_scene_flags |= RTC_SCENE_DYNAMIC;
+              else if (flag == "compact") g_scene_flags |= RTC_SCENE_COMPACT;
+              else if (flag == "coherent") g_scene_flags |= RTC_SCENE_COHERENT;
+              else if (flag == "incoherent") g_scene_flags |= RTC_SCENE_INCOHERENT;
+              else if (flag == "high_quality") g_scene_flags |= RTC_SCENE_HIGH_QUALITY;
+              else if (flag == "robust") g_scene_flags |= RTC_SCENE_ROBUST;
+            } while (parseSymbol (cfg,',',pos));
+          }
+        }
         
       } while (findNext (cfg,',',pos));
     }
-
 
     g_error = createTls();
 

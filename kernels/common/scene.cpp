@@ -29,11 +29,14 @@
 
 namespace embree
 {
-  Scene::Scene (RTCSceneFlags flags, RTCAlgorithmFlags aflags)
-    : flags(flags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
+  Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
+    : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
       numTriangleMeshes(0), numTriangleMeshes2(0), numUserGeometries(0),
       flat_triangle_source_1(this,1), flat_triangle_source_2(this,2)
   {
+    if (g_scene_flags != -1)
+      flags = (RTCSceneFlags) g_scene_flags;
+
 #if defined(__MIC__)
 
     accels.accel0 = NULL; 
