@@ -40,6 +40,11 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1,BVH4iTriangle4vIntersector1Pluecker);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4iVirtualIntersector1);
 
+  // -----
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4iTriangle1Intersector1ScalarMoeller);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4iVirtualIntersector1Scalar);
+  // -----
+
   DECLARE_SYMBOL(Accel::Intersector4,BVH4iTriangle1Intersector4ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4iTriangle4Intersector4ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4iTriangle1vIntersector4ChunkPluecker);
@@ -79,6 +84,11 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4iTriangle4vIntersector1Pluecker);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4iVirtualIntersector1);
 
+    // -----
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4iTriangle1Intersector1ScalarMoeller);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4iVirtualIntersector1Scalar);
+    // -----
+
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4iTriangle1Intersector4ChunkMoeller);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4iTriangle4Intersector4ChunkMoeller);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4iTriangle1vIntersector4ChunkPluecker);
@@ -96,7 +106,10 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1 = BVH4iTriangle1Intersector1Moeller;
+    if (g_traverser == "scalar" ) 
+      intersectors.intersector1 = BVH4iTriangle1Intersector1ScalarMoeller;
+    else
+      intersectors.intersector1 = BVH4iTriangle1Intersector1Moeller;
     intersectors.intersector4 = BVH4iTriangle1Intersector4ChunkMoeller;
     intersectors.intersector8 = BVH4iTriangle1Intersector8ChunkMoeller;
     intersectors.intersector16 = NULL;

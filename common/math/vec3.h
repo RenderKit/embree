@@ -242,9 +242,6 @@ namespace embree
 
 #if defined(__MIC__)
   template<> __forceinline Vec3<ssef>::Vec3( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z) {}
-#endif
-
-#if defined(__MIC__)
   template<> __forceinline Vec3<mic_f>::Vec3( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z) {}
 #endif
 }
