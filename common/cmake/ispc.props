@@ -26,7 +26,11 @@
       <MathLibrary>0</MathLibrary>
       <Opt>1</Opt>
       <CommandLineTemplate>ispc.exe [AllOptions] [AdditionalOptions] [Inputs]</CommandLineTemplate>
-      <Outputs>$(IntDir)%(Filename).ispc*.obj</Outputs>
+      <Outputs Condition="'$(Configuration)'=='Debug' and '$(MSBuildProjectName)'!='embree'">$(IntDir)%(Filename).ispc.obj;$(IntDir)%(Filename).ispc_sse2.obj;$(IntDir)%(Filename).ispc_sse4.obj</Outputs>
+      <Outputs Condition="'$(Configuration)'=='Release' and '$(MSBuildProjectName)'!='embree'">$(IntDir)%(Filename).ispc.obj;$(IntDir)%(Filename).ispc_sse2.obj;$(IntDir)%(Filename).ispc_sse4.obj</Outputs>
+      <Outputs Condition="'$(Configuration)'=='ReleaseAVX' and '$(MSBuildProjectName)'!='embree'">$(IntDir)%(Filename).ispc.obj;$(IntDir)%(Filename).ispc_sse2.obj;$(IntDir)%(Filename).ispc_sse4.obj;$(IntDir)%(Filename).ispc_avx.obj</Outputs>
+      <Outputs Condition="'$(Configuration)'=='ReleaseAVX2' and '$(MSBuildProjectName)'!='embree'">$(IntDir)%(Filename).ispc.obj;$(IntDir)%(Filename).ispc_sse2.obj;$(IntDir)%(Filename).ispc_sse4.obj;$(IntDir)%(Filename).ispc_avx.obj</Outputs>
+      <Outputs Condition="'$(MSBuildProjectName)'=='embree'">$(IntDir)%(Filename).ispc.obj;$(IntDir)%(Filename).ispc_sse2.obj;$(IntDir)%(Filename).ispc_sse4.obj;$(IntDir)%(Filename).ispc_avx.obj;$(IntDir)%(Filename).ispc_avx2.obj</Outputs>
       <ExecutionDescription>Compiling %(Filename)%(Extension)  ...</ExecutionDescription>
     </ISPC>
   </ItemDefinitionGroup>
