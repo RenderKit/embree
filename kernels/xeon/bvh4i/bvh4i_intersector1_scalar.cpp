@@ -148,9 +148,7 @@ namespace embree
           /*! single ray intersection with 4 boxes */
           const Node* node = cur.node(nodePtr);
 
-          size_t mask = 0;
-	  float tNear[4];
-
+	  size_t pushed = 0;
 	  for (size_t i=0;i<4;i++)
 	    {
 	      const float nearX = node->lower_x[i] * rdir.x - org_rdir.x;
@@ -166,50 +164,48 @@ namespace embree
 	      const float tNearZ = min(nearZ,farZ);
 	      const float tFarZ  = max(nearZ,farZ);
           
-	      tNear[i] = max(tNearX,tNearY,tNearZ,ray.tnear);
+	      const float tNear = max(tNearX,tNearY,tNearZ,ray.tnear);
 	      const float tFar  = min(tFarX ,tFarY ,tFarZ ,ray.tfar);
-	      mask |= tNear[i] <= tFar ? ((size_t)1 << i) : 0;
+	      if (tNear <= tFar)
+		{
+		  stackPtr->ptr  = node->child(i);
+		  stackPtr->dist = tNear;
+		  stackPtr++;
+		  pushed++;
+		}
 	    }
 
-          /*! if no child is hit, pop next node */
-          if (unlikely(mask == 0))
-            goto pop;
-          
-          /*! one child is hit, continue with that child */
-          size_t r = bitscan(mask); mask = __btc(mask,r);
-          if (likely(mask == 0)) {
-            cur = node->child(r);
-            continue;
-          }
-          
-          /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const float d0 = tNear[r];
-          r = bitscan(mask); mask = __btc(mask,r);
-          NodeRef c1 = node->child(r); const float d1 = tNear[r];
-          if (likely(mask == 0)) {
-            if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
-            else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; continue; }
-          }
-          
-          /*! Here starts the slow path for 3 or 4 hit children. We push
-           *  all nodes onto the stack to sort them there. */
-          stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++;
-          stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++;
-          
-          /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
-          r = bitscan(mask); mask = __btc(mask,r);
-          NodeRef c = node->child(r); float d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-          if (likely(mask == 0)) {
-            sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
-            cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
-            continue;
-          }
-          
-          /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
-          r = bitscan(mask); mask = __btc(mask,r);
-          c = node->child(r); d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
-          cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+	  if (pushed == 0) 
+	    {
+	      goto pop;
+	    }
+	  else if (pushed == 1)
+	    {
+	      cur = (NodeRef) stackPtr[-1].ptr;
+	      stackPtr--;
+	      continue;
+	    }
+	  else if (pushed == 2)
+	    {
+	      sort(stackPtr[-1],stackPtr[-2]);
+	      cur = (NodeRef) stackPtr[-1].ptr; 
+	      stackPtr--;
+	      continue;	      
+	    }
+	  else if (pushed == 3)
+	    {
+	      sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
+	      cur = (NodeRef) stackPtr[-1].ptr; 
+	      stackPtr--;
+	      continue;	      
+	    }
+	  else
+	    {
+	      sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
+	      cur = (NodeRef) stackPtr[-1].ptr; 
+	      stackPtr--;	      
+	    }
+	  
         }
         
         /*! this is a leaf node */
@@ -226,9 +222,10 @@ namespace embree
     void BVH4iIntersector1Scalar<TriangleIntersector>::occluded(const BVH4i* bvh, Ray& ray)
     {
       /*! stack state */
-      NodeRef stack[1+3*BVH4i::maxDepth];  //!< stack of nodes that still need to get traversed
-      NodeRef* stackPtr = stack+1;        //!< current stack pointer
-      stack[0]  = bvh->root;
+      StackItem stack[1+3*BVH4i::maxDepth];  //!< stack of nodes 
+      StackItem *stackPtr = stack+1;        //!< current stack pointer
+      stack[0].ptr  = bvh->root;
+      stack[0].dist = neg_inf;
       
       
       /*! load the ray into SIMD registers */
@@ -241,10 +238,9 @@ namespace embree
       /* pop loop */
       while (true) pop:
       {
-        /*! pop next node */
         if (unlikely(stackPtr == stack)) break;
         stackPtr--;
-        NodeRef cur = (NodeRef) *stackPtr;
+        NodeRef cur = NodeRef(stackPtr->ptr);
         
         /* downtraversal loop */
         while (true)
@@ -256,9 +252,7 @@ namespace embree
           /*! single ray intersection with 4 boxes */
           const Node* node = cur.node(nodePtr);
 
-          size_t mask = 0;
-	  float tNear[4];
-
+	  size_t pushed = 0;
 	  for (size_t i=0;i<4;i++)
 	    {
 	      const float nearX = node->lower_x[i] * rdir.x - org_rdir.x;
@@ -274,43 +268,50 @@ namespace embree
 	      const float tNearZ = min(nearZ,farZ);
 	      const float tFarZ  = max(nearZ,farZ);
           
-	      tNear[i] = max(tNearX,tNearY,tNearZ,ray.tnear);
+	      const float tNear = max(tNearX,tNearY,tNearZ,ray.tnear);
 	      const float tFar  = min(tFarX ,tFarY ,tFarZ ,ray.tfar);
-	      mask |= tNear[i] <= tFar ? ((size_t)1 << i) : 0;
+
+	      if (tNear <= tFar)
+		{
+		  stackPtr->ptr  = node->child(i);
+		  stackPtr->dist = tNear;
+		  stackPtr++;
+		  pushed++;
+		}
+	      
+	    }
+
+	  if (pushed == 0) 
+	    {
+	      goto pop;
+	    }
+	  else if (pushed == 1)
+	    {
+	      cur = (NodeRef) stackPtr[-1].ptr;
+	      stackPtr--;
+	      continue;
+	    }
+	  else if (pushed == 2)
+	    {
+	      sort(stackPtr[-1],stackPtr[-2]);
+	      cur = (NodeRef) stackPtr[-1].ptr; 
+	      stackPtr--;
+	      continue;	      
+	    }
+	  else if (pushed == 3)
+	    {
+	      sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
+	      cur = (NodeRef) stackPtr[-1].ptr; 
+	      stackPtr--;
+	      continue;	      
+	    }
+	  else
+	    {
+	      sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
+	      cur = (NodeRef) stackPtr[-1].ptr; 
+	      stackPtr--;	      
 	    }
           
-          /*! if no child is hit, pop next node */
-          if (unlikely(mask == 0))
-            goto pop;
-          
-          /*! one child is hit, continue with that child */
-          size_t r = bitscan(mask); mask = __btc(mask,r);
-          if (likely(mask == 0)) {
-            cur = node->child(r);
-            continue;
-          }
-          
-          /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const float d0 = tNear[r];
-          r = bitscan(mask); mask = __btc(mask,r);
-          NodeRef c1 = node->child(r); const float d1 = tNear[r];
-          if (likely(mask == 0)) {
-            if (d0 < d1) { *stackPtr = c1; stackPtr++; cur = c0; continue; }
-            else         { *stackPtr = c0; stackPtr++; cur = c1; continue; }
-          }
-          *stackPtr = c0; stackPtr++;
-          *stackPtr = c1; stackPtr++;
-          
-          /*! three children are hit */
-          r = bitscan(mask); mask = __btc(mask,r);
-          cur = node->child(r); *stackPtr = cur; stackPtr++;
-          if (likely(mask == 0)) {
-            stackPtr--;
-            continue;
-          }
-          
-          /*! four children are hit */
-          cur = node->child(3);
         }
         
         /*! this is a leaf node */
