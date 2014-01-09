@@ -56,14 +56,21 @@ extern "C" void ispcDeleteGeometry (RTCScene scene, uniform unsigned int geomID)
 
 extern "C" void ispcSetBoundsFunction (RTCScene scene, uniform unsigned int geomID, void* uniform bounds);
 extern "C" void ispcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr);
+
 extern "C" void ispcSetIntersectFunction1 (RTCScene scene, uniform unsigned int geomID, void* uniform intersect);
 extern "C" void ispcSetIntersectFunction4 (RTCScene scene, uniform unsigned int geomID, void* uniform intersect); 
 extern "C" void ispcSetIntersectFunction8 (RTCScene scene, uniform unsigned int geomID, void* uniform intersect);
 extern "C" void ispcSetIntersectFunction16 (RTCScene scene, uniform unsigned int geomID, void* uniform intersect); 
+
 extern "C" void ispcSetOccludedFunction1 (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
 extern "C" void ispcSetOccludedFunction4 (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
 extern "C" void ispcSetOccludedFunction8 (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
 extern "C" void ispcSetOccludedFunction16 (RTCScene scene, uniform unsigned int geomID, void* uniform occluded);
+
+extern "C" void ispcSetFilterFunction1 (RTCScene scene, uniform unsigned int geomID, void* uniform filter);
+extern "C" void ispcSetFilterFunction4 (RTCScene scene, uniform unsigned int geomID, void* uniform filter);
+extern "C" void ispcSetFilterFunction8 (RTCScene scene, uniform unsigned int geomID, void* uniform filter);
+extern "C" void ispcSetFilterFunction16 (RTCScene scene, uniform unsigned int geomID, void* uniform filter);
 
 void rtcInit(const uniform int8* uniform cfg) {
   ispcInit(cfg);
@@ -232,4 +239,18 @@ void rtcSetOccludedFunction (RTCScene scene, uniform unsigned int geomID, unifor
     ispcSetOccludedFunction8(scene,geomID,occluded);
   else if (sizeof(varying float) == 64)
     ispcSetOccludedFunction16(scene,geomID,occluded);
+}
+
+void rtcSetFilterFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncUniform filter) {
+  ispcSetFilterFunction1(scene,geomID,filter);
+}
+
+void rtcSetFilterFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncVarying filter)
+{
+  if (sizeof(varying float) == 16)
+    ispcSetFilterFunction4(scene,geomID,filter);
+  else if (sizeof(varying float) == 32)
+    ispcSetFilterFunction8(scene,geomID,filter);
+  else if (sizeof(varying float) == 64)
+    ispcSetFilterFunction16(scene,geomID,filter);
 }

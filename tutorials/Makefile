@@ -5,3 +5,4 @@ all:
 	@./ispc2cpp.sh tutorial02/tutorial02_device.ispc tutorial02/tutorial02_device.cpp
 	@./ispc2cpp.sh tutorial03/tutorial03_device.ispc tutorial03/tutorial03_device.cpp
 	@./ispc2cpp.sh tutorial04/tutorial04_device.ispc tutorial04/tutorial04_device.cpp
+	@./ispc2cpp.sh tutorial05/tutorial05_device.ispc tutorial05/tutorial05_device.cpp

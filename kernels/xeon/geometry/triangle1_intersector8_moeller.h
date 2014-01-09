@@ -84,16 +84,49 @@ namespace embree
         if (unlikely(none(valid))) continue;
 #endif
 
+        /* intersection filter test */
+#if defined(__USE_RAY_MASK__)
+        Geometry* geometry = ((Scene*)geom)->get(tri.geomID());
+        typedef void (*ISPCFilterFunc8)(RTCRay8& ray, __m256 valid);
+        ISPCFilterFunc8 filter8 = (ISPCFilterFunc8) geometry->ispcFilter8;
+        if (filter8) 
+        {
+          /* update hit information */
+          const avxf rcpAbsDen = rcp(absDen);
+          avxf ray_u = ray.u;           store8f(valid,&ray.u,U*rcpAbsDen);
+          avxf ray_v = ray.v;           store8f(valid,&ray.v,V*rcpAbsDen);
+          avxf ray_tfar = ray.tfar;     store8f(valid,&ray.tfar,T*rcpAbsDen);
+          avxi ray_geomID = ray.geomID; store8i(valid,&ray.geomID,tri.geomID());
+          avxi ray_primID = ray.primID; store8i(valid,&ray.primID,tri.primID());
+          avxf ray_Ng_x = ray.Ng.x;     store8f(valid,&ray.Ng.x,Ng.x);
+          avxf ray_Ng_y = ray.Ng.y;     store8f(valid,&ray.Ng.y,Ng.y);
+          avxf ray_Ng_z = ray.Ng.z;     store8f(valid,&ray.Ng.z,Ng.z);
+          filter8((RTCRay8&)ray,valid);
+          valid &= ray.geomID == avxi(-1);
+          if (any(valid)) {
+            store8f(valid,&ray.u,ray_u);
+            store8f(valid,&ray.v,ray_v);
+            store8f(valid,&ray.tfar,ray_tfar);
+            store8i(valid,&ray.geomID,ray_geomID);
+            store8i(valid,&ray.primID,ray_primID);
+            store8f(valid,&ray.Ng.x,ray_Ng_x);
+            store8f(valid,&ray.Ng.y,ray_Ng_y);
+            store8f(valid,&ray.Ng.z,ray_Ng_z);
+          }
+          continue;
+        }
+#endif
+
         /* update hit information */
         const avxf rcpAbsDen = rcp(absDen);
-        store8f(valid,(float*)&ray.u,U*rcpAbsDen);
-        store8f(valid,(float*)&ray.v,V*rcpAbsDen);
-        store8f(valid,(float*)&ray.tfar,T*rcpAbsDen);
-        store8i(valid,(float*)&ray.geomID,tri.geomID());
-        store8i(valid,(float*)&ray.primID,tri.primID());
-        store8f(valid,(float*)&ray.Ng.x,Ng.x);
-        store8f(valid,(float*)&ray.Ng.y,Ng.y);
-        store8f(valid,(float*)&ray.Ng.z,Ng.z);
+        store8f(valid,&ray.u,U*rcpAbsDen);
+        store8f(valid,&ray.v,V*rcpAbsDen);
+        store8f(valid,&ray.tfar,T*rcpAbsDen);
+        store8i(valid,&ray.geomID,tri.geomID());
+        store8i(valid,&ray.primID,tri.primID());
+        store8f(valid,&ray.Ng.x,Ng.x);
+        store8f(valid,&ray.Ng.y,Ng.y);
+        store8f(valid,&ray.Ng.z,Ng.z);
       }
     }
 
@@ -149,6 +182,39 @@ namespace embree
 #if defined(__USE_RAY_MASK__)
         valid &= (tri.mask() & ray.mask) != 0;
         if (unlikely(none(valid))) continue;
+#endif
+
+        /* intersection filter test */
+#if defined(__USE_RAY_MASK__)
+        Geometry* geometry = ((Scene*)geom)->get(tri.geomID());
+        typedef void (*ISPCFilterFunc8)(RTCRay8& ray, __m256 valid);
+        ISPCFilterFunc8 filter8 = (ISPCFilterFunc8) geometry->ispcFilter8;
+        if (filter8) 
+        {
+          /* update hit information */
+          const avxf rcpAbsDen = rcp(absDen);
+          avxf ray_u = ray.u;           store8f(valid,&ray.u,U*rcpAbsDen);
+          avxf ray_v = ray.v;           store8f(valid,&ray.v,V*rcpAbsDen);
+          avxf ray_tfar = ray.tfar;     store8f(valid,&ray.tfar,T*rcpAbsDen);
+          avxi ray_geomID = ray.geomID; store8i(valid,&ray.geomID,tri.geomID());
+          avxi ray_primID = ray.primID; store8i(valid,&ray.primID,tri.primID());
+          avxf ray_Ng_x = ray.Ng.x;     store8f(valid,&ray.Ng.x,_Ng.x);
+          avxf ray_Ng_y = ray.Ng.y;     store8f(valid,&ray.Ng.y,_Ng.y);
+          avxf ray_Ng_z = ray.Ng.z;     store8f(valid,&ray.Ng.z,_Ng.z);
+          filter8((RTCRay8&)ray,valid);
+          avxb valid1 = valid & (ray.geomID == avxi(-1));
+          valid &= ray.geomID != avxi(-1);
+          if (any(valid1)) {
+            store8f(valid1,&ray.u,ray_u);
+            store8f(valid1,&ray.v,ray_v);
+            store8f(valid1,&ray.tfar,ray_tfar);
+            store8i(valid1,&ray.geomID,ray_geomID);
+            store8i(valid1,&ray.primID,ray_primID);
+            store8f(valid1,&ray.Ng.x,ray_Ng_x);
+            store8f(valid1,&ray.Ng.y,ray_Ng_y);
+            store8f(valid1,&ray.Ng.z,ray_Ng_z);
+          }
+        }
 #endif
 
         /* update occlusion */

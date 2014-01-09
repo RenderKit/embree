@@ -107,6 +107,18 @@ namespace embree
       recordError(RTC_INVALID_OPERATION); 
     }
 
+    /*! Set filter function for single rays. */
+    virtual void setFilterFunction (RTCFilterFunc filter, bool ispc = false);
+    
+    /*! Set filter function for ray packets of size 4. */
+    virtual void setFilterFunction4 (RTCFilterFunc4 filter4, bool ispc = false);
+    
+    /*! Set filter function for ray packets of size 8. */
+    virtual void setFilterFunction8 (RTCFilterFunc8 filter8, bool ispc = false);
+    
+    /*! Set filter function for ray packets of size 16. */
+    virtual void setFilterFunction16 (RTCFilterFunc16 filter16, bool ispc = false);
+
     /*! instances only */
   public:
     
@@ -175,8 +187,17 @@ namespace embree
     unsigned id;       //!< internal geometry ID
     RTCGeometryFlags flags;    //!< flags of geometry
     State state;       //!< state of the geometry 
-  };
 
+  public:
+    RTCFilterFunc filter1;
+    RTCFilterFunc4 filter4;
+    RTCFilterFunc8 filter8;
+    RTCFilterFunc16 filter16;
+    void* ispcFilter1;
+    void* ispcFilter4;
+    void* ispcFilter8;
+    void* ispcFilter16;
+  };
 }
 
 #endif
