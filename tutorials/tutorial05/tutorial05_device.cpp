@@ -23,6 +23,14 @@ Vec3f* colors = NULL;
 /* render function to use */
 renderPixelFunc renderPixel;
 
+/* intersection filter function */
+void intersectionFilter(RTCRay& ray)
+{
+  Vec3f h = add(ray.org,mul(ray.dir,ray.tfar));
+  float v = sin(4.0f*h.x)*cos(4.0f*h.y)*sin(4.0f*h.z);
+  if (abs(v) > 0.1) ray.geomID = -1;
+}
+
 /* adds a cube to the scene */
 unsigned int addCube (RTCScene scene_i)
 {
@@ -73,6 +81,9 @@ unsigned int addCube (RTCScene scene_i)
   colors[tri] = Vec3f(1,1,0); triangles[tri].v0 = 3; triangles[tri].v1 = 7; triangles[tri].v2 = 5; tri++;
 
   rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+
+  /* set intersection filter for the cube */
+  rtcSetFilterFunction(scene_i,mesh,&intersectionFilter);
 
   return mesh;
 }

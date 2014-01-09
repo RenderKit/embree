@@ -230,6 +230,31 @@ Vec3fa renderPixelCycles(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const
   return Vec3fa((float)(c1-c0)*scale,0.0f,0.0f);
 }
 
+/* renders a single pixel with UV shading */
+Vec3fa renderPixelUV16(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+{
+  /* initialize ray */
+  RTCRay ray;
+  ray.org = p;
+  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  ray.tnear = 0.0f;
+  ray.tfar = inf;
+  ray.geomID = -1;
+  ray.primID = -1;
+  ray.mask = -1;
+  ray.time = 0;
+
+  /* intersect ray with scene */
+  for (int i=0; i<16; i++) {
+    ray.tfar = inf;
+    rtcIntersect(g_scene,ray);
+  }
+
+  /* shade pixel */
+  if (ray.geomID == -1) return Vec3fa(0.0f);
+  else return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
+}
+
 /* returns the point seen through specified pixel */
 extern "C" bool device_pick(const float x,
                                 const float y, 
@@ -274,11 +299,12 @@ extern "C" void device_key_pressed(int key)
   else if (key == GLUT_KEY_F5) renderPixel = renderPixelNg;
   else if (key == GLUT_KEY_F6) renderPixel = renderPixelGeomID;
   else if (key == GLUT_KEY_F7) renderPixel = renderPixelGeomIDPrimID;
-  else if (key == GLUT_KEY_F8) {
+  else if (key == GLUT_KEY_F8) renderPixel = renderPixelUV16;
+  else if (key == GLUT_KEY_F9) {
     if (renderPixel == renderPixelCycles) scale *= 1.1f;
     renderPixel = renderPixelCycles;
   }
-  else if (key == GLUT_KEY_F9) {
+  else if (key == GLUT_KEY_F10) {
     if (renderPixel == renderPixelCycles) scale *= 0.9f;
     renderPixel = renderPixelCycles;
   }

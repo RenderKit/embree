@@ -27,6 +27,18 @@ namespace embree
   /*! type of geometry */
   enum GeometryTy { TRIANGLE_MESH, USER_GEOMETRY, QUADRATIC_BEZIER_CURVES, INSTANCES };
   
+#if defined(__SSE__)
+  typedef void (*ISPCFilterFunc4)(RTCRay4& ray, __m128 valid);
+#endif
+
+#if defined(__AVX__)
+  typedef void (*ISPCFilterFunc8)(RTCRay8& ray, __m256 valid);
+#endif
+
+#if defined(__MIC__)
+  typedef void (*ISPCFilterFunc16)(RTCRay16& ray, __mmask16 valid);
+#endif
+
   /*! Base class all geometries are derived from */
   class Geometry
   {
@@ -193,7 +205,6 @@ namespace embree
     RTCFilterFunc4 filter4;
     RTCFilterFunc8 filter8;
     RTCFilterFunc16 filter16;
-    void* ispcFilter1;
     void* ispcFilter4;
     void* ispcFilter8;
     void* ispcFilter16;

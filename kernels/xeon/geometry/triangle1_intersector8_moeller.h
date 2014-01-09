@@ -85,25 +85,26 @@ namespace embree
 #endif
 
         /* intersection filter test */
-#if defined(__USE_RAY_MASK__)
+#if defined(__INTERSECTION_FILTER__)
         Geometry* geometry = ((Scene*)geom)->get(tri.geomID());
-        typedef void (*ISPCFilterFunc8)(RTCRay8& ray, __m256 valid);
-        ISPCFilterFunc8 filter8 = (ISPCFilterFunc8) geometry->ispcFilter8;
-        if (filter8) 
+        RTCFilterFunc8 filter8 = geometry->filter8;
+        if (unlikely(filter8 != NULL))
         {
           /* update hit information */
           const avxf rcpAbsDen = rcp(absDen);
-          avxf ray_u = ray.u;           store8f(valid,&ray.u,U*rcpAbsDen);
-          avxf ray_v = ray.v;           store8f(valid,&ray.v,V*rcpAbsDen);
-          avxf ray_tfar = ray.tfar;     store8f(valid,&ray.tfar,T*rcpAbsDen);
-          avxi ray_geomID = ray.geomID; store8i(valid,&ray.geomID,tri.geomID());
-          avxi ray_primID = ray.primID; store8i(valid,&ray.primID,tri.primID());
-          avxf ray_Ng_x = ray.Ng.x;     store8f(valid,&ray.Ng.x,Ng.x);
-          avxf ray_Ng_y = ray.Ng.y;     store8f(valid,&ray.Ng.y,Ng.y);
-          avxf ray_Ng_z = ray.Ng.z;     store8f(valid,&ray.Ng.z,Ng.z);
-          filter8((RTCRay8&)ray,valid);
+          const avxf ray_u = ray.u;           store8f(valid,&ray.u,U*rcpAbsDen);
+          const avxf ray_v = ray.v;           store8f(valid,&ray.v,V*rcpAbsDen);
+          const avxf ray_tfar = ray.tfar;     store8f(valid,&ray.tfar,T*rcpAbsDen);
+          const avxi ray_geomID = ray.geomID; store8i(valid,&ray.geomID,tri.geomID());
+          const avxi ray_primID = ray.primID; store8i(valid,&ray.primID,tri.primID());
+          const avxf ray_Ng_x = ray.Ng.x;     store8f(valid,&ray.Ng.x,Ng.x);
+          const avxf ray_Ng_y = ray.Ng.y;     store8f(valid,&ray.Ng.y,Ng.y);
+          const avxf ray_Ng_z = ray.Ng.z;     store8f(valid,&ray.Ng.z,Ng.z);
+          ISPCFilterFunc8 ispcFilter8 = (ISPCFilterFunc8) geometry->ispcFilter8;
+          if (ispcFilter8) ispcFilter8((RTCRay8&)ray,valid);
+          else filter8(&valid,(RTCRay8&)ray);
           valid &= ray.geomID == avxi(-1);
-          if (any(valid)) {
+          if (unlikely(any(valid))) {
             store8f(valid,&ray.u,ray_u);
             store8f(valid,&ray.v,ray_v);
             store8f(valid,&ray.tfar,ray_tfar);
@@ -185,11 +186,10 @@ namespace embree
 #endif
 
         /* intersection filter test */
-#if defined(__USE_RAY_MASK__)
+#if defined(__INTERSECTION_FILTER__)
         Geometry* geometry = ((Scene*)geom)->get(tri.geomID());
-        typedef void (*ISPCFilterFunc8)(RTCRay8& ray, __m256 valid);
-        ISPCFilterFunc8 filter8 = (ISPCFilterFunc8) geometry->ispcFilter8;
-        if (filter8) 
+        RTCFilterFunc8 filter8 = geometry->filter8;
+        if (unlikely(filter8 != NULL))
         {
           /* update hit information */
           const avxf rcpAbsDen = rcp(absDen);
@@ -201,7 +201,9 @@ namespace embree
           avxf ray_Ng_x = ray.Ng.x;     store8f(valid,&ray.Ng.x,_Ng.x);
           avxf ray_Ng_y = ray.Ng.y;     store8f(valid,&ray.Ng.y,_Ng.y);
           avxf ray_Ng_z = ray.Ng.z;     store8f(valid,&ray.Ng.z,_Ng.z);
-          filter8((RTCRay8&)ray,valid);
+          ISPCFilterFunc8 ispcFilter8 = (ISPCFilterFunc8) geometry->ispcFilter8;
+          if (ispcFilter8) ispcFilter8((RTCRay8&)ray,valid);
+          else filter8(&valid,(RTCRay8&)ray);
           avxb valid1 = valid & (ray.geomID == avxi(-1));
           valid &= ray.geomID != avxi(-1);
           if (any(valid1)) {
