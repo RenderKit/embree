@@ -373,6 +373,30 @@ namespace embree
     global_bounds.extend_atomic(bounds);    
   }
 
+  __forceinline void reorderBVHNodesOnArea(BVHNode *__restrict__ const bptr)
+  {
+    float node_area[4];
+    size_t valid = 0;
+    for (size_t i=0;i<4;i++) 
+      {
+	node_area[i] = area( bptr[i] );
+	if ( node_area[i] > 0.0f) valid++;
+	//std::cout << "i " << i << " area " << area( bptr[i] ) << std::endl;
+      }
+    
+    //DBG_PRINT(valid);
+    if (valid == 0) return;
+
+    assert( valid >= 2 );
+    for (size_t j=0;j<valid-1;j++)
+      for (size_t i=j+1;i<valid;i++)
+	if ( area( bptr[j] ) > area( bptr[i] ) )
+	  std::swap( bptr[j], bptr[i] );
+
+    // for (size_t i=0;i<4;i++) 
+    //   std::cout << "i " << i << " area " << area( bptr[i] ) << std::endl;
+
+  }
   __forceinline void convertToBVH4Layout(BVHNode *__restrict__ const bptr)
   {
     const mic_i box01 = load16i((int*)(bptr + 0));
@@ -1501,12 +1525,14 @@ namespace embree
     createAccel(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_createAccel " << 1000. * msec << " ms" << std::endl << std::flush);
+
     
     /* convert to SOA node layout */
     TIMER(msec = getSeconds());     
     convertQBVHLayout(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_convertToSOALayout " << 1000. * msec << " ms" << std::endl << std::flush);
+
     
     /* update BVH4 */
     bvh->root = bvh->qbvh[0].lower[0].child; 

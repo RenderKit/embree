@@ -224,7 +224,7 @@ namespace embree
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
     }
-    
+
     void BVH4iIntersector16Chunk::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
       /* allocate stack */
@@ -411,7 +411,7 @@ namespace embree
       }
       store16i(valid & m_terminated,&ray.geomID,0);
     }
-    
+
     DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16ChunkMoeller, BVH4iIntersector16Chunk);
   }
 }
