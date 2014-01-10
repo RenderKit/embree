@@ -58,7 +58,10 @@ namespace embree
 
   protected:
 
-    void allocateMemoryPools(const size_t numPrims, const size_t numNodes);
+    void allocateMemoryPools(const size_t numPrims, 
+			     const size_t numNodes,
+			     const size_t sizeNodeInBytes  = sizeof(BVHNode),
+			     const size_t sizeAccelInBytes = sizeof(Triangle1));
 
     void checkBuildRecord(const BuildRecord &current);
 
@@ -110,8 +113,9 @@ namespace embree
     void recurseSAH(BuildRecord& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads);
 
   protected:
+    size_t numNodesToAllocate;
     BuildSource* source;          //!< input geometry
-    Scene* scene;               //!< input geometry
+    Scene* scene;                 //!< input geometry
     BVH4i* bvh;                   //!< Output BVH
 
 

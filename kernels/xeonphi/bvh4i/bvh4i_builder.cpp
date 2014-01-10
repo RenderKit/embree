@@ -91,8 +91,8 @@ namespace embree
       prims(NULL), 
       node(NULL), 
       accel(NULL), 
-      size_prims(0)     
-
+      size_prims(0),
+      numNodesToAllocate(BVH4i::N)
   {
     DBG(PING);
   }
@@ -111,7 +111,10 @@ namespace embree
     return source->size();
   }
 
-  void BVH4iBuilder::allocateMemoryPools(const size_t numPrims, const size_t numNodes)
+  void BVH4iBuilder::allocateMemoryPools(const size_t numPrims, 
+					 const size_t numNodes,
+					 const size_t sizeNodeInBytes,
+					 const size_t sizeAccelInBytes)
   {
     const size_t additional_size = 16 * CACHELINE_SIZE;
 
@@ -132,8 +135,9 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
-    const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeof(BVHNode) + additional_size;
-    const size_t size_accel    = numPrims * sizeof(Triangle1) + additional_size;
+    const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size;
+    const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
+
     numAllocatedNodes = size_node / sizeof(BVHNode);
       
     DBG(DBG_PRINT(size_primrefs));
@@ -1169,7 +1173,7 @@ namespace embree
 
     /* allocate next four nodes */
     size_t numChildren = 4;
-    const size_t currentIndex = alloc.get(BVH4i::N);
+    const size_t currentIndex = alloc.get(numNodesToAllocate);
 
     node[current.parentID].createNode(currentIndex,numChildren);
     
@@ -1252,7 +1256,7 @@ namespace embree
     }
 
     /* allocate next four nodes */
-    const size_t currentIndex = alloc.get(BVH4i::N);
+    const size_t currentIndex = alloc.get(numNodesToAllocate);
     node[current.parentID].createNode(currentIndex,numChildren);
 
     /* init used/unused nodes */
