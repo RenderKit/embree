@@ -208,6 +208,11 @@ namespace embree
     void* ispcFilter4;
     void* ispcFilter8;
     void* ispcFilter16;
+
+    __forceinline bool hasFilter1() const { return filter1 != NULL; }
+    __forceinline bool hasFilter4() const { return filter4 != NULL; }
+    __forceinline bool hasFilter8() const { return filter8 != NULL; }
+    __forceinline bool hasFilter16() const { return filter16 != NULL; }
   };
 }
 

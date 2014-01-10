@@ -18,7 +18,8 @@
 #define __EMBREE_ACCEL_TRIANGLE1_INTERSECTOR1_MOELLER_H__
 
 #include "triangle1.h"
-#include "../common/ray.h"
+#include "common/ray.h"
+#include "geometry/filter.h"
 
 namespace embree
 {
@@ -81,14 +82,30 @@ namespace embree
       if (unlikely((tri.mask() & ray.mask) == 0)) return;
 #endif
 
-      /* update hit information */
+      /* calculate hit information */
       const float rcpAbsDen = rcp(absDen);
-      ray.u   = U * rcpAbsDen;
-      ray.v   = V * rcpAbsDen;
-      ray.tfar = T * rcpAbsDen;
+      const float u = U * rcpAbsDen;
+      const float v = V * rcpAbsDen;
+      const float t = T * rcpAbsDen;
+      const int geomID = tri.geomID();
+      const int primID = tri.primID();
+
+        /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (unlikely(geometry->hasFilter1())) {
+          runIntersectionFilter1(geometry,ray,u,v,t,tri_Ng,geomID,primID);
+          return;
+        }
+#endif
+
+      /* update hit information */
+      ray.u = u;
+      ray.v = v;
+      ray.tfar = t;
       ray.Ng  = tri_Ng;
-      ray.geomID = tri.geomID();
-      ray.primID = tri.primID();
+      ray.geomID = geomID;
+      ray.primID = primID;
     }
 
     static __forceinline void intersect(Ray& ray, const Triangle1* tri, size_t num, void* geom)
@@ -98,7 +115,7 @@ namespace embree
     }
 
     /*! Test if the ray is occluded by one of the triangles. */
-    static __forceinline bool occluded(const Ray& ray, const Triangle1& tri, const void* geom)
+    static __forceinline bool occluded(Ray& ray, const Triangle1& tri, const void* geom)
     {
       /* load triangle */
       STAT3(shadow.trav_prims,1,1,1);
@@ -142,6 +159,23 @@ namespace embree
 #if defined(__USE_RAY_MASK__)
       if (unlikely((tri.mask() & ray.mask) == 0)) return false;
 #endif
+
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+      const int geomID = tri.geomID();
+      Geometry* geometry = ((Scene*)geom)->get(geomID);
+      if (unlikely(geometry->hasFilter1()))
+      {
+        /* calculate hit information */
+        const float rcpAbsDen = rcp(absDen);
+        const float u = U*rcpAbsDen;
+        const float v = V*rcpAbsDen;
+        const float t = T*rcpAbsDen;
+        const int primID = tri.primID();
+        return runOcclusionFilter1(geometry,ray,u,v,t,tri_Ng,geomID,primID);
+      }
+#endif
+
       return true;
     }
 

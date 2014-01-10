@@ -31,12 +31,13 @@ namespace embree
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
       ray.geomID = -1;
+      ray.instID = instance->id;
       instance->object->intersect16(valid,(RTCRay16&)ray);
       ray.org = ray_org;
       ray.dir = ray_dir;
       mic_m nohit = ray.geomID == mic_i(-1);
       ray.geomID = select(nohit,ray_geomID,ray.geomID);
-      ray.instID = select(nohit,ray.instID,instance->id);
+      ray.instID = select(nohit,ray_instID,ray.instID);
     }
     
     void FastInstanceIntersector16::occluded (mic_i* valid, const UserGeometryScene::Instance* instance, Ray16& ray, size_t item)
@@ -47,6 +48,7 @@ namespace embree
       const AffineSpace3fMIC world2local(instance->world2local);
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
+      ray.instID = instance->id;
       instance->object->occluded16(valid,(RTCRay16&)ray);
       ray.org = ray_org;
       ray.dir = ray_dir;
