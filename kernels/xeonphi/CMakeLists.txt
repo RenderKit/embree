@@ -53,7 +53,8 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   bvh4i/bvh4i_intersector1_scalar.cpp
   bvh4i/bvh4i_statistics.cpp
 
-#  bvh4mb/bvh4mb.cpp
+  bvh4mb/bvh4mb.cpp
+  bvh4mb/bvh4mb_builder.cpp
 )
 
 TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi)

@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVHI_BUILDER_MIC_H__
-#define __EMBREE_BVHI_BUILDER_MIC_H__
+#ifndef __EMBREE_BVH4I_BUILDER_MIC_H__
+#define __EMBREE_BVH4I_BUILDER_MIC_H__
 
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder_util.h"
