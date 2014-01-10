@@ -1,0 +1,212 @@
+// ======================================================================== //
+// Copyright 2009-2013 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+#ifndef __EMBREE_FILTER_H__
+#define __EMBREE_FILTER_H__
+
+#include "common/geometry.h"
+#include "common/ray.h"
+#include "common/ray16.h"
+
+namespace embree
+{
+  __forceinline bool runIntersectionFilter1(const Geometry* const geometry, Ray& ray, 
+                                            const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+  {
+    /* temporarily update hit information */
+    const float  ray_tfar = ray.tfar;
+    const Vec3fa ray_Ng   = ray.Ng;
+    const Vec3fa ray_uv_ids = *(Vec3fa*)&ray.u;
+    ray.u = u;
+    ray.v = v;
+    ray.tfar = t;
+    ray.geomID = geomID;
+    ray.primID = primID;
+    ray.Ng = Ng;
+
+    /* invoke filter function */
+    geometry->filter1((RTCRay&)ray);
+    
+    /* restore hit if filter not passed */
+    if (unlikely(ray.geomID == -1)) 
+    {
+      ray.tfar = ray_tfar;
+      ray.Ng = ray_Ng;
+      *(Vec3fa*)&ray.u = ray_uv_ids;
+      return false;
+    }
+    return true;
+  }
+
+  __forceinline bool runOcclusionFilter1(const Geometry* const geometry, Ray& ray, 
+                                         const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+  {
+    /* temporarily update hit information */
+    const float ray_tfar = ray.tfar;
+    const int   ray_geomID = ray.geomID;
+    ray.u = u;
+    ray.v = v;
+    ray.tfar = t;
+    ray.geomID = geomID;
+    ray.primID = primID;
+    ray.Ng = Ng;
+
+    /* invoke filter function */
+    geometry->filter1((RTCRay&)ray);
+    
+    /* restore hit if filter not passed */
+    if (unlikely(ray.geomID == -1)) 
+    {
+      ray.tfar = ray_tfar;
+      ray.geomID = ray_geomID;
+      return false;
+    }
+    return true;
+  }
+
+  __forceinline mic_m runIntersectionFilter16(const mic_m& valid, const Geometry* const geometry, Ray16& ray, 
+                                            const mic_f& u, const mic_f& v, const mic_f& t, const mic_3f& Ng, const mic_i& geomID, const mic_i& primID)
+  {
+    /* temporarily update hit information */
+    const mic_f ray_u = ray.u;           store16f(valid,&ray.u,u);
+    const mic_f ray_v = ray.v;           store16f(valid,&ray.v,v);
+    const mic_f ray_tfar = ray.tfar;     store16f(valid,&ray.tfar,t);
+    const mic_i ray_geomID = ray.geomID; store16i(valid,&ray.geomID,geomID);
+    const mic_i ray_primID = ray.primID; store16i(valid,&ray.primID,primID);
+    const mic_f ray_Ng_x = ray.Ng.x;     store16f(valid,&ray.Ng.x,Ng.x);
+    const mic_f ray_Ng_y = ray.Ng.y;     store16f(valid,&ray.Ng.y,Ng.y);
+    const mic_f ray_Ng_z = ray.Ng.z;     store16f(valid,&ray.Ng.z,Ng.z);
+
+    /* invoke filter function */
+    RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->filter16;
+    ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->ispcFilter16;
+    if (ispcFilter16) ispcFilter16((RTCRay16&)ray,valid);
+    else filter16(&valid,(RTCRay16&)ray);
+    const mic_m valid_failed = valid & (ray.geomID == mic_i(-1));
+    const mic_m valid_passed = valid & (ray.geomID != mic_i(-1));
+
+    /* restore hit if filter not passed */
+    if (unlikely(any(valid_failed))) 
+    {
+      store16f(valid_failed,&ray.u,ray_u);
+      store16f(valid_failed,&ray.v,ray_v);
+      store16f(valid_failed,&ray.tfar,ray_tfar);
+      store16i(valid_failed,&ray.geomID,ray_geomID);
+      store16i(valid_failed,&ray.primID,ray_primID);
+      store16f(valid_failed,&ray.Ng.x,ray_Ng_x);
+      store16f(valid_failed,&ray.Ng.y,ray_Ng_y);
+      store16f(valid_failed,&ray.Ng.z,ray_Ng_z);
+    }
+    return valid_passed;
+  }
+
+  __forceinline mic_m runOcclusionFilter16(const mic_m& valid, const Geometry* const geometry, Ray16& ray, 
+                                         const mic_f& u, const mic_f& v, const mic_f& t, const mic_3f& Ng, const mic_i& geomID, const mic_i& primID)
+  {
+    /* temporarily update hit information */
+    const mic_f ray_tfar = ray.tfar; 
+    const mic_i ray_geomID = ray.geomID;
+    store16f(valid,&ray.u,u);
+    store16f(valid,&ray.v,v);
+    store16f(valid,&ray.tfar,t);
+    store16i(valid,&ray.geomID,geomID);
+    store16i(valid,&ray.primID,primID);
+    store16f(valid,&ray.Ng.x,Ng.x);
+    store16f(valid,&ray.Ng.y,Ng.y);
+    store16f(valid,&ray.Ng.z,Ng.z);
+
+    /* invoke filter function */
+    RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->filter16;
+    ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->ispcFilter16;
+    if (ispcFilter16) ispcFilter16((RTCRay16&)ray,valid);
+    else filter16(&valid,(RTCRay16&)ray);
+    const mic_m valid_failed = valid & (ray.geomID == mic_i(-1));
+    const mic_m valid_passed = valid & (ray.geomID != mic_i(-1));
+
+    /* restore hit if filter not passed */
+    store16f(valid_failed,&ray.tfar,ray_tfar);
+    store16i(valid_failed,&ray.geomID,ray_geomID);
+    return valid_passed;
+  }
+
+  __forceinline bool runIntersectionFilter16(const Geometry* const geometry, Ray16& ray, const size_t k,
+                                            const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+  {
+    /* temporarily update hit information */
+    const mic_f ray_u = ray.u;           ray.u[k] = u;
+    const mic_f ray_v = ray.v;           ray.v[k] = v;
+    const mic_f ray_tfar = ray.tfar;     ray.tfar[k] = t;
+    const mic_i ray_geomID = ray.geomID; ray.geomID[k] = geomID;
+    const mic_i ray_primID = ray.primID; ray.primID[k] = primID;
+    const mic_f ray_Ng_x = ray.Ng.x;     ray.Ng.x[k] = Ng.x;
+    const mic_f ray_Ng_y = ray.Ng.y;     ray.Ng.y[k] = Ng.y;
+    const mic_f ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
+
+    /* invoke filter function */
+    const mic_m valid(1 << k);
+    RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->filter16;
+    ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->ispcFilter16;
+    if (ispcFilter16) ispcFilter16((RTCRay16&)ray,valid);
+    else filter16(&valid,(RTCRay16&)ray);
+    const bool passed = ray.geomID[k] != -1;
+
+    /* restore hit if filter not passed */
+    if (unlikely(!passed)) {
+      store16f(&ray.u,ray_u);
+      store16f(&ray.v,ray_v);
+      store16f(&ray.tfar,ray_tfar);
+      store16i(&ray.geomID,ray_geomID);
+      store16i(&ray.primID,ray_primID);
+      store16f(&ray.Ng.x,ray_Ng_x);
+      store16f(&ray.Ng.y,ray_Ng_y);
+      store16f(&ray.Ng.z,ray_Ng_z);
+    }
+    return passed;
+  }
+
+  __forceinline bool runOcclusionFilter16(const Geometry* const geometry, Ray16& ray, const size_t k,
+                                         const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+  {
+    /* temporarily update hit information */
+    const mic_f ray_tfar = ray.tfar; 
+    const mic_i ray_geomID = ray.geomID;
+    ray.u[k] = u;
+    ray.v[k] = v;
+    ray.tfar[k] = t;
+    ray.geomID[k] = geomID;
+    ray.primID[k] = primID;
+    ray.Ng.x[k] = Ng.x;
+    ray.Ng.y[k] = Ng.y;
+    ray.Ng.z[k] = Ng.z;
+
+    /* invoke filter function */
+    const mic_m valid(1 << k);
+    RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->filter16;
+    ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->ispcFilter16;
+    if (ispcFilter16) ispcFilter16((RTCRay16&)ray,valid);
+    else filter16(&valid,(RTCRay16&)ray);
+    const bool passed = ray.geomID[k] != -1;
+
+    /* restore hit if filter not passed */
+    if (unlikely(!passed)) {
+      store16f(&ray.tfar,ray_tfar);
+      store16i(&ray.geomID,ray_geomID);
+    }
+    return passed;
+  }
+}
+
+#endif

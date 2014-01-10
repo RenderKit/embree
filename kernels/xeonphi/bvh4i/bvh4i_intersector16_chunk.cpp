@@ -211,6 +211,15 @@ namespace embree
 #endif
 	    if (unlikely(none(valid))) continue;
         
+            /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+            Geometry* geometry = ((Scene*)geom)->get(geomID);
+            if (unlikely(geometry->hasFilter16())) {
+              runIntersectionFilter16(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+              continue;
+            }
+#endif
+
 	    /* update hit information */
 	    store16f(valid,(float*)&ray.u,u);
 	    store16f(valid,(float*)&ray.v,v);
@@ -401,6 +410,14 @@ namespace embree
 #endif
 	    if (unlikely(none(valid))) continue;
 	    
+            /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+            const int geomID = tri.geomID();
+            Geometry* geometry = ((Scene*)geom)->get(geomID);
+            if (unlikely(geometry->hasFilter16()))
+              valid = runOcclusionFilter16(valid,geometry,ray,u,v,t,Ng,tri.geomID(),tri.primID());
+#endif
+
 	    /* update occlusion */
 	    m_terminated |= valid;
 	    valid_leaf &= ~valid;

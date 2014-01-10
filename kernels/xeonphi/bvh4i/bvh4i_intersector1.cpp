@@ -217,6 +217,41 @@ namespace embree
 		    
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
+          /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+
+          size_t i = select_min(m_final,t)/4; // FIXME: correct???
+          int geomID = tri.geomID[i];
+
+          while (true) 
+          {
+            Geometry* geometry = ((Scene*)geom)->get(geomID);
+            if (likely(!geometry->hasFilter1())) 
+            {
+              /* update hit information */
+              ray.u = u[i];
+              ray.v = v[i];
+              ray.tfar = t[i];
+              ray.Ng.x = tri.Ng.x[i];
+              ray.Ng.y = tri.Ng.y[i];
+              ray.Ng.z = tri.Ng.z[i];
+              ray.geomID = geomID;
+              ray.primID = tri.primID[i];
+              break;
+            }
+            
+            Vec3fa Ng = Vec3fa(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
+            if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri.primID[i])) return;
+            m_final &= ~(1<<i);
+            if (none(m_final)) break;
+            i = select_min(m_final,t)/4; // FIXME: correct???
+            geomID = tri.geomID[i];
+          }
+          continue;
+#endif
+
+          
+	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	  /* did the ray hot one of the four triangles? */
 	  if (unlikely(any(m_final)))
