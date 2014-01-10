@@ -89,14 +89,14 @@ namespace embree
       const float t = T * rcpAbsDen;
       const int geomID = tri.geomID();
       const int primID = tri.primID();
-
-        /* intersection filter test */
+      
+      /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-        Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (unlikely(geometry->hasFilter1())) {
-          runIntersectionFilter1(geometry,ray,u,v,t,tri_Ng,geomID,primID);
-          return;
-        }
+      Geometry* geometry = ((Scene*)geom)->get(geomID);
+      if (unlikely(geometry->hasFilter1())) {
+        runIntersectionFilter1(geometry,ray,u,v,t,tri_Ng,geomID,primID);
+        return;
+      }
 #endif
 
       /* update hit information */

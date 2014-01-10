@@ -90,16 +90,32 @@ namespace embree
         if (unlikely(none(valid))) continue;
 #endif
         
-        /* update hit information for all rays that hit the triangle */
+        /* calculate hit information */
         const ssef rcpAbsDen = rcp(absDen);
-        ray.u    = select(valid,U * rcpAbsDen,ray.u );
-        ray.v    = select(valid,V * rcpAbsDen,ray.v );
-        ray.tfar  = select(valid,T * rcpAbsDen,ray.tfar );
-        ray.geomID  = select(valid,tri.geomID[i]  ,ray.geomID);
-        ray.primID  = select(valid,tri.primID[i]  ,ray.primID);
-        ray.Ng.x = select(valid,Ng.x,ray.Ng.x);
-        ray.Ng.y = select(valid,Ng.y,ray.Ng.y);
-        ray.Ng.z = select(valid,Ng.z,ray.Ng.z);
+        const ssef u = U*rcpAbsDen;
+        const ssef v = V*rcpAbsDen;
+        const ssef t = T*rcpAbsDen;
+        const int geomID = tri.geomID[i];
+        const int primID = tri.primID[i];
+
+        /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (unlikely(geometry->hasFilter4())) {
+          runIntersectionFilter4(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+          continue;
+        }
+#endif
+
+        /* update hit information */
+        store4f(valid,&ray.u,u);
+        store4f(valid,&ray.v,v);
+        store4f(valid,&ray.tfar,t);
+        store4i(valid,&ray.geomID,geomID);
+        store4i(valid,&ray.primID,primID);
+        store4f(valid,&ray.Ng.x,Ng.x);
+        store4f(valid,&ray.Ng.y,Ng.y);
+        store4f(valid,&ray.Ng.z,Ng.z);
       }
     }
 
@@ -111,7 +127,7 @@ namespace embree
     }
 
     /*! Test for 4 rays if they are occluded by any of the 4 triangle. */
-    static __forceinline sseb occluded(const sseb& valid_i, const Ray4& ray, const Triangle4& tri, void* geom)
+    static __forceinline sseb occluded(const sseb& valid_i, Ray4& ray, const Triangle4& tri, void* geom)
     {
       sseb valid0 = valid_i;
 
@@ -168,6 +184,22 @@ namespace embree
         if (unlikely(none(valid))) continue;
 #endif
 
+        /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+        const int geomID = tri.geomID[i];
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (unlikely(geometry->hasFilter4()))
+        {
+          /* calculate hit information */
+          const ssef rcpAbsDen = rcp(absDen);
+          const ssef u = U*rcpAbsDen;
+          const ssef v = V*rcpAbsDen;
+          const ssef t = T*rcpAbsDen;
+          const int primID = tri.primID[i];
+          valid = runOcclusionFilter4(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+        }
+#endif
+
         /* update occlusion */
         valid0 &= !valid;
         if (none(valid0)) break;
@@ -175,7 +207,7 @@ namespace embree
       return !valid0;
     }
 
-    static __forceinline sseb occluded(const sseb& valid, const Ray4& ray, const Triangle4* tri, size_t num, void* geom)
+    static __forceinline sseb occluded(const sseb& valid, Ray4& ray, const Triangle4* tri, size_t num, void* geom)
     {
       sseb valid0 = valid;
       for (size_t i=0; i<num; i++) {
@@ -221,20 +253,44 @@ namespace embree
       if (unlikely(none(valid))) return;
 #endif
 
-      /* update hit information */
+      /* calculate hit information */
       const ssef rcpAbsDen = rcp(absDen);
       const ssef u = U * rcpAbsDen;
       const ssef v = V * rcpAbsDen;
       const ssef t = T * rcpAbsDen;
-      const size_t i = select_min(valid,t);
-      ray.u[k]   = u[i];
-      ray.v[k]   = v[i];
-      ray.tfar[k] = t[i];
-      ray.Ng.x[k] = tri.Ng.x[i];
-      ray.Ng.y[k] = tri.Ng.y[i];
-      ray.Ng.z[k] = tri.Ng.z[i];
-      ray.geomID[k] = tri.geomID[i];
-      ray.primID[k] = tri.primID[i];
+      size_t i = select_min(valid,t);
+      int geomID = tri.geomID[i];
+      
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+      while (true) 
+      {
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (likely(!geometry->hasFilter4())) 
+        {
+#endif
+          /* update hit information */
+          ray.u[k] = u[i];
+          ray.v[k] = v[i];
+          ray.tfar[k] = t[i];
+          ray.Ng.x[k] = tri.Ng.x[i];
+          ray.Ng.y[k] = tri.Ng.y[i];
+          ray.Ng.z[k] = tri.Ng.z[i];
+          ray.geomID[k] = geomID;
+          ray.primID[k] = tri.primID[i];
+
+#if defined(__INTERSECTION_FILTER__)
+          return;
+        }
+
+        const Vec3fa Ng(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
+        if (runIntersectionFilter4(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri.primID[i])) return;
+        valid[i] = 0;
+        if (unlikely(none(valid))) return;
+        i = select_min(valid,t);
+        geomID = tri.geomID[i];
+      }
+#endif
     }
 
     static __forceinline void intersect(Ray4& ray, size_t k, const Triangle4* tri, size_t num, void* geom)
@@ -282,6 +338,32 @@ namespace embree
       valid &= (tri.mask & ray.mask[k]) != 0;
       if (unlikely(none(valid))) return false;
 #endif
+
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+
+      size_t i = select_min(valid,T);
+      int geomID = tri.geomID[i];
+
+      while (true) 
+      {
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (likely(!geometry->hasFilter4())) break;
+
+        /* calculate hit information */
+        const ssef rcpAbsDen = rcp(absDen);
+        const ssef u = U * rcpAbsDen;
+        const ssef v = V * rcpAbsDen;
+        const ssef t = T * rcpAbsDen;
+        const Vec3fa Ng(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
+        if (runOcclusionFilter4(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri.primID[i])) break;
+        valid[i] = 0;
+        if (unlikely(none(valid))) return false;
+        i = select_min(valid,T);
+        geomID = tri.geomID[i];
+      }
+#endif
+
       return true;
     }
 

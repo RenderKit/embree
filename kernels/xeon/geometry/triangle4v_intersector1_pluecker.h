@@ -43,9 +43,9 @@ namespace embree
       const sse3f e2 = v1-v2;
 
       /* calculate geometry normal and denominator */
-      const sse3f Ng = cross(e1,e0);
-      const sse3f Ng2 = Ng+Ng;
-      const ssef den = dot(Ng2,D);
+      const sse3f Ng1 = cross(e1,e0);
+      const sse3f Ng = Ng1+Ng1;
+      const ssef den = dot(Ng,D);
       const ssef absDen = abs(den);
       const ssef sgnDen = signmsk(den);
 
@@ -57,7 +57,7 @@ namespace embree
       if (unlikely(none(valid))) return;
 
       /* perform depth test */
-      const ssef T = dot(v0,Ng2) ^ sgnDen;
+      const ssef T = dot(v0,Ng) ^ sgnDen;
       valid &= (T >= absDen*ssef(ray.tnear)) & (absDen*ssef(ray.tfar) >= T);
       if (unlikely(none(valid))) return;
 
@@ -76,19 +76,43 @@ namespace embree
       if (unlikely(none(valid))) return;
 #endif
 
-      /* update hit information */
+      /* calculate hit information */
       const ssef u = U / absDen;
       const ssef v = V / absDen;
       const ssef t = T / absDen;
-      const size_t i = select_min(valid,t);
-      ray.tfar = t[i];
-      ray.u = u[i];
-      ray.v = v[i];
-      ray.Ng.x = Ng2.x[i];
-      ray.Ng.y = Ng2.y[i];
-      ray.Ng.z = Ng2.z[i];
-      ray.geomID = tri.geomID[i];
-      ray.primID = tri.primID[i];
+      size_t i = select_min(valid,t);
+      int geomID = tri.geomID[i];
+      
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+      while (true) 
+      {
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (likely(!geometry->hasFilter1())) 
+        {
+#endif
+          /* update hit information */
+          ray.u = u[i];
+          ray.v = v[i];
+          ray.tfar = t[i];
+          ray.Ng.x = Ng.x[i];
+          ray.Ng.y = Ng.y[i];
+          ray.Ng.z = Ng.z[i];
+          ray.geomID = geomID;
+          ray.primID = tri.primID[i];
+
+#if defined(__INTERSECTION_FILTER__)
+          return;
+        }
+
+        Vec3fa N = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+        if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],N,geomID,tri.primID[i])) return;
+        valid[i] = 0;
+        if (none(valid)) return;
+        i = select_min(valid,t);
+        geomID = tri.geomID[i];
+      }
+#endif
     }
 
     static __forceinline void intersect(Ray& ray, const Triangle4v* tri, size_t num, void* geom)
@@ -114,9 +138,9 @@ namespace embree
       const sse3f e2 = v1-v2;
 
       /* calculate geometry normal and denominator */
-      const sse3f Ng = cross(e1,e0);
-      const sse3f Ng2 = Ng+Ng;
-      const ssef den = dot(Ng2,D);
+      const sse3f Ng1 = cross(e1,e0);
+      const sse3f Ng = Ng1+Ng1;
+      const ssef den = dot(Ng,D);
       const ssef absDen = abs(den);
       const ssef sgnDen = signmsk(den);
 
@@ -128,7 +152,7 @@ namespace embree
       if (unlikely(none(valid))) return false;
       
       /* perform depth test */
-      const ssef T = dot(v0,Ng2) ^ sgnDen;
+      const ssef T = dot(v0,Ng) ^ sgnDen;
       valid &= (T >= absDen*ssef(ray.tnear)) & (absDen*ssef(ray.tfar) >= T);
       if (unlikely(none(valid))) return false;
 
@@ -145,6 +169,31 @@ namespace embree
 #if defined(__USE_RAY_MASK__)
       valid &= (tri.mask & ray.mask) != 0;
       if (unlikely(none(valid))) return false;
+#endif
+
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+
+      size_t i = select_min(valid,T);
+      int geomID = tri.geomID[i];
+
+      while (true) 
+      {
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (likely(!geometry->hasFilter1())) break;
+
+        /* calculate hit information */
+        const ssef rcpAbsDen = rcp(absDen);
+        const ssef u = U / absDen;
+        const ssef v = V / absDen;
+        const ssef t = T / absDen;
+        const Vec3fa N = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+        if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],N,geomID,tri.primID[i])) break;
+        valid[i] = 0;
+        if (none(valid)) return false;
+        i = select_min(valid,T);
+        geomID = tri.geomID[i];
+      }
 #endif
 
       return true;

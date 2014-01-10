@@ -154,6 +154,72 @@ namespace embree
     return valid_passed;
   }
 
+  __forceinline bool runIntersectionFilter4(const Geometry* const geometry, Ray4& ray, const size_t k,
+                                            const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+  {
+    /* temporarily update hit information */
+    const ssef ray_u = ray.u;           ray.u[k] = u;
+    const ssef ray_v = ray.v;           ray.v[k] = v;
+    const ssef ray_tfar = ray.tfar;     ray.tfar[k] = t;
+    const ssei ray_geomID = ray.geomID; ray.geomID[k] = geomID;
+    const ssei ray_primID = ray.primID; ray.primID[k] = primID;
+    const ssef ray_Ng_x = ray.Ng.x;     ray.Ng.x[k] = Ng.x;
+    const ssef ray_Ng_y = ray.Ng.y;     ray.Ng.y[k] = Ng.y;
+    const ssef ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
+
+    /* invoke filter function */
+    const sseb valid(1 << k);
+    RTCFilterFunc4  filter4     = (RTCFilterFunc4)  geometry->filter4;
+    ISPCFilterFunc4 ispcFilter4 = (ISPCFilterFunc4) geometry->ispcFilter4;
+    if (ispcFilter4) ispcFilter4((RTCRay4&)ray,valid);
+    else filter4(&valid,(RTCRay4&)ray);
+    const bool passed = ray.geomID[k] != -1;
+
+    /* restore hit if filter not passed */
+    if (unlikely(!passed)) {
+      store4f(&ray.u,ray_u);
+      store4f(&ray.v,ray_v);
+      store4f(&ray.tfar,ray_tfar);
+      store4i(&ray.geomID,ray_geomID);
+      store4i(&ray.primID,ray_primID);
+      store4f(&ray.Ng.x,ray_Ng_x);
+      store4f(&ray.Ng.y,ray_Ng_y);
+      store4f(&ray.Ng.z,ray_Ng_z);
+    }
+    return passed;
+  }
+
+  __forceinline bool runOcclusionFilter4(const Geometry* const geometry, Ray4& ray, const size_t k,
+                                         const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+  {
+    /* temporarily update hit information */
+    const ssef ray_tfar = ray.tfar; 
+    const ssei ray_geomID = ray.geomID;
+    ray.u[k] = u;
+    ray.v[k] = v;
+    ray.tfar[k] = t;
+    ray.geomID[k] = geomID;
+    ray.primID[k] = primID;
+    ray.Ng.x[k] = Ng.x;
+    ray.Ng.y[k] = Ng.y;
+    ray.Ng.z[k] = Ng.z;
+
+    /* invoke filter function */
+    const sseb valid(1 << k);
+    RTCFilterFunc4  filter4     = (RTCFilterFunc4)  geometry->filter4;
+    ISPCFilterFunc4 ispcFilter4 = (ISPCFilterFunc4) geometry->ispcFilter4;
+    if (ispcFilter4) ispcFilter4((RTCRay4&)ray,valid);
+    else filter4(&valid,(RTCRay4&)ray);
+    const bool passed = ray.geomID[k] != -1;
+
+    /* restore hit if filter not passed */
+    if (unlikely(!passed)) {
+      store4f(&ray.tfar,ray_tfar);
+      store4i(&ray.geomID,ray_geomID);
+    }
+    return passed;
+  }
+
 #if defined(__AVX__)
   __forceinline avxb runIntersectionFilter8(const avxb& valid, const Geometry* const geometry, Ray8& ray, 
                                             const avxf& u, const avxf& v, const avxf& t, const avx3f& Ng, const int geomID, const int primID)
@@ -219,6 +285,73 @@ namespace embree
     store8i(valid_failed,&ray.geomID,ray_geomID);
     return valid_passed;
   }
+
+  __forceinline bool runIntersectionFilter8(const Geometry* const geometry, Ray8& ray, const size_t k,
+                                            const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+  {
+    /* temporarily update hit information */
+    const avxf ray_u = ray.u;           ray.u[k] = u;
+    const avxf ray_v = ray.v;           ray.v[k] = v;
+    const avxf ray_tfar = ray.tfar;     ray.tfar[k] = t;
+    const avxi ray_geomID = ray.geomID; ray.geomID[k] = geomID;
+    const avxi ray_primID = ray.primID; ray.primID[k] = primID;
+    const avxf ray_Ng_x = ray.Ng.x;     ray.Ng.x[k] = Ng.x;
+    const avxf ray_Ng_y = ray.Ng.y;     ray.Ng.y[k] = Ng.y;
+    const avxf ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
+
+    /* invoke filter function */
+    const avxb valid(1 << k);
+    RTCFilterFunc8  filter8     = (RTCFilterFunc8)  geometry->filter8;
+    ISPCFilterFunc8 ispcFilter8 = (ISPCFilterFunc8) geometry->ispcFilter8;
+    if (ispcFilter8) ispcFilter8((RTCRay8&)ray,valid);
+    else filter8(&valid,(RTCRay8&)ray);
+    const bool passed = ray.geomID[k] != -1;
+
+    /* restore hit if filter not passed */
+    if (unlikely(!passed)) {
+      store8f(&ray.u,ray_u);
+      store8f(&ray.v,ray_v);
+      store8f(&ray.tfar,ray_tfar);
+      store8i(&ray.geomID,ray_geomID);
+      store8i(&ray.primID,ray_primID);
+      store8f(&ray.Ng.x,ray_Ng_x);
+      store8f(&ray.Ng.y,ray_Ng_y);
+      store8f(&ray.Ng.z,ray_Ng_z);
+    }
+    return passed;
+  }
+
+  __forceinline bool runOcclusionFilter8(const Geometry* const geometry, Ray8& ray, const size_t k,
+                                         const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+  {
+    /* temporarily update hit information */
+    const avxf ray_tfar = ray.tfar; 
+    const avxi ray_geomID = ray.geomID;
+    ray.u[k] = u;
+    ray.v[k] = v;
+    ray.tfar[k] = t;
+    ray.geomID[k] = geomID;
+    ray.primID[k] = primID;
+    ray.Ng.x[k] = Ng.x;
+    ray.Ng.y[k] = Ng.y;
+    ray.Ng.z[k] = Ng.z;
+
+    /* invoke filter function */
+    const avxb valid(1 << k);
+    RTCFilterFunc8  filter8     = (RTCFilterFunc8)  geometry->filter8;
+    ISPCFilterFunc8 ispcFilter8 = (ISPCFilterFunc8) geometry->ispcFilter8;
+    if (ispcFilter8) ispcFilter8((RTCRay8&)ray,valid);
+    else filter8(&valid,(RTCRay8&)ray);
+    const bool passed = ray.geomID[k] != -1;
+
+    /* restore hit if filter not passed */
+    if (unlikely(!passed)) {
+      store8f(&ray.tfar,ray_tfar);
+      store8i(&ray.geomID,ray_geomID);
+    }
+    return passed;
+  }
+
 #endif
 }
 
