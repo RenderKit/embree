@@ -57,7 +57,7 @@ namespace embree
 	  _mm_pause(); 
 	  _mm_pause();
 #else
-	  _mm_delay_32(128); // FIXME: exp falloff
+	  _mm_delay_32(256); // FIXME: exp falloff
 #endif
 	}
         __memory_barrier();
