@@ -25,6 +25,7 @@
 #include "bvh4mb/bvh4mb.h"
 #else
 #include "../xeonphi/bvh4i/bvh4i.h"
+#include "../xeonphi/bvh4mb/bvh4mb.h"
 #endif
 
 namespace embree
@@ -75,6 +76,10 @@ namespace embree
 	else if (g_builder == "high_quality" || g_builder == "presplits")
 	  {
 	    accels.accel0 = BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this);
+	  }
+	else if (g_builder == "motionblur" || g_builder == "motion_blur")
+	  {
+	    accels.accel0 = BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this);
 	  }
 	else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
 

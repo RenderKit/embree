@@ -14,39 +14,29 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4MB_BUILDER_MIC_H__
-#define __EMBREE_BVH4MB_BUILDER_MIC_H__
+#ifndef __EMBREE_BVH4MB_INTERSECTOR16_CHUNK_MIC_H__
+#define __EMBREE_BVH4MB_INTERSECTOR16_CHUNK_MIC_H__
 
-#include "bvh4i/bvh4i_builder.h"
 #include "bvh4mb.h"
+#include "common/ray16.h" 
 
 namespace embree
 {
-
-
-  /*! derived binned-SAH builder supporting virtual geometry */  
-  class BVH4mbBuilder : public BVH4iBuilder
+  namespace isa
   {
-  public:
-
-    Triangle1* accel_t1;
-
-    /*! creates the builder */
-    static Builder* create (void* accel, BuildSource* source, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
-
-  BVH4mbBuilder(BVH4mb* bvh, BuildSource* source, void* geometry) : BVH4iBuilder((BVH4i*)bvh,source,geometry) 
-      {
-	accel_t1 = NULL;
-      }
-
-    virtual void createAccel(const size_t threadIndex, const size_t threadCount);
-    virtual void printBuilderName();
-
-  protected:
-    //TASK_FUNCTION(BVH4mbBuilderSAH,createVirtualGeometryAccel);
-    
-  };
-
+    /*! BVH4mb Traverser. Packet traversal implementation for a Quad BVH. */
+    class BVH4mbIntersector16Chunk
+    {
+      /* shortcuts for frequently used types */
+      typedef typename BVH4i::NodeRef NodeRef;
+      typedef typename BVH4i::Node Node;
+      
+    public:
+      static void intersect(mic_i* valid, BVH4mb* bvh, Ray16& ray);
+      static void occluded (mic_i* valid, BVH4mb* bvh, Ray16& ray);
+    };
+  }
 }
 
 #endif
+  

@@ -19,15 +19,22 @@
 namespace embree
 {
   
+
+  Builder* BVH4mbBuilder::create (void* accel, BuildSource* source, void* geometry, size_t mode ) 
+  { 
+    Builder* builder = new BVH4mbBuilder((BVH4mb*)accel,source,geometry);
+    return builder;
+  }
+
   void BVH4mbBuilder::printBuilderName()
   {
-    std::cout << "building BVH4i with presplits-based SAH builder (MIC) ... " << std::endl;    
+    std::cout << "building BVH4mb with binned SAH builder (MIC) ... " << std::endl;    
   }
 
 
   void BVH4mbBuilder::createAccel(const size_t threadIndex, const size_t threadCount)
   {
-    //LockStepTaskScheduler::dispatchTask( task_createVirtualGeometryAccel, this, threadIndex, threadCount );
+    LockStepTaskScheduler::dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );   
   }
 
 }

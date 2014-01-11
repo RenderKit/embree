@@ -41,6 +41,7 @@ namespace embree
   {
   public:
  
+    static const size_t MAX_MIC_WAIT_CYCLES = 256;
     AtomicMutex ()
       : flag(0) {}
 
@@ -50,6 +51,7 @@ namespace embree
 
     __forceinline void lock()
     {
+      unsigned int wait = 16;
       while(1) {
         __memory_barrier();
 	while (flag == 1) { // read without atomic op first
@@ -57,7 +59,9 @@ namespace embree
 	  _mm_pause(); 
 	  _mm_pause();
 #else
-	  _mm_delay_32(256); // FIXME: exp falloff
+	  _mm_delay_32(wait); 
+	  wait += wait;
+	  if (wait > MAX_MIC_WAIT_CYCLES) wait = MAX_MIC_WAIT_CYCLES;
 #endif
 	}
         __memory_barrier();
