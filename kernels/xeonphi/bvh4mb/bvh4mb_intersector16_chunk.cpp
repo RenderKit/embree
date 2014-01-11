@@ -29,8 +29,6 @@ namespace embree
       __align(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
-      DBG_PRINT(ray.time);
-
       /* load ray */
       const mic_m valid0   = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir     = rcp_safe(ray.dir);

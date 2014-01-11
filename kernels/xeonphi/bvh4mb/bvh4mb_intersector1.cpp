@@ -162,30 +162,56 @@ namespace embree
 	  unsigned int items;
 	  const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf(accel,items);
 	  
-	  prefetch<PFHINT_L1>(tptr + 3);
-	  prefetch<PFHINT_L1>(tptr + 2);
-	  prefetch<PFHINT_L1>(tptr + 1);
-	  prefetch<PFHINT_L1>(tptr + 0); 
+
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  0); 
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  1); 
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  2); 
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  3); 
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  4); 
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  5); 
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  6); 
 
 	  const mic_i and_mask = broadcast4to16i(zlc4);
 	      
-	  const mic_f v0 = gather_4f_zlc(and_mask,
-					 (float*)&tptr[0].t0.v0,
-					 (float*)&tptr[1].t0.v0,
-					 (float*)&tptr[2].t0.v0,
-					 (float*)&tptr[3].t0.v0);
+	  const mic_f v0_t0 = gather_4f_zlc(and_mask,
+					    (float*)&tptr[0].t0.v0,
+					    (float*)&tptr[1].t0.v0,
+					    (float*)&tptr[2].t0.v0,
+					    (float*)&tptr[3].t0.v0);
 	      
-	  const mic_f v1 = gather_4f_zlc(and_mask,
-					 (float*)&tptr[0].t0.v1,
-					 (float*)&tptr[1].t0.v1,
-					 (float*)&tptr[2].t0.v1,
-					 (float*)&tptr[3].t0.v1);
+	  const mic_f v1_t0 = gather_4f_zlc(and_mask,
+					    (float*)&tptr[0].t0.v1,
+					    (float*)&tptr[1].t0.v1,
+					    (float*)&tptr[2].t0.v1,
+					    (float*)&tptr[3].t0.v1);
 	      
-	  const mic_f v2 = gather_4f_zlc(and_mask,
-					 (float*)&tptr[0].t0.v2,
-					 (float*)&tptr[1].t0.v2,
-					 (float*)&tptr[2].t0.v2,
-					 (float*)&tptr[3].t0.v2);
+	  const mic_f v2_t0 = gather_4f_zlc(and_mask,
+					    (float*)&tptr[0].t0.v2,
+					    (float*)&tptr[1].t0.v2,
+					    (float*)&tptr[2].t0.v2,
+					    (float*)&tptr[3].t0.v2);
+
+	  const mic_f v0_t1 = gather_4f_zlc(and_mask,
+					    (float*)&tptr[0].t1.v0,
+					    (float*)&tptr[1].t1.v0,
+					    (float*)&tptr[2].t1.v0,
+					    (float*)&tptr[3].t1.v0);
+	      
+	  const mic_f v1_t1 = gather_4f_zlc(and_mask,
+					    (float*)&tptr[0].t1.v1,
+					    (float*)&tptr[1].t1.v1,
+					    (float*)&tptr[2].t1.v1,
+					    (float*)&tptr[3].t1.v1);
+	      
+	  const mic_f v2_t1 = gather_4f_zlc(and_mask,
+					    (float*)&tptr[0].t1.v2,
+					    (float*)&tptr[1].t1.v2,
+					    (float*)&tptr[2].t1.v2,
+					    (float*)&tptr[3].t1.v2);
+
+	  const mic_f v0 = v0_t0 * (mic_f::one() - ray.time) + ray.time * v0_t1;
+	  const mic_f v1 = v1_t0 * (mic_f::one() - ray.time) + ray.time * v1_t1;
+	  const mic_f v2 = v2_t0 * (mic_f::one() - ray.time) + ray.time * v2_t1;
 
 	  const mic_f e1 = v1 - v0;
 	  const mic_f e2 = v0 - v2;	     
@@ -235,12 +261,12 @@ namespace embree
 
 	      const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
 
-	      const mic_f gnormalx = mic_f(tri_ptr->t0.Ng.x);
-	      const mic_f gnormaly = mic_f(tri_ptr->t0.Ng.y);
-	      const mic_f gnormalz = mic_f(tri_ptr->t0.Ng.z);
+	      const mic_f gnormalz = swAAAA(normal);
+	      const mic_f gnormalx = swBBBB(normal);
+	      const mic_f gnormaly = swCCCC(normal);
 
 #if defined(__USE_RAY_MASK__)
-	      if ( (tri_ptr->mask() & ray.mask) != 0 )
+	      if ( (tri_ptr->t0.mask() & ray.mask) != 0 )
 #else
 	      if (1)
 #endif
@@ -329,6 +355,8 @@ namespace embree
     {
       /* near and node stack */
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+
+      FATAL("FIX FIRST");
 
       /* setup */
       const mic3f rdir16      = rcp_safe(mic3f(ray.dir.x,ray.dir.y,ray.dir.z));
@@ -449,31 +477,57 @@ namespace embree
 
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	  const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel);
-	  prefetch<PFHINT_L1>(tptr + 3);
-	  prefetch<PFHINT_L1>(tptr + 2);
-	  prefetch<PFHINT_L1>(tptr + 1);
-	  prefetch<PFHINT_L1>(tptr + 0); 
+	  const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf(accel);
+
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  0); 
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  1); 
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  2); 
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  3); 
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  4); 
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  5); 
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  6); 
 
 	  const mic_i and_mask = broadcast4to16i(zlc4);
 	      
-	  const mic_f v0 = gather_4f_zlc(and_mask,
-					 (float*)&tptr[0].v0,
-					 (float*)&tptr[1].v0,
-					 (float*)&tptr[2].v0,
-					 (float*)&tptr[3].v0);
+	  const mic_f v0_t0 = gather_4f_zlc(and_mask,
+					    (float*)&tptr[0].t0.v0,
+					    (float*)&tptr[1].t0.v0,
+					    (float*)&tptr[2].t0.v0,
+					    (float*)&tptr[3].t0.v0);
 	      
-	  const mic_f v1 = gather_4f_zlc(and_mask,
-					 (float*)&tptr[0].v1,
-					 (float*)&tptr[1].v1,
-					 (float*)&tptr[2].v1,
-					 (float*)&tptr[3].v1);
+	  const mic_f v1_t0 = gather_4f_zlc(and_mask,
+					    (float*)&tptr[0].t0.v1,
+					    (float*)&tptr[1].t0.v1,
+					    (float*)&tptr[2].t0.v1,
+					    (float*)&tptr[3].t0.v1);
 	      
-	  const mic_f v2 = gather_4f_zlc(and_mask,
-					 (float*)&tptr[0].v2,
-					 (float*)&tptr[1].v2,
-					 (float*)&tptr[2].v2,
-					 (float*)&tptr[3].v2);
+	  const mic_f v2_t0 = gather_4f_zlc(and_mask,
+					    (float*)&tptr[0].t0.v2,
+					    (float*)&tptr[1].t0.v2,
+					    (float*)&tptr[2].t0.v2,
+					    (float*)&tptr[3].t0.v2);
+
+	  const mic_f v0_t1 = gather_4f_zlc(and_mask,
+					    (float*)&tptr[0].t1.v0,
+					    (float*)&tptr[1].t1.v0,
+					    (float*)&tptr[2].t1.v0,
+					    (float*)&tptr[3].t1.v0);
+	      
+	  const mic_f v1_t1 = gather_4f_zlc(and_mask,
+					    (float*)&tptr[0].t1.v1,
+					    (float*)&tptr[1].t1.v1,
+					    (float*)&tptr[2].t1.v1,
+					    (float*)&tptr[3].t1.v1);
+	      
+	  const mic_f v2_t1 = gather_4f_zlc(and_mask,
+					    (float*)&tptr[0].t1.v2,
+					    (float*)&tptr[1].t1.v2,
+					    (float*)&tptr[2].t1.v2,
+					    (float*)&tptr[3].t1.v2);
+
+	  const mic_f v0 = v0_t0 * (mic_f::one() - ray.time) + ray.time * v0_t1;
+	  const mic_f v1 = v1_t0 * (mic_f::one() - ray.time) + ray.time * v1_t1;
+	  const mic_f v2 = v2_t0 * (mic_f::one() - ray.time) + ray.time * v2_t1;
 
 	  const mic_f e1 = v1 - v0;
 	  const mic_f e2 = v0 - v2;	     
@@ -507,10 +561,10 @@ namespace embree
 	    {
 #if defined(__USE_RAY_MASK__)
 	      const mic_i rayMask(ray.mask);
-	      const mic_i triMask = swDDDD(gather16i_4i((int*)&tptr[0].v2,
-							(int*)&tptr[1].v2,
-							(int*)&tptr[2].v2,
-							(int*)&tptr[3].v2));
+	      const mic_i triMask = swDDDD(gather16i_4i((int*)&tptr[0].t0.v2,
+							(int*)&tptr[1].t0.v2,
+							(int*)&tptr[2].t0.v2,
+							(int*)&tptr[3].t0.v2));
 	      const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
 		    
 	      if ( any(m_final & m_ray_mask) )
