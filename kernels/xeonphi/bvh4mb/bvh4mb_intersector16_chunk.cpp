@@ -74,6 +74,8 @@ namespace embree
           STAT3(normal.trav_nodes,1,popcnt(ray_tfar > curDist),16);
           const Node* __restrict__ const node = curNode.node(nodes);
 
+          const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
+
           /* pop of next node */
           sptr_node--;
           sptr_dist--;
@@ -88,12 +90,20 @@ namespace embree
           {
 	    const NodeRef child = node->lower[i].child;
 
-            const mic_f lclipMinX = msub(node->lower[i].x,rdir.x,org_rdir.x);
-            const mic_f lclipMinY = msub(node->lower[i].y,rdir.y,org_rdir.y);
-            const mic_f lclipMinZ = msub(node->lower[i].z,rdir.z,org_rdir.z);
-            const mic_f lclipMaxX = msub(node->upper[i].x,rdir.x,org_rdir.x);
-            const mic_f lclipMaxY = msub(node->upper[i].y,rdir.y,org_rdir.y);
-            const mic_f lclipMaxZ = msub(node->upper[i].z,rdir.z,org_rdir.z);
+	    const mic_f lower_x =  (mic_f::one() - ray.time) * nodeMB->lower[i].x + ray.time * nodeMB->lower_t1[i].x;
+	    const mic_f lower_y =  (mic_f::one() - ray.time) * nodeMB->lower[i].y + ray.time * nodeMB->lower_t1[i].y;
+	    const mic_f lower_z =  (mic_f::one() - ray.time) * nodeMB->lower[i].z + ray.time * nodeMB->lower_t1[i].z;
+	    const mic_f upper_x =  (mic_f::one() - ray.time) * nodeMB->upper[i].x + ray.time * nodeMB->upper_t1[i].x;
+	    const mic_f upper_y =  (mic_f::one() - ray.time) * nodeMB->upper[i].y + ray.time * nodeMB->upper_t1[i].y;
+	    const mic_f upper_z =  (mic_f::one() - ray.time) * nodeMB->upper[i].z + ray.time * nodeMB->upper_t1[i].z;
+
+
+            const mic_f lclipMinX = msub(lower_x,rdir.x,org_rdir.x);
+            const mic_f lclipMinY = msub(lower_y,rdir.y,org_rdir.y);
+            const mic_f lclipMinZ = msub(lower_z,rdir.z,org_rdir.z);
+            const mic_f lclipMaxX = msub(upper_x,rdir.x,org_rdir.x);
+            const mic_f lclipMaxY = msub(upper_y,rdir.y,org_rdir.y);
+            const mic_f lclipMaxZ = msub(upper_z,rdir.z,org_rdir.z);
 	    
             const mic_f lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
             const mic_f lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
@@ -153,7 +163,8 @@ namespace embree
 
 	for (size_t i=0; i<items; i++) 
 	  {
-	    const Triangle1& tri = tris[i].t0;
+	    const Triangle1& tri_t0 = tris[i].t0;
+	    const Triangle1& tri_t1 = tris[i].t1;
 
 	    prefetch<PFHINT_L1>(&tris[i+1].t0); 
 	    prefetch<PFHINT_L1>(&tris[i+1].t1); 
@@ -161,17 +172,29 @@ namespace embree
 	    STAT3(normal.trav_prims,1,popcnt(valid_i),16);
         
 	    /* load vertices and calculate edges */
-	    const mic_f v0 = broadcast4to16f(&tri.v0);
-	    const mic_f v1 = broadcast4to16f(&tri.v1);
-	    const mic_f v2 = broadcast4to16f(&tri.v2);
+	    const mic_f v0_t0 = broadcast4to16f(&tri_t0.v0);
+	    const mic_f v1_t0 = broadcast4to16f(&tri_t0.v1);
+	    const mic_f v2_t0 = broadcast4to16f(&tri_t0.v2);
+
+	    const mic_f v0_t1 = broadcast4to16f(&tri_t1.v0);
+	    const mic_f v1_t1 = broadcast4to16f(&tri_t1.v1);
+	    const mic_f v2_t1 = broadcast4to16f(&tri_t1.v2);
+	    
+	    const mic_f v0 = v0_t0 * (mic_f::one() - ray.time) + ray.time * v0_t1;
+	    const mic_f v1 = v1_t0 * (mic_f::one() - ray.time) + ray.time * v1_t1;
+	    const mic_f v2 = v2_t0 * (mic_f::one() - ray.time) + ray.time * v2_t1;
+
 	    const mic_f e1 = v0-v1;
 	    const mic_f e2 = v2-v0;
+
+	    const mic_f tri_Ng = lcross_zxy(e1,e2);
 
 	    /* calculate denominator */
 	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
 	    const mic3f C =  _v0 - org;
 	    
-	    const mic3f Ng = mic3f(tri.Ng);
+	    const mic3f Ng(swizzle<1>(tri_Ng),swizzle<2>(tri_Ng),swizzle<0>(tri_Ng));
+
 	    const mic_f den = dot(Ng,dir);
 
 	    mic_m valid = valid_leaf;
@@ -202,8 +225,8 @@ namespace embree
 	    valid = ge(valid, t,ray.tnear);
 	    valid = ge(valid,ray.tfar,t);
 
-	    const mic_i geomID = tri.geomID();
-	    const mic_i primID = tri.primID();
+	    const mic_i geomID = tri_t0.geomID();
+	    const mic_i primID = tri_t0.primID();
 	    prefetch<PFHINT_L1EX>(&ray.geomID);      
 	    prefetch<PFHINT_L1EX>(&ray.primID);      
 	    prefetch<PFHINT_L1EX>(&ray.Ng.x);      
@@ -212,7 +235,7 @@ namespace embree
 
 	    /* ray masking test */
 #if defined(__USE_RAY_MASK__)
-	    valid &= (mic_i(tri.mask()) & ray.mask) != 0;
+	    valid &= (mic_i(tri_t0.mask()) & ray.mask) != 0;
 #endif
 	    if (unlikely(none(valid))) continue;
         
@@ -281,6 +304,7 @@ namespace embree
           
           STAT3(shadow.trav_nodes,1,popcnt(ray_tfar > curDist),16);
           const Node* __restrict__ const node = curNode.node(nodes);
+          const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
           
 	  prefetch<PFHINT_L1>((mic_f*)node + 0); 
 	  prefetch<PFHINT_L1>((mic_f*)node + 1); 
@@ -295,13 +319,21 @@ namespace embree
           for (unsigned int i=0; i<4; i++)
           {
 	    const NodeRef child = node->lower[i].child;
-            
-            const mic_f lclipMinX = msub(node->lower[i].x,rdir.x,org_rdir.x);
-            const mic_f lclipMinY = msub(node->lower[i].y,rdir.y,org_rdir.y);
-            const mic_f lclipMinZ = msub(node->lower[i].z,rdir.z,org_rdir.z);
-            const mic_f lclipMaxX = msub(node->upper[i].x,rdir.x,org_rdir.x);
-            const mic_f lclipMaxY = msub(node->upper[i].y,rdir.y,org_rdir.y);
-            const mic_f lclipMaxZ = msub(node->upper[i].z,rdir.z,org_rdir.z);	    
+
+	    const mic_f lower_x =  (mic_f::one() - ray.time) * nodeMB->lower[i].x + ray.time * nodeMB->lower_t1[i].x;
+	    const mic_f lower_y =  (mic_f::one() - ray.time) * nodeMB->lower[i].y + ray.time * nodeMB->lower_t1[i].y;
+	    const mic_f lower_z =  (mic_f::one() - ray.time) * nodeMB->lower[i].z + ray.time * nodeMB->lower_t1[i].z;
+	    const mic_f upper_x =  (mic_f::one() - ray.time) * nodeMB->upper[i].x + ray.time * nodeMB->upper_t1[i].x;
+	    const mic_f upper_y =  (mic_f::one() - ray.time) * nodeMB->upper[i].y + ray.time * nodeMB->upper_t1[i].y;
+	    const mic_f upper_z =  (mic_f::one() - ray.time) * nodeMB->upper[i].z + ray.time * nodeMB->upper_t1[i].z;
+
+
+            const mic_f lclipMinX = msub(lower_x,rdir.x,org_rdir.x);
+            const mic_f lclipMinY = msub(lower_y,rdir.y,org_rdir.y);
+            const mic_f lclipMinZ = msub(lower_z,rdir.z,org_rdir.z);
+            const mic_f lclipMaxX = msub(upper_x,rdir.x,org_rdir.x);
+            const mic_f lclipMaxY = msub(upper_y,rdir.y,org_rdir.y);
+            const mic_f lclipMaxZ = msub(upper_z,rdir.z,org_rdir.z);
 
             const mic_f lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
             const mic_f lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
@@ -359,7 +391,8 @@ namespace embree
 
 	for (size_t i=0; i<items; i++) 
 	  {
-	    const Triangle1& tri = tris[i].t0;
+	    const Triangle1& tri_t0 = tris[i].t0;
+	    const Triangle1& tri_t1 = tris[i].t1;
 
 	    prefetch<PFHINT_L1>(&tris[i+1].t0); 
 	    prefetch<PFHINT_L1>(&tris[i+1].t1); 
@@ -367,17 +400,29 @@ namespace embree
 	    STAT3(normal.trav_prims,1,popcnt(valid_i),16);
         
 	    /* load vertices and calculate edges */
-	    const mic_f v0 = broadcast4to16f(&tri.v0);
-	    const mic_f v1 = broadcast4to16f(&tri.v1);
-	    const mic_f v2 = broadcast4to16f(&tri.v2);
+	    const mic_f v0_t0 = broadcast4to16f(&tri_t0.v0);
+	    const mic_f v1_t0 = broadcast4to16f(&tri_t0.v1);
+	    const mic_f v2_t0 = broadcast4to16f(&tri_t0.v2);
+
+	    const mic_f v0_t1 = broadcast4to16f(&tri_t1.v0);
+	    const mic_f v1_t1 = broadcast4to16f(&tri_t1.v1);
+	    const mic_f v2_t1 = broadcast4to16f(&tri_t1.v2);
+	    
+	    const mic_f v0 = v0_t0 * (mic_f::one() - ray.time) + ray.time * v0_t1;
+	    const mic_f v1 = v1_t0 * (mic_f::one() - ray.time) + ray.time * v1_t1;
+	    const mic_f v2 = v2_t0 * (mic_f::one() - ray.time) + ray.time * v2_t1;
+
 	    const mic_f e1 = v0-v1;
 	    const mic_f e2 = v2-v0;
+
+	    const mic_f tri_Ng = lcross_zxy(e1,e2);
 
 	    /* calculate denominator */
 	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
 	    const mic3f C =  _v0 - org;
 	    
-	    const mic3f Ng = mic3f(tri.Ng);
+	    const mic3f Ng(swizzle<1>(tri_Ng),swizzle<2>(tri_Ng),swizzle<0>(tri_Ng));
+
 	    const mic_f den = dot(Ng,dir);
 
 	    mic_m valid = valid_leaf;
@@ -407,7 +452,7 @@ namespace embree
 
 	    /* ray masking test */
 #if defined(__USE_RAY_MASK__)
-	    valid &= (mic_i(tri.mask()) & ray.mask) != 0;
+	    valid &= (mic_i(tri_t0.mask()) & ray.mask) != 0;
 #endif
 	    if (unlikely(none(valid))) continue;
 	    

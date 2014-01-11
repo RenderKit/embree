@@ -40,7 +40,7 @@ namespace embree
 
       struct Delta {
         float x,y,z,w;         
-      } delta_lower[4], delta_upper[4];    // lower and upper bounds of all 4 children
+      } lower_t1[4], upper_t1[4];    // lower and upper bounds of all 4 children
 
       /*! Returns bounds of specified child. */
       __forceinline BBox3f bounds(size_t i) const {
@@ -110,11 +110,11 @@ namespace embree
       o << "upper: ";
       for (size_t i=0;i<4;i++) o << "[" << v.upper[i].x << "," << v.upper[i].y << "," << v.upper[i].z << "," << v.upper[i].child <<"] ";
 
-      o << "delta_lower: ";
-      for (size_t i=0;i<4;i++) o << "[" << v.delta_lower[i].x << "," << v.delta_lower[i].y << "," << v.delta_lower[i].z << "," << v.delta_lower[i].w <<"] ";
+      o << "lower_t1: ";
+      for (size_t i=0;i<4;i++) o << "[" << v.lower_t1[i].x << "," << v.lower_t1[i].y << "," << v.lower_t1[i].z << "," << v.lower_t1[i].w <<"] ";
       o << std::endl;
-      o << "delta_upper: ";
-      for (size_t i=0;i<4;i++) o << "[" << v.delta_upper[i].x << "," << v.delta_upper[i].y << "," << v.delta_upper[i].z << "," << v.delta_upper[i].w <<"] ";
+      o << "upper_t1: ";
+      for (size_t i=0;i<4;i++) o << "[" << v.upper_t1[i].x << "," << v.upper_t1[i].y << "," << v.upper_t1[i].z << "," << v.upper_t1[i].w <<"] ";
       o << std::endl;
       return o;
     } 

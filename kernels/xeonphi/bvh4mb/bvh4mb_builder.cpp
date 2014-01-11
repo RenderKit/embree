@@ -102,6 +102,37 @@ namespace embree
     LockStepTaskScheduler::dispatchTask( task_createTriangle01AccelMB, this, threadIndex, threadCount );   
   }
 
+  void BVH4mbBuilder::refit(const size_t index, BBox3f& dest)
+  {   
+    BVHNode& entry = node[index];
+
+    if (unlikely(entry.isLeaf()))
+      {
+	DBG_PRINT("get leaf bounds first");
+	return;
+      }
+
+    const size_t children = entry.firstChildID();
+    const size_t items    = entry.items();
+    BBox3f* next = (BBox3f*)&node[children+0];
+    
+    Vec3fa lower(pos_inf);
+    Vec3fa upper(neg_inf);
+    
+    for (size_t i=0; i<items; i++) 
+    {
+      const size_t childIndex = children + i;	    	    
+      //refit(childIndex);
+      FATAL("HERE");
+      
+      lower = min(lower,next[4+i].lower);
+      upper = max(upper,next[4+i].upper);
+    }      
+    
+    dest.lower = lower;
+    dest.upper = upper;
+  }    
+
 
   __forceinline void convertToBVH4Layout(BVHNode *__restrict__ const bptr)
   {

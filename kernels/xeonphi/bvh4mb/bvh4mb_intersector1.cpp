@@ -54,6 +54,7 @@ namespace embree
       const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
       const mic_f min_dist_xyz = broadcast1to16f(&ray.tnear);
       mic_f       max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const mic_f time         = broadcast1to16f(&ray.time);
 	  
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 	  
@@ -62,6 +63,8 @@ namespace embree
 	  NodeRef curNode = stack_node[sindex-1];
 	  sindex--;
             
+	  const mic_f one_time = (mic_f::one() - time);
+
 	  while (1) 
 	    {
 	      /* test if this is a leaf node */
@@ -74,10 +77,17 @@ namespace embree
 	      
 	      prefetch<PFHINT_L1>((char*)node + 0);
 	      prefetch<PFHINT_L1>((char*)node + 64);
+
+	      const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
+
+	      const mic_f lower = one_time  * load16f((float*)nodeMB->lower) + time * load16f((float*)nodeMB->lower_t1);
+	      const mic_f upper = one_time  * load16f((float*)nodeMB->upper) + time * load16f((float*)nodeMB->upper_t1);
+		  
         
 	      /* intersect single ray with 4 bounding boxes */
-	      const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-	      const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+	      const mic_f tLowerXYZ = lower * rdir_xyz - org_rdir_xyz;
+	      const mic_f tUpperXYZ = upper * rdir_xyz - org_rdir_xyz;
+
 	      const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
 	      const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
@@ -376,6 +386,7 @@ namespace embree
       const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
       const mic_f min_dist_xyz = broadcast1to16f(&ray.tnear);
       const mic_f max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const mic_f time         = broadcast1to16f(&ray.time);
 
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 	  
@@ -383,7 +394,9 @@ namespace embree
 	{
 	  NodeRef curNode = stack_node[sindex-1];
 	  sindex--;
-            
+          
+	  const mic_f one_time = (mic_f::one() - time);
+  
 	  while (1) 
 	    {
 	      /* test if this is a leaf node */
@@ -395,10 +408,17 @@ namespace embree
 
 	      prefetch<PFHINT_L1>((char*)node + 0);
 	      prefetch<PFHINT_L1>((char*)node + 64);
+
+	      const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
+
+	      const mic_f lower = one_time  * load16f((float*)nodeMB->lower) + time * load16f((float*)nodeMB->lower_t1);
+	      const mic_f upper = one_time  * load16f((float*)nodeMB->upper) + time * load16f((float*)nodeMB->upper_t1);
+		  
         
 	      /* intersect single ray with 4 bounding boxes */
-	      const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-	      const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+	      const mic_f tLowerXYZ = lower * rdir_xyz - org_rdir_xyz;
+	      const mic_f tUpperXYZ = upper * rdir_xyz - org_rdir_xyz;
+
 	      const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
 	      const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
