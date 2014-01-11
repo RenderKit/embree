@@ -25,7 +25,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1,BVH4mbTriangle1Intersector1);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4mbTriangle1Intersector16ChunkMoeller);
 
-  void BVH4mbRegister () 
+  void BVH4MBRegister () 
   {
     int features = getCPUFeatures();
 

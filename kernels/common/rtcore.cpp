@@ -239,8 +239,8 @@ namespace embree
 
 #if !defined(__MIC__)
     BVH4Register();
-    BVH4MBRegister();
 #endif
+    BVH4MBRegister();
     BVH4iRegister();
     
 #if !defined(__WIN32__) && defined(__TARGET_AVX__)
