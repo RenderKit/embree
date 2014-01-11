@@ -51,12 +51,5 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  BVH4mb::~BVH4mb()
-  {
-    if (qbvh)  os_free(qbvh,size_node);
-    if (accel) os_free(accel,size_accel);
-    if (accel_t1) os_free(accel_t1,size_accel);
-  }
-
 
 }

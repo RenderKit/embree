@@ -29,22 +29,24 @@ namespace embree
   {
   public:
 
-    Triangle1* accel_t1;
-
     /*! creates the builder */
     static Builder* create (void* accel, BuildSource* source, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
 
   BVH4mbBuilder(BVH4mb* bvh, BuildSource* source, void* geometry) : BVH4iBuilder((BVH4i*)bvh,source,geometry) 
       {
-	accel_t1 = NULL;
+	numNodesToAllocate = 2 * BVH4i::N; /* 8 */
       }
+
+    virtual void allocateData(const size_t threadCount, const size_t newNumPrimitives);
+    virtual void convertQBVHLayout(const size_t threadIndex, const size_t threadCount);
 
     virtual void createAccel(const size_t threadIndex, const size_t threadCount);
     virtual void printBuilderName();
 
   protected:
-    //TASK_FUNCTION(BVH4mbBuilderSAH,createVirtualGeometryAccel);
-    
+    TASK_FUNCTION(BVH4mbBuilder,createTriangle01AccelMB);    
+    TASK_FUNCTION(BVH4mbBuilder,convertToSOALayoutMB);    
+
   };
 
 }

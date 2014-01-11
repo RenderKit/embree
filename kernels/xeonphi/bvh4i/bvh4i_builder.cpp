@@ -385,10 +385,8 @@ namespace embree
       {
 	node_area[i] = area( bptr[i] );
 	if ( node_area[i] > 0.0f) valid++;
-	//std::cout << "i " << i << " area " << area( bptr[i] ) << std::endl;
       }
     
-    //DBG_PRINT(valid);
     if (valid == 0) return;
 
     assert( valid >= 2 );
@@ -396,11 +394,8 @@ namespace embree
       for (size_t i=j+1;i<valid;i++)
 	if ( area( bptr[j] ) > area( bptr[i] ) )
 	  std::swap( bptr[j], bptr[i] );
-
-    // for (size_t i=0;i<4;i++) 
-    //   std::cout << "i " << i << " area " << area( bptr[i] ) << std::endl;
-
   }
+
   __forceinline void convertToBVH4Layout(BVHNode *__restrict__ const bptr)
   {
     const mic_i box01 = load16i((int*)(bptr + 0));

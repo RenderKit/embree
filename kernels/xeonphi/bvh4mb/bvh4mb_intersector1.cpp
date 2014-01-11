@@ -40,8 +40,8 @@ namespace embree
 
       store16f(stack_dist,inf);
 
-      const Node      * __restrict__ nodes = (Node    *)bvh->nodePtr();
-      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+      const Node               * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const BVH4mb::Triangle01 * __restrict__ accel = (BVH4mb::Triangle01 *)bvh->triPtr();
 
       stack_node[0] = BVH4i::invalidNode;      
       stack_node[1] = bvh->root;
@@ -159,7 +159,9 @@ namespace embree
 
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	  const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel);
+	  unsigned int items;
+	  const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf(accel,items);
+	  
 	  prefetch<PFHINT_L1>(tptr + 3);
 	  prefetch<PFHINT_L1>(tptr + 2);
 	  prefetch<PFHINT_L1>(tptr + 1);
@@ -168,22 +170,22 @@ namespace embree
 	  const mic_i and_mask = broadcast4to16i(zlc4);
 	      
 	  const mic_f v0 = gather_4f_zlc(and_mask,
-					 (float*)&tptr[0].v0,
-					 (float*)&tptr[1].v0,
-					 (float*)&tptr[2].v0,
-					 (float*)&tptr[3].v0);
+					 (float*)&tptr[0].t0.v0,
+					 (float*)&tptr[1].t0.v0,
+					 (float*)&tptr[2].t0.v0,
+					 (float*)&tptr[3].t0.v0);
 	      
 	  const mic_f v1 = gather_4f_zlc(and_mask,
-					 (float*)&tptr[0].v1,
-					 (float*)&tptr[1].v1,
-					 (float*)&tptr[2].v1,
-					 (float*)&tptr[3].v1);
+					 (float*)&tptr[0].t0.v1,
+					 (float*)&tptr[1].t0.v1,
+					 (float*)&tptr[2].t0.v1,
+					 (float*)&tptr[3].t0.v1);
 	      
 	  const mic_f v2 = gather_4f_zlc(and_mask,
-					 (float*)&tptr[0].v2,
-					 (float*)&tptr[1].v2,
-					 (float*)&tptr[2].v2,
-					 (float*)&tptr[3].v2);
+					 (float*)&tptr[0].t0.v2,
+					 (float*)&tptr[1].t0.v2,
+					 (float*)&tptr[2].t0.v2,
+					 (float*)&tptr[3].t0.v2);
 
 	  const mic_f e1 = v1 - v0;
 	  const mic_f e2 = v0 - v2;	     
@@ -229,13 +231,13 @@ namespace embree
 	      const size_t vecIndex = bitscan(toInt(m_dist));
 	      const size_t triIndex = vecIndex >> 2;
 
-	      const Triangle1  *__restrict__ tri_ptr = tptr + triIndex;
+	      const BVH4mb::Triangle01  *__restrict__ tri_ptr = tptr + triIndex;
 
 	      const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
 
-	      const mic_f gnormalx = mic_f(tri_ptr->Ng.x);
-	      const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
-	      const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
+	      const mic_f gnormalx = mic_f(tri_ptr->t0.Ng.x);
+	      const mic_f gnormaly = mic_f(tri_ptr->t0.Ng.y);
+	      const mic_f gnormalz = mic_f(tri_ptr->t0.Ng.z);
 
 #if defined(__USE_RAY_MASK__)
 	      if ( (tri_ptr->mask() & ray.mask) != 0 )
@@ -253,8 +255,8 @@ namespace embree
 		  compactustore16f_low(m_tri,&ray.Ng.y,gnormaly); 
 		  compactustore16f_low(m_tri,&ray.Ng.z,gnormalz); 
 
-		  ray.geomID = tri_ptr->geomID();
-		  ray.primID = tri_ptr->primID();
+		  ray.geomID = tri_ptr->t0.geomID();
+		  ray.primID = tri_ptr->t0.primID();
 
 		  /* compact the stack if size of stack >= 2 */
 		  if (likely(sindex >= 2))
@@ -333,8 +335,8 @@ namespace embree
       const mic_f inf         = mic_f(pos_inf);
       const mic_f zero        = mic_f::zero();
 
-      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
-      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+      const Node               * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const BVH4mb::Triangle01 * __restrict__ accel = (BVH4mb::Triangle01 *)bvh->triPtr();
 
       stack_node[0] = BVH4i::invalidNode;
       stack_node[1] = bvh->root;

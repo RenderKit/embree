@@ -29,6 +29,8 @@ namespace embree
       __align(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
+      DBG_PRINT(ray.time);
+
       /* load ray */
       const mic_m valid0   = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir     = rcp_safe(ray.dir);
@@ -46,8 +48,8 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       mic_f*   __restrict__ sptr_dist = stack_dist + 2;
       
-      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
-      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+      const Node               * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const BVH4mb::Triangle01 * __restrict__ accel = (BVH4mb::Triangle01 *)bvh->triPtr();
 
       while (1)
       {
@@ -135,7 +137,7 @@ namespace embree
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
  
 	unsigned int items; 
-	const Triangle1* tris  = (Triangle1*) curNode.leaf(accel,items);
+	const BVH4mb::Triangle01* tris  = (BVH4mb::Triangle01*) curNode.leaf(accel,items);
 
 	const mic_f zero = mic_f::zero();
 	const mic_f one  = mic_f::one();
@@ -144,15 +146,19 @@ namespace embree
 	prefetch<PFHINT_L2>((mic_f*)tris +  1); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  2); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  4); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  5); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  6); 
 
         const mic3f org = ray.org;
         const mic3f dir = ray.dir;
 
 	for (size_t i=0; i<items; i++) 
 	  {
-	    const Triangle1& tri = tris[i];
+	    const Triangle1& tri = tris[i].t0;
 
-	    prefetch<PFHINT_L1>(&tris[i+1]); 
+	    prefetch<PFHINT_L1>(&tris[i+1].t0); 
+	    prefetch<PFHINT_L1>(&tris[i+1].t1); 
 
 	    STAT3(normal.trav_prims,1,popcnt(valid_i),16);
         
@@ -249,8 +255,8 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       mic_f*   __restrict__ sptr_dist = stack_dist + 2;
       
-      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
-      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+      const Node               * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const BVH4mb::Triangle01 * __restrict__ accel = (BVH4mb::Triangle01 *)bvh->triPtr();
 
       while (1)
       {
@@ -339,12 +345,15 @@ namespace embree
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
 
 	unsigned int items; 
-	const Triangle1* tris  = (Triangle1*) curNode.leaf(accel,items);
+	const BVH4mb::Triangle01* tris  = (BVH4mb::Triangle01*) curNode.leaf(accel,items);
 
 	prefetch<PFHINT_L1>((mic_f*)tris +  0); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  1); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  2); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  4); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  5); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  6); 
 
         const mic3f org = ray.org;
         const mic3f dir = ray.dir;
@@ -352,9 +361,10 @@ namespace embree
 
 	for (size_t i=0; i<items; i++) 
 	  {
-	    const Triangle1& tri = tris[i];
+	    const Triangle1& tri = tris[i].t0;
 
-	    prefetch<PFHINT_L1>(&tris[i+1]); 
+	    prefetch<PFHINT_L1>(&tris[i+1].t0); 
+	    prefetch<PFHINT_L1>(&tris[i+1].t1); 
 
 	    STAT3(normal.trav_prims,1,popcnt(valid_i),16);
         

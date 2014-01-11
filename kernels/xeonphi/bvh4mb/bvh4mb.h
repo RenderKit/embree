@@ -18,6 +18,7 @@
 #define __EMBREE_BVH4MB_MIC_H__
 
 #include "bvh4i/bvh4i.h"
+#include "geometry/triangle1.h"
 
 namespace embree
 {
@@ -78,19 +79,22 @@ namespace embree
 
     };
 
+    /*! BVH4mb Triangle01 */
+
+    struct Triangle01
+    {
+    public:
+      Triangle1 t0;
+      Triangle1 t1;
+    };
 
 
   public:
 
-    void *accel_t1;
-
     /*! BVH4 default constructor. */
     BVH4mb (const PrimitiveType& primTy, void* geometry = NULL) : BVH4i(primTy,geometry)
     {
-      accel_t1 = NULL;
     }
-
-    ~BVH4mb();
 
 
     static Accel* BVH4mbTriangle1ObjectSplitBinnedSAH(Scene* scene);
