@@ -1478,7 +1478,7 @@ namespace embree
     TIMER(msec = getSeconds());
 
     /* allocate and initialize root node */
-    atomicID.reset(BVH4i::N);
+    atomicID.reset(numNodesToAllocate);
     node[0].lower = global_bounds.geometry.lower;
     node[0].upper = global_bounds.geometry.upper;
     

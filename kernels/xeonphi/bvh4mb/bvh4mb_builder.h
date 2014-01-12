@@ -43,7 +43,7 @@ namespace embree
     virtual void createAccel(const size_t threadIndex, const size_t threadCount);
     virtual void printBuilderName();
 
-    void refit(const size_t index, BBox3f& dest);
+    void refit(const size_t index);
 
   protected:
     TASK_FUNCTION(BVH4mbBuilder,createTriangle01AccelMB);    

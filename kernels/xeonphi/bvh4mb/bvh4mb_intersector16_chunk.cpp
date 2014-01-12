@@ -64,7 +64,10 @@ namespace embree
         /* cull node if behind closest hit point */
         if (unlikely(none(m_stackDist))) {continue;}
 	        
-	const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+	const unsigned int leaf_mask = BVH4I_LEAF_MASK; 
+
+	const mic_f time     = ray.time;
+	const mic_f one_time = (mic_f::one() - time);
 
         while (1)
         {
@@ -90,12 +93,12 @@ namespace embree
           {
 	    const NodeRef child = node->lower[i].child;
 
-	    const mic_f lower_x =  (mic_f::one() - ray.time) * nodeMB->lower[i].x + ray.time * nodeMB->lower_t1[i].x;
-	    const mic_f lower_y =  (mic_f::one() - ray.time) * nodeMB->lower[i].y + ray.time * nodeMB->lower_t1[i].y;
-	    const mic_f lower_z =  (mic_f::one() - ray.time) * nodeMB->lower[i].z + ray.time * nodeMB->lower_t1[i].z;
-	    const mic_f upper_x =  (mic_f::one() - ray.time) * nodeMB->upper[i].x + ray.time * nodeMB->upper_t1[i].x;
-	    const mic_f upper_y =  (mic_f::one() - ray.time) * nodeMB->upper[i].y + ray.time * nodeMB->upper_t1[i].y;
-	    const mic_f upper_z =  (mic_f::one() - ray.time) * nodeMB->upper[i].z + ray.time * nodeMB->upper_t1[i].z;
+	    const mic_f lower_x =  one_time * nodeMB->lower[i].x + time * nodeMB->lower_t1[i].x;
+	    const mic_f lower_y =  one_time * nodeMB->lower[i].y + time * nodeMB->lower_t1[i].y;
+	    const mic_f lower_z =  one_time * nodeMB->lower[i].z + time * nodeMB->lower_t1[i].z;
+	    const mic_f upper_x =  one_time * nodeMB->upper[i].x + time * nodeMB->upper_t1[i].x;
+	    const mic_f upper_y =  one_time * nodeMB->upper[i].y + time * nodeMB->upper_t1[i].y;
+	    const mic_f upper_z =  one_time * nodeMB->upper[i].z + time * nodeMB->upper_t1[i].z;
 
 
             const mic_f lclipMinX = msub(lower_x,rdir.x,org_rdir.x);
@@ -180,9 +183,9 @@ namespace embree
 	    const mic_f v1_t1 = broadcast4to16f(&tri_t1.v1);
 	    const mic_f v2_t1 = broadcast4to16f(&tri_t1.v2);
 	    
-	    const mic_f v0 = v0_t0 * (mic_f::one() - ray.time) + ray.time * v0_t1;
-	    const mic_f v1 = v1_t0 * (mic_f::one() - ray.time) + ray.time * v1_t1;
-	    const mic_f v2 = v2_t0 * (mic_f::one() - ray.time) + ray.time * v2_t1;
+	    const mic_f v0 = v0_t0 * one_time + time * v0_t1;
+	    const mic_f v1 = v1_t0 * one_time + time * v1_t1;
+	    const mic_f v2 = v2_t0 * one_time + time * v2_t1;
 
 	    const mic_f e1 = v0-v1;
 	    const mic_f e2 = v2-v0;
@@ -297,10 +300,15 @@ namespace embree
 
         if (unlikely(none(m_stackDist))) { continue; }
 	
+	const unsigned int leaf_mask = BVH4I_LEAF_MASK; 
+
+	const mic_f time     = ray.time;
+	const mic_f one_time = (mic_f::one() - time);
+
         while (1)
         {
           /* test if this is a leaf node */
-          if (unlikely(curNode.isLeaf())) break;
+          if (unlikely(curNode.isLeaf(leaf_mask))) break;
           
           STAT3(shadow.trav_nodes,1,popcnt(ray_tfar > curDist),16);
           const Node* __restrict__ const node = curNode.node(nodes);
@@ -320,12 +328,12 @@ namespace embree
           {
 	    const NodeRef child = node->lower[i].child;
 
-	    const mic_f lower_x =  (mic_f::one() - ray.time) * nodeMB->lower[i].x + ray.time * nodeMB->lower_t1[i].x;
-	    const mic_f lower_y =  (mic_f::one() - ray.time) * nodeMB->lower[i].y + ray.time * nodeMB->lower_t1[i].y;
-	    const mic_f lower_z =  (mic_f::one() - ray.time) * nodeMB->lower[i].z + ray.time * nodeMB->lower_t1[i].z;
-	    const mic_f upper_x =  (mic_f::one() - ray.time) * nodeMB->upper[i].x + ray.time * nodeMB->upper_t1[i].x;
-	    const mic_f upper_y =  (mic_f::one() - ray.time) * nodeMB->upper[i].y + ray.time * nodeMB->upper_t1[i].y;
-	    const mic_f upper_z =  (mic_f::one() - ray.time) * nodeMB->upper[i].z + ray.time * nodeMB->upper_t1[i].z;
+	    const mic_f lower_x =  one_time * nodeMB->lower[i].x + time * nodeMB->lower_t1[i].x;
+	    const mic_f lower_y =  one_time * nodeMB->lower[i].y + time * nodeMB->lower_t1[i].y;
+	    const mic_f lower_z =  one_time * nodeMB->lower[i].z + time * nodeMB->lower_t1[i].z;
+	    const mic_f upper_x =  one_time * nodeMB->upper[i].x + time * nodeMB->upper_t1[i].x;
+	    const mic_f upper_y =  one_time * nodeMB->upper[i].y + time * nodeMB->upper_t1[i].y;
+	    const mic_f upper_z =  one_time * nodeMB->upper[i].z + time * nodeMB->upper_t1[i].z;
 
 
             const mic_f lclipMinX = msub(lower_x,rdir.x,org_rdir.x);
@@ -408,9 +416,9 @@ namespace embree
 	    const mic_f v1_t1 = broadcast4to16f(&tri_t1.v1);
 	    const mic_f v2_t1 = broadcast4to16f(&tri_t1.v2);
 	    
-	    const mic_f v0 = v0_t0 * (mic_f::one() - ray.time) + ray.time * v0_t1;
-	    const mic_f v1 = v1_t0 * (mic_f::one() - ray.time) + ray.time * v1_t1;
-	    const mic_f v2 = v2_t0 * (mic_f::one() - ray.time) + ray.time * v2_t1;
+	    const mic_f v0 = v0_t0 * one_time + time * v0_t1;
+	    const mic_f v1 = v1_t0 * one_time + time * v1_t1;
+	    const mic_f v2 = v2_t0 * one_time + time * v2_t1;
 
 	    const mic_f e1 = v0-v1;
 	    const mic_f e2 = v2-v0;

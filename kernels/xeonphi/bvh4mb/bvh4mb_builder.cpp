@@ -102,35 +102,57 @@ namespace embree
     LockStepTaskScheduler::dispatchTask( task_createTriangle01AccelMB, this, threadIndex, threadCount );   
   }
 
-  void BVH4mbBuilder::refit(const size_t index, BBox3f& dest)
+  void BVH4mbBuilder::refit(const size_t index)
   {   
+    PING;
+    DBG_PRINT(index);
+
     BVHNode& entry = node[index];
 
     if (unlikely(entry.isLeaf()))
       {
-	DBG_PRINT("get leaf bounds first");
+	unsigned int accel_entries = entry.items();
+	unsigned int accel_offset  = entry.itemListOfs();
+	BBox3f leaf_bounds = empty;
+	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)(accel + accel_offset);
+	for (size_t i=0;i<accel_entries;i++)
+	  leaf_bounds.extend( accelMB[i].t1.bounds() );
+
+	DBG_PRINT(leaf_bounds);
+
+	*(BBox3f*)&node[index+4] = leaf_bounds;
+	DBG_PRINT(index+4);
 	return;
       }
 
-    const size_t children = entry.firstChildID();
+    const size_t childrenID = entry.firstChildID();
     const size_t items    = entry.items();
-    BBox3f* next = (BBox3f*)&node[children+0];
+    BBox3f* next = (BBox3f*)&node[childrenID+4];
     
-    Vec3fa lower(pos_inf);
-    Vec3fa upper(neg_inf);
-    
+    DBG_PRINT(childrenID);
+
+    /* init second node */
+    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    store16f_ngo((float*)next + 0,init_node);
+    store16f_ngo((float*)next + 2,init_node);
+
+    BBox3f parentBounds = empty;
     for (size_t i=0; i<items; i++) 
     {
-      const size_t childIndex = children + i;	    	    
-      //refit(childIndex);
-      FATAL("HERE");
-      
-      lower = min(lower,next[4+i].lower);
-      upper = max(upper,next[4+i].upper);
+      const size_t childIndex = childrenID + i;	    	    
+
+      DBG_PRINT(childIndex);
+
+      refit(childIndex);
+
+      DBG_PRINT(next[i]);
+      parentBounds.extend( next[i] );
     }      
-    
-    dest.lower = lower;
-    dest.upper = upper;
+
+    DBG_PRINT(parentBounds);
+    DBG_PRINT(index+4);
+
+    *(BBox3f*)&node[index+4] = parentBounds;    
   }    
 
 
