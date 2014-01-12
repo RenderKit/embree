@@ -64,6 +64,8 @@ namespace embree
 			     const size_t sizeAccelInBytes = sizeof(Triangle1));
 
     void checkBuildRecord(const BuildRecord &current);
+    void checkLeafNode(const BVHNode &node);
+
 
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
     TASK_FUNCTION(BVH4iBuilder,fillLocalWorkQueues);

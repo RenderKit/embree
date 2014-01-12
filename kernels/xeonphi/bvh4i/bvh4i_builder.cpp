@@ -140,6 +140,7 @@ namespace embree
 
     numAllocatedNodes = size_node / sizeof(BVHNode);
       
+    DBG(DBG_PRINT(numAllocatedNodes));
     DBG(DBG_PRINT(size_primrefs));
     DBG(DBG_PRINT(size_node));
     DBG(DBG_PRINT(size_accel));
@@ -1151,9 +1152,12 @@ namespace embree
       throw std::runtime_error("ERROR: depth limit reached");
 #endif
     
-    /* create leaf for few primitives */
+    /* create leaf */
     if (current.items() <= BVH4i::N) {
       node[current.parentID].createLeaf(current.begin,current.items());
+#if defined(DEBUG)
+      checkLeafNode(node[current.parentID]);      
+#endif
       return;
     }
 
@@ -1269,6 +1273,12 @@ namespace embree
     }
 
   }
+
+  void BVH4iBuilder::checkLeafNode(const BVHNode &node)
+  {
+    FATAL("not implemented");
+  }
+
 
   void BVH4iBuilder::checkBuildRecord(const BuildRecord &current)
   {
@@ -1516,6 +1526,7 @@ namespace embree
     TIMER(msec = getSeconds());    
     LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
     numNodes = atomicID >> 2;
+    DBG(DBG_PRINT(atomicID));
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
 

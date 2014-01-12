@@ -104,24 +104,33 @@ namespace embree
 
   void BVH4mbBuilder::refit(const size_t index)
   {   
+    std::cout << std::endl;
     PING;
     DBG_PRINT(index);
 
     BVHNode& entry = node[index];
-
+    DBG_PRINT( entry );
+    
     if (unlikely(entry.isLeaf()))
       {
+	std::cout << "LEAF" << std::endl;
 	unsigned int accel_entries = entry.items();
 	unsigned int accel_offset  = entry.itemListOfs();
 	BBox3f leaf_bounds = empty;
 	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)(accel + accel_offset);
 	for (size_t i=0;i<accel_entries;i++)
-	  leaf_bounds.extend( accelMB[i].t1.bounds() );
+	  {
+	    DBG_PRINT( i );
+	    DBG_PRINT( accelMB[i].t0 );
+	    DBG_PRINT( accelMB[i].t1 );
+
+	    leaf_bounds.extend( accelMB[i].t1.bounds() );
+	  }
 
 	DBG_PRINT(leaf_bounds);
-
-	*(BBox3f*)&node[index+4] = leaf_bounds;
-	DBG_PRINT(index+4);
+	//*(BBox3f*)&node[index+4] = leaf_bounds;
+	DBG_PRINT(node[index]);
+	DBG_PRINT(node[index+4]);
 	return;
       }
 
@@ -133,18 +142,23 @@ namespace embree
 
     /* init second node */
     const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-    store16f_ngo((float*)next + 0,init_node);
-    store16f_ngo((float*)next + 2,init_node);
+    store16f_ngo(next + 0,init_node);
+    store16f_ngo(next + 2,init_node);
 
     BBox3f parentBounds = empty;
     for (size_t i=0; i<items; i++) 
     {
       const size_t childIndex = childrenID + i;	    	    
-
       DBG_PRINT(childIndex);
-
       refit(childIndex);
+    }      
 
+
+    std::cout << "TEST" << std::endl;
+    for (size_t i=0; i<items; i++) 
+    {
+      DBG_PRINT(node[childrenID+i]);
+      DBG_PRINT(node[childrenID+i+4]);
       DBG_PRINT(next[i]);
       parentBounds.extend( next[i] );
     }      
@@ -152,7 +166,7 @@ namespace embree
     DBG_PRINT(parentBounds);
     DBG_PRINT(index+4);
 
-    *(BBox3f*)&node[index+4] = parentBounds;    
+    //*(BBox3f*)&node[index+4] = parentBounds;    
   }    
 
 
@@ -200,6 +214,7 @@ namespace embree
 
   void BVH4mbBuilder::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
   {
+    refit(0);
     LockStepTaskScheduler::dispatchTask( task_convertToSOALayoutMB, this, threadIndex, threadCount );    
   }
 
