@@ -175,29 +175,24 @@ namespace embree
 	    STAT3(normal.trav_prims,1,popcnt(valid_i),16);
         
 	    /* load vertices and calculate edges */
-	    const mic_f v0_t0 = broadcast4to16f(&tri_t0.v0);
-	    const mic_f v1_t0 = broadcast4to16f(&tri_t0.v1);
-	    const mic_f v2_t0 = broadcast4to16f(&tri_t0.v2);
+	    const mic3f v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
+	    const mic3f v0_t1( broadcast1to16f(&tri_t1.v0.x), broadcast1to16f(&tri_t1.v0.y), broadcast1to16f(&tri_t1.v0.z) );
+	    const mic3f v0 = v0_t0 * one_time + time * v0_t1;
+	    const mic3f v1_t0( broadcast1to16f(&tri_t0.v1.x), broadcast1to16f(&tri_t0.v1.y), broadcast1to16f(&tri_t0.v1.z) );
+	    const mic3f v1_t1( broadcast1to16f(&tri_t1.v1.x), broadcast1to16f(&tri_t1.v1.y), broadcast1to16f(&tri_t1.v1.z) );
+	    const mic3f v1 = v1_t0 * one_time + time * v1_t1;
+	    const mic3f v2_t0( broadcast1to16f(&tri_t0.v2.x), broadcast1to16f(&tri_t0.v2.y), broadcast1to16f(&tri_t0.v2.z) );
+	    const mic3f v2_t1( broadcast1to16f(&tri_t1.v2.x), broadcast1to16f(&tri_t1.v2.y), broadcast1to16f(&tri_t1.v2.z) );
+	    const mic3f v2 = v2_t0 * one_time + time * v2_t1;
 
-	    const mic_f v0_t1 = broadcast4to16f(&tri_t1.v0);
-	    const mic_f v1_t1 = broadcast4to16f(&tri_t1.v1);
-	    const mic_f v2_t1 = broadcast4to16f(&tri_t1.v2);
-	    
-	    const mic_f v0 = v0_t0 * one_time + time * v0_t1;
-	    const mic_f v1 = v1_t0 * one_time + time * v1_t1;
-	    const mic_f v2 = v2_t0 * one_time + time * v2_t1;
+	    const mic3f e1 = v0-v1;
+	    const mic3f e2 = v2-v0;
 
-	    const mic_f e1 = v0-v1;
-	    const mic_f e2 = v2-v0;
-
-	    const mic_f tri_Ng = lcross_zxy(e1,e2);
+	    const mic3f Ng = cross(e1,e2);
 
 	    /* calculate denominator */
-	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
-	    const mic3f C =  _v0 - org;
+	    const mic3f C =  v0 - org;
 	    
-	    const mic3f Ng(swizzle<1>(tri_Ng),swizzle<2>(tri_Ng),swizzle<0>(tri_Ng));
-
 	    const mic_f den = dot(Ng,dir);
 
 	    mic_m valid = valid_leaf;
@@ -210,10 +205,8 @@ namespace embree
 	    /* perform edge tests */
 	    const mic_f rcp_den = rcp(den);
 	    const mic3f R = cross(dir,C);
-	    const mic3f _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
-	    const mic_f u = dot(R,_e2)*rcp_den;
-	    const mic3f _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
-	    const mic_f v = dot(R,_e1)*rcp_den;
+	    const mic_f u = dot(R,e2)*rcp_den;
+	    const mic_f v = dot(R,e1)*rcp_den;
 	    valid = ge(valid,u,zero);
 	    valid = ge(valid,v,zero);
 	    valid = le(valid,u+v,one);
@@ -408,29 +401,24 @@ namespace embree
 	    STAT3(normal.trav_prims,1,popcnt(valid_i),16);
         
 	    /* load vertices and calculate edges */
-	    const mic_f v0_t0 = broadcast4to16f(&tri_t0.v0);
-	    const mic_f v1_t0 = broadcast4to16f(&tri_t0.v1);
-	    const mic_f v2_t0 = broadcast4to16f(&tri_t0.v2);
+	    const mic3f v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
+	    const mic3f v0_t1( broadcast1to16f(&tri_t1.v0.x), broadcast1to16f(&tri_t1.v0.y), broadcast1to16f(&tri_t1.v0.z) );
+	    const mic3f v0 = v0_t0 * one_time + time * v0_t1;
+	    const mic3f v1_t0( broadcast1to16f(&tri_t0.v1.x), broadcast1to16f(&tri_t0.v1.y), broadcast1to16f(&tri_t0.v1.z) );
+	    const mic3f v1_t1( broadcast1to16f(&tri_t1.v1.x), broadcast1to16f(&tri_t1.v1.y), broadcast1to16f(&tri_t1.v1.z) );
+	    const mic3f v1 = v1_t0 * one_time + time * v1_t1;
+	    const mic3f v2_t0( broadcast1to16f(&tri_t0.v2.x), broadcast1to16f(&tri_t0.v2.y), broadcast1to16f(&tri_t0.v2.z) );
+	    const mic3f v2_t1( broadcast1to16f(&tri_t1.v2.x), broadcast1to16f(&tri_t1.v2.y), broadcast1to16f(&tri_t1.v2.z) );
+	    const mic3f v2 = v2_t0 * one_time + time * v2_t1;
 
-	    const mic_f v0_t1 = broadcast4to16f(&tri_t1.v0);
-	    const mic_f v1_t1 = broadcast4to16f(&tri_t1.v1);
-	    const mic_f v2_t1 = broadcast4to16f(&tri_t1.v2);
-	    
-	    const mic_f v0 = v0_t0 * one_time + time * v0_t1;
-	    const mic_f v1 = v1_t0 * one_time + time * v1_t1;
-	    const mic_f v2 = v2_t0 * one_time + time * v2_t1;
+	    const mic3f e1 = v0-v1;
+	    const mic3f e2 = v2-v0;
 
-	    const mic_f e1 = v0-v1;
-	    const mic_f e2 = v2-v0;
-
-	    const mic_f tri_Ng = lcross_zxy(e1,e2);
+	    const mic3f Ng = cross(e1,e2);
 
 	    /* calculate denominator */
-	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
-	    const mic3f C =  _v0 - org;
+	    const mic3f C =  v0 - org;
 	    
-	    const mic3f Ng(swizzle<1>(tri_Ng),swizzle<2>(tri_Ng),swizzle<0>(tri_Ng));
-
 	    const mic_f den = dot(Ng,dir);
 
 	    mic_m valid = valid_leaf;
@@ -443,10 +431,8 @@ namespace embree
 	    /* perform edge tests */
 	    const mic_f rcp_den = rcp(den);
 	    const mic3f R = cross(dir,C);
-	    const mic3f _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
-	    const mic_f u = dot(R,_e2)*rcp_den;
-	    const mic3f _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
-	    const mic_f v = dot(R,_e1)*rcp_den;
+	    const mic_f u = dot(R,e2)*rcp_den;
+	    const mic_f v = dot(R,e1)*rcp_den;
 	    valid = ge(valid,u,zero);
 	    valid = ge(valid,v,zero);
 	    valid = le(valid,u+v,one);

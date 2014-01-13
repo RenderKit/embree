@@ -97,7 +97,7 @@ namespace embree
       /* let inactive rays miss all boxes */
       sse3f rdir = rcp_safe(ray.dir);
       ssef ray_tfar = select(valid,ray.tfar,ssef(neg_inf));
-      
+
       while (true)
       {
         /*! pop next node */

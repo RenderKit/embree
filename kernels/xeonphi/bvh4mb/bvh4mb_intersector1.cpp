@@ -219,9 +219,9 @@ namespace embree
 					    (float*)&tptr[2].t1.v2,
 					    (float*)&tptr[3].t1.v2);
 
-	  const mic_f v0 = v0_t0 * (mic_f::one() - ray.time) + ray.time * v0_t1;
-	  const mic_f v1 = v1_t0 * (mic_f::one() - ray.time) + ray.time * v1_t1;
-	  const mic_f v2 = v2_t0 * (mic_f::one() - ray.time) + ray.time * v2_t1;
+	  const mic_f v0 = v0_t0 * one_time + time * v0_t1;
+	  const mic_f v1 = v1_t0 * one_time + time * v1_t1;
+	  const mic_f v2 = v2_t0 * one_time + time * v2_t1;
 
 	  const mic_f e1 = v1 - v0;
 	  const mic_f e2 = v0 - v2;	     
@@ -545,9 +545,10 @@ namespace embree
 					    (float*)&tptr[2].t1.v2,
 					    (float*)&tptr[3].t1.v2);
 
-	  const mic_f v0 = v0_t0 * (mic_f::one() - ray.time) + ray.time * v0_t1;
-	  const mic_f v1 = v1_t0 * (mic_f::one() - ray.time) + ray.time * v1_t1;
-	  const mic_f v2 = v2_t0 * (mic_f::one() - ray.time) + ray.time * v2_t1;
+
+	  const mic_f v0 = v0_t0 * one_time + time * v0_t1;
+	  const mic_f v1 = v1_t0 * one_time + time * v1_t1;
+	  const mic_f v2 = v2_t0 * one_time + time * v2_t1;
 
 	  const mic_f e1 = v1 - v0;
 	  const mic_f e2 = v0 - v2;	     

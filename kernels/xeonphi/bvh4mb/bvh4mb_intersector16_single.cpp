@@ -28,6 +28,9 @@ namespace embree
 
     static __align(64) int zlc4[4] = {0xffffffff,0xffffffff,0xffffffff,0};
 
+    //static __align(64) float testtime[16] = { 0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1 };
+    static __align(64) float testtime[16] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 };
+
     void BVH4mbIntersector16Single::intersect(mic_i* valid_i, BVH4mb* bvh, Ray16& ray16)
     {
       /* near and node stack */
@@ -223,9 +226,9 @@ namespace embree
 						(float*)&tptr[2].t1.v2,
 						(float*)&tptr[3].t1.v2);
 
-	      const mic_f v0 = v0_t0 * (mic_f::one() - ray16.time) + ray16.time * v0_t1;
-	      const mic_f v1 = v1_t0 * (mic_f::one() - ray16.time) + ray16.time * v1_t1;
-	      const mic_f v2 = v2_t0 * (mic_f::one() - ray16.time) + ray16.time * v2_t1;
+	      const mic_f v0 = v0_t0 * one_time + time * v0_t1;
+	      const mic_f v1 = v1_t0 * one_time + time * v1_t1;
+	      const mic_f v2 = v2_t0 * one_time + time * v2_t1;
 
 	      const mic_f e1 = v1 - v0;
 	      const mic_f e2 = v0 - v2;	     
@@ -558,9 +561,9 @@ namespace embree
 						(float*)&tptr[2].t1.v2,
 						(float*)&tptr[3].t1.v2);
 
-	      const mic_f v0 = v0_t0 * (mic_f::one() - ray16.time) + ray16.time * v0_t1;
-	      const mic_f v1 = v1_t0 * (mic_f::one() - ray16.time) + ray16.time * v1_t1;
-	      const mic_f v2 = v2_t0 * (mic_f::one() - ray16.time) + ray16.time * v2_t1;
+	      const mic_f v0 = v0_t0 * one_time + time * v0_t1;
+	      const mic_f v1 = v1_t0 * one_time + time * v1_t1;
+	      const mic_f v2 = v2_t0 * one_time + time * v2_t1;
 
 	      const mic_f e1 = v1 - v0;
 	      const mic_f e2 = v0 - v2;	     
