@@ -28,7 +28,7 @@
 #define PROFILE
 #endif
 #define TIMER(x) 
-#define DBG(x)  
+#define DBG(x) 
 
 #define L1_PREFETCH_ITEMS 8
 #define L2_PREFETCH_ITEMS 44
@@ -1175,6 +1175,7 @@ namespace embree
 
   void BVH4iBuilderMorton::build_main (const size_t threadIndex, const size_t threadCount)
   { 
+    DBG(PING);
     TIMER(std::cout << std::endl);
     TIMER(double msec = 0.0);
 

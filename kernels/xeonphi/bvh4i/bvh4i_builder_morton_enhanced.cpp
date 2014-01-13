@@ -45,6 +45,8 @@ namespace embree
 
   void BVH4iBuilderMortonEnhanced::build(size_t threadIndex, size_t threadCount) 
   {
+    DBG(PING);
+
     if (g_verbose >= 2) {
       std::cout << "building BVH4i with Enhanced Morton builder (MIC)... " << std::endl << std::flush;
     }
@@ -427,6 +429,7 @@ namespace embree
 
   void BVH4iBuilderMortonEnhanced::build_parallel_morton_enhanced(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
+    DBG(PING);
     /* initialize thread state */
     initThreadState(threadIndex,threadCount);
     
@@ -435,6 +438,7 @@ namespace embree
       LockStepTaskScheduler::dispatchTaskMainLoop(threadIndex,threadCount);
       return;
     }
+
 
     /* start measurement */
     double t0 = 0.0f;
@@ -451,7 +455,7 @@ namespace embree
     TIMER(double msec);
     TIMER(msec = getSeconds());
 
-    build_main(threadIndex,taskCount);
+    build_main(threadIndex,threadCount);
 
     bvh->accel = this->accel;
     bvh->qbvh  = (BVH4i::Node*)this->node;
