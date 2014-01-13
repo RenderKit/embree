@@ -60,6 +60,9 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   bvh4mb/bvh4mb_intersector16_hybrid.cpp
   bvh4mb/bvh4mb_intersector1.cpp
 
+  bvh16i/bvh16i.cpp
+  bvh16i/bvh16i_builder.cpp
+  bvh16i/bvh16i_intersector16_single.cpp  
 )
 
 TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi)

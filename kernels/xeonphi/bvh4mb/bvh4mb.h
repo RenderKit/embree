@@ -30,7 +30,7 @@ namespace embree
 
     /*! BVH4mb Node */
 
-    struct Node
+    struct __align(64) Node
     {
     public:
       struct NodeStruct {
@@ -65,23 +65,11 @@ namespace embree
       __forceinline       NodeRef& child(size_t i)       { return lower[i].child; }
       __forceinline const NodeRef& child(size_t i) const { return lower[i].child; }
 
-
-      __forceinline std::ostream& operator<<(std::ostream &o)
-      {
-	for (size_t i=0;i<4;i++)
-	  {
-	    o << "lower: [" << lower[i].x << "," << lower[i].y << "," << lower[i].z << "] ";
-	    o << "upper: [" << upper[i].x << "," << upper[i].y << "," << upper[i].z << "] ";
-	    o << std::endl;
-	  }
-	return o;
-      }
-
     };
 
     /*! BVH4mb Triangle01 */
 
-    struct Triangle01
+    struct __align(64) Triangle01
     {
     public:
       Triangle1 t0;

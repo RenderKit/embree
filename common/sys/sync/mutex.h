@@ -51,7 +51,7 @@ namespace embree
 
     __forceinline void lock()
     {
-      unsigned int wait = 16;
+      unsigned int wait = 128;
       while(1) {
         __memory_barrier();
 	while (flag == 1) { // read without atomic op first
@@ -60,8 +60,8 @@ namespace embree
 	  _mm_pause();
 #else
 	  _mm_delay_32(wait); 
-	  wait += wait;
-	  if (wait > MAX_MIC_WAIT_CYCLES) wait = MAX_MIC_WAIT_CYCLES;
+	  /* wait += wait; */
+	  /* if (wait > MAX_MIC_WAIT_CYCLES) wait = MAX_MIC_WAIT_CYCLES; */
 #endif
 	}
         __memory_barrier();
