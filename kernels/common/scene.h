@@ -44,16 +44,16 @@ namespace embree
     ~Scene ();
 
     /*! Creates new user geometry. */
-    unsigned newUserGeometry (size_t items);
+    unsigned int newUserGeometry (size_t items);
 
     /*! Creates a new scene instance. */
-    unsigned newInstance (Scene* scene);
+    unsigned int newInstance (Scene* scene);
 
     /*! Creates a new triangle mesh. */
-    unsigned newTriangleMesh (RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
+    unsigned int newTriangleMesh (RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new collection of quadratic bezier curves. */
-    unsigned newQuadraticBezierCurves (RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
+    unsigned int newQuadraticBezierCurves (RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
 
     /*! Builds acceleration structure for the scene. */
     void build ();
@@ -68,7 +68,7 @@ namespace embree
     __forceinline size_t size() const { return geometries.size(); }
     
     /* add user geometry to scene */
-    unsigned add (Geometry* geometry);
+    unsigned int add (Geometry* geometry);
     
     /* removes user geometry from scene again */
     void remove(Geometry* geometry);

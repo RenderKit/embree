@@ -52,6 +52,7 @@ namespace embree
     initEncodingAllocateData(threadCount);
     LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); 
 
+    DBG_PRINT( numPrimitives );
 #if defined(PROFILE)
     std::cout << "STARTING PROFILE MODE" << std::endl << std::flush;
 
@@ -70,9 +71,9 @@ namespace embree
     dt_avg /= double(iterations);
 
     std::cout << "[DONE]" << std::endl;
-    std::cout << "  min = " << 1000.0f*dt_min << "ms (" << source->size()/dt_min*1E-6 << " Mtris/s)" << std::endl;
-    std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << source->size()/dt_avg*1E-6 << " Mtris/s)" << std::endl;
-    std::cout << "  max = " << 1000.0f*dt_max << "ms (" << source->size()/dt_max*1E-6 << " Mtris/s)" << std::endl;
+    std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
+    std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
+    std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
     std::cout << BVH4iStatistics(bvh).str();
 
 #else
@@ -107,7 +108,7 @@ namespace embree
       }
 
     if (g_verbose >= 2) {
-      double perf = source->size()/dt*1E-6;
+      double perf = numPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
       std::cout << BVH4iStatistics(bvh).str();
     }
@@ -510,7 +511,7 @@ namespace embree
 
     if (g_verbose >= 2) {
       double t1 = getSeconds();
-      double perf = source->size()/(t1-t0)*1E-6;
+      double perf = numPrimitives/(t1-t0)*1E-6;
       std::cout << "[DONE] " << t1-t0 << "sec (" << perf << " Mtris/s)" << std::endl;
       //
     }

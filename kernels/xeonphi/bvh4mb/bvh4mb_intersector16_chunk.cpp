@@ -37,7 +37,7 @@ namespace embree
       mic_f ray_tnear      = select(valid0,ray.tnear,pos_inf);
       mic_f ray_tfar       = select(valid0,ray.tfar ,neg_inf);
       const mic_f inf      = mic_f(pos_inf);
-      
+
       /* allocate stack and push root node */
       stack_node[0] = BVH4i::invalidNode;
       stack_dist[0] = inf;

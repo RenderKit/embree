@@ -83,7 +83,6 @@ namespace embree
       }
     else
       {
-	DBG( DBG_PRINT( (int)mesh->numTimeSteps ) );
 	assert( (int)mesh->numTimeSteps == 2 );
 	const float *__restrict__ const vptr0_t1 = (float*)&mesh->vertex(tri.v[0],1);
 	const float *__restrict__ const vptr1_t1 = (float*)&mesh->vertex(tri.v[1],1);

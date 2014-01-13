@@ -284,7 +284,7 @@ namespace embree
   void BVH4iBuilderPreSplits::computePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
   {
     DBG(PING);
-    const size_t numGroups = source->size();
+    const size_t numGroups = scene->size();
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
     

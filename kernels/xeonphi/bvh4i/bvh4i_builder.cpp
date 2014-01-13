@@ -108,7 +108,18 @@ namespace embree
 
   size_t BVH4iBuilder::getNumPrimitives()
   {
-    return source->size();
+    /* count total number of triangles */
+    size_t primitives = 0;       
+    for (size_t i=0;i<scene->size();i++)
+      {
+	if (unlikely(scene->get(i) == NULL)) continue;
+	if (unlikely((scene->get(i)->type != TRIANGLE_MESH))) continue;
+	if (unlikely(!scene->get(i)->isEnabled())) continue;
+	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(i);
+	primitives += mesh->numTriangles;
+      }
+    return primitives;	
+  
   }
 
   void BVH4iBuilder::allocateMemoryPools(const size_t numPrims, 
@@ -210,7 +221,7 @@ namespace embree
 #if defined(PROFILE)
 
 	std::cout << "STARTING PROFILE MODE" << std::endl << std::flush;
-	std::cout << "primitives = " << source->size() << std::endl;
+	std::cout << "primitives = " << totalNumPrimitives << std::endl;
 	double dt_min = pos_inf;
 	double dt_avg = 0.0f;
 	double dt_max = neg_inf;
@@ -225,9 +236,9 @@ namespace embree
 	dt_avg /= double(iterations);
 
 	std::cout << "[DONE]" << std::endl;
-	std::cout << "  min = " << 1000.0f*dt_min << "ms (" << source->size()/dt_min*1E-6 << " Mtris/s)" << std::endl;
-	std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << source->size()/dt_avg*1E-6 << " Mtris/s)" << std::endl;
-	std::cout << "  max = " << 1000.0f*dt_max << "ms (" << source->size()/dt_max*1E-6 << " Mtris/s)" << std::endl;
+	std::cout << "  min = " << 1000.0f*dt_min << "ms (" << totalNumPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
+	std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << totalNumPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
+	std::cout << "  max = " << 1000.0f*dt_max << "ms (" << totalNumPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
 	std::cout << BVH4iStatistics(bvh).str();
 
 #else
@@ -317,6 +328,7 @@ namespace embree
 
       for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
       { 			    
+	//DBG_PRINT(currentID);
 	const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(i);
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
@@ -341,6 +353,9 @@ namespace embree
 	store4f(&local_prims[numLocalPrims].upper,bmax);	
 	local_prims[numLocalPrims].lower.a = g;
 	local_prims[numLocalPrims].upper.a = i;
+
+	//DBG_PRINT( local_prims[numLocalPrims] );
+
 	numLocalPrims++;
 	if (unlikely(((size_t)dest % 64) != 0) && numLocalPrims == 1)
 	  {
