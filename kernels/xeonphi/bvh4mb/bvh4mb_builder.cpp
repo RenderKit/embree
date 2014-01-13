@@ -62,20 +62,41 @@ namespace embree
     const mic_i pID(primID);
     const mic_i gID(geomID);
 
-    const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
-    const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
-    const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+    const float *__restrict__ const vptr0_t0 = (float*)&mesh->vertex(tri.v[0]);
+    const float *__restrict__ const vptr1_t0 = (float*)&mesh->vertex(tri.v[1]);
+    const float *__restrict__ const vptr2_t0 = (float*)&mesh->vertex(tri.v[2]);
 
-    prefetch<PFHINT_L1>(vptr1);
-    prefetch<PFHINT_L1>(vptr2);
+    prefetch<PFHINT_L1>(vptr1_t0);
+    prefetch<PFHINT_L1>(vptr2_t0);
 
-    const mic_f v0 = broadcast4to16f(vptr0); //WARNING: zero last component
-    const mic_f v1 = broadcast4to16f(vptr1);
-    const mic_f v2 = broadcast4to16f(vptr2);
+    const mic_f v0_t0 = broadcast4to16f(vptr0_t0); 
+    const mic_f v1_t0 = broadcast4to16f(vptr1_t0);
+    const mic_f v2_t0 = broadcast4to16f(vptr2_t0);
 
-    const mic_f tri_accel = initTriangle1(v0,v1,v2,gID,pID,mic_i(mesh->mask));
-    store16f_ngo(&acc->t0,tri_accel);
-    store16f_ngo(&acc->t1,tri_accel);
+    const mic_f tri_accel_t0 = initTriangle1(v0_t0,v1_t0,v2_t0,gID,pID,mic_i(mesh->mask));
+
+    store16f_ngo(&acc->t0,tri_accel_t0);
+
+    if ((int)mesh->numTimeSteps == 1)
+      {
+	store16f_ngo(&acc->t1,tri_accel_t0);
+      }
+    else
+      {
+	DBG( DBG_PRINT( (int)mesh->numTimeSteps ) );
+	assert( (int)mesh->numTimeSteps == 2 );
+	const float *__restrict__ const vptr0_t1 = (float*)&mesh->vertex(tri.v[0],1);
+	const float *__restrict__ const vptr1_t1 = (float*)&mesh->vertex(tri.v[1],1);
+	const float *__restrict__ const vptr2_t1 = (float*)&mesh->vertex(tri.v[2],1);
+	
+	const mic_f v0_t1 = broadcast4to16f(vptr0_t1); 
+	const mic_f v1_t1 = broadcast4to16f(vptr1_t1);
+	const mic_f v2_t1 = broadcast4to16f(vptr2_t1);
+
+	const mic_f tri_accel_t1 = initTriangle1(v0_t1,v1_t1,v2_t1,gID,pID,mic_i(mesh->mask));
+
+	store16f_ngo(&acc->t1,tri_accel_t1);
+      }
   }
 
   void BVH4mbBuilder::createTriangle01AccelMB(const size_t threadID, const size_t numThreads)
@@ -99,6 +120,7 @@ namespace embree
 
   void BVH4mbBuilder::createAccel(const size_t threadIndex, const size_t threadCount)
   {
+    DBG(PING);
     LockStepTaskScheduler::dispatchTask( task_createTriangle01AccelMB, this, threadIndex, threadCount );   
   }
 
@@ -212,6 +234,7 @@ namespace embree
 
   void BVH4mbBuilder::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
   {
+    DBG(PING);
     refit(0);
     LockStepTaskScheduler::dispatchTask( task_convertToSOALayoutMB, this, threadIndex, threadCount );    
   }

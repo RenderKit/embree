@@ -113,7 +113,7 @@ namespace embree
 
     public:
       unsigned mask;              //!< for masking out geometry
-      bool built;                //!< geometry got built
+      bool built;                 //!< geometry got built
       unsigned char numTimeSteps;
 
       Triangle* triangles;        //!< array of triangles
