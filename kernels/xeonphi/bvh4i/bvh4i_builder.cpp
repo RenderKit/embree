@@ -1274,9 +1274,42 @@ namespace embree
 
   }
 
-  void BVH4iBuilder::checkLeafNode(const BVHNode &node)
+  void BVH4iBuilder::checkLeafNode(const BVHNode &entry)
   {
-    FATAL("not implemented");
+    if (!entry.isLeaf())
+      FATAL("no leaf");
+
+    unsigned int accel_entries = entry.items();
+    unsigned int accel_offset  = entry.itemListOfs();
+
+    BBox3f leaf_prim_bounds = empty;
+    for (size_t i=0;i<accel_entries;i++)
+      {
+	leaf_prim_bounds.extend( prims[ accel_offset + i ].lower );
+	leaf_prim_bounds.extend( prims[ accel_offset + i ].upper );
+      }
+
+    BBox3f leaf_tri_bounds = empty;
+    for (size_t i=0;i<accel_entries;i++)
+      {
+	const unsigned int geomID = prims[ accel_offset + i ].geomID();
+	const unsigned int primID = prims[ accel_offset + i ].primID();
+
+	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	const TriangleMeshScene::TriangleMesh::Triangle & tri = mesh->triangle(primID);
+
+	leaf_tri_bounds.extend( mesh->vertex(tri.v[0]) );
+	leaf_tri_bounds.extend( mesh->vertex(tri.v[1]) );
+	leaf_tri_bounds.extend( mesh->vertex(tri.v[2]) );	
+      }
+
+    if (!(subset(leaf_prim_bounds,leaf_tri_bounds) && subset(leaf_tri_bounds,leaf_prim_bounds))) 
+      {
+	DBG_PRINT(leaf_prim_bounds);
+	DBG_PRINT(leaf_tri_bounds);
+	FATAL("check build record");
+      }
+
   }
 
 
