@@ -16,6 +16,7 @@
 
 #include "bvh4i_intersector16_single.h"
 #include "geometry/triangle1.h"
+#include "geometry/filter.h"
 
 namespace embree
 {
@@ -218,7 +219,7 @@ namespace embree
 	      if (unlikely(none(m_aperture))) continue;
 	      const mic_f t = rcp_den*nom;
 
-	      const mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
+	      mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
 	      max_dist_xyz  = select(m_final,t,max_dist_xyz);
 		    
@@ -227,38 +228,49 @@ namespace embree
  /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
 
-          size_t i = select_min(m_final,t)/4; // FIXME: correct???
-          int geomID = tri.geomID[i];
+              mic_f min_dist = vreduce_min(max_dist_xyz);
+              mic_m m_dist = eq(min_dist,max_dist_xyz);
+              size_t vecIndex = bitscan(toInt(m_dist));
+              size_t triIndex = vecIndex >> 2;
+              const Triangle1* tri = &tptr[triIndex];
+              int geomID = tri->geomID();
 
-          while (true) 
-          {
-            Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
-            if (likely(!geom->hasFilter1())) 
-            {
-              /* update hit information */
-              ray.u = u[i];
-              ray.v = v[i];
-              ray.tfar = t[i];
-              ray.Ng.x = tri.Ng.x[i];
-              ray.Ng.y = tri.Ng.y[i];
-              ray.Ng.z = tri.Ng.z[i];
-              ray.geomID = geomID;
-              ray.primID = tri.primID[i];
-              break;
-            }
-            
-            Vec3fa Ng = Vec3fa(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
-            if (runIntersectionFilter1(geom,ray,u[i],v[i],t[i],Ng,geomID,tri.primID[i])) return;
-            m_final &= ~(1<<i);
-            if (none(m_final)) break;
-            i = select_min(m_final,t)/4; // FIXME: correct???
-            geomID = tri.geomID[i];
-          }
-          continue;
+              while (true) 
+              {
+                Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
+                if (likely(!geom->hasFilter1())) 
+                {
+                  /* update hit information */
+                  ray16.u[rayIndex] = u[triIndex];
+                  ray16.v[rayIndex] = v[triIndex];
+                  ray16.tfar[rayIndex] = t[triIndex];
+                  ray16.Ng.x[rayIndex] = tri->Ng.x;
+                  ray16.Ng.y[rayIndex] = tri->Ng.y;
+                  ray16.Ng.z[rayIndex] = tri->Ng.z;
+                  ray16.geomID[rayIndex] = geomID;
+                  ray16.primID[rayIndex] = tri->primID();
+                  max_dist_xyz = min_dist;
+                  break;
+                }
+                
+                Vec3fa Ng = Vec3fa(tri->Ng.x,tri->Ng.y,tri->Ng.z);
+                if (runIntersectionFilter16(geom,ray16,rayIndex,u[triIndex],v[triIndex],t[triIndex],Ng,geomID,tri->primID())) return;
+                m_final &= mic_m(~(1<<triIndex));
+                if (none(m_final)) break;
+                
+                max_dist_xyz  = select(m_final,t,max_dist_xyz);
+                min_dist = vreduce_min(max_dist_xyz);
+                m_dist = eq(min_dist,max_dist_xyz);
+                vecIndex = bitscan(toInt(m_dist));
+                triIndex = vecIndex >> 2;
+                tri = &tptr[triIndex];
+                geomID = tri->geomID();
+              }
+              continue;
 #endif  
           //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	      /* did the ray hot one of the four triangles? */
+	      /* did the ray hit one of the four triangles? */
 	      if (unlikely(any(m_final)))
 		{
 		  const mic_f min_dist = vreduce_min(max_dist_xyz);

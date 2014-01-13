@@ -351,11 +351,11 @@ namespace embree
   __forceinline mic_f vreduce_add8(mic_f x) { x = vreduce_add4(x); return x + permute(x,_MM_SHUF_PERM(2,3,0,1)); }
   __forceinline mic_f vreduce_add (mic_f x) { x = vreduce_add8(x); return x + permute(x,_MM_SHUF_PERM(1,0,3,2)); }
 
-  __forceinline size_t select_min(const ssef& v) { return __bsf(movemask(v == vreduce_min(v))); }
-  __forceinline size_t select_max(const ssef& v) { return __bsf(movemask(v == vreduce_max(v))); }
+  __forceinline size_t select_min(const mic_f& v) { return __bsf(movemask(v == vreduce_min(v))); }
+  __forceinline size_t select_max(const mic_f& v) { return __bsf(movemask(v == vreduce_max(v))); }
 
-  __forceinline size_t select_min(const sseb& valid, const ssef& v) { const ssef a = select(valid,v,ssef(pos_inf)); return __bsf(movemask(valid & (a == vreduce_min(a)))); }
-  __forceinline size_t select_max(const sseb& valid, const ssef& v) { const ssef a = select(valid,v,ssef(neg_inf)); return __bsf(movemask(valid & (a == vreduce_max(a)))); }
+  __forceinline size_t select_min(const mic_m& valid, const mic_f& v) { const mic_f a = select(valid,v,mic_f(pos_inf)); return __bsf(movemask(valid & (a == vreduce_min(a)))); }
+  __forceinline size_t select_max(const mic_m& valid, const mic_f& v) { const mic_f a = select(valid,v,mic_f(neg_inf)); return __bsf(movemask(valid & (a == vreduce_max(a)))); }
   
   __forceinline mic_f prefix_sum(const mic_f& a)
   {
