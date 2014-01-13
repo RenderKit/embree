@@ -450,7 +450,7 @@ namespace embree
     TIMER(double msec);
     TIMER(msec = getSeconds());
 
-    build_main(threadIndex,taskCount);
+    build_main(threadIndex,threadCount);
 
     bvh->accel = this->accel;
     bvh->qbvh  = (BVH4i::Node*)this->node;
