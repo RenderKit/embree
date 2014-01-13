@@ -56,7 +56,8 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   bvh4mb/bvh4mb.cpp
   bvh4mb/bvh4mb_builder.cpp
   bvh4mb/bvh4mb_intersector16_chunk.cpp
-  bvh4mb/bvh4mb_intersector16_single.cpp
+  bvh4mb/bvh4mb_intersector16_single.cpp  
+  bvh4mb/bvh4mb_intersector16_hybrid.cpp
   bvh4mb/bvh4mb_intersector1.cpp
 
 )

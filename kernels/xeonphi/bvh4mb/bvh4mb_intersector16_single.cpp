@@ -87,7 +87,6 @@ namespace embree
 		  prefetch<PFHINT_L1>((char*)node + 64);
 
 		  const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
-
 		  const mic_f lower = one_time  * load16f((float*)nodeMB->lower) + time * load16f((float*)nodeMB->lower_t1);
 		  const mic_f upper = one_time  * load16f((float*)nodeMB->upper) + time * load16f((float*)nodeMB->upper_t1);
 		  
@@ -428,7 +427,6 @@ namespace embree
 		  prefetch<PFHINT_L1>((char*)node + 64);
 
 		  const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
-
 		  const mic_f lower = one_time  * load16f((float*)nodeMB->lower) + time * load16f((float*)nodeMB->lower_t1);
 		  const mic_f upper = one_time  * load16f((float*)nodeMB->upper) + time * load16f((float*)nodeMB->upper_t1);
         
