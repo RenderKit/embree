@@ -64,4 +64,27 @@ namespace embree
     LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );    
   }
 
+  void BVH16iBuilder::countLeaves(const size_t index)
+  {
+    BVHNode &entry = node[index];
+
+    if (entry.isLeaf())
+      {
+	entry.upper.a = 1;
+      }
+    else
+      {
+	const unsigned int childID = entry.firstChildID();
+	const unsigned int children = entry.items();
+
+	unsigned int leaves = 0;
+	for (unsigned int i=0;i<children;i++) 
+	  {
+	    countLeaves(childID+i);
+	    leaves += node[childID+i].upper.a;
+	  }      
+	entry.upper.a = leaves;
+      }
+  }
+
 }

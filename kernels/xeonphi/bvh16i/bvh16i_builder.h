@@ -44,6 +44,8 @@ namespace embree
   protected:
     TASK_FUNCTION(BVH16iBuilder,convertToSOALayoutMB);    
 
+    void countLeaves(const size_t index);
+
   };
 
 }
