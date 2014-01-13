@@ -109,17 +109,9 @@ namespace embree
 #endif
         if (unlikely(none(valid))) continue;
 
-        /* calculate hit information */
-        const mic_f rcpAbsDen = rcp(absDen);
-        const mic_f u = U*rcpAbsDen;
-        const mic_f v = V*rcpAbsDen;
-        const mic_f t = T*rcpAbsDen;
-        const int geomID = tri.geomID();
-        const int primID = tri.primID();
-
         /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        Geometry* geometry = ((Scene*)geom)->get(tri.geomID());
         if (unlikely(geometry->hasFilter16())) {
           runIntersectionFilter16(valid,geometry,ray,u,v,t,Ng,geomID,primID);
           continue;
@@ -201,18 +193,11 @@ namespace embree
 
         /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-        const int geomID = tri.geomID();
-        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        const mic_i geomID = tri.geomID();
+	const mic_i primID = tri.primID();
+        Geometry* geometry = ((Scene*)geom)->get(tri.geomID());
         if (unlikely(geometry->hasFilter16()))
-        {
-          /* calculate hit information */
-          const mic_f rcpAbsDen = rcp(absDen);
-          const mic_f u = U*rcpAbsDen;
-          const mic_f v = V*rcpAbsDen;
-          const mic_f t = T*rcpAbsDen;
-          const int primID = tri.primID();
           valid = runOcclusionFilter16(valid,geometry,ray,u,v,t,Ng,geomID,primID);
-        }
 #endif
 
         /* update occlusion */

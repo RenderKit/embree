@@ -78,7 +78,7 @@ namespace embree
   }
 
   __forceinline mic_m runIntersectionFilter16(const mic_m& valid, const Geometry* const geometry, Ray16& ray, 
-                                            const mic_f& u, const mic_f& v, const mic_f& t, const mic_3f& Ng, const mic_i& geomID, const mic_i& primID)
+                                            const mic_f& u, const mic_f& v, const mic_f& t, const mic3f& Ng, const mic_i& geomID, const mic_i& primID)
   {
     /* temporarily update hit information */
     const mic_f ray_u = ray.u;           store16f(valid,&ray.u,u);
@@ -114,7 +114,7 @@ namespace embree
   }
 
   __forceinline mic_m runOcclusionFilter16(const mic_m& valid, const Geometry* const geometry, Ray16& ray, 
-                                         const mic_f& u, const mic_f& v, const mic_f& t, const mic_3f& Ng, const mic_i& geomID, const mic_i& primID)
+                                         const mic_f& u, const mic_f& v, const mic_f& t, const mic3f& Ng, const mic_i& geomID, const mic_i& primID)
   {
     /* temporarily update hit information */
     const mic_f ray_tfar = ray.tfar; 

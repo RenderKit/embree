@@ -16,6 +16,7 @@
 
 #include "bvh4i_intersector16_chunk.h"
 #include "geometry/triangle1.h"
+#include "geometry/filter.h"
 
 namespace embree
 {
@@ -213,9 +214,9 @@ namespace embree
         
             /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-            Geometry* geometry = ((Scene*)geom)->get(geomID);
-            if (unlikely(geometry->hasFilter16())) {
-              runIntersectionFilter16(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+            Geometry* geom = ((Scene*)bvh->geometry)->get(tri.geomID());
+            if (unlikely(geom->hasFilter16())) {
+              runIntersectionFilter16(valid,geom,ray,u,v,t,Ng,geomID,primID);
               continue;
             }
 #endif
@@ -413,9 +414,9 @@ namespace embree
             /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
             const int geomID = tri.geomID();
-            Geometry* geometry = ((Scene*)geom)->get(geomID);
-            if (unlikely(geometry->hasFilter16()))
-              valid = runOcclusionFilter16(valid,geometry,ray,u,v,t,Ng,tri.geomID(),tri.primID());
+            Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
+            if (unlikely(geom->hasFilter16()))
+              valid = runOcclusionFilter16(valid,geom,ray,u,v,t,Ng,geomID,tri.primID());
 #endif
 
 	    /* update occlusion */

@@ -27,6 +27,7 @@ namespace embree
       const mic3f ray_org = ray.org;
       const mic3f ray_dir = ray.dir;
       const mic_i ray_geomID = ray.geomID;
+      const mic_i ray_instID = ray.instID;
       const AffineSpace3fMIC world2local(instance->world2local);
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);

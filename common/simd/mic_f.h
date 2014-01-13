@@ -335,7 +335,7 @@ namespace embree
   __forceinline float reduce_mul(mic_f a) { return _mm512_reduce_mul_ps(a); }
   __forceinline float reduce_min(mic_f a) { return _mm512_reduce_min_ps(a); }
   __forceinline float reduce_max(mic_f a) { return _mm512_reduce_max_ps(a); }
-    
+
   __forceinline mic_f vreduce_min2(mic_f x) {                      return min(x,swizzle(x,_MM_SWIZ_REG_BADC)); }
   __forceinline mic_f vreduce_min4(mic_f x) { x = vreduce_min2(x); return min(x,swizzle(x,_MM_SWIZ_REG_CDAB)); }
   __forceinline mic_f vreduce_min8(mic_f x) { x = vreduce_min4(x); return min(x,permute(x,_MM_SHUF_PERM(2,3,0,1))); }
@@ -350,6 +350,12 @@ namespace embree
   __forceinline mic_f vreduce_add4(mic_f x) { x = vreduce_add2(x); return x + swizzle(x,_MM_SWIZ_REG_CDAB); }
   __forceinline mic_f vreduce_add8(mic_f x) { x = vreduce_add4(x); return x + permute(x,_MM_SHUF_PERM(2,3,0,1)); }
   __forceinline mic_f vreduce_add (mic_f x) { x = vreduce_add8(x); return x + permute(x,_MM_SHUF_PERM(1,0,3,2)); }
+
+  __forceinline size_t select_min(const ssef& v) { return __bsf(movemask(v == vreduce_min(v))); }
+  __forceinline size_t select_max(const ssef& v) { return __bsf(movemask(v == vreduce_max(v))); }
+
+  __forceinline size_t select_min(const sseb& valid, const ssef& v) { const ssef a = select(valid,v,ssef(pos_inf)); return __bsf(movemask(valid & (a == vreduce_min(a)))); }
+  __forceinline size_t select_max(const sseb& valid, const ssef& v) { const ssef a = select(valid,v,ssef(neg_inf)); return __bsf(movemask(valid & (a == vreduce_max(a)))); }
   
   __forceinline mic_f prefix_sum(const mic_f& a)
   {

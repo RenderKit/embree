@@ -218,7 +218,7 @@ namespace embree
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
           /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(__INTERSECTION_FILTER__) && 0
 
           size_t i = select_min(m_final,t)/4; // FIXME: correct???
           int geomID = tri.geomID[i];
