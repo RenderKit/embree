@@ -45,6 +45,124 @@ namespace embree
 	fflush(stdout);\
   }
 
+  std::vector<thread_t> g_threads;
+  std::vector<thread_t> g_threads2;
+
+  MutexSys g_mutex;
+  BarrierSys g_barrier;
+  BarrierSys g_barrier2;
+  size_t g_num_barrier_waits = 10000;
+  size_t g_num_mutex_locks = 100000;
+
+  atomic_t g_atomic_mutex_locks = 0;
+
+  void benchmark_mutex_sys_thread(void* ptr) 
+  {
+    while (true)
+    {
+      if (atomic_add(&g_atomic_mutex_locks,-1) < 0) break;
+      g_mutex.lock();
+      g_mutex.unlock();
+    }
+  }
+  
+  void benchmark_mutex_sys ()
+  {
+    size_t numThreads = getNumberOfLogicalThreads();
+#if defined (__MIC__)
+    numThreads -= 4;
+#endif
+    g_atomic_mutex_locks = g_num_mutex_locks;
+    for (size_t i=1; i<numThreads; i++)
+      g_threads.push_back(createThread(benchmark_mutex_sys_thread,NULL,1000000,i));
+    setAffinity(0);
+
+    double t0 = getSeconds();
+    benchmark_mutex_sys_thread(NULL);
+    double t1 = getSeconds();
+
+    for (size_t i=0; i<g_threads.size(); i++)
+      join(g_threads[i]);
+
+    g_threads.clear();
+
+    printf("%30s ... %f ms (%f k/s)\n","mutex_sys",1000.0f*(t1-t0)/double(g_num_mutex_locks),1E-3*g_num_mutex_locks/(t1-t0));
+    fflush(stdout);
+  }
+
+  void benchmark_barrier_sys_thread(void* ptr) 
+  {
+    for (size_t i=0; i<g_num_barrier_waits; i++) 
+      g_barrier.wait();
+  }
+  
+  void benchmark_barrier_sys ()
+  {
+    size_t numThreads = getNumberOfLogicalThreads();
+#if defined (__MIC__)
+    numThreads -= 4;
+#endif
+    g_barrier.init(numThreads);
+    for (size_t i=1; i<numThreads; i++)
+      g_threads.push_back(createThread(benchmark_barrier_sys_thread,NULL,1000000,i));
+    setAffinity(0);
+
+    double t0 = getSeconds();
+    
+    for (size_t i=0; i<g_num_barrier_waits; i++) 
+      g_barrier.wait();
+    
+    double t1 = getSeconds();
+
+    for (size_t i=0; i<g_threads.size(); i++)
+      join(g_threads[i]);
+
+    g_threads.clear();
+
+    printf("%30s ... %f ms (%f k/s)\n","barrier_sys",1000.0f*(t1-t0)/double(g_num_barrier_waits),1E-3*g_num_barrier_waits/(t1-t0));
+    fflush(stdout);
+  }
+
+  void benchmark_barrier_sys_thread2(void* ptr) {
+    g_barrier2.wait();
+  }
+
+  void benchmark_barrier_sys_oversubscribed ()
+  {
+    size_t numThreads = getNumberOfLogicalThreads();
+#if defined (__MIC__)
+    numThreads -= 4;
+#endif
+    g_barrier.init(numThreads);
+    for (size_t i=1; i<numThreads; i++)
+      g_threads.push_back(createThread(benchmark_barrier_sys_thread,NULL,1000000,i));
+    setAffinity(0);
+
+    g_barrier2.init(numThreads+1);
+    for (size_t i=0; i<numThreads; i++)
+      g_threads2.push_back(createThread(benchmark_barrier_sys_thread2,NULL,1000000,i));
+
+    double t0 = getSeconds();
+    
+    for (size_t i=0; i<g_num_barrier_waits; i++) 
+      g_barrier.wait();
+    
+    double t1 = getSeconds();
+
+    for (size_t i=0; i<g_threads.size(); i++)
+      join(g_threads[i]);
+
+    g_barrier2.wait();
+    for (size_t i=0; i<g_threads2.size(); i++)
+      join(g_threads2[i]);
+
+    g_threads.clear();
+    g_threads2.clear();
+
+    printf("%30s ... %f ms (%f k/s)\n","barrier_sys_oversubscribed",1000.0f*(t1-t0)/double(g_num_barrier_waits),1E-3*g_num_barrier_waits/(t1-t0));
+    fflush(stdout);
+  }
+
   RTCRay makeRay(Vec3f org, Vec3f dir) 
   {
     RTCRay ray;
@@ -280,7 +398,7 @@ namespace embree
     double t1 = getSeconds();
 
     printf("%30s ... %f Mrps\n","coherent_intersect1",1E-6*(double)(width*height)/(t1-t0));
-	fflush(stdout);
+    fflush(stdout);
   }
 
   void rtcore_coherent_intersect4(RTCScene scene)
@@ -480,6 +598,10 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
+
+    benchmark_mutex_sys();
+    benchmark_barrier_sys();
+    benchmark_barrier_sys_oversubscribed();
     
     rtcore_intersect_benchmark(RTC_SCENE_STATIC, 501);
 
