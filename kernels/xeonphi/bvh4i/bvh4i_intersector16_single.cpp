@@ -250,7 +250,7 @@ namespace embree
 
 #if defined(__USE_RAY_MASK__)
                     if ( (tri_ptr->mask() & ray16.mask[rayIndex]) == 0 ) {
-                      m_final ^= 1<<vecIndex;
+                      m_final ^= m_tri;
                       continue;
                     }
 #endif
@@ -277,7 +277,7 @@ namespace embree
                       max_dist_xyz = min_dist;
                       break;
                     }
-                    m_final ^= 1<<vecIndex;
+                    m_final ^= m_tri;
 #endif
                   }
                   continue;
