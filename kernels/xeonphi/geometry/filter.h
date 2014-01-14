@@ -143,17 +143,18 @@ namespace embree
   }
 
   __forceinline bool runIntersectionFilter16(const Geometry* const geometry, Ray16& ray, const size_t k,
-                                            const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+                                             const mic_f& u, const mic_f& v, const mic_f& t, const mic_f& Ngx, const mic_f& Ngy, const mic_f& Ngz, const mic_m wmask, 
+                                             const int geomID, const int primID)
   {
     /* temporarily update hit information */
-    const mic_f ray_u = ray.u;           ray.u[k] = u;
-    const mic_f ray_v = ray.v;           ray.v[k] = v;
-    const mic_f ray_tfar = ray.tfar;     ray.tfar[k] = t;
+    const mic_f ray_u = ray.u;           compactustore16f_low(wmask,&ray.u[k],u); 
+    const mic_f ray_v = ray.v;           compactustore16f_low(wmask,&ray.v[k],v); 
+    const mic_f ray_tfar = ray.tfar;     compactustore16f_low(wmask,&ray.tfar[k],t);
     const mic_i ray_geomID = ray.geomID; ray.geomID[k] = geomID;
     const mic_i ray_primID = ray.primID; ray.primID[k] = primID;
-    const mic_f ray_Ng_x = ray.Ng.x;     ray.Ng.x[k] = Ng.x;
-    const mic_f ray_Ng_y = ray.Ng.y;     ray.Ng.y[k] = Ng.y;
-    const mic_f ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
+    const mic_f ray_Ng_x = ray.Ng.x;     compactustore16f_low(wmask,&ray.Ng.x[k],Ngx);
+    const mic_f ray_Ng_y = ray.Ng.y;     compactustore16f_low(wmask,&ray.Ng.y[k],Ngy);
+    const mic_f ray_Ng_z = ray.Ng.z;     compactustore16f_low(wmask,&ray.Ng.z[k],Ngz);
 
     /* invoke filter function */
     const mic_m valid(1 << k);
