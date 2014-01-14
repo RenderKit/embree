@@ -45,6 +45,12 @@ namespace embree
     TASK_FUNCTION(BVH16iBuilder,convertToSOALayoutMB);    
 
     void countLeaves(const size_t index);
+    void convertBVH4iToBVH16i(const BVHNode *const bvh4,
+			      const unsigned int bvh4_ext_min, 
+			      const unsigned int bvh4_ext_max, 
+			      BVH16i::Node *const bvh16,
+			      size_t &index16,
+			      unsigned int &parent_offset);
 
   };
 
