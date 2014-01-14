@@ -24,18 +24,23 @@
 namespace embree
 {
   __forceinline bool runIntersectionFilter1(const Geometry* const geometry, Ray& ray, 
-                                            const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+                                            const mic_f& u, const mic_f& v, const mic_f& t, const mic_f& Ngx, const mic_f& Ngy, const mic_f& Ngz, const mic_m wmask, 
+                                            const int geomID, const int primID)
   {
+ 
+
     /* temporarily update hit information */
     const float  ray_tfar = ray.tfar;
     const Vec3fa ray_Ng   = ray.Ng;
     const Vec3fa ray_uv_ids = *(Vec3fa*)&ray.u;
-    ray.u = u;
-    ray.v = v;
-    ray.tfar = t;
+    compactustore16f_low(wmask,&ray.tfar,t);
+    compactustore16f_low(wmask,&ray.u,u); 
+    compactustore16f_low(wmask,&ray.v,v); 
+    compactustore16f_low(wmask,&ray.Ng.x,Ngx); 
+    compactustore16f_low(wmask,&ray.Ng.y,Ngy); 
+    compactustore16f_low(wmask,&ray.Ng.z,Ngz);
     ray.geomID = geomID;
     ray.primID = primID;
-    ray.Ng = Ng;
 
     /* invoke filter function */
     geometry->filter1((RTCRay&)ray);
@@ -52,17 +57,20 @@ namespace embree
   }
 
   __forceinline bool runOcclusionFilter1(const Geometry* const geometry, Ray& ray, 
-                                         const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+                                         const mic_f& u, const mic_f& v, const mic_f& t, const mic_f& Ngx, const mic_f& Ngy, const mic_f& Ngz, const mic_m wmask, 
+                                         const int geomID, const int primID)
   {
     /* temporarily update hit information */
     const float ray_tfar = ray.tfar;
     const int   ray_geomID = ray.geomID;
-    ray.u = u;
-    ray.v = v;
-    ray.tfar = t;
+    compactustore16f_low(wmask,&ray.tfar,t);
+    compactustore16f_low(wmask,&ray.u,u); 
+    compactustore16f_low(wmask,&ray.v,v); 
+    compactustore16f_low(wmask,&ray.Ng.x,Ngx); 
+    compactustore16f_low(wmask,&ray.Ng.y,Ngy); 
+    compactustore16f_low(wmask,&ray.Ng.z,Ngz);
     ray.geomID = geomID;
     ray.primID = primID;
-    ray.Ng = Ng;
 
     /* invoke filter function */
     geometry->filter1((RTCRay&)ray);
@@ -78,7 +86,7 @@ namespace embree
   }
 
   __forceinline mic_m runIntersectionFilter16(const mic_m& valid, const Geometry* const geometry, Ray16& ray, 
-                                            const mic_f& u, const mic_f& v, const mic_f& t, const mic3f& Ng, const mic_i& geomID, const mic_i& primID)
+                                              const mic_f& u, const mic_f& v, const mic_f& t, const mic3f& Ng, const mic_i& geomID, const mic_i& primID)
   {
     /* temporarily update hit information */
     const mic_f ray_u = ray.u;           store16f(valid,&ray.u,u);
@@ -114,7 +122,7 @@ namespace embree
   }
 
   __forceinline mic_m runOcclusionFilter16(const mic_m& valid, const Geometry* const geometry, Ray16& ray, 
-                                         const mic_f& u, const mic_f& v, const mic_f& t, const mic3f& Ng, const mic_i& geomID, const mic_i& primID)
+                                           const mic_f& u, const mic_f& v, const mic_f& t, const mic3f& Ng, const mic_i& geomID, const mic_i& primID)
   {
     /* temporarily update hit information */
     const mic_f ray_tfar = ray.tfar; 
@@ -179,19 +187,20 @@ namespace embree
   }
 
   __forceinline bool runOcclusionFilter16(const Geometry* const geometry, Ray16& ray, const size_t k,
-                                         const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+                                          const mic_f& u, const mic_f& v, const mic_f& t, const mic_f& Ngx, const mic_f& Ngy, const mic_f& Ngz, const mic_m wmask, 
+                                          const int geomID, const int primID)
   {
     /* temporarily update hit information */
     const mic_f ray_tfar = ray.tfar; 
     const mic_i ray_geomID = ray.geomID;
-    ray.u[k] = u;
-    ray.v[k] = v;
-    ray.tfar[k] = t;
+    compactustore16f_low(wmask,&ray.u[k],u); 
+    compactustore16f_low(wmask,&ray.v[k],v); 
+    compactustore16f_low(wmask,&ray.tfar[k],t);
     ray.geomID[k] = geomID;
     ray.primID[k] = primID;
-    ray.Ng.x[k] = Ng.x;
-    ray.Ng.y[k] = Ng.y;
-    ray.Ng.z[k] = Ng.z;
+    compactustore16f_low(wmask,&ray.Ng.x[k],Ngx);
+    compactustore16f_low(wmask,&ray.Ng.y[k],Ngy);
+    compactustore16f_low(wmask,&ray.Ng.z[k],Ngz);
 
     /* invoke filter function */
     const mic_m valid(1 << k);
