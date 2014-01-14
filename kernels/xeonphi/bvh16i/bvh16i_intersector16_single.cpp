@@ -23,7 +23,7 @@ namespace embree
   namespace isa
   {
 
-    static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
+    static unsigned int TMP_BVH16I_LEAF_MASK = BVH16I_LEAF_MASK; // needed due to compiler efficiency bug
 
     static __align(64) int zlc4[4] = {0xffffffff,0xffffffff,0xffffffff,0};
 
@@ -44,12 +44,14 @@ namespace embree
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
       BVH16i::Node* __restrict__ bvh16 = bvh->node16;
 
-      stack_node[0] = BVH4i::invalidNode;
+      stack_node[0] = BVH16I_TERMINAL_TOKEN;
       
+      NodeRef root = bvh16->child[0];
+
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
         {
-	  stack_node[1] = bvh->root;
+	  stack_node[1] = root;
 	  size_t sindex = 2;
 
 	  const mic_f org_xyz  = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
@@ -59,10 +61,10 @@ namespace embree
 	  const mic3f dir(ray16.dir.x[rayIndex],ray16.dir.y[rayIndex],ray16.dir.z[rayIndex]);
 	  const mic3f rdir = rcp(dir);
 	  const mic3f org_rdir = org * rdir;	  
-	  const mic_f min_dist = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  mic_f       max_dist = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const mic_f tnear = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  mic_f       tfar  = broadcast1to16f(&ray16.tfar[rayIndex]);
 	  
-	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+	  const unsigned int leaf_mask = TMP_BVH16I_LEAF_MASK;
 
 	  while (1)
 	    {
@@ -75,7 +77,7 @@ namespace embree
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;       
 
 		  const BVH16i::Node* __restrict__ const bptr = (BVH16i::Node*)((char*)bvh16 + curNode);
-        
+
 		  const mic_f min_x = bptr->min_x * rdir.x - org_rdir.x;
 		  const mic_f max_x = bptr->max_x * rdir.x - org_rdir.x;
 
@@ -94,8 +96,8 @@ namespace embree
 		  const mic_f nearZ = min(min_z,max_z);
 		  const mic_f farZ  = max(min_z,max_z);
 
-		  const mic_f near16 = max(max(nearX,nearY),max(nearZ,min_dist));
-		  const mic_f far16  = max(max(farX,farY),min(farZ,max_dist));
+		  const mic_f near16 = max(max(nearX,nearY),max(nearZ,tnear));
+		  const mic_f far16  = min(min(farX,farY),min(farZ,tfar));
 
 		  sindex--;
 
@@ -149,20 +151,20 @@ namespace embree
 		  const unsigned int old_sindex = sindex;
 		  sindex += countbits(hiti) - 1;
 		  assert(sindex < 3*BVH4i::maxDepth+1);
-		  const mic_i plower_node = bptr->child;
+		  const mic_i children = bptr->child;
         
 		  const mic_m closest_child = eq(hitm,min_dist,near16);
 		  const unsigned long closest_child_pos = bitscan64(closest_child);
 		  const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
 		  curNode = bptr->child[closest_child_pos];
 		  compactustore16f(m_pos,&stack_dist[old_sindex],near16);
-		  compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
+		  compactustore16i(m_pos,&stack_node[old_sindex],children);
 		}
 	  
 	    
 
 	      /* return if stack is empty */
-	      if (unlikely(curNode == BVH4i::invalidNode)) break;
+	      if (unlikely(curNode == BVH16I_TERMINAL_TOKEN)) break;
 
 
 	      /* intersect one ray against four triangles */
@@ -224,9 +226,9 @@ namespace embree
 	      if (unlikely(none(m_aperture))) continue;
 	      const mic_f t = rcp_den*nom;
 
-	      const mic_m m_final  = lt(lt(m_aperture,min_dist,t),t,max_dist);
+	      const mic_m m_final  = lt(lt(m_aperture,tnear,t),t,tfar);
 
-	      max_dist  = select(m_final,t,max_dist); // FIXME: max_dist 1 16 bc!!!!!!!!!
+	      tfar  = select(m_final,t,tfar); 
 		    
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -234,8 +236,8 @@ namespace embree
 	      /* did the ray hot one of the four triangles? */
 	      if (unlikely(any(m_final)))
 		{
-		  const mic_f min_dist_new = vreduce_min(max_dist);
-		  const mic_m m_dist = eq(min_dist_new,max_dist);
+		  const mic_f min_dist_new = vreduce_min(tfar);
+		  const mic_m m_dist = eq(min_dist_new,tfar);
 
 		  const size_t vecIndex = bitscan(toInt(m_dist));
 		  const size_t triIndex = vecIndex >> 2;
@@ -263,9 +265,9 @@ namespace embree
 		      prefetch<PFHINT_L1EX>(&ray16.geomID);
 		      prefetch<PFHINT_L1EX>(&ray16.primID);
 
-		      max_dist = min_dist_new;
+		      tfar = min_dist_new;
 		  
-		      compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
+		      compactustore16f_low(m_tri,&ray16.tfar[rayIndex],tfar);
 		      compactustore16f_low(m_tri,&ray16.u[rayIndex],u); 
 		      compactustore16f_low(m_tri,&ray16.v[rayIndex],v); 
 		      compactustore16f_low(m_tri,&ray16.Ng.x[rayIndex],gnormalx); 
@@ -284,7 +286,7 @@ namespace embree
 			      const mic_m m_num_stack_low  = toMask(m_num_stack);
 			      const mic_f snear_low  = load16f(stack_dist + 0);
 			      const mic_i snode_low  = load16i((int*)stack_node + 0);
-			      const mic_m m_stack_compact_low  = le(m_num_stack_low,snear_low,max_dist) | (mic_m)1;
+			      const mic_m m_stack_compact_low  = le(m_num_stack_low,snear_low,tfar) | (mic_m)1;
 			      compactustore16f_low(m_stack_compact_low,stack_dist + 0,snear_low);
 			      compactustore16i_low(m_stack_compact_low,(int*)stack_node + 0,snode_low);
 			      sindex = countbits(m_stack_compact_low);
@@ -297,8 +299,8 @@ namespace embree
 			      const mic_f snear_high = load16f(stack_dist + 16);
 			      const mic_i snode_low  = load16i((int*)stack_node + 0);
 			      const mic_i snode_high = load16i((int*)stack_node + 16);
-			      const mic_m m_stack_compact_low  = le(snear_low,max_dist) | (mic_m)1;
-			      const mic_m m_stack_compact_high = le(m_num_stack_high,snear_high,max_dist);
+			      const mic_m m_stack_compact_low  = le(snear_low,tfar) | (mic_m)1;
+			      const mic_m m_stack_compact_high = le(m_num_stack_high,snear_high,tfar);
 			      compactustore16f(m_stack_compact_low,      stack_dist + 0,snear_low);
 			      compactustore16i(m_stack_compact_low,(int*)stack_node + 0,snode_low);
 			      compactustore16f(m_stack_compact_high,      stack_dist + countbits(m_stack_compact_low),snear_high);
@@ -318,9 +320,9 @@ namespace embree
 			      const mic_i snode_0  = load16i((int*)stack_node + 0);
 			      const mic_i snode_16 = load16i((int*)stack_node + 16);
 			      const mic_i snode_32 = load16i((int*)stack_node + 32);
-			      const mic_m m_stack_compact_0  = le(               snear_0 ,max_dist) | (mic_m)1;
-			      const mic_m m_stack_compact_16 = le(               snear_16,max_dist);
-			      const mic_m m_stack_compact_32 = le(m_num_stack_32,snear_32,max_dist);
+			      const mic_m m_stack_compact_0  = le(               snear_0 ,tfar) | (mic_m)1;
+			      const mic_m m_stack_compact_16 = le(               snear_16,tfar);
+			      const mic_m m_stack_compact_32 = le(m_num_stack_32,snear_32,tfar);
 
 			      sindex = 0;
 			      compactustore16f(m_stack_compact_0,      stack_dist + sindex,snear_0);
@@ -354,25 +356,30 @@ namespace embree
       const mic_f inf         = mic_f(pos_inf);
       const mic_f zero        = mic_f::zero();
 
-      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+      BVH16i::Node* __restrict__ bvh16 = bvh->node16;
 
-      stack_node[0] = BVH4i::invalidNode;
+      stack_node[0] = BVH16I_TERMINAL_TOKEN;
+      NodeRef root = bvh16->child[0];
 
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
         {
-	  stack_node[1] = bvh->root;
+	  stack_node[1] = root;
 	  size_t sindex = 2;
 
-	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
-	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 
-	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+	  const mic_f org_xyz  = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const mic_f dir_xyz  = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+
+	  const mic3f org(ray16.org.x[rayIndex],ray16.org.y[rayIndex],ray16.org.z[rayIndex]);
+	  const mic3f dir(ray16.dir.x[rayIndex],ray16.dir.y[rayIndex],ray16.dir.z[rayIndex]);
+	  const mic3f rdir = rcp(dir);
+	  const mic3f org_rdir = org * rdir;	  
+	  const mic_f tnear = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  mic_f       tfar  = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  
+	  const unsigned int leaf_mask = TMP_BVH16I_LEAF_MASK;
 
 	  while (1)
 	    {
@@ -383,31 +390,36 @@ namespace embree
 		{
 		  /* test if this is a leaf node */
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;
-        
-		  const Node* __restrict__ const node = curNode.node(nodes);
-		  const float* __restrict const plower = (float*)node->lower;
-		  const float* __restrict const pupper = (float*)node->upper;
 
-		  prefetch<PFHINT_L1>((char*)node + 0);
-		  prefetch<PFHINT_L1>((char*)node + 64);
+		  const BVH16i::Node* __restrict__ const bptr = (BVH16i::Node*)((char*)bvh16 + curNode);
         
-		  /* intersect single ray with 4 bounding boxes */
-		  const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-		  const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
-		  const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
-		  const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
+		  const mic_f min_x = bptr->min_x * rdir.x - org_rdir.x;
+		  const mic_f max_x = bptr->max_x * rdir.x - org_rdir.x;
 
-		  const Node* __restrict__ const next = curNode.node(nodes);
-		  prefetch<PFHINT_L2>((char*)next + 0);
-		  prefetch<PFHINT_L2>((char*)next + 64);
+		  const mic_f min_y = bptr->min_y * rdir.y - org_rdir.y;
+		  const mic_f max_y = bptr->max_y * rdir.y - org_rdir.y;
+
+		  const mic_f min_z = bptr->min_z * rdir.z - org_rdir.z;
+		  const mic_f max_z = bptr->max_z * rdir.z - org_rdir.z;
+
+		  const mic_f nearX = min(min_x,max_x);
+		  const mic_f farX  = max(min_x,max_x);
+
+		  const mic_f nearY = min(min_y,max_y);
+		  const mic_f farY  = max(min_y,max_y);
+
+		  const mic_f nearZ = min(min_z,max_z);
+		  const mic_f farZ  = max(min_z,max_z);
+
+		  const mic_f near16 = max(max(nearX,nearY),max(nearZ,tnear));
+		  const mic_f far16  = min(min(farX,farY),min(farZ,tfar));
 
 		  sindex--;
-		  const mic_f tNear = vreduce_max4(tLower);
-		  const mic_f tFar  = vreduce_min4(tUpper);  
-		  const mic_m hitm = le(0x8888,tNear,tFar);
-		  const mic_f tNear_pos = select(hitm,tNear,inf);
 
 		  curNode = stack_node[sindex]; // early pop of next node
+
+		  const mic_m hitm = le(near16,far16);
+		  const mic_f tNear_pos = select(hitm,near16,inf);
 
 		  /* if no child is hit, continue with early popped child */
 		  if (unlikely(none(hitm))) continue;
@@ -418,17 +430,17 @@ namespace embree
 		  const unsigned long num_hitm = countbits(hiti); 
         
 		  /* if a single child is hit, continue with that child */
-		  curNode = ((unsigned int *)plower)[pos_first];
+		  curNode = bptr->child[pos_first];
 		  if (likely(num_hitm == 1)) continue;
         
 		  /* if two children are hit, push in correct order */
 		  const unsigned long pos_second = bitscan64(pos_first,hiti);
 		  if (likely(num_hitm == 2))
 		    {
-		      const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
-		      const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
+		      const unsigned int dist_first  = ((unsigned int*)&near16)[pos_first];
+		      const unsigned int dist_second = ((unsigned int*)&near16)[pos_second];
 		      const unsigned int node_first  = curNode;
-		      const unsigned int node_second = ((unsigned int*)plower)[pos_second];
+		      const unsigned int node_second = bptr->child[pos_second];
           
 		      if (dist_first <= dist_second)
 			{
@@ -448,23 +460,23 @@ namespace embree
 		    }
         
 		  /* continue with closest child and push all others */
-		  const mic_f min_dist = set_min_lanes(tNear_pos);
+		  const mic_f min_dist = set_min16(tNear_pos);
 		  const unsigned int old_sindex = sindex;
 		  sindex += countbits(hiti) - 1;
 		  assert(sindex < 3*BVH4i::maxDepth+1);
+		  const mic_i children = bptr->child;
         
-		  const mic_m closest_child = eq(hitm,min_dist,tNear);
+		  const mic_m closest_child = eq(hitm,min_dist,near16);
 		  const unsigned long closest_child_pos = bitscan64(closest_child);
 		  const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
-		  const mic_i plower_node = load16i((int*)plower);
-		  curNode = ((unsigned int*)plower)[closest_child_pos];
-		  compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
+		  curNode = bptr->child[closest_child_pos];
+		  compactustore16i(m_pos,&stack_node[old_sindex],children);        
 		}
 	  
 	    
 
 	      /* return if stack is empty */
-	      if (unlikely(curNode == BVH4i::invalidNode)) break;
+	      if (unlikely(curNode == BVH16I_TERMINAL_TOKEN)) break;
 
 
 	      /* intersect one ray against four triangles */
@@ -523,7 +535,7 @@ namespace embree
 	      const mic_f t = rcp_den*nom;
 	      if (unlikely(none(m_aperture))) continue;
 
-	      const mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
+	      const mic_m m_final  = lt(lt(m_aperture,tnear,t),t,tfar);
 
 	      if (unlikely(any(m_final)))
 		{
@@ -554,8 +566,12 @@ namespace embree
 
       store16i(m_valid & toMask(terminated),&ray16.geomID,0);
     }
+
+    void BVH16iIntersector1::intersect(BVH4i* bvh, Ray& ray) {}
+    void BVH16iIntersector1::occluded (BVH4i* bvh, Ray& ray) {}
     
-    DEFINE_INTERSECTOR16    (BVH16iTriangle1Intersector16SingleMoeller, BVH16iIntersector16Single);
+    DEFINE_INTERSECTOR16   (BVH16iTriangle1Intersector16SingleMoeller, BVH16iIntersector16Single);
+    DEFINE_INTERSECTOR1    (BVH16iTriangle1Intersector1, BVH16iIntersector1);
 
   }
 }

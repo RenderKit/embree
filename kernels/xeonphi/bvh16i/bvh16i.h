@@ -24,12 +24,12 @@ namespace embree
   /*! Multi BVH with 16 children. Each node stores the bounding box of
    * it's 16 children as well as a 16 child indices. */
 
-#define BVH16_INDEX_SHIFT 7
-#define BVH16_LEAF_BIT_SHIFT 5
-#define BVH16_LEAF_MASK     ((unsigned int)1 << BVH16_LEAF_BIT_SHIFT)
-#define BVH16_ITEMS_MASK   (BVH16_LEAF_MASK-1)
-#define BVH16_OFFSET_MASK  (~(BVH16_ITEMS_MASK | BVH16_LEAF_MASK))
-#define BVH16_TERMINAL_TOKEN BVH16_LEAF_MASK
+  //#define BVH16I_INDEX_SHIFT 7
+#define BVH16I_LEAF_BIT_SHIFT 5
+#define BVH16I_LEAF_MASK     ((unsigned int)1 << BVH16I_LEAF_BIT_SHIFT)
+#define BVH16I_ITEMS_MASK   (BVH16I_LEAF_MASK-1)
+#define BVH16I_OFFSET_MASK  (~(BVH16I_ITEMS_MASK | BVH16I_LEAF_MASK))
+#define BVH16I_TERMINAL_TOKEN BVH16I_LEAF_MASK
 
   class BVH16i : public BVH4i
   {
@@ -135,7 +135,7 @@ namespace embree
 	max_y = mic_f(1E14);
 	max_z = mic_f(1E14);
 
-	child = mic_i(BVH16_LEAF_MASK);
+	child = mic_i(BVH16I_LEAF_MASK);
 	data  = mic_i(0);
       }
 

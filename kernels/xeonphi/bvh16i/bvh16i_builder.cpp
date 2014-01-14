@@ -18,7 +18,7 @@
 
 namespace embree
 {
-#define DBG(x) x
+#define DBG(x) 
 
   static mic_i bvh16_node_dist = 0;
 
@@ -33,38 +33,17 @@ namespace embree
     std::cout << "building BVH16i with binned SAH builder (MIC) ... " << std::endl;    
   }
 
-  __forceinline void convertToBVH4Layout(BVHNode *__restrict__ const bptr)
-  {
-    const mic_i box01 = load16i((int*)(bptr + 0));
-    const mic_i box23 = load16i((int*)(bptr + 2));
-
-    const mic_i box_min01 = permute<2,0,2,0>(box01);
-    const mic_i box_max01 = permute<3,1,3,1>(box01);
-
-    const mic_i box_min23 = permute<2,0,2,0>(box23);
-    const mic_i box_max23 = permute<3,1,3,1>(box23);
-    const mic_i box_min0123 = select(0x00ff,box_min01,box_min23);
-    const mic_i box_max0123 = select(0x00ff,box_max01,box_max23);
-
-    const mic_m min_d_mask = bvhLeaf(box_min0123) != mic_i::zero();
-    const mic_i childID    = bvhChildID(box_min0123)>>2;
-    const mic_i min_d_node = qbvhCreateNode(childID,mic_i::zero());
-    const mic_i min_d_leaf = ((box_min0123 ^ BVH_LEAF_MASK)<<1) | QBVH_LEAF_MASK; // * 2 as accel size is 128 bytes now
-    const mic_i min_d      = select(min_d_mask,min_d_leaf,min_d_node);
-    const mic_i bvh4_min   = select(0x7777,box_min0123,min_d);
-    const mic_i bvh4_max   = box_max0123;
-    store16i_nt((int*)(bptr + 0),bvh4_min);
-    store16i_nt((int*)(bptr + 2),bvh4_max);
-  }
-
   void BVH16iBuilder::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
   {
     DBG(PING);
-    //LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );    
-    
+    DBG_PRINT(numPrimitives);
+
     countLeaves(0);
 
-    BVH16i::Node *bvh16 = (BVH16i::Node*)this->prims;
+    //BVH16i::Node *bvh16 = (BVH16i::Node*)this->prims;
+    BVH16i::Node *bvh16 = (BVH16i::Node*)(os_malloc(sizeof(BVH16i::Node)*numPrimitives));
+
+    
     bvh16[0].reset();
     size_t index16 = 1;
     bvh16_node_dist = 0;
@@ -95,8 +74,11 @@ namespace embree
     std::cout << std::endl;
     DBG_PRINT(100.0f * util / (16.0f * total));
     std::cout << std::endl;
-    sleep(1);
-    exit(0);
+
+    ((BVH16i*)bvh)->node16 = bvh16;
+
+    // for bvh4i
+    LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );    
   }
 
   void BVH16iBuilder::countLeaves(const size_t index)
