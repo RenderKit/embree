@@ -24,7 +24,9 @@
 #include "bvh8i/bvh8i.h"
 #include "bvh4mb/bvh4mb.h"
 #else
-#include "../xeonphi/bvh4i/bvh4i.h"
+#include "xeonphi/bvh4i/bvh4i.h"
+#include "xeonphi/bvh4mb/bvh4mb.h"
+#include "xeonphi/bvh16i/bvh16i.h"
 #endif
 
 namespace embree
@@ -36,6 +38,8 @@ namespace embree
   {
     if (g_scene_flags != -1)
       flags = (RTCSceneFlags) g_scene_flags;
+
+    geometries.reserve(128);
 
 #if defined(__MIC__)
 
@@ -73,6 +77,14 @@ namespace embree
 	else if (g_builder == "high_quality" || g_builder == "presplits")
 	  {
 	    accels.accel0 = BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this);
+	  }
+	else if (g_builder == "motionblur" || g_builder == "motion_blur")
+	  {
+	    accels.accel0 = BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this);
+	  }
+	else if (g_builder == "bvh16" || g_builder == "bvh16.sah")
+	  {
+	    accels.accel0 = BVH16i::BVH16iTriangle1ObjectSplitBinnedSAH(this);
 	  }
 	else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
 
@@ -212,9 +224,8 @@ namespace embree
 
   unsigned Scene::add(Geometry* geometry) 
   {
-#if !defined(__MIC__)
     Lock<AtomicMutex> lock(geometriesMutex);
-#endif
+
     if (usedIDs.size()) {
       int id = usedIDs.back(); 
       usedIDs.pop_back();
@@ -228,9 +239,8 @@ namespace embree
   
   void Scene::remove(Geometry* geometry) 
   {
-#if !defined(__MIC__)
     Lock<AtomicMutex> lock(geometriesMutex);
-#endif
+
     usedIDs.push_back(geometry->id);
     geometries[geometry->id] = NULL;
     delete geometry;
@@ -246,9 +256,7 @@ namespace embree
 
   void Scene::build () 
   {
-#if !defined(__MIC__)
     Lock<MutexSys> lock(mutex);
-#endif
 
     if ((isStatic() && isBuild()) || !ready()) {
       recordError(RTC_INVALID_OPERATION);

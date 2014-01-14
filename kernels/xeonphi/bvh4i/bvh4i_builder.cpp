@@ -91,8 +91,8 @@ namespace embree
       prims(NULL), 
       node(NULL), 
       accel(NULL), 
-      size_prims(0)     
-
+      size_prims(0),
+      numNodesToAllocate(BVH4i::N)
   {
     DBG(PING);
   }
@@ -108,10 +108,24 @@ namespace embree
 
   size_t BVH4iBuilder::getNumPrimitives()
   {
-    return source->size();
+    /* count total number of triangles */
+    size_t primitives = 0;       
+    for (size_t i=0;i<scene->size();i++)
+      {
+	if (unlikely(scene->get(i) == NULL)) continue;
+	if (unlikely((scene->get(i)->type != TRIANGLE_MESH))) continue;
+	if (unlikely(!scene->get(i)->isEnabled())) continue;
+	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(i);
+	primitives += mesh->numTriangles;
+      }
+    return primitives;	
+  
   }
 
-  void BVH4iBuilder::allocateMemoryPools(const size_t numPrims, const size_t numNodes)
+  void BVH4iBuilder::allocateMemoryPools(const size_t numPrims, 
+					 const size_t numNodes,
+					 const size_t sizeNodeInBytes,
+					 const size_t sizeAccelInBytes)
   {
     const size_t additional_size = 16 * CACHELINE_SIZE;
 
@@ -132,10 +146,12 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
-    const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeof(BVHNode) + additional_size;
-    const size_t size_accel    = numPrims * sizeof(Triangle1) + additional_size;
+    const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size;
+    const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
+
     numAllocatedNodes = size_node / sizeof(BVHNode);
       
+    DBG(DBG_PRINT(numAllocatedNodes));
     DBG(DBG_PRINT(size_primrefs));
     DBG(DBG_PRINT(size_node));
     DBG(DBG_PRINT(size_accel));
@@ -205,7 +221,7 @@ namespace embree
 #if defined(PROFILE)
 
 	std::cout << "STARTING PROFILE MODE" << std::endl << std::flush;
-	std::cout << "primitives = " << source->size() << std::endl;
+	std::cout << "primitives = " << totalNumPrimitives << std::endl;
 	double dt_min = pos_inf;
 	double dt_avg = 0.0f;
 	double dt_max = neg_inf;
@@ -220,9 +236,9 @@ namespace embree
 	dt_avg /= double(iterations);
 
 	std::cout << "[DONE]" << std::endl;
-	std::cout << "  min = " << 1000.0f*dt_min << "ms (" << source->size()/dt_min*1E-6 << " Mtris/s)" << std::endl;
-	std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << source->size()/dt_avg*1E-6 << " Mtris/s)" << std::endl;
-	std::cout << "  max = " << 1000.0f*dt_max << "ms (" << source->size()/dt_max*1E-6 << " Mtris/s)" << std::endl;
+	std::cout << "  min = " << 1000.0f*dt_min << "ms (" << totalNumPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
+	std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << totalNumPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
+	std::cout << "  max = " << 1000.0f*dt_max << "ms (" << totalNumPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
 	std::cout << BVH4iStatistics(bvh).str();
 
 #else
@@ -312,6 +328,7 @@ namespace embree
 
       for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
       { 			    
+	//DBG_PRINT(currentID);
 	const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(i);
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
@@ -336,6 +353,9 @@ namespace embree
 	store4f(&local_prims[numLocalPrims].upper,bmax);	
 	local_prims[numLocalPrims].lower.a = g;
 	local_prims[numLocalPrims].upper.a = i;
+
+	//DBG_PRINT( local_prims[numLocalPrims] );
+
 	numLocalPrims++;
 	if (unlikely(((size_t)dest % 64) != 0) && numLocalPrims == 1)
 	  {
@@ -371,6 +391,25 @@ namespace embree
     store4f(&bounds.geometry.upper,bounds_scene_max);
 
     global_bounds.extend_atomic(bounds);    
+  }
+
+  __forceinline void reorderBVHNodesOnArea(BVHNode *__restrict__ const bptr)
+  {
+    float node_area[4];
+    size_t valid = 0;
+    for (size_t i=0;i<4;i++) 
+      {
+	node_area[i] = area( bptr[i] );
+	if ( node_area[i] > 0.0f) valid++;
+      }
+    
+    if (valid == 0) return;
+
+    assert( valid >= 2 );
+    for (size_t j=0;j<valid-1;j++)
+      for (size_t i=j+1;i<valid;i++)
+	if ( area( bptr[j] ) > area( bptr[i] ) )
+	  std::swap( bptr[j], bptr[i] );
   }
 
   __forceinline void convertToBVH4Layout(BVHNode *__restrict__ const bptr)
@@ -1128,9 +1167,12 @@ namespace embree
       throw std::runtime_error("ERROR: depth limit reached");
 #endif
     
-    /* create leaf for few primitives */
+    /* create leaf */
     if (current.items() <= BVH4i::N) {
       node[current.parentID].createLeaf(current.begin,current.items());
+#if defined(DEBUG)
+      checkLeafNode(node[current.parentID]);      
+#endif
       return;
     }
 
@@ -1145,7 +1187,7 @@ namespace embree
 
     /* allocate next four nodes */
     size_t numChildren = 4;
-    const size_t currentIndex = alloc.get(BVH4i::N);
+    const size_t currentIndex = alloc.get(numNodesToAllocate);
 
     node[current.parentID].createNode(currentIndex,numChildren);
     
@@ -1228,7 +1270,7 @@ namespace embree
     }
 
     /* allocate next four nodes */
-    const size_t currentIndex = alloc.get(BVH4i::N);
+    const size_t currentIndex = alloc.get(numNodesToAllocate);
     node[current.parentID].createNode(currentIndex,numChildren);
 
     /* init used/unused nodes */
@@ -1246,6 +1288,45 @@ namespace embree
     }
 
   }
+
+  void BVH4iBuilder::checkLeafNode(const BVHNode &entry)
+  {
+    if (!entry.isLeaf())
+      FATAL("no leaf");
+
+    unsigned int accel_entries = entry.items();
+    unsigned int accel_offset  = entry.itemListOfs();
+
+    BBox3f leaf_prim_bounds = empty;
+    for (size_t i=0;i<accel_entries;i++)
+      {
+	leaf_prim_bounds.extend( prims[ accel_offset + i ].lower );
+	leaf_prim_bounds.extend( prims[ accel_offset + i ].upper );
+      }
+
+    BBox3f leaf_tri_bounds = empty;
+    for (size_t i=0;i<accel_entries;i++)
+      {
+	const unsigned int geomID = prims[ accel_offset + i ].geomID();
+	const unsigned int primID = prims[ accel_offset + i ].primID();
+
+	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	const TriangleMeshScene::TriangleMesh::Triangle & tri = mesh->triangle(primID);
+
+	leaf_tri_bounds.extend( mesh->vertex(tri.v[0]) );
+	leaf_tri_bounds.extend( mesh->vertex(tri.v[1]) );
+	leaf_tri_bounds.extend( mesh->vertex(tri.v[2]) );	
+      }
+
+    if (!(subset(leaf_prim_bounds,leaf_tri_bounds) && subset(leaf_tri_bounds,leaf_prim_bounds))) 
+      {
+	DBG_PRINT(leaf_prim_bounds);
+	DBG_PRINT(leaf_tri_bounds);
+	FATAL("check build record");
+      }
+
+  }
+
 
   void BVH4iBuilder::checkBuildRecord(const BuildRecord &current)
   {
@@ -1455,7 +1536,7 @@ namespace embree
     TIMER(msec = getSeconds());
 
     /* allocate and initialize root node */
-    atomicID.reset(BVH4i::N);
+    atomicID.reset(numNodesToAllocate);
     node[0].lower = global_bounds.geometry.lower;
     node[0].upper = global_bounds.geometry.upper;
     
@@ -1493,6 +1574,7 @@ namespace embree
     TIMER(msec = getSeconds());    
     LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
     numNodes = atomicID >> 2;
+    DBG(DBG_PRINT(atomicID));
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
@@ -1501,12 +1583,14 @@ namespace embree
     createAccel(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_createAccel " << 1000. * msec << " ms" << std::endl << std::flush);
+
     
     /* convert to SOA node layout */
     TIMER(msec = getSeconds());     
     convertQBVHLayout(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_convertToSOALayout " << 1000. * msec << " ms" << std::endl << std::flush);
+
     
     /* update BVH4 */
     bvh->root = bvh->qbvh[0].lower[0].child; 

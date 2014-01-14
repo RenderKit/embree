@@ -40,6 +40,7 @@ namespace embree
 
   /*! intersector registration functions */
   DECLARE_SYMBOL(Accel::Intersector1,BVH4iTriangle1Intersector1);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4iTriangle1Intersector1Scalar);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16SingleMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16HybridMoeller);
@@ -53,6 +54,7 @@ namespace embree
 
     /* default target */
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector1);
+    SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector1Scalar);
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16ChunkMoeller);
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16SingleMoeller);
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16HybridMoeller);
@@ -70,7 +72,12 @@ namespace embree
     else if (g_traverser == "hybrid" ) intersectors.intersector16 = BVH4iTriangle1Intersector16HybridMoeller;
     else if (g_traverser == "chunk"  ) intersectors.intersector16 = BVH4iTriangle1Intersector16ChunkMoeller;
     else if (g_traverser == "single" ) intersectors.intersector16 = BVH4iTriangle1Intersector16SingleMoeller;
-    else throw std::runtime_error("unknown builder "+g_traverser+" for BVH4i<Triangle1>");      
+    else if (g_traverser == "scalar" ) 
+      {
+	intersectors.intersector1  = BVH4iTriangle1Intersector1Scalar;
+	intersectors.intersector16 = BVH4iTriangle1Intersector16SingleMoeller;
+      }
+    else throw std::runtime_error("unknown traverser "+g_traverser+" for BVH4i<Triangle1>");      
     return intersectors;
   }
 

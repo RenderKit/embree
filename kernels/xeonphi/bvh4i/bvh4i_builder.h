@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVHI_BUILDER_MIC_H__
-#define __EMBREE_BVHI_BUILDER_MIC_H__
+#ifndef __EMBREE_BVH4I_BUILDER_MIC_H__
+#define __EMBREE_BVH4I_BUILDER_MIC_H__
 
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder_util.h"
@@ -58,9 +58,14 @@ namespace embree
 
   protected:
 
-    void allocateMemoryPools(const size_t numPrims, const size_t numNodes);
+    void allocateMemoryPools(const size_t numPrims, 
+			     const size_t numNodes,
+			     const size_t sizeNodeInBytes  = sizeof(BVHNode),
+			     const size_t sizeAccelInBytes = sizeof(Triangle1));
 
     void checkBuildRecord(const BuildRecord &current);
+    void checkLeafNode(const BVHNode &node);
+
 
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
     TASK_FUNCTION(BVH4iBuilder,fillLocalWorkQueues);
@@ -110,8 +115,9 @@ namespace embree
     void recurseSAH(BuildRecord& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads);
 
   protected:
+    size_t numNodesToAllocate;
     BuildSource* source;          //!< input geometry
-    Scene* scene;               //!< input geometry
+    Scene* scene;                 //!< input geometry
     BVH4i* bvh;                   //!< Output BVH
 
 

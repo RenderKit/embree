@@ -81,7 +81,8 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4i/bvh4i_builder_binner.cpp
   bvh4i/bvh4i_intersector1.cpp   
   bvh4i/bvh4i_intersector4_chunk.cpp   
-
+  bvh4i/bvh4i_intersector1_scalar.cpp   
+ 
   bvh4mb/bvh4mb.cpp
   bvh4mb/bvh4mb_builder.cpp
   bvh4mb/bvh4mb_intersector1.cpp   
@@ -120,6 +121,7 @@ IF (TARGET_AVX)
    bvh4/bvh4_intersector8_hybrid.cpp
 
    bvh4i/bvh4i_intersector1.cpp   
+   bvh4i/bvh4i_intersector1_scalar.cpp   
    bvh4i/bvh4i_intersector4_chunk.cpp   
    bvh4i/bvh4i_intersector8_chunk.cpp   
 
@@ -156,6 +158,7 @@ IF (TARGET_AVX2)
     bvh4i/bvh4i_intersector8_chunk_avx2.cpp  
 
     bvh4i/bvh4i_intersector1.cpp   
+    bvh4i/bvh4i_intersector1_scalar.cpp   
     bvh4i/bvh4i_intersector4_chunk.cpp   
     bvh4i/bvh4i_intersector8_chunk.cpp
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="embree"
 	ProjectGUID="{ED858C9A-C161-4036-8DF7-EB169BCB81BC}"
 	RootNamespace="embree"
@@ -1173,6 +1173,14 @@
 			</File>
 			<File
 				RelativePath=".\bvh4i\bvh4i_intersector1.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4i\bvh4i_intersector1_scalar.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4i\bvh4i_intersector1_scalar.h"
 				>
 			</File>
 			<File

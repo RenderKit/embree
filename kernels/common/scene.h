@@ -44,16 +44,16 @@ namespace embree
     ~Scene ();
 
     /*! Creates new user geometry. */
-    unsigned newUserGeometry (size_t items);
+    unsigned int newUserGeometry (size_t items);
 
     /*! Creates a new scene instance. */
-    unsigned newInstance (Scene* scene);
+    unsigned int newInstance (Scene* scene);
 
     /*! Creates a new triangle mesh. */
-    unsigned newTriangleMesh (RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
+    unsigned int newTriangleMesh (RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new collection of quadratic bezier curves. */
-    unsigned newQuadraticBezierCurves (RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
+    unsigned int newQuadraticBezierCurves (RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
 
     /*! Builds acceleration structure for the scene. */
     void build ();
@@ -68,7 +68,7 @@ namespace embree
     __forceinline size_t size() const { return geometries.size(); }
     
     /* add user geometry to scene */
-    unsigned add (Geometry* geometry);
+    unsigned int add (Geometry* geometry);
     
     /* removes user geometry from scene again */
     void remove(Geometry* geometry);
@@ -80,11 +80,10 @@ namespace embree
     __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i]; }
     __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i]; }
     __forceinline       Geometry* get_locked(size_t i)  { 
-#if !defined(__MIC__)
-      Lock<AtomicMutex> lock(geometriesMutex); 
-#endif
+      Lock<AtomicMutex> lock(geometriesMutex);
+      Geometry *g = geometries[i]; 
       assert(i < geometries.size()); 
-      return geometries[i]; 
+      return g; 
     }
 
     /* get triangle mesh by ID */
@@ -206,7 +205,6 @@ namespace embree
 
     
   public:
-    AtomicMutex geometriesMutex;
     std::vector<int> usedIDs;
     std::vector<Geometry*> geometries; //!< list of all user geometries
     
@@ -219,6 +217,7 @@ namespace embree
     bool needVertices;
     bool is_build;
     MutexSys mutex;
+    AtomicMutex geometriesMutex;
 
   public:
     atomic_t numTriangleMeshes;        //!< number of enabled triangle meshes

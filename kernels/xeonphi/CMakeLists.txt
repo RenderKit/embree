@@ -50,7 +50,19 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   bvh4i/bvh4i_intersector16_hybrid.cpp
   bvh4i/bvh4i_intersector16_virtual.cpp
   bvh4i/bvh4i_intersector1.cpp
+  bvh4i/bvh4i_intersector1_scalar.cpp
   bvh4i/bvh4i_statistics.cpp
+
+  bvh4mb/bvh4mb.cpp
+  bvh4mb/bvh4mb_builder.cpp
+  bvh4mb/bvh4mb_intersector16_chunk.cpp
+  bvh4mb/bvh4mb_intersector16_single.cpp  
+  bvh4mb/bvh4mb_intersector16_hybrid.cpp
+  bvh4mb/bvh4mb_intersector1.cpp
+
+  bvh16i/bvh16i.cpp
+  bvh16i/bvh16i_builder.cpp
+  bvh16i/bvh16i_intersector16_single.cpp  
 )
 
 TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi)
