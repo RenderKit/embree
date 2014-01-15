@@ -387,6 +387,12 @@ namespace embree
     return v;  
   }
 
+  __forceinline mic_f set_min4(mic_f x) {
+    x = min(x,swizzle(x,_MM_SWIZ_REG_BADC));
+    x = min(x,swizzle(x,_MM_SWIZ_REG_CDAB));
+    return x;
+  }
+
   __forceinline mic_f set_min_lanes(mic_f x) {
     x = min(x,_mm512_permute4f128_ps(x, _MM_PERM_CDAB));
     x = min(x,_mm512_permute4f128_ps(x, _MM_PERM_BADC));
@@ -398,6 +404,11 @@ namespace embree
     x = max(x,_mm512_permute4f128_ps(x, _MM_PERM_BADC));
     return x;
   }
+
+  __forceinline mic_f set_min16(mic_f x) {
+    return set_min_lanes(set_min4(x));
+  }
+
 
 
   ////////////////////////////////////////////////////////////////////////////////

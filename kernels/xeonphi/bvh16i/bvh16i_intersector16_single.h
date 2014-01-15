@@ -29,12 +29,25 @@ namespace embree
     {
       /* shortcuts for frequently used types */
       typedef typename BVH4i::NodeRef NodeRef;
-      typedef typename BVH4i::Node Node;
       
     public:
       static void intersect(mic_i* valid, BVH16i* bvh, Ray16& ray);
       static void occluded (mic_i* valid, BVH16i* bvh, Ray16& ray);
+
+
     };
+
+      class BVH16iIntersector1
+    {
+      /* shortcuts for frequently used types */
+      typedef typename BVH4i::NodeRef NodeRef;
+      typedef typename BVH4i::Node Node;
+      
+    public:
+      static void intersect(BVH4i* bvh, Ray& ray);
+      static void occluded (BVH4i* bvh, Ray& ray);
+    };
+
   }
 }
 

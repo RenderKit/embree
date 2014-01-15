@@ -25,6 +25,7 @@ namespace embree
 {
 
   DECLARE_SYMBOL(Accel::Intersector16,BVH16iTriangle1Intersector16SingleMoeller);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH16iTriangle1Intersector1);
 
   void BVH16iRegister () 
   {
@@ -32,6 +33,7 @@ namespace embree
     
     /* default target */
     SELECT_SYMBOL_KNC(features,BVH16iTriangle1Intersector16SingleMoeller);
+    SELECT_SYMBOL_KNC(features,BVH16iTriangle1Intersector1);
   }
 
 
@@ -39,7 +41,7 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1  = NULL; // BVH4iTriangle1Intersector1;
+    intersectors.intersector1  = BVH16iTriangle1Intersector1;
     intersectors.intersector16 = BVH16iTriangle1Intersector16SingleMoeller;
     return intersectors;
   }
