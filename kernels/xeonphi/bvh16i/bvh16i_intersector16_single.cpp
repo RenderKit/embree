@@ -18,6 +18,10 @@
 #include "geometry/triangle1.h"
 #include "bvh16i.h"
 
+
+//#define NEAR_FAR_OPT_INTERSECT
+//#define NEAR_FAR_OPT_OCCLUDED
+
 namespace embree
 {
   namespace isa
@@ -50,6 +54,12 @@ namespace embree
 
       const unsigned int leaf_mask = TMP_BVH16I_LEAF_MASK;
 
+#if defined(NEAR_FAR_OPT_INTERSECT)            
+      const mic_i nearXoffset16 = select(rdir16.x >= 0.0f,mic_i(0),mic_i(sizeof(mic_f)));
+      const mic_i nearYoffset16 = select(rdir16.y >= 0.0f,mic_i(0),mic_i(sizeof(mic_f)));
+      const mic_i nearZoffset16 = select(rdir16.z >= 0.0f,mic_i(0),mic_i(sizeof(mic_f)));
+#endif
+
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
         {
@@ -69,7 +79,16 @@ namespace embree
 	    {
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
-            
+
+#if defined(NEAR_FAR_OPT_INTERSECT)            
+	      const unsigned int nearXoffset0 = nearXoffset16[rayIndex];
+	      const unsigned int nearYoffset0 = nearYoffset16[rayIndex];
+	      const unsigned int nearZoffset0 = nearZoffset16[rayIndex];
+
+	      const unsigned int nearXoffset1 = nearXoffset0 ^ sizeof(mic_f);
+	      const unsigned int nearYoffset1 = nearYoffset0 ^ sizeof(mic_f);
+	      const unsigned int nearZoffset1 = nearZoffset0 ^ sizeof(mic_f);
+#endif
 	      while (1) 
 		{
 		  /* test if this is a leaf node */
@@ -83,8 +102,9 @@ namespace embree
 		  prefetch<PFHINT_L1>(&bptr->max_y);
 		  prefetch<PFHINT_L1>(&bptr->min_z);
 		  prefetch<PFHINT_L1>(&bptr->max_z);
+		  prefetch<PFHINT_L1>(&bptr->child);
 
-
+#if !defined(NEAR_FAR_OPT_INTERSECT)
 		  const mic_f min_x = bptr->min_x * rdir.x - org_rdir.x;
 		  const mic_f max_x = bptr->max_x * rdir.x - org_rdir.x;
 
@@ -103,6 +123,18 @@ namespace embree
 		  const mic_f nearZ = min(min_z,max_z);
 		  const mic_f farZ  = max(min_z,max_z);
 
+#else
+
+		  const mic_f nearX = load16f((float*)((const char*)&bptr->min_x + (size_t)nearXoffset0)) * rdir.x - org_rdir.x;
+		  const mic_f farX  = load16f((float*)((const char*)&bptr->min_x + (size_t)nearXoffset1)) * rdir.x - org_rdir.x;
+
+		  const mic_f nearY = load16f((float*)((const char*)&bptr->min_y + (size_t)nearYoffset0)) * rdir.y - org_rdir.y;
+		  const mic_f farY  = load16f((float*)((const char*)&bptr->min_y + (size_t)nearYoffset1)) * rdir.y - org_rdir.y;
+
+		  const mic_f nearZ = load16f((float*)((const char*)&bptr->min_z + (size_t)nearZoffset0)) * rdir.z - org_rdir.z;
+		  const mic_f farZ  = load16f((float*)((const char*)&bptr->min_z + (size_t)nearZoffset1)) * rdir.z - org_rdir.z;
+		  
+#endif
 		  sindex--;
 		  curNode = stack_node[sindex]; // early pop of next node
 
@@ -114,8 +146,14 @@ namespace embree
 		  const mic_f tNear_pos = select(hitm,near16,inf);
 
 
+		  // const BVH16i::Node* __restrict__ const next = (BVH16i::Node*)((char*)bvh16 + curNode.id());
 
-		  prefetch<PFHINT_L1>(&bptr->child);
+		  // prefetch<PFHINT_L2>(&next->min_x);
+		  // prefetch<PFHINT_L2>(&next->max_x);
+		  // prefetch<PFHINT_L2>(&next->min_y);
+		  // prefetch<PFHINT_L2>(&next->max_y);
+		  // prefetch<PFHINT_L2>(&next->min_z);
+		  // prefetch<PFHINT_L2>(&next->max_z);
 
 		  /* if no child is hit, continue with early popped child */
 		  if (unlikely(none(hitm))) continue;
@@ -171,6 +209,15 @@ namespace embree
 		  curNode = bptr->child[closest_child_pos];
 		  compactustore16f(m_pos,&stack_dist[old_sindex],near16);
 		  compactustore16i(m_pos,&stack_node[old_sindex],children);
+
+#if 1
+		  if (unlikely(((unsigned int*)stack_dist)[sindex-2] < ((unsigned int*)stack_dist)[sindex-1]))
+		    {
+		      std::swap(((unsigned int*)stack_dist)[sindex-2],((unsigned int*)stack_dist)[sindex-1]);
+		      std::swap(((unsigned int*)stack_node)[sindex-2],((unsigned int*)stack_node)[sindex-1]);
+		    }
+#endif
+
 		}
 	  
 	    
@@ -210,7 +257,6 @@ namespace embree
 					     (float*)&tptr[1].v2,
 					     (float*)&tptr[2].v2,
 					     (float*)&tptr[3].v2);
-
 	      const mic_f e1 = v1 - v0;
 	      const mic_f e2 = v0 - v2;	     
 	      const mic_f normal = lcross_zxy(e1,e2);
@@ -364,7 +410,7 @@ namespace embree
       /* setup */
       const mic_m m_valid     = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir16      = rcp_safe(ray16.dir);
-      unsigned int terminated = toInt(!m_valid);
+      mic_m terminated        = !m_valid;
       const mic_f inf         = mic_f(pos_inf);
       const mic_f zero        = mic_f::zero();
 
@@ -373,6 +419,12 @@ namespace embree
 
       stack_node[0] = BVH16I_TERMINAL_TOKEN;
       NodeRef root = bvh16->child[0];
+
+#if defined(NEAR_FAR_OPT_OCCLUDED)            
+      const mic_i nearXoffset16 = select(rdir16.x >= 0.0f,mic_i(0),mic_i(sizeof(mic_f)));
+      const mic_i nearYoffset16 = select(rdir16.y >= 0.0f,mic_i(0),mic_i(sizeof(mic_f)));
+      const mic_i nearZoffset16 = select(rdir16.z >= 0.0f,mic_i(0),mic_i(sizeof(mic_f)));
+#endif
 
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
@@ -390,6 +442,16 @@ namespace embree
 	  mic_f       tfar  = broadcast1to16f(&ray16.tfar[rayIndex]);
 
 	  const unsigned int leaf_mask = TMP_BVH16I_LEAF_MASK;
+
+#if defined(NEAR_FAR_OPT_OCCLUDED)            
+	      const unsigned int nearXoffset0 = nearXoffset16[rayIndex];
+	      const unsigned int nearYoffset0 = nearYoffset16[rayIndex];
+	      const unsigned int nearZoffset0 = nearZoffset16[rayIndex];
+
+	      const unsigned int nearXoffset1 = nearXoffset0 ^ sizeof(mic_f);
+	      const unsigned int nearYoffset1 = nearYoffset0 ^ sizeof(mic_f);
+	      const unsigned int nearZoffset1 = nearZoffset0 ^ sizeof(mic_f);
+#endif
 
 	  while (1)
 	    {
@@ -409,7 +471,9 @@ namespace embree
 		  prefetch<PFHINT_L1>(&bptr->max_y);
 		  prefetch<PFHINT_L1>(&bptr->min_z);
 		  prefetch<PFHINT_L1>(&bptr->max_z);
+		  prefetch<PFHINT_L1>(&bptr->child);
 
+#if !defined(NEAR_FAR_OPT_OCCLUDED)
         
 		  const mic_f min_x = bptr->min_x * rdir.x - org_rdir.x;
 		  const mic_f max_x = bptr->max_x * rdir.x - org_rdir.x;
@@ -429,6 +493,19 @@ namespace embree
 		  const mic_f nearZ = min(min_z,max_z);
 		  const mic_f farZ  = max(min_z,max_z);
 
+#else
+
+		  const mic_f nearX = load16f((float*)((const char*)&bptr->min_x + (size_t)nearXoffset0)) * rdir.x - org_rdir.x;
+		  const mic_f farX  = load16f((float*)((const char*)&bptr->min_x + (size_t)nearXoffset1)) * rdir.x - org_rdir.x;
+
+		  const mic_f nearY = load16f((float*)((const char*)&bptr->min_y + (size_t)nearYoffset0)) * rdir.y - org_rdir.y;
+		  const mic_f farY  = load16f((float*)((const char*)&bptr->min_y + (size_t)nearYoffset1)) * rdir.y - org_rdir.y;
+
+		  const mic_f nearZ = load16f((float*)((const char*)&bptr->min_z + (size_t)nearZoffset0)) * rdir.z - org_rdir.z;
+		  const mic_f farZ  = load16f((float*)((const char*)&bptr->min_z + (size_t)nearZoffset1)) * rdir.z - org_rdir.z;
+		  
+#endif
+
 		  const mic_f near16 = max(max(nearX,nearY),max(nearZ,tnear));
 		  const mic_f far16  = min(min(farX,farY),min(farZ,tfar));
 
@@ -439,10 +516,20 @@ namespace embree
 		  const mic_m hitm = le(near16,far16);
 		  const mic_f tNear_pos = select(hitm,near16,inf);
 
-		  prefetch<PFHINT_L1>(&bptr->child);
+
+		  // const BVH16i::Node* __restrict__ const next = (BVH16i::Node*)((char*)bvh16 + curNode.id());
+
+		  // prefetch<PFHINT_L2>(&next->min_x);
+		  // prefetch<PFHINT_L2>(&next->max_x);
+		  // prefetch<PFHINT_L2>(&next->min_y);
+		  // prefetch<PFHINT_L2>(&next->max_y);
+		  // prefetch<PFHINT_L2>(&next->min_z);
+		  // prefetch<PFHINT_L2>(&next->max_z);
 
 		  /* if no child is hit, continue with early popped child */
 		  if (unlikely(none(hitm))) continue;
+
+
 		  sindex++;
         
 		  const unsigned long hiti = toInt(hitm);
@@ -571,7 +658,7 @@ namespace embree
 #endif
 
 		   {
-		     terminated |= mic_m::shift1[rayIndex];
+		     terminated |= toMask(mic_m::shift1[rayIndex]);
 		     break;
 		   }
 		}
