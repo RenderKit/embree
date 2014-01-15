@@ -48,6 +48,8 @@ namespace embree
       
       NodeRef root = bvh16->child[0];
 
+      const unsigned int leaf_mask = TMP_BVH16I_LEAF_MASK;
+
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
         {
@@ -57,15 +59,12 @@ namespace embree
 	  const mic_f org_xyz  = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const mic_f dir_xyz  = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
 
-	  const mic3f org(ray16.org.x[rayIndex],ray16.org.y[rayIndex],ray16.org.z[rayIndex]);
-	  const mic3f dir(ray16.dir.x[rayIndex],ray16.dir.y[rayIndex],ray16.dir.z[rayIndex]);
-	  const mic3f rdir = rcp(dir);
-	  const mic3f org_rdir = org * rdir;	  
+	  const mic3f rdir(rdir16.x[rayIndex],rdir16.y[rayIndex],rdir16.z[rayIndex]);
+	  const mic3f org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+	  const mic3f org_rdir = rdir * org;	  
 	  const mic_f tnear = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  mic_f       tfar  = broadcast1to16f(&ray16.tfar[rayIndex]);
 	  
-	  const unsigned int leaf_mask = TMP_BVH16I_LEAF_MASK;
-
 	  while (1)
 	    {
 	      NodeRef curNode = stack_node[sindex-1];
@@ -76,7 +75,15 @@ namespace embree
 		  /* test if this is a leaf node */
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;       
 
-		  const BVH16i::Node* __restrict__ const bptr = (BVH16i::Node*)((char*)bvh16 + curNode);
+		  const BVH16i::Node* __restrict__ const bptr = (BVH16i::Node*)((char*)bvh16 + curNode.id());
+
+		  prefetch<PFHINT_L1>(&bptr->min_x);
+		  prefetch<PFHINT_L1>(&bptr->max_x);
+		  prefetch<PFHINT_L1>(&bptr->min_y);
+		  prefetch<PFHINT_L1>(&bptr->max_y);
+		  prefetch<PFHINT_L1>(&bptr->min_z);
+		  prefetch<PFHINT_L1>(&bptr->max_z);
+
 
 		  const mic_f min_x = bptr->min_x * rdir.x - org_rdir.x;
 		  const mic_f max_x = bptr->max_x * rdir.x - org_rdir.x;
@@ -96,18 +103,23 @@ namespace embree
 		  const mic_f nearZ = min(min_z,max_z);
 		  const mic_f farZ  = max(min_z,max_z);
 
+		  sindex--;
+		  curNode = stack_node[sindex]; // early pop of next node
+
 		  const mic_f near16 = max(max(nearX,nearY),max(nearZ,tnear));
 		  const mic_f far16  = min(min(farX,farY),min(farZ,tfar));
 
-		  sindex--;
-
-		  curNode = stack_node[sindex]; // early pop of next node
 
 		  const mic_m hitm = le(near16,far16);
 		  const mic_f tNear_pos = select(hitm,near16,inf);
 
+
+
+		  prefetch<PFHINT_L1>(&bptr->child);
+
 		  /* if no child is hit, continue with early popped child */
 		  if (unlikely(none(hitm))) continue;
+
 		  sindex++;
         
 		  const unsigned long hiti = toInt(hitm);
@@ -368,17 +380,15 @@ namespace embree
 	  stack_node[1] = root;
 	  size_t sindex = 2;
 
-
 	  const mic_f org_xyz  = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const mic_f dir_xyz  = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
 
-	  const mic3f org(ray16.org.x[rayIndex],ray16.org.y[rayIndex],ray16.org.z[rayIndex]);
-	  const mic3f dir(ray16.dir.x[rayIndex],ray16.dir.y[rayIndex],ray16.dir.z[rayIndex]);
-	  const mic3f rdir = rcp(dir);
-	  const mic3f org_rdir = org * rdir;	  
+	  const mic3f rdir(rdir16.x[rayIndex],rdir16.y[rayIndex],rdir16.z[rayIndex]);
+	  const mic3f org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+	  const mic3f org_rdir = rdir * org;	  
 	  const mic_f tnear = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  mic_f       tfar  = broadcast1to16f(&ray16.tfar[rayIndex]);
-	  
+
 	  const unsigned int leaf_mask = TMP_BVH16I_LEAF_MASK;
 
 	  while (1)
@@ -391,7 +401,15 @@ namespace embree
 		  /* test if this is a leaf node */
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;
 
-		  const BVH16i::Node* __restrict__ const bptr = (BVH16i::Node*)((char*)bvh16 + curNode);
+		  const BVH16i::Node* __restrict__ const bptr = (BVH16i::Node*)((char*)bvh16 + curNode.id());
+
+		  prefetch<PFHINT_L1>(&bptr->min_x);
+		  prefetch<PFHINT_L1>(&bptr->max_x);
+		  prefetch<PFHINT_L1>(&bptr->min_y);
+		  prefetch<PFHINT_L1>(&bptr->max_y);
+		  prefetch<PFHINT_L1>(&bptr->min_z);
+		  prefetch<PFHINT_L1>(&bptr->max_z);
+
         
 		  const mic_f min_x = bptr->min_x * rdir.x - org_rdir.x;
 		  const mic_f max_x = bptr->max_x * rdir.x - org_rdir.x;
@@ -420,6 +438,8 @@ namespace embree
 
 		  const mic_m hitm = le(near16,far16);
 		  const mic_f tNear_pos = select(hitm,near16,inf);
+
+		  prefetch<PFHINT_L1>(&bptr->child);
 
 		  /* if no child is hit, continue with early popped child */
 		  if (unlikely(none(hitm))) continue;
