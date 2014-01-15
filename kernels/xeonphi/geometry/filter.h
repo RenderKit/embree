@@ -43,7 +43,7 @@ namespace embree
     ray.primID = primID;
 
     /* invoke filter function */
-    geometry->filter1((RTCRay&)ray);
+    geometry->filter1(geometry->userPtr,(RTCRay&)ray);
     
     /* restore hit if filter not passed */
     if (unlikely(ray.geomID == -1)) 
@@ -73,7 +73,7 @@ namespace embree
     ray.primID = primID;
 
     /* invoke filter function */
-    geometry->filter1((RTCRay&)ray);
+    geometry->filter1(geometry->userPtr,(RTCRay&)ray);
     
     /* restore hit if filter not passed */
     if (unlikely(ray.geomID == -1)) 
@@ -101,8 +101,8 @@ namespace embree
     /* invoke filter function */
     RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->filter16;
     ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->ispcFilter16;
-    if (ispcFilter16) ispcFilter16((RTCRay16&)ray,valid);
-    else filter16(&valid,(RTCRay16&)ray);
+    if (ispcFilter16) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
+    else filter16(&valid,geometry->userPtr,(RTCRay16&)ray);
     const mic_m valid_failed = valid & (ray.geomID == mic_i(-1));
     const mic_m valid_passed = valid & (ray.geomID != mic_i(-1));
 
@@ -139,8 +139,8 @@ namespace embree
     /* invoke filter function */
     RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->filter16;
     ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->ispcFilter16;
-    if (ispcFilter16) ispcFilter16((RTCRay16&)ray,valid);
-    else filter16(&valid,(RTCRay16&)ray);
+    if (ispcFilter16) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
+    else filter16(&valid,geometry->userPtr,(RTCRay16&)ray);
     const mic_m valid_failed = valid & (ray.geomID == mic_i(-1));
     const mic_m valid_passed = valid & (ray.geomID != mic_i(-1));
 
@@ -168,8 +168,8 @@ namespace embree
     const mic_m valid(1 << k);
     RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->filter16;
     ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->ispcFilter16;
-    if (ispcFilter16) ispcFilter16((RTCRay16&)ray,valid);
-    else filter16(&valid,(RTCRay16&)ray);
+    if (ispcFilter16) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
+    else filter16(&valid,geometry->userPtr,(RTCRay16&)ray);
     const bool passed = ray.geomID[k] != -1;
 
     /* restore hit if filter not passed */
@@ -206,8 +206,8 @@ namespace embree
     const mic_m valid(1 << k);
     RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->filter16;
     ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->ispcFilter16;
-    if (ispcFilter16) ispcFilter16((RTCRay16&)ray,valid);
-    else filter16(&valid,(RTCRay16&)ray);
+    if (ispcFilter16) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
+    else filter16(&valid,geometry->userPtr,(RTCRay16&)ray);
     const bool passed = ray.geomID[k] != -1;
 
     /* restore hit if filter not passed */

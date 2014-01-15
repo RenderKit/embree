@@ -47,6 +47,7 @@ namespace embree
       bool verify ();
       void* map(RTCBufferType type);
       void unmap(RTCBufferType type);
+      void setUserData (void* ptr, bool ispc);
 
       void enabling();
       void disabling();

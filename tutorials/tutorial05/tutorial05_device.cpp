@@ -24,7 +24,7 @@ Vec3f* colors = NULL;
 renderPixelFunc renderPixel;
 
 /* intersection filter function */
-void intersectionFilter(RTCRay& ray)
+void intersectionFilter(void* ptr, RTCRay& ray)
 {
   Vec3f h = add(ray.org,mul(ray.dir,ray.tfar));
   float v = sin(4.0f*h.x)*cos(4.0f*h.y)*sin(4.0f*h.z);

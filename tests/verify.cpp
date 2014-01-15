@@ -1164,13 +1164,13 @@ namespace embree
 	fflush(stdout);
   }
 
-  void intersectionFilter1(RTCRay& ray) 
+  void intersectionFilter1(void* ptr, RTCRay& ray) 
   {
     if (ray.primID & 2) 
       ray.geomID = -1;
   }
 
-  void intersectionFilter4(const void* valid_i, RTCRay4& ray) 
+  void intersectionFilter4(const void* valid_i, void* ptr, RTCRay4& ray) 
   {
     int* valid = (int*)valid_i;
     for (size_t i=0; i<4; i++)
@@ -1179,7 +1179,7 @@ namespace embree
           ray.geomID[i] = -1;
   }
 
-  void intersectionFilter8(const void* valid_i, RTCRay8& ray) 
+  void intersectionFilter8(const void* valid_i, void* ptr, RTCRay8& ray) 
   {
     int* valid = (int*)valid_i;
     for (size_t i=0; i<8; i++)
@@ -1188,7 +1188,7 @@ namespace embree
           ray.geomID[i] = -1;
   }
 
-  void intersectionFilter16(const void* valid_i, RTCRay16& ray) 
+  void intersectionFilter16(const void* valid_i, void* ptr, RTCRay16& ray) 
   {
     int* valid = (int*)valid_i;
     for (size_t i=0; i<16; i++)

@@ -21,7 +21,8 @@ namespace embree
 {
   Geometry::Geometry (Scene* parent, GeometryTy type, size_t numPrimitives, RTCGeometryFlags flags) 
     : parent(parent), type(type), numPrimitives(numPrimitives), id(0), flags(flags), state(ENABLING),
-      filter1(NULL), filter4(NULL), filter8(NULL), filter16(NULL), ispcFilter4(NULL), ispcFilter8(NULL), ispcFilter16(NULL)
+      filter1(NULL), filter4(NULL), filter8(NULL), filter16(NULL), ispcFilter4(NULL), ispcFilter8(NULL), ispcFilter16(NULL),
+      userPtr(NULL)
   {
     id = parent->add(this);
   }

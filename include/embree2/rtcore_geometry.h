@@ -47,18 +47,22 @@ enum RTCGeometryFlags
 };
 
 /*! Intersection filter function for single rays. */
-typedef void (*RTCFilterFunc)(RTCRay& ray           /*!< intersection to filter */);
+typedef void (*RTCFilterFunc)(void* ptr,           /*!< pointer to user data */
+                              RTCRay& ray          /*!< intersection to filter */);
 
 /*! Intersection filter function for ray packets of size 4. */
 typedef void (*RTCFilterFunc4)(const void* valid,  /*!< pointer to valid mask */
-                               RTCRay4& ray       /*!< intersection to filter */);
+                               void* ptr,          /*!< pointer to user data */
+                               RTCRay4& ray        /*!< intersection to filter */);
 
 /*! Intersection filter function for ray packets of size 8. */
 typedef void (*RTCFilterFunc8)(const void* valid,  /*!< pointer to valid mask */
+                               void* ptr,          /*!< pointer to user data */
                                RTCRay8& ray        /*!< intersection to filter */);
 
 /*! Intersection filter function for ray packets of size 16. */
 typedef void (*RTCFilterFunc16)(const void* valid, /*!< pointer to valid mask */
+                                void* ptr,         /*!< pointer to user data */
                                 RTCRay16& ray      /*!< intersection to filter */);
 
 /*! \brief Creates a new scene instance. 

@@ -47,10 +47,12 @@ enum RTCGeometryFlags
 };
 
 /*! Intersection filter function for uniform rays. */
-typedef void (*RTCFilterFuncUniform)(uniform RTCRay1& ray  /*!< intersection to filter */);
+typedef void (*RTCFilterFuncUniform)(void* uniform ptr,    /*!< pointer to user data */
+                                     uniform RTCRay1& ray  /*!< intersection to filter */);
 
 /*! Intersection filter function for varying rays. */
-typedef void (*RTCFilterFuncVarying)(varying RTCRay& ray  /*!< intersection to filter */);
+typedef void (*RTCFilterFuncVarying)(void* uniform ptr,   /*!< pointer to user data */
+                                     varying RTCRay& ray  /*!< intersection to filter */);
 
 /*! \brief Creates a new scene instance. 
 

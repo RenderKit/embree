@@ -192,6 +192,10 @@ namespace embree
     }
   }
 
+  void TriangleMeshScene::TriangleMesh::setUserData (void* ptr, bool ispc) {
+    userPtr = ptr;
+  }
+
   void TriangleMeshScene::TriangleMesh::immutable () 
   {
     built = true;
