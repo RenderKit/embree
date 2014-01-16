@@ -93,6 +93,7 @@ namespace embree
 		{
 		  /* test if this is a leaf node */
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;       
+		  STAT3(normal.trav_nodes,1,1,1);
 
 		  const BVH16i::Node* __restrict__ const bptr = (BVH16i::Node*)((char*)bvh16 + curNode.id());
 
@@ -225,6 +226,9 @@ namespace embree
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH16I_TERMINAL_TOKEN)) break;
 
+	      STAT3(normal.trav_leaves,1,1,1);
+	      STAT3(normal.trav_prims,4,4,4);
+
 
 	      /* intersect one ray against four triangles */
 
@@ -294,6 +298,8 @@ namespace embree
 	      /* did the ray hot one of the four triangles? */
 	      if (unlikely(any(m_final)))
 		{
+		  STAT3(normal.trav_prim_hits,1,1,1);
+
 		  const mic_f min_dist_new = vreduce_min(tfar);
 		  const mic_m m_dist = eq(min_dist_new,tfar);
 
@@ -462,6 +468,7 @@ namespace embree
 		{
 		  /* test if this is a leaf node */
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;
+		  STAT3(shadow.trav_nodes,1,1,1);
 
 		  const BVH16i::Node* __restrict__ const bptr = (BVH16i::Node*)((char*)bvh16 + curNode.id());
 
@@ -585,6 +592,8 @@ namespace embree
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH16I_TERMINAL_TOKEN)) break;
 
+	      STAT3(shadow.trav_leaves,1,1,1);
+	      STAT3(shadow.trav_prims,4,4,4);
 
 	      /* intersect one ray against four triangles */
 
@@ -658,6 +667,7 @@ namespace embree
 #endif
 
 		   {
+		     STAT3(shadow.trav_prim_hits,1,1,1);
 		     terminated |= toMask(mic_m::shift1[rayIndex]);
 		     break;
 		   }

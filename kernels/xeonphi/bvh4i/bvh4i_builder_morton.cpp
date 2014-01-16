@@ -24,9 +24,6 @@
 
 #define PROFILE_ITERATIONS 200
 
-#if defined(__USE_STAT_COUNTERS__)
-#define PROFILE
-#endif
 #define TIMER(x) 
 #define DBG(x) 
 
@@ -166,7 +163,7 @@ namespace embree
     initEncodingAllocateData(TaskScheduler::getNumThreads());
 
 #if defined(PROFILE)
-    size_t numTotalPrimitives = getNumPrimitives();
+    size_t numTotalPrimitives = numPrimitives;
     std::cout << "STARTING PROFILE MODE" << std::endl << std::flush;
     std::cout << "primitives = " << numTotalPrimitives << std::endl;
 

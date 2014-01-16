@@ -70,6 +70,7 @@ namespace embree
 		{
 		  /* test if this is a leaf node */
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;
+		  STAT3(normal.trav_nodes,1,1,1);
         
 		  const Node* __restrict__ const node = curNode.node(nodes);
 		  const float* __restrict const plower = (float*)node->lower;
@@ -158,6 +159,8 @@ namespace embree
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
+	      STAT3(normal.trav_leaves,1,1,1);
+	      STAT3(normal.trav_prims,4,4,4);
 
 	      /* intersect one ray against four triangles */
 
@@ -228,6 +231,8 @@ namespace embree
 	      /* did the ray hot one of the four triangles? */
 	      if (unlikely(any(m_final)))
 		{
+		  STAT3(normal.trav_prim_hits,1,1,1);
+
 		  const mic_f min_dist = vreduce_min(max_dist_xyz);
 		  const mic_m m_dist = eq(min_dist,max_dist_xyz);
 
@@ -377,7 +382,8 @@ namespace embree
 		{
 		  /* test if this is a leaf node */
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;
-        
+		  STAT3(shadow.trav_nodes,1,1,1);
+
 		  const Node* __restrict__ const node = curNode.node(nodes);
 		  const float* __restrict const plower = (float*)node->lower;
 		  const float* __restrict const pupper = (float*)node->upper;
@@ -460,6 +466,8 @@ namespace embree
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
+	      STAT3(shadow.trav_leaves,1,1,1);
+	      STAT3(shadow.trav_prims,4,4,4);
 
 	      /* intersect one ray against four triangles */
 
@@ -533,6 +541,7 @@ namespace embree
 #endif
 
 		   {
+		     STAT3(shadow.trav_prim_hits,1,1,1);
 		     terminated |= mic_m::shift1[rayIndex];
 		     break;
 		   }
