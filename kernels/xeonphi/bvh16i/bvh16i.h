@@ -98,7 +98,7 @@ namespace embree
 	return node;
       }
 
-      __forceinline mic_f area()
+      __forceinline mic_f area() const
       {
 	const mic_f x = max_x - min_x;
 	const mic_f y = max_y - min_y;
@@ -155,6 +155,40 @@ namespace embree
 	data  = mic_i(b);
       }
 
+      __forceinline void swap(const size_t index0,const size_t index1)
+      {
+	std::swap(min_x[index0],min_x[index1]);
+	std::swap(min_y[index0],min_y[index1]);
+	std::swap(min_z[index0],min_z[index1]);
+
+	std::swap(max_x[index0],max_x[index1]);
+	std::swap(max_y[index0],max_y[index1]);
+	std::swap(max_z[index0],max_z[index1]);
+
+	std::swap(child[index0],child[index1]);
+	std::swap(data[index0] ,data[index1]);
+      }
+
+      __forceinline void reorderNodesOnArea()
+      {
+	mic_f node_area = area();
+	size_t valid = 0;
+	for (size_t i=0;i<16;i++) 
+	  if ( node_area[i] > 0.0f) valid++;
+    
+	if (valid == 0) return;
+
+	assert( valid >= 2 );
+	for (size_t j=0;j<valid-1;j++)
+	  for (size_t i=j+1;i<valid;i++)
+	    if ( node_area[j] > node_area[i] )
+	      {
+		swap( j, i );
+		std::swap(node_area[j],node_area[i]);
+	      }
+      }
+
+
     };
 
 
@@ -187,6 +221,7 @@ namespace embree
 
       o << "child " << v.child << std::endl;
       o << "data " << v.data << std::endl;
+      o << "area " << v.area() << std::endl;
 
       return o;
     }

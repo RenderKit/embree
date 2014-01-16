@@ -57,6 +57,11 @@ namespace embree
         
     DBG_PRINT(numPrimitives * sizeof(BVHNode) / sizeof(BVH16i::Node));
 
+    // for (size_t i=0;i<index16;i++)
+    //    {
+    //  	bvh16[i].reorderNodesOnArea();
+    //    }
+
     const size_t sizeBVH16i = index16 * sizeof(BVH16i::Node);
 
     DBG_PRINT(index16);

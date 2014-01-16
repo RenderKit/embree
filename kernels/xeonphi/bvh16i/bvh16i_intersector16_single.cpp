@@ -22,6 +22,29 @@
 //#define NEAR_FAR_OPT_INTERSECT
 //#define NEAR_FAR_OPT_OCCLUDED
 
+__forceinline void sort(void * stack_dist,
+			void * stack_node,
+			const size_t sindex0,
+			const size_t sindex1)
+{
+  if (unlikely(((unsigned int*)stack_dist)[sindex1] < ((unsigned int*)stack_dist)[sindex0]))
+    {
+      std::swap(((unsigned int*)stack_dist)[sindex1],((unsigned int*)stack_dist)[sindex0]);
+      std::swap(((unsigned int*)stack_node)[sindex1],((unsigned int*)stack_node)[sindex0]);
+    }
+ 
+}
+
+		  // const BVH16i::Node* __restrict__ const next = (BVH16i::Node*)((char*)bvh16 + curNode.id());
+
+		  // prefetch<PFHINT_L2>(&next->min_x);
+		  // prefetch<PFHINT_L2>(&next->max_x);
+		  // prefetch<PFHINT_L2>(&next->min_y);
+		  // prefetch<PFHINT_L2>(&next->max_y);
+		  // prefetch<PFHINT_L2>(&next->min_z);
+		  // prefetch<PFHINT_L2>(&next->max_z);
+		  // prefetch<PFHINT_L2>(&next->child);
+			
 namespace embree
 {
   namespace isa
@@ -146,16 +169,6 @@ namespace embree
 		  const mic_m hitm = le(near16,far16);
 		  const mic_f tNear_pos = select(hitm,near16,inf);
 
-
-		  // const BVH16i::Node* __restrict__ const next = (BVH16i::Node*)((char*)bvh16 + curNode.id());
-
-		  // prefetch<PFHINT_L2>(&next->min_x);
-		  // prefetch<PFHINT_L2>(&next->max_x);
-		  // prefetch<PFHINT_L2>(&next->min_y);
-		  // prefetch<PFHINT_L2>(&next->max_y);
-		  // prefetch<PFHINT_L2>(&next->min_z);
-		  // prefetch<PFHINT_L2>(&next->max_z);
-
 		  STAT3(normal.trav_hit_boxes[countbits(hitm)],1,1,1);
 
 		  /* if no child is hit, continue with early popped child */
@@ -198,9 +211,29 @@ namespace embree
 			  continue;
 			}
 		    }
-        
+#if 0
+		  else if (likely(num_hitm <= 4))
+		    {
+		      const unsigned int old_sindex = sindex;
+		      compactustore16f(hitm,&stack_dist[old_sindex],near16);
+		      const mic_i children = bptr->child;
+		      compactustore16i(hitm,&stack_node[old_sindex],children);
+		      sindex += num_hitm;
+
+		      sort(stack_dist,stack_node,sindex-4,sindex-3);
+		      sort(stack_dist,stack_node,sindex-2,sindex-1);
+		      sort(stack_dist,stack_node,sindex-3,sindex-1);
+		      curNode = stack_node[sindex-1];
+		      sindex--;
+		      continue;
+		    }
+#endif
+
+
+
 		  /* continue with closest child and push all others */
 		  const mic_f min_dist = set_min16(tNear_pos);
+
 		  const unsigned int old_sindex = sindex;
 		  sindex += countbits(hiti) - 1;
 		  assert(sindex < 3*BVH4i::maxDepth+1);
@@ -213,13 +246,11 @@ namespace embree
 		  compactustore16f(m_pos,&stack_dist[old_sindex],near16);
 		  compactustore16i(m_pos,&stack_node[old_sindex],children);
 
-#if 1
 		  if (unlikely(((unsigned int*)stack_dist)[sindex-2] < ((unsigned int*)stack_dist)[sindex-1]))
 		    {
 		      std::swap(((unsigned int*)stack_dist)[sindex-2],((unsigned int*)stack_dist)[sindex-1]);
 		      std::swap(((unsigned int*)stack_node)[sindex-2],((unsigned int*)stack_node)[sindex-1]);
 		    }
-#endif
 
 		}
 	  
@@ -576,10 +607,21 @@ namespace embree
 			  assert(sindex < 3*BVH4i::maxDepth+1);
 			  continue;
 			}
+		    }        
+#if 1
+		    {
+		      const unsigned int old_sindex = sindex;
+		      const mic_i children = bptr->child;
+		      compactustore16i(hitm,&stack_node[old_sindex],children);
+		      sindex += num_hitm-1;
+		      curNode = stack_node[sindex];
+		      continue;
 		    }
-        
+#else
+
 		  /* continue with closest child and push all others */
 		  const mic_f min_dist = set_min16(tNear_pos);
+
 		  const unsigned int old_sindex = sindex;
 		  sindex += countbits(hiti) - 1;
 		  assert(sindex < 3*BVH4i::maxDepth+1);
@@ -590,6 +632,7 @@ namespace embree
 		  const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
 		  curNode = bptr->child[closest_child_pos];
 		  compactustore16i(m_pos,&stack_node[old_sindex],children);        
+#endif
 		}
 	  
 	    
