@@ -266,10 +266,11 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
 {
   int seed = x*233+y*234234+237;
   Vec3f L = make_Vec3f(0.0f,0.0f,0.0f);
-  for (uniform int i=0; i<1; i++) {
+  //for (uniform int i=0; i<16; i++) {
     L = add(L,renderPixelSeed(x,y,seed,vx,vy,vz,p));
-  }
-  return mul(L,1.0f/1.0f);
+  //}
+  //L = mul(L,1.0f/16.0f);
+  return L;
 }
   
 /* task that renders a single screen tile */
