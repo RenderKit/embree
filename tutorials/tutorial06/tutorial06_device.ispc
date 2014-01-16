@@ -204,7 +204,7 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const un
       L = add(L,mul(Lw,La));
       break;
     }
-    
+        
     /* shade all rays that hit something */
 #if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
     int materialID = g_ispc_scene->meshes[ray.geomID]->triangles[ray.primID].materialID; 

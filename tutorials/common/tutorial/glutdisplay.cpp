@@ -186,7 +186,7 @@ namespace embree
            pixel2world.l.vz,
            pixel2world.p);
     double dt0 = getSeconds()-t0;
-    
+
     /* draw pixels to screen */
     int* pixels = map();
     glRasterPos2i(-1, 1);
