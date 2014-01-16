@@ -63,6 +63,10 @@ __forceinline Vec3f add(const Vec3f& a, const Vec3f& b) { return a+b; }
 __forceinline Vec3f sub(const Vec3f& a, const Vec3f& b) { return a-b; }
 __forceinline Vec3f add(const Vec3f& a, const Vec3f& b, const Vec3f& c) { return a+b+c; }
 
+__forceinline Vec3f mul(const LinearSpace3<Vec3f>& a, const Vec3f& b) { return b.x*a.vx + b.y*a.vy + b.z*a.vz; }
+
+__forceinline Vec3f div(const Vec3f& a, const float& b) { return a/b; }
+
 /* parallel invokation of renderTile function */
 void launch_renderTile (int numTiles, 
                         int* pixels, const int width, const int height, const float time, 

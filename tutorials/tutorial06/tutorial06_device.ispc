@@ -120,9 +120,9 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 /*! Cosine weighted hemisphere sampling. Up direction is the z direction. */
 inline Vec3f cosineSampleHemisphere(float& pdf, const float u, const float v) 
 {
-  const float phi = 2.0f * pi * u;
+  const float phi = 2.0f * (float)pi * u;
   const float cosTheta = sqrt(v), sinTheta = sqrt(1.0f - v);
-  pdf = cosTheta*(1.0f/pi);
+  pdf = cosTheta*(1.0f/(float)pi);
   return make_Vec3f(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
 }
 
@@ -149,7 +149,7 @@ inline Vec3f Matte__eval(const int& materialID, const Vec3f& wo, const Vec3f& Ns
 {
   uniform ISPCMaterial* material = &g_ispc_scene->materials[materialID];
   Vec3f diffuse = material->Kd;
-  return mul(diffuse, (1.0f/pi) * clamp(dot(wi,Ns),0.0f,1.0f));
+  return mul(diffuse, (1.0f/(float)pi) * clamp(dot(wi,Ns),0.0f,1.0f));
 }
 
 inline Vec3f Matte__sample(const int& materialID, const Vec3f& wo, const Vec3f& Ns, Vec3f& wi, const Vec2f& s) 

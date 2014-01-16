@@ -2,7 +2,7 @@
 
 echo Converting ISPC tutorial $1 to CPP tutorial $2
 cp $1 $2
-sed -i .backup  's/.isph/.h/g' $2
+sed -i .backup  's/.isph\"/.h\"/g' $2
 sed -i .backup  's/RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
 sed -i .backup  's/uniform //g' $2
 sed -i .backup  's/ uniform//g' $2

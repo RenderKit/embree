@@ -63,6 +63,9 @@ RTCScene g_scene = NULL;
 /* render function to use */
 renderPixelFunc renderPixel;
 
+/* light */
+Vec3f AmbientLight__L;
+
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
 {
@@ -71,6 +74,9 @@ extern "C" void device_init (int8* cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
+
+  /* set light */
+  AmbientLight__L = Vec3f(1,1,1);
 }
 
 RTCScene convertScene(ISPCScene* scene_in)
@@ -111,9 +117,64 @@ RTCScene convertScene(ISPCScene* scene_in)
   return scene_out;
 }
 
-/* task that renders a single screen tile */
-Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+/*! Cosine weighted hemisphere sampling. Up direction is the z direction. */
+inline Vec3f cosineSampleHemisphere(float& pdf, const float u, const float v) 
 {
+  const float phi = 2.0f * (float)pi * u;
+  const float cosTheta = sqrt(v), sinTheta = sqrt(1.0f - v);
+  pdf = cosTheta*(1.0f/(float)pi);
+  return Vec3f(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+}
+
+/*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
+inline Vec3f cosineSampleHemisphere(float& pdf, const float& u, const float& v, const Vec3f& N) {
+  return mul(frame(N),cosineSampleHemisphere(pdf,u,v));
+}
+
+inline Vec3f AmbientLight__eval(const Vec3f& Ns, const Vec3f& wi) {
+  return AmbientLight__L;
+}
+
+inline Vec3f AmbientLight__sample(const Vec3f& Ns, 
+                                  Vec3f& wi,
+                                  float& tMax,
+                                  const Vec2f& s) 
+{
+  float pdf; wi = cosineSampleHemisphere(pdf,s.x,s.y,Ns);
+  tMax = 1e20f;
+  return div(AmbientLight__L,pdf);
+}
+
+inline Vec3f Matte__eval(const int& materialID, const Vec3f& wo, const Vec3f& Ns, const Vec3f& wi) 
+{
+  ISPCMaterial* material = &g_ispc_scene->materials[materialID];
+  Vec3f diffuse = material->Kd;
+  return mul(diffuse, (1.0f/(float)pi) * clamp(dot(wi,Ns),0.0f,1.0f));
+}
+
+inline Vec3f Matte__sample(const int& materialID, const Vec3f& wo, const Vec3f& Ns, Vec3f& wi, const Vec2f& s) 
+{
+  float pdf; wi = cosineSampleHemisphere(pdf,s.x,s.y,Ns);
+  return div(Matte__eval(materialID, wo, Ns, wi),pdf);
+}
+
+inline float frand(int& seed) {
+  seed = 1103515245 * seed + 12345;
+  seed = 235543534 * seed + 2341233;
+  seed = 43565 * seed + 2332443;
+  return (seed & 0xFFFF)/(float)0xFFFF;
+}
+
+inline Vec3f face_forward(Vec3f dir, Vec3f Ng) {
+  return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
+}
+
+Vec3f renderPixelSeed(int x, int y, int& seed, const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p)
+{
+  /* radiance accumulator and weight */
+  Vec3f L = Vec3f(0.0f);
+  Vec3f Lw = Vec3f(1.0f);
+
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
@@ -124,34 +185,94 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   ray.primID = -1;
   ray.mask = -1;
   ray.time = 0;
-  
-  /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
-  
-  /* shade background black */
-  if (ray.geomID == -1) return Vec3f(0.0f);
-  
-  /* shade all rays that hit something */
-  Vec3f color = Vec3f(0.0f);
+
+  /* iterative path tracer loop */
+  for (int i=0; i<10; i++)
+  {
+    /* terminate if contribution too low */
+    if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
+      break;
+
+    /* intersect ray with scene */ 
+    rtcIntersect(g_scene,ray);
+    Vec3f Ns = face_forward(ray.dir,normalize(ray.Ng));
+    Vec3f Ph = add(ray.org,mul(ray.tfar,ray.dir));
+
+    /* shade background with ambient light */
+    if (ray.geomID == -1) {
+      Vec3f La = AmbientLight__eval(Ns,neg(ray.dir));
+      L = add(L,mul(Lw,La));
+      break;
+    }
+    
+    /* shade all rays that hit something */
 #if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
-  int materialID = g_ispc_scene->meshes[ray.geomID]->triangles[ray.primID].materialID; 
+    int materialID = g_ispc_scene->meshes[ray.geomID]->triangles[ray.primID].materialID; 
 #else
-  int materialID = 0;
-  foreach_unique (geomID in ray.geomID) {
-    ISPCMesh* mesh = g_ispc_scene->meshes[geomID];
-    materialID = mesh->triangles[ray.primID].materialID;
-  }
+    int materialID = 0;
+    foreach_unique (geomID in ray.geomID) {
+      if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
+        ISPCMesh* mesh = g_ispc_scene->meshes[geomID];
+        materialID = mesh->triangles[ray.primID].materialID;
+      }
+    }
 #endif
-  ISPCMaterial* material = &g_ispc_scene->materials[materialID];
-  color = material->Kd;
-  
-  /* apply ambient light */
-  Vec3f Ng = normalize(ray.Ng);
-  Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
-  color = mul(color,abs(dot(ray.dir,Ng)));    
-  return color;
+
+    /* sample ambient light */
+    Vec3f wi; float tMax;
+    Vec2f s = Vec2f(frand(seed),frand(seed));
+    Vec3f Ll = AmbientLight__sample(Ns,wi,tMax,s);
+        
+    /* initialize shadow ray */
+    RTCRay shadow;
+    shadow.org = Ph;
+    shadow.dir = wi;
+    shadow.tnear = 0.001f;
+    shadow.tfar = inf;
+    shadow.geomID = 1;
+    shadow.primID = -1;
+    shadow.mask = -1;
+    shadow.time = 0;
+    
+    /* trace shadow ray */
+    rtcOccluded(g_scene,shadow);
+    
+    /* add light contribution */
+    if (shadow.geomID != 0) {
+      Vec3f Lm = Matte__eval(materialID,neg(ray.dir),Ns,wi);
+      L = add(L,mul(Lw,mul(Ll,Lm)));
+    }
+
+    /* calculate diffuce bounce */
+    s = Vec2f(frand(seed),frand(seed));
+    Vec3f c = Matte__sample(materialID,neg(ray.dir), Ns, wi, s);
+    Lw = mul(Lw,c);
+
+    /* setup secondary ray */
+    ray.org = Ph;
+    ray.dir = normalize(wi);
+    ray.tnear = 0.001f;
+    ray.tfar = inf;
+    ray.geomID = -1;
+    ray.primID = -1;
+    ray.mask = -1;
+    ray.time = 0;
+  }
+  return L;
 }
 
+/* task that renders a single screen tile */
+Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+{
+  int seed = x*233+y*234234+237;
+  Vec3f L = Vec3f(0.0f,0.0f,0.0f);
+  //for (int i=0; i<16; i++) {
+    L = add(L,renderPixelSeed(x,y,seed,vx,vy,vz,p));
+  //}
+  //L = mul(L,1.0f/16.0f);
+  return L;
+}
+  
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
                      const int width,
