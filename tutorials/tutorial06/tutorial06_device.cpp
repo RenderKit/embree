@@ -169,6 +169,8 @@ inline Vec3f face_forward(Vec3f dir, Vec3f Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
+//size_t numRays = 0;
+
 Vec3f renderPixelSeed(int x, int y, int& seed, const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p)
 {
   /* radiance accumulator and weight */
@@ -194,7 +196,8 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const Vec3f& vx, const Vec3f& vy,
       break;
 
     /* intersect ray with scene */ 
-    rtcIntersect(g_scene,ray);
+    rtcIntersect(g_scene,ray); 
+    //numRays++;
     Vec3f Ns = face_forward(ray.dir,normalize(ray.Ng));
     Vec3f Ph = add(ray.org,mul(ray.tfar,ray.dir));
 
@@ -235,7 +238,8 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const Vec3f& vx, const Vec3f& vy,
     shadow.time = 0;
     
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
+    rtcOccluded(g_scene,shadow); 
+    //numRays++;
     
     /* add light contribution */
     if (shadow.geomID != 0) {
@@ -318,12 +322,14 @@ extern "C" void device_render (int* pixels,
   /* create scene */
   if (g_scene == NULL)
     g_scene = convertScene(g_ispc_scene);
+  //numRays = 0;
 
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
   rtcDebug();
+  //PRINT(1E-6*numRays);
 }
 
 /* called by the C++ code for cleanup */
