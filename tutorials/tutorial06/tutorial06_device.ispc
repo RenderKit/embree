@@ -82,7 +82,7 @@ export void device_init (uniform int8* uniform cfg)
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 {
   /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* add all meshes to the scene */
   for (uniform int i=0; i<scene_in->numMeshes; i++)
@@ -204,7 +204,7 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const un
       L = add(L,mul(Lw,La));
       break;
     }
-    
+        
     /* shade all rays that hit something */
 #if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
     int materialID = g_ispc_scene->meshes[ray.geomID]->triangles[ray.primID].materialID; 
