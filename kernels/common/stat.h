@@ -54,26 +54,19 @@ namespace embree
 
     public:
 
-      union {
-        
-        struct {
-          
-          /* per packet and per ray stastics */
-          struct {
-            /* normal and shadow ray statistics */
-            struct {
-              size_t travs;
-              size_t trav_nodes;
-              size_t trav_leaves;
-              size_t trav_prims;
-              size_t trav_prim_hits;
+	/* per packet and per ray stastics */
+	struct {
+	  /* normal and shadow ray statistics */
+	  struct {
+	    AtomicCounter travs;
+	    AtomicCounter trav_nodes;
+	    AtomicCounter trav_leaves;
+	    AtomicCounter trav_prims;
+	    AtomicCounter trav_prim_hits;
 
-            } normal, shadow;
-          } all, active, code;
-        };
+	  } normal, shadow;
+	} all, active, code;
 
-        size_t data[32];
-      };
     };
 
   public:

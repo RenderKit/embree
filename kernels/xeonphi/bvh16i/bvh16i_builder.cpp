@@ -41,6 +41,7 @@ namespace embree
     countLeaves(0);
 
     //BVH16i::Node *bvh16 = (BVH16i::Node*)this->prims;
+    const size_t sizeBVH4i = atomicID * sizeof(BVHNode);
     BVH16i::Node *bvh16 = (BVH16i::Node*)(os_malloc(sizeof(BVH16i::Node)*numPrimitives));
 
     
@@ -56,8 +57,11 @@ namespace embree
         
     DBG_PRINT(numPrimitives * sizeof(BVHNode) / sizeof(BVH16i::Node));
 
+    const size_t sizeBVH16i = index16 * sizeof(BVH16i::Node);
+
     DBG_PRINT(index16);
-    DBG_PRINT(index16*sizeof(BVH16i::Node));
+    DBG_PRINT(sizeBVH16i);
+    DBG_PRINT((float)sizeBVH4i / sizeBVH16i);
  
     unsigned int total = 0;
     float util = 0.0f;

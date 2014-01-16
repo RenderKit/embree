@@ -36,10 +36,6 @@
 
 #define PROFILE_ITERATIONS 100
 
-#if defined(__USE_STAT_COUNTERS__)
-#define PROFILE
-#endif
-
 // TODO: CHECK     const float voxelArea    = current.cs_AABB.sceneArea();
 //                 const float centroidArea = current.cs_AABB.centroidArea();
 
