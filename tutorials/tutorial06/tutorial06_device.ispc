@@ -165,6 +165,10 @@ inline float frand(int& seed) {
   return (seed & 0xFFFF)/(float)0xFFFF;
 }
 
+inline Vec3f face_forward(Vec3f dir, Vec3f Ng) {
+  return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
+}
+
 Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* radiance accumulator and weight */
@@ -186,12 +190,12 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const un
   for (uniform int i=0; i<10; i++)
   {
     /* terminate if contribution too low */
-    if (min(Lw.x,min(Lw.y,Lw.z)) < 0.01f)
+    if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
       break;
 
-    /* intersect ray with scene */
+    /* intersect ray with scene */ 
     rtcIntersect(g_scene,ray);
-    Vec3f Ns = normalize(ray.Ng);
+    Vec3f Ns = face_forward(ray.dir,normalize(ray.Ng));
     Vec3f Ph = add(ray.org,mul(ray.tfar,ray.dir));
 
     /* shade background with ambient light */
@@ -202,13 +206,15 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const un
     }
     
     /* shade all rays that hit something */
-#if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
+#if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
     int materialID = g_ispc_scene->meshes[ray.geomID]->triangles[ray.primID].materialID; 
 #else
     int materialID = 0;
     foreach_unique (geomID in ray.geomID) {
-      uniform ISPCMesh* uniform mesh = g_ispc_scene->meshes[geomID];
-      materialID = mesh->triangles[ray.primID].materialID;
+      if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
+        uniform ISPCMesh* uniform mesh = g_ispc_scene->meshes[geomID];
+        materialID = mesh->triangles[ray.primID].materialID;
+      }
     }
 #endif
 
