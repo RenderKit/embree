@@ -156,6 +156,8 @@ namespace embree
 		  // prefetch<PFHINT_L2>(&next->min_z);
 		  // prefetch<PFHINT_L2>(&next->max_z);
 
+		  STAT3(normal.trav_hit_boxes[countbits(hitm)],1,1,1);
+
 		  /* if no child is hit, continue with early popped child */
 		  if (unlikely(none(hitm))) continue;
 
@@ -532,6 +534,9 @@ namespace embree
 		  // prefetch<PFHINT_L2>(&next->max_y);
 		  // prefetch<PFHINT_L2>(&next->min_z);
 		  // prefetch<PFHINT_L2>(&next->max_z);
+
+		  STAT3(shadow.trav_hit_boxes[countbits(hitm)],1,1,1);
+
 
 		  /* if no child is hit, continue with early popped child */
 		  if (unlikely(none(hitm))) continue;

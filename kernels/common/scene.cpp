@@ -62,7 +62,7 @@ namespace embree
       }
     else
       {
-	if (g_builder == "sah" || g_builder == "objectsplit")
+	if (g_builder == "sah" || g_builder == "objectsplit" || g_builder == "bvh4i")
 	  {
 	    accels.accel0 = BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this);
 	  }

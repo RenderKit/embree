@@ -42,12 +42,28 @@ namespace embree
     cout << "    #prims        = " << float(cntrs.code.normal.trav_prims       )*1E-6 << "M" << std::endl;
     cout << "    #prim_hits    = " << float(cntrs.code.normal.trav_prim_hits   )*1E-6 << "M" << std::endl;
 
+#if defined(__MIC__)
+    size_t normal_box_hits = 0;
+    for (size_t i=0;i<=16;i++) normal_box_hits += cntrs.code.normal.trav_hit_boxes[i];
+    cout << "    #hit_boxes    = ";
+    for (size_t i=0;i<=16;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.normal.trav_hit_boxes[i] / normal_box_hits << " ";
+    cout << std::endl;
+#endif
     if (cntrs.code.shadow.travs) {
       cout << "  #shadow_travs = " << float(cntrs.code.shadow.travs         )*1E-6 << "M" << std::endl;
       cout << "    #nodes      = " << float(cntrs.code.shadow.trav_nodes    )*1E-6 << "M" << std::endl;
       cout << "    #leaves     = " << float(cntrs.code.shadow.trav_leaves   )*1E-6 << "M" << std::endl;
       cout << "    #prims      = " << float(cntrs.code.shadow.trav_prims    )*1E-6 << "M" << std::endl;
       cout << "    #prim_hits  = " << float(cntrs.code.shadow.trav_prim_hits)*1E-6 << "M" << std::endl;
+
+#if defined(__MIC__)
+      size_t shadow_box_hits = 0;
+      for (size_t i=0;i<=16;i++) shadow_box_hits += cntrs.code.shadow.trav_hit_boxes[i];
+      cout << "    #hit_boxes    = ";
+      for (size_t i=0;i<=16;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.shadow.trav_hit_boxes[i] / shadow_box_hits << " ";
+      cout << std::endl;
+#endif
+
     }
     cout << std::endl;
 

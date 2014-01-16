@@ -98,6 +98,7 @@ namespace embree
 		  const mic_m hitm = le(0x8888,tNear,tFar);
 		  const mic_f tNear_pos = select(hitm,tNear,inf);
 
+		  STAT3(normal.trav_hit_boxes[countbits(hitm)],1,1,1);
 
 		  /* if no child is hit, continue with early popped child */
 		  if (unlikely(none(hitm))) continue;
@@ -408,6 +409,8 @@ namespace embree
 		  const mic_f tNear_pos = select(hitm,tNear,inf);
 
 		  curNode = stack_node[sindex]; // early pop of next node
+
+		  STAT3(shadow.trav_hit_boxes[countbits(hitm)],1,1,1);
 
 		  /* if no child is hit, continue with early popped child */
 		  if (unlikely(none(hitm))) continue;
