@@ -480,6 +480,21 @@ namespace embree
     return cast(v);
   }
 
+
+  __forceinline mic_f gather_4f_zlc_align(const mic_i &v_mask,
+					  const void *__restrict__ const ptr0,
+					  const void *__restrict__ const ptr1,
+					  const void *__restrict__ const ptr2,
+					  const void *__restrict__ const ptr3) 
+  {
+    mic_f v = broadcast4to16f(ptr3);
+    v = align_shift_right<12>(v,broadcast4to16f(ptr2));
+    v = align_shift_right<12>(v,broadcast4to16f(ptr1));
+    v = align_shift_right<12>(v,broadcast4to16f(ptr0));
+    return cast(cast(v) & v_mask);
+  }
+
+
   __forceinline mic_f uload16f(const float *const addr) {
     mic_f r = mic_f::undefined();
     r =_mm512_extloadunpacklo_ps(r, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
