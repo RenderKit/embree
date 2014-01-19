@@ -20,7 +20,7 @@
 #include "geometry/triangle8_intersector8_moeller.h"
 #include "geometry/triangle4v_intersector8_pluecker.h"
 
-#define SWITCH_THRESHOLD 3
+#define SWITCH_THRESHOLD 6
 
 namespace embree
 {
