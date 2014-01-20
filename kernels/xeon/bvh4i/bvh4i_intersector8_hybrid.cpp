@@ -14,11 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4_intersector8_hybrid.h"
+#include "bvh4i_intersector8_hybrid.h"
 
+#include "geometry/triangle1_intersector8_moeller.h"
 #include "geometry/triangle4_intersector8_moeller.h"
-#include "geometry/triangle8_intersector8_moeller.h"
+#include "geometry/triangle1v_intersector8_pluecker.h"
 #include "geometry/triangle4v_intersector8_pluecker.h"
+#include "geometry/virtual_accel_intersector8.h"
 
 #define SWITCH_THRESHOLD 6
 
@@ -27,7 +29,7 @@ namespace embree
   namespace isa
   {
     template<typename PrimitiveIntersector8>
-    __forceinline void BVH4Intersector8Hybrid<PrimitiveIntersector8>::intersect1(const BVH4* bvh, NodeRef root, size_t k, Ray8& ray, 
+    __forceinline void BVH4iIntersector8Hybrid<PrimitiveIntersector8>::intersect1(const BVH4i* bvh, NodeRef root, size_t k, Ray8& ray, 
                                                                                  avx3f ray_org, avx3f ray_dir, avx3f ray_rdir, avxf ray_tnear, avxf ray_tfar)
     {
       /*! stack state */
@@ -37,6 +39,9 @@ namespace embree
       stack[0].ptr = root;
       stack[0].dist = neg_inf;
       
+      const Node      * __restrict__ nodes = (Node    *)bvh->nodePtr();
+      const Primitive * __restrict__ accel = (Primitive*)bvh->triPtr();
+
       /*! offsets to select the side that becomes the lower or upper bound */
       const size_t nearX = ray_dir.x[k] >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
       const size_t nearY = ray_dir.y[k] >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
@@ -68,7 +73,7 @@ namespace embree
           STAT3(normal.trav_nodes,1,1,1);
           
           /*! single ray intersection with 4 boxes */
-          const Node* node = cur.node();
+          const Node* node = cur.node(nodes);
           const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
 #if defined (__AVX2__)
           const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
@@ -106,7 +111,7 @@ namespace embree
           size_t r = bitscan(mask); mask = __btc(mask,r);
           if (likely(mask == 0)) {
             cur = node->child(r);
-            assert(cur != BVH4::emptyNode);
+            assert(cur != BVH4i::emptyNode);
             continue;
           }
           
@@ -114,8 +119,8 @@ namespace embree
           NodeRef c0 = node->child(r); const float d0 = tNear[r];
           r = bitscan(mask); mask = __btc(mask,r);
           NodeRef c1 = node->child(r); const float d1 = tNear[r];
-          assert(c0 != BVH4::emptyNode);
-          assert(c1 != BVH4::emptyNode);
+          assert(c0 != BVH4i::emptyNode);
+          assert(c1 != BVH4i::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
             if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
@@ -133,7 +138,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = bitscan(mask); mask = __btc(mask,r);
           NodeRef c = node->child(r); float d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-          assert(c0 != BVH4::emptyNode);
+          assert(c0 != BVH4i::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
             cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -144,22 +149,25 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = bitscan(mask); mask = __btc(mask,r);
           c = node->child(r); d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-          assert(c != BVH4::emptyNode);
+          assert(c != BVH4i::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
         }
         
         /*! this is a leaf node */
         STAT3(normal.trav_leaves,1,1,1);
-        size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
+        size_t num; Primitive* prim = (Primitive*) cur.leaf(accel,num);
         PrimitiveIntersector8::intersect(ray,k,prim,num,bvh->geometry);
         rayFar = ray.tfar[k];
       }
     }
     
     template<typename PrimitiveIntersector8>
-    void BVH4Intersector8Hybrid<PrimitiveIntersector8>::intersect(avxb* valid_i, BVH4* bvh, Ray8& ray)
+    void BVH4iIntersector8Hybrid<PrimitiveIntersector8>::intersect(avxb* valid_i, BVH4i* bvh, Ray8& ray)
     {
+      const Node      * __restrict__ nodes = (Node    *)bvh->nodePtr();
+      const Primitive * __restrict__ accel = (Primitive*)bvh->triPtr();
+
       /* load ray */
       const avxb valid0 = *valid_i;
       avx3f ray_org = ray.org, ray_dir = ray.dir;
@@ -180,7 +188,7 @@ namespace embree
       /* allocate stack and push root node */
       avxf    stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
-      stack_node[0] = BVH4::invalidNode;
+      stack_node[0] = BVH4i::invalidNode;
       stack_near[0] = inf;
       stack_node[1] = bvh->root;
       stack_near[1] = ray_tnear; 
@@ -195,7 +203,7 @@ namespace embree
         sptr_node--;
         sptr_near--;
         NodeRef curNode = *sptr_node;
-        if (unlikely(curNode == BVH4::invalidNode)) {
+        if (unlikely(curNode == BVH4i::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -226,7 +234,7 @@ namespace embree
           
           const avxb valid_node = ray_tfar > curDist;
           STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
-          const Node* __restrict__ const node = curNode.node();
+          const Node* __restrict__ const node = curNode.node(nodes);
           
           /* pop of next node */
           assert(sptr_node > stack_node);
@@ -239,7 +247,7 @@ namespace embree
           for (unsigned i=0; i<4; i++)
           {
             const NodeRef child = node->children[i];
-            if (unlikely(child == BVH4::emptyNode)) break;
+            if (unlikely(child == BVH4i::emptyNode)) break;
             
 #if defined(__AVX2__)
             const avxf lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
@@ -270,7 +278,7 @@ namespace embree
               assert(sptr_node < stackEnd);
               const avxf childDist = select(lhit,lnearP,inf);
               const NodeRef child = node->children[i];
-              assert(child != BVH4::emptyNode);
+              assert(child != BVH4i::emptyNode);
               sptr_node++;
               sptr_near++;
               
@@ -293,7 +301,7 @@ namespace embree
         }
         
         /* return if stack is empty */
-        if (unlikely(curNode == BVH4::invalidNode)) {
+        if (unlikely(curNode == BVH4i::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -301,7 +309,7 @@ namespace embree
         /* intersect leaf */
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
-        size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
+        size_t items; const Primitive* prim = (Primitive*) curNode.leaf(accel,items);
         PrimitiveIntersector8::intersect(valid_leaf,ray,prim,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
@@ -309,9 +317,13 @@ namespace embree
     }
 
     template<typename PrimitiveIntersector8>
-    __forceinline bool BVH4Intersector8Hybrid<PrimitiveIntersector8>::occluded1(const BVH4* bvh, NodeRef root, size_t k, Ray8& ray, 
+    __forceinline bool BVH4iIntersector8Hybrid<PrimitiveIntersector8>::occluded1(const BVH4i* bvh, NodeRef root, size_t k, Ray8& ray, 
                                                                                 avx3f ray_org, avx3f ray_dir, avx3f ray_rdir, avxf ray_tnear, avxf ray_tfar)
     {
+      /* load node and primitive array */
+      const Node      * __restrict__ nodes = (Node    *)bvh->nodePtr();
+      const Primitive * __restrict__ accel = (Primitive*)bvh->triPtr();
+
       /*! stack state */
       NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
       NodeRef* stackPtr = stack+1;        //!< current stack pointer
@@ -345,7 +357,7 @@ namespace embree
           STAT3(shadow.trav_nodes,1,1,1);
           
           /*! single ray intersection with 4 boxes */
-          const Node* node = cur.node();
+          const Node* node = cur.node(nodes);
           const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
 #if defined (__AVX2__)
           const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
@@ -383,7 +395,7 @@ namespace embree
           size_t r = bitscan(mask); mask = __btc(mask,r);
           if (likely(mask == 0)) {
             cur = node->child(r);
-            assert(cur != BVH4::emptyNode);
+            assert(cur != BVH4i::emptyNode);
             continue;
           }
           
@@ -391,8 +403,8 @@ namespace embree
           NodeRef c0 = node->child(r); const float d0 = tNear[r];
           r = bitscan(mask); mask = __btc(mask,r);
           NodeRef c1 = node->child(r); const float d1 = tNear[r];
-          assert(c0 != BVH4::emptyNode);
-          assert(c1 != BVH4::emptyNode);
+          assert(c0 != BVH4i::emptyNode);
+          assert(c1 != BVH4i::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd);
             if (d0 < d1) { *stackPtr = c1; stackPtr++; cur = c0; continue; }
@@ -405,19 +417,19 @@ namespace embree
           
           /*! three children are hit */
           r = bitscan(mask); mask = __btc(mask,r); cur = node->child(r); 
-          assert(cur != BVH4::emptyNode);
+          assert(cur != BVH4i::emptyNode);
           if (likely(mask == 0)) continue;
           assert(stackPtr < stackEnd);
           *stackPtr = cur; stackPtr++;
           
           /*! four children are hit */
           cur = node->child(3);
-          assert(cur != BVH4::emptyNode);
+          assert(cur != BVH4i::emptyNode);
         }
         
         /*! this is a leaf node */
         STAT3(shadow.trav_leaves,1,1,1);
-        size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
+        size_t num; Primitive* prim = (Primitive*) cur.leaf(accel,num);
         if (PrimitiveIntersector8::occluded(ray,k,prim,num,bvh->geometry)) {
           ray.geomID[k] = 0;
           return true;
@@ -427,8 +439,12 @@ namespace embree
     }
     
     template<typename PrimitiveIntersector8>
-    void BVH4Intersector8Hybrid<PrimitiveIntersector8>::occluded(avxb* valid_i, BVH4* bvh, Ray8& ray)
+    void BVH4iIntersector8Hybrid<PrimitiveIntersector8>::occluded(avxb* valid_i, BVH4i* bvh, Ray8& ray)
     {
+      /* load node and primitive array */
+      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const Primitive * __restrict__ accel = (Primitive*)bvh->triPtr();
+
       /* load ray */
       const avxb valid = *valid_i;
       avxb terminated = !valid;
@@ -450,7 +466,7 @@ namespace embree
       /* allocate stack and push root node */
       avxf    stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
-      stack_node[0] = BVH4::invalidNode;
+      stack_node[0] = BVH4i::invalidNode;
       stack_near[0] = inf;
       stack_node[1] = bvh->root;
       stack_near[1] = ray_tnear; 
@@ -465,7 +481,7 @@ namespace embree
         sptr_node--;
         sptr_near--;
         NodeRef curNode = *sptr_node;
-        if (unlikely(curNode == BVH4::invalidNode)) {
+        if (unlikely(curNode == BVH4i::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -498,7 +514,7 @@ namespace embree
           
           const avxb valid_node = ray_tfar > curDist;
           STAT3(shadow.trav_nodes,1,popcnt(valid_node),8);
-          const Node* __restrict__ const node = curNode.node();
+          const Node* __restrict__ const node = curNode.node(nodes);
           
           /* pop of next node */
           assert(sptr_node > stack_node);
@@ -511,7 +527,7 @@ namespace embree
           for (unsigned i=0; i<4; i++)
           {
             const NodeRef child = node->children[i];
-            if (unlikely(child == BVH4::emptyNode)) break;
+            if (unlikely(child == BVH4i::emptyNode)) break;
             
 #if defined(__AVX2__)
             const avxf lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
@@ -540,7 +556,7 @@ namespace embree
             if (likely(any(lhit)))
             {
               assert(sptr_node < stackEnd);
-              assert(child != BVH4::emptyNode);
+              assert(child != BVH4i::emptyNode);
               const avxf childDist = select(lhit,lnearP,inf);
               sptr_node++;
               sptr_near++;
@@ -564,7 +580,7 @@ namespace embree
         }
         
         /* return if stack is empty */
-        if (unlikely(curNode == BVH4::invalidNode)) {
+        if (unlikely(curNode == BVH4i::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -572,7 +588,7 @@ namespace embree
         /* intersect leaf */
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
-        size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
+        size_t items; const Primitive* prim = (Primitive*) curNode.leaf(accel,items);
         terminated |= PrimitiveIntersector8::occluded(!terminated,ray,prim,items,bvh->geometry);
         if (all(terminated)) break;
         ray_tfar = select(terminated,avxf(neg_inf),ray_tfar);
@@ -580,9 +596,8 @@ namespace embree
       store8i(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
     }
-    
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoeller, BVH4Intersector8Hybrid<Triangle4Intersector8MoellerTrumbore>);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoeller, BVH4Intersector8Hybrid<Triangle8Intersector8MoellerTrumbore>);
-    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8HybridPluecker, BVH4Intersector8Hybrid<Triangle4vIntersector8Pluecker>);
+
+
+    DEFINE_INTERSECTOR8(BVH4iTriangle4Intersector8HybridMoeller, BVH4iIntersector8Hybrid<Triangle4Intersector8MoellerTrumbore>);
   }
 }
