@@ -44,6 +44,7 @@ namespace embree
   /* output settings */
   static size_t g_width = 512;
   static size_t g_height = 512;
+  static bool g_display = true;
 
   /* fullscreen settings */
   static bool g_fullscreen = false;
@@ -87,6 +88,7 @@ namespace embree
     case 'd' : g_camera.rotate(+0.02f,0.0f); break;
     case 'w' : g_camera.move(0.0f,0.0f,+g_speed); break;
     case 's' : g_camera.move(0.0f,0.0f,-g_speed); break;
+    case ' ' : g_display = !g_display; break;
     case '\033': case 'q': case 'Q':
       cleanup();
       glutDestroyWindow(g_window);
@@ -187,13 +189,16 @@ namespace embree
            pixel2world.p);
     double dt0 = getSeconds()-t0;
 
-    /* draw pixels to screen */
-    int* pixels = map();
-    glRasterPos2i(-1, 1);
-    glPixelZoom(1.0f, -1.0f);
-    glDrawPixels(g_width,g_height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
-    glutSwapBuffers();
-    unmap();
+    if (g_display) 
+    {
+      /* draw pixels to screen */
+      int* pixels = map();
+      glRasterPos2i(-1, 1);
+      glPixelZoom(1.0f, -1.0f);
+      glDrawPixels(g_width,g_height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
+      glutSwapBuffers();
+      unmap();
+    }
     double dt1 = getSeconds()-t0;
 
     /* print frame rate */
