@@ -26,28 +26,28 @@ struct RTCORE_ALIGN(16)  RTCRay
   /* ray data */
 public:
   float org[3];      //!< Ray origin
-  int32 align0;
+  int   align0;
   
   float dir[3];      //!< Ray direction
-  int32 align1;
+  int   align1;
   
   float tnear;       //!< Start of ray segment
   float tfar;        //!< End of ray segment (set to hit distance)
 
   float time;        //!< Time of this ray for motion blur
-  int32 mask;        //!< Used to mask out objects during traversal
+  int   mask;        //!< Used to mask out objects during traversal
   
   /* hit data */
 public:
   float Ng[3];       //!< Unnormalized geometry normal
-  int32 align2;
+  int   align2;
   
   float u;           //!< Barycentric u coordinate of hit
   float v;           //!< Barycentric v coordinate of hit
 
-  int32 geomID;        //!< geometry ID
-  int32 primID;        //!< primitive ID
-  int32 instID;        //!< instance ID
+  int   geomID;        //!< geometry ID
+  int   primID;        //!< primitive ID
+  int   instID;        //!< instance ID
 };
 
 /*! Ray structure for packets of 4 rays. */
@@ -67,7 +67,7 @@ public:
   float tfar[4];  //!< End of ray segment (set to hit distance)
 
   float time[4];  //!< Time of this ray for motion blur
-  int32 mask[4];  //!< Used to mask out objects during traversal
+  int   mask[4];  //!< Used to mask out objects during traversal
   
   /* hit data */
 public:
@@ -78,9 +78,9 @@ public:
   float u[4];     //!< Barycentric u coordinate of hit
   float v[4];     //!< Barycentric v coordinate of hit
   
-  int32 geomID[4];  //!< geometry ID
-  int32 primID[4];  //!< primitive ID
-  int32 instID[4];  //!< instance ID
+  int   geomID[4];  //!< geometry ID
+  int   primID[4];  //!< primitive ID
+  int   instID[4];  //!< instance ID
 };
 
 /*! Ray structure for packets of 8 rays. */
@@ -100,7 +100,7 @@ public:
   float tfar[8];  //!< End of ray segment (set to hit distance)
 
   float time[8];  //!< Time of this ray for motion blur
-  int32 mask[8];  //!< Used to mask out objects during traversal
+  int   mask[8];  //!< Used to mask out objects during traversal
   
   /* hit data */
 public:
@@ -111,9 +111,9 @@ public:
   float u[8];     //!< Barycentric u coordinate of hit
   float v[8];     //!< Barycentric v coordinate of hit
   
-  int32 geomID[8];  //!< geometry ID
-  int32 primID[8];  //!< primitive ID
-  int32 instID[8];  //!< instance ID
+  int   geomID[8];  //!< geometry ID
+  int   primID[8];  //!< primitive ID
+  int   instID[8];  //!< instance ID
 };
 
 /*! \brief Ray structure for packets of 16 rays. */
@@ -133,7 +133,7 @@ public:
   float tfar[16];  //!< End of ray segment (set to hit distance)
 
   float time[16];  //!< Time of this ray for motion blur
-  int32 mask[16];  //!< Used to mask out objects during traversal
+  int   mask[16];  //!< Used to mask out objects during traversal
   
   /* hit data */
 public:
@@ -144,9 +144,9 @@ public:
   float u[16];     //!< Barycentric u coordinate of hit
   float v[16];     //!< Barycentric v coordinate of hit
   
-  int32 geomID[16];  //!< geometry ID
-  int32 primID[16];  //!< primitive ID
-  int32 instID[16];  //!< instance ID
+  int   geomID[16];  //!< geometry ID
+  int   primID[16];  //!< primitive ID
+  int   instID[16];  //!< instance ID
 };
 
 /*! @} */
