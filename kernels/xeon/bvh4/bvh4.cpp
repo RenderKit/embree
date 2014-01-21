@@ -256,7 +256,7 @@ namespace embree
     BVH4* accel = new BVH4(SceneTriangle4::type);
 
     Accel::Intersectors intersectors;
-    if      (g_traverser == "default") intersectors = BVH4Triangle4IntersectorsChunk(accel);
+    if      (g_traverser == "default") intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     else if (g_traverser == "chunk"  ) intersectors = BVH4Triangle4IntersectorsChunk(accel);
     else if (g_traverser == "hybrid" ) intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     else throw std::runtime_error("unknown traverser "+g_traverser+" for BVH4<Triangle4>");
@@ -281,7 +281,7 @@ namespace embree
     BVH4* accel = new BVH4(SceneTriangle8::type);
 
     Accel::Intersectors intersectors;
-    if      (g_traverser == "default") intersectors = BVH4Triangle8IntersectorsChunk(accel);
+    if      (g_traverser == "default") intersectors = BVH4Triangle8IntersectorsHybrid(accel);
     else if (g_traverser == "chunk"  ) intersectors = BVH4Triangle8IntersectorsChunk(accel);
     else if (g_traverser == "hybrid" ) intersectors = BVH4Triangle8IntersectorsHybrid(accel);
     else throw std::runtime_error("unknown traverser "+g_traverser+" for BVH4<Triangle8>");
@@ -317,7 +317,7 @@ namespace embree
     BVH4* accel = new BVH4(SceneTriangle4v::type);
 
     Accel::Intersectors intersectors;
-    if      (g_traverser == "default") intersectors = BVH4Triangle4vIntersectorsChunk(accel);
+    if      (g_traverser == "default") intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
     else if (g_traverser == "chunk"  ) intersectors = BVH4Triangle4vIntersectorsChunk(accel);
     else if (g_traverser == "hybrid" ) intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
     else throw std::runtime_error("unknown traverser "+g_traverser+" for BVH4<Triangle4>");
