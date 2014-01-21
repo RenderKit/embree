@@ -27,7 +27,7 @@ namespace embree
 {
   /*! Multi BVH with 4 children. Each node stores the bounding box of
    * it's 4 children as well as 4 child pointers. */
-  class BVH4 : public Bounded, public AllocatorPerThread
+  class BVH4 : public Bounded
   {
   public:
     
@@ -236,20 +236,20 @@ namespace embree
     static Accel* BVH4Triangle4vObjectSplit(TriangleMeshScene::TriangleMesh* mesh);
     static Accel* BVH4Triangle4Refit(TriangleMeshScene::TriangleMesh* mesh);
 
-    /*! clears the acceleration structure */
-    void clear ();
+    /*! initializes the acceleration structure */
+    void init (size_t numPrimitives = 0);
 
     /*! Clears the barrier bits of a subtree. */
     void clearBarrier(NodeRef& node);
 
-    /*! Allocates a new node */
+    Ref<LinearAllocatorPerThread> alloc;
+
     __forceinline Node* allocNode(size_t thread) {
-      Node* node = (Node*) malloc(thread,sizeof(Node),1 << alignment); node->clear(); return node;
+      Node* node = (Node*) alloc->malloc(thread,sizeof(Node),1 << 7); node->clear(); return node;
     }
 
-    /*! Allocated a new list of primitive blocks */
     __forceinline char* allocPrimitiveBlocks(size_t thread, size_t num) {
-      return (char*) malloc(thread,num*primTy.bytes,1 << alignment);
+      return (char*) alloc->malloc(thread,num*primTy.bytes,1 << 6);
     }
 
     /*! Encodes a node */
@@ -271,7 +271,7 @@ namespace embree
       if (nodes || primitives)
         return bytesNodes+bytesPrimitives+numVertices*sizeof(Vec3fa);
       else
-        return AllocatorPerThread::bytes()+numVertices*sizeof(Vec3fa);
+        return alloc->bytes()+numVertices*sizeof(Vec3fa);
     }
 
   public:

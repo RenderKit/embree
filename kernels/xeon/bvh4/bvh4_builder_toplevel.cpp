@@ -111,7 +111,7 @@ namespace embree
         bounds.extend(g_state->thread_bounds[i]);
       
       /* ignore empty scenes */
-      bvh->clear();
+      //bvh->clear();
       bvh->bounds = bounds.geometry;
       refs.resize(nextRef);
       if (refs.size() == 0) return;
@@ -135,6 +135,7 @@ namespace embree
       TaskScheduler::executeTask(threadIndex,threadCount,_task_open_parallel,this,threadCount,"toplevel_open_parallel");
       refs.resize(global_dest);
 #endif
+      bvh->init(refs.size());
 
       /* start toplevel build */
       BuildRecord task; 

@@ -125,7 +125,10 @@ namespace embree
   BVH4::BVH4 (const PrimitiveType& primTy, void* geometry)
   : primTy(primTy), geometry(geometry), root(emptyNode),
     numPrimitives(0), numVertices(0),
-    nodes(NULL), bytesNodes(0), primitives(NULL), bytesPrimitives(0) {}
+    nodes(NULL), bytesNodes(0), primitives(NULL), bytesPrimitives(0) 
+  {
+    alloc = new LinearAllocatorPerThread;
+  }
 
   BVH4::~BVH4 () {
     if (nodes) os_free(nodes, bytesNodes);
@@ -561,11 +564,29 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  void BVH4::clear () 
+  void BVH4::init(size_t numPrimitives)
   {
+    /* allocate as much memory as likely needed and reserve conservative amounts of memory */
+    size_t blockSize = LinearAllocatorPerThread::allocBlockSize;
+    
+    size_t numPrimBlocks = primTy.blocks(numPrimitives);
+    size_t numAllocatedNodes = min(size_t(0.6*numPrimBlocks),numPrimitives);
+    size_t numAllocatedPrimitives = min(size_t(1.2*numPrimBlocks),numPrimitives);
+#if defined(__X86_64__)
+    size_t numReservedNodes = 2*numPrimitives;
+    size_t numReservedPrimitives = 2*numPrimitives;
+#else
+    size_t numReservedNodes = 1.5*numAllocatedNodes;
+    size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
+#endif
+    
+    size_t bytesAllocated = numAllocatedNodes * sizeof(BVH4::Node) + numAllocatedPrimitives * primTy.bytes;
+    size_t bytesReserved  = numReservedNodes * sizeof(BVH4::Node) + numReservedPrimitives * primTy.bytes;
+    bytesReserved         = (bytesReserved+blockSize-1)/blockSize*blockSize;
+
     root = emptyNode;
-    bounds = empty;
-    AllocatorPerThread::clear();
+    //alloc->init(numNodes*sizeof(BVH4::Node) + numPrimitives*primTy.bytes);
+    alloc->init(bytesAllocated,bytesReserved);
   }
 
   void BVH4::clearBarrier(NodeRef& node)
