@@ -50,10 +50,8 @@ namespace embree
 #if defined(__MIC__)
     instance = new TaskSchedulerMIC; 
     //instance = new TaskSchedulerSys; 
-
 #else
     instance = new TaskSchedulerSys; 
-
 #endif
 
 #if 1
