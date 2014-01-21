@@ -18,8 +18,6 @@
 
 namespace embree
 {
-  // FIXME: fast version 19.279 ms versus slow version 21.43 ms, not much difference!
-
   /*! Computes half surface area of box. */
   __forceinline float halfArea3f(const BBox<ssef>& box) {
     const ssef d = box.size();
@@ -29,7 +27,6 @@ namespace embree
 
   size_t BVH4iRotate::rotate(BVH4i* bvh, NodeRef parentRef, size_t depth)
   {
-#if 1
     /*! nothing to rotate if we reached a leaf node. */
     if (parentRef.isBarrier()) return 0;
     if (parentRef.isLeaf()) return 0;
@@ -107,7 +104,7 @@ namespace embree
       ssef area0123 = ssef(extract<0>(min0),extract<0>(min1),extract<0>(min2),extract<0>(min3)) - ssef(childArea[c2]);
       int pos[4] = { pos0,pos1,pos2,pos3 };
       sseb valid = ssei(int(depth+1))+cdepth <= ssei(BVH4i::maxBuildDepth); // only select swaps that fulfill depth constraints
-      valid[c2] = false;
+      valid &= ssei(c2) != ssei(step);
       if (none(valid)) continue;
       size_t c1 = select_min(valid,area0123);
       float area = area0123[c1]; 
@@ -131,99 +128,10 @@ namespace embree
     parent->set(bestChild2,child2->bounds());
     BVH4i::compact(parent);
     BVH4i::compact(child2);
-
+    
     /*! This returned depth is conservative as the child that was
      *  pulled up in the tree could have been on the critical path. */
     cdepth[bestChild1]++; // bestChild1 was pushed down one level
     return 1+reduce_max(cdepth); 
-
-#else
-
-    /*! nothing to rotate if we reached a leaf node. */
-    if (parentRef.isBarrier()) return 0;
-    if (parentRef.isLeaf()) return 0;
-    void* nodePtr = bvh->nodePtr();
-    Node* parent = parentRef.node(nodePtr);
-    
-    /*! rotate all children first */
-    int max_cdepth = 0;
-    int cdepth[4];
-    for (size_t c=0; c<4; c++) {
-      int d = (int)rotate(bvh,parent->child(c),depth+1);
-      max_cdepth = max(max_cdepth,d);
-      cdepth[c] = d;
-    }
-    
-    /* compute bounds */
-    float parentAreas[4]; BBox3f parentBounds[4];
-    for (size_t i=0; i<4; i++) {
-      const BBox3f bound = parent->bounds(i);
-      parentBounds[i] = bound;
-      parentAreas [i] = halfArea(bound);
-    }
-    
-    /*! Find best rotation. We pick a first child a second child and a 
-      subchild of it. We perform the best swap of the subchild and the 
-      first child. */
-    float bestArea = 0.0f;
-    int bestChild1 = -1, bestChild2 = -1, bestChild2Child = -1;
-    
-    /* iterate over all first children */
-    for (size_t c1=0; c1<4; c1++)
-    {
-      if ((depth+1)+cdepth[c1] > BVH4i::maxBuildDepth) continue;
-      const BBox3f child1Bound = parentBounds[c1];
-      
-      /* iterate over all second children */
-      for (size_t c2=0; c2<4; c2++)
-      {
-        if (c1 == c2) continue;
-        
-        /*! ignore leaf nodes as we cannot descent into them */
-        NodeRef child2Ref = parent->child(c2);
-        if (child2Ref.isBarrier()) continue;
-        if (child2Ref.isLeaf()) continue;
-        Node* child2 = child2Ref.node(nodePtr);
-        
-        /* compute child bounds */
-        BBox3f child2Bounds[4];
-        for (size_t i=0; i<4; i++)
-          child2Bounds[i] = child2->bounds(i);
-        
-        /* iterate over all subchildren of the second child */
-        for (size_t c2c=0; c2c<4; c2c++)
-        {
-          /* compute heuristic */
-          BBox3f bounds = child1Bound;
-          for (size_t i=0; i<4; i++) {
-            if (i == c2c) continue;
-            bounds = merge(bounds,child2Bounds[i]);
-          }
-          float area = halfArea(bounds)-parentAreas[c2];
-          
-          /* select best swap */
-          if (area < bestArea) {
-            bestArea = area;
-            bestChild1 = (int)c1;
-            bestChild2 = (int)c2;
-            bestChild2Child = (int)c2c;
-          }
-        }
-      }
-    }
-
-    /*! if we did not find a swap that improves the SAH then do nothing */
-    if (bestChild1 == -1) return 1+max_cdepth;
-      
-    /*! perform the best found tree rotation */
-    Node* child2 = parent->child(bestChild2).node(nodePtr);
-    BVH4i::swap(parent,bestChild1,child2,bestChild2Child);
-    parent->set(bestChild2,child2->bounds());
-    
-      /*! This returned depth is conservative as the child that was
-       *  pulled up in the tree could have been on the critical path. */
-    cdepth[bestChild1]++; // bestChild1 was pushed down one level
-    return 1+max_cdepth; 
-#endif
   }
 }
