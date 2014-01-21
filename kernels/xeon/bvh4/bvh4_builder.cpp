@@ -32,9 +32,16 @@ namespace embree
   template<typename Heuristic>
   void BVH4Builder<Heuristic>::build(size_t threadIndex, size_t threadCount) 
   {
+#if 0
     bvh->clear();
     if (source->isEmpty()) 
       return;
+#else
+    size_t numPrimitives = source->size();
+    bvh->init(numPrimitives);
+    if (source->isEmpty()) 
+      return;
+#endif
 
     if (g_verbose >= 2) 
       std::cout << "building BVH4<" << bvh->primTy.name << "> with " << Heuristic::name() << " SAH builder ... " << std::flush;

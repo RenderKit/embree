@@ -207,14 +207,14 @@ namespace embree
   {
     ALIGNED_CLASS;
 
-    /*! each thread handles block of that many bytes locally */
-    enum { allocBlockSize = 4096 };
-
   public:
+
+     /*! each thread handles block of that many bytes locally */
+    enum { allocBlockSize = 4096 };
 
     /*! Allocator default construction. */
     LinearAllocatorPerThread () 
-      : ptr(NULL), cur(0), end(0)
+      : ptr(NULL), cur(0), end(0), bytesAllocated(0)
     {
       thread = new ThreadAllocator[getNumberOfLogicalThreads()];
       ptr = NULL;
@@ -258,6 +258,23 @@ namespace embree
       }
     }
 
+    /*! initializes the allocator */
+    void init (size_t bytesAllocate, size_t bytesReserve) 
+    {
+      clear();
+      const size_t numThreads = getNumberOfLogicalThreads();
+      size_t bytesReserved = max(bytesReserve,size_t(allocBlockSize*numThreads));
+      if (bytesReserved != size_t(end) || bytesAllocate != bytesAllocated) 
+      {
+        bytesAllocated = bytesAllocate;
+        if (ptr) os_free(ptr,end);
+        ptr = (char*) os_reserve(bytesReserved);
+        os_commit(ptr,bytesAllocated);
+        memset(ptr,0,bytesAllocated);
+        end = bytesReserved;
+      }
+    }
+
     /*! initialized the allocator */
     void init_malloc (size_t bytes) 
     {
@@ -282,7 +299,8 @@ namespace embree
       ssize_t i = atomic_add(&cur,bytes);
       if (unlikely(i > end)) throw std::runtime_error("build out of memory");
       void* p = &ptr[i];
-      os_commit(p,bytes);
+      if (i+bytes > bytesAllocated)
+        os_commit(p,bytes);
       return p;
     }
 
@@ -326,6 +344,7 @@ namespace embree
     char*  ptr;                //!< pointer to memory
     atomic_t cur;              //!< Current location of the allocator.
     atomic_t end;              //!< End of the memory block.
+    atomic_t bytesAllocated;
   };
 
   class __align(64) GlobalAllocator

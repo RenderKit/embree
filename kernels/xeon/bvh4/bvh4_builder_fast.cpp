@@ -148,7 +148,8 @@ namespace embree
     
     void BVH4BuilderFast::init(size_t threadIndex, size_t threadCount)
     {
-      bvh->clear();
+      //bvh->clear();
+      bvh->init(0); // FIXME
       numGroups = scene->size();
       
       /* calculate size of scene */

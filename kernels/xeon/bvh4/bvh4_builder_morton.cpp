@@ -149,7 +149,8 @@ namespace embree
     
     void BVH4BuilderMorton::init(size_t threadIndex, size_t threadCount)
     {
-      bvh->clear();
+      //bvh->clear();
+      bvh->init(numPrimitives);
       
       /* calculate size of scene */
       size_t numVertices = 0;
