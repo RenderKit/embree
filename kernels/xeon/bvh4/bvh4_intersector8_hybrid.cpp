@@ -27,8 +27,7 @@ namespace embree
   namespace isa
   {
     template<typename PrimitiveIntersector8>
-    __forceinline void BVH4Intersector8Hybrid<PrimitiveIntersector8>::intersect1(const BVH4* bvh, NodeRef root, size_t k, Ray8& ray, 
-                                                                                 avx3f ray_org, avx3f ray_dir, avx3f ray_rdir, avxf ray_tnear, avxf ray_tfar)
+    __forceinline void BVH4Intersector8Hybrid<PrimitiveIntersector8>::intersect1(const BVH4* bvh, NodeRef root, const size_t k, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
     {
       /*! stack state */
       StackItem stack[stackSizeSingle];  //!< stack of nodes 
@@ -38,10 +37,10 @@ namespace embree
       stack[0].dist = neg_inf;
       
       /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_dir.x[k] >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
-      const size_t nearY = ray_dir.y[k] >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
-      const size_t nearZ = ray_dir.z[k] >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
-      
+      const size_t nearX = nearXYZ.x[k];
+      const size_t nearY = nearXYZ.y[k];
+      const size_t nearZ = nearXYZ.z[k];
+
       /*! load the ray into SIMD registers */
       const sse3f org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
       const sse3f rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
@@ -162,7 +161,8 @@ namespace embree
     {
       /* load ray */
       const avxb valid0 = *valid_i;
-      avx3f ray_org = ray.org, ray_dir = ray.dir;
+      avx3f ray_org = ray.org;
+      avx3f ray_dir = ray.dir;
       avxf ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
 #if defined(__FIX_RAYS__)
       const avxf float_range = 1.8E19;
@@ -176,6 +176,12 @@ namespace embree
       ray_tnear = select(valid0,ray_tnear,avxf(pos_inf));
       ray_tfar  = select(valid0,ray_tfar ,avxf(neg_inf));
       const avxf inf = avxf(pos_inf);
+
+      /* compute near/far per ray */
+      avx3i nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,avxi(0*(int)sizeof(ssef)),avxi(1*(int)sizeof(ssef)));
+      nearXYZ.y = select(rdir.y >= 0.0f,avxi(2*(int)sizeof(ssef)),avxi(3*(int)sizeof(ssef)));
+      nearXYZ.z = select(rdir.z >= 0.0f,avxi(4*(int)sizeof(ssef)),avxi(5*(int)sizeof(ssef)));
 
       /* allocate stack and push root node */
       avxf    stack_near[stackSizeChunk];
@@ -211,7 +217,7 @@ namespace embree
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-            intersect1(bvh,curNode,i,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar);
+            intersect1(bvh,curNode,i,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ);
           }
           ray_tfar = ray.tfar;
           continue;
@@ -309,8 +315,7 @@ namespace embree
     }
 
     template<typename PrimitiveIntersector8>
-    __forceinline bool BVH4Intersector8Hybrid<PrimitiveIntersector8>::occluded1(const BVH4* bvh, NodeRef root, size_t k, Ray8& ray, 
-                                                                                avx3f ray_org, avx3f ray_dir, avx3f ray_rdir, avxf ray_tnear, avxf ray_tfar)
+    __forceinline bool BVH4Intersector8Hybrid<PrimitiveIntersector8>::occluded1(const BVH4* bvh, NodeRef root, const size_t k, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
     {
       /*! stack state */
       NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -319,9 +324,9 @@ namespace embree
       stack[0]  = root;
       
       /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_dir.x[k] >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
-      const size_t nearY = ray_dir.y[k] >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
-      const size_t nearZ = ray_dir.z[k] >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
+      const size_t nearX = nearXYZ.x[k];
+      const size_t nearY = nearXYZ.y[k];
+      const size_t nearZ = nearXYZ.z[k];
       
       /*! load the ray into SIMD registers */
       const sse3f org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
@@ -447,6 +452,12 @@ namespace embree
       ray_tfar  = select(valid,ray_tfar ,avxf(neg_inf));
       const avxf inf = avxf(pos_inf);
       
+      /* compute near/far per ray */
+      avx3i nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,avxi(0*(int)sizeof(ssef)),avxi(1*(int)sizeof(ssef)));
+      nearXYZ.y = select(rdir.y >= 0.0f,avxi(2*(int)sizeof(ssef)),avxi(3*(int)sizeof(ssef)));
+      nearXYZ.z = select(rdir.z >= 0.0f,avxi(4*(int)sizeof(ssef)),avxi(5*(int)sizeof(ssef)));
+
       /* allocate stack and push root node */
       avxf    stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
@@ -481,7 +492,7 @@ namespace embree
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-            if (occluded1(bvh,curNode,i,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar))
+            if (occluded1(bvh,curNode,i,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
               terminated[i] = -1;
           }
           if (all(terminated)) break;
