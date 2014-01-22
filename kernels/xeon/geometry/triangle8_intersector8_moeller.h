@@ -58,12 +58,10 @@ namespace embree
         /* test against edge p2 p0 */
         const avxf U = dot(R,e2) ^ sgnDen;
         valid &= U >= 0.0f;
-        if (likely(none(valid))) continue;
         
         /* test against edge p0 p1 */
         const avxf V = dot(R,e1) ^ sgnDen;
         valid &= V >= 0.0f;
-        if (likely(none(valid))) continue;
         
         /* test against edge p1 p2 */
         const avxf W = absDen-U-V;
@@ -151,12 +149,10 @@ namespace embree
         /* test against edge p2 p0 */
         const avxf U = dot(R,e2) ^ sgnDen;
         valid &= U >= 0.0f;
-        if (likely(none(valid))) continue;
         
         /* test against edge p0 p1 */
         const avxf V = dot(R,e1) ^ sgnDen;
         valid &= V >= 0.0f;
-        if (likely(none(valid))) continue;
         
         /* test against edge p1 p2 */
         const avxf W = absDen-U-V;
