@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="tutorial03"
+	Name="tutorial06"
 	ProjectGUID="{C40637AE-D2F4-4D16-BF36-1B04D1B32ABA}"
-	RootNamespace="tutorial03"
+	RootNamespace="tutorial06"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -630,11 +630,11 @@
 	</References>
 	<Files>
 		<File
-			RelativePath=".\tutorial03.cpp"
+			RelativePath=".\tutorial06.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\tutorial03_device.cpp"
+			RelativePath=".\tutorial06_device.cpp"
 			>
 		</File>
 	</Files>

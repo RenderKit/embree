@@ -2,10 +2,10 @@
 <VisualStudioProject
 	ProjectType="Intel C++ Project"
 	Version="14.0"
-	Name="tutorial03"
+	Name="tutorial06"
 	ProjectGUID="{EA071D3C-04D0-4E42-A377-FD781FB24E98}"
 	VCNestedProjectGUID="{C40637AE-D2F4-4D16-BF36-1B04D1B32ABA}"
-	VCNestedProjectFileName="tutorial03.vcproj"
+	VCNestedProjectFileName="tutorial06.vcproj"
 	>
 	<Configurations>
 		<Configuration

@@ -528,7 +528,7 @@
 			<Tool
 				Name="ISPC"
 				Architecture="0"
-				TargetISA="6"
+				TargetISA="7"
 				NoWarnings="true"
 			/>
 			<Tool
@@ -608,7 +608,7 @@
 			/>
 			<Tool
 				Name="ISPC"
-				TargetISA="6"
+				TargetISA="7"
 				NoWarnings="true"
 			/>
 			<Tool
