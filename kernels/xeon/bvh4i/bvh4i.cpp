@@ -135,7 +135,6 @@ namespace embree
     intersectors.ptr = bvh;
     intersectors.intersector1 = BVH4iTriangle4Intersector1Moeller;
     intersectors.intersector4 = BVH4iTriangle4Intersector4ChunkMoeller;
-    //intersectors.intersector8 = BVH4iTriangle4Intersector8ChunkMoeller;
     intersectors.intersector8 = BVH4iTriangle4Intersector8HybridMoeller;
     intersectors.intersector16 = NULL;
     return intersectors;
