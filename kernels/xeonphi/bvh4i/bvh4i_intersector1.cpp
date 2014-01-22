@@ -248,7 +248,7 @@ namespace embree
                 
 #if defined(__INTERSECTION_FILTER__) 
                 Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
-                if (likely(!geom->hasFilter1())) 
+                if (likely(!geom->hasIntersectionFilter1())) 
                 {
 #endif
                   compactustore16f_low(m_tri,&ray.tfar,min_dist);
@@ -586,7 +586,7 @@ namespace embree
                 
 #if defined(__INTERSECTION_FILTER__) 
                 Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
-                if (likely(!geom->hasFilter1())) 
+                if (likely(!geom->hasOcclusionFilter1())) 
                 {
 #endif
                   ray.geomID = 0;

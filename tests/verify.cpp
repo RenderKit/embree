@@ -1166,12 +1166,18 @@ namespace embree
 
   void intersectionFilter1(void* ptr, RTCRay& ray) 
   {
+    if ((size_t)ptr != 123) 
+      return;
+
     if (ray.primID & 2) 
       ray.geomID = -1;
   }
 
   void intersectionFilter4(const void* valid_i, void* ptr, RTCRay4& ray) 
   {
+    if ((size_t)ptr != 123) 
+      return;
+
     int* valid = (int*)valid_i;
     for (size_t i=0; i<4; i++)
       if (valid[i] == -1)
@@ -1181,6 +1187,9 @@ namespace embree
 
   void intersectionFilter8(const void* valid_i, void* ptr, RTCRay8& ray) 
   {
+    if ((size_t)ptr != 123) 
+      return;
+
     int* valid = (int*)valid_i;
     for (size_t i=0; i<8; i++)
       if (valid[i] == -1)
@@ -1190,6 +1199,9 @@ namespace embree
 
   void intersectionFilter16(const void* valid_i, void* ptr, RTCRay16& ray) 
   {
+    if ((size_t)ptr != 123) 
+      return;
+
     int* valid = (int*)valid_i;
     for (size_t i=0; i<16; i++)
       if (valid[i] == -1)
@@ -1204,10 +1216,11 @@ namespace embree
     RTCScene scene = rtcNewScene(sflags,aflags);
     Vec3fa p0(-0.75f,-0.25f,-10.0f), dx(4,0,0), dy(0,4,0);
     int geom0 = addPlane (scene, gflags, 4, p0, dx, dy);
-    rtcSetFilterFunction(scene,geom0,intersectionFilter1);
-    rtcSetFilterFunction4(scene,geom0,intersectionFilter4);
-    rtcSetFilterFunction8(scene,geom0,intersectionFilter8);
-    rtcSetFilterFunction16(scene,geom0,intersectionFilter16);
+    rtcSetUserData(scene,geom0,(void*)123);
+    rtcSetIntersectionFilterFunction(scene,geom0,intersectionFilter1);
+    rtcSetIntersectionFilterFunction4(scene,geom0,intersectionFilter4);
+    rtcSetIntersectionFilterFunction8(scene,geom0,intersectionFilter8);
+    rtcSetIntersectionFilterFunction16(scene,geom0,intersectionFilter16);
     rtcCommit (scene);
     
     for (size_t iy=0; iy<4; iy++) 
@@ -1275,10 +1288,11 @@ namespace embree
     RTCScene scene = rtcNewScene(sflags,aflags);
     Vec3fa p0(-0.75f,-0.25f,-10.0f), dx(4,0,0), dy(0,4,0);
     int geom0 = addPlane (scene, gflags, 4, p0, dx, dy);
-    rtcSetFilterFunction(scene,geom0,intersectionFilter1);
-    rtcSetFilterFunction4(scene,geom0,intersectionFilter4);
-    rtcSetFilterFunction8(scene,geom0,intersectionFilter8);
-    rtcSetFilterFunction16(scene,geom0,intersectionFilter16);
+    rtcSetUserData(scene,geom0,(void*)123);
+    rtcSetOcclusionFilterFunction(scene,geom0,intersectionFilter1);
+    rtcSetOcclusionFilterFunction4(scene,geom0,intersectionFilter4);
+    rtcSetOcclusionFilterFunction8(scene,geom0,intersectionFilter8);
+    rtcSetOcclusionFilterFunction16(scene,geom0,intersectionFilter16);
     rtcCommit (scene);
     
     for (size_t iy=0; iy<4; iy++) 

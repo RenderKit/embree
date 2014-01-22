@@ -121,10 +121,16 @@ void rtcUpdate (RTCScene scene, uniform unsigned int geomID);
 void rtcDisable (RTCScene scene, uniform unsigned int geomID);
 
 /*! \brief Sets the intersection filter function for uniform rays. */
-void rtcSetFilterFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncUniform func);
+void rtcSetIntersectionFilterFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncUniform func);
 
 /*! \brief Sets the intersection filter function for varying rays. */
-void rtcSetFilterFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncVarying func);
+void rtcSetIntersectionFilterFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncVarying func);
+
+/*! \brief Sets the occlusion filter function for uniform rays. */
+void rtcSetOcclusionFilterFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncUniform func);
+
+/*! \brief Sets the occlusion filter function for varying rays. */
+void rtcSetOcclusionFilterFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncVarying func);
 
 /*! \brief Deletes the geometry. */
 void rtcDeleteGeometry (RTCScene scene, uniform unsigned int geomID);

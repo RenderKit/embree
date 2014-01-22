@@ -119,17 +119,29 @@ namespace embree
       recordError(RTC_INVALID_OPERATION); 
     }
 
-    /*! Set filter function for single rays. */
-    virtual void setFilterFunction (RTCFilterFunc filter, bool ispc = false);
+    /*! Set intersection filter function for single rays. */
+    virtual void setIntersectionFilterFunction (RTCFilterFunc filter, bool ispc = false);
     
-    /*! Set filter function for ray packets of size 4. */
-    virtual void setFilterFunction4 (RTCFilterFunc4 filter4, bool ispc = false);
+    /*! Set intersection filter function for ray packets of size 4. */
+    virtual void setIntersectionFilterFunction4 (RTCFilterFunc4 filter4, bool ispc = false);
     
-    /*! Set filter function for ray packets of size 8. */
-    virtual void setFilterFunction8 (RTCFilterFunc8 filter8, bool ispc = false);
+    /*! Set intersection filter function for ray packets of size 8. */
+    virtual void setIntersectionFilterFunction8 (RTCFilterFunc8 filter8, bool ispc = false);
     
-    /*! Set filter function for ray packets of size 16. */
-    virtual void setFilterFunction16 (RTCFilterFunc16 filter16, bool ispc = false);
+    /*! Set intersection filter function for ray packets of size 16. */
+    virtual void setIntersectionFilterFunction16 (RTCFilterFunc16 filter16, bool ispc = false);
+
+    /*! Set occlusion filter function for single rays. */
+    virtual void setOcclusionFilterFunction (RTCFilterFunc filter, bool ispc = false);
+    
+    /*! Set occlusion filter function for ray packets of size 4. */
+    virtual void setOcclusionFilterFunction4 (RTCFilterFunc4 filter4, bool ispc = false);
+    
+    /*! Set occlusion filter function for ray packets of size 8. */
+    virtual void setOcclusionFilterFunction8 (RTCFilterFunc8 filter8, bool ispc = false);
+    
+    /*! Set occlusion filter function for ray packets of size 16. */
+    virtual void setOcclusionFilterFunction16 (RTCFilterFunc16 filter16, bool ispc = false);
 
     /*! instances only */
   public:
@@ -202,18 +214,33 @@ namespace embree
     void* userPtr;     //!< user pointer
 
   public:
-    RTCFilterFunc filter1;
-    RTCFilterFunc4 filter4;
-    RTCFilterFunc8 filter8;
-    RTCFilterFunc16 filter16;
-    void* ispcFilter4;
-    void* ispcFilter8;
-    void* ispcFilter16;
+    RTCFilterFunc intersectionFilter1;
+    RTCFilterFunc occlusionFilter1;
 
-    __forceinline bool hasFilter1() const { return filter1 != NULL; }
-    __forceinline bool hasFilter4() const { return filter4 != NULL; }
-    __forceinline bool hasFilter8() const { return filter8 != NULL; }
-    __forceinline bool hasFilter16() const { return filter16 != NULL; }
+    RTCFilterFunc4 intersectionFilter4;
+    RTCFilterFunc4 occlusionFilter4;
+    void* ispcIntersectionFilter4; // FIXME: this ISPC mode can be encoded more compactly
+    void* ispcOcclusionFilter4;
+
+    RTCFilterFunc8 intersectionFilter8;
+    RTCFilterFunc8 occlusionFilter8;
+    void* ispcIntersectionFilter8;
+    void* ispcOcclusionFilter8;
+
+    RTCFilterFunc16 intersectionFilter16;
+    RTCFilterFunc16 occlusionFilter16;
+    void* ispcIntersectionFilter16;
+    void* ispcOcclusionFilter16;
+
+    __forceinline bool hasIntersectionFilter1() const { return intersectionFilter1 != NULL; }
+    __forceinline bool hasIntersectionFilter4() const { return intersectionFilter4 != NULL; }
+    __forceinline bool hasIntersectionFilter8() const { return intersectionFilter8 != NULL; }
+    __forceinline bool hasIntersectionFilter16() const { return intersectionFilter16 != NULL; }
+
+    __forceinline bool hasOcclusionFilter1() const { return occlusionFilter1 != NULL; }
+    __forceinline bool hasOcclusionFilter4() const { return occlusionFilter4 != NULL; }
+    __forceinline bool hasOcclusionFilter8() const { return occlusionFilter8 != NULL; }
+    __forceinline bool hasOcclusionFilter16() const { return occlusionFilter16 != NULL; }
   };
 }
 

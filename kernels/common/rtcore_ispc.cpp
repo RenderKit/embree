@@ -252,43 +252,83 @@ namespace embree
     CATCH_END;
   }
 
-  extern "C" void ispcSetFilterFunction1 (RTCScene scene, unsigned geomID, RTCFilterFunc filter) 
+  extern "C" void ispcSetIntersectionFilterFunction1 (RTCScene scene, unsigned geomID, RTCFilterFunc filter) 
   {
     CATCH_BEGIN;
-    TRACE(rtcSetFilterFunction1);
+    TRACE(rtcSetIntersectionFilterFunction1);
     VERIFY_HANDLE(scene);
     VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get(geomID)->setFilterFunction(filter,true);
+    ((Scene*)scene)->get(geomID)->setIntersectionFilterFunction(filter,true);
     CATCH_END;
   }
   
-  extern "C" void ispcSetFilterFunction4 (RTCScene scene, unsigned geomID, RTCFilterFunc4 filter) 
+  extern "C" void ispcSetIntersectionFilterFunction4 (RTCScene scene, unsigned geomID, RTCFilterFunc4 filter) 
   {
     CATCH_BEGIN;
-    TRACE(rtcSetFilterFunction4);
+    TRACE(rtcSetIntersectionFilterFunction4);
     VERIFY_HANDLE(scene);
     VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get(geomID)->setFilterFunction4(filter,true);
+    ((Scene*)scene)->get(geomID)->setIntersectionFilterFunction4(filter,true);
     CATCH_END;
   }
   
-  extern "C" void ispcSetFilterFunction8 (RTCScene scene, unsigned geomID, RTCFilterFunc8 filter) 
+  extern "C" void ispcSetIntersectionFilterFunction8 (RTCScene scene, unsigned geomID, RTCFilterFunc8 filter) 
   {
     CATCH_BEGIN;
-    TRACE(rtcSetFilterFunction8);
+    TRACE(rtcSetIntersectionFilterFunction8);
     VERIFY_HANDLE(scene);
     VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get(geomID)->setFilterFunction8(filter,true);
+    ((Scene*)scene)->get(geomID)->setIntersectionFilterFunction8(filter,true);
     CATCH_END;
   }
   
-  extern "C" void ispcSetFilterFunction16 (RTCScene scene, unsigned geomID, RTCFilterFunc16 filter) 
+  extern "C" void ispcSetIntersectionFilterFunction16 (RTCScene scene, unsigned geomID, RTCFilterFunc16 filter) 
   {
     CATCH_BEGIN;
-    TRACE(rtcSetFilterFunction16);
+    TRACE(rtcSetIntersectionFilterFunction16);
     VERIFY_HANDLE(scene);
     VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get(geomID)->setFilterFunction16(filter,true);
+    ((Scene*)scene)->get(geomID)->setIntersectionFilterFunction16(filter,true);
+    CATCH_END;
+  }
+
+  extern "C" void ispcSetOcclusionFilterFunction1 (RTCScene scene, unsigned geomID, RTCFilterFunc filter) 
+  {
+    CATCH_BEGIN;
+    TRACE(rtcSetOcclusionFilterFunction1);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get(geomID)->setOcclusionFilterFunction(filter,true);
+    CATCH_END;
+  }
+  
+  extern "C" void ispcSetOcclusionFilterFunction4 (RTCScene scene, unsigned geomID, RTCFilterFunc4 filter) 
+  {
+    CATCH_BEGIN;
+    TRACE(rtcSetOcclusionFilterFunction4);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get(geomID)->setOcclusionFilterFunction4(filter,true);
+    CATCH_END;
+  }
+  
+  extern "C" void ispcSetOcclusionFilterFunction8 (RTCScene scene, unsigned geomID, RTCFilterFunc8 filter) 
+  {
+    CATCH_BEGIN;
+    TRACE(rtcSetOcclusionFilterFunction8);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get(geomID)->setOcclusionFilterFunction8(filter,true);
+    CATCH_END;
+  }
+  
+  extern "C" void ispcSetOcclusionFilterFunction16 (RTCScene scene, unsigned geomID, RTCFilterFunc16 filter) 
+  {
+    CATCH_BEGIN;
+    TRACE(rtcSetOcclusionFilterFunction16);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get(geomID)->setOcclusionFilterFunction16(filter,true);
     CATCH_END;
   }
 }

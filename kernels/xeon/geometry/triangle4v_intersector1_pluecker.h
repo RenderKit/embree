@@ -88,7 +88,7 @@ namespace embree
       while (true) 
       {
         Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (likely(!geometry->hasFilter1())) 
+        if (likely(!geometry->hasIntersectionFilter1())) 
         {
 #endif
           /* update hit information */
@@ -180,7 +180,7 @@ namespace embree
       while (true) 
       {
         Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (likely(!geometry->hasFilter1())) break;
+        if (likely(!geometry->hasOcclusionFilter1())) break;
 
         /* calculate hit information */
         const ssef rcpAbsDen = rcp(absDen);

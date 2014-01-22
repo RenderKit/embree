@@ -84,7 +84,7 @@ namespace embree
       while (true) 
       {
         Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (likely(!geometry->hasFilter1())) 
+        if (likely(!geometry->hasIntersectionFilter1())) 
         {
 #endif
           /* update hit information */
@@ -162,7 +162,7 @@ namespace embree
         Geometry* geometry = ((Scene*)geom)->get(geomID);
 
         /* if we have no filter then the test passes */
-        if (likely(!geometry->hasFilter1()))
+        if (likely(!geometry->hasOcclusionFilter1()))
           break;
 
         /* calculate hit information */

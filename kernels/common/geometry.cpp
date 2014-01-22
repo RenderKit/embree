@@ -21,7 +21,10 @@ namespace embree
 {
   Geometry::Geometry (Scene* parent, GeometryTy type, size_t numPrimitives, RTCGeometryFlags flags) 
     : parent(parent), type(type), numPrimitives(numPrimitives), id(0), flags(flags), state(ENABLING),
-      filter1(NULL), filter4(NULL), filter8(NULL), filter16(NULL), ispcFilter4(NULL), ispcFilter8(NULL), ispcFilter16(NULL),
+      intersectionFilter1(NULL), occlusionFilter1(NULL),
+      intersectionFilter4(NULL), occlusionFilter4(NULL), ispcIntersectionFilter4(NULL), ispcOcclusionFilter4(NULL), 
+      intersectionFilter8(NULL), occlusionFilter8(NULL), ispcIntersectionFilter8(NULL), ispcOcclusionFilter8(NULL), 
+      intersectionFilter16(NULL), occlusionFilter16(NULL), ispcIntersectionFilter16(NULL), ispcOcclusionFilter16(NULL), 
       userPtr(NULL)
   {
     id = parent->add(this);
@@ -118,45 +121,87 @@ namespace embree
     }
   }
 
-  void Geometry::setFilterFunction (RTCFilterFunc filter, bool ispc) 
+  void Geometry::setIntersectionFilterFunction (RTCFilterFunc filter, bool ispc) 
   {
     if (type != TRIANGLE_MESH) {
       recordError(RTC_INVALID_OPERATION); 
       return;
     }
-    filter1 = filter;
+    intersectionFilter1 = filter;
   }
     
-  void Geometry::setFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
+  void Geometry::setIntersectionFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
   { 
     if (type != TRIANGLE_MESH) {
       recordError(RTC_INVALID_OPERATION); 
       return;
     }
-    filter4 = filter;
-    if (ispc) ispcFilter4 = (void*) filter; 
-    else      ispcFilter4 = NULL;
+    intersectionFilter4 = filter;
+    if (ispc) ispcIntersectionFilter4 = (void*) filter; 
+    else      ispcIntersectionFilter4 = NULL;
   }
     
-  void Geometry::setFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
+  void Geometry::setIntersectionFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
   { 
     if (type != TRIANGLE_MESH) {
       recordError(RTC_INVALID_OPERATION); 
       return;
     }
-    filter8 = filter;
-    if (ispc) ispcFilter8 = (void*) filter; 
-    else      ispcFilter8 = NULL;
+    intersectionFilter8 = filter;
+    if (ispc) ispcIntersectionFilter8 = (void*) filter; 
+    else      ispcIntersectionFilter8 = NULL;
   }
   
-  void Geometry::setFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
+  void Geometry::setIntersectionFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
   { 
     if (type != TRIANGLE_MESH) {
       recordError(RTC_INVALID_OPERATION); 
       return;
     }
-    filter16 = filter;
-    if (ispc) ispcFilter16 = (void*) filter; 
-    else      ispcFilter16 = NULL;
+    intersectionFilter16 = filter;
+    if (ispc) ispcIntersectionFilter16 = (void*) filter; 
+    else      ispcIntersectionFilter16 = NULL;
+  }
+
+  void Geometry::setOcclusionFilterFunction (RTCFilterFunc filter, bool ispc) 
+  {
+    if (type != TRIANGLE_MESH) {
+      recordError(RTC_INVALID_OPERATION); 
+      return;
+    }
+    occlusionFilter1 = filter;
+  }
+    
+  void Geometry::setOcclusionFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
+  { 
+    if (type != TRIANGLE_MESH) {
+      recordError(RTC_INVALID_OPERATION); 
+      return;
+    }
+    occlusionFilter4 = filter;
+    if (ispc) ispcOcclusionFilter4 = (void*) filter; 
+    else      ispcOcclusionFilter4 = NULL;
+  }
+    
+  void Geometry::setOcclusionFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
+  { 
+    if (type != TRIANGLE_MESH) {
+      recordError(RTC_INVALID_OPERATION); 
+      return;
+    }
+    occlusionFilter8 = filter;
+    if (ispc) ispcOcclusionFilter8 = (void*) filter; 
+    else      ispcOcclusionFilter8 = NULL;
+  }
+  
+  void Geometry::setOcclusionFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
+  { 
+    if (type != TRIANGLE_MESH) {
+      recordError(RTC_INVALID_OPERATION); 
+      return;
+    }
+    occlusionFilter16 = filter;
+    if (ispc) ispcOcclusionFilter16 = (void*) filter; 
+    else      ispcOcclusionFilter16 = NULL;
   }
 }

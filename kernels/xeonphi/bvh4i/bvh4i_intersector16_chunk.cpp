@@ -216,7 +216,7 @@ namespace embree
             /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
             Geometry* geom = ((Scene*)bvh->geometry)->get(tri.geomID());
-            if (unlikely(geom->hasFilter16())) {
+            if (unlikely(geom->hasIntersectionFilter16())) {
               runIntersectionFilter16(valid,geom,ray,u,v,t,Ng,geomID,primID);
               continue;
             }
@@ -417,7 +417,7 @@ namespace embree
 #if defined(__INTERSECTION_FILTER__)
             const int geomID = tri.geomID();
             Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
-            if (unlikely(geom->hasFilter16()))
+            if (unlikely(geom->hasOcclusionFilter16()))
               valid = runOcclusionFilter16(valid,geom,ray,u,v,t,Ng,geomID,tri.primID());
 #endif
 

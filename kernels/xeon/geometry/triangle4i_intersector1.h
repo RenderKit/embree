@@ -99,7 +99,7 @@ namespace embree
           geomID = tri.geomID[i];
           continue;
         }
-        if (likely(!geometry->hasFilter1())) 
+        if (likely(!geometry->hasIntersectionFilter1())) 
         {
 #endif
           /* update hit information */
@@ -202,7 +202,7 @@ namespace embree
 #if defined(__INTERSECTION_FILTER__)
 
         /* if we have no filter then the test passes */
-        if (likely(!geometry->hasFilter1()))
+        if (likely(!geometry->hasOcclusionFilter1()))
           break;
 
         /* calculate hit information */

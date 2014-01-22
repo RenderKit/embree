@@ -82,7 +82,7 @@ extern "C" void device_init (int8* cfg)
 RTCScene convertScene(ISPCScene* scene_in)
 {
   /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT,RTC_INTERSECT1);
 
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
@@ -169,8 +169,6 @@ inline Vec3f face_forward(Vec3f dir, Vec3f Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-//size_t numRays = 0;
-
 Vec3f renderPixelSeed(int x, int y, int& seed, const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p)
 {
   /* radiance accumulator and weight */
@@ -196,8 +194,7 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const Vec3f& vx, const Vec3f& vy,
       break;
 
     /* intersect ray with scene */ 
-    rtcIntersect(g_scene,ray); 
-    //numRays++;
+    rtcIntersect(g_scene,ray);
     Vec3f Ns = face_forward(ray.dir,normalize(ray.Ng));
     Vec3f Ph = add(ray.org,mul(ray.tfar,ray.dir));
 
@@ -207,7 +204,7 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const Vec3f& vx, const Vec3f& vy,
       L = add(L,mul(Lw,La));
       break;
     }
-    
+        
     /* shade all rays that hit something */
 #if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
     int materialID = g_ispc_scene->meshes[ray.geomID]->triangles[ray.primID].materialID; 
@@ -238,8 +235,7 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const Vec3f& vx, const Vec3f& vy,
     shadow.time = 0;
     
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow); 
-    //numRays++;
+    rtcOccluded(g_scene,shadow);
     
     /* add light contribution */
     if (shadow.geomID != 0) {
@@ -322,14 +318,12 @@ extern "C" void device_render (int* pixels,
   /* create scene */
   if (g_scene == NULL)
     g_scene = convertScene(g_ispc_scene);
-  //numRays = 0;
 
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
   rtcDebug();
-  //PRINT(1E-6*numRays);
 }
 
 /* called by the C++ code for cleanup */

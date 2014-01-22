@@ -83,7 +83,8 @@ uniform unsigned int addCube (RTCScene scene_i)
   rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
 
   /* set intersection filter for the cube */
-  rtcSetFilterFunction(scene_i,mesh,&intersectionFilter);
+  rtcSetIntersectionFilterFunction(scene_i,mesh,&intersectionFilter);
+  rtcSetOcclusionFilterFunction(scene_i,mesh,&intersectionFilter);
 
   return mesh;
 }

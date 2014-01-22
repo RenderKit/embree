@@ -132,16 +132,28 @@ RTCORE_API void rtcUpdate (RTCScene scene, unsigned geomID);
 RTCORE_API void rtcDisable (RTCScene scene, unsigned geomID);
 
 /*! \brief Sets the intersection filter function for single rays. */
-RTCORE_API void rtcSetFilterFunction (RTCScene scene, unsigned geomID, RTCFilterFunc func);
+RTCORE_API void rtcSetIntersectionFilterFunction (RTCScene scene, unsigned geomID, RTCFilterFunc func);
 
 /*! \brief Sets the intersection filter function for ray packets of size 4. */
-RTCORE_API void rtcSetFilterFunction4 (RTCScene scene, unsigned geomID, RTCFilterFunc4 func);
+RTCORE_API void rtcSetIntersectionFilterFunction4 (RTCScene scene, unsigned geomID, RTCFilterFunc4 func);
 
 /*! \brief Sets the intersection filter function for ray packets of size 8. */
-RTCORE_API void rtcSetFilterFunction8 (RTCScene scene, unsigned geomID, RTCFilterFunc8 func);
+RTCORE_API void rtcSetIntersectionFilterFunction8 (RTCScene scene, unsigned geomID, RTCFilterFunc8 func);
 
 /*! \brief Sets the intersection filter function for ray packets of size 16. */
-RTCORE_API void rtcSetFilterFunction16 (RTCScene scene, unsigned geomID, RTCFilterFunc16 func);
+RTCORE_API void rtcSetIntersectionFilterFunction16 (RTCScene scene, unsigned geomID, RTCFilterFunc16 func);
+
+/*! \brief Sets the occlusion filter function for single rays. */
+RTCORE_API void rtcSetOcclusionFilterFunction (RTCScene scene, unsigned geomID, RTCFilterFunc func);
+
+/*! \brief Sets the occlusion filter function for ray packets of size 4. */
+RTCORE_API void rtcSetOcclusionFilterFunction4 (RTCScene scene, unsigned geomID, RTCFilterFunc4 func);
+
+/*! \brief Sets the occlusion filter function for ray packets of size 8. */
+RTCORE_API void rtcSetOcclusionFilterFunction8 (RTCScene scene, unsigned geomID, RTCFilterFunc8 func);
+
+/*! \brief Sets the occlusion filter function for ray packets of size 16. */
+RTCORE_API void rtcSetOcclusionFilterFunction16 (RTCScene scene, unsigned geomID, RTCFilterFunc16 func);
 
 /*! \brief Deletes the geometry. */
 RTCORE_API void rtcDeleteGeometry (RTCScene scene, unsigned geomID);

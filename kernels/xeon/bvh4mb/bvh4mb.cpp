@@ -38,7 +38,7 @@ namespace embree
 
   Accel* BVH4MB::BVH4MBTriangle1v(Scene* scene)
   { 
-    BVH4MB* accel = new BVH4MB(SceneTriangle1vMB::type);
+    BVH4MB* accel = new BVH4MB(SceneTriangle1vMB::type,scene);
 
     Builder* builder = NULL;
     if      (g_builder == "default"     ) builder = BVH4MBBuilderObjectSplit1(accel,&scene->flat_triangle_source_2,scene,1,inf);
@@ -57,7 +57,7 @@ namespace embree
 
   Accel* BVH4MB::BVH4MBTriangle1vObjectSplit(TriangleMeshScene::TriangleMesh* mesh)
   {
-    BVH4MB* accel = new BVH4MB(TriangleMeshTriangle1vMB::type);
+    BVH4MB* accel = new BVH4MB(TriangleMeshTriangle1vMB::type,mesh->parent);
     Builder* builder = BVH4MBBuilderObjectSplit1(accel,mesh,mesh,1,inf);
 
     Accel::Intersectors intersectors;

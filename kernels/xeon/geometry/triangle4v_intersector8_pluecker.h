@@ -95,7 +95,7 @@ namespace embree
         /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
         Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (unlikely(geometry->hasFilter8())) {
+        if (unlikely(geometry->hasIntersectionFilter8())) {
           runIntersectionFilter8(valid,geometry,ray,u,v,t,Ng,geomID,primID);
           continue;
         }
@@ -183,7 +183,7 @@ namespace embree
 #if defined(__INTERSECTION_FILTER__)
         const int geomID = tri.geomID[i];
         Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (unlikely(geometry->hasFilter8()))
+        if (unlikely(geometry->hasOcclusionFilter8()))
         {
           /* calculate hit information */
           const avxf rcpAbsDen = rcp(absDen);
@@ -274,7 +274,7 @@ namespace embree
       while (true) 
       {
         Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (likely(!geometry->hasFilter8())) 
+        if (likely(!geometry->hasIntersectionFilter8())) 
         {
 #endif
           /* update hit information */
@@ -366,7 +366,7 @@ namespace embree
       while (true) 
       {
         Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (likely(!geometry->hasFilter8())) break;
+        if (likely(!geometry->hasOcclusionFilter8())) break;
 
         /* calculate hit information */
         const ssef u = U / absDen;

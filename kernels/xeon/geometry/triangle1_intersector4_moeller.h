@@ -97,7 +97,7 @@ namespace embree
         /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
         Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (unlikely(geometry->hasFilter4())) {
+        if (unlikely(geometry->hasIntersectionFilter4())) {
           runIntersectionFilter4(valid,geometry,ray,u,v,t,Ng,geomID,primID);
           continue;
         }
@@ -173,7 +173,7 @@ namespace embree
 #if defined(__INTERSECTION_FILTER__)
         const int geomID = tri.geomID();
         Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (unlikely(geometry->hasFilter4()))
+        if (unlikely(geometry->hasOcclusionFilter4()))
         {
           /* calculate hit information */
           const ssef rcpAbsDen = rcp(absDen);
