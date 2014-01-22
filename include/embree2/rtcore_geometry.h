@@ -46,6 +46,25 @@ enum RTCGeometryFlags
   RTC_GEOMETRY_DYNAMIC    = 2,    //!< specifies dynamic geometry with arbitrary motion (BVH refit not possible)
 };
 
+/*! Intersection filter function for single rays. */
+typedef void (*RTCFilterFunc)(void* ptr,           /*!< pointer to user data */
+                              RTCRay& ray          /*!< intersection to filter */);
+
+/*! Intersection filter function for ray packets of size 4. */
+typedef void (*RTCFilterFunc4)(const void* valid,  /*!< pointer to valid mask */
+                               void* ptr,          /*!< pointer to user data */
+                               RTCRay4& ray        /*!< intersection to filter */);
+
+/*! Intersection filter function for ray packets of size 8. */
+typedef void (*RTCFilterFunc8)(const void* valid,  /*!< pointer to valid mask */
+                               void* ptr,          /*!< pointer to user data */
+                               RTCRay8& ray        /*!< intersection to filter */);
+
+/*! Intersection filter function for ray packets of size 16. */
+typedef void (*RTCFilterFunc16)(const void* valid, /*!< pointer to valid mask */
+                                void* ptr,         /*!< pointer to user data */
+                                RTCRay16& ray      /*!< intersection to filter */);
+
 /*! \brief Creates a new scene instance. 
 
   A scene instance contains a reference to a scene to instantiate and
@@ -111,6 +130,18 @@ RTCORE_API void rtcUpdate (RTCScene scene, unsigned geomID);
   geometry gives higher performance than deleting and recreating
   geometry. */
 RTCORE_API void rtcDisable (RTCScene scene, unsigned geomID);
+
+/*! \brief Sets the intersection filter function for single rays. */
+RTCORE_API void rtcSetFilterFunction (RTCScene scene, unsigned geomID, RTCFilterFunc func);
+
+/*! \brief Sets the intersection filter function for ray packets of size 4. */
+RTCORE_API void rtcSetFilterFunction4 (RTCScene scene, unsigned geomID, RTCFilterFunc4 func);
+
+/*! \brief Sets the intersection filter function for ray packets of size 8. */
+RTCORE_API void rtcSetFilterFunction8 (RTCScene scene, unsigned geomID, RTCFilterFunc8 func);
+
+/*! \brief Sets the intersection filter function for ray packets of size 16. */
+RTCORE_API void rtcSetFilterFunction16 (RTCScene scene, unsigned geomID, RTCFilterFunc16 func);
 
 /*! \brief Deletes the geometry. */
 RTCORE_API void rtcDeleteGeometry (RTCScene scene, unsigned geomID);

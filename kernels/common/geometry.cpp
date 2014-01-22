@@ -20,7 +20,9 @@
 namespace embree
 {
   Geometry::Geometry (Scene* parent, GeometryTy type, size_t numPrimitives, RTCGeometryFlags flags) 
-    : parent(parent), type(type), numPrimitives(numPrimitives), id(0), flags(flags), state(ENABLING) 
+    : parent(parent), type(type), numPrimitives(numPrimitives), id(0), flags(flags), state(ENABLING),
+      filter1(NULL), filter4(NULL), filter8(NULL), filter16(NULL), ispcFilter4(NULL), ispcFilter8(NULL), ispcFilter16(NULL),
+      userPtr(NULL)
   {
     id = parent->add(this);
   }
@@ -114,5 +116,47 @@ namespace embree
     case ERASING:
       break;
     }
+  }
+
+  void Geometry::setFilterFunction (RTCFilterFunc filter, bool ispc) 
+  {
+    if (type != TRIANGLE_MESH) {
+      recordError(RTC_INVALID_OPERATION); 
+      return;
+    }
+    filter1 = filter;
+  }
+    
+  void Geometry::setFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
+  { 
+    if (type != TRIANGLE_MESH) {
+      recordError(RTC_INVALID_OPERATION); 
+      return;
+    }
+    filter4 = filter;
+    if (ispc) ispcFilter4 = (void*) filter; 
+    else      ispcFilter4 = NULL;
+  }
+    
+  void Geometry::setFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
+  { 
+    if (type != TRIANGLE_MESH) {
+      recordError(RTC_INVALID_OPERATION); 
+      return;
+    }
+    filter8 = filter;
+    if (ispc) ispcFilter8 = (void*) filter; 
+    else      ispcFilter8 = NULL;
+  }
+  
+  void Geometry::setFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
+  { 
+    if (type != TRIANGLE_MESH) {
+      recordError(RTC_INVALID_OPERATION); 
+      return;
+    }
+    filter16 = filter;
+    if (ispc) ispcFilter16 = (void*) filter; 
+    else      ispcFilter16 = NULL;
   }
 }

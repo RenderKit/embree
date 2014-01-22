@@ -53,9 +53,9 @@ namespace embree
         const avx3f e2 = v1-v2;
         
         /* calculate geometry normal and denominator */
-        const avx3f Ng = cross(e1,e0);
-        const avx3f Ng2 = Ng+Ng;
-        const avxf den = dot(avx3f(Ng2),D);
+        const avx3f Ng1 = cross(e1,e0);
+        const avx3f Ng = Ng1+Ng1;
+        const avxf den = dot(avx3f(Ng),D);
         const avxf absDen = abs(den);
         const avxf sgnDen = signmsk(den);
         
@@ -71,7 +71,7 @@ namespace embree
         if (likely(none(valid))) continue;
         
         /* perform depth test */
-        const avxf T = dot(v0,avx3f(Ng2)) ^ sgnDen;
+        const avxf T = dot(v0,avx3f(Ng)) ^ sgnDen;
         valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
         if (unlikely(none(valid))) continue;
 
@@ -91,15 +91,31 @@ namespace embree
         if (unlikely(none(valid))) continue;
 #endif
         
-        /* update hit information for all rays that hit the triangle */
-        ray.u   = select(valid,U / absDen,ray.u );
-        ray.v   = select(valid,V / absDen,ray.v );
-        ray.tfar = select(valid,T / absDen,ray.tfar );
-        ray.geomID = select(valid,tri.geomID[i],ray.geomID);
-        ray.primID = select(valid,tri.primID[i],ray.primID);
-        ray.Ng.x = select(valid,Ng2.x,ray.Ng.x);
-        ray.Ng.y = select(valid,Ng2.y,ray.Ng.y);
-        ray.Ng.z = select(valid,Ng2.z,ray.Ng.z);
+        /* calculate hit information */
+        const avxf u = U / absDen;
+        const avxf v = V / absDen;
+        const avxf t = T / absDen;
+        const int geomID = tri.geomID[i];
+        const int primID = tri.primID[i];
+
+        /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (unlikely(geometry->hasFilter8())) {
+          runIntersectionFilter8(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+          continue;
+        }
+#endif
+
+        /* update hit information */
+        store8f(valid,&ray.u,u);
+        store8f(valid,&ray.v,v);
+        store8f(valid,&ray.tfar,t);
+        store8i(valid,&ray.geomID,geomID);
+        store8i(valid,&ray.primID,primID);
+        store8f(valid,&ray.Ng.x,Ng.x);
+        store8f(valid,&ray.Ng.y,Ng.y);
+        store8f(valid,&ray.Ng.z,Ng.z);
       }
     }
 
@@ -109,7 +125,7 @@ namespace embree
         intersect(valid,ray,tri[i],geom);
     }
     
-    static __forceinline avxb occluded(const avxb& valid_i, const Ray8& ray, const Triangle4i& tri, const void* geom)
+    static __forceinline avxb occluded(const avxb& valid_i, Ray8& ray, const Triangle4i& tri, const void* geom)
     {
       avxb valid0 = valid_i;
 
@@ -137,9 +153,9 @@ namespace embree
         const avx3f e2 = v1-v2;
         
         /* calculate geometry normal and denominator */
-        const avx3f Ng = cross(e1,e0);
-        const avx3f Ng2 = Ng+Ng;
-        const avxf den = dot(avx3f(Ng2),D);
+        const avx3f Ng1 = cross(e1,e0);
+        const avx3f Ng = Ng1+Ng1;
+        const avxf den = dot(avx3f(Ng),D);
         const avxf absDen = abs(den);
         const avxf sgnDen = signmsk(den);
         
@@ -155,7 +171,7 @@ namespace embree
         if (likely(none(valid))) continue;
         
         /* perform depth test */
-        const avxf T = dot(v0,avx3f(Ng2)) ^ sgnDen;
+        const avxf T = dot(v0,avx3f(Ng)) ^ sgnDen;
         valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
 
         /* perform backface culling */
@@ -174,6 +190,21 @@ namespace embree
         if (unlikely(none(valid))) continue;
 #endif
 
+        /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+        const int geomID = tri.geomID[i];
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (unlikely(geometry->hasFilter8()))
+        {
+          /* calculate hit information */
+          const avxf u = U / absDen;
+          const avxf v = V / absDen;
+          const avxf t = T / absDen;
+          const int primID = tri.primID[i];
+          valid = runOcclusionFilter8(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+        }
+#endif
+
         /* update occlusion */
         valid0 &= !valid;
         if (none(valid0)) break;
@@ -181,7 +212,7 @@ namespace embree
       return !valid0;
     }
 
-    static __forceinline avxb occluded(const avxb& valid, const Ray8& ray, const Triangle4i* tri, size_t num, const void* geom)
+    static __forceinline avxb occluded(const avxb& valid, Ray8& ray, const Triangle4i* tri, size_t num, const void* geom)
     {
       avxb valid0 = valid;
       for (size_t i=0; i<num; i++) {

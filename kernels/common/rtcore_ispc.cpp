@@ -251,4 +251,44 @@ namespace embree
     ((Scene*)scene)->get(geomID)->setOccludedFunction16(occluded,true);
     CATCH_END;
   }
+
+  extern "C" void ispcSetFilterFunction1 (RTCScene scene, unsigned geomID, RTCFilterFunc filter) 
+  {
+    CATCH_BEGIN;
+    TRACE(rtcSetFilterFunction1);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get(geomID)->setFilterFunction(filter,true);
+    CATCH_END;
+  }
+  
+  extern "C" void ispcSetFilterFunction4 (RTCScene scene, unsigned geomID, RTCFilterFunc4 filter) 
+  {
+    CATCH_BEGIN;
+    TRACE(rtcSetFilterFunction4);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get(geomID)->setFilterFunction4(filter,true);
+    CATCH_END;
+  }
+  
+  extern "C" void ispcSetFilterFunction8 (RTCScene scene, unsigned geomID, RTCFilterFunc8 filter) 
+  {
+    CATCH_BEGIN;
+    TRACE(rtcSetFilterFunction8);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get(geomID)->setFilterFunction8(filter,true);
+    CATCH_END;
+  }
+  
+  extern "C" void ispcSetFilterFunction16 (RTCScene scene, unsigned geomID, RTCFilterFunc16 filter) 
+  {
+    CATCH_BEGIN;
+    TRACE(rtcSetFilterFunction16);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get(geomID)->setFilterFunction16(filter,true);
+    CATCH_END;
+  }
 }

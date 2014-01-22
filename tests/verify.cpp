@@ -1164,6 +1164,199 @@ namespace embree
 	fflush(stdout);
   }
 
+  void intersectionFilter1(void* ptr, RTCRay& ray) 
+  {
+    if (ray.primID & 2) 
+      ray.geomID = -1;
+  }
+
+  void intersectionFilter4(const void* valid_i, void* ptr, RTCRay4& ray) 
+  {
+    int* valid = (int*)valid_i;
+    for (size_t i=0; i<4; i++)
+      if (valid[i] == -1)
+        if (ray.primID[i] & 2) 
+          ray.geomID[i] = -1;
+  }
+
+  void intersectionFilter8(const void* valid_i, void* ptr, RTCRay8& ray) 
+  {
+    int* valid = (int*)valid_i;
+    for (size_t i=0; i<8; i++)
+      if (valid[i] == -1)
+        if (ray.primID[i] & 2) 
+          ray.geomID[i] = -1;
+  }
+
+  void intersectionFilter16(const void* valid_i, void* ptr, RTCRay16& ray) 
+  {
+    int* valid = (int*)valid_i;
+    for (size_t i=0; i<16; i++)
+      if (valid[i] == -1)
+        if (ray.primID[i] & 2) 
+          ray.geomID[i] = -1;
+  }
+
+  bool rtcore_filter_intersect(RTCSceneFlags sflags, RTCGeometryFlags gflags)
+  {
+    bool passed = true;
+
+    RTCScene scene = rtcNewScene(sflags,aflags);
+    Vec3fa p0(-0.75f,-0.25f,-10.0f), dx(4,0,0), dy(0,4,0);
+    int geom0 = addPlane (scene, gflags, 4, p0, dx, dy);
+    rtcSetFilterFunction(scene,geom0,intersectionFilter1);
+    rtcSetFilterFunction4(scene,geom0,intersectionFilter4);
+    rtcSetFilterFunction8(scene,geom0,intersectionFilter8);
+    rtcSetFilterFunction16(scene,geom0,intersectionFilter16);
+    rtcCommit (scene);
+    
+    for (size_t iy=0; iy<4; iy++) 
+    {
+      for (size_t ix=0; ix<4; ix++) 
+      {
+        int primID = 2*(iy*4+ix);
+        {
+          RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+          rtcIntersect(scene,ray0);
+          bool ok0 = (primID & 2) ? (ray0.geomID == -1) : (ray0.geomID == 0);
+          if (!ok0) passed = false;
+        }
+
+#if !defined(__MIC__)
+      {
+        RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+
+	RTCRay4 ray4;
+	setRay(ray4,0,ray0);
+	__align(16) int valid4[4] = { -1,0,0,0 };
+	rtcIntersect4(valid4,scene,ray4);
+        bool ok0 = (primID & 2) ? (ray4.geomID[0] == -1) : (ray4.geomID[0] == 0);
+        if (!ok0) passed = false;
+      }
+
+#if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
+      if (has_feature(AVX))
+      {
+        RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+
+	RTCRay8 ray8;
+	setRay(ray8,0,ray0);
+	__align(32) int valid8[8] = { -1,0,0,0,0,0,0,0 };
+	rtcIntersect8(valid8,scene,ray8);
+        bool ok0 = (primID & 2) ? (ray8.geomID[0] == -1) : (ray8.geomID[0] == 0);
+        if (!ok0) passed = false;
+      }
+#endif
+
+#endif
+
+#if defined(__MIC__)
+      {
+        RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+
+	RTCRay16 ray16;
+	setRay(ray16,0,ray0);
+	__align(64) int valid16[16] = { -1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+	rtcIntersect16(valid16,scene,ray16);
+        bool ok0 = (primID & 2) ? (ray16.geomID[0] == -1) : (ray16.geomID[0] == 0);
+        if (!ok0) passed = false;
+      }
+#endif
+      }
+    }
+    rtcDeleteScene (scene);
+    return passed;
+  }
+
+  bool rtcore_filter_occluded(RTCSceneFlags sflags, RTCGeometryFlags gflags)
+  {
+    bool passed = true;
+
+    RTCScene scene = rtcNewScene(sflags,aflags);
+    Vec3fa p0(-0.75f,-0.25f,-10.0f), dx(4,0,0), dy(0,4,0);
+    int geom0 = addPlane (scene, gflags, 4, p0, dx, dy);
+    rtcSetFilterFunction(scene,geom0,intersectionFilter1);
+    rtcSetFilterFunction4(scene,geom0,intersectionFilter4);
+    rtcSetFilterFunction8(scene,geom0,intersectionFilter8);
+    rtcSetFilterFunction16(scene,geom0,intersectionFilter16);
+    rtcCommit (scene);
+    
+    for (size_t iy=0; iy<4; iy++) 
+    {
+      for (size_t ix=0; ix<4; ix++) 
+      {
+        int primID = 2*(iy*4+ix);
+        {
+          RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+          rtcOccluded(scene,ray0);
+          bool ok0 = (primID & 2) ? (ray0.geomID == -1) : (ray0.geomID == 0);
+          if (!ok0) passed = false;
+        }
+
+#if !defined(__MIC__)
+      {
+        RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+
+	RTCRay4 ray4;
+	setRay(ray4,0,ray0);
+	__align(16) int valid4[4] = { -1,0,0,0 };
+	rtcOccluded4(valid4,scene,ray4);
+        bool ok0 = (primID & 2) ? (ray4.geomID[0] == -1) : (ray4.geomID[0] == 0);
+        if (!ok0) passed = false;
+      }
+
+#if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
+      if (has_feature(AVX))
+      {
+        RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+
+	RTCRay8 ray8;
+	setRay(ray8,0,ray0);
+	__align(32) int valid8[8] = { -1,0,0,0,0,0,0,0 };
+	rtcOccluded8(valid8,scene,ray8);
+        bool ok0 = (primID & 2) ? (ray8.geomID[0] == -1) : (ray8.geomID[0] == 0);
+        if (!ok0) passed = false;
+      }
+#endif
+
+#endif
+
+#if defined(__MIC__)
+      {
+        RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
+
+	RTCRay16 ray16;
+	setRay(ray16,0,ray0);
+	__align(64) int valid16[16] = { -1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+	rtcOccluded16(valid16,scene,ray16);
+        bool ok0 = (primID & 2) ? (ray16.geomID[0] == -1) : (ray16.geomID[0] == 0);
+        if (!ok0) passed = false;
+      }
+#endif
+      }
+    }
+    rtcDeleteScene (scene);
+    return passed;
+  }
+
+  void rtcore_filter_all()
+  {
+    printf("%30s ... ","intersection_filter");
+    bool passed = true;
+    for (int i=0; i<numSceneFlags; i++) 
+    {
+      RTCSceneFlags flag = getSceneFlag(i);
+      bool ok0 = rtcore_filter_intersect(flag,RTC_GEOMETRY_STATIC);
+      if (ok0) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
+      passed &= ok0;
+      bool ok1 = rtcore_filter_occluded(flag,RTC_GEOMETRY_STATIC);
+      if (ok1) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
+      passed &= ok1;
+    }
+    printf(" %s\n",passed ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");
+    fflush(stdout);
+  }
+
   bool rtcore_packet_write_test(RTCSceneFlags sflags, RTCGeometryFlags gflags)
   {
     bool passed = true;
@@ -1908,6 +2101,10 @@ namespace embree
 
 #if defined(__USE_RAY_MASK__)
     rtcore_ray_masks_all();
+#endif
+
+#if defined(__INTERSECTION_FILTER__)
+    rtcore_filter_all();
 #endif
 
 #if defined(__BACKFACE_CULLING__)

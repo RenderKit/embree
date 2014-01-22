@@ -71,20 +71,44 @@ namespace embree
       if (unlikely(none(valid))) return;
 #endif
 
-      /* update hit information */
+      /* calculate hit information */
       const avxf rcpAbsDen = rcp(absDen);
       const avxf u = U * rcpAbsDen;
       const avxf v = V * rcpAbsDen;
       const avxf t = T * rcpAbsDen;
-      const size_t i = select_min(valid,t);
-      ray.u   = u[i];
-      ray.v   = v[i];
-      ray.tfar = t[i];
-      ray.Ng.x = tri.Ng.x[i];
-      ray.Ng.y = tri.Ng.y[i];
-      ray.Ng.z = tri.Ng.z[i];
-      ray.geomID = tri.geomID[i];
-      ray.primID = tri.primID[i];
+      size_t i = select_min(valid,t);
+      int geomID = tri.geomID[i];
+      
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+      while (true) 
+      {
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (likely(!geometry->hasFilter1())) 
+        {
+#endif
+          /* update hit information */
+          ray.u = u[i];
+          ray.v = v[i];
+          ray.tfar = t[i];
+          ray.Ng.x = tri.Ng.x[i];
+          ray.Ng.y = tri.Ng.y[i];
+          ray.Ng.z = tri.Ng.z[i];
+          ray.geomID = geomID;
+          ray.primID = tri.primID[i];
+
+#if defined(__INTERSECTION_FILTER__)
+          return;
+        }
+
+        Vec3fa Ng = Vec3fa(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
+        if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri.primID[i])) return;
+        valid[i] = 0;
+        if (none(valid)) return;
+        i = select_min(valid,t);
+        geomID = tri.geomID[i];
+      }
+#endif
     }
 
     static __forceinline void intersect(Ray& ray, const Triangle8* tri, size_t num, void* geom)
@@ -132,6 +156,32 @@ namespace embree
       valid &= (tri.mask & ray.mask) != 0;
       if (unlikely(none(valid))) return false;
 #endif
+
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+
+      size_t i = select_min(valid,T);
+      int geomID = tri.geomID[i];
+
+      while (true) 
+      {
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (likely(!geometry->hasFilter1())) break;
+
+        /* calculate hit information */
+        const avxf rcpAbsDen = rcp(absDen);
+        const avxf u = U * rcpAbsDen;
+        const avxf v = V * rcpAbsDen;
+        const avxf t = T * rcpAbsDen;
+        const Vec3fa Ng = Vec3fa(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
+        if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri.primID[i])) break;
+        valid[i] = 0;
+        if (none(valid)) return false;
+        i = select_min(valid,T);
+        geomID = tri.geomID[i];
+      }
+#endif
+
       return true;
     }
 

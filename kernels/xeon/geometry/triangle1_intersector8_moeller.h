@@ -18,7 +18,8 @@
 #define __EMBREE_ACCEL_TRIANGLE1_INTERSECTOR8_MOELLER_H__
 
 #include "triangle1.h"
-#include "../common/ray8.h"
+#include "common/ray8.h"
+#include "geometry/filter.h"
 
 namespace embree
 {
@@ -84,16 +85,32 @@ namespace embree
         if (unlikely(none(valid))) continue;
 #endif
 
-        /* update hit information */
+        /* calculate hit information */
         const avxf rcpAbsDen = rcp(absDen);
-        store8f(valid,(float*)&ray.u,U*rcpAbsDen);
-        store8f(valid,(float*)&ray.v,V*rcpAbsDen);
-        store8f(valid,(float*)&ray.tfar,T*rcpAbsDen);
-        store8i(valid,(float*)&ray.geomID,tri.geomID());
-        store8i(valid,(float*)&ray.primID,tri.primID());
-        store8f(valid,(float*)&ray.Ng.x,Ng.x);
-        store8f(valid,(float*)&ray.Ng.y,Ng.y);
-        store8f(valid,(float*)&ray.Ng.z,Ng.z);
+        const avxf u = U*rcpAbsDen;
+        const avxf v = V*rcpAbsDen;
+        const avxf t = T*rcpAbsDen;
+        const int geomID = tri.geomID();
+        const int primID = tri.primID();
+
+        /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (unlikely(geometry->hasFilter8())) {
+          runIntersectionFilter8(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+          continue;
+        }
+#endif
+
+        /* update hit information */
+        store8f(valid,&ray.u,u);
+        store8f(valid,&ray.v,v);
+        store8f(valid,&ray.tfar,t);
+        store8i(valid,&ray.geomID,geomID);
+        store8i(valid,&ray.primID,primID);
+        store8f(valid,&ray.Ng.x,Ng.x);
+        store8f(valid,&ray.Ng.y,Ng.y);
+        store8f(valid,&ray.Ng.z,Ng.z);
       }
     }
 
@@ -149,6 +166,22 @@ namespace embree
 #if defined(__USE_RAY_MASK__)
         valid &= (tri.mask() & ray.mask) != 0;
         if (unlikely(none(valid))) continue;
+#endif
+
+        /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+        const int geomID = tri.geomID();
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (unlikely(geometry->hasFilter8()))
+        {
+          /* calculate hit information */
+          const avxf rcpAbsDen = rcp(absDen);
+          const avxf u = U*rcpAbsDen;
+          const avxf v = V*rcpAbsDen;
+          const avxf t = T*rcpAbsDen;
+          const int primID = tri.primID();
+          valid = runOcclusionFilter8(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+        }
 #endif
 
         /* update occlusion */

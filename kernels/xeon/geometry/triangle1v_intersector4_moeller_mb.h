@@ -18,7 +18,8 @@
 #define __EMBREE_ACCEL_TRIANGLE1V_INTERSECTOR4_MOELLER_MB_H__
 
 #include "triangle1v.h"
-#include "../common/ray4.h"
+#include "common/ray4.h"
+#include "geometry/filter.h"
 
 namespace embree
 {
@@ -86,13 +87,29 @@ namespace embree
         if (unlikely(none(valid))) continue;
 #endif
 
-        /* update hit information */
+        /* calculate hit information */
         const ssef rcpAbsDen = rcp(absDen);
-        store4f(valid,&ray.u,U*rcpAbsDen);
-        store4f(valid,&ray.v,V*rcpAbsDen);
-        store4f(valid,&ray.tfar,T*rcpAbsDen);
-        store4i(valid,&ray.geomID,tri.geomID());
-        store4i(valid,&ray.primID,tri.primID());
+        const ssef u = U*rcpAbsDen;
+        const ssef v = V*rcpAbsDen;
+        const ssef t = T*rcpAbsDen;
+        const int geomID = tri.geomID();
+        const int primID = tri.primID();
+
+        /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (unlikely(geometry->hasFilter4())) {
+          runIntersectionFilter4(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+          continue;
+        }
+#endif
+
+        /* update hit information */
+        store4f(valid,&ray.u,u);
+        store4f(valid,&ray.v,v);
+        store4f(valid,&ray.tfar,t);
+        store4i(valid,&ray.geomID,geomID);
+        store4i(valid,&ray.primID,primID);
         store4f(valid,&ray.Ng.x,Ng.x);
         store4f(valid,&ray.Ng.y,Ng.y);
         store4f(valid,&ray.Ng.z,Ng.z);
@@ -152,6 +169,22 @@ namespace embree
 #if defined(__USE_RAY_MASK__)
         valid &= (tri.mask() & ray.mask) != 0;
         if (unlikely(none(valid))) continue;
+#endif
+
+        /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+        const int geomID = tri.geomID();
+        Geometry* geometry = ((Scene*)geom)->get(geomID);
+        if (unlikely(geometry->hasFilter4()))
+        {
+          /* calculate hit information */
+          const ssef rcpAbsDen = rcp(absDen);
+          const ssef u = U*rcpAbsDen;
+          const ssef v = V*rcpAbsDen;
+          const ssef t = T*rcpAbsDen;
+          const int primID = tri.primID();
+          valid = runOcclusionFilter4(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+        }
 #endif
         
         /* update occlusion */

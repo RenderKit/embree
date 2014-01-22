@@ -18,7 +18,8 @@
 #define __EMBREE_ACCEL_TRIANGLE1V_INTERSECTOR1_PLUECKER_H__
 
 #include "triangle1v.h"
-#include "../common/ray.h"
+#include "common/ray.h"
+#include "geometry/filter.h"
 
 namespace embree
 {
@@ -53,9 +54,9 @@ namespace embree
       const Vec3fa e2 = v1-v2;
 
       /* calculate geometry normal and denominator */
-      const Vec3fa Ng = cross(e1,e0);
-      const Vec3fa Ng2 = Ng+Ng;
-      const float den = dot(Ng2,D);
+      const Vec3fa Ng1 = cross(e1,e0);
+      const Vec3fa Ng = Ng1+Ng1;
+      const float den = dot(Ng,D);
       const float absDen = abs(den);
       const float sgnDen = signmsk(den);
 
@@ -68,7 +69,7 @@ namespace embree
       if (unlikely(W < 0.0f)) return;
       
       /* perform depth test */
-      const float T = xorf(dot(v0,Ng2),sgnDen);
+      const float T = xorf(dot(v0,Ng),sgnDen);
       if (unlikely(absDen*float(ray.tfar) < T)) return;
       if (unlikely(T < absDen*float(ray.tnear))) return;
 
@@ -84,14 +85,30 @@ namespace embree
       if (unlikely((tri.mask() & ray.mask) == 0)) return;
 #endif
 
-      /* update hit information */
+      /* calculate hit information */
       const float rcpAbsDen = rcp(absDen);
-      ray.u   = U * rcpAbsDen;
-      ray.v   = V * rcpAbsDen;
-      ray.tfar = T * rcpAbsDen;
-      ray.Ng  = Ng2;
-      ray.geomID = tri.geomID();
-      ray.primID = tri.primID();
+      const float u = U * rcpAbsDen;
+      const float v = V * rcpAbsDen;
+      const float t = T * rcpAbsDen;
+      const int geomID = tri.geomID();
+      const int primID = tri.primID();
+
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+      Geometry* geometry = ((Scene*)geom)->get(geomID);
+      if (unlikely(geometry->hasFilter1())) {
+        runIntersectionFilter1(geometry,ray,u,v,t,Ng,geomID,primID);
+        return;
+      }
+#endif
+
+      /* update hit information */
+      ray.u = u;
+      ray.v = v;
+      ray.tfar = t;
+      ray.Ng  = Ng;
+      ray.geomID = geomID;
+      ray.primID = primID;
     }
 
     static __forceinline void intersect(Ray& ray, const Triangle1v* tri, size_t num, void* geom)
@@ -101,7 +118,7 @@ namespace embree
     }
 
     /*! Test if the ray is occluded by one of the triangles. */
-    static __forceinline bool occluded(const Ray& ray, const Triangle1v& tri, const void* geom)
+    static __forceinline bool occluded(Ray& ray, const Triangle1v& tri, const void* geom)
     {
       /* load triangle */
       STAT3(shadow.trav_prims,1,1,1);
@@ -122,9 +139,9 @@ namespace embree
       const Vec3fa e2 = v1-v2;
 
       /* calculate geometry normal and denominator */
-      const Vec3fa Ng = cross(e1,e0);
-      const Vec3fa Ng2 = Ng+Ng;
-      const float den = dot(Ng2,D);
+      const Vec3fa Ng1 = cross(e1,e0);
+      const Vec3fa Ng = Ng1+Ng1;
+      const float den = dot(Ng,D);
       const float absDen = abs(den);
       const float sgnDen = signmsk(den);
 
@@ -137,7 +154,7 @@ namespace embree
       if (unlikely(W < 0.0f)) return false;
       
       /* perform depth test */
-      const float T = xorf(dot(v0,Ng2),sgnDen);
+      const float T = xorf(dot(v0,Ng),sgnDen);
       if (unlikely(absDen*float(ray.tfar) < T)) return false;
       if (unlikely(T < absDen*float(ray.tnear))) return false;
 
@@ -152,6 +169,23 @@ namespace embree
 #if defined(__USE_RAY_MASK__)
       if (unlikely((tri.mask() & ray.mask) == 0)) return false;
 #endif
+
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+      const int geomID = tri.geomID();
+      Geometry* geometry = ((Scene*)geom)->get(geomID);
+      if (unlikely(geometry->hasFilter1()))
+      {
+        /* calculate hit information */
+        const float rcpAbsDen = rcp(absDen);
+        const float u = U*rcpAbsDen;
+        const float v = V*rcpAbsDen;
+        const float t = T*rcpAbsDen;
+        const int primID = tri.primID();
+        return runOcclusionFilter1(geometry,ray,u,v,t,Ng,geomID,primID);
+      }
+#endif
+
       return true;
     }
 

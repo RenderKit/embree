@@ -244,6 +244,10 @@ namespace embree
   /// New stuff
   ////////////////////////////////////////////////////////////////////////////////
 
+  __forceinline void store8i(void* ptr, const avxi& i) {
+    _mm256_store_ps((float*)ptr,_mm256_castsi256_ps(i));
+  }
+
   __forceinline void store8i( const avxb &mask, void *ptr, const avxi& i ) { 
     _mm256_maskstore_ps((float*)ptr,(__m256i)mask,_mm256_castsi256_ps(i));
   }

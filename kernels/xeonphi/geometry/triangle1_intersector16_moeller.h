@@ -18,7 +18,8 @@
 #define __EMBREE_ACCEL_TRIANGLE1_INTERSECTOR16_MOELLER_H__
 
 #include "triangle1.h"
-#include "../common/ray16.h"
+#include "common/ray16.h"
+#include "geometry/filter.h"
 
 namespace embree
 {
@@ -107,16 +108,25 @@ namespace embree
         valid &= (tri.mask() & ray.mask) != 0;
 #endif
         if (unlikely(none(valid))) continue;
-        
+
+        /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+        Geometry* geometry = ((Scene*)geom)->get(tri.geomID());
+        if (unlikely(geometry->hasFilter16())) {
+          runIntersectionFilter16(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+          continue;
+        }
+#endif
+
         /* update hit information */
-        store16f(valid,(float*)&ray.u,u);
-        store16f(valid,(float*)&ray.v,v);
-        store16f(valid,(float*)&ray.tfar,t);
-        store16i(valid,(float*)&ray.geomID,geomID);
-        store16i(valid,(float*)&ray.primID,primID);
-        store16f(valid,(float*)&ray.Ng.x,Ng.x);
-        store16f(valid,(float*)&ray.Ng.y,Ng.y);
-        store16f(valid,(float*)&ray.Ng.z,Ng.z);
+        store16f(valid,&ray.u,u);
+        store16f(valid,&ray.v,v);
+        store16f(valid,&ray.tfar,t);
+        store16i(valid,&ray.geomID,geomID);
+        store16i(valid,&ray.primID,primID);
+        store16f(valid,&ray.Ng.x,Ng.x);
+        store16f(valid,&ray.Ng.y,Ng.y);
+        store16f(valid,&ray.Ng.z,Ng.z);
       }
     }
 
@@ -180,6 +190,15 @@ namespace embree
         valid &= (tri.mask() & ray.mask) != 0;
 #endif
         if (unlikely(none(valid))) continue;
+
+        /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+        const mic_i geomID = tri.geomID();
+	const mic_i primID = tri.primID();
+        Geometry* geometry = ((Scene*)geom)->get(tri.geomID());
+        if (unlikely(geometry->hasFilter16()))
+          valid = runOcclusionFilter16(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+#endif
 
         /* update occlusion */
         valid0 &= !valid;

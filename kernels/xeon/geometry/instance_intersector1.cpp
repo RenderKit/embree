@@ -44,14 +44,18 @@ namespace embree
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
       const int ray_geomID = ray.geomID;
+      const int ray_instID = ray.instID;
       ray.org = xfmPoint (instance->world2local,ray_org);
       ray.dir = xfmVector(instance->world2local,ray_dir);
       ray.geomID = -1;
+      ray.instID = instance->id;
       instance->object->intersect((RTCRay&)ray);
       ray.org = ray_org;
       ray.dir = ray_dir;
-      if (ray.geomID == -1) ray.geomID = ray_geomID;
-      else ray.instID = instance->id;
+      if (ray.geomID == -1) {
+        ray.geomID = ray_geomID;
+        ray.instID = ray_instID;
+      }
     }
     
     void FastInstanceIntersector1::occluded (const UserGeometryScene::Instance* instance, Ray& ray, size_t item)
@@ -60,6 +64,7 @@ namespace embree
       const Vec3fa ray_dir = ray.dir;
       ray.org = xfmPoint (instance->world2local,ray_org);
       ray.dir = xfmVector(instance->world2local,ray_dir);
+      ray.instID = instance->id;
       instance->object->occluded((RTCRay&)ray);
       ray.org = ray_org;
       ray.dir = ray_dir;

@@ -28,6 +28,7 @@ renderPixelFunc renderPixel;
 
 struct Instance 
 {
+  ALIGNED_STRUCT
   unsigned int geometry;
   RTCScene object;
   int userID;
@@ -117,6 +118,7 @@ void updateInstance (RTCScene scene, Instance* instance)
 
 struct Sphere
 {
+  ALIGNED_STRUCT
   Vec3f p;                      //!< position of the sphere
   float r;                      //!< radius of the sphere
   unsigned int geomID;

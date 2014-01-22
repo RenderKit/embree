@@ -169,11 +169,11 @@
 #endif
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-#define   likely(expr) expr
-#define unlikely(expr) expr
+#define   likely(expr) (expr)
+#define unlikely(expr) (expr)
 #else
-#define   likely(expr) __builtin_expect(expr,true )
-#define unlikely(expr) __builtin_expect(expr,false)
+#define   likely(expr) __builtin_expect((expr),true )
+#define unlikely(expr) __builtin_expect((expr),false)
 #endif
 
 /* compiler memory barriers */
@@ -261,20 +261,26 @@ typedef int32 ssize_t;
 
 namespace embree
 {
-#define ALIGNED_CLASS                                                \
-  public:                                                            \
-    void* operator new(size_t size) { return alignedMalloc(size); }  \
+#define ALIGNED_STRUCT                                           \
+  void* operator new(size_t size) { return alignedMalloc(size); }       \
   void operator delete(void* ptr) { alignedFree(ptr); }      \
   void* operator new[](size_t size) { return alignedMalloc(size); }  \
   void operator delete[](void* ptr) { alignedFree(ptr); }    \
- private:
 
-#define ALIGNED_CLASS_(align)                                           \
-  public:                                                               \
-    void* operator new(size_t size) { return alignedMalloc(size,align); } \
+#define ALIGNED_STRUCT_(align)                                           \
+  void* operator new(size_t size) { return alignedMalloc(size,align); } \
   void operator delete(void* ptr) { alignedFree(ptr); }                 \
   void* operator new[](size_t size) { return alignedMalloc(size,align); } \
   void operator delete[](void* ptr) { alignedFree(ptr); }               \
+
+#define ALIGNED_CLASS                                                \
+  public:                                                            \
+    ALIGNED_STRUCT                                                  \
+  private:
+
+#define ALIGNED_CLASS_(align)                                           \
+ public:                                                               \
+    ALIGNED_STRUCT_(align)                                              \
  private:
   
   /*! aligned allocation */

@@ -43,6 +43,7 @@ extern "C" int64 get_tsc();
 #define GLUT_KEY_F7 7
 #define GLUT_KEY_F8 8
 #define GLUT_KEY_F9 9
+#define GLUT_KEY_F10 10
 
 /* standard shading function */
 typedef Vec3fa (* renderPixelFunc)(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);

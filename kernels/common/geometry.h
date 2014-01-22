@@ -27,6 +27,18 @@ namespace embree
   /*! type of geometry */
   enum GeometryTy { TRIANGLE_MESH, USER_GEOMETRY, QUADRATIC_BEZIER_CURVES, INSTANCES };
   
+#if defined(__SSE__)
+  typedef void (*ISPCFilterFunc4)(void* ptr, RTCRay4& ray, __m128 valid);
+#endif
+
+#if defined(__AVX__)
+  typedef void (*ISPCFilterFunc8)(void* ptr, RTCRay8& ray, __m256 valid);
+#endif
+
+#if defined(__MIC__)
+  typedef void (*ISPCFilterFunc16)(void* ptr, RTCRay16& ray, __mmask16 valid);
+#endif
+
   /*! Base class all geometries are derived from */
   class Geometry
   {
@@ -107,6 +119,18 @@ namespace embree
       recordError(RTC_INVALID_OPERATION); 
     }
 
+    /*! Set filter function for single rays. */
+    virtual void setFilterFunction (RTCFilterFunc filter, bool ispc = false);
+    
+    /*! Set filter function for ray packets of size 4. */
+    virtual void setFilterFunction4 (RTCFilterFunc4 filter4, bool ispc = false);
+    
+    /*! Set filter function for ray packets of size 8. */
+    virtual void setFilterFunction8 (RTCFilterFunc8 filter8, bool ispc = false);
+    
+    /*! Set filter function for ray packets of size 16. */
+    virtual void setFilterFunction16 (RTCFilterFunc16 filter16, bool ispc = false);
+
     /*! instances only */
   public:
     
@@ -175,8 +199,22 @@ namespace embree
     unsigned id;       //!< internal geometry ID
     RTCGeometryFlags flags;    //!< flags of geometry
     State state;       //!< state of the geometry 
-  };
+    void* userPtr;     //!< user pointer
 
+  public:
+    RTCFilterFunc filter1;
+    RTCFilterFunc4 filter4;
+    RTCFilterFunc8 filter8;
+    RTCFilterFunc16 filter16;
+    void* ispcFilter4;
+    void* ispcFilter8;
+    void* ispcFilter16;
+
+    __forceinline bool hasFilter1() const { return filter1 != NULL; }
+    __forceinline bool hasFilter4() const { return filter4 != NULL; }
+    __forceinline bool hasFilter8() const { return filter8 != NULL; }
+    __forceinline bool hasFilter16() const { return filter16 != NULL; }
+  };
 }
 
 #endif

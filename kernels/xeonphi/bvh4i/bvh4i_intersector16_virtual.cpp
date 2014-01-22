@@ -16,7 +16,7 @@
 
 #include "bvh4i_intersector16_virtual.h"
 #include "geometry/virtual_accel_intersector16.h"
-#include "geometry/triangle1_intersector16_moeller.h"
+#include "geometry/triangle1.h"
 #include "geometry/virtual_accel_intersector1.h"
 
 namespace embree

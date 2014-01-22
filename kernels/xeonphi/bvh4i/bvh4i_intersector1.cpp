@@ -213,14 +213,73 @@ namespace embree
 	  const mic_f t = rcp_den*nom;
 	  mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
-	  max_dist_xyz  = select(m_final,t,max_dist_xyz);
-		    
-	  //////////////////////////////////////////////////////////////////////////////////////////////////
+          /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__) || defined(__USE_RAY_MASK__)
+              
+              mic_f org_max_dist_xyz = max_dist_xyz;
 
+              /* did the ray hit one of the four triangles? */
+              while (true) 
+              {
+                if (none(m_final)) {
+                  max_dist_xyz = org_max_dist_xyz;
+                  break;
+                }
+
+                max_dist_xyz  = select(m_final,t,org_max_dist_xyz);
+                const mic_f min_dist = vreduce_min(max_dist_xyz);
+                const mic_m m_dist = eq(min_dist,max_dist_xyz);
+                const size_t vecIndex = bitscan(toInt(m_dist));
+                const size_t triIndex = vecIndex >> 2;
+                const Triangle1  *__restrict__ tri_ptr = tptr + triIndex;
+                const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+                const mic_f gnormalx = mic_f(tri_ptr->Ng.x);
+                const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
+                const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
+                const int geomID = tri_ptr->geomID();
+                const int primID = tri_ptr->primID();
+
+#if defined(__USE_RAY_MASK__)
+                if ( (tri_ptr->mask() & ray.mask) == 0 ) {
+                  m_final ^= m_tri;
+                  continue;
+                }
+#endif
+                
+#if defined(__INTERSECTION_FILTER__) 
+                Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
+                if (likely(!geom->hasFilter1())) 
+                {
+#endif
+                  compactustore16f_low(m_tri,&ray.tfar,min_dist);
+                  compactustore16f_low(m_tri,&ray.u,u); 
+                  compactustore16f_low(m_tri,&ray.v,v); 
+                  compactustore16f_low(m_tri,&ray.Ng.x,gnormalx); 
+                  compactustore16f_low(m_tri,&ray.Ng.y,gnormaly); 
+                  compactustore16f_low(m_tri,&ray.Ng.z,gnormalz); 
+                  ray.geomID = geomID;
+                  ray.primID = primID;
+                  max_dist_xyz = min_dist;
+                  break;
+#if defined(__INTERSECTION_FILTER__) 
+                }
+                
+                if (runIntersectionFilter1(geom,ray,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) {
+                  max_dist_xyz = min_dist;
+                  break;
+                }
+                m_final ^= m_tri;
+#endif
+              }
+
+#else
+
+              //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	  /* did the ray hot one of the four triangles? */
 	  if (unlikely(any(m_final)))
 	    {
+              max_dist_xyz  = select(m_final,t,max_dist_xyz);
 	      const mic_f min_dist = vreduce_min(max_dist_xyz);
 	      const mic_m m_dist = eq(min_dist,max_dist_xyz);
 
@@ -238,13 +297,6 @@ namespace embree
 	      const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
 	      const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
 
-#if defined(__USE_RAY_MASK__)
-	      if ( (tri_ptr->mask() & ray.mask) != 0 )
-#else
-	      if (1)
-#endif
-		{		  
-		  
 		  max_dist_xyz = min_dist;
 
 		  compactustore16f_low(m_tri,&ray.tfar,min_dist);
@@ -316,10 +368,10 @@ namespace embree
 
 			  assert(sindex < 48);		  
 			}
-		    } // sindex
-		}
+		    }
 
 	    }
+#endif
 	}	  
     }
 
@@ -500,7 +552,58 @@ namespace embree
 
 	  if (unlikely(none(m_aperture))) continue;
 
-	  const mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
+	  mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
+
+            /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__) || defined(__USE_RAY_MASK__)
+              
+              /* did the ray hit one of the four triangles? */
+              while (true) 
+              {
+                if (none(m_final)) {
+                  break;
+                }
+
+                const mic_f temp_t  = select(m_final,t,max_dist_xyz);
+                const mic_f min_dist = vreduce_min(temp_t);
+                const mic_m m_dist = eq(min_dist,temp_t);
+                const size_t vecIndex = bitscan(toInt(m_dist));
+                const size_t triIndex = vecIndex >> 2;
+                const Triangle1  *__restrict__ tri_ptr = tptr + triIndex;
+                const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+                const mic_f gnormalx = mic_f(tri_ptr->Ng.x);
+                const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
+                const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
+                const int geomID = tri_ptr->geomID();
+                const int primID = tri_ptr->primID();
+
+#if defined(__USE_RAY_MASK__)
+                if ( (tri_ptr->mask() & ray16.mask[rayIndex]) == 0 ) {
+                  m_final ^= m_tri;
+                  continue;
+                }
+#endif
+                
+#if defined(__INTERSECTION_FILTER__) 
+                Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
+                if (likely(!geom->hasFilter1())) 
+                {
+#endif
+                  ray.geomID = 0;
+		  return;
+
+#if defined(__INTERSECTION_FILTER__) 
+                }
+                
+                if (runOcclusionFilter1(geom,ray,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) {
+                  ray.geomID = 0;
+		  return;
+                }
+                m_final ^= m_tri;
+#endif
+              }
+
+#else
 
 	  if (unlikely(any(m_final)))
 	    {
@@ -520,6 +623,7 @@ namespace embree
 		  return;
 		}
 	    }
+#endif
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	}

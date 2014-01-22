@@ -93,7 +93,7 @@ namespace embree
 
   Accel* BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene)
   { 
-    BVH4i* accel = new BVH4i(SceneTriangle1::type);   
+    BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);   
     Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,BVH4iBuilder::BVH4I_BUILDER_DEFAULT);    
     Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
@@ -101,7 +101,7 @@ namespace embree
 
   Accel* BVH4i::BVH4iTriangle1ObjectSplitMorton(Scene* scene)
   { 
-    BVH4i* accel = new BVH4i(SceneTriangle1::type);   
+    BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);   
     Builder* builder = BVH4iBuilderMorton::create(accel,&scene->flat_triangle_source_1,scene);  
     Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
@@ -109,7 +109,7 @@ namespace embree
 
   Accel* BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene)
   { 
-    BVH4i* accel = new BVH4i(SceneTriangle1::type);
+    BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);
     
     Builder* builder = BVH4iBuilderMortonEnhanced::create(accel,&scene->flat_triangle_source_1,scene);
     
@@ -119,7 +119,7 @@ namespace embree
 
   Accel* BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene)
   {
-    BVH4i* accel = new BVH4i(SceneTriangle1::type);
+    BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);
     
     Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,BVH4iBuilder::BVH4I_BUILDER_PRESPLITS);
     
@@ -129,7 +129,7 @@ namespace embree
 
   Accel* BVH4i::BVH4iVirtualGeometryBinnedSAH(Scene* scene)
   {
-    BVH4i* accel = new BVH4i(SceneTriangle1::type);    
+    BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);    
     Builder* builder = BVH4iBuilder::create(accel,NULL,scene,BVH4iBuilder::BVH4I_BUILDER_VIRTUAL_GEOMETRY);   
     Accel::Intersectors intersectors = BVH4iVirtualGeometryIntersectors(accel);
     return new AccelInstance(accel,builder,intersectors);    

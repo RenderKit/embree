@@ -11,3 +11,6 @@
 ./tutorial03_ispc -c ~/Work/models/embree/conference/conference_obj.ecs
 ./tutorial04
 ./tutorial04_ispc
+./tutorial05
+./tutorial05_ispc
+

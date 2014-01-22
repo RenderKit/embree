@@ -46,6 +46,14 @@ enum RTCGeometryFlags
   RTC_GEOMETRY_DYNAMIC    = 2,    //!< specifies dynamic geometry with arbitrary motion (BVH refit not possible)
 };
 
+/*! Intersection filter function for uniform rays. */
+typedef void (*RTCFilterFuncUniform)(void* uniform ptr,    /*!< pointer to user data */
+                                     uniform RTCRay1& ray  /*!< intersection to filter */);
+
+/*! Intersection filter function for varying rays. */
+typedef void (*RTCFilterFuncVarying)(void* uniform ptr,   /*!< pointer to user data */
+                                     varying RTCRay& ray  /*!< intersection to filter */);
+
 /*! \brief Creates a new scene instance. 
 
   A scene instance contains a reference to a scene to instantiate and
@@ -111,6 +119,12 @@ void rtcUpdate (RTCScene scene, uniform unsigned int geomID);
   geometry gives higher performance than deleting and recreating
   geometry. */
 void rtcDisable (RTCScene scene, uniform unsigned int geomID);
+
+/*! \brief Sets the intersection filter function for uniform rays. */
+void rtcSetFilterFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncUniform func);
+
+/*! \brief Sets the intersection filter function for varying rays. */
+void rtcSetFilterFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncVarying func);
 
 /*! \brief Deletes the geometry. */
 void rtcDeleteGeometry (RTCScene scene, uniform unsigned int geomID);
