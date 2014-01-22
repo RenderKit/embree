@@ -27,3 +27,4 @@ sed -i .backup  's/Vec3f renderPixelStandard(int x, int y, const Vec3f\& vx, con
 sed -i .backup  's/RTCIntersectFuncVarying/RTCIntersectFunc/g' $2
 sed -i .backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
 sed -i .backup  's/\#if 1 \/\/ enables parallel execution/\#if 0/g' $2
+sed -i .backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2

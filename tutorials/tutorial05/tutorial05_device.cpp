@@ -23,12 +23,39 @@ Vec3f* colors = NULL;
 /* render function to use */
 renderPixelFunc renderPixel;
 
-/* intersection filter function */
-void intersectionFilter(void* ptr, RTCRay& ray)
+/* shadow ray structure that includes total transparency along the ray */
+struct RTCRay2
 {
-  Vec3f h = add(ray.org,mul(ray.dir,ray.tfar));
-  float v = sin(4.0f*h.x)*cos(4.0f*h.y)*sin(4.0f*h.z);
-  if (abs(v) > 0.1) ray.geomID = -1;
+  RTCRay ray;
+  float transparency;
+};
+
+/* 3D procedural transparency */
+inline float transparencyFunction(RTCRay2& ray)
+{
+  Vec3f h = add(ray.ray.org,mul(ray.ray.dir,ray.ray.tfar));
+  float v = abs(sin(4.0f*h.x)*cos(4.0f*h.y)*sin(4.0f*h.z));
+  float T = clamp((v-0.1f)*3.0f,0.0f,1.0f);
+  return T;
+}
+
+/* intersection filter function */
+void intersectionFilter(void* ptr, RTCRay2& ray)
+{
+  float T = transparencyFunction(ray);
+  if (T >= 1.0f) ray.ray.geomID = -1;
+  else ray.transparency = T;
+}
+
+/* occlusion filter function */
+void occlusionFilter(void* ptr, RTCRay2& ray)
+{
+  float T = transparencyFunction(ray);
+  T *= ray.transparency;
+  ray.transparency = T;
+  if (T != 0.0f) {
+    ray.ray.geomID = -1;
+  }
 }
 
 /* adds a cube to the scene */
@@ -83,8 +110,8 @@ unsigned int addCube (RTCScene scene_i)
   rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
 
   /* set intersection filter for the cube */
-  rtcSetIntersectionFilterFunction(scene_i,mesh,&intersectionFilter);
-  rtcSetOcclusionFilterFunction(scene_i,mesh,&intersectionFilter);
+  rtcSetIntersectionFilterFunction(scene_i,mesh,(RTCFilterFunc)&intersectionFilter);
+  rtcSetOcclusionFilterFunction   (scene_i,mesh,(RTCFilterFunc)&occlusionFilter);
 
   return mesh;
 }
@@ -137,49 +164,77 @@ extern "C" void device_init (int8* cfg)
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  /* initialize ray */
-  RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
-  ray.mask = -1;
-  ray.time = 0;
-  
-  /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
-  
-  /* shade pixels */
+  float weight = 1.0f;
   Vec3f color = Vec3f(0.0f);
-  if (ray.geomID != -1) 
+
+  /* initialize ray */
+  RTCRay2 primary;
+  primary.ray.org = p;
+  primary.ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  primary.ray.tnear = 0.0f;
+  primary.ray.tfar = inf;
+  primary.ray.geomID = -1;
+  primary.ray.primID = -1;
+  primary.ray.mask = -1;
+  primary.ray.time = 0;
+  primary.transparency = 0.0f;
+
+  while (true)
   {
-    Vec3f diffuse = colors[ray.primID];
-    color = add(color,mul(diffuse,0.5f));
-    Vec3f lightDir = normalize(Vec3f(-1,-1,-1));
+    /* intersect ray with scene */
+    rtcIntersect(g_scene,primary.ray);
     
+    /* shade pixels */
+    if (primary.ray.geomID == -1) 
+      break;
+
+    float opacity = 1.0f-primary.transparency;
+    Vec3f diffuse = colors[primary.ray.primID];
+    Vec3f La = mul(diffuse,0.5f);
+    color = add(color,mul(weight*opacity,La));
+    Vec3f lightDir = normalize(Vec3f(-1,-1,-1));
+      
     /* initialize shadow ray */
-    RTCRay shadow;
-    shadow.org = add(ray.org,mul(ray.tfar,ray.dir));
-    shadow.dir = neg(lightDir);
-    shadow.tnear = 0.001f;
-    shadow.tfar = inf;
-    shadow.geomID = 1;
-    shadow.primID = 0;
-    shadow.mask = -1;
-    shadow.time = 0;
+    RTCRay2 shadow;
+    shadow.ray.org = add(primary.ray.org,mul(primary.ray.tfar,primary.ray.dir));
+    shadow.ray.dir = neg(lightDir);
+    shadow.ray.tnear = 0.001f;
+    shadow.ray.tfar = inf;
+    shadow.ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.ray.primID = RTC_INVALID_GEOMETRY_ID;
+    shadow.ray.mask = -1;
+    shadow.ray.time = 0;
+    shadow.transparency = 1.0f;
     
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
+    rtcOccluded(g_scene,shadow.ray);
     
     /* add light contribution */
-    if (shadow.geomID)
-      color = add(color,mul(diffuse,clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
+    if (shadow.ray.geomID) {
+      Vec3f Ll = mul(diffuse,shadow.transparency*clamp(-dot(lightDir,normalize(primary.ray.Ng)),0.0f,1.0f));
+      color = add(color,mul(weight*opacity,Ll));
+    }
+
+    /* shoot transmission ray */
+    weight *= primary.transparency;
+    primary.ray.org = p;
+    primary.ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+    primary.ray.tnear = 1.001f*primary.ray.tfar;
+    primary.ray.tfar = inf;
+    primary.ray.geomID = -1;
+    primary.ray.primID = -1;
+    primary.ray.mask = -1;
+    primary.ray.time = 0;
+    primary.transparency = 0.0f;
+
+/*    primary.ray.tfar = inf;
+    primary.ray.geomID = -1;
+    primary.ray.primID = -1;
+    primary.transparency = 0.0f;*/
   }
   return color;
 }
-
+  
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
                      const int width,
