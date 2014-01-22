@@ -23,12 +23,27 @@ uniform Vec3f* uniform colors = NULL;
 /* render function to use */
 renderPixelFunc renderPixel;
 
+struct RTCShadowRay
+{
+  RTCRay ray;
+  Vec3f transparency;
+};
+
 /* intersection filter function */
 void intersectionFilter(void* uniform ptr, RTCRay& ray)
 {
   Vec3f h = add(ray.org,mul(ray.dir,ray.tfar));
   float v = sin(4.0f*h.x)*cos(4.0f*h.y)*sin(4.0f*h.z);
   if (abs(v) > 0.1) ray.geomID = -1;
+}
+
+/* occlusion filter function */
+void occlusionFilter(void* uniform ptr, RTCRay& ray)
+{
+  Vec3f h = add(ray.org,mul(ray.dir,ray.tfar));
+  float v = sin(4.0f*h.x)*cos(4.0f*h.y)*sin(4.0f*h.z);
+  if (abs(v) > 0.1) ray.geomID = -1;
+  RTCShadowRay* uniform sray = (RTCShadowRay* uniform) &ray;
 }
 
 /* adds a cube to the scene */
@@ -84,7 +99,7 @@ uniform unsigned int addCube (RTCScene scene_i)
 
   /* set intersection filter for the cube */
   rtcSetIntersectionFilterFunction(scene_i,mesh,&intersectionFilter);
-  rtcSetOcclusionFilterFunction(scene_i,mesh,&intersectionFilter);
+  rtcSetOcclusionFilterFunction(scene_i,mesh,&occlusionFilter);
 
   return mesh;
 }
@@ -160,21 +175,22 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     
     /* initialize shadow ray */
-    RTCRay shadow;
-    shadow.org = add(ray.org,mul(ray.tfar,ray.dir));
-    shadow.dir = neg(lightDir);
-    shadow.tnear = 0.001f;
-    shadow.tfar = inf;
-    shadow.geomID = 1;
-    shadow.primID = 0;
-    shadow.mask = -1;
-    shadow.time = 0;
-    
+    RTCShadowRay shadow;
+    shadow.ray.org = add(ray.org,mul(ray.tfar,ray.dir));
+    shadow.ray.dir = neg(lightDir);
+    shadow.ray.tnear = 0.001f;
+    shadow.ray.tfar = inf;
+    shadow.ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.ray.primID = RTC_INVALID_GEOMETRY_ID;
+    shadow.ray.mask = -1;
+    shadow.ray.time = 0;
+    shadow.transparency = make_Vec3f(1.0f);
+
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
+    rtcOccluded(g_scene,shadow.ray);
     
     /* add light contribution */
-    if (shadow.geomID)
+    if (shadow.ray.geomID) // FIXME: != RTC_INVALID_GEOMETRY_ID
       color = add(color,mul(diffuse,clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
   }
   return color;
