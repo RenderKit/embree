@@ -56,6 +56,9 @@
   
   threads = num,       // sets the number of threads to use (default is to use all threads)
   verbose = num,       // sets verbosity level (default is 0)
+
+  If Embree is started on an unsupported CPU, rtcInit will fail and
+  set the RTC_UNSUPPORTED_CPU error code.
   
 */
 RTCORE_API void rtcInit(const char* cfg = NULL);
@@ -75,7 +78,8 @@ enum RTCError {
   RTC_UNKNOWN_ERROR = 1,     //!< An unknown error has occured.
   RTC_INVALID_ARGUMENT = 2,  //!< An invalid argument is specified
   RTC_INVALID_OPERATION = 3, //!< The operation is not allowed for the specified object.
-  RTC_OUT_OF_MEMORY = 4      //!< There is not enough memory left to execute the command.
+  RTC_OUT_OF_MEMORY = 4,     //!< There is not enough memory left to execute the command.
+  RTC_UNSUPPORTED_CPU = 5,   //!< The CPU is not supported as it does not support SSE2.
 };
 
 /*! \brief Returns the value of the per-thread error flag. 

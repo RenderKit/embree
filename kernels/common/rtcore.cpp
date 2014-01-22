@@ -236,6 +236,22 @@ namespace embree
       } while (findNext (cfg,',',pos));
     }
 
+    if (g_verbose >= 1)
+    {
+      std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
+      std::cout << "  Compiler : " << getCompilerName() << std::endl;
+      std::cout << "  Platform : " << getPlatformName() << std::endl;
+      std::cout << "  CPU      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
+    }
+
+    /* CPU has to support at least SSE2 */
+#if !defined (__MIC__)
+    if (!has_feature(SSE2)) {
+      recordError(RTC_UNSUPPORTED_CPU);
+      return;
+    }
+#endif
+
     g_error = createTls();
 
 #if !defined(__MIC__)
@@ -250,14 +266,6 @@ namespace embree
     BVH8iRegister();
 #endif
     InstanceIntersectorsRegister();
-
-    if (g_verbose >= 1)
-    {
-      std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
-      std::cout << "  Compiler : " << getCompilerName() << std::endl;
-      std::cout << "  Platform : " << getPlatformName() << std::endl;
-      std::cout << "  CPU      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
-    }
 
     if (g_verbose >= 2) 
     {
@@ -316,6 +324,7 @@ namespace embree
       case RTC_INVALID_ARGUMENT : std::cerr << "Embree: Invalid argument" << std::endl; break;
       case RTC_INVALID_OPERATION: std::cerr << "Embree: Invalid operation" << std::endl; break;
       case RTC_OUT_OF_MEMORY    : std::cerr << "Embree: Out of memory" << std::endl; break;
+      case RTC_UNSUPPORTED_CPU  : std::cerr << "Embree: Unsupported CPU" << std::endl; break;
       };
     }
     if (*stored_error == RTC_NO_ERROR)
