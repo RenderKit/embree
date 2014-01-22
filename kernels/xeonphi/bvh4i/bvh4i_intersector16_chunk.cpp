@@ -62,7 +62,7 @@ namespace embree
         if (unlikely(curNode == BVH4i::invalidNode))  break;
         
         /* cull node if behind closest hit point */
-        if (unlikely(none(m_stackDist))) continue;
+        if (unlikely(none(m_stackDist))) {continue;}
 	        
 	const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
@@ -77,9 +77,10 @@ namespace embree
           /* pop of next node */
           sptr_node--;
           sptr_dist--;
-          curNode = *sptr_node; 
+          curNode = *sptr_node; 	  
           curDist = *sptr_dist;
-          
+
+	  prefetch<PFHINT_L1>((mic_f*)node + 0);           
 	  prefetch<PFHINT_L1>((mic_f*)node + 1); 
 
 #pragma unroll(4)
@@ -266,7 +267,8 @@ namespace embree
         if (unlikely(curNode == BVH4i::invalidNode))  break;
         
         /* cull node if behind closest hit point */
-        if (unlikely(none(m_stackDist))) continue;
+
+        if (unlikely(none(m_stackDist))) { continue; }
 	
         while (1)
         {

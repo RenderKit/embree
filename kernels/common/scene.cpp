@@ -34,6 +34,8 @@ namespace embree
       numTriangleMeshes(0), numTriangleMeshes2(0), numUserGeometries(0),
       flat_triangle_source_1(this,1), flat_triangle_source_2(this,2)
   {
+    geometries.reserve(128);
+
 #if defined(__MIC__)
 
     accels.accel0 = NULL; 
@@ -209,9 +211,8 @@ namespace embree
 
   unsigned Scene::add(Geometry* geometry) 
   {
-#if !defined(__MIC__)
     Lock<AtomicMutex> lock(geometriesMutex);
-#endif
+
     if (usedIDs.size()) {
       int id = usedIDs.back(); 
       usedIDs.pop_back();
@@ -225,9 +226,8 @@ namespace embree
   
   void Scene::remove(Geometry* geometry) 
   {
-#if !defined(__MIC__)
     Lock<AtomicMutex> lock(geometriesMutex);
-#endif
+
     usedIDs.push_back(geometry->id);
     geometries[geometry->id] = NULL;
     delete geometry;
@@ -243,9 +243,7 @@ namespace embree
 
   void Scene::build () 
   {
-#if !defined(__MIC__)
     Lock<MutexSys> lock(mutex);
-#endif
 
     if ((isStatic() && isBuild()) || !ready()) {
       recordError(RTC_INVALID_OPERATION);

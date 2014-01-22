@@ -81,13 +81,10 @@ namespace embree
     __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i]; }
     __forceinline       Geometry* get_locked(size_t i)  { 
 
-#if !defined(__MIC__)
-      Lock<AtomicMutex> lock(geometriesMutex); 
-#endif
-
+      Lock<AtomicMutex> lock(geometriesMutex);
       Geometry *g = geometries[i]; 
-
-      assert(i < geometries.size()); return g; 
+      assert(i < geometries.size()); 
+      return g; 
     }
 
     /* get triangle mesh by ID */
@@ -209,7 +206,6 @@ namespace embree
 
     
   public:
-    AtomicMutex geometriesMutex;
     std::vector<int> usedIDs;
     std::vector<Geometry*> geometries; //!< list of all user geometries
     
@@ -222,6 +218,7 @@ namespace embree
     bool needVertices;
     bool is_build;
     MutexSys mutex;
+    AtomicMutex geometriesMutex;
 
   public:
     atomic_t numTriangleMeshes;        //!< number of enabled triangle meshes

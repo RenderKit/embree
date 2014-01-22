@@ -21,11 +21,7 @@
 
 #define BVH_NODE_PREALLOC_FACTOR 1.1f
 
-//#define PROFILE
-
-#if defined(__USE_STAT_COUNTERS__)
 #define PROFILE
-#endif
 
 #define DBG(x)
 
@@ -61,14 +57,14 @@ namespace embree
       double dt_min = pos_inf;
       double dt_avg = 0.0f;
       double dt_max = neg_inf;
-      for (size_t i=0; i<200; i++) 
+      for (size_t i=0; i<20; i++) 
       {
         TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,TaskScheduler::getNumThreads(),"build_parallel_morton");
         dt_min = min(dt_min,dt);
         dt_avg = dt_avg + dt;
         dt_max = max(dt_max,dt);
       }
-      dt_avg /= double(200);
+      dt_avg /= double(20);
       
       std::cout << "[DONE]" << std::endl;
       std::cout << "  min = " << 1000.0f*dt_min << "ms (" << source->size()/dt_min*1E-6 << " Mtris/s)" << std::endl;
