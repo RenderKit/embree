@@ -23,6 +23,10 @@
 #include "geometry/triangle4v_intersector1_pluecker.h"
 #include "geometry/virtual_accel_intersector1.h"
 
+#if defined(__AVX__)
+#include "geometry/triangle8_intersector1_moeller.h"
+#endif
+
 namespace embree
 {
   namespace isa
@@ -274,5 +278,8 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH4iTriangle1vIntersector1Pluecker,BVH4iIntersector1<Triangle1vIntersector1Pluecker>);
     DEFINE_INTERSECTOR1(BVH4iTriangle4vIntersector1Pluecker,BVH4iIntersector1<Triangle4vIntersector1Pluecker>);
     DEFINE_INTERSECTOR1(BVH4iVirtualIntersector1,BVH4iIntersector1<VirtualAccelIntersector1>);
+#if defined(__AVX__)
+    DEFINE_INTERSECTOR1(BVH4iTriangle8Intersector1Moeller,BVH4iIntersector1<Triangle8Intersector1MoellerTrumbore>);
+#endif
   }
 }
