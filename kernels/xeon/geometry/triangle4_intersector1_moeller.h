@@ -156,7 +156,8 @@ namespace embree
 
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-      for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
+      size_t m=movemask(valid), i=__bsf(m);
+      while (true)
       {  
         const int geomID = tri.geomID[i];
         Geometry* geometry = ((Scene*)geom)->get(geomID);
@@ -173,11 +174,14 @@ namespace embree
         const Vec3fa Ng = Vec3fa(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
         if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri.primID[i])) 
           break;
+
+        /* test if one more triangle hit */
+        m=__btc(m,i); i=__bsf(m);
+        if (m == 0) return false;
       }
-      return false;
-#else
-      return true;
 #endif
+
+      return true;
     }
 
     static __forceinline bool occluded(Ray& ray, const Triangle4* tri, size_t num, void* geom) 

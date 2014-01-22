@@ -173,26 +173,28 @@ namespace embree
 
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-
-      size_t i = select_min(valid,T);
-      int geomID = tri.geomID[i];
-
-      while (true) 
-      {
+      size_t m=movemask(valid), i=__bsf(m);
+      while (true)
+      {  
+        const int geomID = tri.geomID[i];
         Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (likely(!geometry->hasOcclusionFilter1())) break;
+
+        /* if we have no filter then the test passes */
+        if (likely(!geometry->hasOcclusionFilter1()))
+          break;
 
         /* calculate hit information */
         const ssef rcpAbsDen = rcp(absDen);
-        const ssef u = U / absDen;
-        const ssef v = V / absDen;
-        const ssef t = T / absDen;
+        const ssef u = U * rcpAbsDen;
+        const ssef v = V * rcpAbsDen;
+        const ssef t = T * rcpAbsDen;
         const Vec3fa N = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-        if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],N,geomID,tri.primID[i])) break;
-        valid[i] = 0;
-        if (none(valid)) return false;
-        i = select_min(valid,T);
-        geomID = tri.geomID[i];
+        if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],N,geomID,tri.primID[i])) 
+          break;
+
+        /* test if one more triangle hit */
+        m=__btc(m,i); i=__bsf(m);
+        if (m == 0) return false;
       }
 #endif
 

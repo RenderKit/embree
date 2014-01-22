@@ -203,7 +203,7 @@ namespace embree
 
         /* if we have no filter then the test passes */
         if (likely(!geometry->hasOcclusionFilter1()))
-          break;
+          return true;
 
         /* calculate hit information */
         const ssef rcpAbsDen = rcp(absDen);
@@ -212,7 +212,7 @@ namespace embree
         const ssef t = T * rcpAbsDen;
         const Vec3fa N = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
         if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],N,geomID,tri.primID[i])) 
-          break;
+          return true;
 #endif
       }
       return false;
