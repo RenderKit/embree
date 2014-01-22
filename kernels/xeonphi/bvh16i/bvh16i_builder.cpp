@@ -76,9 +76,11 @@ namespace embree
     }
     DBG_PRINT(total);
     std::cout << "node util dist: ";
+    float sum = 0;
     for (size_t i=0;i<16;i++) 
       {
-	std::cout << i+1 << "[" << (float)bvh16_node_dist[i] * 100.0f / total << "] ";
+	sum += (float)bvh16_node_dist[i] * 100.0f / total;
+	std::cout << i+1 << "[" << (float)bvh16_node_dist[i] * 100.0f / total << "%, sum " << sum << "%] ";
       }
     std::cout << std::endl;
     DBG_PRINT(100.0f * util / (16.0f * total));
