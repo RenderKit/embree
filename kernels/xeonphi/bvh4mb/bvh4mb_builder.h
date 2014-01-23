@@ -43,12 +43,17 @@ namespace embree
     virtual void createAccel(const size_t threadIndex, const size_t threadCount);
     virtual void printBuilderName();
 
-    void refit(const size_t index);
 
+    /* parallel refit bvh4mb tree */
     void generate_subtrees(const size_t index,const size_t depth, size_t &subtrees);
     BBox3f refit_toplevel(const size_t index,const size_t depth);
-
     BBox3f refit_subtree(const size_t index);
+
+    /* scalar refit */
+    void refit(const size_t index);
+
+    /* check bvh4mb tree */
+    void check_tree(const unsigned index);
 
   protected:
     size_t subtrees;

@@ -57,11 +57,6 @@ namespace embree
         
     DBG_PRINT(numPrimitives * sizeof(BVHNode) / sizeof(BVH16i::Node));
 
-    // for (size_t i=0;i<index16;i++)
-    //    {
-    //  	bvh16[i].reorderNodesOnArea();
-    //    }
-
     const size_t sizeBVH16i = index16 * sizeof(BVH16i::Node);
 
     DBG_PRINT(index16);
@@ -258,12 +253,14 @@ namespace embree
       bvh16_node_dist[bvh16_used_slots-1]++;
       
       BVH16i::Node &b16 = bvh16[bvh16_node_index];
-      
+
+
       DBG(DBG_PRINT(b16));
       for (size_t i=0;i<bvh16_used_slots;i++)
         if (!bvhLeaf(b16.child[i]))
 	{
 	  DBG(std::cout << "RECURSE FOR " << b16.child[i] << " " << b16.data[i] << std::endl << std::flush);
+	  DBG_PRINT(b16.data[i]); // TRY: EITHER BVH4i leaf/leaves or triangle16 struct 
 	  convertBVH4iToBVH16i(bvh4,
 			       b16.child[i],
 			       b16.data[i],
