@@ -265,7 +265,7 @@ ray will intersect the scene with the vertices of the two time steps
 linearly interpolated to this specified time. Each ray can specify a
 different time, even inside a ray packet.</p>
 
-<p>A 30 bit geometry mask can be assigned to triangle mesh geometries
+<p>A 32 bit geometry mask can be assigned to triangle mesh geometries
 using the <code>rtcSetMask</code> call.</p>
 
 <pre><code>rtcSetMask(scene,geomID,mask);</code></pre>
@@ -449,8 +449,7 @@ does not change. The ray contains the following data members:</p>
   <tr><td>tnear</td><td>in</td><td>start of ray segment</td></tr>
   <tr><td>tfar</td><td>in/out</td><td>end of ray segment, set to hit distance after intersection</td></tr>
   <tr><td>time</td><td>in</td><td>time used for motion blur</td></tr>
-  <tr><td>mask</td><td>in</td><td>ray mask to mask out geometries (30
-  bits used)</td></tr>
+  <tr><td>mask</td><td>in</td><td>ray mask to mask out geometries</td></tr>
 
   <tr><td>Ng</td><td>out</td><td>not normalized geometry normal</td></tr>
   <tr><td>u</td><td>out</td><td>barycentric u-coordinate of hit</td></tr>

@@ -93,7 +93,12 @@ RTCORE_API void rtcSetTransform (RTCScene scene,                          //!< s
   (RTC_INDEX_BUFFER) and the triangle vertices can be set by mapping
   and writing into the vertex buffer (RTC_VERTEX_BUFFER). In case of
   linear motion blur, two vertex buffers have to get filled
-  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1), one for each time step. */
+  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1), one for each time
+  step. The index buffer has the default layout of three 32 bit
+  integer indices for each triangle. An index points to the ith
+  vertex. The vertex buffer stores single precision x,y,z floating
+  point coordinates aligned to 16 bytes. The value of the 4th float
+  used for alignment can be arbitrary. */
 RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene,                    //!< the scene the mesh belongs to
                                         RTCGeometryFlags flags,            //!< geometry flags
                                         size_t numTriangles,               //!< number of triangles
@@ -101,7 +106,7 @@ RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene,                    //!< 
                                         size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
 
-/*! \brief Sets 30 bit ray mask. */
+/*! \brief Sets 32 bit ray mask. */
 RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask);
 
 /*! \brief Maps specified buffer. This function can be used to set index and
@@ -113,6 +118,20 @@ RTCORE_API void* rtcMapBuffer(RTCScene scene, unsigned geomID, RTCBufferType typ
   A buffer has to be unmapped before the rtcEnable, rtcDisable,
   rtcUpdate, or rtcDeleteGeometry calls are executed. */
 RTCORE_API void rtcUnmapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type);
+
+/*! \brief Shares a data buffer between the application and
+ *  Embree. The passed buffer is used by Embree to store index and
+ *  vertex data. It has to remain valid as long as the mesh exists,
+ *  and the user is responsible to free the data when the mesh gets
+ *  deleted. One can optionally speficy a byte offset and byte stride
+ *  of the elements stored inside the buffer. The addresses
+ *  ptr+offset+i*stride have to be aligned to 4 bytes. For vertex
+ *  buffers, the 4 bytes after the z-coordinate of the last vertex has
+ *  to be a valid address to read from, thus padding is required for
+ *  some layouts. If this function is not called, Embree will allocate
+ *  and manage buffers of the default layout. */
+RTCORE_API void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, 
+                             void* ptr, size_t offset = 0, size_t stride = 16);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnable (RTCScene scene, unsigned geomID);
