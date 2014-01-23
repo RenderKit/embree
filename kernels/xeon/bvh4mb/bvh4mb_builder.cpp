@@ -48,6 +48,9 @@ namespace embree
     /* finish build */
     finish(threadIndex,threadCount,NULL);
 
+    /* free all temporary blocks */
+    Alloc::global.clear();
+
     if (g_verbose >= 2 || g_benchmark) 
       t1 = getSeconds();
     

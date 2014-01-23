@@ -68,6 +68,9 @@ namespace embree
     bvh->bounds = initStage.pinfo.geomBounds;
     initStage.pinfo.clear();
 
+    /* free all temporary blocks */
+    Alloc::global.clear();
+
     if (g_verbose >= 2 || g_benchmark) 
       t1 = getSeconds();
     

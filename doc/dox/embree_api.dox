@@ -533,11 +533,11 @@ invoked for each intersection found during the
 <code>rtcIntersect</code> or <code>rtcOccluded</code> calls. The
 former ones are called intersection filter functions, the latter ones
 occlusion filter functions. The filter functions can be used to
-implement various useful features, such as rejecting a hit,
-accumulating opacity for shadow shadows, counting the number of
-surfaces along a ray, collecting all hits along a ray, etc. The filter
-functions are only supported for triangle mesh geometry, including
-triangle meshes with motion blur.</p>
+implement various useful features, such as rejecting a hit to
+implement backface culling, accumulating opacity for shadow shadows,
+counting the number of surfaces along a ray, collecting all hits along
+a ray, etc. The filter functions are only supported for triangle mesh
+geometry, including triangle meshes with motion blur.</p>
 
 <p>The filter functions provided by the user have to have the
 following signature:</p>
