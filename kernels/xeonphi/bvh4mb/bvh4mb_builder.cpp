@@ -25,6 +25,7 @@ namespace embree
 #define L2_PREFETCH_ITEMS 16
 
 #define GENERATE_SUBTREES_MAX_TREE_DEPTH 5
+#define SERIAL_REFIT_THRESHOLD 1024
 
   Builder* BVH4mbBuilder::create (void* accel, BuildSource* source, void* geometry, size_t mode ) 
   { 
@@ -378,46 +379,26 @@ namespace embree
 
   void BVH4mbBuilder::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
   {
-    TIMER(double msec = 0.0);
-
-    DBG(PING);
-
-    TIMER(msec = getSeconds());    
-    subtrees = 0;
-    generate_subtrees(0,0,subtrees);
-    TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "generate subtrees " << 1000. * msec << " ms" << std::endl << std::flush);
-
-    DBG(DBG_PRINT(subtrees));
-
-#if 0
-    unsigned int *subtrees_array = (unsigned int*)prims;
-    for (size_t i=0;i<subtrees;i++)
+    if (numPrimitives < SERIAL_REFIT_THRESHOLD)
       {
-	const unsigned int index = subtrees_array[i];
-	BBox3f bounds = refit_subtree(index);
-	*(BBox3f*)&node[index+4] = bounds;	
+	refit(0);
       }
-#else
+    else
+      {
+	subtrees = 0;
+	generate_subtrees(0,0,subtrees);
 
-    TIMER(msec = getSeconds());    
-    LockStepTaskScheduler::dispatchTask( task_refitBVH4MB, this, threadIndex, threadCount );    
+	DBG(DBG_PRINT(subtrees));
+
+	LockStepTaskScheduler::dispatchTask( task_refitBVH4MB, this, threadIndex, threadCount );    
     
-    TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "refit subtrees " << 1000. * msec << " ms" << std::endl << std::flush);
-
-#endif
-
-    TIMER(msec = getSeconds());    
-
-    refit_toplevel(0,0);
-
-    TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "refit toplevel " << 1000. * msec << " ms" << std::endl << std::flush);
+	refit_toplevel(0,0);
+      }
 
 #if defined(DEBUG)
     check_tree(0);
 #endif
+
     LockStepTaskScheduler::dispatchTask( task_convertToSOALayoutMB, this, threadIndex, threadCount );    
   }
 
