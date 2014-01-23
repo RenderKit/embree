@@ -135,6 +135,20 @@ __forceinline size_t __btr(size_t v, size_t i) {
   __int64 r = v; _bittestandreset64(&r,i); return r;
 }
 
+__forceinline int __bscf(int& v) 
+{
+  int i = __bsf(v);
+  v = __btc(v,i);
+  return i;
+}
+
+__forceinline size_t __bscf(size_t& v) 
+{
+  size_t i = __bsf(v);
+  v = __btc(v,i);
+  return i;
+}
+
 #endif
 
 #if defined(__X86_64__)
@@ -266,8 +280,119 @@ __forceinline size_t __btr(size_t v, size_t i) {
   size_t r = 0; asm ("btr %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
 }
 
+__forceinline int bitscan(int v) {
+#if defined(__AVX2__) 
+  return _tzcnt_u32(v);
+#else
+  return __bsf(v);
 #endif
+}
 
+__forceinline size_t bitscan(size_t v) {
+#if defined(__AVX2__)
+#if defined(__X86_64__)
+  return _tzcnt_u64(v);
+#else
+  return _tzcnt_u32(v);
+#endif
+#else
+  return __bsf(v);
+#endif
+}
+
+__forceinline int clz(const int x)
+{
+#if defined(__AVX2__)
+  return _lzcnt_u32(x);
+#elif defined(__MIC__)
+  return _lzcnt_u32(x); 
+#else
+  if (unlikely(x == 0)) return 32;
+  return 31 - __bsr(x);    
+#endif
+}
+
+__forceinline int __bscf(int& v) 
+{
+  int i = bitscan(v);
+  v = __btc(v,i);
+  return i;
+}
+
+__forceinline size_t __bscf(size_t& v) 
+{
+  size_t i = bitscan(v);
+  v = __btc(v,i);
+  return i;
+}
+
+#else
+
+__forceinline unsigned int clz(const unsigned int x) {
+  return _lzcnt_u32(x); 
+}
+
+__forceinline unsigned int bitscan(unsigned int v) {
+  return _mm_tzcnt_32(v); 
+}
+
+__forceinline size_t bitscan64(size_t v) {
+  return _mm_tzcnt_64(v); 
+}
+
+__forceinline unsigned int bitscan(const int index, const unsigned int v) { 
+  return _mm_tzcnti_32(index,v); 
+};
+
+__forceinline size_t bitscan64(const ssize_t index, const size_t v) { 
+  return _mm_tzcnti_64(index,v); 
+};
+
+__forceinline int __popcnt(int v) {
+  return _mm_countbits_32(v); 
+}
+
+__forceinline unsigned int __popcnt(unsigned int v) {
+  return _mm_countbits_32(v); 
+}
+
+__forceinline unsigned int countbits(unsigned int v) {
+  return _mm_countbits_32(v); 
+};
+
+__forceinline size_t __popcnt(size_t v) {
+  return _mm_countbits_64(v); 
+}
+
+__forceinline size_t countbits64(size_t v) { 
+  return _mm_countbits_64(v); 
+};
+
+__forceinline int __bsf(int v) {
+  return bitscan(v); 
+}
+
+__forceinline unsigned int __bsf(unsigned int v) {
+  return bitscan(v); 
+}
+
+__forceinline size_t __bsf(size_t v) {
+  return bitscan(v); 
+}
+
+__forceinline size_t __btc(size_t v, size_t i) {
+  return v ^ (size_t(1) << i); 
+}
+
+__forceinline unsigned int __bsr(unsigned int v) {
+  return 31 - _lzcnt_u32(v); 
+}
+
+__forceinline size_t __bsr(size_t v) {
+  return 63 - _lzcnt_u64(v); 
+}
+
+#endif
 
 #if defined(__X86_64__)
 
@@ -423,120 +548,9 @@ __forceinline void atomic_max_ui32(volatile unsigned int *__restrict__ ptr, cons
   }
 }
 
-__forceinline unsigned int bitscan(unsigned int v) {
-#if defined(__AVX2__) 
-  return _tzcnt_u32(v);
-#elif defined(__MIC__)
-  return _mm_tzcnt_32(v); 
-#else
-  if (unlikely(v == 0)) return 32;
-  return __bsf((int)v);
-#endif
-}
-
-__forceinline size_t bitscan64(size_t v) {
-#if defined(__AVX2__)
-#if defined(__X86_64__)
-  return _tzcnt_u64(v);
-#else
-  return _tzcnt_u32(v);
-#endif
-#elif defined(__MIC__)
-  return _mm_tzcnt_64(v); 
-#else
-  if (unlikely(v == 0)) return 64;
-  return __bsf(v);
-#endif
-}
-
 static const unsigned int BITSCAN_NO_BIT_SET_32 = 32;
 static const size_t       BITSCAN_NO_BIT_SET_64 = 64;
 
-
-__forceinline unsigned int clz(const unsigned int x)
-{
-#if defined(__AVX2__)
-  return _lzcnt_u32(x);
-#elif defined(__MIC__)
-  return _lzcnt_u32(x); 
-#else
-  if (unlikely(x == 0)) return 32;
-  return 31 - __bsr((int)x);    
-#endif
-}
-
-#if defined(__MIC__)
-
-__forceinline unsigned int __bsf(unsigned int v) {
-  return bitscan(v); 
-}
-
-__forceinline int __bsf(int v) {
-  return bitscan(v); 
-}
-
-__forceinline size_t __bsf(size_t v) {
-  return bitscan(v); 
-}
-
-__forceinline size_t __btc(size_t v, size_t i) {
-  return v ^ (size_t(1) << i); 
-}
-
-__forceinline size_t __bsr(size_t v) {
-#if defined(__X86_64__)
-  return 63 - _lzcnt_u64(v); 
-#else
-  return 63 - _lzcnt_u32(v); 
-#endif
-}
-
-__forceinline unsigned int __bsr(unsigned int v) {
-  return 31 - _lzcnt_u32(v); 
-}
-
-__forceinline unsigned int bitscan(const int index,const unsigned int v) { 
-  return _mm_tzcnti_32(index,v); 
-};
-
-__forceinline size_t bitscan64(const ssize_t index,const size_t v) { 
-#if defined(__X86_64__)
-  return _mm_tzcnti_64(index,v); 
-#else
-  return _mm_tzcnti_32(index,v); 
-#endif
-};
-
-__forceinline size_t countbits64(size_t v) { 
-#if defined(__X86_64__)
-  return _mm_countbits_64(v); 
-#else
-  return _mm_countbits_32(v); 
-#endif
-};
-
-__forceinline unsigned int countbits(unsigned int v) {
-  return _mm_countbits_32(v); 
-};
-
-__forceinline unsigned int __popcnt(unsigned int v) {
-  return _mm_countbits_32(v); 
-}
-
-__forceinline int __popcnt(int v) {
-  return _mm_countbits_32(v); 
-}
-
-__forceinline size_t __popcnt(size_t v) {
-#if defined(__X86_64__)
-  return _mm_countbits_64(v); 
-#else
-  return _mm_countbits_32(v); 
-#endif
-}
-
-
-#endif
 
 __forceinline uint64 rdtsc()
 {
@@ -572,15 +586,12 @@ __forceinline void __pause (const int cycles = 0) {
 }
 #endif
 
-__forceinline void __pause_expfalloff(unsigned int &cycles,
-				      const unsigned int max_cycles) 
+__forceinline void __pause_expfalloff(unsigned int &cycles, const unsigned int max_cycles) 
 { 
   __pause(cycles);
   cycles += cycles;
   if (cycles > max_cycles) 
-    {
-      cycles = max_cycles;
-    }
+    cycles = max_cycles;
 }
 
 /* prefetches */
@@ -604,13 +615,5 @@ __forceinline void prefetchL2EX(const void* ptr) {
   _mm_prefetch((const char*)ptr,_MM_HINT_T1); 
 #endif
 }
-
-#if defined(__X86_64__)
-#if defined(__AVX2__) || defined(__MIC__)
-    __forceinline size_t bitscan(size_t mask) { return _tzcnt_u64(mask); }
-#else
-    __forceinline size_t bitscan(size_t mask) { return __bsf(mask); }
-#endif
-#endif
 
 #endif

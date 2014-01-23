@@ -112,7 +112,7 @@ namespace embree
             goto pop;
           
           /*! one child is hit, continue with that child */
-          size_t r = bitscan(mask); mask = __btc(mask,r);
+          size_t r = __bscf(mask);
           if (likely(mask == 0)) {
             cur = node->child(r);
             continue;
@@ -120,7 +120,7 @@ namespace embree
           
           /*! two children are hit, push far child, and continue with closer child */
           NodeRef c0 = node->child(r); const float d0 = tNear[r];
-          r = bitscan(mask); mask = __btc(mask,r);
+          r = __bscf(mask);
           NodeRef c1 = node->child(r); const float d1 = tNear[r];
           if (likely(mask == 0)) {
             if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
@@ -133,7 +133,7 @@ namespace embree
           stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++;
           
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
-          r = bitscan(mask); mask = __btc(mask,r);
+          r = __bscf(mask);
           NodeRef c = node->child(r); float d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
@@ -142,7 +142,7 @@ namespace embree
           }
           
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
-          r = bitscan(mask); mask = __btc(mask,r);
+          r = __bscf(mask);
           c = node->child(r); d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -233,7 +233,7 @@ namespace embree
             goto pop;
           
           /*! one child is hit, continue with that child */
-          size_t r = bitscan(mask); mask = __btc(mask,r);
+          size_t r = __bscf(mask);
           if (likely(mask == 0)) {
             cur = node->child(r);
             continue;
@@ -241,7 +241,7 @@ namespace embree
           
           /*! two children are hit, push far child, and continue with closer child */
           NodeRef c0 = node->child(r); const float d0 = tNear[r];
-          r = bitscan(mask); mask = __btc(mask,r);
+          r = __bscf(mask);
           NodeRef c1 = node->child(r); const float d1 = tNear[r];
           if (likely(mask == 0)) {
             if (d0 < d1) { *stackPtr = c1; stackPtr++; cur = c0; continue; }
@@ -251,7 +251,7 @@ namespace embree
           *stackPtr = c1; stackPtr++;
           
           /*! three children are hit */
-          r = bitscan(mask); mask = __btc(mask,r);
+          r = __bscf(mask);
           cur = node->child(r); *stackPtr = cur; stackPtr++;
           if (likely(mask == 0)) {
             stackPtr--;

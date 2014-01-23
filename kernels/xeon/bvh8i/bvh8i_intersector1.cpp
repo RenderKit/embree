@@ -113,7 +113,7 @@ namespace embree
           
           size_t i_lr_hit = m_near_far;
           sindex++;
-          const size_t pos_first = bitscan64(i_lr_hit);
+          const size_t pos_first = bitscan(i_lr_hit);
           
           curNode = bptr->min_d[pos_first];
           
@@ -124,7 +124,7 @@ namespace embree
           
           while(1)
           {
-            const size_t posN = bitscan64(i_lr_hit);
+            const size_t posN = bitscan(i_lr_hit);
             
             const unsigned int distN   = ((unsigned int*)&near8)[posN];
             const unsigned int nodeN   = bptr->min_d[posN];		  
@@ -185,7 +185,7 @@ namespace embree
           //   {
           
           
-          // 	const size_t posN = bitscan64(i_lr_hit);
+          // 	const size_t posN = bitscan(i_lr_hit);
           // 	DBG(DBG_PRINT(posN));
           
           
@@ -411,7 +411,7 @@ namespace embree
           size_t i_lr_hit = m_near_far;
           const size_t num_m_lr_hit = __popcnt(i_lr_hit); 
           sindex++;
-          const size_t pos_first = bitscan64(i_lr_hit);
+          const size_t pos_first = bitscan(i_lr_hit);
           curNode = bptr->min_d[pos_first];
           
           if (likely(num_m_lr_hit == 1)) continue;
@@ -420,7 +420,7 @@ namespace embree
           while(1)
           {
             
-            const size_t posN = bitscan64(i_lr_hit);
+            const size_t posN = bitscan(i_lr_hit);
             DBG(DBG_PRINT(posN));
             
             
