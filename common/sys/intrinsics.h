@@ -134,6 +134,36 @@ __forceinline size_t __btr(size_t v, size_t i) {
   __int64 r = v; _bittestandreset64(&r,i); return r;
 }
 
+__forceinline int bitscan(int v) {
+#if defined(__AVX2__) 
+  return _tzcnt_u32(v);
+#else
+  return __bsf(v);
+#endif
+}
+
+__forceinline size_t bitscan(size_t v) {
+#if defined(__AVX2__)
+#if defined(__X86_64__)
+  return _tzcnt_u64(v);
+#else
+  return _tzcnt_u32(v);
+#endif
+#else
+  return __bsf(v);
+#endif
+}
+
+__forceinline int clz(const int x)
+{
+#if defined(__AVX2__)
+  return _lzcnt_u32(x);
+#else
+  if (unlikely(x == 0)) return 32;
+  return 31 - __bsr(x);    
+#endif
+}
+
 __forceinline int __bscf(int& v) 
 {
   int i = __bsf(v);
@@ -303,8 +333,6 @@ __forceinline int clz(const int x)
 {
 #if defined(__AVX2__)
   return _lzcnt_u32(x);
-#elif defined(__MIC__)
-  return _lzcnt_u32(x); 
 #else
   if (unlikely(x == 0)) return 32;
   return 31 - __bsr(x);    
