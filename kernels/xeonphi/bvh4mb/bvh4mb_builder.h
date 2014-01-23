@@ -45,7 +45,15 @@ namespace embree
 
     void refit(const size_t index);
 
+    void generate_subtrees(const size_t index,const size_t depth, size_t &subtrees);
+    BBox3f refit_toplevel(const size_t index,const size_t depth);
+
+    BBox3f refit_subtree(const size_t index);
+
   protected:
+    size_t subtrees;
+
+    TASK_FUNCTION(BVH4mbBuilder,refitBVH4MB);    
     TASK_FUNCTION(BVH4mbBuilder,createTriangle01AccelMB);    
     TASK_FUNCTION(BVH4mbBuilder,convertToSOALayoutMB);    
 

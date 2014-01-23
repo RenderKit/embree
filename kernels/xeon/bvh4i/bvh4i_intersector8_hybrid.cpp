@@ -16,11 +16,9 @@
 
 #include "bvh4i_intersector8_hybrid.h"
 
-#include "geometry/triangle1_intersector8_moeller.h"
 #include "geometry/triangle4_intersector8_moeller.h"
-#include "geometry/triangle1v_intersector8_pluecker.h"
+#include "geometry/triangle8_intersector8_moeller.h"
 #include "geometry/triangle4v_intersector8_pluecker.h"
-#include "geometry/virtual_accel_intersector8.h"
 
 #define SWITCH_THRESHOLD 6
 
@@ -599,5 +597,7 @@ namespace embree
 
 
     DEFINE_INTERSECTOR8(BVH4iTriangle4Intersector8HybridMoeller, BVH4iIntersector8Hybrid<Triangle4Intersector8MoellerTrumbore>);
+    DEFINE_INTERSECTOR8(BVH4iTriangle8Intersector8HybridMoeller, BVH4iIntersector8Hybrid<Triangle8Intersector8MoellerTrumbore>);
+
   }
 }

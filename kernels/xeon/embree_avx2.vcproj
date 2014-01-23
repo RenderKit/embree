@@ -775,6 +775,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\bvh4i\bvh4i_intersector1_scalar.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4i\bvh4i_intersector1_scalar.h"
+				>
+			</File>
+			<File
 				RelativePath=".\bvh4i\bvh4i_intersector4_chunk.cpp"
 				>
 			</File>
@@ -965,6 +973,14 @@
 						Name="VCCustomBuildTool"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\bvh4i\bvh4i_intersector8_hybrid.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4i\bvh4i_intersector8_hybrid.h"
+				>
 			</File>
 		</Filter>
 		<Filter

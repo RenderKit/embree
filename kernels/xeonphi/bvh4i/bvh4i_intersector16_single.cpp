@@ -227,10 +227,11 @@ namespace embree
 
 	      mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
+              mic_f org_max_dist_xyz = max_dist_xyz;
+
               /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__) || defined(__USE_RAY_MASK__)
               
-              mic_f org_max_dist_xyz = max_dist_xyz;
 
               /* did the ray hit one of the four triangles? */
               while (true) 
