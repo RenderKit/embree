@@ -56,6 +56,7 @@ namespace embree
     void check_tree(const unsigned index);
 
   protected:
+    AtomicCounter atomicID;
     size_t subtrees;
 
     TASK_FUNCTION(BVH4mbBuilder,refitBVH4MB);    

@@ -24,7 +24,7 @@ namespace embree
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-#define GENERATE_SUBTREES_MAX_TREE_DEPTH 5
+#define GENERATE_SUBTREES_MAX_TREE_DEPTH 6
 #define SERIAL_REFIT_THRESHOLD 1024
 
   Builder* BVH4mbBuilder::create (void* accel, BuildSource* source, void* geometry, size_t mode ) 
@@ -218,6 +218,8 @@ namespace embree
 
   BBox3f BVH4mbBuilder::refit_subtree(const size_t index)
   {
+    BBox3f local[4];
+
     BVHNode& entry = node[index];
     if (unlikely(entry.isLeaf()))
       {
@@ -225,16 +227,22 @@ namespace embree
 	unsigned int accel_offset  = entry.itemListOfs();
 	BBox3f leaf_bounds = empty;
 	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)accel + accel_offset;
+
+	for (size_t i=0;i<accel_entries;i++)
+	  prefetch<PFHINT_L1>(&accelMB[i].t1);
+
 	for (size_t i=0;i<accel_entries;i++)
 	  leaf_bounds.extend( accelMB[i].t1.bounds() );
 	return leaf_bounds;
       }
 
+    prefetch<PFHINT_L1>(local + 0);
+    prefetch<PFHINT_L1>(local + 2);
+
     const size_t childrenID = entry.firstChildID();
     const size_t items    = entry.items();
     BBox3f* next = (BBox3f*)&node[childrenID+4];
 
-    BBox3f local[4];
 
     /* init second node */
     const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
@@ -247,8 +255,8 @@ namespace embree
     {
       const size_t childIndex = childrenID + i;	    	    
       BBox3f childBounds = refit_subtree(childIndex);
-      bounds.extend ( childBounds );
       local[i] = childBounds;
+      bounds.extend ( childBounds );
     }      
 
     store16f_ngo(next + 0,load16f(&local[0]));
@@ -369,9 +377,11 @@ namespace embree
 
     unsigned int *subtrees_array = (unsigned int*)prims;
 
-    for (size_t i=startID;i<endID;i++)
+    while(1)
       {
-	const unsigned int index = subtrees_array[i];
+	unsigned int ID = atomicID.inc();
+	if (ID >= subtrees) break;
+	const unsigned int index = subtrees_array[ID];
 	BBox3f bounds = refit_subtree(index);
 	*(BBox3f*)&node[index+4] = bounds;		
       }
@@ -379,27 +389,56 @@ namespace embree
 
   void BVH4mbBuilder::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
   {
+    TIMER(double msec = 0.0);
+
+
     if (numPrimitives < SERIAL_REFIT_THRESHOLD)
       {
 	refit(0);
       }
     else
       {
+	TIMER(msec = getSeconds());
+	// ------------------------
+	atomicID.reset(0);
 	subtrees = 0;
 	generate_subtrees(0,0,subtrees);
+	// ------------------------
+	TIMER(msec = getSeconds()-msec);    
+	TIMER(std::cout << "generate subtrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
 	DBG(DBG_PRINT(subtrees));
 
+	TIMER(msec = getSeconds());
+	// ------------------------
 	LockStepTaskScheduler::dispatchTask( task_refitBVH4MB, this, threadIndex, threadCount );    
-    
+	// ------------------------
+	TIMER(msec = getSeconds()-msec);    
+	TIMER(std::cout << "refit subtrees " << 1000. * msec << " ms" << std::endl << std::flush);
+
+	TIMER(msec = getSeconds());
+	// ------------------------    
 	refit_toplevel(0,0);
+	// ------------------------
+	TIMER(msec = getSeconds()-msec);    
+	TIMER(std::cout << "refit toplevel " << 1000. * msec << " ms" << std::endl << std::flush);
+
       }
 
 #if defined(DEBUG)
+    std::cout << "checking tree..." << std::flush;
     check_tree(0);
+    std::cout << "done" << std::endl << std::flush;
 #endif
 
+
+    TIMER(msec = getSeconds());
+
     LockStepTaskScheduler::dispatchTask( task_convertToSOALayoutMB, this, threadIndex, threadCount );    
+
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "convert " << 1000. * msec << " ms" << std::endl << std::flush);
+
   }
 
 }
