@@ -10,7 +10,9 @@ blur), instanced geometry, and user defined geometry. Supported ray
 queries are, finding the closest scene intersection along a ray, and
 testing a ray segment for any intersection with the scene. Single
 rays, as well as packets of rays in a struct of array layout can be
-used for packet sizes of 1, 4, 8, and 16.</p>
+used for packet sizes of 1, 4, 8, and 16. Filter callback functions
+are supported, that get invoked for every intersection encountered
+during traversal.</p>
 
 <p>The Embree API exists in a C++ and ISPC version. This document
 describes the C++ version of the API, the ISPC version is almost
