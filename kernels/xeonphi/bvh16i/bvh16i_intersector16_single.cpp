@@ -22,6 +22,8 @@
 //#define NEAR_FAR_OPT_INTERSECT
 //#define NEAR_FAR_OPT_OCCLUDED
 
+#define ENABLE_EXTENDED_LEAVES
+
 __forceinline void sort(void * stack_dist,
 			void * stack_node,
 			const size_t sindex0,
@@ -89,12 +91,16 @@ namespace embree
 	  stack_node[1] = root;
 	  size_t sindex = 2;
 
-	  const mic_f org_xyz  = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const mic_f dir_xyz  = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-
+	  const mic_f rdir_xyz = rcp(dir_xyz);
+	  const mic_f org_xyz  = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
 	  const mic3f rdir(rdir16.x[rayIndex],rdir16.y[rayIndex],rdir16.z[rayIndex]);
 	  const mic3f org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
 	  const mic3f org_rdir = rdir * org;	  
+
+	  //const mic3f org_rdir(swAAAA(org_rdir_xyz),swBBBB(org_rdir_xyz),swCCCC(org_rdir_xyz));
+
 	  const mic_f tnear = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  mic_f       tfar  = broadcast1to16f(&ray16.tfar[rayIndex]);
 	  
@@ -128,6 +134,7 @@ namespace embree
 		  prefetch<PFHINT_L1>(&bptr->max_z);
 		  prefetch<PFHINT_L1>(&bptr->child);
 
+
 #if !defined(NEAR_FAR_OPT_INTERSECT)
 		  const mic_f min_x = bptr->min_x * rdir.x - org_rdir.x;
 		  const mic_f max_x = bptr->max_x * rdir.x - org_rdir.x;
@@ -148,6 +155,7 @@ namespace embree
 		  const mic_f farZ  = max(min_z,max_z);
 
 #else
+
 
 		  const mic_f nearX = load16f((float*)((const char*)&bptr->min_x + (size_t)nearXoffset0)) * rdir.x - org_rdir.x;
 		  const mic_f farX  = load16f((float*)((const char*)&bptr->min_x + (size_t)nearXoffset1)) * rdir.x - org_rdir.x;
@@ -253,11 +261,92 @@ namespace embree
 		    }
 
 		}
-	  
-	    
 
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH16I_TERMINAL_TOKEN)) break;
+	  
+#if defined(ENABLE_EXTENDED_LEAVES)
+	      if (likely((curNode.isLeaf(BVH16I_EXTENDED_LEAF_MASK) == BVH16I_EXTENDED_LEAF_MASK)))
+		{
+		  curNode.id() ^= BVH16I_EXTENDED_LEAF_MASK;
+
+		  const BVH4i::Node* __restrict__ const node4 = (BVH4i::Node*)((char*)bvh16 + curNode.id());
+
+		  const float* __restrict const plower = (float*)node4->lower;
+		  const float* __restrict const pupper = (float*)node4->upper;
+
+		  prefetch<PFHINT_L1>((char*)node4 + 0);
+		  prefetch<PFHINT_L1>((char*)node4 + 64);
+        
+		  /* intersect single ray with 4 bounding boxes */
+		  const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
+		  const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+		  const mic_f tLower = mask_min(0x7777,tnear,tLowerXYZ,tUpperXYZ);
+		  const mic_f tUpper = mask_max(0x7777,tfar,tLowerXYZ,tUpperXYZ);
+
+		  const mic_f tNear = vreduce_max4(tLower);
+		  const mic_f tFar  = vreduce_min4(tUpper);  
+		  const mic_m hitm = le(0x8888,tNear,tFar);
+		  const mic_f tNear_pos = select(hitm,tNear,inf);
+
+		  STAT3(normal.trav_hit_boxes[countbits(hitm)],1,1,1);
+
+		  /* if no child is hit, continue with early popped child */
+		  if (unlikely(none(hitm))) continue;
+        
+		  const unsigned long hiti = toInt(hitm);
+		  const unsigned long pos_first = bitscan64(hiti);
+		  const unsigned long num_hitm = countbits(hiti); 
+        
+		  /* if a single child is hit, continue with that child */
+		  curNode = ((unsigned int *)plower)[pos_first];
+		  if (likely(num_hitm == 1)) 
+		    {
+		      
+		    }
+		  else if (likely(num_hitm == 2)) /* if two children are hit, push in correct order */
+		    {
+		      const unsigned long pos_second = bitscan64(pos_first,hiti);
+		      const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
+		      const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
+		      const unsigned int node_first  = curNode;
+		      const unsigned int node_second = ((unsigned int*)plower)[pos_second];
+          
+		      if (dist_first <= dist_second)
+			{
+			  stack_node[sindex] = node_second;
+			  ((unsigned int*)stack_dist)[sindex] = dist_second;                      
+			  sindex++;
+			  assert(sindex < 3*BVH4i::maxDepth+1);
+			}
+		      else
+			{
+			  stack_node[sindex] = curNode;
+			  ((unsigned int*)stack_dist)[sindex] = dist_first;
+			  curNode = node_second;
+			  sindex++;
+			  assert(sindex < 3*BVH4i::maxDepth+1);
+			}
+		    }
+		  else
+		    {        
+		      /* continue with closest child and push all others */
+		      const mic_f min_dist = set_min_lanes(tNear_pos);
+		      const unsigned int old_sindex = sindex;
+		      sindex += countbits(hiti) - 1;
+		      assert(sindex < 3*BVH4i::maxDepth+1);
+		      const mic_i plower_node = load16i((int*)plower);
+        
+		      const mic_m closest_child = eq(hitm,min_dist,tNear);
+		      const unsigned long closest_child_pos = bitscan64(closest_child);
+		      const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
+		      curNode = ((unsigned int*)plower)[closest_child_pos];
+		      compactustore16f(m_pos,&stack_dist[old_sindex],tNear);
+		      compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
+		    }		  
+		}
+#endif
+
 
 	      STAT3(normal.trav_leaves,1,1,1);
 	      STAT3(normal.trav_prims,4,4,4);
@@ -475,6 +564,9 @@ namespace embree
 	  const mic_f dir_xyz  = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
 
 	  const mic3f rdir(rdir16.x[rayIndex],rdir16.y[rayIndex],rdir16.z[rayIndex]);
+	  const mic_f rdir_xyz = rcp(dir_xyz);
+	  const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
+
 	  const mic3f org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
 	  const mic3f org_rdir = rdir * org;	  
 	  const mic_f tnear = broadcast1to16f(&ray16.tnear[rayIndex]);
@@ -636,6 +728,84 @@ namespace embree
 		}
 	  
 	    
+#if defined(ENABLE_EXTENDED_LEAVES)
+	      if (likely((curNode.isLeaf(BVH16I_EXTENDED_LEAF_MASK) == BVH16I_EXTENDED_LEAF_MASK)))
+		{
+		  curNode.id() ^= BVH16I_EXTENDED_LEAF_MASK;
+
+		  const BVH4i::Node* __restrict__ const node4 = (BVH4i::Node*)((char*)bvh16 + curNode.id());
+
+		  const float* __restrict const plower = (float*)node4->lower;
+		  const float* __restrict const pupper = (float*)node4->upper;
+
+		  prefetch<PFHINT_L1>((char*)node4 + 0);
+		  prefetch<PFHINT_L1>((char*)node4 + 64);
+        
+		  /* intersect single ray with 4 bounding boxes */
+		  const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
+		  const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+		  const mic_f tLower = mask_min(0x7777,tnear,tLowerXYZ,tUpperXYZ);
+		  const mic_f tUpper = mask_max(0x7777,tfar,tLowerXYZ,tUpperXYZ);
+
+		  const mic_f tNear = vreduce_max4(tLower);
+		  const mic_f tFar  = vreduce_min4(tUpper);  
+		  const mic_m hitm = le(0x8888,tNear,tFar);
+		  const mic_f tNear_pos = select(hitm,tNear,inf);
+
+		  STAT3(normal.trav_hit_boxes[countbits(hitm)],1,1,1);
+
+		  /* if no child is hit, continue with early popped child */
+		  if (unlikely(none(hitm))) continue;
+        
+		  const unsigned long hiti = toInt(hitm);
+		  const unsigned long pos_first = bitscan64(hiti);
+		  const unsigned long num_hitm = countbits(hiti); 
+        
+		  /* if a single child is hit, continue with that child */
+		  curNode = ((unsigned int *)plower)[pos_first];
+		  if (likely(num_hitm == 1)) 
+		    {
+		      
+		    }
+		  else if (likely(num_hitm == 2)) /* if two children are hit, push in correct order */
+		    {
+		      const unsigned long pos_second = bitscan64(pos_first,hiti);
+		      const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
+		      const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
+		      const unsigned int node_first  = curNode;
+		      const unsigned int node_second = ((unsigned int*)plower)[pos_second];
+          
+		      if (dist_first <= dist_second)
+			{
+			  stack_node[sindex] = node_second;
+			  sindex++;
+			  assert(sindex < 3*BVH4i::maxDepth+1);
+			}
+		      else
+			{
+			  stack_node[sindex] = curNode;
+			  curNode = node_second;
+			  sindex++;
+			  assert(sindex < 3*BVH4i::maxDepth+1);
+			}
+		    }
+		  else
+		    {        
+		      /* continue with closest child and push all others */
+		      const mic_f min_dist = set_min_lanes(tNear_pos);
+		      const unsigned int old_sindex = sindex;
+		      sindex += countbits(hiti) - 1;
+		      assert(sindex < 3*BVH4i::maxDepth+1);
+		      const mic_i plower_node = load16i((int*)plower);
+        
+		      const mic_m closest_child = eq(hitm,min_dist,tNear);
+		      const unsigned long closest_child_pos = bitscan64(closest_child);
+		      const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
+		      curNode = ((unsigned int*)plower)[closest_child_pos];
+		      compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
+		    }		  
+		}
+#endif
 
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH16I_TERMINAL_TOKEN)) break;

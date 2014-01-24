@@ -327,7 +327,7 @@ namespace embree
     return bounds;
   }
 
-  __forceinline void convertToBVH4Layout(BVHNode *__restrict__ const bptr)
+  __forceinline void convertToBVH4MBLayout(BVHNode *__restrict__ const bptr)
   {
     const mic_i box01 = load16i((int*)(bptr + 0));
     const mic_i box23 = load16i((int*)(bptr + 2));
@@ -364,7 +364,7 @@ namespace embree
       {
 	prefetch<PFHINT_L1EX>(bptr+4);
 	prefetch<PFHINT_L2EX>(bptr+4*4);
-	convertToBVH4Layout(bptr);
+	convertToBVH4MBLayout(bptr);
 	evictL1(bptr);
       }
   }
