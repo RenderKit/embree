@@ -62,7 +62,7 @@ namespace embree
       }
     else
       {
-	if (g_builder == "sah" || g_builder == "objectsplit" || g_builder == "bvh4i")
+	if (g_builder == "sah" || g_builder == "bvh4i" || g_builder == "bvh4i.sah")
 	  {
 	    accels.accel0 = BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this);
 	  }
@@ -78,11 +78,11 @@ namespace embree
 	  {
 	    accels.accel0 = BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this);
 	  }
-	else if (g_builder == "motionblur" || g_builder == "motion_blur")
+	else if (g_builder == "motionblur" || g_builder == "bvh4mb")
 	  {
 	    accels.accel0 = BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this);
 	  }
-	else if (g_builder == "bvh16" || g_builder == "bvh16.sah")
+	else if (g_builder == "bvh16i" || g_builder == "bvh16i.sah")
 	  {
 	    accels.accel0 = BVH16i::BVH16iTriangle1ObjectSplitBinnedSAH(this);
 	  }
