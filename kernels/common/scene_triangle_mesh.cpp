@@ -199,7 +199,7 @@ namespace embree
       if (triangles[i].v[2] >= numVertices) return false;
     }
     for (size_t j=0; j<numTimeSteps; j++) {
-      BufferStream<Vec3f>& verts = vertices[j];
+      BufferStream<Vec3fa>& verts = vertices[j];
       for (size_t i=0; i<numVertices; i++) {
         if (verts[i].x < -range || verts[i].x > range) return false;
         if (verts[i].y < -range || verts[i].y > range) return false;

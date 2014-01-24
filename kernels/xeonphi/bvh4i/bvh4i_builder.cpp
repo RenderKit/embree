@@ -33,7 +33,6 @@
 #define DBG(x) 
 
 //#define PROFILE
-
 #define PROFILE_ITERATIONS 100
 
 // TODO: CHECK     const float voxelArea    = current.cs_AABB.sceneArea();
@@ -329,9 +328,9 @@ namespace embree
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
-	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
-	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+	const float *__restrict__ const vptr0 = (float*)&mesh->vertex3f(tri.v[0]);
+	const float *__restrict__ const vptr1 = (float*)&mesh->vertex3f(tri.v[1]);
+	const float *__restrict__ const vptr2 = (float*)&mesh->vertex3f(tri.v[2]);
 
 	const mic_f v0 = broadcast4to16f(vptr0);
 	const mic_f v1 = broadcast4to16f(vptr1);
@@ -466,9 +465,9 @@ namespace embree
     const mic_i pID(primID);
     const mic_i gID(geomID);
 
-    const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
-    const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
-    const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+    const float *__restrict__ const vptr0 = (float*)&mesh->vertex3f(tri.v[0]);
+    const float *__restrict__ const vptr1 = (float*)&mesh->vertex3f(tri.v[1]);
+    const float *__restrict__ const vptr2 = (float*)&mesh->vertex3f(tri.v[2]);
 
     prefetch<PFHINT_L1>(vptr1);
     prefetch<PFHINT_L1>(vptr2);

@@ -31,9 +31,9 @@
 
 #define DBG(x) 
 
-#if defined(__USE_STAT_COUNTERS__)
-#define PROFILE
-#endif
+//#if defined(__USE_STAT_COUNTERS__)
+//#define PROFILE
+//#endif
 
 namespace embree
 {

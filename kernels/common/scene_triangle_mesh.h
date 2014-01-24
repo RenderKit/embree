@@ -98,7 +98,7 @@ namespace embree
 #endif
       }
 
-      __forceinline const Vec3f& vertex3f(size_t i, size_t j = 0) const {
+      __forceinline const Vec3fa& vertex3f(size_t i, size_t j = 0) const {
         assert(i < numVertices);
         assert(j < 2);
         return vertices[j][i];
@@ -113,14 +113,6 @@ namespace embree
 	return BBox3f( min(min(v0,v1),v2), max(max(v0,v1),v2) );
       }
 
-#if 0 // FIXME: remove
-      __forceinline const Vec3f& getTriangleVertex(size_t index, size_t vtxID)
-      {
-        const Triangle& tri = triangle(index);
-        return vertex(tri.v[vtxID]);
-      }
-#endif
-
       __forceinline bool anyMappedBuffers() const {
         return triangles.isMapped() || vertices[0].isMapped() || vertices[1].isMapped();
       }
@@ -134,7 +126,7 @@ namespace embree
       bool needTriangles;               //!< set if triangle array required by acceleration structure
       size_t numTriangles;              //!< number of triangles
 
-      BufferStream<Vec3f> vertices[2];  //!< vertex array
+      BufferStream<Vec3fa> vertices[2];  //!< vertex array
       bool needVertices;                //!< set if vertex array required by acceleration structure
       size_t numVertices;               //!< number of vertices
     };

@@ -86,14 +86,22 @@ namespace embree
     __forceinline T& operator[](size_t i) 
     {
       assert(i<num);
+#if defined(__XEON_PHI__)
+      return ((T*)ptr)[i];
+#else
       return *(T*)(ptr + ofs + i*stride);
+#endif
     }
 
     /*! access to the ith element of the buffer stream */
     __forceinline const T& operator[](size_t i) const 
     {
       assert(i<num);
+#if defined(__XEON_PHI__)
+      return ((const T*)ptr)[i];
+#else
       return *(const T*)(ptr + ofs + i*stride);
+#endif
     }
 
     /*! sets shared buffer */
