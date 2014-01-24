@@ -86,12 +86,21 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 
     /* create a triangle mesh */
     uniform unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
-    
-#if 1
+
+#if 1    
     /* share vertex and index buffer */
     rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa      ));
     rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
 
+#elif 0
+    uniform Vec3f* uniform positions = uniform new uniform Vec3f[mesh->numVertices+1];
+    for (uniform int j=0; j<mesh->numVertices; j++) {
+      positions[j].x = mesh->positions[j].x;
+      positions[j].y = mesh->positions[j].y;
+      positions[j].z = mesh->positions[j].z;
+    }
+    rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, positions, 0, sizeof(uniform Vec3f));
+    rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
 #else
 
     /* set vertices */

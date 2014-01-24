@@ -32,13 +32,16 @@ namespace embree
     {
       /* gather vertices */
       STAT3(normal.trav_prims,1,1,1);
-      const ssef* base0 = (const ssef*) tri.v0[0];
-      const ssef* base1 = (const ssef*) tri.v0[1];
-      const ssef* base2 = (const ssef*) tri.v0[2];
-      const ssef* base3 = (const ssef*) tri.v0[3];
-      sse3f p0; transpose(base0[        0],base1[        0],base2[        0],base3[        0],p0.x,p0.y,p0.z);
-      sse3f p1; transpose(base0[tri.v1[0]],base1[tri.v1[1]],base2[tri.v1[2]],base3[tri.v1[3]],p1.x,p1.y,p1.z);
-      sse3f p2; transpose(base0[tri.v2[0]],base1[tri.v2[1]],base2[tri.v2[2]],base3[tri.v2[3]],p2.x,p2.y,p2.z);
+      const int* base0 = (const int*) tri.v0[0];
+      const int* base1 = (const int*) tri.v0[1];
+      const int* base2 = (const int*) tri.v0[2];
+      const int* base3 = (const int*) tri.v0[3];
+      const ssef a0 = loadu4f(base0          ), a1 = loadu4f(base1          ), a2 = loadu4f(base2          ), a3 = loadu4f(base3          );
+      const ssef b0 = loadu4f(base0+tri.v1[0]), b1 = loadu4f(base1+tri.v1[1]), b2 = loadu4f(base2+tri.v1[2]), b3 = loadu4f(base3+tri.v1[3]);
+      const ssef c0 = loadu4f(base0+tri.v2[0]), c1 = loadu4f(base1+tri.v2[1]), c2 = loadu4f(base2+tri.v2[2]), c3 = loadu4f(base3+tri.v2[3]);
+      sse3f p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
+      sse3f p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
+      sse3f p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
 
       /* calculate vertices relative to ray origin */
       const sse3f O = sse3f(ray.org);
@@ -137,13 +140,16 @@ namespace embree
     {
       /* gather vertices */
       STAT3(shadow.trav_prims,1,1,1);
-      const ssef* base0 = (const ssef*) tri.v0[0];
-      const ssef* base1 = (const ssef*) tri.v0[1];
-      const ssef* base2 = (const ssef*) tri.v0[2];
-      const ssef* base3 = (const ssef*) tri.v0[3];
-      sse3f p0; transpose(base0[        0],base1[        0],base2[        0],base3[        0],p0.x,p0.y,p0.z);
-      sse3f p1; transpose(base0[tri.v1[0]],base1[tri.v1[1]],base2[tri.v1[2]],base3[tri.v1[3]],p1.x,p1.y,p1.z);
-      sse3f p2; transpose(base0[tri.v2[0]],base1[tri.v2[1]],base2[tri.v2[2]],base3[tri.v2[3]],p2.x,p2.y,p2.z);
+      const int* base0 = (const int*) tri.v0[0];
+      const int* base1 = (const int*) tri.v0[1];
+      const int* base2 = (const int*) tri.v0[2];
+      const int* base3 = (const int*) tri.v0[3];
+      const ssef a0 = loadu4f(base0          ), a1 = loadu4f(base1          ), a2 = loadu4f(base2          ), a3 = loadu4f(base3          );
+      const ssef b0 = loadu4f(base0+tri.v1[0]), b1 = loadu4f(base1+tri.v1[1]), b2 = loadu4f(base2+tri.v1[2]), b3 = loadu4f(base3+tri.v1[3]);
+      const ssef c0 = loadu4f(base0+tri.v2[0]), c1 = loadu4f(base1+tri.v2[1]), c2 = loadu4f(base2+tri.v2[2]), c3 = loadu4f(base3+tri.v2[3]);
+      sse3f p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
+      sse3f p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
+      sse3f p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
       
       /* calculate vertices relative to ray origin */
       const sse3f O = sse3f(ray.org);

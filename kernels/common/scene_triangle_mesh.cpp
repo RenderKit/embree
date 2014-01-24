@@ -105,11 +105,42 @@ namespace embree
       return;
     }
 
+    /* verify that all accesses are 4 bytes aligned */
+    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) {
+      recordError(RTC_INVALID_OPERATION);
+      return;
+    }
+
+    /* verify that all vertex accesses are 16 bytes aligned */
+#if defined(__MIC__)
+    if (type == RTC_VERTEX_BUFFER0 || type == RTC_VERTEX_BUFFER1) {
+      if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF)) {
+        recordError(RTC_INVALID_OPERATION);
+        return;
+      }
+    }
+#endif
+
     switch (type) {
-    case RTC_INDEX_BUFFER  : triangles  .set(ptr,offset,stride); break;
-    case RTC_VERTEX_BUFFER0: vertices[0].set(ptr,offset,stride); break;
-    case RTC_VERTEX_BUFFER1: vertices[1].set(ptr,offset,stride); break;
-    default                : recordError(RTC_INVALID_ARGUMENT); break;
+    case RTC_INDEX_BUFFER  : 
+      triangles.set(ptr,offset,stride); 
+      break;
+    case RTC_VERTEX_BUFFER0: 
+      vertices[0].set(ptr,offset,stride); 
+      if (numVertices) {
+        /* test if array is properly padded */
+        volatile int w = *((int*)&vertices[0][numVertices-1]+3); // FIXME: is failing hard avoidable?
+      }
+      break;
+    case RTC_VERTEX_BUFFER1: 
+      vertices[1].set(ptr,offset,stride); 
+      if (numVertices) {
+        /* test if array is properly padded */
+        volatile int w = *((int*)&vertices[1][numVertices-1]+3); // FIXME: is failing hard avoidable?
+      }
+      break;
+    default: 
+      recordError(RTC_INVALID_ARGUMENT); break;
     }
   }
 
@@ -168,7 +199,7 @@ namespace embree
       if (triangles[i].v[2] >= numVertices) return false;
     }
     for (size_t j=0; j<numTimeSteps; j++) {
-      BufferStream<Vec3fa>& verts = vertices[j];
+      BufferStream<Vec3f>& verts = vertices[j];
       for (size_t i=0; i<numVertices; i++) {
         if (verts[i].x < -range || verts[i].x > range) return false;
         if (verts[i].y < -range || verts[i].y > range) return false;

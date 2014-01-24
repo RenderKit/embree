@@ -175,7 +175,7 @@ namespace embree
         }
       }
 
-      const Vec3fa& vertex(size_t group, size_t prim, size_t vtxID) const 
+      const Vec3fa vertex(size_t group, size_t prim, size_t vtxID) const 
       {
 	assert(scene->get(group) != NULL);
 	assert(scene->get(group)->type == TRIANGLE_MESH);
