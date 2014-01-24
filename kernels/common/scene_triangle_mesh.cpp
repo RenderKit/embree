@@ -98,6 +98,21 @@ namespace embree
     Geometry::erase();
   }
 
+  void TriangleMeshScene::TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
+  { 
+    if (parent->isStatic() && parent->isBuild()) {
+      recordError(RTC_INVALID_OPERATION);
+      return;
+    }
+
+    switch (type) {
+    case RTC_INDEX_BUFFER  : triangles  .set(ptr,offset,stride); break;
+    case RTC_VERTEX_BUFFER0: vertices[0].set(ptr,offset,stride); break;
+    case RTC_VERTEX_BUFFER1: vertices[1].set(ptr,offset,stride); break;
+    default                : recordError(RTC_INVALID_ARGUMENT); break;
+    }
+  }
+
   void* TriangleMeshScene::TriangleMesh::map(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild()) {

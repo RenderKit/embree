@@ -87,6 +87,13 @@ RTCScene convertScene(ISPCScene* scene_in)
     /* create a triangle mesh */
     unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
     
+#if 1
+    /* share vertex and index buffer */
+    rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa      ));
+    rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
+
+#else
+
     /* set vertices */
     Vertex* vertices = (Vertex*) rtcMapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
     for (int j=0; j<mesh->numVertices; j++) {
@@ -94,6 +101,7 @@ RTCScene convertScene(ISPCScene* scene_in)
       vertices[j].y = mesh->positions[j].y;
       vertices[j].z = mesh->positions[j].z;
     }
+    rtcUnmapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
 
     /* set triangles */
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
@@ -102,8 +110,8 @@ RTCScene convertScene(ISPCScene* scene_in)
       triangles[j].v1 = mesh->triangles[j].v1;
       triangles[j].v2 = mesh->triangles[j].v2;
     }
-    rtcUnmapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
     rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+#endif
   }
 
   /* commit changes to scene */
