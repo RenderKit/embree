@@ -20,6 +20,7 @@
 #include "common/default.h"
 #include "common/geometry.h"
 #include "common/buildsource.h"
+#include "common/buffer.h"
 
 namespace embree
 {
@@ -35,7 +36,6 @@ namespace embree
 
     public:
       TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps); 
-      ~TriangleMesh ();
       
     public:
       void setMask (unsigned mask);
@@ -90,7 +90,7 @@ namespace embree
       __forceinline const Vec3fa& vertex(size_t i, size_t j = 0) const {
         assert(i < numVertices);
         assert(j < 2);
-        return vertices_[j][i];
+        return vertices[j][i];
       }
 
       __forceinline BBox3f bounds(size_t index) const 
@@ -109,23 +109,21 @@ namespace embree
       }
 
       __forceinline bool anyMappedBuffers() const {
-        return mappedTriangles || mappedVertices[0] || mappedVertices[1];
+        return triangles.isMapped() || vertices[0].isMapped() || vertices[1].isMapped();
       }
 
     public:
-      unsigned mask;              //!< for masking out geometry
-      bool built;                 //!< geometry got built
-      unsigned char numTimeSteps;
+      unsigned mask;                    //!< for masking out geometry
+      bool built;                       //!< geometry got built
+      unsigned char numTimeSteps;       //!< number of time steps (1 or 2)
 
-      Triangle* triangles;        //!< array of triangles
-      size_t numTriangles;        //!< number of triangles in array
-      bool mappedTriangles;       //!< is triangles buffer mapped?
-      bool needTriangles;         //!< true if triangle array required by acceleration structure
+      BufferStream<Triangle> triangles; //!< array of triangles
+      bool needTriangles;               //!< set if triangle array required by acceleration structure
+      size_t numTriangles;              //!< number of triangles
 
-      Vec3fa* vertices_[2];           //!< array of vertices, has to be aligned to 16 bytes
-      size_t numVertices;         //!< number of vertices in array
-      bool mappedVertices[2];        //!< is vertex buffer mapped?
-      bool needVertices;          //!< true if vertex array required by acceleration structure
+      BufferStream<Vec3fa> vertices[2]; //!< vertex array
+      bool needVertices;                //!< set if vertex array required by acceleration structure
+      size_t numVertices;               //!< number of vertices
     };
   }
 }

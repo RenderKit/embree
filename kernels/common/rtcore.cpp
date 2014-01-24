@@ -594,7 +594,7 @@ namespace embree
     TRACE(rtcSetBuffer);
     VERIFY_HANDLE(scene);
     VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get_locked(geomID)->setBuffer(type,(char*)ptr+offset,stride);
+    ((Scene*)scene)->get_locked(geomID)->setBuffer(type,ptr,offset,stride);
     CATCH_END;
   }
 

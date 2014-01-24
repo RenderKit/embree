@@ -120,7 +120,7 @@ namespace embree
     }
 
     /*! Sets specified buffer. */
-    virtual void setBuffer(RTCBufferType type, void* ptr, size_t stride) { 
+    virtual void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) { 
       recordError(RTC_INVALID_OPERATION); 
     }
 

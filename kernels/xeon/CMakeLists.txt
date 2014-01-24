@@ -37,6 +37,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   ../common/rtcore.cpp 
   ../common/rtcore_ispc.cpp 
   ../common/rtcore_ispc.ispc 
+  ../common/buffer.cpp
   ../common/scene.cpp
   ../common/geometry.cpp
   ../common/scene_user_geometry.cpp
