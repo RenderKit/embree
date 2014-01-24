@@ -87,6 +87,8 @@ namespace embree
 
 	  prefetch<PFHINT_L1>((mic_f*)node + 0);           
 	  prefetch<PFHINT_L1>((mic_f*)node + 1); 
+	  prefetch<PFHINT_L1>((mic_f*)node + 2); 
+	  prefetch<PFHINT_L1>((mic_f*)node + 3); 
 
 #pragma unroll(4)
           for (unsigned int i=0; i<4; i++)
@@ -160,6 +162,7 @@ namespace embree
 	prefetch<PFHINT_L2>((mic_f*)tris +  4); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  5); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  6); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  7); 
 
         const mic3f org = ray.org;
         const mic3f dir = ray.dir;
@@ -309,6 +312,8 @@ namespace embree
           
 	  prefetch<PFHINT_L1>((mic_f*)node + 0); 
 	  prefetch<PFHINT_L1>((mic_f*)node + 1); 
+	  prefetch<PFHINT_L1>((mic_f*)node + 2); 
+	  prefetch<PFHINT_L1>((mic_f*)node + 3); 
 
           /* pop of next node */
           sptr_node--;
@@ -385,6 +390,7 @@ namespace embree
 	prefetch<PFHINT_L2>((mic_f*)tris +  4); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  5); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  6); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  7); 
 
         const mic3f org = ray.org;
         const mic3f dir = ray.dir;

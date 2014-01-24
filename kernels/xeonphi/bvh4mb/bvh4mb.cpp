@@ -44,9 +44,12 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4mbTriangle1Intersector1;
-    //intersectors.intersector16 = BVH4mbTriangle1Intersector16ChunkMoeller;
-    //intersectors.intersector16 = BVH4mbTriangle1Intersector16SingleMoeller;
-    intersectors.intersector16 = BVH4mbTriangle1Intersector16HybridMoeller;
+
+    if      (g_traverser == "default") intersectors.intersector16 = BVH4mbTriangle1Intersector16HybridMoeller;
+    else if (g_traverser == "hybrid" ) intersectors.intersector16 = BVH4mbTriangle1Intersector16HybridMoeller;
+    else if (g_traverser == "chunk"  ) intersectors.intersector16 = BVH4mbTriangle1Intersector16ChunkMoeller;
+    else if (g_traverser == "single" ) intersectors.intersector16 = BVH4mbTriangle1Intersector16SingleMoeller;
+    else throw std::runtime_error("unknown traverser "+g_traverser+" for BVH4mb<Triangle1>");      
 
     return intersectors;
   }
