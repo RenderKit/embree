@@ -33,7 +33,6 @@ namespace embree
       __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
-      //const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir16     = rcp_safe(mic3f(mic_f(ray.dir.x),mic_f(ray.dir.y),mic_f(ray.dir.z)));
       const mic_f inf        = mic_f(pos_inf);
       const mic_f zero       = mic_f::zero();
@@ -75,8 +74,10 @@ namespace embree
 	      const float* __restrict const pupper = (float*)node->upper;
 
 	      
-	      prefetch<PFHINT_L1>((char*)node + 0);
-	      prefetch<PFHINT_L1>((char*)node + 64);
+	      prefetch<PFHINT_L1>((char*)node + 0*64);
+	      prefetch<PFHINT_L1>((char*)node + 1*64);
+	      prefetch<PFHINT_L1>((char*)node + 2*64);
+	      prefetch<PFHINT_L1>((char*)node + 3*64);
 
 	      const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
 
@@ -180,6 +181,7 @@ namespace embree
 	  prefetch<PFHINT_L2>((mic_f*)tptr +  4); 
 	  prefetch<PFHINT_L2>((mic_f*)tptr +  5); 
 	  prefetch<PFHINT_L2>((mic_f*)tptr +  6); 
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  7); 
 
 	  const mic_i and_mask = broadcast4to16i(zlc4);
 	      
@@ -403,8 +405,10 @@ namespace embree
 	      const float* __restrict const plower = (float*)node->lower;
 	      const float* __restrict const pupper = (float*)node->upper;
 
-	      prefetch<PFHINT_L1>((char*)node + 0);
-	      prefetch<PFHINT_L1>((char*)node + 64);
+	      prefetch<PFHINT_L1>((char*)node + 0*64);
+	      prefetch<PFHINT_L1>((char*)node + 1*64);
+	      prefetch<PFHINT_L1>((char*)node + 2*64);
+	      prefetch<PFHINT_L1>((char*)node + 3*64);
 
 	      const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
 
@@ -503,6 +507,7 @@ namespace embree
 	  prefetch<PFHINT_L2>((mic_f*)tptr +  4); 
 	  prefetch<PFHINT_L2>((mic_f*)tptr +  5); 
 	  prefetch<PFHINT_L2>((mic_f*)tptr +  6); 
+	  prefetch<PFHINT_L2>((mic_f*)tptr +  7); 
 
 	  const mic_i and_mask = broadcast4to16i(zlc4);
 	      
