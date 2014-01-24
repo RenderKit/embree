@@ -110,11 +110,31 @@ namespace embree
       }
   }
 
+  void BVH16iBuilder::getLeaves(unsigned int bvh4_ext_min, unsigned int *leaves, unsigned int &numLeaves)
+  {
+
+    if (bvhLeaf(bvh4_ext_min))
+      {
+	leaves[numLeaves++] = bvh4_ext_min;
+      }
+    else
+      {
+        const size_t childID = bvhChildID(bvh4_ext_min);
+        const size_t children = bvhItems(bvh4_ext_min);
+
+	for (unsigned int i=0;i<children;i++) 
+	  {
+	    BVHNode &entry = node[childID+i];
+	    getLeaves(entry.lower.a,leaves,numLeaves);
+	  }
+      }
+  }
+
 
 
   void BVH16iBuilder::convertBVH4iToBVH16i(const BVHNode *const bvh4,
 					   const unsigned int bvh4_ext_min, 
-					   const unsigned int bvh4_ext_max, 
+					   const unsigned int numLeavesInSubTree, 
 					   BVH16i::Node *const bvh16,
 					   size_t &index16,
 					   unsigned int &parent_offset)
@@ -124,11 +144,25 @@ namespace embree
       
       DBG(DBG_PRINT(bvh16_node_index));
       
+      if (numLeavesInSubTree <= 4)
+       	{
+       	  unsigned int leaves[4];
+	  unsigned int numLeaves = 0;
+       	  getLeaves(bvh4_ext_min,leaves,numLeaves);
+	  DBG_PRINT(numLeavesInSubTree);
+	  DBG_PRINT(numLeaves);
+	  exit(0);
+	}
+		    
+
+
       bvh16[bvh16_node_index].reset();
       
       {
+
         const size_t childID = bvhChildID(bvh4_ext_min);
         const size_t children = bvhItems(bvh4_ext_min);
+
         DBG(
           DBG_PRINT(childID);
           DBG_PRINT(children);
@@ -260,7 +294,9 @@ namespace embree
         if (!bvhLeaf(b16.child[i]))
 	{
 	  DBG(std::cout << "RECURSE FOR " << b16.child[i] << " " << b16.data[i] << std::endl << std::flush);
-	  DBG_PRINT(b16.data[i]); // TRY: EITHER BVH4i leaf/leaves or triangle16 struct 
+
+	  //DBG_PRINT(b16.data[i]); // TRY: EITHER BVH4i leaf/leaves or triangle16 struct 
+
 	  convertBVH4iToBVH16i(bvh4,
 			       b16.child[i],
 			       b16.data[i],
