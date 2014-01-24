@@ -20,7 +20,7 @@
 #define NUM_MORTON_IDS_PER_BLOCK            8
 #define SINGLE_THREADED_BUILD_THRESHOLD  (MAX_MIC_THREADS*8)
 
-//#define PROFILE
+#define PROFILE
 #define PROFILE_ITERATIONS 200
 
 #define TIMER(x) 

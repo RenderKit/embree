@@ -86,10 +86,10 @@ namespace embree
     __forceinline T& operator[](size_t i) 
     {
       assert(i<num);
-#if defined(__XEON_PHI__)
-      return ((T*)ptr)[i];
-#else
+#if defined(__RTCORE_BUFFER_STRIDE__)
       return *(T*)(ptr + ofs + i*stride);
+#else
+      return *(T*)(ptr + i*sizeof(T));
 #endif
     }
 
@@ -97,10 +97,10 @@ namespace embree
     __forceinline const T& operator[](size_t i) const 
     {
       assert(i<num);
-#if defined(__XEON_PHI__)
-      return ((const T*)ptr)[i];
-#else
+#if defined(__RTCORE_BUFFER_STRIDE__)
       return *(const T*)(ptr + ofs + i*stride);
+#else
+      return *(const T*)(ptr + i*sizeof(T));
 #endif
     }
 
@@ -110,6 +110,12 @@ namespace embree
       Buffer::set(ptr);
       ofs = ofs_in;
       stride = stride_in;
+
+#if !defined(__RTCORE_BUFFER_STRIDE__)
+      if (ofs != 0 || stride != sizeof(T)) {
+        recordError(RTC_INVALID_OPERATION);
+      }
+#endif
     }
 
   private:
