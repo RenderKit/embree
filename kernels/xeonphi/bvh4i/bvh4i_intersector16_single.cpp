@@ -225,7 +225,6 @@ namespace embree
 
 	      mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
-              mic_f org_max_dist_xyz = max_dist_xyz;
 
 #if defined(__USE_RAY_MASK__)
 	      const mic_i rayMask(ray16.mask[rayIndex]);
@@ -241,14 +240,12 @@ namespace embree
 		{
 		  /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__) 
-		  while (true) 
-		    {
-		      /* did the ray hit one of the four triangles? */
-		      if (none(m_final)) {
-			max_dist_xyz = org_max_dist_xyz;
-			break;
-		      }
 
+		  mic_f org_max_dist_xyz = max_dist_xyz;
+
+		  /* did the ray hit one of the four triangles? */
+		  while (any(m_final)) 
+		    {
 		      max_dist_xyz  = select(m_final,t,org_max_dist_xyz);
 		      const mic_f min_dist = vreduce_min(max_dist_xyz);
 		      const mic_m m_dist = eq(min_dist,max_dist_xyz);
@@ -284,10 +281,10 @@ namespace embree
 		      }
 		      m_final ^= m_tri;
 		    }
-
+		  max_dist_xyz = ray16.tfar[rayIndex];
 #else
 		  STAT3(normal.trav_prim_hits,1,1,1);
-                  max_dist_xyz  = select(m_final,t,org_max_dist_xyz);
+                  max_dist_xyz  = select(m_final,t,max_dist_xyz);
 		  const mic_f min_dist = vreduce_min(max_dist_xyz);
 		  const mic_m m_dist = eq(min_dist,max_dist_xyz);
                   const size_t vecIndex = bitscan(toInt(m_dist));
@@ -585,7 +582,6 @@ namespace embree
 	      m_final &= m_ray_mask;	      
 #endif
 
-	      /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__) 
               
               /* did the ray hit one of the four triangles? */

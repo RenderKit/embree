@@ -232,13 +232,8 @@ namespace embree
 	      mic_f org_max_dist_xyz = max_dist_xyz;
 
 	      /* did the ray hit one of the four triangles? */
-	      while (true) 
+	      while (any(m_final)) 
 		{
-		  if (none(m_final)) {
-		    max_dist_xyz = org_max_dist_xyz;
-		    break;
-		  }
-
 		  max_dist_xyz  = select(m_final,t,org_max_dist_xyz);
 		  const mic_f min_dist = vreduce_min(max_dist_xyz);
 		  const mic_m m_dist = eq(min_dist,max_dist_xyz);
@@ -278,6 +273,8 @@ namespace embree
 		  }
 		  m_final ^= m_tri;
 		}
+	      max_dist_xyz = ray.tfar;
+
 #else
               max_dist_xyz  = select(m_final,t,max_dist_xyz);
 	      const mic_f min_dist = vreduce_min(max_dist_xyz);
