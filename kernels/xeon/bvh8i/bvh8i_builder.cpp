@@ -15,9 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4i/bvh4i.h"
-#include "bvh4i/bvh4i_rotate.h"
-#include "bvh4i/bvh4i_statistics.h"
-#include "bvh4i/bvh4i_builder_util.h"
+#include "bvh4i/bvh4i_builder.h"
 
 #include "bvh8i_builder.h"
 
@@ -41,14 +39,17 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    BVH8iBuilder::BVH8iBuilder (BVH4i* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize)
-    : BVH4iBuilderFast(bvh,source,geometry) {}
-    
-    void BVH8iBuilder::build(size_t threadIndex, size_t threadCount) 
+    BVH8iBuilderTriangle8::BVH8iBuilderTriangle8 (BVH4i* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) 
+
     {
-      bvh->init();
-      allocateData();
-      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
+      bvh4i_builder;
+    } 
+    
+    void BVH8iBuilderTriangle8::build(size_t threadIndex, size_t threadCount) 
+    {
+      // bvh->init();
+      // allocateData();
+      // TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
     }
     
     // =======================================================================================================
@@ -293,175 +294,176 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH8iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
-    {
-      if (threadIndex == 0)
-      {
-	const size_t maxTri4Nodes = numPrimitives / 4.0f * 1.3f;
-	accel4 = NULL; // (Triangle4*)os_malloc(sizeof(Triangle4)*maxTri4Nodes);
-      }
+//     void BVH8iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+//     {
+//       if (threadIndex == 0)
+//       {
+// 	const size_t maxTri4Nodes = numPrimitives / 4.0f * 1.3f;
+// 	accel4 = NULL; // (Triangle4*)os_malloc(sizeof(Triangle4)*maxTri4Nodes);
+//       }
       
-      global_barrier.wait(threadIndex,threadCount);
-      //std::cout << "entering threadID " << threadIndex << " of " << threadCount << std::endl;
+//       global_barrier.wait(threadIndex,threadCount);
+//       //std::cout << "entering threadID " << threadIndex << " of " << threadCount << std::endl;
       
-      if (threadIndex == 0)
-      {
-	// ==========================          
-	// === preallocate arrays ===
-	// ==========================
+//       if (threadIndex == 0)
+//       {
+// 	// ==========================          
+// 	// === preallocate arrays ===
+// 	// ==========================
         
-	double t0 = 0.0f;
-	if (g_verbose >= 2) {
-	  std::cout << "building BVH8i with SAH builder2 ... " << std::flush;
-	  t0 = getSeconds();
-	}
+// 	double t0 = 0.0f;
+// 	if (g_verbose >= 2) {
+// 	  std::cout << "building BVH8i with SAH builder2 ... " << std::flush;
+// 	  t0 = getSeconds();
+// 	}
         
-	// ==================================          
-	// === calculate list of primrefs ===
-	// ==================================
+// 	// ==================================          
+// 	// === calculate list of primrefs ===
+// 	// ==================================
         
-	//const Scene *__restrict__ const scene = (Scene*)geometry;
-	//PrimRef *__restrict__ const aabb = this->prims;
-        
-        
-	global_bounds.reset();
-	LockStepTaskScheduler::dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
+// 	//const Scene *__restrict__ const scene = (Scene*)geometry;
+// 	//PrimRef *__restrict__ const aabb = this->prims;
         
         
-	//DBG_PRINT(global_bounds);
+// 	global_bounds.reset();
+// 	LockStepTaskScheduler::dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
         
-	// =======================          
-	// === build QBVH tree ===
-	// =======================
         
-	atomicID.reset(4);
-	//global_bounds.storeSceneAABB((float*)&this->node[0]);
-        this->node[0].lower = global_bounds.geometry.lower;
-        this->node[0].upper = global_bounds.geometry.upper;
+// 	//DBG_PRINT(global_bounds);
         
-	BuildRecord br;
-	br.init(global_bounds,0,numPrimitives);
-	br.parentID = 0;
-	global_workStack.reset();
+// 	// =======================          
+// 	// === build QBVH tree ===
+// 	// =======================
         
-	global_workStack.push_nolock(br);
-	while(global_workStack.size() < 2*threadCount && global_workStack.size()+1 <= SIZE_WORK_STACK)
-        {
-          bool success = global_workStack.pop(br);
-          assert(success);
-          recurseSAH(br,BUILD_TOP_LEVEL,threadIndex,threadCount);
-        }
-	LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
-	numNodes = atomicID >> 2;
+// 	atomicID.reset(4);
+// 	//global_bounds.storeSceneAABB((float*)&this->node[0]);
+//         this->node[0].lower = global_bounds.geometry.lower;
+//         this->node[0].upper = global_bounds.geometry.upper;
         
-	// =============================        
-	// === create triangle accel ===
-	// =============================
+// 	BuildRecord br;
+// 	br.init(global_bounds,0,numPrimitives);
+// 	br.parentID = 0;
+// 	global_workStack.reset();
         
-	LockStepTaskScheduler::dispatchTask( task_createTriangle1, this, threadIndex, threadCount );
+// 	global_workStack.push_nolock(br);
+// 	while(global_workStack.size() < 2*threadCount && global_workStack.size()+1 <= SIZE_WORK_STACK)
+//         {
+//           bool success = global_workStack.pop(br);
+//           assert(success);
+//           recurseSAH(br,BUILD_TOP_LEVEL,threadIndex,threadCount);
+//         }
+// 	LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
+// 	numNodes = atomicID >> 2;
+        
+// 	// =============================        
+// 	// === create triangle accel ===
+// 	// =============================
+        
+// 	LockStepTaskScheduler::dispatchTask( task_createTriangle1, this, threadIndex, threadCount );
 	
-	for (size_t i=0;i<4;i++)
-	  this->accel[numPrimitives+i] = this->accel[numPrimitives-1];
+// 	for (size_t i=0;i<4;i++)
+// 	  this->accel[numPrimitives+i] = this->accel[numPrimitives-1];
         
-	bvh->accel = this->accel;
-	bvh->qbvh  = this->node;
+// 	bvh->accel = this->accel;
+// 	bvh->qbvh  = this->node;
         
-#ifdef DEBUG
-	// checkBVH4iTree(this->node,
-	// 	       this->accel,
-	// 	       numPrimitives,
-	// 	       true);
-#endif
+// #ifdef DEBUG
+// 	// checkBVH4iTree(this->node,
+// 	// 	       this->accel,
+// 	// 	       numPrimitives,
+// 	// 	       true);
+// #endif
         
-#ifdef CONVERT_TO_BVH8
-	BVHNode  *bvh4 = (BVHNode*)this->node;
+// #ifdef CONVERT_TO_BVH8
+// 	BVHNode  *bvh4 = (BVHNode*)this->node;
         
-	size_t index_tri4 = 0;
-	countLeavesButtomUpBVH4(bvh4,0,index_tri4,accel4);
+// 	size_t index_tri4 = 0;
+// 	countLeavesButtomUpBVH4(bvh4,0,index_tri4,accel4);
         
-	BVH8i::BVH8iNode *bvh8 = (BVH8i::BVH8iNode*)this->prims;
-	bvh8[0].reset();
-	size_t index8 = 1;
-	avxi bvh8_node_dist = 0;
-	convertBVH4toBVH8(bvh4,
-			  bvh4[0].lower.a,
-			  bvh4[0].upper.a,
-			  bvh8,
-			  index8,
-			  (unsigned int&)bvh8[0].min_d[0],
-			  bvh8_node_dist);
+// 	BVH8i::BVH8iNode *bvh8 = (BVH8i::BVH8iNode*)this->prims;
+// 	bvh8[0].reset();
+// 	size_t index8 = 1;
+// 	avxi bvh8_node_dist = 0;
+// 	convertBVH4toBVH8(bvh4,
+// 			  bvh4[0].lower.a,
+// 			  bvh4[0].upper.a,
+// 			  bvh8,
+// 			  index8,
+// 			  (unsigned int&)bvh8[0].min_d[0],
+// 			  bvh8_node_dist);
         
-	DBG_PRINT(index8);
-	DBG_PRINT(index8*sizeof(BVH8i::BVH8iNode));
-	//DBG_PRINT(index_tri4);
+// 	DBG_PRINT(index8);
+// 	DBG_PRINT(index8*sizeof(BVH8i::BVH8iNode));
+// 	//DBG_PRINT(index_tri4);
         
-	{
-	  unsigned int total = 0;
-	  float util = 0.0f;
-	  for (size_t i=0;i<8;i++) {
-	    util += (float)(i+1) * bvh8_node_dist[i];
-	    total += bvh8_node_dist[i];
-	  }
-	  DBG_PRINT(total);
-	  std::cout << "node util dist: ";
-	  for (size_t i=0;i<8;i++) 
-          {
-            std::cout << i+1 << "[" << (float)bvh8_node_dist[i] * 100.0f / total << "] ";
-          }
-	  std::cout << std::endl;
-	  DBG_PRINT(100.0f * util / (8.0f * total));
-	  std::cout << std::endl;
-	  //exit(0);
-	}
+// 	{
+// 	  unsigned int total = 0;
+// 	  float util = 0.0f;
+// 	  for (size_t i=0;i<8;i++) {
+// 	    util += (float)(i+1) * bvh8_node_dist[i];
+// 	    total += bvh8_node_dist[i];
+// 	  }
+// 	  DBG_PRINT(total);
+// 	  std::cout << "node util dist: ";
+// 	  for (size_t i=0;i<8;i++) 
+//           {
+//             std::cout << i+1 << "[" << (float)bvh8_node_dist[i] * 100.0f / total << "] ";
+//           }
+// 	  std::cout << std::endl;
+// 	  DBG_PRINT(100.0f * util / (8.0f * total));
+// 	  std::cout << std::endl;
+// 	  //exit(0);
+// 	}
         
-	//bvh->accel = (Triangle1*)accel4;
+// 	//bvh->accel = (Triangle1*)accel4;
 	
-#endif
+// #endif
         
         
 	
-	// ===================================        
-	// === convert to optimized layout ===
-	// ===================================
+// 	// ===================================        
+// 	// === convert to optimized layout ===
+// 	// ===================================
         
-	LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );
+// 	LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );
         
         
-	const QBVHNode      *const __restrict__ qbvh  = (QBVHNode*)bvh->qbvh;
-	bvh->root = qbvh[0].min_d[0]; 
-	bvh->bounds = BBox3f(Vec3fa(qbvh->min_x[0],qbvh->min_y[0],qbvh->min_y[0]),
-			     Vec3fa(qbvh->max_x[0],qbvh->max_y[0],qbvh->max_y[0]));
+// 	const QBVHNode      *const __restrict__ qbvh  = (QBVHNode*)bvh->qbvh;
+// 	bvh->root = qbvh[0].min_d[0]; 
+// 	bvh->bounds = BBox3f(Vec3fa(qbvh->min_x[0],qbvh->min_y[0],qbvh->min_y[0]),
+// 			     Vec3fa(qbvh->max_x[0],qbvh->max_y[0],qbvh->max_y[0]));
         
-#ifdef CONVERT_TO_BVH8
-	memcpy(bvh4,bvh8,sizeof(BVH8i::BVH8iNode)*index8);
-#endif
+// #ifdef CONVERT_TO_BVH8
+// 	memcpy(bvh4,bvh8,sizeof(BVH8i::BVH8iNode)*index8);
+// #endif
         
-	//for (int i=0; i<5; i++) 
-	//BVH4iRotate::rotate(bvh,bvh->root);
+// 	//for (int i=0; i<5; i++) 
+// 	//BVH4iRotate::rotate(bvh,bvh->root);
 	
-	// ==================          
-	// === stop timer ===
-	// ==================
+// 	// ==================          
+// 	// === stop timer ===
+// 	// ==================
         
-	if (g_verbose >= 2) {
-	  double t1 = getSeconds();
-	  std::cout << "[DONE]" << std::endl;
-	  std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(source->size())/(t1-t0) << " Mprim/s" << std::endl;
-	}
+// 	if (g_verbose >= 2) {
+// 	  double t1 = getSeconds();
+// 	  std::cout << "[DONE]" << std::endl;
+// 	  std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(source->size())/(t1-t0) << " Mprim/s" << std::endl;
+// 	}
         
-#ifndef CONVERT_TO_BVH8
-	if (g_verbose >= 2) 
-	  std::cout << BVH4iStatistics(bvh).str();
-#endif
-	LockStepTaskScheduler::releaseThreads(threadCount);
-      }
-      else
-        LockStepTaskScheduler::dispatchTaskMainLoop(threadIndex,threadCount); 
-    };
+// #ifndef CONVERT_TO_BVH8
+// 	if (g_verbose >= 2) 
+// 	  std::cout << BVH4iStatistics(bvh).str();
+// #endif
+// 	LockStepTaskScheduler::releaseThreads(threadCount);
+//       }
+//       else
+//         LockStepTaskScheduler::dispatchTaskMainLoop(threadIndex,threadCount); 
+//     };
 
-    Builder* BVH8iTriangle1BuilderObjectSplit4 (void* bvh, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize) {
-      return new BVH8iBuilder((BVH4i*)bvh,source,scene,minLeafSize,maxLeafSize);
-    }
+     Builder* BVH8iTriangle8BuilderObjectSplit (void* bvh, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize) {
+       return new BVH8iBuilderTriangle8((BVH4i*)bvh,source,scene,minLeafSize,maxLeafSize);
+     }
   }
 };
   
+

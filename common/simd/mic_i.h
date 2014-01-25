@@ -356,6 +356,20 @@ namespace embree
     v = select((mic_m)0xf000, broadcast4to16i(ptr3),v);
     return v;
   }
+
+
+  __forceinline mic_i gather16i_4i_align(const void *__restrict__ const ptr0,
+					 const void *__restrict__ const ptr1,
+					 const void *__restrict__ const ptr2,
+					 const void *__restrict__ const ptr3) 
+  {
+    mic_i v = broadcast4to16i((const int*)ptr3);
+    v = align_shift_right<12>(v,broadcast4to16i((const int*)ptr2));
+    v = align_shift_right<12>(v,broadcast4to16i((const int*)ptr1));
+    v = align_shift_right<12>(v,broadcast4to16i((const int*)ptr0));
+    return v;
+  }
+
   
   __forceinline mic_i gather16i(const mic_m& mask, const int *const ptr, const mic_i& index,const _MM_INDEX_SCALE_ENUM scale) {
     return _mm512_mask_i32extgather_epi32(_mm512_undefined_epi32(),mask,index,ptr,_MM_UPCONV_EPI32_NONE,scale,0);

@@ -16,11 +16,9 @@
 
 #include "bvh4i_intersector8_hybrid.h"
 
-#include "geometry/triangle1_intersector8_moeller.h"
 #include "geometry/triangle4_intersector8_moeller.h"
-#include "geometry/triangle1v_intersector8_pluecker.h"
+#include "geometry/triangle8_intersector8_moeller.h"
 #include "geometry/triangle4v_intersector8_pluecker.h"
-#include "geometry/virtual_accel_intersector8.h"
 
 #define SWITCH_THRESHOLD 6
 
@@ -108,7 +106,7 @@ namespace embree
             goto pop;
           
           /*! one child is hit, continue with that child */
-          size_t r = bitscan(mask); mask = __btc(mask,r);
+          size_t r = __bscf(mask);
           if (likely(mask == 0)) {
             cur = node->child(r);
             assert(cur != BVH4i::emptyNode);
@@ -117,7 +115,7 @@ namespace embree
           
           /*! two children are hit, push far child, and continue with closer child */
           NodeRef c0 = node->child(r); const float d0 = tNear[r];
-          r = bitscan(mask); mask = __btc(mask,r);
+          r = __bscf(mask);
           NodeRef c1 = node->child(r); const float d1 = tNear[r];
           assert(c0 != BVH4i::emptyNode);
           assert(c1 != BVH4i::emptyNode);
@@ -136,7 +134,7 @@ namespace embree
           
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
-          r = bitscan(mask); mask = __btc(mask,r);
+          r = __bscf(mask);
           NodeRef c = node->child(r); float d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           assert(c0 != BVH4i::emptyNode);
           if (likely(mask == 0)) {
@@ -147,7 +145,7 @@ namespace embree
           
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
-          r = bitscan(mask); mask = __btc(mask,r);
+          r = __bscf(mask);
           c = node->child(r); d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           assert(c != BVH4i::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
@@ -392,7 +390,7 @@ namespace embree
             goto pop;
           
           /*! one child is hit, continue with that child */
-          size_t r = bitscan(mask); mask = __btc(mask,r);
+          size_t r = __bscf(mask);
           if (likely(mask == 0)) {
             cur = node->child(r);
             assert(cur != BVH4i::emptyNode);
@@ -401,7 +399,7 @@ namespace embree
           
           /*! two children are hit, push far child, and continue with closer child */
           NodeRef c0 = node->child(r); const float d0 = tNear[r];
-          r = bitscan(mask); mask = __btc(mask,r);
+          r = __bscf(mask);
           NodeRef c1 = node->child(r); const float d1 = tNear[r];
           assert(c0 != BVH4i::emptyNode);
           assert(c1 != BVH4i::emptyNode);
@@ -416,7 +414,8 @@ namespace embree
           *stackPtr = c1; stackPtr++;
           
           /*! three children are hit */
-          r = bitscan(mask); mask = __btc(mask,r); cur = node->child(r); 
+          r = __bscf(mask);
+          cur = node->child(r); 
           assert(cur != BVH4i::emptyNode);
           if (likely(mask == 0)) continue;
           assert(stackPtr < stackEnd);

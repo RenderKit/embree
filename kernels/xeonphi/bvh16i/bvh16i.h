@@ -31,6 +31,9 @@ namespace embree
 #define BVH16I_OFFSET_MASK  (~(BVH16I_ITEMS_MASK | BVH16I_LEAF_MASK))
 #define BVH16I_TERMINAL_TOKEN BVH16I_LEAF_MASK
 
+#define BVH16I_EXTENDED_LEAF_BIT_SHIFT 7
+#define BVH16I_EXTENDED_LEAF_MASK     (((unsigned int)1 << BVH16I_EXTENDED_LEAF_BIT_SHIFT)-1)
+
   class BVH16i : public BVH4i
   {
   public:

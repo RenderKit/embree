@@ -16,11 +16,14 @@
 
 #include "bvh16i/bvh16i_builder.h"
 
+#define ENABLE_EXTENDED_LEAVES
+
 namespace embree
 {
 #define DBG(x) 
 
-  static mic_i bvh16_node_dist = 0;
+  static mic_i bvh16i_node_dist = 0;
+  static mic_i bvh4i_node_dist = 0;
 
   Builder* BVH16iBuilder::create (void* accel, BuildSource* source, void* geometry, size_t mode ) 
   { 
@@ -47,7 +50,8 @@ namespace embree
     
     bvh16[0].reset();
     size_t index16 = 1;
-    bvh16_node_dist = 0;
+    bvh16i_node_dist = 0;
+    bvh4i_node_dist = 0;
     convertBVH4iToBVH16i(node,
 			 node[0].lower.a,
 			 node[0].upper.a,
@@ -57,32 +61,56 @@ namespace embree
         
     DBG_PRINT(numPrimitives * sizeof(BVHNode) / sizeof(BVH16i::Node));
 
-    // for (size_t i=0;i<index16;i++)
-    //    {
-    //  	bvh16[i].reorderNodesOnArea();
-    //    }
-
     const size_t sizeBVH16i = index16 * sizeof(BVH16i::Node);
 
     DBG_PRINT(index16);
     DBG_PRINT(sizeBVH16i);
     DBG_PRINT((float)sizeBVH4i / sizeBVH16i);
  
-    unsigned int total = 0;
-    float util = 0.0f;
-    for (size_t i=0;i<16;i++) {
-      util += (float)(i+1) * bvh16_node_dist[i];
-      total += bvh16_node_dist[i];
-    }
-    DBG_PRINT(total);
-    std::cout << "node util dist: ";
-    for (size_t i=0;i<16;i++) 
-      {
-	std::cout << i+1 << "[" << (float)bvh16_node_dist[i] * 100.0f / total << "] ";
+    /* bvh16i node util */
+    {
+      unsigned int total = 0;
+      float util = 0.0f;
+      for (size_t i=0;i<16;i++) {
+	util += (float)(i+1) * bvh16i_node_dist[i];
+	total += bvh16i_node_dist[i];
       }
-    std::cout << std::endl;
-    DBG_PRINT(100.0f * util / (16.0f * total));
-    std::cout << std::endl;
+      DBG_PRINT(total);
+      std::cout << "bvh16i node util dist: ";
+      DBG_PRINT(bvh16i_node_dist);
+      float sum = 0;
+      for (size_t i=0;i<16;i++) 
+	{
+	  sum += (float)bvh16i_node_dist[i] * 100.0f / total;
+	  std::cout << i+1 << "[" << (float)bvh16i_node_dist[i] * 100.0f / total << "%, sum " << sum << "%] ";
+	}
+      std::cout << std::endl;
+      DBG_PRINT(100.0f * util / (16.0f * total));
+      std::cout << std::endl;
+    }
+
+    /* bvh4i node util */
+    {
+      unsigned int total = 0;
+      float util = 0.0f;
+      for (size_t i=0;i<16;i++) {
+	util += (float)(i+1) * bvh4i_node_dist[i];
+	total += bvh4i_node_dist[i];
+      }
+      DBG_PRINT(total);
+      std::cout << "bvh4i node util dist: ";
+      DBG_PRINT(bvh4i_node_dist);
+      float sum = 0;
+      for (size_t i=0;i<16;i++) 
+	{
+	  sum += (float)bvh4i_node_dist[i] * 100.0f / total;
+	  std::cout << i+1 << "[" << (float)bvh4i_node_dist[i] * 100.0f / total << "%, sum " << sum << "%] ";
+	}
+      std::cout << std::endl;
+      DBG_PRINT(100.0f * util / (16.0f * total));
+      std::cout << std::endl;
+    }
+
 
     ((BVH16i*)bvh)->node16 = bvh16;
 
@@ -113,11 +141,34 @@ namespace embree
       }
   }
 
+  void BVH16iBuilder::getLeaves(unsigned int bvh4_ext_min, 
+				unsigned int node_index, 
+				BVHNode *leaves, 
+				unsigned int &numLeaves)
+  {
+
+    if (bvhLeaf(bvh4_ext_min))
+      {
+	leaves[numLeaves++] = node[node_index];
+      }
+    else
+      {
+        const size_t childID = bvhChildID(bvh4_ext_min);
+        const size_t children = bvhItems(bvh4_ext_min);
+
+	for (unsigned int i=0;i<children;i++) 
+	  {
+	    BVHNode &entry = node[childID+i];
+	    getLeaves(entry.lower.a,childID+i,leaves,numLeaves);
+	  }
+      }
+  }
+
 
 
   void BVH16iBuilder::convertBVH4iToBVH16i(const BVHNode *const bvh4,
 					   const unsigned int bvh4_ext_min, 
-					   const unsigned int bvh4_ext_max, 
+					   const unsigned int numLeavesInSubTree, 
 					   BVH16i::Node *const bvh16,
 					   size_t &index16,
 					   unsigned int &parent_offset)
@@ -127,11 +178,38 @@ namespace embree
       
       DBG(DBG_PRINT(bvh16_node_index));
       
+#if defined(ENABLE_EXTENDED_LEAVES)
+      if (numLeavesInSubTree <= 4)
+       	{
+       	  BVHNode *leaves = (BVHNode*)&bvh16[bvh16_node_index];
+	  const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+	  store16f_ngo((float*)&leaves[0],init_node);
+	  store16f_ngo((float*)&leaves[2],init_node);
+
+	  unsigned int numLeaves = 0;
+       	  getLeaves(bvh4_ext_min,(unsigned int)-1,leaves,numLeaves);
+
+	  bvh4i_node_dist[numLeaves-1]++;
+
+	  if (numLeavesInSubTree != numLeaves) FATAL("HERE");
+
+	  convertToBVH4Layout(leaves);
+
+	  parent_offset  = (unsigned int)(sizeof(BVH16i::Node) * bvh16_node_index);
+	  parent_offset |= BVH16I_EXTENDED_LEAF_MASK;
+	  
+	  return;
+	}
+#endif		    
+
+
       bvh16[bvh16_node_index].reset();
       
       {
+
         const size_t childID = bvhChildID(bvh4_ext_min);
         const size_t children = bvhItems(bvh4_ext_min);
+
         DBG(
           DBG_PRINT(childID);
           DBG_PRINT(children);
@@ -253,15 +331,19 @@ namespace embree
       
       parent_offset = (unsigned int)(sizeof(BVH16i::Node) * bvh16_node_index);
       
-      bvh16_node_dist[bvh16_used_slots-1]++;
+      bvh16i_node_dist[bvh16_used_slots-1]++;
       
       BVH16i::Node &b16 = bvh16[bvh16_node_index];
-      
+
+
       DBG(DBG_PRINT(b16));
       for (size_t i=0;i<bvh16_used_slots;i++)
         if (!bvhLeaf(b16.child[i]))
 	{
 	  DBG(std::cout << "RECURSE FOR " << b16.child[i] << " " << b16.data[i] << std::endl << std::flush);
+
+	  //DBG_PRINT(b16.data[i]); // TRY: EITHER BVH4i leaf/leaves or triangle16 struct 
+
 	  convertBVH4iToBVH16i(bvh4,
 			       b16.child[i],
 			       b16.data[i],

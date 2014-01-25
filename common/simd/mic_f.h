@@ -487,16 +487,25 @@ namespace embree
   }
 
 
+  __forceinline mic_f gather16f_4f_align(const void *__restrict__ const ptr0,
+					 const void *__restrict__ const ptr1,
+					 const void *__restrict__ const ptr2,
+					 const void *__restrict__ const ptr3) 
+  {
+    mic_f v = broadcast4to16f(ptr3);
+    v = align_shift_right<12>(v,broadcast4to16f(ptr2));
+    v = align_shift_right<12>(v,broadcast4to16f(ptr1));
+    v = align_shift_right<12>(v,broadcast4to16f(ptr0));
+    return v;
+  }
+
   __forceinline mic_f gather_4f_zlc_align(const mic_i &v_mask,
 					  const void *__restrict__ const ptr0,
 					  const void *__restrict__ const ptr1,
 					  const void *__restrict__ const ptr2,
 					  const void *__restrict__ const ptr3) 
   {
-    mic_f v = broadcast4to16f(ptr3);
-    v = align_shift_right<12>(v,broadcast4to16f(ptr2));
-    v = align_shift_right<12>(v,broadcast4to16f(ptr1));
-    v = align_shift_right<12>(v,broadcast4to16f(ptr0));
+    mic_f v = gather16f_4f_align(ptr0,ptr1,ptr2,ptr3);
     return cast(cast(v) & v_mask);
   }
 

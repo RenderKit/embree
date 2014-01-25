@@ -216,6 +216,11 @@ namespace embree
     BVH4MB (const PrimitiveType& primTy, void* geometry = NULL)
       : primTy(primTy), geometry(geometry), root((Base*)Base::empty) {}
 
+    ~BVH4MB () {
+      clear();
+      Alloc::global.clear();
+    }
+
     /*! BVH4MB instantiations */
     static Accel* BVH4MBTriangle1v(Scene* scene);
     static Accel* BVH4MBTriangle1vObjectSplit(TriangleMeshScene::TriangleMesh* mesh);

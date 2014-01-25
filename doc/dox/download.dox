@@ -33,6 +33,10 @@ $ git checkout v2.1</code></pre>
 <pre><code>$ svn checkout https://github.com/embree/embree.git/branches/v2.1 embree
 $ cd embree</code></pre>
 
+<p>If you encounter bugs please report them to the <a
+  href="https://github.com/embree/embree/issues">GitHub Issue
+ Tracker</a> for Embree.</p>
+
 <h3>Folder Structure</h3>
 
 <p>Once you downloaded or checked out Embree you will see the following

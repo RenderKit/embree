@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="tutorial03_ispc"
+	Name="tutorial06_ispc"
 	ProjectGUID="{E0048C9A-D461-4046-9DF7-EB16912381EC}"
-	RootNamespace="tutorial03"
+	RootNamespace="tutorial06"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -526,7 +526,7 @@
 			<Tool
 				Name="ISPC"
 				Architecture="0"
-				TargetISA="6"
+				TargetISA="7"
 				NoWarnings="true"
 			/>
 			<Tool
@@ -606,7 +606,7 @@
 			/>
 			<Tool
 				Name="ISPC"
-				TargetISA="6"
+				TargetISA="7"
 				NoWarnings="true"
 			/>
 			<Tool
@@ -677,11 +677,11 @@
 	</References>
 	<Files>
 		<File
-			RelativePath=".\tutorial03.cpp"
+			RelativePath=".\tutorial06.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\tutorial03_device.ispc"
+			RelativePath=".\tutorial06_device.ispc"
 			>
 		</File>
 		<File

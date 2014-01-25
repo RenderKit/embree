@@ -10,7 +10,9 @@ blur), instanced geometry, and user defined geometry. Supported ray
 queries are, finding the closest scene intersection along a ray, and
 testing a ray segment for any intersection with the scene. Single
 rays, as well as packets of rays in a struct of array layout can be
-used for packet sizes of 1, 4, 8, and 16.</p>
+used for packet sizes of 1, 4, 8, and 16. Filter callback functions
+are supported, that get invoked for every intersection encountered
+during traversal.</p>
 
 <p>The Embree API exists in a C++ and ISPC version. This document
 describes the C++ version of the API, the ISPC version is almost
@@ -533,11 +535,11 @@ invoked for each intersection found during the
 <code>rtcIntersect</code> or <code>rtcOccluded</code> calls. The
 former ones are called intersection filter functions, the latter ones
 occlusion filter functions. The filter functions can be used to
-implement various useful features, such as rejecting a hit,
-accumulating opacity for shadow shadows, counting the number of
-surfaces along a ray, collecting all hits along a ray, etc. The filter
-functions are only supported for triangle mesh geometry, including
-triangle meshes with motion blur.</p>
+implement various useful features, such as rejecting a hit to
+implement backface culling, accumulating opacity for shadow shadows,
+counting the number of surfaces along a ray, collecting all hits along
+a ray, etc. The filter functions are only supported for triangle mesh
+geometry, including triangle meshes with motion blur.</p>
 
 <p>The filter functions provided by the user have to have the
 following signature:</p>
