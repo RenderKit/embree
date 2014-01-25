@@ -58,4 +58,30 @@ namespace embree
 
     return new AccelInstance(accel,builder,intersectors);
   }
+
+
+  Accel* BVH8i::BVH8iTriangle4(Scene* scene)
+  { 
+    BVH8i* accel = new BVH8i(SceneTriangle1::type);
+    Builder* builder = BVH8iTriangle1BuilderObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
+
+    Accel::Intersectors intersectors;
+    FATAL("not implemented");
+
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH8i::BVH8iTriangle8(Scene* scene)
+  { 
+    BVH8i* accel = new BVH8i(SceneTriangle1::type);
+    Builder* builder = BVH8iTriangle1BuilderObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
+
+    Accel::Intersectors intersectors;
+    FATAL("not implemented");
+
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+
+
 }
