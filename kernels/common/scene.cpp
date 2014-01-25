@@ -160,6 +160,7 @@ namespace embree
       else if (g_tri_accel == "bvh4.triangle4i")        accels.accel0 = BVH4::BVH4Triangle4i(this);
       else if (g_tri_accel == "bvh4i.triangle1")        accels.accel0 = BVH4i::BVH4iTriangle1(this);
       else if (g_tri_accel == "bvh4i.triangle4")        accels.accel0 = BVH4i::BVH4iTriangle4(this);
+      else if (g_tri_accel == "bvh4i.triangle8")        accels.accel0 = BVH4i::BVH4iTriangle8(this);
       else if (g_tri_accel == "bvh4i.triangle1.v1")     accels.accel0 = BVH4i::BVH4iTriangle1_v1(this);
       else if (g_tri_accel == "bvh4i.triangle1.v2")     accels.accel0 = BVH4i::BVH4iTriangle1_v2(this);
       else if (g_tri_accel == "bvh4i.triangle1.morton") accels.accel0 = BVH4i::BVH4iTriangle1_morton(this);

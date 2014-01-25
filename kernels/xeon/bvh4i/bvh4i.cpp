@@ -20,6 +20,7 @@
 #include "geometry/triangle4.h"
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
+#include "geometry/triangle8.h"
 
 #include "common/accelinstance.h"
 
@@ -61,6 +62,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH4iTriangle8Intersector8HybridMoeller);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4iTriangle8Intersector1Moeller);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4iTriangle8Intersector4ChunkMoeller);
+  DECLARE_SYMBOL(Accel::Intersector8,BVH4iTriangle8Intersector8ChunkMoeller);
 
 
 #if defined(__TARGET_AVX2__)
@@ -75,6 +77,10 @@ namespace embree
   Builder* BVH4iBuilderObjectSplit4 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
   Builder* BVH4iBuilderSpatialSplit1 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
   Builder* BVH4iBuilderSpatialSplit4 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
+
+  Builder* BVH4iBuilderObjectSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
+
+  Builder* BVH4iBuilderSpatialSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
 
 
   void BVH4iRegister () 
@@ -112,8 +118,10 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2(features,BVH4iTriangle8Intersector8HybridMoeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4iTriangle8Intersector1Moeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4iTriangle8Intersector4ChunkMoeller);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH4iTriangle8Intersector8ChunkMoeller);
 
   }
+
 
   Accel::Intersectors BVH4iTriangle1Intersectors(BVH4i* bvh)
   {
@@ -172,6 +180,27 @@ namespace embree
     intersectors.intersector16 = NULL;
     return intersectors;
   }
+
+#if defined (__TARGET_AVX__)
+
+  Accel* BVH4i::BVH4iTriangle8(Scene* scene)
+  { 
+    BVH4i* accel = new BVH4i(SceneTriangle8::type,scene);
+
+    Accel::Intersectors intersectors;
+    if      (g_traverser == "default") intersectors = BVH4iTriangle8IntersectorsHybrid(accel);
+    else if (g_traverser == "hybrid" ) intersectors = BVH4iTriangle8IntersectorsHybrid(accel);
+    else throw std::runtime_error("unknown traverser "+g_traverser+" for BVH4i<Triangle8>");
+   
+    Builder* builder = NULL;
+    if      (g_builder == "default"     ) builder = BVH4iBuilderObjectSplit8(accel,&scene->flat_triangle_source_1,scene,1,inf);
+    else if (g_builder == "spatialsplit") builder = BVH4iBuilderSpatialSplit8(accel,&scene->flat_triangle_source_1,scene,1,inf);
+    else if (g_builder == "objectsplit" ) builder = BVH4iBuilderObjectSplit8(accel,&scene->flat_triangle_source_1,scene,1,inf);
+    else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle8>");
+
+    return new AccelInstance(accel,builder,intersectors);
+  }
+#endif
 
 
   Accel* BVH4i::BVH4iTriangle1(Scene* scene)

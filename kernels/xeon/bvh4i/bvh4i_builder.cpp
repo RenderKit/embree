@@ -369,6 +369,10 @@ namespace embree
     return new BVH4iBuilder<HeuristicBinning<2> >((BVH4i*)accel,source,geometry,minLeafSize,maxLeafSize);
   }
 
+  Builder* BVH4iBuilderObjectSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
+    return new BVH4iBuilder<HeuristicBinning<3> >((BVH4i*)accel,source,geometry,minLeafSize,maxLeafSize);
+  }
+
   Builder* BVH4iBuilderSpatialSplit1 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
     return new BVH4iBuilder<HeuristicSpatial<0> >((BVH4i*)accel,source,geometry,minLeafSize,maxLeafSize);
   }
@@ -376,4 +380,9 @@ namespace embree
   Builder* BVH4iBuilderSpatialSplit4 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
     return new BVH4iBuilder<HeuristicSpatial<2> >((BVH4i*)accel,source,geometry,minLeafSize,maxLeafSize);
   }
+
+  Builder* BVH4iBuilderSpatialSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
+    return new BVH4iBuilder<HeuristicSpatial<3> >((BVH4i*)accel,source,geometry,minLeafSize,maxLeafSize);
+  }
+
 }
