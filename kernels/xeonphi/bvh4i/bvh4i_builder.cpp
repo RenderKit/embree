@@ -33,7 +33,6 @@
 #define DBG(x) 
 
 //#define PROFILE
-
 #define PROFILE_ITERATIONS 100
 
 // TODO: CHECK     const float voxelArea    = current.cs_AABB.sceneArea();

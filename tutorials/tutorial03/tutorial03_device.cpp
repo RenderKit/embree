@@ -86,14 +86,11 @@ RTCScene convertScene(ISPCScene* scene_in)
 
     /* create a triangle mesh */
     unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
-    
-    /* set vertices */
-    Vertex* vertices = (Vertex*) rtcMapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
-    for (int j=0; j<mesh->numVertices; j++) {
-      vertices[j].x = mesh->positions[j].x;
-      vertices[j].y = mesh->positions[j].y;
-      vertices[j].z = mesh->positions[j].z;
-    }
+
+#if 1
+    /* share vertex buffer */
+    rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa      ));
+    //rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
 
     /* set triangles */
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
@@ -102,8 +99,37 @@ RTCScene convertScene(ISPCScene* scene_in)
       triangles[j].v1 = mesh->triangles[j].v1;
       triangles[j].v2 = mesh->triangles[j].v2;
     }
-    rtcUnmapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
     rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+
+#elif 0
+    Vec3f* positions = new Vec3f[mesh->numVertices+1];
+    for (int j=0; j<mesh->numVertices; j++) {
+      positions[j].x = mesh->positions[j].x;
+      positions[j].y = mesh->positions[j].y;
+      positions[j].z = mesh->positions[j].z;
+    }
+    rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, positions, 0, sizeof(Vec3f));
+    rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
+#else
+
+    /* set vertices */
+    Vertex* vertices = (Vertex*) rtcMapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
+    for (int j=0; j<mesh->numVertices; j++) {
+      vertices[j].x = mesh->positions[j].x;
+      vertices[j].y = mesh->positions[j].y;
+      vertices[j].z = mesh->positions[j].z;
+    }
+    rtcUnmapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
+
+    /* set triangles */
+    Triangle* triangles = (Triangle*) rtcMapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+    for (int j=0; j<mesh->numTriangles; j++) {
+      triangles[j].v0 = mesh->triangles[j].v0;
+      triangles[j].v1 = mesh->triangles[j].v1;
+      triangles[j].v2 = mesh->triangles[j].v2;
+    }
+    rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+#endif
   }
 
   /* commit changes to scene */
@@ -120,8 +146,8 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
   
@@ -129,7 +155,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   rtcIntersect(g_scene,ray);
   
   /* shade background black */
-  if (ray.geomID == -1) return Vec3f(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3f(0.0f);
   
   /* shade all rays that hit something */
   Vec3f color = Vec3f(0.0f);
@@ -146,7 +172,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   color = material->Kd;
   
   /* apply ambient light */
-  Vec3f Ng = normalize(ray.Ng);
+  Vec3fa Ng = normalize(ray.Ng);
   Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
   color = mul(color,abs(dot(ray.dir,Ng)));    
   return color;

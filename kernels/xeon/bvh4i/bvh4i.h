@@ -67,10 +67,10 @@ namespace embree
       __forceinline NodeRef () {}
 
       /*! Construction from integer */
-      __forceinline NodeRef (unsigned id) : id(id) { }
+      __forceinline NodeRef (unsigned int id) : id(id) { }
 
       /*! Cast to unsigned */
-      __forceinline operator unsigned() const { return id; }
+      __forceinline operator unsigned int() const { return id; }
 
       /*! Clears the barrier bit. */
       __forceinline void setBarrier() { id |= barrier_mask; }
@@ -79,13 +79,13 @@ namespace embree
       __forceinline void clearBarrier() { id &= ~barrier_mask; }
 
       /*! Checks if this is an barrier. A barrier tells the top level tree rotation of how deep to enter the tree. */
-      __forceinline unsigned isBarrier() const { return id & barrier_mask; }
+      __forceinline unsigned int isBarrier() const { return id & barrier_mask; }
      
       /*! checks if this is a leaf */
-      __forceinline unsigned isLeaf() const { return id & leaf_mask; }
+      __forceinline unsigned int isLeaf() const { return id & leaf_mask; }
       
       /*! checks if this is a node */
-      __forceinline unsigned isNode() const { return (id & leaf_mask) == 0; }
+      __forceinline unsigned int isNode() const { return (id & leaf_mask) == 0; }
       
       /*! returns node pointer */
       __forceinline       Node* node(      void* base) const { assert(isNode()); return (      Node*)((      char*)base + id); }
@@ -99,7 +99,7 @@ namespace embree
       }
       
     private:
-      unsigned id;
+      unsigned int id;
     };
 
     /*! BVH4i Node */
@@ -148,6 +148,15 @@ namespace embree
       __forceinline       NodeRef& child(size_t i)       { return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { return children[i]; }
 
+      /*! Returns number of valid children */
+      __forceinline size_t numValidChildren()  {
+	size_t valid = 0;
+	for (size_t i=0;i<4;i++)
+	  if (children[i] != emptyNode)
+	    valid++;
+	return valid;
+      }
+
     public:
       ssef lower_x;           //!< X dimension of lower bounds of all 4 children.
       ssef upper_x;           //!< X dimension of upper bounds of all 4 children.
@@ -156,8 +165,10 @@ namespace embree
       ssef lower_z;           //!< Z dimension of lower bounds of all 4 children.
       ssef upper_z;           //!< Z dimension of upper bounds of all 4 children.
       NodeRef children[4];    //!< Pointer to the 4 children (can be a node or leaf)
-      unsigned align[4];
+      unsigned int data[4];
     };
+
+
 
     /*! swap the children of two nodes */
     __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
@@ -290,6 +301,23 @@ namespace embree
   private:
     float sah (NodeRef& node, const BBox3f& bounds);
   };
+
+  __forceinline std::ostream &operator<<(std::ostream &o, const BVH4i::Node &v)
+  {
+    o << "lower_x " << v.lower_x << std::endl;
+    o << "upper_x " << v.upper_x << std::endl;
+    
+    o << "lower_y " << v.lower_y << std::endl;
+    o << "upper_y " << v.upper_y << std::endl;
+    
+    o << "lower_z " << v.lower_z << std::endl;
+    o << "upper_z " << v.upper_z << std::endl;
+    
+    o << "children " << *(ssei*)v.children << std::endl;
+    o << "data     " << *(ssei*)v.data << std::endl;
+    
+    return o;
+  }
 
   /* ------------------ */
   /* --- Binary BVH --- */
@@ -458,26 +486,6 @@ namespace embree
     return (nodeID << QBVH_INDEX_SHIFT) | children;
   };
 
-  /* __forceinline std::ostream &operator<<(std::ostream &o, const QBVHNode &v) */
-  /* { */
-  /*   o << std::endl; */
-  /*   for (int i=0;i<4;i++) */
-  /*     { */
-  /* 	o << "[" << i << "]" << std::endl; */
-  /* 	o << "min [" << v.min_x[i] << "," << v.min_y[i] << "," << v.min_z[i] << "," << v.min_d[i] << "]" << std::endl; */
-  /* 	o << "max [" << v.max_x[i] << "," << v.max_y[i] << "," << v.max_z[i] << "," << v.max_d[i] << "]" << std::endl;       */
-  /*     } */
-
-  /*   o << "min_d "; */
-  /*   for (int i=0;i<4;i++) o << v.min_d[i] << " "; */
-  /*   o << std::endl; */
-
-  /*   o << "max_d "; */
-  /*   for (int i=0;i<4;i++) o << v.max_d[i] << " "; */
-  /*   o << std::endl; */
-    
-  /*   return o; */
-  /* } */
 }
 
 #endif

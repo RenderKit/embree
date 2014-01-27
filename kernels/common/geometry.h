@@ -119,6 +119,11 @@ namespace embree
       recordError(RTC_INVALID_OPERATION); 
     }
 
+    /*! Sets specified buffer. */
+    virtual void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) { 
+      recordError(RTC_INVALID_OPERATION); 
+    }
+
     /*! Set intersection filter function for single rays. */
     virtual void setIntersectionFilterFunction (RTCFilterFunc filter, bool ispc = false);
     

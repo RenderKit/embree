@@ -781,6 +781,50 @@ namespace embree
     return true;
   }
 
+  bool rtcore_buffer_stride()
+  {
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,aflags);
+    AssertNoError();
+    unsigned geom = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 16, 16);
+    AssertNoError();
+    char* indexBuffer  = (char*) alignedMalloc(8+16*6*sizeof(int));
+    char* vertexBuffer = (char*) alignedMalloc(12+16*9*sizeof(float)+4);
+    
+    rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer,1,3*sizeof(int));
+    AssertError(RTC_INVALID_OPERATION);
+    rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,1,3*sizeof(float));
+    AssertError(RTC_INVALID_OPERATION);
+
+    rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer,0,3*sizeof(int)+3);
+    AssertError(RTC_INVALID_OPERATION);
+    rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,0,3*sizeof(float)+3);
+    AssertError(RTC_INVALID_OPERATION);
+
+#if defined(__RTCORE_BUFFER_STRIDE__) && !defined(__MIC__)
+    rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer,0,3*sizeof(int));
+    AssertNoError();
+    rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,0,3*sizeof(float));
+    AssertNoError();
+
+    rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer,8,6*sizeof(int));
+    AssertNoError();
+    rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,12,9*sizeof(float));
+    AssertNoError();
+#endif
+
+    rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer,0,3*sizeof(int));
+    AssertNoError();
+    rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,0,4*sizeof(float));
+    AssertNoError();
+
+    rtcDeleteScene (scene);
+    AssertNoError();
+
+    alignedFree(indexBuffer);
+    alignedFree(vertexBuffer);
+    return true;
+  }
+
   bool rtcore_dynamic_enable_disable()
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
@@ -2106,6 +2150,7 @@ namespace embree
     POSITIVE("static_scene",              rtcore_static_scene());
     //POSITIVE("deformable_geometry",       rtcore_deformable_geometry()); // FIXME
     POSITIVE("unmapped_before_commit",    rtcore_unmapped_before_commit());
+    POSITIVE("buffer_stride",             rtcore_buffer_stride());
 
     POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
     POSITIVE("update_deformable",         rtcore_update(RTC_GEOMETRY_DEFORMABLE));

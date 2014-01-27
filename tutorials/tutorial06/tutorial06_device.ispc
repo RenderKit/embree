@@ -181,8 +181,8 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const un
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
 
@@ -199,7 +199,7 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const un
     Vec3f Ph = add(ray.org,mul(ray.tfar,ray.dir));
 
     /* shade background with ambient light */
-    if (ray.geomID == -1) {
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
       Vec3f La = AmbientLight__eval(Ns,neg(ray.dir));
       L = add(L,mul(Lw,La));
       break;
@@ -229,8 +229,8 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const un
     shadow.dir = wi;
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
-    shadow.geomID = 1;
-    shadow.primID = -1;
+    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
     shadow.time = 0;
     
@@ -238,7 +238,7 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const un
     rtcOccluded(g_scene,shadow);
     
     /* add light contribution */
-    if (shadow.geomID != 0) {
+    if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
       Vec3f Lm = Matte__eval(materialID,neg(ray.dir),Ns,wi);
       L = add(L,mul(Lw,mul(Ll,Lm)));
     }
@@ -253,8 +253,8 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const un
     ray.dir = normalize(wi);
     ray.tnear = 0.001f;
     ray.tfar = inf;
-    ray.geomID = -1;
-    ray.primID = -1;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
     ray.time = 0;
   }

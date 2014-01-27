@@ -34,10 +34,9 @@ namespace embree
         STAT3(normal.trav_prims,1,popcnt(valid_i),4);
 
         /* load vertices */
-        const Vec3fa* base = tri.v0[i];
-        const Vec3fa& p0 = base[0];
-        const Vec3fa& p1 = base[tri.v1[i]];
-        const Vec3fa& p2 = base[tri.v2[i]];
+        const Vec3f& p0 = *tri.v0[i];
+        const Vec3f& p1 = *(Vec3f*)((int*)&p0 + tri.v1[i]);
+        const Vec3f& p2 = *(Vec3f*)((int*)&p0 + tri.v2[i]);
 
         /* calculate vertices relative to ray origin */
         sseb valid = valid_i;
@@ -134,10 +133,9 @@ namespace embree
         STAT3(shadow.trav_prims,1,popcnt(valid_i),4);
 
         /* load vertices */
-        const Vec3fa* base = tri.v0[i];
-        const Vec3fa& p0 = base[0];
-        const Vec3fa& p1 = base[tri.v1[i]];
-        const Vec3fa& p2 = base[tri.v2[i]];
+        const Vec3f& p0 = *tri.v0[i];
+        const Vec3f& p1 = *(Vec3f*)((int*)&p0 + tri.v1[i]);
+        const Vec3f& p2 = *(Vec3f*)((int*)&p0 + tri.v2[i]);
 
         /* calculate vertices relative to ray origin */
         sseb valid = valid0;

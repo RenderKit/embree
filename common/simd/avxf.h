@@ -348,7 +348,7 @@ namespace embree
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline avxf load8f( const float* const a) { 
+  __forceinline avxf load8f( const void* const a) { 
     return _mm256_load_ps((const float*)a); 
   }
 

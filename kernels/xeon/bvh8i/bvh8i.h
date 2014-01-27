@@ -45,13 +45,19 @@ namespace embree
   {
   public:
 
+    /*! forward declaration of node type */
+    struct Node;
+
+    /*! branching width of the tree */
+    static const size_t N = 8;
+
     /*! BVH8i instantiations */
     static Accel* BVH8iTriangle8(Scene* scene);
 
 #if defined (__AVX__)
 
     /*! BVH8 Node */
-    struct __align(64) BVH8iNode
+    struct __align(64) Node
     {
       avxf min_x;
       avxf max_x;
@@ -59,9 +65,24 @@ namespace embree
       avxf max_y;
       avxf min_z;
       avxf max_z;
-      avxi min_d;
-      avxi max_d;
+      BVH4i::NodeRef children[8];
+      unsigned int data[8]; 
 
+      __forceinline void set(const size_t index,const BVH4i::Node &node4, const size_t i)
+      {
+	min_x[index] = node4.lower_x[i];
+	min_y[index] = node4.lower_y[i];
+	min_z[index] = node4.lower_z[i];
+
+	max_x[index] = node4.upper_x[i];
+	max_y[index] = node4.upper_y[i];
+	max_z[index] = node4.upper_z[i];
+
+	children[index] = node4.children[i];
+	data[index]     = node4.data[i];
+      }
+
+      // -------------------------
       __forceinline void set(const size_t index,const BBox3f &node)
       {
 	min_x[index] = node.lower[0];
@@ -72,14 +93,14 @@ namespace embree
 	max_y[index] = node.upper[1];
 	max_z[index] = node.upper[2];
 
-	min_d[index] = node.lower.a;
-	max_d[index] = node.upper.a;
+	children[index] = node.lower.a;
+	data[index] = node.upper.a;
       }
 
-      __forceinline void set(const size_t index,const BVH8iNode &node, const size_t source_index)
+      __forceinline void set(const size_t index,const Node &node, const size_t source_index)
       {
-	assert(index < 8);
-	assert(source_index < 8);
+	assert(index < N);
+	assert(source_index < N);
 
 	min_x[index] = node.min_x[source_index];
 	min_y[index] = node.min_y[source_index];
@@ -89,24 +110,24 @@ namespace embree
 	max_y[index] = node.max_y[source_index];
 	max_z[index] = node.max_z[source_index];
 
-	min_d[index] = node.min_d[source_index];
-	max_d[index] = node.max_d[source_index];
+	children[index] = node.children[source_index];
+	data[index] = node.data[source_index];
       }
 
       __forceinline BBox3f extract(const size_t index)
       {
-	assert(index < 8);
+	assert(index < N);
 
 	BBox3f node;
 	node.lower[0] = min_x[index];
 	node.lower[1] = min_y[index];
 	node.lower[2] = min_z[index];
-	node.lower.a  = min_d[index];
+	node.lower.a  = children[index];
 
 	node.upper[0] = max_x[index];
 	node.upper[1] = max_y[index];
 	node.upper[2] = max_z[index];
-	node.upper.a  = max_d[index];
+	node.upper.a  = data[index];
 	return node;
       }
 
@@ -120,9 +141,9 @@ namespace embree
 
       __forceinline void shift(const size_t index)
       {
-	assert(index < 8);
+	assert(index < N);
 
-	for (size_t i=index+1;i<8;i++)
+	for (size_t i=index+1;i<N;i++)
 	  {
 	    min_x[i-1] = min_x[i];
 	    min_y[i-1] = min_y[i];
@@ -132,61 +153,77 @@ namespace embree
 	    max_y[i-1] = max_y[i];
 	    max_z[i-1] = max_z[i];
 
-	    min_d[i-1] = min_d[i];
-	    max_d[i-1] = max_d[i];	
+	    children[i-1] = children[i];
+	    data[i-1] = data[i];	
 	  }
       }
 
       __forceinline void reset()
       {
     
-	min_x = avxf(1E14);
-	min_y = avxf(1E14);
-	min_z = avxf(1E14);
+	min_x = pos_inf;
+	min_y = pos_inf;
+	min_z = pos_inf;
 
-	max_x = avxf(1E14);
-	max_y = avxf(1E14);
-	max_z = avxf(1E14);
+	max_x = neg_inf;
+	max_y = neg_inf;
+	max_z = neg_inf;
 
-	min_d = avxi(BVH8_LEAF_MASK);
-	max_d = avxi(0);
+	for (size_t i=0;i<N;i++) children[i] = emptyNode;
+	for (size_t i=0;i<N;i++) data[i] = 0;
+
       }
 
-      __forceinline void reset(const unsigned int a,
-			       const unsigned int b = 0)
-      {
-    
-	min_x = avxf(1E14);
-	min_y = avxf(1E14);
-	min_z = avxf(1E14);
-
-	max_x = avxf(1E14);
-	max_y = avxf(1E14);
-	max_z = avxf(1E14);
-
-	min_d = avxi(a);
-	max_d = avxi(b);
+      __forceinline BBox3f bounds() const {
+        const Vec3fa lower(reduce_min(min_x),reduce_min(min_y),reduce_min(min_z));
+        const Vec3fa upper(reduce_max(max_x),reduce_max(max_y),reduce_max(max_z));
+        return BBox3f(lower,upper);
       }
+
+      /*! Returns bounds of specified child. */
+      __forceinline BBox3f bounds(size_t i) const {
+        Vec3fa lower(min_x[i],min_y[i],min_z[i]);
+        Vec3fa upper(max_x[i],max_y[i],max_z[i]);
+        return BBox3f(lower,upper);
+      }
+
+      /*! Returns number of valid children */
+      __forceinline size_t numValidChildren()  {
+	size_t valid = 0;
+	for (size_t i=0;i<N;i++)
+	  if (children[i] != emptyNode)
+	    valid++;
+	return valid;
+      }
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { return children[i]; }
+
 
     };
 
-    static __forceinline BVH8iNode *bvh8ChildPtrNoMask(const BVH8iNode * __restrict__ const ptr, const unsigned int node) {
-      return (BVH8iNode*)((char*)ptr + (unsigned long)node);
+    static __forceinline Node *bvh8ChildPtrNoMask(const Node * __restrict__ const ptr, const unsigned int node) {
+      return (Node*)((char*)ptr + (unsigned long)node);
     };
+
+    float sah8 ();
+    float sah8 (Node*base, BVH4i::NodeRef& node, const BBox3f& bounds);
 
 #endif
 
   public:
-    
+
     /*! BVH4 default constructor. */
-    BVH8i (const PrimitiveType& primTy, void* geometry = NULL)
-      : BVH4i(primTy,geometry) {}
+    BVH8i (const PrimitiveType& primTy, void* geometry = NULL) : BVH4i(primTy,geometry) {}
+
+    
   };
 
 
 #if defined (__AVX__)
 
-    __forceinline std::ostream &operator<<(std::ostream &o, const BVH8i::BVH8iNode &v)
+    __forceinline std::ostream &operator<<(std::ostream &o, const BVH8i::Node &v)
     {
       o << "min_x " << v.min_x << std::endl;
       o << "max_x " << v.max_x << std::endl;
@@ -197,8 +234,8 @@ namespace embree
       o << "min_z " << v.min_z << std::endl;
       o << "max_z " << v.max_z << std::endl;
 
-      o << "min_d " << v.min_d << std::endl;
-      o << "max_d " << v.max_d << std::endl;
+      o << "children " << *(avxi*)v.children << std::endl;
+      o << "data     " << *(avxi*)v.data << std::endl;
 
       return o;
     }

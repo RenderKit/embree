@@ -20,15 +20,15 @@
 namespace embree
 {
   TriangleMeshScene::TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
-    : Geometry(parent,TRIANGLE_MESH,numTriangles,flags), mask(-1), built(false),
-      triangles(NULL), numTriangles(numTriangles), mappedTriangles(false), needTriangles(false),
-      numVertices(numVertices), numTimeSteps(numTimeSteps), needVertices(false)
+    : Geometry(parent,TRIANGLE_MESH,numTriangles,flags), 
+      mask(-1), built(false), numTimeSteps(numTimeSteps),
+      numTriangles(numTriangles), needTriangles(false),
+      numVertices(numVertices), needVertices(false)
   {
-    mappedVertices[0] = mappedVertices[1] = false;
-    vertices_[0] = vertices_[1] = NULL;
-    triangles = (Triangle*) alignedMalloc(numTriangles*sizeof(Triangle));
-    for (size_t i=0; i<numTimeSteps; i++)
-      vertices_[i]  = (Vec3fa*) alignedMalloc(numVertices*sizeof(Vec3fa));
+    triangles.init(numTriangles);
+    for (size_t i=0; i<numTimeSteps; i++) {
+      vertices[i].init(numVertices,16);
+    }
     enabling();
   }
   
@@ -42,13 +42,6 @@ namespace embree
   { 
     if (numTimeSteps == 1) atomic_add(&parent->numTriangleMeshes ,-1); 
     else                   atomic_add(&parent->numTriangleMeshes2,-1); 
-  }
-
-  TriangleMeshScene::TriangleMesh::~TriangleMesh () 
-  {
-    alignedFree(triangles);
-    for (size_t i=0; i<2; i++)
-      alignedFree(vertices_[i]);
   }
 
   void TriangleMeshScene::TriangleMesh::split (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) const
@@ -105,6 +98,52 @@ namespace embree
     Geometry::erase();
   }
 
+  void TriangleMeshScene::TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
+  { 
+    if (parent->isStatic() && parent->isBuild()) {
+      recordError(RTC_INVALID_OPERATION);
+      return;
+    }
+
+    /* verify that all accesses are 4 bytes aligned */
+    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) {
+      recordError(RTC_INVALID_OPERATION);
+      return;
+    }
+
+    /* verify that all vertex accesses are 16 bytes aligned */
+#if defined(__MIC__)
+    if (type == RTC_VERTEX_BUFFER0 || type == RTC_VERTEX_BUFFER1) {
+      if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF)) {
+        recordError(RTC_INVALID_OPERATION);
+        return;
+      }
+    }
+#endif
+
+    switch (type) {
+    case RTC_INDEX_BUFFER  : 
+      triangles.set(ptr,offset,stride); 
+      break;
+    case RTC_VERTEX_BUFFER0: 
+      vertices[0].set(ptr,offset,stride); 
+      if (numVertices) {
+        /* test if array is properly padded */
+        volatile int w = *((int*)&vertices[0][numVertices-1]+3); // FIXME: is failing hard avoidable?
+      }
+      break;
+    case RTC_VERTEX_BUFFER1: 
+      vertices[1].set(ptr,offset,stride); 
+      if (numVertices) {
+        /* test if array is properly padded */
+        volatile int w = *((int*)&vertices[1][numVertices-1]+3); // FIXME: is failing hard avoidable?
+      }
+      break;
+    default: 
+      recordError(RTC_INVALID_ARGUMENT); break;
+    }
+  }
+
   void* TriangleMeshScene::TriangleMesh::map(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild()) {
@@ -113,36 +152,9 @@ namespace embree
     }
 
     switch (type) {
-    case RTC_INDEX_BUFFER : 
-    {
-      if (mappedTriangles) {
-        recordError(RTC_INVALID_OPERATION);
-        return NULL;
-      }
-      mappedTriangles = true; 
-      atomic_add(&parent->numMappedBuffers,1); 
-      return triangles;
-    }
-    case RTC_VERTEX_BUFFER0: 
-    {
-      if (mappedVertices[0]) {
-        recordError(RTC_INVALID_OPERATION);
-        return NULL;
-      }
-      mappedVertices[0] = true; 
-      atomic_add(&parent->numMappedBuffers,1); 
-      return vertices_[0];
-    }
-    case RTC_VERTEX_BUFFER1: 
-    {
-      if (mappedVertices[1]) {
-        recordError(RTC_INVALID_OPERATION);
-        return NULL;
-      }
-      mappedVertices[1] = true; 
-      atomic_add(&parent->numMappedBuffers,1); 
-      return vertices_[1];
-    }
+    case RTC_INDEX_BUFFER  : return triangles  .map(parent->numMappedBuffers);
+    case RTC_VERTEX_BUFFER0: return vertices[0].map(parent->numMappedBuffers);
+    case RTC_VERTEX_BUFFER1: return vertices[1].map(parent->numMappedBuffers);
     default: 
       recordError(RTC_INVALID_ARGUMENT); 
       return NULL;
@@ -157,38 +169,10 @@ namespace embree
     }
 
     switch (type) {
-    case RTC_INDEX_BUFFER : 
-    {
-      if (mappedTriangles) {
-        mappedTriangles = false; 
-        atomic_add(&parent->numMappedBuffers,-1); 
-      } else {
-        recordError(RTC_INVALID_OPERATION);
-      }
-      break;
-    }
-    case RTC_VERTEX_BUFFER0: 
-    {
-      if (mappedVertices[0]) {
-        mappedVertices[0] = false; 
-        atomic_add(&parent->numMappedBuffers,-1); 
-      } else {
-        recordError(RTC_INVALID_OPERATION);
-      }
-      break;
-    }
-    case RTC_VERTEX_BUFFER1: 
-    {
-      if (mappedVertices[1]) {
-        mappedVertices[1] = false; 
-        atomic_add(&parent->numMappedBuffers,-1); 
-      } else {
-        recordError(RTC_INVALID_OPERATION);
-      }
-      break;
-    }
-    default: 
-      recordError(RTC_INVALID_ARGUMENT);
+    case RTC_INDEX_BUFFER  : triangles  .unmap(parent->numMappedBuffers); break;
+    case RTC_VERTEX_BUFFER0: vertices[0].unmap(parent->numMappedBuffers); break;
+    case RTC_VERTEX_BUFFER1: vertices[1].unmap(parent->numMappedBuffers); break;
+    default                : recordError(RTC_INVALID_ARGUMENT); break;
     }
   }
 
@@ -201,13 +185,9 @@ namespace embree
     built = true;
     bool freeTriangles = !(needTriangles || parent->needTriangles);
     bool freeVertices  = !(needVertices  || parent->needVertices);
-    if (freeTriangles) {
-      if (triangles) alignedFree(triangles); triangles = NULL;
-    }
-    if (freeVertices) {
-      if (vertices_[0]) alignedFree(vertices_[0]); vertices_[0] = NULL;
-      if (vertices_[1]) alignedFree(vertices_[1]); vertices_[1] = NULL;
-    }
+    if (freeTriangles) triangles.free();
+    if (freeVertices ) vertices[0].free();
+    if (freeVertices ) vertices[1].free();
   }
 
   bool TriangleMeshScene::TriangleMesh::verify () 
@@ -218,9 +198,8 @@ namespace embree
       if (triangles[i].v[1] >= numVertices) return false;
       if (triangles[i].v[2] >= numVertices) return false;
     }
-    for (size_t j=0; j<2; j++) {
-      if (vertices_[j] == NULL) continue;
-      Vec3fa* verts = vertices_[j];
+    for (size_t j=0; j<numTimeSteps; j++) {
+      BufferStream<Vec3fa>& verts = vertices[j];
       for (size_t i=0; i<numVertices; i++) {
         if (verts[i].x < -range || verts[i].x > range) return false;
         if (verts[i].y < -range || verts[i].y > range) return false;

@@ -73,16 +73,19 @@ void rtcSetTransform (RTCScene scene,                                  //!< scen
                       const uniform float* uniform xfm                       //!< transformation matrix
                       );
 
-/*! \brief Creates a new triangle mesh. 
-
-  The number of triangles (numTriangles), number of vertices
-  (numVertices), and number of time steps (1 for normal meshes, and 2
-  for linear motion blur), have to get specified. The triangle indices
-  can be set be mapping and writing to the index buffer
-  (RTC_INDEX_BUFFER) and the triangle vertices can be set by mapping
-  and writing into the vertex buffer (RTC_VERTEX_BUFFER). In case of
-  linear motion blur, two vertex buffers have to get filled
-  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1), one for each time step. */
+/*! \brief Creates a new triangle mesh. The number of triangles
+  (numTriangles), number of vertices (numVertices), and number of time
+  steps (1 for normal meshes, and 2 for linear motion blur), have to
+  get specified. The triangle indices can be set be mapping and
+  writing to the index buffer (RTC_INDEX_BUFFER) and the triangle
+  vertices can be set by mapping and writing into the vertex buffer
+  (RTC_VERTEX_BUFFER). In case of linear motion blur, two vertex
+  buffers have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1),
+  one for each time step. The index buffer has the default layout of
+  three 32 bit integer indices for each triangle. An index points to
+  the ith vertex. The vertex buffer stores single precision x,y,z
+  floating point coordinates aligned to 16 bytes. The value of the 4th
+  float used for alignment can be arbitrary. */
 uniform unsigned int rtcNewTriangleMesh (RTCScene scene,              //!< the scene the mesh belongs to
                                          uniform RTCGeometryFlags flags,  //!< geometry flags
                                          uniform size_t numTriangles,     //!< number of triangles
@@ -90,7 +93,27 @@ uniform unsigned int rtcNewTriangleMesh (RTCScene scene,              //!< the s
                                          uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
   );
 
-/*! \brief Sets 30 bit ray mask. */
+/*! \brief Creates a new set of quadratic bezier curves. The number of
+  curves (numCurves), number of vertices (numVertices), and number of
+  time steps (1 for normal curves, and 2 for linear motion blur), have
+  to get specified at construction time. Further, the curve index
+  buffer (RTC_INDEX_BUFFER) and the curve vertex buffer
+  (RTC_VERTEX_BUFFER) have to get set by mapping and writing to the
+  appropiate buffers. In case of linear motion blur, two vertex
+  buffers have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1),
+  one for each time step. The index buffer has the default layout of a
+  single 32 bit integer index for each curve, that references the
+  start vertex of the curve. The vertex buffer stores 4 control points
+  per curve, each such control point consists of a single precision
+  (x,y,z) position and radius, stored in that order in memory. */
+uniform unsigned int rtcNewQuadraticBezierCurves (RTCScene scene,                    //!< the scene the curves belong to
+                                                  uniform RTCGeometryFlags flags,    //!< geometry flags
+                                                  uniform size_t numCurves,          //!< number of curves
+                                                  uniform size_t numVertices,        //!< number of vertices
+                                                  uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
+  );
+
+/*! \brief Sets 32 bit ray mask. */
 void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
 
 /*! \brief Maps specified buffer. This function can be used to set index and
@@ -102,6 +125,21 @@ void* uniform rtcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform 
   A buffer has to be unmapped before the rtcEnable, rtcDisable,
   rtcUpdate, or rtcDeleteGeometry calls are executed. */
 void rtcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
+
+/*! \brief Shares a data buffer between the application and
+ *  Embree. The passed buffer is used by Embree to store index and
+ *  vertex data. It has to remain valid as long as the mesh exists,
+ *  and the user is responsible to free the data when the mesh gets
+ *  deleted. One can optionally speficy a byte offset and byte stride
+ *  of the elements stored inside the buffer. The addresses
+ *  ptr+offset+i*stride have to be aligned to 4 bytes on Xeon CPUs and
+ *  16 bytes on Xeon Phi accelerators. For vertex buffers, the 4 bytes
+ *  after the z-coordinate of the last vertex have to be readable memory,
+ *  thus padding is required for some layouts. If this function is not
+ *  called, Embree will allocate and manage buffers of the default
+ *  layout. */
+void rtcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, 
+                  void* uniform ptr, uniform size_t offset = 0, uniform size_t stride = 16);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 void rtcEnable (RTCScene scene, uniform unsigned int geomID);

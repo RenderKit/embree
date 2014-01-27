@@ -21,7 +21,7 @@
 
 #define BVH_NODE_PREALLOC_FACTOR 1.1f
 
-#define PROFILE
+//#define PROFILE
 
 #define DBG(x)
 
