@@ -44,10 +44,6 @@ namespace embree
   class BVH8i : public BVH4i
   {
   public:
-
-    /*! forward declaration of node type */
-    struct Node;
-
     /*! branching width of the tree */
     static const size_t N = 8;
 
@@ -59,24 +55,24 @@ namespace embree
     /*! BVH8 Node */
     struct __align(64) Node
     {
-      avxf min_x;
-      avxf max_x;
-      avxf min_y;
-      avxf max_y;
-      avxf min_z;
-      avxf max_z;
+      avxf lower_x;
+      avxf upper_x;
+      avxf lower_y;
+      avxf upper_y;
+      avxf lower_z;
+      avxf upper_z;
       BVH4i::NodeRef children[8];
       unsigned int data[8]; 
 
       __forceinline void set(const size_t index,const BVH4i::Node &node4, const size_t i)
       {
-	min_x[index] = node4.lower_x[i];
-	min_y[index] = node4.lower_y[i];
-	min_z[index] = node4.lower_z[i];
+	lower_x[index] = node4.lower_x[i];
+	lower_y[index] = node4.lower_y[i];
+	lower_z[index] = node4.lower_z[i];
 
-	max_x[index] = node4.upper_x[i];
-	max_y[index] = node4.upper_y[i];
-	max_z[index] = node4.upper_z[i];
+	upper_x[index] = node4.upper_x[i];
+	upper_y[index] = node4.upper_y[i];
+	upper_z[index] = node4.upper_z[i];
 
 	children[index] = node4.children[i];
 	data[index]     = node4.data[i];
@@ -85,13 +81,13 @@ namespace embree
       // -------------------------
       __forceinline void set(const size_t index,const BBox3f &node)
       {
-	min_x[index] = node.lower[0];
-	min_y[index] = node.lower[1];
-	min_z[index] = node.lower[2];
+	lower_x[index] = node.lower[0];
+	lower_y[index] = node.lower[1];
+	lower_z[index] = node.lower[2];
 
-	max_x[index] = node.upper[0];
-	max_y[index] = node.upper[1];
-	max_z[index] = node.upper[2];
+	upper_x[index] = node.upper[0];
+	upper_y[index] = node.upper[1];
+	upper_z[index] = node.upper[2];
 
 	children[index] = node.lower.a;
 	data[index] = node.upper.a;
@@ -102,13 +98,13 @@ namespace embree
 	assert(index < N);
 	assert(source_index < N);
 
-	min_x[index] = node.min_x[source_index];
-	min_y[index] = node.min_y[source_index];
-	min_z[index] = node.min_z[source_index];
+	lower_x[index] = node.lower_x[source_index];
+	lower_y[index] = node.lower_y[source_index];
+	lower_z[index] = node.lower_z[source_index];
 
-	max_x[index] = node.max_x[source_index];
-	max_y[index] = node.max_y[source_index];
-	max_z[index] = node.max_z[source_index];
+	upper_x[index] = node.upper_x[source_index];
+	upper_y[index] = node.upper_y[source_index];
+	upper_z[index] = node.upper_z[source_index];
 
 	children[index] = node.children[source_index];
 	data[index] = node.data[source_index];
@@ -119,23 +115,23 @@ namespace embree
 	assert(index < N);
 
 	BBox3f node;
-	node.lower[0] = min_x[index];
-	node.lower[1] = min_y[index];
-	node.lower[2] = min_z[index];
+	node.lower[0] = lower_x[index];
+	node.lower[1] = lower_y[index];
+	node.lower[2] = lower_z[index];
 	node.lower.a  = children[index];
 
-	node.upper[0] = max_x[index];
-	node.upper[1] = max_y[index];
-	node.upper[2] = max_z[index];
+	node.upper[0] = upper_x[index];
+	node.upper[1] = upper_y[index];
+	node.upper[2] = upper_z[index];
 	node.upper.a  = data[index];
 	return node;
       }
 
       __forceinline avxf area()
       {
-	const avxf x = max_x - min_x;
-	const avxf y = max_y - min_y;
-	const avxf z = max_z - min_z;
+	const avxf x = upper_x - lower_x;
+	const avxf y = upper_y - lower_y;
+	const avxf z = upper_z - lower_z;
 	return (x*y+x*z+y*z) * 2.0f; 
       }
 
@@ -145,13 +141,13 @@ namespace embree
 
 	for (size_t i=index+1;i<N;i++)
 	  {
-	    min_x[i-1] = min_x[i];
-	    min_y[i-1] = min_y[i];
-	    min_z[i-1] = min_z[i];
+	    lower_x[i-1] = lower_x[i];
+	    lower_y[i-1] = lower_y[i];
+	    lower_z[i-1] = lower_z[i];
 
-	    max_x[i-1] = max_x[i];
-	    max_y[i-1] = max_y[i];
-	    max_z[i-1] = max_z[i];
+	    upper_x[i-1] = upper_x[i];
+	    upper_y[i-1] = upper_y[i];
+	    upper_z[i-1] = upper_z[i];
 
 	    children[i-1] = children[i];
 	    data[i-1] = data[i];	
@@ -161,13 +157,13 @@ namespace embree
       __forceinline void reset()
       {
     
-	min_x = pos_inf;
-	min_y = pos_inf;
-	min_z = pos_inf;
+	lower_x = pos_inf;
+	lower_y = pos_inf;
+	lower_z = pos_inf;
 
-	max_x = neg_inf;
-	max_y = neg_inf;
-	max_z = neg_inf;
+	upper_x = neg_inf;
+	upper_y = neg_inf;
+	upper_z = neg_inf;
 
 	for (size_t i=0;i<N;i++) children[i] = emptyNode;
 	for (size_t i=0;i<N;i++) data[i] = 0;
@@ -175,15 +171,15 @@ namespace embree
       }
 
       __forceinline BBox3f bounds() const {
-        const Vec3fa lower(reduce_min(min_x),reduce_min(min_y),reduce_min(min_z));
-        const Vec3fa upper(reduce_max(max_x),reduce_max(max_y),reduce_max(max_z));
+        const Vec3fa lower(reduce_min(lower_x),reduce_min(lower_y),reduce_min(lower_z));
+        const Vec3fa upper(reduce_max(upper_x),reduce_max(upper_y),reduce_max(upper_z));
         return BBox3f(lower,upper);
       }
 
       /*! Returns bounds of specified child. */
       __forceinline BBox3f bounds(size_t i) const {
-        Vec3fa lower(min_x[i],min_y[i],min_z[i]);
-        Vec3fa upper(max_x[i],max_y[i],max_z[i]);
+        Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
+        Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
         return BBox3f(lower,upper);
       }
 
@@ -225,14 +221,14 @@ namespace embree
 
     __forceinline std::ostream &operator<<(std::ostream &o, const BVH8i::Node &v)
     {
-      o << "min_x " << v.min_x << std::endl;
-      o << "max_x " << v.max_x << std::endl;
+      o << "lower_x " << v.lower_x << std::endl;
+      o << "upper_x " << v.upper_x << std::endl;
 
-      o << "min_y " << v.min_y << std::endl;
-      o << "max_y " << v.max_y << std::endl;
+      o << "lower_y " << v.lower_y << std::endl;
+      o << "upper_y " << v.upper_y << std::endl;
 
-      o << "min_z " << v.min_z << std::endl;
-      o << "max_z " << v.max_z << std::endl;
+      o << "lower_z " << v.lower_z << std::endl;
+      o << "upper_z " << v.upper_z << std::endl;
 
       o << "children " << *(avxi*)v.children << std::endl;
       o << "data     " << *(avxi*)v.data << std::endl;

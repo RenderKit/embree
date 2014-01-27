@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH8I_INTERSECTOR8_CHUNK_H__
-#define __EMBREE_BVH8I_INTERSECTOR8_CHUNK_H__
+#ifndef __EMBREE_BVH8I_INTERSECTOR8_HYBRID_H__
+#define __EMBREE_BVH8I_INTERSECTOR8_HYBRID_H__
 
 #include "bvh8i.h"
 #include "../common/stack_item.h"
@@ -28,7 +28,7 @@ namespace embree
   {
     /*! BVH8i Traverser. Packet traversal implementation for a Quad BVH. */
 template<typename TriangleIntersector8>    
-class BVH8iIntersector8Chunk
+class BVH8iIntersector8Hybrid
     {
 
       /* shortcuts for frequently used types */
