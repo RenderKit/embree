@@ -29,10 +29,6 @@
 
 //#define PROFILE
 
-#if defined(__USE_STAT_COUNTERS__)
-#define PROFILE
-#endif
-
 namespace embree
 {
   namespace isa
