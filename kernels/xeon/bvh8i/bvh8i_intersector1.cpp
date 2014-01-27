@@ -36,6 +36,8 @@ namespace embree
     
     void BVH8iIntersector1::intersect(const BVH8i* bvh, Ray& ray)
     {
+      PING;
+      return;
       const avxb init_mask(1,0,0,0,1,0,0,0); // = r_movemask(0x11);
       
       DBG(PING);
@@ -513,6 +515,6 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR1(BVH8iTriangle1Intersector1Moeller,BVH8iIntersector1);
+    DEFINE_INTERSECTOR1(BVH8iTriangle8Intersector1Moeller,BVH8iIntersector1);
   }
 }

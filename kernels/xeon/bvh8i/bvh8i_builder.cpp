@@ -42,11 +42,15 @@ namespace embree
     BVH8iBuilderTriangle8::BVH8iBuilderTriangle8 (BVH4i* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) 
 
     {
-      //bvh4i_builder8 = new BVH4iBuilder8(bvh,source,geometry,minLeafSize,maxLeafSize);
+      bvh4i_builder8 = BVH4iBuilderObjectSplit8(bvh,source,geometry,minLeafSize,maxLeafSize);
     } 
     
     void BVH8iBuilderTriangle8::build(size_t threadIndex, size_t threadCount) 
     {
+      bvh4i_builder8->build(threadIndex,threadCount);
+      std::cout << "DONE" << std::endl << std::flush;
+      exit(0);
+
       // bvh->init();
       // allocateData();
       // TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
