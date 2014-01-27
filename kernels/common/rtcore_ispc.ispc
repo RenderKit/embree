@@ -49,6 +49,7 @@ extern "C" uniform unsigned int ispcNewTriangleMesh (RTCScene scene,
 extern "C" void ispcSetRayMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
 extern "C" void* uniform ispcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
 extern "C" void ispcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
+extern "C" void ispcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, void* uniform ptr, uniform size_t offset, uniform size_t stride);
 extern "C" void ispcEnable (RTCScene scene, uniform unsigned int geomID);
 extern "C" void ispcModified (RTCScene scene, uniform unsigned int geomID);
 extern "C" void ispcDisable (RTCScene scene, uniform unsigned int geomID);
@@ -192,6 +193,10 @@ void* uniform rtcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform 
 
 void rtcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type) {
   ispcUnmapBuffer(scene,geomID,type);
+}
+
+void rtcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, void* uniform ptr, uniform size_t offset, uniform size_t stride) {
+  ispcSetBuffer(scene,geomID,type,ptr,offset,stride);
 }
 
 void rtcEnable (RTCScene scene, uniform unsigned int geomID) {

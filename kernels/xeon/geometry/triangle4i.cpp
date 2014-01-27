@@ -37,7 +37,7 @@ namespace embree
     Scene* scene = (Scene*) geom;
     
     ssei geomID = -1, primID = -1;
-    Vec3fa* v0[4] = { NULL, NULL, NULL, NULL };
+    Vec3f* v0[4] = { NULL, NULL, NULL, NULL };
     ssei v1 = zero, v2 = zero;
     PrimRef& prim = *prims;
     
@@ -48,9 +48,9 @@ namespace embree
       if (prims) {
         geomID[i] = prim.geomID();
         primID[i] = prim.primID();
-        v0[i] = (Vec3fa*) &mesh->vertex(tri.v[0]); 
-        v1[i] = &mesh->vertex(tri.v[1])-v0[i]; 
-        v2[i] = &mesh->vertex(tri.v[2])-v0[i]; 
+        v0[i] = (Vec3f*) &mesh->vertex(tri.v[0]); 
+        v1[i] = (int*)&mesh->vertex(tri.v[1])-(int*)v0[i]; 
+        v2[i] = (int*)&mesh->vertex(tri.v[2])-(int*)v0[i]; 
         prims++;
       } else {
         assert(i);

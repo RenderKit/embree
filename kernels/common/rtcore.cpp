@@ -588,6 +588,16 @@ namespace embree
     CATCH_END;
   }
 
+  RTCORE_API void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, void* ptr, size_t offset, size_t stride)
+  {
+    CATCH_BEGIN;
+    TRACE(rtcSetBuffer);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get_locked(geomID)->setBuffer(type,ptr,offset,stride);
+    CATCH_END;
+  }
+
   RTCORE_API void rtcEnable (RTCScene scene, unsigned geomID) 
   {
     CATCH_BEGIN;

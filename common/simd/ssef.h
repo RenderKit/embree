@@ -351,6 +351,10 @@ namespace embree
     _mm_store_ps((float*)ptr,v);
   }
 
+  __forceinline ssef loadu4f( const void* const a ) {
+    return _mm_loadu_ps((float*)a); 
+  }
+
   __forceinline void storeu4f ( void* ptr, const ssef& v ) {
     _mm_storeu_ps((float*)ptr,v);
   }

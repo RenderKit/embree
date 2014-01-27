@@ -30,7 +30,7 @@ namespace embree
     __forceinline Triangle4i () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Triangle4i (Vec3fa* base[4], const ssei& v1, const ssei& v2, const ssei& geomID, const ssei& primID)
+    __forceinline Triangle4i (Vec3f* base[4], const ssei& v1, const ssei& v2, const ssei& geomID, const ssei& primID)
       : v1(v1), v2(v2), geomID(geomID), primID(primID) 
       {
         v0[0] = base[0];
@@ -48,7 +48,7 @@ namespace embree
     }
 
   public:
-    const Vec3fa* v0[4]; //!< Pointer to 1st vertex.
+    const Vec3f* v0[4];  //!< Pointer to 1st vertex.
     ssei v1;             //!< Offset to 2nd vertex.
     ssei v2;             //!< Offset to 3rd vertex.
     ssei geomID;         //!< ID of mesh.
