@@ -222,6 +222,8 @@ namespace embree
   public:
     atomic_t numTriangleMeshes;        //!< number of enabled triangle meshes
     atomic_t numTriangleMeshes2;       //!< number of enabled motion blur triangle meshes
+    atomic_t numCurveSets;             //!< number of enabled curve sets
+    atomic_t numCurveSets2;            //!< number of enabled motion blur curve sets
     atomic_t numUserGeometries;        //!< number of enabled user geometries
     
   public:
