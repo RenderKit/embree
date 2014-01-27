@@ -59,8 +59,8 @@ namespace embree
       avxf max_y;
       avxf min_z;
       avxf max_z;
-      avxi min_d; // children
-      avxi max_d; // data
+      BVH4i::NodeRef children[8];
+      unsigned int data[8]; 
 
       __forceinline void set(const size_t index,const BVH4i::Node &node4, const size_t i)
       {
@@ -72,8 +72,8 @@ namespace embree
 	max_y[index] = node4.upper_y[i];
 	max_z[index] = node4.upper_z[i];
 
-	min_d[index] = node4.children[i];
-	max_d[index] = node4.data[i];
+	children[index] = node4.children[i];
+	data[index]     = node4.data[i];
       }
 
       // -------------------------
@@ -87,8 +87,8 @@ namespace embree
 	max_y[index] = node.upper[1];
 	max_z[index] = node.upper[2];
 
-	min_d[index] = node.lower.a;
-	max_d[index] = node.upper.a;
+	children[index] = node.lower.a;
+	data[index] = node.upper.a;
       }
 
       __forceinline void set(const size_t index,const BVH8iNode &node, const size_t source_index)
@@ -104,8 +104,8 @@ namespace embree
 	max_y[index] = node.max_y[source_index];
 	max_z[index] = node.max_z[source_index];
 
-	min_d[index] = node.min_d[source_index];
-	max_d[index] = node.max_d[source_index];
+	children[index] = node.children[source_index];
+	data[index] = node.data[source_index];
       }
 
       __forceinline BBox3f extract(const size_t index)
@@ -116,12 +116,12 @@ namespace embree
 	node.lower[0] = min_x[index];
 	node.lower[1] = min_y[index];
 	node.lower[2] = min_z[index];
-	node.lower.a  = min_d[index];
+	node.lower.a  = children[index];
 
 	node.upper[0] = max_x[index];
 	node.upper[1] = max_y[index];
 	node.upper[2] = max_z[index];
-	node.upper.a  = max_d[index];
+	node.upper.a  = data[index];
 	return node;
       }
 
@@ -147,40 +147,25 @@ namespace embree
 	    max_y[i-1] = max_y[i];
 	    max_z[i-1] = max_z[i];
 
-	    min_d[i-1] = min_d[i];
-	    max_d[i-1] = max_d[i];	
+	    children[i-1] = children[i];
+	    data[i-1] = data[i];	
 	  }
       }
 
       __forceinline void reset()
       {
     
-	min_x = avxf(1E14);
-	min_y = avxf(1E14);
-	min_z = avxf(1E14);
+	min_x = pos_inf;
+	min_y = pos_inf;
+	min_z = pos_inf;
 
-	max_x = avxf(1E14);
-	max_y = avxf(1E14);
-	max_z = avxf(1E14);
+	max_x = neg_inf;
+	max_y = neg_inf;
+	max_z = neg_inf;
 
-	min_d = avxi(BVH8_LEAF_MASK);
-	max_d = avxi(0);
-      }
+	for (size_t i=0;i<8;i++) children[i] = emptyNode;
+	for (size_t i=0;i<8;i++) data[i] = 0;
 
-      __forceinline void reset(const unsigned int a,
-			       const unsigned int b = 0)
-      {
-    
-	min_x = avxf(1E14);
-	min_y = avxf(1E14);
-	min_z = avxf(1E14);
-
-	max_x = avxf(1E14);
-	max_y = avxf(1E14);
-	max_z = avxf(1E14);
-
-	min_d = avxi(a);
-	max_d = avxi(b);
       }
 
     };
@@ -212,8 +197,8 @@ namespace embree
       o << "min_z " << v.min_z << std::endl;
       o << "max_z " << v.max_z << std::endl;
 
-      o << "min_d " << v.min_d << std::endl;
-      o << "max_d " << v.max_d << std::endl;
+      o << "children " << *(avxi*)v.children << std::endl;
+      o << "data     " << *(avxi*)v.data << std::endl;
 
       return o;
     }
