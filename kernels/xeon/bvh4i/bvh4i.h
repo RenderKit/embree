@@ -67,10 +67,10 @@ namespace embree
       __forceinline NodeRef () {}
 
       /*! Construction from integer */
-      __forceinline NodeRef (unsigned id) : id(id) { }
+      __forceinline NodeRef (unsigned int id) : id(id) { }
 
       /*! Cast to unsigned */
-      __forceinline operator unsigned() const { return id; }
+      __forceinline operator unsigned int() const { return id; }
 
       /*! Clears the barrier bit. */
       __forceinline void setBarrier() { id |= barrier_mask; }
@@ -79,13 +79,13 @@ namespace embree
       __forceinline void clearBarrier() { id &= ~barrier_mask; }
 
       /*! Checks if this is an barrier. A barrier tells the top level tree rotation of how deep to enter the tree. */
-      __forceinline unsigned isBarrier() const { return id & barrier_mask; }
+      __forceinline unsigned int isBarrier() const { return id & barrier_mask; }
      
       /*! checks if this is a leaf */
-      __forceinline unsigned isLeaf() const { return id & leaf_mask; }
+      __forceinline unsigned int isLeaf() const { return id & leaf_mask; }
       
       /*! checks if this is a node */
-      __forceinline unsigned isNode() const { return (id & leaf_mask) == 0; }
+      __forceinline unsigned int isNode() const { return (id & leaf_mask) == 0; }
       
       /*! returns node pointer */
       __forceinline       Node* node(      void* base) const { assert(isNode()); return (      Node*)((      char*)base + id); }
@@ -99,7 +99,7 @@ namespace embree
       }
       
     private:
-      unsigned id;
+      unsigned int id;
     };
 
     /*! BVH4i Node */
@@ -148,6 +148,15 @@ namespace embree
       __forceinline       NodeRef& child(size_t i)       { return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { return children[i]; }
 
+      /*! Returns number of valid children */
+      __forceinline size_t numValidChildren()  {
+	size_t valid = 0;
+	for (size_t i=0;i<4;i++)
+	  if (children[i] != emptyNode)
+	    valid++;
+	return valid;
+      }
+
     public:
       ssef lower_x;           //!< X dimension of lower bounds of all 4 children.
       ssef upper_x;           //!< X dimension of upper bounds of all 4 children.
@@ -156,7 +165,7 @@ namespace embree
       ssef lower_z;           //!< Z dimension of lower bounds of all 4 children.
       ssef upper_z;           //!< Z dimension of upper bounds of all 4 children.
       NodeRef children[4];    //!< Pointer to the 4 children (can be a node or leaf)
-      unsigned align[4];
+      unsigned int data[4];
     };
 
     /*! swap the children of two nodes */

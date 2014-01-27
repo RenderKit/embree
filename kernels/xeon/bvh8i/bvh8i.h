@@ -59,9 +59,24 @@ namespace embree
       avxf max_y;
       avxf min_z;
       avxf max_z;
-      avxi min_d;
-      avxi max_d;
+      avxi min_d; // children
+      avxi max_d; // data
 
+      __forceinline void set(const size_t index,const BVH4i::Node &node4, const size_t i)
+      {
+	min_x[index] = node4.lower_x[i];
+	min_y[index] = node4.lower_y[i];
+	min_z[index] = node4.lower_z[i];
+
+	max_x[index] = node4.upper_x[i];
+	max_y[index] = node4.upper_y[i];
+	max_z[index] = node4.upper_z[i];
+
+	min_d[index] = node4.children[i];
+	max_d[index] = node4.data[i];
+      }
+
+      // -------------------------
       __forceinline void set(const size_t index,const BBox3f &node)
       {
 	min_x[index] = node.lower[0];
