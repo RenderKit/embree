@@ -51,6 +51,9 @@ namespace embree
     
     void BVH8iIntersector8Chunk::intersect(avxb* valid_i, BVH8i* bvh, Ray8& ray)
     {
+      PING;
+      return;
+
       DBG(PING);
       
       const avxb init_mask(1,0,0,0,1,0,0,0); // = r_movemask(0x11);
@@ -775,7 +778,7 @@ namespace embree
 #endif
     }
     
-    DEFINE_INTERSECTOR8(BVH8iTriangle1Intersector8ChunkMoeller,BVH8iIntersector8Chunk);
+    DEFINE_INTERSECTOR8(BVH8iTriangle8Intersector8ChunkMoeller,BVH8iIntersector8Chunk);
 
     /*REGISTER_INTERSECTOR(BVH8iIntersector8Chunk) 
     {

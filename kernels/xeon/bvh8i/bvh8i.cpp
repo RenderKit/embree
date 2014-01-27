@@ -25,8 +25,8 @@
 
 namespace embree
 {
-  DECLARE_SYMBOL(Accel::Intersector1,BVH8iTriangle1Intersector1Moeller);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH8iTriangle1Intersector8ChunkMoeller);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH8iTriangle8Intersector1Moeller);
+  DECLARE_SYMBOL(Accel::Intersector8,BVH8iTriangle8Intersector8ChunkMoeller);
 
   DECLARE_BUILDER(BVH8iTriangle8BuilderObjectSplit);
 
@@ -34,11 +34,11 @@ namespace embree
   {
     int features = getCPUFeatures();
     
-    SELECT_SYMBOL_AVX(features,BVH8iTriangle1Intersector1Moeller);
-    SELECT_SYMBOL_AVX2(features,BVH8iTriangle1Intersector1Moeller);
+    SELECT_SYMBOL_AVX(features,BVH8iTriangle8Intersector1Moeller);
+    SELECT_SYMBOL_AVX2(features,BVH8iTriangle8Intersector1Moeller);
 
-    SELECT_SYMBOL_AVX(features,BVH8iTriangle1Intersector8ChunkMoeller);
-    SELECT_SYMBOL_AVX2(features,BVH8iTriangle1Intersector8ChunkMoeller);
+    SELECT_SYMBOL_AVX(features,BVH8iTriangle8Intersector8ChunkMoeller);
+    SELECT_SYMBOL_AVX2(features,BVH8iTriangle8Intersector8ChunkMoeller);
     
     SELECT_SYMBOL_AVX(features,BVH8iTriangle8BuilderObjectSplit);
   }
@@ -65,8 +65,12 @@ namespace embree
     BVH8i* accel = new BVH8i(SceneTriangle1::type);
     Builder* builder = BVH8iTriangle8BuilderObjectSplit(accel,&scene->flat_triangle_source_1,scene,1,inf);
 
+
     Accel::Intersectors intersectors;
-    FATAL("not implemented");
+    intersectors.ptr = accel;
+    intersectors.intersector1 = BVH8iTriangle8Intersector1Moeller;
+    intersectors.intersector4 = NULL;
+    intersectors.intersector8 = BVH8iTriangle8Intersector8ChunkMoeller;
 
     return new AccelInstance(accel,builder,intersectors);
   }

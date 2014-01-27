@@ -189,6 +189,8 @@ namespace embree
   public:
     BVH4i* bvh;                      //!< Output BVH4i
   };
+
+  Builder* BVH4iBuilderObjectSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
 }
 
 #endif
