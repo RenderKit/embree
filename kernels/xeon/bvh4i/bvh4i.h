@@ -210,6 +210,8 @@ namespace embree
     static Accel* BVH4iTriangle1_morton(Scene* scene);
     static Accel* BVH4iTriangle1_morton_enhanced(Scene* scene);
 
+    static Accel* BVH4iTriangle8(Scene* scene);
+
     static Accel* BVH4iTriangle1(TriangleMeshScene::TriangleMesh* mesh);
     static Accel* BVH4iTriangle4(TriangleMeshScene::TriangleMesh* mesh);
     static Accel* BVH4iTriangle1v(TriangleMeshScene::TriangleMesh* mesh);

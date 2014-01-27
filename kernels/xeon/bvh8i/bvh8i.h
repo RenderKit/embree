@@ -46,7 +46,7 @@ namespace embree
   public:
 
     /*! BVH8i instantiations */
-    static Accel* BVH8iTriangle1(Scene* scene);
+    static Accel* BVH8iTriangle8(Scene* scene);
 
 #if defined (__AVX__)
 

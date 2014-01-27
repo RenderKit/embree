@@ -88,7 +88,7 @@ namespace embree
 #if defined(__MIC__)
     if (bytes > 16*4096) {
       flags |= MAP_HUGETLB | MAP_POPULATE;
-      bytes = (bytes+2*1024*1024-1)&(-2*1024*1024);
+     bytes = (bytes+2*1024*1024-1)&(-2*1024*1024);
     } else {
       bytes = (bytes+4095)&(-4096);
     }

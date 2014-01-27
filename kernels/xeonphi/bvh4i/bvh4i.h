@@ -337,23 +337,6 @@ namespace embree
     return o;
   } 
 
-  __forceinline mic_f initTriangle1(const mic_f &v0,
-				    const mic_f &v1,
-				    const mic_f &v2,
-				    const mic_i &geomID,
-				    const mic_i &primID,
-				    const mic_i &mask)
-  {
-    const mic_f e1 = v0 - v1;
-    const mic_f e2 = v2 - v0;	     
-    const mic_f normal = lcross_xyz(e1,e2);
-    const mic_f _v0 = select(0x8888,cast((__m512i)primID),v0);
-    const mic_f _v1 = select(0x8888,cast((__m512i)geomID),v1);
-    const mic_f _v2 = select(0x8888,cast((__m512i)mask),v2);
-    const mic_f _v3 = select(0x8888,mic_f::zero(),normal);
-    const mic_f final = lane_shuffle_gather<0>(_v0,_v1,_v2,_v3);
-    return final;
-  }
 
   /* ---------------- */
   /* --- QUAD BVH --- */
@@ -410,6 +393,48 @@ namespace embree
     return (nodeID << QBVH_INDEX_SHIFT) | children;
   };
 
+
+  __forceinline mic_f initTriangle1(const mic_f &v0,
+				    const mic_f &v1,
+				    const mic_f &v2,
+				    const mic_i &geomID,
+				    const mic_i &primID,
+				    const mic_i &mask)
+  {
+    const mic_f e1 = v0 - v1;
+    const mic_f e2 = v2 - v0;	     
+    const mic_f normal = lcross_xyz(e1,e2);
+    const mic_f _v0 = select(0x8888,cast((__m512i)primID),v0);
+    const mic_f _v1 = select(0x8888,cast((__m512i)geomID),v1);
+    const mic_f _v2 = select(0x8888,cast((__m512i)mask),v2);
+    const mic_f _v3 = select(0x8888,mic_f::zero(),normal);
+    const mic_f final = lane_shuffle_gather<0>(_v0,_v1,_v2,_v3);
+    return final;
+  }
+
+  __forceinline void convertToBVH4Layout(BVHNode *__restrict__ const bptr)
+  {
+    const mic_i box01 = load16i((int*)(bptr + 0));
+    const mic_i box23 = load16i((int*)(bptr + 2));
+
+    const mic_i box_min01 = permute<2,0,2,0>(box01);
+    const mic_i box_max01 = permute<3,1,3,1>(box01);
+
+    const mic_i box_min23 = permute<2,0,2,0>(box23);
+    const mic_i box_max23 = permute<3,1,3,1>(box23);
+    const mic_i box_min0123 = select(0x00ff,box_min01,box_min23);
+    const mic_i box_max0123 = select(0x00ff,box_max01,box_max23);
+
+    const mic_m min_d_mask = bvhLeaf(box_min0123) != mic_i::zero();
+    const mic_i childID    = bvhChildID(box_min0123)>>2;
+    const mic_i min_d_node = qbvhCreateNode(childID,mic_i::zero());
+    const mic_i min_d_leaf = (box_min0123 ^ BVH_LEAF_MASK) | QBVH_LEAF_MASK;
+    const mic_i min_d      = select(min_d_mask,min_d_leaf,min_d_node);
+    const mic_i bvh4_min   = select(0x7777,box_min0123,min_d);
+    const mic_i bvh4_max   = box_max0123;
+    store16i_nt((int*)(bptr + 0),bvh4_min);
+    store16i_nt((int*)(bptr + 2),bvh4_max);
+  }
 
 }
 

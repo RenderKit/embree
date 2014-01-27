@@ -110,8 +110,11 @@ namespace embree
 			const float* __restrict const plower = (float*)node->lower;
 			const float* __restrict const pupper = (float*)node->upper;
 
-			prefetch<PFHINT_L1>((char*)node + 0);
-			prefetch<PFHINT_L1>((char*)node + 64);
+			prefetch<PFHINT_L1>((char*)node + 0*64);
+			prefetch<PFHINT_L1>((char*)node + 1*64);
+			prefetch<PFHINT_L1>((char*)node + 2*64);
+			prefetch<PFHINT_L1>((char*)node + 3*64);
+
 
 			const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
 			const mic_f lower = one_time  * load16f((float*)nodeMB->lower) + time * load16f((float*)nodeMB->lower_t1);
@@ -205,13 +208,14 @@ namespace embree
 
 		    const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf(accel);
 	      
-		    prefetch<PFHINT_L2>((mic_f*)tptr +  0); 
-		    prefetch<PFHINT_L2>((mic_f*)tptr +  1); 
-		    prefetch<PFHINT_L2>((mic_f*)tptr +  2); 
-		    prefetch<PFHINT_L2>((mic_f*)tptr +  3); 
-		    prefetch<PFHINT_L2>((mic_f*)tptr +  4); 
-		    prefetch<PFHINT_L2>((mic_f*)tptr +  5); 
-		    prefetch<PFHINT_L2>((mic_f*)tptr +  6); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  0); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  1); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  2); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  3); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  4); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  5); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  6); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  7); 
 
 		    const mic_i and_mask = broadcast4to16i(zlc4);
 	     
@@ -282,9 +286,16 @@ namespace embree
 		    if (unlikely(none(m_aperture))) continue;
 		    const mic_f t = rcp_den*nom;
 
-		    const mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
+		    mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
 		    max_dist_xyz  = select(m_final,t,max_dist_xyz);		    
+
+#if defined(__USE_RAY_MASK__)
+		    const mic_i rayMask(ray16.mask[rayIndex]);
+		    const mic_i triMask = swDDDD(gather16i_4i_align(&tptr[0].t0.v2,&tptr[1].t0.v2,&tptr[2].t0.v2,&tptr[3].t0.v2));
+		    const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
+		    m_final &= m_ray_mask;	      
+#endif
 
 		    /* did the ray hot one of the four triangles? */
 		    if (unlikely(any(m_final)))
@@ -312,84 +323,76 @@ namespace embree
 			const mic_f gnormalx = swBBBB(normal);
 			const mic_f gnormaly = swCCCC(normal);
 		  
-#if defined(__USE_RAY_MASK__)
-			if ( (tri_ptr->t0.mask() & ray16.mask[rayIndex]) != 0 )
-#else
-			if (1)
-#endif
+			max_dist_xyz = min_dist;
 
+			compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
+			compactustore16f_low(m_tri,&ray16.u[rayIndex],u); 
+			compactustore16f_low(m_tri,&ray16.v[rayIndex],v); 
+			compactustore16f_low(m_tri,&ray16.Ng.x[rayIndex],gnormalx); 
+			compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
+			compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
+
+			ray16.geomID[rayIndex] = tri_ptr->t0.geomID();
+			ray16.primID[rayIndex] = tri_ptr->t0.primID();
+
+			/* compact the stack if size of stack >= 2 */
+			if (likely(sindex >= 2))
 			  {
-			    max_dist_xyz = min_dist;
-
-			    compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
-			    compactustore16f_low(m_tri,&ray16.u[rayIndex],u); 
-			    compactustore16f_low(m_tri,&ray16.v[rayIndex],v); 
-			    compactustore16f_low(m_tri,&ray16.Ng.x[rayIndex],gnormalx); 
-			    compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
-			    compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
-
-			    ray16.geomID[rayIndex] = tri_ptr->t0.geomID();
-			    ray16.primID[rayIndex] = tri_ptr->t0.primID();
-
-			    /* compact the stack if size of stack >= 2 */
-			    if (likely(sindex >= 2))
+			    if (likely(sindex < 16))
 			      {
-				if (likely(sindex < 16))
-				  {
-				    const unsigned int m_num_stack = mic_m::shift1[sindex] - 1;
-				    const mic_m m_num_stack_low  = toMask(m_num_stack);
-				    const mic_f snear_low  = load16f(stack_dist_single + 0);
-				    const mic_i snode_low  = load16i((int*)stack_node_single + 0);
-				    const mic_m m_stack_compact_low  = le(m_num_stack_low,snear_low,max_dist_xyz) | (mic_m)1;
-				    compactustore16f_low(m_stack_compact_low,stack_dist_single + 0,snear_low);
-				    compactustore16i_low(m_stack_compact_low,(int*)stack_node_single + 0,snode_low);
-				    sindex = countbits(m_stack_compact_low);
-				    assert(sindex < 16);
-				  }
-				else if (likely(sindex < 32))
-				  {
-				    const mic_m m_num_stack_high = toMask(mic_m::shift1[sindex-16] - 1); 
-				    const mic_f snear_low  = load16f(stack_dist_single + 0);
-				    const mic_f snear_high = load16f(stack_dist_single + 16);
-				    const mic_i snode_low  = load16i((int*)stack_node_single + 0);
-				    const mic_i snode_high = load16i((int*)stack_node_single + 16);
-				    const mic_m m_stack_compact_low  = le(snear_low,max_dist_xyz) | (mic_m)1;
-				    const mic_m m_stack_compact_high = le(m_num_stack_high,snear_high,max_dist_xyz);
-				    compactustore16f(m_stack_compact_low,      stack_dist_single + 0,snear_low);
-				    compactustore16i(m_stack_compact_low,(int*)stack_node_single + 0,snode_low);
-				    compactustore16f(m_stack_compact_high,      stack_dist_single + countbits(m_stack_compact_low),snear_high);
-				    compactustore16i(m_stack_compact_high,(int*)stack_node_single + countbits(m_stack_compact_low),snode_high);
-				    assert ((unsigned int)m_num_stack_high == ((mic_m::shift1[sindex] - 1) >> 16));
-				    sindex = countbits(m_stack_compact_low) + countbits(m_stack_compact_high);
-				    assert(sindex < 32);
-				  }
-				else
-				  {
-				    const mic_m m_num_stack_32 = toMask(mic_m::shift1[sindex-32] - 1); 
+				const unsigned int m_num_stack = mic_m::shift1[sindex] - 1;
+				const mic_m m_num_stack_low  = toMask(m_num_stack);
+				const mic_f snear_low  = load16f(stack_dist_single + 0);
+				const mic_i snode_low  = load16i((int*)stack_node_single + 0);
+				const mic_m m_stack_compact_low  = le(m_num_stack_low,snear_low,max_dist_xyz) | (mic_m)1;
+				compactustore16f_low(m_stack_compact_low,stack_dist_single + 0,snear_low);
+				compactustore16i_low(m_stack_compact_low,(int*)stack_node_single + 0,snode_low);
+				sindex = countbits(m_stack_compact_low);
+				assert(sindex < 16);
+			      }
+			    else if (likely(sindex < 32))
+			      {
+				const mic_m m_num_stack_high = toMask(mic_m::shift1[sindex-16] - 1); 
+				const mic_f snear_low  = load16f(stack_dist_single + 0);
+				const mic_f snear_high = load16f(stack_dist_single + 16);
+				const mic_i snode_low  = load16i((int*)stack_node_single + 0);
+				const mic_i snode_high = load16i((int*)stack_node_single + 16);
+				const mic_m m_stack_compact_low  = le(snear_low,max_dist_xyz) | (mic_m)1;
+				const mic_m m_stack_compact_high = le(m_num_stack_high,snear_high,max_dist_xyz);
+				compactustore16f(m_stack_compact_low,      stack_dist_single + 0,snear_low);
+				compactustore16i(m_stack_compact_low,(int*)stack_node_single + 0,snode_low);
+				compactustore16f(m_stack_compact_high,      stack_dist_single + countbits(m_stack_compact_low),snear_high);
+				compactustore16i(m_stack_compact_high,(int*)stack_node_single + countbits(m_stack_compact_low),snode_high);
+				assert ((unsigned int)m_num_stack_high == ((mic_m::shift1[sindex] - 1) >> 16));
+				sindex = countbits(m_stack_compact_low) + countbits(m_stack_compact_high);
+				assert(sindex < 32);
+			      }
+			    else
+			      {
+				const mic_m m_num_stack_32 = toMask(mic_m::shift1[sindex-32] - 1); 
 
-				    const mic_f snear_0  = load16f(stack_dist_single + 0);
-				    const mic_f snear_16 = load16f(stack_dist_single + 16);
-				    const mic_f snear_32 = load16f(stack_dist_single + 32);
-				    const mic_i snode_0  = load16i((int*)stack_node_single + 0);
-				    const mic_i snode_16 = load16i((int*)stack_node_single + 16);
-				    const mic_i snode_32 = load16i((int*)stack_node_single + 32);
-				    const mic_m m_stack_compact_0  = le(               snear_0 ,max_dist_xyz) | (mic_m)1;
-				    const mic_m m_stack_compact_16 = le(               snear_16,max_dist_xyz);
-				    const mic_m m_stack_compact_32 = le(m_num_stack_32,snear_32,max_dist_xyz);
+				const mic_f snear_0  = load16f(stack_dist_single + 0);
+				const mic_f snear_16 = load16f(stack_dist_single + 16);
+				const mic_f snear_32 = load16f(stack_dist_single + 32);
+				const mic_i snode_0  = load16i((int*)stack_node_single + 0);
+				const mic_i snode_16 = load16i((int*)stack_node_single + 16);
+				const mic_i snode_32 = load16i((int*)stack_node_single + 32);
+				const mic_m m_stack_compact_0  = le(               snear_0 ,max_dist_xyz) | (mic_m)1;
+				const mic_m m_stack_compact_16 = le(               snear_16,max_dist_xyz);
+				const mic_m m_stack_compact_32 = le(m_num_stack_32,snear_32,max_dist_xyz);
 
-				    sindex = 0;
-				    compactustore16f(m_stack_compact_0,      stack_dist_single + sindex,snear_0);
-				    compactustore16i(m_stack_compact_0,(int*)stack_node_single + sindex,snode_0);
-				    sindex += countbits(m_stack_compact_0);
-				    compactustore16f(m_stack_compact_16,      stack_dist_single + sindex,snear_16);
-				    compactustore16i(m_stack_compact_16,(int*)stack_node_single + sindex,snode_16);
-				    sindex += countbits(m_stack_compact_16);
-				    compactustore16f(m_stack_compact_32,      stack_dist_single + sindex,snear_32);
-				    compactustore16i(m_stack_compact_32,(int*)stack_node_single + sindex,snode_32);
-				    sindex += countbits(m_stack_compact_32);
+				sindex = 0;
+				compactustore16f(m_stack_compact_0,      stack_dist_single + sindex,snear_0);
+				compactustore16i(m_stack_compact_0,(int*)stack_node_single + sindex,snode_0);
+				sindex += countbits(m_stack_compact_0);
+				compactustore16f(m_stack_compact_16,      stack_dist_single + sindex,snear_16);
+				compactustore16i(m_stack_compact_16,(int*)stack_node_single + sindex,snode_16);
+				sindex += countbits(m_stack_compact_16);
+				compactustore16f(m_stack_compact_32,      stack_dist_single + sindex,snear_32);
+				compactustore16i(m_stack_compact_32,(int*)stack_node_single + sindex,snode_32);
+				sindex += countbits(m_stack_compact_32);
 
-				    assert(sindex < 48);		  
-				  }
+				assert(sindex < 48);		  
 			      }
 			  }
 		      }
@@ -424,8 +427,10 @@ namespace embree
           curNode = *sptr_node; 
           curDist = *sptr_dist;
           
-	  prefetch<PFHINT_L1>((mic_f*)node + 0); 
-	  prefetch<PFHINT_L1>((mic_f*)node + 1); 
+	  prefetch<PFHINT_L1>((char*)node + 0*64); 
+	  prefetch<PFHINT_L1>((char*)node + 1*64); 
+	  prefetch<PFHINT_L1>((char*)node + 2*64); 
+	  prefetch<PFHINT_L1>((char*)node + 3*64); 
 
 #pragma unroll(4)
           for (unsigned int i=0; i<4; i++)
@@ -502,6 +507,7 @@ namespace embree
 	prefetch<PFHINT_L2>((mic_f*)tris +  4); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  5); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  6); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  7); 
 
 	for (size_t i=0; i<items; i++) 
 	  {
@@ -676,8 +682,12 @@ namespace embree
 			const float* __restrict const plower = (float*)node->lower;
 			const float* __restrict const pupper = (float*)node->upper;
 
-			prefetch<PFHINT_L1>((char*)node + 0);
-			prefetch<PFHINT_L1>((char*)node + 64);
+
+			prefetch<PFHINT_L1>((char*)node + 0*64);
+			prefetch<PFHINT_L1>((char*)node + 1*64);
+			prefetch<PFHINT_L1>((char*)node + 2*64);
+			prefetch<PFHINT_L1>((char*)node + 3*64);
+
 			const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
 			const mic_f lower = one_time  * load16f((float*)nodeMB->lower) + time * load16f((float*)nodeMB->lower_t1);
 			const mic_f upper = one_time  * load16f((float*)nodeMB->upper) + time * load16f((float*)nodeMB->upper_t1);
@@ -765,13 +775,14 @@ namespace embree
 
 		    const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf(accel);
 
-		    prefetch<PFHINT_L2>((mic_f*)tptr +  0); 
-		    prefetch<PFHINT_L2>((mic_f*)tptr +  1); 
-		    prefetch<PFHINT_L2>((mic_f*)tptr +  2); 
-		    prefetch<PFHINT_L2>((mic_f*)tptr +  3); 
-		    prefetch<PFHINT_L2>((mic_f*)tptr +  4); 
-		    prefetch<PFHINT_L2>((mic_f*)tptr +  5); 
-		    prefetch<PFHINT_L2>((mic_f*)tptr +  6); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  0); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  1); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  2); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  3); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  4); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  5); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  6); 
+		    prefetch<PFHINT_L1>((mic_f*)tptr +  7); 
 
 		    const mic_i and_mask = broadcast4to16i(zlc4);
 	      
@@ -842,27 +853,20 @@ namespace embree
 
 		    if (unlikely(none(m_aperture))) continue;
 
-		    const mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
+		    mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
+
+#if defined(__USE_RAY_MASK__)
+		    const mic_i rayMask(ray16.mask[rayIndex]);
+		    const mic_i triMask = swDDDD(gather16i_4i_align(&tptr[0].t0.v2,&tptr[1].t0.v2,&tptr[2].t0.v2,&tptr[3].t0.v2));
+		    const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
+		    m_final &= m_ray_mask;	      
+#endif
 
 		    /* did the ray hot one of the four triangles? */
 		    if (unlikely(any(m_final)))
 		      {
-#if defined(__USE_RAY_MASK__)
-			const mic_i rayMask(ray16.mask[rayIndex]);
-			const mic_i triMask = swDDDD(gather16i_4i((int*)&tptr[0].t0.v2,
-								  (int*)&tptr[1].t0.v2,
-								  (int*)&tptr[2].t0.v2,
-								  (int*)&tptr[3].t0.v2));
-
-			const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
-			
-			if ( any(m_final & m_ray_mask) )
-#endif
-
-			  {
-			    m_terminated |= toMask(mic_m::shift1[rayIndex]);
-			    break;
-			  }			
+			m_terminated |= toMask(mic_m::shift1[rayIndex]);
+			break;
 		      }
 		  }	  
 		if (unlikely(all(m_terminated))) 
@@ -895,8 +899,10 @@ namespace embree
           
           const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
 
-	  prefetch<PFHINT_L1>((char*)node + 0);
-	  prefetch<PFHINT_L1>((char*)node + 64);
+	  prefetch<PFHINT_L1>((char*)node + 0*64);
+	  prefetch<PFHINT_L1>((char*)node + 1*64);
+	  prefetch<PFHINT_L1>((char*)node + 2*64);
+	  prefetch<PFHINT_L1>((char*)node + 3*64);
 
           /* pop of next node */
           sptr_node--;
@@ -972,6 +978,7 @@ namespace embree
 	prefetch<PFHINT_L2>((mic_f*)tris +  4); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  5); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  6); 
+	prefetch<PFHINT_L2>((mic_f*)tris +  7); 
 
 	mic_m valid0 = valid_leaf;
 

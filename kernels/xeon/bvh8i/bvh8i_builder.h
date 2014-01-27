@@ -18,28 +18,27 @@
 #define __EMBREE_BVH8I_BUILDER_H__
 
 #include "bvh4i/bvh4i.h"
-#include "bvh4i/bvh4i_builder_fast.h"
-#include "geometry/triangle4.h"
+#include "builders/heuristics.h"
+#include "bvh4i/bvh4i_builder.h"
 
 namespace embree
 {
   namespace isa
   {
-    class BVH8iBuilder : public BVH4iBuilderFast
+    //typedef typename BVH4iBuilder< HeuristicSpatial<3> > BVH4iBuilder8;
+
+    class BVH8iBuilderTriangle8 : public Builder
     {
       ALIGNED_CLASS;
     public:
+      BVH4iBuilder< HeuristicSpatial<3> > *bvh4i_builder;
       
       /*! Constructor. */
-      BVH8iBuilder(BVH4i* bvh, BuildSource* source, void* geometry, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
-            
-      /*! parallel task to iterate over the triangles */
-      TASK_RUN_FUNCTION(BVH8iBuilder,build_parallel);
-      
+      BVH8iBuilderTriangle8(BVH4i* bvh, BuildSource* source, void* geometry, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+                  
       /* build function */
       void build(size_t threadIndex, size_t threadCount);
       
-      Triangle4 *accel4;
     };
   }  
 }
