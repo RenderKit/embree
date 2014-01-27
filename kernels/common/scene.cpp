@@ -33,7 +33,7 @@ namespace embree
 {
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
-      numTriangleMeshes(0), numTriangleMeshes2(0), numUserGeometries(0),
+      numTriangleMeshes(0), numTriangleMeshes2(0), numCurveSets(0), numCurveSets2(0), numUserGeometries(0),
       flat_triangle_source_1(this,1), flat_triangle_source_2(this,2)
   {
     if (g_scene_flags != -1)
@@ -218,8 +218,13 @@ namespace embree
       recordError(RTC_INVALID_OPERATION);
       return -1;
     }
+
+    if (numTimeSteps == 0 || numTimeSteps > 2) {
+      recordError(RTC_INVALID_OPERATION);
+      return -1;
+    }
     
-    Geometry* geom = new QuadraticBezierCurvesScene::QuadraticBezierCurves(this,gflags,numCurves,numVertices);
+    Geometry* geom = new QuadraticBezierCurvesScene::QuadraticBezierCurves(this,gflags,numCurves,numVertices,numTimeSteps);
     return geom->id;
   }
 

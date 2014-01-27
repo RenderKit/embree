@@ -19,25 +19,22 @@
 
 #include "common/default.h"
 #include "common/geometry.h"
+#include "common/buildsource.h"
+#include "common/buffer.h"
 
 namespace embree
 {
   namespace QuadraticBezierCurvesScene
   {
 
-    struct QuadraticBezierCurves : public Geometry
+    struct QuadraticBezierCurves : public Geometry, public BuildSource
     {
-      struct Curve {
-        int v0,v1,v2,v3;
-      };
-
       struct Vertex {
         float x,y,z,r;
       };
 
     public:
-      QuadraticBezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices); 
-      ~QuadraticBezierCurves ();
+      QuadraticBezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps); 
       
     public:
       void setMask (unsigned mask);
@@ -45,60 +42,84 @@ namespace embree
       void update ();
       void disable ();
       void erase ();
+      void immutable ();
+      bool verify ();
+      void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
       void* map(RTCBufferType type);
       void unmap(RTCBufferType type);
-      void postBuild(bool needVertices);
 
-      void enabling() {}
-      void disabling() {}
+      void enabling();
+      void disabling();
 
     public:
 
-      __forceinline const Curve& curve(size_t i) const {
+      bool isEmpty () const { 
+        return numCurves == 0;
+      }
+      
+      size_t groups () const { 
+        return 1;
+      }
+      
+      size_t prims (size_t group, size_t* pnumVertices) const {
+        if (pnumVertices) *pnumVertices = numVertices*numTimeSteps;
+        return numCurves;
+      }
+
+      const BBox3f bounds(size_t group, size_t prim) const {
+        return bounds(prim);
+      }
+
+    public:
+
+      __forceinline const int& curve(size_t i) const {
         assert(i < numCurves);
         return curves[i];
       }
 
-      __forceinline const Vec3fa& vertex(size_t i) const {
+      __forceinline const Vec3fa& vertex(size_t i, size_t j = 0) const {
         assert(i < numVertices);
-        return (Vec3fa&)vertices[i];
+        assert(j < 2);
+        return (Vec3fa&)vertices[j][i];
       }
 
-      __forceinline float radius(size_t i) const {
+      __forceinline float radius(size_t i, size_t j = 0) const {
         assert(i < numVertices);
-        return vertices[i].r;
+        assert(j < 2);
+        return vertices[j][i].r;
       }
 
       __forceinline BBox3f bounds(size_t i) const 
       {
-        const Curve& index = curve(i);
-        const float r0 = radius(index.v0);
-        const float r1 = radius(index.v1);
-        const float r2 = radius(index.v2);
-        const float r3 = radius(index.v3);
-        const Vec3fa& v0 = vertex(index.v0);
-        const Vec3fa& v1 = vertex(index.v1);
-        const Vec3fa& v2 = vertex(index.v2);
-        const Vec3fa& v3 = vertex(index.v3);
+        const int index = curve(i);
+        const float r0 = radius(index+0);
+        const float r1 = radius(index+1);
+        const float r2 = radius(index+2);
+        const float r3 = radius(index+3);
+        const Vec3fa& v0 = vertex(index+0);
+        const Vec3fa& v1 = vertex(index+1);
+        const Vec3fa& v2 = vertex(index+2);
+        const Vec3fa& v3 = vertex(index+3);
         const BBox3f b = merge(BBox3f(v0),BBox3f(v1),BBox3f(v2),BBox3f(v3));
         return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
       }
 
       __forceinline bool anyMappedBuffers() const {
-        return mappedCurves || mappedVertices;
+        return curves.isMapped() || vertices[0].isMapped() || vertices[1].isMapped();
       }
 
     public:
-      unsigned mask;              //!< for masking out geometry
-      bool built;                //!< geometry got built
+      unsigned mask;                    //!< for masking out geometry
+      bool built;                       //!< geometry got built
+      unsigned char numTimeSteps;       //!< number of time steps (1 or 2)
 
-      Curve* curves;              //!< array of curves
-      size_t numCurves;           //!< number of curves in array
-      bool mappedCurves;          //!< is curves buffer mapped?
+      BufferStream<int> curves;         //!< array of curve indices
+      bool needCurves;                  //!< set if curve indices required by acceleration structure
+      size_t numCurves;                 //!< number of triangles
 
-      Vertex* vertices;           //!< array of vertices and radii
-      size_t numVertices;         //!< number of vertices in array
-      bool mappedVertices;        //!< is vertices buffer mapped?
+      BufferStream<Vertex> vertices[2]; //!< vertex array
+      bool needVertices;                //!< set if vertex array required by acceleration structure
+      size_t numVertices;               //!< number of vertices
     };
 
   }

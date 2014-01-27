@@ -547,7 +547,7 @@ namespace embree
     return -1;
   }
 
-/*  RTCORE_API unsigned rtcNewQuadraticBezierCurves (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  RTCORE_API unsigned rtcNewQuadraticBezierCurves (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     CATCH_BEGIN;
     TRACE(rtcNewQuadraticBezierCurves);
@@ -555,7 +555,7 @@ namespace embree
     return ((Scene*)scene)->newQuadraticBezierCurves(flags,numCurves,numVertices,numTimeSteps);
     CATCH_END;
     return -1;
-    }*/
+  }
 
   RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask) 
   {
