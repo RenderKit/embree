@@ -146,8 +146,8 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
   
@@ -155,7 +155,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   rtcIntersect(g_scene,ray);
   
   /* shade background black */
-  if (ray.geomID == -1) return Vec3f(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3f(0.0f);
   
   /* shade all rays that hit something */
   Vec3f color = Vec3f(0.0f);
@@ -172,7 +172,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   color = material->Kd;
   
   /* apply ambient light */
-  Vec3f Ng = normalize(ray.Ng);
+  Vec3fa Ng = normalize(ray.Ng);
   Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
   color = mul(color,abs(dot(ray.dir,Ng)));    
   return color;

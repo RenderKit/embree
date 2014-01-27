@@ -131,8 +131,8 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
   
@@ -141,7 +141,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   
   /* shade pixels */
   Vec3f color = Vec3f(0.0f);
-  if (ray.geomID != -1) 
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
     Vec3f diffuse = colors[ray.primID];
     color = add(color,mul(diffuse,0.5f));

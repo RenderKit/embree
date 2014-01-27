@@ -37,8 +37,8 @@ Vec3f renderPixelEyeLight(int x, int y, const uniform Vec3f& vx, const uniform V
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
 
@@ -46,7 +46,7 @@ Vec3f renderPixelEyeLight(int x, int y, const uniform Vec3f& vx, const uniform V
   rtcIntersect(g_scene,ray);
 
   /* shade pixel */
-  if (ray.geomID == -1) return make_Vec3f(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
   else return make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
@@ -59,8 +59,8 @@ Vec3f renderPixelAmbientOcclusion(int x, int y, const uniform Vec3f& vx, const u
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
 
@@ -68,7 +68,7 @@ Vec3f renderPixelAmbientOcclusion(int x, int y, const uniform Vec3f& vx, const u
   rtcIntersect(g_scene,ray);
 
   /* return black if nothing hit */
-  if (ray.geomID == -1) return make_Vec3f(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
 
   /* calculate hit point */
   float intensity = 0;
@@ -119,8 +119,8 @@ Vec3f renderPixelUV(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& 
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
 
@@ -128,7 +128,7 @@ Vec3f renderPixelUV(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& 
   rtcIntersect(g_scene,ray);
 
   /* shade pixel */
-  if (ray.geomID == -1) return make_Vec3f(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
   else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
 }
 
@@ -141,8 +141,8 @@ Vec3f renderPixelNg(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& 
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
 
@@ -150,7 +150,7 @@ Vec3f renderPixelNg(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& 
   rtcIntersect(g_scene,ray);
 
   /* shade pixel */
-  if (ray.geomID == -1) return make_Vec3f(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
   else return abs(make_Vec3f(ray.Ng.x,ray.Ng.y,ray.Ng.z));
 }
 
@@ -172,8 +172,8 @@ Vec3f renderPixelGeomID(int x, int y, const uniform Vec3f& vx, const uniform Vec
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
 
@@ -181,7 +181,7 @@ Vec3f renderPixelGeomID(int x, int y, const uniform Vec3f& vx, const uniform Vec
   rtcIntersect(g_scene,ray);
 
   /* shade pixel */
-  if (ray.geomID == -1) return make_Vec3f(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
   else return randomColor(ray.geomID);
 }
 
@@ -194,8 +194,8 @@ Vec3f renderPixelGeomIDPrimID(int x, int y, const uniform Vec3f& vx, const unifo
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
 
@@ -203,7 +203,7 @@ Vec3f renderPixelGeomIDPrimID(int x, int y, const uniform Vec3f& vx, const unifo
   rtcIntersect(g_scene,ray);
 
   /* shade pixel */
-  if (ray.geomID == -1) return make_Vec3f(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
   else return randomColor(ray.geomID ^ ray.primID);
 }
 
@@ -216,8 +216,8 @@ Vec3f renderPixelCycles(int x, int y, const uniform Vec3f& vx, const uniform Vec
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
 
@@ -239,8 +239,8 @@ Vec3f renderPixelUV16(int x, int y, const uniform Vec3f& vx, const uniform Vec3f
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
 
@@ -251,7 +251,7 @@ Vec3f renderPixelUV16(int x, int y, const uniform Vec3f& vx, const uniform Vec3f
   }
 
   /* shade pixel */
-  if (ray.geomID == -1) return make_Vec3f(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
   else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
 }
 
@@ -270,8 +270,8 @@ export uniform bool device_pick(const uniform float x,
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
 
@@ -279,7 +279,7 @@ export uniform bool device_pick(const uniform float x,
   rtcIntersect1(g_scene,ray);
 
   /* shade pixel */
-  if (ray.geomID == -1) {
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     hitPos = make_Vec3f(0.0f,0.0f,0.0f);
     return false;
   }

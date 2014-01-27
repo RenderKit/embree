@@ -67,11 +67,11 @@ void instanceIntersectFunc(const uniform Instance* uniform instance, varying RTC
   const int geomID = ray.geomID;
   ray.org = xfmPoint (instance->world2local,ray_org);
   ray.dir = xfmVector(instance->world2local,ray_dir);
-  ray.geomID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
   rtcIntersect(instance->object,ray);
   ray.org = ray_org;
   ray.dir = ray_dir;
-  if (ray.geomID == -1) ray.geomID = geomID;
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) ray.geomID = geomID;
   else ray.instID = instance->userID;
 }
 
@@ -387,8 +387,8 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.instID = 4; // set default instance ID
   ray.mask = -1;
   ray.time = 0;
@@ -398,7 +398,7 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
   
   /* shade pixels */
   Vec3f color = make_Vec3f(0.0f);
-  if (ray.geomID != -1) 
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
     Vec3f diffuse = make_Vec3f(0.0f);
     if (ray.instID == 0) diffuse = colors[ray.instID][ray.primID];
