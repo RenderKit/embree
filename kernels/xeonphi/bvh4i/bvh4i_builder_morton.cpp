@@ -288,9 +288,9 @@ namespace embree
 	{
 	  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 
-	  const float *__restrict__ const vptr0 = (float*)&mesh->vertex3f(tri->v[0]);
-	  const float *__restrict__ const vptr1 = (float*)&mesh->vertex3f(tri->v[1]);
-	  const float *__restrict__ const vptr2 = (float*)&mesh->vertex3f(tri->v[2]);
+	  const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri->v[0]);
+	  const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri->v[1]);
+	  const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri->v[2]);
 
 	  prefetch<PFHINT_NT>(vptr1);
 	  prefetch<PFHINT_NT>(vptr2);
@@ -361,9 +361,9 @@ namespace embree
 	prefetch<PFHINT_NT>(&tri + 16);
 	prefetch<PFHINT_NT>(&tri + 4);
 
-	const float *__restrict__ const vptr0 = (float*)&mesh->vertex3f(tri.v[0]);
-	const float *__restrict__ const vptr1 = (float*)&mesh->vertex3f(tri.v[1]);
-	const float *__restrict__ const vptr2 = (float*)&mesh->vertex3f(tri.v[2]);
+	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
+	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
+	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
 
 	prefetch<PFHINT_L2>(vptr1);
 	prefetch<PFHINT_L2>(vptr2);
@@ -432,9 +432,9 @@ namespace embree
 	    const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
 
-	    const float *__restrict__ const vptr0 = (float*)&mesh->vertex3f(tri.v[0]);
-	    const float *__restrict__ const vptr1 = (float*)&mesh->vertex3f(tri.v[1]);
-	    const float *__restrict__ const vptr2 = (float*)&mesh->vertex3f(tri.v[2]);
+	    const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
+	    const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
+	    const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
 
 	    prefetch<PFHINT_L1>(vptr1);
 	    prefetch<PFHINT_L1>(vptr2);
@@ -462,9 +462,9 @@ namespace embree
 	    const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
 
-	    const mic_f v0 = broadcast4to16f((float*)&mesh->vertex3f(tri.v[0]));
-	    const mic_f v1 = broadcast4to16f((float*)&mesh->vertex3f(tri.v[1]));
-	    const mic_f v2 = broadcast4to16f((float*)&mesh->vertex3f(tri.v[2]));
+	    const mic_f v0 = broadcast4to16f((float*)&mesh->vertex(tri.v[0]));
+	    const mic_f v1 = broadcast4to16f((float*)&mesh->vertex(tri.v[1]));
+	    const mic_f v2 = broadcast4to16f((float*)&mesh->vertex(tri.v[2]));
      
 	    const mic_f bmin = min(min(v0,v1),v2);
 	    const mic_f bmax = max(max(v0,v1),v2);
@@ -496,9 +496,9 @@ namespace embree
 	    const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
 
-	    const mic_f v0 = broadcast4to16f((float*)&mesh->vertex3f(tri.v[0]));
-	    const mic_f v1 = broadcast4to16f((float*)&mesh->vertex3f(tri.v[1]));
-	    const mic_f v2 = broadcast4to16f((float*)&mesh->vertex3f(tri.v[2]));
+	    const mic_f v0 = broadcast4to16f((float*)&mesh->vertex(tri.v[0]));
+	    const mic_f v1 = broadcast4to16f((float*)&mesh->vertex(tri.v[1]));
+	    const mic_f v2 = broadcast4to16f((float*)&mesh->vertex(tri.v[2]));
      
 	    const mic_f bmin = min(min(v0,v1),v2);
 	    const mic_f bmax = max(max(v0,v1),v2);
@@ -526,9 +526,9 @@ namespace embree
 	    const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
 
-	    const mic_f v0 = broadcast4to16f((float*)&mesh->vertex3f(tri.v[0]));
-	    const mic_f v1 = broadcast4to16f((float*)&mesh->vertex3f(tri.v[1]));
-	    const mic_f v2 = broadcast4to16f((float*)&mesh->vertex3f(tri.v[2]));
+	    const mic_f v0 = broadcast4to16f((float*)&mesh->vertex(tri.v[0]));
+	    const mic_f v1 = broadcast4to16f((float*)&mesh->vertex(tri.v[1]));
+	    const mic_f v2 = broadcast4to16f((float*)&mesh->vertex(tri.v[2]));
      
 	    const mic_f bmin = min(min(v0,v1),v2);
 	    const mic_f bmax = max(max(v0,v1),v2);
@@ -806,9 +806,9 @@ namespace embree
 	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
       
-	const float *__restrict__ const vptr0 = (float*)&mesh->vertex3f(tri.v[0]);
-	const float *__restrict__ const vptr1 = (float*)&mesh->vertex3f(tri.v[1]);
-	const float *__restrict__ const vptr2 = (float*)&mesh->vertex3f(tri.v[2]);
+	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
+	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
+	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
 
 	const mic_f v0 = broadcast4to16f(vptr0); //WARNING: zero last component
 	const mic_f v1 = broadcast4to16f(vptr1);

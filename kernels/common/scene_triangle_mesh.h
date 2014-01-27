@@ -88,17 +88,7 @@ namespace embree
         return triangles[i];
       }
 
-      __forceinline const Vec3fa vertex(size_t i, size_t j = 0) const {
-        assert(i < numVertices);
-        assert(j < 2);
-#if defined(__MIC__)
-        return *(Vec3fa*)&vertices[j][i];
-#else
-        return Vec3fa(loadu4f(&vertices[j][i]));
-#endif
-      }
-
-      __forceinline const Vec3fa& vertex3f(size_t i, size_t j = 0) const {
+      __forceinline const Vec3fa& vertex(size_t i, size_t j = 0) const {
         assert(i < numVertices);
         assert(j < 2);
         return vertices[j][i];

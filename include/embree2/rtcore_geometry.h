@@ -125,11 +125,12 @@ RTCORE_API void rtcUnmapBuffer(RTCScene scene, unsigned geomID, RTCBufferType ty
  *  and the user is responsible to free the data when the mesh gets
  *  deleted. One can optionally speficy a byte offset and byte stride
  *  of the elements stored inside the buffer. The addresses
- *  ptr+offset+i*stride have to be aligned to 4 bytes. For vertex
- *  buffers, the 4 bytes after the z-coordinate of the last vertex has
- *  to be a valid address to read from, thus padding is required for
- *  some layouts. If this function is not called, Embree will allocate
- *  and manage buffers of the default layout. */
+ *  ptr+offset+i*stride have to be aligned to 4 bytes on Xeon CPUs and
+ *  16 bytes on Xeon Phi accelerators. For vertex buffers, the 4 bytes
+ *  after the z-coordinate of the last vertex have to be readable memory,
+ *  thus padding is required for some layouts. If this function is not
+ *  called, Embree will allocate and manage buffers of the default
+ *  layout. */
 RTCORE_API void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, 
                              void* ptr, size_t offset = 0, size_t stride = 16);
 

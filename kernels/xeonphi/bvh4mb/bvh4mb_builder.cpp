@@ -66,9 +66,9 @@ namespace embree
     const mic_i pID(primID);
     const mic_i gID(geomID);
 
-    const float *__restrict__ const vptr0_t0 = (float*)&mesh->vertex3f(tri.v[0]);
-    const float *__restrict__ const vptr1_t0 = (float*)&mesh->vertex3f(tri.v[1]);
-    const float *__restrict__ const vptr2_t0 = (float*)&mesh->vertex3f(tri.v[2]);
+    const float *__restrict__ const vptr0_t0 = (float*)&mesh->vertex(tri.v[0]);
+    const float *__restrict__ const vptr1_t0 = (float*)&mesh->vertex(tri.v[1]);
+    const float *__restrict__ const vptr2_t0 = (float*)&mesh->vertex(tri.v[2]);
 
     prefetch<PFHINT_L1>(vptr1_t0);
     prefetch<PFHINT_L1>(vptr2_t0);
@@ -88,9 +88,9 @@ namespace embree
     else
       {
 	assert( (int)mesh->numTimeSteps == 2 );
-	const float *__restrict__ const vptr0_t1 = (float*)&mesh->vertex3f(tri.v[0],1);
-	const float *__restrict__ const vptr1_t1 = (float*)&mesh->vertex3f(tri.v[1],1);
-	const float *__restrict__ const vptr2_t1 = (float*)&mesh->vertex3f(tri.v[2],1);
+	const float *__restrict__ const vptr0_t1 = (float*)&mesh->vertex(tri.v[0],1);
+	const float *__restrict__ const vptr1_t1 = (float*)&mesh->vertex(tri.v[1],1);
+	const float *__restrict__ const vptr2_t1 = (float*)&mesh->vertex(tri.v[2],1);
 	
 	const mic_f v0_t1 = broadcast4to16f(vptr0_t1); 
 	const mic_f v1_t1 = broadcast4to16f(vptr1_t1);

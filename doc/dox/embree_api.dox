@@ -449,10 +449,10 @@ quite some freedom in the data layout of these buffers, however, some
 restrictions apply. Index buffers always store 32 bit indices and
 vertex buffers always store single precision floating point data. The
 start address ptr+offset and stride always have to be aligned to 4
-bytes, otherwise the <code>rtcSetBuffer</code> function will fail. For
-vertex buffers, the 4 bytes after the z-coordinate of the last vertex
-have to have a valid address to read from, thus padding is required for
-some layouts.</p>
+bytes on Xeon CPUs and 16 bytes on Xeon Phi accelerators, otherwise
+the <code>rtcSetBuffer</code> function will fail. For vertex buffers,
+the 4 bytes after the z-coordinate of the last vertex have to be
+readable memory, thus padding is required for some layouts.</p>
 
 <p>The following is an example of howto create a mesh with shared index
 and vertex buffers:</p>
