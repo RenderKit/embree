@@ -89,7 +89,7 @@ namespace embree
     static void convertBVH4itoBVH8i(BVH4i::Node *bvh4i,
 				    BVH4i::NodeRef &ref, 
 				    unsigned int numLeavesInSubTree, 
-				    BVH8i::BVH8iNode *bvh8i,
+				    BVH8i::Node *bvh8i,
 				    size_t &index8,
 				    BVH4i::NodeRef &parent_offset,
 				    avxi &bvh8i_node_dist)
@@ -179,11 +179,11 @@ namespace embree
 	}
       
 
-      parent_offset = (unsigned int)(sizeof(BVH8i::BVH8iNode) * bvh8i_node_index);
+      parent_offset = (unsigned int)(sizeof(BVH8i::Node) * bvh8i_node_index);
       
       bvh8i_node_dist[bvh8i_used_slots-1]++;
       
-      BVH8i::BVH8iNode &b8 = bvh8i[bvh8i_node_index];
+      BVH8i::Node &b8 = bvh8i[bvh8i_node_index];
       
       for (size_t i=0;i<bvh8i_used_slots;i++)
 	{
@@ -213,7 +213,7 @@ namespace embree
       unsigned int totalLeaves = countLeavesButtomUp((BVH4i::Node*)bvh4i_builder8->bvh->nodePtr(),bvh4i_builder8->bvh->root);
       DBG_PRINT(totalLeaves);
       avxi bvh8i_node_dist = 0;
-      BVH8i::BVH8iNode *bvh8i_base = (BVH8i::BVH8iNode *)os_malloc(sizeof(BVH8i::Node) * numBVH4iNodes);
+      BVH8i::Node *bvh8i_base = (BVH8i::Node *)os_malloc(sizeof(BVH8i::Node) * numBVH4iNodes);
       BVH4i::NodeRef bvh8i_root;
       size_t index8 = 0;
       convertBVH4itoBVH8i((BVH4i::Node*)bvh4i_builder8->bvh->nodePtr(),
@@ -225,7 +225,31 @@ namespace embree
 			  bvh8i_node_dist);
 
       std::cout << "BVH4i TO BVH8I CONVERSION DONE" << std::endl << std::flush;
-      
+      DBG_PRINT(index8);
+ 
+      /* bvh8i node util */
+      {
+	unsigned int total = 0;
+	float util = 0.0f;
+	for (size_t i=0;i<8;i++) {
+	  util += (float)(i+1) * bvh8i_node_dist[i];
+	  total += bvh8i_node_dist[i];
+	}
+	DBG_PRINT(total);
+	std::cout << "bvh8i node util dist: ";
+	DBG_PRINT(bvh8i_node_dist);
+	float sum = 0;
+	for (size_t i=0;i<8;i++) 
+	  {
+	    sum += (float)bvh8i_node_dist[i] * 100.0f / total;
+	    std::cout << i+1 << "[" << (float)bvh8i_node_dist[i] * 100.0f / total << "%, sum " << sum << "%] ";
+	  }
+	std::cout << std::endl;
+	DBG_PRINT(100.0f * util / (8.0f * total));
+	std::cout << std::endl;
+      }
+
+
       exit(0);
 
       // bvh->init();

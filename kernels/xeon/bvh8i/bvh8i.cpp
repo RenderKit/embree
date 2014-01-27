@@ -75,6 +75,30 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
+#if defined (__AVX__)
 
+  float BVH8i::sah8 () {
+    return sah(bvh8i_base,bvh8i_root,bounds)/area(bounds);
+  }
+
+  float BVH8i::sah8 (BVH8iNode * base, NodeRef& node, const BBox3f& bounds)
+  {
+    float f = bounds.empty() ? 0.0f : area(bounds);
+
+    if (node.isNode()) 
+    {
+      BVH8i::BVH8iNode* n = node.node(base);
+      unsigned int children = n->numValidChildren();
+      for (size_t c=0; c<n; c++) 
+        f += sah(n->child(c),n->bounds(c));
+      return f;
+    }
+    else 
+    {
+      size_t num; node.leaf(triPtr(),num);
+      return f*num;
+    }
+  }
+#endif
 
 }

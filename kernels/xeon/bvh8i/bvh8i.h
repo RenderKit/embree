@@ -41,9 +41,33 @@ namespace embree
 
   /*! Multi BVH with 8 children. Each node stores the bounding box of
    * it's 8 children as well as a 8 child indices. */
-  class BVH8i : public BVH4i
+  class BVH8i : public Bounded
   {
   public:
+
+    /*! forward declaration of node type */
+    struct Node;
+
+    /*! branching width of the tree */
+    static const size_t N = 8;
+
+    /*! Masks the bits that store the number of items per leaf. */
+    static const unsigned offset_mask = 0xFFFFFFFF << 6;
+    static const unsigned barrier_mask = 1<<31;
+    static const unsigned leaf_mask = 1<<5;  
+    static const unsigned items_mask = leaf_mask-1;  
+    
+    /*! Empty node */
+    static const unsigned emptyNode = leaf_mask;
+
+    /*! Invalid node */
+    //static const unsigned invalidNode = leaf_mask;
+    static const unsigned invalidNode = 0xFFFFFFE0;
+
+    /*! Maximal depth of the BVH. */
+    static const size_t maxBuildDepth = 32;
+    static const size_t maxBuildDepthLeaf = maxBuildDepth+16;
+    static const size_t maxDepth = maxBuildDepthLeaf+maxBuildDepthLeaf+maxBuildDepth; // this depth makes tree rotations of top part of tree safe
 
     /*! BVH8i instantiations */
     static Accel* BVH8iTriangle8(Scene* scene);
@@ -51,7 +75,7 @@ namespace embree
 #if defined (__AVX__)
 
     /*! BVH8 Node */
-    struct __align(64) BVH8iNode
+    struct __align(64) Node
     {
       avxf min_x;
       avxf max_x;
@@ -91,10 +115,10 @@ namespace embree
 	data[index] = node.upper.a;
       }
 
-      __forceinline void set(const size_t index,const BVH8iNode &node, const size_t source_index)
+      __forceinline void set(const size_t index,const Node &node, const size_t source_index)
       {
-	assert(index < 8);
-	assert(source_index < 8);
+	assert(index < N);
+	assert(source_index < N);
 
 	min_x[index] = node.min_x[source_index];
 	min_y[index] = node.min_y[source_index];
@@ -110,7 +134,7 @@ namespace embree
 
       __forceinline BBox3f extract(const size_t index)
       {
-	assert(index < 8);
+	assert(index < N);
 
 	BBox3f node;
 	node.lower[0] = min_x[index];
@@ -135,9 +159,9 @@ namespace embree
 
       __forceinline void shift(const size_t index)
       {
-	assert(index < 8);
+	assert(index < N);
 
-	for (size_t i=index+1;i<8;i++)
+	for (size_t i=index+1;i<N;i++)
 	  {
 	    min_x[i-1] = min_x[i];
 	    min_y[i-1] = min_y[i];
@@ -163,30 +187,65 @@ namespace embree
 	max_y = neg_inf;
 	max_z = neg_inf;
 
-	for (size_t i=0;i<8;i++) children[i] = emptyNode;
-	for (size_t i=0;i<8;i++) data[i] = 0;
+	for (size_t i=0;i<N;i++) children[i] = emptyNode;
+	for (size_t i=0;i<N;i++) data[i] = 0;
 
+      }
+
+      __forceinline BBox3f bounds() const {
+        const Vec3fa lower(reduce_min(min_x),reduce_min(min_y),reduce_min(min_z));
+        const Vec3fa upper(reduce_max(max_x),reduce_max(max_y),reduce_max(max_z));
+        return BBox3f(lower,upper);
+      }
+
+      /*! Returns bounds of specified child. */
+      __forceinline BBox3f bounds(size_t i) const {
+        Vec3fa lower(min_x[i],min_y[i],min_z[i]);
+        Vec3fa upper(max_x[i],max_y[i],max_z[i]);
+        return BBox3f(lower,upper);
+      }
+
+      /*! Returns number of valid children */
+      __forceinline size_t numValidChildren()  {
+	size_t valid = 0;
+	for (size_t i=0;i<N;i++)
+	  if (children[i] != emptyNode)
+	    valid++;
+	return valid;
       }
 
     };
 
-    static __forceinline BVH8iNode *bvh8ChildPtrNoMask(const BVH8iNode * __restrict__ const ptr, const unsigned int node) {
-      return (BVH8iNode*)((char*)ptr + (unsigned long)node);
+    static __forceinline Node *bvh8ChildPtrNoMask(const Node * __restrict__ const ptr, const unsigned int node) {
+      return (Node*)((char*)ptr + (unsigned long)node);
     };
+
+    float sah8 ();
+    float sah8 (Node*base, BVH4i::NodeRef& node, const BBox3f& bounds);
 
 #endif
 
   public:
+    const PrimitiveType& primTy;   //!< triangle type stored in BVH
+
+    BVH4i::NodeRef root;                      //!< Root node (can also be a leaf).
+    Node *base;
+
+    void* geometry;                //!< pointer to geometry for intersection
     
+
+
     /*! BVH4 default constructor. */
     BVH8i (const PrimitiveType& primTy, void* geometry = NULL)
-      : BVH4i(primTy,geometry) {}
+      : primTy(primTy), geometry(geometry), root(emptyNode), base(NULL) {}
+
+    
   };
 
 
 #if defined (__AVX__)
 
-    __forceinline std::ostream &operator<<(std::ostream &o, const BVH8i::BVH8iNode &v)
+    __forceinline std::ostream &operator<<(std::ostream &o, const BVH8i::Node &v)
     {
       o << "min_x " << v.min_x << std::endl;
       o << "max_x " << v.max_x << std::endl;
