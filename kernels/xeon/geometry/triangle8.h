@@ -104,6 +104,21 @@ namespace embree
   };
 #endif
 
+#if defined (__AVX__)
+
+    __forceinline std::ostream &operator<<(std::ostream &o, const Triangle8 &tri)
+    {
+      o << "v0    " << tri.v0 << std::endl;
+      o << "e1    " << tri.e1 << std::endl;
+      o << "e2    " << tri.e2 << std::endl;
+      o << "Ng    " << tri.Ng << std::endl;
+      o << "geomID" << tri.geomID << std::endl;
+      o << "primID" << tri.primID << std::endl;
+      return o;
+    }
+#endif
+
+
 #if defined(__TARGET_AVX__)
   struct Triangle8Type : public PrimitiveType {
     Triangle8Type ();

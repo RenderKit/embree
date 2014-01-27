@@ -41,7 +41,7 @@ namespace embree
 
   /*! Multi BVH with 8 children. Each node stores the bounding box of
    * it's 8 children as well as a 8 child indices. */
-  class BVH8i : public Bounded
+  class BVH8i : public BVH4i
   {
   public:
 
@@ -50,24 +50,6 @@ namespace embree
 
     /*! branching width of the tree */
     static const size_t N = 8;
-
-    /*! Masks the bits that store the number of items per leaf. */
-    static const unsigned offset_mask = 0xFFFFFFFF << 6;
-    static const unsigned barrier_mask = 1<<31;
-    static const unsigned leaf_mask = 1<<5;  
-    static const unsigned items_mask = leaf_mask-1;  
-    
-    /*! Empty node */
-    static const unsigned emptyNode = leaf_mask;
-
-    /*! Invalid node */
-    //static const unsigned invalidNode = leaf_mask;
-    static const unsigned invalidNode = 0xFFFFFFE0;
-
-    /*! Maximal depth of the BVH. */
-    static const size_t maxBuildDepth = 32;
-    static const size_t maxBuildDepthLeaf = maxBuildDepth+16;
-    static const size_t maxDepth = maxBuildDepthLeaf+maxBuildDepthLeaf+maxBuildDepth; // this depth makes tree rotations of top part of tree safe
 
     /*! BVH8i instantiations */
     static Accel* BVH8iTriangle8(Scene* scene);
@@ -214,6 +196,11 @@ namespace embree
 	return valid;
       }
 
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { return children[i]; }
+
+
     };
 
     static __forceinline Node *bvh8ChildPtrNoMask(const Node * __restrict__ const ptr, const unsigned int node) {
@@ -226,18 +213,9 @@ namespace embree
 #endif
 
   public:
-    const PrimitiveType& primTy;   //!< triangle type stored in BVH
-
-    BVH4i::NodeRef root;                      //!< Root node (can also be a leaf).
-    Node *base;
-
-    void* geometry;                //!< pointer to geometry for intersection
-    
-
 
     /*! BVH4 default constructor. */
-    BVH8i (const PrimitiveType& primTy, void* geometry = NULL)
-      : primTy(primTy), geometry(geometry), root(emptyNode), base(NULL) {}
+    BVH8i (const PrimitiveType& primTy, void* geometry = NULL) : BVH4i(primTy,geometry) {}
 
     
   };

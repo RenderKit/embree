@@ -23,6 +23,7 @@
 #include "sys/sync/barrier.h"
 
 #include "bvh8i/bvh8i.h"
+#include "geometry/triangle8.h"
 
 using namespace embree;
 
@@ -102,10 +103,12 @@ namespace embree
 
       {
 	BVH4i::Node *node4 = ref.node(bvh4i);
+	DBG_PRINT(*node4);
 	unsigned int children = node4->numValidChildren();
-        
+        DBG_PRINT(children);
 	for (size_t i=0;i<children;i++) 
 	  bvh8i[bvh8i_node_index].set(bvh8i_used_slots++,*node4,i);      
+	DBG_PRINT( bvh8i[bvh8i_node_index] );
       }
 
       while(bvh8i_used_slots < 8)
@@ -131,13 +134,14 @@ namespace embree
 		  node_area[i] > max_area)
 		{      
 		  //if (bvh8_used_slots >=8)
-		  //if (bvh8i[bvh8i_node_index].max_d[i] >= 4 && bvh8i[bvh8i_node_index].max_d[i] <= 8) continue;	      
+		  //if (bvh8i[bvh8i_node_index].data[i] >= 6 && bvh8i[bvh8i_node_index].data[i] <= 8) continue;	      
             
 		  max_index = i;
 		  max_area = node_area[i];
                         
 		}
 	  
+#if 1
 	      if (bvh8i[bvh8i_node_index].data[i] <= free_slots && 
 		  bvh8i[bvh8i_node_index].data[i] < min_children_small)// &&
 		//node_area[i] > max_area_small)
@@ -147,7 +151,7 @@ namespace embree
 		  max_area_small = node_area[i];
                         
 		}	  
-          
+#endif     
 	    }
 
 	  if (max_index == -1) break;
@@ -206,7 +210,9 @@ namespace embree
 
     void BVH8iBuilderTriangle8::build(size_t threadIndex, size_t threadCount) 
     {
+      PING;
       bvh4i_builder8->build(threadIndex,threadCount);
+      DBG_PRINT(*(Triangle8*)bvh4i_builder8->bvh->geometry);
       std::cout << "BVH4i BUILD DONE" << std::endl << std::flush;
       unsigned int numBVH4iNodes = countBVH4iNodes((BVH4i::Node*)bvh4i_builder8->bvh->nodePtr(),bvh4i_builder8->bvh->root);
       DBG_PRINT(numBVH4iNodes);
@@ -226,6 +232,8 @@ namespace embree
 
       std::cout << "BVH4i TO BVH8I CONVERSION DONE" << std::endl << std::flush;
       DBG_PRINT(index8);
+      DBG_PRINT(bvh8i_root);
+      DBG_PRINT(bvh8i_base[0]);
  
       /* bvh8i node util */
       {
@@ -249,9 +257,13 @@ namespace embree
 	std::cout << std::endl;
       }
 
+      bvh4i_builder8->bvh->root = bvh8i_root;
+      bvh4i_builder8->bvh->qbvh = bvh8i_base; 
+
+      DBG_PRINT(bvh8i_root);
+      DBG_PRINT(bvh8i_base);
 
       exit(0);
-
       // bvh->init();
       // allocateData();
       // TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
