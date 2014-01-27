@@ -418,6 +418,63 @@ space.</code>
 
 <p>See tutorial04 for an example of how to use instances.</p>
 
+<h3>Buffer Sharing</h3> 
+
+<p>Embree supports sharing of buffers with the application. Each buffer
+that can be mapped for a specific geometry can also be shared with the
+application, by pass a pointer, offset, and stride of the application
+side buffer using the <code>rtcSetBuffer</code> API function.</p>
+
+<pre><code>void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, 
+                  void* ptr, size_t offset, size_t stride);</code></pre>
+
+<p>The <code>rtcSetBuffer</code> function has to get called before any
+call to <code>rtcMapBuffer</code> for that buffer, otherwise the
+buffer will get allocated internally and the call to
+<code>rtcSetBuffer</code> will fail. The buffer has to remain valid as
+long as the geometry exists, and the user is responsible to free the
+buffer when the geometry gets deleted. 
+
+When a buffer is shared, it is safe to modify that buffer without
+mapping and unmapping it. However, for dynamic scenes one still has to
+call <code>rtcModified</code> for modified geometries and the buffer
+data has to stay constant from the <code>rtcCommit</code> call to
+after the last ray query invokation.</p>
+
+<p>The <code>offset</code> parameter specifies a byte offset to the
+start of the first element and the <code>stride</code> parameter
+specifies a byte stride between the different elements of the shared
+buffer. This support for offset and stride allows the application
+quite some freedom in the data layout of these buffers, however, some
+restrictions apply. Index buffers always store 32 bit indices and
+vertex buffers always store single precision floating point data. The
+start address ptr+offset and stride always have to be aligned to 4
+bytes, otherwise the <code>rtcSetBuffer</code> function will fail. For
+vertex buffers, the 4 bytes after the z-coordinate of the last vertex
+have to have a valid address to read from, thus padding is required for
+some layouts.</p>
+
+<p>The following is an example of howto create a mesh with shared index
+and vertex buffers:</p>
+
+<pre><code>unsigned geomID = rtcNewTriangleMesh(scene,geomFlags,numTriangles,numVertices,1);
+rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexPtr,0,3*sizeof(float));
+rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER ,indexPtr ,0,3*sizeof(int));
+</code></pre>
+
+<p>Sharing buffers can significantly reduce the memory required by the
+application, thus we recommend using this feature. When enabling the
+<code>RTC_COMPACT</code> scene flag, the spatial index structures of
+Embree might also share the vertex buffer, resulting in even higher
+memory savings.</p>
+
+<p>The support for offset and stride is enabled by default, but can
+get disabled at compile time using the
+<code>RTCORE_BUFFER_STRIDE</code> parameter in cmake. Disabling this
+feature enables the default offset and stride which increases
+performance of spatial index structure build, thus can be useful for
+dynamic content.</p>
+
 <h2>Ray Queries</h2>
 
 <p>The API supports finding the closest hit of a ray segment with the
