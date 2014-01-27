@@ -25,13 +25,13 @@ namespace embree
 {
   namespace isa
   {
-    //typedef typename BVH4iBuilder< HeuristicSpatial<3> > BVH4iBuilder8;
+    typedef BVH4iBuilder< HeuristicSpatial<3> > BVH4iBuilder8;
 
     class BVH8iBuilderTriangle8 : public Builder
     {
       ALIGNED_CLASS;
     public:
-      BVH4iBuilder< HeuristicSpatial<3> > *bvh4i_builder;
+      BVH4iBuilder8 *bvh4i_builder8;
       
       /*! Constructor. */
       BVH8iBuilderTriangle8(BVH4i* bvh, BuildSource* source, void* geometry, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
