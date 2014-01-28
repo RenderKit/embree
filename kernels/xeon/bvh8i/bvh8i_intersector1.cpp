@@ -100,7 +100,7 @@ namespace embree
           const avxf tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
           const avxf tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
           const avxb vmask = cast(tNear) > cast(tFar);
-          size_t mask = movemask(vmask)^0xf;
+          size_t mask = movemask(vmask)^0xff;
 #else
           const avxf tNear = max(tNearX,tNearY,tNearZ,rayNear);
           const avxf tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);

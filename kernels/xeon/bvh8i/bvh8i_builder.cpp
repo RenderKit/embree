@@ -103,12 +103,9 @@ namespace embree
 
       {
 	BVH4i::Node *node4 = ref.node(bvh4i);
-	DBG_PRINT(*node4);
 	unsigned int children = node4->numValidChildren();
-        DBG_PRINT(children);
 	for (size_t i=0;i<children;i++) 
 	  bvh8i[bvh8i_node_index].set(bvh8i_used_slots++,*node4,i);      
-	DBG_PRINT( bvh8i[bvh8i_node_index] );
       }
 
       while(bvh8i_used_slots < 8)
