@@ -112,11 +112,11 @@ namespace embree
       bool built;                       //!< geometry got built
       unsigned char numTimeSteps;       //!< number of time steps (1 or 2)
 
-      BufferStream<Triangle> triangles; //!< array of triangles
+      BufferT<Triangle> triangles;      //!< array of triangles
       bool needTriangles;               //!< set if triangle array required by acceleration structure
       size_t numTriangles;              //!< number of triangles
 
-      BufferStream<Vec3fa> vertices[2];  //!< vertex array
+      BufferT<Vec3fa> vertices[2];      //!< vertex array
       bool needVertices;                //!< set if vertex array required by acceleration structure
       size_t numVertices;               //!< number of vertices
     };

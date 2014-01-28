@@ -19,24 +19,55 @@
 namespace embree
 {
   Buffer::Buffer () 
-    : ptr(NULL), bytes(0), shared(false), mapped(false) {}
+    : ptr(NULL), bytes(0), ptr_ofs(NULL), stride(0), num(0), shared(false), mapped(false) {}
   
   Buffer::~Buffer () {
     free();
   }
-      
-  void Buffer::init(size_t bytes_in) 
+
+  void Buffer::init(size_t num_in, size_t stride_in) 
   {
     ptr = NULL;
-    bytes = bytes_in;
+    bytes = num_in*stride_in;
+    ptr_ofs = NULL;
+    num = num_in;
+    stride = stride_in;
     shared = false;
     mapped = false;
+  }
+
+  void Buffer::set(void* ptr_in, size_t ofs_in, size_t stride_in)
+  {
+#if !defined(__RTCORE_BUFFER_STRIDE__)
+    if (stride_in != stride) {
+      recordError(RTC_INVALID_OPERATION);
+      return;
+    }
+#endif
+
+    ptr = (char*) ptr_in;
+    bytes = 0;
+    ptr_ofs = (char*) ptr_in + ofs_in;
+    stride = stride_in;
+    shared = true;
+  }
+
+  void Buffer::alloc()
+  {
+    /* report error if buffer already allocated or shared */
+    if (shared || ptr) {
+      recordError(RTC_INVALID_OPERATION);
+      return;
+    }
+
+    /* allocate buffer */
+    ptr = ptr_ofs = (char*) alignedMalloc(bytes);
   }
 
   void Buffer::free()
   {
     if (shared || !ptr) return;
-    alignedFree(ptr); ptr = NULL; bytes = 0;
+    alignedFree(ptr); ptr = NULL; ptr_ofs = NULL; bytes = 0;
   }
 
   void* Buffer::map(atomic_t& cntr)
@@ -68,24 +99,5 @@ namespace embree
     /* unmap buffer */
     atomic_add(&cntr,-1); 
     mapped = false;
-  }
-
-  void Buffer::alloc()
-  {
-    /* report error if buffer already allocated or shared */
-    if (shared || ptr) {
-      recordError(RTC_INVALID_OPERATION);
-      return;
-    }
-
-    /* allocate buffer */
-    ptr = (char*) alignedMalloc(bytes);
-  }
-      
-  void Buffer::set(void* ptr_in)
-  {
-    shared = true;
-    ptr = (char*) ptr_in;
-    bytes = 0;
   }
 }

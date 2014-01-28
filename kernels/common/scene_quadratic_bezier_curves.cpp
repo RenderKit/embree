@@ -25,9 +25,9 @@ namespace embree
       numCurves(numCurves), needCurves(false),
       numVertices(numVertices), needVertices(false)
   {
-    curves.init(numCurves);
+    curves.init(numCurves,sizeof(int));
     for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(numVertices);
+      vertices[i].init(numVertices,sizeof(Vertex));
     }
     enabling();
   }
@@ -184,7 +184,7 @@ namespace embree
       if (curves[i] >= numVertices) return false;
     }
     for (size_t j=0; j<numTimeSteps; j++) {
-      BufferStream<Vertex>& verts = vertices[j];
+      BufferT<Vertex>& verts = vertices[j];
       for (size_t i=0; i<numVertices; i++) {
         if (verts[i].x < -range || verts[i].x > range) return false;
         if (verts[i].y < -range || verts[i].y > range) return false;

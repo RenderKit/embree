@@ -113,11 +113,11 @@ namespace embree
       bool built;                       //!< geometry got built
       unsigned char numTimeSteps;       //!< number of time steps (1 or 2)
 
-      BufferStream<int> curves;         //!< array of curve indices
+      BufferT<int> curves;              //!< array of curve indices
       bool needCurves;                  //!< set if curve indices required by acceleration structure
       size_t numCurves;                 //!< number of triangles
 
-      BufferStream<Vertex> vertices[2]; //!< vertex array
+      BufferT<Vertex> vertices[2];      //!< vertex array
       bool needVertices;                //!< set if vertex array required by acceleration structure
       size_t numVertices;               //!< number of vertices
     };

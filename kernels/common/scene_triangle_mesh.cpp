@@ -25,9 +25,9 @@ namespace embree
       numTriangles(numTriangles), needTriangles(false),
       numVertices(numVertices), needVertices(false)
   {
-    triangles.init(numTriangles);
+    triangles.init(numTriangles,sizeof(Triangle));
     for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(numVertices,16);
+      vertices[i].init(numVertices,sizeof(Vec3fa));
     }
     enabling();
   }
@@ -199,7 +199,7 @@ namespace embree
       if (triangles[i].v[2] >= numVertices) return false;
     }
     for (size_t j=0; j<numTimeSteps; j++) {
-      BufferStream<Vec3fa>& verts = vertices[j];
+      BufferT<Vec3fa>& verts = vertices[j];
       for (size_t i=0; i<numVertices; i++) {
         if (verts[i].x < -range || verts[i].x > range) return false;
         if (verts[i].y < -range || verts[i].y > range) return false;
