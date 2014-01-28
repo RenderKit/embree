@@ -207,7 +207,6 @@ namespace embree
 
     void BVH8iBuilderTriangle8::build(size_t threadIndex, size_t threadCount) 
     {
-      PING;
       bvh4i_builder8->build(threadIndex,threadCount);
       std::cout << "BVH4i BUILD DONE" << std::endl << std::flush;
       unsigned int numBVH4iNodes = countBVH4iNodes((BVH4i::Node*)bvh4i_builder8->bvh->nodePtr(),bvh4i_builder8->bvh->root);

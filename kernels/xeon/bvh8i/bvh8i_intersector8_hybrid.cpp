@@ -74,7 +74,7 @@ namespace embree
           
           /*! single ray intersection with 4 boxes */
           const Node* node = (Node*)cur.node(nodes);
-          const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
+          const size_t farX  = nearX ^ sizeof(avxf), farY  = nearY ^ sizeof(avxf), farZ  = nearZ ^ sizeof(avxf);
 #if defined (__AVX2__)
           const avxf tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
           const avxf tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
@@ -229,6 +229,7 @@ namespace embree
           continue;
         
         /* switch to single ray traversal */
+#if 1
 #if !defined(__WIN32__) || defined(__X86_64__)
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
@@ -239,7 +240,7 @@ namespace embree
           continue;
         }
 #endif
-
+#endif
         while (1)
         {
           /* test if this is a leaf node */
@@ -257,7 +258,7 @@ namespace embree
           curNode = *sptr_node;
           curDist = *sptr_near;
           
-#pragma unroll(4)
+#pragma unroll(2)
           for (unsigned i=0; i<8; i++)
           {
             const NodeRef child = node->children[i];
@@ -372,7 +373,7 @@ namespace embree
           
           /*! single ray intersection with 4 boxes */
           const Node* node = (Node*)cur.node(nodes);
-          const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
+          const size_t farX  = nearX ^ sizeof(avxf), farY  = nearY ^ sizeof(avxf), farZ  = nearZ ^ sizeof(avxf);
 #if defined (__AVX2__)
           const avxf tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
           const avxf tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
