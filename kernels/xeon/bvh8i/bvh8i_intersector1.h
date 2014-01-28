@@ -25,10 +25,20 @@ namespace embree
 {
   namespace isa
   {
-    /*! BVH8i Traverser. Single ray traversal implementation for a Quad BVH. */
+    /*! BVH8i Traverser. Single ray traversal implementation for a 8-wide BVH. */
+
+    template<typename TriangleIntersector>
     class BVH8iIntersector1
     {
+
+      typedef typename TriangleIntersector::Primitive Triangle;
+      typedef typename BVH4i::NodeRef NodeRef;
+      typedef typename BVH8i::Node Node;
+      typedef StackItemT<size_t> StackItem;
+
     public:
+
+
       static void intersect(const BVH8i* This, Ray& ray);
       static void occluded (const BVH8i* This, Ray& ray);
     };

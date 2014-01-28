@@ -56,7 +56,7 @@ namespace embree
       
       const void* nodePtr = bvh->nodePtr();
       const void* triPtr  = bvh->triPtr();
-      
+
       /* pop loop */
       while (true) pop:
       {

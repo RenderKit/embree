@@ -23,11 +23,19 @@
 
 namespace embree
 {
+    
   namespace isa
   {
     /*! BVH8i Traverser. Packet traversal implementation for a Quad BVH. */
-    class BVH8iIntersector8Chunk
+template<typename TriangleIntersector8>    
+class BVH8iIntersector8Chunk
     {
+
+      /* shortcuts for frequently used types */
+      typedef typename TriangleIntersector8::Primitive Triangle;
+      typedef typename BVH4i::NodeRef NodeRef;
+      typedef typename BVH4i::Node Node;
+
     public:
       static void intersect(avxb* valid, BVH8i* bvh, Ray8& ray);
       static void occluded (avxb* valid, BVH8i* bvh, Ray8& ray);

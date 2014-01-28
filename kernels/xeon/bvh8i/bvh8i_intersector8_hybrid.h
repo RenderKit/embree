@@ -14,35 +14,34 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH8I_BUILDER_H__
-#define __EMBREE_BVH8I_BUILDER_H__
+#ifndef __EMBREE_BVH8I_INTERSECTOR8_HYBRID_H__
+#define __EMBREE_BVH8I_INTERSECTOR8_HYBRID_H__
 
-#include "bvh4i/bvh4i.h"
-#include "builders/heuristics.h"
-#include "bvh4i/bvh4i_builder.h"
+#include "bvh8i.h"
+#include "../common/stack_item.h"
+#include "../common/ray8.h"
 
 namespace embree
 {
+    
   namespace isa
   {
-
-    typedef  BVH4iBuilder<HeuristicBinning<3> > BVH4iBuilder8;
-
-    class BVH8iBuilderTriangle8 : public Builder
+    /*! BVH8i Traverser. Packet traversal implementation for a Quad BVH. */
+template<typename TriangleIntersector8>    
+class BVH8iIntersector8Hybrid
     {
-      ALIGNED_CLASS;
+
+      /* shortcuts for frequently used types */
+      typedef typename TriangleIntersector8::Primitive Triangle;
+      typedef typename BVH4i::NodeRef NodeRef;
+      typedef typename BVH4i::Node Node;
+
     public:
-      BVH4iBuilder8 *bvh4i_builder8;
-      
-      /*! Constructor. */
-      BVH8iBuilderTriangle8(BVH4i* bvh, BuildSource* source, void* geometry, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
-                  
-      /* build function */
-      void build(size_t threadIndex, size_t threadCount);
-      
+      static void intersect(avxb* valid, BVH8i* bvh, Ray8& ray);
+      static void occluded (avxb* valid, BVH8i* bvh, Ray8& ray);
     };
-  }  
+  }
 }
- 
+
 #endif
   
