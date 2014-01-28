@@ -17,9 +17,9 @@
 #ifndef __EMBREE_ACCEL_TRIANGLE8_INTERSECTOR1_MOELLER_H__
 #define __EMBREE_ACCEL_TRIANGLE8_INTERSECTOR1_MOELLER_H__
 
-#include "../common/default.h"
 #include "triangle8.h"
-#include "../common/ray.h"
+#include "common/ray.h"
+#include "geometry/filter.h"
 
 namespace embree
 {
