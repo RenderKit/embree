@@ -209,7 +209,6 @@ namespace embree
     {
       PING;
       bvh4i_builder8->build(threadIndex,threadCount);
-      DBG_PRINT(*(Triangle8*)bvh4i_builder8->bvh->accel);
       std::cout << "BVH4i BUILD DONE" << std::endl << std::flush;
       unsigned int numBVH4iNodes = countBVH4iNodes((BVH4i::Node*)bvh4i_builder8->bvh->nodePtr(),bvh4i_builder8->bvh->root);
       DBG_PRINT(numBVH4iNodes);
@@ -229,8 +228,6 @@ namespace embree
 
       std::cout << "BVH4i TO BVH8I CONVERSION DONE" << std::endl << std::flush;
       DBG_PRINT(index8);
-      DBG_PRINT(bvh8i_root);
-      DBG_PRINT(bvh8i_base[0]);
  
       /* bvh8i node util */
       {

@@ -58,7 +58,7 @@ namespace embree
     intersectors.ptr = accel;
     intersectors.intersector1 = BVH8iTriangle8Intersector1Moeller;
     intersectors.intersector4 = NULL;
-    intersectors.intersector8 = BVH8iTriangle8Intersector8ChunkMoeller;
+    intersectors.intersector8 = BVH8iTriangle8Intersector8HybridMoeller;
 
     return new AccelInstance(accel,builder,intersectors);
   }

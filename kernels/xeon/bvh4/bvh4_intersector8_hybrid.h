@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4_INTERSECTOR4_HYBRID_H__
-#define __EMBREE_BVH4_INTERSECTOR4_HYBRID_H__
+#ifndef __EMBREE_BVH4_INTERSECTOR8_HYBRID_H__
+#define __EMBREE_BVH4_INTERSECTOR8_HYBRID_H__
 
 #include "bvh4.h"
 #include "common/ray8.h"
