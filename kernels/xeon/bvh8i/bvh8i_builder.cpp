@@ -252,13 +252,6 @@ namespace embree
 
       bvh4i_builder8->bvh->root = bvh8i_root;
       bvh4i_builder8->bvh->qbvh = bvh8i_base; 
-
-      DBG_PRINT(bvh8i_root);
-      DBG_PRINT(bvh8i_base);
-
-      // bvh->init();
-      // allocateData();
-      // TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
     }
     
     
