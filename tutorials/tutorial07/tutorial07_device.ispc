@@ -77,6 +77,29 @@ uniform unsigned int addCube (RTCScene scene_i)
   return mesh;
 }
 
+/* adds hair to the scene */
+uniform unsigned int addHair (RTCScene scene_i)
+{
+  /* create set of bezier curves */
+  uniform unsigned int curves = rtcNewQuadraticBezierCurves (scene_i, RTC_GEOMETRY_STATIC, 1000*4, 1000*(2*4+2));
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,curves,RTC_VERTEX_BUFFER); 
+
+  for (uniform size_t i=0; i<1000; i++)
+  {
+    uniform Vec3f d = sampleHemisphere();
+    uniform Vec3f p = d/max(abs(d.x),max(abs(d.y),abs(d.z)));
+    for (uniform size_t j=0; j<2+4*2; j++) {
+      vertices[j].x = p.x;
+      vertices[j].y = p.y;
+      vertices[j].z = p.z;
+      vertices[j].r = 0.01f*(1.0f-j/(2+4*2));
+      p = p + noise(p);
+    }
+  }
+
+  rtcUnmapBuffer(scene_i,curves,RTC_VERTEX_BUFFER); 
+}
+
 /* adds a ground plane to the scene */
 uniform unsigned int addGroundPlane (RTCScene scene_i)
 {
