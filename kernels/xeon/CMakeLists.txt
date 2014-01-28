@@ -51,6 +51,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   builders/splitter_parallel.cpp
   builders/primrefgen.cpp
   
+  geometry/bezier1i.cpp
   geometry/triangle1.cpp
   geometry/triangle4.cpp
   geometry/triangle1v.cpp

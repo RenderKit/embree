@@ -34,7 +34,7 @@ namespace embree
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
       numTriangleMeshes(0), numTriangleMeshes2(0), numCurveSets(0), numCurveSets2(0), numUserGeometries(0),
-      flat_triangle_source_1(this,1), flat_triangle_source_2(this,2)
+      flat_triangle_source_1(this,1), flat_triangle_source_2(this,2), bezier_source_1(this,1)
   {
     if (g_scene_flags != -1)
       flags = (RTCSceneFlags) g_scene_flags;
