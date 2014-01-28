@@ -33,6 +33,11 @@ using namespace embree;
 /* returns time stamp counter */
 extern "C" int64 get_tsc();
 
+/* face forward for shading normals */
+__forceinline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng ) {
+  return dot(I, Ng) < 0 ? N : -N;
+}
+
 /* glut keys codes */
 #define GLUT_KEY_F1 1
 #define GLUT_KEY_F2 2

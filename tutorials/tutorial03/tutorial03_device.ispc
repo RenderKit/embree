@@ -160,21 +160,53 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
   /* shade all rays that hit something */
   Vec3f color = make_Vec3f(0.0f);
 #if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
-  int materialID = g_ispc_scene->meshes[ray.geomID]->triangles[ray.primID].materialID; 
+  uniform ISPCMesh* varying mesh = g_ispc_scene->meshes[ray.geomID];
+  uniform ISPCTriangle* varying tri = &mesh->triangles[ray.primID];
+
+  /* load material ID */
+  int materialID = tri->materialID;
+
+  /* interpolate shading normal */
+  Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
+  Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
+  Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
+  float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+  Vec3f Ns = add(add(mul(w,n0),mul(u,n1)),mul(v,n2));
+  Ns = normalize(Ns);
+
 #else
+
   int materialID = 0;
-  foreach_unique (geomID in ray.geomID) {
+  Vec3f Ns = make_Vec3f(0.0f);
+  foreach_unique (geomID in ray.geomID) 
+  {
     uniform ISPCMesh* uniform mesh = g_ispc_scene->meshes[geomID];
-    materialID = mesh->triangles[ray.primID].materialID;
+    
+    foreach_unique (primID in ray.primID) 
+    {
+      uniform ISPCTriangle* uniform tri = &mesh->triangles[primID];
+      
+      /* load material ID */
+      materialID = tri->materialID;
+
+      /* interpolate shading normal */
+      Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
+      Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
+      Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
+      float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+      Ns = add(add(mul(w,n0),mul(u,n1)),mul(v,n2));
+    }
   }
+  Ns = normalize(Ns);
 #endif
   uniform ISPCMaterial* material = &g_ispc_scene->materials[materialID];
   color = material->Kd;
-  
+
   /* apply ambient light */
-  Vec3f Ng = normalize(ray.Ng);
-  Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
-  color = mul(color,abs(dot(ray.dir,Ng)));    
+  Vec3f Nf = faceforward(Ns,neg(ray.dir),ray.Ng);
+  //Vec3f Ng = normalize(ray.Ng);
+  //Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
+  color = mul(color,dot(ray.dir,Nf));    
   return color;
 }
 

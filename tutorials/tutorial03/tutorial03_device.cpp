@@ -160,21 +160,53 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   /* shade all rays that hit something */
   Vec3f color = Vec3f(0.0f);
 #if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
-  int materialID = g_ispc_scene->meshes[ray.geomID]->triangles[ray.primID].materialID; 
+  ISPCMesh* mesh = g_ispc_scene->meshes[ray.geomID];
+  ISPCTriangle* tri = &mesh->triangles[ray.primID];
+
+  /* load material ID */
+  int materialID = tri->materialID;
+
+  /* interpolate shading normal */
+  Vec3f n0 = Vec3f(mesh->normals[tri->v0]);
+  Vec3f n1 = Vec3f(mesh->normals[tri->v1]);
+  Vec3f n2 = Vec3f(mesh->normals[tri->v2]);
+  float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+  Vec3f Ns = add(add(mul(w,n0),mul(u,n1)),mul(v,n2));
+  Ns = normalize(Ns);
+
 #else
+
   int materialID = 0;
-  foreach_unique (geomID in ray.geomID) {
+  Vec3f Ns = Vec3f(0.0f);
+  foreach_unique (geomID in ray.geomID) 
+  {
     ISPCMesh* mesh = g_ispc_scene->meshes[geomID];
-    materialID = mesh->triangles[ray.primID].materialID;
+    
+    foreach_unique (primID in ray.primID) 
+    {
+      ISPCTriangle* tri = &mesh->triangles[primID];
+      
+      /* load material ID */
+      materialID = tri->materialID;
+
+      /* interpolate shading normal */
+      Vec3f n0 = Vec3f(mesh->normals[tri->v0]);
+      Vec3f n1 = Vec3f(mesh->normals[tri->v1]);
+      Vec3f n2 = Vec3f(mesh->normals[tri->v2]);
+      float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+      Ns = add(add(mul(w,n0),mul(u,n1)),mul(v,n2));
+    }
   }
+  Ns = normalize(Ns);
 #endif
   ISPCMaterial* material = &g_ispc_scene->materials[materialID];
   color = material->Kd;
-  
+
   /* apply ambient light */
-  Vec3fa Ng = normalize(ray.Ng);
-  Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
-  color = mul(color,abs(dot(ray.dir,Ng)));    
+  Vec3f Nf = faceforward(Ns,neg(ray.dir),ray.Ng);
+  //Vec3fa Ng = normalize(ray.Ng);
+  //Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
+  color = mul(color,dot(ray.dir,Nf));    
   return color;
 }
 
