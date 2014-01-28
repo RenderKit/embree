@@ -43,6 +43,7 @@ namespace embree
     template<typename TriangleIntersector>
     void BVH8iIntersector1<TriangleIntersector>::intersect(const BVH8i* bvh, Ray& ray)
     {
+#if defined(__AVX__)
       /*! stack state */
       StackItem stack[1+3*BVH4i::maxDepth];  //!< stack of nodes 
       StackItem* stackPtr = stack+1;        //!< current stack pointer
@@ -88,23 +89,14 @@ namespace embree
           /*! single ray intersection with 4 boxes */
           const Node* node = (BVH8i::Node*)cur.node(nodePtr);
           const size_t farX  = nearX ^ sizeof(avxf), farY  = nearY ^ sizeof(avxf), farZ  = nearZ ^ sizeof(avxf);
-#if defined (__AVX2__)
           const avxf tNearX = msub(load8f((const char*)nodePtr+(size_t)cur+nearX), rdir.x, org_rdir.x);
           const avxf tNearY = msub(load8f((const char*)nodePtr+(size_t)cur+nearY), rdir.y, org_rdir.y);
           const avxf tNearZ = msub(load8f((const char*)nodePtr+(size_t)cur+nearZ), rdir.z, org_rdir.z);
           const avxf tFarX  = msub(load8f((const char*)nodePtr+(size_t)cur+farX ), rdir.x, org_rdir.x);
           const avxf tFarY  = msub(load8f((const char*)nodePtr+(size_t)cur+farY ), rdir.y, org_rdir.y);
           const avxf tFarZ  = msub(load8f((const char*)nodePtr+(size_t)cur+farZ ), rdir.z, org_rdir.z);
-#else
-          const avxf tNearX = (norg.x + load8f((const char*)nodePtr+(size_t)cur+nearX)) * rdir.x;
-          const avxf tNearY = (norg.y + load8f((const char*)nodePtr+(size_t)cur+nearY)) * rdir.y;
-          const avxf tNearZ = (norg.z + load8f((const char*)nodePtr+(size_t)cur+nearZ)) * rdir.z;
-          const avxf tFarX  = (norg.x + load8f((const char*)nodePtr+(size_t)cur+farX )) * rdir.x;
-          const avxf tFarY  = (norg.y + load8f((const char*)nodePtr+(size_t)cur+farY )) * rdir.y;
-          const avxf tFarZ  = (norg.z + load8f((const char*)nodePtr+(size_t)cur+farZ )) * rdir.z;
-#endif
           
-#if 0
+#if defined(__AVX2__)
           const avxf tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
           const avxf tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
           const avxb vmask = cast(tNear) > cast(tFar);
@@ -153,17 +145,28 @@ namespace embree
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           r = __bscf(mask);
           c = node->child(r); d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
-          cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+	  if (likely(mask == 0)) {
+	    sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
+	    cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+	    continue;
+	  }
+	  
+	  while(1)
+	    {
+	      r = __bscf(mask);
+	      c = node->child(r); d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+	      if (unlikely(mask == 0)) break;
+	    }
+	    cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
         }
         
         /*! this is a leaf node */
         STAT3(normal.trav_leaves,1,1,1);
-        size_t num; Triangle8* tri = (Triangle8*) cur.leaf(triPtr,num);
-	DBG_PRINT(*tri);
-        //TriangleIntersector::intersect(ray,tri,num,bvh->geometry);
+        size_t num; Triangle* tri = (Triangle*) cur.leaf(triPtr,num);
+        TriangleIntersector::intersect(ray,tri,num,bvh->geometry);
         rayFar = ray.tfar;
       }
+#endif
       AVX_ZERO_UPPER();
      
       // return;

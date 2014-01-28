@@ -212,7 +212,7 @@ namespace embree
     {
       PING;
       bvh4i_builder8->build(threadIndex,threadCount);
-      DBG_PRINT(*(Triangle8*)bvh4i_builder8->bvh->geometry);
+      DBG_PRINT(*(Triangle8*)bvh4i_builder8->bvh->accel);
       std::cout << "BVH4i BUILD DONE" << std::endl << std::flush;
       unsigned int numBVH4iNodes = countBVH4iNodes((BVH4i::Node*)bvh4i_builder8->bvh->nodePtr(),bvh4i_builder8->bvh->root);
       DBG_PRINT(numBVH4iNodes);
@@ -263,7 +263,6 @@ namespace embree
       DBG_PRINT(bvh8i_root);
       DBG_PRINT(bvh8i_base);
 
-      exit(0);
       // bvh->init();
       // allocateData();
       // TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");

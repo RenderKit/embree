@@ -20,6 +20,7 @@
 #include "geometry/triangle4.h"
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
+#include "geometry/triangle8.h"
 
 #include "common/accelinstance.h"
 
@@ -49,7 +50,7 @@ namespace embree
 
   Accel* BVH8i::BVH8iTriangle8(Scene* scene)
   { 
-    BVH8i* accel = new BVH8i(SceneTriangle1::type);
+    BVH8i* accel = new BVH8i(SceneTriangle8::type);
     Builder* builder = BVH8iTriangle8BuilderObjectSplit(accel,&scene->flat_triangle_source_1,scene,1,inf);
 
 
