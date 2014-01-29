@@ -33,7 +33,7 @@ namespace embree
       typedef typename TriangleIntersector::Primitive Triangle;
       typedef typename BVH4i::NodeRef NodeRef;
       typedef typename BVH4i::Node Node;
-      typedef StackItemT<size_t> StackItem;
+      typedef StackItemT<unsigned> StackItem;
       
     public:
       static void intersect(const BVH4i* This, Ray& ray);
