@@ -22,7 +22,7 @@ namespace embree
   SceneBezier1i SceneBezier1i::type;
 
   Bezier1iType::Bezier1iType () 
-    : PrimitiveType("bezier1i",sizeof(Bezier1i),1,false,1) {} 
+    : PrimitiveType("bezier1i",sizeof(Bezier1i),1,true,1) {} 
   
   size_t Bezier1iType::blocks(size_t x) const {
     return x;

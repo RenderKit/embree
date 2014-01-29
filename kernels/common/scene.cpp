@@ -117,7 +117,10 @@ namespace embree
         }
         accels.add(BVH4MB::BVH4MBTriangle1v(this)); 
         accels.add(new TwoLevelAccel("bvh4",this)); 
-      } else {
+        accels.add(BVH4::BVH4Bezier1i(this));
+      } 
+      else 
+      {
         int mode =  4*(int)isCoherent() + 2*(int)isCompact() + 1*(int)isRobust();
         switch (mode) {
         case /*0b000*/ 0: accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this)); break;
@@ -131,11 +134,12 @@ namespace embree
         }
         accels.add(BVH4MB::BVH4MBTriangle1v(this));
         accels.add(new TwoLevelAccel("bvh4",this));
+        accels.add(BVH4::BVH4Bezier1i(this));
       }
     }
 
     /* create user specified acceleration structure */
-    else if (g_top_accel == "default") 
+    else if (g_top_accel == "default") // FIXME: remove g_top_accel feature
     {
       if      (g_tri_accel == "bvh4.bvh4.triangle1.morton") accels.add(BVH4::BVH4BVH4Triangle1Morton(this));
       else if (g_tri_accel == "bvh4.bvh4.triangle1")    accels.add(BVH4::BVH4BVH4Triangle1ObjectSplit(this));
