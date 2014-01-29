@@ -110,7 +110,7 @@ namespace embree
 
   struct __align(8) StackItemInt64
   {
-#if 1
+#if 0
     /*! Sort 2 stack items. */
     __forceinline friend void sort(StackItemInt64& s1, StackItemInt64& s2) {
       if (s2.dist < s1.dist) swap(s2,s1);
@@ -137,25 +137,47 @@ namespace embree
 
     /*! Sort 2 stack items. */
     __forceinline friend void sort(StackItemInt64& s1, StackItemInt64& s2) {
-      if (s2.i64 < s1.i64) swap(s2.i64,s1.i64);
+      uint64 s1_i64 = s1.i64;
+      uint64 s2_i64 = s2.i64;
+      if (s2_i64 < s1_i64) swap(s2_i64,s1_i64);
+      s1.i64 = s1_i64;
+      s2.i64 = s2_i64;
     }
     
     /*! Sort 3 stack items. */
     __forceinline friend void sort(StackItemInt64& s1, StackItemInt64& s2, StackItemInt64& s3)
     {
-      if (s2.i64 < s1.i64) swap(s2.i64,s1.i64);
-      if (s3.i64 < s2.i64) swap(s3.i64,s2.i64);
-      if (s2.i64 < s1.i64) swap(s2.i64,s1.i64);
+      uint64 s1_i64 = s1.i64;
+      uint64 s2_i64 = s2.i64;
+      uint64 s3_i64 = s3.i64;
+
+      if (s2_i64 < s1_i64) swap(s2_i64,s1_i64);
+      if (s3_i64 < s2_i64) swap(s3_i64,s2_i64);
+      if (s2_i64 < s1_i64) swap(s2_i64,s1_i64);
+
+      s1.i64 = s1_i64;
+      s2.i64 = s2_i64;
+      s3.i64 = s3_i64;
     }
     
     /*! Sort 4 stack items. */
     __forceinline friend void sort(StackItemInt64& s1, StackItemInt64& s2, StackItemInt64& s3, StackItemInt64& s4)
     {
-      if (s2.i64 < s1.i64) swap(s2.i64,s1.i64);
-      if (s4.i64 < s3.i64) swap(s4.i64,s3.i64);
-      if (s3.i64 < s1.i64) swap(s3.i64,s1.i64);
-      if (s4.i64 < s2.i64) swap(s4.i64,s2.i64);
-      if (s3.i64 < s2.i64) swap(s3.i64,s2.i64);
+      uint64 s1_i64 = s1.i64;
+      uint64 s2_i64 = s2.i64;
+      uint64 s3_i64 = s3.i64;
+      uint64 s4_i64 = s4.i64;
+
+      if (s2_i64 < s1_i64) swap(s2_i64,s1_i64);
+      if (s4_i64 < s3_i64) swap(s4_i64,s3_i64);
+      if (s3_i64 < s1_i64) swap(s3_i64,s1_i64);
+      if (s4_i64 < s2_i64) swap(s4_i64,s2_i64);
+      if (s3_i64 < s2_i64) swap(s3_i64,s2_i64);
+
+      s1.i64 = s1_i64;
+      s2.i64 = s2_i64;
+      s3.i64 = s3_i64;
+      s4.i64 = s4_i64;
     }
 
 #endif
@@ -168,6 +190,7 @@ namespace embree
       };
       uint64 i64;
     };
+
   };
 
 #if !defined(__MIC__) && 0
