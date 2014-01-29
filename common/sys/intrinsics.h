@@ -361,7 +361,11 @@ __forceinline int clz(const int x)
 __forceinline int __bscf(int& v) 
 {
   int i = bitscan(v);
+#if defined(__AVX2__)
+  v &= v-1;
+#else
   v = __btc(v,i);
+#endif
   return i;
 }
 
@@ -375,7 +379,11 @@ __forceinline unsigned int __bscf(unsigned int& v)
 __forceinline size_t __bscf(size_t& v) 
 {
   size_t i = bitscan(v);
+#if defined(__AVX2__)
+  v &= v-1;
+#else
   v = __btc(v,i);
+#endif
   return i;
 }
 
