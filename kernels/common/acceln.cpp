@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "acceln.h"
+#include "embree2/rtcore_ray.h"
 
 namespace embree
 {
@@ -66,29 +67,37 @@ namespace embree
   void AccelN::occluded (void* ptr, RTCRay& ray) 
   {
     AccelN* This = (AccelN*)ptr;
-    for (size_t i=0; i<This->N; i++)
-      This->accels[i]->occluded(ray); // FIXME: terminate loop if hit found
+    for (size_t i=0; i<This->N; i++) {
+      This->accels[i]->occluded(ray); 
+      if (ray.geomID == 0) break;
+    }
   }
 
   void AccelN::occluded4 (const void* valid, void* ptr, RTCRay4& ray) 
   {
     AccelN* This = (AccelN*)ptr;
-    for (size_t i=0; i<This->N; i++)
+    for (size_t i=0; i<This->N; i++) {
       This->accels[i]->occluded4(valid,ray);
+      // FIXME: exit if already hit something
+    }
   }
 
   void AccelN::occluded8 (const void* valid, void* ptr, RTCRay8& ray) 
   {
     AccelN* This = (AccelN*)ptr;
-    for (size_t i=0; i<This->N; i++)
+    for (size_t i=0; i<This->N; i++) {
       This->accels[i]->occluded8(valid,ray);
+      // FIXME: exit if already hit something
+    }
   }
 
   void AccelN::occluded16 (const void* valid, void* ptr, RTCRay16& ray) 
   {
     AccelN* This = (AccelN*)ptr;
-    for (size_t i=0; i<This->N; i++)
+    for (size_t i=0; i<This->N; i++) {
       This->accels[i]->occluded16(valid,ray);
+      // FIXME: exit if already hit something
+    }
   }
 
   void AccelN::print(size_t ident)
