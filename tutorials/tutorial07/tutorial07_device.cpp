@@ -77,6 +77,84 @@ unsigned int addCube (RTCScene scene_i)
   return mesh;
 }
 
+/*! random number generator for floating point numbers in range [0,1] */
+inline float frand(int& seed) {
+  seed = 1103515245 * seed + 12345;
+  seed = 235543534 * seed + 2341233;
+  seed = 43565 * seed + 2332443;
+  return (seed & 0xFFFF)/(float)0xFFFF;
+}
+
+/*! Uniform hemisphere sampling. Up direction is the z direction. */
+Vec3f sampleSphere(const float& u, const float& v) 
+{
+  const float phi = 2.0f*(float)pi * u;
+  const float cosTheta = 1.0f - 2.0f * v, sinTheta = 2.0f * sqrt(v * (1.0f - v));
+  return Vec3f(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+}
+
+Vec3f noise(Vec3f p) {
+  return p;
+}
+
+/* adds hair to the scene */
+unsigned int addHair (RTCScene scene_i)
+{
+  int seed = 0;
+  const int numCurves = 1000;
+  const int numCurveSegments = 4;
+  const int numCurvePoints = 3*numCurveSegments+1;
+
+  /* create set of bezier curves */
+  unsigned int geomID = rtcNewQuadraticBezierCurves (scene_i, RTC_GEOMETRY_STATIC, numCurves*numCurveSegments, numCurves*numCurvePoints);
+
+  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
+  int*    indices  = (int*   ) rtcMapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
+
+  for (size_t i=0; i<numCurves; i++)
+  {
+    float ru = frand(seed);
+    float rv = frand(seed);
+    Vec3f d = sampleSphere(ru,rv);
+    Vec3f p = div(d,max(abs(d.x),max(abs(d.y),abs(d.z))));
+    for (size_t j=0; j<=numCurveSegments; j++) 
+    {
+      Vec3f p0 = p;
+      p = add(p,noise(p));
+      Vec3f p1 = p;
+      p = add(p,noise(p));
+      
+      if (j>0) {
+        vertices[i*numCurvePoints+3*j-1].x = 2.0f*p0.x-p1.x;
+        vertices[i*numCurvePoints+3*j-1].y = 2.0f*p0.y-p1.y;
+        vertices[i*numCurvePoints+3*j-1].z = 2.0f*p0.z-p1.z;
+        vertices[i*numCurvePoints+3*j-1].r = 0.01f;
+      }
+      
+      vertices[i*numCurvePoints+3*j+0].x = p0.x;
+      vertices[i*numCurvePoints+3*j+0].y = p0.y;
+      vertices[i*numCurvePoints+3*j+0].z = p0.z;
+      vertices[i*numCurvePoints+3*j+0].r = 0.01f;
+
+      if (j<numCurveSegments) {
+        vertices[i*numCurvePoints+3*j+1].x = p1.x;
+        vertices[i*numCurvePoints+3*j+1].y = p1.y;
+        vertices[i*numCurvePoints+3*j+1].z = p1.z;
+        vertices[i*numCurvePoints+3*j+1].r = 0.01f;
+      }
+    }
+
+    for (size_t j=0; j<numCurveSegments; j++) {
+      indices[i*numCurveSegments+3*j] = i*numCurvePoints+3*j;
+    }
+  }
+
+  rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
+
+  return geomID;
+}
+
 /* adds a ground plane to the scene */
 unsigned int addGroundPlane (RTCScene scene_i)
 {
@@ -111,6 +189,9 @@ extern "C" void device_init (int8* cfg)
 
   /* add cube */
   addCube(g_scene);
+
+  /* add hairs */
+  addHair(g_scene);
 
   /* add ground plane */
   addGroundPlane(g_scene);
