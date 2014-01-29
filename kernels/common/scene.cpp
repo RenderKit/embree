@@ -43,52 +43,44 @@ namespace embree
 
 #if defined(__MIC__)
 
-    accels.accel0 = NULL; 
-    accels.accel1 = BVH4i::BVH4iVirtualGeometryBinnedSAH(this);
-    accels.accel2 = NULL;
- 
     if (g_builder == "default") 
+    {
+      if (isStatic())
       {
-	if (isStatic())
-	  {
-	    if (g_verbose >= 1) std::cout << "STATIC BUILDER MODE" << std::endl;
-	    accels.accel0 = BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this);
-	  }
-	else
-	  {
-	    if (g_verbose >= 1) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
-	    accels.accel0 = BVH4i::BVH4iTriangle1ObjectSplitMorton(this);
-	  }
+        if (g_verbose >= 1) std::cout << "STATIC BUILDER MODE" << std::endl;
+        accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
       }
+      else
+      {
+        if (g_verbose >= 1) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
+        accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this));
+      }
+    }
     else
-      {
-	if (g_builder == "sah" || g_builder == "bvh4i" || g_builder == "bvh4i.sah")
-	  {
-	    accels.accel0 = BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this);
-	  }
-	else if (g_builder == "fast" || g_builder == "morton")
-	  {
-	    accels.accel0 = BVH4i::BVH4iTriangle1ObjectSplitMorton(this);
-	  }
-	else if (g_builder == "fast_enhanced" || g_builder == "morton.enhanced")
-	  {
-	    accels.accel0 = BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this);
-	  }
-	else if (g_builder == "high_quality" || g_builder == "presplits")
-	  {
-	    accels.accel0 = BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this);
-	  }
-	else if (g_builder == "motionblur" || g_builder == "bvh4mb")
-	  {
-	    accels.accel0 = BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this);
-	  }
-	else if (g_builder == "bvh16i" || g_builder == "bvh16i.sah")
-	  {
-	    accels.accel0 = BVH16i::BVH16iTriangle1ObjectSplitBinnedSAH(this);
-	  }
-	else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
-
+    {
+      if (g_builder == "sah" || g_builder == "bvh4i" || g_builder == "bvh4i.sah") {
+        accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
       }
+      else if (g_builder == "fast" || g_builder == "morton") {
+        accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this));
+      }
+      else if (g_builder == "fast_enhanced" || g_builder == "morton.enhanced") {
+        accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this));
+      }
+      else if (g_builder == "high_quality" || g_builder == "presplits") {
+        accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this));
+      }
+      else if (g_builder == "motionblur" || g_builder == "bvh4mb") {
+        accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
+      }
+      else if (g_builder == "bvh16i" || g_builder == "bvh16i.sah") {
+        accels.add(BVH16i::BVH16iTriangle1ObjectSplitBinnedSAH(this));
+      }
+      else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
+    }
+
+    accels.add(BVH4i::BVH4iVirtualGeometryBinnedSAH(this));
+
 #else
 
     /* create default acceleration structure */
@@ -101,80 +93,79 @@ namespace embree
 #if defined (__TARGET_AVX__)
           if (has_feature(AVX2) && aflags == RTC_INTERSECT1) 
           {
-            if (isHighQuality()) accels.accel0 = BVH4::BVH4Triangle8SpatialSplit(this); 
-            else                 accels.accel0 = BVH4::BVH4Triangle8ObjectSplit(this); 
+            if (isHighQuality()) accels.add(BVH4::BVH4Triangle8SpatialSplit(this)); 
+            else                 accels.add(BVH4::BVH4Triangle8ObjectSplit(this)); 
           }
           else 
 #endif
           {
-            if (isHighQuality()) accels.accel0 = BVH4::BVH4Triangle4SpatialSplit(this);
-            else                 accels.accel0 = BVH4::BVH4Triangle4ObjectSplit(this); 
+            if (isHighQuality()) accels.add(BVH4::BVH4Triangle4SpatialSplit(this));
+            else                 accels.add(BVH4::BVH4Triangle4ObjectSplit(this)); 
           }
           break;
 
-        case /*0b001*/ 1: accels.accel0 = BVH4::BVH4Triangle4vObjectSplit(this); break;
-        case /*0b010*/ 2: accels.accel0 = BVH4::BVH4Triangle4iObjectSplit(this); break;
-        case /*0b011*/ 3: accels.accel0 = BVH4::BVH4Triangle4iObjectSplit(this); break;
+        case /*0b001*/ 1: accels.add(BVH4::BVH4Triangle4vObjectSplit(this)); break;
+        case /*0b010*/ 2: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
+        case /*0b011*/ 3: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
         case /*0b100*/ 4: 
-          if (isHighQuality()) accels.accel0 = BVH4::BVH4Triangle1SpatialSplit(this);
-          else                 accels.accel0 = BVH4::BVH4Triangle1ObjectSplit(this); 
+          if (isHighQuality()) accels.add(BVH4::BVH4Triangle1SpatialSplit(this));
+          else                 accels.add(BVH4::BVH4Triangle1ObjectSplit(this)); 
           break;
-        case /*0b101*/ 5: accels.accel0 = BVH4::BVH4Triangle1vObjectSplit(this); break;
-        case /*0b110*/ 6: accels.accel0 = BVH4::BVH4Triangle4iObjectSplit(this); break;
-        case /*0b111*/ 7: accels.accel0 = BVH4::BVH4Triangle4iObjectSplit(this); break;
+        case /*0b101*/ 5: accels.add(BVH4::BVH4Triangle1vObjectSplit(this)); break;
+        case /*0b110*/ 6: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
+        case /*0b111*/ 7: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
         }
-        accels.accel1 = BVH4MB::BVH4MBTriangle1v(this); 
-        accels.accel2 = new TwoLevelAccel("bvh4",this); 
+        accels.add(BVH4MB::BVH4MBTriangle1v(this)); 
+        accels.add(new TwoLevelAccel("bvh4",this)); 
       } else {
         int mode =  4*(int)isCoherent() + 2*(int)isCompact() + 1*(int)isRobust();
         switch (mode) {
-        case /*0b000*/ 0: accels.accel0 = BVH4::BVH4BVH4Triangle4ObjectSplit(this); break;
-        case /*0b001*/ 1: accels.accel0 = BVH4::BVH4BVH4Triangle4vObjectSplit(this); break;
-        case /*0b010*/ 2: accels.accel0 = BVH4::BVH4BVH4Triangle4vObjectSplit(this); break;
-        case /*0b011*/ 3: accels.accel0 = BVH4::BVH4BVH4Triangle4vObjectSplit(this); break;
-        case /*0b100*/ 4: accels.accel0 = BVH4::BVH4BVH4Triangle1ObjectSplit(this); break;
-        case /*0b101*/ 5: accels.accel0 = BVH4::BVH4BVH4Triangle1vObjectSplit(this); break;
-        case /*0b110*/ 6: accels.accel0 = BVH4::BVH4BVH4Triangle1vObjectSplit(this); break;
-        case /*0b111*/ 7: accels.accel0 = BVH4::BVH4BVH4Triangle1vObjectSplit(this); break;
+        case /*0b000*/ 0: accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this)); break;
+        case /*0b001*/ 1: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
+        case /*0b010*/ 2: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
+        case /*0b011*/ 3: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
+        case /*0b100*/ 4: accels.add(BVH4::BVH4BVH4Triangle1ObjectSplit(this)); break;
+        case /*0b101*/ 5: accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this)); break;
+        case /*0b110*/ 6: accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this)); break;
+        case /*0b111*/ 7: accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this)); break;
         }
-        accels.accel1 = BVH4MB::BVH4MBTriangle1v(this);
-        accels.accel2 = new TwoLevelAccel("bvh4",this);
+        accels.add(BVH4MB::BVH4MBTriangle1v(this));
+        accels.add(new TwoLevelAccel("bvh4",this));
       }
     }
 
     /* create user specified acceleration structure */
     else if (g_top_accel == "default") 
     {
-      if      (g_tri_accel == "bvh4.bvh4.triangle1.morton") accels.accel0 = BVH4::BVH4BVH4Triangle1Morton(this);
-      else if (g_tri_accel == "bvh4.bvh4.triangle1")    accels.accel0 = BVH4::BVH4BVH4Triangle1ObjectSplit(this);
-      else if (g_tri_accel == "bvh4.bvh4.triangle4")    accels.accel0 = BVH4::BVH4BVH4Triangle4ObjectSplit(this);
-      else if (g_tri_accel == "bvh4.bvh4.triangle1v")   accels.accel0 = BVH4::BVH4BVH4Triangle1vObjectSplit(this);
-      else if (g_tri_accel == "bvh4.bvh4.triangle4v")   accels.accel0 = BVH4::BVH4BVH4Triangle4vObjectSplit(this);
-      else if (g_tri_accel == "bvh4.triangle1")         accels.accel0 = BVH4::BVH4Triangle1(this);
-      else if (g_tri_accel == "bvh4.triangle4")         accels.accel0 = BVH4::BVH4Triangle4(this);
+      if      (g_tri_accel == "bvh4.bvh4.triangle1.morton") accels.add(BVH4::BVH4BVH4Triangle1Morton(this));
+      else if (g_tri_accel == "bvh4.bvh4.triangle1")    accels.add(BVH4::BVH4BVH4Triangle1ObjectSplit(this));
+      else if (g_tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this));
+      else if (g_tri_accel == "bvh4.bvh4.triangle1v")   accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this));
+      else if (g_tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
+      else if (g_tri_accel == "bvh4.triangle1")         accels.add(BVH4::BVH4Triangle1(this));
+      else if (g_tri_accel == "bvh4.triangle4")         accels.add(BVH4::BVH4Triangle4(this));
 #if defined (__TARGET_AVX__)
-      else if (g_tri_accel == "bvh4.triangle8")         accels.accel0 = BVH4::BVH4Triangle8(this);
+      else if (g_tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
 #endif
-      else if (g_tri_accel == "bvh4.triangle1v")        accels.accel0 = BVH4::BVH4Triangle1v(this);
-      else if (g_tri_accel == "bvh4.triangle4v")        accels.accel0 = BVH4::BVH4Triangle4v(this);
-      else if (g_tri_accel == "bvh4.triangle4i")        accels.accel0 = BVH4::BVH4Triangle4i(this);
-      else if (g_tri_accel == "bvh4i.triangle1")        accels.accel0 = BVH4i::BVH4iTriangle1(this);
-      else if (g_tri_accel == "bvh4i.triangle4")        accels.accel0 = BVH4i::BVH4iTriangle4(this);
-      else if (g_tri_accel == "bvh4i.triangle8")        accels.accel0 = BVH4i::BVH4iTriangle8(this);
-      else if (g_tri_accel == "bvh4i.triangle1.v1")     accels.accel0 = BVH4i::BVH4iTriangle1_v1(this);
-      else if (g_tri_accel == "bvh4i.triangle1.v2")     accels.accel0 = BVH4i::BVH4iTriangle1_v2(this);
-      else if (g_tri_accel == "bvh4i.triangle1.morton") accels.accel0 = BVH4i::BVH4iTriangle1_morton(this);
-      else if (g_tri_accel == "bvh4i.triangle1.morton.enhanced") accels.accel0 = BVH4i::BVH4iTriangle1_morton_enhanced(this);
+      else if (g_tri_accel == "bvh4.triangle1v")        accels.add(BVH4::BVH4Triangle1v(this));
+      else if (g_tri_accel == "bvh4.triangle4v")        accels.add(BVH4::BVH4Triangle4v(this));
+      else if (g_tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
+      else if (g_tri_accel == "bvh4i.triangle1")        accels.add(BVH4i::BVH4iTriangle1(this));
+      else if (g_tri_accel == "bvh4i.triangle4")        accels.add(BVH4i::BVH4iTriangle4(this));
+      else if (g_tri_accel == "bvh4i.triangle8")        accels.add(BVH4i::BVH4iTriangle8(this));
+      else if (g_tri_accel == "bvh4i.triangle1.v1")     accels.add(BVH4i::BVH4iTriangle1_v1(this));
+      else if (g_tri_accel == "bvh4i.triangle1.v2")     accels.add(BVH4i::BVH4iTriangle1_v2(this));
+      else if (g_tri_accel == "bvh4i.triangle1.morton") accels.add(BVH4i::BVH4iTriangle1_morton(this));
+      else if (g_tri_accel == "bvh4i.triangle1.morton.enhanced") accels.add(BVH4i::BVH4iTriangle1_morton_enhanced(this));
 #if !defined(__WIN32__) && defined (__TARGET_AVX__)
-      else if (g_tri_accel == "bvh8i.triangle8")        accels.accel0 = BVH8i::BVH8iTriangle8(this);
+      else if (g_tri_accel == "bvh8i.triangle8")        accels.add(BVH8i::BVH8iTriangle8(this));
 #endif
       else throw std::runtime_error("unknown triangle acceleration structure "+g_tri_accel);
 
-      accels.accel1 = new TwoLevelAccel(g_top_accel,this);
+      accels.add(new TwoLevelAccel(g_top_accel,this));
     }
     else {
-      accels.accel0 = new TwoLevelAccel(g_top_accel,this);
-      accels.accel1 = NULL;
+      accels.add(new TwoLevelAccel(g_top_accel,this));
     }
 #endif
   }

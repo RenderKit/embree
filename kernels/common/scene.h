@@ -23,7 +23,7 @@
 #include "scene_user_geometry.h"
 #include "scene_quadratic_bezier_curves.h"
 
-#include "common/accel3.h"
+#include "common/acceln.h"
 #include "geometry.h"
 #include "common/buildsource.h"
 
@@ -209,7 +209,7 @@ namespace embree
     std::vector<Geometry*> geometries; //!< list of all user geometries
     
   public:
-    Accel3 accels;
+    AccelN accels;
     atomic_t numMappedBuffers;         //!< number of mapped buffers
     RTCSceneFlags flags;
     RTCAlgorithmFlags aflags;

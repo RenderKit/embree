@@ -14,18 +14,21 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ACCEL3_H__
-#define __EMBREE_ACCEL3_H__
+#ifndef __EMBREE_ACCELN_H__
+#define __EMBREE_ACCELN_H__
 
 #include "accel.h"
 
 namespace embree
 {
-  class Accel3 : public Accel
+  class AccelN : public Accel
   {
   public:
-    Accel3 (Accel* accel0 = NULL, Accel* accel1 = NULL, Accel* accel2 = NULL);
-    ~Accel3();
+    AccelN ();
+    ~AccelN();
+
+  public:
+    void add(Accel* accel);
 
   public:
     static void intersect (void* ptr, RTCRay& ray);
@@ -45,9 +48,8 @@ namespace embree
     void build (size_t threadIndex, size_t threadCount);
 
   public:
-    Accel* accel0;
-    Accel* accel1;
-    Accel* accel2;
+    Accel* accels[16];
+    size_t N;
   };
 }
 
