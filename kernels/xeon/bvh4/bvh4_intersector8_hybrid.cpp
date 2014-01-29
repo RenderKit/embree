@@ -241,8 +241,7 @@ namespace embree
           curNode = *sptr_node;
           curDist = *sptr_near;
           
-#pragma unroll(4)
-          for (unsigned i=0; i<4; i++)
+          for (size_t i=0; i<4; i++)
           {
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH4::emptyNode)) break;
@@ -277,22 +276,24 @@ namespace embree
               const avxf childDist = select(lhit,lnearP,inf);
               const NodeRef child = node->children[i];
               assert(child != BVH4::emptyNode);
-              sptr_node++;
-              sptr_near++;
               
               /* push cur node onto stack and continue with hit child */
               if (any(childDist < curDist))
               {
-                *(sptr_node-1) = curNode;
-                *(sptr_near-1) = curDist; 
+                *sptr_node = curNode;
+                *sptr_near = curDist; 
                 curDist = childDist;
                 curNode = child;
+		sptr_node++;
+		sptr_near++;
               }
               
               /* push hit child onto stack */
               else {
-                *(sptr_node-1) = child;
-                *(sptr_near-1) = childDist; 
+                *sptr_node = child;
+                *sptr_near = childDist; 
+		sptr_node++;
+		sptr_near++;
               }
             }	      
           }
@@ -519,8 +520,7 @@ namespace embree
           curNode = *sptr_node;
           curDist = *sptr_near;
           
-#pragma unroll(4)
-          for (unsigned i=0; i<4; i++)
+          for (size_t i=0; i<4; i++)
           {
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH4::emptyNode)) break;
@@ -554,22 +554,26 @@ namespace embree
               assert(sptr_node < stackEnd);
               assert(child != BVH4::emptyNode);
               const avxf childDist = select(lhit,lnearP,inf);
-              sptr_node++;
-              sptr_near++;
               
               /* push cur node onto stack and continue with hit child */
               if (any(childDist < curDist))
-              {
-                *(sptr_node-1) = curNode;
-                *(sptr_near-1) = curDist; 
-                curDist = childDist;
-                curNode = child;
-              }
+		{
+		  *sptr_node = curNode;
+		  *sptr_near = curDist; 
+		  curDist = childDist;
+		  curNode = child;
+		  sptr_node++;
+		  sptr_near++;
+
+		}
               
               /* push hit child onto stack */
               else {
-                *(sptr_node-1) = child;
-                *(sptr_near-1) = childDist; 
+                *sptr_node = child;
+                *sptr_near = childDist; 
+		sptr_node++;
+		sptr_near++;
+
               }
             }	      
           }
