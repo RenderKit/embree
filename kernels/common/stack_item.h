@@ -220,59 +220,6 @@ namespace embree
 
   };
 
-#if !defined(__MIC__) && 0
-  template<>
-    struct __align(16) StackItemT<unsigned long>  
-  {  
-    /*! Sort 2 stack items. */  
-    __forceinline friend void sort(StackItemT& a, StackItemT& b)  
-    {  
-      __m128 s1 = a.all;  
-      __m128 s2 = b.all;  
-      if (_mm_comilt_ss(s2, s1)) swap(s2, s1);  
-      a.all = s1;  
-      b.all = s2;  
-    }
-
-    /*! Sort 3 stack items. */  
-    __forceinline friend void sort(StackItemT& a, StackItemT& b, StackItemT& c)  
-    {  
-      __m128 s1 = a.all;  
-      __m128 s2 = b.all;  
-      __m128 s3 = c.all;  
-      if (_mm_comilt_ss(s2, s1)) swap(s2, s1);  
-      if (_mm_comilt_ss(s3, s2)) swap(s3, s2);  
-      if (_mm_comilt_ss(s2, s1)) swap(s2, s1);  
-      a.all = s1;  
-      b.all = s2;  
-      c.all = s3;  
-    }  
-    
-    /*! Sort 4 stack items. */  
-    __forceinline friend void sort(StackItemT& a, StackItemT& b, StackItemT& c, StackItemT& d)  
-    {  
-      __m128 s1 = a.all;  
-      __m128 s2 = b.all;  
-      __m128 s3 = c.all;  
-      __m128 s4 = d.all;  
-      if (_mm_comilt_ss(s2, s1)) swap(s2,s1);  
-      if (_mm_comilt_ss(s4, s3)) swap(s4,s3);  
-      if (_mm_comilt_ss(s3, s1)) swap(s3,s1);  
-      if (_mm_comilt_ss(s4, s2)) swap(s4,s2);  
-      if (_mm_comilt_ss(s3, s2)) swap(s3,s2);  
-      a.all = s1;  
-      b.all = s2;  
-      c.all = s3;  
-      d.all = s4;  
-    }  
-    
-  public:
-    union {  
-      struct { float dist; float pad; unsigned long ptr; };  
-      __m128 all;  
-    };  
-  };  
-#endif
  
 #if defined(__MIC__)
 
