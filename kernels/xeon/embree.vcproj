@@ -724,11 +724,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\common\accel3.cpp"
+				RelativePath="..\common\acceln.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\common\accel3.h"
+				RelativePath="..\common\acceln.h"
 				>
 			</File>
 			<File

@@ -34,7 +34,7 @@ namespace embree
       typedef typename TriangleIntersector::Primitive Triangle;
       typedef typename BVH4i::NodeRef NodeRef;
       typedef typename BVH8i::Node Node;
-      typedef StackItemT<size_t> StackItem;
+      typedef StackItemT<unsigned> StackItem;
 
     public:
 

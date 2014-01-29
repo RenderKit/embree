@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -466,7 +466,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\common\accel.h" />
-    <ClInclude Include="..\common\accel3.h" />
+    <ClInclude Include="..\common\acceln.h" />
     <ClInclude Include="..\common\accelinstance.h" />
     <ClInclude Include="..\common\accelset.h" />
     <ClInclude Include="..\common\alloc.h" />
@@ -581,7 +581,7 @@
     <ClInclude Include="..\..\include\embree2\rtcore_scene.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\common\accel3.cpp" />
+    <ClCompile Include="..\common\acceln.cpp" />
     <ClCompile Include="..\common\alloc.cpp" />
     <ClCompile Include="..\common\geometry.cpp" />
     <ClCompile Include="..\common\rtcore.cpp" />

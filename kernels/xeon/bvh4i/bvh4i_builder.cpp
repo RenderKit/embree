@@ -370,7 +370,6 @@ namespace embree
   }
 
   Builder* BVH4iBuilderObjectSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
-    PING;
     return new BVH4iBuilder<HeuristicBinning<3> >((BVH4i*)accel,source,geometry,minLeafSize,maxLeafSize);
   }
 

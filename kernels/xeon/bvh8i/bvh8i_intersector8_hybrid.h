@@ -34,7 +34,13 @@ class BVH8iIntersector8Hybrid
       /* shortcuts for frequently used types */
       typedef typename TriangleIntersector8::Primitive Triangle;
       typedef typename BVH4i::NodeRef NodeRef;
-      typedef typename BVH4i::Node Node;
+      typedef typename BVH8i::Node Node;
+      typedef StackItemT<NodeRef> StackItem;
+      static const size_t stackSizeSingle = 1+3*BVH4i::maxDepth;
+      static const size_t stackSizeChunk = 4*BVH4i::maxDepth+1;
+
+      static void intersect1(const BVH8i* bvh, NodeRef root, const size_t k, Ray8& ray, const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ);
+      static bool occluded1 (const BVH8i* bvh, NodeRef root, const size_t k, Ray8& ray, const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ);
 
     public:
       static void intersect(avxb* valid, BVH8i* bvh, Ray8& ray);

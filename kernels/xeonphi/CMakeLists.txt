@@ -25,7 +25,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../common/stat.cpp 
   ../common/alloc.cpp 
   ../common/tasksys.cpp 
-  ../common/accel3.cpp
+  ../common/acceln.cpp
   ../common/rtcore.cpp 
   ../common/rtcore_ispc.cpp 
   ../common/rtcore_ispc.ispc 
