@@ -34,7 +34,8 @@ namespace embree
 
     /*! calculate the bounds of the triangle */
     __forceinline BBox3f bounds() const {
-      return merge(BBox3f(p[0]),BBox3f(p[1]),BBox3f(p[2]),BBox3f(p[3]));
+      const BBox3f b = merge(BBox3f(p[0]),BBox3f(p[1]),BBox3f(p[2]),BBox3f(p[3]));
+      return enlarge(b,Vec3fa(b.upper.w));
     }
 
   public:

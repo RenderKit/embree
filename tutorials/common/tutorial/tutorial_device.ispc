@@ -151,7 +151,7 @@ Vec3f renderPixelNg(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& 
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
-  else return abs(make_Vec3f(ray.Ng.x,ray.Ng.y,ray.Ng.z));
+  else return abs(normalize(make_Vec3f(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
 }
 
 Vec3f randomColor(const int ID) 

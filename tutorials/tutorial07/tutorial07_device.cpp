@@ -106,8 +106,8 @@ unsigned int addHair (RTCScene scene_i)
   Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
   int*    indices  = (int*   ) rtcMapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
   vertices[0].x = 0; vertices[0].y = -2; vertices[0].z = 0; vertices[0].r = 0.1; 
-  vertices[1].x = 0; vertices[1].y = -1; vertices[1].z = 0; vertices[1].r = 0.1; 
-  vertices[2].x = 0; vertices[2].y =  0; vertices[2].z = 0; vertices[2].r = 0.1; 
+  vertices[1].x = 1; vertices[1].y = -1; vertices[1].z = 1; vertices[1].r = 0.1; 
+  vertices[2].x = -1; vertices[2].y =  0; vertices[2].z = -1; vertices[2].r = 0.1; 
   vertices[3].x = 0; vertices[3].y =  1; vertices[3].z = 0; vertices[3].r = 0.0; 
   indices[0] = 0;
   rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
