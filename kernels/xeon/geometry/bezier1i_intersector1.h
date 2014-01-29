@@ -26,6 +26,7 @@ namespace embree
   struct BezierCurve3D
   {
     Vec3fa v0,v1,v2,v3;
+    float t0,t1;
     int depth;
 
     __forceinline BezierCurve3D() {}
@@ -34,8 +35,10 @@ namespace embree
                                 const Vec3fa& v1, 
                                 const Vec3fa& v2, 
                                 const Vec3fa& v3,
-                                int depth)
-      : v0(v0), v1(v1), v2(v2), v3(v3), depth(depth) {}
+                                const float t0,
+                                const float t1,
+                                const int depth)
+      : v0(v0), v1(v1), v2(v2), v3(v3), t0(t0), t1(t1), depth(depth) {}
 
     __forceinline const BBox3f bounds() const {
       BBox3f b = merge(BBox3f(v0),BBox3f(v1),BBox3f(v2),BBox3f(v3));
@@ -56,16 +59,22 @@ namespace embree
       const Vec3fa p21 = (p11 + p12) * 0.5f;
       const Vec3fa p30 = (p20 + p21) * 0.5f;
 
+      const float t01 = (t0 + t1) * 0.5f;
+
       left.v0 = p00;
       left.v1 = p10;
       left.v2 = p20;
       left.v3 = p30;
+      left.t0 = t0;
+      left.t1 = t01;
       left.depth = depth-1;
         
       right.v0 = p30;
       right.v1 = p21;
       right.v2 = p12;
       right.v3 = p03;
+      right.t0 = t01;
+      right.t1 = t1;
       right.depth = depth-1;
     }
 
@@ -101,18 +110,13 @@ namespace embree
 
     static __forceinline void intersect(Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
-      //PING;
-
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
       const Vec3fa v0 = curve_in.p[0];
       const Vec3fa v1 = curve_in.p[1];
       const Vec3fa v2 = curve_in.p[2];
       const Vec3fa v3 = curve_in.p[3];
-      //PRINT(v0);
-      //PRINT(v1);
-      //PRINT(v2);
-      //PRINT(v3);
+
       LinearSpace3f ray_space = rcp(frame(ray.dir));
       Vec3fa w0 = xfmVector(ray_space,v0-ray.org); w0.w = v0.w;
       Vec3fa w1 = xfmVector(ray_space,v1-ray.org); w1.w = v1.w;
@@ -120,7 +124,7 @@ namespace embree
       Vec3fa w3 = xfmVector(ray_space,v3-ray.org); w3.w = v3.w;
       
 #if 0
-      BezierCurve3D curve(w0,w1,w2,w3,0);
+      BezierCurve3D curve(w0,w1,w2,w3,0.0f,1.0f,0);
       const Vec3fa v = curve.v3-curve.v0;
       const Vec3fa w = -curve.v0;
       const float d0 = w.x*v.x + w.y*v.y;
@@ -128,7 +132,6 @@ namespace embree
       const float b = clamp(d0/d1,0.0f,1.0f);
       const Vec3fa d = curve.v0 + b*v;
       const float dist = sqrt(d.x*d.x + d.y*d.y); 
-      //if (unlikely(dist > d.w)) return;
       if (unlikely(dist > curve.v0.w)) return;
       const float t = d.z;
       if (unlikely(t < ray.tnear || t > ray.tfar)) return;
@@ -146,7 +149,7 @@ namespace embree
 
       /* push first curve onto stack */
       BezierCurve3D stack[32];
-      new (&stack[0]) BezierCurve3D(w0,w1,w2,w3,4);
+      new (&stack[0]) BezierCurve3D(w0,w1,w2,w3,0.0f,1.0f,4);
       size_t sptr = 1;
 
       while (true) 
@@ -154,11 +157,9 @@ namespace embree
       pop:
         if (sptr == 0) break;
         BezierCurve3D curve = stack[--sptr];
-        //PRINT(sptr);
       
         while (curve.depth)
         {
-          //PRINT(curve);
           BezierCurve3D curve0,curve1;
           curve.subdivide(curve0,curve1);
 
@@ -182,17 +183,17 @@ namespace embree
         const Vec3fa w = -curve.v0;
         const float d0 = w.x*v.x + w.y*v.y;
         const float d1 = v.x*v.x + v.y*v.y;
-        const float b = clamp(d0/d1,0.0f,1.0f);
-        const Vec3fa d = curve.v0 + b*v;
+        const float u = clamp(d0/d1,0.0f,1.0f);
+        const Vec3fa d = curve.v0 + u*v;
         const float dist = sqrt(d.x*d.x + d.y*d.y); 
-        //if (unlikely(dist > d.w)) return;
-        if (unlikely(dist > curve.v0.w)) continue;
+        if (unlikely(dist > d.w)) continue;
+        //if (unlikely(dist > curve.v0.w)) continue;
         const float t = d.z;
         if (unlikely(t < ray.tnear || t > ray.tfar)) continue;
-        ray.u = b;
+        ray.u = curve.t0+u*(curve.t1-curve.t0);
         ray.v = 0.0f;
         ray.tfar = t;
-        //const Vec3fa p = v0 + b*(v3-v0);
+        //const Vec3fa p = v0 + u*(v3-v0);
         //const Vec3fa h = ray.org + t*ray.dir;
         ray.Ng = Vec3f(zero); //h-p;
         ray.geomID = curve_in.geomID;
