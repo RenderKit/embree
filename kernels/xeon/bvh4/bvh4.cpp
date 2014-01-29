@@ -254,6 +254,7 @@ namespace embree
     BVH4* accel = new BVH4(SceneBezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors(accel);
     Builder* builder = BVH4BuilderObjectSplit1(accel,&scene->bezier_source_1,scene,1,inf);
+    scene->needVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 

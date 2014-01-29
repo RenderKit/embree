@@ -68,29 +68,9 @@ namespace embree
       right.depth = depth-1;
     }
 
-    __forceinline float intersect(const Ray& ray) const
-    {
-      const Vec3f v = v3-v0;
-      const Vec3f w =  ray.org-v0;
-      const float d0 = dot(w,v);
-      const float d1 = dot(v,v);
-      const float radius = v0.w;
-      if (d0 <= 0.0f) { 
-        const float dist = length(ray.org-v0); if (dist < radius) { /*u = 0.0f;*/ return dist; } 
-      }
-      else if (d1 <= d0) { 
-        const float dist = length(ray.org-v1); if (dist < radius) { /*u = 1.0f;*/ return dist; } 
-      }
-      else
-      {
-	const float b = d0/d1;
-	const Vec3fa d = v0 + b*v;
-	//u = b;
-	const float dist = length(ray.org-d); 
-	if (dist < radius) return dist;
-      }
-      return -1.0f;
-    }  
+    friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurve3D& curve) {
+      return cout << "{ v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << ", depth = " << curve.depth << " }";
+    }
   };
 
   __forceinline bool intersect_box(const BBox3f& box, const Ray& ray, float& dist)
@@ -116,25 +96,61 @@ namespace embree
 
     static __forceinline void intersect(Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
+      //PING;
+
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
       const Vec3fa v0 = curve_in.p[0];
       const Vec3fa v1 = curve_in.p[1];
       const Vec3fa v2 = curve_in.p[2];
       const Vec3fa v3 = curve_in.p[3];
+      //PRINT(v0);
+      //PRINT(v1);
+      //PRINT(v2);
+      //PRINT(v3);
+      LinearSpace3f ray_space = rcp(frame(normalize(ray.dir)));
+      Vec3fa w0 = xfmVector(ray_space,v0-ray.org); w0.w = v0.w;
+      Vec3fa w1 = xfmVector(ray_space,v1-ray.org); w1.w = v1.w;
+      Vec3fa w2 = xfmVector(ray_space,v2-ray.org); w2.w = v2.w;
+      Vec3fa w3 = xfmVector(ray_space,v3-ray.org); w3.w = v3.w;
+      
+      //BezierCurve3D curve(w0,w1,w2,w3,0);
+      BezierCurve3D curve(w0,w1,w2,w3,0);
+      //float t = curve.intersect(ray);
 
+      const Vec3fa v = curve.v3-curve.v0;
+      const Vec3fa w = -curve.v0;
+      const float d0 = w.x*v.x + w.y*v.y;
+      const float d1 = v.x*v.x + v.y*v.y;
+      const float b = clamp(d0/d1,0.0f,1.0f);
+      const Vec3fa d = curve.v0 + b*v;
+      const float dist = sqrt(d.x*d.x + d.y*d.y); 
+      if (unlikely(dist > d.w)) return;
+      const float t = d.z/length(ray.dir);
+      if (unlikely(t < ray.tnear || t > ray.tfar)) return;
+      ray.u = 0.0f;
+      ray.v = 0.0f;
+      ray.tfar = t;
+      ray.Ng = Vec3fa(zero);
+      ray.geomID = curve_in.geomID;
+      ray.primID = curve_in.primID;
+      
+#if 0
       /* push first curve onto stack */
       BezierCurve3D stack[32];
       new (&stack[0]) BezierCurve3D(v0,v1,v2,v3,4);
       size_t sptr = 1;
 
-      while (sptr) 
+      while (true) 
       {
       pop:
+        if (sptr == 0) break;
         BezierCurve3D curve = stack[--sptr];
+        //PRINT(sptr);
       
         while (curve.depth)
         {
+          //PRINT(curve);
           BezierCurve3D curve0,curve1;
           curve.subdivide(curve0,curve1);
 
@@ -169,6 +185,7 @@ namespace embree
         }
 
         /* intersect with line */
+        //PRINT("leaf");
         float t = curve.intersect(ray);
         if (t < 0) continue;
 
@@ -180,6 +197,9 @@ namespace embree
         ray.geomID = curve_in.geomID;
         ray.primID = curve_in.primID;
       }
+
+      //PING;
+#endif
     }
 
     static __forceinline void intersect(Ray& ray, const Bezier1i* curves, size_t num, void* geom)
@@ -189,7 +209,7 @@ namespace embree
     }
 
     static __forceinline bool occluded(Ray& ray, const Bezier1i& curve_in, const void* geom) {
-      return true;
+      return false;
     }
 
     static __forceinline bool occluded(Ray& ray, const Bezier1i* curves, size_t num, void* geom) 

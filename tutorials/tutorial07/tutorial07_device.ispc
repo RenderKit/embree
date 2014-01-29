@@ -94,12 +94,27 @@ uniform Vec3f sampleSphere(const uniform float& u, const uniform float& v)
 }
 
 uniform Vec3f noise(uniform Vec3f p) {
-  return p;
+  return div(p,length(p));
 }
 
 /* adds hair to the scene */
 uniform unsigned int addHair (RTCScene scene_i)
 {
+#if 1
+
+  uniform unsigned int geomID = rtcNewQuadraticBezierCurves (scene_i, RTC_GEOMETRY_STATIC, 1, 4);
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
+  uniform int*    uniform indices  = (uniform int*    uniform) rtcMapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
+  vertices[0].x = 0; vertices[0].y = -2; vertices[0].z = 0; vertices[0].r = 0.5; 
+  vertices[1].x = 0; vertices[1].y = -1; vertices[1].z = 0; vertices[1].r = 0.5; 
+  vertices[2].x = 0; vertices[2].y =  0; vertices[2].z = 0; vertices[2].r = 0.5; 
+  vertices[3].x = 0; vertices[3].y =  1; vertices[3].z = 0; vertices[3].r = 0.5; 
+  indices[0] = 0;
+  rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
+  return geomID;
+
+#else
   uniform int seed = 0;
   const uniform int numCurves = 1000;
   const uniform int numCurveSegments = 4;
@@ -145,7 +160,7 @@ uniform unsigned int addHair (RTCScene scene_i)
     }
 
     for (uniform size_t j=0; j<numCurveSegments; j++) {
-      indices[i*numCurveSegments+3*j] = i*numCurvePoints+3*j;
+      indices[i*numCurveSegments+j] = i*numCurvePoints+3*j;
     }
   }
 
@@ -153,6 +168,7 @@ uniform unsigned int addHair (RTCScene scene_i)
   rtcUnmapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
 
   return geomID;
+#endif
 }
 
 /* adds a ground plane to the scene */
@@ -188,7 +204,7 @@ export void device_init (uniform int8* uniform cfg)
   g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* add cube */
-  addCube(g_scene);
+  //addCube(g_scene);
 
   /* add hairs */
   addHair(g_scene);
@@ -220,6 +236,10 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
   
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
+  else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
+
+#if 0
   /* shade pixels */
   Vec3f color = make_Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
@@ -247,6 +267,7 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
       color = add(color,mul(diffuse,clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
   }
   return color;
+#endif
 }
 
 /* task that renders a single screen tile */

@@ -94,12 +94,27 @@ Vec3f sampleSphere(const float& u, const float& v)
 }
 
 Vec3f noise(Vec3f p) {
-  return p;
+  return div(p,length(p));
 }
 
 /* adds hair to the scene */
 unsigned int addHair (RTCScene scene_i)
 {
+#if 1
+
+  unsigned int geomID = rtcNewQuadraticBezierCurves (scene_i, RTC_GEOMETRY_STATIC, 1, 4);
+  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
+  int*    indices  = (int*   ) rtcMapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
+  vertices[0].x = 0; vertices[0].y = -2; vertices[0].z = 0; vertices[0].r = 0.1; 
+  vertices[1].x = 0; vertices[1].y = -1; vertices[1].z = 0; vertices[1].r = 0.1; 
+  vertices[2].x = 0; vertices[2].y =  0; vertices[2].z = 0; vertices[2].r = 0.1; 
+  vertices[3].x = 0; vertices[3].y =  1; vertices[3].z = 0; vertices[3].r = 0.0; 
+  indices[0] = 0;
+  rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
+  return geomID;
+
+#else
   int seed = 0;
   const int numCurves = 1000;
   const int numCurveSegments = 4;
@@ -145,7 +160,7 @@ unsigned int addHair (RTCScene scene_i)
     }
 
     for (size_t j=0; j<numCurveSegments; j++) {
-      indices[i*numCurveSegments+3*j] = i*numCurvePoints+3*j;
+      indices[i*numCurveSegments+j] = i*numCurvePoints+3*j;
     }
   }
 
@@ -153,6 +168,7 @@ unsigned int addHair (RTCScene scene_i)
   rtcUnmapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
 
   return geomID;
+#endif
 }
 
 /* adds a ground plane to the scene */
@@ -188,7 +204,7 @@ extern "C" void device_init (int8* cfg)
   g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
 
   /* add cube */
-  addCube(g_scene);
+  //addCube(g_scene);
 
   /* add hairs */
   addHair(g_scene);
@@ -220,6 +236,10 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
   
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3f(0.0f);
+  else return Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
+
+#if 0
   /* shade pixels */
   Vec3f color = Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
@@ -247,6 +267,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
       color = add(color,mul(diffuse,clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
   }
   return color;
+#endif
 }
 
 /* task that renders a single screen tile */
