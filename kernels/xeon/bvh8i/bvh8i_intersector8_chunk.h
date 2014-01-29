@@ -34,7 +34,7 @@ class BVH8iIntersector8Chunk
       /* shortcuts for frequently used types */
       typedef typename TriangleIntersector8::Primitive Triangle;
       typedef typename BVH4i::NodeRef NodeRef;
-      typedef typename BVH4i::Node Node;
+      typedef typename BVH8i::Node Node;
 
     public:
       static void intersect(avxb* valid, BVH8i* bvh, Ray8& ray);
