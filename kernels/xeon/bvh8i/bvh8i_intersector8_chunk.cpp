@@ -83,7 +83,6 @@ namespace embree
           curNode = *sptr_node; // FIXME: this trick creates issues with stack depth
           curDist = *sptr_near;
           
-#pragma unroll(8)
           for (unsigned i=0; i<8; i++)
           {
             const NodeRef child = node->children[i];
@@ -117,22 +116,26 @@ namespace embree
             {
               const avxf childDist = select(lhit,lnearP,inf);
               const NodeRef child = node->children[i];
-              sptr_node++;
-              sptr_near++;
               
               /* push cur node onto stack and continue with hit child */
               if (any(childDist < curDist))
               {
-                *(sptr_node-1) = curNode;
-                *(sptr_near-1) = curDist; 
+                *sptr_node = curNode;
+                *sptr_near = curDist; 
+		sptr_node++;
+		sptr_near++;
+
                 curDist = childDist;
                 curNode = child;
               }
               
               /* push hit child onto stack*/
               else {
-                *(sptr_node-1) = child;
-                *(sptr_near-1) = childDist; 
+                *sptr_node = child;
+                *sptr_near = childDist; 
+		sptr_node++;
+		sptr_near++;
+
               }
               assert(sptr_node - stack_node < BVH4i::maxDepth);
             }	      
@@ -211,7 +214,6 @@ namespace embree
           curNode = *sptr_node; // FIXME: this trick creates issues with stack depth
           curDist = *sptr_near;
           
-#pragma unroll(4)
           for (unsigned i=0; i<8; i++)
           {
             const NodeRef child = node->children[i];

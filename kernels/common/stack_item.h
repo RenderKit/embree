@@ -111,14 +111,10 @@ namespace embree
   struct __align(8) StackItemInt64
   {
 
-    __forceinline friend void swap64(StackItemInt64& s1, StackItemInt64& s2) {
-      if (s2.dist < s1.dist) swap(s2.i64,s1.i64);
-    }
-
 #if 0
     /*! Sort 2 stack items. */
     __forceinline friend void sort(StackItemInt64& s1, StackItemInt64& s2) {
-      if (s2.dist < s1.dist) swap64(s2,s1);
+      if (s2.dist < s1.dist) swap(s2,s1);
     }
     
     /*! Sort 3 stack items. */

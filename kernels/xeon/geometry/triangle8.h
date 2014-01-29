@@ -45,8 +45,11 @@ namespace embree
     /*! Returns a mask that tells which triangles are valid. */
     __forceinline avxb valid() const { return geomID != avxi(-1); }
 
+    /*! Returns a mask that tells which triangles are invalid. */
+    __forceinline avxb invalid() const { return geomID == avxi(-1); }
+
     /*! Returns the number of stored triangles. */
-    __forceinline size_t size() const {
+    __forceinline unsigned int size() const {
       return __bsf(~movemask(valid()));
     }
 

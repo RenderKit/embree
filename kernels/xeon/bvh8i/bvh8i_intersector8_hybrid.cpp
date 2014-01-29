@@ -95,12 +95,12 @@ namespace embree
           const avxf tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
           const avxf tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
           const avxb vmask = cast(tNear) > cast(tFar);
-          size_t mask = movemask(vmask)^0xff;
+          unsigned int mask = movemask(vmask)^0xff;
 #else
           const avxf tNear = max(tNearX,tNearY,tNearZ,rayNear);
           const avxf tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
           const avxb vmask = tNear <= tFar;
-          size_t mask = movemask(vmask);
+          unsigned int mask = movemask(vmask);
 #endif
           
           /*! if no child is hit, pop next node */
@@ -159,7 +159,7 @@ namespace embree
 	  while(1)
 	    {
 	      r = __bscf(mask);
-	      c = node->child(r); d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+	      c = node->child(r); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
 	      if (unlikely(mask == 0)) break;
 	    }
 	  cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -229,9 +229,8 @@ namespace embree
           continue;
         
         /* switch to single ray traversal */
-#if 1
 #if !defined(__WIN32__) || defined(__X86_64__)
-        size_t bits = movemask(active);
+        unsigned int bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
             intersect1(bvh,curNode,i,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ);
@@ -239,7 +238,6 @@ namespace embree
           ray_tfar = ray.tfar;
           continue;
         }
-#endif
 #endif
         while (1)
         {
@@ -293,22 +291,24 @@ namespace embree
               const avxf childDist = select(lhit,lnearP,inf);
               const NodeRef child = node->children[i];
               assert(child != BVH4i::emptyNode);
-              sptr_node++;
-              sptr_near++;
               
               /* push cur node onto stack and continue with hit child */
               if (any(childDist < curDist))
               {
-                *(sptr_node-1) = curNode;
-                *(sptr_near-1) = curDist; 
+                *sptr_node = curNode;
+                *sptr_near = curDist; 
                 curDist = childDist;
                 curNode = child;
-              }
-              
+		sptr_node++;
+		sptr_near++;
+              }              
               /* push hit child onto stack */
               else {
-                *(sptr_node-1) = child;
-                *(sptr_near-1) = childDist; 
+                *sptr_node = child;
+                *sptr_near = childDist;               
+		sptr_node++;
+		sptr_near++;
+
               }
             }	      
           }
@@ -323,7 +323,8 @@ namespace embree
         /* intersect leaf */
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
-        size_t items; const Triangle* prim = (Triangle*) curNode.leaf(accel,items);
+        size_t items; 
+	const Triangle8* prim = (Triangle8*) curNode.leaf(accel,items);
         TriangleIntersector8::intersect(valid_leaf,ray,prim,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
@@ -393,12 +394,12 @@ namespace embree
           const avxf tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
           const avxf tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
           const avxb vmask = cast(tNear) > cast(tFar);
-          size_t mask = movemask(vmask)^0xff;
+          unsigned int mask = movemask(vmask)^0xff;
 #else
           const avxf tNear = max(tNearX,tNearY,tNearZ,rayNear);
           const avxf tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
           const avxb vmask = tNear <= tFar;
-          size_t mask = movemask(vmask);
+          unsigned int mask = movemask(vmask);
 #endif
           
           /*! if no child is hit, pop next node */
@@ -414,9 +415,9 @@ namespace embree
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const float d0 = tNear[r];
+          NodeRef c0 = node->child(r); const unsigned int d0 = *(unsigned int*)&tNear[r];
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); const float d1 = tNear[r];
+          NodeRef c1 = node->child(r); const unsigned int d1 = *(unsigned int*)&tNear[r];
           assert(c0 != BVH4i::emptyNode);
           assert(c1 != BVH4i::emptyNode);
           if (likely(mask == 0)) {

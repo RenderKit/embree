@@ -228,7 +228,7 @@ namespace embree
           const avxf tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
           const avxf tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
           const avxb vmask = cast(tNear) > cast(tFar);
-          size_t mask = movemask(vmask)^0xff;
+          unsigned int mask = movemask(vmask)^0xff;
 #else
           const avxf tNear = max(tNearX,tNearY,tNearZ,rayNear);
           const avxf tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
@@ -248,15 +248,10 @@ namespace embree
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-#if 1
           NodeRef c0 = node->child(r); const unsigned int d0 = *(unsigned int*)&tNear[r];
           r = __bscf(mask);
           NodeRef c1 = node->child(r); const unsigned int d1 = *(unsigned int*)&tNear[r];
-#else
-          NodeRef c0 = node->child(r); const float d0 = tNear[r];
-          r = __bscf(mask);
-          NodeRef c1 = node->child(r); const float d1 = tNear[r];
-#endif
+
           if (likely(mask == 0)) {
             if (d0 < d1) { *stackPtr = c1; stackPtr++; cur = c0; continue; }
             else         { *stackPtr = c0; stackPtr++; cur = c1; continue; }
