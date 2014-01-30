@@ -139,7 +139,15 @@ namespace embree
   {
     typedef Bezier1i Primitive;
 
-    static __forceinline void intersect(Ray& ray, const Bezier1i& curve_in, const void* geom)
+    struct Precalculations 
+    {
+      __forceinline Precalculations (const Ray& ray)
+      : ray_space(rcp(frame(ray.dir))) {}
+
+      LinearSpace3f ray_space;
+    };
+
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
@@ -149,32 +157,15 @@ namespace embree
       const Vec3fa v3 = curve_in.p[3];
 
       /* transform control points into ray space */
-      LinearSpace3f ray_space = rcp(frame(ray.dir)); // FIXME: calculate once per ray
-      Vec3fa w0 = xfmVector(ray_space,v0-ray.org); w0.w = v0.w;
-      Vec3fa w1 = xfmVector(ray_space,v1-ray.org); w1.w = v1.w;
-      Vec3fa w2 = xfmVector(ray_space,v2-ray.org); w2.w = v2.w;
-      Vec3fa w3 = xfmVector(ray_space,v3-ray.org); w3.w = v3.w;
+      Vec3fa w0 = xfmVector(pre.ray_space,v0-ray.org); w0.w = v0.w;
+      Vec3fa w1 = xfmVector(pre.ray_space,v1-ray.org); w1.w = v1.w;
+      Vec3fa w2 = xfmVector(pre.ray_space,v2-ray.org); w2.w = v2.w;
+      Vec3fa w3 = xfmVector(pre.ray_space,v3-ray.org); w3.w = v3.w;
       BezierCurve3D bezier(w0,w1,w2,w3,0.0f,1.0f,4);
 
-      /* calculate factors to subdivide 3 levels at once */ // FIXME: precalculate these
-      /*const float dt = 1.0f/8.0f;
-      const avxf t1 = avxf(step)*dt;
-      const avxf t0 = 1.0f-t1;
-      const avxf c0 = t0 * t0 * t0;
-      const avxf c1 = 3.0f * t1* t0 * t0;
-      const avxf c2 = 3.0f * t1* t1 * t0;
-      const avxf c3 = t1 * t1 * t1;
-      const avxf tt1 = avxf(step)*dt+avxf(dt);
-      const avxf tt0 = 1.0f-tt1;
-      const avxf e0 = tt0 * tt0 * tt0;
-      const avxf e1 = 3.0f * tt1* tt0 * tt0;
-      const avxf e2 = 3.0f * tt1* tt1 * tt0;
-      const avxf e3 = tt1 * tt1 * tt1;*/
+      /* subdivide 3 levels at once */ 
       const avx4f p0 = bezier.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
       const avx4f p1 = bezier.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
-      /*const avx3f p1 = avx3f(avxf::shift_right(bezier.w3.x,p0.x),
-                             avxf::shift_right(bezier.w3.x,p0.x)
-                             avxf::shift_right(bezier.w3.x,p0.x));*/
 
       /* approximative intersection with cone */
       const avx4f v = p1-p0;
@@ -201,20 +192,20 @@ namespace embree
       }
     }
 
-    static __forceinline void intersect(Ray& ray, const Bezier1i* curves, size_t num, void* geom)
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
     {
       for (size_t i=0; i<num; i++)
-        intersect(ray,curves[i],geom);
+        intersect(pre,ray,curves[i],geom);
     }
 
-    static __forceinline bool occluded(Ray& ray, const Bezier1i& curve_in, const void* geom) {
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom) {
       return false;
     }
 
-    static __forceinline bool occluded(Ray& ray, const Bezier1i* curves, size_t num, void* geom) 
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom) 
     {
       for (size_t i=0; i<num; i++) 
-        if (occluded(ray,curves[i],geom))
+        if (occluded(pre,ray,curves[i],geom))
           return true;
 
       return false;
