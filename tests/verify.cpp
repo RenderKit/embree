@@ -2150,7 +2150,10 @@ namespace embree
     POSITIVE("static_scene",              rtcore_static_scene());
     //POSITIVE("deformable_geometry",       rtcore_deformable_geometry()); // FIXME
     POSITIVE("unmapped_before_commit",    rtcore_unmapped_before_commit());
+
+#if defined(__RTCORE_BUFFER_STRIDE__)
     POSITIVE("buffer_stride",             rtcore_buffer_stride());
+#endif
 
     POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
     POSITIVE("update_deformable",         rtcore_update(RTC_GEOMETRY_DEFORMABLE));
