@@ -257,12 +257,12 @@ Vec3fa renderPixelUV16(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const V
 
 /* returns the point seen through specified pixel */
 extern "C" bool device_pick(const float x,
-                                const float y, 
-                                const Vec3fa& vx, 
-                                const Vec3fa& vy, 
-                                const Vec3fa& vz, 
-                                const Vec3fa& p,
-                                Vec3fa& hitPos)
+                            const float y, 
+                            const Vec3f& vx, 
+                            const Vec3f& vy, 
+                            const Vec3f& vz, 
+                            const Vec3f& p,
+                            Vec3f& hitPos)
 {
   /* initialize ray */
   RTCRay ray;
