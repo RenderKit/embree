@@ -789,7 +789,9 @@ namespace embree
     AssertNoError();
     char* indexBuffer  = (char*) alignedMalloc(8+16*6*sizeof(int));
     char* vertexBuffer = (char*) alignedMalloc(12+16*9*sizeof(float)+4);
-    
+
+
+#if !defined(__MIC__)    
     rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer,1,3*sizeof(int));
     AssertError(RTC_INVALID_OPERATION);
     rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,1,3*sizeof(float));
@@ -800,7 +802,6 @@ namespace embree
     rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,0,3*sizeof(float)+3);
     AssertError(RTC_INVALID_OPERATION);
 
-#if defined(__RTCORE_BUFFER_STRIDE__) && !defined(__MIC__)
     rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer,0,3*sizeof(int));
     AssertNoError();
     rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,0,3*sizeof(float));
@@ -810,10 +811,12 @@ namespace embree
     AssertNoError();
     rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,12,9*sizeof(float));
     AssertNoError();
-#endif
+
 
     rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer,0,3*sizeof(int));
     AssertNoError();
+#endif
+
     rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,0,4*sizeof(float));
     AssertNoError();
 
@@ -1246,11 +1249,11 @@ namespace embree
     if ((size_t)ptr != 123) 
       return;
 
-    int* valid = (int*)valid_i;
+    unsigned int valid = *(unsigned int*)valid_i;
     for (size_t i=0; i<16; i++)
-      if (valid[i] == -1)
-        if (ray.primID[i] & 2) 
-          ray.geomID[i] = -1;
+	if (valid & ((unsigned int)1 << i))
+	  if (ray.primID[i] & 2) 
+	    ray.geomID[i] = -1;
   }
 
   bool rtcore_filter_intersect(RTCSceneFlags sflags, RTCGeometryFlags gflags)
@@ -1307,7 +1310,7 @@ namespace embree
 
 #endif
 
-#if defined(__MIC__)
+#if defined(__MIC__) && 1
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
@@ -2131,6 +2134,7 @@ namespace embree
     /* perform tests */
     rtcInit(g_rtcore.c_str());
 
+
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
     POSITIVE("barrier_sys",               test_barrier_sys());
@@ -2150,7 +2154,10 @@ namespace embree
     POSITIVE("static_scene",              rtcore_static_scene());
     //POSITIVE("deformable_geometry",       rtcore_deformable_geometry()); // FIXME
     POSITIVE("unmapped_before_commit",    rtcore_unmapped_before_commit());
+
+#if defined(__RTCORE_BUFFER_STRIDE__)
     POSITIVE("buffer_stride",             rtcore_buffer_stride());
+#endif
 
     POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
     POSITIVE("update_deformable",         rtcore_update(RTC_GEOMETRY_DEFORMABLE));

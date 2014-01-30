@@ -43,41 +43,54 @@ namespace embree
 
 #if defined(__MIC__)
 
-    if (g_builder == "default") 
-    {
-      if (isStatic())
+    g_top_accel = g_tri_accel;
+
+    if (unlikely(numTriangleMeshes2 > 0)) /* motion blur */
       {
-        if (g_verbose >= 1) std::cout << "STATIC BUILDER MODE" << std::endl;
-        accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
+	if (g_verbose >=2)
+	  DBG_PRINT(numTriangleMeshes2);
+	g_top_accel = "bvh4mb";
       }
-      else
+
+    if (g_top_accel == "default" || g_top_accel == "bvh4i")   
       {
-        if (g_verbose >= 1) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
-        accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this));
+	if (g_builder == "default") 
+	  {
+	    if (isStatic())
+	      {
+		if (g_verbose >= 1) std::cout << "STATIC BUILDER MODE" << std::endl;
+		accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
+	      }
+	    else
+	      {
+		if (g_verbose >= 1) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
+		accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this));
+	      }
+	  }
+	else
+	  {
+	    if (g_builder == "sah" || g_builder == "bvh4i" || g_builder == "bvh4i.sah") {
+	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
+	    }
+	    else if (g_builder == "fast" || g_builder == "morton") {
+	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this));
+	    }
+	    else if (g_builder == "fast_enhanced" || g_builder == "morton.enhanced") {
+	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this));
+	    }
+	    else if (g_builder == "high_quality" || g_builder == "presplits") {
+	      accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this));
+	    }
+	    else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
+	  }
       }
+    else if (g_top_accel == "bvh4mb") {
+      accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
     }
-    else
-    {
-      if (g_builder == "sah" || g_builder == "bvh4i" || g_builder == "bvh4i.sah") {
-        accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
-      }
-      else if (g_builder == "fast" || g_builder == "morton") {
-        accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this));
-      }
-      else if (g_builder == "fast_enhanced" || g_builder == "morton.enhanced") {
-        accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this));
-      }
-      else if (g_builder == "high_quality" || g_builder == "presplits") {
-        accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this));
-      }
-      else if (g_builder == "motionblur" || g_builder == "bvh4mb") {
-        accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
-      }
-      else if (g_builder == "bvh16i" || g_builder == "bvh16i.sah") {
-        accels.add(BVH16i::BVH16iTriangle1ObjectSplitBinnedSAH(this));
-      }
-      else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
+    else if (g_top_accel == "bvh16i") {
+      accels.add(BVH16i::BVH16iTriangle1ObjectSplitBinnedSAH(this));
     }
+    else throw std::runtime_error("unknown accel "+g_top_accel);
 
     accels.add(BVH4i::BVH4iVirtualGeometryBinnedSAH(this));
 
