@@ -510,7 +510,7 @@ does not change. The ray contains the following data members:</p>
   <tr><td>time</td><td>in</td><td>time used for motion blur</td></tr>
   <tr><td>mask</td><td>in</td><td>ray mask to mask out geometries</td></tr>
 
-  <tr><td>Ng</td><td>out</td><td>not normalized geometry normal</td></tr>
+  <tr><td>Ng</td><td>out</td><td>unnormalized geometry normal</td></tr>
   <tr><td>u</td><td>out</td><td>barycentric u-coordinate of hit</td></tr>
   <tr><td>v</td><td>out</td><td>barycentric v-coordinate of hit</td></tr>
   <tr><td>geomID</td><td>out</td><td>geometry ID of hit geometry</td></tr>
@@ -579,8 +579,9 @@ rtcIntersect(scene,ray);
 <p>Testing if any geometry intersects with the ray segment is done
 through the <code>rtcOccluded</code> functions. Initialization has to
 be done as for <code>rtcIntersect</code>. If some geometry got found
-along the ray segment, the geometry ID (<code>geomID</code>) will get set to 0. No
-other member of the ray will get modified.</p>
+along the ray segment, the geometry ID (<code>geomID</code>) will get
+set to 0. Other hit information of the ray is undefined after
+calling <code>rtcOccluded</code>.</p>
 
 <p>See tutorial00 for an example of how to trace rays.</p>
 
