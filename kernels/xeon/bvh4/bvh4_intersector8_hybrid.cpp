@@ -21,6 +21,7 @@
 #include "geometry/triangle4v_intersector8_pluecker.h"
 
 #define SWITCH_THRESHOLD 6
+#define ENABLE_PREFETCHING
 
 namespace embree
 {
@@ -115,6 +116,14 @@ namespace embree
           NodeRef c1 = node->child(r); const unsigned int d1 = *(unsigned int*)&tNear[r];
           assert(c0 != BVH4::emptyNode);
           assert(c1 != BVH4::emptyNode);
+
+#if defined(__AVX2__) && defined(ENABLE_PREFETCHING)
+	  prefetchL1(((char*)c0.node()) + 0);
+	  prefetchL1(((char*)c0.node()) + 64);
+	  prefetchL1(((char*)c1.node()) + 0);
+	  prefetchL1(((char*)c1.node()) + 64);
+#endif
+
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
             if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
@@ -132,6 +141,8 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           NodeRef c = node->child(r); unsigned int d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+
+
           assert(c0 != BVH4::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
@@ -395,9 +406,17 @@ namespace embree
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const unsigned int d0 = *(unsigned int*)&tNear[r];
+          NodeRef c0 = node->child(r); unsigned int d0 = ((unsigned int*)&tNear)[r];
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); const unsigned int d1 = *(unsigned int*)&tNear[r];
+          NodeRef c1 = node->child(r); unsigned int d1 = ((unsigned int*)&tNear)[r];
+
+#if defined(__AVX2__) && defined(ENABLE_PREFETCHING)
+	  prefetchL1(((char*)c0.node()) + 0);
+	  prefetchL1(((char*)c0.node()) + 64);
+	  prefetchL1(((char*)c1.node()) + 0);
+	  prefetchL1(((char*)c1.node()) + 64);
+#endif
+
           assert(c0 != BVH4::emptyNode);
           assert(c1 != BVH4::emptyNode);
           if (likely(mask == 0)) {
@@ -406,15 +425,18 @@ namespace embree
             else         { *stackPtr = c0; stackPtr++; cur = c1; continue; }
           }
           assert(stackPtr < stackEnd);
-          *stackPtr = c0; stackPtr++;
+          stackPtr[0] = c0; 
           assert(stackPtr < stackEnd);
-          *stackPtr = c1; stackPtr++;
-          
+          stackPtr[1] = c1; 
+
+          stackPtr+=2;
+
           /*! three children are hit */
           r = __bscf(mask);
           cur = node->child(r); 
           assert(cur != BVH4::emptyNode);
           if (likely(mask == 0)) continue;
+
           assert(stackPtr < stackEnd);
           *stackPtr = cur; stackPtr++;
           
