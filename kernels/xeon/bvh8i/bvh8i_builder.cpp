@@ -29,8 +29,7 @@ using namespace embree;
 
 #define __ALIGN(x) __declspec(align(x))
 
-
-#define CONVERT_TO_BVH8
+#define DBG(x) 
 
 namespace embree
 {
@@ -108,6 +107,10 @@ namespace embree
 	  bvh8i[bvh8i_node_index].set(bvh8i_used_slots++,*node4,i);      
       }
 
+      DBG(std::cout << std::endl);
+      DBG(DBG_PRINT(bvh8i_node_index));
+      DBG(DBG_PRINT(numLeavesInSubTree));
+
       while(bvh8i_used_slots < 8)
 	{
 	  const avxf node_area = bvh8i[bvh8i_node_index].area();
@@ -119,6 +122,9 @@ namespace embree
 	  ssize_t max_index_small = -1;
 	  ssize_t min_children_small = 8;
 	  float max_area_small = 0.0f;
+
+	  DBG(DBG_PRINT(bvh8i_used_slots));
+	  DBG(DBG_PRINT(*(avxi*)bvh8i[bvh8i_node_index].data));
         
 	  for (size_t i=0;i<bvh8i_used_slots;i++)
 	    {
@@ -127,6 +133,14 @@ namespace embree
 	      BVH4i::Node *node4 = bvh8i[bvh8i_node_index].children[i].node(bvh4i);
 	      unsigned int children = node4->numValidChildren();
 
+#if 0
+	      if (bvh8i[bvh8i_node_index].data[i] < 8)
+		if (children != bvh8i[bvh8i_node_index].data[i]) 
+		  {
+		    DBG_PRINT(children);
+		    DBG_PRINT(bvh8i[bvh8i_node_index].data[i]);		    
+		  }
+#endif
 	      if ((children + bvh8i_used_slots - 1) <= 8 && 
 		  node_area[i] > max_area)
 		{      
@@ -151,6 +165,12 @@ namespace embree
 #endif     
 	    }
 
+	  DBG(DBG_PRINT(max_index));
+	  DBG(DBG_PRINT(max_area));
+
+	  DBG(DBG_PRINT(max_index_small));
+	  DBG(DBG_PRINT(min_children_small));
+
 	  if (max_index == -1) break;
         
 	  if (max_index_small != -1)
@@ -167,9 +187,6 @@ namespace embree
 	  BVH4i::Node *node4 = parent_ref.node(bvh4i);
 	  unsigned int children = node4->numValidChildren();
         
-	  //const size_t childID = bvhChildID(parent_index);
-	  //const size_t children = bvhItems(parent_index);
-
 	  for (size_t i=0;i<children;i++) 
 	    bvh8i[bvh8i_node_index].set(bvh8i_used_slots++,*node4,i);
 
@@ -178,18 +195,27 @@ namespace embree
 	  assert(bvh8i_used_slots <= 8);
 
 	}
-      
+      DBG(DBG_PRINT(bvh8i_used_slots));
 
       parent_offset = (unsigned int)(sizeof(BVH8i::Node) * bvh8i_node_index);
       
       bvh8i_node_dist[bvh8i_used_slots-1]++;
       
       BVH8i::Node &b8 = bvh8i[bvh8i_node_index];
+
+      DBG(
+	  {
+	    bool recurse = false;
+	    for (size_t i=0;i<bvh8i_used_slots;i++)
+	      if (b8.children[i].isNode())
+		recurse = true;
+	    DBG(DBG_PRINT(recurse));
+	  }
+	  );
+
       
       for (size_t i=0;i<bvh8i_used_slots;i++)
-	{
 	  if (b8.children[i].isNode())
-	    {
 	      convertBVH4itoBVH8i(bvh4i,
 				  b8.children[i],
 				  b8.data[i],
@@ -197,8 +223,6 @@ namespace embree
 				  index8,
 				  b8.children[i],
 				  bvh8i_node_dist);
-	    }      
-	}
     }
 
     // =======================================================================================================
@@ -208,11 +232,8 @@ namespace embree
     void BVH8iBuilderTriangle8::build(size_t threadIndex, size_t threadCount) 
     {
       bvh4i_builder8->build(threadIndex,threadCount);
-      std::cout << "BVH4i BUILD DONE" << std::endl << std::flush;
       unsigned int numBVH4iNodes = countBVH4iNodes((BVH4i::Node*)bvh4i_builder8->bvh->nodePtr(),bvh4i_builder8->bvh->root);
-      DBG_PRINT(numBVH4iNodes);
       unsigned int totalLeaves = countLeavesButtomUp((BVH4i::Node*)bvh4i_builder8->bvh->nodePtr(),bvh4i_builder8->bvh->root);
-      DBG_PRINT(totalLeaves);
       avxi bvh8i_node_dist = 0;
       BVH8i::Node *bvh8i_base = (BVH8i::Node *)os_malloc(sizeof(BVH8i::Node) * numBVH4iNodes);
       BVH4i::NodeRef bvh8i_root;
@@ -225,30 +246,37 @@ namespace embree
 			  bvh8i_root,
 			  bvh8i_node_dist);
 
-      std::cout << "BVH4i TO BVH8I CONVERSION DONE" << std::endl << std::flush;
-      DBG_PRINT(index8);
- 
-      /* bvh8i node util */
-      {
-	unsigned int total = 0;
-	float util = 0.0f;
-	for (size_t i=0;i<8;i++) {
-	  util += (float)(i+1) * bvh8i_node_dist[i];
-	  total += bvh8i_node_dist[i];
-	}
-	DBG_PRINT(total);
-	std::cout << "bvh8i node util dist: ";
-	DBG_PRINT(bvh8i_node_dist);
-	float sum = 0;
-	for (size_t i=0;i<8;i++) 
+      if (g_verbose >= 2)
+	{
+	  std::cout << "BVH4i TO BVH8I CONVERSION DONE" << std::endl << std::flush;
+	  DBG_PRINT(numBVH4iNodes);
+	  DBG_PRINT(numBVH4iNodes*sizeof(BVH4i::Node));
+	  DBG_PRINT(totalLeaves);
+	  DBG_PRINT(index8);
+	  DBG_PRINT(index8*sizeof(BVH8i::Node));
+
+	  /* bvh8i node util */
 	  {
-	    sum += (float)bvh8i_node_dist[i] * 100.0f / total;
-	    std::cout << i+1 << "[" << (float)bvh8i_node_dist[i] * 100.0f / total << "%, sum " << sum << "%] ";
+	    unsigned int total = 0;
+	    float util = 0.0f;
+	    for (size_t i=0;i<8;i++) {
+	      util += (float)(i+1) * bvh8i_node_dist[i];
+	      total += bvh8i_node_dist[i];
+	    }
+	    DBG_PRINT(total);
+	    std::cout << "bvh8i node util dist: ";
+	    DBG_PRINT(bvh8i_node_dist);
+	    float sum = 0;
+	    for (size_t i=0;i<8;i++) 
+	      {
+		sum += (float)bvh8i_node_dist[i] * 100.0f / total;
+		std::cout << i+1 << "[" << (float)bvh8i_node_dist[i] * 100.0f / total << "%, sum " << sum << "%] ";
+	      }
+	    std::cout << std::endl;
+	    DBG_PRINT(100.0f * util / (8.0f * total));
+	    std::cout << std::endl;
 	  }
-	std::cout << std::endl;
-	DBG_PRINT(100.0f * util / (8.0f * total));
-	std::cout << std::endl;
-      }
+	}
 
       bvh4i_builder8->bvh->root = bvh8i_root;
       bvh4i_builder8->bvh->qbvh = bvh8i_base; 
