@@ -54,6 +54,54 @@ namespace embree
     float dist;
   };
 
+
+
+  /*! An item on the stack holds the node ID and distance of that node. */
+  template<typename T>
+    struct StackItemInt32
+  {
+    
+    __forceinline static void swap2(StackItemInt32<T>& a, StackItemInt32<T>& b) { 
+#if defined(__AVX__)
+      /* use sse registers to copy stack items */
+      ssef sse_a = load4f(&a);
+      ssef sse_b = load4f(&b);
+      store4f(&a,sse_b);
+      store4f(&b,sse_a);
+#else
+      StackItemInt32<T> t = b; b = a; a = t;
+#endif
+    }
+
+    /*! Sort 2 stack items. */
+    __forceinline friend void sort(StackItemInt32& s1, StackItemInt32& s2) {
+      if (s2.dist < s1.dist) swap2(s2,s1);
+    }
+    
+    /*! Sort 3 stack items. */
+    __forceinline friend void sort(StackItemInt32& s1, StackItemInt32& s2, StackItemInt32& s3)
+    {
+      if (s2.dist < s1.dist) swap2(s2,s1);
+      if (s3.dist < s2.dist) swap2(s3,s2);
+      if (s2.dist < s1.dist) swap2(s2,s1);
+    }
+    
+    /*! Sort 4 stack items. */
+    __forceinline friend void sort(StackItemInt32& s1, StackItemInt32& s2, StackItemInt32& s3, StackItemInt32& s4)
+    {
+      if (s2.dist < s1.dist) swap2(s2,s1);
+      if (s4.dist < s3.dist) swap2(s4,s3);
+      if (s3.dist < s1.dist) swap2(s3,s1);
+      if (s4.dist < s2.dist) swap2(s4,s2);
+      if (s3.dist < s2.dist) swap2(s3,s2);
+    }
+    
+  public:
+    T ptr; 
+    unsigned int dist;
+  };
+
+
   /*! An item on the stack holds the node ID and distance of that node. */
   template<>
     struct StackItemT<unsigned int>
@@ -110,6 +158,7 @@ namespace embree
 
   struct __align(8) StackItemInt64
   {
+
 #if 1
     /*! Sort 2 stack items. */
     __forceinline friend void sort(StackItemInt64& s1, StackItemInt64& s2) {
@@ -146,7 +195,7 @@ namespace embree
       if (s2.i64 < s1.i64) swap(s2.i64,s1.i64);
       if (s3.i64 < s2.i64) swap(s3.i64,s2.i64);
       if (s2.i64 < s1.i64) swap(s2.i64,s1.i64);
-    }
+   }
     
     /*! Sort 4 stack items. */
     __forceinline friend void sort(StackItemInt64& s1, StackItemInt64& s2, StackItemInt64& s3, StackItemInt64& s4)
@@ -168,61 +217,9 @@ namespace embree
       };
       uint64 i64;
     };
+
   };
 
-#if !defined(__MIC__) && 0
-  template<>
-    struct __align(16) StackItemT<unsigned long>  
-  {  
-    /*! Sort 2 stack items. */  
-    __forceinline friend void sort(StackItemT& a, StackItemT& b)  
-    {  
-      __m128 s1 = a.all;  
-      __m128 s2 = b.all;  
-      if (_mm_comilt_ss(s2, s1)) swap(s2, s1);  
-      a.all = s1;  
-      b.all = s2;  
-    }
-
-    /*! Sort 3 stack items. */  
-    __forceinline friend void sort(StackItemT& a, StackItemT& b, StackItemT& c)  
-    {  
-      __m128 s1 = a.all;  
-      __m128 s2 = b.all;  
-      __m128 s3 = c.all;  
-      if (_mm_comilt_ss(s2, s1)) swap(s2, s1);  
-      if (_mm_comilt_ss(s3, s2)) swap(s3, s2);  
-      if (_mm_comilt_ss(s2, s1)) swap(s2, s1);  
-      a.all = s1;  
-      b.all = s2;  
-      c.all = s3;  
-    }  
-    
-    /*! Sort 4 stack items. */  
-    __forceinline friend void sort(StackItemT& a, StackItemT& b, StackItemT& c, StackItemT& d)  
-    {  
-      __m128 s1 = a.all;  
-      __m128 s2 = b.all;  
-      __m128 s3 = c.all;  
-      __m128 s4 = d.all;  
-      if (_mm_comilt_ss(s2, s1)) swap(s2,s1);  
-      if (_mm_comilt_ss(s4, s3)) swap(s4,s3);  
-      if (_mm_comilt_ss(s3, s1)) swap(s3,s1);  
-      if (_mm_comilt_ss(s4, s2)) swap(s4,s2);  
-      if (_mm_comilt_ss(s3, s2)) swap(s3,s2);  
-      a.all = s1;  
-      b.all = s2;  
-      c.all = s3;  
-      d.all = s4;  
-    }  
-    
-  public:
-    union {  
-      struct { float dist; float pad; unsigned long ptr; };  
-      __m128 all;  
-    };  
-  };  
-#endif
  
 #if defined(__MIC__)
 

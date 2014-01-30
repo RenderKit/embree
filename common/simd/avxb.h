@@ -149,13 +149,13 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline size_t popcnt( const avxb& a ) { return __popcnt(_mm256_movemask_ps(a)); }
-  __forceinline bool reduce_and( const avxb& a ) { return _mm256_movemask_ps(a) == 0xff; }
+  __forceinline bool reduce_and( const avxb& a ) { return _mm256_movemask_ps(a) == (unsigned int)0xff; }
   __forceinline bool reduce_or ( const avxb& a ) { return !_mm256_testz_ps(a,a); }
-  __forceinline bool all       ( const avxb& a ) { return _mm256_movemask_ps(a) == 0xff; }
+  __forceinline bool all       ( const avxb& a ) { return _mm256_movemask_ps(a) == (unsigned int)0xff; }
   __forceinline bool none      ( const avxb& a ) { return _mm256_testz_ps(a,a) != 0; }
   __forceinline bool any       ( const avxb& a ) { return !_mm256_testz_ps(a,a); }
 
-  __forceinline size_t movemask( const avxb& a ) { return _mm256_movemask_ps(a); }
+  __forceinline unsigned int movemask( const avxb& a ) { return _mm256_movemask_ps(a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators

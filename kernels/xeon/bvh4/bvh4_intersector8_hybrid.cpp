@@ -30,9 +30,9 @@ namespace embree
     __forceinline void BVH4Intersector8Hybrid<PrimitiveIntersector8>::intersect1(const BVH4* bvh, NodeRef root, const size_t k, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
     {
       /*! stack state */
-      StackItem stack[stackSizeSingle];  //!< stack of nodes 
-      StackItem* stackPtr = stack+1;        //!< current stack pointer
-      StackItem* stackEnd = stack+stackSizeSingle;
+      StackItemInt32<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
+      StackItemInt32<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
+      StackItemInt32<NodeRef>* stackEnd = stack+stackSizeSingle;
       stack[0].ptr = root;
       stack[0].dist = neg_inf;
       
@@ -56,7 +56,7 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->ptr);
         
         /*! if popped node is too far, pop next one */
-        if (unlikely(stackPtr->dist > ray.tfar[k]))
+        if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k]))
           continue;
         
         /* downtraversal loop */
@@ -110,9 +110,9 @@ namespace embree
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const float d0 = tNear[r];
+          NodeRef c0 = node->child(r); const unsigned int d0 = *(unsigned int*)&tNear[r];
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); const float d1 = tNear[r];
+          NodeRef c1 = node->child(r); const unsigned int d1 = *(unsigned int*)&tNear[r];
           assert(c0 != BVH4::emptyNode);
           assert(c1 != BVH4::emptyNode);
           if (likely(mask == 0)) {
@@ -131,7 +131,7 @@ namespace embree
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          NodeRef c = node->child(r); float d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          NodeRef c = node->child(r); unsigned int d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           assert(c0 != BVH4::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
@@ -142,7 +142,7 @@ namespace embree
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          c = node->child(r); d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          c = node->child(r); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           assert(c != BVH4::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -154,6 +154,7 @@ namespace embree
         PrimitiveIntersector8::intersect(ray,k,prim,num,bvh->geometry);
         rayFar = ray.tfar[k];
       }
+      AVX_ZERO_UPPER();
     }
     
     template<typename PrimitiveIntersector8>
@@ -241,8 +242,7 @@ namespace embree
           curNode = *sptr_node;
           curDist = *sptr_near;
           
-#pragma unroll(4)
-          for (unsigned i=0; i<4; i++)
+          for (size_t i=0; i<4; i++)
           {
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH4::emptyNode)) break;
@@ -277,22 +277,24 @@ namespace embree
               const avxf childDist = select(lhit,lnearP,inf);
               const NodeRef child = node->children[i];
               assert(child != BVH4::emptyNode);
-              sptr_node++;
-              sptr_near++;
               
               /* push cur node onto stack and continue with hit child */
               if (any(childDist < curDist))
               {
-                *(sptr_node-1) = curNode;
-                *(sptr_near-1) = curDist; 
+                *sptr_node = curNode;
+                *sptr_near = curDist; 
                 curDist = childDist;
                 curNode = child;
+		sptr_node++;
+		sptr_near++;
               }
               
               /* push hit child onto stack */
               else {
-                *(sptr_node-1) = child;
-                *(sptr_near-1) = childDist; 
+                *sptr_node = child;
+                *sptr_near = childDist; 
+		sptr_node++;
+		sptr_near++;
               }
             }	      
           }
@@ -393,9 +395,9 @@ namespace embree
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const float d0 = tNear[r];
+          NodeRef c0 = node->child(r); const unsigned int d0 = *(unsigned int*)&tNear[r];
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); const float d1 = tNear[r];
+          NodeRef c1 = node->child(r); const unsigned int d1 = *(unsigned int*)&tNear[r];
           assert(c0 != BVH4::emptyNode);
           assert(c1 != BVH4::emptyNode);
           if (likely(mask == 0)) {
@@ -519,8 +521,7 @@ namespace embree
           curNode = *sptr_node;
           curDist = *sptr_near;
           
-#pragma unroll(4)
-          for (unsigned i=0; i<4; i++)
+          for (size_t i=0; i<4; i++)
           {
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH4::emptyNode)) break;
@@ -554,22 +555,26 @@ namespace embree
               assert(sptr_node < stackEnd);
               assert(child != BVH4::emptyNode);
               const avxf childDist = select(lhit,lnearP,inf);
-              sptr_node++;
-              sptr_near++;
               
               /* push cur node onto stack and continue with hit child */
               if (any(childDist < curDist))
-              {
-                *(sptr_node-1) = curNode;
-                *(sptr_near-1) = curDist; 
-                curDist = childDist;
-                curNode = child;
-              }
+		{
+		  *sptr_node = curNode;
+		  *sptr_near = curDist; 
+		  curDist = childDist;
+		  curNode = child;
+		  sptr_node++;
+		  sptr_near++;
+
+		}
               
               /* push hit child onto stack */
               else {
-                *(sptr_node-1) = child;
-                *(sptr_near-1) = childDist; 
+                *sptr_node = child;
+                *sptr_near = childDist; 
+		sptr_node++;
+		sptr_near++;
+
               }
             }	      
           }
