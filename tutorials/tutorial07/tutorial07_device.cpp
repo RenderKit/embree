@@ -99,6 +99,9 @@ Vec3f noise(Vec3f p, float t) {
   return p + Vec3f(sin(4.0f*t),4.0f*t,cos(4.0f*t));
 }
 
+Vertex* vertices = NULL;
+int*    indices = NULL;
+
 /* adds hair to the scene */
 unsigned int addHair (RTCScene scene_i)
 {
@@ -118,20 +121,23 @@ unsigned int addHair (RTCScene scene_i)
 
 #else
   int seed = 879;
-  const int numCurves = 1000;
+  const int numCurves = 1;
   const int numCurveSegments = 4;
   const int numCurvePoints = 3*numCurveSegments+1;
+  const float R = 0.01f;
 
   /* create set of bezier curves */
   unsigned int geomID = rtcNewQuadraticBezierCurves (scene_i, RTC_GEOMETRY_STATIC, numCurves*numCurveSegments, numCurves*numCurvePoints);
-
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
-  int*    indices  = (int*   ) rtcMapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
+  vertices = new Vertex[numCurves*numCurvePoints]; //(Vertex*) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER);  // FIXME: use shared buffers
+  indices  = new int   [numCurves*numCurveSegments]; //(int*   ) rtcMapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
+  rtcSetBuffer(scene_i,geomID,RTC_VERTEX_BUFFER,vertices,0,sizeof(Vertex));
+  rtcSetBuffer(scene_i,geomID,RTC_INDEX_BUFFER,indices,0,sizeof(int));
 
   for (size_t i=0; i<numCurves; i++)
   {
     float ru = frand(seed);
     float rv = frand(seed);
+    ru = rv = 0.5f;
     //Vec3f d = sampleSphere(ru,rv);
     //Vec3f p = div(d,max(abs(d.x),max(abs(d.y),abs(d.z))));
     Vec3f p = Vec3f(-10.0f+ru*20.0f,-2.0f,-10.0f+rv*20.0f);
@@ -147,19 +153,19 @@ unsigned int addHair (RTCScene scene_i)
         vertices[i*numCurvePoints+3*j-1].x = 2.0f*p0.x-p1.x;
         vertices[i*numCurvePoints+3*j-1].y = 2.0f*p0.y-p1.y;
         vertices[i*numCurvePoints+3*j-1].z = 2.0f*p0.z-p1.z;
-        vertices[i*numCurvePoints+3*j-1].r = last ? 0.0f : 0.1f;
+        vertices[i*numCurvePoints+3*j-1].r = last ? 0.0f : R;
       }
       
       vertices[i*numCurvePoints+3*j+0].x = p0.x;
       vertices[i*numCurvePoints+3*j+0].y = p0.y;
       vertices[i*numCurvePoints+3*j+0].z = p0.z;
-      vertices[i*numCurvePoints+3*j+0].r = last ? 0.0f : 0.1f;
+      vertices[i*numCurvePoints+3*j+0].r = last ? 0.0f : R;
 
       if (j<numCurveSegments) {
         vertices[i*numCurvePoints+3*j+1].x = p1.x;
         vertices[i*numCurvePoints+3*j+1].y = p1.y;
         vertices[i*numCurvePoints+3*j+1].z = p1.z;
-        vertices[i*numCurvePoints+3*j+1].r = 0.1f;
+        vertices[i*numCurvePoints+3*j+1].r = R;
       }
     }
 
@@ -168,8 +174,8 @@ unsigned int addHair (RTCScene scene_i)
     }
   }
 
-  rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
-  rtcUnmapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
+  //rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
+  //rtcUnmapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
 
   return geomID;
 #endif
@@ -223,13 +229,61 @@ extern "C" void device_init (int8* cfg)
   renderPixel = renderPixelStandard;
 }
 
+__forceinline Vec3fa evalBezier(const int primID, const float t)
+{
+  const float t0 = 1.0f - t, t1 = t;
+  
+  const int i = indices[primID];
+  const Vec3fa p00 = *(Vec3fa*)&vertices[i+0];
+  const Vec3fa p01 = *(Vec3fa*)&vertices[i+1];
+  const Vec3fa p02 = *(Vec3fa*)&vertices[i+2];
+  const Vec3fa p03 = *(Vec3fa*)&vertices[i+3];
+
+  const Vec3fa p10 = p00 * t0 + p01 * t1;
+  const Vec3fa p11 = p01 * t0 + p02 * t1;
+  const Vec3fa p12 = p02 * t0 + p03 * t1;
+  const Vec3fa p20 = p10 * t0 + p11 * t1;
+  const Vec3fa p21 = p11 * t0 + p12 * t1;
+  const Vec3fa p30 = p20 * t0 + p21 * t1;
+  
+  return p30;
+  //tangent = p21-p20;
+}
+
+float occluded(RTCScene scene, RTCRay& shadow)
+{
+  float T = 1.0f;
+  while (true) 
+  {
+    rtcIntersect(scene,shadow);
+    if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) break;
+    if (shadow.geomID != 0) return 0.0f;
+    
+    /* calculate size of shadow ray at hit point */
+    float sizeRay = max(shadow.org.w + shadow.tfar*shadow.dir.w, 0.00001f);
+    
+    /* calculate size of hair at hit point */
+    float sizeCurve = evalBezier(shadow.primID,shadow.u).w;
+    
+    /* calculate how much the curve occluded the ray */
+    float Tcurve = 0.3f;
+    T *= 1.0f-clamp((1.0f-Tcurve)*sizeCurve/sizeRay,0.0f,1.0f);
+    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.tnear = 1.001f*shadow.tfar;
+  }
+  return T;
+}
+
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
+  ray.org.w = 0.0f;
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  Vec3fa dir1 = normalize(add(mul(x+1,vx), mul(y+1,vy), vz));
+  ray.dir.w = 0.5f*0.707f*length(dir1-ray.dir);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -240,38 +294,35 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
   
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3f(0.0f);
-  else return Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
-
-#if 0
   /* shade pixels */
   Vec3f color = Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3f diffuse = colors[ray.primID];
-    color = add(color,mul(diffuse,0.5f));
+    Vec3f diffuse = Vec3f(1.0f,0.9f,0.8f); //colors[ray.primID];
+    if (ray.geomID == 1) diffuse = Vec3f(1.0f,1.0f,1.0f);
+    //color = add(color,mul(diffuse,0.5f));
     Vec3f lightDir = normalize(Vec3f(-1,-1,-1));
     
     /* initialize shadow ray */
     RTCRay shadow;
     shadow.org = add(ray.org,mul(ray.tfar,ray.dir));
+    shadow.org.w = ray.org.w+ray.tfar*ray.dir.w;
     shadow.dir = neg(lightDir);
+    shadow.dir.w = 0.0f;
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
-    shadow.geomID = 1;
-    shadow.primID = 0;
+    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
     shadow.time = 0;
     
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
+    float T = occluded(g_scene,shadow);
     
     /* add light contribution */
-    if (shadow.geomID)
-      color = add(color,mul(diffuse,clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
+    color = add(color,mul(T,diffuse)); //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
   }
   return color;
-#endif
 }
 
 /* task that renders a single screen tile */

@@ -174,9 +174,10 @@ namespace embree
       const avxf d1 = v.x*v.x + v.y*v.y;
       const avxf u = clamp(d0/d1,avxf(zero),avxf(one));
       const avx4f p = p0 + u*v;
-      const avxf d2 = p.x*p.x + p.y*p.y; 
-      const avxf r2 = p.w*p.w;
       const avxf t = p.z;
+      const avxf d2 = p.x*p.x + p.y*p.y; 
+      const avxf r = max(p.w,ray.org.w+ray.dir.w*t);
+      const avxf r2 = r*r;
       const avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
       if (unlikely(none(valid))) return;
       const float one_over_8 = 1.0f/8.0f;
@@ -198,8 +199,39 @@ namespace embree
         intersect(pre,ray,curves[i],geom);
     }
 
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom) {
-      return false;
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom) 
+    {
+      /* load bezier curve control points */
+      STAT3(normal.trav_prims,1,1,1);
+      const Vec3fa v0 = curve_in.p[0];
+      const Vec3fa v1 = curve_in.p[1];
+      const Vec3fa v2 = curve_in.p[2];
+      const Vec3fa v3 = curve_in.p[3];
+
+      /* transform control points into ray space */
+      Vec3fa w0 = xfmVector(pre.ray_space,v0-ray.org); w0.w = v0.w;
+      Vec3fa w1 = xfmVector(pre.ray_space,v1-ray.org); w1.w = v1.w;
+      Vec3fa w2 = xfmVector(pre.ray_space,v2-ray.org); w2.w = v2.w;
+      Vec3fa w3 = xfmVector(pre.ray_space,v3-ray.org); w3.w = v3.w;
+      BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
+
+      /* subdivide 3 levels at once */ 
+      const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+      const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+
+      /* approximative intersection with cone */
+      const avx4f v = p1-p0;
+      const avx4f w = -p0;
+      const avxf d0 = w.x*v.x + w.y*v.y;
+      const avxf d1 = v.x*v.x + v.y*v.y;
+      const avxf u = clamp(d0/d1,avxf(zero),avxf(one));
+      const avx4f p = p0 + u*v;
+      const avxf t = p.z;
+      const avxf d2 = p.x*p.x + p.y*p.y; 
+      const avxf r = p.w+ray.org.w+ray.dir.w*t;
+      const avxf r2 = r*r;
+      const avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
+      return any(valid);
     }
 
     static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom) 
