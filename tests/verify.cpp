@@ -789,7 +789,9 @@ namespace embree
     AssertNoError();
     char* indexBuffer  = (char*) alignedMalloc(8+16*6*sizeof(int));
     char* vertexBuffer = (char*) alignedMalloc(12+16*9*sizeof(float)+4);
-    
+
+
+#if !defined(__MIC__)    
     rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer,1,3*sizeof(int));
     AssertError(RTC_INVALID_OPERATION);
     rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,1,3*sizeof(float));
@@ -800,7 +802,6 @@ namespace embree
     rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,0,3*sizeof(float)+3);
     AssertError(RTC_INVALID_OPERATION);
 
-#if defined(__RTCORE_BUFFER_STRIDE__) && !defined(__MIC__)
     rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer,0,3*sizeof(int));
     AssertNoError();
     rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,0,3*sizeof(float));
@@ -810,10 +811,12 @@ namespace embree
     AssertNoError();
     rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,12,9*sizeof(float));
     AssertNoError();
-#endif
+
 
     rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer,0,3*sizeof(int));
     AssertNoError();
+#endif
+
     rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,vertexBuffer,0,4*sizeof(float));
     AssertNoError();
 
