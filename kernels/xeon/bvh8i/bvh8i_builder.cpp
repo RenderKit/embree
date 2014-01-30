@@ -195,13 +195,66 @@ namespace embree
 	  assert(bvh8i_used_slots <= 8);
 
 	}
+
       DBG(DBG_PRINT(bvh8i_used_slots));
+
+      BVH8i::Node &b8 = bvh8i[bvh8i_node_index];
+
+      // try to pull up a child to fill nodes
+      if (bvh8i_used_slots < 8)
+	{	 
+	  DBG(std::cout << "PULL UP CHILD" << std::endl);
+	  ssize_t max_index = -1;
+	  ssize_t max_leaves = -1;
+
+	  for (size_t i=0;i<bvh8i_used_slots;i++)
+	    if (b8.children[i].isNode())
+	      if (b8.data[i] > max_leaves)
+		{
+		  max_leaves = b8.data[i];
+		  max_index = i;
+		}
+
+	  DBG(DBG_PRINT(*(avxi*)b8.data));
+	  DBG(DBG_PRINT(max_index));
+
+	  if (max_index != -1) 
+	    {
+	      BVH4i::NodeRef child = b8.children[max_index];
+	      BVH4i::Node *node4 = child.node(bvh4i);
+	      unsigned int children4 = node4->numValidChildren();
+	      DBG(DBG_PRINT(node4->numValidChildren()));
+
+	      b8.set(bvh8i_used_slots++,*node4,children4-1);
+	      node4->children[children4-1] = BVH4i::emptyNode;
+
+	      DBG(DBG_PRINT(node4->data[children4-1]));
+
+	      b8.data[max_index] -= node4->data[children4-1];
+
+	      DBG(DBG_PRINT(node4->numValidChildren()));
+
+	    }
+
+	  DBG(DBG_PRINT(*(avxi*)b8.data));
+	  DBG(DBG_PRINT(bvh8i_used_slots));
+	  
+	  for (size_t i=0;i<bvh8i_used_slots;i++)
+	    if (b8.children[i].isNode())
+	      {
+		BVH4i::NodeRef child = b8.children[i];
+		BVH4i::Node *node4 = child.node(bvh4i);
+		unsigned int children4 = node4->numValidChildren();
+		if (children4==1)
+		  b8.set(i,*node4,children4-1);
+		//if (BVH4i::NodeRef(b8.children[i]).isNode()) FATAL("isNode");
+	      }
+	}
 
       parent_offset = (unsigned int)(sizeof(BVH8i::Node) * bvh8i_node_index);
       
       bvh8i_node_dist[bvh8i_used_slots-1]++;
       
-      BVH8i::Node &b8 = bvh8i[bvh8i_node_index];
 
       DBG(
 	  {
