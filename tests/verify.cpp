@@ -1246,11 +1246,11 @@ namespace embree
     if ((size_t)ptr != 123) 
       return;
 
-    int* valid = (int*)valid_i;
+    unsigned int valid = *(unsigned int*)valid_i;
     for (size_t i=0; i<16; i++)
-      if (valid[i] == -1)
-        if (ray.primID[i] & 2) 
-          ray.geomID[i] = -1;
+	if (valid & ((unsigned int)1 << i))
+	  if (ray.primID[i] & 2) 
+	    ray.geomID[i] = -1;
   }
 
   bool rtcore_filter_intersect(RTCSceneFlags sflags, RTCGeometryFlags gflags)
@@ -1307,7 +1307,7 @@ namespace embree
 
 #endif
 
-#if defined(__MIC__)
+#if defined(__MIC__) && 1
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
@@ -2130,6 +2130,7 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
+
 
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 

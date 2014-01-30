@@ -240,7 +240,6 @@ namespace embree
 		{
 		  /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__) 
-
 		  mic_f org_max_dist_xyz = max_dist_xyz;
 
 		  /* did the ray hit one of the four triangles? */

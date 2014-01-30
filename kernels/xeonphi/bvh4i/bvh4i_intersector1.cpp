@@ -228,7 +228,6 @@ namespace embree
 	    {
 	      /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-              
 	      mic_f org_max_dist_xyz = max_dist_xyz;
 
 	      /* did the ray hit one of the four triangles? */
@@ -247,10 +246,10 @@ namespace embree
 		  const int geomID = tri_ptr->geomID();
 		  const int primID = tri_ptr->primID();
 
-		  if ( (tri_ptr->mask() & ray.mask) == 0 ) {
-		    m_final ^= m_tri;
-		    continue;
-		  }
+		  // if ( (tri_ptr->mask() & ray.mask) == 0 ) {
+		  //   m_final ^= m_tri;
+		  //   continue;
+		  // }
                 
 		  Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
 		  if (likely(!geom->hasIntersectionFilter1())) 
@@ -274,7 +273,6 @@ namespace embree
 		  m_final ^= m_tri;
 		}
 	      max_dist_xyz = ray.tfar;
-
 #else
               max_dist_xyz  = select(m_final,t,max_dist_xyz);
 	      const mic_f min_dist = vreduce_min(max_dist_xyz);
@@ -575,6 +573,7 @@ namespace embree
 	      const int geomID = tri_ptr->geomID();
 	      const int primID = tri_ptr->primID();                
 	      Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
+
 	      if (likely(!geom->hasOcclusionFilter1())) break;
                 
 	      if (runOcclusionFilter1(geom,ray,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) 
