@@ -91,7 +91,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT(features,BVH4BuilderRefitObjectSplit4TriangleMeshFast);
 
     /* select intersectors1 */
-    SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Bezier1iIntersector1);
+    SELECT_SYMBOL_AVX_AVX2              (features,BVH4Bezier1iIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle1Intersector1Moeller);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector1Moeller);
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4Triangle8Intersector1Moeller);

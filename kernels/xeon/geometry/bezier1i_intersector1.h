@@ -137,40 +137,18 @@ namespace embree
       const Vec3fa v2 = curve_in.p[2];
       const Vec3fa v3 = curve_in.p[3];
 
-      float ray_u = 0.0f;
-      float ray_tfar = ray.tfar;
-      bool hit = false;
-      
-      LinearSpace3f ray_space = rcp(frame(ray.dir));
+      /* transform control points into ray space */
+      LinearSpace3f ray_space = rcp(frame(ray.dir)); // FIXME: calculate once per ray
       Vec3fa w0 = xfmVector(ray_space,v0-ray.org); w0.w = v0.w;
       Vec3fa w1 = xfmVector(ray_space,v1-ray.org); w1.w = v1.w;
       Vec3fa w2 = xfmVector(ray_space,v2-ray.org); w2.w = v2.w;
       Vec3fa w3 = xfmVector(ray_space,v3-ray.org); w3.w = v3.w;
+
+      /* hit information */
+      float ray_u = 0.0f;
+      float ray_tfar = ray.tfar;
+      bool hit = false;
       
-#if 0
-      BezierCurve3D curve(w0,w1,w2,w3,0.0f,1.0f,0);
-      const Vec3fa v = curve.v3-curve.v0;
-      const Vec3fa w = -curve.v0;
-      const float d0 = w.x*v.x + w.y*v.y;
-      const float d1 = v.x*v.x + v.y*v.y;
-      const float b = clamp(d0/d1,0.0f,1.0f);
-      const Vec3fa d = curve.v0 + b*v;
-      const float dist = sqrt(d.x*d.x + d.y*d.y); 
-      if (unlikely(dist > curve.v0.w)) return;
-      const float t = d.z;
-      if (unlikely(t < ray.tnear || t > ray.tfar)) return;
-      ray.u = b;
-      ray.v = 0.0f;
-      ray.tfar = t;
-      const Vec3fa p = v0 + b*(v3-v0);
-      const Vec3fa h = ray.org + t*ray.dir;
-      ray.Ng = h-p;
-      ray.geomID = curve_in.geomID;
-      ray.primID = curve_in.primID;
-      return;
-
-#else
-
       /* push first curve onto stack */
       BezierCurve3D stack[32];
       new (&stack[0]) BezierCurve3D(w0,w1,w2,w3,0.0f,1.0f,4);
@@ -202,21 +180,21 @@ namespace embree
           }
         }
 
-        /* intersect with line */
+        /* approximative intersection with cone */
         const Vec3fa v = curve.v3-curve.v0;
         const Vec3fa w = -curve.v0;
         const float d0 = w.x*v.x + w.y*v.y;
         const float d1 = v.x*v.x + v.y*v.y;
         const float u = clamp(d0/d1,0.0f,1.0f);
-        const Vec3fa d = curve.v0 + u*v;
-        const float dist = sqrt(d.x*d.x + d.y*d.y); 
-        if (unlikely(dist > d.w)) continue;
-        //if (unlikely(dist > curve.v0.w)) continue;
-        const float t = d.z;
+        const Vec3fa p = curve.v0 + u*v;
+        const float d2 = p.x*p.x + p.y*p.y; 
+        const float r2 = p.w*p.w;
+        if (unlikely(d2 > r2)) continue;
+        const float t = p.z;
         if (unlikely(t < ray.tnear || t > ray_tfar)) continue;
-        hit = true;
         ray_u = curve.t0+u*(curve.t1-curve.t0);
         ray_tfar = t;
+        hit = true;
       }
 
       /* compute final hit data */
@@ -231,7 +209,6 @@ namespace embree
         ray.geomID = curve_in.geomID;
         ray.primID = curve_in.primID;
       }
-#endif
     }
 
     static __forceinline void intersect(Ray& ray, const Bezier1i* curves, size_t num, void* geom)
