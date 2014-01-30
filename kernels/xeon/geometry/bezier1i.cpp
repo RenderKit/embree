@@ -41,12 +41,6 @@ namespace embree
     const QuadraticBezierCurvesScene::QuadraticBezierCurves* curves = scene->getBezierCurves(geomID);
     const int vtx = curves->curve(primID);
     const Vec3fa& p0 = curves->vertex(vtx);
-    PRINT((&p0)[0]);
-    PRINT((&p0)[1]);
-    PRINT((&p0)[2]);
-    PRINT((&p0)[3]);
-    PRINT((void*)&p0);
-    PRINT((void*)&scene);
     new (dst) Bezier1i(&p0,geomID,primID,curves->mask);
     prims++;
   }

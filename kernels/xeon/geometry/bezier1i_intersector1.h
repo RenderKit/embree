@@ -78,6 +78,26 @@ namespace embree
       right.depth = depth-1;
     }
 
+    __forceinline void eval(const float t, Vec3fa& point, Vec3fa& tangent)
+    {
+      const float t0 = 1.0f - t, t1 = t;
+
+      const Vec3fa p00 = v0;
+      const Vec3fa p01 = v1;
+      const Vec3fa p02 = v2;
+      const Vec3fa p03 = v3;
+
+      const Vec3fa p10 = p00 * t0 + p01 * t1;
+      const Vec3fa p11 = p01 * t0 + p02 * t1;
+      const Vec3fa p12 = p02 * t0 + p03 * t1;
+      const Vec3fa p20 = p10 * t0 + p11 * t1;
+      const Vec3fa p21 = p11 * t0 + p12 * t1;
+      const Vec3fa p30 = p20 * t0 + p21 * t1;
+      
+      point = p30;
+      tangent = p21-p20;
+    }
+
     friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurve3D& curve) {
       return cout << "{ v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << ", depth = " << curve.depth << " }";
     }
@@ -117,6 +137,10 @@ namespace embree
       const Vec3fa v2 = curve_in.p[2];
       const Vec3fa v3 = curve_in.p[3];
 
+      float ray_u = 0.0f;
+      float ray_tfar = ray.tfar;
+      bool hit = false;
+      
       LinearSpace3f ray_space = rcp(frame(ray.dir));
       Vec3fa w0 = xfmVector(ray_space,v0-ray.org); w0.w = v0.w;
       Vec3fa w1 = xfmVector(ray_space,v1-ray.org); w1.w = v1.w;
@@ -189,18 +213,24 @@ namespace embree
         if (unlikely(dist > d.w)) continue;
         //if (unlikely(dist > curve.v0.w)) continue;
         const float t = d.z;
-        if (unlikely(t < ray.tnear || t > ray.tfar)) continue;
-        ray.u = curve.t0+u*(curve.t1-curve.t0);
-        ray.v = 0.0f;
-        ray.tfar = t;
-        //const Vec3fa p = v0 + u*(v3-v0);
-        //const Vec3fa h = ray.org + t*ray.dir;
-        ray.Ng = Vec3f(zero); //h-p;
+        if (unlikely(t < ray.tnear || t > ray_tfar)) continue;
+        hit = true;
+        ray_u = curve.t0+u*(curve.t1-curve.t0);
+        ray_tfar = t;
+      }
+
+      /* compute final hit data */
+      if (likely(hit)) 
+      {
+        BezierCurve3D curve(v0,v1,v2,v3,0.0f,1.0f,0);
+        Vec3fa P,T; curve.eval(ray.u,P,T);
+        ray.u = ray_u;
+        ray.v = 1.0f;
+        ray.tfar = ray_tfar;
+        ray.Ng = T;
         ray.geomID = curve_in.geomID;
         ray.primID = curve_in.primID;
       }
-
-      //PING;
 #endif
     }
 
