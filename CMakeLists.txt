@@ -89,6 +89,8 @@ IF (RTCORE_ENABLE_TASKLOGGER)
  ADD_DEFINITIONS(-D__LOG_TASKS__)
 ENDIF()
 
+SET(RTCORE_EXPORT_ALL_SYMBOLS OFF CACHE BOOL "Lets Embree shared library export all symbols.")
+
 ##############################################################
 # ISA configuration
 ##############################################################
