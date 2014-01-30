@@ -116,9 +116,9 @@ namespace embree
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const unsigned int d0 = *(unsigned int*)&tNear[r];
+          NodeRef c0 = node->child(r); const unsigned int d0 = ((unsigned int*)&tNear)[r];
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); const unsigned int d1 = *(unsigned int*)&tNear[r];
+          NodeRef c1 = node->child(r); const unsigned int d1 = ((unsigned int*)&tNear)[r];
           assert(c0 != BVH4i::emptyNode);
           assert(c1 != BVH4i::emptyNode);
           if (likely(mask == 0)) {
@@ -137,7 +137,7 @@ namespace embree
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          NodeRef c = node->child(r); unsigned int d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          NodeRef c = node->child(r); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           assert(c0 != BVH4i::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
@@ -148,7 +148,7 @@ namespace embree
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          c = node->child(r); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          c = node->child(r); d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           assert(c != BVH4i::emptyNode);
 	  if (likely(mask == 0)) {
 	    sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
@@ -159,7 +159,7 @@ namespace embree
 	  while(1)
 	    {
 	      r = __bscf(mask);
-	      c = node->child(r); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+	      c = node->child(r); d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
 	      if (unlikely(mask == 0)) break;
 	    }
 	  cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -415,9 +415,9 @@ namespace embree
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const unsigned int d0 = *(unsigned int*)&tNear[r];
+          NodeRef c0 = node->child(r); const unsigned int d0 = ((unsigned int*)&tNear)[r];
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); const unsigned int d1 = *(unsigned int*)&tNear[r];
+          NodeRef c1 = node->child(r); const unsigned int d1 = ((unsigned int*)&tNear)[r];
           assert(c0 != BVH4i::emptyNode);
           assert(c1 != BVH4i::emptyNode);
           if (likely(mask == 0)) {

@@ -104,6 +104,7 @@ namespace embree
 #if defined(__USE_RAY_MASK__)
     avxi mask;     //!< geometry mask
 #endif
+
   };
 #endif
 
