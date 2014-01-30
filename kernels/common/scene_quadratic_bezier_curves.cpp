@@ -167,6 +167,10 @@ namespace embree
     }
   }
 
+  void QuadraticBezierCurvesScene::QuadraticBezierCurves::setUserData (void* ptr, bool ispc) {
+    userPtr = ptr;
+  }
+
   void QuadraticBezierCurvesScene::QuadraticBezierCurves::immutable () 
   {
     built = true;

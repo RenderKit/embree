@@ -178,19 +178,43 @@ namespace embree
       const avxf d2 = p.x*p.x + p.y*p.y; 
       const avxf r = max(p.w,ray.org.w+ray.dir.w*t);
       const avxf r2 = r*r;
-      const avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
+      avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
       if (unlikely(none(valid))) return;
       const float one_over_8 = 1.0f/8.0f;
-      const size_t i = select_min(valid,t);
-      const float uu = (float(i)+u[i])*one_over_8;
-      ray.u = uu;
-      ray.v = 0.0f;
-      ray.tfar = t[i];
-      BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
-      Vec3fa P,T; curve3D.eval(uu,P,T);
-      ray.Ng = T;
-      ray.geomID = curve_in.geomID;
-      ray.primID = curve_in.primID;
+      size_t i = select_min(valid,t);
+
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+      int geomID = curve_in.geomID;
+      Geometry* geometry = ((Scene*)geom)->get(geomID);
+      if (!likely(geometry->hasIntersectionFilter1())) 
+      {
+#endif
+        /* update hit information */
+        const float uu = (float(i)+u[i])*one_over_8;
+        BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+        Vec3fa P,T; curve3D.eval(uu,P,T);
+        ray.u = uu;
+        ray.v = 0.0f;
+        ray.tfar = t[i];
+        ray.Ng = T;
+        ray.geomID = curve_in.geomID;
+        ray.primID = curve_in.primID;
+#if defined(__INTERSECTION_FILTER__)
+          return;
+      }
+
+      while (true) 
+      {
+        const float uu = (float(i)+u[i])*one_over_8;
+        BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+        Vec3fa P,T; curve3D.eval(uu,P,T);
+        if (runIntersectionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,curve_in.primID)) return;
+        valid[i] = 0;
+        if (none(valid)) return;
+        i = select_min(valid,t);
+      }
+#endif
     }
 
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
@@ -230,8 +254,31 @@ namespace embree
       const avxf d2 = p.x*p.x + p.y*p.y; 
       const avxf r = p.w+ray.org.w+ray.dir.w*t;
       const avxf r2 = r*r;
-      const avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
-      return any(valid);
+      avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
+      if (none(valid)) return false;
+
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+
+      size_t i = select_min(valid,t);
+      int geomID = curve_in.geomID;
+      Geometry* geometry = ((Scene*)geom)->get(geomID);
+      if (likely(!geometry->hasOcclusionFilter1())) return true;
+      const float one_over_8 = 1.0f/8.0f;
+
+      while (true) 
+      {
+        /* calculate hit information */
+        const float uu = (float(i)+u[i])*one_over_8;
+        BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+        Vec3fa P,T; curve3D.eval(uu,P,T);
+        if (runOcclusionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,curve_in.primID)) break;
+        valid[i] = 0;
+        if (none(valid)) return false;
+        i = select_min(valid,t);
+      }
+#endif
+      return true;
     }
 
     static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom) 

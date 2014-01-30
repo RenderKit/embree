@@ -16,12 +16,59 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+#define USE_OCCLUSION_FILTER 1
+
 /* scene data */
 RTCScene g_scene = NULL;
 Vec3f* colors = NULL;
 
 /* render function to use */
 renderPixelFunc renderPixel;
+float T_hair = 0.3f;
+
+Vertex* vertices = NULL;
+int*    indices = NULL;
+
+__forceinline Vec3fa evalBezier(const int primID, const float t)
+{
+  const float t0 = 1.0f - t, t1 = t;
+  
+  const int i = indices[primID];
+  const Vec3fa p00 = *(Vec3fa*)&vertices[i+0];
+  const Vec3fa p01 = *(Vec3fa*)&vertices[i+1];
+  const Vec3fa p02 = *(Vec3fa*)&vertices[i+2];
+  const Vec3fa p03 = *(Vec3fa*)&vertices[i+3];
+
+  const Vec3fa p10 = p00 * t0 + p01 * t1;
+  const Vec3fa p11 = p01 * t0 + p02 * t1;
+  const Vec3fa p12 = p02 * t0 + p03 * t1;
+  const Vec3fa p20 = p10 * t0 + p11 * t1;
+  const Vec3fa p21 = p11 * t0 + p12 * t1;
+  const Vec3fa p30 = p20 * t0 + p21 * t1;
+  
+  return p30;
+  //tangent = p21-p20;
+}
+
+/* extended ray structure that includes total transparency along the ray */
+struct RTCRay2
+{
+  Vec3fa org;     //!< Ray origin
+  Vec3fa dir;     //!< Ray direction
+  float tnear;   //!< Start of ray segment
+  float tfar;    //!< End of ray segment
+  float time;    //!< Time of this ray for motion blur.
+  int mask;      //!< used to mask out objects during traversal
+  Vec3fa Ng;      //!< Geometric normal.
+  float u;       //!< Barycentric u coordinate of hit
+  float v;       //!< Barycentric v coordinate of hit
+  int geomID;    //!< geometry ID
+  int primID;    //!< primitive ID
+  int instID;    //!< instance ID
+
+  // ray extensions
+  float transparency; //!< accumulated transparency value
+};
 
 /* adds a cube to the scene */
 unsigned int addCube (RTCScene scene_i)
@@ -97,12 +144,58 @@ Vec3f sampleSphere(const float& u, const float& v)
 
 Vec3f noise(Vec3f p, float t) {
   //return div(p,length(p));
-  return p + Vec3f(sin(4.0f*t),4.0f*t,cos(4.0f*t));
+  return p + Vec3f(sin(2.0f*t),4.0f*t,cos(2.0f*t));
   //return p + Vec3f(4.0f*t,4.0f*t,0.0f);
 }
 
-Vertex* vertices = NULL;
-int*    indices = NULL;
+#if USE_OCCLUSION_FILTER
+
+/* occlusion filter function */
+void occlusionFilter(void* ptr, RTCRay2& shadow)
+{
+  /* calculate how much the curve occludes the ray */
+  float sizeRay = max(shadow.org.w + shadow.tfar*shadow.dir.w, 0.00001f);
+  float sizeCurve = evalBezier(shadow.primID,shadow.u).w;
+  float T = 1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
+  T *= shadow.transparency;
+  shadow.transparency = T;
+  if (T != 0.0f) shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+}
+
+float occluded(RTCScene scene, RTCRay2& shadow)
+{
+  shadow.transparency = 1.0f;
+  rtcOccluded(scene,(RTCRay&)shadow);
+  return shadow.transparency;
+}
+
+#else
+
+float occluded(RTCScene scene, RTCRay2& shadow)
+{
+  float T = 1.0f;
+  while (true) 
+  {
+    rtcIntersect(scene,(RTCRay&)shadow);
+    if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) break;
+    if (shadow.geomID != 0) return 0.0f;
+    
+    /* calculate how much the curve occludes the ray */
+    float sizeRay = max(shadow.org.w + shadow.tfar*shadow.dir.w, 0.00001f);
+    float sizeCurve = evalBezier(shadow.primID,shadow.u).w;
+    T *= 1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
+
+    /* continue shadow ray */
+    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.tnear = 1.001f*shadow.tfar;
+    shadow.tfar = inf;
+  }
+  return T;
+}
+
+#endif
+
+
 
 /* adds hair to the scene */
 unsigned int addHair (RTCScene scene_i)
@@ -123,7 +216,7 @@ unsigned int addHair (RTCScene scene_i)
 
 #else
   int seed = 879;
-  const int numCurves = 1000;
+  const int numCurves = 400;
   const int numCurveSegments = 4;
   const int numCurvePoints = 3*numCurveSegments+1;
   const float R = 0.01f;
@@ -176,6 +269,9 @@ unsigned int addHair (RTCScene scene_i)
     }
   }
 
+#if USE_OCCLUSION_FILTER
+  rtcSetOcclusionFilterFunction(scene_i,geomID,(RTCFilterFunc)occlusionFilter);
+#endif
   //rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
   //rtcUnmapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
 
@@ -229,51 +325,6 @@ extern "C" void device_init (int8* cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
-}
-
-__forceinline Vec3fa evalBezier(const int primID, const float t)
-{
-  const float t0 = 1.0f - t, t1 = t;
-  
-  const int i = indices[primID];
-  const Vec3fa p00 = *(Vec3fa*)&vertices[i+0];
-  const Vec3fa p01 = *(Vec3fa*)&vertices[i+1];
-  const Vec3fa p02 = *(Vec3fa*)&vertices[i+2];
-  const Vec3fa p03 = *(Vec3fa*)&vertices[i+3];
-
-  const Vec3fa p10 = p00 * t0 + p01 * t1;
-  const Vec3fa p11 = p01 * t0 + p02 * t1;
-  const Vec3fa p12 = p02 * t0 + p03 * t1;
-  const Vec3fa p20 = p10 * t0 + p11 * t1;
-  const Vec3fa p21 = p11 * t0 + p12 * t1;
-  const Vec3fa p30 = p20 * t0 + p21 * t1;
-  
-  return p30;
-  //tangent = p21-p20;
-}
-
-float T_hair = 0.3f;
-
-float occluded(RTCScene scene, RTCRay& shadow)
-{
-  float T = 1.0f;
-  while (true) 
-  {
-    rtcIntersect(scene,shadow);
-    if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) break;
-    if (shadow.geomID != 0) return 0.0f;
-    
-    /* calculate how much the curve occludes the ray */
-    float sizeRay = max(shadow.org.w + shadow.tfar*shadow.dir.w, 0.00001f);
-    float sizeCurve = evalBezier(shadow.primID,shadow.u).w;
-    T *= 1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
-
-    /* continue shadow ray */
-    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-    shadow.tnear = 1.001f*shadow.tfar;
-    shadow.tfar = inf;
-  }
-  return T;
 }
 
 /*! Anisotropic power cosine microfacet distribution. */
@@ -344,7 +395,7 @@ public:
 Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
-  RTCRay ray;
+  RTCRay2 ray;
   ray.org = p;
   ray.org.w = 0.0f;
   ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
@@ -363,7 +414,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   while (true)
   {
     /* intersect ray with scene */
-    rtcIntersect(g_scene,ray);
+    rtcIntersect(g_scene,(RTCRay&)ray);
   
     /* exit if we hit environment */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
@@ -410,7 +461,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     Vec3fa lightIntensity = Vec3fa(1.0f);
     
     /* initialize shadow ray */
-    RTCRay shadow;
+    RTCRay2 shadow;
     shadow.org = add(ray.org,mul(ray.tfar,ray.dir));
     shadow.org.w = ray.org.w+ray.tfar*ray.dir.w;
     shadow.dir = neg(lightDir);

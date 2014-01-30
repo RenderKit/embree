@@ -123,7 +123,7 @@ namespace embree
 
   void Geometry::setIntersectionFilterFunction (RTCFilterFunc filter, bool ispc) 
   {
-    if (type != TRIANGLE_MESH) {
+    if (type != TRIANGLE_MESH && type != QUADRATIC_BEZIER_CURVES) {
       recordError(RTC_INVALID_OPERATION); 
       return;
     }
@@ -132,7 +132,7 @@ namespace embree
     
   void Geometry::setIntersectionFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
   { 
-    if (type != TRIANGLE_MESH) {
+    if (type != TRIANGLE_MESH && type != QUADRATIC_BEZIER_CURVES) {
       recordError(RTC_INVALID_OPERATION); 
       return;
     }
@@ -143,7 +143,7 @@ namespace embree
     
   void Geometry::setIntersectionFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
   { 
-    if (type != TRIANGLE_MESH) {
+    if (type != TRIANGLE_MESH && type != QUADRATIC_BEZIER_CURVES) {
       recordError(RTC_INVALID_OPERATION); 
       return;
     }
@@ -154,7 +154,7 @@ namespace embree
   
   void Geometry::setIntersectionFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
   { 
-    if (type != TRIANGLE_MESH) {
+    if (type != TRIANGLE_MESH && type != QUADRATIC_BEZIER_CURVES) {
       recordError(RTC_INVALID_OPERATION); 
       return;
     }
@@ -165,7 +165,7 @@ namespace embree
 
   void Geometry::setOcclusionFilterFunction (RTCFilterFunc filter, bool ispc) 
   {
-    if (type != TRIANGLE_MESH) {
+    if (type != TRIANGLE_MESH && type != QUADRATIC_BEZIER_CURVES) {
       recordError(RTC_INVALID_OPERATION); 
       return;
     }
@@ -174,7 +174,7 @@ namespace embree
     
   void Geometry::setOcclusionFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
   { 
-    if (type != TRIANGLE_MESH) {
+    if (type != TRIANGLE_MESH && type != QUADRATIC_BEZIER_CURVES) {
       recordError(RTC_INVALID_OPERATION); 
       return;
     }
@@ -185,7 +185,7 @@ namespace embree
     
   void Geometry::setOcclusionFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
   { 
-    if (type != TRIANGLE_MESH) {
+    if (type != TRIANGLE_MESH && type != QUADRATIC_BEZIER_CURVES) {
       recordError(RTC_INVALID_OPERATION); 
       return;
     }
@@ -196,7 +196,7 @@ namespace embree
   
   void Geometry::setOcclusionFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
   { 
-    if (type != TRIANGLE_MESH) {
+    if (type != TRIANGLE_MESH && type != QUADRATIC_BEZIER_CURVES) {
       recordError(RTC_INVALID_OPERATION); 
       return;
     }
