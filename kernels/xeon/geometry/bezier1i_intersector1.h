@@ -98,6 +98,15 @@ namespace embree
       tangent = p21-p20;
     }
 
+    __forceinline avx4f eval(const avxf& c0, const avxf& c1, const avxf& c2, const avxf& c3)
+    {
+      const avx4f p00 = avx4f(v0);
+      const avx4f p01 = avx4f(v1);
+      const avx4f p02 = avx4f(v2);
+      const avx4f p03 = avx4f(v3);
+      return c0*p00 + c1*p01 + c2*p02 + c3*p03; // FIXME: use fmadd
+    }
+
     friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurve3D& curve) {
       return cout << "{ v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << ", depth = " << curve.depth << " }";
     }
@@ -122,6 +131,97 @@ namespace embree
     return max(box.lower.x,box.lower.y) <= 0.0f && 0.0f <= min(box.upper.x,box.upper.y);
 #endif
   }
+
+#if 1
+
+  /*! Intersector for a single ray with a bezier curve. */
+  struct Bezier1iIntersector1
+  {
+    typedef Bezier1i Primitive;
+
+    static __forceinline void intersect(Ray& ray, const Bezier1i& curve_in, const void* geom)
+    {
+      /* load bezier curve control points */
+      STAT3(normal.trav_prims,1,1,1);
+      const Vec3fa v0 = curve_in.p[0];
+      const Vec3fa v1 = curve_in.p[1];
+      const Vec3fa v2 = curve_in.p[2];
+      const Vec3fa v3 = curve_in.p[3];
+
+      /* transform control points into ray space */
+      LinearSpace3f ray_space = rcp(frame(ray.dir)); // FIXME: calculate once per ray
+      Vec3fa w0 = xfmVector(ray_space,v0-ray.org); w0.w = v0.w;
+      Vec3fa w1 = xfmVector(ray_space,v1-ray.org); w1.w = v1.w;
+      Vec3fa w2 = xfmVector(ray_space,v2-ray.org); w2.w = v2.w;
+      Vec3fa w3 = xfmVector(ray_space,v3-ray.org); w3.w = v3.w;
+      BezierCurve3D bezier(w0,w1,w2,w3,0.0f,1.0f,4);
+
+      /* calculate factors to subdivide 3 levels at once */ // FIXME: precalculate these
+      /*const float dt = 1.0f/8.0f;
+      const avxf t1 = avxf(step)*dt;
+      const avxf t0 = 1.0f-t1;
+      const avxf c0 = t0 * t0 * t0;
+      const avxf c1 = 3.0f * t1* t0 * t0;
+      const avxf c2 = 3.0f * t1* t1 * t0;
+      const avxf c3 = t1 * t1 * t1;
+      const avxf tt1 = avxf(step)*dt+avxf(dt);
+      const avxf tt0 = 1.0f-tt1;
+      const avxf e0 = tt0 * tt0 * tt0;
+      const avxf e1 = 3.0f * tt1* tt0 * tt0;
+      const avxf e2 = 3.0f * tt1* tt1 * tt0;
+      const avxf e3 = tt1 * tt1 * tt1;*/
+      const avx4f p0 = bezier.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+      const avx4f p1 = bezier.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+      /*const avx3f p1 = avx3f(avxf::shift_right(bezier.w3.x,p0.x),
+                             avxf::shift_right(bezier.w3.x,p0.x)
+                             avxf::shift_right(bezier.w3.x,p0.x));*/
+
+      /* approximative intersection with cone */
+      const avx4f v = p1-p0;
+      const avx4f w = -p0;
+      const avxf d0 = w.x*v.x + w.y*v.y;
+      const avxf d1 = v.x*v.x + v.y*v.y;
+      const avxf u = clamp(d0/d1,avxf(zero),avxf(one));
+      const avx4f p = p0 + u*v;
+      const avxf d2 = p.x*p.x + p.y*p.y; 
+      const avxf r2 = p.w*p.w;
+      const avxf t = p.z;
+      const avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
+      int mask = movemask(valid);
+      const float one_over_8 = 1.0f/8.0f;
+      while (mask) {
+        int i = __bscf(mask); 
+        if (t[i] >= ray.tfar) continue;
+        ray.u = (float(i)+u[i])*one_over_8;
+        ray.v = 0.0f;
+        ray.tfar = t[i];
+        ray.Ng = Vec3fa(zero);
+        ray.geomID = curve_in.geomID;
+        ray.primID = curve_in.primID;
+      }
+    }
+
+    static __forceinline void intersect(Ray& ray, const Bezier1i* curves, size_t num, void* geom)
+    {
+      for (size_t i=0; i<num; i++)
+        intersect(ray,curves[i],geom);
+    }
+
+    static __forceinline bool occluded(Ray& ray, const Bezier1i& curve_in, const void* geom) {
+      return false;
+    }
+
+    static __forceinline bool occluded(Ray& ray, const Bezier1i* curves, size_t num, void* geom) 
+    {
+      for (size_t i=0; i<num; i++) 
+        if (occluded(ray,curves[i],geom))
+          return true;
+
+      return false;
+    }
+  };
+
+#else
 
   /*! Intersector for a single ray with a bezier curve. */
   struct Bezier1iIntersector1
@@ -230,6 +330,7 @@ namespace embree
       return false;
     }
   };
+#endif
 }
 
 #endif

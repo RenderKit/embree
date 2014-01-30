@@ -21,6 +21,11 @@
 
 namespace embree
 {
+#if defined(__AVX__)
+  extern avxf coeff0[4];
+  extern avxf coeff1[4];
+#endif
+
   struct Bezier1i
   {
   public:

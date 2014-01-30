@@ -166,6 +166,7 @@ namespace embree
   typedef Vec3<avxi> avx3i;
   typedef Vec2<avxf> avx2f;
   typedef Vec3<avxf> avx3f;
+  typedef Vec4<avxf> avx4f;
 #endif
 
 #if defined (__MIC__)
