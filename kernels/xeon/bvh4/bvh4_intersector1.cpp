@@ -35,9 +35,9 @@ namespace embree
     void BVH4Intersector1<PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
     {
       /*! stack state */
-      StackItem stack[stackSize];  //!< stack of nodes 
-      StackItem* stackPtr = stack+1;        //!< current stack pointer
-      StackItem* stackEnd = stack+stackSize;
+      StackItemInt32<NodeRef> stack[stackSize];  //!< stack of nodes 
+      StackItemInt32<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
+      StackItemInt32<NodeRef>* stackEnd = stack+stackSize;
       stack[0].ptr = bvh->root;
       stack[0].dist = neg_inf;
       
@@ -81,7 +81,7 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->ptr);
         
         /*! if popped node is too far, pop next one */
-        if (unlikely(stackPtr->dist > ray.tfar))
+        if (unlikely(*(float*)&stackPtr->dist > ray.tfar))
           continue;
         
         /* downtraversal loop */
@@ -135,9 +135,9 @@ namespace embree
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const float d0 = tNear[r];
+          NodeRef c0 = node->child(r); const unsigned int d0 = ((unsigned int*)&tNear)[r];
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); const float d1 = tNear[r];
+          NodeRef c1 = node->child(r); const unsigned int d1 = ((unsigned int*)&tNear)[r];
           assert(c0 != BVH4::emptyNode);
           assert(c1 != BVH4::emptyNode);
           if (likely(mask == 0)) {
@@ -156,7 +156,7 @@ namespace embree
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          NodeRef c = node->child(r); float d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          NodeRef c = node->child(r); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           assert(c != BVH4::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
@@ -167,7 +167,7 @@ namespace embree
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          c = node->child(r); d = tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          c = node->child(r); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           assert(c != BVH4::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -179,7 +179,6 @@ namespace embree
         PrimitiveIntersector::intersect(ray,prim,num,bvh->geometry);
         ray_far = ray.tfar;
       }
-      AVX_ZERO_UPPER();
     }
     
     template<typename PrimitiveIntersector>
@@ -281,9 +280,9 @@ namespace embree
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const float d0 = tNear[r];
+          NodeRef c0 = node->child(r); const unsigned int d0 = ((unsigned int*)&tNear)[r];
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); const float d1 = tNear[r];
+          NodeRef c1 = node->child(r); const unsigned int d1 = ((unsigned int*)&tNear)[r];
           assert(c0 != BVH4::emptyNode);
           assert(c1 != BVH4::emptyNode);
           if (likely(mask == 0)) {

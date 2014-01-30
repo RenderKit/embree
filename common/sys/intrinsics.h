@@ -171,6 +171,13 @@ __forceinline int __bscf(int& v)
   return i;
 }
 
+__forceinline unsigned int __bscf(unsigned int& v) 
+{
+  unsigned int i = __bsf(v);
+  v &= v-1;
+  return i;
+}
+
 __forceinline size_t __bscf(size_t& v) 
 {
   size_t i = __bsf(v);
@@ -293,6 +300,10 @@ __forceinline size_t __bsf(size_t v) {
   size_t r = 0; asm ("bsf %1,%0" : "=r"(r) : "r"(v)); return r;
 }
 
+__forceinline unsigned int __bsf(unsigned int v) {
+  unsigned int r = 0; asm ("bsf %1,%0" : "=r"(r) : "r"(v)); return r;
+}
+
 __forceinline size_t __bsr(size_t v) {
   size_t r = 0; asm ("bsr %1,%0" : "=r"(r) : "r"(v)); return r;
 }
@@ -310,6 +321,14 @@ __forceinline size_t __btr(size_t v, size_t i) {
 }
 
 __forceinline int bitscan(int v) {
+#if defined(__AVX2__) 
+  return _tzcnt_u32(v);
+#else
+  return __bsf(v);
+#endif
+}
+
+__forceinline unsigned int bitscan(unsigned int v) {
 #if defined(__AVX2__) 
   return _tzcnt_u32(v);
 #else
@@ -342,14 +361,29 @@ __forceinline int clz(const int x)
 __forceinline int __bscf(int& v) 
 {
   int i = bitscan(v);
+#if defined(__AVX2__)
+  v &= v-1;
+#else
   v = __btc(v,i);
+#endif
+  return i;
+}
+
+__forceinline unsigned int __bscf(unsigned int& v) 
+{
+  unsigned int i = bitscan(v);
+  v &= v-1;
   return i;
 }
 
 __forceinline size_t __bscf(size_t& v) 
 {
   size_t i = bitscan(v);
+#if defined(__AVX2__)
+  v &= v-1;
+#else
   v = __btc(v,i);
+#endif
   return i;
 }
 
