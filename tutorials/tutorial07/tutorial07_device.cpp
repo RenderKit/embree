@@ -50,6 +50,8 @@ __forceinline Vec3fa evalBezier(const int primID, const float t)
   //tangent = p21-p20;
 }
 
+struct HitList;
+
 /* extended ray structure that includes total transparency along the ray */
 struct RTCRay2
 {
@@ -68,6 +70,14 @@ struct RTCRay2
 
   // ray extensions
   float transparency; //!< accumulated transparency value
+  HitList* list;
+};
+
+struct HitList
+{
+  RTCRay2 data[128];
+  RTCRay2* rays[128];
+  size_t num;
 };
 
 /* adds a cube to the scene */
@@ -149,6 +159,18 @@ Vec3f noise(Vec3f p, float t) {
 }
 
 #if USE_OCCLUSION_FILTER
+
+/* intersection filter function */
+void intersectionFilter(HitList* ptr, RTCRay2& shadow)
+{
+  /* calculate how much the curve occludes the ray */
+  float sizeRay = max(shadow.org.w + shadow.tfar*shadow.dir.w, 0.00001f);
+  float sizeCurve = evalBezier(shadow.primID,shadow.u).w;
+  float T = 1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
+  T *= shadow.transparency;
+  shadow.transparency = T;
+  if (T != 0.0f) shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+}
 
 /* occlusion filter function */
 void occlusionFilter(void* ptr, RTCRay2& shadow)
@@ -391,6 +413,7 @@ public:
   float norm2;     //!< Normalization constant for calculating the distribution.
 };
 
+#if 1
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
@@ -490,6 +513,113 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   }
   return color;
 }
+
+#else
+
+/* task that renders a single screen tile */
+Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+{
+  /* initialize ray */
+  RTCRay2 ray;
+  ray.org = p;
+  ray.org.w = 0.0f;
+  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  Vec3fa dir1 = normalize(add(mul(x+1,vx), mul(y+1,vy), vz));
+  ray.dir.w = 0.5f*0.707f*length(dir1-ray.dir);
+  ray.tnear = 0.0f;
+  ray.tfar = inf;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = 0;
+
+  Vec3fa color = Vec3f(0.0f);
+  float weight = 1.0f;
+
+  HitList hits;
+  ray.hits = &hits;
+
+  while (true)
+  {
+    /* intersect ray with scene */
+    rtcIntersect(g_scene,(RTCRay&)ray);
+  
+    /* exit if we hit environment */
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+      return color;
+
+    /* calculate transmissivity of hair */
+    AnisotropicPowerCosineDistribution brdf;
+
+    float Th = 0.0f;
+    if (ray.geomID == 0) 
+    {
+      /* calculate how much the curve occludes the ray */
+      float sizeRay = max(ray.org.w + ray.tfar*ray.dir.w, 0.00001f);
+      float sizeCurve = evalBezier(ray.primID,ray.u).w;
+      Th = 1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
+
+      /* calculate tangent space */
+      const Vec3fa dx = normalize(ray.Ng);
+      const Vec3fa dy = normalize(cross(ray.dir,dx));
+      const Vec3fa dz = normalize(cross(dy,dx));
+
+      /* generate anisotropic BRDF */
+      //const Vec3fa color(0.5f,0.4f,0.4f);
+      const Vec3fa color(1.0f);
+      new (&brdf) AnisotropicPowerCosineDistribution(color,dx,10.0f,dy,1.0f,dz);
+    }
+    else 
+    {
+      /* calculate tangent space */
+      const Vec3fa dz = normalize(ray.Ng);
+      const Vec3fa dx = normalize(cross(dz,ray.dir));
+      const Vec3fa dy = normalize(cross(dz,dx));
+      
+      /* generate isotropic BRDF */
+      const Vec3fa color(1.0f,1.0f,1.0f);
+      new (&brdf) AnisotropicPowerCosineDistribution(color,dx,1.0f,dy,1.0f,dz);
+    }
+    
+    /* calculate shadows */
+    //Vec3f diffuse = Vec3f(0.5f,0.4f,0.4f); //colors[ray.primID];
+    //if (ray.geomID == 1) diffuse = Vec3f(1.0f,1.0f,1.0f);
+    //color = add(color,mul(diffuse,0.5f));
+    Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
+    Vec3fa lightIntensity = Vec3fa(1.0f);
+    
+    /* initialize shadow ray */
+    RTCRay2 shadow;
+    shadow.org = add(ray.org,mul(ray.tfar,ray.dir));
+    shadow.org.w = ray.org.w+ray.tfar*ray.dir.w;
+    shadow.dir = neg(lightDir);
+    shadow.dir.w = 0.0f;
+    shadow.tnear = 0.1f;
+    shadow.tfar = inf;
+    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.primID = RTC_INVALID_GEOMETRY_ID;
+    shadow.mask = -1;
+    shadow.time = 0;
+    
+    /* trace shadow ray */
+    float T = occluded(g_scene,shadow);
+    
+    /* add light contribution */
+    Vec3fa c = brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
+    //if (ray.geomID == 0) PRINT(c);
+    //Vec3fa c = clamp(dot(neg(ray.dir),brdf.dz),0.0f,1.0f);
+    color = add(color,mul(weight*(1.0f-Th),mul(c,mul(T,lightIntensity)))); //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
+    weight *= Th;
+
+    /* continue ray */
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.tnear = 1.001f*ray.tfar;
+    ray.tfar = inf;
+  }
+  return color;
+}
+
+#endif
 
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
