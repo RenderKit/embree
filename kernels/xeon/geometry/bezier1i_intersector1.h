@@ -161,11 +161,11 @@ namespace embree
       Vec3fa w1 = xfmVector(pre.ray_space,v1-ray.org); w1.w = v1.w;
       Vec3fa w2 = xfmVector(pre.ray_space,v2-ray.org); w2.w = v2.w;
       Vec3fa w3 = xfmVector(pre.ray_space,v3-ray.org); w3.w = v3.w;
-      BezierCurve3D bezier(w0,w1,w2,w3,0.0f,1.0f,4);
+      BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
 
       /* subdivide 3 levels at once */ 
-      const avx4f p0 = bezier.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-      const avx4f p1 = bezier.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+      const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+      const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
 
       /* approximative intersection with cone */
       const avx4f v = p1-p0;
@@ -178,18 +178,18 @@ namespace embree
       const avxf r2 = p.w*p.w;
       const avxf t = p.z;
       const avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
-      int mask = movemask(valid);
+      if (unlikely(none(valid))) return;
       const float one_over_8 = 1.0f/8.0f;
-      while (mask) {
-        int i = __bscf(mask); 
-        if (t[i] >= ray.tfar) continue;
-        ray.u = (float(i)+u[i])*one_over_8;
-        ray.v = 0.0f;
-        ray.tfar = t[i];
-        ray.Ng = Vec3fa(zero);
-        ray.geomID = curve_in.geomID;
-        ray.primID = curve_in.primID;
-      }
+      const size_t i = select_min(valid,t);
+      const float uu = (float(i)+u[i])*one_over_8;
+      ray.u = uu;
+      ray.v = 0.0f;
+      ray.tfar = t[i];
+      BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+      Vec3fa P,T; curve3D.eval(uu,P,T);
+      ray.Ng = T;
+      ray.geomID = curve_in.geomID;
+      ray.primID = curve_in.primID;
     }
 
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
