@@ -80,7 +80,7 @@ namespace embree
     __forceinline T& operator[](size_t i) 
     {
       assert(i<num);
-#if defined(__RTCORE_BUFFER_STRIDE__)
+#if defined(__BUFFER_STRIDE__)
       return *(T*)(ptr_ofs + i*stride);
 #else
       return *(T*)(ptr_ofs + i*sizeof(T));
@@ -91,7 +91,7 @@ namespace embree
     __forceinline const T& operator[](size_t i) const 
     {
       assert(i<num);
-#if defined(__RTCORE_BUFFER_STRIDE__)
+#if defined(__BUFFER_STRIDE__)
       return *(const T*)(ptr_ofs + i*stride);
 #else
       return *(const T*)(ptr_ofs + i*sizeof(T));

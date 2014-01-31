@@ -109,8 +109,11 @@
 //#define __USE_RAY_MASK__
 //#define __USE_STAT_COUNTERS__
 //#define __BACKFACE_CULLING__
-//#define __FIX_RAYS__
+#define __INTERSECTION_FILTER__
+#define __BUFFER_STRIDE__
 //#define __SPINLOCKS__
+//#define __LOG_TASKS__
+//#define __FIX_RAYS__
 #endif
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)

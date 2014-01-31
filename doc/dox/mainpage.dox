@@ -49,6 +49,15 @@ included in the Embree kernel package is now available in a separate
 GIT repository (see <a href="renderer.html">Embree Example
 Renderer</a>).</p>
 
+<h3>What's New in Embree 2.2?</h3>
+<ul>
+  <li>Support for Motion Blur also on Xeon Phi&trade;</li>
+  <li>Support for intersection filter callback functions</li>
+  <li>Support for buffer sharing with the application</li>
+  <li>Experimental support for 8-wide BVHs for AVX</li>
+</ul>    
+</ul>
+
 <h3>What's New in Embree 2.1?</h3>
 <ul>
   <li>new future proof API with a strong focus on supporting dynamic scenes</li>
@@ -59,8 +68,8 @@ Renderer</a>).</p>
 <ul style="padding-left:20px">
   <li>fast adaptive Morton code-based builder (w/o SAH-based top-level
   rebuild)</li>
-  <li>both the SAH and Morton code-based builders got faster (Xeon Phi)</li>
-  <li>new variant of the SAH-based builder using triangle pre-splits (Xeon Phi)</li>
+  <li>both the SAH and Morton code-based builders got faster (Xeon Phi&trade;)</li>
+  <li>new variant of the SAH-based builder using triangle pre-splits (Xeon Phi&trade;)</li>
 </ul>    
 </ul>
 

@@ -461,7 +461,7 @@ and vertex buffers:</p>
 
 <pre><code>unsigned geomID = rtcNewTriangleMesh(scene,geomFlags,numTriangles,numVertices,1);
 rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexPtr,0,3*sizeof(float));
-rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER ,indexPtr ,0,3*sizeof(int));
+rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,indexPtr ,0,3*sizeof(int));
 </code></pre>
 
 <p>Sharing buffers can significantly reduce the memory required by the

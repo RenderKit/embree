@@ -38,7 +38,7 @@ namespace embree
 
   void Buffer::set(void* ptr_in, size_t ofs_in, size_t stride_in)
   {
-#if !defined(__RTCORE_BUFFER_STRIDE__)
+#if !defined(__BUFFER_STRIDE__)
     if (stride_in != stride) {
       recordError(RTC_INVALID_OPERATION);
       return;

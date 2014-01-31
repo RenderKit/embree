@@ -2155,7 +2155,7 @@ namespace embree
     //POSITIVE("deformable_geometry",       rtcore_deformable_geometry()); // FIXME
     POSITIVE("unmapped_before_commit",    rtcore_unmapped_before_commit());
 
-#if defined(__RTCORE_BUFFER_STRIDE__)
+#if defined(__BUFFER_STRIDE__)
     POSITIVE("buffer_stride",             rtcore_buffer_stride());
 #endif
 
