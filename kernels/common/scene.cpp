@@ -45,12 +45,9 @@ namespace embree
 
     g_top_accel = g_tri_accel;
 
-    if (unlikely(numTriangleMeshes2 > 0)) /* motion blur */
-      {
-	if (g_verbose >=2)
-	  DBG_PRINT(numTriangleMeshes2);
-	g_top_accel = "bvh4mb";
-      }
+    DBG_PRINT(g_builder);
+
+    accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
 
     if (g_top_accel == "default" || g_top_accel == "bvh4i")   
       {
@@ -84,9 +81,9 @@ namespace embree
 	    else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
 	  }
       }
-    else if (g_top_accel == "bvh4mb") {
-      accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
-    }
+    // else if (g_top_accel == "bvh4mb") {
+    //   accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
+    // }
     else if (g_top_accel == "bvh16i") {
       accels.add(BVH16i::BVH16iTriangle1ObjectSplitBinnedSAH(this));
     }
