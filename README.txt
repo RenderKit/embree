@@ -80,15 +80,10 @@ embree/kernels/xeon     Embree kernels for Intel(R) Xeon(R) CPUs
 embree/kernels/xeonphi  Embree kernels for Intel(R) Xeon Phi(TM) Accelerators
 embree/tutorials        Embree tutorials
 
-As of version 2.1, the Embree example renderer that used to come with
-earlier versions of Embree is no longer included in the main branch
-used for the kernels, and has been moved to a separate branch
-dedicated to this path tracer.
-
 --- Compiling Embree on Linux and MacOS ---
 
 Embree requires the Intel SPMD Compiler (ISPC) to compile. We have
-tested ISPC version 1.5.0, but more recent versions of ISPC should
+tested ISPC version 1.6.0, but more recent versions of ISPC should
 also work. You can download and install the ISPC binaries from
 http://ispc.github.com/downloads.html. After installation, put the
 path to the ispc executable permanently into your PATH.
@@ -115,7 +110,6 @@ and execute "ccmake .." inside this directory.
   mkdir build
   cd build
   cmake ..
-  make
 
 This will open a configuration dialog where you should set the
 CMAKE_BUILD_TYPE to "Release" and the compiler to "GCC", "CLANG" or
@@ -140,7 +134,7 @@ your system:
 --- Compiling Embree on Windows ---
 
 Embree requires the Intel SPMD Compiler (ISPC) to compile. We have
-tested ISPC version 1.5.0, but more recent versions of ISPC should
+tested ISPC version 1.6.0, but more recent versions of ISPC should
 also work. You can download and install the ISPC binaries from
 http://ispc.github.com/downloads.html. After installation, put the
 path to ispc.exe permanently into your PATH environment variable. You

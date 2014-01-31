@@ -66,7 +66,7 @@ can be found in the following sections.</p>
 <h3>Compiling Embree on Linux and MacOS</h3>
 
 <p>Embree requires the Intel SPMD Compiler (ISPC) to compile. We have
-tested ISPC version 1.5.0, but more recent versions of ISPC should
+tested ISPC version 1.6.0, but more recent versions of ISPC should
 also work. You can download and install the ISPC binaries from <a
  href="http://ispc.github.com/downloads.html">ispc.github.com</a>. After installation, put
 the path to the ispc executable permanently into your PATH.</p>
@@ -146,7 +146,7 @@ building spatial hierarchies, in particular on Xeon Phi&trade;.</p>
  <h3>Compiling Embree on Windows</h3>
 
  <p>Embree requires the Intel SPMD Compiler (ISPC) to compile. We have
- tested ISPC version 1.5.0, but more recent versions of ISPC should
+ tested ISPC version 1.6.0, but more recent versions of ISPC should
  also work. You can download and install the ISPC binaries from <a
   href="http://ispc.github.com/downloads.html">ispc.github.com</a>. After
  installation, put the path to ispc.exe permanently into your PATH
