@@ -45,7 +45,6 @@ namespace embree
 
     g_top_accel = g_tri_accel;
 
-    DBG_PRINT(g_builder);
 
     accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
 

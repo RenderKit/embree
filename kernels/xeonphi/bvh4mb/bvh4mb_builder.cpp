@@ -81,6 +81,7 @@ namespace embree
       if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
       const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;
+      if (unlikely(mesh->numTimeSteps == 1)) continue;
 
       const size_t numTriangles = mesh->numTriangles;
       if (numSkipped + numTriangles > startID) break;
