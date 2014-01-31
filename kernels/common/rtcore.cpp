@@ -263,7 +263,8 @@ namespace embree
     BVH4iRegister();
     
 #if !defined(__WIN32__) && defined(__TARGET_AVX__)
-    BVH8iRegister();
+    if (has_feature(AVX))
+      BVH8iRegister();
 #endif
     InstanceIntersectorsRegister();
 

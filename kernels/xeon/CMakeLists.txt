@@ -88,8 +88,6 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4mb/bvh4mb_builder.cpp
   bvh4mb/bvh4mb_intersector1.cpp   
   bvh4mb/bvh4mb_intersector4.cpp
-
-  bvh8i/bvh8i.cpp
 )
 
 IF (TARGET_SSE41) 
@@ -132,6 +130,7 @@ IF (TARGET_AVX)
    bvh4i/bvh4i_builder_morton.cpp
    bvh4i/bvh4i_builder_morton_enhanced.cpp
 
+   bvh8i/bvh8i.cpp
    bvh8i/bvh8i_builder.cpp
    bvh8i/bvh8i_intersector1.cpp   
    bvh8i/bvh8i_intersector8_chunk.cpp

@@ -63,7 +63,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-#if defined (__AVX__)
+#if defined (__AVX__) && 0
 
   float BVH8i::sah8 () {
     return sah(bvh8i_base,bvh8i_root,bounds)/area(bounds);
