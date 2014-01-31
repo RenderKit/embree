@@ -96,6 +96,10 @@ __forceinline int __bsf(int v) {
   unsigned long r = 0; _BitScanForward(&r,v); return r;
 }
 
+__forceinline unsigned int __bsf(unsigned int v) {
+  unsigned long r = 0; _BitScanForward(&r,v); return r;
+}
+
 __forceinline int __bsr(int v) {
   unsigned long r = 0; _BitScanReverse(&r,v); return r;
 }

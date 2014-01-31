@@ -43,6 +43,9 @@ namespace embree
     virtual void createAccel(const size_t threadIndex, const size_t threadCount);
     virtual void printBuilderName();
 
+    virtual size_t getNumPrimitives();
+    virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
+
 
     /* parallel refit bvh4mb tree */
     void generate_subtrees(const size_t index,const size_t depth, size_t &subtrees);
@@ -62,6 +65,7 @@ namespace embree
     TASK_FUNCTION(BVH4mbBuilder,refitBVH4MB);    
     TASK_FUNCTION(BVH4mbBuilder,createTriangle01AccelMB);    
     TASK_FUNCTION(BVH4mbBuilder,convertToSOALayoutMB);    
+    TASK_FUNCTION(BVH4mbBuilder,computePrimRefsTrianglesMB);    
 
   };
 

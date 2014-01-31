@@ -80,7 +80,7 @@ namespace embree
     : source(source), 
       scene((Scene*)geometry), 
       bvh(bvh), 
-      numPrimitives(0), 
+      numPrimitives((size_t)-1), 
       numNodes(0), 
       numAllocatedNodes(0), 
       prims(NULL), 
@@ -111,6 +111,7 @@ namespace embree
 	if (unlikely((scene->get(i)->type != TRIANGLE_MESH))) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
 	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(i);
+	if (unlikely(mesh->numTimeSteps != 1)) continue;
 	primitives += mesh->numTriangles;
       }
     return primitives;	
@@ -179,7 +180,7 @@ namespace embree
     DBG(DBG_PRINT(numPrimitives));
 
 
-    if (numPrimitivesOld != numPrimitives || numPrimitives == 0)
+    if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
@@ -198,6 +199,7 @@ namespace embree
   {
     DBG(PING);
     const size_t totalNumPrimitives = getNumPrimitives();
+
 
     DBG(DBG_PRINT(totalNumPrimitives));
 
@@ -294,6 +296,7 @@ namespace embree
       if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
       const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;
+      if (unlikely(mesh->numTimeSteps != 1)) continue;
 
       const size_t numTriangles = mesh->numTriangles;
       if (numSkipped + numTriangles > startID) break;
@@ -320,6 +323,7 @@ namespace embree
       if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
       const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;
+      if (unlikely(mesh->numTimeSteps != 1)) continue;
 
       for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
       { 			    

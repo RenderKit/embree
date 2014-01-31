@@ -67,6 +67,7 @@ namespace embree
 	if (scene->get(group)->type != TRIANGLE_MESH) continue;
 	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
 	if (unlikely(!mesh->isEnabled())) continue;
+	if (unlikely(mesh->numTimeSteps != 1)) continue;
 
 	maxPrimsPerGroup = max(maxPrimsPerGroup,mesh->numTriangles);
 	numPrimitives   += mesh->numTriangles;
@@ -246,6 +247,8 @@ namespace embree
       if (scene->get(group)->type != TRIANGLE_MESH) continue;
       const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;
+      if (unlikely(mesh->numTimeSteps != 1)) continue;
+
       const size_t numTriangles = mesh->numTriangles;	
       if (skipped + numTriangles > startID) break;
       skipped += numTriangles;
@@ -281,6 +284,8 @@ namespace embree
       if (unlikely(scene->get(group)->type != TRIANGLE_MESH)) continue;
       const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;
+      if (unlikely(mesh->numTimeSteps != 1)) continue;
+
 
       const TriangleMeshScene::TriangleMesh::Triangle* tri = &mesh->triangle(offset);
 
@@ -352,6 +357,8 @@ namespace embree
       if (unlikely(scene->get(group)->type != TRIANGLE_MESH)) continue;
       const TriangleMeshScene::TriangleMesh* const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;
+      if (unlikely(mesh->numTimeSteps != 1)) continue;
+
       const size_t numTriangles = min(mesh->numTriangles-offset,endID-currentID);
        
       const unsigned int groupCode = (group << encodeShift);

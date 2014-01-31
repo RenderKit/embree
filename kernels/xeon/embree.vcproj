@@ -724,15 +724,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\common\accelinstance.h"
+				>
+			</File>
+			<File
 				RelativePath="..\common\acceln.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\common\acceln.h"
-				>
-			</File>
-			<File
-				RelativePath="..\common\accelinstance.h"
 				>
 			</File>
 			<File
@@ -753,6 +753,14 @@
 			</File>
 			<File
 				RelativePath="..\common\atomic_set.h"
+				>
+			</File>
+			<File
+				RelativePath="..\common\buffer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\common\buffer.h"
 				>
 			</File>
 			<File

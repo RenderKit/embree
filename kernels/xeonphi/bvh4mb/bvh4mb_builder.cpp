@@ -38,6 +38,146 @@ namespace embree
     std::cout << "building BVH4mb with binned SAH builder (MIC) ... " << std::endl;    
   }
 
+
+  size_t BVH4mbBuilder::getNumPrimitives()
+  {
+    if (scene->numTriangleMeshes2 == 0) return 0;
+
+    /* count total number of triangles */
+    size_t primitives = 0;       
+    for (size_t i=0;i<scene->size();i++)
+      {
+	if (unlikely(scene->get(i) == NULL)) continue;
+	if (unlikely((scene->get(i)->type != TRIANGLE_MESH))) continue;
+	if (unlikely(!scene->get(i)->isEnabled())) continue;
+
+	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(i);
+	if (unlikely(mesh->numTimeSteps == 1)) continue;
+
+	primitives += mesh->numTriangles;
+      }
+    return primitives;	  
+  }
+
+  void BVH4mbBuilder::computePrimRefs(const size_t threadIndex, const size_t threadCount)
+  {
+    LockStepTaskScheduler::dispatchTask( task_computePrimRefsTrianglesMB, this, threadIndex, threadCount );
+  }
+
+
+  void BVH4mbBuilder::computePrimRefsTrianglesMB(const size_t threadID, const size_t numThreads) 
+  {
+    DBG(PING);
+    const size_t numGroups = scene->size();
+    const size_t startID = (threadID+0)*numPrimitives/numThreads;
+    const size_t endID   = (threadID+1)*numPrimitives/numThreads;
+    
+    PrimRef *__restrict__ const prims     = this->prims;
+
+    // === find first group containing startID ===
+    unsigned int g=0, numSkipped = 0;
+    for (; g<numGroups; g++) {       
+      if (unlikely(scene->get(g) == NULL)) continue;
+      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+      const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+      if (unlikely(!mesh->isEnabled())) continue;
+      if (unlikely(mesh->numTimeSteps == 1)) continue;
+
+      const size_t numTriangles = mesh->numTriangles;
+      if (numSkipped + numTriangles > startID) break;
+      numSkipped += numTriangles;
+    }
+
+    // === start with first group containing startID ===
+    mic_f bounds_scene_min((float)pos_inf);
+    mic_f bounds_scene_max((float)neg_inf);
+    mic_f bounds_centroid_min((float)pos_inf);
+    mic_f bounds_centroid_max((float)neg_inf);
+
+    unsigned int num = 0;
+    unsigned int currentID = startID;
+    unsigned int offset = startID - numSkipped;
+
+    __align(64) PrimRef local_prims[2];
+    size_t numLocalPrims = 0;
+    PrimRef *__restrict__ dest = &prims[currentID];
+
+    for (; g<numGroups; g++) 
+    {
+      if (unlikely(scene->get(g) == NULL)) continue;
+      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+      const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+      if (unlikely(!mesh->isEnabled())) continue;
+      if (unlikely(mesh->numTimeSteps == 1)) continue;
+
+      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
+      { 			    
+	//DBG_PRINT(currentID);
+	const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(i);
+	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
+	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
+
+	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
+	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
+	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+
+	const mic_f v0 = broadcast4to16f(vptr0);
+	const mic_f v1 = broadcast4to16f(vptr1);
+	const mic_f v2 = broadcast4to16f(vptr2);
+
+	const mic_f bmin = min(min(v0,v1),v2);
+	const mic_f bmax = max(max(v0,v1),v2);
+	bounds_scene_min = min(bounds_scene_min,bmin);
+	bounds_scene_max = max(bounds_scene_max,bmax);
+	const mic_f centroid2 = bmin+bmax;
+	bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	bounds_centroid_max = max(bounds_centroid_max,centroid2);
+
+	store4f(&local_prims[numLocalPrims].lower,bmin);
+	store4f(&local_prims[numLocalPrims].upper,bmax);	
+	local_prims[numLocalPrims].lower.a = g;
+	local_prims[numLocalPrims].upper.a = i;
+
+	//DBG_PRINT( local_prims[numLocalPrims] );
+
+	numLocalPrims++;
+	if (unlikely(((size_t)dest % 64) != 0) && numLocalPrims == 1)
+	  {
+	    *dest = local_prims[0];
+	    dest++;
+	    numLocalPrims--;
+	  }
+	else
+	  {
+	    const mic_f twoAABBs = load16f(local_prims);
+	    if (numLocalPrims == 2)
+	      {
+		numLocalPrims = 0;
+		store16f_ngo(dest,twoAABBs);
+		dest+=2;
+	      }
+	  }	
+      }
+      if (currentID == endID) break;
+      offset = 0;
+    }
+
+    /* is there anything left in the local queue? */
+    if (numLocalPrims % 2 != 0)
+      *dest = local_prims[0];
+
+    /* update global bounds */
+    Centroid_Scene_AABB bounds;
+    
+    store4f(&bounds.centroid2.lower,bounds_centroid_min);
+    store4f(&bounds.centroid2.upper,bounds_centroid_max);
+    store4f(&bounds.geometry.lower,bounds_scene_min);
+    store4f(&bounds.geometry.upper,bounds_scene_max);
+
+    global_bounds.extend_atomic(bounds);    
+  }
+
+
   void BVH4mbBuilder::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
     DBG(PING);
@@ -46,7 +186,7 @@ namespace embree
     DBG(DBG_PRINT(numPrimitives));
 
 
-    if (numPrimitivesOld != numPrimitives || numPrimitives == 0)
+    if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
