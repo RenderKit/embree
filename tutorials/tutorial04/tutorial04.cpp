@@ -90,7 +90,9 @@ namespace embree
       g_rtcore += ",threads=" + std::stringOf(g_numThreads);
 
     /* initialize task scheduler */
+#if !defined(__EXPORT_ALL_SYMBOLS__)
     TaskScheduler::create(g_numThreads);
+#endif
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
