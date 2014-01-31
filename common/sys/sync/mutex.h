@@ -60,12 +60,15 @@ namespace embree
 	  _mm_pause();
 #else
 	  _mm_delay_32(wait); 
-	  /* wait += wait; */
-	  /* if (wait > MAX_MIC_WAIT_CYCLES) wait = MAX_MIC_WAIT_CYCLES; */
+	  wait += wait;  
+	  if (wait > MAX_MIC_WAIT_CYCLES) wait = MAX_MIC_WAIT_CYCLES;  
 #endif
 	}
         __memory_barrier();
 	if (atomic_cmpxchg(&flag,0,1) == 0) break;
+#if defined(__MIC__)
+	_mm_delay_32(wait); 
+#endif
       }
     }
 

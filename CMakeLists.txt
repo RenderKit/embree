@@ -69,7 +69,12 @@ IF (RTCORE_FIX_RAYS)
  ADD_DEFINITIONS(-D__FIX_RAYS__)
 ENDIF()
 
+IF (TARGET_XEON_PHI)
+SET(RTCORE_BUFFER_STRIDE OFF CACHE BOOL "Enables support for strides and offsets of buffers.")
+ELSE (TARGET_XEON_PHI)
 SET(RTCORE_BUFFER_STRIDE ON CACHE BOOL "Enables support for strides and offsets of buffers.")
+ENDIF()
+
 IF (RTCORE_BUFFER_STRIDE)
  ADD_DEFINITIONS(-D__RTCORE_BUFFER_STRIDE__)
 ENDIF()
@@ -90,6 +95,9 @@ IF (RTCORE_ENABLE_TASKLOGGER)
 ENDIF()
 
 SET(RTCORE_EXPORT_ALL_SYMBOLS OFF CACHE BOOL "Lets Embree shared library export all symbols.")
+IF (RTCORE_EXPORT_ALL_SYMBOLS)
+ ADD_DEFINITIONS(-D__EXPORT_ALL_SYMBOLS__)
+ENDIF()
 
 ##############################################################
 # ISA configuration

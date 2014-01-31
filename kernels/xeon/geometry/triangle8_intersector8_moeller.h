@@ -120,8 +120,9 @@ namespace embree
 
     static __forceinline void intersect(const avxb& valid, Ray8& ray, const Triangle8* tri, size_t num, const void* geom)
     {
+      
       for (size_t i=0; i<num; i++)
-        intersect(valid,ray,tri[i],geom);
+	intersect(valid,ray,tri[i],geom);
     }
 
     /*! Test for 4 rays if they are occluded by any of the 4 triangle. */

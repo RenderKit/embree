@@ -130,7 +130,7 @@
 #define __dllimport extern "C"
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__EXPORT_ALL_SYMBOLS__)
 #  define __hidden
 #else
 #  define __hidden __attribute__ ((visibility ("hidden")))
