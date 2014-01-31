@@ -1699,6 +1699,34 @@
 				</FileConfiguration>
 			</File>
 		</Filter>
+		<Filter
+			Name="bvh8i"
+			>
+			<File
+				RelativePath=".\bvh8i\bvh8i_intersector1.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh8i\bvh8i_intersector1.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh8i\bvh8i_intersector8_chunk.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh8i\bvh8i_intersector8_chunk.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh8i\bvh8i_intersector8_hybrid.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh8i\bvh8i_intersector8_hybrid.h"
+				>
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>
