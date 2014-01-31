@@ -65,6 +65,7 @@ IF (RTCORE_INTERSECTION_FILTER)
 ENDIF()
 
 IF (TARGET_XEON_PHI)
+unset(RTCORE_BUFFER_STRIDE CACHE)
 SET(RTCORE_BUFFER_STRIDE OFF CACHE BOOL "Enables support for strides and offsets of buffers.")
 ELSE (TARGET_XEON_PHI)
 SET(RTCORE_BUFFER_STRIDE ON CACHE BOOL "Enables support for strides and offsets of buffers.")
