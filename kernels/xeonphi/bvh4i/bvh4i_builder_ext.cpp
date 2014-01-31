@@ -47,7 +47,7 @@ namespace embree
     numPrimitives = totalNumPrimitives;
     DBG(DBG_PRINT(numPrimitives));
 
-    if (numPrimitivesOld != numPrimitives || numPrimitives == 0)
+    if (numPrimitivesOld != numPrimitives)
       {
 	const size_t preSplitPrims = (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR);
 	const size_t numPrims = numPrimitives+preSplitPrims;
