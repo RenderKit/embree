@@ -33,8 +33,8 @@ namespace embree
       : v0(v0,primID), v1(v1,geomID), v2(v2,mask), Ng(cross(v0-v1,v2-v0)) {}
 
     /*! calculate the bounds of the triangle */
-    __forceinline BBox3f bounds() const {
-      return merge(BBox3f(v0),BBox3f(v1),BBox3f(v2));
+    __forceinline BBox3fa bounds() const {
+      return merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2));
     }
 
     /*! access hidden members */

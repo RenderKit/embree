@@ -54,7 +54,7 @@ namespace embree
     }
 
     /*! calculate the bounds of the triangle */
-    __forceinline BBox3f bounds() const 
+    __forceinline BBox3fa bounds() const 
     {
       avx3f p0 = v0;
       avx3f p1 = v0+e1;
@@ -68,7 +68,7 @@ namespace embree
       upper.x = select(mask,upper.x,avxf(neg_inf));
       upper.y = select(mask,upper.y,avxf(neg_inf));
       upper.z = select(mask,upper.z,avxf(neg_inf));
-      return BBox3f(Vec3fa(reduce_min(lower.x),reduce_min(lower.y),reduce_min(lower.z)),
+      return BBox3fa(Vec3fa(reduce_min(lower.x),reduce_min(lower.y),reduce_min(lower.z)),
                     Vec3fa(reduce_max(upper.x),reduce_max(upper.y),reduce_max(upper.z)));
     }
 
@@ -135,14 +135,14 @@ namespace embree
     static SceneTriangle8 type;
     void pack(char* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const;
     void pack(char* dst, const PrimRef* prims, size_t num, void* geom) const;
-    BBox3f update(char* prim, size_t num, void* geom) const;
+    BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 
   struct TriangleMeshTriangle8 : public Triangle8Type
   {
     static TriangleMeshTriangle8 type;
     void pack(char* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const;
-    BBox3f update(char* prim, size_t num, void* geom) const;
+    BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 #endif
 }

@@ -41,12 +41,12 @@ namespace embree
         }
       
       /*! Computes the bin numbers for each dimension for a box. */
-      __forceinline ssei bin_unsafe(const BBox3f& box) const {
+      __forceinline ssei bin_unsafe(const BBox3fa& box) const {
         return floori((ssef(center2(box)) - ofs)*scale);
       }
       
       /*! Computes the bin numbers for each dimension for a box. */
-      __forceinline ssei bin(const BBox3f& box) const {
+      __forceinline ssei bin(const BBox3fa& box) const {
 #if defined (__SSE4_1__)
         return clamp(bin_unsafe(box),ssei(0),ssei(BINS-1));
 #else
@@ -123,7 +123,7 @@ namespace embree
                      BuildRecord& right);
       
     public:
-      BBox3f bounds[BINS][4];
+      BBox3fa bounds[BINS][4];
       ssei   counts[BINS];
     };
     

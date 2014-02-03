@@ -364,7 +364,7 @@ namespace embree
         
         for (size_t i=0; i<numTriangles; i++)	  
         {
-          const BBox3f b = mesh->bounds(offset+i);
+          const BBox3fa b = mesh->bounds(offset+i);
           const ssef lower = (ssef)b.lower;
           const ssef upper = (ssef)b.upper;
           const ssef centroid = lower+upper;
@@ -433,7 +433,7 @@ namespace embree
         const size_t index  = morton[i].index;
         const size_t primID = index & encodeMask; 
         const size_t geomID = index >> encodeShift; 
-        const BBox3f b = scene->getTriangleMesh(geomID)->bounds(primID);
+        const BBox3fa b = scene->getTriangleMesh(geomID)->bounds(primID);
         const ssef lower = (ssef)b.lower;
         const ssef upper = (ssef)b.upper;
         const ssef centroid = lower+upper;
@@ -537,7 +537,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4BuilderMorton::createTriangle1Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3f& box_o)
+    void BVH4BuilderMorton::createTriangle1Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -573,10 +573,10 @@ namespace embree
         store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),mesh->mask)));
         store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0)));
       }
-      box_o = BBox3f((Vec3fa)lower,(Vec3fa)upper);
+      box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4BuilderMorton::createTriangle4Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3f& box_o)
+    void BVH4BuilderMorton::createTriangle4Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -612,10 +612,10 @@ namespace embree
       }
       Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask));
       //new (accel) Triangle4(v0,v1,v2,vgeomID,vprimID,vmask);
-      box_o = BBox3f((Vec3fa)lower,(Vec3fa)upper);
+      box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4BuilderMorton::createTriangle1vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3f& box_o)
+    void BVH4BuilderMorton::createTriangle1vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -650,10 +650,10 @@ namespace embree
         store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
         store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),mesh->mask)));
       }
-      box_o = BBox3f((Vec3fa)lower,(Vec3fa)upper);
+      box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4BuilderMorton::createTriangle4vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3f& box_o)
+    void BVH4BuilderMorton::createTriangle4vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -689,7 +689,7 @@ namespace embree
       }
       Triangle4v::store_nt(accel,Triangle4v(v0,v1,v2,vgeomID,vprimID,vmask));
       //new (accel) Triangle4v(v0,v1,v2,vgeomID,vprimID,vmask);
-      box_o = BBox3f((Vec3fa)lower,(Vec3fa)upper);
+      box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
     void BVH4BuilderMorton::split_fallback(SmallBuildRecord& current, SmallBuildRecord& leftChild, SmallBuildRecord& rightChild) const
@@ -699,7 +699,7 @@ namespace embree
       rightChild.init(center,current.end);
     }
     
-    BBox3f BVH4BuilderMorton::createLeaf(SmallBuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID)
+    BBox3fa BVH4BuilderMorton::createLeaf(SmallBuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID)
     {
 #if defined(DEBUG)
       if (current.depth > BVH4::maxBuildDepthLeaf) 
@@ -708,7 +708,7 @@ namespace embree
       
       /* create leaf for few primitives */
       if (current.size() <= MORTON_LEAF_THRESHOLD) {
-        BBox3f bounds;
+        BBox3fa bounds;
         createSmallLeaf(this,current,leafAlloc,threadID,bounds);
         return bounds;
       }
@@ -727,11 +727,11 @@ namespace embree
       *current.parent = bvh->encodeNode(node);
       
       /* recurse into each child */
-      BBox3f bounds0 = empty;
+      BBox3fa bounds0 = empty;
       for (size_t i=0; i<4; i++) {
         children[i].parent = &node->child(i);
         children[i].depth = current.depth+1;
-        BBox3f bounds = createLeaf(children[i],nodeAlloc,leafAlloc,threadID);
+        BBox3fa bounds = createLeaf(children[i],nodeAlloc,leafAlloc,threadID);
         bounds0.extend(bounds);
         node->set(i,bounds);
       }
@@ -787,7 +787,7 @@ namespace embree
       right.init(center,current.end);
     }
     
-    BBox3f BVH4BuilderMorton::recurse(SmallBuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID) 
+    BBox3fa BVH4BuilderMorton::recurse(SmallBuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID) 
     {
       /* stop toplevel recursion at some number of items */
       if (mode == CREATE_TOP_LEVEL && (current.size() <= topLevelItemThreshold || g_state->numBuildRecords >= MAX_TOP_LEVEL_BINS)) 
@@ -842,7 +842,7 @@ namespace embree
       
       /* create leaf node if no split is possible */
       if (unlikely(numChildren == 1)) {
-        BBox3f bounds; createSmallLeaf(this,current,leafAlloc,threadID,bounds); return bounds;
+        BBox3fa bounds; createSmallLeaf(this,current,leafAlloc,threadID,bounds); return bounds;
       }
       
       /* allocate node */
@@ -850,17 +850,17 @@ namespace embree
       *current.parent = bvh->encodeNode(node);
       
       /* recurse into each child */
-      BBox3f bounds0 = empty;
+      BBox3fa bounds0 = empty;
       for (size_t i=0; i<numChildren; i++) 
       {
         children[i].parent = &node->child(i);
         
         if (children[i].size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD) {
-          const BBox3f bounds = createLeaf(children[i],nodeAlloc,leafAlloc,threadID);
+          const BBox3fa bounds = createLeaf(children[i],nodeAlloc,leafAlloc,threadID);
           bounds0.extend(bounds);
           node->set(i,bounds);
         } else {
-          const BBox3f bounds = recurse(children[i],nodeAlloc,leafAlloc,mode,threadID);
+          const BBox3fa bounds = recurse(children[i],nodeAlloc,leafAlloc,mode,threadID);
           bounds0.extend(bounds);
           node->set(i,bounds);
         }
@@ -868,43 +868,43 @@ namespace embree
       return bounds0;
     }
     
-    __forceinline BBox3f BVH4BuilderMorton::leafBoundsTriangle1(NodeRef& ref)
+    __forceinline BBox3fa BVH4BuilderMorton::leafBoundsTriangle1(NodeRef& ref)
     {
-      BBox3f bounds = empty;
+      BBox3fa bounds = empty;
       size_t num; Triangle1* tri = (Triangle1*) ref.leaf(num);
       for (size_t i=0; i<num; i++) 
         bounds.extend(tri[i].bounds());
       return bounds;
     }
     
-    __forceinline BBox3f BVH4BuilderMorton::leafBoundsTriangle4(NodeRef& ref)
+    __forceinline BBox3fa BVH4BuilderMorton::leafBoundsTriangle4(NodeRef& ref)
     {
-      BBox3f bounds = empty;
+      BBox3fa bounds = empty;
       size_t num; Triangle4* tri = (Triangle4*) ref.leaf(num);
       for (size_t i=0; i<num; i++) 
         bounds.extend(tri[i].bounds());
       return bounds;
     }
     
-    __forceinline BBox3f BVH4BuilderMorton::leafBoundsTriangle1v(NodeRef& ref)
+    __forceinline BBox3fa BVH4BuilderMorton::leafBoundsTriangle1v(NodeRef& ref)
     {
-      BBox3f bounds = empty;
+      BBox3fa bounds = empty;
       size_t num; Triangle1v* tri = (Triangle1v*) ref.leaf(num);
       for (size_t i=0; i<num; i++) 
         bounds.extend(tri[i].bounds());
       return bounds;
     }
     
-    __forceinline BBox3f BVH4BuilderMorton::leafBoundsTriangle4v(NodeRef& ref)
+    __forceinline BBox3fa BVH4BuilderMorton::leafBoundsTriangle4v(NodeRef& ref)
     {
-      BBox3f bounds = empty;
+      BBox3fa bounds = empty;
       size_t num; Triangle4v* tri = (Triangle4v*) ref.leaf(num);
       for (size_t i=0; i<num; i++) 
         bounds.extend(tri[i].bounds());
       return bounds;
     }
     
-    __forceinline BBox3f BVH4BuilderMorton::node_bounds(NodeRef& ref) const
+    __forceinline BBox3fa BVH4BuilderMorton::node_bounds(NodeRef& ref) const
     {
       if (ref.isNode())
         return ref.node()->bounds();
@@ -912,7 +912,7 @@ namespace embree
         return leafBounds(ref);
     }
     
-    BBox3f BVH4BuilderMorton::refit_toplevel(NodeRef& ref) const
+    BBox3fa BVH4BuilderMorton::refit_toplevel(NodeRef& ref) const
     { 
       /* stop here if we encounter a barrier */
       if (unlikely(ref.isBarrier())) {
@@ -922,7 +922,7 @@ namespace embree
       
       /* return point bound for empty nodes */
       if (unlikely(ref == BVH4::emptyNode))
-        return BBox3f(empty);
+        return BBox3fa(empty);
       
       /* this is a leaf node */
       if (unlikely(ref.isLeaf()))
@@ -930,10 +930,10 @@ namespace embree
       
       /* recurse if this is an internal node */
       Node* node = ref.node();
-      const BBox3f bounds0 = refit_toplevel(node->child(0));
-      const BBox3f bounds1 = refit_toplevel(node->child(1));
-      const BBox3f bounds2 = refit_toplevel(node->child(2));
-      const BBox3f bounds3 = refit_toplevel(node->child(3));
+      const BBox3fa bounds0 = refit_toplevel(node->child(0));
+      const BBox3fa bounds1 = refit_toplevel(node->child(1));
+      const BBox3fa bounds2 = refit_toplevel(node->child(2));
+      const BBox3fa bounds3 = refit_toplevel(node->child(3));
       
       /* AOS to SOA transform */
       BBox<sse3f> bounds;
@@ -955,7 +955,7 @@ namespace embree
       const float upper_x = reduce_max(bounds.upper.x);
       const float upper_y = reduce_max(bounds.upper.y);
       const float upper_z = reduce_max(bounds.upper.z);
-      return BBox3f(Vec3fa(lower_x,lower_y,lower_z),
+      return BBox3fa(Vec3fa(lower_x,lower_y,lower_z),
                     Vec3fa(upper_x,upper_y,upper_z));
     }
 

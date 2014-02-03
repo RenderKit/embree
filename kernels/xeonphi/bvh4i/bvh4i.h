@@ -121,10 +121,10 @@ namespace embree
       } lower[4], upper[4];    // lower and upper bounds of all 4 children
 
       /*! Returns bounds of specified child. */
-      __forceinline BBox3f bounds(size_t i) const {
+      __forceinline BBox3fa bounds(size_t i) const {
         Vec3fa l = *(Vec3fa*)&lower[i];
         Vec3fa u = *(Vec3fa*)&upper[i];
-        return BBox3f(l,u);
+        return BBox3fa(l,u);
       }
 
       __forceinline void setInvalid(size_t i)
@@ -220,7 +220,7 @@ namespace embree
     static Helper initQBVHNode[4];
 
   private:
-    float sah (NodeRef& node, BBox3f bounds);
+    float sah (NodeRef& node, BBox3fa bounds);
   };
 
 
@@ -271,7 +271,7 @@ namespace embree
     return (children & BVH_LEAF_MASK);
   };
 
-  class __align(32) BVHNode : public BBox3f
+  class __align(32) BVHNode : public BBox3fa
   {
   public:
     __forceinline unsigned int isLeaf() const {

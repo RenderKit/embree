@@ -113,29 +113,29 @@ namespace embree
       }
 
       /*! Sets bounding box of child. */
-      __forceinline void set(size_t i, const BBox3f& bounds) {
+      __forceinline void set(size_t i, const BBox3fa& bounds) {
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
         upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3f& bounds, const NodeRef& childID) {
+      __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& childID) {
         set(i,bounds);
         children[i] = childID;
       }
 
       /*! Returns bounds of node. */
-      __forceinline BBox3f bounds() const {
+      __forceinline BBox3fa bounds() const {
         const Vec3fa lower(reduce_min(lower_x),reduce_min(lower_y),reduce_min(lower_z));
         const Vec3fa upper(reduce_max(upper_x),reduce_max(upper_y),reduce_max(upper_z));
-        return BBox3f(lower,upper);
+        return BBox3fa(lower,upper);
       }
 
       /*! Returns bounds of specified child. */
-      __forceinline BBox3f bounds(size_t i) const {
+      __forceinline BBox3fa bounds(size_t i) const {
         Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
         Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
-        return BBox3f(lower,upper);
+        return BBox3fa(lower,upper);
       }
 
       /*! Returns bounds of all children */
@@ -299,7 +299,7 @@ namespace embree
     void *accel;
 
   private:
-    float sah (NodeRef& node, const BBox3f& bounds);
+    float sah (NodeRef& node, const BBox3fa& bounds);
   };
 
   __forceinline std::ostream &operator<<(std::ostream &o, const BVH4i::Node &v)
@@ -355,7 +355,7 @@ namespace embree
     return (children & BVH_LEAF_MASK);
   };
 
-  class __align(32) BVHNode : public BBox3f
+  class __align(32) BVHNode : public BBox3fa
   {
   public:
     __forceinline unsigned int isLeaf() const {

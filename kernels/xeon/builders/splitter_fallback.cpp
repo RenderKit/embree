@@ -27,8 +27,8 @@ namespace embree
                                           atomic_set<PrimRefBlock>& rprims, PrimInfo& rinfo, Split& rsplit)
   {
     /* enforce split */
-    size_t lnum = 0; BBox3f lgeomBounds = empty; BBox3f lcentBounds = empty;
-    size_t rnum = 0; BBox3f rgeomBounds = empty; BBox3f rcentBounds = empty;
+    size_t lnum = 0; BBox3fa lgeomBounds = empty; BBox3fa lcentBounds = empty;
+    size_t rnum = 0; BBox3fa rgeomBounds = empty; BBox3fa rcentBounds = empty;
     atomic_set<PrimRefBlock>::item* lblock = lprims.insert(alloc->malloc(threadIndex));
     atomic_set<PrimRefBlock>::item* rblock = rprims.insert(alloc->malloc(threadIndex));
     
@@ -37,7 +37,7 @@ namespace embree
       for (size_t i=0; i<block->size(); i++) 
       {
         const PrimRef& prim = block->at(i); 
-        const BBox3f bounds = prim.bounds();
+        const BBox3fa bounds = prim.bounds();
         
         if ((lnum+rnum)&1) 
         {
@@ -85,8 +85,8 @@ namespace embree
                                           atomic_set<PrimRefBlock>& rprims, PrimInfo& rinfo)
   {
     /* enforce split */
-    size_t lnum = 0; BBox3f lgeomBounds = empty; BBox3f lcentBounds = empty;
-    size_t rnum = 0; BBox3f rgeomBounds = empty; BBox3f rcentBounds = empty;
+    size_t lnum = 0; BBox3fa lgeomBounds = empty; BBox3fa lcentBounds = empty;
+    size_t rnum = 0; BBox3fa rgeomBounds = empty; BBox3fa rcentBounds = empty;
     atomic_set<PrimRefBlock>::item* lblock = lprims.insert(alloc->malloc(threadIndex));
     atomic_set<PrimRefBlock>::item* rblock = rprims.insert(alloc->malloc(threadIndex));
     
@@ -95,7 +95,7 @@ namespace embree
       for (size_t i=0; i<block->size(); i++) 
       {
         const PrimRef& prim = block->at(i); 
-        const BBox3f bounds = prim.bounds();
+        const BBox3fa bounds = prim.bounds();
         
         if ((lnum+rnum)&1) 
         {

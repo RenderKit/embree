@@ -65,7 +65,7 @@ namespace embree
     return stream.str();
   }
 
-  void BVH4iStatistics::statistics(NodeRef node, const BBox3f& bounds, size_t& depth)
+  void BVH4iStatistics::statistics(NodeRef node, const BBox3fa& bounds, size_t& depth)
   {
     float A = bounds.empty() ? 0.0f : area(bounds);
     

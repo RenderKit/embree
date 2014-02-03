@@ -150,7 +150,7 @@ namespace embree
         return mesh->numTriangles;
       }
 
-      const BBox3f bounds(size_t group, size_t prim) const 
+      const BBox3fa bounds(size_t group, size_t prim) const 
       {
 	assert(scene->get(group) != NULL);
 	assert(scene->get(group)->type == TRIANGLE_MESH);
@@ -160,7 +160,7 @@ namespace embree
         return mesh->bounds(prim);
       }
 
-      void bounds(size_t group, size_t begin, size_t end, BBox3f* bounds_o) const 
+      void bounds(size_t group, size_t begin, size_t end, BBox3fa* bounds_o) const 
       {
 	assert(scene->get(group) != NULL);
 	assert(scene->get(group)->type == TRIANGLE_MESH);

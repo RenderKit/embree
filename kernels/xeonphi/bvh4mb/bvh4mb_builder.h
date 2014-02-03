@@ -49,8 +49,8 @@ namespace embree
 
     /* parallel refit bvh4mb tree */
     void generate_subtrees(const size_t index,const size_t depth, size_t &subtrees);
-    BBox3f refit_toplevel(const size_t index,const size_t depth);
-    BBox3f refit_subtree(const size_t index);
+    BBox3fa refit_toplevel(const size_t index,const size_t depth);
+    BBox3fa refit_subtree(const size_t index);
 
     /* scalar refit */
     void refit(const size_t index);

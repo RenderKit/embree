@@ -35,10 +35,10 @@ namespace embree
     virtual size_t prims (size_t group, size_t* pNumVertices = NULL) const = 0;
 
     /*! calculates the bounding box of specified primitive of specified group */
-    virtual const BBox3f bounds(size_t group, size_t prim) const = 0;
+    virtual const BBox3fa bounds(size_t group, size_t prim) const = 0;
 
     /*! calculates the bounding box of specified primitive of specified group */
-    virtual void bounds(size_t group, size_t begin, size_t end, BBox3f* bounds_o) const {}
+    virtual void bounds(size_t group, size_t begin, size_t end, BBox3fa* bounds_o) const {}
 
     /*! splits a clipped primitive into two clipped primitives */
     virtual void split (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) const { 
@@ -58,7 +58,7 @@ namespace embree
 
   __forceinline void splitTriangle(const PrimRef& prim, int dim, float pos, const Vec3fa& a, const Vec3fa& b, const Vec3fa& c, PrimRef& left_o, PrimRef& right_o)
   {
-    BBox3f left = empty, right = empty;
+    BBox3fa left = empty, right = empty;
     const Vec3fa v[3] = { a,b,c };
 
     /* clip triangle to left and right box by processing all edges */
@@ -83,10 +83,10 @@ namespace embree
     assert(!right.empty()); // happens if split does not hit triangle
 
     /* safe clip against current bounds */
-    BBox3f bounds = prim.bounds();
-    BBox3f cleft(min(max(left.lower,bounds.lower),bounds.upper),
+    BBox3fa bounds = prim.bounds();
+    BBox3fa cleft(min(max(left.lower,bounds.lower),bounds.upper),
                  max(min(left.upper,bounds.upper),bounds.lower));
-    BBox3f cright(min(max(right.lower,bounds.lower),bounds.upper),
+    BBox3fa cright(min(max(right.lower,bounds.lower),bounds.upper),
                   max(min(right.upper,bounds.upper),bounds.lower));
 
     new (&left_o ) PrimRef(cleft, prim.geomID(), prim.primID());

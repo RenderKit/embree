@@ -45,11 +45,11 @@ namespace embree
         return accels[group]->size();
       }
       
-      const BBox3f bounds(size_t group, size_t prim) const {
+      const BBox3fa bounds(size_t group, size_t prim) const {
         return accels[group]->bounds(prim);
       }
 
-      void bounds(size_t group, size_t begin, size_t end, BBox3f* bounds_o) const {
+      void bounds(size_t group, size_t begin, size_t end, BBox3fa* bounds_o) const {
         assert(false); // FIXME
       }
       

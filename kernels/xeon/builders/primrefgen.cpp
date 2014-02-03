@@ -32,13 +32,13 @@ namespace embree
     }
 
     /* approximate bounds */
-    BBox3f geomBound = empty, centBound = empty;
+    BBox3fa geomBound = empty, centBound = empty;
     size_t s = 0, t = 0, dt = max(size_t(1),numPrimitives/2048);
     for (size_t g=0; g<numGroups; g++) 
     {
       size_t numPrims = geom->prims(g);
       for (size_t i=t-s; i<numPrims; i+=dt, t+=dt) {
-        BBox3f bounds = geom->bounds(g,i);
+        BBox3fa bounds = geom->bounds(g,i);
         geomBound.extend(bounds);
         centBound.extend(center2(bounds));
       }
@@ -94,7 +94,7 @@ namespace embree
     size_t numGroupPrims = numPrims ? geom->prims(g) : 0;
     size_t numAddedPrims = 0;
     
-    BBox3f geomBound = empty, centBound = empty;
+    BBox3fa geomBound = empty, centBound = empty;
     typename atomic_set<PrimRefBlock>::item* block = prims.insert(alloc->malloc(threadIndex)); 
     for (size_t p=0; p<numPrims; p++, i++)
     {
@@ -104,7 +104,7 @@ namespace embree
         numGroupPrims = geom->prims(g);
       }
 
-      const BBox3f b = geom->bounds(g,i);
+      const BBox3fa b = geom->bounds(g,i);
       if (b.empty()) continue;
       numAddedPrims++;
       geomBound.extend(b);
@@ -126,8 +126,8 @@ namespace embree
   {
     /* reduce geometry and centroid bounds */
     size_t numAddedPrims = 0;
-    BBox3f geomBound = empty;
-    BBox3f centBound = empty;
+    BBox3fa geomBound = empty;
+    BBox3fa centBound = empty;
     for (size_t i=0; i<numTasks; i++) {
       geomBound = merge(geomBound,geomBounds[i]);
       centBound = merge(centBound,centBounds[i]);

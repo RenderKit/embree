@@ -61,18 +61,18 @@ namespace embree
       __forceinline PrimInfo () 
         : num(0), numFailed(0), geomBounds(empty), centBounds(empty), duplications(NULL) {}
 
-      __forceinline PrimInfo (size_t num, const BBox3f& geomBounds) 
+      __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds) 
         : num(num), numFailed(0), geomBounds(geomBounds), centBounds(geomBounds),
           duplications(new AtomicCounter(size_t(duplicationPercentage*double(num)/100.0))) {}
       
-      __forceinline PrimInfo (size_t num, const BBox3f& geomBounds, const BBox3f& centBounds)
+      __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds)
         : num(num), numFailed(0), geomBounds(geomBounds), centBounds(centBounds),
           duplications(new AtomicCounter(size_t(duplicationPercentage*double(num)/100.0))) {}
 
-      __forceinline PrimInfo (size_t num, const BBox3f& geomBounds, const BBox3f& centBounds, const PrimInfo& other)
+      __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds, const PrimInfo& other)
         : num(num), numFailed(0), geomBounds(geomBounds), centBounds(centBounds), duplications(other.duplications) {}
 
-      __forceinline PrimInfo (size_t num, int numFailed, const BBox3f& geomBounds, const BBox3f& centBounds, AtomicCounter* duplications) 
+      __forceinline PrimInfo (size_t num, int numFailed, const BBox3fa& geomBounds, const BBox3fa& centBounds, AtomicCounter* duplications) 
         : num(num), numFailed(numFailed), geomBounds(geomBounds), centBounds(centBounds), duplications(duplications) {}
       
       /*! returns the number of primitives */
@@ -99,8 +99,8 @@ namespace embree
     public:
       size_t num;         //!< number of primitives
       int    numFailed;   //!< number of times a spatial split failed
-      BBox3f geomBounds;  //!< geometry bounds of primitives
-      BBox3f centBounds;  //!< centroid bounds of primitives
+      BBox3fa geomBounds;  //!< geometry bounds of primitives
+      BBox3fa centBounds;  //!< centroid bounds of primitives
       AtomicCounter* duplications; //!< maximal number of duplications allowed
     };
     
@@ -128,22 +128,22 @@ namespace embree
       __forceinline size_t size() const { return num; }
       
       /*! Computes the bin numbers for each dimension for a box. */
-      __forceinline Vec3ia bin_unsafe(const BBox3f& box) const {
+      __forceinline Vec3ia bin_unsafe(const BBox3fa& box) const {
         return Vec3ia((center2(box) - ofs)*scale-Vec3fa(0.5f));
       }
       
       /*! Computes the bin numbers for each dimension for a box. */
-      __forceinline Vec3ia bin(const BBox3f& box) const {
+      __forceinline Vec3ia bin(const BBox3fa& box) const {
         return clamp(bin_unsafe(box),Vec3ia(0),Vec3ia(int(num-1)));
       }
 
       /*! Computes if object is on the left of a spatial split. */
-      __forceinline Vec3ba left(const BBox3f& box) const {
+      __forceinline Vec3ba left(const BBox3fa& box) const {
         return le_mask(box.upper,bleft);
       }
 
       /*! Computes if object is on the right of a spatial split. */
-      __forceinline Vec3ba right(const BBox3f& box) const {
+      __forceinline Vec3ba right(const BBox3fa& box) const {
         return ge_mask(box.lower,bright);
       }
 
@@ -186,7 +186,7 @@ namespace embree
       /*! splitting the primitive if required */
       __forceinline void split(const PrimRef& prim, PrimRef& lprim_o, PrimRef& rprim_o) const 
       {
-        const BBox3f bounds = prim.bounds();
+        const BBox3fa bounds = prim.bounds();
         const bool left  = mapping.left(bounds )[sdim];
         const bool right = mapping.right(bounds)[sdim];
 
@@ -303,16 +303,16 @@ namespace embree
     /* counter and bounds for object binning */
   public:
     Vec3ia counts    [maxBins];    //< number of primitives mapped to bin
-    BBox3f geomBounds[maxBins][4]; //< bounds for every bin in every dimension
-    BBox3f centBounds[maxBins][4]; //< centroid bounds for every bin in every dimension
+    BBox3fa geomBounds[maxBins][4]; //< bounds for every bin in every dimension
+    BBox3fa centBounds[maxBins][4]; //< centroid bounds for every bin in every dimension
 
     /* counter and bounds for spatial binning */
   public:
     Vec3ia lcounts, rcounts;        //< left and right count for spatial split
-    BBox3f lgeomBounds[4];        //< left geometry bounds for spatial split
-    BBox3f rgeomBounds[4];        //< right geometry bounds for spatial split
-    BBox3f lcentBounds[4];        //< left centroid bounds for spatial split
-    BBox3f rcentBounds[4];        //< right centroid bounds for spatial split
+    BBox3fa lgeomBounds[4];        //< left geometry bounds for spatial split
+    BBox3fa rgeomBounds[4];        //< right geometry bounds for spatial split
+    BBox3fa lcentBounds[4];        //< left centroid bounds for spatial split
+    BBox3fa rcentBounds[4];        //< right centroid bounds for spatial split
     
   public:
     const BuildSource* geom;       //!< geometry

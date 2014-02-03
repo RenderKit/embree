@@ -79,7 +79,7 @@ namespace embree
       }
 
       // -------------------------
-      __forceinline void set(const size_t index,const BBox3f &node)
+      __forceinline void set(const size_t index,const BBox3fa &node)
       {
 	lower_x[index] = node.lower[0];
 	lower_y[index] = node.lower[1];
@@ -110,11 +110,11 @@ namespace embree
 	data[index] = node.data[source_index];
       }
 
-      __forceinline BBox3f extract(const size_t index)
+      __forceinline BBox3fa extract(const size_t index)
       {
 	assert(index < N);
 
-	BBox3f node;
+	BBox3fa node;
 	node.lower[0] = lower_x[index];
 	node.lower[1] = lower_y[index];
 	node.lower[2] = lower_z[index];
@@ -170,17 +170,17 @@ namespace embree
 
       }
 
-      __forceinline BBox3f bounds() const {
+      __forceinline BBox3fa bounds() const {
         const Vec3fa lower(reduce_min(lower_x),reduce_min(lower_y),reduce_min(lower_z));
         const Vec3fa upper(reduce_max(upper_x),reduce_max(upper_y),reduce_max(upper_z));
-        return BBox3f(lower,upper);
+        return BBox3fa(lower,upper);
       }
 
       /*! Returns bounds of specified child. */
-      __forceinline BBox3f bounds(size_t i) const {
+      __forceinline BBox3fa bounds(size_t i) const {
         Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
         Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
-        return BBox3f(lower,upper);
+        return BBox3fa(lower,upper);
       }
 
       /*! Returns number of valid children */
@@ -204,7 +204,7 @@ namespace embree
     };
 
     float sah8 ();
-    float sah8 (Node*base, BVH4i::NodeRef& node, const BBox3f& bounds);
+    float sah8 (Node*base, BVH4i::NodeRef& node, const BBox3fa& bounds);
 
 #endif
 

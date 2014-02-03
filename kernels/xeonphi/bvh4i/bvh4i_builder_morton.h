@@ -148,10 +148,10 @@ namespace embree
     void build_main(const size_t threadID, const size_t numThreads);
 
     /*! creates a leaf node */
-    BBox3f createSmallLeaf(SmallBuildRecord& current) const;
+    BBox3fa createSmallLeaf(SmallBuildRecord& current) const;
 
 
-    BBox3f createLeaf(SmallBuildRecord& current, NodeAllocator& alloc);
+    BBox3fa createLeaf(SmallBuildRecord& current, NodeAllocator& alloc);
 
     /*! fallback split mode */
     void split_fallback(SmallBuildRecord& current, SmallBuildRecord& leftChild, SmallBuildRecord& rightChild) const;
@@ -163,7 +163,7 @@ namespace embree
     size_t createQBVHNode(SmallBuildRecord& current, SmallBuildRecord *__restrict__ const children);
 
     /*! main recursive build function */
-    BBox3f recurse(SmallBuildRecord& current, 
+    BBox3fa recurse(SmallBuildRecord& current, 
 		   NodeAllocator& alloc,
 		   const size_t mode, 
 		   const size_t numThreads);

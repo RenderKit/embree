@@ -30,14 +30,14 @@ namespace embree
   {
     ALIGNED_CLASS;
   public:
-    BBox3f centroid2;
-    BBox3f geometry;
+    BBox3fa centroid2;
+    BBox3fa geometry;
 
     __forceinline void reset() {
       centroid2 = geometry = empty;
     }
 
-    __forceinline void extend(const BBox3f& b) {
+    __forceinline void extend(const BBox3fa& b) {
       assert(!b.empty());
       centroid2.extend(center2(b));
       geometry.extend(b);

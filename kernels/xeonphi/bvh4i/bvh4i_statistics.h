@@ -35,7 +35,7 @@ namespace embree
     std::string str();
 
   private:
-    void statistics(NodeRef node, BBox3f bounds, size_t& depth);
+    void statistics(NodeRef node, BBox3fa bounds, size_t& depth);
 
   private:
     BVH4i* bvh;

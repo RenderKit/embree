@@ -91,9 +91,9 @@ namespace embree
     }
   }
   
-  BBox3f SceneTriangle8::update(char* prim, size_t num, void* geom) const 
+  BBox3fa SceneTriangle8::update(char* prim, size_t num, void* geom) const 
   {
-    BBox3f bounds = empty;
+    BBox3fa bounds = empty;
     Scene* scene = (Scene*) geom;
     
     for (size_t j=0; j<num; j++) 
@@ -113,7 +113,7 @@ namespace embree
         const Vec3fa p0 = mesh->vertex(tri.v[0]);
         const Vec3fa p1 = mesh->vertex(tri.v[1]);
         const Vec3fa p2 = mesh->vertex(tri.v[2]);
-        bounds.extend(merge(BBox3f(p0),BBox3f(p1),BBox3f(p2)));
+        bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
         vgeomID [i] = geomID;
         vprimID [i] = primID;
         vmask   [i] = mesh->mask;
@@ -150,9 +150,9 @@ namespace embree
     new (This) Triangle8(v0,v1,v2,geomID,primID,mask);
   }
   
-  BBox3f TriangleMeshTriangle8::update(char* prim, size_t num, void* geom) const 
+  BBox3fa TriangleMeshTriangle8::update(char* prim, size_t num, void* geom) const 
   {
-    BBox3f bounds = empty;
+    BBox3fa bounds = empty;
     TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
     
     for (size_t j=0; j<num; j++) 
@@ -171,7 +171,7 @@ namespace embree
         const Vec3fa p0 = mesh->vertex(tri.v[0]);
         const Vec3fa p1 = mesh->vertex(tri.v[1]);
         const Vec3fa p2 = mesh->vertex(tri.v[2]);
-        bounds.extend(merge(BBox3f(p0),BBox3f(p1),BBox3f(p2)));
+        bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
         vgeomID [i] = geomID;
         vprimID [i] = primID;
         vmask   [i] = mesh->mask;

@@ -1272,14 +1272,14 @@ namespace embree
     unsigned int accel_entries = entry.items();
     unsigned int accel_offset  = entry.itemListOfs();
 
-    BBox3f leaf_prim_bounds = empty;
+    BBox3fa leaf_prim_bounds = empty;
     for (size_t i=0;i<accel_entries;i++)
       {
 	leaf_prim_bounds.extend( prims[ accel_offset + i ].lower );
 	leaf_prim_bounds.extend( prims[ accel_offset + i ].upper );
       }
 
-    BBox3f leaf_tri_bounds = empty;
+    BBox3fa leaf_tri_bounds = empty;
     for (size_t i=0;i<accel_entries;i++)
       {
 	const unsigned int geomID = prims[ accel_offset + i ].geomID();
@@ -1305,12 +1305,12 @@ namespace embree
 
   void BVH4iBuilder::checkBuildRecord(const BuildRecord &current)
   {
-    BBox3f check_box;
-    BBox3f box;
+    BBox3fa check_box;
+    BBox3fa box;
     check_box = empty;
-    box = *(BBox3f*)&current.bounds.geometry;
+    box = *(BBox3fa*)&current.bounds.geometry;
 
-    BBox3f *aabb = (BBox3f*)prims;
+    BBox3fa *aabb = (BBox3fa*)prims;
 
     for (unsigned int i=current.begin;i<current.end;i++) 
       {
@@ -1569,7 +1569,7 @@ namespace embree
     
     /* update BVH4 */
     bvh->root = bvh->qbvh[0].lower[0].child; 
-    bvh->bounds = BBox3f(*(Vec3fa*)&bvh->qbvh->lower[0],*(Vec3fa*)&bvh->qbvh->upper[0]);
+    bvh->bounds = BBox3fa(*(Vec3fa*)&bvh->qbvh->lower[0],*(Vec3fa*)&bvh->qbvh->upper[0]);
     
     /* release all threads again */
     LockStepTaskScheduler::releaseThreads(threadCount);

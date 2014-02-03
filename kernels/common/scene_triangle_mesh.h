@@ -68,13 +68,13 @@ namespace embree
         return numTriangles;
       }
 
-      const BBox3f bounds(size_t group, size_t prim) const {
+      const BBox3fa bounds(size_t group, size_t prim) const {
         return bounds(prim);
       }
 
-      void bounds(size_t group, size_t begin, size_t end, BBox3f* bounds_o) const 
+      void bounds(size_t group, size_t begin, size_t end, BBox3fa* bounds_o) const 
       {
-        BBox3f b = empty;
+        BBox3fa b = empty;
         for (size_t i=begin; i<end; i++) b.extend(bounds(i));
         *bounds_o = b;
       }
@@ -94,13 +94,13 @@ namespace embree
         return vertices[j][i];
       }
 
-      __forceinline BBox3f bounds(size_t index) const 
+      __forceinline BBox3fa bounds(size_t index) const 
       {
         const Triangle& tri = triangle(index);
         const Vec3fa& v0 = vertex(tri.v[0]);
         const Vec3fa& v1 = vertex(tri.v[1]);
         const Vec3fa& v2 = vertex(tri.v[2]);
-	return BBox3f( min(min(v0,v1),v2), max(max(v0,v1),v2) );
+	return BBox3fa( min(min(v0,v1),v2), max(max(v0,v1),v2) );
       }
 
       __forceinline bool anyMappedBuffers() const {
