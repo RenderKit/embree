@@ -66,9 +66,9 @@ namespace embree
     prims++;
   }
     
-  BBox3f SceneTriangle1v::update(char* prim, size_t num, void* geom) const 
+  BBox3fa SceneTriangle1v::update(char* prim, size_t num, void* geom) const 
   {
-    BBox3f bounds = empty;
+    BBox3fa bounds = empty;
     Scene* scene = (Scene*) geom;
     
     for (size_t j=0; j<num; j++) 
@@ -82,7 +82,7 @@ namespace embree
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
       const Vec3fa v2 = mesh->vertex(tri.v[2]);
       new (&dst) Triangle1v(v0,v1,v2,geomID,primID,mesh->mask);
-      bounds.extend(merge(BBox3f(v0),BBox3f(v1),BBox3f(v2)));
+      bounds.extend(merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2)));
     }
     return bounds; 
   }
@@ -115,9 +115,9 @@ namespace embree
     prims++;
   }
   
-  BBox3f TriangleMeshTriangle1v::update(char* prim, size_t num, void* geom) const 
+  BBox3fa TriangleMeshTriangle1v::update(char* prim, size_t num, void* geom) const 
   {
-    BBox3f bounds = empty;
+    BBox3fa bounds = empty;
     const TriangleMeshScene::TriangleMesh* mesh = (const TriangleMeshScene::TriangleMesh*) geom;
     
     for (size_t j=0; j<num; j++) 
@@ -130,7 +130,7 @@ namespace embree
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
       const Vec3fa v2 = mesh->vertex(tri.v[2]);
       new (&dst) Triangle1v(v0,v1,v2,geomID,primID,mesh->mask);
-      bounds.extend(merge(BBox3f(v0),BBox3f(v1),BBox3f(v2)));
+      bounds.extend(merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2)));
     }
     return bounds; 
   }
@@ -182,17 +182,17 @@ namespace embree
     prims++;
   }
   
-  std::pair<BBox3f,BBox3f> SceneTriangle1vMB::update2(char* prim, size_t num, void* geom) const 
+  std::pair<BBox3fa,BBox3fa> SceneTriangle1vMB::update2(char* prim, size_t num, void* geom) const 
   {
-    BBox3f bounds0 = empty, bounds1 = empty;
+    BBox3fa bounds0 = empty, bounds1 = empty;
     
     for (size_t j=0; j<num; j++) 
     {
       const Triangle1vMB& tri = ((Triangle1vMB*) prim)[j];
-      bounds0.extend(merge(BBox3f(tri.v0),BBox3f(tri.v1),BBox3f(tri.v2)));
-      bounds1.extend(merge(BBox3f(tri.v0+tri.d0),BBox3f(tri.v1+tri.d1),BBox3f(tri.v2+tri.d2)));
+      bounds0.extend(merge(BBox3fa(tri.v0),BBox3fa(tri.v1),BBox3fa(tri.v2)));
+      bounds1.extend(merge(BBox3fa(tri.v0+tri.d0),BBox3fa(tri.v1+tri.d1),BBox3fa(tri.v2+tri.d2)));
     }
-    return std::pair<BBox3f,BBox3f>(bounds0,bounds1);
+    return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
   }
 
   void TriangleMeshTriangle1vMB::pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const 
@@ -229,16 +229,16 @@ namespace embree
     prims++;
   }
 
-  std::pair<BBox3f,BBox3f> TriangleMeshTriangle1vMB::update2(char* prim, size_t num, void* geom) const 
+  std::pair<BBox3fa,BBox3fa> TriangleMeshTriangle1vMB::update2(char* prim, size_t num, void* geom) const 
   {
-    BBox3f bounds0 = empty, bounds1 = empty;
+    BBox3fa bounds0 = empty, bounds1 = empty;
     
     for (size_t j=0; j<num; j++) 
     {
       const Triangle1vMB& tri = ((Triangle1vMB*) prim)[j];
-      bounds0.extend(merge(BBox3f(tri.v0),BBox3f(tri.v1),BBox3f(tri.v2)));
-      bounds1.extend(merge(BBox3f(tri.v0+tri.d0),BBox3f(tri.v1+tri.d1),BBox3f(tri.v2+tri.d2)));
+      bounds0.extend(merge(BBox3fa(tri.v0),BBox3fa(tri.v1),BBox3fa(tri.v2)));
+      bounds1.extend(merge(BBox3fa(tri.v0+tri.d0),BBox3fa(tri.v1+tri.d1),BBox3fa(tri.v2+tri.d2)));
     }
-    return std::pair<BBox3f,BBox3f>(bounds0,bounds1);
+    return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
   }
 }

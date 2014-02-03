@@ -274,27 +274,27 @@ namespace embree
       {
 	unsigned int accel_entries = entry.items();
 	unsigned int accel_offset  = entry.itemListOfs();
-	BBox3f leaf_bounds = empty;
+	BBox3fa leaf_bounds = empty;
 	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)accel + accel_offset;
 	for (size_t i=0;i<accel_entries;i++)
 	  {
 	    leaf_bounds.extend( accelMB[i].t1.bounds() );
 	  }
 
-	*(BBox3f*)&node[index+4] = leaf_bounds;
+	*(BBox3fa*)&node[index+4] = leaf_bounds;
 	return;
       }
 
     const size_t childrenID = entry.firstChildID();
     const size_t items    = entry.items();
-    BBox3f* next = (BBox3f*)&node[childrenID+4];
+    BBox3fa* next = (BBox3fa*)&node[childrenID+4];
     
     /* init second node */
     const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
     store16f_ngo(next + 0,init_node);
     store16f_ngo(next + 2,init_node);
 
-    BBox3f parentBounds = empty;
+    BBox3fa parentBounds = empty;
     for (size_t i=0; i<items; i++) 
     {
       const size_t childIndex = childrenID + i;	    	    
@@ -305,7 +305,7 @@ namespace embree
     for (size_t i=0; i<items; i++) 
       parentBounds.extend( next[i] );
 
-    *(BBox3f*)&node[index+4] = parentBounds;    
+    *(BBox3fa*)&node[index+4] = parentBounds;    
 
   }    
 
@@ -316,14 +316,14 @@ namespace embree
       {
 	unsigned int accel_entries = entry.items();
 	unsigned int accel_offset  = entry.itemListOfs();
-	BBox3f leaf_bounds = empty;
+	BBox3fa leaf_bounds = empty;
 	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)accel + accel_offset;
 	for (size_t i=0;i<accel_entries;i++)
 	  leaf_bounds.extend( accelMB[i].t1.bounds() );
-	if (leaf_bounds != *(BBox3f*)&node[index+4])
+	if (leaf_bounds != *(BBox3fa*)&node[index+4])
 	  {
 	    DBG_PRINT(leaf_bounds);
-	    DBG_PRINT(*(BBox3f*)&node[index+4]);
+	    DBG_PRINT(*(BBox3fa*)&node[index+4]);
 	    DBG_PRINT(index);
 	    FATAL("LEAF");
 	  }
@@ -332,17 +332,17 @@ namespace embree
       {
 	const size_t childrenID = entry.firstChildID();
 	const size_t items    = entry.items();
-	BBox3f* next = (BBox3f*)&node[childrenID+4];
+	BBox3fa* next = (BBox3fa*)&node[childrenID+4];
 
-	BBox3f bounds = empty;
+	BBox3fa bounds = empty;
 	for (size_t i=0; i<items; i++) 
 	  bounds.extend ( next[i]  );
 
 	if (index != 0)
-	  if ( bounds != *(BBox3f*)&node[index+4])
+	  if ( bounds != *(BBox3fa*)&node[index+4])
 	    {
 	      DBG_PRINT(bounds);
-	      DBG_PRINT(*(BBox3f*)&node[index+4]);
+	      DBG_PRINT(*(BBox3fa*)&node[index+4]);
 	      DBG_PRINT(index);
 	    FATAL("NODE");
 	    }
@@ -356,16 +356,16 @@ namespace embree
     
   }
 
-  BBox3f BVH4mbBuilder::refit_subtree(const size_t index)
+  BBox3fa BVH4mbBuilder::refit_subtree(const size_t index)
   {
-    BBox3f local[4];
+    BBox3fa local[4];
 
     BVHNode& entry = node[index];
     if (unlikely(entry.isLeaf()))
       {
 	unsigned int accel_entries = entry.items();
 	unsigned int accel_offset  = entry.itemListOfs();
-	BBox3f leaf_bounds = empty;
+	BBox3fa leaf_bounds = empty;
 	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)accel + accel_offset;
 
 	for (size_t i=0;i<accel_entries;i++)
@@ -381,7 +381,7 @@ namespace embree
 
     const size_t childrenID = entry.firstChildID();
     const size_t items    = entry.items();
-    BBox3f* next = (BBox3f*)&node[childrenID+4];
+    BBox3fa* next = (BBox3fa*)&node[childrenID+4];
 
 
     /* init second node */
@@ -390,11 +390,11 @@ namespace embree
     store16f(local + 2,init_node);
 
 
-    BBox3f bounds = empty;
+    BBox3fa bounds = empty;
     for (size_t i=0; i<items; i++) 
     {
       const size_t childIndex = childrenID + i;	    	    
-      BBox3f childBounds = refit_subtree(childIndex);
+      BBox3fa childBounds = refit_subtree(childIndex);
       local[i] = childBounds;
       bounds.extend ( childBounds );
     }      
@@ -431,20 +431,20 @@ namespace embree
   }
 
 
-  BBox3f BVH4mbBuilder::refit_toplevel(const size_t index,const size_t depth)
+  BBox3fa BVH4mbBuilder::refit_toplevel(const size_t index,const size_t depth)
   {
     BVHNode& entry = node[index];
 
     if (depth == GENERATE_SUBTREES_MAX_TREE_DEPTH || entry.isLeaf())
       {
-	return *(BBox3f*)&node[index+4];
+	return *(BBox3fa*)&node[index+4];
       }
 
     const size_t childrenID = entry.firstChildID();
     const size_t items    = entry.items();
-    BBox3f* next = (BBox3f*)&node[childrenID+4];
+    BBox3fa* next = (BBox3fa*)&node[childrenID+4];
 
-    __align(64) BBox3f local[4];
+    __align(64) BBox3fa local[4];
 
     /* init second node */
     const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
@@ -452,11 +452,11 @@ namespace embree
     store16f(local + 2,init_node);
 
 
-    BBox3f bounds = empty;
+    BBox3fa bounds = empty;
     for (size_t i=0; i<items; i++) 
     {
       const size_t childIndex = childrenID + i;	    	    
-      BBox3f childBounds = refit_toplevel(childIndex,depth+1);
+      BBox3fa childBounds = refit_toplevel(childIndex,depth+1);
       local[i] = childBounds;
       bounds.extend ( childBounds );
     }      
@@ -522,8 +522,8 @@ namespace embree
 	unsigned int ID = atomicID.inc();
 	if (ID >= subtrees) break;
 	const unsigned int index = subtrees_array[ID];
-	BBox3f bounds = refit_subtree(index);
-	*(BBox3f*)&node[index+4] = bounds;		
+	BBox3fa bounds = refit_subtree(index);
+	*(BBox3fa*)&node[index+4] = bounds;		
       }
   }
 

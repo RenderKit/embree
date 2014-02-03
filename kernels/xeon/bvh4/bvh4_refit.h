@@ -50,10 +50,10 @@ namespace embree
       size_t annotate_tree_sizes(NodeRef& ref);
       void calculate_refit_roots ();
       
-      BBox3f leaf_bounds(NodeRef& ref);
-      BBox3f node_bounds(NodeRef& ref);
-      BBox3f recurse_bottom(NodeRef& ref);
-      BBox3f recurse_top(NodeRef& ref);
+      BBox3fa leaf_bounds(NodeRef& ref);
+      BBox3fa node_bounds(NodeRef& ref);
+      BBox3fa recurse_bottom(NodeRef& ref);
+      BBox3fa recurse_top(NodeRef& ref);
       
     private:
       //BuildSource* source;           //!< input geometry

@@ -132,14 +132,14 @@ namespace embree
       }
     }
     
-    __forceinline BBox3f BVH4Refit::leaf_bounds(NodeRef& ref)
+    __forceinline BBox3fa BVH4Refit::leaf_bounds(NodeRef& ref)
     {
       size_t num; char* tri = ref.leaf(num);
       if (unlikely(num == 0)) return empty;
       return bvh->primTy.update(tri,num,mesh);
     }
     
-    __forceinline BBox3f BVH4Refit::node_bounds(NodeRef& ref)
+    __forceinline BBox3fa BVH4Refit::node_bounds(NodeRef& ref)
     {
       if (ref.isNode())
         return ref.node()->bounds();
@@ -147,7 +147,7 @@ namespace embree
         return leaf_bounds(ref);
     }
     
-    BBox3f BVH4Refit::recurse_bottom(NodeRef& ref)
+    BBox3fa BVH4Refit::recurse_bottom(NodeRef& ref)
     {
       /* this is a leaf node */
       if (unlikely(ref.isLeaf()))
@@ -155,10 +155,10 @@ namespace embree
       
       /* recurse if this is an internal node */
       Node* node = ref.node();
-      const BBox3f bounds0 = recurse_bottom(node->child(0));
-      const BBox3f bounds1 = recurse_bottom(node->child(1));
-      const BBox3f bounds2 = recurse_bottom(node->child(2));
-      const BBox3f bounds3 = recurse_bottom(node->child(3));
+      const BBox3fa bounds0 = recurse_bottom(node->child(0));
+      const BBox3fa bounds1 = recurse_bottom(node->child(1));
+      const BBox3fa bounds2 = recurse_bottom(node->child(2));
+      const BBox3fa bounds3 = recurse_bottom(node->child(3));
       
       /* AOS to SOA transform */
       BBox<sse3f> bounds;
@@ -180,11 +180,11 @@ namespace embree
       const float upper_x = reduce_max(bounds.upper.x);
       const float upper_y = reduce_max(bounds.upper.y);
       const float upper_z = reduce_max(bounds.upper.z);
-      return BBox3f(Vec3fa(lower_x,lower_y,lower_z),
+      return BBox3fa(Vec3fa(lower_x,lower_y,lower_z),
                     Vec3fa(upper_x,upper_y,upper_z));
     }
     
-    BBox3f BVH4Refit::recurse_top(NodeRef& ref)
+    BBox3fa BVH4Refit::recurse_top(NodeRef& ref)
     {
       /* stop here if we encounter a barrier */
       if (unlikely(ref.isBarrier())) {
@@ -198,10 +198,10 @@ namespace embree
       
       /* recurse if this is an internal node */
       Node* node = ref.node();
-      const BBox3f bounds0 = recurse_top(node->child(0));
-      const BBox3f bounds1 = recurse_top(node->child(1));
-      const BBox3f bounds2 = recurse_top(node->child(2));
-      const BBox3f bounds3 = recurse_top(node->child(3));
+      const BBox3fa bounds0 = recurse_top(node->child(0));
+      const BBox3fa bounds1 = recurse_top(node->child(1));
+      const BBox3fa bounds2 = recurse_top(node->child(2));
+      const BBox3fa bounds3 = recurse_top(node->child(3));
       
       /* AOS to SOA transform */
       BBox<sse3f> bounds;
@@ -223,7 +223,7 @@ namespace embree
       const float upper_x = reduce_max(bounds.upper.x);
       const float upper_y = reduce_max(bounds.upper.y);
       const float upper_z = reduce_max(bounds.upper.z);
-      return BBox3f(Vec3fa(lower_x,lower_y,lower_z),
+      return BBox3fa(Vec3fa(lower_x,lower_y,lower_z),
                     Vec3fa(upper_x,upper_y,upper_z));
     }
     

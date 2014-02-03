@@ -450,7 +450,7 @@ namespace embree
     float r;
   };
 
-  void BoundsFunc(Sphere* sphere, size_t index, BBox3f* bounds_o)
+  void BoundsFunc(Sphere* sphere, size_t index, BBox3fa* bounds_o)
   {
     bounds_o->lower.x = sphere->pos.x-sphere->r;
     bounds_o->lower.y = sphere->pos.y-sphere->r;
@@ -486,7 +486,7 @@ namespace embree
 
   unsigned addUserGeometryEmpty (RTCScene scene, const Vec3fa& pos, const float r)
   {
-    BBox3f bounds(pos-Vec3fa(r),pos+Vec3fa(r));
+    BBox3fa bounds(pos-Vec3fa(r),pos+Vec3fa(r));
     unsigned geom = rtcNewUserGeometry (scene,1);
     Sphere* sphere = new Sphere; // FIXME: get never deleted
     sphere->pos = pos; sphere->r = r;

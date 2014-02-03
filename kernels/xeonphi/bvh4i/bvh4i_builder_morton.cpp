@@ -759,7 +759,7 @@ namespace embree
   }
 		
 
-  __forceinline BBox3f BVH4iBuilderMorton::createSmallLeaf(SmallBuildRecord& current) const
+  __forceinline BBox3fa BVH4iBuilderMorton::createSmallLeaf(SmallBuildRecord& current) const
   {
     mic_f bounds_min(pos_inf);
     mic_f bounds_max(neg_inf);
@@ -807,14 +807,14 @@ namespace embree
     store4f(&node[current.parentID].lower,bounds_min);
     store4f(&node[current.parentID].upper,bounds_max);
     node[current.parentID].createLeaf(start,items,items);
-    __align(64) BBox3f bounds;
+    __align(64) BBox3fa bounds;
     store4f(&bounds.lower,bounds_min);
     store4f(&bounds.upper,bounds_max);
     return bounds;
   }
 
 
-  BBox3f BVH4iBuilderMorton::createLeaf(SmallBuildRecord& current, NodeAllocator& alloc)
+  BBox3fa BVH4iBuilderMorton::createLeaf(SmallBuildRecord& current, NodeAllocator& alloc)
   {
 #if defined(DEBUG)
     if (current.depth > BVH4i::maxBuildDepthLeaf) 
@@ -845,7 +845,7 @@ namespace embree
     store16f_ngo((float*)&node[currentIndex+0],init_node);
     store16f_ngo((float*)&node[currentIndex+2],init_node);
 
-    BBox3f bounds; 
+    BBox3fa bounds; 
     bounds = empty;
     /* recurse into each child */
     for (size_t i=0; i<numChildren; i++) {
@@ -989,7 +989,7 @@ namespace embree
   }
 
   
-  BBox3f BVH4iBuilderMorton::recurse(SmallBuildRecord& current, 
+  BBox3fa BVH4iBuilderMorton::recurse(SmallBuildRecord& current, 
 				     NodeAllocator& alloc,
 				     const size_t mode, 
 				     const size_t numThreads) 
@@ -1065,7 +1065,7 @@ namespace embree
     store16f_ngo((float*)&node[currentIndex+2],init_node);
 
     /* recurse into each child */
-    BBox3f bounds;
+    BBox3fa bounds;
     bounds = empty;
     for (size_t i=0; i<numChildren; i++) 
     {

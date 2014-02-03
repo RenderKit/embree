@@ -33,7 +33,7 @@ namespace embree
     for (size_t i=0; i<num; i++)
     {
       /*! map even and odd primitive to bin */
-      const BBox3f prim = prims[i].bounds(); const Vec3ia bin = mapping.bin(prim); const Vec3fa center = Vec3fa(center2(prim));
+      const BBox3fa prim = prims[i].bounds(); const Vec3ia bin = mapping.bin(prim); const Vec3fa center = Vec3fa(center2(prim));
       
       /*! increase bounds for bins for even primitive */
       const int b0 = bin.x; counts[b0][0]++; geomBounds[b0][0].extend(prim); centBounds[b0][0].extend(center);
@@ -116,7 +116,7 @@ namespace embree
     
     /* sweep from right to left and compute parallel prefix of merged bounds */
     assert(mapping.size() > 0);
-    Vec3ia count = 0; BBox3f bx = empty; BBox3f by = empty; BBox3f bz = empty;
+    Vec3ia count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
     for (size_t i=mapping.size()-1; i>0; i--)
     {
       count += counts[i];
@@ -167,8 +167,8 @@ namespace embree
     
     /* calculate geometry info from binning data */
     size_t numLeft = 0, numRight = 0;
-    BBox3f lcentBounds = empty, rcentBounds = empty;
-    BBox3f lgeomBounds = empty, rgeomBounds = empty;
+    BBox3fa lcentBounds = empty, rcentBounds = empty;
+    BBox3fa lgeomBounds = empty, rgeomBounds = empty;
     for (size_t i=0; i<pos; i++) {
       numLeft += counts[i][dim];
       lcentBounds.extend(centBounds[i][dim]);

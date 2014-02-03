@@ -34,8 +34,8 @@ namespace embree
       for (i=begin; i<end-1; i+=2)
       {
         /*! map even and odd primitive to bin */
-        const BBox3f prim0 = prims[i+0].bounds(); const ssei bin0 = mapping.bin(prim0);
-        const BBox3f prim1 = prims[i+1].bounds(); const ssei bin1 = mapping.bin(prim1);
+        const BBox3fa prim0 = prims[i+0].bounds(); const ssei bin0 = mapping.bin(prim0);
+        const BBox3fa prim1 = prims[i+1].bounds(); const ssei bin1 = mapping.bin(prim1);
         
         /*! increase bounds for bins for even primitive */
         const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].extend(prim0);
@@ -52,7 +52,7 @@ namespace embree
       if (i < end)
       {
         /*! map primitive to bin */
-        const BBox3f prim0 = prims[i].bounds(); const ssei bin0 = mapping.bin(prim0);
+        const BBox3fa prim0 = prims[i].bounds(); const ssei bin0 = mapping.bin(prim0);
         
         /*! increase bounds of bins */
         const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].extend(prim0);
@@ -76,8 +76,8 @@ namespace embree
       for (i=begin; i<end-1; i+=2)
       {
         /*! map even and odd primitive to bin */
-        const BBox3f prim0 = prims[i+0].bounds(); const ssei bin0 = mapping.bin(prim0);
-        const BBox3f prim1 = prims[i+1].bounds(); const ssei bin1 = mapping.bin(prim1);
+        const BBox3fa prim0 = prims[i+0].bounds(); const ssei bin0 = mapping.bin(prim0);
+        const BBox3fa prim1 = prims[i+1].bounds(); const ssei bin1 = mapping.bin(prim1);
         
         /*! increase bounds for bins for even primitive */
         const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].extend(prim0);
@@ -98,7 +98,7 @@ namespace embree
       if (i < end)
       {
         /*! map primitive to bin */
-        const BBox3f prim0 = prims[i].bounds(); const ssei bin0 = mapping.bin(prim0);
+        const BBox3fa prim0 = prims[i].bounds(); const ssei bin0 = mapping.bin(prim0);
         
         /*! increase bounds of bins */
         const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].extend(prim0);
@@ -134,7 +134,7 @@ namespace embree
       ssei rCounts[BINS];
       
       /* sweep from right to left and compute parallel prefix of merged bounds */
-      ssei count = 0; BBox3f bx = empty; BBox3f by = empty; BBox3f bz = empty;
+      ssei count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
       for (size_t i=BINS-1; i>0; i--)
       {
         count += counts[i];

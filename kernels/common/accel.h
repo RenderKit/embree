@@ -26,7 +26,7 @@ namespace embree
   public:
     Bounded () : bounds(empty) {}
   public:
-    BBox3f bounds;
+    BBox3fa bounds;
   };
 
   /*! Base class for all intersectable and buildable acceleration structures. */

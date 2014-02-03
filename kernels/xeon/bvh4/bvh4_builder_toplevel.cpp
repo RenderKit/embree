@@ -197,7 +197,7 @@ namespace embree
         allThreadBuilds.push_back(objectID);
     }
     
-    BBox3f BVH4BuilderTopLevel::build (size_t threadIndex, size_t threadCount, size_t objectID)
+    BBox3fa BVH4BuilderTopLevel::build (size_t threadIndex, size_t threadCount, size_t objectID)
     {
       /* ignore if no triangle mesh or not enabled */
       TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
@@ -216,7 +216,7 @@ namespace embree
       }
       
       /* create build primitive */
-      const BBox3f bounds = object->bounds;
+      const BBox3fa bounds = object->bounds;
       refs[nextRef++] = BuildRef(bounds,object->root);
       return bounds;
     }
@@ -231,7 +231,7 @@ namespace embree
         return;
       
       /* build all other meshes */
-      BBox3f bounds = build(threadIndex,threadCount,objectID);
+      BBox3fa bounds = build(threadIndex,threadCount,objectID);
       if (!bounds.empty()) 
         g_state->thread_bounds[threadIndex].extend(bounds);
     }

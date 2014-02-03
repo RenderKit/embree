@@ -29,8 +29,8 @@ namespace embree
   class __align(64) Centroid_Scene_AABB
   {
   public:
-    BBox3f centroid2;
-    BBox3f geometry;
+    BBox3fa centroid2;
+    BBox3fa geometry;
 
     __forceinline void reset() {
 #if !defined(__MIC__)
@@ -45,7 +45,7 @@ namespace embree
 #endif
     }
 
-    __forceinline void extend(const BBox3f& b) {
+    __forceinline void extend(const BBox3fa& b) {
       assert(!b.empty());
       centroid2.extend(center2(b));
       geometry.extend(b);

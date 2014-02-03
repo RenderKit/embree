@@ -163,7 +163,7 @@ namespace embree
 
         for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
         { 			    
-          const BBox3f bounds1 = mesh->bounds(i);
+          const BBox3fa bounds1 = mesh->bounds(i);
           bounds.extend(bounds1);
           prims[currentID] = PrimRef(bounds1,g,i);
         }
@@ -204,7 +204,7 @@ namespace embree
         
         for (size_t i=0; i<numTriangles; i++, currentID++)	 
         { 			    
-          const BBox3f bounds1 = source->bounds(g,offset+i);
+          const BBox3fa bounds1 = source->bounds(g,offset+i);
           bounds.extend(bounds1);
           prims[currentID] = PrimRef(bounds1,g,offset+i);
         }
@@ -586,7 +586,7 @@ namespace embree
       /* update BVH4 */
       const QBVHNode* const __restrict__ qbvh  = (QBVHNode*)bvh->qbvh;
       bvh->root = qbvh[0].min_d[0]; 
-      bvh->bounds = BBox3f(Vec3fa(qbvh->min_x[0],qbvh->min_y[0],qbvh->min_y[0]),
+      bvh->bounds = BBox3fa(Vec3fa(qbvh->min_x[0],qbvh->min_y[0],qbvh->min_y[0]),
                            Vec3fa(qbvh->max_x[0],qbvh->max_y[0],qbvh->max_y[0]));
       
       /* release all threads again */

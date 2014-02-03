@@ -266,7 +266,7 @@ namespace embree
         
         for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
         { 			    
-          const BBox3f bounds1 = mesh->bounds(i);
+          const BBox3fa bounds1 = mesh->bounds(i);
           bounds.extend(bounds1);
           prims[currentID] = PrimRef(bounds1,g,i);
         }
@@ -313,7 +313,7 @@ namespace embree
         
         for (size_t i=0; i<numTriangles; i++, currentID++)	 
         { 			    
-          const BBox3f bounds1 = source->bounds(g,offset+i);
+          const BBox3fa bounds1 = source->bounds(g,offset+i);
           bounds.extend(bounds1);
           prims[currentID] = PrimRef(bounds1,g,offset+i);
         }

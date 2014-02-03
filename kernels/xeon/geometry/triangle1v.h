@@ -33,8 +33,8 @@ namespace embree
       : v0(v0,primID), v1(v1,geomID), v2(v2,mask) {}
 
     /*! calculate the bounds of the triangle */
-    __forceinline BBox3f bounds() const {
-      return merge(BBox3f(v0),BBox3f(v1),BBox3f(v2));
+    __forceinline BBox3fa bounds() const {
+      return merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2));
     }
 
     /*! access hidden members */
@@ -59,7 +59,7 @@ namespace embree
     static SceneTriangle1v type;
     void pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const;
     void pack(char* dst, const PrimRef* prims, size_t num, void* geom) const;
-    BBox3f update(char* prim, size_t num, void* geom) const;
+    BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 
   struct TriangleMeshTriangle1v : public Triangle1vType 
@@ -67,7 +67,7 @@ namespace embree
     static TriangleMeshTriangle1v type;
     void pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const;
     void pack(char* dst, const PrimRef* prims, size_t num, void* geom) const;
-    BBox3f update(char* prim, size_t num, void* geom) const;
+    BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 
   struct Triangle1vMB
@@ -109,7 +109,7 @@ namespace embree
     static SceneTriangle1vMB type;
     void pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const;
     void pack(char* dst, const PrimRef* prims, size_t num, void* geom) const;
-    std::pair<BBox3f,BBox3f> update2(char* prim, size_t num, void* geom) const;
+    std::pair<BBox3fa,BBox3fa> update2(char* prim, size_t num, void* geom) const;
   };
 
   struct TriangleMeshTriangle1vMB : public Triangle1vMBType
@@ -117,7 +117,7 @@ namespace embree
     static TriangleMeshTriangle1vMB type;
     void pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const;
     void pack(char* dst, const PrimRef* prims, size_t num, void* geom) const;
-    std::pair<BBox3f,BBox3f> update2(char* prim, size_t num, void* geom) const;
+    std::pair<BBox3fa,BBox3fa> update2(char* prim, size_t num, void* geom) const;
   };
 }
 

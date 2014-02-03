@@ -48,13 +48,13 @@ namespace embree
       __forceinline PrimInfo () 
         : num(0), geomBounds(empty), centBounds(empty) {}
 
-      __forceinline PrimInfo (size_t num, const BBox3f& geomBounds) 
+      __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds) 
         : num(num), geomBounds(geomBounds), centBounds(geomBounds) {}
       
-      __forceinline PrimInfo (size_t num, const BBox3f& geomBounds, const BBox3f& centBounds) 
+      __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
         : num(num), geomBounds(geomBounds), centBounds(centBounds) {}
 
-      __forceinline PrimInfo (size_t num, const BBox3f& geomBounds, const BBox3f& centBounds, const PrimInfo& other) 
+      __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds, const PrimInfo& other) 
         : num(num), geomBounds(geomBounds), centBounds(centBounds) {}
 
       /*! returns the number of primitives */
@@ -78,8 +78,8 @@ namespace embree
       
     public:
       size_t num;          //!< number of primitives
-      BBox3f geomBounds;   //!< geometry bounds of primitives
-      BBox3f centBounds;   //!< centroid bounds of primitives
+      BBox3fa geomBounds;   //!< geometry bounds of primitives
+      BBox3fa centBounds;   //!< centroid bounds of primitives
     };
     
     /*! mapping from bounding boxes to bins */
@@ -102,12 +102,12 @@ namespace embree
       __forceinline size_t size() const { return num; }
       
       /*! Computes the bin numbers for each dimension for a box. */
-      __forceinline Vec3ia bin_unsafe(const BBox3f& box) const {
+      __forceinline Vec3ia bin_unsafe(const BBox3fa& box) const {
         return Vec3ia((center2(box) - ofs)*scale-Vec3fa(0.5f));
       }
       
       /*! Computes the bin numbers for each dimension for a box. */
-      __forceinline Vec3ia bin(const BBox3f& box) const {
+      __forceinline Vec3ia bin(const BBox3fa& box) const {
         return clamp(bin_unsafe(box),Vec3ia(0),Vec3ia(int(num-1)));
       }
       
@@ -203,8 +203,8 @@ namespace embree
     
     /* initialize binning counter and bounds */
     Vec3ia   counts    [maxBins];    //< number of primitives mapped to bin
-    BBox3f geomBounds[maxBins][4]; //< bounds for every bin in every dimension
-    BBox3f centBounds[maxBins][4]; //< centroid bounds for every bin in every dimension
+    BBox3fa geomBounds[maxBins][4]; //< bounds for every bin in every dimension
+    BBox3fa centBounds[maxBins][4]; //< centroid bounds for every bin in every dimension
   };
 }
 

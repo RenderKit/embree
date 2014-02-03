@@ -60,8 +60,8 @@ namespace embree
     /* intermediate data */
   private:
     TaskScheduler::Task task;
-    BBox3f geomBounds[numTasks];     //!< Geometry bounds per thread
-    BBox3f centBounds[numTasks];     //!< Centroid bounds per thread
+    BBox3fa geomBounds[numTasks];     //!< Geometry bounds per thread
+    BBox3fa centBounds[numTasks];     //!< Centroid bounds per thread
     Heuristic heuristics[numTasks];  //!< Heuristics per thread
     WorkItem work[numTasks];
     

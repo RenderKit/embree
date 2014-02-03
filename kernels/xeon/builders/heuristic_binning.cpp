@@ -29,8 +29,8 @@ namespace embree
     size_t i; for (i=0; i<num-1; i+=2)
     {
       /*! map even and odd primitive to bin */
-      const BBox3f prim0 = prims[i+0].bounds(); const Vec3ia bin0 = mapping.bin(prim0); const Vec3fa center0 = Vec3fa(center2(prim0));
-      const BBox3f prim1 = prims[i+1].bounds(); const Vec3ia bin1 = mapping.bin(prim1); const Vec3fa center1 = Vec3fa(center2(prim1));
+      const BBox3fa prim0 = prims[i+0].bounds(); const Vec3ia bin0 = mapping.bin(prim0); const Vec3fa center0 = Vec3fa(center2(prim0));
+      const BBox3fa prim1 = prims[i+1].bounds(); const Vec3ia bin1 = mapping.bin(prim1); const Vec3fa center1 = Vec3fa(center2(prim1));
       
       /*! increase bounds for bins for even primitive */
       const int b00 = bin0.x; counts[b00][0]++; geomBounds[b00][0].extend(prim0); centBounds[b00][0].extend(center0);
@@ -47,7 +47,7 @@ namespace embree
     if (i < num)
     {
       /*! map primitive to bin */
-      const BBox3f prim0 = prims[i].bounds(); const Vec3ia bin0 = mapping.bin(prim0); const Vec3fa center0 = Vec3fa(center2(prim0));
+      const BBox3fa prim0 = prims[i].bounds(); const Vec3ia bin0 = mapping.bin(prim0); const Vec3fa center0 = Vec3fa(center2(prim0));
       
       /*! increase bounds of bins */
       const int b00 = bin0.x; counts[b00][0]++; geomBounds[b00][0].extend(prim0); centBounds[b00][0].extend(center0);
@@ -64,7 +64,7 @@ namespace embree
     
     /* sweep from right to left and compute parallel prefix of merged bounds */
     assert(mapping.size() > 0);
-    Vec3ia count = 0; BBox3f bx = empty; BBox3f by = empty; BBox3f bz = empty;
+    Vec3ia count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
     for (size_t i=mapping.size()-1; i>0; i--)
     {
       count += counts[i];
@@ -109,8 +109,8 @@ namespace embree
     /* calculate geometry info from binning data */
     size_t pos = split.pos, dim = split.dim;
     size_t numLeft = 0, numRight = 0;
-    BBox3f lcentBounds = empty, rcentBounds = empty;
-    BBox3f lgeomBounds = empty, rgeomBounds = empty;
+    BBox3fa lcentBounds = empty, rcentBounds = empty;
+    BBox3fa lgeomBounds = empty, rgeomBounds = empty;
     for (size_t i=0; i<pos; i++) {
       numLeft += counts[i][dim];
       lcentBounds.extend(centBounds[i][dim]);

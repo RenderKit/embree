@@ -66,7 +66,7 @@ namespace embree
         return numCurves;
       }
 
-      const BBox3f bounds(size_t group, size_t prim) const {
+      const BBox3fa bounds(size_t group, size_t prim) const {
         return bounds(prim);
       }
 
@@ -89,7 +89,7 @@ namespace embree
         return vertices[j][i].r;
       }
 
-      __forceinline BBox3f bounds(size_t i) const 
+      __forceinline BBox3fa bounds(size_t i) const 
       {
         const int index = curve(i);
         const float r0 = radius(index+0);
@@ -100,7 +100,7 @@ namespace embree
         const Vec3fa& v1 = vertex(index+1);
         const Vec3fa& v2 = vertex(index+2);
         const Vec3fa& v3 = vertex(index+3);
-        const BBox3f b = merge(BBox3f(v0),BBox3f(v1),BBox3f(v2),BBox3f(v3));
+        const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
         return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
       }
 

@@ -176,16 +176,16 @@ namespace embree
       
     public:
       
-      typedef void (*createLeafFunction)(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3f& box_o);
-      typedef BBox3f (*leafBoundsFunction)(NodeRef& ref);
+      typedef void (*createLeafFunction)(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+      typedef BBox3fa (*leafBoundsFunction)(NodeRef& ref);
       
       /*! creates a leaf node */
-      static void createTriangle1Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3f& box_o);
-      static void createTriangle4Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3f& box_o);
-      static void createTriangle1vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3f& box_o);
-      static void createTriangle4vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3f& box_o);
+      static void createTriangle1Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+      static void createTriangle4Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+      static void createTriangle1vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+      static void createTriangle4vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
       
-      BBox3f createLeaf(SmallBuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID);
+      BBox3fa createLeaf(SmallBuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID);
       
       /*! fallback split mode */
       void split_fallback(SmallBuildRecord& current, SmallBuildRecord& leftChild, SmallBuildRecord& rightChild) const;
@@ -194,22 +194,22 @@ namespace embree
       void split(SmallBuildRecord& current, SmallBuildRecord& left, SmallBuildRecord& right) const;
       
       /*! main recursive build function */
-      BBox3f recurse(SmallBuildRecord& current, 
+      BBox3fa recurse(SmallBuildRecord& current, 
                      Allocator& nodeAlloc, Allocator& leafAlloc,
                      const size_t mode, 
                      const size_t threadID);
       
-      static BBox3f leafBoundsTriangle1(NodeRef& ref);
-      static BBox3f leafBoundsTriangle4(NodeRef& ref);
-      static BBox3f leafBoundsTriangle1v(NodeRef& ref);
-      static BBox3f leafBoundsTriangle4v(NodeRef& ref);
-      BBox3f node_bounds(NodeRef& ref) const;
+      static BBox3fa leafBoundsTriangle1(NodeRef& ref);
+      static BBox3fa leafBoundsTriangle4(NodeRef& ref);
+      static BBox3fa leafBoundsTriangle1v(NodeRef& ref);
+      static BBox3fa leafBoundsTriangle4v(NodeRef& ref);
+      BBox3fa node_bounds(NodeRef& ref) const;
       
       /*! refit the toplevel part of the BVH */
-      BBox3f refit_toplevel(NodeRef& index) const;
+      BBox3fa refit_toplevel(NodeRef& index) const;
       
       /*! refit the sub-BVHs */
-      BBox3f refit(NodeRef& index) const;
+      BBox3fa refit(NodeRef& index) const;
       
       /*! recreates morton codes when reaching a region where all codes are identical */
       void recreateMortonCodes(SmallBuildRecord& current) const;

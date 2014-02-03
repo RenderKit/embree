@@ -357,7 +357,7 @@ namespace embree
           
           const QBVHNode      *const __restrict__ qbvh  = (QBVHNode*)bvh->qbvh;
           bvh->root = qbvh[0].min_d[0]; 
-          bvh->bounds = BBox3f(Vec3fa(qbvh->min_x[0],qbvh->min_y[0],qbvh->min_y[0]),
+          bvh->bounds = BBox3fa(Vec3fa(qbvh->min_x[0],qbvh->min_y[0],qbvh->min_y[0]),
                                Vec3fa(qbvh->max_x[0],qbvh->max_y[0],qbvh->max_y[0]));
           
           // ==================          

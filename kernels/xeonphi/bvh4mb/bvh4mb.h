@@ -43,10 +43,10 @@ namespace embree
       } lower_t1[4], upper_t1[4];    // lower and upper bounds of all 4 children
 
       /*! Returns bounds of specified child. */
-      __forceinline BBox3f bounds(size_t i) const {
+      __forceinline BBox3fa bounds(size_t i) const {
         Vec3fa l = *(Vec3fa*)&lower[i];
         Vec3fa u = *(Vec3fa*)&upper[i];
-        return BBox3f(l,u);
+        return BBox3fa(l,u);
       }
 
       __forceinline void setInvalid(size_t i)

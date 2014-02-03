@@ -38,10 +38,10 @@ namespace embree
     virtual void pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const = 0;
 
     /*! Updates all primitives stored in a leaf */
-    virtual BBox3f update(char* prim, size_t num, void* geom) const { return BBox3f(empty); }
+    virtual BBox3fa update(char* prim, size_t num, void* geom) const { return BBox3fa(empty); }
 
     /*! Updates all primitives stored in a leaf */
-    virtual std::pair<BBox3f,BBox3f> update2(char* prim, size_t num, void* geom) const { return std::pair<BBox3f,BBox3f>(empty,empty); }
+    virtual std::pair<BBox3fa,BBox3fa> update2(char* prim, size_t num, void* geom) const { return std::pair<BBox3fa,BBox3fa>(empty,empty); }
 
   public:
     std::string name;       //!< name of this primitive type

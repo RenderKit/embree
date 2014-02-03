@@ -71,7 +71,7 @@ namespace embree
 
   __forceinline void splitTri(const PrimRef& prim, int dim, float pos, const Vec3fa& a, const Vec3fa& b, const Vec3fa& c, PrimRef& left_o, PrimRef& right_o)
   {
-    BBox3f left = empty, right = empty;
+    BBox3fa left = empty, right = empty;
     const Vec3fa v[3] = { a,b,c };
 
     /* clip triangle to left and right box by processing all edges */
@@ -96,10 +96,10 @@ namespace embree
     assert(!right.empty()); // happens if split does not hit triangle
 
     /* safe clip against current bounds */
-    BBox3f bounds = prim.bounds();
-    BBox3f cleft(min(max(left.lower,bounds.lower),bounds.upper),
+    BBox3fa bounds = prim.bounds();
+    BBox3fa cleft(min(max(left.lower,bounds.lower),bounds.upper),
                  max(min(left.upper,bounds.upper),bounds.lower));
-    BBox3f cright(min(max(right.lower,bounds.lower),bounds.upper),
+    BBox3fa cright(min(max(right.lower,bounds.lower),bounds.upper),
                   max(min(right.upper,bounds.upper),bounds.lower));
 
     left_o  = PrimRef(cleft, prim.geomID(), prim.primID());
@@ -259,7 +259,7 @@ namespace embree
 	Vec3fa vtxB = *(Vec3fa*)vptr1;
 	Vec3fa vtxC = *(Vec3fa*)vptr2;
 
-	BBox3f bounds = empty;
+	BBox3fa bounds = empty;
 	bounds.extend(vtxA);
 	bounds.extend(vtxB);
 	bounds.extend(vtxC);
@@ -481,7 +481,7 @@ namespace embree
         size_t N = virtual_geometry->size();
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
         { 			    
-          const BBox3f bounds = virtual_geometry->bounds(i);
+          const BBox3fa bounds = virtual_geometry->bounds(i);
           const mic_f bmin = broadcast4to16f(&bounds.lower); 
           const mic_f bmax = broadcast4to16f(&bounds.upper);
 

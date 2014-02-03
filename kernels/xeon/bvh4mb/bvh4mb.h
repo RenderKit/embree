@@ -129,14 +129,14 @@ namespace embree
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3f& bounds, Base* childID) {
+      __forceinline void set(size_t i, const BBox3fa& bounds, Base* childID) {
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
         upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
         child[i] = childID;
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3f& bounds0, const BBox3f& bounds1) 
+      __forceinline void set(size_t i, const BBox3fa& bounds0, const BBox3fa& bounds1) 
       {
         lower_x[i] = bounds0.lower.x; lower_y[i] = bounds0.lower.y; lower_z[i] = bounds0.lower.z;
         upper_x[i] = bounds0.upper.x; upper_y[i] = bounds0.upper.y; upper_z[i] = bounds0.upper.z;
@@ -161,20 +161,20 @@ namespace embree
       }
 
       /*! Return bounding box for time 0 */
-      __forceinline BBox3f bounds0(size_t i) const {
-        return BBox3f(Vec3fa(lower_x[i],lower_y[i],lower_z[i]),
+      __forceinline BBox3fa bounds0(size_t i) const {
+        return BBox3fa(Vec3fa(lower_x[i],lower_y[i],lower_z[i]),
                       Vec3fa(upper_x[i],upper_y[i],upper_z[i]));
       }
 
       /*! Return bounding box for time 1 */
-      __forceinline BBox3f bounds1(size_t i) const {
-        return BBox3f(Vec3fa(lower_x[i]+lower_dx[i],lower_y[i]+lower_dy[i],lower_z[i]+lower_dz[i]),
+      __forceinline BBox3fa bounds1(size_t i) const {
+        return BBox3fa(Vec3fa(lower_x[i]+lower_dx[i],lower_y[i]+lower_dy[i],lower_z[i]+lower_dz[i]),
                       Vec3fa(upper_x[i]+upper_dx[i],upper_y[i]+upper_dy[i],upper_z[i]+upper_dz[i]));
       }
 
       /*! Returns bounds of node. */
-      __forceinline BBox3f bounds() const {
-        return BBox3f(Vec3fa(reduce_min(min(lower_x,lower_x+lower_dx)),
+      __forceinline BBox3fa bounds() const {
+        return BBox3fa(Vec3fa(reduce_min(min(lower_x,lower_x+lower_dx)),
                              reduce_min(min(lower_y,lower_y+lower_dy)),
                              reduce_min(min(lower_z,lower_z+lower_dz))),
                       Vec3fa(reduce_max(max(upper_x,upper_x+upper_dx)),
@@ -235,7 +235,7 @@ namespace embree
     size_t rotate(Base* node, size_t depth);
 
     /*! Propagate bounds for time t0 and time t1 up the tree. */
-    std::pair<BBox3f,BBox3f> refit(void* geom, Base* node);
+    std::pair<BBox3fa,BBox3fa> refit(void* geom, Base* node);
 
     /*! Data of the BVH */
   public:

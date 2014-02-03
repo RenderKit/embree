@@ -238,7 +238,7 @@ namespace embree
         
         for (size_t i=0; i<numTriangles; i++)	  
         {
-          const BBox3f b = mesh->bounds(offset+i);
+          const BBox3fa b = mesh->bounds(offset+i);
           const ssef lower = (ssef)b.lower;
           const ssef upper = (ssef)b.upper;
           const ssef centroid2 = lower+upper;
@@ -296,7 +296,7 @@ namespace embree
         const size_t index  = morton[i].index;
         const size_t primID = index & encodeMask; 
         const size_t geomID = index >> encodeShift; 
-        const BBox3f b = scene->getTriangleMesh(geomID)->bounds(primID);
+        const BBox3fa b = scene->getTriangleMesh(geomID)->bounds(primID);
         const ssef lower = (ssef)b.lower;
         const ssef upper = (ssef)b.upper;
         const ssef centroid2 = lower+upper;
@@ -469,7 +469,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
-    __forceinline BBox3f BVH4iBuilderMorton::createSmallLeaf(SmallBuildRecord& current, NodeAllocator& alloc) const
+    __forceinline BBox3fa BVH4iBuilderMorton::createSmallLeaf(SmallBuildRecord& current, NodeAllocator& alloc) const
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -504,7 +504,7 @@ namespace embree
       node[current.parentID].lower = Vec3fa(lower);
       node[current.parentID].upper = Vec3fa(upper);
       node[current.parentID].createLeaf(start,items,items);
-      BBox3f bounds;
+      BBox3fa bounds;
       bounds.lower = Vec3fa(lower);
       bounds.upper = Vec3fa(upper);
       return bounds;
@@ -517,7 +517,7 @@ namespace embree
       rightChild.init(center,current.end);
     }
     
-    BBox3f BVH4iBuilderMorton::createLeaf(SmallBuildRecord& current, NodeAllocator& alloc)
+    BBox3fa BVH4iBuilderMorton::createLeaf(SmallBuildRecord& current, NodeAllocator& alloc)
     {
 #if defined(DEBUG)
       if (current.depth > BVH4i::maxBuildDepthLeaf) 
@@ -543,7 +543,7 @@ namespace embree
       //const unsigned int currentIndex = allocNode(BVH4i::N);
       const size_t currentIndex = alloc.get(BVH4i::N);
       
-      BBox3f bounds; 
+      BBox3fa bounds; 
       bounds = empty;
       /* recurse into each child */
       for (size_t i=0; i<numChildren; i++) {
@@ -614,7 +614,7 @@ namespace embree
       return true;
     }
     
-    BBox3f BVH4iBuilderMorton::recurse(SmallBuildRecord& current, 
+    BBox3fa BVH4iBuilderMorton::recurse(SmallBuildRecord& current, 
                                        NodeAllocator& alloc,
                                        const size_t mode, 
                                        const size_t threadID) 
@@ -681,7 +681,7 @@ namespace embree
       const size_t currentIndex = alloc.get(BVH4i::N);
       
       /* recurse into each child */
-      BBox3f bounds;
+      BBox3fa bounds;
       bounds = empty;
       for (size_t i=0; i<numChildren; i++) 
       {

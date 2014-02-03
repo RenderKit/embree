@@ -69,7 +69,7 @@ namespace embree
     return sah(bvh8i_base,bvh8i_root,bounds)/area(bounds);
   }
 
-  float BVH8i::sah8 (BVH8iNode * base, NodeRef& node, const BBox3f& bounds)
+  float BVH8i::sah8 (BVH8iNode * base, NodeRef& node, const BBox3fa& bounds)
   {
     float f = bounds.empty() ? 0.0f : area(bounds);
 

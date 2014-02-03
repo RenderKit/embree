@@ -83,7 +83,7 @@ namespace embree
       TASK_RUN_FUNCTION(BVH4BuilderTopLevel,task_build_parallel);
       
       
-      BBox3f build (size_t threadIndex, size_t threadCount, size_t objectID);
+      BBox3fa build (size_t threadIndex, size_t threadCount, size_t objectID);
       void create_object(size_t objectID);
       
       void open_sequential();

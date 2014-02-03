@@ -20,7 +20,7 @@ namespace embree
 {
   namespace isa
   {
-    void InstanceBoundsFunction(const UserGeometryScene::Instance* instance, size_t item, BBox3f& bounds_o)
+    void InstanceBoundsFunction(const UserGeometryScene::Instance* instance, size_t item, BBox3fa& bounds_o)
     {
       Vec3fa lower = instance->object->bounds.lower;
       Vec3fa upper = instance->object->bounds.upper;

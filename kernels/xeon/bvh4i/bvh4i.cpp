@@ -349,7 +349,7 @@ namespace embree
     return sah(root,bounds)/area(bounds);
   }
 
-  float BVH4i::sah (NodeRef& node, const BBox3f& bounds)
+  float BVH4i::sah (NodeRef& node, const BBox3fa& bounds)
   {
     float f = bounds.empty() ? 0.0f : area(bounds);
 

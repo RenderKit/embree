@@ -201,7 +201,7 @@ namespace embree
     return 1+reduce_max(cdepth); 
   }
 
-  std::pair<BBox3f,BBox3f> BVH4MB::refit(void* geom, Base* node)
+  std::pair<BBox3fa,BBox3fa> BVH4MB::refit(void* geom, Base* node)
   {
     /*! merge bounds of triangles for both time steps */
     if (node->isLeaf()) 
@@ -215,13 +215,13 @@ namespace embree
       Node* n = node->node();
       if (!n->hasBounds()) {
         for (size_t i=0; i<4; i++) {
-          std::pair<BBox3f,BBox3f> bounds = refit(geom,n->child[i]);
+          std::pair<BBox3fa,BBox3fa> bounds = refit(geom,n->child[i]);
           n->set(i,bounds.first,bounds.second);
         }
       }
-      BBox3f bounds0 = merge(n->bounds0(0),n->bounds0(1),n->bounds0(2),n->bounds0(3));
-      BBox3f bounds1 = merge(n->bounds1(0),n->bounds1(1),n->bounds1(2),n->bounds1(3));
-      return std::pair<BBox3f,BBox3f>(bounds0,bounds1);
+      BBox3fa bounds0 = merge(n->bounds0(0),n->bounds0(1),n->bounds0(2),n->bounds0(3));
+      BBox3fa bounds1 = merge(n->bounds1(0),n->bounds1(1),n->bounds1(2),n->bounds1(3));
+      return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
     }
   }
 

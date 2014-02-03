@@ -38,7 +38,7 @@ namespace embree
     size_t bytesUsed();
 
   private:
-    void statistics(NodeRef node, const BBox3f& bounds, size_t& depth);
+    void statistics(NodeRef node, const BBox3fa& bounds, size_t& depth);
 
   private:
     BVH4* bvh;

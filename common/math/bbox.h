@@ -133,7 +133,8 @@ namespace embree
 
   /*! default template instantiations */
   typedef BBox<Vec2f> BBox2f;
-  typedef BBox<Vec3fa> BBox3f;
+  typedef BBox<Vec3f> BBox3f;
+  typedef BBox<Vec3fa> BBox3fa;
 }
 
 #endif

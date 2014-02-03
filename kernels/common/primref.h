@@ -25,13 +25,13 @@ namespace embree
   struct __align(32) PrimRef 
   {
     __forceinline PrimRef () {}
-    __forceinline PrimRef (const BBox3f& bounds, unsigned geomID, unsigned primID) {
+    __forceinline PrimRef (const BBox3fa& bounds, unsigned geomID, unsigned primID) {
       lower = bounds.lower; lower.a = geomID;
       upper = bounds.upper; upper.a = primID;
     }
     
-    __forceinline const BBox3f bounds() const {
-      return BBox3f(lower,upper);
+    __forceinline const BBox3fa bounds() const {
+      return BBox3fa(lower,upper);
     }
 
     __forceinline size_t geomID() const { 

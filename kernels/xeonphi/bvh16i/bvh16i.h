@@ -53,7 +53,7 @@ namespace embree
       mic_i child;
       mic_i data;
 
-      __forceinline void set(const size_t index,const BBox3f &node)
+      __forceinline void set(const size_t index,const BBox3fa &node)
       {
 	min_x[index] = node.lower[0];
 	min_y[index] = node.lower[1];
@@ -84,11 +84,11 @@ namespace embree
 	data[index]  = node.data[source_index];
       }
 
-      __forceinline BBox3f extract(const size_t index)
+      __forceinline BBox3fa extract(const size_t index)
       {
 	assert(index < 16);
 
-	BBox3f node;
+	BBox3fa node;
 	node.lower[0] = min_x[index];
 	node.lower[1] = min_y[index];
 	node.lower[2] = min_z[index];
