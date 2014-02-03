@@ -38,6 +38,9 @@ inline varying Vec3f make_Vec3f(const varying float x, const varying float y, co
 /// Unary Operators
 ////////////////////////////////////////////////////////////////////////////////
 
+inline uniform Vec3f operator-(const uniform Vec3f a) { return make_Vec3f(-a.x,-a.y,-a.z); }
+inline varying Vec3f operator-(const varying Vec3f a) { return make_Vec3f(-a.x,-a.y,-a.z); }
+
 inline uniform Vec3f neg(const uniform Vec3f a) { return make_Vec3f(-a.x,-a.y,-a.z); }
 inline varying Vec3f neg(const varying Vec3f a) { return make_Vec3f(-a.x,-a.y,-a.z); }
 
@@ -56,6 +59,30 @@ inline varying Vec3f exp(const varying Vec3f a) { return make_Vec3f(exp(a.x),exp
 ////////////////////////////////////////////////////////////////////////////////
 /// Binary Operators
 ////////////////////////////////////////////////////////////////////////////////
+
+inline uniform Vec3f operator+(const uniform Vec3f a, const uniform Vec3f b) { return make_Vec3f(a.x+b.x, a.y+b.y, a.z+b.z); }
+inline varying Vec3f operator+(const varying Vec3f a, const varying Vec3f b) { return make_Vec3f(a.x+b.x, a.y+b.y, a.z+b.z); }
+
+inline uniform Vec3f operator-(const uniform Vec3f a, const uniform Vec3f b) { return make_Vec3f(a.x-b.x, a.y-b.y, a.z-b.z); }
+inline varying Vec3f operator-(const varying Vec3f a, const varying Vec3f b) { return make_Vec3f(a.x-b.x, a.y-b.y, a.z-b.z); }
+
+inline uniform Vec3f operator*(const uniform float a, const uniform Vec3f b) { return make_Vec3f(a*b.x, a*b.y, a*b.z); }
+inline varying Vec3f operator*(const varying float a, const varying Vec3f b) { return make_Vec3f(a*b.x, a*b.y, a*b.z); }
+
+inline uniform Vec3f operator*(const uniform Vec3f a, const uniform float b) { return make_Vec3f(a.x*b, a.y*b, a.z*b); }
+inline varying Vec3f operator*(const varying Vec3f a, const varying float b) { return make_Vec3f(a.x*b, a.y*b, a.z*b); }
+
+inline uniform Vec3f operator*(const uniform Vec3f a, const uniform Vec3f b) { return make_Vec3f(a.x*b.x, a.y*b.y, a.z*b.z); }
+inline varying Vec3f operator*(const varying Vec3f a, const varying Vec3f b) { return make_Vec3f(a.x*b.x, a.y*b.y, a.z*b.z); }
+
+inline uniform Vec3f operator/(const uniform float a, const uniform Vec3f b) { return make_Vec3f(a/b.x, a/b.y, a/b.z); }
+inline varying Vec3f operator/(const varying float a, const varying Vec3f b) { return make_Vec3f(a/b.x, a/b.y, a/b.z); }
+
+inline uniform Vec3f operator/(const uniform Vec3f a, const uniform float b) { return make_Vec3f(a.x/b, a.y/b, a.z/b); }
+inline varying Vec3f operator/(const varying Vec3f a, const varying float b) { return make_Vec3f(a.x/b, a.y/b, a.z/b); }
+
+inline uniform Vec3f operator/(const uniform Vec3f a, const uniform Vec3f b) { return make_Vec3f(a.x/b.x, a.y/b.y, a.z/b.z); }
+inline varying Vec3f operator/(const varying Vec3f a, const varying Vec3f b) { return make_Vec3f(a.x/b.x, a.y/b.y, a.z/b.z); }
 
 inline uniform Vec3f add(const uniform Vec3f a, const uniform Vec3f b) { return make_Vec3f(a.x+b.x, a.y+b.y, a.z+b.z); }
 inline varying Vec3f add(const varying Vec3f a, const varying Vec3f b) { return make_Vec3f(a.x+b.x, a.y+b.y, a.z+b.z); }
@@ -118,6 +145,12 @@ inline uniform Vec3f __reduce_max(const varying Vec3f a) { return make_Vec3f(red
 ////////////////////////////////////////////////////////////////////////////////
 /// Comparison Operators
 ////////////////////////////////////////////////////////////////////////////////
+
+//inline uniform bool operator==(const uniform Vec3f a, const uniform Vec3f b) { return (a.x == b.x) & (a.y == b.y) & (a.z == b.z); }
+//inline varying bool operator==(const varying Vec3f a, const varying Vec3f b) { return (a.x == b.x) & (a.y == b.y) & (a.z == b.z); }
+
+//inline uniform bool operator!=(const uniform Vec3f a, const uniform Vec3f b) { return (a.x != b.x) | (a.y != b.y) | (a.z != b.z); }
+//inline varying bool operator!=(const varying Vec3f a, const varying Vec3f b) { return (a.x != b.x) | (a.y != b.y) | (a.z != b.z); }
 
 inline uniform bool eq(const uniform Vec3f a, const uniform Vec3f b) { return (a.x == b.x) & (a.y == b.y) & (a.z == b.z); }
 inline varying bool eq(const varying Vec3f a, const varying Vec3f b) { return (a.x == b.x) & (a.y == b.y) & (a.z == b.z); }

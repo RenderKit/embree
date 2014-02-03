@@ -149,7 +149,7 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
     
     /* initialize shadow ray */
     RTCRay shadow;
-    shadow.org = add(ray.org,mul(ray.tfar,ray.dir));
+    shadow.org = ray.org + mul(ray.tfar,ray.dir);
     shadow.dir = neg(lightDir);
     shadow.tnear = 0.001f;
     shadow.tfar = inf;

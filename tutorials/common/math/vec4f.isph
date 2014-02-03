@@ -50,6 +50,9 @@ inline varying Vec3f make_Vec3f(const varying Vec4f a) { varying Vec3f v; v.x = 
 /// Unary Operators
 ////////////////////////////////////////////////////////////////////////////////
 
+inline uniform Vec4f operator-(const uniform Vec4f a) { return make_Vec4f(-a.x,-a.y,-a.z,-a.w); }
+inline varying Vec4f operator-(const varying Vec4f a) { return make_Vec4f(-a.x,-a.y,-a.z,-a.w); }
+
 inline uniform Vec4f neg(const uniform Vec4f a) { return make_Vec4f(-a.x,-a.y,-a.z,-a.w); }
 inline varying Vec4f neg(const varying Vec4f a) { return make_Vec4f(-a.x,-a.y,-a.z,-a.w); }
 
@@ -62,6 +65,18 @@ inline varying Vec4f rcp(const varying Vec4f a) { return make_Vec4f(rcp(a.x),rcp
 ////////////////////////////////////////////////////////////////////////////////
 /// Binary Operators
 ////////////////////////////////////////////////////////////////////////////////
+
+inline uniform Vec4f operator+(const uniform Vec4f a, const uniform Vec4f b) { uniform Vec4f v; v.x = a.x+b.x; v.y = a.y+b.y; v.z = a.z+b.z; v.w = a.w+b.w; return v; }
+inline varying Vec4f operator+(const varying Vec4f a, const varying Vec4f b) { varying Vec4f v; v.x = a.x+b.x; v.y = a.y+b.y; v.z = a.z+b.z; v.w = a.w+b.w; return v; }
+
+inline uniform Vec4f operator*(const uniform float a, const uniform Vec4f b) { uniform Vec4f v; v.x = a*b.x; v.y = a*b.y; v.z = a*b.z; v.w = a*b.w; return v; }
+inline varying Vec4f operator*(const varying float a, const varying Vec4f b) { varying Vec4f v; v.x = a*b.x; v.y = a*b.y; v.z = a*b.z; v.w = a*b.w; return v; }
+
+inline uniform Vec4f operator*(const uniform Vec4f a, const uniform float b) { uniform Vec4f v; v.x = a.x*b; v.y = a.y*b; v.z = a.z*b; v.w = a.w*b; return v; }
+inline varying Vec4f operator*(const varying Vec4f a, const varying float b) { varying Vec4f v; v.x = a.x*b; v.y = a.y*b; v.z = a.z*b; v.w = a.w*b; return v; }
+
+inline uniform Vec4f operator*(const uniform Vec4f a, const uniform Vec4f b) { uniform Vec4f v; v.x = a.x*b.x; v.y = a.y*b.y; v.z = a.z*b.z; v.w = a.w*b.w; return v; }
+inline varying Vec4f operator*(const varying Vec4f a, const varying Vec4f b) { varying Vec4f v; v.x = a.x*b.x; v.y = a.y*b.y; v.z = a.z*b.z; v.w = a.w*b.w; return v; }
 
 inline uniform Vec4f add(const uniform Vec4f a, const uniform Vec4f b) { uniform Vec4f v; v.x = a.x+b.x; v.y = a.y+b.y; v.z = a.z+b.z; v.w = a.w+b.w; return v; }
 inline varying Vec4f add(const varying Vec4f a, const varying Vec4f b) { varying Vec4f v; v.x = a.x+b.x; v.y = a.y+b.y; v.z = a.z+b.z; v.w = a.w+b.w; return v; }
