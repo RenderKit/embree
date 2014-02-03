@@ -40,8 +40,8 @@ namespace embree
                                 const int depth)
       : v0(v0), v1(v1), v2(v2), v3(v3), t0(t0), t1(t1), depth(depth) {}
 
-    __forceinline const BBox3f bounds() const {
-      BBox3f b = merge(BBox3f(v0),BBox3f(v1),BBox3f(v2),BBox3f(v3));
+    __forceinline const BBox3fa bounds() const {
+      BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
       return enlarge(b,Vec3fa(b.upper.w));
     }
 
@@ -112,7 +112,7 @@ namespace embree
     }
   };
 
-  __forceinline bool intersect_box(const BBox3f& box, const Ray& ray)
+  __forceinline bool intersect_box(const BBox3fa& box, const Ray& ray)
   {
 #if 0
     const float clipNearX = (box.lower.x - ray.org.x) / ray.dir.x; // FIXME: use rdir
@@ -335,8 +335,8 @@ namespace embree
           BezierCurve3D curve0,curve1;
           curve.subdivide(curve0,curve1);
 
-          BBox3f bounds0 = curve0.bounds();
-          BBox3f bounds1 = curve1.bounds();
+          BBox3fa bounds0 = curve0.bounds();
+          BBox3fa bounds1 = curve1.bounds();
           bool hit0 = intersect_box(bounds0,ray);
           bool hit1 = intersect_box(bounds1,ray);
           

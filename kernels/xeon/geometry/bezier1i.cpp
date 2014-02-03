@@ -58,9 +58,9 @@ namespace embree
     prims++;
   }
     
-  BBox3f SceneBezier1i::update(char* prim, size_t num, void* geom) const 
+  BBox3fa SceneBezier1i::update(char* prim, size_t num, void* geom) const 
   {
-    BBox3f bounds = empty;
+    BBox3fa bounds = empty;
     Scene* scene = (Scene*) geom;
     
     for (size_t j=0; j<num; j++) 

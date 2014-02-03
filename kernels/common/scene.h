@@ -232,7 +232,7 @@ namespace embree
         return curves->numCurves;
       }
 
-      const BBox3f bounds(size_t group, size_t prim) const 
+      const BBox3fa bounds(size_t group, size_t prim) const 
       {
 	assert(scene->get(group) != NULL);
 	assert(scene->get(group)->type == QUADRATIC_BEZIER_CURVES);

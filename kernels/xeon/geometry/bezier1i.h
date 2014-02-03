@@ -38,8 +38,8 @@ namespace embree
       : p(p), geomID(geomID), primID(primID), mask(mask) {}
 
     /*! calculate the bounds of the triangle */
-    __forceinline BBox3f bounds() const {
-      const BBox3f b = merge(BBox3f(p[0]),BBox3f(p[1]),BBox3f(p[2]),BBox3f(p[3]));
+    __forceinline BBox3fa bounds() const {
+      const BBox3fa b = merge(BBox3fa(p[0]),BBox3fa(p[1]),BBox3fa(p[2]),BBox3fa(p[3]));
       return enlarge(b,Vec3fa(b.upper.w));
     }
 
@@ -61,7 +61,7 @@ namespace embree
     static SceneBezier1i type;
     void pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const; 
     void pack(char* dst, const PrimRef* prims, size_t num, void* geom) const;
-    BBox3f update(char* prim, size_t num, void* geom) const;
+    BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 }
 
