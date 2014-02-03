@@ -22,7 +22,7 @@
 #define TILE_SIZE_Y 8
 
 /* vertex and triangle layout */
-struct Vertex   { float x,y,z,a; };
+struct Vertex   { float x,y,z,r; };
 struct Triangle { int v0, v1, v2; };
 
 #include "embree2/rtcore.h"

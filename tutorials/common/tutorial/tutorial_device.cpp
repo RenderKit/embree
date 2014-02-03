@@ -151,7 +151,7 @@ Vec3fa renderPixelNg(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
-  else return abs(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z));
+  else return abs(normalize(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
 }
 
 Vec3fa randomColor(const int ID) 

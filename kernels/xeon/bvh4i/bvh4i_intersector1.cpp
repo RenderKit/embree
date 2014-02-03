@@ -34,6 +34,9 @@ namespace embree
     template<typename TriangleIntersector>
     void BVH4iIntersector1<TriangleIntersector>::intersect(const BVH4i* bvh, Ray& ray)
     {
+      /*! perform per ray precalculations required by the primitive intersector */
+      const Precalculations pre(ray);
+
       /*! stack state */
       StackItem stack[1+3*BVH4i::maxDepth];  //!< stack of nodes 
       StackItem* stackPtr = stack+1;        //!< current stack pointer
@@ -151,7 +154,7 @@ namespace embree
         /*! this is a leaf node */
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Triangle* tri = (Triangle*) cur.leaf(triPtr,num);
-        TriangleIntersector::intersect(ray,tri,num,bvh->geometry);
+        TriangleIntersector::intersect(pre,ray,tri,num,bvh->geometry);
         rayFar = ray.tfar;
       }
       AVX_ZERO_UPPER();
@@ -160,6 +163,9 @@ namespace embree
     template<typename TriangleIntersector>
     void BVH4iIntersector1<TriangleIntersector>::occluded(const BVH4i* bvh, Ray& ray)
     {
+      /*! perform per ray precalculations required by the primitive intersector */
+      const Precalculations pre(ray);
+
       /*! stack state */
       NodeRef stack[1+3*BVH4i::maxDepth];  //!< stack of nodes that still need to get traversed
       NodeRef* stackPtr = stack+1;        //!< current stack pointer
@@ -265,7 +271,7 @@ namespace embree
         /*! this is a leaf node */
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Triangle* tri = (Triangle*) cur.leaf(triPtr,num);
-        if (TriangleIntersector::occluded(ray,tri,num,bvh->geometry)) {
+        if (TriangleIntersector::occluded(pre,ray,tri,num,bvh->geometry)) {
           ray.geomID = 0;
           break;
         }

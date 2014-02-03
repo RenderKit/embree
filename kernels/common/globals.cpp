@@ -14,34 +14,37 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4I_INTERSECTOR1_H__
-#define __EMBREE_BVH4I_INTERSECTOR1_H__
-
-#include "bvh4i.h"
-#include "../common/stack_item.h"
-#include "../common/ray.h"
+#include "common/default.h"
 
 namespace embree
 {
+#if defined(__AVX__)
+  avxf coeff0[4];
+  avxf coeff1[4];
+
   namespace isa
   {
-    /*! BVH4i Traverser. Single ray traversal implementation for a Quad BVH. */
-    template<typename PrimitiveIntersector>
-      class BVH4iIntersector1
+    void init_globals()
     {
-      /* shortcuts for frequently used types */
-      typedef typename PrimitiveIntersector::Precalculations Precalculations;
-      typedef typename PrimitiveIntersector::Primitive Triangle;
-      typedef typename BVH4i::NodeRef NodeRef;
-      typedef typename BVH4i::Node Node;
-      typedef StackItemT<unsigned> StackItem;
-      
-    public:
-      static void intersect(const BVH4i* This, Ray& ray);
-      static void occluded (const BVH4i* This, Ray& ray);
-    };
+      {
+        const float dt = 1.0f/8.0f;
+        const avxf t1 = avxf(step)*dt;
+        const avxf t0 = 1.0f-t1;
+        coeff0[0] = t0 * t0 * t0;
+        coeff0[1] = 3.0f * t1* t0 * t0;
+        coeff0[2] = 3.0f * t1* t1 * t0;
+        coeff0[3] = t1 * t1 * t1;
+      }
+      {
+        const float dt = 1.0f/8.0f;
+        const avxf t1 = avxf(step)*dt+avxf(dt);
+        const avxf t0 = 1.0f-t1;
+        coeff1[0] = t0 * t0 * t0;
+        coeff1[1] = 3.0f * t1* t0 * t0;
+        coeff1[2] = 3.0f * t1* t1 * t0;
+        coeff1[3] = t1 * t1 * t1;
+      }
+    }
   }
-}
-
 #endif
-  
+}

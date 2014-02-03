@@ -51,6 +51,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   builders/splitter_parallel.cpp
   builders/primrefgen.cpp
   
+  geometry/bezier1i.cpp
   geometry/triangle1.cpp
   geometry/triangle4.cpp
   geometry/triangle1v.cpp
@@ -106,6 +107,7 @@ ENDIF ()
 IF (TARGET_AVX) 
   ADD_LIBRARY(embree_avx STATIC
    
+   ../common/globals.cpp 
    geometry/triangle8.cpp
    geometry/ispc_wrapper_avx.cpp
 

@@ -16,6 +16,7 @@
 
 #include "bvh4.h"
 
+#include "geometry/bezier1i.h"
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
@@ -27,6 +28,7 @@
 
 namespace embree
 {
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4Bezier1iIntersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle1Intersector1Moeller);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle4Intersector1Moeller);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle8Intersector1Moeller);
@@ -89,6 +91,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT(features,BVH4BuilderRefitObjectSplit4TriangleMeshFast);
 
     /* select intersectors1 */
+    SELECT_SYMBOL_AVX_AVX2              (features,BVH4Bezier1iIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle1Intersector1Moeller);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector1Moeller);
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4Triangle8Intersector1Moeller);
@@ -134,6 +137,17 @@ namespace embree
     if (nodes) os_free(nodes, bytesNodes);
     if (primitives) os_free(primitives, bytesPrimitives);
     for (size_t i=0; i<objects.size(); i++) delete objects[i];
+  }
+
+  Accel::Intersectors BVH4Bezier1iIntersectors(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1 = BVH4Bezier1iIntersector1;
+    intersectors.intersector4 = NULL;
+    intersectors.intersector8 = NULL;
+    intersectors.intersector16 = NULL;
+    return intersectors;
   }
   
   Accel::Intersectors BVH4Triangle1Intersectors(BVH4* bvh)
@@ -233,6 +247,15 @@ namespace embree
     intersectors.intersector8 = BVH4Triangle4iIntersector8ChunkPluecker;
     intersectors.intersector16 = NULL;
     return intersectors;
+  }
+
+  Accel* BVH4::BVH4Bezier1i(Scene* scene)
+  { 
+    BVH4* accel = new BVH4(SceneBezier1i::type,scene);
+    Accel::Intersectors intersectors = BVH4Bezier1iIntersectors(accel);
+    Builder* builder = BVH4BuilderObjectSplit1(accel,&scene->bezier_source_1,scene,1,inf);
+    scene->needVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
   }
 
   Accel* BVH4::BVH4Triangle1(Scene* scene)

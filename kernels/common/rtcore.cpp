@@ -56,6 +56,9 @@ namespace embree
     recordError(RTC_INVALID_ARGUMENT);                                  \
   }
   
+  /* functions to initialize global state */
+  namespace avx { void init_globals(); }
+
   /* register functions for accels */
   void BVH4Register();
   void BVH4iRegister();
@@ -267,6 +270,10 @@ namespace embree
       BVH8iRegister();
 #endif
     InstanceIntersectorsRegister();
+
+#if defined(__TARGET_AVX__)
+    if (has_feature(AVX)) avx::init_globals();
+#endif
 
     if (g_verbose >= 2) 
     {

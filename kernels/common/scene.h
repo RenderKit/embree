@@ -111,6 +111,12 @@ namespace embree
       if (geometries[i]->type != USER_GEOMETRY && geometries[i]->type != INSTANCES) return NULL;
       else return (UserGeometryScene::Base*) geometries[i]; 
     }
+    __forceinline QuadraticBezierCurvesScene::QuadraticBezierCurves* getBezierCurves(size_t i) { 
+      assert(i < geometries.size()); 
+      assert(geometries[i]);
+      assert(geometries[i]->type == QUADRATIC_BEZIER_CURVES);
+      return (QuadraticBezierCurvesScene::QuadraticBezierCurves*) geometries[i]; 
+    }
 
 
     /* test if this is a static scene */
@@ -203,6 +209,43 @@ namespace embree
       size_t numTimeSteps;
     };
 
+    struct BezierBuildSource : public BuildSource
+    {
+      BezierBuildSource (Scene* scene, size_t numTimeSteps = 1)
+        : scene(scene), numTimeSteps(numTimeSteps) {}
+
+      bool isEmpty () const { 
+        if (numTimeSteps == 1) return scene->numCurveSets  == 0;
+        else                   return scene->numCurveSets2 == 0;
+      }
+      
+      size_t groups () const { 
+        return scene->geometries.size();
+      }
+      
+      size_t prims (size_t group, size_t* numVertices) const 
+      {
+        if (scene->get(group) == NULL || scene->get(group)->type != QUADRATIC_BEZIER_CURVES) return 0;
+        QuadraticBezierCurvesScene::QuadraticBezierCurves* curves = scene->getBezierCurves(group);
+        if (!curves->isEnabled() || curves->numTimeSteps != numTimeSteps) return 0;
+        if (numVertices) *numVertices = curves->numVertices;
+        return curves->numCurves;
+      }
+
+      const BBox3f bounds(size_t group, size_t prim) const 
+      {
+	assert(scene->get(group) != NULL);
+	assert(scene->get(group)->type == QUADRATIC_BEZIER_CURVES);
+        QuadraticBezierCurvesScene::QuadraticBezierCurves* curves = scene->getBezierCurves(group);
+        if (curves == NULL) return empty;
+        return curves->bounds(prim);
+      }
+
+    public:
+      Scene* scene;
+      size_t numTimeSteps;
+    };
+
     
   public:
     std::vector<int> usedIDs;
@@ -229,6 +272,7 @@ namespace embree
   public:
     FlatTriangleAccelBuildSource flat_triangle_source_1;
     FlatTriangleAccelBuildSource flat_triangle_source_2;
+    BezierBuildSource bezier_source_1;
   };
 
   typedef Builder* (*TriangleMeshBuilderFunc)(void* accel, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize);

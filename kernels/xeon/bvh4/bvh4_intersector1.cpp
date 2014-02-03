@@ -16,6 +16,9 @@
 
 #include "bvh4_intersector1.h"
 
+#if defined(__AVX__)
+#include "geometry/bezier1i_intersector1.h"
+#endif
 #include "geometry/triangle1_intersector1_moeller.h"
 #include "geometry/triangle4_intersector1_moeller.h"
 #if defined(__AVX__)
@@ -33,6 +36,9 @@ namespace embree
     template<typename PrimitiveIntersector>
     void BVH4Intersector1<PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
     {
+      /*! perform per ray precalculations required by the primitive intersector */
+      const Precalculations pre(ray);
+
       /*! stack state */
       StackItemInt32<NodeRef> stack[stackSize];  //!< stack of nodes 
       StackItemInt32<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
@@ -175,7 +181,7 @@ namespace embree
         /*! this is a leaf node */
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
-        PrimitiveIntersector::intersect(ray,prim,num,bvh->geometry);
+        PrimitiveIntersector::intersect(pre,ray,prim,num,bvh->geometry);
         ray_far = ray.tfar;
       }
     }
@@ -183,6 +189,9 @@ namespace embree
     template<typename PrimitiveIntersector>
     void BVH4Intersector1<PrimitiveIntersector>::occluded(const BVH4* bvh, Ray& ray)
     {
+      /*! perform per ray precalculations required by the primitive intersector */
+      const Precalculations pre(ray);
+
       /*! stack state */
       NodeRef stack[stackSize];  //!< stack of nodes that still need to get traversed
       NodeRef* stackPtr = stack+1;        //!< current stack pointer
@@ -310,7 +319,7 @@ namespace embree
         /*! this is a leaf node */
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
-        if (PrimitiveIntersector::occluded(ray,prim,num,bvh->geometry)) {
+        if (PrimitiveIntersector::occluded(pre,ray,prim,num,bvh->geometry)) {
           ray.geomID = 0;
           break;
         }
@@ -318,6 +327,9 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
+#if defined(__AVX__)
+    DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1,BVH4Intersector1<Bezier1iIntersector1>);
+#endif
     DEFINE_INTERSECTOR1(BVH4Triangle1Intersector1Moeller,BVH4Intersector1<Triangle1Intersector1MoellerTrumbore>);
     DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVH4Intersector1<Triangle4Intersector1MoellerTrumbore>);
 #if defined(__AVX__)
