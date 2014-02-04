@@ -201,7 +201,7 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const un
     /* shade background with ambient light */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
       Vec3f La = AmbientLight__eval(Ns,neg(ray.dir));
-      L = L + Lw*La; // FIXME
+      L = L + Lw*La; // FIXME: +=
       break;
     }
         
@@ -240,13 +240,13 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const un
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
       Vec3f Lm = Matte__eval(materialID,neg(ray.dir),Ns,wi);
-      L = L + Lw*Ll*Lm; // FIXME
+      L = L + Lw*Ll*Lm; // FIXME: +=
     }
 
     /* calculate diffuce bounce */
     s = make_Vec2f(frand(seed),frand(seed));
     Vec3f c = Matte__sample(materialID,neg(ray.dir), Ns, wi, s);
-    Lw = Lw*c; // FIXME
+    Lw = Lw*c; // FIXME: *=
 
     /* setup secondary ray */
     ray.org = Ph;
@@ -267,7 +267,7 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
   int seed = x*233+y*234234+237;
   Vec3f L = make_Vec3f(0.0f,0.0f,0.0f);
   //for (uniform int i=0; i<16; i++) {
-  L = L + renderPixelSeed(x,y,seed,vx,vy,vz,p); // FIXME
+  L = L + renderPixelSeed(x,y,seed,vx,vy,vz,p); // FIXME: +=
   //}
   //L = L*(1.0f/16.0f);
   return L;

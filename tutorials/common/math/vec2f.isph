@@ -78,32 +78,6 @@ inline varying Vec2f operator/(const varying float a, const varying Vec2f b) { r
 inline uniform Vec2f operator/(const uniform Vec2f a, const uniform Vec2f b) { return make_Vec2f(a.x/b.x,a.y/b.y); }
 inline varying Vec2f operator/(const varying Vec2f a, const varying Vec2f b) { return make_Vec2f(a.x/b.x,a.y/b.y); }
 
-/*
-inline uniform Vec2f add(const uniform Vec2f a, const uniform Vec2f b) { return make_Vec2f(a.x+b.x,a.y+b.y); }
-inline varying Vec2f add(const varying Vec2f a, const varying Vec2f b) { return make_Vec2f(a.x+b.x,a.y+b.y); }
-
-inline uniform Vec2f sub(const uniform Vec2f a, const uniform Vec2f b) { return make_Vec2f(a.x-b.x,a.y-b.y); }
-inline varying Vec2f sub(const varying Vec2f a, const varying Vec2f b) { return make_Vec2f(a.x-b.x,a.y-b.y); }
-
-inline uniform Vec2f mul(const uniform float a, const uniform Vec2f b) { return make_Vec2f(a*b.x,a*b.y); }
-inline varying Vec2f mul(const varying float a, const varying Vec2f b) { return make_Vec2f(a*b.x,a*b.y); }
-
-inline uniform Vec2f mul(const uniform Vec2f a, const uniform float b) { return make_Vec2f(a.x*b,a.y*b); }
-inline varying Vec2f mul(const varying Vec2f a, const varying float b) { return make_Vec2f(a.x*b,a.y*b); }
-
-inline uniform Vec2f mul(const uniform Vec2f a, const uniform Vec2f b) { return make_Vec2f(a.x*b.x,a.y*b.y); }
-inline varying Vec2f mul(const varying Vec2f a, const varying Vec2f b) { return make_Vec2f(a.x*b.x,a.y*b.y); }
-
-inline uniform Vec2f div(const uniform Vec2f a, const uniform float b) { return make_Vec2f(a.x/b,a.y/b); }
-inline varying Vec2f div(const varying Vec2f a, const varying float b) { return make_Vec2f(a.x/b,a.y/b); }
-
-inline uniform Vec2f div(const uniform float a, const uniform Vec2f b) { return make_Vec2f(a/b.x,a/b.y); }
-inline varying Vec2f div(const varying float a, const varying Vec2f b) { return make_Vec2f(a/b.x,a/b.y); }
-
-inline uniform Vec2f div(const uniform Vec2f a, const uniform Vec2f b) { return make_Vec2f(a.x/b.x,a.y/b.y); }
-inline varying Vec2f div(const varying Vec2f a, const varying Vec2f b) { return make_Vec2f(a.x/b.x,a.y/b.y); }
-*/
-
 inline uniform Vec2f min(const uniform Vec2f a, const uniform Vec2f b) { return make_Vec2f(min(a.x,b.x),min(a.y,b.y)); }
 inline varying Vec2f min(const varying Vec2f a, const varying Vec2f b) { return make_Vec2f(min(a.x,b.x),min(a.y,b.y)); }
 
@@ -130,7 +104,7 @@ inline varying float reduce_max(const varying Vec2f a) { return max(a.x,a.y); }
 /// Comparison Operators
 ////////////////////////////////////////////////////////////////////////////////
 
-//inline uniform bool operator==(const uniform Vec2f a, const uniform Vec2f b) { return (a.x == b.x) & (a.y == b.y); }
+//inline uniform bool operator==(const uniform Vec2f a, const uniform Vec2f b) { return (a.x == b.x) & (a.y == b.y); } // FIXME: enable
 //inline varying bool operator==(const varying Vec2f a, const varying Vec2f b) { return (a.x == b.x) & (a.y == b.y); }
 
 //inline uniform bool operator!=(const uniform Vec2f a, const uniform Vec2f b) { return (a.x != b.x) | (a.y != b.y); }

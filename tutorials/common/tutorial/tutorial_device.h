@@ -55,23 +55,8 @@ typedef Vec3fa (* renderPixelFunc)(int x, int y, const Vec3fa& vx, const Vec3fa&
 
 Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
+__forceinline Vec3f  neg(const Vec3f& a ) { return -a; }
 __forceinline Vec3fa neg(const Vec3fa& a) { return -a; }
-__forceinline Vec3fa mul(const Vec3fa& a, const Vec3fa& b) { return a*b; }
-__forceinline Vec3fa add(const Vec3fa& a, const Vec3fa& b) { return a+b; }
-__forceinline Vec3fa sub(const Vec3fa& a, const Vec3fa& b) { return a-b; }
-__forceinline Vec3fa add(const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return a+b+c; }
-
-__forceinline Vec3f sub(const Vec3fa& a, const Vec3f& b) { return a-b; }
-
-__forceinline Vec3f neg(const Vec3f& a) { return -a; }
-__forceinline Vec3f mul(const Vec3f& a, const Vec3f& b) { return a*b; }
-__forceinline Vec3f add(const Vec3f& a, const Vec3f& b) { return a+b; }
-__forceinline Vec3f sub(const Vec3f& a, const Vec3f& b) { return a-b; }
-__forceinline Vec3f add(const Vec3f& a, const Vec3f& b, const Vec3f& c) { return a+b+c; }
-
-__forceinline Vec3f mul(const LinearSpace3<Vec3f>& a, const Vec3f& b) { return b.x*a.vx + b.y*a.vy + b.z*a.vz; }
-
-__forceinline Vec3f div(const Vec3f& a, const float& b) { return a/b; }
 
 /* parallel invokation of renderTile function */
 void launch_renderTile (int numTiles, 

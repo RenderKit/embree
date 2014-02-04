@@ -206,7 +206,7 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
   Vec3f Nf = faceforward(Ns,neg(ray.dir),ray.Ng);
   //Vec3f Ng = normalize(ray.Ng);
   //Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
-  color = color*dot(ray.dir,Nf);   // FIXME
+  color = color*dot(ray.dir,Nf);   // FIXME: *=
   return color;
 }
 

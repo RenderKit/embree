@@ -46,7 +46,7 @@ struct RTCRay2
 /* 3D procedural transparency */
 inline float transparencyFunction(RTCRay2& ray)
 {
-  Vec3f h = add(ray.org,mul(ray.dir,ray.tfar));
+  Vec3f h = ray.org + ray.dir*ray.tfar;
   float v = abs(sin(4.0f*h.x)*cos(4.0f*h.y)*sin(4.0f*h.z));
   float T = clamp((v-0.1f)*3.0f,0.0f,1.0f);
   return T;
@@ -181,7 +181,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   /* initialize ray */
   RTCRay2 primary;
   primary.org = p;
-  primary.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  primary.dir = normalize(x*vx + y*vy + vz);
   primary.tnear = 0.0f;
   primary.tfar = inf;
   primary.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -201,13 +201,13 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
 
     float opacity = 1.0f-primary.transparency;
     Vec3f diffuse = colors[primary.primID];
-    Vec3f La = mul(diffuse,0.5f);
-    color = add(color,mul(weight*opacity,La));
+    Vec3f La = diffuse*0.5f;
+    color = color + weight*opacity*La; // FIXME: +=
     Vec3f lightDir = normalize(Vec3f(-1,-1,-1));
       
     /* initialize shadow ray */
     RTCRay2 shadow;
-    shadow.org = add(primary.org,mul(primary.tfar,primary.dir));
+    shadow.org = primary.org + primary.tfar*primary.dir;
     shadow.dir = neg(lightDir);
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
@@ -222,8 +222,8 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     
     /* add light contribution */
     if (shadow.geomID) {
-      Vec3f Ll = mul(diffuse,shadow.transparency*clamp(-dot(lightDir,normalize(primary.Ng)),0.0f,1.0f));
-      color = add(color,mul(weight*opacity,Ll));
+      Vec3f Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.Ng)),0.0f,1.0f);
+      color = color + weight*opacity*Ll; // FIXME: +=
     }
 
     /* shoot transmission ray */

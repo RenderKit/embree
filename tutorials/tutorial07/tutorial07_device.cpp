@@ -421,8 +421,8 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   RTCRay2 ray;
   ray.org = p;
   ray.org.w = 0.0f;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
-  Vec3fa dir1 = normalize(add(mul(x+1,vx), mul(y+1,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
+  Vec3fa dir1 = normalize((x+1)*vx + (y+1)*vy + vz);
   ray.dir.w = 0.5f*0.707f*length(dir1-ray.dir);
   ray.tnear = 0.0f;
   ray.tfar = inf;
@@ -479,13 +479,13 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     /* calculate shadows */
     //Vec3f diffuse = Vec3f(0.5f,0.4f,0.4f); //colors[ray.primID];
     //if (ray.geomID == 1) diffuse = Vec3f(1.0f,1.0f,1.0f);
-    //color = add(color,mul(diffuse,0.5f));
+    //color = color + diffuse*0.5f;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
     Vec3fa lightIntensity = Vec3fa(1.0f);
     
     /* initialize shadow ray */
     RTCRay2 shadow;
-    shadow.org = add(ray.org,mul(ray.tfar,ray.dir));
+    shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.org.w = ray.org.w+ray.tfar*ray.dir.w;
     shadow.dir = neg(lightDir);
     shadow.dir.w = 0.0f;
@@ -503,7 +503,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     Vec3fa c = brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
     //if (ray.geomID == 0) PRINT(c);
     //Vec3fa c = clamp(dot(neg(ray.dir),brdf.dz),0.0f,1.0f);
-    color = add(color,mul(weight*(1.0f-Th),mul(c,mul(T,lightIntensity)))); //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
+    color = color + weight*(1.0f-Th)*c*T*lightIntensity; //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f))); // FIXME: use +=
     weight *= Th;
 
     /* continue ray */
@@ -523,8 +523,8 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   RTCRay2 ray;
   ray.org = p;
   ray.org.w = 0.0f;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
-  Vec3fa dir1 = normalize(add(mul(x+1,vx), mul(y+1,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
+  Vec3fa dir1 = normalize((x+1)*vx + (y+1)*vy + vz);
   ray.dir.w = 0.5f*0.707f*length(dir1-ray.dir);
   ray.tnear = 0.0f;
   ray.tfar = inf;
@@ -584,13 +584,13 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     /* calculate shadows */
     //Vec3f diffuse = Vec3f(0.5f,0.4f,0.4f); //colors[ray.primID];
     //if (ray.geomID == 1) diffuse = Vec3f(1.0f,1.0f,1.0f);
-    //color = add(color,mul(diffuse,0.5f));
+    //color = color + diffuse*0.5f; // FIXME: use +=
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
     Vec3fa lightIntensity = Vec3fa(1.0f);
     
     /* initialize shadow ray */
     RTCRay2 shadow;
-    shadow.org = add(ray.org,mul(ray.tfar,ray.dir));
+    shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.org.w = ray.org.w+ray.tfar*ray.dir.w;
     shadow.dir = neg(lightDir);
     shadow.dir.w = 0.0f;
@@ -608,7 +608,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     Vec3fa c = brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
     //if (ray.geomID == 0) PRINT(c);
     //Vec3fa c = clamp(dot(neg(ray.dir),brdf.dz),0.0f,1.0f);
-    color = add(color,mul(weight*(1.0f-Th),mul(c,mul(T,lightIntensity)))); //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
+    color = color + weight*(1.0f-Th)*c*T*lightIntensity; //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f))); // FIXME: use +=
     weight *= Th;
 
     /* continue ray */
