@@ -78,6 +78,7 @@ inline varying Vec2f operator/(const varying float a, const varying Vec2f b) { r
 inline uniform Vec2f operator/(const uniform Vec2f a, const uniform Vec2f b) { return make_Vec2f(a.x/b.x,a.y/b.y); }
 inline varying Vec2f operator/(const varying Vec2f a, const varying Vec2f b) { return make_Vec2f(a.x/b.x,a.y/b.y); }
 
+/*
 inline uniform Vec2f add(const uniform Vec2f a, const uniform Vec2f b) { return make_Vec2f(a.x+b.x,a.y+b.y); }
 inline varying Vec2f add(const varying Vec2f a, const varying Vec2f b) { return make_Vec2f(a.x+b.x,a.y+b.y); }
 
@@ -101,6 +102,7 @@ inline varying Vec2f div(const varying float a, const varying Vec2f b) { return 
 
 inline uniform Vec2f div(const uniform Vec2f a, const uniform Vec2f b) { return make_Vec2f(a.x/b.x,a.y/b.y); }
 inline varying Vec2f div(const varying Vec2f a, const varying Vec2f b) { return make_Vec2f(a.x/b.x,a.y/b.y); }
+*/
 
 inline uniform Vec2f min(const uniform Vec2f a, const uniform Vec2f b) { return make_Vec2f(min(a.x,b.x),min(a.y,b.y)); }
 inline varying Vec2f min(const varying Vec2f a, const varying Vec2f b) { return make_Vec2f(min(a.x,b.x),min(a.y,b.y)); }
@@ -150,10 +152,10 @@ inline varying float dot(const varying Vec2f a, const varying Vec2f b) { return 
 inline uniform float length(const uniform Vec2f a) { return sqrt(dot(a,a)); }
 inline varying float length(const varying Vec2f a) { return sqrt(dot(a,a)); }
 
-inline uniform Vec2f normalize(const uniform Vec2f a) { return mul(rsqrt(dot(a,a)),a); }
-inline varying Vec2f normalize(const varying Vec2f a) { return mul(rsqrt(dot(a,a)),a); }
+inline uniform Vec2f normalize(const uniform Vec2f a) { return rsqrt(dot(a,a))*a; }
+inline varying Vec2f normalize(const varying Vec2f a) { return rsqrt(dot(a,a))*a; }
 
-inline uniform float distance(const uniform Vec2f a, const uniform Vec2f b) { return length(sub(a,b)); }
-inline varying float distance(const varying Vec2f a, const uniform Vec2f b) { return length(sub(a,b)); }
+inline uniform float distance(const uniform Vec2f a, const uniform Vec2f b) { return length(a-b); }
+inline varying float distance(const varying Vec2f a, const uniform Vec2f b) { return length(a-b); }
 
 #endif

@@ -34,7 +34,7 @@ Vec3f renderPixelEyeLight(int x, int y, const uniform Vec3f& vx, const uniform V
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -56,7 +56,7 @@ Vec3f renderPixelAmbientOcclusion(int x, int y, const uniform Vec3f& vx, const u
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -72,7 +72,7 @@ Vec3f renderPixelAmbientOcclusion(int x, int y, const uniform Vec3f& vx, const u
 
   /* calculate hit point */
   float intensity = 0;
-  Vec3f hitPos = add(ray.org,mul(ray.tfar,ray.dir));
+  Vec3f hitPos = ray.org + ray.tfar*ray.dir;
 
   /* trace some ambient occlusion rays */
   int seed = 34*x+12*y;
@@ -116,7 +116,7 @@ Vec3f renderPixelUV(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& 
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -138,7 +138,7 @@ Vec3f renderPixelNg(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& 
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -169,7 +169,7 @@ Vec3f renderPixelGeomID(int x, int y, const uniform Vec3f& vx, const uniform Vec
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -191,7 +191,7 @@ Vec3f renderPixelGeomIDPrimID(int x, int y, const uniform Vec3f& vx, const unifo
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -213,7 +213,7 @@ Vec3f renderPixelCycles(int x, int y, const uniform Vec3f& vx, const uniform Vec
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -236,7 +236,7 @@ Vec3f renderPixelUV16(int x, int y, const uniform Vec3f& vx, const uniform Vec3f
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -267,7 +267,7 @@ export uniform bool device_pick(const uniform float x,
   /* initialize ray */
   uniform RTCRay1 ray;
   ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -284,7 +284,7 @@ export uniform bool device_pick(const uniform float x,
     return false;
   }
   else {
-    hitPos = add(ray.org,mul(ray.tfar,ray.dir));
+    hitPos = ray.org + ray.tfar*ray.dir;
     return true;
   }
 }

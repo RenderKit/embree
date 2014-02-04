@@ -99,6 +99,7 @@ inline varying LinearSpace3f frame(const varying Vec3f N)
 /// Binary Operators
 ////////////////////////////////////////////////////////////////////////////////
 
+/*
 inline uniform LinearSpace3f add(const uniform LinearSpace3f a, const uniform LinearSpace3f b) { return make_LinearSpace3f(add(a.vx,b.vx), add(a.vy,b.vy), add(a.vz,b.vz)); }
 inline varying LinearSpace3f add(const varying LinearSpace3f a, const varying LinearSpace3f b) { return make_LinearSpace3f(add(a.vx,b.vx), add(a.vy,b.vy), add(a.vz,b.vz)); }
 
@@ -116,7 +117,7 @@ inline uniform LinearSpace3f mul(const uniform LinearSpace3f a, const uniform Li
 inline varying LinearSpace3f mul(const varying float         a, const varying LinearSpace3f b) { return make_LinearSpace3f(mul(a,b.vx), mul(a,b.vy), mul(a,b.vz)); }
 inline varying LinearSpace3f mul(const varying LinearSpace3f a, const varying float         b) { return make_LinearSpace3f(mul(a.vx,b), mul(a.vy,b), mul(a.vz,b)); }
 inline varying LinearSpace3f mul(const varying LinearSpace3f a, const varying LinearSpace3f b) { return make_LinearSpace3f(mul(a,b.vx), mul(a,b.vy), mul(a,b.vz)); }
-
+*/
 inline uniform LinearSpace3f operator+(const uniform LinearSpace3f a, const uniform LinearSpace3f b) { return make_LinearSpace3f(a.vx+b.vx, a.vy+b.vy, a.vz+b.vz); }
 inline varying LinearSpace3f operator+(const varying LinearSpace3f a, const varying LinearSpace3f b) { return make_LinearSpace3f(a.vx+b.vx, a.vy+b.vy, a.vz+b.vz); }
 
@@ -160,8 +161,7 @@ inline varying bool ne(const varying LinearSpace3f a, const varying LinearSpace3
 ////////////////////////////////////////////////////////////////////////////////
 
 /*! compute inverse matrix */
-inline uniform LinearSpace3f rcp(const uniform LinearSpace3f l) { return mul(rcp(det(l)),adjoint(l)); }
-inline varying LinearSpace3f rcp(const varying LinearSpace3f l) { return mul(rcp(det(l)),adjoint(l)); }
-
+inline uniform LinearSpace3f rcp(const uniform LinearSpace3f l) { return rcp(det(l))*adjoint(l); }
+inline varying LinearSpace3f rcp(const varying LinearSpace3f l) { return rcp(det(l))*adjoint(l); }
 
 #endif

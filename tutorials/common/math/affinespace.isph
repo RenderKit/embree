@@ -50,8 +50,8 @@ inline varying AffineSpace3f make_AffineSpace3f(const varying Vec3f x, const var
 inline uniform AffineSpace3f neg(const uniform AffineSpace3f a) { return make_AffineSpace3f(neg(a.l),neg(a.p)); }
 inline varying AffineSpace3f neg(const varying AffineSpace3f a) { return make_AffineSpace3f(neg(a.l),neg(a.p)); }
 
-inline uniform AffineSpace3f rcp( const uniform AffineSpace3f a) { uniform LinearSpace3f il = rcp(a.l); return make_AffineSpace3f(il,neg(mul(il,a.p))); }
-inline varying AffineSpace3f rcp( const varying AffineSpace3f a) { varying LinearSpace3f il = rcp(a.l); return make_AffineSpace3f(il,neg(mul(il,a.p))); }
+inline uniform AffineSpace3f rcp( const uniform AffineSpace3f a) { uniform LinearSpace3f il = rcp(a.l); return make_AffineSpace3f(il,neg(il*a.p)); }
+inline varying AffineSpace3f rcp( const varying AffineSpace3f a) { varying LinearSpace3f il = rcp(a.l); return make_AffineSpace3f(il,neg(il*a.p)); }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Binary Operators
@@ -71,6 +71,7 @@ inline varying AffineSpace3f operator*( const varying float         a, const var
 inline varying AffineSpace3f operator*( const varying AffineSpace3f a, const varying float         b ) { return make_AffineSpace3f(a.l*b,a.p*b); }
 inline varying AffineSpace3f operator*( const varying AffineSpace3f a, const varying AffineSpace3f b ) { return make_AffineSpace3f(a.l*b.l,a.l*b.p + a.p); }
 
+/*
 inline uniform AffineSpace3f add(const uniform AffineSpace3f a, const uniform AffineSpace3f b) { return make_AffineSpace3f(add(a.l,b.l), add(a.p,b.p)); }
 inline varying AffineSpace3f add(const varying AffineSpace3f a, const varying AffineSpace3f b) { return make_AffineSpace3f(add(a.l,b.l), add(a.p,b.p)); }
 
@@ -84,10 +85,10 @@ inline uniform AffineSpace3f mul( const uniform AffineSpace3f a, const uniform A
 inline varying AffineSpace3f mul( const varying float         a, const varying AffineSpace3f b ) { return make_AffineSpace3f(mul(a,b.l),mul(a,b.p)); }
 inline varying AffineSpace3f mul( const varying AffineSpace3f a, const varying float         b ) { return make_AffineSpace3f(mul(a.l,b),mul(a.p,b)); }
 inline varying AffineSpace3f mul( const varying AffineSpace3f a, const varying AffineSpace3f b ) { return make_AffineSpace3f(mul(a.l,b.l),add(mul(a.l,b.p),a.p)); }
-
-inline uniform Vec3f xfmPoint (const uniform AffineSpace3f a, const uniform Vec3f v) { return add(xfmVector(a.l,v),a.p); }
-inline varying Vec3f xfmPoint (const uniform AffineSpace3f a, const varying Vec3f v) { return add(xfmVector(a.l,v),a.p); }
-inline varying Vec3f xfmPoint (const varying AffineSpace3f a, const varying Vec3f v) { return add(xfmVector(a.l,v),a.p); }
+*/
+inline uniform Vec3f xfmPoint (const uniform AffineSpace3f a, const uniform Vec3f v) { return xfmVector(a.l,v)+a.p; }
+inline varying Vec3f xfmPoint (const uniform AffineSpace3f a, const varying Vec3f v) { return xfmVector(a.l,v)+a.p; }
+inline varying Vec3f xfmPoint (const varying AffineSpace3f a, const varying Vec3f v) { return xfmVector(a.l,v)+a.p; }
 
 inline uniform Vec3f xfmVector(const uniform AffineSpace3f a, const uniform Vec3f v) { return xfmVector(a.l,v); }
 inline varying Vec3f xfmVector(const uniform AffineSpace3f a, const varying Vec3f v) { return xfmVector(a.l,v); }

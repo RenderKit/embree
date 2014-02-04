@@ -128,7 +128,7 @@ inline Vec3f cosineSampleHemisphere(float& pdf, const float u, const float v)
 
 /*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
 inline Vec3f cosineSampleHemisphere(float& pdf, const float& u, const float& v, const Vec3f& N) {
-  return mul(frame(N),cosineSampleHemisphere(pdf,u,v));
+  return frame(N)*cosineSampleHemisphere(pdf,u,v);
 }
 
 inline Vec3f AmbientLight__eval(const Vec3f& Ns, const Vec3f& wi) {
@@ -142,20 +142,20 @@ inline Vec3f AmbientLight__sample(const Vec3f& Ns,
 {
   float pdf; wi = cosineSampleHemisphere(pdf,s.x,s.y,Ns);
   tMax = 1e20f;
-  return div(AmbientLight__L,pdf);
+  return AmbientLight__L/pdf;
 }
 
 inline Vec3f Matte__eval(const int& materialID, const Vec3f& wo, const Vec3f& Ns, const Vec3f& wi) 
 {
   uniform ISPCMaterial* material = &g_ispc_scene->materials[materialID];
   Vec3f diffuse = material->Kd;
-  return mul(diffuse, (1.0f/(float)pi) * clamp(dot(wi,Ns),0.0f,1.0f));
+  return diffuse * (1.0f/(float)pi) * clamp(dot(wi,Ns),0.0f,1.0f);
 }
 
 inline Vec3f Matte__sample(const int& materialID, const Vec3f& wo, const Vec3f& Ns, Vec3f& wi, const Vec2f& s) 
 {
   float pdf; wi = cosineSampleHemisphere(pdf,s.x,s.y,Ns);
-  return div(Matte__eval(materialID, wo, Ns, wi),pdf);
+  return Matte__eval(materialID, wo, Ns, wi)/pdf;
 }
 
 inline float frand(int& seed) {
@@ -178,7 +178,7 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const un
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -196,12 +196,12 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const un
     /* intersect ray with scene */ 
     rtcIntersect(g_scene,ray);
     Vec3f Ns = face_forward(ray.dir,normalize(ray.Ng));
-    Vec3f Ph = add(ray.org,mul(ray.tfar,ray.dir));
+    Vec3f Ph = ray.org + ray.tfar*ray.dir;
 
     /* shade background with ambient light */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
       Vec3f La = AmbientLight__eval(Ns,neg(ray.dir));
-      L = add(L,mul(Lw,La));
+      L = L + Lw*La; // FIXME
       break;
     }
         
@@ -240,13 +240,13 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const uniform Vec3f& vx, const un
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
       Vec3f Lm = Matte__eval(materialID,neg(ray.dir),Ns,wi);
-      L = add(L,mul(Lw,mul(Ll,Lm)));
+      L = L + Lw*Ll*Lm; // FIXME
     }
 
     /* calculate diffuce bounce */
     s = make_Vec2f(frand(seed),frand(seed));
     Vec3f c = Matte__sample(materialID,neg(ray.dir), Ns, wi, s);
-    Lw = mul(Lw,c);
+    Lw = Lw*c; // FIXME
 
     /* setup secondary ray */
     ray.org = Ph;
@@ -267,9 +267,9 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
   int seed = x*233+y*234234+237;
   Vec3f L = make_Vec3f(0.0f,0.0f,0.0f);
   //for (uniform int i=0; i<16; i++) {
-    L = add(L,renderPixelSeed(x,y,seed,vx,vy,vz,p));
+  L = L + renderPixelSeed(x,y,seed,vx,vy,vz,p); // FIXME
   //}
-  //L = mul(L,1.0f/16.0f);
+  //L = L*(1.0f/16.0f);
   return L;
 }
   

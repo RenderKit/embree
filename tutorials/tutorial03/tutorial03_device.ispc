@@ -143,7 +143,7 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -171,7 +171,7 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
   Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
   Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
   float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-  Vec3f Ns = add(add(mul(w,n0),mul(u,n1)),mul(v,n2));
+  Vec3f Ns = w*n0 + u*n1 + v*n2;
   Ns = normalize(Ns);
 
 #else
@@ -194,7 +194,7 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
       Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
       Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
       float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-      Ns = add(add(mul(w,n0),mul(u,n1)),mul(v,n2));
+      Ns = w*n0 + u*n1 + v*n2;
     }
   }
   Ns = normalize(Ns);
@@ -206,7 +206,7 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
   Vec3f Nf = faceforward(Ns,neg(ray.dir),ray.Ng);
   //Vec3f Ng = normalize(ray.Ng);
   //Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
-  color = mul(color,dot(ray.dir,Nf));    
+  color = color*dot(ray.dir,Nf);   // FIXME
   return color;
 }
 

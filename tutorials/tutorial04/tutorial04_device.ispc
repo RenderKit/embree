@@ -165,7 +165,7 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -184,12 +184,12 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
     Vec3f diffuse = make_Vec3f(1,1,1);
     if (ray.instID != -1)
       diffuse = colors[ray.instID][ray.geomID];
-    color = add(color,mul(diffuse,0.5));
+    color = color + diffuse*0.5; // FIXME
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     
     /* initialize shadow ray */
     RTCRay shadow;
-    shadow.org = add(ray.org,mul(ray.tfar,ray.dir));
+    shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.dir = neg(lightDir);
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
@@ -203,7 +203,7 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
 
     /* add light contribution */
     if (shadow.geomID)
-      color = add(color,mul(diffuse,clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
+      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME
   }
   return color;
 }
@@ -259,13 +259,13 @@ export void device_render (uniform int* uniform pixels,
   uniform float t = 0.7f*time;
 
   /* move instances */
-  xfm.p = mul(2.0f,make_Vec3f(+cos(t),0.0f,+sin(t)));
+  xfm.p = 2.0f*make_Vec3f(+cos(t),0.0f,+sin(t));
   rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm);
-  xfm.p = mul(2.0f,make_Vec3f(-cos(t),0.0f,-sin(t)));
+  xfm.p = 2.0f*make_Vec3f(-cos(t),0.0f,-sin(t));
   rtcSetTransform(g_scene,g_instance1,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm);
-  xfm.p = mul(2.0f,make_Vec3f(-sin(t),0.0f,+cos(t)));
+  xfm.p = 2.0f*make_Vec3f(-sin(t),0.0f,+cos(t));
   rtcSetTransform(g_scene,g_instance2,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm);
-  xfm.p = mul(2.0f,make_Vec3f(+sin(t),0.0f,-cos(t)));
+  xfm.p = 2.0f*make_Vec3f(+sin(t),0.0f,-cos(t));
   rtcSetTransform(g_scene,g_instance3,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm);
 
   /* update scene */

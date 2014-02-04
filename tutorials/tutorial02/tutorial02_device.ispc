@@ -138,7 +138,7 @@ void sphereBoundsFunc(const uniform Sphere* uniform spheres, uniform size_t item
 void sphereIntersectFunc(const uniform Sphere* uniform spheres, varying RTCRay& ray, uniform size_t item)
 {
   const uniform Sphere& sphere = spheres[item];
-  const Vec3f v = sub(ray.org,sphere.p);
+  const Vec3f v = ray.org-sphere.p;
   const float A = dot(ray.dir,ray.dir);
   const float B = 2.0f*dot(v,ray.dir);
   const float C = dot(v,v) - sqr(sphere.r);
@@ -154,7 +154,7 @@ void sphereIntersectFunc(const uniform Sphere* uniform spheres, varying RTCRay& 
     ray.tfar = t0;
     ray.geomID = sphere.geomID;
     ray.primID = item;
-    ray.Ng = sub(add(ray.org,mul(t0,ray.dir)),sphere.p);
+    ray.Ng = ray.org+t0*ray.dir-sphere.p;
   }
   if ((ray.tnear < t1) & (t1 < ray.tfar)) {
     ray.u = 0.0f;
@@ -162,14 +162,14 @@ void sphereIntersectFunc(const uniform Sphere* uniform spheres, varying RTCRay& 
     ray.tfar = t1;
     ray.geomID = sphere.geomID;
     ray.primID = item;
-    ray.Ng = sub(add(ray.org,mul(t1,ray.dir)),sphere.p);
+    ray.Ng = ray.org+t1*ray.dir-sphere.p;
   }
 }
 
 void sphereOccludedFunc(const uniform Sphere* uniform spheres, varying RTCRay& ray, uniform size_t item)
 {
   const uniform Sphere& sphere = spheres[item];
-  const Vec3f v = sub(ray.org,sphere.p);
+  const Vec3f v = ray.org-sphere.p;
   const float A = dot(ray.dir,ray.dir);
   const float B = 2.0f*dot(v,ray.dir);
   const float C = dot(v,v) - sqr(sphere.r);
@@ -384,7 +384,7 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
-  ray.dir = normalize(add(mul(x,vx), mul(y,vy), vz));
+  ray.dir = normalize(x*vx + y*vy + vz);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -403,12 +403,12 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
     Vec3f diffuse = make_Vec3f(0.0f);
     if (ray.instID == 0) diffuse = colors[ray.instID][ray.primID];
     else                 diffuse = colors[ray.instID][ray.geomID];
-    color = add(color,mul(diffuse,0.5));
+    color = color + diffuse*0.5; // FIXME
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     
     /* initialize shadow ray */
     RTCRay shadow;
-    shadow.org = add(ray.org,mul(ray.tfar,ray.dir));
+    shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.dir = neg(lightDir);
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
@@ -422,7 +422,7 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
     
     /* add light contribution */
     if (shadow.geomID)
-      color = add(color,mul(diffuse,clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f)));
+      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME
   }
   return color;
 }
@@ -471,10 +471,10 @@ export void device_render (uniform int* uniform pixels,
 {
   /* move instances */
   uniform float t = 0.7f*time;
-  g_instance0->local2world.p = mul(2.0f,make_Vec3f(+cos(t),0.0f,+sin(t)));
-  g_instance1->local2world.p = mul(2.0f,make_Vec3f(-cos(t),0.0f,-sin(t)));
-  g_instance2->local2world.p = mul(2.0f,make_Vec3f(-sin(t),0.0f,+cos(t)));
-  g_instance3->local2world.p = mul(2.0f,make_Vec3f(+sin(t),0.0f,-cos(t)));
+  g_instance0->local2world.p = 2.0f*make_Vec3f(+cos(t),0.0f,+sin(t));
+  g_instance1->local2world.p = 2.0f*make_Vec3f(-cos(t),0.0f,-sin(t));
+  g_instance2->local2world.p = 2.0f*make_Vec3f(-sin(t),0.0f,+cos(t));
+  g_instance3->local2world.p = 2.0f*make_Vec3f(+sin(t),0.0f,-cos(t));
   updateInstance(g_scene,g_instance0);
   updateInstance(g_scene,g_instance1);
   updateInstance(g_scene,g_instance2);
