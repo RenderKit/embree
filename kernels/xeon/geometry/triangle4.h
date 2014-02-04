@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ACCEL_TRIANGLE4_H__
-#define __EMBREE_ACCEL_TRIANGLE4_H__
+#pragma once
 
 #include "primitive.h"
 
@@ -122,5 +121,3 @@ namespace embree
     BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 }
-
-#endif

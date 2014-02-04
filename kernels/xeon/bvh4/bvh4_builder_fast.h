@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4_BUILDER_FAST_H__
-#define __EMBREE_BVH4_BUILDER_FAST_H__
+#pragma once
 
 #include "bvh4.h"
 #include "../bvh4i/bvh4i_builder_util.h"
@@ -136,5 +135,3 @@ namespace embree
     };
   }
 }
-#endif
-

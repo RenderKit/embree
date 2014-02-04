@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_TRIANGLE4I_H__
-#define __EMBREE_TRIANGLE4I_H__
+#pragma once
 
 #include "primitive.h"
 
@@ -65,7 +64,3 @@ namespace embree
     void pack(char* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const;
   };
 }
-
-#endif
-
-

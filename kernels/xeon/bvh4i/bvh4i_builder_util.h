@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef BVH4I_BUILDER_UTIL_H
-#define BVH4I_BUILDER_UTIL_H
+#pragma once
 
 #include "common/primref.h"
 #include "geometry/triangle1.h"
@@ -554,5 +553,3 @@ namespace embree
     }
   };
 };
-
-#endif

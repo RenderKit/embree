@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_LINEAR_SPACE3_H__
-#define __EMBREE_LINEAR_SPACE3_H__
+#pragma once
 
 #include "vec3.h"
 #include "quaternion.h"
@@ -160,5 +159,3 @@ namespace embree
   /*! Shortcuts for common linear spaces. */
   typedef LinearSpace3<Vec3fa> LinearSpace3f;
 }
-
-#endif

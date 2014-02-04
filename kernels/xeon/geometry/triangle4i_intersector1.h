@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_TRIANGLE4I_INTERSECTOR1_PLUECKER_H__
-#define __EMBREE_TRIANGLE4I_INTERSECTOR1_PLUECKER_H__
+#pragma once
 
 #include "triangle4i.h"
 #include "common/ray.h"
@@ -241,7 +240,3 @@ namespace embree
     }
   };
 }
-
-#endif
-
-

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ACCELSET_H__
-#define __EMBREE_ACCELSET_H__
+#pragma once
 
 #include "common/default.h"
 #include "common/builder.h"
@@ -229,5 +228,3 @@ namespace embree
                                  (AccelSet::OccludedFunc16)intersector::occluded, \
                                  TOSTRING(isa) "::" TOSTRING(symbol));  
 }
-
-#endif

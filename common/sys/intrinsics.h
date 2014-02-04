@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_INTRINSICS_H__
-#define __EMBREE_INTRINSICS_H__
+#pragma once
 
 #include "platform.h"
 
@@ -680,5 +679,3 @@ __forceinline void prefetchL2EX(const void* ptr) {
   _mm_prefetch((const char*)ptr,_MM_HINT_T1); 
 #endif
 }
-
-#endif

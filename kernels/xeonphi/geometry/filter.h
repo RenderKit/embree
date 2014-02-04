@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_FILTER_H__
-#define __EMBREE_FILTER_H__
+#pragma once
 
 #include "common/geometry.h"
 #include "common/ray.h"
@@ -218,5 +217,3 @@ namespace embree
     return passed;
   }
 }
-
-#endif

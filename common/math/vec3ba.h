@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_VECTOR3B_SSE_H__
-#define __EMBREE_VECTOR3B_SSE_H__
+#pragma once
 
 #include "simd/sse.h"
 #include "math.h"
@@ -116,5 +115,3 @@ namespace embree
     return cout << "(" << (a.x ? "1" : "0") << ", " << (a.y ? "1" : "0") << ", " << (a.z ? "1" : "0") << ")";
   }
 }
-
-#endif

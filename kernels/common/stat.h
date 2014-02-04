@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_STAT_H__
-#define __EMBREE_STAT_H__
+#pragma once
 
 #include "default.h"
 
@@ -90,5 +89,3 @@ namespace embree
     static Stat instance;
   };
 }
-
-#endif

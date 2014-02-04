@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_PARSE_STREAM_H__
-#define __EMBREE_PARSE_STREAM_H__
+#pragma once
 
 #include "stringstream.h"
 #include "sys/filename.h"
@@ -110,5 +109,3 @@ namespace embree
     Ref<Stream<std::string> > cin;
   };
 }
-
-#endif

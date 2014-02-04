@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_QUATERNION_H__
-#define __EMBREE_QUATERNION_H__
+#pragma once
 
 #include "sys/platform.h"
 #include "math/vec3.h"
@@ -193,5 +192,3 @@ namespace embree
   typedef QuaternionT<float>  Quaternion3f;
   typedef QuaternionT<double> Quaternion3d;
 }
-
-#endif

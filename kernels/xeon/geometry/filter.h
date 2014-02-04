@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_FILTER_H__
-#define __EMBREE_FILTER_H__
+#pragma once
 
 #include "common/geometry.h"
 
@@ -364,5 +363,3 @@ namespace embree
 
 #endif
 }
-
-#endif

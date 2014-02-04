@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4_BUILDER_H__
-#define __EMBREE_BVH4_BUILDER_H__
+#pragma once
 
 #include "builders/primrefalloc.h"
 #include "builders/primrefblock.h"
@@ -184,5 +183,3 @@ namespace embree
     BVH4* bvh;                      //!< Output BVH4
   };
 }
-
-#endif

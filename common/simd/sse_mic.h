@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_SSE_MIC_H__
-#define __EMBREE_SSE_MIC_H__
+#pragma once
 
 #include "sys/platform.h"
 #include "sys/intrinsics.h"
@@ -50,8 +49,3 @@ __forceinline const ssef cast( const ssei& a ) { return *(ssef*)&a; }
  }
 
 }
-
-
-
-
-#endif

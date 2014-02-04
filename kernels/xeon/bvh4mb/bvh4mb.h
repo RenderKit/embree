@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4MB_H__
-#define __EMBREE_BVH4MB_H__
+#pragma once
 
 #include "common/alloc.h"
 #include "common/accel.h"
@@ -254,5 +253,3 @@ namespace embree
     size_t depth;                      //!< Depth of the tree.
   };
 }
-
-#endif

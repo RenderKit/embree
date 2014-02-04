@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ACCELN_H__
-#define __EMBREE_ACCELN_H__
+#pragma once
 
 #include "accel.h"
 
@@ -55,5 +54,3 @@ namespace embree
     size_t M;
   };
 }
-
-#endif

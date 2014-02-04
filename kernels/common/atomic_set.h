@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ATOMIC_SET_H__
-#define __EMBREE_ATOMIC_SET_H__
+#pragma once
 
 #include "sys/intrinsics.h"
 
@@ -202,6 +201,3 @@ namespace embree
     item* root;
   };
 }
-
-#endif
-

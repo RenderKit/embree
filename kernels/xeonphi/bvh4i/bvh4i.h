@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4I_MIC_H__
-#define __EMBREE_BVH4I_MIC_H__
+#pragma once
 
 #include "common/alloc.h"
 #include "common/accel.h"
@@ -437,5 +436,3 @@ namespace embree
   }
 
 }
-
-#endif

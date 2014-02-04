@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ISPC_WRAPPER_SSE_H__
-#define __EMBREE_ISPC_WRAPPER_SSE_H__
+#pragma once
 
 #include "common/scene_user_geometry.h"
 
@@ -26,6 +25,3 @@ namespace embree
     static void occluded (const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay4& ray, size_t item);
   };
 }
-
-#endif
-

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH_REFIT_H__
-#define __EMBREE_BVH_REFIT_H__
+#pragma once
 
 #include "bvh4.h"
 
@@ -71,5 +70,3 @@ namespace embree
     };
   }
 }
-#endif
-  

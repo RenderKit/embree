@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_VEC3I_MIC_H__
-#define __EMBREE_VEC3I_MIC_H__
+#pragma once
 
 #include "math.h"
 
@@ -228,5 +227,3 @@ namespace embree
     return cout << "(" << a.x << ", " << a.y << ", " << a.z << ")";
   }
 }
-
-#endif

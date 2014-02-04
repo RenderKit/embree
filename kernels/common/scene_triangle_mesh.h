@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_TRIANGLE_MESH_SCENE_H__
-#define __EMBREE_TRIANGLE_MESH_SCENE_H__
+#pragma once
 
 #include "common/default.h"
 #include "common/geometry.h"
@@ -122,5 +121,3 @@ namespace embree
     };
   }
 }
-
-#endif

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BUILDER_H__
-#define __EMBREE_BUILDER_H__
+#pragma once
 
 #include "common/default.h"
 
@@ -48,6 +47,3 @@ namespace embree
   void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
   BuilderFunc symbol = (BuilderFunc) symbol##_error;
 }
-
-#endif
-

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_SCENE_H__
-#define __EMBREE_SCENE_H__
+#pragma once
 
 #include "common/default.h"
 
@@ -279,6 +278,3 @@ namespace embree
   typedef Builder* (*BuilderFunc)            (void* accel, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize);
 
 }
-
-#endif
-

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_VECTOR_H__
-#define __EMBREE_VECTOR_H__
+#pragma once
 
 #include <stdio.h>
 #include <assert.h>
@@ -135,5 +134,3 @@ namespace embree
       T *t;             // data array
     };
 }
-
-#endif

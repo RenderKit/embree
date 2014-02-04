@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_SPLITTER_FALLBACK_H__
-#define __EMBREE_SPLITTER_FALLBACK_H__
+#pragma once
 
 #include "common/buildsource.h"
 #include "primrefalloc.h"
@@ -45,5 +44,3 @@ namespace embree
                       atomic_set<PrimRefBlock>& rprims_o, PrimInfo& rinfo_o);
   };
 }
-
-#endif

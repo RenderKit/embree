@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_TUTORIALS_H__
-#define __EMBREE_TUTORIALS_H__
+#pragma once
 
 /* size of screen tiles */
 #define TILE_SIZE_X 8
@@ -62,5 +61,3 @@ __forceinline Vec3fa neg(const Vec3fa& a) { return -a; }
 void launch_renderTile (int numTiles, 
                         int* pixels, const int width, const int height, const float time, 
                         const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p, const int numTilesX, const int numTilesY);
-
-#endif

@@ -14,9 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ARRAY2D_H__
-#define __EMBREE_ARRAY2D_H__
-
+#pragma once
+// FIXME: remove this file
 #include "../platform.h"
 
 namespace embree
@@ -51,5 +50,3 @@ namespace embree
     T** data;
   };
 }
-
-#endif

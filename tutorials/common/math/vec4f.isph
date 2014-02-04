@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ISPC_VEC4F_H__
-#define __EMBREE_ISPC_VEC4F_H__
+#pragma once
 
 struct Vec4f 
 {
@@ -77,5 +76,3 @@ inline varying Vec4f operator*(const varying Vec4f a, const varying float b) { v
 
 inline uniform Vec4f operator*(const uniform Vec4f a, const uniform Vec4f b) { uniform Vec4f v; v.x = a.x*b.x; v.y = a.y*b.y; v.z = a.z*b.z; v.w = a.w*b.w; return v; }
 inline varying Vec4f operator*(const varying Vec4f a, const varying Vec4f b) { varying Vec4f v; v.x = a.x*b.x; v.y = a.y*b.y; v.z = a.z*b.z; v.w = a.w*b.w; return v; }
-
-#endif

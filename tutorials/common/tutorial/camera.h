@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_TUTORIALS_CAMERA_H__
-#define __EMBREE_TUTORIALS_CAMERA_H__
+#pragma once
 
 #include "sys/platform.h"
 #include "sys/ref.h"
@@ -96,5 +95,3 @@ namespace embree
     float fov;       //!< field of view
   };
 }
-
-#endif

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_MIC_H__
-#define __EMBREE_MIC_H__
+#pragma once
 
 #include "sys/platform.h"
 #include "sys/intrinsics.h"
@@ -130,8 +129,4 @@ namespace embree
   {
     return broadcast4to16f(&v);
   }
-
-
 }
-
-#endif

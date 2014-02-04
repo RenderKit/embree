@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ISPC_LINEARSPACE_H__
-#define __EMBREE_ISPC_LINEARSPACE_H__
+#pragma once
 
 #include "vec.isph"
 
@@ -144,5 +143,3 @@ inline varying bool ne(const varying LinearSpace3f a, const varying LinearSpace3
 /*! compute inverse matrix */
 inline uniform LinearSpace3f rcp(const uniform LinearSpace3f l) { return rcp(det(l))*adjoint(l); }
 inline varying LinearSpace3f rcp(const varying LinearSpace3f l) { return rcp(det(l))*adjoint(l); }
-
-#endif

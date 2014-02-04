@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4MB_MIC_H__
-#define __EMBREE_BVH4MB_MIC_H__
+#pragma once
 
 #include "bvh4i/bvh4i.h"
 #include "geometry/triangle1.h"
@@ -108,5 +107,3 @@ namespace embree
     } 
 
 }
-
-#endif

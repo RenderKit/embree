@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_PRIM_REF_BLOCK_H__
-#define __EMBREE_PRIM_REF_BLOCK_H__
+#pragma once
 
 #include "common/primref.h"
 #include "common/atomic_set.h"
@@ -69,5 +68,3 @@ namespace embree
     //char align[sizeof(PrimRef)-sizeof(size_t)-sizeof(size_t)];
   };
 }
-#endif
-

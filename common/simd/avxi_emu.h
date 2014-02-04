@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_AVXI_EMU_H__
-#define __EMBREE_AVXI_EMU_H__
+#pragma once
 
 namespace embree
 {
@@ -265,5 +264,3 @@ namespace embree
     return cout << "<" << a[0] << ", " << a[1] << ", " << a[2] << ", " << a[3] << ", " << a[4] << ", " << a[5] << ", " << a[6] << ", " << a[7] << ">";
   }
 }
-
-#endif

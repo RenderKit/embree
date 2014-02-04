@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_HEURISTICS_H__
-#define __EMBREE_HEURISTICS_H__
+#pragma once
 
 #include "common/primref.h"
 #include "primrefblock.h"
@@ -30,5 +29,3 @@
   template class Base<HeuristicSpatial<0> >;                   \
   template class Base<HeuristicSpatial<2> >;                   \
   template class Base<HeuristicSpatial<3> >;
-
-#endif

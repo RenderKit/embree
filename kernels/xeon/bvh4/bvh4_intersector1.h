@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4_INTERSECTOR1_H__
-#define __EMBREE_BVH4_INTERSECTOR1_H__
+#pragma once
 
 #include "bvh4.h"
 #include "common/ray.h"
@@ -43,5 +42,3 @@ namespace embree
     };
   }
 }
-
-#endif

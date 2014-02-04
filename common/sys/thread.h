@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_THREAD_H__
-#define __EMBREE_THREAD_H__
+#pragma once
 
 #include "platform.h"
 
@@ -60,7 +59,4 @@ namespace embree
 #if defined(__MIC__)
   void printThreadInfo();
 #endif
-
 }
-
-#endif

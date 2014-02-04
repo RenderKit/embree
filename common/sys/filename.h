@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_FILENAME_H__
-#define __EMBREE_FILENAME_H__
+#pragma once
 
 #include "platform.h"
 
@@ -82,5 +81,3 @@ namespace embree
   };
 
 }
-
-#endif

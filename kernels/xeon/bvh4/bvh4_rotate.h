@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4_ROTATE_H__
-#define __EMBREE_BVH4_ROTATE_H__
+#pragma once
 
 #include "bvh4.h"
 
@@ -32,5 +31,3 @@ namespace embree
     static size_t rotate(BVH4* bvh, NodeRef parentRef, size_t depth = 1);
   };
 }
-
-#endif

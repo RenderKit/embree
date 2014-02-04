@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_MUTEX_H__
-#define __EMBREE_MUTEX_H__
+#pragma once
 
 #include "../platform.h"
 #include "atomic.h"
@@ -131,5 +130,3 @@ namespace embree
     Mutex& mutex;
   };
 }
-
-#endif

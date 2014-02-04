@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_VIRTUAL_ACCEL_INTERSECTOR1_H__
-#define __EMBREE_VIRTUAL_ACCEL_INTERSECTOR1_H__
+#pragma once
 
 #include "common/accel.h"
 #include "common/ray.h"
@@ -55,7 +54,3 @@ namespace embree
     }
   };
 }
-
-#endif
-
-

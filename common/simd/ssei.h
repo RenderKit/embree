@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_SSEI_H__
-#define __EMBREE_SSEI_H__
+#pragma once
 
 #include "math/math.h"
 
@@ -304,6 +303,4 @@ namespace embree
     return cout << "<" << a[0] << ", " << a[1] << ", " << a[2] << ", " << a[3] << ">";
   }
 }
-
-#endif
 

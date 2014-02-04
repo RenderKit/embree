@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_AFFINE_SPACE_H__
-#define __EMBREE_AFFINE_SPACE_H__
+#pragma once
 
 #include "math/linearspace3.h"
 #include "math/quaternion.h"
@@ -173,5 +172,3 @@ namespace embree
   #undef VectorT
   #undef ScalarT
 }
-
-#endif

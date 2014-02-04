@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_PRIMREF_ALLOCATOR_H__
-#define __EMBREE_PRIMREF_ALLOCATOR_H__
+#pragma once
 
 #include "../common/alloc.h"
 #include "primrefblock.h"
@@ -79,5 +78,3 @@ namespace embree
     ThreadPrimBlockAllocator* threadPrimBlockAllocator;  //!< Thread local allocator
   };
 }
-
-#endif

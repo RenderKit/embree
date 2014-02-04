@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4_H__
-#define __EMBREE_BVH4_H__
+#pragma once
 
 #include "embree2/rtcore.h"
 #include "common/alloc.h"
@@ -301,5 +300,3 @@ namespace embree
   namespace avx2  { extern Builder* symbol(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
   BVH4BuilderTopLevelFunc symbol;
 }
-
-#endif

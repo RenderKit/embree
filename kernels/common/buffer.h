@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BUFFER_H__
-#define __EMBREE_BUFFER_H__
+#pragma once
 
 #include "common/default.h"
 
@@ -99,5 +98,3 @@ namespace embree
     }
   };
 }
-
-#endif

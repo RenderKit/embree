@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __TOKEN_STREAM_H__
-#define __TOKEN_STREAM_H__
+#pragma once
 
 #include "stream.h"
 #include <string>
@@ -172,5 +171,3 @@ namespace embree
     __forceinline bool isAlphaNum(int c) const { return isAlpha(c) || isDigit(c); }
   };
 }
-
-#endif

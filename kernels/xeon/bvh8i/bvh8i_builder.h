@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH8I_BUILDER_H__
-#define __EMBREE_BVH8I_BUILDER_H__
+#pragma once
 
 #include "bvh4i/bvh4i.h"
 #include "builders/heuristics.h"
@@ -43,6 +42,3 @@ namespace embree
     };
   }  
 }
- 
-#endif
-  

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4i_BUILDER_H__
-#define __EMBREE_BVH4i_BUILDER_H__
+#pragma once
 
 #include "builders/primrefalloc.h"
 #include "builders/primrefblock.h"
@@ -192,5 +191,3 @@ namespace embree
 
   Builder* BVH4iBuilderObjectSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
 }
-
-#endif

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_PLATFORM_H__
-#define __EMBREE_PLATFORM_H__
+#pragma once
 
 #include <stddef.h>
 #include <assert.h>
@@ -323,6 +322,4 @@ namespace embree
 #define isa sse
 #else 
 #error Unknown ISA
-#endif
-
 #endif

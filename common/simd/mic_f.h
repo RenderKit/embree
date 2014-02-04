@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_MICF_H__
-#define __EMBREE_MICF_H__
+#pragma once
 
 namespace embree
 {
@@ -678,5 +677,3 @@ __forceinline mic_f lcross_zxy(const mic_f &ao, const mic_f &bo) {
     return cout;
   }
 }
-
-#endif

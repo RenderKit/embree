@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_TWOLEVEL_ACCEL_H__
-#define __EMBREE_TWOLEVEL_ACCEL_H__
+#pragma once
 
 #include "embree2/rtcore.h"
 #include "common/scene_triangle_mesh.h"
@@ -42,5 +41,3 @@ namespace embree
     std::vector<AccelSet*> enabled_accels;
   };
 }
-
-#endif

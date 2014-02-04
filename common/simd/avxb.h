@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_AVXB_H__
-#define __EMBREE_AVXB_H__
+#pragma once
 
 namespace embree
 {
@@ -166,5 +165,3 @@ namespace embree
                        << a[4] << ", " << a[5] << ", " << a[6] << ", " << a[7] << ">";
   }
 }
-
-#endif

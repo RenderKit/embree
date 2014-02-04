@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_TUTORIAL03_OBJ_LOADER_H__
-#define __EMBREE_TUTORIAL03_OBJ_LOADER_H__
+#pragma once
 
 #include "sys/platform.h"
 #include "sys/filename.h"
@@ -86,5 +85,3 @@ namespace embree
   /*! read from disk */
   void loadOBJ(const FileName& fileName, OBJScene& mesh);
 }
-
-#endif

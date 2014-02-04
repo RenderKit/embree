@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_MATH_H__
-#define __EMBREE_MATH_H__
+#pragma once
 
 #include "sys/platform.h"
 #include "sys/intrinsics.h"
@@ -205,5 +204,3 @@ namespace embree
 #endif
 
 }
-
-#endif

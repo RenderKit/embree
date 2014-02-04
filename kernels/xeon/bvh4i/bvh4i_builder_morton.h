@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVHI_BUILDER_MORTON_H__
-#define __EMBREE_BVHI_BUILDER_MORTON_H__
+#pragma once
 
 #include "bvh4i.h"
 #include "bvh4i_builder_util.h"
@@ -195,6 +194,3 @@ namespace embree
     };
   }
 }
-
-#endif
-  

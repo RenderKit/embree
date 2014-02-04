@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_INSTANCE_INTERSECTOR4_H__
-#define __EMBREE_INSTANCE_INTERSECTOR4_H__
+#pragma once
 
 #include "common/scene_user_geometry.h"
 #include "common/ray4.h"
@@ -31,6 +30,3 @@ namespace embree
     };
   }
 }
-
-#endif
-  

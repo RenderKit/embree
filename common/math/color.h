@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_COLOR_H__
-#define __EMBREE_COLOR_H__
+#pragma once
 
 #include "../sys/constants.h"
 #include "../simd/sse.h"
@@ -221,5 +220,3 @@ namespace embree
     return cout << "(" << a.r << ", " << a.g << ", " << a.b << ")";
   }
 }
-
-#endif

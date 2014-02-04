@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_CONDITION_H__
-#define __EMBREE_CONDITION_H__
+#pragma once
 
 #include "mutex.h"
 
@@ -33,5 +32,3 @@ namespace embree
     void* cond;
   };
 }
-
-#endif

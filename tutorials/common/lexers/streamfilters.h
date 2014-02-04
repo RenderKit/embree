@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_STREAM_FILTERS_H__
-#define __EMBREE_STREAM_FILTERS_H__
+#pragma once
 
 #include "stream.h"
 
@@ -51,5 +50,3 @@ namespace embree
     std::string lineComment;
   };
 }
-
-#endif

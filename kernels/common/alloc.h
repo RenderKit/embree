@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ALLOC_H__
-#define __EMBREE_ALLOC_H__
+#pragma once
 
 #include "sys/sysinfo.h"
 #include "sys/sync/mutex.h"
@@ -440,5 +439,3 @@ namespace embree
     size_t bytesReserved;
   };
 }
-
-#endif

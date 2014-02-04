@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_MICI_H__
-#define __EMBREE_MICI_H__
+#pragma once
 
 namespace embree
 { 
@@ -447,5 +446,3 @@ namespace embree
       return cout;
     }
 }
-
-#endif

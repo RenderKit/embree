@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH16I_INTERSECTOR16_SINGLE_MIC_H__
-#define __EMBREE_BVH16I_INTERSECTOR16_SINGLE_MIC_H__
+#pragma once
 
 #include "bvh16i.h"
 #include "common/ray16.h" 
@@ -50,5 +49,3 @@ namespace embree
 
   }
 }
-
-#endif

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_TASKSCHEDULER_SYS_H__
-#define __EMBREE_TASKSCHEDULER_SYS_H__
+#pragma once
 
 #include "taskscheduler.h"
 #include "sys/sync/mutex.h"
@@ -55,6 +54,3 @@ namespace embree
     std::vector<Task*> tasks; //!< queue of tasks
   };
 }
-
-#endif
-

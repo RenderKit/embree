@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH16I_BUILDER_MIC_H__
-#define __EMBREE_BVH16I_BUILDER_MIC_H__
+#pragma once
 
 #include "bvh4i/bvh4i_builder.h"
 #include "bvh16i.h"
@@ -59,5 +58,3 @@ namespace embree
   };
 
 }
-
-#endif

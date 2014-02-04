@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_PRIMREFGENBIN_H__
-#define __EMBREE_PRIMREFGENBIN_H__
+#pragma once
 
 #include "common/buildsource.h"
 #include "primrefalloc.h"
@@ -74,5 +73,3 @@ namespace embree
     Split split;                     //!< best possible split
   };
 }
-
-#endif

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ACCEL_TRIANGLE4_INTERSECTOR4_MOELLER_H__
-#define __EMBREE_ACCEL_TRIANGLE4_INTERSECTOR4_MOELLER_H__
+#pragma once
 
 #include "triangle4.h"
 #include "triangle4_intersector1_moeller.h"
@@ -377,5 +376,3 @@ namespace embree
     }
   };
 }
-
-#endif

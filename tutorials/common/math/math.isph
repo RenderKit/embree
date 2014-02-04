@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ISPC_MATH_H__
-#define __EMBREE_ISPC_MATH_H__
+#pragma once
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Constants
@@ -58,6 +57,3 @@ inline varying float deg2rad (const varying float x)  { return x * 1.74532925199
 
 inline uniform float rad2deg (const uniform float x)  { return x * 5.72957795130823208768e1f; }
 inline varying float rad2deg (const varying float x)  { return x * 5.72957795130823208768e1f; }
-
-#endif
-

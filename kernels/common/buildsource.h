@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BUILD_SOURCE_H__
-#define __EMBREE_BUILD_SOURCE_H__
+#pragma once
 
 #include "common/default.h"
 #include "primref.h"
@@ -93,4 +92,3 @@ namespace embree
     new (&right_o) PrimRef(cright,prim.geomID(), prim.primID());
   }
 }
-#endif

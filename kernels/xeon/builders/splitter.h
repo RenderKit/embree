@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_SPLITTER_H__
-#define __EMBREE_SPLITTER_H__
+#pragma once
 
 #include "common/buildsource.h"
 #include "primrefalloc.h"
@@ -53,5 +52,3 @@ namespace embree
     Split rsplit;                     //!< best split for right primitives
   };
 }
-
-#endif

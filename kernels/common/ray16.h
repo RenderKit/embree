@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_RAY16_H__
-#define __EMBREE_RAY16_H__
+#pragma once
 
 #include "ray.h"
 
@@ -59,5 +58,3 @@ namespace embree
       "instID = " << ray.instID << std::endl << " geomID = " << ray.geomID << std::endl << " primID = " << ray.primID <<  std::endl << " " << "u = " << ray.u <<  std::endl << " v = " << ray.v << std::endl << " Ng = " << ray.Ng << " }";
   }
 }
-
-#endif

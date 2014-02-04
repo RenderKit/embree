@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_HEURISTIC_SPATIAL_H__
-#define __EMBREE_HEURISTIC_SPATIAL_H__
+#pragma once
 
 #include "common/buildsource.h"
 #include "common/primref.h"
@@ -318,5 +317,3 @@ namespace embree
     const BuildSource* geom;       //!< geometry
   };
 }
-
-#endif

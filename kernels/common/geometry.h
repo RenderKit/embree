@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_GEOMETRY_H__
-#define __EMBREE_GEOMETRY_H__
+#pragma once
 
 #include "embree2/rtcore.h"
 #include "common/default.h"
@@ -248,5 +247,3 @@ namespace embree
     __forceinline bool hasOcclusionFilter16() const { return occlusionFilter16 != NULL; }
   };
 }
-
-#endif

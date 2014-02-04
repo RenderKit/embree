@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_AVX_H__
-#define __EMBREE_AVX_H__
+#pragma once
 
 #include "simd/sse.h"
 
@@ -33,5 +32,3 @@ namespace embree
 #include "simd/avxi_emu.h"
 #endif
 #include "simd/avxf.h"
-
-#endif

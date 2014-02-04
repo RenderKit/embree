@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_STRING_STREAM_H__
-#define __EMBREE_STRING_STREAM_H__
+#pragma once
 
 #include "stream.h"
 
@@ -39,5 +38,3 @@ namespace embree
     bool multiLine;        /*! whether to parse lines wrapped with \ */
   };
 }
-
-#endif

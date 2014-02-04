@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_SSEF_H__
-#define __EMBREE_SSEF_H__
+#pragma once
 
 namespace embree
 {
@@ -409,5 +408,3 @@ namespace embree
   }
 
 }
-
-#endif

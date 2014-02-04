@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __BVH4I_BUILDER_BINNING_H__
-#define __BVH4I_BUILDER_BINNING_H__
+#pragma once
 
 #include "bvh4i.h"
 #include "bvh4i_builder_util.h"
@@ -166,5 +165,3 @@ namespace embree
       };
   }
 }
-#endif
-  

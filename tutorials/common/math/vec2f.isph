@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ISPC_VEC2F_H__
-#define __EMBREE_ISPC_VEC2F_H__
+#pragma once
 
 /*! \brief ISPC Two-float vector class */
 struct Vec2f 
@@ -131,5 +130,3 @@ inline varying Vec2f normalize(const varying Vec2f a) { return rsqrt(dot(a,a))*a
 
 inline uniform float distance(const uniform Vec2f a, const uniform Vec2f b) { return length(a-b); }
 inline varying float distance(const varying Vec2f a, const uniform Vec2f b) { return length(a-b); }
-
-#endif

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_IMAGE_H__
-#define __EMBREE_IMAGE_H__
+#pragma once
 
 #include <vector>
 #include <string>
@@ -144,5 +143,3 @@ namespace embree
   /*! Store image to file. Format is auto detected. */
   void storeImage(const Ref<Image>& image, const FileName& filename);
 }
-
-#endif

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef BVH4I_BUILDER_UTIL_MIC_H
-#define BVH4I_BUILDER_UTIL_MIC_H
+#pragma once
 
 #include "bvh4i.h"
 #include "common/primref.h"
@@ -908,5 +907,3 @@ namespace embree
 
 
 };
-
-#endif

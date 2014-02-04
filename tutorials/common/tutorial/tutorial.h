@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_TUTORIAL_H__
-#define __EMBREE_TUTORIAL_H__
+#pragma once
 
 #include "sys/platform.h"
 #include "sys/ref.h"
@@ -28,6 +27,4 @@
 inline double drand48() {
   return (double)rand()/(double)RAND_MAX;
 }
-#endif
-
 #endif

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ISPC_VEC3F_H__
-#define __EMBREE_ISPC_VEC3F_H__
+#pragma once
 
 struct Vec3f 
 {
@@ -153,5 +152,3 @@ inline varying Vec3f cross(const varying Vec3f a, const varying Vec3f b) {
 
 inline uniform Vec3f lerp(const uniform float s, const uniform Vec3f v0, const uniform Vec3f v1) { return (1.0f-s)*v0+s*v1; }
 inline varying Vec3f lerp(const varying float s, const varying Vec3f v0, const varying Vec3f v1) { return (1.0f-s)*v0+s*v1; }
-
-#endif

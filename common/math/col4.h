@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_COL4_H__
-#define __EMBREE_COL4_H__
+#pragma once
 
 #include "sys/platform.h"
 #include "math/math.h"
@@ -60,5 +59,3 @@ namespace embree
   typedef Col4<unsigned char> Col4c;
   typedef Col4<float        > Col4f;
 }
-
-#endif

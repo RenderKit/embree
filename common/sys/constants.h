@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_CONSTANTS_H__
-#define __EMBREE_CONSTANTS_H__
+#pragma once
 
 #ifndef NULL
 #define NULL 0
@@ -160,5 +159,3 @@ namespace embree
   static struct FullTy {
   } full MAYBE_UNUSED;
 }
-
-#endif

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_VEC4_H__
-#define __EMBREE_VEC4_H__
+#pragma once
 
 #include "sys/platform.h"
 
@@ -197,5 +196,3 @@ namespace embree
   template<> __forceinline Vec4<mic_f>::Vec4( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z), w(a.w) {}
 #endif
 }
-
-#endif

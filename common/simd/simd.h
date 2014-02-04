@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_SIMD_H__
-#define __EMBREE_SIMD_H__
+#pragma once
 
 #include "math/math.h"
 
@@ -39,6 +38,4 @@
 #define AVX_ZERO_UPPER() _mm256_zeroupper()
 #else
 #define AVX_ZERO_UPPER()
-#endif
-
 #endif

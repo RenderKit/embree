@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_STRING_H__
-#define __EMBREE_STRING_H__
+#pragma once
 
 #include "../platform.h"
 
@@ -34,5 +33,3 @@ namespace std
     stringstream s; s << v; return s.str();
   }
 }
-
-#endif

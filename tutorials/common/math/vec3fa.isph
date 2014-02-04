@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ISPC_VEC3FA_H__
-#define __EMBREE_ISPC_VEC3FA_H__
+#pragma once
 
 struct Vec3fa 
 {
@@ -40,5 +39,3 @@ inline varying Vec3fa make_Vec3fa(varying Vec3f a) { return make_Vec3fa(a.x,a.y,
 
 inline uniform Vec3f make_Vec3f(uniform Vec3fa a) { return make_Vec3f(a.x,a.y,a.z); }
 inline varying Vec3f make_Vec3f(varying Vec3fa a) { return make_Vec3f(a.x,a.y,a.z); }
-
-#endif

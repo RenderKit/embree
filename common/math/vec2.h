@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_VEC2_H__
-#define __EMBREE_VEC2_H__
+#pragma once
 
 #include "sys/platform.h"
 #include "math/math.h"
@@ -153,5 +152,3 @@ namespace embree
   typedef Vec2<int  > Vec2i;
   typedef Vec2<float> Vec2f;
 }
-
-#endif

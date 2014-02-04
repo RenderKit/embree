@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_RTCORE_XEON_DEFAULT_H__
-#define __EMBREE_RTCORE_XEON_DEFAULT_H__
+#pragma once
 
 #include "sys/platform.h"
 #include "sys/ref.h"
@@ -255,5 +254,3 @@ typedef void (*ErrorFunc) ();
   SELECT_SYMBOL_AVX(features,intersector);                         \
   SELECT_SYMBOL_TEST(intersector);
 }
-
-#endif

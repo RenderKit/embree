@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_STACK_ITEM_H__
-#define __EMBREE_STACK_ITEM_H__
+#pragma once
 
 namespace embree
 {
@@ -53,8 +52,6 @@ namespace embree
     T ptr; 
     float dist;
   };
-
-
 
   /*! An item on the stack holds the node ID and distance of that node. */
   template<typename T>
@@ -313,5 +310,3 @@ namespace embree
   }  
 #endif
 }
-
-#endif

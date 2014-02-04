@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4I_INTERSECTOR8_CHUNK_H__
-#define __EMBREE_BVH4I_INTERSECTOR8_CHUNK_H__
+#pragma once
 
 #include "bvh4i.h"
 #include "../common/stack_item.h"
@@ -40,6 +39,3 @@ namespace embree
     };
   }
 }
-
-#endif
-  

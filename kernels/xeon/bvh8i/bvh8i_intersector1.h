@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH8I_INTERSECTOR1_H__
-#define __EMBREE_BVH8I_INTERSECTOR1_H__
+#pragma once
 
 #include "bvh8i.h"
 #include "../common/stack_item.h"
@@ -44,6 +43,3 @@ namespace embree
     };
   }
 }
-
-#endif
-  

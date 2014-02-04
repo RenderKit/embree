@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_TASKLOGGER_H__
-#define __EMBREE_TASKLOGGER_H__
+#pragma once
 
 /*! \file Implements a task logger. One can log start and end cycle of a task and store the
    resulting scheduling diagram into a FIG file. */
@@ -115,6 +114,3 @@ namespace embree
     } counters[PERF_MAX_TASKS];
   };
 }
-
-#endif
-

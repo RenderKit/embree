@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ISPC_AFFINESPACE_H__
-#define __EMBREE_ISPC_AFFINESPACE_H__
+#pragma once
 
 #include "linearspace.isph"
 
@@ -94,5 +93,3 @@ inline varying bool eq(const varying AffineSpace3f a, const varying AffineSpace3
 
 inline uniform bool ne(const uniform AffineSpace3f a, const uniform AffineSpace3f b) { return ne(a.l,b.l) | ne(a.p,b.p); }
 inline varying bool ne(const varying AffineSpace3f a, const varying AffineSpace3f b) { return ne(a.l,b.l) | ne(a.p,b.p); }
-
-#endif

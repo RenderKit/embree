@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_SSEB_H__
-#define __EMBREE_SSEB_H__
+#pragma once
 
 namespace embree
 {
@@ -158,5 +157,3 @@ namespace embree
     return cout << "<" << a[0] << ", " << a[1] << ", " << a[2] << ", " << a[3] << ">";
   }
 }
-
-#endif

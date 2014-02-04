@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BBOX_H__
-#define __EMBREE_BBOX_H__
+#pragma once
 
 #include "vec2.h"
 #include "vec3.h"
@@ -136,5 +135,3 @@ namespace embree
   typedef BBox<Vec3f> BBox3f;
   typedef BBox<Vec3fa> BBox3fa;
 }
-
-#endif

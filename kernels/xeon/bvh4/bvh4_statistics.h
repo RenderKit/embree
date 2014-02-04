@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4_STATISTICS_H__
-#define __EMBREE_BVH4_STATISTICS_H__
+#pragma once
 
 #include "bvh4.h"
 
@@ -51,5 +50,3 @@ namespace embree
     size_t depth;                      //!< Depth of the tree.
   };
 }
-
-#endif

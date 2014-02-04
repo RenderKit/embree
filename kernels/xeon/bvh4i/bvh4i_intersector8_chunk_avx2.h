@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4I_INTERSECTOR8_CHUNK__AVX2_H__
-#define __EMBREE_BVH4I_INTERSECTOR8_CHUNK__AVX2_H__
+#pragma once
 
 #include "bvh4i.h"
 #include "../common/stack_item.h"
@@ -31,5 +30,3 @@ namespace embree
     static void occluded (avxb* valid, BVH4i* bvh, Ray8& ray);
   };
 }
-
-#endif

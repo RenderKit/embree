@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_USER_GEOMETRY_SCENE_H__
-#define __EMBREE_USER_GEOMETRY_SCENE_H__
+#pragma once
 
 #include "common/default.h"
 #include "common/accel.h"
@@ -78,5 +77,3 @@ namespace embree
     };
   }
 }
-
-#endif

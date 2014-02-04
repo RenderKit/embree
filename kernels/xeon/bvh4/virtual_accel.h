@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_VIRTUAL_ACCEL_H__
-#define __EMBREE_VIRTUAL_ACCEL_H__
+#pragma once
 
 #include "embree2/rtcore.h"
 #include "common/accel.h"
@@ -93,5 +92,3 @@ namespace embree
     VirtualBuildSource source;
   };
 }
-
-#endif

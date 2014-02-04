@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BARRIER_H__
-#define __EMBREE_BARRIER_H__
+#pragma once
 
 #include "sys/platform.h"
 #include "sys/intrinsics.h"
@@ -180,5 +179,3 @@ namespace embree
     __align(64) CoreSyncData data[MAX_MIC_CORES]; // == one cacheline per core ==
   };
 }
-
-#endif

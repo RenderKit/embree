@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ACCEL_INSTANCE_H__
-#define __EMBREE_ACCEL_INSTANCE_H__
+#pragma once
 
 #include "accel.h"
 #include "builder.h"
@@ -51,5 +50,3 @@ namespace embree
     Builder* builder;
   };
 }
-
-#endif

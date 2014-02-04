@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_PRIM_REF_H__
-#define __EMBREE_PRIM_REF_H__
+#pragma once
 
 #include "common/default.h"
 
@@ -93,5 +92,3 @@ namespace embree
   }
 
 }
-#endif
-

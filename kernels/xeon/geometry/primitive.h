@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ACCEL_PRIMITIVE_H__
-#define __EMBREE_ACCEL_PRIMITIVE_H__
+#pragma once
 
 #include "common/default.h"
 #include "builders/primrefblock.h"
@@ -51,5 +50,3 @@ namespace embree
     int    intCost;         //!< cost of one ray/primitive intersection
   };
 }
-
-#endif

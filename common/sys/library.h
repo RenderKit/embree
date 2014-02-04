@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_LIBRARY_H__
-#define __EMBREE_LIBRARY_H__
+#pragma once
 
 #include "platform.h"
 
@@ -33,5 +32,3 @@ namespace embree
   /*! unloads a shared library */
   void closeLibrary(lib_t lib);
 }
-
-#endif

@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#pragma once
+
 #include "sys/platform.h"
 #include "sys/ref.h"
 #include "camera.h"

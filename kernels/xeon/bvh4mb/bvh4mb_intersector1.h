@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_BVH4MB_INTERSECTOR1_H__
-#define __EMBREE_BVH4MB_INTERSECTOR1_H__
+#pragma once
 
 #include "bvh4mb.h"
 #include "embree2/rtcore.h"
@@ -41,6 +40,3 @@ namespace embree
     };
   }
 }
-
-#endif
-  

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ACCEL_TRIANGLE4V_INTERSECTOR4_PLUECKER_H__
-#define __EMBREE_ACCEL_TRIANGLE4V_INTERSECTOR4_PLUECKER_H__
+#pragma once
 
 #include "triangle4v.h"
 #include "../common/ray4.h"
@@ -393,7 +392,3 @@ namespace embree
     }
   };
 }
-
-#endif
-
-

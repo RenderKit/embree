@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_LOG_H__
-#define __EMBREE_LOG_H__
+#pragma once
 
 #include "platform.h"
 
@@ -257,4 +256,3 @@ typedef Log<LogOutput> DefaultLogger;
 #endif
 
 } // embree
-#endif 

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_NETWORK_H__
-#define __EMBREE_NETWORK_H__
+#pragma once
 
 #include "platform.h"
 
@@ -85,5 +84,3 @@ namespace embree
     void write(socket_t socket, const std::string& str);
   }
 }
-
-#endif

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ATOMIC_H__
-#define __EMBREE_ATOMIC_H__
+#pragma once
 
 #include "../intrinsics.h"
 
@@ -70,6 +69,4 @@ namespace embree
     volatile atomic32_t data;
     char align[64-sizeof(atomic32_t)]; // one counter per cache line
   };
- }
-
-#endif
+}

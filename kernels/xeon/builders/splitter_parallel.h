@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_SPLITTER_PARALLEL_H__
-#define __EMBREE_SPLITTER_PARALLEL_H__
+#pragma once
 
 #include "sys/taskscheduler.h"
 #include "common/buildsource.h"
@@ -83,6 +82,4 @@ namespace embree
     void* cptr;                            //!< call data for continuation function
   };
 }
-
-#endif
 

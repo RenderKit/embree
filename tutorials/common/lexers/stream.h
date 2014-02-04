@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_STREAM_H__
-#define __EMBREE_STREAM_H__
+#pragma once
 
 #include "sys/platform.h"
 #include "sys/ref.h"
@@ -203,5 +202,3 @@ namespace embree
     Ref<String> name;        /// name of buffer
   };
 }
-
-#endif

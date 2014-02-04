@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_SSE_H__
-#define __EMBREE_SSE_H__
+#pragma once
 
 #include "sys/platform.h"
 #include "sys/intrinsics.h"
@@ -57,5 +56,3 @@ namespace embree
 #include "simd/sseb.h"
 #include "simd/ssei.h"
 #include "simd/ssef.h"
-
-#endif

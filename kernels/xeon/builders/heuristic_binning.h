@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_HEURISTIC_BINNING_H__
-#define __EMBREE_HEURISTIC_BINNING_H__
+#pragma once
 
 #include "common/buildsource.h"
 #include "common/primref.h"
@@ -207,5 +206,3 @@ namespace embree
     BBox3fa centBounds[maxBins][4]; //< centroid bounds for every bin in every dimension
   };
 }
-
-#endif

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ACCEL_TRIANGLE8_H__
-#define __EMBREE_ACCEL_TRIANGLE8_H__
+#pragma once
 
 #include "primitive.h"
 
@@ -146,5 +145,3 @@ namespace embree
   };
 #endif
 }
-
-#endif

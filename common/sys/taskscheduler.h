@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_TASKSCHEDULER_H__
-#define __EMBREE_TASKSCHEDULER_H__
+#pragma once
 
 #include "sys/platform.h"
 #include "sys/thread.h"
@@ -292,12 +291,5 @@ namespace embree
     }
     
     void syncThreads(const size_t localThreadID);
-
-
   };
-
-
 }
-
-#endif
-

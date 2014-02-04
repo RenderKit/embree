@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_REF_H__
-#define __EMBREE_REF_H__
+#pragma once
 
 #include "constants.h"
 #include "sync/atomic.h"
@@ -102,6 +101,3 @@ namespace embree
   template<typename Type> __forceinline  bool operator !=( NullTy            , const Ref<Type>& b ) { return NULL  != b.ptr ; }
   template<typename Type> __forceinline  bool operator !=( const Ref<Type>& a, const Ref<Type>& b ) { return a.ptr != b.ptr ; }
 }
-
-#endif
-

@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_SYSINFO_H__
-#define __EMBREE_SYSINFO_H__
+#pragma once
 
 #define CACHELINE_SIZE 64
 #define PAGE_SIZE 4096
@@ -78,5 +77,3 @@ namespace embree
   /*! returns the size of the terminal window in characters */
   int getTerminalWidth();
 }
-
-#endif

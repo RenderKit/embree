@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_ACCEL_BEZIER1I_INTERSECTOR1_MOELLER_H__
-#define __EMBREE_ACCEL_BEZIER1I_INTERSECTOR1_MOELLER_H__
+#pragma once
 
 #include "bezier1i.h"
 #include "common/ray.h"
@@ -402,7 +401,3 @@ namespace embree
   };
 #endif
 }
-
-#endif
-
-

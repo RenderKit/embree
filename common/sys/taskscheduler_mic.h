@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_TASKSCHEDULER_MIC_H__
-#define __EMBREE_TASKSCHEDULER_MIC_H__
+#pragma once
 
 #include "taskscheduler.h"
 #include "sys/sync/mutex.h"
@@ -58,6 +57,3 @@ namespace embree
     __align(64) LinearBarrierActive barrier;
   };
 }
-
-#endif
-

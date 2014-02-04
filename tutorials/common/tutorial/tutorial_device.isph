@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_TUTORIALS_H__
-#define __EMBREE_TUTORIALS_H__
+#pragma once
 
 /* size of screen tiles */
 #define TILE_SIZE_X 16
@@ -61,5 +60,3 @@ Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform V
 Vec3f renderPixelUV(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
 
 #define ALIGNED_STRUCT
-
-#endif
