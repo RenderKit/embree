@@ -39,7 +39,7 @@ namespace embree
   /*! set the affinity of a given thread */
   void setAffinity(HANDLE thread, ssize_t affinity)
   {
-#if (_WIN32_WINNT >= 0x0601)
+#if (_WIN32_WINNT >= 0x0601) // FIXME: use getProcAddress to activate this feature only if supported by Windows
     int groups = GetActiveProcessorGroupCount();
     int totalProcessors = 0, group = 0, number = 0;
     for (int i = 0; i<groups; i++) {
@@ -66,12 +66,12 @@ namespace embree
     processorNumber.Number = number;
     processorNumber.Reserved = 0;
     if (!SetThreadIdealProcessorEx(thread, &processorNumber, NULL))
-      throw std::runtime_error("cannot set threadeal processor");
+      throw std::runtime_error("cannot set ideal processor");
 #else
     if (!SetThreadAffinityMask(thread, DWORD_PTR(uint64(1) << affinity)))
       throw std::runtime_error("cannot set thread affinity mask");
     if (SetThreadIdealProcessor(thread, (DWORD)affinity) == (DWORD)-1)
-      throw std::runtime_error("cannot set threadeal processor");
+      throw std::runtime_error("cannot set ideal processor");
 #endif
   }
 
