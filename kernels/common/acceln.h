@@ -50,6 +50,9 @@ namespace embree
   public:
     Accel* accels[16];
     size_t N;
+
+    Accel* validAccels[16];
+    size_t M;
   };
 }
 

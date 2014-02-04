@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  AccelN::AccelN () : N(0) { 
+  AccelN::AccelN () : N(0), M(0) { 
     memset(accels,0,sizeof(accels));
   }
 
@@ -39,36 +39,36 @@ namespace embree
   void AccelN::intersect (void* ptr, RTCRay& ray) 
   {
     AccelN* This = (AccelN*)ptr;
-    for (size_t i=0; i<This->N; i++)
-      This->accels[i]->intersect(ray);
+    for (size_t i=0; i<This->M; i++)
+      This->validAccels[i]->intersect(ray);
   }
 
   void AccelN::intersect4 (const void* valid, void* ptr, RTCRay4& ray) 
   {
     AccelN* This = (AccelN*)ptr;
-    for (size_t i=0; i<This->N; i++)
-      This->accels[i]->intersect4(valid,ray);
+    for (size_t i=0; i<This->M; i++)
+      This->validAccels[i]->intersect4(valid,ray);
   }
 
   void AccelN::intersect8 (const void* valid, void* ptr, RTCRay8& ray) 
   {
     AccelN* This = (AccelN*)ptr;
-    for (size_t i=0; i<This->N; i++)
-      This->accels[i]->intersect8(valid,ray);
+    for (size_t i=0; i<This->M; i++)
+      This->validAccels[i]->intersect8(valid,ray);
   }
 
   void AccelN::intersect16 (const void* valid, void* ptr, RTCRay16& ray) 
   {
     AccelN* This = (AccelN*)ptr;
-    for (size_t i=0; i<This->N; i++)
-      This->accels[i]->intersect16(valid,ray);
+    for (size_t i=0; i<This->M; i++)
+      This->validAccels[i]->intersect16(valid,ray);
   }
 
   void AccelN::occluded (void* ptr, RTCRay& ray) 
   {
     AccelN* This = (AccelN*)ptr;
-    for (size_t i=0; i<This->N; i++) {
-      This->accels[i]->occluded(ray); 
+    for (size_t i=0; i<This->M; i++) {
+      This->validAccels[i]->occluded(ray); 
       if (ray.geomID == 0) break;
     }
   }
@@ -76,8 +76,8 @@ namespace embree
   void AccelN::occluded4 (const void* valid, void* ptr, RTCRay4& ray) 
   {
     AccelN* This = (AccelN*)ptr;
-    for (size_t i=0; i<This->N; i++) {
-      This->accels[i]->occluded4(valid,ray);
+    for (size_t i=0; i<This->M; i++) {
+      This->validAccels[i]->occluded4(valid,ray);
       // FIXME: exit if already hit something
     }
   }
@@ -85,8 +85,8 @@ namespace embree
   void AccelN::occluded8 (const void* valid, void* ptr, RTCRay8& ray) 
   {
     AccelN* This = (AccelN*)ptr;
-    for (size_t i=0; i<This->N; i++) {
-      This->accels[i]->occluded8(valid,ray);
+    for (size_t i=0; i<This->M; i++) {
+      This->validAccels[i]->occluded8(valid,ray);
       // FIXME: exit if already hit something
     }
   }
@@ -94,19 +94,19 @@ namespace embree
   void AccelN::occluded16 (const void* valid, void* ptr, RTCRay16& ray) 
   {
     AccelN* This = (AccelN*)ptr;
-    for (size_t i=0; i<This->N; i++) {
-      This->accels[i]->occluded16(valid,ray);
+    for (size_t i=0; i<This->M; i++) {
+      This->validAccels[i]->occluded16(valid,ray);
       // FIXME: exit if already hit something
     }
   }
 
   void AccelN::print(size_t ident)
   {
-    for (size_t i=0; i<N; i++)
+    for (size_t i=0; i<M; i++)
     {
       for (size_t j=0; j<ident; j++) std::cout << " "; 
       std::cout << "accels[" << i << "]" << std::endl;
-      accels[i]->intersectors.print(ident+2);
+      validAccels[i]->intersectors.print(ident+2);
     }
   }
 
@@ -118,20 +118,17 @@ namespace embree
 
   void AccelN::build (size_t threadIndex, size_t threadCount) 
   {
-    size_t validAccelIndex = 0;
-    size_t validAccelCount = 0;
-    
     /* build all acceleration structures */
+    M = 0;
     for (size_t i=0; i<N; i++) 
     {
       accels[i]->build(threadIndex,threadCount);
       if (accels[i]->bounds.empty()) continue;
-      validAccelIndex = i;
-      validAccelCount++;
+      validAccels[M++] = accels[i];
     }
 
-    if (validAccelCount == 1) {
-      intersectors = accels[validAccelIndex]->intersectors;
+    if (M == 1) {
+      intersectors = validAccels[0]->intersectors;
     }
     else 
     {
@@ -144,7 +141,7 @@ namespace embree
     
     /*! calculate bounds */
     bounds = empty;
-    for (size_t i=0; i<N; i++) 
-      bounds.extend(accels[i]->bounds);
+    for (size_t i=0; i<M; i++) 
+      bounds.extend(validAccels[i]->bounds);
   }
 }
