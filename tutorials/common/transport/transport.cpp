@@ -29,6 +29,15 @@ namespace embree
   int g_width = -1;
   int g_height = -1;
 
+  /*! ISPC compatible hair */
+  struct ISPCHair
+  {
+    Vec3fa* v;     //!< hair control points (x,y,z,r)
+    int* index;    //!< for each hair, index to first control point
+    int numVertices;
+    int numHairs;
+  };
+
   /* ISPC compatible mesh */
   struct ISPCMesh
   {
@@ -49,11 +58,22 @@ namespace embree
     OBJScene::Material* materials;  //!< material list
     int numMeshes;
     int numMaterials;
-    bool animate;
+    ISPCHair** hairs;
+    int numHairSets;
   };
 
   /* scene */
   extern "C" ISPCScene* g_ispc_scene = NULL;
+
+  ISPCHair* convertHair (OBJScene::Hair* in)
+  {
+    ISPCHair* out = new ISPCHair;
+    out->v = in->v.size() ? &in->v[0] : NULL;
+    out->index = in->index.size() ? &in->index[0] : NULL;
+    out->numVertices = in->v.size();
+    out->numHairs = in->index.size();
+    return out;
+  }
   
   ISPCMesh* convertMesh (OBJScene::Mesh* in)
   {
@@ -96,7 +116,8 @@ namespace embree
     for (size_t i=0; i<in->meshes.size(); i++) out->meshes[i] = convertMesh(in->meshes[i]);
     out->numMaterials = in->materials.size();
     out->numMeshes = in->meshes.size();
-    out->animate = false; //g_animate;
+    out->hairs = new ISPCHair*[in->hairs.size()];
+    for (size_t i=0; i<in->hairs.size(); i++) out->hairs[i] = convertHair(in->hairs[i]);
     g_ispc_scene = out;
   }
 

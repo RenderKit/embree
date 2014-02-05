@@ -41,6 +41,14 @@ struct ISPCMaterial
   Vec3f Tf;              /*< transmission filter */
 };
 
+struct ISPCHair
+{
+  Vec3fa* v;     //!< hair control points (x,y,z,r)
+  int* index;    //!< for each hair, index to first control point
+  int numVertices;
+  int numHairs;
+};
+
 struct ISPCMesh
 {
   Vec3fa* positions;    //!< vertex position array
@@ -57,6 +65,8 @@ struct ISPCScene
   ISPCMaterial* materials;  //!< material list
   int numMeshes;
   int numMaterials;
+  ISPCHair** hairs;
+  int numHairSets;
 };
 
 /* scene data */
