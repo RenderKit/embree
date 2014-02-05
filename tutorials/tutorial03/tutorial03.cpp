@@ -32,26 +32,6 @@ namespace embree
   static bool g_fullscreen = false;
   static size_t g_numThreads = 0;
 
-  /* ISPC compatible mesh */
-  struct ISPCMesh
-  {
-    Vec3fa* positions;    //!< vertex position array
-    Vec3fa* normals;       //!< vertex normal array
-    Vec2f* texcoords;     //!< vertex texcoord array
-    OBJScene::Triangle* triangles;  //!< list of triangles
-    int numVertices;
-    int numTriangles;
-  };
-
-  /* ISPC compatible scene */
-  struct ISPCScene
-  {
-    ISPCMesh** meshes;
-    OBJScene::Material* materials;  //!< material list
-    int numMeshes;
-    int numMaterials;
-  };
-
   /* scene */
   OBJScene g_obj_scene;
   static FileName filename = "default.obj";

@@ -16,10 +16,51 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-#define USE_INTERSECTION_FILTER 1
-#define USE_OCCLUSION_FILTER 1
+#define USE_INTERSECTION_FILTER 0
+#define USE_OCCLUSION_FILTER 0
+
+struct ISPCTriangle 
+{
+  int v0;                /*< first triangle vertex */
+  int v1;                /*< second triangle vertex */
+  int v2;                /*< third triangle vertex */
+  int materialID;        /*< material of triangle */
+};
+
+struct ISPCMaterial
+{
+  int illum;             /*< illumination model */
+  
+  float d;               /*< dissolve factor, 1=opaque, 0=transparent */
+  float Ns;              /*< specular exponent */
+  float Ni;              /*< optical density for the surface (index of refraction) */
+  
+  Vec3f Ka;              /*< ambient reflectivity */
+  Vec3f Kd;              /*< diffuse reflectivity */
+  Vec3f Ks;              /*< specular reflectivity */
+  Vec3f Tf;              /*< transmission filter */
+};
+
+struct ISPCMesh
+{
+  Vec3fa* positions;    //!< vertex position array
+  Vec3fa* normals;       //!< vertex normal array
+  Vec2f* texcoords;     //!< vertex texcoord array
+  ISPCTriangle* triangles;  //!< list of triangles
+  int numVertices;
+  int numTriangles;
+};
+
+struct ISPCScene
+{
+  ISPCMesh** meshes;         //!< list of meshes
+  ISPCMaterial* materials;  //!< material list
+  int numMeshes;
+  int numMaterials;
+};
 
 /* scene data */
+extern "C" ISPCScene* g_ispc_scene;
 RTCScene g_scene = NULL;
 Vec3f* colors = NULL;
 
@@ -29,6 +70,44 @@ float T_hair = 0.3f;
 
 Vertex* vertices = NULL;
 int*    indices = NULL;
+
+RTCScene convertScene(ISPCScene* scene_in)
+{
+  /* create scene */
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT,RTC_INTERSECT1);
+
+  /* add all meshes to the scene */
+  for (int i=0; i<scene_in->numMeshes; i++)
+  {
+    /* get ith mesh */
+    ISPCMesh* mesh = scene_in->meshes[i];
+
+    /* create a triangle mesh */
+    unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
+    
+    /* set vertices */
+    Vertex* vertices = (Vertex*) rtcMapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
+    for (int j=0; j<mesh->numVertices; j++) {
+      vertices[j].x = mesh->positions[j].x;
+      vertices[j].y = mesh->positions[j].y;
+      vertices[j].z = mesh->positions[j].z;
+    }
+
+    /* set triangles */
+    Triangle* triangles = (Triangle*) rtcMapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+    for (int j=0; j<mesh->numTriangles; j++) {
+      triangles[j].v0 = mesh->triangles[j].v0;
+      triangles[j].v1 = mesh->triangles[j].v1;
+      triangles[j].v2 = mesh->triangles[j].v2;
+    }
+    rtcUnmapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
+    rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+  }
+
+  /* commit changes to scene */
+  rtcCommit (scene_out);
+  return scene_out;
+}
 
 __forceinline Vec3fa evalBezier(const int primID, const float t)
 {
@@ -343,6 +422,7 @@ extern "C" void device_init (int8* cfg)
   /* initialize ray tracing core */
   rtcInit(cfg);
 
+#if 0
   /* create scene */
   g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
 
@@ -357,6 +437,7 @@ extern "C" void device_init (int8* cfg)
 
   /* commit changes to scene */
   rtcCommit (g_scene);
+#endif
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -551,10 +632,12 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   {
     /* intersect ray with scene and gather all hits */
     rtcIntersect(g_scene,(RTCRay&)ray);
-  
+
     /* exit if we hit environment */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
       return color;
+
+    return Vec3f(ray.u,ray.v,0.0f);
 
     /* calculate transmissivity of hair */
     AnisotropicPowerCosineDistribution brdf;
@@ -672,6 +755,10 @@ extern "C" void device_render (int* pixels,
                     const Vec3f& vz, 
                     const Vec3f& p)
 {
+  /* create scene */
+  if (g_scene == NULL)
+    g_scene = convertScene(g_ispc_scene);
+
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 

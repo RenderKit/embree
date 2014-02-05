@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "tutorial/tutorial.h"
+#include "tutorial/obj_loader.h"
 #include "sys/taskscheduler.h"
 
 namespace embree
@@ -31,6 +32,10 @@ namespace embree
   static bool g_fullscreen = false;
   static size_t g_numThreads = 0;
 
+  /* scene */
+  OBJScene g_obj_scene;
+  static FileName filename = "default.obj";
+
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
   {
     while (true)
@@ -42,6 +47,11 @@ namespace embree
       if (tag == "-c") {
         FileName file = path + cin->getFileName();
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
+      }
+
+      /* load OBJ model*/
+      else if (tag == "-i") {
+        filename = path + cin->getFileName();
       }
 
       /* parse camera parameters */
@@ -94,8 +104,14 @@ namespace embree
     TaskScheduler::create(g_numThreads);
 #endif
 
+    /* load scene */
+    loadOBJ(filename,g_obj_scene);
+
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
+
+    /* send model */
+    set_scene(&g_obj_scene);
 
     /* initialize GLUT */
     initGlut(tutorialName,g_width,g_height,g_fullscreen,true);
