@@ -37,6 +37,7 @@ namespace embree
   OBJScene g_obj_scene;
   static FileName filename = "";
   static FileName filenameHair = "";
+  Vec3fa offset = 0.0f;
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
   {
@@ -51,14 +52,19 @@ namespace embree
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
       }
 
-      /* load OBJ model*/
+      /* load OBJ model */
       else if (tag == "-i") {
         filename = path + cin->getFileName();
       }
 
-      /* load hair model*/
+      /* load hair model */
       else if (tag == "--hair") {
         filenameHair = path + cin->getFileName();
+      }
+
+      /* scene offset */
+      else if (tag == "--offset") {
+        offset = cin->getVec3fa();
       }
 
       /* parse camera parameters */
@@ -113,11 +119,11 @@ namespace embree
 
     /* load scene */
     if (filename.str() != "")
-      loadOBJ(filename,g_obj_scene);
+      loadOBJ(filename,g_obj_scene,offset);
 
     /* load hair */
     if (filenameHair.str() != "")
-      loadHair(filenameHair,g_obj_scene);
+      loadHair(filenameHair,g_obj_scene,offset);
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());

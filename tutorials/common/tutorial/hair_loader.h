@@ -20,5 +20,5 @@
 
 namespace embree
 {
-  void loadHair(const FileName& fileName, OBJScene& scene);
+  void loadHair(const FileName& fileName, OBJScene& scene, const Vec3fa& offset = zero);
 }

@@ -18,7 +18,7 @@
 
 namespace embree
 {
-  void loadHair(const FileName& fileName, OBJScene& scene)
+  void loadHair(const FileName& fileName, OBJScene& scene, const Vec3fa& offset)
   {
     /* open hair file */
     FILE* f = fopen(fileName.c_str(),"r");
@@ -62,6 +62,9 @@ namespace embree
           if (i == 0) sscanf(line,"%d : Bezier %f %f %f %f",&id,&v.x,&v.y,&v.z,&v.w);
           else        sscanf(line,"%d : %f %f %f %f",&id,&v.x,&v.y,&v.z,&v.w);
           //printf("%d %d : %f %f %f %f \n",id,vertex_start_id+id,v.x,v.y,v.z,v.w);		
+          v.x-=offset.x;
+          v.y-=offset.y;
+          v.z-=offset.z;
           hair->v.push_back(v);
         }
         

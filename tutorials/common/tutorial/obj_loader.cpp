@@ -93,7 +93,7 @@ namespace embree
   public:
 
     /*! Constructor. */
-    OBJLoader(const FileName& fileName, OBJScene& mesh);
+    OBJLoader(const FileName& fileName, OBJScene& mesh, const Vec3fa& offset);
 
     /*! Destruction */
     ~OBJLoader();
@@ -114,6 +114,7 @@ namespace embree
     vector_t<Vec3fa> vn;
     std::vector<Vec2f> vt;
     std::vector<std::vector<Vertex> > curGroup;
+    Vec3fa offset;
 
     /*! Material handling. */
     int curMaterial;
@@ -128,8 +129,8 @@ namespace embree
     uint32 getVertex(std::map<Vertex,uint32>& vertexMap, OBJScene::Mesh* mesh, const Vertex& i);
   };
 
-  OBJLoader::OBJLoader(const FileName &fileName, OBJScene& mesh) 
-    : path(fileName.path()), model(mesh)
+  OBJLoader::OBJLoader(const FileName &fileName, OBJScene& mesh, const Vec3fa& offset) 
+    : path(fileName.path()), model(mesh), offset(offset)
   {
     /* open file */
     std::ifstream cin;
@@ -162,7 +163,7 @@ namespace embree
       if (token[0] == 0) continue;
 
       /*! parse position */
-      if (token[0] == 'v' && isSep(token[1]))                    { v.push_back((Vec3fa)getVec3f(token += 2)); continue; }
+      if (token[0] == 'v' && isSep(token[1]))                    { v.push_back((Vec3fa)getVec3f(token += 2)-offset); continue; }
 
       /* parse normal */
       if (token[0] == 'v' && token[1] == 'n' && isSep(token[2])) { vn.push_back((Vec3fa)getVec3f(token += 3)); continue; }
@@ -338,8 +339,8 @@ namespace embree
     curGroup.clear();
   }
 
-  void loadOBJ(const FileName& fileName, OBJScene& mesh_o) {
-    OBJLoader loader(fileName,mesh_o); 
+  void loadOBJ(const FileName& fileName, OBJScene& mesh_o, const Vec3fa& offset) {
+    OBJLoader loader(fileName,mesh_o,offset); 
   }
 }
 

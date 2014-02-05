@@ -94,5 +94,5 @@ namespace embree
   };
   
   /*! read from disk */
-  void loadOBJ(const FileName& fileName, OBJScene& mesh);
+  void loadOBJ(const FileName& fileName, OBJScene& mesh, const Vec3fa& offset = zero);
 }
