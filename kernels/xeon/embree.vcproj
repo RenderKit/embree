@@ -1344,6 +1344,18 @@
 			Name="geometry"
 			>
 			<File
+				RelativePath=".\geometry\bezier1i.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\bezier1i.h"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\bezier1i_intersector1.h"
+				>
+			</File>
+			<File
 				RelativePath=".\geometry\instance_intersector1.cpp"
 				>
 			</File>

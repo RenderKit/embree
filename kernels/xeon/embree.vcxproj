@@ -530,6 +530,8 @@
     <ClInclude Include="..\..\common\simd\sseb.h" />
     <ClInclude Include="..\..\common\simd\ssef.h" />
     <ClInclude Include="..\..\common\simd\ssei.h" />
+    <ClInclude Include="geometry\bezier1i.h" />
+    <ClInclude Include="geometry\bezier1i_intersector1.h" />
     <ClInclude Include="geometry\instance_intersector1.h" />
     <ClInclude Include="geometry\instance_intersector4.h" />
     <ClInclude Include="geometry\ispc_wrapper_sse.h" />
@@ -605,6 +607,7 @@
     <ClCompile Include="bvh4i\bvh4i_rotate.cpp" />
     <ClCompile Include="bvh4i\bvh4i_statistics.cpp" />
     <ClCompile Include="..\..\common\simd\sse.cpp" />
+    <ClCompile Include="geometry\bezier1i.cpp" />
     <ClCompile Include="geometry\instance_intersector1.cpp" />
     <ClCompile Include="geometry\instance_intersector4.cpp" />
     <ClCompile Include="geometry\ispc_wrapper_sse.cpp" />
