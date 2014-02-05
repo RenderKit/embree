@@ -86,6 +86,18 @@ RTCScene convertScene(ISPCScene* scene_in)
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT,RTC_INTERSECT1);
 
+  /* add all hair sets to the scene */
+  for (int i=0; i<scene_in->numHairSets; i++)
+  {
+    /* get ith hair set */
+    ISPCHair* hair = scene_in->hairs[i];
+    
+    /* create a hair set */
+    unsigned int geomID = rtcNewQuadraticBezierCurves (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
+    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
+    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->index,0,sizeof(int));
+  }
+
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
   {

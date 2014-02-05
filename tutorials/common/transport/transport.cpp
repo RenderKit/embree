@@ -118,6 +118,7 @@ namespace embree
     out->numMeshes = in->meshes.size();
     out->hairs = new ISPCHair*[in->hairs.size()];
     for (size_t i=0; i<in->hairs.size(); i++) out->hairs[i] = convertHair(in->hairs[i]);
+    out->numHairSets = in->hairs.size();
     g_ispc_scene = out;
   }
 
