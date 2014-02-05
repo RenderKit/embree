@@ -35,6 +35,9 @@ namespace embree
     {
       for (size_t i=0; i<meshes.size(); i++)
         delete meshes[i];
+
+      for (size_t i=0; i<hairs.size(); i++)
+        delete hairs[i];
     }
 
     /*! OBJ Triangle */
@@ -55,6 +58,13 @@ namespace embree
       vector_t<Vec3fa> vn;
       std::vector<Vec2f> vt;
       std::vector<Triangle> triangles;
+    };
+
+    /*! Hair. */
+    struct Hair
+    {
+      vector_t<Vec3fa> v;       //!< hair control points (x,y,z,r)
+      std::vector<int> index;   //!< for each hair, index to first control point
     };
     
     /*! OBJ material */
@@ -79,7 +89,8 @@ namespace embree
 
   public:
     std::vector<Material> materials;   //!< material list
-    std::vector<Mesh*> meshes;           //!< list of meshes
+    std::vector<Mesh*> meshes;         //!< list of meshes
+    std::vector<Hair*> hairs;          //!< list of hair sets
   };
   
   /*! read from disk */

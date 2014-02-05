@@ -16,6 +16,7 @@
 
 #include "tutorial/tutorial.h"
 #include "tutorial/obj_loader.h"
+#include "tutorial/hair_loader.h"
 #include "sys/taskscheduler.h"
 
 namespace embree
@@ -34,7 +35,8 @@ namespace embree
 
   /* scene */
   OBJScene g_obj_scene;
-  static FileName filename = "default.obj";
+  static FileName filename = "";
+  static FileName filenameHair = "";
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
   {
@@ -52,6 +54,11 @@ namespace embree
       /* load OBJ model*/
       else if (tag == "-i") {
         filename = path + cin->getFileName();
+      }
+
+      /* load hair model*/
+      else if (tag == "--hair") {
+        filenameHair = path + cin->getFileName();
       }
 
       /* parse camera parameters */
@@ -105,7 +112,12 @@ namespace embree
 #endif
 
     /* load scene */
-    loadOBJ(filename,g_obj_scene);
+    if (filename.str() != "")
+      loadOBJ(filename,g_obj_scene);
+
+    /* load hair */
+    if (filenameHair.str() != "")
+      loadHair(filenameHair,g_obj_scene);
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());

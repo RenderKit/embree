@@ -21,7 +21,8 @@ FIND_PACKAGE(OpenGL REQUIRED)
 
 ADD_LIBRARY(tutorial STATIC 
     glutdisplay.cpp
-    obj_loader.cpp)
+    obj_loader.cpp
+    hair_loader.cpp)
 TARGET_LINK_LIBRARIES(tutorial sys lexers ${OPENGL_LIBRARY} ${GLUT_LIBRARY})
 
 IF (BUILD_TUTORIALS)
