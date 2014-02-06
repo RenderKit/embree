@@ -23,7 +23,7 @@
 namespace embree
 {
   /* name of the tutorial */
-  const char* tutorialName = "tutorial00";
+  const char* tutorialName = "tutorial07";
 
   /* configuration */
   static std::string g_rtcore = "";
@@ -144,6 +144,9 @@ namespace embree
     TaskScheduler::create(g_numThreads);
 #endif
 
+    /* initialize ray tracing core */
+    init(g_rtcore.c_str());
+
     /* load scene */
     if (objFilename.str() != "")
       loadOBJ(objFilename,g_obj_scene,offset);
@@ -152,11 +155,9 @@ namespace embree
     if (hairFilename.str() != "")
       loadHair(hairFilename,g_obj_scene,offset);
 
-    /* initialize ray tracing core */
-    init(g_rtcore.c_str());
-
     /* send model */
-    set_scene(&g_obj_scene);
+    if (objFilename.str() != "" && hairFilename.str() != "")
+      set_scene(&g_obj_scene);
 
     /* render to disk */
     if (outFilename.str() != "") {
