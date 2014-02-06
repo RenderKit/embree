@@ -16,7 +16,7 @@
 
 IF (__XEON__ AND BUILD_TUTORIALS)
   ADD_EXECUTABLE(tutorial07 tutorial07.cpp tutorial07_device.cpp)
-  TARGET_LINK_LIBRARIES(tutorial07 embree tutorial transport tutorial_device)
+  TARGET_LINK_LIBRARIES(tutorial07 embree tutorial transport tutorial_device image)
 ENDIF()
 
 #IF (__XEON__ AND BUILD_TUTORIALS_ISPC)

@@ -18,6 +18,7 @@
 #include "tutorial/obj_loader.h"
 #include "tutorial/hair_loader.h"
 #include "sys/taskscheduler.h"
+#include "image/image.h"
 
 namespace embree
 {
@@ -35,8 +36,9 @@ namespace embree
 
   /* scene */
   OBJScene g_obj_scene;
-  static FileName filename = "";
-  static FileName filenameHair = "";
+  static FileName objFilename = "";
+  static FileName hairFilename = "";
+  static FileName outFilename = "";
   Vec3fa offset = 0.0f;
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
@@ -54,17 +56,22 @@ namespace embree
 
       /* load OBJ model */
       else if (tag == "-i") {
-        filename = path + cin->getFileName();
+        objFilename = path + cin->getFileName();
       }
 
       /* load hair model */
       else if (tag == "--hair") {
-        filenameHair = path + cin->getFileName();
+        hairFilename = path + cin->getFileName();
       }
 
       /* scene offset */
       else if (tag == "--offset") {
         offset = cin->getVec3fa();
+      }
+
+      /* output filename */
+      else if (tag == "-o") {
+        outFilename = cin->getFileName();
       }
 
       /* parse camera parameters */
@@ -101,6 +108,26 @@ namespace embree
     }
   }
 
+  void renderToFile(const FileName& fileName)
+  {
+    resize(g_width,g_height);
+    AffineSpace3f pixel2world = g_camera.pixel2world(g_width,g_height);
+
+    /* render image using ISPC */
+    double t0 = getSeconds();
+    render(0.0f,
+           pixel2world.l.vx,
+           pixel2world.l.vy,
+           pixel2world.l.vz,
+           pixel2world.p);
+    double dt0 = getSeconds()-t0;
+
+    void* ptr = map();
+    Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
+    storeImage(image, fileName);
+    unmap();
+  }
+
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
@@ -118,18 +145,24 @@ namespace embree
 #endif
 
     /* load scene */
-    if (filename.str() != "")
-      loadOBJ(filename,g_obj_scene,offset);
+    if (objFilename.str() != "")
+      loadOBJ(objFilename,g_obj_scene,offset);
 
     /* load hair */
-    if (filenameHair.str() != "")
-      loadHair(filenameHair,g_obj_scene,offset);
+    if (hairFilename.str() != "")
+      loadHair(hairFilename,g_obj_scene,offset);
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
 
     /* send model */
     set_scene(&g_obj_scene);
+
+    /* render to disk */
+    if (outFilename.str() != "") {
+      renderToFile(outFilename);
+      return 0;
+    } 
 
     /* initialize GLUT */
     initGlut(tutorialName,g_width,g_height,g_fullscreen,true);
