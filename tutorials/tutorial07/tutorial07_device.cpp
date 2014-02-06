@@ -17,11 +17,11 @@
 #include "../common/tutorial/tutorial_device.h"
 
 #define USE_INTERSECTION_FILTER 1
-#define USE_OCCLUSION_FILTER 0
+#define USE_OCCLUSION_FILTER 1
 
 Vec3fa lightDir = normalize(-Vec3fa(-20.6048, 22.2367, -2.93452));
 //Vec3fa lightIntensity = Vec3fa(8.0f);
-Vec3fa lightIntensity = Vec3fa(1.0f);
+Vec3fa lightIntensity = Vec3fa(2.0f);
 
 struct ISPCTriangle 
 {
@@ -222,7 +222,6 @@ void occlusionFilter(void* ptr, RTCRay2& ray)
 
 float occluded(RTCScene scene, RTCRay2& ray)
 {
-  return 1.0f;
   ray.filter = (RTCFilterFunc) occlusionFilter;
   ray.transparency = 1.0f;
   rtcOccluded(scene,(RTCRay&)ray);
@@ -233,13 +232,11 @@ float occluded(RTCScene scene, RTCRay2& ray)
 
 float occluded(RTCScene scene, RTCRay2& ray)
 {
-  return 1.0f;
   float T = 1.0f;
   while (true) 
   {
     rtcIntersect(scene,(RTCRay&)ray);
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) break;
-    return 0.0f;
     if (ray.geomID >= g_ispc_scene->numHairSets) return 0.0f; // make all surfaces opaque
     
     /* calculate how much the curve occludes the ray */
@@ -423,8 +420,8 @@ public:
   /*! Anisotropic power cosine distribution constructor. */
   __forceinline AnisotropicPowerCosineDistribution(const Vec3fa& R, const Vec3fa& dx, float nx, const Vec3fa& dy, float ny, const Vec3fa& dz) 
     : R(R), dx(dx), nx(nx), dy(dy), ny(ny), dz(dz),
-      norm1(0.5f * sqrtf((nx+1)*(ny+1)) * float(one_over_two_pi)),
-      norm2(0.5f * sqrtf((nx+2)*(ny+2)) * float(one_over_two_pi)) {}
+      //norm1(sqrtf((nx+1)*(ny+1)) * float(one_over_two_pi)),
+      norm2(2.0f * sqrtf((nx+2)*(ny+2)) * float(one_over_two_pi)) {}
       //norm1(1.0f), norm2(1.0f) {}
 
   /*! Evaluates the power cosine distribution. \param wh is the half
@@ -459,13 +456,13 @@ public:
     const float cosTheta = dot(wi, wh); // = dot(wo, wh);
     const float D = eval(wh);
     const float G = min(1.0f, 2.0f * cosThetaH * cosThetaO * rcp(cosTheta), 2.0f * cosThetaH * cosThetaI * rcp(cosTheta));
+    const Vec3fa c1(188.0f/255.0f,107.0f/255.0f,58.0f/255.0f);
     return R * D * G * rcp(4.0f*cosThetaO);
     //const float G = dot(wi,dz);
     //return R*D*G;
   }
 
 public:
-  Vec3fa R;
   Vec3fa dx;       //!< x-direction of the distribution.
   float nx;        //!< Glossiness in x direction with range [0,infinity[ where 0 is a diffuse surface.
   Vec3fa dy;       //!< y-direction of the distribution.
@@ -473,13 +470,14 @@ public:
   Vec3fa dz;       //!< z-direction of the distribution.
   float norm1;     //!< Normalization constant for calculating the pdf for sampling.
   float norm2;     //!< Normalization constant for calculating the distribution.
+  Vec3f R; // FIXME: using Vec3fa triggers some compiler bug!?
 };
 
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   //PRINT2(x,y);
-  //if (x != 256 || y != 256) return zero;
+  //if (x != 400 || y != 183) return zero;
 
   /* initialize ray */
   RTCRay2 ray;
@@ -543,25 +541,20 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
 
       /* generate anisotropic BRDF */
       //const Vec3fa color(0.5f,0.4f,0.4f);
-      const Vec3fa color(1.0f);
-      new (&brdf) AnisotropicPowerCosineDistribution(color,dx,10.0f,dy,1.0f,dz);
+      const Vec3fa color1(188.0f/255.0f,107.0f/255.0f,58.0f/255.0f);
+      brdf = AnisotropicPowerCosineDistribution(color1,dx,10.0f,dy,1.0f,dz);
     }
     else 
     {
       /* calculate tangent space */
-      const Vec3fa dz = normalize(ray2->Ng);
+      const Vec3fa dz = -normalize(ray2->Ng);
       const Vec3fa dx = normalize(cross(dz,ray2->dir));
       const Vec3fa dy = normalize(cross(dz,dx));
       
       /* generate isotropic BRDF */
-      const Vec3fa color(1.0f,1.0f,1.0f);
-      new (&brdf) AnisotropicPowerCosineDistribution(color,dx,0.0f,dy,0.0f,dz);
+      const Vec3fa color2(1.0f);
+      brdf = AnisotropicPowerCosineDistribution(color2,dx,0.0f,dy,0.0f,dz);
     }
-    
-    /* calculate shadows */
-    //Vec3f diffuse = Vec3f(0.5f,0.4f,0.4f); //colors[ray2->primID];
-    //if (ray2->geomID == 1) diffuse = Vec3f(1.0f,1.0f,1.0f);
-    //color = color + diffuse*0.5f; // FIXME: use +=
     
     /* initialize shadow ray */
     RTCRay2 shadow;
@@ -579,13 +572,18 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     
     /* trace shadow ray */
     float T = occluded(g_scene,shadow);
+    //float T = 1.0f;
     
     /* add light contribution */
     //Vec3fa c = Vec3fa(1.0f); 
-    //Vec3fa c = clamp(dot(neg(ray.dir),brdf.dz),0.0f,1.0f);
-    Vec3fa c = brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
-    color = color + /*weight*/(1.0f-Th)*c*T*lightIntensity; //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f))); // FIXME: use +=
-    //weight *= Th;
+    Vec3fa c = zero;
+    if (brdf.nx == 0.0f || brdf.ny == 0.0f)
+      c = Vec3fa(clamp(dot(neg(ray.dir),brdf.dz),0.0f,1.0f));
+    else 
+      c = brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
+
+    color += weight*(1.0f-Th)*c*T*lightIntensity; //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f))); // FIXME: use +=
+    weight *= Th;
     //weight = max(0.0f,weight-Th);
     if (weight < 0.01) return color;
     //return color;
