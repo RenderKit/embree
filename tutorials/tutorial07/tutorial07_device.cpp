@@ -19,6 +19,9 @@
 #define USE_INTERSECTION_FILTER 0
 #define USE_OCCLUSION_FILTER 0
 
+Vec3fa lightDir = normalize(-Vec3fa(-20.6048, 22.2367, -2.93452));
+Vec3fa lightIntensity = Vec3fa(4.0f);
+
 struct ISPCTriangle 
 {
   int v0;                /*< first triangle vertex */
@@ -526,10 +529,10 @@ public:
     const float cosThetaH = dot(wh, dz);
     const float cosTheta = dot(wi, wh); // = dot(wo, wh);
     const float D = eval(wh);
-    //const float G = min(1.0f, 2.0f * cosThetaH * cosThetaO * rcp(cosTheta), 2.0f * cosThetaH * cosThetaI * rcp(cosTheta));
-    //return R * D * G * rcp(4.0f*cosThetaO);
-    const float G = dot(wi,dz);
-    return R*D*G;
+    const float G = min(1.0f, 2.0f * cosThetaH * cosThetaO * rcp(cosTheta), 2.0f * cosThetaH * cosThetaI * rcp(cosTheta));
+    return R * D * G * rcp(4.0f*cosThetaO);
+    //const float G = dot(wi,dz);
+    //return R*D*G;
   }
 
 public:
@@ -575,11 +578,11 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   /* intersect ray with scene and gather all hits */
   rtcIntersect(g_scene,(RTCRay&)ray);
 
-  for (size_t i=0; i<hits.num; i++) 
+/*  for (size_t i=0; i<hits.num; i++) 
   {
     RTCRay2* ray2 = hits.rays[i];
     PRINT(ray2->tfar);
-  }
+    }*/
 
   /* iterate through all hits */
   for (size_t i=0; i<hits.num; i++) 
@@ -590,7 +593,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     AnisotropicPowerCosineDistribution brdf;
 
     float Th = 0.0f;
-    if (ray2->geomID == 0) 
+    if (ray2->geomID < g_ispc_scene->numHairSets) 
     {
       /* calculate how much the curve occludes the ray */
       float sizeRay = max(ray2->org.w + ray2->tfar*ray2->dir.w, 0.00001f);
@@ -623,8 +626,6 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     //Vec3f diffuse = Vec3f(0.5f,0.4f,0.4f); //colors[ray2->primID];
     //if (ray2->geomID == 1) diffuse = Vec3f(1.0f,1.0f,1.0f);
     //color = color + diffuse*0.5f; // FIXME: use +=
-    Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
-    Vec3fa lightIntensity = Vec3fa(1.0f);
     
     /* initialize shadow ray */
     RTCRay2 shadow;
@@ -658,7 +659,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  //if (x != 256 || y != 256) return zero;
+  //if (x != 417 || y != 376) return zero;
 
   /* initialize ray */
   RTCRay2 ray;
@@ -724,8 +725,6 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     //Vec3f diffuse = Vec3f(0.5f,0.4f,0.4f); //colors[ray.primID];
     //if (ray.geomID == 1) diffuse = Vec3f(1.0f,1.0f,1.0f);
     //color = color + diffuse*0.5f;
-    Vec3fa lightDir = normalize(-Vec3fa(-20.6048, 22.2367, -2.93452));
-    Vec3fa lightIntensity = Vec3fa(1.0f);
     
     /* initialize shadow ray */
     RTCRay2 shadow;
@@ -746,7 +745,6 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
 
     /* add light contribution */
     Vec3fa c = brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
-    //if (ray.geomID == 0) PRINT(c);
     //Vec3fa c = clamp(dot(neg(ray.dir),brdf.dz),0.0f,1.0f);
     color = color + weight*(1.0f-Th)*c*T*lightIntensity; //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f))); // FIXME: use +=
     weight *= Th;
@@ -765,15 +763,15 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
 
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
-                     const int width,
-                     const int height, 
-                     const float time,
-                     const Vec3f& vx, 
-                     const Vec3f& vy, 
-                     const Vec3f& vz, 
-                     const Vec3f& p,
-                     const int numTilesX, 
-                     const int numTilesY)
+                const int width,
+                const int height, 
+                const float time,
+                const Vec3f& vx, 
+                const Vec3f& vy, 
+                const Vec3f& vz, 
+                const Vec3f& p,
+                const int numTilesX, 
+                const int numTilesY)
 {
   const int tileY = taskIndex / numTilesX;
   const int tileX = taskIndex - tileY * numTilesX;
@@ -797,13 +795,13 @@ void renderTile(int taskIndex, int* pixels,
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
-                    const int width,
-                    const int height,
-                    const float time,
-                    const Vec3f& vx, 
-                    const Vec3f& vy, 
-                    const Vec3f& vz, 
-                    const Vec3f& p)
+                               const int width,
+                               const int height,
+                               const float time,
+                               const Vec3f& vx, 
+                               const Vec3f& vy, 
+                               const Vec3f& vz, 
+                               const Vec3f& p)
 {
   /* create scene */
   if (g_scene == NULL)

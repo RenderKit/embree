@@ -92,7 +92,7 @@ namespace embree
       const Vec3fa p20 = p10 * t0 + p11 * t1;
       const Vec3fa p21 = p11 * t0 + p12 * t1;
       const Vec3fa p30 = p20 * t0 + p21 * t1;
-      
+
       point = p30;
       tangent = p21-p20;
     }
@@ -178,6 +178,7 @@ namespace embree
       const avxf r = max(p.w,ray.org.w+ray.dir.w*t);
       const avxf r2 = r*r;
       avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
+    retry:
       if (unlikely(none(valid))) return;
       const float one_over_8 = 1.0f/8.0f;
       size_t i = select_min(valid,t);
@@ -193,6 +194,7 @@ namespace embree
         const float uu = (float(i)+u[i])*one_over_8;
         BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
         Vec3fa P,T; curve3D.eval(uu,P,T);
+        if (T == Vec3fa(zero)) { valid[i] = 0; goto retry; } // ignore denormalized curves
         ray.u = uu;
         ray.v = 0.0f;
         ray.tfar = t[i];
