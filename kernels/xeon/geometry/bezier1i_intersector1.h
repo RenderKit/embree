@@ -210,8 +210,8 @@ namespace embree
         const float uu = (float(i)+u[i])*one_over_8;
         BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
         Vec3fa P,T; curve3D.eval(uu,P,T);
-        if (T == Vec3fa(zero)) continue; // ignore denormalized curves
-        if (runIntersectionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,curve_in.primID)) return;
+        if (T != Vec3fa(zero))
+            if (runIntersectionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,curve_in.primID)) return;
         valid[i] = 0;
         if (none(valid)) return;
         i = select_min(valid,t);
@@ -274,8 +274,8 @@ namespace embree
         const float uu = (float(i)+u[i])*one_over_8;
         BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
         Vec3fa P,T; curve3D.eval(uu,P,T);
-        if (T == Vec3fa(zero)) continue; // ignore denormalized curves
-        if (runOcclusionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,curve_in.primID)) break;
+        if (T != Vec3fa(zero))
+          if (runOcclusionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,curve_in.primID)) break;
         valid[i] = 0;
         if (none(valid)) return false;
         i = select_min(valid,t);

@@ -16,7 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-#define USE_INTERSECTION_FILTER 0
+#define USE_INTERSECTION_FILTER 1
 #define USE_OCCLUSION_FILTER 0
 
 Vec3fa lightDir = normalize(-Vec3fa(-20.6048, 22.2367, -2.93452));
@@ -259,7 +259,7 @@ float occluded(RTCScene scene, RTCRay2& ray)
 void addHair (ISPCScene* scene)
 {
   int seed = 879;
-  const int numCurves = 400;
+  const int numCurves = 4000;
   const int numCurveSegments = 4;
   const int numCurvePoints = 3*numCurveSegments+1;
   const float R = 0.01f;
@@ -276,7 +276,7 @@ void addHair (ISPCScene* scene)
   {
     float ru = frand(seed);
     float rv = frand(seed);
-    Vec3f p = Vec3f(-2.0f+ru*4.0f,-2.0f,-2.0f+rv*4.0f);
+    Vec3f p = Vec3f(-4.0f+ru*8.0f,-2.0f,-4.0f+rv*8.0f);
     for (size_t j=0; j<=numCurveSegments; j++) 
     {
       bool last = j == numCurveSegments;
@@ -349,6 +349,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   {
     /* get ith hair set */
     ISPCHair* hair = scene_in->hairs[i];
+    PRINT(hair->numHairs);
     
     /* create a hair set */
     unsigned int geomID = rtcNewQuadraticBezierCurves (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
@@ -367,6 +368,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   {
     /* get ith mesh */
     ISPCMesh* mesh = scene_in->meshes[i];
+    PRINT(mesh->numTriangles);
 
     /* create a triangle mesh */
     unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
@@ -404,24 +406,6 @@ extern "C" void device_init (int8* cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
-
-#if 1
-  /* create new scene */
-  ISPCScene* scene = new ISPCScene;
-  scene->materials = NULL;
-  scene->numMaterials = 0;
-  scene->meshes = new ISPCMesh*[1024*1024]; // FIXME: hardcoded maximal number of meshes
-  scene->numMeshes = 0;
-  scene->hairs = new ISPCHair*[1024]; // FIXME: hardcoded maximal number of hair sets
-  scene->numHairSets = 0;
-  g_ispc_scene = scene;
-
-  /* add hairs */
-  addHair(scene);
-
-  /* add ground plane */
-  addGroundPlane(scene);
-#endif
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -587,11 +571,13 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     float T = occluded(g_scene,shadow);
     
     /* add light contribution */
-    Vec3fa c = brdf.eval(ray2->geomID,neg(ray2->dir),neg(lightDir));
-    //if (ray2->geomID == 0) PRINT(c);
-    //Vec3fa c = clamp(dot(neg(ray2->dir),brdf.dz),0.0f,1.0f);
-    color = color + weight*(1.0f-Th)*c*T*lightIntensity; //clamp(-dot(lightDir,normalize(ray2->Ng)),0.0f,1.0f))); // FIXME: use +=
-    weight *= Th;
+    Vec3fa c = Vec3fa(1.0f); //brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
+    //Vec3fa c = clamp(dot(neg(ray.dir),brdf.dz),0.0f,1.0f);
+    color = color + /*weight*/(1.0f-Th)*c*T*lightIntensity; //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f))); // FIXME: use +=
+    //weight *= Th;
+    //weight = max(0.0f,weight-Th);
+    if (weight < 0.01) return color;
+    //return color;
   }
   return color;
 }
@@ -629,7 +615,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
       return color;
 
-    return Vec3fa(ray.u,ray.v,0.0f);
+    //return Vec3fa(ray.u,ray.v,0.0f);
 
     /* calculate transmissivity of hair */
     AnisotropicPowerCosineDistribution brdf;
@@ -687,10 +673,11 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     float T = occluded(g_scene,shadow);
 
     /* add light contribution */
-    Vec3fa c = Vec3fa(0.5f); //brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
+    Vec3fa c = Vec3fa(1.0f); //brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
     //Vec3fa c = clamp(dot(neg(ray.dir),brdf.dz),0.0f,1.0f);
-    color = color + weight*(1.0f-Th)*c*T*lightIntensity; //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f))); // FIXME: use +=
-    weight *= Th;
+    color = color + /*weight*/(1.0f-Th)*c*T*lightIntensity; //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f))); // FIXME: use +=
+    //weight *= Th;
+    //weight = max(0.0f,weight-Th);
     if (weight < 0.01) return color;
     //return color;
 
@@ -747,8 +734,21 @@ extern "C" void device_render (int* pixels,
                                const Vec3f& p)
 {
   /* create scene */
-  if (g_scene == NULL)
+  if (g_scene == NULL) {
+    if (g_ispc_scene == NULL) {
+      ISPCScene* scene = new ISPCScene;
+      scene->materials = NULL;
+      scene->numMaterials = 0;
+      scene->meshes = new ISPCMesh*[1024*1024]; // FIXME: hardcoded maximal number of meshes
+      scene->numMeshes = 0;
+      scene->hairs = new ISPCHair*[1024]; // FIXME: hardcoded maximal number of hair sets
+      scene->numHairSets = 0;
+      g_ispc_scene = scene;
+      addHair(scene);
+      //addGroundPlane(scene);
+    }
     g_scene = convertScene(g_ispc_scene);
+  }
 
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
