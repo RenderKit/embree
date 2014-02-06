@@ -91,12 +91,13 @@ namespace embree
           const Node* node = cur.node();
           const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
 
-          const ssef tFarX0  = (norg.x + load4f((const char*)node+farX )) * rdir.x;
-          const ssef tFarY0  = (norg.y + load4f((const char*)node+farY )) * rdir.y;
-          const ssef tFarZ0  = (norg.z + load4f((const char*)node+farZ )) * rdir.z;
+          const ssef tFarX0  = abs((norg.x + load4f((const char*)node+farX )) * rdir.x);
+          const ssef tFarY0  = abs((norg.y + load4f((const char*)node+farY )) * rdir.y);
+          const ssef tFarZ0  = abs((norg.z + load4f((const char*)node+farZ )) * rdir.z);
           const ssef tFar0  = min(tFarX0 ,tFarY0 ,tFarZ0);
-          //const ssef radius = abs(ssef(ray.org.w) + tFar0 * ssef(ray.dir.w));
-          const ssef radius = zero;
+          const ssef radius = abs(ssef(ray.org.w) + tFar0 * ssef(ray.dir.w));
+          //const ssef radius = zero;
+          //PRINT2(tFar0,radius);
 
           const ssef tLowerX = (norg.x + node->lower_x - radius) * rdir.x;
           const ssef tLowerY = (norg.y + node->lower_y - radius) * rdir.y;
