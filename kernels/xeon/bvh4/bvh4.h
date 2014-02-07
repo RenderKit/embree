@@ -242,14 +242,14 @@ namespace embree
     /*! Clears the barrier bits of a subtree. */
     void clearBarrier(NodeRef& node);
 
-    Ref<LinearAllocatorPerThread> alloc;
+    Ref<LinearAllocatorPerThread> alloc; // FIXME: why using reference?
 
     __forceinline Node* allocNode(size_t thread) {
-      Node* node = (Node*) alloc->malloc(thread,sizeof(Node),1 << 7); node->clear(); return node;
+      Node* node = (Node*) alloc->malloc(thread,sizeof(Node),1 << 7); node->clear(); return node; // FIXME: why 7 bits alinged, and not 4 bits
     }
 
     __forceinline char* allocPrimitiveBlocks(size_t thread, size_t num) {
-      return (char*) alloc->malloc(thread,num*primTy.bytes,1 << 6);
+      return (char*) alloc->malloc(thread,num*primTy.bytes,1 << 6); // FIXME: why 6 bits alinged, and not 4 bits
     }
 
     /*! Encodes a node */

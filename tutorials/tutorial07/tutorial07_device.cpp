@@ -16,8 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-#define USE_INTERSECTION_FILTER 1
-#define USE_OCCLUSION_FILTER 1
+#define USE_INTERSECTION_FILTER 0
+#define USE_OCCLUSION_FILTER 0
 
 Vec3fa lightDir = normalize(-Vec3fa(-20.6048, 22.2367, -2.93452));
 //Vec3fa lightIntensity = Vec3fa(8.0f);
@@ -363,6 +363,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 #endif
   }
 
+#if 0
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
   {
@@ -395,6 +396,7 @@ RTCScene convertScene(ISPCScene* scene_in)
     rtcSetIntersectionFilterFunction(scene_out,geomID,(RTCFilterFunc)filterDispatch);
 #endif
   }
+#endif
 
   /* commit changes to scene */
   rtcCommit (scene_out);
@@ -520,6 +522,8 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     /* exit if we hit environment */
     if (ray2->geomID == RTC_INVALID_GEOMETRY_ID) 
       return color;
+
+    return Vec3fa(ray2->u,ray2->v,0.0f);
     
 #endif
   
