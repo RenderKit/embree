@@ -34,14 +34,14 @@ namespace embree
 
   void QuadraticBezierCurvesScene::QuadraticBezierCurves::enabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numCurveSets ,1); 
-    else                   atomic_add(&parent->numCurveSets2,1); 
+    if (numTimeSteps == 1) atomic_add(&parent->numCurveSets ,numCurves); 
+    else                   atomic_add(&parent->numCurveSets2,numCurves); 
   }
   
   void QuadraticBezierCurvesScene::QuadraticBezierCurves::disabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numCurveSets ,-1); 
-    else                   atomic_add(&parent->numCurveSets2,-1); 
+    if (numTimeSteps == 1) atomic_add(&parent->numCurveSets ,-numCurves); 
+    else                   atomic_add(&parent->numCurveSets2,-numCurves); 
   }
   
   void QuadraticBezierCurvesScene::QuadraticBezierCurves::setMask (unsigned mask) 

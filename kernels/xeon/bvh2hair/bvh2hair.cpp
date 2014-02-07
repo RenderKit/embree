@@ -20,7 +20,7 @@ namespace embree
 {
   DECLARE_SYMBOL(Accel::Intersector1,BVH2HairIntersector1_);
 
-  Builder* BVH2HairBuilder (BVH2Hair* bvh, Scene* scene);
+  Builder* BVH2HairBuilder_ (BVH2Hair* bvh, Scene* scene);
   
   void BVH2HairRegister () 
   {
@@ -49,7 +49,7 @@ namespace embree
   { 
     BVH2Hair* accel = new BVH2Hair;
     Accel::Intersectors intersectors = BVH2HairBezier1(accel);
-    Builder* builder = BVH2HairBuilder(accel,scene);
+    Builder* builder = BVH2HairBuilder_(accel,scene);
     return new AccelInstance(accel,builder,intersectors);
   }
 

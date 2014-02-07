@@ -92,6 +92,14 @@ namespace embree
     /*! Non-axis aligned bounds */
     struct NAABBox3f
     {
+    public:
+      __forceinline NAABBox3f (const BBox3fa& bounds) 
+        : xfm(one), bounds(bounds) {}
+      
+      __forceinline NAABBox3f (const AffineSpace3f& xfm, const BBox3fa& bounds) 
+        : xfm(xfm), bounds(bounds) {}
+      
+    public:
       AffineSpace3f xfm;   //!< orthonormal transformation
       BBox3fa bounds;      //!< bounds in transformed space // FIXME: one could merge this into above transformation, however, this causes problems with curve radius
     };

@@ -25,7 +25,6 @@ namespace embree
 {
   namespace QuadraticBezierCurvesScene
   {
-
     struct QuadraticBezierCurves : public Geometry, public BuildSource
     {
       struct Vertex {
