@@ -68,6 +68,9 @@ namespace embree
       /*! Construction from integer */
       __forceinline NodeRef (size_t ptr) : ptr(ptr) { }
 
+      /*! Cast to size_t */
+      __forceinline operator size_t() const { return ptr; }
+
       /*! checks if this is a leaf */
       __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) != 0; }
       

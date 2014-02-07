@@ -23,6 +23,7 @@
 #include "bvh4i/bvh4i.h"
 #include "bvh8i/bvh8i.h"
 #include "bvh4mb/bvh4mb.h"
+#include "bvh2hair/bvh2hair.h"
 #else
 #include "xeonphi/bvh4i/bvh4i.h"
 #include "xeonphi/bvh4mb/bvh4mb.h"
@@ -126,7 +127,8 @@ namespace embree
         }
         accels.add(BVH4MB::BVH4MBTriangle1v(this)); 
         accels.add(new TwoLevelAccel("bvh4",this)); 
-        accels.add(BVH4::BVH4Bezier1i(this));
+        //accels.add(BVH4::BVH4Bezier1i(this));
+        accels.add(BVH2Hair::BVH2HairBezier1(this));
       } 
       else 
       {

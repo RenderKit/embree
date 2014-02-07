@@ -57,7 +57,7 @@ namespace embree
       if (!geom->isEnabled()) continue;
       QuadraticBezierCurvesScene::QuadraticBezierCurves* set = (QuadraticBezierCurvesScene::QuadraticBezierCurves*) geom;
 
-      for (size_t j=0; j<set->numCurves; i++) {
+      for (size_t j=0; j<set->numCurves; j++) {
         int ofs = set->curve(j);
         const Vec3fa& p0 = set->vertex(ofs+0); bounds.extend(p0);
         const Vec3fa& p1 = set->vertex(ofs+1); bounds.extend(p1);
@@ -84,6 +84,9 @@ namespace embree
 
   const BVH2Hair::NAABBox3fa BVH2HairBuilder::bestSpace(Bezier1* curves, size_t begin, size_t end)
   {
+    if (end-begin == 0)
+      return NAABBox3fa(empty);
+
     BBox3fa bestBounds = empty;
     Vec3fa bestAxis = one;
     float bestArea = inf;
@@ -160,12 +163,24 @@ namespace embree
     return left;
   }
 
-  __forceinline const BVH2HairBuilder::ObjectSplit BVH2HairBuilder::ObjectSplit::find(Bezier1* curves, size_t begin, size_t end, const NAABBox3fa& pbounds)
+  __forceinline const BVH2HairBuilder::ObjectSplit BVH2HairBuilder::ObjectSplit::find(Bezier1* curves, size_t begin, size_t end, const NAABBox3fa& space)
   {
+    /* calculate geometry and centroid bounds */
+    BBox3fa centBounds = empty;
+    BBox3fa geomBounds = empty;
+    for (size_t i=begin; i<end; i++)
+    {
+      const Vec3fa p0 = xfmPoint(space.space,curves[i].p0); geomBounds.extend(p0);
+      const Vec3fa p1 = xfmPoint(space.space,curves[i].p1); geomBounds.extend(p1);
+      const Vec3fa p2 = xfmPoint(space.space,curves[i].p2); geomBounds.extend(p2);
+      const Vec3fa p3 = xfmPoint(space.space,curves[i].p3); geomBounds.extend(p3);
+      centBounds.extend(p0+p3);
+    }
+
     /* calculate binning function */
-    const ssef geometryDiagonal = 2.0f * (ssef) pbounds.bounds.size();
-    const ssef scale = select(geometryDiagonal != 0.0f,rcp(geometryDiagonal) * ssef(BINS * 0.99f),ssef(0.0f));
-    const ssef ofs = 2.0f * (ssef) pbounds.bounds.lower;
+    const ssef ofs = (ssef) centBounds.lower;
+    const ssef diag = (ssef) centBounds.size();
+    const ssef scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
 
     /* initialize bins */
     BBox3fa bounds[BINS][4];
@@ -179,10 +194,10 @@ namespace embree
     for (size_t i=begin; i<end; i++)
     {
       BBox3fa cbounds = empty;
-      const Vec3fa p0 = xfmPoint(pbounds.space,curves[i].p0); cbounds.extend(p0);
-      const Vec3fa p1 = xfmPoint(pbounds.space,curves[i].p1); cbounds.extend(p1);
-      const Vec3fa p2 = xfmPoint(pbounds.space,curves[i].p2); cbounds.extend(p2);
-      const Vec3fa p3 = xfmPoint(pbounds.space,curves[i].p3); cbounds.extend(p3);
+      const Vec3fa p0 = xfmPoint(space.space,curves[i].p0); cbounds.extend(p0);
+      const Vec3fa p1 = xfmPoint(space.space,curves[i].p1); cbounds.extend(p1);
+      const Vec3fa p2 = xfmPoint(space.space,curves[i].p2); cbounds.extend(p2);
+      const Vec3fa p3 = xfmPoint(space.space,curves[i].p3); cbounds.extend(p3);
       //const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),ssei(0),ssei(BINS-1));
       const ssei bin = floori((ssef(p0+p3) - ofs)*scale);
       assert(bin[0] >=0 && bin[0] < BINS);
@@ -246,14 +261,14 @@ namespace embree
     /* partition curves */
     ssize_t left = begin, right = end;
     while (left < right) {
-      const Vec3fa p0 = xfmPoint(pbounds.space,curves[left].p0);
-      const Vec3fa p3 = xfmPoint(pbounds.space,curves[left].p3);
+      const Vec3fa p0 = xfmPoint(space.space,curves[left].p0);
+      const Vec3fa p3 = xfmPoint(space.space,curves[left].p3);
       //const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),ssei(0),ssei(BINS-1));
       const ssei bin = floori((ssef(p0+p3) - ofs)*scale);
       if (bin[split.dim] < split.pos) left++;
       else std::swap(curves[left],curves[--right]);
     }
-    split.bounds = pbounds;
+    split.space = space.space;
     split.bounds0 = bestSpace(curves,begin,left);
     split.bounds1 = bestSpace(curves,left, end );
     split.ofs = ofs;
@@ -265,8 +280,8 @@ namespace embree
   {
     ssize_t left = begin, right = end;
     while (left < right) {
-      const Vec3fa p0 = xfmPoint(bounds.space,curves[left].p0);
-      const Vec3fa p3 = xfmPoint(bounds.space,curves[left].p3);
+      const Vec3fa p0 = xfmPoint(space,curves[left].p0);
+      const Vec3fa p3 = xfmPoint(space,curves[left].p3);
       //const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),ssei(0),ssei(BINS-1));
       const ssei bin = floori((ssef(p0+p3) - ofs)*scale);
       if (bin[dim] < pos) left++;

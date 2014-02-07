@@ -96,14 +96,14 @@ namespace embree
       /*! splits hairs into two sets */
       size_t split(Bezier1* curves, size_t begin, size_t end);
 
-  public:
-    NAABBox3fa bounds;
-    NAABBox3fa bounds0, bounds1;
-    size_t dim;
-    size_t pos;
-    float cost;
-    size_t num0,num1;
-    ssef ofs,scale;
+    public:
+      AffineSpace3f space;
+      NAABBox3fa bounds0, bounds1;
+      size_t dim;
+      size_t pos;
+      float cost;
+      size_t num0,num1;
+      ssef ofs,scale;
   };
     
     /*! try to find best non-axis aligned space, where the sum of all bounding areas is minimal */
