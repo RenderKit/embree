@@ -89,6 +89,9 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4mb/bvh4mb_builder.cpp
   bvh4mb/bvh4mb_intersector1.cpp   
   bvh4mb/bvh4mb_intersector4.cpp
+
+  bvh2hair/bvh2hair.cpp
+  bvh2hair/bvh2hair_builder.cpp
 )
 
 IF (TARGET_SSE41) 
@@ -142,6 +145,8 @@ IF (TARGET_AVX)
    bvh4mb/bvh4mb_intersector1.cpp   
    bvh4mb/bvh4mb_intersector4.cpp
    bvh4mb/bvh4mb_intersector8.cpp
+
+   bvh2hair/bvh2hair_intersector1.cpp
 )
 
   SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")

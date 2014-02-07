@@ -34,10 +34,9 @@ namespace embree
   void BVH2HairBuilder::build(size_t threadIndex, size_t threadCount) 
   {
     /* fast path for empty BVH */
-    if (scene->numCurves == 0) {
-      bvh->init(0);
-      return;
-    }
+    size_t numPrimitives = scene->numCurves;
+    bvh->init(numPrimitives);
+    if (numPrimitives == 0) return;
     
     double t0 = 0.0;
     if (g_verbose >= 2) {
@@ -46,31 +45,30 @@ namespace embree
     }
 
     /* allocate temporary curve array */
-    size_t numPrimitives = scene->numCurves;
     curves = new Bezier1[2*numPrimitives];
 
     /* create initial curve list */
-    BBox3f bounds = empty;
+    BBox3fa bounds = empty;
     size_t begin = 0, end = 0;
     for (size_t i=0; i<scene->size(); i++) 
     {
       Geometry* geom = scene->get(i);
       if (geom->type != QUADRATIC_BEZIER_CURVES) continue;
-      if (!geom->enabled()) continue;
+      if (!geom->isEnabled()) continue;
       QuadraticBezierCurvesScene::QuadraticBezierCurves* set = (QuadraticBezierCurvesScene::QuadraticBezierCurves*) geom;
 
-      for (size_t j=0; j<set.numCurves; i++) {
-        int ofs = set.curve(j);
-        const Vec3fa& p0 = set.vertex(ofs+0); bounds.extend(p0);
-        const Vec3fa& p1 = set.vertex(ofs+1); bounds.extend(p1);
-        const Vec3fa& p2 = set.vertex(ofs+2); bounds.extend(p2);
-        const Vec3fa& p3 = set.vertex(ofs+3); bounds.extend(p3);
-        curves[end++] = Bezier1 (p0,p1,p2,p3,0,1,set.geomID,j);
+      for (size_t j=0; j<set->numCurves; i++) {
+        int ofs = set->curve(j);
+        const Vec3fa& p0 = set->vertex(ofs+0); bounds.extend(p0);
+        const Vec3fa& p1 = set->vertex(ofs+1); bounds.extend(p1);
+        const Vec3fa& p2 = set->vertex(ofs+2); bounds.extend(p2);
+        const Vec3fa& p3 = set->vertex(ofs+3); bounds.extend(p3);
+        curves[end++] = Bezier1 (p0,p1,p2,p3,0,1,i,j);
       }
     }
 
     /* find best bounds for hair */
-    NAABBox3fa naabb = bestBounds(begin,end);
+    NAABBox3fa naabb = bestSpace(curves,begin,end);
 
     /* start recursive build */
     bvh->root = recurse(threadIndex,0,begin,end,naabb);
@@ -79,26 +77,26 @@ namespace embree
     if (g_verbose >= 2) {
       double t1 = getSeconds();
       std::cout << "[DONE]" << std::endl;
-      std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(source->size())/(t1-t0) << " Mprim/s" << std::endl;
+      std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
       //std::cout << BVH2HairStatistics(bvh).str();
     }
   }
 
-  const NAABBox3fa BVH2HairBuilder::bestSpace(size_t begin, size_t end)
+  const BVH2Hair::NAABBox3fa BVH2HairBuilder::bestSpace(Bezier1* curves, size_t begin, size_t end)
   {
-    BBox3f bestBounds = empty;
-    BBox3f bestAxis = one;
-    BBox3f bestArea = inf;
+    BBox3fa bestBounds = empty;
+    Vec3fa bestAxis = one;
+    float bestArea = inf;
     for (size_t i=0; i<16; i++)
     {
-      size_t k = random() % (end-begin);
+      size_t k = rand() % (end-begin);
       const Vec3fa axis = normalize(curves[k].p3-curves[k].p0);
       const AffineSpace3f space = frame(axis);
       
-      BBox3f bounds = empty;
+      BBox3fa bounds = empty;
       float area = 0.0f;
       for (size_t j=begin; j<end; j++) {
-        BBox3f cbounds = empty;
+        BBox3fa cbounds = empty;
         const Vec3fa p0 = xfmPoint(space,curves[k].p0); cbounds.extend(p0);
         const Vec3fa p1 = xfmPoint(space,curves[k].p1); cbounds.extend(p1);
         const Vec3fa p2 = xfmPoint(space,curves[k].p2); cbounds.extend(p2);
@@ -114,19 +112,19 @@ namespace embree
       }
     }
 
-    return NAABBox3fa(frame(axis),bestBounds);
+    return NAABBox3fa(frame(bestAxis),bestBounds);
   }
 
-  __forceinline StrandSplit::StrandSplit (const NAABBox3fa& bounds0, const Vec3fa& axis0, const size_t num0,
-                                          const NAABBox3fa& bounds1, const Vec3fa& axis1, const size_t num1)
+  __forceinline BVH2HairBuilder::StrandSplit::StrandSplit (const NAABBox3fa& bounds0, const Vec3fa& axis0, const size_t num0,
+                                                           const NAABBox3fa& bounds1, const Vec3fa& axis1, const size_t num1)
     : bounds0(bounds0), bounds1(bounds1), axis0(axis0), axis1(axis1), num0(num0), num1(num1) {}
   
-  __forceinline const StrandSplit StrandSplit::find(size_t begin, size_t end)
+  __forceinline const BVH2HairBuilder::StrandSplit BVH2HairBuilder::StrandSplit::find(Bezier1* curves, size_t begin, size_t end)
   {
     /* first try to split two hair strands */
     Vec3fa axis0 = normalize(curves[begin].p3-curves[begin].p0);
     float bestCos = 1.0f;
-    float bestI = begin;
+    size_t bestI = begin;
     for (size_t i=begin; i<end; i++) {
       Vec3fa axisi = normalize(curves[i].p3-curves[i].p0);
       float cos = abs(dot(axisi,axis0));
@@ -137,46 +135,62 @@ namespace embree
     /* partition the two strands */
     ssize_t left = begin, right = end;
     while (left < right) {
-      if (curves[left].isLeft()) left++;
+      const Vec3fa axisi = normalize(curves[left].p3-curves[left].p0);
+      const float cos0 = abs(dot(axisi,axis0));
+      const float cos1 = abs(dot(axisi,axis1));
+      if (cos0 < cos1) left++;
       else std::swap(curves[left],curves[--right]);
     }
-    const NAABBox3fa naabb0 = bestSpace(begin,left);
-    const NAABBox3fa naabb1 = bestSpace(left, end );
-    return StrandSplit(axis0,naabb0,axis1,naabb1);
+    const NAABBox3fa naabb0 = bestSpace(curves,begin,left);
+    const NAABBox3fa naabb1 = bestSpace(curves,left, end );
+    return StrandSplit(naabb0,axis0,left-begin,
+                       naabb1,axis1,end-left);
   }
 
-  __forceinline size_t StrandSplit::split(Bezier1* curves, size_t begin, size_t end)
+  __forceinline size_t BVH2HairBuilder::StrandSplit::split(Bezier1* curves, size_t begin, size_t end)
   {
     ssize_t left = begin, right = end;
     while (left < right) {
-      if (curves[left].isLeft()) left++;
+      const Vec3fa axisi = normalize(curves[left].p3-curves[left].p0);
+      const float cos0 = abs(dot(axisi,axis0));
+      const float cos1 = abs(dot(axisi,axis1));
+      if (cos0 < cos1) left++;
       else std::swap(curves[left],curves[--right]);
     }
     return left;
   }
 
-  __forceinline ObjectSplit::ObjectSplit ()
-    : dim(0), pos(0), cost(inf), num0(0), num1(0) {}
-
-  __forceinline const ObjectSplit ObjectSplit::find(size_t begin, size_t end, const NAABBox3fa& pbounds)
+  __forceinline const BVH2HairBuilder::ObjectSplit BVH2HairBuilder::ObjectSplit::find(Bezier1* curves, size_t begin, size_t end, const NAABBox3fa& pbounds)
   {
     /* calculate binning function */
-    const ssef geometryDiagonal = 2.0f * (ssef) bounds.bounds.size();
+    const ssef geometryDiagonal = 2.0f * (ssef) pbounds.bounds.size();
     const ssef scale = select(geometryDiagonal != 0.0f,rcp(geometryDiagonal) * ssef(BINS * 0.99f),ssef(0.0f));
-    const ssef ofs = 2.0f * (ssef) bounds.bounds.lower;
-    
+    const ssef ofs = 2.0f * (ssef) pbounds.bounds.lower;
+
+    /* initialize bins */
+    BBox3fa bounds[BINS][4];
+    ssei    counts[BINS];
+    for (size_t i=0; i<BINS; i++) {
+      bounds[i][0] = bounds[i][1] = bounds[i][2] = bounds[i][3] = empty;
+      counts[i] = 0;
+    }
+ 
     /* perform binning of curves */
     for (size_t i=begin; i<end; i++)
     {
-      const BBox3fa bounds = empty;
-      const Vec3fa p0 = xfmPoint(pbounds.space,curves[i].p0); bounds.extend(p0);
-      const Vec3fa p1 = xfmPoint(pbounds.space,curves[i].p1); bounds.extend(p1);
-      const Vec3fa p2 = xfmPoint(pbounds.space,curves[i].p2); bounds.extend(p2);
-      const Vec3fa p3 = xfmPoint(pbounds.space,curves[i].p3); bounds.extend(p3);
-      const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),0,BINS-1);
-      const int b0 = bin[0]; counts[b0][0]++; bounds[b0][0].extend(bounds);
-      const int b1 = bin[1]; counts[b1][1]++; bounds[b1][1].extend(bounds);
-      const int b2 = bin[2]; counts[b2][2]++; bounds[b2][2].extend(bounds);
+      BBox3fa cbounds = empty;
+      const Vec3fa p0 = xfmPoint(pbounds.space,curves[i].p0); cbounds.extend(p0);
+      const Vec3fa p1 = xfmPoint(pbounds.space,curves[i].p1); cbounds.extend(p1);
+      const Vec3fa p2 = xfmPoint(pbounds.space,curves[i].p2); cbounds.extend(p2);
+      const Vec3fa p3 = xfmPoint(pbounds.space,curves[i].p3); cbounds.extend(p3);
+      //const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),ssei(0),ssei(BINS-1));
+      const ssei bin = floori((ssef(p0+p3) - ofs)*scale);
+      assert(bin[0] >=0 && bin[0] < BINS);
+      assert(bin[1] >=0 && bin[1] < BINS);
+      assert(bin[2] >=0 && bin[2] < BINS);
+      const int b0 = bin[0]; counts[b0][0]++; bounds[b0][0].extend(cbounds);
+      const int b1 = bin[1]; counts[b1][1]++; bounds[b1][1].extend(cbounds);
+      const int b2 = bin[2]; counts[b2][2]++; bounds[b2][2].extend(cbounds);
     }
     
     /* sweep from right to left and compute parallel prefix of merged bounds */
@@ -225,7 +239,7 @@ namespace embree
         split.pos = bestPos[dim];
         split.cost = bestSAH[dim];
         split.num0 = bestLeft[dim];
-        split.num1 = end-begin-split.nleft;
+        split.num1 = end-begin-split.num0;
       }
     }
     
@@ -234,26 +248,28 @@ namespace embree
     while (left < right) {
       const Vec3fa p0 = xfmPoint(pbounds.space,curves[left].p0);
       const Vec3fa p3 = xfmPoint(pbounds.space,curves[left].p3);
-      const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),0,BINS-1);
-      if (bin < pos) left++;
+      //const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),ssei(0),ssei(BINS-1));
+      const ssei bin = floori((ssef(p0+p3) - ofs)*scale);
+      if (bin[split.dim] < split.pos) left++;
       else std::swap(curves[left],curves[--right]);
     }
-    split.bounds = bounds;
-    split.bounds0 = bestSpace(begin,left);
-    split.bounds1 = bestSpace(left, end );
+    split.bounds = pbounds;
+    split.bounds0 = bestSpace(curves,begin,left);
+    split.bounds1 = bestSpace(curves,left, end );
     split.ofs = ofs;
     split.scale = scale;
     return split;
   }
   
-  __forceinline size_t ObjectSplit::split(Bezier1* curves, size_t begin, size_t end)
+  __forceinline size_t BVH2HairBuilder::ObjectSplit::split(Bezier1* curves, size_t begin, size_t end)
   {
     ssize_t left = begin, right = end;
     while (left < right) {
       const Vec3fa p0 = xfmPoint(bounds.space,curves[left].p0);
-      const Vec3fa p3 = xfmPoint(ounds.space,curves[left].p3);
-      const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),0,BINS-1);
-      if (bin < pos) left++;
+      const Vec3fa p3 = xfmPoint(bounds.space,curves[left].p3);
+      //const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),ssei(0),ssei(BINS-1));
+      const ssei bin = floori((ssef(p0+p3) - ofs)*scale);
+      if (bin[dim] < pos) left++;
       else std::swap(curves[left],curves[--right]);
     }
     return left;
@@ -263,29 +279,29 @@ namespace embree
   {
     size_t N = end-begin;
     assert(N <= (size_t)BVH2Hair::maxLeafBlocks);
-    Bezier1* curves = (Bezier1*) bvh->allocPrimitiveBlocks(threadIndex,N);
-    for (size_t i=0; i<N; i++) curves[i] = prims[begin+i];
-    return bvh->encodeLeaf(curves,N);
+    Bezier1* leaf = (Bezier1*) bvh->allocPrimitiveBlocks(threadIndex,N);
+    for (size_t i=0; i<N; i++) leaf[i] = curves[begin+i];
+    return bvh->encodeLeaf((char*)leaf,N);
   }
 
   typename BVH2Hair::NodeRef BVH2HairBuilder::recurse(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
   {
     /*! compute leaf and split cost */
     size_t N = end-begin;
-    const float leafSAH  = float(N)*bounds.area();
+    const float leafSAH  = float(N)*halfArea(bounds.bounds);
     
     /* first split into two strands */
-    StrandSplit strandSplit = StrandSplit::find(begin,end);
-    const float strandSAH = strandsplit.sah();
+    StrandSplit strandSplit = StrandSplit::find(curves,begin,end);
+    const float strandSAH = strandSplit.sah();
 
     /* second perform standard binning */
-    ObjectSplit objectSplit = ObjectSplit::find(begin,end,bounds.xfm);
-    const float objectSAH = objectsplit.sah();
+    ObjectSplit objectSplit = ObjectSplit::find(curves,begin,end,bounds);
+    const float objectSAH = objectSplit.sah();
     
     /* leaf test */
     const float bestSAH = min(leafSAH,strandSAH,objectSAH);
     if (bestSAH == leafSAH) return leaf(threadIndex,depth,begin,end,bounds);
-    Node* node = parent->bvh->allocNode(threadIndex);
+    Node* node = bvh->allocNode(threadIndex);
 
     /* perform strand split */
     if (bestSAH == strandSAH) {
@@ -299,7 +315,7 @@ namespace embree
       node->set(0,strandSplit.bounds0,recurse(threadIndex,depth+1,begin ,center,strandSplit.bounds0));
       node->set(1,strandSplit.bounds1,recurse(threadIndex,depth+1,center,end   ,strandSplit.bounds1));
     }
-    return parent->bvh->encodeNode(node);
+    return bvh->encodeNode(node);
   }
 
   Builder* BVH2HairBuilder_ (BVH2Hair* accel, Scene* scene) {

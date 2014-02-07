@@ -41,6 +41,7 @@ namespace embree
 
       __forceinline AffineSpaceT           ( )                           { }
       __forceinline AffineSpaceT           ( const AffineSpaceT& other ) { l = other.l; p = other.p; }
+      __forceinline AffineSpaceT           ( const L           & other ) { l = other  ; p = VectorT(zero); }
       __forceinline AffineSpaceT& operator=( const AffineSpaceT& other ) { l = other.l; p = other.p; return *this; }
 
       __forceinline AffineSpaceT( const VectorT& vx, const VectorT& vy, const VectorT& vz, const VectorT& p ) : l(vx,vy,vz), p(p) {}

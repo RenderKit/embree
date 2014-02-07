@@ -23,8 +23,8 @@ namespace embree
   {
     __forceinline bool BVH2HairIntersector1::intersectBox(const NAABBox3fa& naabb, const Ray& ray, float& tNear, float& tFar)
     {
-      const Vec3fa org = xfmPoint (naabb.xfm,ray.org);
-      const Vec3fa dir = xfmVector(naabb.xfm,ray.dir);
+      const Vec3fa org = xfmPoint (naabb.space,ray.org);
+      const Vec3fa dir = xfmVector(naabb.space,ray.dir);
       const Vec3fa rdir = rcp(dir);
       
       const float tLowerX = (naabb.bounds.lower.x - org.x) * rdir.x;
@@ -92,12 +92,12 @@ namespace embree
       BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
       Vec3fa P,T; curve3D.eval(uu,P,T);
       if (T == Vec3fa(zero)) { valid[i] = 0; goto retry; } // ignore denormalized curves
-      ray.u = uu;
+      ray.u = bezier.t0 + uu*bezier.dt;
       ray.v = 0.0f;
       ray.tfar = t[i];
       ray.Ng = T;
-      ray.geomID = curve_in.geomID;
-      ray.primID = curve_in.primID;
+      ray.geomID = bezier.geomID;
+      ray.primID = bezier.primID;
     }
 
     void BVH2HairIntersector1::intersect(const BVH2Hair* bvh, Ray& ray)
@@ -107,8 +107,8 @@ namespace embree
       StackItem* stackPtr = stack+1;        //!< current stack pointer
       StackItem* stackEnd = stack+stackSize;
       stack[0].ref = bvh->root;
-      stack[0].tnear = ray.tnear;
-      stack[0].tfar  = ray.tfar;
+      stack[0].tNear = ray.tnear;
+      stack[0].tFar  = ray.tfar;
       
       /* pop loop */
       while (true) pop:
@@ -117,11 +117,11 @@ namespace embree
         if (unlikely(stackPtr == stack)) break;
         stackPtr--;
         NodeRef cur = stackPtr->ref;
-        float tNear = stackPtr->tnear;
-        float tFar  = stackPtr->tfar;
+        float tNear = stackPtr->tNear;
+        float tFar  = stackPtr->tFar;
         
         /*! if popped node is too far, pop next one */
-        if (unlikely(tnear > ray.tfar))
+        if (unlikely(tNear > ray.tfar))
           continue;
         
         /* downtraversal loop */
@@ -133,9 +133,9 @@ namespace embree
           const Node* node = cur.node();
 
           /*! intersect with both non-axis aligned boxes */
-          float tNear0 = tNear, tFar0 = rFar;
+          float tNear0 = tNear, tFar0 = tFar;
           bool hit0 = intersectBox(node->bounds(0), ray, tNear0, tFar0);
-          float tNear1 = tNear, tFar1 = rFar;
+          float tNear1 = tNear, tFar1 = tFar;
           bool hit1 = intersectBox(node->bounds(1), ray, tNear1, tFar1);
           
           /*! if no child is hit, pop next node */

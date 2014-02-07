@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh2hair.h"
+#include "common/accelinstance.h"
 
 namespace embree
 {
@@ -25,7 +26,7 @@ namespace embree
   void BVH2HairRegister () 
   {
     int features = getCPUFeatures();
-    SELECT_SYMBOL_AVX_AVX2(features,BVH2HairIntersector1_);
+    SELECT_SYMBOL_AVX(features,BVH2HairIntersector1_);
   }
 
   BVH2Hair::BVH2Hair () 
@@ -48,7 +49,7 @@ namespace embree
   Accel* BVH2Hair::BVH2HairBezier1(Scene* scene)
   { 
     BVH2Hair* accel = new BVH2Hair;
-    Accel::Intersectors intersectors = BVH2HairBezier1(accel);
+    Accel::Intersectors intersectors = BVH2HairIntersectors(accel);
     Builder* builder = BVH2HairBuilder_(accel,scene);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -72,6 +73,6 @@ namespace embree
     bytesReserved    = (bytesReserved+blockSize-1)/blockSize*blockSize;
 
     root = emptyNode;
-    alloc->init(bytesAllocated,bytesReserved);
+    alloc.init(bytesAllocated,bytesReserved);
   }
 }

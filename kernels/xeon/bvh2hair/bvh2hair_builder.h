@@ -26,9 +26,10 @@ namespace embree
   public:
 
     /*! Type shortcuts */
-    typedef typename BVH2Hair::Node    Node;
-    typedef typename BVH2Hair::NodeRef NodeRef;
-    typedef typename BVH2Hair::Bezier1 Bezier1;
+    typedef BVH2Hair::Node    Node;
+    typedef BVH2Hair::NodeRef NodeRef;
+    typedef BVH2Hair::Bezier1 Bezier1;
+    typedef BVH2Hair::NAABBox3fa NAABBox3fa;
     
   public:
 
@@ -62,7 +63,7 @@ namespace embree
       }
 
       /*! finds the two hair strands */
-      static const StrandSplit find(size_t begin, size_t end);
+      static const StrandSplit find(Bezier1* curves, size_t begin, size_t end);
       
       /*! splits hair list into the two strands */
       size_t split(Bezier1* curves, size_t begin, size_t end);
@@ -86,11 +87,11 @@ namespace embree
       
       /*! calculates surface area for the split */
       __forceinline float sah() const {
-        return float(num0)*halfArea(bounds0) + float(num1)*halfArea(bounds1);
+        return float(num0)*halfArea(bounds0.bounds) + float(num1)*halfArea(bounds1.bounds);
       }
 
       /*! performs object binning to the the best partitioning */
-      static const ObjectSplit find(size_t begin, size_t end, const NAABBox3fa& pbounds);
+      static const ObjectSplit find(Bezier1* curves, size_t begin, size_t end, const NAABBox3fa& pbounds);
 
       /*! splits hairs into two sets */
       size_t split(Bezier1* curves, size_t begin, size_t end);
@@ -106,7 +107,7 @@ namespace embree
   };
     
     /*! try to find best non-axis aligned space, where the sum of all bounding areas is minimal */
-    const NAABBox3fa bestSpace(size_t begin, size_t end);
+    static const NAABBox3fa bestSpace(Bezier1* curves, size_t begin, size_t end);
 
   public:
     Scene* scene;          //!< source

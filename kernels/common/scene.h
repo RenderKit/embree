@@ -214,8 +214,8 @@ namespace embree
         : scene(scene), numTimeSteps(numTimeSteps) {}
 
       bool isEmpty () const { 
-        if (numTimeSteps == 1) return scene->numCurveSets  == 0;
-        else                   return scene->numCurveSets2 == 0;
+        if (numTimeSteps == 1) return scene->numCurves  == 0;
+        else                   return scene->numCurves2 == 0;
       }
       
       size_t groups () const { 

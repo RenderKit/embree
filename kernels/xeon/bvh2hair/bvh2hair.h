@@ -93,14 +93,20 @@ namespace embree
     struct NAABBox3fa
     {
     public:
-      __forceinline NAABBox3fa (const BBox3fa& bounds) 
-        : xfm(one), bounds(bounds) {}
       
-      __forceinline NAABBox3fa (const AffineSpace3f& xfm, const BBox3fa& bounds) 
-        : xfm(xfm), bounds(bounds) {}
+      __forceinline NAABBox3fa () {}
+
+      __forceinline NAABBox3fa (EmptyTy) 
+        : space(one), bounds(empty) {}
+      
+      __forceinline NAABBox3fa (const BBox3fa& bounds) 
+        : space(one), bounds(bounds) {}
+      
+      __forceinline NAABBox3fa (const AffineSpace3f& space, const BBox3fa& bounds) 
+        : space(space), bounds(bounds) {}
       
     public:
-      AffineSpace3f xfm;   //!< orthonormal transformation
+      AffineSpace3f space; //!< orthonormal transformation
       BBox3fa bounds;      //!< bounds in transformed space // FIXME: one could merge this into above transformation, however, this causes problems with curve radius
     };
 
@@ -109,27 +115,27 @@ namespace embree
     {
       /*! Clears the node. */
       __forceinline void clear() {
-        naabb[0] = naabb[1] = one;
+        naabb[0] = naabb[1] = empty;
         children[0] = children[1] = emptyNode;
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const NAABBox3f& b, const NodeRef& childID) {
+      __forceinline void set(size_t i, const NAABBox3fa& b, const NodeRef& childID) {
         assert(i < 2);
-        naabb[i] = rcp(b);
+        naabb[i] = NAABBox3fa(rcp(b.space),b.bounds); // FIXME: can use faster reciprocal here (orthonormal space)
         children[i] = childID;
       }
 
       /*! Returns bounds of specified child. */
-      __forceinline const NAABBox3f& bounds(size_t i) const { assert(i < 2); return naabb[2]; }
+      __forceinline const NAABBox3fa& bounds(size_t i) const { assert(i < 2); return naabb[2]; }
 
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { assert(i<2); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<2); return children[i]; }
 
     public:
-      NAABBox3f naabb   [2];   //!< left and right non-axis aligned bounding box
-      NodeRef   children[2];   //!< Pointer to the 2 children (can be a node or leaf)
+      NAABBox3fa naabb   [2];   //!< left and right non-axis aligned bounding box
+      NodeRef    children[2];   //!< Pointer to the 2 children (can be a node or leaf)
     };
 
     /*! Hair Leaf */
@@ -147,7 +153,7 @@ namespace embree
 
       /*! calculate the bounds of the curve */
       __forceinline BBox3fa bounds() const {
-        const BBox3fa b = merge(BBox3fa(p[0]),BBox3fa(p[1]),BBox3fa(p[2]),BBox3fa(p[3]));
+        const BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2),BBox3fa(p3));
         return enlarge(b,Vec3fa(b.upper.w));
       }
 
@@ -156,7 +162,7 @@ namespace embree
       Vec3fa p1;            //!< 2nd control point (x,y,z,r)
       Vec3fa p2;            //!< 3rd control point (x,y,z,r)
       Vec3fa p3;            //!< 4th control point (x,y,z,r)
-      float t0,t1;          //!< t range of this sub-curve
+      float t0,dt;          //!< t range of this sub-curve
       unsigned int geomID;  //!< geometry ID
       unsigned int primID;  //!< primitive ID
     };
@@ -185,7 +191,7 @@ namespace embree
 
     /*! allocates a block of primitives */
     __forceinline char* allocPrimitiveBlocks(size_t thread, size_t num) {
-      return (char*) alloc.malloc(thread,num*primTy.bytes,1 << 4);
+      return (char*) alloc.malloc(thread,num*sizeof(Bezier1),1 << 4);
     }
 
     /*! Encodes a node */
