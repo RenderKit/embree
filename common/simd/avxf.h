@@ -57,9 +57,9 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline avxf( ZeroTy   ) : m256(_mm256_setzero_ps()) {}
-    __forceinline avxf( OneTy    ) : m256(_mm256_set_ps(1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f)) {}
-    __forceinline avxf( PosInfTy ) : m256(_mm256_set_ps(pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf)) {}
-    __forceinline avxf( NegInfTy ) : m256(_mm256_set_ps(neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf)) {}
+    __forceinline avxf( OneTy    ) : m256(_mm256_set1_ps(1.0f)) {}
+    __forceinline avxf( PosInfTy ) : m256(_mm256_set1_ps(pos_inf)) {}
+    __forceinline avxf( NegInfTy ) : m256(_mm256_set1_ps(neg_inf)) {}
     __forceinline avxf( StepTy   ) : m256(_mm256_set_ps(7.0f, 6.0f, 5.0f, 4.0f, 3.0f, 2.0f, 1.0f, 0.0f)) {}
     __forceinline avxf( NaNTy    ) : m256(_mm256_set1_ps(nan)) {}
 

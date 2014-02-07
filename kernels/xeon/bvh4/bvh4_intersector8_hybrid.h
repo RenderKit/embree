@@ -40,8 +40,6 @@ namespace embree
 	static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
 
       public:
-	//static void intersect1(const BVH4* bvh, NodeRef root, const size_t k, Ray8& ray, const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ);
-
 	template<typename PrimitiveIntersector8>
 	  static __forceinline void intersect1(const BVH4* bvh, NodeRef root, const size_t k, Ray8& ray, const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
 	  {
@@ -180,10 +178,7 @@ namespace embree
 		PrimitiveIntersector8::intersect(ray, k, prim, num, bvh->geometry);
 		rayFar = ray.tfar[k];
 	      }
-	    AVX_ZERO_UPPER();
 	  }
-
-	//static bool occluded1 (const BVH4* bvh, NodeRef root, const size_t k, Ray8& ray, const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ);
 
 	template<typename PrimitiveIntersector8>
 	  static __forceinline bool occluded1(const BVH4* bvh, NodeRef root, const size_t k, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
