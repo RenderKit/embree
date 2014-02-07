@@ -42,10 +42,10 @@ namespace embree
     ~BVH2HairBuilder ();
 
     /*! creates a leaf node */
-    NodeRef createLeaf(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3f& bounds);
+    NodeRef leaf(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds);
 
     /*! recursive build function */
-    NodeRef recurse   (size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3f& bounds);
+    NodeRef recurse   (size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds);
 
   public:
     Scene* scene;          //!< source

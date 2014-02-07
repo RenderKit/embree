@@ -90,13 +90,13 @@ namespace embree
     };
 
     /*! Non-axis aligned bounds */
-    struct NAABBox3f
+    struct NAABBox3fa
     {
     public:
-      __forceinline NAABBox3f (const BBox3fa& bounds) 
+      __forceinline NAABBox3fa (const BBox3fa& bounds) 
         : xfm(one), bounds(bounds) {}
       
-      __forceinline NAABBox3f (const AffineSpace3f& xfm, const BBox3fa& bounds) 
+      __forceinline NAABBox3fa (const AffineSpace3f& xfm, const BBox3fa& bounds) 
         : xfm(xfm), bounds(bounds) {}
       
     public:

@@ -40,7 +40,7 @@ namespace embree
       }
 
     private:
-      bool intersectBox(const NAABBox3f& naabb, const Ray& ray, float& tNear, float& tFar);
+      bool intersectBox(const NAABBox3fa& naabb, const Ray& ray, float& tNear, float& tFar);
       void intersectBezier(Ray& ray, const Bezier1& bezier);
       
     public:

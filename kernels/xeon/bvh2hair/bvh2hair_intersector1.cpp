@@ -21,7 +21,7 @@ namespace embree
 { 
   namespace isa
   {
-    __forceinline bool BVH2HairIntersector1::intersectBox(const NAABBox3f& naabb, const Ray& ray, float& tNear, float& tFar)
+    __forceinline bool BVH2HairIntersector1::intersectBox(const NAABBox3fa& naabb, const Ray& ray, float& tNear, float& tFar)
     {
       const Vec3fa org = xfmPoint (naabb.xfm,ray.org);
       const Vec3fa dir = xfmVector(naabb.xfm,ray.dir);
