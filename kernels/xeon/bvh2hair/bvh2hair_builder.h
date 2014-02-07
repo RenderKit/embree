@@ -47,6 +47,67 @@ namespace embree
     /*! recursive build function */
     NodeRef recurse   (size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds);
 
+  private:
+
+    /*! Tries to split hair into two differently aligned hair strands */
+    struct StrandSplit
+    {
+    public:
+      StrandSplit (const NAABBox3fa& bounds0, const Vec3fa& axis0, const size_t num0,
+                   const NAABBox3fa& bounds1, const Vec3fa& axis1, const size_t num1);
+
+      /*! calculates surface area for the split */
+      __forceinline float sah() const {
+        return float(num0)*halfArea(bounds0.bounds) + float(num1)*halfArea(bounds1.bounds);
+      }
+
+      /*! finds the two hair strands */
+      static const StrandSplit find(size_t begin, size_t end);
+      
+      /*! splits hair list into the two strands */
+      size_t split(Bezier1* curves, size_t begin, size_t end);
+
+    public:
+      NAABBox3fa bounds0, bounds1;  //!< bounds of the strands
+      Vec3fa axis0, axis1;          //!< axis the strands are aligned into
+      size_t num0, num1;            //!< number of hairs in the strands
+    };
+
+    /*! Performs standard object binning */
+    struct ObjectSplit
+    {
+      /*! number of bins */
+      static const size_t BINS = 16;
+
+    public:
+
+      __forceinline ObjectSplit ()
+      : dim(0), pos(0), cost(inf), num0(0), num1(0) {}
+      
+      /*! calculates surface area for the split */
+      __forceinline float sah() const {
+        return float(num0)*halfArea(bounds0) + float(num1)*halfArea(bounds1);
+      }
+
+      /*! performs object binning to the the best partitioning */
+      static const ObjectSplit find(size_t begin, size_t end, const NAABBox3fa& pbounds);
+
+      /*! splits hairs into two sets */
+      size_t split(Bezier1* curves, size_t begin, size_t end);
+
+  public:
+    NAABBox3fa bounds;
+    NAABBox3fa bounds0, bounds1;
+    size_t dim;
+    size_t pos;
+    float cost;
+    size_t num0,num1;
+    ssef ofs,scale;
+  };
+    
+    /*! try to find best non-axis aligned space, where the sum of all bounding areas is minimal */
+    const NAABBox3fa bestSpace(size_t begin, size_t end);
+
   public:
     Scene* scene;          //!< source
     size_t minLeafSize;    //!< minimal size of a leaf
