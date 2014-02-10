@@ -69,6 +69,8 @@ namespace embree
 
     /* find best bounds for hair */
     NAABBox3fa naabb = bestSpace(curves,begin,end);
+    //bvh->rbounds = naabb; // FIXME: remove
+    //bvh->rbounds = bestSpace(curves,0,1);
 
     /* start recursive build */
     bvh->root = recurse(threadIndex,0,begin,end,naabb);
@@ -165,9 +167,6 @@ namespace embree
 
   __forceinline const BVH2HairBuilder::ObjectSplit BVH2HairBuilder::ObjectSplit::find(Bezier1* curves, size_t begin, size_t end, const NAABBox3fa& space)
   {
-    //PRINT(space.bounds);
-    //PRINT(halfArea(space.bounds));
-
     /* calculate geometry and centroid bounds */
     BBox3fa centBounds = empty;
     BBox3fa geomBounds = empty;
@@ -179,8 +178,6 @@ namespace embree
       const Vec3fa p3 = xfmPoint(space.space,curves[i].p3); geomBounds.extend(p3);
       centBounds.extend(p0+p3);
     }
-    //PRINT(geomBounds);
-    //PRINT(halfArea(geomBounds));
 
     /* calculate binning function */
     const ssef ofs = (ssef) centBounds.lower;
@@ -311,27 +308,17 @@ namespace embree
 
   typename BVH2Hair::NodeRef BVH2HairBuilder::recurse(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
   {
-    //PRINT(depth);
-    //PRINT3(begin,end,bounds);
-
     /*! compute leaf and split cost */
     size_t N = end-begin;
-    //PRINT(N);
-    //PRINT(halfArea(bounds.bounds));
     const float leafSAH  = float(N)*halfArea(bounds.bounds);
-    //PRINT(leafSAH);
     
     /* first split into two strands */
     const StrandSplit strandSplit = StrandSplit::find(curves,begin,end);
-    //PRINT(strandSplit);
     const float strandSAH = BVH2Hair::travCost*halfArea(bounds.bounds) + strandSplit.sah();
-    //PRINT(strandSAH);
 
     /* second perform standard binning */
     const ObjectSplit objectSplit = ObjectSplit::find(curves,begin,end,bounds);
-    //PRINT(objectSplit);
     const float objectSAH = BVH2Hair::travCost*halfArea(bounds.bounds) + objectSplit.sah();
-    //PRINT(objectSAH);
 
     /* leaf test */
     const float bestSAH = min(leafSAH,strandSAH,objectSAH);
@@ -348,9 +335,10 @@ namespace embree
     /* or object split */
     else {
       const size_t center = objectSplit.split(curves,begin,end);
-      node->set(0,strandSplit.bounds0,recurse(threadIndex,depth+1,begin ,center,strandSplit.bounds0));
-      node->set(1,strandSplit.bounds1,recurse(threadIndex,depth+1,center,end   ,strandSplit.bounds1));
+      node->set(0,objectSplit.bounds0,recurse(threadIndex,depth+1,begin ,center,objectSplit.bounds0));
+      node->set(1,objectSplit.bounds1,recurse(threadIndex,depth+1,center,end   ,objectSplit.bounds1));
     }
+
     return bvh->encodeNode(node);
   }
 

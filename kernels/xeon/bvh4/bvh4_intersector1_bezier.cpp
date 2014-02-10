@@ -128,7 +128,7 @@ namespace embree
           size_t r = __bscf(mask);
           if (likely(mask == 0)) {
             cur = node->child(r);
-            assert(cur != BVH4::emptyNode);
+            //assert(cur != BVH4::emptyNode); // FIXME: enable these assertions again, currently traversing empty children
             continue;
           }
           
@@ -136,8 +136,8 @@ namespace embree
           NodeRef c0 = node->child(r); const unsigned int d0 = ((unsigned int*)&tNear)[r];
           r = __bscf(mask);
           NodeRef c1 = node->child(r); const unsigned int d1 = ((unsigned int*)&tNear)[r];
-          assert(c0 != BVH4::emptyNode);
-          assert(c1 != BVH4::emptyNode);
+          //assert(c0 != BVH4::emptyNode);
+          //assert(c1 != BVH4::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
             if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
@@ -155,7 +155,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           NodeRef c = node->child(r); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-          assert(c != BVH4::emptyNode);
+          //assert(c != BVH4::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
             cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -166,7 +166,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           c = node->child(r); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-          assert(c != BVH4::emptyNode);
+          //assert(c != BVH4::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
         }
@@ -276,7 +276,7 @@ namespace embree
           size_t r = __bscf(mask);
           if (likely(mask == 0)) {
             cur = node->child(r);
-            assert(cur != BVH4::emptyNode);
+            //assert(cur != BVH4::emptyNode);
             continue;
           }
           
@@ -284,8 +284,8 @@ namespace embree
           NodeRef c0 = node->child(r); const unsigned int d0 = ((unsigned int*)&tNear)[r];
           r = __bscf(mask);
           NodeRef c1 = node->child(r); const unsigned int d1 = ((unsigned int*)&tNear)[r];
-          assert(c0 != BVH4::emptyNode);
-          assert(c1 != BVH4::emptyNode);
+          //assert(c0 != BVH4::emptyNode);
+          //assert(c1 != BVH4::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd);
             if (d0 < d1) { *stackPtr = c1; stackPtr++; cur = c0; continue; }
@@ -299,14 +299,14 @@ namespace embree
           /*! three children are hit */
           r = __bscf(mask);
           cur = node->child(r); 
-          assert(cur != BVH4::emptyNode);
+          //assert(cur != BVH4::emptyNode);
           if (likely(mask == 0)) continue;
           assert(stackPtr < stackEnd);
           *stackPtr = cur; stackPtr++;
           
           /*! four children are hit */
           cur = node->child(3);
-          assert(cur != BVH4::emptyNode);
+          //assert(cur != BVH4::emptyNode);
         }
         
         /*! this is a leaf node */

@@ -130,12 +130,12 @@ namespace embree
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, const NAABBox3fa& b, const NodeRef& childID) {
         assert(i < 2);
-        naabb[i] = NAABBox3fa(rcp(b.space),b.bounds); // FIXME: can use faster reciprocal here (orthonormal space)
+        naabb[i] = b;
         children[i] = childID;
       }
 
       /*! Returns bounds of specified child. */
-      __forceinline const NAABBox3fa& bounds(size_t i) const { assert(i < 2); return naabb[2]; }
+      __forceinline const NAABBox3fa& bounds(size_t i) const { assert(i < 2); return naabb[i]; }
 
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { assert(i<2); return children[i]; }
@@ -214,6 +214,7 @@ namespace embree
     }
 
   public:
+    NAABBox3fa rbounds; // FIXME: remove
     NodeRef root;  //!< Root node
   };
 }

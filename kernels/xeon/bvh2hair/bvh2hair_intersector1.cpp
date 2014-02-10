@@ -109,7 +109,7 @@ namespace embree
       stack[0].ref = bvh->root;
       stack[0].tNear = ray.tnear;
       stack[0].tFar  = ray.tfar;
-      
+
       /* pop loop */
       while (true) pop:
       {
