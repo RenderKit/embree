@@ -214,7 +214,6 @@ namespace embree
     }
 
   public:
-    NAABBox3fa rbounds; // FIXME: remove
     NodeRef root;  //!< Root node
   };
 }

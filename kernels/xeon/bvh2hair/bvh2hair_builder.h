@@ -60,7 +60,9 @@ namespace embree
       /*! calculates surface area for the split */
       __forceinline float sah() const {
         //return float(num0)*halfArea(bounds0.bounds) + float(num1)*halfArea(bounds1.bounds);
-        return bounds0.bounds.lower.w*halfArea(bounds0.bounds) + bounds1.bounds.lower.w*halfArea(bounds1.bounds);
+        return 
+          (bounds0.bounds.lower.w + float(num0))*halfArea(bounds0.bounds) + 
+          (bounds1.bounds.lower.w + float(num1))*halfArea(bounds1.bounds);
       }
 
       /*! finds the two hair strands */
@@ -96,7 +98,9 @@ namespace embree
       /*! calculates surface area for the split */
       __forceinline float sah() const {
         //return float(num0)*halfArea(bounds0.bounds) + float(num1)*halfArea(bounds1.bounds);
-        return bounds0.bounds.lower.w*halfArea(bounds0.bounds) + bounds1.bounds.lower.w*halfArea(bounds1.bounds);
+        return 
+          (bounds0.bounds.lower.w + float(num0))*halfArea(bounds0.bounds) + 
+          (bounds1.bounds.lower.w + float(num1))*halfArea(bounds1.bounds);
       }
 
       /*! performs object binning to the the best partitioning */

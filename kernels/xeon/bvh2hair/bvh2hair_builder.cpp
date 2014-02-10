@@ -69,8 +69,6 @@ namespace embree
 
     /* find best bounds for hair */
     NAABBox3fa naabb = bestSpace(curves,begin,end);
-    //bvh->rbounds = naabb; // FIXME: remove
-    //bvh->rbounds = bestSpace(curves,0,1);
 
     /* start recursive build */
     bvh->root = recurse(threadIndex,0,begin,end,naabb);
@@ -96,7 +94,6 @@ namespace embree
     {
       size_t k = begin + rand() % (end-begin);
       const Vec3fa axis = normalize(curves[k].p3-curves[k].p0);
-      //PRINT(axis);
       const AffineSpace3f space = rcp(frame(axis));
       
       BBox3fa bounds = empty;
@@ -107,7 +104,6 @@ namespace embree
         const Vec3fa p1 = xfmPoint(space,curves[j].p1); cbounds.extend(p1);
         const Vec3fa p2 = xfmPoint(space,curves[j].p2); cbounds.extend(p2);
         const Vec3fa p3 = xfmPoint(space,curves[j].p3); cbounds.extend(p3);
-        //PRINT(halfArea(cbounds));
         area += halfArea(cbounds);
         bounds.extend(cbounds);
       }
@@ -141,27 +137,17 @@ namespace embree
     }
     Vec3fa axis1 = normalize(curves[bestI].p3-curves[bestI].p0);
 
-    //PRINT(axis0);
-    //PRINT(axis1);
-    
     /* partition the two strands */
     ssize_t left = begin, right = end;
     while (left < right) {
       const Vec3fa axisi = normalize(curves[left].p3-curves[left].p0);
       const float cos0 = abs(dot(axisi,axis0));
       const float cos1 = abs(dot(axisi,axis1));
-      //PRINT(axisi);
-      //PRINT3(cos0,cos1,cos0 > cos1);
       if (cos0 > cos1) left++;
       else std::swap(curves[left],curves[--right]);
     }
-    //PRINT(left-begin);
-    //PRINT(end-left);
-    //PING;
     const NAABBox3fa naabb0 = bestSpace(curves,begin,left);
-    PING;
     const NAABBox3fa naabb1 = bestSpace(curves,left, end );
-    PING;
     return StrandSplit(naabb0,axis0,left-begin,
                        naabb1,axis1,end-left);
   }
@@ -253,9 +239,6 @@ namespace embree
       const ssei lCount = count;
       const ssei rCount = rCounts[i];
       const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
-      //PRINT2(lArea,lCount);
-      //PRINT2(rArea,rCount);
-      //PRINT2(i,sah);
       bestPos = select(sah < bestSAH,ii ,bestPos);
       bestLeft= select(sah < bestSAH,count,bestLeft);
       bestSAH = select(sah < bestSAH,sah,bestSAH);
