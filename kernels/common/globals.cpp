@@ -18,7 +18,7 @@
 
 namespace embree
 {
-#if defined(__AVX__)
+#if defined(__AVX__)  
   avxf coeff0[4];
   avxf coeff1[4];
 

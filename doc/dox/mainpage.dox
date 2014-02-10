@@ -51,10 +51,11 @@ Renderer</a>).</p>
 
 <h3>What's New in Embree 2.2?</h3>
 <ul>
-  <li>Support for Motion Blur also on Xeon Phi&trade;</li>
+  <li>Support for Motion Blur on Xeon Phi&trade;</li>
   <li>Support for intersection filter callback functions</li>
   <li>Support for buffer sharing with the application</li>
-  <li>Experimental support for 8-wide BVHs for AVX</li>
+  <li>Lots of AVX2 optimizations, e.g. ~20% faster 8-wide hybrid traversal</li>
+  <li>Experimental support for 8-wide (AVX/AVX2) and 16-wide BVHs (Xeon Phi)</li>
 </ul>    
 </ul>
 

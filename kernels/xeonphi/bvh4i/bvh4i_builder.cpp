@@ -41,7 +41,7 @@
 namespace embree
 {
 #if defined(DEBUG)
-  static AtomicMutex mtx;
+  extern AtomicMutex mtx;
 #endif
 
   static double dt = 0.0f;
