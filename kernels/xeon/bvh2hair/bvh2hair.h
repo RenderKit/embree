@@ -52,6 +52,7 @@ namespace embree
       
     /*! Maximal depth of the BVH. */
     static const size_t maxDepth = 32;
+    static const size_t maxBuildDepth = 32;
     
     /*! Maximal number of primitive blocks in a leaf. */
     static const size_t maxLeafBlocks = items_mask-1;
@@ -107,6 +108,10 @@ namespace embree
       
       __forceinline NAABBox3fa (const AffineSpace3f& space, const BBox3fa& bounds) 
         : space(space), bounds(bounds) {}
+
+      friend std::ostream& operator<<(std::ostream& cout, const NAABBox3fa& p) {
+        return std::cout << "{ space = " << p.space << ", bounds = " << p.bounds << "}";
+      }
       
     public:
       AffineSpace3f space; //!< orthonormal transformation

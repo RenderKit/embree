@@ -65,6 +65,7 @@ namespace embree
   void BVH8iRegister();
   void BVH4MBRegister();
   void BVH16iRegister();
+  void BVH2HairRegister();
 
   /*! intersector registration functions */
   DECLARE_SYMBOL(RTCBoundsFunc,InstanceBoundsFunc);
@@ -274,6 +275,7 @@ namespace embree
 #if defined(__TARGET_AVX__)
     if (has_feature(AVX)) avx::init_globals();
 #endif
+    BVH2HairRegister();
 
     if (g_verbose >= 2) 
     {

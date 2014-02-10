@@ -66,7 +66,14 @@ namespace embree
       static const StrandSplit find(Bezier1* curves, size_t begin, size_t end);
       
       /*! splits hair list into the two strands */
-      size_t split(Bezier1* curves, size_t begin, size_t end);
+      size_t split(Bezier1* curves, size_t begin, size_t end) const;
+
+      friend std::ostream& operator<<(std::ostream& cout, const StrandSplit& p) {
+        return std::cout << "{ " << std::endl << 
+          " bounds0 = " << p.bounds0 << ", axis0 = " << p.axis0 << ", num0 = " << p.num0 << std::endl << 
+          " bounds1 = " << p.bounds1 << ", axis1 = " << p.axis1 << ", num1 = " << p.num1 << std::endl << 
+          "}";
+      }
 
     public:
       NAABBox3fa bounds0, bounds1;  //!< bounds of the strands
@@ -94,7 +101,15 @@ namespace embree
       static const ObjectSplit find(Bezier1* curves, size_t begin, size_t end, const NAABBox3fa& pbounds);
 
       /*! splits hairs into two sets */
-      size_t split(Bezier1* curves, size_t begin, size_t end);
+      size_t split(Bezier1* curves, size_t begin, size_t end) const;
+
+      friend std::ostream& operator<<(std::ostream& cout, const ObjectSplit& p) {
+        return std::cout << "{ " << std::endl << 
+          " space = " << p.space << ", dim = " << p.dim << ", pos = " << p.pos << ", cost = " << p.cost << std::endl << 
+          " bounds0 = " << p.bounds0 << ", num0 = " << p.num0 << std::endl << 
+          " bounds1 = " << p.bounds1 << ", num1 = " << p.num1 << std::endl << 
+          "}";
+      }
 
     public:
       AffineSpace3f space;
