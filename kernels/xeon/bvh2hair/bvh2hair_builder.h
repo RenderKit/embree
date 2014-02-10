@@ -59,7 +59,8 @@ namespace embree
 
       /*! calculates surface area for the split */
       __forceinline float sah() const {
-        return float(num0)*halfArea(bounds0.bounds) + float(num1)*halfArea(bounds1.bounds);
+        //return float(num0)*halfArea(bounds0.bounds) + float(num1)*halfArea(bounds1.bounds);
+        return bounds0.bounds.lower.w*halfArea(bounds0.bounds) + bounds1.bounds.lower.w*halfArea(bounds1.bounds);
       }
 
       /*! finds the two hair strands */
@@ -70,8 +71,8 @@ namespace embree
 
       friend std::ostream& operator<<(std::ostream& cout, const StrandSplit& p) {
         return std::cout << "{ " << std::endl << 
-          " bounds0 = " << p.bounds0 << ", axis0 = " << p.axis0 << ", num0 = " << p.num0 << std::endl << 
-          " bounds1 = " << p.bounds1 << ", axis1 = " << p.axis1 << ", num1 = " << p.num1 << std::endl << 
+          " bounds0 = " << p.bounds0 << ", areaSum0 = " << p.bounds0.bounds.lower.w << ", axis0 = " << p.axis0 << ", num0 = " << p.num0 << std::endl << 
+          " bounds1 = " << p.bounds1 << ", areaSum1 = " << p.bounds1.bounds.lower.w << ", axis1 = " << p.axis1 << ", num1 = " << p.num1 << std::endl << 
           "}";
       }
 
@@ -94,7 +95,8 @@ namespace embree
       
       /*! calculates surface area for the split */
       __forceinline float sah() const {
-        return float(num0)*halfArea(bounds0.bounds) + float(num1)*halfArea(bounds1.bounds);
+        //return float(num0)*halfArea(bounds0.bounds) + float(num1)*halfArea(bounds1.bounds);
+        return bounds0.bounds.lower.w*halfArea(bounds0.bounds) + bounds1.bounds.lower.w*halfArea(bounds1.bounds);
       }
 
       /*! performs object binning to the the best partitioning */
@@ -106,14 +108,15 @@ namespace embree
       friend std::ostream& operator<<(std::ostream& cout, const ObjectSplit& p) {
         return std::cout << "{ " << std::endl << 
           " space = " << p.space << ", dim = " << p.dim << ", pos = " << p.pos << ", cost = " << p.cost << std::endl << 
-          " bounds0 = " << p.bounds0 << ", num0 = " << p.num0 << std::endl << 
-          " bounds1 = " << p.bounds1 << ", num1 = " << p.num1 << std::endl << 
+          " bounds0 = " << p.bounds0 << ", areaSum0 = " << p.bounds0.bounds.lower.w << ", num0 = " << p.num0 << std::endl << 
+          " bounds1 = " << p.bounds1 << ", areaSum1 = " << p.bounds1.bounds.lower.w << ", num1 = " << p.num1 << std::endl << 
           "}";
       }
 
     public:
       AffineSpace3f space;
       NAABBox3fa bounds0, bounds1;
+      float areaSum0, areaSum1;
       size_t dim;
       size_t pos;
       float cost;

@@ -94,9 +94,10 @@ namespace embree
     float bestArea = inf;
     for (size_t i=0; i<16; i++)
     {
-      size_t k = rand() % (end-begin);
+      size_t k = begin + rand() % (end-begin);
       const Vec3fa axis = normalize(curves[k].p3-curves[k].p0);
-      const AffineSpace3f space = frame(axis);
+      //PRINT(axis);
+      const AffineSpace3f space = rcp(frame(axis));
       
       BBox3fa bounds = empty;
       float area = 0.0f;
@@ -106,6 +107,7 @@ namespace embree
         const Vec3fa p1 = xfmPoint(space,curves[j].p1); cbounds.extend(p1);
         const Vec3fa p2 = xfmPoint(space,curves[j].p2); cbounds.extend(p2);
         const Vec3fa p3 = xfmPoint(space,curves[j].p3); cbounds.extend(p3);
+        //PRINT(halfArea(cbounds));
         area += halfArea(cbounds);
         bounds.extend(cbounds);
       }
@@ -117,7 +119,9 @@ namespace embree
       }
     }
     
-    return NAABBox3fa(frame(bestAxis),bestBounds);
+    NAABBox3fa bounds(rcp(frame(bestAxis)),bestBounds);
+    bounds.bounds.lower.w = bestArea;
+    return bounds;
   }
 
   __forceinline BVH2HairBuilder::StrandSplit::StrandSplit (const NAABBox3fa& bounds0, const Vec3fa& axis0, const size_t num0,
@@ -136,6 +140,9 @@ namespace embree
       if (cos < bestCos) { bestCos = cos; bestI = i; }
     }
     Vec3fa axis1 = normalize(curves[bestI].p3-curves[bestI].p0);
+
+    //PRINT(axis0);
+    //PRINT(axis1);
     
     /* partition the two strands */
     ssize_t left = begin, right = end;
@@ -143,11 +150,18 @@ namespace embree
       const Vec3fa axisi = normalize(curves[left].p3-curves[left].p0);
       const float cos0 = abs(dot(axisi,axis0));
       const float cos1 = abs(dot(axisi,axis1));
-      if (cos0 < cos1) left++;
+      //PRINT(axisi);
+      //PRINT3(cos0,cos1,cos0 > cos1);
+      if (cos0 > cos1) left++;
       else std::swap(curves[left],curves[--right]);
     }
+    //PRINT(left-begin);
+    //PRINT(end-left);
+    //PING;
     const NAABBox3fa naabb0 = bestSpace(curves,begin,left);
+    PING;
     const NAABBox3fa naabb1 = bestSpace(curves,left, end );
+    PING;
     return StrandSplit(naabb0,axis0,left-begin,
                        naabb1,axis1,end-left);
   }
@@ -310,7 +324,8 @@ namespace embree
   {
     /*! compute leaf and split cost */
     size_t N = end-begin;
-    const float leafSAH  = float(N)*halfArea(bounds.bounds);
+    //const float leafSAH  = float(N)*halfArea(bounds.bounds);
+    const float leafSAH  = bounds.bounds.lower.w*halfArea(bounds.bounds);
     
     /* first split into two strands */
     const StrandSplit strandSplit = StrandSplit::find(curves,begin,end);
@@ -319,6 +334,14 @@ namespace embree
     /* second perform standard binning */
     const ObjectSplit objectSplit = ObjectSplit::find(curves,begin,end,bounds);
     const float objectSAH = BVH2Hair::travCost*halfArea(bounds.bounds) + objectSplit.sah();
+
+    /*if (depth == 0) {
+      PRINT(strandSplit);
+      PRINT(objectSplit);
+      PRINT(leafSAH);
+      PRINT(strandSAH);
+      PRINT(objectSAH);
+      }*/
 
     /* leaf test */
     const float bestSAH = min(leafSAH,strandSAH,objectSAH);

@@ -127,8 +127,11 @@ namespace embree
         }
         accels.add(BVH4MB::BVH4MBTriangle1v(this)); 
         accels.add(new TwoLevelAccel("bvh4",this)); 
-        //accels.add(BVH4::BVH4Bezier1i(this));
-        accels.add(BVH2Hair::BVH2HairBezier1(this));
+        
+        // FIXME:
+        if      (g_hair_accel == "bvh4.bezier1i") accels.add(BVH4::BVH4Bezier1i(this));
+        else if (g_hair_accel == "bvh2hair.bezier1") accels.add(BVH2Hair::BVH2HairBezier1(this));
+        else accels.add(BVH4::BVH4Bezier1i(this));
       } 
       else 
       {

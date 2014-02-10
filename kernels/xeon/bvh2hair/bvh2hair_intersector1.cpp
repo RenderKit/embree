@@ -137,6 +137,11 @@ namespace embree
           bool hit0 = intersectBox(node->bounds(0), ray, tNear0, tFar0);
           float tNear1 = tNear, tFar1 = tFar;
           bool hit1 = intersectBox(node->bounds(1), ray, tNear1, tFar1);
+
+          /*ray.geomID = 0;
+          if (hit0) ray.geomID += 123434;
+          if (hit1) ray.geomID += 2344343;
+          return;*/
           
           /*! if no child is hit, pop next node */
           if (unlikely(!hit0 && !hit1))

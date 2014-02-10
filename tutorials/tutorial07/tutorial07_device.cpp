@@ -174,9 +174,13 @@ Vec3f sampleSphere(const float& u, const float& v)
   return Vec3f(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
 }
 
-Vec3f noise(Vec3f p, float t) {
+Vec3f noise(int i, Vec3f p, float t) {
   //return div(p,length(p));
-  return p + Vec3f(sin(2.0f*t),4.0f*t,cos(2.0f*t));
+  //return p + Vec3f(sin(2.0f*t),4.0f*t,cos(2.0f*t));
+  if (i % 2)
+    return p + Vec3f(2.0f*t,2.0f*t,2.0f*t);
+  else
+    return p + Vec3f(-2.0f*t,2.0f*t,-2.0f*t);
   //return p + Vec3f(4.0f*t,4.0f*t,0.0f);
 }
 
@@ -259,8 +263,9 @@ float occluded(RTCScene scene, RTCRay2& ray)
 void addHair (ISPCScene* scene)
 {
   int seed = 879;
-  const int numCurves = 1000;
-  const int numCurveSegments = 4;
+  const int numCurves = 10;
+  //const int numCurves = 1000;
+  const int numCurveSegments = 1;
   const int numCurvePoints = 3*numCurveSegments+1;
   const float R = 0.01f;
 
@@ -282,8 +287,8 @@ void addHair (ISPCScene* scene)
       bool last = j == numCurveSegments;
       float f0 = float(2*j+0)/float(2*numCurveSegments);
       float f1 = float(2*j+1)/float(2*numCurveSegments);
-      Vec3f p0 = noise(p,f0);
-      Vec3f p1 = noise(p,f1);
+      Vec3f p0 = noise(i,p,f0);
+      Vec3f p1 = noise(i,p,f1);
       
       if (j>0) {
         vertices[i*numCurvePoints+3*j-1].x = 2.0f*p0.x-p1.x;

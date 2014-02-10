@@ -77,6 +77,7 @@ namespace embree
   /* global settings */
   std::string g_top_accel = "default";    //!< toplevel acceleration structure to use
   std::string g_tri_accel = "default";    //!< triangle acceleration structure to use
+  std::string g_hair_accel = "default";    //!< hair acceleration structure to use
   std::string g_builder = "default";      //!< builder to use
   std::string g_traverser = "default";    //!< traverser to use
   int g_scene_flags = -1;       //!< scene flags to use
@@ -200,6 +201,10 @@ namespace embree
         else if (tok == "triaccel") {
           if (parseSymbol (cfg,'=',pos))
             g_tri_accel = parseIdentifier (cfg,pos);
+        } 
+        else if (tok == "hairaccel") {
+          if (parseSymbol (cfg,'=',pos))
+            g_hair_accel = parseIdentifier (cfg,pos);
         } 
         else if (tok == "topaccel") {
           if (parseSymbol (cfg,'=',pos))
