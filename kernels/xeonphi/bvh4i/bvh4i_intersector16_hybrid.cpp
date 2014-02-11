@@ -18,6 +18,8 @@
 #include "geometry/triangle1.h"
 #include "geometry/filter.h"
 
+#define EXTENDED_PREFETCHING
+
 namespace embree
 {
   namespace isa
@@ -451,13 +453,15 @@ namespace embree
             const mic_m lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);   
 	    const mic_f childDist = select(lhit,lnearP,inf);
             const mic_m m_child_dist = childDist < curDist;
+
+
             /* if we hit the child we choose to continue with that child if it 
                is closer than the current next child, or we push it onto the stack */
             if (likely(any(lhit)))
             {
               sptr_node++;
               sptr_dist++;
-              
+
               /* push cur node onto stack and continue with hit child */
               if (any(m_child_dist))
               {
@@ -465,12 +469,20 @@ namespace embree
                 *(sptr_dist-1) = curDist; 
                 curDist = childDist;
                 curNode = child;
+
+
               }              
               /* push hit child onto stack*/
               else 
 		{
 		  *(sptr_node-1) = child;
 		  *(sptr_dist-1) = childDist; 
+
+#if defined(EXTENDED_PREFETCHING)
+		    const char* __restrict__ const pnode = (char*)child.node(nodes);             
+		    prefetch<PFHINT_L2>(pnode + 0);
+		    prefetch<PFHINT_L2>(pnode + 64);
+#endif
 		}
               assert(sptr_node - stack_node < BVH4i::maxDepth);
             }	      
@@ -900,6 +912,7 @@ namespace embree
 	      const mic_m lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
 	      const mic_f childDist = select(lhit,lnearP,inf);
 	      const mic_m m_child_dist = childDist < curDist;
+
             
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -907,10 +920,12 @@ namespace embree
 		{
 		  sptr_node++;
 		  sptr_dist++;
+
               
 		  /* push cur node onto stack and continue with hit child */
 		  if (any(m_child_dist))
 		    {
+
 		      *(sptr_node-1) = curNode;
 		      *(sptr_dist-1) = curDist; 
 		      curDist = childDist;
@@ -921,6 +936,12 @@ namespace embree
 		  else {
 		    *(sptr_node-1) = child;
 		    *(sptr_dist-1) = childDist; 
+
+#if defined(EXTENDED_PREFETCHING)
+		    const char* __restrict__ const pnode = (char*)child.node(nodes);             
+		    prefetch<PFHINT_L2>(pnode + 0);
+		    prefetch<PFHINT_L2>(pnode + 64);
+#endif
 		  }
 		  assert(sptr_node - stack_node < BVH4i::maxDepth);
 		}	      

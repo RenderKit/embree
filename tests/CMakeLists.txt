@@ -41,11 +41,9 @@ ELSE ()
   INCLUDE (icc_xeonphi)
 
   ADD_EXECUTABLE(verify_xeonphi verify.cpp)
-  TARGET_LINK_LIBRARIES(verify_xeonphi sys_xeonphi embree_xeonphi.so)
-  ADD_DEPENDENCIES(verify_xeonphi embree_xeonphi)
+  TARGET_LINK_LIBRARIES(verify_xeonphi sys_xeonphi embree_xeonphi)
 
   ADD_EXECUTABLE(benchmark_xeonphi benchmark.cpp)
-  TARGET_LINK_LIBRARIES(benchmark_xeonphi sys_xeonphi embree_xeonphi.so)
-  ADD_DEPENDENCIES(benchmark_xeonphi embree_xeonphi)
+  TARGET_LINK_LIBRARIES(benchmark_xeonphi sys_xeonphi embree_xeonphi)
 
 ENDIF()
