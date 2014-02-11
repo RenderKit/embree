@@ -58,7 +58,9 @@ namespace embree
     static const size_t maxLeafBlocks = items_mask-1;
 
     /*! Cost of one traversal step. */
-    static const int travCost = 1;
+    static const int travCostAligned = 1;
+    static const int travCostUnaligned = 2;
+    static const int intCost = 5;
 
     /*! Pointer that points to a node or a list of primitives */
     struct NodeRef
