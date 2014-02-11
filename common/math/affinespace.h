@@ -139,35 +139,9 @@ namespace embree
   // Template Instantiations
   ////////////////////////////////////////////////////////////////////////////////
 
+  typedef AffineSpaceT<LinearSpace3f> AffineSpace3f;
   typedef AffineSpaceT<LinearSpace3fa> AffineSpace3fa;
   typedef AffineSpaceT<Quaternion3f > OrthonormalSpace3f;
-
-  ////////////////////////////////////////////////////////////////////////////////
-  // Data conversions for AffineSpace3fa
-  ////////////////////////////////////////////////////////////////////////////////
-
-  struct Array12f {
-    float values[12];
-    operator float*() { return(values); }
-  };
-  
-  __forceinline Array12f copyToArray(const AffineSpace3fa& xfm)  
-  {
-    Array12f values;
-    values[ 0] = xfm.l.vx.x;  values[ 1] = xfm.l.vx.y;  values[ 2] = xfm.l.vx.z;       
-    values[ 3] = xfm.l.vy.x;  values[ 4] = xfm.l.vy.y;  values[ 5] = xfm.l.vy.z;       
-    values[ 6] = xfm.l.vz.x;  values[ 7] = xfm.l.vz.y;  values[ 8] = xfm.l.vz.z;       
-    values[ 9] = xfm.p.x;     values[10] = xfm.p.y;     values[11] = xfm.p.z;       
-    return values;
-  }
-  
-  __forceinline AffineSpace3fa copyFromArray(const float* v) 
-  {
-    return AffineSpace3fa(LinearSpace3fa(Vec3fa(v[0],v[1],v[2]),
-                                         Vec3fa(v[3],v[4],v[5]),
-                                         Vec3fa(v[6],v[7],v[8])),
-                          Vec3fa(v[9],v[10],v[11]));
-  }
 
   #undef VectorT
   #undef ScalarT
