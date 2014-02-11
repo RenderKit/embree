@@ -18,7 +18,6 @@
 
 #include "triangle8.h"
 #include "triangle8_intersector1_moeller.h"
-
 #include "../common/ray8.h"
 
 namespace embree
@@ -36,9 +35,8 @@ namespace embree
     /*! Intersects a 8 rays with 8 triangles. */
     static __forceinline void intersect(const avxb& valid_i, Ray8& ray, const Triangle8& tri, const void* geom)
     {
-      const unsigned int tri_size = tri.size();
-      for (unsigned int i=0; i<tri_size; i++)
-	{
+      for (size_t i=0; i<4 && tri.valid(i); i++)
+      {
         STAT3(normal.trav_prims,1,popcnt(valid_i),8);
 
         /* load edges and geometry normal */
@@ -119,7 +117,6 @@ namespace embree
 
     static __forceinline void intersect(const avxb& valid, Ray8& ray, const Triangle8* tri, size_t num, const void* geom)
     {
-      
       for (size_t i=0; i<num; i++)
 	intersect(valid,ray,tri[i],geom);
     }
@@ -129,7 +126,7 @@ namespace embree
     {
       avxb valid0 = valid_i;
 
-      for (unsigned int i=0; i<tri.size(); i++)
+      for (size_t i=0; i<4 && tri.valid(i); i++)
       {
         STAT3(shadow.trav_prims,1,popcnt(valid_i),8);
 
