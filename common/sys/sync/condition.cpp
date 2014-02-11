@@ -26,53 +26,41 @@ namespace embree
 #if 1
   struct ConditionImplementation
   {
-    __forceinline ConditionImplementation ()
-    {
+    __forceinline ConditionImplementation () {
       InitializeConditionVariable(&cond);
     }
 
-    __forceinline ~ConditionImplementation ()
-    {
-
+    __forceinline ~ConditionImplementation () {
     }
 
-    __forceinline void wait(MutexSys& mutex_in)
-    {
+    __forceinline void wait(MutexSys& mutex_in) {
       SleepConditionVariableCS(&cond, (LPCRITICAL_SECTION)mutex_in.mutex, INFINITE);
     }
 
-    __forceinline void broadcast() 
-    {
+    __forceinline void broadcast() {
       WakeAllConditionVariable(&cond);
     }
 
   public:
     CONDITION_VARIABLE cond;
   };
+
 #else
+
   struct ConditionImplementation
   {
-    __forceinline ConditionImplementation ()
-      : count(0)
-    {
-      //mutex = CreateMutex(NULL,FALSE,NULL);
+    __forceinline ConditionImplementation () : count(0) {
       event = CreateEvent(NULL,TRUE,FALSE,NULL);
     }
 
-    __forceinline ~ConditionImplementation ()
-    {
-      //CloseHandle(mutex);
+    __forceinline ~ConditionImplementation () {
       CloseHandle(event);
     }
 
     __forceinline void wait(MutexSys& mutex_in)
     {
       /* atomically increment thread count */
-      //WaitForSingleObject(mutex,INFINITE);
-      //mutex.lock();
       ssize_t cnt0 = atomic_add(&count,+1);
-      //mutex.unlock();
-      //ReleaseMutex(mutex);
       mutex_in.unlock();
 
       /* all threads except the last one are wait in the barrier */
@@ -81,11 +69,7 @@ namespace embree
 
       /* atomically decrement thread count */
       mutex_in.lock();
-      //WaitForSingleObject(mutex,INFINITE);
-      //mutex.lock();
       ssize_t cnt1 = atomic_add(&count,-1);
-      //mutex.unlock();
-      //ReleaseMutex(mutex);
 
       /* the last thread that left the barrier resets the event again */
       if (cnt1 == 1) {
@@ -97,23 +81,15 @@ namespace embree
     __forceinline void broadcast() 
     {
       /* we support only one broadcast at a given time */
-      //WaitForSingleObject(mutex,INFINITE);
-      //mutex.lock();
       bool hasWaiters = count > 0;
-      //mutex.unlock();
-      //ReleaseMutex(mutex);
 
       /* if threads are waiting, let them continue */
       if (hasWaiters) 
-	{
-	  if (SetEvent(event) == 0)
-	    throw std::runtime_error("SetEvent failed");
-	}
+        if (SetEvent(event) == 0)
+          throw std::runtime_error("SetEvent failed");
     }
 
   public:
-    //HANDLE mutex;
-    AtomicMutex mutex;
     HANDLE event;
     volatile atomic_t count;
   };
