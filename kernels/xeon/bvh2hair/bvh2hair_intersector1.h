@@ -41,6 +41,7 @@ namespace embree
       };
 
     private:
+      static bool intersectBox(const BBox3fa& aabb, const Ray& ray, float& tNear, float& tFar);
       static bool intersectBox(const NAABBox3fa& naabb, const Ray& ray, float& tNear, float& tFar);
       static void intersectBezier(Ray& ray, const Bezier1& bezier);
       

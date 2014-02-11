@@ -21,6 +21,18 @@ namespace embree
 { 
   namespace isa
   {
+    __forceinline bool BVH2HairIntersector1::intersectBox(const BBox3fa& aabb, const Ray& ray, float& tNear, float& tFar)
+    {
+      const Vec3fa rdir = rcp(ray.dir); // FIXME: move out of loop
+      const Vec3fa tLowerXYZ = (aabb.lower - ray.org) * rdir;
+      const Vec3fa tUpperXYZ = (aabb.upper - ray.org) * rdir;
+      const Vec3fa tNearXYZ = min(tLowerXYZ,tUpperXYZ);
+      const Vec3fa tFarXYZ = max(tLowerXYZ,tUpperXYZ);
+      tNear = max(reduce_max(tNearXYZ),tNear);
+      tFar  = min(reduce_min(tFarXYZ ),tFar);
+      return tNear <= tFar;
+    }
+
     __forceinline bool BVH2HairIntersector1::intersectBox(const NAABBox3fa& naabb, const Ray& ray, float& tNear, float& tFar)
     {
       const Vec3fa dir = xfmVector(naabb.space,ray.dir);
@@ -117,39 +129,83 @@ namespace embree
           /*! stop if we found a leaf */
           if (unlikely(cur.isLeaf())) break;
           STAT3(normal.trav_nodes,1,1,1);
-          const UnalignedNode* node = cur.unalignedNode();
 
-          /*! intersect with both non-axis aligned boxes */
-          float tNear0 = tNear, tFar0 = tFar;
-          bool hit0 = intersectBox(node->bounds(0), ray, tNear0, tFar0);
-          float tNear1 = tNear, tFar1 = tFar;
-          bool hit1 = intersectBox(node->bounds(1), ray, tNear1, tFar1);
+          /*! process nodes with aligned bounds */
+          if (likely(cur.isAlignedNode()))
+          {
+            const AlignedNode* node = cur.alignedNode();
 
-          /*! if no child is hit, pop next node */
-          if (unlikely(!hit0 && !hit1))
-            goto pop;
+            /*! intersect with both axis aligned boxes */
+            float tNear0 = tNear, tFar0 = tFar;
+            bool hit0 = intersectBox(node->bounds(0), ray, tNear0, tFar0);
+            float tNear1 = tNear, tFar1 = tFar;
+            bool hit1 = intersectBox(node->bounds(1), ray, tNear1, tFar1);
+
+            /*! if no child is hit, pop next node */
+            if (unlikely(!hit0 && !hit1))
+              goto pop;
           
-          /*! one child is hit, continue with that child */
-          if (hit0 != hit1) {
-            if (hit0) { cur = node->child(0); tNear = tNear0; tFar = tFar0; }
-            else      { cur = node->child(1); tNear = tNear1; tFar = tFar1; }
-            assert(cur != BVH2Hair::emptyNode);
-            continue;
+            /*! one child is hit, continue with that child */
+            if (hit0 != hit1) {
+              if (hit0) { cur = node->child(0); tNear = tNear0; tFar = tFar0; }
+              else      { cur = node->child(1); tNear = tNear1; tFar = tFar1; }
+              assert(cur != BVH2Hair::emptyNode);
+              continue;
+            }
+          
+            /*! two children are hit, push far child, and continue with closer child */
+            NodeRef c0 = node->child(0);
+            NodeRef c1 = node->child(1);
+            assert(c0 != BVH2Hair::emptyNode);
+            assert(c1 != BVH2Hair::emptyNode);
+            assert(stackPtr < stackEnd); 
+            if (tNear0 < tNear1) { 
+              stackPtr->ref = c1; stackPtr->tNear = tNear1; stackPtr->tFar = tFar1; stackPtr++; 
+              cur = c0; tNear = tNear0; tFar = tFar0;
+            }
+            else { 
+              stackPtr->ref = c0; stackPtr->tNear = tNear0; stackPtr->tFar = tFar0; stackPtr++; 
+              cur = c1; tNear = tNear1; tFar = tFar1;
+            }
           }
           
-          /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(0);
-          NodeRef c1 = node->child(1);
-          assert(c0 != BVH2Hair::emptyNode);
-          assert(c1 != BVH2Hair::emptyNode);
-          assert(stackPtr < stackEnd); 
-          if (tNear0 < tNear1) { 
-            stackPtr->ref = c1; stackPtr->tNear = tNear1; stackPtr->tFar = tFar1; stackPtr++; 
-            cur = c0; tNear = tNear0; tFar = tFar0;
-          }
-          else { 
-            stackPtr->ref = c0; stackPtr->tNear = tNear0; stackPtr->tFar = tFar0; stackPtr++; 
-            cur = c1; tNear = tNear1; tFar = tFar1;
+          /*! process nodes with unaligned bounds */
+          else
+          {
+            const UnalignedNode* node = cur.unalignedNode();
+
+            /*! intersect with both non-axis aligned boxes */
+            float tNear0 = tNear, tFar0 = tFar;
+            bool hit0 = intersectBox(node->bounds(0), ray, tNear0, tFar0);
+            float tNear1 = tNear, tFar1 = tFar;
+            bool hit1 = intersectBox(node->bounds(1), ray, tNear1, tFar1);
+
+            /*! if no child is hit, pop next node */
+            if (unlikely(!hit0 && !hit1))
+              goto pop;
+          
+            /*! one child is hit, continue with that child */
+            if (hit0 != hit1) {
+              if (hit0) { cur = node->child(0); tNear = tNear0; tFar = tFar0; }
+              else      { cur = node->child(1); tNear = tNear1; tFar = tFar1; }
+              assert(cur != BVH2Hair::emptyNode);
+              continue;
+            }
+          
+            /*! two children are hit, push far child, and continue with closer child */
+            NodeRef c0 = node->child(0);
+            NodeRef c1 = node->child(1);
+            assert(c0 != BVH2Hair::emptyNode);
+            assert(c1 != BVH2Hair::emptyNode);
+            assert(stackPtr < stackEnd); 
+            if (tNear0 < tNear1) { 
+              stackPtr->ref = c1; stackPtr->tNear = tNear1; stackPtr->tFar = tFar1; stackPtr++; 
+              cur = c0; tNear = tNear0; tFar = tFar0;
+            }
+            else { 
+              stackPtr->ref = c0; stackPtr->tNear = tNear0; stackPtr->tFar = tFar0; stackPtr++; 
+              cur = c1; tNear = tNear1; tFar = tFar1;
+            }
           }
         }
         
