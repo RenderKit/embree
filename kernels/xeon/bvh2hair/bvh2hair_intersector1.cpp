@@ -117,7 +117,7 @@ namespace embree
           /*! stop if we found a leaf */
           if (unlikely(cur.isLeaf())) break;
           STAT3(normal.trav_nodes,1,1,1);
-          const Node* node = cur.node();
+          const UnalignedNode* node = cur.unalignedNode();
 
           /*! intersect with both non-axis aligned boxes */
           float tNear0 = tNear, tFar0 = tFar;

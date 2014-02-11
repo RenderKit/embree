@@ -336,7 +336,7 @@ namespace embree
 
     /* perform strand split */
     if (bestSAH == strandSAH) {
-      Node* node = bvh->allocNode(threadIndex);
+      UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
       const size_t center = strandSplit.split(curves,begin,end);
       node->set(0,strandSplit.bounds0,recurse_unaligned(threadIndex,depth+1,begin ,center,strandSplit.bounds0));
       node->set(1,strandSplit.bounds1,recurse_unaligned(threadIndex,depth+1,center,end   ,strandSplit.bounds1));
@@ -345,7 +345,7 @@ namespace embree
     
     /* perform object split */
     else {
-      Node* node = bvh->allocNode(threadIndex);
+      UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
       const size_t center = objectSplit.split(curves,begin,end);
       node->set(0,objectSplit.bounds0,recurse_unaligned(threadIndex,depth+1,begin ,center,objectSplit.bounds0));
       node->set(1,objectSplit.bounds1,recurse_unaligned(threadIndex,depth+1,center,end   ,objectSplit.bounds1));
@@ -372,7 +372,7 @@ namespace embree
       return leaf(threadIndex,depth,begin,end,bounds);
 
     /* perform object split */
-    Node* node = bvh->allocNode(threadIndex);
+    UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
     node->set(0,objectSplit.bounds0,recurse_aligned(threadIndex,depth+1,begin ,center,objectSplit.bounds0));
     node->set(1,objectSplit.bounds1,recurse_aligned(threadIndex,depth+1,center,end   ,objectSplit.bounds1));
     return bvh->encodeNode(node);
@@ -380,7 +380,6 @@ namespace embree
 
   typename BVH2Hair::NodeRef BVH2HairBuilder::recurse_aligned_unaligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
   {
-#if 1
     /*! compute leaf and split cost */
     size_t N = end-begin;
     const float leafSAH = BVH2Hair::intCost*bounds.bounds.lower.w*halfArea(bounds.bounds);
@@ -407,7 +406,7 @@ namespace embree
       return leaf(threadIndex,depth,begin,end,bounds);
 
     if (bestSAH == alignedObjectSAH) {
-      Node* node = bvh->allocNode(threadIndex);
+      UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
       const size_t center = objectSplitAligned.split(curves,begin,end);
       node->set(0,objectSplitAligned.bounds0,recurse_aligned_unaligned(threadIndex,depth+1,begin ,center,objectSplitAligned.bounds0));
       node->set(1,objectSplitAligned.bounds1,recurse_aligned_unaligned(threadIndex,depth+1,center,end   ,objectSplitAligned.bounds1));
@@ -416,7 +415,7 @@ namespace embree
 
     /* perform strand split */
     else if (bestSAH == strandSAH) {
-      Node* node = bvh->allocNode(threadIndex);
+      UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
       const size_t center = strandSplit.split(curves,begin,end);
       node->set(0,strandSplit.bounds0,recurse_aligned_unaligned(threadIndex,depth+1,begin ,center,strandSplit.bounds0));
       node->set(1,strandSplit.bounds1,recurse_aligned_unaligned(threadIndex,depth+1,center,end   ,strandSplit.bounds1));
@@ -425,77 +424,12 @@ namespace embree
     
     /* perform object split */
     else {
-      Node* node = bvh->allocNode(threadIndex);
+      UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
       const size_t center = objectSplit.split(curves,begin,end);
       node->set(0,objectSplit.bounds0,recurse_aligned_unaligned(threadIndex,depth+1,begin ,center,objectSplit.bounds0));
       node->set(1,objectSplit.bounds1,recurse_aligned_unaligned(threadIndex,depth+1,center,end   ,objectSplit.bounds1));
       return bvh->encodeNode(node);
     }
-
-#else
-
-    /*! compute leaf and split cost */
-    size_t N = end-begin;
-    PRINT2(depth,N);
-    const float leafSAH = BVH2Hair::intCost*bounds.bounds.lower.w*halfArea(bounds.bounds);
-    
-    /* first split into two strands */
-    const StrandSplit strandSplit = StrandSplit::find(curves,begin,end);
-    const float strandSAH = BVH2Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.modifiedSAH();
-
-    /* second perform standard binning in unaligned space */
-    const ObjectSplit objectSplitUnaligned = ObjectSplit::find(curves,begin,end,bounds.space);
-    const float unalignedObjectSAH = BVH2Hair::travCostUnaligned*halfArea(bounds.bounds) + objectSplitUnaligned.modifiedSAH();
-
-#if 0
-    /* third perform standard binning in aligned space */
-    const AffineSpace3fa aligned(one);
-    ObjectSplit objectSplitAligned = ObjectSplit::find(curves,begin,end,aligned);
-    const size_t center = objectSplitAligned.split(curves,begin,end);
-    objectSplitAligned.bounds0 = computeAlignedBounds(curves,begin,center,aligned);
-    objectSplitAligned.bounds1 = computeAlignedBounds(curves,center,end,aligned);
-    const float alignedObjectSAH = BVH2Hair::travCostAligned*halfArea(bounds.bounds) + objectSplitAligned.modifiedSAH();
-#endif
-
-    /* leaf test */
-    //const float bestSAH = min(leafSAH,strandSAH,alignedObjectSAH,unalignedObjectSAH);
-    const float bestSAH = min(leafSAH,strandSAH,unalignedObjectSAH);
-    PRINT(bestSAH == leafSAH);
-    //PRINT(bestSAH == alignedObjectSAH);
-    PRINT(bestSAH == unalignedObjectSAH);
-    PRINT(bestSAH == strandSAH);
-    if (N <= minLeafSize || depth > BVH2Hair::maxBuildDepth || (N <= maxLeafSize && bestSAH == leafSAH))
-      return leaf(threadIndex,depth,begin,end,bounds);
-
-#if 0
-    /* perform aligned object split */
-    if (bestSAH == alignedObjectSAH) {
-      Node* node = bvh->allocNode(threadIndex);
-      const size_t center = objectSplitAligned.split(curves,begin,end);
-      node->set(0,objectSplitAligned.bounds0,recurse_aligned_unaligned(threadIndex,depth+1,begin ,center,objectSplitAligned.bounds0));
-      node->set(1,objectSplitAligned.bounds1,recurse_aligned_unaligned(threadIndex,depth+1,center,end   ,objectSplitAligned.bounds1));
-      return bvh->encodeNode(node);
-    }
-#endif
-
-    /* perform unaligned object split */
-    if (bestSAH == unalignedObjectSAH) {
-      Node* node = bvh->allocNode(threadIndex);
-      const size_t center = objectSplitUnaligned.split(curves,begin,end);
-      node->set(0,objectSplitUnaligned.bounds0,recurse_aligned_unaligned(threadIndex,depth+1,begin ,center,objectSplitUnaligned.bounds0));
-      node->set(1,objectSplitUnaligned.bounds1,recurse_aligned_unaligned(threadIndex,depth+1,center,end   ,objectSplitUnaligned.bounds1));
-      return bvh->encodeNode(node);
-    }
-
-    /* perform strand split */
-    else {
-      Node* node = bvh->allocNode(threadIndex);
-      const size_t center = strandSplit.split(curves,begin,end);
-      node->set(0,strandSplit.bounds0,recurse_aligned_unaligned(threadIndex,depth+1,begin ,center,strandSplit.bounds0));
-      node->set(1,strandSplit.bounds1,recurse_aligned_unaligned(threadIndex,depth+1,center,end   ,strandSplit.bounds1));
-      return bvh->encodeNode(node);
-    }
-#endif
   }
 
   Builder* BVH2HairBuilder_ (BVH2Hair* accel, Scene* scene) {

@@ -30,7 +30,8 @@ namespace embree
   public:
     
     /*! forward declaration of node type */
-    struct Node;
+    struct AlignedNode;
+    struct UnalignedNode;
 
     /*! branching width of the tree */
     static const size_t N = 1;
@@ -48,14 +49,14 @@ namespace embree
     static const size_t emptyNode = 1;
 
     /*! Invalid node, used as marker in traversal */
-    static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | 1;
+    static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | 2;
       
     /*! Maximal depth of the BVH. */
     static const size_t maxDepth = 32;
     static const size_t maxBuildDepth = 32;
     
     /*! Maximal number of primitive blocks in a leaf. */
-    static const size_t maxLeafBlocks = items_mask-1;
+    static const size_t maxLeafBlocks = items_mask-2;
 
     /*! Cost of one traversal step. */
     static const int travCostAligned = 1;
@@ -75,19 +76,26 @@ namespace embree
       __forceinline operator size_t() const { return ptr; }
 
       /*! checks if this is a leaf */
-      __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) != 0; }
+      __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) > 1; }
       
-      /*! checks if this is a node */
-      __forceinline int isNode() const { return (ptr & (size_t)align_mask) == 0; }
+      /*! checks if this is a node with aligned bounding boxes */
+      __forceinline int isAlignedNode() const { return (ptr & (size_t)align_mask) == 0; }
+
+      /*! checks if this is a node with aligned bounding boxes */
+      __forceinline int isUnalignedNode() const { return (ptr & (size_t)align_mask) == 1; }
       
-      /*! returns node pointer */
-      __forceinline       Node* node()       { assert(isNode()); return (      Node*)ptr; }
-      __forceinline const Node* node() const { assert(isNode()); return (const Node*)ptr; }
+      /*! returns aligned node pointer */
+      __forceinline       AlignedNode* alignedNode()       { assert(isAlignedNode()); return (      AlignedNode*)ptr; }
+      __forceinline const AlignedNode* alignedNode() const { assert(isAlignedNode()); return (const AlignedNode*)ptr; }
+
+      /*! returns unaligned node pointer */
+      __forceinline       UnalignedNode* unalignedNode()       { assert(isUnalignedNode()); return (      UnalignedNode*)((size_t)ptr & ~(size_t)align_mask); }
+      __forceinline const UnalignedNode* unalignedNode() const { assert(isUnalignedNode()); return (const UnalignedNode*)((size_t)ptr & ~(size_t)align_mask); }
       
       /*! returns leaf pointer */
       __forceinline char* leaf(size_t& num) const {
         assert(isLeaf());
-        num = (ptr & (size_t)items_mask)-1;
+        num = (ptr & (size_t)items_mask)-2;
         return (char*)(ptr & ~(size_t)align_mask);
       }
 
@@ -117,11 +125,39 @@ namespace embree
       
     public:
       AffineSpace3fa space; //!< orthonormal transformation
-      BBox3fa bounds;      //!< bounds in transformed space // FIXME: one could merge this into above transformation, however, this causes problems with curve radius
+      BBox3fa bounds;       //!< bounds in transformed space // FIXME: one could merge this into above transformation, however, this causes problems with curve radius
     };
 
-    /*! BVH2Hair Node */
-    struct Node
+    /*! Node with aligned bounds */
+    struct AlignedNode
+    {
+      /*! Clears the node. */
+      __forceinline void clear() {
+        aabb[0] = aabb[1] = empty;
+        children[0] = children[1] = emptyNode;
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const BBox3fa& b, const NodeRef& childID) {
+        assert(i < 2);
+        aabb[i] = b;
+        children[i] = childID;
+      }
+
+      /*! Returns bounds of specified child. */
+      __forceinline const BBox3fa& bounds(size_t i) const { assert(i < 2); return aabb[i]; }
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { assert(i<2); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<2); return children[i]; }
+
+    public:
+      BBox3fa aabb    [2];   //!< left and right non-axis aligned bounding box
+      NodeRef children[2];   //!< Pointer to the 2 children (can be a node or leaf)
+    };
+
+    /*! Node with unaligned bounds */
+    struct UnalignedNode
     {
       /*! Clears the node. */
       __forceinline void clear() {
@@ -194,9 +230,14 @@ namespace embree
     /*! allocator for nodes */
     LinearAllocatorPerThread alloc;
 
-    /*! allocates a new node */
-    __forceinline Node* allocNode(size_t thread) {
-      Node* node = (Node*) alloc.malloc(thread,sizeof(Node),1 << 4); node->clear(); return node;
+    /*! allocates a new aligned node */
+    __forceinline AlignedNode* allocAlignedNode(size_t thread) {
+      AlignedNode* node = (AlignedNode*) alloc.malloc(thread,sizeof(AlignedNode),1 << 4); node->clear(); return node;
+    }
+
+    /*! allocates a new unaligned node */
+    __forceinline UnalignedNode* allocUnalignedNode(size_t thread) {
+      UnalignedNode* node = (UnalignedNode*) alloc.malloc(thread,sizeof(UnalignedNode),1 << 4); node->clear(); return node;
     }
 
     /*! allocates a block of primitives */
@@ -204,9 +245,14 @@ namespace embree
       return (char*) alloc.malloc(thread,num*sizeof(Bezier1),1 << 4);
     }
 
-    /*! Encodes a node */
-    __forceinline NodeRef encodeNode(Node* node) { 
+    /*! Encodes an alingned node */
+    __forceinline NodeRef encodeNode(AlignedNode* node) { 
       return NodeRef((size_t) node);
+    }
+
+    /*! Encodes an unaligned node */
+    __forceinline NodeRef encodeNode(UnalignedNode* node) { 
+      return NodeRef(((size_t) node) | 1);
     }
     
     /*! Encodes a leaf */

@@ -26,8 +26,9 @@ namespace embree
   public:
 
     /*! Type shortcuts */
-    typedef BVH2Hair::Node    Node;
     typedef BVH2Hair::NodeRef NodeRef;
+    typedef BVH2Hair::AlignedNode AlignedNode;
+    typedef BVH2Hair::UnalignedNode UnalignedNode;
     typedef BVH2Hair::Bezier1 Bezier1;
     typedef BVH2Hair::NAABBox3fa NAABBox3fa;
     

@@ -66,8 +66,8 @@ namespace embree
     size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
 #endif
     
-    size_t bytesAllocated = numAllocatedNodes * sizeof(Node) + numAllocatedPrimitives * sizeof(Bezier1);
-    size_t bytesReserved  = numReservedNodes  * sizeof(Node) + numReservedPrimitives  * sizeof(Bezier1);
+    size_t bytesAllocated = numAllocatedNodes * sizeof(UnalignedNode) + numAllocatedPrimitives * sizeof(Bezier1);
+    size_t bytesReserved  = numReservedNodes  * sizeof(UnalignedNode) + numReservedPrimitives  * sizeof(Bezier1);
 
     size_t blockSize = LinearAllocatorPerThread::allocBlockSize;
     bytesReserved    = (bytesReserved+blockSize-1)/blockSize*blockSize;
