@@ -23,28 +23,15 @@ namespace embree
   {
     __forceinline bool BVH2HairIntersector1::intersectBox(const NAABBox3fa& naabb, const Ray& ray, float& tNear, float& tFar)
     {
-      const Vec3fa org = xfmPoint (naabb.space,ray.org);
       const Vec3fa dir = xfmVector(naabb.space,ray.dir);
       const Vec3fa rdir = rcp(dir);
-      
-      const float tLowerX = (naabb.bounds.lower.x - org.x) * rdir.x;
-      const float tLowerY = (naabb.bounds.lower.y - org.y) * rdir.y;
-      const float tLowerZ = (naabb.bounds.lower.z - org.z) * rdir.z;
-
-      const float tUpperX = (naabb.bounds.upper.x - org.x) * rdir.x;
-      const float tUpperY = (naabb.bounds.upper.y - org.y) * rdir.y;
-      const float tUpperZ = (naabb.bounds.upper.z - org.z) * rdir.z;
-
-      const float tNearX = min(tLowerX,tUpperX);
-      const float tNearY = min(tLowerY,tUpperY);
-      const float tNearZ = min(tLowerZ,tUpperZ);
-
-      const float tFarX = max(tLowerX,tUpperX);
-      const float tFarY = max(tLowerY,tUpperY);
-      const float tFarZ = max(tLowerZ,tUpperZ);
-      
-      tNear = max(tNearX,tNearY,tNearZ,tNear);
-      tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
+      const Vec3fa org = xfmPoint (naabb.space,ray.org);
+      const Vec3fa tLowerXYZ = (naabb.bounds.lower - org) * rdir;
+      const Vec3fa tUpperXYZ = (naabb.bounds.upper - org) * rdir;
+      const Vec3fa tNearXYZ = min(tLowerXYZ,tUpperXYZ);
+      const Vec3fa tFarXYZ = max(tLowerXYZ,tUpperXYZ);
+      tNear = max(reduce_max(tNearXYZ),tNear);
+      tFar  = min(reduce_min(tFarXYZ ),tFar);
       return tNear <= tFar;
     }
 
