@@ -68,9 +68,9 @@ namespace embree
     }
 
     /* start recursive build */
-    //bvh->root = recurse_aligned(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,AffineSpace3fa(one)));
+    bvh->root = recurse_aligned(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,AffineSpace3fa(one)));
     //bvh->root = recurse_unaligned(threadIndex,0,begin,end,computeUnalignedBounds(curves,begin,end));
-    bvh->root = recurse_aligned_unaligned(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,AffineSpace3fa(one)));
+    //bvh->root = recurse_aligned_unaligned(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,AffineSpace3fa(one)));
     bvh->bounds = bounds;
 
     if (g_verbose >= 2) {
@@ -309,7 +309,11 @@ namespace embree
   typename BVH2Hair::NodeRef BVH2HairBuilder::leaf(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
   {
     size_t N = end-begin;
-    assert(N <= (size_t)BVH2Hair::maxLeafBlocks);
+    if (N > (size_t)BVH2Hair::maxLeafBlocks) {
+      std::cout << "WARNING: Loosing " << N-BVH2Hair::maxLeafBlocks << " primitives during build!" << std::endl;
+      N = (size_t)BVH2Hair::maxLeafBlocks;
+    }
+    //assert(N <= (size_t)BVH2Hair::maxLeafBlocks);
     Bezier1* leaf = (Bezier1*) bvh->allocPrimitiveBlocks(threadIndex,N);
     for (size_t i=0; i<N; i++) leaf[i] = curves[begin+i];
     return bvh->encodeLeaf((char*)leaf,N);
@@ -406,10 +410,10 @@ namespace embree
       return leaf(threadIndex,depth,begin,end,bounds);
 
     if (bestSAH == alignedObjectSAH) {
-      UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
+      AlignedNode* node = bvh->allocAlignedNode(threadIndex);
       const size_t center = objectSplitAligned.split(curves,begin,end);
-      node->set(0,objectSplitAligned.bounds0,recurse_aligned_unaligned(threadIndex,depth+1,begin ,center,objectSplitAligned.bounds0));
-      node->set(1,objectSplitAligned.bounds1,recurse_aligned_unaligned(threadIndex,depth+1,center,end   ,objectSplitAligned.bounds1));
+      node->set(0,objectSplitAligned.bounds0.bounds,recurse_aligned_unaligned(threadIndex,depth+1,begin ,center,objectSplitAligned.bounds0));
+      node->set(1,objectSplitAligned.bounds1.bounds,recurse_aligned_unaligned(threadIndex,depth+1,center,end   ,objectSplitAligned.bounds1));
       return bvh->encodeNode(node);
     }
 
