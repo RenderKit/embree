@@ -784,6 +784,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\common\globals.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\common\primref.h"
 				>
 			</File>

@@ -364,7 +364,6 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\common\globals.cpp" />
     <ClCompile Include="bvh4i\bvh4i_builder_binner.cpp" />
     <ClCompile Include="bvh4i\bvh4i_builder_fast.cpp" />
     <ClCompile Include="bvh4i\bvh4i_builder_morton.cpp" />
@@ -374,6 +373,7 @@
     <ClCompile Include="bvh4i\bvh4i_intersector4_chunk.cpp" />
     <ClCompile Include="bvh4i\bvh4i_intersector8_chunk.cpp" />
     <ClCompile Include="bvh4i\bvh4i_intersector8_hybrid.cpp" />
+    <ClCompile Include="bvh4\bvh4_intersector1_bezier.cpp" />
     <ClCompile Include="geometry\instance_intersector1.cpp" />
     <ClCompile Include="geometry\instance_intersector4.cpp" />
     <ClCompile Include="geometry\instance_intersector8.cpp" />
@@ -408,6 +408,7 @@
     <CustomBuildStep Include="geometry\instance_intersector1.h" />
     <CustomBuildStep Include="geometry\instance_intersector4.h" />
     <CustomBuildStep Include="geometry\instance_intersector8.h" />
+    <ClInclude Include="bvh4\bvh4_intersector1_bezier.h" />
     <ClInclude Include="geometry\ispc_wrapper_avx.h" />
     <CustomBuildStep Include="geometry\triangle8.h" />
     <CustomBuildStep Include="bvh4\bvh4_builder_morton.h" />
