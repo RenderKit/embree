@@ -94,7 +94,7 @@ namespace embree
     {
       size_t k = begin + rand() % (end-begin);
       const Vec3fa axis = normalize(curves[k].p3-curves[k].p0);
-      const AffineSpace3f space = rcp(frame(axis));
+      const AffineSpace3fa space = rcp(frame(axis));
       
       BBox3fa bounds = empty;
       float area = 0.0f;

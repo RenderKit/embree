@@ -75,7 +75,6 @@ namespace embree
   DECLARE_SYMBOL(AccelSet::Intersector16,InstanceIntersector16);
   
   /* global settings */
-  std::string g_top_accel = "default";    //!< toplevel acceleration structure to use
   std::string g_tri_accel = "default";    //!< triangle acceleration structure to use
   std::string g_hair_accel = "default";    //!< hair acceleration structure to use
   std::string g_builder = "default";      //!< builder to use
@@ -157,7 +156,6 @@ namespace embree
 
     /* reset global state */
     g_initialized = true;
-    g_top_accel = "default";
     g_tri_accel = "default";
     g_builder = "default";
     g_traverser = "default";
@@ -205,10 +203,6 @@ namespace embree
         else if (tok == "hairaccel") {
           if (parseSymbol (cfg,'=',pos))
             g_hair_accel = parseIdentifier (cfg,pos);
-        } 
-        else if (tok == "topaccel") {
-          if (parseSymbol (cfg,'=',pos))
-            g_top_accel = parseIdentifier (cfg,pos);
         } 
         else if (tok == "builder") {
           if (parseSymbol (cfg,'=',pos))
@@ -286,7 +280,6 @@ namespace embree
       PRINT(cfg);
       PRINT(g_numThreads);
       PRINT(g_verbose);
-      PRINT(g_top_accel);
       PRINT(g_tri_accel);
       PRINT(g_builder);
       PRINT(g_traverser);
@@ -508,25 +501,25 @@ namespace embree
     VERIFY_GEOMID(geomID);
     VERIFY_HANDLE(xfm);
 
-    AffineSpace3f transform = one;
+    AffineSpace3fa transform = one;
     switch (layout) 
     {
     case RTC_MATRIX_ROW_MAJOR:
-      transform = AffineSpace3f(Vec3fa(xfm[ 0],xfm[ 4],xfm[ 8]),
+      transform = AffineSpace3fa(Vec3fa(xfm[ 0],xfm[ 4],xfm[ 8]),
                                 Vec3fa(xfm[ 1],xfm[ 5],xfm[ 9]),
                                 Vec3fa(xfm[ 2],xfm[ 6],xfm[10]),
                                 Vec3fa(xfm[ 3],xfm[ 7],xfm[11]));
       break;
 
     case RTC_MATRIX_COLUMN_MAJOR:
-      transform = AffineSpace3f(Vec3fa(xfm[ 0],xfm[ 1],xfm[ 2]),
+      transform = AffineSpace3fa(Vec3fa(xfm[ 0],xfm[ 1],xfm[ 2]),
                                 Vec3fa(xfm[ 3],xfm[ 4],xfm[ 5]),
                                 Vec3fa(xfm[ 6],xfm[ 7],xfm[ 8]),
                                 Vec3fa(xfm[ 9],xfm[10],xfm[11]));
       break;
 
     case RTC_MATRIX_COLUMN_MAJOR_ALIGNED16:
-      transform = AffineSpace3f(Vec3fa(xfm[ 0],xfm[ 1],xfm[ 2]),
+      transform = AffineSpace3fa(Vec3fa(xfm[ 0],xfm[ 1],xfm[ 2]),
                                 Vec3fa(xfm[ 4],xfm[ 5],xfm[ 6]),
                                 Vec3fa(xfm[ 8],xfm[ 9],xfm[10]),
                                 Vec3fa(xfm[12],xfm[13],xfm[14]));

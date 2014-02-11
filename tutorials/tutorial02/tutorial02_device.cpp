@@ -32,8 +32,8 @@ struct Instance
   unsigned int geometry;
   RTCScene object;
   int userID;
-  AffineSpace3f local2world;
-  AffineSpace3f world2local;
+  AffineSpace3fa local2world;
+  AffineSpace3fa world2local;
   Vec3f lower;
   Vec3f upper;
 };

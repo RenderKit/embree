@@ -111,7 +111,7 @@ namespace embree
   void renderToFile(const FileName& fileName)
   {
     resize(g_width,g_height);
-    AffineSpace3f pixel2world = g_camera.pixel2world(g_width,g_height);
+    AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
 
     /* render image using ISPC */
     double t0 = getSeconds();

@@ -110,7 +110,7 @@ ENDIF ()
 
 IF (TARGET_AVX) 
   ADD_LIBRARY(embree_avx STATIC
-   
+
    geometry/triangle8.cpp
    geometry/ispc_wrapper_avx.cpp
 

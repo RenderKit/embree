@@ -151,7 +151,7 @@ namespace embree
   public:
     
     /*! Sets transformation of the instance */
-    virtual void setTransform(AffineSpace3f& transform) {
+    virtual void setTransform(AffineSpace3fa& transform) {
       recordError(RTC_INVALID_OPERATION); 
     };
 

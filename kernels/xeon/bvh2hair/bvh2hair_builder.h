@@ -118,7 +118,7 @@ namespace embree
       }
 
     public:
-      AffineSpace3f space;
+      AffineSpace3fa space;
       NAABBox3fa bounds0, bounds1;
       float areaSum0, areaSum1;
       size_t dim;

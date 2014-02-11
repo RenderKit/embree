@@ -38,6 +38,12 @@ namespace embree
         v0[3] = base[3];
       }
 
+    /*! Returns if the specified triangle is valid. */
+    __forceinline bool valid(const size_t i) const { 
+      assert(i<4); 
+      return geomID[i] != -1; 
+    }
+
     /*! Returns a mask that tells which triangles are valid. */
     __forceinline sseb valid() const { return primID != ssei(-1); }
 

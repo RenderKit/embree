@@ -372,6 +372,7 @@
     <ClCompile Include="bvh4i\bvh4i_intersector8_chunk.cpp" />
     <ClCompile Include="bvh4i\bvh4i_intersector8_chunk_avx2.cpp" />
     <ClCompile Include="bvh4i\bvh4i_intersector8_hybrid.cpp" />
+    <ClCompile Include="bvh4\bvh4_intersector1_bezier.cpp" />
     <ClCompile Include="geometry\instance_intersector1.cpp" />
     <ClCompile Include="geometry\instance_intersector4.cpp" />
     <ClCompile Include="geometry\instance_intersector8.cpp" />
@@ -407,6 +408,7 @@
     <CustomBuildStep Include="bvh4mb\bvh4mb_intersector1.h" />
     <CustomBuildStep Include="bvh4mb\bvh4mb_intersector4.h" />
     <CustomBuildStep Include="bvh4mb\bvh4mb_intersector8.h" />
+    <ClInclude Include="bvh4\bvh4_intersector1_bezier.h" />
     <ClInclude Include="bvh8i\bvh8i_intersector1.h" />
     <ClInclude Include="bvh8i\bvh8i_intersector8_chunk.h" />
     <ClInclude Include="bvh8i\bvh8i_intersector8_hybrid.h" />

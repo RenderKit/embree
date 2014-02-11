@@ -50,7 +50,7 @@ namespace embree
 
     __forceinline void BVH2HairIntersector1::intersectBezier(Ray& ray, const Bezier1& bezier)
     {
-      LinearSpace3f ray_space(rcp(frame(ray.dir)));
+      const LinearSpace3fa ray_space(rcp(frame(ray.dir)));
 
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);

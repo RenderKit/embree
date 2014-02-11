@@ -126,7 +126,7 @@ namespace embree
       mouseMode = 0;
       if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == GLUT_ACTIVE_CTRL) 
       {
-        AffineSpace3f pixel2world = g_camera.pixel2world(g_width,g_height);
+        AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
         Vec3f p; bool hit = pick(x,y, pixel2world.l.vx, pixel2world.l.vy, pixel2world.l.vz, pixel2world.p, p);
 
         if (hit) {
@@ -139,7 +139,7 @@ namespace embree
       }
       else if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == (GLUT_ACTIVE_CTRL | GLUT_ACTIVE_SHIFT)) 
       {
-        AffineSpace3f pixel2world = g_camera.pixel2world(g_width,g_height);
+        AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
         Vec3f p; bool hit = pick(x,y, pixel2world.l.vx, pixel2world.l.vy, pixel2world.l.vz, pixel2world.p, p);
         if (hit) g_camera.to = p;
       }
@@ -178,7 +178,7 @@ namespace embree
 
   void displayFunc(void) 
   {
-    AffineSpace3f pixel2world = g_camera.pixel2world(g_width,g_height);
+    AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
 
     /* render image using ISPC */
     double t0 = getSeconds();
