@@ -31,6 +31,7 @@ ENDIF()
 ADD_ISPC_LIBRARY(embree SHARED   
 
   ../common/stat.cpp 
+  ../common/globals.cpp 
   ../common/alloc.cpp 
   ../common/tasksys.cpp 
   ../common/acceln.cpp
@@ -110,7 +111,6 @@ ENDIF ()
 IF (TARGET_AVX) 
   ADD_LIBRARY(embree_avx STATIC
    
-   ../common/globals.cpp 
    geometry/triangle8.cpp
    geometry/ispc_wrapper_avx.cpp
 

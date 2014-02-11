@@ -57,7 +57,7 @@ namespace embree
   }
   
   /* functions to initialize global state */
-  namespace avx { void init_globals(); }
+  void init_globals();
 
   /* register functions for accels */
   void BVH4Register();
@@ -263,6 +263,8 @@ namespace embree
 
     g_error = createTls();
 
+    init_globals();
+
 #if !defined(__MIC__)
     BVH4Register();
 #else
@@ -275,12 +277,9 @@ namespace embree
     if (has_feature(AVX))
       BVH8iRegister();
 #endif
-    InstanceIntersectorsRegister();
-
-#if defined(__TARGET_AVX__)
-    if (has_feature(AVX)) avx::init_globals();
-#endif
     BVH2HairRegister();
+
+    InstanceIntersectorsRegister();
 
     if (g_verbose >= 2) 
     {
