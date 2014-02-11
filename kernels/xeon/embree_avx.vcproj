@@ -1507,6 +1507,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\bvh4\bvh4_intersector1_bezier.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4\bvh4_intersector1_bezier.h"
+				>
+			</File>
+			<File
 				RelativePath=".\bvh4\bvh4_intersector4_chunk.cpp"
 				>
 			</File>
