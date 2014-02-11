@@ -251,7 +251,7 @@ extern "C" void device_render (int* pixels,
                            const Vec3f& p)
 {
   /* create identity matrix */
-  AffineSpace3f xfm;
+  AffineSpace3fa xfm;
   xfm.l.vx = Vec3f(1,0,0);
   xfm.l.vy = Vec3f(0,1,0);
   xfm.l.vz = Vec3f(0,0,1);

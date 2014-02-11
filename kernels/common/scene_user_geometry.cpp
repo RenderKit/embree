@@ -169,7 +169,7 @@ namespace embree
     intersectors.intersector16 = InstanceIntersector16;
   }
   
-  void UserGeometryScene::Instance::setTransform(AffineSpace3f& xfm)
+  void UserGeometryScene::Instance::setTransform(AffineSpace3fa& xfm)
   {
     local2world = xfm;
     world2local = rcp(xfm);

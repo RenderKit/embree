@@ -493,25 +493,25 @@ namespace embree
     VERIFY_GEOMID(geomID);
     VERIFY_HANDLE(xfm);
 
-    AffineSpace3f transform = one;
+    AffineSpace3fa transform = one;
     switch (layout) 
     {
     case RTC_MATRIX_ROW_MAJOR:
-      transform = AffineSpace3f(Vec3fa(xfm[ 0],xfm[ 4],xfm[ 8]),
+      transform = AffineSpace3fa(Vec3fa(xfm[ 0],xfm[ 4],xfm[ 8]),
                                 Vec3fa(xfm[ 1],xfm[ 5],xfm[ 9]),
                                 Vec3fa(xfm[ 2],xfm[ 6],xfm[10]),
                                 Vec3fa(xfm[ 3],xfm[ 7],xfm[11]));
       break;
 
     case RTC_MATRIX_COLUMN_MAJOR:
-      transform = AffineSpace3f(Vec3fa(xfm[ 0],xfm[ 1],xfm[ 2]),
+      transform = AffineSpace3fa(Vec3fa(xfm[ 0],xfm[ 1],xfm[ 2]),
                                 Vec3fa(xfm[ 3],xfm[ 4],xfm[ 5]),
                                 Vec3fa(xfm[ 6],xfm[ 7],xfm[ 8]),
                                 Vec3fa(xfm[ 9],xfm[10],xfm[11]));
       break;
 
     case RTC_MATRIX_COLUMN_MAJOR_ALIGNED16:
-      transform = AffineSpace3f(Vec3fa(xfm[ 0],xfm[ 1],xfm[ 2]),
+      transform = AffineSpace3fa(Vec3fa(xfm[ 0],xfm[ 1],xfm[ 2]),
                                 Vec3fa(xfm[ 4],xfm[ 5],xfm[ 6]),
                                 Vec3fa(xfm[ 8],xfm[ 9],xfm[10]),
                                 Vec3fa(xfm[12],xfm[13],xfm[14]));

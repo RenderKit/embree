@@ -24,7 +24,7 @@ namespace embree
     {
       Vec3fa lower = instance->object->bounds.lower;
       Vec3fa upper = instance->object->bounds.upper;
-      AffineSpace3f local2world = instance->local2world;
+      AffineSpace3fa local2world = instance->local2world;
       Vec3fa p000 = xfmPoint(local2world,Vec3fa(lower.x,lower.y,lower.z));
       Vec3fa p001 = xfmPoint(local2world,Vec3fa(lower.x,lower.y,upper.z));
       Vec3fa p010 = xfmPoint(local2world,Vec3fa(lower.x,upper.y,lower.z));

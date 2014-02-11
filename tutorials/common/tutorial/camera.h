@@ -35,16 +35,16 @@ namespace embree
     Camera (Vec3fa& from, Vec3fa& to, Vec3fa& up, float fov) 
       : from(from), to(to), up(up), fov(fov) {}
 
-    AffineSpace3f camera2world () { return AffineSpace3f::lookat(from, to, up); }
-    AffineSpace3f world2camera () { return rcp(AffineSpace3f::lookat(from, to, up)); }
+    AffineSpace3fa camera2world () { return AffineSpace3fa::lookat(from, to, up); }
+    AffineSpace3fa world2camera () { return rcp(AffineSpace3fa::lookat(from, to, up)); }
     Vec3fa world2camera(const Vec3fa& p) { return xfmPoint(world2camera(),p); }
     Vec3fa camera2world(const Vec3fa& p) { return xfmPoint(camera2world(),p); }
 
-    AffineSpace3f pixel2world (size_t width, size_t height) 
+    AffineSpace3fa pixel2world (size_t width, size_t height) 
     {
       const float fovScale = 1.0f/tanf(deg2rad(0.5f*fov));
-      const AffineSpace3f local2world = AffineSpace3f::lookat(from, to, up);
-      return AffineSpace3f(local2world.l.vx,
+      const AffineSpace3fa local2world = AffineSpace3fa::lookat(from, to, up);
+      return AffineSpace3fa(local2world.l.vx,
                            -local2world.l.vy,
                            -0.5f*width*local2world.l.vx + 0.5f*height*local2world.l.vy + 0.5f*height*fovScale*local2world.l.vz,
                            local2world.p);
@@ -52,7 +52,7 @@ namespace embree
 
     void move (float dx, float dy, float dz)
     {
-      AffineSpace3f xfm = camera2world();
+      AffineSpace3fa xfm = camera2world();
       Vec3fa ds = xfmVector(xfm,Vec3fa(dx,dy,dz));
       from += ds;
       to   += ds;

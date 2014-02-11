@@ -67,12 +67,12 @@ namespace embree
     {
     public:
       Instance (Scene* parent, Accel* object); 
-      virtual void setTransform(AffineSpace3f& local2world);
+      virtual void setTransform(AffineSpace3fa& local2world);
       virtual void build(size_t threadIndex, size_t threadCount) {}
     
     public:
-      AffineSpace3f local2world;
-      AffineSpace3f world2local;
+      AffineSpace3fa local2world;
+      AffineSpace3fa world2local;
       Accel* object;
     };
   }

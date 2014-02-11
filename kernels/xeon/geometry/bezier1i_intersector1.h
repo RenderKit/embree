@@ -143,7 +143,7 @@ namespace embree
       __forceinline Precalculations (const Ray& ray)
       : ray_space(rcp(frame(ray.dir))) {}
 
-      LinearSpace3f ray_space;
+      LinearSpace3fa ray_space;
     };
 
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
@@ -311,7 +311,7 @@ namespace embree
       const Vec3fa v3 = curve_in.p[3];
 
       /* transform control points into ray space */
-      LinearSpace3f ray_space = rcp(frame(ray.dir)); // FIXME: calculate once per ray
+      LinearSpace3fa ray_space = rcp(frame(ray.dir)); // FIXME: calculate once per ray
       Vec3fa w0 = xfmVector(ray_space,v0-ray.org); w0.w = v0.w;
       Vec3fa w1 = xfmVector(ray_space,v1-ray.org); w1.w = v1.w;
       Vec3fa w2 = xfmVector(ray_space,v2-ray.org); w2.w = v2.w;
