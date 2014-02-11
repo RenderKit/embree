@@ -74,7 +74,6 @@ namespace embree
   DECLARE_SYMBOL(AccelSet::Intersector16,InstanceIntersector16);
   
   /* global settings */
-  std::string g_top_accel = "default";    //!< toplevel acceleration structure to use
   std::string g_tri_accel = "default";    //!< triangle acceleration structure to use
   std::string g_builder = "default";      //!< builder to use
   std::string g_traverser = "default";    //!< traverser to use
@@ -155,7 +154,6 @@ namespace embree
 
     /* reset global state */
     g_initialized = true;
-    g_top_accel = "default";
     g_tri_accel = "default";
     g_builder = "default";
     g_traverser = "default";
@@ -199,10 +197,6 @@ namespace embree
         else if (tok == "triaccel") {
           if (parseSymbol (cfg,'=',pos))
             g_tri_accel = parseIdentifier (cfg,pos);
-        } 
-        else if (tok == "topaccel") {
-          if (parseSymbol (cfg,'=',pos))
-            g_top_accel = parseIdentifier (cfg,pos);
         } 
         else if (tok == "builder") {
           if (parseSymbol (cfg,'=',pos))
@@ -278,7 +272,6 @@ namespace embree
       PRINT(cfg);
       PRINT(g_numThreads);
       PRINT(g_verbose);
-      PRINT(g_top_accel);
       PRINT(g_tri_accel);
       PRINT(g_builder);
       PRINT(g_traverser);

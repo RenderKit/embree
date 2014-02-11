@@ -43,12 +43,9 @@ namespace embree
 
 #if defined(__MIC__)
 
-    g_top_accel = g_tri_accel;
-
-
     accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
 
-    if (g_top_accel == "default" || g_top_accel == "bvh4i")   
+    if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
       {
 	if (g_builder == "default") 
 	  {
@@ -80,20 +77,20 @@ namespace embree
 	    else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
 	  }
       }
-    // else if (g_top_accel == "bvh4mb") {
+    // else if (g_tri_accel == "bvh4mb") {
     //   accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
     // }
-    else if (g_top_accel == "bvh16i") {
+    else if (g_tri_accel == "bvh16i") {
       accels.add(BVH16i::BVH16iTriangle1ObjectSplitBinnedSAH(this));
     }
-    else throw std::runtime_error("unknown accel "+g_top_accel);
+    else throw std::runtime_error("unknown accel "+g_tri_accel);
 
     accels.add(BVH4i::BVH4iVirtualGeometryBinnedSAH(this));
 
 #else
 
     /* create default acceleration structure */
-    if (g_top_accel == "default" && g_tri_accel == "default") 
+    if (g_tri_accel == "default") 
     {
       if (isStatic()) {
         int mode =  4*(int)isCoherent() + 2*(int)isCompact() + 1*(int)isRobust();
@@ -148,7 +145,7 @@ namespace embree
     }
 
     /* create user specified acceleration structure */
-    else if (g_top_accel == "default") // FIXME: remove g_top_accel feature
+    else
     {
       if      (g_tri_accel == "bvh4.bvh4.triangle1.morton") accels.add(BVH4::BVH4BVH4Triangle1Morton(this));
       else if (g_tri_accel == "bvh4.bvh4.triangle1")    accels.add(BVH4::BVH4BVH4Triangle1ObjectSplit(this));
@@ -177,10 +174,7 @@ namespace embree
 #endif
       else throw std::runtime_error("unknown triangle acceleration structure "+g_tri_accel);
 
-      accels.add(new TwoLevelAccel(g_top_accel,this));
-    }
-    else {
-      accels.add(new TwoLevelAccel(g_top_accel,this));
+      accels.add(new TwoLevelAccel("default",this));
     }
 #endif
   }

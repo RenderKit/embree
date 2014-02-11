@@ -57,7 +57,6 @@ namespace embree
   /* global settings */
   extern size_t g_numThreads;
   extern size_t g_verbose;
-  extern std::string g_top_accel;
   extern std::string g_tri_accel;
   extern std::string g_builder;
   extern std::string g_traverser;
