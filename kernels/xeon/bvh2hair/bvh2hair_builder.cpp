@@ -68,9 +68,9 @@ namespace embree
     }
 
     /* start recursive build */
-    bvh->root = recurse_aligned(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,AffineSpace3fa(one)));
+    //bvh->root = recurse_aligned(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,AffineSpace3fa(one)));
     //bvh->root = recurse_unaligned(threadIndex,0,begin,end,computeUnalignedBounds(curves,begin,end));
-    //bvh->root = recurse_aligned_unaligned(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,AffineSpace3fa(one)));
+    bvh->root = recurse_aligned_unaligned(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,AffineSpace3fa(one)));
     bvh->bounds = bounds;
 
     if (g_verbose >= 2) {
@@ -176,7 +176,7 @@ namespace embree
     return left;
   }
 
-  __forceinline const BVH2HairBuilder::ObjectSplit BVH2HairBuilder::ObjectSplit::find(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space)
+  __forceinline BVH2HairBuilder::ObjectSplit BVH2HairBuilder::ObjectSplit::find(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space)
   {
     /* calculate geometry and centroid bounds */
     BBox3fa centBounds = empty;
@@ -257,6 +257,10 @@ namespace embree
     
     /* find best dimension */
     ObjectSplit split;
+    split.space = space;
+    split.ofs = ofs;
+    split.scale = scale;
+
     for (size_t dim=0; dim<3; dim++) 
     {
       /* ignore zero sized dimensions */
@@ -272,7 +276,31 @@ namespace embree
         split.num1 = end-begin-split.num0;
       }
     }
-    
+    return split;
+  }
+
+  const BVH2HairBuilder::ObjectSplit BVH2HairBuilder::ObjectSplit::alignedBounds(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space)
+  {
+    if (dim == -1) {
+      num0 = num1 = 1;
+      bounds0 = bounds1 = BBox3fa(inf);
+      return *this;
+    }
+
+    const size_t center = split(curves,begin,end);
+    bounds0 = computeAlignedBounds(curves,begin,center,space);
+    bounds1 = computeAlignedBounds(curves,center,end,space);
+    return *this;
+  }
+  
+  const BVH2HairBuilder::ObjectSplit  BVH2HairBuilder::ObjectSplit::unalignedBounds(Bezier1* curves, size_t begin, size_t end)
+  {
+    if (dim == -1) {
+      num0 = num1 = 1;
+      bounds0 = bounds1 = BBox3fa(inf);
+      return *this;
+    }
+
     /* partition curves */
     ssize_t left = begin, right = end;
     while (left < right) {
@@ -280,16 +308,12 @@ namespace embree
       const Vec3fa p3 = xfmPoint(space,curves[left].p3);
       //const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),ssei(0),ssei(BINS-1));
       const ssei bin = floori((ssef(p0+p3) - ofs)*scale);
-      if (bin[split.dim] < split.pos) left++;
+      if (bin[dim] < pos) left++;
       else std::swap(curves[left],curves[--right]);
     }
-    split.space = space;
-    split.ofs = ofs;
-    split.scale = scale;
-
-    split.bounds0 = computeUnalignedBounds(curves,begin,left);
-    split.bounds1 = computeUnalignedBounds(curves,left, end );
-    return split;
+    bounds0 = computeUnalignedBounds(curves,begin,left);
+    bounds1 = computeUnalignedBounds(curves,left, end );
+    return *this;
   }
   
   __forceinline size_t BVH2HairBuilder::ObjectSplit::split(Bezier1* curves, size_t begin, size_t end) const
@@ -330,7 +354,7 @@ namespace embree
     const float strandSAH = BVH2Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.modifiedSAH();
 
     /* second perform standard binning */
-    const ObjectSplit objectSplit = ObjectSplit::find(curves,begin,end,bounds.space);
+    const ObjectSplit objectSplit = ObjectSplit::find(curves,begin,end,bounds.space).unalignedBounds(curves,begin,end);
     const float objectSAH = BVH2Hair::travCostUnaligned*halfArea(bounds.bounds) + objectSplit.modifiedSAH();
 
     /* leaf test */
@@ -365,10 +389,7 @@ namespace embree
     
     /* perform standard binning with aligned bounds */
     const AffineSpace3fa aligned(one);
-    ObjectSplit objectSplit = ObjectSplit::find(curves,begin,end,aligned);
-    const size_t center = objectSplit.split(curves,begin,end);
-    objectSplit.bounds0 = computeAlignedBounds(curves,begin,center,aligned);
-    objectSplit.bounds1 = computeAlignedBounds(curves,center,end,aligned);
+    const ObjectSplit objectSplit = ObjectSplit::find(curves,begin,end,aligned).alignedBounds(curves,begin,end,aligned);
     const float objectSAH = BVH2Hair::travCostAligned*halfArea(bounds.bounds) + objectSplit.standardSAH();
 
     /* leaf test */
@@ -377,6 +398,7 @@ namespace embree
 
     /* perform object split */
     UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
+    const size_t center = objectSplit.split(curves,begin,end);
     node->set(0,objectSplit.bounds0,recurse_aligned(threadIndex,depth+1,begin ,center,objectSplit.bounds0));
     node->set(1,objectSplit.bounds1,recurse_aligned(threadIndex,depth+1,center,end   ,objectSplit.bounds1));
     return bvh->encodeNode(node);
@@ -393,15 +415,12 @@ namespace embree
     const float strandSAH = BVH2Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.modifiedSAH();
 
     /* second perform standard binning */
-    const ObjectSplit objectSplit = ObjectSplit::find(curves,begin,end,bounds.space);
+    const ObjectSplit objectSplit = ObjectSplit::find(curves,begin,end,bounds.space).unalignedBounds(curves,begin,end);
     const float objectSAH = BVH2Hair::travCostUnaligned*halfArea(bounds.bounds) + objectSplit.modifiedSAH();
 
     /* third perform standard binning in aligned space */
     const AffineSpace3fa aligned(one);
-    ObjectSplit objectSplitAligned = ObjectSplit::find(curves,begin,end,aligned);
-    const size_t center = objectSplitAligned.split(curves,begin,end);
-    objectSplitAligned.bounds0 = computeAlignedBounds(curves,begin,center,aligned);
-    objectSplitAligned.bounds1 = computeAlignedBounds(curves,center,end,aligned);
+    ObjectSplit objectSplitAligned = ObjectSplit::find(curves,begin,end,aligned).alignedBounds(curves,begin,end,aligned);
     const float alignedObjectSAH = BVH2Hair::travCostAligned*halfArea(bounds.bounds) + objectSplitAligned.modifiedSAH();
 
     /* leaf test */

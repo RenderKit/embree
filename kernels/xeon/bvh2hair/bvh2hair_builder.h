@@ -93,7 +93,7 @@ namespace embree
 
       /*! default constructor */
       __forceinline ObjectSplit ()
-      : dim(0), pos(0), cost(inf), num0(0), num1(0) {}
+        : dim(-1), pos(0), cost(inf), num0(0), num1(0), bounds0(inf), bounds1(inf) {}
       
       /*! calculates standard surface area heuristic for the split */
       __forceinline float standardSAH() const {
@@ -108,7 +108,13 @@ namespace embree
       }
 
       /*! performs object binning to the the best partitioning */
-      static const ObjectSplit find(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space);
+      static ObjectSplit find(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space);
+
+      /*! calculates aligned bounds for left and right split */
+      const ObjectSplit alignedBounds(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space);
+
+      /*! calculates the bounds for left and right split */
+      const ObjectSplit unalignedBounds(Bezier1* curves, size_t begin, size_t end);
 
       /*! splits hairs into two sets */
       size_t split(Bezier1* curves, size_t begin, size_t end) const;
@@ -124,8 +130,8 @@ namespace embree
     public:
       AffineSpace3fa space;
       NAABBox3fa bounds0, bounds1;
-      size_t dim;
-      size_t pos;
+      int dim;
+      int pos;
       float cost;
       size_t num0,num1;
       ssef ofs,scale;
