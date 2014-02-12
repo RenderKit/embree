@@ -284,6 +284,13 @@ namespace embree
   __forceinline avxf permute(const avxf &a, const __m256i &index) {
     return _mm256_permutevar8x32_ps(a,index);
   }
+
+  template<int i>
+  __forceinline avxf alignr(const avxf &a, const avxf &b)
+  {
+    return _mm256_castsi256_ps(_mm256_alignr_epi8(_mm256_castps_si256(a), _mm256_castps_si256(b), i));
+  }
+
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -363,6 +370,7 @@ namespace embree
   __forceinline avxf load8f_nt(void* ptr) {
     return _mm256_castsi256_ps(_mm256_stream_load_si256((__m256i*)ptr));
   }
+
 #endif
   
   __forceinline void store8f_nt(void* ptr, const avxf& v) {

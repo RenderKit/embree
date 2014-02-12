@@ -100,7 +100,7 @@ namespace embree
         const Vec3fa& v3 = vertex(index+3);
 
 	
-#if 0 
+#if 0
 	BBox3fa b;
 	b = empty;
 	for (unsigned int step=0;step<=8;step++)

@@ -78,6 +78,20 @@ namespace embree
       const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
       const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
 
+#if 0
+#if defined(__AVX2__)
+      avxf g0 = avxf(step);
+      avxf g1 = alignr<4>(g0,avxf(10));
+      DBG_PRINT(g0);
+      DBG_PRINT(g1);
+#endif
+
+      DBG_PRINT(p0);
+      DBG_PRINT(p1);
+      DBG_PRINT(w0);
+      DBG_PRINT(w3);
+      exit(0);
+#endif
       /* approximative intersection with cone */
       const avx4f v = p1-p0;
       const avx4f w = -p0;
