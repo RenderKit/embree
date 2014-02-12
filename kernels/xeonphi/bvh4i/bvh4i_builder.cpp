@@ -110,7 +110,7 @@ namespace embree
 	if (unlikely(scene->get(i) == NULL)) continue;
 	if (unlikely((scene->get(i)->type != TRIANGLE_MESH))) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
-	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(i);
+	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(i);
 	if (unlikely(mesh->numTimeSteps != 1)) continue;
 	primitives += mesh->numTriangles;
       }
@@ -294,7 +294,7 @@ namespace embree
     for (; g<numGroups; g++) {       
       if (unlikely(scene->get(g) == NULL)) continue;
       if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
-      const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
@@ -321,14 +321,14 @@ namespace embree
     {
       if (unlikely(scene->get(g) == NULL)) continue;
       if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
-      const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
       for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
       { 			    
 	//DBG_PRINT(currentID);
-	const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(i);
+	const TriangleMesh::Triangle& tri = mesh->triangle(i);
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
@@ -439,8 +439,8 @@ namespace embree
 					     const Scene *__restrict__ const scene,
 					     Triangle1 * __restrict__ const acc)
   {
-    const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-    const TriangleMeshScene::TriangleMesh::Triangle & tri = mesh->triangle(primID);
+    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+    const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 
     const mic_i pID(primID);
     const mic_i gID(geomID);
@@ -1285,8 +1285,8 @@ namespace embree
 	const unsigned int geomID = prims[ accel_offset + i ].geomID();
 	const unsigned int primID = prims[ accel_offset + i ].primID();
 
-	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-	const TriangleMeshScene::TriangleMesh::Triangle & tri = mesh->triangle(primID);
+	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 
 	leaf_tri_bounds.extend( mesh->vertex(tri.v[0]) );
 	leaf_tri_bounds.extend( mesh->vertex(tri.v[1]) );

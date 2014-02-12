@@ -41,7 +41,7 @@ namespace embree
 
     std::auto_ptr<BVH4BuilderMorton::MortonBuilderState> BVH4BuilderMorton::g_state(NULL);
     
-    BVH4BuilderMorton::BVH4BuilderMorton (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
+    BVH4BuilderMorton::BVH4BuilderMorton (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
     : bvh(bvh), source(source), scene(scene), mesh(mesh), topLevelItemThreshold(0), encodeShift(0), encodeMask(0),
       morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
     {
@@ -166,7 +166,7 @@ namespace embree
         {
           Geometry* geom = scene->get(i);
           if (!geom || geom->type != TRIANGLE_MESH) continue;
-          TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+          TriangleMesh* mesh = (TriangleMesh*) geom;
           if (mesh->numTimeSteps != 1) continue;
           numPrimitives += mesh->numTriangles;
           numVertices += mesh->numVertices;
@@ -272,7 +272,7 @@ namespace embree
         {       
           Geometry* geom = scene->get(group);
           if (!geom || geom->type != TRIANGLE_MESH) continue;
-          TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+          TriangleMesh* mesh = (TriangleMesh*) geom;
           if (mesh->numTimeSteps != 1) continue;
           const size_t numTriangles = mesh->numTriangles;
           if (skipped + numTriangles > startID) break; 
@@ -301,7 +301,7 @@ namespace embree
         {       
           Geometry* geom = scene->get(group);
           if (!geom || geom->type != TRIANGLE_MESH) continue;
-          TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+          TriangleMesh* mesh = (TriangleMesh*) geom;
           if (mesh->numTimeSteps != 1) continue;
           for (size_t i=0; i<mesh->numTriangles; i++)	 
             bounds.extend(mesh->bounds(i));
@@ -325,7 +325,7 @@ namespace embree
       {       
         Geometry* geom = scene->get(group);
         if (!geom || geom->type != TRIANGLE_MESH) continue;
-        TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+        TriangleMesh* mesh = (TriangleMesh*) geom;
         if (mesh->numTimeSteps != 1) continue;
         
         for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
@@ -358,7 +358,7 @@ namespace embree
       {       
         Geometry* geom = scene->get(group);
         if (!geom || geom->type != TRIANGLE_MESH) continue;
-        TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+        TriangleMesh* mesh = (TriangleMesh*) geom;
         if (mesh->numTimeSteps != 1) continue;
         const size_t numTriangles = min(mesh->numTriangles-offset,endID-currentID);
         
@@ -554,8 +554,8 @@ namespace embree
         const size_t index = This->morton[start+i].index;
         const size_t primID = index & This->encodeMask; 
         const size_t geomID = index >> This->encodeShift; 
-        const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
-        const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         
         const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
         const ssef v1 = select(0x7,(ssef)mesh->vertex(tri.v[1]),zero);
@@ -596,8 +596,8 @@ namespace embree
         const size_t index = This->morton[start+i].index;
         const size_t primID = index & This->encodeMask; 
         const size_t geomID = index >> This->encodeShift; 
-        const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
-        const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);
         const Vec3fa& p2 = mesh->vertex(tri.v[2]);
@@ -632,8 +632,8 @@ namespace embree
         const size_t index = This->morton[start+i].index;
         const size_t primID = index & This->encodeMask; 
         const size_t geomID = index >> This->encodeShift; 
-        const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
-        const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         
         const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
         const ssef v1 = select(0x7,(ssef)mesh->vertex(tri.v[1]),zero);
@@ -673,8 +673,8 @@ namespace embree
         const size_t index = This->morton[start+i].index;
         const size_t primID = index & This->encodeMask; 
         const size_t geomID = index >> This->encodeShift; 
-        const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
-        const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);
         const Vec3fa& p2 = mesh->vertex(tri.v[2]);
@@ -1077,7 +1077,7 @@ namespace embree
       return new BVH4BuilderMorton((BVH4*)bvh,source,scene,NULL,minLeafSize,maxLeafSize);
     }
     
-    Builder* BVH4BuilderMortonTriangleMeshFast (void* bvh, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize) {
+    Builder* BVH4BuilderMortonTriangleMeshFast (void* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize) {
       return new BVH4BuilderMorton((BVH4*)bvh,NULL,mesh->parent,mesh,minLeafSize,maxLeafSize);
     }
   }

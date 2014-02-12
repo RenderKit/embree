@@ -172,7 +172,7 @@ namespace embree
     
     void BVH4BuilderTopLevel::create_object(size_t objectID)
     {
-      TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
+      TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
       
       /* verify meshes got deleted properly */
       if (mesh == NULL || mesh->numTimeSteps != 1) {
@@ -190,7 +190,7 @@ namespace embree
       
       /* create BVH and builder for new meshes */
       if (objects[objectID] == NULL)
-        createTriangleMeshAccel((TriangleMeshScene::TriangleMesh*)mesh,objects[objectID],builders[objectID]);
+        createTriangleMeshAccel((TriangleMesh*)mesh,objects[objectID],builders[objectID]);
       
       /* remember meshes that need all threads to get built */
       if (builders[objectID]->needAllThreads) 
@@ -200,7 +200,7 @@ namespace embree
     BBox3fa BVH4BuilderTopLevel::build (size_t threadIndex, size_t threadCount, size_t objectID)
     {
       /* ignore if no triangle mesh or not enabled */
-      TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
+      TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
       if (mesh == NULL || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
         return empty;
       

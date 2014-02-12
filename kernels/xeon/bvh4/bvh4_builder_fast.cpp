@@ -43,7 +43,7 @@ namespace embree
 
     std::auto_ptr<BVH4BuilderFast::GlobalState> BVH4BuilderFast::g_state(NULL);
     
-    BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
+    BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
     : source(source), scene(scene), mesh(mesh), primTy(bvh->primTy), bvh(bvh), numGroups(0), numPrimitives(0), prims(NULL), bytesPrims(0), createSmallLeaf(NULL)
     {
       needAllThreads = true;
@@ -164,7 +164,7 @@ namespace embree
         for (size_t i=0; i<scene->size(); i++) {
           Geometry* geom = scene->get(i);
           if (!geom || geom->type != TRIANGLE_MESH) continue;
-          TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+          TriangleMesh* mesh = (TriangleMesh*) geom;
           if (mesh->numTimeSteps != 1) continue;
           numPrimitives += mesh->numTriangles;
           numVertices += mesh->numVertices;
@@ -242,7 +242,7 @@ namespace embree
         for (; g<numGroups; g++) {       
           Geometry* geom = scene->get(g);
           if (!geom || geom->type != TRIANGLE_MESH) continue;
-          TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+          TriangleMesh* mesh = (TriangleMesh*) geom;
           if (mesh->numTimeSteps != 1) continue;
           const size_t numTriangles = mesh->numTriangles;
           if (numSkipped + numTriangles > startID) break;
@@ -261,7 +261,7 @@ namespace embree
       {
         Geometry* geom = scene->get(g);
         if (!geom || geom->type != TRIANGLE_MESH) continue;
-        TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+        TriangleMesh* mesh = (TriangleMesh*) geom;
         if (mesh->numTimeSteps != 1) continue;
         
         for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
@@ -342,8 +342,8 @@ namespace embree
       {	
         const size_t geomID = This->prims[start+i].geomID();
         const size_t primID = This->prims[start+i].primID();
-        const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
-        const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         
         const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
         const ssef v1 = select(0x7,(ssef)mesh->vertex(tri.v[1]),zero);
@@ -377,8 +377,8 @@ namespace embree
       {
         const size_t geomID = This->prims[start+i].geomID();
         const size_t primID = This->prims[start+i].primID();
-        const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
-        const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);
         const Vec3fa& p2 = mesh->vertex(tri.v[2]);
@@ -406,8 +406,8 @@ namespace embree
       {	
         const size_t geomID = This->prims[start+i].geomID();
         const size_t primID = This->prims[start+i].primID();
-        const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
-        const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         
         const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
         const ssef v1 = select(0x7,(ssef)mesh->vertex(tri.v[1]),zero);
@@ -440,8 +440,8 @@ namespace embree
       {
         const size_t geomID = This->prims[start+i].geomID();
         const size_t primID = This->prims[start+i].primID();
-        const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
-        const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);
         const Vec3fa& p2 = mesh->vertex(tri.v[2]);
@@ -786,7 +786,7 @@ namespace embree
       return new BVH4BuilderFast((BVH4*)bvh,source,scene,NULL,minLeafSize,maxLeafSize);
     }
 
-    Builder* BVH4BuilderObjectSplit4TriangleMeshFast (void* bvh, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize) {
+    Builder* BVH4BuilderObjectSplit4TriangleMeshFast (void* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize) {
       return new BVH4BuilderFast((BVH4*)bvh,NULL,mesh->parent,mesh,minLeafSize,maxLeafSize);
     }
   }

@@ -248,8 +248,8 @@ namespace embree
 	const size_t geomID = prims[i].geomID();
 	const size_t primID = prims[i].primID();
 
-	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-	const TriangleMeshScene::TriangleMesh::Triangle & tri = mesh->triangle(primID);
+	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 
 	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
 	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
@@ -295,7 +295,7 @@ namespace embree
     for (; g<numGroups; g++) {       
       if (unlikely(scene->get(g) == NULL)) continue;
       if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
-      const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
@@ -318,13 +318,13 @@ namespace embree
     {
       if (unlikely(scene->get(g) == NULL)) continue;
       if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
-      const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
       for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
       { 			    
-	const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(i);
+	const TriangleMesh::Triangle& tri = mesh->triangle(i);
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 

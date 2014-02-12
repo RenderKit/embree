@@ -23,17 +23,14 @@
 
 namespace embree
 {
-  namespace QuadraticBezierCurvesScene
-  {
-
-    struct QuadraticBezierCurves : public Geometry, public BuildSource
+    struct BezierCurves : public Geometry, public BuildSource
     {
       struct Vertex {
         float x,y,z,r;
       };
 
     public:
-      QuadraticBezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps); 
+      BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps); 
       
     public:
       void setMask (unsigned mask);
@@ -121,6 +118,4 @@ namespace embree
       bool needVertices;                //!< set if vertex array required by acceleration structure
       size_t numVertices;               //!< number of vertices
     };
-
-  }
 }

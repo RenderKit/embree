@@ -60,7 +60,7 @@ namespace embree
     public:
       
       /*! Constructor. */
-      BVH4BuilderFast (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      BVH4BuilderFast (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
       
       /*! Destructor */
       ~BVH4BuilderFast ();
@@ -113,7 +113,7 @@ namespace embree
     protected:
       BuildSource* source;                     //!< input geometry
       Scene* scene;                            //!< input scene
-      TriangleMeshScene::TriangleMesh* mesh;   //!< input mesh
+      TriangleMesh* mesh;   //!< input mesh
       BVH4* bvh;                               //!< Output BVH
       const PrimitiveType& primTy;             //!< triangle type stored in BVH
       

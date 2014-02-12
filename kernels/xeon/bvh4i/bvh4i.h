@@ -222,11 +222,11 @@ namespace embree
 
     static Accel* BVH4iTriangle8(Scene* scene);
 
-    static Accel* BVH4iTriangle1(TriangleMeshScene::TriangleMesh* mesh);
-    static Accel* BVH4iTriangle4(TriangleMeshScene::TriangleMesh* mesh);
-    static Accel* BVH4iTriangle1v(TriangleMeshScene::TriangleMesh* mesh);
-    static Accel* BVH4iTriangle4v(TriangleMeshScene::TriangleMesh* mesh);
-    static Accel* BVH4iTriangle4i(TriangleMeshScene::TriangleMesh* mesh);
+    static Accel* BVH4iTriangle1(TriangleMesh* mesh);
+    static Accel* BVH4iTriangle4(TriangleMesh* mesh);
+    static Accel* BVH4iTriangle1v(TriangleMesh* mesh);
+    static Accel* BVH4iTriangle4v(TriangleMesh* mesh);
+    static Accel* BVH4iTriangle4i(TriangleMesh* mesh);
 
     /*! initializes the acceleration structure */
     void init (size_t numNodes = 0, size_t numPrimitives = 0);

@@ -271,7 +271,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
   
-  Accel* BVH4i::BVH4iTriangle1(TriangleMeshScene::TriangleMesh* mesh)
+  Accel* BVH4i::BVH4iTriangle1(TriangleMesh* mesh)
   {
     BVH4i* accel = new BVH4i(TriangleMeshTriangle1::type);
 
@@ -285,7 +285,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4i::BVH4iTriangle4(TriangleMeshScene::TriangleMesh* mesh)
+  Accel* BVH4i::BVH4iTriangle4(TriangleMesh* mesh)
   {
     BVH4i* accel = new BVH4i(TriangleMeshTriangle4::type);
 
@@ -299,7 +299,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4i::BVH4iTriangle1v(TriangleMeshScene::TriangleMesh* mesh)
+  Accel* BVH4i::BVH4iTriangle1v(TriangleMesh* mesh)
   {
     BVH4i* accel = new BVH4i(TriangleMeshTriangle1v::type);
 
@@ -313,7 +313,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4i::BVH4iTriangle4v(TriangleMeshScene::TriangleMesh* mesh)
+  Accel* BVH4i::BVH4iTriangle4v(TriangleMesh* mesh)
   {
     BVH4i* accel = new BVH4i(TriangleMeshTriangle4v::type);
 

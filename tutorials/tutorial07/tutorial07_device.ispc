@@ -102,7 +102,7 @@ uniform unsigned int addHair (RTCScene scene_i)
 {
 #if 1
 
-  uniform unsigned int geomID = rtcNewQuadraticBezierCurves (scene_i, RTC_GEOMETRY_STATIC, 1, 4);
+  uniform unsigned int geomID = rtcNewBezierCurves (scene_i, RTC_GEOMETRY_STATIC, 1, 4);
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
   uniform int*    uniform indices  = (uniform int*    uniform) rtcMapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
   vertices[0].x = 0; vertices[0].y = -2; vertices[0].z = 0; vertices[0].r = 0.5; 
@@ -121,7 +121,7 @@ uniform unsigned int addHair (RTCScene scene_i)
   const uniform int numCurvePoints = 3*numCurveSegments+1;
 
   /* create set of bezier curves */
-  uniform unsigned int geomID = rtcNewQuadraticBezierCurves (scene_i, RTC_GEOMETRY_STATIC, numCurves*numCurveSegments, numCurves*numCurvePoints);
+  uniform unsigned int geomID = rtcNewBezierCurves (scene_i, RTC_GEOMETRY_STATIC, numCurves*numCurveSegments, numCurves*numCurvePoints);
 
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
   uniform int*    uniform indices  = (uniform int*    uniform) rtcMapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 

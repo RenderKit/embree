@@ -104,7 +104,7 @@ RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene,                    //!< 
                                         size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
 
-/*! \brief Creates a new set of quadratic bezier curves. The number of
+/*! \brief Creates a new set of cubic bezier curves. The number of
   curves (numCurves), number of vertices (numVertices), and number of
   time steps (1 for normal curves, and 2 for linear motion blur), have
   to get specified at construction time. Further, the curve index
@@ -117,7 +117,7 @@ RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene,                    //!< 
   start vertex of the curve. The vertex buffer stores 4 control points
   per curve, each such control point consists of a single precision
   (x,y,z) position and radius, stored in that order in memory. */
-RTCORE_API unsigned rtcNewQuadraticBezierCurves (RTCScene scene,                    //!< the scene the curves belong to
+RTCORE_API unsigned rtcNewBezierCurves (RTCScene scene,                    //!< the scene the curves belong to
                                                  RTCGeometryFlags flags,            //!< geometry flags
                                                  size_t numCurves,                  //!< number of curves
                                                  size_t numVertices,                //!< number of vertices

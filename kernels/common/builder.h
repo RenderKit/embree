@@ -32,10 +32,10 @@ namespace embree
   builders.add(ISA,NAME,BUILDER,LEAFMIN,LEAFMAX);
 
 #define DECLARE_TRIANGLEMESH_BUILDER(symbol)                            \
-  namespace isa   { extern Builder* symbol(void* accel, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
-  namespace sse41 { extern Builder* symbol(void* accel, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
-  namespace avx   { extern Builder* symbol(void* accel, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
-  namespace avx2  { extern Builder* symbol(void* accel, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
+  namespace isa   { extern Builder* symbol(void* accel, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
+  namespace sse41 { extern Builder* symbol(void* accel, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
+  namespace avx   { extern Builder* symbol(void* accel, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
+  namespace avx2  { extern Builder* symbol(void* accel, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
   void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
   TriangleMeshBuilderFunc symbol = (TriangleMeshBuilderFunc) symbol##_error;
   

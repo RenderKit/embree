@@ -98,7 +98,7 @@ namespace embree
 	{
 	  if (unlikely(scene->get(group) == NULL)) continue;
 	  if (scene->get(group)->type != TRIANGLE_MESH) continue;
-	  const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
+	  const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
 	  if (unlikely(!mesh->isEnabled())) continue;
 
 	  maxPrimsPerGroup = max(maxPrimsPerGroup,mesh->numTriangles);
@@ -166,7 +166,7 @@ namespace embree
       {       
         Geometry* geom = scene->get(group);
         if (geom == NULL || geom->type != TRIANGLE_MESH) continue;
-        TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+        TriangleMesh* mesh = (TriangleMesh*) geom;
 	if (unlikely(!mesh->isEnabled())) continue;
 
         const size_t numTriangles = mesh->numTriangles;	
@@ -194,7 +194,7 @@ namespace embree
       {       
         Geometry* geom = scene->get(group);
         if (geom == NULL || geom->type != TRIANGLE_MESH) continue;
-        TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+        TriangleMesh* mesh = (TriangleMesh*) geom;
 	if (unlikely(!mesh->isEnabled())) continue;
 
         for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
@@ -231,7 +231,7 @@ namespace embree
       {       
         Geometry* geom = scene->get(group);
         if (geom == NULL || geom->type != TRIANGLE_MESH) continue;
-        TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+        TriangleMesh* mesh = (TriangleMesh*) geom;
 	if (unlikely(!mesh->isEnabled())) continue;
 
         const size_t numTriangles = min(mesh->numTriangles-offset,endID-currentID);
@@ -482,8 +482,8 @@ namespace embree
         const size_t index = morton[start+i].index;
         const size_t primID = index & encodeMask; 
         const size_t geomID = index >> encodeShift; 
-        const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-        const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         
         const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
         const ssef v1 = select(0x7,(ssef)mesh->vertex(tri.v[1]),zero);

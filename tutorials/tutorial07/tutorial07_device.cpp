@@ -352,7 +352,7 @@ RTCScene convertScene(ISPCScene* scene_in)
     PRINT(hair->numHairs);
     
     /* create a hair set */
-    unsigned int geomID = rtcNewQuadraticBezierCurves (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
+    unsigned int geomID = rtcNewBezierCurves (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
     rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->index,0,sizeof(int));
 #if USE_OCCLUSION_FILTER

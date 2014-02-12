@@ -34,7 +34,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../common/geometry.cpp
   ../common/scene_user_geometry.cpp
   ../common/scene_triangle_mesh.cpp
-  ../common/scene_quadratic_bezier_curves.cpp
+  ../common/scene_bezier_curves.cpp
   
   geometry/triangle1.cpp
   geometry/ispc_wrapper_knc.cpp
