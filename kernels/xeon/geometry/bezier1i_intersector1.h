@@ -94,6 +94,27 @@ namespace embree
       return true;
     }
 
+    static __forceinline bool intersectBoxes(const Ray& ray,const Vec3fa &v0,const Vec3fa &v1,const Vec3fa &v2,const Vec3fa &v3)
+    {
+      BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+      const avx4f p0 = curve3D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+      const avx4f p1 = curve3D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+      const avx3f d0(p0.x,p0.y,p0.z);
+      const avx3f d1(p1.x,p1.y,p1.z);
+      const avx3f d_min = min(d0,d1) - avx3f(p0.w);
+      const avx3f d_max = max(d0,d1) + avx3f(p1.w);
+      
+      const Vec3fa ray_rdir = rcp_safe(ray.dir);
+      const avx3f t_min = (d_min - avx3f(ray.org)) * avx3f(ray_rdir);
+      const avx3f t_max = (d_max - avx3f(ray.org)) * avx3f(ray_rdir);
+      const avx3f tNear3 = min(t_min,t_max);
+      const avx3f tFar3  = max(t_min,t_max);
+      const avxf tNear = max(tNear3.x,tNear3.y,tNear3.z,avxf(ray.tnear));
+      const avxf tFar  = min(tFar3.x,tFar3.y,tFar3.z,avxf(ray.tfar));
+      const avxb vmask = tNear <= tFar;
+      return any(vmask);
+    }
+
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
@@ -104,6 +125,7 @@ namespace embree
       const Vec3fa &v3 = curve_in.p[3];
 
       //if (!intersectCylinder(ray,v0,v1,v2,v3)) return;
+      if (!intersectBoxes(ray,v0,v1,v2,v3)) return;
 
       /* transform control points into ray space */
       Vec3fa w0 = xfmVector(pre.ray_space,v0-ray.org); w0.w = v0.w;
