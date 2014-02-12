@@ -97,7 +97,7 @@ namespace embree
 #if defined(__INTERSECTION_FILTER__) || defined(__USE_RAY_MASK__)
       while (true) 
       {
-        TriangleMeshScene::TriangleMesh* geometry = ((Scene*)geom)->getTriangleMesh(geomID);
+        TriangleMesh* geometry = ((Scene*)geom)->getTriangleMesh(geomID);
         if ((geometry->mask & ray.mask) == 0) {
           valid[i] = 0;
           if (none(valid)) return;
@@ -200,7 +200,7 @@ namespace embree
       for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
       {  
         const int geomID = tri.geomID[i];
-        TriangleMeshScene::TriangleMesh* geometry = ((Scene*)geom)->getTriangleMesh(geomID);
+        TriangleMesh* geometry = ((Scene*)geom)->getTriangleMesh(geomID);
 
 #if defined(__USE_RAY_MASK__)
         /* goto next hit if mask test fails */

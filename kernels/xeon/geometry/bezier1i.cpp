@@ -38,7 +38,7 @@ namespace embree
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
     const unsigned primID = prim.primID();
-    const QuadraticBezierCurvesScene::QuadraticBezierCurves* curves = scene->getBezierCurves(geomID);
+    const BezierCurves* curves = scene->getBezierCurves(geomID);
     const int vtx = curves->curve(primID);
     const Vec3fa& p0 = curves->vertex(vtx);
     new (dst) Bezier1i(&p0,geomID,primID,curves->mask);
@@ -51,7 +51,7 @@ namespace embree
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
     const unsigned primID = prim.primID();
-    const QuadraticBezierCurvesScene::QuadraticBezierCurves* curves = scene->getBezierCurves(geomID);
+    const BezierCurves* curves = scene->getBezierCurves(geomID);
     const int vtx = curves->curve(primID);
     const Vec3fa& p0 = curves->vertex(vtx);
     new (dst) Bezier1i(&p0,geomID,primID,curves->mask);
@@ -68,7 +68,7 @@ namespace embree
       Bezier1i& dst = ((Bezier1i*) prim)[j];
       const unsigned geomID = dst.geomID;
       const unsigned primID = dst.primID;
-      const QuadraticBezierCurvesScene::QuadraticBezierCurves* curves = scene->getBezierCurves(geomID);
+      const BezierCurves* curves = scene->getBezierCurves(geomID);
       const int vtx = curves->curve(primID);
       bounds.extend(curves->vertex(vtx+0));
       bounds.extend(curves->vertex(vtx+1));

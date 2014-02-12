@@ -85,6 +85,8 @@ float T_hair = 0.3f;
 //Vertex* vertices = NULL;
 //int*    indices = NULL;
 
+Vec3fa renderPixelTestEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
+
 __forceinline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 {
   const float t0 = 1.0f - t, t1 = t;
@@ -357,7 +359,7 @@ RTCScene convertScene(ISPCScene* scene_in)
     PRINT(hair->numHairs);
     
     /* create a hair set */
-    unsigned int geomID = rtcNewQuadraticBezierCurves (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
+    unsigned int geomID = rtcNewBezierCurves (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
     rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->index,0,sizeof(int));
 #if USE_OCCLUSION_FILTER
@@ -607,6 +609,35 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   return color;
 }
 
+
+Vec3fa renderPixelTestEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+{
+  /* initialize ray */
+  RTCRay2 ray;
+  ray.org = p;
+  ray.org.w = 0.0f;
+  ray.dir = normalize(x*vx + y*vy + vz);
+  Vec3fa dir1 = normalize((x+1)*vx + (y+1)*vy + vz);
+  ray.dir.w = 0.5f*0.707f*length(dir1-ray.dir);
+  ray.tnear = 0.0f;
+  ray.tfar = inf;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = 0;
+
+  Vec3fa color = Vec3f(0.0f);
+  float weight = 1.0f;
+
+  rtcIntersect(g_scene,(RTCRay&)ray);
+  ray.filter = NULL; // (RTCFilterFunc) intersectionFilter;
+
+  if (ray.primID != -1)
+    color += abs(dot(ray.dir,ray.Ng));
+
+  return color;
+}
+
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
                 const int width,
@@ -629,7 +660,9 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    //Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixelTestEyeLight(x,y,vx,vy,vz,p);
+
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

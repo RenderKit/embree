@@ -65,7 +65,7 @@ namespace embree
       {
 	if (unlikely(scene->get(group) == NULL)) continue;
 	if (scene->get(group)->type != TRIANGLE_MESH) continue;
-	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
+	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
 	if (unlikely(!mesh->isEnabled())) continue;
 	if (unlikely(mesh->numTimeSteps != 1)) continue;
 
@@ -245,7 +245,7 @@ namespace embree
     {       
       if (unlikely(scene->get(group) == NULL)) continue;
       if (scene->get(group)->type != TRIANGLE_MESH) continue;
-      const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
+      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
@@ -282,12 +282,12 @@ namespace embree
     {       
       if (unlikely(scene->get(group) == NULL)) continue;
       if (unlikely(scene->get(group)->type != TRIANGLE_MESH)) continue;
-      const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
+      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
 
-      const TriangleMeshScene::TriangleMesh::Triangle* tri = &mesh->triangle(offset);
+      const TriangleMesh::Triangle* tri = &mesh->triangle(offset);
 
       for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,tri++)	 
 	{
@@ -355,7 +355,7 @@ namespace embree
     {       
       if (unlikely(scene->get(group) == NULL)) continue;
       if (unlikely(scene->get(group)->type != TRIANGLE_MESH)) continue;
-      const TriangleMeshScene::TriangleMesh* const mesh = scene->getTriangleMesh(group);
+      const TriangleMesh* const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
@@ -364,7 +364,7 @@ namespace embree
       const unsigned int groupCode = (group << encodeShift);
       for (size_t i=0; i<numTriangles; i++)	  
       {
-	const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(offset+i);
+	const TriangleMesh::Triangle& tri = mesh->triangle(offset+i);
 	prefetch<PFHINT_NT>(&tri + 16);
 	prefetch<PFHINT_NT>(&tri + 4);
 
@@ -436,8 +436,8 @@ namespace embree
 	    const unsigned int index  = m[j].index;
 	    const unsigned int primID = index & encodeMask; 
 	    const unsigned int geomID = index >> encodeShift; 
-	    const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-	    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+	    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
 
 	    const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
 	    const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
@@ -466,8 +466,8 @@ namespace embree
 	    const unsigned int primID = index & encodeMask; 
 	    const unsigned int geomID = index >> encodeShift; 
 
-	    const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-	    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+	    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
 
 	    const mic_f v0 = broadcast4to16f((float*)&mesh->vertex(tri.v[0]));
 	    const mic_f v1 = broadcast4to16f((float*)&mesh->vertex(tri.v[1]));
@@ -500,8 +500,8 @@ namespace embree
 	    const unsigned int primID = index & encodeMask; 
 	    const unsigned int geomID = index >> encodeShift; 
 
-	    const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-	    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+	    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
 
 	    const mic_f v0 = broadcast4to16f((float*)&mesh->vertex(tri.v[0]));
 	    const mic_f v1 = broadcast4to16f((float*)&mesh->vertex(tri.v[1]));
@@ -530,8 +530,8 @@ namespace embree
 	    const unsigned int primID = index & encodeMask; 
 	    const unsigned int geomID = index >> encodeShift; 
 
-	    const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-	    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+	    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
 
 	    const mic_f v0 = broadcast4to16f((float*)&mesh->vertex(tri.v[0]));
 	    const mic_f v1 = broadcast4to16f((float*)&mesh->vertex(tri.v[1]));
@@ -786,8 +786,8 @@ namespace embree
 	const mic_i morton_primID = morton_index & morton_mask;
 	const mic_i morton_geomID = morton_index >> morton_shift;
 
-	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-	const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	const TriangleMesh::Triangle& tri = mesh->triangle(primID);
       
 	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
 	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);

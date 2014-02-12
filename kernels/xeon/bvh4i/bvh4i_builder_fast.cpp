@@ -140,7 +140,7 @@ namespace embree
       for (; g<numGroups; g++) {       
         Geometry* geom = scene->get(g);
         if (geom == NULL || geom->type != TRIANGLE_MESH) continue;
-        TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+        TriangleMesh* mesh = (TriangleMesh*) geom;
 	if (unlikely(!mesh->isEnabled())) continue;
         const size_t numTriangles = mesh->numTriangles;
         if (numSkipped + numTriangles > startID) break;
@@ -158,7 +158,7 @@ namespace embree
       {
         Geometry* geom = scene->get(g);
         if (geom == NULL || geom->type != TRIANGLE_MESH) continue;
-        TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+        TriangleMesh* mesh = (TriangleMesh*) geom;
 	if (unlikely(!mesh->isEnabled())) continue;
 
         for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
@@ -258,8 +258,8 @@ namespace embree
                                                const Scene *__restrict__ const scene,
                                                Triangle1 * __restrict__ const acc)
     {
-      const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-      const TriangleMeshScene::TriangleMesh::Triangle & tri = mesh->triangle(primID);
+      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+      const TriangleMesh::Triangle & tri = mesh->triangle(primID);
       
       const ssef v0 = select(0x7,(ssef) mesh->vertex(tri.v[0]),zero);
       const ssef v1 = select(0x7,(ssef) mesh->vertex(tri.v[1]),zero);

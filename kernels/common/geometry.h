@@ -24,7 +24,7 @@ namespace embree
   class Scene;
 
   /*! type of geometry */
-  enum GeometryTy { TRIANGLE_MESH, USER_GEOMETRY, QUADRATIC_BEZIER_CURVES, INSTANCES };
+  enum GeometryTy { TRIANGLE_MESH, USER_GEOMETRY, BEZIER_CURVES, INSTANCES };
   
 #if defined(__SSE__)
   typedef void (*ISPCFilterFunc4)(void* ptr, RTCRay4& ray, __m128 valid);

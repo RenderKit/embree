@@ -35,7 +35,7 @@ namespace embree
       return sa < sb;
     }
     
-    BVH4Refit::BVH4Refit (BVH4* bvh, Builder* builder, TriangleMeshScene::TriangleMesh* mesh)
+    BVH4Refit::BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh)
     : builder(builder), mesh(mesh), primTy(bvh->primTy), bvh(bvh) 
     {
       needAllThreads = builder->needAllThreads;
@@ -242,9 +242,9 @@ namespace embree
       bvh->bounds = recurse_bottom(bvh->root);
     }
 
-    Builder* BVH4BuilderObjectSplit4TriangleMeshFast (void* bvh, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize);
+    Builder* BVH4BuilderObjectSplit4TriangleMeshFast (void* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize);
 
-    Builder* BVH4BuilderRefitObjectSplit4TriangleMeshFast (void* accel, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize) {
+    Builder* BVH4BuilderRefitObjectSplit4TriangleMeshFast (void* accel, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize) {
       Builder* builder = BVH4BuilderObjectSplit4TriangleMeshFast(accel,mesh,minLeafSize,maxLeafSize);
       return new BVH4Refit((BVH4*)accel,builder,mesh);
     }

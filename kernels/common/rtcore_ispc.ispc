@@ -41,7 +41,7 @@ extern "C" uniform unsigned int ispcNewTriangleMesh (RTCScene scene,
                                                  uniform size_tt numTriangles,
                                                  uniform size_tt numVertices,
                                                  uniform size_tt numTimeSteps);
-extern "C" uniform unsigned int ispcNewQuadraticBezierCurves (RTCScene scene,
+extern "C" uniform unsigned int ispcNewBezierCurves (RTCScene scene,
                                                               uniform RTCGeometryFlags flags,
                                                               uniform size_tt numCurves,
                                                               uniform size_tt numVertices,
@@ -174,13 +174,13 @@ uniform unsigned int rtcNewTriangleMesh (RTCScene scene,
   return ispcNewTriangleMesh(scene,flags,numTriangles,numVertices,numTimeSteps);
 }
 
-uniform unsigned int rtcNewQuadraticBezierCurves (RTCScene scene,
+uniform unsigned int rtcNewBezierCurves (RTCScene scene,
                                                   uniform RTCGeometryFlags flags,
                                                   uniform size_t numCurves,
                                                   uniform size_t numVertices,
                                                   uniform size_t numTimeSteps)
 {
-  return ispcNewQuadraticBezierCurves (scene,flags,numCurves,numVertices,numTimeSteps);
+  return ispcNewBezierCurves (scene,flags,numCurves,numVertices,numTimeSteps);
 }
 
 void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask) {

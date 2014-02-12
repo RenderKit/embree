@@ -222,7 +222,7 @@ namespace embree
 
     /*! BVH4MB instantiations */
     static Accel* BVH4MBTriangle1v(Scene* scene);
-    static Accel* BVH4MBTriangle1vObjectSplit(TriangleMeshScene::TriangleMesh* mesh);
+    static Accel* BVH4MBTriangle1vObjectSplit(TriangleMesh* mesh);
 
     /*! clears the acceleration structure */
     void clear ();

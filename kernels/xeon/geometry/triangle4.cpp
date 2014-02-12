@@ -54,8 +54,8 @@ namespace embree
     for (size_t i=0; i<4 && prims; i++, prims++)
     {
       const PrimRef& prim = *prims;
-      const TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
-      const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
+      const TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
+      const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
       const Vec3fa& p0 = mesh->vertex(tri.v[0]);
       const Vec3fa& p1 = mesh->vertex(tri.v[1]);
       const Vec3fa& p2 = mesh->vertex(tri.v[2]);
@@ -82,8 +82,8 @@ namespace embree
       for (size_t i=0; i<4 && p < num; i++, p++)
       {
         const PrimRef& prim = prims[p];
-        const TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
-        const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
+        const TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
+        const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);
         const Vec3fa& p2 = mesh->vertex(tri.v[2]);
@@ -116,8 +116,8 @@ namespace embree
         if (dst.primID[i] == -1) break;
         const unsigned geomID = dst.geomID[i];
         const unsigned primID = dst.primID[i];
-        const TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-        const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa p0 = mesh->vertex(tri.v[0]);
         const Vec3fa p1 = mesh->vertex(tri.v[1]);
         const Vec3fa p2 = mesh->vertex(tri.v[2]);
@@ -136,7 +136,7 @@ namespace embree
 
   void TriangleMeshTriangle4::pack(char* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const 
   {
-    TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+    TriangleMesh* mesh = (TriangleMesh*) geom;
     
     ssei geomID = -1, primID = -1, mask = -1;
     sse3f v0 = zero, v1 = zero, v2 = zero;
@@ -144,7 +144,7 @@ namespace embree
     for (size_t i=0; i<4 && prims; i++, prims++)
     {
       const PrimRef& prim = *prims;
-      const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
+      const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
       const Vec3fa& p0 = mesh->vertex(tri.v[0]);
       const Vec3fa& p1 = mesh->vertex(tri.v[1]);
       const Vec3fa& p2 = mesh->vertex(tri.v[2]);
@@ -161,7 +161,7 @@ namespace embree
   BBox3fa TriangleMeshTriangle4::update(char* prim, size_t num, void* geom) const 
   {
     BBox3fa bounds = empty;
-    TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
+    TriangleMesh* mesh = (TriangleMesh*) geom;
     
     for (size_t j=0; j<num; j++) 
     {
@@ -175,7 +175,7 @@ namespace embree
         if (dst.primID[i] == -1) break;
         const unsigned geomID = dst.geomID[i];
         const unsigned primID = dst.primID[i];
-        const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa p0 = mesh->vertex(tri.v[0]);
         const Vec3fa p1 = mesh->vertex(tri.v[1]);
         const Vec3fa p2 = mesh->vertex(tri.v[2]);

@@ -16,7 +16,7 @@
 
 #include "bvh2hair.h"
 #include "bvh2hair_builder.h"
-#include "common/scene_quadratic_bezier_curves.h"
+#include "common/scene_bezier_curves.h"
 
 namespace embree
 {
@@ -53,9 +53,9 @@ namespace embree
     for (size_t i=0; i<scene->size(); i++) 
     {
       Geometry* geom = scene->get(i);
-      if (geom->type != QUADRATIC_BEZIER_CURVES) continue;
+      if (geom->type != BEZIER_CURVES) continue;
       if (!geom->isEnabled()) continue;
-      QuadraticBezierCurvesScene::QuadraticBezierCurves* set = (QuadraticBezierCurvesScene::QuadraticBezierCurves*) geom;
+      BezierCurves* set = (BezierCurves*) geom;
 
       for (size_t j=0; j<set->numCurves; j++) {
         int ofs = set->curve(j);

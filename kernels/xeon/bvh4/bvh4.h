@@ -230,11 +230,11 @@ namespace embree
     static Accel* BVH4Triangle4vObjectSplit(Scene* scene);
     static Accel* BVH4Triangle4iObjectSplit(Scene* scene);
 
-    static Accel* BVH4Triangle1ObjectSplit(TriangleMeshScene::TriangleMesh* mesh);
-    static Accel* BVH4Triangle4ObjectSplit(TriangleMeshScene::TriangleMesh* mesh);
-    static Accel* BVH4Triangle1vObjectSplit(TriangleMeshScene::TriangleMesh* mesh);
-    static Accel* BVH4Triangle4vObjectSplit(TriangleMeshScene::TriangleMesh* mesh);
-    static Accel* BVH4Triangle4Refit(TriangleMeshScene::TriangleMesh* mesh);
+    static Accel* BVH4Triangle1ObjectSplit(TriangleMesh* mesh);
+    static Accel* BVH4Triangle4ObjectSplit(TriangleMesh* mesh);
+    static Accel* BVH4Triangle1vObjectSplit(TriangleMesh* mesh);
+    static Accel* BVH4Triangle4vObjectSplit(TriangleMesh* mesh);
+    static Accel* BVH4Triangle4Refit(TriangleMesh* mesh);
 
     /*! initializes the acceleration structure */
     void init (size_t numPrimitives = 0);
@@ -290,7 +290,7 @@ namespace embree
     std::vector<BVH4*> objects;
   };
 
-  typedef void (*createTriangleMeshAccelTy)(TriangleMeshScene::TriangleMesh* mesh, BVH4*& accel, Builder*& builder);
+  typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, BVH4*& accel, Builder*& builder);
   typedef Builder* (*BVH4BuilderTopLevelFunc)(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
 
 #define DECLARE_TOPLEVEL_BUILDER(symbol)                                         \

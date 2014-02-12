@@ -371,14 +371,14 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  void createTriangleMeshTriangle1Morton(TriangleMeshScene::TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
+  void createTriangleMeshTriangle1Morton(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle1::type,mesh->parent);
     builder = BVH4BuilderMortonTriangleMeshFast(accel,mesh,4,inf);
   } 
 
-  void createTriangleMeshTriangle1(TriangleMeshScene::TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
+  void createTriangleMeshTriangle1(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle1::type,mesh->parent);
@@ -390,7 +390,7 @@ namespace embree
     }
   } 
 
-  void createTriangleMeshTriangle4(TriangleMeshScene::TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
+  void createTriangleMeshTriangle4(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent);
@@ -402,7 +402,7 @@ namespace embree
     }
   } 
 
-  void createTriangleMeshTriangle1v(TriangleMeshScene::TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
+  void createTriangleMeshTriangle1v(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle1v::type,mesh->parent);
@@ -414,7 +414,7 @@ namespace embree
     }
   } 
 
-  void createTriangleMeshTriangle4v(TriangleMeshScene::TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
+  void createTriangleMeshTriangle4v(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle4v::type,mesh->parent);
@@ -547,7 +547,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4::BVH4Triangle1ObjectSplit(TriangleMeshScene::TriangleMesh* mesh)
+  Accel* BVH4::BVH4Triangle1ObjectSplit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle1::type,mesh->parent);
     Builder* builder = BVH4BuilderObjectSplit4TriangleMeshFast(accel,mesh,4,inf);
@@ -555,7 +555,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4::BVH4Triangle4ObjectSplit(TriangleMeshScene::TriangleMesh* mesh)
+  Accel* BVH4::BVH4Triangle4ObjectSplit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent);
     Builder* builder = BVH4BuilderObjectSplit4TriangleMeshFast(accel,mesh,4,inf);
@@ -563,7 +563,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4::BVH4Triangle1vObjectSplit(TriangleMeshScene::TriangleMesh* mesh)
+  Accel* BVH4::BVH4Triangle1vObjectSplit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle1v::type,mesh->parent);
     Builder* builder = BVH4BuilderObjectSplit4TriangleMeshFast(accel,mesh,4,inf);
@@ -571,7 +571,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4::BVH4Triangle4vObjectSplit(TriangleMeshScene::TriangleMesh* mesh)
+  Accel* BVH4::BVH4Triangle4vObjectSplit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle4v::type,mesh->parent);
     Builder* builder = BVH4BuilderObjectSplit4TriangleMeshFast(accel,mesh,4,inf);
@@ -579,7 +579,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4::BVH4Triangle4Refit(TriangleMeshScene::TriangleMesh* mesh)
+  Accel* BVH4::BVH4Triangle4Refit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent);
     Builder* builder = BVH4BuilderRefitObjectSplit4TriangleMeshFast(accel,mesh,4,inf);

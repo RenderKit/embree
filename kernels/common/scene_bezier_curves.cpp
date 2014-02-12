@@ -14,13 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "scene_quadratic_bezier_curves.h"
+#include "scene_bezier_curves.h"
 #include "scene.h"
 
 namespace embree
 {
-  QuadraticBezierCurvesScene::QuadraticBezierCurves::QuadraticBezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
-    : Geometry(parent,QUADRATIC_BEZIER_CURVES,numCurves,flags), 
+  BezierCurves::BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+    : Geometry(parent,BEZIER_CURVES,numCurves,flags), 
       mask(-1), built(false), numTimeSteps(numTimeSteps),
       numCurves(numCurves), needCurves(false),
       numVertices(numVertices), needVertices(false)
@@ -32,19 +32,19 @@ namespace embree
     enabling();
   }
 
-  void QuadraticBezierCurvesScene::QuadraticBezierCurves::enabling() 
+  void BezierCurves::enabling() 
   { 
     if (numTimeSteps == 1) atomic_add(&parent->numCurves ,numCurves); 
     else                   atomic_add(&parent->numCurves2,numCurves); 
   }
   
-  void QuadraticBezierCurvesScene::QuadraticBezierCurves::disabling() 
+  void BezierCurves::disabling() 
   { 
     if (numTimeSteps == 1) atomic_add(&parent->numCurves ,-numCurves); 
     else                   atomic_add(&parent->numCurves2,-numCurves); 
   }
   
-  void QuadraticBezierCurvesScene::QuadraticBezierCurves::setMask (unsigned mask) 
+  void BezierCurves::setMask (unsigned mask) 
   {
     if (parent->isStatic() && parent->isBuild()) {
       recordError(RTC_INVALID_OPERATION);
@@ -53,7 +53,7 @@ namespace embree
     this->mask = mask; 
   }
 
-  void QuadraticBezierCurvesScene::QuadraticBezierCurves::enable () 
+  void BezierCurves::enable () 
   {
     if (parent->isStatic() || anyMappedBuffers()) {
       recordError(RTC_INVALID_OPERATION);
@@ -62,7 +62,7 @@ namespace embree
     Geometry::enable();
   }
 
-  void QuadraticBezierCurvesScene::QuadraticBezierCurves::update () 
+  void BezierCurves::update () 
   {
     if (parent->isStatic() || anyMappedBuffers()) {
       recordError(RTC_INVALID_OPERATION);
@@ -71,7 +71,7 @@ namespace embree
     Geometry::update();
   }
 
-  void QuadraticBezierCurvesScene::QuadraticBezierCurves::disable () 
+  void BezierCurves::disable () 
   {
     if (parent->isStatic() || anyMappedBuffers()) {
       recordError(RTC_INVALID_OPERATION);
@@ -80,7 +80,7 @@ namespace embree
     Geometry::disable();
   }
 
-  void QuadraticBezierCurvesScene::QuadraticBezierCurves::erase () 
+  void BezierCurves::erase () 
   {
     if (parent->isStatic() || anyMappedBuffers()) {
       recordError(RTC_INVALID_OPERATION);
@@ -89,7 +89,7 @@ namespace embree
     Geometry::erase();
   }
 
-  void QuadraticBezierCurvesScene::QuadraticBezierCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
+  void BezierCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
   { 
     if (parent->isStatic() && parent->isBuild()) {
       recordError(RTC_INVALID_OPERATION);
@@ -135,7 +135,7 @@ namespace embree
     }
   }
 
-  void* QuadraticBezierCurvesScene::QuadraticBezierCurves::map(RTCBufferType type) 
+  void* BezierCurves::map(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild()) {
       recordError(RTC_INVALID_OPERATION);
@@ -152,7 +152,7 @@ namespace embree
     }
   }
 
-  void QuadraticBezierCurvesScene::QuadraticBezierCurves::unmap(RTCBufferType type) 
+  void BezierCurves::unmap(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild()) {
       recordError(RTC_INVALID_OPERATION);
@@ -167,11 +167,11 @@ namespace embree
     }
   }
 
-  void QuadraticBezierCurvesScene::QuadraticBezierCurves::setUserData (void* ptr, bool ispc) {
+  void BezierCurves::setUserData (void* ptr, bool ispc) {
     userPtr = ptr;
   }
 
-  void QuadraticBezierCurvesScene::QuadraticBezierCurves::immutable () 
+  void BezierCurves::immutable () 
   {
     built = true;
     bool freeCurves    = !needCurves;
@@ -181,7 +181,7 @@ namespace embree
     if (freeVertices ) vertices[1].free();
   }
 
-  bool QuadraticBezierCurvesScene::QuadraticBezierCurves::verify () 
+  bool BezierCurves::verify () 
   {
     float range = sqrtf(0.5f*FLT_MAX);
     for (size_t i=0; i<numCurves; i++) {

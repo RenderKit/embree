@@ -55,7 +55,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4MB::BVH4MBTriangle1vObjectSplit(TriangleMeshScene::TriangleMesh* mesh)
+  Accel* BVH4MB::BVH4MBTriangle1vObjectSplit(TriangleMesh* mesh)
   {
     BVH4MB* accel = new BVH4MB(TriangleMeshTriangle1vMB::type,mesh->parent);
     Builder* builder = BVH4MBBuilderObjectSplit1(accel,mesh,mesh,1,inf);

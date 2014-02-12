@@ -213,11 +213,11 @@ namespace embree
       return -1;
     }
     
-    Geometry* geom = new TriangleMeshScene::TriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps);
+    Geometry* geom = new TriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps);
     return geom->id;
   }
 
-  unsigned Scene::newQuadraticBezierCurves (RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  unsigned Scene::newBezierCurves (RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       recordError(RTC_INVALID_OPERATION);
@@ -229,7 +229,7 @@ namespace embree
       return -1;
     }
     
-    Geometry* geom = new QuadraticBezierCurvesScene::QuadraticBezierCurves(this,gflags,numCurves,numVertices,numTimeSteps);
+    Geometry* geom = new BezierCurves(this,gflags,numCurves,numVertices,numTimeSteps);
     return geom->id;
   }
 

@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  TriangleMeshScene::TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
+  TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
     : Geometry(parent,TRIANGLE_MESH,numTriangles,flags), 
       mask(-1), built(false), numTimeSteps(numTimeSteps),
       numTriangles(numTriangles), needTriangles(false),
@@ -32,28 +32,28 @@ namespace embree
     enabling();
   }
   
-  void TriangleMeshScene::TriangleMesh::enabling() 
+  void TriangleMesh::enabling() 
   { 
     if (numTimeSteps == 1) atomic_add(&parent->numTriangleMeshes ,1); 
     else                   atomic_add(&parent->numTriangleMeshes2,1); 
   }
   
-  void TriangleMeshScene::TriangleMesh::disabling() 
+  void TriangleMesh::disabling() 
   { 
     if (numTimeSteps == 1) atomic_add(&parent->numTriangleMeshes ,-1); 
     else                   atomic_add(&parent->numTriangleMeshes2,-1); 
   }
 
-  void TriangleMeshScene::TriangleMesh::split (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) const
+  void TriangleMesh::split (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) const
   {
-    const TriangleMeshScene::TriangleMesh::Triangle& tri = triangle(prim.primID());
+    const TriangleMesh::Triangle& tri = triangle(prim.primID());
     const Vec3fa& v0 = vertex(tri.v[0]);
     const Vec3fa& v1 = vertex(tri.v[1]);
     const Vec3fa& v2 = vertex(tri.v[2]);
     splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
   }
   
-  void TriangleMeshScene::TriangleMesh::setMask (unsigned mask) 
+  void TriangleMesh::setMask (unsigned mask) 
   {
     if (parent->isStatic() && parent->isBuild()) {
       recordError(RTC_INVALID_OPERATION);
@@ -62,7 +62,7 @@ namespace embree
     this->mask = mask; 
   }
 
-  void TriangleMeshScene::TriangleMesh::enable () 
+  void TriangleMesh::enable () 
   {
     if (parent->isStatic() || anyMappedBuffers()) {
       recordError(RTC_INVALID_OPERATION);
@@ -71,7 +71,7 @@ namespace embree
     Geometry::enable();
   }
 
-  void TriangleMeshScene::TriangleMesh::update () 
+  void TriangleMesh::update () 
   {
     if (parent->isStatic() || anyMappedBuffers()) {
       recordError(RTC_INVALID_OPERATION);
@@ -80,7 +80,7 @@ namespace embree
     Geometry::update();
   }
 
-  void TriangleMeshScene::TriangleMesh::disable () 
+  void TriangleMesh::disable () 
   {
     if (parent->isStatic() || anyMappedBuffers()) {
       recordError(RTC_INVALID_OPERATION);
@@ -89,7 +89,7 @@ namespace embree
     Geometry::disable();
   }
 
-  void TriangleMeshScene::TriangleMesh::erase () 
+  void TriangleMesh::erase () 
   {
     if (parent->isStatic() || anyMappedBuffers()) {
       recordError(RTC_INVALID_OPERATION);
@@ -98,7 +98,7 @@ namespace embree
     Geometry::erase();
   }
 
-  void TriangleMeshScene::TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
+  void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
   { 
     if (parent->isStatic() && parent->isBuild()) {
       recordError(RTC_INVALID_OPERATION);
@@ -144,7 +144,7 @@ namespace embree
     }
   }
 
-  void* TriangleMeshScene::TriangleMesh::map(RTCBufferType type) 
+  void* TriangleMesh::map(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild()) {
       recordError(RTC_INVALID_OPERATION);
@@ -161,7 +161,7 @@ namespace embree
     }
   }
 
-  void TriangleMeshScene::TriangleMesh::unmap(RTCBufferType type) 
+  void TriangleMesh::unmap(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild()) {
       recordError(RTC_INVALID_OPERATION);
@@ -176,11 +176,11 @@ namespace embree
     }
   }
 
-  void TriangleMeshScene::TriangleMesh::setUserData (void* ptr, bool ispc) {
+  void TriangleMesh::setUserData (void* ptr, bool ispc) {
     userPtr = ptr;
   }
 
-  void TriangleMeshScene::TriangleMesh::immutable () 
+  void TriangleMesh::immutable () 
   {
     built = true;
     bool freeTriangles = !(needTriangles || parent->needTriangles);
@@ -190,7 +190,7 @@ namespace embree
     if (freeVertices ) vertices[1].free();
   }
 
-  bool TriangleMeshScene::TriangleMesh::verify () 
+  bool TriangleMesh::verify () 
   {
     float range = sqrtf(0.5f*FLT_MAX);
     for (size_t i=0; i<numTriangles; i++) {

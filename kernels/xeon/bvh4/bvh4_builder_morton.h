@@ -134,7 +134,7 @@ namespace embree
       };
       
       /*! Constructor. */
-      BVH4BuilderMorton (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      BVH4BuilderMorton (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
       
       /*! Destruction */
       ~BVH4BuilderMorton ();
@@ -217,7 +217,7 @@ namespace embree
       BVH4* bvh;               //!< Output BVH
       BuildSource* source;      //!< input geometry
       Scene* scene;
-      TriangleMeshScene::TriangleMesh* mesh;
+      TriangleMesh* mesh;
       
       size_t topLevelItemThreshold;
       size_t encodeShift;

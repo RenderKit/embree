@@ -42,8 +42,8 @@ namespace embree
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
     const unsigned primID = prim.primID();
-    const TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+    const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
     const Vec3fa& p0 = mesh->vertex(tri.v[0]);
     const Vec3fa& p1 = mesh->vertex(tri.v[1]);
     const Vec3fa& p2 = mesh->vertex(tri.v[2]);
@@ -57,8 +57,8 @@ namespace embree
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
     const unsigned primID = prim.primID();
-    const TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+    const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
     const Vec3fa& p0 = mesh->vertex(tri.v[0]);
     const Vec3fa& p1 = mesh->vertex(tri.v[1]);
     const Vec3fa& p2 = mesh->vertex(tri.v[2]);
@@ -76,8 +76,8 @@ namespace embree
       Triangle1v& dst = ((Triangle1v*) prim)[j];
       const unsigned geomID = dst.geomID();
       const unsigned primID = dst.primID();
-      const TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-      const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+      const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+      const TriangleMesh::Triangle& tri = mesh->triangle(primID);
       const Vec3fa v0 = mesh->vertex(tri.v[0]);
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
       const Vec3fa v2 = mesh->vertex(tri.v[2]);
@@ -92,8 +92,8 @@ namespace embree
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
     const unsigned primID = prim.primID();
-    const TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
-    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+    const TriangleMesh* mesh = (TriangleMesh*) geom;
+    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
     const Vec3fa& p0 = mesh->vertex(tri.v[0]);
     const Vec3fa& p1 = mesh->vertex(tri.v[1]);
     const Vec3fa& p2 = mesh->vertex(tri.v[2]);
@@ -106,8 +106,8 @@ namespace embree
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
     const unsigned primID = prim.primID();
-    const TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
-    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+    const TriangleMesh* mesh = (TriangleMesh*) geom;
+    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
     const Vec3fa& p0 = mesh->vertex(tri.v[0]);
     const Vec3fa& p1 = mesh->vertex(tri.v[1]);
     const Vec3fa& p2 = mesh->vertex(tri.v[2]);
@@ -118,14 +118,14 @@ namespace embree
   BBox3fa TriangleMeshTriangle1v::update(char* prim, size_t num, void* geom) const 
   {
     BBox3fa bounds = empty;
-    const TriangleMeshScene::TriangleMesh* mesh = (const TriangleMeshScene::TriangleMesh*) geom;
+    const TriangleMesh* mesh = (const TriangleMesh*) geom;
     
     for (size_t j=0; j<num; j++) 
     {
       Triangle1v& dst = ((Triangle1v*) prim)[j];
       const unsigned geomID = dst.geomID();
       const unsigned primID = dst.primID();
-      const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+      const TriangleMesh::Triangle& tri = mesh->triangle(primID);
       const Vec3fa v0 = mesh->vertex(tri.v[0]);
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
       const Vec3fa v2 = mesh->vertex(tri.v[2]);
@@ -152,8 +152,8 @@ namespace embree
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
     const unsigned primID = prim.primID();
-    const TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+    const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
     const Vec3fa& a0 = mesh->vertex(tri.v[0],0);
     const Vec3fa& a1 = mesh->vertex(tri.v[0],1);
     const Vec3fa& b0 = mesh->vertex(tri.v[1],0);
@@ -170,8 +170,8 @@ namespace embree
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
     const unsigned primID = prim.primID();
-    const TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+    const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
     const Vec3fa& a0 = mesh->vertex(tri.v[0],0);
     const Vec3fa& a1 = mesh->vertex(tri.v[0],1);
     const Vec3fa& b0 = mesh->vertex(tri.v[1],0);
@@ -200,8 +200,8 @@ namespace embree
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
     const unsigned primID = prim.primID();
-    const TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
-    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+    const TriangleMesh* mesh = (TriangleMesh*) geom;
+    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
     const Vec3fa& a0 = mesh->vertex(tri.v[0],0);
     const Vec3fa& a1 = mesh->vertex(tri.v[0],1);
     const Vec3fa& b0 = mesh->vertex(tri.v[1],0);
@@ -217,8 +217,8 @@ namespace embree
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
     const unsigned primID = prim.primID();
-    const TriangleMeshScene::TriangleMesh* mesh = (TriangleMeshScene::TriangleMesh*) geom;
-    const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(primID);
+    const TriangleMesh* mesh = (TriangleMesh*) geom;
+    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
     const Vec3fa& a0 = mesh->vertex(tri.v[0],0);
     const Vec3fa& a1 = mesh->vertex(tri.v[0],1);
     const Vec3fa& b0 = mesh->vertex(tri.v[1],0);

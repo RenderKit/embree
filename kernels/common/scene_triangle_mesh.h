@@ -23,9 +23,6 @@
 
 namespace embree
 {
-  namespace TriangleMeshScene
-  {
-
     /*! Triangle Mesh */
     struct TriangleMesh : public Geometry, public BuildSource
     {
@@ -119,5 +116,4 @@ namespace embree
       bool needVertices;                //!< set if vertex array required by acceleration structure
       size_t numVertices;               //!< number of vertices
     };
-  }
 }

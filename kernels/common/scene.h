@@ -20,7 +20,7 @@
 
 #include "scene_triangle_mesh.h"
 #include "scene_user_geometry.h"
-#include "scene_quadratic_bezier_curves.h"
+#include "scene_bezier_curves.h"
 
 #include "common/acceln.h"
 #include "geometry.h"
@@ -34,7 +34,7 @@ namespace embree
     ALIGNED_CLASS;
   public:
 
-    typedef TriangleMeshScene::TriangleMesh TriangleMesh;
+    typedef TriangleMesh TriangleMesh;
     
     /*! Scene construction */
     Scene (RTCSceneFlags flags, RTCAlgorithmFlags aflags);
@@ -52,7 +52,7 @@ namespace embree
     unsigned int newTriangleMesh (RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new collection of quadratic bezier curves. */
-    unsigned int newQuadraticBezierCurves (RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
+    unsigned int newBezierCurves (RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
 
     /*! Builds acceleration structure for the scene. */
     void build ();
@@ -110,11 +110,11 @@ namespace embree
       if (geometries[i]->type != USER_GEOMETRY && geometries[i]->type != INSTANCES) return NULL;
       else return (UserGeometryScene::Base*) geometries[i]; 
     }
-    __forceinline QuadraticBezierCurvesScene::QuadraticBezierCurves* getBezierCurves(size_t i) { 
+    __forceinline BezierCurves* getBezierCurves(size_t i) { 
       assert(i < geometries.size()); 
       assert(geometries[i]);
-      assert(geometries[i]->type == QUADRATIC_BEZIER_CURVES);
-      return (QuadraticBezierCurvesScene::QuadraticBezierCurves*) geometries[i]; 
+      assert(geometries[i]->type == BEZIER_CURVES);
+      return (BezierCurves*) geometries[i]; 
     }
 
 
@@ -149,7 +149,7 @@ namespace embree
       size_t prims (size_t group, size_t* numVertices) const 
       {
         if (scene->get(group) == NULL || scene->get(group)->type != TRIANGLE_MESH) return 0;
-        TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMesh(group);
+        TriangleMesh* mesh = scene->getTriangleMesh(group);
         if (mesh == NULL || !mesh->isEnabled() || mesh->numTimeSteps != numTimeSteps) return 0;
         if (numVertices) *numVertices = mesh->numVertices;
         return mesh->numTriangles;
@@ -160,7 +160,7 @@ namespace embree
 	assert(scene->get(group) != NULL);
 	assert(scene->get(group)->type == TRIANGLE_MESH);
 
-        TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMesh(group);
+        TriangleMesh* mesh = scene->getTriangleMesh(group);
         if (mesh == NULL) return empty;
         return mesh->bounds(prim);
       }
@@ -170,7 +170,7 @@ namespace embree
 	assert(scene->get(group) != NULL);
 	assert(scene->get(group)->type == TRIANGLE_MESH);
 
-        TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMesh(group);
+        TriangleMesh* mesh = scene->getTriangleMesh(group);
         if (mesh == NULL) { 
           for (size_t i=0; i<end-begin; i++)
             bounds_o[i] = empty;
@@ -185,8 +185,8 @@ namespace embree
 	assert(scene->get(group) != NULL);
 	assert(scene->get(group)->type == TRIANGLE_MESH);
 
-        const TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMesh(group);
-        const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(prim);
+        const TriangleMesh* mesh = scene->getTriangleMesh(group);
+        const TriangleMesh::Triangle& tri = mesh->triangle(prim);
 	return mesh->vertex(tri.v[vtxID]);
       }
       
@@ -195,8 +195,8 @@ namespace embree
 	assert(scene->get(prim.geomID()));
 	assert(scene->get(prim.geomID())->type == TRIANGLE_MESH);
 
-        const TriangleMeshScene::TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
-        const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
+        const TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
+        const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
         const Vec3fa& v0 = mesh->vertex(tri.v[0]);
         const Vec3fa& v1 = mesh->vertex(tri.v[1]);
         const Vec3fa& v2 = mesh->vertex(tri.v[2]);
@@ -224,8 +224,8 @@ namespace embree
       
       size_t prims (size_t group, size_t* numVertices) const 
       {
-        if (scene->get(group) == NULL || scene->get(group)->type != QUADRATIC_BEZIER_CURVES) return 0;
-        QuadraticBezierCurvesScene::QuadraticBezierCurves* curves = scene->getBezierCurves(group);
+        if (scene->get(group) == NULL || scene->get(group)->type != BEZIER_CURVES) return 0;
+        BezierCurves* curves = scene->getBezierCurves(group);
         if (!curves->isEnabled() || curves->numTimeSteps != numTimeSteps) return 0;
         if (numVertices) *numVertices = curves->numVertices;
         return curves->numCurves;
@@ -234,8 +234,8 @@ namespace embree
       const BBox3fa bounds(size_t group, size_t prim) const 
       {
 	assert(scene->get(group) != NULL);
-	assert(scene->get(group)->type == QUADRATIC_BEZIER_CURVES);
-        QuadraticBezierCurvesScene::QuadraticBezierCurves* curves = scene->getBezierCurves(group);
+	assert(scene->get(group)->type == BEZIER_CURVES);
+        BezierCurves* curves = scene->getBezierCurves(group);
         if (curves == NULL) return empty;
         return curves->bounds(prim);
       }
@@ -274,7 +274,7 @@ namespace embree
     BezierBuildSource bezier_source_1;
   };
 
-  typedef Builder* (*TriangleMeshBuilderFunc)(void* accel, TriangleMeshScene::TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize);
+  typedef Builder* (*TriangleMeshBuilderFunc)(void* accel, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize);
   typedef Builder* (*BuilderFunc)            (void* accel, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize);
 
 }
