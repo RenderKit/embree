@@ -68,9 +68,9 @@ namespace embree
     }
 
     /* start recursive build */
-    //bvh->root = recurse_aligned(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,AffineSpace3fa(one)));
+    bvh->root = recurse_aligned(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,AffineSpace3fa(one)));
     //bvh->root = recurse_unaligned(threadIndex,0,begin,end,computeUnalignedBounds(curves,begin,end));
-    bvh->root = recurse_aligned_unaligned(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,AffineSpace3fa(one)));
+    //bvh->root = recurse_aligned_unaligned(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,AffineSpace3fa(one)));
     bvh->bounds = bounds;
 
     if (g_verbose >= 2) {
@@ -382,22 +382,35 @@ namespace embree
 
   typename BVH2Hair::NodeRef BVH2HairBuilder::recurse_aligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
   {
-    /*! compute leaf cost */
+    /* create enforced leaf */
     const size_t N = end-begin;
-    const float leafSAH = BVH2Hair::intCost*float(N)*halfArea(bounds.bounds);
+    if (N <= minLeafSize || depth > BVH2Hair::maxBuildDepth)
+      return leaf(threadIndex,depth,begin,end,bounds);
+
+    /*! compute leaf cost */
+    const float leafSAH = N <= maxLeafSize ? BVH2Hair::intCost*float(N)*halfArea(bounds.bounds) : inf;
     
     /* perform standard binning with aligned bounds */
     const AffineSpace3fa aligned(one);
     const ObjectSplit objectSplit = ObjectSplit::find(curves,begin,end,aligned).alignedBounds(curves,begin,end,aligned);
     const float objectSAH = BVH2Hair::travCostAligned*halfArea(bounds.bounds) + objectSplit.standardSAH();
 
-    /* leaf test */
-    if (N <= minLeafSize || depth > BVH2Hair::maxBuildDepth || (N <= maxLeafSize && leafSAH <= objectSAH))
-      return leaf(threadIndex,depth,begin,end,bounds);
+    /* calculate best SAH */
+    const float bestSAH = min(leafSAH,objectSAH);
+
+    /* perform fallback split */
+    if (bestSAH == float(inf)) 
+    {
+      AlignedNode* node = bvh->allocAlignedNode(threadIndex);
+      const FallBackSplit split = FallBackSplit::find(curves,begin,end);
+      assert((split.center-begin > 0) && (end-split.center) > 0);
+      node->set(0,split.bounds0,recurse_aligned(threadIndex,depth+1,begin,split.center,split.bounds0));
+      node->set(1,split.bounds1,recurse_aligned(threadIndex,depth+1,split.center,end  ,split.bounds1));
+      return bvh->encodeNode(node);
+    }
 
     /* perform object split */
-    if (objectSAH < float(inf)) 
-    {
+    else if (bestSAH == objectSAH) {
       UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
       const size_t center = objectSplit.split(curves,begin,end);
       assert((center-begin > 0) && (end-center) > 0);
@@ -406,22 +419,20 @@ namespace embree
       return bvh->encodeNode(node);
     }
 
-    /* perform fallback split */
-    else {
-      AlignedNode* node = bvh->allocAlignedNode(threadIndex);
-      const FallBackSplit split = FallBackSplit::find(curves,begin,end);
-      assert((split.center-begin > 0) && (end-split.center) > 0);
-      node->set(0,split.bounds0,recurse_aligned(threadIndex,depth+1,begin,split.center,split.bounds0));
-      node->set(1,split.bounds1,recurse_aligned(threadIndex,depth+1,split.center,end  ,split.bounds1));
-      return bvh->encodeNode(node);
-    }
+    /* else create leaf */
+    else
+      return leaf(threadIndex,depth,begin,end,bounds);
   }
 
   typename BVH2Hair::NodeRef BVH2HairBuilder::recurse_unaligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
   {
-    /*! compute leaf and split cost */
+    /* create enforced leaf */
     const size_t N = end-begin;
-    const float leafSAH = BVH2Hair::intCost*bounds.bounds.upper.w*halfArea(bounds.bounds);
+    if (N <= minLeafSize || depth > BVH2Hair::maxBuildDepth)
+      return leaf(threadIndex,depth,begin,end,bounds);
+
+    /*! compute leaf and split cost */
+    const float leafSAH = N <= maxLeafSize ? BVH2Hair::intCost*bounds.bounds.upper.w*halfArea(bounds.bounds) : inf;
     
     /* first split into two strands */
     const StrandSplit strandSplit = StrandSplit::find(curves,begin,end);
@@ -431,10 +442,8 @@ namespace embree
     const ObjectSplit objectSplit = ObjectSplit::find(curves,begin,end,bounds.space).unalignedBounds(curves,begin,end);
     const float objectSAH = BVH2Hair::travCostUnaligned*halfArea(bounds.bounds) + objectSplit.modifiedSAH();
 
-    /* leaf test */
+    /* calculate best SAH */
     const float bestSAH = min(leafSAH,strandSAH,objectSAH);
-    if (N <= minLeafSize || depth > BVH2Hair::maxBuildDepth || (N <= maxLeafSize && bestSAH == leafSAH))
-      return leaf(threadIndex,depth,begin,end,bounds);
 
     /* perform fallback split */
     if (bestSAH == float(inf)) {
@@ -457,7 +466,7 @@ namespace embree
     }
     
     /* perform object split */
-    else {
+    else if (bestSAH == objectSAH) {
       UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
       const size_t center = objectSplit.split(curves,begin,end);
       assert((center-begin > 0) && (end-center) > 0);
@@ -465,6 +474,10 @@ namespace embree
       node->set(1,objectSplit.bounds1,recurse_unaligned(threadIndex,depth+1,center,end   ,objectSplit.bounds1));
       return bvh->encodeNode(node);
     }
+
+    /* else create leaf */
+    else
+      return leaf(threadIndex,depth,begin,end,bounds);
   }
 
   typename BVH2Hair::NodeRef BVH2HairBuilder::recurse_aligned_unaligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
@@ -490,7 +503,7 @@ namespace embree
     const ObjectSplit objectSplitAligned = ObjectSplit::find(curves,begin,end,aligned).alignedBounds(curves,begin,end,aligned);
     const float alignedObjectSAH = BVH2Hair::travCostAligned*halfArea(bounds.bounds) + objectSplitAligned.modifiedSAH();
 
-    /* leaf test */
+    /* calculate best SAH */
     const float bestSAH = min(leafSAH,strandSAH,objectSAH,alignedObjectSAH);
 
     /* perform fallback split */
@@ -533,8 +546,8 @@ namespace embree
       return bvh->encodeNode(node);
     }
 
-    /* create leaf */
-    else //if (bestSAH == leafSAH)
+    /* else create leaf */
+    else
       return leaf(threadIndex,depth,begin,end,bounds);
   }
 
