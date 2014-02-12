@@ -60,8 +60,8 @@ namespace embree
       /*! calculates modified surface area heuristic for the split */
       __forceinline float modifiedSAH() const {
         return 
-          (BVH2Hair::travCostUnaligned*bounds0.bounds.upper.w + BVH2Hair::intCost*float(num0))*halfArea(bounds0.bounds) + 
-          (BVH2Hair::travCostUnaligned*bounds1.bounds.upper.w + BVH2Hair::intCost*float(num1))*halfArea(bounds1.bounds);
+          BVH2Hair::travCostUnaligned*float(num0)*halfArea(bounds0.bounds) + BVH2Hair::intCost*bounds0.bounds.upper.w + 
+          BVH2Hair::travCostUnaligned*float(num1)*halfArea(bounds1.bounds) + BVH2Hair::intCost*bounds1.bounds.upper.w;
       }
       
       /*! finds the two hair strands */
@@ -103,8 +103,8 @@ namespace embree
       /*! calculates modified surface area heuristic for the split */
       __forceinline float modifiedSAH() const {
         return 
-          (BVH2Hair::travCostUnaligned*bounds0.bounds.upper.w + BVH2Hair::intCost*float(num0))*halfArea(bounds0.bounds) + 
-          (BVH2Hair::travCostUnaligned*bounds1.bounds.upper.w + BVH2Hair::intCost*float(num1))*halfArea(bounds1.bounds);
+          BVH2Hair::travCostUnaligned*float(num0)*halfArea(bounds0.bounds) + BVH2Hair::intCost*bounds0.bounds.upper.w + 
+          BVH2Hair::travCostUnaligned*float(num1)*halfArea(bounds1.bounds) + BVH2Hair::intCost*bounds1.bounds.upper.w;
       }
 
       /*! performs object binning to the the best partitioning */

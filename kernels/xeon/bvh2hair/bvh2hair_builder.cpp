@@ -187,9 +187,11 @@ namespace embree
       const Vec3fa axisi = normalize(curves[left].p3-curves[left].p0);
       const float cos0 = abs(dot(axisi,axis0));
       const float cos1 = abs(dot(axisi,axis1));
-      if (cos0 < cos1) left++;
+      if (cos0 > cos1) left++;
       else std::swap(curves[left],curves[--right]);
     }
+    assert(left-begin == num0);
+    assert(end-left == num1);
     return left;
   }
 
@@ -340,6 +342,8 @@ namespace embree
       if (bin[dim] < pos) left++;
       else std::swap(curves[left],curves[--right]);
     }
+    assert(left-begin == num0);
+    assert(end-left == num1);
     return left;
   }
   
@@ -415,7 +419,7 @@ namespace embree
       return leaf(threadIndex,depth,begin,end,bounds);
 
     /*! compute leaf and split cost */
-    const float leafSAH = N <= maxLeafSize ? BVH2Hair::intCost*bounds.bounds.upper.w*halfArea(bounds.bounds) : inf;
+    const float leafSAH = N <= maxLeafSize ? BVH2Hair::intCost*float(N)*halfArea(bounds.bounds) : inf;
     
     /* first split into two strands */
     const StrandSplit strandSplit = StrandSplit::find(curves,begin,end);
@@ -471,7 +475,7 @@ namespace embree
       return leaf(threadIndex,depth,begin,end,bounds);
 
     /*! compute leaf and split cost */
-    const float leafSAH = N <= maxLeafSize ? BVH2Hair::intCost*bounds.bounds.upper.w*halfArea(bounds.bounds) : inf;
+    const float leafSAH = N <= maxLeafSize ? BVH2Hair::intCost*float(N)*halfArea(bounds.bounds) : inf;
 
     /* first split into two strands */
     const StrandSplit strandSplit = StrandSplit::find(curves,begin,end);
