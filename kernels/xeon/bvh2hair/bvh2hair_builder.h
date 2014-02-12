@@ -60,8 +60,8 @@ namespace embree
       /*! calculates modified surface area heuristic for the split */
       __forceinline float modifiedSAH() const {
         return 
-          (BVH2Hair::travCostUnaligned*bounds0.bounds.lower.w + BVH2Hair::intCost*float(num0))*halfArea(bounds0.bounds) + 
-          (BVH2Hair::travCostUnaligned*bounds1.bounds.lower.w + BVH2Hair::intCost*float(num1))*halfArea(bounds1.bounds);
+          (BVH2Hair::travCostUnaligned*bounds0.bounds.upper.w + BVH2Hair::intCost*float(num0))*halfArea(bounds0.bounds) + 
+          (BVH2Hair::travCostUnaligned*bounds1.bounds.upper.w + BVH2Hair::intCost*float(num1))*halfArea(bounds1.bounds);
       }
       
       /*! finds the two hair strands */
@@ -72,8 +72,8 @@ namespace embree
 
       friend std::ostream& operator<<(std::ostream& cout, const StrandSplit& p) {
         return std::cout << "{ " << std::endl << 
-          " bounds0 = " << p.bounds0 << ", areaSum0 = " << p.bounds0.bounds.lower.w << ", axis0 = " << p.axis0 << ", num0 = " << p.num0 << std::endl << 
-          " bounds1 = " << p.bounds1 << ", areaSum1 = " << p.bounds1.bounds.lower.w << ", axis1 = " << p.axis1 << ", num1 = " << p.num1 << std::endl << 
+          " bounds0 = " << p.bounds0 << ", areaSum0 = " << p.bounds0.bounds.upper.w << ", axis0 = " << p.axis0 << ", num0 = " << p.num0 << std::endl << 
+          " bounds1 = " << p.bounds1 << ", areaSum1 = " << p.bounds1.bounds.upper.w << ", axis1 = " << p.axis1 << ", num1 = " << p.num1 << std::endl << 
           "}";
       }
 
@@ -103,8 +103,8 @@ namespace embree
       /*! calculates modified surface area heuristic for the split */
       __forceinline float modifiedSAH() const {
         return 
-          (BVH2Hair::travCostUnaligned*bounds0.bounds.lower.w + BVH2Hair::intCost*float(num0))*halfArea(bounds0.bounds) + 
-          (BVH2Hair::travCostUnaligned*bounds1.bounds.lower.w + BVH2Hair::intCost*float(num1))*halfArea(bounds1.bounds);
+          (BVH2Hair::travCostUnaligned*bounds0.bounds.upper.w + BVH2Hair::intCost*float(num0))*halfArea(bounds0.bounds) + 
+          (BVH2Hair::travCostUnaligned*bounds1.bounds.upper.w + BVH2Hair::intCost*float(num1))*halfArea(bounds1.bounds);
       }
 
       /*! performs object binning to the the best partitioning */
@@ -122,8 +122,8 @@ namespace embree
       friend std::ostream& operator<<(std::ostream& cout, const ObjectSplit& p) {
         return std::cout << "{ " << std::endl << 
           " space = " << p.space << ", dim = " << p.dim << ", pos = " << p.pos << ", cost = " << p.cost << std::endl << 
-          " bounds0 = " << p.bounds0 << ", areaSum0 = " << p.bounds0.bounds.lower.w << ", num0 = " << p.num0 << std::endl << 
-          " bounds1 = " << p.bounds1 << ", areaSum1 = " << p.bounds1.bounds.lower.w << ", num1 = " << p.num1 << std::endl << 
+          " bounds0 = " << p.bounds0 << ", areaSum0 = " << p.bounds0.bounds.upper.w << ", num0 = " << p.num0 << std::endl << 
+          " bounds1 = " << p.bounds1 << ", areaSum1 = " << p.bounds1.bounds.upper.w << ", num1 = " << p.num1 << std::endl << 
           "}";
       }
       
@@ -136,6 +136,23 @@ namespace embree
       size_t num0,num1;
       ssef ofs,scale;
     };
+
+    /*! Performs fallback splits */
+    struct FallBackSplit
+    {
+      __forceinline FallBackSplit (size_t center, const BBox3fa& bounds0, const BBox3fa& bounds1)
+        : center(center), bounds0(bounds0), bounds1(bounds1) {}
+
+      /*! finds some partitioning */
+      static FallBackSplit find(Bezier1* curves, size_t begin, size_t end);
+
+    public:
+      size_t center;
+      BBox3fa bounds0, bounds1;
+    };
+
+    /*! calculate bounds for range of primitives */
+    static const BBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end);
 
     /*! calculate bounds for range of primitives */
     static const NAABBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space);
