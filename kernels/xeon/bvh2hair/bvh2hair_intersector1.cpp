@@ -21,9 +21,8 @@ namespace embree
 { 
   namespace isa
   {
-    __forceinline bool BVH2HairIntersector1::intersectBox(const BBox3fa& aabb, const Ray& ray, float& tNear, float& tFar)
+    __forceinline bool BVH2HairIntersector1::intersectBox(const BBox3fa& aabb, const Ray& ray, const Vec3fa& rdir, float& tNear, float& tFar)
     {
-      const Vec3fa rdir = rcp(ray.dir); // FIXME: move out of loop
       const Vec3fa tLowerXYZ = (aabb.lower - ray.org) * rdir;
       const Vec3fa tUpperXYZ = (aabb.upper - ray.org) * rdir;
       const Vec3fa tNearXYZ = min(tLowerXYZ,tUpperXYZ);
@@ -108,6 +107,7 @@ namespace embree
       stack[0].ref = bvh->root;
       stack[0].tNear = ray.tnear;
       stack[0].tFar  = ray.tfar;
+      const Vec3fa rdir = rcp(ray.dir);
 
       /* pop loop */
       while (true) pop:
@@ -137,9 +137,9 @@ namespace embree
 
             /*! intersect with both axis aligned boxes */
             float tNear0 = tNear, tFar0 = tFar;
-            bool hit0 = intersectBox(node->bounds(0), ray, tNear0, tFar0);
+            bool hit0 = intersectBox(node->bounds(0), ray, rdir, tNear0, tFar0);
             float tNear1 = tNear, tFar1 = tFar;
-            bool hit1 = intersectBox(node->bounds(1), ray, tNear1, tFar1);
+            bool hit1 = intersectBox(node->bounds(1), ray, rdir, tNear1, tFar1);
 
             /*! if no child is hit, pop next node */
             if (unlikely(!hit0 && !hit1))
