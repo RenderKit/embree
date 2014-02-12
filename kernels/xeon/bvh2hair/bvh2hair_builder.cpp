@@ -221,11 +221,9 @@ namespace embree
     /* perform binning of curves */
     for (size_t i=begin; i<end; i++)
     {
-      BBox3fa cbounds = empty;
-      const Vec3fa p0 = xfmPoint(space,curves[i].p0); cbounds.extend(p0);
-      const Vec3fa p1 = xfmPoint(space,curves[i].p1); cbounds.extend(p1);
-      const Vec3fa p2 = xfmPoint(space,curves[i].p2); cbounds.extend(p2);
-      const Vec3fa p3 = xfmPoint(space,curves[i].p3); cbounds.extend(p3);
+      const BBox3fa cbounds = curves[i].bounds(space); // FIXME: transforms again
+      const Vec3fa p0 = xfmPoint(space,curves[i].p0);
+      const Vec3fa p3 = xfmPoint(space,curves[i].p3);
       //const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),ssei(0),ssei(BINS-1));
       const ssei bin = floori((ssef(p0+p3) - ofs)*scale);
       assert(bin[0] >=0 && bin[0] < BINS);
@@ -399,10 +397,6 @@ namespace embree
       AlignedNode* node = bvh->allocAlignedNode(threadIndex);
       const size_t center = objectSplit.split(curves,begin,end);
       assert((center-begin > 0) && (end-center) > 0);
-
-      //BBox3fa bounds0 = empty;
-      //for (size_t i=begin; i<center; i++)
-
       node->set(0,objectSplit.bounds0.bounds,recurse_aligned(threadIndex,depth+1,begin ,center,objectSplit.bounds0));
       node->set(1,objectSplit.bounds1.bounds,recurse_aligned(threadIndex,depth+1,center,end   ,objectSplit.bounds1));
       return bvh->encodeNode(node);
@@ -439,8 +433,8 @@ namespace embree
       AlignedNode* node = bvh->allocAlignedNode(threadIndex);
       const FallBackSplit split = FallBackSplit::find(curves,begin,end);
       assert((split.center-begin > 0) && (end-split.center) > 0);
-      node->set(0,split.bounds0,recurse_aligned(threadIndex,depth+1,begin,split.center,split.bounds0));
-      node->set(1,split.bounds1,recurse_aligned(threadIndex,depth+1,split.center,end  ,split.bounds1));
+      node->set(0,split.bounds0,recurse_unaligned(threadIndex,depth+1,begin,split.center,split.bounds0));
+      node->set(1,split.bounds1,recurse_unaligned(threadIndex,depth+1,split.center,end  ,split.bounds1));
       return bvh->encodeNode(node);
     }
 
@@ -499,8 +493,8 @@ namespace embree
       AlignedNode* node = bvh->allocAlignedNode(threadIndex);
       const FallBackSplit split = FallBackSplit::find(curves,begin,end);
       assert((split.center-begin > 0) && (end-split.center) > 0);
-      node->set(0,split.bounds0,recurse_aligned(threadIndex,depth+1,begin,split.center,split.bounds0));
-      node->set(1,split.bounds1,recurse_aligned(threadIndex,depth+1,split.center,end  ,split.bounds1));
+      node->set(0,split.bounds0,recurse_aligned_unaligned(threadIndex,depth+1,begin,split.center,split.bounds0));
+      node->set(1,split.bounds1,recurse_aligned_unaligned(threadIndex,depth+1,split.center,end  ,split.bounds1));
       return bvh->encodeNode(node);
     }
 

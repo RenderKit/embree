@@ -270,7 +270,7 @@ namespace embree
     /*! Encodes a leaf */
     __forceinline NodeRef encodeLeaf(char* data, size_t num) {
       assert(!((size_t)data & align_mask)); 
-      return NodeRef((size_t)data | (1+min(num,(size_t)maxLeafBlocks)));
+      return NodeRef((size_t)data | (2+min(num,(size_t)maxLeafBlocks)));
     }
 
   public:
