@@ -108,10 +108,10 @@ namespace embree
       }
 
       /*! performs object binning to the the best partitioning */
-      static ObjectSplit find(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space);
+      static ObjectSplit find(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space = one);
 
       /*! calculates aligned bounds for left and right split */
-      const ObjectSplit alignedBounds(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space);
+      const ObjectSplit alignedBounds(Bezier1* curves, size_t begin, size_t end);
 
       /*! calculates the bounds for left and right split */
       const ObjectSplit unalignedBounds(Bezier1* curves, size_t begin, size_t end);

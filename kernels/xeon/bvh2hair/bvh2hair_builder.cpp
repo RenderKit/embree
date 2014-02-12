@@ -58,12 +58,14 @@ namespace embree
       BezierCurves* set = (BezierCurves*) geom;
 
       for (size_t j=0; j<set->numCurves; j++) {
-        int ofs = set->curve(j);
-        const Vec3fa& p0 = set->vertex(ofs+0); bounds.extend(p0);
-        const Vec3fa& p1 = set->vertex(ofs+1); bounds.extend(p1);
-        const Vec3fa& p2 = set->vertex(ofs+2); bounds.extend(p2);
-        const Vec3fa& p3 = set->vertex(ofs+3); bounds.extend(p3);
-        curves[end++] = Bezier1 (p0,p1,p2,p3,0,1,i,j);
+        const int ofs = set->curve(j);
+        const Vec3fa& p0 = set->vertex(ofs+0);
+        const Vec3fa& p1 = set->vertex(ofs+1);
+        const Vec3fa& p2 = set->vertex(ofs+2);
+        const Vec3fa& p3 = set->vertex(ofs+3);
+        const Bezier1 bezier(p0,p1,p2,p3,0,1,i,j);
+        bounds.extend(bezier.bounds());
+        curves[end++] = bezier;
       }
     }
 
@@ -85,15 +87,10 @@ namespace embree
   {
     float area = 0.0f;
     BBox3fa bounds = empty;
-    for (size_t j=begin; j<end; j++) 
-    {
-        BBox3fa cbounds = empty;
-        const Vec3fa p0 = curves[j].p0; cbounds.extend(p0);
-        const Vec3fa p1 = curves[j].p1; cbounds.extend(p1);
-        const Vec3fa p2 = curves[j].p2; cbounds.extend(p2);
-        const Vec3fa p3 = curves[j].p3; cbounds.extend(p3);
-        area += halfArea(cbounds);
-        bounds.extend(cbounds);
+    for (size_t j=begin; j<end; j++) {
+      const BBox3fa cbounds = curves[j].bounds();
+      area += halfArea(cbounds);
+      bounds.extend(cbounds);
     }
     bounds.upper.w = area;
     return bounds;
@@ -103,15 +100,10 @@ namespace embree
   {
     float area = 0.0f;
     BBox3fa bounds = empty;
-    for (size_t j=begin; j<end; j++) 
-    {
-        BBox3fa cbounds = empty;
-        const Vec3fa p0 = xfmPoint(space,curves[j].p0); cbounds.extend(p0);
-        const Vec3fa p1 = xfmPoint(space,curves[j].p1); cbounds.extend(p1);
-        const Vec3fa p2 = xfmPoint(space,curves[j].p2); cbounds.extend(p2);
-        const Vec3fa p3 = xfmPoint(space,curves[j].p3); cbounds.extend(p3);
-        area += halfArea(cbounds);
-        bounds.extend(cbounds);
+    for (size_t j=begin; j<end; j++) {
+      const BBox3fa cbounds = curves[j].bounds(space);
+      area += halfArea(cbounds);
+      bounds.extend(cbounds);
     }
     NAABBox3fa b(space,bounds);
     b.bounds.upper.w = area;
@@ -135,11 +127,7 @@ namespace embree
       BBox3fa bounds = empty;
       float area = 0.0f;
       for (size_t j=begin; j<end; j++) {
-        BBox3fa cbounds = empty;
-        const Vec3fa p0 = xfmPoint(space,curves[j].p0); cbounds.extend(p0);
-        const Vec3fa p1 = xfmPoint(space,curves[j].p1); cbounds.extend(p1);
-        const Vec3fa p2 = xfmPoint(space,curves[j].p2); cbounds.extend(p2);
-        const Vec3fa p3 = xfmPoint(space,curves[j].p3); cbounds.extend(p3);
+        const BBox3fa cbounds = curves[j].bounds(space);
         area += halfArea(cbounds);
         bounds.extend(cbounds);
       }
@@ -210,12 +198,10 @@ namespace embree
     /* calculate geometry and centroid bounds */
     BBox3fa centBounds = empty;
     BBox3fa geomBounds = empty;
-    for (size_t i=begin; i<end; i++)
-    {
-      const Vec3fa p0 = xfmPoint(space,curves[i].p0); geomBounds.extend(p0);
-      const Vec3fa p1 = xfmPoint(space,curves[i].p1); geomBounds.extend(p1);
-      const Vec3fa p2 = xfmPoint(space,curves[i].p2); geomBounds.extend(p2);
-      const Vec3fa p3 = xfmPoint(space,curves[i].p3); geomBounds.extend(p3);
+    for (size_t i=begin; i<end; i++) {
+      const Vec3fa p0 = xfmPoint(space,curves[i].p0);
+      const Vec3fa p3 = xfmPoint(space,curves[i].p3);
+      geomBounds.extend(curves[i].bounds(space)); // FIXME: transforms points again
       centBounds.extend(p0+p3);
     }
 
@@ -308,7 +294,7 @@ namespace embree
     return split;
   }
 
-  const BVH2HairBuilder::ObjectSplit BVH2HairBuilder::ObjectSplit::alignedBounds(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space)
+  const BVH2HairBuilder::ObjectSplit BVH2HairBuilder::ObjectSplit::alignedBounds(Bezier1* curves, size_t begin, size_t end)
   {
     if (dim == -1) {
       num0 = num1 = 1;
@@ -317,8 +303,8 @@ namespace embree
     }
 
     const size_t center = split(curves,begin,end);
-    bounds0 = computeAlignedBounds(curves,begin,center,space);
-    bounds1 = computeAlignedBounds(curves,center,end,space);
+    bounds0 = computeAlignedBounds(curves,begin,center);
+    bounds1 = computeAlignedBounds(curves,center,end);
     return *this;
   }
   
@@ -391,8 +377,7 @@ namespace embree
     const float leafSAH = N <= maxLeafSize ? BVH2Hair::intCost*float(N)*halfArea(bounds.bounds) : inf;
     
     /* perform standard binning with aligned bounds */
-    const AffineSpace3fa aligned(one);
-    const ObjectSplit objectSplit = ObjectSplit::find(curves,begin,end,aligned).alignedBounds(curves,begin,end,aligned);
+    const ObjectSplit objectSplit = ObjectSplit::find(curves,begin,end).alignedBounds(curves,begin,end);
     const float objectSAH = BVH2Hair::travCostAligned*halfArea(bounds.bounds) + objectSplit.standardSAH();
 
     /* calculate best SAH */
@@ -411,11 +396,15 @@ namespace embree
 
     /* perform object split */
     else if (bestSAH == objectSAH) {
-      UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
+      AlignedNode* node = bvh->allocAlignedNode(threadIndex);
       const size_t center = objectSplit.split(curves,begin,end);
       assert((center-begin > 0) && (end-center) > 0);
-      node->set(0,objectSplit.bounds0,recurse_aligned(threadIndex,depth+1,begin ,center,objectSplit.bounds0));
-      node->set(1,objectSplit.bounds1,recurse_aligned(threadIndex,depth+1,center,end   ,objectSplit.bounds1));
+
+      //BBox3fa bounds0 = empty;
+      //for (size_t i=begin; i<center; i++)
+
+      node->set(0,objectSplit.bounds0.bounds,recurse_aligned(threadIndex,depth+1,begin ,center,objectSplit.bounds0));
+      node->set(1,objectSplit.bounds1.bounds,recurse_aligned(threadIndex,depth+1,center,end   ,objectSplit.bounds1));
       return bvh->encodeNode(node);
     }
 
@@ -499,8 +488,7 @@ namespace embree
     const float objectSAH = BVH2Hair::travCostUnaligned*halfArea(bounds.bounds) + objectSplit.modifiedSAH();
 
     /* third perform standard binning in aligned space */
-    const AffineSpace3fa aligned(one);
-    const ObjectSplit objectSplitAligned = ObjectSplit::find(curves,begin,end,aligned).alignedBounds(curves,begin,end,aligned);
+    const ObjectSplit objectSplitAligned = ObjectSplit::find(curves,begin,end).alignedBounds(curves,begin,end);
     const float alignedObjectSAH = BVH2Hair::travCostAligned*halfArea(bounds.bounds) + objectSplitAligned.modifiedSAH();
 
     /* calculate best SAH */

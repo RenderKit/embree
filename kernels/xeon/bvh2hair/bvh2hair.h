@@ -198,11 +198,23 @@ namespace embree
         : p0(p0), p1(p1), p2(p2), p3(p3), t0(t0), dt(t1-t0), geomID(geomID), primID(primID) {}
 
       /*! calculate the bounds of the curve */
-      __forceinline BBox3fa bounds() const {
+      __forceinline const BBox3fa bounds() const {
         const BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2),BBox3fa(p3));
         return enlarge(b,Vec3fa(b.upper.w));
       }
 
+      /*! calculate bounds in specified coordinate space */
+      __forceinline const BBox3fa bounds(const AffineSpace3fa& space) const 
+      {
+        const BBox3fa b0 = xfmPoint(space,p0);
+        const BBox3fa b1 = xfmPoint(space,p1);
+        const BBox3fa b2 = xfmPoint(space,p2);
+        const BBox3fa b3 = xfmPoint(space,p3);
+        const BBox3fa b = merge(b0,b1,b2,b3);
+        const float   r = max(p0.w,p1.w,p2.w,p3.w);
+        return enlarge(b,Vec3fa(r));
+      }
+      
     public:
       Vec3fa p0;            //!< 1st control point (x,y,z,r)
       Vec3fa p1;            //!< 2nd control point (x,y,z,r)
