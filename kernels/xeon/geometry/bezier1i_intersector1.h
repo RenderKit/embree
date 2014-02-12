@@ -58,14 +58,52 @@ namespace embree
       LinearSpace3fa ray_space;
     };
 
+    static __forceinline bool intersectCylinder(const Ray& ray,const Vec3fa &v0,const Vec3fa &v1,const Vec3fa &v2,const Vec3fa &v3)
+    {
+      const Vec3fa cyl_dir = v3 - v0;
+      const float dist_v1 = length((v1 - v0) - (dot(v1-v0,cyl_dir)*cyl_dir));
+      const float dist_v2 = length((v2 - v0) - (dot(v2-v0,cyl_dir)*cyl_dir));
+      
+      const float w0 = v0.w;
+      const float w1 = v1.w + dist_v1;
+      const float w2 = v2.w + dist_v2;
+      const float w3 = v3.w;
+
+
+      const float radius = max(max(w0,w1),max(w2,w3));
+
+#if 0
+      DBG_PRINT(w0);
+      DBG_PRINT(w1);
+      DBG_PRINT(w2);
+      DBG_PRINT(w3);
+      DBG_PRINT(radius);
+#endif
+      const Vec3fa cyl_org = v0;
+      const Vec3fa delta_org = ray.org - cyl_org;
+      const Vec3fa g0 = ray.dir - (dot(ray.dir,cyl_dir) * cyl_dir);
+      const Vec3fa g1 = delta_org - (dot(delta_org,cyl_dir) * cyl_dir);
+
+      const float A = dot(g0,g0);
+      const float B = 2.0f * dot(g0,g1);
+      const float C = dot(g1,g1) - radius*radius;
+
+      const float D = B*B - 4*A*C;
+      if (D <= 0.0f) return false;
+
+      return true;
+    }
+
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
-      const Vec3fa v0 = curve_in.p[0];
-      const Vec3fa v1 = curve_in.p[1];
-      const Vec3fa v2 = curve_in.p[2];
-      const Vec3fa v3 = curve_in.p[3];
+      const Vec3fa &v0 = curve_in.p[0];
+      const Vec3fa &v1 = curve_in.p[1];
+      const Vec3fa &v2 = curve_in.p[2];
+      const Vec3fa &v3 = curve_in.p[3];
+
+      //if (!intersectCylinder(ray,v0,v1,v2,v3)) return;
 
       /* transform control points into ray space */
       Vec3fa w0 = xfmVector(pre.ray_space,v0-ray.org); w0.w = v0.w;
@@ -78,20 +116,6 @@ namespace embree
       const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
       const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
 
-#if 0
-#if defined(__AVX2__)
-      avxf g0 = avxf(step);
-      avxf g1 = alignr<4>(g0,avxf(10));
-      DBG_PRINT(g0);
-      DBG_PRINT(g1);
-#endif
-
-      DBG_PRINT(p0);
-      DBG_PRINT(p1);
-      DBG_PRINT(w0);
-      DBG_PRINT(w3);
-      exit(0);
-#endif
       /* approximative intersection with cone */
       const avx4f v = p1-p0;
       const avx4f w = -p0;
