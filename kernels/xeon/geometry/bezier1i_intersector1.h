@@ -143,7 +143,7 @@ namespace embree
       const avx4f w = -p0;
       const avxf d0 = w.x*v.x + w.y*v.y;
       const avxf d1 = v.x*v.x + v.y*v.y;
-      const avxf u = clamp(d0/d1,avxf(zero),avxf(one));
+      const avxf u = clamp(d0*rcp(d1),avxf(zero),avxf(one));
       const avx4f p = p0 + u*v;
       const avxf t = p.z;
       const avxf d2 = p.x*p.x + p.y*p.y; 
