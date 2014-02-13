@@ -216,6 +216,30 @@ namespace embree
         const float   r = max(p0.w,p1.w,p2.w,p3.w);
         return enlarge(b,Vec3fa(r));
       }
+
+      /*! subdivide the bezier curve */
+      __forceinline void subdivide(Bezier1& left, Bezier1& right) const
+      {
+        const Vec3fa p00 = p0;
+        const Vec3fa p01 = p1;
+        const Vec3fa p02 = p2;
+        const Vec3fa p03 = p3;
+      
+        const Vec3fa p10 = (p00 + p01) * 0.5f;
+        const Vec3fa p11 = (p01 + p02) * 0.5f;
+        const Vec3fa p12 = (p02 + p03) * 0.5f;
+        const Vec3fa p20 = (p10 + p11) * 0.5f;
+        const Vec3fa p21 = (p11 + p12) * 0.5f;
+        const Vec3fa p30 = (p20 + p21) * 0.5f;
+        
+        const float t01 = t0 + dt * 0.5f;
+        const float t1  = t0 + dt;
+        const unsigned int geomID = this->geomID;
+        const unsigned int primID = this->primID;
+        
+        new (&left ) Bezier1(p00,p10,p20,p30,t0,t01,geomID,primID);
+        new (&right) Bezier1(p30,p21,p12,p03,t01,t1,geomID,primID);
+      }
       
     public:
       Vec3fa p0;            //!< 1st control point (x,y,z,r)
