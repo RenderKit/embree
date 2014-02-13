@@ -90,7 +90,8 @@ namespace embree
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-			  intersect1<PrimitiveIntersector8>(bvh, curNode, i, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
+            intersect1(bvh, curNode, i, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
+            // intersect1<PrimitiveIntersector8>(bvh, curNode, i, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
           }
           ray_tfar = ray.tfar;
           continue;
@@ -255,7 +256,8 @@ namespace embree
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-            if (occluded1<PrimitiveIntersector8>(bvh,curNode,i,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
+            if (occluded1(bvh,curNode,i,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
+            // if (occluded1<PrimitiveIntersector8>(bvh,curNode,i,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
               terminated[i] = -1;
           }
           if (all(terminated)) break;

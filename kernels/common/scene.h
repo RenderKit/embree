@@ -34,7 +34,7 @@ namespace embree
     ALIGNED_CLASS;
   public:
 
-    typedef TriangleMesh TriangleMesh;
+    //   typedef TriangleMesh TriangleMesh;
     
     /*! Scene construction */
     Scene (RTCSceneFlags flags, RTCAlgorithmFlags aflags);

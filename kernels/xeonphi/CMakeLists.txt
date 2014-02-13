@@ -23,6 +23,7 @@ ADD_DEFINITIONS(-D__TARGET_XEON_PHI__)
 ADD_ISPC_LIBRARY(embree_xeonphi SHARED
 
   ../common/stat.cpp 
+  ../common/globals.cpp 
   ../common/alloc.cpp 
   ../common/tasksys.cpp 
   ../common/acceln.cpp
