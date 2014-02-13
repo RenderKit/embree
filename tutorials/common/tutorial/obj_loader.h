@@ -63,6 +63,7 @@ namespace embree
     struct Hair
     {
     public:
+      Hair () {}
       Hair (int vertex, int id)
       : vertex(vertex), id(id) {}
     public:

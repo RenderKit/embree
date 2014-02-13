@@ -16,21 +16,21 @@
 
 #include "hair_loader.h"
 
+#define CONVERT_TO_BINARY 0
+
 namespace embree
 {
-  void loadHair(const FileName& fileName, OBJScene& scene, const Vec3fa& offset)
-  {
+  const int hair_bin_magick = 0x12EF3F90;
+
+  int loadHairASCII(const FileName& fileName, OBJScene::HairSet* hairset, Vec3fa& offset)
+  {  
     /* open hair file */
     FILE* f = fopen(fileName.c_str(),"r");
     if (!f) throw std::runtime_error("could not open " + fileName.str());
 
-    /* add new hair set to scene */
-    OBJScene::HairSet* hairset = new OBJScene::HairSet;
-    scene.hairsets.push_back(hairset);
-
     char line[10000];
     fgets(line,10000,f);
-    int curveID = 0;
+    int numCurves = 0;
     
     while (fgets(line,10000,f) && !feof(f))
     {
@@ -71,15 +71,71 @@ namespace embree
         
         /* add indices to hair starts */
         for (int i=0; i<points-1; i+=3)
-          hairset->hairs.push_back(OBJScene::Hair(vertex_start_id + i,curveID));
+          hairset->hairs.push_back(OBJScene::Hair(vertex_start_id + i,numCurves));
 	
         if (id != points-1) 
           throw std::runtime_error("hair parsing error");
 
-        curveID++;
+        numCurves++;
       }
     }
     fclose(f);
+    return numCurves;
+  }
+
+  int loadHairBin(const FileName& fileName, OBJScene::HairSet* hairset, Vec3fa& offset)
+  {  
+    FILE* fin = fopen(fileName.c_str(),"rb");
+    if (!fin) throw std::runtime_error("could not open " + fileName.str());
+    int magick; fread(&magick,sizeof(int),1,fin);
+    if (magick != hair_bin_magick)
+      throw std::runtime_error("invalid binary hair file " + fileName.str());
+    int numHairs; fread(&numHairs,sizeof(int),1,fin);
+    int numPoints; fread(&numPoints,sizeof(int),1,fin);
+    int numSegments; fread(&numSegments,sizeof(int),1,fin);
+    hairset->v.resize(numPoints);
+    hairset->hairs.resize(numSegments);
+    if (numPoints) fread(&hairset->v[0],sizeof(Vec3fa),numPoints,fin);
+    if (numSegments) fread(&hairset->hairs[0],sizeof(OBJScene::Hair),numSegments,fin);
+    fclose(fin);
+
+    for (size_t i=0; i<numPoints; i++) {
+      hairset->v[i].x-=offset.x;
+      hairset->v[i].y-=offset.y;
+      hairset->v[i].z-=offset.z;
+    }
+    return numHairs;
+  }
+
+  void loadHair(const FileName& fileName, OBJScene& scene, Vec3fa& offset)
+  {
+    /* add new hair set to scene */
+    OBJScene::HairSet* hairset = new OBJScene::HairSet;
+    scene.hairsets.push_back(hairset);
+ 
+#if CONVERT_TO_BINARY   
+    offset = Vec3fa(zero);
+#endif
+
+    int numHairs = 0;
+    if (fileName.ext() == "txt")
+      numHairs = loadHairASCII(fileName,hairset,offset);
+    else
+      numHairs = loadHairBin(fileName,hairset,offset);
+
+#if CONVERT_TO_BINARY
+    FILE* fout = fopen(fileName.setExt(".bin").c_str(),"wb");
+    if (!fout) throw std::runtime_error("could not open " + fileName.str());
+    fwrite(&hair_bin_magick,sizeof(int),1,fout);
+    fwrite(&numHairs,sizeof(int),1,fout);
+    int numPoints = hairset->v.size();
+    int numSegments = hairset->hairs.size();
+    fwrite(&numPoints,sizeof(int),1,fout);
+    fwrite(&numSegments,sizeof(int),1,fout);
+    if (numPoints) fwrite(&hairset->v[0],sizeof(Vec3fa),numPoints,fout);
+    if (numSegments) fwrite(&hairset->hairs[0],sizeof(OBJScene::Hair),numSegments,fout);
+    fclose(fout);
+#endif
   }
 }
 
