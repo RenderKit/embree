@@ -34,6 +34,7 @@ namespace embree
 
     __forceinline bool BVH2HairIntersector1::intersectBox(const AffineSpace3fa& naabb, const Ray& ray, float& tNear, float& tFar)
     {
+      //asm nop;
       const Vec3fa dir = xfmVector(naabb,ray.dir);
       const Vec3fa rdir = rcp(dir);
       const Vec3fa org = xfmPoint (naabb,ray.org);
@@ -187,7 +188,6 @@ namespace embree
           else
           {
             const UnalignedNode* node = cur.unalignedNode();
-
             /*! intersect with both non-axis aligned boxes */
             float tNear0 = tNear, tFar0 = tFar;
             bool hit0 = intersectBox(node->bounds(0), ray, tNear0, tFar0);
@@ -213,10 +213,13 @@ namespace embree
             assert(c1 != BVH2Hair::emptyNode);
             assert(stackPtr < stackEnd); 
             if (tNear0 < tNear1) { 
+
               stackPtr->ref = c1; stackPtr->tNear = tNear1; stackPtr->tFar = tFar1; stackPtr++; 
               cur = c0; tNear = tNear0; tFar = tFar0;
+	      
             }
             else { 
+
               stackPtr->ref = c0; stackPtr->tNear = tNear0; stackPtr->tFar = tFar0; stackPtr++; 
               cur = c1; tNear = tNear1; tFar = tFar1;
             }

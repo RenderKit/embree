@@ -60,6 +60,7 @@ namespace embree
       
       size_t prims (size_t group, size_t* pnumVertices) const {
         if (pnumVertices) *pnumVertices = numVertices*numTimeSteps;
+	DBG_PRINT(numCurves);
         return numCurves;
       }
 
@@ -86,6 +87,17 @@ namespace embree
         return vertices[j][i].r;
       }
 
+      __forceinline unsigned int maxSubdivisionSteps(const float eps, const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3) const {
+	const Vec3fa d0 = abs(p0 - 2.0f * p1 + p2);
+	const Vec3fa d1 = abs(p1 - 2.0f * p2 + p3);
+	const float d0_max = max(d0.x,d0.y,d0.z);
+	const float d1_max = max(d1.x,d1.y,d1.z);
+	const float L0 = max(d0_max,d1_max);
+	const float r0 = (sqrtf(2.0f) * 4 * (4-1) * L0) / (8.0f * eps);      
+	return (unsigned int)logf(r0);
+      }
+
+
       __forceinline BBox3fa bounds(size_t i) const 
       {
         const int index = curve(i);
@@ -98,7 +110,6 @@ namespace embree
         const Vec3fa& v2 = vertex(index+2);
         const Vec3fa& v3 = vertex(index+3);
 
-	
 #if 0
 	BBox3fa b;
 	b = empty;

@@ -65,7 +65,9 @@ namespace embree
   void BVH8iRegister();
   void BVH4MBRegister();
   void BVH16iRegister();
+#if !defined(__MIC__)
   void BVH2HairRegister();
+#endif
 
   /*! intersector registration functions */
   DECLARE_SYMBOL(RTCBoundsFunc,InstanceBoundsFunc);
