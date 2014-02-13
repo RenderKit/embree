@@ -20,7 +20,6 @@
 #include "common/geometry.h"
 #include "common/buildsource.h"
 #include "common/buffer.h"
-//#include "../geometry/bezier1i.h"
 
 namespace embree
 {

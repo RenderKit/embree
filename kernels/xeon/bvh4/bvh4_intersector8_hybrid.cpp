@@ -22,13 +22,10 @@
 
 #define SWITCH_THRESHOLD 6
 
-
 namespace embree
 {
   namespace isa
   {
- 
-    
     template<typename PrimitiveIntersector8>
     void BVH4Intersector8Hybrid<PrimitiveIntersector8>::intersect(avxb* valid_i, BVH4* bvh, Ray8& ray)
     {
@@ -91,7 +88,6 @@ namespace embree
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
             intersect1(bvh, curNode, i, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
-            // intersect1<PrimitiveIntersector8>(bvh, curNode, i, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
           }
           ray_tfar = ray.tfar;
           continue;
@@ -257,7 +253,6 @@ namespace embree
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
             if (occluded1(bvh,curNode,i,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
-            // if (occluded1<PrimitiveIntersector8>(bvh,curNode,i,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
               terminated[i] = -1;
           }
           if (all(terminated)) break;
