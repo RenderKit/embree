@@ -32,13 +32,13 @@ namespace embree
       return tNear <= tFar;
     }
 
-    __forceinline bool BVH2HairIntersector1::intersectBox(const NAABBox3fa& naabb, const Ray& ray, float& tNear, float& tFar)
+    __forceinline bool BVH2HairIntersector1::intersectBox(const AffineSpace3fa& naabb, const Ray& ray, float& tNear, float& tFar)
     {
-      const Vec3fa dir = xfmVector(naabb.space,ray.dir);
+      const Vec3fa dir = xfmVector(naabb,ray.dir);
       const Vec3fa rdir = rcp(dir);
-      const Vec3fa org = xfmPoint (naabb.space,ray.org);
-      const Vec3fa tLowerXYZ = (naabb.bounds.lower - org) * rdir;
-      const Vec3fa tUpperXYZ = (naabb.bounds.upper - org) * rdir;
+      const Vec3fa org = xfmPoint (naabb,ray.org);
+      const Vec3fa tLowerXYZ = - org * rdir;
+      const Vec3fa tUpperXYZ = (Vec3fa(one) - org) * rdir;
       const Vec3fa tNearXYZ = min(tLowerXYZ,tUpperXYZ);
       const Vec3fa tFarXYZ = max(tLowerXYZ,tUpperXYZ);
       tNear = max(reduce_max(tNearXYZ),tNear);

@@ -125,7 +125,7 @@ namespace embree
       
     public:
       AffineSpace3fa space; //!< orthonormal transformation
-      BBox3fa bounds;       //!< bounds in transformed space // FIXME: one could merge this into above transformation, however, this causes problems with curve radius
+      BBox3fa bounds;       //!< bounds in transformed space
     };
 
     /*! Node with aligned bounds */
@@ -152,7 +152,7 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<2); return children[i]; }
 
     public:
-      BBox3fa aabb    [2];   //!< left and right non-axis aligned bounding box
+      BBox3fa aabb    [2];   //!< left and right axis aligned bounding box
       NodeRef children[2];   //!< Pointer to the 2 children (can be a node or leaf)
     };
 
@@ -161,27 +161,29 @@ namespace embree
     {
       /*! Clears the node. */
       __forceinline void clear() {
-        naabb[0] = naabb[1] = empty;
+        naabb[0] = naabb[1] = one;
         children[0] = children[1] = emptyNode;
       }
 
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, const NAABBox3fa& b, const NodeRef& childID) {
         assert(i < 2);
-        naabb[i] = b;
+        naabb[i] = b.space;
+        naabb[i].p -= b.bounds.lower;
+        naabb[i] = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19),b.bounds.upper-b.bounds.lower))*naabb[i];
         children[i] = childID;
       }
 
       /*! Returns bounds of specified child. */
-      __forceinline const NAABBox3fa& bounds(size_t i) const { assert(i < 2); return naabb[i]; }
+      __forceinline const AffineSpace3fa& bounds(size_t i) const { assert(i < 2); return naabb[i]; }
 
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { assert(i<2); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<2); return children[i]; }
 
     public:
-      NAABBox3fa naabb   [2];   //!< left and right non-axis aligned bounding box
-      NodeRef    children[2];   //!< Pointer to the 2 children (can be a node or leaf)
+      AffineSpace3fa naabb   [2];   //!< left and right non-axis aligned bounding box (bounds are [0,1] in specified space)
+      NodeRef        children[2];   //!< Pointer to the 2 children (can be a node or leaf)
     };
 
     /*! Hair Leaf */
