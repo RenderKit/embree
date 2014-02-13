@@ -46,14 +46,26 @@ namespace embree
       return tNear <= tFar;
     }
 
+    static __forceinline bool intersectLineBoxes(const Ray& ray,const avx4f &p0, const avx4f &p1)
+    {
+      const avx2f d0(p0.x,p0.y);
+      const avx2f d1(p1.x,p1.y);
+      const avx2f d_min = min(d0,d1) - avx2f(p0.w);
+      const avx2f d_max = max(d0,d1) + avx2f(p1.w);
+      const avxb vmask_x = (d_min.x <= avxf(zero)) & (d_max.x >= avxf(zero));
+      const avxb vmask_y = (d_min.y <= avxf(zero)) & (d_max.y >= avxf(zero));
+      return any(vmask_x & vmask_y);
+    }
+
     __forceinline void BVH2HairIntersector1::intersectBezier(const LinearSpace3fa &ray_space, Ray& ray, const Bezier1& bezier)
     {
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
-      const Vec3fa v0 = bezier.p0;
-      const Vec3fa v1 = bezier.p1;
-      const Vec3fa v2 = bezier.p2;
-      const Vec3fa v3 = bezier.p3;
+      const Vec3fa &v0 = bezier.p0;
+      const Vec3fa &v1 = bezier.p1;
+      const Vec3fa &v2 = bezier.p2;
+      const Vec3fa &v3 = bezier.p3;
+
 
       /* transform control points into ray space */
       Vec3fa w0 = xfmVector(ray_space,v0-ray.org); w0.w = v0.w;
@@ -65,6 +77,8 @@ namespace embree
       /* subdivide 3 levels at once */ 
       const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
       const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+
+      //if (!intersectLineBoxes(ray,p0,p1)) { return; }
 
       /* approximative intersection with cone */
       const avx4f v = p1-p0;
