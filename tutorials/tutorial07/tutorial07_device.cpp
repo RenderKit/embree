@@ -370,7 +370,6 @@ RTCScene convertScene(ISPCScene* scene_in)
 #endif
   }
 
-#if 0
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
   {
@@ -403,7 +402,6 @@ RTCScene convertScene(ISPCScene* scene_in)
     rtcSetIntersectionFilterFunction(scene_out,geomID,(RTCFilterFunc)filterDispatch);
 #endif
   }
-#endif
 
   /* commit changes to scene */
   rtcCommit (scene_out);
