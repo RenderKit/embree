@@ -28,41 +28,40 @@ namespace embree
   {
     /*! BVH4 Traverser. Hybrid Packet traversal implementation for a Quad BVH. */
     template<typename PrimitiveIntersector8>
-      class BVH4Intersector8Hybrid 
+    class BVH4Intersector8Hybrid 
+    {
+      /* shortcuts for frequently used types */
+      typedef typename PrimitiveIntersector8::Primitive Primitive;
+      typedef typename BVH4::NodeRef NodeRef;
+      typedef typename BVH4::Node Node;
+      typedef StackItemT<NodeRef> StackItem;
+      static const size_t stackSizeSingle = 1+3*BVH4::maxDepth;
+      static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
+      
+    public:
+      static __forceinline void intersect1(const BVH4* bvh, NodeRef root, const size_t k, Ray8& ray, const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
       {
-	/* shortcuts for frequently used types */
-	typedef typename PrimitiveIntersector8::Primitive Primitive;
-	typedef typename BVH4::NodeRef NodeRef;
-	typedef typename BVH4::Node Node;
-	typedef StackItemT<NodeRef> StackItem;
-	static const size_t stackSizeSingle = 1+3*BVH4::maxDepth;
-	static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
-
-      public:
-	template<typename PrimitiveIntersector8>
-	  static __forceinline void intersect1(const BVH4* bvh, NodeRef root, const size_t k, Ray8& ray, const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
-	  {
-	    /*! stack state */
-	    StackItemInt32<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
-	    StackItemInt32<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
-	    StackItemInt32<NodeRef>* stackEnd = stack + stackSizeSingle;
-	    stack[0].ptr = root;
-	    stack[0].dist = neg_inf;
-
-	    /*! offsets to select the side that becomes the lower or upper bound */
-	    const size_t nearX = nearXYZ.x[k];
-	    const size_t nearY = nearXYZ.y[k];
-	    const size_t nearZ = nearXYZ.z[k];
-
-	    /*! load the ray into SIMD registers */
-	    const sse3f org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
-	    const sse3f rdir(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
-	    const sse3f org_rdir(org*rdir);
-	    ssef rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
-
-	    /* pop loop */
-	    while (true) pop:
-	      {
+        /*! stack state */
+        StackItemInt32<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
+        StackItemInt32<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
+        StackItemInt32<NodeRef>* stackEnd = stack + stackSizeSingle;
+        stack[0].ptr = root;
+        stack[0].dist = neg_inf;
+        
+        /*! offsets to select the side that becomes the lower or upper bound */
+        const size_t nearX = nearXYZ.x[k];
+        const size_t nearY = nearXYZ.y[k];
+        const size_t nearZ = nearXYZ.z[k];
+        
+        /*! load the ray into SIMD registers */
+        const sse3f org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
+        const sse3f rdir(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
+        const sse3f org_rdir(org*rdir);
+        ssef rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
+        
+        /* pop loop */
+        while (true) pop:
+          {
 		/*! pop next node */
 		if (unlikely(stackPtr == stack)) break;
 		stackPtr--;
@@ -179,7 +178,6 @@ namespace embree
 	      }
 	  }
 
-	template<typename PrimitiveIntersector8>
 	  static __forceinline bool occluded1(const BVH4* bvh, NodeRef root, const size_t k, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
 	  {
 	    /*! stack state */

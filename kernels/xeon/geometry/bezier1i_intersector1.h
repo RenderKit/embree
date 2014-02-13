@@ -22,94 +22,6 @@
 
 namespace embree
 {
-  struct BezierCurve3D
-  {
-    Vec3fa v0,v1,v2,v3;
-    float t0,t1;
-    int depth;
-
-    __forceinline BezierCurve3D() {}
-
-    __forceinline BezierCurve3D(const Vec3fa& v0, 
-                                const Vec3fa& v1, 
-                                const Vec3fa& v2, 
-                                const Vec3fa& v3,
-                                const float t0,
-                                const float t1,
-                                const int depth)
-      : v0(v0), v1(v1), v2(v2), v3(v3), t0(t0), t1(t1), depth(depth) {}
-
-    __forceinline const BBox3fa bounds() const {
-      BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
-      return enlarge(b,Vec3fa(b.upper.w));
-    }
-
-    __forceinline void subdivide(BezierCurve3D& left, BezierCurve3D& right) const
-    {
-      const Vec3fa p00 = v0;
-      const Vec3fa p01 = v1;
-      const Vec3fa p02 = v2;
-      const Vec3fa p03 = v3;
-
-      const Vec3fa p10 = (p00 + p01) * 0.5f;
-      const Vec3fa p11 = (p01 + p02) * 0.5f;
-      const Vec3fa p12 = (p02 + p03) * 0.5f;
-      const Vec3fa p20 = (p10 + p11) * 0.5f;
-      const Vec3fa p21 = (p11 + p12) * 0.5f;
-      const Vec3fa p30 = (p20 + p21) * 0.5f;
-
-      const float t01 = (t0 + t1) * 0.5f;
-
-      left.v0 = p00;
-      left.v1 = p10;
-      left.v2 = p20;
-      left.v3 = p30;
-      left.t0 = t0;
-      left.t1 = t01;
-      left.depth = depth-1;
-        
-      right.v0 = p30;
-      right.v1 = p21;
-      right.v2 = p12;
-      right.v3 = p03;
-      right.t0 = t01;
-      right.t1 = t1;
-      right.depth = depth-1;
-    }
-
-    __forceinline void eval(const float t, Vec3fa& point, Vec3fa& tangent)
-    {
-      const float t0 = 1.0f - t, t1 = t;
-
-      const Vec3fa p00 = v0;
-      const Vec3fa p01 = v1;
-      const Vec3fa p02 = v2;
-      const Vec3fa p03 = v3;
-
-      const Vec3fa p10 = p00 * t0 + p01 * t1;
-      const Vec3fa p11 = p01 * t0 + p02 * t1;
-      const Vec3fa p12 = p02 * t0 + p03 * t1;
-      const Vec3fa p20 = p10 * t0 + p11 * t1;
-      const Vec3fa p21 = p11 * t0 + p12 * t1;
-      const Vec3fa p30 = p20 * t0 + p21 * t1;
-
-      point = p30;
-      tangent = p21-p20;
-    }
-
-    __forceinline avx4f eval(const avxf& c0, const avxf& c1, const avxf& c2, const avxf& c3)
-    {
-      const avx4f p00 = avx4f(v0);
-      const avx4f p01 = avx4f(v1);
-      const avx4f p02 = avx4f(v2);
-      const avx4f p03 = avx4f(v3);
-      return c0*p00 + c1*p01 + c2*p02 + c3*p03; // FIXME: use fmadd
-    }
-
-    friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurve3D& curve) {
-      return cout << "{ v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << ", depth = " << curve.depth << " }";
-    }
-  };
 
   __forceinline bool intersect_box(const BBox3fa& box, const Ray& ray)
   {
@@ -146,14 +58,74 @@ namespace embree
       LinearSpace3fa ray_space;
     };
 
+    static __forceinline bool intersectCylinder(const Ray& ray,const Vec3fa &v0,const Vec3fa &v1,const Vec3fa &v2,const Vec3fa &v3)
+    {
+      const Vec3fa cyl_dir = v3 - v0;
+      const float dist_v1 = length((v1 - v0) - (dot(v1-v0,cyl_dir)*cyl_dir));
+      const float dist_v2 = length((v2 - v0) - (dot(v2-v0,cyl_dir)*cyl_dir));
+      
+      const float w0 = v0.w;
+      const float w1 = v1.w + dist_v1;
+      const float w2 = v2.w + dist_v2;
+      const float w3 = v3.w;
+
+
+      const float radius = max(max(w0,w1),max(w2,w3));
+
+#if 0
+      DBG_PRINT(w0);
+      DBG_PRINT(w1);
+      DBG_PRINT(w2);
+      DBG_PRINT(w3);
+      DBG_PRINT(radius);
+#endif
+      const Vec3fa cyl_org = v0;
+      const Vec3fa delta_org = ray.org - cyl_org;
+      const Vec3fa g0 = ray.dir - (dot(ray.dir,cyl_dir) * cyl_dir);
+      const Vec3fa g1 = delta_org - (dot(delta_org,cyl_dir) * cyl_dir);
+
+      const float A = dot(g0,g0);
+      const float B = 2.0f * dot(g0,g1);
+      const float C = dot(g1,g1) - radius*radius;
+
+      const float D = B*B - 4*A*C;
+      if (D <= 0.0f) return false;
+
+      return true;
+    }
+
+    static __forceinline bool intersectBoxes(const Ray& ray,const Vec3fa &v0,const Vec3fa &v1,const Vec3fa &v2,const Vec3fa &v3)
+    {
+      BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+      const avx4f p0 = curve3D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+      const avx4f p1 = curve3D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+      const avx3f d0(p0.x,p0.y,p0.z);
+      const avx3f d1(p1.x,p1.y,p1.z);
+      const avx3f d_min = min(d0,d1) - avx3f(p0.w);
+      const avx3f d_max = max(d0,d1) + avx3f(p1.w);
+      
+      const Vec3fa ray_rdir = rcp_safe(ray.dir);
+      const avx3f t_min = (d_min - avx3f(ray.org)) * avx3f(ray_rdir);
+      const avx3f t_max = (d_max - avx3f(ray.org)) * avx3f(ray_rdir);
+      const avx3f tNear3 = min(t_min,t_max);
+      const avx3f tFar3  = max(t_min,t_max);
+      const avxf tNear = max(tNear3.x,tNear3.y,tNear3.z,avxf(ray.tnear));
+      const avxf tFar  = min(tFar3.x,tFar3.y,tFar3.z,avxf(ray.tfar));
+      const avxb vmask = tNear <= tFar;
+      return any(vmask);
+    }
+
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
-      const Vec3fa v0 = curve_in.p[0];
-      const Vec3fa v1 = curve_in.p[1];
-      const Vec3fa v2 = curve_in.p[2];
-      const Vec3fa v3 = curve_in.p[3];
+      const Vec3fa &v0 = curve_in.p[0];
+      const Vec3fa &v1 = curve_in.p[1];
+      const Vec3fa &v2 = curve_in.p[2];
+      const Vec3fa &v3 = curve_in.p[3];
+
+      //if (!intersectCylinder(ray,v0,v1,v2,v3)) return;
+      if (!intersectBoxes(ray,v0,v1,v2,v3)) return;
 
       /* transform control points into ray space */
       Vec3fa w0 = xfmVector(pre.ray_space,v0-ray.org); w0.w = v0.w;

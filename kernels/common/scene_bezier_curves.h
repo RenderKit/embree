@@ -97,7 +97,26 @@ namespace embree
         const Vec3fa& v1 = vertex(index+1);
         const Vec3fa& v2 = vertex(index+2);
         const Vec3fa& v3 = vertex(index+3);
+
+	
+#if 0
+	BBox3fa b;
+	b = empty;
+	for (unsigned int step=0;step<=8;step++)
+	  {
+	    float t1 = (float)step / 8.0f;
+	    float t0 = 1.0f - t1;
+	    const float coeff0 = t0 * t0 * t0;
+	    const float coeff1 = 3.0f * t1* t0 * t0;
+	    const float coeff2 = 3.0f * t1* t1 * t0;
+	    const float coeff3 = t1 * t1 * t1;
+	    const Vec3fa p = coeff0 * v0 + coeff1 * v1 + coeff2 * v2 + coeff3 * v3; 
+	    b.extend(p);
+	  }
+#else	
         const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
+#endif
+
         return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
       }
 
