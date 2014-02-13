@@ -47,8 +47,14 @@ struct ISPCMaterial
 
 struct ISPCHair
 {
-  Vec3fa* v;     //!< hair control points (x,y,z,r)
-  int* index;    //!< for each hair, index to first control point
+  int vertex;
+  int id;
+};
+
+struct ISPCHairSet
+{
+  Vec3fa* v;       //!< hair control points (x,y,z,r)
+  ISPCHair* hairs; //!< for each hair, index to first control point
   int numVertices;
   int numHairs;
 };
@@ -69,7 +75,7 @@ struct ISPCScene
   ISPCMaterial* materials;  //!< material list
   int numMeshes;
   int numMaterials;
-  ISPCHair** hairs;
+  ISPCHairSet** hairs;
   int numHairSets;
 };
 
@@ -90,11 +96,11 @@ Vec3fa renderPixelTestEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy,
 __forceinline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 {
   const float t0 = 1.0f - t, t1 = t;
-  const ISPCHair* hair = g_ispc_scene->hairs[geomID]; // FIXME: works only because hairs are added first to scene
+  const ISPCHairSet* hair = g_ispc_scene->hairs[geomID]; // FIXME: works only because hairs are added first to scene
   const Vec3fa* vertices = hair->v;
-  const int* indices = hair->index;
+  const ISPCHair* hairs = hair->hairs;
   
-  const int i = indices[primID];
+  const int i = hairs[primID].vertex;
   const Vec3fa p00 = *(Vec3fa*)&vertices[i+0];
   const Vec3fa p01 = *(Vec3fa*)&vertices[i+1];
   const Vec3fa p02 = *(Vec3fa*)&vertices[i+2];
@@ -271,13 +277,13 @@ void addHair (ISPCScene* scene)
   const int numCurvePoints = 3*numCurveSegments+1;
   const float R = 0.01f;
 
-  ISPCHair* hair = new ISPCHair;
+  ISPCHairSet* hair = new ISPCHairSet;
   hair->numVertices = numCurves*numCurvePoints;
   hair->numHairs = numCurves*numCurveSegments;
   hair->v = new Vec3fa[hair->numVertices];
-  hair->index = new int[hair->numHairs];
+  hair->hairs = new ISPCHair[hair->numHairs];
   Vertex* vertices = (Vertex*) hair->v;
-  int* indices  = hair->index;
+  ISPCHair* hairs  = hair->hairs;
 
   for (size_t i=0; i<numCurves; i++)
   {
@@ -313,7 +319,8 @@ void addHair (ISPCScene* scene)
     }
 
     for (size_t j=0; j<numCurveSegments; j++) {
-      indices[i*numCurveSegments+j] = i*numCurvePoints+3*j;
+      hairs[i*numCurveSegments+j].vertex = i*numCurvePoints+3*j;
+      hairs[i*numCurveSegments+j].id = i;
     }
   }
 
@@ -355,13 +362,13 @@ RTCScene convertScene(ISPCScene* scene_in)
   for (int i=0; i<scene_in->numHairSets; i++)
   {
     /* get ith hair set */
-    ISPCHair* hair = scene_in->hairs[i];
+    ISPCHairSet* hair = scene_in->hairs[i];
     PRINT(hair->numHairs);
     
     /* create a hair set */
     unsigned int geomID = rtcNewBezierCurves (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
     rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
-    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->index,0,sizeof(int));
+    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
 #if USE_OCCLUSION_FILTER
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)filterDispatch);
 #endif
@@ -688,7 +695,7 @@ extern "C" void device_render (int* pixels,
       scene->numMaterials = 0;
       scene->meshes = new ISPCMesh*[1024*1024]; // FIXME: hardcoded maximal number of meshes
       scene->numMeshes = 0;
-      scene->hairs = new ISPCHair*[1024]; // FIXME: hardcoded maximal number of hair sets
+      scene->hairs = new ISPCHairSet*[1024]; // FIXME: hardcoded maximal number of hair sets
       scene->numHairSets = 0;
       g_ispc_scene = scene;
       addHair(scene);

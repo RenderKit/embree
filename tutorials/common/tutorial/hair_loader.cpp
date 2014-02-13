@@ -25,11 +25,12 @@ namespace embree
     if (!f) throw std::runtime_error("could not open " + fileName.str());
 
     /* add new hair set to scene */
-    OBJScene::Hair* hair = new OBJScene::Hair;
-    scene.hairs.push_back(hair);
+    OBJScene::HairSet* hairset = new OBJScene::HairSet;
+    scene.hairsets.push_back(hairset);
 
     char line[10000];
     fgets(line,10000,f);
+    int curveID = 0;
     
     while (fgets(line,10000,f) && !feof(f))
     {
@@ -46,7 +47,7 @@ namespace embree
         /* skip Tracks line */
         fgets(line,10000,f);
         
-        const int vertex_start_id = hair->v.size();
+        const int vertex_start_id = hairset->v.size();
         
         double x,y,z,w;
         unsigned int id = 0;
@@ -65,25 +66,20 @@ namespace embree
           v.x-=offset.x;
           v.y-=offset.y;
           v.z-=offset.z;
-          hair->v.push_back(v);
+          hairset->v.push_back(v);
         }
         
         /* add indices to hair starts */
         for (int i=0; i<points-1; i+=3)
-          hair->index.push_back(vertex_start_id + i);
+          hairset->hairs.push_back(OBJScene::Hair(vertex_start_id + i,curveID));
 	
         if (id != points-1) 
           throw std::runtime_error("hair parsing error");
+
+        curveID++;
       }
     }
     fclose(f);
-    
-    /*PRINT(hair->v.size());
-    for (int i=0;i<hair->v.size();i++) 
-      std::cout << i << " -> " << hair->v[i].x << ", " << hair->v[i].y << ", " << hair->v[i].z << ", " << hair->v[i].w << std::endl;
-    PRINT(hair->index.size());
-    for (int i=0;i<hair->index.size();i++) 
-      std::cout << i << " -> " << hair->index[i] << std::endl;*/
   }
 }
 
