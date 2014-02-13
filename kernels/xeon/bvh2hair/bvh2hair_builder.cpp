@@ -16,6 +16,7 @@
 
 #include "bvh2hair.h"
 #include "bvh2hair_builder.h"
+#include "bvh2hair_statistics.h"
 #include "common/scene_bezier_curves.h"
 
 namespace embree
@@ -67,6 +68,8 @@ namespace embree
 
     /* subdivide very curved hair segments */
     subdivide(0.1f);
+    bvh->numPrimitives = curves.size();
+    bvh->numVertices = 0;
 
     /* start recursive build */
     size_t begin = 0, end = curves.size();
@@ -79,7 +82,7 @@ namespace embree
       double t1 = getSeconds();
       std::cout << "[DONE]" << std::endl;
       std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
-      //std::cout << BVH2HairStatistics(bvh).str();
+      std::cout << BVH2HairStatistics(bvh).str();
     }
   }
 

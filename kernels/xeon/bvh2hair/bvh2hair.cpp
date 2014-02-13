@@ -30,7 +30,7 @@ namespace embree
   }
 
   BVH2Hair::BVH2Hair () 
-    : root(emptyNode) {}
+    : root(emptyNode), numPrimitives(0), numVertices(0) {}
 
   BVH2Hair::~BVH2Hair () {
   }
