@@ -46,10 +46,8 @@ namespace embree
       return tNear <= tFar;
     }
 
-    __forceinline void BVH2HairIntersector1::intersectBezier(Ray& ray, const Bezier1& bezier)
+    __forceinline void BVH2HairIntersector1::intersectBezier(const LinearSpace3fa &ray_space, Ray& ray, const Bezier1& bezier)
     {
-      const LinearSpace3fa ray_space(rcp(frame(ray.dir)));
-
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
       const Vec3fa v0 = bezier.p0;
@@ -73,7 +71,7 @@ namespace embree
       const avx4f w = -p0;
       const avxf d0 = w.x*v.x + w.y*v.y;
       const avxf d1 = v.x*v.x + v.y*v.y;
-      const avxf u = clamp(d0/d1,avxf(zero),avxf(one));
+      const avxf u = clamp(d0*rcp(d1),avxf(zero),avxf(one));
       const avx4f p = p0 + u*v;
       const avxf t = p.z;
       const avxf d2 = p.x*p.x + p.y*p.y; 
@@ -108,6 +106,8 @@ namespace embree
       stack[0].tNear = ray.tnear;
       stack[0].tFar  = ray.tfar;
       const Vec3fa rdir = rcp(ray.dir);
+
+      const LinearSpace3fa ray_space(rcp(frame(ray.dir)));
 
       /* pop loop */
       while (true) pop:
@@ -212,7 +212,7 @@ namespace embree
         /*! this is a leaf node */
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Bezier1* prim = (Bezier1*) cur.leaf(num);
-        for (size_t i=0; i<num; i++) intersectBezier(ray,prim[i]);
+        for (size_t i=0; i<num; i++) intersectBezier(ray_space,ray,prim[i]);
       }
     }
     
