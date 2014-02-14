@@ -19,18 +19,29 @@
 #define USE_INTERSECTION_FILTER 0
 #define USE_OCCLUSION_FILTER 1
 
+/* accumulation buffer */
+Vec3fa* g_accu = NULL;
+size_t g_accu_width = 0;
+size_t g_accu_height = 0;
+size_t g_accu_count = 0;
+Vec3f g_accu_vx = zero;
+Vec3f g_accu_vy = zero;
+Vec3f g_accu_vz = zero;
+Vec3f g_accu_p  = zero;
+
 /* light settings */
+Vec3fa ambientLightIntensity = Vec3fa(0.8f);
 Vec3fa lightDir = normalize(-Vec3fa(-20.6048, 22.2367, -2.93452));
-Vec3fa lightIntensity = Vec3fa(4.0f);
+Vec3fa lightIntensity = Vec3fa(3.0f);
 
 /* hair material */
 const Vec3fa hair_K  = Vec3fa(1.0f,0.57f,0.32);
 const Vec3fa hair_dK = Vec3fa(0.02f,0.05f,0.02);
 //const Vec3fa hair_K  = Vec3fa(1.0f,0.87f,0.62);
-const Vec3fa hair_Kr = 0.3f*hair_K;    //!< reflectivity of hair
-const Vec3fa hair_Kt = 0.7f*hair_K;    //!< transparency of hair
+const Vec3fa hair_Kr = 0.7f*hair_K;    //!< reflectivity of hair
+const Vec3fa hair_Kt = 0.3f*hair_K;    //!< transparency of hair
 const float  hair_Ke = 0.01f;
-const Vec3fa hair_Kts= Vec3fa(pow(hair_Kt.x,hair_Ke),pow(hair_Kt.x,hair_Ke),pow(hair_Kt.x,hair_Ke));    //!< transparency of hair for shadow rays
+const Vec3fa hair_Kts= hair_Kt; //Vec3fa(pow(hair_Kt.x,hair_Ke),pow(hair_Kt.x,hair_Ke),pow(hair_Kt.x,hair_Ke));    //!< transparency of hair for shadow rays
 
 struct ISPCTriangle 
 {
@@ -179,11 +190,11 @@ inline float frand(int& seed) {
 }
 
 /*! Uniform hemisphere sampling. Up direction is the z direction. */
-Vec3f sampleSphere(const float& u, const float& v) 
+Vec3fa sampleSphere(const float u, const float v) 
 {
   const float phi = 2.0f*(float)pi * u;
   const float cosTheta = 1.0f - 2.0f * v, sinTheta = 2.0f * sqrt(v * (1.0f - v));
-  return Vec3f(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+  return Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta, float(one_over_four_pi));
 }
 
 Vec3f noise(int i, Vec3f p, float t) {
@@ -235,6 +246,10 @@ void occlusionFilter(void* ptr, RTCRay2& ray)
 
 Vec3fa occluded(RTCScene scene, RTCRay2& ray)
 {
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = 0;
   ray.filter = (RTCFilterFunc) occlusionFilter;
   ray.transparency = Vec3fa(1.0f);
   rtcOccluded(scene,(RTCRay&)ray);
@@ -245,6 +260,12 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
 
 Vec3fa occluded(RTCScene scene, RTCRay2& ray)
 {
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = 0;
+  ray.filter = NULL;
+
   Vec3fa T = 1.0f;
   while (true) 
   {
@@ -360,6 +381,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT,RTC_INTERSECT1);
 
   /* add all hair sets to the scene */
+  //scene_in->numHairSets = 0;
   for (int i=0; i<scene_in->numHairSets; i++)
   {
     /* get ith hair set */
@@ -531,13 +553,15 @@ public:
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
+  int seed = random(); //255*x+13*y+45*g_accu_count;
+
   /* initialize ray */
   RTCRay2 ray;
   ray.org = p;
   ray.org.w = 0.0f;
   ray.dir = normalize(x*vx + y*vy + vz);
   Vec3fa dir1 = normalize((x+1)*vx + (y+1)*vy + vz);
-  ray.dir.w = 0.5f*0.707f*length(dir1-ray.dir);
+  ray.dir.w = 0.0f; //0.5f*0.707f*length(dir1-ray.dir);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -557,7 +581,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     
     /* exit if we hit environment */
     if (ray2->geomID == RTC_INVALID_GEOMETRY_ID) 
-      return color;
+      return color + weight*ambientLightIntensity;
   
     /* calculate transmissivity of hair */
     AnisotropicBlinn brdf;
@@ -570,9 +594,9 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       const Vec3fa dz = normalize(cross(dy,dx));
 
       /* generate anisotropic BRDF */
-      int seed = g_ispc_scene->hairs[ray2->geomID]->hairs[ray2->primID].id;
-      const Vec3fa dK = hair_dK*frand(seed);
-      brdf = AnisotropicBlinn(hair_Kr-dK,hair_Kt-dK,dx,10.0f,dy,1.0f,dz);
+      int seed1 = g_ispc_scene->hairs[ray2->geomID]->hairs[ray2->primID].id;
+      const Vec3fa dK = hair_dK*frand(seed1);
+      brdf = AnisotropicBlinn(hair_Kr-dK,hair_Kt-dK,dx,1.0f,dy,0.0f,dz);
     }
     else 
     {
@@ -585,30 +609,36 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       brdf = AnisotropicBlinn(one,zero,dx,0.0f,dy,0.0f,dz);
     }
     
-    /* initialize shadow ray */
+    /* sample directional light */
     RTCRay2 shadow;
     shadow.org = ray2->org + ray2->tfar*ray2->dir;
-    shadow.org.w = ray2->org.w+ray2->tfar*ray2->dir.w;
+    shadow.org.w = 0.0f; //ray2->org.w+ray2->tfar*ray2->dir.w;
     shadow.dir = neg(lightDir);
     shadow.dir.w = 0.0f;
-    shadow.tnear = 0.1f;
+    shadow.tnear = 0.001f;
     shadow.tfar = inf;
-    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-    shadow.primID = RTC_INVALID_GEOMETRY_ID;
-    shadow.mask = -1;
-    shadow.time = 0;
-    shadow.filter = NULL;
-    
-    /* trace shadow ray */
     Vec3fa T = occluded(g_scene,shadow);
-    
-    /* add light contribution */
     Vec3fa c = brdf.eval(neg(ray.dir),neg(lightDir));
-    color += weight*(1.0f-brdf.Kt)*c*T*lightIntensity;
-    weight *= brdf.Kt;
-    if (reduce_max(weight) < 0.01) return color;
+    //Vec3fa c = clamp(dot(neg(lightDir),brdf.dz),0.0f,1.0f)*float(one_over_pi);
+    color += weight*c*T*lightIntensity;
 
-    /* continue ray */
+#if 0
+    /* sample ambient light */
+    const Vec3fa ambientLightDir = sampleSphere(frand(seed),frand(seed)); 
+    shadow.dir = ambientLightDir;
+    shadow.dir.w = 0.0f; 
+    shadow.tnear = 0.001f;
+    shadow.tfar = inf;
+    T = occluded(g_scene,shadow);
+    c = brdf.eval(neg(ray.dir),neg(ambientLightDir))/ambientLightDir.w;
+    color += weight*c*T*ambientLightIntensity;
+#endif
+
+    /* continue with transmission ray */
+    weight *= brdf.Kt;
+    if (reduce_max(weight) < 0.01) 
+      return color + weight*ambientLightIntensity;
+    
     ray2->geomID = RTC_INVALID_GEOMETRY_ID;
     ray2->tnear = 1.001f*ray2->tfar;
     ray2->tfar = inf;
@@ -643,16 +673,6 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
 
   return color;
 }
-
-/* accumulation buffer */
-Vec3fa* g_accu = NULL;
-size_t g_accu_width = 0;
-size_t g_accu_height = 0;
-size_t g_accu_count = 0;
-Vec3f g_accu_vx = zero;
-Vec3f g_accu_vy = zero;
-Vec3f g_accu_vz = zero;
-Vec3f g_accu_p  = zero;
 
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
