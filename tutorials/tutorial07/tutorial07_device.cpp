@@ -582,6 +582,8 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     /* exit if we hit environment */
     if (ray2->geomID == RTC_INVALID_GEOMETRY_ID) 
       return color + weight*ambientLightIntensity;
+
+    //return Vec3fa(ray2->u,ray2->v,0.0f);
   
     /* calculate transmissivity of hair */
     AnisotropicBlinn brdf;
