@@ -657,7 +657,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   ray.org.w = 0.0f;
   ray.dir = normalize(x*vx + y*vy + vz);
   Vec3fa dir1 = normalize((x+1)*vx + (y+1)*vy + vz);
-  ray.dir.w = 0.5f*0.707f*length(dir1-ray.dir);
+  ray.dir.w = 0.0f; // 0.5f*0.707f*length(dir1-ray.dir);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
