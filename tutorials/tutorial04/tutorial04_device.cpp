@@ -160,7 +160,7 @@ extern "C" void device_init (int8* cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -251,7 +251,7 @@ extern "C" void device_render (int* pixels,
                            const Vec3f& p)
 {
   /* create identity matrix */
-  AffineSpace3fa xfm;
+  AffineSpace3f xfm;
   xfm.l.vx = Vec3f(1,0,0);
   xfm.l.vy = Vec3f(0,1,0);
   xfm.l.vz = Vec3f(0,0,1);

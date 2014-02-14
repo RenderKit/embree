@@ -26,10 +26,10 @@ float scale = 0.001f;
 extern renderPixelFunc renderPixel;
 
 /* standard rendering function for each tutorial */
-Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
+Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
 /* renders a single pixel with eyelight shading */
-Vec3fa renderPixelEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -51,7 +51,7 @@ Vec3fa renderPixelEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
 }
 
 /* renders a single pixel with ambient occlusion shading */
-Vec3fa renderPixelAmbientOcclusion(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -111,7 +111,7 @@ Vec3fa renderPixelAmbientOcclusion(int x, int y, const Vec3fa& vx, const Vec3fa&
 }
 
 /* renders a single pixel with UV shading */
-Vec3fa renderPixelUV(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelUV(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -133,7 +133,7 @@ Vec3fa renderPixelUV(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec
 }
 
 /* renders a single pixel with geometry normal shading */
-Vec3fa renderPixelNg(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelNg(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -164,7 +164,7 @@ Vec3fa randomColor(const int ID)
 }
 
 /* geometry ID shading */
-Vec3fa renderPixelGeomID(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelGeomID(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -186,7 +186,7 @@ Vec3fa renderPixelGeomID(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const
 }
 
 /* geometry ID and primitive ID shading */
-Vec3fa renderPixelGeomIDPrimID(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelGeomIDPrimID(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -208,7 +208,7 @@ Vec3fa renderPixelGeomIDPrimID(int x, int y, const Vec3fa& vx, const Vec3fa& vy,
 }
 
 /* vizualizes the traversal cost of a pixel */
-Vec3fa renderPixelCycles(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelCycles(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -231,7 +231,7 @@ Vec3fa renderPixelCycles(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const
 }
 
 /* renders a single pixel with UV shading */
-Vec3fa renderPixelUV16(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelUV16(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
