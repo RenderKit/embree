@@ -21,6 +21,7 @@ extern RTCScene g_scene;
 
 /* intensity scaling for traversal cost visualization */
 float scale = 0.001f;
+bool g_changed = false;
 
 /* stores pointer to currently used rendePixel function */
 extern renderPixelFunc renderPixel;
@@ -292,21 +293,47 @@ extern "C" bool device_pick(const float x,
 /* called when a key is pressed */
 extern "C" void device_key_pressed(int key)
 {
-  if      (key == GLUT_KEY_F1) renderPixel = renderPixelStandard;
-  else if (key == GLUT_KEY_F2) renderPixel = renderPixelEyeLight;
-  else if (key == GLUT_KEY_F3) renderPixel = renderPixelAmbientOcclusion;
-  else if (key == GLUT_KEY_F4) renderPixel = renderPixelUV;
-  else if (key == GLUT_KEY_F5) renderPixel = renderPixelNg;
-  else if (key == GLUT_KEY_F6) renderPixel = renderPixelGeomID;
-  else if (key == GLUT_KEY_F7) renderPixel = renderPixelGeomIDPrimID;
-  else if (key == GLUT_KEY_F8) renderPixel = renderPixelUV16;
+  if (key == GLUT_KEY_F1) {
+    renderPixel = renderPixelStandard;
+    g_changed = true;
+  }
+  else if (key == GLUT_KEY_F2) {
+    renderPixel = renderPixelEyeLight;
+    g_changed = true;
+  }    
+  else if (key == GLUT_KEY_F3) {
+    renderPixel = renderPixelAmbientOcclusion;
+    g_changed = true;
+  }
+  else if (key == GLUT_KEY_F4) {
+    renderPixel = renderPixelUV;
+    g_changed = true;
+  }
+  else if (key == GLUT_KEY_F5) {
+    renderPixel = renderPixelNg;
+    g_changed = true;
+  }
+  else if (key == GLUT_KEY_F6) {
+    renderPixel = renderPixelGeomID;
+    g_changed = true;
+  }
+  else if (key == GLUT_KEY_F7) {
+    renderPixel = renderPixelGeomIDPrimID;
+    g_changed = true;
+  }
+  else if (key == GLUT_KEY_F8) {
+    renderPixel = renderPixelUV16;
+    g_changed = true;
+  }
   else if (key == GLUT_KEY_F9) {
     if (renderPixel == renderPixelCycles) scale *= 1.1f;
     renderPixel = renderPixelCycles;
+    g_changed = true;
   }
   else if (key == GLUT_KEY_F10) {
     if (renderPixel == renderPixelCycles) scale *= 0.9f;
     renderPixel = renderPixelCycles;
+    g_changed = true;
   }
 }
 
