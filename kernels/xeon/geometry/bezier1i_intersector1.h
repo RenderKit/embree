@@ -52,9 +52,12 @@ namespace embree
     struct Precalculations 
     {
       __forceinline Precalculations (const Ray& ray)
-      : ray_space(rcp(frame(ray.dir))) {}
+	: ray_space(rcp(frame(ray.dir))), mailbox(-1),mailbox_index(0) {}
 
       LinearSpace3fa ray_space;
+
+      avxi mailbox;      
+      unsigned int mailbox_index;
     };
 
     static __forceinline bool intersectCylinder(const Ray& ray,const Vec3fa &v0,const Vec3fa &v1,const Vec3fa &v2,const Vec3fa &v3)
@@ -115,7 +118,7 @@ namespace embree
     }
 
 
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
@@ -191,10 +194,20 @@ namespace embree
 #endif
     }
 
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
     {
       for (size_t i=0; i<num; i++)
-        intersect(pre,ray,curves[i],geom);
+	{
+#if defined(PRE_SUBDIVISION_HACK)
+	  if (unlikely(any(pre.mailbox == curves[i].geomID))) { continue; }
+#endif
+	  intersect(pre,ray,curves[i],geom);
+
+#if defined(PRE_SUBDIVISION_HACK)
+	  pre.mailbox[pre.mailbox_index] = curves[i].geomID;
+	  pre.mailbox_index = (pre.mailbox_index+1)%8;
+#endif
+	}
     }
 
     static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom) 
