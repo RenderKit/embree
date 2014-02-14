@@ -768,6 +768,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
 Vec3fa* g_accu = NULL;
 size_t g_accu_width = 0;
 size_t g_accu_height = 0;
+size_t g_accu_count = 0;
 Vec3f g_accu_vx = zero;
 Vec3f g_accu_vy = zero;
 Vec3f g_accu_vz = zero;
@@ -791,13 +792,16 @@ void renderTile(int taskIndex, int* pixels,
   const int x1 = min(x0+TILE_SIZE_X,width);
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
+  int seed = tileY*numTilesX+tileX+g_accu_count;
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    //Vec3f color = renderPixel(x,y,vx,vy,vz,p);
-    Vec3f color = renderPixelPathTrace(x,y,vx,vy,vz,p);
-    //Vec3f color = renderPixelTestEyeLight(x,y,vx,vy,vz,p);
+    float fx = x + frand(seed);
+    float fy = y + frand(seed);
+    //Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
+    Vec3f color = renderPixelPathTrace(fx,fy,vx,vy,vz,p);
+    //Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
     Vec3fa& dst = g_accu[y*width+x];
     dst += Vec3fa(color.x,color.y,color.z,1.0f);
 
@@ -842,6 +846,7 @@ extern "C" void device_render (int* pixels,
     g_accu = new Vec3fa[width*height];
     g_accu_width = width;
     g_accu_height = height;
+    memset(g_accu,0,width*height*sizeof(Vec3fa));
   }
 
   /* reset accumulator */
@@ -850,10 +855,10 @@ extern "C" void device_render (int* pixels,
   camera_changed |= g_accu_vy != vy; g_accu_vy = vy;
   camera_changed |= g_accu_vz != vz; g_accu_vz = vz;
   camera_changed |= g_accu_p  != p;  g_accu_p  = p;
+  g_accu_count++;
   if (camera_changed) {
-    for (size_t y=0; y<g_accu_height; y++)
-      for (size_t x=0; x<g_accu_width; x++)
-        g_accu[y*g_accu_width+x] = Vec3fa(zero);
+    g_accu_count=0;
+    memset(g_accu,0,width*height*sizeof(Vec3fa));
   }
 
   /* render frame */
