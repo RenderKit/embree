@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.h"
 
 #define USE_INTERSECTION_FILTER 0
-#define USE_OCCLUSION_FILTER 1
+#define USE_OCCLUSION_FILTER 0
 
 /* accumulation buffer */
 Vec3fa* g_accu = NULL;
@@ -276,7 +276,7 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
     /* calculate how much the curve occludes the ray */
     //float sizeRay = max(ray.org.w + ray.tfar*ray.dir.w, 0.00001f);
     //float sizeCurve = evalBezier(ray.geomID,ray.primID,ray.u).w;
-    T *= hair_Tt; //1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
+    T *= hair_Kt; //1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
 
     /* continue ray ray */
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -668,7 +668,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   ray.org.w = 0.0f;
   ray.dir = normalize(x*vx + y*vy + vz);
   Vec3fa dir1 = normalize((x+1)*vx + (y+1)*vy + vz);
-  ray.dir.w = 0.5f*0.707f*length(dir1-ray.dir);
+  ray.dir.w = 0.0f; // 0.5f*0.707f*length(dir1-ray.dir);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
