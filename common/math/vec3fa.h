@@ -164,8 +164,10 @@ namespace embree
 
   __forceinline Vec3fa& operator +=( Vec3fa& a, const Vec3fa& b ) { return a = a + b; }
   __forceinline Vec3fa& operator -=( Vec3fa& a, const Vec3fa& b ) { return a = a - b; }
-  __forceinline Vec3fa& operator *=( Vec3fa& a, const float b ) { return a = a * b; }
-  __forceinline Vec3fa& operator /=( Vec3fa& a, const float b ) { return a = a / b; }
+  __forceinline Vec3fa& operator *=( Vec3fa& a, const Vec3fa& b ) { return a = a * b; }
+  __forceinline Vec3fa& operator *=( Vec3fa& a, const float   b ) { return a = a * b; }
+  __forceinline Vec3fa& operator /=( Vec3fa& a, const Vec3fa& b ) { return a = a / b; }
+  __forceinline Vec3fa& operator /=( Vec3fa& a, const float   b ) { return a = a / b; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions

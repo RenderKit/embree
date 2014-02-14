@@ -19,9 +19,13 @@
 #define USE_INTERSECTION_FILTER 0
 #define USE_OCCLUSION_FILTER 1
 
+/* light settings */
 Vec3fa lightDir = normalize(-Vec3fa(-20.6048, 22.2367, -2.93452));
-//Vec3fa lightIntensity = Vec3fa(8.0f);
 Vec3fa lightIntensity = Vec3fa(2.0f);
+
+/* hair material */
+const Vec3fa hair_Kt = 0.2f*Vec3fa(0.73f,0.42f,0.23);   //!< transparency of hair
+const Vec3fa hair_Kr = 0.8f*Vec3fa(0.73f,0.42f,0.23);   //!< reflectivity of hair
 
 struct ISPCTriangle 
 {
@@ -82,14 +86,9 @@ struct ISPCScene
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
 RTCScene g_scene = NULL;
-//Vec3f* colors = NULL;
 
 /* render function to use */
 renderPixelFunc renderPixel;
-float T_hair = 0.3f;
-
-//Vertex* vertices = NULL;
-//int*    indices = NULL;
 
 Vec3fa renderPixelTestEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
@@ -137,7 +136,7 @@ struct RTCRay2
 
   // ray extensions
   RTCFilterFunc filter;
-  float transparency; //!< accumulated transparency value
+  Vec3fa transparency; //!< accumulated transparency value
   HitList* list;
 };
 
@@ -203,16 +202,6 @@ void filterDispatch(void* ptr, RTCRay2& ray) {
 /* intersection filter function */
 void intersectionFilter(void* ptr, RTCRay2& ray)
 {
-#if 0
-  if (ray.geomID == 0) {
-    /* calculate how much the curve occludes the ray */
-    float sizeRay = max(ray.org.w + ray.tfar*ray.dir.w, 0.00001f);
-    float sizeCurve = evalBezier(ray.primID,ray.u).w;
-    float T = 1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
-    T *= ray.transparency;
-    ray.transparency = T;
-  }
-#endif
   bool added = addHit(ray.list,ray);
   /*if (T != 0.0f && added)*/ ray.geomID = RTC_INVALID_GEOMETRY_ID; // FIXME: enable this
 }
@@ -222,35 +211,35 @@ void occlusionFilter(void* ptr, RTCRay2& ray)
 {
   /* make all surfaces opaque */
   if (ray.geomID >= g_ispc_scene->numHairSets) {
-    ray.transparency = 0.0f;
+    ray.transparency = Vec3fa(zero);
     return;
   }
 
-  // FIXME: handle triangles properly
   /* calculate how much the curve occludes the ray */
   //float sizeRay = max(ray.org.w + ray.tfar*ray.dir.w, 0.00001f);
   //float sizeCurve = evalBezier(ray.geomID,ray.primID,ray.u).w;
-  float T = T_hair; //1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
+
+  Vec3fa T = hair_Kt; //1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
   T *= ray.transparency;
   ray.transparency = T;
-  if (T != 0.0f) ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  if (T != Vec3fa(0.0f)) ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
 #if USE_OCCLUSION_FILTER
 
-float occluded(RTCScene scene, RTCRay2& ray)
+Vec3fa occluded(RTCScene scene, RTCRay2& ray)
 {
   ray.filter = (RTCFilterFunc) occlusionFilter;
-  ray.transparency = 1.0f;
+  ray.transparency = Vec3fa(1.0f);
   rtcOccluded(scene,(RTCRay&)ray);
   return ray.transparency;
 }
 
 #else
 
-float occluded(RTCScene scene, RTCRay2& ray)
+Vec3fa occluded(RTCScene scene, RTCRay2& ray)
 {
-  float T = 1.0f;
+  Vec3fa T = 1.0f;
   while (true) 
   {
     rtcIntersect(scene,(RTCRay&)ray);
@@ -258,9 +247,9 @@ float occluded(RTCScene scene, RTCRay2& ray)
     if (ray.geomID >= g_ispc_scene->numHairSets) return 0.0f; // make all surfaces opaque
     
     /* calculate how much the curve occludes the ray */
-    float sizeRay = max(ray.org.w + ray.tfar*ray.dir.w, 0.00001f);
-    float sizeCurve = evalBezier(ray.geomID,ray.primID,ray.u).w;
-    T *= 1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
+    //float sizeRay = max(ray.org.w + ray.tfar*ray.dir.w, 0.00001f);
+    //float sizeCurve = evalBezier(ray.geomID,ray.primID,ray.u).w;
+    T *= hair_Tt; //1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
 
     /* continue ray ray */
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -443,8 +432,8 @@ public:
   __forceinline AnisotropicPowerCosineDistribution() {}
 
   /*! Anisotropic power cosine distribution constructor. */
-  __forceinline AnisotropicPowerCosineDistribution(const Vec3fa& R, const Vec3fa& dx, float nx, const Vec3fa& dy, float ny, const Vec3fa& dz) 
-    : R(R), dx(dx), nx(nx), dy(dy), ny(ny), dz(dz),
+  __forceinline AnisotropicPowerCosineDistribution(const Vec3fa& Kr, const Vec3fa& Kt, const Vec3fa& dx, float nx, const Vec3fa& dy, float ny, const Vec3fa& dz) 
+    : Kr(Kr), Kt(Kt), dx(dx), nx(nx), dy(dy), ny(ny), dz(dz),
       //norm1(sqrtf((nx+1)*(ny+1)) * float(one_over_two_pi)),
       norm2(sqrtf((nx+2)*(ny+2)) * float(one_over_two_pi)) {}
       //norm1(1.0f), norm2(1.0f) {}
@@ -468,6 +457,7 @@ public:
 
   __forceinline Vec3fa eval(int geomID, const Vec3fa& wo, const Vec3fa& wi_) const
   {
+    Vec3fa K = Kr;
     Vec3fa wi = wi_;
     //if (dot(wi,dz) <= 0) return zero;
     const float cosThetaO = dot(wo,dz);
@@ -475,13 +465,14 @@ public:
     //if (cosThetaI <= 0.0f || cosThetaO <= 0.0f) return zero;
     if (cosThetaI < 0.0f) {
       wi = reflect(wi,dz);
+      K = Kt;
     }
     const Vec3fa wh = normalize(wi + wo);
     //const float cosThetaH = dot(wh, dz);
     //const float cosTheta = dot(wi, wh); // = dot(wo, wh);
     const float D = eval(wh);
     //const float G = min(1.0f, 2.0f * cosThetaH * cosThetaO * rcp(cosTheta), 2.0f * cosThetaH * cosThetaI * rcp(cosTheta));
-    return R * D * abs(cosThetaI); // * G * rcp(4.0f*cosThetaO);
+    return K * D * abs(cosThetaI); // * G * rcp(4.0f*cosThetaO);
     //const float G = dot(wi,dz);
     //return R*D*G;
   }
@@ -494,15 +485,12 @@ public:
   Vec3fa dz;       //!< z-direction of the distribution.
   float norm1;     //!< Normalization constant for calculating the pdf for sampling.
   float norm2;     //!< Normalization constant for calculating the distribution.
-  Vec3f R; // FIXME: using Vec3fa triggers some compiler bug!?
+  Vec3f Kr,Kt;     // FIXME: using Vec3fa triggers some compiler bug!?
 };
 
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  //PRINT2(x,y);
-  //if (x != 400 || y != 183) return zero;
-
   /* initialize ray */
   RTCRay2 ray;
   ray.org = p;
@@ -519,131 +507,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   ray.filter = (RTCFilterFunc) intersectionFilter;
 
   Vec3fa color = Vec3f(0.0f);
-  float weight = 1.0f;
-
-#if USE_INTERSECTION_FILTER
-
-  HitList hits;
-  hits.num = 0;
-  ray.list = &hits;
-
-  /* intersect ray with scene and gather all hits */
-  rtcIntersect(g_scene,(RTCRay&)ray);
-
-  /* iterate through all hits */
-  for (size_t i=0; i<hits.num; i++) {
-    RTCRay2* ray2 = hits.rays[i];
-#else
-
-  while (true)
-  {
-    /* intersect ray with scene and gather all hits */
-    rtcIntersect(g_scene,(RTCRay&)ray);
-    RTCRay2* ray2 = &ray;
-    
-    /* exit if we hit environment */
-    if (ray2->geomID == RTC_INVALID_GEOMETRY_ID) 
-      return color;
-
-    return Vec3fa(ray2->u,ray2->v,0.0f);
-    
-#endif
-  
-    /* calculate transmissivity of hair */
-    AnisotropicPowerCosineDistribution brdf;
-
-    float Th = 0.0f;
-    if (ray2->geomID < g_ispc_scene->numHairSets) 
-    {
-      /* calculate how much the curve occludes the ray */
-      float sizeRay = max(ray2->org.w + ray2->tfar*ray2->dir.w, 0.00001f);
-      float sizeCurve = evalBezier(ray2->geomID,ray2->primID,ray2->u).w;
-      Th = 1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
-
-      /* calculate tangent space */
-      const Vec3fa dx = normalize(ray2->Ng);
-      const Vec3fa dy = normalize(cross(ray2->dir,dx));
-      const Vec3fa dz = normalize(cross(dy,dx));
-
-      /* generate anisotropic BRDF */
-      //const Vec3fa color(0.5f,0.4f,0.4f);
-      const Vec3fa color1(188.0f/255.0f,107.0f/255.0f,58.0f/255.0f);
-      brdf = AnisotropicPowerCosineDistribution(color1,dx,10.0f,dy,1.0f,dz);
-    }
-    else 
-    {
-      /* calculate tangent space */
-      const Vec3fa dz = -normalize(ray2->Ng);
-      const Vec3fa dx = normalize(cross(dz,ray2->dir));
-      const Vec3fa dy = normalize(cross(dz,dx));
-      
-      /* generate isotropic BRDF */
-      const Vec3fa color2(1.0f);
-      brdf = AnisotropicPowerCosineDistribution(color2,dx,0.0f,dy,0.0f,dz);
-    }
-    
-    /* initialize shadow ray */
-    RTCRay2 shadow;
-    shadow.org = ray2->org + ray2->tfar*ray2->dir;
-    shadow.org.w = ray2->org.w+ray2->tfar*ray2->dir.w;
-    shadow.dir = neg(lightDir);
-    shadow.dir.w = 0.0f;
-    shadow.tnear = 0.1f;
-    shadow.tfar = inf;
-    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-    shadow.primID = RTC_INVALID_GEOMETRY_ID;
-    shadow.mask = -1;
-    shadow.time = 0;
-    shadow.filter = NULL;
-    
-    /* trace shadow ray */
-    float T = occluded(g_scene,shadow);
-    //float T = 1.0f;
-    
-    /* add light contribution */
-    //Vec3fa c = Vec3fa(1.0f); 
-    Vec3fa c = zero;
-    if (brdf.nx == 0.0f || brdf.ny == 0.0f)
-      c = Vec3fa(clamp(dot(neg(ray.dir),brdf.dz),0.0f,1.0f));
-    else 
-      c = brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
-
-    color += weight*(1.0f-Th)*c*T*lightIntensity; //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f))); // FIXME: use +=
-    weight *= Th;
-    //weight = max(0.0f,weight-Th);
-    if (weight < 0.01) return color;
-    //return color;
-
-#if !USE_INTERSECTION_FILTER
-    /* continue ray */
-    ray2->geomID = RTC_INVALID_GEOMETRY_ID;
-    ray2->tnear = 1.001f*ray2->tfar; //+2.0f*shadow.org.w;
-    ray2->tfar = inf;
-#endif
-  }
-  return color;
-}
-
-/* task that renders a single screen tile */
-Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
-{
-  /* initialize ray */
-  RTCRay2 ray;
-  ray.org = p;
-  ray.org.w = 0.0f;
-  ray.dir = normalize(x*vx + y*vy + vz);
-  Vec3fa dir1 = normalize((x+1)*vx + (y+1)*vy + vz);
-  ray.dir.w = 0.5f*0.707f*length(dir1-ray.dir);
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = 0;
-  ray.filter = (RTCFilterFunc) intersectionFilter;
-
-  Vec3fa color = Vec3f(0.0f);
-  float weight = 1.0f;
+  Vec3fa weight = 1.0f;
 
 #if USE_INTERSECTION_FILTER
 
@@ -674,22 +538,17 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     /* calculate transmissivity of hair */
     AnisotropicPowerCosineDistribution brdf;
 
-    float Th = 0.0f;
+    Vec3fa Kt = Vec3fa(0.0f);
     if (ray2->geomID < g_ispc_scene->numHairSets) 
     {
-      /* calculate how much the curve occludes the ray */
-      //float sizeRay = max(ray2->org.w + ray2->tfar*ray2->dir.w, 0.00001f);
-      //float sizeCurve = evalBezier(ray2->geomID,ray2->primID,ray2->u).w;
-      Th = T_hair; //1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
-
       /* calculate tangent space */
       const Vec3fa dx = normalize(ray2->Ng);
       const Vec3fa dy = normalize(cross(ray2->dir,dx));
       const Vec3fa dz = normalize(cross(dy,dx));
 
       /* generate anisotropic BRDF */
-      const Vec3fa color1(188.0f/255.0f,107.0f/255.0f,58.0f/255.0f);
-      brdf = AnisotropicPowerCosineDistribution(color1,dx,10.0f,dy,1.0f,dz);
+      brdf = AnisotropicPowerCosineDistribution(hair_Kr,hair_Kt,dx,10.0f,dy,1.0f,dz);
+      Kt = hair_Kt; 
     }
     else 
     {
@@ -699,8 +558,8 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
       const Vec3fa dy = normalize(cross(dz,dx));
       
       /* generate isotropic BRDF */
-      const Vec3fa color2(1.0f);
-      brdf = AnisotropicPowerCosineDistribution(color2,dx,1.0f,dy,1.0f,dz);
+      brdf = AnisotropicPowerCosineDistribution(one,zero,dx,1.0f,dy,1.0f,dz);
+      Kt = Vec3fa(0.0f);
     }
     
     /* initialize shadow ray */
@@ -718,15 +577,13 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     shadow.filter = NULL;
     
     /* trace shadow ray */
-    float T = occluded(g_scene,shadow);
+    Vec3fa T = occluded(g_scene,shadow);
     
     /* add light contribution */
     Vec3fa c = brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
-
-    color += weight*(1.0f-Th)*c*T*lightIntensity; //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f))); // FIXME: use +=
-    weight *= Th;
-    //weight = max(0.0f,weight-Th);
-    if (weight < 0.01) return color;
+    color += weight*(1.0f-Kt)*c*T*lightIntensity;
+    weight *= Kt;
+    if (reduce_max(weight) < 0.01) return color;
     return color;
 
 #if !USE_INTERSECTION_FILTER
@@ -802,8 +659,7 @@ void renderTile(int taskIndex, int* pixels,
     /* calculate pixel color */
     float fx = x + frand(seed);
     float fy = y + frand(seed);
-    //Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
-    Vec3f color = renderPixelPathTrace(fx,fy,vx,vy,vz,p);
+    Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
     //Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
     Vec3fa& dst = g_accu[y*width+x];
     dst += Vec3fa(color.x,color.y,color.z,1.0f);
@@ -877,7 +733,149 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
-  //delete[] colors;
   rtcExit();
 }
 
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
+
+#if 0
+/* task that renders a single screen tile */
+Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+{
+  //PRINT2(x,y);
+  //if (x != 400 || y != 183) return zero;
+
+  /* initialize ray */
+  RTCRay2 ray;
+  ray.org = p;
+  ray.org.w = 0.0f;
+  ray.dir = normalize(x*vx + y*vy + vz);
+  Vec3fa dir1 = normalize((x+1)*vx + (y+1)*vy + vz);
+  ray.dir.w = 0.5f*0.707f*length(dir1-ray.dir);
+  ray.tnear = 0.0f;
+  ray.tfar = inf;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = 0;
+  ray.filter = (RTCFilterFunc) intersectionFilter;
+
+  Vec3fa color = Vec3f(0.0f);
+  float weight = 1.0f;
+
+#if USE_INTERSECTION_FILTER
+
+  HitList hits;
+  hits.num = 0;
+  ray.list = &hits;
+
+  /* intersect ray with scene and gather all hits */
+  rtcIntersect(g_scene,(RTCRay&)ray);
+
+  /* iterate through all hits */
+  for (size_t i=0; i<hits.num; i++) {
+    RTCRay2* ray2 = hits.rays[i];
+#else
+
+  while (true)
+  {
+    /* intersect ray with scene and gather all hits */
+    rtcIntersect(g_scene,(RTCRay&)ray);
+    RTCRay2* ray2 = &ray;
+    
+    /* exit if we hit environment */
+    if (ray2->geomID == RTC_INVALID_GEOMETRY_ID) 
+      return color;
+
+    return Vec3fa(ray2->u,ray2->v,0.0f);
+    
+#endif
+  
+    /* calculate transmissivity of hair */
+    AnisotropicPowerCosineDistribution brdf;
+
+    float Th = 0.0f;
+    if (ray2->geomID < g_ispc_scene->numHairSets) 
+    {
+      /* calculate how much the curve occludes the ray */
+      float sizeRay = max(ray2->org.w + ray2->tfar*ray2->dir.w, 0.00001f);
+      float sizeCurve = evalBezier(ray2->geomID,ray2->primID,ray2->u).w;
+      Th = 1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
+
+      /* calculate tangent space */
+      const Vec3fa dx = normalize(ray2->Ng);
+      const Vec3fa dy = normalize(cross(ray2->dir,dx));
+      const Vec3fa dz = normalize(cross(dy,dx));
+
+      /* generate anisotropic BRDF */
+      brdf = AnisotropicPowerCosineDistribution(hair_color,dx,10.0f,dy,1.0f,dz);
+    }
+    else 
+    {
+      /* calculate tangent space */
+      const Vec3fa dz = -normalize(ray2->Ng);
+      const Vec3fa dx = normalize(cross(dz,ray2->dir));
+      const Vec3fa dy = normalize(cross(dz,dx));
+      
+      /* generate isotropic BRDF */
+      const Vec3fa color2(1.0f);
+      brdf = AnisotropicPowerCosineDistribution(color2,dx,0.0f,dy,0.0f,dz);
+    }
+    
+    /* initialize shadow ray */
+    RTCRay2 shadow;
+    shadow.org = ray2->org + ray2->tfar*ray2->dir;
+    shadow.org.w = ray2->org.w+ray2->tfar*ray2->dir.w;
+    shadow.dir = neg(lightDir);
+    shadow.dir.w = 0.0f;
+    shadow.tnear = 0.1f;
+    shadow.tfar = inf;
+    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.primID = RTC_INVALID_GEOMETRY_ID;
+    shadow.mask = -1;
+    shadow.time = 0;
+    shadow.filter = NULL;
+    
+    /* trace shadow ray */
+    float T = occluded(g_scene,shadow);
+    //float T = 1.0f;
+    
+    /* add light contribution */
+    //Vec3fa c = Vec3fa(1.0f); 
+    Vec3fa c = zero;
+    if (brdf.nx == 0.0f || brdf.ny == 0.0f)
+      c = Vec3fa(clamp(dot(neg(ray.dir),brdf.dz),0.0f,1.0f));
+    else 
+      c = brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
+
+    color += weight*(1.0f-Th)*c*T*lightIntensity; //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f))); // FIXME: use +=
+    weight *= Th;
+    //weight = max(0.0f,weight-Th);
+    if (weight < 0.01) return color;
+    //return color;
+
+#if !USE_INTERSECTION_FILTER
+    /* continue ray */
+    ray2->geomID = RTC_INVALID_GEOMETRY_ID;
+    ray2->tnear = 1.001f*ray2->tfar; //+2.0f*shadow.org.w;
+    ray2->tfar = inf;
+#endif
+  }
+  return color;
+}
+#endif
