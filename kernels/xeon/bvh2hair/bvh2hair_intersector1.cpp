@@ -86,7 +86,6 @@ namespace embree
       const Vec3fa &v2 = bezier.p2;
       const Vec3fa &v3 = bezier.p3;
 
-
       /* transform control points into ray space */
       Vec3fa w0 = xfmVector(ray_space,v0-ray.org); w0.w = v0.w;
       Vec3fa w1 = xfmVector(ray_space,v1-ray.org); w1.w = v1.w;

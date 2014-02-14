@@ -60,8 +60,8 @@ namespace embree
 
     /*! Cost of one traversal step. */
     static const int travCostAligned = 1;
-    static const int travCostUnaligned = 2;
-    static const int intCost = 5;
+    static const int travCostUnaligned = 3;
+    static const int intCost = 6;
 
     /*! Pointer that points to a node or a list of primitives */
     struct NodeRef
