@@ -38,8 +38,8 @@ Vec3fa lightIntensity = Vec3fa(3.0f);
 const Vec3fa hair_K  = Vec3fa(1.0f,0.57f,0.32);
 const Vec3fa hair_dK = Vec3fa(0.02f,0.05f,0.02);
 //const Vec3fa hair_K  = Vec3fa(1.0f,0.87f,0.62);
-const Vec3fa hair_Kr = 0.7f*hair_K;    //!< reflectivity of hair
-const Vec3fa hair_Kt = 0.3f*hair_K;    //!< transparency of hair
+const Vec3fa hair_Kr = 0.3f*hair_K;    //!< reflectivity of hair
+const Vec3fa hair_Kt = 0.7f*hair_K;    //!< transparency of hair
 const float  hair_Ke = 0.01f;
 const Vec3fa hair_Kts= hair_Kt; //Vec3fa(pow(hair_Kt.x,hair_Ke),pow(hair_Kt.x,hair_Ke),pow(hair_Kt.x,hair_Ke));    //!< transparency of hair for shadow rays
 
@@ -380,7 +380,6 @@ RTCScene convertScene(ISPCScene* scene_in)
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT,RTC_INTERSECT1);
 
-  DBG_PRINT(scene_in->numHairSets); 
   /* add all hair sets to the scene */
   //scene_in->numHairSets = 0;
   for (int i=0; i<scene_in->numHairSets; i++)
@@ -493,7 +492,7 @@ public:
     const float n = nx*sqr(cosPhi)+ny*sqr(sinPhi);
     const float cosTheta = powf(sy,rcp(n+1));
     const float sinTheta = cos2sin(cosTheta);
-    const float pdf = norm1*powf(cosTheta,n);
+    const float pdf = max(norm1*powf(cosTheta,n),0.0001f); // FIXME: clamping PDF
     const Vec3fa h(cosPhi * sinTheta, sinPhi * sinTheta, cosTheta);
     const Vec3fa wh = h.x*dx + h.y*dy + h.z*dz;
     return Vec3fa(wh,pdf);
@@ -554,7 +553,7 @@ public:
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  //int seed = random(); //255*x+13*y+45*g_accu_count;
+  int seed = random(); //255*x+13*y+45*g_accu_count;
 
   /* initialize ray */
   RTCRay2 ray;
@@ -569,13 +568,18 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
-  ray.filter = NULL; //(RTCFilterFunc) intersectionFilter;
+  ray.filter = (RTCFilterFunc) intersectionFilter;
 
   Vec3fa color = Vec3f(0.0f);
   Vec3fa weight = 1.0f;
+  size_t depth = 0;
 
   while (true)
   {
+    /* terminate ray path */
+    if (reduce_max(weight) < 0.01 || depth > 10) 
+      return color + weight*ambientLightIntensity;
+
     /* intersect ray with scene and gather all hits */
     rtcIntersect(g_scene,(RTCRay&)ray);
     RTCRay2* ray2 = &ray;
@@ -599,7 +603,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       /* generate anisotropic BRDF */
       int seed1 = g_ispc_scene->hairs[ray2->geomID]->hairs[ray2->primID].id;
       const Vec3fa dK = hair_dK*frand(seed1);
-      brdf = AnisotropicBlinn(hair_Kr-dK,hair_Kt-dK,dx,1.0f,dy,0.0f,dz);
+      brdf = AnisotropicBlinn(hair_Kr-dK,hair_Kt-dK,dx,10.0f,dy,2.0f,dz);
     }
     else 
     {
@@ -625,26 +629,33 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     //Vec3fa c = clamp(dot(neg(lightDir),brdf.dz),0.0f,1.0f)*float(one_over_pi);
     color += weight*c*T*lightIntensity;
 
-#if 0
-    /* sample ambient light */
-    const Vec3fa ambientLightDir = sampleSphere(frand(seed),frand(seed)); 
-    shadow.dir = ambientLightDir;
-    shadow.dir.w = 0.0f; 
-    shadow.tnear = 0.001f;
-    shadow.tfar = inf;
-    T = occluded(g_scene,shadow);
-    c = brdf.eval(neg(ray.dir),neg(ambientLightDir))/ambientLightDir.w;
-    color += weight*c*T*ambientLightIntensity;
-#endif
+#if 1
+    /* sample BRDF */
+    Vec3fa wi;
+    c = brdf.sample(neg(ray.dir),wi,frand(seed),frand(seed),frand(seed));
+    ray.org = ray2->org + ray2->tfar*ray2->dir;
+    ray.org.w = 0.0f;
+    ray.dir = normalize(x*vx + y*vy + vz);
+    ray.dir.w = 0.0f;
+    ray.tnear = 0.0f;
+    ray.tfar = inf;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
+    ray.mask = -1;
+    ray.time = 0;
+    ray.filter = NULL; //(RTCFilterFunc) intersectionFilter;
+    weight *= c/wi.w;
 
-    /* continue with transmission ray */
-    weight *= brdf.Kt;
-    if (reduce_max(weight) < 0.01) 
-      return color + weight*ambientLightIntensity;
-    
+#else    
+
+    /* continue with transparency ray */
     ray2->geomID = RTC_INVALID_GEOMETRY_ID;
     ray2->tnear = 1.001f*ray2->tfar;
     ray2->tfar = inf;
+    weight *= brdf.Kt;
+#endif
+
+    depth++;
   }
   return color;
 }
@@ -672,7 +683,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   ray.filter = NULL; // (RTCFilterFunc) intersectionFilter;
 
   if (ray.primID != -1)
-    color += 0.3f + abs(dot(ray.dir,ray.Ng));
+    color += abs(dot(ray.dir,ray.Ng));
 
   return color;
 }
@@ -702,8 +713,8 @@ void renderTile(int taskIndex, int* pixels,
     /* calculate pixel color */
     float fx = x + frand(seed);
     float fy = y + frand(seed);
-    //Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
     Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
+    //Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
     Vec3fa& dst = g_accu[y*width+x];
     dst += Vec3fa(color.x,color.y,color.z,1.0f);
 
