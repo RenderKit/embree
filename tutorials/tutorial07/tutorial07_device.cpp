@@ -401,7 +401,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 #endif
   }
 
-#if 0
+#if 1
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
   {
@@ -554,7 +554,7 @@ public:
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  int seed = random(); //255*x+13*y+45*g_accu_count;
+  //int seed = random(); //255*x+13*y+45*g_accu_count;
 
   /* initialize ray */
   RTCRay2 ray;
@@ -569,7 +569,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
-  ray.filter = (RTCFilterFunc) intersectionFilter;
+  ray.filter = NULL; //(RTCFilterFunc) intersectionFilter;
 
   Vec3fa color = Vec3f(0.0f);
   Vec3fa weight = 1.0f;
@@ -657,7 +657,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   ray.org.w = 0.0f;
   ray.dir = normalize(x*vx + y*vy + vz);
   Vec3fa dir1 = normalize((x+1)*vx + (y+1)*vy + vz);
-  ray.dir.w = 0.5f*0.707f*length(dir1-ray.dir);
+  ray.dir.w = 0.0f; //0.5f*0.707f*length(dir1-ray.dir);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -702,8 +702,8 @@ void renderTile(int taskIndex, int* pixels,
     /* calculate pixel color */
     float fx = x + frand(seed);
     float fy = y + frand(seed);
-    Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
-    //Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
+    //Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
+    Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
     Vec3fa& dst = g_accu[y*width+x];
     dst += Vec3fa(color.x,color.y,color.z,1.0f);
 
