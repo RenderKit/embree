@@ -40,6 +40,7 @@ namespace embree
     __forceinline Vec3fa () {}
     __forceinline Vec3fa ( float x                   ) : x(x), y(x), z(x), a(0) {}
     __forceinline Vec3fa ( float x, float y, float z ) : x(x), y(y), z(z), a(0) {}
+    __forceinline Vec3fa ( const Vec3f & o           ) : x(o.x), y(o.y), z(o.z), a(0) {}
     __forceinline Vec3fa ( const Vec3fa& other, const int other_a ) : x(other.x), y(other.y), z(other.z), a(other_a) {}
     
     __forceinline Vec3fa           ( const Vec3ia_t& other );
@@ -142,6 +143,15 @@ namespace embree
 
   __forceinline const Vec3fa_t min( const Vec3fa_t& a, const Vec3fa_t& b ) { return _mm512_gmin_ps(a.m512,b.m512); }
   __forceinline const Vec3fa_t max( const Vec3fa_t& a, const Vec3fa_t& b ) { return _mm512_gmax_ps(a.m512,b.m512); }
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Ternary Operators
+  ////////////////////////////////////////////////////////////////////////////////
+
+  __forceinline Vec3fa_t madd  ( const Vec3fa_t& a, const Vec3fa_t& b, const Vec3fa_t& c) { return _mm512_fmadd_ps(a,b,c); }
+  __forceinline Vec3fa_t msub  ( const Vec3fa_t& a, const Vec3fa_t& b, const Vec3fa_t& c) { return _mm512_fmsub_ps(a,b,c); }
+  __forceinline Vec3fa_t nmadd ( const Vec3fa_t& a, const Vec3fa_t& b, const Vec3fa_t& c) { return _mm512_fnmadd_ps(a,b,c); }
+  __forceinline Vec3fa_t nmsub ( const Vec3fa_t& a, const Vec3fa_t& b, const Vec3fa_t& c) { return _mm512_fnmsub_ps(a,b,c); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
