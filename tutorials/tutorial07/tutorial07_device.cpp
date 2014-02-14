@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.h"
 
 #define USE_INTERSECTION_FILTER 0
-#define USE_OCCLUSION_FILTER 0
+#define USE_OCCLUSION_FILTER 1
 
 Vec3fa lightDir = normalize(-Vec3fa(-20.6048, 22.2367, -2.93452));
 //Vec3fa lightIntensity = Vec3fa(8.0f);
@@ -166,12 +166,12 @@ bool addHit(HitList* list, RTCRay2& ray)
 
 /*! random number generator for floating point numbers in range [0,1] */
 inline float frand(int& seed) {
-  /*seed = 7 * seed + 5;
-  seed = 13 * seed + 17;
+  seed = 7 * seed + 5;
+  /*seed = 13 * seed + 17;
   seed = 3 * seed + 2;
-  seed = 127 * seed + 13;
-  return (seed & 0xFFFF)/(float)0xFFFF;*/
-  return drand48();
+  seed = 127 * seed + 13;*/
+  return (seed & 0xFFFF)/(float)0xFFFF;
+  //return drand48();
 }
 
 /*! Uniform hemisphere sampling. Up direction is the z direction. */
@@ -669,9 +669,9 @@ Vec3fa renderPixelPathTrace(int x, int y, const Vec3fa& vx, const Vec3fa& vy, co
     if (ray2->geomID < g_ispc_scene->numHairSets) 
     {
       /* calculate how much the curve occludes the ray */
-      float sizeRay = max(ray2->org.w + ray2->tfar*ray2->dir.w, 0.00001f);
-      float sizeCurve = evalBezier(ray2->geomID,ray2->primID,ray2->u).w;
-      Th = 1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
+      //float sizeRay = max(ray2->org.w + ray2->tfar*ray2->dir.w, 0.00001f);
+      //float sizeCurve = evalBezier(ray2->geomID,ray2->primID,ray2->u).w;
+      Th = T_hair; //1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
 
       /* calculate tangent space */
       const Vec3fa dx = normalize(ray2->Ng);
@@ -679,7 +679,6 @@ Vec3fa renderPixelPathTrace(int x, int y, const Vec3fa& vx, const Vec3fa& vy, co
       const Vec3fa dz = normalize(cross(dy,dx));
 
       /* generate anisotropic BRDF */
-      //const Vec3fa color(0.5f,0.4f,0.4f);
       const Vec3fa color1(188.0f/255.0f,107.0f/255.0f,58.0f/255.0f);
       brdf = AnisotropicPowerCosineDistribution(color1,dx,10.0f,dy,1.0f,dz);
     }
@@ -765,6 +764,15 @@ Vec3fa renderPixelTestEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy,
   return color;
 }
 
+/* accumulation buffer */
+Vec3fa* g_accu = NULL;
+size_t g_accu_width = 0;
+size_t g_accu_height = 0;
+Vec3f g_accu_vx = zero;
+Vec3f g_accu_vy = zero;
+Vec3f g_accu_vz = zero;
+Vec3f g_accu_p  = zero;
+
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
                 const int width,
@@ -790,11 +798,14 @@ void renderTile(int taskIndex, int* pixels,
     //Vec3f color = renderPixel(x,y,vx,vy,vz,p);
     Vec3f color = renderPixelPathTrace(x,y,vx,vy,vz,p);
     //Vec3f color = renderPixelTestEyeLight(x,y,vx,vy,vz,p);
+    Vec3fa& dst = g_accu[y*width+x];
+    dst += Vec3fa(color.x,color.y,color.z,1.0f);
 
     /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    float f = rcp(max(0.001f,dst.w));
+    unsigned int r = (unsigned int) (255.0f * clamp(dst.x*f,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(dst.y*f,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(dst.z*f,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 }
@@ -826,6 +837,26 @@ extern "C" void device_render (int* pixels,
     g_scene = convertScene(g_ispc_scene);
   }
 
+  /* create accumulator */
+  if (g_accu_width != width || g_accu_height != height) {
+    g_accu = new Vec3fa[width*height];
+    g_accu_width = width;
+    g_accu_height = height;
+  }
+
+  /* reset accumulator */
+  bool camera_changed = false;
+  camera_changed |= g_accu_vx != vx; g_accu_vx = vx;
+  camera_changed |= g_accu_vy != vy; g_accu_vy = vy;
+  camera_changed |= g_accu_vz != vz; g_accu_vz = vz;
+  camera_changed |= g_accu_p  != p;  g_accu_p  = p;
+  if (camera_changed) {
+    for (size_t y=0; y<g_accu_height; y++)
+      for (size_t x=0; x<g_accu_width; x++)
+        g_accu[y*g_accu_width+x] = Vec3fa(zero);
+  }
+
+  /* render frame */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   enableFilterDispatch = true;

@@ -389,13 +389,10 @@ namespace embree
             assert(c1 != BVH2Hair::emptyNode);
             assert(stackPtr < stackEnd); 
             if (tNear0 < tNear1) { 
-
               stackPtr->ref = c1; stackPtr->tNear = tNear1; stackPtr->tFar = tFar1; stackPtr++; 
               cur = c0; tNear = tNear0; tFar = tFar0;
-	      
             }
             else { 
-
               stackPtr->ref = c0; stackPtr->tNear = tNear0; stackPtr->tFar = tFar0; stackPtr++; 
               cur = c1; tNear = tNear1; tFar = tFar1;
             }
