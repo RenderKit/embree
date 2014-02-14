@@ -26,7 +26,7 @@ namespace embree
   void BVH2HairRegister () 
   {
     int features = getCPUFeatures();
-    SELECT_SYMBOL_AVX(features,BVH2HairIntersector1_);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH2HairIntersector1_);
   }
 
   BVH2Hair::BVH2Hair () 

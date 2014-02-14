@@ -21,20 +21,33 @@ namespace embree
 { 
   namespace isa
   {
-    __forceinline bool BVH2HairIntersector1::intersectBox(const BBox3fa& aabb, const Ray& ray, const Vec3fa& rdir, float& tNear, float& tFar)
+    __forceinline bool BVH2HairIntersector1::intersectBox(const BBox3fa& aabb, const Ray& ray, const Vec3fa& org_rdir, const Vec3fa& rdir, float& tNear, float& tFar)
     {
+#if defined (__AVX2__)
+      const Vec3fa tLowerXYZ = msub(aabb.lower,rdir,org_rdir);
+      const Vec3fa tUpperXYZ = msub(aabb.upper,rdir,org_rdir);
+#else
       const Vec3fa tLowerXYZ = (aabb.lower - ray.org) * rdir;
       const Vec3fa tUpperXYZ = (aabb.upper - ray.org) * rdir;
+#endif
+
+#if defined(__SSE4_1__)
+      const Vec3fa tNearXYZ = mini(tLowerXYZ,tUpperXYZ);
+      const Vec3fa tFarXYZ = maxi(tLowerXYZ,tUpperXYZ);
+      tNear = max(reduce_max(tNearXYZ),tNear);
+      tFar  = min(reduce_min(tFarXYZ ),tFar);
+      return tNear <= tFar;
+#else
       const Vec3fa tNearXYZ = min(tLowerXYZ,tUpperXYZ);
       const Vec3fa tFarXYZ = max(tLowerXYZ,tUpperXYZ);
       tNear = max(reduce_max(tNearXYZ),tNear);
       tFar  = min(reduce_min(tFarXYZ ),tFar);
       return tNear <= tFar;
+#endif
     }
 
     __forceinline bool BVH2HairIntersector1::intersectBox(const AffineSpace3fa& naabb, const Ray& ray, float& tNear, float& tFar)
     {
-      //asm nop;
       const Vec3fa dir = xfmVector(naabb,ray.dir);
       const Vec3fa rdir = rcp(dir);
       const Vec3fa org = xfmPoint (naabb,ray.org);
@@ -121,6 +134,7 @@ namespace embree
       stack[0].tNear = ray.tnear;
       stack[0].tFar  = ray.tfar;
       const Vec3fa rdir = rcp(ray.dir);
+      const Vec3fa org_rdir = ray.org*rdir;
 
       const LinearSpace3fa ray_space(rcp(frame(ray.dir)));
 
@@ -152,9 +166,9 @@ namespace embree
 
             /*! intersect with both axis aligned boxes */
             float tNear0 = tNear, tFar0 = tFar;
-            bool hit0 = intersectBox(node->bounds(0), ray, rdir, tNear0, tFar0);
+            bool hit0 = intersectBox(node->bounds(0), ray, org_rdir, rdir, tNear0, tFar0);
             float tNear1 = tNear, tFar1 = tFar;
-            bool hit1 = intersectBox(node->bounds(1), ray, rdir, tNear1, tFar1);
+            bool hit1 = intersectBox(node->bounds(1), ray, org_rdir, rdir, tNear1, tFar1);
 
             /*! if no child is hit, pop next node */
             if (unlikely(!hit0 && !hit1))

@@ -185,6 +185,8 @@ IF (TARGET_AVX2)
 
     bvh4i/bvh4i_builder_fast.cpp
     bvh4i/bvh4i_builder_binner.cpp
+
+    bvh2hair/bvh2hair_intersector1.cpp
 )
 
   SET_TARGET_PROPERTIES(embree_avx2 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX2}")

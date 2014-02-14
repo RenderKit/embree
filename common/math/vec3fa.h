@@ -120,6 +120,40 @@ namespace embree
   __forceinline const Vec3fa min( const Vec3fa& a, const Vec3fa& b ) { return _mm_min_ps(a.m128,b.m128); }
   __forceinline const Vec3fa max( const Vec3fa& a, const Vec3fa& b ) { return _mm_max_ps(a.m128,b.m128); }
 
+#if defined(__SSE4_1__)
+    __forceinline Vec3fa mini(const Vec3fa& a, const Vec3fa& b) {
+      const ssei ai = _mm_castps_si128(a);
+      const ssei bi = _mm_castps_si128(b);
+      const ssei ci = _mm_min_epi32(ai,bi);
+      return _mm_castsi128_ps(ci);
+    }
+#endif
+    
+#if defined(__SSE4_1__)
+    __forceinline Vec3fa maxi(const Vec3fa& a, const Vec3fa& b) {
+      const ssei ai = _mm_castps_si128(a);
+      const ssei bi = _mm_castps_si128(b);
+      const ssei ci = _mm_max_epi32(ai,bi);
+      return _mm_castsi128_ps(ci);
+    }
+#endif
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Ternary Operators
+  ////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__AVX2__)
+  __forceinline const Vec3fa madd  ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return _mm_fmadd_ps(a,b,c); }
+  __forceinline const Vec3fa msub  ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return _mm_fmsub_ps(a,b,c); }
+  __forceinline const Vec3fa nmadd ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return _mm_fnmadd_ps(a,b,c); }
+  __forceinline const Vec3fa nmsub ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return _mm_fnmsub_ps(a,b,c); }
+#else
+  __forceinline const Vec3fa madd  ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return a*b+c; }
+  __forceinline const Vec3fa msub  ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return a*b-c; }
+  __forceinline const Vec3fa nmadd ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return -a*b-c;}
+  __forceinline const Vec3fa nmsub ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return c-a*b; }
+#endif
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -137,6 +171,11 @@ namespace embree
   __forceinline float reduce_mul(const Vec3fa& v) { return v.x*v.y*v.z; }
   __forceinline float reduce_min(const Vec3fa& v) { return min(v.x,v.y,v.z); }
   __forceinline float reduce_max(const Vec3fa& v) { return max(v.x,v.y,v.z); }
+
+  /*#if defined(__SSE4_1__)
+  __forceinline float reduce_mini(const Vec3fa& v) { return min(v.x,v.y,v.z); }
+  __forceinline float reduce_maxi(const Vec3fa& v) { return max(v.x,v.y,v.z); }
+  #endif*/
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators

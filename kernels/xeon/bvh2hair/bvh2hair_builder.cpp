@@ -67,7 +67,7 @@ namespace embree
     }
 
     /* subdivide very curved hair segments */
-    subdivide(0.1f);
+    //subdivide(0.1f);
     bvh->numPrimitives = curves.size();
     bvh->numVertices = 0;
 
