@@ -509,20 +509,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Vec3fa color = Vec3f(0.0f);
   Vec3fa weight = 1.0f;
 
-#if USE_INTERSECTION_FILTER
-
-  HitList hits;
-  hits.num = 0;
-  ray.list = &hits;
-
-  /* intersect ray with scene and gather all hits */
-  rtcIntersect(g_scene,(RTCRay&)ray);
-
-  /* iterate through all hits */
-  for (size_t i=0; i<hits.num; i++) {
-    RTCRay2* ray2 = hits.rays[i];
-#else
-
   while (true)
   {
     /* intersect ray with scene and gather all hits */
@@ -532,13 +518,10 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     /* exit if we hit environment */
     if (ray2->geomID == RTC_INVALID_GEOMETRY_ID) 
       return color;
-    
-#endif
   
     /* calculate transmissivity of hair */
     AnisotropicPowerCosineDistribution brdf;
 
-    Vec3fa Kt = Vec3fa(0.0f);
     if (ray2->geomID < g_ispc_scene->numHairSets) 
     {
       /* calculate tangent space */
@@ -548,7 +531,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 
       /* generate anisotropic BRDF */
       brdf = AnisotropicPowerCosineDistribution(hair_Kr,hair_Kt,dx,10.0f,dy,1.0f,dz);
-      Kt = hair_Kt; 
     }
     else 
     {
@@ -559,7 +541,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       
       /* generate isotropic BRDF */
       brdf = AnisotropicPowerCosineDistribution(one,zero,dx,1.0f,dy,1.0f,dz);
-      Kt = Vec3fa(0.0f);
     }
     
     /* initialize shadow ray */
@@ -581,17 +562,15 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     
     /* add light contribution */
     Vec3fa c = brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
-    color += weight*(1.0f-Kt)*c*T*lightIntensity;
-    weight *= Kt;
+    color += weight*(1.0f-brdf.Kt)*c*T*lightIntensity;
+    weight *= brdf.Kt;
     if (reduce_max(weight) < 0.01) return color;
     return color;
 
-#if !USE_INTERSECTION_FILTER
     /* continue ray */
     ray2->geomID = RTC_INVALID_GEOMETRY_ID;
-    ray2->tnear = 1.001f*ray2->tfar; //+2.0f*shadow.org.w;
+    ray2->tnear = 1.001f*ray2->tfar;
     ray2->tfar = inf;
-#endif
   }
   return color;
 }
