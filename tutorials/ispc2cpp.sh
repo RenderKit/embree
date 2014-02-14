@@ -14,7 +14,7 @@ sed -i .backup  's/launch\[numTilesX\*numTilesY\] renderTile(/launch_renderTile(
 sed -i .backup  's/launch\[numPhi+1\] animateSphere(/launch_animateSphere(numPhi+1,/g' $2
 sed -i .backup  's/\*pi\*/\*float(pi)\*/g' $2
 sed -i .backup  's/\*pi\//\*float(pi)\//g' $2
-sed -i .backup  's/RTC_MATRIX_COLUMN_MAJOR/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
+#sed -i .backup  's/RTC_MATRIX_COLUMN_MAJOR/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
 sed -i .backup  's/sync;//g' $2
 sed -i .backup  's/make_//g' $2
 sed -i .backup  's/\#if 0 \/\/ FIXME: pointer gather/\#if 1 \/\/ FIXME: pointer gather/g' $2
@@ -23,7 +23,7 @@ sed -i .backup  's/foreach (phi = 0 ... numPhi+1, theta = 0 ... numTheta)/for (i
 sed -i .backup  's/foreach (theta = 0 ... numTheta)/for (int theta = 0; theta<numTheta; theta++)/g' $2
 sed -i .backup  's/task void renderTile(int\* pixels,/void renderTile(int taskIndex, int\* pixels,/g' $2
 sed -i .backup  's/task void animateSphere (Vertex\* vertices,/void animateSphere (int taskIndex, Vertex\* vertices,/g' $2
-sed -i .backup  's/Vec3f renderPixelStandard(int x, int y, const Vec3f\& vx, const Vec3f\& vy, const Vec3f\& vz, const Vec3f\& p)/Vec3fa renderPixelStandard(int x, int y, const Vec3fa\& vx, const Vec3fa\& vy, const Vec3fa\& vz, const Vec3fa\& p)/g' $2
+sed -i .backup  's/Vec3f renderPixelStandard(float x, float y, const Vec3f\& vx, const Vec3f\& vy, const Vec3f\& vz, const Vec3f\& p)/Vec3fa renderPixelStandard(float x, float y, const Vec3fa\& vx, const Vec3fa\& vy, const Vec3fa\& vz, const Vec3fa\& p)/g' $2
 sed -i .backup  's/RTCIntersectFuncVarying/RTCIntersectFunc/g' $2
 sed -i .backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
 sed -i .backup  's/\#if 1 \/\/ enables parallel execution/\#if 0/g' $2

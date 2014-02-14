@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.h"
 
 #define USE_INTERSECTION_FILTER 0
-#define USE_OCCLUSION_FILTER 0
+#define USE_OCCLUSION_FILTER 1
 
 Vec3fa lightDir = normalize(-Vec3fa(-20.6048, 22.2367, -2.93452));
 //Vec3fa lightIntensity = Vec3fa(8.0f);
@@ -166,12 +166,12 @@ bool addHit(HitList* list, RTCRay2& ray)
 
 /*! random number generator for floating point numbers in range [0,1] */
 inline float frand(int& seed) {
-  /*seed = 7 * seed + 5;
-  seed = 13 * seed + 17;
+  seed = 7 * seed + 5;
+  /*seed = 13 * seed + 17;
   seed = 3 * seed + 2;
-  seed = 127 * seed + 13;
-  return (seed & 0xFFFF)/(float)0xFFFF;*/
-  return drand48();
+  seed = 127 * seed + 13;*/
+  return (seed & 0xFFFF)/(float)0xFFFF;
+  //return drand48();
 }
 
 /*! Uniform hemisphere sampling. Up direction is the z direction. */
@@ -377,6 +377,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 #endif
   }
 
+#if 1
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
   {
@@ -409,6 +410,7 @@ RTCScene convertScene(ISPCScene* scene_in)
     rtcSetIntersectionFilterFunction(scene_out,geomID,(RTCFilterFunc)filterDispatch);
 #endif
   }
+#endif
 
   /* commit changes to scene */
   rtcCommit (scene_out);
@@ -435,7 +437,7 @@ public:
   __forceinline AnisotropicPowerCosineDistribution(const Vec3fa& R, const Vec3fa& dx, float nx, const Vec3fa& dy, float ny, const Vec3fa& dz) 
     : R(R), dx(dx), nx(nx), dy(dy), ny(ny), dz(dz),
       //norm1(sqrtf((nx+1)*(ny+1)) * float(one_over_two_pi)),
-      norm2(2.0f * sqrtf((nx+2)*(ny+2)) * float(one_over_two_pi)) {}
+      norm2(sqrtf((nx+2)*(ny+2)) * float(one_over_two_pi)) {}
       //norm1(1.0f), norm2(1.0f) {}
 
   /*! Evaluates the power cosine distribution. \param wh is the half
@@ -466,12 +468,11 @@ public:
       wi = reflect(wi,dz);
     }
     const Vec3fa wh = normalize(wi + wo);
-    const float cosThetaH = dot(wh, dz);
-    const float cosTheta = dot(wi, wh); // = dot(wo, wh);
+    //const float cosThetaH = dot(wh, dz);
+    //const float cosTheta = dot(wi, wh); // = dot(wo, wh);
     const float D = eval(wh);
-    const float G = min(1.0f, 2.0f * cosThetaH * cosThetaO * rcp(cosTheta), 2.0f * cosThetaH * cosThetaI * rcp(cosTheta));
-    const Vec3fa c1(188.0f/255.0f,107.0f/255.0f,58.0f/255.0f);
-    return R * D * G * rcp(4.0f*cosThetaO);
+    //const float G = min(1.0f, 2.0f * cosThetaH * cosThetaO * rcp(cosTheta), 2.0f * cosThetaH * cosThetaI * rcp(cosTheta));
+    return R * D * abs(cosThetaI); // * G * rcp(4.0f*cosThetaO);
     //const float G = dot(wi,dz);
     //return R*D*G;
   }
@@ -488,7 +489,7 @@ public:
 };
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   //PRINT2(x,y);
   //if (x != 400 || y != 183) return zero;
@@ -614,8 +615,128 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   return color;
 }
 
+/* task that renders a single screen tile */
+Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+{
+  /* initialize ray */
+  RTCRay2 ray;
+  ray.org = p;
+  ray.org.w = 0.0f;
+  ray.dir = normalize(x*vx + y*vy + vz);
+  Vec3fa dir1 = normalize((x+1)*vx + (y+1)*vy + vz);
+  ray.dir.w = 0.5f*0.707f*length(dir1-ray.dir);
+  ray.tnear = 0.0f;
+  ray.tfar = inf;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = 0;
+  ray.filter = (RTCFilterFunc) intersectionFilter;
 
-Vec3fa renderPixelTestEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+  Vec3fa color = Vec3f(0.0f);
+  float weight = 1.0f;
+
+#if USE_INTERSECTION_FILTER
+
+  HitList hits;
+  hits.num = 0;
+  ray.list = &hits;
+
+  /* intersect ray with scene and gather all hits */
+  rtcIntersect(g_scene,(RTCRay&)ray);
+
+  /* iterate through all hits */
+  for (size_t i=0; i<hits.num; i++) {
+    RTCRay2* ray2 = hits.rays[i];
+#else
+
+  while (true)
+  {
+    /* intersect ray with scene and gather all hits */
+    rtcIntersect(g_scene,(RTCRay&)ray);
+    RTCRay2* ray2 = &ray;
+    
+    /* exit if we hit environment */
+    if (ray2->geomID == RTC_INVALID_GEOMETRY_ID) 
+      return color;
+    
+#endif
+  
+    /* calculate transmissivity of hair */
+    AnisotropicPowerCosineDistribution brdf;
+
+    float Th = 0.0f;
+    if (ray2->geomID < g_ispc_scene->numHairSets) 
+    {
+      /* calculate how much the curve occludes the ray */
+      //float sizeRay = max(ray2->org.w + ray2->tfar*ray2->dir.w, 0.00001f);
+      //float sizeCurve = evalBezier(ray2->geomID,ray2->primID,ray2->u).w;
+      Th = T_hair; //1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
+
+      /* calculate tangent space */
+      const Vec3fa dx = normalize(ray2->Ng);
+      const Vec3fa dy = normalize(cross(ray2->dir,dx));
+      const Vec3fa dz = normalize(cross(dy,dx));
+
+      /* generate anisotropic BRDF */
+      const Vec3fa color1(188.0f/255.0f,107.0f/255.0f,58.0f/255.0f);
+      brdf = AnisotropicPowerCosineDistribution(color1,dx,10.0f,dy,1.0f,dz);
+    }
+    else 
+    {
+      /* calculate tangent space */
+      const Vec3fa dz = -normalize(ray2->Ng);
+      const Vec3fa dx = normalize(cross(dz,ray2->dir));
+      const Vec3fa dy = normalize(cross(dz,dx));
+      
+      /* generate isotropic BRDF */
+      const Vec3fa color2(1.0f);
+      brdf = AnisotropicPowerCosineDistribution(color2,dx,0.0f,dy,0.0f,dz);
+    }
+    
+    /* initialize shadow ray */
+    RTCRay2 shadow;
+    shadow.org = ray2->org + ray2->tfar*ray2->dir;
+    shadow.org.w = ray2->org.w+ray2->tfar*ray2->dir.w;
+    shadow.dir = neg(lightDir);
+    shadow.dir.w = 0.0f;
+    shadow.tnear = 0.1f;
+    shadow.tfar = inf;
+    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.primID = RTC_INVALID_GEOMETRY_ID;
+    shadow.mask = -1;
+    shadow.time = 0;
+    shadow.filter = NULL;
+    
+    /* trace shadow ray */
+    float T = occluded(g_scene,shadow);
+    //float T = 1.0f;
+    
+    /* add light contribution */
+    //Vec3fa c = Vec3fa(1.0f); 
+    Vec3fa c = zero;
+    if (brdf.nx == 0.0f || brdf.ny == 0.0f)
+      c = Vec3fa(clamp(dot(neg(ray.dir),brdf.dz),0.0f,1.0f));
+    else 
+      c = brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
+
+    color += weight*(1.0f-Th)*c*T*lightIntensity; //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f))); // FIXME: use +=
+    weight *= Th;
+    //weight = max(0.0f,weight-Th);
+    if (weight < 0.01) return color;
+    return color;
+
+#if !USE_INTERSECTION_FILTER
+    /* continue ray */
+    ray2->geomID = RTC_INVALID_GEOMETRY_ID;
+    ray2->tnear = 1.001f*ray2->tfar; //+2.0f*shadow.org.w;
+    ray2->tfar = inf;
+#endif
+  }
+  return color;
+}
+
+Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay2 ray;
@@ -643,6 +764,16 @@ Vec3fa renderPixelTestEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy,
   return color;
 }
 
+/* accumulation buffer */
+Vec3fa* g_accu = NULL;
+size_t g_accu_width = 0;
+size_t g_accu_height = 0;
+size_t g_accu_count = 0;
+Vec3f g_accu_vx = zero;
+Vec3f g_accu_vy = zero;
+Vec3f g_accu_vz = zero;
+Vec3f g_accu_p  = zero;
+
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
                 const int width,
@@ -661,18 +792,24 @@ void renderTile(int taskIndex, int* pixels,
   const int x1 = min(x0+TILE_SIZE_X,width);
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
+  int seed = tileY*numTilesX+tileX+g_accu_count;
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
-    //Vec3f color = renderPixelTestEyeLight(x,y,vx,vy,vz,p);
-
+    float fx = x + frand(seed);
+    float fy = y + frand(seed);
+    //Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
+    Vec3f color = renderPixelPathTrace(fx,fy,vx,vy,vz,p);
+    //Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
+    Vec3fa& dst = g_accu[y*width+x];
+    dst += Vec3fa(color.x,color.y,color.z,1.0f);
 
     /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    float f = rcp(max(0.001f,dst.w));
+    unsigned int r = (unsigned int) (255.0f * clamp(dst.x*f,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(dst.y*f,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(dst.z*f,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 }
@@ -704,6 +841,27 @@ extern "C" void device_render (int* pixels,
     g_scene = convertScene(g_ispc_scene);
   }
 
+  /* create accumulator */
+  if (g_accu_width != width || g_accu_height != height) {
+    g_accu = new Vec3fa[width*height];
+    g_accu_width = width;
+    g_accu_height = height;
+    memset(g_accu,0,width*height*sizeof(Vec3fa));
+  }
+
+  /* reset accumulator */
+  bool camera_changed = false;
+  camera_changed |= g_accu_vx != vx; g_accu_vx = vx;
+  camera_changed |= g_accu_vy != vy; g_accu_vy = vy;
+  camera_changed |= g_accu_vz != vz; g_accu_vz = vz;
+  camera_changed |= g_accu_p  != p;  g_accu_p  = p;
+  g_accu_count++;
+  if (camera_changed) {
+    g_accu_count=0;
+    memset(g_accu,0,width*height*sizeof(Vec3fa));
+  }
+
+  /* render frame */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   enableFilterDispatch = true;

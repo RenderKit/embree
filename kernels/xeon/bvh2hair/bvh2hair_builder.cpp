@@ -73,9 +73,9 @@ namespace embree
 
     /* start recursive build */
     size_t begin = 0, end = curves.size();
-    //bvh->root = recurse_aligned(threadIndex,0,begin,end,computeAlignedBounds(&curves[0],begin,end,AffineSpace3fa(one)));
+    bvh->root = recurse_aligned(threadIndex,0,begin,end,computeAlignedBounds(&curves[0],begin,end,AffineSpace3fa(one)));
     //bvh->root = recurse_unaligned(threadIndex,0,begin,end,computeUnalignedBounds(&curves[0],begin,end));
-    bvh->root = recurse_aligned_unaligned(threadIndex,0,begin,end,computeAlignedBounds(&curves[0],begin,end,AffineSpace3fa(one)));
+    //bvh->root = recurse_aligned_unaligned(threadIndex,0,begin,end,computeAlignedBounds(&curves[0],begin,end,AffineSpace3fa(one)));
     bvh->bounds = bounds;
 
     if (g_verbose >= 2) {

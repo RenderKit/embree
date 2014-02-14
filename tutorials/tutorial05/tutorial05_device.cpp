@@ -173,7 +173,7 @@ extern "C" void device_init (int8* cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   float weight = 1.0f;
   Vec3f color = Vec3f(0.0f);
@@ -193,7 +193,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
   while (true)
   {
     /* intersect ray with scene */
-    rtcIntersect(g_scene,*((RTCRay*)&primary));
+    rtcIntersect(g_scene,*((RTCRay*)&primary)); // FIXME: use (RTCRay&) cast
     
     /* shade pixels */
     if (primary.geomID == RTC_INVALID_GEOMETRY_ID) 
@@ -218,7 +218,7 @@ Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
     shadow.transparency = 1.0f;
     
     /* trace shadow ray */
-    rtcOccluded(g_scene,*((RTCRay*)&shadow));
+    rtcOccluded(g_scene,*((RTCRay*)&shadow)); // FIXME: use (RTCRay&) cast
     
     /* add light contribution */
     if (shadow.geomID) {
