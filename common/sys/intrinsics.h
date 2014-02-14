@@ -93,11 +93,19 @@ __forceinline size_t __popcnt(size_t in) {
 #endif
 
 __forceinline int __bsf(int v) {
+#if defined(__AVX2__) 
+  return _tzcnt_u32(v);
+#else
   unsigned long r = 0; _BitScanForward(&r,v); return r;
+#endif
 }
 
 __forceinline unsigned int __bsf(unsigned int v) {
+#if defined(__AVX2__) 
+  return _tzcnt_u32(v);
+#else
   unsigned long r = 0; _BitScanForward(&r,v); return r;
+#endif
 }
 
 __forceinline int __bsr(int v) {
@@ -151,7 +159,11 @@ __forceinline unsigned int __bscf(unsigned int& v)
 #if defined(__X86_64__)
 
 __forceinline size_t __bsf(size_t v) {
+#if defined(__AVX2__) 
+  return _tzcnt_u64(v);
+#else
   unsigned long r = 0; _BitScanForward64(&r,v); return r;
+#endif
 }
 
 __forceinline size_t __bsr(size_t v) {

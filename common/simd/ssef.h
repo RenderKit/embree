@@ -52,9 +52,9 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline ssef( ZeroTy   ) : m128(_mm_setzero_ps()) {}
-    __forceinline ssef( OneTy    ) : m128(_mm_set_ps(1.0f,1.0f,1.0f,1.0f)) {}
-    __forceinline ssef( PosInfTy ) : m128(_mm_set_ps(pos_inf,pos_inf,pos_inf,pos_inf)) {}
-    __forceinline ssef( NegInfTy ) : m128(_mm_set_ps(neg_inf,neg_inf,neg_inf,neg_inf)) {}
+    __forceinline ssef( OneTy    ) : m128(_mm_set1_ps(1.0f)) {}
+    __forceinline ssef( PosInfTy ) : m128(_mm_set1_ps(pos_inf)) {}
+    __forceinline ssef( NegInfTy ) : m128(_mm_set1_ps(neg_inf)) {}
     __forceinline ssef( StepTy   ) : m128(_mm_set_ps(3.0f, 2.0f, 1.0f, 0.0f)) {}
     __forceinline ssef( NaNTy    ) : m128(_mm_set1_ps(nan)) {}
 
