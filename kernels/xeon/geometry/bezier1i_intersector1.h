@@ -136,7 +136,7 @@ namespace embree
 
       /* subdivide 3 levels at once */ 
       const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-      const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+      const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
 
       /* approximative intersection with cone */
       const avx4f v = p1-p0;

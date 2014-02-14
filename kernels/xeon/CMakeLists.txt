@@ -93,6 +93,7 @@ ADD_ISPC_LIBRARY(embree SHARED
 
   bvh2hair/bvh2hair.cpp
   bvh2hair/bvh2hair_builder.cpp
+  bvh2hair/bvh2hair_statistics.cpp
 )
 
 IF (TARGET_SSE41) 

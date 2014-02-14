@@ -175,9 +175,10 @@ namespace embree
     return Vec3fa(shuffle<1,2,0,3>(msub(a0,b0,a1*b1)));
   }
 
-  __forceinline float  length   ( const Vec3fa& a )                    { return sqrt(dot(a,a)); }
-  __forceinline Vec3fa normalize( const Vec3fa& a )                    { return a*rsqrt(dot(a,a)); }
+  __forceinline float  length   ( const Vec3fa& a )                  { return sqrt(dot(a,a)); }
+  __forceinline Vec3fa normalize( const Vec3fa& a )                  { return a*rsqrt(dot(a,a)); }
   __forceinline float  distance ( const Vec3fa& a, const Vec3fa& b ) { return length(a-b); }
+  __forceinline float  halfArea ( const Vec3fa& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Select
