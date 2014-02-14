@@ -130,6 +130,48 @@ namespace embree
         return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
       }
 
+
+      __forceinline BBox3fa subBounds(size_t curveID, size_t segmentID) const 
+      {
+	assert(curveID < numCurves);
+	assert(segmentID < 8);
+        const int index = curve(curveID);
+        const float r0 = radius(index+0);
+        const float r1 = radius(index+1);
+        const float r2 = radius(index+2);
+        const float r3 = radius(index+3);
+        const Vec3fa& v0 = vertex(index+0);
+        const Vec3fa& v1 = vertex(index+1);
+        const Vec3fa& v2 = vertex(index+2);
+        const Vec3fa& v3 = vertex(index+3);
+
+	BBox3fa b(empty);
+	{
+	  unsigned int step = segmentID;
+	  float t1 = (float)step / 8.0f;
+	  float t0 = 1.0f - t1;
+	  const float coeff0 = t0 * t0 * t0;
+	  const float coeff1 = 3.0f * t1* t0 * t0;
+	  const float coeff2 = 3.0f * t1* t1 * t0;
+	  const float coeff3 = t1 * t1 * t1;
+	  const Vec3fa p = coeff0 * v0 + coeff1 * v1 + coeff2 * v2 + coeff3 * v3; 
+	  b.extend(p);
+	}
+
+	{
+	  unsigned int step = segmentID+1;
+	  float t1 = (float)step / 8.0f;
+	  float t0 = 1.0f - t1;
+	  const float coeff0 = t0 * t0 * t0;
+	  const float coeff1 = 3.0f * t1* t0 * t0;
+	  const float coeff2 = 3.0f * t1* t1 * t0;
+	  const float coeff3 = t1 * t1 * t1;
+	  const Vec3fa p = coeff0 * v0 + coeff1 * v1 + coeff2 * v2 + coeff3 * v3; 
+	  b.extend(p);
+	}
+        return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
+      }
+
       __forceinline bool anyMappedBuffers() const {
         return curves.isMapped() || vertices[0].isMapped() || vertices[1].isMapped();
       }
