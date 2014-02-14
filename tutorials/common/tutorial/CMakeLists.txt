@@ -19,11 +19,12 @@ IF (__XEON__)
 FIND_PACKAGE(GLUT REQUIRED)
 FIND_PACKAGE(OpenGL REQUIRED)
 
+INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
 ADD_LIBRARY(tutorial STATIC 
     glutdisplay.cpp
     obj_loader.cpp
     hair_loader.cpp)
-TARGET_LINK_LIBRARIES(tutorial sys lexers ${OPENGL_LIBRARY} ${GLUT_LIBRARY})
+TARGET_LINK_LIBRARIES(tutorial sys lexers ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
 
 IF (BUILD_TUTORIALS)
   ADD_LIBRARY(tutorial_device STATIC tutorial_device.cpp)
