@@ -23,7 +23,7 @@
 
 namespace embree
 {
-    struct BezierCurves : public Geometry, public BuildSource
+    struct BezierCurves : public Geometry
     {
       struct Vertex {
         float x,y,z,r;
@@ -50,23 +50,22 @@ namespace embree
 
     public:
 
-      bool isEmpty () const { 
-        return numCurves == 0;
-      }
+      /* bool isEmpty () const {  */
+      /*   return numCurves == 0; */
+      /* } */
       
-      size_t groups () const { 
-        return 1;
-      }
+      /* virtual size_t groups () const {  */
+      /*   return 1; */
+      /* } */
       
-      size_t prims (size_t group, size_t* pnumVertices) const {
-        if (pnumVertices) *pnumVertices = numVertices*numTimeSteps;
-	DBG_PRINT(numCurves);
-        return numCurves;
-      }
+      /* virtual size_t prims (size_t group, size_t* pnumVertices) const { */
+      /*   if (pnumVertices) *pnumVertices = numVertices*numTimeSteps; */
+      /*   return numCurves; */
+      /* } */
 
-      const BBox3fa bounds(size_t group, size_t prim) const {
-        return bounds(prim);
-      }
+      /* const BBox3fa bounds(size_t group, size_t prim) const { */
+      /*   return bounds(prim); */
+      /* } */
 
     public:
 
