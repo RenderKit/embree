@@ -124,7 +124,7 @@ namespace embree
       const Vec3fa &v3 = curve_in.p[3];
 
       //if (!intersectCylinder(ray,v0,v1,v2,v3)) return;
-      if (!intersectBoxes(ray,v0,v1,v2,v3)) return;
+      //if (!intersectBoxes(ray,v0,v1,v2,v3)) return;
 
       /* transform control points into ray space */
       Vec3fa w0 = xfmVector(pre.ray_space,v0-ray.org); w0.w = v0.w;

@@ -358,6 +358,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT,RTC_INTERSECT1);
 
+  DBG_PRINT(scene_in->numHairSets); 
   /* add all hair sets to the scene */
   for (int i=0; i<scene_in->numHairSets; i++)
   {
@@ -377,7 +378,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 #endif
   }
 
-#if 1
+#if 0
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
   {
@@ -759,7 +760,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   ray.filter = NULL; // (RTCFilterFunc) intersectionFilter;
 
   if (ray.primID != -1)
-    color += abs(dot(ray.dir,ray.Ng));
+    color += 0.3f + abs(dot(ray.dir,ray.Ng));
 
   return color;
 }
@@ -800,8 +801,8 @@ void renderTile(int taskIndex, int* pixels,
     float fx = x + frand(seed);
     float fy = y + frand(seed);
     //Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
-    Vec3f color = renderPixelPathTrace(fx,fy,vx,vy,vz,p);
-    //Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
+    //Vec3f color = renderPixelPathTrace(fx,fy,vx,vy,vz,p);
+    Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
     Vec3fa& dst = g_accu[y*width+x];
     dst += Vec3fa(color.x,color.y,color.z,1.0f);
 
