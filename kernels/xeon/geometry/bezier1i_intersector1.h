@@ -22,7 +22,6 @@
 
 namespace embree
 {
-
   __forceinline bool intersect_box(const BBox3fa& box, const Ray& ray)
   {
 #if 0
