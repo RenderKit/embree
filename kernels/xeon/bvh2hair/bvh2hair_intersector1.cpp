@@ -33,13 +33,13 @@ namespace embree
 
 #if defined(__SSE4_1__)
       const Vec3fa tNearXYZ = mini(tLowerXYZ,tUpperXYZ);
-      const Vec3fa tFarXYZ = maxi(tLowerXYZ,tUpperXYZ);
-      tNear = max(reduce_max(tNearXYZ),tNear);
-      tFar  = min(reduce_min(tFarXYZ ),tFar);
+      const Vec3fa tFarXYZ  = maxi(tLowerXYZ,tUpperXYZ);
+      tNear = max(max(tNearXYZ.x,tNearXYZ.y),max(tNearXYZ.z,tNear)); // FIXME: using mini here makes things slower
+      tFar  = min(min(tFarXYZ .x,tFarXYZ .y),min(tFarXYZ .z,tFar ));
       return tNear <= tFar;
 #else
       const Vec3fa tNearXYZ = min(tLowerXYZ,tUpperXYZ);
-      const Vec3fa tFarXYZ = max(tLowerXYZ,tUpperXYZ);
+      const Vec3fa tFarXYZ  = max(tLowerXYZ,tUpperXYZ);
       tNear = max(reduce_max(tNearXYZ),tNear);
       tFar  = min(reduce_min(tFarXYZ ),tFar);
       return tNear <= tFar;
@@ -51,10 +51,16 @@ namespace embree
       const Vec3fa dir = xfmVector(naabb,ray.dir);
       const Vec3fa rdir = rcp(dir);
       const Vec3fa org = xfmPoint (naabb,ray.org);
-      const Vec3fa tLowerXYZ = - org * rdir;
-      const Vec3fa tUpperXYZ = (Vec3fa(one) - org) * rdir;
+      const Vec3fa tLowerXYZ = - org * rdir;     // (Vec3fa(zero) - org) * rdir;
+      const Vec3fa tUpperXYZ = rdir + tLowerXYZ; // (Vec3fa(one ) - org) * rdir;
+
+#if defined(__SSE4_1__)
+      const Vec3fa tNearXYZ = mini(tLowerXYZ,tUpperXYZ);
+      const Vec3fa tFarXYZ  = maxi(tLowerXYZ,tUpperXYZ);
+#else
       const Vec3fa tNearXYZ = min(tLowerXYZ,tUpperXYZ);
-      const Vec3fa tFarXYZ = max(tLowerXYZ,tUpperXYZ);
+      const Vec3fa tFarXYZ  = max(tLowerXYZ,tUpperXYZ);
+#endif
       tNear = max(reduce_max(tNearXYZ),tNear);
       tFar  = min(reduce_min(tFarXYZ ),tFar);
       return tNear <= tFar;

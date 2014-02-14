@@ -110,6 +110,24 @@ namespace embree
   __forceinline double floor( const double x ) { return ::floor (x); }
   __forceinline double ceil ( const double x ) { return ::ceil (x); }
 
+#if defined(__SSE4_1__)
+  __forceinline float mini(float a, float b) { 
+    const __m128i ai = _mm_castps_si128(_mm_set_ss(a));
+    const __m128i bi = _mm_castps_si128(_mm_set_ss(b));
+    const __m128i ci = _mm_min_epi32(ai,bi);
+    return _mm_cvtss_f32(_mm_castsi128_ps(ci));
+  }
+#endif
+
+#if defined(__SSE4_1__)
+  __forceinline float maxi(float a, float b) { 
+    const __m128i ai = _mm_castps_si128(_mm_set_ss(a));
+    const __m128i bi = _mm_castps_si128(_mm_set_ss(b));
+    const __m128i ci = _mm_max_epi32(ai,bi);
+    return _mm_cvtss_f32(_mm_castsi128_ps(ci));
+  }
+#endif
+
   __forceinline                    int min(int    a, int    b)                                         { return a<b? a:b; }
   __forceinline                  int64 min(int64  a, int64  b)                                         { return a<b? a:b; }
   __forceinline                 size_t min(size_t a, size_t b)                                         { return a<b? a:b; }

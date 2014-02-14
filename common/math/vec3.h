@@ -112,6 +112,15 @@ namespace embree
   template<typename T> __forceinline Vec3<T> operator <<( const Vec3<T>& a, const int b ) { return Vec3<T>(a.x << b, a.y << b, a.z << b); }
 
   ////////////////////////////////////////////////////////////////////////////////
+  /// Ternary Operators
+  ////////////////////////////////////////////////////////////////////////////////
+
+  template<typename T> __forceinline const Vec3<T> madd  ( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c) { return a*b+c; }
+  template<typename T> __forceinline const Vec3<T> msub  ( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c) { return a*b-c; }
+  template<typename T> __forceinline const Vec3<T> nmadd ( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c) { return -a*b-c;}
+  template<typename T> __forceinline const Vec3<T> nmsub ( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c) { return c-a*b; }
+
+  ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
 

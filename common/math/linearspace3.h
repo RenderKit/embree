@@ -137,8 +137,8 @@ namespace embree
   template<typename T> __forceinline LinearSpace3<T>& operator *=( LinearSpace3<T>& a, const LinearSpace3<T>& b ) { return a = a * b; }
   template<typename T> __forceinline LinearSpace3<T>& operator /=( LinearSpace3<T>& a, const LinearSpace3<T>& b ) { return a = a / b; }
 
-  template<typename T> __forceinline T       xfmPoint (const LinearSpace3<T>& s, const T      & a) { return a.x*s.vx + a.y*s.vy + a.z*s.vz; }
-  template<typename T> __forceinline T       xfmVector(const LinearSpace3<T>& s, const T      & a) { return a.x*s.vx + a.y*s.vy + a.z*s.vz; }
+  template<typename T> __forceinline T       xfmPoint (const LinearSpace3<T>& s, const T      & a) { return madd(T(a.x),s.vx,madd(T(a.y),s.vy,T(a.z)*s.vz)); }
+  template<typename T> __forceinline T       xfmVector(const LinearSpace3<T>& s, const T      & a) { return madd(T(a.x),s.vx,madd(T(a.y),s.vy,T(a.z)*s.vz)); }
   template<typename T> __forceinline T       xfmNormal(const LinearSpace3<T>& s, const T      & a) { return xfmVector(s.inverse().transposed(),a); }
 
   ////////////////////////////////////////////////////////////////////////////////

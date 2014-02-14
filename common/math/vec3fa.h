@@ -172,11 +172,6 @@ namespace embree
   __forceinline float reduce_min(const Vec3fa& v) { return min(v.x,v.y,v.z); }
   __forceinline float reduce_max(const Vec3fa& v) { return max(v.x,v.y,v.z); }
 
-  /*#if defined(__SSE4_1__)
-  __forceinline float reduce_mini(const Vec3fa& v) { return min(v.x,v.y,v.z); }
-  __forceinline float reduce_maxi(const Vec3fa& v) { return max(v.x,v.y,v.z); }
-  #endif*/
-
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators
   ////////////////////////////////////////////////////////////////////////////////
