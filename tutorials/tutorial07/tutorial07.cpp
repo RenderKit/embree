@@ -38,6 +38,9 @@ namespace embree
   static bool g_fullscreen = false;
   static size_t g_numThreads = 0;
 
+  static int tessellation_segments = -1;
+  static int tessellation_strips   = -1;
+
   /* scene */
   OBJScene g_obj_scene;
   static FileName objFilename = "";
@@ -83,6 +86,12 @@ namespace embree
       /* ambient light */
       else if (tag == "--ambient") {
         g_ambient_intensity = cin->getVec3fa();
+      }
+
+      /* tessellation flags */
+      else if (tag == "--tessellate") {
+        tessellation_segments = cin->getInt();
+        tessellation_strips   = cin->getInt();
       }
 
       /* output filename */

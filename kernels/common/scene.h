@@ -221,7 +221,6 @@ namespace embree
       
       size_t groups () const { 
 #if !defined(PRE_SUBDIVISION_HACK)
-	DBG_PRINT(scene->geometries.size());
         return scene->geometries.size();
 #else
         BezierCurves* curves = scene->getBezierCurves(0);
