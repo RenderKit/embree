@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.h"
 
 #define USE_INTERSECTION_FILTER 0
-#define USE_OCCLUSION_FILTER 1
+#define USE_OCCLUSION_FILTER 0
 
 /* accumulation buffer */
 Vec3fa* g_accu = NULL;
@@ -276,7 +276,7 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
     /* calculate how much the curve occludes the ray */
     //float sizeRay = max(ray.org.w + ray.tfar*ray.dir.w, 0.00001f);
     //float sizeCurve = evalBezier(ray.geomID,ray.primID,ray.u).w;
-    T *= hair_Tt; //1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
+    T *= hair_Kt; //1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
 
     /* continue ray ray */
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -401,7 +401,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 #endif
   }
 
-#if 0
+#if 1
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
   {
@@ -554,7 +554,7 @@ public:
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  int seed = random(); //255*x+13*y+45*g_accu_count;
+  //int seed = random(); //255*x+13*y+45*g_accu_count;
 
   /* initialize ray */
   RTCRay2 ray;
@@ -569,7 +569,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
-  ray.filter = (RTCFilterFunc) intersectionFilter;
+  ray.filter = NULL; //(RTCFilterFunc) intersectionFilter;
 
   Vec3fa color = Vec3f(0.0f);
   Vec3fa weight = 1.0f;
@@ -702,8 +702,8 @@ void renderTile(int taskIndex, int* pixels,
     /* calculate pixel color */
     float fx = x + frand(seed);
     float fy = y + frand(seed);
-    Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
-    //Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
+    //Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
+    Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
     Vec3fa& dst = g_accu[y*width+x];
     dst += Vec3fa(color.x,color.y,color.z,1.0f);
 
