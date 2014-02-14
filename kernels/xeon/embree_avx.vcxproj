@@ -364,6 +364,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bvh2hair\bvh2hair_intersector1.cpp" />
     <ClCompile Include="bvh4i\bvh4i_builder_binner.cpp" />
     <ClCompile Include="bvh4i\bvh4i_builder_fast.cpp" />
     <ClCompile Include="bvh4i\bvh4i_builder_morton.cpp" />
@@ -401,6 +402,7 @@
     <CustomBuildStep Include="bvh4i\bvh4i_builder_morton_enhanced.h" />
     <CustomBuildStep Include="bvh4i\bvh4i_builder_util.h" />
     <CustomBuildStep Include="bvh4i\bvh4i_intersector1.h" />
+    <ClInclude Include="bvh2hair\bvh2hair_intersector1.h" />
     <ClInclude Include="bvh4i\bvh4i_intersector1_scalar.h" />
     <CustomBuildStep Include="bvh4i\bvh4i_intersector4_chunk.h" />
     <CustomBuildStep Include="bvh4i\bvh4i_intersector8_chunk.h" />

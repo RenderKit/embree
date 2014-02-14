@@ -123,47 +123,9 @@ __forceinline int __btr(int v, int i) {
   long r = v; _bittestandreset(&r,i); return r;
 }
 
-#if defined(__X86_64__)
-
-__forceinline size_t __bsf(size_t v) {
-#if defined(__AVX2__) 
-  return _tzcnt_u64(v);
-#else
-  unsigned long r = 0; _BitScanForward64(&r,v); return r;
-#endif
-}
-
-__forceinline size_t __bsr(size_t v) {
-  unsigned long r = 0; _BitScanReverse64(&r,v); return r;
-}
-
-__forceinline size_t __btc(size_t v, size_t i) {
-  size_t r = v; _bittestandcomplement64((__int64*)&r,i); return r;
-}
-
-__forceinline size_t __bts(size_t v, size_t i) {
-  __int64 r = v; _bittestandset64(&r,i); return r;
-}
-
-__forceinline size_t __btr(size_t v, size_t i) {
-  __int64 r = v; _bittestandreset64(&r,i); return r;
-}
-
 __forceinline int bitscan(int v) {
 #if defined(__AVX2__) 
   return _tzcnt_u32(v);
-#else
-  return __bsf(v);
-#endif
-}
-
-__forceinline size_t bitscan(size_t v) {
-#if defined(__AVX2__)
-#if defined(__X86_64__)
-  return _tzcnt_u64(v);
-#else
-  return _tzcnt_u32(v);
-#endif
 #else
   return __bsf(v);
 #endif
@@ -193,29 +155,49 @@ __forceinline unsigned int __bscf(unsigned int& v)
   return i;
 }
 
+#if defined(__X86_64__)
+
+__forceinline size_t __bsf(size_t v) {
+#if defined(__AVX2__) 
+  return _tzcnt_u64(v);
+#else
+  unsigned long r = 0; _BitScanForward64(&r,v); return r;
+#endif
+}
+
+__forceinline size_t __bsr(size_t v) {
+  unsigned long r = 0; _BitScanReverse64(&r,v); return r;
+}
+
+__forceinline size_t __btc(size_t v, size_t i) {
+  size_t r = v; _bittestandcomplement64((__int64*)&r,i); return r;
+}
+
+__forceinline size_t __bts(size_t v, size_t i) {
+  __int64 r = v; _bittestandset64(&r,i); return r;
+}
+
+__forceinline size_t __btr(size_t v, size_t i) {
+  __int64 r = v; _bittestandreset64(&r,i); return r;
+}
+
+__forceinline size_t bitscan(size_t v) {
+#if defined(__AVX2__)
+#if defined(__X86_64__)
+  return _tzcnt_u64(v);
+#else
+  return _tzcnt_u32(v);
+#endif
+#else
+  return __bsf(v);
+#endif
+}
+
 __forceinline size_t __bscf(size_t& v) 
 {
   size_t i = __bsf(v);
   v &= v-1;
   return i;
-}
-
-#endif
-
-#if defined(__X86_64__)
-
-typedef int64 atomic64_t;
-
-__forceinline int64 atomic_add(volatile int64* m, const int64 v) {
-  return _InterlockedExchangeAdd64(m,v);
-}
-
-__forceinline int64 atomic_xchg(volatile int64 *p, int64 v) {
-  return _InterlockedExchange64((volatile long long *)p, v);
-}
-
-__forceinline int64 atomic_cmpxchg(volatile int64* m, const int64 c, const int64 v) {
-  return _InterlockedCompareExchange64(m,v,c);
 }
 
 #endif
@@ -234,6 +216,23 @@ __forceinline int32 atomic_cmpxchg(volatile int32* p, const int32 c, const int32
   return _InterlockedCompareExchange((volatile long*)p,v,c);
 }
 
+#if defined(__X86_64__)
+
+typedef int64 atomic64_t;
+
+__forceinline int64 atomic_add(volatile int64* m, const int64 v) {
+  return _InterlockedExchangeAdd64(m,v);
+}
+
+__forceinline int64 atomic_xchg(volatile int64 *p, int64 v) {
+  return _InterlockedExchange64((volatile long long *)p, v);
+}
+
+__forceinline int64 atomic_cmpxchg(volatile int64* m, const int64 c, const int64 v) {
+  return _InterlockedCompareExchange64(m,v,c);
+}
+
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Unix Platform
