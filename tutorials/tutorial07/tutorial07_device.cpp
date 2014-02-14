@@ -28,18 +28,19 @@ Vec3f g_accu_vx = zero;
 Vec3f g_accu_vy = zero;
 Vec3f g_accu_vz = zero;
 Vec3f g_accu_p  = zero;
+extern bool g_changed;
 
 /* light settings */
-Vec3fa ambientLightIntensity = Vec3fa(0.8f);
-Vec3fa lightDir = normalize(-Vec3fa(-20.6048, 22.2367, -2.93452));
-Vec3fa lightIntensity = Vec3fa(3.0f);
+extern Vec3fa g_dirlight_direction;
+extern Vec3fa g_dirlight_intensity;
+extern Vec3fa g_ambient_intensity;
 
 /* hair material */
 const Vec3fa hair_K  = Vec3fa(1.0f,0.57f,0.32);
 const Vec3fa hair_dK = Vec3fa(0.02f,0.05f,0.02);
 //const Vec3fa hair_K  = Vec3fa(1.0f,0.87f,0.62);
-const Vec3fa hair_Kr = 0.3f*hair_K;    //!< reflectivity of hair
-const Vec3fa hair_Kt = 0.7f*hair_K;    //!< transparency of hair
+const Vec3fa hair_Kr = 0.7f*hair_K;    //!< reflectivity of hair
+const Vec3fa hair_Kt = 0.3f*hair_K;    //!< transparency of hair
 const float  hair_Ke = 0.01f;
 const Vec3fa hair_Kts= hair_Kt; //Vec3fa(pow(hair_Kt.x,hair_Ke),pow(hair_Kt.x,hair_Ke),pow(hair_Kt.x,hair_Ke));    //!< transparency of hair for shadow rays
 
@@ -492,7 +493,7 @@ public:
     const float n = nx*sqr(cosPhi)+ny*sqr(sinPhi);
     const float cosTheta = powf(sy,rcp(n+1));
     const float sinTheta = cos2sin(cosTheta);
-    const float pdf = max(norm1*powf(cosTheta,n),0.0001f); // FIXME: clamping PDF
+    const float pdf = max(norm1*powf(cosTheta,n),0.1f); // FIXME: clamping PDF
     const Vec3fa h(cosPhi * sinTheta, sinPhi * sinTheta, cosTheta);
     const Vec3fa wh = h.x*dx + h.y*dy + h.z*dz;
     return Vec3fa(wh,pdf);
@@ -526,6 +527,7 @@ public:
     /* reflection */
     if (sz < side) {
       wi = Vec3fa(reflect(wo,wh),wh.w*side);
+      if (dot(wi,dz) < 0.0f) return Vec3fa(zero,0.0f);
       const float cosThetaI = dot(wi,dz);
       return Kr * eval(wh) * abs(cosThetaI);
     }
@@ -533,6 +535,7 @@ public:
     /* transmission */
     else {
       wi = Vec3fa(reflect(reflect(wo,wh),dz),wh.w*(1-side));
+      if (dot(wi,dz) > 0.0f) return Vec3fa(zero,0.0f);
       const float cosThetaI = dot(wi,dz);
       return Kt * eval(wh) * abs(cosThetaI);
     }
@@ -578,7 +581,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   {
     /* terminate ray path */
     if (reduce_max(weight) < 0.01 || depth > 10) 
-      return color + weight*ambientLightIntensity;
+      return color; // + weight*g_ambient_intensity;
 
     /* intersect ray with scene and gather all hits */
     rtcIntersect(g_scene,(RTCRay&)ray);
@@ -586,7 +589,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     
     /* exit if we hit environment */
     if (ray2->geomID == RTC_INVALID_GEOMETRY_ID) 
-      return color + weight*ambientLightIntensity;
+      return color + weight*g_ambient_intensity;
 
     //return Vec3fa(ray2->u,ray2->v,0.0f);
   
@@ -607,32 +610,35 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     }
     else 
     {
+      if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
+
       /* calculate tangent space */
-      const Vec3fa dz = -normalize(ray2->Ng);
+      const Vec3fa dz = normalize(ray2->Ng);
       const Vec3fa dx = normalize(cross(dz,ray2->dir));
       const Vec3fa dy = normalize(cross(dz,dx));
       
       /* generate isotropic BRDF */
-      brdf = AnisotropicBlinn(one,zero,dx,0.0f,dy,0.0f,dz);
+      brdf = AnisotropicBlinn(one,zero,dx,1.0f,dy,1.0f,dz);
     }
     
     /* sample directional light */
     RTCRay2 shadow;
     shadow.org = ray2->org + ray2->tfar*ray2->dir;
     shadow.org.w = 0.0f; //ray2->org.w+ray2->tfar*ray2->dir.w;
-    shadow.dir = neg(lightDir);
+    shadow.dir = neg(g_dirlight_direction);
     shadow.dir.w = 0.0f;
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
     Vec3fa T = occluded(g_scene,shadow);
-    Vec3fa c = brdf.eval(neg(ray.dir),neg(lightDir));
-    //Vec3fa c = clamp(dot(neg(lightDir),brdf.dz),0.0f,1.0f)*float(one_over_pi);
-    color += weight*c*T*lightIntensity;
+    Vec3fa c = brdf.eval(neg(ray.dir),neg(g_dirlight_direction));
+    //Vec3fa c = clamp(dot(neg(g_dirlight_direction),brdf.dz),0.0f,1.0f)*float(one_over_pi);
+    color += weight*c*T*g_dirlight_intensity;
 
 #if 1
     /* sample BRDF */
     Vec3fa wi;
     c = brdf.sample(neg(ray.dir),wi,frand(seed),frand(seed),frand(seed));
+    if (wi.w <= 0.0f) return color;
     ray.org = ray2->org + ray2->tfar*ray2->dir;
     ray.org.w = 0.0f;
     ray.dir = normalize(x*vx + y*vy + vz);
@@ -763,7 +769,7 @@ extern "C" void device_render (int* pixels,
   }
 
   /* reset accumulator */
-  bool camera_changed = false;
+  bool camera_changed = g_changed; g_changed = false;
   camera_changed |= g_accu_vx != vx; g_accu_vx = vx;
   camera_changed |= g_accu_vy != vy; g_accu_vy = vy;
   camera_changed |= g_accu_vz != vz; g_accu_vz = vz;
@@ -895,7 +901,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     RTCRay2 shadow;
     shadow.org = ray2->org + ray2->tfar*ray2->dir;
     shadow.org.w = ray2->org.w+ray2->tfar*ray2->dir.w;
-    shadow.dir = neg(lightDir);
+    shadow.dir = neg(g_dirlight_direction);
     shadow.dir.w = 0.0f;
     shadow.tnear = 0.1f;
     shadow.tfar = inf;
@@ -915,9 +921,9 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     if (brdf.nx == 0.0f || brdf.ny == 0.0f)
       c = Vec3fa(clamp(dot(neg(ray.dir),brdf.dz),0.0f,1.0f));
     else 
-      c = brdf.eval(ray.geomID,neg(ray.dir),neg(lightDir));
+      c = brdf.eval(ray.geomID,neg(ray.dir),neg(g_dirlight_direction));
 
-    color += weight*(1.0f-Th)*c*T*lightIntensity; //clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f))); // FIXME: use +=
+    color += weight*(1.0f-Th)*c*T*g_dirlight_intensity; //clamp(-dot(g_dirlight_direction,normalize(ray.Ng)),0.0f,1.0f))); // FIXME: use +=
     weight *= Th;
     //weight = max(0.0f,weight-Th);
     if (weight < 0.01) return color;

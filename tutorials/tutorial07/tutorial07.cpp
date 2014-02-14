@@ -20,6 +20,10 @@
 #include "sys/taskscheduler.h"
 #include "image/image.h"
 
+embree::Vec3fa g_dirlight_direction = embree::normalize(-embree::Vec3fa(1,1,1));
+embree::Vec3fa g_dirlight_intensity = embree::Vec3fa(5.0f);
+embree::Vec3fa g_ambient_intensity = embree::Vec3fa(1.0f);
+
 namespace embree
 {
   /* name of the tutorial */
@@ -39,6 +43,7 @@ namespace embree
   static FileName objFilename = "";
   static FileName hairFilename = "";
   static FileName outFilename = "";
+
   Vec3fa offset = 0.0f;
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
@@ -67,6 +72,17 @@ namespace embree
       /* scene offset */
       else if (tag == "--offset") {
         offset = cin->getVec3fa();
+      }
+
+      /* directional light */
+      else if (tag == "--dirlight") {
+        g_dirlight_direction = normalize(cin->getVec3fa());
+        g_dirlight_intensity = cin->getVec3fa();
+      }
+
+      /* ambient light */
+      else if (tag == "--ambient") {
+        g_ambient_intensity = cin->getVec3fa();
       }
 
       /* output filename */
