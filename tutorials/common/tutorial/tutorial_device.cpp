@@ -21,15 +21,16 @@ extern RTCScene g_scene;
 
 /* intensity scaling for traversal cost visualization */
 float scale = 0.001f;
+bool g_changed = false;
 
 /* stores pointer to currently used rendePixel function */
 extern renderPixelFunc renderPixel;
 
 /* standard rendering function for each tutorial */
-Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
+Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
 /* renders a single pixel with eyelight shading */
-Vec3fa renderPixelEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -51,7 +52,7 @@ Vec3fa renderPixelEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy, con
 }
 
 /* renders a single pixel with ambient occlusion shading */
-Vec3fa renderPixelAmbientOcclusion(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -111,7 +112,7 @@ Vec3fa renderPixelAmbientOcclusion(int x, int y, const Vec3fa& vx, const Vec3fa&
 }
 
 /* renders a single pixel with UV shading */
-Vec3fa renderPixelUV(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelUV(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -133,7 +134,7 @@ Vec3fa renderPixelUV(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec
 }
 
 /* renders a single pixel with geometry normal shading */
-Vec3fa renderPixelNg(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelNg(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -164,7 +165,7 @@ Vec3fa randomColor(const int ID)
 }
 
 /* geometry ID shading */
-Vec3fa renderPixelGeomID(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelGeomID(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -186,7 +187,7 @@ Vec3fa renderPixelGeomID(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const
 }
 
 /* geometry ID and primitive ID shading */
-Vec3fa renderPixelGeomIDPrimID(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelGeomIDPrimID(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -208,7 +209,7 @@ Vec3fa renderPixelGeomIDPrimID(int x, int y, const Vec3fa& vx, const Vec3fa& vy,
 }
 
 /* vizualizes the traversal cost of a pixel */
-Vec3fa renderPixelCycles(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelCycles(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -231,7 +232,7 @@ Vec3fa renderPixelCycles(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const
 }
 
 /* renders a single pixel with UV shading */
-Vec3fa renderPixelUV16(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelUV16(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -292,21 +293,47 @@ extern "C" bool device_pick(const float x,
 /* called when a key is pressed */
 extern "C" void device_key_pressed(int key)
 {
-  if      (key == GLUT_KEY_F1) renderPixel = renderPixelStandard;
-  else if (key == GLUT_KEY_F2) renderPixel = renderPixelEyeLight;
-  else if (key == GLUT_KEY_F3) renderPixel = renderPixelAmbientOcclusion;
-  else if (key == GLUT_KEY_F4) renderPixel = renderPixelUV;
-  else if (key == GLUT_KEY_F5) renderPixel = renderPixelNg;
-  else if (key == GLUT_KEY_F6) renderPixel = renderPixelGeomID;
-  else if (key == GLUT_KEY_F7) renderPixel = renderPixelGeomIDPrimID;
-  else if (key == GLUT_KEY_F8) renderPixel = renderPixelUV16;
+  if (key == GLUT_KEY_F1) {
+    renderPixel = renderPixelStandard;
+    g_changed = true;
+  }
+  else if (key == GLUT_KEY_F2) {
+    renderPixel = renderPixelEyeLight;
+    g_changed = true;
+  }    
+  else if (key == GLUT_KEY_F3) {
+    renderPixel = renderPixelAmbientOcclusion;
+    g_changed = true;
+  }
+  else if (key == GLUT_KEY_F4) {
+    renderPixel = renderPixelUV;
+    g_changed = true;
+  }
+  else if (key == GLUT_KEY_F5) {
+    renderPixel = renderPixelNg;
+    g_changed = true;
+  }
+  else if (key == GLUT_KEY_F6) {
+    renderPixel = renderPixelGeomID;
+    g_changed = true;
+  }
+  else if (key == GLUT_KEY_F7) {
+    renderPixel = renderPixelGeomIDPrimID;
+    g_changed = true;
+  }
+  else if (key == GLUT_KEY_F8) {
+    renderPixel = renderPixelUV16;
+    g_changed = true;
+  }
   else if (key == GLUT_KEY_F9) {
     if (renderPixel == renderPixelCycles) scale *= 1.1f;
     renderPixel = renderPixelCycles;
+    g_changed = true;
   }
   else if (key == GLUT_KEY_F10) {
     if (renderPixel == renderPixelCycles) scale *= 0.9f;
     renderPixel = renderPixelCycles;
+    g_changed = true;
   }
 }
 

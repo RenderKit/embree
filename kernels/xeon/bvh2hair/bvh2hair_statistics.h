@@ -17,38 +17,33 @@
 #pragma once
 
 #include "bvh2hair.h"
-#include "common/ray.h"
-#include "common/stack_item.h"
 
 namespace embree
 {
-  namespace isa
+  class BVH2HairStatistics 
   {
-    /*! BVH2Hair single ray traversal implementation. */
-    class BVH2HairIntersector1 
-    {
-      /* shortcuts for frequently used types */
-      typedef BVH2Hair::NodeRef NodeRef;
-      typedef BVH2Hair::AlignedNode AlignedNode;
-      typedef BVH2Hair::UnalignedNode UnalignedNode;
-      typedef BVH2Hair::Bezier1 Bezier1;
-      typedef BVH2Hair::NAABBox3fa NAABBox3fa;
-      static const size_t stackSize = 1+BVH2Hair::maxDepth;
+    typedef BVH2Hair::AlignedNode AlignedNode;
+    typedef BVH2Hair::UnalignedNode UnalignedNode;
+    typedef BVH2Hair::NodeRef NodeRef;
 
-      struct StackItem {
-        NodeRef ref;
-        float tNear,tFar;
-      };
+  public:
 
-    private:
-      static bool intersectBox(const BBox3fa& aabb, const Ray& ray, const Vec3fa& org_rdir, const Vec3fa& rdir, float& tNear, float& tFar);
-      static bool intersectBox(const AffineSpace3fa& naabb, const Ray& ray, float& tNear, float& tFar);
-      static void intersectBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier);
-      static bool occludedBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier);
-      
-    public:
-      static void intersect(const BVH2Hair* This, Ray& ray);
-      static void occluded (const BVH2Hair* This, Ray& ray);
-    };
-  }
+    /* Constructor gathers statistics. */
+    BVH2HairStatistics (BVH2Hair* bvh);
+
+    /*! Convert statistics into a string */
+    std::string str();
+
+  private:
+    void statistics(NodeRef node, const float A, size_t& depth);
+
+  private:
+    BVH2Hair* bvh;
+    float bvhSAH;                      //!< SAH cost.
+    size_t numAlignedNodes;            //!< Number of aligned internal nodes.
+    size_t numUnalignedNodes;          //!< Number of unaligned internal nodes.
+    size_t numLeaves;                  //!< Number of leaf nodes.
+    size_t numPrims;                   //!< Number of primitives.
+    size_t depth;                      //!< Depth of the tree.
+  };
 }
