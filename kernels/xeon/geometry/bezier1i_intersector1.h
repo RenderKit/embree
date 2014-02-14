@@ -114,6 +114,7 @@ namespace embree
       return any(vmask);
     }
 
+
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
@@ -155,7 +156,7 @@ namespace embree
       size_t i = select_min(valid,t);
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(__INTERSECTION_FILTER__) && !defined(PRE_SUBDIVISION_HACK)
       int geomID = curve_in.geomID;
       Geometry* geometry = ((Scene*)geom)->get(geomID);
       if (!likely(geometry->hasIntersectionFilter1())) 
@@ -172,7 +173,7 @@ namespace embree
         ray.Ng = T;
         ray.geomID = curve_in.geomID;
         ray.primID = curve_in.primID;
-#if defined(__INTERSECTION_FILTER__)
+#if defined(__INTERSECTION_FILTER__)  && !defined(PRE_SUBDIVISION_HACK)
           return;
       }
 
@@ -231,7 +232,7 @@ namespace embree
       if (none(valid)) return false;
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(__INTERSECTION_FILTER__)  && !defined(PRE_SUBDIVISION_HACK)
 
       size_t i = select_min(valid,t);
       int geomID = curve_in.geomID;
