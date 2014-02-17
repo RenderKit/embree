@@ -24,6 +24,7 @@
 #include "bvh8i/bvh8i.h"
 #include "bvh4mb/bvh4mb.h"
 #include "bvh2hair/bvh2hair.h"
+#include "bvh4hair/bvh4hair.h"
 #else
 #include "xeonphi/bvh4i/bvh4i.h"
 #include "xeonphi/bvh4mb/bvh4mb.h"
@@ -128,6 +129,7 @@ namespace embree
         // FIXME:
         if      (g_hair_accel == "bvh4.bezier1i") accels.add(BVH4::BVH4Bezier1i(this));
         else if (g_hair_accel == "bvh2hair.bezier1") accels.add(BVH2Hair::BVH2HairBezier1(this));
+        else if (g_hair_accel == "bvh4hair.bezier1") accels.add(BVH4Hair::BVH4HairBezier1(this));
         else accels.add(BVH4::BVH4Bezier1i(this));
       } 
       else 

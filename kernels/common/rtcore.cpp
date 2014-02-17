@@ -67,6 +67,7 @@ namespace embree
   void BVH16iRegister();
 #if !defined(__MIC__)
   void BVH2HairRegister();
+  void BVH4HairRegister();
 #endif
 
   /*! intersector registration functions */
@@ -276,6 +277,7 @@ namespace embree
 
 #if !defined(__MIC__)
     BVH2HairRegister();
+    BVH4HairRegister();
 #endif
 
     InstanceIntersectorsRegister();

@@ -216,7 +216,7 @@ namespace embree
 
       /*! Returns the extend of the bounds of the ith child */
       __forceinline Vec3fa extend(size_t i) const {
-        assert(i<2);
+        assert(i<4);
         const Vec3fa vx(naabb.l.vx.x[i],naabb.l.vx.y[i],naabb.l.vx.z[i]);
         const Vec3fa vy(naabb.l.vy.x[i],naabb.l.vy.y[i],naabb.l.vy.z[i]);
         const Vec3fa vz(naabb.l.vz.x[i],naabb.l.vz.y[i],naabb.l.vz.z[i]);
@@ -225,8 +225,8 @@ namespace embree
       }
 
       /*! Returns reference to specified child */
-      __forceinline       NodeRef& child(size_t i)       { assert(i<2); return children[i]; }
-      __forceinline const NodeRef& child(size_t i) const { assert(i<2); return children[i]; }
+      __forceinline       NodeRef& child(size_t i)       { assert(i<4); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<4); return children[i]; }
 
     public:
       NodeRef         children[4];   //!< Pointer to the children (can be a node or leaf)

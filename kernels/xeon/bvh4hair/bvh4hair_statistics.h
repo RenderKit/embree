@@ -16,20 +16,20 @@
 
 #pragma once
 
-#include "bvh2hair.h"
+#include "bvh4hair.h"
 
 namespace embree
 {
-  class BVH2HairStatistics 
+  class BVH4HairStatistics 
   {
-    typedef BVH2Hair::AlignedNode AlignedNode;
-    typedef BVH2Hair::UnalignedNode UnalignedNode;
-    typedef BVH2Hair::NodeRef NodeRef;
+    typedef BVH4Hair::AlignedNode AlignedNode;
+    typedef BVH4Hair::UnalignedNode UnalignedNode;
+    typedef BVH4Hair::NodeRef NodeRef;
 
   public:
 
     /* Constructor gathers statistics. */
-    BVH2HairStatistics (BVH2Hair* bvh);
+    BVH4HairStatistics (BVH4Hair* bvh);
 
     /*! Convert statistics into a string */
     std::string str();
@@ -38,7 +38,7 @@ namespace embree
     void statistics(NodeRef node, const float A, size_t& depth);
 
   private:
-    BVH2Hair* bvh;
+    BVH4Hair* bvh;
     float bvhSAH;                      //!< SAH cost.
     size_t numAlignedNodes;            //!< Number of aligned internal nodes.
     size_t numUnalignedNodes;          //!< Number of unaligned internal nodes.

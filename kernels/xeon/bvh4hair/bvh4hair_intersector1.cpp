@@ -48,7 +48,7 @@ namespace embree
     }
 #endif
 
-    __forceinline size_t BVH4HairIntersector1::intersectBox(const AffineSpace3<ssef>& naabb, const Ray& ray, ssef& tNear, ssef& tFar)
+    __forceinline size_t BVH4HairIntersector1::intersectBox(const AffineSpaceSOA4& naabb, const Ray& ray, ssef& tNear, ssef& tFar)
     {
       const sse3f dir = xfmVector(naabb,sse3f(ray.dir));
       const sse3f rdir = rcp(dir);
@@ -68,12 +68,12 @@ namespace embree
 //        tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
 //        tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
 //        const sseb vmask = cast(tNear) > cast(tFar);
-//        mask = movemask(vmask)^0xf;
+//        size_t mask = movemask(vmask)^0xf;
 //#else
-        tNear = max(tNearXYZ.X,tNearXYZ.Y,tNearXYZ.Z,tNear);
-        tFar  = min(tFarXYZ.Z ,tFarXYZ.Y ,tFarXYZ.Z ,tFar);
+        tNear = max(tNearXYZ.x,tNearXYZ.y,tNearXYZ.z,tNear);
+        tFar  = min(tFarXYZ.x ,tFarXYZ.y ,tFarXYZ.z ,tFar);
         const sseb vmask = tNear <= tFar;
-        mask = movemask(vmask);
+        size_t mask = movemask(vmask);
 //#endif
       return mask;
     }
@@ -138,9 +138,9 @@ namespace embree
       StackItem stack[stackSize];  //!< stack of nodes 
       StackItem* stackPtr = stack+1;        //!< current stack pointer
       StackItem* stackEnd = stack+stackSize;
-      stack[0].ptr = bvh->root;
-      stack[0].tNear = ray.tNear;
-      stack[0].tFar = ray.tFar;
+      stack[0].ref = bvh->root;
+      stack[0].tNear = ray.tnear;
+      stack[0].tFar = ray.tfar;
       
       /*! offsets to select the side that becomes the lower or upper bound */
       const size_t nearX = ray.dir.x >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
@@ -160,9 +160,9 @@ namespace embree
         /*! pop next node */
         if (unlikely(stackPtr == stack)) break;
         stackPtr--;
-        NodeRef cur = NodeRef(stackPtr->ptr);
-        ssef tNear = sptr->tNear;
-        ssef tFar = min(sptr->tFar,ray.tFar);
+        NodeRef cur = NodeRef(stackPtr->ref);
+        ssef tNear = stackPtr->tNear;
+        ssef tFar = min(stackPtr->tFar,ray.tfar);
         
         /*! if popped node is too far, pop next one */
         if (unlikely(_mm_cvtss_f32(tNear) > _mm_cvtss_f32(tFar)))
@@ -214,7 +214,7 @@ namespace embree
           /*! process nodes with unaligned bounds */
           else {
             const UnalignedNode* node = cur.unalignedNode();
-            mask = intersectBox(node->naabb,ray,rNear,tFar);
+            mask = intersectBox(node->naabb,ray,tNear,tFar);
           }
 
           const AlignedNode* node = cur.alignedNode(); // FIXME: raises assertion but is correct
@@ -239,35 +239,35 @@ namespace embree
           assert(c1 != BVH4::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
-            if (d0 < d1) { stackPtr->ptr = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++; cur = c0; tNear = n0; tFar = f0; continue; }
-            else         { stackPtr->ptr = c0; stackPtr->tNear = n0; stackPtr->tFar = f0; stackPtr++; cur = c1; tNear = n1; tFar = f1; continue; }
+            if (n0 < n1) { stackPtr->ref = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++; cur = c0; tNear = n0; tFar = f0; continue; }
+            else         { stackPtr->ref = c0; stackPtr->tNear = n0; stackPtr->tFar = f0; stackPtr++; cur = c1; tNear = n1; tFar = f1; continue; }
           }
           
           /*! Here starts the slow path for 3 or 4 hit children. We push
            *  all nodes onto the stack to sort them there. */
           assert(stackPtr < stackEnd); 
-          stackPtr->ptr = c0; stackPtr->tNear = n0; stackPtr->tFar = f0; stackPtr++;
+          stackPtr->ref = c0; stackPtr->tNear = n0; stackPtr->tFar = f0; stackPtr++;
           assert(stackPtr < stackEnd); 
-          stackPtr->ptr = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++;
+          stackPtr->ref = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++;
           
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          NodeRef c = node->child(r); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ptr = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
+          NodeRef c = node->child(r); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
           assert(c != BVH4::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
-            cur = (NodeRef) stackPtr[-1].ptr; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
+            cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
             continue;
           }
           
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          c = node->child(r); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ptr = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
+          c = node->child(r); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
           assert(c != BVH4::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
-          cur = (NodeRef) stackPtr[-1].ptr; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
+          cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
         }
         
         /*! this is a leaf node */
@@ -323,9 +323,9 @@ namespace embree
       StackItem stack[stackSize];  //!< stack of nodes 
       StackItem* stackPtr = stack+1;        //!< current stack pointer
       StackItem* stackEnd = stack+stackSize;
-      stack[0].ptr = bvh->root;
-      stack[0].tNear = ray.tNear;
-      stack[0].tFar = ray.tFar;
+      stack[0].ref = bvh->root;
+      stack[0].tNear = ray.tnear;
+      stack[0].tFar = ray.tfar;
       
       /*! offsets to select the side that becomes the lower or upper bound */
       const size_t nearX = ray.dir.x >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
@@ -345,9 +345,9 @@ namespace embree
         /*! pop next node */
         if (unlikely(stackPtr == stack)) break;
         stackPtr--;
-        NodeRef cur = NodeRef(stackPtr->ptr);
-        ssef tNear = sptr->tNear;
-        ssef tFar = min(sptr->tFar,ray.tFar);
+        NodeRef cur = NodeRef(stackPtr->ref);
+        ssef tNear = stackPtr->tNear;
+        ssef tFar = min(stackPtr->tFar,ray.tfar);
         
         /*! if popped node is too far, pop next one */
         if (unlikely(_mm_cvtss_f32(tNear) > _mm_cvtss_f32(tFar)))
@@ -399,7 +399,7 @@ namespace embree
           /*! process nodes with unaligned bounds */
           else {
             const UnalignedNode* node = cur.unalignedNode();
-            mask = intersectBox(node->naabb,ray,rNear,tFar);
+            mask = intersectBox(node->naabb,ray,tNear,tFar);
           }
 
           const AlignedNode* node = cur.alignedNode(); // FIXME: raises assertion but is correct
@@ -424,16 +424,16 @@ namespace embree
           assert(c1 != BVH4::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
-            if (d0 < d1) { stackPtr->ptr = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++; cur = c0; tNear = n0; tFar = f0; continue; }
-            else         { stackPtr->ptr = c0; stackPtr->tNear = n0; stackPtr->tFar = f0; stackPtr++; cur = c1; tNear = n1; tFar = f1; continue; }
+            if (n0 < n1) { stackPtr->ref = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++; cur = c0; tNear = n0; tFar = f0; continue; }
+            else         { stackPtr->ref = c0; stackPtr->tNear = n0; stackPtr->tFar = f0; stackPtr++; cur = c1; tNear = n1; tFar = f1; continue; }
           }
           
           /*! Here starts the slow path for 3 or 4 hit children. We push
            *  all nodes onto the stack to sort them there. */
           assert(stackPtr < stackEnd); 
-          stackPtr->ptr = c0; stackPtr->tNear = n0; stackPtr->tFar = f0; stackPtr++;
+          stackPtr->ref = c0; stackPtr->tNear = n0; stackPtr->tFar = f0; stackPtr++;
           assert(stackPtr < stackEnd); 
-          stackPtr->ptr = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++;
+          stackPtr->ref = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++;
           
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
@@ -443,7 +443,7 @@ namespace embree
           assert(c != BVH4::emptyNode);
           if (likely(mask == 0)) continue;
           assert(stackPtr < stackEnd); 
-          stackPtr->ptr = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
+          stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
           
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           cur = node->child(3); tNear = tNear[3]; tFar = tFar[3]; 
