@@ -182,6 +182,7 @@ namespace embree
         PrimitiveIntersector::intersect(pre,ray,prim,num,bvh->geometry);
         ray_far = ray.tfar;
       }
+      AVX_ZERO_UPPER();
     }
     
     template<typename PrimitiveIntersector>
