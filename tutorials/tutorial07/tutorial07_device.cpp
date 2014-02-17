@@ -17,7 +17,8 @@
 #include "../common/tutorial/tutorial_device.h"
 
 #define USE_INTERSECTION_FILTER 0
-#define USE_OCCLUSION_FILTER 1
+#define USE_OCCLUSION_FILTER 0
+#define USE_EYELIGHT_SHADING 0
 
 /* accumulation buffer */
 Vec3fa* g_accu = NULL;
@@ -689,7 +690,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   ray.filter = NULL; // (RTCFilterFunc) intersectionFilter;
 
   if (ray.primID != -1)
-    color += abs(dot(ray.dir,ray.Ng));
+    color += 0.3f + abs(dot(ray.dir,ray.Ng));
 
   return color;
 }
@@ -719,8 +720,12 @@ void renderTile(int taskIndex, int* pixels,
     /* calculate pixel color */
     float fx = x + frand(seed);
     float fy = y + frand(seed);
+#if USE_EYELIGHT_SHADING == 1
+    Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
+#else
     Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
-    //Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
+#endif
+
     Vec3fa& dst = g_accu[y*width+x];
     dst += Vec3fa(color.x,color.y,color.z,1.0f);
 

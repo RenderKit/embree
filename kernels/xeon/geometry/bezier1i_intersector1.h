@@ -49,16 +49,25 @@ namespace embree
   {
     typedef Bezier1i Primitive;
 
+    struct Mailbox {
+      avxi ids;      
+      unsigned int index;
+
+      __forceinline Mailbox() {
+        ids = -1;
+        index = 0;
+      };
+    };
+
     struct Precalculations 
     {
       __forceinline Precalculations (const Ray& ray)
-	: ray_space(rcp(frame(ray.dir))), mailbox(-1),mailbox_index(0) {}
+	: ray_space(rcp(frame(ray.dir))) {}
 
       LinearSpace3fa ray_space;
-
-      avxi mailbox;      
-      unsigned int mailbox_index;
+      Mailbox mbox;
     };
+
 
     static __forceinline bool intersectCylinder(const Ray& ray,const Vec3fa &v0,const Vec3fa &v1,const Vec3fa &v2,const Vec3fa &v3)
     {
@@ -176,7 +185,7 @@ namespace embree
         ray.Ng = T;
         ray.geomID = curve_in.geomID;
         ray.primID = curve_in.primID;
-#if defined(__INTERSECTION_FILTER__)  && !defined(PRE_SUBDIVISION_HACK)
+#if defined(__INTERSECTION_FILTER__) && !defined(PRE_SUBDIVISION_HACK)
           return;
       }
 
@@ -199,13 +208,13 @@ namespace embree
       for (size_t i=0; i<num; i++)
 	{
 #if defined(PRE_SUBDIVISION_HACK)
-	  if (unlikely(any(pre.mailbox == curves[i].geomID))) { continue; }
+	  if (unlikely(any(pre.mbox.ids == curves[i].geomID))) { continue; }
 #endif
 	  intersect(pre,ray,curves[i],geom);
 
 #if defined(PRE_SUBDIVISION_HACK)
-	  pre.mailbox[pre.mailbox_index] = curves[i].geomID;
-	  pre.mailbox_index = (pre.mailbox_index+1)%8;
+	  *(unsigned int*)&pre.mbox.ids[pre.mbox.index] = curves[i].geomID;
+	  *(unsigned int*)&pre.mbox.index = (pre.mbox.index + 1 ) % 8;
 #endif
 	}
     }

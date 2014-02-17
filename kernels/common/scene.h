@@ -238,6 +238,8 @@ namespace embree
         return curves->numCurves;
 #else
 	return 8;
+	//return 4;
+
 #endif
       }
 
@@ -253,7 +255,13 @@ namespace embree
         BezierCurves* curves = scene->getBezierCurves(0);
         //return curves->bounds(group);
 	assert(prim < 8);
-	return curves->subBounds(group,prim);
+        BBox3fa box( empty );
+        box.extend( curves->subBounds(group,prim) );
+
+        //box.extend( curves->subBounds(group,2*prim+0) );
+        //box.extend( curves->subBounds(group,2*prim+1) );
+
+        return box;
 #endif
       }
 
