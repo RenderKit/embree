@@ -165,7 +165,7 @@ inline float frand(int& seed) {
   return (seed & 0xFFFF)/(float)0xFFFF;
 }
 
-inline Vec3f face_forward(Vec3fa dir, Vec3fa Ng) {
+inline Vec3f face_forward(const Vec3fa& dir, const Vec3fa& Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 

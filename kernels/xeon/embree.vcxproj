@@ -61,7 +61,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -191,6 +191,7 @@
       <ModuleDefinitionFile>embree.def</ModuleDefinitionFile>
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -228,6 +229,7 @@
       <ModuleDefinitionFile>embree.def</ModuleDefinitionFile>
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -260,7 +262,7 @@
     <Link>
       <AdditionalOptions>/ignore:4217 /ignore:4049 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>$(OutDir)sys.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
       <ModuleDefinitionFile>embree.def</ModuleDefinitionFile>
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -298,7 +300,7 @@
     <Link>
       <AdditionalOptions>/ignore:4217 /ignore:4049 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>$(OutDir)sys.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
       <ModuleDefinitionFile>embree.def</ModuleDefinitionFile>
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -337,6 +339,7 @@
       <ModuleDefinitionFile>embree.def</ModuleDefinitionFile>
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|x64'">
@@ -375,6 +378,7 @@
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <TargetMachine>MachineX64</TargetMachine>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|Win32'">
@@ -410,6 +414,7 @@
       <ModuleDefinitionFile>embree.def</ModuleDefinitionFile>
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'">
@@ -448,6 +453,7 @@
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <TargetMachine>MachineX64</TargetMachine>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

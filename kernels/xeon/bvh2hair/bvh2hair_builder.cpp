@@ -355,7 +355,7 @@ namespace embree
     return FallBackSplit(center,bounds0,bounds1);
   }
 
-  typename BVH2Hair::NodeRef BVH2HairBuilder::leaf(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
+  BVH2Hair::NodeRef BVH2HairBuilder::leaf(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
   {
     size_t N = end-begin;
     if (N > (size_t)BVH2Hair::maxLeafBlocks) {
@@ -368,7 +368,7 @@ namespace embree
     return bvh->encodeLeaf((char*)leaf,N);
   }
 
-  typename BVH2Hair::NodeRef BVH2HairBuilder::recurse_aligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
+  BVH2Hair::NodeRef BVH2HairBuilder::recurse_aligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
   {
     /* create enforced leaf */
     const size_t N = end-begin;
@@ -411,7 +411,7 @@ namespace embree
       return leaf(threadIndex,depth,begin,end,bounds);
   }
 
-  typename BVH2Hair::NodeRef BVH2HairBuilder::recurse_unaligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
+  BVH2Hair::NodeRef BVH2HairBuilder::recurse_unaligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
   {
     /* create enforced leaf */
     const size_t N = end-begin;
@@ -467,7 +467,7 @@ namespace embree
       return leaf(threadIndex,depth,begin,end,bounds);
   }
 
-  typename BVH2Hair::NodeRef BVH2HairBuilder::recurse_aligned_unaligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
+  BVH2Hair::NodeRef BVH2HairBuilder::recurse_aligned_unaligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds)
   {
     /* create enforced leaf */
     const size_t N = end-begin;

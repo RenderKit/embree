@@ -298,7 +298,7 @@ namespace embree
       ssize_t i = atomic_add(&cur,bytes);
       if (unlikely(i > end)) throw std::runtime_error("build out of memory");
       void* p = &ptr[i];
-      if (i+bytes > bytesAllocated)
+      if (i+(ssize_t)bytes > bytesAllocated)
         os_commit(p,bytes);
       return p;
     }

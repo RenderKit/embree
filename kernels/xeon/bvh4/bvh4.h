@@ -28,6 +28,7 @@ namespace embree
    * it's 4 children as well as 4 child pointers. */
   class BVH4 : public Bounded
   {
+	  ALIGNED_CLASS;
   public:
     
     /*! forward declaration of node type */

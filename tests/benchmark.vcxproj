@@ -61,7 +61,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -181,6 +181,7 @@
       <SubSystem>Console</SubSystem>
       <StackReserveSize>4000000</StackReserveSize>
       <StackCommitSize>4000000</StackCommitSize>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -210,6 +211,7 @@
       <SubSystem>Console</SubSystem>
       <StackReserveSize>4000000</StackReserveSize>
       <StackCommitSize>4000000</StackCommitSize>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -235,6 +237,7 @@
       <SubSystem>Console</SubSystem>
       <StackReserveSize>4000000</StackReserveSize>
       <StackCommitSize>4000000</StackCommitSize>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -263,6 +266,7 @@
       <SubSystem>Console</SubSystem>
       <StackReserveSize>4000000</StackReserveSize>
       <StackCommitSize>4000000</StackCommitSize>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|Win32'">
@@ -288,6 +292,7 @@
       <SubSystem>Console</SubSystem>
       <StackReserveSize>4000000</StackReserveSize>
       <StackCommitSize>4000000</StackCommitSize>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|x64'">
@@ -317,6 +322,7 @@
       <StackReserveSize>4000000</StackReserveSize>
       <StackCommitSize>4000000</StackCommitSize>
       <TargetMachine>MachineX64</TargetMachine>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|Win32'">
@@ -342,6 +348,7 @@
       <SubSystem>Console</SubSystem>
       <StackReserveSize>4000000</StackReserveSize>
       <StackCommitSize>4000000</StackCommitSize>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'">
@@ -371,6 +378,7 @@
       <StackReserveSize>4000000</StackReserveSize>
       <StackCommitSize>4000000</StackCommitSize>
       <TargetMachine>MachineX64</TargetMachine>
+      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
