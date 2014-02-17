@@ -553,12 +553,14 @@ namespace embree
     }
 
     /* perform strand split */
-    else { //if (bestSAH == strandSAH) {
+    else if (bestSAH == strandSAH) {
       const size_t center = strandSplit.split(&curves[0],begin,end);
       assert((center-begin > 0) && (end-center) > 0);
       lbounds = strandSplit.bounds0;
       rbounds = strandSplit.bounds1;
       return center;
+    } else {
+      throw std::runtime_error("bvh4hair_builder: internal error");
     }
   }
 
@@ -596,8 +598,8 @@ namespace embree
       /*! split selected child */
       NAABBox3fa lbounds, rbounds;
       size_t center = split(cbegin[bestChild],cend[bestChild],cbounds[bestChild],lbounds,rbounds);
-      cbounds[bestChild] = lbounds; cbegin[numChildren] = center; cend[numChildren] = cend[bestChild];
-      cbounds[bestChild] = lbounds; cend  [bestChild] = center; 
+      cbounds[numChildren] = rbounds; cbegin[numChildren] = center; cend[numChildren] = cend[bestChild];
+      cbounds[bestChild  ] = lbounds;                               cend[bestChild  ] = center; 
       numChildren++;
       
     } while (numChildren < BVH4Hair::N);

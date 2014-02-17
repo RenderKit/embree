@@ -48,7 +48,7 @@ namespace embree
     static const size_t items_mask = (1 << (alignment-1))-1;  
 
     /*! Empty node */
-    static const size_t emptyNode = 1;
+    static const size_t emptyNode = 2;
 
     /*! Invalid node, used as marker in traversal */
     static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | 2;
