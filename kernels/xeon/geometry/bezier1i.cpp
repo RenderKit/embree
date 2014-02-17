@@ -38,8 +38,13 @@ namespace embree
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
     const unsigned primID = prim.primID();
+#if !defined(PRE_SUBDIVISION_HACK)
     const BezierCurves* curves = scene->getBezierCurves(geomID);
     const int vtx = curves->curve(primID);
+#else
+    const BezierCurves* curves = scene->getBezierCurves(0);
+    const int vtx = curves->curve(geomID);    
+#endif
     const Vec3fa& p0 = curves->vertex(vtx);
     new (dst) Bezier1i(&p0,geomID,primID,curves->mask);
     prims++;

@@ -262,7 +262,8 @@
     <Link>
       <AdditionalOptions>/ignore:4217 /ignore:4049 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>$(OutDir)sys.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
       <ModuleDefinitionFile>embree.def</ModuleDefinitionFile>
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -300,7 +301,8 @@
     <Link>
       <AdditionalOptions>/ignore:4217 /ignore:4049 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>$(OutDir)sys.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
       <ModuleDefinitionFile>embree.def</ModuleDefinitionFile>
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -339,7 +341,8 @@
       <ModuleDefinitionFile>embree.def</ModuleDefinitionFile>
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
-      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|x64'">
@@ -378,7 +381,8 @@
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <TargetMachine>MachineX64</TargetMachine>
-      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|Win32'">
@@ -414,7 +418,8 @@
       <ModuleDefinitionFile>embree.def</ModuleDefinitionFile>
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
-      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'">
@@ -453,7 +458,8 @@
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <TargetMachine>MachineX64</TargetMachine>
-      <IgnoreSpecificDefaultLibraries>libcpmt.lib</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -482,6 +488,7 @@
     <ClInclude Include="..\common\stat.h" />
     <ClInclude Include="bvh2hair\bvh2hair.h" />
     <ClInclude Include="bvh2hair\bvh2hair_builder.h" />
+    <ClInclude Include="bvh2hair\bvh2hair_statistics.h" />
     <ClInclude Include="bvh4\bvh4.h" />
     <ClInclude Include="bvh4\bvh4_builder.h" />
     <ClInclude Include="bvh4\bvh4_builder_binner.h" />
@@ -593,6 +600,7 @@
     <ClCompile Include="..\common\tasksys.cpp" />
     <ClCompile Include="bvh2hair\bvh2hair.cpp" />
     <ClCompile Include="bvh2hair\bvh2hair_builder.cpp" />
+    <ClCompile Include="bvh2hair\bvh2hair_statistics.cpp" />
     <ClCompile Include="bvh4\bvh4.cpp" />
     <ClCompile Include="bvh4\bvh4_builder.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_binner.cpp" />

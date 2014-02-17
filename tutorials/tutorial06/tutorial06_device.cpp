@@ -169,7 +169,7 @@ inline Vec3f face_forward(const Vec3fa& dir, const Vec3fa& Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-Vec3f renderPixelSeed(int x, int y, int& seed, const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p)
+Vec3f renderPixelSeed(float x, float y, int& seed, const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p)
 {
   /* radiance accumulator and weight */
   Vec3f L = Vec3f(0.0f);
@@ -262,7 +262,7 @@ Vec3f renderPixelSeed(int x, int y, int& seed, const Vec3f& vx, const Vec3f& vy,
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   int seed = x*233+y*234234+237;
   Vec3f L = Vec3f(0.0f,0.0f,0.0f);

@@ -151,6 +151,11 @@ namespace embree
       BBox3fa bounds0, bounds1;
     };
 
+  private:
+
+    /*! subdivide very curved hairs */
+    void subdivide(float ratio);
+
     /*! calculate bounds for range of primitives */
     static const BBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end);
 
@@ -177,6 +182,6 @@ namespace embree
     size_t minLeafSize;    //!< minimal size of a leaf
     size_t maxLeafSize;    //!< maximal size of a leaf
     BVH2Hair* bvh;         //!< output
-    Bezier1* curves;       //!< array with all curves
+    vector_t<Bezier1> curves; //!< array with all curves
   };
 }

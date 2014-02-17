@@ -284,6 +284,19 @@ namespace embree
 
     void BVH8iBuilderTriangle8::build(size_t threadIndex, size_t threadCount) 
     {
+      // DBG_PRINT(sizeof(BVH8i::CompressedNode));
+      // DBG_PRINT(sizeof(BVH8i::Node));
+
+      // BVH8i::CompressedNode test;
+      // for (size_t i=0;i<8;i++) 
+      // 	test.lower_x[i] = 100 + i;
+      // for (size_t i=0;i<8;i++) 
+      // 	test.upper_x[i] = 200 + i;
+
+      // avxi tt = _mm256_cvtepu8_epi32(*(__m128i*)test.lower_x);
+      // DBG_PRINT(tt);
+      // exit(0);
+
       bvh4i_builder8->build(threadIndex,threadCount);
       unsigned int numBVH4iNodes = countBVH4iNodes((BVH4i::Node*)bvh4i_builder8->bvh->nodePtr(),bvh4i_builder8->bvh->root);
       unsigned int totalLeaves = countLeavesButtomUp((BVH4i::Node*)bvh4i_builder8->bvh->nodePtr(),bvh4i_builder8->bvh->root);

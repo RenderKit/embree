@@ -26,6 +26,8 @@
 #include "geometry.h"
 #include "common/buildsource.h"
 
+//#define PRE_SUBDIVISION_HACK
+
 namespace embree
 {
   /*! Base class all scenes are derived from */
@@ -76,6 +78,7 @@ namespace embree
     /* get mesh by ID */
     __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i]; }
     __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i]; }
+
     __forceinline       Geometry* get_locked(size_t i)  { 
       Lock<AtomicMutex> lock(geometriesMutex);
       Geometry *g = geometries[i]; 
@@ -217,25 +220,41 @@ namespace embree
       }
       
       size_t groups () const { 
+#if !defined(PRE_SUBDIVISION_HACK)
         return scene->geometries.size();
+#else
+        BezierCurves* curves = scene->getBezierCurves(0);
+	return curves->numCurves;
+#endif
       }
       
       size_t prims (size_t group, size_t* numVertices) const 
       {
+#if !defined(PRE_SUBDIVISION_HACK)
         if (scene->get(group) == NULL || scene->get(group)->type != BEZIER_CURVES) return 0;
         BezierCurves* curves = scene->getBezierCurves(group);
         if (!curves->isEnabled() || curves->numTimeSteps != numTimeSteps) return 0;
         if (numVertices) *numVertices = curves->numVertices;
         return curves->numCurves;
+#else
+	return 8;
+#endif
       }
 
       const BBox3fa bounds(size_t group, size_t prim) const 
       {
+#if !defined(PRE_SUBDIVISION_HACK)
 	assert(scene->get(group) != NULL);
 	assert(scene->get(group)->type == BEZIER_CURVES);
         BezierCurves* curves = scene->getBezierCurves(group);
         if (curves == NULL) return empty;
         return curves->bounds(prim);
+#else
+        BezierCurves* curves = scene->getBezierCurves(0);
+        //return curves->bounds(group);
+	assert(prim < 8);
+	return curves->subBounds(group,prim);
+#endif
       }
 
     public:

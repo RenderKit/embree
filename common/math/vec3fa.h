@@ -50,8 +50,12 @@ namespace embree
     __forceinline Vec3fa( const float a ) : m128(_mm_set1_ps(a)) {}
     __forceinline Vec3fa( const float x, const float y, const float z) : m128(_mm_set_ps(z, z, y, x)) {}
 
-    __forceinline explicit Vec3fa( const Vec3fa& other, const int a1) { m128 = other.m128; a = a1; }
-    __forceinline explicit Vec3fa( const float x, const float y, const float z, const int a) : x(x), y(y), z(z), a(a) {}
+    __forceinline explicit Vec3fa( const Vec3fa& other, const int      a1) { m128 = other.m128; a = a1; }
+    __forceinline explicit Vec3fa( const Vec3fa& other, const unsigned a1) { m128 = other.m128; a = a1; }
+    __forceinline explicit Vec3fa( const Vec3fa& other, const float    w1) { m128 = other.m128; w = w1; }
+    __forceinline explicit Vec3fa( const float x, const float y, const float z, const int      a) : x(x), y(y), z(z), a(a) {}
+    __forceinline explicit Vec3fa( const float x, const float y, const float z, const unsigned a) : x(x), y(y), z(z), a(a) {}
+    __forceinline explicit Vec3fa( const float x, const float y, const float z, const float    w) : x(x), y(y), z(z), w(w) {}
 
     __forceinline explicit Vec3fa( const __m128i a ) : m128(_mm_cvtepi32_ps(a)) {}
 
@@ -120,14 +124,50 @@ namespace embree
   __forceinline const Vec3fa min( const Vec3fa& a, const Vec3fa& b ) { return _mm_min_ps(a.m128,b.m128); }
   __forceinline const Vec3fa max( const Vec3fa& a, const Vec3fa& b ) { return _mm_max_ps(a.m128,b.m128); }
 
+#if defined(__SSE4_1__)
+    __forceinline Vec3fa mini(const Vec3fa& a, const Vec3fa& b) {
+      const ssei ai = _mm_castps_si128(a);
+      const ssei bi = _mm_castps_si128(b);
+      const ssei ci = _mm_min_epi32(ai,bi);
+      return _mm_castsi128_ps(ci);
+    }
+#endif
+    
+#if defined(__SSE4_1__)
+    __forceinline Vec3fa maxi(const Vec3fa& a, const Vec3fa& b) {
+      const ssei ai = _mm_castps_si128(a);
+      const ssei bi = _mm_castps_si128(b);
+      const ssei ci = _mm_max_epi32(ai,bi);
+      return _mm_castsi128_ps(ci);
+    }
+#endif
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Ternary Operators
+  ////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__AVX2__)
+  __forceinline Vec3fa madd  ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return _mm_fmadd_ps(a,b,c); }
+  __forceinline Vec3fa msub  ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return _mm_fmsub_ps(a,b,c); }
+  __forceinline Vec3fa nmadd ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return _mm_fnmadd_ps(a,b,c); }
+  __forceinline Vec3fa nmsub ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return _mm_fnmsub_ps(a,b,c); }
+#else
+  __forceinline Vec3fa madd  ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return a*b+c; }
+  __forceinline Vec3fa msub  ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return a*b-c; }
+  __forceinline Vec3fa nmadd ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return -a*b-c;}
+  __forceinline Vec3fa nmsub ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return c-a*b; }
+#endif
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline Vec3fa& operator +=( Vec3fa& a, const Vec3fa& b ) { return a = a + b; }
   __forceinline Vec3fa& operator -=( Vec3fa& a, const Vec3fa& b ) { return a = a - b; }
-  __forceinline Vec3fa& operator *=( Vec3fa& a, const float b ) { return a = a * b; }
-  __forceinline Vec3fa& operator /=( Vec3fa& a, const float b ) { return a = a / b; }
+  __forceinline Vec3fa& operator *=( Vec3fa& a, const Vec3fa& b ) { return a = a * b; }
+  __forceinline Vec3fa& operator *=( Vec3fa& a, const float   b ) { return a = a * b; }
+  __forceinline Vec3fa& operator /=( Vec3fa& a, const Vec3fa& b ) { return a = a / b; }
+  __forceinline Vec3fa& operator /=( Vec3fa& a, const float   b ) { return a = a / b; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
@@ -175,9 +215,10 @@ namespace embree
     return Vec3fa(shuffle<1,2,0,3>(msub(a0,b0,a1*b1)));
   }
 
-  __forceinline float  length   ( const Vec3fa& a )                    { return sqrt(dot(a,a)); }
-  __forceinline Vec3fa normalize( const Vec3fa& a )                    { return a*rsqrt(dot(a,a)); }
+  __forceinline float  length   ( const Vec3fa& a )                  { return sqrt(dot(a,a)); }
+  __forceinline Vec3fa normalize( const Vec3fa& a )                  { return a*rsqrt(dot(a,a)); }
   __forceinline float  distance ( const Vec3fa& a, const Vec3fa& b ) { return length(a-b); }
+  __forceinline float  halfArea ( const Vec3fa& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Select

@@ -205,6 +205,58 @@ namespace embree
     float sah8 ();
     float sah8 (Node*base, BVH4i::NodeRef& node, const BBox3fa& bounds);
 
+    struct __align(8) CompressedNode
+    {
+      float min_x;
+      float max_x;
+      float min_y;
+      float max_y;
+      float min_z;
+      float max_z;
+      float dummy[2];
+
+      char lower_x[8];
+      char upper_x[8];
+      char lower_y[8];
+      char upper_y[8];
+      char lower_z[8];
+      char upper_z[8];
+
+      BVH4i::NodeRef children[8];            
+
+      CompressedNode() {}
+      CompressedNode( const BVH8i::Node &node8 )
+        {
+          min_x = reduce_min(node8.lower_x);
+          max_x = reduce_max(node8.upper_x);
+          min_y = reduce_min(node8.lower_y);
+          max_y = reduce_max(node8.upper_y);
+          min_z = reduce_min(node8.lower_z);
+          max_z = reduce_max(node8.upper_z);
+          for (size_t i=0;i<8;i++) children[i] = node8.children[i];		
+
+          const float diff_x = 1.0f / (max_x - min_x);
+          const float diff_y = 1.0f / (max_y - min_y);
+          const float diff_z = 1.0f / (max_z - min_z);
+
+          for (size_t i=0;i<8;i++)
+            {
+              lower_x[i] = (unsigned int)floorf((node8.lower_x[i] - min_x) * diff_x);
+              upper_x[i] = (unsigned int) ceilf((node8.upper_x[i] - min_x) * diff_x);
+
+              lower_y[i] = (unsigned int)floorf((node8.lower_y[i] - min_y) * diff_y);
+              upper_y[i] = (unsigned int) ceilf((node8.upper_y[i] - min_y) * diff_y);
+
+              lower_z[i] = (unsigned int)floorf((node8.lower_z[i] - min_z) * diff_z);
+              upper_z[i] = (unsigned int) ceilf((node8.upper_z[i] - min_z) * diff_z);
+            }
+
+
+        }
+    };
+
+    
+
 #endif
 
   public:

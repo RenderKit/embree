@@ -22,7 +22,6 @@
 
 namespace embree
 {
-
   __forceinline bool intersect_box(const BBox3fa& box, const Ray& ray)
   {
 #if 0
@@ -53,9 +52,12 @@ namespace embree
     struct Precalculations 
     {
       __forceinline Precalculations (const Ray& ray)
-      : ray_space(rcp(frame(ray.dir))) {}
+	: ray_space(rcp(frame(ray.dir))), mailbox(-1),mailbox_index(0) {}
 
       LinearSpace3fa ray_space;
+
+      avxi mailbox;      
+      unsigned int mailbox_index;
     };
 
     static __forceinline bool intersectCylinder(const Ray& ray,const Vec3fa &v0,const Vec3fa &v1,const Vec3fa &v2,const Vec3fa &v3)
@@ -115,7 +117,8 @@ namespace embree
       return any(vmask);
     }
 
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
+
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
@@ -125,7 +128,7 @@ namespace embree
       const Vec3fa &v3 = curve_in.p[3];
 
       //if (!intersectCylinder(ray,v0,v1,v2,v3)) return;
-      if (!intersectBoxes(ray,v0,v1,v2,v3)) return;
+      //if (!intersectBoxes(ray,v0,v1,v2,v3)) return;
 
       /* transform control points into ray space */
       Vec3fa w0 = xfmVector(pre.ray_space,v0-ray.org); w0.w = v0.w;
@@ -136,7 +139,7 @@ namespace embree
 
       /* subdivide 3 levels at once */ 
       const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-      const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+      const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
 
       /* approximative intersection with cone */
       const avx4f v = p1-p0;
@@ -156,7 +159,7 @@ namespace embree
       size_t i = select_min(valid,t);
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(__INTERSECTION_FILTER__) && !defined(PRE_SUBDIVISION_HACK)
       int geomID = curve_in.geomID;
       Geometry* geometry = ((Scene*)geom)->get(geomID);
       if (!likely(geometry->hasIntersectionFilter1())) 
@@ -173,7 +176,7 @@ namespace embree
         ray.Ng = T;
         ray.geomID = curve_in.geomID;
         ray.primID = curve_in.primID;
-#if defined(__INTERSECTION_FILTER__)
+#if defined(__INTERSECTION_FILTER__)  && !defined(PRE_SUBDIVISION_HACK)
           return;
       }
 
@@ -191,10 +194,20 @@ namespace embree
 #endif
     }
 
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
     {
       for (size_t i=0; i<num; i++)
-        intersect(pre,ray,curves[i],geom);
+	{
+#if defined(PRE_SUBDIVISION_HACK)
+	  if (unlikely(any(pre.mailbox == curves[i].geomID))) { continue; }
+#endif
+	  intersect(pre,ray,curves[i],geom);
+
+#if defined(PRE_SUBDIVISION_HACK)
+	  pre.mailbox[pre.mailbox_index] = curves[i].geomID;
+	  pre.mailbox_index = (pre.mailbox_index+1)%8;
+#endif
+	}
     }
 
     static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom) 
@@ -232,7 +245,7 @@ namespace embree
       if (none(valid)) return false;
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(__INTERSECTION_FILTER__)  && !defined(PRE_SUBDIVISION_HACK)
 
       size_t i = select_min(valid,t);
       int geomID = curve_in.geomID;

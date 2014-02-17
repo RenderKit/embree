@@ -26,10 +26,10 @@ uniform float scale = 0.0001f;
 extern renderPixelFunc renderPixel;
 
 /* standard rendering function for each tutorial */
-Vec3f renderPixelStandard(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
+Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
 
 /* renders a single pixel with eyelight shading */
-Vec3f renderPixelEyeLight(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelEyeLight(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -51,7 +51,7 @@ Vec3f renderPixelEyeLight(int x, int y, const uniform Vec3f& vx, const uniform V
 }
 
 /* renders a single pixel with ambient occlusion shading */
-Vec3f renderPixelAmbientOcclusion(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -111,7 +111,7 @@ Vec3f renderPixelAmbientOcclusion(int x, int y, const uniform Vec3f& vx, const u
 }
 
 /* renders a single pixel with UV shading */
-Vec3f renderPixelUV(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelUV(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -133,7 +133,7 @@ Vec3f renderPixelUV(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& 
 }
 
 /* renders a single pixel with geometry normal shading */
-Vec3f renderPixelNg(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelNg(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -164,7 +164,7 @@ Vec3f randomColor(const int ID)
 }
 
 /* geometry ID shading */
-Vec3f renderPixelGeomID(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelGeomID(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -186,7 +186,7 @@ Vec3f renderPixelGeomID(int x, int y, const uniform Vec3f& vx, const uniform Vec
 }
 
 /* geometry ID and primitive ID shading */
-Vec3f renderPixelGeomIDPrimID(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -208,7 +208,7 @@ Vec3f renderPixelGeomIDPrimID(int x, int y, const uniform Vec3f& vx, const unifo
 }
 
 /* vizualizes the traversal cost of a pixel */
-Vec3f renderPixelCycles(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelCycles(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -231,7 +231,7 @@ Vec3f renderPixelCycles(int x, int y, const uniform Vec3f& vx, const uniform Vec
 }
 
 /* renders a single pixel with UV shading and shoot ray 16 times for measurements */
-Vec3f renderPixelUV16(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelUV16(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
