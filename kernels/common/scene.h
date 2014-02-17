@@ -238,8 +238,7 @@ namespace embree
         return curves->numCurves;
 #else
 	return 8;
-	//return 4;
-
+	//return 1;       
 #endif
       }
 
@@ -260,6 +259,8 @@ namespace embree
 
         //box.extend( curves->subBounds(group,2*prim+0) );
         //box.extend( curves->subBounds(group,2*prim+1) );
+
+        //box =  curves->bounds(group);
 
         return box;
 #endif
