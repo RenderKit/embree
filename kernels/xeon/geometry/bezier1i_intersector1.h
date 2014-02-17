@@ -118,7 +118,7 @@ namespace embree
     }
 
 
-    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
@@ -194,7 +194,7 @@ namespace embree
 #endif
     }
 
-    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
     {
       for (size_t i=0; i<num; i++)
 	{
@@ -286,7 +286,11 @@ namespace embree
   {
     typedef Bezier1i Primitive;
 
-    static __forceinline void intersect(Ray& ray, const Bezier1i& curve_in, const void* geom)
+    struct Precalculations {
+      __forceinline Precalculations (const Ray& ray) {}
+    };
+
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
@@ -369,20 +373,20 @@ namespace embree
       }
     }
 
-    static __forceinline void intersect(Ray& ray, const Bezier1i* curves, size_t num, void* geom)
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
     {
       for (size_t i=0; i<num; i++)
-        intersect(ray,curves[i],geom);
+        intersect(pre,ray,curves[i],geom);
     }
 
-    static __forceinline bool occluded(Ray& ray, const Bezier1i& curve_in, const void* geom) {
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom) {
       return false;
     }
 
-    static __forceinline bool occluded(Ray& ray, const Bezier1i* curves, size_t num, void* geom) 
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom) 
     {
       for (size_t i=0; i<num; i++) 
-        if (occluded(ray,curves[i],geom))
+        if (occluded(pre,ray,curves[i],geom))
           return true;
 
       return false;
