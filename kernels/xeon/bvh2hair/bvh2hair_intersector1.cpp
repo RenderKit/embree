@@ -150,7 +150,7 @@ namespace embree
         stackPtr--;
         NodeRef cur = stackPtr->ref;
         float tNear = stackPtr->tNear;
-        float tFar  = stackPtr->tFar;
+        float tFar  = min(stackPtr->tFar,ray.tfar);
         
         /*! if popped node is too far, pop next one */
         if (unlikely(tNear > ray.tfar))
