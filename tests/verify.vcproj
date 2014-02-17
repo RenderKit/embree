@@ -69,6 +69,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				IgnoreDefaultLibraryNames="libcpmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				StackReserveSize="4000000"
@@ -147,6 +148,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
+				IgnoreDefaultLibraryNames="libcpmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				StackReserveSize="4000000"
