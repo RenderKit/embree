@@ -24,8 +24,8 @@
 
 namespace embree
 {
-  /*! BVH2 with rotated bounds. */
-  class BVH2Hair : public Bounded
+  /*! BVH4 with unaligned bounds. */
+  class BVH4Hair : public Bounded
   {
     ALIGNED_CLASS;
   public:
@@ -35,7 +35,7 @@ namespace embree
     struct UnalignedNode;
 
     /*! branching width of the tree */
-    static const size_t N = 2;
+    static const size_t N = 4;
 
     /*! Number of address bits the Node and primitives are aligned
         to. Maximally 2^alignment-2 many primitive blocks per leaf are
@@ -134,33 +134,46 @@ namespace embree
     {
       /*! Clears the node. */
       __forceinline void clear() {
-        aabb[0] = aabb[1] = empty;
-        children[0] = children[1] = emptyNode;
+        lower_x = lower_y = lower_z = pos_inf; 
+        upper_x = upper_y = upper_z = neg_inf;
+        children[0] = children[1] = children[2] = children[3] = emptyNode;
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3fa& b, const NodeRef& childID) {
-        assert(i < 2);
-        aabb[i] = b;
+      __forceinline void set(size_t i, const BBox3fa& b, const NodeRef& childID) 
+      {
+        assert(i < 4);
+        lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
+        upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
         children[i] = childID;
       }
 
       /*! Returns bounds of specified child. */
-      __forceinline const BBox3fa& bounds(size_t i) const { assert(i < 2); return aabb[i]; }
+      __forceinline const BBox3fa& bounds(size_t i) const { 
+        assert(i < 4);
+        const Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
+        const Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
+        return BBox3fa(lower,upper);
+      }
 
       /*! Returns the extend of the bounds of the ith child */
       __forceinline Vec3fa extend(size_t i) const {
-        assert(i<2);
-        return aabb[i].size();
+        assert(i < 4);
+        return bounds(i).size();
       }
 
       /*! Returns reference to specified child */
-      __forceinline       NodeRef& child(size_t i)       { assert(i<2); return children[i]; }
-      __forceinline const NodeRef& child(size_t i) const { assert(i<2); return children[i]; }
+      __forceinline       NodeRef& child(size_t i)       { assert(i<4); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<4); return children[i]; }
 
     public:
-      BBox3fa aabb    [2];   //!< left and right axis aligned bounding box
-      NodeRef children[2];   //!< Pointer to the 2 children (can be a node or leaf)
+      NodeRef children[4];    //!< Pointer to the 4 children (can be a node or leaf)
+      ssef lower_x;           //!< X dimension of lower bounds of all 4 children.
+      ssef upper_x;           //!< X dimension of upper bounds of all 4 children.
+      ssef lower_y;           //!< Y dimension of lower bounds of all 4 children.
+      ssef upper_y;           //!< Y dimension of upper bounds of all 4 children.
+      ssef lower_z;           //!< Z dimension of lower bounds of all 4 children.
+      ssef upper_z;           //!< Z dimension of upper bounds of all 4 children.
     };
 
     /*! Node with unaligned bounds */
@@ -168,17 +181,35 @@ namespace embree
     {
       /*! Clears the node. */
       __forceinline void clear() {
-        naabb[0] = naabb[1] = one;
-        children[0] = children[1] = emptyNode;
+        naabb = one;
+        for (size_t i=0; i<4; j++) children[i]= emptyNode;
       }
 
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, const NAABBox3fa& b, const NodeRef& childID) 
       {
-        assert(i < 2);
-        naabb[i] = b.space;
-        naabb[i].p -= b.bounds.lower;
-        naabb[i] = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19),b.bounds.upper-b.bounds.lower))*naabb[i];
+        assert(i < 4);
+
+        AffineSpace3fa space = b.space;
+        space.p -= b.bounds.lower;
+        space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19),b.bounds.upper-b.bounds.lower))*space;
+        
+        naabb.l.vx.x[i] = space.l.vx.x;
+        naabb.l.vx.y[i] = space.l.vx.y;
+        naabb.l.vx.z[i] = space.l.vx.z;
+
+        naabb.l.vy.x[i] = space.l.vy.x;
+        naabb.l.vy.y[i] = space.l.vy.y;
+        naabb.l.vy.z[i] = space.l.vy.z;
+
+        naabb.l.vz.x[i] = space.l.vz.x;
+        naabb.l.vz.y[i] = space.l.vz.y;
+        naabb.l.vz.z[i] = space.l.vz.z;
+
+        naabb.p.x[i] = space.p.x;
+        naabb.p.y[i] = space.p.y;
+        naabb.p.z[i] = space.p.z;
+
         children[i] = childID;
       }
 
@@ -196,8 +227,8 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<2); return children[i]; }
 
     public:
-      AffineSpace3fa naabb   [2];   //!< left and right non-axis aligned bounding box (bounds are [0,1] in specified space)
-      NodeRef        children[2];   //!< Pointer to the 2 children (can be a node or leaf)
+      NodeRef        children[4];   //!< Pointer to the children (can be a node or leaf)
+      AffineSpace3<ssef> naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
 
     /*! Hair Leaf */
@@ -267,14 +298,14 @@ namespace embree
 
   public:
 
-    /*! BVH2Hair default constructor. */
-    BVH2Hair ();
+    /*! BVH4Hair default constructor. */
+    BVH4Hair ();
 
-    /*! BVH2Hair destruction */
-    ~BVH2Hair ();
+    /*! BVH4Hair destruction */
+    ~BVH4Hair ();
 
-    /*! BVH2Hair instantiations */
-    static Accel* BVH2HairBezier1(Scene* scene);
+    /*! BVH4Hair instantiations */
+    static Accel* BVH4HairBezier1(Scene* scene);
 
     /*! initializes the acceleration structure */
     void init (size_t numPrimitives = 0);

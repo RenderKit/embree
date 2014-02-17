@@ -21,6 +21,7 @@ namespace embree
 { 
   namespace isa
   {
+#if 0
     __forceinline bool BVH2HairIntersector1::intersectBox(const BBox3fa& aabb, const Ray& ray, const Vec3fa& org_rdir, const Vec3fa& rdir, float& tNear, float& tFar)
     {
 #if defined (__AVX2__)
@@ -45,36 +46,36 @@ namespace embree
       return tNear <= tFar;
 #endif
     }
-
-    __forceinline bool BVH2HairIntersector1::intersectBox(const AffineSpace3fa& naabb, const Ray& ray, float& tNear, float& tFar)
-    {
-      const Vec3fa dir = xfmVector(naabb,ray.dir);
-      const Vec3fa rdir = rcp(dir);
-      const Vec3fa org = xfmPoint (naabb,ray.org);
-      const Vec3fa tLowerXYZ = - org * rdir;     // (Vec3fa(zero) - org) * rdir;
-      const Vec3fa tUpperXYZ = rdir + tLowerXYZ; // (Vec3fa(one ) - org) * rdir;
-
-#if defined(__SSE4_1__)
-      const Vec3fa tNearXYZ = mini(tLowerXYZ,tUpperXYZ);
-      const Vec3fa tFarXYZ  = maxi(tLowerXYZ,tUpperXYZ);
-#else
-      const Vec3fa tNearXYZ = min(tLowerXYZ,tUpperXYZ);
-      const Vec3fa tFarXYZ  = max(tLowerXYZ,tUpperXYZ);
 #endif
-      tNear = max(reduce_max(tNearXYZ),tNear);
-      tFar  = min(reduce_min(tFarXYZ ),tFar);
-      return tNear <= tFar;
-    }
 
-    static __forceinline bool intersectLineBoxes(const Ray& ray,const avx4f &p0, const avx4f &p1)
+    __forceinline size_t BVH2HairIntersector1::intersectBox(const AffineSpace3<ssef>& naabb, const Ray& ray, ssef& tNear, ssef& tFar)
     {
-      const avx2f d0(p0.x,p0.y);
-      const avx2f d1(p1.x,p1.y);
-      const avx2f d_min = min(d0,d1) - avx2f(p0.w);
-      const avx2f d_max = max(d0,d1) + avx2f(p1.w);
-      const avxb vmask_x = (d_min.x <= avxf(zero)) & (d_max.x >= avxf(zero));
-      const avxb vmask_y = (d_min.y <= avxf(zero)) & (d_max.y >= avxf(zero));
-      return any(vmask_x & vmask_y);
+      const sse3f dir = xfmVector(naabb,sse3f(ray.dir));
+      const sse3f rdir = rcp(dir);
+      const sse3f org = xfmPoint (naabb,sse3f(ray.org));
+      const sse3f tLowerXYZ = - org * rdir;     // (Vec3fa(zero) - org) * rdir;
+      const sse3f tUpperXYZ = rdir + tLowerXYZ; // (Vec3fa(one ) - org) * rdir;
+
+//#if defined(__SSE4_1__)
+//      const sse3f tNearXYZ = mini(tLowerXYZ,tUpperXYZ);
+//      const sse3f tFarXYZ  = maxi(tLowerXYZ,tUpperXYZ);
+//#else
+      const sse3f tNearXYZ = min(tLowerXYZ,tUpperXYZ);
+      const sse3f tFarXYZ  = max(tLowerXYZ,tUpperXYZ);
+//#endif
+
+//#if defined(__SSE4_1__)
+//        tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
+//        tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
+//        const sseb vmask = cast(tNear) > cast(tFar);
+//        mask = movemask(vmask)^0xf;
+//#else
+        tNear = max(tNearXYZ.X,tNearXYZ.Y,tNearXYZ.Z,tNear);
+        tFar  = min(tFarXYZ.Z ,tFarXYZ.Y ,tFarXYZ.Z ,tFar);
+        const sseb vmask = tNear <= tFar;
+        mask = movemask(vmask);
+//#endif
+      return mask;
     }
 
     __forceinline void BVH2HairIntersector1::intersectBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier)
@@ -96,8 +97,6 @@ namespace embree
       /* subdivide 3 levels at once */ 
       const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
       const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
-
-      //if (!intersectLineBoxes(ray,p0,p1)) { return; }
 
       /* approximative intersection with cone */
       const avx4f v = p1-p0;
@@ -131,6 +130,160 @@ namespace embree
 
     void BVH2HairIntersector1::intersect(const BVH2Hair* bvh, Ray& ray)
     {
+      /*! perform per ray precalculations required by the primitive intersector */
+      const Precalculations pre(ray);
+
+      /*! stack state */
+      StackItem<NodeRef> stack[stackSize];  //!< stack of nodes 
+      StackItem<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
+      StackItem<NodeRef>* stackEnd = stack+stackSize;
+      stack[0].ptr = bvh->root;
+      stack[0].tNear = ray.tNear;
+      stack[0].tFar = ray.tFar;
+      
+      /*! offsets to select the side that becomes the lower or upper bound */
+      const size_t nearX = ray.dir.x >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
+      const size_t nearY = ray.dir.y >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
+      const size_t nearZ = ray.dir.z >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
+      
+      /*! load the ray into SIMD registers */
+      const sse3f norg(-ray.org.x,-ray.org.y,-ray.org.z);
+      const Vec3fa ray_rdir = rcp_safe(ray.dir);
+      const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+      const Vec3fa ray_org_rdir = ray.org*ray_rdir;
+      const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+      ssef tNear(ray.tnear);
+      ssef tFar(ray.tfar);
+
+      /* pop loop */
+      while (true) pop:
+      {
+        /*! pop next node */
+        if (unlikely(stackPtr == stack)) break;
+        stackPtr--;
+        NodeRef cur = NodeRef(stackPtr->ptr);
+        
+        /*! if popped node is too far, pop next one */
+        if (unlikely(stackPtr->tNear > ray.tfar))
+          continue;
+        
+        /* downtraversal loop */
+        while (true)
+        {
+          /*! stop if we found a leaf */
+          if (unlikely(cur.isLeaf())) break;
+          STAT3(normal.trav_nodes,1,1,1);
+          
+          size_t mask;
+          ssef tNear = tNear, tFar = tFar;
+
+          /*! process nodes with aligned bounds */
+          if (likely(cur.isAlignedNode()))
+          {
+            /*! single ray intersection with 4 boxes */
+            const AlignedNode* node = cur.alignedNode();
+            const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
+#if defined (__AVX2__)
+            const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
+            const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);
+            const ssef tNearZ = msub(load4f((const char*)node+nearZ), rdir.z, org_rdir.z);
+            const ssef tFarX  = msub(load4f((const char*)node+farX ), rdir.x, org_rdir.x);
+            const ssef tFarY  = msub(load4f((const char*)node+farY ), rdir.y, org_rdir.y);
+            const ssef tFarZ  = msub(load4f((const char*)node+farZ ), rdir.z, org_rdir.z);
+#else
+            const ssef tNearX = (norg.x + load4f((const char*)node+nearX)) * rdir.x;
+            const ssef tNearY = (norg.y + load4f((const char*)node+nearY)) * rdir.y;
+            const ssef tNearZ = (norg.z + load4f((const char*)node+nearZ)) * rdir.z;
+            const ssef tFarX  = (norg.x + load4f((const char*)node+farX )) * rdir.x;
+            const ssef tFarY  = (norg.y + load4f((const char*)node+farY )) * rdir.y;
+            const ssef tFarZ  = (norg.z + load4f((const char*)node+farZ )) * rdir.z;
+#endif
+            
+#if defined(__SSE4_1__)
+            tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
+            tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
+            const sseb vmask = cast(tNear) > cast(tFar);
+            mask = movemask(vmask)^0xf;
+#else
+            tNear = max(tNearX,tNearY,tNearZ,tNear);
+            tFar  = min(tFarX ,tFarY ,tFarZ ,tNear);
+            const sseb vmask = tNear <= tFar;
+            mask = movemask(vmask);
+#endif
+          }
+
+          /*! process nodes with unaligned bounds */
+          else {
+            const UnalignedNode* node = cur.unalignedNode();
+            mask = intersectBox(node->naabb,ray,rNear,tFar);
+          }
+
+          const AlignedNode* node = cur.alignedNode(); // FIXME: raises assertion but is correct
+
+          /*! if no child is hit, pop next node */
+          if (unlikely(mask == 0))
+            goto pop;
+          
+          /*! one child is hit, continue with that child */
+          size_t r = __bscf(mask);
+          if (likely(mask == 0)) {
+            cur = node->child(r);
+            assert(cur != BVH4::emptyNode);
+            continue;
+          }
+          
+          /*! two children are hit, push far child, and continue with closer child */
+          NodeRef c0 = node->child(r); const float n0 = tNear[r]; const float f0 = tFar[r]; 
+          r = __bscf(mask);
+          NodeRef c1 = node->child(r); const float n1 = tNear[r]; const float f1 = tNear[r];
+          assert(c0 != BVH4::emptyNode);
+          assert(c1 != BVH4::emptyNode);
+          if (likely(mask == 0)) {
+            assert(stackPtr < stackEnd); 
+            if (d0 < d1) { stackPtr->ptr = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++; cur = c0; continue; }
+            else         { stackPtr->ptr = c0; stackPtr->tNear = n0; stackPtr->tFar = f0; stackPtr++; cur = c1; continue; }
+          }
+          
+          /*! Here starts the slow path for 3 or 4 hit children. We push
+           *  all nodes onto the stack to sort them there. */
+          assert(stackPtr < stackEnd); 
+          stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++;
+          assert(stackPtr < stackEnd); 
+          stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++;
+          
+          /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
+          assert(stackPtr < stackEnd); 
+          r = __bscf(mask);
+          NodeRef c = node->child(r); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          assert(c != BVH4::emptyNode);
+          if (likely(mask == 0)) {
+            sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
+            cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+            continue;
+          }
+          
+          /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
+          assert(stackPtr < stackEnd); 
+          r = __bscf(mask);
+          c = node->child(r); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          assert(c != BVH4::emptyNode);
+          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
+          cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+        }
+        
+        /*! this is a leaf node */
+        STAT3(normal.trav_leaves,1,1,1);
+        size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
+        PrimitiveIntersector::intersect(pre,ray,prim,num,bvh->geometry);
+        tFar = ray.tfar;
+      }
+
+
+
+
+
+
+
       /*! stack state */
       StackItem stack[stackSize];  //!< stack of nodes 
       StackItem* stackPtr = stack+1;        //!< current stack pointer
@@ -150,7 +303,7 @@ namespace embree
         stackPtr--;
         NodeRef cur = stackPtr->ref;
         float tNear = stackPtr->tNear;
-        float tFar  = min(stackPtr->tFar,ray.tfar);
+        float tFar  = stackPtr->tFar;
         
         /*! if popped node is too far, pop next one */
         if (unlikely(tNear > ray.tfar))
@@ -231,10 +384,13 @@ namespace embree
             assert(c1 != BVH2Hair::emptyNode);
             assert(stackPtr < stackEnd); 
             if (tNear0 < tNear1) { 
+
               stackPtr->ref = c1; stackPtr->tNear = tNear1; stackPtr->tFar = tFar1; stackPtr++; 
               cur = c0; tNear = tNear0; tFar = tFar0;
+	      
             }
             else { 
+
               stackPtr->ref = c0; stackPtr->tNear = tNear0; stackPtr->tFar = tFar0; stackPtr++; 
               cur = c1; tNear = tNear1; tFar = tFar1;
             }
