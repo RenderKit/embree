@@ -41,6 +41,7 @@ namespace embree
       };
 
     private:
+      static size_t intersectBox(const AffineSpace3<ssef>& naabb, const Ray& ray, ssef& tNear, ssef& tFar);
       static void intersectBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier);
       static bool occludedBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier);
       

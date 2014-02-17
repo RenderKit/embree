@@ -33,6 +33,7 @@ namespace embree
     /*! forward declaration of node type */
     struct AlignedNode;
     struct UnalignedNode;
+    typedef AffineSpaceT<LinearSpace3<Vec3<ssef> > > AffineSpaceSOA4;
 
     /*! branching width of the tree */
     static const size_t N = 4;
@@ -140,7 +141,7 @@ namespace embree
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3fa& b, const NodeRef& childID) 
+      __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& childID) 
       {
         assert(i < 4);
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
@@ -149,7 +150,7 @@ namespace embree
       }
 
       /*! Returns bounds of specified child. */
-      __forceinline const BBox3fa& bounds(size_t i) const { 
+      __forceinline const BBox3fa bounds(size_t i) const { 
         assert(i < 4);
         const Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
         const Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
@@ -182,7 +183,7 @@ namespace embree
       /*! Clears the node. */
       __forceinline void clear() {
         naabb = one;
-        for (size_t i=0; i<4; j++) children[i]= emptyNode;
+        for (size_t i=0; i<4; i++) children[i]= emptyNode;
       }
 
       /*! Sets bounding box and ID of child. */
@@ -213,13 +214,14 @@ namespace embree
         children[i] = childID;
       }
 
-      /*! Returns bounds of specified child. */
-      __forceinline const AffineSpace3fa& bounds(size_t i) const { assert(i < 2); return naabb[i]; }
-
       /*! Returns the extend of the bounds of the ith child */
       __forceinline Vec3fa extend(size_t i) const {
         assert(i<2);
-        return rsqrt(naabb[i].l.vx*naabb[i].l.vx + naabb[i].l.vy*naabb[i].l.vy + naabb[i].l.vz*naabb[i].l.vz);
+        const Vec3fa vx(naabb.l.vx.x[i],naabb.l.vx.y[i],naabb.l.vx.z[i]);
+        const Vec3fa vy(naabb.l.vy.x[i],naabb.l.vy.y[i],naabb.l.vy.z[i]);
+        const Vec3fa vz(naabb.l.vz.x[i],naabb.l.vz.y[i],naabb.l.vz.z[i]);
+        const Vec3fa p (naabb.p   .x[i],naabb.p   .y[i],naabb.p   .z[i]);
+        return rsqrt(vx*vx + vy*vy + vz*vz);
       }
 
       /*! Returns reference to specified child */
@@ -227,8 +229,8 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<2); return children[i]; }
 
     public:
-      NodeRef        children[4];   //!< Pointer to the children (can be a node or leaf)
-      AffineSpace3<ssef> naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
+      NodeRef         children[4];   //!< Pointer to the children (can be a node or leaf)
+      AffineSpaceSOA4 naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
 
     /*! Hair Leaf */

@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh2hair_intersector1.h"
+#include "bvh4hair_intersector1.h"
 #include "geometry/bezier1i_intersector1.h"
 
 namespace embree

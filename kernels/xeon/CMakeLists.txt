@@ -152,7 +152,7 @@ IF (TARGET_AVX)
    bvh4mb/bvh4mb_intersector8.cpp
 
    bvh2hair/bvh2hair_intersector1.cpp
-#   bvh4hair/bvh4hair_intersector1.cpp
+   bvh4hair/bvh4hair_intersector1.cpp
 )
 
   SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")
@@ -192,7 +192,7 @@ IF (TARGET_AVX2)
     bvh4i/bvh4i_builder_binner.cpp
 
     bvh2hair/bvh2hair_intersector1.cpp
-#    bvh4hair/bvh4hair_intersector1.cpp
+    bvh4hair/bvh4hair_intersector1.cpp
 )
 
   SET_TARGET_PROPERTIES(embree_avx2 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX2}")
