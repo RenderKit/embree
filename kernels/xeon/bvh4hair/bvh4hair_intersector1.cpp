@@ -52,29 +52,33 @@ namespace embree
     {
       const sse3f dir = xfmVector(naabb,sse3f(ray.dir));
       const sse3f rdir = rcp(dir);
-      const sse3f org = xfmPoint (naabb,sse3f(ray.org));
+      const sse3f org = xfmPoint(naabb,sse3f(ray.org));
       const sse3f tLowerXYZ = - org * rdir;     // (Vec3fa(zero) - org) * rdir;
       const sse3f tUpperXYZ = rdir + tLowerXYZ; // (Vec3fa(one ) - org) * rdir;
 
-//#if defined(__SSE4_1__)
-//      const sse3f tNearXYZ = mini(tLowerXYZ,tUpperXYZ);
-//      const sse3f tFarXYZ  = maxi(tLowerXYZ,tUpperXYZ);
-//#else
-      const sse3f tNearXYZ = min(tLowerXYZ,tUpperXYZ);
-      const sse3f tFarXYZ  = max(tLowerXYZ,tUpperXYZ);
-//#endif
-
-//#if defined(__SSE4_1__)
-//        tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
-//        tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
-//        const sseb vmask = cast(tNear) > cast(tFar);
-//        size_t mask = movemask(vmask)^0xf;
-//#else
-        tNear = max(tNearXYZ.x,tNearXYZ.y,tNearXYZ.z,tNear);
-        tFar  = min(tFarXYZ.x ,tFarXYZ.y ,tFarXYZ.z ,tFar);
-        const sseb vmask = tNear <= tFar;
-        size_t mask = movemask(vmask);
-//#endif
+#if defined(__SSE4_1__)
+      const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
+      const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
+      tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
+      tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
+      const sseb vmask = cast(tNear) > cast(tFar);
+      size_t mask = movemask(vmask)^0xf;
+#else
+      const ssef tNearX = min(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tNearY = min(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tNearZ = min(tLowerXYZ.z,tUpperXYZ.z);
+      const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
+      tNear = max(tNearX,tNearY,tNearZ,tNear);
+      tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
+      const sseb vmask = tNear <= tFar;
+      size_t mask = movemask(vmask);
+#endif
       return mask;
     }
 
