@@ -212,7 +212,7 @@ namespace embree
           size_t r = __bscf(mask);
           if (likely(mask == 0)) {
             cur = node->child(r); tNear = tNear[r]; tFar = tFar[r];
-            assert(cur != BVH4::emptyNode);
+            assert(cur != BVH4Hair::emptyNode);
             continue;
           }
      
@@ -220,8 +220,8 @@ namespace embree
           NodeRef c0 = node->child(r); const float n0 = tNear[r]; const float f0 = tFar[r]; 
           r = __bscf(mask);
           NodeRef c1 = node->child(r); const float n1 = tNear[r]; const float f1 = tFar[r];
-          assert(c0 != BVH4::emptyNode);
-          assert(c1 != BVH4::emptyNode);
+          assert(c0 != BVH4Hair::emptyNode);
+          assert(c1 != BVH4Hair::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
             if (n0 < n1) { stackPtr->ref = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++; cur = c0; tNear = n0; tFar = f0; continue; }
@@ -239,7 +239,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           NodeRef c = node->child(r); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
-          assert(c != BVH4::emptyNode);
+          assert(c != BVH4Hair::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
             cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
@@ -258,7 +258,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           c = node->child(r); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
-          assert(c != BVH4::emptyNode);
+          assert(c != BVH4Hair::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
 #endif
@@ -402,7 +402,7 @@ namespace embree
           size_t r = __bscf(mask);
           if (likely(mask == 0)) {
             cur = node->child(r); tNear = tNear[r]; tFar = tFar[r];
-            assert(cur != BVH4::emptyNode);
+            assert(cur != BVH4Hair::emptyNode);
             continue;
           }
           
@@ -410,8 +410,8 @@ namespace embree
           NodeRef c0 = node->child(r); const float n0 = tNear[r]; const float f0 = tFar[r]; 
           r = __bscf(mask);
           NodeRef c1 = node->child(r); const float n1 = tNear[r]; const float f1 = tFar[r];
-          assert(c0 != BVH4::emptyNode);
-          assert(c1 != BVH4::emptyNode);
+          assert(c0 != BVH4Hair::emptyNode);
+          assert(c1 != BVH4Hair::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
             if (n0 < n1) { stackPtr->ref = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++; cur = c0; tNear = n0; tFar = f0; continue; }
@@ -430,7 +430,7 @@ namespace embree
           r = __bscf(mask);
           NodeRef c = node->child(r); float n2 = tNear[r]; float f2 = tFar[r]; 
           cur = c; tNear = n2; tFar = f2;
-          assert(c != BVH4::emptyNode);
+          assert(c != BVH4Hair::emptyNode);
           if (likely(mask == 0)) continue;
           assert(stackPtr < stackEnd); 
           stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
@@ -444,7 +444,7 @@ namespace embree
 #else
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           cur = node->child(3); tNear = tNear[3]; tFar = tFar[3]; 
-          assert(cur != BVH4::emptyNode);
+          assert(cur != BVH4Hair::emptyNode);
 #endif
         }
         

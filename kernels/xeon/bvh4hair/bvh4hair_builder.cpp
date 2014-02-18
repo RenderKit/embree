@@ -295,12 +295,14 @@ namespace embree
       bz.extend(bounds[i-1][2]); float Az = area(bz);
       const ssef lArea = ssef(Ax,Ay,Az,Az);
       const ssef rArea = rAreas[i];
-#if 0
+#if BVH4HAIR_WIDTH == 8
+      const ssei lCount = (count     +ssei(7)) >> 3;
+      const ssei rCount = (rCounts[i]+ssei(7)) >> 3;
+#else
       const ssei lCount = (count     +ssei(3)) >> 2;
       const ssei rCount = (rCounts[i]+ssei(3)) >> 2;
-#else
-      const ssei lCount = count;
-      const ssei rCount = rCounts[i];
+      //const ssei lCount = count;
+      //const ssei rCount = rCounts[i];
 #endif
       const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
       bestPos = select(sah < bestSAH,ii ,bestPos);

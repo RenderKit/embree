@@ -22,7 +22,7 @@
 #include "common/scene.h"
 #include "geometry/primitive.h"
 
-#define BVH4HAIR_WIDTH 8
+#define BVH4HAIR_WIDTH 4
 
 namespace embree
 {
