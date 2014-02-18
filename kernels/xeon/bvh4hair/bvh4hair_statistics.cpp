@@ -49,12 +49,12 @@ namespace embree
     stream << "  used = " << bytesTotal/1E6 << " MB, allocated = " << bytesTotalAllocated/1E6 << " MB, perPrimitive = " << double(bytesTotal)/double(bvh->numPrimitives) << " B" << std::endl;
     stream.precision(1);
     stream << "  alignedNodes = "  << numAlignedNodes << " "
-           << "(" << 100.0*double(childrenAlignedNodes)/double(BVH4Hair::N*numAlignedNodes) << " % filled) " 
+           << "(" << 100.0*double(childrenAlignedNodes)/double(BVH4Hair::N*numAlignedNodes) << "% filled) " 
            << "(" << bytesAlignedNodes/1E6  << " MB) " 
            << "(" << 100.0*double(bytesAlignedNodes)/double(bytesTotal) << "% of total)"
            << std::endl;
     stream << "  unalignedNodes = "  << numUnalignedNodes << " "
-           << "(" << 100.0*double(childrenUnalignedNodes)/double(BVH4Hair::N*numUnalignedNodes) << " % filled) " 
+           << "(" << 100.0*double(childrenUnalignedNodes)/double(BVH4Hair::N*numUnalignedNodes) << "% filled) " 
            << "(" << bytesUnalignedNodes/1E6  << " MB) " 
            << "(" << 100.0*double(bytesUnalignedNodes)/double(bytesTotal) << "% of total)"
            << std::endl;
