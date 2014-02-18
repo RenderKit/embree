@@ -284,10 +284,6 @@ namespace embree
 
     void BVH8iBuilderTriangle8::build(size_t threadIndex, size_t threadCount) 
     {
-      // DBG_PRINT(sizeof(BVH8i::CompressedNode));
-      // DBG_PRINT(sizeof(BVH8i::Node));
-
-      // BVH8i::CompressedNode test;
       // for (size_t i=0;i<8;i++) 
       // 	test.lower_x[i] = 100 + i;
       // for (size_t i=0;i<8;i++) 
@@ -311,6 +307,13 @@ namespace embree
 			  index8,
 			  bvh8i_root,
 			  bvh8i_node_dist);
+
+      DBG_PRINT(sizeof(BVH8i::CompressedNode));
+      DBG_PRINT(sizeof(BVH8i::Node));
+
+      BVH8i::CompressedNode test;
+      for (size_t i=0;i<index8;i++)
+        test = BVH8i::CompressedNode( bvh8i_base[i] );
 
       if (g_verbose >= 2)
 	{
