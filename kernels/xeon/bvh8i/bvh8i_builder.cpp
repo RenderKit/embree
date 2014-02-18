@@ -314,6 +314,7 @@ namespace embree
       BVH8i::CompressedNode test;
       for (size_t i=0;i<index8;i++)
         test = BVH8i::CompressedNode( bvh8i_base[i] );
+      std::cout << "COMPRESSION TEST DONE" << std::endl << std::flush;
 
       if (g_verbose >= 2)
 	{

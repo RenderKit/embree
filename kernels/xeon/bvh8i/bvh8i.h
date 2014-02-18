@@ -183,7 +183,7 @@ namespace embree
       }
 
       /*! Returns number of valid children */
-      __forceinline size_t numValidChildren()  {
+      __forceinline size_t numValidChildren() const  {
 	size_t valid = 0;
 	for (size_t i=0;i<N;i++)
 	  if (children[i] != emptyNode)
@@ -224,89 +224,108 @@ namespace embree
 
       BVH4i::NodeRef children[8];            
 
-      CompressedNode() {}
+      __forceinline CompressedNode() {}
 
-      float clamp255(float i)
+      __forceinline float clamp255(float i)
       {
         return min(max(i,0.0f),255.0f);
       }
 
+#define ULPS 1
+
+      __forceinline float roundUp(float v)
+      {
+	const float s_up   = 1.0f + ULPS * (float)ulp;
+	const float s_down = 1.0f - ULPS * (float)ulp;
+	const float new_v = v < 0.0f ? v*s_down : v*s_up;
+	return new_v;
+      }
+
+      __forceinline float roundDown(float v)
+      {
+	const float s_up   = 1.0f + ULPS * (float)ulp;
+	const float s_down = 1.0f - ULPS * (float)ulp;
+	const float new_v = v >= 0.0f ? v*s_down : v*s_up;
+	return new_v;
+      }
+
+
       CompressedNode( const BVH8i::Node &node8 )
         {
-          const float stretch = 0.0001f;
-
           min_x = reduce_min(node8.lower_x);
-          min_x -= stretch * abs(min_x);
           max_x = reduce_max(node8.upper_x);
-          max_x += stretch * abs(max_x);
-
           min_y = reduce_min(node8.lower_y);
-          min_y -= stretch * abs(min_y);
           max_y = reduce_max(node8.upper_y);
-          max_y += stretch * abs(max_y);
-
           min_z = reduce_min(node8.lower_z);
-          min_z -= stretch * abs(min_z);
           max_z = reduce_max(node8.upper_z);
-          max_z += stretch * abs(max_z);
 
           for (size_t i=0;i<8;i++) children[i] = node8.children[i];		
 
-          const float diff_x = 1.0f / (max_x - min_x);
+          const float diff_x = 1.0f / (max_x - min_x); 
           const float diff_y = 1.0f / (max_y - min_y);
           const float diff_z = 1.0f / (max_z - min_z);
 
           for (size_t i=0;i<8;i++)
+	    {
+	      lower_x[i] = 0;
+	      upper_x[i] = 0;
+	      lower_y[i] = 0;
+	      upper_y[i] = 0;
+	      lower_z[i] = 0;
+	      upper_z[i] = 0;
+	    }
+	  
+          for (size_t i=0;i<node8.numValidChildren();i++)
             {
+              lower_x[i] = (unsigned int)clamp255(floorf(255.0f * roundDown(((node8.lower_x[i] - min_x) * diff_x))));
+              upper_x[i] = (unsigned int)clamp255(ceilf(255.0f * roundUp( ((node8.upper_x[i] - min_x) * diff_x)) ));
 
-              lower_x[i] = (unsigned int)clamp255(floorf(255.0f * ((node8.lower_x[i] - min_x) * diff_x)));
-              upper_x[i] = (unsigned int)clamp255(ceilf(255.0f * ((node8.upper_x[i] - min_x) * diff_x)));
+              float t0_x = ((float)floorf(lower_x[i]) * 1.0f/255.0f);
+              float t1_x = ((float)ceilf(upper_x[i]) * 1.0f/255.0f);
 
-              lower_y[i] = (unsigned int)clamp255(floorf(255.0f * ((node8.lower_y[i] - min_y) * diff_y)));
-              upper_y[i] = (unsigned int)clamp255(ceilf(255.0f * ((node8.upper_y[i] - min_y) * diff_y)));
+              float decompress_min_x = floorf(t0_x * max_x + (1.0f - t0_x) * min_x);
+              float decompress_max_x = ceilf(t1_x * max_x + (1.0f - t1_x) * min_x);
 
-              lower_z[i] = (unsigned int)clamp255(floorf(255.0f * ((node8.lower_z[i] - min_z) * diff_z)));
-              upper_z[i] = (unsigned int)clamp255(ceilf(255.0f * ((node8.upper_z[i] - min_z) * diff_z)));
-
-              float t0_x = ((float)(lower_x[i]) * 1.0f/255.0f);
-              float t1_x = ((float)(upper_x[i]) * 1.0f/255.0f);
-
-              float t0_y = ((float)(lower_y[i]) * 1.0f/255.0f);
-              float t1_y = ((float)(upper_y[i]) * 1.0f/255.0f);
-
-              float t0_z = ((float)(lower_z[i]) * 1.0f/255.0f);
-              float t1_z = ((float)(upper_z[i]) * 1.0f/255.0f);
-
-
-              float decompress_min_x = t0_x * max_x + (1.0f - t0_x) * min_x;
-              float decompress_max_x = t1_x * max_x + (1.0f - t1_x) * min_x;
-
-              float decompress_min_y = t0_y * max_y + (1.0f - t0_y) * min_y;
-              float decompress_max_y = t1_y * max_y + (1.0f - t1_y) * min_y;
-
-              float decompress_min_z = t0_z * max_z + (1.0f - t0_z) * min_z;
-              float decompress_max_z = t1_z * max_z + (1.0f - t1_z) * min_z;
 
 #if 0
               std::cout << std::endl;
 
-              DBG_PRINT( min_z );
-              DBG_PRINT( max_z );
-              DBG_PRINT( (unsigned int)lower_z[i] );
-              DBG_PRINT( (unsigned int)upper_z[i] );
+              DBG_PRINT( min_x );
+              DBG_PRINT( max_x );
+              DBG_PRINT( (unsigned int)lower_x[i] );
+              DBG_PRINT( (unsigned int)upper_x[i] );
 
-              DBG_PRINT(t0_z);
-              DBG_PRINT(t1_z);
+              DBG_PRINT(t0_x);
+              DBG_PRINT(t1_x);
 
-              DBG_PRINT( decompress_min_z );
-              DBG_PRINT( decompress_max_z );
+              DBG_PRINT( decompress_min_x );
+              DBG_PRINT( decompress_max_x );
 
-              DBG_PRINT( node8.lower_z[i] );
-              DBG_PRINT( node8.upper_z[i] );
+              DBG_PRINT( node8.lower_x[i] );
+              DBG_PRINT( node8.upper_x[i] );
 #endif
 
               assert( decompress_min_x <= node8.lower_x[i] );
               assert( decompress_max_x >= node8.upper_x[i] );
+
+              lower_y[i] = (unsigned int)clamp255(floorf(255.0f * roundDown(((node8.lower_y[i] - min_y) * diff_y))));
+              upper_y[i] = (unsigned int)clamp255(ceilf(255.0f * roundUp(((node8.upper_y[i] - min_y) * diff_y))));
+
+              float t0_y = ((float)(lower_y[i]) * 1.0f/255.0f);
+              float t1_y = ((float)(upper_y[i]) * 1.0f/255.0f);
+
+              float decompress_min_y = floorf(t0_y * max_y + (1.0f - t0_y) * min_y);
+              float decompress_max_y = ceilf(t1_y * max_y + (1.0f - t1_y) * min_y);
+
+              lower_z[i] = (unsigned int)clamp255(floorf(255.0f * roundDown(((node8.lower_z[i] - min_z) * diff_z))));
+              upper_z[i] = (unsigned int)clamp255(ceilf(255.0f * roundUp(((node8.upper_z[i] - min_z) * diff_z))));
+
+              float t0_z = ((float)(lower_z[i]) * 1.0f/255.0f);
+              float t1_z = ((float)(upper_z[i]) * 1.0f/255.0f);
+
+              float decompress_min_z = floorf(t0_z * max_z + (1.0f - t0_z) * min_z);
+              float decompress_max_z = ceilf(t1_z * max_z + (1.0f - t1_z) * min_z);
+
 
               assert( decompress_min_y <= node8.lower_y[i] );
               assert( decompress_max_y >= node8.upper_y[i] );
