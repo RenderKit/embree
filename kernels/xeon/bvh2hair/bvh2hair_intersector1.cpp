@@ -246,6 +246,7 @@ namespace embree
         size_t num; Bezier1* prim = (Bezier1*) cur.leaf(num);
         for (size_t i=0; i<num; i++) intersectBezier(ray_space,ray,prim[i]);
       }
+      AVX_ZERO_UPPER();
     }
 
     __forceinline bool BVH2HairIntersector1::occludedBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier)
@@ -402,10 +403,12 @@ namespace embree
         for (size_t i=0; i<num; i++) {
           if (occludedBezier(ray_space,ray,prim[i])) {
             ray.geomID = 0;
-            return;
+            goto exit;
           }
         }
       }
+    exit:
+      AVX_ZERO_UPPER();
     }
 
     DEFINE_INTERSECTOR1(BVH2HairIntersector1_,BVH2HairIntersector1);

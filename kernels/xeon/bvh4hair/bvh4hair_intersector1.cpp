@@ -195,12 +195,14 @@ namespace embree
             const simdb vmask = tNear <= tFar;
             mask = movemask(vmask);
 #endif
+            //mask = 0xF;
           }
 
           /*! process nodes with unaligned bounds */
           else {
             const UnalignedNode* node = cur.unalignedNode();
             mask = intersectBox(node->naabb,org,dir,tNear,tFar);
+            //mask = 0xF;
           }
 
           /*! if no child is hit, pop next node */
@@ -303,15 +305,16 @@ namespace embree
       const avxf d2 = p.x*p.x + p.y*p.y; 
       const avxf r = p.w; //max(p.w,ray.org.w+ray.dir.w*t);
       const avxf r2 = r*r;
-      const avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
-      return any(valid);
+      avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
+      if (unlikely(none(valid))) return false;
+      return true;
     }
     
     void BVH4HairIntersector1::occluded(const BVH4Hair* bvh, Ray& ray) 
     {
       /*! perform per ray precalculations required by the primitive intersector */
       //const Precalculations pre(ray);
-      const LinearSpace3fa pre(rcp(frame(ray.dir)));
+      const LinearSpace3fa pre(frame(ray.dir).transposed()); // FIXME: works only for normalized ray.dir
 
       /*! stack state */
       StackItem stack[stackSize];  //!< stack of nodes 
@@ -342,8 +345,17 @@ namespace embree
         stackPtr--;
         NodeRef cur = NodeRef(stackPtr->ref);
         simdf tNear = stackPtr->tNear;
-        simdf tFar  = stackPtr->tFar;
+        simdf tFar = min(stackPtr->tFar,ray.tfar);
         
+        /*! if popped node is too far, pop next one */
+#if BVH4HAIR_WIDTH == 4
+        if (unlikely(_mm_cvtss_f32(tNear) > _mm_cvtss_f32(tFar)))
+          continue;
+#else
+        if (unlikely(tNear[0] > tFar[0]))
+          continue;
+#endif
+
         /* downtraversal loop */
         while (true)
         {
@@ -374,17 +386,17 @@ namespace embree
             const simdf tFarZ  = (load4f((const char*)&node->lower_x+farZ ) - org.z) * rdir.z;
 #endif
             
-/*#if ((BVH4HAIR_WIDTH == 4) && defined(__SSE4_1__) || (BVH4HAIR_WIDTH == 8) && defined(__AVX2__))
+#if ((BVH4HAIR_WIDTH == 4) && defined(__SSE4_1__) || (BVH4HAIR_WIDTH == 8) && defined(__AVX2__))
             tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
             tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
             const simdb vmask = cast(tNear) > cast(tFar);
             mask = movemask(vmask)^(sizeof(simdf)-1);
-            #else*/
+#else
             tNear = max(tNearX,tNearY,tNearZ,tNear);
             tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
             const simdb vmask = tNear <= tFar;
             mask = movemask(vmask);
-//#endif
+#endif
           }
 
           /*! process nodes with unaligned bounds */
@@ -405,7 +417,7 @@ namespace embree
             assert(cur != BVH4Hair::emptyNode);
             continue;
           }
-          
+     
           /*! two children are hit, push far child, and continue with closer child */
           NodeRef c0 = node->child(r); const float n0 = tNear[r]; const float f0 = tFar[r]; 
           r = __bscf(mask);
@@ -428,23 +440,29 @@ namespace embree
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          NodeRef c = node->child(r); float n2 = tNear[r]; float f2 = tFar[r]; 
-          cur = c; tNear = n2; tFar = f2;
+          NodeRef c = node->child(r); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
           assert(c != BVH4Hair::emptyNode);
-          if (likely(mask == 0)) continue;
-          assert(stackPtr < stackEnd); 
-          stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
+          if (likely(mask == 0)) {
+            sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
+            cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
+            continue;
+          }
 
 #if BVH4HAIR_WIDTH == 8
           while (mask) {
             r = __bscf(mask);
             c = node->child(r); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
           }
+          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
 #else
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
-          cur = node->child(3); tNear = tNear[3]; tFar = tFar[3]; 
-          assert(cur != BVH4Hair::emptyNode);
+          assert(stackPtr < stackEnd); 
+          r = __bscf(mask);
+          c = node->child(r); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
+          assert(c != BVH4Hair::emptyNode);
+          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
+          cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
 #endif
         }
         
@@ -454,10 +472,11 @@ namespace embree
         for (size_t i=0; i<num; i++) {
           if (occludedBezier(pre,ray,prim[i])) {
             ray.geomID = 0;
-            break;
+            goto exit;
           }
         }
       }
+    exit:
       AVX_ZERO_UPPER();
     }
 

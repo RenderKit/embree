@@ -271,7 +271,9 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
   Vec3fa T = 1.0f;
   while (true) 
   {
+    //PRINT(ray.tnear);
     rtcIntersect(scene,(RTCRay&)ray);
+    //PRINT2(ray.geomID,ray.primID);
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) break;
     if (ray.geomID >= g_ispc_scene->numHairSets) return 0.0f; // make all surfaces opaque
     
@@ -586,51 +588,62 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 
     /* intersect ray with scene and gather all hits */
     rtcIntersect(g_scene,(RTCRay&)ray);
-    RTCRay2* ray2 = &ray;
     
     /* exit if we hit environment */
-    if (ray2->geomID == RTC_INVALID_GEOMETRY_ID) 
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
       return color + weight*g_ambient_intensity;
 
-    return Vec3fa(ray2->u,ray2->v,0.0f);
+    //return Vec3fa(ray.u,ray.v,0.0f);
   
     /* calculate transmissivity of hair */
     AnisotropicBlinn brdf;
 
-    if (ray2->geomID < g_ispc_scene->numHairSets) 
+    if (ray.geomID < g_ispc_scene->numHairSets) 
     {
       /* calculate tangent space */
-      const Vec3fa dx = normalize(ray2->Ng);
-      const Vec3fa dy = normalize(cross(ray2->dir,dx));
+      const Vec3fa dx = normalize(ray.Ng);
+      const Vec3fa dy = normalize(cross(ray.dir,dx));
       const Vec3fa dz = normalize(cross(dy,dx));
 
       /* generate anisotropic BRDF */
-      int seed1 = g_ispc_scene->hairs[ray2->geomID]->hairs[ray2->primID].id;
+      int seed1 = g_ispc_scene->hairs[ray.geomID]->hairs[ray.primID].id;
       const Vec3fa dK = hair_dK*frand(seed1);
-      brdf = AnisotropicBlinn(hair_Kr-dK,hair_Kt-dK,dx,10.0f,dy,2.0f,dz);
+      new (&brdf) AnisotropicBlinn(hair_Kr-dK,hair_Kt-dK,dx,10.0f,dy,2.0f,dz);
+      brdf.Kr = hair_Kr-dK;
     }
     else 
     {
       if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
 
       /* calculate tangent space */
-      const Vec3fa dz = normalize(ray2->Ng);
-      const Vec3fa dx = normalize(cross(dz,ray2->dir));
+      const Vec3fa dz = normalize(ray.Ng);
+      const Vec3fa dx = normalize(cross(dz,ray.dir));
       const Vec3fa dy = normalize(cross(dz,dx));
       
       /* generate isotropic BRDF */
-      brdf = AnisotropicBlinn(one,zero,dx,1.0f,dy,1.0f,dz);
+      new (&brdf) AnisotropicBlinn(one,zero,dx,1.0f,dy,1.0f,dz);
     }
     
     /* sample directional light */
     RTCRay2 shadow;
-    shadow.org = ray2->org + ray2->tfar*ray2->dir;
-    shadow.org.w = 0.0f; //ray2->org.w+ray2->tfar*ray2->dir.w;
+    shadow.org = ray.org + ray.tfar*ray.dir;
+    shadow.org.w = 0.0f; //ray.org.w+ray.tfar*ray.dir.w;
     shadow.dir = neg(g_dirlight_direction);
     shadow.dir.w = 0.0f;
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
+
+    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.primID = RTC_INVALID_GEOMETRY_ID;
+    shadow.mask = -1;
+    shadow.time = 0;
+    shadow.filter = NULL;
+
     Vec3fa T = occluded(g_scene,shadow);
+    //rtcOccluded(g_scene,(RTCRay&)shadow);
+    //Vec3fa T = Vec3fa(one);
+    //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) T = Vec3fa(zero);
+
     Vec3fa c = brdf.eval(neg(ray.dir),neg(g_dirlight_direction));
     //Vec3fa c = clamp(dot(neg(g_dirlight_direction),brdf.dz),0.0f,1.0f)*float(one_over_pi);
     color += weight*c*T*g_dirlight_intensity;
@@ -640,7 +653,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     Vec3fa wi;
     c = brdf.sample(neg(ray.dir),wi,frand(seed),frand(seed),frand(seed));
     if (wi.w <= 0.0f) return color;
-    ray.org = ray2->org + ray2->tfar*ray2->dir;
+    ray.org = ray.org + ray.tfar*ray.dir;
     ray.org.w = 0.0f;
     ray.dir = normalize(x*vx + y*vy + vz);
     ray.dir.w = 0.0f;
@@ -656,9 +669,9 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 #else    
 
     /* continue with transparency ray */
-    ray2->geomID = RTC_INVALID_GEOMETRY_ID;
-    ray2->tnear = 1.001f*ray2->tfar;
-    ray2->tfar = inf;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.tnear = 1.001f*ray.tfar;
+    ray.tfar = inf;
     weight *= brdf.Kt;
 #endif
 
@@ -692,6 +705,29 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   if (ray.primID != -1)
     color += 0.3f + abs(dot(ray.dir,ray.Ng));
 
+#if 0
+    /* sample directional light */
+    RTCRay2 shadow;
+    shadow.org = ray.org + ray.tfar*ray.dir;
+    shadow.org.w = 0.0f; //ray.org.w+ray.tfar*ray.dir.w;
+    shadow.dir = neg(g_dirlight_direction);
+    shadow.dir.w = 0.0f;
+    shadow.tnear = 0.001f;
+    shadow.tfar = inf;
+
+    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.primID = RTC_INVALID_GEOMETRY_ID;
+    shadow.mask = -1;
+    shadow.time = 0;
+    shadow.filter = NULL;
+
+    //Vec3fa T = occluded(g_scene,shadow);
+    rtcIntersect(g_scene,(RTCRay&)shadow);
+    Vec3fa T = Vec3fa(one);
+    if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) T = Vec3fa(zero);
+    color = T;
+#endif
+
   return color;
 }
 
@@ -717,6 +753,8 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
+    //if (x != 341 || y != 472) continue;
+
     /* calculate pixel color */
     float fx = x + frand(seed);
     float fy = y + frand(seed);
@@ -760,7 +798,7 @@ extern "C" void device_render (int* pixels,
       scene->numHairSets = 0;
       g_ispc_scene = scene;
       addHair(scene);
-      //addGroundPlane(scene);
+      addGroundPlane(scene);
     }
     g_scene = convertScene(g_ispc_scene);
   }
