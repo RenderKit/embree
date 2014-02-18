@@ -136,7 +136,8 @@ namespace embree
     {
       /*! perform per ray precalculations required by the primitive intersector */
       //const Precalculations pre(ray);
-      const LinearSpace3fa pre(rcp(frame(ray.dir))); // FIXME: transpose
+      //const LinearSpace3fa pre(rcp(frame(ray.dir)));
+      const LinearSpace3fa pre(frame(ray.dir).transposed()); // FIXME: works only with normalized ray direction
 
       /*! stack state */
       StackItem stack[stackSize];  //!< stack of nodes 
