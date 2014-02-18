@@ -505,7 +505,7 @@ namespace embree
   }
 #endif
 
-  size_t BVH4HairBuilder::split(size_t begin, size_t end, const NAABBox3fa& bounds, NAABBox3fa& lbounds, NAABBox3fa& rbounds)
+  size_t BVH4HairBuilder::split(size_t begin, size_t end, const NAABBox3fa& bounds, NAABBox3fa& lbounds, NAABBox3fa& rbounds, bool& isAligned)
   {
     /*! compute leaf and split cost */
     //const float leafSAH = N <= maxLeafSize ? BVH4Hair::intCost*float(N)*halfArea(bounds.bounds) : inf;
@@ -549,6 +549,7 @@ namespace embree
       assert((center-begin > 0) && (end-center) > 0);
       lbounds = objectSplit.bounds0;
       rbounds = objectSplit.bounds1;
+      isAligned = false;
       return center;
     }
 
@@ -558,8 +559,10 @@ namespace embree
       assert((center-begin > 0) && (end-center) > 0);
       lbounds = strandSplit.bounds0;
       rbounds = strandSplit.bounds1;
+      isAligned = false;
       return center;
-    } else {
+    } 
+    else {
       throw std::runtime_error("bvh4hair_builder: internal error");
     }
   }
@@ -572,6 +575,7 @@ namespace embree
       return leaf(threadIndex,depth,begin,end,bounds);
 
     /*! initialize child list */
+    bool isAligned = true;
     size_t cbegin [BVH4Hair::N];
     size_t cend   [BVH4Hair::N];
     NAABBox3fa cbounds[BVH4Hair::N];
@@ -597,18 +601,28 @@ namespace embree
       
       /*! split selected child */
       NAABBox3fa lbounds, rbounds;
-      size_t center = split(cbegin[bestChild],cend[bestChild],cbounds[bestChild],lbounds,rbounds);
+      size_t center = split(cbegin[bestChild],cend[bestChild],cbounds[bestChild],lbounds,rbounds,isAligned);
       cbounds[numChildren] = rbounds; cbegin[numChildren] = center; cend[numChildren] = cend[bestChild];
       cbounds[bestChild  ] = lbounds;                               cend[bestChild  ] = center; 
       numChildren++;
       
     } while (numChildren < BVH4Hair::N);
-
-    /* create node */
-    UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
-    for (size_t i=0; i<numChildren; i++)
-      node->set(i,cbounds[i],recurse_aligned_unaligned(threadIndex,depth+1,cbegin[i],cend[i],cbounds[i]));
-    return bvh->encodeNode(node);
+    
+    /* create aligned node */
+    if (isAligned) {
+      AlignedNode* node = bvh->allocAlignedNode(threadIndex);
+      for (size_t i=0; i<numChildren; i++)
+        node->set(i,cbounds[i].bounds,recurse_aligned_unaligned(threadIndex,depth+1,cbegin[i],cend[i],cbounds[i]));
+      return bvh->encodeNode(node);
+    }
+    
+    /* create unaligned node */
+    else {
+      UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
+      for (size_t i=0; i<numChildren; i++)
+        node->set(i,cbounds[i],recurse_aligned_unaligned(threadIndex,depth+1,cbegin[i],cend[i],cbounds[i]));
+      return bvh->encodeNode(node);
+    }
   }
 
   Builder* BVH4HairBuilder_ (BVH4Hair* accel, Scene* scene) {

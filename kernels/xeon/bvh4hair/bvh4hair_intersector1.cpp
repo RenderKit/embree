@@ -183,19 +183,19 @@ namespace embree
             const AlignedNode* node = cur.alignedNode();
             const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
 #if defined (__AVX2__)
-            const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
-            const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);
-            const ssef tNearZ = msub(load4f((const char*)node+nearZ), rdir.z, org_rdir.z);
-            const ssef tFarX  = msub(load4f((const char*)node+farX ), rdir.x, org_rdir.x);
-            const ssef tFarY  = msub(load4f((const char*)node+farY ), rdir.y, org_rdir.y);
-            const ssef tFarZ  = msub(load4f((const char*)node+farZ ), rdir.z, org_rdir.z);
+            const ssef tNearX = msub(load4f((const char*)&node->lower_x+nearX), rdir.x, org_rdir.x);
+            const ssef tNearY = msub(load4f((const char*)&node->lower_x+nearY), rdir.y, org_rdir.y);
+            const ssef tNearZ = msub(load4f((const char*)&node->lower_x+nearZ), rdir.z, org_rdir.z);
+            const ssef tFarX  = msub(load4f((const char*)&node->lower_x+farX ), rdir.x, org_rdir.x);
+            const ssef tFarY  = msub(load4f((const char*)&node->lower_x+farY ), rdir.y, org_rdir.y);
+            const ssef tFarZ  = msub(load4f((const char*)&node->lower_x+farZ ), rdir.z, org_rdir.z);
 #else
-            const ssef tNearX = (norg.x + load4f((const char*)node+nearX)) * rdir.x;
-            const ssef tNearY = (norg.y + load4f((const char*)node+nearY)) * rdir.y;
-            const ssef tNearZ = (norg.z + load4f((const char*)node+nearZ)) * rdir.z;
-            const ssef tFarX  = (norg.x + load4f((const char*)node+farX )) * rdir.x;
-            const ssef tFarY  = (norg.y + load4f((const char*)node+farY )) * rdir.y;
-            const ssef tFarZ  = (norg.z + load4f((const char*)node+farZ )) * rdir.z;
+            const ssef tNearX = (norg.x + load4f((const char*)&node->lower_x+nearX)) * rdir.x;
+            const ssef tNearY = (norg.y + load4f((const char*)&node->lower_x+nearY)) * rdir.y;
+            const ssef tNearZ = (norg.z + load4f((const char*)&node->lower_x+nearZ)) * rdir.z;
+            const ssef tFarX  = (norg.x + load4f((const char*)&node->lower_x+farX )) * rdir.x;
+            const ssef tFarY  = (norg.y + load4f((const char*)&node->lower_x+farY )) * rdir.y;
+            const ssef tFarZ  = (norg.z + load4f((const char*)&node->lower_x+farZ )) * rdir.z;
 #endif
             
 #if defined(__SSE4_1__)
@@ -367,19 +367,19 @@ namespace embree
             const AlignedNode* node = cur.alignedNode();
             const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
 #if defined (__AVX2__)
-            const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
-            const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);
-            const ssef tNearZ = msub(load4f((const char*)node+nearZ), rdir.z, org_rdir.z);
-            const ssef tFarX  = msub(load4f((const char*)node+farX ), rdir.x, org_rdir.x);
-            const ssef tFarY  = msub(load4f((const char*)node+farY ), rdir.y, org_rdir.y);
-            const ssef tFarZ  = msub(load4f((const char*)node+farZ ), rdir.z, org_rdir.z);
+            const ssef tNearX = msub(load4f((const char*)&node->lower_x+nearX), rdir.x, org_rdir.x);
+            const ssef tNearY = msub(load4f((const char*)&node->lower_x+nearY), rdir.y, org_rdir.y);
+            const ssef tNearZ = msub(load4f((const char*)&node->lower_x+nearZ), rdir.z, org_rdir.z);
+            const ssef tFarX  = msub(load4f((const char*)&node->lower_x+farX ), rdir.x, org_rdir.x);
+            const ssef tFarY  = msub(load4f((const char*)&node->lower_x+farY ), rdir.y, org_rdir.y);
+            const ssef tFarZ  = msub(load4f((const char*)&node->lower_x+farZ ), rdir.z, org_rdir.z);
 #else
-            const ssef tNearX = (norg.x + load4f((const char*)node+nearX)) * rdir.x;
-            const ssef tNearY = (norg.y + load4f((const char*)node+nearY)) * rdir.y;
-            const ssef tNearZ = (norg.z + load4f((const char*)node+nearZ)) * rdir.z;
-            const ssef tFarX  = (norg.x + load4f((const char*)node+farX )) * rdir.x;
-            const ssef tFarY  = (norg.y + load4f((const char*)node+farY )) * rdir.y;
-            const ssef tFarZ  = (norg.z + load4f((const char*)node+farZ )) * rdir.z;
+            const ssef tNearX = (norg.x + load4f((const char*)&node->lower_x+nearX)) * rdir.x;
+            const ssef tNearY = (norg.y + load4f((const char*)&node->lower_x+nearY)) * rdir.y;
+            const ssef tNearZ = (norg.z + load4f((const char*)&node->lower_x+nearZ)) * rdir.z;
+            const ssef tFarX  = (norg.x + load4f((const char*)&node->lower_x+farX )) * rdir.x;
+            const ssef tFarY  = (norg.y + load4f((const char*)&node->lower_x+farY )) * rdir.y;
+            const ssef tFarZ  = (norg.z + load4f((const char*)&node->lower_x+farZ )) * rdir.z;
 #endif
             
 #if defined(__SSE4_1__)
@@ -401,9 +401,8 @@ namespace embree
             mask = intersectBox(node->naabb,ray,tNear,tFar);
           }
 
-          const AlignedNode* node = cur.alignedNode(); // FIXME: raises assertion but is correct
-
           /*! if no child is hit, pop next node */
+          const Node* node = cur.node();
           if (unlikely(mask == 0))
             goto pop;
           
