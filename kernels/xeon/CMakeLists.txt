@@ -94,10 +94,6 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh2hair/bvh2hair.cpp
   bvh2hair/bvh2hair_builder.cpp
   bvh2hair/bvh2hair_statistics.cpp
-
-  bvh4hair/bvh4hair.cpp
-  bvh4hair/bvh4hair_builder.cpp
-  bvh4hair/bvh4hair_statistics.cpp
 )
 
 IF (TARGET_SSE41) 
@@ -115,6 +111,10 @@ ENDIF ()
 
 IF (TARGET_AVX) 
   ADD_LIBRARY(embree_avx STATIC
+
+  bvh4hair/bvh4hair.cpp               # FIXME: should be in SSE2 section
+  bvh4hair/bvh4hair_builder.cpp       # FIXME: should be in SSE2 section
+  bvh4hair/bvh4hair_statistics.cpp    # FIXME: should be in SSE2 section
 
    geometry/triangle8.cpp
    geometry/ispc_wrapper_avx.cpp

@@ -42,6 +42,8 @@ namespace embree
     float bvhSAH;                      //!< SAH cost.
     size_t numAlignedNodes;            //!< Number of aligned internal nodes.
     size_t numUnalignedNodes;          //!< Number of unaligned internal nodes.
+    size_t childrenAlignedNodes;       //!< Number of children of aligned nodes
+    size_t childrenUnalignedNodes;     //!< Number of children of unaligned internal nodes.
     size_t numLeaves;                  //!< Number of leaf nodes.
     size_t numPrims;                   //!< Number of primitives.
     size_t depth;                      //!< Depth of the tree.

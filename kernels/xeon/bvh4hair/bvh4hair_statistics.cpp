@@ -21,6 +21,7 @@ namespace embree
   BVH4HairStatistics::BVH4HairStatistics (BVH4Hair* bvh) : bvh(bvh)
   {
     numAlignedNodes = numUnalignedNodes = numLeaves = numPrims = depth = 0;
+    childrenAlignedNodes = childrenUnalignedNodes = 0;
     bvhSAH = 0.0f;
     float A = max(0.0f,halfArea(bvh->bounds));
     statistics(bvh->root,A,depth);
@@ -48,11 +49,13 @@ namespace embree
     stream << "  used = " << bytesTotal/1E6 << " MB, allocated = " << bytesTotalAllocated/1E6 << " MB, perPrimitive = " << double(bytesTotal)/double(bvh->numPrimitives) << " B" << std::endl;
     stream.precision(1);
     stream << "  alignedNodes = "  << numAlignedNodes << " "
-           << "(" << bytesAlignedNodes/1E6  << " MB) "
+           << "(" << 100.0*double(childrenAlignedNodes)/double(BVH4Hair::N*numAlignedNodes) << " % filled) " 
+           << "(" << bytesAlignedNodes/1E6  << " MB) " 
            << "(" << 100.0*double(bytesAlignedNodes)/double(bytesTotal) << "% of total)"
            << std::endl;
     stream << "  unalignedNodes = "  << numUnalignedNodes << " "
-           << "(" << bytesUnalignedNodes/1E6  << " MB) "
+           << "(" << 100.0*double(childrenUnalignedNodes)/double(BVH4Hair::N*numUnalignedNodes) << " % filled) " 
+           << "(" << bytesUnalignedNodes/1E6  << " MB) " 
            << "(" << 100.0*double(bytesUnalignedNodes)/double(bytesTotal) << "% of total)"
            << std::endl;
     stream << "  leaves = " << numLeaves << " "
@@ -77,6 +80,7 @@ namespace embree
 
       depth = 0;
       for (size_t i=0; i<BVH4Hair::N; i++) {
+        if (n->child(i) != BVH4Hair::emptyNode) childrenAlignedNodes++;
         const float Ai = max(0.0f,halfArea(n->extend(i)));
         size_t cdepth; statistics(n->child(i),Ai,cdepth); 
         depth=max(depth,cdepth);
@@ -91,6 +95,7 @@ namespace embree
 
       depth = 0;
       for (size_t i=0; i<BVH4Hair::N; i++) {
+        if (n->child(i) != BVH4Hair::emptyNode) childrenUnalignedNodes++;
         const float Ai = max(0.0f,halfArea(n->extend(i)));
         size_t cdepth; statistics(n->child(i),Ai,cdepth); 
         depth=max(depth,cdepth);

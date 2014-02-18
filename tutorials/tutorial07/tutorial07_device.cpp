@@ -18,10 +18,7 @@
 
 #define USE_INTERSECTION_FILTER 0
 #define USE_OCCLUSION_FILTER 0
-<<<<<<< HEAD
-=======
 #define USE_EYELIGHT_SHADING 0
->>>>>>> master
 
 /* accumulation buffer */
 Vec3fa* g_accu = NULL;

@@ -28,6 +28,10 @@ namespace embree
     class BVH4HairIntersector1 
     {
       /* shortcuts for frequently used types */
+      typedef BVH4Hair::simdb simdb;
+      typedef BVH4Hair::simdi simdi;
+      typedef BVH4Hair::simdf simdf;
+      typedef Vec3<BVH4Hair::simdf> simd3f;
       typedef BVH4Hair::NodeRef NodeRef;
       typedef BVH4Hair::Node Node;
       typedef BVH4Hair::AlignedNode AlignedNode;
@@ -83,7 +87,7 @@ namespace embree
       };
 
     private:
-      static size_t intersectBox(const AffineSpaceSOA4& naabb, const sse3f& org, const sse3f& dir, ssef& tNear, ssef& tFar);
+      static size_t intersectBox(const AffineSpaceSOA4& naabb, const simd3f& org, const simd3f& dir, simdf& tNear, simdf& tFar);
       static void intersectBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier);
       static bool occludedBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier);
       

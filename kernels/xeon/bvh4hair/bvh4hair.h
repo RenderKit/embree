@@ -22,6 +22,8 @@
 #include "common/scene.h"
 #include "geometry/primitive.h"
 
+#define BVH4HAIR_WIDTH 4
+
 namespace embree
 {
   /*! BVH4 with unaligned bounds. */
@@ -29,15 +31,24 @@ namespace embree
   {
     ALIGNED_CLASS;
   public:
+#if BVH4HAIR_WIDTH == 8
+    typedef avxb simdb;
+    typedef avxi simdi;
+    typedef avxf simdf;
+#elif BVH4HAIR_WIDTH == 4
+    typedef sseb simdb;
+    typedef ssei simdi;
+    typedef ssef simdf;
+#endif
     
     /*! forward declaration of node type */
     struct Node;
     struct AlignedNode;
     struct UnalignedNode;
-    typedef AffineSpaceT<LinearSpace3<Vec3<ssef> > > AffineSpaceSOA4;
+    typedef AffineSpaceT<LinearSpace3<Vec3<simdf> > > AffineSpaceSOA4;
 
     /*! branching width of the tree */
-    static const size_t N = 4;
+    static const size_t N = BVH4HAIR_WIDTH;
 
     /*! Number of address bits the Node and primitives are aligned
         to. Maximally 2^alignment-2 many primitive blocks per leaf are
@@ -143,21 +154,21 @@ namespace embree
     {
       /*! Clears the node. */
       __forceinline void clear() {
-        for (size_t i=0; i<4; i++) children[i] = emptyNode;
+        for (size_t i=0; i<N; i++) children[i] = emptyNode;
       }
 
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, const NodeRef& childID) {
-        assert(i < 4);
+        assert(i < N);
         children[i] = childID;
       }
 
       /*! Returns reference to specified child */
-      __forceinline       NodeRef& child(size_t i)       { assert(i<4); return children[i]; }
-      __forceinline const NodeRef& child(size_t i) const { assert(i<4); return children[i]; }
+      __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
     public:
-      NodeRef children[4];   //!< Pointer to the children (can be a node or leaf)
+      NodeRef children[N];   //!< Pointer to the children (can be a node or leaf)
     };
 
     /*! Node with aligned bounds */
@@ -173,7 +184,7 @@ namespace embree
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& childID) 
       {
-        assert(i < 4);
+        assert(i < N);
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
         upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
         Node::set(i,childID);
@@ -181,7 +192,7 @@ namespace embree
 
       /*! Returns bounds of specified child. */
       __forceinline const BBox3fa bounds(size_t i) const { 
-        assert(i < 4);
+        assert(i < N);
         const Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
         const Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
         return BBox3fa(lower,upper);
@@ -189,17 +200,17 @@ namespace embree
 
       /*! Returns the extend of the bounds of the ith child */
       __forceinline Vec3fa extend(size_t i) const {
-        assert(i < 4);
+        assert(i < N);
         return bounds(i).size();
       }
 
     public:
-      ssef lower_x;           //!< X dimension of lower bounds of all 4 children.
-      ssef upper_x;           //!< X dimension of upper bounds of all 4 children.
-      ssef lower_y;           //!< Y dimension of lower bounds of all 4 children.
-      ssef upper_y;           //!< Y dimension of upper bounds of all 4 children.
-      ssef lower_z;           //!< Z dimension of lower bounds of all 4 children.
-      ssef upper_z;           //!< Z dimension of upper bounds of all 4 children.
+      simdf lower_x;           //!< X dimension of lower bounds of all 4 children.
+      simdf upper_x;           //!< X dimension of upper bounds of all 4 children.
+      simdf lower_y;           //!< Y dimension of lower bounds of all 4 children.
+      simdf upper_y;           //!< Y dimension of upper bounds of all 4 children.
+      simdf lower_z;           //!< Z dimension of lower bounds of all 4 children.
+      simdf upper_z;           //!< Z dimension of upper bounds of all 4 children.
     };
 
     /*! Node with unaligned bounds */
@@ -214,7 +225,7 @@ namespace embree
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, const NAABBox3fa& b, const NodeRef& childID) 
       {
-        assert(i < 4);
+        assert(i < N);
 
         AffineSpace3fa space = b.space;
         space.p -= b.bounds.lower;
@@ -241,7 +252,7 @@ namespace embree
 
       /*! Returns the extend of the bounds of the ith child */
       __forceinline Vec3fa extend(size_t i) const {
-        assert(i<4);
+        assert(i<N);
         const Vec3fa vx(naabb.l.vx.x[i],naabb.l.vx.y[i],naabb.l.vx.z[i]);
         const Vec3fa vy(naabb.l.vy.x[i],naabb.l.vy.y[i],naabb.l.vy.z[i]);
         const Vec3fa vz(naabb.l.vz.x[i],naabb.l.vz.y[i],naabb.l.vz.z[i]);

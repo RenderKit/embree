@@ -24,7 +24,7 @@
 #include "bvh8i/bvh8i.h"
 #include "bvh4mb/bvh4mb.h"
 #include "bvh2hair/bvh2hair.h"
-#include "bvh4hair/bvh4hair.h"
+//#include "bvh4hair/bvh4hair.h"
 #else
 #include "xeonphi/bvh4i/bvh4i.h"
 #include "xeonphi/bvh4mb/bvh4mb.h"
@@ -33,6 +33,10 @@
 
 namespace embree
 {
+  class BVH4Hair {
+  public: static Accel* BVH4HairBezier1(Scene* scene); // FIXME: hack
+  };
+
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
       numTriangleMeshes(0), numTriangleMeshes2(0), numCurves(0), numCurves2(0), numUserGeometries(0),
