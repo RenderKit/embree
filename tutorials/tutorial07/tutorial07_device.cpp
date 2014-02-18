@@ -294,8 +294,8 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
 void addHair (ISPCScene* scene)
 {
   int seed = 879;
-  //const int numCurves = 10;
-  const int numCurves = 1000;
+  const int numCurves = 10;
+  //const int numCurves = 1000;
   const int numCurveSegments = 1;
   const int numCurvePoints = 3*numCurveSegments+1;
   const float R = 0.01f;

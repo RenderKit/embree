@@ -217,7 +217,8 @@ namespace embree
             mask = intersectBox(node->naabb,ray,tNear,tFar);
           }
 
-          const AlignedNode* node = cur.alignedNode(); // FIXME: raises assertion but is correct
+          //const AlignedNode* node = cur.alignedNode(); // FIXME: raises assertion but is correct
+          const UnalignedNode* node = cur.unalignedNode(); // FIXME: raises assertion but is correct
 
           /*! if no child is hit, pop next node */
           if (unlikely(mask == 0))

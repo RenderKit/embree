@@ -137,7 +137,7 @@ namespace embree
       __forceinline void clear() {
         lower_x = lower_y = lower_z = pos_inf; 
         upper_x = upper_y = upper_z = neg_inf;
-        children[0] = children[1] = children[2] = children[3] = emptyNode;
+        for (size_t i=0; i<4; i++) children[i] = emptyNode;
       }
 
       /*! Sets bounding box and ID of child. */
@@ -183,7 +183,7 @@ namespace embree
       /*! Clears the node. */
       __forceinline void clear() {
         naabb = one;
-        for (size_t i=0; i<4; i++) children[i]= emptyNode;
+        for (size_t i=0; i<4; i++) children[i] = emptyNode;
       }
 
       /*! Sets bounding box and ID of child. */
