@@ -177,6 +177,7 @@ namespace embree
     Scene* scene;          //!< source
     size_t minLeafSize;    //!< minimal size of a leaf
     size_t maxLeafSize;    //!< maximal size of a leaf
+    size_t numGeneratedPrims;
     BVH4Hair* bvh;         //!< output
     vector_t<Bezier1> curves; //!< array with all curves
   };

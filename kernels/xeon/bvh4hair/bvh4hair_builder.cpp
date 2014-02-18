@@ -19,6 +19,8 @@
 #include "bvh4hair_statistics.h"
 #include "common/scene_bezier_curves.h"
 
+#define BOUNDS_ACCURACY 1
+
 namespace embree
 {
   BVH4HairBuilder::BVH4HairBuilder (BVH4Hair* bvh, Scene* scene)
@@ -37,10 +39,11 @@ namespace embree
     size_t numPrimitives = scene->numCurves;
     bvh->init(numPrimitives);
     if (numPrimitives == 0) return;
+    numGeneratedPrims = 0;
     
     double t0 = 0.0;
     if (g_verbose >= 2) {
-      std::cout << "building BVH4Hair<Bezier1> ... " << std::flush;
+      std::cout << "building BVH4Hair<Bezier1> ..." << std::flush;
       t0 = getSeconds();
     }
 
@@ -61,7 +64,7 @@ namespace embree
         const Vec3fa& p2 = set->vertex(ofs+2);
         const Vec3fa& p3 = set->vertex(ofs+3);
         const Bezier1 bezier(p0,p1,p2,p3,0,1,i,j);
-        bounds.extend(bezier.bounds());
+        bounds.extend(bezier.bounds(BOUNDS_ACCURACY));
         curves.push_back(bezier);
       }
     }
@@ -79,7 +82,7 @@ namespace embree
 
     if (g_verbose >= 2) {
       double t1 = getSeconds();
-      std::cout << "[DONE]" << std::endl;
+      std::cout << " [DONE]" << std::endl;
       std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
       std::cout << BVH4HairStatistics(bvh).str();
     }
@@ -98,7 +101,7 @@ namespace embree
       if (len == 0.0f) continue; // FIXME: could still need subdivision
       
       /* test if we should subdivide */
-      const AffineSpace3fa space = rcp(frame(axis/len)); // FIXME: use transpose
+      const AffineSpace3fa space = frame(axis/len).transposed();
       BBox3fa bounds = empty;
       const Vec3fa p0 = xfmPoint(space,curves[i].p0); bounds.extend(p0);
       const Vec3fa p1 = xfmPoint(space,curves[i].p1); bounds.extend(p1);
@@ -123,7 +126,7 @@ namespace embree
     float area = 0.0f;
     BBox3fa bounds = empty;
     for (size_t j=begin; j<end; j++) {
-      const BBox3fa cbounds = curves[j].bounds();
+      const BBox3fa cbounds = curves[j].bounds(BOUNDS_ACCURACY);
       area += halfArea(cbounds);
       bounds.extend(cbounds);
     }
@@ -136,7 +139,7 @@ namespace embree
     float area = 0.0f;
     BBox3fa bounds = empty;
     for (size_t j=begin; j<end; j++) {
-      const BBox3fa cbounds = curves[j].bounds(space);
+      const BBox3fa cbounds = curves[j].bounds(BOUNDS_ACCURACY,space);
       area += halfArea(cbounds);
       bounds.extend(cbounds);
     }
@@ -157,12 +160,12 @@ namespace embree
     {
       size_t k = begin + rand() % (end-begin);
       const Vec3fa axis = normalize(curves[k].p3-curves[k].p0);
-      const AffineSpace3fa space = rcp(frame(axis)); // FIXME: use transpose
+      const AffineSpace3fa space = frame(axis).transposed();
       
       BBox3fa bounds = empty;
       float area = 0.0f;
       for (size_t j=begin; j<end; j++) {
-        const BBox3fa cbounds = curves[j].bounds(space);
+        const BBox3fa cbounds = curves[j].bounds(BOUNDS_ACCURACY,space);
         area += halfArea(cbounds);
         bounds.extend(cbounds);
       }
@@ -174,7 +177,7 @@ namespace embree
       }
     }
     
-    NAABBox3fa bounds(rcp(frame(bestAxis)),bestBounds);
+    NAABBox3fa bounds(frame(bestAxis).transposed(),bestBounds);
     bounds.bounds.upper.w = bestArea;
     return bounds;
   }
@@ -238,7 +241,7 @@ namespace embree
     for (size_t i=begin; i<end; i++) {
       const Vec3fa p0 = xfmPoint(space,curves[i].p0);
       const Vec3fa p3 = xfmPoint(space,curves[i].p3);
-      geomBounds.extend(curves[i].bounds(space)); // FIXME: transforms points again
+      geomBounds.extend(curves[i].bounds(BOUNDS_ACCURACY,space)); // FIXME: transforms points again
       centBounds.extend(p0+p3);
     }
 
@@ -258,7 +261,7 @@ namespace embree
     /* perform binning of curves */
     for (size_t i=begin; i<end; i++)
     {
-      const BBox3fa cbounds = curves[i].bounds(space); // FIXME: transforms again
+      const BBox3fa cbounds = curves[i].bounds(BOUNDS_ACCURACY,space); // FIXME: transforms again
       const Vec3fa p0 = xfmPoint(space,curves[i].p0);
       const Vec3fa p3 = xfmPoint(space,curves[i].p3);
       //const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),ssei(0),ssei(BINS-1));
@@ -402,6 +405,7 @@ namespace embree
       std::cout << "WARNING: Loosing " << N-BVH4Hair::maxLeafBlocks << " primitives during build!" << std::endl;
       N = (size_t)BVH4Hair::maxLeafBlocks;
     }
+    numGeneratedPrims+=N; if (numGeneratedPrims > 10000) { std::cout << "." << std::flush; numGeneratedPrims = 0; }
     //assert(N <= (size_t)BVH4Hair::maxLeafBlocks);
     Bezier1* leaf = (Bezier1*) bvh->allocPrimitiveBlocks(threadIndex,N);
     for (size_t i=0; i<N; i++) leaf[i] = curves[begin+i];

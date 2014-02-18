@@ -277,10 +277,41 @@ namespace embree
                              const unsigned int geomID, const unsigned int primID)
         : p0(p0), p1(p1), p2(p2), p3(p3), t0(t0), dt(t1-t0), geomID(geomID), primID(primID) {}
 
+      /*! calculate the bounds of the curve through subdivision */
+      const BBox3fa bounds(size_t depth, const Vec3fa& p00, const Vec3fa& p01, const Vec3fa& p02, const Vec3fa& p03) const 
+      {
+        if (depth == 0) {
+          const BBox3fa b = merge(BBox3fa(p00),BBox3fa(p01),BBox3fa(p02),BBox3fa(p03));
+          return enlarge(b,Vec3fa(b.upper.w));
+        }
+        const Vec3fa p10 = (p00 + p01) * 0.5f;
+        const Vec3fa p11 = (p01 + p02) * 0.5f;
+        const Vec3fa p12 = (p02 + p03) * 0.5f;
+        const Vec3fa p20 = (p10 + p11) * 0.5f;
+        const Vec3fa p21 = (p11 + p12) * 0.5f;
+        const Vec3fa p30 = (p20 + p21) * 0.5f;
+        return merge(bounds(depth-1,p00,p10,p20,p30),bounds(depth-1,p30,p21,p12,p03));
+      }
+
+      /*! calculate the bounds of the curve */
+      __forceinline const BBox3fa bounds(size_t depth) const {
+        return bounds(depth,p0,p1,p2,p3);
+      }
+
       /*! calculate the bounds of the curve */
       __forceinline const BBox3fa bounds() const {
         const BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2),BBox3fa(p3));
         return enlarge(b,Vec3fa(b.upper.w));
+      }
+
+      /*! calculate bounds in specified coordinate space */
+      __forceinline const BBox3fa bounds(size_t depth, const AffineSpace3fa& space) const 
+      {
+        const Vec3fa b0(xfmPoint(space,p0),p0.w);
+        const Vec3fa b1(xfmPoint(space,p1),p1.w);
+        const Vec3fa b2(xfmPoint(space,p2),p2.w);
+        const Vec3fa b3(xfmPoint(space,p3),p3.w);
+        return bounds(depth,b0,b1,b2,b3);
       }
 
       /*! calculate bounds in specified coordinate space */
