@@ -170,14 +170,8 @@ namespace embree
 
     size_t split(size_t begin, size_t end, const NAABBox3fa& bounds, NAABBox3fa& lbounds, NAABBox3fa& rbounds, bool& isAligned);
 
-    /*! recursive build function */
-    NodeRef recurse_unaligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds);
-
-    /*! recursive build function for axis aligned bounds */
-    NodeRef recurse_aligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds);
-
     /*! recursive build function for aligned and non-aligned bounds */
-    NodeRef recurse_aligned_unaligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds);
+    NodeRef recurse(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds);
 
   public:
     Scene* scene;          //!< source
