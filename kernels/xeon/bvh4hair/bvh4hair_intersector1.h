@@ -29,6 +29,7 @@ namespace embree
     {
       /* shortcuts for frequently used types */
       typedef BVH4Hair::NodeRef NodeRef;
+      typedef BVH4Hair::Node Node;
       typedef BVH4Hair::AlignedNode AlignedNode;
       typedef BVH4Hair::UnalignedNode UnalignedNode;
       typedef BVH4Hair::Bezier1 Bezier1;

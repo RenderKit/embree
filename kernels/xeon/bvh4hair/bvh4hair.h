@@ -31,6 +31,7 @@ namespace embree
   public:
     
     /*! forward declaration of node type */
+    struct Node;
     struct AlignedNode;
     struct UnalignedNode;
     typedef AffineSpaceT<LinearSpace3<Vec3<ssef> > > AffineSpaceSOA4;
@@ -79,6 +80,9 @@ namespace embree
 
       /*! checks if this is a leaf */
       __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) > 1; }
+
+      /*! checks if this is a node */
+      __forceinline int isNode() const { return (ptr & (size_t)align_mask) <= 1; }
       
       /*! checks if this is a node with aligned bounding boxes */
       __forceinline int isAlignedNode() const { return (ptr & (size_t)align_mask) == 0; }
@@ -86,6 +90,10 @@ namespace embree
       /*! checks if this is a node with aligned bounding boxes */
       __forceinline int isUnalignedNode() const { return (ptr & (size_t)align_mask) == 1; }
       
+      /*! returns node pointer */
+      __forceinline       Node* node()       { assert(isNode()); return (      Node*)((size_t)ptr & ~(size_t)align_mask); }
+      __forceinline const Node* node() const { assert(isNode()); return (const Node*)((size_t)ptr & ~(size_t)align_mask); }
+
       /*! returns aligned node pointer */
       __forceinline       AlignedNode* alignedNode()       { assert(isAlignedNode()); return (      AlignedNode*)ptr; }
       __forceinline const AlignedNode* alignedNode() const { assert(isAlignedNode()); return (const AlignedNode*)ptr; }
@@ -130,14 +138,36 @@ namespace embree
       BBox3fa bounds;       //!< bounds in transformed space
     };
 
+    /*! Base Node structure */
+    struct Node
+    {
+      /*! Clears the node. */
+      __forceinline void clear() {
+        for (size_t i=0; i<4; i++) children[i] = emptyNode;
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const NodeRef& childID) {
+        assert(i < 4);
+        children[i] = childID;
+      }
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { assert(i<4); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<4); return children[i]; }
+
+    public:
+      NodeRef children[4];   //!< Pointer to the children (can be a node or leaf)
+    };
+
     /*! Node with aligned bounds */
-    struct AlignedNode
+    struct AlignedNode : public Node
     {
       /*! Clears the node. */
       __forceinline void clear() {
         lower_x = lower_y = lower_z = pos_inf; 
         upper_x = upper_y = upper_z = neg_inf;
-        for (size_t i=0; i<4; i++) children[i] = emptyNode;
+        Node::clear();
       }
 
       /*! Sets bounding box and ID of child. */
@@ -146,7 +176,7 @@ namespace embree
         assert(i < 4);
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
         upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
-        children[i] = childID;
+        Node::set(i,childID);
       }
 
       /*! Returns bounds of specified child. */
@@ -163,12 +193,7 @@ namespace embree
         return bounds(i).size();
       }
 
-      /*! Returns reference to specified child */
-      __forceinline       NodeRef& child(size_t i)       { assert(i<4); return children[i]; }
-      __forceinline const NodeRef& child(size_t i) const { assert(i<4); return children[i]; }
-
     public:
-      NodeRef children[4];    //!< Pointer to the 4 children (can be a node or leaf)
       ssef lower_x;           //!< X dimension of lower bounds of all 4 children.
       ssef upper_x;           //!< X dimension of upper bounds of all 4 children.
       ssef lower_y;           //!< Y dimension of lower bounds of all 4 children.
@@ -178,12 +203,12 @@ namespace embree
     };
 
     /*! Node with unaligned bounds */
-    struct UnalignedNode
+    struct UnalignedNode : public Node
     {
       /*! Clears the node. */
       __forceinline void clear() {
         naabb = one;
-        for (size_t i=0; i<4; i++) children[i] = emptyNode;
+        Node::clear();
       }
 
       /*! Sets bounding box and ID of child. */
@@ -211,7 +236,7 @@ namespace embree
         naabb.p.y[i] = space.p.y;
         naabb.p.z[i] = space.p.z;
 
-        children[i] = childID;
+        Node::set(i,childID);
       }
 
       /*! Returns the extend of the bounds of the ith child */
@@ -224,12 +249,7 @@ namespace embree
         return rsqrt(vx*vx + vy*vy + vz*vz);
       }
 
-      /*! Returns reference to specified child */
-      __forceinline       NodeRef& child(size_t i)       { assert(i<4); return children[i]; }
-      __forceinline const NodeRef& child(size_t i) const { assert(i<4); return children[i]; }
-
     public:
-      NodeRef         children[4];   //!< Pointer to the children (can be a node or leaf)
       AffineSpaceSOA4 naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
 
