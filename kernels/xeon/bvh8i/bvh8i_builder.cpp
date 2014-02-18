@@ -308,13 +308,6 @@ namespace embree
 			  bvh8i_root,
 			  bvh8i_node_dist);
 
-      DBG_PRINT(sizeof(BVH8i::CompressedNode));
-      DBG_PRINT(sizeof(BVH8i::Node));
-
-      BVH8i::CompressedNode test;
-      for (size_t i=0;i<index8;i++)
-        test = BVH8i::CompressedNode( bvh8i_base[i] );
-      std::cout << "COMPRESSION TEST DONE" << std::endl << std::flush;
 
       if (g_verbose >= 2)
 	{
@@ -349,7 +342,20 @@ namespace embree
 	}
 
       bvh4i_builder8->bvh->root = bvh8i_root;
+#if 0
       bvh4i_builder8->bvh->qbvh = bvh8i_base; 
+#else
+      DBG_PRINT(sizeof(BVH8i::Quantized8BitNode));
+      DBG_PRINT(sizeof(BVH8i::Node));
+
+      BVH8i::Quantized8BitNode *bvh8i_quantized = (BVH8i::Quantized8BitNode *)os_malloc(sizeof(BVH8i::Quantized8BitNode) * numBVH4iNodes);
+
+      for (size_t i=0;i<index8;i++)
+        bvh8i_quantized[i].init( bvh8i_base[i] );
+
+      std::cout << "8BIT QUANTIZATION DONE" << std::endl << std::flush;
+      bvh4i_builder8->bvh->qbvh = bvh8i_quantized; 
+#endif
     }
     
     
