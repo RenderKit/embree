@@ -49,7 +49,7 @@ namespace embree
     __forceinline bool BVH2HairIntersector1::intersectBox(const AffineSpace3fa& naabb, const Ray& ray, float& tNear, float& tFar)
     {
       const Vec3fa dir = xfmVector(naabb,ray.dir);
-      const Vec3fa rdir = rcp(dir);
+      const Vec3fa rdir = rcp_safe(dir);
       const Vec3fa org = xfmPoint (naabb,ray.org);
       const Vec3fa tLowerXYZ = - org * rdir;     // (Vec3fa(zero) - org) * rdir;
       const Vec3fa tUpperXYZ = rdir + tLowerXYZ; // (Vec3fa(one ) - org) * rdir;

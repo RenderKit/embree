@@ -28,7 +28,7 @@ namespace embree
     __forceinline size_t BVH4HairIntersector1::intersectBox(const AffineSpaceSOA4& naabb, const simd3f& ray_org, const simd3f& ray_dir, simdf& tNear, simdf& tFar)
     {
       const simd3f dir = xfmVector(naabb,ray_dir);
-      const simd3f rdir = rcp(dir);
+      const simd3f rdir = rcp_safe(dir);
       const simd3f org = xfmPoint(naabb,ray_org);
       const simd3f tLowerXYZ = - org * rdir;     // (Vec3fa(zero) - org) * rdir;
       const simd3f tUpperXYZ = rdir + tLowerXYZ; // (Vec3fa(one ) - org) * rdir;
@@ -195,14 +195,12 @@ namespace embree
             const simdb vmask = tNear <= tFar;
             mask = movemask(vmask);
 #endif
-            //mask = 0xF;
           }
 
           /*! process nodes with unaligned bounds */
           else {
             const UnalignedNode* node = cur.unalignedNode();
             mask = intersectBox(node->naabb,org,dir,tNear,tFar);
-            //mask = 0xF;
           }
 
           /*! if no child is hit, pop next node */

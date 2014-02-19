@@ -703,18 +703,18 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   ray.filter = NULL; // (RTCFilterFunc) intersectionFilter;
 
   if (ray.primID != -1)
-    color += 0.3f + abs(dot(ray.dir,ray.Ng));
+  {
+    color += 0.3f + abs(dot(ray.dir,normalize(ray.Ng)));
 
 #if 0
     /* sample directional light */
     RTCRay2 shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.org.w = 0.0f; //ray.org.w+ray.tfar*ray.dir.w;
-    shadow.dir = neg(g_dirlight_direction);
+    shadow.dir = neg(normalize(g_dirlight_direction));
     shadow.dir.w = 0.0f;
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
-
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
@@ -723,11 +723,13 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
 
     //Vec3fa T = occluded(g_scene,shadow);
     rtcIntersect(g_scene,(RTCRay&)shadow);
-    Vec3fa T = Vec3fa(one);
-    if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) T = Vec3fa(zero);
-    color = T;
+    //Vec3fa T = shadow.geomID == RTC_INVALID_GEOMETRY_ID ? Vec3fa(1.0f) : Vec3fa(0.5f);
+    //Vec3fa T = shadow.geomID != RTC_INVALID_GEOMETRY_ID ? Vec3fa(0.5f) : Vec3fa(1.0f);
+    Vec3fa T = shadow.geomID == 0 ? Vec3fa(0.5f) : Vec3fa(1.0f);
+    //PRINT(T);
+    color *= T;
 #endif
-
+  }
   return color;
 }
 
