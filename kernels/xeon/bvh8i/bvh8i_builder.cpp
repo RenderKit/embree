@@ -333,7 +333,7 @@ namespace embree
 	}
 
       bvh4i_builder8->bvh->root = bvh8i_root;
-#if 0
+#if !defined(USE_QUANTIZED_NODES)
       bvh4i_builder8->bvh->qbvh = bvh8i_base; 
 
       std::cout << "SAH = " << BVH8i::sah8( bvh8i_base, bvh8i_root ) << std::endl;
