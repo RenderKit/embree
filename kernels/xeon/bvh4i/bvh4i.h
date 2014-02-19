@@ -97,6 +97,10 @@ namespace embree
         num = id & items_mask;
         return (const char*)base + (id & offset_mask);
       }
+      /*! returns number of primitives in leaf */ 
+      __forceinline unsigned int items() const {
+        return id & items_mask;
+      }
       
     private:
       unsigned int id;

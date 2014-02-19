@@ -63,29 +63,62 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-#if defined (__AVX__) && 0
+#if defined (__AVX__) && 1
 
-  float BVH8i::sah8 () {
-    return sah(bvh8i_base,bvh8i_root,bounds)/area(bounds);
+  float BVH8i::sah8 (Node * base, BVH4i::NodeRef& root) {
+    BVH8i::Node* n = (BVH8i::Node*)root.node(base);
+    BBox3fa bounds = n->bounds();
+
+    return sah8(base,root,bounds)/area(bounds);
   }
 
-  float BVH8i::sah8 (BVH8iNode * base, NodeRef& node, const BBox3fa& bounds)
+  float BVH8i::sah8 (Node * base, NodeRef& node, const BBox3fa& bounds)
   {
     float f = bounds.empty() ? 0.0f : area(bounds);
 
     if (node.isNode()) 
     {
-      BVH8i::BVH8iNode* n = node.node(base);
-      unsigned int children = n->numValidChildren();
-      for (size_t c=0; c<n; c++) 
-        f += sah(n->child(c),n->bounds(c));
+      BVH8i::Node* n = (BVH8i::Node*)node.node(base);
+
+      size_t children = n->numValidChildren();
+      for (size_t c=0; c<children; c++) 
+        f += sah8(base,n->child(c),n->bounds(c));
       return f;
     }
     else 
     {
-      size_t num; node.leaf(triPtr(),num);
+      size_t num = node.items();
       return f*num;
     }
+  }
+
+  float BVH8i::sah8_quantized(Quantized8BitNode * base, BVH4i::NodeRef& root) {
+    BVH8i::Quantized8BitNode* n = (BVH8i::Quantized8BitNode*)root.node(base);
+    BBox3fa bounds = n->bounds();
+
+    return sah8_quantized(base,root,bounds)/area(bounds);
+  }
+
+  float BVH8i::sah8_quantized(Quantized8BitNode * base, NodeRef& node, const BBox3fa& bounds)
+  {
+    float f = bounds.empty() ? 0.0f : area(bounds);
+
+    if (node.isNode()) 
+    {
+      BVH8i::Quantized8BitNode* n = (BVH8i::Quantized8BitNode*)node.node(base);
+      size_t children = n->numValidChildren();
+      for (size_t c=0; c<children; c++) 
+        {
+          f += sah8_quantized(base,n->child(c),n->bounds(c));
+        }
+      return f;
+    }
+    else 
+    {
+      size_t num = node.items();
+      return f*num;
+    }
+
   }
 #endif
 

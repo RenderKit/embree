@@ -28,17 +28,6 @@ namespace embree
 {
   namespace isa
   {
-// #if defined(__AVX2__)
-// #if defined(__X86_64__)
-//     __forceinline size_t bitscan(size_t mask) { return _tzcnt_u64(mask); }
-// #else
-//     __forceinline size_t bitscan(size_t mask) { return _tzcnt_u32(mask); }
-// #endif
-// #else
-//     __forceinline size_t bitscan(size_t mask) { return __bsf(mask); }
-// #endif
-
-
 
     
 #define DBG(x) 
@@ -93,27 +82,41 @@ namespace embree
           STAT3(normal.trav_nodes,1,1,1);
           
           /*! single ray intersection with 4 boxes */
-#if defined(__AVX2__) && 1
+#if defined(__AVX2__) && 0
           const BVH8i::Quantized8BitNode* node = (BVH8i::Quantized8BitNode*)cur.node(nodePtr);
 
           const avxf t0_x = avxf(_mm256_cvtepu8_epi32(*(__m128i*)node->lower_x)) * 1.0f/255.0f;
           const avxf t1_x = avxf(_mm256_cvtepu8_epi32(*(__m128i*)node->upper_x)) * 1.0f/255.0f;
 
-          const avxf base_min_x = floor(t0_x * broadcast(&node->max_x) + (avxf(one) - t0_x) * broadcast(&node->max_x));
-          const avxf base_max_x =  ceil(t1_x * broadcast(&node->max_x) + (avxf(one) - t1_x) * broadcast(&node->max_x));
+
+          const avxf base_min_x = floor(t0_x * broadcast(&node->max_x) + (avxf(one) - t0_x) * broadcast(&node->min_x));
+          const avxf base_max_x =  ceil(t1_x * broadcast(&node->max_x) + (avxf(one) - t1_x) * broadcast(&node->min_x));
+
+
           const avxf min_x = msub(base_min_x,rdir.x,org_rdir.x);
           const avxf max_x = msub(base_max_x,rdir.x,org_rdir.x);
 
           const avxf tNearX = min(min_x,max_x);
           const avxf tFarX  = max(min_x,max_x);
 
+#if 0
+          DBG_PRINT(t0_x);
+          DBG_PRINT(t1_x);
+
+          DBG_PRINT(base_min_x);
+          DBG_PRINT(base_max_x);
+          
+          DBG_PRINT(tNearX);
+          DBG_PRINT(tFarX);
+          exit(0);
+#endif
           // --------------------------------------
 
           const avxf t0_y = avxf(_mm256_cvtepu8_epi32(*(__m128i*)node->lower_y)) * 1.0f/255.0f;
           const avxf t1_y = avxf(_mm256_cvtepu8_epi32(*(__m128i*)node->upper_y)) * 1.0f/255.0f;
 
-          const avxf base_min_y = floor(t0_y * broadcast(&node->max_y) + (avxf(one) - t0_y) * broadcast(&node->max_y));
-          const avxf base_max_y =  ceil(t1_y * broadcast(&node->max_y) + (avxf(one) - t1_y) * broadcast(&node->max_y));
+          const avxf base_min_y = floor(t0_y * broadcast(&node->max_y) + (avxf(one) - t0_y) * broadcast(&node->min_y));
+          const avxf base_max_y =  ceil(t1_y * broadcast(&node->max_y) + (avxf(one) - t1_y) * broadcast(&node->min_y));
           const avxf min_y = msub(base_min_y,rdir.y,org_rdir.y);
           const avxf max_y = msub(base_max_y,rdir.y,org_rdir.y);
 
@@ -125,8 +128,8 @@ namespace embree
           const avxf t0_z = avxf(_mm256_cvtepu8_epi32(*(__m128i*)node->lower_z)) * 1.0f/255.0f;
           const avxf t1_z = avxf(_mm256_cvtepu8_epi32(*(__m128i*)node->upper_z)) * 1.0f/255.0f;
 
-          const avxf base_min_z = floor(t0_z * broadcast(&node->max_z) + (avxf(one) - t0_z) * broadcast(&node->max_z));
-          const avxf base_max_z =  ceil(t1_z * broadcast(&node->max_z) + (avxf(one) - t1_z) * broadcast(&node->max_z));
+          const avxf base_min_z = floor(t0_z * broadcast(&node->max_z) + (avxf(one) - t0_z) * broadcast(&node->min_z));
+          const avxf base_max_z =  ceil(t1_z * broadcast(&node->max_z) + (avxf(one) - t1_z) * broadcast(&node->min_z));
           const avxf min_z = msub(base_min_z,rdir.z,org_rdir.z);
           const avxf max_z = msub(base_max_z,rdir.z,org_rdir.z);
 
@@ -143,6 +146,7 @@ namespace embree
           const avxf tFarX  = msub(load8f((const char*)nodePtr+(size_t)cur+farX ), rdir.x, org_rdir.x);
           const avxf tFarY  = msub(load8f((const char*)nodePtr+(size_t)cur+farY ), rdir.y, org_rdir.y);
           const avxf tFarZ  = msub(load8f((const char*)nodePtr+(size_t)cur+farZ ), rdir.z, org_rdir.z);
+
 #endif
           
 #if defined(__AVX2__)
