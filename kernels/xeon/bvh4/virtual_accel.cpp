@@ -52,8 +52,8 @@ namespace embree
 
   VirtualAccel::~VirtualAccel ()
   {
-    delete accel;
     delete builder;
+    delete accel;
   }
 
   void VirtualAccel::build (size_t threadIndex, size_t threadCount) 
