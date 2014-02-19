@@ -203,7 +203,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   color = material->Kd;
 
   /* apply ambient light */
-  Vec3f Nf = faceforward(Ns,neg(ray.dir),ray.Ng);
+  Vec3f Nf = faceforward(Ns,neg(ray.dir),Ns);
   //Vec3f Ng = normalize(ray.Ng);
   //Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
   color = color*dot(ray.dir,Nf);   // FIXME: *=
