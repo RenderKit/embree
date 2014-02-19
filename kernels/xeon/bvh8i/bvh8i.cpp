@@ -106,6 +106,7 @@ namespace embree
     if (node.isNode()) 
     {
       BVH8i::Quantized8BitNode* n = (BVH8i::Quantized8BitNode*)node.node(base);
+
       size_t children = n->numValidChildren();
       for (size_t c=0; c<children; c++) 
         {

@@ -208,6 +208,13 @@ namespace embree
 
     struct __align(8) Quantized8BitNode
     {
+      unsigned char lower_x[8];
+      unsigned char upper_x[8];
+      unsigned char lower_y[8];
+      unsigned char upper_y[8];
+      unsigned char lower_z[8];
+      unsigned char upper_z[8];
+
       float min_x;
       float max_x;
       float min_y;
@@ -216,12 +223,6 @@ namespace embree
       float max_z;
       float dummy[6];
 
-      unsigned char lower_x[8];
-      unsigned char upper_x[8];
-      unsigned char lower_y[8];
-      unsigned char upper_y[8];
-      unsigned char lower_z[8];
-      unsigned char upper_z[8];
 
       BVH4i::NodeRef children[8];            
 
@@ -253,42 +254,42 @@ namespace embree
       __forceinline float lowerX(const size_t i) const
       {
         const float t0_x = (float)lower_x[i] * 1.0f/255.0f;
-        const float decompress_x = floorf(t0_x * max_x + (1.0f - t0_x) * min_x);
+        const float decompress_x = t0_x * max_x + (1.0f - t0_x) * min_x;
         return decompress_x;
       }
 
       __forceinline float upperX(const size_t i) const
       {
         float t1_x = (float)upper_x[i] * 1.0f/255.0f;
-        float decompress_x = ceilf(t1_x * max_x + (1.0f - t1_x) * min_x);        
+        float decompress_x = t1_x * max_x + (1.0f - t1_x) * min_x;        
         return decompress_x;        
       }
 
       __forceinline float lowerY(const size_t i) const
       {
         const float t0_y = (float)lower_y[i] * 1.0f/255.0f;
-        const float decompress_y = floorf(t0_y * max_y + (1.0f - t0_y) * min_y);
+        const float decompress_y = t0_y * max_y + (1.0f - t0_y) * min_y;
         return decompress_y;
       }
 
       __forceinline float upperY(const size_t i) const
       {
         float t1_y = (float)upper_y[i] * 1.0f/255.0f;
-        float decompress_y = ceilf(t1_y * max_y + (1.0f - t1_y) * min_y);        
+        float decompress_y = t1_y * max_y + (1.0f - t1_y) * min_y;        
         return decompress_y;        
       }
 
       __forceinline float lowerZ(const size_t i) const
       {
         const float t0_z = (float)lower_z[i] * 1.0f/255.0f;
-        const float decompress_z = floorf(t0_z * max_z + (1.0f - t0_z) * min_z);
+        const float decompress_z = t0_z * max_z + (1.0f - t0_z) * min_z;
         return decompress_z;
       }
 
       __forceinline float upperZ(const size_t i) const
       {
         float t1_z = (float)upper_z[i] * 1.0f/255.0f;
-        float decompress_z = ceilf(t1_z * max_z + (1.0f - t1_z) * min_z);        
+        float decompress_z = t1_z * max_z + (1.0f - t1_z) * min_z;        
         return decompress_z;        
       }
 
@@ -332,27 +333,28 @@ namespace embree
             float decompress_min_x = lowerX(i); 
             float decompress_max_x = upperX(i); 
 
+#if 0
             assert( decompress_min_x <= node8.lower_x[i] );
             assert( decompress_max_x >= node8.upper_x[i] );
-
+#endif
             lower_y[i] = (unsigned int)clamp255(floorf(255.0f * roundDown(((node8.lower_y[i] - min_y) * diff_y))));
             upper_y[i] = (unsigned int)clamp255(ceilf(255.0f * roundUp(((node8.upper_y[i] - min_y) * diff_y))));
 
             float decompress_min_y = lowerY(i);
             float decompress_max_y = upperY(i);
-
+#if 0
             assert( decompress_min_y <= node8.lower_y[i] );
             assert( decompress_max_y >= node8.upper_y[i] );
-
+#endif
             lower_z[i] = (unsigned int)clamp255(floorf(255.0f * roundDown(((node8.lower_z[i] - min_z) * diff_z))));
             upper_z[i] = (unsigned int)clamp255(ceilf(255.0f * roundUp(((node8.upper_z[i] - min_z) * diff_z))));
 
             float decompress_min_z = lowerZ(i);
             float decompress_max_z = upperZ(i);
-
+#if 0
             assert( decompress_min_z <= node8.lower_z[i] );
             assert( decompress_max_z >= node8.upper_z[i] );
-
+#endif
           }
           
       }
@@ -426,6 +428,8 @@ namespace embree
 
     __forceinline std::ostream &operator<<(std::ostream &o, const BVH8i::Quantized8BitNode &v)
     {
+      o << "min " << v.min_x << " " << v.min_y << " " << v.min_z << std::endl;
+      o << "max " << v.max_x << " " << v.max_y << " " << v.max_z << std::endl;
       o << "lower_x ";
       for (size_t i=0;i<8;i++) o << v.lowerX(i) << " ";
       o << std::endl;
