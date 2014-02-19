@@ -115,7 +115,7 @@ namespace embree
       size_t i = select_min(valid,t);
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__) && !defined(PRE_SUBDIVISION_HACK)
+#if defined(__INTERSECTION_FILTER__)
       int geomID = bezier.geomID;
       const Geometry* geometry = scene->get(geomID);
       if (!likely(geometry->hasIntersectionFilter1())) 
@@ -132,7 +132,7 @@ namespace embree
         ray.Ng = T;
         ray.geomID = bezier.geomID;
         ray.primID = bezier.primID;
-#if defined(__INTERSECTION_FILTER__) && !defined(PRE_SUBDIVISION_HACK)
+#if defined(__INTERSECTION_FILTER__)
           return;
       }
 
@@ -305,7 +305,7 @@ namespace embree
       if (none(valid)) return false;
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)  && !defined(PRE_SUBDIVISION_HACK)
+#if defined(__INTERSECTION_FILTER__)
 
       size_t i = select_min(valid,t);
       int geomID = bezier.geomID;

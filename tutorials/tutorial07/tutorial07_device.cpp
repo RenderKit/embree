@@ -17,8 +17,8 @@
 #include "../common/tutorial/tutorial_device.h"
 
 #define USE_INTERSECTION_FILTER 0
-#define USE_OCCLUSION_FILTER 1
-#define USE_EYELIGHT_SHADING 0
+#define USE_OCCLUSION_FILTER 0
+#define USE_EYELIGHT_SHADING 1
 
 /* accumulation buffer */
 Vec3fa* g_accu = NULL;

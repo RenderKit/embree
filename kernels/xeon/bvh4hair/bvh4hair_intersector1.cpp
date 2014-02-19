@@ -330,7 +330,7 @@ namespace embree
       if (none(valid)) return false;
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)  && !defined(PRE_SUBDIVISION_HACK)
+#if defined(__INTERSECTION_FILTER__)
 
       size_t i = select_min(valid,t);
       int geomID = bezier.geomID;
