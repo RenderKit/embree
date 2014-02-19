@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.h"
 
 #define USE_INTERSECTION_FILTER 0
-#define USE_OCCLUSION_FILTER 0
+#define USE_OCCLUSION_FILTER 1
 #define USE_EYELIGHT_SHADING 0
 
 /* accumulation buffer */
@@ -271,9 +271,7 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
   Vec3fa T = 1.0f;
   while (true) 
   {
-    //PRINT(ray.tnear);
     rtcIntersect(scene,(RTCRay&)ray);
-    //PRINT2(ray.geomID,ray.primID);
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) break;
     if (ray.geomID >= g_ispc_scene->numHairSets) return 0.0f; // make all surfaces opaque
     

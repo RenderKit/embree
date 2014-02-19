@@ -268,7 +268,7 @@ namespace embree
   public:
 
     /*! BVH2Hair default constructor. */
-    BVH2Hair ();
+    BVH2Hair (Scene* scene);
 
     /*! BVH2Hair destruction */
     ~BVH2Hair ();
@@ -314,6 +314,7 @@ namespace embree
     }
 
   public:
+    Scene* scene;
     NodeRef root;  //!< Root node
     size_t numPrimitives;
     size_t numVertices;

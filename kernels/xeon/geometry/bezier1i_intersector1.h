@@ -159,7 +159,7 @@ namespace embree
       const avx4f p = p0 + u*v;
       const avxf t = p.z;
       const avxf d2 = p.x*p.x + p.y*p.y; 
-      const avxf r = max(p.w,ray.org.w+ray.dir.w*t);
+      const avxf r = p.w; //max(p.w,ray.org.w+ray.dir.w*t);
       const avxf r2 = r*r;
       avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
     retry:
@@ -222,7 +222,7 @@ namespace embree
     static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom) 
     {
       /* load bezier curve control points */
-      STAT3(normal.trav_prims,1,1,1);
+      STAT3(shadow.trav_prims,1,1,1);
       const Vec3fa v0 = curve_in.p[0];
       const Vec3fa v1 = curve_in.p[1];
       const Vec3fa v2 = curve_in.p[2];
@@ -248,7 +248,7 @@ namespace embree
       const avx4f p = p0 + u*v;
       const avxf t = p.z;
       const avxf d2 = p.x*p.x + p.y*p.y; 
-      const avxf r = p.w+ray.org.w+ray.dir.w*t;
+      const avxf r = p.w; //+ray.org.w+ray.dir.w*t;
       const avxf r2 = r*r;
       avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
       if (none(valid)) return false;

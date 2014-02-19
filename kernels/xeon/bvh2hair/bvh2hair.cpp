@@ -29,8 +29,8 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2(features,BVH2HairIntersector1_);
   }
 
-  BVH2Hair::BVH2Hair () 
-    : root(emptyNode), numPrimitives(0), numVertices(0) {}
+  BVH2Hair::BVH2Hair (Scene* scene) 
+    : scene(scene), root(emptyNode), numPrimitives(0), numVertices(0) {}
 
   BVH2Hair::~BVH2Hair () {
   }
@@ -48,7 +48,7 @@ namespace embree
   
   Accel* BVH2Hair::BVH2HairBezier1(Scene* scene)
   { 
-    BVH2Hair* accel = new BVH2Hair;
+    BVH2Hair* accel = new BVH2Hair(scene);
     Accel::Intersectors intersectors = BVH2HairIntersectors(accel);
     Builder* builder = BVH2HairBuilder_(accel,scene);
     return new AccelInstance(accel,builder,intersectors);
