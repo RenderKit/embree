@@ -50,7 +50,7 @@ namespace embree
   void storeMagick(const Ref<Image>& img, const FileName& fileName)
   {
     Magick::Image image(Magick::Geometry(img->width,img->height),
-                        Magick::ColorRGB(0,0,0));
+                        Magick::Color(0,0,0,0));
     image.modifyImage();
 
     Magick::Pixels pixel_cache(image);
@@ -58,9 +58,10 @@ namespace embree
     for (size_t y=0; y<img->height; y++) {
       for (size_t x=0; x<img->width; x++) {
         Color4 c = img->get(x,y);
-        pixels[y*img->width+x] = Magick::ColorRGB(Magick::Quantum(clamp(c.r)*MaxRGB),
-						  Magick::Quantum(clamp(c.g)*MaxRGB),
-						  Magick::Quantum(clamp(c.b)*MaxRGB));
+        pixels[y*img->width+x] = Magick::Color(Magick::Quantum(clamp(c.r)*MaxRGB),
+                                               Magick::Quantum(clamp(c.g)*MaxRGB),
+                                               Magick::Quantum(clamp(c.b)*MaxRGB),
+                                               Magick::Quantum(clamp(c.a)*MaxRGB));
       }
     }
     pixel_cache.sync();
