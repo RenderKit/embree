@@ -168,7 +168,7 @@ namespace embree
       size_t i = select_min(valid,t);
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__) && !defined(PRE_SUBDIVISION_HACK)
+#if defined(__INTERSECTION_FILTER__)
       int geomID = curve_in.geomID;
       Geometry* geometry = ((Scene*)geom)->get(geomID);
       if (!likely(geometry->hasIntersectionFilter1())) 
@@ -185,7 +185,7 @@ namespace embree
         ray.Ng = T;
         ray.geomID = curve_in.geomID;
         ray.primID = curve_in.primID;
-#if defined(__INTERSECTION_FILTER__) && !defined(PRE_SUBDIVISION_HACK)
+#if defined(__INTERSECTION_FILTER__)
           return;
       }
 
@@ -208,12 +208,12 @@ namespace embree
       for (size_t i=0; i<num; i++)
 	{
 #if defined(PRE_SUBDIVISION_HACK)
-	  if (unlikely(any(pre.mbox.ids == curves[i].geomID))) { continue; }
+	  if (unlikely(any(pre.mbox.ids == curves[i].primID))) continue; // FIXME: works only for single hair set
 #endif
 	  intersect(pre,ray,curves[i],geom);
 
 #if defined(PRE_SUBDIVISION_HACK)
-	  *(unsigned int*)&pre.mbox.ids[pre.mbox.index] = curves[i].geomID;
+	  *(unsigned int*)&pre.mbox.ids[pre.mbox.index] = curves[i].primID; // FIXME: works only for single hair set
 	  *(unsigned int*)&pre.mbox.index = (pre.mbox.index + 1 ) % 8;
 #endif
 	}
@@ -254,7 +254,7 @@ namespace embree
       if (none(valid)) return false;
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)  && !defined(PRE_SUBDIVISION_HACK)
+#if defined(__INTERSECTION_FILTER__)
 
       size_t i = select_min(valid,t);
       int geomID = curve_in.geomID;
