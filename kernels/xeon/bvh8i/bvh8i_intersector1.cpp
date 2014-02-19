@@ -93,7 +93,7 @@ namespace embree
           STAT3(normal.trav_nodes,1,1,1);
           
           /*! single ray intersection with 4 boxes */
-#if 1
+#if defined(__AVX2__) && 1
           const BVH8i::Quantized8BitNode* node = (BVH8i::Quantized8BitNode*)cur.node(nodePtr);
 
           const avxf t0_x = avxf(_mm256_cvtepu8_epi32(*(__m128i*)node->lower_x)) * 1.0f/255.0f;
