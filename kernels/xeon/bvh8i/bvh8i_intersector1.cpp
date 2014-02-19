@@ -81,7 +81,7 @@ namespace embree
         if (unlikely(*(float*)&stackPtr->dist > ray.tfar))
           continue;
         
-        const float factor = 1.0f/255.0f;
+        const avxf factor = 1.0f/255.0f;
         /* downtraversal loop */
         while (true)
         {
@@ -97,23 +97,43 @@ namespace embree
           
           const avxf tnear_x = avxf(_mm256_cvtepu8_epi32(*(__m128i*)((const char*)node+nearX) )) * factor;
           const avxf tfar_x  = avxf(_mm256_cvtepu8_epi32(*(__m128i*)((const char*)node+farX)  )) * factor;
-          const avxf near_x  = tnear_x * broadcast(&node->max_x) + (avxf(one) - tnear_x) * broadcast(&node->min_x);
-          const avxf far_x   = tfar_x  * broadcast(&node->max_x) + (avxf(one) - tfar_x)  * broadcast(&node->min_x);
+
+          // const avxf near_x  = tnear_x * avxf(node->max_x) + (avxf(one) - tnear_x) * avxf(node->min_x);
+          // const avxf far_x   = tfar_x  * avxf(node->max_x) + (avxf(one) - tfar_x)  * avxf(node->min_x);
+          const avxf min_x  = avxf(node->min_x);
+          const avxf diff_x = avxf(node->diff_x);
+          const avxf near_x  = min_x + tnear_x * diff_x;
+          const avxf far_x   = min_x + tfar_x  * diff_x;
+
           const avxf tNearX  = msub(near_x,rdir.x,org_rdir.x);
           const avxf tFarX   = msub(far_x,rdir.x,org_rdir.x);
 
 
           const avxf tnear_y = avxf(_mm256_cvtepu8_epi32(*(__m128i*)((const char*)node+nearY) )) * factor;
           const avxf tfar_y  = avxf(_mm256_cvtepu8_epi32(*(__m128i*)((const char*)node+farY)  )) * factor;
-          const avxf near_y  = tnear_y * broadcast(&node->max_y) + (avxf(one) - tnear_y) * broadcast(&node->min_y);
-          const avxf far_y   = tfar_y  * broadcast(&node->max_y) + (avxf(one) - tfar_y)  * broadcast(&node->min_y);
+          // const avxf near_y  = tnear_y * avxf(node->max_y) + (avxf(one) - tnear_y) * avxf(node->min_y);
+          // const avxf far_y   = tfar_y  * avxf(node->max_y) + (avxf(one) - tfar_y)  * avxf(node->min_y);
+
+          const avxf min_y  = avxf(node->min_y);
+          const avxf diff_y = avxf(node->diff_y);
+
+          const avxf near_y  = min_y + tnear_y * diff_y;
+          const avxf far_y   = min_y + tfar_y  * diff_y;
+
           const avxf tNearY  = msub(near_y,rdir.y,org_rdir.y);
           const avxf tFarY   = msub(far_y,rdir.y,org_rdir.y);
 
           const avxf tnear_z = avxf(_mm256_cvtepu8_epi32(*(__m128i*)((const char*)node+nearZ) )) * factor;
           const avxf tfar_z  = avxf(_mm256_cvtepu8_epi32(*(__m128i*)((const char*)node+farZ)  )) * factor;
-          const avxf near_z  = tnear_z * broadcast(&node->max_z) + (avxf(one) - tnear_z) * broadcast(&node->min_z);
-          const avxf far_z   = tfar_z  * broadcast(&node->max_z) + (avxf(one) - tfar_z)  * broadcast(&node->min_z);
+          // const avxf near_z  = tnear_z * avxf(node->max_z) + (avxf(one) - tnear_z) * avxf(node->min_z);
+          // const avxf far_z   = tfar_z  * avxf(node->max_z) + (avxf(one) - tfar_z)  * avxf(node->min_z);
+
+          const avxf min_z  = avxf(node->min_z);
+          const avxf diff_z = avxf(node->diff_z);
+
+          const avxf near_z  = min_z + tnear_z * diff_z;
+          const avxf far_z   = min_z + tfar_z  * diff_z;
+
           const avxf tNearZ  = msub(near_z,rdir.z,org_rdir.z);
           const avxf tFarZ   = msub(far_z,rdir.z,org_rdir.z);
 
@@ -249,7 +269,8 @@ namespace embree
         stackPtr--;
         NodeRef cur = (NodeRef) *stackPtr;
 
-        const float factor = 1.0f/255.0f;
+        const avxf factor = 1.0f/255.0f;
+
         /* downtraversal loop */
         while (true)
         {
@@ -265,25 +286,42 @@ namespace embree
           
           const avxf tnear_x = avxf(_mm256_cvtepu8_epi32(*(__m128i*)((const char*)node+nearX) )) * factor;
           const avxf tfar_x  = avxf(_mm256_cvtepu8_epi32(*(__m128i*)((const char*)node+farX)  )) * factor;
-          const avxf near_x  = tnear_x * broadcast(&node->max_x) + (avxf(one) - tnear_x) * broadcast(&node->min_x);
-          const avxf far_x   = tfar_x  * broadcast(&node->max_x) + (avxf(one) - tfar_x)  * broadcast(&node->min_x);
+
+          const avxf near_x  = avxf(node->min_x) + tnear_x * avxf(node->diff_x);
+          const avxf far_x   = avxf(node->min_x) + tfar_x  * avxf(node->diff_x);
+
+          // const avxf near_x  = tnear_x * avxf(node->max_x) + (avxf(one) - tnear_x) * avxf(node->min_x);
+          // const avxf far_x   = tfar_x  * avxf(node->max_x) + (avxf(one) - tfar_x)  * avxf(node->min_x);
           const avxf tNearX  = msub(near_x,rdir.x,org_rdir.x);
           const avxf tFarX   = msub(far_x,rdir.x,org_rdir.x);
 
 
           const avxf tnear_y = avxf(_mm256_cvtepu8_epi32(*(__m128i*)((const char*)node+nearY) )) * factor;
           const avxf tfar_y  = avxf(_mm256_cvtepu8_epi32(*(__m128i*)((const char*)node+farY)  )) * factor;
-          const avxf near_y  = tnear_y * broadcast(&node->max_y) + (avxf(one) - tnear_y) * broadcast(&node->min_y);
-          const avxf far_y   = tfar_y  * broadcast(&node->max_y) + (avxf(one) - tfar_y)  * broadcast(&node->min_y);
+
+          // const avxf near_y  = tnear_y * avxf(node->max_y) + (avxf(one) - tnear_y) * avxf(node->min_y);
+          // const avxf far_y   = tfar_y  * avxf(node->max_y) + (avxf(one) - tfar_y)  * avxf(node->min_y);
+          const avxf near_y  = avxf(node->min_y) + tnear_y * avxf(node->diff_y);
+          const avxf far_y   = avxf(node->min_y) + tfar_y  * avxf(node->diff_y);
+
           const avxf tNearY  = msub(near_y,rdir.y,org_rdir.y);
           const avxf tFarY   = msub(far_y,rdir.y,org_rdir.y);
 
           const avxf tnear_z = avxf(_mm256_cvtepu8_epi32(*(__m128i*)((const char*)node+nearZ) )) * factor;
           const avxf tfar_z  = avxf(_mm256_cvtepu8_epi32(*(__m128i*)((const char*)node+farZ)  )) * factor;
-          const avxf near_z  = tnear_z * broadcast(&node->max_z) + (avxf(one) - tnear_z) * broadcast(&node->min_z);
-          const avxf far_z   = tfar_z  * broadcast(&node->max_z) + (avxf(one) - tfar_z)  * broadcast(&node->min_z);
+
+          const avxf near_z  = avxf(node->min_z) + tnear_z * avxf(node->diff_z);
+          const avxf far_z   = avxf(node->min_z) + tfar_z  * avxf(node->diff_z);
+
+          // const avxf near_z  = tnear_z * avxf(node->max_z) + (avxf(one) - tnear_z) * avxf(node->min_z);
+          // const avxf far_z   = tfar_z  * avxf(node->max_z) + (avxf(one) - tfar_z)  * avxf(node->min_z);
+
           const avxf tNearZ  = msub(near_z,rdir.z,org_rdir.z);
           const avxf tFarZ   = msub(far_z,rdir.z,org_rdir.z);
+
+
+
+
 
           //const avxi children = load8i((int*)node->children);
           //const unsigned int m_children = movemask(children != BVH4i::emptyNode);

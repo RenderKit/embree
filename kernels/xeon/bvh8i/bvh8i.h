@@ -209,7 +209,7 @@ namespace embree
     static float sah8 (Node* base, BVH4i::NodeRef& root );
     static float sah8 (Node* base, BVH4i::NodeRef& node, const BBox3fa& bounds);
 
-    struct __align(8) Quantized8BitNode
+    struct __align(64) Quantized8BitNode
     {
       unsigned char lower_x[8];
       unsigned char upper_x[8];
@@ -224,7 +224,12 @@ namespace embree
       float max_y;
       float min_z;
       float max_z;
-      float dummy[6];
+
+      float diff_x;
+      float diff_y;
+      float diff_z;
+
+      float dummy[3];
 
 
       BVH4i::NodeRef children[8];            
@@ -314,9 +319,13 @@ namespace embree
               children[i] = node8.children[i];		
           }
 
-        const float diff_x = 1.0f / (max_x - min_x); 
-        const float diff_y = 1.0f / (max_y - min_y);
-        const float diff_z = 1.0f / (max_z - min_z);
+        diff_x = max_x - min_x;
+        diff_y = max_y - min_y;
+        diff_z = max_z - min_z;
+
+        const float rcp_diff_x = 1.0f / diff_x; 
+        const float rcp_diff_y = 1.0f / diff_y;
+        const float rcp_diff_z = 1.0f / diff_z;
 
         for (size_t i=0;i<8;i++)
           {
@@ -330,8 +339,8 @@ namespace embree
 	  
         for (size_t i=0;i<node8.numValidChildren();i++)
           {
-            lower_x[i] = (unsigned int)clamp255(floorf(255.0f * roundDown(((node8.lower_x[i] - min_x) * diff_x))));
-            upper_x[i] = (unsigned int)clamp255(ceilf(255.0f * roundUp( ((node8.upper_x[i] - min_x) * diff_x)) ));
+            lower_x[i] = (unsigned int)clamp255(floorf(255.0f * roundDown(((node8.lower_x[i] - min_x) * rcp_diff_x))));
+            upper_x[i] = (unsigned int)clamp255(ceilf(255.0f * roundUp( ((node8.upper_x[i] - min_x) * rcp_diff_x)) ));
 
             float decompress_min_x = lowerX(i); 
             float decompress_max_x = upperX(i); 
@@ -340,8 +349,8 @@ namespace embree
             assert( decompress_min_x <= node8.lower_x[i] );
             assert( decompress_max_x >= node8.upper_x[i] );
 #endif
-            lower_y[i] = (unsigned int)clamp255(floorf(255.0f * roundDown(((node8.lower_y[i] - min_y) * diff_y))));
-            upper_y[i] = (unsigned int)clamp255(ceilf(255.0f * roundUp(((node8.upper_y[i] - min_y) * diff_y))));
+            lower_y[i] = (unsigned int)clamp255(floorf(255.0f * roundDown(((node8.lower_y[i] - min_y) * rcp_diff_y))));
+            upper_y[i] = (unsigned int)clamp255(ceilf(255.0f * roundUp(((node8.upper_y[i] - min_y) * rcp_diff_y))));
 
             float decompress_min_y = lowerY(i);
             float decompress_max_y = upperY(i);
@@ -349,8 +358,8 @@ namespace embree
             assert( decompress_min_y <= node8.lower_y[i] );
             assert( decompress_max_y >= node8.upper_y[i] );
 #endif
-            lower_z[i] = (unsigned int)clamp255(floorf(255.0f * roundDown(((node8.lower_z[i] - min_z) * diff_z))));
-            upper_z[i] = (unsigned int)clamp255(ceilf(255.0f * roundUp(((node8.upper_z[i] - min_z) * diff_z))));
+            lower_z[i] = (unsigned int)clamp255(floorf(255.0f * roundDown(((node8.lower_z[i] - min_z) * rcp_diff_z))));
+            upper_z[i] = (unsigned int)clamp255(ceilf(255.0f * roundUp(((node8.upper_z[i] - min_z) * rcp_diff_z))));
 
             float decompress_min_z = lowerZ(i);
             float decompress_max_z = upperZ(i);
