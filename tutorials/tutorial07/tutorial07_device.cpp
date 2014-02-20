@@ -37,8 +37,8 @@ extern Vec3fa g_dirlight_intensity;
 extern Vec3fa g_ambient_intensity;
 
 /* hair material */
-const Vec3fa hair_K  = Vec3fa(0.8f,0.57f,0.32);
-const Vec3fa hair_dK = Vec3fa(0.02f,0.05f,0.02);
+const Vec3fa hair_K  = Vec3fa(0.8f,0.57f,0.32f);
+const Vec3fa hair_dK = Vec3fa(0.1f,0.12f,0.08f);
 //const Vec3fa hair_K  = Vec3fa(1.0f,1.0f,1.0f);
 //const Vec3fa hair_dK = Vec3fa(0.0f,0.0f,0.0f);
 const Vec3fa hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
@@ -632,7 +632,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       /* generate anisotropic BRDF */
       int seed1 = g_ispc_scene->hairs[ray.geomID]->hairs[ray.primID].id;
       const Vec3fa dK = hair_dK*frand(seed1);
-      new (&brdf) AnisotropicBlinn(hair_Kr-dK,hair_Kt-dK,dx,20.0f,dy,10.0f,dz);
+      new (&brdf) AnisotropicBlinn(hair_Kr+dK,hair_Kt+dK,dx,5.0f,dy,2.0f,dz);
       brdf.Kr = hair_Kr-dK;
       tnear_eps = 1.1f*evalBezier(ray.geomID,ray.primID,ray.u).w;
     }
