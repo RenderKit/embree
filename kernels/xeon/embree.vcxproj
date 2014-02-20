@@ -539,7 +539,6 @@
     <ClInclude Include="..\..\common\math\vec3fa.h" />
     <ClInclude Include="..\..\common\math\vec3ia.h" />
     <ClInclude Include="..\..\common\math\vec4.h" />
-    <ClInclude Include="..\..\common\math\vector3f.h" />
     <ClInclude Include="..\..\common\simd\avx.h" />
     <ClInclude Include="..\..\common\simd\avxb.h" />
     <ClInclude Include="..\..\common\simd\avxf.h" />
