@@ -37,12 +37,12 @@ extern Vec3fa g_dirlight_intensity;
 extern Vec3fa g_ambient_intensity;
 
 /* hair material */
-const Vec3fa hair_K  = Vec3fa(1.0f,0.57f,0.32);
+const Vec3fa hair_K  = Vec3fa(0.8f,0.57f,0.32);
 const Vec3fa hair_dK = Vec3fa(0.02f,0.05f,0.02);
 //const Vec3fa hair_K  = Vec3fa(1.0f,1.0f,1.0f);
 //const Vec3fa hair_dK = Vec3fa(0.0f,0.0f,0.0f);
-const Vec3fa hair_Kr = 0.5f*hair_K;    //!< reflectivity of hair
-const Vec3fa hair_Kt = 0.5f*hair_K;    //!< transparency of hair
+const Vec3fa hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
+const Vec3fa hair_Kt = 0.8f*hair_K;    //!< transparency of hair
 
 void filterDispatch(void* ptr, struct RTCRay2& ray);
 
@@ -599,29 +599,18 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   ray.time = 0;
   ray.filter = NULL; //(RTCFilterFunc) intersectionFilter;
   
-  /*PRINT(ray.org);
-  PRINT(ray.dir);
-  PRINT(ray.tnear);
-  PRINT(ray.tfar);*/
-  
   Vec3fa color = Vec3f(0.0f);
   Vec3fa weight = 1.0f;
   size_t depth = 0;
-  //PRINT(weight);
 
   while (true)
   {
-    //PRINT(depth);
-
     /* terminate ray path */
-    if (reduce_max(weight) < 0.01 || depth > 2000) 
-      return color; // + weight*g_ambient_intensity;
+    if (reduce_max(weight) < 0.01 || depth > 20) 
+      return color;
 
     /* intersect ray with scene and gather all hits */
     rtcIntersect(g_scene,(RTCRay&)ray);
-    /*PRINT(ray.tfar);
-    PRINT(ray.geomID);
-    PRINT(ray.primID);*/
     
     /* exit if we hit environment */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
@@ -645,10 +634,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       const Vec3fa dK = hair_dK*frand(seed1);
       new (&brdf) AnisotropicBlinn(hair_Kr-dK,hair_Kt-dK,dx,20.0f,dy,10.0f,dz);
       brdf.Kr = hair_Kr-dK;
-
-      tnear_eps = evalBezier(ray.geomID,ray.primID,ray.u).w;
-      //PRINT(tnear_eps);
-      //tnear_eps /= fabs(dot(normalize(ray.dir),dz));
+      tnear_eps = 1.1f*evalBezier(ray.geomID,ray.primID,ray.u).w;
     }
     else 
     {
@@ -674,19 +660,16 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     Vec3fa T = occluded(g_scene,shadow);
     Vec3fa c = brdf.eval(neg(ray.dir),neg(g_dirlight_direction));
     color += weight*c*T*g_dirlight_intensity;
-    //PRINT(color);
 
 #if 1
-    //PRINT(dot(ray.dir,brdf.dz));
     /* sample BRDF */
     Vec3fa wi;
     c = brdf.sample(neg(ray.dir),wi,frand(seed),frand(seed),frand(seed));
-    //PRINT(dot(wi,brdf.dz));
     if (wi.w <= 0.0f) return color;
     if (dot(wi,brdf.dz) < 0.0f)
-      ray.org = ray.org + ray.tfar*ray.dir - 2.0f*tnear_eps*brdf.dz;
+      ray.org = ray.org + ray.tfar*ray.dir - tnear_eps*brdf.dz;
     else
-      ray.org = ray.org + ray.tfar*ray.dir + 2.0f*tnear_eps*brdf.dz;
+      ray.org = ray.org + ray.tfar*ray.dir + tnear_eps*brdf.dz;
     ray.org.w = 0.0f;
     ray.dir = wi;
     ray.dir.w = 0.0f;
@@ -698,11 +681,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     ray.time = 0;
     ray.filter = NULL; //(RTCFilterFunc) intersectionFilter;
     weight *= c/wi.w;
-    /*PRINT(ray.org);
-    PRINT(ray.dir);
-    PRINT(ray.tnear);
-    PRINT(ray.tfar);
-    PRINT(weight);*/
 
 #else    
 
