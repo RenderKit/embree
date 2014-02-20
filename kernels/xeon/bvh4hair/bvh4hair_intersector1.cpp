@@ -232,15 +232,19 @@ namespace embree
             goto pop;
           
           /*! one child is hit, continue with that child */
+
           size_t r = __bscf(mask);
+          NodeRef c0 = node->child(r);
+          c0.prefetch();
+
           if (likely(mask == 0)) {
-            cur = node->child(r); cur.prefetch(); tNear = tNear[r]; tFar = tFar[r];
+            cur = c0;  tNear = tNear[r]; tFar = tFar[r];
             assert(cur != BVH4Hair::emptyNode);
             continue;
           }
      
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); c0.prefetch(); const float n0 = tNear[r]; const float f0 = tFar[r]; 
+          const float n0 = tNear[r]; const float f0 = tFar[r]; 
           r = __bscf(mask);
           NodeRef c1 = node->child(r); c1.prefetch(); const float n1 = tNear[r]; const float f1 = tFar[r];
           assert(c0 != BVH4Hair::emptyNode);
@@ -456,14 +460,16 @@ namespace embree
           
           /*! one child is hit, continue with that child */
           size_t r = __bscf(mask);
+          NodeRef c0 = node->child(r); c0.prefetch();
+
           if (likely(mask == 0)) {
-            cur = node->child(r); cur.prefetch();tNear = tNear[r]; tFar = tFar[r];
+            cur = c0; tNear = tNear[r]; tFar = tFar[r];
             assert(cur != BVH4Hair::emptyNode);
             continue;
           }
      
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); c0.prefetch(); const float n0 = tNear[r]; const float f0 = tFar[r]; 
+           const float n0 = tNear[r]; const float f0 = tFar[r]; 
           r = __bscf(mask);
           NodeRef c1 = node->child(r); c1.prefetch(); const float n1 = tNear[r]; const float f1 = tFar[r];
           assert(c0 != BVH4Hair::emptyNode);
