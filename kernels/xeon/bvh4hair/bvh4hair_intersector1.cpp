@@ -41,8 +41,8 @@ namespace embree
       const simdf tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
       tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
       tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
-      const simdb vmask = cast(tNear) > cast(tFar);
-      return movemask(vmask)^(sizeof(simdf)-1);
+      const simdb vmask = tNear <= tFar;
+      return movemask(vmask);
 #else
       const simdf tNearX = min(tLowerXYZ.x,tUpperXYZ.x);
       const simdf tNearY = min(tLowerXYZ.y,tUpperXYZ.y);
@@ -211,7 +211,7 @@ namespace embree
             tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
             tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
             const simdb vmask = cast(tNear) > cast(tFar);
-            mask = movemask(vmask)^(sizeof(simdf)-1);
+            mask = movemask(vmask)^((1<<BVH4Hair::N)-1);
 #else
             tNear = max(tNearX,tNearY,tNearZ,tNear);
             tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
@@ -434,7 +434,7 @@ namespace embree
             tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
             tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
             const simdb vmask = cast(tNear) > cast(tFar);
-            mask = movemask(vmask)^(sizeof(simdf)-1);
+            mask = movemask(vmask)^((1<<BVH4Hair::N)-1);
 #else
             tNear = max(tNearX,tNearY,tNearZ,tNear);
             tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);

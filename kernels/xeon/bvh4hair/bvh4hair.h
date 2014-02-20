@@ -23,7 +23,7 @@
 #include "geometry/primitive.h"
 #include "geometry/bezier1i.h"
 
-#define BVH4HAIR_WIDTH 4
+#define BVH4HAIR_WIDTH 8
 
 namespace embree
 {
