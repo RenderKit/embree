@@ -42,6 +42,8 @@ const Vec3fa hair_dK = Vec3fa(0.02f,0.05f,0.02);
 const Vec3fa hair_Kr = 0.7f*hair_K;    //!< reflectivity of hair
 const Vec3fa hair_Kt = 0.3f*hair_K;    //!< transparency of hair
 
+void filterDispatch(void* ptr, struct RTCRay2& ray);
+
 struct ISPCTriangle 
 {
   int v0;                /*< first triangle vertex */
@@ -107,77 +109,6 @@ renderPixelFunc renderPixel;
 
 Vec3fa renderPixelTestEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
-__forceinline Vec3fa evalBezier(const int geomID, const int primID, const float t)
-{
-  const float t0 = 1.0f - t, t1 = t;
-  const ISPCHairSet* hair = g_ispc_scene->hairs[geomID]; // FIXME: works only because hairs are added first to scene
-  const Vec3fa* vertices = hair->v;
-  const ISPCHair* hairs = hair->hairs;
-  
-  const int i = hairs[primID].vertex;
-  const Vec3fa p00 = *(Vec3fa*)&vertices[i+0];
-  const Vec3fa p01 = *(Vec3fa*)&vertices[i+1];
-  const Vec3fa p02 = *(Vec3fa*)&vertices[i+2];
-  const Vec3fa p03 = *(Vec3fa*)&vertices[i+3];
-
-  const Vec3fa p10 = p00 * t0 + p01 * t1;
-  const Vec3fa p11 = p01 * t0 + p02 * t1;
-  const Vec3fa p12 = p02 * t0 + p03 * t1;
-  const Vec3fa p20 = p10 * t0 + p11 * t1;
-  const Vec3fa p21 = p11 * t0 + p12 * t1;
-  const Vec3fa p30 = p20 * t0 + p21 * t1;
-  
-  return p30;
-  //tangent = p21-p20;
-}
-
-struct HitList;
-
-/* extended ray structure that includes total transparency along the ray */
-struct RTCRay2
-{
-  Vec3fa org;     //!< Ray origin
-  Vec3fa dir;     //!< Ray direction
-  float tnear;   //!< Start of ray segment
-  float tfar;    //!< End of ray segment
-  float time;    //!< Time of this ray for motion blur.
-  int mask;      //!< used to mask out objects during traversal
-  Vec3fa Ng;      //!< Geometric normal.
-  float u;       //!< Barycentric u coordinate of hit
-  float v;       //!< Barycentric v coordinate of hit
-  int geomID;    //!< geometry ID
-  int primID;    //!< primitive ID
-  int instID;    //!< instance ID
-
-  // ray extensions
-  RTCFilterFunc filter;
-  Vec3fa transparency; //!< accumulated transparency value
-  HitList* list;
-};
-
-struct HitList
-{
-  RTCRay2 data[128];
-  RTCRay2* rays[128];
-  size_t num;
-};
-
-bool addHit(HitList* list, RTCRay2& ray)
-{
-  if (list->num >= 128) 
-    return false;
-
-  int i = list->num++;
-  list->data[i] = ray;
-  RTCRay2* r = &list->data[i];
-  while (i>0 && list->rays[i-1]->tfar > r->tfar) {
-    list->rays[i] = list->rays[i-1];
-    i--;
-  }
-  list->rays[i] = r;
-  return true;
-}
-
 /*! random number generator for floating point numbers in range [0,1] */
 inline float frand(int& seed) {
   seed = 7 * seed + 5;
@@ -195,97 +126,6 @@ Vec3fa sampleSphere(const float u, const float v)
   const float cosTheta = 1.0f - 2.0f * v, sinTheta = 2.0f * sqrt(v * (1.0f - v));
   return Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta, float(one_over_four_pi));
 }
-
-Vec3f noise(int i, Vec3f p, float t) {
-  //return div(p,length(p));
-  //return p + Vec3f(sin(2.0f*t),4.0f*t,cos(2.0f*t));
-  if (i % 2)
-    return p + Vec3f(2.0f*t,2.0f*t,2.0f*t);
-  else
-    return p + Vec3f(-2.0f*t,2.0f*t,-2.0f*t);
-  //return p + Vec3f(4.0f*t,4.0f*t,0.0f);
-}
-
-bool enableFilterDispatch = false;
-
-/* filter dispatch function */
-void filterDispatch(void* ptr, RTCRay2& ray) {
-  if (!enableFilterDispatch) return;
-  if (ray.filter) ray.filter(ptr,(RTCRay&)ray);
-}
-
-/* intersection filter function */
-void intersectionFilter(void* ptr, RTCRay2& ray)
-{
-  bool added = addHit(ray.list,ray);
-  /*if (T != 0.0f && added)*/ ray.geomID = RTC_INVALID_GEOMETRY_ID; // FIXME: enable this
-}
-
-/* occlusion filter function */
-void occlusionFilter(void* ptr, RTCRay2& ray)
-{
-  /* make all surfaces opaque */
-  if (ray.geomID >= g_ispc_scene->numHairSets) {
-    ray.transparency = Vec3fa(zero);
-    return;
-  }
-
-  /* calculate how much the curve occludes the ray */
-  //float sizeRay = max(ray.org.w + ray.tfar*ray.dir.w, 0.00001f);
-  //float sizeCurve = evalBezier(ray.geomID,ray.primID,ray.u).w;
-  //1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
-
-  Vec3fa T = hair_Kt;
-  T *= ray.transparency;
-  ray.transparency = T;
-  if (T != Vec3fa(0.0f)) ray.geomID = RTC_INVALID_GEOMETRY_ID;
-}
-
-#if USE_OCCLUSION_FILTER
-
-Vec3fa occluded(RTCScene scene, RTCRay2& ray)
-{
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = 0;
-  ray.filter = (RTCFilterFunc) occlusionFilter;
-  ray.transparency = Vec3fa(1.0f);
-  rtcOccluded(scene,(RTCRay&)ray);
-  return ray.transparency;
-}
-
-#else
-
-Vec3fa occluded(RTCScene scene, RTCRay2& ray)
-{
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = 0;
-  ray.filter = NULL;
-
-  Vec3fa T = 1.0f;
-  while (true) 
-  {
-    rtcIntersect(scene,(RTCRay&)ray);
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) break;
-    if (ray.geomID >= g_ispc_scene->numHairSets) return 0.0f; // make all surfaces opaque
-    
-    /* calculate how much the curve occludes the ray */
-    //float sizeRay = max(ray.org.w + ray.tfar*ray.dir.w, 0.00001f);
-    //float sizeCurve = evalBezier(ray.geomID,ray.primID,ray.u).w;
-    T *= hair_Kt; //1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
-
-    /* continue ray ray */
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.tnear = 1.001f*ray.tfar;
-    ray.tfar = inf;
-  }
-  return T;
-}
-
-#endif
 
 /* adds hair to the scene */
 void addHair (ISPCScene* scene)
@@ -355,7 +195,7 @@ void addHair (ISPCScene* scene)
   scene->hairs[scene->numHairSets++] = hair;
 }
 
-/* adds triangulates sphere */
+/* adds triangulated sphere */
 void addTriangulatedSphere (ISPCScene* scene, Vec3f p, float r)
 {
   const int numPhi = 5;
@@ -445,11 +285,13 @@ void addGroundPlane (ISPCScene* scene)
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
+  //scene_in->numHairSets = 0;
+  //scene_in->numMeshes = 0;
+
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT,RTC_INTERSECT1);
 
   /* add all hair sets to the scene */
-  //scene_in->numHairSets = 0;
   for (int i=0; i<scene_in->numHairSets; i++)
   {
     /* get ith hair set */
@@ -468,7 +310,6 @@ RTCScene convertScene(ISPCScene* scene_in)
 #endif
   }
 
-#if 1
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
   {
@@ -504,12 +345,19 @@ RTCScene convertScene(ISPCScene* scene_in)
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)filterDispatch);
 #endif
   }
-#endif
 
   /* commit changes to scene */
   rtcCommit (scene_out);
   return scene_out;
 }
+
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+
 
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
@@ -528,7 +376,8 @@ public:
   __forceinline AnisotropicBlinn() {}
 
   /*! Anisotropic power cosine distribution constructor. */
-  __forceinline AnisotropicBlinn(const Vec3fa& Kr, const Vec3fa& Kt, const Vec3fa& dx, float nx, const Vec3fa& dy, float ny, const Vec3fa& dz) 
+  __forceinline AnisotropicBlinn(const Vec3fa& Kr, const Vec3fa& Kt, 
+				 const Vec3fa& dx, float nx, const Vec3fa& dy, float ny, const Vec3fa& dz) 
     : Kr(Kr), Kt(Kt), dx(dx), nx(nx), dy(dy), ny(ny), dz(dz),
       norm1(sqrtf((nx+1)*(ny+1)) * float(one_over_two_pi)),
       norm2(sqrtf((nx+2)*(ny+2)) * float(one_over_two_pi)),
@@ -620,6 +469,95 @@ public:
   float side;
 };
 
+/* extended ray structure that includes total transparency along the ray */
+struct RTCRay2
+{
+  Vec3fa org;     //!< Ray origin
+  Vec3fa dir;     //!< Ray direction
+  float tnear;   //!< Start of ray segment
+  float tfar;    //!< End of ray segment
+  float time;    //!< Time of this ray for motion blur.
+  int mask;      //!< used to mask out objects during traversal
+  Vec3fa Ng;      //!< Geometric normal.
+  float u;       //!< Barycentric u coordinate of hit
+  float v;       //!< Barycentric v coordinate of hit
+  int geomID;    //!< geometry ID
+  int primID;    //!< primitive ID
+  int instID;    //!< instance ID
+
+  // ray extensions
+  RTCFilterFunc filter;
+  Vec3fa transparency; //!< accumulated transparency value
+};
+
+bool enableFilterDispatch = false;
+
+/* filter dispatch function */
+void filterDispatch(void* ptr, RTCRay2& ray) {
+  if (!enableFilterDispatch) return;
+  if (ray.filter) ray.filter(ptr,(RTCRay&)ray);
+}
+
+/* occlusion filter function */
+void occlusionFilter(void* ptr, RTCRay2& ray)
+{
+  /* make all surfaces opaque */
+  if (ray.geomID >= g_ispc_scene->numHairSets) {
+    ray.transparency = Vec3fa(zero);
+    return;
+  }
+  Vec3fa T = hair_Kt;
+  T *= ray.transparency;
+  ray.transparency = T;
+  if (T != Vec3fa(0.0f)) ray.geomID = RTC_INVALID_GEOMETRY_ID;
+}
+
+#if USE_OCCLUSION_FILTER
+
+Vec3fa occluded(RTCScene scene, RTCRay2& ray)
+{
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = 0;
+  ray.filter = (RTCFilterFunc) occlusionFilter;
+  ray.transparency = Vec3fa(1.0f);
+  rtcOccluded(scene,(RTCRay&)ray);
+  return ray.transparency;
+}
+
+#else
+
+Vec3fa occluded(RTCScene scene, RTCRay2& ray)
+{
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = 0;
+  ray.filter = NULL;
+
+  Vec3fa T = 1.0f;
+  while (true) 
+  {
+    rtcIntersect(scene,(RTCRay&)ray);
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) break;
+    if (ray.geomID >= g_ispc_scene->numHairSets) return 0.0f; // make all surfaces opaque
+    
+    /* calculate how much the curve occludes the ray */
+    //float sizeRay = max(ray.org.w + ray.tfar*ray.dir.w, 0.00001f);
+    //float sizeCurve = evalBezier(ray.geomID,ray.primID,ray.u).w;
+    T *= hair_Kt; //1.0f-clamp((1.0f-T_hair)*sizeCurve/sizeRay,0.0f,1.0f);
+
+    /* continue ray ray */
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.tnear = 1.001f*ray.tfar;
+    ray.tfar = inf;
+  }
+  return T;
+}
+
+#endif
+
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
@@ -638,7 +576,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
-  ray.filter = (RTCFilterFunc) intersectionFilter;
+  ray.filter = NULL; //(RTCFilterFunc) intersectionFilter;
 
   Vec3fa color = Vec3f(0.0f);
   Vec3fa weight = 1.0f;
