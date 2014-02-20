@@ -28,7 +28,7 @@ namespace embree
    * it's 4 children as well as 4 child pointers. */
   class BVH4 : public Bounded
   {
-	  ALIGNED_CLASS;
+    ALIGNED_CLASS;
   public:
     
     /*! forward declaration of node type */
@@ -291,7 +291,8 @@ namespace embree
     std::vector<BVH4*> objects;
   };
 
-  typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, BVH4*& accel, Builder*& builder);
+  // FIXME: move the below code to somewhere else
+  typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, BVH4*& accel, Builder*& builder); 
   typedef Builder* (*BVH4BuilderTopLevelFunc)(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
 
 #define DECLARE_TOPLEVEL_BUILDER(symbol)                                         \
