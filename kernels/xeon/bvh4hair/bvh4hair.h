@@ -232,8 +232,13 @@ namespace embree
     struct UnalignedNode : public Node
     {
       /*! Clears the node. */
-      __forceinline void clear() {
-        naabb = one;
+      __forceinline void clear() 
+      {
+	AffineSpace3fa empty = AffineSpace3fa::scale(Vec3fa(1E+19));
+	naabb.l.vx = empty.l.vx;
+	naabb.l.vy = empty.l.vy;
+	naabb.l.vz = empty.l.vz;
+	naabb.p    = empty.p;
         Node::clear();
       }
 
