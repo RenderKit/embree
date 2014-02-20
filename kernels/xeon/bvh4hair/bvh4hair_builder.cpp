@@ -156,7 +156,7 @@ namespace embree
     BBox3fa bestBounds = empty;
     Vec3fa bestAxis = one;
     float bestArea = inf;
-    for (size_t i=0; i<16; i++)
+    for (size_t i=0; i<4; i++)
     {
       size_t k = begin + rand() % (end-begin);
       const Vec3fa axis = normalize(curves[k].p3-curves[k].p0);
