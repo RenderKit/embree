@@ -234,15 +234,15 @@ namespace embree
           /*! one child is hit, continue with that child */
           size_t r = __bscf(mask);
           if (likely(mask == 0)) {
-            cur = node->child(r); tNear = tNear[r]; tFar = tFar[r];
+            cur = node->child(r); cur.prefetch(); tNear = tNear[r]; tFar = tFar[r];
             assert(cur != BVH4Hair::emptyNode);
             continue;
           }
      
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const float n0 = tNear[r]; const float f0 = tFar[r]; 
+          NodeRef c0 = node->child(r); c0.prefetch(); const float n0 = tNear[r]; const float f0 = tFar[r]; 
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); const float n1 = tNear[r]; const float f1 = tFar[r];
+          NodeRef c1 = node->child(r); c1.prefetch(); const float n1 = tNear[r]; const float f1 = tFar[r];
           assert(c0 != BVH4Hair::emptyNode);
           assert(c1 != BVH4Hair::emptyNode);
           if (likely(mask == 0)) {
@@ -261,7 +261,7 @@ namespace embree
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          NodeRef c = node->child(r); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
+          NodeRef c = node->child(r); c.prefetch(); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
           assert(c != BVH4Hair::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
@@ -272,7 +272,7 @@ namespace embree
 #if BVH4HAIR_WIDTH == 8
           while (mask) {
             r = __bscf(mask);
-            c = node->child(r); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
+            c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
           }
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
@@ -280,7 +280,7 @@ namespace embree
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          c = node->child(r); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
+          c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
           assert(c != BVH4Hair::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
@@ -457,15 +457,15 @@ namespace embree
           /*! one child is hit, continue with that child */
           size_t r = __bscf(mask);
           if (likely(mask == 0)) {
-            cur = node->child(r); tNear = tNear[r]; tFar = tFar[r];
+            cur = node->child(r); cur.prefetch();tNear = tNear[r]; tFar = tFar[r];
             assert(cur != BVH4Hair::emptyNode);
             continue;
           }
      
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const float n0 = tNear[r]; const float f0 = tFar[r]; 
+          NodeRef c0 = node->child(r); c0.prefetch(); const float n0 = tNear[r]; const float f0 = tFar[r]; 
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); const float n1 = tNear[r]; const float f1 = tFar[r];
+          NodeRef c1 = node->child(r); c1.prefetch(); const float n1 = tNear[r]; const float f1 = tFar[r];
           assert(c0 != BVH4Hair::emptyNode);
           assert(c1 != BVH4Hair::emptyNode);
           if (likely(mask == 0)) {
@@ -484,7 +484,7 @@ namespace embree
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          NodeRef c = node->child(r); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
+          NodeRef c = node->child(r); c.prefetch(); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
           assert(c != BVH4Hair::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
@@ -495,7 +495,7 @@ namespace embree
 #if BVH4HAIR_WIDTH == 8
           while (mask) {
             r = __bscf(mask);
-            c = node->child(r); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
+            c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
           }
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
@@ -503,7 +503,7 @@ namespace embree
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          c = node->child(r); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
+          c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
           assert(c != BVH4Hair::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;

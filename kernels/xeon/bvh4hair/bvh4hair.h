@@ -90,6 +90,20 @@ namespace embree
       /*! Cast to size_t */
       __forceinline operator size_t() const { return ptr; }
 
+      /*! Prefetches the node this reference points to */
+      __forceinline void prefetch() const {
+	prefetchL1(((char*)ptr)+0*64);
+	prefetchL1(((char*)ptr)+1*64);
+	prefetchL1(((char*)ptr)+2*64);
+	prefetchL1(((char*)ptr)+3*64);
+#if BVH4HAIR_WIDTH == 8
+	prefetchL1(((char*)ptr)+4*64);
+	prefetchL1(((char*)ptr)+5*64);
+	prefetchL1(((char*)ptr)+6*64);
+	prefetchL1(((char*)ptr)+7*64);
+#endif
+      }
+
       /*! checks if this is a leaf */
       __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) > 1; }
 
