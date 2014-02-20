@@ -1281,10 +1281,6 @@
 				RelativePath="..\..\common\math\vec4.h"
 				>
 			</File>
-			<File
-				RelativePath="..\..\common\math\vector3f.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="simd"
