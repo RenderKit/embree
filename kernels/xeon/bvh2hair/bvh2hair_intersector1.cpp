@@ -108,7 +108,7 @@ namespace embree
       const avx4f p = p0 + u*v;
       const avxf t = p.z;
       const avxf d2 = p.x*p.x + p.y*p.y; 
-      const avxf r = max(p.w,ray.org.w+ray.dir.w*t);
+      const avxf r = p.w; //max(p.w,ray.org.w+ray.dir.w*t);
       const avxf r2 = r*r;
       avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
     retry:
@@ -150,7 +150,7 @@ namespace embree
         stackPtr--;
         NodeRef cur = stackPtr->ref;
         float tNear = stackPtr->tNear;
-        float tFar  = stackPtr->tFar;
+        float tFar  = min(stackPtr->tFar,ray.tfar);
         
         /*! if popped node is too far, pop next one */
         if (unlikely(tNear > ray.tfar))
@@ -280,7 +280,7 @@ namespace embree
       const avx4f p = p0 + u*v;
       const avxf t = p.z;
       const avxf d2 = p.x*p.x + p.y*p.y; 
-      const avxf r = max(p.w,ray.org.w+ray.dir.w*t);
+      const avxf r = p.w; //max(p.w,ray.org.w+ray.dir.w*t);
       const avxf r2 = r*r;
       const avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
       return any(valid);

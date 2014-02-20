@@ -49,16 +49,25 @@ namespace embree
   {
     typedef Bezier1i Primitive;
 
+    struct Mailbox {
+      avxi ids;      
+      unsigned int index;
+
+      __forceinline Mailbox() {
+        ids = -1;
+        index = 0;
+      };
+    };
+
     struct Precalculations 
     {
       __forceinline Precalculations (const Ray& ray)
-	: ray_space(rcp(frame(ray.dir))), mailbox(-1),mailbox_index(0) {}
+	: ray_space(rcp(frame(ray.dir))) {}
 
       LinearSpace3fa ray_space;
-
-      avxi mailbox;      
-      unsigned int mailbox_index;
+      Mailbox mbox;
     };
+
 
     static __forceinline bool intersectCylinder(const Ray& ray,const Vec3fa &v0,const Vec3fa &v1,const Vec3fa &v2,const Vec3fa &v3)
     {
@@ -118,7 +127,7 @@ namespace embree
     }
 
 
-    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
@@ -159,7 +168,7 @@ namespace embree
       size_t i = select_min(valid,t);
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__) && !defined(PRE_SUBDIVISION_HACK)
+#if defined(__INTERSECTION_FILTER__)
       int geomID = curve_in.geomID;
       Geometry* geometry = ((Scene*)geom)->get(geomID);
       if (!likely(geometry->hasIntersectionFilter1())) 
@@ -176,7 +185,7 @@ namespace embree
         ray.Ng = T;
         ray.geomID = curve_in.geomID;
         ray.primID = curve_in.primID;
-#if defined(__INTERSECTION_FILTER__)  && !defined(PRE_SUBDIVISION_HACK)
+#if defined(__INTERSECTION_FILTER__)
           return;
       }
 
@@ -194,18 +203,18 @@ namespace embree
 #endif
     }
 
-    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
     {
       for (size_t i=0; i<num; i++)
 	{
 #if defined(PRE_SUBDIVISION_HACK)
-	  if (unlikely(any(pre.mailbox == curves[i].geomID))) { continue; }
+	  if (unlikely(any(pre.mbox.ids == curves[i].primID))) continue; // FIXME: works only for single hair set
 #endif
 	  intersect(pre,ray,curves[i],geom);
 
 #if defined(PRE_SUBDIVISION_HACK)
-	  pre.mailbox[pre.mailbox_index] = curves[i].geomID;
-	  pre.mailbox_index = (pre.mailbox_index+1)%8;
+	  *(unsigned int*)&pre.mbox.ids[pre.mbox.index] = curves[i].primID; // FIXME: works only for single hair set
+	  *(unsigned int*)&pre.mbox.index = (pre.mbox.index + 1 ) % 8;
 #endif
 	}
     }
@@ -245,7 +254,7 @@ namespace embree
       if (none(valid)) return false;
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)  && !defined(PRE_SUBDIVISION_HACK)
+#if defined(__INTERSECTION_FILTER__)
 
       size_t i = select_min(valid,t);
       int geomID = curve_in.geomID;
@@ -286,7 +295,11 @@ namespace embree
   {
     typedef Bezier1i Primitive;
 
-    static __forceinline void intersect(Ray& ray, const Bezier1i& curve_in, const void* geom)
+    struct Precalculations {
+      __forceinline Precalculations (const Ray& ray) {}
+    };
+
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
@@ -369,20 +382,20 @@ namespace embree
       }
     }
 
-    static __forceinline void intersect(Ray& ray, const Bezier1i* curves, size_t num, void* geom)
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
     {
       for (size_t i=0; i<num; i++)
-        intersect(ray,curves[i],geom);
+        intersect(pre,ray,curves[i],geom);
     }
 
-    static __forceinline bool occluded(Ray& ray, const Bezier1i& curve_in, const void* geom) {
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom) {
       return false;
     }
 
-    static __forceinline bool occluded(Ray& ray, const Bezier1i* curves, size_t num, void* geom) 
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom) 
     {
       for (size_t i=0; i<num; i++) 
-        if (occluded(ray,curves[i],geom))
+        if (occluded(pre,ray,curves[i],geom))
           return true;
 
       return false;

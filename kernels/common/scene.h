@@ -220,40 +220,32 @@ namespace embree
       }
       
       size_t groups () const { 
-#if !defined(PRE_SUBDIVISION_HACK)
         return scene->geometries.size();
-#else
-        BezierCurves* curves = scene->getBezierCurves(0);
-	return curves->numCurves;
-#endif
       }
       
       size_t prims (size_t group, size_t* numVertices) const 
       {
-#if !defined(PRE_SUBDIVISION_HACK)
         if (scene->get(group) == NULL || scene->get(group)->type != BEZIER_CURVES) return 0;
         BezierCurves* curves = scene->getBezierCurves(group);
         if (!curves->isEnabled() || curves->numTimeSteps != numTimeSteps) return 0;
         if (numVertices) *numVertices = curves->numVertices;
-        return curves->numCurves;
+#if defined(PRE_SUBDIVISION_HACK)
+        return 8*curves->numCurves;
 #else
-	return 8;
+        return curves->numCurves;
 #endif
       }
 
       const BBox3fa bounds(size_t group, size_t prim) const 
       {
-#if !defined(PRE_SUBDIVISION_HACK)
 	assert(scene->get(group) != NULL);
 	assert(scene->get(group)->type == BEZIER_CURVES);
         BezierCurves* curves = scene->getBezierCurves(group);
         if (curves == NULL) return empty;
-        return curves->bounds(prim);
+#if defined(PRE_SUBDIVISION_HACK)
+        return curves->subBounds(prim/8,prim%8);
 #else
-        BezierCurves* curves = scene->getBezierCurves(0);
-        //return curves->bounds(group);
-	assert(prim < 8);
-	return curves->subBounds(group,prim);
+        return curves->bounds(prim);
 #endif
       }
 
