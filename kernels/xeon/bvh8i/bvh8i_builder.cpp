@@ -338,19 +338,32 @@ namespace embree
 
       std::cout << "SAH = " << BVH8i::sah8( bvh8i_base, bvh8i_root ) << std::endl;
 #else
+      DBG_PRINT(sizeof(BVH8i::NodeHF16));
       DBG_PRINT(sizeof(BVH8i::Quantized8BitNode));
       DBG_PRINT(sizeof(BVH8i::Node));
       DBG_PRINT(index8);
 
+#if 0
+
       BVH8i::Quantized8BitNode *bvh8i_quantized = (BVH8i::Quantized8BitNode *)os_malloc(sizeof(BVH8i::Quantized8BitNode) * index8);
-
-      for (size_t i=0;i<index8;i++)
-        bvh8i_quantized[i].init( bvh8i_base[i] );
-
+      for (size_t i=0;i<index8;i++) bvh8i_quantized[i].init( bvh8i_base[i] );
       std::cout << "SAH = " << BVH8i::sah8_quantized( bvh8i_quantized, bvh8i_root ) << std::endl;
-
       std::cout << "8BIT QUANTIZATION DONE" << std::endl << std::flush;
       bvh4i_builder8->bvh->qbvh = bvh8i_quantized; 
+
+#else
+      BBox3fa root_bounds = bvh4i_builder8->bvh->bounds;
+      DBG_PRINT( root_bounds );
+      BVH8i::NodeHF16 *bvh8i_hf = (BVH8i::NodeHF16 *)os_malloc(sizeof(BVH8i::NodeHF16) * index8);
+      for (size_t i=0;i<index8;i++) {
+        bvh8i_hf[i].init( root_bounds , bvh8i_base[i] );
+      }
+      std::cout << "HF CONVERSION DONE" << std::endl << std::flush;
+      bvh4i_builder8->bvh->qbvh = bvh8i_hf; 
+#endif
+
+
+
 #endif
     }
     

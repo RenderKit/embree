@@ -26,7 +26,7 @@ namespace embree
 {
 
 
-  //#define USE_QUANTIZED_NODES
+#define USE_QUANTIZED_NODES
 
 #define BVH8_MAX_STACK_DEPTH 128
 
@@ -410,10 +410,7 @@ namespace embree
 
 
 
-#endif
 
-
-#if defined (__AVX2__)
 
     struct __align(64) NodeHF16
     {
@@ -442,7 +439,7 @@ namespace embree
         for (size_t i=0;i<8;i++) 
           {
             if (node8.children[i].isNode())
-              children[i] = sizeof(BVH8i::Quantized8BitNode) * ((unsigned int)node8.children[i] / sizeof(BVH8i::Node));
+              children[i] = sizeof(BVH8i::NodeHF16) * ((unsigned int)node8.children[i] / sizeof(BVH8i::Node));
             else
               children[i] = node8.children[i];		
           }
@@ -461,14 +458,14 @@ namespace embree
         const avxf lower_z_t = (node8.lower_z - root_lower.z) * root_inv_length.z;
         const avxf upper_z_t = (node8.upper_z - root_lower.z) * root_inv_length.z;
 
-        lower_x = convert_to_hf16(lower_x_t,_MM_ROUND_DOWN);
-        upper_x = convert_to_hf16(upper_x_t,_MM_ROUND_UP);
+        lower_x = convert_to_hf16<_MM_ROUND_DOWN>(lower_x_t);
+        upper_x = convert_to_hf16<_MM_ROUND_UP>(upper_x_t);
 
-        lower_y = convert_to_hf16(lower_y_t,_MM_ROUND_DOWN);
-        upper_y = convert_to_hf16(upper_y_t,_MM_ROUND_UP);
+        lower_y = convert_to_hf16<_MM_ROUND_DOWN>(lower_y_t);
+        upper_y = convert_to_hf16<_MM_ROUND_UP>(upper_y_t);
 
-        lower_z = convert_to_hf16(lower_z_t,_MM_ROUND_DOWN);
-        upper_z = convert_to_hf16(upper_z_t,_MM_ROUND_UP);
+        lower_z = convert_to_hf16<_MM_ROUND_DOWN>(lower_z_t);
+        upper_z = convert_to_hf16<_MM_ROUND_UP>(upper_z_t);
 
 
         for (size_t i=node8.numValidChildren();i<8;i++)
@@ -508,6 +505,7 @@ namespace embree
       }
 
 
+
     };
 
 #endif
@@ -520,7 +518,7 @@ namespace embree
     
   };
 
-#if defined (__AVX2__)
+#if defined (__AVX__)
 
     __forceinline std::ostream &operator<<(std::ostream &o, const BVH8i::NodeHF16 &v)
     {
@@ -538,9 +536,7 @@ namespace embree
       return o;
     }
 
-#endif
 
-#if defined (__AVX__)
 
     __forceinline std::ostream &operator<<(std::ostream &o, const BVH8i::Node &v)
     {
