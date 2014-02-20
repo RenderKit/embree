@@ -91,7 +91,9 @@ namespace embree
       __forceinline operator size_t() const { return ptr; }
 
       /*! Prefetches the node this reference points to */
-      __forceinline void prefetch() const {
+      __forceinline void prefetch() const 
+      {
+#if defined(__AVX2__) // FIXME: test if bring performance also on SNB
 	prefetchL1(((char*)ptr)+0*64);
 	prefetchL1(((char*)ptr)+1*64);
 	prefetchL1(((char*)ptr)+2*64);
@@ -101,6 +103,7 @@ namespace embree
 	prefetchL1(((char*)ptr)+5*64);
 	prefetchL1(((char*)ptr)+6*64);
 	prefetchL1(((char*)ptr)+7*64);
+#endif
 #endif
       }
 

@@ -146,11 +146,7 @@ namespace embree
               const avxf childDist = select(lhit,lnearP,inf);
               const NodeRef child = node->children[i];
               assert(child != BVH4::emptyNode);
-
-#if defined(__AVX2__) && defined(ENABLE_PREFETCHING)
-	      prefetchL1(((char*)child.node()) + 0);
-	      prefetchL1(((char*)child.node()) + 64);
-#endif
+	      child.prefetch();
               
               /* push cur node onto stack and continue with hit child */
               if (any(childDist < curDist))
@@ -312,11 +308,8 @@ namespace embree
               assert(sptr_node < stackEnd);
               assert(child != BVH4::emptyNode);
               const avxf childDist = select(lhit,lnearP,inf);
+	      child.prefetch();
 
-#if defined(__AVX2__) && defined(ENABLE_PREFETCHING)
-	      prefetchL1(((char*)child.node()) + 0);
-	      prefetchL1(((char*)child.node()) + 64);
-#endif              
               /* push cur node onto stack and continue with hit child */
               if (any(childDist < curDist))
 		{
