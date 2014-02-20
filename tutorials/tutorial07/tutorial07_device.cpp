@@ -135,7 +135,7 @@ void addHair (ISPCScene* scene)
   const int numCurves = 10000;
   const int numCurveSegments = 2;
   const int numCurvePoints = 3*numCurveSegments+1;
-  const float R = 0.02f;
+  const float R = 0.002f;
 
   ISPCHairSet* hair = new ISPCHairSet;
   hair->numVertices = numCurves*numCurvePoints;
@@ -415,8 +415,8 @@ public:
     return Vec3fa(wh,pdf);
   }
 
-  __forceinline Vec3fa reflect(const Vec3fa& I, const Vec3fa& N) const {
-    return I-2.0f*dot(I,N)*N;
+  __forceinline Vec3fa reflect(const Vec3fa& V, const Vec3fa& N) const {
+    return 2.0f*dot(V,N)*N-V;
   }
 
   __forceinline Vec3fa eval(const Vec3fa& wo, const Vec3fa& wi) const
@@ -438,9 +438,7 @@ public:
 
   __forceinline Vec3fa sample(const Vec3fa& wo, Vec3fa& wi, const float sx, const float sy, const float sz) const
   {
-    wi = Vec3fa(reflect(normalize(wo),normalize(dz)),1.0f);
-    return Kr;
-
+    //wi = Vec3fa(reflect(normalize(wo),normalize(dz)),1.0f); return Kr;
     const Vec3fa wh = sample(sx,sy);
 
     /* reflection */
@@ -471,6 +469,30 @@ public:
   Vec3fa Kr,Kt; 
   float side;
 };
+
+__forceinline Vec3fa evalBezier(const int geomID, const int primID, const float t)
+{
+  const float t0 = 1.0f - t, t1 = t;
+  const ISPCHairSet* hair = g_ispc_scene->hairs[geomID]; // FIXME: works only because hairs are added first to scene
+  const Vec3fa* vertices = hair->v;
+  const ISPCHair* hairs = hair->hairs;
+  
+  const int i = hairs[primID].vertex;
+  const Vec3fa p00 = *(Vec3fa*)&vertices[i+0];
+  const Vec3fa p01 = *(Vec3fa*)&vertices[i+1];
+  const Vec3fa p02 = *(Vec3fa*)&vertices[i+2];
+  const Vec3fa p03 = *(Vec3fa*)&vertices[i+3];
+
+  const Vec3fa p10 = p00 * t0 + p01 * t1;
+  const Vec3fa p11 = p01 * t0 + p02 * t1;
+  const Vec3fa p12 = p02 * t0 + p03 * t1;
+  const Vec3fa p20 = p10 * t0 + p11 * t1;
+  const Vec3fa p21 = p11 * t0 + p12 * t1;
+  const Vec3fa p30 = p20 * t0 + p21 * t1;
+  
+  return p30;
+  //tangent = p21-p20;
+}
 
 /* extended ray structure that includes total transparency along the ray */
 struct RTCRay2
@@ -607,6 +629,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
     /* calculate transmissivity of hair */
     AnisotropicBlinn brdf;
+    float tnear_eps = 0.0001f;
 
     if (ray.geomID < g_ispc_scene->numHairSets) 
     {
@@ -620,6 +643,10 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       const Vec3fa dK = hair_dK*frand(seed1);
       new (&brdf) AnisotropicBlinn(hair_Kr-dK,hair_Kt-dK,dx,10.0f,dy,0.0f,dz);
       brdf.Kr = hair_Kr-dK;
+
+      tnear_eps = evalBezier(ray.geomID,ray.primID,ray.u).w;
+      //PRINT(tnear_eps);
+      //tnear_eps /= fabs(dot(normalize(ray.dir),dz));
     }
     else 
     {
@@ -648,15 +675,17 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     //PRINT(color);
 
 #if 1
+    //PRINT(dot(ray.dir,brdf.dz));
     /* sample BRDF */
     Vec3fa wi;
     c = brdf.sample(neg(ray.dir),wi,frand(seed),frand(seed),frand(seed));
+    //PRINT(dot(wi,brdf.dz));
     if (wi.w <= 0.0f) return color;
-    ray.org = ray.org + ray.tfar*ray.dir;// - 0.2f*brdf.dz;
+    ray.org = ray.org + ray.tfar*ray.dir + 2.0f*tnear_eps*brdf.dz;
     ray.org.w = 0.0f;
-    ray.dir = normalize(x*vx + y*vy + vz);
+    ray.dir = wi;
     ray.dir.w = 0.0f;
-    ray.tnear = 0.01f;
+    ray.tnear = 0.001f;
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
@@ -754,7 +783,7 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    //if (x != 259 || y != 224) continue;
+    //if (x != 185 || y != 277) continue;
 
     /* calculate pixel color */
     float fx = x + frand(seed);
