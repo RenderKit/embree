@@ -21,6 +21,7 @@
 #include "common/accel.h"
 #include "common/scene.h"
 #include "geometry/primitive.h"
+#include "geometry/bezier1i.h"
 
 #define BVH4HAIR_WIDTH 4
 
@@ -277,53 +278,31 @@ namespace embree
                              const unsigned int geomID, const unsigned int primID)
         : p0(p0), p1(p1), p2(p2), p3(p3), t0(t0), dt(t1-t0), geomID(geomID), primID(primID) {}
 
-      /*! calculate the bounds of the curve through subdivision */
-      const BBox3fa bounds(size_t depth, const Vec3fa& p00, const Vec3fa& p01, const Vec3fa& p02, const Vec3fa& p03) const 
-      {
-        if (depth == 0) {
-          const BBox3fa b = merge(BBox3fa(p00),BBox3fa(p01),BBox3fa(p02),BBox3fa(p03));
-          return enlarge(b,Vec3fa(b.upper.w));
-        }
-        const Vec3fa p10 = (p00 + p01) * 0.5f;
-        const Vec3fa p11 = (p01 + p02) * 0.5f;
-        const Vec3fa p12 = (p02 + p03) * 0.5f;
-        const Vec3fa p20 = (p10 + p11) * 0.5f;
-        const Vec3fa p21 = (p11 + p12) * 0.5f;
-        const Vec3fa p30 = (p20 + p21) * 0.5f;
-        return merge(bounds(depth-1,p00,p10,p20,p30),bounds(depth-1,p30,p21,p12,p03));
-      }
-
+      
       /*! calculate the bounds of the curve */
-      __forceinline const BBox3fa bounds(size_t depth) const {
-        return bounds(depth,p0,p1,p2,p3);
-      }
-
-      /*! calculate the bounds of the curve */
-      __forceinline const BBox3fa bounds() const {
-        const BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2),BBox3fa(p3));
-        return enlarge(b,Vec3fa(b.upper.w));
-      }
-
-      /*! calculate bounds in specified coordinate space */
-      __forceinline const BBox3fa bounds(size_t depth, const AffineSpace3fa& space) const 
+      __forceinline const BBox3fa bounds() const 
       {
-        const Vec3fa b0(xfmPoint(space,p0),p0.w);
-        const Vec3fa b1(xfmPoint(space,p1),p1.w);
-        const Vec3fa b2(xfmPoint(space,p2),p2.w);
-        const Vec3fa b3(xfmPoint(space,p3),p3.w);
-        return bounds(depth,b0,b1,b2,b3);
+	const BezierCurve3D curve2D(p0,p1,p2,p3,0.0f,1.0f,0);
+	const avx4f pi = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+	const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
+	const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
+	const Vec3fa upper_r = reduce_max(pi.w);
+        return enlarge(BBox3fa(lower,upper),upper_r);
       }
 
       /*! calculate bounds in specified coordinate space */
       __forceinline const BBox3fa bounds(const AffineSpace3fa& space) const 
       {
-        const BBox3fa b0 = xfmPoint(space,p0);
-        const BBox3fa b1 = xfmPoint(space,p1);
-        const BBox3fa b2 = xfmPoint(space,p2);
-        const BBox3fa b3 = xfmPoint(space,p3);
-        const BBox3fa b = merge(b0,b1,b2,b3);
-        const float   r = max(p0.w,p1.w,p2.w,p3.w);
-        return enlarge(b,Vec3fa(r));
+        Vec3fa b0 = xfmPoint(space,p0); b0.w = p0.w;
+        Vec3fa b1 = xfmPoint(space,p1); b1.w = p1.w;
+        Vec3fa b2 = xfmPoint(space,p2); b2.w = p2.w;
+        Vec3fa b3 = xfmPoint(space,p3); b3.w = p3.w;
+	const BezierCurve3D curve2D(b0,b1,b2,b3,0.0f,1.0f,0);
+	const avx4f pi = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+	const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
+	const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
+	const Vec3fa upper_r = reduce_max(pi.w);
+        return enlarge(BBox3fa(lower,upper),upper_r);
       }
 
       /*! subdivide the bezier curve */

@@ -19,8 +19,6 @@
 #include "bvh4hair_statistics.h"
 #include "common/scene_bezier_curves.h"
 
-#define BOUNDS_ACCURACY 1
-
 namespace embree
 {
   BVH4HairBuilder::BVH4HairBuilder (BVH4Hair* bvh, Scene* scene)
@@ -64,7 +62,7 @@ namespace embree
         const Vec3fa& p2 = set->vertex(ofs+2);
         const Vec3fa& p3 = set->vertex(ofs+3);
         const Bezier1 bezier(p0,p1,p2,p3,0,1,i,j);
-        bounds.extend(bezier.bounds(BOUNDS_ACCURACY));
+        bounds.extend(bezier.bounds());
         curves.push_back(bezier);
       }
     }
@@ -126,7 +124,7 @@ namespace embree
     float area = 0.0f;
     BBox3fa bounds = empty;
     for (size_t j=begin; j<end; j++) {
-      const BBox3fa cbounds = curves[j].bounds(BOUNDS_ACCURACY);
+      const BBox3fa cbounds = curves[j].bounds();
       area += halfArea(cbounds);
       bounds.extend(cbounds);
     }
@@ -139,7 +137,7 @@ namespace embree
     float area = 0.0f;
     BBox3fa bounds = empty;
     for (size_t j=begin; j<end; j++) {
-      const BBox3fa cbounds = curves[j].bounds(BOUNDS_ACCURACY,space);
+      const BBox3fa cbounds = curves[j].bounds(space);
       area += halfArea(cbounds);
       bounds.extend(cbounds);
     }
@@ -165,7 +163,7 @@ namespace embree
       BBox3fa bounds = empty;
       float area = 0.0f;
       for (size_t j=begin; j<end; j++) {
-        const BBox3fa cbounds = curves[j].bounds(BOUNDS_ACCURACY,space);
+        const BBox3fa cbounds = curves[j].bounds(space);
         area += halfArea(cbounds);
         bounds.extend(cbounds);
       }
@@ -241,7 +239,7 @@ namespace embree
     for (size_t i=begin; i<end; i++) {
       const Vec3fa p0 = xfmPoint(space,curves[i].p0);
       const Vec3fa p3 = xfmPoint(space,curves[i].p3);
-      geomBounds.extend(curves[i].bounds(BOUNDS_ACCURACY,space)); // FIXME: transforms points again
+      geomBounds.extend(curves[i].bounds(space)); // FIXME: transforms points again
       centBounds.extend(p0+p3);
     }
 
@@ -261,7 +259,7 @@ namespace embree
     /* perform binning of curves */
     for (size_t i=begin; i<end; i++)
     {
-      const BBox3fa cbounds = curves[i].bounds(BOUNDS_ACCURACY,space); // FIXME: transforms again
+      const BBox3fa cbounds = curves[i].bounds(space); // FIXME: transforms again
       const Vec3fa p0 = xfmPoint(space,curves[i].p0);
       const Vec3fa p3 = xfmPoint(space,curves[i].p3);
       //const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),ssei(0),ssei(BINS-1));
