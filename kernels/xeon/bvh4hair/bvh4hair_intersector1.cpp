@@ -243,6 +243,7 @@ namespace embree
             continue;
           }
      
+
           /*! two children are hit, push far child, and continue with closer child */
           const float n0 = tNear[r]; const float f0 = tFar[r]; 
           r = __bscf(mask);
@@ -274,6 +275,7 @@ namespace embree
           }
 
 #if BVH4HAIR_WIDTH == 8
+
           while (mask) {
             r = __bscf(mask);
             c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;

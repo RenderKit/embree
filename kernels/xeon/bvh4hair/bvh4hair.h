@@ -107,6 +107,25 @@ namespace embree
 #endif
       }
 
+
+      __forceinline void prefetch_L2() const 
+      {
+#if defined(__AVX2__) // FIXME: test if bring performance also on SNB
+	prefetchL2(((char*)ptr)+0*64);
+	prefetchL2(((char*)ptr)+1*64);
+	prefetchL2(((char*)ptr)+2*64);
+	prefetchL2(((char*)ptr)+3*64);
+#if BVH4HAIR_WIDTH == 8
+	prefetchL2(((char*)ptr)+4*64);
+	prefetchL2(((char*)ptr)+5*64);
+	prefetchL2(((char*)ptr)+6*64);
+	prefetchL2(((char*)ptr)+7*64);
+#endif
+#endif
+      }
+
+
+
       /*! checks if this is a leaf */
       __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) > 1; }
 

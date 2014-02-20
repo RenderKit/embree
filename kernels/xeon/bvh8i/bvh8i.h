@@ -407,6 +407,109 @@ namespace embree
     static float sah8_quantized (Quantized8BitNode*base, BVH4i::NodeRef& node, const BBox3fa& bounds);
     static float sah8_quantized (Quantized8BitNode* base, BVH4i::NodeRef& root );
 
+
+
+
+#endif
+
+
+#if defined (__AVX2__)
+
+    struct __align(64) NodeHF16
+    {
+      ssei lower_x;
+      ssei upper_x;
+      ssei lower_y;
+      ssei upper_y;
+      ssei lower_z;
+      ssei upper_z;
+
+      BVH4i::NodeRef children[8];            
+
+      __forceinline avxf lowerX() const { return convert_from_hf16(lower_x); }
+      __forceinline avxf upperX() const { return convert_from_hf16(upper_x); }
+
+      __forceinline avxf lowerY() const { return convert_from_hf16(lower_y); }
+      __forceinline avxf upperY() const { return convert_from_hf16(upper_y); }
+
+      __forceinline avxf lowerZ() const { return convert_from_hf16(lower_z); }
+      __forceinline avxf upperZ() const { return convert_from_hf16(upper_z); }
+
+
+      void init( const BBox3fa& root, const BVH8i::Node &node8 )
+      {
+
+        for (size_t i=0;i<8;i++) 
+          {
+            if (node8.children[i].isNode())
+              children[i] = sizeof(BVH8i::Quantized8BitNode) * ((unsigned int)node8.children[i] / sizeof(BVH8i::Node));
+            else
+              children[i] = node8.children[i];		
+          }
+
+        avx3f root_lower(root.lower.x,root.lower.y,root.lower.z);
+        avx3f root_upper(root.upper.x,root.upper.y,root.upper.z);
+        avx3f root_length = root_upper - root_lower;
+        avx3f root_inv_length = avx3f( one ) / root_length;
+
+        const avxf lower_x_t = (node8.lower_x - root_lower.x) * root_inv_length.x;
+        const avxf upper_x_t = (node8.upper_x - root_lower.x) * root_inv_length.x;
+
+        const avxf lower_y_t = (node8.lower_y - root_lower.y) * root_inv_length.y;
+        const avxf upper_y_t = (node8.upper_y - root_lower.y) * root_inv_length.y;
+
+        const avxf lower_z_t = (node8.lower_z - root_lower.z) * root_inv_length.z;
+        const avxf upper_z_t = (node8.upper_z - root_lower.z) * root_inv_length.z;
+
+        lower_x = convert_to_hf16(lower_x_t,_MM_ROUND_DOWN);
+        upper_x = convert_to_hf16(upper_x_t,_MM_ROUND_UP);
+
+        lower_y = convert_to_hf16(lower_y_t,_MM_ROUND_DOWN);
+        upper_y = convert_to_hf16(upper_y_t,_MM_ROUND_UP);
+
+        lower_z = convert_to_hf16(lower_z_t,_MM_ROUND_DOWN);
+        upper_z = convert_to_hf16(upper_z_t,_MM_ROUND_UP);
+
+
+        for (size_t i=node8.numValidChildren();i<8;i++)
+          {
+            ((short*)&lower_x)[i] = 0;
+            ((short*)&upper_x)[i] = 0;
+            ((short*)&lower_y)[i] = 0;
+            ((short*)&upper_y)[i] = 0;
+            ((short*)&lower_z)[i] = 0;
+            ((short*)&upper_z)[i] = 0;            
+          }
+      }
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { return children[i]; }
+
+      __forceinline BBox3fa bounds(size_t i) const {
+        Vec3fa lower(lowerX()[i],lowerY()[i],lowerZ()[i]);
+        Vec3fa upper(upperX()[i],upperY()[i],upperZ()[i]);
+        return BBox3fa(lower,upper);
+      }
+
+
+      __forceinline BBox3fa bounds() const {
+        const Vec3fa lower(reduce_min(lowerX()),reduce_min(lowerY()),reduce_min(lowerZ()));
+        const Vec3fa upper(reduce_max(upperX()),reduce_max(upperY()),reduce_max(upperZ()));
+        return BBox3fa(lower,upper);
+      }
+
+      __forceinline size_t numValidChildren() const  {
+	size_t valid = 0;
+	for (size_t i=0;i<N;i++)
+	  if (children[i] != emptyNode)
+	    valid++;
+	return valid;
+      }
+
+
+    };
+
 #endif
 
   public:
@@ -417,6 +520,25 @@ namespace embree
     
   };
 
+#if defined (__AVX2__)
+
+    __forceinline std::ostream &operator<<(std::ostream &o, const BVH8i::NodeHF16 &v)
+    {
+      o << "lower_x " << v.lowerX() << std::endl;
+      o << "upper_x " << v.upperX() << std::endl;
+
+      o << "lower_y " << v.lowerY() << std::endl;
+      o << "upper_y " << v.upperY() << std::endl;
+
+      o << "lower_z " << v.lowerZ() << std::endl;
+      o << "upper_z " << v.upperZ() << std::endl;
+
+      o << "children " << *(avxi*)v.children << std::endl;
+
+      return o;
+    }
+
+#endif
 
 #if defined (__AVX__)
 
