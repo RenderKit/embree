@@ -20,7 +20,7 @@
 #include "sys/taskscheduler.h"
 #include "image/image.h"
 
-embree::Vec3fa g_dirlight_direction = embree::normalize(embree::Vec3fa(1,0,1));
+embree::Vec3fa g_dirlight_direction = embree::normalize(embree::Vec3fa(1,-1,1));
 embree::Vec3fa g_dirlight_intensity = embree::Vec3fa(1.0f);
 embree::Vec3fa g_ambient_intensity = embree::Vec3fa(1.0f);
 

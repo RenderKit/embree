@@ -39,8 +39,10 @@ extern Vec3fa g_ambient_intensity;
 /* hair material */
 const Vec3fa hair_K  = Vec3fa(1.0f,0.57f,0.32);
 const Vec3fa hair_dK = Vec3fa(0.02f,0.05f,0.02);
-const Vec3fa hair_Kr = 1.0f*hair_K;    //!< reflectivity of hair
-const Vec3fa hair_Kt = 0.0f*hair_K;    //!< transparency of hair
+//const Vec3fa hair_K  = Vec3fa(1.0f,1.0f,1.0f);
+//const Vec3fa hair_dK = Vec3fa(0.0f,0.0f,0.0f);
+const Vec3fa hair_Kr = 0.5f*hair_K;    //!< reflectivity of hair
+const Vec3fa hair_Kt = 0.5f*hair_K;    //!< transparency of hair
 
 void filterDispatch(void* ptr, struct RTCRay2& ray);
 
@@ -196,7 +198,7 @@ void addHair (ISPCScene* scene)
 }
 
 /* adds triangulated sphere */
-void addTriangulatedSphere (ISPCScene* scene, Vec3f p, float r)
+void addSphere (ISPCScene* scene, Vec3f p, float r)
 {
   const int numPhi = 50;
   const int numTheta = 2*numPhi;
@@ -439,12 +441,13 @@ public:
   __forceinline Vec3fa sample(const Vec3fa& wo, Vec3fa& wi, const float sx, const float sy, const float sz) const
   {
     //wi = Vec3fa(reflect(normalize(wo),normalize(dz)),1.0f); return Kr;
+    //wi = Vec3fa(neg(wo),1.0f); return Kt;
     const Vec3fa wh = sample(sx,sy);
+    //if (dot(wo,wh) < 0.0f) return Vec3fa(zero,0.0f);
 
     /* reflection */
     if (sz < side) {
       wi = Vec3fa(reflect(wo,wh),wh.w*side);
-      if (dot(wi,dz) < 0.0f) return Vec3fa(zero,0.0f);
       const float cosThetaI = dot(wi,dz);
       return Kr * eval(wh) * abs(cosThetaI);
     }
@@ -452,7 +455,6 @@ public:
     /* transmission */
     else {
       wi = Vec3fa(reflect(reflect(wo,wh),dz),wh.w*(1-side));
-      if (dot(wi,dz) > 0.0f) return Vec3fa(zero,0.0f);
       const float cosThetaI = dot(wi,dz);
       return Kt * eval(wh) * abs(cosThetaI);
     }
@@ -612,7 +614,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     //PRINT(depth);
 
     /* terminate ray path */
-    if (reduce_max(weight) < 0.01 || depth > 10) 
+    if (reduce_max(weight) < 0.01 || depth > 2000) 
       return color; // + weight*g_ambient_intensity;
 
     /* intersect ray with scene and gather all hits */
@@ -641,7 +643,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       /* generate anisotropic BRDF */
       int seed1 = g_ispc_scene->hairs[ray.geomID]->hairs[ray.primID].id;
       const Vec3fa dK = hair_dK*frand(seed1);
-      new (&brdf) AnisotropicBlinn(hair_Kr-dK,hair_Kt-dK,dx,10.0f,dy,0.0f,dz);
+      new (&brdf) AnisotropicBlinn(hair_Kr-dK,hair_Kt-dK,dx,20.0f,dy,10.0f,dz);
       brdf.Kr = hair_Kr-dK;
 
       tnear_eps = evalBezier(ray.geomID,ray.primID,ray.u).w;
@@ -681,7 +683,10 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     c = brdf.sample(neg(ray.dir),wi,frand(seed),frand(seed),frand(seed));
     //PRINT(dot(wi,brdf.dz));
     if (wi.w <= 0.0f) return color;
-    ray.org = ray.org + ray.tfar*ray.dir + 2.0f*tnear_eps*brdf.dz;
+    if (dot(wi,brdf.dz) < 0.0f)
+      ray.org = ray.org + ray.tfar*ray.dir - 2.0f*tnear_eps*brdf.dz;
+    else
+      ray.org = ray.org + ray.tfar*ray.dir + 2.0f*tnear_eps*brdf.dz;
     ray.org.w = 0.0f;
     ray.dir = wi;
     ray.dir.w = 0.0f;
@@ -756,7 +761,6 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
     Ng = dz;
   }
 
-  
   color += 0.3f + abs(dot(ray.dir,Ng));
   return color;
 }
@@ -828,7 +832,7 @@ extern "C" void device_render (int* pixels,
       scene->numHairSets = 0;
       g_ispc_scene = scene;
       addHair(scene);
-      addTriangulatedSphere(scene,Vec3f(0,2,0),1.0f);
+      addSphere(scene,Vec3f(0,2,0),1.0f);
       addGroundPlane(scene);
     }
     g_scene = convertScene(g_ispc_scene);
