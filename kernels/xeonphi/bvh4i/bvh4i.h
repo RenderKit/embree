@@ -121,9 +121,18 @@ namespace embree
 
       /*! Returns bounds of specified child. */
       __forceinline BBox3fa bounds(size_t i) const {
+	assert( i < 4 );
         Vec3fa l = *(Vec3fa*)&lower[i];
         Vec3fa u = *(Vec3fa*)&upper[i];
         return BBox3fa(l,u);
+      }
+
+      __forceinline mic_f lowerXYZ(size_t i) const {
+	return broadcast4to16f(&lower[i]);
+      }
+
+      __forceinline mic_f upperXYZ(size_t i) const {
+	return broadcast4to16f(&upper[i]);
       }
 
       __forceinline void setInvalid(size_t i)
@@ -153,8 +162,56 @@ namespace embree
 	  }
 	return o;
       }
-
     };
+
+
+    /*! 64bit byte-quantized BVH4i Node */
+
+    struct QuantizedNode
+    {
+    public:
+      Vec3f start;
+      NodeRef child0;
+      Vec3f diff;
+      NodeRef child1;
+      unsigned char lower[12];
+      NodeRef child2;
+      unsigned char upper[12];
+      NodeRef child3;
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef &child(size_t i)       { return ((NodeRef*)&child0)[4*i]; }
+      __forceinline const NodeRef &child(size_t i) const { return ((NodeRef*)&child0)[4*i]; }
+
+      __forceinline void init( const Node &node)
+      {
+	const mic_f minXYZ = min(min(node.lowerXYZ(0),node.lowerXYZ(1)),min(node.lowerXYZ(2),node.lowerXYZ(3)));
+	const mic_f maxXYZ = max(max(node.upperXYZ(0),node.upperXYZ(1)),max(node.upperXYZ(2),node.upperXYZ(3)));
+	const mic_f diffXYZ = maxXYZ - minXYZ;
+	const mic_f rcp_diffXYZ = mic_f(1.0f) / diffXYZ;
+ 
+	const mic_f lowerXYZ = gather16f_4f_align(node.lowerXYZ(0),node.lowerXYZ(1),node.lowerXYZ(2),node.lowerXYZ(3));
+	const mic_f upperXYZ = gather16f_4f_align(node.upperXYZ(0),node.upperXYZ(1),node.upperXYZ(2),node.upperXYZ(3));
+
+	const mic_f local_lowerXYZ = (lowerXYZ - minXYZ) * rcp_diffXYZ;
+	const mic_f local_upperXYZ = (upperXYZ - minXYZ) * rcp_diffXYZ;
+
+	store4f(&start,minXYZ);
+	store4f(&diff ,diffXYZ);
+	compactustore16f_low_uint8(0x7777,lower,local_lowerXYZ);
+	compactustore16f_low_uint8(0x7777,upper,local_upperXYZ);
+	child0 = node.child(0);
+	child1 = node.child(1);
+	child2 = node.child(2);
+	child3 = node.child(3);
+      }
+
+      __forceinline std::ostream& operator<<(std::ostream &o)
+      {
+	return o;
+      }
+    };
+
 
 
 

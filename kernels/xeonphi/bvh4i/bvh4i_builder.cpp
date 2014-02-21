@@ -265,6 +265,7 @@ namespace embree
 	  }
       }
 
+    DBG_PRINT(sizeof(BVH4i::QuantizedNode));
 
 
     if (g_verbose >= 2) {
