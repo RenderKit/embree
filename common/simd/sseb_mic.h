@@ -20,7 +20,7 @@
 namespace embree
 {
   /* memory representation as bit vector */
-  struct __align(16) sseb_m 
+  struct __aligned(16) sseb_m 
   {
     enum { size = 4 };  // number of SIMD elements
     int32 v[4];

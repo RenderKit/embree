@@ -356,7 +356,7 @@ namespace embree
     return (children & BVH_LEAF_MASK);
   };
 
-  class __align(32) BVHNode : public BBox3f
+  class __aligned(32) BVHNode : public BBox3f
   {
   public:
     __forceinline unsigned int isLeaf() const {
@@ -432,7 +432,7 @@ namespace embree
 #define QBVH_OFFSET_MASK  (~(QBVH_ITEMS_MASK | QBVH_LEAF_MASK))
 #define QBVH_TERMINAL_TOKEN QBVH_LEAF_MASK
 
-  class __align(64) QBVHNode
+  class __aligned(64) QBVHNode
   {
   public:
     float min_x[4];

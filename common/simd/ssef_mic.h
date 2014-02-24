@@ -20,7 +20,7 @@
 namespace embree
 {
   /* memory representation as 4 aligned floats */
-  struct __align(16) ssef_m 
+  struct __aligned(16) ssef_m 
   {
     typedef sseb_m Mask;
     typedef ssei_m Int;
@@ -62,7 +62,7 @@ namespace embree
   };
   
   /*! 4-wide SSE float type emulated with 16-wide vectors. */
-  struct __align(64) ssef_t 
+  struct __aligned(64) ssef_t 
   {
     union {
       __m512 m512; 

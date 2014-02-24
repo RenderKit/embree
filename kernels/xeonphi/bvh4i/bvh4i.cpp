@@ -24,14 +24,14 @@
 
 namespace embree
 {
-  // __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
+  // __aligned(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
   //   { FLT_MAX_EXP, FLT_MAX_EXP, FLT_MAX_EXP,(int)(1 << 31)},
   //   { FLT_MAX_EXP, FLT_MAX_EXP, FLT_MAX_EXP,(int)(1 << 31)},
   //   { FLT_MAX_EXP, FLT_MAX_EXP, FLT_MAX_EXP,(int)(1 << 31)},
   //   { FLT_MAX_EXP, FLT_MAX_EXP, FLT_MAX_EXP,(int)(1 << 31)}
   // };
 
-  __align(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
+  __aligned(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
     {1E14f,1E14f,1E14f,(int)(1 << 31)},
     {1E14f,1E14f,1E14f,(int)(1 << 31)},
     {1E14f,1E14f,1E14f,(int)(1 << 31)},

@@ -30,7 +30,7 @@ namespace embree
 
     /*! BVH4mb Node */
 
-    struct __align(64) Node
+    struct __aligned(64) Node
     {
     public:
       struct NodeStruct {
@@ -69,7 +69,7 @@ namespace embree
 
     /*! BVH4mb Triangle01 */
 
-    struct __align(64) Triangle01
+    struct __aligned(64) Triangle01
     {
     public:
       Triangle1 t0;

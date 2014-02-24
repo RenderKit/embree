@@ -193,7 +193,7 @@ namespace embree
     volatile bool terminateThreads;
     std::vector<thread_t> threads;
     size_t numThreads;
-    struct __align(64) ThreadEvent { 
+    struct __aligned(64) ThreadEvent { 
       Event* event; 
       char align[64-sizeof(Event*)];
     };
@@ -221,9 +221,9 @@ namespace embree
 
     static const unsigned int CONTROL_THREAD_ID = 0;
 
-    __align(64)static AlignedAtomicCounter32 taskCounter;
-    __align(64) static void (* taskPtr)(void* data, const size_t threadID, const size_t numThreads);
-    __align(64) static void* volatile data;
+    __aligned(64)static AlignedAtomicCounter32 taskCounter;
+    __aligned(64) static void (* taskPtr)(void* data, const size_t threadID, const size_t numThreads);
+    __aligned(64) static void* volatile data;
 
 #if defined(__MIC__)
     static QuadTreeBarrier taskBarrier;
@@ -261,7 +261,7 @@ namespace embree
   };
 
 
-  class __align(64) LockStepTaskScheduler4ThreadsLocalCore
+  class __aligned(64) LockStepTaskScheduler4ThreadsLocalCore
   {
   public:
 
@@ -272,7 +272,7 @@ namespace embree
     volatile unsigned char threadState[2][4];
     volatile unsigned int mode;
 
-    __align(64) AtomicMutex mutex;
+    __aligned(64) AtomicMutex mutex;
 
 
     LockStepTaskScheduler4ThreadsLocalCore();

@@ -98,7 +98,7 @@ namespace embree
     unsigned int currentID = startID;
     unsigned int offset = startID - numSkipped;
 
-    __align(64) PrimRef local_prims[2];
+    __aligned(64) PrimRef local_prims[2];
     size_t numLocalPrims = 0;
     PrimRef *__restrict__ dest = &prims[currentID];
 
@@ -444,7 +444,7 @@ namespace embree
     const size_t items    = entry.items();
     BBox3f* next = (BBox3f*)&node[childrenID+4];
 
-    __align(64) BBox3f local[4];
+    __aligned(64) BBox3f local[4];
 
     /* init second node */
     const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);

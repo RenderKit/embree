@@ -26,7 +26,7 @@
 
 namespace embree
 {
- __align(64) Vec3fa initQBVHNode[2] = { 
+ __aligned(64) Vec3fa initQBVHNode[2] = { 
     Vec3fa(pos_inf,pos_inf,pos_inf,(int)(1 << 31)),
     Vec3fa(neg_inf,neg_inf,neg_inf,(int)(1 << 31))
   };

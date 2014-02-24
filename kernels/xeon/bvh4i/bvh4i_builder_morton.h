@@ -39,7 +39,7 @@ namespace embree
       
     public:
       
-      class __align(16) SmallBuildRecord 
+      class __aligned(16) SmallBuildRecord 
       {
       public:
         unsigned int begin;
@@ -63,7 +63,7 @@ namespace embree
         __forceinline bool operator>(const SmallBuildRecord& br) const { return size() > br.size(); } 
       };
       
-      struct __align(8) MortonID32Bit
+      struct __aligned(8) MortonID32Bit
       {
         unsigned int code;
         unsigned int index;
@@ -156,17 +156,17 @@ namespace embree
       size_t encodeMask;
       size_t numBuildRecords;
       
-      __align(64) LinearBarrierActive barrier;
-      __align(64) SmallBuildRecord buildRecords[MAX_TOP_LEVEL_BINS];    
-      __align(64) unsigned int thread_startGroup[MAX_MIC_THREADS];
-      __align(64) unsigned int thread_startGroupOffset[MAX_MIC_THREADS];
+      __aligned(64) LinearBarrierActive barrier;
+      __aligned(64) SmallBuildRecord buildRecords[MAX_TOP_LEVEL_BINS];    
+      __aligned(64) unsigned int thread_startGroup[MAX_MIC_THREADS];
+      __aligned(64) unsigned int thread_startGroupOffset[MAX_MIC_THREADS];
       
       /*! state for radix sort */
     public:
       static const size_t RADIX_BITS = 11;
       static const size_t RADIX_BUCKETS = (1 << RADIX_BITS);
       static const size_t RADIX_BUCKETS_MASK = (RADIX_BUCKETS-1);
-      __align(64) unsigned int radixCount[MAX_MIC_THREADS][RADIX_BUCKETS];
+      __aligned(64) unsigned int radixCount[MAX_MIC_THREADS][RADIX_BUCKETS];
       
     protected:
       MortonID32Bit* __restrict__ morton;

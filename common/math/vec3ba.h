@@ -26,7 +26,7 @@ namespace embree
   /// SSE Vec3ba Type
   ////////////////////////////////////////////////////////////////////////////////
 
-  struct __align(16) Vec3ba
+  struct __aligned(16) Vec3ba
   {
     union {
       __m128 m128;

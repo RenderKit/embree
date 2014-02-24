@@ -486,7 +486,7 @@ namespace embree
         scheduler.syncThreads(threadID,numThreads);
         
         /* calculate total number of items for each bucket */
-        __align(64) size_t total[RADIX_BUCKETS];
+        __aligned(64) size_t total[RADIX_BUCKETS];
         for (size_t i=0; i<RADIX_BUCKETS; i++)
           total[i] = 0;
         
@@ -495,7 +495,7 @@ namespace embree
             total[j] += radixCount[i][j];
         
         /* calculate start offset of each bucket */
-        __align(64) size_t offset[RADIX_BUCKETS];
+        __aligned(64) size_t offset[RADIX_BUCKETS];
         offset[0] = 0;
         for (size_t i=1; i<RADIX_BUCKETS; i++)    
           offset[i] = offset[i-1] + total[i-1];
@@ -518,8 +518,8 @@ namespace embree
     
     void BVH4BuilderMorton::recurseSubMortonTrees(const size_t threadID, const size_t numThreads)
     {
-      __align(64) Allocator nodeAlloc(nodeAllocator);
-      __align(64) Allocator leafAlloc(primAllocator);
+      __aligned(64) Allocator nodeAlloc(nodeAllocator);
+      __aligned(64) Allocator leafAlloc(primAllocator);
       while (true)
       {
         const unsigned int taskID = scheduler.taskCounter.inc();
@@ -797,7 +797,7 @@ namespace embree
         return empty;
       }
       
-      __align(64) SmallBuildRecord children[BVH4::N];
+      __aligned(64) SmallBuildRecord children[BVH4::N];
       
       /* create leaf node */
       if (unlikely(current.depth >= BVH4::maxBuildDepth || current.size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD)) {
@@ -828,7 +828,7 @@ namespace embree
         if (bestChild == -1) break;
         
         /*! split best child into left and right child */
-        __align(64) SmallBuildRecord left, right;
+        __aligned(64) SmallBuildRecord left, right;
         split(children[bestChild],left,right);
                 
         /* add new children left and right */
@@ -991,8 +991,8 @@ namespace embree
       /* perform first splits in single threaded mode */
       nodeAllocator.reset();
       primAllocator.reset();
-      __align(64) Allocator nodeAlloc(nodeAllocator);
-      __align(64) Allocator leafAlloc(primAllocator);
+      __aligned(64) Allocator nodeAlloc(nodeAllocator);
+      __aligned(64) Allocator leafAlloc(primAllocator);
       recurse(br,nodeAlloc,leafAlloc,RECURSE,threadIndex);	    
             
       /* stop measurement */
@@ -1052,8 +1052,8 @@ namespace embree
       /* perform first splits in single threaded mode */
       nodeAllocator.reset();
       primAllocator.reset();
-      __align(64) Allocator nodeAlloc(nodeAllocator);
-      __align(64) Allocator leafAlloc(primAllocator);
+      __aligned(64) Allocator nodeAlloc(nodeAllocator);
+      __aligned(64) Allocator leafAlloc(primAllocator);
       recurse(br,nodeAlloc,leafAlloc,CREATE_TOP_LEVEL,threadIndex);	    
       
       /* sort all subtasks by size */

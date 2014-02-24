@@ -26,7 +26,7 @@ namespace embree
   /// SSE Vec3fa Type
   ////////////////////////////////////////////////////////////////////////////////
 
-  struct __align(16) Vec3fa
+  struct __aligned(16) Vec3fa
   {
     typedef float Scalar;
     enum { N = 3 };

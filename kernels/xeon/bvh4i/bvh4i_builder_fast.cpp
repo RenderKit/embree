@@ -449,7 +449,7 @@ namespace embree
     
     void BVH4iBuilderFast::recurseSAH(BuildRecord& current, const size_t mode, const size_t threadID, const size_t numThreads)
     {
-      __align(64) BuildRecord children[BVH4i::N];
+      __aligned(64) BuildRecord children[BVH4i::N];
       
       /* create leaf node */
       if (current.depth >= BVH4i::maxBuildDepth || current.isLeaf()) {
@@ -482,7 +482,7 @@ namespace embree
         if (bestChild == -1) break;
         
         /*! split best child into left and right child */
-        __align(64) BuildRecord left, right;
+        __aligned(64) BuildRecord left, right;
         if (!split(children[bestChild],left,right,mode,threadID,numThreads)) 
           continue;
         

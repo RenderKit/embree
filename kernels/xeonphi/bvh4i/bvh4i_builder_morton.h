@@ -40,7 +40,7 @@ namespace embree
 
   public:
 
-    class __align(16) SmallBuildRecord 
+    class __aligned(16) SmallBuildRecord 
     {
     public:
       unsigned int begin;
@@ -73,7 +73,7 @@ namespace embree
 
     
 
-    struct __align(8) MortonID32Bit
+    struct __aligned(8) MortonID32Bit
     {
       unsigned int code;
       unsigned int index;
@@ -187,10 +187,10 @@ namespace embree
     unsigned int encodeShift;
     unsigned int encodeMask;
 
-    __align(64) LinearBarrierActive barrier;
-    __align(64) SmallBuildRecord buildRecords[MAX_TOP_LEVEL_BINS];    
-    __align(64) unsigned int thread_startGroup[MAX_MIC_THREADS];      
-    __align(64) unsigned int thread_startGroupOffset[MAX_MIC_THREADS];
+    __aligned(64) LinearBarrierActive barrier;
+    __aligned(64) SmallBuildRecord buildRecords[MAX_TOP_LEVEL_BINS];    
+    __aligned(64) unsigned int thread_startGroup[MAX_MIC_THREADS];      
+    __aligned(64) unsigned int thread_startGroupOffset[MAX_MIC_THREADS];
 
 
     /*! state for radix sort */
@@ -198,7 +198,7 @@ namespace embree
     static const size_t RADIX_BITS = 8;
     static const size_t RADIX_BUCKETS = (1 << RADIX_BITS);
     static const size_t RADIX_BUCKETS_MASK = (RADIX_BUCKETS-1);
-    __align(64) unsigned int radixCount[MAX_MIC_THREADS][RADIX_BUCKETS];
+    __aligned(64) unsigned int radixCount[MAX_MIC_THREADS][RADIX_BUCKETS];
 
   protected:
     MortonID32Bit* __restrict__ morton;
@@ -211,11 +211,11 @@ namespace embree
     size_t numAllocatedNodes;
     size_t size_morton;
 
-    __align(64) Centroid_Scene_AABB global_bounds;
+    __aligned(64) Centroid_Scene_AABB global_bounds;
 
     /*! node allocator */
-    __align(64) AlignedAtomicCounter32  atomicID;
-    __align(64) AlignedAtomicCounter32  numBuildRecordCounter;
+    __aligned(64) AlignedAtomicCounter32  atomicID;
+    __aligned(64) AlignedAtomicCounter32  numBuildRecordCounter;
 
     __forceinline unsigned int allocNode(int size)
     {

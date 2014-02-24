@@ -63,7 +63,7 @@ namespace embree
   // === fast memory barrier ===
   // =================================================
 
-  struct __align(64) BarrierActive 
+  struct __aligned(64) BarrierActive 
   {
   public:
     BarrierActive () : cntr(0) {}
@@ -93,7 +93,7 @@ namespace embree
 #define MAX_MIC_BARRIER_WAIT_CYCLES 256
 
 
-  class __align(64) LinearBarrierActive
+  class __aligned(64) LinearBarrierActive
   {
     public:
       volatile unsigned char count0[MAX_MIC_THREADS]; 
@@ -124,11 +124,11 @@ namespace embree
 
 
 
-  class __align(64) QuadTreeBarrier
+  class __aligned(64) QuadTreeBarrier
   {
   public:
 
-    class __align(64) CoreSyncData {
+    class __aligned(64) CoreSyncData {
     public:
       volatile unsigned char threadState[2][4];
       volatile unsigned int mode;
@@ -177,7 +177,7 @@ namespace embree
     
 
   public:  
-    __align(64) CoreSyncData data[MAX_MIC_CORES]; // == one cacheline per core ==
+    __aligned(64) CoreSyncData data[MAX_MIC_CORES]; // == one cacheline per core ==
   };
 }
 

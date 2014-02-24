@@ -53,7 +53,7 @@ namespace embree
 #if defined (__AVX__)
 
     /*! BVH8 Node */
-    struct __align(64) Node
+    struct __aligned(64) Node
     {
       avxf lower_x;
       avxf upper_x;

@@ -49,8 +49,8 @@ namespace embree
         }
 
       public:
-        __align(64) WorkStack<BuildRecord,SIZE_WORK_STACK> workStack;
-        __align(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* threadStack;
+        __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK> workStack;
+        __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* threadStack;
         ParallelBinner<16> parallelBinner;    
         LockStepTaskScheduler scheduler;
         LinearBarrierActive barrier;
@@ -131,8 +131,8 @@ namespace embree
       Centroid_Scene_AABB global_bounds;
       
     protected:
-      __align(64) GlobalAllocator nodeAllocator;
-      __align(64) GlobalAllocator primAllocator;
+      __aligned(64) GlobalAllocator nodeAllocator;
+      __aligned(64) GlobalAllocator primAllocator;
     };
   }
 }

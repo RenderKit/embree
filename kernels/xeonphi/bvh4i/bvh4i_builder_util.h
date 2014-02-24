@@ -26,7 +26,7 @@ namespace embree
   /* --------------------- Centroid_Scene_AABB --------------------- */
   /* --------------------------------------------------------------- */
 
-  class __align(64) Centroid_Scene_AABB
+  class __aligned(64) Centroid_Scene_AABB
   {
   public:
     BBox3f centroid2;
@@ -106,7 +106,7 @@ namespace embree
   /* ------------------------- BuildRecord ------------------------- */
   /* --------------------------------------------------------------- */
 
-  class __align(64) BuildRecord 
+  class __aligned(64) BuildRecord 
   {
   public:
     Centroid_Scene_AABB bounds; //!< geometry and centroid bounds
@@ -186,8 +186,8 @@ namespace embree
   {
     ALIGNED_CLASS;
   public:
-    AlignedAtomicMutex __align(64) mutex;
-    __align(64) T t[SIZE];
+    AlignedAtomicMutex __aligned(64) mutex;
+    __aligned(64) T t[SIZE];
 
     __forceinline void init() {
       mutex.reset();

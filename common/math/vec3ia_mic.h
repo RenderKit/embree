@@ -29,7 +29,7 @@ namespace embree
   struct Vec3fa_t;
 
   /* 3 aligned ints as memory representation */
-  struct __align(16) Vec3ia 
+  struct __aligned(16) Vec3ia 
   {
     typedef int Scalar;
     enum { N = 3 }; 
@@ -65,7 +65,7 @@ namespace embree
   };
   
   /*! 3-wide vectors emulated with 16-wide vectors. */
-  struct __align(64) Vec3ia_t 
+  struct __aligned(64) Vec3ia_t 
   {
     __m512i m512; 
     

@@ -25,13 +25,13 @@ namespace embree
 
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
 
-    static __align(64) int zlc4[4] = {0xffffffff,0xffffffff,0xffffffff,0};
+    static __aligned(64) int zlc4[4] = {0xffffffff,0xffffffff,0xffffffff,0};
 
     void BVH4iIntersector16Single::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
-      __align(64) float   stack_dist[3*BVH4i::maxDepth+1];
-      __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
       const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
@@ -389,7 +389,7 @@ namespace embree
     void BVH4iIntersector16Single::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
-      __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
       const mic_m m_valid     = *(mic_i*)valid_i != mic_i(0);

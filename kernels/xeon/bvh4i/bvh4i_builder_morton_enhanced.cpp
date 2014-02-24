@@ -333,7 +333,7 @@ namespace embree
           
           const Vec3fa rootDiag = this->node[0].upper - this->node[0].lower;
           
-          __align(64) BVHNode local_node[MAX_REBUILD_NODES];
+          __aligned(64) BVHNode local_node[MAX_REBUILD_NODES];
           size_t nodes = 0;
           extractTopLevelTree(0,rootDiag,local_node,nodes);
           BuildRecord topLevelBuildRecord;

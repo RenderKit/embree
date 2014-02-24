@@ -504,7 +504,7 @@ namespace embree
         if (bestChild == -1) break;
         
         /*! split best child into left and right child */
-        __align(64) BuildRecord left, right;
+        __aligned(64) BuildRecord left, right;
         split(childTasks[bestChild],left,right,mode,threadID,numThreads);
         
         /* add new children left and right */
