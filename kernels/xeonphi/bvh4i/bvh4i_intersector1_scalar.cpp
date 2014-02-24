@@ -25,8 +25,8 @@ namespace embree
     void BVH4iIntersector1Scalar::intersect(BVH4i* bvh, Ray& ray)
     {
       /* near and node stack */
-      __align(64) float   stack_dist[3*BVH4i::maxDepth+1];
-      __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
       const Vec3fa rdir  = rcp_safe(ray.dir);
@@ -202,7 +202,7 @@ namespace embree
     {
 
       /* near and node stack */
-      __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
       const Vec3fa rdir  = rcp_safe(ray.dir);

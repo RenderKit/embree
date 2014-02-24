@@ -35,7 +35,7 @@ namespace embree
   // =======================================================================================================
   // =======================================================================================================
 
-  __align(64) static double dt = 0.0f;
+  __aligned(64) static double dt = 0.0f;
 
   BVH4iBuilderMorton::BVH4iBuilderMorton (BVH4i* bvh, BuildSource* source, void* geometry)
   : bvh(bvh), source(source), scene((Scene*)geometry), topLevelItemThreshold(0), encodeShift(0), encodeMask(0), numBuildRecords(0), 
@@ -267,7 +267,7 @@ namespace embree
     const size_t endID     = min( ((threadID+1)*numBlocks/numThreads) * NUM_MORTON_IDS_PER_BLOCK ,numPrimitives) ;
     assert(startID % NUM_MORTON_IDS_PER_BLOCK == 0);
 
-    __align(64) Centroid_Scene_AABB bounds;
+    __aligned(64) Centroid_Scene_AABB bounds;
     bounds.reset();
 
     size_t currentID = startID;
@@ -622,7 +622,7 @@ namespace embree
 	for (size_t j=0; j<16; j++)
 	  count[j] += load16i((int*)&radixCount[i][j*16]);
       
-      __align(64) unsigned int inner_offset[RADIX_BUCKETS];
+      __aligned(64) unsigned int inner_offset[RADIX_BUCKETS];
 
 #pragma unroll(16)
       for (size_t i=0; i<16; i++)
@@ -637,13 +637,13 @@ namespace embree
 	for (size_t j=0; j<16; j++)
 	  count[j] += load16i((int*)&radixCount[i][j*16]);	  
 
-     __align(64) unsigned int total[RADIX_BUCKETS];
+     __aligned(64) unsigned int total[RADIX_BUCKETS];
 
 #pragma unroll(16)
       for (size_t i=0; i<16; i++)
 	store16i(&total[i*16],count[i]);
 
-      __align(64) unsigned int offset[RADIX_BUCKETS];
+      __aligned(64) unsigned int offset[RADIX_BUCKETS];
 
       /* calculate start offset of each bucket */
       offset[0] = 0;
@@ -681,7 +681,7 @@ namespace embree
   void BVH4iBuilderMorton::createTopLevelTree(const size_t threadID, const size_t numThreads)
   {
     size_t taskID = threadID;
-    __align(64) SmallBuildRecord children[BVH4i::N];
+    __aligned(64) SmallBuildRecord children[BVH4i::N];
 
     
     while(taskID < numBuildRecords)
@@ -807,7 +807,7 @@ namespace embree
     store4f(&node[current.parentID].lower,bounds_min);
     store4f(&node[current.parentID].upper,bounds_max);
     node[current.parentID].createLeaf(start,items,items);
-    __align(64) BBox3fa bounds;
+    __aligned(64) BBox3fa bounds;
     store4f(&bounds.lower,bounds_min);
     store4f(&bounds.upper,bounds_max);
     return bounds;
@@ -951,7 +951,7 @@ namespace embree
       if (bestChild == -1) break;
 
       /*! split best child into left and right child */
-      __align(64) SmallBuildRecord left, right;
+      __aligned(64) SmallBuildRecord left, right;
       if (!split(children[bestChild],left,right))
         continue;
       
@@ -1004,7 +1004,7 @@ namespace embree
 	}
       }
 
-    __align(64) SmallBuildRecord children[BVH4i::N];
+    __aligned(64) SmallBuildRecord children[BVH4i::N];
 
     /* create leaf node */
     if (unlikely(current.size() <= BVH4iBuilderMorton::MORTON_LEAF_THRESHOLD)) {
@@ -1038,7 +1038,7 @@ namespace embree
       if (bestChild == -1) break;
 
       /*! split best child into left and right child */
-      __align(64) SmallBuildRecord left, right;
+      __aligned(64) SmallBuildRecord left, right;
       if (!split(children[bestChild],left,right))
         continue;
       

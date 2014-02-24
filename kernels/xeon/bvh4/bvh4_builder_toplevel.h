@@ -55,8 +55,8 @@ namespace embree
         }
 
       public:
-        __align(64) WorkStack<BuildRecord,SIZE_WORK_STACK> global_workStack;
-        __align(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* thread_workStack;
+        __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK> global_workStack;
+        __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* thread_workStack;
         LinearBarrierActive global_barrier;
         ParallelBinner2<16> parallelBinner;  
         Centroid_Scene_AABB* thread_bounds;

@@ -55,7 +55,7 @@ namespace embree
 #if defined (__AVX__)
 
     /*! BVH8 Node */
-    struct __align(64) Node
+    struct __aligned(64) Node
     {
       avxf lower_x;
       avxf upper_x;
@@ -209,7 +209,7 @@ namespace embree
     static float sah8 (Node* base, BVH4i::NodeRef& root );
     static float sah8 (Node* base, BVH4i::NodeRef& node, const BBox3fa& bounds);
 
-    struct __align(64) Quantized8BitNode
+    struct __aligned(64) Quantized8BitNode
     {
       unsigned char lower_x[8];
       unsigned char upper_x[8];
@@ -412,7 +412,7 @@ namespace embree
 
 
 
-    struct __align(64) NodeHF16
+    struct __aligned(64) NodeHF16
     {
       ssei lower_x;
       ssei upper_x;

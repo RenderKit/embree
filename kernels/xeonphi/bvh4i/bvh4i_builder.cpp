@@ -314,7 +314,7 @@ namespace embree
     unsigned int currentID = startID;
     unsigned int offset = startID - numSkipped;
 
-    __align(64) PrimRef local_prims[2];
+    __aligned(64) PrimRef local_prims[2];
     size_t numLocalPrims = 0;
     PrimRef *__restrict__ dest = &prims[currentID];
 
@@ -488,7 +488,7 @@ namespace embree
 
   void BVH4iBuilder::fillLocalWorkQueues(const size_t threadID, const size_t numThreads)
   {
-    __align(64) BuildRecord br;
+    __aligned(64) BuildRecord br;
     const size_t numCores = (numThreads+3)/4;
     const size_t coreID   = threadID/4;
 
@@ -512,7 +512,7 @@ namespace embree
   void BVH4iBuilder::buildSubTrees(const size_t threadID, const size_t numThreads)
   {
     NodeAllocator alloc(atomicID,numAllocatedNodes);
-    __align(64) BuildRecord br;
+    __aligned(64) BuildRecord br;
     const size_t numCores = (numThreads+3)/4;
     const size_t globalCoreID   = threadID/4;
 
@@ -700,8 +700,8 @@ namespace embree
     mic_f rightCentroidBoundsMax((float)neg_inf);
 
     /* local queues for NGO stores */
-    __align(64) PrimRef local_left_queue[2];
-    __align(64) PrimRef local_right_queue[2];
+    __aligned(64) PrimRef local_left_queue[2];
+    __aligned(64) PrimRef local_right_queue[2];
     size_t num_local_left  = 0;
     size_t num_local_right = 0;
 
@@ -828,8 +828,8 @@ namespace embree
     PrimRef * __restrict__ l_dest     = prims + current.begin + thread_start_left;
     PrimRef * __restrict__ r_dest     = prims + current.begin + thread_start_right + bestSplitNumLeft;
 
-    __align(64) Centroid_Scene_AABB local_left;
-    __align(64) Centroid_Scene_AABB local_right; // just one local
+    __aligned(64) Centroid_Scene_AABB local_left;
+    __aligned(64) Centroid_Scene_AABB local_right; // just one local
 
     parallelPartitioning(current,l_source,r_source,l_dest,r_dest,global_sharedData.split,local_left,local_right);
 
@@ -1194,7 +1194,7 @@ namespace embree
   
   void BVH4iBuilder::recurseSAH(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads)
   {
-    __align(64) BuildRecord children[BVH4i::N];
+    __aligned(64) BuildRecord children[BVH4i::N];
 
     /* create leaf node */
     if (current.depth >= BVH4i::maxBuildDepth || current.isLeaf()) {
@@ -1226,7 +1226,7 @@ namespace embree
       if (bestChild == -1) break;
 
       /*! split best child into left and right child */
-      __align(64) BuildRecord left, right;
+      __aligned(64) BuildRecord left, right;
       if (!split(children[bestChild],left,right,mode,threadID,numThreads)) 
         continue;
       
@@ -1441,8 +1441,8 @@ namespace embree
     PrimRef * __restrict__ l_dest     = prims + current.begin + thread_start_left;
     PrimRef * __restrict__ r_dest     = prims + current.begin + thread_start_right + bestSplitNumLeft;
 
-    __align(64) Centroid_Scene_AABB local_left;
-    __align(64) Centroid_Scene_AABB local_right; 
+    __aligned(64) Centroid_Scene_AABB local_left;
+    __aligned(64) Centroid_Scene_AABB local_right; 
 
     parallelPartitioning(current,l_source,r_source,l_dest,r_dest,sd.split,local_left,local_right);
 

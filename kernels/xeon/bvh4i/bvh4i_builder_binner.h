@@ -158,10 +158,10 @@ namespace embree
         Split split;
         const PrimRef* src;
         PrimRef* dst;
-        __align(64) AlignedAtomicCounter32 lCounter;
-        __align(64) AlignedAtomicCounter32 rCounter;
+        __aligned(64) AlignedAtomicCounter32 lCounter;
+        __aligned(64) AlignedAtomicCounter32 rCounter;
         Binner<BINS> bin16;
-        __align(64) Binner<BINS> global_bin16[MAX_MIC_THREADS];
+        __aligned(64) Binner<BINS> global_bin16[MAX_MIC_THREADS];
       };
   }
 }

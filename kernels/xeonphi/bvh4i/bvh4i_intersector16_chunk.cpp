@@ -27,8 +27,8 @@ namespace embree
     void BVH4iIntersector16Chunk::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
       /* near and node stack */
-      __align(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
-      __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* load ray */
       const mic_m valid0   = *(mic_i*)valid_i != mic_i(0);
@@ -239,8 +239,8 @@ namespace embree
     void BVH4iIntersector16Chunk::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
       /* allocate stack */
-      __align(64) mic_f    stack_dist[3*BVH4i::maxDepth+1];
-      __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) mic_f    stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* load ray */
       const mic_m valid = *(mic_i*)valid_i != mic_i(0);

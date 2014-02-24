@@ -24,7 +24,7 @@ namespace embree
       but only when not called intermixed. Thus one can only
       atomically remove or insert items. */
   template<typename T>
-    class __align(64) atomic_set 
+    class __aligned(64) atomic_set 
   {
     ALIGNED_CLASS;
   public:

@@ -585,7 +585,7 @@ namespace embree
     
     void BVH4BuilderFast::recurseSAH(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads)
     {
-      __align(64) BuildRecord children[BVH4::N];
+      __aligned(64) BuildRecord children[BVH4::N];
       
       /* create leaf node */
       if (current.depth >= BVH4::maxBuildDepth || current.isLeaf()) {
@@ -618,7 +618,7 @@ namespace embree
         if (bestChild == -1) break;
         
         /*! split best child into left and right child */
-        __align(64) BuildRecord left, right;
+        __aligned(64) BuildRecord left, right;
         if (!split(children[bestChild],left,right,mode,threadID,numThreads)) 
           continue;
         
@@ -658,8 +658,8 @@ namespace embree
     
     void BVH4BuilderFast::buildSubTrees(const size_t threadID, const size_t numThreads)
     {
-      __align(64) Allocator nodeAlloc(nodeAllocator);
-      __align(64) Allocator leafAlloc(primAllocator);
+      __aligned(64) Allocator nodeAlloc(nodeAllocator);
+      __aligned(64) Allocator leafAlloc(primAllocator);
       
       while (true) 
       {
@@ -695,8 +695,8 @@ namespace embree
       /* initialize node and leaf allocator */
       nodeAllocator.reset();
       primAllocator.reset();
-      __align(64) Allocator nodeAlloc(nodeAllocator);
-      __align(64) Allocator leafAlloc(primAllocator);
+      __aligned(64) Allocator nodeAlloc(nodeAllocator);
+      __aligned(64) Allocator leafAlloc(primAllocator);
      
       /* create prim refs */
       global_bounds.reset();
@@ -739,8 +739,8 @@ namespace embree
       /* initialize node and leaf allocator */
       nodeAllocator.reset();
       primAllocator.reset();
-      __align(64) Allocator nodeAlloc(nodeAllocator);
-      __align(64) Allocator leafAlloc(primAllocator);
+      __aligned(64) Allocator nodeAlloc(nodeAllocator);
+      __aligned(64) Allocator leafAlloc(primAllocator);
 
       /* create initial build record */
       BuildRecord br;

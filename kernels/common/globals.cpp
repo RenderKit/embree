@@ -18,7 +18,7 @@
 
 namespace embree
 {
-  struct __align(32) avxf 
+  struct __aligned(32) avxf 
   {
     __forceinline avxf() { }
     __forceinline avxf(float a) { for (size_t i=0; i<8; i++) v[i] = a; }
