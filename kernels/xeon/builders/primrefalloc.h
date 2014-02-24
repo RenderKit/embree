@@ -26,7 +26,7 @@ namespace embree
     ALIGNED_CLASS;
   public:
    
-    struct __align(4096) ThreadPrimBlockAllocator 
+    struct __aligned(4096) ThreadPrimBlockAllocator 
     {
       ALIGNED_CLASS_(4096);
     public:

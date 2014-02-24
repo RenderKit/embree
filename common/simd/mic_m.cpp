@@ -19,7 +19,7 @@
 namespace embree
 {
 
-  __align(64) unsigned int mic_m::shift1[32] = {
+  __aligned(64) unsigned int mic_m::shift1[32] = {
     ((unsigned int)1 << 0),
     ((unsigned int)1 << 1),
     ((unsigned int)1 << 2),

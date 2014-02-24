@@ -368,7 +368,7 @@ namespace embree
     return (children & BVH_LEAF_MASK);
   };
 
-  class __align(32) BVHNode : public BBox3fa
+  class __aligned(32) BVHNode : public BBox3fa
   {
   public:
     __forceinline unsigned int isLeaf() const {

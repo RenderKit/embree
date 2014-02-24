@@ -144,7 +144,7 @@
 //#define __forceinline          __forceinline
 //#define __restrict             __restrict
 #define __thread               __declspec(thread)
-#define __align(...)           __declspec(align(__VA_ARGS__))
+#define __aligned(...)           __declspec(align(__VA_ARGS__))
 //#define __FUNCTION__           __FUNCTION__
 #define debugbreak()           __debugbreak()
 
@@ -155,7 +155,7 @@
 #define __forceinline          inline __attribute__((always_inline))
 //#define __restrict             __restrict
 //#define __thread               __thread
-#define __align(...)           __attribute__((aligned(__VA_ARGS__)))
+#define __aligned(...)           __attribute__((aligned(__VA_ARGS__)))
 #define __FUNCTION__           __PRETTY_FUNCTION__
 #define debugbreak()           asm ("int $3")
 #endif

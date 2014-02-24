@@ -153,7 +153,7 @@ namespace embree
   };
 
 
-  struct __align(8) StackItemInt64
+  struct __aligned(8) StackItemInt64
   {
 
 #if 1
@@ -221,7 +221,7 @@ namespace embree
 #if defined(__MIC__)
 
   /*! An item on the stack holds the node and distance. */
-  struct __align(16) StackItem 
+  struct __aligned(16) StackItem 
   {
     /*! pointer to the node */
     void* ptr;
@@ -256,7 +256,7 @@ namespace embree
 
 #else
 
-  struct __align(16) StackItem  
+  struct __aligned(16) StackItem  
   {  
     /*! Copy operator */  
     StackItem& operator=(const StackItem& other) { all = other.all; return *this; }  
