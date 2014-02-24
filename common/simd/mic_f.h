@@ -629,6 +629,19 @@ namespace embree
     return f;
   }
 
+  __forceinline mic_f loadAOS4to16f(const unsigned int index,
+				    const mic_f &x,
+				    const mic_f &y,
+				    const mic_f &z,
+				    const mic_f &fill)
+  {
+    mic_f f = fill;
+    f = select(0x1111,broadcast1to16f((float*)&x + index),f);
+    f = select(0x2222,broadcast1to16f((float*)&y + index),f);
+    f = select(0x4444,broadcast1to16f((float*)&z + index),f);
+    return f;
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
