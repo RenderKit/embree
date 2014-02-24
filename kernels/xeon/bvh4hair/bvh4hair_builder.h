@@ -108,7 +108,7 @@ namespace embree
       }
 
       /*! performs object binning to the the best partitioning */
-      static ObjectSplit find(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space = one);
+      static ObjectSplit find(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space = one);
 
       /*! calculates aligned bounds for left and right split */
       const ObjectSplit alignedBounds(Bezier1* curves, size_t begin, size_t end);
@@ -128,7 +128,7 @@ namespace embree
       }
       
     public:
-      AffineSpace3fa space;
+      LinearSpace3fa space;
       NAABBox3fa bounds0, bounds1;
       int dim;
       int pos;
@@ -160,7 +160,7 @@ namespace embree
     static const BBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end);
 
     /*! calculate bounds for range of primitives */
-    static const NAABBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space);
+    static const NAABBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space);
     
     /*! try to find best non-axis aligned space, where the sum of all bounding areas is minimal */
     static const NAABBox3fa computeUnalignedBounds(Bezier1* curves, size_t begin, size_t end);

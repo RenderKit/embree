@@ -174,7 +174,7 @@ namespace embree
       __forceinline NAABBox3fa (const BBox3fa& bounds) 
         : space(one), bounds(bounds) {}
       
-      __forceinline NAABBox3fa (const AffineSpace3fa& space, const BBox3fa& bounds) 
+      __forceinline NAABBox3fa (const LinearSpace3fa& space, const BBox3fa& bounds) 
         : space(space), bounds(bounds) {}
 
       friend std::ostream& operator<<(std::ostream& cout, const NAABBox3fa& p) {
@@ -182,7 +182,7 @@ namespace embree
       }
       
     public:
-      AffineSpace3fa space; //!< orthonormal transformation
+      LinearSpace3fa space; //!< orthonormal transformation
       BBox3fa bounds;       //!< bounds in transformed space
     };
 
