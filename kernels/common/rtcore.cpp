@@ -66,7 +66,6 @@ namespace embree
   void BVH4MBRegister();
   void BVH16iRegister();
 #if !defined(__MIC__)
-  void BVH2HairRegister();
   void BVH4HairRegister();
 #endif
 
@@ -276,7 +275,6 @@ namespace embree
 #endif
 
 #if !defined(__MIC__)
-    BVH2HairRegister();
     BVH4HairRegister();
 #endif
 
