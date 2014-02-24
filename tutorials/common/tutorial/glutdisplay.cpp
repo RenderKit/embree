@@ -124,7 +124,7 @@ namespace embree
     if (state == GLUT_UP) 
     {
       mouseMode = 0;
-      if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == GLUT_ACTIVE_CTRL) 
+      if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == GLUT_ACTIVE_SHIFT) 
       {
         AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
         Vec3f p; bool hit = pick(x,y, pixel2world.l.vx, pixel2world.l.vy, pixel2world.l.vz, pixel2world.p, p);

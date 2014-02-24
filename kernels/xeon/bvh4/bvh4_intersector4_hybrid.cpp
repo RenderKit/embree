@@ -278,6 +278,7 @@ namespace embree
               const ssef childDist = select(lhit,lnearP,inf);
               const NodeRef child = node->children[i];
               assert(child != BVH4::emptyNode);
+	      child.prefetch();
               sptr_node++;
               sptr_near++;
 
@@ -554,6 +555,7 @@ namespace embree
             {
               assert(sptr_node < stackEnd);
               assert(child != BVH4::emptyNode);
+	      child.prefetch();
               const ssef childDist = select(lhit,lnearP,inf);
               sptr_node++;
               sptr_near++;

@@ -14,47 +14,47 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh2hair.h"
+#include "bvh4hair.h"
 #include "common/accelinstance.h"
 
 namespace embree
 {
-  DECLARE_SYMBOL(Accel::Intersector1,BVH2HairIntersector1_);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4HairIntersector1_);
 
-  Builder* BVH2HairBuilder_ (BVH2Hair* bvh, Scene* scene);
+  Builder* BVH4HairBuilder_ (BVH4Hair* bvh, Scene* scene);
   
-  void BVH2HairRegister () 
+  void BVH4HairRegister () 
   {
     int features = getCPUFeatures();
-    SELECT_SYMBOL_AVX_AVX2(features,BVH2HairIntersector1_);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH4HairIntersector1_);
   }
 
-  BVH2Hair::BVH2Hair (Scene* scene) 
+  BVH4Hair::BVH4Hair (Scene* scene) 
     : scene(scene), root(emptyNode), numPrimitives(0), numVertices(0) {}
 
-  BVH2Hair::~BVH2Hair () {
+  BVH4Hair::~BVH4Hair () {
   }
 
-  Accel::Intersectors BVH2HairIntersectors(BVH2Hair* bvh)
+  Accel::Intersectors BVH4HairIntersectors(BVH4Hair* bvh)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1 = BVH2HairIntersector1_;
+    intersectors.intersector1 = BVH4HairIntersector1_;
     intersectors.intersector4 = NULL;
     intersectors.intersector8 = NULL;
     intersectors.intersector16 = NULL;
     return intersectors;
   }
   
-  Accel* BVH2Hair::BVH2HairBezier1(Scene* scene)
+  Accel* BVH4Hair::BVH4HairBezier1(Scene* scene)
   { 
-    BVH2Hair* accel = new BVH2Hair(scene);
-    Accel::Intersectors intersectors = BVH2HairIntersectors(accel);
-    Builder* builder = BVH2HairBuilder_(accel,scene);
+    BVH4Hair* accel = new BVH4Hair(scene);
+    Accel::Intersectors intersectors = BVH4HairIntersectors(accel);
+    Builder* builder = BVH4HairBuilder_(accel,scene);
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  void BVH2Hair::init(size_t numPrimitives)
+  void BVH4Hair::init(size_t numPrimitives)
   {
     size_t numAllocatedNodes = numPrimitives;
     size_t numAllocatedPrimitives = numPrimitives;

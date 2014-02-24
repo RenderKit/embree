@@ -75,6 +75,14 @@ namespace embree
       /*! Cast to size_t */
       __forceinline operator size_t() const { return ptr; }
 
+       /*! Prefetches the node this reference points to */
+      __forceinline void prefetch() const {
+#if defined(__AVX2__)
+	prefetchL1(((char*)ptr)+0*64);
+	prefetchL1(((char*)ptr)+1*64);
+#endif
+      }
+
       /*! Sets the barrier bit. */
       __forceinline void setBarrier() { ptr |= (size_t)(1 << (alignment-1)); }
       

@@ -49,7 +49,7 @@ namespace embree
     __forceinline bool BVH2HairIntersector1::intersectBox(const AffineSpace3fa& naabb, const Ray& ray, float& tNear, float& tFar)
     {
       const Vec3fa dir = xfmVector(naabb,ray.dir);
-      const Vec3fa rdir = rcp(dir);
+      const Vec3fa rdir = rcp_safe(dir);
       const Vec3fa org = xfmPoint (naabb,ray.org);
       const Vec3fa tLowerXYZ = - org * rdir;     // (Vec3fa(zero) - org) * rdir;
       const Vec3fa tUpperXYZ = rdir + tLowerXYZ; // (Vec3fa(one ) - org) * rdir;
@@ -77,7 +77,7 @@ namespace embree
       return any(vmask_x & vmask_y);
     }
 
-    __forceinline void BVH2HairIntersector1::intersectBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier)
+    __forceinline void BVH2HairIntersector1::intersectBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier, const Scene* scene)
     {
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
@@ -95,9 +95,7 @@ namespace embree
 
       /* subdivide 3 levels at once */ 
       const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-      const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
-
-      //if (!intersectLineBoxes(ray,p0,p1)) { return; }
+      const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
 
       /* approximative intersection with cone */
       const avx4f v = p1-p0;
@@ -116,17 +114,40 @@ namespace embree
       const float one_over_8 = 1.0f/8.0f;
       size_t i = select_min(valid,t);
 
-      /* update hit information */
-      const float uu = (float(i)+u[i])*one_over_8;
-      BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
-      Vec3fa P,T; curve3D.eval(uu,P,T);
-      if (T == Vec3fa(zero)) { valid[i] = 0; goto retry; } // ignore denormalized curves
-      ray.u = bezier.t0 + uu*bezier.dt;
-      ray.v = 0.0f;
-      ray.tfar = t[i];
-      ray.Ng = T;
-      ray.geomID = bezier.geomID;
-      ray.primID = bezier.primID;
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+      int geomID = bezier.geomID;
+      const Geometry* geometry = scene->get(geomID);
+      if (!likely(geometry->hasIntersectionFilter1())) 
+      {
+#endif
+        /* update hit information */
+        const float uu = (float(i)+u[i])*one_over_8;
+        BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+        Vec3fa P,T; curve3D.eval(uu,P,T);
+        if (T == Vec3fa(zero)) { valid[i] = 0; goto retry; } // ignore denormalized curves
+        ray.u = uu;
+        ray.v = 0.0f;
+        ray.tfar = t[i];
+        ray.Ng = T;
+        ray.geomID = bezier.geomID;
+        ray.primID = bezier.primID;
+#if defined(__INTERSECTION_FILTER__)
+          return;
+      }
+
+      while (true) 
+      {
+        const float uu = (float(i)+u[i])*one_over_8;
+        BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+        Vec3fa P,T; curve3D.eval(uu,P,T);
+        if (T != Vec3fa(zero))
+            if (runIntersectionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,bezier.primID)) return;
+        valid[i] = 0;
+        if (none(valid)) return;
+        i = select_min(valid,t);
+      }
+#endif
     }
 
     void BVH2HairIntersector1::intersect(const BVH2Hair* bvh, Ray& ray)
@@ -231,13 +252,10 @@ namespace embree
             assert(c1 != BVH2Hair::emptyNode);
             assert(stackPtr < stackEnd); 
             if (tNear0 < tNear1) { 
-
               stackPtr->ref = c1; stackPtr->tNear = tNear1; stackPtr->tFar = tFar1; stackPtr++; 
               cur = c0; tNear = tNear0; tFar = tFar0;
-	      
             }
             else { 
-
               stackPtr->ref = c0; stackPtr->tNear = tNear0; stackPtr->tFar = tFar0; stackPtr++; 
               cur = c1; tNear = tNear1; tFar = tFar1;
             }
@@ -247,14 +265,15 @@ namespace embree
         /*! this is a leaf node */
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Bezier1* prim = (Bezier1*) cur.leaf(num);
-        for (size_t i=0; i<num; i++) intersectBezier(ray_space,ray,prim[i]);
+        for (size_t i=0; i<num; i++) intersectBezier(ray_space,ray,prim[i],bvh->scene);
       }
+      AVX_ZERO_UPPER();
     }
 
-    __forceinline bool BVH2HairIntersector1::occludedBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier)
+    __forceinline bool BVH2HairIntersector1::occludedBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier, const Scene* scene)
     {
       /* load bezier curve control points */
-      STAT3(normal.trav_prims,1,1,1);
+      STAT3(shadow.trav_prims,1,1,1);
       const Vec3fa& v0 = bezier.p0;
       const Vec3fa& v1 = bezier.p1;
       const Vec3fa& v2 = bezier.p2;
@@ -276,14 +295,38 @@ namespace embree
       const avx4f w = -p0;
       const avxf d0 = w.x*v.x + w.y*v.y;
       const avxf d1 = v.x*v.x + v.y*v.y;
-      const avxf u = clamp(d0*rcp(d1),avxf(zero),avxf(one));
+      const avxf u = clamp(d0/d1,avxf(zero),avxf(one));
       const avx4f p = p0 + u*v;
       const avxf t = p.z;
       const avxf d2 = p.x*p.x + p.y*p.y; 
-      const avxf r = p.w; //max(p.w,ray.org.w+ray.dir.w*t);
+      const avxf r = p.w; //+ray.org.w+ray.dir.w*t;
       const avxf r2 = r*r;
-      const avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
-      return any(valid);
+      avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
+      if (none(valid)) return false;
+
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+
+      size_t i = select_min(valid,t);
+      int geomID = bezier.geomID;
+      const Geometry* geometry = scene->get(geomID);
+      if (likely(!geometry->hasOcclusionFilter1())) return true;
+      const float one_over_8 = 1.0f/8.0f;
+
+      while (true) 
+      {
+        /* calculate hit information */
+        const float uu = (float(i)+u[i])*one_over_8;
+        BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+        Vec3fa P,T; curve3D.eval(uu,P,T);
+        if (T != Vec3fa(zero))
+          if (runOcclusionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,bezier.primID)) break;
+        valid[i] = 0;
+        if (none(valid)) return false;
+        i = select_min(valid,t);
+      }
+#endif
+      return true;
     }
     
     void BVH2HairIntersector1::occluded(const BVH2Hair* bvh, Ray& ray) 
@@ -403,12 +446,14 @@ namespace embree
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Bezier1* prim = (Bezier1*) cur.leaf(num);
         for (size_t i=0; i<num; i++) {
-          if (occludedBezier(ray_space,ray,prim[i])) {
+          if (occludedBezier(ray_space,ray,prim[i],bvh->scene)) {
             ray.geomID = 0;
-            return;
+            goto exit;
           }
         }
       }
+    exit:
+      AVX_ZERO_UPPER();
     }
 
     DEFINE_INTERSECTOR1(BVH2HairIntersector1_,BVH2HairIntersector1);
