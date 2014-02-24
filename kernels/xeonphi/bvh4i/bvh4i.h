@@ -183,18 +183,48 @@ namespace embree
       __forceinline       NodeRef &child(size_t i)       { return ((NodeRef*)&child0)[4*i]; }
       __forceinline const NodeRef &child(size_t i) const { return ((NodeRef*)&child0)[4*i]; }
 
+      __forceinline mic_f lowerXYZ()
+      {
+	return uload16f_low_uint8(0x7777,lower,mic_f::zero());
+      }
+
+      __forceinline mic_f decompress_lowerXYZ(const mic_f &s, const mic_f &diff)
+      {
+	return s + diff * lowerXYZ();
+      }
+
+      __forceinline mic_f upperXYZ()
+      {
+	return uload16f_low_uint8(0x7777,upper,mic_f::zero());
+      }
+
+      __forceinline mic_f decompress_upperXYZ(const mic_f &s, const mic_f &diff)
+      {
+	return s + diff * upperXYZ();
+      }
+
       __forceinline void init( const Node &node)
       {
-	const mic_f minXYZ = min(min(node.lowerXYZ(0),node.lowerXYZ(1)),min(node.lowerXYZ(2),node.lowerXYZ(3)));
-	const mic_f maxXYZ = max(max(node.upperXYZ(0),node.upperXYZ(1)),max(node.upperXYZ(2),node.upperXYZ(3)));
+	PING;
+	const mic_f minXYZ = select(0x7777,min(min(node.lowerXYZ(0),node.lowerXYZ(1)),min(node.lowerXYZ(2),node.lowerXYZ(3))),mic_f::zero());
+	const mic_f maxXYZ = select(0x7777,max(max(node.upperXYZ(0),node.upperXYZ(1)),max(node.upperXYZ(2),node.upperXYZ(3))),mic_f::one());
 	const mic_f diffXYZ = maxXYZ - minXYZ;
 	const mic_f rcp_diffXYZ = mic_f(1.0f) / diffXYZ;
  
-	const mic_f lowerXYZ = gather16f_4f_align(node.lowerXYZ(0),node.lowerXYZ(1),node.lowerXYZ(2),node.lowerXYZ(3));
-	const mic_f upperXYZ = gather16f_4f_align(node.upperXYZ(0),node.upperXYZ(1),node.upperXYZ(2),node.upperXYZ(3));
+	DBG_PRINT(minXYZ);
+	DBG_PRINT(maxXYZ);
 
-	const mic_f local_lowerXYZ = (lowerXYZ - minXYZ) * rcp_diffXYZ;
-	const mic_f local_upperXYZ = (upperXYZ - minXYZ) * rcp_diffXYZ;
+	const mic_f node_lowerXYZ = select(0x7777,load16f(node.lower),minXYZ); //gather16f_4f_align(node.lowerXYZ(0),node.lowerXYZ(1),node.lowerXYZ(2),node.lowerXYZ(3));
+	const mic_f node_upperXYZ = select(0x7777,load16f(node.upper),minXYZ); //gather16f_4f_align(node.upperXYZ(0),node.upperXYZ(1),node.upperXYZ(2),node.upperXYZ(3));
+
+	DBG_PRINT(node_lowerXYZ);
+	DBG_PRINT(node_upperXYZ);
+
+	const mic_f local_lowerXYZ = ((node_lowerXYZ - minXYZ) * rcp_diffXYZ)*mic_f(255.0f);
+	const mic_f local_upperXYZ = ((node_upperXYZ - minXYZ) * rcp_diffXYZ)*mic_f(255.0f);
+
+	DBG_PRINT(local_lowerXYZ);
+	DBG_PRINT(local_upperXYZ);
 
 	store4f(&start,minXYZ);
 	store4f(&diff ,diffXYZ);
@@ -204,6 +234,17 @@ namespace embree
 	child1 = node.child(1);
 	child2 = node.child(2);
 	child3 = node.child(3);
+
+	std::cout << "TEST" << std::endl;
+	const mic_f s = broadcast4to16f(&start);
+	const mic_f d = broadcast4to16f(&diff);
+
+	const mic_f lower_XYZ_0 = lowerXYZ();
+	const mic_f lower_XYZ_1 = decompress_lowerXYZ(s,d);
+
+	DBG_PRINT(lower_XYZ_0);
+	DBG_PRINT(lower_XYZ_1);
+
       }
 
       __forceinline std::ostream& operator<<(std::ostream &o)

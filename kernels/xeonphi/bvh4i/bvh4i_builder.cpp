@@ -265,8 +265,20 @@ namespace embree
 	  }
       }
 
-    DBG_PRINT(sizeof(BVH4i::QuantizedNode));
+    if (likely(numPrimitives > 0))
+      {
+	DBG_PRINT(sizeof(BVH4i::QuantizedNode));
+	DBG_PRINT(numNodes);
+	BVH4i::QuantizedNode *quantBVH = (BVH4i::QuantizedNode*) os_malloc(numNodes * sizeof(BVH4i::QuantizedNode));
+	//for (size_t i=0;i<numNodes;i++)
+	for (size_t i=0;i<2;i++)
 
+	  {
+	    DBG_PRINT( bvh->qbvh[i] );
+	    quantBVH[i].init( bvh->qbvh[i] );
+	  }
+	exit(0);
+      }
 
     if (g_verbose >= 2) {
       double perf = totalNumPrimitives/dt*1E-6;
