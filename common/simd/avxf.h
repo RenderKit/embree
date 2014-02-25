@@ -127,7 +127,7 @@ namespace embree
 
   __forceinline const avxf operator /( const avxf& a, const avxf& b ) { return _mm256_div_ps(a.m256, b.m256); }
   __forceinline const avxf operator /( const avxf& a, const float b ) { return a / avxf(b); }
-  __forceinline const avxf operator /( const float a, const avxf& b ) { return avxf(a) * b; }
+  __forceinline const avxf operator /( const float a, const avxf& b ) { return avxf(a) / b; }
 
   __forceinline const avxf operator^( const avxf& a, const avxf& b ) { return _mm256_xor_ps(a.m256,b.m256); }
   __forceinline const avxf operator^( const avxf& a, const avxi& b ) { return _mm256_xor_ps(a.m256,_mm256_castsi256_ps(b.m256)); }
