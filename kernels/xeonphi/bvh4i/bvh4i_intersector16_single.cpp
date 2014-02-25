@@ -18,6 +18,9 @@
 #include "geometry/triangle1.h"
 #include "geometry/filter.h"
 
+//#define QUANTIZATION
+
+
 namespace embree
 {
   namespace isa
@@ -45,7 +48,6 @@ namespace embree
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
 
       stack_node[0] = BVH4i::invalidNode;
-      
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
         {
@@ -54,7 +56,7 @@ namespace embree
 
 	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z,mic_f::one());
 	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
 	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
@@ -73,6 +75,7 @@ namespace embree
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;
 		  STAT3(normal.trav_nodes,1,1,1);
         
+#if !defined(QUANTIZATION)
 		  const Node* __restrict__ const node = curNode.node(nodes);
 		  const float* __restrict const plower = (float*)node->lower;
 		  const float* __restrict const pupper = (float*)node->upper;
@@ -83,6 +86,21 @@ namespace embree
 		  /* intersect single ray with 4 bounding boxes */
 		  const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
 		  const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+#else
+		  BVH4i::QuantizedNode* __restrict__ const node = (BVH4i::QuantizedNode*)curNode.node(nodes);
+		  prefetch<PFHINT_L1>((char*)node + 0);
+
+		  const float* __restrict const plower = (float*)node;
+		  
+		  const mic_f startXYZ = node->decompress_startXYZ();
+		  const mic_f diffXYZ  = node->decompress_diffXYZ();
+		  const mic_f lower   = node->decompress_lowerXYZ(startXYZ,diffXYZ);
+		  const mic_f upper   = node->decompress_upperXYZ(startXYZ,diffXYZ);
+
+		  const mic_f tLowerXYZ = lower * rdir_xyz - org_rdir_xyz;
+		  const mic_f tUpperXYZ = upper * rdir_xyz - org_rdir_xyz;
+		  
+#endif
 		  const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
 		  const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
@@ -103,6 +121,7 @@ namespace embree
 
 		  /* if no child is hit, continue with early popped child */
 		  if (unlikely(none(hitm))) continue;
+
 		  sindex++;
         
 		  const unsigned long hiti = toInt(hitm);
@@ -429,6 +448,8 @@ namespace embree
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;
 		  STAT3(shadow.trav_nodes,1,1,1);
 
+
+#if !defined(QUANTIZATION)
 		  const Node* __restrict__ const node = curNode.node(nodes);
 		  const float* __restrict const plower = (float*)node->lower;
 		  const float* __restrict const pupper = (float*)node->upper;
@@ -439,6 +460,21 @@ namespace embree
 		  /* intersect single ray with 4 bounding boxes */
 		  const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
 		  const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+#else
+		  BVH4i::QuantizedNode* __restrict__ const node = (BVH4i::QuantizedNode*)curNode.node(nodes);
+		  prefetch<PFHINT_L1>((char*)node + 0);
+
+		  const float* __restrict const plower = (float*)node;
+		  
+		  const mic_f startXYZ = node->decompress_startXYZ();
+		  const mic_f diffXYZ  = node->decompress_diffXYZ();
+		  const mic_f lower   = node->decompress_lowerXYZ(startXYZ,diffXYZ);
+		  const mic_f upper   = node->decompress_upperXYZ(startXYZ,diffXYZ);
+
+		  const mic_f tLowerXYZ = lower * rdir_xyz - org_rdir_xyz;
+		  const mic_f tUpperXYZ = upper * rdir_xyz - org_rdir_xyz;
+		  
+#endif
 		  const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
 		  const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
