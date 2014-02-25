@@ -45,6 +45,7 @@ namespace embree
       /*! stack state */
       StackItemInt64 stack[1+3*BVH4i::maxDepth];  //!< stack of nodes 
       StackItemInt64* stackPtr = stack+1;        //!< current stack pointer
+
       stack[0].ptr  = bvh->root;
       stack[0].dist = neg_inf;
       
@@ -72,8 +73,8 @@ namespace embree
       const void* nodePtr = bvh->nodePtr();
       const void* triPtr  = bvh->triPtr();
 
-    const Vec3fa root_bounds_min  = bvh->bounds.lower;
-    const Vec3fa root_bounds_diff = bvh->bounds.upper - bvh->bounds.lower;
+      //const Vec3fa root_bounds_min  = bvh->bounds.lower;
+      //const Vec3fa root_bounds_diff = bvh->bounds.upper - bvh->bounds.lower;
 
       /* pop loop */
       while (true) pop:
