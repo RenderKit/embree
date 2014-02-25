@@ -81,9 +81,9 @@ namespace embree
       const avx3f dp = p1-p0;
 
       const avxf R = r0 + dot(dp,d0)*dr;
-      const avxf A = dot(d1,d1) - dot(d0,d1)*dot(d0,d1) - dr*dr * dot(d0,d1)*dot(d0,d1);
-      const avxf B = 2.0f*dot(d1,dp) - 2.0f*dot(d0,dp)*dot(d0,d1) - 2.0f*R*dr*dot(d0,d1);
-      const avxf C = dot(dp,dp) - dot(dp,d0)*dot(dp,d0) - R*R;
+      const avxf A = dot(d1,d1) - sqr(dot(d0,d1)) * (1.0f+dr*dr);
+      const avxf B = 2.0f*dot(d1,dp) - 2.0f*dot(d0,d1)*(dot(dp,d0)*(1.0f+dr*dr) + r0*dr);
+      const avxf C = dot(dp,dp) - sqr(dot(dp,d0)) - R*R;
       const avxf D = B*B - 4.0f*A*C;
       const avxb valid = D >= 0.0f;
       if (none(valid)) return;
