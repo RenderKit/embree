@@ -57,55 +57,6 @@ namespace embree
 #endif
     }
 
-    float f0(Ray& ray, const Vec3fa& v0, const Vec3fa& v3, const float t)
-    {
-      Vec3fa p0 = v0, d0 = normalize(v3-v0);
-      Vec3fa p1 = ray.org, d1 = ray.dir;
-      float r0 = v0.w, dr = (v3.w-v0.w)/length(v3-v0);
-      Vec3fa h = p1-p0+t*d1;
-      return dot(h,h) - sqr(dot(h,d0)) - sqr(r0+dot(h,d0)*dr);
-    }
-
-    float f1(Ray& ray, const Vec3fa& v0, const Vec3fa& v3, const float t)
-    {
-      Vec3fa p0 = v0, d0 = normalize(v3-v0);
-      Vec3fa p1 = ray.org, d1 = ray.dir;
-      float r0 = v0.w, dr = (v3.w-v0.w)/length(v3-v0);
-      Vec3fa dp = p1-p0;
-      Vec3fa h = dp+t*d1;
-      float R = r0+dot(dp,d0)*dr;
-      return dot(dp,dp) + 2.0f*t*dot(dp,d1) + sqr(t)*dot(d1,d1) 
-        - sqr(dot(dp,d0) + t*dot(d0,d1)) 
-        - sqr(R+t*dr*dot(d0,d1));
-    }
-
-    float f2(Ray& ray, const Vec3fa& v0, const Vec3fa& v3, const float t)
-    {
-      Vec3fa p0 = v0, d0 = normalize(v3-v0);
-      Vec3fa p1 = ray.org, d1 = ray.dir;
-      float r0 = v0.w, dr = (v3.w-v0.w)/length(v3-v0);
-      Vec3fa dp = p1-p0;
-      Vec3fa h = dp+t*d1;
-      float R = r0+dot(dp,d0)*dr;
-      return dot(dp,dp) + 2.0f*t*dot(dp,d1) + sqr(t)*dot(d1,d1) 
-        - sqr(dot(dp,d0)) - 2.0f*t*dot(dp,d0)*dot(d0,d1) - sqr(t)*sqr(dot(d0,d1)) 
-        - sqr(R) - 2.0f*R*t*dr*dot(d0,d1) - sqr(t)*sqr(dr)*sqr(dot(d0,d1));
-    }
-
-    float f3(Ray& ray, const Vec3fa& v0, const Vec3fa& v3, const float t)
-    {
-      Vec3fa p0 = v0, d0 = normalize(v3-v0);
-      Vec3fa p1 = ray.org, d1 = ray.dir;
-      float r0 = v0.w, dr = (v3.w-v0.w)/length(v3-v0);
-      Vec3fa dp = p1-p0;
-      Vec3fa h = dp+t*d1;
-      float R = r0+dot(dp,d0)*dr;
-      float A = dot(d1,d1) - sqr(dot(d0,d1)) - sqr(dr*dot(d0,d1));
-      float B = 2.0f*dot(d1,dp) - 2.0f*dot(d0,dp)*dot(d0,d1) - 2.0f*R*dr*dot(d0,d1);
-      float C = dot(dp,dp) - sqr(dot(dp,d0)) - R*R;
-      return A*t*t + B*t + C;
-    }
-
     __forceinline void BVH4HairIntersector1::intersectBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier, const Scene* scene)
     {
       /* load bezier curve control points */
@@ -115,39 +66,11 @@ namespace embree
       const Vec3fa& v2 = bezier.p2;
       const Vec3fa& v3 = bezier.p3;
 
-#if 0
-      /*for (size_t i=1000; i<2000; i++)
-      {
-        float t = float(i)/100.0f;
-        float v = f0(ray,v0,v3,t);
-        PRINT2(t,v);
-        }*/
-
-      float k1 = 10.555f;
-      float k3 = 15.945f;
-      float k2 = 0.5f*(k1+k3);
-
-      float f01 = f0(ray,v0,v3,k1); PRINT(f01);
-      float f02 = f0(ray,v0,v3,k2); PRINT(f02);
-      float f03 = f0(ray,v0,v3,k3); PRINT(f03);
-
-      float f11 = f1(ray,v0,v3,k1); PRINT(f11);
-      float f12 = f1(ray,v0,v3,k2); PRINT(f12);
-      float f13 = f1(ray,v0,v3,k3); PRINT(f13);
-
-      float f21 = f2(ray,v0,v3,k1); PRINT(f21);
-      float f22 = f2(ray,v0,v3,k2); PRINT(f22);
-      float f23 = f2(ray,v0,v3,k3); PRINT(f23);
-
-      float f31 = f3(ray,v0,v3,k1); PRINT(f31);
-      float f32 = f3(ray,v0,v3,k2); PRINT(f32);
-      float f33 = f3(ray,v0,v3,k3); PRINT(f33);
-      
-      //const BezierCurve3D curve2D(v0,v1,v2,v3,0.0f,1.0f,0);
-
+#if 1
       /* subdivide 3 levels at once */ 
-      const avx4f a = v0; //curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-      const avx4f b = v3; //curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
+      const BezierCurve3D curve2D(v0,v1,v2,v3,0.0f,1.0f,0);
+      const avx4f a = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+      const avx4f b = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
       const avx3f a3(a.x,a.y,a.z);
       const avx3f b3(b.x,b.y,b.z);
 
@@ -157,26 +80,11 @@ namespace embree
       const avx3f p1 = ray.org, d1 = ray.dir;
       const avx3f dp = p1-p0;
 
-      /*PRINT(p0);
-      PRINT(d0);
-      PRINT(p1);
-      PRINT(d1);
-      PRINT(r0);
-      PRINT(dr);
-      PRINT(dot(d1,d1));*/
-
       const avxf R = r0 + dot(dp,d0)*dr;
       const avxf A = dot(d1,d1) - dot(d0,d1)*dot(d0,d1) - dr*dr * dot(d0,d1)*dot(d0,d1);
       const avxf B = 2.0f*dot(d1,dp) - 2.0f*dot(d0,dp)*dot(d0,d1) - 2.0f*R*dr*dot(d0,d1);
       const avxf C = dot(dp,dp) - dot(dp,d0)*dot(dp,d0) - R*R;
-
-      PRINT(A);
-      PRINT(B);
-      PRINT(C);
-
       const avxf D = B*B - 4.0f*A*C;
-      PRINT(D);
-
       const avxb valid = D >= 0.0f;
       if (none(valid)) return;
 
@@ -184,31 +92,31 @@ namespace embree
       const avxf rcp2A = 1.0f/(2.0f*A);
       const avxf t0 = (-B-Q)*rcp2A;
       const avxf t1 = (-B+Q)*rcp2A;
-      PRINT(t0);
-      PRINT(t1);
 
-      const avxb valid0 = valid & (ray.tnear < t0) & (t0 < ray.tfar);
+      const avxf u0 = dot(dp+t0*d1,d0)/l0;
+      const avxb valid0 = valid & (ray.tnear < t0) & (t0 < ray.tfar) & (0.0f <= u0) & (u0 <= 1.0f);
       if (any(valid0)) 
       {
         size_t i = select_min(valid0,t0);
-        ray.u = 0.0f;
+        ray.u = u0[i];
         ray.v = 0.0f;
         ray.tfar = t0[i];
         ray.geomID = bezier.geomID;
         ray.primID = bezier.primID;
-        ray.Ng = Vec3fa(zero); //ray.org+t0*ray.dir-sphere.p;
+        ray.Ng = Vec3fa(d0.x[i],d0.y[i],d0.z[i]);
       }
 
-      const avxb valid1 = valid & (ray.tnear < t1) & (t1 < ray.tfar);
+      const avxf u1 = dot(dp+t1*d1,d0)/l0;
+      const avxb valid1 = valid & (ray.tnear < t1) & (t1 < ray.tfar) & (0.0f <= u1) & (u1 <= 1.0f);
       if (any(valid1)) 
       {
         size_t i = select_min(valid1,t1);
-        ray.u = 0.0f;
+        ray.u = u1[i];
         ray.v = 0.0f;
         ray.tfar = t1[i];
         ray.geomID = bezier.geomID;
         ray.primID = bezier.primID;
-        ray.Ng = Vec3fa(zero); //ray.org+t0*ray.dir-sphere.p;
+        ray.Ng = Vec3fa(d0.x[i],d0.y[i],d0.z[i]);
       }
 
 #else
