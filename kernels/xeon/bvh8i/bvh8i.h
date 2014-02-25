@@ -458,16 +458,16 @@ namespace embree
         const avxf lower_z_t = (node8.lower_z - root_lower.z) * root_inv_length.z;
         const avxf upper_z_t = (node8.upper_z - root_lower.z) * root_inv_length.z;
 
-        lower_x = convert_to_hf16<_MM_ROUND_DOWN>(lower_x_t);
-        upper_x = convert_to_hf16<_MM_ROUND_UP>(upper_x_t);
+        lower_x = convert_to_hf16<_MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC>(lower_x_t);
+        upper_x = convert_to_hf16<_MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC>(upper_x_t);
 
-        lower_y = convert_to_hf16<_MM_ROUND_DOWN>(lower_y_t);
-        upper_y = convert_to_hf16<_MM_ROUND_UP>(upper_y_t);
+        lower_y = convert_to_hf16<_MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC>(lower_y_t);
+        upper_y = convert_to_hf16<_MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC>(upper_y_t);
 
-        lower_z = convert_to_hf16<_MM_ROUND_DOWN>(lower_z_t);
-        upper_z = convert_to_hf16<_MM_ROUND_UP>(upper_z_t);
+        lower_z = convert_to_hf16<_MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC>(lower_z_t);
+        upper_z = convert_to_hf16<_MM_FROUND_TO_POS_INF |_MM_FROUND_NO_EXC>(upper_z_t);
 
-
+#if 0
         for (size_t i=node8.numValidChildren();i<8;i++)
           {
             ((short*)&lower_x)[i] = 0;
@@ -477,6 +477,7 @@ namespace embree
             ((short*)&lower_z)[i] = 0;
             ((short*)&upper_z)[i] = 0;            
           }
+#endif
       }
 
       /*! Returns reference to specified child */

@@ -33,7 +33,6 @@ namespace embree
 #define DBG(x) 
 
 #define COMPRESSED_SIZE_DIM 16
-
     
     template<typename TriangleIntersector>
     void BVH8iIntersector1<TriangleIntersector>::intersect(const BVH8i* bvh, Ray& ray)
@@ -86,8 +85,20 @@ namespace embree
         /*! if popped node is too far, pop next one */
         if (unlikely(*(float*)&stackPtr->dist > ray.tfar))
           continue;
+
+#if defined(__AVX2__) && defined(USE_QUANTIZED_NODES)
         
         const avxf factor = 1.0f/255.0f;
+
+
+        const avxf min_x   = avxf(root_bounds_min.x);
+        const avxf diff_x  = avxf(root_bounds_diff.x);
+        const avxf min_y   = avxf(root_bounds_min.y);
+        const avxf diff_y  = avxf(root_bounds_diff.y);
+        const avxf min_z   = avxf(root_bounds_min.z);
+        const avxf diff_z  = avxf(root_bounds_diff.z);
+#endif
+
         /* downtraversal loop */
         while (true)
         {
@@ -142,8 +153,6 @@ namespace embree
 
           const avxf tnear_x = convert_from_hf16(*(__m128i*)((const char*)node+nearX) );
           const avxf tfar_x  = convert_from_hf16(*(__m128i*)((const char*)node+farX)  );
-          const avxf min_x   = avxf(root_bounds_min.x);
-          const avxf diff_x  = avxf(root_bounds_diff.x);
           const avxf near_x  = min_x + tnear_x * diff_x;
           const avxf far_x   = min_x + tfar_x  * diff_x;
           const avxf tNearX  = msub(near_x,rdir.x,org_rdir.x);
@@ -151,8 +160,6 @@ namespace embree
 
           const avxf tnear_y = convert_from_hf16(*(__m128i*)((const char*)node+nearY) );
           const avxf tfar_y  = convert_from_hf16(*(__m128i*)((const char*)node+farY)  );
-          const avxf min_y   = avxf(root_bounds_min.y);
-          const avxf diff_y  = avxf(root_bounds_diff.y);
           const avxf near_y  = min_y + tnear_y * diff_y;
           const avxf far_y   = min_y + tfar_y  * diff_y;
           const avxf tNearY  = msub(near_y,rdir.y,org_rdir.y);
@@ -160,8 +167,6 @@ namespace embree
 
           const avxf tnear_z = convert_from_hf16(*(__m128i*)((const char*)node+nearZ) );
           const avxf tfar_z  = convert_from_hf16(*(__m128i*)((const char*)node+farZ)  );
-          const avxf min_z   = avxf(root_bounds_min.z);
-          const avxf diff_z  = avxf(root_bounds_diff.z);
           const avxf near_z  = min_z + tnear_z * diff_z;
           const avxf far_z   = min_z + tfar_z  * diff_z;
           const avxf tNearZ  = msub(near_z,rdir.z,org_rdir.z);
@@ -306,7 +311,18 @@ namespace embree
         stackPtr--;
         NodeRef cur = (NodeRef) *stackPtr;
 
+#if defined(__AVX2__) && defined(USE_QUANTIZED_NODES)
+        
         const avxf factor = 1.0f/255.0f;
+
+
+        const avxf min_x   = avxf(root_bounds_min.x);
+        const avxf diff_x  = avxf(root_bounds_diff.x);
+        const avxf min_y   = avxf(root_bounds_min.y);
+        const avxf diff_y  = avxf(root_bounds_diff.y);
+        const avxf min_z   = avxf(root_bounds_min.z);
+        const avxf diff_z  = avxf(root_bounds_diff.z);
+#endif
 
         /* downtraversal loop */
         while (true)
@@ -351,8 +367,6 @@ namespace embree
 
           const avxf tnear_x = convert_from_hf16(*(__m128i*)((const char*)node+nearX) );
           const avxf tfar_x  = convert_from_hf16(*(__m128i*)((const char*)node+farX)  );
-          const avxf min_x   = avxf(root_bounds_min.x);
-          const avxf diff_x  = avxf(root_bounds_diff.x);
           const avxf near_x  = min_x + tnear_x * diff_x;
           const avxf far_x   = min_x + tfar_x  * diff_x;
           const avxf tNearX  = msub(near_x,rdir.x,org_rdir.x);
@@ -360,8 +374,6 @@ namespace embree
 
           const avxf tnear_y = convert_from_hf16(*(__m128i*)((const char*)node+nearY) );
           const avxf tfar_y  = convert_from_hf16(*(__m128i*)((const char*)node+farY)  );
-          const avxf min_y   = avxf(root_bounds_min.y);
-          const avxf diff_y  = avxf(root_bounds_diff.y);
           const avxf near_y  = min_y + tnear_y * diff_y;
           const avxf far_y   = min_y + tfar_y  * diff_y;
           const avxf tNearY  = msub(near_y,rdir.y,org_rdir.y);
@@ -369,8 +381,6 @@ namespace embree
 
           const avxf tnear_z = convert_from_hf16(*(__m128i*)((const char*)node+nearZ) );
           const avxf tfar_z  = convert_from_hf16(*(__m128i*)((const char*)node+farZ)  );
-          const avxf min_z   = avxf(root_bounds_min.z);
-          const avxf diff_z  = avxf(root_bounds_diff.z);
           const avxf near_z  = min_z + tnear_z * diff_z;
           const avxf far_z   = min_z + tfar_z  * diff_z;
           const avxf tNearZ  = msub(near_z,rdir.z,org_rdir.z);
