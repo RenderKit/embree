@@ -127,7 +127,7 @@ namespace embree
 
   __forceinline const avxf operator /( const avxf& a, const avxf& b ) { return _mm256_div_ps(a.m256, b.m256); }
   __forceinline const avxf operator /( const avxf& a, const float b ) { return a / avxf(b); }
-  __forceinline const avxf operator /( const float a, const avxf& b ) { return avxf(a) * b; }
+  __forceinline const avxf operator /( const float a, const avxf& b ) { return avxf(a) / b; }
 
   __forceinline const avxf operator^( const avxf& a, const avxf& b ) { return _mm256_xor_ps(a.m256,b.m256); }
   __forceinline const avxf operator^( const avxf& a, const avxi& b ) { return _mm256_xor_ps(a.m256,_mm256_castsi256_ps(b.m256)); }
@@ -289,6 +289,16 @@ namespace embree
   __forceinline avxf alignr(const avxf &a, const avxf &b)
   {
     return _mm256_castsi256_ps(_mm256_alignr_epi8(_mm256_castps_si256(a), _mm256_castps_si256(b), i));
+  }  
+
+
+  template<const int mode>
+  __forceinline ssei convert_to_hf16(const avxf &a) {
+    return _mm256_cvtps_ph(a,mode);
+  }
+
+  __forceinline avxf convert_from_hf16(const ssei &a) {
+    return _mm256_cvtph_ps(a);
   }
 
 #endif

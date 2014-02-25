@@ -284,19 +284,6 @@ namespace embree
 
     void BVH8iBuilderTriangle8::build(size_t threadIndex, size_t threadCount) 
     {
-      // DBG_PRINT(sizeof(BVH8i::CompressedNode));
-      // DBG_PRINT(sizeof(BVH8i::Node));
-
-      // BVH8i::CompressedNode test;
-      // for (size_t i=0;i<8;i++) 
-      // 	test.lower_x[i] = 100 + i;
-      // for (size_t i=0;i<8;i++) 
-      // 	test.upper_x[i] = 200 + i;
-
-      // avxi tt = _mm256_cvtepu8_epi32(*(__m128i*)test.lower_x);
-      // DBG_PRINT(tt);
-      // exit(0);
-
       bvh4i_builder8->build(threadIndex,threadCount);
       unsigned int numBVH4iNodes = countBVH4iNodes((BVH4i::Node*)bvh4i_builder8->bvh->nodePtr(),bvh4i_builder8->bvh->root);
       unsigned int totalLeaves = countLeavesButtomUp((BVH4i::Node*)bvh4i_builder8->bvh->nodePtr(),bvh4i_builder8->bvh->root);
@@ -311,6 +298,7 @@ namespace embree
 			  index8,
 			  bvh8i_root,
 			  bvh8i_node_dist);
+
 
       if (g_verbose >= 2)
 	{
@@ -345,7 +333,36 @@ namespace embree
 	}
 
       bvh4i_builder8->bvh->root = bvh8i_root;
+#if !defined(USE_QUANTIZED_NODES)
       bvh4i_builder8->bvh->qbvh = bvh8i_base; 
+
+      //std::cout << "SAH = " << BVH8i::sah8( bvh8i_base, bvh8i_root ) << std::endl;
+#else
+      DBG_PRINT(sizeof(BVH8i::Quantized8BitNode));
+      DBG_PRINT(sizeof(BVH8i::Node));
+      DBG_PRINT(index8);
+
+#if 1
+      BVH8i::Quantized8BitNode *bvh8i_quantized = (BVH8i::Quantized8BitNode *)os_malloc(sizeof(BVH8i::Quantized8BitNode) * index8);
+      for (size_t i=0;i<index8;i++) bvh8i_quantized[i].init( bvh8i_base[i] );
+      std::cout << "SAH = " << BVH8i::sah8_quantized( bvh8i_quantized, bvh8i_root ) << std::endl;
+      std::cout << "8BIT QUANTIZATION DONE" << std::endl << std::flush;
+      bvh4i_builder8->bvh->qbvh = bvh8i_quantized; 
+
+#else
+      BBox3fa root_bounds = bvh4i_builder8->bvh->bounds;
+      DBG_PRINT( root_bounds );
+      BVH8i::NodeHF16 *bvh8i_hf = (BVH8i::NodeHF16 *)os_malloc(sizeof(BVH8i::NodeHF16) * index8);
+      for (size_t i=0;i<index8;i++) {
+        bvh8i_hf[i].init( root_bounds , bvh8i_base[i] );
+      }
+      std::cout << "HF CONVERSION DONE" << std::endl << std::flush;
+      bvh4i_builder8->bvh->qbvh = bvh8i_hf; 
+#endif
+
+
+
+#endif
     }
     
     

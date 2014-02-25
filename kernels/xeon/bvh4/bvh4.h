@@ -28,6 +28,7 @@ namespace embree
    * it's 4 children as well as 4 child pointers. */
   class BVH4 : public Bounded
   {
+    ALIGNED_CLASS;
   public:
     
     /*! forward declaration of node type */
@@ -73,6 +74,14 @@ namespace embree
 
       /*! Cast to size_t */
       __forceinline operator size_t() const { return ptr; }
+
+       /*! Prefetches the node this reference points to */
+      __forceinline void prefetch() const {
+#if defined(__AVX2__)
+	prefetchL1(((char*)ptr)+0*64);
+	prefetchL1(((char*)ptr)+1*64);
+#endif
+      }
 
       /*! Sets the barrier bit. */
       __forceinline void setBarrier() { ptr |= (size_t)(1 << (alignment-1)); }
@@ -290,7 +299,8 @@ namespace embree
     std::vector<BVH4*> objects;
   };
 
-  typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, BVH4*& accel, Builder*& builder);
+  // FIXME: move the below code to somewhere else
+  typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, BVH4*& accel, Builder*& builder); 
   typedef Builder* (*BVH4BuilderTopLevelFunc)(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
 
 #define DECLARE_TOPLEVEL_BUILDER(symbol)                                         \

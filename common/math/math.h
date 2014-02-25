@@ -183,8 +183,9 @@ namespace embree
 
   /*! bit reverse operation */
   template<class T>
-    __forceinline T bitReverse(T v)
+    __forceinline T bitReverse(const T& vin)
   {
+    T v = vin;
     v = ((v >> 1) & 0x55555555) | ((v & 0x55555555) << 1);
     v = ((v >> 2) & 0x33333333) | ((v & 0x33333333) << 2);
     v = ((v >> 4) & 0x0F0F0F0F) | ((v & 0x0F0F0F0F) << 4);
@@ -195,8 +196,9 @@ namespace embree
 
   /*! bit interleave operation */
   template<class T>
-    __forceinline T bitInterleave(T x, T y, T z)
+    __forceinline T bitInterleave(const T& xin, const T& yin, const T& zin)
   {
+	T x = xin, y = yin, z = zin;
     x = (x | (x << 16)) & 0x030000FF; 
     x = (x | (x <<  8)) & 0x0300F00F; 
     x = (x | (x <<  4)) & 0x030C30C3; 

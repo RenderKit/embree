@@ -90,10 +90,6 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4mb/bvh4mb_builder.cpp
   bvh4mb/bvh4mb_intersector1.cpp   
   bvh4mb/bvh4mb_intersector4.cpp
-
-  bvh2hair/bvh2hair.cpp
-  bvh2hair/bvh2hair_builder.cpp
-  bvh2hair/bvh2hair_statistics.cpp
 )
 
 IF (TARGET_SSE41) 
@@ -111,6 +107,10 @@ ENDIF ()
 
 IF (TARGET_AVX) 
   ADD_LIBRARY(embree_avx STATIC
+
+  bvh4hair/bvh4hair.cpp               # FIXME: should be in SSE2 section
+  bvh4hair/bvh4hair_builder.cpp       # FIXME: should be in SSE2 section
+  bvh4hair/bvh4hair_statistics.cpp    # FIXME: should be in SSE2 section
 
    geometry/triangle8.cpp
    geometry/ispc_wrapper_avx.cpp
@@ -147,7 +147,7 @@ IF (TARGET_AVX)
    bvh4mb/bvh4mb_intersector4.cpp
    bvh4mb/bvh4mb_intersector8.cpp
 
-   bvh2hair/bvh2hair_intersector1.cpp
+   bvh4hair/bvh4hair_intersector1.cpp
 )
 
   SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")
@@ -186,7 +186,7 @@ IF (TARGET_AVX2)
     bvh4i/bvh4i_builder_fast.cpp
     bvh4i/bvh4i_builder_binner.cpp
 
-    bvh2hair/bvh2hair_intersector1.cpp
+    bvh4hair/bvh4hair_intersector1.cpp
 )
 
   SET_TARGET_PROPERTIES(embree_avx2 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX2}")

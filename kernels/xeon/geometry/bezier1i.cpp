@@ -37,15 +37,13 @@ namespace embree
     Scene* scene = (Scene*) geom;
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
-    const unsigned primID = prim.primID();
-#if !defined(PRE_SUBDIVISION_HACK)
-    const BezierCurves* curves = scene->getBezierCurves(geomID);
-    const int vtx = curves->curve(primID);
+#if defined(PRE_SUBDIVISION_HACK)
+    const unsigned primID = prim.primID()/8;
 #else
-    const BezierCurves* curves = scene->getBezierCurves(0);
-    const int vtx = curves->curve(geomID);    
+    const unsigned primID = prim.primID();
 #endif
-    const Vec3fa& p0 = curves->vertex(vtx);
+    const BezierCurves* curves = scene->getBezierCurves(geomID);
+    const Vec3fa& p0 = curves->vertex(curves->curve(primID));
     new (dst) Bezier1i(&p0,geomID,primID,curves->mask);
     prims++;
   }
@@ -55,7 +53,11 @@ namespace embree
     Scene* scene = (Scene*) geom;
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
+#if defined(PRE_SUBDIVISION_HACK)
+    const unsigned primID = prim.primID()/8;
+#else
     const unsigned primID = prim.primID();
+#endif
     const BezierCurves* curves = scene->getBezierCurves(geomID);
     const int vtx = curves->curve(primID);
     const Vec3fa& p0 = curves->vertex(vtx);

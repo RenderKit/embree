@@ -58,12 +58,13 @@ namespace embree
   std::string getCompilerName()
   {
 #if defined(__INTEL_COMPILER)
-    std::string version = std::stringOf(__INTEL_COMPILER);
-    version.insert(3,".");
-    version.insert(2,".");
-    version = "Intel Compiler " + version;
+    int icc_mayor = __INTEL_COMPILER / 100 % 100;
+    int icc_minor = __INTEL_COMPILER % 100;
+    std::string version = "Intel Compiler ";
+    version += std::stringOf(icc_mayor);
+    version += "." + std::stringOf(icc_minor);
 #if defined(__INTEL_COMPILER_UPDATE)
-    version += " Update " + std::stringOf(__INTEL_COMPILER_UPDATE);
+    version += "." + std::stringOf(__INTEL_COMPILER_UPDATE);
 #endif
     return version;
 #elif defined(__clang__)

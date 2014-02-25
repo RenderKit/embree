@@ -416,7 +416,7 @@ namespace embree
             setRay(ray4,2*dy+dx,makeRay(zero,Vec3f(float(x+dx)*rcpWidth,1,float(y+dy)*rcpHeight)));
           }
         }
-        __align(16) int valid4[4] = { -1,-1,-1,-1 };
+        __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
         rtcIntersect4(valid4,scene,ray4);
       }
     }
@@ -441,7 +441,7 @@ namespace embree
             setRay(ray8,2*dy+dx,makeRay(zero,Vec3f(float(x+dx)*rcpWidth,1,float(y+dy)*rcpHeight)));
           }
         }
-        __align(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+        __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
         rtcIntersect8(valid8,scene,ray8);
       }
     }
@@ -466,7 +466,7 @@ namespace embree
             setRay(ray16,4*dy+dx,makeRay(zero,Vec3f(float(x+dx)*rcpWidth,1,float(y+dy)*rcpHeight)));
           }
         }
-        __align(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+        __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
         rtcIntersect16(valid16,scene,ray16);
       }
     }
@@ -497,7 +497,7 @@ namespace embree
       for (size_t j=0; j<4; j++) {
         setRay(ray4,j,makeRay(zero,numbers[i+j]));
       }
-      __align(16) int valid4[4] = { -1,-1,-1,-1 };
+      __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
       rtcIntersect4(valid4,scene,ray4);
     }
     double t1 = getSeconds();
@@ -514,7 +514,7 @@ namespace embree
       for (size_t j=0; j<8; j++) {
         setRay(ray8,j,makeRay(zero,numbers[i+j]));
       }
-      __align(16) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(16) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
       rtcIntersect8(valid8,scene,ray8);
     }
     double t1 = getSeconds();
@@ -531,7 +531,7 @@ namespace embree
       for (size_t j=0; j<16; j++) {
         setRay(ray16,j,makeRay(zero,numbers[i+j]));
       }
-      __align(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
       rtcIntersect16(valid16,scene,ray16);
     }
     double t1 = getSeconds();

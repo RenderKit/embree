@@ -39,7 +39,7 @@ namespace embree
 
     /*! BVH16i Node */
 
-    struct __align(64) Node
+    struct __aligned(64) Node
     {
     public:
 

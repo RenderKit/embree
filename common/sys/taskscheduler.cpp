@@ -180,17 +180,17 @@ namespace embree
   // ================================================================================
   // ================================================================================
 
-  __align(64) void* volatile LockStepTaskScheduler::data = NULL;
-  __align(64) void (* LockStepTaskScheduler::taskPtr)(void* data, const size_t threadID, const size_t numThreads) = NULL;
+  __aligned(64) void* volatile LockStepTaskScheduler::data = NULL;
+  __aligned(64) void (* LockStepTaskScheduler::taskPtr)(void* data, const size_t threadID, const size_t numThreads) = NULL;
 
 #if defined(__MIC__)
-  __align(64) QuadTreeBarrier LockStepTaskScheduler::taskBarrier;
-  //__align(64) Barrier LockStepTaskScheduler::taskBarrier;
+  __aligned(64) QuadTreeBarrier LockStepTaskScheduler::taskBarrier;
+  //__aligned(64) Barrier LockStepTaskScheduler::taskBarrier;
 #else
-  __align(64) Barrier LockStepTaskScheduler::taskBarrier;
+  __aligned(64) Barrier LockStepTaskScheduler::taskBarrier;
 #endif
 
-  __align(64) AlignedAtomicCounter32 LockStepTaskScheduler::taskCounter;
+  __aligned(64) AlignedAtomicCounter32 LockStepTaskScheduler::taskCounter;
 
   void LockStepTaskScheduler::init(const size_t numThreads) {
     taskBarrier.init(numThreads);

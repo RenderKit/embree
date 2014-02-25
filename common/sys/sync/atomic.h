@@ -44,7 +44,7 @@ namespace embree
     volatile atomic_t data;
   };
 
-  class __align(64) AlignedAtomicCounter32
+  class __aligned(64) AlignedAtomicCounter32
   {
   public:
     __forceinline AlignedAtomicCounter32 () : data(0) {}

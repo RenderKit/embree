@@ -20,17 +20,17 @@
 
 namespace embree
 {
-  class BVH2HairBuilder : public Builder
+  class BVH4HairBuilder : public Builder
   {
     ALIGNED_CLASS;
   public:
 
     /*! Type shortcuts */
-    typedef BVH2Hair::NodeRef NodeRef;
-    typedef BVH2Hair::AlignedNode AlignedNode;
-    typedef BVH2Hair::UnalignedNode UnalignedNode;
-    typedef BVH2Hair::Bezier1 Bezier1;
-    typedef BVH2Hair::NAABBox3fa NAABBox3fa;
+    typedef BVH4Hair::NodeRef NodeRef;
+    typedef BVH4Hair::AlignedNode AlignedNode;
+    typedef BVH4Hair::UnalignedNode UnalignedNode;
+    typedef BVH4Hair::Bezier1 Bezier1;
+    typedef BVH4Hair::NAABBox3fa NAABBox3fa;
     
   public:
 
@@ -38,10 +38,10 @@ namespace embree
     void build(size_t threadIndex, size_t threadCount);
 
     /*! Constructor. */
-    BVH2HairBuilder (BVH2Hair* bvh, Scene* scene);
+    BVH4HairBuilder (BVH4Hair* bvh, Scene* scene);
 
     /*! Destructor. */
-    ~BVH2HairBuilder ();
+    ~BVH4HairBuilder ();
 
   private:
 
@@ -54,14 +54,14 @@ namespace embree
 
       /*! calculates standard surface area heuristic for the split */
       __forceinline float standardSAH() const {
-        return BVH2Hair::intCost*float(num0)*halfArea(bounds0.bounds) + BVH2Hair::intCost*float(num1)*halfArea(bounds1.bounds);
+        return BVH4Hair::intCost*float(num0)*halfArea(bounds0.bounds) + BVH4Hair::intCost*float(num1)*halfArea(bounds1.bounds);
       }
 
       /*! calculates modified surface area heuristic for the split */
       __forceinline float modifiedSAH() const {
         return 
-          BVH2Hair::travCostUnaligned*float(num0)*halfArea(bounds0.bounds) + BVH2Hair::intCost*bounds0.bounds.upper.w + 
-          BVH2Hair::travCostUnaligned*float(num1)*halfArea(bounds1.bounds) + BVH2Hair::intCost*bounds1.bounds.upper.w;
+          BVH4Hair::travCostUnaligned*float(num0)*halfArea(bounds0.bounds) + BVH4Hair::intCost*bounds0.bounds.upper.w + 
+          BVH4Hair::travCostUnaligned*float(num1)*halfArea(bounds1.bounds) + BVH4Hair::intCost*bounds1.bounds.upper.w;
       }
       
       /*! finds the two hair strands */
@@ -97,18 +97,18 @@ namespace embree
       
       /*! calculates standard surface area heuristic for the split */
       __forceinline float standardSAH() const {
-        return BVH2Hair::intCost*float(num0)*halfArea(bounds0.bounds) + BVH2Hair::intCost*float(num1)*halfArea(bounds1.bounds);
+        return BVH4Hair::intCost*float(num0)*halfArea(bounds0.bounds) + BVH4Hair::intCost*float(num1)*halfArea(bounds1.bounds);
       }
 
       /*! calculates modified surface area heuristic for the split */
       __forceinline float modifiedSAH() const {
         return 
-          BVH2Hair::travCostUnaligned*float(num0)*halfArea(bounds0.bounds) + BVH2Hair::intCost*bounds0.bounds.upper.w + 
-          BVH2Hair::travCostUnaligned*float(num1)*halfArea(bounds1.bounds) + BVH2Hair::intCost*bounds1.bounds.upper.w;
+          BVH4Hair::travCostUnaligned*float(num0)*halfArea(bounds0.bounds) + BVH4Hair::intCost*bounds0.bounds.upper.w + 
+          BVH4Hair::travCostUnaligned*float(num1)*halfArea(bounds1.bounds) + BVH4Hair::intCost*bounds1.bounds.upper.w;
       }
 
       /*! performs object binning to the the best partitioning */
-      static ObjectSplit find(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space = one);
+      static ObjectSplit find(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space = one);
 
       /*! calculates aligned bounds for left and right split */
       const ObjectSplit alignedBounds(Bezier1* curves, size_t begin, size_t end);
@@ -128,7 +128,7 @@ namespace embree
       }
       
     public:
-      AffineSpace3fa space;
+      LinearSpace3fa space;
       NAABBox3fa bounds0, bounds1;
       int dim;
       int pos;
@@ -160,7 +160,7 @@ namespace embree
     static const BBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end);
 
     /*! calculate bounds for range of primitives */
-    static const NAABBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space);
+    static const NAABBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space);
     
     /*! try to find best non-axis aligned space, where the sum of all bounding areas is minimal */
     static const NAABBox3fa computeUnalignedBounds(Bezier1* curves, size_t begin, size_t end);
@@ -168,20 +168,17 @@ namespace embree
     /*! creates a leaf node */
     NodeRef leaf(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds);
 
-    /*! recursive build function */
-    NodeRef recurse_unaligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds);
-
-    /*! recursive build function for axis aligned bounds */
-    NodeRef recurse_aligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds);
+    size_t split(size_t begin, size_t end, const NAABBox3fa& bounds, NAABBox3fa& lbounds, NAABBox3fa& rbounds, bool& isAligned);
 
     /*! recursive build function for aligned and non-aligned bounds */
-    NodeRef recurse_aligned_unaligned(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds);
+    NodeRef recurse(size_t threadIndex, size_t depth, size_t begin, size_t end, const NAABBox3fa& bounds);
 
   public:
     Scene* scene;          //!< source
     size_t minLeafSize;    //!< minimal size of a leaf
     size_t maxLeafSize;    //!< maximal size of a leaf
-    BVH2Hair* bvh;         //!< output
-    std::vector<Bezier1> curves; //!< array with all curves
+    size_t numGeneratedPrims;
+    BVH4Hair* bvh;         //!< output
+    vector_t<Bezier1> curves; //!< array with all curves
   };
 }

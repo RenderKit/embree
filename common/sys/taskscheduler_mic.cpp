@@ -20,7 +20,7 @@
 
 namespace embree
 {
-  __align(64) AtomicMutex mtx;
+  __aligned(64) AtomicMutex mtx;
 
   //#define DBG(x) { mtx.lock(); x ; mtx.unlock(); }
   #define DBG(x) 

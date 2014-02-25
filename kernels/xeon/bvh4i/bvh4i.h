@@ -27,6 +27,7 @@ namespace embree
    * it's 4 children as well as a 4 child indices. */
   class BVH4i : public Bounded
   {
+	  ALIGNED_CLASS;
   public:
 
     /*! forward declaration of node type */
@@ -95,6 +96,10 @@ namespace embree
         assert(isLeaf());
         num = id & items_mask;
         return (const char*)base + (id & offset_mask);
+      }
+      /*! returns number of primitives in leaf */ 
+      __forceinline unsigned int items() const {
+        return id & items_mask;
       }
       
     private:
@@ -354,7 +359,7 @@ namespace embree
     return (children & BVH_LEAF_MASK);
   };
 
-  class __align(32) BVHNode : public BBox3fa
+  class __aligned(32) BVHNode : public BBox3fa
   {
   public:
     __forceinline unsigned int isLeaf() const {
@@ -430,7 +435,7 @@ namespace embree
 #define QBVH_OFFSET_MASK  (~(QBVH_ITEMS_MASK | QBVH_LEAF_MASK))
 #define QBVH_TERMINAL_TOKEN QBVH_LEAF_MASK
 
-  class __align(64) QBVHNode
+  class __aligned(64) QBVHNode
   {
   public:
     float min_x[4];

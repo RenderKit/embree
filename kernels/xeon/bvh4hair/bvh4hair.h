@@ -21,20 +21,35 @@
 #include "common/accel.h"
 #include "common/scene.h"
 #include "geometry/primitive.h"
+#include "geometry/bezier1i.h"
+
+#define BVH4HAIR_WIDTH 8
 
 namespace embree
 {
-  /*! BVH2 with rotated bounds. */
-  class BVH2Hair : public Bounded
+  /*! BVH4 with unaligned bounds. */
+  class BVH4Hair : public Bounded
   {
+    ALIGNED_CLASS;
   public:
+#if BVH4HAIR_WIDTH == 8
+    typedef avxb simdb;
+    typedef avxi simdi;
+    typedef avxf simdf;
+#elif BVH4HAIR_WIDTH == 4
+    typedef sseb simdb;
+    typedef ssei simdi;
+    typedef ssef simdf;
+#endif
     
     /*! forward declaration of node type */
+    struct Node;
     struct AlignedNode;
     struct UnalignedNode;
+    typedef AffineSpaceT<LinearSpace3<Vec3<simdf> > > AffineSpaceSOA4;
 
     /*! branching width of the tree */
-    static const size_t N = 1;
+    static const size_t N = BVH4HAIR_WIDTH;
 
     /*! Number of address bits the Node and primitives are aligned
         to. Maximally 2^alignment-2 many primitive blocks per leaf are
@@ -46,7 +61,7 @@ namespace embree
     static const size_t items_mask = (1 << (alignment-1))-1;  
 
     /*! Empty node */
-    static const size_t emptyNode = 1;
+    static const size_t emptyNode = 2;
 
     /*! Invalid node, used as marker in traversal */
     static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | 2;
@@ -75,8 +90,47 @@ namespace embree
       /*! Cast to size_t */
       __forceinline operator size_t() const { return ptr; }
 
+      /*! Prefetches the node this reference points to */
+      __forceinline void prefetch() const 
+      {
+#if defined(__AVX2__) // FIXME: test if bring performance also on SNB
+	prefetchL1(((char*)ptr)+0*64);
+	prefetchL1(((char*)ptr)+1*64);
+	prefetchL1(((char*)ptr)+2*64);
+	prefetchL1(((char*)ptr)+3*64);
+#if BVH4HAIR_WIDTH == 8
+	prefetchL1(((char*)ptr)+4*64);
+	prefetchL1(((char*)ptr)+5*64);
+	prefetchL1(((char*)ptr)+6*64);
+	prefetchL1(((char*)ptr)+7*64);
+#endif
+#endif
+      }
+
+
+      __forceinline void prefetch_L2() const 
+      {
+#if defined(__AVX2__) // FIXME: test if bring performance also on SNB
+	prefetchL2(((char*)ptr)+0*64);
+	prefetchL2(((char*)ptr)+1*64);
+	prefetchL2(((char*)ptr)+2*64);
+	prefetchL2(((char*)ptr)+3*64);
+#if BVH4HAIR_WIDTH == 8
+	prefetchL2(((char*)ptr)+4*64);
+	prefetchL2(((char*)ptr)+5*64);
+	prefetchL2(((char*)ptr)+6*64);
+	prefetchL2(((char*)ptr)+7*64);
+#endif
+#endif
+      }
+
+
+
       /*! checks if this is a leaf */
       __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) > 1; }
+
+      /*! checks if this is a node */
+      __forceinline int isNode() const { return (ptr & (size_t)align_mask) <= 1; }
       
       /*! checks if this is a node with aligned bounding boxes */
       __forceinline int isAlignedNode() const { return (ptr & (size_t)align_mask) == 0; }
@@ -84,6 +138,10 @@ namespace embree
       /*! checks if this is a node with aligned bounding boxes */
       __forceinline int isUnalignedNode() const { return (ptr & (size_t)align_mask) == 1; }
       
+      /*! returns node pointer */
+      __forceinline       Node* node()       { assert(isNode()); return (      Node*)((size_t)ptr & ~(size_t)align_mask); }
+      __forceinline const Node* node() const { assert(isNode()); return (const Node*)((size_t)ptr & ~(size_t)align_mask); }
+
       /*! returns aligned node pointer */
       __forceinline       AlignedNode* alignedNode()       { assert(isAlignedNode()); return (      AlignedNode*)ptr; }
       __forceinline const AlignedNode* alignedNode() const { assert(isAlignedNode()); return (const AlignedNode*)ptr; }
@@ -116,7 +174,7 @@ namespace embree
       __forceinline NAABBox3fa (const BBox3fa& bounds) 
         : space(one), bounds(bounds) {}
       
-      __forceinline NAABBox3fa (const AffineSpace3fa& space, const BBox3fa& bounds) 
+      __forceinline NAABBox3fa (const LinearSpace3fa& space, const BBox3fa& bounds) 
         : space(space), bounds(bounds) {}
 
       friend std::ostream& operator<<(std::ostream& cout, const NAABBox3fa& p) {
@@ -124,79 +182,128 @@ namespace embree
       }
       
     public:
-      AffineSpace3fa space; //!< orthonormal transformation
+      LinearSpace3fa space; //!< orthonormal transformation
       BBox3fa bounds;       //!< bounds in transformed space
     };
 
-    /*! Node with aligned bounds */
-    struct AlignedNode
+    /*! Base Node structure */
+    struct Node
     {
       /*! Clears the node. */
       __forceinline void clear() {
-        aabb[0] = aabb[1] = empty;
-        children[0] = children[1] = emptyNode;
+        for (size_t i=0; i<N; i++) children[i] = emptyNode;
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3fa& b, const NodeRef& childID) {
-        assert(i < 2);
-        aabb[i] = b;
+      __forceinline void set(size_t i, const NodeRef& childID) {
+        assert(i < N);
         children[i] = childID;
       }
 
-      /*! Returns bounds of specified child. */
-      __forceinline const BBox3fa& bounds(size_t i) const { assert(i < 2); return aabb[i]; }
-
-      /*! Returns the extend of the bounds of the ith child */
-      __forceinline Vec3fa extend(size_t i) const {
-        assert(i<2);
-        return aabb[i].size();
-      }
-
       /*! Returns reference to specified child */
-      __forceinline       NodeRef& child(size_t i)       { assert(i<2); return children[i]; }
-      __forceinline const NodeRef& child(size_t i) const { assert(i<2); return children[i]; }
+      __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
     public:
-      BBox3fa aabb    [2];   //!< left and right axis aligned bounding box
-      NodeRef children[2];   //!< Pointer to the 2 children (can be a node or leaf)
+      NodeRef children[N];   //!< Pointer to the children (can be a node or leaf)
     };
 
-    /*! Node with unaligned bounds */
-    struct UnalignedNode
+    /*! Node with aligned bounds */
+    struct AlignedNode : public Node
     {
       /*! Clears the node. */
       __forceinline void clear() {
-        naabb[0] = naabb[1] = one;
-        children[0] = children[1] = emptyNode;
+        lower_x = lower_y = lower_z = pos_inf; 
+        upper_x = upper_y = upper_z = neg_inf;
+        Node::clear();
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& childID) 
+      {
+        assert(i < N);
+        lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
+        upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
+        Node::set(i,childID);
+      }
+
+      /*! Returns bounds of specified child. */
+      __forceinline const BBox3fa bounds(size_t i) const { 
+        assert(i < N);
+        const Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
+        const Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
+        return BBox3fa(lower,upper);
+      }
+
+      /*! Returns the extend of the bounds of the ith child */
+      __forceinline Vec3fa extend(size_t i) const {
+        assert(i < N);
+        return bounds(i).size();
+      }
+
+    public:
+      simdf lower_x;           //!< X dimension of lower bounds of all 4 children.
+      simdf upper_x;           //!< X dimension of upper bounds of all 4 children.
+      simdf lower_y;           //!< Y dimension of lower bounds of all 4 children.
+      simdf upper_y;           //!< Y dimension of upper bounds of all 4 children.
+      simdf lower_z;           //!< Z dimension of lower bounds of all 4 children.
+      simdf upper_z;           //!< Z dimension of upper bounds of all 4 children.
+    };
+
+    /*! Node with unaligned bounds */
+    struct UnalignedNode : public Node
+    {
+      /*! Clears the node. */
+      __forceinline void clear() 
+      {
+	AffineSpace3fa empty = AffineSpace3fa::scale(Vec3fa(1E+19));
+	naabb.l.vx = empty.l.vx;
+	naabb.l.vy = empty.l.vy;
+	naabb.l.vz = empty.l.vz;
+	naabb.p    = empty.p;
+        Node::clear();
       }
 
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, const NAABBox3fa& b, const NodeRef& childID) 
       {
-        assert(i < 2);
-        naabb[i] = b.space;
-        naabb[i].p -= b.bounds.lower;
-        naabb[i] = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19),b.bounds.upper-b.bounds.lower))*naabb[i];
-        children[i] = childID;
-      }
+        assert(i < N);
 
-      /*! Returns bounds of specified child. */
-      __forceinline const AffineSpace3fa& bounds(size_t i) const { assert(i < 2); return naabb[i]; }
+        AffineSpace3fa space = b.space;
+        space.p -= b.bounds.lower;
+        space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19),b.bounds.upper-b.bounds.lower))*space;
+        
+        naabb.l.vx.x[i] = space.l.vx.x;
+        naabb.l.vx.y[i] = space.l.vx.y;
+        naabb.l.vx.z[i] = space.l.vx.z;
+
+        naabb.l.vy.x[i] = space.l.vy.x;
+        naabb.l.vy.y[i] = space.l.vy.y;
+        naabb.l.vy.z[i] = space.l.vy.z;
+
+        naabb.l.vz.x[i] = space.l.vz.x;
+        naabb.l.vz.y[i] = space.l.vz.y;
+        naabb.l.vz.z[i] = space.l.vz.z;
+
+        naabb.p.x[i] = space.p.x;
+        naabb.p.y[i] = space.p.y;
+        naabb.p.z[i] = space.p.z;
+
+        Node::set(i,childID);
+      }
 
       /*! Returns the extend of the bounds of the ith child */
       __forceinline Vec3fa extend(size_t i) const {
-        assert(i<2);
-        return rsqrt(naabb[i].l.vx*naabb[i].l.vx + naabb[i].l.vy*naabb[i].l.vy + naabb[i].l.vz*naabb[i].l.vz);
+        assert(i<N);
+        const Vec3fa vx(naabb.l.vx.x[i],naabb.l.vx.y[i],naabb.l.vx.z[i]);
+        const Vec3fa vy(naabb.l.vy.x[i],naabb.l.vy.y[i],naabb.l.vy.z[i]);
+        const Vec3fa vz(naabb.l.vz.x[i],naabb.l.vz.y[i],naabb.l.vz.z[i]);
+        const Vec3fa p (naabb.p   .x[i],naabb.p   .y[i],naabb.p   .z[i]);
+        return rsqrt(vx*vx + vy*vy + vz*vz);
       }
 
-      /*! Returns reference to specified child */
-      __forceinline       NodeRef& child(size_t i)       { assert(i<2); return children[i]; }
-      __forceinline const NodeRef& child(size_t i) const { assert(i<2); return children[i]; }
-
     public:
-      AffineSpace3fa naabb   [2];   //!< left and right non-axis aligned bounding box (bounds are [0,1] in specified space)
-      NodeRef        children[2];   //!< Pointer to the 2 children (can be a node or leaf)
+      AffineSpaceSOA4 naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
 
     /*! Hair Leaf */
@@ -212,22 +319,41 @@ namespace embree
                              const unsigned int geomID, const unsigned int primID)
         : p0(p0), p1(p1), p2(p2), p3(p3), t0(t0), dt(t1-t0), geomID(geomID), primID(primID) {}
 
+      
       /*! calculate the bounds of the curve */
-      __forceinline const BBox3fa bounds() const {
+      __forceinline const BBox3fa bounds() const 
+      {
+#if 1
+	const BezierCurve3D curve2D(p0,p1,p2,p3,0.0f,1.0f,0);
+	const avx4f pi = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+	const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
+	const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
+	const Vec3fa upper_r = reduce_max(abs(pi.w));
+        return enlarge(BBox3fa(min(lower,p3),max(upper,p3)),max(upper_r,p3.w));
+#else
         const BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2),BBox3fa(p3));
         return enlarge(b,Vec3fa(b.upper.w));
+#endif
       }
 
       /*! calculate bounds in specified coordinate space */
       __forceinline const BBox3fa bounds(const AffineSpace3fa& space) const 
       {
-        const BBox3fa b0 = xfmPoint(space,p0);
-        const BBox3fa b1 = xfmPoint(space,p1);
-        const BBox3fa b2 = xfmPoint(space,p2);
-        const BBox3fa b3 = xfmPoint(space,p3);
-        const BBox3fa b = merge(b0,b1,b2,b3);
-        const float   r = max(p0.w,p1.w,p2.w,p3.w);
-        return enlarge(b,Vec3fa(r));
+        Vec3fa b0 = xfmPoint(space,p0); b0.w = p0.w;
+        Vec3fa b1 = xfmPoint(space,p1); b1.w = p1.w;
+        Vec3fa b2 = xfmPoint(space,p2); b2.w = p2.w;
+        Vec3fa b3 = xfmPoint(space,p3); b3.w = p3.w;
+#if 1
+	const BezierCurve3D curve2D(b0,b1,b2,b3,0.0f,1.0f,0);
+	const avx4f pi = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+	const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
+	const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
+	const Vec3fa upper_r = reduce_max(abs(pi.w));
+        return enlarge(BBox3fa(min(lower,b3),max(upper,b3)),max(upper_r,b3.w));
+#else
+        const BBox3fa b = merge(BBox3fa(b0),BBox3fa(b1),BBox3fa(b2),BBox3fa(b3));
+        return enlarge(b,Vec3fa(b.upper.w));
+#endif
       }
 
       /*! subdivide the bezier curve */
@@ -266,14 +392,14 @@ namespace embree
 
   public:
 
-    /*! BVH2Hair default constructor. */
-    BVH2Hair ();
+    /*! BVH4Hair default constructor. */
+    BVH4Hair (Scene* scene);
 
-    /*! BVH2Hair destruction */
-    ~BVH2Hair ();
+    /*! BVH4Hair destruction */
+    ~BVH4Hair ();
 
-    /*! BVH2Hair instantiations */
-    static Accel* BVH2HairBezier1(Scene* scene);
+    /*! BVH4Hair instantiations */
+    static Accel* BVH4HairBezier1(Scene* scene);
 
     /*! initializes the acceleration structure */
     void init (size_t numPrimitives = 0);
@@ -313,6 +439,7 @@ namespace embree
     }
 
   public:
+    Scene* scene;
     NodeRef root;  //!< Root node
     size_t numPrimitives;
     size_t numVertices;

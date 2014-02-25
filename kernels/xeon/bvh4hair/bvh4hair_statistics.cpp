@@ -14,26 +14,27 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh2hair_statistics.h"
+#include "bvh4hair_statistics.h"
 
 namespace embree
 {
-  BVH2HairStatistics::BVH2HairStatistics (BVH2Hair* bvh) : bvh(bvh)
+  BVH4HairStatistics::BVH4HairStatistics (BVH4Hair* bvh) : bvh(bvh)
   {
     numAlignedNodes = numUnalignedNodes = numLeaves = numPrims = depth = 0;
+    childrenAlignedNodes = childrenUnalignedNodes = 0;
     bvhSAH = 0.0f;
     float A = max(0.0f,halfArea(bvh->bounds));
     statistics(bvh->root,A,depth);
     bvhSAH /= area(bvh->bounds);
-    assert(depth <= BVH2Hair::maxDepth);
+    assert(depth <= BVH4Hair::maxDepth);
   }
 
-  std::string BVH2HairStatistics::str()  
+  std::string BVH4HairStatistics::str()  
   {
     std::ostringstream stream;
     size_t bytesAlignedNodes = numAlignedNodes*sizeof(AlignedNode);
     size_t bytesUnalignedNodes = numUnalignedNodes*sizeof(UnalignedNode);
-    size_t bytesPrims  = numPrims*sizeof(BVH2Hair::Bezier1);
+    size_t bytesPrims  = numPrims*sizeof(BVH4Hair::Bezier1);
     size_t numVertices = bvh->numVertices;
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
     size_t bytesTotal = bytesAlignedNodes+bytesUnalignedNodes+bytesPrims+bytesVertices;
@@ -48,11 +49,13 @@ namespace embree
     stream << "  used = " << bytesTotal/1E6 << " MB, allocated = " << bytesTotalAllocated/1E6 << " MB, perPrimitive = " << double(bytesTotal)/double(bvh->numPrimitives) << " B" << std::endl;
     stream.precision(1);
     stream << "  alignedNodes = "  << numAlignedNodes << " "
-           << "(" << bytesAlignedNodes/1E6  << " MB) "
+           << "(" << 100.0*double(childrenAlignedNodes)/double(BVH4Hair::N*numAlignedNodes) << "% filled) " 
+           << "(" << bytesAlignedNodes/1E6  << " MB) " 
            << "(" << 100.0*double(bytesAlignedNodes)/double(bytesTotal) << "% of total)"
            << std::endl;
     stream << "  unalignedNodes = "  << numUnalignedNodes << " "
-           << "(" << bytesUnalignedNodes/1E6  << " MB) "
+           << "(" << 100.0*double(childrenUnalignedNodes)/double(BVH4Hair::N*numUnalignedNodes) << "% filled) " 
+           << "(" << bytesUnalignedNodes/1E6  << " MB) " 
            << "(" << 100.0*double(bytesUnalignedNodes)/double(bytesTotal) << "% of total)"
            << std::endl;
     stream << "  leaves = " << numLeaves << " "
@@ -67,16 +70,17 @@ namespace embree
     return stream.str();
   }
 
-  void BVH2HairStatistics::statistics(NodeRef node, const float A, size_t& depth)
+  void BVH4HairStatistics::statistics(NodeRef node, const float A, size_t& depth)
   {
     if (node.isAlignedNode())
     {
       numAlignedNodes++;
       AlignedNode* n = node.alignedNode();
-      bvhSAH += A*BVH2Hair::travCostAligned;
+      bvhSAH += A*BVH4Hair::travCostAligned;
 
       depth = 0;
-      for (size_t i=0; i<2; i++) {
+      for (size_t i=0; i<BVH4Hair::N; i++) {
+        if (n->child(i) != BVH4Hair::emptyNode) childrenAlignedNodes++;
         const float Ai = max(0.0f,halfArea(n->extend(i)));
         size_t cdepth; statistics(n->child(i),Ai,cdepth); 
         depth=max(depth,cdepth);
@@ -87,10 +91,11 @@ namespace embree
     {
       numUnalignedNodes++;
       UnalignedNode* n = node.unalignedNode();
-      bvhSAH += A*BVH2Hair::travCostUnaligned;
+      bvhSAH += A*BVH4Hair::travCostUnaligned;
 
       depth = 0;
-      for (size_t i=0; i<2; i++) {
+      for (size_t i=0; i<BVH4Hair::N; i++) {
+        if (n->child(i) != BVH4Hair::emptyNode) childrenUnalignedNodes++;
         const float Ai = max(0.0f,halfArea(n->extend(i)));
         size_t cdepth; statistics(n->child(i),Ai,cdepth); 
         depth=max(depth,cdepth);
@@ -105,7 +110,7 @@ namespace embree
       
       numLeaves++;
       numPrims += num;
-      float sah = A * BVH2Hair::intCost * num;
+      float sah = A * BVH4Hair::intCost * num;
       bvhSAH += sah;
     }
   }

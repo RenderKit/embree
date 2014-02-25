@@ -43,8 +43,6 @@ namespace embree
       return enlarge(b,Vec3fa(b.upper.w));
     }
 
-   
-
   public:
     const Vec3fa* p;      //!< pointer to first control point (x,y,z,r)
     unsigned int geomID;  //!< geometry ID
@@ -121,7 +119,7 @@ namespace embree
       right.depth = depth-1;
     }
 
-    __forceinline void eval(const float t, Vec3fa& point, Vec3fa& tangent)
+    __forceinline void eval(const float t, Vec3fa& point, Vec3fa& tangent) const
     {
       const float t0 = 1.0f - t, t1 = t;
 
@@ -142,7 +140,7 @@ namespace embree
     }
 
 #if defined(__AVX__)
-    __forceinline avx4f eval(const avxf& c0, const avxf& c1, const avxf& c2, const avxf& c3)
+    __forceinline avx4f eval(const avxf& c0, const avxf& c1, const avxf& c2, const avxf& c3) const
     {
       const avx4f p00 = avx4f(v0);
       const avx4f p01 = avx4f(v1);

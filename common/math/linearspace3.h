@@ -103,6 +103,14 @@ namespace embree
     Vector vx,vy,vz;
   };
 
+#if !defined(__MIC__)
+  /*! compute transposed matrix */
+  template<> __forceinline const LinearSpace3<Vec3fa> LinearSpace3<Vec3fa>::transposed() const { 
+    ssef rx,ry,rz; transpose((ssef&)vx,(ssef&)vy,(ssef&)vz,ssef(zero),rx,ry,rz);
+    return LinearSpace3<Vec3fa>(Vec3fa(rx),Vec3fa(ry),Vec3fa(rz)); 
+  }
+#endif
+
   ////////////////////////////////////////////////////////////////////////////////
   // Unary Operators
   ////////////////////////////////////////////////////////////////////////////////

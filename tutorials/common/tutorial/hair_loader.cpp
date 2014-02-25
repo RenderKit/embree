@@ -107,12 +107,95 @@ namespace embree
     return numHairs;
   }
 
+  OBJScene::HairSet* reduce_hairs(OBJScene::HairSet* in)
+  {
+    OBJScene::HairSet* out = new OBJScene::HairSet;
+    int numSegments = in->hairs.size();
+    
+    for (size_t i=0; i<numSegments; i++)
+    {
+      const OBJScene::Hair h0 = in->hairs[i+0];
+      const Vec3fa a0 = in->v[h0.vertex+0];
+      const Vec3fa a1 = in->v[h0.vertex+1];
+      const Vec3fa a2 = in->v[h0.vertex+2];
+      const Vec3fa a3 = in->v[h0.vertex+3];
+      
+      if (i+1 >= numSegments) 
+      {
+        if (out->v.size() == 0 || out->v.back() != a0) 
+        out->v.push_back(a0);
+        out->v.push_back(a1);
+        out->v.push_back(a2);
+        out->v.push_back(a3);
+        out->hairs.push_back(OBJScene::Hair(out->v.size()-4,h0.id));
+        continue;
+      }
+      
+      const OBJScene::Hair h1 = in->hairs[i+1];
+      const Vec3fa b0 = in->v[h1.vertex+0];
+      const Vec3fa b1 = in->v[h1.vertex+1];
+      const Vec3fa b2 = in->v[h1.vertex+2];
+      const Vec3fa b3 = in->v[h1.vertex+3];
+      
+      if (h0.vertex+3 != h1.vertex || h0.id != h1.id) 
+      {
+        if (out->v.size() == 0 || out->v.back() != a0) 
+        out->v.push_back(a0);
+        out->v.push_back(a1);
+        out->v.push_back(a2);
+        out->v.push_back(a3);
+        out->hairs.push_back(OBJScene::Hair(out->v.size()-4,h0.id));
+        continue;
+      }
+      
+      const Vec3fa c0 = a0;
+      const Vec3fa c1 = 2*a1-a0;
+      const Vec3fa c2 = 2*b2-b3;
+      const Vec3fa c3 = b3;
+
+      const Vec3fa p00 = c0;
+      const Vec3fa p01 = c1;
+      const Vec3fa p02 = c2;
+      const Vec3fa p03 = c3;
+      const Vec3fa p10 = 0.5f*(p00 + p01);
+      const Vec3fa p11 = 0.5f*(p01 + p02);
+      const Vec3fa p12 = 0.5f*(p02 + p03);
+      const Vec3fa p20 = 0.5f*(p10 + p11);
+      const Vec3fa p21 = 0.5f*(p11 + p12);
+      const Vec3fa p30 = 0.5f*(p20 + p21);
+
+      const float len = length(a3-a0) + length(b3-b0);
+      const float err = length(p30-a3);
+
+      if (err > 0.01*len)
+      {
+        if (out->v.size() == 0 || out->v.back() != a0) 
+        out->v.push_back(a0);
+        out->v.push_back(a1);
+        out->v.push_back(a2);
+        out->v.push_back(a3);
+        out->hairs.push_back(OBJScene::Hair(out->v.size()-4,h0.id));
+      }
+      else
+      {
+        if (out->v.size() == 0 || out->v.back() != c0) 
+        out->v.push_back(c0);
+        out->v.push_back(c1);
+        out->v.push_back(c2);
+        out->v.push_back(c3);
+        out->hairs.push_back(OBJScene::Hair(out->v.size()-4,h0.id));
+        i++;
+      }
+    }
+
+    delete in; 
+    return out;
+  }
+
   void loadHair(const FileName& fileName, OBJScene& scene, Vec3fa& offset)
   {
     /* add new hair set to scene */
-    OBJScene::HairSet* hairset = new OBJScene::HairSet;
-    scene.hairsets.push_back(hairset);
- 
+    OBJScene::HairSet* hairset = new OBJScene::HairSet; 
 #if CONVERT_TO_BINARY   
     offset = Vec3fa(zero);
 #endif
@@ -122,14 +205,26 @@ namespace embree
       numHairs = loadHairASCII(fileName,hairset,offset);
     else
       numHairs = loadHairBin(fileName,hairset,offset);
+    
+    /* reduce number of hairs */
+    //PRINT(hairset->hairs.size());
+    //hairset = reduce_hairs(hairset);
+    //PRINT(hairset->hairs.size());
+    
+    /* add hairset to scene */
+    scene.hairsets.push_back(hairset);
+
+    int numPoints = hairset->v.size();
+    int numSegments = hairset->hairs.size();
+    PRINT(numHairs);
+    PRINT(numSegments);
+    PRINT(numPoints);
 
 #if CONVERT_TO_BINARY
     FILE* fout = fopen(fileName.setExt(".bin").c_str(),"wb");
     if (!fout) throw std::runtime_error("could not open " + fileName.str());
     fwrite(&hair_bin_magick,sizeof(int),1,fout);
     fwrite(&numHairs,sizeof(int),1,fout);
-    int numPoints = hairset->v.size();
-    int numSegments = hairset->hairs.size();
     fwrite(&numPoints,sizeof(int),1,fout);
     fwrite(&numSegments,sizeof(int),1,fout);
     if (numPoints) fwrite(&hairset->v[0],sizeof(Vec3fa),numPoints,fout);

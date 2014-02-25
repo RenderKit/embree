@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#if 0 // FIXME: remove this file?
+
 #include "bvh4_intersector1_bezier.h"
 
 #if defined(__AVX__)
@@ -287,7 +289,8 @@ namespace embree
     }
 
 #if defined(__AVX__)
-    DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1,BVH4Intersector1Bezier<Bezier1iIntersector1>);
+    //DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1,BVH4Intersector1Bezier<Bezier1iIntersector1>);
 #endif
   }
 }
+#endif

@@ -185,10 +185,10 @@ namespace embree
         Split2 split;
         const BuildRef* src;
         BuildRef* dst;
-        __align(64) AlignedAtomicCounter32 lCounter;
-        __align(64) AlignedAtomicCounter32 rCounter;
+        __aligned(64) AlignedAtomicCounter32 lCounter;
+        __aligned(64) AlignedAtomicCounter32 rCounter;
         Binner2<BINS> bin16;
-        __align(64) Binner2<BINS> global_bin16[MAX_MIC_THREADS]; // FIXME: hardcoded number of threads
+        __aligned(64) Binner2<BINS> global_bin16[MAX_MIC_THREADS]; // FIXME: hardcoded number of threads
       };
   };
 }

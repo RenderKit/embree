@@ -89,7 +89,7 @@ namespace embree
     volatile int flag;
   };
 
-  class __align(64) AlignedAtomicMutex : public AtomicMutex
+  class __aligned(64) AlignedAtomicMutex : public AtomicMutex
   {
   public:
     volatile unsigned int index;

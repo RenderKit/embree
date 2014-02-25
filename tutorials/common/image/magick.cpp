@@ -27,42 +27,6 @@ namespace embree
 {
   Ref<Image> loadMagick(const FileName& fileName)
   {
-#if 1
-    if (std::string(fileName.c_str()).size() > 2 && fileName.c_str()[1] == ' ') {
-      Magick::Image image(fileName.c_str()+2);
-      Image* out = new Image4f(image.columns(),image.rows(),fileName);
-      float rcpMaxRGB = 1.0f/float(MaxRGB);
-      Magick::Pixels pixel_cache(image);
-      Magick::PixelPacket* pixels = pixel_cache.get(0,0,out->width,out->height);
-    
-      for (size_t y=0; y<out->height; y++) {
-        for (size_t x=0; x<out->width; x++) {
-          Color4 c;
-          if (fileName.c_str()[0] == 'a') {
-            c.r =
-            c.g =
-            c.b = float(pixels[y*out->width+x].opacity )*rcpMaxRGB;
-            c.a = 1.f;
-          } else {
-            c.r = float(pixels[y*out->width+x].red  )*rcpMaxRGB;
-            c.g = float(pixels[y*out->width+x].green)*rcpMaxRGB;
-            c.b = float(pixels[y*out->width+x].blue )*rcpMaxRGB;
-            c.a = 1.f;
-          }
-          out->set(x,y,c);
-        }
-      }
-
-      return out;
-      // if (fileName[0] == 'd') {
-      //   Ref<Image> img = loadMagick(fileName.c_str()+2);
-        
-      //   return img;
-      // }
-      // if (fileName[0] == 'a')
-      //   return NULL;
-    }
-#endif
     Magick::Image image(fileName.c_str());
     Image* out = new Image4c(image.columns(),image.rows(),fileName);
     float rcpMaxRGB = 1.0f/float(MaxRGB);
