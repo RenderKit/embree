@@ -66,7 +66,7 @@ namespace embree
       const Vec3fa& v2 = bezier.p2;
       const Vec3fa& v3 = bezier.p3;
 
-#if 1
+#if 0
       /* subdivide 3 levels at once */ 
       const BezierCurve3D curve2D(v0,v1,v2,v3,0.0f,1.0f,0);
       const avx4f a = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
