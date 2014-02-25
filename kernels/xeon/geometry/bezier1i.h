@@ -43,8 +43,6 @@ namespace embree
       return enlarge(b,Vec3fa(b.upper.w));
     }
 
-   
-
   public:
     const Vec3fa* p;      //!< pointer to first control point (x,y,z,r)
     unsigned int geomID;  //!< geometry ID

@@ -125,30 +125,30 @@ namespace embree
     static const size_t SIZE_GLOBAL_WORK_STACK = 512;
     static const size_t SIZE_LOCAL_WORK_STACK  = 16;
 
-    __align(64) WorkStack<BuildRecord,SIZE_GLOBAL_WORK_STACK> global_workStack;
-    __align(64) WorkStack<BuildRecord,SIZE_LOCAL_WORK_STACK> local_workStack[MAX_MIC_CORES];
+    __aligned(64) WorkStack<BuildRecord,SIZE_GLOBAL_WORK_STACK> global_workStack;
+    __aligned(64) WorkStack<BuildRecord,SIZE_LOCAL_WORK_STACK> local_workStack[MAX_MIC_CORES];
 
   public:
 
     /* shared structure for multi-threaded binning and partitioning */
-    struct __align(64) SharedBinningPartitionData
+    struct __aligned(64) SharedBinningPartitionData
     {
-      __align(64) BuildRecord rec;
-      __align(64) Centroid_Scene_AABB left;
-      __align(64) Centroid_Scene_AABB right;
-      __align(64) Split split;
-      __align(64) AlignedAtomicCounter32 lCounter;
-      __align(64) AlignedAtomicCounter32 rCounter;
+      __aligned(64) BuildRecord rec;
+      __aligned(64) Centroid_Scene_AABB left;
+      __aligned(64) Centroid_Scene_AABB right;
+      __aligned(64) Split split;
+      __aligned(64) AlignedAtomicCounter32 lCounter;
+      __aligned(64) AlignedAtomicCounter32 rCounter;
     };
 
     /* single structure for all worker threads */
-    __align(64) SharedBinningPartitionData global_sharedData;
+    __aligned(64) SharedBinningPartitionData global_sharedData;
 
     /* one 16-bins structure per thread */
-    __align(64) Bin16 global_bin16[MAX_MIC_THREADS];
+    __aligned(64) Bin16 global_bin16[MAX_MIC_THREADS];
 
     /* one shared binning/partitoning structure per core */
-    __align(64) SharedBinningPartitionData local_sharedData[MAX_MIC_CORES];
+    __aligned(64) SharedBinningPartitionData local_sharedData[MAX_MIC_CORES];
 
   protected:
     PrimRef*   prims;
@@ -168,7 +168,7 @@ namespace embree
     AlignedAtomicCounter32  atomicID;
 
     /*! per core lock-step task scheduler */
-    __align(64) LockStepTaskScheduler4ThreadsLocalCore localTaskScheduler[MAX_MIC_CORES];
+    __aligned(64) LockStepTaskScheduler4ThreadsLocalCore localTaskScheduler[MAX_MIC_CORES];
 
     /*! node allocation */
     __forceinline unsigned int allocNode(int size)
@@ -199,8 +199,8 @@ namespace embree
     size_t numMaxPrimitives;
     size_t numMaxPreSplits;
 
-    __align(64) AlignedAtomicCounter32 dest0;
-    __align(64) AlignedAtomicCounter32 dest1;
+    __aligned(64) AlignedAtomicCounter32 dest0;
+    __aligned(64) AlignedAtomicCounter32 dest1;
 
     TASK_FUNCTION(BVH4iBuilderPreSplits,computePrimRefsPreSplits);
     

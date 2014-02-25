@@ -444,6 +444,11 @@ namespace embree
     return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_UINT8,_MM_BROADCAST_16X16,_MM_HINT_NONE),mic_f(1.0f/255.0f));  
   }
 
+  __forceinline mic_f uload16f_low_uint8(const mic_m& mask, const void* addr, const mic_f& v1) {
+    return _mm512_mask_extloadunpacklo_ps(v1, mask, addr, _MM_UPCONV_PS_UINT8, _MM_HINT_NONE);
+  }
+
+
   __forceinline mic_f gather16f_4f(const float *__restrict__ const ptr0,
                                    const float *__restrict__ const ptr1,
                                    const float *__restrict__ const ptr2,
@@ -498,6 +503,19 @@ namespace embree
     return v;
   }
 
+
+  __forceinline mic_f gather16f_4f_align(const mic_f& v0,
+					 const mic_f& v1,
+					 const mic_f& v2,
+					 const mic_f& v3) 
+  {
+    mic_f v = v3;
+    v = align_shift_right<12>(v,v2);
+    v = align_shift_right<12>(v,v1);
+    v = align_shift_right<12>(v,v0);
+    return v;
+  }
+
   __forceinline mic_f gather_4f_zlc_align(const mic_i &v_mask,
 					  const void *__restrict__ const ptr0,
 					  const void *__restrict__ const ptr1,
@@ -537,6 +555,10 @@ namespace embree
   
   __forceinline void compactustore16f_low(const mic_m& mask, float * addr, const mic_f &reg) {
     _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
+  }
+
+  __forceinline void compactustore16f_low_uint8(const mic_m& mask, void * addr, const mic_f &reg) {
+    _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_UINT8 , 0);
   }
   
   __forceinline void ustore16f_low(float * addr, const mic_f& reg) {
@@ -601,6 +623,19 @@ namespace embree
 				    const mic_f &z)
   {
     mic_f f = mic_f::zero();
+    f = select(0x1111,broadcast1to16f((float*)&x + index),f);
+    f = select(0x2222,broadcast1to16f((float*)&y + index),f);
+    f = select(0x4444,broadcast1to16f((float*)&z + index),f);
+    return f;
+  }
+
+  __forceinline mic_f loadAOS4to16f(const unsigned int index,
+				    const mic_f &x,
+				    const mic_f &y,
+				    const mic_f &z,
+				    const mic_f &fill)
+  {
+    mic_f f = fill;
     f = select(0x1111,broadcast1to16f((float*)&x + index),f);
     f = select(0x2222,broadcast1to16f((float*)&y + index),f);
     f = select(0x4444,broadcast1to16f((float*)&z + index),f);

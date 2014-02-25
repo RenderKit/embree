@@ -174,7 +174,7 @@ namespace embree
       __forceinline NAABBox3fa (const BBox3fa& bounds) 
         : space(one), bounds(bounds) {}
       
-      __forceinline NAABBox3fa (const AffineSpace3fa& space, const BBox3fa& bounds) 
+      __forceinline NAABBox3fa (const LinearSpace3fa& space, const BBox3fa& bounds) 
         : space(space), bounds(bounds) {}
 
       friend std::ostream& operator<<(std::ostream& cout, const NAABBox3fa& p) {
@@ -182,7 +182,7 @@ namespace embree
       }
       
     public:
-      AffineSpace3fa space; //!< orthonormal transformation
+      LinearSpace3fa space; //!< orthonormal transformation
       BBox3fa bounds;       //!< bounds in transformed space
     };
 
@@ -323,12 +323,17 @@ namespace embree
       /*! calculate the bounds of the curve */
       __forceinline const BBox3fa bounds() const 
       {
+#if 1
 	const BezierCurve3D curve2D(p0,p1,p2,p3,0.0f,1.0f,0);
 	const avx4f pi = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
 	const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
 	const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
-	const Vec3fa upper_r = reduce_max(pi.w);
-        return enlarge(BBox3fa(lower,upper),upper_r);
+	const Vec3fa upper_r = reduce_max(abs(pi.w));
+        return enlarge(BBox3fa(min(lower,p3),max(upper,p3)),max(upper_r,p3.w));
+#else
+        const BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2),BBox3fa(p3));
+        return enlarge(b,Vec3fa(b.upper.w));
+#endif
       }
 
       /*! calculate bounds in specified coordinate space */
@@ -338,12 +343,17 @@ namespace embree
         Vec3fa b1 = xfmPoint(space,p1); b1.w = p1.w;
         Vec3fa b2 = xfmPoint(space,p2); b2.w = p2.w;
         Vec3fa b3 = xfmPoint(space,p3); b3.w = p3.w;
+#if 1
 	const BezierCurve3D curve2D(b0,b1,b2,b3,0.0f,1.0f,0);
 	const avx4f pi = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
 	const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
 	const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
-	const Vec3fa upper_r = reduce_max(pi.w);
-        return enlarge(BBox3fa(lower,upper),upper_r);
+	const Vec3fa upper_r = reduce_max(abs(pi.w));
+        return enlarge(BBox3fa(min(lower,b3),max(upper,b3)),max(upper_r,b3.w));
+#else
+        const BBox3fa b = merge(BBox3fa(b0),BBox3fa(b1),BBox3fa(b2),BBox3fa(b3));
+        return enlarge(b,Vec3fa(b.upper.w));
+#endif
       }
 
       /*! subdivide the bezier curve */

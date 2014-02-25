@@ -55,7 +55,7 @@ namespace embree
 #if defined (__AVX__)
 
     /*! BVH8 Node */
-    struct __align(64) Node
+    struct __aligned(64) Node
     {
       avxf lower_x;
       avxf upper_x;
@@ -209,7 +209,7 @@ namespace embree
     static float sah8 (Node* base, BVH4i::NodeRef& root );
     static float sah8 (Node* base, BVH4i::NodeRef& node, const BBox3fa& bounds);
 
-    struct __align(64) Quantized8BitNode
+    struct __aligned(64) Quantized8BitNode
     {
       unsigned char lower_x[8];
       unsigned char upper_x[8];
@@ -236,69 +236,59 @@ namespace embree
 
       __forceinline Quantized8BitNode() {}
 
-      __forceinline float clamp255(float i)
-      {
-        return min(max(i,0.0f),255.0f);
-      }
-
 #define ULPS 1
+
+      __forceinline float clamp(float v)
+      {
+        return min(max(v,0.0f),255.0f);     
+      }
 
       __forceinline float roundUp(float v)
       {
-	const float s_up   = 1.0f + ULPS * (float)ulp;
-	const float s_down = 1.0f - ULPS * (float)ulp;
-	const float new_v = v < 0.0f ? v*s_down : v*s_up;
-	return new_v;
+	/* const float s_up   = 1.0f + ULPS * (float)ulp; */
+	/* const float s_down = 1.0f - ULPS * (float)ulp; */
+	/* const float new_v = v < 0.0f ? v*s_down : v*s_up; */
+	/* return new_v; */
+        return v;
       }
 
       __forceinline float roundDown(float v)
       {
-	const float s_up   = 1.0f + ULPS * (float)ulp;
-	const float s_down = 1.0f - ULPS * (float)ulp;
-	const float new_v = v >= 0.0f ? v*s_down : v*s_up;
-	return new_v;
+	/* const float s_up   = 1.0f + ULPS * (float)ulp; */
+	/* const float s_down = 1.0f - ULPS * (float)ulp; */
+	/* const float new_v = v >= 0.0f ? v*s_down : v*s_up; */
+	/* return new_v; */
+        return v;
       }
 
       __forceinline float lowerX(const size_t i) const
       {
-        const float t0_x = (float)lower_x[i] * 1.0f/255.0f;
-        const float decompress_x = t0_x * max_x + (1.0f - t0_x) * min_x;
-        return decompress_x;
+        return min_x + ((float)lower_x[i] * diff_x);
       }
 
       __forceinline float upperX(const size_t i) const
       {
-        float t1_x = (float)upper_x[i] * 1.0f/255.0f;
-        float decompress_x = t1_x * max_x + (1.0f - t1_x) * min_x;        
-        return decompress_x;        
+        return min_x + ((float)upper_x[i] * diff_x);
       }
 
       __forceinline float lowerY(const size_t i) const
       {
-        const float t0_y = (float)lower_y[i] * 1.0f/255.0f;
-        const float decompress_y = t0_y * max_y + (1.0f - t0_y) * min_y;
-        return decompress_y;
+        return min_y + ((float)lower_y[i] * diff_y);
       }
 
       __forceinline float upperY(const size_t i) const
       {
-        float t1_y = (float)upper_y[i] * 1.0f/255.0f;
-        float decompress_y = t1_y * max_y + (1.0f - t1_y) * min_y;        
-        return decompress_y;        
+        return min_y + ((float)upper_y[i] * diff_y);        
       }
 
       __forceinline float lowerZ(const size_t i) const
       {
-        const float t0_z = (float)lower_z[i] * 1.0f/255.0f;
-        const float decompress_z = t0_z * max_z + (1.0f - t0_z) * min_z;
-        return decompress_z;
+        return min_z + ((float)lower_z[i] * diff_z);
       }
 
       __forceinline float upperZ(const size_t i) const
       {
-        float t1_z = (float)upper_z[i] * 1.0f/255.0f;
-        float decompress_z = t1_z * max_z + (1.0f - t1_z) * min_z;        
-        return decompress_z;        
+        return min_z + ((float)upper_z[i] * diff_z);        
       }
 
 
@@ -316,16 +306,27 @@ namespace embree
             if (node8.children[i].isNode())
               children[i] = sizeof(BVH8i::Quantized8BitNode) * ((unsigned int)node8.children[i] / sizeof(BVH8i::Node));
             else
-              children[i] = node8.children[i];		
+              {
+                children[i] = node8.children[i];
+                if (node8.children[i] == -1)
+                  {
+                    PING;
+                    exit(0);
+                  }
+              }		
           }
 
         diff_x = max_x - min_x;
         diff_y = max_y - min_y;
         diff_z = max_z - min_z;
 
-        const float rcp_diff_x = 1.0f / diff_x; 
-        const float rcp_diff_y = 1.0f / diff_y;
-        const float rcp_diff_z = 1.0f / diff_z;
+        const float rcp_diff_x = 255.0f / diff_x; 
+        const float rcp_diff_y = 255.0f / diff_y;
+        const float rcp_diff_z = 255.0f / diff_z;
+
+        diff_x *= 1.0f / 255.0f;
+        diff_y *= 1.0f / 255.0f;
+        diff_z *= 1.0f / 255.0f;
 
         for (size_t i=0;i<8;i++)
           {
@@ -339,18 +340,23 @@ namespace embree
 	  
         for (size_t i=0;i<node8.numValidChildren();i++)
           {
-            lower_x[i] = (unsigned int)clamp255(floorf(255.0f * roundDown(((node8.lower_x[i] - min_x) * rcp_diff_x))));
-            upper_x[i] = (unsigned int)clamp255(ceilf(255.0f * roundUp( ((node8.upper_x[i] - min_x) * rcp_diff_x)) ));
+            lower_x[i] = (unsigned int)clamp(floorf(roundDown(((node8.lower_x[i] - min_x) * rcp_diff_x))));
+            upper_x[i] = (unsigned int)clamp(ceilf(roundUp( ((node8.upper_x[i] - min_x) * rcp_diff_x))));
 
             float decompress_min_x = lowerX(i); 
             float decompress_max_x = upperX(i); 
 
 #if 0
+            DBG_PRINT(decompress_min_x);
+            DBG_PRINT(decompress_max_x);
+            DBG_PRINT(node8.lower_x[i]);
+            DBG_PRINT(node8.upper_x[i]);
+
             assert( decompress_min_x <= node8.lower_x[i] );
             assert( decompress_max_x >= node8.upper_x[i] );
 #endif
-            lower_y[i] = (unsigned int)clamp255(floorf(255.0f * roundDown(((node8.lower_y[i] - min_y) * rcp_diff_y))));
-            upper_y[i] = (unsigned int)clamp255(ceilf(255.0f * roundUp(((node8.upper_y[i] - min_y) * rcp_diff_y))));
+            lower_y[i] = (unsigned int)clamp(floorf(roundDown(((node8.lower_y[i] - min_y) * rcp_diff_y))));
+            upper_y[i] = (unsigned int)clamp(ceilf(roundUp(((node8.upper_y[i] - min_y) * rcp_diff_y))));
 
             float decompress_min_y = lowerY(i);
             float decompress_max_y = upperY(i);
@@ -358,8 +364,8 @@ namespace embree
             assert( decompress_min_y <= node8.lower_y[i] );
             assert( decompress_max_y >= node8.upper_y[i] );
 #endif
-            lower_z[i] = (unsigned int)clamp255(floorf(255.0f * roundDown(((node8.lower_z[i] - min_z) * rcp_diff_z))));
-            upper_z[i] = (unsigned int)clamp255(ceilf(255.0f * roundUp(((node8.upper_z[i] - min_z) * rcp_diff_z))));
+            lower_z[i] = (unsigned int)clamp(floorf(roundDown(((node8.lower_z[i] - min_z) * rcp_diff_z))));
+            upper_z[i] = (unsigned int)clamp(ceilf(roundUp(((node8.upper_z[i] - min_z) * rcp_diff_z))));
 
             float decompress_min_z = lowerZ(i);
             float decompress_max_z = upperZ(i);
@@ -411,8 +417,9 @@ namespace embree
 
 
 
+#if defined (__AVX2__)
 
-    struct __align(64) NodeHF16
+    struct __aligned(64) NodeHF16
     {
       ssei lower_x;
       ssei upper_x;
@@ -505,9 +512,8 @@ namespace embree
 	return valid;
       }
 
-
-
     };
+#endif
 
 #endif
 
@@ -519,7 +525,8 @@ namespace embree
     
   };
 
-#if defined (__AVX__)
+
+#if defined (__AVX2__)
 
     __forceinline std::ostream &operator<<(std::ostream &o, const BVH8i::NodeHF16 &v)
     {
@@ -536,8 +543,10 @@ namespace embree
 
       return o;
     }
+#endif
 
 
+#if defined (__AVX__)
 
     __forceinline std::ostream &operator<<(std::ostream &o, const BVH8i::Node &v)
     {

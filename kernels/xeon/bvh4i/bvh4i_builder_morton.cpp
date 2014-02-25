@@ -351,7 +351,7 @@ namespace embree
         
         
 #if 0
-        __align(64) unsigned int total[RADIX_BUCKETS];
+        __aligned(64) unsigned int total[RADIX_BUCKETS];
         for (size_t i=0; i<RADIX_BUCKETS; i++)
           total[i] = 0;
         
@@ -359,7 +359,7 @@ namespace embree
           for (size_t j=0; j<RADIX_BUCKETS; j++)
             total[j] += radixCount[i][j];
 #else
-        __align(64) unsigned int inner_offset[RADIX_BUCKETS];
+        __aligned(64) unsigned int inner_offset[RADIX_BUCKETS];
         
 #define CHUNK 64
         
@@ -373,7 +373,7 @@ namespace embree
             for (size_t k=0;k<CHUNK;k++)
               inner_offset[j+k] += radixCount[i][j+k];
         
-        __align(64) unsigned int total[RADIX_BUCKETS];
+        __aligned(64) unsigned int total[RADIX_BUCKETS];
         
 #pragma unroll(CHUNK)      
         for (size_t i=0; i<RADIX_BUCKETS; i++)
@@ -388,7 +388,7 @@ namespace embree
 #endif
         
         /* calculate start offset of each bucket */
-        __align(64) unsigned int offset[RADIX_BUCKETS];
+        __aligned(64) unsigned int offset[RADIX_BUCKETS];
         offset[0] = 0;
         for (size_t i=1; i<RADIX_BUCKETS; i++)    
           offset[i] = offset[i-1] + total[i-1];
@@ -625,7 +625,7 @@ namespace embree
         return empty;
       }
       
-      __align(64) SmallBuildRecord children[BVH4i::N];
+      __aligned(64) SmallBuildRecord children[BVH4i::N];
       
       /* create leaf node */
       if (unlikely(current.size() <= BVH4iBuilderMorton::MORTON_LEAF_THRESHOLD)) {
@@ -659,7 +659,7 @@ namespace embree
         if (bestChild == -1) break;
         
         /*! split best child into left and right child */
-        __align(64) SmallBuildRecord left, right;
+        __aligned(64) SmallBuildRecord left, right;
         if (!split(children[bestChild],left,right))
           continue;
         

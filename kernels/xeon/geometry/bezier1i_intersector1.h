@@ -126,7 +126,6 @@ namespace embree
       return any(vmask);
     }
 
-
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */

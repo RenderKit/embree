@@ -133,9 +133,10 @@ Vec3fa sampleSphere(const float u, const float v)
 void addHair (ISPCScene* scene)
 {
   int seed = 879;
-  //const int numCurves = 1;
+  //const int numCurves = 100;
   const int numCurves = 10000;
   const int numCurveSegments = 2;
+  //const int numCurveSegments = 1;
   const int numCurvePoints = 3*numCurveSegments+1;
   const float R = 0.002f;
 
@@ -146,6 +147,35 @@ void addHair (ISPCScene* scene)
   hair->hairs = new ISPCHair[hair->numHairs];
   Vertex* vertices = (Vertex*) hair->v;
   ISPCHair* hairs  = hair->hairs;
+
+#if 0
+  vertices[0].x = 0.0f;
+  vertices[0].y = -1.0f;
+  vertices[0].z = 0.0f;
+  vertices[0].r = 1.0f;
+
+  vertices[1].x = 1.0f;
+  vertices[1].y = -1.0f;
+  vertices[1].z = 0.0f;
+  vertices[1].r = 1.0f;
+
+  vertices[2].x = 1.0f;
+  vertices[2].y = 1.0f;
+  vertices[2].z = 0.0f;
+  vertices[2].r = 1.0f;
+
+  vertices[3].x = 0.0f;
+  vertices[3].y = 1.0f;
+  vertices[3].z = 0.0f;
+  vertices[3].r = 1.0f;
+
+  hairs[0].vertex = 0;
+  hairs[0].id = 0;
+
+  scene->hairs[scene->numHairSets++] = hair;
+
+  return;
+#endif
 
   for (size_t i=0; i<numCurves; i++)
   {
@@ -298,7 +328,6 @@ RTCScene convertScene(ISPCScene* scene_in)
   {
     /* get ith hair set */
     ISPCHairSet* hair = scene_in->hairs[i];
-    PRINT(hair->numHairs);
     
     /* create a hair set */
     unsigned int geomID = rtcNewBezierCurves (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
@@ -317,7 +346,6 @@ RTCScene convertScene(ISPCScene* scene_in)
   {
     /* get ith mesh */
     ISPCMesh* mesh = scene_in->meshes[i];
-    PRINT(mesh->numTriangles);
 
     /* create a triangle mesh */
     unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
@@ -765,7 +793,7 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    //if (x != 185 || y != 277) continue;
+    //if (x != 256 || y != 511) continue;
 
     /* calculate pixel color */
     float fx = x + frand(seed);

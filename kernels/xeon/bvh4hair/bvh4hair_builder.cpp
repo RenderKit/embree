@@ -75,7 +75,7 @@ namespace embree
 
     /* start recursive build */
     size_t begin = 0, end = curves.size();
-    bvh->root = recurse(threadIndex,0,begin,end,computeAlignedBounds(&curves[0],begin,end,AffineSpace3fa(one)));
+    bvh->root = recurse(threadIndex,0,begin,end,computeAlignedBounds(&curves[0],begin,end,LinearSpace3fa(one)));
     bvh->bounds = bounds;
 
     if (g_verbose >= 2) {
@@ -99,7 +99,7 @@ namespace embree
       if (len == 0.0f) continue; // FIXME: could still need subdivision
       
       /* test if we should subdivide */
-      const AffineSpace3fa space = frame(axis/len).transposed();
+      const LinearSpace3fa space = frame(axis/len).transposed();
       BBox3fa bounds = empty;
       const Vec3fa p0 = xfmPoint(space,curves[i].p0); bounds.extend(p0);
       const Vec3fa p1 = xfmPoint(space,curves[i].p1); bounds.extend(p1);
@@ -132,7 +132,7 @@ namespace embree
     return bounds;
   }
 
-  const BVH4Hair::NAABBox3fa BVH4HairBuilder::computeAlignedBounds(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space)
+  const BVH4Hair::NAABBox3fa BVH4HairBuilder::computeAlignedBounds(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space)
   {
     float area = 0.0f;
     BBox3fa bounds = empty;
@@ -158,7 +158,7 @@ namespace embree
     {
       size_t k = begin + rand() % (end-begin);
       const Vec3fa axis = normalize(curves[k].p3-curves[k].p0);
-      const AffineSpace3fa space = frame(axis).transposed();
+      const LinearSpace3fa space = frame(axis).transposed();
       
       BBox3fa bounds = empty;
       float area = 0.0f;
@@ -231,7 +231,7 @@ namespace embree
     return left;
   }
 
-  __forceinline BVH4HairBuilder::ObjectSplit BVH4HairBuilder::ObjectSplit::find(Bezier1* curves, size_t begin, size_t end, const AffineSpace3fa& space)
+  __forceinline BVH4HairBuilder::ObjectSplit BVH4HairBuilder::ObjectSplit::find(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space)
   {
     /* calculate geometry and centroid bounds */
     BBox3fa centBounds = empty;

@@ -85,7 +85,7 @@ namespace embree
 
     };
 
-    __align(64) StackEntry stack[QBVH_MAX_STACK_DEPTH];
+    __aligned(64) StackEntry stack[QBVH_MAX_STACK_DEPTH];
 
     avxb m_active = *valid_i;
        

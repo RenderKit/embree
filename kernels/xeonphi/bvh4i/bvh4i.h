@@ -121,9 +121,18 @@ namespace embree
 
       /*! Returns bounds of specified child. */
       __forceinline BBox3fa bounds(size_t i) const {
+	assert( i < 4 );
         Vec3fa l = *(Vec3fa*)&lower[i];
         Vec3fa u = *(Vec3fa*)&upper[i];
         return BBox3fa(l,u);
+      }
+
+      __forceinline mic_f lowerXYZ(size_t i) const {
+	return broadcast4to16f(&lower[i]);
+      }
+
+      __forceinline mic_f upperXYZ(size_t i) const {
+	return broadcast4to16f(&upper[i]);
       }
 
       __forceinline void setInvalid(size_t i)
@@ -153,8 +162,143 @@ namespace embree
 	  }
 	return o;
       }
+    };
+
+
+    /*! 64bit byte-quantized BVH4i Node */
+
+    struct QuantizedNode
+    {
+    public:
+      Vec3f start;
+      NodeRef child0;
+      Vec3f diff;
+      NodeRef child1;
+      unsigned char lower[12];
+      NodeRef child2;
+      unsigned char upper[12];
+      NodeRef child3;
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef child(size_t i)       { return ((unsigned int*)this)[3+4*i]; }
+      __forceinline const NodeRef child(size_t i) const { return ((unsigned int*)this)[3+4*i]; }
+
+      __forceinline mic_f lowerXYZ() const
+      {
+	return uload16f_low_uint8(0x7777,lower,mic_f::zero());
+      }
+
+      __forceinline mic_f decompress_lowerXYZ(const mic_f &s, const mic_f &d)  const
+      {
+	return s + d * lowerXYZ();
+      }
+
+      __forceinline mic_f upperXYZ()  const
+      {
+	return uload16f_low_uint8(0x7777,upper,mic_f::zero());
+      }
+
+      __forceinline mic_f decompress_upperXYZ(const mic_f &s, const mic_f &d)  const
+      {
+	return s + d * upperXYZ();
+      }
+
+      __forceinline mic_f decompress_startXYZ() const
+      {
+	return broadcast4to16f(&start);
+      }
+
+      __forceinline mic_f decompress_diffXYZ() const
+      {
+	return broadcast4to16f(&diff);
+      }
+
+      __forceinline void init( const Node &node)
+      {
+	mic_f l0 = node.lowerXYZ(0);
+	mic_f l1 = node.lowerXYZ(1);
+	mic_f l2 = node.lowerXYZ(2);
+	mic_f l3 = node.lowerXYZ(3);
+
+	l0 = select(eq(0x7777,l0,mic_f(1E38)),pos_inf,l0);
+	l1 = select(eq(0x7777,l1,mic_f(1E38)),pos_inf,l1);
+	l2 = select(eq(0x7777,l2,mic_f(1E38)),pos_inf,l2);
+	l3 = select(eq(0x7777,l3,mic_f(1E38)),pos_inf,l3);
+
+	mic_f u0 = node.upperXYZ(0);
+	mic_f u1 = node.upperXYZ(1);
+	mic_f u2 = node.upperXYZ(2);
+	mic_f u3 = node.upperXYZ(3);
+
+	u0 = select(eq(0x7777,u0,mic_f(1E38)),neg_inf,u0);
+	u1 = select(eq(0x7777,u1,mic_f(1E38)),neg_inf,u1);
+	u2 = select(eq(0x7777,u2,mic_f(1E38)),neg_inf,u2);
+	u3 = select(eq(0x7777,u3,mic_f(1E38)),neg_inf,u3);
+
+	const mic_f minXYZ = select(0x7777,min(min(l0,l1),min(l2,l3)),mic_f::zero());
+	const mic_f maxXYZ = select(0x7777,max(max(u0,u1),max(u2,u3)),mic_f::one());
+	const mic_f diffXYZ = maxXYZ - minXYZ;
+
+	const mic_f rcp_diffXYZ = mic_f(255.0f) / diffXYZ;
+ 
+	const mic_f nlower = load16f(node.lower);
+	const mic_f nupper = load16f(node.upper);
+	const mic_m isInvalid = eq(0x7777,nlower,mic_f(1E38));
+	//DBG_PRINT(isInvalid);
+
+	const mic_f node_lowerXYZ = select(mic_m(0x7777) ^ isInvalid,nlower,minXYZ); 
+	const mic_f node_upperXYZ = select(mic_m(0x7777) ^ isInvalid,nupper,minXYZ); 
+
+	mic_f local_lowerXYZ = ((node_lowerXYZ - minXYZ) * rcp_diffXYZ) - 0.5f;
+	mic_f local_upperXYZ = ((node_upperXYZ - minXYZ) * rcp_diffXYZ) + 0.5f;
+
+
+	/* DBG_PRINT(minXYZ);  */
+	/* DBG_PRINT(maxXYZ); */
+	/* DBG_PRINT(diffXYZ); */
+	/* DBG_PRINT(node_lowerXYZ); */
+	/* DBG_PRINT(node_upperXYZ); */
+	/* DBG_PRINT(local_lowerXYZ); */
+	/* DBG_PRINT(local_upperXYZ); */
+
+	store4f(&start,minXYZ);
+	store4f(&diff ,diffXYZ * (1.0f/255.0f));
+	compactustore16f_low_uint8(0x7777,lower,local_lowerXYZ);
+	compactustore16f_low_uint8(0x7777,upper,local_upperXYZ);
+	child0 = node.child(0).isNode() ? (unsigned int)((node.child(0) / sizeof(BVH4i::Node))*sizeof(BVH4i::QuantizedNode)) : (unsigned int)node.child(0);
+
+	child1 = node.child(1).isNode() ? (unsigned int)((node.child(1) / sizeof(BVH4i::Node))*sizeof(BVH4i::QuantizedNode)) : (unsigned int)node.child(1);
+
+	child2 = node.child(2).isNode() ? (unsigned int)((node.child(2) / sizeof(BVH4i::Node))*sizeof(BVH4i::QuantizedNode)) : (unsigned int)node.child(2);
+
+	child3 = node.child(3).isNode() ? (unsigned int)((node.child(3) / sizeof(BVH4i::Node))*sizeof(BVH4i::QuantizedNode)) : (unsigned int)node.child(3);
+
+
+	/* DBG_PRINT( lowerXYZ() ); */
+	/* DBG_PRINT( upperXYZ() ); */
+
+	const mic_f s = decompress_startXYZ();
+	const mic_f d = decompress_diffXYZ();
+
+	const mic_f decompress_lower_XYZ = decompress_lowerXYZ(s,d);
+	const mic_f decompress_upper_XYZ = decompress_upperXYZ(s,d);
+
+	/* if ( any(gt(0x7777,decompress_lower_XYZ,node_lowerXYZ)) ) */
+	/*   { */
+	/*     DBG_PRINT(node_lowerXYZ);  */
+	/*     DBG_PRINT(decompress_lower_XYZ);  */
+	/*   } */
+
+	/* if ( any(lt(0x7777,decompress_upper_XYZ,node_upperXYZ)) ) */
+	/*   { */
+	/*     DBG_PRINT(node_upperXYZ);  */
+	/*     DBG_PRINT(decompress_upper_XYZ);  */
+	/*   } */
+
+      }
 
     };
+
 
 
 
@@ -235,6 +379,15 @@ namespace embree
       return o;
     } 
 
+  __forceinline std::ostream& operator<<(std::ostream &o, BVH4i::QuantizedNode &v)
+    {
+      o << "start " << v.start << " diff " << v.diff << std::endl;
+      o << "lower " << v.decompress_lowerXYZ(v.decompress_startXYZ(),v.decompress_diffXYZ()) << std::endl;
+      o << "upper " << v.decompress_upperXYZ(v.decompress_startXYZ(),v.decompress_diffXYZ()) << std::endl;
+      o << "child0 " << v.child(0) << " child1 " << v.child(1) << " child2 " << v.child(2) << " child3 " << v.child(3) << std::endl;
+      return o;
+    }
+
 
   /* ------------------ */
   /* --- Binary BVH --- */
@@ -270,7 +423,7 @@ namespace embree
     return (children & BVH_LEAF_MASK);
   };
 
-  class __align(32) BVHNode : public BBox3fa
+  class __aligned(32) BVHNode : public BBox3fa
   {
   public:
     __forceinline unsigned int isLeaf() const {

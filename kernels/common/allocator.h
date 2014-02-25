@@ -61,7 +61,7 @@ namespace embree
     }
 
     /*! Per thread structure holding the current memory block. */
-    struct __align(64) ThreadAllocator 
+    struct __aligned(64) ThreadAllocator 
     {
       ALIGNED_CLASS_(64);
     public:

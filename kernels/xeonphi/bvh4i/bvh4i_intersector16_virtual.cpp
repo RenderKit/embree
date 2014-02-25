@@ -29,8 +29,8 @@ namespace embree
     void BVH4iIntersector16Virtual<VirtualGeometryIntersector16>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
       /* near and node stack */
-      __align(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
-      __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       if (unlikely(bvh == NULL)) return;
 
@@ -160,8 +160,8 @@ namespace embree
     void BVH4iIntersector16Virtual<VirtualGeometryIntersector16>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
       /* allocate stack */
-      __align(64) mic_f    stack_dist[3*BVH4i::maxDepth+1];
-      __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) mic_f    stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       if (unlikely(bvh == NULL)) return;
 
@@ -294,8 +294,8 @@ namespace embree
     void BVH4iIntersector1Virtual<VirtualGeometryIntersector1>::intersect(BVH4i* bvh, Ray& ray)
     {
       /* near and node stack */
-      __align(64) float   stack_dist[3*BVH4i::maxDepth+1];
-      __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       if (unlikely(bvh == NULL)) return;
 
@@ -504,7 +504,7 @@ namespace embree
     void BVH4iIntersector1Virtual<VirtualGeometryIntersector1>::occluded(BVH4i* bvh, Ray& ray)
     {
       /* near and node stack */
-      __align(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       if (unlikely(bvh == NULL)) return;
 

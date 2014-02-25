@@ -47,7 +47,7 @@ namespace embree
 
     public:
   
-      class __align(16) SmallBuildRecord 
+      class __aligned(16) SmallBuildRecord 
       {
       public:
         unsigned int begin;
@@ -71,7 +71,7 @@ namespace embree
         __forceinline bool operator>(const SmallBuildRecord& br) const { return size() > br.size(); } 
       };
 
-      struct __align(8) MortonID32Bit
+      struct __aligned(8) MortonID32Bit
       {
         union {
           struct {
@@ -128,8 +128,8 @@ namespace embree
         ThreadRadixCountTy* radixCount;
         
         size_t numBuildRecords;
-        __align(64) SmallBuildRecord buildRecords[NUM_TOP_LEVEL_BINS];
-        __align(64) WorkStack<SmallBuildRecord,NUM_TOP_LEVEL_BINS> workStack;
+        __aligned(64) SmallBuildRecord buildRecords[NUM_TOP_LEVEL_BINS];
+        __aligned(64) WorkStack<SmallBuildRecord,NUM_TOP_LEVEL_BINS> workStack;
         LinearBarrierActive barrier;
       };
       
@@ -240,8 +240,8 @@ namespace embree
       LockStepTaskScheduler scheduler;
       
     protected:
-      __align(64) GlobalAllocator nodeAllocator;
-      __align(64) GlobalAllocator primAllocator;
+      __aligned(64) GlobalAllocator nodeAllocator;
+      __aligned(64) GlobalAllocator primAllocator;
     };
   }
 }

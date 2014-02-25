@@ -246,7 +246,7 @@ namespace embree
     case 4: {
       RTCRay4 ray4;
       for (size_t i=0; i<4; i++) setRay(ray4,i,ray);
-      __align(16) int valid[4] = { -1,-1,-1,-1 };
+      __aligned(16) int valid[4] = { -1,-1,-1,-1 };
       rtcIntersect4(valid,scene,ray4);
       ray = getRay(ray4,0);
       break;
@@ -256,7 +256,7 @@ namespace embree
     case 8: {
       RTCRay8 ray8;
       for (size_t i=0; i<8; i++) setRay(ray8,i,ray);
-      __align(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
       rtcIntersect8(valid,scene,ray8);
       ray = getRay(ray8,0);
       break;
@@ -266,7 +266,7 @@ namespace embree
     case 16: {
       RTCRay16 ray16;
       for (size_t i=0; i<16; i++) setRay(ray16,i,ray);
-      __align(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
       rtcIntersect16(valid,scene,ray16);
       ray = getRay(ray16,0);
       break;
@@ -287,7 +287,7 @@ namespace embree
     case 4: {
       RTCRay4 ray4;
       for (size_t i=0; i<4; i++) setRay(ray4,i,ray);
-      __align(16) int valid[4] = { -1,-1,-1,-1 };
+      __aligned(16) int valid[4] = { -1,-1,-1,-1 };
       rtcOccluded4(valid,scene,ray4);
       ray.geomID = ray4.geomID[0];
       break;
@@ -297,7 +297,7 @@ namespace embree
     case 8: {
       RTCRay8 ray8;
       for (size_t i=0; i<8; i++) setRay(ray8,i,ray);
-      __align(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
       rtcOccluded8(valid,scene,ray8);
       ray.geomID = ray8.geomID[0];
       break;
@@ -307,7 +307,7 @@ namespace embree
     case 16: {
       RTCRay16 ray16;
       for (size_t i=0; i<16; i++) setRay(ray16,i,ray);
-      __align(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
       rtcOccluded16(valid,scene,ray16);
       ray.geomID = ray16.geomID[0];
       break;
@@ -922,7 +922,7 @@ namespace embree
         setRay(ray4,1,ray1);
         setRay(ray4,2,ray2);
         setRay(ray4,3,ray3);
-        __align(16) int valid4[4] = { -1,-1,-1,-1 };
+        __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
         rtcIntersect4(valid4,scene,ray4);
         if (ray4.geomID[0] != 0 || 
             ray4.geomID[1] != 1 || 
@@ -938,7 +938,7 @@ namespace embree
           setRay(ray8,1,ray1);
           setRay(ray8,2,ray2);
           setRay(ray8,3,ray3);
-          __align(32) int valid8[8] = { -1,-1,-1,-1, 0, 0, 0, 0 };
+          __aligned(32) int valid8[8] = { -1,-1,-1,-1, 0, 0, 0, 0 };
           rtcIntersect8(valid8,scene,ray8);
           if (ray8.geomID[0] != 0 || 
               ray8.geomID[1] != 1 || 
@@ -953,7 +953,7 @@ namespace embree
         setRay(ray16,1,ray1);
         setRay(ray16,2,ray2);
         setRay(ray16,3,ray3);
-        __align(64) int valid16[16] = { -1,-1,-1,-1,+0,+0,+0,+0, 
+        __aligned(64) int valid16[16] = { -1,-1,-1,-1,+0,+0,+0,+0, 
                             +0,+0,+0,+0,+0,+0,+0,+0 };
         rtcIntersect16(valid16,scene,ray16);
         if (ray16.geomID[0] != 0 || 
@@ -1018,7 +1018,7 @@ namespace embree
 	setRay(ray4,1,ray1);
 	setRay(ray4,2,ray2);
 	setRay(ray4,3,ray3);
-	__align(16) int valid4[4] = { -1,-1,-1,-1 };
+	__aligned(16) int valid4[4] = { -1,-1,-1,-1 };
 	rtcIntersect4(valid4,scene,ray4);
 	bool ok4a = mask0 & 1 ? ray4.geomID[0] == 0 : ray4.geomID[0] == -1;
 	bool ok4b = mask1 & 2 ? ray4.geomID[1] == 1 : ray4.geomID[1] == -1;
@@ -1040,7 +1040,7 @@ namespace embree
 	setRay(ray8,1,ray1);
 	setRay(ray8,2,ray2);
 	setRay(ray8,3,ray3);
-	__align(32) int valid8[8] = { -1,-1,-1,-1,0,0,0,0 };
+	__aligned(32) int valid8[8] = { -1,-1,-1,-1,0,0,0,0 };
 	rtcIntersect8(valid8,scene,ray8);
 	bool ok8a = mask0 & 1 ? ray8.geomID[0] == 0 : ray8.geomID[0] == -1;
 	bool ok8b = mask1 & 2 ? ray8.geomID[1] == 1 : ray8.geomID[1] == -1;
@@ -1064,7 +1064,7 @@ namespace embree
 	setRay(ray16,1,ray1);
 	setRay(ray16,2,ray2);
 	setRay(ray16,3,ray3);
-	__align(64) int valid16[16] = { -1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0 };
+	__aligned(64) int valid16[16] = { -1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0 };
 	rtcIntersect16(valid16,scene,ray16);
 	bool ok16a = mask0 & 1 ? ray16.geomID[0] == 0 : ray16.geomID[0] == -1;
 	bool ok16b = mask1 & 2 ? ray16.geomID[1] == 1 : ray16.geomID[1] == -1;
@@ -1130,7 +1130,7 @@ namespace embree
 	setRay(ray4,1,ray1);
 	setRay(ray4,2,ray2);
 	setRay(ray4,3,ray3);
-	__align(16) int valid4[4] = { -1,-1,-1,-1 };
+	__aligned(16) int valid4[4] = { -1,-1,-1,-1 };
 	rtcOccluded4(valid4,scene,ray4);
 	bool ok4a = mask0 & 1 ? ray4.geomID[0] == 0 : ray4.geomID[0] == -1;
 	bool ok4b = mask1 & 2 ? ray4.geomID[1] == 0 : ray4.geomID[1] == -1;
@@ -1152,7 +1152,7 @@ namespace embree
 	setRay(ray8,1,ray1);
 	setRay(ray8,2,ray2);
 	setRay(ray8,3,ray3);
-	__align(32) int valid8[8] = { -1,-1,-1,-1,0,0,0,0 };
+	__aligned(32) int valid8[8] = { -1,-1,-1,-1,0,0,0,0 };
 	rtcOccluded8(valid8,scene,ray8);
 	bool ok8a = mask0 & 1 ? ray8.geomID[0] == 0 : ray8.geomID[0] == -1;
 	bool ok8b = mask1 & 2 ? ray8.geomID[1] == 0 : ray8.geomID[1] == -1;
@@ -1176,7 +1176,7 @@ namespace embree
 	setRay(ray16,1,ray1);
 	setRay(ray16,2,ray2);
 	setRay(ray16,3,ray3);
-	__align(64) int valid16[16] = { -1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0 };
+	__aligned(64) int valid16[16] = { -1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,0,0 };
 
 	rtcOccluded16(valid16,scene,ray16);
 
@@ -1288,7 +1288,7 @@ namespace embree
 
 	RTCRay4 ray4;
 	setRay(ray4,0,ray0);
-	__align(16) int valid4[4] = { -1,0,0,0 };
+	__aligned(16) int valid4[4] = { -1,0,0,0 };
 	rtcIntersect4(valid4,scene,ray4);
         bool ok0 = (primID & 2) ? (ray4.geomID[0] == -1) : (ray4.geomID[0] == 0);
         if (!ok0) passed = false;
@@ -1301,7 +1301,7 @@ namespace embree
 
 	RTCRay8 ray8;
 	setRay(ray8,0,ray0);
-	__align(32) int valid8[8] = { -1,0,0,0,0,0,0,0 };
+	__aligned(32) int valid8[8] = { -1,0,0,0,0,0,0,0 };
 	rtcIntersect8(valid8,scene,ray8);
         bool ok0 = (primID & 2) ? (ray8.geomID[0] == -1) : (ray8.geomID[0] == 0);
         if (!ok0) passed = false;
@@ -1316,7 +1316,7 @@ namespace embree
 
 	RTCRay16 ray16;
 	setRay(ray16,0,ray0);
-	__align(64) int valid16[16] = { -1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+	__aligned(64) int valid16[16] = { -1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 	rtcIntersect16(valid16,scene,ray16);
         bool ok0 = (primID & 2) ? (ray16.geomID[0] == -1) : (ray16.geomID[0] == 0);
         if (!ok0) passed = false;
@@ -1360,7 +1360,7 @@ namespace embree
 
 	RTCRay4 ray4;
 	setRay(ray4,0,ray0);
-	__align(16) int valid4[4] = { -1,0,0,0 };
+	__aligned(16) int valid4[4] = { -1,0,0,0 };
 	rtcOccluded4(valid4,scene,ray4);
         bool ok0 = (primID & 2) ? (ray4.geomID[0] == -1) : (ray4.geomID[0] == 0);
         if (!ok0) passed = false;
@@ -1373,7 +1373,7 @@ namespace embree
 
 	RTCRay8 ray8;
 	setRay(ray8,0,ray0);
-	__align(32) int valid8[8] = { -1,0,0,0,0,0,0,0 };
+	__aligned(32) int valid8[8] = { -1,0,0,0,0,0,0,0 };
 	rtcOccluded8(valid8,scene,ray8);
         bool ok0 = (primID & 2) ? (ray8.geomID[0] == -1) : (ray8.geomID[0] == 0);
         if (!ok0) passed = false;
@@ -1388,7 +1388,7 @@ namespace embree
 
 	RTCRay16 ray16;
 	setRay(ray16,0,ray0);
-	__align(64) int valid16[16] = { -1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+	__aligned(64) int valid16[16] = { -1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 	rtcOccluded16(valid16,scene,ray16);
         bool ok0 = (primID & 2) ? (ray16.geomID[0] == -1) : (ray16.geomID[0] == 0);
         if (!ok0) passed = false;
@@ -1438,7 +1438,7 @@ namespace embree
       RTCRay4 ray4; 
       memset(&ray4,-1,sizeof(RTCRay4));
       setRay(ray4,i,ray);
-      __align(16) int valid4[4] = { 0,0,0,0 };
+      __aligned(16) int valid4[4] = { 0,0,0,0 };
       valid4[i] = -1;
       rtcOccluded4(valid4,scene,ray4);
       rtcIntersect4(valid4,scene,ray4);
@@ -1454,7 +1454,7 @@ namespace embree
         RTCRay8 ray8; 
         memset(&ray8,-1,sizeof(RTCRay8));
         setRay(ray8,i,ray);
-        __align(32) int valid8[8] = { 0,0,0,0,0,0,0,0 };
+        __aligned(32) int valid8[8] = { 0,0,0,0,0,0,0,0 };
         valid8[i] = -1;
         rtcOccluded8(valid8,scene,ray8);
         rtcIntersect8(valid8,scene,ray8);
@@ -1467,10 +1467,10 @@ namespace embree
 #endif
 
 #if defined(__MIC__)
-      __align(64) RTCRay16 ray16; 
+      __aligned(64) RTCRay16 ray16; 
       memset(&ray16,-1,sizeof(RTCRay16));
       setRay(ray16,i,ray);
-      __align(64) int valid16[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+      __aligned(64) int valid16[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
       valid16[i] = -1;
       rtcOccluded16(valid16,scene,ray16);
       rtcIntersect16(valid16,scene,ray16);
@@ -1533,7 +1533,7 @@ namespace embree
         RTCRay ray = makeRay(Vec3fa(pos,0.0f,0.0f)+org,dir); 
         setRay(ray4,j,ray);
       }
-      __align(16) int valid[4] = { -1,-1,-1,-1 };
+      __aligned(16) int valid[4] = { -1,-1,-1,-1 };
       rtcIntersect4(valid,scene,ray4);
       for (size_t j=0; j<4; j++)
         numFailures += ray4.primID[j] == -1;
@@ -1558,7 +1558,7 @@ namespace embree
         RTCRay ray = makeRay(Vec3fa(pos,0.0f,0.0f)+org,dir); 
         setRay(ray8,j,ray);
       }
-      __align(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
       rtcIntersect8(valid,scene,ray8);
       for (size_t j=0; j<8; j++)
         numFailures += ray8.primID[j] == -1;
@@ -1583,7 +1583,7 @@ namespace embree
         RTCRay ray = makeRay(Vec3fa(pos,0.0f,0.0f)+org,dir); 
         setRay(ray16,j,ray);
       }
-      __align(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
       rtcIntersect16(valid,scene,ray16);
       for (size_t j=0; j<16; j++)
         numFailures += ray16.primID[j] == -1;
@@ -1627,7 +1627,7 @@ namespace embree
         RTCRay ray = makeRay(Vec3fa(pos-3.0f,0.0f,0.0f),dir); 
         setRay(ray4,j,ray);
       }
-      __align(16) int valid[4] = { -1,-1,-1,-1 };
+      __aligned(16) int valid[4] = { -1,-1,-1,-1 };
       rtcIntersect4(valid,scene,ray4);
       for (size_t j=0; j<4; j++)
         numFailures += ray4.primID[j] == -1;
@@ -1652,7 +1652,7 @@ namespace embree
         RTCRay ray = makeRay(Vec3fa(pos-3.0f,0.0f,0.0f),dir); 
         setRay(ray8,j,ray);
       }
-      __align(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
       rtcIntersect8(valid,scene,ray8);
       for (size_t j=0; j<8; j++)
         numFailures += ray8.primID[j] == -1;
@@ -1677,7 +1677,7 @@ namespace embree
         RTCRay ray = makeRay(Vec3fa(pos-3.0f,0.0f,0.0f),dir); 
         setRay(ray16,j,ray);
       }
-      __align(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
       rtcIntersect16(valid,scene,ray16);
       for (size_t j=0; j<16; j++)
         numFailures += ray16.primID[j] == -1;
@@ -1957,7 +1957,7 @@ namespace embree
       RTCRay ray = makeRay(org,dir); 
       setRay(ray4,j,ray);
     }
-    __align(16) int valid4[4] = { -1,-1,-1,-1 };
+    __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
     rtcOccluded4(valid4,scene,ray4);
     rtcIntersect4(valid4,scene,ray4);
 #endif
@@ -1971,7 +1971,7 @@ namespace embree
         RTCRay ray = makeRay(org,dir); 
         setRay(ray8,j,ray);
       }
-      __align(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
       rtcOccluded8(valid8,scene,ray8);
       rtcIntersect8(valid8,scene,ray8);
     }
@@ -1985,7 +1985,7 @@ namespace embree
       RTCRay ray = makeRay(org,dir); 
       setRay(ray16,j,ray);
     }
-    __align(16) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+    __aligned(16) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
     rtcOccluded16(valid16,scene,ray16);
     rtcIntersect16(valid16,scene,ray16);
 #endif
