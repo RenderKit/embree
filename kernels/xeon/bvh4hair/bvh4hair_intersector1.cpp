@@ -80,10 +80,15 @@ namespace embree
       const avx3f p1 = ray.org, d1 = ray.dir;
       const avx3f dp = p1-p0;
 
-      const avxf R = r0 + dot(dp,d0)*dr;
-      const avxf A = dot(d1,d1) - sqr(dot(d0,d1)) * (1.0f+dr*dr);
-      const avxf B = 2.0f*dot(d1,dp) - 2.0f*dot(d0,d1)*(dot(dp,d0)*(1.0f+dr*dr) + r0*dr);
-      const avxf C = dot(dp,dp) - sqr(dot(dp,d0)) - R*R;
+      const avxf dpdp = dot(dp,dp);
+      const avxf d1d1 = dot(d1,d1);
+      const avxf d0d1 = dot(d0,d1);
+      const avxf d0dp = dot(d0,dp);
+      const avxf d1dp = dot(d1,dp);
+      const avxf R = r0 + d0dp*dr;
+      const avxf A = d1d1 - sqr(d0d1) * (1.0f+dr*dr);
+      const avxf B = 2.0f * (d1dp - d0d1*(d0dp + R*dr));
+      const avxf C = dpdp - (sqr(d0dp) + sqr(R));
       const avxf D = B*B - 4.0f*A*C;
       const avxb valid = D >= 0.0f;
       if (none(valid)) return;
