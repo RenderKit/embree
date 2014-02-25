@@ -74,12 +74,13 @@ namespace embree
       const avx3f a3(a.x,a.y,a.z);
       const avx3f b3(b.x,b.y,b.z);
 
-      const avxf l0 = length(b3-a3);
-      const avx3f p0 = a3, d0 = (b3-a3)/l0;
-      const avxf r0 = a.w, dr = (b.w-a.w)/l0;
-      const avx3f p1 = ray.org, d1 = ray.dir;
-      const avx3f dp = p1-p0;
+      const avxf  rl0 = 1.0f/length(b3-a3);
+      const avx3f p0 = a3, d0 = (b3-a3)*rl0;
+      const avxf  r0 = a.w, dr = (b.w-a.w)*rl0;
+      const float rl1 = 1.0f/length(ray.dir);
+      const avx3f p1 = ray.org, d1 = ray.dir*rl1;
 
+      const avx3f dp = p1-p0;
       const avxf dpdp = dot(dp,dp);
       const avxf d1d1 = dot(d1,d1);
       const avxf d0d1 = dot(d0,d1);
@@ -92,14 +93,14 @@ namespace embree
       const avxf D = B*B - 4.0f*A*C;
       avxb valid = D >= 0.0f;
       if (none(valid)) return;
-
+      
       const avxf Q = sqrt(D);
-      const avxf rcp2A = 1.0f/(2.0f*A);
-
-      const avxf t0 = (-B-Q)*rcp2A;
+      //const avxf t0 = (-B-Q)*rcp2A;
       //const avxf t1 = (-B+Q)*rcp2A;
-      const avxf t = t0;
-      const avxf u = (d0dp+t*d0d1)/l0;
+      const avxf t0 = (-B-Q)/(2.0f*A);
+      const avxf u0 = d0dp+t0*d0d1;
+      const avxf t = t0*rl1;
+      const avxf u = u0*rl0;
       valid &= (ray.tnear < t) & (t < ray.tfar) & (0.0f <= u) & (u <= 1.0f);
 
 #else
@@ -127,6 +128,7 @@ namespace embree
       const avxf r = p.w; //max(p.w,ray.org.w+ray.dir.w*t);
       const avxf r2 = r*r;
       avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
+
 #endif
 
     retry:
