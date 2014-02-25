@@ -90,39 +90,17 @@ namespace embree
       const avxf B = 2.0f * (d1dp - d0d1*(d0dp + R*dr));
       const avxf C = dpdp - (sqr(d0dp) + sqr(R));
       const avxf D = B*B - 4.0f*A*C;
-      const avxb valid = D >= 0.0f;
+      avxb valid = D >= 0.0f;
       if (none(valid)) return;
 
       const avxf Q = sqrt(D);
       const avxf rcp2A = 1.0f/(2.0f*A);
+
       const avxf t0 = (-B-Q)*rcp2A;
-      const avxf t1 = (-B+Q)*rcp2A;
-
-      const avxf u0 = dot(dp+t0*d1,d0)/l0;
-      const avxb valid0 = valid & (ray.tnear < t0) & (t0 < ray.tfar) & (0.0f <= u0) & (u0 <= 1.0f);
-      if (any(valid0)) 
-      {
-        size_t i = select_min(valid0,t0);
-        ray.u = u0[i];
-        ray.v = 0.0f;
-        ray.tfar = t0[i];
-        ray.geomID = bezier.geomID;
-        ray.primID = bezier.primID;
-        ray.Ng = Vec3fa(d0.x[i],d0.y[i],d0.z[i]);
-      }
-
-      const avxf u1 = dot(dp+t1*d1,d0)/l0;
-      const avxb valid1 = valid & (ray.tnear < t1) & (t1 < ray.tfar) & (0.0f <= u1) & (u1 <= 1.0f);
-      if (any(valid1)) 
-      {
-        size_t i = select_min(valid1,t1);
-        ray.u = u1[i];
-        ray.v = 0.0f;
-        ray.tfar = t1[i];
-        ray.geomID = bezier.geomID;
-        ray.primID = bezier.primID;
-        ray.Ng = Vec3fa(d0.x[i],d0.y[i],d0.z[i]);
-      }
+      //const avxf t1 = (-B+Q)*rcp2A;
+      const avxf t = t0;
+      const avxf u = (d0dp+t*d0d1)/l0;
+      valid &= (ray.tnear < t) & (t < ray.tfar) & (0.0f <= u) & (u <= 1.0f);
 
 #else
 
@@ -149,6 +127,8 @@ namespace embree
       const avxf r = p.w; //max(p.w,ray.org.w+ray.dir.w*t);
       const avxf r2 = r*r;
       avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
+#endif
+
     retry:
       if (unlikely(none(valid))) return;
       const float one_over_8 = 1.0f/8.0f;
@@ -187,8 +167,6 @@ namespace embree
         if (none(valid)) return;
         i = select_min(valid,t);
       }
-#endif
-
 #endif
     }
 
