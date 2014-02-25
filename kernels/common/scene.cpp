@@ -128,10 +128,12 @@ namespace embree
         accels.add(BVH4MB::BVH4MBTriangle1v(this)); 
         accels.add(new TwoLevelAccel("bvh4",this)); 
         
+#if defined(__TARGET_AVX__)
         // FIXME:
         if      (g_hair_accel == "bvh4.bezier1i"   ) accels.add(BVH4::BVH4Bezier1i(this));
         else if (g_hair_accel == "bvh4hair.bezier1") accels.add(BVH4Hair::BVH4HairBezier1(this));
         else accels.add(BVH4::BVH4Bezier1i(this));
+#endif
       } 
       else 
       {

@@ -328,7 +328,6 @@ RTCScene convertScene(ISPCScene* scene_in)
   {
     /* get ith hair set */
     ISPCHairSet* hair = scene_in->hairs[i];
-    PRINT(hair->numHairs);
     
     /* create a hair set */
     unsigned int geomID = rtcNewBezierCurves (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
@@ -347,7 +346,6 @@ RTCScene convertScene(ISPCScene* scene_in)
   {
     /* get ith mesh */
     ISPCMesh* mesh = scene_in->meshes[i];
-    PRINT(mesh->numTriangles);
 
     /* create a triangle mesh */
     unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);

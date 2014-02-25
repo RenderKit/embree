@@ -74,10 +74,10 @@ namespace embree
       const avx3f a3(a.x,a.y,a.z);
       const avx3f b3(b.x,b.y,b.z);
 
-      const avxf  rl0 = 1.0f/length(b3-a3);
+      const avxf  rl0 = 1.0f/length(b3-a3); // FIXME: multiply equation with this
       const avx3f p0 = a3, d0 = (b3-a3)*rl0;
       const avxf  r0 = a.w, dr = (b.w-a.w)*rl0;
-      const float rl1 = 1.0f/length(ray.dir);
+      const float rl1 = 1.0f/length(ray.dir); // FIXME: normalization not required
       const avx3f p1 = ray.org, d1 = ray.dir*rl1;
 
       const avx3f dp = p1-p0;
