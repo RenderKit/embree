@@ -338,13 +338,11 @@ namespace embree
 
       std::cout << "SAH = " << BVH8i::sah8( bvh8i_base, bvh8i_root ) << std::endl;
 #else
-      DBG_PRINT(sizeof(BVH8i::NodeHF16));
       DBG_PRINT(sizeof(BVH8i::Quantized8BitNode));
       DBG_PRINT(sizeof(BVH8i::Node));
       DBG_PRINT(index8);
 
-#if 0
-
+#if 1
       BVH8i::Quantized8BitNode *bvh8i_quantized = (BVH8i::Quantized8BitNode *)os_malloc(sizeof(BVH8i::Quantized8BitNode) * index8);
       for (size_t i=0;i<index8;i++) bvh8i_quantized[i].init( bvh8i_base[i] );
       std::cout << "SAH = " << BVH8i::sah8_quantized( bvh8i_quantized, bvh8i_root ) << std::endl;

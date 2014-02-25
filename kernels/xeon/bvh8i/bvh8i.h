@@ -411,6 +411,7 @@ namespace embree
 
 
 
+#if defined (__AVX2__)
 
     struct __aligned(64) NodeHF16
     {
@@ -504,9 +505,8 @@ namespace embree
 	return valid;
       }
 
-
-
     };
+#endif
 
 #endif
 
@@ -518,7 +518,8 @@ namespace embree
     
   };
 
-#if defined (__AVX__)
+
+#if defined (__AVX2__)
 
     __forceinline std::ostream &operator<<(std::ostream &o, const BVH8i::NodeHF16 &v)
     {
@@ -535,8 +536,10 @@ namespace embree
 
       return o;
     }
+#endif
 
 
+#if defined (__AVX__)
 
     __forceinline std::ostream &operator<<(std::ostream &o, const BVH8i::Node &v)
     {

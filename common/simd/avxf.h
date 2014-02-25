@@ -291,7 +291,6 @@ namespace embree
     return _mm256_castsi256_ps(_mm256_alignr_epi8(_mm256_castps_si256(a), _mm256_castps_si256(b), i));
   }  
 
-#endif
 
   template<const int mode>
   __forceinline ssei convert_to_hf16(const avxf &a) {
@@ -301,6 +300,8 @@ namespace embree
   __forceinline avxf convert_from_hf16(const ssei &a) {
     return _mm256_cvtph_ps(a);
   }
+
+#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Transpose
