@@ -26,7 +26,7 @@
 #include "geometry.h"
 #include "common/buildsource.h"
 
-#define PRE_SUBDIVISION_HACK
+//#define PRE_SUBDIVISION_HACK
 
 namespace embree
 {
