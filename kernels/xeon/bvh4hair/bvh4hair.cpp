@@ -22,7 +22,50 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1,BVH4HairIntersector1_);
 
   Builder* BVH4HairBuilder_ (BVH4Hair* bvh, Scene* scene);
-  
+
+#if BVH4HAIR_NAVIGATION
+
+  ssize_t naviDepth = 0;
+  BVH4Hair::NodeRef naviNode = BVH4Hair::emptyNode;
+  BVH4Hair::NodeRef rootNode = BVH4Hair::emptyNode;
+  std::vector<BVH4Hair::NodeRef> naviStack;
+
+  __dllexport void BVH4HairGotoRoot() {
+    naviStack.clear();
+    naviStack.push_back(rootNode);
+    naviNode = naviStack.back();
+  }
+
+  __dllexport void BVH4HairGotoChild(int i) 
+  {
+    if (unlikely(naviNode.isLeaf())) {
+      std::cout << "LEAF node!" << std::endl;
+      return;
+    }
+    
+    if (likely(naviNode.isNode())) {
+      naviStack.push_back(naviNode.node()->child(i));
+      naviNode = naviStack.back();
+      return;
+    }
+  }
+
+  __dllexport void BVH4HairGoUp() 
+  {
+    if (naviStack.size() == 1)
+      return;
+
+    naviStack.pop_back();
+    naviNode = naviStack.back();
+  }
+
+  __dllexport void BVH4HairAddDepth(int d) 
+  {
+    naviDepth += d;
+    PRINT(naviDepth);
+  }
+#endif
+
   void BVH4HairRegister () 
   {
     int features = getCPUFeatures();

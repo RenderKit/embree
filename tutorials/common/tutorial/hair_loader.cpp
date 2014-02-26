@@ -207,10 +207,18 @@ namespace embree
       numHairs = loadHairBin(fileName,hairset,offset);
     
     /* reduce number of hairs */
-    //PRINT(hairset->hairs.size());
-    //hairset = reduce_hairs(hairset);
-    //PRINT(hairset->hairs.size());
-    
+#if 0
+    PRINT(hairset->hairs.size());
+    hairset = reduce_hairs(hairset);
+    PRINT(hairset->hairs.size());
+    hairset = reduce_hairs(hairset);
+    PRINT(hairset->hairs.size());
+    hairset = reduce_hairs(hairset);
+    PRINT(hairset->hairs.size());
+    hairset = reduce_hairs(hairset);
+    PRINT(hairset->hairs.size());
+#endif
+
     /* add hairset to scene */
     scene.hairsets.push_back(hairset);
 
