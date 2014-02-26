@@ -103,13 +103,14 @@ installed or might have slightly different names.
   sudo yum install freeglut.x86_64 freeglut-devel.x86_64
   sudo yum install libXmu.x86_64 libXi.x86_64 
   sudo yum install libXmu-devel.x86_64 libXi-devel.x86_64
+(Note: on some distrubitions you also need "cmake-gui")
         
 Finally you can compile Embree using CMake. Create a build directory
 and execute "ccmake .." inside this directory.
         
   mkdir build
   cd build
-  cmake ..
+  ccmake ..
 
 This will open a configuration dialog where you should set the
 CMAKE_BUILD_TYPE to "Release" and the compiler to "GCC", "CLANG" or
