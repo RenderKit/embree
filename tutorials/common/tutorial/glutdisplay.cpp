@@ -54,6 +54,11 @@ namespace embree
   /* ID of created window */
   static int g_window = 0;
 
+  __dllimport void BVH4HairGotoRoot();
+  __dllimport void BVH4HairGotoChild(int i);
+  __dllimport void BVH4HairGoUp();
+  __dllimport void BVH4HairAddDepth(int i);
+
   /*************************************************************************************************/
   /*                                  Keyboard control                                             */
   /*************************************************************************************************/
@@ -89,6 +94,18 @@ namespace embree
     case 'w' : g_camera.move(0.0f,0.0f,+g_speed); break;
     case 's' : g_camera.move(0.0f,0.0f,-g_speed); break;
     case ' ' : g_display = !g_display; break;
+
+#if 0
+    case 'r' : BVH4HairGotoRoot(); break;
+    case 'u' : BVH4HairGoUp(); break;
+    case '1' : BVH4HairGotoChild(0); break;
+    case '2' : BVH4HairGotoChild(1); break;
+    case '3' : BVH4HairGotoChild(2); break;
+    case '4' : BVH4HairGotoChild(3); break;
+    case '+' : BVH4HairAddDepth(+1); break;
+    case '-' : BVH4HairAddDepth(-1); break;
+#endif
+
     case '\033': case 'q': case 'Q':
       cleanup();
       glutDestroyWindow(g_window);

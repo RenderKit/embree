@@ -23,7 +23,13 @@
 #include "geometry/primitive.h"
 #include "geometry/bezier1i.h"
 
-#define BVH4HAIR_WIDTH 8
+#define BVH4HAIR_WIDTH 4
+#define BVH4HAIR_NAVIGATION 0
+#if BVH4HAIR_NAVIGATION
+#define NAVI(x) x
+#else
+#define NAVI(x)
+#endif
 
 namespace embree
 {

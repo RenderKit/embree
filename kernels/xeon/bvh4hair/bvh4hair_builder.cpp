@@ -21,6 +21,12 @@
 
 namespace embree
 {
+#if BVH4HAIR_NAVIGATION
+  extern BVH4Hair::NodeRef rootNode;
+  extern BVH4Hair::NodeRef naviNode;
+  extern std::vector<BVH4Hair::NodeRef> naviStack;
+#endif
+
   BVH4HairBuilder::BVH4HairBuilder (BVH4Hair* bvh, Scene* scene)
     : scene(scene), minLeafSize(1), maxLeafSize(inf), bvh(bvh)
   {
@@ -45,6 +51,9 @@ namespace embree
       t0 = getSeconds();
     }
 
+    size_t N = 0;
+    float r = 0;
+
     /* create initial curve list */
     BBox3fa bounds = empty;
     curves.reserve(numPrimitives);
@@ -66,10 +75,11 @@ namespace embree
         curves.push_back(bezier);
       }
     }
-
+    
     /* subdivide very curved hair segments */
+    //subdivide(0.01f);
     //subdivide(0.1f);
-    //subdivide(0.05f);
+    //subdivide(0.25f);
     bvh->numPrimitives = curves.size();
     bvh->numVertices = 0;
 
@@ -77,6 +87,9 @@ namespace embree
     size_t begin = 0, end = curves.size();
     bvh->root = recurse(threadIndex,0,begin,end,computeAlignedBounds(&curves[0],begin,end,LinearSpace3fa(one)));
     bvh->bounds = bounds;
+    NAVI(naviNode = bvh->root);
+    NAVI(rootNode = bvh->root);
+    NAVI(naviStack.push_back(bvh->root));
 
     if (g_verbose >= 2) {
       double t1 = getSeconds();
@@ -105,14 +118,29 @@ namespace embree
       const Vec3fa p1 = xfmPoint(space,curves[i].p1); bounds.extend(p1);
       const Vec3fa p2 = xfmPoint(space,curves[i].p2); bounds.extend(p2);
       const Vec3fa p3 = xfmPoint(space,curves[i].p3); bounds.extend(p3);
-      const Vec3fa diag = bounds.size();
-
+      const float r0 = curves[i].p0.w;
+      const float r1 = curves[i].p1.w;
+      const float r2 = curves[i].p2.w;
+      const float r3 = curves[i].p3.w;
+      bounds = enlarge(bounds,Vec3fa(max(r0,r1,r2,r3)));
+        
+#if 0
       /* perform subdivision */
+      const Vec3fa diag = bounds.size();
       if (max(diag.x,diag.y) > ratio*diag.z && curves[i].dt > 0.1f) {
         Bezier1 left,right; curves[i].subdivide(left,right);
         curves[i] = left; curves.push_back(right);
         i--;
       }
+#else
+      const float Ab = area(bounds);
+      const float Ac = len*2.0f*float(pi)*0.25f*(r0+r1+r2+r2);
+      if (ratio*Ab > Ac && curves[i].dt > 0.1f) {
+        Bezier1 left,right; curves[i].subdivide(left,right);
+        curves[i] = left; curves.push_back(right);
+        i--;
+      }
+#endif
     }
 
     if (g_verbose >= 2) 
@@ -412,21 +440,25 @@ namespace embree
 
   size_t BVH4HairBuilder::split(size_t begin, size_t end, const NAABBox3fa& bounds, NAABBox3fa& lbounds, NAABBox3fa& rbounds, bool& isAligned)
   {
+    float bestSAH = inf;
+
     /* first split into two strands */
     const StrandSplit strandSplit = StrandSplit::find(&curves[0],begin,end);
     const float strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.modifiedSAH();
+    bestSAH = min(bestSAH,strandSAH);
 
     /* second perform standard binning */
     const ObjectSplit objectSplitUnaligned = ObjectSplit::find(&curves[0],begin,end,bounds.space).unalignedBounds(&curves[0],begin,end);
     const float unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + objectSplitUnaligned.modifiedSAH();
+    //const float unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + objectSplitUnaligned.standardSAH();
+    bestSAH = min(bestSAH,unalignedObjectSAH);
 
     /* third perform standard binning in aligned space */
     const int travCostAligned = isAligned ? BVH4Hair::travCostAligned : BVH4Hair::travCostUnaligned;
     const ObjectSplit objectSplitAligned = ObjectSplit::find(&curves[0],begin,end).alignedBounds(&curves[0],begin,end);
     const float alignedObjectSAH = travCostAligned*halfArea(bounds.bounds) + objectSplitAligned.modifiedSAH();
-
-    /* calculate best SAH */
-    const float bestSAH = min(strandSAH,unalignedObjectSAH,alignedObjectSAH);
+    //const float alignedObjectSAH = travCostAligned*halfArea(bounds.bounds) + objectSplitAligned.standardSAH();
+    bestSAH = min(bestSAH,alignedObjectSAH);
 
     /* perform fallback split */
     if (bestSAH == float(inf)) {
@@ -464,7 +496,8 @@ namespace embree
       rbounds = strandSplit.bounds1;
       isAligned = false;
       return center;
-    } 
+    }
+ 
     else {
       throw std::runtime_error("bvh4hair_builder: internal error");
     }
@@ -510,6 +543,9 @@ namespace embree
       numChildren++;
       
     } while (numChildren < BVH4Hair::N);
+
+    //for (size_t i=0; i<numChildren; i++)
+    //PRINT3(depth,i,cend[i]-cbegin[i]);
     
     /* create aligned node */
     if (isAligned) {

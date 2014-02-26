@@ -396,8 +396,8 @@ extern "C" void device_init (int8* cfg)
   rtcInit(cfg);
 
   /* set start render mode */
-  //renderPixel = renderPixelStandard;
-  renderPixel = renderPixelGeomIDPrimID;
+  renderPixel = renderPixelStandard;
+  //renderPixel = renderPixelGeomIDPrimID;
 }
 
 /*! Anisotropic power cosine microfacet distribution. */
@@ -794,7 +794,7 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    //if (x != 256 || y != 511) continue;
+    //if (x != 330 || y != 256) continue;
 
     /* calculate pixel color */
     float fx = x + frand(seed);
@@ -854,7 +854,9 @@ extern "C" void device_render (int* pixels,
   }
 
   /* reset accumulator */
-  bool camera_changed = g_changed; g_changed = false;
+  bool camera_changed = g_changed; 
+  g_changed = false;
+  //g_changed = true;
   camera_changed |= g_accu_vx != vx; g_accu_vx = vx;
   camera_changed |= g_accu_vy != vy; g_accu_vy = vy;
   camera_changed |= g_accu_vz != vz; g_accu_vz = vz;

@@ -42,21 +42,24 @@ namespace embree
 
       static const size_t stackSize = 1+3*BVH4Hair::maxDepth;
 
-      struct StackItem 
+      struct __aligned(16) StackItem 
       {
       public:
-
         __forceinline static void swap2(StackItem& a, StackItem& b) 
         { 
-#if defined(__AVX__)
+#if defined(__AVX__) && !BVH4HAIR_NAVIGATION
           ssef sse_a = load4f(&a);
           ssef sse_b = load4f(&b);
           store4f(&a,sse_b);
           store4f(&b,sse_a);
 #else
-          StackItemInt32<T> t = b; b = a; a = t;
+          StackItem t = b; b = a; a = t;
 #endif
     }
+
+        __forceinline friend bool operator<(const StackItem& s1, const StackItem& s2) {
+          return s1.tNear > s2.tNear;
+        }
 
         /*! Sort 2 stack items. */
         __forceinline friend void sort(StackItem& s1, StackItem& s2) {
@@ -84,6 +87,9 @@ namespace embree
       public:
         size_t ref;
         float tNear,tFar;
+#if BVH4HAIR_NAVIGATION
+        size_t depth;
+#endif
       };
 
     private:
