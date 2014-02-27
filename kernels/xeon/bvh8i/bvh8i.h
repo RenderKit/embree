@@ -137,6 +137,12 @@ namespace embree
 	return (x*y+x*z+y*z) * 2.0f; 
       }
 
+      __forceinline float area(const size_t index)
+      {
+        avxf area8 = area();
+	return area8[index];
+      }
+
       __forceinline void shift(const size_t index)
       {
 	assert(index < N);
@@ -188,10 +194,8 @@ namespace embree
 
       /*! Returns number of valid children */
       __forceinline size_t numValidChildren() const  {
-	size_t valid = 0;
-	for (size_t i=0;i<N;i++)
-	  if (children[i] != emptyNode)
-	    valid++;
+        size_t valid =__popcnt(movemask((*(avxi*)children) != avxi(emptyNode)));
+        assert(valid <= 8);
 	return valid;
       }
 
@@ -206,8 +210,8 @@ namespace embree
       return (Node*)((char*)ptr + (unsigned long)node);
     };
 
-    static float sah8 (Node* base, BVH4i::NodeRef& root );
-    static float sah8 (Node* base, BVH4i::NodeRef& node, const BBox3fa& bounds);
+    static float sah8 (Node* base, BVH4i::NodeRef& root, avxi &bvh8i_node_dist);
+    static float sah8 (Node* base, BVH4i::NodeRef& node, const BBox3fa& bounds, avxi &bvh8i_node_dist);
 
     struct __aligned(64) Quantized8BitNode
     {
@@ -308,11 +312,6 @@ namespace embree
             else
               {
                 children[i] = node8.children[i];
-                if (node8.children[i] == -1)
-                  {
-                    PING;
-                    exit(0);
-                  }
               }		
           }
 
@@ -375,6 +374,7 @@ namespace embree
 #endif
           }
           
+        assert(node8.numValidChildren() == numValidChildren());
       }
 
       /*! Returns reference to specified child */
@@ -400,18 +400,16 @@ namespace embree
       }
 
       __forceinline size_t numValidChildren() const  {
-	size_t valid = 0;
-	for (size_t i=0;i<N;i++)
-	  if (children[i] != emptyNode)
-	    valid++;
+        size_t valid =__popcnt(movemask((*(avxi*)children) != avxi(emptyNode)));
+        assert(valid <= 8);
 	return valid;
       }
       
     };
 
     
-    static float sah8_quantized (Quantized8BitNode*base, BVH4i::NodeRef& node, const BBox3fa& bounds);
-    static float sah8_quantized (Quantized8BitNode* base, BVH4i::NodeRef& root );
+    static float sah8_quantized (Quantized8BitNode*base, BVH4i::NodeRef& node, const BBox3fa& bounds, avxi &bvh8i_node_dist);
+    static float sah8_quantized (Quantized8BitNode* base, BVH4i::NodeRef& root, avxi &bvh8i_node_dist);
 
 
 

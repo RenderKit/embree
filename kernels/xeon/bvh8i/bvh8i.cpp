@@ -65,14 +65,14 @@ namespace embree
 
 #if defined (__AVX__) && 1
 
-  float BVH8i::sah8 (Node * base, BVH4i::NodeRef& root) {
+  float BVH8i::sah8 (Node * base, BVH4i::NodeRef& root, avxi &bvh8i_node_dist) {
     BVH8i::Node* n = (BVH8i::Node*)root.node(base);
     BBox3fa bounds = n->bounds();
 
-    return sah8(base,root,bounds)/area(bounds);
+    return sah8(base,root,bounds,bvh8i_node_dist)/area(bounds);
   }
 
-  float BVH8i::sah8 (Node * base, NodeRef& node, const BBox3fa& bounds)
+  float BVH8i::sah8 (Node * base, NodeRef& node, const BBox3fa& bounds, avxi &bvh8i_node_dist)
   {
     float f = bounds.empty() ? 0.0f : area(bounds);
 
@@ -81,8 +81,11 @@ namespace embree
       BVH8i::Node* n = (BVH8i::Node*)node.node(base);
 
       size_t children = n->numValidChildren();
+
+      bvh8i_node_dist[children-1]++;
+
       for (size_t c=0; c<children; c++) 
-        f += sah8(base,n->child(c),n->bounds(c));
+        f += sah8(base,n->child(c),n->bounds(c),bvh8i_node_dist);
       return f;
     }
     else 
@@ -92,14 +95,14 @@ namespace embree
     }
   }
 
-  float BVH8i::sah8_quantized(Quantized8BitNode * base, BVH4i::NodeRef& root) {
+  float BVH8i::sah8_quantized(Quantized8BitNode * base, BVH4i::NodeRef& root, avxi &bvh8i_node_dist) {
     BVH8i::Quantized8BitNode* n = (BVH8i::Quantized8BitNode*)root.node(base);
     BBox3fa bounds = n->bounds();
 
-    return sah8_quantized(base,root,bounds)/area(bounds);
+    return sah8_quantized(base,root,bounds,bvh8i_node_dist)/area(bounds);
   }
 
-  float BVH8i::sah8_quantized(Quantized8BitNode * base, NodeRef& node, const BBox3fa& bounds)
+  float BVH8i::sah8_quantized(Quantized8BitNode * base, NodeRef& node, const BBox3fa& bounds, avxi &bvh8i_node_dist)
   {
     float f = bounds.empty() ? 0.0f : area(bounds);
 
@@ -108,9 +111,12 @@ namespace embree
       BVH8i::Quantized8BitNode* n = (BVH8i::Quantized8BitNode*)node.node(base);
 
       size_t children = n->numValidChildren();
+      assert(children > 0 && children <= 8);
+      bvh8i_node_dist[children-1]++;
+
       for (size_t c=0; c<children; c++) 
         {
-          f += sah8_quantized(base,n->child(c),n->bounds(c));
+          f += sah8_quantized(base,n->child(c),n->bounds(c),bvh8i_node_dist);
         }
       return f;
     }
