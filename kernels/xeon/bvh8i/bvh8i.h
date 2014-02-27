@@ -66,6 +66,32 @@ namespace embree
       BVH4i::NodeRef children[8];
       unsigned int data[8]; 
 
+      __forceinline BBox3fa bounds() const {
+        const Vec3fa lower(reduce_min(lower_x),reduce_min(lower_y),reduce_min(lower_z));
+        const Vec3fa upper(reduce_max(upper_x),reduce_max(upper_y),reduce_max(upper_z));
+        return BBox3fa(lower,upper);
+      }
+
+      /*! Returns bounds of specified child. */
+      __forceinline BBox3fa bounds(size_t i) const {
+        Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
+        Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
+        return BBox3fa(lower,upper);
+      }
+
+
+      /*! Returns number of valid children */
+      __forceinline size_t numValidChildren() const  {
+        size_t valid =__popcnt(movemask((*(avxi*)children) != avxi(emptyNode)));
+        assert(valid <= 8);
+	return valid;
+      }
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { return children[i]; }
+
+
       __forceinline void set(const size_t index,const BVH4i::Node &node4, const size_t i)
       {
 	lower_x[index] = node4.lower_x[i];
@@ -95,6 +121,18 @@ namespace embree
 	data[index] = node.upper.a;
       }
 
+      __forceinline void setBounds(const size_t index,const BBox3fa &node)
+      {
+	lower_x[index] = node.lower[0];
+	lower_y[index] = node.lower[1];
+	lower_z[index] = node.lower[2];
+
+	upper_x[index] = node.upper[0];
+	upper_y[index] = node.upper[1];
+	upper_z[index] = node.upper[2];
+
+      }
+
       __forceinline void set(const size_t index,const Node &node, const size_t source_index)
       {
 	assert(index < N);
@@ -110,6 +148,15 @@ namespace embree
 
 	children[index] = node.children[source_index];
 	data[index] = node.data[source_index];
+      }
+
+      __forceinline void merge(const Node &source)
+      {
+        const size_t numValidDest   = numValidChildren();
+        const size_t numValidSource = source.numValidChildren();
+        assert(numValidDest + numValidSource <= 8);
+        for (size_t i=0;i<numValidSource;i++)
+          set(numValidDest+i,source,i);
       }
 
       __forceinline BBox3fa extract(const size_t index)
@@ -175,33 +222,23 @@ namespace embree
 
 	for (size_t i=0;i<N;i++) children[i] = emptyNode;
 	for (size_t i=0;i<N;i++) data[i] = 0;
-
       }
 
-      __forceinline BBox3fa bounds() const {
-        const Vec3fa lower(reduce_min(lower_x),reduce_min(lower_y),reduce_min(lower_z));
-        const Vec3fa upper(reduce_max(upper_x),reduce_max(upper_y),reduce_max(upper_z));
-        return BBox3fa(lower,upper);
+      __forceinline void setInvalid(const size_t i)
+      {
+    
+	lower_x[i] = pos_inf;
+	lower_y[i] = pos_inf;
+	lower_z[i] = pos_inf;
+
+	upper_x[i] = neg_inf;
+	upper_y[i] = neg_inf;
+	upper_z[i] = neg_inf;
+
+	children[i] = emptyNode;
+	data[i] = 0;
       }
 
-      /*! Returns bounds of specified child. */
-      __forceinline BBox3fa bounds(size_t i) const {
-        Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
-        Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
-        return BBox3fa(lower,upper);
-      }
-
-
-      /*! Returns number of valid children */
-      __forceinline size_t numValidChildren() const  {
-        size_t valid =__popcnt(movemask((*(avxi*)children) != avxi(emptyNode)));
-        assert(valid <= 8);
-	return valid;
-      }
-
-      /*! Returns reference to specified child */
-      __forceinline       NodeRef& child(size_t i)       { return children[i]; }
-      __forceinline const NodeRef& child(size_t i) const { return children[i]; }
 
 
     };
@@ -209,6 +246,7 @@ namespace embree
     static __forceinline Node *bvh8ChildPtrNoMask(const Node * __restrict__ const ptr, const unsigned int node) {
       return (Node*)((char*)ptr + (unsigned long)node);
     };
+
 
     static float sah8 (Node* base, BVH4i::NodeRef& root, avxi &bvh8i_node_dist);
     static float sah8 (Node* base, BVH4i::NodeRef& node, const BBox3fa& bounds, avxi &bvh8i_node_dist);
@@ -559,6 +597,7 @@ namespace embree
 
       o << "children " << *(avxi*)v.children << std::endl;
       o << "data     " << *(avxi*)v.data << std::endl;
+      o << "empytNode " << (avxi(BVH8i::emptyNode) == *(avxi*)v.children) << std::endl;
 
       return o;
     }
@@ -592,7 +631,7 @@ namespace embree
       for (size_t i=0;i<8;i++) o << v.upperZ(i) << " ";
       o << std::endl;
 
-      o << "children " << *(avxi*)v.children << std::endl;
+      o << "children  " << *(avxi*)v.children << std::endl;
 
       return o;
     }

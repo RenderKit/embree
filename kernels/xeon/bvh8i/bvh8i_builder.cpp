@@ -86,6 +86,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
 
+
     static void convertBVH4itoBVH8i(BVH4i::Node *bvh4i,
 				    BVH4i::NodeRef &ref, 
 				    unsigned int numLeavesInSubTree, 
@@ -274,9 +275,37 @@ namespace embree
 				  b8.children[i]);
     }
 
+    __forceinline size_t numValidChildren(BVH8i::Node* base, BVH4i::NodeRef& node) 
+    {
+      if (node.isLeaf()) return 0;
+      BVH8i::Node* n = (BVH8i::Node*)node.node(base);
+      return n->numValidChildren();
+    }
 
-    static void compactBVH8i(BVH8i::Node *bvh8i,
-                             BVH4i::NodeRef &node)
+    static void refitBVH8i(BVH8i::Node *bvh8i,
+                           BVH4i::NodeRef &node,
+                           BVH8i::Node &root,
+                           const unsigned int root_slot)
+    {
+      if (node.isNode()) 
+        {
+          BVH8i::Node* n = (BVH8i::Node*)node.node(bvh8i);
+          
+          BBox3fa bounds = empty;
+          size_t children = n->numValidChildren();
+          for (size_t c=0; c<children; c++) 
+            {
+              refitBVH8i(bvh8i,n->child(c),*n,c);
+              bounds.extend( n->extract(c) );
+            }
+          root.setBounds(root_slot, bounds);
+          if (children == 1) 
+            root.set(root_slot,*n,0);
+        }
+    }
+
+    static size_t compactBVH8i(BVH8i::Node *bvh8i,
+                               BVH4i::NodeRef &node)
     {
       if (node.isNode()) 
         {
@@ -284,10 +313,74 @@ namespace embree
 
           size_t children = n->numValidChildren();
           for (size_t c=0; c<children; c++) 
-            compactBVH8i(bvh8i,n->child(c));
+            n->data[c] = compactBVH8i(bvh8i,n->child(c));
+
+          while(1)
+            {
+              ssize_t min_index = -1;
+              ssize_t min_slots =  8;
+              for (size_t c=0; c<children; c++) 
+                {
+                  BVH4i::NodeRef child = n->child(c);
+                  if (child.isLeaf()) continue;
+                  
+                  size_t child_children = numValidChildren(bvh8i,child);
+                  
+                  if (child_children < min_slots)
+                    {
+                      min_index = c;
+                      min_slots = child_children;
+                    }              
+                }
+
+              if (min_index == -1) break;
+
+              BBox3fa min_bounds = n->extract(min_index);
+
+              ssize_t pair_index = -1;
+              ssize_t pair_slots =  8;
+              float pair_sah = pos_inf;
+
+              for (size_t c=0; c<children; c++) 
+                {
+                  if (c == min_index) continue;
+                  BVH4i::NodeRef child = n->child(c);
+                  if (child.isLeaf()) continue;
+                  
+                  size_t child_children = numValidChildren(bvh8i,child);
+
+                  BBox3fa b = min_bounds;
+                  b.extend( n->area(c) );
+                  float new_sah = area( b );
+                  
+                  if (child_children <= pair_slots && min_slots + child_children <= 8 && new_sah < pair_sah)
+                    {
+                      pair_index = c;
+                      pair_slots = child_children;
+                      pair_sah = new_sah;
+                    }              
+                }
+              if (pair_index == -1) break;
+
+              BVH4i::NodeRef child0 = n->child( min_index);
+              BVH4i::NodeRef child1 = n->child(pair_index);
+
+              BVH8i::Node* p_child0 = (BVH8i::Node*)child0.node(bvh8i);
+              BVH8i::Node* p_child1 = (BVH8i::Node*)child1.node(bvh8i);
+
+              p_child0->merge(*p_child1);
+
+              n->shift(pair_index);
+              n->setInvalid(children-1);
+
+              
+            }
+
+          return n->numValidChildren();
         }
       else 
         {
+          return 0;
         }
       
     }
@@ -325,12 +418,25 @@ namespace embree
       DBG_PRINT(index8);
       DBG_PRINT(index8*sizeof(BVH8i::Node));
 
-      bvh8i_node_dist = 0;
 
+#if 1
+      unsigned int root_data = 0;
+      root_data = compactBVH8i(bvh8i_base,bvh8i_root);      
+      DBG_PRINT(root_data);
+#endif
+
+#if 1
+      BVH8i::Node tmp_root;
+      tmp_root.reset();
+      refitBVH8i(bvh8i_base,bvh8i_root,tmp_root,0);      
+      DBG_PRINT(tmp_root);
+#endif
+
+      bvh8i_node_dist = 0;
       bvh4i_builder8->bvh->root = bvh8i_root;
 #if !defined(USE_QUANTIZED_NODES)
       bvh4i_builder8->bvh->qbvh = bvh8i_base; 
-      
+
 
       std::cout << "SAH = " << BVH8i::sah8( bvh8i_base, bvh8i_root, bvh8i_node_dist ) << std::endl;
 
@@ -359,6 +465,8 @@ namespace embree
       bvh4i_builder8->bvh->qbvh = bvh8i_hf; 
 #endif
 
+#endif
+
       /* bvh8i node util */
       {
         unsigned int total = 0;
@@ -381,9 +489,6 @@ namespace embree
         std::cout << std::endl;
       }
 
-
-
-#endif
     }
     
     
