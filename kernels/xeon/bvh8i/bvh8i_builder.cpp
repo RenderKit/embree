@@ -91,8 +91,7 @@ namespace embree
 				    unsigned int numLeavesInSubTree, 
 				    BVH8i::Node *bvh8i,
 				    size_t &index8,
-				    BVH4i::NodeRef &parent_offset,
-				    avxi &bvh8i_node_dist)
+				    BVH4i::NodeRef &parent_offset)
     {
       size_t bvh8i_used_slots = 0;
       const size_t bvh8i_node_index = index8++;
@@ -252,9 +251,7 @@ namespace embree
 	}
 
       parent_offset = (unsigned int)(sizeof(BVH8i::Node) * bvh8i_node_index);
-      
-      bvh8i_node_dist[bvh8i_used_slots-1]++;
-      
+            
 
       DBG(
 	  {
@@ -274,8 +271,25 @@ namespace embree
 				  b8.data[i],
 				  bvh8i,			      
 				  index8,
-				  b8.children[i],
-				  bvh8i_node_dist);
+				  b8.children[i]);
+    }
+
+
+    static void compactBVH8i(BVH8i::Node *bvh8i,
+                             BVH4i::NodeRef &node)
+    {
+      if (node.isNode()) 
+        {
+          BVH8i::Node* n = (BVH8i::Node*)node.node(bvh8i);
+
+          size_t children = n->numValidChildren();
+          for (size_t c=0; c<children; c++) 
+            compactBVH8i(bvh8i,n->child(c));
+        }
+      else 
+        {
+        }
+      
     }
 
     // =======================================================================================================
@@ -296,47 +310,30 @@ namespace embree
 			  totalLeaves,
 			  bvh8i_base,
 			  index8,
-			  bvh8i_root,
-			  bvh8i_node_dist);
+			  bvh8i_root);
 
 
       if (g_verbose >= 2)
 	{
-	  std::cout << "BVH4i TO BVH8I CONVERSION DONE" << std::endl << std::flush;
-	  DBG_PRINT(numBVH4iNodes);
-	  DBG_PRINT(numBVH4iNodes*sizeof(BVH4i::Node));
-	  DBG_PRINT(totalLeaves);
-	  DBG_PRINT(index8);
-	  DBG_PRINT(index8*sizeof(BVH8i::Node));
 
-	  /* bvh8i node util */
-	  {
-	    unsigned int total = 0;
-	    float util = 0.0f;
-	    for (size_t i=0;i<8;i++) {
-	      util += (float)(i+1) * bvh8i_node_dist[i];
-	      total += bvh8i_node_dist[i];
-	    }
-	    DBG_PRINT(total);
-	    std::cout << "bvh8i node util dist: ";
-	    DBG_PRINT(bvh8i_node_dist);
-	    float sum = 0;
-	    for (size_t i=0;i<8;i++) 
-	      {
-		sum += (float)bvh8i_node_dist[i] * 100.0f / total;
-		std::cout << i+1 << "[" << (float)bvh8i_node_dist[i] * 100.0f / total << "%, sum " << sum << "%] ";
-	      }
-	    std::cout << std::endl;
-	    DBG_PRINT(100.0f * util / (8.0f * total));
-	    std::cout << std::endl;
-	  }
 	}
+
+      std::cout << "BVH4i TO BVH8I CONVERSION DONE" << std::endl << std::flush;
+      DBG_PRINT(numBVH4iNodes);
+      DBG_PRINT(numBVH4iNodes*sizeof(BVH4i::Node));
+      DBG_PRINT(totalLeaves);
+      DBG_PRINT(index8);
+      DBG_PRINT(index8*sizeof(BVH8i::Node));
+
+      bvh8i_node_dist = 0;
 
       bvh4i_builder8->bvh->root = bvh8i_root;
 #if !defined(USE_QUANTIZED_NODES)
       bvh4i_builder8->bvh->qbvh = bvh8i_base; 
+      
 
-      //std::cout << "SAH = " << BVH8i::sah8( bvh8i_base, bvh8i_root ) << std::endl;
+      std::cout << "SAH = " << BVH8i::sah8( bvh8i_base, bvh8i_root, bvh8i_node_dist ) << std::endl;
+
 #else
       DBG_PRINT(sizeof(BVH8i::Quantized8BitNode));
       DBG_PRINT(sizeof(BVH8i::Node));
@@ -345,8 +342,10 @@ namespace embree
 #if 1
       BVH8i::Quantized8BitNode *bvh8i_quantized = (BVH8i::Quantized8BitNode *)os_malloc(sizeof(BVH8i::Quantized8BitNode) * index8);
       for (size_t i=0;i<index8;i++) bvh8i_quantized[i].init( bvh8i_base[i] );
-      std::cout << "SAH = " << BVH8i::sah8_quantized( bvh8i_quantized, bvh8i_root ) << std::endl;
+      
       std::cout << "8BIT QUANTIZATION DONE" << std::endl << std::flush;
+      std::cout << "SAH = " << BVH8i::sah8_quantized( bvh8i_quantized, bvh8i_root,bvh8i_node_dist ) << std::endl;
+
       bvh4i_builder8->bvh->qbvh = bvh8i_quantized; 
 
 #else
@@ -359,6 +358,28 @@ namespace embree
       std::cout << "HF CONVERSION DONE" << std::endl << std::flush;
       bvh4i_builder8->bvh->qbvh = bvh8i_hf; 
 #endif
+
+      /* bvh8i node util */
+      {
+        unsigned int total = 0;
+        float util = 0.0f;
+        for (size_t i=0;i<8;i++) {
+          util += (float)(i+1) * bvh8i_node_dist[i];
+          total += bvh8i_node_dist[i];
+        }
+        DBG_PRINT(total);
+        std::cout << "bvh8i node util dist: ";
+        DBG_PRINT(bvh8i_node_dist);
+        float sum = 0;
+        for (size_t i=0;i<8;i++) 
+          {
+            sum += (float)bvh8i_node_dist[i] * 100.0f / total;
+            std::cout << i+1 << "[" << (float)bvh8i_node_dist[i] * 100.0f / total << "%, sum " << sum << "%] ";
+          }
+        std::cout << std::endl;
+        DBG_PRINT(100.0f * util / (8.0f * total));
+        std::cout << std::endl;
+      }
 
 
 
