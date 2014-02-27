@@ -390,19 +390,35 @@ namespace embree
         new (&right_o) Bezier1(p30,p21,p12,p03,t01,t1,geomID,primID);
       }
 
-#if 0
       /*! split the hair using splitting plane */
       __forceinline bool split(const Vec3fa& plane, Bezier1& left_o, Bezier1& right_o) const
       {
+        /*! test if start and end points lie on different sides of plane */
         const float p0p = dot(p0,plane)+plane.w;
         const float p3p = dot(p3,plane)+plane.w;
-        if (p0p <= 0.0f && p3p <= 0.0f) return false;
-        if (p0p >= 0.0f && p3p >= 0.0f) return false;
+        if (p0p == 0.0f || p3p == 0.0f) return false;
+        if (p0p < 0.0f && p3p < 0.0f) return false;
+        if (p0p > 0.0f && p3p > 0.0f) return false;
         
-        float t = 0.5f;
-        
+        /*! search for the t-value that splits the curve into one part
+         *  left and right of the plane */
+        float t0 = 0.0f, t1 = 1.0f;
+        while (t1-t0 < 0.01f) 
+        {
+          const float tc = 0.5f*(t0+t1);
+          Bezier1 left,right; subdivide(left,right,tc);
+          const float lp0p = dot(left.p0,plane)+plane.w;
+          const float lp3p = dot(left.p3,plane)+plane.w;
+          if (lp0p <= 0.0f && lp3p >= 0.0f) { t1 = tc; continue; }
+          if (lp0p >= 0.0f && lp3p <= 0.0f) { t1 = tc; continue; }
+          t0 = tc; 
+        }
+
+        /*! return the split curve */
+        if (p0p < 0.0f) subdivide(left_o,right_o,0.5f*(t0+t1));
+        else            subdivide(right_o,left_o,0.5f*(t0+t1));
+        return true;
       }
-#endif
  
     public:
       Vec3fa p0;            //!< 1st control point (x,y,z,r)

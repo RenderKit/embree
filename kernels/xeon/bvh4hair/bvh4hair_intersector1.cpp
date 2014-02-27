@@ -285,13 +285,13 @@ namespace embree
           {
             simdb valid = tNear <= tFar;
             if (any(valid)) {
-            const int c = select_min(valid,tNear);
+              const int c = select_min(valid,tNear);
               const Node* node = cur.node();
               ray.tfar = tNear[c];
               ray.u = ray.v = 0.0f;
               ray.Ng = Vec3fa(zero);
               ray.geomID = 0;
-              ray.primID = (int) node->child(c);
+              ray.primID = 132*(int) node->child(c);
             }
             goto pop;
           }
