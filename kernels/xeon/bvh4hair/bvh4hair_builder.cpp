@@ -19,6 +19,8 @@
 #include "bvh4hair_statistics.h"
 #include "common/scene_bezier_curves.h"
 
+#define ENABLE_SPATIAL_SPLITS 0
+
 namespace embree
 {
 #if BVH4HAIR_NAVIGATION
@@ -41,7 +43,7 @@ namespace embree
   {
     /* fast path for empty BVH */
     size_t numPrimitives = scene->numCurves;
-    bvh->init(numPrimitives);
+    bvh->init(2*numPrimitives); // FIXME: 2x for spatial splits
     if (numPrimitives == 0) return;
     numGeneratedPrims = 0;
     numAlignedObjectSplits = 0;
@@ -62,7 +64,7 @@ namespace embree
 
     /* create initial curve list */
     BBox3fa bounds = empty;
-    curves.reserve(numPrimitives);
+    curves.reserve(2*numPrimitives+100); // FIXME: 2x for spatial splits
     for (size_t i=0; i<scene->size(); i++) 
     {
       Geometry* geom = scene->get(i);
@@ -435,7 +437,7 @@ namespace embree
     for (size_t i=begin; i<end; i++) 
       geomBounds.extend(curves[i].bounds(space));
     Vec3fa cent = center(geomBounds);
-
+    
     /* test spatial split in each dimension */
     float bestSAH = inf;
     int   bestDim = -1;
@@ -481,11 +483,19 @@ namespace embree
 
         /* split and sort to left and right */
         Bezier1 left,right;
-        curves[i].split(plane,left,right);
-        const BBox3fa lb = left .bounds(space);
-        const BBox3fa rb = right.bounds(space);
-        lbounds.extend(lb); larea += halfArea(lb); lnum++;
-        rbounds.extend(rb); rarea += halfArea(rb); rnum++;
+        if (curves[i].split(plane,left,right)) {
+          const BBox3fa lb = left .bounds(space);
+          const BBox3fa rb = right.bounds(space);
+          lbounds.extend(lb); larea += halfArea(lb); lnum++;
+          rbounds.extend(rb); rarea += halfArea(rb); rnum++;
+          continue;
+        }
+
+        /* fallback in case we could not split the curve */
+        const BBox3fa bounds = curves[i].bounds(space);
+        lbounds.extend(bounds);
+        larea += halfArea(bounds);
+        lnum++;
       }
       lbounds.upper.w = larea;
       rbounds.upper.w = rarea;
@@ -567,7 +577,7 @@ namespace embree
     return bvh->encodeLeaf((char*)leaf,N);
   }
 
-  size_t BVH4HairBuilder::split(size_t begin, size_t& end, const NAABBox3fa& bounds, NAABBox3fa& lbounds, NAABBox3fa& rbounds, bool& isAligned)
+  size_t BVH4HairBuilder::split(size_t depth, size_t begin, size_t& end, const NAABBox3fa& bounds, NAABBox3fa& lbounds, NAABBox3fa& rbounds, bool& isAligned)
   {
     float bestSAH = inf;
 
@@ -579,10 +589,12 @@ namespace embree
     bestSAH = min(bestSAH,alignedObjectSAH);
 
     /* perform spatial split in aligned space */
+#if ENABLE_SPATIAL_SPLITS
     const SpatialCenterSplit spatialSplitAligned = SpatialCenterSplit::find(&curves[0],begin,end);
     const float alignedSpatialSAH = travCostAligned*halfArea(bounds.bounds) + spatialSplitAligned.modifiedSAH();
     //const float alignedSpatialSAH = travCostAligned*halfArea(bounds.bounds) + spatialSplitAligned.standardSAH();
     bestSAH = min(bestSAH,alignedSpatialSAH);
+#endif
 
     /* perform standard binning in unaligned space */
     const ObjectSplit objectSplitUnaligned = ObjectSplit::find(&curves[0],begin,end,bounds.space).unalignedBounds(&curves[0],begin,end);
@@ -591,10 +603,12 @@ namespace embree
     bestSAH = min(bestSAH,unalignedObjectSAH);
 
     /* perform spatial split in unaligned space */
+#if ENABLE_SPATIAL_SPLITS
     const SpatialCenterSplit spatialSplitUnaligned = SpatialCenterSplit::find(&curves[0],begin,end,bounds.space);
     const float unalignedSpatialSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + spatialSplitUnaligned.modifiedSAH();
     //const float unalignedSpatialSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + spatialSplitUnaligned.standardSAH();
     bestSAH = min(bestSAH,unalignedSpatialSAH);
+#endif
 
     /* perform splitting into two strands */
     const StrandSplit strandSplit = StrandSplit::find(&curves[0],begin,end);
@@ -623,6 +637,7 @@ namespace embree
     }
 
     /* perform aliged spatial split */
+#if ENABLE_SPATIAL_SPLITS
     else if (bestSAH == alignedSpatialSAH) {
       numAlignedSpatialSplits++;
       const size_t center = spatialSplitAligned.split(&curves[0],begin,end);
@@ -631,6 +646,7 @@ namespace embree
       rbounds = spatialSplitAligned.bounds1;
       return center;
     }
+#endif
 
     /* perform unaliged object split */
     else if (bestSAH == unalignedObjectSAH) {
@@ -644,6 +660,7 @@ namespace embree
     }
 
     /* perform unaliged spatial split */
+#if ENABLE_SPATIAL_SPLITS
     else if (bestSAH == unalignedSpatialSAH) {
       numUnalignedSpatialSplits++;
       const size_t center = spatialSplitUnaligned.split(&curves[0],begin,end);
@@ -652,6 +669,7 @@ namespace embree
       rbounds = spatialSplitUnaligned.bounds1;
       return center;
     }
+#endif
 
     /* perform strand split */
     else if (bestSAH == strandSAH) {
@@ -696,27 +714,32 @@ namespace embree
       {
         size_t N = cend[i]-cbegin[i];
         float A = halfArea(cbounds[i].bounds);
-        if (N <= minLeafSize) continue; 
+        if (N <= minLeafSize) continue;  
         if (A > bestArea) { bestChild = i; bestArea = A; }
       }
       if (bestChild == -1) break;
 
-      /*! move selected child to the right, requird for spatial splits only !!! */
+      /*! move selected child to the right, required for spatial splits only !!! */
+#if ENABLE_SPATIAL_SPLITS
       for (size_t c=bestChild+1; c<numChildren; c++)
       {
-        size_t j,k;
+        ssize_t j,k;
         size_t c0 = c-1, c1 = c;
         std::swap(cbounds[c0],cbounds[c1]);
-        for (j=cbegin[c0], k=cbegin[c1]; j<cend[c0] && k<cend[c1]; j++, k++)
-          std::swap(curves[j],curves[k]);
-
-        cend[c0] = j; cbegin[c1] = j;
+        size_t s0 = cend[c0]-cbegin[c0];
+        size_t s1 = cend[c1]-cbegin[c1];
+        size_t num = min(s0,s1);
+        for (j=cbegin[c0], k=cend[c1]; j<cbegin[c0]+num; j++, k--) 
+          std::swap(curves[j],curves[k-1]);
+        if (s0<s1) { cend[c0] = k; cbegin[c1] = k; }
+        else       { cend[c0] = j; cbegin[c1] = j; }
       }
       bestChild = numChildren-1;
+#endif
       
       /*! split selected child */
       NAABBox3fa lbounds, rbounds;
-      size_t center = split(cbegin[bestChild],cend[bestChild],cbounds[bestChild],lbounds,rbounds,isAligned);
+      size_t center = split(depth,cbegin[bestChild],cend[bestChild],cbounds[bestChild],lbounds,rbounds,isAligned);
       cbounds[numChildren] = rbounds; cbegin[numChildren] = center; cend[numChildren] = cend[bestChild];
       cbounds[bestChild  ] = lbounds;                               cend[bestChild  ] = center; 
       numChildren++;
