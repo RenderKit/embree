@@ -35,6 +35,9 @@
 //#define PROFILE
 #define PROFILE_ITERATIONS 100
 
+
+//#define USE_QUANTIZATION
+
 // TODO: CHECK     const float voxelArea    = current.cs_AABB.sceneArea();
 //                 const float centroidArea = current.cs_AABB.centroidArea();
 
@@ -271,24 +274,15 @@ namespace embree
       std::cout << BVH4iStatistics(bvh).str();
     }
 
-#if 0
+#if defined(USE_QUANTIZATION)            
     if (likely(numPrimitives > 0))
       {
 	DBG_PRINT(sizeof(BVH4i::QuantizedNode));
 	DBG_PRINT(numNodes);
 	BVH4i::QuantizedNode *quantBVH = (BVH4i::QuantizedNode*) os_malloc(numNodes * sizeof(BVH4i::QuantizedNode));
 	for (size_t i=0;i<numNodes;i++)
-
-	//for (size_t i=0;i<20;i++)
 	  {	    
-	    //DBG_PRINT( i );
-	    //DBG_PRINT( bvh->qbvh[i] );
-
 	    quantBVH[i].init( bvh->qbvh[i] );
-
-	    //DBG_PRINT( quantBVH[i] );
-
-
 	  }
 	bvh->qbvh = (BVH4i::Node*)quantBVH;
 	bvh->root = quantBVH->child0;

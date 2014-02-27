@@ -18,7 +18,7 @@
 #include "geometry/triangle1.h"
 #include "geometry/filter.h"
 
-//#define QUANTIZATION
+//#define USE_QUANTIZATION
 
 
 namespace embree
@@ -68,14 +68,15 @@ namespace embree
 	    {
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
-            
+
 	      while (1) 
 		{
 		  /* test if this is a leaf node */
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;
 		  STAT3(normal.trav_nodes,1,1,1);
+
+#if !defined(USE_QUANTIZATION)            
         
-#if !defined(QUANTIZATION)
 		  const Node* __restrict__ const node = curNode.node(nodes);
 		  const float* __restrict const plower = (float*)node->lower;
 		  const float* __restrict const pupper = (float*)node->upper;
@@ -87,6 +88,7 @@ namespace embree
 		  const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
 		  const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
 #else
+
 		  BVH4i::QuantizedNode* __restrict__ const node = (BVH4i::QuantizedNode*)curNode.node(nodes);
 		  prefetch<PFHINT_L1>((char*)node + 0);
 
@@ -99,8 +101,8 @@ namespace embree
 
 		  const mic_f tLowerXYZ = lower * rdir_xyz - org_rdir_xyz;
 		  const mic_f tUpperXYZ = upper * rdir_xyz - org_rdir_xyz;
-		  
 #endif
+
 		  const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
 		  const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
@@ -109,8 +111,8 @@ namespace embree
 		  curNode = stack_node[sindex]; // early pop of next node
 
 		  const Node* __restrict__ const next = curNode.node(nodes);
-		  prefetch<PFHINT_L2>((char*)next + 0);
-		  prefetch<PFHINT_L2>((char*)next + 64);
+		  prefetch<PFHINT_L2>((char*)next + 0*64);
+		  prefetch<PFHINT_L2>((char*)next + 1*64);
 
 		  const mic_f tNear = vreduce_max4(tLower);
 		  const mic_f tFar  = vreduce_min4(tUpper);  
@@ -161,6 +163,8 @@ namespace embree
 		    }
         
 		  /* continue with closest child and push all others */
+
+
 		  const mic_f min_dist = set_min_lanes(tNear_pos);
 		  const unsigned int old_sindex = sindex;
 		  sindex += countbits(hiti) - 1;
@@ -173,9 +177,7 @@ namespace embree
 		  curNode = ((unsigned int*)plower)[closest_child_pos];
 		  compactustore16f(m_pos,&stack_dist[old_sindex],tNear);
 		  compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
-		}
-	  
-	    
+		}	    
 
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -441,15 +443,15 @@ namespace embree
 	    {
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
-            
+
 	      while (1) 
 		{
 		  /* test if this is a leaf node */
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;
 		  STAT3(shadow.trav_nodes,1,1,1);
+#if !defined(USE_QUANTIZATION)            
 
 
-#if !defined(QUANTIZATION)
 		  const Node* __restrict__ const node = curNode.node(nodes);
 		  const float* __restrict const plower = (float*)node->lower;
 		  const float* __restrict const pupper = (float*)node->upper;
@@ -460,7 +462,9 @@ namespace embree
 		  /* intersect single ray with 4 bounding boxes */
 		  const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
 		  const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+
 #else
+
 		  BVH4i::QuantizedNode* __restrict__ const node = (BVH4i::QuantizedNode*)curNode.node(nodes);
 		  prefetch<PFHINT_L1>((char*)node + 0);
 
@@ -473,8 +477,8 @@ namespace embree
 
 		  const mic_f tLowerXYZ = lower * rdir_xyz - org_rdir_xyz;
 		  const mic_f tUpperXYZ = upper * rdir_xyz - org_rdir_xyz;
-		  
 #endif
+
 		  const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
 		  const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
@@ -543,7 +547,6 @@ namespace embree
 		  curNode = ((unsigned int*)plower)[closest_child_pos];
 		  compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
 		}
-	  
 	    
 
 	      /* return if stack is empty */
