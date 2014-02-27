@@ -149,7 +149,7 @@ namespace embree
       {
 #endif
         /* update hit information */
-        const float uu = (float(i)+u[i])*one_over_8;
+        const float uu = (float(i)+u[i])*one_over_8; // FIXME: correct u range for subdivided segments
         BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
         Vec3fa P,T; curve3D.eval(uu,P,T);
         if (T == Vec3fa(zero)) { valid[i] = 0; goto retry; } // ignore denormalized curves

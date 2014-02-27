@@ -135,7 +135,7 @@ namespace embree
 #else
       const float Ab = area(bounds);
       const float Ac = len*2.0f*float(pi)*0.25f*(r0+r1+r2+r2);
-      if (ratio*Ab > Ac && curves[i].dt > 0.1f) {
+      if (ratio*Ab > Ac && curves[i].dt() > 0.1f) {
         Bezier1 left,right; curves[i].subdivide(left,right);
         curves[i] = left; curves.push_back(right);
         i--;
@@ -415,7 +415,17 @@ namespace embree
     assert(end-left == num1);
     return left;
   }
-  
+
+#if 0  
+  const BVH4HairBuilder::SpatialCenterSplit BVH4HairBuilder::SpatialCenterSplit::find(Bezier1* curves, size_t begin, size_t end)
+  {
+  }
+      
+  size_t BVH4HairBuilder::SpatialCenterSplit::split(Bezier1* curves, size_t begin, size_t end) const
+  {
+  }
+#endif
+
   __forceinline BVH4HairBuilder::FallBackSplit BVH4HairBuilder::FallBackSplit::find(Bezier1* curves, size_t begin, size_t end)
   {
     const size_t center = (begin+end)/2;

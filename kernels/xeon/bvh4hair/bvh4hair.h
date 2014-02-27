@@ -323,8 +323,12 @@ namespace embree
       /*! Construction from vertices and IDs. */
       __forceinline Bezier1 (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const float t0, const float t1,
                              const unsigned int geomID, const unsigned int primID)
-        : p0(p0), p1(p1), p2(p2), p3(p3), t0(t0), dt(t1-t0), geomID(geomID), primID(primID) {}
+        : p0(p0), p1(p1), p2(p2), p3(p3), t0(t0), t1(t1), geomID(geomID), primID(primID) {}
 
+      /*! returns size of t range */
+      __forceinline float dt() const {
+        return t1-t0;
+      }
       
       /*! calculate the bounds of the curve */
       __forceinline const BBox3fa bounds() const 
@@ -363,35 +367,49 @@ namespace embree
       }
 
       /*! subdivide the bezier curve */
-      __forceinline void subdivide(Bezier1& left, Bezier1& right) const
+      __forceinline void subdivide(Bezier1& left_o, Bezier1& right_o, const float T = 0.5f) const
       {
         const Vec3fa p00 = p0;
         const Vec3fa p01 = p1;
         const Vec3fa p02 = p2;
         const Vec3fa p03 = p3;
-      
-        const Vec3fa p10 = (p00 + p01) * 0.5f;
-        const Vec3fa p11 = (p01 + p02) * 0.5f;
-        const Vec3fa p12 = (p02 + p03) * 0.5f;
-        const Vec3fa p20 = (p10 + p11) * 0.5f;
-        const Vec3fa p21 = (p11 + p12) * 0.5f;
-        const Vec3fa p30 = (p20 + p21) * 0.5f;
+
+        const float T0 = 1.0f - T, T1 = T;
+        const Vec3fa p10 = T0*p00 + T1*p01;
+        const Vec3fa p11 = T0*p01 + T1*p02;
+        const Vec3fa p12 = T0*p02 + T1*p03;
+        const Vec3fa p20 = T0*p10 + T1*p11;
+        const Vec3fa p21 = T0*p11 + T1*p12;
+        const Vec3fa p30 = T0*p20 + T1*p21;
         
-        const float t01 = t0 + dt * 0.5f;
-        const float t1  = t0 + dt;
+        const float t01 = T0*t0 + T1*t1;
         const unsigned int geomID = this->geomID;
         const unsigned int primID = this->primID;
         
-        new (&left ) Bezier1(p00,p10,p20,p30,t0,t01,geomID,primID);
-        new (&right) Bezier1(p30,p21,p12,p03,t01,t1,geomID,primID);
+        new (&left_o ) Bezier1(p00,p10,p20,p30,t0,t01,geomID,primID);
+        new (&right_o) Bezier1(p30,p21,p12,p03,t01,t1,geomID,primID);
       }
-      
+
+#if 0
+      /*! split the hair using splitting plane */
+      __forceinline bool split(const Vec3fa& plane, Bezier1& left_o, Bezier1& right_o) const
+      {
+        const float p0p = dot(p0,plane)+plane.w;
+        const float p3p = dot(p3,plane)+plane.w;
+        if (p0p <= 0.0f && p3p <= 0.0f) return false;
+        if (p0p >= 0.0f && p3p >= 0.0f) return false;
+        
+        float t = 0.5f;
+        
+      }
+#endif
+ 
     public:
       Vec3fa p0;            //!< 1st control point (x,y,z,r)
       Vec3fa p1;            //!< 2nd control point (x,y,z,r)
       Vec3fa p2;            //!< 3rd control point (x,y,z,r)
       Vec3fa p3;            //!< 4th control point (x,y,z,r)
-      float t0,dt;          //!< t range of this sub-curve
+      float t0,t1;          //!< t range of this sub-curve
       unsigned int geomID;  //!< geometry ID
       unsigned int primID;  //!< primitive ID
     };
