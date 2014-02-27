@@ -24,7 +24,7 @@ namespace embree
   extern AccelSet::OccludedFunc4 ispcWrapperOccluded4;
 #endif
 
-#if defined(__TARGET_AVX__)
+#if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
   extern AccelSet::IntersectFunc8 ispcWrapperIntersect8;
   extern AccelSet::OccludedFunc8 ispcWrapperOccluded8;
 #endif
@@ -85,7 +85,7 @@ namespace embree
   void UserGeometryScene::UserGeometry::setIntersectFunction8 (RTCIntersectFunc8 intersect8, bool ispc) 
   {
     if (ispc) {
-#if defined(__TARGET_AVX__)
+#if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
       intersectors.ptr = this;
       intersectors.intersector8.intersect = ispcWrapperIntersect8;
       ispcIntersect8 = (void*) intersect8;
@@ -128,7 +128,7 @@ namespace embree
   void UserGeometryScene::UserGeometry::setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc) 
   {
     if (ispc) {
-#if defined(__TARGET_AVX__)
+#if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
       intersectors.ptr = this;
       intersectors.intersector8.occluded = ispcWrapperOccluded8;
       ispcOccluded8 = (void*) occluded8;

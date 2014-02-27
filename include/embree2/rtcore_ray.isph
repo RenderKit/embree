@@ -30,7 +30,6 @@
 RTCORE_ALIGN(16) struct RTCRay1 
 {
   /* ray data */
-public:
   float org[3];      //!< Ray origin
   float align0;      //!< unused member to force alignment of following members
   
@@ -43,7 +42,6 @@ public:
   int   mask;        //!< Used to mask out objects during traversal
   
   /* hit data */
-public:
   float Ng[3];       //!< Unnormalized geometry normal
   float align2;
   
@@ -59,7 +57,6 @@ public:
 struct RTCRay
 {
   /* ray data */
-public:
   float orgx;  //!< x coordinate of ray origin
   float orgy;  //!< y coordinate of ray origin
   float orgz;  //!< z coordinate of ray origin
@@ -74,7 +71,6 @@ public:
   int   mask;  //!< Used to mask out objects during traversal
   
   /* hit data */
-public:
   float Ngx;   //!< x coordinate of geometry normal
   float Ngy;   //!< y coordinate of geometry normal
   float Ngz;   //!< z coordinate of geometry normal

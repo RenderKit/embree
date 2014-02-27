@@ -160,7 +160,9 @@ IF (TARGET_AVX2)
     geometry/instance_intersector1.cpp
     geometry/instance_intersector4.cpp
     geometry/instance_intersector8.cpp
-
+		
+		geometry/ispc_wrapper_avx.cpp
+		
     bvh4/bvh4_intersector1.cpp
     bvh4/bvh4_intersector1_bezier.cpp
     bvh4/bvh4_intersector4_chunk.cpp

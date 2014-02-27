@@ -229,11 +229,11 @@ void rtcSetIntersectFunction1 (RTCScene scene, uniform unsigned int geomID, unif
 
 void rtcSetIntersectFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFuncVarying intersect)
 {
-  if (sizeof(varying float) == 16)
+  if (sizeof(varying float) == 16) 
     ispcSetIntersectFunction4(scene,geomID,intersect);
-  else if (sizeof(varying float) == 32)
+  else if (sizeof(varying float) == 32) 
     ispcSetIntersectFunction8(scene,geomID,intersect);
-  else if (sizeof(varying float) == 64)
+  else if (sizeof(varying float) == 64) 
     ispcSetIntersectFunction16(scene,geomID,intersect);
 }
 
