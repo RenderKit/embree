@@ -20,6 +20,7 @@
 
 namespace embree
 {
+  float g_reduce_hair_segment_error = 0.0f;
   const int hair_bin_magick = 0x12EF3F90;
 
   int loadHairASCII(const FileName& fileName, OBJScene::HairSet* hairset, Vec3fa& offset)
@@ -107,7 +108,7 @@ namespace embree
     return numHairs;
   }
 
-  OBJScene::HairSet* reduce_hairs(OBJScene::HairSet* in)
+  OBJScene::HairSet* reduce_hairs(OBJScene::HairSet* in, float relative_error)
   {
     OBJScene::HairSet* out = new OBJScene::HairSet;
     int numSegments = in->hairs.size();
@@ -167,7 +168,7 @@ namespace embree
       const float len = length(a3-a0) + length(b3-b0);
       const float err = length(p30-a3);
 
-      if (err > 0.01*len)
+      if (err > relative_error*len)
       {
         if (out->v.size() == 0 || out->v.back() != a0) 
         out->v.push_back(a0);
@@ -207,17 +208,21 @@ namespace embree
       numHairs = loadHairBin(fileName,hairset,offset);
     
     /* reduce number of hairs */
-#if 0
-    PRINT(hairset->hairs.size());
-    hairset = reduce_hairs(hairset);
-    PRINT(hairset->hairs.size());
-    hairset = reduce_hairs(hairset);
-    PRINT(hairset->hairs.size());
-    hairset = reduce_hairs(hairset);
-    PRINT(hairset->hairs.size());
-    hairset = reduce_hairs(hairset);
-    PRINT(hairset->hairs.size());
-#endif
+    if (g_reduce_hair_segment_error != 0.0f)
+    {
+      std::ios_base :: fmtflags   flag = std::cout.flags();
+      std           :: streamsize prec = std::cout.precision();
+      std::cout << "reducing number of hair segments ... " << std::flush;
+      std::cout.precision(3);
+      std::cout << 1E-6*float(hairset->hairs.size()) << "M" << std::flush;
+      for (size_t i=0; i<10; i++) {
+        hairset = reduce_hairs(hairset,g_reduce_hair_segment_error);
+        std::cout << " " << 1E-6*float(hairset->hairs.size()) << "M" << std::flush;
+      }
+      std::cout << " [DONE]" << std::endl;
+      std::cout.flags    (flag);
+      std::cout.precision(prec);
+    }
 
     /* add hairset to scene */
     scene.hairsets.push_back(hairset);

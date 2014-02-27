@@ -40,6 +40,7 @@ namespace embree
 
   static int tessellate_subdivisions = -1;
   static int tessellate_strips   = -1;
+  extern float g_reduce_hair_segment_error;
 
   /* scene */
   OBJScene g_obj_scene;
@@ -94,6 +95,11 @@ namespace embree
       else if (tag == "--tessellate") {
         tessellate_subdivisions = cin->getInt();
         tessellate_strips   = cin->getInt();
+      }
+
+      /* reduce number of hair segments */
+      else if (tag == "--reduce-hair-segment-error") {
+        g_reduce_hair_segment_error = cin->getFloat();
       }
 
       /* output filename */
