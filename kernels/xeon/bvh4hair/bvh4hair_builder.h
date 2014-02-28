@@ -49,6 +49,8 @@ namespace embree
     struct StrandSplit
     {
     public:
+      StrandSplit () {}
+
       StrandSplit (const NAABBox3fa& bounds0, const Vec3fa& axis0, const size_t num0,
                    const NAABBox3fa& bounds1, const Vec3fa& axis1, const size_t num1);
 
@@ -281,6 +283,7 @@ namespace embree
     size_t minLeafSize;    //!< minimal size of a leaf
     size_t maxLeafSize;    //!< maximal size of a leaf
     size_t numGeneratedPrims;
+
     size_t numAlignedObjectSplits;
     size_t numAlignedSpatialSplits;
     size_t numAlignedSubdivObjectSplits;
@@ -289,6 +292,16 @@ namespace embree
     size_t numUnalignedSubdivObjectSplits;
     size_t numStrandSplits;
     size_t numFallbackSplits;
+
+    bool enableAlignedObjectSplits;
+    bool enableAlignedSpatialSplits;
+    bool enableAlignedSubdivObjectSplits;
+    bool enableUnalignedObjectSplits;
+    bool enableUnalignedSpatialSplits;
+    bool enableUnalignedSubdivObjectSplits;
+    bool enableStrandSplits;
+    bool enablePresplit3;
+
     BVH4Hair* bvh;         //!< output
     vector_t<Bezier1> curves; //!< array with all curves
   };

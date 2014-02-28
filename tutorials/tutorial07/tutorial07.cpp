@@ -47,6 +47,7 @@ namespace embree
   static FileName objFilename = "";
   static FileName hairFilename = "";
   static FileName outFilename = "";
+  static int g_numFrames = 1;
 
   Vec3fa offset = 0.0f;
 
@@ -105,6 +106,11 @@ namespace embree
       /* output filename */
       else if (tag == "-o") {
         outFilename = cin->getFileName();
+      }
+
+      /* number of frames to render in output mode */
+      else if (tag == "-frames") {
+        g_numFrames = cin->getInt();
       }
 
       /* parse camera parameters */
@@ -197,14 +203,20 @@ namespace embree
     AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
 
     /* render image using ISPC */
-    double t0 = getSeconds();
-    render(0.0f,
-           pixel2world.l.vx,
-           pixel2world.l.vy,
-           pixel2world.l.vz,
-           pixel2world.p);
-    double dt0 = getSeconds()-t0;
-
+    double dt = 0.0f;
+    for (size_t i=0; i<g_numFrames; i++) 
+    {
+      double t0 = getSeconds();
+      render(0.0f,
+             pixel2world.l.vx,
+             pixel2world.l.vy,
+             pixel2world.l.vz,
+             pixel2world.p);
+      dt +=getSeconds()-t0;
+    }
+    if (g_numFrames > 1) 
+      std::cout << "BENCHMARK_RENDER " << double(g_numFrames)/dt << std::endl;
+    
     void* ptr = map();
     Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
     storeImage(image, fileName);

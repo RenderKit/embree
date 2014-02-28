@@ -39,6 +39,7 @@ namespace embree
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
     size_t bytesTotal = bytesAlignedNodes+bytesUnalignedNodes+bytesPrims+bytesVertices;
     size_t bytesTotalAllocated = bvh->alloc.bytes();
+    if (g_benchmark) std::cout << "BENCHMARK_HAIR_ACCEL " << bvhSAH << " " << bytesTotal << std::endl;
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream << "  primitives = " << bvh->numPrimitives << ", vertices = " << bvh->numVertices << std::endl;
     stream.precision(4);
