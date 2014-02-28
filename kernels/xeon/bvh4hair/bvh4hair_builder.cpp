@@ -95,8 +95,9 @@ namespace embree
     /* subdivide very curved hair segments */
 #if ENABLE_PRE_SUBDIVISION
     //subdivide(0.01f);
-    subdivide(0.1f);
+    //subdivide(0.1f);
     //subdivide(0.25f);
+    subdivide3();
 #endif
     bvh->numPrimitives = curves.size();
     bvh->numVertices = 0;
@@ -167,6 +168,38 @@ namespace embree
         i--;
       }
 #endif
+    }
+
+    if (g_verbose >= 2) 
+      std::cout << "  after  subdivision: " << 1E-6*float(curves.size()) << " M curves" << std::endl;
+  }
+
+  void BVH4HairBuilder::subdivide3()
+  {
+    if (g_verbose >= 2) 
+      std::cout << std::endl << "  before subdivision: " << 1E-6*float(curves.size()) << " M curves" << std::endl;
+
+    size_t N = curves.size();
+    for (ssize_t i=0; i<N; i++)
+    {
+      Bezier1 a = curves[i];
+      Bezier1 b0, b1;   a.subdivide(b0,b1);
+      Bezier1 c00, c01; b0.subdivide(c00,c01);
+      Bezier1 c10, c11; b1.subdivide(c10,c11);
+
+      Bezier1 d000, d001; c00.subdivide(d000,d001);
+      Bezier1 d010, d011; c01.subdivide(d010,d011);
+      Bezier1 d100, d101; c10.subdivide(d100,d101);
+      Bezier1 d110, d111; c11.subdivide(d110,d111);
+
+      curves[i] = d000;
+      curves.push_back(d001);
+      curves.push_back(d010);
+      curves.push_back(d011);
+      curves.push_back(d100);
+      curves.push_back(d101);
+      curves.push_back(d110);
+      curves.push_back(d111);
     }
 
     if (g_verbose >= 2) 

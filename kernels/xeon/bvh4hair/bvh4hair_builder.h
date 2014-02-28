@@ -250,6 +250,9 @@ namespace embree
     /*! subdivide very curved hairs */
     void subdivide(float ratio);
 
+    /*! subdivide 3 levels */
+    void subdivide3();
+
     /*! calculate bounds for range of primitives */
     static const BBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end);
 
