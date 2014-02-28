@@ -19,12 +19,15 @@
 #include "bvh4hair_statistics.h"
 #include "common/scene_bezier_curves.h"
 
-#define ENABLE_OBJECT_SPLITS 1
-#define ENABLE_SUBDIV_SPLITS 0
-#define ENABLE_SPATIAL_SPLITS 0
-#define ENABLE_STRAND_SPLITS 1
-#define ENABLE_ALIGNED_SPLITS 1
-#define ENABLE_UNALIGNED_SPLITS 1
+#define ENABLE_ALIGNED_OBJECT_SPLITS 1
+#define ENABLE_ALIGNED_SUBDIV_SPLITS 1
+#define ENABLE_ALIGNED_SPATIAL_SPLITS 1
+
+#define ENABLE_UNALIGNED_OBJECT_SPLITS 1
+#define ENABLE_UNALIGNED_SUBDIV_SPLITS 1
+#define ENABLE_UNALIGNED_SPATIAL_SPLITS 1
+#define ENABLE_UNALIGNED_STRAND_SPLITS 1
+
 #define ENABLE_PRE_SUBDIVISION 0
 
 namespace embree
@@ -844,8 +847,8 @@ namespace embree
       split.bounds1 = NAABBox3fa(space,rbounds);
       //assert(lnum == split.num0);
       //assert(rnum == split.num1);
-      assert(lnum > 0);
-      assert(rnum > 0);
+      //assert(lnum > 0);
+      //assert(rnum > 0);
     }
     return split;
   }
@@ -924,7 +927,7 @@ namespace embree
     const int travCostAligned = isAligned ? BVH4Hair::travCostAligned : BVH4Hair::travCostUnaligned;
     
     /* perform standard binning in aligned space */
-#if ENABLE_ALIGNED_SPLITS && ENABLE_OBJECT_SPLITS
+#if ENABLE_ALIGNED_OBJECT_SPLITS
     const ObjectSplit alignedObjectSplit = ObjectSplit::find(&curves[0],begin,end).alignedBounds(&curves[0],begin,end);
     const float alignedObjectSAH = travCostAligned*halfArea(bounds.bounds) + alignedObjectSplit.modifiedSAH();
     //const float alignedObjectSAH = travCostAligned*halfArea(bounds.bounds) + alignedObjectSplit.standardSAH();
@@ -932,7 +935,7 @@ namespace embree
 #endif
 
     /* perform spatial split in aligned space */
-#if ENABLE_ALIGNED_SPLITS && ENABLE_SPATIAL_SPLITS
+#if ENABLE_ALIGNED_SPATIAL_SPLITS 
     const SpatialSplit alignedSpatialSplit = SpatialSplit::find(&curves[0],begin,end);
     const float alignedSpatialSAH = travCostAligned*halfArea(bounds.bounds) + alignedSpatialSplit.modifiedSAH();
     //const float alignedSpatialSAH = travCostAligned*halfArea(bounds.bounds) + alignedSpatialSplit.standardSAH();
@@ -940,7 +943,7 @@ namespace embree
 #endif
 
     /* perform binning with subdivision in aligned space */
-#if ENABLE_ALIGNED_SPLITS && ENABLE_SUBDIV_SPLITS
+#if ENABLE_ALIGNED_SUBDIV_SPLITS
     const SubdivObjectSplit alignedSubdivObjectSplit = SubdivObjectSplit::find(&curves[0],begin,end);
     const float alignedSubdivObjectSAH = travCostAligned*halfArea(bounds.bounds) + alignedSubdivObjectSplit.modifiedSAH();
     //const float alignedSubdivObjectSAH = travCostAligned*halfArea(bounds.bounds) + alignedSubdivObjectSplit.standardSAH();
@@ -948,7 +951,7 @@ namespace embree
 #endif
 
     /* perform standard binning in unaligned space */
-#if ENABLE_UNALIGNED_SPLITS && ENABLE_OBJECT_SPLITS
+#if ENABLE_UNALIGNED_OBJECT_SPLITS
     const ObjectSplit unalignedObjectSplit = ObjectSplit::find(&curves[0],begin,end,bounds.space).unalignedBounds(&curves[0],begin,end);
     const float unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + unalignedObjectSplit.modifiedSAH();
     //const float unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + unalignedObjectSplit.standardSAH();
@@ -956,7 +959,7 @@ namespace embree
 #endif
 
     /* perform spatial split in unaligned space */
-#if ENABLE_UNALIGNED_SPLITS && ENABLE_SPATIAL_SPLITS && 0 // FIXME: buggy
+#if ENABLE_UNALIGNED_SPATIAL_SPLITS
     const SpatialSplit unalignedSpatialSplit = SpatialSplit::find(&curves[0],begin,end,bounds.space);
     const float unalignedSpatialSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + unalignedSpatialSplit.modifiedSAH();
     //const float unalignedSpatialSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + unalignedSpatialSplit.standardSAH();
@@ -964,7 +967,7 @@ namespace embree
 #endif
 
     /* perform binning with subdivision in unaligned space */
-#if ENABLE_UNALIGNED_SPLITS && ENABLE_SUBDIV_SPLITS
+#if ENABLE_UNALIGNED_SUBDIV_SPLITS
     const SubdivObjectSplit unalignedSubdivObjectSplit = SubdivObjectSplit::find(&curves[0],begin,end,bounds.space);
     const float unalignedSubdivObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + unalignedSubdivObjectSplit.modifiedSAH();
     //const float unalignedSubdivObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + unalignedSubdivObjectSplit.standardSAH();
@@ -972,7 +975,7 @@ namespace embree
 #endif
 
     /* perform splitting into two strands */
-#if ENABLE_UNALIGNED_SPLITS && ENABLE_STRAND_SPLITS
+#if ENABLE_UNALIGNED_STRAND_SPLITS
     const StrandSplit strandSplit = StrandSplit::find(&curves[0],begin,end);
     const float strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.modifiedSAH();
     //const float strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.standardSAH();
@@ -990,7 +993,7 @@ namespace embree
     }
 
     /* perform aligned object split */
-#if ENABLE_ALIGNED_SPLITS && ENABLE_OBJECT_SPLITS
+#if ENABLE_ALIGNED_OBJECT_SPLITS
     else if (bestSAH == alignedObjectSAH) {
       numAlignedObjectSplits++;
       const size_t center = alignedObjectSplit.split(&curves[0],begin,end);
@@ -1002,7 +1005,7 @@ namespace embree
 #endif
 
     /* perform aligned spatial split */
-#if ENABLE_ALIGNED_SPLITS && ENABLE_SPATIAL_SPLITS
+#if ENABLE_ALIGNED_SPATIAL_SPLITS 
     else if (bestSAH == alignedSpatialSAH) {
       numAlignedSpatialSplits++;
       const size_t center = alignedSpatialSplit.split(&curves[0],begin,end);
@@ -1014,7 +1017,7 @@ namespace embree
 #endif
 
     /* perform aligned object split with subdivision */
-#if ENABLE_ALIGNED_SPLITS && ENABLE_SUBDIV_SPLITS
+#if ENABLE_ALIGNED_SUBDIV_SPLITS
     else if (bestSAH == alignedSubdivObjectSAH) {
       numAlignedSubdivObjectSplits++;
       const size_t center = alignedSubdivObjectSplit.split(&curves[0],begin,end);
@@ -1026,7 +1029,7 @@ namespace embree
 #endif
 
     /* perform unaligned object split */
-#if ENABLE_UNALIGNED_SPLITS && ENABLE_OBJECT_SPLITS
+#if ENABLE_UNALIGNED_OBJECT_SPLITS
     else if (bestSAH == unalignedObjectSAH) {
       numUnalignedObjectSplits++;
       const size_t center = unalignedObjectSplit.split(&curves[0],begin,end);
@@ -1039,31 +1042,33 @@ namespace embree
 #endif
 
     /* perform unaligned spatial split */
-#if ENABLE_UNALIGNED_SPLITS && ENABLE_SPATIAL_SPLITS && 0
+#if ENABLE_UNALIGNED_SPATIAL_SPLITS
     else if (bestSAH == unalignedSpatialSAH) {
       numUnalignedSpatialSplits++;
       const size_t center = unalignedSpatialSplit.split(&curves[0],begin,end);
       assert((center-begin > 0) && (end-center) > 0);
       lbounds = unalignedSpatialSplit.bounds0;
       rbounds = unalignedSpatialSplit.bounds1;
+      isAligned = false;
       return center;
     }
 #endif
 
     /* perform unaligned object split with subdivision */
-#if ENABLE_UNALIGNED_SPLITS && ENABLE_SUBDIV_SPLITS
+#if ENABLE_UNALIGNED_SUBDIV_SPLITS
     else if (bestSAH == unalignedSubdivObjectSAH) {
       numUnalignedSubdivObjectSplits++;
       const size_t center = unalignedSubdivObjectSplit.split(&curves[0],begin,end);
       assert((center-begin > 0) && (end-center) > 0);
       lbounds = unalignedSubdivObjectSplit.bounds0;
       rbounds = unalignedSubdivObjectSplit.bounds1;
+      isAligned = false;
       return center;
     }
 #endif
 
     /* perform strand split */
-#if ENABLE_UNALIGNED_SPLITS && ENABLE_STRAND_SPLITS
+#if ENABLE_UNALIGNED_STRAND_SPLITS
     else if (bestSAH == strandSAH) {
       numStrandSplits++;
       const size_t center = strandSplit.split(&curves[0],begin,end);
@@ -1113,7 +1118,7 @@ namespace embree
       if (bestChild == -1) break;
 
       /*! move selected child to the right, required for spatial splits and subdiv splits !!! */
-#if ENABLE_SPATIAL_SPLITS || ENABLE_SUBDIV_SPLITS
+//#if ENABLE_SPATIAL_SPLITS || ENABLE_SUBDIV_SPLITS
       for (size_t c=bestChild+1; c<numChildren; c++)
       {
         ssize_t j,k;
@@ -1128,7 +1133,7 @@ namespace embree
         else       { cend[c0] = j; cbegin[c1] = j; }
       }
       bestChild = numChildren-1;
-#endif
+//#endif
       
       /*! split selected child */
       NAABBox3fa lbounds, rbounds;
