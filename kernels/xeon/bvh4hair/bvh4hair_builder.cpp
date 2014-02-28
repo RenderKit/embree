@@ -775,6 +775,10 @@ namespace embree
     split.space = space;
     split.ofs = ofs;
     split.scale = scale;
+    split.dim = -1;
+    split.pos = 0.0f;
+    split.num0 = split.num1 = 1;
+    split.bounds0 = split.bounds1 = BBox3fa(inf);
 
     float bestCost = inf;
     for (size_t dim=0; dim<3; dim++) 
@@ -794,62 +798,59 @@ namespace embree
     }
 
     /* compute bounds of left and right side */
-    if (split.dim == -1) {
-      split.num0 = split.num1 = 1; // avoids NANs in SAH calculation
-      split.bounds0 = split.bounds1 = BBox3fa(inf);
-    }
-    else 
+    if (split.dim == -1)
+      return split;
+
+    /* calculate bounding box of left and right side */
+    BBox3fa lbounds = empty, rbounds = empty;
+    float   larea   = 0.0f,  rarea   = 0.0f;
+    size_t lnum = 0, rnum = 0;
+
+    for (size_t i=begin; i<end; i++) 
     {
-      BBox3fa lbounds = empty, rbounds = empty;
-      float   larea   = 0.0f,  rarea   = 0.0f;
-      size_t lnum = 0, rnum = 0;
+      const Vec3fa plane(space.vx[split.dim],space.vy[split.dim],space.vz[split.dim],-split.pos);
+      
+      const float p0p = dot(curves[i].p0,plane)+plane.w;
+      const float p3p = dot(curves[i].p3,plane)+plane.w;
 
-      for (size_t i=begin; i<end; i++) 
-      {
-        const Vec3fa plane(space.vx[split.dim],space.vy[split.dim],space.vz[split.dim],-split.pos);
-
-        const float p0p = dot(curves[i].p0,plane)+plane.w;
-        const float p3p = dot(curves[i].p3,plane)+plane.w;
-
-        /* sort to the left side */
-        if (p0p <= 0.0f && p3p <= 0.0f) {
-          const BBox3fa bounds = curves[i].bounds(space);
-          lbounds.extend(bounds);
-          larea += halfArea(bounds);
-          lnum++;
-          continue;
-        }
-
-        /* sort to the right side */
-        if (p0p >= 0.0f && p3p >= 0.0f) {
-          const BBox3fa bounds = curves[i].bounds(space);
-          rbounds.extend(bounds);
-          rarea += halfArea(bounds);
-          rnum++;
-          continue;
-        }
-
-        Bezier1 left,right; 
-        if (curves[i].split(plane,left,right)) {
-          const BBox3fa lcbounds = left.bounds(space);
-          const BBox3fa rcbounds = right.bounds(space);
-          lbounds.extend(lcbounds); larea += halfArea(lcbounds); lnum++;
-          rbounds.extend(rcbounds); rarea += halfArea(rcbounds); rnum++;
-          continue;
-        }
-
+      /* sort to the left side */
+      if (p0p <= 0.0f && p3p <= 0.0f) {
         const BBox3fa bounds = curves[i].bounds(space);
-        lbounds.extend(bounds); larea += halfArea(bounds); lnum++;
+        lbounds.extend(bounds);
+        larea += halfArea(bounds);
+        lnum++;
+        continue;
       }
-      lbounds.upper.w = larea;
-      rbounds.upper.w = rarea;
-      split.bounds0 = NAABBox3fa(space,lbounds);
-      split.bounds1 = NAABBox3fa(space,rbounds);
-      //assert(lnum == split.num0);
-      //assert(rnum == split.num1);
-      //assert(lnum > 0);
-      //assert(rnum > 0);
+      
+      /* sort to the right side */
+      if (p0p >= 0.0f && p3p >= 0.0f) {
+        const BBox3fa bounds = curves[i].bounds(space);
+        rbounds.extend(bounds);
+        rarea += halfArea(bounds);
+        rnum++;
+        continue;
+      }
+
+      Bezier1 left,right; 
+      if (curves[i].split(plane,left,right)) {
+        const BBox3fa lcbounds = left.bounds(space);
+        const BBox3fa rcbounds = right.bounds(space);
+        lbounds.extend(lcbounds); larea += halfArea(lcbounds); lnum++;
+        rbounds.extend(rcbounds); rarea += halfArea(rcbounds); rnum++;
+        continue;
+      }
+      
+      const BBox3fa bounds = curves[i].bounds(space);
+      lbounds.extend(bounds); larea += halfArea(bounds); lnum++;
     }
+    lbounds.upper.w = larea;
+    rbounds.upper.w = rarea;
+    split.bounds0 = NAABBox3fa(space,lbounds);
+    split.bounds1 = NAABBox3fa(space,rbounds);
+    //assert(lnum == split.num0);
+    //assert(rnum == split.num1);
+    //assert(lnum > 0);
+    //assert(rnum > 0);
     return split;
   }
       
