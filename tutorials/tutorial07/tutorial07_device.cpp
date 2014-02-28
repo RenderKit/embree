@@ -133,7 +133,7 @@ Vec3fa sampleSphere(const float u, const float v)
 void addHair (ISPCScene* scene)
 {
   int seed = 879;
-  //const int numCurves = 1;
+  //const int numCurves = 100;
   //const int numCurveSegments = 1;
   const int numCurves = 10000;
   const int numCurveSegments = 2;

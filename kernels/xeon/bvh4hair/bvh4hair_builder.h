@@ -180,7 +180,7 @@ namespace embree
       NAABBox3fa bounds0, bounds1;
       int dim;
       int pos;
-      float cost;
+      float cost; // FIXME: can be removed
       size_t num0,num1;
       ssef ofs,scale;
     };
@@ -200,14 +200,19 @@ namespace embree
     };
 
     /*! Performs spatial split in geometry center */
-    struct SpatialCenterSplit
+    struct SpatialSplit
     {
+      /*! number of bins */
+      static const size_t BINS = 16;
+
     public:
 
-      __forceinline SpatialCenterSplit (const LinearSpace3fa& space, 
-                                        const float pos, const int dim, 
-                                        const NAABBox3fa& bounds0, const size_t num0, 
-                                        const NAABBox3fa& bounds1, const size_t num1)
+      __forceinline SpatialSplit () {}
+
+      __forceinline SpatialSplit (const LinearSpace3fa& space, 
+                                  const float pos, const int dim, 
+                                  const NAABBox3fa& bounds0, const size_t num0, 
+                                  const NAABBox3fa& bounds1, const size_t num1)
         : space(space), pos(pos), dim(dim), bounds0(bounds0), bounds1(bounds1), num0(num0), num1(num1) {}
 
       /*! calculates standard surface area heuristic for the split */
@@ -223,12 +228,12 @@ namespace embree
       }
       
       /*! finds the two hair strands */
-      static const SpatialCenterSplit find(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space = one);
+      static const SpatialSplit find(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space = one);
       
       /*! splits hair list into the two strands */
       size_t split(Bezier1* curves, size_t begin, size_t& end) const;
 
-      friend std::ostream& operator<<(std::ostream& cout, const SpatialCenterSplit& p) 
+      friend std::ostream& operator<<(std::ostream& cout, const SpatialSplit& p) 
       {
         return std::cout << "{ " << std::endl << 
           " pos = " << p.pos << ", dim = " << p.dim << "," << std::endl <<
@@ -243,6 +248,7 @@ namespace embree
       float pos;
       int dim;
       size_t num0, num1;            //!< number of hairs in the strands
+      ssef ofs,scale;
     };
 
   private:

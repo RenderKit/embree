@@ -113,7 +113,6 @@ namespace embree
 #endif
       }
 
-
       __forceinline void prefetch_L2() const 
       {
 #if defined(__AVX2__) // FIXME: test if bring performance also on SNB
@@ -129,8 +128,6 @@ namespace embree
 #endif
 #endif
       }
-
-
 
       /*! checks if this is a leaf */
       __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) > 1; }
@@ -401,7 +398,7 @@ namespace embree
       }
 
       /*! split the hair using splitting plane */
-      __forceinline bool split(const Vec3fa& plane, Bezier1& left_o, Bezier1& right_o) const
+      bool split(const Vec3fa& plane, Bezier1& left_o, Bezier1& right_o) const
       {
         /*! test if start and end points lie on different sides of plane */
         const float p0p = dot(p0,plane)+plane.w;
@@ -412,21 +409,21 @@ namespace embree
         
         /*! search for the t-value that splits the curve into one part
          *  left and right of the plane */
-        float t0 = 0.0f, t1 = 1.0f;
-        while (t1-t0 < 0.01f) 
+        float u0 = 0.0f, u1 = 1.0f;
+        while (u1-u0 > 0.01f) 
         {
-          const float tc = 0.5f*(t0+t1);
+          const float tc = 0.5f*(u0+u1);
           Bezier1 left,right; subdivide(left,right,tc);
           const float lp0p = dot(left.p0,plane)+plane.w;
           const float lp3p = dot(left.p3,plane)+plane.w;
-          if (lp0p <= 0.0f && lp3p >= 0.0f) { t1 = tc; continue; }
-          if (lp0p >= 0.0f && lp3p <= 0.0f) { t1 = tc; continue; }
-          t0 = tc; 
+          if (lp0p <= 0.0f && lp3p >= 0.0f) { u1 = tc; continue; }
+          if (lp0p >= 0.0f && lp3p <= 0.0f) { u1 = tc; continue; }
+          u0 = tc; 
         }
 
         /*! return the split curve */
-        if (p0p < 0.0f) subdivide(left_o,right_o,0.5f*(t0+t1));
-        else            subdivide(right_o,left_o,0.5f*(t0+t1));
+        if (p0p < 0.0f) subdivide(left_o,right_o,0.5f*(u0+u1));
+        else            subdivide(right_o,left_o,0.5f*(u0+u1));
         return true;
       }
  
