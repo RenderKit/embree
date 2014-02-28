@@ -16,7 +16,7 @@
 
 #include "bvh16i/bvh16i_builder.h"
 
-#define ENABLE_EXTENDED_LEAVES
+//#define ENABLE_EXTENDED_LEAVES
 
 namespace embree
 {
@@ -93,7 +93,7 @@ namespace embree
     {
       unsigned int total = 0;
       float util = 0.0f;
-      for (size_t i=0;i<16;i++) {
+      for (size_t i=0;i<4;i++) {
 	util += (float)(i+1) * bvh4i_node_dist[i];
 	total += bvh4i_node_dist[i];
       }
@@ -101,13 +101,13 @@ namespace embree
       std::cout << "bvh4i node util dist: ";
       DBG_PRINT(bvh4i_node_dist);
       float sum = 0;
-      for (size_t i=0;i<16;i++) 
+      for (size_t i=0;i<4;i++) 
 	{
 	  sum += (float)bvh4i_node_dist[i] * 100.0f / total;
 	  std::cout << i+1 << "[" << (float)bvh4i_node_dist[i] * 100.0f / total << "%, sum " << sum << "%] ";
 	}
       std::cout << std::endl;
-      DBG_PRINT(100.0f * util / (16.0f * total));
+      DBG_PRINT(100.0f * util / (4.0f * total));
       std::cout << std::endl;
     }
 
@@ -250,7 +250,7 @@ namespace embree
               node_area[i] > max_area)
           {      
             //if (bvh16_used_slots >=8)
-            if (bvh16[bvh16_node_index].data[i] >= 8 && bvh16[bvh16_node_index].data[i] <= 16) continue;	      
+            //if (bvh16[bvh16_node_index].data[i] >= 8 && bvh16[bvh16_node_index].data[i] <= 16) continue;	      
             
             max_index = i;
             max_area = node_area[i];
@@ -263,6 +263,7 @@ namespace embree
             
           }
 	  
+	  //if (bvh16[bvh16_node_index].data[i] <= 4)
           if (bvh16[bvh16_node_index].data[i] <= free_slots && 
               bvh16[bvh16_node_index].data[i] < min_children_small)// &&
             //node_area[i] > max_area_small)

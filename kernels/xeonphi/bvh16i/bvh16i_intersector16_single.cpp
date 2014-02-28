@@ -22,7 +22,7 @@
 //#define NEAR_FAR_OPT_INTERSECT
 //#define NEAR_FAR_OPT_OCCLUDED
 
-#define ENABLE_EXTENDED_LEAVES
+//#define ENABLE_EXTENDED_LEAVES
 
 __forceinline void sort(void * stack_dist,
 			void * stack_node,
@@ -126,6 +126,7 @@ namespace embree
 
 		  const BVH16i::Node* __restrict__ const bptr = (BVH16i::Node*)((char*)bvh16 + curNode.id());
 
+#if 1
 		  prefetch<PFHINT_L1>(&bptr->min_x);
 		  prefetch<PFHINT_L1>(&bptr->max_x);
 		  prefetch<PFHINT_L1>(&bptr->min_y);
@@ -133,7 +134,7 @@ namespace embree
 		  prefetch<PFHINT_L1>(&bptr->min_z);
 		  prefetch<PFHINT_L1>(&bptr->max_z);
 		  prefetch<PFHINT_L1>(&bptr->child);
-
+#endif
 
 #if !defined(NEAR_FAR_OPT_INTERSECT)
 		  const mic_f min_x = bptr->min_x * rdir.x - org_rdir.x;
@@ -177,7 +178,17 @@ namespace embree
 		  const mic_m hitm = le(near16,far16);
 		  const mic_f tNear_pos = select(hitm,near16,inf);
 
+		  // const void* __restrict__ const next = curNode.node(bvh16);
+		  // prefetch<PFHINT_L2>((char*)next + 0*64);
+		  // prefetch<PFHINT_L2>((char*)next + 1*64);
+		  // prefetch<PFHINT_L2>((char*)next + 2*64);
+		  // prefetch<PFHINT_L2>((char*)next + 3*64);
+		  // prefetch<PFHINT_L2>((char*)next + 4*64);
+		  // prefetch<PFHINT_L2>((char*)next + 5*64);
+		  // prefetch<PFHINT_L2>((char*)next + 6*64);
+
 		  STAT3(normal.trav_hit_boxes[countbits(hitm)],1,1,1);
+
 
 		  /* if no child is hit, continue with early popped child */
 		  if (unlikely(none(hitm))) continue;
