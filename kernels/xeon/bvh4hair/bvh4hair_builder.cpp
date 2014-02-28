@@ -25,7 +25,7 @@
 #define ENABLE_STRAND_SPLITS 1
 #define ENABLE_ALIGNED_SPLITS 1
 #define ENABLE_UNALIGNED_SPLITS 1
-#define ENABLE_PRE_SUBDIVISION 0
+#define ENABLE_PRE_SUBDIVISION 1
 
 namespace embree
 {
@@ -49,7 +49,7 @@ namespace embree
   {
     /* fast path for empty BVH */
     size_t numPrimitives = scene->numCurves;
-    bvh->init(2*numPrimitives); // FIXME: 2x for spatial splits
+    bvh->init(3*numPrimitives); // FIXME: 2x for spatial splits
     if (numPrimitives == 0) return;
     numGeneratedPrims = 0;
     numAlignedObjectSplits = 0;
@@ -72,7 +72,7 @@ namespace embree
 
     /* create initial curve list */
     BBox3fa bounds = empty;
-    curves.reserve(2*numPrimitives+100); // FIXME: 2x for spatial splits
+    curves.reserve(3*numPrimitives+100); // FIXME: 2x for spatial splits
     for (size_t i=0; i<scene->size(); i++) 
     {
       Geometry* geom = scene->get(i);
