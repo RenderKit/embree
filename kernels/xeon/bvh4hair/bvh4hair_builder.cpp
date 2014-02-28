@@ -25,6 +25,7 @@
 #define ENABLE_STRAND_SPLITS 1
 #define ENABLE_ALIGNED_SPLITS 1
 #define ENABLE_UNALIGNED_SPLITS 1
+#define ENABLE_PRE_SUBDIVISION 0
 
 namespace embree
 {
@@ -92,9 +93,11 @@ namespace embree
     }
     
     /* subdivide very curved hair segments */
+#if ENABLE_PRE_SUBDIVISION
     //subdivide(0.01f);
-    //subdivide(0.1f);
+    subdivide(0.1f);
     //subdivide(0.25f);
+#endif
     bvh->numPrimitives = curves.size();
     bvh->numVertices = 0;
 
@@ -192,9 +195,8 @@ namespace embree
       area += halfArea(cbounds);
       bounds.extend(cbounds);
     }
-    NAABBox3fa b(space,bounds);
-    b.bounds.upper.w = area;
-    return b;
+    bounds.upper.w = area;
+    return NAABBox3fa(space,bounds);
   }
 
   const BVH4Hair::NAABBox3fa BVH4HairBuilder::computeUnalignedBounds(Bezier1* curves, size_t begin, size_t end)
@@ -202,9 +204,10 @@ namespace embree
     if (end-begin == 0)
       return NAABBox3fa(empty);
 
-    BBox3fa bestBounds = empty;
-    Vec3fa bestAxis = one;
     float bestArea = inf;
+    Vec3fa bestAxis = one;
+    BBox3fa bestBounds = empty;
+
     for (size_t i=0; i<4; i++)
     {
       size_t k = begin + rand() % (end-begin);
@@ -225,10 +228,9 @@ namespace embree
         bestArea = area;
       }
     }
-    
-    NAABBox3fa bounds(frame(bestAxis).transposed(),bestBounds);
-    bounds.bounds.upper.w = bestArea;
-    return bounds;
+    bestBounds.upper.w = bestArea;
+
+    return NAABBox3fa(frame(bestAxis).transposed(),bestBounds);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -248,9 +250,12 @@ namespace embree
     /* first try to split two hair strands */
     Vec3fa axis0 = normalize(curves[begin].p3-curves[begin].p0);
     float bestCos = 1.0f;
-    size_t bestI = begin;
+    size_t bestI = end-1;
     for (size_t i=begin; i<end; i++) {
-      Vec3fa axisi = normalize(curves[i].p3-curves[i].p0);
+      Vec3fa axisi = curves[i].p3-curves[i].p0;
+      float leni = length(axisi);
+      if (leni == 0.0f) continue;
+      axisi /= leni;
       float cos = abs(dot(axisi,axis0));
       if (cos < bestCos) { bestCos = cos; bestI = i; }
     }
@@ -303,14 +308,12 @@ namespace embree
     BBox3fa centBounds = empty;
     BBox3fa geomBounds = empty;
     for (size_t i=begin; i<end; i++) {
-      const Vec3fa p0 = xfmPoint(space,curves[i].p0);
-      const Vec3fa p3 = xfmPoint(space,curves[i].p3);
-      geomBounds.extend(curves[i].bounds(space)); // FIXME: transforms points again
-      centBounds.extend(p0+p3);
+      geomBounds.extend(curves[i].bounds(space));
+      centBounds.extend(curves[i].center(space));
     }
 
     /* calculate binning function */
-    const ssef ofs = (ssef) centBounds.lower;
+    const ssef ofs  = (ssef) centBounds.lower;
     const ssef diag = (ssef) centBounds.size();
     const ssef scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
 
@@ -325,11 +328,10 @@ namespace embree
     /* perform binning of curves */
     for (size_t i=begin; i<end; i++)
     {
-      const BBox3fa cbounds = curves[i].bounds(space); // FIXME: transforms again
-      const Vec3fa p0 = xfmPoint(space,curves[i].p0);
-      const Vec3fa p3 = xfmPoint(space,curves[i].p3);
-      //const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),ssei(0),ssei(BINS-1));
-      const ssei bin = floori((ssef(p0+p3) - ofs)*scale);
+      const BBox3fa cbounds = curves[i].bounds(space);
+      const Vec3fa  center  = curves[i].center(space);
+      //const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
+      const ssei bin = floori((ssef(center) - ofs)*scale);
       assert(bin[0] >=0 && bin[0] < BINS);
       assert(bin[1] >=0 && bin[1] < BINS);
       assert(bin[2] >=0 && bin[2] < BINS);
@@ -423,18 +425,9 @@ namespace embree
       return *this;
     }
 
-    /* partition curves */
-    ssize_t left = begin, right = end;
-    while (left < right) {
-      const Vec3fa p0 = xfmPoint(space,curves[left].p0);
-      const Vec3fa p3 = xfmPoint(space,curves[left].p3);
-      //const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),ssei(0),ssei(BINS-1));
-      const ssei bin = floori((ssef(p0+p3) - ofs)*scale);
-      if (bin[dim] < pos) left++;
-      else std::swap(curves[left],curves[--right]);
-    }
-    bounds0 = computeUnalignedBounds(&curves[0],begin,left);
-    bounds1 = computeUnalignedBounds(&curves[0],left, end );
+    const size_t center = split(&curves[0],begin,end);
+    bounds0 = computeUnalignedBounds(&curves[0],begin,center);
+    bounds1 = computeUnalignedBounds(&curves[0],center,end);
     return *this;
   }
   
@@ -442,10 +435,9 @@ namespace embree
   {
     ssize_t left = begin, right = end;
     while (left < right) {
-      const Vec3fa p0 = xfmPoint(space,curves[left].p0);
-      const Vec3fa p3 = xfmPoint(space,curves[left].p3);
-      //const ssei bin = clamp(floori((ssef(p0+p3) - ofs)*scale),ssei(0),ssei(BINS-1));
-      const ssei bin = floori((ssef(p0+p3) - ofs)*scale);
+      const Vec3fa center = curves[left].center(space);
+      //const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
+      const ssei bin = floori((ssef(center)-ofs)*scale);
       if (bin[dim] < pos) left++;
       else std::swap(curves[left],curves[--right]);
     }
@@ -476,8 +468,8 @@ namespace embree
       centBounds.extend(right.center(space));
     }
 
-    /* calculate binning function */
-    const ssef ofs = (ssef) centBounds.lower;
+    /* calculate binning function */ 
+    const ssef ofs  = (ssef) centBounds.lower;
     const ssef diag = (ssef) centBounds.size();
     const ssef scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
 
