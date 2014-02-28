@@ -252,15 +252,6 @@ namespace embree
 	mic_f local_lowerXYZ = ((node_lowerXYZ - minXYZ) * rcp_diffXYZ) - 0.5f;
 	mic_f local_upperXYZ = ((node_upperXYZ - minXYZ) * rcp_diffXYZ) + 0.5f;
 
-
-	/* DBG_PRINT(minXYZ);  */
-	/* DBG_PRINT(maxXYZ); */
-	/* DBG_PRINT(diffXYZ); */
-	/* DBG_PRINT(node_lowerXYZ); */
-	/* DBG_PRINT(node_upperXYZ); */
-	/* DBG_PRINT(local_lowerXYZ); */
-	/* DBG_PRINT(local_upperXYZ); */
-
 	store4f(&start,minXYZ);
 	store4f(&diff ,diffXYZ * (1.0f/255.0f));
 	compactustore16f_low_uint8(0x7777,lower,local_lowerXYZ);
@@ -272,10 +263,6 @@ namespace embree
 	child2 = node.child(2).isNode() ? (unsigned int)((node.child(2) / sizeof(BVH4i::Node))*sizeof(BVH4i::QuantizedNode)) : (unsigned int)node.child(2);
 
 	child3 = node.child(3).isNode() ? (unsigned int)((node.child(3) / sizeof(BVH4i::Node))*sizeof(BVH4i::QuantizedNode)) : (unsigned int)node.child(3);
-
-
-	/* DBG_PRINT( lowerXYZ() ); */
-	/* DBG_PRINT( upperXYZ() ); */
 
 	const mic_f s = decompress_startXYZ();
 	const mic_f d = decompress_diffXYZ();
