@@ -137,6 +137,54 @@ namespace embree
       ssef ofs,scale;
     };
 
+    /*! Performs object binning with subdivision */
+    struct SubdivObjectSplit
+    {
+      /*! number of bins */
+      static const size_t BINS = 16;
+
+    public:
+
+      /*! default constructor */
+      __forceinline SubdivObjectSplit ()
+        : dim(-1), pos(0), cost(inf), num0(0), num1(0), bounds0(inf), bounds1(inf) {}
+      
+      /*! calculates standard surface area heuristic for the split */
+      __forceinline float standardSAH() const {
+        return BVH4Hair::intCost*float(num0)*halfArea(bounds0.bounds) + BVH4Hair::intCost*float(num1)*halfArea(bounds1.bounds);
+      }
+
+      /*! calculates modified surface area heuristic for the split */
+      __forceinline float modifiedSAH() const {
+        return 
+          BVH4Hair::travCostUnaligned*float(num0)*halfArea(bounds0.bounds) + BVH4Hair::intCost*bounds0.bounds.upper.w + 
+          BVH4Hair::travCostUnaligned*float(num1)*halfArea(bounds1.bounds) + BVH4Hair::intCost*bounds1.bounds.upper.w;
+      }
+
+      /*! performs object binning to the the best partitioning */
+      static SubdivObjectSplit find(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space = one);
+
+      /*! splits hairs into two sets */
+      size_t split(Bezier1* curves, size_t begin, size_t& end) const;
+
+      friend std::ostream& operator<<(std::ostream& cout, const SubdivObjectSplit& p) {
+        return std::cout << "{ " << std::endl << 
+          " space = " << p.space << ", dim = " << p.dim << ", pos = " << p.pos << ", cost = " << p.cost << std::endl << 
+          " bounds0 = " << p.bounds0 << ", areaSum0 = " << p.bounds0.bounds.upper.w << ", num0 = " << p.num0 << std::endl << 
+          " bounds1 = " << p.bounds1 << ", areaSum1 = " << p.bounds1.bounds.upper.w << ", num1 = " << p.num1 << std::endl << 
+          "}";
+      }
+      
+    public:
+      LinearSpace3fa space;
+      NAABBox3fa bounds0, bounds1;
+      int dim;
+      int pos;
+      float cost;
+      size_t num0,num1;
+      ssef ofs,scale;
+    };
+
     /*! Performs fallback splits */
     struct FallBackSplit
     {
@@ -225,9 +273,11 @@ namespace embree
     size_t maxLeafSize;    //!< maximal size of a leaf
     size_t numGeneratedPrims;
     size_t numAlignedObjectSplits;
-    size_t numUnalignedObjectSplits;
     size_t numAlignedSpatialSplits;
+    size_t numAlignedSubdivObjectSplits;
+    size_t numUnalignedObjectSplits;
     size_t numUnalignedSpatialSplits;
+    size_t numUnalignedSubdivObjectSplits;
     size_t numStrandSplits;
     size_t numFallbackSplits;
     BVH4Hair* bvh;         //!< output

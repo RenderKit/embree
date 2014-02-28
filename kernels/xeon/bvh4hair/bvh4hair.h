@@ -330,6 +330,16 @@ namespace embree
         return t1-t0;
       }
       
+      /*! calculate the center of the curve */
+      __forceinline const Vec3fa center() const {
+        return p0+p3;
+      }
+
+      /*! calculate the center of the curve */
+      __forceinline const Vec3fa center(const AffineSpace3fa& space) const {
+        return xfmPoint(space,p0)+xfmPoint(space,p3);
+      }
+
       /*! calculate the bounds of the curve */
       __forceinline const BBox3fa bounds() const 
       {
