@@ -209,7 +209,7 @@ namespace embree
 	{	 
 	  DBG(std::cout << "PULL UP CHILD" << std::endl);
 	  ssize_t max_index = -1;
-	  ssize_t max_leaves = -1;
+	  ssize_t max_leaves = 4;
 
 	  for (size_t i=0;i<bvh8i_used_slots;i++)
 	    if (b8.children[i].isNode())
@@ -221,6 +221,11 @@ namespace embree
 
           if (max_index == -1) break;
 
+	  // for (size_t i=0;i<bvh8i_used_slots;i++)
+	  //   if (b8.children[i].isNode())
+	  //     if (b8.data[i] == 2)
+          //       max_index = i;
+
 	  DBG(DBG_PRINT(*(avxi*)b8.data));
 	  DBG(DBG_PRINT(max_index));
 
@@ -230,6 +235,20 @@ namespace embree
 	      BVH4i::Node *node4 = child.node(bvh4i);
 	      unsigned int children4 = node4->numValidChildren();
 	      DBG(DBG_PRINT(node4->numValidChildren()));
+              int child4_index = -1;
+              int child4_leaves = 0;
+              for (size_t i=0;i<children4;i++)
+                if (node4->data[i] > child4_leaves)
+                  {
+                    child4_leaves = node4->data[i];
+                    child4_index = i;
+                  }
+              if (child4_index == -1) break;
+              assert(child4_index != -1);
+              DBG_PRINT(child4_index);
+              DBG_PRINT(children4);
+
+              BVH4i::swap(node4,child4_index,node4,children4-1);
 
 	      b8.set(bvh8i_used_slots++,*node4,children4-1);
 	      node4->children[children4-1] = BVH4i::emptyNode;
