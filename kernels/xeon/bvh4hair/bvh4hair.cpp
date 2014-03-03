@@ -20,6 +20,7 @@
 namespace embree
 {
   DECLARE_SYMBOL(Accel::Intersector1,BVH4HairBezier1Intersector1);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4HairBezier1iIntersector1);
 
   Builder* BVH4HairBuilder_ (BVH4Hair* bvh, Scene* scene);
 
@@ -70,15 +71,16 @@ namespace embree
   {
     int features = getCPUFeatures();
     SELECT_SYMBOL_AVX_AVX2(features,BVH4HairBezier1Intersector1);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH4HairBezier1iIntersector1);
   }
 
-  BVH4Hair::BVH4Hair (Scene* scene) 
-    : scene(scene), root(emptyNode), numPrimitives(0), numVertices(0) {}
+  BVH4Hair::BVH4Hair (const PrimitiveType& primTy, Scene* scene) 
+    : primTy(primTy), scene(scene), root(emptyNode), numPrimitives(0), numVertices(0) {}
 
   BVH4Hair::~BVH4Hair () {
   }
 
-  Accel::Intersectors BVH4HairIntersectors(BVH4Hair* bvh)
+  Accel::Intersectors BVH4HairBezier1Intersectors(BVH4Hair* bvh)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
@@ -88,29 +90,50 @@ namespace embree
     intersectors.intersector16 = NULL;
     return intersectors;
   }
+
+  Accel::Intersectors BVH4HairBezier1iIntersectors(BVH4Hair* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1 = BVH4HairBezier1iIntersector1;
+    intersectors.intersector4 = NULL;
+    intersectors.intersector8 = NULL;
+    intersectors.intersector16 = NULL;
+    return intersectors;
+  }
   
   Accel* BVH4Hair::BVH4HairBezier1(Scene* scene)
   { 
-    BVH4Hair* accel = new BVH4Hair(scene);
-    Accel::Intersectors intersectors = BVH4HairIntersectors(accel);
+    BVH4Hair* accel = new BVH4Hair(Bezier1Type::type,scene);
+    Accel::Intersectors intersectors = BVH4HairBezier1Intersectors(accel);
     Builder* builder = BVH4HairBuilder_(accel,scene);
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  void BVH4Hair::init(size_t numPrimitives)
+  Accel* BVH4Hair::BVH4HairBezier1i(Scene* scene)
+  { 
+    BVH4Hair* accel = new BVH4Hair(SceneBezier1i::type,scene);
+    Accel::Intersectors intersectors = BVH4HairBezier1iIntersectors(accel);
+    Builder* builder = BVH4HairBuilder_(accel,scene);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  void BVH4Hair::init(size_t numPrimitivesMin, size_t numPrimitivesMax)
   {
-    size_t numAllocatedNodes = numPrimitives;
-    size_t numAllocatedPrimitives = numPrimitives;
+    if (numPrimitivesMax == 0) numPrimitivesMax = numPrimitivesMin;
+
+    size_t numAllocatedNodes = numPrimitivesMin;
+    size_t numAllocatedPrimitives = numPrimitivesMin;
 #if defined(__X86_64__)
-    size_t numReservedNodes = 2*numPrimitives;
-    size_t numReservedPrimitives = 2*numPrimitives;
+    size_t numReservedNodes = 2*numPrimitivesMax;
+    size_t numReservedPrimitives = 2*numPrimitivesMax;
 #else
     size_t numReservedNodes = 1.5*numAllocatedNodes;
     size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
 #endif
     
-    size_t bytesAllocated = numAllocatedNodes * sizeof(UnalignedNode) + numAllocatedPrimitives * sizeof(Bezier1);
-    size_t bytesReserved  = numReservedNodes  * sizeof(UnalignedNode) + numReservedPrimitives  * sizeof(Bezier1);
+    size_t bytesAllocated = numAllocatedNodes * sizeof(UnalignedNode) + numAllocatedPrimitives * sizeof(primTy.bytes);
+    size_t bytesReserved  = numReservedNodes  * sizeof(UnalignedNode) + numReservedPrimitives  * sizeof(primTy.bytes);
 
     size_t blockSize = LinearAllocatorPerThread::allocBlockSize;
     bytesReserved    = (bytesReserved+blockSize-1)/blockSize*blockSize;

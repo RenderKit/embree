@@ -34,7 +34,7 @@ namespace embree
     virtual size_t size(const char* This) const = 0;
 
     /*! Packs triangles taken from primitive list. */
-    virtual void pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const = 0;
+    virtual void pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const {}
 
     /*! Updates all primitives stored in a leaf */
     virtual BBox3fa update(char* prim, size_t num, void* geom) const { return BBox3fa(empty); }

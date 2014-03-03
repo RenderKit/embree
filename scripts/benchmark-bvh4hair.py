@@ -59,7 +59,7 @@ def render(mode):
     command += ' -rtcore verbose=2,benchmark=1,hairaccel=bvh4hair.bezier1,hairaccelmode=' + mode
     if model != 'none':
       command += ' -c ' + model
-    command += ' -frames 4 16'
+    command += ' -size 1024 1024 -frames 4 32'
     command += ' -o ' + imgFile + ' > ' + logFile
     os.system(command)
 

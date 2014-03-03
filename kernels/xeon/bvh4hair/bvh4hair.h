@@ -370,16 +370,17 @@ namespace embree
   public:
 
     /*! BVH4Hair default constructor. */
-    BVH4Hair (Scene* scene);
+    BVH4Hair (const PrimitiveType& primTy, Scene* scene);
 
     /*! BVH4Hair destruction */
     ~BVH4Hair ();
 
     /*! BVH4Hair instantiations */
     static Accel* BVH4HairBezier1(Scene* scene);
+    static Accel* BVH4HairBezier1i(Scene* scene);
 
     /*! initializes the acceleration structure */
-    void init (size_t numPrimitives = 0);
+    void init (size_t numPrimitivesMin = 0, size_t numPrimitivesMax = 0);
 
     /*! allocator for nodes */
     LinearAllocatorPerThread alloc;
@@ -396,7 +397,7 @@ namespace embree
 
     /*! allocates a block of primitives */
     __forceinline char* allocPrimitiveBlocks(size_t thread, size_t num) {
-      return (char*) alloc.malloc(thread,num*sizeof(Bezier1),1 << 4);
+      return (char*) alloc.malloc(thread,num*primTy.bytes,1 << 4);
     }
 
     /*! Encodes an alingned node */
@@ -416,6 +417,7 @@ namespace embree
     }
 
   public:
+    const PrimitiveType& primTy;       //!< primitive type stored in the BVH
     Scene* scene;
     NodeRef root;  //!< Root node
     size_t numPrimitives;

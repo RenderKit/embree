@@ -303,6 +303,8 @@ namespace embree
     bool enablePresplit3;
 
     BVH4Hair* bvh;         //!< output
-    vector_t<Bezier1> curves; //!< array with all curves
+    //vector_t<Bezier1> curves; //!< array with all curves
+    Bezier1* curves;
+    size_t numCurves,maxCurves;
   };
 }

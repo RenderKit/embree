@@ -33,6 +33,7 @@ namespace embree
 {
   class BVH4Hair {
   public: static Accel* BVH4HairBezier1(Scene* scene); // FIXME: hack
+  public: static Accel* BVH4HairBezier1i(Scene* scene); // FIXME: hack
   };
 
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
@@ -132,7 +133,8 @@ namespace embree
         // FIXME:
         if      (g_hair_accel == "bvh4.bezier1i"   ) accels.add(BVH4::BVH4Bezier1i(this));
         else if (g_hair_accel == "bvh4hair.bezier1") accels.add(BVH4Hair::BVH4HairBezier1(this));
-        else accels.add(BVH4::BVH4Bezier1i(this));
+        else if (g_hair_accel == "bvh4hair.bezier1i") accels.add(BVH4Hair::BVH4HairBezier1i(this));
+        else throw std::runtime_error("invalid hair accel");
 #endif
       } 
       else 

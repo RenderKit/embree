@@ -18,7 +18,9 @@
 
 namespace embree
 {
-  Bezier1Type::Bezier1iType () 
+  Bezier1Type Bezier1Type::type;
+
+  Bezier1Type::Bezier1Type () 
     : PrimitiveType("bezier1",sizeof(Bezier1),1,true,1) {} 
   
   size_t Bezier1Type::blocks(size_t x) const {
