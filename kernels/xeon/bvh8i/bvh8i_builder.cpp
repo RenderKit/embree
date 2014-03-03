@@ -29,7 +29,7 @@ using namespace embree;
 
 #define __ALIGN(x) __declspec(align(x))
 
-#define DBG(x) 
+#define DBG(x) x
 
 namespace embree
 {
@@ -201,11 +201,15 @@ namespace embree
       BVH8i::Node &b8 = bvh8i[bvh8i_node_index];
 
       // try to pull up a child to fill nodes
-      if (bvh8i_used_slots < 8)
+
+
+
+#if 1
+      while (bvh8i_used_slots < 8)
 	{	 
 	  DBG(std::cout << "PULL UP CHILD" << std::endl);
 	  ssize_t max_index = -1;
-	  ssize_t max_leaves = -1;
+	  ssize_t max_leaves = 4;
 
 	  for (size_t i=0;i<bvh8i_used_slots;i++)
 	    if (b8.children[i].isNode())
@@ -214,6 +218,13 @@ namespace embree
 		  max_leaves = b8.data[i];
 		  max_index = i;
 		}
+
+          if (max_index == -1) break;
+
+	  // for (size_t i=0;i<bvh8i_used_slots;i++)
+	  //   if (b8.children[i].isNode())
+	  //     if (b8.data[i] == 2)
+          //       max_index = i;
 
 	  DBG(DBG_PRINT(*(avxi*)b8.data));
 	  DBG(DBG_PRINT(max_index));
@@ -224,6 +235,20 @@ namespace embree
 	      BVH4i::Node *node4 = child.node(bvh4i);
 	      unsigned int children4 = node4->numValidChildren();
 	      DBG(DBG_PRINT(node4->numValidChildren()));
+              int child4_index = -1;
+              int child4_leaves = 0;
+              for (size_t i=0;i<children4;i++)
+                if (node4->data[i] > child4_leaves)
+                  {
+                    child4_leaves = node4->data[i];
+                    child4_index = i;
+                  }
+              if (child4_index == -1) break;
+              assert(child4_index != -1);
+              DBG_PRINT(child4_index);
+              DBG_PRINT(children4);
+
+              BVH4i::swap(node4,child4_index,node4,children4-1);
 
 	      b8.set(bvh8i_used_slots++,*node4,children4-1);
 	      node4->children[children4-1] = BVH4i::emptyNode;
@@ -250,6 +275,16 @@ namespace embree
 		//if (BVH4i::NodeRef(b8.children[i]).isNode()) FATAL("isNode");
 	      }
 	}
+#endif
+
+      for (size_t i=0;i<bvh8i_used_slots;i++)
+        {
+          DBG_PRINT(i);
+          if (b8.children[i].isNode())
+            DBG_PRINT(b8.data[i]);
+        }
+
+      //assert(bvh8i_used_slots == 8);
 
       parent_offset = (unsigned int)(sizeof(BVH8i::Node) * bvh8i_node_index);
             
@@ -419,7 +454,7 @@ namespace embree
       DBG_PRINT(index8*sizeof(BVH8i::Node));
 
 
-#if 1
+#if 0
       unsigned int root_data = 0;
       root_data = compactBVH8i(bvh8i_base,bvh8i_root);      
       DBG_PRINT(root_data);

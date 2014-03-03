@@ -26,7 +26,7 @@ namespace embree
 {
 
 
-#define USE_QUANTIZED_NODES
+  //#define USE_QUANTIZED_NODES
 
 #define BVH8_MAX_STACK_DEPTH 128
 

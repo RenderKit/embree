@@ -177,6 +177,7 @@ namespace embree
     /*! swap the children of two nodes */
     __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
     {
+      std::swap(a->data[i],b->data[j]);
       std::swap(a->children[i],b->children[j]);
       std::swap(a->lower_x[i],b->lower_x[j]);
       std::swap(a->lower_y[i],b->lower_y[j]);
