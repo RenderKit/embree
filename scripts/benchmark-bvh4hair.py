@@ -56,7 +56,7 @@ def render(mode):
   imgFile = statDir + dash + base + '.tga'
   if not os.path.exists(logFile):
     command = executable
-    command += ' -rtcore verbose=2,benchmark=1,hairaccel=bvh4hair.bezier1,hairaccelmode=' + mode
+    command += ' -rtcore verbose=2,benchmark=1,hairaccel=bvh4hair.bezier1i,hairaccelmode=' + mode
     if model != 'none':
       command += ' -c ' + model
     command += ' -size 1024 1024 -frames 4 32'
