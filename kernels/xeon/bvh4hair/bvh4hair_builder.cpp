@@ -53,16 +53,17 @@ namespace embree
     enableStrandSplits = false;
     enablePresplit3 = false;
     
-    for (size_t i=0; i<g_hair_accel_mode.size(); i++)
+    for (size_t i=0; i<g_hair_accel_mode.size();)
     {
-      if (g_hair_accel_mode.substr(i,2) == "P3") { enablePresplit3 = true; i+=2; } 
-      else if (g_hair_accel_mode.substr(i,3) == "aOB") { enableAlignedObjectSplits = true; i+=3; } 
-      else if (g_hair_accel_mode.substr(i,3) == "uOB") { enableUnalignedObjectSplits = true; i+=3; } 
+      if      (g_hair_accel_mode.substr(i,2) == "P3") { enablePresplit3 = true; i+=2; } 
+      else if (g_hair_accel_mode.substr(i,2) == "aO") { enableAlignedObjectSplits = true; i+=2; } 
+      else if (g_hair_accel_mode.substr(i,2) == "uO") { enableUnalignedObjectSplits = true; i+=2; } 
       else if (g_hair_accel_mode.substr(i,3) == "uST") { enableStrandSplits = true; i+=3; } 
       else if (g_hair_accel_mode.substr(i,3) == "aSP") { enableAlignedSpatialSplits = true; i+=3; } 
       else if (g_hair_accel_mode.substr(i,3) == "uSP") { enableUnalignedSpatialSplits = true; i+=3; } 
       else if (g_hair_accel_mode.substr(i,3) == "aSD") { enableAlignedSubdivObjectSplits = true; i+=3; } 
       else if (g_hair_accel_mode.substr(i,3) == "uSD") { enableUnalignedSubdivObjectSplits = true; i+=3; } 
+      else throw std::runtime_error("invalid hair accel mode");
     }
 
     PRINT(enableAlignedObjectSplits);
