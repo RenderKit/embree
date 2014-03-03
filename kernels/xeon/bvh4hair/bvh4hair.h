@@ -24,6 +24,7 @@
 #include "geometry/bezier1i.h"
 
 #define BVH4HAIR_WIDTH 4
+#define BVH4HAIR_SHARED_XFM 0
 #define BVH4HAIR_NAVIGATION 0
 #if BVH4HAIR_NAVIGATION
 #define NAVI(x) x
@@ -253,6 +254,60 @@ namespace embree
       simdf upper_z;           //!< Z dimension of upper bounds of all 4 children.
     };
 
+#if BVH4HAIR_SHARED_XFM
+
+    /*! Node with unaligned bounds */
+    struct UnalignedNode : public Node
+    {
+      /*! Clears the node. */
+      __forceinline void clear() 
+      {
+	space = one;
+        lower_x = lower_y = lower_z = 1E10;
+        upper_x = upper_y = upper_z = 1E10;
+        Node::clear();
+      }
+
+      /*! Sets non-axis aligned space of node. */
+      __forceinline void set(const AffineSpace3fa& s) {
+        space = s;
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& childID) 
+      {
+        assert(i < N);
+        lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
+        upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
+        Node::set(i,childID);
+      }
+
+      /*! Returns bounds of specified child. */
+      __forceinline const BBox3fa bounds(size_t i) const { 
+        assert(i < N);
+        const Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
+        const Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
+        return BBox3fa(lower,upper);
+      }
+
+      /*! Returns the extend of the bounds of the ith child */
+      __forceinline Vec3fa extend(size_t i) const {
+        assert(i < N);
+        return bounds(i).size();
+      }
+
+    public:
+      AffineSpace3fa space;    //!< non-axis aligned space
+      simdf lower_x;           //!< X dimension of lower bounds of all 4 children.
+      simdf upper_x;           //!< X dimension of upper bounds of all 4 children.
+      simdf lower_y;           //!< Y dimension of lower bounds of all 4 children.
+      simdf upper_y;           //!< Y dimension of upper bounds of all 4 children.
+      simdf lower_z;           //!< Z dimension of lower bounds of all 4 children.
+      simdf upper_z;           //!< Z dimension of upper bounds of all 4 children.
+    };
+
+#else
+
     /*! Node with unaligned bounds */
     struct UnalignedNode : public Node
     {
@@ -308,6 +363,8 @@ namespace embree
     public:
       AffineSpaceSOA4 naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
+
+#endif
 
     /*! Hair Leaf */
     struct Bezier1

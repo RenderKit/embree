@@ -93,7 +93,7 @@ namespace embree
       };
 
     private:
-      static size_t intersectBox(const AffineSpaceSOA4& naabb, const simd3f& org, const simd3f& dir, simdf& tNear, simdf& tFar);
+      static size_t intersectBox(const UnalignedNode* node, Ray& ray, const simd3f& org, const simd3f& dir, simdf& tNear, simdf& tFar);
       static void intersectBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier, const Scene* scene);
       static bool occludedBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier, const Scene* scene);
       

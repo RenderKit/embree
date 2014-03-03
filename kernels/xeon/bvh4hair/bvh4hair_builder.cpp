@@ -1215,8 +1215,16 @@ namespace embree
     /* create unaligned node */
     else {
       UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
+#if BVH4HAIR_SHARED_XFM
+      node->set(bounds.space);
+      for (ssize_t i=numChildren-1; i>=0; i--) {
+        const NAABBox3fa cboundsi = computeAlignedBounds(&curves[0],cbegin[i],cend[i],bounds.space);
+        node->set(i,cboundsi.bounds,recurse(threadIndex,depth+1,cbegin[i],cend[i],cbounds[i]));
+      }
+#else
       for (ssize_t i=numChildren-1; i>=0; i--)
         node->set(i,cbounds[i],recurse(threadIndex,depth+1,cbegin[i],cend[i],cbounds[i]));
+#endif
       return bvh->encodeNode(node);
     }
   }

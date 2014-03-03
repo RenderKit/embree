@@ -30,13 +30,27 @@ namespace embree
 
   namespace isa
   {
-    __forceinline size_t BVH4HairIntersector1::intersectBox(const AffineSpaceSOA4& naabb, const simd3f& ray_org, const simd3f& ray_dir, simdf& tNear, simdf& tFar)
+    __forceinline size_t BVH4HairIntersector1::intersectBox(const BVH4Hair::UnalignedNode* node, Ray& ray, 
+                                                            const simd3f& ray_org, const simd3f& ray_dir, simdf& tNear, simdf& tFar)
     {
-      const simd3f dir = xfmVector(naabb,ray_dir);
+#if BVH4HAIR_SHARED_XFM
+      const Vec3fa dir = xfmVector(node->space,ray.dir);
+      const Vec3fa rdir = rcp_safe(dir);
+      const Vec3fa org = xfmPoint(node->space,ray.org);
+      const simd3f vorg  = simd3f(org);
+      const simd3f vrdir = simd3f(rdir);
+      const simd3f lower(node->lower_x,node->lower_y,node->lower_z);
+      const simd3f upper(node->upper_x,node->upper_y,node->upper_z);
+      const simd3f tLowerXYZ = (lower - vorg) * vrdir;
+      const simd3f tUpperXYZ = (upper - vorg) * vrdir;
+#else
+      const simd3f dir = xfmVector(node->naabb,ray_dir);
       const simd3f rdir = rcp_safe(dir);
-      const simd3f org = xfmPoint(naabb,ray_org);
+      const simd3f org = xfmPoint(node->naabb,ray_org);
       const simd3f tLowerXYZ = - org * rdir;     // (Vec3fa(zero) - org) * rdir;
       const simd3f tUpperXYZ = rdir + tLowerXYZ; // (Vec3fa(one ) - org) * rdir;
+#endif
+
 #if ((BVH4HAIR_WIDTH == 4) && defined(__SSE4_1__) || (BVH4HAIR_WIDTH == 8) && defined(__AVX2__))
       const simdf tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
       const simdf tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
@@ -277,7 +291,7 @@ namespace embree
           /*! process nodes with unaligned bounds */
           else {
             const UnalignedNode* node = cur.unalignedNode();
-            mask = intersectBox(node->naabb,org,dir,tNear,tFar);
+            mask = intersectBox(node,ray,org,dir,tNear,tFar);
           }
 
 #if BVH4HAIR_NAVIGATION
@@ -530,7 +544,7 @@ namespace embree
           /*! process nodes with unaligned bounds */
           else {
             const UnalignedNode* node = cur.unalignedNode();
-            mask = intersectBox(node->naabb,org,dir,tNear,tFar);
+            mask = intersectBox(node,ray,org,dir,tNear,tFar);
           }
 
           /*! if no child is hit, pop next node */
