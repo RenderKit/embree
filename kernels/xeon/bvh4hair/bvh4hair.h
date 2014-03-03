@@ -397,7 +397,7 @@ namespace embree
 
     /*! allocates a block of primitives */
     __forceinline char* allocPrimitiveBlocks(size_t thread, size_t num) {
-      return (char*) alloc.malloc(thread,num*sizeof(Bezier1),1 << 4);
+      return (char*) alloc.malloc(thread,num*primTy.bytes,1 << 4);
     }
 
     /*! Encodes an alingned node */

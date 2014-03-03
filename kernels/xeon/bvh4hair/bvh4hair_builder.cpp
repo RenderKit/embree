@@ -97,7 +97,7 @@ namespace embree
 
     double t0 = 0.0;
     if (g_verbose >= 2) {
-      std::cout << "building BVH4Hair<Bezier1> ..." << std::flush;
+      std::cout << "building BVH4Hair<" + bvh->primTy.name + "> ..." << std::flush;
       t0 = getSeconds();
     }
 
@@ -106,6 +106,7 @@ namespace embree
 
     /* create initial curve list */
     BBox3fa bounds = empty;
+    size_t numVertices = 0;
     curves.reserve(10*numPrimitives+100); // FIXME: 2x for spatial splits
     for (size_t i=0; i<scene->size(); i++) 
     {
@@ -113,7 +114,7 @@ namespace embree
       if (geom->type != BEZIER_CURVES) continue;
       if (!geom->isEnabled()) continue;
       BezierCurves* set = (BezierCurves*) geom;
-
+      numVertices += set->numVertices;
       for (size_t j=0; j<set->numCurves; j++) {
         const int ofs = set->curve(j);
         const Vec3fa& p0 = set->vertex(ofs+0);
@@ -135,6 +136,7 @@ namespace embree
 #endif
     bvh->numPrimitives = curves.size();
     bvh->numVertices = 0;
+    if (&bvh->primTy == &SceneBezier1i::type) bvh->numVertices = numVertices;
 
     /* start recursive build */
     size_t begin = 0, end = curves.size();
@@ -947,9 +949,23 @@ namespace embree
     }
     numGeneratedPrims+=N; if (numGeneratedPrims > 10000) { std::cout << "." << std::flush; numGeneratedPrims = 0; }
     //assert(N <= (size_t)BVH4Hair::maxLeafBlocks);
-    Bezier1* leaf = (Bezier1*) bvh->allocPrimitiveBlocks(threadIndex,N);
-    for (size_t i=0; i<N; i++) leaf[i] = curves[begin+i];
-    return bvh->encodeLeaf((char*)leaf,N);
+    if (&bvh->primTy == &Bezier1Type::type) {
+      Bezier1* leaf = (Bezier1*) bvh->allocPrimitiveBlocks(threadIndex,N);
+      for (size_t i=0; i<N; i++) leaf[i] = curves[begin+i];
+      return bvh->encodeLeaf((char*)leaf,N);
+    } 
+    else if (&bvh->primTy == &SceneBezier1i::type) {
+      Bezier1i* leaf = (Bezier1i*) bvh->allocPrimitiveBlocks(threadIndex,N);
+      for (size_t i=0; i<N; i++) {
+        const Bezier1& curve = curves[begin+i];
+        const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID);
+        const Vec3fa& p0 = in->vertex(in->curve(curve.primID));
+        leaf[i] = Bezier1i(&p0,curve.geomID,curve.primID,-1); // FIXME: support mask
+      }
+      return bvh->encodeLeaf((char*)leaf,N);
+    }
+    else 
+      throw std::runtime_error("unknown primitive type");
   }
 
   size_t BVH4HairBuilder::split(size_t depth, size_t begin, size_t& end, const NAABBox3fa& bounds, NAABBox3fa& lbounds, NAABBox3fa& rbounds, bool& isAligned)
