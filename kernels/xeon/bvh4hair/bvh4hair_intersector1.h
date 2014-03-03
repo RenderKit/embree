@@ -25,9 +25,12 @@ namespace embree
   namespace isa
   {
     /*! BVH4Hair single ray traversal implementation. */
-    class BVH4HairIntersector1 
+    template<typename PrimitiveIntersector>
+      class BVH4HairIntersector1 
     {
       /* shortcuts for frequently used types */
+      typedef typename PrimitiveIntersector::Precalculations Precalculations;
+      typedef typename PrimitiveIntersector::Primitive Primitive;
       typedef BVH4Hair::simdb simdb;
       typedef BVH4Hair::simdi simdi;
       typedef BVH4Hair::simdf simdf;
@@ -36,7 +39,6 @@ namespace embree
       typedef BVH4Hair::Node Node;
       typedef BVH4Hair::AlignedNode AlignedNode;
       typedef BVH4Hair::UnalignedNode UnalignedNode;
-      typedef BVH4Hair::Bezier1 Bezier1;
       typedef BVH4Hair::NAABBox3fa NAABBox3fa;
       typedef BVH4Hair::AffineSpaceSOA4 AffineSpaceSOA4;
 
@@ -55,7 +57,7 @@ namespace embree
 #else
           StackItem t = b; b = a; a = t;
 #endif
-    }
+        }
 
         __forceinline friend bool operator<(const StackItem& s1, const StackItem& s2) {
           return s1.tNear > s2.tNear;

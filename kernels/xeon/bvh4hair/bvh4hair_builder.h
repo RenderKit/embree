@@ -17,6 +17,7 @@
 #pragma once
 
 #include "geometry/primitive.h"
+#include "geometry/bezier1.h"
 
 namespace embree
 {
@@ -29,7 +30,6 @@ namespace embree
     typedef BVH4Hair::NodeRef NodeRef;
     typedef BVH4Hair::AlignedNode AlignedNode;
     typedef BVH4Hair::UnalignedNode UnalignedNode;
-    typedef BVH4Hair::Bezier1 Bezier1;
     typedef BVH4Hair::NAABBox3fa NAABBox3fa;
     
   public:

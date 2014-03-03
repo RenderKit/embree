@@ -34,7 +34,7 @@ namespace embree
     std::ostringstream stream;
     size_t bytesAlignedNodes = numAlignedNodes*sizeof(AlignedNode);
     size_t bytesUnalignedNodes = numUnalignedNodes*sizeof(UnalignedNode);
-    size_t bytesPrims  = numPrims*sizeof(BVH4Hair::Bezier1);
+    size_t bytesPrims  = numPrims*sizeof(Bezier1);
     size_t numVertices = bvh->numVertices;
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
     size_t bytesTotal = bytesAlignedNodes+bytesUnalignedNodes+bytesPrims+bytesVertices;
