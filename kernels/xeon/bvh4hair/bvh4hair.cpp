@@ -118,20 +118,22 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  void BVH4Hair::init(size_t numPrimitives)
+  void BVH4Hair::init(size_t numPrimitivesMin, size_t numPrimitivesMax)
   {
-    size_t numAllocatedNodes = numPrimitives;
-    size_t numAllocatedPrimitives = numPrimitives;
+    if (numPrimitivesMax == 0) numPrimitivesMax = numPrimitivesMin;
+
+    size_t numAllocatedNodes = numPrimitivesMin;
+    size_t numAllocatedPrimitives = numPrimitivesMin;
 #if defined(__X86_64__)
-    size_t numReservedNodes = 2*numPrimitives;
-    size_t numReservedPrimitives = 2*numPrimitives;
+    size_t numReservedNodes = 2*numPrimitivesMax;
+    size_t numReservedPrimitives = 2*numPrimitivesMax;
 #else
     size_t numReservedNodes = 1.5*numAllocatedNodes;
     size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
 #endif
     
-    size_t bytesAllocated = numAllocatedNodes * sizeof(UnalignedNode) + numAllocatedPrimitives * sizeof(Bezier1);
-    size_t bytesReserved  = numReservedNodes  * sizeof(UnalignedNode) + numReservedPrimitives  * sizeof(Bezier1);
+    size_t bytesAllocated = numAllocatedNodes * sizeof(UnalignedNode) + numAllocatedPrimitives * sizeof(primTy.bytes);
+    size_t bytesReserved  = numReservedNodes  * sizeof(UnalignedNode) + numReservedPrimitives  * sizeof(primTy.bytes);
 
     size_t blockSize = LinearAllocatorPerThread::allocBlockSize;
     bytesReserved    = (bytesReserved+blockSize-1)/blockSize*blockSize;

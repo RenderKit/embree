@@ -380,7 +380,7 @@ namespace embree
     static Accel* BVH4HairBezier1i(Scene* scene);
 
     /*! initializes the acceleration structure */
-    void init (size_t numPrimitives = 0);
+    void init (size_t numPrimitivesMin = 0, size_t numPrimitivesMax = 0);
 
     /*! allocator for nodes */
     LinearAllocatorPerThread alloc;
