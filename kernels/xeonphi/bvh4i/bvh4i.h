@@ -147,6 +147,7 @@ namespace embree
 	upper[i].z = neg_inf;
 	upper[i].child = NodeRef(0);
       }
+
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { return lower[i].child; }
       __forceinline const NodeRef& child(size_t i) const { return lower[i].child; }
