@@ -22,28 +22,6 @@
 
 namespace embree
 {
-  __forceinline bool intersect_box(const BBox3fa& box, const Ray& ray)
-  {
-#if 0
-    const float clipNearX = (box.lower.x - ray.org.x) / ray.dir.x; // FIXME: use rdir
-    const float clipNearY = (box.lower.y - ray.org.y) / ray.dir.y; // FIXME: use SSE for intersection
-    const float clipNearZ = (box.lower.z - ray.org.z) / ray.dir.z;
-    const float clipFarX = (box.upper.x - ray.org.x) / ray.dir.x;
-    const float clipFarY = (box.upper.y - ray.org.y) / ray.dir.y;
-    const float clipFarZ = (box.upper.z - ray.org.z) / ray.dir.z;
-
-    const float near = max(max(min(clipNearX, clipFarX), min(clipNearY, clipFarY)), min(clipNearZ, clipFarZ));
-    const float far   = min(min(max(clipNearX, clipFarX), max(clipNearY, clipFarY)), max(clipNearZ, clipFarZ));
-    const bool hit    = max(near,ray.tnear) <= min(far,ray.tfar);
-    dist = near;
-    return hit;
-#else
-    return max(box.lower.x,box.lower.y) <= 0.0f && 0.0f <= min(box.upper.x,box.upper.y);
-#endif
-  }
-
-#if 1
-
   /*! Intersector for a single ray with a bezier curve. */
   struct Bezier1iIntersector1
   {
@@ -80,16 +58,7 @@ namespace embree
       const float w2 = v2.w + dist_v2;
       const float w3 = v3.w;
 
-
       const float radius = max(max(w0,w1),max(w2,w3));
-
-#if 0
-      DBG_PRINT(w0);
-      DBG_PRINT(w1);
-      DBG_PRINT(w2);
-      DBG_PRINT(w3);
-      DBG_PRINT(radius);
-#endif
       const Vec3fa cyl_org = v0;
       const Vec3fa delta_org = ray.org - cyl_org;
       const Vec3fa g0 = ray.dir - (dot(ray.dir,cyl_dir) * cyl_dir);
@@ -286,119 +255,4 @@ namespace embree
       return false;
     }
   };
-
-#else
-
-  /*! Intersector for a single ray with a bezier curve. */
-  struct Bezier1iIntersector1
-  {
-    typedef Bezier1i Primitive;
-
-    struct Precalculations {
-      __forceinline Precalculations (const Ray& ray) {}
-    };
-
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
-    {
-      /* load bezier curve control points */
-      STAT3(normal.trav_prims,1,1,1);
-      const Vec3fa v0 = curve_in.p[0];
-      const Vec3fa v1 = curve_in.p[1];
-      const Vec3fa v2 = curve_in.p[2];
-      const Vec3fa v3 = curve_in.p[3];
-
-      /* transform control points into ray space */
-      LinearSpace3fa ray_space = rcp(frame(ray.dir)); // FIXME: calculate once per ray
-      Vec3fa w0 = xfmVector(ray_space,v0-ray.org); w0.w = v0.w;
-      Vec3fa w1 = xfmVector(ray_space,v1-ray.org); w1.w = v1.w;
-      Vec3fa w2 = xfmVector(ray_space,v2-ray.org); w2.w = v2.w;
-      Vec3fa w3 = xfmVector(ray_space,v3-ray.org); w3.w = v3.w;
-
-      /* hit information */
-      float ray_u = 0.0f;
-      float ray_tfar = ray.tfar;
-      bool hit = false;
-      
-      /* push first curve onto stack */
-      BezierCurve3D stack[32];
-      new (&stack[0]) BezierCurve3D(w0,w1,w2,w3,0.0f,1.0f,4);
-      size_t sptr = 1;
-
-      while (true) 
-      {
-      pop:
-        if (sptr == 0) break;
-        BezierCurve3D curve = stack[--sptr];
-      
-        while (curve.depth)
-        {
-          BezierCurve3D curve0,curve1;
-          curve.subdivide(curve0,curve1);
-
-          BBox3fa bounds0 = curve0.bounds();
-          BBox3fa bounds1 = curve1.bounds();
-          bool hit0 = intersect_box(bounds0,ray);
-          bool hit1 = intersect_box(bounds1,ray);
-          
-          if (!hit0 && !hit1) goto pop;
-          else if (likely(hit0 != hit1)) {
-            if (hit0) { curve = curve0; continue; } 
-            else      { curve = curve1; continue; }
-          } else {
-            curve = curve0;
-            stack[sptr++] = curve1;
-          }
-        }
-
-        /* approximative intersection with cone */
-        const Vec3fa v = curve.v3-curve.v0;
-        const Vec3fa w = -curve.v0;
-        const float d0 = w.x*v.x + w.y*v.y;
-        const float d1 = v.x*v.x + v.y*v.y;
-        const float u = clamp(d0/d1,0.0f,1.0f);
-        const Vec3fa p = curve.v0 + u*v;
-        const float d2 = p.x*p.x + p.y*p.y; 
-        const float r2 = p.w*p.w;
-        if (unlikely(d2 > r2)) continue;
-        const float t = p.z;
-        if (unlikely(t < ray.tnear || t > ray_tfar)) continue;
-        ray_u = curve.t0+u*(curve.t1-curve.t0);
-        ray_tfar = t;
-        hit = true;
-      }
-
-      /* compute final hit data */
-      if (likely(hit)) 
-      {
-        BezierCurve3D curve(v0,v1,v2,v3,0.0f,1.0f,0);
-        Vec3fa P,T; curve.eval(ray.u,P,T);
-        ray.u = ray_u;
-        ray.v = 1.0f;
-        ray.tfar = ray_tfar;
-        ray.Ng = T;
-        ray.geomID = curve_in.geomID;
-        ray.primID = curve_in.primID;
-      }
-    }
-
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
-    {
-      for (size_t i=0; i<num; i++)
-        intersect(pre,ray,curves[i],geom);
-    }
-
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom) {
-      return false;
-    }
-
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom) 
-    {
-      for (size_t i=0; i<num; i++) 
-        if (occluded(pre,ray,curves[i],geom))
-          return true;
-
-      return false;
-    }
-  };
-#endif
 }
