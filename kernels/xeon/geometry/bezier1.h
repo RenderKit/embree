@@ -155,7 +155,7 @@ namespace embree
   };
 
   struct Bezier1Type : public PrimitiveType {
-    static Bezier1iType type;
+    //static Bezier1iType type;
     Bezier1Type ();
     size_t blocks(size_t x) const;
     size_t size(const char* This) const;

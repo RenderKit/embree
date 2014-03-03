@@ -450,5 +450,6 @@ namespace embree
     }
 
     DEFINE_INTERSECTOR1(BVH4HairBezier1Intersector1,BVH4HairIntersector1<Bezier1Intersector1>);
+    DEFINE_INTERSECTOR1(BVH4HairBezier1iIntersector1,BVH4HairIntersector1<Bezier1iIntersector1>);
   }
 }
