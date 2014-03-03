@@ -54,6 +54,7 @@ namespace embree
       return xfmPoint(space,p0)+xfmPoint(space,p3);
     }
 
+#if defined(__AVX__)
     /*! calculate the bounds of the curve */
     __forceinline const BBox3fa bounds() const 
     {
@@ -89,6 +90,7 @@ namespace embree
       return enlarge(b,Vec3fa(b.upper.w));
 #endif
     }
+#endif
     
     /*! subdivide the bezier curve */
     __forceinline void subdivide(Bezier1& left_o, Bezier1& right_o, const float T = 0.5f) const
@@ -154,8 +156,9 @@ namespace embree
     unsigned primID;      //!< primitive ID
   };
 
-  struct Bezier1Type : public PrimitiveType {
-    //static Bezier1iType type;
+  struct Bezier1Type : public PrimitiveType 
+  {
+    static Bezier1Type type;
     Bezier1Type ();
     size_t blocks(size_t x) const;
     size_t size(const char* This) const;
