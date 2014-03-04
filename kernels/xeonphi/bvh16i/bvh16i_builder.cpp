@@ -327,15 +327,79 @@ namespace embree
       
       DBG(DBG_PRINT(bvh16[bvh16_node_index].child));
       
-      
       DBG(DBG_PRINT(bvh16_used_slots));
       
+#if 0
+      while(bvh16_used_slots < 16)
+	{
+	  DBG(std::cout << "PULL UP CHILD" << std::endl);
+	  DBG(DBG_PRINT(bvh16_used_slots));
+
+	  ssize_t max_index  = -1;
+	  ssize_t max_leaves = 0;
+
+#if 0
+	  ssize_t min_leaves = 5;
+	  for (size_t i=0;i<bvh16_used_slots;i++)
+	    {
+	      if (bvhLeaf(bvh16[bvh16_node_index].child[i])) continue;
+	      if (bvh16[bvh16_node_index].data[i] < min_leaves)
+		{
+		  max_index = i;
+		  min_leaves = bvh16[bvh16_node_index].data[i];
+		}
+	    }
+#endif
+
+	  if (max_index == -1)
+	  for (size_t i=0;i<bvh16_used_slots;i++)
+	    {
+	      if (bvhLeaf(bvh16[bvh16_node_index].child[i])) continue;
+	      //if (bvhItems(bvh16[bvh16_node_index].child[i]) != 4) continue;
+	      if (bvh16[bvh16_node_index].data[i] > max_leaves)
+		{
+		  max_index = i;
+		  max_leaves = bvh16[bvh16_node_index].data[i];
+		}
+	    }
+
+
+	  DBG(DBG_PRINT(max_index));
+
+	  if (max_index == -1) break;
+
+	  unsigned int pullUpChildIndex = bvh16[bvh16_node_index].child[max_index];
+
+	  DBG(DBG_PRINT(pullUpChildIndex));
+
+	  const size_t childID  = bvhChildID(pullUpChildIndex);
+	  const size_t children = bvhItems(pullUpChildIndex);
+
+	  DBG(DBG_PRINT(childID));
+	  DBG(DBG_PRINT(children));
+	  DBG(DBG_PRINT(bvh16[bvh16_node_index]));
+
+	  bvh16[bvh16_node_index].set(bvh16_used_slots++,bvh4[childID+children-1]);
+	  
+
+	  bvh16[bvh16_node_index].data[max_index]  -= bvh4[childID+children-1].upper.a;
+	  bvh16[bvh16_node_index].child[max_index] -= 1;
+
+	  assert( bvh16[bvh16_node_index].child[max_index] > 1 );
+
+	  DBG(DBG_PRINT(bvh4[childID+children-1].upper.a));
+	  DBG(DBG_PRINT(bvh16[bvh16_node_index]));
+	  DBG(DBG_PRINT(bvhItems( bvh16[bvh16_node_index].child[max_index])));
+	  assert(children > bvhItems( bvh16[bvh16_node_index].child[max_index] ));
+
+	}
+#endif
+
       parent_offset = (unsigned int)(sizeof(BVH16i::Node) * bvh16_node_index);
-      
+
       bvh16i_node_dist[bvh16_used_slots-1]++;
       
       BVH16i::Node &b16 = bvh16[bvh16_node_index];
-
 
       DBG(DBG_PRINT(b16));
       for (size_t i=0;i<bvh16_used_slots;i++)
