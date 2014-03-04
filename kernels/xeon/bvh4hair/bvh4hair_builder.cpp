@@ -80,6 +80,23 @@ namespace embree
     os_free(curves,maxCurves*sizeof(Bezier1));
   }
 
+  /*! scales orthonormal transformation into the range -127 to +127 */
+  const LinearSpace3fa compressTransform(const LinearSpace3fa& xfm)
+  {
+    assert(xfm.vx.x >= -1.0f && xfm.vx.x <= 1.0f);
+    assert(xfm.vx.y >= -1.0f && xfm.vx.y <= 1.0f);
+    assert(xfm.vx.z >= -1.0f && xfm.vx.z <= 1.0f);
+    assert(xfm.vy.x >= -1.0f && xfm.vy.x <= 1.0f);
+    assert(xfm.vy.y >= -1.0f && xfm.vy.y <= 1.0f);
+    assert(xfm.vy.z >= -1.0f && xfm.vy.z <= 1.0f);
+    assert(xfm.vz.x >= -1.0f && xfm.vz.x <= 1.0f);
+    assert(xfm.vz.y >= -1.0f && xfm.vz.y <= 1.0f);
+    assert(xfm.vz.z >= -1.0f && xfm.vz.z <= 1.0f);
+    return LinearSpace3fa (clamp(trunc(128.0f*xfm.vx),Vec3fa(-127.0f),Vec3fa(+128.0f))/128.0f,
+                           clamp(trunc(128.0f*xfm.vy),Vec3fa(-127.0f),Vec3fa(+128.0f))/128.0f,
+                           clamp(trunc(128.0f*xfm.vz),Vec3fa(-127.0f),Vec3fa(+128.0f))/128.0f);
+  }
+
   void BVH4HairBuilder::build(size_t threadIndex, size_t threadCount) 
   {
     /* fast path for empty BVH */
@@ -286,7 +303,10 @@ namespace embree
     {
       size_t k = begin + rand() % (end-begin);
       const Vec3fa axis = normalize(curves[k].p3-curves[k].p0);
-      const LinearSpace3fa space = frame(axis).transposed();
+      LinearSpace3fa space = frame(axis).transposed();
+#if BVH4HAIR_COMPRESSION
+      space = compressTransform(space);
+#endif
       
       BBox3fa bounds = empty;
       float area = 0.0f;
@@ -304,7 +324,11 @@ namespace embree
     }
     bestBounds.upper.w = bestArea;
 
-    return NAABBox3fa(frame(bestAxis).transposed(),bestBounds);
+    LinearSpace3fa space = frame(bestAxis).transposed();
+#if BVH4HAIR_COMPRESSION
+      space = compressTransform(space);
+#endif
+    return NAABBox3fa(space,bestBounds);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1235,8 +1259,8 @@ namespace embree
     /* create unaligned node */
     else {
       UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
-#if BVH4HAIR_SHARED_XFM
-      node->set(bounds.space);
+#if BVH4HAIR_COMPRESSION
+      node->set(bounds.space,bounds.bounds);
       for (ssize_t i=numChildren-1; i>=0; i--) {
         const NAABBox3fa cboundsi = computeAlignedBounds(curves,cbegin[i],cend[i],bounds.space);
         node->set(i,cboundsi.bounds,recurse(threadIndex,depth+1,cbegin[i],cend[i],cbounds[i]));

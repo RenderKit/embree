@@ -25,7 +25,7 @@
 #include "geometry/bezier1i.h"
 
 #define BVH4HAIR_WIDTH 4
-#define BVH4HAIR_SHARED_XFM 0
+#define BVH4HAIR_COMPRESSION 0
 #define BVH4HAIR_NAVIGATION 0
 #if BVH4HAIR_NAVIGATION
 #define NAVI(x) x
@@ -55,6 +55,7 @@ namespace embree
     struct AlignedNode;
     struct UnalignedNode;
     typedef AffineSpaceT<LinearSpace3<Vec3<simdf> > > AffineSpaceSOA4;
+    typedef BBox<Vec3<ssef> > BBoxSSE3f;
 
     /*! branching width of the tree */
     static const size_t N = BVH4HAIR_WIDTH;
@@ -255,7 +256,7 @@ namespace embree
       simdf upper_z;           //!< Z dimension of upper bounds of all 4 children.
     };
 
-#if BVH4HAIR_SHARED_XFM
+#if BVH4HAIR_COMPRESSION
 
     /*! Node with unaligned bounds */
     struct UnalignedNode : public Node
@@ -263,41 +264,111 @@ namespace embree
       /*! Clears the node. */
       __forceinline void clear() 
       {
-	space = one;
-        lower_x = lower_y = lower_z = 1E10;
-        upper_x = upper_y = upper_z = 1E10;
+        xfm_vx[0] = 1; xfm_vx[1] = 0; xfm_vx[2] = 0;
+        xfm_vy[0] = 0; xfm_vy[1] = 1; xfm_vy[2] = 0;
+        xfm_vz[0] = 0; xfm_vz[1] = 0; xfm_vz[2] = 1;
+        offset = 0.0f; scale = 1E10;
+        lower_x[0] = lower_x[1] = lower_x[2] = lower_x[3] = 0;
+        lower_y[0] = lower_y[1] = lower_y[2] = lower_y[3] = 0;
+        lower_z[0] = lower_z[1] = lower_z[2] = lower_z[3] = 0;
+        upper_x[0] = upper_x[1] = upper_x[2] = upper_x[3] = 0;
+        upper_y[0] = upper_y[1] = upper_y[2] = upper_y[3] = 0;
+        upper_z[0] = upper_z[1] = upper_z[2] = upper_z[3] = 0;
+        align[0] = align[1] = align[2] = align[3] = 0;
         Node::clear();
       }
 
-      /*! Sets non-axis aligned space of node. */
-      __forceinline void set(const LinearSpace3fa& s) {
-        space = s;
+      /*! Sets non-axis aligned space of node and parent bounding box. */
+      __forceinline void set(const LinearSpace3fa& space, const BBox3fa& bounds) 
+      {
+        xfm_vx[0] = (char) (128.0f*space.vx.x); assert(128.0f*space.vx.x >= -127.0f && 128.0f*space.vx.x <= 128.0f && trunc(128.0f*space.vx.x) == 128.0f*space.vx.x);
+        xfm_vx[1] = (char) (128.0f*space.vx.y); assert(128.0f*space.vx.y >= -127.0f && 128.0f*space.vx.y <= 128.0f && trunc(128.0f*space.vx.y) == 128.0f*space.vx.y);
+        xfm_vx[2] = (char) (128.0f*space.vx.z); assert(128.0f*space.vx.z >= -127.0f && 128.0f*space.vx.z <= 128.0f && trunc(128.0f*space.vx.z) == 128.0f*space.vx.z);
+        xfm_vx[3] = 0;
+        xfm_vy[0] = (char) (128.0f*space.vy.x); assert(128.0f*space.vy.x >= -127.0f && 128.0f*space.vy.x <= 128.0f && trunc(128.0f*space.vy.x) == 128.0f*space.vy.x);
+        xfm_vy[1] = (char) (128.0f*space.vy.y); assert(128.0f*space.vy.y >= -127.0f && 128.0f*space.vy.y <= 128.0f && trunc(128.0f*space.vy.y) == 128.0f*space.vy.y);
+        xfm_vy[2] = (char) (128.0f*space.vy.z); assert(128.0f*space.vy.z >= -127.0f && 128.0f*space.vy.z <= 128.0f && trunc(128.0f*space.vy.z) == 128.0f*space.vy.z);
+        xfm_vy[3] = 0;
+        xfm_vz[0] = (char) (128.0f*space.vz.x); assert(128.0f*space.vz.x >= -127.0f && 128.0f*space.vz.x <= 128.0f && trunc(128.0f*space.vz.x) == 128.0f*space.vz.x);
+        xfm_vz[1] = (char) (128.0f*space.vz.y); assert(128.0f*space.vz.y >= -127.0f && 128.0f*space.vz.y <= 128.0f && trunc(128.0f*space.vz.y) == 128.0f*space.vz.y);
+        xfm_vz[2] = (char) (128.0f*space.vz.z); assert(128.0f*space.vz.z >= -127.0f && 128.0f*space.vz.z <= 128.0f && trunc(128.0f*space.vz.z) == 128.0f*space.vz.z);
+        xfm_vz[3] = 0;
+        offset = 128.0f*bounds.lower;
+        scale  = 1.0f/(128.0f*(bounds.upper-bounds.lower));
       }
 
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& childID) 
       {
         assert(i < N);
-        lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
-        upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
+        const Vec3fa lower = (128.0f*bounds.lower-Vec3fa(offset))*Vec3fa(scale);
+        assert(lower.x >= 0.0f && lower.x <= 1.0f);
+        assert(lower.y >= 0.0f && lower.y <= 1.0f);
+        assert(lower.z >= 0.0f && lower.z <= 1.0f);
+        lower_x[i] = (unsigned char) floorf(255.0f*lower.x);
+        lower_y[i] = (unsigned char) floorf(255.0f*lower.y); 
+        lower_z[i] = (unsigned char) floorf(255.0f*lower.z);
+        const Vec3fa upper = (128.0f*bounds.upper-Vec3fa(offset))*Vec3fa(scale);
+        assert(upper.x >= 0.0f && upper.x <= 1.0f);
+        assert(upper.y >= 0.0f && upper.y <= 1.0f);
+        assert(upper.z >= 0.0f && upper.z <= 1.0f);
+        upper_x[i] = (unsigned char) ceilf (255.0f*upper.x);
+        upper_y[i] = (unsigned char) ceilf (255.0f*upper.y); 
+        upper_z[i] = (unsigned char) ceilf (255.0f*upper.z);
         Node::set(i,childID);
       }
 
-      /*! Returns bounds of specified child. */
-      __forceinline const BBox3fa bounds(size_t i) const { 
-        assert(i < N);
-        const Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
-        const Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
-        return BBox3fa(lower,upper);
+      /*! returns transformation */
+      __forceinline const LinearSpace3fa getXfm() const 
+      {
+        const ssei v = *(ssei*)&xfm_vx;
+        const ssef vx = _mm_cvtepi8_epi32(v);
+        const ssef vy = _mm_cvtepi8_epi32(shuffle<1>(v));
+        const ssef vz = _mm_cvtepi8_epi32(shuffle<2>(v));
+        return LinearSpace3fa((Vec3fa)vx,(Vec3fa)vy,(Vec3fa)vz);
+      }
+
+      /*! returns 4 bounding boxes */
+      __forceinline BBoxSSE3f getBounds() const 
+      {
+        const ssef offset = *(ssef*)&this->offset;
+        const ssef scale  = *(ssef*)&this->scale;
+        const ssei lower = *(ssei*)&this->lower_x;
+        const ssef lower_x = _mm_cvtepi8_epi32(lower);
+        const ssef lower_y = _mm_cvtepi8_epi32(shuffle<1>(lower));
+        const ssef lower_z = _mm_cvtepi8_epi32(shuffle<2>(lower));
+        const ssei upper = *(ssei*)&this->upper_x;
+        const ssef upper_x = _mm_cvtepi8_epi32(upper);
+        const ssef upper_y = _mm_cvtepi8_epi32(shuffle<1>(upper));
+        const ssef upper_z = _mm_cvtepi8_epi32(shuffle<2>(upper));
+        return BBoxSSE3f(madd(Vec3<simdf>(scale),Vec3<simdf>(lower_x,lower_y,lower_z),Vec3<simdf>(offset)),
+                         madd(Vec3<simdf>(scale),Vec3<simdf>(upper_x,upper_y,upper_z),Vec3<simdf>(offset)));
       }
 
       /*! Returns the extend of the bounds of the ith child */
-      __forceinline Vec3fa extend(size_t i) const {
+      __forceinline Vec3fa extend(size_t i) const 
+      {
         assert(i < N);
-        return bounds(i).size();
+        const sse3f s4 = getBounds().size();
+        const Vec3f s(s4.x[i],s4.y[i],s4.z[i]);
+        return s/128.0f;
       }
 
     public:
+#if 1
+      char xfm_vx[4];             //!< 1st column of transformation
+      char xfm_vy[4];             //!< 2nd column of transformation
+      char xfm_vz[4];             //!< 3rd column of transformation
+      Vec3f offset;               //!< offset to decompress bounds
+      Vec3f scale;                //!< scale  to decompress bounds
+      unsigned char lower_x[4];   //!< X dimension of lower bounds of all 4 children.
+      unsigned char upper_x[4];   //!< X dimension of upper bounds of all 4 children.
+      unsigned char lower_y[4];   //!< Y dimension of lower bounds of all 4 children.
+      unsigned char upper_y[4];   //!< Y dimension of upper bounds of all 4 children.
+      unsigned char lower_z[4];   //!< Z dimension of lower bounds of all 4 children.
+      unsigned char upper_z[4];   //!< Z dimension of upper bounds of all 4 children.
+      char align[4];
+#else
       LinearSpace3fa space;    //!< non-axis aligned space
       simdf lower_x;           //!< X dimension of lower bounds of all 4 children.
       simdf upper_x;           //!< X dimension of upper bounds of all 4 children.
@@ -305,6 +376,7 @@ namespace embree
       simdf upper_y;           //!< Y dimension of upper bounds of all 4 children.
       simdf lower_z;           //!< Z dimension of lower bounds of all 4 children.
       simdf upper_z;           //!< Z dimension of upper bounds of all 4 children.
+#endif
     };
 
 #else

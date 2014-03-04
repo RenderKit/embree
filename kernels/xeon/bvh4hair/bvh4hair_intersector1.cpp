@@ -35,16 +35,16 @@ namespace embree
     __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::UnalignedNode* node, Ray& ray, 
                                                                                   const simd3f& ray_org, const simd3f& ray_dir, simdf& tNear, simdf& tFar)
     {
-#if BVH4HAIR_SHARED_XFM
-      const Vec3fa dir = xfmVector(node->space,ray.dir);
+#if BVH4HAIR_COMPRESSION
+      const LinearSpace3fa xfm = node->getXfm();
+      const Vec3fa dir = xfmVector(xfm,ray.dir);
       const Vec3fa rdir = rcp_safe(dir);
-      const Vec3fa org = xfmPoint(node->space,ray.org);
+      const Vec3fa org = xfmPoint(xfm,ray.org);
       const simd3f vorg  = simd3f(org);
       const simd3f vrdir = simd3f(rdir);
-      const simd3f lower(node->lower_x,node->lower_y,node->lower_z);
-      const simd3f upper(node->upper_x,node->upper_y,node->upper_z);
-      const simd3f tLowerXYZ = (lower - vorg) * vrdir;
-      const simd3f tUpperXYZ = (upper - vorg) * vrdir;
+      const BVH4Hair::BBoxSSE3f bounds = node->getBounds();
+      const simd3f tLowerXYZ = (bounds.lower - vorg) * vrdir;
+      const simd3f tUpperXYZ = (bounds.upper - vorg) * vrdir;
 #else
       const simd3f dir = xfmVector(node->naabb,ray_dir);
       const simd3f rdir = rcp_safe(dir);
