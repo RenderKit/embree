@@ -133,12 +133,16 @@ Vec3fa sampleSphere(const float u, const float v)
 void addHair (ISPCScene* scene)
 {
   int seed = 879;
-  //const int numCurves = 100;
-  //const int numCurveSegments = 1;
+#if 0
+  const int numCurves = 2;
+  const int numCurveSegments = 1;
+  const float R = 0.2f;
+#else
   const int numCurves = 10000;
   const int numCurveSegments = 2;
-  const int numCurvePoints = 3*numCurveSegments+1;
   const float R = 0.002f;
+#endif
+  const int numCurvePoints = 3*numCurveSegments+1;
 
   ISPCHairSet* hair = new ISPCHairSet;
   hair->numVertices = numCurves*numCurvePoints;
@@ -794,7 +798,7 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    //if (x != 330 || y != 256) continue;
+    //if (x != 0 || y != 0) continue;
 
     /* calculate pixel color */
     float fx = x + frand(seed);

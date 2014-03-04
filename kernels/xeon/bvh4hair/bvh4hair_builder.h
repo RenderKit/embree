@@ -110,7 +110,7 @@ namespace embree
       }
 
       /*! performs object binning to the the best partitioning */
-      static ObjectSplit find(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space = one);
+      static ObjectSplit find(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space);
 
       /*! calculates aligned bounds for left and right split */
       const ObjectSplit alignedBounds(Bezier1* curves, size_t begin, size_t end);
@@ -164,7 +164,7 @@ namespace embree
       }
 
       /*! performs object binning to the the best partitioning */
-      static SubdivObjectSplit find(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space = one);
+      static SubdivObjectSplit find(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space);
 
       /*! splits hairs into two sets */
       size_t split(Bezier1* curves, size_t begin, size_t& end) const;
@@ -190,7 +190,7 @@ namespace embree
     /*! Performs fallback splits */
     struct FallBackSplit
     {
-      __forceinline FallBackSplit (size_t center, const BBox3fa& bounds0, const BBox3fa& bounds1)
+      __forceinline FallBackSplit (size_t center, const NAABBox3fa& bounds0, const NAABBox3fa& bounds1)
         : center(center), bounds0(bounds0), bounds1(bounds1) {}
 
       /*! finds some partitioning */
@@ -198,7 +198,7 @@ namespace embree
 
     public:
       size_t center;
-      BBox3fa bounds0, bounds1;
+      NAABBox3fa bounds0, bounds1;
     };
 
     /*! Performs spatial split in geometry center */
@@ -230,7 +230,7 @@ namespace embree
       }
       
       /*! finds the two hair strands */
-      static const SpatialSplit find(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space = one);
+      static const SpatialSplit find(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space);
       
       /*! splits hair list into the two strands */
       size_t split(Bezier1* curves, size_t begin, size_t& end) const;
@@ -262,7 +262,7 @@ namespace embree
     void subdivide3();
 
     /*! calculate bounds for range of primitives */
-    static const BBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end);
+    //static const BBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end);
 
     /*! calculate bounds for range of primitives */
     static const NAABBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space);

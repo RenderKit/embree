@@ -267,13 +267,13 @@ namespace embree
         xfm_vx[0] = 1; xfm_vx[1] = 0; xfm_vx[2] = 0;
         xfm_vy[0] = 0; xfm_vy[1] = 1; xfm_vy[2] = 0;
         xfm_vz[0] = 0; xfm_vz[1] = 0; xfm_vz[2] = 1;
-        offset = 0.0f; scale = 1E10;
-        lower_x[0] = lower_x[1] = lower_x[2] = lower_x[3] = 0;
-        lower_y[0] = lower_y[1] = lower_y[2] = lower_y[3] = 0;
-        lower_z[0] = lower_z[1] = lower_z[2] = lower_z[3] = 0;
-        upper_x[0] = upper_x[1] = upper_x[2] = upper_x[3] = 0;
-        upper_y[0] = upper_y[1] = upper_y[2] = upper_y[3] = 0;
-        upper_z[0] = upper_z[1] = upper_z[2] = upper_z[3] = 0;
+        offset = 0.0f; scale = 0.0f;
+        lower_x[0] = lower_x[1] = lower_x[2] = lower_x[3] = 127;
+        lower_y[0] = lower_y[1] = lower_y[2] = lower_y[3] = 127;
+        lower_z[0] = lower_z[1] = lower_z[2] = lower_z[3] = 127;
+        upper_x[0] = upper_x[1] = upper_x[2] = upper_x[3] = 127;
+        upper_y[0] = upper_y[1] = upper_y[2] = upper_y[3] = 127;
+        upper_z[0] = upper_z[1] = upper_z[2] = upper_z[3] = 127;
         align[0] = align[1] = align[2] = align[3] = 0;
         Node::clear();
       }
@@ -281,68 +281,93 @@ namespace embree
       /*! Sets non-axis aligned space of node and parent bounding box. */
       __forceinline void set(const LinearSpace3fa& space, const BBox3fa& bounds) 
       {
-        xfm_vx[0] = (char) (128.0f*space.vx.x); assert(128.0f*space.vx.x >= -127.0f && 128.0f*space.vx.x <= 128.0f && trunc(128.0f*space.vx.x) == 128.0f*space.vx.x);
-        xfm_vx[1] = (char) (128.0f*space.vx.y); assert(128.0f*space.vx.y >= -127.0f && 128.0f*space.vx.y <= 128.0f && trunc(128.0f*space.vx.y) == 128.0f*space.vx.y);
-        xfm_vx[2] = (char) (128.0f*space.vx.z); assert(128.0f*space.vx.z >= -127.0f && 128.0f*space.vx.z <= 128.0f && trunc(128.0f*space.vx.z) == 128.0f*space.vx.z);
+        xfm_vx[0] = (char) (128.0f*space.vx.x); assert((128.0f*space.vx.x >= -128.0f) && (128.0f*space.vx.x <= 127.0f) && (truncf(128.0f*space.vx.x) == 128.0f*space.vx.x));
+        xfm_vx[1] = (char) (128.0f*space.vx.y); assert(128.0f*space.vx.y >= -128.0f && 128.0f*space.vx.y <= 127.0f && truncf(128.0f*space.vx.y) == 128.0f*space.vx.y);
+        xfm_vx[2] = (char) (128.0f*space.vx.z); assert(128.0f*space.vx.z >= -128.0f && 128.0f*space.vx.z <= 127.0f && truncf(128.0f*space.vx.z) == 128.0f*space.vx.z);
         xfm_vx[3] = 0;
-        xfm_vy[0] = (char) (128.0f*space.vy.x); assert(128.0f*space.vy.x >= -127.0f && 128.0f*space.vy.x <= 128.0f && trunc(128.0f*space.vy.x) == 128.0f*space.vy.x);
-        xfm_vy[1] = (char) (128.0f*space.vy.y); assert(128.0f*space.vy.y >= -127.0f && 128.0f*space.vy.y <= 128.0f && trunc(128.0f*space.vy.y) == 128.0f*space.vy.y);
-        xfm_vy[2] = (char) (128.0f*space.vy.z); assert(128.0f*space.vy.z >= -127.0f && 128.0f*space.vy.z <= 128.0f && trunc(128.0f*space.vy.z) == 128.0f*space.vy.z);
+        xfm_vy[0] = (char) (128.0f*space.vy.x); assert(128.0f*space.vy.x >= -128.0f && 128.0f*space.vy.x <= 127.0f && truncf(128.0f*space.vy.x) == 128.0f*space.vy.x);
+        xfm_vy[1] = (char) (128.0f*space.vy.y); assert(128.0f*space.vy.y >= -128.0f && 128.0f*space.vy.y <= 127.0f && truncf(128.0f*space.vy.y) == 128.0f*space.vy.y);
+        xfm_vy[2] = (char) (128.0f*space.vy.z); assert(128.0f*space.vy.z >= -128.0f && 128.0f*space.vy.z <= 127.0f && truncf(128.0f*space.vy.z) == 128.0f*space.vy.z);
         xfm_vy[3] = 0;
-        xfm_vz[0] = (char) (128.0f*space.vz.x); assert(128.0f*space.vz.x >= -127.0f && 128.0f*space.vz.x <= 128.0f && trunc(128.0f*space.vz.x) == 128.0f*space.vz.x);
-        xfm_vz[1] = (char) (128.0f*space.vz.y); assert(128.0f*space.vz.y >= -127.0f && 128.0f*space.vz.y <= 128.0f && trunc(128.0f*space.vz.y) == 128.0f*space.vz.y);
-        xfm_vz[2] = (char) (128.0f*space.vz.z); assert(128.0f*space.vz.z >= -127.0f && 128.0f*space.vz.z <= 128.0f && trunc(128.0f*space.vz.z) == 128.0f*space.vz.z);
+        xfm_vz[0] = (char) (128.0f*space.vz.x); assert(128.0f*space.vz.x >= -128.0f && 128.0f*space.vz.x <= 127.0f && truncf(128.0f*space.vz.x) == 128.0f*space.vz.x);
+        xfm_vz[1] = (char) (128.0f*space.vz.y); assert(128.0f*space.vz.y >= -128.0f && 128.0f*space.vz.y <= 127.0f && truncf(128.0f*space.vz.y) == 128.0f*space.vz.y);
+        xfm_vz[2] = (char) (128.0f*space.vz.z); assert(128.0f*space.vz.z >= -128.0f && 128.0f*space.vz.z <= 127.0f && truncf(128.0f*space.vz.z) == 128.0f*space.vz.z);
         xfm_vz[3] = 0;
         offset = 128.0f*bounds.lower;
-        scale  = 1.0f/(128.0f*(bounds.upper-bounds.lower));
+        scale  = 128.0f*bounds.size()/255.0f;
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const BBox3fa& bounds) 
+      {
+        assert(i < N);
+        //PRINT2("seti",bounds);
+        const Vec3fa lower = (128.0f*bounds.lower-Vec3fa(offset))/Vec3fa(scale);
+        //PRINT(lower);
+        //PRINT(128.0f*bounds.lower-Vec3fa(offset));
+        assert(lower.x >= 0.0f && lower.x <= 255.0001f);
+        assert(lower.y >= 0.0f && lower.y <= 255.0001f);
+        assert(lower.z >= 0.0f && lower.z <= 255.0001f);
+        lower_x[i] = (unsigned char) floorf(lower.x);
+        lower_y[i] = (unsigned char) floorf(lower.y); 
+        lower_z[i] = (unsigned char) floorf(lower.z);
+        const Vec3fa upper = (128.0f*bounds.upper-Vec3fa(offset))/Vec3fa(scale);
+        //PRINT(upper);
+        assert(upper.x >= 0.0f && upper.x <= 255.0001f);
+        assert(upper.y >= 0.0f && upper.y <= 255.0001f);
+        assert(upper.z >= 0.0f && upper.z <= 255.0001f);
+        upper_x[i] = (unsigned char) ceilf (upper.x);
+        upper_y[i] = (unsigned char) ceilf (upper.y); 
+        upper_z[i] = (unsigned char) ceilf (upper.z);
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const NodeRef& childID) {
+        Node::set(i,childID);
       }
 
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& childID) 
       {
-        assert(i < N);
-        const Vec3fa lower = (128.0f*bounds.lower-Vec3fa(offset))*Vec3fa(scale);
-        assert(lower.x >= 0.0f && lower.x <= 1.0f);
-        assert(lower.y >= 0.0f && lower.y <= 1.0f);
-        assert(lower.z >= 0.0f && lower.z <= 1.0f);
-        lower_x[i] = (unsigned char) floorf(255.0f*lower.x);
-        lower_y[i] = (unsigned char) floorf(255.0f*lower.y); 
-        lower_z[i] = (unsigned char) floorf(255.0f*lower.z);
-        const Vec3fa upper = (128.0f*bounds.upper-Vec3fa(offset))*Vec3fa(scale);
-        assert(upper.x >= 0.0f && upper.x <= 1.0f);
-        assert(upper.y >= 0.0f && upper.y <= 1.0f);
-        assert(upper.z >= 0.0f && upper.z <= 1.0f);
-        upper_x[i] = (unsigned char) ceilf (255.0f*upper.x);
-        upper_y[i] = (unsigned char) ceilf (255.0f*upper.y); 
-        upper_z[i] = (unsigned char) ceilf (255.0f*upper.z);
+        set(i,bounds);
         Node::set(i,childID);
       }
 
       /*! returns transformation */
       __forceinline const LinearSpace3fa getXfm() const 
       {
-        const ssei v = *(ssei*)&xfm_vx;
-        const ssef vx = _mm_cvtepi8_epi32(v);
-        const ssef vy = _mm_cvtepi8_epi32(shuffle<1>(v));
-        const ssef vz = _mm_cvtepi8_epi32(shuffle<2>(v));
+        //const ssei v = *(ssei*)&xfm_vx;
+        const ssef vx = ssef(_mm_cvtepi8_epi32(*(ssei*)&xfm_vx));
+        const ssef vy = ssef(_mm_cvtepi8_epi32(*(ssei*)&xfm_vy));
+        const ssef vz = ssef(_mm_cvtepi8_epi32(*(ssei*)&xfm_vz));
         return LinearSpace3fa((Vec3fa)vx,(Vec3fa)vy,(Vec3fa)vz);
       }
 
       /*! returns 4 bounding boxes */
       __forceinline BBoxSSE3f getBounds() const 
       {
-        const ssef offset = *(ssef*)&this->offset;
-        const ssef scale  = *(ssef*)&this->scale;
-        const ssei lower = *(ssei*)&this->lower_x;
-        const ssef lower_x = _mm_cvtepi8_epi32(lower);
-        const ssef lower_y = _mm_cvtepi8_epi32(shuffle<1>(lower));
-        const ssef lower_z = _mm_cvtepi8_epi32(shuffle<2>(lower));
-        const ssei upper = *(ssei*)&this->upper_x;
-        const ssef upper_x = _mm_cvtepi8_epi32(upper);
-        const ssef upper_y = _mm_cvtepi8_epi32(shuffle<1>(upper));
-        const ssef upper_z = _mm_cvtepi8_epi32(shuffle<2>(upper));
-        return BBoxSSE3f(madd(Vec3<simdf>(scale),Vec3<simdf>(lower_x,lower_y,lower_z),Vec3<simdf>(offset)),
-                         madd(Vec3<simdf>(scale),Vec3<simdf>(upper_x,upper_y,upper_z),Vec3<simdf>(offset)));
+        const Vec3fa offset = *(Vec3fa*)&this->offset;
+        const Vec3fa scale  = *(Vec3fa*)&this->scale;
+        //PRINT(offset);
+        //PRINT(scale);
+        //const ssei lower = *(ssei*)&this->lower_x;
+        const ssef lower_x = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_x));
+        const ssef lower_y = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_y));
+        const ssef lower_z = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_z));
+        //PRINT(lower_x);
+        //PRINT(lower_y);
+        //PRINT(lower_z);
+        //const ssei upper = *(ssei*)&this->upper_x;
+        const ssef upper_x = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_x));
+        const ssef upper_y = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_y));
+        const ssef upper_z = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_z));
+        //PRINT(upper_x);
+        //PRINT(upper_y);
+        //PRINT(upper_z);
+        //simdf slower_x = scale.x*lower_x + offset.x;
+        //PRINT(slower_x);
+        return BBoxSSE3f(Vec3<simdf>(scale)*Vec3<simdf>(lower_x,lower_y,lower_z)+Vec3<simdf>(offset),
+                         Vec3<simdf>(scale)*Vec3<simdf>(upper_x,upper_y,upper_z)+Vec3<simdf>(offset));
       }
 
       /*! Returns the extend of the bounds of the ith child */
@@ -362,10 +387,10 @@ namespace embree
       Vec3f offset;               //!< offset to decompress bounds
       Vec3f scale;                //!< scale  to decompress bounds
       unsigned char lower_x[4];   //!< X dimension of lower bounds of all 4 children.
-      unsigned char upper_x[4];   //!< X dimension of upper bounds of all 4 children.
       unsigned char lower_y[4];   //!< Y dimension of lower bounds of all 4 children.
-      unsigned char upper_y[4];   //!< Y dimension of upper bounds of all 4 children.
       unsigned char lower_z[4];   //!< Z dimension of lower bounds of all 4 children.
+      unsigned char upper_x[4];   //!< X dimension of upper bounds of all 4 children.
+      unsigned char upper_y[4];   //!< Y dimension of upper bounds of all 4 children.
       unsigned char upper_z[4];   //!< Z dimension of upper bounds of all 4 children.
       char align[4];
 #else

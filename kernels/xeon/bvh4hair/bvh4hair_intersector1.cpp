@@ -37,22 +37,32 @@ namespace embree
     {
 #if BVH4HAIR_COMPRESSION
       const LinearSpace3fa xfm = node->getXfm();
+      //PRINT(xfm);
       const Vec3fa dir = xfmVector(xfm,ray.dir);
+      //PRINT(dir);
       const Vec3fa rdir = rcp_safe(dir);
       const Vec3fa org = xfmPoint(xfm,ray.org);
+      //PRINT(org);
       const simd3f vorg  = simd3f(org);
       const simd3f vrdir = simd3f(rdir);
       const BVH4Hair::BBoxSSE3f bounds = node->getBounds();
+      //PRINT(bounds);
       const simd3f tLowerXYZ = (bounds.lower - vorg) * vrdir;
       const simd3f tUpperXYZ = (bounds.upper - vorg) * vrdir;
 #else
-      const simd3f dir = xfmVector(node->naabb,ray_dir);
+      const AffineSpaceSOA4 xfm = node->naabb;
+      //PRINT(xfm);
+      const simd3f dir = xfmVector(xfm,ray_dir);
+      //PRINT(dir);
       const simd3f rdir = rcp_safe(dir);
-      const simd3f org = xfmPoint(node->naabb,ray_org);
+      const simd3f org = xfmPoint(xfm,ray_org);
+      //PRINT(org);
       const simd3f tLowerXYZ = - org * rdir;     // (Vec3fa(zero) - org) * rdir;
       const simd3f tUpperXYZ = rdir + tLowerXYZ; // (Vec3fa(one ) - org) * rdir;
 #endif
-
+      //PRINT(tLowerXYZ);
+      //PRINT(tUpperXYZ);
+      
 #if ((BVH4HAIR_WIDTH == 4) && defined(__SSE4_1__) || (BVH4HAIR_WIDTH == 8) && defined(__AVX2__))
       const simdf tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
       const simdf tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
@@ -63,6 +73,7 @@ namespace embree
       tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
       tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
       const simdb vmask = tNear <= tFar;
+      //PRINT(vmask);
       return movemask(vmask);
 #else
       const simdf tNearX = min(tLowerXYZ.x,tUpperXYZ.x);

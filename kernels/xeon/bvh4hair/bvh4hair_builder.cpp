@@ -38,6 +38,27 @@ namespace embree
   extern std::vector<BVH4Hair::NodeRef> naviStack;
 #endif
 
+  /*! scales orthonormal transformation into the range -128 to +127 */
+  __forceinline const LinearSpace3fa compressTransform(const LinearSpace3fa& xfm)
+  {
+#if BVH4HAIR_COMPRESSION
+    assert(xfm.vx.x >= -1.0f && xfm.vx.x <= 1.0f);
+    assert(xfm.vx.y >= -1.0f && xfm.vx.y <= 1.0f);
+    assert(xfm.vx.z >= -1.0f && xfm.vx.z <= 1.0f);
+    assert(xfm.vy.x >= -1.0f && xfm.vy.x <= 1.0f);
+    assert(xfm.vy.y >= -1.0f && xfm.vy.y <= 1.0f);
+    assert(xfm.vy.z >= -1.0f && xfm.vy.z <= 1.0f);
+    assert(xfm.vz.x >= -1.0f && xfm.vz.x <= 1.0f);
+    assert(xfm.vz.y >= -1.0f && xfm.vz.y <= 1.0f);
+    assert(xfm.vz.z >= -1.0f && xfm.vz.z <= 1.0f);
+    return LinearSpace3fa (clamp(trunc(128.0f*xfm.vx),Vec3fa(-128.0f),Vec3fa(+127.0f))/128.0f,
+                           clamp(trunc(128.0f*xfm.vy),Vec3fa(-128.0f),Vec3fa(+127.0f))/128.0f,
+                           clamp(trunc(128.0f*xfm.vz),Vec3fa(-128.0f),Vec3fa(+127.0f))/128.0f);
+#else
+    return xfm;
+#endif
+  }
+
   BVH4HairBuilder::BVH4HairBuilder (BVH4Hair* bvh, Scene* scene)
     : scene(scene), minLeafSize(1), maxLeafSize(inf), bvh(bvh), numCurves(0), maxCurves(0)
   {
@@ -66,35 +87,20 @@ namespace embree
       else throw std::runtime_error("invalid hair accel mode");
     }
 
-    PRINT(enableAlignedObjectSplits);
-    PRINT(enableAlignedSpatialSplits);
-    PRINT(enableAlignedSubdivObjectSplits);
-    PRINT(enableUnalignedObjectSplits);
-    PRINT(enableUnalignedSpatialSplits);
-    PRINT(enableUnalignedSubdivObjectSplits);
-    PRINT(enableStrandSplits);
-    PRINT(enablePresplit3);
+    if (g_verbose >= 2) {
+      PRINT(enableAlignedObjectSplits);
+      PRINT(enableAlignedSpatialSplits);
+      PRINT(enableAlignedSubdivObjectSplits);
+      PRINT(enableUnalignedObjectSplits);
+      PRINT(enableUnalignedSpatialSplits);
+      PRINT(enableUnalignedSubdivObjectSplits);
+      PRINT(enableStrandSplits);
+      PRINT(enablePresplit3);
+    }
   }
 
   BVH4HairBuilder::~BVH4HairBuilder () {
     os_free(curves,maxCurves*sizeof(Bezier1));
-  }
-
-  /*! scales orthonormal transformation into the range -127 to +127 */
-  const LinearSpace3fa compressTransform(const LinearSpace3fa& xfm)
-  {
-    assert(xfm.vx.x >= -1.0f && xfm.vx.x <= 1.0f);
-    assert(xfm.vx.y >= -1.0f && xfm.vx.y <= 1.0f);
-    assert(xfm.vx.z >= -1.0f && xfm.vx.z <= 1.0f);
-    assert(xfm.vy.x >= -1.0f && xfm.vy.x <= 1.0f);
-    assert(xfm.vy.y >= -1.0f && xfm.vy.y <= 1.0f);
-    assert(xfm.vy.z >= -1.0f && xfm.vy.z <= 1.0f);
-    assert(xfm.vz.x >= -1.0f && xfm.vz.x <= 1.0f);
-    assert(xfm.vz.y >= -1.0f && xfm.vz.y <= 1.0f);
-    assert(xfm.vz.z >= -1.0f && xfm.vz.z <= 1.0f);
-    return LinearSpace3fa (clamp(trunc(128.0f*xfm.vx),Vec3fa(-127.0f),Vec3fa(+128.0f))/128.0f,
-                           clamp(trunc(128.0f*xfm.vy),Vec3fa(-127.0f),Vec3fa(+128.0f))/128.0f,
-                           clamp(trunc(128.0f*xfm.vz),Vec3fa(-127.0f),Vec3fa(+128.0f))/128.0f);
   }
 
   void BVH4HairBuilder::build(size_t threadIndex, size_t threadCount) 
@@ -162,7 +168,8 @@ namespace embree
     /* start recursive build */
     size_t begin = 0, end = numCurves; //curves.size();
     //curves.resize(10*numPrimitives+10); // FIXME: to make debug mode happy
-    bvh->root = recurse(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,LinearSpace3fa(one)));
+    const LinearSpace3fa space = compressTransform(one);
+    bvh->root = recurse(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,space));
     bvh->bounds = bounds;
     NAVI(naviNode = bvh->root);
     NAVI(rootNode = bvh->root);
@@ -264,7 +271,7 @@ namespace embree
       std::cout << "  after  subdivision: " << 1E-6*float(numCurves) << " M curves" << std::endl;
   }
 
-  const BBox3fa BVH4HairBuilder::computeAlignedBounds(Bezier1* curves, size_t begin, size_t end)
+  /*const BBox3fa BVH4HairBuilder::computeAlignedBounds(Bezier1* curves, size_t begin, size_t end)
   {
     float area = 0.0f;
     BBox3fa bounds = empty;
@@ -275,7 +282,7 @@ namespace embree
     }
     bounds.upper.w = area;
     return bounds;
-  }
+    }*/
 
   const BVH4Hair::NAABBox3fa BVH4HairBuilder::computeAlignedBounds(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space)
   {
@@ -303,11 +310,7 @@ namespace embree
     {
       size_t k = begin + rand() % (end-begin);
       const Vec3fa axis = normalize(curves[k].p3-curves[k].p0);
-      LinearSpace3fa space = frame(axis).transposed();
-#if BVH4HAIR_COMPRESSION
-      space = compressTransform(space);
-#endif
-      
+      const LinearSpace3fa space = compressTransform(frame(axis).transposed());
       BBox3fa bounds = empty;
       float area = 0.0f;
       for (size_t j=begin; j<end; j++) {
@@ -324,10 +327,7 @@ namespace embree
     }
     bestBounds.upper.w = bestArea;
 
-    LinearSpace3fa space = frame(bestAxis).transposed();
-#if BVH4HAIR_COMPRESSION
-      space = compressTransform(space);
-#endif
+    const LinearSpace3fa space = compressTransform(frame(bestAxis).transposed());
     return NAABBox3fa(space,bestBounds);
   }
 
@@ -371,7 +371,8 @@ namespace embree
     const size_t num0 = left-begin;
     const size_t num1 = end-left;
     if (num0 == 0 || num1 == 0)
-      return StrandSplit(NAABBox3fa(one,inf),axis0,1,NAABBox3fa(one,inf),axis1,1);
+      return StrandSplit(NAABBox3fa(compressTransform(one),inf),axis0,1,
+                         NAABBox3fa(compressTransform(one),inf),axis1,1);
 
     const NAABBox3fa naabb0 = computeUnalignedBounds(curves,begin,left);
     const NAABBox3fa naabb1 = computeUnalignedBounds(curves,left, end );
@@ -510,8 +511,8 @@ namespace embree
     }
 
     const size_t center = split(curves,begin,end);
-    bounds0 = computeAlignedBounds(curves,begin,center);
-    bounds1 = computeAlignedBounds(curves,center,end);
+    bounds0 = computeAlignedBounds(curves,begin,center,compressTransform(one));
+    bounds1 = computeAlignedBounds(curves,center,end  ,compressTransform(one));
     return *this;
   }
   
@@ -956,8 +957,8 @@ namespace embree
   __forceinline BVH4HairBuilder::FallBackSplit BVH4HairBuilder::FallBackSplit::find(Bezier1* curves, size_t begin, size_t end)
   {
     const size_t center = (begin+end)/2;
-    const BBox3fa bounds0 = computeAlignedBounds(curves,begin,center);
-    const BBox3fa bounds1 = computeAlignedBounds(curves,center,end);
+    const NAABBox3fa bounds0 = computeAlignedBounds(curves,begin,center,compressTransform(one));
+    const NAABBox3fa bounds1 = computeAlignedBounds(curves,center,end  ,compressTransform(one));
     return FallBackSplit(center,bounds0,bounds1);
   }
 
@@ -1007,7 +1008,8 @@ namespace embree
     ObjectSplit alignedObjectSplit;
     float alignedObjectSAH;
     if (enableAlignedObjectSplits) {
-      alignedObjectSplit = ObjectSplit::find(curves,begin,end).alignedBounds(curves,begin,end);
+      const LinearSpace3fa space = compressTransform(one);
+      alignedObjectSplit = ObjectSplit::find(curves,begin,end,space).alignedBounds(curves,begin,end);
       alignedObjectSAH = travCostAligned*halfArea(bounds.bounds) + alignedObjectSplit.modifiedSAH();
       //alignedObjectSAH = travCostAligned*halfArea(bounds.bounds) + alignedObjectSplit.standardSAH();
       bestSAH = min(bestSAH,alignedObjectSAH);
@@ -1019,7 +1021,8 @@ namespace embree
     SpatialSplit alignedSpatialSplit;
     float alignedSpatialSAH;
     if (enableAlignedSpatialSplits) {
-      alignedSpatialSplit = SpatialSplit::find(curves,begin,end);
+      const LinearSpace3fa space = compressTransform(one);
+      alignedSpatialSplit = SpatialSplit::find(curves,begin,end,space);
       alignedSpatialSAH = travCostAligned*halfArea(bounds.bounds) + alignedSpatialSplit.modifiedSAH();
       //alignedSpatialSAH = travCostAligned*halfArea(bounds.bounds) + alignedSpatialSplit.standardSAH();
       bestSAH = min(bestSAH,alignedSpatialSAH);
@@ -1031,7 +1034,8 @@ namespace embree
     SubdivObjectSplit alignedSubdivObjectSplit;
     float alignedSubdivObjectSAH;
     if (enableAlignedSubdivObjectSplits) {
-      alignedSubdivObjectSplit = SubdivObjectSplit::find(curves,begin,end);
+      const LinearSpace3fa space = compressTransform(one);
+      alignedSubdivObjectSplit = SubdivObjectSplit::find(curves,begin,end,space);
       alignedSubdivObjectSAH = travCostAligned*halfArea(bounds.bounds) + alignedSubdivObjectSplit.modifiedSAH();
       //alignedSubdivObjectSAH = travCostAligned*halfArea(bounds.bounds) + alignedSubdivObjectSplit.standardSAH();
       bestSAH = min(bestSAH,alignedSubdivObjectSAH);
@@ -1251,8 +1255,9 @@ namespace embree
     /* create aligned node */
     if (isAligned) {
       AlignedNode* node = bvh->allocAlignedNode(threadIndex);
-      for (ssize_t i=numChildren-1; i>=0; i--)
+      for (ssize_t i=numChildren-1; i>=0; i--) {
         node->set(i,cbounds[i].bounds,recurse(threadIndex,depth+1,cbegin[i],cend[i],cbounds[i]));
+      }
       return bvh->encodeNode(node);
     }
     
@@ -1263,7 +1268,10 @@ namespace embree
       node->set(bounds.space,bounds.bounds);
       for (ssize_t i=numChildren-1; i>=0; i--) {
         const NAABBox3fa cboundsi = computeAlignedBounds(curves,cbegin[i],cend[i],bounds.space);
-        node->set(i,cboundsi.bounds,recurse(threadIndex,depth+1,cbegin[i],cend[i],cbounds[i]));
+        node->set(i,cboundsi.bounds);
+      }
+      for (ssize_t i=numChildren-1; i>=0; i--) {
+        node->set(i,recurse(threadIndex,depth+1,cbegin[i],cend[i],cbounds[i]));
       }
 #else
       for (ssize_t i=numChildren-1; i>=0; i--)
