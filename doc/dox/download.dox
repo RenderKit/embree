@@ -109,6 +109,11 @@ your system:
 
 <pre><code>sudo make install</code></pre>
 
+<p>If you cannot install Embree on your system (e.g. when you don't
+have administrator rights) you need to add embree_root_directory/build
+to your LD_LIBRARY_PATH (and SINK_LD_LIBRARY_PATH in case you
+want to use Embree on Xeon Phi).</p>
+
 <p>The default configuration in the configuration dialog should be
 appropiate for most usages. The following table described all
 parameters that can be configured:</p>
