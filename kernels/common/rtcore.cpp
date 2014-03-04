@@ -79,7 +79,7 @@ namespace embree
   /* global settings */
   std::string g_tri_accel = "default";    //!< triangle acceleration structure to use
   std::string g_hair_accel = "default";    //!< hair acceleration structure to use
-  std::string g_hair_accel_mode = "aOuO"; //!< flags for hair acceleration structure
+  std::string g_hair_accel_mode = "aOuOuST"; //!< flags for hair acceleration structure
   std::string g_builder = "default";      //!< builder to use
   std::string g_traverser = "default";    //!< traverser to use
   int g_scene_flags = -1;       //!< scene flags to use

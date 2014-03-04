@@ -270,7 +270,7 @@ namespace embree
       }
 
       /*! Sets non-axis aligned space of node. */
-      __forceinline void set(const AffineSpace3fa& s) {
+      __forceinline void set(const LinearSpace3fa& s) {
         space = s;
       }
 
@@ -298,7 +298,7 @@ namespace embree
       }
 
     public:
-      AffineSpace3fa space;    //!< non-axis aligned space
+      LinearSpace3fa space;    //!< non-axis aligned space
       simdf lower_x;           //!< X dimension of lower bounds of all 4 children.
       simdf upper_x;           //!< X dimension of upper bounds of all 4 children.
       simdf lower_y;           //!< Y dimension of lower bounds of all 4 children.
