@@ -38,7 +38,7 @@ namespace embree
     size_t numVertices = bvh->numVertices;
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
     size_t bytesTotal = bytesAlignedNodes+bytesUnalignedNodes+bytesPrims+bytesVertices;
-    size_t bytesTotalAllocated = bvh->alloc.bytes();
+    //size_t bytesTotalAllocated = bvh->alloc.bytes();
     if (g_benchmark) std::cout << "BENCHMARK_HAIR_ACCEL " << bvhSAH << " " << bytesTotal << std::endl;
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream << "  primitives = " << bvh->numPrimitives << ", vertices = " << bvh->numVertices << std::endl;
@@ -47,7 +47,7 @@ namespace embree
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream.precision(1);
     stream << ", depth = " << depth << std::endl;
-    stream << "  used = " << bytesTotal/1E6 << " MB, allocated = " << bytesTotalAllocated/1E6 << " MB, perPrimitive = " << double(bytesTotal)/double(bvh->numPrimitives) << " B" << std::endl;
+    stream << "  used = " << bytesTotal/1E6 << " MB, perPrimitive = " << double(bytesTotal)/double(bvh->numPrimitives) << " B" << std::endl;
     stream.precision(1);
     stream << "  alignedNodes = "  << numAlignedNodes << " "
            << "(" << 100.0*double(childrenAlignedNodes)/double(BVH4Hair::N*numAlignedNodes) << "% filled) " 

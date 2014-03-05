@@ -332,28 +332,28 @@ namespace embree
       /*! returns transformation */
       __forceinline const LinearSpace3fa getXfm() const 
       {
-        //const ssei v = *(ssei*)&xfm_vx;
-        const ssef vx = ssef(_mm_cvtepi8_epi32(*(ssei*)&xfm_vx));
-        const ssef vy = ssef(_mm_cvtepi8_epi32(*(ssei*)&xfm_vy));
-        const ssef vz = ssef(_mm_cvtepi8_epi32(*(ssei*)&xfm_vz));
+        const ssei v = *(ssei*)&xfm_vx;
+        const ssef vx = ssef(_mm_cvtepi8_epi32(v));
+        const ssef vy = ssef(_mm_cvtepi8_epi32(shuffle<1>(v)));
+        const ssef vz = ssef(_mm_cvtepi8_epi32(shuffle<2>(v)));
         return LinearSpace3fa((Vec3fa)vx,(Vec3fa)vy,(Vec3fa)vz);
       }
 
       /*! returns 4 bounding boxes */
       __forceinline BBoxSSE3f getBounds() const 
       {
-        const Vec3fa offset = *(Vec3fa*)&this->offset;
-        const Vec3fa scale  = *(Vec3fa*)&this->scale;
-        //const ssei lower = *(ssei*)&this->lower_x;
-        const ssef lower_x = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_x));
-        const ssef lower_y = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_y));
-        const ssef lower_z = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_z));
-        //const ssei upper = *(ssei*)&this->upper_x;
-        const ssef upper_x = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_x));
-        const ssef upper_y = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_y));
-        const ssef upper_z = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_z));
-        return BBoxSSE3f(Vec3<simdf>(scale)*Vec3<simdf>(lower_x,lower_y,lower_z)+Vec3<simdf>(offset),
-                         Vec3<simdf>(scale)*Vec3<simdf>(upper_x,upper_y,upper_z)+Vec3<simdf>(offset));
+        const ssei lower = *(ssei*)&this->lower_x;
+        const ssef lower_x = ssef(_mm_cvtepu8_epi32(lower));
+        const ssef lower_y = ssef(_mm_cvtepu8_epi32(shuffle<1>(lower)));
+        const ssef lower_z = ssef(_mm_cvtepu8_epi32(shuffle<2>(lower)));
+        const ssei upper = *(ssei*)&this->upper_x;
+        const ssef upper_x = ssef(_mm_cvtepu8_epi32(upper));
+        const ssef upper_y = ssef(_mm_cvtepu8_epi32(shuffle<1>(upper)));
+        const ssef upper_z = ssef(_mm_cvtepu8_epi32(shuffle<2>(upper)));
+        const Vec3<simdf> offset = *(Vec3fa*)&this->offset;
+        const Vec3<simdf> scale  = *(Vec3fa*)&this->scale;
+        return BBoxSSE3f(scale*Vec3<simdf>(lower_x,lower_y,lower_z)+offset,
+                         scale*Vec3<simdf>(upper_x,upper_y,upper_z)+offset);
       }
 
       /*! returns 4 bounding boxes */
@@ -376,6 +376,7 @@ namespace embree
       char xfm_vx[4];             //!< 1st column of transformation
       char xfm_vy[4];             //!< 2nd column of transformation
       char xfm_vz[4];             //!< 3rd column of transformation
+      char align[4];              
       Vec3f offset;               //!< offset to decompress bounds
       Vec3f scale;                //!< scale  to decompress bounds
       unsigned char lower_x[4];   //!< X dimension of lower bounds of all 4 children.
@@ -384,7 +385,6 @@ namespace embree
       unsigned char upper_x[4];   //!< X dimension of upper bounds of all 4 children.
       unsigned char upper_y[4];   //!< Y dimension of upper bounds of all 4 children.
       unsigned char upper_z[4];   //!< Z dimension of upper bounds of all 4 children.
-      char align[4];
 #else
       LinearSpace3fa space;    //!< non-axis aligned space
       simdf lower_x;           //!< X dimension of lower bounds of all 4 children.
