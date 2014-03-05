@@ -70,9 +70,11 @@ namespace embree
     {
 #if BVH4HAIR_COMPRESS_UNALIGNED_NODES
       const LinearSpace3fa xfm = node->getXfm();
-      const Vec3fa dir = xfmVector(xfm,ray.dir);
+      //const Vec3fa dir = xfmVector(xfm,ray.dir);
+      const Vec3fa dir = madd(xfm.vx,(Vec3fa)ray_dir.x,madd(xfm.vy,(Vec3fa)ray_dir.y,xfm.vz*(Vec3fa)ray_dir.z));
       const Vec3fa rdir = rcp_safe(dir);
-      const Vec3fa org = xfmPoint(xfm,ray.org);
+      //const Vec3fa org = xfmPoint(xfm,ray.org);
+      const Vec3fa org = madd(xfm.vx,(Vec3fa)ray_org.x,madd(xfm.vy,(Vec3fa)ray_org.y,xfm.vz*(Vec3fa)ray_org.z));
       const simd3f vorg  = simd3f(org);
       const simd3f vrdir = simd3f(rdir);
       const BVH4Hair::BBoxSIMD3f bounds = node->getBounds();
