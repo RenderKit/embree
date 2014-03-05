@@ -262,7 +262,7 @@ namespace embree
     void subdivide3();
 
     /*! calculate bounds for range of primitives */
-    //static const BBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end);
+    static const BBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end);
 
     /*! calculate bounds for range of primitives */
     static const NAABBox3fa computeAlignedBounds(Bezier1* curves, size_t begin, size_t end, const LinearSpace3fa& space);

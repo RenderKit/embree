@@ -25,7 +25,7 @@
 #include "geometry/bezier1i.h"
 
 #define BVH4HAIR_WIDTH 4
-#define BVH4HAIR_COMPRESSION 0
+#define BVH4HAIR_COMPRESSION 1
 #define BVH4HAIR_NAVIGATION 0
 #if BVH4HAIR_NAVIGATION
 #define NAVI(x) x
@@ -281,37 +281,37 @@ namespace embree
       /*! Sets non-axis aligned space of node and parent bounding box. */
       __forceinline void set(const LinearSpace3fa& space, const BBox3fa& bounds) 
       {
-        xfm_vx[0] = (char) (128.0f*space.vx.x); assert((128.0f*space.vx.x >= -128.0f) && (128.0f*space.vx.x <= 127.0f) && (truncf(128.0f*space.vx.x) == 128.0f*space.vx.x));
-        xfm_vx[1] = (char) (128.0f*space.vx.y); assert(128.0f*space.vx.y >= -128.0f && 128.0f*space.vx.y <= 127.0f && truncf(128.0f*space.vx.y) == 128.0f*space.vx.y);
-        xfm_vx[2] = (char) (128.0f*space.vx.z); assert(128.0f*space.vx.z >= -128.0f && 128.0f*space.vx.z <= 127.0f && truncf(128.0f*space.vx.z) == 128.0f*space.vx.z);
+        xfm_vx[0] = (char) (127.0f*space.vx.x); assert(127.0f*space.vx.x >= -127.0f && 127.0f*space.vx.x <= 127.0f && truncf(127.0f*space.vx.x) == 127.0f*space.vx.x);
+        xfm_vx[1] = (char) (127.0f*space.vx.y); assert(127.0f*space.vx.y >= -127.0f && 127.0f*space.vx.y <= 127.0f && truncf(127.0f*space.vx.y) == 127.0f*space.vx.y);
+        xfm_vx[2] = (char) (127.0f*space.vx.z); assert(127.0f*space.vx.z >= -127.0f && 127.0f*space.vx.z <= 127.0f && truncf(127.0f*space.vx.z) == 127.0f*space.vx.z);
         xfm_vx[3] = 0;
-        xfm_vy[0] = (char) (128.0f*space.vy.x); assert(128.0f*space.vy.x >= -128.0f && 128.0f*space.vy.x <= 127.0f && truncf(128.0f*space.vy.x) == 128.0f*space.vy.x);
-        xfm_vy[1] = (char) (128.0f*space.vy.y); assert(128.0f*space.vy.y >= -128.0f && 128.0f*space.vy.y <= 127.0f && truncf(128.0f*space.vy.y) == 128.0f*space.vy.y);
-        xfm_vy[2] = (char) (128.0f*space.vy.z); assert(128.0f*space.vy.z >= -128.0f && 128.0f*space.vy.z <= 127.0f && truncf(128.0f*space.vy.z) == 128.0f*space.vy.z);
+        xfm_vy[0] = (char) (127.0f*space.vy.x); assert(127.0f*space.vy.x >= -127.0f && 127.0f*space.vy.x <= 127.0f && truncf(127.0f*space.vy.x) == 127.0f*space.vy.x);
+        xfm_vy[1] = (char) (127.0f*space.vy.y); assert(127.0f*space.vy.y >= -127.0f && 127.0f*space.vy.y <= 127.0f && truncf(127.0f*space.vy.y) == 127.0f*space.vy.y);
+        xfm_vy[2] = (char) (127.0f*space.vy.z); assert(127.0f*space.vy.z >= -127.0f && 127.0f*space.vy.z <= 127.0f && truncf(127.0f*space.vy.z) == 127.0f*space.vy.z);
         xfm_vy[3] = 0;
-        xfm_vz[0] = (char) (128.0f*space.vz.x); assert(128.0f*space.vz.x >= -128.0f && 128.0f*space.vz.x <= 127.0f && truncf(128.0f*space.vz.x) == 128.0f*space.vz.x);
-        xfm_vz[1] = (char) (128.0f*space.vz.y); assert(128.0f*space.vz.y >= -128.0f && 128.0f*space.vz.y <= 127.0f && truncf(128.0f*space.vz.y) == 128.0f*space.vz.y);
-        xfm_vz[2] = (char) (128.0f*space.vz.z); assert(128.0f*space.vz.z >= -128.0f && 128.0f*space.vz.z <= 127.0f && truncf(128.0f*space.vz.z) == 128.0f*space.vz.z);
+        xfm_vz[0] = (char) (127.0f*space.vz.x); assert(127.0f*space.vz.x >= -127.0f && 127.0f*space.vz.x <= 127.0f && truncf(127.0f*space.vz.x) == 127.0f*space.vz.x);
+        xfm_vz[1] = (char) (127.0f*space.vz.y); assert(127.0f*space.vz.y >= -127.0f && 127.0f*space.vz.y <= 127.0f && truncf(127.0f*space.vz.y) == 127.0f*space.vz.y);
+        xfm_vz[2] = (char) (127.0f*space.vz.z); assert(127.0f*space.vz.z >= -127.0f && 127.0f*space.vz.z <= 127.0f && truncf(127.0f*space.vz.z) == 127.0f*space.vz.z);
         xfm_vz[3] = 0;
-        offset = 128.0f*bounds.lower;
-        scale  = 128.0f*bounds.size()/255.0f;
+        offset = 127.0f*bounds.lower;
+        scale  = (127.0f*bounds.upper-127.0f*bounds.lower)/255.0f;
       }
 
       /*! Sets bounding box and ID of child. */
       __forceinline void set(size_t i, const BBox3fa& bounds) 
       {
         assert(i < N);
-        const Vec3fa lower = (128.0f*bounds.lower-Vec3fa(offset))/Vec3fa(scale);
-        assert(lower.x >= 0.0f && lower.x <= 255.0001f);
-        assert(lower.y >= 0.0f && lower.y <= 255.0001f);
-        assert(lower.z >= 0.0f && lower.z <= 255.0001f);
+        const Vec3fa lower = (127.0f*bounds.lower-Vec3fa(offset))/Vec3fa(scale);
+        assert(lower.x >= 0.0f && lower.x <= 255.01f); // FIXME: should be smaller than 255.0f
+        assert(lower.y >= 0.0f && lower.y <= 255.01f);
+        assert(lower.z >= 0.0f && lower.z <= 255.01f);
         lower_x[i] = (unsigned char) clamp(floorf(lower.x),0.0f,255.0f);
         lower_y[i] = (unsigned char) clamp(floorf(lower.y),0.0f,255.0f);
         lower_z[i] = (unsigned char) clamp(floorf(lower.z),0.0f,255.0f);
-        const Vec3fa upper = (128.0f*bounds.upper-Vec3fa(offset))/Vec3fa(scale);
-        assert(upper.x >= 0.0f && upper.x <= 255.0001f);
-        assert(upper.y >= 0.0f && upper.y <= 255.0001f);
-        assert(upper.z >= 0.0f && upper.z <= 255.0001f);
+        const Vec3fa upper = (127.0f*bounds.upper-Vec3fa(offset))/Vec3fa(scale);
+        assert(upper.x >= 0.0f && upper.x <= 255.01f); // FIXME: should be smaller than 255.0f
+        assert(upper.y >= 0.0f && upper.y <= 255.01f);
+        assert(upper.z >= 0.0f && upper.z <= 255.01f);
         upper_x[i] = (unsigned char) clamp(ceilf(upper.x),0.0f,255.0f);
         upper_y[i] = (unsigned char) clamp(ceilf(upper.y),0.0f,255.0f);
         upper_z[i] = (unsigned char) clamp(ceilf(upper.z),0.0f,255.0f);
@@ -368,7 +368,7 @@ namespace embree
       /*! Returns the extend of the bounds of the ith child */
       __forceinline Vec3fa extend(size_t i) const {
         assert(i < N);
-        return getBounds(i).bounds.size()/128.0f;
+        return getBounds(i).bounds.size()/127.0f;
       }
 
     public:
