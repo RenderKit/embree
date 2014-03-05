@@ -66,7 +66,8 @@ namespace embree
 
     template<typename PrimitiveIntersector>
     __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::UnalignedNode* node, Ray& ray, 
-                                                                                  const simd3f& ray_org, const simd3f& ray_dir, simdf& tNear, simdf& tFar)
+                                                                                  const avx3f& ray_org_dir, const simd3f& ray_org, const simd3f& ray_dir, 
+                                                                                  simdf& tNear, simdf& tFar)
     {
 #if BVH4HAIR_COMPRESS_UNALIGNED_NODES
       const LinearSpace3fa xfm = node->getXfm();
@@ -81,7 +82,7 @@ namespace embree
       const simd3f tLowerXYZ = (bounds.lower - vorg) * vrdir;
       const simd3f tUpperXYZ = (bounds.upper - vorg) * vrdir;
 #else
-#if 0
+#if 1
       const AffineSpaceSIMD3f xfm = node->naabb;
       const simd3f dir = xfmVector(xfm,ray_dir);
       const simd3f nrdir = simd3f(simdf(-1.0f))/dir; //rcp_safe(dir); // FIXME: not 100% safe
@@ -90,9 +91,21 @@ namespace embree
       const simd3f tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
 #else
       const AffineSpaceSIMD3f xfm = node->naabb;
-      const simd3f dir = xfmVector(xfm,ray_dir);
+      const avxf orgdirx = madd(avxf(xfm.l.vx.x),ray_org_dir.x,
+                                madd(avxf(xfm.l.vy.x),ray_org_dir.y,
+                                     madd(avxf(xfm.l.vz.x),ray_org_dir.z,
+                                          avxf(xfm.p.x,zero))));
+      const avxf orgdiry = madd(avxf(xfm.l.vx.y),ray_org_dir.x,
+                                madd(avxf(xfm.l.vy.y),ray_org_dir.y,
+                                     madd(avxf(xfm.l.vz.y),ray_org_dir.z,
+                                          avxf(xfm.p.y,zero))));
+      const avxf orgdirz = madd(avxf(xfm.l.vx.z),ray_org_dir.x,
+                                madd(avxf(xfm.l.vy.z),ray_org_dir.y,
+                                     madd(avxf(xfm.l.vz.z),ray_org_dir.z,
+                                          avxf(xfm.p.z,zero))));
+      const simd3f org(extract<0>(orgdirx),extract<0>(orgdiry),extract<0>(orgdirz));
+      const simd3f dir(extract<1>(orgdirx),extract<1>(orgdiry),extract<1>(orgdirz));
       const simd3f nrdir = simd3f(simdf(-1.0f))/dir; //rcp_safe(dir); // FIXME: not 100% safe
-      const simd3f org = xfmPoint(xfm,ray_org);
       const simd3f tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
       const simd3f tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
 #endif
@@ -151,6 +164,7 @@ namespace embree
       const simd3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
       const simd3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+      const avx3f org_dir(avxf(org.x,dir.x),avxf(org.y,dir.y),avxf(org.z,dir.z));
 
       /* pop loop */
       while (true) pop:
@@ -185,7 +199,7 @@ namespace embree
 
           /*! process nodes with unaligned bounds */
           else if (unlikely(cur.isUnalignedNode()))
-            mask = intersectBox(cur.unalignedNode(),ray,org,dir,tNear,tFar);
+            mask = intersectBox(cur.unalignedNode(),ray,org_dir,org,dir,tNear,tFar);
 
           /*! otherwise this is a leaf */
           else break;
@@ -315,6 +329,7 @@ namespace embree
       const simd3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
       const simd3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+      const avx3f org_dir(avxf(org.x,dir.x),avxf(org.y,dir.y),avxf(org.z,dir.z));
 
       /* pop loop */
       while (true) pop:
@@ -345,7 +360,7 @@ namespace embree
 
           /*! process nodes with unaligned bounds */
           else if (unlikely(cur.isUnalignedNode()))
-            mask = intersectBox(cur.unalignedNode(),ray,org,dir,tNear,tFar);
+            mask = intersectBox(cur.unalignedNode(),ray,org_dir,org,dir,tNear,tFar);
 
           /*! otherwise this is a leaf */
           else break;
