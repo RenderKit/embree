@@ -1251,7 +1251,7 @@ namespace embree
       numChildren++;
       
     } while (numChildren < BVH4Hair::N);
-    
+
     /* create aligned node */
     if (isAligned) {
       AlignedNode* node = bvh->allocAlignedNode(threadIndex);
@@ -1268,10 +1268,7 @@ namespace embree
       node->set(bounds.space,bounds.bounds);
       for (ssize_t i=numChildren-1; i>=0; i--) {
         const NAABBox3fa cboundsi = computeAlignedBounds(curves,cbegin[i],cend[i],bounds.space);
-        node->set(i,cboundsi.bounds);
-      }
-      for (ssize_t i=numChildren-1; i>=0; i--) {
-        node->set(i,recurse(threadIndex,depth+1,cbegin[i],cend[i],cbounds[i]));
+        node->set(i,cboundsi.bounds,recurse(threadIndex,depth+1,cbegin[i],cend[i],cbounds[i]));
       }
 #else
       for (ssize_t i=numChildren-1; i>=0; i--)

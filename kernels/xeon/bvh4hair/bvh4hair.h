@@ -301,24 +301,20 @@ namespace embree
       __forceinline void set(size_t i, const BBox3fa& bounds) 
       {
         assert(i < N);
-        //PRINT2("seti",bounds);
         const Vec3fa lower = (128.0f*bounds.lower-Vec3fa(offset))/Vec3fa(scale);
-        //PRINT(lower);
-        //PRINT(128.0f*bounds.lower-Vec3fa(offset));
         assert(lower.x >= 0.0f && lower.x <= 255.0001f);
         assert(lower.y >= 0.0f && lower.y <= 255.0001f);
         assert(lower.z >= 0.0f && lower.z <= 255.0001f);
-        lower_x[i] = (unsigned char) floorf(lower.x);
-        lower_y[i] = (unsigned char) floorf(lower.y); 
-        lower_z[i] = (unsigned char) floorf(lower.z);
+        lower_x[i] = (unsigned char) clamp(floorf(lower.x),0.0f,255.0f);
+        lower_y[i] = (unsigned char) clamp(floorf(lower.y),0.0f,255.0f);
+        lower_z[i] = (unsigned char) clamp(floorf(lower.z),0.0f,255.0f);
         const Vec3fa upper = (128.0f*bounds.upper-Vec3fa(offset))/Vec3fa(scale);
-        //PRINT(upper);
         assert(upper.x >= 0.0f && upper.x <= 255.0001f);
         assert(upper.y >= 0.0f && upper.y <= 255.0001f);
         assert(upper.z >= 0.0f && upper.z <= 255.0001f);
-        upper_x[i] = (unsigned char) ceilf (upper.x);
-        upper_y[i] = (unsigned char) ceilf (upper.y); 
-        upper_z[i] = (unsigned char) ceilf (upper.z);
+        upper_x[i] = (unsigned char) clamp(ceilf(upper.x),0.0f,255.0f);
+        upper_y[i] = (unsigned char) clamp(ceilf(upper.y),0.0f,255.0f);
+        upper_z[i] = (unsigned char) clamp(ceilf(upper.z),0.0f,255.0f);
       }
 
       /*! Sets bounding box and ID of child. */
@@ -348,35 +344,31 @@ namespace embree
       {
         const Vec3fa offset = *(Vec3fa*)&this->offset;
         const Vec3fa scale  = *(Vec3fa*)&this->scale;
-        //PRINT(offset);
-        //PRINT(scale);
         //const ssei lower = *(ssei*)&this->lower_x;
         const ssef lower_x = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_x));
         const ssef lower_y = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_y));
         const ssef lower_z = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_z));
-        //PRINT(lower_x);
-        //PRINT(lower_y);
-        //PRINT(lower_z);
         //const ssei upper = *(ssei*)&this->upper_x;
         const ssef upper_x = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_x));
         const ssef upper_y = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_y));
         const ssef upper_z = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_z));
-        //PRINT(upper_x);
-        //PRINT(upper_y);
-        //PRINT(upper_z);
-        //simdf slower_x = scale.x*lower_x + offset.x;
-        //PRINT(slower_x);
         return BBoxSSE3f(Vec3<simdf>(scale)*Vec3<simdf>(lower_x,lower_y,lower_z)+Vec3<simdf>(offset),
                          Vec3<simdf>(scale)*Vec3<simdf>(upper_x,upper_y,upper_z)+Vec3<simdf>(offset));
       }
 
-      /*! Returns the extend of the bounds of the ith child */
-      __forceinline Vec3fa extend(size_t i) const 
+      /*! returns 4 bounding boxes */
+      __forceinline NAABBox3fa getBounds(size_t i) const 
       {
         assert(i < N);
-        const sse3f s4 = getBounds().size();
-        const Vec3f s(s4.x[i],s4.y[i],s4.z[i]);
-        return s/128.0f;
+        const Vec3f lower((float)lower_x[i],lower_y[i],lower_z[i]);
+        const Vec3f upper((float)upper_x[i],upper_y[i],upper_z[i]);
+        return NAABBox3fa(getXfm(),BBox3fa(Vec3fa(offset+scale*lower),Vec3fa(offset+scale*upper)));
+      }
+
+      /*! Returns the extend of the bounds of the ith child */
+      __forceinline Vec3fa extend(size_t i) const {
+        assert(i < N);
+        return getBounds(i).bounds.size()/128.0f;
       }
 
     public:
