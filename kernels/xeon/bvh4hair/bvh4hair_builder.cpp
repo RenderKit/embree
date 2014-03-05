@@ -168,8 +168,7 @@ namespace embree
     /* start recursive build */
     size_t begin = 0, end = numCurves; //curves.size();
     //curves.resize(10*numPrimitives+10); // FIXME: to make debug mode happy
-    const LinearSpace3fa space = compressTransform(one);
-    bvh->root = recurse(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,space));
+    bvh->root = recurse(threadIndex,0,begin,end,computeAlignedBounds(curves,begin,end,one));
     bvh->bounds = bounds;
     NAVI(naviNode = bvh->root);
     NAVI(rootNode = bvh->root);
@@ -300,7 +299,7 @@ namespace embree
   const BVH4Hair::NAABBox3fa BVH4HairBuilder::computeUnalignedBounds(Bezier1* curves, size_t begin, size_t end)
   {
     if (end-begin == 0)
-      return NAABBox3fa(empty);
+      return NAABBox3fa(empty); // FIXME: can cause problems with compression
 
     float bestArea = inf;
     Vec3fa bestAxis = one;
@@ -310,7 +309,7 @@ namespace embree
     {
       size_t k = begin + rand() % (end-begin);
       const Vec3fa axis = normalize(curves[k].p3-curves[k].p0);
-      const LinearSpace3fa space = compressTransform(frame(axis).transposed());
+      const LinearSpace3fa space = compressTransform(clamp(frame(axis).transposed()));
       BBox3fa bounds = empty;
       float area = 0.0f;
       for (size_t j=begin; j<end; j++) {
@@ -327,7 +326,7 @@ namespace embree
     }
     bestBounds.upper.w = bestArea;
 
-    const LinearSpace3fa space = compressTransform(frame(bestAxis).transposed());
+    const LinearSpace3fa space = compressTransform(clamp(frame(bestAxis).transposed()));
     return NAABBox3fa(space,bestBounds);
   }
 

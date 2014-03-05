@@ -268,12 +268,12 @@ namespace embree
         xfm_vy[0] = 0; xfm_vy[1] = 1; xfm_vy[2] = 0;
         xfm_vz[0] = 0; xfm_vz[1] = 0; xfm_vz[2] = 1;
         offset = 0.0f; scale = 0.0f;
-        lower_x[0] = lower_x[1] = lower_x[2] = lower_x[3] = 127;
-        lower_y[0] = lower_y[1] = lower_y[2] = lower_y[3] = 127;
-        lower_z[0] = lower_z[1] = lower_z[2] = lower_z[3] = 127;
-        upper_x[0] = upper_x[1] = upper_x[2] = upper_x[3] = 127;
-        upper_y[0] = upper_y[1] = upper_y[2] = upper_y[3] = 127;
-        upper_z[0] = upper_z[1] = upper_z[2] = upper_z[3] = 127;
+        lower_x[0] = lower_x[1] = lower_x[2] = lower_x[3] = -128;
+        lower_y[0] = lower_y[1] = lower_y[2] = lower_y[3] = -128;
+        lower_z[0] = lower_z[1] = lower_z[2] = lower_z[3] = -128;
+        upper_x[0] = upper_x[1] = upper_x[2] = upper_x[3] = -128;
+        upper_y[0] = upper_y[1] = upper_y[2] = upper_y[3] = -128;
+        upper_z[0] = upper_z[1] = upper_z[2] = upper_z[3] = -128;
         align[0] = align[1] = align[2] = align[3] = 0;
         Node::clear();
       }
@@ -301,14 +301,14 @@ namespace embree
       __forceinline void set(size_t i, const BBox3fa& bounds) 
       {
         assert(i < N);
-        const Vec3fa lower = (127.0f*bounds.lower-Vec3fa(offset))/Vec3fa(scale);
+        const Vec3fa lower = select(eq_mask(scale,Vec3fa(0.0f)),0.0f,(127.0f*bounds.lower-Vec3fa(offset))/Vec3fa(scale));
         assert(lower.x >= 0.0f && lower.x <= 255.01f); // FIXME: should be smaller than 255.0f
         assert(lower.y >= 0.0f && lower.y <= 255.01f);
         assert(lower.z >= 0.0f && lower.z <= 255.01f);
         lower_x[i] = (unsigned char) clamp(floorf(lower.x),0.0f,255.0f);
         lower_y[i] = (unsigned char) clamp(floorf(lower.y),0.0f,255.0f);
         lower_z[i] = (unsigned char) clamp(floorf(lower.z),0.0f,255.0f);
-        const Vec3fa upper = (127.0f*bounds.upper-Vec3fa(offset))/Vec3fa(scale);
+        const Vec3fa upper = select(eq_mask(scale,Vec3fa(0.0f)),0.0f,(127.0f*bounds.upper-Vec3fa(offset))/Vec3fa(scale));
         assert(upper.x >= 0.0f && upper.x <= 255.01f); // FIXME: should be smaller than 255.0f
         assert(upper.y >= 0.0f && upper.y <= 255.01f);
         assert(upper.z >= 0.0f && upper.z <= 255.01f);

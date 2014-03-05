@@ -128,6 +128,13 @@ namespace embree
     return LinearSpace3<T>(dx,dy,N);
   }
 
+  /* clamps linear space to range -1 to +1 */
+  template<typename T> __forceinline LinearSpace3<T> clamp(const LinearSpace3<T>& space) {
+    return LinearSpace3<T>(clamp(space.vx,T(-1.0f),T(1.0f)),
+                           clamp(space.vy,T(-1.0f),T(1.0f)),
+                           clamp(space.vz,T(-1.0f),T(1.0f)));
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   // Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
