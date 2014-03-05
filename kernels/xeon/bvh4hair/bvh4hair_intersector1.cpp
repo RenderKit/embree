@@ -72,7 +72,7 @@ namespace embree
       const LinearSpace3fa xfm = node->getXfm();
       //const Vec3fa dir = xfmVector(xfm,ray.dir);
       const Vec3fa dir = madd(xfm.vx,(Vec3fa)ray_dir.x,madd(xfm.vy,(Vec3fa)ray_dir.y,xfm.vz*(Vec3fa)ray_dir.z));
-      const Vec3fa rdir = rcp_safe(dir);
+      const simd3f rdir = Vec3fa(one)/dir; //rcp_safe(dir); // FIXME: not 100% safe
       //const Vec3fa org = xfmPoint(xfm,ray.org);
       const Vec3fa org = madd(xfm.vx,(Vec3fa)ray_org.x,madd(xfm.vy,(Vec3fa)ray_org.y,xfm.vz*(Vec3fa)ray_org.z));
       const simd3f vorg  = simd3f(org);
@@ -81,12 +81,21 @@ namespace embree
       const simd3f tLowerXYZ = (bounds.lower - vorg) * vrdir;
       const simd3f tUpperXYZ = (bounds.upper - vorg) * vrdir;
 #else
+#if 0
       const AffineSpaceSIMD3f xfm = node->naabb;
       const simd3f dir = xfmVector(xfm,ray_dir);
       const simd3f rdir = rcp_safe(dir);
       const simd3f org = xfmPoint(xfm,ray_org);
       const simd3f tLowerXYZ = - org * rdir;     // (Vec3fa(zero) - org) * rdir;
       const simd3f tUpperXYZ = rdir + tLowerXYZ; // (Vec3fa(one ) - org) * rdir;
+#else
+      const AffineSpaceSIMD3f xfm = node->naabb;
+      const simd3f dir = xfmVector(xfm,ray_dir);
+      const simd3f rdir = simd3f(simdf(1.0f))/dir; //rcp_safe(dir); // FIXME: not 100% safe
+      const simd3f org = xfmPoint(xfm,ray_org);
+      const simd3f tLowerXYZ = - org * rdir;     // (Vec3fa(zero) - org) * rdir;
+      const simd3f tUpperXYZ = rdir + tLowerXYZ; // (Vec3fa(one ) - org) * rdir;
+#endif
 #endif
       
 #if ((BVH4HAIR_WIDTH == 4) && defined(__SSE4_1__) || (BVH4HAIR_WIDTH == 8) && defined(__AVX2__))
