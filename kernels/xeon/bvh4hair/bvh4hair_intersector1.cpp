@@ -169,18 +169,17 @@ namespace embree
         /* downtraversal loop */
         while (true)
         {
-          /*! stop if we found a leaf */
-          size_t mask;
-          if (unlikely(cur.isLeaf())) break;
-          STAT3(normal.trav_nodes,1,1,1);
-          
           /*! process nodes with aligned bounds */
+          size_t mask;
           if (likely(cur.isAlignedNode()))
             mask = intersectBox(cur.alignedNode(),org,rdir,org_rdir,nearX,nearY,nearZ,tNear,tFar);
 
           /*! process nodes with unaligned bounds */
-          else
+          else if (unlikely(cur.isUnalignedNode()))
             mask = intersectBox(cur.unalignedNode(),ray,org,dir,tNear,tFar);
+
+          /*! otherwise this is a leaf */
+          else break;
 
 #if BVH4HAIR_NAVIGATION
           if (depth == naviDepth)
@@ -200,6 +199,7 @@ namespace embree
 #endif
 
           /*! if no child is hit, pop next node */
+          STAT3(normal.trav_nodes,1,1,1);
           const Node* node = cur.node();
           if (unlikely(mask == 0))
             goto pop;
@@ -329,20 +329,20 @@ namespace embree
         /* downtraversal loop */
         while (true)
         {
-          /*! stop if we found a leaf */
-          size_t mask;
-          if (unlikely(cur.isLeaf())) break;
-          STAT3(normal.trav_nodes,1,1,1);
-          
           /*! process nodes with aligned bounds */
+          size_t mask;
           if (likely(cur.isAlignedNode()))
             mask = intersectBox(cur.alignedNode(),org,rdir,org_rdir,nearX,nearY,nearZ,tNear,tFar);
 
           /*! process nodes with unaligned bounds */
-          else
+          else if (unlikely(cur.isUnalignedNode()))
             mask = intersectBox(cur.unalignedNode(),ray,org,dir,tNear,tFar);
 
+          /*! otherwise this is a leaf */
+          else break;
+
           /*! if no child is hit, pop next node */
+          STAT3(normal.trav_nodes,1,1,1);
           const Node* node = cur.node();
           if (unlikely(mask == 0))
             goto pop;
