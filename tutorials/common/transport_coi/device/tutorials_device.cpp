@@ -135,6 +135,17 @@ namespace embree
     g_ispc_scene->meshes[meshID] = mesh;
   }
 
+  extern "C" void run_create_hairset(uint32_t         in_BufferCount,
+				     void**           in_ppBufferPointers,
+				     uint64_t*        in_pBufferLengths,
+				     CreateMeshData*  in_pMiscData,
+				     uint16_t         in_MiscDataLength,
+				     void*            in_pReturnValue,
+				     uint16_t         in_ReturnValueLength)
+  {
+    PING;
+  }
+
   extern "C" void run_create_scene(uint32_t         in_BufferCount,
                                    void**           in_ppBufferPointers,
                                    uint64_t*        in_pBufferLengths,
