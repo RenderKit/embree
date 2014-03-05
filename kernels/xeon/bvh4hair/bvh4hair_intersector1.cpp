@@ -84,17 +84,17 @@ namespace embree
 #if 0
       const AffineSpaceSIMD3f xfm = node->naabb;
       const simd3f dir = xfmVector(xfm,ray_dir);
-      const simd3f rdir = rcp_safe(dir);
+      const simd3f nrdir = simd3f(simdf(-1.0f))/dir; //rcp_safe(dir); // FIXME: not 100% safe
       const simd3f org = xfmPoint(xfm,ray_org);
-      const simd3f tLowerXYZ = - org * rdir;     // (Vec3fa(zero) - org) * rdir;
-      const simd3f tUpperXYZ = rdir + tLowerXYZ; // (Vec3fa(one ) - org) * rdir;
+      const simd3f tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
+      const simd3f tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
 #else
       const AffineSpaceSIMD3f xfm = node->naabb;
       const simd3f dir = xfmVector(xfm,ray_dir);
-      const simd3f rdir = simd3f(simdf(1.0f))/dir; //rcp_safe(dir); // FIXME: not 100% safe
+      const simd3f nrdir = simd3f(simdf(-1.0f))/dir; //rcp_safe(dir); // FIXME: not 100% safe
       const simd3f org = xfmPoint(xfm,ray_org);
-      const simd3f tLowerXYZ = - org * rdir;     // (Vec3fa(zero) - org) * rdir;
-      const simd3f tUpperXYZ = rdir + tLowerXYZ; // (Vec3fa(one ) - org) * rdir;
+      const simd3f tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
+      const simd3f tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
 #endif
 #endif
       
