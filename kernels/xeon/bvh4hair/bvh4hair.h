@@ -53,10 +53,24 @@ namespace embree
     
     /*! forward declaration of node type */
     struct Node;
-    struct AlignedNode;
-    struct UnalignedNode;
+    struct CompressedAlignedNode;
+    struct UncompressedAlignedNode;
+    struct CompressedUnalignedNode;
+    struct UncompressedUnalignedNode;
     typedef AffineSpaceT<LinearSpace3<Vec3<simdf> > > AffineSpaceSIMD3f;
     typedef BBox<Vec3<simdf> > BBoxSIMD3f;
+
+#if BVH4HAIR_COMPRESS_ALIGNED_NODES 
+    typedef CompressedAlignedNode AlignedNode;
+#else
+    typedef UncompressedAlignedNode AlignedNode;
+#endif
+
+#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
+    typedef CompressedUnalignedNode UnalignedNode;
+#else
+    typedef UncompressedUnalignedNode UnalignedNode;
+#endif
 
     /*! branching width of the tree */
     static const size_t N = BVH4HAIR_WIDTH;
@@ -221,10 +235,8 @@ namespace embree
       NodeRef children[N];   //!< Pointer to the children (can be a node or leaf)
     };
 
-#if BVH4HAIR_COMPRESS_ALIGNED_NODES
-
     /*! Compressed node with aligned bounds */
-    struct AlignedNode : public Node
+    struct CompressedAlignedNode : public Node
     {
       enum { stride = 4 };
 
@@ -320,10 +332,8 @@ namespace embree
       unsigned char upper_z[N];   //!< Z dimension of upper bounds of all 4 children.
     };
 
-#else
-
     /*! Node with aligned bounds */
-    struct AlignedNode : public Node
+    struct UncompressedAlignedNode : public Node
     {
       enum { stride = sizeof(simdf) };
 
@@ -388,12 +398,8 @@ namespace embree
       simdf upper_z;           //!< Z dimension of upper bounds of all 4 children.
     };
 
-#endif
-
-#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
-
     /*! Compressed node with unaligned bounds */
-    struct UnalignedNode : public Node
+    struct CompressedUnalignedNode : public Node
     {
       /*! Clears the node. */
       __forceinline void clear() 
@@ -517,10 +523,8 @@ namespace embree
       unsigned char upper_z[N];   //!< Z dimension of upper bounds of all 4 children.
     };
 
-#else
-
     /*! Node with unaligned bounds */
-    struct UnalignedNode : public Node
+    struct UncompressedUnalignedNode : public Node
     {
       /*! Clears the node. */
       __forceinline void clear() 
@@ -574,8 +578,6 @@ namespace embree
     public:
       AffineSpaceSIMD3f naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
-
-#endif
 
   public:
 
