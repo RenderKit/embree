@@ -77,10 +77,8 @@ namespace embree
 
        /*! Prefetches the node this reference points to */
       __forceinline void prefetch() const {
-#if defined(__AVX2__)
 	prefetchL1(((char*)ptr)+0*64);
 	prefetchL1(((char*)ptr)+1*64);
-#endif
       }
 
       /*! Sets the barrier bit. */
