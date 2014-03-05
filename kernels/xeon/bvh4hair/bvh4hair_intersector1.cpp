@@ -18,10 +18,6 @@
 #include "geometry/bezier1_intersector1.h"
 #include "geometry/bezier1i_intersector1.h"
 
-#if BVH4HAIR_WIDTH == 8
-#define load4f load8f
-#endif
-
 namespace embree
 { 
 #if BVH4HAIR_NAVIGATION
@@ -37,7 +33,7 @@ namespace embree
                                                                                   const size_t nearX, const size_t nearY, const size_t nearZ,
                                                                                   simdf& tNear, simdf& tFar)
     {
-      const BVH4Hair::BBoxSSE3f bounds = node->getBounds(nearX,nearY,nearZ);
+      const BVH4Hair::BBoxSIMD3f bounds = node->getBounds(nearX,nearY,nearZ);
 
 #if defined (__AVX2__)
       const simdf tNearX = msub(bounds.lower.x, rdir.x, org_rdir.x);
@@ -79,11 +75,11 @@ namespace embree
       const Vec3fa org = xfmPoint(xfm,ray.org);
       const simd3f vorg  = simd3f(org);
       const simd3f vrdir = simd3f(rdir);
-      const BVH4Hair::BBoxSSE3f bounds = node->getBounds();
+      const BVH4Hair::BBoxSIMD3f bounds = node->getBounds();
       const simd3f tLowerXYZ = (bounds.lower - vorg) * vrdir;
       const simd3f tUpperXYZ = (bounds.upper - vorg) * vrdir;
 #else
-      const AffineSpaceSOA4 xfm = node->naabb;
+      const AffineSpaceSIMD3f xfm = node->naabb;
       const simd3f dir = xfmVector(xfm,ray_dir);
       const simd3f rdir = rcp_safe(dir);
       const simd3f org = xfmPoint(xfm,ray_org);
