@@ -27,15 +27,15 @@ model  = ''
 statDir = ''
 hair_builder_modes = [
   'aO',
-  'aOuO',
+#  'aOuO',
   'aOuOuST',
-  'aOuOuSTaSP',
+#  'aOuOuSTaSP',
   'aOuOuSTaSPuSP',
-  'aOuOuSTaSD',
-  'aOuOuSTaSDuSD',
-  'aOuOuSTaSPuSPaSDuSD',
+#  'aOuOuSTaSD',
+#  'aOuOuSTaSDuSD',
+#  'aOuOuSTaSPuSPaSDuSD',
   'P3aO',
-  'P3aOuO',
+#  'P3aOuO',
   'P3aOuOuST'
   ];
 
@@ -111,7 +111,7 @@ def printDataLoop():
 
   print('')
   
-  line  = '  ' + '{0:<27}'.format('Mode') + ' |     SAH      Memory     Fps'
+  line  = '  ' + '{0:<27}'.format(statDir) + ' |     SAH      Memory     Fps'
   print(line)
 
   line = ''
@@ -127,10 +127,10 @@ def printDataLoop():
 
 def printUsage():
   sys.stderr.write('Usage: ' + sys.argv[0] + ' measure <model> <statDir>\n')
-  sys.stderr.write('       ' + sys.argv[0] + ' print   <model> <statDir>\n')
+  sys.stderr.write('       ' + sys.argv[0] + ' print   <model> <statDir0> <statDir1> ...\n')
   sys.exit(1)
 
-if len(sys.argv) != 3 and len(sys.argv) != 4:
+if len(sys.argv) < 3:
   printUsage()
   sys.exit(1)
 
@@ -139,18 +139,21 @@ if len(sys.argv) >= 3:
   model = sys.argv[2]
 
 statDir = 'stat';  
-if len(sys.argv) >= 4:
-  statDir = sys.argv[3]
 
 if sys.argv[1] == 'measure':
+  if len(sys.argv) >= 4:
+    statDir = sys.argv[3]
   renderLoop()
   extractLoop()
   printDataLoop()
   sys.exit(1)
 
 if sys.argv[1] == 'print':
-  extractLoop()
-  printDataLoop()
+  print(os.path.basename(model))
+  for i in range(3, len(sys.argv)):
+    statDir = sys.argv[i]
+    extractLoop()
+    printDataLoop()
   sys.exit(1)
 
 printUsage()
