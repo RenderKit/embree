@@ -457,10 +457,9 @@ namespace embree
       /*! returns transformation */
       __forceinline const LinearSpace3fa getXfm() const 
       {
-        const ssei v = *(ssei*)&xfm_vx;
-        const ssef vx = ssef(_mm_cvtepi8_epi32(v));
-        const ssef vy = ssef(_mm_cvtepi8_epi32(shuffle<1>(v)));
-        const ssef vz = ssef(_mm_cvtepi8_epi32(shuffle<2>(v)));
+        const ssef vx = ssef(_mm_cvtepi8_epi32(*(ssei*)&xfm_vx));
+        const ssef vy = ssef(_mm_cvtepi8_epi32(*(ssei*)&xfm_vy));
+        const ssef vz = ssef(_mm_cvtepi8_epi32(*(ssei*)&xfm_vz));
         return LinearSpace3fa((Vec3fa)vx,(Vec3fa)vy,(Vec3fa)vz);
       }
 
@@ -477,14 +476,12 @@ namespace embree
       __forceinline BBoxSIMD3f getBounds() const 
       {
 #if BVH4HAIR_WIDTH == 4
-        const ssei lower = *(ssei*)&this->lower_x;
-        const ssef lower_x = ssef(_mm_cvtepu8_epi32(lower));
-        const ssef lower_y = ssef(_mm_cvtepu8_epi32(shuffle<1>(lower)));
-        const ssef lower_z = ssef(_mm_cvtepu8_epi32(shuffle<2>(lower)));
-        const ssei upper = *(ssei*)&this->upper_x;
-        const ssef upper_x = ssef(_mm_cvtepu8_epi32(upper));
-        const ssef upper_y = ssef(_mm_cvtepu8_epi32(shuffle<1>(upper)));
-        const ssef upper_z = ssef(_mm_cvtepu8_epi32(shuffle<2>(upper)));
+        const ssef lower_x = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_x));
+        const ssef lower_y = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_y));
+        const ssef lower_z = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_z));
+        const ssef upper_x = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_x));
+        const ssef upper_y = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_y));
+        const ssef upper_z = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_z));
 #else
         const avxf lower_x = avxf(_mm256_cvtepu8_epi32(*(ssei*)&this->lower_x));
         const avxf lower_y = avxf(_mm256_cvtepu8_epi32(*(ssei*)&this->lower_y));
