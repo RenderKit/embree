@@ -25,7 +25,8 @@
 #include "geometry/bezier1i.h"
 
 #define BVH4HAIR_WIDTH 4
-#define BVH4HAIR_COMPRESSION 1
+#define BVH4HAIR_COMPRESS_ALIGNED_NODES 0
+#define BVH4HAIR_COMPRESS_UNALIGNED_NODES 0
 #define BVH4HAIR_NAVIGATION 0
 #if BVH4HAIR_NAVIGATION
 #define NAVI(x) x
@@ -214,9 +215,102 @@ namespace embree
       NodeRef children[N];   //!< Pointer to the children (can be a node or leaf)
     };
 
+#if BVH4HAIR_COMPRESS_ALIGNED_NODES
+
+    /*! Compressed node with aligned bounds */
+    struct AlignedNode : public Node
+    {
+      enum { stride = 4 };
+
+      /*! Clears the node. */
+      __forceinline void clear() 
+      {
+        offset = 0.0f; scale = 0.0f;
+        lower_x[0] = lower_x[1] = lower_x[2] = lower_x[3] = 0;
+        lower_y[0] = lower_y[1] = lower_y[2] = lower_y[3] = 0;
+        lower_z[0] = lower_z[1] = lower_z[2] = lower_z[3] = 0;
+        upper_x[0] = upper_x[1] = upper_x[2] = upper_x[3] = 0;
+        upper_y[0] = upper_y[1] = upper_y[2] = upper_y[3] = 0;
+        upper_z[0] = upper_z[1] = upper_z[2] = upper_z[3] = 0;
+        Node::clear();
+      }
+
+      /*! Sets non-axis aligned space of node and parent bounding box. */
+      __forceinline void set(const NAABBox3fa& naabb) {
+        offset = naabb.bounds.lower;
+        scale  = naabb.bounds.size()/255.0f;
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& childID) 
+      {
+        assert(i < N);
+        const Vec3fa lower = select(eq_mask(scale,Vec3fa(0.0f)),0.0f,(bounds.lower-Vec3fa(offset))/Vec3fa(scale));
+        assert(lower.x >= 0.0f && lower.x <= 255.0f);
+        assert(lower.y >= 0.0f && lower.y <= 255.0f);
+        assert(lower.z >= 0.0f && lower.z <= 255.0f);
+        lower_x[i] = (unsigned char) clamp(floorf(lower.x),0.0f,255.0f);
+        lower_y[i] = (unsigned char) clamp(floorf(lower.y),0.0f,255.0f);
+        lower_z[i] = (unsigned char) clamp(floorf(lower.z),0.0f,255.0f);
+        const Vec3fa upper = select(eq_mask(scale,Vec3fa(0.0f)),0.0f,(bounds.upper-Vec3fa(offset))/Vec3fa(scale));
+        assert(upper.x >= 0.0f && upper.x <= 255.0f);
+        assert(upper.y >= 0.0f && upper.y <= 255.0f);
+        assert(upper.z >= 0.0f && upper.z <= 255.0f);
+        upper_x[i] = (unsigned char) clamp(ceilf(upper.x),0.0f,255.0f);
+        upper_y[i] = (unsigned char) clamp(ceilf(upper.y),0.0f,255.0f);
+        upper_z[i] = (unsigned char) clamp(ceilf(upper.z),0.0f,255.0f);
+        Node::set(i,childID);
+      }
+
+      /*! returns ith bounding boxes */
+      __forceinline BBox3fa getBounds(size_t i) const 
+      {
+        assert(i < N);
+        const Vec3f lower((float)lower_x[i],lower_y[i],lower_z[i]);
+        const Vec3f upper((float)upper_x[i],upper_y[i],upper_z[i]);
+        return BBox3fa(Vec3fa(offset+scale*lower),Vec3fa(offset+scale*upper));
+      }
+
+      /*! returns 4 bounding boxes */
+      __forceinline const BBoxSSE3f getBounds(const size_t nearX, const size_t nearY, const size_t nearZ) const 
+      {
+        const size_t farX  = nearX ^ 4, farY  = nearY ^ 4, farZ  = nearZ ^ 4;
+        const ssef near_x = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_x+nearX)));
+        const ssef near_y = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_y+nearY)));
+        const ssef near_z = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_z+nearZ)));
+        const ssef far_x  = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_x+farX )));
+        const ssef far_y  = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_y+farY )));
+        const ssef far_z  = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_z+farZ )));
+        const Vec3<simdf> offset = *(Vec3fa*)&this->offset;
+        const Vec3<simdf> scale  = *(Vec3fa*)&this->scale;
+        return BBoxSSE3f(scale*Vec3<simdf>(near_x,near_y,near_z)+offset,
+                         scale*Vec3<simdf>(far_x, far_y, far_z)+offset);
+      }
+
+      /*! Returns the extend of the bounds of the ith child */
+      __forceinline Vec3fa extend(size_t i) const {
+        assert(i < N);
+        return getBounds(i).size();
+      }
+
+    public:
+      Vec3f offset;               //!< offset to decompress bounds
+      Vec3f scale;                //!< scale  to decompress bounds
+      unsigned char lower_x[4];   //!< X dimension of lower bounds of all 4 children.
+      unsigned char upper_x[4];   //!< X dimension of upper bounds of all 4 children.
+      unsigned char lower_y[4];   //!< Y dimension of lower bounds of all 4 children.
+      unsigned char upper_y[4];   //!< Y dimension of upper bounds of all 4 children.
+      unsigned char lower_z[4];   //!< Z dimension of lower bounds of all 4 children.
+      unsigned char upper_z[4];   //!< Z dimension of upper bounds of all 4 children.
+    };
+
+#else
+
     /*! Node with aligned bounds */
     struct AlignedNode : public Node
     {
+      enum { stride = sizeof(simdf) };
+
       /*! Clears the node. */
       __forceinline void clear() {
         lower_x = lower_y = lower_z = pos_inf; 
@@ -225,7 +319,7 @@ namespace embree
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& childID) 
+      __forceinline void set(const size_t i, const BBox3fa& bounds, const NodeRef& childID) 
       {
         assert(i < N);
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
@@ -234,15 +328,28 @@ namespace embree
       }
 
       /*! Returns bounds of specified child. */
-      __forceinline const BBox3fa bounds(size_t i) const { 
+      __forceinline const BBox3fa bounds(const size_t i) const { 
         assert(i < N);
         const Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
         const Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
         return BBox3fa(lower,upper);
       }
 
+      /*! returns 4 bounding boxes */
+      __forceinline const BBoxSSE3f getBounds(const size_t nearX, const size_t nearY, const size_t nearZ) const 
+      {
+        const size_t farX  = nearX ^ sizeof(simdf), farY  = nearY ^ sizeof(simdf), farZ  = nearZ ^ sizeof(simdf);
+        const simdf nearx = load4f((const char*)&lower_x+nearX);
+        const simdf neary = load4f((const char*)&lower_y+nearY);
+        const simdf nearz = load4f((const char*)&lower_z+nearZ);
+        const simdf farx  = load4f((const char*)&lower_x+farX );
+        const simdf fary  = load4f((const char*)&lower_y+farY );
+        const simdf farz  = load4f((const char*)&lower_z+farZ );
+        return BBoxSSE3f(Vec3<simdf>(nearx,neary,nearz),Vec3<simdf>(farx,fary,farz));
+      }
+
       /*! Returns the extend of the bounds of the ith child */
-      __forceinline Vec3fa extend(size_t i) const {
+      __forceinline Vec3fa extend(const size_t i) const {
         assert(i < N);
         return bounds(i).size();
       }
@@ -256,9 +363,11 @@ namespace embree
       simdf upper_z;           //!< Z dimension of upper bounds of all 4 children.
     };
 
-#if BVH4HAIR_COMPRESSION
+#endif
 
-    /*! Node with unaligned bounds */
+#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
+
+    /*! Compressed node with unaligned bounds */
     struct UnalignedNode : public Node
     {
       /*! Clears the node. */
@@ -268,19 +377,21 @@ namespace embree
         xfm_vy[0] = 0; xfm_vy[1] = 1; xfm_vy[2] = 0;
         xfm_vz[0] = 0; xfm_vz[1] = 0; xfm_vz[2] = 1;
         offset = 0.0f; scale = 0.0f;
-        lower_x[0] = lower_x[1] = lower_x[2] = lower_x[3] = -128;
-        lower_y[0] = lower_y[1] = lower_y[2] = lower_y[3] = -128;
-        lower_z[0] = lower_z[1] = lower_z[2] = lower_z[3] = -128;
-        upper_x[0] = upper_x[1] = upper_x[2] = upper_x[3] = -128;
-        upper_y[0] = upper_y[1] = upper_y[2] = upper_y[3] = -128;
-        upper_z[0] = upper_z[1] = upper_z[2] = upper_z[3] = -128;
+        lower_x[0] = lower_x[1] = lower_x[2] = lower_x[3] = 0;
+        lower_y[0] = lower_y[1] = lower_y[2] = lower_y[3] = 0;
+        lower_z[0] = lower_z[1] = lower_z[2] = lower_z[3] = 0;
+        upper_x[0] = upper_x[1] = upper_x[2] = upper_x[3] = 0;
+        upper_y[0] = upper_y[1] = upper_y[2] = upper_y[3] = 0;
+        upper_z[0] = upper_z[1] = upper_z[2] = upper_z[3] = 0;
         align[0] = align[1] = align[2] = align[3] = 0;
         Node::clear();
       }
 
       /*! Sets non-axis aligned space of node and parent bounding box. */
-      __forceinline void set(const LinearSpace3fa& space, const BBox3fa& bounds) 
+      __forceinline void set(const NAABBox3fa& naabb) 
       {
+        const LinearSpace3fa& space = naabb.space;
+        const BBox3fa& bounds = naabb.bounds;
         xfm_vx[0] = (char) (127.0f*space.vx.x); assert(127.0f*space.vx.x >= -127.0f && 127.0f*space.vx.x <= 127.0f && truncf(127.0f*space.vx.x) == 127.0f*space.vx.x);
         xfm_vx[1] = (char) (127.0f*space.vx.y); assert(127.0f*space.vx.y >= -127.0f && 127.0f*space.vx.y <= 127.0f && truncf(127.0f*space.vx.y) == 127.0f*space.vx.y);
         xfm_vx[2] = (char) (127.0f*space.vx.z); assert(127.0f*space.vx.z >= -127.0f && 127.0f*space.vx.z <= 127.0f && truncf(127.0f*space.vx.z) == 127.0f*space.vx.z);
@@ -298,7 +409,7 @@ namespace embree
       }
 
       /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3fa& bounds) 
+      __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& childID) 
       {
         assert(i < N);
         const Vec3fa lower = select(eq_mask(scale,Vec3fa(0.0f)),0.0f,(127.0f*bounds.lower-Vec3fa(offset))/Vec3fa(scale));
@@ -315,17 +426,6 @@ namespace embree
         upper_x[i] = (unsigned char) clamp(ceilf(upper.x),0.0f,255.0f);
         upper_y[i] = (unsigned char) clamp(ceilf(upper.y),0.0f,255.0f);
         upper_z[i] = (unsigned char) clamp(ceilf(upper.z),0.0f,255.0f);
-      }
-
-      /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const NodeRef& childID) {
-        Node::set(i,childID);
-      }
-
-      /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& childID) 
-      {
-        set(i,bounds);
         Node::set(i,childID);
       }
 
@@ -337,6 +437,15 @@ namespace embree
         const ssef vy = ssef(_mm_cvtepi8_epi32(shuffle<1>(v)));
         const ssef vz = ssef(_mm_cvtepi8_epi32(shuffle<2>(v)));
         return LinearSpace3fa((Vec3fa)vx,(Vec3fa)vy,(Vec3fa)vz);
+      }
+
+      /*! returns ith bounding boxes */
+      __forceinline NAABBox3fa getBounds(size_t i) const 
+      {
+        assert(i < N);
+        const Vec3f lower((float)lower_x[i],lower_y[i],lower_z[i]);
+        const Vec3f upper((float)upper_x[i],upper_y[i],upper_z[i]);
+        return NAABBox3fa(getXfm(),BBox3fa(Vec3fa(offset+scale*lower),Vec3fa(offset+scale*upper)));
       }
 
       /*! returns 4 bounding boxes */
@@ -354,15 +463,6 @@ namespace embree
         const Vec3<simdf> scale  = *(Vec3fa*)&this->scale;
         return BBoxSSE3f(scale*Vec3<simdf>(lower_x,lower_y,lower_z)+offset,
                          scale*Vec3<simdf>(upper_x,upper_y,upper_z)+offset);
-      }
-
-      /*! returns 4 bounding boxes */
-      __forceinline NAABBox3fa getBounds(size_t i) const 
-      {
-        assert(i < N);
-        const Vec3f lower((float)lower_x[i],lower_y[i],lower_z[i]);
-        const Vec3f upper((float)upper_x[i],upper_y[i],upper_z[i]);
-        return NAABBox3fa(getXfm(),BBox3fa(Vec3fa(offset+scale*lower),Vec3fa(offset+scale*upper)));
       }
 
       /*! Returns the extend of the bounds of the ith child */

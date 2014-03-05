@@ -41,7 +41,7 @@ namespace embree
   /*! scales orthonormal transformation into the range -127 to +127 */
   __forceinline const LinearSpace3fa compressTransform(const LinearSpace3fa& xfm)
   {
-#if BVH4HAIR_COMPRESSION
+#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
     assert(xfm.vx.x >= -1.0f && xfm.vx.x <= 1.0f);
     assert(xfm.vx.y >= -1.0f && xfm.vx.y <= 1.0f);
     assert(xfm.vx.z >= -1.0f && xfm.vx.z <= 1.0f);
@@ -1251,6 +1251,9 @@ namespace embree
     /* create aligned node */
     if (isAligned) {
       AlignedNode* node = bvh->allocAlignedNode(threadIndex);
+#if BVH4HAIR_COMPRESS_ALIGNED_NODES
+      node->set(bounds);
+#endif
       for (ssize_t i=numChildren-1; i>=0; i--) {
         node->set(i,cbounds[i].bounds,recurse(threadIndex,depth+1,cbegin[i],cend[i],cbounds[i]));
       }
@@ -1260,8 +1263,8 @@ namespace embree
     /* create unaligned node */
     else {
       UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
-#if BVH4HAIR_COMPRESSION
-      node->set(bounds.space,bounds.bounds);
+#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
+      node->set(bounds);
       for (ssize_t i=numChildren-1; i>=0; i--) {
         const NAABBox3fa cboundsi = computeAlignedBounds(curves,cbegin[i],cend[i],bounds.space);
         node->set(i,cboundsi.bounds,recurse(threadIndex,depth+1,cbegin[i],cend[i],cbounds[i]));
