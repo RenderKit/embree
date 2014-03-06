@@ -237,7 +237,9 @@ namespace embree
     
     CreateSceneData parms;
     parms.numMaterials = scene->materials.size();
-    parms.numMeshes = scene->meshes.size();
+    parms.numMeshes    = scene->meshes.size();
+    parms.numHairSets  = scene->hairsets.size();
+
     //parms.animate = g_animate;
     //parms.pointLightPosition = pointLightPosition;
     //parms.pointLightIntensity = pointLightIntensity;

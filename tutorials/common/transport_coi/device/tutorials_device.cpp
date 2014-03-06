@@ -59,17 +59,42 @@ namespace embree
   };
 
   /* ISPC compatible scene */
+  struct ISPCHair
+  {
+    ALIGNED_CLASS;
+  public:
+    ISPCHair () {}
+    ISPCHair (int vertex, int id)
+      : vertex(vertex), id(id) {}
+  public:
+    int vertex,id;  //!< index of first control point and hair ID
+  };
+
+  /*! Hair Set. */
+  struct ISPCHairSet
+  {
+    ALIGNED_CLASS;
+    Vec3fa *positons;   //!< hair control points (x,y,z,r)
+    ISPCHair *hairs;    //!< list of hairs
+  };
+
+
+  /* ISPC compatible scene */
   struct ISPCScene
   {
     ALIGNED_CLASS;
   public:
-    ISPCScene (int numMeshes, int numMaterials, void* materials_in)
-      : numMeshes(numMeshes), numMaterials(numMaterials),
+    ISPCScene (int numMeshes, int numMaterials, void* materials_in, int numHairSets)
+      : numMeshes(numMeshes), numMaterials(numMaterials),numHairSets(numHairSets),
         meshes(NULL), materials(NULL) 
     {
       meshes = new ISPCMesh*[numMeshes];
       for (size_t i=0; i<numMeshes; i++)
         meshes[i] = NULL;
+
+      hairsets = new ISPCHairSet*[numHairSets];
+      for (size_t i=0; i<numHairSets; i++)
+        hairsets[i] = NULL;
 
       materials = new OBJScene::Material[numMaterials];
       memcpy(materials,materials_in,numMaterials*sizeof(OBJScene::Material));
@@ -86,14 +111,18 @@ namespace embree
 
   public:
     ISPCMesh** meshes;
+    ISPCHairSet** hairsets;
     OBJScene::Material* materials;  //!< material list
     int numMeshes;
     int numMaterials;
+    int numHairSets;
     bool animate;
   };
 
   /* scene */
   static size_t g_meshID = 0;
+  static size_t g_hairsetID = 0;
+
   extern "C" ISPCScene* g_ispc_scene = NULL;
 
   extern "C" void run_init(uint32_t         in_BufferCount,
@@ -143,7 +172,10 @@ namespace embree
 				     void*            in_pReturnValue,
 				     uint16_t         in_ReturnValueLength)
   {
+    size_t hairsetID = g_hairsetID++;
+
     PING;
+    DBG_PRINT(hairsetID);
   }
 
   extern "C" void run_create_scene(uint32_t         in_BufferCount,
@@ -155,7 +187,11 @@ namespace embree
                                    uint16_t         in_ReturnValueLength)
   {
     g_meshID = 0;
-    g_ispc_scene = new ISPCScene(in_pMiscData->numMeshes,in_pMiscData->numMaterials,in_ppBufferPointers[0]);
+    DBG_PRINT(in_pMiscData->numMeshes);
+    DBG_PRINT(in_pMiscData->numMaterials);
+    DBG_PRINT(in_pMiscData->numHairSets);
+
+    g_ispc_scene = new ISPCScene(in_pMiscData->numMeshes,in_pMiscData->numMaterials,in_ppBufferPointers[0],in_pMiscData->numHairSets);
     //g_ispc_scene->pointLightPosition = in_pMiscData->pointLightPosition;
     //g_ispc_scene->pointLightIntensity = in_pMiscData->pointLightIntensity;
     //g_ispc_scene->ambientLightIntensity = in_pMiscData->ambientLightIntensity;
