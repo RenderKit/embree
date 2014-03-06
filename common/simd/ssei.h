@@ -42,10 +42,9 @@ namespace embree
     __forceinline operator const __m128i&( void ) const { return m128; }
     __forceinline operator       __m128i&( void )       { return m128; }
 
-    __forceinline explicit ssei  ( const int32* const a ) : m128(_mm_loadu_si128((__m128i*)a)) {}
-    //__forceinline ssei           ( int32  a ) : m128(_mm_set1_epi32(a)) {}
-    __forceinline ssei           ( const int32& a ) : m128(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
-    __forceinline ssei           ( int32  a, int32  b) : m128(_mm_set_epi32(b, a, b, a)) {}
+    __forceinline ssei           ( const int32&  a ) : m128(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
+    __forceinline ssei           ( const uint32& a ) : m128(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
+    __forceinline ssei           ( const size_t a  ) : m128(_mm_set1_epi32((int)a)) {}
     __forceinline ssei           ( int32  a, int32  b, int32  c, int32  d) : m128(_mm_set_epi32(d, c, b, a)) {}
 
     __forceinline explicit ssei( const __m128 a ) : m128(_mm_cvtps_epi32(a)) {}

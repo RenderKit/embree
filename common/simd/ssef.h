@@ -41,7 +41,6 @@ namespace embree
     __forceinline operator       __m128&( void )       { return m128; }
 
     __forceinline ssef           ( float  a ) : m128(_mm_set1_ps(a)) {}
-    __forceinline ssef           ( float  a, float  b) : m128(_mm_set_ps(b, a, b, a)) {}
     __forceinline ssef           ( float  a, float  b, float  c, float  d) : m128(_mm_set_ps(d, c, b, a)) {}
 
     __forceinline explicit ssef( const __m128i a ) : m128(_mm_cvtepi32_ps(a)) {}
