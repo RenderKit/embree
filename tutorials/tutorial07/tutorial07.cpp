@@ -227,7 +227,8 @@ namespace embree
     
     void* ptr = map();
     Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
-    storeImage(image, fileName);
+    FATAL("storeImage disabled due to link error with ISPC");
+    //storeImage(image, fileName);
     unmap();
   }
 

@@ -59,7 +59,7 @@ namespace embree
   {
     
     __forceinline static void swap2(StackItemInt32<T>& a, StackItemInt32<T>& b) { 
-#if defined(__AVX__)
+#if defined(__AVX__) // FIXME: works only if sizeof(T) is 8 bytes large
       /* use sse registers to copy stack items */
       ssef sse_a = load4f(&a);
       ssef sse_b = load4f(&b);

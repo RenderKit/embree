@@ -47,6 +47,12 @@ namespace embree
     Vec3f offset;
   };
 
+  struct CreateHairSetData
+  {
+    int numVertices;
+    int numHairs;
+  };
+
   struct ResizeData {
     int32 width, height;
   };
