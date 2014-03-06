@@ -139,7 +139,7 @@ void addHair (ISPCScene* scene)
   const float R = 0.2f;
 #else
   const int numCurves = 10000;
-  const int numCurveSegments = 2;
+  const int numCurveSegments = 1;
   const float R = 0.002f;
 #endif
   const int numCurvePoints = 3*numCurveSegments+1;
@@ -185,8 +185,14 @@ void addHair (ISPCScene* scene)
   {
     float ru = drand48();//frand(seed);
     float rv = drand48();//frand(seed);
-    Vec3fa dp0 = sampleSphere(ru,rv); 
-    Vec3f p0 = Vec3f(0,2,0) + dp0;
+    //Vec3fa dp0 = sampleSphere(ru,rv); 
+    //Vec3f p0 = Vec3f(0,2,0) + dp0;
+    //Vec3f g = Vec3fa(1,-1,1);
+    Vec3fa du = normalize(Vec3fa(1,0,0));
+    Vec3fa dv = normalize(Vec3fa(0,0,1));
+    Vec3fa dp0 = normalize(Vec3fa(0,1,0));
+    Vec3f ddp0 = Vec3fa(1,0,1);
+    Vec3fa p0 = (2.0f*ru-1.0f)*du + (2.0f*rv-1.0f)*dv;
     Vec3f pi = p0, dpi = dp0;
     float ds = 0.1f;
 
@@ -195,9 +201,9 @@ void addHair (ISPCScene* scene)
       bool last = j == numCurveSegments;
       float ds = 1.0f/float(numCurveSegments);
       float t = float(j)*ds;
-      Vec3f g(1,-1,1);
-      pi = p0 + t*dp0 + t*t*g;
-      dpi = dp0 + 2.0f*t*g;
+      pi = p0 + t*dp0 + t*t*ddp0;
+      dpi = dp0 + 2.0f*t*ddp0;
+      //pi = p0 + t*dp0;
 
       if (j>0) {
         vertices[i*numCurvePoints+3*j-1].x = pi.x-0.5f*ds*dpi.x;
@@ -843,8 +849,8 @@ extern "C" void device_render (int* pixels,
       scene->numHairSets = 0;
       g_ispc_scene = scene;
       addHair(scene);
-      addSphere(scene,Vec3f(0,2,0),1.0f);
-      addGroundPlane(scene);
+      //addSphere(scene,Vec3f(0,2,0),1.0f);
+      //addGroundPlane(scene);
     }
     g_scene = convertScene(g_ispc_scene);
   }
