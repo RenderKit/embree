@@ -34,6 +34,7 @@ namespace embree
   COIFUNCTION runInit;
   COIFUNCTION runKeyPressed;
   COIFUNCTION runCreateMesh;
+  COIFUNCTION runCreateHairSet;
   COIFUNCTION runCreateScene;
   COIFUNCTION runPick;
   COIFUNCTION runRender;
@@ -97,8 +98,8 @@ namespace embree
       throw std::runtime_error(std::string("COIPipelineCreate failed: ") + COIResultGetName(result));
 
     /* get run functions */
-    const char *fctNameArray[7] = { "run_init", "run_key_pressed", "run_create_mesh", "run_create_scene", "run_pick", "run_render", "run_cleanup" };
-    result = COIProcessGetFunctionHandles (process, 7, fctNameArray, &runInit);
+    const char *fctNameArray[8] = { "run_init", "run_key_pressed", "run_create_mesh", "run_create_hairset", "run_create_scene", "run_pick", "run_render", "run_cleanup" };
+    result = COIProcessGetFunctionHandles (process, 8, fctNameArray, &runInit);
     if (result != COI_SUCCESS) 
       throw std::runtime_error("COIProcessGetFunctionHandles failed: "+std::string(COIResultGetName(result)));
 
@@ -120,8 +121,51 @@ namespace embree
       throw std::runtime_error("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
   }
 
+  void send_hairset (OBJScene::HairSet* hairset)
+  {
+    PING;
+    COIRESULT result;
+    struct {
+      COIBUFFER position;    //!< vertex position array
+      COIBUFFER hairs;      //!< hair array
+    } buffers;
+
+    size_t positionBytes = max(size_t(16),hairset->v.size()*sizeof(Vec3fa));
+    void* positionPtr = hairset->v.size() ? &hairset->v.front() : NULL;
+    result = COIBufferCreate(positionBytes,COI_BUFFER_STREAMING_TO_SINK,0,positionPtr,1,&process,&buffers.position);
+    if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
+    size_t hairsBytes = max(size_t(16),hairset->hairs.size()*sizeof(OBJScene::Hair));
+    void* hairsPtr = hairset->hairs.size() ? &hairset->hairs.front() : NULL;
+    result = COIBufferCreate(hairsBytes,COI_BUFFER_STREAMING_TO_SINK,0,hairsPtr,1,&process,&buffers.hairs);
+    if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
+    CreateHairSetData parms;
+
+    parms.numVertices = hairset->v.size();
+    parms.numHairs    = hairset->hairs.size();
+    COI_ACCESS_FLAGS flags[2] = { COI_SINK_READ, COI_SINK_READ};
+
+    COIEVENT event;
+    memset(&event,0,sizeof(event));
+
+    /* run set scene runfunction */
+    result = COIPipelineRunFunction (pipeline, runCreateHairSet, 2, &buffers.position, flags, 0, NULL, &parms, sizeof(parms), NULL, 0, &event);
+    if (result != COI_SUCCESS) throw std::runtime_error("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
+ 
+    result = COIEventWait(1,&event,-1,1,NULL,NULL);
+    if (result != COI_SUCCESS) throw std::runtime_error("COIEventWait failed: "+std::string(COIResultGetName(result)));
+
+    /* destroy buffers again */
+    result = COIBufferDestroy(buffers.position);
+    if (result != COI_SUCCESS) throw std::runtime_error("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
+    result = COIBufferDestroy(buffers.hairs);
+    if (result != COI_SUCCESS) throw std::runtime_error("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
+  }
+
   void send_mesh (OBJScene::Mesh* mesh)
   {
+    PING;
     COIRESULT result;
     struct {
       COIBUFFER position;      //!< vertex position array
@@ -181,6 +225,7 @@ namespace embree
   /* set scene to use */
   void set_scene (OBJScene* scene)
   {
+    PING;
     COIRESULT result;
 
     /* send scene */
@@ -216,6 +261,12 @@ namespace embree
     /* send all meshes */
     for (size_t i=0; i<scene->meshes.size(); i++) 
       send_mesh(scene->meshes[i]);
+
+    /* send all hairsets */
+    DBG_PRINT( scene->hairsets.size() );
+    for (size_t i=0; i<scene->hairsets.size(); i++) 
+      send_hairset(scene->hairsets[i]);
+
   }
 
   void resize(int32_t width, int32_t height)

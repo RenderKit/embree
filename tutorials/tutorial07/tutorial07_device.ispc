@@ -94,7 +94,7 @@ uniform Vec3f sampleSphere(const uniform float& u, const uniform float& v)
 }
 
 uniform Vec3f noise(uniform Vec3f p) {
-  return div(p,length(p));
+  return p / length(p);
 }
 
 /* adds hair to the scene */
