@@ -23,6 +23,113 @@ uniform Vec3f* uniform colors = NULL;
 /* render function to use */
 renderPixelFunc renderPixel;
 
+struct ISPCTriangle 
+{
+  int v0;                /*< first triangle vertex */
+  int v1;                /*< second triangle vertex */
+  int v2;                /*< third triangle vertex */
+  int materialID;        /*< material of triangle */
+};
+
+struct ISPCMaterial
+{
+  int illum;             /*< illumination model */
+  
+  float d;               /*< dissolve factor, 1=opaque, 0=transparent */
+  float Ns;              /*< specular exponent */
+  float Ni;              /*< optical density for the surface (index of refraction) */
+  
+  Vec3f Ka;              /*< ambient reflectivity */
+  Vec3f Kd;              /*< diffuse reflectivity */
+  Vec3f Ks;              /*< specular reflectivity */
+  Vec3f Tf;              /*< transmission filter */
+};
+
+struct ISPCMesh
+{
+  uniform Vec3fa* positions;    //!< vertex position array
+  uniform Vec3fa* normals;       //!< vertex normal array
+  uniform Vec2f* texcoords;     //!< vertex texcoord array
+  uniform ISPCTriangle* triangles;  //!< list of triangles
+  int numVertices;
+  int numTriangles;
+};
+
+struct ISPCScene
+{
+  uniform ISPCMesh* uniform* meshes;         //!< list of meshes
+  uniform ISPCMaterial* materials;  //!< material list
+  int numMeshes;
+  int numMaterials;
+};
+
+/* scene data */
+extern uniform ISPCScene* uniform g_ispc_scene;
+
+RTCScene convertScene(uniform ISPCScene* uniform scene_in)
+{
+  /* create scene */
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+
+  /* add all meshes to the scene */
+  for (uniform int i=0; i<scene_in->numMeshes; i++)
+  {
+    /* get ith mesh */
+    uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
+
+    /* create a triangle mesh */
+    uniform unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
+
+#if 1
+    /* share vertex buffer */
+    rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa      ));
+    //rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
+
+    /* set triangles */
+    uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+    for (uniform int j=0; j<mesh->numTriangles; j++) {
+      triangles[j].v0 = mesh->triangles[j].v0;
+      triangles[j].v1 = mesh->triangles[j].v1;
+      triangles[j].v2 = mesh->triangles[j].v2;
+    }
+    rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+
+#elif 0
+    uniform Vec3f* uniform positions = uniform new uniform Vec3f[mesh->numVertices+1];
+    for (uniform int j=0; j<mesh->numVertices; j++) {
+      positions[j].x = mesh->positions[j].x;
+      positions[j].y = mesh->positions[j].y;
+      positions[j].z = mesh->positions[j].z;
+    }
+    rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, positions, 0, sizeof(uniform Vec3f));
+    rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
+#else
+
+    /* set vertices */
+    uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
+    for (uniform int j=0; j<mesh->numVertices; j++) {
+      vertices[j].x = mesh->positions[j].x;
+      vertices[j].y = mesh->positions[j].y;
+      vertices[j].z = mesh->positions[j].z;
+    }
+    rtcUnmapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
+
+    /* set triangles */
+    uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+    for (uniform int j=0; j<mesh->numTriangles; j++) {
+      triangles[j].v0 = mesh->triangles[j].v0;
+      triangles[j].v1 = mesh->triangles[j].v1;
+      triangles[j].v2 = mesh->triangles[j].v2;
+    }
+    rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+#endif
+  }
+
+  /* commit changes to scene */
+  rtcCommit (scene_out);
+  return scene_out;
+}
+
 /* adds a cube to the scene */
 uniform unsigned int addCube (RTCScene scene_i)
 {
@@ -101,7 +208,7 @@ uniform Vec3f noise(uniform Vec3f p) {
 uniform unsigned int addHair (RTCScene scene_i)
 {
 #if 1
-
+  print("addHair\n");
   uniform unsigned int geomID = rtcNewBezierCurves (scene_i, RTC_GEOMETRY_STATIC, 1, 4);
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
   uniform int*    uniform indices  = (uniform int*    uniform) rtcMapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
@@ -201,19 +308,21 @@ export void device_init (uniform int8* uniform cfg)
   rtcInit(cfg);
 
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  //g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* add cube */
   //addCube(g_scene);
 
   /* add hairs */
-  addHair(g_scene);
+  //addHair(g_scene);
 
   /* add ground plane */
-  addGroundPlane(g_scene);
+  //addGroundPlane(g_scene);
+
+  //addMeshes(g_scene,g_ispc_scene);
 
   /* commit changes to scene */
-  rtcCommit (g_scene);
+  //rtcCommit (g_scene);
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -312,6 +421,9 @@ export void device_render (uniform int* uniform pixels,
                     const uniform Vec3f& vz, 
                     const uniform Vec3f& p)
 {
+  if (g_scene == NULL)
+    g_scene = convertScene(g_ispc_scene);
+
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
