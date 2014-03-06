@@ -61,12 +61,11 @@ namespace embree
   /* ISPC compatible scene */
   struct ISPCHair
   {
-    ALIGNED_CLASS;
   public:
     ISPCHair () {}
     ISPCHair (int vertex, int id)
       : vertex(vertex), id(id) {}
-  public:
+
     int vertex,id;  //!< index of first control point and hair ID
   };
 
@@ -74,8 +73,16 @@ namespace embree
   struct ISPCHairSet
   {
     ALIGNED_CLASS;
-    Vec3fa *positons;   //!< hair control points (x,y,z,r)
+  public:
+    Vec3fa *positions;   //!< hair control points (x,y,z,r)
     ISPCHair *hairs;    //!< list of hairs
+    int numVertices;
+    int numHairs;
+    ISPCHairSet(int numHairs, int numVertices) : numHairs(numHairs),numVertices(numVertices),positions(NULL),hairs(NULL) {}
+    ~ISPCHairSet() {
+      if (positions) free(positions);
+      if (hairs) free(hairs);
+    }
   };
 
 
@@ -167,15 +174,24 @@ namespace embree
   extern "C" void run_create_hairset(uint32_t         in_BufferCount,
 				     void**           in_ppBufferPointers,
 				     uint64_t*        in_pBufferLengths,
-				     CreateMeshData*  in_pMiscData,
+				     CreateHairSetData*  in_pMiscData,
 				     uint16_t         in_MiscDataLength,
 				     void*            in_pReturnValue,
 				     uint16_t         in_ReturnValueLength)
   {
     size_t hairsetID = g_hairsetID++;
+    ISPCHairSet* hairset = new ISPCHairSet(in_pMiscData->numHairs,in_pMiscData->numVertices);
 
     PING;
     DBG_PRINT(hairsetID);
+    DBG_PRINT(in_pMiscData->numVertices);
+    DBG_PRINT(in_pMiscData->numHairs);
+    DBG_PRINT(in_pBufferLengths[0]);
+    DBG_PRINT(in_pBufferLengths[1]);
+
+    memcpy(hairset->positions = (Vec3fa*)malloc(in_pBufferLengths[0]),in_ppBufferPointers[0],in_pBufferLengths[0]);
+    memcpy(hairset->hairs = (ISPCHair*)malloc(in_pBufferLengths[1]),in_ppBufferPointers[1],in_pBufferLengths[1]);
+    g_ispc_scene->hairsets[hairsetID] = hairset;
   }
 
   extern "C" void run_create_scene(uint32_t         in_BufferCount,
