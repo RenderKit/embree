@@ -44,7 +44,8 @@ namespace embree
     ~BVH4HairBuilder ();
 
     static __forceinline float countfunc(size_t N) {
-      return sqrtf(float(N));
+      //return sqrtf(float(N));
+      return float(N);
     }
 
   private:
