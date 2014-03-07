@@ -46,7 +46,23 @@ struct ISPCMesh
   uniform ISPCTriangle* triangles;  //!< list of triangles
   int numVertices;
   int numTriangles;
+  Vec3f dir;
+  float offset;
 };
+
+struct ISPCHair
+{
+ int vertex,id;  //!< index of first control point and hair ID
+};
+
+struct ISPCHairSet
+{
+ uniform Vec3fa *positions;   //!< hair control points (x,y,z,r)
+ uniform ISPCHair *hairs;    //!< list of hairs
+ int numVertices;
+ int numHairs;
+};
+
 
 struct ISPCScene
 {
@@ -54,6 +70,9 @@ struct ISPCScene
   uniform ISPCMaterial* materials;  //!< material list
   int numMeshes;
   int numMaterials;
+  uniform ISPCHairSet** hairsets;
+  int numHairSets;
+  bool animate;
 };
 
 /* scene data */
@@ -77,6 +96,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 {
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+
 
   /* add all meshes to the scene */
   for (uniform int i=0; i<scene_in->numMeshes; i++)
