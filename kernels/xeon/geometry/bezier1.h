@@ -145,6 +145,17 @@ namespace embree
       else            subdivide(right_o,left_o,0.5f*(u0+u1));
       return true;
     }
+
+    friend std::ostream& operator<<(std::ostream& cout, const Bezier1& b) {
+      return std::cout << "Bezier1 { " << std::endl << 
+        " p0 = " << b.p0 << ", " << std::endl <<
+        " p1 = " << b.p1 << ", " << std::endl <<
+        " p2 = " << b.p2 << ", " << std::endl <<
+        " p3 = " << b.p3 << ",  " << std::endl <<
+        " t0 = " << b.t0 << ",  t1 = " << b.t1 << ", " << std::endl <<
+        " geomID = " << b.geomID << ", primID = " << b.primID << std::endl << 
+      "}";
+    }
     
   public:
     Vec3fa p0;            //!< 1st control point (x,y,z,r)

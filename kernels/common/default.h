@@ -60,6 +60,7 @@ namespace embree
   extern size_t g_verbose;
   extern std::string g_tri_accel;
   extern std::string g_hair_accel;
+  extern std::string g_hair_builder;
   extern std::string g_hair_accel_mode;
   extern std::string g_builder;
   extern std::string g_traverser;

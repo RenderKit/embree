@@ -156,7 +156,7 @@ namespace embree
         }
       }
     }
-    
+
     bvh->numPrimitives = numPrimitives;
     bvh->numVertices = 0;
     if (&bvh->primTy == &SceneBezier1i::type) bvh->numVertices = numVertices;
@@ -263,7 +263,7 @@ namespace embree
     size_t k=0;
     for (atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims; i; i++)
     {
-      if ((k++) % (N/4)) continue;
+      if ((k++) % ((N+3)/4)) continue;
       //size_t k = begin + rand() % (end-begin);
       const Vec3fa axis = normalize(i->p3 - i->p0);
       const LinearSpace3fa space = compressTransform(clamp(frame(axis).transposed()));
@@ -321,7 +321,8 @@ namespace embree
     atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims;
     Vec3fa axis0 = normalize(i->p3 - i->p0);
     float bestCos = 1.0f;
-    Bezier1& bestI = *i;
+    Bezier1 bestI = *i;
+
     for (i; i; i++) {
       Vec3fa axisi = i->p3 - i->p0;
       float leni = length(axisi);
@@ -351,6 +352,7 @@ namespace embree
     /* merge lists again */
     parent->insert(threadIndex,lprims,prims);
     parent->insert(threadIndex,rprims,prims);
+
     return StrandSplit(naabb0,axis0,num0,naabb1,axis1,num1);
   }
 
@@ -764,6 +766,8 @@ namespace embree
       }
       parent->alloc.free(threadIndex,block);
     }
+    //assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims).size() == num0);
+    //assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims).size() == num1);
   }
 
   __forceinline BVH4HairBuilder2::FallBackSplit BVH4HairBuilder2::FallBackSplit::find(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& prims, 
@@ -864,11 +868,10 @@ namespace embree
     /* perform standard binning in aligned space */
 #if ENABLE_ALIGNED_OBJECT_SPLITS
     ObjectSplit alignedObjectSplit;
-    float alignedObjectSAH;
+    float alignedObjectSAH = neg_inf;
     if (enableAlignedObjectSplits) {
       alignedObjectSplit = ObjectSplit::find(threadIndex,this,prims,one).alignedBounds(threadIndex,this,prims);
       //alignedObjectSAH = travCostAligned*embree::area(bounds.bounds) + alignedObjectSplit.modifiedSAH();
-      //PRINT3(alignedObjectSAH,alignedObjectSplit.modifiedSAH(),alignedObjectSplit.standardSAH());
       alignedObjectSAH = travCostAligned*embree::area(bounds.bounds) + alignedObjectSplit.standardSAH();
       bestSAH = min(bestSAH,alignedObjectSAH);
     }
@@ -877,11 +880,10 @@ namespace embree
     /* perform spatial split in aligned space */
 #if ENABLE_ALIGNED_SPATIAL_SPLITS 
     SpatialSplit alignedSpatialSplit;
-    float alignedSpatialSAH;
+    float alignedSpatialSAH = neg_inf;
     if (enableAlignedSpatialSplits) {
       alignedSpatialSplit = SpatialSplit::find(threadIndex,this,prims,one);
       //alignedSpatialSAH = travCostAligned*embree::area(bounds.bounds) + alignedSpatialSplit.modifiedSAH();
-      //PRINT3(alignedSpatialSAH,alignedSpatialSplit.modifiedSAH(),alignedSpatialSplit.standardSAH());
       alignedSpatialSAH = travCostAligned*embree::area(bounds.bounds) + alignedSpatialSplit.standardSAH();
       bestSAH = min(bestSAH,alignedSpatialSAH);
     }
@@ -890,11 +892,10 @@ namespace embree
     /* perform standard binning in unaligned space */
 #if ENABLE_UNALIGNED_OBJECT_SPLITS
     ObjectSplit unalignedObjectSplit;
-    float unalignedObjectSAH;
+    float unalignedObjectSAH = neg_inf;
     if (enableUnalignedObjectSplits) {
       unalignedObjectSplit = ObjectSplit::find(threadIndex,this,prims,bounds.space).unalignedBounds(threadIndex,this,prims);
       //unalignedObjectSAH = BVH4Hair::travCostUnaligned*embree::area(bounds.bounds) + unalignedObjectSplit.modifiedSAH();
-      //PRINT3(unalignedObjectSAH,unalignedObjectSplit.modifiedSAH(),unalignedObjectSplit.standardSAH());
       unalignedObjectSAH = BVH4Hair::travCostUnaligned*embree::area(bounds.bounds) + unalignedObjectSplit.standardSAH();
       bestSAH = min(bestSAH,unalignedObjectSAH);
     }
@@ -903,7 +904,7 @@ namespace embree
     /* perform spatial split in unaligned space */
 #if ENABLE_UNALIGNED_SPATIAL_SPLITS
     SpatialSplit unalignedSpatialSplit;
-    float unalignedSpatialSAH;
+    float unalignedSpatialSAH = neg_inf;
     if (enableUnalignedSpatialSplits) {
       unalignedSpatialSplit = SpatialSplit::find(threadIndex,this,prims,bounds.space);
       //unalignedSpatialSAH = BVH4Hair::travCostUnaligned*embree::area(bounds.bounds) + unalignedSpatialSplit.modifiedSAH();
@@ -915,7 +916,7 @@ namespace embree
     /* perform splitting into two strands */
 #if ENABLE_UNALIGNED_STRAND_SPLITS
     StrandSplit strandSplit;
-    float strandSAH;
+    float strandSAH = neg_inf;
     if (enableStrandSplits) {
       strandSplit = StrandSplit::find(threadIndex,this,prims);
       //strandSAH = BVH4Hair::travCostUnaligned*embree::area(bounds.bounds) + strandSplit.modifiedSAH();
@@ -925,8 +926,8 @@ namespace embree
 #endif
 
     /* perform fallback split */
-    if (bestSAH == leafSAH) { //float(inf)) {
-      if (N <= maxLeafSize) return false;
+    if (bestSAH == float(inf)) {
+      //if (N <= maxLeafSize) return false;
       numFallbackSplits++;
       const FallBackSplit fallbackSplit = FallBackSplit::find(threadIndex,this,prims,lprims_o,rprims_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
@@ -1013,10 +1014,8 @@ namespace embree
   BVH4Hair::NodeRef BVH4HairBuilder2::recurse(size_t threadIndex, size_t depth, atomic_set<PrimRefBlock>& prims, bool makeleaf, const NAABBox3fa& bounds)
   {
     /* create enforced leaf */
-    //const size_t N = end-begin;
     const size_t N = atomic_set<PrimRefBlock>::block_iterator_unsafe(prims).size();
     if (N <= minLeafSize || depth >= BVH4Hair::maxBuildDepth || makeleaf)
-    //if (N <= 4 || depth >= BVH4Hair::maxBuildDepth)
       return leaf(threadIndex,depth,prims,bounds);
 
     /*! initialize child list */
