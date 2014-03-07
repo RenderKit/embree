@@ -188,31 +188,6 @@ namespace embree
       size_t ptr;
     };
 
-    /*! Non-axis aligned bounds */
-    struct NAABBox3fa
-    {
-    public:
-      
-      __forceinline NAABBox3fa () {}
-
-      __forceinline NAABBox3fa (EmptyTy) 
-        : space(one), bounds(empty) {}
-      
-      __forceinline NAABBox3fa (const BBox3fa& bounds) 
-        : space(one), bounds(bounds) {}
-      
-      __forceinline NAABBox3fa (const LinearSpace3fa& space, const BBox3fa& bounds) 
-        : space(space), bounds(bounds) {}
-
-      friend std::ostream& operator<<(std::ostream& cout, const NAABBox3fa& p) {
-        return std::cout << "{ space = " << p.space << ", bounds = " << p.bounds << "}";
-      }
-      
-    public:
-      LinearSpace3fa space; //!< orthonormal transformation
-      BBox3fa bounds;       //!< bounds in transformed space
-    };
-
     /*! Base Node structure */
     struct Node
     {

@@ -105,6 +105,8 @@ namespace embree
       __forceinline operator bool( ) const { return root; }
       __forceinline const Type& operator*( ) const { return (*root)[pos]; }
       __forceinline       Type& operator*( )       { return (*root)[pos]; }
+      __forceinline const Type* operator->( ) const { return &(*root)[pos]; }
+      __forceinline       Type* operator->( )       { return &(*root)[pos]; }
   
     private:
 

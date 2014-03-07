@@ -30,6 +30,7 @@
 #include "math/vec3.h"
 #include "math/vec4.h"
 #include "math/bbox.h"
+#include "math/naabbox.h"
 #include "math/affinespace.h"
 
 #include "simd/simd.h"

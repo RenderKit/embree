@@ -39,7 +39,6 @@ namespace embree
       typedef BVH4Hair::Node Node;
       typedef BVH4Hair::AlignedNode AlignedNode;
       typedef BVH4Hair::UnalignedNode UnalignedNode;
-      typedef BVH4Hair::NAABBox3fa NAABBox3fa;
       typedef BVH4Hair::AffineSpaceSIMD3f AffineSpaceSIMD3f;
 
       static const size_t stackSize = 1+3*BVH4Hair::maxDepth;
