@@ -603,7 +603,7 @@ namespace embree
     size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
 #endif
     
-    size_t bytesAllocated = numAllocatedNodes * sizeof(BVH4::Node) + numAllocatedPrimitives * primTy.bytes;
+    size_t bytesAllocated = 0; //numAllocatedNodes * sizeof(BVH4::Node) + numAllocatedPrimitives * primTy.bytes;
     size_t bytesReserved  = numReservedNodes * sizeof(BVH4::Node) + numReservedPrimitives * primTy.bytes;
     bytesReserved         = (bytesReserved+blockSize-1)/blockSize*blockSize;
 

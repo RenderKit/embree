@@ -327,6 +327,7 @@ void addGroundPlane (ISPCScene* scene)
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
+  PING;
   //scene_in->numHairSets = 0;
   //scene_in->numMeshes = 0;
 

@@ -100,7 +100,7 @@ namespace embree
   {
     /* fast path for empty BVH */
     size_t numPrimitives = scene->numCurves;
-    bvh->init(numPrimitives,10*numPrimitives); // FIXME: 2x for spatial splits
+    bvh->init(numPrimitives,5*numPrimitives); // FIXME: 2x for spatial splits
     if (numPrimitives == 0) return;
     numGeneratedPrims = 0;
     numAlignedObjectSplits = 0;
@@ -125,8 +125,8 @@ namespace embree
     BBox3fa bounds = empty;
     //size_t numPrimitives = 0;
     size_t numVertices = 0;
-    //curves.reserve(10*numPrimitives+100); // FIXME: 2x for spatial splits
-    //numCurves = 0; maxCurves = 10*numPrimitives+100;
+    //curves.reserve(5*numPrimitives+100); // FIXME: 2x for spatial splits
+    //numCurves = 0; maxCurves = 5*numPrimitives+100;
     //curves = (Bezier1*) os_malloc(maxCurves*sizeof(Bezier1));
     atomic_set<PrimRefBlock> prims;
     atomic_set<PrimRefBlock>::item* block = prims.insert(alloc.malloc(threadIndex));
@@ -163,7 +163,7 @@ namespace embree
 
     /* start recursive build */
     //size_t begin = 0, end = numCurves; //curves.size();
-    //curves.resize(10*numPrimitives+10); // FIXME: to make debug mode happy
+    //curves.resize(5*numPrimitives+10); // FIXME: to make debug mode happy
     bvh->root = recurse(threadIndex,0,prims,false,computeAlignedBounds(prims,one));
     bvh->bounds = bounds;
     NAVI(naviNode = bvh->root);
@@ -1073,7 +1073,7 @@ namespace embree
 #if BVH4HAIR_COMPRESS_UNALIGNED_NODES
       node->set(bounds);
       for (ssize_t i=numChildren-1; i>=0; i--) {
-        const NAABBox3fa cboundsi = computeAlignedBounds(curves,cprims[i],bounds.space);
+        const NAABBox3fa cboundsi = computeAlignedBounds(cprims[i],bounds.space);
         node->set(i,cboundsi.bounds,recurse(threadIndex,depth+1,cprims[i],isleaf[i],cbounds[i]));
       }
 #else
