@@ -747,13 +747,13 @@ namespace embree
         Bezier1 left,right;
         if (prim.split(plane,left,right)) 
         {
-          if (!lblock->insert(prim)) {
+          if (!lblock->insert(left)) {
             lblock = lprims_o.insert(parent->alloc.malloc(threadIndex));
-            lblock->insert(prim);
+            lblock->insert(left);
           }
-          if (!rblock->insert(prim)) {
+          if (!rblock->insert(right)) {
             rblock = rprims_o.insert(parent->alloc.malloc(threadIndex));
-            rblock->insert(prim);
+            rblock->insert(right);
           }
           continue;
         }
