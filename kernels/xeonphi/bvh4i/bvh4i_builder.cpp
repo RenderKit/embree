@@ -68,6 +68,10 @@ namespace embree
 	builder = new BVH4iBuilderVirtualGeometry((BVH4i*)accel,source,geometry);
 	break;
 
+      case BVH4I_BUILDER_HAIR:
+	builder = new BVH4iBuilderHair((BVH4i*)accel,source,geometry);
+	break;
+
       default:
 	throw std::runtime_error("ERROR: unknown BVH4iBuilder mode selected");	
       }
