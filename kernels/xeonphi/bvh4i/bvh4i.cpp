@@ -161,6 +161,14 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);    
   }
 
+  Accel* BVH4i::BVH4iBezierCurvesBinnedSAH(Scene* scene)
+  {
+    BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);    
+    Builder* builder = BVH4iBuilder::create(accel,NULL,scene,BVH4iBuilder::BVH4I_BUILDER_BEZIER_CURVES);   
+    Accel::Intersectors intersectors = BVH4iBezierCurvesIntersectors(accel);
+    return new AccelInstance(accel,builder,intersectors);    
+  }
+
   BVH4i::~BVH4i()
   {
     if (qbvh)  os_free(qbvh,size_node);
