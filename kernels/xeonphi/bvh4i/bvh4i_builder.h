@@ -35,7 +35,7 @@ namespace embree
 
   public:
 
-    enum { BVH4I_BUILDER_DEFAULT, BVH4I_BUILDER_PRESPLITS, BVH4I_BUILDER_VIRTUAL_GEOMETRY, BVH4I_BUILDER_HAIR };
+    enum { BVH4I_BUILDER_DEFAULT, BVH4I_BUILDER_PRESPLITS, BVH4I_BUILDER_VIRTUAL_GEOMETRY, BVH4I_BUILDER_BEZIER_CURVES};
  
     /*! Constructor. */
     BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry);
@@ -228,10 +228,10 @@ namespace embree
 
 
   /*! derived binned-SAH builder supporting hair primitives */  
-  class BVH4iBuilderHair : public BVH4iBuilder
+  class BVH4iBuilderBezierCurves : public BVH4iBuilder
   {
   public:
-  BVH4iBuilderHair(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
+  BVH4iBuilderBezierCurves(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
       {
       }
 
@@ -241,8 +241,8 @@ namespace embree
     virtual void printBuilderName();
 
   protected:
-    TASK_FUNCTION(BVH4iBuilderHair,computePrimRefsHair);
-    TASK_FUNCTION(BVH4iBuilderHair,createHairAccel);    
+    TASK_FUNCTION(BVH4iBuilderBezierCurves,computePrimRefsBezierCurves);
+    TASK_FUNCTION(BVH4iBuilderBezierCurves,createBezierCurvesAccel);    
   };
 
 

@@ -545,39 +545,39 @@ namespace embree
   // ==========================================================================================
 
 
-  void BVH4iBuilderHair::printBuilderName()
+  void BVH4iBuilderBezierCurves::printBuilderName()
   {
-    std::cout << "building BVH4i with Hair SAH builder (MIC) ... " << std::endl;    
+    std::cout << "building BVH4i with BezierCurves SAH builder (MIC) ... " << std::endl;    
   }
 
-  size_t BVH4iBuilderHair::getNumPrimitives()
+  size_t BVH4iBuilderBezierCurves::getNumPrimitives()
   {
     /* count total number of virtual objects */
-    size_t numVirtualObjects = 0;       
+    size_t numCurves = 0;       
     for (size_t i=0;i<scene->size();i++)
       {
 	if (unlikely(scene->get(i) == NULL)) continue;
-	if (unlikely((scene->get(i)->type != USER_GEOMETRY) && (scene->get(i)->type != INSTANCES))) continue;
+	if (unlikely((scene->get(i)->type != BEZIER_CURVES))) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
-        UserGeometryScene::Base* geom = (UserGeometryScene::Base*) scene->get(i);
-	numVirtualObjects += geom->size();
+        BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(i);
+	numCurves += geom->numCurves;
       }
-    return numVirtualObjects;	
+    return numCurves;	
   }
 
-  void BVH4iBuilderHair::computePrimRefs(const size_t threadIndex, const size_t threadCount)
+  void BVH4iBuilderBezierCurves::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
     DBG(PING);
-    LockStepTaskScheduler::dispatchTask( task_computePrimRefsHair, this, threadIndex, threadCount );	
+    LockStepTaskScheduler::dispatchTask( task_computePrimRefsBezierCurves, this, threadIndex, threadCount );	
   }
 
-  void BVH4iBuilderHair::createAccel(const size_t threadIndex, const size_t threadCount)
+  void BVH4iBuilderBezierCurves::createAccel(const size_t threadIndex, const size_t threadCount)
   {
     DBG(PING);
-    LockStepTaskScheduler::dispatchTask( task_createHairAccel, this, threadIndex, threadCount );
+    LockStepTaskScheduler::dispatchTask( task_createBezierCurvesAccel, this, threadIndex, threadCount );
   }
 
-  void BVH4iBuilderHair::computePrimRefsHair(const size_t threadID, const size_t numThreads) 
+  void BVH4iBuilderBezierCurves::computePrimRefsBezierCurves(const size_t threadID, const size_t numThreads) 
   {
     DBG(PING);
 
@@ -601,10 +601,10 @@ namespace embree
     unsigned int g=0, numSkipped = 0;
     for (; g<numTotalGroups; g++) {       
       if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely((scene->get(g)->type != USER_GEOMETRY) && (scene->get(g)->type != INSTANCES))) continue;
+      if (unlikely((scene->get(g)->type != BEZIER_CURVES))) continue;
       if (unlikely(!scene->get(g)->isEnabled())) continue;
-      const UserGeometryScene::Base* const geom = (UserGeometryScene::Base*) scene->get(g);
-      const size_t numPrims = geom->size();
+      BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(g);
+      const size_t numPrims = geom->numCurves;
       if (numSkipped + numPrims > startID) break;
       numSkipped += numPrims;
     }
@@ -622,15 +622,15 @@ namespace embree
     for (; g<numTotalGroups; g++) 
       {
 	if (unlikely(scene->get(g) == NULL)) continue;
-	if (unlikely((scene->get(g)->type != USER_GEOMETRY ) && (scene->get(g)->type != INSTANCES))) continue;
+      if (unlikely((scene->get(g)->type != BEZIER_CURVES))) continue;
 	if (unlikely(!scene->get(g)->isEnabled())) continue;
 
-	UserGeometryScene::Base *virtual_geometry = (UserGeometryScene::Base *)scene->get(g);
+	BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(g);
 
-        size_t N = virtual_geometry->size();
+        size_t N = geom->numCurves;
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
         { 			    
-          const BBox3fa bounds = virtual_geometry->bounds(i);
+          const BBox3fa bounds = geom->bounds(i);
           const mic_f bmin = broadcast4to16f(&bounds.lower); 
           const mic_f bmax = broadcast4to16f(&bounds.upper);
 
@@ -667,7 +667,7 @@ namespace embree
   }
 
 
-  void BVH4iBuilderHair::createHairAccel(const size_t threadID, const size_t numThreads)
+  void BVH4iBuilderBezierCurves::createBezierCurvesAccel(const size_t threadID, const size_t numThreads)
   {
     DBG(PING);
 

@@ -61,6 +61,8 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16HybridMoeller);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4iVirtualGeometryIntersector1);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iVirtualGeometryIntersector16);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4iBezierCurvesIntersector1);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4iBezierCurvesIntersector16);
 
 
   void BVH4iRegister () 
@@ -103,6 +105,15 @@ namespace embree
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4iVirtualGeometryIntersector1;
     intersectors.intersector16 = BVH4iVirtualGeometryIntersector16;
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH4iBezierCurvesIntersectors(BVH4i* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH4iBezierCurvesIntersector1;
+    intersectors.intersector16 = BVH4iBezierCurvesIntersector16;
     return intersectors;
   }
 
