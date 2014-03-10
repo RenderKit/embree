@@ -30,7 +30,7 @@
 #define L2_PREFETCH_ITEMS 16
 
 #define TIMER(x) x
-#define DBG(x) 
+#define DBG(x) x
 
 //#define PROFILE
 #define PROFILE_ITERATIONS 100
@@ -51,6 +51,9 @@ namespace embree
 
   Builder* BVH4iBuilder::create (void* accel, BuildSource* source, void* geometry, size_t mode ) 
   { 
+    DBG(PING);
+    DBG(DBG_PRINT(mode));
+
     Builder* builder = NULL;
 
     switch( mode )
@@ -105,6 +108,7 @@ namespace embree
     if (prims)  {
       assert(size_prims > 0);
       os_free(prims,size_prims);
+      prims = NULL;
     }    
   }
 
@@ -302,7 +306,6 @@ namespace embree
 
   void BVH4iBuilder::computePrimRefsTriangles(const size_t threadID, const size_t numThreads) 
   {
-    DBG(PING);
     const size_t numGroups = scene->size();
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;

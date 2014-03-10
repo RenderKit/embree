@@ -582,7 +582,7 @@ namespace embree
   {
     DBG(PING);
     DBG(sleep(1));
-    LockStepTaskScheduler::dispatchTask( task_createBezierCurvesAccel, this, threadIndex, threadCount );
+    //LockStepTaskScheduler::dispatchTask( task_createBezierCurvesAccel, this, threadIndex, threadCount );
   }
 
   void BVH4iBuilderBezierCurves::computePrimRefsBezierCurves(const size_t threadID, const size_t numThreads) 

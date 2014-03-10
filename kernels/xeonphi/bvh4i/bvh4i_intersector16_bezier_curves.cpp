@@ -148,7 +148,7 @@ namespace embree
 	unsigned int index = (curNode.offset() >> 6); /* array of AccelSetItems */
 	//Primitive *accel_ptr = (Primitive*)accel + index;
 
-	FATAL("NOT YET IMPLEMENTED");
+	//FATAL("NOT YET IMPLEMENTED");
         //BezierCurvesIntersector16::intersect(valid_leaf,ray,accel_ptr,items,bvh->geometry);
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -280,7 +280,7 @@ namespace embree
 	//Primitive *accel_ptr = (Primitive *)accel + index;
 
 	mic_m occ = 0xffff; // BezierCurvesIntersector16::occluded(valid_leaf,ray,accel_ptr,items,bvh->geometry);
-	FATAL("NOT YET IMPLEMENTED");
+	//FATAL("NOT YET IMPLEMENTED");
 
         m_terminated |= valid_leaf & occ;
 
@@ -428,7 +428,7 @@ namespace embree
 	  unsigned int index = (curNode.offset() >> 6); /* array of AccelSetItems */
 	  //Primitive *accel_ptr = (Primitive *)accel + index;
 
-	  FATAL("NOT YET IMPLEMENTED");
+	  //FATAL("NOT YET IMPLEMENTED");
 
 	  //BezierCurvesIntersector1::intersect(ray,accel_ptr,items,bvh->geometry);
 
@@ -636,7 +636,7 @@ namespace embree
 	  unsigned int index = (curNode.offset() >> 6); /* array of AccelSetItems */
 	  //Primitive *accel_ptr = (Primitive *)accel + index;
 
-	  FATAL("NOT YET IMPLEMENTED");
+	  //FATAL("NOT YET IMPLEMENTED");
 	  // if (BezierCurvesIntersector1::occluded(ray,accel_ptr,items,bvh->geometry)) {
 	  //   ray.geomID = 0;
 	  //   return;

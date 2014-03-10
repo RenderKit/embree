@@ -51,6 +51,8 @@ namespace embree
 #if defined(__MIC__)
 
     accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
+    accels.add(BVH4i::BVH4iVirtualGeometryBinnedSAH(this));
+    accels.add(BVH4i::BVH4iBezierCurvesBinnedSAH(this));
 
     if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
       {
@@ -92,9 +94,6 @@ namespace embree
     }
     else throw std::runtime_error("unknown accel "+g_tri_accel);
 
-    accels.add(BVH4i::BVH4iVirtualGeometryBinnedSAH(this));
-
-    accels.add(BVH4i::BVH4iBezierCurvesBinnedSAH(this));
 
 #else
 
