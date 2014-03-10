@@ -242,8 +242,8 @@ namespace embree
           const float n0 = tNear[r]; const float f0 = tFar[r]; 
           r = __bscf(mask);
           NodeRef c1 = node->child(r); c1.prefetch(); const float n1 = tNear[r]; const float f1 = tFar[r];
-          assert(c0 != BVH4Hair::emptyNode);
-          assert(c1 != BVH4Hair::emptyNode);
+          //assert(c0 != BVH4Hair::emptyNode); // FIXME: enable
+          //assert(c1 != BVH4Hair::emptyNode); // FIXME: enable
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
             if (n0 < n1) { 
@@ -269,7 +269,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           NodeRef c = node->child(r); c.prefetch(); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; NAVI(stackPtr->depth = depth+1); stackPtr++;
-          assert(c != BVH4Hair::emptyNode);
+          //assert(c != BVH4Hair::emptyNode); // FIXME: enable
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
             cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; NAVI(depth = stackPtr[-1].depth); stackPtr--;
@@ -289,7 +289,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; NAVI(stackPtr->depth = depth+1); stackPtr++;
-          assert(c != BVH4Hair::emptyNode);
+          //assert(c != BVH4Hair::emptyNode); // FIXME: enable
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; NAVI(depth = stackPtr[-1].depth); stackPtr--;
 #endif
@@ -385,8 +385,8 @@ namespace embree
            const float n0 = tNear[r]; const float f0 = tFar[r]; 
           r = __bscf(mask);
           NodeRef c1 = node->child(r); c1.prefetch(); const float n1 = tNear[r]; const float f1 = tFar[r];
-          assert(c0 != BVH4Hair::emptyNode);
-          assert(c1 != BVH4Hair::emptyNode);
+          //assert(c0 != BVH4Hair::emptyNode); // FIXME: enable
+          //assert(c1 != BVH4Hair::emptyNode); // FIXME: enable
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
             if (n0 < n1) { stackPtr->ref = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++; cur = c0; tNear = n0; tFar = f0; continue; }
@@ -404,7 +404,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           NodeRef c = node->child(r); c.prefetch(); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
-          assert(c != BVH4Hair::emptyNode);
+          //assert(c != BVH4Hair::emptyNode); // FIXME: enable
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
             cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
@@ -423,7 +423,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
-          assert(c != BVH4Hair::emptyNode);
+          //assert(c != BVH4Hair::emptyNode); // FIXME: enable
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
 #endif

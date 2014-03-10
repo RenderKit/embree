@@ -26,7 +26,7 @@
 
 #define BVH4HAIR_WIDTH 4
 #define BVH4HAIR_COMPRESS_ALIGNED_NODES 0
-#define BVH4HAIR_COMPRESS_UNALIGNED_NODES 0
+#define BVH4HAIR_COMPRESS_UNALIGNED_NODES 1
 #define BVH4HAIR_NAVIGATION 0
 #if BVH4HAIR_NAVIGATION
 #define NAVI(x) x
@@ -393,12 +393,12 @@ namespace embree
         xfm_vy[0] = 0; xfm_vy[1] = 1; xfm_vy[2] = 0;
         xfm_vz[0] = 0; xfm_vz[1] = 0; xfm_vz[2] = 1;
         offset = 0.0f; scale = 0.0f;
-        lower_x[0] = lower_x[1] = lower_x[2] = lower_x[3] = 0;
-        lower_y[0] = lower_y[1] = lower_y[2] = lower_y[3] = 0;
-        lower_z[0] = lower_z[1] = lower_z[2] = lower_z[3] = 0;
-        upper_x[0] = upper_x[1] = upper_x[2] = upper_x[3] = 0;
-        upper_y[0] = upper_y[1] = upper_y[2] = upper_y[3] = 0;
-        upper_z[0] = upper_z[1] = upper_z[2] = upper_z[3] = 0;
+        lower_x[0] = lower_x[1] = lower_x[2] = lower_x[3] = 1;
+        lower_y[0] = lower_y[1] = lower_y[2] = lower_y[3] = 1;
+        lower_z[0] = lower_z[1] = lower_z[2] = lower_z[3] = 1;
+        upper_x[0] = upper_x[1] = upper_x[2] = upper_x[3] = 1;
+        upper_y[0] = upper_y[1] = upper_y[2] = upper_y[3] = 1;
+        upper_z[0] = upper_z[1] = upper_z[2] = upper_z[3] = 1;
         align[0] = align[1] = align[2] = align[3] = 0;
         Node::clear();
       }
