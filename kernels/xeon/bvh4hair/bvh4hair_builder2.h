@@ -139,6 +139,26 @@ namespace embree
     private:
       ThreadPrimBlockAllocator* threadPrimBlockAllocator;  //!< Thread local allocator
     };
+
+    /*! stores all info to build a subtree */
+    struct BuildTask
+    {
+      __forceinline BuildTask () {}
+      __forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, bool makeleaf, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds)
+        : dst(dst), depth(depth), makeleaf(makeleaf), prims(prims), bounds(bounds) {}
+
+    public:
+      __forceinline friend bool operator< (const BuildTask& a, const BuildTask& b) {
+        return area(a.bounds.bounds) > area(b.bounds.bounds);
+      }
+
+    public:
+      BVH4Hair::NodeRef* dst;
+      size_t depth;
+      bool makeleaf;
+      atomic_set<PrimRefBlock> prims;
+      NAABBox3fa bounds;
+    };
     
     /*! Tries to split hair into two differently aligned hair strands */
     struct StrandSplit
@@ -310,8 +330,11 @@ namespace embree
                atomic_set<PrimRefBlock>& rprims, NAABBox3fa& rbounds,  
                bool& isAligned);
 
+    /*! execute single task and create subtasks */
+    void processTask(size_t threadIndex, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& N);
+
     /*! recursive build function for aligned and non-aligned bounds */
-    BVH4Hair::NodeRef recurse(size_t threadIndex, size_t depth, atomic_set<PrimRefBlock>& prims, bool makeleaf, const NAABBox3fa& bounds);
+    void recurseTask(size_t threadIndex, BuildTask& task);
 
   public:
     Scene* scene;          //!< source
@@ -339,8 +362,7 @@ namespace embree
 
     BVH4Hair* bvh;         //!< output
     PrimRefBlockAlloc alloc;                 //!< Allocator for primitive blocks
-    //vector_t<Bezier1> curves; //!< array with all curves
-    //Bezier1* curves;
-    //size_t numCurves,maxCurves;
+
+    std::vector<BuildTask> tasks;
   };
 }

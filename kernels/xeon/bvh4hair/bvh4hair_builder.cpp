@@ -121,7 +121,7 @@ namespace embree
 
     double t0 = 0.0;
     if (g_verbose >= 2) {
-      std::cout << "building BVH4Hair<" + bvh->primTy.name + "> ..." << std::flush;
+      std::cout << "building BVH4Hair<" + bvh->primTy.name + "> using BVH4HairBuilder ..." << std::flush;
       t0 = getSeconds();
     }
 
@@ -1268,7 +1268,8 @@ namespace embree
       node->set(bounds);
 #endif
       for (ssize_t i=numChildren-1; i>=0; i--) {
-        node->set(i,cbounds[i].bounds,recurse(threadIndex,depth+1,cbegin[i],cend[i],isleaf[i],cbounds[i]));
+        node->set(i,cbounds[i].bounds);
+        node->set(i,recurse(threadIndex,depth+1,cbegin[i],cend[i],isleaf[i],cbounds[i]));
       }
       return bvh->encodeNode(node);
     }
@@ -1280,11 +1281,14 @@ namespace embree
       node->set(bounds);
       for (ssize_t i=numChildren-1; i>=0; i--) {
         const NAABBox3fa cboundsi = computeAlignedBounds(curves,cbegin[i],cend[i],bounds.space);
-        node->set(i,cboundsi.bounds,recurse(threadIndex,depth+1,cbegin[i],cend[i],isleaf[i],cbounds[i]));
+        node->set(i,cboundsi.bounds);
+        node->set(i,recurse(threadIndex,depth+1,cbegin[i],cend[i],isleaf[i],cbounds[i]));
       }
 #else
-      for (ssize_t i=numChildren-1; i>=0; i--)
-        node->set(i,cbounds[i],recurse(threadIndex,depth+1,cbegin[i],cend[i],isleaf[i],cbounds[i]));
+      for (ssize_t i=numChildren-1; i>=0; i--) {
+        node->set(i,cbounds[i]);
+        node->set(i,recurse(threadIndex,depth+1,cbegin[i],cend[i],isleaf[i],cbounds[i]));
+      }
 #endif
       return bvh->encodeNode(node);
     }

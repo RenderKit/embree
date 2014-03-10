@@ -26,7 +26,7 @@
 
 #define BVH4HAIR_WIDTH 4
 #define BVH4HAIR_COMPRESS_ALIGNED_NODES 0
-#define BVH4HAIR_COMPRESS_UNALIGNED_NODES 1
+#define BVH4HAIR_COMPRESS_UNALIGNED_NODES 0
 #define BVH4HAIR_NAVIGATION 0
 #if BVH4HAIR_NAVIGATION
 #define NAVI(x) x
@@ -234,8 +234,8 @@ namespace embree
         scale  = naabb.bounds.size()/255.0f;
       }
 
-      /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& childID) 
+      /*! Sets bounding box. */
+      __forceinline void set(size_t i, const BBox3fa& bounds) 
       {
         assert(i < N);
         const Vec3fa lower = select(eq_mask(scale,Vec3fa(0.0f)),0.0f,(bounds.lower-Vec3fa(offset))/Vec3fa(scale));
@@ -252,6 +252,10 @@ namespace embree
         upper_x[i] = (unsigned char) clamp(ceilf(upper.x),0.0f,255.0f);
         upper_y[i] = (unsigned char) clamp(ceilf(upper.y),0.0f,255.0f);
         upper_z[i] = (unsigned char) clamp(ceilf(upper.z),0.0f,255.0f);
+      }
+
+      /*! Sets ID of child. */
+      __forceinline void set(size_t i, const NodeRef& childID) {
         Node::set(i,childID);
       }
 
@@ -319,12 +323,16 @@ namespace embree
         Node::clear();
       }
 
-      /*! Sets bounding box and ID of child. */
-      __forceinline void set(const size_t i, const BBox3fa& bounds, const NodeRef& childID) 
+      /*! Sets bounding box. */
+      __forceinline void set(const size_t i, const BBox3fa& bounds) 
       {
         assert(i < N);
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
         upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
+      }
+
+      /*! Sets ID of child. */
+      __forceinline void set(size_t i, const NodeRef& childID) {
         Node::set(i,childID);
       }
 
@@ -414,8 +422,8 @@ namespace embree
         scale  = (127.0f*bounds.upper-127.0f*bounds.lower)/255.0f;
       }
 
-      /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const BBox3fa& bounds, const NodeRef& childID) 
+      /*! Sets bounding box. */
+      __forceinline void set(size_t i, const BBox3fa& bounds) 
       {
         assert(i < N);
         const Vec3fa lower = select(eq_mask(scale,Vec3fa(0.0f)),0.0f,(127.0f*bounds.lower-Vec3fa(offset))/Vec3fa(scale));
@@ -432,6 +440,10 @@ namespace embree
         upper_x[i] = (unsigned char) clamp(ceilf(upper.x),0.0f,255.0f);
         upper_y[i] = (unsigned char) clamp(ceilf(upper.y),0.0f,255.0f);
         upper_z[i] = (unsigned char) clamp(ceilf(upper.z),0.0f,255.0f);
+      }
+
+      /*! Sets ID of child. */
+      __forceinline void set(size_t i, const NodeRef& childID) {
         Node::set(i,childID);
       }
 
@@ -512,8 +524,8 @@ namespace embree
         Node::clear();
       }
 
-      /*! Sets bounding box and ID of child. */
-      __forceinline void set(size_t i, const NAABBox3fa& b, const NodeRef& childID) 
+      /*! Sets bounding box. */
+      __forceinline void set(size_t i, const NAABBox3fa& b) 
       {
         assert(i < N);
 
@@ -536,7 +548,10 @@ namespace embree
         naabb.p.x[i] = space.p.x;
         naabb.p.y[i] = space.p.y;
         naabb.p.z[i] = space.p.z;
+      }
 
+      /*! Sets ID of child. */
+      __forceinline void set(size_t i, const NodeRef& childID) {
         Node::set(i,childID);
       }
 

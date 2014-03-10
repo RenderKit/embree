@@ -114,7 +114,7 @@ namespace embree
 
     double t0 = 0.0;
     if (g_verbose >= 2) {
-      std::cout << "building BVH4Hair<" + bvh->primTy.name + "> ..." << std::flush;
+      std::cout << "building BVH4Hair<" + bvh->primTy.name + "> using BVH4HairBuilder2 ..." << std::flush;
       t0 = getSeconds();
     }
 
@@ -123,14 +123,9 @@ namespace embree
 
     /* create initial curve list */
     BBox3fa bounds = empty;
-    //size_t numPrimitives = 0;
     size_t numVertices = 0;
-    //curves.reserve(5*numPrimitives+100); // FIXME: 2x for spatial splits
-    //numCurves = 0; maxCurves = 5*numPrimitives+100;
-    //curves = (Bezier1*) os_malloc(maxCurves*sizeof(Bezier1));
     atomic_set<PrimRefBlock> prims;
     atomic_set<PrimRefBlock>::item* block = prims.insert(alloc.malloc(threadIndex));
-    bvh->numPrimitives = 0;
 
     for (size_t i=0; i<scene->size(); i++) 
     {
@@ -147,9 +142,6 @@ namespace embree
         const Vec3fa& p3 = set->vertex(ofs+3);
         const Bezier1 bezier(p0,p1,p2,p3,0,1,i,j);
         bounds.extend(bezier.bounds());
-        //curves.push_back(bezier);
-        //curves[numCurves++] = bezier;
-        //numPrimitives++;
         if (!block->insert(bezier)) {
           block = prims.insert(alloc.malloc(threadIndex));
           block->insert(bezier);
@@ -162,10 +154,21 @@ namespace embree
     if (&bvh->primTy == &SceneBezier1i::type) bvh->numVertices = numVertices;
 
     /* start recursive build */
-    //size_t begin = 0, end = numCurves; //curves.size();
-    //curves.resize(5*numPrimitives+10); // FIXME: to make debug mode happy
-    bvh->root = recurse(threadIndex,0,prims,false,computeAlignedBounds(prims,one));
+    BuildTask task(&bvh->root,0,false,prims,computeAlignedBounds(prims,one));
     bvh->bounds = bounds;
+
+#if 1
+    recurseTask(threadIndex,task);
+#else
+    tasks.push_back(task);
+    push_heap(tasks.begin(),tasks.end());
+    while (tasks.size()) {
+      BuildTask task = tasks.front();
+      pop_heap(tasks.begin(),tasks.end());
+      tasks.pop_back();
+      
+    }
+#endif
     NAVI(naviNode = bvh->root);
     NAVI(rootNode = bvh->root);
     NAVI(naviStack.push_back(bvh->root));
@@ -1011,20 +1014,23 @@ namespace embree
     }
   }
 
-  BVH4Hair::NodeRef BVH4HairBuilder2::recurse(size_t threadIndex, size_t depth, atomic_set<PrimRefBlock>& prims, bool makeleaf, const NAABBox3fa& bounds)
+  void BVH4HairBuilder2::processTask(size_t threadIndex, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& numTasks_o)
   {
     /* create enforced leaf */
-    const size_t N = atomic_set<PrimRefBlock>::block_iterator_unsafe(prims).size();
-    if (N <= minLeafSize || depth >= BVH4Hair::maxBuildDepth || makeleaf)
-      return leaf(threadIndex,depth,prims,bounds);
+    const size_t N = atomic_set<PrimRefBlock>::block_iterator_unsafe(task.prims).size(); // FIXME: slow
+    if (N <= minLeafSize || task.depth >= BVH4Hair::maxBuildDepth || task.makeleaf) {
+      *task.dst = leaf(threadIndex,task.depth,task.prims,task.bounds);
+      numTasks_o = 0;
+      return;
+    }
 
     /*! initialize child list */
     bool isAligned = true;
     NAABBox3fa cbounds[BVH4Hair::N];
     atomic_set<PrimRefBlock> cprims[BVH4Hair::N];
     bool isleaf[BVH4Hair::N];
-    cprims[0] = prims;
-    cbounds[0] = bounds;
+    cprims[0] = task.prims;
+    cbounds[0] = task.bounds;
     isleaf[0] = false;
     size_t numChildren = 1;
     
@@ -1047,7 +1053,7 @@ namespace embree
       /*! split selected child */
       NAABBox3fa lbounds, rbounds;
       atomic_set<PrimRefBlock> lprims, rprims;
-      bool done = split(threadIndex,depth,cprims[bestChild],cbounds[bestChild],lprims,lbounds,rprims,rbounds,isAligned);
+      bool done = split(threadIndex,task.depth,cprims[bestChild],cbounds[bestChild],lprims,lbounds,rprims,rbounds,isAligned);
       if (!done) { isleaf[bestChild] = true; continue; }
       cbounds[numChildren] = rbounds; cprims[numChildren] = rprims; isleaf[numChildren] = false;
       cbounds[bestChild  ] = lbounds; cprims[bestChild  ] = lprims; isleaf[bestChild  ] = false;
@@ -1062,26 +1068,41 @@ namespace embree
       node->set(bounds);
 #endif
       for (ssize_t i=numChildren-1; i>=0; i--) {
-        node->set(i,cbounds[i].bounds,recurse(threadIndex,depth+1,cprims[i],isleaf[i],cbounds[i]));
+        node->set(i,cbounds[i].bounds);
+        new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,isleaf[i],cprims[i],cbounds[i]);
       }
-      return bvh->encodeNode(node);
+      numTasks_o = numChildren;
+      *task.dst = bvh->encodeNode(node);
     }
     
     /* create unaligned node */
     else {
       BVH4Hair::UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
 #if BVH4HAIR_COMPRESS_UNALIGNED_NODES
-      node->set(bounds);
+      node->set(task.bounds);
       for (ssize_t i=numChildren-1; i>=0; i--) {
-        const NAABBox3fa cboundsi = computeAlignedBounds(cprims[i],bounds.space);
-        node->set(i,cboundsi.bounds,recurse(threadIndex,depth+1,cprims[i],isleaf[i],cbounds[i]));
+        const NAABBox3fa cboundsi = computeAlignedBounds(cprims[i],task.bounds.space);
+        node->set(i,cboundsi.bounds);
+        new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,isleaf[i],cprims[i],cbounds[i]);
       }
 #else
-      for (ssize_t i=numChildren-1; i>=0; i--)
-        node->set(i,cbounds[i],recurse(threadIndex,depth+1,cprims[i],isleaf[i],cbounds[i]));
+      for (ssize_t i=numChildren-1; i>=0; i--) {
+        node->set(i,cbounds[i]);
+        new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,isleaf[i],cprims[i],cbounds[i]);
+      }
 #endif
-      return bvh->encodeNode(node);
+      numTasks_o = numChildren;
+      *task.dst = bvh->encodeNode(node);
     }
+  }
+
+  void BVH4HairBuilder2::recurseTask(size_t threadIndex, BuildTask& task)
+  {
+    size_t numChildren;
+    BuildTask tasks[BVH4Hair::N];
+    processTask(threadIndex,task,tasks,numChildren);
+    for (size_t i=0; i<numChildren; i++) 
+      recurseTask(threadIndex,tasks[i]);
   }
 
   Builder* BVH4HairBuilder2_ (BVH4Hair* accel, Scene* scene) {
