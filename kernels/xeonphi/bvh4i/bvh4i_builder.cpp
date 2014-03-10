@@ -29,7 +29,7 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-#define TIMER(x) 
+#define TIMER(x) x
 #define DBG(x) 
 
 //#define PROFILE
@@ -1299,6 +1299,13 @@ namespace embree
 	leaf_prim_bounds.extend( prims[ accel_offset + i ].upper );
       }
 
+    if (!(subset(leaf_prim_bounds,entry))) 
+      {
+	DBG_PRINT(leaf_prim_bounds);
+	FATAL("check build record");
+      }
+
+#if 0
     BBox3fa leaf_tri_bounds = empty;
     for (size_t i=0;i<accel_entries;i++)
       {
@@ -1313,12 +1320,13 @@ namespace embree
 	leaf_tri_bounds.extend( mesh->vertex(tri.v[2]) );	
       }
 
-    if (!(subset(leaf_prim_bounds,leaf_tri_bounds) && subset(leaf_tri_bounds,leaf_prim_bounds))) 
+    if (!(subset(leaf_prim_bounds,entry) && subset(leaf_tri_bounds,leaf_prim_bounds))) 
       {
 	DBG_PRINT(leaf_prim_bounds);
 	DBG_PRINT(leaf_tri_bounds);
 	FATAL("check build record");
       }
+#endif
 
   }
 

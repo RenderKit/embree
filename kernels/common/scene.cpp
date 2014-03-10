@@ -94,6 +94,8 @@ namespace embree
 
     accels.add(BVH4i::BVH4iVirtualGeometryBinnedSAH(this));
 
+    accels.add(BVH4i::BVH4iBezierCurvesBinnedSAH(this));
+
 #else
 
     /* create default acceleration structure */

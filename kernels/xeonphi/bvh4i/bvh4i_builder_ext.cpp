@@ -38,11 +38,13 @@ namespace embree
   void BVH4iBuilderPreSplits::printBuilderName()
   {
     std::cout << "building BVH4i with presplits-based SAH builder (MIC) ... " << std::endl;    
+    DBG(sleep(1));
   }
 
   void BVH4iBuilderPreSplits::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
     DBG(PING);
+    DBG(sleep(1));
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
     DBG(DBG_PRINT(numPrimitives));
@@ -548,10 +550,14 @@ namespace embree
   void BVH4iBuilderBezierCurves::printBuilderName()
   {
     std::cout << "building BVH4i with BezierCurves SAH builder (MIC) ... " << std::endl;    
+    DBG(sleep(1));
   }
 
   size_t BVH4iBuilderBezierCurves::getNumPrimitives()
   {
+    DBG(PING);
+    DBG(sleep(1));
+
     /* count total number of virtual objects */
     size_t numCurves = 0;       
     for (size_t i=0;i<scene->size();i++)
@@ -568,29 +574,32 @@ namespace embree
   void BVH4iBuilderBezierCurves::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
     DBG(PING);
+    DBG(sleep(1));
     LockStepTaskScheduler::dispatchTask( task_computePrimRefsBezierCurves, this, threadIndex, threadCount );	
   }
 
   void BVH4iBuilderBezierCurves::createAccel(const size_t threadIndex, const size_t threadCount)
   {
     DBG(PING);
+    DBG(sleep(1));
     LockStepTaskScheduler::dispatchTask( task_createBezierCurvesAccel, this, threadIndex, threadCount );
   }
 
   void BVH4iBuilderBezierCurves::computePrimRefsBezierCurves(const size_t threadID, const size_t numThreads) 
   {
     DBG(PING);
+    DBG(sleep(1));
 
     const size_t numTotalGroups = scene->size();
 
     /* count total number of virtual objects */
-    const size_t numVirtualObjects = numPrimitives;
-    const size_t startID   = (threadID+0)*numVirtualObjects/numThreads;
-    const size_t endID     = (threadID+1)*numVirtualObjects/numThreads; 
+    const size_t numBezierCurves = numPrimitives;
+    const size_t startID   = (threadID+0)*numBezierCurves/numThreads;
+    const size_t endID     = (threadID+1)*numBezierCurves/numThreads; 
 
     DBG(
 	DBG_PRINT(numTotalGroups);
-	DBG_PRINT(numVirtualObjects);
+	DBG_PRINT(numBezierCurves);
 	DBG_PRINT(startID);
 	DBG_PRINT(endID);
 	);
@@ -622,7 +631,7 @@ namespace embree
     for (; g<numTotalGroups; g++) 
       {
 	if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely((scene->get(g)->type != BEZIER_CURVES))) continue;
+	if (unlikely((scene->get(g)->type != BEZIER_CURVES))) continue;
 	if (unlikely(!scene->get(g)->isEnabled())) continue;
 
 	BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(g);
@@ -634,11 +643,11 @@ namespace embree
           const mic_f bmin = broadcast4to16f(&bounds.lower); 
           const mic_f bmax = broadcast4to16f(&bounds.upper);
 
-          DBG(
-	    DBG_PRINT(currentID);
-	    DBG_PRINT(bmin);
-	    DBG_PRINT(bmax);
-	    );
+          // DBG(
+	  //   DBG_PRINT(currentID);
+	  //   DBG_PRINT(bmin);
+	  //   DBG_PRINT(bmax);
+	  //   );
           
           bounds_scene_min = min(bounds_scene_min,bmin);
           bounds_scene_max = max(bounds_scene_max,bmax);
@@ -674,19 +683,19 @@ namespace embree
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
 
-    AccelSetItem *acc = (AccelSetItem*)accel + startID;
+    // AccelSetItem *acc = (AccelSetItem*)accel + startID;
 
-    const PrimRef* __restrict__  bptr = prims + startID;
+    // const PrimRef* __restrict__  bptr = prims + startID;
 
-    for (size_t j=startID; j<endID; j++, bptr++, acc++)
-      {
-	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
-	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
-	assert(bptr->geomID() < scene->size() );
-        AccelSet* _accel = (AccelSet*)(UserGeometryScene::Base *) scene->get( bptr->geomID() );
-	acc->accel = _accel;
-        acc->item = bptr->primID();
-      }
+    // for (size_t j=startID; j<endID; j++, bptr++, acc++)
+    //   {
+    // 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
+    // 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
+    // 	assert(bptr->geomID() < scene->size() );
+    //     AccelSet* _accel = (AccelSet*)(UserGeometryScene::Base *) scene->get( bptr->geomID() );
+    // 	acc->accel = _accel;
+    //     acc->item = bptr->primID();
+    //   }
   }
 
 };
