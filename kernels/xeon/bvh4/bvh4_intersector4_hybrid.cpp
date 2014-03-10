@@ -216,7 +216,7 @@ namespace embree
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
             intersect1(bvh,curNode,i,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar);
           }
-          ray_tfar = ray.tfar;
+          ray_tfar = min(ray_tfar,ray.tfar);
           continue;
         }
 #endif
