@@ -31,10 +31,12 @@
 
 namespace embree
 {
+#if defined(__TARGET_AVX__)
   class BVH4Hair {
   public: static Accel* BVH4HairBezier1(Scene* scene); // FIXME: hack
   public: static Accel* BVH4HairBezier1i(Scene* scene); // FIXME: hack
   };
+#endif
 
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),

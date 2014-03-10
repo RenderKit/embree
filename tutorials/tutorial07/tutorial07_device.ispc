@@ -53,7 +53,23 @@ struct ISPCMesh
   uniform ISPCTriangle* triangles;  //!< list of triangles
   int numVertices;
   int numTriangles;
+  Vec3f dir;
+  float offset;
 };
+
+struct ISPCHair
+{
+ int vertex,id;  //!< index of first control point and hair ID
+};
+
+struct ISPCHairSet
+{
+ uniform Vec3fa *positions;   //!< hair control points (x,y,z,r)
+ uniform ISPCHair *hairs;    //!< list of hairs
+ int numVertices;
+ int numHairs;
+};
+
 
 struct ISPCScene
 {
@@ -61,6 +77,9 @@ struct ISPCScene
   uniform ISPCMaterial* materials;  //!< material list
   int numMeshes;
   int numMaterials;
+  uniform ISPCHairSet** hairsets;
+  int numHairSets;
+  bool animate;
 };
 
 /* scene data */
@@ -80,7 +99,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     /* create a triangle mesh */
     uniform unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
 
-#if 1
+#if 0
     /* share vertex buffer */
     rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa      ));
     //rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
@@ -125,6 +144,36 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 #endif
   }
 
+
+  /* add all meshes to the scene */
+  for (uniform int i=0; i<scene_in->numHairSets; i++)
+  {
+  
+    /* get ith hair set */
+    uniform ISPCHairSet* uniform hairset = scene_in->hairsets[i];
+    
+    /* create a hair set */
+    uniform unsigned int geomID = rtcNewBezierCurves (scene_out, RTC_GEOMETRY_STATIC, hairset->numHairs, hairset->numVertices);
+    uniform Vertex* uniform vertices = (uniform Vertex* uniform)rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
+
+    for (uniform int j=0; j<hairset->numVertices; j++) {
+      vertices[j].x = hairset->positions[j].x;
+      vertices[j].y = hairset->positions[j].y;
+      vertices[j].z = hairset->positions[j].z;
+    }
+
+    rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
+
+    uniform ISPCHair* uniform hairs   = (uniform ISPCHair* uniform)rtcMapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
+
+    for (uniform int j=0; j<hairset->numVertices; j++) {
+      hairs[j].vertex = hairset->hairs[j].vertex;
+      hairs[j].id     = hairset->hairs[j].id;
+    }
+    
+    rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER); 
+
+  }
   /* commit changes to scene */
   rtcCommit (scene_out);
   return scene_out;

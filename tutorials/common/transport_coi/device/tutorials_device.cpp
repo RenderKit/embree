@@ -118,10 +118,10 @@ namespace embree
 
   public:
     ISPCMesh** meshes;
-    ISPCHairSet** hairsets;
     OBJScene::Material* materials;  //!< material list
     int numMeshes;
     int numMaterials;
+    ISPCHairSet** hairsets;
     int numHairSets;
     bool animate;
   };

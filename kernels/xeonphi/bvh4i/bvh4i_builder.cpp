@@ -68,6 +68,10 @@ namespace embree
 	builder = new BVH4iBuilderVirtualGeometry((BVH4i*)accel,source,geometry);
 	break;
 
+      case BVH4I_BUILDER_BEZIER_CURVES:
+	builder = new BVH4iBuilderBezierCurves((BVH4i*)accel,source,geometry);
+	break;
+
       default:
 	throw std::runtime_error("ERROR: unknown BVH4iBuilder mode selected");	
       }
