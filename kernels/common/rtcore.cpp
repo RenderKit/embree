@@ -208,7 +208,7 @@ namespace embree
           if (parseSymbol (cfg,'=',pos))
             g_hair_accel = parseIdentifier (cfg,pos);
         } 
-        else if (tok == "hairaccelmode") {
+        else if (tok == "hairbuildermode") {
           if (parseSymbol (cfg,'=',pos))
             g_hair_accel_mode = parseIdentifier (cfg,pos);
         } 

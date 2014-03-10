@@ -151,6 +151,7 @@ namespace embree
     public:
       __forceinline friend bool operator< (const BuildTask& a, const BuildTask& b) {
         return area(a.bounds.bounds) < area(b.bounds.bounds);
+        //return area(a.bounds.bounds)/double(a.size) < area(b.bounds.bounds)/double(b.size);
       }
 
     public:
@@ -211,6 +212,7 @@ namespace embree
       /*! calculates standard surface area heuristic for the split */
       __forceinline float standardSAH() const {
         return BVH4Hair::intCost*countfunc(num0)*embree::area(bounds0.bounds) + BVH4Hair::intCost*countfunc(num1)*embree::area(bounds1.bounds);
+        //return cost;
       }
 
       /*! calculates modified surface area heuristic for the split */
@@ -229,13 +231,13 @@ namespace embree
       }
 
       /*! performs object binning to the the best partitioning */
-      static ObjectSplit find(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
+      static ObjectSplit find(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
 
       /*! calculates aligned bounds for left and right split */
-      const ObjectSplit alignedBounds(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves);
+      const ObjectSplit alignedBounds(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves);
 
       /*! calculates the bounds for left and right split */
-      const ObjectSplit unalignedBounds(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves);
+      const ObjectSplit unalignedBounds(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves);
 
       /*! splits hairs into two sets */
       void split(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
@@ -260,15 +262,10 @@ namespace embree
 
       __forceinline SpatialSplit () {}
 
-      __forceinline SpatialSplit (const LinearSpace3fa& space, 
-                                  const float pos, const int dim, 
-                                  const NAABBox3fa& bounds0, const size_t num0, 
-                                  const NAABBox3fa& bounds1, const size_t num1)
-        : space(space), pos(pos), dim(dim), bounds0(bounds0), bounds1(bounds1), num0(num0), num1(num1) {}
-
       /*! calculates standard surface area heuristic for the split */
       __forceinline float standardSAH() const {
         return BVH4Hair::intCost*countfunc(num0)*embree::area(bounds0.bounds) + BVH4Hair::intCost*countfunc(num1)*embree::area(bounds1.bounds);
+        //return cost;
       }
 
       /*! calculates modified surface area heuristic for the split */
@@ -279,7 +276,7 @@ namespace embree
       }
       
       /*! finds the two hair strands */
-      static const SpatialSplit find(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
+      static const SpatialSplit find(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
       
       /*! splits hair list into the two strands */
       void split(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
@@ -289,6 +286,8 @@ namespace embree
       NAABBox3fa bounds0, bounds1;
       float pos;
       int dim;
+      float cost;
+      size_t numReplications;
       size_t num0, num1;            //!< number of hairs in the strands
       ssef ofs,scale;
     };
@@ -313,7 +312,8 @@ namespace embree
     void insert(size_t threadIndex, atomic_set<PrimRefBlock>& prims_i, atomic_set<PrimRefBlock>& prims_o);
 
     template<typename Left>
-      void split(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const Left& left, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o);
+      void split(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const Left& left, 
+                 atomic_set<PrimRefBlock>& lprims_o, size_t& lnum_o, atomic_set<PrimRefBlock>& rprims_o, size_t& rnum_o);
 
     /*! calculate bounds for range of primitives */
     static const BBox3fa computeAlignedBounds(atomic_set<PrimRefBlock>& curves);
@@ -367,5 +367,6 @@ namespace embree
     PrimRefBlockAlloc alloc;                 //!< Allocator for primitive blocks
 
     std::vector<BuildTask> tasks;
+    atomic_t remainingReplications;
   };
 }
