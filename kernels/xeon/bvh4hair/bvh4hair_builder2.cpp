@@ -157,16 +157,26 @@ namespace embree
     BuildTask task(&bvh->root,0,false,prims,computeAlignedBounds(prims,one));
     bvh->bounds = bounds;
 
-#if 1
+#if 0
     recurseTask(threadIndex,task);
 #else
     tasks.push_back(task);
     push_heap(tasks.begin(),tasks.end());
-    while (tasks.size()) {
+    while (tasks.size()) 
+    {
+      /* take next task from heap */
       BuildTask task = tasks.front();
       pop_heap(tasks.begin(),tasks.end());
       tasks.pop_back();
       
+      /* execute task and add child tasks */
+      size_t numChildren;
+      BuildTask ctasks[BVH4Hair::N];
+      processTask(threadIndex,task,ctasks,numChildren);
+      for (size_t i=0; i<numChildren; i++) {
+        tasks.push_back(ctasks[i]);
+        push_heap(tasks.begin(),tasks.end());
+      }
     }
 #endif
     NAVI(naviNode = bvh->root);

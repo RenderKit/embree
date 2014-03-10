@@ -129,12 +129,12 @@ namespace embree
     __forceinline atomic_set () : root(NULL) {}
 
     /*! copy constructor */
-    __forceinline atomic_set (atomic_set& other) {
+    __forceinline atomic_set (const atomic_set& other) {
       this->root = other.root; other.root = NULL;
     }
 
     /*! assignment operator */
-    __forceinline atomic_set& operator=(atomic_set& other) {
+    __forceinline atomic_set& operator=(const atomic_set& other) {
       this->root = other.root; other.root = NULL;
       return *this;
     }
@@ -200,6 +200,6 @@ namespace embree
     }
 
   private:
-    item* root;
+    mutable item* root;
   };
 }

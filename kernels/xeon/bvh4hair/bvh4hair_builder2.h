@@ -144,6 +144,7 @@ namespace embree
     struct BuildTask
     {
       __forceinline BuildTask () {}
+
       __forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, bool makeleaf, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds)
         : dst(dst), depth(depth), makeleaf(makeleaf), prims(prims), bounds(bounds) {}
 
