@@ -16,6 +16,7 @@
 
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder.h"
+#include "geometry/bezier1i.h"
 
 #define PRESPLIT_SPACE_FACTOR         0.45f
 #define PRESPLIT_AREA_THRESHOLD      20.0f
@@ -582,7 +583,7 @@ namespace embree
   {
     DBG(PING);
     DBG(sleep(1));
-    //LockStepTaskScheduler::dispatchTask( task_createBezierCurvesAccel, this, threadIndex, threadCount );
+    LockStepTaskScheduler::dispatchTask( task_createBezierCurvesAccel, this, threadIndex, threadCount );
   }
 
   void BVH4iBuilderBezierCurves::computePrimRefsBezierCurves(const size_t threadID, const size_t numThreads) 
@@ -683,19 +684,22 @@ namespace embree
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
 
-    // AccelSetItem *acc = (AccelSetItem*)accel + startID;
+    Bezier1i *acc = (Bezier1i*)accel + startID;
 
-    // const PrimRef* __restrict__  bptr = prims + startID;
+    const PrimRef* __restrict__  bptr = prims + startID;
 
-    // for (size_t j=startID; j<endID; j++, bptr++, acc++)
-    //   {
-    // 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
-    // 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
-    // 	assert(bptr->geomID() < scene->size() );
-    //     AccelSet* _accel = (AccelSet*)(UserGeometryScene::Base *) scene->get( bptr->geomID() );
-    // 	acc->accel = _accel;
-    //     acc->item = bptr->primID();
-    //   }
+    for (size_t j=startID; j<endID; j++, bptr++, acc++)
+      {
+     	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
+     	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
+     	assert(bptr->geomID() < scene->size() );
+	
+	const unsigned int geomID = bptr->geomID();
+	const unsigned int primID = bptr->primID();
+	BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(geomID);
+
+     	*acc = Bezier1i( &geom->vertex( geom->curve( primID ) ), geomID, primID, geom->mask );
+      }
   }
 
 };

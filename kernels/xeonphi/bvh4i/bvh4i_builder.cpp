@@ -29,8 +29,8 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-#define TIMER(x) x
-#define DBG(x) x
+#define TIMER(x) 
+#define DBG(x) 
 
 //#define PROFILE
 #define PROFILE_ITERATIONS 100
