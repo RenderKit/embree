@@ -145,17 +145,18 @@ namespace embree
     {
       __forceinline BuildTask () {}
 
-      __forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, bool makeleaf, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds)
-        : dst(dst), depth(depth), makeleaf(makeleaf), prims(prims), bounds(bounds) {}
+      __forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, size_t size, bool makeleaf, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds)
+        : dst(dst), depth(depth), size(size), makeleaf(makeleaf), prims(prims), bounds(bounds) {}
 
     public:
       __forceinline friend bool operator< (const BuildTask& a, const BuildTask& b) {
-        return area(a.bounds.bounds) > area(b.bounds.bounds);
+        return area(a.bounds.bounds) < area(b.bounds.bounds);
       }
 
     public:
       BVH4Hair::NodeRef* dst;
       size_t depth;
+      size_t size;
       bool makeleaf;
       atomic_set<PrimRefBlock> prims;
       NAABBox3fa bounds;
@@ -295,14 +296,15 @@ namespace embree
     /*! Performs fallback splits */
     struct FallBackSplit
     {
-      __forceinline FallBackSplit (const NAABBox3fa& bounds0, const NAABBox3fa& bounds1)
-        : bounds0(bounds0), bounds1(bounds1) {}
+      __forceinline FallBackSplit (const NAABBox3fa& bounds0, size_t num0, const NAABBox3fa& bounds1, size_t num1)
+        : bounds0(bounds0), num0(num0), bounds1(bounds1), num1(num1) {}
 
       /*! finds some partitioning */
       static FallBackSplit find(size_t threadIndex, BVH4HairBuilder2* parent, 
                                 atomic_set<PrimRefBlock>& prims, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o);
 
     public:
+      size_t num0, num1;
       NAABBox3fa bounds0, bounds1;
     };
 
@@ -326,9 +328,9 @@ namespace embree
     BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds);
 
     bool split(size_t threadIndex, size_t depth, 
-               atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds, 
-               atomic_set<PrimRefBlock>& lprims, NAABBox3fa& lbounds, 
-               atomic_set<PrimRefBlock>& rprims, NAABBox3fa& rbounds,  
+               atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds, size_t size,
+               atomic_set<PrimRefBlock>& lprims, NAABBox3fa& lbounds, size_t& lsize,
+               atomic_set<PrimRefBlock>& rprims, NAABBox3fa& rbounds, size_t& rsize,
                bool& isAligned);
 
     /*! execute single task and create subtasks */
