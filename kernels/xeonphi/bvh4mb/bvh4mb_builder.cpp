@@ -481,9 +481,9 @@ namespace embree
     const mic_i box_max0123 = select(0x00ff,box_max01,box_max23);
 
     const mic_m min_d_mask = bvhLeaf(box_min0123) != mic_i::zero();
-    const mic_i childID    = bvhChildID(box_min0123)>>2;
+    const mic_i childID    = bvhChildID(box_min0123);
     const mic_i min_d_node = qbvhCreateNode(childID,mic_i::zero());
-    const mic_i min_d_leaf = ((box_min0123 ^ BVH_LEAF_MASK)<<1) | QBVH_LEAF_MASK; // * 2 as accel size is 128 bytes now
+    const mic_i min_d_leaf = ((box_min0123 ^ BVH_LEAF_MASK)<<0) | QBVH_LEAF_MASK; // * 2 as accel size is 128 bytes now
     const mic_i min_d      = select(min_d_mask,min_d_leaf,min_d_node);
     const mic_i bvh4_min   = select(0x7777,box_min0123,min_d);
     const mic_i bvh4_max   = box_max0123;

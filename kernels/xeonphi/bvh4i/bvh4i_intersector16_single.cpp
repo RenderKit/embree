@@ -61,7 +61,6 @@ namespace embree
 	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 
-	  
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
 	  while (1)
@@ -76,7 +75,6 @@ namespace embree
 		  STAT3(normal.trav_nodes,1,1,1);
 
 #if !defined(USE_QUANTIZATION)            
-        
 		  const Node* __restrict__ const node = curNode.node(nodes);
 		  const float* __restrict const plower = (float*)node->lower;
 		  const float* __restrict const pupper = (float*)node->upper;
@@ -188,6 +186,10 @@ namespace embree
 	      /* intersect one ray against four triangles */
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
+	      // DBG_PRINT(curNode);
+	      // DBG_PRINT(curNode.offsetIndex());
+	      // DBG_PRINT(curNode.offset());
+	      // exit(0);
 
 	      const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel);
 

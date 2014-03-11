@@ -32,7 +32,7 @@ namespace embree
     static __aligned(64) float testtime[16] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 };
 
     void BVH4mbIntersector16Single::intersect(mic_i* valid_i, BVH4mb* bvh, Ray16& ray16)
-    {
+    {      
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];

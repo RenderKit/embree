@@ -116,8 +116,6 @@ namespace embree
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4iBezierCurvesIntersector1;
     intersectors.intersector16 = BVH4iBezierCurvesIntersector16;
-    DBG_PRINT( BVH4iBezierCurvesIntersector1 );
-    DBG_PRINT( BVH4iBezierCurvesIntersector16 );
     return intersectors;
   }
 

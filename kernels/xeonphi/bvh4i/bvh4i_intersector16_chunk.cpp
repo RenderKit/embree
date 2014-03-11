@@ -75,6 +75,7 @@ namespace embree
           STAT3(normal.trav_nodes,1,popcnt(ray_tfar > curDist),16);
           const Node* __restrict__ const node = curNode.node(nodes);
 
+
           /* pop of next node */
           sptr_node--;
           sptr_dist--;
