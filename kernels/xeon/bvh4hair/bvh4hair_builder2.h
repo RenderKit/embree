@@ -233,12 +233,6 @@ namespace embree
       /*! performs object binning to the the best partitioning */
       static ObjectSplit find(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
 
-      /*! calculates aligned bounds for left and right split */
-      const ObjectSplit alignedBounds(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves);
-
-      /*! calculates the bounds for left and right split */
-      const ObjectSplit unalignedBounds(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves);
-
       /*! splits hairs into two sets */
       void split(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
       
@@ -348,19 +342,15 @@ namespace embree
 
     size_t numAlignedObjectSplits;
     size_t numAlignedSpatialSplits;
-    size_t numAlignedSubdivObjectSplits;
     size_t numUnalignedObjectSplits;
     size_t numUnalignedSpatialSplits;
-    size_t numUnalignedSubdivObjectSplits;
     size_t numStrandSplits;
     size_t numFallbackSplits;
 
     bool enableAlignedObjectSplits;
     bool enableAlignedSpatialSplits;
-    bool enableAlignedSubdivObjectSplits;
     bool enableUnalignedObjectSplits;
     bool enableUnalignedSpatialSplits;
-    bool enableUnalignedSubdivObjectSplits;
     bool enableStrandSplits;
     bool enablePresplit3;
 

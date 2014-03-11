@@ -58,10 +58,8 @@ namespace embree
 
     enableAlignedObjectSplits = false;
     enableAlignedSpatialSplits = false;
-    enableAlignedSubdivObjectSplits = false;
     enableUnalignedObjectSplits = false;
     enableUnalignedSpatialSplits = false;
-    enableUnalignedSubdivObjectSplits = false;
     enableStrandSplits = false;
     enablePresplit3 = false;
     
@@ -72,18 +70,14 @@ namespace embree
       else if (g_hair_accel_mode.substr(i,3) == "uST") { enableStrandSplits = true; i+=3; } 
       else if (g_hair_accel_mode.substr(i,3) == "aSP") { enableAlignedSpatialSplits = true; i+=3; } 
       else if (g_hair_accel_mode.substr(i,3) == "uSP") { enableUnalignedSpatialSplits = true; i+=3; } 
-      else if (g_hair_accel_mode.substr(i,3) == "aSD") { enableAlignedSubdivObjectSplits = true; i+=3; } 
-      else if (g_hair_accel_mode.substr(i,3) == "uSD") { enableUnalignedSubdivObjectSplits = true; i+=3; } 
       else throw std::runtime_error("invalid hair accel mode");
     }
 
     if (g_verbose >= 2) {
       PRINT(enableAlignedObjectSplits);
       PRINT(enableAlignedSpatialSplits);
-      PRINT(enableAlignedSubdivObjectSplits);
       PRINT(enableUnalignedObjectSplits);
       PRINT(enableUnalignedSpatialSplits);
-      PRINT(enableUnalignedSubdivObjectSplits);
       PRINT(enableStrandSplits);
       PRINT(enablePresplit3);
     }
@@ -97,10 +91,8 @@ namespace embree
     if (numPrimitives == 0) return;
     numGeneratedPrims = 0;
     numAlignedObjectSplits = 0;
-    numAlignedSubdivObjectSplits = 0;
     numAlignedSpatialSplits = 0;
     numUnalignedObjectSplits = 0;
-    numUnalignedSubdivObjectSplits = 0;
     numUnalignedSpatialSplits = 0;
     numStrandSplits = 0;
     numFallbackSplits = 0;
@@ -170,10 +162,8 @@ namespace embree
       std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
       PRINT(numAlignedObjectSplits);
       PRINT(numAlignedSpatialSplits);
-      PRINT(numAlignedSubdivObjectSplits);
       PRINT(numUnalignedObjectSplits);
       PRINT(numUnalignedSpatialSplits);
-      PRINT(numUnalignedSubdivObjectSplits);
       PRINT(numStrandSplits);
       PRINT(numFallbackSplits);
       std::cout << BVH4HairStatistics(bvh).str();
@@ -509,7 +499,6 @@ namespace embree
       }
     }
 
-#if 1
     if (split.dim == -1) {
       split.num0 = split.num1 = 1;
       split.bounds0 = split.bounds1 = BBox3fa(inf);
@@ -523,8 +512,6 @@ namespace embree
     split.bounds1 = computeAlignedBounds(rprims,space);
     parent->insert(threadIndex,lprims,prims);
     parent->insert(threadIndex,rprims,prims);
-#endif
-
     return split;
   }
 
@@ -535,40 +522,6 @@ namespace embree
     parent->split(threadIndex,prims,*this,lprims_o,lnum,rprims_o,rnum);
     assert(lnum == num0);
     assert(rnum == num1);
-  }
-
-  const BVH4HairBuilder2::ObjectSplit BVH4HairBuilder2::ObjectSplit::alignedBounds(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& prims)
-  {
-    if (dim == -1) {
-      num0 = num1 = 1;
-      bounds0 = bounds1 = BBox3fa(inf);
-      return *this;
-    }
-
-    atomic_set<PrimRefBlock> lprims, rprims; 
-    split(threadIndex,parent,prims,lprims,rprims);
-    bounds0 = computeAlignedBounds(lprims);
-    bounds1 = computeAlignedBounds(rprims);
-    parent->insert(threadIndex,lprims,prims);
-    parent->insert(threadIndex,rprims,prims);
-    return *this;
-  }
-  
-  const BVH4HairBuilder2::ObjectSplit  BVH4HairBuilder2::ObjectSplit::unalignedBounds(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& prims)
-  {
-    if (dim == -1) {
-      num0 = num1 = 1;
-      bounds0 = bounds1 = BBox3fa(inf);
-      return *this;
-    }
-
-    atomic_set<PrimRefBlock> lprims, rprims; 
-    split(threadIndex,parent,prims,lprims,rprims);
-    bounds0 = computeUnalignedBounds(lprims);
-    bounds1 = computeUnalignedBounds(rprims);
-    parent->insert(threadIndex,lprims,prims);
-    parent->insert(threadIndex,rprims,prims);
-    return *this;
   }
   
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1040,8 +993,8 @@ namespace embree
       unalignedSpatialSplit.split(threadIndex,this,prims,lprims_o,rprims_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
-      lsize = unalignedObjectSplit.num0;
-      rsize = unalignedObjectSplit.num1;
+      lsize = unalignedSpatialSplit.num0;
+      rsize = unalignedSpatialSplit.num1;
       atomic_add(&remainingReplications,-unalignedSpatialSplit.numReplications);
       isAligned = false;
       return true;

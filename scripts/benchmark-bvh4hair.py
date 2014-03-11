@@ -27,7 +27,9 @@ model  = ''
 statDir = ''
 hair_builder_modes = [
   'aO',
+#  'aO', with triangles
   'P3aO',
+  'uO',
   'aOuO',
   'aOuOuST',
   'P3aOuOuST',
