@@ -35,7 +35,7 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     __forceinline Bezier1i (const Vec3fa* p, const unsigned int geomID, const unsigned int primID, const unsigned int mask)
-      : p(p), geomID(geomID), primID(primID), mask(mask) {}
+      : p(p), geomID(geomID), primID(primID)/*, mask(mask)*/ {}
 
     /*! calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const {
@@ -47,7 +47,7 @@ namespace embree
     const Vec3fa* p;      //!< pointer to first control point (x,y,z,r)
     unsigned int geomID;  //!< geometry ID
     unsigned int primID;  //!< primitive ID
-    unsigned int mask;    //!< geometry mask
+    //unsigned int mask;    //!< geometry mask
   };
 
   struct Bezier1iType : public PrimitiveType {

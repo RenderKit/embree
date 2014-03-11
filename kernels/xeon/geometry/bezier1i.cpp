@@ -81,7 +81,7 @@ namespace embree
       bounds.extend(curves->vertex(vtx+1));
       bounds.extend(curves->vertex(vtx+2));
       bounds.extend(curves->vertex(vtx+3));
-      dst.mask = curves->mask;
+      //dst.mask = curves->mask;
     }
     return bounds; 
   }
