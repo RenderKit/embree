@@ -27,16 +27,12 @@ model  = ''
 statDir = ''
 hair_builder_modes = [
   'aO',
-#  'aOuO',
-  'aOuOuST',
-#  'aOuOuSTaSP',
-  'aOuOuSTaSPuSP',
-#  'aOuOuSTaSD',
-#  'aOuOuSTaSDuSD',
-#  'aOuOuSTaSPuSPaSDuSD',
   'P3aO',
-#  'P3aOuO',
-  'P3aOuOuST'
+  'aOuO',
+  'aOuOuST',
+  'P3aOuOuST',
+  'aOaSP',
+  'aOuOuSTaSPuSP',
   ];
 
 ########################## compiling ##########################
