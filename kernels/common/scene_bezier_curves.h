@@ -50,25 +50,6 @@ namespace embree
 
     public:
 
-      /* bool isEmpty () const {  */
-      /*   return numCurves == 0; */
-      /* } */
-      
-      /* virtual size_t groups () const {  */
-      /*   return 1; */
-      /* } */
-      
-      /* virtual size_t prims (size_t group, size_t* pnumVertices) const { */
-      /*   if (pnumVertices) *pnumVertices = numVertices*numTimeSteps; */
-      /*   return numCurves; */
-      /* } */
-
-      /* const BBox3fa bounds(size_t group, size_t prim) const { */
-      /*   return bounds(prim); */
-      /* } */
-
-    public:
-
       __forceinline const int& curve(size_t i) const {
         assert(i < numCurves);
         return curves[i];
@@ -177,7 +158,7 @@ namespace embree
       }
 
     public:
-      unsigned mask;                    //!< for masking out geometry
+      unsigned int mask;                //!< for masking out geometry
       bool built;                       //!< geometry got built
       unsigned char numTimeSteps;       //!< number of time steps (1 or 2)
 

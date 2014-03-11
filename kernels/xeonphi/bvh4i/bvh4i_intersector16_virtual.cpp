@@ -146,7 +146,7 @@ namespace embree
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 
 	unsigned int items = curNode.items();
-	unsigned int index = (curNode.offset() >> 6); /* array of AccelSetItems */
+	unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
 	Primitive *accel_ptr = (Primitive*)accel + index;
 
         VirtualGeometryIntersector16::intersect(valid_leaf,ray,accel_ptr,items,bvh->geometry);
@@ -277,7 +277,7 @@ namespace embree
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 
 	unsigned int items = curNode.items();
-	unsigned int index = (curNode.offset() >> 6); /* array of AccelSetItems */
+	unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
 	Primitive *accel_ptr = (Primitive *)accel + index;
 
         m_terminated |= valid_leaf & VirtualGeometryIntersector16::occluded(valid_leaf,ray,accel_ptr,items,bvh->geometry);
@@ -424,7 +424,7 @@ namespace embree
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	  unsigned int items = curNode.items();
-	  unsigned int index = (curNode.offset() >> 6); /* array of AccelSetItems */
+	  unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
 	  Primitive *accel_ptr = (Primitive *)accel + index;
 
 	  VirtualGeometryIntersector1::intersect(ray,accel_ptr,items,bvh->geometry);
@@ -629,7 +629,7 @@ namespace embree
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	  unsigned int items = curNode.items();
-	  unsigned int index = (curNode.offset() >> 6); /* array of AccelSetItems */
+	  unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
 	  Primitive *accel_ptr = (Primitive *)accel + index;
 
 	  if (VirtualGeometryIntersector1::occluded(ray,accel_ptr,items,bvh->geometry)) {

@@ -145,6 +145,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   }
 
 
+#if 1
   /* add all meshes to the scene */
   for (uniform int i=0; i<scene_in->numHairSets; i++)
   {
@@ -156,17 +157,21 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     uniform unsigned int geomID = rtcNewBezierCurves (scene_out, RTC_GEOMETRY_STATIC, hairset->numHairs, hairset->numVertices);
     uniform Vertex* uniform vertices = (uniform Vertex* uniform)rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
 
+    print("hairset->numVertices %d\n",hairset->numVertices);
     for (uniform int j=0; j<hairset->numVertices; j++) {
       vertices[j].x = hairset->positions[j].x;
       vertices[j].y = hairset->positions[j].y;
       vertices[j].z = hairset->positions[j].z;
+      vertices[j].r = hairset->positions[j].a;
     }
 
     rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
 
     uniform ISPCHair* uniform hairs   = (uniform ISPCHair* uniform)rtcMapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
 
-    for (uniform int j=0; j<hairset->numVertices; j++) {
+    print("hairset->numHairs %d\n",hairset->numHairs);
+
+    for (uniform int j=0; j<hairset->numHairs; j++) {
       hairs[j].vertex = hairset->hairs[j].vertex;
       hairs[j].id     = hairset->hairs[j].id;
     }
@@ -174,6 +179,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER); 
 
   }
+#endif
   /* commit changes to scene */
   rtcCommit (scene_out);
   return scene_out;

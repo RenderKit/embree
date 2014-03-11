@@ -36,17 +36,17 @@ namespace embree
     static const size_t N = 4;
 
     /*! Masks the bits that store the number of items per leaf. */
-    static const unsigned int offset_mask = 0xFFFFFFFF << 6;
-    static const unsigned int barrier_mask = 1<<31;
-    static const unsigned int leaf_mask = 1<<5;  
+    static const unsigned int encodingBits = 6;
+    static const unsigned int offset_mask = 0xFFFFFFFF << encodingBits;
+    static const unsigned int leaf_shift = 4;
+    static const unsigned int leaf_mask = 1<<leaf_shift;  
     static const unsigned int items_mask = leaf_mask-1;  
     
     /*! Empty node */
     static const unsigned int emptyNode = leaf_mask;
 
     /*! Invalid node */
-    //static const unsigned invalidNode = leaf_mask;
-    static const unsigned int invalidNode = 0xFFFFFFE0;
+    static const unsigned int invalidNode = (unsigned int)-1;
 
     /*! Maximal depth of the BVH. */
     static const size_t maxBuildDepth = 26;
@@ -98,6 +98,10 @@ namespace embree
 
       __forceinline unsigned int offset() const {
         return _id & offset_mask;
+      }
+
+      __forceinline unsigned int offsetIndex() const {
+        return _id >> encodingBits;
       }
 
       __forceinline unsigned int items() const {
@@ -483,50 +487,50 @@ namespace embree
   /* ---------------- */
 
 #define QBVH_INDEX_SHIFT 7
-#define QBVH_LEAF_BIT_SHIFT 5
-#define QBVH_LEAF_MASK     ((unsigned int)1 << QBVH_LEAF_BIT_SHIFT)
-#define QBVH_ITEMS_MASK   (QBVH_LEAF_MASK-1)
-#define QBVH_OFFSET_MASK  (~(QBVH_ITEMS_MASK | QBVH_LEAF_MASK))
-#define QBVH_TERMINAL_TOKEN QBVH_LEAF_MASK
+#define QBVH_LEAF_BIT_SHIFT BVH4i::leaf_shift 
+#define QBVH_LEAF_MASK     ((unsigned int)1 << QBVH_LEAF_BIT_SHIFT) 
+/* #define QBVH_ITEMS_MASK   (QBVH_LEAF_MASK-1) */
+/* #define QBVH_OFFSET_MASK  (~(QBVH_ITEMS_MASK | QBVH_LEAF_MASK)) */
+/* #define QBVH_TERMINAL_TOKEN QBVH_LEAF_MASK */
 
   typedef BVH4i::Node QBVHNode;
 
-  __forceinline unsigned int qbvhItemOffset(const unsigned int children) {
-    return children & BVH_OFFSET_MASK; // 6 bits instead of 7
-  }
+  /* __forceinline unsigned int qbvhItemOffset(const unsigned int children) { */
+  /*   return children & BVH_OFFSET_MASK; // 6 bits instead of 7 */
+  /* } */
 
-  __forceinline unsigned int qbvhItemOffsetToID(const unsigned int children) {
-    return children >> BVH_INDEX_SHIFT; // 6 bits instead of 7
-  }
+  /* __forceinline unsigned int qbvhItemOffsetToID(const unsigned int children) { */
+  /*   return children >> BVH_INDEX_SHIFT; // 6 bits instead of 7 */
+  /* } */
 
-  __forceinline unsigned int qbvhItems(const unsigned int children) {
-    return children & QBVH_ITEMS_MASK; // 6 bits instead of 7
-  }
+  /* __forceinline unsigned int qbvhItems(const unsigned int children) { */
+  /*   return children & QBVH_ITEMS_MASK; // 6 bits instead of 7 */
+  /* } */
 
-  __forceinline unsigned int qbvhChildID(const unsigned int node) {
-    return (node & QBVH_OFFSET_MASK) >> QBVH_INDEX_SHIFT;
-  };
+  /* __forceinline unsigned int qbvhChildID(const unsigned int node) { */
+  /*   return (node & QBVH_OFFSET_MASK) >> QBVH_INDEX_SHIFT; */
+  /* }; */
 
-  __forceinline QBVHNode *qbvhChildPtr(const QBVHNode * __restrict__ const ptr, const unsigned int node) {
-    const unsigned int offset = node & QBVH_OFFSET_MASK;
-    return (QBVHNode*)((char*)ptr + offset);
-  };
+  /* __forceinline QBVHNode *qbvhChildPtr(const QBVHNode * __restrict__ const ptr, const unsigned int node) { */
+  /*   const unsigned int offset = node & QBVH_OFFSET_MASK; */
+  /*   return (QBVHNode*)((char*)ptr + offset); */
+  /* }; */
 
-  __forceinline QBVHNode *qbvhChildPtrNoMask(const QBVHNode * __restrict__ const ptr, const unsigned int node) {
-    return (QBVHNode*)((char*)ptr + (unsigned long)node);
-  };
+  /* __forceinline QBVHNode *qbvhChildPtrNoMask(const QBVHNode * __restrict__ const ptr, const unsigned int node) { */
+  /*   return (QBVHNode*)((char*)ptr + (unsigned long)node); */
+  /* }; */
 
-  __forceinline unsigned int qbvhLeaf(const unsigned int node) {
-    return (node & QBVH_LEAF_MASK);
-  };
+  /* __forceinline unsigned int qbvhLeaf(const unsigned int node) { */
+  /*   return (node & QBVH_LEAF_MASK); */
+  /* }; */
 
-  __forceinline unsigned int qbvhLeaf(const unsigned int node, const unsigned int mask) {
-    return (node & mask);
-  };
+  /* __forceinline unsigned int qbvhLeaf(const unsigned int node, const unsigned int mask) { */
+  /*   return (node & mask); */
+  /* }; */
 
-  __forceinline unsigned int qbvhChildren(const unsigned int node) {
-    return (node & QBVH_ITEMS_MASK);
-  };
+  /* __forceinline unsigned int qbvhChildren(const unsigned int node) { */
+  /*   return (node & QBVH_ITEMS_MASK); */
+  /* }; */
 
   template<class T>
     __forceinline T qbvhCreateNode(const T& nodeID, const T& children) {

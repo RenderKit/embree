@@ -77,6 +77,8 @@ namespace embree
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16HybridMoeller);
     SELECT_SYMBOL_KNC(features,BVH4iVirtualGeometryIntersector1);
     SELECT_SYMBOL_KNC(features,BVH4iVirtualGeometryIntersector16);
+    SELECT_SYMBOL_KNC(features,BVH4iBezierCurvesIntersector1);
+    SELECT_SYMBOL_KNC(features,BVH4iBezierCurvesIntersector16);
   }
 
 
@@ -114,6 +116,8 @@ namespace embree
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4iBezierCurvesIntersector1;
     intersectors.intersector16 = BVH4iBezierCurvesIntersector16;
+    DBG_PRINT( BVH4iBezierCurvesIntersector1 );
+    DBG_PRINT( BVH4iBezierCurvesIntersector16 );
     return intersectors;
   }
 

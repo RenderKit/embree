@@ -51,6 +51,9 @@ namespace embree
 
   Builder* BVH4iBuilder::create (void* accel, BuildSource* source, void* geometry, size_t mode ) 
   { 
+    DBG(PING);
+    DBG(DBG_PRINT(mode));
+
     Builder* builder = NULL;
 
     switch( mode )
@@ -105,6 +108,7 @@ namespace embree
     if (prims)  {
       assert(size_prims > 0);
       os_free(prims,size_prims);
+      prims = NULL;
     }    
   }
 
@@ -302,7 +306,6 @@ namespace embree
 
   void BVH4iBuilder::computePrimRefsTriangles(const size_t threadID, const size_t numThreads) 
   {
-    DBG(PING);
     const size_t numGroups = scene->size();
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -1299,6 +1302,13 @@ namespace embree
 	leaf_prim_bounds.extend( prims[ accel_offset + i ].upper );
       }
 
+    if (!(subset(leaf_prim_bounds,entry))) 
+      {
+	DBG_PRINT(leaf_prim_bounds);
+	FATAL("check build record");
+      }
+
+#if 0
     BBox3fa leaf_tri_bounds = empty;
     for (size_t i=0;i<accel_entries;i++)
       {
@@ -1313,12 +1323,13 @@ namespace embree
 	leaf_tri_bounds.extend( mesh->vertex(tri.v[2]) );	
       }
 
-    if (!(subset(leaf_prim_bounds,leaf_tri_bounds) && subset(leaf_tri_bounds,leaf_prim_bounds))) 
+    if (!(subset(leaf_prim_bounds,entry) && subset(leaf_tri_bounds,leaf_prim_bounds))) 
       {
 	DBG_PRINT(leaf_prim_bounds);
 	DBG_PRINT(leaf_tri_bounds);
 	FATAL("check build record");
       }
+#endif
 
   }
 
