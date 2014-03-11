@@ -531,10 +531,8 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  const BVH4HairBuilder2::SpatialSplit BVH4HairBuilder2::SpatialSplit::find(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& prims, const LinearSpace3fa& space)
+  const BVH4HairBuilder2::SpatialSplit BVH4HairBuilder2::SpatialSplit::find(size_t threadIndex, size_t depth, size_t size, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& prims, const LinearSpace3fa& space)
   {
-    size_t N = atomic_set<PrimRefBlock>::block_iterator_unsafe(prims).size(); // FIXME: slow
-
     /* calculate geometry and centroid bounds */
     BBox3fa geomBounds = empty;
     for (atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims; i; i++)
@@ -719,7 +717,7 @@ namespace embree
     //assert(rnum == split.num1);
     split.num0 = lnum;
     split.num1 = rnum;
-    split.numReplications = split.num0 + split.num1 - N;
+    split.numReplications = split.num0 + split.num1 - size;
     assert(split.numReplications >= 0);
     //assert(lnum > 0);
     //assert(rnum > 0);
@@ -887,13 +885,11 @@ namespace embree
                                atomic_set<PrimRefBlock>& rprims_o, size_t& rsize,
                                bool& isAligned)
   {
-    bool enableSpatialSplits = remainingReplications > 0;
-    size_t N = atomic_set<PrimRefBlock>::block_iterator_unsafe(prims).size(); // FIXME: slow
-
     /* variable to track the SAH of the best splitting approach */
     float bestSAH = inf;
+    bool enableSpatialSplits = remainingReplications > 0;
     const int travCostAligned = isAligned ? BVH4Hair::travCostAligned : BVH4Hair::travCostUnaligned;
-    const float leafSAH = BVH4Hair::intCost*countfunc(N)*embree::area(bounds.bounds);
+    const float leafSAH = BVH4Hair::intCost*countfunc(size)*embree::area(bounds.bounds);
     
     /* perform standard binning in aligned space */
     ObjectSplit alignedObjectSplit;
@@ -908,7 +904,7 @@ namespace embree
     SpatialSplit alignedSpatialSplit;
     float alignedSpatialSAH = neg_inf;
     if (enableSpatialSplits && enableAlignedSpatialSplits) {
-      alignedSpatialSplit = SpatialSplit::find(threadIndex,depth,this,prims,one);
+      alignedSpatialSplit = SpatialSplit::find(threadIndex,depth,size,this,prims,one);
       alignedSpatialSAH = travCostAligned*embree::area(bounds.bounds) + alignedSpatialSplit.standardSAH();
       bestSAH = min(bestSAH,alignedSpatialSAH);
     }
@@ -926,7 +922,7 @@ namespace embree
     SpatialSplit unalignedSpatialSplit;
     float unalignedSpatialSAH = neg_inf;
     if (enableSpatialSplits && enableUnalignedSpatialSplits) {
-      unalignedSpatialSplit = SpatialSplit::find(threadIndex,depth,this,prims,bounds.space);
+      unalignedSpatialSplit = SpatialSplit::find(threadIndex,depth,size,this,prims,bounds.space);
       unalignedSpatialSAH = BVH4Hair::travCostUnaligned*embree::area(bounds.bounds) + unalignedSpatialSplit.standardSAH();
       bestSAH = min(bestSAH,unalignedSpatialSAH);
     }
@@ -1021,8 +1017,7 @@ namespace embree
   void BVH4HairBuilder2::processTask(size_t threadIndex, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& numTasks_o)
   {
     /* create enforced leaf */
-    const size_t N = atomic_set<PrimRefBlock>::block_iterator_unsafe(task.prims).size(); // FIXME: slow
-    if (N <= minLeafSize || task.depth >= BVH4Hair::maxBuildDepth || task.makeleaf) {
+    if (task.size <= minLeafSize || task.depth >= BVH4Hair::maxBuildDepth || task.makeleaf) {
       *task.dst = leaf(threadIndex,task.depth,task.prims,task.bounds);
       numTasks_o = 0;
       return;

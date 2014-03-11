@@ -144,8 +144,9 @@ namespace embree
 #endif
         /* update hit information */
         const float uu = (float(i)+u[i])*one_over_8; // FIXME: correct u range for subdivided segments
-        BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
-        Vec3fa P,T; curve3D.eval(uu,P,T);
+        //BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+        //Vec3fa P,T; curve3D.eval(uu,P,T);
+        Vec3fa T = v3-v0;
         if (T == Vec3fa(zero)) { valid[i] = 0; goto retry; } // ignore denormalized curves
         ray.u = uu;
         ray.v = 0.0f;
@@ -160,8 +161,9 @@ namespace embree
       while (true) 
       {
         const float uu = (float(i)+u[i])*one_over_8;
-        BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
-        Vec3fa P,T; curve3D.eval(uu,P,T);
+        //BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+        //Vec3fa P,T; curve3D.eval(uu,P,T);
+        Vec3fa T = v3-v0;
         if (T != Vec3fa(zero))
             if (runIntersectionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,curve_in.primID)) return;
         valid[i] = 0;
@@ -234,8 +236,9 @@ namespace embree
       {
         /* calculate hit information */
         const float uu = (float(i)+u[i])*one_over_8;
-        BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
-        Vec3fa P,T; curve3D.eval(uu,P,T);
+        //BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+        //Vec3fa P,T; curve3D.eval(uu,P,T);
+        Vec3fa T = v3-v0;
         if (T != Vec3fa(zero))
           if (runOcclusionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,curve_in.primID)) break;
         valid[i] = 0;

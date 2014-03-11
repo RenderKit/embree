@@ -270,7 +270,7 @@ namespace embree
       }
       
       /*! finds the two hair strands */
-      static const SpatialSplit find(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
+      static const SpatialSplit find(size_t threadIndex, size_t depth, size_t size, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
       
       /*! splits hair list into the two strands */
       void split(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
