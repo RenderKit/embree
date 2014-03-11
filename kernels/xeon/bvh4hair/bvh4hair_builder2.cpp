@@ -21,7 +21,7 @@
 
 namespace embree
 {
-  static double replicationFactor = 7.0;
+  static double replicationFactor = 2.0;
   
 #if BVH4HAIR_NAVIGATION
   extern BVH4Hair::NodeRef rootNode;
@@ -477,10 +477,8 @@ namespace embree
       const ssei lCount = (count     +ssei(7)) >> 3;
       const ssei rCount = (rCounts[i]+ssei(7)) >> 3;
 #else
-      //const ssei lCount = (count     +ssei(3)) >> 2;
-      //const ssei rCount = (rCounts[i]+ssei(3)) >> 2;
-      const ssei lCount = count;
-      const ssei rCount = rCounts[i];
+      const ssei lCount = (count     +ssei(3)) >> 2;
+      const ssei rCount = (rCounts[i]+ssei(3)) >> 2;
 #endif
       const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
       bestPos = select(sah < bestSAH,ii ,bestPos);
@@ -673,10 +671,8 @@ namespace embree
       const ssei lCount = (count     +ssei(7)) >> 3;
       const ssei rCount = (rCounts[i]+ssei(7)) >> 3;
 #else
-      //const ssei lCount = (count     +ssei(3)) >> 2;
-      //const ssei rCount = (rCounts[i]+ssei(3)) >> 2;
-      const ssei lCount = count;
-      const ssei rCount = rCounts[i];
+      const ssei lCount = (count     +ssei(3)) >> 2;
+      const ssei rCount = (rCounts[i]+ssei(3)) >> 2;
 #endif
       const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
       bestPos  = select(sah < bestSAH,ii ,bestPos);
@@ -1020,7 +1016,7 @@ namespace embree
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       lsize = alignedSpatialSplit.num0;
       rsize = alignedSpatialSplit.num1;
-      remainingReplications -= alignedSpatialSplit.numReplications;
+      atomic_add(&remainingReplications,-alignedSpatialSplit.numReplications);
       return true;
     }
 
@@ -1044,7 +1040,7 @@ namespace embree
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       lsize = unalignedObjectSplit.num0;
       rsize = unalignedObjectSplit.num1;
-      remainingReplications -= unalignedSpatialSplit.numReplications;
+      atomic_add(&remainingReplications,-unalignedSpatialSplit.numReplications);
       isAligned = false;
       return true;
     }

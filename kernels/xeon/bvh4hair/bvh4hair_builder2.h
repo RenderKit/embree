@@ -370,8 +370,7 @@ namespace embree
     MutexSys taskMutex;
     volatile atomic_t numActiveTasks;
     volatile atomic_t numGeneratedPrims;
+    volatile atomic_t remainingReplications;
     std::vector<BuildTask> tasks;
-    atomic_t remainingReplications;
-
   };
 }
