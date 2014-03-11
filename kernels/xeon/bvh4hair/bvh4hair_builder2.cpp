@@ -197,8 +197,8 @@ namespace embree
       taskMutex.unlock();
 
       /* recursively finish task */
-      if (task.size < 1024 || remainingReplications <= 0) {
-        numActiveTasks--;
+      if (task.size < 512 || remainingReplications <= 0) {
+        atomic_add(&numActiveTasks,-1);
         recurseTask(threadIndex,task);
       }
       
@@ -210,11 +210,11 @@ namespace embree
         processTask(threadIndex,task,ctasks,numChildren);
         taskMutex.lock();
         for (size_t i=0; i<numChildren; i++) {
-          numActiveTasks++;
+          atomic_add(&numActiveTasks,+1);
           tasks.push_back(ctasks[i]);
           push_heap(tasks.begin(),tasks.end());
         }
-        numActiveTasks--;
+        atomic_add(&numActiveTasks,-1);
         taskMutex.unlock();
       }
     }
@@ -895,7 +895,7 @@ namespace embree
       std::cout << "!" << std::flush;
       N = (size_t)BVH4Hair::maxLeafBlocks;
     }
-    size_t numGeneratedPrimsOld = numGeneratedPrims+=N; 
+    size_t numGeneratedPrimsOld = atomic_add(&numGeneratedPrims,N); 
     if (numGeneratedPrimsOld%10000 > (numGeneratedPrimsOld+N)%10000) std::cout << "." << std::flush; 
     //assert(N <= (size_t)BVH4Hair::maxLeafBlocks);
     if (&bvh->primTy == &Bezier1Type::type) {

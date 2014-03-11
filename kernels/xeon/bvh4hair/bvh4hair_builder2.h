@@ -368,8 +368,8 @@ namespace embree
     PrimRefBlockAlloc alloc;                 //!< Allocator for primitive blocks
 
     MutexSys taskMutex;
-    atomic_t numActiveTasks;
-    atomic_t numGeneratedPrims;
+    volatile atomic_t numActiveTasks;
+    volatile atomic_t numGeneratedPrims;
     std::vector<BuildTask> tasks;
     atomic_t remainingReplications;
 
