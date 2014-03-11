@@ -339,11 +339,12 @@ namespace embree
     /*! recursive build function for aligned and non-aligned bounds */
     void recurseTask(size_t threadIndex, BuildTask& task);
 
+    TASK_RUN_FUNCTION(BVH4HairBuilder2,task_build_parallel);
+
   public:
     Scene* scene;          //!< source
     size_t minLeafSize;    //!< minimal size of a leaf
     size_t maxLeafSize;    //!< maximal size of a leaf
-    size_t numGeneratedPrims;
 
     size_t numAlignedObjectSplits;
     size_t numAlignedSpatialSplits;
@@ -366,7 +367,11 @@ namespace embree
     BVH4Hair* bvh;         //!< output
     PrimRefBlockAlloc alloc;                 //!< Allocator for primitive blocks
 
+    MutexSys taskMutex;
+    atomic_t numActiveTasks;
+    atomic_t numGeneratedPrims;
     std::vector<BuildTask> tasks;
     atomic_t remainingReplications;
+
   };
 }

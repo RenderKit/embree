@@ -154,33 +154,12 @@ namespace embree
 #if 0
     recurseTask(threadIndex,task);
 #else
+    numActiveTasks = 1;
     tasks.push_back(task);
     push_heap(tasks.begin(),tasks.end());
-    while (tasks.size()) 
-    {
-      /* take next task from heap */
-      BuildTask task = tasks.front();
-      pop_heap(tasks.begin(),tasks.end());
-      tasks.pop_back();
-
-      /* recursively finish task */
-      if (task.size < 1024 || remainingReplications <= 0) {
-        recurseTask(threadIndex,task);
-      }
-      
-      /* execute task and add child tasks */
-      else 
-      {
-        size_t numChildren;
-        BuildTask ctasks[BVH4Hair::N];
-        processTask(threadIndex,task,ctasks,numChildren);
-        for (size_t i=0; i<numChildren; i++) {
-          tasks.push_back(ctasks[i]);
-          push_heap(tasks.begin(),tasks.end());
-        }
-      }
-    }
+    TaskScheduler::executeTask(threadIndex,threadCount,_task_build_parallel,this,threadCount,"BVH4Builder2::build_parallel");
 #endif
+    
     NAVI(naviNode = bvh->root);
     NAVI(rootNode = bvh->root);
     NAVI(naviStack.push_back(bvh->root));
@@ -198,6 +177,46 @@ namespace embree
       PRINT(numStrandSplits);
       PRINT(numFallbackSplits);
       std::cout << BVH4HairStatistics(bvh).str();
+    }
+  }
+
+  void BVH4HairBuilder2::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  {
+    while (numActiveTasks) 
+    {
+      taskMutex.lock();
+      if (tasks.size() == 0) {
+        taskMutex.unlock();
+        continue;
+      }
+
+      /* take next task from heap */
+      BuildTask task = tasks.front();
+      pop_heap(tasks.begin(),tasks.end());
+      tasks.pop_back();
+      taskMutex.unlock();
+
+      /* recursively finish task */
+      if (task.size < 1024 || remainingReplications <= 0) {
+        numActiveTasks--;
+        recurseTask(threadIndex,task);
+      }
+      
+      /* execute task and add child tasks */
+      else 
+      {
+        size_t numChildren;
+        BuildTask ctasks[BVH4Hair::N];
+        processTask(threadIndex,task,ctasks,numChildren);
+        taskMutex.lock();
+        for (size_t i=0; i<numChildren; i++) {
+          numActiveTasks++;
+          tasks.push_back(ctasks[i]);
+          push_heap(tasks.begin(),tasks.end());
+        }
+        numActiveTasks--;
+        taskMutex.unlock();
+      }
     }
   }
 
@@ -876,7 +895,8 @@ namespace embree
       std::cout << "!" << std::flush;
       N = (size_t)BVH4Hair::maxLeafBlocks;
     }
-    numGeneratedPrims+=N; if (numGeneratedPrims > 10000) { std::cout << "." << std::flush; numGeneratedPrims = 0; }
+    size_t numGeneratedPrimsOld = numGeneratedPrims+=N; 
+    if (numGeneratedPrimsOld%10000 > (numGeneratedPrimsOld+N)%10000) std::cout << "." << std::flush; 
     //assert(N <= (size_t)BVH4Hair::maxLeafBlocks);
     if (&bvh->primTy == &Bezier1Type::type) {
       Bezier1* leaf = (Bezier1*) bvh->allocPrimitiveBlocks(threadIndex,N);
