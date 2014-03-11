@@ -509,6 +509,7 @@ namespace embree
       }
     }
 
+#if 1
     if (split.dim == -1) {
       split.num0 = split.num1 = 1;
       split.bounds0 = split.bounds1 = BBox3fa(inf);
@@ -522,7 +523,8 @@ namespace embree
     split.bounds1 = computeAlignedBounds(rprims,space);
     parent->insert(threadIndex,lprims,prims);
     parent->insert(threadIndex,rprims,prims);
-    
+#endif
+
     return split;
   }
 
@@ -1144,6 +1146,7 @@ namespace embree
 #endif
       for (ssize_t i=numChildren-1; i>=0; i--) {
         node->set(i,cbounds[i].bounds);
+        cbounds[i] = computeUnalignedBounds(cprims[i]);
         new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,csize[i],isleaf[i],cprims[i],cbounds[i]);
       }
       numTasks_o = numChildren;
@@ -1163,6 +1166,7 @@ namespace embree
 #else
       for (ssize_t i=numChildren-1; i>=0; i--) {
         node->set(i,cbounds[i]);
+        cbounds[i] = computeUnalignedBounds(cprims[i]);
         new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,csize[i],isleaf[i],cprims[i],cbounds[i]);
       }
 #endif
