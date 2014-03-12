@@ -18,7 +18,7 @@
 
 #define USE_INTERSECTION_FILTER 0
 #define USE_OCCLUSION_FILTER 1
-#define USE_EYELIGHT_SHADING 0
+#define USE_EYELIGHT_SHADING 1
 
 /* accumulation buffer */
 Vec3fa* g_accu = NULL;
@@ -784,7 +784,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
     Ng = dz;
   }
 
-  color += 0.3f + abs(dot(ray.dir,Ng));
+  color += 0.2f + 0.5f * abs(dot(ray.dir,Ng));
   return color;
 }
 
