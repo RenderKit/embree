@@ -23,7 +23,8 @@ INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
 ADD_LIBRARY(tutorial STATIC 
     glutdisplay.cpp
     obj_loader.cpp
-    hair_loader.cpp)
+    hair_loader.cpp
+    cy_hair_loader.cpp)
 TARGET_LINK_LIBRARIES(tutorial sys lexers ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
 
 IF (BUILD_TUTORIALS)
