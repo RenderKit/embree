@@ -274,7 +274,7 @@ namespace embree
 
    /* load cy_hair */
     if (cy_hairFilename.str() != "") {
-      loadHair(cy_hairFilename,g_obj_scene,offset);
+      loadCYHair(cy_hairFilename,g_obj_scene,offset);
     }
 
     /* send model */
