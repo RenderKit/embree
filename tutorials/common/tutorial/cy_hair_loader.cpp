@@ -138,6 +138,7 @@ namespace embree
     std::cout << "Successfully loaded hair data" << std::endl; 
 
     OBJScene::HairSet* hairset = new OBJScene::HairSet; 
+    DBG_PRINT(offset);
 
     for (size_t i=0;i<cyFile.header.numPoints;i++)
       {
