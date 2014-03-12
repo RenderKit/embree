@@ -17,6 +17,7 @@
 #include "tutorial/tutorial.h"
 #include "tutorial/obj_loader.h"
 #include "tutorial/hair_loader.h"
+#include "tutorial/cy_hair_loader.h"
 #include "sys/taskscheduler.h"
 #include "image/image.h"
 
@@ -46,6 +47,7 @@ namespace embree
   OBJScene g_obj_scene;
   static FileName objFilename = "";
   static FileName hairFilename = "";
+  static FileName cy_hairFilename = "";
   static FileName outFilename = "";
   static int g_numFrames = 1;
   static int g_skipFrames = 0;
@@ -75,6 +77,11 @@ namespace embree
       /* load hair model */
       else if (tag == "--hair") {
         hairFilename = path + cin->getFileName();
+      }
+
+      /* load hair model */
+      else if (tag == "--cy_hair") {
+        cy_hairFilename = path + cin->getFileName();
       }
 
       /* scene offset */
@@ -263,6 +270,11 @@ namespace embree
       loadHair(hairFilename,g_obj_scene,offset);
       if (tessellate_subdivisions > 0 && tessellate_strips > 0)
         tessellateHair(g_obj_scene);
+    }
+
+   /* load cy_hair */
+    if (cy_hairFilename.str() != "") {
+      loadHair(cy_hairFilename,g_obj_scene,offset);
     }
 
     /* send model */
