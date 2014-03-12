@@ -21,7 +21,7 @@
 
 namespace embree
 {
-  static double replicationFactor = 2.0;
+  double g_hair_builder_replication_factor = 2.0;
   
 #if BVH4HAIR_NAVIGATION
   extern BVH4Hair::NodeRef rootNode;
@@ -61,33 +61,31 @@ namespace embree
     enableUnalignedObjectSplits = false;
     enableUnalignedSpatialSplits = false;
     enableStrandSplits = false;
-    enablePresplit3 = false;
+    enablePreSubdivision = 0;
     
     for (size_t i=0; i<g_hair_accel_mode.size();)
     {
-      if      (g_hair_accel_mode.substr(i,2) == "aO") { enableAlignedObjectSplits = true; i+=2; } 
-      else if (g_hair_accel_mode.substr(i,2) == "uO") { enableUnalignedObjectSplits = true; i+=2; } 
+      if      (g_hair_accel_mode.substr(i,2) == "P0" ) { enablePreSubdivision = 0; i+=2; } 
+      else if (g_hair_accel_mode.substr(i,2) == "P1" ) { enablePreSubdivision = 1; i+=2; } 
+      else if (g_hair_accel_mode.substr(i,2) == "P2" ) { enablePreSubdivision = 2; i+=2; } 
+      else if (g_hair_accel_mode.substr(i,2) == "P3" ) { enablePreSubdivision = 3; i+=2; } 
+      else if (g_hair_accel_mode.substr(i,2) == "P4" ) { enablePreSubdivision = 4; i+=2; } 
+      else if (g_hair_accel_mode.substr(i,2) == "aO" ) { enableAlignedObjectSplits = true; i+=2; } 
+      else if (g_hair_accel_mode.substr(i,2) == "uO" ) { enableUnalignedObjectSplits = true; i+=2; } 
+      else if (g_hair_accel_mode.substr(i,3) == "auO" ) { enableAlignedObjectSplits = enableUnalignedObjectSplits = true; i+=3; } 
       else if (g_hair_accel_mode.substr(i,3) == "uST") { enableStrandSplits = true; i+=3; } 
       else if (g_hair_accel_mode.substr(i,3) == "aSP") { enableAlignedSpatialSplits = true; i+=3; } 
       else if (g_hair_accel_mode.substr(i,3) == "uSP") { enableUnalignedSpatialSplits = true; i+=3; } 
+      else if (g_hair_accel_mode.substr(i,4) == "auSP") { enableAlignedSpatialSplits = enableUnalignedSpatialSplits = true; i+=4; } 
       else throw std::runtime_error("invalid hair accel mode");
-    }
-
-    if (g_verbose >= 2) {
-      PRINT(enableAlignedObjectSplits);
-      PRINT(enableAlignedSpatialSplits);
-      PRINT(enableUnalignedObjectSplits);
-      PRINT(enableUnalignedSpatialSplits);
-      PRINT(enableStrandSplits);
-      PRINT(enablePresplit3);
     }
   }
 
   void BVH4HairBuilder2::build(size_t threadIndex, size_t threadCount) 
   {
     /* fast path for empty BVH */
-    size_t numPrimitives = scene->numCurves;
-    bvh->init(numPrimitives,numPrimitives+(size_t)(replicationFactor*numPrimitives));
+    size_t numPrimitives = scene->numCurves << enablePreSubdivision;
+    bvh->init(numPrimitives,numPrimitives+(size_t)(g_hair_builder_replication_factor*numPrimitives));
     if (numPrimitives == 0) return;
     numGeneratedPrims = 0;
     numAlignedObjectSplits = 0;
@@ -98,7 +96,15 @@ namespace embree
     numFallbackSplits = 0;
 
     double t0 = 0.0;
-    if (g_verbose >= 2) {
+    if (g_verbose >= 2) 
+    {
+      PRINT(enableAlignedObjectSplits);
+      PRINT(enableAlignedSpatialSplits);
+      PRINT(enableUnalignedObjectSplits);
+      PRINT(enableUnalignedSpatialSplits);
+      PRINT(enableStrandSplits);
+      PRINT(enablePreSubdivision);
+
       std::cout << "building BVH4Hair<" + bvh->primTy.name + "> using BVH4HairBuilder2 ..." << std::flush;
       t0 = getSeconds();
     }
@@ -110,8 +116,6 @@ namespace embree
     BBox3fa bounds = empty;
     size_t numVertices = 0;
     atomic_set<PrimRefBlock> prims;
-    atomic_set<PrimRefBlock>::item* block = prims.insert(alloc.malloc(threadIndex));
-
     for (size_t i=0; i<scene->size(); i++) 
     {
       Geometry* geom = scene->get(i);
@@ -126,20 +130,16 @@ namespace embree
         const Vec3fa& p2 = set->vertex(ofs+2);
         const Vec3fa& p3 = set->vertex(ofs+3);
         const Bezier1 bezier(p0,p1,p2,p3,0,1,i,j);
-        bounds.extend(bezier.bounds());
-        if (!block->insert(bezier)) {
-          block = prims.insert(alloc.malloc(threadIndex));
-          block->insert(bezier);
-        }
+        bounds.extend(subdivideAndAdd(threadIndex,prims,bezier,enablePreSubdivision));
       }
     }
 
-    bvh->numPrimitives = numPrimitives;
+    bvh->numPrimitives = scene->numCurves;
     bvh->numVertices = 0;
     if (&bvh->primTy == &SceneBezier1i::type) bvh->numVertices = numVertices;
 
     /* start recursive build */
-    remainingReplications = replicationFactor*numPrimitives;
+    remainingReplications = g_hair_builder_replication_factor*numPrimitives;
     BuildTask task(&bvh->root,0,numPrimitives,false,prims,computeAlignedBounds(prims,one));
     bvh->bounds = bounds;
 
@@ -170,6 +170,24 @@ namespace embree
     }
   }
 
+  const BBox3fa BVH4HairBuilder2::subdivideAndAdd(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const Bezier1& bezier, size_t depth)
+  {
+    if (depth == 0) {
+      atomic_set<PrimRefBlock>::item* block = prims.head();
+      if (block == NULL || !block->insert(bezier)) {
+        block = prims.insert(alloc.malloc(threadIndex));
+        block->insert(bezier);
+      }
+      return bezier.bounds();
+    }
+
+    Bezier1 bezier0,bezier1;
+    bezier.subdivide(bezier0,bezier1);
+    const BBox3fa bounds0 = subdivideAndAdd(threadIndex,prims,bezier0,depth-1);
+    const BBox3fa bounds1 = subdivideAndAdd(threadIndex,prims,bezier1,depth-1);
+    return merge(bounds0,bounds1);
+  }
+
   void BVH4HairBuilder2::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
     while (numActiveTasks) 
@@ -187,7 +205,7 @@ namespace embree
       taskMutex.unlock();
 
       /* recursively finish task */
-      if (task.size < 512 || remainingReplications <= 0) {
+      if (task.size < 512) {
         atomic_add(&numActiveTasks,-1);
         recurseTask(threadIndex,task);
       }

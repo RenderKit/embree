@@ -87,6 +87,7 @@ namespace embree
   size_t g_verbose = 0;                   //!< verbosity of output
   size_t g_numThreads = 0;                //!< number of threads to use in builders
   size_t g_benchmark = 0;
+  extern double g_hair_builder_replication_factor;
 
   /* error flag */
   static tls_t g_error = NULL;
@@ -200,21 +201,25 @@ namespace embree
           if (parseSymbol (cfg,'=',pos))
             g_tri_accel = parseIdentifier (cfg,pos);
         } 
-        else if (tok == "triaccel") {
+        else if (tok == "triaccel" || tok == "tri_accel") {
           if (parseSymbol (cfg,'=',pos))
             g_tri_accel = parseIdentifier (cfg,pos);
         } 
-        else if (tok == "hairaccel") {
+        else if (tok == "hairaccel" || tok == "hair_accel") {
           if (parseSymbol (cfg,'=',pos))
             g_hair_accel = parseIdentifier (cfg,pos);
         } 
-        else if (tok == "hairbuildermode") {
+        else if (tok == "hair_builder") {
+          if (parseSymbol (cfg,'=',pos))
+            g_hair_builder = parseIdentifier (cfg,pos);
+        } 
+        else if (tok == "hair_builder_mode") {
           if (parseSymbol (cfg,'=',pos))
             g_hair_accel_mode = parseIdentifier (cfg,pos);
         } 
-        else if (tok == "hairbuilder") {
+        else if (tok == "hair_builder_replication_factor") {
           if (parseSymbol (cfg,'=',pos))
-            g_hair_builder = parseIdentifier (cfg,pos);
+            g_hair_builder_replication_factor = parseInt (cfg,pos);
         } 
         else if (tok == "builder") {
           if (parseSymbol (cfg,'=',pos))

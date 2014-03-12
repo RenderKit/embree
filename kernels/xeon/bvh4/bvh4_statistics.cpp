@@ -46,6 +46,7 @@ namespace embree
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
     size_t bytesTotal = bytesNodes+bytesTris+bytesVertices;
     size_t bytesTotalAllocated = bvh->bytesAllocated();
+    if (g_benchmark) std::cout << "BENCHMARK_TRIANGLE_ACCEL " << bvhSAH << " " << bytesTotal << std::endl;
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream << "  primitives = " << bvh->numPrimitives << ", vertices = " << bvh->numVertices << std::endl;
     stream.precision(4);

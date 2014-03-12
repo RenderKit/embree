@@ -25,17 +25,20 @@ import re
 dash = '/'
 model  = ''
 statDir = ''
-hair_builder_modes = [
-  'aO',
-#  'aO', with triangles
-  'P3aO',
-  'uO',
-  'aOuO',
-  'aOuOuST',
-  'P3aOuOuST',
-  'aOaSP',
-  'aOuOuSTaSPuSP',
-  ];
+hair_builder_modes = [ 
+#    ('tri_accel=bvh4.triangle4  --tessellate-hair 2 4', 'bvh4.triangle4.P2aO'),
+#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuST', 'bvh4hair.bezier1i.P0aOuOuST')
+
+    ('tri_accel=bvh4.triangle4  --tessellate-hair 3 4', 'bvh4.triangle4.P3aO'),
+    ('tri_accel=bvh4.triangle4i --tessellate-hair 3 4', 'bvh4.triangle4i.P3aO'),
+    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aO'  , 'bvh4hair.bezier1i.P0aO'),
+    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P3aO', 'bvh4hair.bezier1i.P3aO'),
+    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuO', 'bvh4hair.bezier1i.P0aOuO'),
+    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuST', 'bvh4hair.bezier1i.P0aOuOuST'),
+    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P3aOuOuST', 'bvh4hair.bezier1i.P3aOuOuST'),
+    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOaSP,hair_builder_replication_factor=3', 'bvh4hair.bezier1i.P0aOaSP'),
+    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=3', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP')
+    ];
 
 ########################## compiling ##########################
 
@@ -48,22 +51,22 @@ def compile():
 def render(mode):
   #executable = 'build' + '/' + 'tutorial07'
   executable = './tutorial07'
-  base = os.path.basename(model) + '_' + mode
+  base = os.path.basename(model) + '_' + mode[1]
   os.system('mkdir -p ' + statDir)
   logFile = statDir + dash + base + '.log'
   imgFile = statDir + dash + base + '.tga'
   if not os.path.exists(logFile):
     command = executable
-    command += ' -rtcore verbose=2,benchmark=1,hairaccel=bvh4hair.bezier1i,hairaccelmode=' + mode
-    if model != 'none':
-      command += ' -c ' + model
+    command += ' -rtcore verbose=2,benchmark=1,' + mode[0]
+    command += ' -c ' + model
+    command += ' -i none'  # disable triangle geometry
     command += ' -size 1024 1024 -frames 4 32'
     command += ' -o ' + imgFile + ' > ' + logFile
     os.system(command)
 
 def renderLoop():
     for mode in hair_builder_modes:
-      print(mode)
+      print(mode[1])
       render(mode)
 
 ########################## data extraction ##########################
@@ -73,7 +76,7 @@ memory = {}
 fps   = {}
 
 def extract(mode):
-  base = os.path.basename(model) + '_' + mode
+  base = os.path.basename(model) + '_' + mode[1]
   logFileName = statDir + dash + base + '.log'
   sah   [base] = 0
   memory[base] = 0
@@ -83,8 +86,12 @@ def extract(mode):
     for line in logFile:
       if line.count('BENCHMARK_HAIR_ACCEL ') == 1:
         numbers = map(float, line[21:].split(" "))
-        sah   [base] = numbers[0]
-        memory[base] = numbers[1]
+        sah   [base] += numbers[0]
+        memory[base] += numbers[1]
+      if line.count('BENCHMARK_TRIANGLE_ACCEL ') == 1:
+        numbers = map(float, line[25:].split(" "))
+        sah   [base] += numbers[0]
+        memory[base] += numbers[1]
       if line.count('BENCHMARK_RENDER ') == 1:
         numbers = map(float, line[17:].split(" "))
         fps[base] += numbers[0]
@@ -97,8 +104,8 @@ def extractLoop():
     extract(mode)
 
 def printData(mode):
-  base = os.path.basename(model) + '_' + mode
-  line  = '  ' + '{0:<27}'.format(mode) + ' | '
+  base = os.path.basename(model) + '_' + mode[1]
+  line  = '  ' + '{0:<27}'.format(mode[1]) + ' | '
   line += (' %#6.1f' %  sah[base])
   line += ('   %#6.1f MB' %  (1E-6*memory[base]))
   line += ('  %#6.1f' %  fps[base])

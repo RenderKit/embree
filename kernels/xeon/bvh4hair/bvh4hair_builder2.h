@@ -303,6 +303,8 @@ namespace embree
 
   private:
 
+    const BBox3fa subdivideAndAdd(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const Bezier1& bezier, size_t depth);
+
     void insert(size_t threadIndex, atomic_set<PrimRefBlock>& prims_i, atomic_set<PrimRefBlock>& prims_o);
 
     template<typename Left>
@@ -352,7 +354,7 @@ namespace embree
     bool enableUnalignedObjectSplits;
     bool enableUnalignedSpatialSplits;
     bool enableStrandSplits;
-    bool enablePresplit3;
+    int enablePreSubdivision;
 
     BVH4Hair* bvh;         //!< output
     PrimRefBlockAlloc alloc;                 //!< Allocator for primitive blocks
