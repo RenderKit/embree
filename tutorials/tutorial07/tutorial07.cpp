@@ -293,7 +293,7 @@ namespace embree
     }
 
     /* send model */
-    if (objFilename.str() != "" && hairFilename.str() != "" && cy_hairFilename.str() != "")
+    if (objFilename.str() != "" || hairFilename.str() != "" || cy_hairFilename.str() != "")
       set_scene(&g_obj_scene);
 
     /* render to disk */

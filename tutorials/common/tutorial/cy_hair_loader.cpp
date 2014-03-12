@@ -139,15 +139,13 @@ namespace embree
 
     OBJScene::HairSet* hairset = new OBJScene::HairSet; 
 
-    DBG_PRINT( cyFile.header.numPoints );
-
     for (size_t i=0;i<cyFile.header.numPoints;i++)
       {
         Vec3fa v;
         v.x = cyFile.points[3*i+0];
         v.y = cyFile.points[3*i+1];
         v.z = cyFile.points[3*i+2];
-        v.w = cyFile.thickness ? cyFile.thickness[i] : 1.0f;
+        v.w = cyFile.thickness ? cyFile.thickness[i] : 0.1f;
         v.x-=offset.x;
         v.y-=offset.y;
         v.z-=offset.z;
