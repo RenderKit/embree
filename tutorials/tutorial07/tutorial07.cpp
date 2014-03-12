@@ -51,6 +51,10 @@ namespace embree
   static FileName outFilename = "";
   static int g_numFrames = 1;
   static int g_skipFrames = 0;
+  static bool hairy_triangles = false;
+  static float hairy_triangles_length = 1.0f;
+  static float hairy_triangles_thickness = 0.1f;
+  static int hairy_triangles_strands_per_triangle = 1;
 
   Vec3fa offset = 0.0f;
 
@@ -102,6 +106,17 @@ namespace embree
       else if (tag == "--tessellate-hair") {
         tessellate_subdivisions = cin->getInt();
         tessellate_strips = cin->getInt();
+      }
+
+      /* load hair model */
+      else if (tag == "--hairy-triangles") {
+        hairy_triangles_strands_per_triangle = cin->getInt();
+        hairy_triangles_length = cin->getFloat();
+        hairy_triangles_thickness = cin->getFloat();
+        DBG_PRINT(hairy_triangles_length);
+        DBG_PRINT(hairy_triangles_strands_per_triangle);
+        DBG_PRINT(hairy_triangles_thickness);
+        hairy_triangles = true;
       }
 
       /* reduce number of hair segments */
@@ -223,6 +238,70 @@ namespace embree
     scene.hairsets.clear();
   }
 
+
+  void generateHairOnTriangles(OBJScene& scene)
+  {
+    PING;
+    OBJScene::HairSet* hairset = new OBJScene::HairSet;
+
+    for (size_t m=0; m<scene.meshes.size(); m++) 
+      for (size_t t=0; t<scene.meshes[m]->triangles.size(); t++) 
+        {
+          const Vec3fa &v0 = scene.meshes[m]->v[ scene.meshes[m]->triangles[t].v0 ];
+          const Vec3fa &v1 = scene.meshes[m]->v[ scene.meshes[m]->triangles[t].v1 ];
+          const Vec3fa &v2 = scene.meshes[m]->v[ scene.meshes[m]->triangles[t].v2 ];
+          
+          const Vec3fa edge0 = v1-v0;
+          const Vec3fa edge1 = v2-v0;
+          const Vec3fa normal = normalize(cross(edge0,edge1));
+          LinearSpace3<Vec3fa> local_frame = frame(normal);
+
+          const float length = hairy_triangles_length;
+          const Vec3fa &dx = normalize(local_frame.vx);
+          const Vec3fa &dy = normalize(local_frame.vy);
+          const Vec3fa &dz = normalize(local_frame.vz) * length;
+
+          const float thickness = hairy_triangles_thickness;
+
+          for (size_t i=0;i<hairy_triangles_strands_per_triangle;i++)
+            {
+ 
+              float ru = drand48();
+              float rv = drand48();
+              float delta = drand48();
+              const Vec3fa position = (1.0f - sqrtf(ru)) * v0 + (sqrtf(ru) * (1.0f - rv)) * v1 + (sqrtf(ru) * rv) * v2;
+
+
+
+
+              const Vec3fa p0(   0, 0,0);
+              const Vec3fa p1(0.25, delta,0);
+              const Vec3fa p2(0.75,-delta,0);
+              const Vec3fa p3(   1, 0,0);
+
+              Vec3fa l0 = position + p0.x * dz + p0.y * dx + p0.z * dy;
+              Vec3fa l1 = position + p1.x * dz + p1.y * dx + p1.z * dy;
+              Vec3fa l2 = position + p2.x * dz + p2.y * dx + p2.z * dy;
+              Vec3fa l3 = position + p3.x * dz + p3.y * dx + p3.z * dy;
+
+          
+              l0.w = thickness;
+              l1.w = thickness;
+              l2.w = thickness;
+              l3.w = thickness;
+
+              const unsigned int v_index = hairset->v.size();
+              hairset->v.push_back(l0);
+              hairset->v.push_back(l1);
+              hairset->v.push_back(l2);
+              hairset->v.push_back(l3);
+
+              hairset->hairs.push_back( OBJScene::Hair(v_index,hairset->hairs.size()) );
+            }
+        }
+    scene.hairsets.push_back(hairset);
+  }
+
   void renderToFile(const FileName& fileName)
   {
     resize(g_width,g_height);
@@ -294,7 +373,12 @@ namespace embree
 
     /* send model */
     if (objFilename.str() != "" || hairFilename.str() != "" || cy_hairFilename.str() != "")
-      set_scene(&g_obj_scene);
+      {
+        if (hairy_triangles && objFilename.str() != "")
+          generateHairOnTriangles(g_obj_scene);
+
+        set_scene(&g_obj_scene);
+      }
 
     /* render to disk */
     if (outFilename.str() != "") {
