@@ -182,6 +182,10 @@ namespace embree
       return s;
     }
 
+    __forceinline item* head() {
+      return root;
+    }
+
   private:
 
     __forceinline bool try_insert(item* ptr) 
