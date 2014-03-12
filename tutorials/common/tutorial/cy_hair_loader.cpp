@@ -154,6 +154,16 @@ namespace embree
         hairset->v.push_back(v);
       }
 
+    ssize_t index = 0;
+    for (ssize_t i=0;i<cyFile.header.numStrands;i++)
+      {
+        ssize_t numSegments = cyFile.segments[i]+1;
+        
+        for (ssize_t j=0; j<numSegments-1; j+=3)
+          hairset->hairs.push_back(OBJScene::Hair(index + j,i));
+        index += numSegments;	
+      }
+
     scene.hairsets.push_back(hairset);
 
 
@@ -162,7 +172,6 @@ namespace embree
     PRINT(numHairs);
     PRINT(numSegments);
     PRINT(numPoints);
-    exit(0);
-
+    
   }
 }
