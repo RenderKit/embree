@@ -39,7 +39,7 @@ namespace embree
   static size_t g_numThreads = 0;
 
   static int tessellate_subdivisions = -1;
-  static int tessellate_strips   = -1;
+  static int tessellate_strips = -1;
   extern float g_reduce_hair_segment_error;
 
   /* scene */
@@ -51,8 +51,6 @@ namespace embree
   static int g_skipFrames = 0;
 
   Vec3fa offset = 0.0f;
-
-  static void tessellateHair(OBJScene &scene);
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
   {
@@ -94,9 +92,9 @@ namespace embree
       }
 
       /* tessellation flags */
-      else if (tag == "--tessellate") {
+      else if (tag == "--tessellate-hair") {
         tessellate_subdivisions = cin->getInt();
-        tessellate_strips   = cin->getInt();
+        tessellate_strips = cin->getInt();
       }
 
       /* reduce number of hair segments */
@@ -149,53 +147,72 @@ namespace embree
     }
   }
 
-  void addHairSegment(OBJScene &scene, 
-                      const Vec3fa &p00,
-                      const Vec3fa &p01)
+  void addHairSegment(OBJScene::Mesh& mesh, const Vec3fa& p0, const Vec3fa& p1)
   {
-    /* todo */
+    const size_t N = tessellate_strips;
+    if (length(p1-p0) <= 1E-6f) return;
+    const LinearSpace3fa xfm = frame(p1-p0);
+    const int base = mesh.v.size();
+    for (size_t i=0; i<N; i++) {
+      const float a = 2.0f*float(pi)*float(i)/float(N);
+      const float u = sinf(a), v = cosf(a);
+      mesh.v.push_back(p0+u*p0.w*xfm.vx+v*p0.w*xfm.vy);
+      mesh.v.push_back(p1+u*p1.w*xfm.vx+v*p1.w*xfm.vy);
+    }
+    for (size_t i=0; i<N; i++) {
+      const int v0 = base + (2*i+0)%(2*N);
+      const int v1 = base + (2*i+1)%(2*N);
+      const int v2 = base + (2*i+2)%(2*N);
+      const int v3 = base + (2*i+3)%(2*N);
+      mesh.triangles.push_back(OBJScene::Triangle(v0,v1,v2,0));
+      mesh.triangles.push_back(OBJScene::Triangle(v1,v3,v2,0));
+    }
   }
-  void tessellateHair(OBJScene &scene, 
-                      const Vec3fa &p00,
-                      const Vec3fa &p01,
-                      const Vec3fa &p02,
-                      const Vec3fa &p03,
-                      int subdivisions)
+
+  void tessellateHair(OBJScene::Mesh& mesh, 
+                      const Vec3fa& p00,
+                      const Vec3fa& p01,
+                      const Vec3fa& p02,
+                      const Vec3fa& p03,
+                      const int depth)
   {
-    if (subdivisions > 0) {
+    if (depth > 0) 
+    {
       const Vec3fa p10 = 0.5f*(p00+p01);
       const Vec3fa p11 = 0.5f*(p01+p02);
       const Vec3fa p12 = 0.5f*(p02+p03);
-
       const Vec3fa p20 = 0.5f*(p10+p11);
       const Vec3fa p21 = 0.5f*(p11+p12);
-
       const Vec3fa p30 = 0.5f*(p20+p21);
-      
-      tessellateHair(scene,p00,p10,p20,p30,subdivisions-1);
-      tessellateHair(scene,p30,p21,p12,p03,subdivisions-1);
+      tessellateHair(mesh,p00,p10,p20,p30,depth-1);
+      tessellateHair(mesh,p30,p21,p12,p03,depth-1);
     } else {
-      addHairSegment(scene,p00,p01);
-      addHairSegment(scene,p01,p02);
-      addHairSegment(scene,p02,p03);
+      addHairSegment(mesh,p00,p03);
     }
   }
-  void tessellateHair(OBJScene &scene, 
-                      const OBJScene::HairSet &hairSet)
+
+  void tessellateHair(OBJScene::Mesh& mesh, const OBJScene::HairSet& hairSet)
   {
-    for (int i=0;i<hairSet.hairs.size();i++) {
+    for (size_t i=0; i<hairSet.hairs.size(); i++) 
+    {
       OBJScene::Hair hair = hairSet.hairs[i];
-      Vec3fa p00 = hairSet.v[hair.vertex+0];
-      Vec3fa p01 = hairSet.v[hair.vertex+1];
-      Vec3fa p02 = hairSet.v[hair.vertex+2];
-      Vec3fa p03 = hairSet.v[hair.vertex+3];
-      tessellateHair(scene,p00,p01,p02,p03,tessellate_subdivisions);
+      const Vec3fa p00 = hairSet.v[hair.vertex+0];
+      const Vec3fa p01 = hairSet.v[hair.vertex+1];
+      const Vec3fa p02 = hairSet.v[hair.vertex+2];
+      const Vec3fa p03 = hairSet.v[hair.vertex+3];
+      tessellateHair(mesh,p00,p01,p02,p03,tessellate_subdivisions);
     }
   }
-  void tessellateHair(OBJScene &scene)
+
+  void tessellateHair(OBJScene& scene)
   {
-    for (int i=0;i<scene.hairsets.size();i++) 
-      tessellateHair(scene,*scene.hairsets[i]);
+    for (int i=0; i<scene.hairsets.size(); i++) {
+      OBJScene::Mesh* mesh = new OBJScene::Mesh;
+      OBJScene::HairSet* hairset = scene.hairsets[i];
+      tessellateHair(*mesh,*hairset);
+      scene.meshes.push_back(mesh);
+      delete hairset;
+    }
     scene.hairsets.clear();
   }
 
@@ -227,8 +244,7 @@ namespace embree
     
     void* ptr = map();
     Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
-    FATAL("storeImage disabled due to link error with ISPC");
-    //storeImage(image, fileName);
+    storeImage(image, fileName);
     unmap();
   }
 
@@ -255,14 +271,13 @@ namespace embree
     init(g_rtcore.c_str());
 
     /* load scene */
-    if (objFilename.str() != "")
+    if (objFilename.str() != "" && objFilename.str() != "none")
       loadOBJ(objFilename,g_obj_scene,offset);
 
     /* load hair */
-    if (hairFilename.str() != "") {
+    if (hairFilename.str() != "" && hairFilename.str() != "none") {
       loadHair(hairFilename,g_obj_scene,offset);
-      if (tessellate_subdivisions > 0 && tessellate_strips > 0)
-        tessellateHair(g_obj_scene);
+      if (tessellate_strips > 0) tessellateHair(g_obj_scene);
     }
 
     /* send model */
