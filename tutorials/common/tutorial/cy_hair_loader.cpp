@@ -158,20 +158,20 @@ namespace embree
         if (cyFile.segments)
           {
             ssize_t numSegments = cyFile.segments[i];       
-            for (ssize_t j=0; j<numSegments-2; j+=3)
+            for (ssize_t j=0; j<numSegments-3; j+=3)
               {
                 hairset->hairs.push_back(OBJScene::Hair(index + j,i));
               }
-            index += numSegments;	
+            index += numSegments+1;	
           }
         else
           {
             ssize_t numSegments = cyFile.header.defaultSegments;       
-            for (ssize_t j=0; j<numSegments-2; j+=3)
+            for (ssize_t j=0; j<numSegments-3; j+=3)
               {
                 hairset->hairs.push_back(OBJScene::Hair(index + j,i));
               }
-            index += numSegments;	
+            index += numSegments+1;	
 
           }
       }
