@@ -26,20 +26,23 @@ dash = '/'
 model  = ''
 statDir = ''
 hair_builder_modes = [ 
-#    ('tri_accel=bvh4.triangle4  --tessellate-hair 2 4', 'bvh4.triangle4.P2aO'),
-#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuST', 'bvh4hair.bezier1i.P0aOuOuST')
+    ('tri_accel=bvh4.triangle4  --tessellate-hair 2 4', 'bvh4.triangle4.P2aO'),
+    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuST', 'bvh4hair.bezier1i.P0aOuOuST')
 
-    ('tri_accel=bvh4.triangle4  --tessellate-hair 3 4', 'bvh4.triangle4.P3aO'),
-    ('tri_accel=bvh4.triangle4i --tessellate-hair 3 4', 'bvh4.triangle4i.P3aO'),
-    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aO'  , 'bvh4hair.bezier1i.P0aO'),
-    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P3aO', 'bvh4hair.bezier1i.P3aO'),
-    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuO', 'bvh4hair.bezier1i.P0aOuO'),
-    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuST', 'bvh4hair.bezier1i.P0aOuOuST'),
-    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P3aOuOuST', 'bvh4hair.bezier1i.P3aOuOuST'),
-    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOaSP,hair_builder_replication_factor=3', 'bvh4hair.bezier1i.P0aOaSP'),
-    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=3', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP')
+#    ('tri_accel=bvh4.triangle4  --tessellate-hair 3 4', 'bvh4.triangle4.P3aO'),
+#    ('tri_accel=bvh4.triangle4i --tessellate-hair 3 4', 'bvh4.triangle4i.P3aO'),
+#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aO'  , 'bvh4hair.bezier1i.P0aO'),
+#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P3aO', 'bvh4hair.bezier1i.P3aO'),
+#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuO', 'bvh4hair.bezier1i.P0aOuO'),
+#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuST', 'bvh4hair.bezier1i.P0aOuOuST'),
+#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P3aOuOuST', 'bvh4hair.bezier1i.P3aOuOuST'),
+#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOaSP,hair_builder_replication_factor=3', 'bvh4hair.bezier1i.P0aOaSP'),
+#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=3', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP')
     ];
 
+def name(model,mode):
+  return os.path.splitext(os.path.basename(model))[0] + '_' + mode[1]
+  
 ########################## compiling ##########################
 
 def compile():
@@ -51,7 +54,7 @@ def compile():
 def render(mode):
   #executable = 'build' + '/' + 'tutorial07'
   executable = './tutorial07'
-  base = os.path.basename(model) + '_' + mode[1]
+  base = name(model,mode)
   os.system('mkdir -p ' + statDir)
   logFile = statDir + dash + base + '.log'
   imgFile = statDir + dash + base + '.tga'
@@ -66,7 +69,7 @@ def render(mode):
 
 def renderLoop():
     for mode in hair_builder_modes:
-      print(mode[1])
+      print(name(model,mode))
       render(mode)
 
 ########################## data extraction ##########################
@@ -76,7 +79,7 @@ memory = {}
 fps   = {}
 
 def extract(mode):
-  base = os.path.basename(model) + '_' + mode[1]
+  base = name(model,mode)
   logFileName = statDir + dash + base + '.log'
   sah   [base] = 0
   memory[base] = 0
@@ -104,7 +107,7 @@ def extractLoop():
     extract(mode)
 
 def printData(mode):
-  base = os.path.basename(model) + '_' + mode[1]
+  base = name(model,mode)
   line  = '  ' + '{0:<27}'.format(mode[1]) + ' | '
   line += (' %#6.1f' %  sah[base])
   line += ('   %#6.1f MB' %  (1E-6*memory[base]))
@@ -131,32 +134,33 @@ def printDataLoop():
 ########################## command line parsing ##########################
 
 def printUsage():
-  sys.stderr.write('Usage: ' + sys.argv[0] + ' measure <model> <statDir>\n')
-  sys.stderr.write('       ' + sys.argv[0] + ' print   <model> <statDir0> <statDir1> ...\n')
+  sys.stderr.write('Usage: ' + sys.argv[0] + ' measure <statDir> <model0> <model1> ...\n')
+  sys.stderr.write('       ' + sys.argv[0] + ' print   <statDir> <model0> <model1> ...\n')
   sys.exit(1)
 
 if len(sys.argv) < 3:
   printUsage()
   sys.exit(1)
 
-model = 'none';  
-if len(sys.argv) >= 3:
-  model = sys.argv[2]
-
-statDir = 'stat';  
+model = 'none' 
+statDir = 'stat'
 
 if sys.argv[1] == 'measure':
-  if len(sys.argv) >= 4:
-    statDir = sys.argv[3]
-  renderLoop()
-  extractLoop()
-  printDataLoop()
+  statDir = sys.argv[2]
+  for i in range(3, len(sys.argv)):
+    model = sys.argv[i]
+    renderLoop()
+  for i in range(3, len(sys.argv)):
+    model = sys.argv[i]
+    extractLoop()
+    printDataLoop()
   sys.exit(1)
 
 if sys.argv[1] == 'print':
-  print(os.path.basename(model))
+  print(os.path.splitext(os.path.basename(model))[0])
+  statDir = sys.argv[2]
   for i in range(3, len(sys.argv)):
-    statDir = sys.argv[i]
+    model = sys.argv[i]
     extractLoop()
     printDataLoop()
   sys.exit(1)
