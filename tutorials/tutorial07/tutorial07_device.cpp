@@ -334,12 +334,17 @@ RTCScene convertScene(ISPCScene* scene_in)
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT,RTC_INTERSECT1);
 
+  DBG_PRINT(scene_in->numHairSets);
+
   /* add all hair sets to the scene */
   for (int i=0; i<scene_in->numHairSets; i++)
   {
     /* get ith hair set */
     ISPCHairSet* hair = scene_in->hairs[i];
-    
+
+    DBG_PRINT(hair->numHairs);
+    DBG_PRINT(hair->numVertices);
+
     /* create a hair set */
     unsigned int geomID = rtcNewBezierCurves (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
     rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
@@ -779,7 +784,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
     Ng = dz;
   }
 
-  color += 0.3f + abs(dot(ray.dir,Ng));
+  color += 0.2f + 0.5f * abs(dot(ray.dir,Ng));
   return color;
 }
 
@@ -849,7 +854,7 @@ extern "C" void device_render (int* pixels,
       scene->hairs = new ISPCHairSet*[1024]; // FIXME: hardcoded maximal number of hair sets
       scene->numHairSets = 0;
       g_ispc_scene = scene;
-      addHair(scene);
+      //addHair(scene);
       //addSphere(scene,Vec3f(0,2,0),1.0f);
       //addGroundPlane(scene);
     }
