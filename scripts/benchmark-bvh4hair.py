@@ -25,7 +25,10 @@ import re
 dash = '/'
 model  = ''
 statDir = ''
-hair_builder_modes = [ 
+
+# define BVH4HAIR_COMPRESS_ALIGNED_NODES 0
+# define BVH4HAIR_COMPRESS_UNALIGNED_NODES 0
+hair_builder_modes_uncompressed = [ 
     ('tri_accel=bvh4.triangle4  --tessellate-hair 0 4', 'bvh4.triangle4.P0aO'),
     ('tri_accel=bvh4.triangle4  --tessellate-hair 1 4', 'bvh4.triangle4.P1aO'),
     ('tri_accel=bvh4.triangle4  --tessellate-hair 2 4', 'bvh4.triangle4.P2aO'),
@@ -43,6 +46,21 @@ hair_builder_modes = [
     ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=3', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R3'),
     ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=7', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7')
     ];
+
+hair_builder_modes_compressed_aligned = [
+  ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P3aO', 'cbvh4hair.bezier1i.P3aO'),
+  ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOaSP,hair_builder_replication_factor=7', 'cbvh4hair.bezier1i.P0aOaSP.R7'),
+]
+
+hair_builder_modes_compressed_unaligned = [
+  ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuST', 'cbvh4hair.bezier1i.P0aOuOuST'),
+  ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=7', 'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7')
+]
+
+#hair_builder_modes_measure = hair_builder_modes_uncompressed
+#hair_builder_modes_measure = hair_builder_modes_compressed_aligned
+hair_builder_modes_measure = hair_builder_modes_compressed_unaligned 
+hair_builder_modes_print = hair_builder_modes_uncompressed + hair_builder_modes_compressed_aligned + hair_builder_modes_compressed_unaligned 
 
 def name(model,mode):
   return os.path.splitext(os.path.basename(model))[0] + '_' + mode[1]
@@ -72,7 +90,7 @@ def render(mode):
     os.system(command)
 
 def renderLoop():
-    for mode in hair_builder_modes:
+    for mode in hair_builder_modes_measure:
       print(name(model,mode))
       render(mode)
 
@@ -107,31 +125,31 @@ def extract(mode):
 
 # Extract all data
 def extractLoop():
-  for mode in hair_builder_modes:
+  for mode in hair_builder_modes_print:
     extract(mode)
 
 def printData(mode):
   base = name(model,mode)
-  line  = '  ' + '{0:<35}'.format(mode[1]) + ' | '
+  line  = '  ' + '{0:<40}'.format(mode[1]) + ' | '
   line += (' %#6.1f' %  sah[base])
   line += ('   %#6.1f MB' %  (1E-6*memory[base]))
   line += ('  %#6.1f' %  fps[base])
   print(line)
 
 def printDataLoop():
-  tableWidth = 35 + 32
+  tableWidth = 40 + 32
 
   print('')
   
   title = os.path.splitext(os.path.basename(model))[0]
-  line  = '  ' + '{0:<35}'.format(title) + ' |     SAH      Memory     Fps'
+  line  = '  ' + '{0:<40}'.format(title) + ' |     SAH      Memory     Fps'
   print(line)
 
   line = ''
   while (len(line) < tableWidth): line = line + '-'
   print(line)
 
-  for mode in hair_builder_modes:
+  for mode in hair_builder_modes_print:
     printData(mode)
 
   print('')

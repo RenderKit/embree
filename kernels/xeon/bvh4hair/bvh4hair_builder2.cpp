@@ -1108,10 +1108,13 @@ namespace embree
     if (isAligned) {
       BVH4Hair::AlignedNode* node = bvh->allocAlignedNode(threadIndex);
 #if BVH4HAIR_COMPRESS_ALIGNED_NODES
-      node->set(task.bounds);
+      BBox3fa bounds = empty;
+      for (ssize_t i=0; i<numChildren; i++)
+	bounds.extend(cbounds[i].bounds);
+      node->set(bounds);
 #endif
       for (ssize_t i=numChildren-1; i>=0; i--) {
-        node->set(i,cbounds[i].bounds);
+	node->set(i,cbounds[i].bounds);
         cbounds[i] = computeUnalignedBounds(cprims[i]);
         new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,csize[i],isleaf[i],cprims[i],cbounds[i]);
       }
