@@ -447,10 +447,8 @@ namespace embree
     {
       const BBox3fa cbounds = i->bounds(space);
       const Vec3fa  center  = i->center(space);
-      //const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
-      ssei bin = floori((ssef(center) - ofs)*scale);
-      bin = max(bin,0);
-      bin = min(bin,BINS-1);
+      const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
+      //const ssei bin = floori((ssef(center) - ofs)*scale);
       assert(bin[0] >=0 && bin[0] < BINS);
       assert(bin[1] >=0 && bin[1] < BINS);
       assert(bin[2] >=0 && bin[2] < BINS);
@@ -577,15 +575,15 @@ namespace embree
     /* perform binning of curves */
     for (atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims; i; i++)
     {
-      //const BBox3fa cbounds = i->bounds(space);
-      //const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
       const Vec3fa v0 = xfmPoint(space,i->p0);
-      const ssei bin0 = floori((ssef(v0)-ofs)*scale);
+      const ssei bin0 = clamp(floori((ssef(v0)-ofs)*scale),ssei(0),ssei(BINS-1));
+      //const ssei bin0 = floori((ssef(v0)-ofs)*scale);
       assert(bin0[0] >=0 && bin0[0] < BINS);
       assert(bin0[1] >=0 && bin0[1] < BINS);
       assert(bin0[2] >=0 && bin0[2] < BINS);
       const Vec3fa v1 = xfmPoint(space,i->p3);
-      const ssei bin1 = floori((ssef(v1)-ofs)*scale);
+      const ssei bin1 = clamp(floori((ssef(v1)-ofs)*scale),ssei(0),ssei(BINS-1));
+      //const ssei bin1 = floori((ssef(v1)-ofs)*scale);
       assert(bin1[0] >=0 && bin1[0] < BINS);
       assert(bin1[1] >=0 && bin1[1] < BINS);
       assert(bin1[2] >=0 && bin1[2] < BINS);
