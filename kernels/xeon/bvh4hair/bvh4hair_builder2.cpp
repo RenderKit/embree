@@ -448,7 +448,9 @@ namespace embree
       const BBox3fa cbounds = i->bounds(space);
       const Vec3fa  center  = i->center(space);
       //const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
-      const ssei bin = floori((ssef(center) - ofs)*scale);
+      ssei bin = floori((ssef(center) - ofs)*scale);
+      bin = max(bin,0);
+      bin = min(bin,BINS-1);
       assert(bin[0] >=0 && bin[0] < BINS);
       assert(bin[1] >=0 && bin[1] < BINS);
       assert(bin[2] >=0 && bin[2] < BINS);

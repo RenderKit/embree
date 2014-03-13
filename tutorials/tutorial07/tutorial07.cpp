@@ -253,12 +253,17 @@ namespace embree
           
           const Vec3fa edge0 = v1-v0;
           const Vec3fa edge1 = v2-v0;
-          const Vec3fa normal = normalize(cross(edge0,edge1));
+          Vec3fa normal = normalize(cross(edge0,edge1));
+          
+          //Vec3fa mid = v0 + edge0 * 0.5f + edge1 * 0.5f;
+          //if (dot(normal,mid) < 0.0f) normal = -normal;
+          //if (length(normal) < 0.0001f) continue;
+
           LinearSpace3<Vec3fa> local_frame = frame(normal);
 
           const float length = hairy_triangles_length;
-          const Vec3fa &dx = normalize(local_frame.vx);
-          const Vec3fa &dy = normalize(local_frame.vy);
+          const Vec3fa &dx = normalize(local_frame.vx) * length;
+          const Vec3fa &dy = normalize(local_frame.vy) * length;
           const Vec3fa &dz = normalize(local_frame.vz) * length;
 
           const float thickness = hairy_triangles_thickness;
@@ -269,14 +274,16 @@ namespace embree
               float ru = drand48();
               float rv = drand48();
               float delta = drand48();
+              float delta2 = drand48();
+
               const Vec3fa position = (1.0f - sqrtf(ru)) * v0 + (sqrtf(ru) * (1.0f - rv)) * v1 + (sqrtf(ru) * rv) * v2;
 
 
 
 
               const Vec3fa p0(   0, 0,0);
-              const Vec3fa p1(0.25, delta,0);
-              const Vec3fa p2(0.75,-delta,0);
+              const Vec3fa p1(0.25, delta, delta2);
+              const Vec3fa p2(0.75,-delta,-delta2);
               const Vec3fa p3(   1, 0,0);
 
               Vec3fa l0 = position + p0.x * dz + p0.y * dx + p0.z * dy;
