@@ -28,14 +28,17 @@ statDir = ''
 hair_builder_modes = [ 
 #    ('tri_accel=bvh4.triangle4  --tessellate-hair 2 4', 'bvh4.triangle4.P2aO'),
 #    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuST', 'bvh4hair.bezier1i.P0aOuOuST')
-
-    ('tri_accel=bvh4.triangle4  --tessellate-hair 3 4', 'bvh4.triangle4.P3aO'),
-    ('tri_accel=bvh4.triangle4i --tessellate-hair 3 4', 'bvh4.triangle4i.P3aO'),
-    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aO'  , 'bvh4hair.bezier1i.P0aO'),
-    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P3aO', 'bvh4hair.bezier1i.P3aO'),
+    ('tri_accel=bvh4.triangle4  --tessellate-hair 0 4', 'bvh4.triangle4.P0aO'),
+    ('tri_accel=bvh4.triangle4i --tessellate-hair 0 4', 'bvh4.triangle4i.P0aO'),
+#    ('tri_accel=bvh4.triangle4  --tessellate-hair 3 4', 'bvh4.triangle4.P3aO'),
+#    ('tri_accel=bvh4.triangle4i --tessellate-hair 3 4', 'bvh4.triangle4i.P3aO'),
+    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aO', 'bvh4hair.bezier1i.P0aO'),
+    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P1aO', 'bvh4hair.bezier1i.P1aO'),
+    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P2aO', 'bvh4hair.bezier1i.P2aO'),
+#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P3aO','bvh4hair.bezier1i.P3aO'),
     ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuO', 'bvh4hair.bezier1i.P0aOuO'),
     ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuST', 'bvh4hair.bezier1i.P0aOuOuST'),
-    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P3aOuOuST', 'bvh4hair.bezier1i.P3aOuOuST'),
+#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P3aOuOuST', 'bvh4hair.bezier1i.P3aOuOuST'),
     ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOaSP,hair_builder_replication_factor=3', 'bvh4hair.bezier1i.P0aOaSP'),
     ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=3', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP')
     ];
@@ -105,18 +108,18 @@ def extractLoop():
 
 def printData(mode):
   base = os.path.basename(model) + '_' + mode[1]
-  line  = '  ' + '{0:<27}'.format(mode[1]) + ' | '
+  line  = '  ' + '{0:<35}'.format(mode[1]) + ' | '
   line += (' %#6.1f' %  sah[base])
   line += ('   %#6.1f MB' %  (1E-6*memory[base]))
   line += ('  %#6.1f' %  fps[base])
   print(line)
 
 def printDataLoop():
-  tableWidth = 33 + 28
+  tableWidth = 35 + 32
 
   print('')
   
-  line  = '  ' + '{0:<27}'.format(statDir) + ' |     SAH      Memory     Fps'
+  line  = '  ' + '{0:<35}'.format(statDir) + ' |     SAH      Memory     Fps'
   print(line)
 
   line = ''
