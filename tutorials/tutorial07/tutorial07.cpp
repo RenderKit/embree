@@ -363,13 +363,16 @@ namespace embree
     /* load hair */
     if (hairFilename.str() != "" && hairFilename.str() != "none") {
       loadHair(hairFilename,g_obj_scene,offset);
-      if (tessellate_strips > 0) tessellateHair(g_obj_scene);
     }
 
    /* load cy_hair */
     if (cy_hairFilename.str() != "") {
       loadCYHair(cy_hairFilename,g_obj_scene,offset);
     }
+
+    /* tessellate hair */
+    if (tessellate_strips > 0) 
+      tessellateHair(g_obj_scene);
 
     /* send model */
     if (objFilename.str() != "" || hairFilename.str() != "" || cy_hairFilename.str() != "")
