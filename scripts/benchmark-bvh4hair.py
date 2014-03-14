@@ -59,6 +59,18 @@ hair_builder_modes_compressed_unaligned = [
 #hair_builder_modes_measure = hair_builder_modes_compressed_aligned
 hair_builder_modes_measure = hair_builder_modes_compressed_unaligned 
 
+hair_builder_ignore = [
+  'sophie_bvh4.triangle4.P1aO',
+  'sophie_bvh4.triangle4.P2aO',
+  'sophie_bvh4.triangle4.P3aO',
+  'buddha_bvh4.triangle4.P1aO',
+  'buddha_bvh4.triangle4.P2aO',
+  'buddha_bvh4.triangle4.P3aO',
+  'hairdragon_bvh4.triangle4.P1aO',
+  'hairdragon_bvh4.triangle4.P2aO',
+  'hairdragon_bvh4.triangle4.P3aO'
+]
+
 hair_builder_modes_print =  [
   'bvh4.triangle4.P0aO',
   'bvh4.triangle4.P1aO',
@@ -128,7 +140,9 @@ def render(mode):
 
 def renderLoop():
     for mode in hair_builder_modes_measure:
-      print(name(model,mode))
+      base = name(model,mode)
+      print(base)
+      if (base in hair_builder_ignore) continue;
       render(mode)
 
 ########################## data extraction ##########################
