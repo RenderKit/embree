@@ -87,7 +87,10 @@ namespace embree
   size_t g_verbose = 0;                   //!< verbosity of output
   size_t g_numThreads = 0;                //!< number of threads to use in builders
   size_t g_benchmark = 0;
+
+#if defined(__TARGET_AVX__)
   extern double g_hair_builder_replication_factor;
+#endif
 
   /* error flag */
   static tls_t g_error = NULL;
@@ -218,8 +221,10 @@ namespace embree
             g_hair_accel_mode = parseIdentifier (cfg,pos);
         } 
         else if (tok == "hair_builder_replication_factor") {
+#if defined(__AVX__)
           if (parseSymbol (cfg,'=',pos))
             g_hair_builder_replication_factor = parseInt (cfg,pos);
+#endif
         } 
         else if (tok == "builder") {
           if (parseSymbol (cfg,'=',pos))
