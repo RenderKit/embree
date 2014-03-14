@@ -49,10 +49,10 @@ namespace embree
     geometries.reserve(128);
 
 #if defined(__MIC__)
-
-    accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
-    accels.add(BVH4i::BVH4iVirtualGeometryBinnedSAH(this));
-    accels.add(BVH4i::BVH4iBezierCurvesBinnedSAH(this));
+    FATAL("here");
+    //accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
+    //accels.add(BVH4i::BVH4iVirtualGeometryBinnedSAH(this));
+    //accels.add(BVH4i::BVH4iBezierCurvesBinnedSAH(this));
 
     if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
       {
