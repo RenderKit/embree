@@ -55,9 +55,14 @@ hair_builder_modes_compressed_unaligned = [
   ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=7', 'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7')
 ]
 
-#hair_builder_modes_measure = hair_builder_modes_uncompressed
+hair_builder_modes_measure = hair_builder_modes_uncompressed
 #hair_builder_modes_measure = hair_builder_modes_compressed_aligned
-hair_builder_modes_measure = hair_builder_modes_compressed_unaligned 
+#hair_builder_modes_measure = hair_builder_modes_compressed_unaligned 
+
+keep_triangles = [
+  'buddha',
+  'hairdragon'  
+]
 
 hair_builder_ignore = [
   'sophie_bvh4.triangle4.P1aO',
@@ -109,10 +114,12 @@ hair_builder_modes_print =  [
   'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7'
 ]
 
+def modelname(model):
+  return os.path.splitext(os.path.basename(model))[0]
 def name(model,mode):
-  return os.path.splitext(os.path.basename(model))[0] + '_' + mode[1]
+  return modelname(model) + '_' + mode[1]
 def name2(model,mode):
-  return os.path.splitext(os.path.basename(model))[0] + '_' + mode
+  return modelname(model) + '_' + mode
   
 ########################## compiling ##########################
 
@@ -133,7 +140,8 @@ def render(mode):
     command = executable
     command += ' -rtcore verbose=2,benchmark=1,' + mode[0]
     command += ' -c ' + model
-    command += ' -i none'  # disable triangle geometry
+    if not modelname(model) in keep_triangles:
+      command += ' -i none'  # disable triangle geometry
     command += ' -size 1024 1024 -frames 4 32'
     command += ' -o ' + imgFile + ' > ' + logFile
     os.system(command)
@@ -142,7 +150,8 @@ def renderLoop():
     for mode in hair_builder_modes_measure:
       base = name(model,mode)
       print(base)
-      if (base in hair_builder_ignore) continue;
+      if (base in hair_builder_ignore):
+        continue;
       render(mode)
 
 ########################## data extraction ##########################
