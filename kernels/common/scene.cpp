@@ -49,10 +49,9 @@ namespace embree
     geometries.reserve(128);
 
 #if defined(__MIC__)
-    FATAL("here");
-    //accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
-    //accels.add(BVH4i::BVH4iVirtualGeometryBinnedSAH(this));
-    //accels.add(BVH4i::BVH4iBezierCurvesBinnedSAH(this));
+    accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
+    accels.add(BVH4i::BVH4iVirtualGeometryBinnedSAH(this));
+    accels.add(BVH4i::BVH4iBezierCurvesBinnedSAH(this));
 
     if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
       {
@@ -86,9 +85,6 @@ namespace embree
 	    else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
 	  }
       }
-     // else if (g_tri_accel == "bvh4mb") {
-     //   accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
-     // }
     else if (g_tri_accel == "bvh16i") {
       accels.add(BVH16i::BVH16iTriangle1ObjectSplitBinnedSAH(this));
     }

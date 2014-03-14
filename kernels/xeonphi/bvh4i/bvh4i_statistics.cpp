@@ -78,37 +78,26 @@ namespace embree
       Node* n = node.node(bvh->nodePtr());
 
       bvhSAH += A*BVH4i::travCost;
+
       for (size_t i=0; i<BVH4i::N; i++) {
+	if (n->isPoint(i)) {continue;}
         statistics(n->child(i),n->bounds(i),cdepth); 
         depth=max(depth,cdepth);
       }
-      for (size_t i=0; i<BVH4i::N; i++) {
-        if (n->child(i) == BVH4i::emptyNode) {
-          for (; i<BVH4i::N; i++) {
-            if (n->child(i) != BVH4i::emptyNode)
-              throw std::runtime_error("invalid node");
-          }
-          break;
-        }
-      }    
       depth++;
       return;
     }
     else
     {
       depth = 0;
-      unsigned int num; const char* tri = node.leaf(bvh->triPtr(),num);
-      if (!num) return;
+      unsigned int prims; const char* tri = node.leaf(bvh->triPtr(),prims);
+      if (!prims) return;
       
       numLeaves++;
-      numPrimBlocks += num;
-      size_t prims = 0;
-      for (size_t i=0; i<num; i++) {
-       prims += bvh->primTy.size(tri+i*bvh->primTy.bytes);
-      }
-      numPrims += prims;
+      numPrimBlocks  += 1;
+      numPrims       += prims;
       numPrimBlocks4 += (prims+3)/4;
-      float sah = A * bvh->primTy.intCost * num;
+      float sah = A * bvh->primTy.intCost * 1;
       bvhSAH += sah;
       leafSAH += sah;
     }
