@@ -241,16 +241,16 @@ namespace embree
       {
         assert(i < N);
         const Vec3fa lower = select(eq_mask(scale,Vec3fa(0.0f)),0.0f,(bounds.lower-Vec3fa(offset))/Vec3fa(scale));
-        assert(lower.x >= 0.0f && lower.x <= 255.0f);
-        assert(lower.y >= 0.0f && lower.y <= 255.0f);
-        assert(lower.z >= 0.0f && lower.z <= 255.0f);
+        assert(lower.x >= 0.0f && lower.x <= 255.01f);
+        assert(lower.y >= 0.0f && lower.y <= 255.01f);
+        assert(lower.z >= 0.0f && lower.z <= 255.01f);
         lower_x[i] = (unsigned char) clamp(floorf(lower.x),0.0f,255.0f);
         lower_y[i] = (unsigned char) clamp(floorf(lower.y),0.0f,255.0f);
         lower_z[i] = (unsigned char) clamp(floorf(lower.z),0.0f,255.0f);
         const Vec3fa upper = select(eq_mask(scale,Vec3fa(0.0f)),0.0f,(bounds.upper-Vec3fa(offset))/Vec3fa(scale));
-        assert(upper.x >= 0.0f && upper.x <= 255.0f);
-        assert(upper.y >= 0.0f && upper.y <= 255.0f);
-        assert(upper.z >= 0.0f && upper.z <= 255.0f);
+        assert(upper.x >= 0.0f && upper.x <= 255.01f);
+        assert(upper.y >= 0.0f && upper.y <= 255.01f);
+        assert(upper.z >= 0.0f && upper.z <= 255.01f);
         upper_x[i] = (unsigned char) clamp(ceilf(upper.x),0.0f,255.0f);
         upper_y[i] = (unsigned char) clamp(ceilf(upper.y),0.0f,255.0f);
         upper_z[i] = (unsigned char) clamp(ceilf(upper.z),0.0f,255.0f);

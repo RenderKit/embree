@@ -140,7 +140,8 @@ namespace embree
 
     /* start recursive build */
     remainingReplications = g_hair_builder_replication_factor*numPrimitives;
-    BuildTask task(&bvh->root,0,numPrimitives,false,prims,computeAlignedBounds(prims,one));
+    const NAABBox3fa ubounds = computeUnalignedBounds(prims);
+    BuildTask task(&bvh->root,0,numPrimitives,false,prims,ubounds);
     bvh->bounds = bounds;
 
 #if 0
@@ -1072,48 +1073,41 @@ namespace embree
       /*! split selected child */
       size_t lsize, rsize;
       atomic_set<PrimRefBlock> lprims, rprims;
-      bool aligned = true;
-      bool done = split(threadIndex,task.depth,cprims[bestChild],cbounds[bestChild],csize[bestChild],lprims,lsize,rprims,rsize,aligned);
+      bool done = split(threadIndex,task.depth,cprims[bestChild],cbounds[bestChild],csize[bestChild],lprims,lsize,rprims,rsize,isAligned);
       if (!done) { isleaf[bestChild] = true; continue; }
       cprims[numChildren] = rprims; isleaf[numChildren] = false; csize[numChildren] = rsize;
       cprims[bestChild  ] = lprims; isleaf[bestChild  ] = false; csize[bestChild  ] = lsize;
 
-      if (isAligned && aligned) {
-        cbounds[numChildren] = computeAlignedBounds(cprims[numChildren]);
-        cbounds[bestChild  ] = computeAlignedBounds(cprims[bestChild  ]);
-      } 
-      else if (isAligned && !aligned) {
-        for (size_t i=0; i<=numChildren; i++) 
 #if BVH4HAIR_COMPRESS_UNALIGNED_NODES
-          cbounds[i] = computeAlignedBounds(cprims[i],task.bounds.space);
+      cbounds[numChildren] = computeAlignedBounds(cprims[numChildren],task.bounds.space);
+      cbounds[bestChild  ] = computeAlignedBounds(cprims[bestChild  ],task.bounds.space);
 #else
-          cbounds[i] = computeUnalignedBounds(cprims[i]);
+      cbounds[numChildren] = computeUnalignedBounds(cprims[numChildren]);
+      cbounds[bestChild  ] = computeUnalignedBounds(cprims[bestChild  ]);
 #endif
-
-      } else /*if (!isAligned)*/ {
-#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
-        cbounds[numChildren] = computeAlignedBounds(cprims[numChildren],task.bounds.space);
-        cbounds[bestChild  ] = computeAlignedBounds(cprims[bestChild  ],task.bounds.space);
-#else
-        cbounds[numChildren] = computeUnalignedBounds(cprims[numChildren]);
-        cbounds[bestChild  ] = computeUnalignedBounds(cprims[bestChild  ]);
-#endif
-      }
-      isAligned = isAligned && aligned;
       numChildren++;
       
     } while (numChildren < BVH4Hair::N);
 
     /* create aligned node */
-    if (isAligned) {
+    if (isAligned) 
+    {
       BVH4Hair::AlignedNode* node = bvh->allocAlignedNode(threadIndex);
+
+      BBox3fa bounds = empty;
+      NAABBox3fa abounds[BVH4Hair::N];
+      for (size_t i=0; i<numChildren; i++) {
+        abounds[i] = computeAlignedBounds(cprims[i]);
+        bounds.extend(abounds[i].bounds);
+      }
+
 #if BVH4HAIR_COMPRESS_ALIGNED_NODES
-      node->set(task.bounds);
+      node->set(bounds);
 #endif
-      for (ssize_t i=numChildren-1; i>=0; i--) {
-        node->set(i,cbounds[i].bounds);
-        cbounds[i] = computeUnalignedBounds(cprims[i]);
-        new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,csize[i],isleaf[i],cprims[i],cbounds[i]);
+      for (ssize_t i=0; i<numChildren; i++) {
+        node->set(i,abounds[i].bounds);
+	const NAABBox3fa ubounds = computeUnalignedBounds(cprims[i]);
+        new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,csize[i],isleaf[i],cprims[i],ubounds);
       }
       numTasks_o = numChildren;
       *task.dst = bvh->encodeNode(node);
@@ -1124,15 +1118,14 @@ namespace embree
       BVH4Hair::UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
 #if BVH4HAIR_COMPRESS_UNALIGNED_NODES
       node->set(task.bounds);
-      for (ssize_t i=numChildren-1; i>=0; i--) {
+      for (ssize_t i=0; i<numChildren; i++) {
         node->set(i,cbounds[i].bounds);
-        cbounds[i] = computeUnalignedBounds(cprims[i]);
-        new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,csize[i],isleaf[i],cprims[i],cbounds[i]);
+        const NAABBox3fa ubounds = computeUnalignedBounds(cprims[i]);
+        new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,csize[i],isleaf[i],cprims[i],ubounds);
       }
 #else
       for (ssize_t i=numChildren-1; i>=0; i--) {
         node->set(i,cbounds[i]);
-        cbounds[i] = computeUnalignedBounds(cprims[i]);
         new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,csize[i],isleaf[i],cprims[i],cbounds[i]);
       }
 #endif

@@ -107,6 +107,7 @@ namespace embree
       }
       numPrims += prims;
       numPrimBlocks4 += (prims+3)/4;
+
       float sah = A * bvh->primTy.intCost * num;
       bvhSAH += sah;
       leafSAH += sah;
