@@ -241,71 +241,71 @@ namespace embree
 
   void generateHairOnTriangles(OBJScene& scene)
   {
-    PING;
     OBJScene::HairSet* hairset = new OBJScene::HairSet;
 
     for (size_t m=0; m<scene.meshes.size(); m++) 
+    {
       for (size_t t=0; t<scene.meshes[m]->triangles.size(); t++) 
-        {
-          const Vec3fa &v0 = scene.meshes[m]->v[ scene.meshes[m]->triangles[t].v0 ];
-          const Vec3fa &v1 = scene.meshes[m]->v[ scene.meshes[m]->triangles[t].v1 ];
-          const Vec3fa &v2 = scene.meshes[m]->v[ scene.meshes[m]->triangles[t].v2 ];
-          
-          const Vec3fa edge0 = v1-v0;
-          const Vec3fa edge1 = v2-v0;
-          Vec3fa normal = normalize(cross(edge0,edge1));
-          
-          //Vec3fa mid = v0 + edge0 * 0.5f + edge1 * 0.5f;
-          //if (dot(normal,mid) < 0.0f) normal = -normal;
-          //if (length(normal) < 0.0001f) continue;
+      {
+	const size_t i0 = scene.meshes[m]->triangles[t].v0;
+	const size_t i1 = scene.meshes[m]->triangles[t].v1;
+	const size_t i2 = scene.meshes[m]->triangles[t].v2;
 
-          LinearSpace3<Vec3fa> local_frame = frame(normal);
+	const Vec3fa& v0 = scene.meshes[m]->v[ i0 ];
+	const Vec3fa& v1 = scene.meshes[m]->v[ i1 ];
+	const Vec3fa& v2 = scene.meshes[m]->v[ i2 ];
 
-          const float length = hairy_triangles_length;
-          const Vec3fa &dx = normalize(local_frame.vx) * length;
-          const Vec3fa &dy = normalize(local_frame.vy) * length;
-          const Vec3fa &dz = normalize(local_frame.vz) * length;
+	const Vec3fa& n0 = scene.meshes[m]->vn[ i0 ];
+	const Vec3fa& n1 = scene.meshes[m]->vn[ i1 ];
+	const Vec3fa& n2 = scene.meshes[m]->vn[ i2 ];
+        
+	const Vec3fa edge0 = v1-v0;
+	const Vec3fa edge1 = v2-v0;
+	Vec3fa normal = cross(edge0,edge1);
+	if (length(normal) < 1E-30) continue;
+        	
+	const float thickness = hairy_triangles_thickness;
+	
+	for (size_t i=0; i<hairy_triangles_strands_per_triangle; i++)
+	{
+	  float ru = drand48();
+	  float rv = drand48();
+	  float delta = drand48();
+	  float delta2 = drand48();
+	  
+	  const float w0 = 1.0f - sqrtf(ru);
+	  const float w1 = sqrtf(ru) * (1.0f - rv);
+	  const float w2 = sqrtf(ru) * rv;
+	  const Vec3fa position = w0*v0 + w1*v1 + w2*v2;
+	  const Vec3fa normal = w0*n0 + w1*n1 + w2*n2;
+	  if (length(normal) < 1E-30) continue;
+        
+	  const LinearSpace3fa local_frame = frame(normalize(normal));
+	  const float length = hairy_triangles_length;
+	  const Vec3fa dx = local_frame.vx * length;
+	  const Vec3fa dy = local_frame.vy * length;
+	  const Vec3fa dz = local_frame.vz * length;
+	  
+	  const Vec3fa p0(   0, 0,0);
+	  const Vec3fa p1(0.25, delta, delta2);
+	  const Vec3fa p2(0.75,-delta,-delta2);
+	  const Vec3fa p3(   1, 0,0);
+	  
+	  Vec3fa l0 = position + p0.x * dz + p0.y * dx + p0.z * dy; l0.w = thickness;
+	  Vec3fa l1 = position + p1.x * dz + p1.y * dx + p1.z * dy; l1.w = thickness;
+	  Vec3fa l2 = position + p2.x * dz + p2.y * dx + p2.z * dy; l2.w = thickness;
+	  Vec3fa l3 = position + p3.x * dz + p3.y * dx + p3.z * dy; l3.w = thickness;
 
-          const float thickness = hairy_triangles_thickness;
-
-          for (size_t i=0;i<hairy_triangles_strands_per_triangle;i++)
-            {
- 
-              float ru = drand48();
-              float rv = drand48();
-              float delta = drand48();
-              float delta2 = drand48();
-
-              const Vec3fa position = (1.0f - sqrtf(ru)) * v0 + (sqrtf(ru) * (1.0f - rv)) * v1 + (sqrtf(ru) * rv) * v2;
-
-
-
-
-              const Vec3fa p0(   0, 0,0);
-              const Vec3fa p1(0.25, delta, delta2);
-              const Vec3fa p2(0.75,-delta,-delta2);
-              const Vec3fa p3(   1, 0,0);
-
-              Vec3fa l0 = position + p0.x * dz + p0.y * dx + p0.z * dy;
-              Vec3fa l1 = position + p1.x * dz + p1.y * dx + p1.z * dy;
-              Vec3fa l2 = position + p2.x * dz + p2.y * dx + p2.z * dy;
-              Vec3fa l3 = position + p3.x * dz + p3.y * dx + p3.z * dy;
-
-          
-              l0.w = thickness;
-              l1.w = thickness;
-              l2.w = thickness;
-              l3.w = thickness;
-
-              const unsigned int v_index = hairset->v.size();
-              hairset->v.push_back(l0);
-              hairset->v.push_back(l1);
-              hairset->v.push_back(l2);
-              hairset->v.push_back(l3);
-
-              hairset->hairs.push_back( OBJScene::Hair(v_index,hairset->hairs.size()) );
-            }
-        }
+	  const unsigned int v_index = hairset->v.size();
+	  hairset->v.push_back(l0);
+	  hairset->v.push_back(l1);
+	  hairset->v.push_back(l2);
+	  hairset->v.push_back(l3);
+	  
+	  hairset->hairs.push_back( OBJScene::Hair(v_index,hairset->hairs.size()) );
+	}
+      }
+    }
     scene.hairsets.push_back(hairset);
   }
 
