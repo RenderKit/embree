@@ -99,7 +99,13 @@ namespace embree
 
         while (1)
         {
+
+          /* test if this is a leaf node */
+          if (unlikely(curNode.isLeaf()))
+            break;
+
 #if defined(SWITCH_DURING_DOWN_TRAVERSAL)
+          // seems to be the best place for testing utilization
           if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
             {
               *sptr_node = curNode;
@@ -109,10 +115,6 @@ namespace embree
               goto pop;
             }
 #endif
-
-          /* test if this is a leaf node */
-          if (unlikely(curNode.isLeaf()))
-            break;
 
           STAT3(normal.trav_nodes,1,popcnt(ray_tfar > curDist),8);
 
@@ -182,6 +184,7 @@ namespace embree
               }
             }	      
           }
+
         }
         
         /* return if stack is empty */
@@ -275,17 +278,6 @@ namespace embree
         while (1)
         {
 
-#if defined(SWITCH_DURING_DOWN_TRAVERSAL)
-          if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
-            {
-              *sptr_node = curNode;
-              *sptr_near = curDist;
-              sptr_node++;
-              sptr_near++;
-              goto pop;
-            }
-#endif
-
           /* test if this is a leaf node */
           if (unlikely(curNode.isLeaf()))
             break;
@@ -359,6 +351,18 @@ namespace embree
               }
             }	      
           }
+#if defined(SWITCH_DURING_DOWN_TRAVERSAL)
+          // seems to be the best place to test
+          if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
+            {
+              *sptr_node = curNode;
+              *sptr_near = curDist;
+              sptr_node++;
+              sptr_near++;
+              goto pop;
+            }
+#endif
+
         }
         
         /* return if stack is empty */
