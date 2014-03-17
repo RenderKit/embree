@@ -22,6 +22,8 @@
 
 #define SWITCH_THRESHOLD 6
 
+#define SWITCH_DURING_DOWN_TRAVERSAL
+
 namespace embree
 {
   namespace isa
@@ -64,7 +66,7 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       avxf*    __restrict__ sptr_near = stack_near + 2;
       
-      while (1)
+      while (1) pop:
       {
         /* pop next node from stack */
         assert(sptr_node > stack_node);
@@ -94,14 +96,26 @@ namespace embree
         }
 #endif
 
+
         while (1)
         {
+#if defined(SWITCH_DURING_DOWN_TRAVERSAL)
+          if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
+            {
+              *sptr_node = curNode;
+              *sptr_near = curDist;
+              sptr_node++;
+              sptr_near++;
+              goto pop;
+            }
+#endif
+
           /* test if this is a leaf node */
           if (unlikely(curNode.isLeaf()))
             break;
-          
-          const avxb valid_node = ray_tfar > curDist;
-          STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+
+          STAT3(normal.trav_nodes,1,popcnt(ray_tfar > curDist),8);
+
           const Node* __restrict__ const node = curNode.node();
           
           /* pop of next node */
@@ -178,6 +192,7 @@ namespace embree
         
         /* intersect leaf */
         const avxb valid_leaf = ray_tfar > curDist;
+
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
         PrimitiveIntersector8::intersect(valid_leaf,ray,prim,items,bvh->geometry);
@@ -225,7 +240,7 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       avxf*    __restrict__ sptr_near = stack_near + 2;
       
-      while (1)
+      while (1) pop:
       {
         /* pop next node from stack */
         assert(sptr_node > stack_node);
@@ -259,12 +274,24 @@ namespace embree
                 
         while (1)
         {
+
+#if defined(SWITCH_DURING_DOWN_TRAVERSAL)
+          if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
+            {
+              *sptr_node = curNode;
+              *sptr_near = curDist;
+              sptr_node++;
+              sptr_near++;
+              goto pop;
+            }
+#endif
+
           /* test if this is a leaf node */
           if (unlikely(curNode.isLeaf()))
             break;
           
-          const avxb valid_node = ray_tfar > curDist;
-          STAT3(shadow.trav_nodes,1,popcnt(valid_node),8);
+          STAT3(shadow.trav_nodes,1,popcnt(ray_tfar > curDist),8);
+
           const Node* __restrict__ const node = curNode.node();
           
           /* pop of next node */
@@ -339,9 +366,11 @@ namespace embree
           assert(sptr_node == stack_node);
           break;
         }
+
         
         /* intersect leaf */
         const avxb valid_leaf = ray_tfar > curDist;
+
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
         terminated |= PrimitiveIntersector8::occluded(!terminated,ray,prim,items,bvh->geometry);
