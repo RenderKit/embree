@@ -27,29 +27,17 @@ namespace embree
 
 #if 0
   __aligned(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
-
-    //{ nan, nan, nan,(unsigned int)(-1)},
-    //{ nan, nan, nan,(unsigned int)(-1)},
-    //{ nan, nan, nan,(unsigned int)(-1)},
-    //{ nan, nan, nan,(unsigned int)(-1)}
-
     { neg_inf, neg_inf, neg_inf,(unsigned int)(-1)},
     { neg_inf, neg_inf, neg_inf,(unsigned int)(-1)},
     { neg_inf, neg_inf, neg_inf,(unsigned int)(-1)},
     { neg_inf, neg_inf, neg_inf,(unsigned int)(-1)}
-
-     // { FLT_MAX, FLT_MAX, FLT_MAX,(unsigned int)(-1)},
-     // { FLT_MIN, FLT_MIN, FLT_MIN,(unsigned int)(-1)},
-     // { FLT_MAX, FLT_MAX, FLT_MAX,(unsigned int)(-1)},
-     // { FLT_MIN, FLT_MIN, FLT_MIN,(unsigned int)(-1)}
-
    };
 #else
   __aligned(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
-    {1E38f,1E38f,1E38f,(int)(1 << 31)},
-    {1E38f,1E38f,1E38f,(int)(1 << 31)},
-    {1E38f,1E38f,1E38f,(int)(1 << 31)},
-    {1E38f,1E38f,1E38f,(int)(1 << 31)}
+    {1E38f,1E38f,1E38f,BVH_LEAF_MASK},
+    {1E38f,1E38f,1E38f,BVH_LEAF_MASK},
+    {1E38f,1E38f,1E38f,BVH_LEAF_MASK},
+    {1E38f,1E38f,1E38f,BVH_LEAF_MASK}
   };
 #endif
 

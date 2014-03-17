@@ -145,6 +145,12 @@ namespace embree
 	return broadcast4to16f(&upper[i]);
       }
 
+      __forceinline bool isPoint(size_t i) const {
+	mic_m m_lane = ((unsigned int)0x7) << (4*i);
+	mic_m m_box  = eq(m_lane,load16f(lower),load16f(upper));
+	return (unsigned int)m_box == (unsigned int)m_lane;
+      }
+
       __forceinline void setInvalid(size_t i)
       {
 	lower[i].x = pos_inf;
@@ -538,7 +544,6 @@ namespace embree
 
     const mic_m min_d_mask = bvhLeaf(box_min0123) != mic_i::zero();
     const mic_i childID    = bvhChildID(box_min0123);
-
     const mic_i min_d_node = qbvhCreateNode(childID,mic_i::zero());
     const mic_i min_d_leaf = (box_min0123 ^ BVH_LEAF_MASK) | QBVH_LEAF_MASK;
     const mic_i min_d      = select(min_d_mask,min_d_leaf,min_d_node);
