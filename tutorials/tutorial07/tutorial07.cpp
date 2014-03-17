@@ -275,6 +275,7 @@ namespace embree
               float rv = drand48();
               float delta = drand48();
               float delta2 = drand48();
+              //float delta3 = drand48();
 
               const Vec3fa position = (1.0f - sqrtf(ru)) * v0 + (sqrtf(ru) * (1.0f - rv)) * v1 + (sqrtf(ru) * rv) * v2;
 
