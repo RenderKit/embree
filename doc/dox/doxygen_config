@@ -31,7 +31,7 @@ PROJECT_NAME           = "Embree"
 # This could be handy for archiving the generated documentation or
 # if some version control system is used.
 
-PROJECT_NUMBER         = "V2.2"
+PROJECT_NUMBER         = "Version 2.2"
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
