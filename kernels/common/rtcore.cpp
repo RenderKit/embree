@@ -94,7 +94,8 @@ namespace embree
 
   /* error flag */
   static tls_t g_error = NULL;
-  std::vector<RTCError*> g_errors;
+  static std::vector<RTCError*> g_errors;
+  static MutexSys g_errors_mutex;
   
   /* mutex to make API thread safe */
   static MutexSys g_mutex;
@@ -324,9 +325,13 @@ namespace embree
       return;
     }
     TaskScheduler::destroy();
-    for (size_t i=0; i<g_errors.size(); i++)
-      delete g_errors[i];
-    destroyTls(g_error);
+    {
+      Lock<MutexSys> lock(g_errors_mutex);
+      for (size_t i=0; i<g_errors.size(); i++)
+        delete g_errors[i];
+      destroyTls(g_error);
+      g_errors.clear();
+    }
     Alloc::global.clear();
     g_initialized = false;
     CATCH_END;
@@ -336,7 +341,7 @@ namespace embree
   {
     RTCError* stored_error = (RTCError*) getTls(g_error);
     if (stored_error == NULL) {
-      Lock<MutexSys> lock(g_mutex);
+      Lock<MutexSys> lock(g_errors_mutex);
       stored_error = new RTCError(RTC_NO_ERROR);
       g_errors.push_back(stored_error);
       setTls(g_error,stored_error);
