@@ -55,8 +55,8 @@ hair_builder_modes_compressed_unaligned = [
   ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=7', 'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7')
 ]
 
-hair_builder_modes_measure = hair_builder_modes_uncompressed
-#hair_builder_modes_measure = hair_builder_modes_compressed_aligned
+#hair_builder_modes_measure = hair_builder_modes_uncompressed
+hair_builder_modes_measure = hair_builder_modes_compressed_aligned
 #hair_builder_modes_measure = hair_builder_modes_compressed_unaligned 
 
 keep_triangles = [
@@ -140,9 +140,9 @@ def render(mode):
     command = executable
     command += ' -rtcore verbose=2,benchmark=1,' + mode[0]
     command += ' -c ' + model
-    if not modelname(model) in keep_triangles:
-      command += ' -i none'  # disable triangle geometry
-    command += ' -size 1024 1024 -frames 4 32'
+    #if not modelname(model) in keep_triangles:
+    #  command += ' -i none'  # disable triangle geometry
+    command += ' -size 1024 1024 -frames 4 8'
     command += ' -o ' + imgFile + ' > ' + logFile
     os.system(command)
 
@@ -156,27 +156,31 @@ def renderLoop():
 
 ########################## data extraction ##########################
 
-sah    = {}
-memory = {}
+tri_sah    = {}
+tri_memory = {}
+hair_sah    = {}
+hair_memory = {}
 fps   = {}
 
 def extract(mode):
   base = name2(model,mode)
   logFileName = statDir + dash + base + '.log'
-  sah   [base] = 0
-  memory[base] = 0
+  tri_sah   [base] = 0
+  tri_memory[base] = 0
+  hair_sah   [base] = 0
+  hair_memory[base] = 0
   fps  [base] = 0
   try:
     logFile = open(logFileName, 'r')
     for line in logFile:
       if line.count('BENCHMARK_HAIR_ACCEL ') == 1:
         numbers = map(float, line[21:].split(" "))
-        sah   [base] += numbers[0]
-        memory[base] += numbers[1]
+        hair_sah   [base] += numbers[0]
+        hair_memory[base] += numbers[1]
       if line.count('BENCHMARK_TRIANGLE_ACCEL ') == 1:
         numbers = map(float, line[25:].split(" "))
-        sah   [base] += numbers[0]
-        memory[base] += numbers[1]
+        tri_sah   [base] += numbers[0]
+        tri_memory[base] += numbers[1]
       if line.count('BENCHMARK_RENDER ') == 1:
         numbers = map(float, line[17:].split(" "))
         fps[base] += numbers[0]
@@ -191,19 +195,21 @@ def extractLoop():
 def printData(mode):
   base = name2(model,mode)
   line  = '  ' + '{0:<40}'.format(mode) + ' | '
-  line += (' %#6.1f' %  sah[base])
-  line += ('   %#6.1f MB' %  (1E-6*memory[base]))
+  line += (' %#6.1f' %  tri_sah[base])
+  line += ('   %#6.1f MB' %  (1E-6*tri_memory[base]))
+  line += (' %#6.1f' %  hair_sah[base])
+  line += ('   %#6.1f MB' %  (1E-6*hair_memory[base]))
   line += ('  %#6.1f' %  fps[base])
-  line += ('  %#6.1f' %  (fps[base]/(1E-9*memory[base]+0.0001)))
+  line += ('  %#6.1f' %  (fps[base]/(1E-9*(tri_memory[base]+hair_memory[base]+0.0001))))
   print(line)
 
 def printDataLoop():
-  tableWidth = 40 + 40
+  tableWidth = 40 + 60
 
   print('')
   
   title = os.path.splitext(os.path.basename(model))[0]
-  line  = '  ' + '{0:<40}'.format(title) + ' |     SAH      Memory     Fps  Fps/GB'
+  line  = '  ' + '{0:<40}'.format(title) + ' |  TriSAH   TriMemory HairSAH HairMemory     Fps  Fps/GB'
   print(line)
 
   line = ''
