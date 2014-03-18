@@ -677,7 +677,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       /* generate anisotropic BRDF */
       int seed1 = g_ispc_scene->hairs[ray.geomID]->hairs[ray.primID].id;
       const Vec3fa dK = hair_dK*frand(seed1);
-      new (&brdf) AnisotropicBlinn(hair_Kr+dK,hair_Kt+dK,dx,5.0f,dy,2.0f,dz);
+      new (&brdf) AnisotropicBlinn(hair_Kr+dK,hair_Kt+dK,dx,20.0f,dy,2.0f,dz);
       brdf.Kr = hair_Kr-dK;
       tnear_eps = 1.1f*evalBezier(ray.geomID,ray.primID,ray.u).w;
     }
