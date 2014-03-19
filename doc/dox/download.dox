@@ -93,7 +93,7 @@ and execute "ccmake .." inside this directory.</p>
         
 <pre><code>mkdir build
 cd build
-cmake ..</code></pre>
+ccmake ..</code></pre>
 
 <p>This will open a configuration dialog where you can perform various
 configurations as described below. After having configured Embree,

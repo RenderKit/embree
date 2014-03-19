@@ -627,7 +627,8 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  int seed = random(); //255*x+13*y+45*g_accu_count;
+  //int seed = random(); //255*x+13*y+45*g_accu_count;
+  int seed = 21344*x+121233*y+234532*g_accu_count;
 
   /* initialize ray */
   RTCRay2 ray;

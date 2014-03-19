@@ -73,7 +73,8 @@ namespace embree
       const LinearSpace3fa xfm = node->getXfm();
       //const Vec3fa dir = xfmVector(xfm,ray.dir);
       const Vec3fa dir = madd(xfm.vx,(Vec3fa)ray_dir.x,madd(xfm.vy,(Vec3fa)ray_dir.y,xfm.vz*(Vec3fa)ray_dir.z));
-      const simd3f rdir = Vec3fa(one)/dir; //rcp_safe(dir); // FIXME: not 100% safe
+      const simd3f rdir = Vec3fa(one)/dir; // FIXME: not 100% safe
+      //const simd3f rdir = rcp_safe(dir); 
       //const Vec3fa org = xfmPoint(xfm,ray.org);
       const Vec3fa org = madd(xfm.vx,(Vec3fa)ray_org.x,madd(xfm.vy,(Vec3fa)ray_org.y,xfm.vz*(Vec3fa)ray_org.z));
       const simd3f vorg  = simd3f(org);

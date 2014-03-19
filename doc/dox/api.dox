@@ -1,4 +1,4 @@
-/*! \page embree_api Embree API
+/*! \page embree_api The Embree Kernel API
 
 <h1>Embree API</h1>
 
@@ -25,9 +25,10 @@ native SIMD size the ISPC code is compiled for.</p>
 the ISPC version of the API, the user should include
 <code>embree2/rtcore.isph</code> and <code>embree2/rtcore_ray.isph</code>.</p>
 
-<pre><code>#include &lt;embree2/rtcore.h&gt;
+<pre>
+#include &lt;embree2/rtcore.h&gt;
 #include &lt;embree2/rtcore_ray.h&gt;
-</code></pre>
+</pre>
 
 <p>All API calls carry the prefix <code>rtc</code> which stands for
 <b>r</b>ay <b>t</b>racing <b>c</b>ore. Before invoking any API call,

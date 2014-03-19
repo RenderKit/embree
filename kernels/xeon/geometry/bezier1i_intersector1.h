@@ -99,10 +99,10 @@ namespace embree
     {
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
-      const Vec3fa &v0 = curve_in.p[0];
-      const Vec3fa &v1 = curve_in.p[1];
-      const Vec3fa &v2 = curve_in.p[2];
-      const Vec3fa &v3 = curve_in.p[3];
+      const Vec3fa& v0 = curve_in.p[0];
+      const Vec3fa& v1 = curve_in.p[1];
+      const Vec3fa& v2 = curve_in.p[2];
+      const Vec3fa& v3 = curve_in.p[3];
 
       //if (!intersectCylinder(ray,v0,v1,v2,v3)) return;
       //if (!intersectBoxes(ray,v0,v1,v2,v3)) return;
@@ -144,9 +144,8 @@ namespace embree
 #endif
         /* update hit information */
         const float uu = (float(i)+u[i])*one_over_8; // FIXME: correct u range for subdivided segments
-        //BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
-        //Vec3fa P,T; curve3D.eval(uu,P,T);
-        Vec3fa T = v3-v0;
+        const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+        Vec3fa P,T; curve3D.eval(uu,P,T);
         if (T == Vec3fa(zero)) { valid[i] = 0; goto retry; } // ignore denormalized curves
         ray.u = uu;
         ray.v = 0.0f;
@@ -161,9 +160,8 @@ namespace embree
       while (true) 
       {
         const float uu = (float(i)+u[i])*one_over_8;
-        //BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
-        //Vec3fa P,T; curve3D.eval(uu,P,T);
-        Vec3fa T = v3-v0;
+        const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+        Vec3fa P,T; curve3D.eval(uu,P,T);
         if (T != Vec3fa(zero))
             if (runIntersectionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,curve_in.primID)) return;
         valid[i] = 0;
@@ -236,9 +234,8 @@ namespace embree
       {
         /* calculate hit information */
         const float uu = (float(i)+u[i])*one_over_8;
-        //BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
-        //Vec3fa P,T; curve3D.eval(uu,P,T);
-        Vec3fa T = v3-v0;
+        const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+        Vec3fa P,T; curve3D.eval(uu,P,T);
         if (T != Vec3fa(zero))
           if (runOcclusionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,curve_in.primID)) break;
         valid[i] = 0;

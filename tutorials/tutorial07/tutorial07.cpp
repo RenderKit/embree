@@ -270,8 +270,8 @@ namespace embree
 	{
 	  float ru = drand48();
 	  float rv = drand48();
-	  float delta = drand48();
-	  float delta2 = drand48();
+	  float delta = 0.1f*drand48();
+	  float delta2 = 0.1f*drand48();
 	  
 	  const float w0 = 1.0f - sqrtf(ru);
 	  const float w1 = sqrtf(ru) * (1.0f - rv);
@@ -287,6 +287,8 @@ namespace embree
 	  const Vec3fa dz = local_frame.vz * length;
 	  
 	  const Vec3fa p0(   0, 0,0);
+	  //const Vec3fa p1(0.25, 0,0);
+	  //const Vec3fa p2(0.74, 0,0);
 	  const Vec3fa p1(0.25, delta, delta2);
 	  const Vec3fa p2(0.75,-delta,-delta2);
 	  const Vec3fa p3(   1, 0,0);
@@ -377,18 +379,16 @@ namespace embree
       loadCYHair(cy_hairFilename,g_obj_scene,offset);
     }
 
+    /* generate hair on triangles */
+    if (hairy_triangles)
+      generateHairOnTriangles(g_obj_scene);
+
     /* tessellate hair */
     if (tessellate_strips > 0) 
       tessellateHair(g_obj_scene);
 
     /* send model */
-    if (objFilename.str() != "" || hairFilename.str() != "" || cy_hairFilename.str() != "")
-      {
-        if (hairy_triangles && objFilename.str() != "")
-          generateHairOnTriangles(g_obj_scene);
-
-        set_scene(&g_obj_scene);
-      }
+    set_scene(&g_obj_scene);
 
     /* render to disk */
     if (outFilename.str() != "") {
