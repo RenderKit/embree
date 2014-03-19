@@ -21,7 +21,7 @@
 
 namespace embree
 {
-  double g_hair_builder_replication_factor = 2.0;
+  extern double g_hair_builder_replication_factor;
   
 #if BVH4HAIR_NAVIGATION
   extern BVH4Hair::NodeRef rootNode;

@@ -55,8 +55,8 @@ hair_builder_modes_compressed_unaligned = [
   ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=7', 'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7')
 ]
 
-#hair_builder_modes_measure = hair_builder_modes_uncompressed
-hair_builder_modes_measure = hair_builder_modes_compressed_aligned
+hair_builder_modes_measure = hair_builder_modes_uncompressed
+#hair_builder_modes_measure = hair_builder_modes_compressed_aligned
 #hair_builder_modes_measure = hair_builder_modes_compressed_unaligned 
 
 keep_triangles = [
@@ -199,8 +199,8 @@ def printData(mode):
   line += ('   %#6.1f MB' %  (1E-6*tri_memory[base]))
   line += (' %#6.1f' %  hair_sah[base])
   line += ('   %#6.1f MB' %  (1E-6*hair_memory[base]))
-  line += ('  %#6.1f' %  fps[base])
-  line += ('  %#6.1f' %  (fps[base]/(1E-9*(tri_memory[base]+hair_memory[base]+0.0001))))
+  line += ('  %#6.3f' %  fps[base])
+  line += ('  %#6.3f' %  (fps[base]/(1E-9*(tri_memory[base]+hair_memory[base]+0.0001))))
   print(line)
 
 def printDataLoop():
