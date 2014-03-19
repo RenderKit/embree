@@ -1,9 +1,8 @@
 /*!
   \mainpage Embree - High Performance Ray Tracing Kernels
 
-  \image html crown.jpg The emblemic "Crown" model rendered with Embree"
 
-<h3>What is Embree?</h3>
+<h2>What is Embree?</h2>
 
 <p>Embree is a collection of high-performance ray tracing kernels,
 developed at Intel. The target user of Embree are graphics application
@@ -49,7 +48,26 @@ included in the Embree kernel package is now available in a separate
 GIT repository (see <a href="renderer.html">Embree Example
 Renderer</a>).</p>
 
-<h3>What's New in Embree 2.2?</h3>
+<h2>Using Embree</h2>
+
+Embree is a low-level kernel library, and primarily intended to be used as a library. Documentation on how to use embree is included in the embree project via DoxyGen-generated pages (what you are currently looking it). It us roughly organized into the following sections:
+<ul>
+<li> Detailted instructions about building Embree on the various architectures (\subpage building_embree)
+<li> A description of the Embree API (\subpage embree_api)
+<li> A list of \subpage embree_tutorials that give several different examples of hot to use the various aspects of embree within one's own programs.
+li>
+</ul>
+
+A more complex example of using embree can also be found in the Embree Sample Path Tracer, available on github via <code>https://github.org/embree/embree-renderer.git</code>.
+
+
+
+
+
+<h2>Release History</h2>
+
+
+<h3>Features Supported in Embree 2.2?</h3>
 <ul>
   <li>Support for Motion Blur on Xeon Phi&trade;</li>
   <li>Support for intersection filter callback functions</li>
@@ -59,7 +77,7 @@ Renderer</a>).</p>
 </ul>    
 </ul>
 
-<h3>What's New in Embree 2.1?</h3>
+<h3>Features Supported in Embree 2.1?</h3>
 <ul>
   <li>new future proof API with a strong focus on supporting dynamic scenes</li>
   <li>lots of optimizations for 8-wide AVX2 (Intel Haswell&trade; architecture)</li>
@@ -109,7 +127,7 @@ Rendering of the Crown model (crown.ecs) with 4 samples per pixel
 </ul>
 
 
-<h3>What's New in Embree 2.0?</h3>
+<h3>Features Supported in Embree 2.0?</h3>
 <ul>
   <li>support for the Intel Xeon Phi&trade; coprocessor platform </li>
   <li>support for high-performance "packet" kernels on SSE, AVX, and Xeon Phi&trade;</li>
