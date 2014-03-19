@@ -55,8 +55,8 @@ hair_builder_modes_compressed_unaligned = [
   ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=7', 'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7')
 ]
 
-#hair_builder_modes_measure = hair_builder_modes_uncompressed
-hair_builder_modes_measure = hair_builder_modes_compressed_aligned
+hair_builder_modes_measure = hair_builder_modes_uncompressed
+#hair_builder_modes_measure = hair_builder_modes_compressed_aligned
 #hair_builder_modes_measure = hair_builder_modes_compressed_unaligned 
 
 keep_triangles = [
