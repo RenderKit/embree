@@ -377,18 +377,16 @@ namespace embree
       loadCYHair(cy_hairFilename,g_obj_scene,offset);
     }
 
+    /* generate hair on triangles */
+    if (hairy_triangles)
+      generateHairOnTriangles(g_obj_scene);
+
     /* tessellate hair */
     if (tessellate_strips > 0) 
       tessellateHair(g_obj_scene);
 
     /* send model */
-    if (objFilename.str() != "" || hairFilename.str() != "" || cy_hairFilename.str() != "")
-      {
-        if (hairy_triangles && objFilename.str() != "")
-          generateHairOnTriangles(g_obj_scene);
-
-        set_scene(&g_obj_scene);
-      }
+    set_scene(&g_obj_scene);
 
     /* render to disk */
     if (outFilename.str() != "") {
