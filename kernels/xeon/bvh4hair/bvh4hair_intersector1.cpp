@@ -73,8 +73,8 @@ namespace embree
       const LinearSpace3fa xfm = node->getXfm();
       //const Vec3fa dir = xfmVector(xfm,ray.dir);
       const Vec3fa dir = madd(xfm.vx,(Vec3fa)ray_dir.x,madd(xfm.vy,(Vec3fa)ray_dir.y,xfm.vz*(Vec3fa)ray_dir.z));
-      const simd3f rdir = Vec3fa(one)/dir; // FIXME: not 100% safe
-      //const simd3f rdir = rcp_safe(dir); 
+      //const simd3f rdir = Vec3fa(one)/dir; // FIXME: not 100% safe
+      const simd3f rdir = rcp_safe(dir); 
       //const Vec3fa org = xfmPoint(xfm,ray.org);
       const Vec3fa org = madd(xfm.vx,(Vec3fa)ray_org.x,madd(xfm.vy,(Vec3fa)ray_org.y,xfm.vz*(Vec3fa)ray_org.z));
       const simd3f vorg  = simd3f(org);
@@ -86,7 +86,8 @@ namespace embree
 #if 1
       const AffineSpaceSIMD3f xfm = node->naabb;
       const simd3f dir = xfmVector(xfm,ray_dir);
-      const simd3f nrdir = simd3f(simdf(-1.0f))/dir; //rcp_safe(dir); // FIXME: not 100% safe
+      //const simd3f nrdir = simd3f(simdf(-1.0f))/dir; // FIXME: not 100% safe
+      const simd3f nrdir = simd3f(simdf(-1.0f))*rcp_safe(dir);
       const simd3f org = xfmPoint(xfm,ray_org);
       const simd3f tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
       const simd3f tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
@@ -367,7 +368,7 @@ namespace embree
           else break;
 
           /*! if no child is hit, pop next node */
-          STAT3(normal.trav_nodes,1,1,1);
+          STAT3(shadow.trav_nodes,1,1,1);
           const Node* node = cur.node();
           if (unlikely(mask == 0))
             goto pop;
@@ -431,7 +432,7 @@ namespace embree
         }
         
         /*! this is a leaf node */
-        STAT3(normal.trav_leaves,1,1,1);
+        STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         if (PrimitiveIntersector::occluded(pre,ray,prim,num,bvh->scene)) {
           ray.geomID = 0;
