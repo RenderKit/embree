@@ -270,8 +270,8 @@ namespace embree
 	{
 	  float ru = drand48();
 	  float rv = drand48();
-	  float delta = drand48();
-	  float delta2 = drand48();
+	  float delta = 0.1f*drand48();
+	  float delta2 = 0.1f*drand48();
 	  
 	  const float w0 = 1.0f - sqrtf(ru);
 	  const float w1 = sqrtf(ru) * (1.0f - rv);
@@ -287,6 +287,8 @@ namespace embree
 	  const Vec3fa dz = local_frame.vz * length;
 	  
 	  const Vec3fa p0(   0, 0,0);
+	  //const Vec3fa p1(0.25, 0,0);
+	  //const Vec3fa p2(0.74, 0,0);
 	  const Vec3fa p1(0.25, delta, delta2);
 	  const Vec3fa p2(0.75,-delta,-delta2);
 	  const Vec3fa p3(   1, 0,0);

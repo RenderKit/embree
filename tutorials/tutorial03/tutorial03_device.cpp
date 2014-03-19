@@ -173,6 +173,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
   Vec3f Ns = w*n0 + u*n1 + v*n2;
   Ns = normalize(Ns);
+  //return abs(dot(Ns,ray.dir));
 
 #else
 
