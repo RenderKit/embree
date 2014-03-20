@@ -412,8 +412,8 @@ extern "C" void device_init (int8* cfg)
   rtcInit(cfg);
 
   /* set start render mode */
-  //renderPixel = renderPixelStandard;
-  renderPixel = renderPixelGeomIDPrimID;
+  renderPixel = renderPixelStandard;
+  //renderPixel = renderPixelGeomIDPrimID;
 }
 
 /*! Anisotropic power cosine microfacet distribution. */
