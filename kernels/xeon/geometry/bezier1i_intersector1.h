@@ -185,6 +185,46 @@ namespace embree
     }
 #endif
 
+    static void intersect_recursive(const float max_radius, const float u_start, const float u_end, Ray& ray, const BezierCurve3D &curve2D, const void* geom, const int depth)
+    {
+      const BBox3fa bounds = curve2D.bounds();
+      const BBox3fa radius_bounds(Vec3fa(-max_radius,max_radius));
+      if (disjoint(radius_bounds,bounds)) return;
+
+      if (depth == 0)
+        {
+          
+        }
+      else
+        {
+          BezierCurve3D left,right;
+          curve2D.subdivide(left,right);
+          intersect_recursive(max_radius,u_start,(u_start+u_end)*0.5f,ray,left,geom,depth-1);
+          intersect_recursive(max_radius,(u_start+u_end)*0.5f,u_end,ray,right,geom,depth-1);
+        }
+    }
+
+    static __forceinline void intersect_recursive(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
+    {
+      /* load bezier curve control points */
+      STAT3(normal.trav_prims,1,1,1);
+      const Vec3fa& v0 = curve_in.p[0];
+      const Vec3fa& v1 = curve_in.p[1];
+      const Vec3fa& v2 = curve_in.p[2];
+      const Vec3fa& v3 = curve_in.p[3];
+
+      /* transform control points into ray space */
+      Vec3fa w0 = xfmVector(pre.ray_space,v0-ray.org); w0.w = v0.w;
+      Vec3fa w1 = xfmVector(pre.ray_space,v1-ray.org); w1.w = v1.w;
+      Vec3fa w2 = xfmVector(pre.ray_space,v2-ray.org); w2.w = v2.w;
+      Vec3fa w3 = xfmVector(pre.ray_space,v3-ray.org); w3.w = v3.w;
+      BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
+      
+      const float max_radius = max(w0.w,w1.w,w2.w,w3.w);
+      intersect_recursive(max_radius,0.0,1.0f,ray,curve2D,geom,3);
+    }
+
+
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
