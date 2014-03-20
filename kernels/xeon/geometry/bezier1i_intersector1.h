@@ -188,11 +188,12 @@ namespace embree
     static void intersect_recursive(const float max_radius, Ray& ray, const BezierCurve3D &curve2D, const void* geom, int geomID, int primID)
     {
       const BBox3fa bounds = curve2D.bounds();
+#if 1
       if (bounds.lower.x > -max_radius ||
           bounds.upper.x <  max_radius ||
           bounds.lower.y > -max_radius ||
           bounds.upper.y <  max_radius) return;
-
+#endif
       if (curve2D.depth == 0)
         {
           const Vec3fa &p0 = curve2D.v0;
@@ -214,28 +215,26 @@ namespace embree
 
           if (unlikely(!( d2 <= r2 & ray.tnear < t & t < ray.tfar ))) return;
 
+          const float uu = curve2D.t0; // FIXME: correct u range for subdivided segments
+
+          Vec3fa P,T; curve2D.eval(0.5f,P,T); 
+          if (T == Vec3fa(zero)) return; // { valid[i] = 0; goto retry; } // ignore denormalized curves */
 
           /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__) && 0
           Geometry* geometry = ((Scene*)geom)->get(geomID);
           if (!likely(geometry->hasIntersectionFilter1())) 
             {
-#endif
-              /* update hit information */
-              const float uu = curve2D.t0; // FIXME: correct u range for subdivided segments
-              /* const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0); */
-              Vec3fa P,T; curve2D.eval(0.5f,P,T); 
-              if (T == Vec3fa(zero)) return; // { valid[i] = 0; goto retry; } // ignore denormalized curves */
-              ray.u = uu;
-              ray.v = 0.0f;
-              ray.tfar = t;
-              ray.Ng = T;
-              ray.geomID = geomID;
-              ray.primID = primID;
-#if defined(__INTERSECTION_FILTER__) && 0
-              if (runIntersectionFilter1(geometry,ray,uu,0.0f,t,T,geomID,primID)) return;
+              runIntersectionFilter1(geometry,ray,uu,0.0f,t,T,geomID,primID);
+              return;
             }
-#endif    
+#endif
+          ray.u = uu;
+          ray.v = 0.0f;
+          ray.tfar = t;
+          ray.Ng = T;
+          ray.geomID = geomID;
+          ray.primID = primID;
         }
       else
         {
