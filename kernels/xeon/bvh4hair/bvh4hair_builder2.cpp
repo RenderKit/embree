@@ -305,7 +305,7 @@ namespace embree
       return NAABBox3fa(empty); // FIXME: can cause problems with compression
 
     float bestArea = inf;
-    Vec3fa bestAxis = one;
+    LinearSpace3fa bestSpace = one;
     BBox3fa bestBounds = empty;
 
     size_t k=0;
@@ -314,7 +314,9 @@ namespace embree
       if ((k++) % ((N+3)/4)) continue;
       //size_t k = begin + rand() % (end-begin);
       const Vec3fa axis = normalize(i->p3 - i->p0);
-      const LinearSpace3fa space = compressTransform(clamp(frame(axis).transposed()));
+      if (length(i->p3 - i->p0) < 1E-9) continue;
+      const LinearSpace3fa space0 = LinearSpace3fa::rotate(Vec3fa(0,0,1),2.0f*float(pi)*drand48())*frame(axis).transposed();
+      const LinearSpace3fa space = compressTransform(clamp(space0));
       BBox3fa bounds = empty;
       float area = 0.0f;
       for (atomic_set<PrimRefBlock>::block_iterator_unsafe j = prims; j; j++) {
@@ -325,14 +327,13 @@ namespace embree
 
       if (area <= bestArea) {
         bestBounds = bounds;
-        bestAxis = axis;
+        bestSpace = space;
         bestArea = area;
       }
     }
+    assert(bestArea != inf); // FIXME: can get raised if all selected curves are points
     bestBounds.upper.w = bestArea;
-
-    const LinearSpace3fa space = compressTransform(clamp(frame(bestAxis).transposed()));
-    return NAABBox3fa(space,bestBounds);
+    return NAABBox3fa(bestSpace,bestBounds);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
