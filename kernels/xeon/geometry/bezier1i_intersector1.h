@@ -259,7 +259,7 @@ namespace embree
       Vec3fa w1 = xfmVector(pre.ray_space,v1-ray.org); w1.w = v1.w;
       Vec3fa w2 = xfmVector(pre.ray_space,v2-ray.org); w2.w = v2.w;
       Vec3fa w3 = xfmVector(pre.ray_space,v3-ray.org); w3.w = v3.w;
-      BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
+      BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,3);
       
       const float max_radius = max(w0.w,w1.w,w2.w,w3.w);
       intersect_recursive(max_radius,ray,curve2D,geom,curve_in.geomID,curve_in.primID);
