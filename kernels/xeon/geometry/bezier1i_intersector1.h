@@ -185,22 +185,62 @@ namespace embree
     }
 #endif
 
-    static void intersect_recursive(const float max_radius, const float u_start, const float u_end, Ray& ray, const BezierCurve3D &curve2D, const void* geom, const int depth)
+    static void intersect_recursive(const float max_radius, Ray& ray, const BezierCurve3D &curve2D, const void* geom, int geomID, int primID)
     {
       const BBox3fa bounds = curve2D.bounds();
       const BBox3fa radius_bounds(Vec3fa(-max_radius,max_radius));
       if (disjoint(radius_bounds,bounds)) return;
 
-      if (depth == 0)
+      if (curve2D.depth == 0)
         {
-          
+          const Vec3fa &p0 = curve2D.v0;
+          const Vec3fa &p1 = curve2D.v3;
+
+          /* approximative intersection with cone */
+          const Vec3fa v = p1-p0;
+          const Vec3fa w = -p0;
+          const float d0 = w.x*v.x + w.y*v.y;
+          const float d1 = v.x*v.x + v.y*v.y;
+          const float u = clamp(d0*rcp(d1),0.0f,1.0f);
+          const Vec3fa p = p0 + u*v;
+          const float t = p.z;
+          const float d2 = p.x*p.x + p.y*p.y; 
+          const float r = p.w; //max(p.w,ray.org.w+ray.dir.w*t);
+          const float r2 = r*r;
+
+          STAT3(normal.trav_prim_hits,1,1,1);
+
+          if (unlikely(!( d2 <= r2 & ray.tnear < t & t < ray.tfar ))) return;
+
+
+          /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+          Geometry* geometry = ((Scene*)geom)->get(geomID);
+          if (!likely(geometry->hasIntersectionFilter1())) 
+            {
+#endif
+              /* update hit information */
+              const float uu = curve2D.t0; // FIXME: correct u range for subdivided segments
+              /* const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0); */
+              Vec3fa P,T; curve2D.eval(uu,P,T); 
+              if (T == Vec3fa(zero)) return; // { valid[i] = 0; goto retry; } // ignore denormalized curves */
+              ray.u = uu;
+              ray.v = 0.0f;
+              ray.tfar = t;
+              ray.Ng = T;
+              ray.geomID = geomID;
+              ray.primID = primID;
+#if defined(__INTERSECTION_FILTER__)
+              if (runIntersectionFilter1(geometry,ray,uu,0.0f,t,T,geomID,primID)) return;
+            }
+#endif    
         }
       else
         {
           BezierCurve3D left,right;
           curve2D.subdivide(left,right);
-          intersect_recursive(max_radius,u_start,(u_start+u_end)*0.5f,ray,left,geom,depth-1);
-          intersect_recursive(max_radius,(u_start+u_end)*0.5f,u_end,ray,right,geom,depth-1);
+          intersect_recursive(max_radius,ray,left,geom,geomID,primID);
+          intersect_recursive(max_radius,ray,right,geom,geomID,primID);
         }
     }
 
@@ -221,11 +261,11 @@ namespace embree
       BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
       
       const float max_radius = max(w0.w,w1.w,w2.w,w3.w);
-      intersect_recursive(max_radius,0.0,1.0f,ray,curve2D,geom,3);
+      intersect_recursive(max_radius,ray,curve2D,geom,curve_in.geomID,curve_in.primID);
     }
 
 
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
       STAT3(normal.trav_prims,1,1,1);
