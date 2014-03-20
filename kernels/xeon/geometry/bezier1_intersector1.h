@@ -113,6 +113,7 @@ namespace embree
       if (unlikely(none(valid))) return;
       const float one_over_8 = 1.0f/8.0f;
       size_t i = select_min(valid,t);
+      STAT3(normal.trav_prim_hits,1,1,1);
 
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
@@ -147,6 +148,7 @@ namespace embree
         valid[i] = 0;
         if (none(valid)) return;
         i = select_min(valid,t);
+        STAT3(normal.trav_prim_hits,1,1,1);
       }
 #endif
     }
@@ -182,11 +184,11 @@ namespace embree
       const avx4f w = -p0;
       const avxf d0 = w.x*v.x + w.y*v.y;
       const avxf d1 = v.x*v.x + v.y*v.y;
-      const avxf u = clamp(d0/d1,avxf(zero),avxf(one));
+      const avxf u = clamp(d0*rcp(d1),avxf(zero),avxf(one));
       const avx4f p = p0 + u*v;
       const avxf t = p.z;
       const avxf d2 = p.x*p.x + p.y*p.y; 
-      const avxf r = p.w; //+ray.org.w+ray.dir.w*t;
+      const avxf r = p.w; //max(p.w,ray.org.w+ray.dir.w*t);
       const avxf r2 = r*r;
       avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
       if (none(valid)) return false;
@@ -212,6 +214,7 @@ namespace embree
         valid[i] = 0;
         if (none(valid)) return false;
         i = select_min(valid,t);
+        STAT3(shadow.trav_prim_hits,1,1,1);
       }
 #endif
       return true;

@@ -95,6 +95,12 @@ namespace embree
       return any(vmask);
     }
 
+    static __forceinline avxf shift_left1(avxf r, float a) 
+    {
+      avxf v[2] = { r, avxf(a) };
+      return *(avxf*)&v[0][1];
+    }
+
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
@@ -117,6 +123,7 @@ namespace embree
       /* subdivide 3 levels at once */ 
       const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
       const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
+      //const avx4f p1(shift_left1(p0.x,w3.x),shift_left1(p0.y,w3.y),shift_left1(p0.z,w3.z),shift_left1(p0.w,w3.w));
 
       /* approximative intersection with cone */
       const avx4f v = p1-p0;
@@ -134,6 +141,7 @@ namespace embree
       if (unlikely(none(valid))) return;
       const float one_over_8 = 1.0f/8.0f;
       size_t i = select_min(valid,t);
+      STAT3(normal.trav_prim_hits,1,1,1);
 
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
@@ -167,6 +175,7 @@ namespace embree
         valid[i] = 0;
         if (none(valid)) return;
         i = select_min(valid,t);
+        STAT3(normal.trav_prim_hits,1,1,1);
       }
 #endif
     }
@@ -212,14 +221,15 @@ namespace embree
       const avx4f w = -p0;
       const avxf d0 = w.x*v.x + w.y*v.y;
       const avxf d1 = v.x*v.x + v.y*v.y;
-      const avxf u = clamp(d0/d1,avxf(zero),avxf(one));
+      const avxf u = clamp(d0*rcp(d1),avxf(zero),avxf(one));
       const avx4f p = p0 + u*v;
       const avxf t = p.z;
       const avxf d2 = p.x*p.x + p.y*p.y; 
-      const avxf r = p.w; //+ray.org.w+ray.dir.w*t;
+      const avxf r = p.w; //max(p.w,ray.org.w+ray.dir.w*t);
       const avxf r2 = r*r;
       avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
       if (none(valid)) return false;
+      STAT3(shadow.trav_prim_hits,1,1,1);
 
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
@@ -241,6 +251,7 @@ namespace embree
         valid[i] = 0;
         if (none(valid)) return false;
         i = select_min(valid,t);
+        STAT3(shadow.trav_prim_hits,1,1,1);
       }
 #endif
       return true;
