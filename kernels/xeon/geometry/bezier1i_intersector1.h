@@ -95,6 +95,12 @@ namespace embree
       return any(vmask);
     }
 
+    static __forceinline avxf shift_left1(avxf r, float a) 
+    {
+      avxf v[2] = { r, avxf(a) };
+      return *(avxf*)&v[0][1];
+    }
+
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
       /* load bezier curve control points */
@@ -117,6 +123,7 @@ namespace embree
       /* subdivide 3 levels at once */ 
       const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
       const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
+      //const avx4f p1(shift_left1(p0.x,w3.x),shift_left1(p0.y,w3.y),shift_left1(p0.z,w3.z),shift_left1(p0.w,w3.w));
 
       /* approximative intersection with cone */
       const avx4f v = p1-p0;
