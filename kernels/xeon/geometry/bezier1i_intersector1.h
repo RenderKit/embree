@@ -188,8 +188,10 @@ namespace embree
     static void intersect_recursive(const float max_radius, Ray& ray, const BezierCurve3D &curve2D, const void* geom, int geomID, int primID)
     {
       const BBox3fa bounds = curve2D.bounds();
-      const BBox3fa radius_bounds(Vec3fa(-max_radius,max_radius));
-      if (disjoint(radius_bounds,bounds)) return;
+      if (bounds.lower.x > -max_radius ||
+          bounds.upper.x <  max_radius ||
+          bounds.lower.y > -max_radius ||
+          bounds.upper.y <  max_radius) return;
 
       if (curve2D.depth == 0)
         {
@@ -214,7 +216,7 @@ namespace embree
 
 
           /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(__INTERSECTION_FILTER__) && 0
           Geometry* geometry = ((Scene*)geom)->get(geomID);
           if (!likely(geometry->hasIntersectionFilter1())) 
             {
@@ -222,7 +224,7 @@ namespace embree
               /* update hit information */
               const float uu = curve2D.t0; // FIXME: correct u range for subdivided segments
               /* const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0); */
-              Vec3fa P,T; curve2D.eval(uu,P,T); 
+              Vec3fa P,T; curve2D.eval(0.5f,P,T); 
               if (T == Vec3fa(zero)) return; // { valid[i] = 0; goto retry; } // ignore denormalized curves */
               ray.u = uu;
               ray.v = 0.0f;
@@ -230,7 +232,7 @@ namespace embree
               ray.Ng = T;
               ray.geomID = geomID;
               ray.primID = primID;
-#if defined(__INTERSECTION_FILTER__)
+#if defined(__INTERSECTION_FILTER__) && 0
               if (runIntersectionFilter1(geometry,ray,uu,0.0f,t,T,geomID,primID)) return;
             }
 #endif    
@@ -352,6 +354,8 @@ namespace embree
 	  if (unlikely(any(pre.mbox.ids == curves[i].primID))) continue; // FIXME: works only for single hair set
 #endif
 	  intersect(pre,ray,curves[i],geom);
+
+	  //intersect_recursive(pre,ray,curves[i],geom);
 
 #if defined(PRE_SUBDIVISION_HACK)
 	  *(unsigned int*)&pre.mbox.ids[pre.mbox.index] = curves[i].primID; // FIXME: works only for single hair set
