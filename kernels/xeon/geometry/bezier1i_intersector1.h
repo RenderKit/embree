@@ -95,11 +95,95 @@ namespace embree
       return any(vmask);
     }
 
-    static __forceinline avxf shift_left1(avxf r, float a) 
+    /*static __forceinline avxf shift_left1(avxf r, float a) 
     {
+#if defined(__AVX2__)
+      avxf r0 = _mm256_castsi256_ps(_mm256_slli_si256(_mm256_castps_si256(r),4));
+      r0[15] = a;
+      return r0;
+#else
       avxf v[2] = { r, avxf(a) };
       return *(avxf*)&v[0][1];
+      #endif
+      }*/
+
+#if 0
+    static __forceinline void intersect2(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
+    {
+      /* load bezier curve control points */
+      STAT3(normal.trav_prims,1,1,1);
+      const Vec3fa& v0 = curve_in.p[0];
+      const Vec3fa& v1 = curve_in.p[1];
+      const Vec3fa& v2 = curve_in.p[2];
+      const Vec3fa& v3 = curve_in.p[3];
+
+      /* transform control points into ray space */
+      Vec3fa w0 = xfmVector(pre.ray_space,v0-ray.org); w0.w = v0.w;
+      Vec3fa w1 = xfmVector(pre.ray_space,v1-ray.org); w1.w = v1.w;
+      Vec3fa w2 = xfmVector(pre.ray_space,v2-ray.org); w2.w = v2.w;
+      Vec3fa w3 = xfmVector(pre.ray_space,v3-ray.org); w3.w = v3.w;
+      BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
+
+      /* subdivide 3 levels at once */ 
+      const avx4f p0 = curve2D.eval(coeff_P0[0],coeff_P0[1],coeff_P0[2],coeff_P0[3]);
+      const avx4f p1 = curve2D.eval(coeff_P1[0],coeff_P1[1],coeff_P1[2],coeff_P1[3]);
+      //const avx4f p1(shift_left1(p0.x,w3.x),shift_left1(p0.y,w3.y),shift_left1(p0.z,w3.z),shift_left1(p0.w,w3.w));
+
+      /* approximative intersection with cone */
+      const avx4f v = p1-p0;
+      const avx4f w = -p0;
+      const avxf d0 = w.x*v.x + w.y*v.y;
+      const avxf d1 = v.x*v.x + v.y*v.y;
+      const avxf u = clamp(d0*rcp(d1),avxf(zero),avxf(one));
+      const avx4f p = p0 + u*v;
+      const avxf t = p.z;
+      const avxf d2 = p.x*p.x + p.y*p.y; 
+      const avxf r = p.w; //max(p.w,ray.org.w+ray.dir.w*t);
+      const avxf r2 = r*r;
+      avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
+    retry:
+      if (unlikely(none(valid))) return;
+      const float one_over_8 = 1.0f/8.0f;
+      size_t i = select_min(valid,t);
+      STAT3(normal.trav_prim_hits,1,1,1);
+
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+      int geomID = curve_in.geomID;
+      Geometry* geometry = ((Scene*)geom)->get(geomID);
+      if (!likely(geometry->hasIntersectionFilter1())) 
+      {
+#endif
+        /* update hit information */
+        const float uu = (float(i)+u[i])*one_over_8; // FIXME: correct u range for subdivided segments
+        const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+        Vec3fa P,T; curve3D.eval(uu,P,T);
+        if (T == Vec3fa(zero)) { valid[i] = 0; goto retry; } // ignore denormalized curves
+        ray.u = uu;
+        ray.v = 0.0f;
+        ray.tfar = t[i];
+        ray.Ng = T;
+        ray.geomID = curve_in.geomID;
+        ray.primID = curve_in.primID;
+#if defined(__INTERSECTION_FILTER__)
+          return;
+      }
+
+      while (true) 
+      {
+        const float uu = (float(i)+u[i])*one_over_8;
+        const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+        Vec3fa P,T; curve3D.eval(uu,P,T);
+        if (T != Vec3fa(zero))
+            if (runIntersectionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,curve_in.primID)) return;
+        valid[i] = 0;
+        if (none(valid)) return;
+        i = select_min(valid,t);
+        STAT3(normal.trav_prim_hits,1,1,1);
+      }
+#endif
     }
+#endif
 
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom)
     {
