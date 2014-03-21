@@ -26,6 +26,7 @@
 
 namespace embree
 {
+
 #if defined(__WIN32__)
   __forceinline bool finite ( const float x ) { return _finite(x) != 0; }
 #endif
