@@ -58,11 +58,10 @@ namespace embree
     for (size_t y=0; y<img->height; y++) {
       for (size_t x=0; x<img->width; x++) {
         Color4 c = img->get(x,y);
-        pixels[y*img->width+x] = Magick::ColorRGB(Magick::Quantum(clamp(c.r)*MaxRGB),
-                                                  Magick::Quantum(clamp(c.g)*MaxRGB),
-                                                  Magick::Quantum(clamp(c.b)*MaxRGB));
-        //,
-        //                                          Magick::Quantum(clamp(c.a)*MaxRGB));
+	pixels[y*img->width+x].red     = Magick::Quantum(clamp(c.r)*MaxRGB);
+	pixels[y*img->width+x].green   = Magick::Quantum(clamp(c.g)*MaxRGB);
+	pixels[y*img->width+x].blue    = Magick::Quantum(clamp(c.b)*MaxRGB);
+	pixels[y*img->width+x].opacity = Magick::Quantum(clamp(c.a)*MaxRGB);
       }
     }
     pixel_cache.sync();
