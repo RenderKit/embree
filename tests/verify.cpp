@@ -2130,7 +2130,7 @@ namespace embree
     for (size_t i=0; i<1000; i++) 
     {
       size_t N = 1LL << ((i+30) % 34);
-      void* ptr = os_malloc(N);
+      void* ptr = os_reserve(N);
       if (size_t(ptr) >> 60) passed = false;
       ptrs.push_back(ptr);
       bytes.push_back(N);
