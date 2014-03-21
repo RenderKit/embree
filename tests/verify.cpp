@@ -2121,6 +2121,29 @@ namespace embree
     return true;
   }
 
+  void os_malloc_test()
+  {
+    printf("%30s ...","os_malloc");
+    bool passed = true;
+    std::vector<void*> ptrs;
+    std::vector<size_t> bytes;
+    for (size_t i=0; i<1000; i++) 
+    {
+      size_t N = 1LL << ((i+30) % 34);
+      void* ptr = os_malloc(N);
+      if (size_t(ptr) >> 60) passed = false;
+      ptrs.push_back(ptr);
+      bytes.push_back(N);
+    }
+    for (size_t i=0; i<1000; i++) 
+      os_free(ptrs[i],bytes[i]);
+    ptrs.clear();
+    bytes.clear();
+
+    printf(" %s\n",passed ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");
+    fflush(stdout);
+  }
+
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
@@ -2134,7 +2157,6 @@ namespace embree
     /* perform tests */
     rtcInit(g_rtcore.c_str());
 
-
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
     POSITIVE("barrier_sys",               test_barrier_sys());
@@ -2142,6 +2164,7 @@ namespace embree
 #if !defined(__MIC__) && !defined(_WIN32) // FIXME: hangs on MIC and Windows
     POSITIVE("condition_sys",             test_condition_sys());
 #endif
+    os_malloc_test();
 
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
