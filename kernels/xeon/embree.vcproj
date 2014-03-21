@@ -1530,26 +1530,6 @@
 				</File>
 			</Filter>
 		</Filter>
-		<Filter
-			Name="bvh2hair"
-			>
-			<File
-				RelativePath=".\bvh2hair\bvh2hair.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh2hair\bvh2hair.h"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh2hair\bvh2hair_builder.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh2hair\bvh2hair_builder.h"
-				>
-			</File>
-		</Filter>
 		<File
 			RelativePath=".\embree.def"
 			>

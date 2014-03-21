@@ -2012,14 +2012,38 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="bvh2hair"
+			Name="bvh4hair"
 			>
 			<File
-				RelativePath=".\bvh2hair\bvh2hair_intersector1.cpp"
+				RelativePath=".\bvh4hair\bvh4hair.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh2hair\bvh2hair_intersector1.h"
+				RelativePath=".\bvh4hair\bvh4hair.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_builder.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_builder.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_intersector1.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_intersector1.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_statistics.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_statistics.h"
 				>
 			</File>
 		</Filter>
