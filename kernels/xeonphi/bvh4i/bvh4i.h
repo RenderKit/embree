@@ -368,6 +368,9 @@ namespace embree
 
     static Helper initQBVHNode[4];
 
+
+    
+
   private:
     float sah (NodeRef& node, BBox3fa bounds);
   };
@@ -553,6 +556,73 @@ namespace embree
     const mic_i bvh4_max   = box_max0123;
     store16i_nt((int*)(bptr + 0),bvh4_min);
     store16i_nt((int*)(bptr + 2),bvh4_max);
+  }
+
+  __forceinline void compactStack(BVH4i::NodeRef *__restrict__ const stack_node,
+				  float   *__restrict__ const stack_dist,
+				  size_t &sindex,
+				  const mic_f &max_dist_xyz)
+  {
+    if (likely(sindex >= 2))
+      {
+	if (likely(sindex < 16))
+	  {
+	    const unsigned int m_num_stack = mic_m::shift1[sindex] - 1;
+	    const mic_m m_num_stack_low  = toMask(m_num_stack);
+	    const mic_f snear_low  = load16f(stack_dist + 0);
+	    const mic_i snode_low  = load16i((int*)stack_node + 0);
+	    const mic_m m_stack_compact_low  = le(m_num_stack_low,snear_low,max_dist_xyz) | (mic_m)1;
+	    compactustore16f_low(m_stack_compact_low,stack_dist + 0,snear_low);
+	    compactustore16i_low(m_stack_compact_low,(int*)stack_node + 0,snode_low);
+	    sindex = countbits(m_stack_compact_low);
+	    assert(sindex < 16);
+	  }
+	else if (likely(sindex < 32))
+	  {
+	    const mic_m m_num_stack_high = toMask(mic_m::shift1[sindex-16] - 1); 
+	    const mic_f snear_low  = load16f(stack_dist + 0);
+	    const mic_f snear_high = load16f(stack_dist + 16);
+	    const mic_i snode_low  = load16i((int*)stack_node + 0);
+	    const mic_i snode_high = load16i((int*)stack_node + 16);
+	    const mic_m m_stack_compact_low  = le(snear_low,max_dist_xyz) | (mic_m)1;
+	    const mic_m m_stack_compact_high = le(m_num_stack_high,snear_high,max_dist_xyz);
+	    compactustore16f(m_stack_compact_low,      stack_dist + 0,snear_low);
+	    compactustore16i(m_stack_compact_low,(int*)stack_node + 0,snode_low);
+	    compactustore16f(m_stack_compact_high,      stack_dist + countbits(m_stack_compact_low),snear_high);
+	    compactustore16i(m_stack_compact_high,(int*)stack_node + countbits(m_stack_compact_low),snode_high);
+	    assert ((unsigned int )m_num_stack_high == ((mic_m::shift1[sindex] - 1) >> 16));
+
+	    sindex = countbits(m_stack_compact_low) + countbits(m_stack_compact_high);
+	    assert(sindex < 32);
+	  }
+	else
+	  {
+	    const mic_m m_num_stack_32 = toMask(mic_m::shift1[sindex-32] - 1); 
+
+	    const mic_f snear_0  = load16f(stack_dist + 0);
+	    const mic_f snear_16 = load16f(stack_dist + 16);
+	    const mic_f snear_32 = load16f(stack_dist + 32);
+	    const mic_i snode_0  = load16i((int*)stack_node + 0);
+	    const mic_i snode_16 = load16i((int*)stack_node + 16);
+	    const mic_i snode_32 = load16i((int*)stack_node + 32);
+	    const mic_m m_stack_compact_0  = le(               snear_0 ,max_dist_xyz) | (mic_m)1;
+	    const mic_m m_stack_compact_16 = le(               snear_16,max_dist_xyz);
+	    const mic_m m_stack_compact_32 = le(m_num_stack_32,snear_32,max_dist_xyz);
+
+	    sindex = 0;
+	    compactustore16f(m_stack_compact_0,      stack_dist + sindex,snear_0);
+	    compactustore16i(m_stack_compact_0,(int*)stack_node + sindex,snode_0);
+	    sindex += countbits(m_stack_compact_0);
+	    compactustore16f(m_stack_compact_16,      stack_dist + sindex,snear_16);
+	    compactustore16i(m_stack_compact_16,(int*)stack_node + sindex,snode_16);
+	    sindex += countbits(m_stack_compact_16);
+	    compactustore16f(m_stack_compact_32,      stack_dist + sindex,snear_32);
+	    compactustore16i(m_stack_compact_32,(int*)stack_node + sindex,snode_32);
+	    sindex += countbits(m_stack_compact_32);
+
+	    assert(sindex < 48);		  
+	  }
+      }
   }
 
 }

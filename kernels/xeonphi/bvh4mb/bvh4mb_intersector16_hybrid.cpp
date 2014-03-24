@@ -17,6 +17,8 @@
 #include "bvh4mb_intersector16_hybrid.h"
 #include "geometry/triangle1.h"
 
+#define SWITCH_ON_DOWN_TRAVERSAL 1
+
 namespace embree
 {
   namespace isa
@@ -51,7 +53,7 @@ namespace embree
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const BVH4mb::Triangle01 * __restrict__ accel = (BVH4mb::Triangle01 *)bvh->triPtr();
 
-      while (1)
+      while (1) pop:
       {
         /* pop next node from stack */
         NodeRef curNode = *(sptr_node-1);
@@ -492,6 +494,16 @@ namespace embree
               assert(sptr_node - stack_node < BVH4i::maxDepth);
             }	      
           }
+#if SWITCH_ON_DOWN_TRAVERSAL == 1
+	  const mic_m curUtil = ray_tfar > curDist;
+	  if (unlikely(countbits(curUtil) <= BVH4i::hybridSIMDUtilSwitchThreshold))
+	    {
+	      *sptr_node++ = curNode;
+	      *sptr_dist++ = curDist; 
+	      goto pop;
+	    }
+#endif
+
         }
         
         /* return if stack is empty */
@@ -636,7 +648,7 @@ namespace embree
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const BVH4mb::Triangle01 * __restrict__ accel = (BVH4mb::Triangle01 *)bvh->triPtr();
 
-      while (1)
+      while (1) pop:
       {
 	const mic_m m_active = !m_terminated;
 
@@ -980,6 +992,15 @@ namespace embree
 		  assert(sptr_node - stack_node < BVH4i::maxDepth);
 		}	      
 	    }
+#if SWITCH_ON_DOWN_TRAVERSAL == 1
+	  const mic_m curUtil = ray_tfar > curDist;
+	  if (unlikely(countbits(curUtil) <= BVH4i::hybridSIMDUtilSwitchThreshold))
+	    {
+	      *sptr_node++ = curNode;
+	      *sptr_dist++ = curDist; 
+	      goto pop;
+	    }
+#endif
         }
         
         /* return if stack is empty */
