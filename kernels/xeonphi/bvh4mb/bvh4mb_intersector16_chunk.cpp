@@ -102,6 +102,7 @@ namespace embree
 	    const mic_f upper_y =  one_time * nodeMB->upper[i].y + time * nodeMB->upper_t1[i].y;
 	    const mic_f upper_z =  one_time * nodeMB->upper[i].z + time * nodeMB->upper_t1[i].z;
 
+	    if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
 
             const mic_f lclipMinX = msub(lower_x,rdir.x,org_rdir.x);
             const mic_f lclipMinY = msub(lower_y,rdir.y,org_rdir.y);
@@ -150,7 +151,7 @@ namespace embree
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
  
 	unsigned int items; 
-	const BVH4mb::Triangle01* tris  = (BVH4mb::Triangle01*) curNode.leaf(accel,items);
+	const BVH4mb::Triangle01* tris  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel,items);
 
 	const mic_f zero = mic_f::zero();
 	const mic_f one  = mic_f::one();
@@ -333,6 +334,7 @@ namespace embree
 	    const mic_f upper_y =  one_time * nodeMB->upper[i].y + time * nodeMB->upper_t1[i].y;
 	    const mic_f upper_z =  one_time * nodeMB->upper[i].z + time * nodeMB->upper_t1[i].z;
 
+	    if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
 
             const mic_f lclipMinX = msub(lower_x,rdir.x,org_rdir.x);
             const mic_f lclipMinY = msub(lower_y,rdir.y,org_rdir.y);
@@ -381,7 +383,7 @@ namespace embree
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
 
 	unsigned int items; 
-	const BVH4mb::Triangle01* tris  = (BVH4mb::Triangle01*) curNode.leaf(accel,items);
+	const BVH4mb::Triangle01* tris  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel,items);
 
 	prefetch<PFHINT_L1>((mic_f*)tris +  0); 
 	prefetch<PFHINT_L2>((mic_f*)tris +  1); 

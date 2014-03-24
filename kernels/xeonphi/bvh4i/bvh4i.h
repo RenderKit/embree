@@ -90,16 +90,18 @@ namespace embree
 #endif
       
       /*! returns leaf pointer */
+      template<unsigned int scale=4>
       __forceinline const char* leaf(const void* base, unsigned int& num) const {
         assert(isLeaf());
         num = _id & items_mask;
-        return (const char*)base + (_id & offset_mask)*4;
+        return (const char*)base + (_id & offset_mask)*scale;
       }
 
       /*! returns leaf pointer */
+      template<unsigned int scale=4>
       __forceinline const char* leaf(const void* base) const {
         assert(isLeaf());
-        return (const char*)base + (_id & offset_mask)*4;
+        return (const char*)base + (_id & offset_mask)*scale;
       }
 
       __forceinline unsigned int offset() const {

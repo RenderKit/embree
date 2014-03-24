@@ -383,7 +383,6 @@ namespace embree
     const size_t items    = entry.items();
     BBox3fa* next = (BBox3fa*)&node[childrenID+4];
 
-
     /* init second node */
     const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
     store16f(local + 0,init_node);
