@@ -96,6 +96,8 @@ namespace embree
             const mic_f lclipMaxX = msub(node->upper[i].x,rdir.x,org_rdir.x);
             const mic_f lclipMaxY = msub(node->upper[i].y,rdir.y,org_rdir.y);
             const mic_f lclipMaxZ = msub(node->upper[i].z,rdir.z,org_rdir.z);
+
+	    if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
 	    
             const mic_f lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
             const mic_f lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
@@ -104,6 +106,7 @@ namespace embree
             const mic_m m_child_dist = lt(childDist,curDist);
             /* if we hit the child we choose to continue with that child if it 
                is closer than the current next child, or we push it onto the stack */
+
 
             if (likely(any(lhit)))
             {
@@ -309,6 +312,8 @@ namespace embree
             const mic_f lclipMaxX = msub(node->upper[i].x,rdir.x,org_rdir.x);
             const mic_f lclipMaxY = msub(node->upper[i].y,rdir.y,org_rdir.y);
             const mic_f lclipMaxZ = msub(node->upper[i].z,rdir.z,org_rdir.z);	    
+
+	    if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
 
             const mic_f lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
             const mic_f lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));

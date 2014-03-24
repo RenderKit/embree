@@ -73,6 +73,9 @@ namespace embree
 	      size_t hiti = 0;
 	      for (size_t i=0;i<4;i++)
 		{
+		  const NodeRef child = node->lower[i].child;
+		  if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
+
 		  const Vec3fa tLowerXYZ = plower[i] * rdir_xyz - org_rdir_xyz;
 		  const Vec3fa tUpperXYZ = pupper[i] * rdir_xyz - org_rdir_xyz;
 		  const Vec3fa tLower = min(tLowerXYZ,tUpperXYZ);

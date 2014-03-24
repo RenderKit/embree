@@ -25,12 +25,12 @@
 namespace embree
 {
 
-#if 0
+#if 1
   __aligned(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
-    { neg_inf, neg_inf, neg_inf,(unsigned int)(-1)},
-    { neg_inf, neg_inf, neg_inf,(unsigned int)(-1)},
-    { neg_inf, neg_inf, neg_inf,(unsigned int)(-1)},
-    { neg_inf, neg_inf, neg_inf,(unsigned int)(-1)}
+    { pos_inf, pos_inf, pos_inf,BVH4i::invalidNode},
+    { neg_inf, neg_inf, neg_inf,BVH4i::invalidNode},
+    { pos_inf, pos_inf, pos_inf,BVH4i::invalidNode},
+    { neg_inf, neg_inf, neg_inf,BVH4i::invalidNode}
    };
 #else
   __aligned(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 

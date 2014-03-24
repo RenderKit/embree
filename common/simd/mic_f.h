@@ -166,6 +166,8 @@ namespace embree
   __forceinline mic_f msub (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmsub_ps(a,b,c); }
   __forceinline mic_f nmadd (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fnmadd_ps(a,b,c); }
   __forceinline mic_f nmsub (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fnmsub_ps(a,b,c); }
+
+  __forceinline mic_f mask_msub (const mic_m& mask,const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_mask_fmsub_ps(a,mask,b,c); }
   
   __forceinline mic_f madd231 (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmadd_ps(c,b,a); }
   __forceinline mic_f msub213 (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmsub_ps(a,b,c); }
@@ -237,6 +239,7 @@ namespace embree
   __forceinline const mic_f select( const mic_m& s, const mic_f& t, const mic_f& f ) {
     return _mm512_mask_blend_ps(s, f, t);
   }
+
 
   __forceinline void xchg(mic_m m, mic_f& a, mic_f& b) 
   {

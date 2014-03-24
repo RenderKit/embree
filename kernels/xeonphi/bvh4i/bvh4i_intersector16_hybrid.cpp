@@ -19,12 +19,14 @@
 #include "geometry/filter.h"
 
 #define EXTENDED_PREFETCHING
+#define SWITCH_ON_DOWN_TRAVERSAL 1
 
 namespace embree
 {
   namespace isa
   {
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
+    static unsigned int M_LANE_7777 = 0x7777; // needed due to compiler efficiency bug
 
     static __aligned(64) int zlc4[4] = {0xffffffff,0xffffffff,0xffffffff,0};
 
@@ -54,7 +56,7 @@ namespace embree
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
 
-      while (1)
+      while (1) pop:
       {
         /* pop next node from stack */
         NodeRef curNode = *(sptr_node-1);
@@ -95,6 +97,9 @@ namespace embree
 		mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 
 		const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+		const mic_m m7777 = 0x7777; // M_LANE_7777;
+		const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero());
+		const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero());
 
 		while (1) 
 		  {
@@ -105,8 +110,9 @@ namespace embree
 		      {
 			/* test if this is a leaf node */
 			if (unlikely(curNode.isLeaf(leaf_mask))) break;
-        
 			const Node* __restrict__ const node = curNode.node(nodes);
+
+        
 			const float* __restrict const plower = (float*)node->lower;
 			const float* __restrict const pupper = (float*)node->upper;
 
@@ -114,23 +120,32 @@ namespace embree
 			prefetch<PFHINT_L1>((char*)node + 64);
         
 			/* intersect single ray with 4 bounding boxes */
-			const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-			const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
-			const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
-			const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
+			mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz);
+			mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz);
 
+			tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
+			tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
+
+			tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
+			tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
+
+			mic_m hitm = ~m7777; 
+			const mic_f tLower = tLowerXYZ;
+			const mic_f tUpper = tUpperXYZ;
+			
 			sindex--;
-
 			curNode = stack_node_single[sindex]; // early pop of next node
+
+			const mic_f tNear = vreduce_max4(tLower);
+			const mic_f tFar  = vreduce_min4(tUpper);  
+			hitm = le(hitm,tNear,tFar);
+
+			const mic_f tNear_pos = select(hitm,tNear,inf);
+			const mic_i plower_node = load16i((int*)plower);
 
 			const Node* __restrict__ const next = curNode.node(nodes);
 			prefetch<PFHINT_L2>((char*)next + 0);
 			prefetch<PFHINT_L2>((char*)next + 64);
-
-			const mic_f tNear = vreduce_max4(tLower);
-			const mic_f tFar  = vreduce_min4(tUpper);  
-			const mic_m hitm = le(0x8888,tNear,tFar);
-			const mic_f tNear_pos = select(hitm,tNear,inf);
 
 			/* if no child is hit, continue with early popped child */
 			if (unlikely(none(hitm))) continue;
@@ -180,7 +195,6 @@ namespace embree
         
 			const mic_m closest_child = eq(hitm,min_dist,tNear);
 			const unsigned long closest_child_pos = bitscan64(closest_child);
-			const mic_i plower_node = load16i((int*)plower);
 			const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
 			curNode = ((unsigned int*)plower)[closest_child_pos];
 
@@ -424,6 +438,9 @@ namespace embree
           
           STAT3(normal.trav_nodes,1,popcnt(ray_tfar > curDist),16);
           const Node* __restrict__ const node = curNode.node(nodes);
+
+	  prefetch<PFHINT_L1>((mic_f*)node + 0); 
+	  prefetch<PFHINT_L1>((mic_f*)node + 1); 
           
           /* pop of next node */
           sptr_node--;
@@ -431,15 +448,11 @@ namespace embree
           curNode = *sptr_node; 
           curDist = *sptr_dist;
           
-	  prefetch<PFHINT_L1>((mic_f*)node + 0); 
-	  prefetch<PFHINT_L1>((mic_f*)node + 1); 
 
 #pragma unroll(4)
           for (unsigned int i=0; i<4; i++)
           {
 	    const NodeRef child = node->lower[i].child;
-
-            //if (unlikely(child == BVH4i::emptyNode)) break;
 
             const mic_f lclipMinX = msub(node->lower[i].x,rdir16.x,org_rdir16.x);
             const mic_f lclipMinY = msub(node->lower[i].y,rdir16.y,org_rdir16.y);
@@ -448,6 +461,8 @@ namespace embree
             const mic_f lclipMaxY = msub(node->upper[i].y,rdir16.y,org_rdir16.y);
             const mic_f lclipMaxZ = msub(node->upper[i].z,rdir16.z,org_rdir16.z);
 	    
+	    if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
+
             const mic_f lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
             const mic_f lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
             const mic_m lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);   
@@ -469,8 +484,6 @@ namespace embree
                 *(sptr_dist-1) = curDist; 
                 curDist = childDist;
                 curNode = child;
-
-
               }              
               /* push hit child onto stack*/
               else 
@@ -487,6 +500,15 @@ namespace embree
               assert(sptr_node - stack_node < BVH4i::maxDepth);
             }	      
           }
+#if SWITCH_ON_DOWN_TRAVERSAL == 1
+	  const mic_m curUtil = ray_tfar > curDist;
+	  if (unlikely(countbits(curUtil) <= BVH4i::hybridSIMDUtilSwitchThreshold))
+	    {
+	      *sptr_node++ = curNode;
+	      *sptr_dist++ = curDist; 
+	      goto pop;
+	    }
+#endif
         }
         
         /* return if stack is empty */
@@ -618,7 +640,7 @@ namespace embree
       const mic3f org_rdir16  = ray16.org * rdir16;
       mic_f ray_tnear         = select(m_valid,ray16.tnear,pos_inf);
       mic_f ray_tfar          = select(m_valid,ray16.tfar ,neg_inf);
-      const mic_f inf = mic_f(pos_inf);
+      const mic_f inf         = mic_f(pos_inf);
 
       
       /* push root node */
@@ -632,7 +654,7 @@ namespace embree
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
 
-      while (1)
+      while (1) pop_occluded:
       {
 	const mic_m m_active = !m_terminated;
 
@@ -667,9 +689,11 @@ namespace embree
 		const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
 		const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
 		const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-
 		const unsigned int leaf_mask = BVH4I_LEAF_MASK;
-	  
+		const mic_m m7777 = 0x7777; // M_LANE_7777;
+		const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero());
+		const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero());
+
 		while (1) 
 		  {
 		    NodeRef curNode = stack_node_single[sindex-1];
@@ -679,6 +703,7 @@ namespace embree
 		      {
 			/* test if this is a leaf node */
 			if (unlikely(curNode.isLeaf(leaf_mask))) break;
+
         
 			const Node* __restrict__ const node = curNode.node(nodes);
 			const float* __restrict const plower = (float*)node->lower;
@@ -687,22 +712,30 @@ namespace embree
 			prefetch<PFHINT_L1>((char*)node + 0);
 			prefetch<PFHINT_L1>((char*)node + 64);
         
-			/* intersect single ray with 4 bounding boxes */
-			const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-			const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
-			const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
-			const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
+			mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz);
+			mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz);
 
+			tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
+			tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
+
+			tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
+			tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
+
+			mic_m hitm = ~m7777; 
+			const mic_f tLower = tLowerXYZ;
+			const mic_f tUpper = tUpperXYZ;
+			
 			sindex--;
 			curNode = stack_node_single[sindex]; // early pop of next node
-
+			
 			const Node* __restrict__ const next = curNode.node(nodes);
 			prefetch<PFHINT_L2>((char*)next + 0);
 			prefetch<PFHINT_L2>((char*)next + 64);
 
 			const mic_f tNear = vreduce_max4(tLower);
 			const mic_f tFar  = vreduce_min4(tUpper);  
-			const mic_m hitm = le(0x8888,tNear,tFar);
+			hitm = le(hitm,tNear,tFar);
+
 			const mic_f tNear_pos = select(hitm,tNear,inf);
 
 
@@ -718,6 +751,7 @@ namespace embree
 			curNode = ((unsigned int *)plower)[pos_first];
 			if (likely(num_hitm == 1)) continue;
         
+	
 			/* if two children are hit, push in correct order */
 			const unsigned long pos_second = bitscan64(pos_first,hiti);
 			if (likely(num_hitm == 2))
@@ -747,6 +781,7 @@ namespace embree
 			/* continue with closest child and push all others */
 			const mic_f min_dist = set_min_lanes(tNear_pos);
 			const unsigned int old_sindex = sindex;
+			
 			sindex += countbits(hiti) - 1;
 			assert(sindex < 3*BVH4i::maxDepth+1);
         
@@ -890,10 +925,12 @@ namespace embree
 	  prefetch<PFHINT_L1>((char*)node + 64);
 
           /* pop of next node */
+          curNode = *(sptr_node-1); 
+          curDist = *(sptr_dist-1);
           sptr_node--;
           sptr_dist--;
-          curNode = *sptr_node; 
-          curDist = *sptr_dist;
+
+	  mic_m m_curUtil = gt(ray_tfar,curDist);
           
 #pragma unroll(4)
           for (size_t i=0; i<4; i++)
@@ -906,6 +943,8 @@ namespace embree
 	      const mic_f lclipMaxX = msub(node->upper[i].x,rdir16.x,org_rdir16.x);
 	      const mic_f lclipMaxY = msub(node->upper[i].y,rdir16.y,org_rdir16.y);
 	      const mic_f lclipMaxZ = msub(node->upper[i].z,rdir16.z,org_rdir16.z);	    
+
+	      if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
 
 	      const mic_f lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
 	      const mic_f lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
@@ -925,11 +964,11 @@ namespace embree
 		  /* push cur node onto stack and continue with hit child */
 		  if (any(m_child_dist))
 		    {
-
 		      *(sptr_node-1) = curNode;
 		      *(sptr_dist-1) = curDist; 
 		      curDist = childDist;
 		      curNode = child;
+		      m_curUtil = gt(ray_tfar,curDist);
 		    }
               
 		  /* push hit child onto stack*/
@@ -946,6 +985,18 @@ namespace embree
 		  assert(sptr_node - stack_node < BVH4i::maxDepth);
 		}	      
 	    }
+
+
+#if SWITCH_ON_DOWN_TRAVERSAL == 1
+	  const unsigned int curUtil = countbits(m_curUtil);
+	  if (unlikely(curUtil <= BVH4i::hybridSIMDUtilSwitchThreshold))
+	    {
+	      *sptr_node++ = curNode;
+	      *sptr_dist++ = curDist; 
+	      goto pop_occluded;
+	    }
+#endif
+
         }
         
         /* return if stack is empty */

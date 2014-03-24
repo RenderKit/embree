@@ -58,6 +58,10 @@ namespace embree
 	  
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 	  
+      const mic_m m7777 = 0x7777; 
+      const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero());
+      const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero());
+
       while (1)
 	{
 	  NodeRef curNode = stack_node[sindex-1];
@@ -77,10 +81,19 @@ namespace embree
 	      prefetch<PFHINT_L1>((char*)node + 64);
         
 	      /* intersect single ray with 4 bounding boxes */
-	      const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-	      const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
-	      const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
-	      const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
+	      mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz);
+	      mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz);
+
+	      tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
+	      tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
+
+	      tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
+	      tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
+
+	      mic_m hitm = ~m7777; 
+	      const mic_f tLower = tLowerXYZ;
+	      const mic_f tUpper = tUpperXYZ;
+
 
 	      sindex--;
 	      curNode = stack_node[sindex]; // early pop of next node
@@ -91,7 +104,7 @@ namespace embree
 
 	      const mic_f tNear = vreduce_max4(tLower);
 	      const mic_f tFar  = vreduce_min4(tUpper);  
-	      const mic_m hitm = le(0x8888,tNear,tFar);
+	      hitm = le(hitm,tNear,tFar);
 	      const mic_f tNear_pos = select(hitm,tNear,inf);
 
 
@@ -395,6 +408,9 @@ namespace embree
       const mic_f max_dist_xyz = broadcast1to16f(&ray.tfar);
 
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+      const mic_m m7777 = 0x7777; 
+      const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero());
+      const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero());
 	  
       while (1)
 	{
@@ -414,10 +430,18 @@ namespace embree
 	      prefetch<PFHINT_L1>((char*)node + 64);
         
 	      /* intersect single ray with 4 bounding boxes */
-	      const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-	      const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
-	      const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
-	      const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
+	      mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz);
+	      mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz);
+
+	      tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
+	      tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
+
+	      tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
+	      tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
+
+	      mic_m hitm = ~m7777; 
+	      const mic_f tLower = tLowerXYZ;
+	      const mic_f tUpper = tUpperXYZ;
 
 	      sindex--;
 	      curNode = stack_node[sindex]; 
@@ -428,7 +452,7 @@ namespace embree
 
 	      const mic_f tNear = vreduce_max4(tLower);
 	      const mic_f tFar  = vreduce_min4(tUpper);  
-	      const mic_m hitm = le(0x8888,tNear,tFar);
+	      hitm = le(hitm,tNear,tFar);
 	      const mic_f tNear_pos = select(hitm,tNear,inf);
 
 

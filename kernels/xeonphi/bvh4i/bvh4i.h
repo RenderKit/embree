@@ -56,7 +56,7 @@ namespace embree
     /*! Cost of one traversal step. */
     static const int travCost = 1;
 
-    static const size_t hybridSIMDUtilSwitchThreshold = 8;
+    static const size_t hybridSIMDUtilSwitchThreshold = 7;
 
     /*! References a Node or list of Triangles */
     struct NodeRef
@@ -84,8 +84,8 @@ namespace embree
       __forceinline       Node* node(      void* base) const { return (      Node*)((      char*)base + _id); }
       __forceinline const Node* node(const void* base) const { return (const Node*)((const char*)base + _id); }
 #else
-      __forceinline       Node* node(      void* base) const { return (      Node*)((      short*)base + _id); }// lea reg,reg*2
-      __forceinline const Node* node(const void* base) const { return (const Node*)((const short*)base + _id); }// lea reg,reg*2
+      __forceinline       Node* node(      void* base) const { return (      Node*)((      short*)base + (size_t)_id); }// lea reg,reg*2
+      __forceinline const Node* node(const void* base) const { return (const Node*)((const short*)base + (size_t)_id); }// lea reg,reg*2
       
 #endif
       
@@ -397,9 +397,9 @@ namespace embree
   /* --- Binary BVH --- */
   /* ------------------ */
 
-#define BVH_INDEX_SHIFT 4
+#define BVH_INDEX_SHIFT  BVH4i::encodingBits
 #define BVH_ITEMS_MASK   (((unsigned int)1 << BVH_INDEX_SHIFT)-1)
-#define BVH_LEAF_MASK    ((unsigned int)1 << 3)
+#define BVH_LEAF_MASK    BVH4i::leaf_mask
 #define BVH_OFFSET_MASK  (~(BVH_ITEMS_MASK | BVH_LEAF_MASK))
 
   template<class T> 
@@ -545,7 +545,7 @@ namespace embree
     const mic_m min_d_mask = bvhLeaf(box_min0123) != mic_i::zero();
     const mic_i childID    = bvhChildID(box_min0123);
     const mic_i min_d_node = qbvhCreateNode(childID,mic_i::zero());
-    const mic_i min_d_leaf = (box_min0123 ^ BVH_LEAF_MASK) | QBVH_LEAF_MASK;
+    const mic_i min_d_leaf = box_min0123; //(box_min0123 ^ BVH_LEAF_MASK) | QBVH_LEAF_MASK;
     const mic_i min_d      = select(min_d_mask,min_d_leaf,min_d_node);
     const mic_i bvh4_min   = select(0x7777,box_min0123,min_d);
     const mic_i bvh4_max   = box_max0123;

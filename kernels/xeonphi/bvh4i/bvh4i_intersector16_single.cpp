@@ -27,6 +27,7 @@ namespace embree
   {
 
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
+    static unsigned int M_LANE_7777 = 0x7777; // needed due to compiler efficiency bug
 
     static __aligned(64) int zlc4[4] = {0xffffffff,0xffffffff,0xffffffff,0};
 
@@ -56,26 +57,31 @@ namespace embree
 
 	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z,mic_f::one());
+	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
 	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
 	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
+	  const mic_m m7777 = 0x7777; 
+	  const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero());
+	  const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero());
+
 	  while (1)
 	    {
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
-
+	      
 	      while (1) 
 		{
 		  /* test if this is a leaf node */
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;
+		  const Node* __restrict__ const node = curNode.node(nodes);
+
 		  STAT3(normal.trav_nodes,1,1,1);
 
 #if !defined(USE_QUANTIZATION)            
-		  const Node* __restrict__ const node = curNode.node(nodes);
 		  const float* __restrict const plower = (float*)node->lower;
 		  const float* __restrict const pupper = (float*)node->upper;
 
@@ -83,8 +89,19 @@ namespace embree
 		  prefetch<PFHINT_L1>((char*)node + 64);
         
 		  /* intersect single ray with 4 bounding boxes */
-		  const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-		  const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+
+		  mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz);
+		  mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz);
+
+		  tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
+		  tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
+
+		  tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
+		  tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
+
+		  mic_m hitm = ~m7777; 
+		  const mic_f tLower = tLowerXYZ;
+		  const mic_f tUpper = tUpperXYZ;
 #else
 
 		  BVH4i::QuantizedNode* __restrict__ const node = (BVH4i::QuantizedNode*)curNode.node(nodes);
@@ -97,39 +114,38 @@ namespace embree
 		  const mic_f lower   = node->decompress_lowerXYZ(startXYZ,diffXYZ);
 		  const mic_f upper   = node->decompress_upperXYZ(startXYZ,diffXYZ);
 
-		  const mic_f tLowerXYZ = lower * rdir_xyz - org_rdir_xyz;
-		  const mic_f tUpperXYZ = upper * rdir_xyz - org_rdir_xyz;
+		  mic_f tLowerXYZ = lower * rdir_xyz - org_rdir_xyz;
+		  mic_f tUpperXYZ = upper * rdir_xyz - org_rdir_xyz;
 #endif
 
-		  const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
-		  const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
 		  sindex--;
 
 		  curNode = stack_node[sindex]; // early pop of next node
 
-		  const Node* __restrict__ const next = curNode.node(nodes);
-		  prefetch<PFHINT_L2>((char*)next + 0*64);
-		  prefetch<PFHINT_L2>((char*)next + 1*64);
 
 		  const mic_f tNear = vreduce_max4(tLower);
 		  const mic_f tFar  = vreduce_min4(tUpper);  
-		  const mic_m hitm = le(0x8888,tNear,tFar);
+		  hitm = le(hitm,tNear,tFar);
+		  
 		  const mic_f tNear_pos = select(hitm,tNear,inf);
 
 		  STAT3(normal.trav_hit_boxes[countbits(hitm)],1,1,1);
 
+		  const mic_i plower_node = load16i((int*)node);
+
+
 		  /* if no child is hit, continue with early popped child */
 		  if (unlikely(none(hitm))) continue;
 
-		  sindex++;
-        
+		  sindex++;        
 		  const unsigned long hiti = toInt(hitm);
 		  const unsigned long pos_first = bitscan64(hiti);
 		  const unsigned long num_hitm = countbits(hiti); 
         
 		  /* if a single child is hit, continue with that child */
 		  curNode = ((unsigned int *)plower)[pos_first];
+
 		  if (likely(num_hitm == 1)) continue;
         
 		  /* if two children are hit, push in correct order */
@@ -143,6 +159,7 @@ namespace embree
           
 		      if (dist_first <= dist_second)
 			{
+			  
 			  stack_node[sindex] = node_second;
 			  ((unsigned int*)stack_dist)[sindex] = dist_second;                      
 			  sindex++;
@@ -167,8 +184,11 @@ namespace embree
 		  const unsigned int old_sindex = sindex;
 		  sindex += countbits(hiti) - 1;
 		  assert(sindex < 3*BVH4i::maxDepth+1);
-		  const mic_i plower_node = load16i((int*)plower);
         
+		  const Node* __restrict__ const next = curNode.node(nodes);
+		  prefetch<PFHINT_L1>((char*)next + 0*64);
+		  prefetch<PFHINT_L1>((char*)next + 1*64);
+
 		  const mic_m closest_child = eq(hitm,min_dist,tNear);
 		  const unsigned long closest_child_pos = bitscan64(closest_child);
 		  const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
@@ -186,10 +206,6 @@ namespace embree
 	      /* intersect one ray against four triangles */
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
-	      // DBG_PRINT(curNode);
-	      // DBG_PRINT(curNode.offsetIndex());
-	      // DBG_PRINT(curNode.offset());
-	      // exit(0);
 
 	      const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel);
 
@@ -438,19 +454,24 @@ namespace embree
 	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
 	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-
+	  const mic_i v_invalidNode(BVH4i::invalidNode);
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+	  const mic_m m7777 = 0x7777; 
+	  const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero());
+	  const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero());
 
 	  while (1)
 	    {
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
 
+
 	      while (1) 
 		{
 		  /* test if this is a leaf node */
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;
 		  STAT3(shadow.trav_nodes,1,1,1);
+
 #if !defined(USE_QUANTIZATION)            
 
 
@@ -462,9 +483,19 @@ namespace embree
 		  prefetch<PFHINT_L1>((char*)node + 64);
         
 		  /* intersect single ray with 4 bounding boxes */
-		  const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-		  const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
 
+		  mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz);
+		  mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz);
+
+		  tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
+		  tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
+
+		  tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
+		  tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
+
+		  mic_m hitm = ~m7777; 
+		  const mic_f tLower = tLowerXYZ;
+		  const mic_f tUpper = tUpperXYZ;
 #else
 
 		  BVH4i::QuantizedNode* __restrict__ const node = (BVH4i::QuantizedNode*)curNode.node(nodes);
@@ -481,24 +512,24 @@ namespace embree
 		  const mic_f tUpperXYZ = upper * rdir_xyz - org_rdir_xyz;
 #endif
 
-		  const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
-		  const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
-
-		  const Node* __restrict__ const next = curNode.node(nodes);
-		  prefetch<PFHINT_L2>((char*)next + 0);
-		  prefetch<PFHINT_L2>((char*)next + 64);
 
 		  sindex--;
+		  curNode = stack_node[sindex]; // early pop of next node
+
 		  const mic_f tNear = vreduce_max4(tLower);
 		  const mic_f tFar  = vreduce_min4(tUpper);  
-		  const mic_m hitm = le(0x8888,tNear,tFar);
+		  hitm = le(hitm,tNear,tFar);
+		  
+
 		  const mic_f tNear_pos = select(hitm,tNear,inf);
 
-		  curNode = stack_node[sindex]; // early pop of next node
 
 		  STAT3(shadow.trav_hit_boxes[countbits(hitm)],1,1,1);
 
+
 		  /* if no child is hit, continue with early popped child */
+		  const mic_i plower_node = load16i((int*)node);
+
 		  if (unlikely(none(hitm))) continue;
 		  sindex++;
         
@@ -545,7 +576,6 @@ namespace embree
 		  const mic_m closest_child = eq(hitm,min_dist,tNear);
 		  const unsigned long closest_child_pos = bitscan64(closest_child);
 		  const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
-		  const mic_i plower_node = load16i((int*)plower);
 		  curNode = ((unsigned int*)plower)[closest_child_pos];
 		  compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
 		}
