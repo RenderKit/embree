@@ -22,7 +22,7 @@
 
 #define SWITCH_THRESHOLD 5
 
-#define SWITCH_DURING_DOWN_TRAVERSAL
+#define SWITCH_DURING_DOWN_TRAVERSAL 1
 
 namespace embree
 {
@@ -104,17 +104,6 @@ namespace embree
           if (unlikely(curNode.isLeaf()))
             break;
 
-#if defined(SWITCH_DURING_DOWN_TRAVERSAL)
-          // seems to be the best place for testing utilization
-          if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
-            {
-              *sptr_node = curNode;
-              *sptr_near = curDist;
-              sptr_node++;
-              sptr_near++;
-              goto pop;
-            }
-#endif
 
           STAT3(normal.trav_nodes,1,popcnt(ray_tfar > curDist),8);
 
@@ -184,6 +173,15 @@ namespace embree
               }
             }	      
           }
+#if SWITCH_DURING_DOWN_TRAVERSAL == 1
+          // seems to be the best place for testing utilization
+          if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
+            {
+              *sptr_node++ = curNode;
+              *sptr_near++ = curDist;
+              goto pop;
+            }
+#endif
 
         }
         
@@ -351,14 +349,12 @@ namespace embree
               }
             }	      
           }
-#if defined(SWITCH_DURING_DOWN_TRAVERSAL)
+#if SWITCH_DURING_DOWN_TRAVERSAL == 1
           // seems to be the best place to test
           if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
             {
-              *sptr_node = curNode;
-              *sptr_near = curDist;
-              sptr_node++;
-              sptr_near++;
+              *sptr_node++ = curNode;
+              *sptr_near++ = curDist;
               goto pop;
             }
 #endif
