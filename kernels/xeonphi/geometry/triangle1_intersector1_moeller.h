@@ -17,30 +17,27 @@
 #pragma once
 
 #include "triangle1.h"
-#include "common/ray16.h"
+#include "common/ray.h"
 #include "geometry/filter.h"
 
 namespace embree
 {
-  /*! Intersector for individual precomputed triangles with 16
-   *  rays. This intersector implements a modified version of the
+  /*! Intersector for individual precomputed triangles with one
+   *  ray. This intersector implements a modified version of the
    *  Moeller Trumbore intersector from the paper "Fast, Minimum
    *  Storage Ray-Triangle Intersection". In contrast to the paper we
    *  precalculate some factors and factor the calculations
    *  differently to allow precalculating the cross product e1 x
    *  e2. */
-  struct Triangle1Intersector16MoellerTrumbore
+  struct Triangle1Intersector1MoellerTrumbore
   {
-    typedef Triangle1 Primitive;
 
-
-    __forceinline static bool intersect1(const size_t rayIndex, 
-					 const mic_f &dir_xyz,
+    __forceinline static bool intersect1(const mic_f &dir_xyz,
 					 const mic_f &org_xyz,
 					 const mic_f &min_dist_xyz,
 					 mic_f &max_dist_xyz,
 					 const mic_i &and_mask,
-					 Ray16& ray16, 
+					 Ray& ray, 
 					 const Scene     *__restrict__ const geometry,
 					 const Triangle1 * __restrict__ const tptr)
     {
@@ -96,21 +93,21 @@ namespace embree
 
       mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
-
 #if defined(__USE_RAY_MASK__)
-      const mic_i rayMask(ray16.mask[rayIndex]);
+      const mic_i rayMask(ray.mask);
       const mic_i triMask = swDDDD(gather16i_4i_align(&tptr[0].v2,&tptr[1].v2,&tptr[2].v2,&tptr[3].v2));
       const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
       m_final &= m_ray_mask;	      
 #endif
 
+
       //////////////////////////////////////////////////////////////////////////////////////////////////
 
-      /* did the ray hit one of the four triangles? */
+      /* did the ray hot one of the four triangles? */
       if (unlikely(any(m_final)))
 	{
 	  /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__) 
+#if defined(__INTERSECTION_FILTER__)
 	  mic_f org_max_dist_xyz = max_dist_xyz;
 
 	  /* did the ray hit one of the four triangles? */
@@ -128,35 +125,42 @@ namespace embree
 	      const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
 	      const int geomID = tri_ptr->geomID();
 	      const int primID = tri_ptr->primID();
-                
-	      Geometry* geom = geometry->get(geomID);
-	      if (likely(!geom->hasIntersectionFilter16())) 
-		{
 
-		  compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
-		  compactustore16f_low(m_tri,&ray16.u[rayIndex],u); 
-		  compactustore16f_low(m_tri,&ray16.v[rayIndex],v); 
-		  compactustore16f_low(m_tri,&ray16.Ng.x[rayIndex],gnormalx); 
-		  compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
-		  compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
-		  ray16.geomID[rayIndex] = geomID;
-		  ray16.primID[rayIndex] = primID;
+	      // if ( (tri_ptr->mask() & ray.mask) == 0 ) {
+	      //   m_final ^= m_tri;
+	      //   continue;
+	      // }
+                
+	      Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
+	      if (likely(!geom->hasIntersectionFilter1())) 
+		{
+		  compactustore16f_low(m_tri,&ray.tfar,min_dist);
+		  compactustore16f_low(m_tri,&ray.u,u); 
+		  compactustore16f_low(m_tri,&ray.v,v); 
+		  compactustore16f_low(m_tri,&ray.Ng.x,gnormalx); 
+		  compactustore16f_low(m_tri,&ray.Ng.y,gnormaly); 
+		  compactustore16f_low(m_tri,&ray.Ng.z,gnormalz); 
+		  ray.geomID = geomID;
+		  ray.primID = primID;
 		  max_dist_xyz = min_dist;
 		  break;
 		}
                 
-	      if (runIntersectionFilter16(geom,ray16,rayIndex,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) {
+	      if (runIntersectionFilter1(geom,ray,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) {
 		max_dist_xyz = min_dist;
 		break;
 	      }
 	      m_final ^= m_tri;
 	    }
-	  max_dist_xyz = ray16.tfar[rayIndex];
+	  max_dist_xyz = ray.tfar;
 #else
-	  STAT3(normal.trav_prim_hits,1,1,1);
 	  max_dist_xyz  = select(m_final,t,max_dist_xyz);
 	  const mic_f min_dist = vreduce_min(max_dist_xyz);
 	  const mic_m m_dist = eq(min_dist,max_dist_xyz);
+
+	  prefetch<PFHINT_L1EX>((mic_f*)&ray + 0);
+	  prefetch<PFHINT_L1EX>((mic_f*)&ray + 1);
+
 	  const size_t vecIndex = bitscan(toInt(m_dist));
 	  const size_t triIndex = vecIndex >> 2;
 
@@ -167,42 +171,32 @@ namespace embree
 	  const mic_f gnormalx = mic_f(tri_ptr->Ng.x);
 	  const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
 	  const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
-                
-	  prefetch<PFHINT_L1EX>(&ray16.tfar);  
-	  prefetch<PFHINT_L1EX>(&ray16.u);
-	  prefetch<PFHINT_L1EX>(&ray16.v);
-	  prefetch<PFHINT_L1EX>(&ray16.Ng.x); 
-	  prefetch<PFHINT_L1EX>(&ray16.Ng.y); 
-	  prefetch<PFHINT_L1EX>(&ray16.Ng.z); 
-	  prefetch<PFHINT_L1EX>(&ray16.geomID);
-	  prefetch<PFHINT_L1EX>(&ray16.primID);
 
 	  max_dist_xyz = min_dist;
-		  
-	  compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
-	  compactustore16f_low(m_tri,&ray16.u[rayIndex],u); 
-	  compactustore16f_low(m_tri,&ray16.v[rayIndex],v); 
-	  compactustore16f_low(m_tri,&ray16.Ng.x[rayIndex],gnormalx); 
-	  compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
-	  compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
 
-	  ray16.geomID[rayIndex] = tri_ptr->geomID();
-	  ray16.primID[rayIndex] = tri_ptr->primID();
+	  compactustore16f_low(m_tri,&ray.tfar,min_dist);
+	  compactustore16f_low(m_tri,&ray.u,u); 
+	  compactustore16f_low(m_tri,&ray.v,v); 
+	  compactustore16f_low(m_tri,&ray.Ng.x,gnormalx); 
+	  compactustore16f_low(m_tri,&ray.Ng.y,gnormaly); 
+	  compactustore16f_low(m_tri,&ray.Ng.z,gnormalz); 
+
+	  ray.geomID = tri_ptr->geomID();
+	  ray.primID = tri_ptr->primID();
 #endif
 	  return true;
-      
+
 	}
       return false;
     }
 
 
-    __forceinline static mic_m occluded1(const size_t rayIndex, 
-					 const mic_f &dir_xyz,
+    __forceinline static mic_m occluded1(const mic_f &dir_xyz,
 					 const mic_f &org_xyz,
 					 const mic_f &min_dist_xyz,
 					 const mic_f &max_dist_xyz,
 					 const mic_i &and_mask,
-					 Ray16& ray16, 
+					 Ray& ray, 
 					 const Scene     *__restrict__ const geometry,
 					 const Triangle1 * __restrict__ const tptr)
     {
@@ -259,7 +253,7 @@ namespace embree
       mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
 #if defined(__USE_RAY_MASK__)
-      const mic_i rayMask(ray16.mask[rayIndex]);
+      const mic_i rayMask(ray.mask);
       const mic_i triMask = swDDDD(gather16i_4i_align(&tptr[0].v2,&tptr[1].v2,&tptr[2].v2,&tptr[3].v2));
       const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
       m_final &= m_ray_mask;	      
@@ -283,207 +277,18 @@ namespace embree
 	  const int geomID = tri_ptr->geomID();
 	  const int primID = tri_ptr->primID();                
 	  Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
-	  if (likely(!geom->hasOcclusionFilter16())) break;
+
+	  if (likely(!geom->hasOcclusionFilter1())) break;
                 
-	  if (runOcclusionFilter16(geom,ray16,rayIndex,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) 
+	  if (runOcclusionFilter1(geom,ray,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) 
 	    break;
 
 	  m_final ^= m_tri; /* clear bit */
 	}
 #endif
+
       return m_final;
     }
 
-    // ==================================================================================================
-    // ==================================================================================================
-    // ==================================================================================================
-
-    __forceinline static void intersect16(const mic_m valid_leaf, 
-					  const unsigned int items,
-					  const mic3f &dir,
-					  const mic3f &org,
-					  Ray16& ray16, 
-					  const Scene     *__restrict__ const geometry,
-					  const Triangle1 * __restrict__ const tptr)
-    {
-      const mic_f zero = mic_f::zero();
-      const mic_f one  = mic_f::one();
-
-      prefetch<PFHINT_L1>((mic_f*)tptr +  0); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  1); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  2); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  3); 
-
-
-      for (size_t i=0; i<items; i++) 
-	{
-	  const Triangle1& tri = tptr[i];
-
-	  prefetch<PFHINT_L1>(&tptr[i+1]); 
-
-	  STAT3(normal.trav_prims,1,popcnt(valid_i),16);
-        
-	  /* load vertices and calculate edges */
-	  const mic_f v0 = broadcast4to16f(&tri.v0);
-	  const mic_f v1 = broadcast4to16f(&tri.v1);
-	  const mic_f v2 = broadcast4to16f(&tri.v2);
-	  const mic_f e1 = v0-v1;
-	  const mic_f e2 = v2-v0;
-
-	  /* calculate denominator */
-	  const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
-	  const mic3f C =  _v0 - org;
-	    
-	  const mic3f Ng = mic3f(tri.Ng);
-	  const mic_f den = dot(Ng,dir);
-
-	  mic_m valid = valid_leaf;
-
-#if defined(__BACKFACE_CULLING__)
-	    
-	  valid &= den > zero;
-#endif
-
-	  /* perform edge tests */
-	  const mic_f rcp_den = rcp(den);
-	  const mic3f R = cross(dir,C);
-	  const mic3f _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
-	  const mic_f u = dot(R,_e2)*rcp_den;
-	  const mic3f _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
-	  const mic_f v = dot(R,_e1)*rcp_den;
-	  valid = ge(valid,u,zero);
-	  valid = ge(valid,v,zero);
-	  valid = le(valid,u+v,one);
-	  prefetch<PFHINT_L1EX>(&ray16.u);      
-	  prefetch<PFHINT_L1EX>(&ray16.v);      
-	  prefetch<PFHINT_L1EX>(&ray16.tfar);      
-	  const mic_f t = dot(C,Ng) * rcp_den;
-
-	  if (unlikely(none(valid))) continue;
-      
-	  /* perform depth test */
-	  valid = ge(valid, t,ray16.tnear);
-	  valid = ge(valid,ray16.tfar,t);
-
-	  const mic_i geomID = tri.geomID();
-	  const mic_i primID = tri.primID();
-	  prefetch<PFHINT_L1EX>(&ray16.geomID);      
-	  prefetch<PFHINT_L1EX>(&ray16.primID);      
-	  prefetch<PFHINT_L1EX>(&ray16.Ng.x);      
-	  prefetch<PFHINT_L1EX>(&ray16.Ng.y);      
-	  prefetch<PFHINT_L1EX>(&ray16.Ng.z);      
-
-	  /* ray masking test */
-#if defined(__USE_RAY_MASK__)
-	  valid &= (mic_i(tri.mask()) & ray16.mask) != 0;
-#endif
-	  if (unlikely(none(valid))) continue;
-        
-	  /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
-	  Geometry* geom = ((Scene*)bvh->geometry)->get(tri.geomID());
-	  if (unlikely(geom->hasIntersectionFilter16())) {
-	    runIntersectionFilter16(valid,geom,ray,u,v,t,Ng,geomID,primID);
-	    continue;
-	  }
-#endif
-
-	  /* update hit information */
-	  store16f(valid,(float*)&ray16.u,u);
-	  store16f(valid,(float*)&ray16.v,v);
-	  store16f(valid,(float*)&ray16.tfar,t);
-	  store16i(valid,(float*)&ray16.geomID,geomID);
-	  store16i(valid,(float*)&ray16.primID,primID);
-	  store16f(valid,(float*)&ray16.Ng.x,Ng.x);
-	  store16f(valid,(float*)&ray16.Ng.y,Ng.y);
-	  store16f(valid,(float*)&ray16.Ng.z,Ng.z);
-	}
-	
-    }
-
-    __forceinline static void occluded16(const mic_m m_valid_leaf, 
-					 const unsigned int items,
-					 const mic3f &dir,
-					 const mic3f &org,
-					 Ray16& ray16, 
-					 mic_m &m_terminated,
-					 const Scene     *__restrict__ const geometry,
-					 const Triangle1 * __restrict__ const tptr)
-    {
-      prefetch<PFHINT_L1>((mic_f*)tptr +  0); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  1); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  2); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  3); 
-
-      const mic_f zero = mic_f::zero();
-      mic_m valid_leaf = m_valid_leaf;
-      for (size_t i=0; i<items; i++) 
-	{
-	  const Triangle1& tri = tptr[i];
-
-	  prefetch<PFHINT_L1>(&tptr[i+1]); 
-
-	  STAT3(normal.trav_prims,1,popcnt(valid_i),16);
-        
-	  /* load vertices and calculate edges */
-	  const mic_f v0 = broadcast4to16f(&tri.v0);
-	  const mic_f v1 = broadcast4to16f(&tri.v1);
-	  const mic_f v2 = broadcast4to16f(&tri.v2);
-	  const mic_f e1 = v0-v1;
-	  const mic_f e2 = v2-v0;
-
-	  /* calculate denominator */
-	  const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
-	  const mic3f C =  _v0 - org;
-	    
-	  const mic3f Ng = mic3f(tri.Ng);
-	  const mic_f den = dot(Ng,dir);
-
-	  mic_m valid = valid_leaf;
-
-#if defined(__BACKFACE_CULLING__)
-	    
-	  valid &= den > zero;
-#endif
-
-	  /* perform edge tests */
-	  const mic_f rcp_den = rcp(den);
-	  const mic3f R = cross(dir,C);
-	  const mic3f _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
-	  const mic_f u = dot(R,_e2)*rcp_den;
-	  const mic3f _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
-	  const mic_f v = dot(R,_e1)*rcp_den;
-	  valid = ge(valid,u,zero);
-	  valid = ge(valid,v,zero);
-	  valid = le(valid,u+v,one);
-	  const mic_f t = dot(C,Ng) * rcp_den;
-
-	  if (unlikely(none(valid))) continue;
-      
-	  /* perform depth test */
-	  valid = ge(valid, t,ray16.tnear);
-	  valid = ge(valid,ray16.tfar,t);
-
-	  /* ray masking test */
-#if defined(__USE_RAY_MASK__)
-	  valid &= (mic_i(tri.mask()) & ray16.mask) != 0;
-#endif
-	  if (unlikely(none(valid))) continue;
-	    
-	  /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
-	  const int geomID = tri.geomID();
-	  Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
-	  if (unlikely(geom->hasOcclusionFilter16()))
-	    valid = runOcclusionFilter16(valid,geom,ray,u,v,t,Ng,geomID,tri.primID());
-#endif
-
-	  /* update occlusion */
-	  m_terminated |= valid;
-	  valid_leaf &= ~valid;
-	  if (unlikely(none(valid_leaf))) break;
-	}
-    }
-
-    };
+  };
 }

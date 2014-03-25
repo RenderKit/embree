@@ -16,6 +16,7 @@
 
 #include "bvh4i_intersector16_chunk.h"
 #include "geometry/triangle1.h"
+#include "geometry/triangle1_intersector16_moeller.h"
 #include "geometry/filter.h"
 
 namespace embree
@@ -49,6 +50,9 @@ namespace embree
       
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+
+      const mic3f org = ray.org;
+      const mic3f dir = ray.dir;
 
       while (1)
       {
@@ -86,102 +90,10 @@ namespace embree
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
  
 	unsigned int items; 
-	const Triangle1* tris  = (Triangle1*) curNode.leaf(accel,items);
+	const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel,items);
 
-	const mic_f zero = mic_f::zero();
-	const mic_f one  = mic_f::one();
+	Triangle1Intersector16MoellerTrumbore::intersect16(valid_leaf,items,dir,org,ray,(Scene*)bvh->geometry,tptr);
 
-	prefetch<PFHINT_L1>((mic_f*)tris +  0); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  1); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  2); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
-
-        const mic3f org = ray.org;
-        const mic3f dir = ray.dir;
-
-	for (size_t i=0; i<items; i++) 
-	  {
-	    const Triangle1& tri = tris[i];
-
-	    prefetch<PFHINT_L1>(&tris[i+1]); 
-
-	    STAT3(normal.trav_prims,1,popcnt(valid_i),16);
-        
-	    /* load vertices and calculate edges */
-	    const mic_f v0 = broadcast4to16f(&tri.v0);
-	    const mic_f v1 = broadcast4to16f(&tri.v1);
-	    const mic_f v2 = broadcast4to16f(&tri.v2);
-	    const mic_f e1 = v0-v1;
-	    const mic_f e2 = v2-v0;
-
-	    /* calculate denominator */
-	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
-	    const mic3f C =  _v0 - org;
-	    
-	    const mic3f Ng = mic3f(tri.Ng);
-	    const mic_f den = dot(Ng,dir);
-
-	    mic_m valid = valid_leaf;
-
-#if defined(__BACKFACE_CULLING__)
-	    
-	    valid &= den > zero;
-#endif
-
-	    /* perform edge tests */
-	    const mic_f rcp_den = rcp(den);
-	    const mic3f R = cross(dir,C);
-	    const mic3f _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
-	    const mic_f u = dot(R,_e2)*rcp_den;
-	    const mic3f _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
-	    const mic_f v = dot(R,_e1)*rcp_den;
-	    valid = ge(valid,u,zero);
-	    valid = ge(valid,v,zero);
-	    valid = le(valid,u+v,one);
-	    prefetch<PFHINT_L1EX>(&ray.u);      
-	    prefetch<PFHINT_L1EX>(&ray.v);      
-	    prefetch<PFHINT_L1EX>(&ray.tfar);      
-	    const mic_f t = dot(C,Ng) * rcp_den;
-
-	    if (unlikely(none(valid))) continue;
-      
-	    /* perform depth test */
-	    valid = ge(valid, t,ray.tnear);
-	    valid = ge(valid,ray.tfar,t);
-
-	    const mic_i geomID = tri.geomID();
-	    const mic_i primID = tri.primID();
-	    prefetch<PFHINT_L1EX>(&ray.geomID);      
-	    prefetch<PFHINT_L1EX>(&ray.primID);      
-	    prefetch<PFHINT_L1EX>(&ray.Ng.x);      
-	    prefetch<PFHINT_L1EX>(&ray.Ng.y);      
-	    prefetch<PFHINT_L1EX>(&ray.Ng.z);      
-
-	    /* ray masking test */
-#if defined(__USE_RAY_MASK__)
-	    valid &= (mic_i(tri.mask()) & ray.mask) != 0;
-#endif
-	    if (unlikely(none(valid))) continue;
-        
-            /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
-            Geometry* geom = ((Scene*)bvh->geometry)->get(tri.geomID());
-            if (unlikely(geom->hasIntersectionFilter16())) {
-              runIntersectionFilter16(valid,geom,ray,u,v,t,Ng,geomID,primID);
-              continue;
-            }
-#endif
-
-	    /* update hit information */
-	    store16f(valid,(float*)&ray.u,u);
-	    store16f(valid,(float*)&ray.v,v);
-	    store16f(valid,(float*)&ray.tfar,t);
-	    store16i(valid,(float*)&ray.geomID,geomID);
-	    store16i(valid,(float*)&ray.primID,primID);
-	    store16f(valid,(float*)&ray.Ng.x,Ng.x);
-	    store16f(valid,(float*)&ray.Ng.y,Ng.y);
-	    store16f(valid,(float*)&ray.Ng.z,Ng.z);
-	  }
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
     }
@@ -211,6 +123,9 @@ namespace embree
       
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+
+      const mic3f org = ray.org;
+      const mic3f dir = ray.dir;
 
       while (1)
       {
@@ -252,83 +167,10 @@ namespace embree
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
 
 	unsigned int items; 
-	const Triangle1* tris  = (Triangle1*) curNode.leaf(accel,items);
+	const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel,items);
 
-	prefetch<PFHINT_L1>((mic_f*)tris +  0); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  1); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  2); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
+	Triangle1Intersector16MoellerTrumbore::occluded16(valid_leaf,items,dir,org,ray,m_terminated,(Scene*)bvh->geometry,tptr);
 
-        const mic3f org = ray.org;
-        const mic3f dir = ray.dir;
-	const mic_f zero = mic_f::zero();
-
-	for (size_t i=0; i<items; i++) 
-	  {
-	    const Triangle1& tri = tris[i];
-
-	    prefetch<PFHINT_L1>(&tris[i+1]); 
-
-	    STAT3(normal.trav_prims,1,popcnt(valid_i),16);
-        
-	    /* load vertices and calculate edges */
-	    const mic_f v0 = broadcast4to16f(&tri.v0);
-	    const mic_f v1 = broadcast4to16f(&tri.v1);
-	    const mic_f v2 = broadcast4to16f(&tri.v2);
-	    const mic_f e1 = v0-v1;
-	    const mic_f e2 = v2-v0;
-
-	    /* calculate denominator */
-	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
-	    const mic3f C =  _v0 - org;
-	    
-	    const mic3f Ng = mic3f(tri.Ng);
-	    const mic_f den = dot(Ng,dir);
-
-	    mic_m valid = valid_leaf;
-
-#if defined(__BACKFACE_CULLING__)
-	    
-	    valid &= den > zero;
-#endif
-
-	    /* perform edge tests */
-	    const mic_f rcp_den = rcp(den);
-	    const mic3f R = cross(dir,C);
-	    const mic3f _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
-	    const mic_f u = dot(R,_e2)*rcp_den;
-	    const mic3f _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
-	    const mic_f v = dot(R,_e1)*rcp_den;
-	    valid = ge(valid,u,zero);
-	    valid = ge(valid,v,zero);
-	    valid = le(valid,u+v,one);
-	    const mic_f t = dot(C,Ng) * rcp_den;
-
-	    if (unlikely(none(valid))) continue;
-      
-	    /* perform depth test */
-	    valid = ge(valid, t,ray.tnear);
-	    valid = ge(valid,ray.tfar,t);
-
-	    /* ray masking test */
-#if defined(__USE_RAY_MASK__)
-	    valid &= (mic_i(tri.mask()) & ray.mask) != 0;
-#endif
-	    if (unlikely(none(valid))) continue;
-	    
-            /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
-            const int geomID = tri.geomID();
-            Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
-            if (unlikely(geom->hasOcclusionFilter16()))
-              valid = runOcclusionFilter16(valid,geom,ray,u,v,t,Ng,geomID,tri.primID());
-#endif
-
-	    /* update occlusion */
-	    m_terminated |= valid;
-	    valid_leaf &= ~valid;
-	    if (unlikely(none(valid_leaf))) break;
-	  }
         if (unlikely(all(m_terminated))) break;
         ray_tfar = select(m_terminated,neg_inf,ray_tfar);
       }
