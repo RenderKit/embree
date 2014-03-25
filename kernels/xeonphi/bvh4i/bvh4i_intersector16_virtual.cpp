@@ -73,67 +73,16 @@ namespace embree
 	        
 	const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
-        while (1)
-        {
-          /* test if this is a leaf node */
-          if (unlikely(curNode.isLeaf(leaf_mask))) break;
-          
-          STAT3(normal.trav_nodes,1,popcnt(ray_tfar > curDist),16);
-          const Node* __restrict__ const node = curNode.node(nodes);
-
-          /* pop of next node */
-          sptr_node--;
-          sptr_dist--;
-          curNode = *sptr_node; 
-          curDist = *sptr_dist;
-          
-	  prefetch<PFHINT_L1>((mic_f*)node + 1); // depth first order, prefetch		
-
-#pragma unroll(4)
-          for (unsigned int i=0; i<4; i++)
-          {
-	    const NodeRef child = node->lower[i].child;
-	    
-            const mic_f lclipMinX = msub(node->lower[i].x,rdir.x,org_rdir.x);
-            const mic_f lclipMinY = msub(node->lower[i].y,rdir.y,org_rdir.y);
-            const mic_f lclipMinZ = msub(node->lower[i].z,rdir.z,org_rdir.z);
-            const mic_f lclipMaxX = msub(node->upper[i].x,rdir.x,org_rdir.x);
-            const mic_f lclipMaxY = msub(node->upper[i].y,rdir.y,org_rdir.y);
-            const mic_f lclipMaxZ = msub(node->upper[i].z,rdir.z,org_rdir.z);
-	    
-	    if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
-
-            const mic_f lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const mic_f lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const mic_m lhit   = le(max(lnearP,ray_tnear),min(lfarP,ray_tfar));   
-	    const mic_f childDist = select(lhit,lnearP,inf);
-            const mic_m m_child_dist = lt(childDist,curDist);
-            /* if we hit the child we choose to continue with that child if it 
-               is closer than the current next child, or we push it onto the stack */
-
-            if (likely(any(lhit)))
-            {
-              sptr_node++;
-              sptr_dist++;
-              
-              /* push cur node onto stack and continue with hit child */
-              if (any(m_child_dist))
-              {
-                *(sptr_node-1) = curNode;
-                *(sptr_dist-1) = curDist; 
-                curDist = childDist;
-                curNode = child;
-              }              
-              /* push hit child onto stack*/
-              else 
-		{
-		  *(sptr_node-1) = child;
-		  *(sptr_dist-1) = childDist; 
-		}
-              assert(sptr_node - stack_node < BVH4i::maxDepth);
-            }	      
-          }
-        }
+	traverse_chunk_intersect(curNode,
+				 curDist,
+				 rdir,
+				 org_rdir,
+				 ray_tnear,
+				 ray_tfar,
+				 sptr_node,
+				 sptr_dist,
+				 nodes,
+				 leaf_mask);            		    	
         
         /* return if stack is empty */
         if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -203,68 +152,19 @@ namespace embree
         /* cull node if behind closest hit point */
         if (unlikely(none(m_stackDist))) continue;
 	
-        while (1)
-        {
-          /* test if this is a leaf node */
-          if (unlikely(curNode.isLeaf())) break;
-          
-          STAT3(shadow.trav_nodes,1,popcnt(ray_tfar > curDist),16);
-          const Node* __restrict__ const node = curNode.node(nodes);
-          
-	  prefetch<PFHINT_L1>((mic_f*)node + 0); 
-	  prefetch<PFHINT_L1>((mic_f*)node + 1); 
+	const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
-          /* pop of next node */
-          sptr_node--;
-          sptr_dist--;
-          curNode = *sptr_node; 
-          curDist = *sptr_dist;
-          	 
-#pragma unroll(4)
-          for (unsigned int i=0; i<4; i++)
-          {
-	    const NodeRef child = node->lower[i].child;
-            
-            const mic_f lclipMinX = msub(node->lower[i].x,rdir.x,org_rdir.x);
-            const mic_f lclipMinY = msub(node->lower[i].y,rdir.y,org_rdir.y);
-            const mic_f lclipMinZ = msub(node->lower[i].z,rdir.z,org_rdir.z);
-            const mic_f lclipMaxX = msub(node->upper[i].x,rdir.x,org_rdir.x);
-            const mic_f lclipMaxY = msub(node->upper[i].y,rdir.y,org_rdir.y);
-            const mic_f lclipMaxZ = msub(node->upper[i].z,rdir.z,org_rdir.z);	    
-
-	    if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
-
-            const mic_f lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const mic_f lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const mic_m lhit   = le(m_active,max(lnearP,ray_tnear),min(lfarP,ray_tfar));      
-	    const mic_f childDist = select(lhit,lnearP,inf);
-            const mic_m m_child_dist = childDist < curDist;
-            
-            /* if we hit the child we choose to continue with that child if it 
-               is closer than the current next child, or we push it onto the stack */
-            if (likely(any(lhit)))
-            {
-              sptr_node++;
-              sptr_dist++;
-              
-              /* push cur node onto stack and continue with hit child */
-              if (any(m_child_dist))
-              {
-                *(sptr_node-1) = curNode; 
-                *(sptr_dist-1) = curDist; 
-                curDist = childDist;
-                curNode = child;
-              }
-              
-              /* push hit child onto stack*/
-              else {
-                *(sptr_node-1) = child;
-                *(sptr_dist-1) = childDist; 
-              }
-              assert(sptr_node - stack_node < BVH4i::maxDepth);
-            }	      
-          }
-        }
+	traverse_chunk_occluded(curNode,
+				curDist,
+				rdir,
+				org_rdir,
+				ray_tnear,
+				ray_tfar,
+				m_active,
+				sptr_node,
+				sptr_dist,
+				nodes,
+				leaf_mask);            		    	
         
         /* return if stack is empty */
         if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -395,9 +295,6 @@ namespace embree
       const mic_f max_dist_xyz = broadcast1to16f(&ray.tfar);
 
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
-      const mic_m m7777 = 0x7777; 
-      const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero());
-      const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero());
 	  
       while (1)
 	{

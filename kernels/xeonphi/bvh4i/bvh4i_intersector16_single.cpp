@@ -283,15 +283,11 @@ namespace embree
 	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 	  const mic_i v_invalidNode(BVH4i::invalidNode);
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
-	  const mic_m m7777 = 0x7777; 
-	  const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero());
-	  const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero());
 
 	  while (1)
 	    {
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
-
 
 	      traverse_single_occluded(curNode,
 				       sindex,
