@@ -41,6 +41,8 @@ namespace embree
 					 const Scene     *__restrict__ const geometry,
 					 const Triangle1 * __restrict__ const tptr)
     {
+      const mic_f zero = mic_f::zero();
+
       prefetch<PFHINT_L1>(tptr + 3);
       prefetch<PFHINT_L1>(tptr + 2);
       prefetch<PFHINT_L1>(tptr + 1);
@@ -131,7 +133,7 @@ namespace embree
 	      //   continue;
 	      // }
                 
-	      Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
+	      const Geometry* geom = geometry->get(geomID);
 	      if (likely(!geom->hasIntersectionFilter1())) 
 		{
 		  compactustore16f_low(m_tri,&ray.tfar,min_dist);
@@ -200,6 +202,8 @@ namespace embree
 					 const Scene     *__restrict__ const geometry,
 					 const Triangle1 * __restrict__ const tptr)
     {
+      const mic_f zero = mic_f::zero();
+
       prefetch<PFHINT_L1>(tptr + 3);
       prefetch<PFHINT_L1>(tptr + 2);
       prefetch<PFHINT_L1>(tptr + 1);
@@ -276,7 +280,7 @@ namespace embree
 	  const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
 	  const int geomID = tri_ptr->geomID();
 	  const int primID = tri_ptr->primID();                
-	  Geometry* geom = ((Scene*)bvh->geometry)->get(geomID);
+	  const Geometry* geom = geometry->get(geomID);
 
 	  if (likely(!geom->hasOcclusionFilter1())) break;
                 
