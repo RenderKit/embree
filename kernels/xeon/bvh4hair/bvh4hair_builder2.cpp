@@ -331,7 +331,7 @@ namespace embree
         bestArea = area;
       }
     }
-    assert(bestArea != inf); // FIXME: can get raised if all selected curves are points
+    assert(bestArea != (float)inf); // FIXME: can get raised if all selected curves are points
     bestBounds.upper.w = bestArea;
     return NAABBox3fa(bestSpace,bestBounds);
   }
