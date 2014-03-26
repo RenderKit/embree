@@ -550,6 +550,10 @@
 			>
 		</File>
 		<File
+			RelativePath=".\jpeg.cpp"
+			>
+		</File>
+		<File
 			RelativePath=".\magick.cpp"
 			>
 		</File>

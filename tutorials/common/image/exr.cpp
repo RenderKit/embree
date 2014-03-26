@@ -86,4 +86,5 @@ namespace embree
   }
 }
 
-#endif
+#endif // USE_OPENEXR
+

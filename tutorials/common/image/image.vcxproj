@@ -300,6 +300,7 @@
   <ItemGroup>
     <ClCompile Include="exr.cpp" />
     <ClCompile Include="image.cpp" />
+    <ClCompile Include="jpeg.cpp" />
     <ClCompile Include="magick.cpp" />
     <ClCompile Include="pfm.cpp" />
     <ClCompile Include="ppm.cpp" />
