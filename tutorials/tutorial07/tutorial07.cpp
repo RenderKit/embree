@@ -255,14 +255,22 @@ namespace embree
 	const Vec3fa& v1 = scene.meshes[m]->v[ i1 ];
 	const Vec3fa& v2 = scene.meshes[m]->v[ i2 ];
 
-	const Vec3fa& n0 = scene.meshes[m]->vn[ i0 ];
-	const Vec3fa& n1 = scene.meshes[m]->vn[ i1 ];
-	const Vec3fa& n2 = scene.meshes[m]->vn[ i2 ];
+        Vec3fa n0,n1,n2;
+        if (scene.meshes[m]->vn.size() != 0)
+          {
+            const Vec3fa& n0 = scene.meshes[m]->vn[ i0 ];
+            const Vec3fa& n1 = scene.meshes[m]->vn[ i1 ];
+            const Vec3fa& n2 = scene.meshes[m]->vn[ i2 ];
+          }
+        else
+          {
+            const Vec3fa edge0 = v1-v0;
+            const Vec3fa edge1 = v2-v0;
+            Vec3fa normal = cross(edge0,edge1);
+            n0 = n1 = n2 = normal;
+          }
         
-	const Vec3fa edge0 = v1-v0;
-	const Vec3fa edge1 = v2-v0;
-	Vec3fa normal = cross(edge0,edge1);
-	if (length(normal) < 1E-30) continue;
+	//if (length(normal) < 1E-30) continue;
         	
 	const float thickness = hairy_triangles_thickness;
 	
