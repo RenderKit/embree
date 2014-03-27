@@ -258,9 +258,9 @@ namespace embree
         Vec3fa n0,n1,n2;
         if (scene.meshes[m]->vn.size() != 0)
           {
-            const Vec3fa& n0 = scene.meshes[m]->vn[ i0 ];
-            const Vec3fa& n1 = scene.meshes[m]->vn[ i1 ];
-            const Vec3fa& n2 = scene.meshes[m]->vn[ i2 ];
+            n0 = scene.meshes[m]->vn[ i0 ];
+            n1 = scene.meshes[m]->vn[ i1 ];
+            n2 = scene.meshes[m]->vn[ i2 ];
           }
         else
           {
@@ -334,6 +334,7 @@ namespace embree
     double dt = 0.0f;
     for (size_t i=0; i<g_numFrames; i++) 
     {
+      std::cout << "frame [" << i << "/" << g_numFrames << "]" << std::endl;
       double t0 = getSeconds();
       render(0.0f,
              pixel2world.l.vx,
