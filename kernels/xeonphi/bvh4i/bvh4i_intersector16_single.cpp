@@ -119,11 +119,11 @@ namespace embree
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
-      const mic_m m_valid     = *(mic_i*)valid_i != mic_i(0);
-      const mic3f rdir16      = rcp_safe(ray16.dir);
-      unsigned int terminated = toInt(!m_valid);
-      const mic_f inf         = mic_f(pos_inf);
-      const mic_f zero        = mic_f::zero();
+      const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
+      const mic3f rdir16  = rcp_safe(ray16.dir);
+      mic_m terminated    = !m_valid;
+      const mic_f inf     = mic_f(pos_inf);
+      const mic_f zero    = mic_f::zero();
 
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
@@ -174,21 +174,17 @@ namespace embree
 
 	      const mic_i and_mask = broadcast4to16i(zlc4);
 
-	      const mic_m m_final = Triangle1Intersector16MoellerTrumbore::occluded1(rayIndex,
-										     dir_xyz,
-										     org_xyz,
-										     min_dist_xyz,
-										     max_dist_xyz,
-										     and_mask,
-										     ray16,
-										     (Scene*)bvh->geometry,
-										     tptr);
-	      if (unlikely(any(m_final)))
-		{
-		  STAT3(shadow.trav_prim_hits,1,1,1);
-		  terminated |= mic_m::shift1[rayIndex];
-		  break;
-		}
+	      const bool hit = Triangle1Intersector16MoellerTrumbore::occluded1(rayIndex,
+										dir_xyz,
+										org_xyz,
+										min_dist_xyz,
+										max_dist_xyz,
+										and_mask,
+										ray16,
+										terminated,
+										(Scene*)bvh->geometry,
+										tptr);
+	      if (unlikely(hit)) break;
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	    }

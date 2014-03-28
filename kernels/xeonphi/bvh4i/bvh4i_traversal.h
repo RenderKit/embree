@@ -278,10 +278,6 @@ namespace embree
 	const unsigned int old_sindex = sindex;
 	sindex += countbits(hiti) - 1;
 
-	/* const BVH4i::Node* __restrict__ const next = curNode.node(nodes); */
-	/* prefetch<PFHINT_L1>((char*)next + 0*64); */
-	/* prefetch<PFHINT_L1>((char*)next + 1*64); */
-
 	assert(sindex < 3*BVH4i::maxDepth+1);
         
 	const mic_m closest_child = eq(hitm,min_dist,tNear);
@@ -509,12 +505,6 @@ namespace embree
 		else {
 		  *(sptr_node-1) = child;
 		  *(sptr_dist-1) = childDist; 
-
-#if 0
-		  const char* __restrict__ const pnode = (char*)child.node(nodes);             
-		  prefetch<PFHINT_L2>(pnode + 0);
-		  prefetch<PFHINT_L2>(pnode + 64);
-#endif
 		}
 		assert(sptr_node - stack_node < BVH4i::maxDepth);
 	      }	      

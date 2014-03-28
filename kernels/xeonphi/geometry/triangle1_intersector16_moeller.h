@@ -197,13 +197,14 @@ namespace embree
     }
 
 
-    __forceinline static mic_m occluded1(const size_t rayIndex, 
+    __forceinline static bool occluded1(const size_t rayIndex, 
 					 const mic_f &dir_xyz,
 					 const mic_f &org_xyz,
 					 const mic_f &min_dist_xyz,
 					 const mic_f &max_dist_xyz,
 					 const mic_i &and_mask,
 					 Ray16& ray16, 
+					 mic_m &m_terminated,
 					 const Scene     *__restrict__ const geometry,
 					 const Triangle1 * __restrict__ const tptr)
     {
@@ -236,6 +237,7 @@ namespace embree
       const mic_f e1 = v1 - v0;
       const mic_f e2 = v0 - v2;	     
       const mic_f normal = lcross_zxy(e1,e2);
+
       const mic_f org = v0 - org_xyz;
       const mic_f odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
       const mic_f den = ldot3_zxy(dir_xyz,normal);	      
@@ -257,7 +259,7 @@ namespace embree
 
       const mic_f nom = ldot3_zxy(org,normal);
       const mic_f t = rcp_den*nom;
-      if (unlikely(none(m_aperture))) return m_aperture;
+      if (unlikely(none(m_aperture))) return false;
 
       mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
@@ -293,8 +295,15 @@ namespace embree
 
 	  m_final ^= m_tri; /* clear bit */
 	}
+      
 #endif
-      return m_final;
+      if (unlikely(any(m_final)))
+	{
+	  STAT3(shadow.trav_prim_hits,1,1,1);
+	  m_terminated |= mic_m::shift1[rayIndex];
+	  return true;
+	}
+      return false;
     }
 
     // ==================================================================================================
