@@ -192,10 +192,10 @@ namespace embree
     {
       const BBox3fa bounds = curve2D.bounds();
 #if 1
-      if (bounds.lower.x > -max_radius ||
-          bounds.upper.x <  max_radius ||
-          bounds.lower.y > -max_radius ||
-          bounds.upper.y <  max_radius) return;
+      if (bounds.lower.x >  max_radius ||
+          bounds.upper.x < -max_radius ||
+          bounds.lower.y >  max_radius ||
+          bounds.upper.y < -max_radius) return;
 #endif
       if (curve2D.depth == 0)
         {
@@ -434,12 +434,14 @@ namespace embree
     static bool occluded_recursive(const float max_radius, Ray& ray, const BezierCurve3D &curve2D, const void* geom, int geomID, int primID)
     {
       const BBox3fa bounds = curve2D.bounds();
+
 #if 1
-      if (bounds.lower.x > -max_radius ||
-          bounds.upper.x <  max_radius ||
-          bounds.lower.y > -max_radius ||
-          bounds.upper.y <  max_radius) return false;
+      if (bounds.lower.x >  max_radius ||
+          bounds.upper.x < -max_radius ||
+          bounds.lower.y >  max_radius ||
+          bounds.upper.y < -max_radius) return false;
 #endif
+
       if (curve2D.depth == 0)
         {
           const Vec3fa &p0 = curve2D.v0;
