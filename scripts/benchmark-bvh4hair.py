@@ -30,7 +30,7 @@ hair_builder_modes_uncompressed = [
     ('tri_accel=bvh4.triangle4  --tessellate-hair 0 4', 'bvh4.triangle4.P0aO'),
 #    ('tri_accel=bvh4.triangle4  --tessellate-hair 1 4', 'bvh4.triangle4.P1aO'),
 #    ('tri_accel=bvh4.triangle4  --tessellate-hair 2 4', 'bvh4.triangle4.P2aO'),
-#    ('tri_accel=bvh4.triangle4  --tessellate-hair 3 4', 'bvh4.triangle4.P3aO'),
+    ('tri_accel=bvh4.triangle4  --tessellate-hair 3 4', 'bvh4.triangle4.P3aO'),
     ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aO', 'bvh4hair.bezier1i.P0aO'),
 #    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P1aO', 'bvh4hair.bezier1i.P1aO'),
 #    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P2aO', 'bvh4hair.bezier1i.P2aO'),
@@ -40,9 +40,9 @@ hair_builder_modes_uncompressed = [
 #    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOaSP,hair_builder_replication_factor=1', 'bvh4hair.bezier1i.P0aOaSP.R1'),
 #    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOaSP,hair_builder_replication_factor=3', 'bvh4hair.bezier1i.P0aOaSP.R3'),
 #    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOaSP,hair_builder_replication_factor=7', 'bvh4hair.bezier1i.P0aOaSP.R7'),
-#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=1', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R1'),
-#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=3', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R3'),
-#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=7', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7')
+    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=1', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R1'),
+    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=3', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R3'),
+    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=7', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7')
     ];
 
 hair_builder_modes_compressed_aligned = [
@@ -55,6 +55,7 @@ hair_builder_modes_compressed_aligned = [
 
 hair_builder_modes_compressed_unaligned = [
   ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuST', 'cbvh4hair.bezier1i.P0aOuOuST'),
+  ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=3', 'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R3'),
   ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=7', 'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7')
 ]
 
