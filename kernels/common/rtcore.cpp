@@ -218,6 +218,7 @@ namespace embree
         else if (tok == "hair_builder_mode") {
           if (parseSymbol (cfg,'=',pos))
             g_hair_accel_mode = parseIdentifier (cfg,pos);
+          DBG_PRINT(g_hair_accel_mode);
         } 
         else if (tok == "hair_builder_replication_factor") {
           if (parseSymbol (cfg,'=',pos))

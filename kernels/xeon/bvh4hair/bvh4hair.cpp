@@ -133,6 +133,14 @@ namespace embree
 
   void BVH4Hair::init(size_t numPrimitivesMin, size_t numPrimitivesMax)
   {
+#if BVH4HAIR_COMPRESS_ALIGNED_NODES 
+    std::cout << "BVH4HAIR_COMPRESS_ALIGNED_NODES ENABLED" << std::endl;
+#endif
+
+#if BVH4HAIR_COMPRESS_UNALIGNED_NODES 
+    std::cout << "BVH4HAIR_COMPRESS_UNALIGNED_NODES ENABLED" << std::endl;
+#endif
+
     if (numPrimitivesMax == 0) numPrimitivesMax = numPrimitivesMin;
 
     size_t numAllocatedNodes = numPrimitivesMin;

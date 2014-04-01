@@ -42,7 +42,7 @@ hair_builder_modes_uncompressed = [
 #    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOaSP,hair_builder_replication_factor=7', 'bvh4hair.bezier1i.P0aOaSP.R7'),
     ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=1', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R1'),
     ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=3', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R3'),
-    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=7', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7')
+#    ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=7', 'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7')
     ];
 
 hair_builder_modes_compressed_aligned = [
@@ -55,67 +55,68 @@ hair_builder_modes_compressed_aligned = [
 
 hair_builder_modes_compressed_unaligned = [
   ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuST', 'cbvh4hair.bezier1i.P0aOuOuST'),
-  ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=3', 'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R3'),
-  ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=7', 'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7')
+  ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=1', 'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R1'),
+  ('hair_accel=bvh4hair.bezier1i,hair_builder_mode=P0aOuOuSTaSPuSP,hair_builder_replication_factor=3', 'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R3')
 ]
 
-hair_builder_modes_measure = hair_builder_modes_uncompressed
+#hair_builder_modes_measure = hair_builder_modes_uncompressed
 #hair_builder_modes_measure = hair_builder_modes_compressed_aligned
-#hair_builder_modes_measure = hair_builder_modes_compressed_unaligned 
+hair_builder_modes_measure = hair_builder_modes_compressed_unaligned 
 
-keep_triangles = [
-  'buddha',
-  'hairdragon'  
-]
+#keep_triangles = [
+#  'buddha',
+#  'hairdragon'  
+#]
 
 hair_builder_ignore = [
-  'sophie_bvh4.triangle4.P1aO',
-  'sophie_bvh4.triangle4.P2aO',
-  'sophie_bvh4.triangle4.P3aO',
-  'buddha_bvh4.triangle4.P1aO',
-  'buddha_bvh4.triangle4.P2aO',
-  'buddha_bvh4.triangle4.P3aO',
-  'hairdragon_bvh4.triangle4.P1aO',
-  'hairdragon_bvh4.triangle4.P2aO',
-  'hairdragon_bvh4.triangle4.P3aO'
+#  'sophie_bvh4.triangle4.P1aO',
+#  'sophie_bvh4.triangle4.P2aO',
+#  'sophie_bvh4.triangle4.P3aO',
+#  'buddha_bvh4.triangle4.P1aO',
+#  'buddha_bvh4.triangle4.P2aO',
+#  'buddha_bvh4.triangle4.P3aO',
+#  'hairdragon_bvh4.triangle4.P1aO',
+#  'hairdragon_bvh4.triangle4.P2aO',
+#  'hairdragon_bvh4.triangle4.P3aO'
 ]
 
 hair_builder_modes_print =  [
   'bvh4.triangle4.P0aO',
-  'bvh4.triangle4.P1aO',
-  'bvh4.triangle4.P2aO',
+#  'bvh4.triangle4.P1aO',
+#  'bvh4.triangle4.P2aO',
   'bvh4.triangle4.P3aO',
   '',
   'bvh4hair.bezier1i.P0aO',
-  'bvh4hair.bezier1i.P1aO',
-  'bvh4hair.bezier1i.P2aO',
-  'bvh4hair.bezier1i.P3aO',
-  'cbvh4hair.bezier1i.P3aO',
+#  'bvh4hair.bezier1i.P1aO',
+#  'bvh4hair.bezier1i.P2aO',
+#  'bvh4hair.bezier1i.P3aO',
+#  'cbvh4hair.bezier1i.P3aO',
   '',
-  'bvh4hair.bezier1i.P0aOaSP.R1',
-  'bvh4hair.bezier1i.P0aOaSP.R3',
-  'bvh4hair.bezier1i.P0aOaSP.R7',
-  'cbvh4hair.bezier1i.P0aOaSP.R7',
+#  'bvh4hair.bezier1i.P0aOaSP.R1',
+#  'bvh4hair.bezier1i.P0aOaSP.R3',
+#  'bvh4hair.bezier1i.P0aOaSP.R7',
+#  'cbvh4hair.bezier1i.P0aOaSP.R7',
   '',
   'bvh4hair.bezier1i.P0aOuO',
   'bvh4hair.bezier1i.P0aOuOuST',
-  'cbvh4hair.bezier1i.P0aOuOuST',
+#  'cbvh4hair.bezier1i.P0aOuOuST',
   '',
   'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R1',
   'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R3',
-  'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7',
-  'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7',
+#  'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7',
+  'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R1',
+  'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R3',
+#  '',
+#  'bvh4.triangle4.P3aO',
+#  'bvh4hair.bezier1i.P3aO',
+#  'bvh4hair.bezier1i.P0aOaSP.R7',
+#  'bvh4hair.bezier1i.P0aOuOuST',
+#  'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7',
   '',
-  'bvh4.triangle4.P3aO',
-  'bvh4hair.bezier1i.P3aO',
-  'bvh4hair.bezier1i.P0aOaSP.R7',
-  'bvh4hair.bezier1i.P0aOuOuST',
-  'bvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7',
-  '',
-  'cbvh4hair.bezier1i.P3aO',
-  'cbvh4hair.bezier1i.P0aOaSP.R7',
-  'cbvh4hair.bezier1i.P0aOuOuST',
-  'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7'
+#  'cbvh4hair.bezier1i.P3aO',
+#  'cbvh4hair.bezier1i.P0aOaSP.R7',
+#  'cbvh4hair.bezier1i.P0aOuOuST',
+#  'cbvh4hair.bezier1i.P0aOuOuSTaSPuSP.R7'
 ]
 
 def modelname(model):
