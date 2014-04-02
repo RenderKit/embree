@@ -676,23 +676,40 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       const Vec3fa dz = normalize(cross(dy,dx));
 
       /* generate anisotropic BRDF */
-      int seed1 = g_ispc_scene->hairs[ray.geomID]->hairs[ray.primID].id;
-      const Vec3fa dK = hair_dK*frand(seed1);
-      new (&brdf) AnisotropicBlinn(hair_Kr+dK,hair_Kt+dK,dx,20.0f,dy,2.0f,dz);
-      brdf.Kr = hair_Kr-dK;
+      new (&brdf) AnisotropicBlinn(hair_Kr,hair_Kt,dx,20.0f,dy,2.0f,dz);
+      brdf.Kr = hair_Kr;
       tnear_eps = 1.1f*evalBezier(ray.geomID,ray.primID,ray.u).w;
     }
     else 
     {
-      if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
-
-      /* calculate tangent space */
-      const Vec3fa dz = normalize(ray.Ng);
-      const Vec3fa dx = normalize(cross(dz,ray.dir));
-      const Vec3fa dy = normalize(cross(dz,dx));
-      
-      /* generate isotropic BRDF */
-      new (&brdf) AnisotropicBlinn(one,zero,dx,1.0f,dy,1.0f,dz);
+      int meshID = ray.geomID-g_ispc_scene->numHairSets;
+      ISPCMesh* mesh = g_ispc_scene->meshes[meshID];
+      ISPCTriangle* triangle = &mesh->triangles[ray.primID];
+      ISPCMaterial* material = &g_ispc_scene->materials[triangle->materialID];
+      if (material->illum == 1)
+      {
+        /* calculate tangent space */
+        const Vec3fa dx = normalize(mesh->normals[triangle->v0]);
+        const Vec3fa dy = normalize(cross(ray.dir,dx));
+        const Vec3fa dz = normalize(cross(dy,dx));
+        
+        /* generate anisotropic BRDF */
+        new (&brdf) AnisotropicBlinn(hair_Kr,hair_Kt,dx,20.0f,dy,2.0f,dz);
+        brdf.Kr = hair_Kr;
+        tnear_eps = 1.1f*mesh->texcoords[triangle->v0].x;
+      }
+      else
+      {
+        if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
+        
+        /* calculate tangent space */
+        const Vec3fa dz = normalize(ray.Ng);
+        const Vec3fa dx = normalize(cross(dz,ray.dir));
+        const Vec3fa dy = normalize(cross(dz,dx));
+        
+        /* generate isotropic BRDF */
+        new (&brdf) AnisotropicBlinn(one,zero,dx,1.0f,dy,1.0f,dz);
+      }
     }
     
     /* sample directional light */

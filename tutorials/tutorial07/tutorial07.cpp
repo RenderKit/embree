@@ -181,6 +181,8 @@ namespace embree
       mesh.v.push_back(p0+u*p0.w*xfm.vx+v*p0.w*xfm.vy);
       mesh.v.push_back(p1+u*p1.w*xfm.vx+v*p1.w*xfm.vy);
       mesh.vn.push_back(p1-p0);
+      mesh.vn.push_back(p1-p0);
+      mesh.vt.push_back(Vec2f(max(p0.w,p1.w)));
       mesh.vt.push_back(Vec2f(max(p0.w,p1.w)));
     }
     for (size_t i=0; i<N; i++) {
