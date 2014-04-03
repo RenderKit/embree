@@ -352,9 +352,9 @@ namespace embree
     {
       for (size_t i=0; i<num; i++)
 	{
-#if defined(PRE_SUBDIVISION_HACK)
+//#if defined(PRE_SUBDIVISION_HACK)
 	  if (unlikely(any(pre.mbox.ids == curves[i].primID))) continue; // FIXME: works only for single hair set
-#endif
+//#endif
 
 #if USE_RECURSIVE_INTERSECTION == 0
 	  intersect(pre,ray,curves[i],geom);
@@ -362,10 +362,10 @@ namespace embree
 	  intersect_recursive(pre,ray,curves[i],geom);
 #endif
 
-#if defined(PRE_SUBDIVISION_HACK)
+//#if defined(PRE_SUBDIVISION_HACK)
 	  *(unsigned int*)&pre.mbox.ids[pre.mbox.index] = curves[i].primID; // FIXME: works only for single hair set
 	  *(unsigned int*)&pre.mbox.index = (pre.mbox.index + 1 ) % 8;
-#endif
+//#endif
 	}
     }
 
