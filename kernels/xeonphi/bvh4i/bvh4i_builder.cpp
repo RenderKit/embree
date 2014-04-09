@@ -35,6 +35,8 @@
 //#define PROFILE
 #define PROFILE_ITERATIONS 100
 
+#define MEASURE_MEMORY_ALLOCATION_TIME 0
+
 // TODO: CHECK     const float voxelArea    = current.cs_AABB.sceneArea();
 //                 const float centroidArea = current.cs_AABB.centroidArea();
 
@@ -123,6 +125,11 @@ namespace embree
 					 const size_t sizeNodeInBytes,
 					 const size_t sizeAccelInBytes)
   {
+#if MEASURE_MEMORY_ALLOCATION_TIME == 1
+    double msec = 0.0;
+    msec = getSeconds();
+#endif
+
     const size_t additional_size = 16 * CACHELINE_SIZE;
 
     /* free previously allocated memory */
@@ -160,9 +167,11 @@ namespace embree
     assert(node   != 0);
     assert(accel  != 0);
 
+#if 0
     memset(prims,0,size_primrefs);
     memset(node,0,size_node);
     memset(accel,0,size_accel);
+#endif
 
     bvh->accel = accel;
     bvh->qbvh  = (BVH4i::Node*)node;
@@ -170,6 +179,11 @@ namespace embree
     bvh->size_accel = size_accel;
 
     size_prims = size_primrefs;    
+
+#if MEASURE_MEMORY_ALLOCATION_TIME == 1
+    msec = getSeconds()-msec;    
+    std::cout << "allocation time " << 1000. * msec << " ms" << std::endl << std::flush;
+#endif
   }
   
   void BVH4iBuilder::allocateData(const size_t threadCount, const size_t totalNumPrimitives)

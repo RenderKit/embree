@@ -296,6 +296,7 @@ task void renderTile(uniform int* uniform pixels,
   {
     /* calculate pixel color */
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    //    Vec3f color = make_Vec3f(0.0,0.0,0.0); 
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
