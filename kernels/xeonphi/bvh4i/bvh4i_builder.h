@@ -203,7 +203,14 @@ namespace embree
     __aligned(64) AlignedAtomicCounter32 dest0;
     __aligned(64) AlignedAtomicCounter32 dest1;
 
-    TASK_FUNCTION(BVH4iBuilderPreSplits,computePrimRefsPreSplits);
+    static const size_t RADIX_BITS = 8;
+    static const size_t RADIX_BUCKETS = (1 << RADIX_BITS);
+    static const size_t RADIX_BUCKETS_MASK = (RADIX_BUCKETS-1);
+    __aligned(64) unsigned int radixCount[MAX_MIC_THREADS][RADIX_BUCKETS];
+
+    TASK_FUNCTION(BVH4iBuilderPreSplits,countAndComputePrimRefsPreSplits);
+    TASK_FUNCTION(BVH4iBuilderPreSplits,radixSortPreSplitIDs);
+    TASK_FUNCTION(BVH4iBuilderPreSplits,computePrimRefsFromPreSplitIDs);
     
   };
 

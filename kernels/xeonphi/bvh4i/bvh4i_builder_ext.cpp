@@ -17,13 +17,15 @@
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder.h"
 
-#define PRESPLIT_SPACE_FACTOR         0.45f
+#define PRESPLIT_SPACE_FACTOR         0.30f
 #define PRESPLIT_AREA_THRESHOLD      20.0f
 #define PRESPLIT_MIN_AREA             0.01f
 #define NUM_PRESPLITS_PER_TRIANGLE    16
 #define PRESPLITS_TREE_DEPTH          4
+#define NUM_PRESPLIT_IDS_PER_BLOCK    8
 
 #define DBG(x) 
+#define TIMER(x) 
 
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
@@ -34,6 +36,31 @@ namespace embree
   /* =================================================================================== */
   /* =================================================================================== */
   /* =================================================================================== */
+
+  struct __aligned(16) PreSplitID
+  {
+    unsigned int code;
+    float sah;
+    unsigned int groupID;
+    unsigned int primID;
+            
+    __forceinline unsigned int get(const unsigned int shift, const unsigned and_mask) const {
+      return (code >> shift) & and_mask;
+    }
+
+    __forceinline unsigned int getByte(const size_t b) const {
+      assert(b < 4);
+      const unsigned char *__restrict const ptr = (const unsigned char*)&code;
+      return ptr[b];
+    }
+            
+    __forceinline friend std::ostream &operator<<(std::ostream &o, const PreSplitID& pid) {
+      o << "code " << pid.code << " boxSAH = " << pid.sah << " groupID " << pid.groupID << " primID " << pid.primID;
+      return o;
+    }
+    __forceinline bool operator<(const PreSplitID &pid) const { return code < pid.code; } 
+    __forceinline bool operator>(const PreSplitID &pid) const { return code > pid.code; } 
+  };
 
   void BVH4iBuilderPreSplits::printBuilderName()
   {
@@ -131,34 +158,6 @@ namespace embree
     return sqrt(ldot3_xyz(n,n)) * 0.5f;
   }
   
-  void quicksort_ascending_primrefs(PrimRef *__restrict__ t, 
-				    const ssize_t begin, 
-				    const ssize_t end)
-  {
-    if (likely(begin < end)) 
-    {      
-      const PrimRef pivotvalue = t[begin];
-      ssize_t left  = begin - 1;
-      ssize_t right = end   + 1;
-      
-      while(1) 
-      {
-        while (box_sah(t[--right]) > box_sah(pivotvalue));
-        while (box_sah(t[++left]) < box_sah(pivotvalue));
-        
-        if (left >= right) break;
-        
-        const PrimRef temp = t[right];
-        t[right] = t[left];
-        t[left] = temp;
-      }
-      
-      const int pivot = right;
-      quicksort_ascending_primrefs(t, begin, pivot);
-      quicksort_ascending_primrefs(t, pivot + 1, end);
-    }
-  }
-
   __forceinline size_t getMaxDim(const PrimRef &p)
   {
     Vec3fa diag = p.upper - p.lower;
@@ -206,96 +205,87 @@ namespace embree
       }
   }
 
-  
+
   void BVH4iBuilderPreSplits::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
-    DBG(PING);
+    TIMER(double msec = 0.0);
+    TIMER(msec = getSeconds());
 
     dest0.reset(0);
-    dest1.reset(numPrimitives-1);
-
-    LockStepTaskScheduler::dispatchTask( task_computePrimRefsPreSplits, this, threadIndex, threadCount );
-
-    const size_t startFactor = dest0;
-    const size_t numFactorTris = numPrimitives - startFactor;
-
-    DBG(
-	DBG_PRINT( startFactor );
-	DBG_PRINT( numFactorTris );
-	);
-
-    quicksort_ascending_primrefs(prims,startFactor, numPrimitives-1);
-    
-    PrimRef *presplits = (PrimRef*)accel;
-
-    const size_t step = (numMaxPreSplits+NUM_PRESPLITS_PER_TRIANGLE-1) / NUM_PRESPLITS_PER_TRIANGLE;
-
-
-    const size_t startPreSplits = numPrimitives - step;
-    dest0 = startPreSplits;
-
-    DBG(
-	DBG_PRINT(step);
-	DBG_PRINT(dest0);
-	DBG_PRINT(numPrimitives);
-	);
-
     dest1.reset(0);
 
+    LockStepTaskScheduler::dispatchTask( task_countAndComputePrimRefsPreSplits, this, threadIndex, threadCount );
 
-    for (size_t i=dest0;i<numPrimitives;i++)
-      {
-	const size_t geomID = prims[i].geomID();
-	const size_t primID = prims[i].primID();
+    /* === padding to 8-wide blocks === */
+    const unsigned int preSplits        = dest1;
+    const unsigned int preSplits_padded = ((preSplits+NUM_PRESPLIT_IDS_PER_BLOCK-1)&(-NUM_PRESPLIT_IDS_PER_BLOCK));
+    PreSplitID* __restrict__ const dest = (PreSplitID*)accel;
+    
+    for (size_t i=preSplits; i<preSplits_padded; i++) {
+      dest[i].code  = 0xffffffff; 
+      dest[i].sah = 0;
+      dest[i].groupID = 0;
+      dest[i].primID = 0;
+    }
 
-	const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-	const TriangleMeshScene::TriangleMesh::Triangle & tri = mesh->triangle(primID);
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "task_countAndComputePrimRefsPreSplits " << 1000. * msec << " ms" << std::endl << std::flush);
 
-	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
-	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
-	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
 
-	Vec3fa vtxA = *(Vec3fa*)vptr0;
-	Vec3fa vtxB = *(Vec3fa*)vptr1;
-	Vec3fa vtxC = *(Vec3fa*)vptr2;
+    const size_t step = (numMaxPreSplits+NUM_PRESPLITS_PER_TRIANGLE-1) / NUM_PRESPLITS_PER_TRIANGLE;
+    const size_t startPreSplits = (step <= preSplits) ? preSplits - step : preSplits;
 
-	BBox3f bounds = empty;
-	bounds.extend(vtxA);
-	bounds.extend(vtxB);
-	bounds.extend(vtxC);
-	PrimRef primBounds = PrimRef(bounds,geomID,primID);
 
-	subdivideTriangle(primBounds,vtxA,vtxB,vtxC,PRESPLITS_TREE_DEPTH,dest1,presplits);
-	
-      }
+    DBG(
+	DBG_PRINT(numPrimitives);
+	DBG_PRINT(preSplits);
+	DBG_PRINT(preSplits_padded);
+	DBG_PRINT(dest0);
+	DBG_PRINT(dest1);
+	DBG_PRINT(step);
+	DBG_PRINT(startPreSplits);
+	);
 
-    assert( startPreSplits + dest1 < numMaxPrimitives);
+    TIMER(msec = getSeconds());
 
-    for (size_t i=0;i<dest1;i++)
-      prims[startPreSplits + i] = presplits[i];
+    LockStepTaskScheduler::dispatchTask( task_radixSortPreSplitIDs, this, threadIndex, threadCount );
 
-    numPrimitives = dest1 + startPreSplits;    
-    //numPrimitives = startPreSplits;    
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "task_radixSortPreSplitIDs " << 1000. * msec << " ms" << std::endl << std::flush);
+
+
+    TIMER(msec = getSeconds());
+
+    LockStepTaskScheduler::dispatchTask( task_computePrimRefsFromPreSplitIDs, this, threadIndex, threadCount );
+
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "task_computePrimRefsFromPreSplitIDs " << 1000. * msec << " ms" << std::endl << std::flush);
+
+
+    numPrimitives = dest0;
+
+    DBG(
+	DBG_PRINT(numPrimitives);
+	);
 
   }
 
 
 
-  void BVH4iBuilderPreSplits::computePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
+  void BVH4iBuilderPreSplits::countAndComputePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
   {
     DBG(PING);
     const size_t numGroups = scene->size();
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
     
-    PrimRef *__restrict__ const prims     = this->prims;
 
     // === find first group containing startID ===
-    unsigned int g=0, numSkipped = 0;
-    for (; g<numGroups; g++) {       
-      if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
-      const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+    unsigned int startGroup=0, numSkipped = 0;
+    for (; startGroup<numGroups; startGroup++) {       
+      if (unlikely(scene->get(startGroup) == NULL)) continue;
+      if (unlikely(scene->get(startGroup)->type != TRIANGLE_MESH)) continue;
+      const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(startGroup);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
@@ -310,75 +300,66 @@ namespace embree
     mic_f bounds_centroid_min((float)pos_inf);
     mic_f bounds_centroid_max((float)neg_inf);
 
-    unsigned int num = 0;
-    unsigned int currentID = startID;
-    unsigned int offset = startID - numSkipped;
+    unsigned int numTrisNoPreSplit = 0;
+    unsigned int numTrisPreSplit = 0;
 
-    for (; g<numGroups; g++) 
+    // === determine presplit candidates ===
     {
-      if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
-      const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
-      if (unlikely(!mesh->isEnabled())) continue;
-      if (unlikely(mesh->numTimeSteps != 1)) continue;
+      unsigned int currentID = startID;
+      unsigned int offset = startID - numSkipped;
+      for (unsigned int g=startGroup; g<numGroups; g++) 
+	{
+	  if (unlikely(scene->get(g) == NULL)) continue;
+	  if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+	  const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+	  if (unlikely(!mesh->isEnabled())) continue;
+	  if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
-      { 			    
-	const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(i);
-	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
-	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
+	  for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
+	    { 			    
+	      const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(i);
+	      prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
+	      prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
-	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
-	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+	      const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
+	      const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
+	      const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
 
-	const mic_f v0 = broadcast4to16f(vptr0);
-	const mic_f v1 = broadcast4to16f(vptr1);
-	const mic_f v2 = broadcast4to16f(vptr2);
+	      const mic_f v0 = broadcast4to16f(vptr0);
+	      const mic_f v1 = broadcast4to16f(vptr1);
+	      const mic_f v2 = broadcast4to16f(vptr2);
 
-	mic_f bmin = min(min(v0,v1),v2);
-	mic_f bmax = max(max(v0,v1),v2);
+	      mic_f bmin = min(min(v0,v1),v2);
+	      mic_f bmax = max(max(v0,v1),v2);
 
 
-	const mic_f area_tri = tri_sah(v0,v1,v2);
-	const mic_f area_box = box_sah(bmin,bmax);
-	const mic_f factor = area_box * rcp(area_tri);
+	      const mic_f area_tri = tri_sah(v0,v1,v2);
+	      const mic_f area_box = box_sah(bmin,bmax);
+	      const mic_f factor = area_box * rcp(area_tri);
 
-	DBG(
-	    DBG_PRINT(area_tri);
-	    DBG_PRINT(area_box);
-	    DBG_PRINT(factor);
-	    );
+	      DBG(
+		  DBG_PRINT(area_tri);
+		  DBG_PRINT(area_box);
+		  DBG_PRINT(factor);
+		  );
 
-	const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
-	const mic_m m_sah_zero = area_box > PRESPLIT_MIN_AREA;
+	      const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
+	      const mic_m m_sah_zero = area_box > PRESPLIT_MIN_AREA;
 
-	if (any(m_factor & m_sah_zero)) 
-	  {
-	    const unsigned int d_index = dest1.dec();
-	    store4f(&prims[d_index].lower,bmin);
-	    store4f(&prims[d_index].upper,bmax);	
-	    prims[d_index].lower.a = g; 
-	    prims[d_index].upper.a = i;
-	  }
-	else
-	  {       
-	    const unsigned int d_index = dest0.inc();
-	    store4f(&prims[d_index].lower,bmin);
-	    store4f(&prims[d_index].upper,bmax);	
-	    prims[d_index].lower.a = g; 
-	    prims[d_index].upper.a = i;
-	  }
+	      if (any(m_factor & m_sah_zero)) 
+		numTrisPreSplit++;
+	      else
+		numTrisNoPreSplit++;   
 
-	bounds_scene_min = min(bounds_scene_min,bmin);
-	bounds_scene_max = max(bounds_scene_max,bmax);
-	const mic_f centroid2 = bmin+bmax;
-	bounds_centroid_min = min(bounds_centroid_min,centroid2);
-	bounds_centroid_max = max(bounds_centroid_max,centroid2);
-
-      }
-      if (currentID == endID) break;
-      offset = 0;
+	      bounds_scene_min = min(bounds_scene_min,bmin);
+	      bounds_scene_max = max(bounds_scene_max,bmax);
+	      const mic_f centroid2 = bmin+bmax;
+	      bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	      bounds_centroid_max = max(bounds_centroid_max,centroid2);
+	    }
+	  if (currentID == endID) break;
+	  offset = 0;
+	}
     }
 
     /* update global bounds */
@@ -390,7 +371,303 @@ namespace embree
     store4f(&bounds.geometry.upper,bounds_scene_max);
 
     global_bounds.extend_atomic(bounds);    
+
+
+    const unsigned int no_presplit_index = dest0.add(numTrisNoPreSplit);
+    const unsigned int presplit_index    = dest1.add(numTrisPreSplit);
+
+    PrimRef *presplits = (PrimRef*)accel;
+
+    PrimRef    *__restrict__ no_presplit_prims = this->prims + no_presplit_index;
+    PreSplitID *__restrict__ presplitIDs       = (PreSplitID*)accel + presplit_index;
+
+
+    // === put triangles into prepsplit/no-presplit bucket ===
+    {
+      unsigned int currentID = startID;
+      unsigned int offset = startID - numSkipped;
+      for (unsigned int g=startGroup; g<numGroups; g++) 
+	{
+	  if (unlikely(scene->get(g) == NULL)) continue;
+	  if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+	  const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+	  if (unlikely(!mesh->isEnabled())) continue;
+	  if (unlikely(mesh->numTimeSteps != 1)) continue;
+
+	  for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
+	    { 			    
+	      const TriangleMeshScene::TriangleMesh::Triangle& tri = mesh->triangle(i);
+	      prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
+	      prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
+
+	      const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
+	      const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
+	      const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+
+	      const mic_f v0 = broadcast4to16f(vptr0);
+	      const mic_f v1 = broadcast4to16f(vptr1);
+	      const mic_f v2 = broadcast4to16f(vptr2);
+
+	      mic_f bmin = min(min(v0,v1),v2);
+	      mic_f bmax = max(max(v0,v1),v2);
+
+
+	      const mic_f area_tri = tri_sah(v0,v1,v2);
+	      const mic_f area_box = box_sah(bmin,bmax);
+	      const mic_f factor = area_box * rcp(area_tri);
+
+	      DBG(
+		  DBG_PRINT(area_tri);
+		  DBG_PRINT(area_box);
+		  DBG_PRINT(factor);
+		  );
+
+	      const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
+	      const mic_m m_sah_zero = area_box > PRESPLIT_MIN_AREA;
+
+	      if (any(m_factor & m_sah_zero)) 
+		{
+		  prefetch<PFHINT_L2EX>(presplitIDs + 4*4);
+
+		  store1f(&presplitIDs->code,area_box);
+		  store1f(&presplitIDs->sah,factor);
+		  presplitIDs->groupID = g;
+		  presplitIDs->primID  = i;
+		  presplitIDs++;
+		}
+	      else
+		{
+		  prefetch<PFHINT_L2EX>(no_presplit_prims + L2_PREFETCH_ITEMS);
+
+		  store4f(&no_presplit_prims->lower,bmin);
+		  store4f(&no_presplit_prims->upper,bmax);	
+		  no_presplit_prims->lower.a = g; 
+		  no_presplit_prims->upper.a = i;
+		  no_presplit_prims++;
+
+		}
+
+	    }
+	  if (currentID == endID) break;
+	  offset = 0;
+	}
+    }
   }
+
+
+  void BVH4iBuilderPreSplits::radixSortPreSplitIDs(const size_t threadID, const size_t numThreads)
+  {
+    const unsigned int preSplits = dest1;
+    const size_t numBlocks = (preSplits+NUM_PRESPLIT_IDS_PER_BLOCK-1) / NUM_PRESPLIT_IDS_PER_BLOCK;
+    const size_t startID   = ((threadID+0)*numBlocks/numThreads) * NUM_PRESPLIT_IDS_PER_BLOCK;
+    const size_t endID     = ((threadID+1)*numBlocks/numThreads) * NUM_PRESPLIT_IDS_PER_BLOCK;
+    assert(startID % NUM_PRESPLIT_IDS_PER_BLOCK == 0);
+    assert(endID % NUM_PRESPLIT_IDS_PER_BLOCK == 0);
+
+    assert(((numThreads)*numBlocks/numThreads) * NUM_PRESPLIT_IDS_PER_BLOCK == ((preSplits+7)&(-8)));
+
+
+    PreSplitID* __restrict__ presplitID[2];
+    presplitID[0] = (PreSplitID*)accel; 
+    presplitID[1] = (PreSplitID*)accel + ((preSplits+NUM_PRESPLIT_IDS_PER_BLOCK-1)&(-NUM_PRESPLIT_IDS_PER_BLOCK));
+
+
+    /* we need 4 iterations to process all 32 bits */
+    for (size_t b=0; b<4; b++)
+      {
+	const PreSplitID* __restrict__ const src = (PreSplitID*)presplitID[((b+0)%2)];
+	PreSplitID*       __restrict__ const dst = (PreSplitID*)presplitID[((b+1)%2)];
+
+	__assume_aligned(&radixCount[threadID][0],64);
+      
+	/* count how many items go into the buckets */
+
+#pragma unroll(16)
+	for (size_t i=0; i<16; i++)
+	  store16i(&radixCount[threadID][i*16],mic_i::zero());
+
+
+	for (size_t i=startID; i<endID; i+=NUM_PRESPLIT_IDS_PER_BLOCK) {
+	  prefetch<PFHINT_NT>(&src[i+L1_PREFETCH_ITEMS]);
+	  prefetch<PFHINT_L2>(&src[i+L2_PREFETCH_ITEMS]);
+	
+#pragma unroll(NUM_PRESPLIT_IDS_PER_BLOCK)
+	  for (unsigned long j=0;j<NUM_PRESPLIT_IDS_PER_BLOCK;j++)
+	    {
+	      const unsigned int index = src[i+j].getByte(b);
+	      radixCount[threadID][index]++;
+	    }
+	}
+
+	LockStepTaskScheduler::syncThreads(threadID,numThreads);
+
+
+	/* calculate total number of items for each bucket */
+
+
+	mic_i count[16];
+#pragma unroll(16)
+	for (size_t i=0; i<16; i++)
+	  count[i] = mic_i::zero();
+
+
+	for (size_t i=0; i<threadID; i++)
+#pragma unroll(16)
+	  for (size_t j=0; j<16; j++)
+	    count[j] += load16i((int*)&radixCount[i][j*16]);
+      
+	__aligned(64) unsigned int inner_offset[RADIX_BUCKETS];
+
+#pragma unroll(16)
+	for (size_t i=0; i<16; i++)
+	  store16i(&inner_offset[i*16],count[i]);
+
+#pragma unroll(16)
+	for (size_t i=0; i<16; i++)
+	  count[i] = load16i((int*)&inner_offset[i*16]);
+
+	for (size_t i=threadID; i<numThreads; i++)
+#pragma unroll(16)
+	  for (size_t j=0; j<16; j++)
+	    count[j] += load16i((int*)&radixCount[i][j*16]);	  
+
+	__aligned(64) unsigned int total[RADIX_BUCKETS];
+
+#pragma unroll(16)
+	for (size_t i=0; i<16; i++)
+	  store16i(&total[i*16],count[i]);
+
+	__aligned(64) unsigned int offset[RADIX_BUCKETS];
+
+	/* calculate start offset of each bucket */
+	offset[0] = 0;
+	for (size_t i=1; i<RADIX_BUCKETS; i++)    
+	  offset[i] = offset[i-1] + total[i-1];
+      
+	/* calculate start offset of each bucket for this thread */
+
+#pragma unroll(RADIX_BUCKETS)
+	for (size_t j=0; j<RADIX_BUCKETS; j++)
+          offset[j] += inner_offset[j];
+
+	/* copy items into their buckets */
+	for (size_t i=startID; i<endID; i+=NUM_PRESPLIT_IDS_PER_BLOCK) {
+	  prefetch<PFHINT_NT>(&src[i+L1_PREFETCH_ITEMS]);
+	  prefetch<PFHINT_L2>(&src[i+L2_PREFETCH_ITEMS]);
+
+#pragma nounroll
+	  for (unsigned long j=0;j<NUM_PRESPLIT_IDS_PER_BLOCK;j++)
+	    {
+	      const unsigned int index = src[i+j].getByte(b);
+	      assert(index < RADIX_BUCKETS);
+	      dst[offset[index]] = src[i+j];
+	      prefetch<PFHINT_L2EX>(&dst[offset[index]+L1_PREFETCH_ITEMS]);
+	      offset[index]++;
+	    }
+	  evictL2(&src[i]);
+	}
+
+	if (b<3) LockStepTaskScheduler::syncThreads(threadID,numThreads);
+
+      }
+  }
+
+  void BVH4iBuilderPreSplits::computePrimRefsFromPreSplitIDs(const size_t threadID, const size_t numThreads) 
+  {
+    const size_t preSplitIDs    = dest1;
+    const size_t step           = (numMaxPreSplits+NUM_PRESPLITS_PER_TRIANGLE-1) / NUM_PRESPLITS_PER_TRIANGLE;
+    const size_t startPreSplits = (step <= preSplitIDs) ? preSplitIDs - step : preSplitIDs;
+
+    // === no pre-splits ==
+    {
+      const size_t startID = (threadID+0)*startPreSplits/numThreads;
+      const size_t endID   = (threadID+1)*startPreSplits/numThreads;
+      const size_t items   = endID - startID;
+      const unsigned int d_index = dest0.add(items);
+
+      PrimRef    *__restrict__ prims = this->prims + d_index;
+      PreSplitID *__restrict__ presplitIDs = (PreSplitID*)accel;
+      
+      for (size_t i=startID;i<endID;i++)
+	{
+	  prefetch<PFHINT_L2>(&presplitIDs[i] + L2_PREFETCH_ITEMS);
+	  prefetch<PFHINT_L1>(&presplitIDs[i] + L1_PREFETCH_ITEMS);
+
+	  const size_t geomID = presplitIDs[i].groupID;
+	  const size_t primID = presplitIDs[i].primID;
+
+	  const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	  const TriangleMeshScene::TriangleMesh::Triangle & tri = mesh->triangle(primID);
+
+	  const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
+	  const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
+	  const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+
+	  const mic_f v0 = broadcast4to16f(vptr0);
+	  const mic_f v1 = broadcast4to16f(vptr1);
+	  const mic_f v2 = broadcast4to16f(vptr2);
+
+	  prefetch<PFHINT_L1EX>(prims);
+
+	  mic_f bmin = min(min(v0,v1),v2);
+	  mic_f bmax = max(max(v0,v1),v2);
+
+	  prefetch<PFHINT_L2EX>(prims + L2_PREFETCH_ITEMS);
+
+	  store4f(&prims->lower,bmin);
+	  store4f(&prims->upper,bmax);	
+	  prims->lower.a = geomID; 
+	  prims->upper.a = primID;
+	  prims++;
+	}
+    }
+
+    // === performing pre-splitting ==
+    {
+      AlignedAtomicCounter32 counter;
+      counter.reset(0);
+
+      const unsigned int numPreSplits = preSplitIDs - startPreSplits;
+      const size_t startID = (threadID+0)*numPreSplits/numThreads;
+      const size_t endID   = (threadID+1)*numPreSplits/numThreads;
+      const size_t items   = (endID - startID)*NUM_PRESPLITS_PER_TRIANGLE;
+      const unsigned int d_index = dest0.add(items);
+
+      PrimRef    *__restrict__ prims = this->prims + d_index;
+      PreSplitID *__restrict__ presplitIDs = (PreSplitID*)accel + startPreSplits;
+      
+      for (size_t i=startID;i<endID;i++)
+	{
+	  prefetch<PFHINT_L2>(&presplitIDs[i] + L2_PREFETCH_ITEMS);
+	  prefetch<PFHINT_L1>(&presplitIDs[i] + L1_PREFETCH_ITEMS);
+
+	  const size_t geomID = presplitIDs[i].groupID;
+	  const size_t primID = presplitIDs[i].primID;
+
+	  const TriangleMeshScene::TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	  const TriangleMeshScene::TriangleMesh::Triangle & tri = mesh->triangle(primID);
+
+	  const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
+	  const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
+	  const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+
+	  Vec3fa vtxA = *(Vec3fa*)vptr0;
+	  Vec3fa vtxB = *(Vec3fa*)vptr1;
+	  Vec3fa vtxC = *(Vec3fa*)vptr2;
+
+	  BBox3f bounds = empty;
+	  bounds.extend(vtxA);
+	  bounds.extend(vtxB);
+	  bounds.extend(vtxC);
+	  PrimRef primBounds = PrimRef(bounds,geomID,primID);
+
+	  subdivideTriangle(primBounds,vtxA,vtxB,vtxC,PRESPLITS_TREE_DEPTH,counter,prims);
+	}
+      assert(counter == items);
+    }
+
+  }
+
 
   /* =================================================================================== */
   /* =================================================================================== */
@@ -480,28 +757,28 @@ namespace embree
 
         size_t N = virtual_geometry->size();
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
-        { 			    
-          const BBox3f bounds = virtual_geometry->bounds(i);
-          const mic_f bmin = broadcast4to16f(&bounds.lower); 
-          const mic_f bmax = broadcast4to16f(&bounds.upper);
+	  { 			    
+	    const BBox3f bounds = virtual_geometry->bounds(i);
+	    const mic_f bmin = broadcast4to16f(&bounds.lower); 
+	    const mic_f bmax = broadcast4to16f(&bounds.upper);
 
-          DBG(
-	    DBG_PRINT(currentID);
-	    DBG_PRINT(bmin);
-	    DBG_PRINT(bmax);
-	    );
+	    DBG(
+		DBG_PRINT(currentID);
+		DBG_PRINT(bmin);
+		DBG_PRINT(bmax);
+		);
           
-          bounds_scene_min = min(bounds_scene_min,bmin);
-          bounds_scene_max = max(bounds_scene_max,bmax);
-          const mic_f centroid2 = bmin+bmax;
-          bounds_centroid_min = min(bounds_centroid_min,centroid2);
-          bounds_centroid_max = max(bounds_centroid_max,centroid2);
+	    bounds_scene_min = min(bounds_scene_min,bmin);
+	    bounds_scene_max = max(bounds_scene_max,bmax);
+	    const mic_f centroid2 = bmin+bmax;
+	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
 
-          store4f(&prims[currentID].lower,bmin);
-          store4f(&prims[currentID].upper,bmax);	
-          prims[currentID].lower.a = g;
-          prims[currentID].upper.a = i;
-        }
+	    store4f(&prims[currentID].lower,bmin);
+	    store4f(&prims[currentID].upper,bmax);	
+	    prims[currentID].lower.a = g;
+	    prims[currentID].upper.a = i;
+	  }
         if (currentID == endID) break;
         offset = 0;
       }
