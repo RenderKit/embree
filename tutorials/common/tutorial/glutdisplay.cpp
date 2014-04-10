@@ -239,8 +239,14 @@ namespace embree
     g_width = width; g_height = height;
   }
   
-  void idleFunc() {
+  void idleFunc()
+  {
     glutPostRedisplay();
+  }
+
+  void enterGlutRunLoop()
+  {
+    glutMainLoop();
   }
 
   /* initialize GLUT */
@@ -266,6 +272,11 @@ namespace embree
     glutMouseFunc(clickFunc);
     glutMotionFunc(motionFunc);
     glutReshapeFunc(reshapeFunc);
-    glutMainLoop();
   }
+
+  void setGlutKeyboardFunc(void (* func)(unsigned char key, int x, int y))
+  {
+    glutKeyboardFunc(func);
+  }
+
 }

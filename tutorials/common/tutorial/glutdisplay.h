@@ -22,9 +22,17 @@
 
 namespace embree
 {
+
   /* camera */
   extern Camera g_camera;
 
+  /* enter the GLUT main run loop */
+  void enterGlutRunLoop();
+
   /* initialize GLUT */
-  void initGlut (const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode);
+  void initGlut(const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode);
+
+  /* override the default keyboard event callback */
+  void setGlutKeyboardFunc(void (*func)(unsigned char key, int x, int y));
+
 }

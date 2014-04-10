@@ -116,6 +116,9 @@ namespace embree
     /* initialize GLUT */
     initGlut(tutorialName,g_width,g_height,g_fullscreen,true);
     
+    /* enter the GLUT run loop */
+    enterGlutRunLoop();
+
     return 0;
   }
 }
