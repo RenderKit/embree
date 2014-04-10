@@ -48,6 +48,8 @@ namespace embree
     cout << "    #hit_boxes    = ";
     for (size_t i=0;i<=16;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.normal.trav_hit_boxes[i] / normal_box_hits << " ";
     cout << std::endl;
+    cout << "  #normal_travs_active   = " << float(cntrs.active.normal.travs            )*1E-6 << "M" << std::endl;
+
 #endif
     if (cntrs.code.shadow.travs) {
       cout << "  #shadow_travs = " << float(cntrs.code.shadow.travs         )*1E-6 << "M" << std::endl;
@@ -62,6 +64,10 @@ namespace embree
       cout << "    #hit_boxes    = ";
       for (size_t i=0;i<=16;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.shadow.trav_hit_boxes[i] / shadow_box_hits << " ";
       cout << std::endl;
+      cout << "  #shadow_travs_active   = " << float(cntrs.active.shadow.travs            )*1E-6 << "M" << std::endl;
+      cout << std::endl;
+      cout << "total  #rays   = " << float(cntrs.active.normal.travs+cntrs.active.shadow.travs            )*1E-6 << "M" << std::endl;
+
 #endif
 
     }

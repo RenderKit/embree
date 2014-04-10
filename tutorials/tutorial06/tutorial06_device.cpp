@@ -169,6 +169,7 @@ inline Vec3f face_forward(const Vec3fa& dir, const Vec3fa& Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
+
 Vec3f renderPixelSeed(int x, int y, int& seed, const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p)
 {
   /* radiance accumulator and weight */
