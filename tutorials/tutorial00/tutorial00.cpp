@@ -98,10 +98,10 @@ namespace embree
     init(g_rtcore.c_str());
 
     /* initialize GLUT */
-    initGlut(tutorialName,g_width,g_height,g_fullscreen,true);
+    initWindowState(tutorialName, g_width, g_height, g_fullscreen);
     
     /* enter the GLUT run loop */
-    enterGlutRunLoop();
+    enterWindowRunLoop();
 
     return 0;
   }

@@ -114,10 +114,10 @@ namespace embree
     set_scene(&g_obj_scene);
 
     /* initialize GLUT */
-    initGlut(tutorialName,g_width,g_height,g_fullscreen,true);
+    initWindowState(tutorialName, g_width, g_height, g_fullscreen);
     
     /* enter the GLUT run loop */
-    enterGlutRunLoop();
+    enterWindowRunLoop();
 
     return 0;
   }

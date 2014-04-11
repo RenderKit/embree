@@ -14,6 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include <map>
 #include "glutdisplay.h"
 #include "sys/filename.h"
 #include "lexers/streamfilters.h"
@@ -63,13 +64,24 @@ namespace embree
   /*                                  Keyboard control                                             */
   /*************************************************************************************************/
 
+  typedef void (* KeyBinding)(unsigned char key, int x, int y);
+
   static float g_speed = 1.0f;
+  static std::map<unsigned char, KeyBinding> keyBindings;
 
-  void keyboardFunc(unsigned char k, int, int)
+  void mapKeyToFunction(unsigned char key, KeyBinding binding)
   {
-    key_pressed(k);
+    keyBindings[key] = binding;
+  }
 
-    switch (k)
+  void keyboardFunc(unsigned char key, int x, int y)
+  {
+
+    if (keyBindings.find(key) != keyBindings.end()) { keyBindings[key](key, x, y);  return; }
+
+    key_pressed(key);
+
+    switch (key)
     {
     case 'f' : 
       if (g_fullscreen) {
@@ -114,11 +126,11 @@ namespace embree
     }
   }
 
-  void specialFunc(int k, int, int)
+  void specialFunc(int key, int, int)
   {
-    key_pressed(k);
+    key_pressed(key);
 
-    switch (k) {
+    switch (key) {
     case GLUT_KEY_LEFT      : g_camera.rotate(-0.02f,0.0f); break;
     case GLUT_KEY_RIGHT     : g_camera.rotate(+0.02f,0.0f); break;
     case GLUT_KEY_UP        : g_camera.move(0.0f,0.0f,+g_speed); break;
@@ -244,13 +256,13 @@ namespace embree
     glutPostRedisplay();
   }
 
-  void enterGlutRunLoop()
+  void enterWindowRunLoop()
   {
     glutMainLoop();
   }
 
   /* initialize GLUT */
-  void initGlut (const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode)
+  void initWindowState(const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode)
   {
     g_width = width;
     g_height = height;
@@ -274,9 +286,5 @@ namespace embree
     glutReshapeFunc(reshapeFunc);
   }
 
-  void setGlutKeyboardFunc(void (* func)(unsigned char key, int x, int y))
-  {
-    glutKeyboardFunc(func);
-  }
-
 }
+
