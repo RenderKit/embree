@@ -182,12 +182,14 @@ namespace embree
     size_t hairsetID = g_hairsetID++;
     ISPCHairSet* hairset = new ISPCHairSet(in_pMiscData->numHairs,in_pMiscData->numVertices);
 
+#if 0
     PING;
     DBG_PRINT(hairsetID);
     DBG_PRINT(in_pMiscData->numVertices);
     DBG_PRINT(in_pMiscData->numHairs);
     DBG_PRINT(in_pBufferLengths[0]);
     DBG_PRINT(in_pBufferLengths[1]);
+#endif
 
     memcpy(hairset->positions = (Vec3fa*)malloc(in_pBufferLengths[0]),in_ppBufferPointers[0],in_pBufferLengths[0]);
     memcpy(hairset->hairs = (ISPCHair*)malloc(in_pBufferLengths[1]),in_ppBufferPointers[1],in_pBufferLengths[1]);
@@ -203,10 +205,11 @@ namespace embree
                                    uint16_t         in_ReturnValueLength)
   {
     g_meshID = 0;
+#if 0
     DBG_PRINT(in_pMiscData->numMeshes);
     DBG_PRINT(in_pMiscData->numMaterials);
     DBG_PRINT(in_pMiscData->numHairSets);
-
+#endif
     g_ispc_scene = new ISPCScene(in_pMiscData->numMeshes,in_pMiscData->numMaterials,in_ppBufferPointers[0],in_pMiscData->numHairSets);
     //g_ispc_scene->pointLightPosition = in_pMiscData->pointLightPosition;
     //g_ispc_scene->pointLightIntensity = in_pMiscData->pointLightIntensity;

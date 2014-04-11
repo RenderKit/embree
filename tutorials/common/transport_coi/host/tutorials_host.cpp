@@ -224,7 +224,6 @@ namespace embree
   /* set scene to use */
   void set_scene (OBJScene* scene)
   {
-    PING;
     COIRESULT result;
 
     /* send scene */
@@ -264,7 +263,7 @@ namespace embree
       send_mesh(scene->meshes[i]);
 
     /* send all hairsets */
-    DBG_PRINT( scene->hairsets.size() );
+    //DBG_PRINT( scene->hairsets.size() );
     for (size_t i=0; i<scene->hairsets.size(); i++) 
       send_hairset(scene->hairsets[i]);
 

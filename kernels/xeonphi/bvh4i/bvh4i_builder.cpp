@@ -171,9 +171,11 @@ namespace embree
     assert(node   != 0);
     assert(accel  != 0);
 
+#if 0
     memset(prims,0,size_primrefs);
     memset(node,0,size_node);
     memset(accel,0,size_accel);
+#endif
 
     bvh->accel = accel;
     bvh->qbvh  = (BVH4i::Node*)node;

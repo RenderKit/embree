@@ -140,9 +140,11 @@ namespace embree
       assert(node   != 0);
       assert(accel  != 0);
 
+#if 0
       memset(morton,0,size_morton_tmp);
       memset(node  ,0,size_node);
       memset(accel ,0,size_accel);	
+#endif
 
       bvh->accel = accel;
       bvh->qbvh  = (BVH4i::Node*)node;

@@ -428,7 +428,6 @@ namespace embree
 		    *(sptr_node-1) = child;
 		    *(sptr_dist-1) = childDist; 
 		  }
-		assert(sptr_node - stack_node < BVH4i::maxDepth);
 	      }	      
           }
       }
@@ -506,7 +505,6 @@ namespace embree
 		  *(sptr_node-1) = child;
 		  *(sptr_dist-1) = childDist; 
 		}
-		assert(sptr_node - stack_node < BVH4i::maxDepth);
 	      }	      
           }
       }
