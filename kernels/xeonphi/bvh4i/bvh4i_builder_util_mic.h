@@ -132,8 +132,8 @@ namespace embree
 
     if (unlikely(start % 2 != 0))
       {
-	const mic_f b_min = broadcast4to16f((float*)&aabb[start].lower);
-	const mic_f b_max = broadcast4to16f((float*)&aabb[start].upper);    
+	const mic_f b_min = aabb[start].getLower();
+	const mic_f b_max = aabb[start].getUpper();
 	const mic_f centroid_2 = b_min + b_max; 
 	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
@@ -179,8 +179,8 @@ namespace embree
 
     if (unlikely(end % 2 != 0))
       {
-	const mic_f b_min = broadcast4to16f((float*)&aabb[end-1].lower);
-	const mic_f b_max = broadcast4to16f((float*)&aabb[end-1].upper);    
+	const mic_f b_min = aabb[end-1].getLower();
+	const mic_f b_max = aabb[end-1].getUpper();
 	const mic_f centroid_2 = b_min + b_max; 
 	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
@@ -240,9 +240,8 @@ namespace embree
 #pragma unroll(2)
 	for (size_t i=0;i<2;i++)
 	  {
-
-	    const mic_f b_min = broadcast4to16f((float*)&aptr[i].lower);
-	    const mic_f b_max = broadcast4to16f((float*)&aptr[i].upper);    
+	    const mic_f b_min = aptr[i].getLower();
+	    const mic_f b_max = aptr[i].getUpper();
 
 	    const mic_f centroid_2 = b_min + b_max;
 	    const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
@@ -522,8 +521,8 @@ namespace embree
 
     if (start % 2 != 0)
       {
-	const mic_f b_min = broadcast4to16f((float*)&aabb[start].lower);
-	const mic_f b_max = broadcast4to16f((float*)&aabb[start].upper);    
+	const mic_f b_min = aabb[start].getLower();
+	const mic_f b_max = aabb[start].getUpper();    
 	const mic_f centroid_2 = b_min + b_max; 
 	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
@@ -570,8 +569,8 @@ namespace embree
 
     if (end % 2 != 0)
       {
-	const mic_f b_min = broadcast4to16f((float*)&aabb[end-1].lower);
-	const mic_f b_max = broadcast4to16f((float*)&aabb[end-1].upper);    
+	const mic_f b_min = aabb[end-1].getLower();
+	const mic_f b_max = aabb[end-1].getUpper();    
 	const mic_f centroid_2 = b_min + b_max; 
 	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
@@ -641,8 +640,8 @@ namespace embree
 #pragma unroll(2)
 	for (size_t i=0;i<2;i++)
 	  {
-	    const mic_f b_min = broadcast4to16f((float*)&aptr[i].lower);
-	    const mic_f b_max = broadcast4to16f((float*)&aptr[i].upper);    
+	    const mic_f b_min = aptr[i].getLower();
+	    const mic_f b_max = aptr[i].getUpper();    
 
 	    const mic_f centroid_2 = b_min + b_max; 
 	    const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
@@ -808,8 +807,8 @@ namespace embree
 	{
 	  while (likely(l < r)) 
 	    {
-	      const mic_f b_min = broadcast4to16f((float*)&l->lower);
-	      const mic_f b_max = broadcast4to16f((float*)&l->upper);
+	      const mic_f b_min = l->getLower();
+	      const mic_f b_max = l->getUpper();
 	      prefetch<PFHINT_L1EX>(l+2);	  
 	      if (unlikely(ge_split(b_min,b_max,dim_mask,c,s,bestSplit_f))) break;
 	      prefetch<PFHINT_L2EX>(l + DISTANCE + 4);	  
@@ -822,8 +821,8 @@ namespace embree
 	    }
 	  while (likely(l < r)) 
 	    {
-	      const mic_f b_min = broadcast4to16f((float*)&r->lower);
-	      const mic_f b_max = broadcast4to16f((float*)&r->upper);
+	      const mic_f b_min = r->getLower();
+	      const mic_f b_max = r->getUpper();
 	      prefetch<PFHINT_L1EX>(r-2);	  
 	      if (unlikely(lt_split(b_min,b_max,dim_mask,c,s,bestSplit_f))) break;
 	      prefetch<PFHINT_L2EX>(r - DISTANCE - 4);
@@ -836,8 +835,8 @@ namespace embree
 	    }
 
 	  if (unlikely(l == r)) {
-	    const mic_f b_min = broadcast4to16f((float*)&r->lower);
-	    const mic_f b_max = broadcast4to16f((float*)&r->upper);
+	    const mic_f b_min = r->getLower();
+	    const mic_f b_max = r->getUpper();
 	    if ( ge_split(b_min,b_max,dim_mask,c,s,bestSplit_f))
 	      {
 		const mic_f centroid2 = b_min+b_max;

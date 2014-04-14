@@ -36,7 +36,7 @@
 #define PROFILE_ITERATIONS 100
 
 //#define USE_QUANTIZATION
-#define MEASURE_MEMORY_ALLOCATION_TIME 0
+#define MEASURE_MEMORY_ALLOCATION_TIME 1
 
 // TODO: CHECK     const float voxelArea    = current.cs_AABB.sceneArea();
 //                 const float centroidArea = current.cs_AABB.centroidArea();
