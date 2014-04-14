@@ -65,6 +65,8 @@ namespace embree
     void encodeRGB8_to_JPEG(unsigned char *image, size_t width, size_t height, unsigned char **encoded, size_t *capacity)
     {
 
+#if JPEG_LIB_VERSION >= 80
+
         /*! Compression parameters and scratch space pointers (allocated by the library). */
         struct jpeg_compress_struct cinfo;
 
@@ -91,6 +93,12 @@ namespace embree
 
         /*! At this point 'jerror.num_warnings' could be checked for corrupt-data warnings. */
         jpeg_destroy_compress(&cinfo);
+
+#else  // JPEG_LIB_VERSION
+
+        throw std::runtime_error("JPEG encoding into a memory buffer requires LibJPEG 8a or higher");
+
+#endif // JPEG_LIB_VERSION
 
     }
 
