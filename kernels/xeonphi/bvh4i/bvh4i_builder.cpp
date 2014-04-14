@@ -188,10 +188,10 @@ namespace embree
     bvh->size_accel = size_accel;
 
     size_prims = size_primrefs;    
-
+    size_t total = size_primrefs+size_node+size_accel;
 #if MEASURE_MEMORY_ALLOCATION_TIME == 1
     msec = getSeconds()-msec;    
-    std::cout << "allocation time " << 1000. * msec << " ms" << std::endl << std::flush;
+    std::cout << "allocation time " << 1000. * msec << " ms for " << (float)(total) / 1024.0f / 1024.0f << " MB " << std::endl << std::flush;
 #endif
   }
   
