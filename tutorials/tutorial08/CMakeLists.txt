@@ -15,7 +15,17 @@
 ## ======================================================================== ##
 
 IF (__XEON__ AND BUILD_TUTORIALS)
-  ADD_EXECUTABLE(tutorial08 tutorial08.cpp tutorial08_device.cpp catmullclark.cpp subdivisionmesh.cpp)
-  TARGET_LINK_LIBRARIES(tutorial08 embree tutorial transport tutorial_device)
+
+    ADD_EXECUTABLE(tutorial08
+        extensions/api.cpp
+        extensions/catmullclark.cpp
+        extensions/subdivisionmesh.cpp
+        extensions/triangulatemesh.cpp
+        tutorial08_device.cpp
+        tutorial08.cpp
+    )
+
+    TARGET_LINK_LIBRARIES(tutorial08 embree tutorial transport tutorial_device)
+
 ENDIF()
 

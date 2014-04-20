@@ -64,46 +64,24 @@
 
     };
 
-    SubdivisionMesh::SubdivisionMesh(const float *vertices, const int32_t *indices, const int32_t *offsets, size_t vertexcount, size_t edgecount, size_t facecount) {
+    SubdivisionMesh::SubdivisionMesh(const size_t coarseFaceCount, const size_t coarseEdgeCount, const size_t coarseVertexCount) {
 
-        vertexCoordinates.reserve(vertexcount);  for (size_t i=0, j=0 ; i < vertexcount ; i++) vertexCoordinates.push_back(Vec3f(vertices[j++], vertices[j++], vertices[j++]));
-        vertexIndices.reserve(edgecount);        for (size_t i=0 ; i < edgecount ; i++) vertexIndices.push_back(indices[i]);
-        vertexOffsets.reserve(facecount + 1);    for (size_t i=0 ; i < facecount + 1 ; i++) vertexOffsets.push_back(offsets[i]);
-
-    }
-
-    SubdivisionMesh::SubdivisionMesh(const std::vector<Vec3f> &vertices, const std::vector<int32_t> &indices, const std::vector<int32_t> &offsets) {
-
-        vertexCoordinates = vertices;
-        vertexIndices     = indices;
-        vertexOffsets     = offsets;
+        vertexIndices.resize(coarseEdgeCount * 2, -1);  vertexCoordinates.resize(coarseVertexCount, Vec3f(0.0f, 0.0f, 0.0f));
+        vertexOffsets.resize(coarseFaceCount + 1,  0);  holeMarkers.resize(coarseFaceCount, 0);
+        creaseWeights.resize(coarseEdgeCount * 2,  0);
 
     }
 
     void SubdivisionMesh::commit() {
 
-        EdgeList list(this);  list.reserve(edgeCount());
+        EdgeList list(this);  list.reserve(edgeCount() * 2);
         for (size_t i=0 ; i < faceCount() ; i++) list.appendEdges(getFace(i));  list.sort();
 
-        oppositeEdges = std::vector<int64_t>(edgeCount(), -1);
-        for (size_t i=0 ; i < edgeCount() ; i += 2) setOppositeEdges(list.getEdge(i), list.getEdge(i + 1));
-
-/*
-printf("Vertex Coordinates\n");
-for (size_t i=0 ; i < vertexCoordinates.size() ; i++) printf("%f %f %f\n", vertexCoordinates[i].x, vertexCoordinates[i].y, vertexCoordinates[i].z);
-printf("Vertex Offsets\n");
-for (size_t i=0 ; i < vertexOffsets.size() ; i++) printf("%d\n", vertexOffsets[i]);
-printf("Vertex Indices\n");
-for (size_t i=0 ; i < vertexIndices.size() ; i++) printf("%d\n", vertexIndices[i]);
-printf("Opposite Edges\n");
-for (size_t i=0 ; i < oppositeEdges.size() ; i++) (oppositeEdges.at(i) < 0) ? printf("-1\n") : printf("%d %d\n", HALF_EDGE_FACE_INDEX(oppositeEdges.at(i)), HALF_EDGE_VERTEX_SLOT(oppositeEdges.at(i)));
-printf("Edge List\n");
-for (size_t i=0 ; i < list.data.size() ; i++) printf("%d %d %d %d\n", list.data[i].v0, list.data[i].v1, HALF_EDGE_FACE_INDEX(list.data[i].edge), HALF_EDGE_VERTEX_SLOT(list.data[i].edge));
-printf("DONE\n");
-*/
+        oppositeEdges = std::vector<int64_t>(edgeCount() * 2, -1);
+        for (size_t i=0 ; i < edgeCount() * 2 ; i += 2) setOppositeEdges(list.getEdge(i), list.getEdge(i + 1));
 
         vertexEdges = std::vector<int64_t>(vertexCount(), -1);
-        for (size_t i=0 ; i < edgeCount() ; i++) { HalfEdge edge = getOppositeEdge(i);  setVertexEdge(edge.getVertex().getIndex(), edge); }
+        for (size_t i=0 ; i < edgeCount() * 2 ; i++) { HalfEdge edge = getOppositeEdge(i);  setVertexEdge(edge.getVertex().getIndex(), edge); }
 
     }
 

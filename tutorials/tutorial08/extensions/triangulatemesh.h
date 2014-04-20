@@ -16,8 +16,12 @@
 
 #pragma once
 
+#include "tutorial/tutorial_device.h"
 #include "subdivisionmesh.h"
 
-/*! Return a copy of the mesh subdivided one level. */
-void catmullClarkSubdivideMesh(SubdivisionMesh &coarseMesh, SubdivisionMesh &fineMesh);
+/*! Compute the number of vertices in the subdivided and triangulated mesh. */
+size_t triangulatedMeshVertices(size_t numFaces, size_t numEdges, size_t numVertices, int subdivisionLevel);
+
+/*! Generate an Embree triangle mesh from a subdivision mesh. */
+void triangulateMesh(RTCScene sceneID, unsigned int meshID, SubdivisionMesh &mesh);
 

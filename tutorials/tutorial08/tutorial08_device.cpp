@@ -15,23 +15,16 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
-#include "catmullclark.h"
-#include "subdivisionmesh.h"
-
-/* Current and requested (tutorial08.cpp) subdivision refinement level. */
-int currentSubdivisionLevel = 0, subdivisionLevel = 0;
-
-/* Embree state identifiers for the scene and triangle mesh corresponding to the subdivision mesh. */
-RTCScene g_scene = NULL;  unsigned int g_mesh;
-
-/* Coarse subdivision mesh. */
-SubdivisionMesh originalMesh;
+#include "extensions/api.h"
 
 /* Function used to render a pixel. */
 renderPixelFunc renderPixel;
 
-/* Construct a new Embree triangle mesh object and triangulate the subdivision mesh. */
-void triangulateMesh(SubdivisionMesh &mesh);
+/* Embree state identifier for the scene. */
+RTCScene g_scene = NULL;
+
+/* Requested subdivision level set in tutorial08.cpp. */
+int subdivisionLevel = 0;
 
 RTCRay constructRay(const Vec3fa &origin, const Vec3fa &direction, float near, float far, int originGeomID, int originPrimID) {
 
@@ -63,13 +56,40 @@ void constructCubeMesh() {
     static const float cubeVertices[24] = {-1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1, -1, 1, -1, 1, 1, -1, 1, 1, 1, -1, 1, 1};
 
     /* Cube faces. */
-    static const int32_t cubeFaceIndices[24] = {0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 0, 4, 7, 3, 4, 5, 6, 7, 0, 3, 2, 1};
+    static const int32_t cubeIndices[24] = {0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 0, 4, 7, 3, 4, 5, 6, 7, 0, 3, 2, 1};
 
     /* Offsets into the index array per face. */
-    static const int32_t cubeFaceOffsets[7] = {0, 4, 8, 12, 16, 20, 24};
+    static const int32_t cubeOffsets[7] = {0, 4, 8, 12, 16, 20, 24};
 
-    /* Construct the subdivision mesh [vertex count, half edge count, face count]. */
-    originalMesh = SubdivisionMesh(cubeVertices, cubeFaceIndices, cubeFaceOffsets, 8, 24, 6);
+    /* Construct a subdivision mesh object. */
+    unsigned int meshID = rtcxNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, 6, 12, 8);
+
+    /* Map the subdivision mesh vertex buffer from Embree space into user space. */
+    float *vertices = (float *) rtcxMapBuffer(g_scene, meshID, RTCX_VERTEX_BUFFER);
+
+    /* Copy vertex data into the subdivision mesh buffer. */
+    memcpy(vertices, cubeVertices, 24 * sizeof(float));
+
+    /* Unmap the subdivision mesh buffer. */
+    rtcxUnmapBuffer(g_scene, meshID, RTCX_VERTEX_BUFFER);
+
+    /* Map the subdivision mesh index buffer from Embree space into user space. */
+    int32_t *indices = (int32_t *) rtcxMapBuffer(g_scene, meshID, RTCX_INDEX_BUFFER);
+
+    /* Copy vertex indices into the subdivision mesh buffer. */
+    memcpy(indices, cubeIndices, 24 * sizeof(int32_t));
+
+    /* Unmap the subdivision mesh buffer. */
+    rtcxUnmapBuffer(g_scene, meshID, RTCX_INDEX_BUFFER);
+
+    /* Map the subdivision mesh offset buffer from Embree space into user space. */
+    int32_t *offsets = (int32_t *) rtcxMapBuffer(g_scene, meshID, RTCX_OFFSET_BUFFER);
+
+    /* Copy face offsets into the subdivision mesh buffer. */
+    memcpy(offsets, cubeOffsets, 7 * sizeof(int32_t));
+
+    /* Unmap the subdivision mesh buffer. */
+    rtcxUnmapBuffer(g_scene, meshID, RTCX_OFFSET_BUFFER);
 
 }
 
@@ -78,26 +98,42 @@ void constructGroundPlane() {
     /* Plane vertices. */
     static Vertex planeVertices[4] = {{-100, -2, -100, 0}, {-100, -2, 100, 0}, {100, -2, -100, 0}, {100, -2, 100, 0}};
 
-    /* Construct a triangulated plane with 2 triangles and 4 vertices. */
-    unsigned int plane = rtcNewTriangleMesh(g_scene, RTC_GEOMETRY_STATIC, 2, 4);
+    /* Construct a triangle mesh object. */
+    unsigned int meshID = rtcNewTriangleMesh(g_scene, RTC_GEOMETRY_STATIC, 2, 4);
 
     /* Map the triangle mesh vertex buffer from Embree space into user space. */
-    Vertex *vertices = (Vertex *) rtcMapBuffer(g_scene, plane, RTC_VERTEX_BUFFER);
+    Vertex *vertices = (Vertex *) rtcMapBuffer(g_scene, meshID, RTC_VERTEX_BUFFER);
 
-    /* Copy plane vertex data into the triangle mesh vertex buffer. */
+    /* Copy vertex data into the triangle mesh buffer. */
     memcpy(vertices, planeVertices, 4 * sizeof(Vertex));
 
-    /* Unmap the triangle mesh vertex buffer. */
-    rtcUnmapBuffer(g_scene, plane, RTC_VERTEX_BUFFER);
+    /* Unmap the triangle mesh buffer. */
+    rtcUnmapBuffer(g_scene, meshID, RTC_VERTEX_BUFFER);
 
-    /* Map the triangle buffer from Embree space into user space. */
-    Triangle *triangles = (Triangle *) rtcMapBuffer(g_scene, plane, RTC_INDEX_BUFFER);
+    /* Map the triangle mesh index buffer from Embree space into user space. */
+    Triangle *triangles = (Triangle *) rtcMapBuffer(g_scene, meshID, RTC_INDEX_BUFFER);
 
-    /* Store the indices of the vertices composing each triangle in the mesh. */
+    /* Copy vertex indices into the triangle mesh buffer. */
     triangles[0].v0 = 0;  triangles[0].v1 = 2;  triangles[0].v2 = 1;  triangles[1].v0 = 1;  triangles[1].v1 = 2;  triangles[1].v2 = 3;
 
-    /* Unmap the triangle buffer. */
-    rtcUnmapBuffer(g_scene, plane, RTC_INDEX_BUFFER);
+    /* Unmap the triangle mesh buffer. */
+    rtcUnmapBuffer(g_scene, meshID, RTC_INDEX_BUFFER);
+
+}
+
+void constructScene() {
+
+    /* Create an Embree object to hold scene state. */
+    g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
+
+    /* Construct a cube shaped subdivision mesh. */
+    constructCubeMesh();
+
+    /* Construct a triangle mesh object for the ground plane. */
+    constructGroundPlane();
+
+    /* Commit the changes to the scene state. */
+    rtcxCommit(g_scene);
 
 }
 
@@ -142,71 +178,6 @@ void renderTile(int taskIndex, int *pixels, int width, int height, float time, c
 
 }
 
-void subdivideMesh(int level) {
-
-    /* Remove the old scene from the Embree state. */
-    rtcDeleteScene(g_scene);
-
-    /* Create an Embree object to hold scene state. */
-    g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
-
-    /* Temporary meshes used during subdivision. */
-    SubdivisionMesh meshes[2];  meshes[0] = originalMesh;
-
-    /* Subdivide the mesh using Catmull-Clark. */
-    for (size_t i=0 ; i < level ; i++) meshes[i % 2].commit(), catmullClarkSubdivideMesh(meshes[i % 2], meshes[(i + 1) % 2]);
-
-    /* Construct a new Embree triangle mesh object and triangulate the subdivision mesh. */
-    triangulateMesh(meshes[level % 2]);
-
-    /* Construct a new Embree triangle mesh object for the ground plane. */
-    constructGroundPlane();
-
-    /* Commit the changes to the scene state. */
-    rtcCommit(g_scene);
-
-}
-
-void triangulateFace(const SubdivisionMesh::Face &face, Triangle *triangles) {
-
-    for (size_t i=0, j=1, k=2 ; j < face.vertexCount() - 1 ; i++, j++, k++) {
-
-        triangles[i].v0 = face.getVertex(0).getIndex();
-        triangles[i].v1 = face.getVertex(j).getIndex();
-        triangles[i].v2 = face.getVertex(k).getIndex();
-
-    }
-
-}
-
-void triangulateMesh(SubdivisionMesh &mesh) {
-
-    /* Number of triangles to be constructed from the subdivision mesh. */
-    size_t triangleCount = mesh.faceCount() + mesh.edgeCount() - 3 * mesh.faceCount();
-
-    /* Construct a new Embree triangle mesh object. */
-    g_mesh = rtcNewTriangleMesh(g_scene, RTC_GEOMETRY_STATIC, triangleCount, mesh.vertexCount());
-
-    /* Map the triangle mesh vertex buffer from Embree space into user space. */
-    Vertex *vertices = (Vertex *) rtcMapBuffer(g_scene, g_mesh, RTC_VERTEX_BUFFER);
-
-    /* Copy vertex data from the subdivision mesh into the triangle mesh vertex buffer. */
-    for (size_t i=0 ; i < mesh.vertexCount() ; i++) { Vec3f p = mesh.getCoordinates(i);  vertices[i].x = p.x;  vertices[i].y = p.y;  vertices[i].z = p.z; }
-
-    /* Unmap the triangle mesh vertex buffer. */
-    rtcUnmapBuffer(g_scene, g_mesh, RTC_VERTEX_BUFFER);
-
-    /* Map the triangle buffer from Embree space into user space. */
-    Triangle *triangles = (Triangle *) rtcMapBuffer(g_scene, g_mesh, RTC_INDEX_BUFFER);
-
-    /* Store the indices of the vertices composing each triangle in the mesh. */
-    for (size_t i=0, j=0 ; i < mesh.faceCount() ; j += mesh.getFace(i).vertexCount() - 2, i++) triangulateFace(mesh.getFace(i), &triangles[j]);
-
-    /* Unmap the triangle buffer. */
-    rtcUnmapBuffer(g_scene, g_mesh, RTC_INDEX_BUFFER);
-
-}
-
 extern "C" void device_cleanup() {
 
     rtcDeleteScene(g_scene);
@@ -222,27 +193,15 @@ extern "C" void device_init(int8 *configuration) {
     /* Set the render mode to use on entry into the run loop. */
     renderPixel = renderPixelStandard;
 
-    /* Create an Embree object to hold scene state. */
-    g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
-
-    /* Construct a cube shaped subdivision mesh. */
-    constructCubeMesh();
-
-    /* Construct a new Embree triangle mesh object and triangulate the subdivision mesh. */
-    triangulateMesh(originalMesh);
-
-    /* Construct a new Embree triangle mesh object for the ground plane. */
-    constructGroundPlane();
-
-    /* Commit the changes to the scene state. */
-    rtcCommit(g_scene);
+    /* Construct a scene with a cube shaped subdivision mesh and a ground plane. */
+    constructScene();
 
 }
 
 extern "C" void device_render(int *pixels, int width, int height, float time, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const Vec3f &p) {
 
     /* Refine the subdivision mesh as needed. */
-    if (currentSubdivisionLevel != subdivisionLevel) subdivideMesh(currentSubdivisionLevel = subdivisionLevel);
+    static int currentLevel = 0;  if (currentLevel != subdivisionLevel) rtcDeleteScene(g_scene), constructScene(), currentLevel = subdivisionLevel;
 
     /* Number of tiles spanning the window in width and height. */
     const Vec2i tileCount((width + TILE_SIZE_X - 1) / TILE_SIZE_X, (height + TILE_SIZE_Y - 1) / TILE_SIZE_Y);
