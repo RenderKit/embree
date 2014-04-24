@@ -308,14 +308,14 @@ namespace embree
 
   bool BVH4HairBuilder2::split(size_t threadIndex, size_t depth, 
                                atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds, const PrimInfo& pinfo,
-                               atomic_set<PrimRefBlock>& lprims_o, PrimInfo& linfo_o, size_t& lsize,
-                               atomic_set<PrimRefBlock>& rprims_o, PrimInfo& rinfo_o, size_t& rsize,
+                               atomic_set<PrimRefBlock>& lprims_o, PrimInfo& linfo_o, 
+                               atomic_set<PrimRefBlock>& rprims_o, PrimInfo& rinfo_o, 
                                bool& isAligned)
   {
     /* variable to track the SAH of the best splitting approach */
     float bestSAH = inf;
     bool enableSpatialSplits = remainingReplications > 0;
-    const int travCostAligned = isAligned ? BVH4Hair::travCostAligned : BVH4Hair::travCostUnaligned;
+    const int travCostAligned = BVH4Hair::travCostAligned;
     const float leafSAH = BVH4Hair::intCost*float(pinfo.size())*halfArea(bounds.bounds);
     
     /* perform standard binning in aligned space */
@@ -370,8 +370,6 @@ namespace embree
       const FallBackSplit fallbackSplit = FallBackSplit::find(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
-      lsize = fallbackSplit.num0;
-      rsize = fallbackSplit.num1;
       return true;
     }
 
@@ -381,8 +379,6 @@ namespace embree
       alignedObjectSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
-      lsize = alignedObjectSplit.num0;
-      rsize = alignedObjectSplit.num1;
       return true;
     }
 
@@ -392,8 +388,6 @@ namespace embree
       alignedSpatialSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
-      lsize = alignedSpatialSplit.num0;
-      rsize = alignedSpatialSplit.num1;
       atomic_add(&remainingReplications,-alignedSpatialSplit.numReplications);
       return true;
     }
@@ -404,8 +398,6 @@ namespace embree
       unalignedObjectSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
-      lsize = unalignedObjectSplit.num0;
-      rsize = unalignedObjectSplit.num1;
       isAligned = false;
       return true;
     }
@@ -416,8 +408,6 @@ namespace embree
       unalignedSpatialSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
-      lsize = unalignedSpatialSplit.num0;
-      rsize = unalignedSpatialSplit.num1;
       atomic_add(&remainingReplications,-unalignedSpatialSplit.numReplications);
       isAligned = false;
       return true;
@@ -429,8 +419,6 @@ namespace embree
       strandSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
-      lsize = strandSplit.num0;
-      rsize = strandSplit.num1;
       isAligned = false;
       return true;
     }
@@ -470,19 +458,17 @@ namespace embree
       ssize_t bestChild = -1;
       for (size_t i=0; i<numChildren; i++) 
       {
-        size_t N = atomic_set<PrimRefBlock>::block_iterator_unsafe(cprims[i]).size(); // FIXME: slow
         float A = halfArea(cbounds[i].bounds);
-        if (N <= minLeafSize) continue;  
+        if (cpinfo[i].size() <= minLeafSize) continue;  
         if (isleaf[i]) continue;
         if (A > bestArea) { bestChild = i; bestArea = A; }
       }
       if (bestChild == -1) break;
 
       /*! split selected child */
-      size_t lsize, rsize;
       PrimInfo linfo, rinfo;
       atomic_set<PrimRefBlock> lprims, rprims;
-      bool done = split(threadIndex,task.depth,cprims[bestChild],cbounds[bestChild],cpinfo[bestChild],lprims,linfo,lsize,rprims,rinfo,rsize,isAligned);
+      bool done = split(threadIndex,task.depth,cprims[bestChild],cbounds[bestChild],cpinfo[bestChild],lprims,linfo,rprims,rinfo,isAligned);
       if (!done) { isleaf[bestChild] = true; continue; }
       cprims[numChildren] = rprims; isleaf[numChildren] = false; cpinfo[numChildren] = rinfo;
       cprims[bestChild  ] = lprims; isleaf[bestChild  ] = false; cpinfo[bestChild  ] = linfo;
@@ -496,16 +482,8 @@ namespace embree
     if (isAligned) 
     {
       BVH4Hair::AlignedNode* node = bvh->allocAlignedNode(threadIndex);
-
-      BBox3fa bounds = empty;
-      NAABBox3fa abounds[BVH4Hair::N];
-      for (size_t i=0; i<numChildren; i++) {
-        abounds[i] = computeAlignedBounds(cprims[i]);
-        bounds.extend(abounds[i].bounds);
-      }
-
       for (ssize_t i=0; i<numChildren; i++) {
-        node->set(i,abounds[i].bounds);
+        node->set(i,cpinfo[i].geomBounds);
 	const NAABBox3fa ubounds = computeUnalignedBounds(cprims[i]);
         new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cpinfo[i],isleaf[i],cprims[i],ubounds);
       }
