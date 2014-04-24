@@ -58,11 +58,6 @@ namespace embree
     bvh->init(numPrimitives,numPrimitives+(size_t)(g_hair_builder_replication_factor*numPrimitives));
     if (numPrimitives == 0) return;
     numGeneratedPrims = 0;
-    numAlignedObjectSplits = 0;
-    numAlignedSpatialSplits = 0;
-    numUnalignedObjectSplits = 0;
-    numStrandSplits = 0;
-    numFallbackSplits = 0;
 
     double t0 = 0.0;
     if (g_verbose >= 2) 
@@ -129,11 +124,6 @@ namespace embree
       double t1 = getSeconds();
       std::cout << " [DONE]" << std::endl;
       std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
-      PRINT(numAlignedObjectSplits);
-      PRINT(numAlignedSpatialSplits);
-      PRINT(numUnalignedObjectSplits);
-      PRINT(numStrandSplits);
-      PRINT(numFallbackSplits);
       std::cout << BVH4HairStatistics(bvh).str();
     }
   }
@@ -295,8 +285,7 @@ namespace embree
   {
     /* variable to track the SAH of the best splitting approach */
     float bestSAH = inf;
-    bool enableSpatialSplits = remainingReplications > 0;
-    const int travCostAligned = BVH4Hair::travCostAligned;
+    
     const float leafSAH = BVH4Hair::intCost*float(pinfo.size())*halfArea(bounds.bounds);
     
     /* perform standard binning in aligned space */
@@ -304,16 +293,17 @@ namespace embree
     float alignedObjectSAH = inf;
     if (enableAlignedObjectSplits) {
       alignedObjectSplit = ObjectPartition::find(threadIndex,depth,prims,one);
-      alignedObjectSAH = travCostAligned*halfArea(bounds.bounds) + alignedObjectSplit.splitSAH(BVH4Hair::intCost);
+      alignedObjectSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + alignedObjectSplit.splitSAH(BVH4Hair::intCost);
       bestSAH = min(bestSAH,alignedObjectSAH);
     }
 
     /* perform spatial split in aligned space */
     SpatialSplit alignedSpatialSplit;
     float alignedSpatialSAH = inf;
+    bool enableSpatialSplits = remainingReplications > 0;
     if (enableSpatialSplits && enableAlignedSpatialSplits) {
       alignedSpatialSplit = SpatialSplit::find(threadIndex,depth,pinfo,prims,one);
-      alignedSpatialSAH = travCostAligned*halfArea(bounds.bounds) + alignedSpatialSplit.splitSAH(BVH4Hair::intCost);
+      alignedSpatialSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + alignedSpatialSplit.splitSAH(BVH4Hair::intCost);
       bestSAH = min(bestSAH,alignedSpatialSAH);
     }
 
@@ -337,33 +327,28 @@ namespace embree
 
     /* perform fallback split */
     if (bestSAH == float(inf)) {
-      numFallbackSplits++;
       FallBackSplit::find(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
     }
 
     /* perform aligned object split */
     else if (bestSAH == alignedObjectSAH) {
-      numAlignedObjectSplits++;
       alignedObjectSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
     }
 
     /* perform aligned spatial split */
     else if (bestSAH == alignedSpatialSAH) {
-      numAlignedSpatialSplits++;
       alignedSpatialSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       atomic_add(&remainingReplications,-alignedSpatialSplit.numReplications);
     }
 
     /* perform unaligned object split */
     else if (bestSAH == unalignedObjectSAH) {
-      numUnalignedObjectSplits++;
       unalignedObjectSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       isAligned = false;
     }
 
     /* perform strand split */
     else if (bestSAH == strandSAH) {
-      numStrandSplits++;
       strandSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       isAligned = false;
     }

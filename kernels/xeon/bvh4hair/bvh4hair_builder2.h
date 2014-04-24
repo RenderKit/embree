@@ -93,12 +93,6 @@ namespace embree
     size_t minLeafSize;    //!< minimal size of a leaf
     size_t maxLeafSize;    //!< maximal size of a leaf
 
-    size_t numAlignedObjectSplits;
-    size_t numAlignedSpatialSplits;
-    size_t numUnalignedObjectSplits;
-    size_t numStrandSplits;
-    size_t numFallbackSplits;
-
     bool enableAlignedObjectSplits;
     bool enableAlignedSpatialSplits;
     bool enableUnalignedObjectSplits;
