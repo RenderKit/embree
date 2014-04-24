@@ -27,12 +27,6 @@
 #define BVH4HAIR_WIDTH 4
 #define BVH4HAIR_COMPRESS_ALIGNED_NODES 0
 #define BVH4HAIR_COMPRESS_UNALIGNED_NODES 0
-#define BVH4HAIR_NAVIGATION 0
-#if BVH4HAIR_NAVIGATION
-#define NAVI(x) x
-#else
-#define NAVI(x)
-#endif
 
 namespace embree
 {

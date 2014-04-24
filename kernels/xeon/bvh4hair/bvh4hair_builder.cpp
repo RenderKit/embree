@@ -23,12 +23,6 @@ namespace embree
 {
   extern double g_hair_builder_replication_factor;
   
-#if BVH4HAIR_NAVIGATION
-  extern BVH4Hair::NodeRef rootNode;
-  extern BVH4Hair::NodeRef naviNode;
-  extern std::vector<BVH4Hair::NodeRef> naviStack;
-#endif
-
   /*! scales orthonormal transformation into the range -127 to +127 */
   __forceinline const LinearSpace3fa compressTransform(const LinearSpace3fa& xfm)
   {
@@ -153,10 +147,6 @@ namespace embree
     TaskScheduler::executeTask(threadIndex,threadCount,_task_build_parallel,this,threadCount,"BVH4Builder::build_parallel");
 #endif
     
-    NAVI(naviNode = bvh->root);
-    NAVI(rootNode = bvh->root);
-    NAVI(naviStack.push_back(bvh->root));
-
     if (g_verbose >= 2) {
       double t1 = getSeconds();
       std::cout << " [DONE]" << std::endl;

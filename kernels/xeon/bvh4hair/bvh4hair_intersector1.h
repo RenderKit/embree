@@ -48,7 +48,7 @@ namespace embree
       public:
         __forceinline static void swap2(StackItem& a, StackItem& b) 
         { 
-#if defined(__AVX__) && !BVH4HAIR_NAVIGATION
+#if defined(__AVX__)
           ssef sse_a = load4f(&a);
           ssef sse_b = load4f(&b);
           store4f(&a,sse_b);
@@ -88,9 +88,6 @@ namespace embree
       public:
         size_t ref;
         float tNear,tFar;
-#if BVH4HAIR_NAVIGATION
-        size_t depth;
-#endif
       };
 
     private:
