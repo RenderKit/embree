@@ -108,14 +108,12 @@ namespace embree
     size_t numAlignedObjectSplits;
     size_t numAlignedSpatialSplits;
     size_t numUnalignedObjectSplits;
-    size_t numUnalignedSpatialSplits;
     size_t numStrandSplits;
     size_t numFallbackSplits;
 
     bool enableAlignedObjectSplits;
     bool enableAlignedSpatialSplits;
     bool enableUnalignedObjectSplits;
-    bool enableUnalignedSpatialSplits;
     bool enableStrandSplits;
     int enablePreSubdivision;
 
