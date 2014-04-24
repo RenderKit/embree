@@ -77,4 +77,62 @@ namespace embree
   private:
     ThreadPrimBlockAllocator* threadPrimBlockAllocator;  //!< Thread local allocator
   };
+
+template<typename PrimRef>
+      class PrimRefBlockAlloc : public AllocatorBase
+    {
+      ALIGNED_CLASS;
+    public:
+   
+      struct __aligned(4096) ThreadPrimBlockAllocator 
+      {
+        ALIGNED_CLASS_(4096);
+      public:
+      
+        __forceinline typename atomic_set<PrimRefBlockT<PrimRef> >::item* malloc(size_t thread, AllocatorBase* alloc) 
+        {
+          /* try to take a block from local list */
+          atomic_set<PrimRefBlockT<PrimRef> >::item* ptr = local_free_blocks.take_unsafe();
+          if (ptr) return new (ptr) typename atomic_set<PrimRefBlockT<PrimRef> >::item();
+          
+          /* if this failed again we have to allocate more memory */
+          ptr = (typename atomic_set<PrimRefBlockT<PrimRef> >::item*) alloc->malloc(sizeof(typename atomic_set<PrimRefBlockT<PrimRef> >::item));
+          
+          /* return first block */
+          return new (ptr) typename atomic_set<PrimRefBlockT<PrimRef> >::item();
+        }
+      
+        __forceinline void free(typename atomic_set<PrimRefBlockT<PrimRef> >::item* ptr) {
+          local_free_blocks.insert_unsafe(ptr);
+        }
+        
+      public:
+        atomic_set<PrimRefBlockT<PrimRef> > local_free_blocks; //!< only accessed from one thread
+      };
+      
+    public:
+      
+      /*! Allocator default construction. */
+      PrimRefBlockAlloc () {
+        threadPrimBlockAllocator = new ThreadPrimBlockAllocator[getNumberOfLogicalThreads()];
+      }
+      
+      /*! Allocator destructor. */
+      virtual ~PrimRefBlockAlloc() {
+        delete[] threadPrimBlockAllocator; threadPrimBlockAllocator = NULL;
+      }
+      
+      /*! Allocate a primitive block */
+      __forceinline typename atomic_set<PrimRefBlockT<PrimRef> >::item* malloc(size_t thread) {
+        return threadPrimBlockAllocator[thread].malloc(thread,this);
+      }
+      
+      /*! Frees a primitive block */
+      __forceinline void free(size_t thread, typename atomic_set<PrimRefBlockT<PrimRef> >::item* block) {
+        return threadPrimBlockAllocator[thread].free(block);
+      }
+      
+    private:
+      ThreadPrimBlockAllocator* threadPrimBlockAllocator;  //!< Thread local allocator
+    };
 }

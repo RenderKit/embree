@@ -18,6 +18,7 @@
 
 #include "geometry/primitive.h"
 #include "geometry/bezier1.h"
+#include "builders/primrefalloc.h"
 
 namespace embree
 {
@@ -40,106 +41,9 @@ namespace embree
   private:
 
     typedef Bezier1 PrimRef;
-
-    /*! Block of build primitives */
-    class PrimRefBlock
-    {
-    public:
-
-      typedef PrimRef T;
-
-      /*! Number of primitive references inside a block */
-      static const size_t blockSize = 511;
-
-      /*! default constructor */
-      PrimRefBlock () : num(0) {}
-
-      /*! frees the block */
-      __forceinline void clear(size_t n = 0) { num = n; }
-      
-      /*! return base pointer */
-      __forceinline PrimRef* base() { return ptr; }
-
-      /*! returns number of elements */
-      __forceinline size_t size() const { return num; }
-
-      /*! inserts a primitive reference */
-      __forceinline bool insert(const PrimRef& ref) {
-        if (unlikely(num >= blockSize)) return false;
-        ptr[num++] = ref;
-        return true;
-      }
-
-      /*! access the i-th primitive reference */
-      __forceinline       PrimRef& operator[] (size_t i)       { return ptr[i]; }
-      __forceinline const PrimRef& operator[] (size_t i) const { return ptr[i]; }
+    typedef PrimRefBlockT<Bezier1> PrimRefBlock;
+    typedef atomic_set<PrimRefBlock> PrimRefList;
     
-      /*! access the i-th primitive reference */
-      __forceinline       PrimRef& at (size_t i)       { return ptr[i]; }
-      __forceinline const PrimRef& at (size_t i) const { return ptr[i]; }
-    
-    private:
-      PrimRef ptr[blockSize];   //!< Block with primitive references
-      size_t num;               //!< Number of primitive references in block
-    };
-
-    class PrimRefBlockAlloc : public AllocatorBase
-    {
-      ALIGNED_CLASS;
-    public:
-   
-      struct __aligned(4096) ThreadPrimBlockAllocator 
-      {
-        ALIGNED_CLASS_(4096);
-      public:
-      
-        __forceinline atomic_set<PrimRefBlock>::item* malloc(size_t thread, AllocatorBase* alloc) 
-        {
-          /* try to take a block from local list */
-          atomic_set<PrimRefBlock>::item* ptr = local_free_blocks.take_unsafe();
-          if (ptr) return new (ptr) atomic_set<PrimRefBlock>::item();
-          
-          /* if this failed again we have to allocate more memory */
-          ptr = (atomic_set<PrimRefBlock>::item*) alloc->malloc(sizeof(atomic_set<PrimRefBlock>::item));
-          
-          /* return first block */
-          return new (ptr) atomic_set<PrimRefBlock>::item();
-        }
-      
-        __forceinline void free(atomic_set<PrimRefBlock>::item* ptr) {
-          local_free_blocks.insert_unsafe(ptr);
-        }
-        
-      public:
-        atomic_set<PrimRefBlock> local_free_blocks; //!< only accessed from one thread
-      };
-      
-    public:
-      
-      /*! Allocator default construction. */
-      PrimRefBlockAlloc () {
-        threadPrimBlockAllocator = new ThreadPrimBlockAllocator[getNumberOfLogicalThreads()];
-      }
-      
-      /*! Allocator destructor. */
-      virtual ~PrimRefBlockAlloc() {
-        delete[] threadPrimBlockAllocator; threadPrimBlockAllocator = NULL;
-      }
-      
-      /*! Allocate a primitive block */
-      __forceinline atomic_set<PrimRefBlock>::item* malloc(size_t thread) {
-        return threadPrimBlockAllocator[thread].malloc(thread,this);
-      }
-      
-      /*! Frees a primitive block */
-      __forceinline void free(size_t thread, atomic_set<PrimRefBlock>::item* block) {
-        return threadPrimBlockAllocator[thread].free(block);
-      }
-      
-    private:
-      ThreadPrimBlockAllocator* threadPrimBlockAllocator;  //!< Thread local allocator
-    };
-
     /*! stores all info to build a subtree */
     struct BuildTask
     {
@@ -357,7 +261,7 @@ namespace embree
     int enablePreSubdivision;
 
     BVH4Hair* bvh;         //!< output
-    PrimRefBlockAlloc alloc;                 //!< Allocator for primitive blocks
+    PrimRefBlockAlloc<PrimRef> alloc;                 //!< Allocator for primitive blocks
 
     MutexSys taskMutex;
     volatile atomic_t numActiveTasks;
