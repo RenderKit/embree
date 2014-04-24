@@ -916,7 +916,7 @@ namespace embree
     float bestSAH = inf;
     bool enableSpatialSplits = remainingReplications > 0;
     const int travCostAligned = isAligned ? BVH4Hair::travCostAligned : BVH4Hair::travCostUnaligned;
-    const float leafSAH = BVH4Hair::intCost*countfunc(size)*embree::area(bounds.bounds);
+    const float leafSAH = BVH4Hair::intCost*float(size)*embree::area(bounds.bounds);
     
     /* perform standard binning in aligned space */
     ObjectSplit alignedObjectSplit;
