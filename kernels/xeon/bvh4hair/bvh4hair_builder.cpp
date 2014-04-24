@@ -277,7 +277,7 @@ namespace embree
     for (atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims; i; i++)
     {
       const BBox3fa cbounds = i->bounds();
-      area += embree::area(cbounds);
+      area += halfArea(cbounds);
       bounds.extend(cbounds);
     }
     bounds.upper.w = area;
@@ -291,7 +291,7 @@ namespace embree
     for (atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims; i; i++)
     {
       const BBox3fa cbounds = i->bounds(space);
-      area += embree::area(cbounds);
+      area += halfArea(cbounds);
       bounds.extend(cbounds);
     }
     bounds.upper.w = area;
@@ -321,7 +321,7 @@ namespace embree
       float area = 0.0f;
       for (atomic_set<PrimRefBlock>::block_iterator_unsafe j = prims; j; j++) {
         const BBox3fa cbounds = j->bounds(space);
-        area += embree::area(cbounds);
+        area += halfArea(cbounds);
         bounds.extend(cbounds);
       }
 
@@ -474,9 +474,9 @@ namespace embree
     {
       count += counts[i];
       rCounts[i] = count;
-      bx.extend(bounds[i][0]); rAreas[i][0] = area(bx);
-      by.extend(bounds[i][1]); rAreas[i][1] = area(by);
-      bz.extend(bounds[i][2]); rAreas[i][2] = area(bz);
+      bx.extend(bounds[i][0]); rAreas[i][0] = halfArea(bx);
+      by.extend(bounds[i][1]); rAreas[i][1] = halfArea(by);
+      bz.extend(bounds[i][2]); rAreas[i][2] = halfArea(bz);
     }
     
     /* sweep from left to right and compute SAH */
@@ -485,9 +485,9 @@ namespace embree
     for (size_t i=1; i<BINS; i++, ii+=1)
     {
       count += counts[i-1];
-      bx.extend(bounds[i-1][0]); float Ax = area(bx);
-      by.extend(bounds[i-1][1]); float Ay = area(by);
-      bz.extend(bounds[i-1][2]); float Az = area(bz);
+      bx.extend(bounds[i-1][0]); float Ax = halfArea(bx);
+      by.extend(bounds[i-1][1]); float Ay = halfArea(by);
+      bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
       const ssef lArea = ssef(Ax,Ay,Az,Az);
       const ssef rArea = rAreas[i];
 #if BVH4HAIR_WIDTH == 8
@@ -611,7 +611,7 @@ namespace embree
           if (curve.split(plane,bincurve,restcurve)) {
             const BBox3fa cbounds = bincurve.bounds(space);
             bounds[bin][dim].extend(cbounds);
-            areas [bin][dim] += embree::area(cbounds); // FIXME: not correct
+            areas [bin][dim] += halfArea(cbounds); // FIXME: not correct
             curve = restcurve;
           }
         }
@@ -619,7 +619,7 @@ namespace embree
         numEnd  [endbin  [dim]][dim]++;
         const BBox3fa cbounds = curve.bounds(space);
         bounds[bin][dim].extend(cbounds);
-        areas [bin][dim] += embree::area(cbounds);  // FIXME: not correct
+        areas [bin][dim] += halfArea(cbounds);  // FIXME: not correct
       }
     }
     
@@ -631,9 +631,9 @@ namespace embree
     {
       count += numEnd[i];
       rCounts[i] = count;
-      bx.extend(bounds[i][0]); rAreas[i][0] = area(bx);
-      by.extend(bounds[i][1]); rAreas[i][1] = area(by);
-      bz.extend(bounds[i][2]); rAreas[i][2] = area(bz);
+      bx.extend(bounds[i][0]); rAreas[i][0] = halfArea(bx);
+      by.extend(bounds[i][1]); rAreas[i][1] = halfArea(by);
+      bz.extend(bounds[i][2]); rAreas[i][2] = halfArea(bz);
     }
     
     /* sweep from left to right and compute SAH */
@@ -642,9 +642,9 @@ namespace embree
     for (size_t i=1; i<BINS; i++, ii+=1)
     {
       count += numBegin[i-1];
-      bx.extend(bounds[i-1][0]); float Ax = area(bx);
-      by.extend(bounds[i-1][1]); float Ay = area(by);
-      bz.extend(bounds[i-1][2]); float Az = area(bz);
+      bx.extend(bounds[i-1][0]); float Ax = halfArea(bx);
+      by.extend(bounds[i-1][1]); float Ay = halfArea(by);
+      bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
       const ssef lArea = ssef(Ax,Ay,Az,Az);
       const ssef rArea = rAreas[i];
 #if BVH4HAIR_WIDTH == 8
@@ -710,7 +710,7 @@ namespace embree
       if (p0p <= 0.0f && p3p <= 0.0f) {
         const BBox3fa bounds = i->bounds(space);
         lbounds.extend(bounds);
-        larea += embree::area(bounds);
+        larea += halfArea(bounds);
         lnum++;
         continue;
       }
@@ -719,7 +719,7 @@ namespace embree
       if (p0p >= 0.0f && p3p >= 0.0f) {
         const BBox3fa bounds = i->bounds(space);
         rbounds.extend(bounds);
-        rarea += embree::area(bounds);
+        rarea += halfArea(bounds);
         rnum++;
         continue;
       }
@@ -728,13 +728,13 @@ namespace embree
       if (i->split(plane,left,right)) {
         const BBox3fa lcbounds = left.bounds(space);
         const BBox3fa rcbounds = right.bounds(space);
-        lbounds.extend(lcbounds); larea += embree::area(lcbounds); lnum++;
-        rbounds.extend(rcbounds); rarea += embree::area(rcbounds); rnum++;
+        lbounds.extend(lcbounds); larea += halfArea(lcbounds); lnum++;
+        rbounds.extend(rcbounds); rarea += halfArea(rcbounds); rnum++;
         continue;
       }
       
       const BBox3fa bounds = i->bounds(space);
-      lbounds.extend(bounds); larea += embree::area(bounds); lnum++;
+      lbounds.extend(bounds); larea += halfArea(bounds); lnum++;
     }
     lbounds.upper.w = larea;
     rbounds.upper.w = rarea;
@@ -916,14 +916,14 @@ namespace embree
     float bestSAH = inf;
     bool enableSpatialSplits = remainingReplications > 0;
     const int travCostAligned = isAligned ? BVH4Hair::travCostAligned : BVH4Hair::travCostUnaligned;
-    const float leafSAH = BVH4Hair::intCost*float(size)*embree::area(bounds.bounds);
+    const float leafSAH = BVH4Hair::intCost*float(size)*halfArea(bounds.bounds);
     
     /* perform standard binning in aligned space */
     ObjectSplit alignedObjectSplit;
     float alignedObjectSAH = neg_inf;
     if (enableAlignedObjectSplits) {
       alignedObjectSplit = ObjectSplit::find(threadIndex,depth,this,prims,one);
-      alignedObjectSAH = travCostAligned*embree::area(bounds.bounds) + alignedObjectSplit.standardSAH();
+      alignedObjectSAH = travCostAligned*halfArea(bounds.bounds) + alignedObjectSplit.standardSAH();
       bestSAH = min(bestSAH,alignedObjectSAH);
     }
 
@@ -932,7 +932,7 @@ namespace embree
     float alignedSpatialSAH = neg_inf;
     if (enableSpatialSplits && enableAlignedSpatialSplits) {
       alignedSpatialSplit = SpatialSplit::find(threadIndex,depth,size,this,prims,one);
-      alignedSpatialSAH = travCostAligned*embree::area(bounds.bounds) + alignedSpatialSplit.standardSAH();
+      alignedSpatialSAH = travCostAligned*halfArea(bounds.bounds) + alignedSpatialSplit.standardSAH();
       bestSAH = min(bestSAH,alignedSpatialSAH);
     }
 
@@ -941,7 +941,7 @@ namespace embree
     float unalignedObjectSAH = neg_inf;
     if (enableUnalignedObjectSplits) {
       unalignedObjectSplit = ObjectSplit::find(threadIndex,depth,this,prims,bounds.space);
-      unalignedObjectSAH = BVH4Hair::travCostUnaligned*embree::area(bounds.bounds) + unalignedObjectSplit.standardSAH();
+      unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + unalignedObjectSplit.standardSAH();
       bestSAH = min(bestSAH,unalignedObjectSAH);
     }
 
@@ -950,7 +950,7 @@ namespace embree
     float unalignedSpatialSAH = neg_inf;
     if (enableSpatialSplits && enableUnalignedSpatialSplits) {
       unalignedSpatialSplit = SpatialSplit::find(threadIndex,depth,size,this,prims,bounds.space);
-      unalignedSpatialSAH = BVH4Hair::travCostUnaligned*embree::area(bounds.bounds) + unalignedSpatialSplit.standardSAH();
+      unalignedSpatialSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + unalignedSpatialSplit.standardSAH();
       bestSAH = min(bestSAH,unalignedSpatialSAH);
     }
 
@@ -959,7 +959,7 @@ namespace embree
     float strandSAH = neg_inf;
     if (enableStrandSplits) {
       strandSplit = StrandSplit::find(threadIndex,this,prims);
-      strandSAH = BVH4Hair::travCostUnaligned*embree::area(bounds.bounds) + strandSplit.standardSAH();
+      strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.standardSAH();
       bestSAH = min(bestSAH,strandSAH);
     }
 
@@ -1071,7 +1071,7 @@ namespace embree
       for (size_t i=0; i<numChildren; i++) 
       {
         size_t N = atomic_set<PrimRefBlock>::block_iterator_unsafe(cprims[i]).size(); // FIXME: slow
-        float A = embree::area(cbounds[i].bounds);
+        float A = halfArea(cbounds[i].bounds);
         if (N <= minLeafSize) continue;  
         if (isleaf[i]) continue;
         if (A > bestArea) { bestChild = i; bestArea = A; }
