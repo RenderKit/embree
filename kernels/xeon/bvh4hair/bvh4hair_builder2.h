@@ -22,7 +22,7 @@
 
 namespace embree
 {
-  class BVH4HairBuilder : public Builder
+  class BVH4HairBuilder2 : public Builder
   {
     ALIGNED_CLASS;
   public:
@@ -31,7 +31,7 @@ namespace embree
     void build(size_t threadIndex, size_t threadCount);
 
     /*! Constructor. */
-    BVH4HairBuilder (BVH4Hair* bvh, Scene* scene);
+    BVH4HairBuilder2 (BVH4Hair* bvh, Scene* scene);
 
   private:
 
@@ -83,10 +83,10 @@ namespace embree
       }
       
       /*! finds the two hair strands */
-      static const StrandSplit find(size_t threadIndex, BVH4HairBuilder* parent, atomic_set<PrimRefBlock>& curves);
+      static const StrandSplit find(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves);
       
       /*! splits hair list into the two strands */
-      void split(size_t threadIndex, BVH4HairBuilder* parent, 
+      void split(size_t threadIndex, BVH4HairBuilder2* parent, 
                  atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lcurves_o, atomic_set<PrimRefBlock>& rcurves_o) const;
 
     public:
@@ -128,10 +128,10 @@ namespace embree
       }
 
       /*! performs object binning to the the best partitioning */
-      static ObjectSplit find(size_t threadIndex, size_t depth, BVH4HairBuilder* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
+      static ObjectSplit find(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
 
       /*! splits hairs into two sets */
-      void split(size_t threadIndex, BVH4HairBuilder* parent, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
+      void split(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
       
     public:
       LinearSpace3fa space;
@@ -167,10 +167,10 @@ namespace embree
       }
       
       /*! finds the two hair strands */
-      static const SpatialSplit find(size_t threadIndex, size_t depth, size_t size, BVH4HairBuilder* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
+      static const SpatialSplit find(size_t threadIndex, size_t depth, size_t size, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
       
       /*! splits hair list into the two strands */
-      void split(size_t threadIndex, BVH4HairBuilder* parent, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
+      void split(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
 
     public:
       LinearSpace3fa space;
@@ -190,7 +190,7 @@ namespace embree
         : bounds0(bounds0), num0(num0), bounds1(bounds1), num1(num1) {}
 
       /*! finds some partitioning */
-      static FallBackSplit find(size_t threadIndex, BVH4HairBuilder* parent, 
+      static FallBackSplit find(size_t threadIndex, BVH4HairBuilder2* parent, 
                                 atomic_set<PrimRefBlock>& prims, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o);
 
     public:
@@ -232,7 +232,7 @@ namespace embree
     /*! recursive build function for aligned and non-aligned bounds */
     void recurseTask(size_t threadIndex, BuildTask& task);
 
-    TASK_RUN_FUNCTION(BVH4HairBuilder,task_build_parallel);
+    TASK_RUN_FUNCTION(BVH4HairBuilder2,task_build_parallel);
 
   public:
     Scene* scene;          //!< source
