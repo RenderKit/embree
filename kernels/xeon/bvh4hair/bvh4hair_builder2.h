@@ -19,6 +19,7 @@
 #include "geometry/primitive.h"
 #include "geometry/bezier1.h"
 #include "builders/primrefalloc.h"
+#include "heuristic_object_partition.h"
 
 namespace embree
 {
@@ -94,39 +95,7 @@ namespace embree
       size_t num0, num1;            //!< number of hairs in the strands
     };
 
-    /*! Performs standard object binning */
-    struct ObjectSplit
-    {
-      /*! number of bins */
-      static const size_t BINS = 16;
-
-    public:
-
-      /*! default constructor */
-      __forceinline ObjectSplit ()
-        : dim(-1), pos(0), cost(inf), num0(0), num1(0), bounds0(inf), bounds1(inf) {}
-      
-      /*! calculates standard surface area heuristic for the split */
-      __forceinline float standardSAH() const {
-        return BVH4Hair::intCost*float(num0)*halfArea(bounds0.bounds) + BVH4Hair::intCost*float(num1)*halfArea(bounds1.bounds);
-      }
-
-      /*! performs object binning to the the best partitioning */
-      static ObjectSplit find(size_t threadIndex, size_t depth, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
-
-      /*! splits hairs into two sets */
-      void split(size_t threadIndex, PrimRefBlockAlloc<PrimRef>& alloc, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
-
-    public:
-      LinearSpace3fa space;
-      NAABBox3fa bounds0, bounds1;
-      int dim;
-      int pos;
-      float cost;
-      size_t num0,num1;
-      ssef ofs,scale;
-    };
-
+    
     /*! Performs spatial split in geometry center */
     struct SpatialSplit
     {
