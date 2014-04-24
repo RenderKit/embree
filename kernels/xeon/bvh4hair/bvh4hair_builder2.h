@@ -20,6 +20,7 @@
 #include "geometry/bezier1.h"
 #include "builders/primrefalloc.h"
 #include "heuristic_object_partition.h"
+#include "heuristic_spatial_split.h"
 
 namespace embree
 {
@@ -93,40 +94,6 @@ namespace embree
       NAABBox3fa bounds0, bounds1;  //!< bounds of the strands
       Vec3fa axis0, axis1;          //!< axis the strands are aligned into
       size_t num0, num1;            //!< number of hairs in the strands
-    };
-
-    
-    /*! Performs spatial split in geometry center */
-    struct SpatialSplit
-    {
-      /*! number of bins */
-      static const size_t BINS = 16;
-
-    public:
-
-      __forceinline SpatialSplit () {}
-
-      /*! calculates standard surface area heuristic for the split */
-      __forceinline float standardSAH() const {
-        return BVH4Hair::intCost*float(num0)*halfArea(bounds0.bounds) + BVH4Hair::intCost*float(num1)*halfArea(bounds1.bounds);
-        //return cost;
-      }
-
-      /*! finds the two hair strands */
-      static const SpatialSplit find(size_t threadIndex, size_t depth, size_t size, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
-      
-      /*! splits hair list into the two strands */
-      void split(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
-
-    public:
-      LinearSpace3fa space;
-      NAABBox3fa bounds0, bounds1;
-      float pos;
-      int dim;
-      float cost;
-      size_t numReplications;
-      size_t num0, num1;            //!< number of hairs in the strands
-      ssef ofs,scale;
     };
 
     /*! Performs fallback splits */
