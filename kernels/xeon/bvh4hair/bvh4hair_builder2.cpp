@@ -345,24 +345,32 @@ namespace embree
     Vec3fa axis1 = normalize(bestI.p3-bestI.p0);
 
     /* partition the two strands */
-    size_t num0, num1;
-    atomic_set<PrimRefBlock> lprims, rprims; 
-    parent->split(threadIndex,prims,StrandSplitFunction(axis0,axis1),lprims,num0,rprims,num1);
-
+    size_t num0 = 0, num1 = 0;
     NAABBox3fa naabb0(one,inf);
     NAABBox3fa naabb1(one,inf);
+
+    BBox3fa lbounds = empty, rbounds = empty;
+    const LinearSpace3fa space0 = frame(axis0).transposed();
+    const LinearSpace3fa space1 = frame(axis1).transposed();
+    
+    for (atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims; i; i++) 
+    {
+      Bezier1& prim = *i;
+      const Vec3fa axisi = normalize(prim.p3-prim.p0);
+      const float cos0 = abs(dot(axisi,axis0));
+      const float cos1 = abs(dot(axisi,axis1));
+      
+      if (cos0 > cos1) { num0++; lbounds.extend(prim.bounds(space0)); }
+      else             { num1++; rbounds.extend(prim.bounds(space1)); }
+    }
+    
     if (num0 == 0 || num1 == 0) {
       num0 = num1 = 1;
-    } 
-    else {
-      naabb0 = computeAlignedBounds(lprims,frame(axis0).transposed());
-      naabb1 = computeAlignedBounds(rprims,frame(axis1).transposed());
+    } else {
+      naabb0 = NAABBox3fa(space0,lbounds);
+      naabb1 = NAABBox3fa(space1,rbounds);
     }
-
-    /* merge lists again */
-    parent->insert(threadIndex,lprims,prims);
-    parent->insert(threadIndex,rprims,prims);
-
+    
     return StrandSplit(naabb0,axis0,num0,naabb1,axis1,num1);
   }
 
