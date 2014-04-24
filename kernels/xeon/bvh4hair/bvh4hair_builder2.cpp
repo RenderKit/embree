@@ -513,8 +513,39 @@ namespace embree
   __forceinline void BVH4HairBuilder2::ObjectSplit::split(size_t threadIndex, BVH4HairBuilder2* parent, 
                                                           atomic_set<PrimRefBlock>& prims, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const
   {
-    size_t lnum,rnum;
-    parent->split(threadIndex,prims,*this,lprims_o,lnum,rprims_o,rnum);
+    size_t lnum_o = 0, rnum_o = 0;
+    //parent->split(threadIndex,prims,*this,lprims_o,lnum,rprims_o,rnum);
+    //lnum_o = rnum_o = 0;
+    atomic_set<PrimRefBlock>::item* lblock = lprims_o.insert(parent->alloc.malloc(threadIndex));
+    atomic_set<PrimRefBlock>::item* rblock = rprims_o.insert(parent->alloc.malloc(threadIndex));
+    
+    while (atomic_set<PrimRefBlock>::item* block = prims.take()) 
+    {
+      for (size_t i=0; i<block->size(); i++) 
+      {
+        const PrimRef& prim = block->at(i); 
+	const Vec3fa center = prim.center(space);
+        //const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
+        const ssei bin = floori((ssef(center)-ofs)*scale);
+
+        if (bin[dim] < pos) 
+        {
+          lnum_o++;
+          if (likely(lblock->insert(prim))) continue; 
+          lblock = lprims_o.insert(parent->alloc.malloc(threadIndex));
+          lblock->insert(prim);
+        } 
+        else 
+        {
+          rnum_o++;
+          if (likely(rblock->insert(prim))) continue;
+          rblock = rprims_o.insert(parent->alloc.malloc(threadIndex));
+          rblock->insert(prim);
+        }
+      }
+      parent->alloc.free(threadIndex,block);
+    }
+
     assert(lnum == num0);
     assert(rnum == num1);
   }
