@@ -112,18 +112,10 @@ namespace embree
       }
 
       /*! performs object binning to the the best partitioning */
-      static ObjectSplit find(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
+      static ObjectSplit find(size_t threadIndex, size_t depth, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
 
       /*! splits hairs into two sets */
       void split(size_t threadIndex, PrimRefBlockAlloc<PrimRef>& alloc, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
-
-      __forceinline bool operator() (const PrimRef& prim) const
-      {
-        const Vec3fa center = prim.center(space);
-        //const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
-        const ssei bin = floori((ssef(center)-ofs)*scale);
-        return bin[dim] < pos;
-      }
 
     public:
       LinearSpace3fa space;

@@ -382,8 +382,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline BVH4HairBuilder2::ObjectSplit BVH4HairBuilder2::ObjectSplit::find(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, 
-                                                                                  atomic_set<PrimRefBlock>& prims, const LinearSpace3fa& space)
+  __forceinline BVH4HairBuilder2::ObjectSplit BVH4HairBuilder2::ObjectSplit::find(size_t threadIndex, size_t depth, atomic_set<PrimRefBlock>& prims, const LinearSpace3fa& space)
   {
     /* calculate geometry and centroid bounds */
     BBox3fa centBounds = empty;
@@ -497,8 +496,7 @@ namespace embree
                                                           atomic_set<PrimRefBlock>& prims, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const
   {
     size_t lnum_o = 0, rnum_o = 0;
-    //split(threadIndex,prims,*this,lprims_o,lnum,rprims_o,rnum);
-    //lnum_o = rnum_o = 0;
+
     atomic_set<PrimRefBlock>::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
     atomic_set<PrimRefBlock>::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
     
@@ -897,7 +895,7 @@ namespace embree
     ObjectSplit alignedObjectSplit;
     float alignedObjectSAH = neg_inf;
     if (enableAlignedObjectSplits) {
-      alignedObjectSplit = ObjectSplit::find(threadIndex,depth,this,prims,one);
+      alignedObjectSplit = ObjectSplit::find(threadIndex,depth,prims,one);
       alignedObjectSAH = travCostAligned*halfArea(bounds.bounds) + alignedObjectSplit.standardSAH();
       bestSAH = min(bestSAH,alignedObjectSAH);
     }
@@ -915,7 +913,7 @@ namespace embree
     ObjectSplit unalignedObjectSplit;
     float unalignedObjectSAH = neg_inf;
     if (enableUnalignedObjectSplits) {
-      unalignedObjectSplit = ObjectSplit::find(threadIndex,depth,this,prims,bounds.space);
+      unalignedObjectSplit = ObjectSplit::find(threadIndex,depth,prims,bounds.space);
       unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + unalignedObjectSplit.standardSAH();
       bestSAH = min(bestSAH,unalignedObjectSAH);
     }
