@@ -241,29 +241,17 @@ namespace embree
 
   const BBox3fa BVH4HairBuilder2::computeAlignedBounds(atomic_set<PrimRefBlock>& prims)
   {
-    float area = 0.0f;
     BBox3fa bounds = empty;
-    for (atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims; i; i++)
-    {
-      const BBox3fa cbounds = i->bounds();
-      area += halfArea(cbounds);
-      bounds.extend(cbounds);
-    }
-    bounds.upper.w = area;
+    for (atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims; i; i++) 
+      bounds.extend(i->bounds());
     return bounds;
   }
 
   const NAABBox3fa BVH4HairBuilder2::computeAlignedBounds(atomic_set<PrimRefBlock>& prims, const LinearSpace3fa& space)
   {
-    float area = 0.0f;
     BBox3fa bounds = empty;
     for (atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims; i; i++)
-    {
-      const BBox3fa cbounds = i->bounds(space);
-      area += halfArea(cbounds);
-      bounds.extend(cbounds);
-    }
-    bounds.upper.w = area;
+      bounds.extend(i->bounds(space));
     return NAABBox3fa(space,bounds);
   }
 
@@ -307,7 +295,6 @@ namespace embree
       }
 #endif
 
-    bestBounds.upper.w = bestArea;
     return NAABBox3fa(bestSpace,bestBounds);
   }
 
@@ -725,8 +712,6 @@ namespace embree
       const BBox3fa bounds = i->bounds(space);
       lbounds.extend(bounds); larea += halfArea(bounds); lnum++;
     }
-    lbounds.upper.w = larea;
-    rbounds.upper.w = rarea;
     split.bounds0 = NAABBox3fa(space,lbounds);
     split.bounds1 = NAABBox3fa(space,rbounds);
     //assert(lnum == split.num0);

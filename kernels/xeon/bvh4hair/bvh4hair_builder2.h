@@ -81,13 +81,6 @@ namespace embree
         return BVH4Hair::intCost*float(num0)*halfArea(bounds0.bounds) + BVH4Hair::intCost*float(num1)*halfArea(bounds1.bounds);
       }
 
-      /*! calculates modified surface area heuristic for the split */
-      __forceinline float modifiedSAH() const {
-        return 
-          BVH4Hair::travCostUnaligned*float(num0)*halfArea(bounds0.bounds) + BVH4Hair::intCost*bounds0.bounds.upper.w + 
-          BVH4Hair::travCostUnaligned*float(num1)*halfArea(bounds1.bounds) + BVH4Hair::intCost*bounds1.bounds.upper.w;
-      }
-      
       /*! finds the two hair strands */
       static const StrandSplit find(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves);
       
@@ -118,12 +111,11 @@ namespace embree
         return BVH4Hair::intCost*float(num0)*halfArea(bounds0.bounds) + BVH4Hair::intCost*float(num1)*halfArea(bounds1.bounds);
       }
 
-      /*! calculates modified surface area heuristic for the split */
-      __forceinline float modifiedSAH() const {
-        return 
-          BVH4Hair::travCostUnaligned*float(num0)*halfArea(bounds0.bounds) + BVH4Hair::intCost*bounds0.bounds.upper.w + 
-          BVH4Hair::travCostUnaligned*float(num1)*halfArea(bounds1.bounds) + BVH4Hair::intCost*bounds1.bounds.upper.w;
-      }
+      /*! performs object binning to the the best partitioning */
+      static ObjectSplit find(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
+
+      /*! splits hairs into two sets */
+      void split(size_t threadIndex, PrimRefBlockAlloc<PrimRef>& alloc, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
 
       __forceinline bool operator() (const PrimRef& prim) const
       {
@@ -133,12 +125,6 @@ namespace embree
         return bin[dim] < pos;
       }
 
-      /*! performs object binning to the the best partitioning */
-      static ObjectSplit find(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
-
-      /*! splits hairs into two sets */
-      void split(size_t threadIndex, PrimRefBlockAlloc<PrimRef>& alloc, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
-      
     public:
       LinearSpace3fa space;
       NAABBox3fa bounds0, bounds1;
@@ -165,13 +151,6 @@ namespace embree
         //return cost;
       }
 
-      /*! calculates modified surface area heuristic for the split */
-      __forceinline float modifiedSAH() const {
-        return 
-          BVH4Hair::travCostUnaligned*float(num0)*halfArea(bounds0.bounds) + BVH4Hair::intCost*bounds0.bounds.upper.w + 
-          BVH4Hair::travCostUnaligned*float(num1)*halfArea(bounds1.bounds) + BVH4Hair::intCost*bounds1.bounds.upper.w;
-      }
-      
       /*! finds the two hair strands */
       static const SpatialSplit find(size_t threadIndex, size_t depth, size_t size, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
       
