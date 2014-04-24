@@ -18,6 +18,7 @@
 
 #include "geometry/bezier1.h"
 #include "builders/primrefalloc.h"
+#include "heuristic_fallback.h"
 
 namespace embree
 {
@@ -51,7 +52,7 @@ namespace embree
     static ObjectPartition find(size_t threadIndex, size_t depth, BezierRefList& curves, const LinearSpace3fa& space);
     
     /*! splits hairs into two sets */
-    void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, BezierRefList& lprims_o, BezierRefList& rprims_o) const;
+    void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
     
   public:
     LinearSpace3fa space;

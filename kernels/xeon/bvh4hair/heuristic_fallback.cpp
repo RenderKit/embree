@@ -19,9 +19,10 @@
 namespace embree
 {
   FallBackSplit FallBackSplit::find(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
-				    BezierRefList& lprims_o, BezierRefList& rprims_o)
+				    BezierRefList& lprims_o, PrimInfo& linfo_o,
+				    BezierRefList& rprims_o, PrimInfo& rinfo_o)
   {
-    size_t num = 0, lnum = 0, rnum = 0;
+    size_t num = 0;
     BBox3fa lbounds = empty, rbounds = empty;
     BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
     BezierRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
@@ -35,19 +36,15 @@ namespace embree
 	
         if ((num++)%2) 
         {
-          lnum++;
-	  lbounds.extend(bounds);
-	  
+	  linfo_o.add(bounds,prim.center()); 
           if (likely(lblock->insert(prim))) continue; 
           lblock = lprims_o.insert(alloc.malloc(threadIndex));
           lblock->insert(prim);
         } 
         else 
         {
-          rnum++;
-	  rbounds.extend(bounds);
-	  
-          if (likely(rblock->insert(prim))) continue;
+	  rinfo_o.add(bounds,prim.center()); 
+	  if (likely(rblock->insert(prim))) continue;
           rblock = rprims_o.insert(alloc.malloc(threadIndex));
           rblock->insert(prim);
         }
@@ -56,6 +53,6 @@ namespace embree
     }
     //const NAABBox3fa bounds0 = computeAlignedBounds(lprims_o);
     //const NAABBox3fa bounds1 = computeAlignedBounds(rprims_o);
-    return FallBackSplit(lbounds,lnum,rbounds,rnum);
+    return FallBackSplit(linfo_o.geomBounds,linfo_o.size(),rinfo_o.geomBounds,rinfo_o.size());
   }
 }

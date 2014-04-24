@@ -95,8 +95,8 @@ namespace embree
 
     bool split(size_t threadIndex, size_t depth, 
                atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds, size_t size,
-               atomic_set<PrimRefBlock>& lprims, size_t& lsize,
-               atomic_set<PrimRefBlock>& rprims, size_t& rsize,
+               atomic_set<PrimRefBlock>& lprims, PrimInfo& linfo_o, size_t& lsize,
+               atomic_set<PrimRefBlock>& rprims, PrimInfo& rinfo_o, size_t& rsize,
                bool& isAligned);
 
     /*! execute single task and create subtasks */

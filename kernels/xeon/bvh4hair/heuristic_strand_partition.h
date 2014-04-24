@@ -18,6 +18,7 @@
 
 #include "geometry/bezier1.h"
 #include "builders/primrefalloc.h"
+#include "heuristic_fallback.h"
 
 namespace embree
 {
@@ -42,7 +43,7 @@ namespace embree
     static const StrandSplit find(size_t threadIndex, BezierRefList& curves);
     
     /*! splits hair list into the two strands */
-    void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, BezierRefList& lcurves_o, BezierRefList& rcurves_o) const;
+    void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, BezierRefList& lcurves_o, PrimInfo& linfo_o, BezierRefList& rcurves_o, PrimInfo& rinfo_o) const;
     
   public:
     NAABBox3fa bounds0, bounds1;  //!< bounds of the strands

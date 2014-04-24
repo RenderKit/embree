@@ -207,7 +207,7 @@ namespace embree
     return split;
   }
       
-  void SpatialSplit::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, BezierRefList& lprims_o, BezierRefList& rprims_o) const
+  void SpatialSplit::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const
   {
     /* calculate splitting plane */
     const Vec3fa plane(space.vx[dim],space.vy[dim],space.vz[dim],-pos);
@@ -227,6 +227,7 @@ namespace embree
         /* sort to the left side */
         if (p0p <= 0.0f && p3p <= 0.0f)
         {
+	  linfo_o.add(prim.bounds(),prim.center());
           if (likely(lblock->insert(prim))) continue; 
           lblock = lprims_o.insert(alloc.malloc(threadIndex));
           lblock->insert(prim);
@@ -236,6 +237,7 @@ namespace embree
         /* sort to the right side */
         if (p0p >= 0.0f && p3p >= 0.0f)
         {
+	  rinfo_o.add(prim.bounds(),prim.center());
           if (likely(rblock->insert(prim))) continue;
           rblock = rprims_o.insert(alloc.malloc(threadIndex));
           rblock->insert(prim);
@@ -246,10 +248,12 @@ namespace embree
         Bezier1 left,right;
         if (prim.split(plane,left,right)) 
         {
+	  linfo_o.add(left.bounds(),left.center());
           if (!lblock->insert(left)) {
             lblock = lprims_o.insert(alloc.malloc(threadIndex));
             lblock->insert(left);
           }
+	  rinfo_o.add(right.bounds(),right.center());
           if (!rblock->insert(right)) {
             rblock = rprims_o.insert(alloc.malloc(threadIndex));
             rblock->insert(right);
@@ -258,6 +262,7 @@ namespace embree
         }
 
         /* insert to left side as fallback */
+	linfo_o.add(prim.bounds(),prim.center());
         if (!lblock->insert(prim)) {
           lblock = lprims_o.insert(alloc.malloc(threadIndex));
           lblock->insert(prim);

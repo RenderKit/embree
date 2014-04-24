@@ -128,11 +128,10 @@ namespace embree
     return split;
   }
 
-  void ObjectPartition::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
-			      BezierRefList& prims, BezierRefList& lprims_o, BezierRefList& rprims_o) const
+  void ObjectPartition::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+			      BezierRefList& lprims_o, PrimInfo& linfo_o, 
+			      BezierRefList& rprims_o, PrimInfo& rinfo_o) const
   {
-    size_t lnum_o = 0, rnum_o = 0;
-
     BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
     BezierRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
     
@@ -147,14 +146,14 @@ namespace embree
 
         if (bin[dim] < pos) 
         {
-          lnum_o++;
-          if (likely(lblock->insert(prim))) continue; 
+	  linfo_o.add(prim.bounds(),prim.center());
+	  if (likely(lblock->insert(prim))) continue; 
           lblock = lprims_o.insert(alloc.malloc(threadIndex));
           lblock->insert(prim);
         } 
         else 
         {
-          rnum_o++;
+          rinfo_o.add(prim.bounds(),prim.center());
           if (likely(rblock->insert(prim))) continue;
           rblock = rprims_o.insert(alloc.malloc(threadIndex));
           rblock->insert(prim);
@@ -162,8 +161,7 @@ namespace embree
       }
       alloc.free(threadIndex,block);
     }
-
-    assert(lnum == num0);
-    assert(rnum == num1);
+    assert(linfo_o.size() == num0);
+    assert(rinfo_o.size() == num1);
   }
 }

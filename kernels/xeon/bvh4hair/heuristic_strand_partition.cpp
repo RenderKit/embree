@@ -70,11 +70,9 @@ namespace embree
     return StrandSplit(naabb0,axis0,num0,naabb1,axis1,num1);
   }
 
-  void StrandSplit::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
-			  BezierRefList& prims, BezierRefList& lprims_o, BezierRefList& rprims_o) const 
+  void StrandSplit::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+			  BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const 
   {
-    size_t lnum_o,rnum_o;
-    lnum_o = rnum_o = 0;
     BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
     BezierRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
     
@@ -89,14 +87,14 @@ namespace embree
 
         if (cos0 > cos1) 
         {
-          lnum_o++;
+          linfo_o.add(prim.bounds(),prim.center());
           if (likely(lblock->insert(prim))) continue; 
           lblock = lprims_o.insert(alloc.malloc(threadIndex));
           lblock->insert(prim);
         } 
         else 
         {
-          rnum_o++;
+          rinfo_o.add(prim.bounds(),prim.center());
           if (likely(rblock->insert(prim))) continue;
           rblock = rprims_o.insert(alloc.malloc(threadIndex));
           rblock->insert(prim);

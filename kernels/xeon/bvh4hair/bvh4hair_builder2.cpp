@@ -345,8 +345,8 @@ namespace embree
 
   bool BVH4HairBuilder2::split(size_t threadIndex, size_t depth, 
                                atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds, size_t size,
-                               atomic_set<PrimRefBlock>& lprims_o, size_t& lsize,
-                               atomic_set<PrimRefBlock>& rprims_o, size_t& rsize,
+                               atomic_set<PrimRefBlock>& lprims_o, PrimInfo& linfo_o, size_t& lsize,
+                               atomic_set<PrimRefBlock>& rprims_o, PrimInfo& rinfo_o, size_t& rsize,
                                bool& isAligned)
   {
     /* variable to track the SAH of the best splitting approach */
@@ -404,7 +404,7 @@ namespace embree
     if (bestSAH == float(inf)) {
       //if (N <= maxLeafSize) return false;
       numFallbackSplits++;
-      const FallBackSplit fallbackSplit = FallBackSplit::find(threadIndex,alloc,prims,lprims_o,rprims_o);
+      const FallBackSplit fallbackSplit = FallBackSplit::find(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       lsize = fallbackSplit.num0;
@@ -415,7 +415,7 @@ namespace embree
     /* perform aligned object split */
     else if (bestSAH == alignedObjectSAH && enableAlignedObjectSplits) {
       numAlignedObjectSplits++;
-      alignedObjectSplit.split(threadIndex,alloc,prims,lprims_o,rprims_o);
+      alignedObjectSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       lsize = alignedObjectSplit.num0;
@@ -426,7 +426,7 @@ namespace embree
     /* perform aligned spatial split */
     else if (bestSAH == alignedSpatialSAH && enableSpatialSplits && enableAlignedSpatialSplits) {
       numAlignedSpatialSplits++;
-      alignedSpatialSplit.split(threadIndex,alloc,prims,lprims_o,rprims_o);
+      alignedSpatialSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       lsize = alignedSpatialSplit.num0;
@@ -438,7 +438,7 @@ namespace embree
     /* perform unaligned object split */
     else if (bestSAH == unalignedObjectSAH && enableUnalignedObjectSplits) {
       numUnalignedObjectSplits++;
-      unalignedObjectSplit.split(threadIndex,alloc,prims,lprims_o,rprims_o);
+      unalignedObjectSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       lsize = unalignedObjectSplit.num0;
@@ -450,7 +450,7 @@ namespace embree
     /* perform unaligned spatial split */
     else if (bestSAH == unalignedSpatialSAH && enableSpatialSplits && enableUnalignedSpatialSplits) {
       numUnalignedSpatialSplits++;
-      unalignedSpatialSplit.split(threadIndex,alloc,prims,lprims_o,rprims_o);
+      unalignedSpatialSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       lsize = unalignedSpatialSplit.num0;
@@ -463,7 +463,7 @@ namespace embree
     /* perform strand split */
     else if (bestSAH == strandSAH && enableStrandSplits) {
       numStrandSplits++;
-      strandSplit.split(threadIndex,alloc,prims,lprims_o,rprims_o);
+      strandSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       lsize = strandSplit.num0;
@@ -517,8 +517,9 @@ namespace embree
 
       /*! split selected child */
       size_t lsize, rsize;
+      PrimInfo linfo, rinfo;
       atomic_set<PrimRefBlock> lprims, rprims;
-      bool done = split(threadIndex,task.depth,cprims[bestChild],cbounds[bestChild],csize[bestChild],lprims,lsize,rprims,rsize,isAligned);
+      bool done = split(threadIndex,task.depth,cprims[bestChild],cbounds[bestChild],csize[bestChild],lprims,linfo,lsize,rprims,rinfo,rsize,isAligned);
       if (!done) { isleaf[bestChild] = true; continue; }
       cprims[numChildren] = rprims; isleaf[numChildren] = false; csize[numChildren] = rsize;
       cprims[bestChild  ] = lprims; isleaf[bestChild  ] = false; csize[bestChild  ] = lsize;

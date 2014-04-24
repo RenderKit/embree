@@ -21,6 +21,41 @@
 
 namespace embree
 {
+  /*! stores bounding information for a set of primitives */
+  class PrimInfo
+  {
+    /*! Compute the number of blocks occupied in one dimension. */
+    __forceinline static size_t  blocks(size_t a) { return a; }
+    //__forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
+
+  public:
+    __forceinline PrimInfo () 
+      : num(0), geomBounds(empty), centBounds(empty) {}
+    
+    __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
+      : num(num), geomBounds(geomBounds), centBounds(centBounds) {}
+
+    __forceinline void add(const BBox3fa& geomBounds_, const BBox3fa& centBounds_, size_t num_ = 1) {
+      geomBounds.extend(geomBounds_);
+      centBounds.extend(centBounds_);
+      num += num_;
+    }
+
+    /*! returns the number of primitives */
+    __forceinline size_t size() const { 
+      return num; 
+    }
+
+    __forceinline float leafSAH(float primCost) const { 
+      return halfArea(geomBounds)*primCost*blocks(num); 
+    }
+
+  public:
+    size_t num;          //!< number of primitives
+    BBox3fa geomBounds;   //!< geometry bounds of primitives
+    BBox3fa centBounds;   //!< centroid bounds of primitives
+  };
+
   /*! Performs fallback splits */
   struct FallBackSplit
   {
@@ -32,7 +67,7 @@ namespace embree
     
     /*! finds some partitioning */
     static FallBackSplit find(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
-			      BezierRefList& prims, BezierRefList& lprims_o, BezierRefList& rprims_o);
+			      BezierRefList& prims, BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o);
     
   public:
     size_t num0, num1;
