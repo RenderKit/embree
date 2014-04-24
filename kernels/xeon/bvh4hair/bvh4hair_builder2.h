@@ -37,24 +37,18 @@ namespace embree
     /*! Constructor. */
     BVH4HairBuilder2 (BVH4Hair* bvh, Scene* scene);
 
-    /*! Compute the number of blocks occupied for each dimension. */
-    __forceinline static ssei blocks(const ssei& a) { return (a+ssei(3)) >> 2; }
-	
-    /*! Compute the number of blocks occupied in one dimension. */
-    __forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
-  
   private:
 
     typedef Bezier1 PrimRef;
     typedef PrimRefBlockT<Bezier1> PrimRefBlock;
-    typedef atomic_set<PrimRefBlock> PrimRefList;
+    typedef atomic_set<PrimRefBlock> BezierRefList;
     
     /*! stores all info to build a subtree */
     struct BuildTask
     {
       __forceinline BuildTask () {}
 
-      __forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, const PrimInfo& pinfo, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds)
+      __forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, const PrimInfo& pinfo, BezierRefList& prims, const NAABBox3fa& bounds)
         : dst(dst), depth(depth), pinfo(pinfo), prims(prims), bounds(bounds) {}
 
     public:
@@ -66,30 +60,24 @@ namespace embree
       BVH4Hair::NodeRef* dst;
       size_t depth;
       PrimInfo pinfo;
-      atomic_set<PrimRefBlock> prims;
+      BezierRefList prims;
       NAABBox3fa bounds;
     };
         
   private:
 
-    const BBox3fa subdivideAndAdd(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const Bezier1& bezier, size_t depth);
+    const BBox3fa subdivideAndAdd(size_t threadIndex, BezierRefList& prims, const Bezier1& bezier, size_t depth);
 
-    /*! calculate bounds for range of primitives */
-    static const BBox3fa computeAlignedBounds(atomic_set<PrimRefBlock>& curves);
-
-    /*! calculate bounds for range of primitives */
-    static const NAABBox3fa computeAlignedBounds(atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
-    
     /*! try to find best non-axis aligned space, where the sum of all bounding areas is minimal */
-    static const NAABBox3fa computeUnalignedBounds(atomic_set<PrimRefBlock>& curves);
+    static const NAABBox3fa computeHairSpaceBounds(BezierRefList& curves);
 
     /*! creates a leaf node */
-    BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds);
+    BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const NAABBox3fa& bounds);
 
     void split(size_t threadIndex, size_t depth, 
-               atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds, const PrimInfo& pinfo,
-               atomic_set<PrimRefBlock>& lprims, PrimInfo& linfo_o, 
-               atomic_set<PrimRefBlock>& rprims, PrimInfo& rinfo_o,
+               BezierRefList& prims, const NAABBox3fa& bounds, const PrimInfo& pinfo,
+               BezierRefList& lprims, PrimInfo& linfo_o, 
+               BezierRefList& rprims, PrimInfo& rinfo_o,
 	       bool& isAligned);
 
     /*! execute single task and create subtasks */

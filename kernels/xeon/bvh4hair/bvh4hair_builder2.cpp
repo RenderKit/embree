@@ -83,7 +83,7 @@ namespace embree
     /* create initial curve list */
     BBox3fa bounds = empty;
     size_t numVertices = 0;
-    atomic_set<PrimRefBlock> prims;
+    BezierRefList prims;
     for (size_t i=0; i<scene->size(); i++) 
     {
       Geometry* geom = scene->get(i);
@@ -102,8 +102,9 @@ namespace embree
       }
     }
 
+    /* compute primitive info */
     PrimInfo pinfo;
-    for (atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims; i; i++) 
+    for (BezierRefList::block_iterator_unsafe i = prims; i; i++) 
       pinfo.add((*i).bounds(),(*i).center());
 
     bvh->numPrimitives = scene->numCurves;
@@ -112,8 +113,7 @@ namespace embree
 
     /* start recursive build */
     remainingReplications = g_hair_builder_replication_factor*numPrimitives;
-    const NAABBox3fa ubounds = computeUnalignedBounds(prims);
-    BuildTask task(&bvh->root,0,pinfo,prims,ubounds);
+    BuildTask task(&bvh->root,0,pinfo,prims,pinfo.geomBounds);
     bvh->bounds = bounds;
 
 #if 0
@@ -138,10 +138,10 @@ namespace embree
     }
   }
 
-  const BBox3fa BVH4HairBuilder2::subdivideAndAdd(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const Bezier1& bezier, size_t depth)
+  const BBox3fa BVH4HairBuilder2::subdivideAndAdd(size_t threadIndex, BezierRefList& prims, const Bezier1& bezier, size_t depth)
   {
     if (depth == 0) {
-      atomic_set<PrimRefBlock>::item* block = prims.head();
+      BezierRefList::item* block = prims.head();
       if (block == NULL || !block->insert(bezier)) {
         block = prims.insert(alloc.malloc(threadIndex));
         block->insert(bezier);
@@ -196,25 +196,9 @@ namespace embree
     }
   }
 
-  const BBox3fa BVH4HairBuilder2::computeAlignedBounds(atomic_set<PrimRefBlock>& prims)
+  const NAABBox3fa BVH4HairBuilder2::computeHairSpaceBounds(BezierRefList& prims)
   {
-    BBox3fa bounds = empty;
-    for (atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims; i; i++) 
-      bounds.extend(i->bounds());
-    return bounds;
-  }
-
-  const NAABBox3fa BVH4HairBuilder2::computeAlignedBounds(atomic_set<PrimRefBlock>& prims, const LinearSpace3fa& space)
-  {
-    BBox3fa bounds = empty;
-    for (atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims; i; i++)
-      bounds.extend(i->bounds(space));
-    return NAABBox3fa(space,bounds);
-  }
-
-  const NAABBox3fa BVH4HairBuilder2::computeUnalignedBounds(atomic_set<PrimRefBlock>& prims)
-  {
-    size_t N = atomic_set<PrimRefBlock>::block_iterator_unsafe(prims).size();
+    size_t N = BezierRefList::block_iterator_unsafe(prims).size();
     if (N == 0)
       return NAABBox3fa(empty); // FIXME: can cause problems with compression
 
@@ -223,7 +207,7 @@ namespace embree
     BBox3fa bestBounds = empty;
 
     size_t k=0;
-    for (atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims; i; i++)
+    for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
     {
       if ((k++) % ((N+3)/4)) continue;
       //size_t k = begin + rand() % (end-begin);
@@ -232,7 +216,7 @@ namespace embree
       const LinearSpace3fa space = clamp(frame(axis).transposed());
       BBox3fa bounds = empty;
       float area = 0.0f;
-      for (atomic_set<PrimRefBlock>::block_iterator_unsafe j = prims; j; j++) {
+      for (BezierRefList::block_iterator_unsafe j = prims; j; j++) {
         const BBox3fa cbounds = j->bounds(space);
         area += halfArea(cbounds);
         bounds.extend(cbounds);
@@ -255,10 +239,10 @@ namespace embree
     return NAABBox3fa(bestSpace,bestBounds);
   }
 
-  BVH4Hair::NodeRef BVH4HairBuilder2::leaf(size_t threadIndex, size_t depth, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds)
+  BVH4Hair::NodeRef BVH4HairBuilder2::leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const NAABBox3fa& bounds)
   {
     //size_t N = end-begin;
-    size_t N = atomic_set<PrimRefBlock>::block_iterator_unsafe(prims).size();
+    size_t N = BezierRefList::block_iterator_unsafe(prims).size();
 
     if (N > (size_t)BVH4Hair::maxLeafBlocks) {
       //std::cout << "WARNING: Loosing " << N-BVH4Hair::maxLeafBlocks << " primitives during build!" << std::endl;
@@ -270,19 +254,19 @@ namespace embree
     //assert(N <= (size_t)BVH4Hair::maxLeafBlocks);
     if (&bvh->primTy == &Bezier1Type::type) {
       Bezier1* leaf = (Bezier1*) bvh->allocPrimitiveBlocks(threadIndex,N);
-      atomic_set<PrimRefBlock>::block_iterator_unsafe iter(prims);
+      BezierRefList::block_iterator_unsafe iter(prims);
       for (size_t i=0; i<N; i++) { leaf[i] = *iter; iter++; }
       assert(!iter);
 
       /* free all primitive blocks */
-      while (atomic_set<PrimRefBlock>::item* block = prims.take())
+      while (BezierRefList::item* block = prims.take())
         alloc.free(threadIndex,block);
 
       return bvh->encodeLeaf((char*)leaf,N);
     } 
     else if (&bvh->primTy == &SceneBezier1i::type) {
       Bezier1i* leaf = (Bezier1i*) bvh->allocPrimitiveBlocks(threadIndex,N);
-      atomic_set<PrimRefBlock>::block_iterator_unsafe iter(prims);
+      BezierRefList::block_iterator_unsafe iter(prims);
       for (size_t i=0; i<N; i++) {
         const Bezier1& curve = *iter; iter++;
         const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID);
@@ -291,7 +275,7 @@ namespace embree
       }
 
       /* free all primitive blocks */
-      while (atomic_set<PrimRefBlock>::item* block = prims.take())
+      while (BezierRefList::item* block = prims.take())
         alloc.free(threadIndex,block);
 
       return bvh->encodeLeaf((char*)leaf,N);
@@ -301,9 +285,9 @@ namespace embree
   }
 
   void BVH4HairBuilder2::split(size_t threadIndex, size_t depth, 
-                               atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds, const PrimInfo& pinfo,
-                               atomic_set<PrimRefBlock>& lprims_o, PrimInfo& linfo_o, 
-                               atomic_set<PrimRefBlock>& rprims_o, PrimInfo& rinfo_o, 
+                               BezierRefList& prims, const NAABBox3fa& bounds, const PrimInfo& pinfo,
+                               BezierRefList& lprims_o, PrimInfo& linfo_o, 
+                               BezierRefList& rprims_o, PrimInfo& rinfo_o, 
                                bool& isAligned)
   {
     /* variable to track the SAH of the best splitting approach */
@@ -398,7 +382,7 @@ namespace embree
     /*! initialize child list */
     bool isAligned = true;
     NAABBox3fa cbounds[BVH4Hair::N];
-    atomic_set<PrimRefBlock> cprims[BVH4Hair::N];
+    BezierRefList cprims[BVH4Hair::N];
     PrimInfo cpinfo[BVH4Hair::N];
     cprims[0] = task.prims;
     cbounds[0] = task.bounds;
@@ -421,12 +405,12 @@ namespace embree
 
       /*! split selected child */
       PrimInfo linfo, rinfo;
-      atomic_set<PrimRefBlock> lprims, rprims;
+      BezierRefList lprims, rprims;
       split(threadIndex,task.depth,cprims[bestChild],cbounds[bestChild],cpinfo[bestChild],lprims,linfo,rprims,rinfo,isAligned);
       cprims[numChildren] = rprims; cpinfo[numChildren] = rinfo;
       cprims[bestChild  ] = lprims; cpinfo[bestChild  ] = linfo;
-      cbounds[numChildren] = computeUnalignedBounds(cprims[numChildren]);
-      cbounds[bestChild  ] = computeUnalignedBounds(cprims[bestChild  ]);
+      cbounds[numChildren] = computeHairSpaceBounds(cprims[numChildren]);
+      cbounds[bestChild  ] = computeHairSpaceBounds(cprims[bestChild  ]);
       numChildren++;
       
     } while (numChildren < BVH4Hair::N);
@@ -437,7 +421,7 @@ namespace embree
       BVH4Hair::AlignedNode* node = bvh->allocAlignedNode(threadIndex);
       for (ssize_t i=0; i<numChildren; i++) {
         node->set(i,cpinfo[i].geomBounds);
-	const NAABBox3fa ubounds = computeUnalignedBounds(cprims[i]);
+	const NAABBox3fa ubounds = computeHairSpaceBounds(cprims[i]);
         new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cpinfo[i],cprims[i],ubounds);
       }
       numTasks_o = numChildren;
