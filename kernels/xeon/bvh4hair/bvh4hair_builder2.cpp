@@ -382,14 +382,6 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-   
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   const BVH4HairBuilder2::SpatialSplit BVH4HairBuilder2::SpatialSplit::find(size_t threadIndex, size_t depth, size_t size, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& prims, const LinearSpace3fa& space)
   {
     /* calculate geometry and centroid bounds */
@@ -404,12 +396,10 @@ namespace embree
 
     /* initialize bins */
     BBox3fa bounds[BINS][4];
-    float   areas [BINS][4];
     ssei    numBegin[BINS];
     ssei    numEnd[BINS];
     for (size_t i=0; i<BINS; i++) {
       bounds[i][0] = bounds[i][1] = bounds[i][2] = bounds[i][3] = empty;
-      areas [i][0] = areas [i][1] = areas [i][2] = areas [i][3] = 0.0f;
       numBegin[i] = numEnd[i] = 0;
     }
  
@@ -443,7 +433,6 @@ namespace embree
           if (curve.split(plane,bincurve,restcurve)) {
             const BBox3fa cbounds = bincurve.bounds(space);
             bounds[bin][dim].extend(cbounds);
-            areas [bin][dim] += halfArea(cbounds); // FIXME: not correct
             curve = restcurve;
           }
         }
@@ -451,7 +440,6 @@ namespace embree
         numEnd  [endbin  [dim]][dim]++;
         const BBox3fa cbounds = curve.bounds(space);
         bounds[bin][dim].extend(cbounds);
-        areas [bin][dim] += halfArea(cbounds);  // FIXME: not correct
       }
     }
     
