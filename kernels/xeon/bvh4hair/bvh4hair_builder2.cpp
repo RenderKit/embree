@@ -382,39 +382,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline BVH4HairBuilder2::FallBackSplit BVH4HairBuilder2::FallBackSplit::find(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& prims, 
-                                                                                      atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o)
-  {
-    size_t num = 0, lnum = 0, rnum = 0;
-    atomic_set<PrimRefBlock>::item* lblock = lprims_o.insert(parent->alloc.malloc(threadIndex));
-    atomic_set<PrimRefBlock>::item* rblock = rprims_o.insert(parent->alloc.malloc(threadIndex));
-    
-    while (atomic_set<PrimRefBlock>::item* block = prims.take()) 
-    {
-      for (size_t i=0; i<block->size(); i++) 
-      {
-        const PrimRef& prim = block->at(i); 
-        if ((num++)%2) 
-        {
-          lnum++;
-          if (likely(lblock->insert(prim))) continue; 
-          lblock = lprims_o.insert(parent->alloc.malloc(threadIndex));
-          lblock->insert(prim);
-        } 
-        else 
-        {
-          rnum++;
-          if (likely(rblock->insert(prim))) continue;
-          rblock = rprims_o.insert(parent->alloc.malloc(threadIndex));
-          rblock->insert(prim);
-        }
-      }
-      parent->alloc.free(threadIndex,block);
-    }
-    const NAABBox3fa bounds0 = computeAlignedBounds(lprims_o);
-    const NAABBox3fa bounds1 = computeAlignedBounds(rprims_o);
-    return FallBackSplit(bounds0,lnum,bounds1,rnum);
-  }
+  
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -529,7 +497,7 @@ namespace embree
     if (bestSAH == float(inf)) {
       //if (N <= maxLeafSize) return false;
       numFallbackSplits++;
-      const FallBackSplit fallbackSplit = FallBackSplit::find(threadIndex,this,prims,lprims_o,rprims_o);
+      const FallBackSplit fallbackSplit = FallBackSplit::find(threadIndex,alloc,prims,lprims_o,rprims_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       lsize = fallbackSplit.num0;

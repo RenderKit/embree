@@ -21,6 +21,7 @@
 #include "builders/primrefalloc.h"
 #include "heuristic_object_partition.h"
 #include "heuristic_spatial_split.h"
+#include "heuristic_fallback.h"
 
 namespace embree
 {
@@ -94,21 +95,6 @@ namespace embree
       NAABBox3fa bounds0, bounds1;  //!< bounds of the strands
       Vec3fa axis0, axis1;          //!< axis the strands are aligned into
       size_t num0, num1;            //!< number of hairs in the strands
-    };
-
-    /*! Performs fallback splits */
-    struct FallBackSplit
-    {
-      __forceinline FallBackSplit (const NAABBox3fa& bounds0, size_t num0, const NAABBox3fa& bounds1, size_t num1)
-        : bounds0(bounds0), num0(num0), bounds1(bounds1), num1(num1) {}
-
-      /*! finds some partitioning */
-      static FallBackSplit find(size_t threadIndex, BVH4HairBuilder2* parent, 
-                                atomic_set<PrimRefBlock>& prims, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o);
-
-    public:
-      size_t num0, num1;
-      NAABBox3fa bounds0, bounds1;
     };
 
   private:

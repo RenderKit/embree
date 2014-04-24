@@ -114,6 +114,7 @@ IF (TARGET_AVX)
   bvh4hair/bvh4hair_builder2.cpp       # FIXME: should be in SSE2 section
   bvh4hair/heuristic_object_partition.cpp
   bvh4hair/heuristic_spatial_split.cpp
+  bvh4hair/heuristic_fallback.cpp
   bvh4hair/bvh4hair_statistics.cpp    # FIXME: should be in SSE2 section
 
    geometry/triangle8.cpp
