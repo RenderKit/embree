@@ -131,7 +131,7 @@ namespace embree
       static ObjectSplit find(size_t threadIndex, size_t depth, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, const LinearSpace3fa& space);
 
       /*! splits hairs into two sets */
-      void split(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
+      void split(size_t threadIndex, PrimRefBlockAlloc<PrimRef>& alloc, atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const;
       
     public:
       LinearSpace3fa space;

@@ -510,14 +510,14 @@ namespace embree
     return split;
   }
 
-  __forceinline void BVH4HairBuilder2::ObjectSplit::split(size_t threadIndex, BVH4HairBuilder2* parent, 
+  __forceinline void BVH4HairBuilder2::ObjectSplit::split(size_t threadIndex, PrimRefBlockAlloc<PrimRef>& alloc, 
                                                           atomic_set<PrimRefBlock>& prims, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const
   {
     size_t lnum_o = 0, rnum_o = 0;
-    //parent->split(threadIndex,prims,*this,lprims_o,lnum,rprims_o,rnum);
+    //split(threadIndex,prims,*this,lprims_o,lnum,rprims_o,rnum);
     //lnum_o = rnum_o = 0;
-    atomic_set<PrimRefBlock>::item* lblock = lprims_o.insert(parent->alloc.malloc(threadIndex));
-    atomic_set<PrimRefBlock>::item* rblock = rprims_o.insert(parent->alloc.malloc(threadIndex));
+    atomic_set<PrimRefBlock>::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
+    atomic_set<PrimRefBlock>::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
     
     while (atomic_set<PrimRefBlock>::item* block = prims.take()) 
     {
@@ -532,18 +532,18 @@ namespace embree
         {
           lnum_o++;
           if (likely(lblock->insert(prim))) continue; 
-          lblock = lprims_o.insert(parent->alloc.malloc(threadIndex));
+          lblock = lprims_o.insert(alloc.malloc(threadIndex));
           lblock->insert(prim);
         } 
         else 
         {
           rnum_o++;
           if (likely(rblock->insert(prim))) continue;
-          rblock = rprims_o.insert(parent->alloc.malloc(threadIndex));
+          rblock = rprims_o.insert(alloc.malloc(threadIndex));
           rblock->insert(prim);
         }
       }
-      parent->alloc.free(threadIndex,block);
+      alloc.free(threadIndex,block);
     }
 
     assert(lnum == num0);
@@ -977,7 +977,7 @@ namespace embree
     /* perform aligned object split */
     else if (bestSAH == alignedObjectSAH && enableAlignedObjectSplits) {
       numAlignedObjectSplits++;
-      alignedObjectSplit.split(threadIndex,this,prims,lprims_o,rprims_o);
+      alignedObjectSplit.split(threadIndex,alloc,prims,lprims_o,rprims_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       lsize = alignedObjectSplit.num0;
@@ -1000,7 +1000,7 @@ namespace embree
     /* perform unaligned object split */
     else if (bestSAH == unalignedObjectSAH && enableUnalignedObjectSplits) {
       numUnalignedObjectSplits++;
-      unalignedObjectSplit.split(threadIndex,this,prims,lprims_o,rprims_o);
+      unalignedObjectSplit.split(threadIndex,alloc,prims,lprims_o,rprims_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       lsize = unalignedObjectSplit.num0;
