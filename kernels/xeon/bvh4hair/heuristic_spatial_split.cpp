@@ -120,8 +120,6 @@ namespace embree
     split.cost = inf;
     split.dim = -1;
     split.pos = 0.0f;
-    split.num0 = split.num1 = 1;
-    split.bounds0 = split.bounds1 = BBox3fa(inf);
 
     float bestCost = inf;
     for (size_t dim=0; dim<3; dim++) 
@@ -135,15 +133,15 @@ namespace embree
         split.dim = dim;
         split.pos = bestPos[dim]/scale[dim]+ofs[dim];
         split.cost = bestSAH[dim];
-        split.num0 = bestLeft[dim];
-        split.num1 = bestRight[dim];
         bestCost = bestSAH[dim];
       }
     }
 
     /* compute bounds of left and right side */
-    if (split.dim == -1)
+    if (split.dim == -1) {
+      split.cost = inf;
       return split;
+    }
 
     /* calculate bounding box of left and right side */
     BBox3fa lbounds = empty, rbounds = empty;
@@ -187,22 +185,25 @@ namespace embree
       const BBox3fa bounds = i->bounds(space);
       lbounds.extend(bounds); larea += halfArea(bounds); lnum++;
     }
-    split.bounds0 = NAABBox3fa(space,lbounds);
-    split.bounds1 = NAABBox3fa(space,rbounds);
-    //assert(lnum == split.num0);
-    //assert(rnum == split.num1);
-    split.num0 = lnum;
-    split.num1 = rnum;
+    split.numReplications = lnum + rnum - pinfo.size();
+    assert(split.numReplications >= 0);
+
+    if (lnum == 0 || rnum == 0) 
+      split.cost = inf;
+    else
+      split.cost = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
+
+#if 0
+    {
+    size_t lnum = 0, rnum = 0;
+    BBox3fa lbounds = empty, rbounds = empty;
+    for (size_t i=0; i<split.pos; i++) { lnum+=numBegin[i][split.dim]; lbounds.extend(bounds[i][split.dim]); }
+    for (size_t i=split.pos; i<BINS; i++) { rnum+=numEnd[i][split.dim]; rbounds.extend(bounds[i][split.dim]); }
+    split.cost = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
     split.numReplications = split.num0 + split.num1 - pinfo.size();
     assert(split.numReplications >= 0);
-    //assert(lnum > 0);
-    //assert(rnum > 0);
-
-    if (split.num0 == 0 || split.num1 == 0) {
-      split.cost = inf;
-      split.num0 = split.num1 = 1;
-      split.bounds0 = split.bounds1 = BBox3fa(inf);
     }
+#endif
 
     return split;
   }

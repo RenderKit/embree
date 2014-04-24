@@ -43,7 +43,7 @@ namespace embree
     
     /*! calculates standard surface area heuristic for the split */
     __forceinline float splitSAH(float intCost) const {
-      return intCost*float(num0)*halfArea(bounds0.bounds) + intCost*float(num1)*halfArea(bounds1.bounds);
+      return intCost*cost;
     }
     
     /*! finds the two hair strands */
@@ -54,12 +54,10 @@ namespace embree
     
   public:
     LinearSpace3fa space;
-    NAABBox3fa bounds0, bounds1;
     float pos;
     int dim;
     float cost;
     size_t numReplications;
-    size_t num0, num1;            //!< number of hairs in the strands
     ssef ofs,scale;
   };
 }

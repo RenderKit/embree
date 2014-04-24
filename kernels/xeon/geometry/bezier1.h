@@ -130,6 +130,7 @@ namespace embree
        *  left and right of the plane */
       float u0 = 0.0f, u1 = 1.0f;
       while (u1-u0 > 0.01f) 
+      //while (u1-u0 > 0.0001f) 
       {
         const float tc = 0.5f*(u0+u1);
         Bezier1 left,right; subdivide(left,right,tc);
