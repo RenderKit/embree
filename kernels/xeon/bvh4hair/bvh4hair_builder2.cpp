@@ -482,13 +482,14 @@ namespace embree
       return split;
     }
     
-    size_t lnum, rnum;
-    atomic_set<PrimRefBlock> lprims, rprims; 
-    parent->split(threadIndex,prims,split,lprims,lnum,rprims,rnum);
-    split.bounds0 = computeAlignedBounds(lprims,space);
-    split.bounds1 = computeAlignedBounds(rprims,space);
-    parent->insert(threadIndex,lprims,prims);
-    parent->insert(threadIndex,rprims,prims);
+    BBox3fa lbounds = empty;
+    for (size_t i=0; i<split.pos; i++) lbounds.extend(bounds[i][split.dim]);
+    split.bounds0 = lbounds;
+
+    BBox3fa rbounds = empty;
+    for (size_t i=split.pos; i<BINS; i++) rbounds.extend(bounds[i][split.dim]);
+    split.bounds1 = rbounds;
+
     return split;
   }
 
