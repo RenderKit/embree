@@ -49,7 +49,7 @@ namespace embree
     }
     
     /*! performs object binning to the the best partitioning */
-    static ObjectPartition find(size_t threadIndex, size_t depth, BezierRefList& curves, const LinearSpace3fa& space);
+    static ObjectPartition find(size_t threadIndex, BezierRefList& curves, const LinearSpace3fa& space);
     
     /*! splits hairs into two sets */
     void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;

@@ -18,7 +18,7 @@
 
 namespace embree
 {
-  ObjectPartition ObjectPartition::find(size_t threadIndex, size_t depth, BezierRefList& prims, const LinearSpace3fa& space)
+  ObjectPartition ObjectPartition::find(size_t threadIndex, BezierRefList& prims, const LinearSpace3fa& space)
   {
     /* calculate geometry and centroid bounds */
     BBox3fa centBounds = empty;

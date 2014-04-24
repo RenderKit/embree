@@ -74,7 +74,7 @@ namespace embree
     /*! creates a leaf node */
     BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const NAABBox3fa& bounds);
 
-    void split(size_t threadIndex, size_t depth, 
+    void split(size_t threadIndex, 
                BezierRefList& prims, const NAABBox3fa& bounds, const PrimInfo& pinfo,
                BezierRefList& lprims, PrimInfo& linfo_o, 
                BezierRefList& rprims, PrimInfo& rinfo_o,
