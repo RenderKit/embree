@@ -18,10 +18,6 @@
 
 namespace embree
 {
-  StrandSplit::StrandSplit (const NAABBox3fa& bounds0, const Vec3fa& axis0, const size_t num0,
-			    const NAABBox3fa& bounds1, const Vec3fa& axis1, const size_t num1)
-    : bounds0(bounds0), bounds1(bounds1), axis0(axis0), axis1(axis1), num0(num0), num1(num1) {}
-  
   const StrandSplit StrandSplit::find(size_t threadIndex, BezierRefList& prims)
   {
     /* first try to split two hair strands */
@@ -42,8 +38,8 @@ namespace embree
 
     /* partition the two strands */
     size_t num0 = 0, num1 = 0;
-    NAABBox3fa naabb0(one,inf);
-    NAABBox3fa naabb1(one,inf);
+    //NAABBox3fa naabb0(one,inf);
+    //NAABBox3fa naabb1(one,inf);
 
     BBox3fa lbounds = empty, rbounds = empty;
     const LinearSpace3fa space0 = frame(axis0).transposed();
@@ -60,14 +56,14 @@ namespace embree
       else             { num1++; rbounds.extend(prim.bounds(space1)); }
     }
     
-    if (num0 == 0 || num1 == 0) {
-      num0 = num1 = 1;
-    } else {
-      naabb0 = NAABBox3fa(space0,lbounds);
-      naabb1 = NAABBox3fa(space1,rbounds);
-    }
-    
-    return StrandSplit(naabb0,axis0,num0,naabb1,axis1,num1);
+    StrandSplit split;				
+    split.axis0 = axis0;
+    split.axis1 = axis1;
+    if (num0 == 0 || num1 == 0) 
+      split.cost = inf;
+    else
+      split.cost = float(num0)*halfArea(lbounds) + float(num1)*halfArea(rbounds);
+    return split;
   }
 
   void StrandSplit::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 

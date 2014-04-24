@@ -31,12 +31,9 @@ namespace embree
   public:
     StrandSplit () {}
     
-    StrandSplit (const NAABBox3fa& bounds0, const Vec3fa& axis0, const size_t num0,
-		 const NAABBox3fa& bounds1, const Vec3fa& axis1, const size_t num1);
-    
     /*! calculates standard surface area heuristic for the split */
     __forceinline float splitSAH(float intCost) const {
-      return intCost*float(num0)*halfArea(bounds0.bounds) + intCost*float(num1)*halfArea(bounds1.bounds);
+      return intCost*cost;
     }
     
     /*! finds the two hair strands */
@@ -46,8 +43,7 @@ namespace embree
     void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, BezierRefList& lcurves_o, PrimInfo& linfo_o, BezierRefList& rcurves_o, PrimInfo& rinfo_o) const;
     
   public:
-    NAABBox3fa bounds0, bounds1;  //!< bounds of the strands
     Vec3fa axis0, axis1;          //!< axis the strands are aligned into
-    size_t num0, num1;            //!< number of hairs in the strands
+    float cost;
   };
 }
