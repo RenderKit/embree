@@ -21,6 +21,7 @@
 #include "builders/primrefalloc.h"
 #include "heuristic_object_partition.h"
 #include "heuristic_spatial_split.h"
+#include "heuristic_strand_partition.h"
 #include "heuristic_fallback.h"
 
 namespace embree
@@ -69,34 +70,7 @@ namespace embree
       atomic_set<PrimRefBlock> prims;
       NAABBox3fa bounds;
     };
-    
-    /*! Tries to split hair into two differently aligned hair strands */
-    struct StrandSplit
-    {
-    public:
-      StrandSplit () {}
-
-      StrandSplit (const NAABBox3fa& bounds0, const Vec3fa& axis0, const size_t num0,
-                   const NAABBox3fa& bounds1, const Vec3fa& axis1, const size_t num1);
-
-      /*! calculates standard surface area heuristic for the split */
-      __forceinline float standardSAH() const {
-        return BVH4Hair::intCost*float(num0)*halfArea(bounds0.bounds) + BVH4Hair::intCost*float(num1)*halfArea(bounds1.bounds);
-      }
-
-      /*! finds the two hair strands */
-      static const StrandSplit find(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves);
-      
-      /*! splits hair list into the two strands */
-      void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
-                 atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lcurves_o, atomic_set<PrimRefBlock>& rcurves_o) const;
-
-    public:
-      NAABBox3fa bounds0, bounds1;  //!< bounds of the strands
-      Vec3fa axis0, axis1;          //!< axis the strands are aligned into
-      size_t num0, num1;            //!< number of hairs in the strands
-    };
-
+        
   private:
 
     const BBox3fa subdivideAndAdd(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const Bezier1& bezier, size_t depth);

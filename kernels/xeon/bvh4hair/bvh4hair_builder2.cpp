@@ -298,120 +298,6 @@ namespace embree
     return NAABBox3fa(bestSpace,bestBounds);
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  struct StrandSplitFunction
-  {
-    __forceinline StrandSplitFunction (const Vec3fa& axis0, const Vec3fa& axis1)
-      : axis0(axis0), axis1(axis1) {}
-
-    __forceinline bool operator() (const Bezier1& prim) const 
-    {
-      const Vec3fa axisi = normalize(prim.p3-prim.p0);
-      const float cos0 = abs(dot(axisi,axis0));
-      const float cos1 = abs(dot(axisi,axis1));
-      return cos0 > cos1;
-    }
-
-    const Vec3fa axis0;
-    const Vec3fa axis1;
-  };
-
-  __forceinline BVH4HairBuilder2::StrandSplit::StrandSplit (const NAABBox3fa& bounds0, const Vec3fa& axis0, const size_t num0,
-                                                           const NAABBox3fa& bounds1, const Vec3fa& axis1, const size_t num1)
-    : bounds0(bounds0), bounds1(bounds1), axis0(axis0), axis1(axis1), num0(num0), num1(num1) {}
-  
-  __forceinline const BVH4HairBuilder2::StrandSplit BVH4HairBuilder2::StrandSplit::find(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& prims)
-  {
-    /* first try to split two hair strands */
-    atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims;
-    Vec3fa axis0 = normalize(i->p3 - i->p0);
-    float bestCos = 1.0f;
-    Bezier1 bestI = *i;
-
-    for (i; i; i++) {
-      Vec3fa axisi = i->p3 - i->p0;
-      float leni = length(axisi);
-      if (leni == 0.0f) continue;
-      axisi /= leni;
-      float cos = abs(dot(axisi,axis0));
-      if (cos < bestCos) { bestCos = cos; bestI = *i; }
-    }
-    Vec3fa axis1 = normalize(bestI.p3-bestI.p0);
-
-    /* partition the two strands */
-    size_t num0 = 0, num1 = 0;
-    NAABBox3fa naabb0(one,inf);
-    NAABBox3fa naabb1(one,inf);
-
-    BBox3fa lbounds = empty, rbounds = empty;
-    const LinearSpace3fa space0 = frame(axis0).transposed();
-    const LinearSpace3fa space1 = frame(axis1).transposed();
-    
-    for (atomic_set<PrimRefBlock>::block_iterator_unsafe i = prims; i; i++) 
-    {
-      Bezier1& prim = *i;
-      const Vec3fa axisi = normalize(prim.p3-prim.p0);
-      const float cos0 = abs(dot(axisi,axis0));
-      const float cos1 = abs(dot(axisi,axis1));
-      
-      if (cos0 > cos1) { num0++; lbounds.extend(prim.bounds(space0)); }
-      else             { num1++; rbounds.extend(prim.bounds(space1)); }
-    }
-    
-    if (num0 == 0 || num1 == 0) {
-      num0 = num1 = 1;
-    } else {
-      naabb0 = NAABBox3fa(space0,lbounds);
-      naabb1 = NAABBox3fa(space1,rbounds);
-    }
-    
-    return StrandSplit(naabb0,axis0,num0,naabb1,axis1,num1);
-  }
-
-  __forceinline void BVH4HairBuilder2::StrandSplit::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
-                                                          atomic_set<PrimRefBlock>& prims, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const 
-  {
-    size_t lnum_o,rnum_o;
-    lnum_o = rnum_o = 0;
-    atomic_set<PrimRefBlock>::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
-    atomic_set<PrimRefBlock>::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
-    
-    while (atomic_set<PrimRefBlock>::item* block = prims.take()) 
-    {
-      for (size_t i=0; i<block->size(); i++) 
-      {
-        const PrimRef& prim = block->at(i); 
-	const Vec3fa axisi = normalize(prim.p3-prim.p0);
-	const float cos0 = abs(dot(axisi,axis0));
-	const float cos1 = abs(dot(axisi,axis1));
-
-        if (cos0 > cos1) 
-        {
-          lnum_o++;
-          if (likely(lblock->insert(prim))) continue; 
-          lblock = lprims_o.insert(alloc.malloc(threadIndex));
-          lblock->insert(prim);
-        } 
-        else 
-        {
-          rnum_o++;
-          if (likely(rblock->insert(prim))) continue;
-          rblock = rprims_o.insert(alloc.malloc(threadIndex));
-          rblock->insert(prim);
-        }
-      }
-      alloc.free(threadIndex,block);
-    }
-    assert(lnum == num0);
-    assert(rnum == num1);
-  }
-
   BVH4Hair::NodeRef BVH4HairBuilder2::leaf(size_t threadIndex, size_t depth, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds)
   {
     //size_t N = end-begin;
@@ -509,8 +395,8 @@ namespace embree
     StrandSplit strandSplit;
     float strandSAH = neg_inf;
     if (enableStrandSplits) {
-      strandSplit = StrandSplit::find(threadIndex,this,prims);
-      strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.standardSAH();
+      strandSplit = StrandSplit::find(threadIndex,prims);
+      strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.splitSAH(BVH4Hair::intCost);
       bestSAH = min(bestSAH,strandSAH);
     }
 
