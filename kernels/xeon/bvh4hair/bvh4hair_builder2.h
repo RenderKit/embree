@@ -33,6 +33,12 @@ namespace embree
     /*! Constructor. */
     BVH4HairBuilder2 (BVH4Hair* bvh, Scene* scene);
 
+    /*! Compute the number of blocks occupied for each dimension. */
+    __forceinline static ssei blocks(const ssei& a) { return (a+ssei(3)) >> 2; }
+	
+    /*! Compute the number of blocks occupied in one dimension. */
+    __forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
+  
   private:
 
     typedef Bezier1 PrimRef;

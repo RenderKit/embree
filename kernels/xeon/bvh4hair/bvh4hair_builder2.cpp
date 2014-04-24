@@ -458,13 +458,8 @@ namespace embree
       bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
       const ssef lArea = ssef(Ax,Ay,Az,Az);
       const ssef rArea = rAreas[i];
-#if BVH4HAIR_WIDTH == 8
-      const ssei lCount = (count     +ssei(7)) >> 3;
-      const ssei rCount = (rCounts[i]+ssei(7)) >> 3;
-#else
-      const ssei lCount = (count     +ssei(3)) >> 2;
-      const ssei rCount = (rCounts[i]+ssei(3)) >> 2;
-#endif
+      const ssei lCount = blocks(count);
+      const ssei rCount = blocks(rCounts[i]);
       const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
       bestPos = select(sah < bestSAH,ii ,bestPos);
       bestLeft= select(sah < bestSAH,count,bestLeft);
@@ -646,13 +641,8 @@ namespace embree
       bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
       const ssef lArea = ssef(Ax,Ay,Az,Az);
       const ssef rArea = rAreas[i];
-#if BVH4HAIR_WIDTH == 8
-      const ssei lCount = (count     +ssei(7)) >> 3;
-      const ssei rCount = (rCounts[i]+ssei(7)) >> 3;
-#else
-      const ssei lCount = (count     +ssei(3)) >> 2;
-      const ssei rCount = (rCounts[i]+ssei(3)) >> 2;
-#endif
+      const ssei lCount = blocks(count);
+      const ssei rCount = blocks(rCounts[i]);
       const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
       bestPos  = select(sah < bestSAH,ii ,bestPos);
       bestLeft = select(sah < bestSAH,count,bestLeft);
