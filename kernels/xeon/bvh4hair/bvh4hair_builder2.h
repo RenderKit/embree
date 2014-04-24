@@ -54,8 +54,8 @@ namespace embree
     {
       __forceinline BuildTask () {}
 
-      __forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, const PrimInfo& pinfo, bool makeleaf, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds)
-        : dst(dst), depth(depth), pinfo(pinfo), makeleaf(makeleaf), prims(prims), bounds(bounds) {}
+      __forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, const PrimInfo& pinfo, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds)
+        : dst(dst), depth(depth), pinfo(pinfo), prims(prims), bounds(bounds) {}
 
     public:
       __forceinline friend bool operator< (const BuildTask& a, const BuildTask& b) {
@@ -66,7 +66,6 @@ namespace embree
       BVH4Hair::NodeRef* dst;
       size_t depth;
       PrimInfo pinfo;
-      bool makeleaf;
       atomic_set<PrimRefBlock> prims;
       NAABBox3fa bounds;
     };
@@ -87,11 +86,11 @@ namespace embree
     /*! creates a leaf node */
     BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds);
 
-    bool split(size_t threadIndex, size_t depth, 
+    void split(size_t threadIndex, size_t depth, 
                atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds, const PrimInfo& pinfo,
                atomic_set<PrimRefBlock>& lprims, PrimInfo& linfo_o, 
-               atomic_set<PrimRefBlock>& rprims, PrimInfo& rinfo_o, 
-               bool& isAligned);
+               atomic_set<PrimRefBlock>& rprims, PrimInfo& rinfo_o,
+	       bool& isAligned);
 
     /*! execute single task and create subtasks */
     void processTask(size_t threadIndex, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& N);
