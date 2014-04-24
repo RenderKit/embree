@@ -366,30 +366,43 @@ namespace embree
     return StrandSplit(naabb0,axis0,num0,naabb1,axis1,num1);
   }
 
-  __forceinline void BVH4HairBuilder2::StrandSplit::split(size_t threadIndex, BVH4HairBuilder2* parent, 
+  __forceinline void BVH4HairBuilder2::StrandSplit::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
                                                           atomic_set<PrimRefBlock>& prims, atomic_set<PrimRefBlock>& lprims_o, atomic_set<PrimRefBlock>& rprims_o) const 
   {
-    size_t lnum,rnum;
-    parent->split(threadIndex,prims,StrandSplitFunction(axis0,axis1),lprims_o,lnum,rprims_o,rnum);
+    size_t lnum_o,rnum_o;
+    lnum_o = rnum_o = 0;
+    atomic_set<PrimRefBlock>::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
+    atomic_set<PrimRefBlock>::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
+    
+    while (atomic_set<PrimRefBlock>::item* block = prims.take()) 
+    {
+      for (size_t i=0; i<block->size(); i++) 
+      {
+        const PrimRef& prim = block->at(i); 
+	const Vec3fa axisi = normalize(prim.p3-prim.p0);
+	const float cos0 = abs(dot(axisi,axis0));
+	const float cos1 = abs(dot(axisi,axis1));
+
+        if (cos0 > cos1) 
+        {
+          lnum_o++;
+          if (likely(lblock->insert(prim))) continue; 
+          lblock = lprims_o.insert(alloc.malloc(threadIndex));
+          lblock->insert(prim);
+        } 
+        else 
+        {
+          rnum_o++;
+          if (likely(rblock->insert(prim))) continue;
+          rblock = rprims_o.insert(alloc.malloc(threadIndex));
+          rblock->insert(prim);
+        }
+      }
+      alloc.free(threadIndex,block);
+    }
     assert(lnum == num0);
     assert(rnum == num1);
   }
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   BVH4Hair::NodeRef BVH4HairBuilder2::leaf(size_t threadIndex, size_t depth, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds)
   {
@@ -556,7 +569,7 @@ namespace embree
     /* perform strand split */
     else if (bestSAH == strandSAH && enableStrandSplits) {
       numStrandSplits++;
-      strandSplit.split(threadIndex,this,prims,lprims_o,rprims_o);
+      strandSplit.split(threadIndex,alloc,prims,lprims_o,rprims_o);
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
       assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       lsize = strandSplit.num0;

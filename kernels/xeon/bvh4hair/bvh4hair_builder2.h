@@ -88,7 +88,7 @@ namespace embree
       static const StrandSplit find(size_t threadIndex, BVH4HairBuilder2* parent, atomic_set<PrimRefBlock>& curves);
       
       /*! splits hair list into the two strands */
-      void split(size_t threadIndex, BVH4HairBuilder2* parent, 
+      void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
                  atomic_set<PrimRefBlock>& curves, atomic_set<PrimRefBlock>& lcurves_o, atomic_set<PrimRefBlock>& rcurves_o) const;
 
     public:
