@@ -54,8 +54,8 @@ namespace embree
     {
       __forceinline BuildTask () {}
 
-      __forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, size_t size, bool makeleaf, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds)
-        : dst(dst), depth(depth), size(size), makeleaf(makeleaf), prims(prims), bounds(bounds) {}
+      __forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, const PrimInfo& pinfo, bool makeleaf, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds)
+        : dst(dst), depth(depth), pinfo(pinfo), makeleaf(makeleaf), prims(prims), bounds(bounds) {}
 
     public:
       __forceinline friend bool operator< (const BuildTask& a, const BuildTask& b) {
@@ -65,7 +65,7 @@ namespace embree
     public:
       BVH4Hair::NodeRef* dst;
       size_t depth;
-      size_t size;
+      PrimInfo pinfo;
       bool makeleaf;
       atomic_set<PrimRefBlock> prims;
       NAABBox3fa bounds;
@@ -74,12 +74,6 @@ namespace embree
   private:
 
     const BBox3fa subdivideAndAdd(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const Bezier1& bezier, size_t depth);
-
-    void insert(size_t threadIndex, atomic_set<PrimRefBlock>& prims_i, atomic_set<PrimRefBlock>& prims_o);
-
-    template<typename Left>
-      void split(size_t threadIndex, atomic_set<PrimRefBlock>& prims, const Left& left, 
-                 atomic_set<PrimRefBlock>& lprims_o, size_t& lnum_o, atomic_set<PrimRefBlock>& rprims_o, size_t& rnum_o);
 
     /*! calculate bounds for range of primitives */
     static const BBox3fa computeAlignedBounds(atomic_set<PrimRefBlock>& curves);
@@ -94,7 +88,7 @@ namespace embree
     BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds);
 
     bool split(size_t threadIndex, size_t depth, 
-               atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds, size_t size,
+               atomic_set<PrimRefBlock>& prims, const NAABBox3fa& bounds, const PrimInfo& pinfo,
                atomic_set<PrimRefBlock>& lprims, PrimInfo& linfo_o, size_t& lsize,
                atomic_set<PrimRefBlock>& rprims, PrimInfo& rinfo_o, size_t& rsize,
                bool& isAligned);

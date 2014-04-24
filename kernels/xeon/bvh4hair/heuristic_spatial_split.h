@@ -47,7 +47,7 @@ namespace embree
     }
     
     /*! finds the two hair strands */
-    static const SpatialSplit find(size_t threadIndex, size_t depth, size_t size, BezierRefList& curves, const LinearSpace3fa& space);
+    static const SpatialSplit find(size_t threadIndex, size_t depth, const PrimInfo& pinfo, BezierRefList& curves, const LinearSpace3fa& space);
     
     /*! splits hair list into the two strands */
     void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
