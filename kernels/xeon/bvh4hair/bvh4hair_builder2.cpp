@@ -209,8 +209,9 @@ namespace embree
     size_t k=0;
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
     {
+      //if ((k++) % ((N+1)/2)) continue;
       if ((k++) % ((N+3)/4)) continue;
-      //size_t k = begin + rand() % (end-begin);
+      //if ((k++) % ((N+15)/16)) continue;
       const Vec3fa axis = normalize(i->p3 - i->p0);
       if (length(i->p3 - i->p0) < 1E-9) continue;
       const LinearSpace3fa space = clamp(frame(axis).transposed());
@@ -228,13 +229,15 @@ namespace embree
         bestArea = area;
       }
     }
-    //assert(bestArea != (float)inf); // FIXME: can get raised if all selected curves are points
-#ifdef DEBUG
-    if (bestArea == (float)inf)
-      {
-        std::cout << "WARNING: bestArea == (float)inf" << std::endl; 
-      }
-#endif
+
+    /* select world space for some corner cases */
+    if (bestArea == float(inf)) 
+    {
+      bestSpace = one;
+      bestBounds = empty;
+      for (BezierRefList::block_iterator_unsafe j = prims; j; j++)
+        bestBounds.extend(j->bounds());
+    }
 
     return NAABBox3fa(bestSpace,bestBounds);
   }
