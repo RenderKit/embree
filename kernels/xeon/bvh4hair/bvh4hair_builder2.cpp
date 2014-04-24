@@ -22,28 +22,7 @@
 namespace embree
 {
   extern double g_hair_builder_replication_factor;
-  
-  /*! scales orthonormal transformation into the range -127 to +127 */
-  __forceinline const LinearSpace3fa compressTransform(const LinearSpace3fa& xfm)
-  {
-#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
-    assert(xfm.vx.x >= -1.0f && xfm.vx.x <= 1.0f);
-    assert(xfm.vx.y >= -1.0f && xfm.vx.y <= 1.0f);
-    assert(xfm.vx.z >= -1.0f && xfm.vx.z <= 1.0f);
-    assert(xfm.vy.x >= -1.0f && xfm.vy.x <= 1.0f);
-    assert(xfm.vy.y >= -1.0f && xfm.vy.y <= 1.0f);
-    assert(xfm.vy.z >= -1.0f && xfm.vy.z <= 1.0f);
-    assert(xfm.vz.x >= -1.0f && xfm.vz.x <= 1.0f);
-    assert(xfm.vz.y >= -1.0f && xfm.vz.y <= 1.0f);
-    assert(xfm.vz.z >= -1.0f && xfm.vz.z <= 1.0f);
-    return LinearSpace3fa (clamp(trunc(127.0f*xfm.vx),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f,
-                           clamp(trunc(127.0f*xfm.vy),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f,
-                           clamp(trunc(127.0f*xfm.vz),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f);
-#else
-    return xfm;
-#endif
-  }
-
+ 
   BVH4HairBuilder2::BVH4HairBuilder2 (BVH4Hair* bvh, Scene* scene)
     : scene(scene), minLeafSize(1), maxLeafSize(inf), bvh(bvh), remainingReplications(0)
   {
@@ -305,8 +284,7 @@ namespace embree
       //size_t k = begin + rand() % (end-begin);
       const Vec3fa axis = normalize(i->p3 - i->p0);
       if (length(i->p3 - i->p0) < 1E-9) continue;
-      //const LinearSpace3fa space0 = LinearSpace3fa::rotate(Vec3fa(0,0,1),2.0f*float(pi)*drand48())*frame(axis).transposed();
-      const LinearSpace3fa space = compressTransform(clamp(frame(axis).transposed()));
+      const LinearSpace3fa space = clamp(frame(axis).transposed());
       BBox3fa bounds = empty;
       float area = 0.0f;
       for (atomic_set<PrimRefBlock>::block_iterator_unsafe j = prims; j; j++) {
@@ -1075,14 +1053,8 @@ namespace embree
       if (!done) { isleaf[bestChild] = true; continue; }
       cprims[numChildren] = rprims; isleaf[numChildren] = false; csize[numChildren] = rsize;
       cprims[bestChild  ] = lprims; isleaf[bestChild  ] = false; csize[bestChild  ] = lsize;
-
-#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
-      cbounds[numChildren] = computeAlignedBounds(cprims[numChildren],task.bounds.space);
-      cbounds[bestChild  ] = computeAlignedBounds(cprims[bestChild  ],task.bounds.space);
-#else
       cbounds[numChildren] = computeUnalignedBounds(cprims[numChildren]);
       cbounds[bestChild  ] = computeUnalignedBounds(cprims[bestChild  ]);
-#endif
       numChildren++;
       
     } while (numChildren < BVH4Hair::N);
@@ -1099,9 +1071,6 @@ namespace embree
         bounds.extend(abounds[i].bounds);
       }
 
-#if BVH4HAIR_COMPRESS_ALIGNED_NODES
-      node->set(bounds);
-#endif
       for (ssize_t i=0; i<numChildren; i++) {
         node->set(i,abounds[i].bounds);
 	const NAABBox3fa ubounds = computeUnalignedBounds(cprims[i]);
@@ -1114,19 +1083,10 @@ namespace embree
     /* create unaligned node */
     else {
       BVH4Hair::UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
-#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
-      node->set(task.bounds);
-      for (ssize_t i=0; i<numChildren; i++) {
-        node->set(i,cbounds[i].bounds);
-        const NAABBox3fa ubounds = computeUnalignedBounds(cprims[i]);
-        new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,csize[i],isleaf[i],cprims[i],ubounds);
-      }
-#else
       for (ssize_t i=numChildren-1; i>=0; i--) {
         node->set(i,cbounds[i]);
         new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,csize[i],isleaf[i],cprims[i],cbounds[i]);
       }
-#endif
       numTasks_o = numChildren;
       *task.dst = bvh->encodeNode(node);
     }
