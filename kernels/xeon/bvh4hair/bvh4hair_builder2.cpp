@@ -355,8 +355,8 @@ namespace embree
       num0 = num1 = 1;
     } 
     else {
-      naabb0 = computeUnalignedBounds(lprims);
-      naabb1 = computeUnalignedBounds(rprims);
+      naabb0 = computeAlignedBounds(lprims,frame(axis0).transposed());
+      naabb1 = computeAlignedBounds(rprims,frame(axis1).transposed());
     }
 
     /* merge lists again */
