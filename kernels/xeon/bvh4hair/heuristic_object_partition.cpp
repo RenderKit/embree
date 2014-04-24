@@ -106,25 +106,19 @@ namespace embree
         split.dim = dim;
         split.pos = bestPos[dim];
         split.cost = bestSAH[dim];
-        split.num0 = bestLeft[dim];
-        split.num1 = bestRight[dim];
       }
     }
 
     if (split.dim == -1) {
-      split.num0 = split.num1 = 1;
-      split.bounds0 = split.bounds1 = BBox3fa(inf);
+      split.cost = inf;
       return split;
     }
     
-    BBox3fa lbounds = empty;
-    for (size_t i=0; i<split.pos; i++) lbounds.extend(bounds[i][split.dim]);
-    split.bounds0 = lbounds;
-
-    BBox3fa rbounds = empty;
-    for (size_t i=split.pos; i<BINS; i++) rbounds.extend(bounds[i][split.dim]);
-    split.bounds1 = rbounds;
-
+    size_t lnum = 0, rnum = 0;
+    BBox3fa lbounds = empty, rbounds = empty;
+    for (size_t i=0; i<split.pos; i++) { lnum+=counts[i][split.dim]; lbounds.extend(bounds[i][split.dim]); }
+    for (size_t i=split.pos; i<BINS; i++) { rnum+=counts[i][split.dim]; rbounds.extend(bounds[i][split.dim]); }
+    split.cost = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
     return split;
   }
 

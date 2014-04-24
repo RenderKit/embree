@@ -320,7 +320,7 @@ namespace embree
     
     /* perform standard binning in aligned space */
     ObjectPartition alignedObjectSplit;
-    float alignedObjectSAH = neg_inf;
+    float alignedObjectSAH = inf;
     if (enableAlignedObjectSplits) {
       alignedObjectSplit = ObjectPartition::find(threadIndex,depth,prims,one);
       alignedObjectSAH = travCostAligned*halfArea(bounds.bounds) + alignedObjectSplit.splitSAH(BVH4Hair::intCost);
@@ -329,7 +329,7 @@ namespace embree
 
     /* perform spatial split in aligned space */
     SpatialSplit alignedSpatialSplit;
-    float alignedSpatialSAH = neg_inf;
+    float alignedSpatialSAH = inf;
     if (enableSpatialSplits && enableAlignedSpatialSplits) {
       alignedSpatialSplit = SpatialSplit::find(threadIndex,depth,pinfo,prims,one);
       alignedSpatialSAH = travCostAligned*halfArea(bounds.bounds) + alignedSpatialSplit.splitSAH(BVH4Hair::intCost);
@@ -338,7 +338,7 @@ namespace embree
 
     /* perform standard binning in unaligned space */
     ObjectPartition unalignedObjectSplit;
-    float unalignedObjectSAH = neg_inf;
+    float unalignedObjectSAH = inf;
     if (enableUnalignedObjectSplits) {
       unalignedObjectSplit = ObjectPartition::find(threadIndex,depth,prims,bounds.space);
       unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + unalignedObjectSplit.splitSAH(BVH4Hair::intCost);
@@ -347,7 +347,7 @@ namespace embree
 
     /* perform spatial split in unaligned space */
     SpatialSplit unalignedSpatialSplit;
-    float unalignedSpatialSAH = neg_inf;
+    float unalignedSpatialSAH = inf;
     if (enableSpatialSplits && enableUnalignedSpatialSplits) {
       unalignedSpatialSplit = SpatialSplit::find(threadIndex,depth,pinfo,prims,bounds.space);
       unalignedSpatialSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + unalignedSpatialSplit.splitSAH(BVH4Hair::intCost);
@@ -356,7 +356,7 @@ namespace embree
 
     /* perform splitting into two strands */
     StrandSplit strandSplit;
-    float strandSAH = neg_inf;
+    float strandSAH = inf;
     if (enableStrandSplits) {
       strandSplit = StrandSplit::find(threadIndex,prims);
       strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.splitSAH(BVH4Hair::intCost);
@@ -377,8 +377,6 @@ namespace embree
     else if (bestSAH == alignedObjectSAH && enableAlignedObjectSplits) {
       numAlignedObjectSplits++;
       alignedObjectSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
-      assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
-      assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       return true;
     }
 
@@ -386,8 +384,6 @@ namespace embree
     else if (bestSAH == alignedSpatialSAH && enableSpatialSplits && enableAlignedSpatialSplits) {
       numAlignedSpatialSplits++;
       alignedSpatialSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
-      assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
-      assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       atomic_add(&remainingReplications,-alignedSpatialSplit.numReplications);
       return true;
     }
@@ -396,8 +392,6 @@ namespace embree
     else if (bestSAH == unalignedObjectSAH && enableUnalignedObjectSplits) {
       numUnalignedObjectSplits++;
       unalignedObjectSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
-      assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
-      assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       isAligned = false;
       return true;
     }
@@ -406,8 +400,6 @@ namespace embree
     else if (bestSAH == unalignedSpatialSAH && enableSpatialSplits && enableUnalignedSpatialSplits) {
       numUnalignedSpatialSplits++;
       unalignedSpatialSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
-      assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
-      assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       atomic_add(&remainingReplications,-unalignedSpatialSplit.numReplications);
       isAligned = false;
       return true;
@@ -417,8 +409,6 @@ namespace embree
     else if (bestSAH == strandSAH && enableStrandSplits) {
       numStrandSplits++;
       strandSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
-      assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(lprims_o).size());
-      assert(atomic_set<PrimRefBlock>::block_iterator_unsafe(rprims_o).size());
       isAligned = false;
       return true;
     }

@@ -41,11 +41,11 @@ namespace embree
     
     /*! default constructor */
     __forceinline ObjectPartition ()
-      : dim(-1), pos(0), cost(inf), num0(0), num1(0), bounds0(inf), bounds1(inf) {}
+      : dim(-1), pos(0), cost(inf) {}
     
     /*! calculates standard surface area heuristic for the split */
     __forceinline float splitSAH(float intCost) const {
-      return intCost*float(num0)*halfArea(bounds0.bounds) + intCost*float(num1)*halfArea(bounds1.bounds);
+      return intCost*cost;
     }
     
     /*! performs object binning to the the best partitioning */
@@ -56,11 +56,9 @@ namespace embree
     
   public:
     LinearSpace3fa space;
-    NAABBox3fa bounds0, bounds1;
     int dim;
     int pos;
     float cost;
-    size_t num0,num1;
     ssef ofs,scale;
   };
 }
