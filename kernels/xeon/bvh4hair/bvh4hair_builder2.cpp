@@ -315,8 +315,8 @@ namespace embree
       //size_t k = begin + rand() % (end-begin);
       const Vec3fa axis = normalize(i->p3 - i->p0);
       if (length(i->p3 - i->p0) < 1E-9) continue;
-      const LinearSpace3fa space0 = LinearSpace3fa::rotate(Vec3fa(0,0,1),2.0f*float(pi)*drand48())*frame(axis).transposed();
-      const LinearSpace3fa space = compressTransform(clamp(space0));
+      //const LinearSpace3fa space0 = LinearSpace3fa::rotate(Vec3fa(0,0,1),2.0f*float(pi)*drand48())*frame(axis).transposed();
+      const LinearSpace3fa space = compressTransform(clamp(frame(axis).transposed()));
       BBox3fa bounds = empty;
       float area = 0.0f;
       for (atomic_set<PrimRefBlock>::block_iterator_unsafe j = prims; j; j++) {
