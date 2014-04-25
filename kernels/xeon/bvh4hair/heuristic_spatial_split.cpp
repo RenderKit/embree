@@ -26,7 +26,7 @@ namespace embree
     }
   }
 
-  void SpatialSplit::Binner::bin(BezierRefList& prims, const PrimInfo& pinfo)
+  __forceinline void SpatialSplit::Binner::bin(BezierRefList& prims, const PrimInfo& pinfo)
   {
     /* calculate binning function */
     const ssef ofs  = (ssef) pinfo.geomBounds.lower;
@@ -71,7 +71,7 @@ namespace embree
     }
   }
 
-  SpatialSplit SpatialSplit::Binner::best(BezierRefList& prims, const PrimInfo& pinfo)
+  __forceinline SpatialSplit::Split SpatialSplit::Binner::best(BezierRefList& prims, const PrimInfo& pinfo)
   {
     /* calculate binning function */
     const ssef ofs  = (ssef) pinfo.geomBounds.lower;
@@ -112,7 +112,7 @@ namespace embree
     }
     
     /* find best dimension */
-    SpatialSplit split;
+    Split split;
     split.ofs = ofs;
     split.scale = scale;
     split.cost = inf;
@@ -194,17 +194,17 @@ namespace embree
 #endif
   }
 
-  const SpatialSplit SpatialSplit::find(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo)
+  const SpatialSplit::Split SpatialSplit::find(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo)
   {
     Binner binner;
     binner.bin(prims,pinfo);
     return binner.best(prims,pinfo);
   }
       
-  void SpatialSplit::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
-			   BezierRefList& prims, 
-			   BezierRefList& lprims_o, PrimInfo& linfo_o, 
-			   BezierRefList& rprims_o, PrimInfo& rinfo_o) const
+  void SpatialSplit::Split::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
+				  BezierRefList& prims, 
+				  BezierRefList& lprims_o, PrimInfo& linfo_o, 
+				  BezierRefList& rprims_o, PrimInfo& rinfo_o) const
   {
     /* sort each curve to left, right, or left and right */
     BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));

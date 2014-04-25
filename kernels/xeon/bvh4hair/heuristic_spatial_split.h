@@ -37,37 +37,36 @@ namespace embree
     /*! Compute the number of blocks occupied in one dimension. */
     __forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
     
+    struct Split
+    {
+      /*! calculates standard surface area heuristic for the split */
+      __forceinline float splitSAH(float intCost) const {
+	return intCost*cost;
+      }
+
+      /*! splits hair list into the two strands */
+      void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, 
+		 BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+
+    public:
+      float pos;
+      int dim;
+      float cost;
+      ssef ofs,scale;
+    };
+
     struct Binner
     {
       Binner();
       void bin(BezierRefList& prims, const PrimInfo& pinfo);
-      SpatialSplit best(BezierRefList& prims, const PrimInfo& pinfo);
+      Split best(BezierRefList& prims, const PrimInfo& pinfo);
 
       BBox3fa bounds[BINS][4];
       ssei    numBegin[BINS];
       ssei    numEnd[BINS];
     };
 
-  public:
-    
-    __forceinline SpatialSplit () {}
-    
-    /*! calculates standard surface area heuristic for the split */
-    __forceinline float splitSAH(float intCost) const {
-      return intCost*cost;
-    }
-    
     /*! finds the two hair strands */
-    static const SpatialSplit find(size_t threadIndex, BezierRefList& curves, const PrimInfo& pinfo);
-    
-    /*! splits hair list into the two strands */
-    void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, 
-	       BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
-    
-  public:
-    float pos;
-    int dim;
-    float cost;
-    ssef ofs,scale;
+    static const Split find(size_t threadIndex, BezierRefList& curves, const PrimInfo& pinfo);
   };
 }

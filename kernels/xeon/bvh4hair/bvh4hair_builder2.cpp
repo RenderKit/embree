@@ -297,7 +297,7 @@ namespace embree
     }
 
     /* perform spatial split in aligned space */
-    SpatialSplit alignedSpatialSplit;
+    SpatialSplit::Split alignedSpatialSplit;
     float alignedSpatialSAH = inf;
     bool enableSpatialSplits = remainingReplications > 0;
     if (enableSpatialSplits && enableAlignedSpatialSplits) {
