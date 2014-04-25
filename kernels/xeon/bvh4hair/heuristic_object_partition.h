@@ -39,6 +39,19 @@ namespace embree
     //__forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
     __forceinline static size_t  blocks(size_t a) { return a; }
 
+    /*! mapping into bins */
+    struct Mapping
+    {
+    public:
+      __forceinline Mapping() {}
+      __forceinline Mapping(const BBox3fa& centBounds);
+      __forceinline ssei bin(const Vec3fa& p) const;
+      __forceinline ssei bin_unsafe(const Vec3fa& p) const;
+      __forceinline bool invalid(const int dim) const;
+    private:
+      ssef ofs,scale;
+    };
+
   public:
     
     /*! default constructor */
@@ -61,6 +74,7 @@ namespace embree
     int dim;
     int pos;
     float cost;
-    ssef ofs,scale;
+    //ssef ofs,scale;
+    Mapping mapping;
   };
 }

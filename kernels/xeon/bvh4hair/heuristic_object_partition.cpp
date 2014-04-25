@@ -18,6 +18,34 @@
 
 namespace embree
 {
+  __forceinline ObjectPartition::Mapping::Mapping(const BBox3fa& centBounds) 
+  {
+    const ssef diag = (ssef) centBounds.size();
+    scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
+    ofs  = (ssef) centBounds.lower;
+  }
+  
+  __forceinline ssei ObjectPartition::Mapping::bin(const Vec3fa& p) const 
+  {
+    const ssei i = floori((ssef(p)-ofs)*scale);
+#if 0
+    assert(i[0] >=0 && i[0] < BINS);
+    assert(i[1] >=0 && i[1] < BINS);
+    assert(i[2] >=0 && i[2] < BINS);
+    return i;
+#else
+    return clamp(i,ssei(0),ssei(BINS-1));
+#endif
+  }
+
+  __forceinline ssei ObjectPartition::Mapping::bin_unsafe(const Vec3fa& p) const {
+    return floori((ssef(p)-ofs)*scale);
+  }
+    
+  __forceinline bool ObjectPartition::Mapping::invalid(const int dim) const {
+    return scale[dim] == 0.0f;
+  }
+
   ObjectPartition ObjectPartition::find(size_t threadIndex, BezierRefList& prims, const LinearSpace3fa& space)
   {
     /* calculate geometry and centroid bounds */
@@ -27,11 +55,8 @@ namespace embree
       geomBounds.extend(i->bounds(space));
       centBounds.extend(i->center(space));
     }
-    
-    /* calculate binning function */
-    const ssef ofs  = (ssef) centBounds.lower;
-    const ssef diag = (ssef) centBounds.size();
-    const ssef scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
+
+    Mapping mapping(centBounds);
 
     /* initialize bins */
     BBox3fa bounds[BINS][4];
@@ -46,7 +71,8 @@ namespace embree
     {
       const BBox3fa cbounds = i->bounds(space);
       const Vec3fa  center  = i->center(space);
-      const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
+      const ssei bin = mapping.bin(center);
+      //const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
       //const ssei bin = floori((ssef(center) - ofs)*scale);
       assert(bin[0] >=0 && bin[0] < BINS);
       assert(bin[1] >=0 && bin[1] < BINS);
@@ -92,14 +118,15 @@ namespace embree
     /* find best dimension */
     ObjectPartition split;
     split.space = space;
-    split.ofs = ofs;
-    split.scale = scale;
+    //split.ofs = ofs;
+    //lit.scale = scale;
+    split.mapping = mapping;
 
     for (size_t dim=0; dim<3; dim++) 
     {
       /* ignore zero sized dimensions */
-      if (unlikely(scale[dim] == 0.0f)) 
-        continue;
+      if (unlikely(mapping.invalid(dim)))
+	continue;
       
       /* test if this is a better dimension */
       if (bestSAH[dim] < split.cost && bestPos[dim] != 0) {
@@ -126,7 +153,8 @@ namespace embree
         const Bezier1& prim = block->at(i); 
 	const Vec3fa center = prim.center(space);
         //const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
-        const ssei bin = floori((ssef(center)-ofs)*scale);
+        //const ssei bin = floori((ssef(center)-ofs)*scale);
+	const ssei bin = mapping.bin_unsafe(center);
 
         if (bin[dim] < pos) 
         {
