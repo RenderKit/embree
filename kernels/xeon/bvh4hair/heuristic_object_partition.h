@@ -32,10 +32,12 @@ namespace embree
     typedef atomic_set<BezierRefBlock> BezierRefList;
 
     /*! Compute the number of blocks occupied for each dimension. */
-    __forceinline static ssei blocks(const ssei& a) { return (a+ssei(3)) >> 2; }
+    //__forceinline static ssei blocks(const ssei& a) { return (a+ssei(3)) >> 2; }
+    __forceinline static ssei blocks(const ssei& a) { return a; }
 	
     /*! Compute the number of blocks occupied in one dimension. */
-    __forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
+    //__forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
+    __forceinline static size_t  blocks(size_t a) { return a; }
 
   public:
     

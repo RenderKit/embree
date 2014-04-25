@@ -18,7 +18,7 @@
 
 namespace embree
 {
-  __forceinline SpatialSplit::Binner::Binner()
+  __forceinline SpatialSplit::BinInfo::BinInfo()
   {
     for (size_t i=0; i<BINS; i++) {
       bounds[i][0] = bounds[i][1] = bounds[i][2] = bounds[i][3] = empty;
@@ -26,7 +26,7 @@ namespace embree
     }
   }
 
-  __forceinline void SpatialSplit::Binner::bin(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping)
+  __forceinline void SpatialSplit::BinInfo::bin(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping)
   {
     /* perform binning of curves */
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
@@ -68,7 +68,7 @@ namespace embree
     }
   }
 
-  __forceinline SpatialSplit::Split SpatialSplit::Binner::best(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping)
+  __forceinline SpatialSplit::Split SpatialSplit::BinInfo::best(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping)
   {
     /* sweep from right to left and compute parallel prefix of merged bounds */
     ssef rAreas[BINS];
@@ -187,7 +187,7 @@ namespace embree
 
   const SpatialSplit::Split SpatialSplit::find(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo)
   {
-    Binner binner;
+    BinInfo binner;
     Mapping mapping(pinfo);
     binner.bin(prims,pinfo,mapping);
     return binner.best(prims,pinfo,mapping);

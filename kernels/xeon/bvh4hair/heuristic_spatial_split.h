@@ -32,11 +32,14 @@ namespace embree
     typedef atomic_set<BezierRefBlock> BezierRefList;
 
     /*! Compute the number of blocks occupied for each dimension. */
-    __forceinline static ssei blocks(const ssei& a) { return (a+ssei(3)) >> 2; }
+    //__forceinline static ssei blocks(const ssei& a) { return (a+ssei(3)) >> 2; }
+    __forceinline static ssei blocks(const ssei& a) { return a; }
 	
     /*! Compute the number of blocks occupied in one dimension. */
-    __forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
+    //__forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
+    __forceinline static size_t  blocks(size_t a) { return a; }
 
+    /*! mapping into bins */
     struct Mapping
     {
       __forceinline Mapping() {}
@@ -49,6 +52,7 @@ namespace embree
       
       __forceinline ssei bin(const Vec3fa& p) const {
 	return clamp(floori((ssef(p)-ofs)*scale),ssei(0),ssei(BINS-1));
+	//return floori((ssef(p)-ofs)*scale);
       }
 
       __forceinline float pos(const int bin, const int dim) const {
@@ -59,6 +63,7 @@ namespace embree
 	return scale[dim] == 0.0f;
       }
 
+    public:
       ssef ofs,scale;
     };
     
@@ -80,9 +85,9 @@ namespace embree
       Mapping mapping;
     };
 
-    struct Binner
+    struct BinInfo
     {
-      Binner();
+      BinInfo();
       void bin(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping);
       Split best(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping);
 
