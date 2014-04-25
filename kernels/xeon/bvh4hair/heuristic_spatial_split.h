@@ -50,9 +50,17 @@ namespace embree
 	ofs  = (ssef) pinfo.geomBounds.lower;
       }
       
-      __forceinline ssei bin(const Vec3fa& p) const {
-	return clamp(floori((ssef(p)-ofs)*scale),ssei(0),ssei(BINS-1));
-	//return floori((ssef(p)-ofs)*scale);
+      __forceinline ssei bin(const Vec3fa& p) const 
+      {
+	const ssei i = floori((ssef(p)-ofs)*scale);
+#if 0
+	assert(i[0] >=0 && i[0] < BINS);
+	assert(i[1] >=0 && i[1] < BINS);
+	assert(i[2] >=0 && i[2] < BINS);
+	return i;
+#else
+	return clamp(i,ssei(0),ssei(BINS-1));
+#endif
       }
 
       __forceinline float pos(const int bin, const int dim) const {

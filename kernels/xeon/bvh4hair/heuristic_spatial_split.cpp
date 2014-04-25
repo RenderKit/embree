@@ -31,20 +31,8 @@ namespace embree
     /* perform binning of curves */
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
     {
-      //const ssei bin0 = clamp(floori((ssef(i->p0)-ofs)*scale),ssei(0),ssei(BINS-1));
-      //const ssei bin0 = floori((ssef(v0)-ofs)*scale);
-      const ssei bin0 = mapping.bin(i->p0);
-      assert(bin0[0] >=0 && bin0[0] < BINS);
-      assert(bin0[1] >=0 && bin0[1] < BINS);
-      assert(bin0[2] >=0 && bin0[2] < BINS);
-      //const ssei bin1 = clamp(floori((ssef(i->p3)-ofs)*scale),ssei(0),ssei(BINS-1));
-      //const ssei bin1 = floori((ssef(v1)-ofs)*scale);
-      const ssei bin1 = mapping.bin(i->p3);
-      assert(bin1[0] >=0 && bin1[0] < BINS);
-      assert(bin1[1] >=0 && bin1[1] < BINS);
-      assert(bin1[2] >=0 && bin1[2] < BINS);
-      const ssei startbin = min(bin0,bin1);
-      const ssei endbin   = max(bin0,bin1);
+      const ssei startbin = mapping.bin(min(i->p0,i->p3));
+      const ssei endbin   = mapping.bin(max(i->p0,i->p3));
 
       for (size_t dim=0; dim<3; dim++) 
       {
@@ -169,20 +157,18 @@ namespace embree
     }
 
     split.sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
-    return split;
-
-#if 0
+    
+#if 0 // FIXME: there is something wrong, this code block should work!!!
     {
     size_t lnum = 0, rnum = 0;
     BBox3fa lbounds = empty, rbounds = empty;
     for (size_t i=0; i<split.pos; i++) { lnum+=numBegin[i][split.dim]; lbounds.extend(bounds[i][split.dim]); }
     for (size_t i=split.pos; i<BINS; i++) { rnum+=numEnd[i][split.dim]; rbounds.extend(bounds[i][split.dim]); }
     split.sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
-    split.numReplications = split.num0 + split.num1 - pinfo.size();
-    assert(split.numReplications >= 0);
     }
-    return split;
 #endif
+
+    return split;
   }
 
   const SpatialSplit::Split SpatialSplit::find(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo)
