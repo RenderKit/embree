@@ -147,6 +147,37 @@ namespace embree
       return true;
     }
 
+    /*! split the hair using splitting plane */
+    bool split(const int dim, const float pos, Bezier1& left_o, Bezier1& right_o) const
+    {
+      /*! test if start and end points lie on different sides of plane */
+      const float p0p = p0[dim];
+      const float p3p = p3[dim];
+      if (p0p == pos || p3p == pos) return false;
+      if (p0p < pos && p3p < pos) return false;
+      if (p0p > pos && p3p > pos) return false;
+      
+      /*! search for the t-value that splits the curve into one part
+       *  left and right of the plane */
+      float u0 = 0.0f, u1 = 1.0f;
+      while (u1-u0 > 0.01f) 
+      //while (u1-u0 > 0.0001f) 
+      {
+        const float tc = 0.5f*(u0+u1);
+        Bezier1 left,right; subdivide(left,right,tc);
+        const float lp0p = left.p0[dim];
+        const float lp3p = left.p3[dim];
+        if (lp0p <= pos && lp3p >= pos) { u1 = tc; continue; }
+        if (lp0p >= pos && lp3p <= pos) { u1 = tc; continue; }
+        u0 = tc; 
+      }
+      
+      /*! return the split curve */
+      if (p0p < pos) subdivide(left_o,right_o,0.5f*(u0+u1));
+      else            subdivide(right_o,left_o,0.5f*(u0+u1));
+      return true;
+    }
+
     friend std::ostream& operator<<(std::ostream& cout, const Bezier1& b) {
       return std::cout << "Bezier1 { " << std::endl << 
         " p0 = " << b.p0 << ", " << std::endl <<
