@@ -63,11 +63,6 @@ namespace embree
       const BBox3fa cbounds = i->bounds(mapping.space);
       const Vec3fa  center  = i->center(mapping.space);
       const ssei bin = mapping.bin(center);
-      //const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
-      //const ssei bin = floori((ssef(center) - ofs)*scale);
-      assert(bin[0] >=0 && bin[0] < BINS);
-      assert(bin[1] >=0 && bin[1] < BINS);
-      assert(bin[2] >=0 && bin[2] < BINS);
       const int b0 = bin[0]; counts[b0][0]++; bounds[b0][0].extend(cbounds);
       const int b1 = bin[1]; counts[b1][1]++; bounds[b1][1].extend(cbounds);
       const int b2 = bin[2]; counts[b2][2]++; bounds[b2][2].extend(cbounds);
@@ -90,7 +85,7 @@ namespace embree
     }
     
     /* sweep from left to right and compute SAH */
-    ssei ii = 1; ssef vbestSAH = pos_inf; ssei vbestPos = 0; ssei vbestLeft = 0; ssei vbestRight = 0;
+    ssei ii = 1; ssef vbestSAH = pos_inf; ssei vbestPos = 0;
     count = 0; bx = empty; by = empty; bz = empty;
     for (size_t i=1; i<BINS; i++, ii+=1)
     {
@@ -104,18 +99,10 @@ namespace embree
       const ssei rCount = blocks(rCounts[i]);
       const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
       vbestPos = select(sah < vbestSAH,ii ,vbestPos);
-      vbestLeft= select(sah < vbestSAH,count,vbestLeft);
-      vbestRight=select(sah < vbestSAH,rCounts[i],vbestRight);
       vbestSAH = select(sah < vbestSAH,sah,vbestSAH);
     }
     
     /* find best dimension */
-    //ObjectPartition::Split split;
-    //split.space = space;
-    //split.ofs = ofs;
-    //lit.scale = scale;
-    //split.mapping = mapping;
-
     float bestSAH = inf;
     int   bestDim = -1;
     int   bestPos = 0;
@@ -154,8 +141,8 @@ namespace embree
   }
 
   void ObjectPartition::Split::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
-			      BezierRefList& lprims_o, PrimInfo& linfo_o, 
-			      BezierRefList& rprims_o, PrimInfo& rinfo_o) const
+				     BezierRefList& lprims_o, PrimInfo& linfo_o, 
+				     BezierRefList& rprims_o, PrimInfo& rinfo_o) const
   {
     BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
     BezierRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
@@ -166,8 +153,6 @@ namespace embree
       {
         const Bezier1& prim = block->at(i); 
 	const Vec3fa center = prim.center(mapping.space);
-        //const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
-        //const ssei bin = floori((ssef(center)-ofs)*scale);
 	const ssei bin = mapping.bin_unsafe(center);
 
         if (bin[dim] < pos) 
@@ -187,7 +172,5 @@ namespace embree
       }
       alloc.free(threadIndex,block);
     }
-    assert(linfo_o.size() == num0);
-    assert(rinfo_o.size() == num1);
   }
 }

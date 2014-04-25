@@ -98,7 +98,5 @@ namespace embree
       }
       alloc.free(threadIndex,block);
     }
-    assert(lnum == num0);
-    assert(rnum == num1);
   }
 }
