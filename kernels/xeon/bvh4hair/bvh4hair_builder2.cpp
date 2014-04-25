@@ -292,7 +292,7 @@ namespace embree
     float alignedObjectSAH = inf;
     if (enableAlignedObjectSplits) {
       alignedObjectSplit = ObjectPartition::find(threadIndex,prims,one);
-      alignedObjectSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + alignedObjectSplit.splitSAH(BVH4Hair::intCost);
+      alignedObjectSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedObjectSplit.splitSAH();
       bestSAH = min(bestSAH,alignedObjectSAH);
     }
 
@@ -311,7 +311,7 @@ namespace embree
     float unalignedObjectSAH = inf;
     if (enableUnalignedObjectSplits) {
       unalignedObjectSplit = ObjectPartition::find(threadIndex,prims,bounds.space);
-      unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + unalignedObjectSplit.splitSAH(BVH4Hair::intCost);
+      unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*unalignedObjectSplit.splitSAH();
       bestSAH = min(bestSAH,unalignedObjectSAH);
     }
 

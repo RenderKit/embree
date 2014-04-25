@@ -58,19 +58,22 @@ namespace embree
       __forceinline Split()
 	 : dim(-1), pos(0), cost(inf) {}
 
-       /*! calculates standard surface area heuristic for the split */
-    __forceinline float splitSAH(float intCost) const {
-      return intCost*cost;
-    }
+      __forceinline Split(float cost, int dim, int pos, const Mapping& mapping)
+	: cost(cost), dim(dim), pos(pos), mapping(mapping) {}
+
+      /*! calculates standard surface area heuristic for the split */
+      __forceinline float splitSAH() const {
+	return cost;
+      }
 
       /*! splits hairs into two sets */
-    void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+      void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, 
+		 BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
 
-      //LinearSpace3fa space;
+    public:
+      float cost;
       int dim;
       int pos;
-      float cost;
-      //ssef ofs,scale;
       Mapping mapping;
     };
 
@@ -80,19 +83,12 @@ namespace embree
       void  bin (BezierRefList& prims, const Mapping& mapping);
       Split best(BezierRefList& prims, const Mapping& mapping);
 
+    private:
       BBox3fa bounds[BINS][4];
       ssei    counts[BINS];
     };
 
   public:
-    
-   
-    
-    /*! performs object binning to the the best partitioning */
     static ObjectPartition::Split find(size_t threadIndex, BezierRefList& curves, const LinearSpace3fa& space);
-    
-    
-  public:
-   
   };
 }

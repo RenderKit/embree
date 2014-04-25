@@ -90,7 +90,7 @@ namespace embree
     }
     
     /* sweep from left to right and compute SAH */
-    ssei ii = 1; ssef bestSAH = pos_inf; ssei bestPos = 0; ssei bestLeft = 0; ssei bestRight = 0;
+    ssei ii = 1; ssef vbestSAH = pos_inf; ssei vbestPos = 0; ssei vbestLeft = 0; ssei vbestRight = 0;
     count = 0; bx = empty; by = empty; bz = empty;
     for (size_t i=1; i<BINS; i++, ii+=1)
     {
@@ -103,19 +103,22 @@ namespace embree
       const ssei lCount = blocks(count);
       const ssei rCount = blocks(rCounts[i]);
       const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
-      bestPos = select(sah < bestSAH,ii ,bestPos);
-      bestLeft= select(sah < bestSAH,count,bestLeft);
-      bestRight=select(sah < bestSAH,rCounts[i],bestRight);
-      bestSAH = select(sah < bestSAH,sah,bestSAH);
+      vbestPos = select(sah < vbestSAH,ii ,vbestPos);
+      vbestLeft= select(sah < vbestSAH,count,vbestLeft);
+      vbestRight=select(sah < vbestSAH,rCounts[i],vbestRight);
+      vbestSAH = select(sah < vbestSAH,sah,vbestSAH);
     }
     
     /* find best dimension */
-    ObjectPartition::Split split;
+    //ObjectPartition::Split split;
     //split.space = space;
     //split.ofs = ofs;
     //lit.scale = scale;
-    split.mapping = mapping;
+    //split.mapping = mapping;
 
+    float bestSAH = inf;
+    int   bestDim = -1;
+    int   bestPos = 0;
     for (size_t dim=0; dim<3; dim++) 
     {
       /* ignore zero sized dimensions */
@@ -123,14 +126,14 @@ namespace embree
 	continue;
       
       /* test if this is a better dimension */
-      if (bestSAH[dim] < split.cost && bestPos[dim] != 0) {
-        split.dim = dim;
-        split.pos = bestPos[dim];
-        split.cost = bestSAH[dim];
+      if (vbestSAH[dim] < bestSAH && vbestPos[dim] != 0) {
+        bestDim = dim;
+        bestPos = vbestPos[dim];
+        bestSAH = vbestSAH[dim];
       }
     }
 
-    return split;
+    return ObjectPartition::Split(bestSAH,bestDim,bestPos,mapping);
   }
 
   ObjectPartition::Split ObjectPartition::find(size_t threadIndex, BezierRefList& prims, const LinearSpace3fa& space)
