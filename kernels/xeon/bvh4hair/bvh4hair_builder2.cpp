@@ -302,7 +302,7 @@ namespace embree
     bool enableSpatialSplits = remainingReplications > 0;
     if (enableSpatialSplits && enableAlignedSpatialSplits) {
       alignedSpatialSplit = SpatialSplit::find(threadIndex,prims,pinfo);
-      alignedSpatialSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + alignedSpatialSplit.splitSAH(BVH4Hair::intCost);
+      alignedSpatialSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedSpatialSplit.splitSAH();
       bestSAH = min(bestSAH,alignedSpatialSAH);
     }
 

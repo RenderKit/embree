@@ -22,7 +22,6 @@
 
 namespace embree
 {
-  /*! Performs spatial split in geometry center */
   struct SpatialSplit
   {
     /*! number of bins */
@@ -42,57 +41,40 @@ namespace embree
     /*! mapping into bins */
     struct Mapping
     {
-      __forceinline Mapping() {}
-
-      __forceinline Mapping(const PrimInfo& pinfo) {
-	const ssef diag = (ssef) pinfo.geomBounds.size();
-	scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
-	ofs  = (ssef) pinfo.geomBounds.lower;
-      }
-      
-      __forceinline ssei bin(const Vec3fa& p) const 
-      {
-	const ssei i = floori((ssef(p)-ofs)*scale);
-#if 0
-	assert(i[0] >=0 && i[0] < BINS);
-	assert(i[1] >=0 && i[1] < BINS);
-	assert(i[2] >=0 && i[2] < BINS);
-	return i;
-#else
-	return clamp(i,ssei(0),ssei(BINS-1));
-#endif
-      }
-
-      __forceinline float pos(const int bin, const int dim) const {
-	return float(bin)/scale[dim]+ofs[dim];
-      }
-
-      __forceinline bool invalid(const int dim) const {
-	return scale[dim] == 0.0f;
-      }
-
     public:
+      __forceinline Mapping() {}
+      __forceinline Mapping(const PrimInfo& pinfo);
+      __forceinline ssei bin(const Vec3fa& p) const;
+      __forceinline float pos(const int bin, const int dim) const;
+      __forceinline bool invalid(const int dim) const;
+    private:
       ssef ofs,scale;
     };
     
+    /*! stores all information required to perform some split */
     struct Split
     {
+      __forceinline Split() 
+	: sah(inf), dim(-1), pos(0.0f) {}
+
+      __forceinline Split(float sah, int dim, float pos, const Mapping& mapping)
+	: sah(sah), dim(dim), pos(pos), mapping(mapping) {}
+
       /*! calculates standard surface area heuristic for the split */
-      __forceinline float splitSAH(float intCost) const {
-	return intCost*sah;
-      }
+      __forceinline float splitSAH() const { return sah; }
 
       /*! splits hair list into the two strands */
       void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, 
 		 BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
 
     public:
-      float pos;
-      int dim;
       float sah;
+      int   dim;
+      float pos;
       Mapping mapping;
     };
 
+    /*! stores all binning information */
     struct BinInfo
     {
       BinInfo();

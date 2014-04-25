@@ -18,6 +18,34 @@
 
 namespace embree
 {
+  __forceinline SpatialSplit::Mapping::Mapping(const PrimInfo& pinfo) 
+  {
+    const ssef diag = (ssef) pinfo.geomBounds.size();
+    scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
+    ofs  = (ssef) pinfo.geomBounds.lower;
+  }
+  
+  __forceinline ssei SpatialSplit::Mapping::bin(const Vec3fa& p) const 
+  {
+    const ssei i = floori((ssef(p)-ofs)*scale);
+#if 0
+    assert(i[0] >=0 && i[0] < BINS);
+    assert(i[1] >=0 && i[1] < BINS);
+    assert(i[2] >=0 && i[2] < BINS);
+    return i;
+#else
+    return clamp(i,ssei(0),ssei(BINS-1));
+#endif
+  }
+  
+  __forceinline float SpatialSplit::Mapping::pos(const int bin, const int dim) const {
+    return float(bin)/scale[dim]+ofs[dim];
+  }
+  
+  __forceinline bool SpatialSplit::Mapping::invalid(const int dim) const {
+    return scale[dim] == 0.0f;
+  }
+
   __forceinline SpatialSplit::BinInfo::BinInfo()
   {
     for (size_t i=0; i<BINS; i++) {
@@ -28,30 +56,27 @@ namespace embree
 
   __forceinline void SpatialSplit::BinInfo::bin(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping)
   {
-    /* perform binning of curves */
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
     {
-      const ssei startbin = mapping.bin(min(i->p0,i->p3));
-      const ssei endbin   = mapping.bin(max(i->p0,i->p3));
+      const ssei bin0 = mapping.bin(min(i->p0,i->p3));
+      const ssei bin1 = mapping.bin(max(i->p0,i->p3));
 
       for (size_t dim=0; dim<3; dim++) 
       {
         size_t bin;
         Bezier1 curve = *i;
-        for (bin=startbin[dim]; bin<endbin[dim]; bin++)
+        for (bin=bin0[dim]; bin<bin1[dim]; bin++)
         {
           const float pos = mapping.pos(bin+1,dim);
           Bezier1 bincurve,restcurve; 
           if (curve.split(dim,pos,bincurve,restcurve)) {
-            const BBox3fa cbounds = bincurve.bounds();
-            bounds[bin][dim].extend(cbounds);
+            bounds[bin][dim].extend(bincurve.bounds());
             curve = restcurve;
           }
         }
-        numBegin[startbin[dim]][dim]++;
-        numEnd  [endbin  [dim]][dim]++;
-        const BBox3fa cbounds = curve.bounds();
-        bounds[bin][dim].extend(cbounds);
+        numBegin[bin0[dim]][dim]++;
+        numEnd  [bin1[dim]][dim]++;
+        bounds  [bin][dim].extend(curve.bounds());
       }
     }
   }
@@ -72,7 +97,7 @@ namespace embree
     }
     
     /* sweep from left to right and compute SAH */
-    ssei ii = 1; ssef bestSAH = pos_inf; ssei bestPos = 0; ssei bestLeft = 0; ssei bestRight = 0;
+    ssei ii = 1; ssef vbestSAH = pos_inf; ssei vbestPos = 0;
     count = 0; bx = empty; by = empty; bz = empty;
     for (size_t i=1; i<BINS; i++, ii+=1)
     {
@@ -85,20 +110,20 @@ namespace embree
       const ssei lCount = blocks(count);
       const ssei rCount = blocks(rCounts[i]);
       const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
-      bestPos  = select(sah < bestSAH,ii ,bestPos);
-      bestLeft = select(sah < bestSAH,count,bestLeft);
-      bestRight= select(sah < bestSAH,rCounts[i],bestRight);
-      bestSAH  = select(sah < bestSAH,sah,bestSAH);
+      vbestPos  = select(sah < vbestSAH,ii ,vbestPos);
+      vbestSAH  = select(sah < vbestSAH,sah,vbestSAH);
     }
     
     /* find best dimension */
-    Split split;
+    /*Split split;
     split.mapping = mapping;
     split.sah = inf;
     split.dim = -1;
-    split.pos = 0.0f;
+    split.pos = 0.0f;*/
 
-    float bestCost = inf;
+    float bestSAH = inf;
+    int   bestDim = -1;
+    float bestPos = 0.0f;
     for (size_t dim=0; dim<3; dim++) 
     {
       /* ignore zero sized dimensions */
@@ -106,19 +131,16 @@ namespace embree
         continue;
       
       /* test if this is a better dimension */
-      if (bestSAH[dim] < bestCost && bestPos[dim] != 0) {
-        split.dim = dim;
-        split.pos = mapping.pos(bestPos[dim],dim);
-        split.sah = bestSAH[dim];
-        bestCost = bestSAH[dim];
+      if (vbestSAH[dim] < bestSAH && vbestPos[dim] != 0) {
+        bestDim = dim;
+        bestPos = mapping.pos(vbestPos[dim],dim);
+        bestSAH = vbestSAH[dim];
       }
     }
 
     /* compute bounds of left and right side */
-    if (split.dim == -1) {
-      split.sah = inf;
-      return split;
-    }
+    if (bestDim == -1) 
+      return Split(inf,-1,0.0f,mapping);
 
     /* calculate bounding box of left and right side */
     BBox3fa lbounds = empty, rbounds = empty;
@@ -126,23 +148,23 @@ namespace embree
 
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
     {
-      const float p0p = i->p0[split.dim];
-      const float p3p = i->p3[split.dim];
+      const float p0p = i->p0[bestDim];
+      const float p3p = i->p3[bestDim];
 
       /* sort to the left side */
-      if (p0p <= split.pos && p3p <= split.pos) {
+      if (p0p <= bestPos && p3p <= bestPos) {
         lbounds.extend(i->bounds()); lnum++;
         continue;
       }
       
       /* sort to the right side */
-      if (p0p >= split.pos && p3p >= split.pos) {
+      if (p0p >= bestPos && p3p >= bestPos) {
         rbounds.extend(i->bounds()); rnum++;
         continue;
       }
 
       Bezier1 left,right; 
-      if (i->split(split.dim,split.pos,left,right)) {
+      if (i->split(bestDim,bestPos,left,right)) {
         lbounds.extend(left .bounds()); lnum++;
         rbounds.extend(right.bounds()); rnum++;
         continue;
@@ -151,24 +173,21 @@ namespace embree
       lbounds.extend(i->bounds()); lnum++;
     }
 
-    if (lnum == 0 || rnum == 0) {
-      split.sah = inf;
-      return split;
-    }
+    if (lnum == 0 || rnum == 0) 
+      return Split(inf,-1,0.0f,mapping);
 
-    split.sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
+    float sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
+    return Split(sah,bestDim,bestPos,mapping);
     
 #if 0 // FIXME: there is something wrong, this code block should work!!!
     {
     size_t lnum = 0, rnum = 0;
     BBox3fa lbounds = empty, rbounds = empty;
-    for (size_t i=0; i<split.pos; i++) { lnum+=numBegin[i][split.dim]; lbounds.extend(bounds[i][split.dim]); }
-    for (size_t i=split.pos; i<BINS; i++) { rnum+=numEnd[i][split.dim]; rbounds.extend(bounds[i][split.dim]); }
+    for (size_t i=0; i<bestPos; i++) { lnum+=numBegin[i][bestDim]; lbounds.extend(bounds[i][bestDim]); }
+    for (size_t i=bestPos; i<BINS; i++) { rnum+=numEnd[i][bestDim]; rbounds.extend(bounds[i][bestDim]); }
     split.sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
     }
 #endif
-
-    return split;
   }
 
   const SpatialSplit::Split SpatialSplit::find(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo)
