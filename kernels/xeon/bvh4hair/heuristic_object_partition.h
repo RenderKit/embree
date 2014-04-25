@@ -89,11 +89,12 @@ namespace embree
     };
 
     /*! stores all binning information */
-    struct BinInfo
+    struct __aligned(64) BinInfo
     {
       BinInfo();
-      void  bin (BezierRefList& prims, const Mapping& mapping);
-      void  bin (const Bezier1* prims, size_t N, const Mapping& mapping);
+      void bin (BezierRefList& prims, const Mapping& mapping);
+      void bin (const Bezier1* prims, size_t N, const Mapping& mapping);
+      void merge (const BinInfo& other);
       Split best(BezierRefList& prims, const Mapping& mapping);
 
     private:
@@ -103,14 +104,38 @@ namespace embree
 
     struct TaskBinParallel
     {
-      TaskBinParallel(BezierRefList& prims);
+      TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
 
+      TASK_RUN_FUNCTION(TaskBinParallel,task_bound_parallel);
       TASK_RUN_FUNCTION(TaskBinParallel,task_bin_parallel);
-
+      
     public:
-      BezierRefList::iterator iter;
+      BezierRefList::iterator iter0;
+      BezierRefList::iterator iter1;
+      LinearSpace3fa space;
+      BBox3fa centBounds;
+      BBox3fa geomBounds;
       Mapping mapping;
       BinInfo binners[32];
+      Split split;
+    };
+
+    struct TaskSplitParallel
+    {
+      TaskSplitParallel(size_t threadIndex, size_t threadCount, Split* split, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+			BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o);
+
+      TASK_RUN_FUNCTION(TaskSplitParallel,task_split_parallel);
+
+      Split* split;
+      PrimRefBlockAlloc<Bezier1>& alloc;
+      BezierRefList prims;
+      BezierRefList& lprims_o; 
+      PrimInfo& linfo_o;
+      BezierRefList& rprims_o;
+      PrimInfo& rinfo_o;
+      PrimInfo linfos[32];
+      PrimInfo rinfos[32];
     };
 
   public:

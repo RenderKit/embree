@@ -41,6 +41,13 @@ namespace embree
       num += num_;
     }
 
+    __forceinline void merge(const PrimInfo& other) 
+    {
+      geomBounds.extend(other.geomBounds);
+      centBounds.extend(other.centBounds);
+      num += other.num;
+    }
+
     /*! returns the number of primitives */
     __forceinline size_t size() const { 
       return num; 
