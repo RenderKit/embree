@@ -44,39 +44,51 @@ namespace embree
     {
     public:
       __forceinline Mapping() {}
+
+      /*! calculates the mapping */
       __forceinline Mapping(const BBox3fa& centBounds, const LinearSpace3fa& space);
+
+      /*! slower but safe binning */
       __forceinline ssei bin(const Vec3fa& p) const;
+
+      /*! faster but unsafe binning */
       __forceinline ssei bin_unsafe(const Vec3fa& p) const;
+
+      /*! returns true if the mapping is invalid in some dimension */
       __forceinline bool invalid(const int dim) const;
     public:
       ssef ofs,scale;
       LinearSpace3fa space;
     };
 
-     struct Split
+    /*! stores all information to perform some split */
+    struct Split
     {
+      /*! constructs invalid split by default */
       __forceinline Split()
-	 : dim(-1), pos(0), cost(inf) {}
+	: dim(-1), pos(0), cost(inf) {}
 
+      /*! constructs specified split */
       __forceinline Split(float cost, int dim, int pos, const Mapping& mapping)
 	: cost(cost), dim(dim), pos(pos), mapping(mapping) {}
 
-      /*! calculates standard surface area heuristic for the split */
+      /*! calculates surface area heuristic for performing the split */
       __forceinline float splitSAH() const {
 	return cost;
       }
 
-      /*! splits hairs into two sets */
+      /*! single threaded splitting into two sets */
       void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, 
 		 BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
 
     public:
-      float cost;
-      int dim;
-      int pos;
-      Mapping mapping;
+      float cost;      //!< SAH cost of the split
+      int dim;         //!< split dimension
+      int pos;         //!< bin index for splitting
+      Mapping mapping; //!< mapping into bins
     };
 
+    /*! stores all binning information */
     struct BinInfo
     {
       BinInfo();
@@ -89,6 +101,7 @@ namespace embree
     };
 
   public:
-    static ObjectPartition::Split find(size_t threadIndex, BezierRefList& curves, const LinearSpace3fa& space);
+    /*! single threaded code that finds the best split */
+    static Split find(size_t threadIndex, BezierRefList& curves, const LinearSpace3fa& space);
   };
 }
