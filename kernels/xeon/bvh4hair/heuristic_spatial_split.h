@@ -37,6 +37,17 @@ namespace embree
     /*! Compute the number of blocks occupied in one dimension. */
     __forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
     
+    struct Binner
+    {
+      Binner();
+      void bin(BezierRefList& prims, const PrimInfo& pinfo);
+      SpatialSplit best(BezierRefList& prims, const PrimInfo& pinfo);
+
+      BBox3fa bounds[BINS][4];
+      ssei    numBegin[BINS];
+      ssei    numEnd[BINS];
+    };
+
   public:
     
     __forceinline SpatialSplit () {}

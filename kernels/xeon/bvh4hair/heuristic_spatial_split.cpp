@@ -18,22 +18,21 @@
 
 namespace embree
 {
-  const SpatialSplit SpatialSplit::find(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo)
+  __forceinline SpatialSplit::Binner::Binner()
+  {
+    for (size_t i=0; i<BINS; i++) {
+      bounds[i][0] = bounds[i][1] = bounds[i][2] = bounds[i][3] = empty;
+      numBegin[i] = numEnd[i] = 0;
+    }
+  }
+
+  void SpatialSplit::Binner::bin(BezierRefList& prims, const PrimInfo& pinfo)
   {
     /* calculate binning function */
     const ssef ofs  = (ssef) pinfo.geomBounds.lower;
     const ssef diag = (ssef) pinfo.geomBounds.size();
     const ssef scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
 
-    /* initialize bins */
-    BBox3fa bounds[BINS][4];
-    ssei    numBegin[BINS];
-    ssei    numEnd[BINS];
-    for (size_t i=0; i<BINS; i++) {
-      bounds[i][0] = bounds[i][1] = bounds[i][2] = bounds[i][3] = empty;
-      numBegin[i] = numEnd[i] = 0;
-    }
- 
     /* perform binning of curves */
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
     {
@@ -70,7 +69,15 @@ namespace embree
         bounds[bin][dim].extend(cbounds);
       }
     }
-    
+  }
+
+  SpatialSplit SpatialSplit::Binner::best(BezierRefList& prims, const PrimInfo& pinfo)
+  {
+    /* calculate binning function */
+    const ssef ofs  = (ssef) pinfo.geomBounds.lower;
+    const ssef diag = (ssef) pinfo.geomBounds.size();
+    const ssef scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
+
     /* sweep from right to left and compute parallel prefix of merged bounds */
     ssef rAreas[BINS];
     ssei rCounts[BINS];
@@ -185,6 +192,13 @@ namespace embree
     }
     return split;
 #endif
+  }
+
+  const SpatialSplit SpatialSplit::find(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo)
+  {
+    Binner binner;
+    binner.bin(prims,pinfo);
+    return binner.best(prims,pinfo);
   }
       
   void SpatialSplit::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
