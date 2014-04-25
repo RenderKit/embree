@@ -53,7 +53,8 @@ namespace embree
 
     public:
       __forceinline friend bool operator< (const BuildTask& a, const BuildTask& b) {
-        return halfArea(a.bounds.bounds) < halfArea(b.bounds.bounds);
+        //return halfArea(a.bounds.bounds) < halfArea(b.bounds.bounds);
+	return a.pinfo.size() < b.pinfo.size();
       }
 
     public:
@@ -80,8 +81,15 @@ namespace embree
                BezierRefList& rprims, PrimInfo& rinfo_o,
 	       bool& isAligned);
 
+    void split_parallel(size_t threadIndex, size_t threadCount, 
+			BezierRefList& prims, const NAABBox3fa& bounds, const PrimInfo& pinfo,
+			BezierRefList& lprims, PrimInfo& linfo_o, 
+			BezierRefList& rprims, PrimInfo& rinfo_o,
+			bool& isAligned);
+
     /*! execute single task and create subtasks */
     void processTask(size_t threadIndex, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& N);
+    void processLargeTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& N);
 
     /*! recursive build function for aligned and non-aligned bounds */
     void recurseTask(size_t threadIndex, BuildTask& task);

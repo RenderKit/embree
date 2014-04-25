@@ -164,7 +164,7 @@ namespace embree
     TaskScheduler::executeTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_bound_parallel");
 
     /* parallel binning */
-    const Mapping mapping(centBounds,space);
+    new (&mapping) Mapping(centBounds,space);
     TaskScheduler::executeTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
 
     /* reduction of bin informations */
@@ -235,7 +235,7 @@ namespace embree
     }
   }
 
-  ObjectPartition::TaskSplitParallel::TaskSplitParallel(size_t threadIndex, size_t threadCount, Split* split, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+  ObjectPartition::TaskSplitParallel::TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
 							BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o)
     : split(split), alloc(alloc), prims(prims), lprims_o(lprims_o), linfo_o(linfo_o), rprims_o(rprims_o), rinfo_o(rinfo_o)
   {
@@ -284,5 +284,13 @@ namespace embree
       }
       alloc.free(threadIndex,block);
     }
+  }
+
+  void ObjectPartition::Split::split_parallel(size_t threadIndex, size_t threadCount, 
+					      PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+					      BezierRefList& lprims_o, PrimInfo& linfo_o, 
+					      BezierRefList& rprims_o, PrimInfo& rinfo_o) const
+  {
+    TaskSplitParallel(threadIndex,threadCount,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
   }
 }

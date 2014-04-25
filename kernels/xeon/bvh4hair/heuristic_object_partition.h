@@ -80,6 +80,9 @@ namespace embree
       /*! single threaded splitting into two sets */
       void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, 
 		 BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+      
+      void split_parallel(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, 
+			  BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
 
     public:
       float cost;      //!< SAH cost of the split
@@ -122,12 +125,12 @@ namespace embree
 
     struct TaskSplitParallel
     {
-      TaskSplitParallel(size_t threadIndex, size_t threadCount, Split* split, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+      TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
 			BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o);
 
       TASK_RUN_FUNCTION(TaskSplitParallel,task_split_parallel);
 
-      Split* split;
+      const Split* split;
       PrimRefBlockAlloc<Bezier1>& alloc;
       BezierRefList prims;
       BezierRefList& lprims_o; 

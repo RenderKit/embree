@@ -117,6 +117,25 @@ namespace embree
     numActiveTasks = 1;
     tasks.push_back(task);
     push_heap(tasks.begin(),tasks.end());
+    
+    while (tasks.front().pinfo.size() > 100000)
+    {
+      BuildTask task = tasks.front();
+      pop_heap(tasks.begin(),tasks.end());
+      tasks.pop_back();
+
+      size_t numChildren;
+      BuildTask ctasks[BVH4Hair::N];
+      processLargeTask(threadIndex,threadCount,task,ctasks,numChildren);
+      
+      for (size_t i=0; i<numChildren; i++) {
+	atomic_add(&numActiveTasks,+1);
+	tasks.push_back(ctasks[i]);
+	push_heap(tasks.begin(),tasks.end());
+      }
+      atomic_add(&numActiveTasks,-1);
+    }
+    
     TaskScheduler::executeTask(threadIndex,threadCount,_task_build_parallel,this,threadCount,"BVH4Builder::build_parallel");
 #endif
     
@@ -144,46 +163,6 @@ namespace embree
     const BBox3fa bounds0 = subdivideAndAdd(threadIndex,prims,bezier0,depth-1);
     const BBox3fa bounds1 = subdivideAndAdd(threadIndex,prims,bezier1,depth-1);
     return merge(bounds0,bounds1);
-  }
-
-  void BVH4HairBuilder2::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
-  {
-    while (numActiveTasks) 
-    {
-      taskMutex.lock();
-      if (tasks.size() == 0) {
-        taskMutex.unlock();
-        continue;
-      }
-
-      /* take next task from heap */
-      BuildTask task = tasks.front();
-      pop_heap(tasks.begin(),tasks.end());
-      tasks.pop_back();
-      taskMutex.unlock();
-
-      /* recursively finish task */
-      if (task.pinfo.size() < 512) {
-        atomic_add(&numActiveTasks,-1);
-        recurseTask(threadIndex,task);
-      }
-      
-      /* execute task and add child tasks */
-      else 
-      {
-        size_t numChildren;
-        BuildTask ctasks[BVH4Hair::N];
-        processTask(threadIndex,task,ctasks,numChildren);
-        taskMutex.lock();
-        for (size_t i=0; i<numChildren; i++) {
-          atomic_add(&numActiveTasks,+1);
-          tasks.push_back(ctasks[i]);
-          push_heap(tasks.begin(),tasks.end());
-        }
-        atomic_add(&numActiveTasks,-1);
-        taskMutex.unlock();
-      }
-    }
   }
 
   const NAABBox3fa BVH4HairBuilder2::computeHairSpaceBounds(BezierRefList& prims)
@@ -357,6 +336,86 @@ namespace embree
     }
   }
 
+  void BVH4HairBuilder2::split_parallel(size_t threadIndex, size_t threadCount, 
+                               BezierRefList& prims, const NAABBox3fa& bounds, const PrimInfo& pinfo,
+                               BezierRefList& lprims_o, PrimInfo& linfo_o, 
+                               BezierRefList& rprims_o, PrimInfo& rinfo_o, 
+                               bool& isAligned)
+  {
+    /* variable to track the SAH of the best splitting approach */
+    float bestSAH = inf;
+    const float leafSAH = BVH4Hair::intCost*float(pinfo.size())*halfArea(bounds.bounds);
+    
+    /* perform standard binning in aligned space */
+    ObjectPartition::Split alignedObjectSplit;
+    float alignedObjectSAH = inf;
+    if (enableAlignedObjectSplits) {
+      alignedObjectSplit = ObjectPartition::find_parallel(threadIndex,threadCount,prims,one);
+      alignedObjectSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedObjectSplit.splitSAH();
+      bestSAH = min(bestSAH,alignedObjectSAH);
+    }
+
+    /* perform spatial split in aligned space */
+    SpatialSplit::Split alignedSpatialSplit;
+    float alignedSpatialSAH = inf;
+    bool enableSpatialSplits = remainingReplications > 0;
+    if (enableSpatialSplits && enableAlignedSpatialSplits) {
+      alignedSpatialSplit = SpatialSplit::find(threadIndex,prims,pinfo);
+      alignedSpatialSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedSpatialSplit.splitSAH();
+      bestSAH = min(bestSAH,alignedSpatialSAH);
+    }
+
+    /* perform standard binning in unaligned space */
+    ObjectPartition::Split unalignedObjectSplit;
+    float unalignedObjectSAH = inf;
+    if (enableUnalignedObjectSplits) {
+      unalignedObjectSplit = ObjectPartition::find_parallel(threadIndex,threadCount,prims,bounds.space);
+      unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*unalignedObjectSplit.splitSAH();
+      bestSAH = min(bestSAH,unalignedObjectSAH);
+    }
+
+    /* perform splitting into two strands */
+    StrandSplit strandSplit;
+    float strandSAH = inf;
+    if (enableStrandSplits) {
+      strandSplit = StrandSplit::find(threadIndex,prims);
+      strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.splitSAH(BVH4Hair::intCost);
+      bestSAH = min(bestSAH,strandSAH);
+    }
+
+    /* perform fallback split */
+    if (bestSAH == float(inf)) {
+      FallBackSplit::find(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+    }
+
+    /* perform aligned object split */
+    else if (bestSAH == alignedObjectSAH) {
+      alignedObjectSplit.split_parallel(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+    }
+
+    /* perform aligned spatial split */
+    else if (bestSAH == alignedSpatialSAH) {
+      alignedSpatialSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      atomic_add(&remainingReplications,pinfo.size()-linfo_o.size()-rinfo_o.size());
+    }
+
+    /* perform unaligned object split */
+    else if (bestSAH == unalignedObjectSAH) {
+      unalignedObjectSplit.split_parallel(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      isAligned = false;
+    }
+
+    /* perform strand split */
+    else if (bestSAH == strandSAH) {
+      strandSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      isAligned = false;
+    }
+ 
+    else {
+      throw std::runtime_error("bvh4hair_builder: internal error");
+    }
+  }
+
   void BVH4HairBuilder2::processTask(size_t threadIndex, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& numTasks_o)
   {
     /* create enforced leaf */
@@ -427,6 +486,76 @@ namespace embree
     }
   }
 
+  void BVH4HairBuilder2::processLargeTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& numTasks_o)
+  {
+    /* create enforced leaf */
+    if (task.pinfo.size() <= minLeafSize || task.depth >= BVH4Hair::maxBuildDepth) {
+      *task.dst = leaf(threadIndex,task.depth,task.prims,task.bounds);
+      numTasks_o = 0;
+      return;
+    }
+
+    /*! initialize child list */
+    bool isAligned = true;
+    PrimInfo cpinfo[BVH4Hair::N];
+    NAABBox3fa cbounds[BVH4Hair::N];
+    BezierRefList cprims[BVH4Hair::N];
+    cprims[0] = task.prims;
+    cbounds[0] = task.bounds;
+    cpinfo[0] = task.pinfo;
+    size_t numChildren = 1;
+    
+    /*! split until node is full or SAH tells us to stop */
+    do {
+      
+      /*! find best child to split */
+      float bestArea = neg_inf; 
+      ssize_t bestChild = -1;
+      for (size_t i=0; i<numChildren; i++) 
+      {
+        float A = halfArea(cbounds[i].bounds);
+        if (cpinfo[i].size() <= minLeafSize) continue;  
+        if (A > bestArea) { bestChild = i; bestArea = A; }
+      }
+      if (bestChild == -1) break;
+
+      /*! split selected child */
+      PrimInfo linfo, rinfo;
+      BezierRefList lprims, rprims;
+      split_parallel(threadIndex,threadCount,cprims[bestChild],cbounds[bestChild],cpinfo[bestChild],lprims,linfo,rprims,rinfo,isAligned);
+      cprims[numChildren] = rprims; cpinfo[numChildren] = rinfo;
+      cprims[bestChild  ] = lprims; cpinfo[bestChild  ] = linfo;
+      cbounds[numChildren] = computeHairSpaceBounds(cprims[numChildren]);
+      cbounds[bestChild  ] = computeHairSpaceBounds(cprims[bestChild  ]);
+      numChildren++;
+      
+    } while (numChildren < BVH4Hair::N);
+
+    /* create aligned node */
+    if (isAligned) 
+    {
+      BVH4Hair::AlignedNode* node = bvh->allocAlignedNode(threadIndex);
+      for (ssize_t i=0; i<numChildren; i++) {
+        node->set(i,cpinfo[i].geomBounds);
+	const NAABBox3fa ubounds = computeHairSpaceBounds(cprims[i]);
+        new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cpinfo[i],cprims[i],ubounds);
+      }
+      numTasks_o = numChildren;
+      *task.dst = bvh->encodeNode(node);
+    }
+    
+    /* create unaligned node */
+    else {
+      BVH4Hair::UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
+      for (ssize_t i=numChildren-1; i>=0; i--) {
+        node->set(i,cbounds[i]);
+        new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cpinfo[i],cprims[i],cbounds[i]);
+      }
+      numTasks_o = numChildren;
+      *task.dst = bvh->encodeNode(node);
+    }
+  }
+
   void BVH4HairBuilder2::recurseTask(size_t threadIndex, BuildTask& task)
   {
     size_t numChildren;
@@ -434,6 +563,46 @@ namespace embree
     processTask(threadIndex,task,tasks,numChildren);
     for (size_t i=0; i<numChildren; i++) 
       recurseTask(threadIndex,tasks[i]);
+  }
+
+  void BVH4HairBuilder2::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  {
+    while (numActiveTasks) 
+    {
+      taskMutex.lock();
+      if (tasks.size() == 0) {
+        taskMutex.unlock();
+        continue;
+      }
+
+      /* take next task from heap */
+      BuildTask task = tasks.front();
+      pop_heap(tasks.begin(),tasks.end());
+      tasks.pop_back();
+      taskMutex.unlock();
+
+      /* recursively finish task */
+      if (task.pinfo.size() < 512) {
+        atomic_add(&numActiveTasks,-1);
+        recurseTask(threadIndex,task);
+      }
+      
+      /* execute task and add child tasks */
+      else 
+      {
+        size_t numChildren;
+        BuildTask ctasks[BVH4Hair::N];
+        processTask(threadIndex,task,ctasks,numChildren);
+        taskMutex.lock();
+        for (size_t i=0; i<numChildren; i++) {
+          atomic_add(&numActiveTasks,+1);
+          tasks.push_back(ctasks[i]);
+          push_heap(tasks.begin(),tasks.end());
+        }
+        atomic_add(&numActiveTasks,-1);
+        taskMutex.unlock();
+      }
+    }
   }
 
   Builder* BVH4HairBuilder2_ (BVH4Hair* accel, Scene* scene) {
