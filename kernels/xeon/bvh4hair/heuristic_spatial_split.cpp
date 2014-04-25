@@ -26,23 +26,20 @@ namespace embree
     }
   }
 
-  __forceinline void SpatialSplit::Binner::bin(BezierRefList& prims, const PrimInfo& pinfo)
+  __forceinline void SpatialSplit::Binner::bin(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping)
   {
-    /* calculate binning function */
-    const ssef ofs  = (ssef) pinfo.geomBounds.lower;
-    const ssef diag = (ssef) pinfo.geomBounds.size();
-    const ssef scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
-
     /* perform binning of curves */
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
     {
-      const ssei bin0 = clamp(floori((ssef(i->p0)-ofs)*scale),ssei(0),ssei(BINS-1));
+      //const ssei bin0 = clamp(floori((ssef(i->p0)-ofs)*scale),ssei(0),ssei(BINS-1));
       //const ssei bin0 = floori((ssef(v0)-ofs)*scale);
+      const ssei bin0 = mapping.bin(i->p0);
       assert(bin0[0] >=0 && bin0[0] < BINS);
       assert(bin0[1] >=0 && bin0[1] < BINS);
       assert(bin0[2] >=0 && bin0[2] < BINS);
-      const ssei bin1 = clamp(floori((ssef(i->p3)-ofs)*scale),ssei(0),ssei(BINS-1));
+      //const ssei bin1 = clamp(floori((ssef(i->p3)-ofs)*scale),ssei(0),ssei(BINS-1));
       //const ssei bin1 = floori((ssef(v1)-ofs)*scale);
+      const ssei bin1 = mapping.bin(i->p3);
       assert(bin1[0] >=0 && bin1[0] < BINS);
       assert(bin1[1] >=0 && bin1[1] < BINS);
       assert(bin1[2] >=0 && bin1[2] < BINS);
@@ -55,7 +52,7 @@ namespace embree
         Bezier1 curve = *i;
         for (bin=startbin[dim]; bin<endbin[dim]; bin++)
         {
-          const float pos = float(bin+1)/scale[dim]+ofs[dim];
+          const float pos = mapping.pos(bin+1,dim);
           Bezier1 bincurve,restcurve; 
           if (curve.split(dim,pos,bincurve,restcurve)) {
             const BBox3fa cbounds = bincurve.bounds();
@@ -71,13 +68,8 @@ namespace embree
     }
   }
 
-  __forceinline SpatialSplit::Split SpatialSplit::Binner::best(BezierRefList& prims, const PrimInfo& pinfo)
+  __forceinline SpatialSplit::Split SpatialSplit::Binner::best(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping)
   {
-    /* calculate binning function */
-    const ssef ofs  = (ssef) pinfo.geomBounds.lower;
-    const ssef diag = (ssef) pinfo.geomBounds.size();
-    const ssef scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
-
     /* sweep from right to left and compute parallel prefix of merged bounds */
     ssef rAreas[BINS];
     ssei rCounts[BINS];
@@ -113,8 +105,7 @@ namespace embree
     
     /* find best dimension */
     Split split;
-    split.ofs = ofs;
-    split.scale = scale;
+    split.mapping = mapping;
     split.cost = inf;
     split.dim = -1;
     split.pos = 0.0f;
@@ -123,13 +114,13 @@ namespace embree
     for (size_t dim=0; dim<3; dim++) 
     {
       /* ignore zero sized dimensions */
-      if (unlikely(scale[dim] == 0.0f)) 
+      if (unlikely(mapping.invalid(dim)))
         continue;
       
       /* test if this is a better dimension */
       if (bestSAH[dim] < bestCost && bestPos[dim] != 0) {
         split.dim = dim;
-        split.pos = bestPos[dim]/scale[dim]+ofs[dim];
+        split.pos = mapping.pos(bestPos[dim],dim);
         split.cost = bestSAH[dim];
         bestCost = bestSAH[dim];
       }
@@ -197,8 +188,9 @@ namespace embree
   const SpatialSplit::Split SpatialSplit::find(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo)
   {
     Binner binner;
-    binner.bin(prims,pinfo);
-    return binner.best(prims,pinfo);
+    Mapping mapping(pinfo);
+    binner.bin(prims,pinfo,mapping);
+    return binner.best(prims,pinfo,mapping);
   }
       
   void SpatialSplit::Split::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 

@@ -36,6 +36,31 @@ namespace embree
 	
     /*! Compute the number of blocks occupied in one dimension. */
     __forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
+
+    struct Mapping
+    {
+      __forceinline Mapping() {}
+
+      __forceinline Mapping(const PrimInfo& pinfo) {
+	const ssef diag = (ssef) pinfo.geomBounds.size();
+	scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
+	ofs  = (ssef) pinfo.geomBounds.lower;
+      }
+      
+      __forceinline ssei bin(const Vec3fa& p) const {
+	return clamp(floori((ssef(p)-ofs)*scale),ssei(0),ssei(BINS-1));
+      }
+
+      __forceinline float pos(const int bin, const int dim) const {
+	return float(bin)/scale[dim]+ofs[dim];
+      }
+
+      __forceinline bool invalid(const int dim) const {
+	return scale[dim] == 0.0f;
+      }
+
+      ssef ofs,scale;
+    };
     
     struct Split
     {
@@ -52,14 +77,14 @@ namespace embree
       float pos;
       int dim;
       float cost;
-      ssef ofs,scale;
+      Mapping mapping;
     };
 
     struct Binner
     {
       Binner();
-      void bin(BezierRefList& prims, const PrimInfo& pinfo);
-      Split best(BezierRefList& prims, const PrimInfo& pinfo);
+      void bin(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping);
+      Split best(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping);
 
       BBox3fa bounds[BINS][4];
       ssei    numBegin[BINS];
