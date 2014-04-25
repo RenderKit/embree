@@ -93,6 +93,7 @@ namespace embree
     {
       BinInfo();
       void  bin (BezierRefList& prims, const Mapping& mapping);
+      void  bin (const Bezier1* prims, size_t N, const Mapping& mapping);
       Split best(BezierRefList& prims, const Mapping& mapping);
 
     private:
@@ -100,8 +101,23 @@ namespace embree
       ssei    counts[BINS];
     };
 
+    struct TaskBinParallel
+    {
+      TaskBinParallel(BezierRefList& prims);
+
+      TASK_RUN_FUNCTION(TaskBinParallel,task_bin_parallel);
+
+    public:
+      BezierRefList::iterator iter;
+      Mapping mapping;
+      BinInfo binners[32];
+    };
+
   public:
-    /*! single threaded code that finds the best split */
+    /*! finds the best split (single-threaded version) */
     static Split find(size_t threadIndex, BezierRefList& curves, const LinearSpace3fa& space);
+
+    /*! finds the best split (multi-threaded version) */
+    static Split find_parallel(size_t threadIndex, size_t threadCount, BezierRefList& curves, const LinearSpace3fa& space);
   };
 }

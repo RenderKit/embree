@@ -57,7 +57,6 @@ namespace embree
 
   void  ObjectPartition::BinInfo::bin(BezierRefList& prims, const Mapping& mapping)
   {
-    /* perform binning of curves */
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
     {
       const BBox3fa cbounds = i->bounds(mapping.space);
@@ -69,6 +68,19 @@ namespace embree
     }
   }
 
+  void ObjectPartition::BinInfo::bin (const Bezier1* prims, size_t N, const Mapping& mapping)
+  {
+    for (size_t i=0; i<N; i++)
+    {
+      const BBox3fa cbounds = prims[i].bounds(mapping.space);
+      const Vec3fa  center  = prims[i].center(mapping.space);
+      const ssei bin = mapping.bin(center);
+      const int b0 = bin[0]; counts[b0][0]++; bounds[b0][0].extend(cbounds);
+      const int b1 = bin[1]; counts[b1][1]++; bounds[b1][1].extend(cbounds);
+      const int b2 = bin[2]; counts[b2][2]++; bounds[b2][2].extend(cbounds);
+    }
+  }
+  
   ObjectPartition::Split ObjectPartition::BinInfo::best(BezierRefList& prims, const Mapping& mapping)
   {
     /* sweep from right to left and compute parallel prefix of merged bounds */
@@ -139,6 +151,35 @@ namespace embree
     binner.bin(prims,mapping);
     return binner.best(prims,mapping);
   }
+
+#if 0
+  ObjectPartition::Split ObjectPartition::find_parallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space) {
+    return TaskBinParallel(prims).split;
+  }
+
+  ObjectPartition::TaskBinParallel::TaskBinParallel(BezierRefList& prims)
+    : iter(prims)
+  {
+    /* calculate geometry and centroid bounds */
+    BBox3fa centBounds = empty;
+    BBox3fa geomBounds = empty;
+    for (BezierRefList::block_iterator_unsafe i = prims; i; i++) {
+      geomBounds.extend(i->bounds(space));
+      centBounds.extend(i->center(space));
+    }
+    const Mapping mapping(centBounds,space);
+    
+    size_t numTasks = min(32,threadCount);
+    TaskScheduler::executeTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
+    binner.bin(prims,mapping);
+    return binner.best(prims,mapping);
+  }
+
+  void ObjectPartition::TaskBinParallel::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  {
+    binners[taskIndex].bin(prims);
+  }
+#endif
 
   void ObjectPartition::Split::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
 				     BezierRefList& lprims_o, PrimInfo& linfo_o, 
