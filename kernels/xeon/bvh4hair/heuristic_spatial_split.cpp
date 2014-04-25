@@ -106,7 +106,7 @@ namespace embree
     /* find best dimension */
     Split split;
     split.mapping = mapping;
-    split.cost = inf;
+    split.sah = inf;
     split.dim = -1;
     split.pos = 0.0f;
 
@@ -121,14 +121,14 @@ namespace embree
       if (bestSAH[dim] < bestCost && bestPos[dim] != 0) {
         split.dim = dim;
         split.pos = mapping.pos(bestPos[dim],dim);
-        split.cost = bestSAH[dim];
+        split.sah = bestSAH[dim];
         bestCost = bestSAH[dim];
       }
     }
 
     /* compute bounds of left and right side */
     if (split.dim == -1) {
-      split.cost = inf;
+      split.sah = inf;
       return split;
     }
 
@@ -164,11 +164,11 @@ namespace embree
     }
 
     if (lnum == 0 || rnum == 0) {
-      split.cost = inf;
+      split.sah = inf;
       return split;
     }
 
-    split.cost = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
+    split.sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
     return split;
 
 #if 0
@@ -177,7 +177,7 @@ namespace embree
     BBox3fa lbounds = empty, rbounds = empty;
     for (size_t i=0; i<split.pos; i++) { lnum+=numBegin[i][split.dim]; lbounds.extend(bounds[i][split.dim]); }
     for (size_t i=split.pos; i<BINS; i++) { rnum+=numEnd[i][split.dim]; rbounds.extend(bounds[i][split.dim]); }
-    split.cost = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
+    split.sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
     split.numReplications = split.num0 + split.num1 - pinfo.size();
     assert(split.numReplications >= 0);
     }

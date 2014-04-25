@@ -71,7 +71,7 @@ namespace embree
     {
       /*! calculates standard surface area heuristic for the split */
       __forceinline float splitSAH(float intCost) const {
-	return intCost*cost;
+	return intCost*sah;
       }
 
       /*! splits hair list into the two strands */
@@ -81,7 +81,7 @@ namespace embree
     public:
       float pos;
       int dim;
-      float cost;
+      float sah;
       Mapping mapping;
     };
 
