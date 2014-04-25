@@ -18,12 +18,12 @@
 
 namespace embree
 {
-  const SpatialSplit SpatialSplit::find(size_t threadIndex, const PrimInfo& pinfo, BezierRefList& prims, const LinearSpace3fa& space)
+  const SpatialSplit SpatialSplit::find(size_t threadIndex, const PrimInfo& pinfo, BezierRefList& prims)
   {
     /* calculate geometry and centroid bounds */
     BBox3fa geomBounds = empty;
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
-      geomBounds.extend(i->bounds(space));
+      geomBounds.extend(i->bounds());
 
     /* calculate binning function */
     const ssef ofs  = (ssef) geomBounds.lower;
@@ -42,14 +42,12 @@ namespace embree
     /* perform binning of curves */
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
     {
-      const Vec3fa v0 = xfmPoint(space,i->p0);
-      const ssei bin0 = clamp(floori((ssef(v0)-ofs)*scale),ssei(0),ssei(BINS-1));
+      const ssei bin0 = clamp(floori((ssef(i->p0)-ofs)*scale),ssei(0),ssei(BINS-1));
       //const ssei bin0 = floori((ssef(v0)-ofs)*scale);
       assert(bin0[0] >=0 && bin0[0] < BINS);
       assert(bin0[1] >=0 && bin0[1] < BINS);
       assert(bin0[2] >=0 && bin0[2] < BINS);
-      const Vec3fa v1 = xfmPoint(space,i->p3);
-      const ssei bin1 = clamp(floori((ssef(v1)-ofs)*scale),ssei(0),ssei(BINS-1));
+      const ssei bin1 = clamp(floori((ssef(i->p3)-ofs)*scale),ssei(0),ssei(BINS-1));
       //const ssei bin1 = floori((ssef(v1)-ofs)*scale);
       assert(bin1[0] >=0 && bin1[0] < BINS);
       assert(bin1[1] >=0 && bin1[1] < BINS);
@@ -61,20 +59,20 @@ namespace embree
       {
         size_t bin;
         Bezier1 curve = *i;
-        for (bin=startbin[dim]; bin<endbin[dim]; bin++) // FIXME: one can prevent many transformations in this loop here !!!
+        for (bin=startbin[dim]; bin<endbin[dim]; bin++)
         {
           const float pos = float(bin+1)/scale[dim]+ofs[dim];
-          const Vec3fa plane(space.vx[dim],space.vy[dim],space.vz[dim],-pos);
+          const Vec3fa plane(dim == 0,dim == 1,dim == 2,-pos);
           Bezier1 bincurve,restcurve; 
           if (curve.split(plane,bincurve,restcurve)) {
-            const BBox3fa cbounds = bincurve.bounds(space);
+            const BBox3fa cbounds = bincurve.bounds();
             bounds[bin][dim].extend(cbounds);
             curve = restcurve;
           }
         }
         numBegin[startbin[dim]][dim]++;
         numEnd  [endbin  [dim]][dim]++;
-        const BBox3fa cbounds = curve.bounds(space);
+        const BBox3fa cbounds = curve.bounds();
         bounds[bin][dim].extend(cbounds);
       }
     }
@@ -114,7 +112,6 @@ namespace embree
     
     /* find best dimension */
     SpatialSplit split;
-    split.space = space;
     split.ofs = ofs;
     split.scale = scale;
     split.cost = inf;
@@ -150,14 +147,15 @@ namespace embree
 
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
     {
-      const Vec3fa plane(space.vx[split.dim],space.vy[split.dim],space.vz[split.dim],-split.pos);
+      //const Vec3fa plane(space.vx[split.dim],space.vy[split.dim],space.vz[split.dim],-split.pos);
+      const Vec3fa plane(split.dim == 0,split.dim == 1,split.dim == 2,-split.pos);
       
       const float p0p = dot(i->p0,plane)+plane.w;
       const float p3p = dot(i->p3,plane)+plane.w;
 
       /* sort to the left side */
       if (p0p <= 0.0f && p3p <= 0.0f) {
-        const BBox3fa bounds = i->bounds(space);
+        const BBox3fa bounds = i->bounds();
         lbounds.extend(bounds);
         larea += halfArea(bounds);
         lnum++;
@@ -166,7 +164,7 @@ namespace embree
       
       /* sort to the right side */
       if (p0p >= 0.0f && p3p >= 0.0f) {
-        const BBox3fa bounds = i->bounds(space);
+        const BBox3fa bounds = i->bounds();
         rbounds.extend(bounds);
         rarea += halfArea(bounds);
         rnum++;
@@ -175,14 +173,14 @@ namespace embree
 
       Bezier1 left,right; 
       if (i->split(plane,left,right)) {
-        const BBox3fa lcbounds = left.bounds(space);
-        const BBox3fa rcbounds = right.bounds(space);
+        const BBox3fa lcbounds = left.bounds();
+        const BBox3fa rcbounds = right.bounds();
         lbounds.extend(lcbounds); larea += halfArea(lcbounds); lnum++;
         rbounds.extend(rcbounds); rarea += halfArea(rcbounds); rnum++;
         continue;
       }
       
-      const BBox3fa bounds = i->bounds(space);
+      const BBox3fa bounds = i->bounds();
       lbounds.extend(bounds); larea += halfArea(bounds); lnum++;
     }
     split.numReplications = lnum + rnum - pinfo.size();
@@ -211,7 +209,8 @@ namespace embree
   void SpatialSplit::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const
   {
     /* calculate splitting plane */
-    const Vec3fa plane(space.vx[dim],space.vy[dim],space.vz[dim],-pos);
+    const Vec3fa plane(dim == 0,dim == 1,dim == 2,-pos);
+    //const Vec3fa plane(space.vx[dim],space.vy[dim],space.vz[dim],-pos);
     
     /* sort each curve to left, right, or left and right */
     BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
