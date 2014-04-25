@@ -18,7 +18,8 @@
 
 namespace embree
 {
-  __forceinline ObjectPartition::Mapping::Mapping(const BBox3fa& centBounds) 
+  __forceinline ObjectPartition::Mapping::Mapping(const BBox3fa& centBounds, const LinearSpace3fa& space) 
+    : space(space)
   {
     const ssef diag = (ssef) centBounds.size();
     scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
@@ -46,31 +47,21 @@ namespace embree
     return scale[dim] == 0.0f;
   }
 
-  ObjectPartition ObjectPartition::find(size_t threadIndex, BezierRefList& prims, const LinearSpace3fa& space)
+  __forceinline ObjectPartition::BinInfo::BinInfo() 
   {
-    /* calculate geometry and centroid bounds */
-    BBox3fa centBounds = empty;
-    BBox3fa geomBounds = empty;
-    for (BezierRefList::block_iterator_unsafe i = prims; i; i++) {
-      geomBounds.extend(i->bounds(space));
-      centBounds.extend(i->center(space));
-    }
-
-    Mapping mapping(centBounds);
-
-    /* initialize bins */
-    BBox3fa bounds[BINS][4];
-    ssei    counts[BINS];
     for (size_t i=0; i<BINS; i++) {
       bounds[i][0] = bounds[i][1] = bounds[i][2] = bounds[i][3] = empty;
       counts[i] = 0;
     }
- 
+  }
+
+  void  ObjectPartition::BinInfo::bin(BezierRefList& prims, const Mapping& mapping)
+  {
     /* perform binning of curves */
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
     {
-      const BBox3fa cbounds = i->bounds(space);
-      const Vec3fa  center  = i->center(space);
+      const BBox3fa cbounds = i->bounds(mapping.space);
+      const Vec3fa  center  = i->center(mapping.space);
       const ssei bin = mapping.bin(center);
       //const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
       //const ssei bin = floori((ssef(center) - ofs)*scale);
@@ -81,7 +72,10 @@ namespace embree
       const int b1 = bin[1]; counts[b1][1]++; bounds[b1][1].extend(cbounds);
       const int b2 = bin[2]; counts[b2][2]++; bounds[b2][2].extend(cbounds);
     }
-    
+  }
+
+  ObjectPartition::Split ObjectPartition::BinInfo::best(BezierRefList& prims, const Mapping& mapping)
+  {
     /* sweep from right to left and compute parallel prefix of merged bounds */
     ssef rAreas[BINS];
     ssei rCounts[BINS];
@@ -116,8 +110,8 @@ namespace embree
     }
     
     /* find best dimension */
-    ObjectPartition split;
-    split.space = space;
+    ObjectPartition::Split split;
+    //split.space = space;
     //split.ofs = ofs;
     //lit.scale = scale;
     split.mapping = mapping;
@@ -139,7 +133,24 @@ namespace embree
     return split;
   }
 
-  void ObjectPartition::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+  ObjectPartition::Split ObjectPartition::find(size_t threadIndex, BezierRefList& prims, const LinearSpace3fa& space)
+  {
+    /* calculate geometry and centroid bounds */
+    BBox3fa centBounds = empty;
+    BBox3fa geomBounds = empty;
+    for (BezierRefList::block_iterator_unsafe i = prims; i; i++) {
+      geomBounds.extend(i->bounds(space));
+      centBounds.extend(i->center(space));
+    }
+
+    const Mapping mapping(centBounds,space);
+    
+    BinInfo binner;
+    binner.bin(prims,mapping);
+    return binner.best(prims,mapping);
+  }
+
+  void ObjectPartition::Split::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
 			      BezierRefList& lprims_o, PrimInfo& linfo_o, 
 			      BezierRefList& rprims_o, PrimInfo& rinfo_o) const
   {
@@ -151,7 +162,7 @@ namespace embree
       for (size_t i=0; i<block->size(); i++) 
       {
         const Bezier1& prim = block->at(i); 
-	const Vec3fa center = prim.center(space);
+	const Vec3fa center = prim.center(mapping.space);
         //const ssei bin = clamp(floori((ssef(center) - ofs)*scale),ssei(0),ssei(BINS-1));
         //const ssei bin = floori((ssef(center)-ofs)*scale);
 	const ssei bin = mapping.bin_unsafe(center);

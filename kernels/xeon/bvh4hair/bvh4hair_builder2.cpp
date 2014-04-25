@@ -288,7 +288,7 @@ namespace embree
     const float leafSAH = BVH4Hair::intCost*float(pinfo.size())*halfArea(bounds.bounds);
     
     /* perform standard binning in aligned space */
-    ObjectPartition alignedObjectSplit;
+    ObjectPartition::Split alignedObjectSplit;
     float alignedObjectSAH = inf;
     if (enableAlignedObjectSplits) {
       alignedObjectSplit = ObjectPartition::find(threadIndex,prims,one);
@@ -307,7 +307,7 @@ namespace embree
     }
 
     /* perform standard binning in unaligned space */
-    ObjectPartition unalignedObjectSplit;
+    ObjectPartition::Split unalignedObjectSplit;
     float unalignedObjectSAH = inf;
     if (enableUnalignedObjectSplits) {
       unalignedObjectSplit = ObjectPartition::find(threadIndex,prims,bounds.space);
