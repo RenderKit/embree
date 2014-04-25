@@ -18,16 +18,11 @@
 
 namespace embree
 {
-  const SpatialSplit SpatialSplit::find(size_t threadIndex, BezierRefList& prims)
+  const SpatialSplit SpatialSplit::find(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo)
   {
-    /* calculate geometry and centroid bounds */
-    BBox3fa geomBounds = empty;
-    for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
-      geomBounds.extend(i->bounds());
-
     /* calculate binning function */
-    const ssef ofs  = (ssef) geomBounds.lower;
-    const ssef diag = (ssef) geomBounds.size();
+    const ssef ofs  = (ssef) pinfo.geomBounds.lower;
+    const ssef diag = (ssef) pinfo.geomBounds.size();
     const ssef scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
 
     /* initialize bins */
@@ -192,7 +187,10 @@ namespace embree
 #endif
   }
       
-  void SpatialSplit::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const
+  void SpatialSplit::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
+			   BezierRefList& prims, 
+			   BezierRefList& lprims_o, PrimInfo& linfo_o, 
+			   BezierRefList& rprims_o, PrimInfo& rinfo_o) const
   {
     /* sort each curve to left, right, or left and right */
     BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
@@ -252,8 +250,6 @@ namespace embree
       }
       alloc.free(threadIndex,block);
     }
-    //assert(BezierRefList::block_iterator_unsafe(lprims).size() == num0);
-    //assert(BezierRefList::block_iterator_unsafe(rprims).size() == num1);
   }
 }
 
