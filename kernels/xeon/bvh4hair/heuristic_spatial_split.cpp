@@ -18,7 +18,7 @@
 
 namespace embree
 {
-  const SpatialSplit SpatialSplit::find(size_t threadIndex, const PrimInfo& pinfo, BezierRefList& prims)
+  const SpatialSplit SpatialSplit::find(size_t threadIndex, BezierRefList& prims)
   {
     /* calculate geometry and centroid bounds */
     BBox3fa geomBounds = empty;
@@ -169,8 +169,6 @@ namespace embree
       
       lbounds.extend(i->bounds()); lnum++;
     }
-    split.numReplications = lnum + rnum - pinfo.size();
-    assert(split.numReplications >= 0);
 
     if (lnum == 0 || rnum == 0) {
       split.cost = inf;

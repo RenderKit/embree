@@ -301,7 +301,7 @@ namespace embree
     float alignedSpatialSAH = inf;
     bool enableSpatialSplits = remainingReplications > 0;
     if (enableSpatialSplits && enableAlignedSpatialSplits) {
-      alignedSpatialSplit = SpatialSplit::find(threadIndex,pinfo,prims);
+      alignedSpatialSplit = SpatialSplit::find(threadIndex,prims);
       alignedSpatialSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + alignedSpatialSplit.splitSAH(BVH4Hair::intCost);
       bestSAH = min(bestSAH,alignedSpatialSAH);
     }
@@ -337,7 +337,7 @@ namespace embree
     /* perform aligned spatial split */
     else if (bestSAH == alignedSpatialSAH) {
       alignedSpatialSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
-      atomic_add(&remainingReplications,-alignedSpatialSplit.numReplications);
+      atomic_add(&remainingReplications,pinfo.size()-linfo_o.size()-rinfo_o.size());
     }
 
     /* perform unaligned object split */

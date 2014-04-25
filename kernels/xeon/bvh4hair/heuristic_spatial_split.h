@@ -47,16 +47,16 @@ namespace embree
     }
     
     /*! finds the two hair strands */
-    static const SpatialSplit find(size_t threadIndex, const PrimInfo& pinfo, BezierRefList& curves);
+    static const SpatialSplit find(size_t threadIndex, BezierRefList& curves);
     
     /*! splits hair list into the two strands */
-    void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+    void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, 
+	       BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
     
   public:
     float pos;
     int dim;
     float cost;
-    size_t numReplications;
     ssef ofs,scale;
   };
 }
