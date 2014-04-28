@@ -260,9 +260,9 @@ namespace embree
   }
 
   void BVH4HairBuilder2::split(size_t threadIndex, 
-                               BezierRefList& prims, const NAABBox3fa& bounds, const PrimInfo& pinfo,
-                               BezierRefList& lprims_o, PrimInfo& linfo_o, 
-                               BezierRefList& rprims_o, PrimInfo& rinfo_o, 
+                               BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, 
+                               BezierRefList& lprims_o, PrimInfo& linfo_o, NAABBox3fa& lbounds_o, 
+                               BezierRefList& rprims_o, PrimInfo& rinfo_o, NAABBox3fa& rbounds_o, 
                                bool& isAligned)
   {
     /* variable to track the SAH of the best splitting approach */
@@ -291,8 +291,9 @@ namespace embree
     /* perform standard binning in unaligned space */
     ObjectPartition::Split unalignedObjectSplit;
     float unalignedObjectSAH = inf;
-    if (enableUnalignedObjectSplits) {
-      unalignedObjectSplit = ObjectPartition::find(threadIndex,prims,bounds.space);
+    if (enableUnalignedObjectSplits && pinfo.size() < 100) {
+      const NAABBox3fa ubounds = computeHairSpaceBounds(prims);
+      unalignedObjectSplit = ObjectPartition::find(threadIndex,prims,ubounds.space);
       unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*unalignedObjectSplit.splitSAH();
       bestSAH = min(bestSAH,unalignedObjectSAH);
     }
@@ -300,7 +301,7 @@ namespace embree
     /* perform splitting into two strands */
     StrandSplit::Split strandSplit;
     float strandSAH = inf;
-    if (enableStrandSplits) {
+    if (enableStrandSplits && pinfo.size() < 100) {
       strandSplit = StrandSplit::find(threadIndex,prims);
       strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.splitSAH(BVH4Hair::intCost);
       bestSAH = min(bestSAH,strandSAH);
@@ -309,28 +310,38 @@ namespace embree
     /* perform fallback split */
     if (bestSAH == float(inf)) {
       FallBackSplit::find(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      lbounds_o = linfo_o.geomBounds; 
+      rbounds_o = rinfo_o.geomBounds;
     }
 
     /* perform aligned object split */
     else if (bestSAH == alignedObjectSAH) {
       alignedObjectSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      lbounds_o = linfo_o.geomBounds; 
+      rbounds_o = rinfo_o.geomBounds;
     }
 
     /* perform aligned spatial split */
     else if (bestSAH == alignedSpatialSAH) {
       alignedSpatialSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       atomic_add(&remainingReplications,pinfo.size()-linfo_o.size()-rinfo_o.size());
+      lbounds_o = linfo_o.geomBounds; 
+      rbounds_o = rinfo_o.geomBounds;
     }
 
     /* perform unaligned object split */
     else if (bestSAH == unalignedObjectSAH) {
       unalignedObjectSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      lbounds_o = computeHairSpaceBounds(lprims_o);
+      rbounds_o = computeHairSpaceBounds(rprims_o);
       isAligned = false;
     }
 
     /* perform strand split */
     else if (bestSAH == strandSAH) {
       strandSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      lbounds_o = computeHairSpaceBounds(lprims_o);
+      rbounds_o = computeHairSpaceBounds(rprims_o);
       isAligned = false;
     }
  
@@ -454,12 +465,13 @@ namespace embree
 
       /*! split selected child */
       PrimInfo linfo, rinfo;
+      NAABBox3fa lbounds, rbounds;
       BezierRefList lprims, rprims;
-      split(threadIndex,cprims[bestChild],cbounds[bestChild],cpinfo[bestChild],lprims,linfo,rprims,rinfo,isAligned);
-      cprims[numChildren] = rprims; cpinfo[numChildren] = rinfo;
-      cprims[bestChild  ] = lprims; cpinfo[bestChild  ] = linfo;
-      cbounds[numChildren] = computeHairSpaceBounds(cprims[numChildren]);
-      cbounds[bestChild  ] = computeHairSpaceBounds(cprims[bestChild  ]);
+      split(threadIndex,cprims[bestChild],cpinfo[bestChild],cbounds[bestChild],lprims,linfo,lbounds,rprims,rinfo,rbounds,isAligned);
+      cprims[numChildren] = rprims; cpinfo[numChildren] = rinfo; cbounds[numChildren ] = rbounds;
+      cprims[bestChild  ] = lprims; cpinfo[bestChild  ] = linfo; cbounds[bestChild   ] = lbounds;
+      //cbounds[numChildren] = computeHairSpaceBounds(cprims[numChildren]);
+      //cbounds[bestChild  ] = computeHairSpaceBounds(cprims[bestChild  ]);
       numChildren++;
       
     } while (numChildren < BVH4Hair::N);
@@ -480,6 +492,7 @@ namespace embree
     else {
       BVH4Hair::UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
       for (ssize_t i=numChildren-1; i>=0; i--) {
+	//NAABBox3fa cboundsi = computeHairSpaceBounds(cprims[i]);
         node->set(i,cbounds[i]);
         new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cpinfo[i],cprims[i],cbounds[i]);
       }
