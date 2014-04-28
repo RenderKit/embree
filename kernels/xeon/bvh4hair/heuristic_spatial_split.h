@@ -39,6 +39,9 @@ namespace embree
 
     /*! number of bins */
     static const size_t BINS = 16;
+    
+    /*! number of tasks */
+    static const size_t maxTasks = 32;
 
     /*! Compute the number of blocks occupied for each dimension. */
     //__forceinline static ssei blocks(const ssei& a) { return (a+ssei(3)) >> 2; }
@@ -145,7 +148,7 @@ private:
       BezierRefList::iterator iter; 
       PrimInfo pinfo;
       Mapping mapping;
-      BinInfo binners[32];
+      BinInfo binners[maxTasks];
 
     public:
       Split split; //!< best split
@@ -170,8 +173,8 @@ private:
       const Split* split;
       PrimRefBlockAlloc<Bezier1>& alloc;
       BezierRefList prims;
-      PrimInfo linfos[32];
-      PrimInfo rinfos[32];
+      PrimInfo linfos[maxTasks];
+      PrimInfo rinfos[maxTasks];
 
       /*! output data */
     private:

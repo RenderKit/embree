@@ -34,6 +34,14 @@ namespace embree
     /*! finds the two hair strands */
     static const Split find(size_t threadIndex, BezierRefList& curves);
     
+    /*! finds the two hair strands */
+    static const Split find_parallel(size_t threadIndex, size_t threadCount, BezierRefList& curves);
+    
+  private:
+
+    /*! number of tasks */
+    static const size_t maxTasks = 32;
+
   public:
 
     /*! stores all information to perform some split */
@@ -69,6 +77,42 @@ namespace embree
       Vec3fa axis0, axis1;   //!< axis the two strands are aligned into
     };
 
+private:
+
+    /*! parallel find of split */
+    struct TaskFindParallel
+    {
+      /*! construction executes the task */
+      TaskFindParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims);
+
+    private:
+
+      /*! parallel task function */
+      TASK_RUN_FUNCTION(TaskFindParallel,task_find_parallel);
+      
+      /*! parallel bounding calculations */
+      TASK_RUN_FUNCTION(TaskFindParallel,task_bound_parallel);
+      
+       /*! state for find stage */
+    private:
+      BezierRefList::iterator iter0; //!< iterator for find stage
+      Vec3fa axis0;
+      Vec3fa axis1;
+      float task_cos[maxTasks];
+      Vec3fa task_axis1[maxTasks];
+
+      /*! state for bounding stage */
+    private:
+      BezierRefList::iterator iter1; //!< iterator for bounding stage 
+      size_t task_lnum[maxTasks];
+      size_t task_rnum[maxTasks];
+      BBox3fa task_lbounds[maxTasks];
+      BBox3fa task_rbounds[maxTasks];
+
+    public:
+      Split split; //!< best split
+    };
+
     /*! task for parallel splitting */
     struct TaskSplitParallel
     {
@@ -88,8 +132,8 @@ namespace embree
       const Split* split;
       PrimRefBlockAlloc<Bezier1>& alloc;
       BezierRefList prims;
-      PrimInfo linfos[32];
-      PrimInfo rinfos[32];
+      PrimInfo linfos[maxTasks];
+      PrimInfo rinfos[maxTasks];
 
       /*! output data */
     private:

@@ -62,6 +62,94 @@ namespace embree
     return Split(sah,axis0,axis1);
   }
 
+  StrandSplit::TaskFindParallel::TaskFindParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims)
+  {
+    /* first curve determines first axis */
+    BezierRefList::block_iterator_unsafe i = prims;
+    axis0 = axis1 = normalize(i->p3 - i->p0);
+    
+    /* parallel calculation of 2nd axis  */
+    size_t numTasks = min(maxTasks,threadCount);
+    TaskScheduler::executeTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_find_parallel");
+    
+    /* select best 2nd axis */
+    float bestCos = 1.0f;
+    for (size_t i=0; i<numTasks; i++) {
+      if (task_cos[i] < bestCos) { bestCos = task_cos[i]; axis1 = task_axis1[i]; }
+    }
+    
+    /* parallel calculation of unaligned bounds */
+    TaskScheduler::executeTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_find_parallel");
+    
+    /* reduce bounds calculates by tasks */
+    size_t lnum = 0; BBox3fa lbounds = empty;
+    size_t rnum = 0; BBox3fa rbounds = empty;
+    for (size_t i=0; i<numTasks; i++) {
+      lnum += task_lnum[i]; lbounds.extend(task_lbounds[i]);
+      rnum += task_rnum[i]; rbounds.extend(task_rbounds[i]);
+    }
+
+    /*! return an invalid split if we do not partition */
+    if (lnum == 0 || rnum == 0) {
+      split = Split(inf,axis0,axis1); 
+      return;
+    }
+
+    /*! calculate sah for the split */
+    const float sah = float(lnum)*halfArea(lbounds) + float(lnum)*halfArea(rbounds);
+    split = Split(sah,axis0,axis1);
+  }
+
+  void StrandSplit::TaskFindParallel::task_find_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  {
+    float bestCos = 1.0f;
+    Vec3fa bestAxis1 = axis0;
+
+    while (BezierRefList::item* block = iter0.next()) 
+    {
+      for (size_t i=0; i<block->size(); i++) 
+      {
+	Bezier1& prim = block->at(i);
+	Vec3fa axisi = prim.p3 - prim.p0;
+	float leni = length(axisi);
+	if (leni == 0.0f) continue;
+	axisi /= leni;
+	float cos = abs(dot(axisi,axis0));
+	if (cos < bestCos) { bestCos = cos; bestAxis1 = axisi; }
+      }
+    }
+    task_cos[taskIndex] = bestCos;
+    task_axis1[taskIndex] = bestAxis1;
+  }
+
+  void StrandSplit::TaskFindParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  {
+    const LinearSpace3fa space0 = frame(axis0).transposed();
+    const LinearSpace3fa space1 = frame(axis1).transposed();
+
+    size_t lnum = 0; BBox3fa lbounds = empty;
+    size_t rnum = 0; BBox3fa rbounds = empty;
+    while (BezierRefList::item* block = iter1.next()) 
+    {
+      for (size_t i=0; i<block->size(); i++) 
+      {
+	Bezier1& prim = block->at(i);
+	const Vec3fa axisi = normalize(prim.p3-prim.p0);
+	const float cos0 = abs(dot(axisi,axis0));
+	const float cos1 = abs(dot(axisi,axis1));
+	
+	if (cos0 > cos1) { lnum++; lbounds.extend(prim.bounds(space0)); }
+	else             { rnum++; rbounds.extend(prim.bounds(space1)); }
+      }
+    }
+    task_lnum[taskIndex] = lnum; task_lbounds[taskIndex] = lbounds;
+    task_rnum[taskIndex] = rnum; task_rbounds[taskIndex] = rbounds;
+  }
+
+  const StrandSplit::Split StrandSplit::find_parallel(size_t threadIndex, size_t threadCount, BezierRefList& prims) {
+    return TaskFindParallel(threadIndex,threadCount,prims).split;
+  }
+
   void StrandSplit::Split::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
 				 BezierRefList& prims, 
 				 BezierRefList& lprims_o, PrimInfo& linfo_o, 
@@ -103,7 +191,7 @@ namespace embree
     : split(split), alloc(alloc), prims(prims), lprims_o(lprims_o), linfo_o(linfo_o), rprims_o(rprims_o), rinfo_o(rinfo_o)
   {
     /* parallel calculation of centroid bounds */
-    size_t numTasks = min(sizeof(linfos)/sizeof(PrimInfo),threadCount);
+    size_t numTasks = min(maxTasks,threadCount);
     TaskScheduler::executeTask(threadIndex,numTasks,_task_split_parallel,this,numTasks,"build::task_split_parallel");
 
     /* reduction of bounding info */

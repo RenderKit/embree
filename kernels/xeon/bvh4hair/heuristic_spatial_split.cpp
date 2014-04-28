@@ -215,7 +215,7 @@ namespace embree
     : iter(prims), pinfo(pinfo), mapping(mapping)
   {
     /* parallel binning */
-    size_t numTasks = min(sizeof(binners)/sizeof(BinInfo),threadCount);
+    size_t numTasks = min(maxTasks,threadCount);
     TaskScheduler::executeTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
 
     /* reduction of bin informations */
@@ -311,7 +311,7 @@ namespace embree
     : split(split), alloc(alloc), prims(prims), lprims_o(lprims_o), linfo_o(linfo_o), rprims_o(rprims_o), rinfo_o(rinfo_o)
   {
     /* parallel calculation of centroid bounds */
-    size_t numTasks = min(sizeof(linfos)/sizeof(PrimInfo),threadCount);
+    size_t numTasks = min(maxTasks,threadCount);
     TaskScheduler::executeTask(threadIndex,numTasks,_task_split_parallel,this,numTasks,"build::task_split_parallel");
 
     /* reduction of bounding info */
