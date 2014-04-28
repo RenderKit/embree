@@ -291,7 +291,7 @@ namespace embree
     /* perform standard binning in unaligned space */
     ObjectPartition::Split unalignedObjectSplit;
     float unalignedObjectSAH = inf;
-    if (enableUnalignedObjectSplits/* && pinfo.size() < 100*/) {
+    if (enableUnalignedObjectSplits && alignedObjectSAH > 0.7f*leafSAH) {
       const NAABBox3fa ubounds = computeHairSpaceBounds(prims);
       unalignedObjectSplit = ObjectPartition::find(threadIndex,prims,ubounds.space);
       unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*unalignedObjectSplit.splitSAH();
@@ -301,7 +301,7 @@ namespace embree
     /* perform splitting into two strands */
     StrandSplit::Split strandSplit;
     float strandSAH = inf;
-    if (enableStrandSplits /*&& pinfo.size() < 100*/) {
+    if (enableStrandSplits && alignedObjectSAH > 0.6f*leafSAH) {
       strandSplit = StrandSplit::find(threadIndex,prims);
       strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.splitSAH(BVH4Hair::intCost);
       bestSAH = min(bestSAH,strandSAH);
@@ -470,8 +470,6 @@ namespace embree
       split(threadIndex,cprims[bestChild],cpinfo[bestChild],cbounds[bestChild],lprims,linfo,lbounds,rprims,rinfo,rbounds,isAligned);
       cprims[numChildren] = rprims; cpinfo[numChildren] = rinfo; cbounds[numChildren ] = rbounds;
       cprims[bestChild  ] = lprims; cpinfo[bestChild  ] = linfo; cbounds[bestChild   ] = lbounds;
-      //cbounds[numChildren] = computeHairSpaceBounds(cprims[numChildren]);
-      //cbounds[bestChild  ] = computeHairSpaceBounds(cprims[bestChild  ]);
       numChildren++;
       
     } while (numChildren < BVH4Hair::N);
@@ -492,7 +490,7 @@ namespace embree
     else {
       BVH4Hair::UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
       for (ssize_t i=numChildren-1; i>=0; i--) {
-	cbounds[i] = computeHairSpaceBounds(cprims[i]);
+	//cbounds[i] = computeHairSpaceBounds(cprims[i]);
         node->set(i,cbounds[i]);
         new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cpinfo[i],cprims[i],cbounds[i]);
       }
