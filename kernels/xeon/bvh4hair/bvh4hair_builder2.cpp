@@ -118,6 +118,7 @@ namespace embree
     tasks.push_back(task);
     push_heap(tasks.begin(),tasks.end());
     
+#if 0
     while (tasks.front().pinfo.size() > 100000)
     {
       BuildTask task = tasks.front();
@@ -135,7 +136,8 @@ namespace embree
       }
       atomic_add(&numActiveTasks,-1);
     }
-    
+#endif
+
     TaskScheduler::executeTask(threadIndex,threadCount,_task_build_parallel,this,threadCount,"BVH4Builder::build_parallel");
 #endif
     
@@ -467,8 +469,7 @@ namespace embree
       BVH4Hair::AlignedNode* node = bvh->allocAlignedNode(threadIndex);
       for (ssize_t i=0; i<numChildren; i++) {
         node->set(i,cpinfo[i].geomBounds);
-	const NAABBox3fa ubounds = computeHairSpaceBounds(cprims[i]);
-        new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cpinfo[i],cprims[i],ubounds);
+        new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cpinfo[i],cprims[i],cbounds[i]);
       }
       numTasks_o = numChildren;
       *task.dst = bvh->encodeNode(node);
@@ -537,8 +538,7 @@ namespace embree
       BVH4Hair::AlignedNode* node = bvh->allocAlignedNode(threadIndex);
       for (ssize_t i=0; i<numChildren; i++) {
         node->set(i,cpinfo[i].geomBounds);
-	const NAABBox3fa ubounds = computeHairSpaceBounds(cprims[i]);
-        new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cpinfo[i],cprims[i],ubounds);
+        new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cpinfo[i],cprims[i],cbounds[i]);
       }
       numTasks_o = numChildren;
       *task.dst = bvh->encodeNode(node);
