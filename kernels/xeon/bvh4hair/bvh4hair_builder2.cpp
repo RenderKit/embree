@@ -380,7 +380,7 @@ namespace embree
     StrandSplit::Split strandSplit;
     float strandSAH = inf;
     if (enableStrandSplits) {
-      strandSplit = StrandSplit::find(threadIndex,prims);
+      strandSplit = StrandSplit::find_parallel(threadIndex,threadCount,prims);
       strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.splitSAH(BVH4Hair::intCost);
       bestSAH = min(bestSAH,strandSAH);
     }
