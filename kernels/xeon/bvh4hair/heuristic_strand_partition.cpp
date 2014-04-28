@@ -18,7 +18,7 @@
 
 namespace embree
 {
-  const StrandSplit StrandSplit::find(size_t threadIndex, BezierRefList& prims)
+  const StrandSplit::Split StrandSplit::find(size_t threadIndex, BezierRefList& prims)
   {
     /* first try to split two hair strands */
     BezierRefList::block_iterator_unsafe i = prims;
@@ -38,9 +38,6 @@ namespace embree
 
     /* partition the two strands */
     size_t num0 = 0, num1 = 0;
-    //NAABBox3fa naabb0(one,inf);
-    //NAABBox3fa naabb1(one,inf);
-
     BBox3fa lbounds = empty, rbounds = empty;
     const LinearSpace3fa space0 = frame(axis0).transposed();
     const LinearSpace3fa space1 = frame(axis1).transposed();
@@ -56,18 +53,19 @@ namespace embree
       else             { num1++; rbounds.extend(prim.bounds(space1)); }
     }
     
-    StrandSplit split;				
-    split.axis0 = axis0;
-    split.axis1 = axis1;
+    /*! return an invalid split if we do not partition */
     if (num0 == 0 || num1 == 0) 
-      split.cost = inf;
-    else
-      split.cost = float(num0)*halfArea(lbounds) + float(num1)*halfArea(rbounds);
-    return split;
+      return Split(inf,axis0,axis1);
+
+    /*! calculate sah for the split */
+    const float sah = float(num0)*halfArea(lbounds) + float(num1)*halfArea(rbounds);
+    return Split(sah,axis0,axis1);
   }
 
-  void StrandSplit::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
-			  BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const 
+  void StrandSplit::Split::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
+				 BezierRefList& prims, 
+				 BezierRefList& lprims_o, PrimInfo& linfo_o, 
+				 BezierRefList& rprims_o, PrimInfo& rinfo_o) const 
   {
     BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
     BezierRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));

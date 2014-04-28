@@ -118,7 +118,7 @@ namespace embree
     tasks.push_back(task);
     push_heap(tasks.begin(),tasks.end());
     
-#if 1
+#if 0
     while (tasks.front().pinfo.size() > 1000000)
     {
       BuildTask task = tasks.front();
@@ -297,7 +297,7 @@ namespace embree
     }
 
     /* perform splitting into two strands */
-    StrandSplit strandSplit;
+    StrandSplit::Split strandSplit;
     float strandSAH = inf;
     if (enableStrandSplits) {
       strandSplit = StrandSplit::find(threadIndex,prims);
@@ -377,7 +377,7 @@ namespace embree
     }
 
     /* perform splitting into two strands */
-    StrandSplit strandSplit;
+    StrandSplit::Split strandSplit;
     float strandSAH = inf;
     if (enableStrandSplits) {
       strandSplit = StrandSplit::find(threadIndex,prims);

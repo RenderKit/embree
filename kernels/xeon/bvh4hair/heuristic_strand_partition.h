@@ -25,25 +25,42 @@ namespace embree
   /*! Tries to split hair into two differently aligned hair strands */
   struct StrandSplit
   {
-    typedef PrimRefBlockT<Bezier1> BezierRefBlock;
-    typedef atomic_set<BezierRefBlock> BezierRefList;
+    struct Split;
+    typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList;
 
   public:
     StrandSplit () {}
     
-    /*! calculates standard surface area heuristic for the split */
-    __forceinline float splitSAH(float intCost) const {
-      return intCost*cost;
-    }
-    
     /*! finds the two hair strands */
-    static const StrandSplit find(size_t threadIndex, BezierRefList& curves);
-    
-    /*! splits hair list into the two strands */
-    void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, BezierRefList& lcurves_o, PrimInfo& linfo_o, BezierRefList& rcurves_o, PrimInfo& rinfo_o) const;
+    static const Split find(size_t threadIndex, BezierRefList& curves);
     
   public:
-    Vec3fa axis0, axis1;          //!< axis the strands are aligned into
-    float cost;
+
+    /*! stores all information to perform some split */
+    struct Split
+    {    
+      /*! construct an invalid split by default */
+      __forceinline Split()
+	: sah(inf), axis0(zero), axis1(zero) {}
+
+      /*! constructs specified split */
+      __forceinline Split(const float sah, const Vec3fa& axis0, const Vec3fa& axis1)
+	: sah(sah), axis0(axis0), axis1(axis1) {}
+
+      /*! calculates standard surface area heuristic for the split */
+      __forceinline float splitSAH(const float intCost) const {
+	return intCost*sah;
+      }
+
+      /*! splits hair list into the two strands */
+      void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
+		 BezierRefList& prims, 
+		 BezierRefList& lprims_o, PrimInfo& linfo_o, 
+		 BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+
+    private:
+      float sah;             //!< SAH cost of the split
+      Vec3fa axis0, axis1;   //!< axis the two strands are aligned into
+    };
   };
 }

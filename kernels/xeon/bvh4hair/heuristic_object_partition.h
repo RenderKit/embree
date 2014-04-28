@@ -101,7 +101,7 @@ namespace embree
 			  BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
 
     public:
-      float sah;      //!< SAH cost of the split
+      float sah;       //!< SAH cost of the split
       int dim;         //!< split dimension
       int pos;         //!< bin index for splitting
       Mapping mapping; //!< mapping into bins

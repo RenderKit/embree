@@ -99,14 +99,16 @@ namespace embree
 			  BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
 
     public:
-      float sah;
-      int   dim;
-      float pos;
-      Mapping mapping;
+      float sah;          //!< SAH cost of the split
+      int   dim;          //!< split dimension
+      float pos;          //!< split position
+      Mapping mapping;    //!< mapping into bins
     };
 
+private:
+
     /*! stores all binning information */
-    struct BinInfo
+    struct __aligned(64) BinInfo
     {
       BinInfo();
 
@@ -115,17 +117,17 @@ namespace embree
 
       /*! bins a list of primitives */
       void bin(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping);
-      
-      /*! finds the best split by scanning binning information */
-      Split best(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping);
-
+    
       /*! merges in other binning information */
       void merge (const BinInfo& other);
 
+      /*! finds the best split by scanning binning information */
+      Split best(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping);
+
     private:
-      BBox3fa bounds[BINS][4];
-      ssei    numBegin[BINS];
-      ssei    numEnd[BINS];
+      BBox3fa bounds[BINS][4];  //!< geometry bounds for each bin in each dimension
+      ssei    numBegin[BINS];   //!< number of primitives starting in bin
+      ssei    numEnd[BINS];     //!< number of primitives ending in bin
     };
 
     /*! task for parallel binning */
@@ -178,7 +180,5 @@ namespace embree
       BezierRefList& rprims_o;
       PrimInfo& rinfo_o;
     };
-
- 
   };
 }
