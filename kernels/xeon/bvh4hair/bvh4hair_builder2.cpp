@@ -118,7 +118,7 @@ namespace embree
     tasks.push_back(task);
     push_heap(tasks.begin(),tasks.end());
     
-#if 1
+#if 0
     while (tasks.front().pinfo.size() > 1000000)
     {
       BuildTask task = tasks.front();
@@ -190,7 +190,8 @@ namespace embree
       float area = 0.0f;
       for (BezierRefList::block_iterator_unsafe j = prims; j; j++) {
         const BBox3fa cbounds = j->bounds(space);
-        area += halfArea(cbounds);
+	//area += halfArea(cbounds);
+	area += (cbounds.upper.x-cbounds.lower.x)*(cbounds.upper.y-cbounds.lower.y);
         bounds.extend(cbounds);
       }
 

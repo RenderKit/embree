@@ -20,24 +20,24 @@ namespace embree
 {
   const StrandSplit::Split StrandSplit::find(size_t threadIndex, BezierRefList& prims)
   {
-    /* first try to split two hair strands */
+    /* first curve determines first axis */
     BezierRefList::block_iterator_unsafe i = prims;
     Vec3fa axis0 = normalize(i->p3 - i->p0);
+    
+    /* find 2nd axis that is most misaligned with first axis */
     float bestCos = 1.0f;
-    Bezier1 bestI = *i;
-
+    Vec3fa axis1 = axis0;
     for (i; i; i++) {
       Vec3fa axisi = i->p3 - i->p0;
       float leni = length(axisi);
       if (leni == 0.0f) continue;
       axisi /= leni;
       float cos = abs(dot(axisi,axis0));
-      if (cos < bestCos) { bestCos = cos; bestI = *i; }
+      if (cos < bestCos) { bestCos = cos; axis1 = axisi; }
     }
-    Vec3fa axis1 = normalize(bestI.p3-bestI.p0);
 
     /* partition the two strands */
-    size_t num0 = 0, num1 = 0;
+    size_t lnum = 0, rnum = 0;
     BBox3fa lbounds = empty, rbounds = empty;
     const LinearSpace3fa space0 = frame(axis0).transposed();
     const LinearSpace3fa space1 = frame(axis1).transposed();
@@ -49,16 +49,16 @@ namespace embree
       const float cos0 = abs(dot(axisi,axis0));
       const float cos1 = abs(dot(axisi,axis1));
       
-      if (cos0 > cos1) { num0++; lbounds.extend(prim.bounds(space0)); }
-      else             { num1++; rbounds.extend(prim.bounds(space1)); }
+      if (cos0 > cos1) { lnum++; lbounds.extend(prim.bounds(space0)); }
+      else             { rnum++; rbounds.extend(prim.bounds(space1)); }
     }
     
     /*! return an invalid split if we do not partition */
-    if (num0 == 0 || num1 == 0) 
+    if (lnum == 0 || rnum == 0) 
       return Split(inf,axis0,axis1);
 
     /*! calculate sah for the split */
-    const float sah = float(num0)*halfArea(lbounds) + float(num1)*halfArea(rbounds);
+    const float sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
     return Split(sah,axis0,axis1);
   }
 
@@ -186,8 +186,10 @@ namespace embree
     }
   }
 
-  StrandSplit::TaskSplitParallel::TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
-							BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o)
+  StrandSplit::TaskSplitParallel::TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, 
+						    BezierRefList& prims, 
+						    BezierRefList& lprims_o, PrimInfo& linfo_o, 
+						    BezierRefList& rprims_o, PrimInfo& rinfo_o)
     : split(split), alloc(alloc), prims(prims), lprims_o(lprims_o), linfo_o(linfo_o), rprims_o(rprims_o), rinfo_o(rinfo_o)
   {
     /* parallel calculation of centroid bounds */
