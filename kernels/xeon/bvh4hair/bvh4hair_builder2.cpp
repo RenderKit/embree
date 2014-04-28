@@ -118,8 +118,8 @@ namespace embree
     tasks.push_back(task);
     push_heap(tasks.begin(),tasks.end());
     
-#if 0
-    while (tasks.front().pinfo.size() > 100000)
+#if 1
+    while (tasks.front().pinfo.size() > 1000000)
     {
       BuildTask task = tasks.front();
       pop_heap(tasks.begin(),tasks.end());
@@ -362,7 +362,7 @@ namespace embree
     float alignedSpatialSAH = inf;
     bool enableSpatialSplits = remainingReplications > 0;
     if (enableSpatialSplits && enableAlignedSpatialSplits) {
-      alignedSpatialSplit = SpatialSplit::find(threadIndex,prims,pinfo);
+      alignedSpatialSplit = SpatialSplit::find_parallel(threadIndex,threadCount,prims,pinfo);
       alignedSpatialSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedSpatialSplit.splitSAH();
       bestSAH = min(bestSAH,alignedSpatialSAH);
     }
@@ -397,7 +397,7 @@ namespace embree
 
     /* perform aligned spatial split */
     else if (bestSAH == alignedSpatialSAH) {
-      alignedSpatialSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      alignedSpatialSplit.split_parallel(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       atomic_add(&remainingReplications,pinfo.size()-linfo_o.size()-rinfo_o.size());
     }
 

@@ -25,11 +25,21 @@ namespace embree
   /*! Performs standard object binning */
   struct ObjectPartition
   {
+    struct Split;
+    typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
+
+  public:
+
+    /*! finds the best split (single-threaded version) */
+    static const Split find(size_t threadIndex, BezierRefList& curves, const LinearSpace3fa& space);
+
+    /*! finds the best split (multi-threaded version) */
+    static const Split find_parallel(size_t threadIndex, size_t threadCount, BezierRefList& curves, const LinearSpace3fa& space);
+
+  private:
+
     /*! number of bins */
     static const size_t BINS = 16;
-
-    typedef PrimRefBlockT<Bezier1> BezierRefBlock;
-    typedef atomic_set<BezierRefBlock> BezierRefList;
 
     /*! Compute the number of blocks occupied for each dimension. */
     //__forceinline static ssei blocks(const ssei& a) { return (a+ssei(3)) >> 2; }
@@ -57,9 +67,11 @@ namespace embree
       /*! returns true if the mapping is invalid in some dimension */
       __forceinline bool invalid(const int dim) const;
     public:
-      ssef ofs,scale;
-      LinearSpace3fa space;
+      ssef ofs,scale;        //!< linear function that maps to bin ID
+      LinearSpace3fa space;  //!< space the binning is performed in
     };
+
+  public:
 
     /*! stores all information to perform some split */
     struct Split
@@ -78,11 +90,16 @@ namespace embree
       }
 
       /*! single threaded splitting into two sets */
-      void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, 
-		 BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+      void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
+		 BezierRefList& prims, 
+		 BezierRefList& lprims_o, PrimInfo& linfo_o, 
+		 BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
       
-      void split_parallel(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, 
-			  BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+      /*! multi threaded splitting into two sets */
+      void split_parallel(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
+			  BezierRefList& curves, 
+			  BezierRefList& lprims_o, PrimInfo& linfo_o, 
+			  BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
 
     public:
       float cost;      //!< SAH cost of the split
@@ -91,61 +108,89 @@ namespace embree
       Mapping mapping; //!< mapping into bins
     };
 
+  private:
+
     /*! stores all binning information */
     struct __aligned(64) BinInfo
     {
       BinInfo();
-      void bin (BezierRefList& prims, const Mapping& mapping);
+
+      /*! bins an array of primitives */
       void bin (const Bezier1* prims, size_t N, const Mapping& mapping);
+  
+      /*! bins a list of primitives */
+      void bin (BezierRefList& prims, const Mapping& mapping);
+      
+      /*! merges in other binning information */
       void merge (const BinInfo& other);
+      
+      /*! finds the best split by scanning binning information */
       Split best(BezierRefList& prims, const Mapping& mapping);
 
     private:
-      BBox3fa bounds[BINS][4];
-      ssei    counts[BINS];
+      BBox3fa bounds[BINS][4]; //!< geometry bounds for each bin in each dimension
+      ssei    counts[BINS];    //!< counts number of primitives that map into the bins
     };
 
+    /*! task for parallel binning */
     struct TaskBinParallel
     {
+      /*! construction executes the task */
       TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
 
+    private:
+
+      /*! parallel bounding calculations */
       TASK_RUN_FUNCTION(TaskBinParallel,task_bound_parallel);
+
+      /*! parallel binning */
       TASK_RUN_FUNCTION(TaskBinParallel,task_bin_parallel);
       
-    public:
-      BezierRefList::iterator iter0;
-      BezierRefList::iterator iter1;
-      LinearSpace3fa space;
-      BBox3fa centBounds;
-      BBox3fa geomBounds;
+      /*! state for bounding stage */
+    private:
+      BezierRefList::iterator iter0; //!< iterator for bounding stage 
+      LinearSpace3fa space; //!< space for bounding calculations
+      BBox3fa centBounds;   //!< calculated centroid bounds
+      BBox3fa geomBounds;   //!< calculated geometry bounds
+
+      /*! state for binning stage */
+    private:
+      BezierRefList::iterator iter1; //!< iterator for binning stage
       Mapping mapping;
       BinInfo binners[32];
-      Split split;
+
+    public:
+      Split split; //!< best split
     };
 
+    /*! task for parallel splitting */
     struct TaskSplitParallel
     {
-      TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
-			BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o);
+      /*! construction executes the task */
+      TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, 
+			BezierRefList& prims, 
+			BezierRefList& lprims_o, PrimInfo& linfo_o, 
+			BezierRefList& rprims_o, PrimInfo& rinfo_o);
 
+    private:
+
+      /*! parallel split task function */
       TASK_RUN_FUNCTION(TaskSplitParallel,task_split_parallel);
 
+      /*! input data */
+    private:
       const Split* split;
       PrimRefBlockAlloc<Bezier1>& alloc;
       BezierRefList prims;
+      PrimInfo linfos[32];
+      PrimInfo rinfos[32];
+
+      /*! output data */
+    private:
       BezierRefList& lprims_o; 
       PrimInfo& linfo_o;
       BezierRefList& rprims_o;
       PrimInfo& rinfo_o;
-      PrimInfo linfos[32];
-      PrimInfo rinfos[32];
     };
-
-  public:
-    /*! finds the best split (single-threaded version) */
-    static Split find(size_t threadIndex, BezierRefList& curves, const LinearSpace3fa& space);
-
-    /*! finds the best split (multi-threaded version) */
-    static Split find_parallel(size_t threadIndex, size_t threadCount, BezierRefList& curves, const LinearSpace3fa& space);
   };
 }

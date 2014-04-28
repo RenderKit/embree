@@ -54,17 +54,17 @@ namespace embree
     }
   }
 
-  __forceinline void SpatialSplit::BinInfo::bin(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping)
+  __forceinline void SpatialSplit::BinInfo::bin (const Bezier1* prims, size_t N, const PrimInfo& pinfo, const Mapping& mapping)
   {
-    for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
+    for (size_t i=0; i<N; i++)
     {
-      const ssei bin0 = mapping.bin(min(i->p0,i->p3));
-      const ssei bin1 = mapping.bin(max(i->p0,i->p3));
+      const ssei bin0 = mapping.bin(min(prims[i].p0,prims[i].p3));
+      const ssei bin1 = mapping.bin(max(prims[i].p0,prims[i].p3));
 
       for (size_t dim=0; dim<3; dim++) 
       {
         size_t bin;
-        Bezier1 curve = *i;
+        Bezier1 curve = prims[i];
         for (bin=bin0[dim]; bin<bin1[dim]; bin++)
         {
           const float pos = mapping.pos(bin+1,dim);
@@ -78,6 +78,25 @@ namespace embree
         numEnd  [bin1[dim]][dim]++;
         bounds  [bin][dim].extend(curve.bounds());
       }
+    }
+  }
+
+  __forceinline void SpatialSplit::BinInfo::bin(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping)
+  {
+    BezierRefList::iterator i=prims;
+    while (BezierRefList::item* block = i.next())
+      bin(block->base(),block->size(),pinfo,mapping);
+  }
+  
+   __forceinline void SpatialSplit::BinInfo::merge (const BinInfo& other)
+  {
+    for (size_t i=0; i<BINS; i++) 
+    {
+      numBegin[i] += other.numBegin[i];
+      numEnd[i] += other.numEnd[i];
+      bounds[i][0].extend(other.bounds[i][0]);
+      bounds[i][1].extend(other.bounds[i][1]);
+      bounds[i][2].extend(other.bounds[i][2]);
     }
   }
 
@@ -115,12 +134,6 @@ namespace embree
     }
     
     /* find best dimension */
-    /*Split split;
-    split.mapping = mapping;
-    split.sah = inf;
-    split.dim = -1;
-    split.pos = 0.0f;*/
-
     float bestSAH = inf;
     int   bestDim = -1;
     float bestPos = 0.0f;
@@ -197,6 +210,34 @@ namespace embree
     binner.bin(prims,pinfo,mapping);
     return binner.best(prims,pinfo,mapping);
   }
+  
+  SpatialSplit::TaskBinParallel::TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping) 
+    : iter(prims), pinfo(pinfo), mapping(mapping)
+  {
+    /* parallel binning */
+    size_t numTasks = min(sizeof(binners)/sizeof(BinInfo),threadCount);
+    TaskScheduler::executeTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
+
+    /* reduction of bin informations */
+    BinInfo bins = binners[0];
+    for (size_t i=1; i<numTasks; i++)
+      bins.merge(binners[i]);
+
+    /* calculation of best split */
+    split = bins.best(prims,pinfo,mapping);
+  }
+
+  void SpatialSplit::TaskBinParallel::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  {
+    while (BezierRefList::item* block = iter.next())
+      binners[taskIndex].bin(block->base(),block->size(),pinfo,mapping);
+  }
+
+  const SpatialSplit::Split SpatialSplit::find_parallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo) 
+  {
+    const Mapping mapping(pinfo);
+    return TaskBinParallel(threadIndex,threadCount,prims,pinfo,mapping).split;
+  }
       
   void SpatialSplit::Split::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
 				  BezierRefList& prims, 
@@ -261,6 +302,38 @@ namespace embree
       }
       alloc.free(threadIndex,block);
     }
+  }
+
+  SpatialSplit::TaskSplitParallel::TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, 
+						     PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+						     BezierRefList& lprims_o, PrimInfo& linfo_o, 
+						     BezierRefList& rprims_o, PrimInfo& rinfo_o)
+    : split(split), alloc(alloc), prims(prims), lprims_o(lprims_o), linfo_o(linfo_o), rprims_o(rprims_o), rinfo_o(rinfo_o)
+  {
+    /* parallel calculation of centroid bounds */
+    size_t numTasks = min(sizeof(linfos)/sizeof(PrimInfo),threadCount);
+    TaskScheduler::executeTask(threadIndex,numTasks,_task_split_parallel,this,numTasks,"build::task_split_parallel");
+
+    /* reduction of bounding info */
+    linfo_o = linfos[0];
+    rinfo_o = rinfos[0];
+    for (size_t i=1; i<numTasks; i++) {
+      linfo_o.merge(linfos[i]);
+      rinfo_o.merge(rinfos[i]);
+    }
+  }
+
+  void SpatialSplit::TaskSplitParallel::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  {
+    split->split(threadIndex,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
+  }
+
+  void SpatialSplit::Split::split_parallel(size_t threadIndex, size_t threadCount, 
+					   PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+					   BezierRefList& lprims_o, PrimInfo& linfo_o, 
+					   BezierRefList& rprims_o, PrimInfo& rinfo_o) const
+  {
+    TaskSplitParallel(threadIndex,threadCount,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
   }
 }
 

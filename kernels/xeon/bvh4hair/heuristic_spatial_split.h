@@ -67,6 +67,11 @@ namespace embree
       void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, 
 		 BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
 
+
+      /*! splits hair list into the two strands */
+      void split_parallel(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+			  BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+
     public:
       float sah;
       int   dim;
@@ -78,15 +83,79 @@ namespace embree
     struct BinInfo
     {
       BinInfo();
+
+      /*! bins an array of primitives */
+      void bin (const Bezier1* prims, size_t N, const PrimInfo& pinfo, const Mapping& mapping);
+
+      /*! bins a list of primitives */
       void bin(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping);
+      
+      /*! finds the best split by scanning binning information */
       Split best(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping);
 
+      /*! merges in other binning information */
+      void merge (const BinInfo& other);
+
+    private:
       BBox3fa bounds[BINS][4];
       ssei    numBegin[BINS];
       ssei    numEnd[BINS];
     };
 
+    /*! task for parallel binning */
+    struct TaskBinParallel
+    {
+      /*! construction executes the task */
+      TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping);
+
+    private:
+
+      /*! parallel binning */
+      TASK_RUN_FUNCTION(TaskBinParallel,task_bin_parallel);
+      
+    private:
+      BezierRefList::iterator iter; 
+      PrimInfo pinfo;
+      Mapping mapping;
+      BinInfo binners[32];
+
+    public:
+      Split split; //!< best split
+    };
+
+    /*! task for parallel splitting */
+    struct TaskSplitParallel
+    {
+      /*! construction executes the task */
+      TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, 
+			BezierRefList& prims, 
+			BezierRefList& lprims_o, PrimInfo& linfo_o, 
+			BezierRefList& rprims_o, PrimInfo& rinfo_o);
+
+    private:
+
+      /*! parallel split task function */
+      TASK_RUN_FUNCTION(TaskSplitParallel,task_split_parallel);
+
+      /*! input data */
+    private:
+      const Split* split;
+      PrimRefBlockAlloc<Bezier1>& alloc;
+      BezierRefList prims;
+      PrimInfo linfos[32];
+      PrimInfo rinfos[32];
+
+      /*! output data */
+    private:
+      BezierRefList& lprims_o; 
+      PrimInfo& linfo_o;
+      BezierRefList& rprims_o;
+      PrimInfo& rinfo_o;
+    };
+
     /*! finds the two hair strands */
     static const Split find(size_t threadIndex, BezierRefList& curves, const PrimInfo& pinfo);
+    
+    static const Split find_parallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo);
   };
 }
