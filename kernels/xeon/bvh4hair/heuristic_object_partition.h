@@ -66,6 +66,7 @@ namespace embree
 
       /*! returns true if the mapping is invalid in some dimension */
       __forceinline bool invalid(const int dim) const;
+
     public:
       ssef ofs,scale;        //!< linear function that maps to bin ID
       LinearSpace3fa space;  //!< space the binning is performed in
@@ -76,18 +77,16 @@ namespace embree
     /*! stores all information to perform some split */
     struct Split
     {
-      /*! constructs invalid split by default */
+      /*! construct an invalid split by default */
       __forceinline Split()
-	: dim(-1), pos(0), cost(inf) {}
+	: sah(inf), dim(-1), pos(0) {}
 
       /*! constructs specified split */
-      __forceinline Split(float cost, int dim, int pos, const Mapping& mapping)
-	: cost(cost), dim(dim), pos(pos), mapping(mapping) {}
+      __forceinline Split(float sah, int dim, int pos, const Mapping& mapping)
+	: sah(sah), dim(dim), pos(pos), mapping(mapping) {}
 
       /*! calculates surface area heuristic for performing the split */
-      __forceinline float splitSAH() const {
-	return cost;
-      }
+      __forceinline float splitSAH() const { return sah; }
 
       /*! single threaded splitting into two sets */
       void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
@@ -97,12 +96,12 @@ namespace embree
       
       /*! multi threaded splitting into two sets */
       void split_parallel(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
-			  BezierRefList& curves, 
+			  BezierRefList& prims, 
 			  BezierRefList& lprims_o, PrimInfo& linfo_o, 
 			  BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
 
     public:
-      float cost;      //!< SAH cost of the split
+      float sah;      //!< SAH cost of the split
       int dim;         //!< split dimension
       int pos;         //!< bin index for splitting
       Mapping mapping; //!< mapping into bins

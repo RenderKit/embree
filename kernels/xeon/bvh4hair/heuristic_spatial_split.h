@@ -24,11 +24,21 @@ namespace embree
 {
   struct SpatialSplit
   {
+    struct Split;
+    typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
+
+  public:
+
+    /*! finds the best split (single-threaded version) */
+    static const Split find(size_t threadIndex, BezierRefList& curves, const PrimInfo& pinfo);
+    
+    /*! finds the best split (multi-threaded version) */
+    static const Split find_parallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo);
+
+  private:
+
     /*! number of bins */
     static const size_t BINS = 16;
-
-    typedef PrimRefBlockT<Bezier1> BezierRefBlock;
-    typedef atomic_set<BezierRefBlock> BezierRefList;
 
     /*! Compute the number of blocks occupied for each dimension. */
     //__forceinline static ssei blocks(const ssei& a) { return (a+ssei(3)) >> 2; }
@@ -43,34 +53,50 @@ namespace embree
     {
     public:
       __forceinline Mapping() {}
+
+      /*! calculates the mapping */
       __forceinline Mapping(const PrimInfo& pinfo);
+
+      /*! slower but safe binning */
       __forceinline ssei bin(const Vec3fa& p) const;
+
+      /*! calculates left spatial position of bin */
       __forceinline float pos(const int bin, const int dim) const;
+
+      /*! returns true if the mapping is invalid in some dimension */
       __forceinline bool invalid(const int dim) const;
+
     private:
-      ssef ofs,scale;
+      ssef ofs,scale;  //!< linear function that maps to bin ID
     };
-    
+
+  public:
+
     /*! stores all information required to perform some split */
     struct Split
     {
+      /*! construct an invalid split by default */
       __forceinline Split() 
 	: sah(inf), dim(-1), pos(0.0f) {}
 
+      /*! constructs specified split */
       __forceinline Split(float sah, int dim, float pos, const Mapping& mapping)
 	: sah(sah), dim(dim), pos(pos), mapping(mapping) {}
 
-      /*! calculates standard surface area heuristic for the split */
+      /*! calculates surface area heuristic for performing the split */
       __forceinline float splitSAH() const { return sah; }
 
-      /*! splits hair list into the two strands */
-      void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& curves, 
-		 BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+      /*! single threaded splitting into two sets */
+      void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
+		 BezierRefList& curves, 
+		 BezierRefList& lprims_o, PrimInfo& linfo_o, 
+		 BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
 
-
-      /*! splits hair list into the two strands */
-      void split_parallel(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
-			  BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+      /*! multi threaded splitting into two sets */
+      void split_parallel(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
+			  BezierRefList& prims, 
+			  BezierRefList& lprims_o, PrimInfo& linfo_o, 
+			  BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
 
     public:
       float sah;
@@ -153,9 +179,6 @@ namespace embree
       PrimInfo& rinfo_o;
     };
 
-    /*! finds the two hair strands */
-    static const Split find(size_t threadIndex, BezierRefList& curves, const PrimInfo& pinfo);
-    
-    static const Split find_parallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo);
+ 
   };
 }
