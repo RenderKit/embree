@@ -118,7 +118,7 @@ namespace embree
     tasks.push_back(task);
     push_heap(tasks.begin(),tasks.end());
     
-#if 0
+#if 1
     while (tasks.front().pinfo.size() > 1000000)
     {
       BuildTask task = tasks.front();
@@ -409,7 +409,7 @@ namespace embree
 
     /* perform strand split */
     else if (bestSAH == strandSAH) {
-      strandSplit.split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      strandSplit.split_parallel(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
       isAligned = false;
     }
  

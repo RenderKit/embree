@@ -52,15 +52,51 @@ namespace embree
 	return intCost*sah;
       }
 
-      /*! splits hair list into the two strands */
+      /*! single threaded splitting into two sets */
       void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
 		 BezierRefList& prims, 
 		 BezierRefList& lprims_o, PrimInfo& linfo_o, 
 		 BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
 
+      /*! multi threaded splitting into two sets */
+      void split_parallel(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
+			  BezierRefList& prims, 
+			  BezierRefList& lprims_o, PrimInfo& linfo_o, 
+			  BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+
     private:
       float sah;             //!< SAH cost of the split
       Vec3fa axis0, axis1;   //!< axis the two strands are aligned into
+    };
+
+    /*! task for parallel splitting */
+    struct TaskSplitParallel
+    {
+      /*! construction executes the task */
+      TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, 
+			BezierRefList& prims, 
+			BezierRefList& lprims_o, PrimInfo& linfo_o, 
+			BezierRefList& rprims_o, PrimInfo& rinfo_o);
+
+    private:
+
+      /*! parallel split task function */
+      TASK_RUN_FUNCTION(TaskSplitParallel,task_split_parallel);
+
+      /*! input data */
+    private:
+      const Split* split;
+      PrimRefBlockAlloc<Bezier1>& alloc;
+      BezierRefList prims;
+      PrimInfo linfos[32];
+      PrimInfo rinfos[32];
+
+      /*! output data */
+    private:
+      BezierRefList& lprims_o; 
+      PrimInfo& linfo_o;
+      BezierRefList& rprims_o;
+      PrimInfo& rinfo_o;
     };
   };
 }
