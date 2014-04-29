@@ -262,6 +262,7 @@ namespace embree
       throw std::runtime_error("unknown primitive type");
   }
 
+  template<bool Parallel>
   Split BVH4HairBuilder2::find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds)
   {
     /* variable to track the SAH of the best splitting approach */
@@ -272,7 +273,7 @@ namespace embree
     ObjectPartition::Split alignedObjectSplit;
     float alignedObjectSAH = inf;
     if (enableAlignedObjectSplits) {
-      alignedObjectSplit = ObjectPartition::find(threadIndex,threadCount,prims,one);
+      alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,prims,one);
       alignedObjectSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedObjectSplit.splitSAH();
       bestSAH = min(bestSAH,alignedObjectSAH);
     }
@@ -282,7 +283,7 @@ namespace embree
     float alignedSpatialSAH = inf;
     bool enableSpatialSplits = remainingReplications > 0;
     if (enableSpatialSplits && enableAlignedSpatialSplits) {
-      alignedSpatialSplit = SpatialSplit::find(threadIndex,threadCount,prims,pinfo);
+      alignedSpatialSplit = SpatialSplit::find<Parallel>(threadIndex,threadCount,prims,pinfo);
       alignedSpatialSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedSpatialSplit.splitSAH();
       bestSAH = min(bestSAH,alignedSpatialSAH);
     }
@@ -292,7 +293,7 @@ namespace embree
     float unalignedObjectSAH = inf;
     if (enableUnalignedObjectSplits && alignedObjectSAH > 0.7f*leafSAH) {
       const NAABBox3fa ubounds = computeHairSpaceBounds(prims);
-      unalignedObjectSplit = ObjectPartition::find(threadIndex,threadCount,prims,ubounds.space);
+      unalignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,prims,ubounds.space);
       unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*unalignedObjectSplit.splitSAH();
       bestSAH = min(bestSAH,unalignedObjectSAH);
     }
@@ -301,7 +302,7 @@ namespace embree
     StrandSplit::Split strandSplit;
     float strandSAH = inf;
     if (enableStrandSplits && alignedObjectSAH > 0.6f*leafSAH) {
-      strandSplit = StrandSplit::find(threadIndex,threadCount,prims);
+      strandSplit = StrandSplit::find<Parallel>(threadIndex,threadCount,prims);
       strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*strandSplit.splitSAH();
       bestSAH = min(bestSAH,strandSAH);
     }
@@ -407,6 +408,7 @@ namespace embree
     }
   }
   
+  template<bool Parallel>
   __forceinline void BVH4HairBuilder2::processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& numTasks_o)
   {
     /* create enforced leaf */
@@ -446,11 +448,11 @@ namespace embree
       PrimInfo linfo, rinfo;
       BezierRefList lprims, rprims;
       isAligned &= csplit[bestChild].isAligned;
-      csplit[bestChild].split(threadIndex,threadCount,alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
+      csplit[bestChild].split<Parallel>(threadIndex,threadCount,alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
       const NAABBox3fa lbounds = isAligned ? linfo.geomBounds : computeHairSpaceBounds(lprims); 
       const NAABBox3fa rbounds = isAligned ? rinfo.geomBounds : computeHairSpaceBounds(rprims); 
-      const Split lsplit = find_split(threadIndex,threadCount,lprims,linfo,lbounds);
-      const Split rsplit = find_split(threadIndex,threadCount,rprims,rinfo,rbounds);
+      const Split lsplit = find_split<Parallel>(threadIndex,threadCount,lprims,linfo,lbounds);
+      const Split rsplit = find_split<Parallel>(threadIndex,threadCount,rprims,rinfo,rbounds);
       cprims[numChildren] = rprims; cpinfo[numChildren] = rinfo; cbounds[numChildren]= rbounds; csplit[numChildren] = rsplit;
       cprims[bestChild  ] = lprims; cpinfo[bestChild  ] = linfo; cbounds[bestChild  ]= lbounds; csplit[bestChild  ] = lsplit;
       numChildren++;
