@@ -19,10 +19,7 @@
 #include "geometry/primitive.h"
 #include "geometry/bezier1.h"
 #include "builders/primrefalloc.h"
-#include "heuristic_object_partition.h"
-#include "heuristic_spatial_split.h"
-#include "heuristic_strand_partition.h"
-#include "heuristic_fallback.h"
+#include "heuristic_split.h"
 
 namespace embree
 {

@@ -56,9 +56,7 @@ namespace embree
 	: sah(sah), axis0(axis0), axis1(axis1) {}
 
       /*! calculates standard surface area heuristic for the split */
-      __forceinline float splitSAH(const float intCost) const {
-	return intCost*sah;
-      }
+      __forceinline float splitSAH() const { return sah; }
 
       /*! single threaded splitting into two sets */
       void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 

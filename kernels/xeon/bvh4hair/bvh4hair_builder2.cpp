@@ -303,7 +303,7 @@ namespace embree
     float strandSAH = inf;
     if (enableStrandSplits && alignedObjectSAH > 0.6f*leafSAH) {
       strandSplit = StrandSplit::find(threadIndex,prims);
-      strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.splitSAH(BVH4Hair::intCost);
+      strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*strandSplit.splitSAH();
       bestSAH = min(bestSAH,strandSAH);
     }
 
@@ -393,7 +393,7 @@ namespace embree
     float strandSAH = inf;
     if (enableStrandSplits) {
       strandSplit = StrandSplit::find_parallel(threadIndex,threadCount,prims);
-      strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + strandSplit.splitSAH(BVH4Hair::intCost);
+      strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*strandSplit.splitSAH();
       bestSAH = min(bestSAH,strandSAH);
     }
 
