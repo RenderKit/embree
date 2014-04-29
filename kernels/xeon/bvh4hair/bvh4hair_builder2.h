@@ -73,15 +73,15 @@ namespace embree
     /*! creates a leaf node */
     BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const NAABBox3fa& bounds);
 
-    Split find_split(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds);
+    Split find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds);
 
-    BVH4Hair::NodeRef recurse(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const Split& split);
+    BVH4Hair::NodeRef recurse(size_t threadIndex, size_t threadCount, size_t depth, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const Split& split);
 
     /*! execute single task and create subtasks */
-    void processTask(size_t threadIndex, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& N);
+    void processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& N);
    
     /*! recursive build function for aligned and non-aligned bounds */
-    void recurseTask(size_t threadIndex, BuildTask& task);
+    void recurseTask(size_t threadIndex, size_t threadCount, BuildTask& task);
 
     TASK_RUN_FUNCTION(BVH4HairBuilder2,task_build_parallel);
 

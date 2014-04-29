@@ -140,7 +140,8 @@ namespace embree
     return ObjectPartition::Split(bestSAH,bestDim,bestPos,mapping);
   }
 
-  const ObjectPartition::Split ObjectPartition::find(size_t threadIndex, BezierRefList& prims, const LinearSpace3fa& space)
+  template<>
+  const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space)
   {
     /* calculate geometry and centroid bounds */
     BBox3fa centBounds = empty;
@@ -197,13 +198,17 @@ namespace embree
       binners[taskIndex].bin(block->base(),block->size(),mapping);
   }
 
-  const ObjectPartition::Split ObjectPartition::find_parallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space) {
+  template<>
+  const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space) {
     return TaskBinParallel(threadIndex,threadCount,prims,space).split;
   }
 
-  void ObjectPartition::Split::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
-				     BezierRefList& lprims_o, PrimInfo& linfo_o, 
-				     BezierRefList& rprims_o, PrimInfo& rinfo_o) const
+  template<>
+  void ObjectPartition::Split::split<false>(size_t threadIndex, size_t threadCount, 
+					    PrimRefBlockAlloc<Bezier1>& alloc, 
+					    BezierRefList& prims, 
+					    BezierRefList& lprims_o, PrimInfo& linfo_o, 
+					    BezierRefList& rprims_o, PrimInfo& rinfo_o) const
   {
     BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
     BezierRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
@@ -254,13 +259,14 @@ namespace embree
 
   void ObjectPartition::TaskSplitParallel::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
-    split->split(threadIndex,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
+    split->split(threadIndex,threadCount,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
   }
 
-  void ObjectPartition::Split::split_parallel(size_t threadIndex, size_t threadCount, 
-					      PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
-					      BezierRefList& lprims_o, PrimInfo& linfo_o, 
-					      BezierRefList& rprims_o, PrimInfo& rinfo_o) const
+  template<>
+  void ObjectPartition::Split::split<true>(size_t threadIndex, size_t threadCount, 
+					   PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+					   BezierRefList& lprims_o, PrimInfo& linfo_o, 
+					   BezierRefList& rprims_o, PrimInfo& rinfo_o) const
   {
     TaskSplitParallel(threadIndex,threadCount,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
   }

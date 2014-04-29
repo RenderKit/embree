@@ -60,30 +60,32 @@ namespace embree
     __forceinline float splitSAH() const { return sah; }
 
     /*! single threaded splitting into two sets */
-    void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
-	       BezierRefList& prims, 
-	       BezierRefList& lprims_o, PrimInfo& linfo_o, 
-	       BezierRefList& rprims_o, PrimInfo& rinfo_o) const
+    template<bool Parallel = false>
+      void split(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
+		 BezierRefList& prims, 
+		 BezierRefList& lprims_o, PrimInfo& linfo_o, 
+		 BezierRefList& rprims_o, PrimInfo& rinfo_o) const
     {
       switch (type) {
-      case OBJECT_SPLIT : ((ObjectPartition::Split*)&data)->split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
-      case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
-      case STRAND_SPLIT : ((StrandSplit::    Split*)&data)->split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+      case OBJECT_SPLIT : ((ObjectPartition::Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+      case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+      case STRAND_SPLIT : ((StrandSplit::    Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       case FALLBACK_SPLIT: FallBackSplit::find(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       default: throw std::runtime_error("internal error");
       }
     }
     
     /*! multi threaded splitting into two sets */
-    void split_parallel(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
-			BezierRefList& prims, 
-			BezierRefList& lprims_o, PrimInfo& linfo_o, 
-			BezierRefList& rprims_o, PrimInfo& rinfo_o) const
-    {
+    template<bool Parallel = false>
+      void split_parallel(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
+			  BezierRefList& prims, 
+			  BezierRefList& lprims_o, PrimInfo& linfo_o, 
+			  BezierRefList& rprims_o, PrimInfo& rinfo_o) const
+      {
       switch (type) {
-      case OBJECT_SPLIT : ((ObjectPartition::Split*)&data)->split_parallel(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
-      case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split_parallel(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
-      case STRAND_SPLIT : ((StrandSplit::    Split*)&data)->split_parallel(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+      case OBJECT_SPLIT : ((ObjectPartition::Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+      case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+      case STRAND_SPLIT : ((StrandSplit::    Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       case FALLBACK_SPLIT: FallBackSplit::find(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       default: throw std::runtime_error("internal error");
       }

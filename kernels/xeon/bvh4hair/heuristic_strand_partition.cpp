@@ -18,7 +18,8 @@
 
 namespace embree
 {
-  const StrandSplit::Split StrandSplit::find(size_t threadIndex, BezierRefList& prims)
+  template<>
+  const StrandSplit::Split StrandSplit::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims)
   {
     /* first curve determines first axis */
     BezierRefList::block_iterator_unsafe i = prims;
@@ -146,14 +147,16 @@ namespace embree
     task_rnum[taskIndex] = rnum; task_rbounds[taskIndex] = rbounds;
   }
 
-  const StrandSplit::Split StrandSplit::find_parallel(size_t threadIndex, size_t threadCount, BezierRefList& prims) {
+  template<>
+  const StrandSplit::Split StrandSplit::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims) {
     return TaskFindParallel(threadIndex,threadCount,prims).split;
   }
 
-  void StrandSplit::Split::split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
-				 BezierRefList& prims, 
-				 BezierRefList& lprims_o, PrimInfo& linfo_o, 
-				 BezierRefList& rprims_o, PrimInfo& rinfo_o) const 
+  template<>
+  void StrandSplit::Split::split<false>(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
+					BezierRefList& prims, 
+					BezierRefList& lprims_o, PrimInfo& linfo_o, 
+					BezierRefList& rprims_o, PrimInfo& rinfo_o) const 
   {
     BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
     BezierRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
@@ -207,10 +210,11 @@ namespace embree
 
   void StrandSplit::TaskSplitParallel::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
-    split->split(threadIndex,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
+    split->split(threadIndex,threadCount,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
   }
 
-  void StrandSplit::Split::split_parallel(size_t threadIndex, size_t threadCount, 
+  template<>
+  void StrandSplit::Split::split<true>(size_t threadIndex, size_t threadCount, 
 					      PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
 					      BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					      BezierRefList& rprims_o, PrimInfo& rinfo_o) const

@@ -30,11 +30,9 @@ namespace embree
 
   public:
 
-    /*! finds the best split (single-threaded version) */
-    static const Split find(size_t threadIndex, BezierRefList& curves, const LinearSpace3fa& space);
-
-    /*! finds the best split (multi-threaded version) */
-    static const Split find_parallel(size_t threadIndex, size_t threadCount, BezierRefList& curves, const LinearSpace3fa& space);
+    /*! finds the best split */
+    template<bool Parallel = false>
+      static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves, const LinearSpace3fa& space);
 
   private:
 
@@ -91,18 +89,14 @@ namespace embree
       /*! calculates surface area heuristic for performing the split */
       __forceinline float splitSAH() const { return sah; }
 
-      /*! single threaded splitting into two sets */
-      void split(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
+      /*! splitting into two sets */
+      template<bool Parallel = false>
+      void split(size_t threadIndex, size_t threadCount, 
+		 PrimRefBlockAlloc<Bezier1>& alloc, 
 		 BezierRefList& prims, 
 		 BezierRefList& lprims_o, PrimInfo& linfo_o, 
 		 BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
       
-      /*! multi threaded splitting into two sets */
-      void split_parallel(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
-			  BezierRefList& prims, 
-			  BezierRefList& lprims_o, PrimInfo& linfo_o, 
-			  BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
-
     public:
       float sah;       //!< SAH cost of the split
       int dim;         //!< split dimension
