@@ -30,8 +30,9 @@ namespace embree
     size_t k=0;
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
     {
+      if ((k++) > 1) break;
       //if ((k++) % ((N+1)/2)) continue;
-      if ((k++) % ((N+3)/4)) continue;
+      //if ((k++) % ((N+3)/4)) continue;
       //if ((k++) % ((N+15)/16)) continue;
       const Vec3fa axis = normalize(i->p3 - i->p0);
       if (length(i->p3 - i->p0) < 1E-9) continue;
