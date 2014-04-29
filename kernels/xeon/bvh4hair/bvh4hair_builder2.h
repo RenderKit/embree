@@ -45,8 +45,8 @@ namespace embree
     {
       __forceinline BuildTask () {}
 
-      __forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, const PrimInfo& pinfo, BezierRefList& prims, const NAABBox3fa& bounds)
-        : dst(dst), depth(depth), pinfo(pinfo), prims(prims), bounds(bounds) {}
+      __forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const Split& split)
+        : dst(dst), depth(depth), prims(prims), pinfo(pinfo), bounds(bounds), split(split) {}
 
     public:
       __forceinline friend bool operator< (const BuildTask& a, const BuildTask& b) {
@@ -57,9 +57,10 @@ namespace embree
     public:
       BVH4Hair::NodeRef* dst;
       size_t depth;
-      PrimInfo pinfo;
       BezierRefList prims;
+      PrimInfo pinfo;
       NAABBox3fa bounds;
+      Split split;
     };
         
   private:
@@ -76,22 +77,9 @@ namespace embree
 
     BVH4Hair::NodeRef recurse(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const Split& split);
 
-    void split(size_t threadIndex, 
-               BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, 
-               BezierRefList& lprims, PrimInfo& linfo_o, NAABBox3fa& lbounds_o, 
-               BezierRefList& rprims, PrimInfo& rinfo_o, NAABBox3fa& rbounds_o, 
-	       bool& isAligned);
-
-    void split_parallel(size_t threadIndex, size_t threadCount, 
-			BezierRefList& prims, const NAABBox3fa& bounds, const PrimInfo& pinfo,
-			BezierRefList& lprims, PrimInfo& linfo_o, 
-			BezierRefList& rprims, PrimInfo& rinfo_o,
-			bool& isAligned);
-
     /*! execute single task and create subtasks */
     void processTask(size_t threadIndex, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& N);
-    void processLargeTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& N);
-
+   
     /*! recursive build function for aligned and non-aligned bounds */
     void recurseTask(size_t threadIndex, BuildTask& task);
 
