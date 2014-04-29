@@ -18,11 +18,10 @@
 
 namespace embree
 {
-  const NAABBox3fa ObjectPartitionUnaligned::computeAlignedSpace(BezierRefList& prims)
+  const NAABBox3fa ObjectPartitionUnaligned::computeAlignedSpace(BezierRefList& prims, const PrimInfo& pinfo)
   {
-    size_t N = BezierRefList::block_iterator_unsafe(prims).size();
-    if (N == 0)
-      return NAABBox3fa(empty); // FIXME: can cause problems with compression
+    size_t N = pinfo.size();
+    if (N == 0) return NAABBox3fa(empty); // FIXME: can cause problems with compression
 
     float bestArea = inf;
     LinearSpace3fa bestSpace = one;
