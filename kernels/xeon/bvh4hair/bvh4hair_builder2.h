@@ -65,9 +65,6 @@ namespace embree
         
   private:
 
-    /*! try to find best non-axis aligned space, where the sum of all bounding areas is minimal */
-    static const NAABBox3fa computeHairSpaceBounds(BezierRefList& curves);
-
     /*! creates a leaf node */
     BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo);
 

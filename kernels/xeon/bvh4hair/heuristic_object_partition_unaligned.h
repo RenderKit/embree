@@ -30,6 +30,9 @@ namespace embree
 
   public:
 
+    /*! calculates some space aligned with the bezier curves */
+    static const NAABBox3fa computeAlignedSpace(BezierRefList& prims);
+ 
     /*! finds the best split */
     template<bool Parallel = false>
       static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves, const LinearSpace3fa& space);
@@ -49,7 +52,7 @@ namespace embree
     /*! Compute the number of blocks occupied in one dimension. */
     //__forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
     __forceinline static size_t  blocks(size_t a) { return a; }
-
+ 
     /*! mapping into bins */
     struct Mapping
     {

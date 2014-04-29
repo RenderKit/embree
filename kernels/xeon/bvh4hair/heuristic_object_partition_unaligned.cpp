@@ -18,6 +18,53 @@
 
 namespace embree
 {
+  const NAABBox3fa ObjectPartitionUnaligned::computeAlignedSpace(BezierRefList& prims)
+  {
+    size_t N = BezierRefList::block_iterator_unsafe(prims).size();
+    if (N == 0)
+      return NAABBox3fa(empty); // FIXME: can cause problems with compression
+
+    float bestArea = inf;
+    LinearSpace3fa bestSpace = one;
+    BBox3fa bestBounds = empty;
+
+    size_t k=0;
+    for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
+    {
+      //if ((k++) % ((N+1)/2)) continue;
+      if ((k++) % ((N+3)/4)) continue;
+      //if ((k++) % ((N+15)/16)) continue;
+      const Vec3fa axis = normalize(i->p3 - i->p0);
+      if (length(i->p3 - i->p0) < 1E-9) continue;
+      const LinearSpace3fa space = clamp(frame(axis).transposed());
+      BBox3fa bounds = empty;
+      float area = 0.0f;
+      for (BezierRefList::block_iterator_unsafe j = prims; j; j++) {
+        const BBox3fa cbounds = j->bounds(space);
+	//area += halfArea(cbounds);
+	area += (cbounds.upper.x-cbounds.lower.x)*(cbounds.upper.y-cbounds.lower.y);
+        bounds.extend(cbounds);
+      }
+
+      if (area <= bestArea) {
+        bestBounds = bounds;
+        bestSpace = space;
+        bestArea = area;
+      }
+    }
+
+    /* select world space for some corner cases */
+    if (bestArea == float(inf)) 
+    {
+      bestSpace = one;
+      bestBounds = empty;
+      for (BezierRefList::block_iterator_unsafe j = prims; j; j++)
+        bestBounds.extend(j->bounds());
+    }
+
+    return NAABBox3fa(bestSpace,bestBounds);
+  }
+
   __forceinline ObjectPartitionUnaligned::Mapping::Mapping(const BBox3fa& centBounds, const LinearSpace3fa& space) 
     : space(space)
   {
