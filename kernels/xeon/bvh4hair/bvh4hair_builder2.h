@@ -71,12 +71,10 @@ namespace embree
     static const NAABBox3fa computeHairSpaceBounds(BezierRefList& curves);
 
     /*! creates a leaf node */
-    BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const NAABBox3fa& bounds);
+    BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo);
 
     template<bool Parallel = false>
       Split find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds);
-
-    BVH4Hair::NodeRef recurse(size_t threadIndex, size_t threadCount, size_t depth, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const Split& split);
 
     /*! execute single task and create subtasks */
     template<bool Parallel = false>
@@ -91,12 +89,6 @@ namespace embree
     Scene* scene;          //!< source
     size_t minLeafSize;    //!< minimal size of a leaf
     size_t maxLeafSize;    //!< maximal size of a leaf
-
-    bool enableAlignedObjectSplits;
-    bool enableAlignedSpatialSplits;
-    bool enableUnalignedObjectSplits;
-    bool enableStrandSplits;
-    int enablePreSubdivision;
 
     BVH4Hair* bvh;         //!< output
     PrimRefBlockAlloc<PrimRef> alloc;                 //!< Allocator for primitive blocks
