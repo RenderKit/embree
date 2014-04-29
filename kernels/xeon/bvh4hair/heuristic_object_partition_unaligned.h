@@ -23,7 +23,7 @@
 namespace embree
 {
   /*! Performs standard object binning */
-  struct ObjectPartition
+  struct ObjectPartitionUnaligned
   {
     struct Split;
     typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
@@ -32,7 +32,7 @@ namespace embree
 
     /*! finds the best split */
     template<bool Parallel = false>
-      static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves);
+      static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves, const LinearSpace3fa& space);
 
   private:
 
@@ -57,7 +57,7 @@ namespace embree
       __forceinline Mapping() {}
 
       /*! calculates the mapping */
-      __forceinline Mapping(const BBox3fa& centBounds);
+      __forceinline Mapping(const BBox3fa& centBounds, const LinearSpace3fa& space);
 
       /*! slower but safe binning */
       __forceinline ssei bin(const Vec3fa& p) const;
@@ -70,6 +70,7 @@ namespace embree
 
     public:
       ssef ofs,scale;        //!< linear function that maps to bin ID
+      LinearSpace3fa space;  //!< space the binning is performed in
     };
 
   public:
@@ -131,7 +132,7 @@ namespace embree
     struct TaskBinParallel
     {
       /*! construction executes the task */
-      TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims);
+      TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
 
     private:
 
@@ -144,6 +145,7 @@ namespace embree
       /*! state for bounding stage */
     private:
       BezierRefList::iterator iter0; //!< iterator for bounding stage 
+      LinearSpace3fa space; //!< space for bounding calculations
       BBox3fa centBounds;   //!< calculated centroid bounds
       BBox3fa geomBounds;   //!< calculated geometry bounds
 

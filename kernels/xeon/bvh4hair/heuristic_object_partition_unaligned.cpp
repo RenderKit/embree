@@ -14,18 +14,19 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "heuristic_object_partition.h"
+#include "heuristic_object_partition_unaligned.h"
 
 namespace embree
 {
-  __forceinline ObjectPartition::Mapping::Mapping(const BBox3fa& centBounds) 
+  __forceinline ObjectPartitionUnaligned::Mapping::Mapping(const BBox3fa& centBounds, const LinearSpace3fa& space) 
+    : space(space)
   {
     const ssef diag = (ssef) centBounds.size();
     scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
     ofs  = (ssef) centBounds.lower;
   }
   
-  __forceinline ssei ObjectPartition::Mapping::bin(const Vec3fa& p) const 
+  __forceinline ssei ObjectPartitionUnaligned::Mapping::bin(const Vec3fa& p) const 
   {
     const ssei i = floori((ssef(p)-ofs)*scale);
 #if 0
@@ -38,15 +39,15 @@ namespace embree
 #endif
   }
 
-  __forceinline ssei ObjectPartition::Mapping::bin_unsafe(const Vec3fa& p) const {
+  __forceinline ssei ObjectPartitionUnaligned::Mapping::bin_unsafe(const Vec3fa& p) const {
     return floori((ssef(p)-ofs)*scale);
   }
     
-  __forceinline bool ObjectPartition::Mapping::invalid(const int dim) const {
+  __forceinline bool ObjectPartitionUnaligned::Mapping::invalid(const int dim) const {
     return scale[dim] == 0.0f;
   }
 
-  __forceinline ObjectPartition::BinInfo::BinInfo() 
+  __forceinline ObjectPartitionUnaligned::BinInfo::BinInfo() 
   {
     for (size_t i=0; i<BINS; i++) {
       bounds[i][0] = bounds[i][1] = bounds[i][2] = bounds[i][3] = empty;
@@ -54,12 +55,12 @@ namespace embree
     }
   }
 
-  __forceinline void ObjectPartition::BinInfo::bin (const Bezier1* prims, size_t N, const Mapping& mapping)
+  __forceinline void ObjectPartitionUnaligned::BinInfo::bin (const Bezier1* prims, size_t N, const Mapping& mapping)
   {
     for (size_t i=0; i<N; i++)
     {
-      const BBox3fa cbounds = prims[i].bounds();
-      const Vec3fa  center  = prims[i].center();
+      const BBox3fa cbounds = prims[i].bounds(mapping.space);
+      const Vec3fa  center  = prims[i].center(mapping.space);
       const ssei bin = mapping.bin(center);
       const int b0 = bin[0]; counts[b0][0]++; bounds[b0][0].extend(cbounds);
       const int b1 = bin[1]; counts[b1][1]++; bounds[b1][1].extend(cbounds);
@@ -67,14 +68,14 @@ namespace embree
     }
   }
 
-  __forceinline void  ObjectPartition::BinInfo::bin(BezierRefList& prims, const Mapping& mapping)
+  __forceinline void  ObjectPartitionUnaligned::BinInfo::bin(BezierRefList& prims, const Mapping& mapping)
   {
     BezierRefList::iterator i=prims;
     while (BezierRefList::item* block = i.next())
       bin(block->base(),block->size(),mapping);
   }
 
-  __forceinline void ObjectPartition::BinInfo::merge (const BinInfo& other)
+  __forceinline void ObjectPartitionUnaligned::BinInfo::merge (const BinInfo& other)
   {
     for (size_t i=0; i<BINS; i++) 
     {
@@ -85,7 +86,7 @@ namespace embree
     }
   }
   
-  __forceinline ObjectPartition::Split ObjectPartition::BinInfo::best(BezierRefList& prims, const Mapping& mapping)
+  __forceinline ObjectPartitionUnaligned::Split ObjectPartitionUnaligned::BinInfo::best(BezierRefList& prims, const Mapping& mapping)
   {
     /* sweep from right to left and compute parallel prefix of merged bounds */
     ssef rAreas[BINS];
@@ -136,35 +137,35 @@ namespace embree
       }
     }
 
-    return ObjectPartition::Split(bestSAH,bestDim,bestPos,mapping);
+    return ObjectPartitionUnaligned::Split(bestSAH,bestDim,bestPos,mapping);
   }
 
   template<>
-  const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims)
+  const ObjectPartitionUnaligned::Split ObjectPartitionUnaligned::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space)
   {
     /* calculate geometry and centroid bounds */
     BBox3fa centBounds = empty;
     BBox3fa geomBounds = empty;
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++) {
-      geomBounds.extend(i->bounds());
-      centBounds.extend(i->center());
+      geomBounds.extend(i->bounds(space));
+      centBounds.extend(i->center(space));
     }
 
     BinInfo binner;
-    const Mapping mapping(centBounds);
+    const Mapping mapping(centBounds,space);
     binner.bin(prims,mapping);
     return binner.best(prims,mapping);
   }
 
-  ObjectPartition::TaskBinParallel::TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims) 
-    : iter0(prims), iter1(prims), geomBounds(empty), centBounds(empty)
+  ObjectPartitionUnaligned::TaskBinParallel::TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space) 
+    : space(space), iter0(prims), iter1(prims), geomBounds(empty), centBounds(empty)
   {
     /* parallel calculation of centroid bounds */
     size_t numTasks = min(maxTasks,threadCount);
     TaskScheduler::executeTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_bound_parallel");
 
     /* parallel binning */
-    new (&mapping) Mapping(centBounds);
+    new (&mapping) Mapping(centBounds,space);
     TaskScheduler::executeTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
 
     /* reduction of bin informations */
@@ -176,34 +177,34 @@ namespace embree
     split = bins.best(prims,mapping);
   }
 
-  void ObjectPartition::TaskBinParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  void ObjectPartitionUnaligned::TaskBinParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
     BBox3fa centBounds = empty;
     BBox3fa geomBounds = empty;
     while (BezierRefList::item* block = iter0.next()) 
     {
       for (size_t i=0; i<block->size(); i++) {
-	geomBounds.extend(block->at(i).bounds());
-	centBounds.extend(block->at(i).center());
+	geomBounds.extend(block->at(i).bounds(space));
+	centBounds.extend(block->at(i).center(space));
       }
     }
     this->centBounds.extend_atomic(centBounds);
     this->geomBounds.extend_atomic(geomBounds);
   }
 
-  void ObjectPartition::TaskBinParallel::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  void ObjectPartitionUnaligned::TaskBinParallel::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
     while (BezierRefList::item* block = iter1.next())
       binners[taskIndex].bin(block->base(),block->size(),mapping);
   }
 
   template<>
-  const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims) {
-    return TaskBinParallel(threadIndex,threadCount,prims).split;
+  const ObjectPartitionUnaligned::Split ObjectPartitionUnaligned::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space) {
+    return TaskBinParallel(threadIndex,threadCount,prims,space).split;
   }
 
   template<>
-  void ObjectPartition::Split::split<false>(size_t threadIndex, size_t threadCount, 
+  void ObjectPartitionUnaligned::Split::split<false>(size_t threadIndex, size_t threadCount, 
 					    PrimRefBlockAlloc<Bezier1>& alloc, 
 					    BezierRefList& prims, 
 					    BezierRefList& lprims_o, PrimInfo& linfo_o, 
@@ -217,7 +218,7 @@ namespace embree
       for (size_t i=0; i<block->size(); i++) 
       {
         const Bezier1& prim = block->at(i); 
-	const Vec3fa center = prim.center();
+	const Vec3fa center = prim.center(mapping.space);
 	const ssei bin = mapping.bin_unsafe(center);
 
         if (bin[dim] < pos) 
@@ -239,7 +240,7 @@ namespace embree
     }
   }
 
-  ObjectPartition::TaskSplitParallel::TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+  ObjectPartitionUnaligned::TaskSplitParallel::TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
 							BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o)
     : split(split), alloc(alloc), prims(prims), lprims_o(lprims_o), linfo_o(linfo_o), rprims_o(rprims_o), rinfo_o(rinfo_o)
   {
@@ -256,13 +257,13 @@ namespace embree
     }
   }
 
-  void ObjectPartition::TaskSplitParallel::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  void ObjectPartitionUnaligned::TaskSplitParallel::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
     split->split(threadIndex,threadCount,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
   }
 
   template<>
-  void ObjectPartition::Split::split<true>(size_t threadIndex, size_t threadCount, 
+  void ObjectPartitionUnaligned::Split::split<true>(size_t threadIndex, size_t threadCount, 
 					   PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
 					   BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					   BezierRefList& rprims_o, PrimInfo& rinfo_o) const

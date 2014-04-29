@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "heuristic_object_partition_unaligned.h"
 #include "heuristic_object_partition.h"
 #include "heuristic_spatial_split.h"
 #include "heuristic_strand_partition.h"
@@ -28,13 +29,17 @@ namespace embree
   {
   private:
 
-    enum Ty { OBJECT_SPLIT, SPATIAL_SPLIT, STRAND_SPLIT, FALLBACK_SPLIT };
+    enum Ty { OBJECT_SPLIT, OBJECT_SPLIT_UNALIGNED, SPATIAL_SPLIT, STRAND_SPLIT, FALLBACK_SPLIT };
 
-    enum { S0 = sizeof(ObjectPartition::Split), 
-	   S1 = sizeof(SpatialSplit::Split), 
-	   S2 = sizeof(StrandSplit::Split),
-	   S12 = S0 > S1 ? S0 : S1,
-	   SIZE = S12 > S2 ? S12 : S2 };
+    enum { 
+      S0 = sizeof(ObjectPartitionUnaligned::Split), 
+      S1 = sizeof(ObjectPartition::Split), 
+      S2 = sizeof(SpatialSplit::Split), 
+      S3 = sizeof(StrandSplit::Split),
+      S01 = S0 > S1 ? S0 : S1,
+      S23 = S2 > S3 ? S2 : S3,
+      SIZE = S01 > S23 ? S01 : S23
+    };
 
     typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
 
@@ -43,6 +48,10 @@ namespace embree
     /*! construct fallback split by default */
     __forceinline Split () 
       : type(FALLBACK_SPLIT), sah(inf), isAligned(true) {}
+
+    /*! construction from object partitioning */
+    __forceinline Split (ObjectPartitionUnaligned::Split& split, bool isAligned) 
+      : type(OBJECT_SPLIT_UNALIGNED), sah(split.splitSAH()), isAligned(isAligned) { new (&data) ObjectPartitionUnaligned::Split(split); }
 
     /*! construction from object partitioning */
     __forceinline Split (ObjectPartition::Split& split, bool isAligned) 
@@ -67,6 +76,7 @@ namespace embree
 		 BezierRefList& rprims_o, PrimInfo& rinfo_o) const
     {
       switch (type) {
+      case OBJECT_SPLIT_UNALIGNED : ((ObjectPartitionUnaligned::Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       case OBJECT_SPLIT : ((ObjectPartition::Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       case STRAND_SPLIT : ((StrandSplit::    Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
@@ -83,6 +93,7 @@ namespace embree
 			  BezierRefList& rprims_o, PrimInfo& rinfo_o) const
       {
       switch (type) {
+      case OBJECT_SPLIT_UNALIGNED : ((ObjectPartitionUnaligned::Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       case OBJECT_SPLIT : ((ObjectPartition::Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       case STRAND_SPLIT : ((StrandSplit::    Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;

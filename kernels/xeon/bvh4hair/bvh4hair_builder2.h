@@ -65,8 +65,6 @@ namespace embree
         
   private:
 
-    const BBox3fa subdivideAndAdd(size_t threadIndex, BezierRefList& prims, const Bezier1& bezier, size_t depth);
-
     /*! try to find best non-axis aligned space, where the sum of all bounding areas is minimal */
     static const NAABBox3fa computeHairSpaceBounds(BezierRefList& curves);
 

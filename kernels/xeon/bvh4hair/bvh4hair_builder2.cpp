@@ -105,24 +105,6 @@ namespace embree
     }
   }
 
-  const BBox3fa BVH4HairBuilder2::subdivideAndAdd(size_t threadIndex, BezierRefList& prims, const Bezier1& bezier, size_t depth)
-  {
-    if (depth == 0) {
-      BezierRefList::item* block = prims.head();
-      if (block == NULL || !block->insert(bezier)) {
-        block = prims.insert(alloc.malloc(threadIndex));
-        block->insert(bezier);
-      }
-      return bezier.bounds();
-    }
-
-    Bezier1 bezier0,bezier1;
-    bezier.subdivide(bezier0,bezier1);
-    const BBox3fa bounds0 = subdivideAndAdd(threadIndex,prims,bezier0,depth-1);
-    const BBox3fa bounds1 = subdivideAndAdd(threadIndex,prims,bezier1,depth-1);
-    return merge(bounds0,bounds1);
-  }
-
   const NAABBox3fa BVH4HairBuilder2::computeHairSpaceBounds(BezierRefList& prims)
   {
     size_t N = BezierRefList::block_iterator_unsafe(prims).size();
@@ -225,7 +207,7 @@ namespace embree
     /* perform standard binning in aligned space */
     ObjectPartition::Split alignedObjectSplit;
     float alignedObjectSAH = inf;
-    alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,prims,one);
+    alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,prims);
     alignedObjectSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedObjectSplit.splitSAH();
     bestSAH = min(bestSAH,alignedObjectSAH);
     
@@ -239,11 +221,11 @@ namespace embree
       }*/
 
     /* perform standard binning in unaligned space */
-    ObjectPartition::Split unalignedObjectSplit;
+    ObjectPartitionUnaligned::Split unalignedObjectSplit;
     float unalignedObjectSAH = inf;
     if (alignedObjectSAH > 0.7f*leafSAH) {
       const NAABBox3fa ubounds = computeHairSpaceBounds(prims);
-      unalignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,prims,ubounds.space);
+      unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,ubounds.space);
       unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*unalignedObjectSplit.splitSAH();
       bestSAH = min(bestSAH,unalignedObjectSAH);
     }

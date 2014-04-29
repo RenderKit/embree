@@ -113,6 +113,7 @@ IF (TARGET_AVX)
   bvh4hair/bvh4hair_builder.cpp       # FIXME: should be in SSE2 section
   bvh4hair/bvh4hair_builder2.cpp      # FIXME: should be in SSE2 section
   builders/bezierrefgen.cpp           # FIXME: should be in SSE2 section
+  bvh4hair/heuristic_object_partition_unaligned.cpp
   bvh4hair/heuristic_object_partition.cpp
   bvh4hair/heuristic_spatial_split.cpp
   bvh4hair/heuristic_strand_partition.cpp
