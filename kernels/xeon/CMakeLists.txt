@@ -51,7 +51,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   builders/splitter_fallback.cpp
   builders/splitter_parallel.cpp
   builders/primrefgen.cpp
-  
+    
   geometry/bezier1.cpp
   geometry/bezier1i.cpp
   geometry/triangle1.cpp
@@ -111,7 +111,8 @@ IF (TARGET_AVX)
 
   bvh4hair/bvh4hair.cpp               # FIXME: should be in SSE2 section
   bvh4hair/bvh4hair_builder.cpp       # FIXME: should be in SSE2 section
-  bvh4hair/bvh4hair_builder2.cpp       # FIXME: should be in SSE2 section
+  bvh4hair/bvh4hair_builder2.cpp      # FIXME: should be in SSE2 section
+  builders/bezierrefgen.cpp           # FIXME: should be in SSE2 section
   bvh4hair/heuristic_object_partition.cpp
   bvh4hair/heuristic_spatial_split.cpp
   bvh4hair/heuristic_strand_partition.cpp

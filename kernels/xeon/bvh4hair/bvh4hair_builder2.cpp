@@ -18,6 +18,7 @@
 #include "bvh4hair_builder2.h"
 #include "bvh4hair_statistics.h"
 #include "common/scene_bezier_curves.h"
+#include "../builders/bezierrefgen.h"
 
 namespace embree
 {
@@ -49,31 +50,10 @@ namespace embree
     float r = 0;
 
     /* create initial curve list */
-    BBox3fa bounds = empty;
-    size_t numVertices = 0;
-    BezierRefList prims;
-    for (size_t i=0; i<scene->size(); i++) 
-    {
-      Geometry* geom = scene->get(i);
-      if (geom->type != BEZIER_CURVES) continue;
-      if (!geom->isEnabled()) continue;
-      BezierCurves* set = (BezierCurves*) geom;
-      numVertices += set->numVertices;
-      for (size_t j=0; j<set->numCurves; j++) {
-        const int ofs = set->curve(j);
-        const Vec3fa& p0 = set->vertex(ofs+0);
-        const Vec3fa& p1 = set->vertex(ofs+1);
-        const Vec3fa& p2 = set->vertex(ofs+2);
-        const Vec3fa& p3 = set->vertex(ofs+3);
-        const Bezier1 bezier(p0,p1,p2,p3,0,1,i,j);
-        bounds.extend(subdivideAndAdd(threadIndex,prims,bezier,0));
-      }
-    }
-
-    /* compute primitive info */
-    PrimInfo pinfo;
-    for (BezierRefList::block_iterator_unsafe i = prims; i; i++) 
-      pinfo.add((*i).bounds(),(*i).center());
+     size_t numVertices = 0;
+     BezierRefGen gen(threadIndex,threadCount,&alloc,scene);
+     PrimInfo pinfo = gen.pinfo;
+     BezierRefList prims = gen.prims;
 
     bvh->numPrimitives = scene->numCurves;
     bvh->numVertices = 0;
@@ -81,14 +61,14 @@ namespace embree
 
     /* start recursive build */
     remainingReplications = g_hair_builder_replication_factor*numPrimitives;
-    bvh->bounds = bounds;
+    bvh->bounds = pinfo.geomBounds;
 
 #if 0
     const Split split = find_split(threadIndex,threadCount,prims,pinfo,pinfo.geomBounds);
     BuildTask task(&bvh->root,0,prims,pinfo,pinfo.geomBounds,split); recurseTask(threadIndex,task);
     /*bvh->root = recurse(threadIndex,0,prims,pinfo,pinfo.geomBounds,split);*/
 #else
-    const Split split = find_split(threadIndex,threadCount,prims,pinfo,pinfo.geomBounds);
+    const Split split = find_split<true>(threadIndex,threadCount,prims,pinfo,pinfo.geomBounds);
     BuildTask task(&bvh->root,0,prims,pinfo,pinfo.geomBounds,split);
     numActiveTasks = 1;
     tasks.push_back(task);
@@ -325,9 +305,9 @@ namespace embree
       /*! split selected child */
       PrimInfo linfo, rinfo;
       BezierRefList lprims, rprims;
-      isAligned &= csplit[bestChild].isAligned;
       csplit[bestChild].split<Parallel>(threadIndex,threadCount,alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
       const ssize_t replications = linfo.size()+rinfo.size()-cpinfo[bestChild].size(); assert(replications >= 0);
+      isAligned &= csplit[bestChild].isAligned;
       const NAABBox3fa lbounds = isAligned ? linfo.geomBounds : computeHairSpaceBounds(lprims); 
       const NAABBox3fa rbounds = isAligned ? rinfo.geomBounds : computeHairSpaceBounds(rprims); 
       const Split lsplit = find_split<Parallel>(threadIndex,threadCount,lprims,linfo,lbounds);
