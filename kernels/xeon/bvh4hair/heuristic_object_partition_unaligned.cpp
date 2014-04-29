@@ -35,7 +35,7 @@ namespace embree
       //if ((k++) % ((N+15)/16)) continue;
       const Vec3fa axis = normalize(i->p3 - i->p0);
       if (length(i->p3 - i->p0) < 1E-9) continue;
-      const LinearSpace3fa space = clamp(frame(axis).transposed());
+      const LinearSpace3fa space = frame(axis).transposed();
       BBox3fa bounds = empty;
       float area = 0.0f;
       for (BezierRefList::block_iterator_unsafe j = prims; j; j++) {
