@@ -53,8 +53,8 @@ namespace embree
       return num; 
     }
 
-    __forceinline float leafSAH(float primCost) const { 
-      return halfArea(geomBounds)*primCost*blocks(num); 
+    __forceinline float leafSAH() const { 
+      return halfArea(geomBounds)*blocks(num); 
     }
 
   public:

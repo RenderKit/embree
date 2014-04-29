@@ -28,7 +28,7 @@ namespace embree
   {
   private:
 
-    enum Ty { OBJECT_SPLIT, SPATIAL_SPLIT, STRAND_SPLIT };
+    enum Ty { OBJECT_SPLIT, SPATIAL_SPLIT, STRAND_SPLIT, FALLBACK_SPLIT };
 
     enum { S0 = sizeof(ObjectPartition::Split), 
 	   S1 = sizeof(SpatialSplit::Split), 
@@ -40,17 +40,21 @@ namespace embree
 
   public:
 
+    /*! construct fallback split by default */
+    __forceinline Split () 
+      : type(FALLBACK_SPLIT), sah(inf), isAligned(true) {}
+
     /*! construction from object partitioning */
-    __forceinline Split (ObjectPartition::Split& split) 
-      : type(OBJECT_SPLIT), sah(split.splitSAH()) { new (&data) ObjectPartition::Split(split); }
+    __forceinline Split (ObjectPartition::Split& split, bool isAligned) 
+      : type(OBJECT_SPLIT), sah(split.splitSAH()), isAligned(isAligned) { new (&data) ObjectPartition::Split(split); }
 
     /*! construction from spatial split */
-    __forceinline Split (SpatialSplit::Split& split) 
-      : type(SPATIAL_SPLIT), sah(split.splitSAH()) { new (&data) SpatialSplit::Split(split); }
+    __forceinline Split (SpatialSplit::Split& split, bool isAligned) 
+      : type(SPATIAL_SPLIT), sah(split.splitSAH()), isAligned(isAligned) { new (&data) SpatialSplit::Split(split); }
 
     /*! construction from strand split */
-    __forceinline Split (StrandSplit::Split& split) 
-      : type(STRAND_SPLIT), sah(split.splitSAH()) { new (&data) StrandSplit::Split(split); }
+    __forceinline Split (StrandSplit::Split& split, bool isAligned) 
+      : type(STRAND_SPLIT), sah(split.splitSAH()), isAligned(isAligned) { new (&data) StrandSplit::Split(split); }
 
     /*! calculates surface area heuristic for performing the split */
     __forceinline float splitSAH() const { return sah; }
@@ -65,6 +69,7 @@ namespace embree
       case OBJECT_SPLIT : ((ObjectPartition::Split*)&data)->split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       case STRAND_SPLIT : ((StrandSplit::    Split*)&data)->split(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+      case FALLBACK_SPLIT: FallBackSplit::find(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       default: throw std::runtime_error("internal error");
       }
     }
@@ -79,6 +84,7 @@ namespace embree
       case OBJECT_SPLIT : ((ObjectPartition::Split*)&data)->split_parallel(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split_parallel(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       case STRAND_SPLIT : ((StrandSplit::    Split*)&data)->split_parallel(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+      case FALLBACK_SPLIT: FallBackSplit::find(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
       default: throw std::runtime_error("internal error");
       }
     }
@@ -87,5 +93,7 @@ namespace embree
     __aligned(16) char data[SIZE]; //!< stores the different split types
     Ty type;                       //!< the type of split stored
     float sah;                     //!< the SAH of the stored split
+  public:
+    bool isAligned;
   };
 }
