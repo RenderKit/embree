@@ -198,7 +198,8 @@ namespace embree
     return binner.best(mapping);
   }
 
-  ObjectPartition::TaskBinBezierParallel::TaskBinBezierParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo) 
+  template<typename List>
+  ObjectPartition::TaskBinParallel<List>::TaskBinParallel(size_t threadIndex, size_t threadCount, List& prims, const PrimInfo& pinfo) 
     : iter(prims)
   {
    /* parallel binning */			
@@ -215,15 +216,21 @@ namespace embree
     split = bins.best(mapping);
   }
 
-  void ObjectPartition::TaskBinBezierParallel::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  template<typename List>
+  void ObjectPartition::TaskBinParallel<List>::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
-    while (BezierRefList::item* block = iter.next())
+    while (typename List::item* block = iter.next())
       binners[taskIndex].bin(block->base(),block->size(),mapping);
   }
 
   template<>
   const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo) {
-    return TaskBinBezierParallel(threadIndex,threadCount,prims,pinfo).split;
+    return TaskBinParallel<BezierRefList>(threadIndex,threadCount,prims,pinfo).split;
+  }
+
+  template<>
+  const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo) {
+    return TaskBinParallel<PrimRefList>(threadIndex,threadCount,prims,pinfo).split;
   }
 
   template<>
@@ -241,19 +248,19 @@ namespace embree
       for (size_t i=0; i<block->size(); i++) 
       {
         const Bezier1& prim = block->at(i); 
-	const Vec3fa center = prim.center();
+	const Vec3fa center = prim.center2();
 	const ssei bin = ssei(mapping.bin_unsafe(center));
 
         if (bin[dim] < pos) 
         {
-	  linfo_o.add(prim.bounds(),prim.center());
+	  linfo_o.add(prim.bounds(),center);
 	  if (likely(lblock->insert(prim))) continue; 
           lblock = lprims_o.insert(alloc.malloc(threadIndex));
           lblock->insert(prim);
         } 
         else 
         {
-          rinfo_o.add(prim.bounds(),prim.center());
+          rinfo_o.add(prim.bounds(),center);
           if (likely(rblock->insert(prim))) continue;
           rblock = rprims_o.insert(alloc.malloc(threadIndex));
           rblock->insert(prim);
@@ -263,8 +270,46 @@ namespace embree
     }
   }
 
-  ObjectPartition::TaskSplitBezierParallel::TaskSplitBezierParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
-							BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o)
+  template<>
+  void ObjectPartition::Split::split<false>(size_t threadIndex, size_t threadCount, 
+					    PrimRefBlockAlloc<PrimRef>& alloc, 
+					    PrimRefList& prims, 
+					    PrimRefList& lprims_o, PrimInfo& linfo_o, 
+					    PrimRefList& rprims_o, PrimInfo& rinfo_o) const
+  {
+    PrimRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
+    PrimRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
+    
+    while (PrimRefList::item* block = prims.take()) 
+    {
+      for (size_t i=0; i<block->size(); i++) 
+      {
+        const PrimRef& prim = block->at(i); 
+	const Vec3fa center = prim.center2();
+	const ssei bin = ssei(mapping.bin_unsafe(center));
+
+        if (bin[dim] < pos) 
+        {
+	  linfo_o.add(prim.bounds(),center);
+	  if (likely(lblock->insert(prim))) continue; 
+          lblock = lprims_o.insert(alloc.malloc(threadIndex));
+          lblock->insert(prim);
+        } 
+        else 
+        {
+          rinfo_o.add(prim.bounds(),center);
+          if (likely(rblock->insert(prim))) continue;
+          rblock = rprims_o.insert(alloc.malloc(threadIndex));
+          rblock->insert(prim);
+        }
+      }
+      alloc.free(threadIndex,block);
+    }
+  }
+
+  template<typename Prim>
+  ObjectPartition::TaskSplitParallel<Prim>::TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Prim>& alloc, List& prims, 
+							      List& lprims_o, PrimInfo& linfo_o, List& rprims_o, PrimInfo& rinfo_o)
     : split(split), alloc(alloc), prims(prims), lprims_o(lprims_o), linfo_o(linfo_o), rprims_o(rprims_o), rinfo_o(rinfo_o)
   {
     /* parallel calculation of centroid bounds */
@@ -280,7 +325,8 @@ namespace embree
     }
   }
 
-  void ObjectPartition::TaskSplitBezierParallel::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  template<typename Prim>
+  void ObjectPartition::TaskSplitParallel<Prim>::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
     split->split(threadIndex,threadCount,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
   }
@@ -291,6 +337,6 @@ namespace embree
 					   BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					   BezierRefList& rprims_o, PrimInfo& rinfo_o) const
   {
-    TaskSplitBezierParallel(threadIndex,threadCount,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+    TaskSplitParallel<Bezier1>(threadIndex,threadCount,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
   }
 }

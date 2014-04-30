@@ -146,50 +146,21 @@ namespace embree
       ssei    counts[BINS];    //!< counts number of primitives that map into the bins
     };
 
-    /*! task for parallel binning of bezier curves */
-    struct TaskBinBezierParallel
+    /*! task for parallel binning */
+    template<typename List>
+    struct TaskBinParallel
     {
       /*! construction executes the task */
-      TaskBinBezierParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo);
+      TaskBinParallel(size_t threadIndex, size_t threadCount, List& prims, const PrimInfo& pinfo);
 
     private:
 
       /*! parallel binning */
-      TASK_RUN_FUNCTION(TaskBinBezierParallel,task_bin_parallel);
+      TASK_RUN_FUNCTION(TaskBinParallel,task_bin_parallel);
       
       /*! state for binning stage */
     private:
-      BezierRefList::iterator iter; //!< iterator for binning stage
-      Mapping mapping;
-      BinInfo binners[maxTasks];
-
-    public:
-      Split split; //!< best split
-    };
-
-    /*! task for parallel binning of primitives */
-    struct TaskBinPrimsParallel
-    {
-      /*! construction executes the task */
-      TaskBinPrimsParallel(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo);
-
-    private:
-
-      /*! parallel bounding calculations */
-      TASK_RUN_FUNCTION(TaskBinPrimsParallel,task_bound_parallel);
-
-      /*! parallel binning */
-      TASK_RUN_FUNCTION(TaskBinPrimsParallel,task_bin_parallel);
-      
-      /*! state for bounding stage */
-    private:
-      PrimRefList::iterator iter0; //!< iterator for bounding stage 
-      BBox3fa centBounds;   //!< calculated centroid bounds
-      BBox3fa geomBounds;   //!< calculated geometry bounds
-
-      /*! state for binning stage */
-    private:
-      PrimRefList::iterator iter1; //!< iterator for binning stage
+      typename List::iterator iter; //!< iterator for binning stage
       Mapping mapping;
       BinInfo binners[maxTasks];
 
@@ -198,61 +169,34 @@ namespace embree
     };
 
     /*! task for parallel splitting of bezier curve lists */
-    struct TaskSplitBezierParallel
+    template<typename Prim>
+    struct TaskSplitParallel
     {
+      typedef atomic_set<PrimRefBlockT<Prim> > List;
+
       /*! construction executes the task */
-      TaskSplitBezierParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, 
-			      BezierRefList& prims, 
-			      BezierRefList& lprims_o, PrimInfo& linfo_o, 
-			      BezierRefList& rprims_o, PrimInfo& rinfo_o);
+      TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Prim>& alloc, 
+			List& prims, 
+			List& lprims_o, PrimInfo& linfo_o, 
+			List& rprims_o, PrimInfo& rinfo_o);
 
     private:
 
       /*! parallel split task function */
-      TASK_RUN_FUNCTION(TaskSplitBezierParallel,task_split_parallel);
+      TASK_RUN_FUNCTION(TaskSplitParallel,task_split_parallel);
 
       /*! input data */
     private:
       const Split* split;
-      PrimRefBlockAlloc<Bezier1>& alloc;
-      BezierRefList prims;
+      PrimRefBlockAlloc<Prim>& alloc;
+      List prims;
       PrimInfo linfos[maxTasks];
       PrimInfo rinfos[maxTasks];
 
       /*! output data */
     private:
-      BezierRefList& lprims_o; 
-      BezierRefList& rprims_o;
-      PrimInfo& linfo_o;
-      PrimInfo& rinfo_o;
-    };
-
-    /*! task for parallel splitting of prim ref lists */
-    struct TaskSplitPrimsParallel
-    {
-      /*! construction executes the task */
-      TaskSplitPrimsParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<PrimRef>& alloc, 
-			     PrimRefList& prims, 
-			     PrimRefList& lprims_o, PrimInfo& linfo_o, 
-			     PrimRefList& rprims_o, PrimInfo& rinfo_o);
-
-    private:
-
-      /*! parallel split task function */
-      TASK_RUN_FUNCTION(TaskSplitPrimsParallel,task_split_parallel);
-
-      /*! input data */
-    private:
-      const Split* split;
-      PrimRefBlockAlloc<PrimRef>& alloc;
-      PrimRefList prims;
-      PrimInfo linfos[maxTasks];
-      PrimInfo rinfos[maxTasks];
-
-      /*! output data */
-    private:
-      PrimRefList& lprims_o; 
-      PrimRefList& rprims_o;
+      List& lprims_o; 
+      List& rprims_o;
       PrimInfo& linfo_o;
       PrimInfo& rinfo_o;
     };

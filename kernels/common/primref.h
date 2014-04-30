@@ -28,6 +28,11 @@ namespace embree
       lower = bounds.lower; lower.a = geomID;
       upper = bounds.upper; upper.a = primID;
     }
+
+    /*! calculates twice the center of the primitive */
+    __forceinline const Vec3fa center2() const {
+      return lower+upper;
+    }
     
     __forceinline const BBox3fa bounds() const {
       return BBox3fa(lower,upper);

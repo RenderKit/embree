@@ -45,12 +45,22 @@ namespace embree
     }
       
     /*! calculate the center of the curve */
-    __forceinline const Vec3fa center() const {
+    __forceinline const Vec3fa center() const { // FIXME: remove this function, use center2 intead
       return p0+p3;
     }
 
     /*! calculate the center of the curve */
-    __forceinline const Vec3fa center(const AffineSpace3fa& space) const {
+    __forceinline const Vec3fa center(const AffineSpace3fa& space) const { // FIXME: remove this function, use center2 intead
+      return xfmPoint(space,p0)+xfmPoint(space,p3);
+    }
+
+    /*! calculate the center of the curve */
+    __forceinline const Vec3fa center2() const {
+      return p0+p3;
+    }
+
+    /*! calculate the center of the curve */
+    __forceinline const Vec3fa center2(const AffineSpace3fa& space) const {
       return xfmPoint(space,p0)+xfmPoint(space,p3);
     }
 
