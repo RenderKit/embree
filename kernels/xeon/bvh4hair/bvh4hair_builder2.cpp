@@ -39,6 +39,8 @@ namespace embree
     if (numPrimitives == 0) return;
     numGeneratedPrims = 0;
 
+    //while (true)
+    {
     double t0 = 0.0;
     if (g_verbose >= 2) 
     {
@@ -75,7 +77,7 @@ namespace embree
     push_heap(tasks.begin(),tasks.end());
     
 #if 1
-    while (tasks.front().pinfo.size() > 1000000)
+    while (tasks.front().pinfo.size() > 200000)
     {
       BuildTask task = tasks.front();
       pop_heap(tasks.begin(),tasks.end());
@@ -102,6 +104,7 @@ namespace embree
       std::cout << " [DONE]" << std::endl;
       std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
       std::cout << BVH4HairStatistics(bvh).str();
+    }
     }
   }
 
