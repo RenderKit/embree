@@ -32,7 +32,11 @@ namespace embree
 
     /*! calculates some space aligned with the bezier curves */
     template<bool Parallel>
-    static const NAABBox3fa computeAlignedSpace(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo);
+    static const LinearSpace3fa computeAlignedSpace(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo);
+
+    /*! calculates some space aligned with the bezier curves */
+    template<bool Parallel>
+    static const NAABBox3fa computeAlignedSpaceBounds(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo);
  
     /*! calculates some space aligned with the bezier curves */
     template<bool Parallel>

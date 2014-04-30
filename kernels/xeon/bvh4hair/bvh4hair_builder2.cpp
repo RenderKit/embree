@@ -177,9 +177,9 @@ namespace embree
     ObjectPartitionUnaligned::Split unalignedObjectSplit;
     float unalignedObjectSAH = inf;
     if (alignedObjectSAH > 0.7f*leafSAH) {
-      const NAABBox3fa ubounds = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,prims,pinfo);
-      const PrimInfo upinfo = ObjectPartitionUnaligned::computePrimInfo<Parallel>(threadIndex,threadCount,prims,ubounds.space);
-      unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,ubounds.space,upinfo);
+      const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,prims,pinfo);
+      const PrimInfo upinfo = ObjectPartitionUnaligned::computePrimInfo<Parallel>(threadIndex,threadCount,prims,space);
+      unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,space,upinfo);
       unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*unalignedObjectSplit.splitSAH();
       bestSAH = min(bestSAH,unalignedObjectSAH);
     }
@@ -244,8 +244,8 @@ namespace embree
       csplit[bestChild].split<Parallel>(threadIndex,threadCount,alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
       const ssize_t replications = linfo.size()+rinfo.size()-cpinfo[bestChild].size(); assert(replications >= 0);
       isAligned &= csplit[bestChild].isAligned;
-      const NAABBox3fa lbounds = isAligned ? linfo.geomBounds : ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,lprims,linfo); 
-      const NAABBox3fa rbounds = isAligned ? rinfo.geomBounds : ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,rprims,rinfo); 
+      const NAABBox3fa lbounds = isAligned ? linfo.geomBounds : ObjectPartitionUnaligned::computeAlignedSpaceBounds<Parallel>(threadIndex,threadCount,lprims,linfo); 
+      const NAABBox3fa rbounds = isAligned ? rinfo.geomBounds : ObjectPartitionUnaligned::computeAlignedSpaceBounds<Parallel>(threadIndex,threadCount,rprims,rinfo); 
       const Split lsplit = find_split<Parallel>(threadIndex,threadCount,lprims,linfo,lbounds);
       const Split rsplit = find_split<Parallel>(threadIndex,threadCount,rprims,rinfo,rbounds);
       cprims[numChildren] = rprims; cpinfo[numChildren] = rinfo; cbounds[numChildren]= rbounds; csplit[numChildren] = rsplit;
