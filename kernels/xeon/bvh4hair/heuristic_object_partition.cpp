@@ -189,15 +189,21 @@ namespace embree
     return binner.best(mapping);
   }
 
-  ObjectPartition::TaskBinBezierParallel::TaskBinBezierParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims) 
-    : iter0(prims), iter1(prims), geomBounds(empty), centBounds(empty)
+  template<>
+  const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo)
   {
-    /* parallel calculation of centroid bounds */
-    size_t numTasks = min(maxTasks,threadCount);
-    TaskScheduler::executeTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_bound_parallel");
+    BinInfo binner;
+    const Mapping mapping(pinfo.centBounds);
+    binner.bin(prims,mapping);
+    return binner.best(mapping);
+  }
 
-    /* parallel binning */
-    new (&mapping) Mapping(centBounds);
+  ObjectPartition::TaskBinBezierParallel::TaskBinBezierParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo) 
+    : iter(prims)
+  {
+   /* parallel binning */			
+    size_t numTasks = min(maxTasks,threadCount);
+    new (&mapping) Mapping(pinfo.centBounds);
     TaskScheduler::executeTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
 
     /* reduction of bin informations */
@@ -209,30 +215,15 @@ namespace embree
     split = bins.best(mapping);
   }
 
-  void ObjectPartition::TaskBinBezierParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
-  {
-    BBox3fa centBounds = empty;
-    BBox3fa geomBounds = empty;
-    while (BezierRefList::item* block = iter0.next()) 
-    {
-      for (size_t i=0; i<block->size(); i++) {
-	geomBounds.extend(block->at(i).bounds());
-	centBounds.extend(block->at(i).center());
-      }
-    }
-    this->centBounds.extend_atomic(centBounds);
-    this->geomBounds.extend_atomic(geomBounds);
-  }
-
   void ObjectPartition::TaskBinBezierParallel::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
-    while (BezierRefList::item* block = iter1.next())
+    while (BezierRefList::item* block = iter.next())
       binners[taskIndex].bin(block->base(),block->size(),mapping);
   }
 
   template<>
   const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo) {
-    return TaskBinBezierParallel(threadIndex,threadCount,prims).split;
+    return TaskBinBezierParallel(threadIndex,threadCount,prims,pinfo).split;
   }
 
   template<>

@@ -150,25 +150,16 @@ namespace embree
     struct TaskBinBezierParallel
     {
       /*! construction executes the task */
-      TaskBinBezierParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims);
+      TaskBinBezierParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo);
 
     private:
-
-      /*! parallel bounding calculations */
-      TASK_RUN_FUNCTION(TaskBinBezierParallel,task_bound_parallel);
 
       /*! parallel binning */
       TASK_RUN_FUNCTION(TaskBinBezierParallel,task_bin_parallel);
       
-      /*! state for bounding stage */
-    private:
-      BezierRefList::iterator iter0; //!< iterator for bounding stage 
-      BBox3fa centBounds;   //!< calculated centroid bounds
-      BBox3fa geomBounds;   //!< calculated geometry bounds
-
       /*! state for binning stage */
     private:
-      BezierRefList::iterator iter1; //!< iterator for binning stage
+      BezierRefList::iterator iter; //!< iterator for binning stage
       Mapping mapping;
       BinInfo binners[maxTasks];
 
@@ -180,7 +171,7 @@ namespace embree
     struct TaskBinPrimsParallel
     {
       /*! construction executes the task */
-      TaskBinPrimsParallel(size_t threadIndex, size_t threadCount, PrimRefList& prims);
+      TaskBinPrimsParallel(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo);
 
     private:
 
