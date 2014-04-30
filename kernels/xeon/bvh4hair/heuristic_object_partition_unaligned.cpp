@@ -18,6 +18,39 @@
 
 namespace embree
 {
+#if 0 
+  template<>
+  const LinearSpace3fa ObjectPartitionUnaligned::computeAlignedSpace<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims)
+  {
+    float bestArea = inf;
+    LinearSpace3fa bestSpace = one;
+
+    size_t k=0;
+    for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
+    {
+      if ((k++) > 1) break;
+      //if ((k++) % ((N+1)/2)) continue;
+      //if ((k++) % ((N+3)/4)) continue;
+      //if ((k++) % ((N+15)/16)) continue;
+      const Vec3fa axis = normalize(i->p3 - i->p0);
+      //if (length(i->p3 - i->p0) < 1E-9) continue;
+      const LinearSpace3fa space = frame(axis).transposed();
+      BBox3fa bounds = empty;
+      float area = 0.0f;
+      for (BezierRefList::block_iterator_unsafe j = prims; j; j++) {
+        const BBox3fa cbounds = j->bounds(space);
+	area += (cbounds.upper.x-cbounds.lower.x)*(cbounds.upper.y-cbounds.lower.y);
+      }
+
+      if (area <= bestArea) {
+        bestSpace = space;
+        bestArea = area;
+      }
+    }
+
+    return bestSpace;
+  }
+#else
   template<>
   const LinearSpace3fa ObjectPartitionUnaligned::computeAlignedSpace<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims)
   {
@@ -34,6 +67,7 @@ namespace embree
     }
     return frame(axis).transposed();
   }
+#endif
 
   template<>
   const LinearSpace3fa ObjectPartitionUnaligned::computeAlignedSpace<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims)
