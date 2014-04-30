@@ -204,31 +204,18 @@ namespace embree
     return binner.best(prims,mapping);
   }
 
-  ObjectPartitionUnaligned::TaskBinParallel::TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space) 
-    : space(space), iter0(prims), iter1(prims), geomBounds(empty), centBounds(empty)
+  ObjectPartitionUnaligned::TaskBoundParallel::TaskBoundParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space) 
+    : space(space), iter(prims), geomBounds(empty), centBounds(empty)
   {
-    /* parallel calculation of centroid bounds */
     size_t numTasks = min(maxTasks,threadCount);
     TaskScheduler::executeTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_bound_parallel");
-
-    /* parallel binning */
-    new (&mapping) Mapping(centBounds,space);
-    TaskScheduler::executeTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
-
-    /* reduction of bin informations */
-    BinInfo bins = binners[0];
-    for (size_t i=1; i<numTasks; i++)
-      bins.merge(binners[i]);
-
-    /* calculation of best split */
-    split = bins.best(prims,mapping);
   }
 
-  void ObjectPartitionUnaligned::TaskBinParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  void ObjectPartitionUnaligned::TaskBoundParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
     BBox3fa centBounds = empty;
     BBox3fa geomBounds = empty;
-    while (BezierRefList::item* block = iter0.next()) 
+    while (BezierRefList::item* block = iter.next()) 
     {
       for (size_t i=0; i<block->size(); i++) {
 	geomBounds.extend(block->at(i).bounds(space));
@@ -239,15 +226,37 @@ namespace embree
     this->geomBounds.extend_atomic(geomBounds);
   }
 
+  ObjectPartitionUnaligned::TaskBinParallel::TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, 
+							     const LinearSpace3fa& space, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
+    : space(space), iter(prims), geomBounds(geomBounds), centBounds(centBounds), mapping(centBounds,space)
+  {
+    /* parallel binning */
+    size_t numTasks = min(maxTasks,threadCount);
+    TaskScheduler::executeTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
+
+    /* reduction of bin information */
+    BinInfo bins = binners[0];
+    for (size_t i=1; i<numTasks; i++)
+      bins.merge(binners[i]);
+
+    /* calculation of best split */
+    split = bins.best(prims,mapping);
+  }
+
   void ObjectPartitionUnaligned::TaskBinParallel::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
-    while (BezierRefList::item* block = iter1.next())
+    while (BezierRefList::item* block = iter.next())
       binners[taskIndex].bin(block->base(),block->size(),mapping);
   }
 
   template<>
-  const ObjectPartitionUnaligned::Split ObjectPartitionUnaligned::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space) {
-    return TaskBinParallel(threadIndex,threadCount,prims,space).split;
+  const ObjectPartitionUnaligned::Split ObjectPartitionUnaligned::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space) 
+  {
+    /*! first compute bounds in parallel */
+    const TaskBoundParallel pinfo(threadIndex,threadCount,prims,space);
+
+    /*! then perform parallel binning */
+    return TaskBinParallel(threadIndex,threadCount,prims,space,pinfo.geomBounds,pinfo.centBounds).split;
   }
 
   template<>

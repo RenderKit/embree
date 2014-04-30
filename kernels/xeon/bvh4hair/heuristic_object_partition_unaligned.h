@@ -131,35 +131,53 @@ namespace embree
       ssei    counts[BINS];    //!< counts number of primitives that map into the bins
     };
 
-    /*! task for parallel binning */
-    struct TaskBinParallel
+    /*! task for parallel bounding calculations */
+    struct TaskBoundParallel
     {
       /*! construction executes the task */
-      TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
+      TaskBoundParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
 
     private:
 
       /*! parallel bounding calculations */
-      TASK_RUN_FUNCTION(TaskBinParallel,task_bound_parallel);
+      TASK_RUN_FUNCTION(TaskBoundParallel,task_bound_parallel);
+    
+      /*! state for bounding stage */
+    private:
+      BezierRefList::iterator iter; //!< iterator for bounding stage 
+      LinearSpace3fa space; //!< space for bounding calculations
+
+      /*! output data */
+    public:
+      BBox3fa centBounds;   //!< calculated centroid bounds
+      BBox3fa geomBounds;   //!< calculated geometry bounds
+    };
+
+    /*! task for parallel binning */
+    struct TaskBinParallel
+    {
+      /*! construction executes the task */
+      TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space, const BBox3fa& geomBounds, const BBox3fa& centBounds);
+
+    private:
 
       /*! parallel binning */
       TASK_RUN_FUNCTION(TaskBinParallel,task_bin_parallel);
       
-      /*! state for bounding stage */
+      /*! input data */
     private:
-      BezierRefList::iterator iter0; //!< iterator for bounding stage 
       LinearSpace3fa space; //!< space for bounding calculations
-      BBox3fa centBounds;   //!< calculated centroid bounds
-      BBox3fa geomBounds;   //!< calculated geometry bounds
+      BBox3fa centBounds;   //!< centroid bounds
+      BBox3fa geomBounds;   //!< geometry bounds
 
       /*! state for binning stage */
     private:
-      BezierRefList::iterator iter1; //!< iterator for binning stage
+      BezierRefList::iterator iter;
       Mapping mapping;
       BinInfo binners[maxTasks];
 
     public:
-      Split split; //!< best split
+      Split split;          //!< best split
     };
 
     /*! task for parallel splitting */
