@@ -31,12 +31,16 @@ namespace embree
   public:
 
     /*! calculates some space aligned with the bezier curves */
-     template<bool Parallel>
-     static const NAABBox3fa computeAlignedSpace(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo);
+    template<bool Parallel>
+    static const NAABBox3fa computeAlignedSpace(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo);
+ 
+    /*! calculates some space aligned with the bezier curves */
+    template<bool Parallel>
+    static const PrimInfo computePrimInfo(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
  
     /*! finds the best split */
     template<bool Parallel = false>
-      static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves, const LinearSpace3fa& space);
+      static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves, const LinearSpace3fa& space, const PrimInfo& pinfo);
 
   private:
 
@@ -150,6 +154,7 @@ namespace embree
 
       /*! output data */
     public:
+      atomic_t num;         //!< number of primitives
       BBox3fa centBounds;   //!< calculated centroid bounds
       BBox3fa geomBounds;   //!< calculated geometry bounds
     };

@@ -72,6 +72,7 @@ namespace embree
     if (pinfo.size() == 0) 
       return NAABBox3fa(empty); // FIXME: can cause problems with compression
 
+    /*! find first curve that defines valid direction */
     Vec3fa axis(0,0,1);
     BezierRefList::block_iterator_unsafe i = prims;
     for (; i; i++)
@@ -87,6 +88,27 @@ namespace embree
     /*! compute bounds in parallel */
     const TaskBoundParallel bounds(threadIndex,threadCount,prims,space);
     return NAABBox3fa(space,bounds.geomBounds);
+  }
+
+  template<>
+  const PrimInfo ObjectPartitionUnaligned::computePrimInfo<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space)
+  {
+    size_t num = 0;
+    BBox3fa geomBounds = empty;
+    BBox3fa centBounds = empty;
+    for (BezierRefList::block_iterator_unsafe i = prims; i; i++) {
+      num++;
+      geomBounds.extend(i->bounds(space));
+      centBounds.extend(i->center(space));
+    }
+    return PrimInfo(num,geomBounds,centBounds);
+  }
+
+  template<>
+  const PrimInfo ObjectPartitionUnaligned::computePrimInfo<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space)
+  {
+    const TaskBoundParallel bounds(threadIndex,threadCount,prims,space);
+    return PrimInfo(bounds.num,bounds.geomBounds,bounds.centBounds);
   }
 
   __forceinline ObjectPartitionUnaligned::Mapping::Mapping(const BBox3fa& centBounds, const LinearSpace3fa& space) 
@@ -212,18 +234,18 @@ namespace embree
   }
 
   template<>
-  const ObjectPartitionUnaligned::Split ObjectPartitionUnaligned::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space)
+  const ObjectPartitionUnaligned::Split ObjectPartitionUnaligned::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space, const PrimInfo& pinfo)
   {
     /* calculate geometry and centroid bounds */
-    BBox3fa centBounds = empty;
+    /*BBox3fa centBounds = empty;
     BBox3fa geomBounds = empty;
     for (BezierRefList::block_iterator_unsafe i = prims; i; i++) {
       geomBounds.extend(i->bounds(space));
       centBounds.extend(i->center(space));
-    }
+      }*/
 
     BinInfo binner;
-    const Mapping mapping(centBounds,space);
+    const Mapping mapping(pinfo.centBounds,space);
     binner.bin(prims,mapping);
     return binner.best(prims,mapping);
   }
@@ -237,15 +259,18 @@ namespace embree
 
   void ObjectPartitionUnaligned::TaskBoundParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
+    size_t N = 0;
     BBox3fa centBounds = empty;
     BBox3fa geomBounds = empty;
     while (BezierRefList::item* block = iter.next()) 
     {
+      N += block->size();
       for (size_t i=0; i<block->size(); i++) {
 	geomBounds.extend(block->at(i).bounds(space));
 	centBounds.extend(block->at(i).center(space));
       }
     }
+    atomic_add(&this->num,N);
     this->centBounds.extend_atomic(centBounds);
     this->geomBounds.extend_atomic(geomBounds);
   }
@@ -274,10 +299,10 @@ namespace embree
   }
 
   template<>
-  const ObjectPartitionUnaligned::Split ObjectPartitionUnaligned::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space) 
+  const ObjectPartitionUnaligned::Split ObjectPartitionUnaligned::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space, const PrimInfo& pinfo) 
   {
     /*! first compute bounds in parallel */
-    const TaskBoundParallel pinfo(threadIndex,threadCount,prims,space);
+    //const TaskBoundParallel pinfo(threadIndex,threadCount,prims,space);
 
     /*! then perform parallel binning */
     return TaskBinParallel(threadIndex,threadCount,prims,space,pinfo.geomBounds,pinfo.centBounds).split;

@@ -178,7 +178,8 @@ namespace embree
     float unalignedObjectSAH = inf;
     if (alignedObjectSAH > 0.7f*leafSAH) {
       const NAABBox3fa ubounds = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,prims,pinfo);
-      unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,ubounds.space);
+      const PrimInfo upinfo = ObjectPartitionUnaligned::computePrimInfo<Parallel>(threadIndex,threadCount,prims,ubounds.space);
+      unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,ubounds.space,upinfo);
       unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*unalignedObjectSplit.splitSAH();
       bestSAH = min(bestSAH,unalignedObjectSAH);
     }
