@@ -18,7 +18,8 @@
 
 namespace embree
 {
-  const NAABBox3fa ObjectPartitionUnaligned::computeAlignedSpace(BezierRefList& prims, const PrimInfo& pinfo)
+  template<>
+  const NAABBox3fa ObjectPartitionUnaligned::computeAlignedSpace<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo)
   {
     size_t N = pinfo.size();
     if (N == 0) return NAABBox3fa(empty); // FIXME: can cause problems with compression
@@ -63,6 +64,29 @@ namespace embree
     }
 
     return NAABBox3fa(bestSpace,bestBounds);
+  }
+
+  template<>
+  const NAABBox3fa ObjectPartitionUnaligned::computeAlignedSpace<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo)
+  {
+    if (pinfo.size() == 0) 
+      return NAABBox3fa(empty); // FIXME: can cause problems with compression
+
+    Vec3fa axis(0,0,1);
+    BezierRefList::block_iterator_unsafe i = prims;
+    for (; i; i++)
+    {
+      const Vec3fa axis1 = normalize(i->p3 - i->p0);
+      if (length(i->p3 - i->p0) > 1E-9) {
+	axis = axis1;
+	break;
+      }
+    }
+    const LinearSpace3fa space = frame(axis).transposed();
+
+    /*! compute bounds in parallel */
+    const TaskBoundParallel bounds(threadIndex,threadCount,prims,space);
+    return NAABBox3fa(space,bounds.geomBounds);
   }
 
   __forceinline ObjectPartitionUnaligned::Mapping::Mapping(const BBox3fa& centBounds, const LinearSpace3fa& space) 

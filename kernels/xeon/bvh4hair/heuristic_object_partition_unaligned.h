@@ -31,7 +31,8 @@ namespace embree
   public:
 
     /*! calculates some space aligned with the bezier curves */
-    static const NAABBox3fa computeAlignedSpace(BezierRefList& prims, const PrimInfo& pinfo);
+     template<bool Parallel>
+     static const NAABBox3fa computeAlignedSpace(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo);
  
     /*! finds the best split */
     template<bool Parallel = false>
