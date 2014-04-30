@@ -19,11 +19,8 @@
 namespace embree
 {
   template<>
-  const LinearSpace3fa ObjectPartitionUnaligned::computeAlignedSpace<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo)
+  const LinearSpace3fa ObjectPartitionUnaligned::computeAlignedSpace<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims)
   {
-    size_t N = pinfo.size();
-    if (N == 0) return one; //return NAABBox3fa(empty); // FIXME: can cause problems with compression
-
     float bestArea = inf;
     LinearSpace3fa bestSpace = one;
     BBox3fa bestBounds = empty;
@@ -62,7 +59,7 @@ namespace embree
       for (BezierRefList::block_iterator_unsafe j = prims; j; j++)
       bestBounds.extend(j->bounds());*/
 
-      return one;
+      return one;// FIXME: can cause problems with compression
     }
 
     return bestSpace;
@@ -70,11 +67,8 @@ namespace embree
   }
 
   template<>
-  const LinearSpace3fa ObjectPartitionUnaligned::computeAlignedSpace<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo)
+  const LinearSpace3fa ObjectPartitionUnaligned::computeAlignedSpace<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims)
   {
-    if (pinfo.size() == 0) 
-      return one; // FIXME: can cause problems with compression
-
     /*! find first curve that defines valid direction */
     Vec3fa axis(0,0,1);
     BezierRefList::block_iterator_unsafe i = prims;
@@ -87,10 +81,6 @@ namespace embree
       }
     }
     return frame(axis).transposed();
-
-    /*! compute bounds in parallel */
-    //const TaskBoundParallel bounds(threadIndex,threadCount,prims,space);
-    //return NAABBox3fa(space,bounds.geomBounds);
   }
 
   template<>
@@ -112,22 +102,6 @@ namespace embree
   {
     const TaskBoundParallel bounds(threadIndex,threadCount,prims,space);
     return PrimInfo(bounds.num,bounds.geomBounds,bounds.centBounds);
-  }
-
-  template<>
-  const NAABBox3fa ObjectPartitionUnaligned::computeAlignedSpaceBounds<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo)
-  {
-    const LinearSpace3fa space = computeAlignedSpace<false>(threadIndex,threadCount,prims,pinfo);
-    const PrimInfo uinfo = computePrimInfo<false>(threadIndex,threadCount,prims,space);
-    return NAABBox3fa(space,uinfo.geomBounds);
-  }
-
-  template<>
-  const NAABBox3fa ObjectPartitionUnaligned::computeAlignedSpaceBounds<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo)
-  {
-    const LinearSpace3fa space = computeAlignedSpace<true>(threadIndex,threadCount,prims,pinfo);
-    const PrimInfo uinfo = computePrimInfo<true>(threadIndex,threadCount,prims,space);
-    return NAABBox3fa(space,uinfo.geomBounds);
   }
 
   __forceinline ObjectPartitionUnaligned::Mapping::Mapping(const BBox3fa& centBounds, const LinearSpace3fa& space) 

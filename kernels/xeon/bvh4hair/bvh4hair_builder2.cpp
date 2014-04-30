@@ -180,14 +180,10 @@ namespace embree
       if (sinfo.num) 
 	unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,bounds.space,sinfo);
       else {
-	const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,prims,pinfo); 
+	const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,prims); 
 	const PrimInfo       sinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,prims,space);
 	unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,space,sinfo);
-      }
-      	
-      //const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,prims,pinfo);
-      //const PrimInfo upinfo = ObjectPartitionUnaligned::computePrimInfo<Parallel>(threadIndex,threadCount,prims,space);
-      //unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,bounds.space,sinfo);
+      }    	
       unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*unalignedObjectSplit.splitSAH();
       bestSAH = min(bestSAH,unalignedObjectSAH);
     }
@@ -256,8 +252,8 @@ namespace embree
       LinearSpace3fa lspace,rspace;
       PrimInfo lsinfo,rsinfo;
       if (!isAligned) {
-	lspace = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,lprims,linfo); 
-	rspace = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,rprims,rinfo); 
+	lspace = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,lprims); 
+	rspace = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,rprims); 
 	lsinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,lprims,lspace);
 	rsinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,rprims,rspace);
       }
