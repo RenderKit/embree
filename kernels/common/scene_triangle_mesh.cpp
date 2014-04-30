@@ -34,14 +34,14 @@ namespace embree
   
   void TriangleMesh::enabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numTriangleMeshes ,1); 
-    else                   atomic_add(&parent->numTriangleMeshes2,1); 
+    if (numTimeSteps == 1) { atomic_add(&parent->numTriangleMeshes ,1); atomic_add(&parent->numTriangles ,numTriangles); }
+    else                   { atomic_add(&parent->numTriangleMeshes2,1); atomic_add(&parent->numTriangles2,numTriangles); }
   }
   
   void TriangleMesh::disabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numTriangleMeshes ,-1); 
-    else                   atomic_add(&parent->numTriangleMeshes2,-1); 
+    if (numTimeSteps == 1) { atomic_add(&parent->numTriangleMeshes ,-1); atomic_add(&parent->numTriangles ,-numTriangles); }
+    else                   { atomic_add(&parent->numTriangleMeshes2,-1); atomic_add(&parent->numTriangles2,-numTriangles); }
   }
 
   void TriangleMesh::split (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) const

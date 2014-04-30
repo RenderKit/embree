@@ -21,6 +21,7 @@
 
 namespace embree
 {
+#if 0 // FIXME: remove
   /*! Data of a block. */
   class PrimRefBlock
   {
@@ -67,6 +68,7 @@ namespace embree
     size_t num;               //!< Number of primitive references in block
     //char align[sizeof(PrimRef)-sizeof(size_t)-sizeof(size_t)];
   };
+#endif
 
 /*! Block of build primitives */
     template<typename PrimRef>
@@ -110,4 +112,6 @@ namespace embree
       PrimRef ptr[blockSize];   //!< Block with primitive references
       size_t num;               //!< Number of primitive references in block
     };
+
+    typedef PrimRefBlockT<PrimRef> PrimRefBlock;
 }

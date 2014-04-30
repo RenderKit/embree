@@ -25,7 +25,7 @@ namespace embree
   class PrimInfo
   {
     /*! Compute the number of blocks occupied in one dimension. */
-    __forceinline static size_t  blocks(size_t a) { return a; }
+    //__forceinline static size_t  blocks(size_t a) { return a; }
     //__forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
 
   public:
@@ -54,7 +54,14 @@ namespace embree
     }
 
     __forceinline float leafSAH() const { 
-      return halfArea(geomBounds)*blocks(num); 
+      return halfArea(geomBounds)*float(num); 
+      //return halfArea(geomBounds)*blocks(num); 
+    }
+
+    __forceinline float leafSAH(size_t block_shift) const { 
+      return halfArea(geomBounds)*float((num+(1<<block_shift)-1) >> block_shift);
+      //return halfArea(geomBounds)*float((num+3) >> 2);
+      //return halfArea(geomBounds)*blocks(num); 
     }
 
   public:
@@ -66,8 +73,8 @@ namespace embree
   /*! Performs fallback splits */
   struct FallBackSplit
   {
-    typedef PrimRefBlockT<Bezier1> BezierRefBlock;
-    typedef atomic_set<BezierRefBlock> BezierRefList;
+    typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
+    typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList;
     
     __forceinline FallBackSplit (const NAABBox3fa& bounds0, size_t num0, const NAABBox3fa& bounds1, size_t num1)
       : bounds0(bounds0), num0(num0), bounds1(bounds1), num1(num1) {}
@@ -75,6 +82,10 @@ namespace embree
     /*! finds some partitioning */
     static FallBackSplit find(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
 			      BezierRefList& prims, BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o);
+
+    /*! finds some partitioning */
+    static FallBackSplit find(size_t threadIndex, PrimRefBlockAlloc<PrimRef>& alloc, 
+			      PrimRefList& prims, PrimRefList& lprims_o, PrimInfo& linfo_o, PrimRefList& rprims_o, PrimInfo& rinfo_o);
     
   public:
     size_t num0, num1;

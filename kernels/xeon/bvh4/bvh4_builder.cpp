@@ -374,7 +374,8 @@ namespace embree
     }
     delete this;
   }
-  
+
+#if 1
   Builder* BVH4BuilderObjectSplit1 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
     return new BVH4Builder<HeuristicBinning<0> >((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
   }
@@ -398,4 +399,5 @@ namespace embree
   Builder* BVH4BuilderSpatialSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
     return new BVH4Builder<HeuristicSpatial<3> >((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
   }
+#endif
 }

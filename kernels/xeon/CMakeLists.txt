@@ -51,6 +51,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   builders/splitter_fallback.cpp
   builders/splitter_parallel.cpp
   builders/primrefgen.cpp
+  builders/trirefgen.cpp
     
   geometry/bezier1.cpp
   geometry/bezier1i.cpp
@@ -67,6 +68,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp
   bvh4/bvh4_builder.cpp
+  bvh4/bvh4_builder2.cpp
   bvh4/bvh4_builder_fast.cpp
   bvh4/bvh4_builder_morton.cpp
   bvh4/bvh4_builder_binner.cpp

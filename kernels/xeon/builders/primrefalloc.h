@@ -21,6 +21,7 @@
 
 namespace embree
 {
+#if 0 // FIXME: remove
   class PrimRefAlloc : public AllocatorBase
   {
     ALIGNED_CLASS;
@@ -77,6 +78,7 @@ namespace embree
   private:
     ThreadPrimBlockAllocator* threadPrimBlockAllocator;  //!< Thread local allocator
   };
+#endif
 
 template<typename PrimRef>
       class PrimRefBlockAlloc : public AllocatorBase
@@ -135,4 +137,6 @@ template<typename PrimRef>
     private:
       ThreadPrimBlockAllocator* threadPrimBlockAllocator;  //!< Thread local allocator
     };
+
+  typedef PrimRefBlockAlloc<PrimRef> PrimRefAlloc;
 }
