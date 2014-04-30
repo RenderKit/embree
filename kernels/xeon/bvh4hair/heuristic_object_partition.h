@@ -33,11 +33,11 @@ namespace embree
 
     /*! finds the best split */
     template<bool Parallel = false>
-      static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo);
+      static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize = 0);
 
     /*! finds the best split */
     template<bool Parallel = false>
-      static const Split find(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo);
+      static const Split find(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize = 0);
 
   private:
 
@@ -139,7 +139,7 @@ namespace embree
       void merge (const BinInfo& other);
       
       /*! finds the best split by scanning binning information */
-      Split best(const Mapping& mapping);
+      Split best(const Mapping& mapping, const size_t logBlockSize);
 
     private:
       BBox3fa bounds[BINS][4]; //!< geometry bounds for each bin in each dimension
@@ -151,7 +151,7 @@ namespace embree
     struct TaskBinParallel
     {
       /*! construction executes the task */
-      TaskBinParallel(size_t threadIndex, size_t threadCount, List& prims, const PrimInfo& pinfo);
+      TaskBinParallel(size_t threadIndex, size_t threadCount, List& prims, const PrimInfo& pinfo, const size_t logBlockSize);
 
     private:
 

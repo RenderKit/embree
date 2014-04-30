@@ -134,7 +134,7 @@ namespace embree
     }
   }
   
-  __forceinline ObjectPartition::Split ObjectPartition::BinInfo::best(const Mapping& mapping)
+  __forceinline ObjectPartition::Split ObjectPartition::BinInfo::best(const Mapping& mapping, const size_t blocks_shift)
   {
     /* sweep from right to left and compute parallel prefix of merged bounds */
     ssef rAreas[BINS];
@@ -150,6 +150,7 @@ namespace embree
     }
     
     /* sweep from left to right and compute SAH */
+    ssei blocks_add = (1 << blocks_shift)-1;
     ssei ii = 1; ssef vbestSAH = pos_inf; ssei vbestPos = 0;
     count = 0; bx = empty; by = empty; bz = empty;
     for (size_t i=1; i<BINS; i++, ii+=1)
@@ -160,8 +161,8 @@ namespace embree
       bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
       const ssef lArea = ssef(Ax,Ay,Az,Az);
       const ssef rArea = rAreas[i];
-      const ssei lCount = blocks(count);
-      const ssei rCount = blocks(rCounts[i]);
+      const ssei lCount = (count     +blocks_add) >> blocks_shift; //blocks(count);
+      const ssei rCount = (rCounts[i]+blocks_add) >> blocks_shift; //blocks(rCounts[i]);
       const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
       vbestPos = select(sah < vbestSAH,ii ,vbestPos);
       vbestSAH = select(sah < vbestSAH,sah,vbestSAH);
@@ -189,21 +190,21 @@ namespace embree
   }
 
   template<>
-  const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo)
+  const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
   {
     BinInfo binner;
     const Mapping mapping(pinfo.centBounds);
     binner.bin(prims,mapping);
-    return binner.best(mapping);
+    return binner.best(mapping,logBlockSize);
   }
 
   template<>
-  const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo)
+  const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
   {
     BinInfo binner;
     const Mapping mapping(pinfo.centBounds);
     binner.bin(prims,mapping);
-    return binner.best(mapping);
+    return binner.best(mapping,logBlockSize);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -211,7 +212,7 @@ namespace embree
   //////////////////////////////////////////////////////////////////////////////
 
   template<typename List>
-  ObjectPartition::TaskBinParallel<List>::TaskBinParallel(size_t threadIndex, size_t threadCount, List& prims, const PrimInfo& pinfo) 
+  ObjectPartition::TaskBinParallel<List>::TaskBinParallel(size_t threadIndex, size_t threadCount, List& prims, const PrimInfo& pinfo, const size_t logBlockSize) 
     : iter(prims)
   {
    /* parallel binning */			
@@ -225,7 +226,7 @@ namespace embree
       bins.merge(binners[i]);
 
     /* calculation of best split */
-    split = bins.best(mapping);
+    split = bins.best(mapping,logBlockSize);
   }
 
   template<typename List>
@@ -236,13 +237,13 @@ namespace embree
   }
 
   template<>
-  const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo) {
-    return TaskBinParallel<BezierRefList>(threadIndex,threadCount,prims,pinfo).split;
+  const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize) {
+    return TaskBinParallel<BezierRefList>(threadIndex,threadCount,prims,pinfo,logBlockSize).split;
   }
 
   template<>
-  const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo) {
-    return TaskBinParallel<PrimRefList>(threadIndex,threadCount,prims,pinfo).split;
+  const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize) {
+    return TaskBinParallel<PrimRefList>(threadIndex,threadCount,prims,pinfo,logBlockSize).split;
   }
 
   //////////////////////////////////////////////////////////////////////////////
