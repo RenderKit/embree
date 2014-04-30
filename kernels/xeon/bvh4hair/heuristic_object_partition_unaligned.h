@@ -211,8 +211,8 @@ namespace embree
       /*! output data */
     private:
       BezierRefList& lprims_o; 
-      PrimInfo& linfo_o;
       BezierRefList& rprims_o;
+      PrimInfo& linfo_o;
       PrimInfo& rinfo_o;
     };
   };

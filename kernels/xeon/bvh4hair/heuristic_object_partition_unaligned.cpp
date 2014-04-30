@@ -21,49 +21,18 @@ namespace embree
   template<>
   const LinearSpace3fa ObjectPartitionUnaligned::computeAlignedSpace<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims)
   {
-    float bestArea = inf;
-    LinearSpace3fa bestSpace = one;
-    BBox3fa bestBounds = empty;
-
-    size_t k=0;
-    for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
+    /*! find first curve that defines valid direction */
+    Vec3fa axis(0,0,1);
+    BezierRefList::block_iterator_unsafe i = prims;
+    for (; i; i++)
     {
-      if ((k++) > 1) break;
-      //if ((k++) % ((N+1)/2)) continue;
-      //if ((k++) % ((N+3)/4)) continue;
-      //if ((k++) % ((N+15)/16)) continue;
-      const Vec3fa axis = normalize(i->p3 - i->p0);
-      if (length(i->p3 - i->p0) < 1E-9) continue;
-      const LinearSpace3fa space = frame(axis).transposed();
-      BBox3fa bounds = empty;
-      float area = 0.0f;
-      for (BezierRefList::block_iterator_unsafe j = prims; j; j++) {
-        const BBox3fa cbounds = j->bounds(space);
-	//area += halfArea(cbounds);
-	area += (cbounds.upper.x-cbounds.lower.x)*(cbounds.upper.y-cbounds.lower.y);
-        bounds.extend(cbounds);
-      }
-
-      if (area <= bestArea) {
-        bestBounds = bounds;
-        bestSpace = space;
-        bestArea = area;
+      const Vec3fa axis1 = normalize(i->p3 - i->p0);
+      if (length(i->p3 - i->p0) > 1E-9) {
+	axis = axis1;
+	break;
       }
     }
-
-    /* select world space for some corner cases */
-    if (bestArea == float(inf)) 
-    {
-      /*bestSpace = one;
-      bestBounds = empty;
-      for (BezierRefList::block_iterator_unsafe j = prims; j; j++)
-      bestBounds.extend(j->bounds());*/
-
-      return one;// FIXME: can cause problems with compression
-    }
-
-    return bestSpace;
-    //return NAABBox3fa(bestSpace,bestBounds);
+    return frame(axis).transposed();
   }
 
   template<>
