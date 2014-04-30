@@ -26,13 +26,18 @@ namespace embree
   struct ObjectPartition
   {
     struct Split;
+    typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;   //!< list of primitives
     typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
 
   public:
 
     /*! finds the best split */
     template<bool Parallel = false>
-      static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves);
+      static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& prims);
+
+    /*! finds the best split */
+    template<bool Parallel = false>
+      static const Split find(size_t threadIndex, size_t threadCount, PrimRefList& prims);
 
   private:
 
@@ -95,6 +100,14 @@ namespace embree
 		 BezierRefList& prims, 
 		 BezierRefList& lprims_o, PrimInfo& linfo_o, 
 		 BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+
+      /*! splitting into two sets */
+      template<bool Parallel = false>
+      void split(size_t threadIndex, size_t threadCount, 
+		 PrimRefBlockAlloc<PrimRef>& alloc, 
+		 PrimRefList& prims, 
+		 PrimRefList& lprims_o, PrimInfo& linfo_o, 
+		 PrimRefList& rprims_o, PrimInfo& rinfo_o) const;
       
     public:
       float sah;       //!< SAH cost of the split
@@ -120,7 +133,7 @@ namespace embree
       void merge (const BinInfo& other);
       
       /*! finds the best split by scanning binning information */
-      Split best(BezierRefList& prims, const Mapping& mapping);
+      Split best(const Mapping& mapping);
 
     private:
       BBox3fa bounds[BINS][4]; //!< geometry bounds for each bin in each dimension

@@ -85,7 +85,7 @@ namespace embree
     }
   }
   
-  __forceinline ObjectPartition::Split ObjectPartition::BinInfo::best(BezierRefList& prims, const Mapping& mapping)
+  __forceinline ObjectPartition::Split ObjectPartition::BinInfo::best(const Mapping& mapping)
   {
     /* sweep from right to left and compute parallel prefix of merged bounds */
     ssef rAreas[BINS];
@@ -153,7 +153,7 @@ namespace embree
     BinInfo binner;
     const Mapping mapping(centBounds);
     binner.bin(prims,mapping);
-    return binner.best(prims,mapping);
+    return binner.best(mapping);
   }
 
   ObjectPartition::TaskBinParallel::TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims) 
@@ -173,7 +173,7 @@ namespace embree
       bins.merge(binners[i]);
 
     /* calculation of best split */
-    split = bins.best(prims,mapping);
+    split = bins.best(mapping);
   }
 
   void ObjectPartition::TaskBinParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
