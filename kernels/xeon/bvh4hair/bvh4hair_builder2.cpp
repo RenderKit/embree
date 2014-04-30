@@ -68,8 +68,8 @@ namespace embree
     BuildTask task(&bvh->root,0,prims,pinfo,pinfo.geomBounds,split); recurseTask(threadIndex,task);
     /*bvh->root = recurse(threadIndex,0,prims,pinfo,pinfo.geomBounds,split);*/
 #else
-    const Split split = find_split<true>(threadIndex,threadCount,prims,pinfo,pinfo.geomBounds);
-    BuildTask task(&bvh->root,0,prims,pinfo,pinfo.geomBounds,split);
+    const Split split = find_split<true>(threadIndex,threadCount,prims,pinfo,pinfo.geomBounds,pinfo);
+    BuildTask task(&bvh->root,0,prims,pinfo,pinfo.geomBounds,pinfo,split);
     numActiveTasks = 1;
     tasks.push_back(task);
     push_heap(tasks.begin(),tasks.end());
@@ -151,7 +151,7 @@ namespace embree
   }
 
   template<bool Parallel>
-  Split BVH4HairBuilder2::find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds)
+  Split BVH4HairBuilder2::find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const PrimInfo& sinfo)
   {
     /* variable to track the SAH of the best splitting approach */
     float bestSAH = inf;
@@ -177,9 +177,17 @@ namespace embree
     ObjectPartitionUnaligned::Split unalignedObjectSplit;
     float unalignedObjectSAH = inf;
     if (alignedObjectSAH > 0.7f*leafSAH) {
-      const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,prims,pinfo);
-      const PrimInfo upinfo = ObjectPartitionUnaligned::computePrimInfo<Parallel>(threadIndex,threadCount,prims,space);
-      unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,space,upinfo);
+      if (sinfo.num) 
+	unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,bounds.space,sinfo);
+      else {
+	const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,prims,pinfo); 
+	const PrimInfo       sinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,prims,space);
+	unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,space,sinfo);
+      }
+      	
+      //const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,prims,pinfo);
+      //const PrimInfo upinfo = ObjectPartitionUnaligned::computePrimInfo<Parallel>(threadIndex,threadCount,prims,space);
+      //unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,bounds.space,sinfo);
       unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*unalignedObjectSplit.splitSAH();
       bestSAH = min(bestSAH,unalignedObjectSAH);
     }
@@ -218,6 +226,7 @@ namespace embree
     /*! initialize child list */
     bool isAligned = true;
     PrimInfo cpinfo     [BVH4Hair::N]; cpinfo [0] = task.pinfo; 
+    PrimInfo csinfo     [BVH4Hair::N]; csinfo [0] = task.sinfo; 
     NAABBox3fa cbounds  [BVH4Hair::N]; cbounds[0] = task.bounds;
     BezierRefList cprims[BVH4Hair::N]; cprims [0] = task.prims;
     Split csplit        [BVH4Hair::N]; csplit [0] = task.split;        
@@ -244,12 +253,20 @@ namespace embree
       csplit[bestChild].split<Parallel>(threadIndex,threadCount,alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
       const ssize_t replications = linfo.size()+rinfo.size()-cpinfo[bestChild].size(); assert(replications >= 0);
       isAligned &= csplit[bestChild].isAligned;
-      const NAABBox3fa lbounds = isAligned ? linfo.geomBounds : ObjectPartitionUnaligned::computeAlignedSpaceBounds<Parallel>(threadIndex,threadCount,lprims,linfo); 
-      const NAABBox3fa rbounds = isAligned ? rinfo.geomBounds : ObjectPartitionUnaligned::computeAlignedSpaceBounds<Parallel>(threadIndex,threadCount,rprims,rinfo); 
-      const Split lsplit = find_split<Parallel>(threadIndex,threadCount,lprims,linfo,lbounds);
-      const Split rsplit = find_split<Parallel>(threadIndex,threadCount,rprims,rinfo,rbounds);
-      cprims[numChildren] = rprims; cpinfo[numChildren] = rinfo; cbounds[numChildren]= rbounds; csplit[numChildren] = rsplit;
-      cprims[bestChild  ] = lprims; cpinfo[bestChild  ] = linfo; cbounds[bestChild  ]= lbounds; csplit[bestChild  ] = lsplit;
+      LinearSpace3fa lspace,rspace;
+      PrimInfo lsinfo,rsinfo;
+      if (!isAligned) {
+	lspace = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,lprims,linfo); 
+	rspace = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,rprims,rinfo); 
+	lsinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,lprims,lspace);
+	rsinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,rprims,rspace);
+      }
+      const NAABBox3fa lbounds = isAligned ? linfo.geomBounds : NAABBox3fa(lspace,lsinfo.geomBounds); 
+      const NAABBox3fa rbounds = isAligned ? rinfo.geomBounds : NAABBox3fa(rspace,rsinfo.geomBounds); 
+      const Split lsplit = find_split<Parallel>(threadIndex,threadCount,lprims,linfo,lbounds,lsinfo);
+      const Split rsplit = find_split<Parallel>(threadIndex,threadCount,rprims,rinfo,rbounds,rsinfo);
+      cprims[numChildren] = rprims; cpinfo[numChildren] = rinfo; cbounds[numChildren] = rbounds; csinfo[numChildren] = lsinfo; csplit[numChildren] = rsplit;
+      cprims[bestChild  ] = lprims; cpinfo[bestChild  ] = linfo; cbounds[bestChild  ] = lbounds; csinfo[bestChild  ] = rsinfo; csplit[bestChild  ] = lsplit;
       if (replications) atomic_add(&remainingReplications,-replications); 
       numChildren++;
       
@@ -261,7 +278,7 @@ namespace embree
       BVH4Hair::AlignedNode* node = bvh->allocAlignedNode(threadIndex);
       for (ssize_t i=0; i<numChildren; i++) {
         node->set(i,cpinfo[i].geomBounds);
-	new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csplit[i]);
+	new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csinfo[i],csplit[i]);
       }
       numTasks_o = numChildren;
       *task.dst = bvh->encodeNode(node);
@@ -272,7 +289,7 @@ namespace embree
       BVH4Hair::UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
       for (ssize_t i=numChildren-1; i>=0; i--) {
         node->set(i,cbounds[i]);
-	new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csplit[i]);
+	new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csinfo[i],csplit[i]);
       }
       numTasks_o = numChildren;
       *task.dst = bvh->encodeNode(node);

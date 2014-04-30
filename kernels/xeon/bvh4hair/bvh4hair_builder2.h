@@ -45,8 +45,8 @@ namespace embree
     {
       __forceinline BuildTask () {}
 
-      __forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const Split& split)
-        : dst(dst), depth(depth), prims(prims), pinfo(pinfo), bounds(bounds), split(split) {}
+      __forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const PrimInfo& sinfo, const Split& split)
+        : dst(dst), depth(depth), prims(prims), pinfo(pinfo), bounds(bounds), sinfo(sinfo), split(split) {}
 
     public:
       __forceinline friend bool operator< (const BuildTask& a, const BuildTask& b) {
@@ -60,6 +60,7 @@ namespace embree
       BezierRefList prims;
       PrimInfo pinfo;
       NAABBox3fa bounds;
+      PrimInfo sinfo;
       Split split;
     };
         
@@ -69,7 +70,7 @@ namespace embree
     BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo);
 
     template<bool Parallel = false>
-      Split find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds);
+      Split find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const PrimInfo& sinfo);
 
     /*! execute single task and create subtasks */
     template<bool Parallel = false>
