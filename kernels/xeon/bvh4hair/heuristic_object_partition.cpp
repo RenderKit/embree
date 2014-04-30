@@ -181,18 +181,10 @@ namespace embree
   }
 
   template<>
-  const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims)
+  const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo)
   {
-    /* calculate geometry and centroid bounds */
-    BBox3fa centBounds = empty;
-    BBox3fa geomBounds = empty;
-    for (BezierRefList::block_iterator_unsafe i = prims; i; i++) {
-      geomBounds.extend(i->bounds());
-      centBounds.extend(i->center());
-    }
-
     BinInfo binner;
-    const Mapping mapping(centBounds);
+    const Mapping mapping(pinfo.centBounds);
     binner.bin(prims,mapping);
     return binner.best(mapping);
   }
@@ -239,7 +231,7 @@ namespace embree
   }
 
   template<>
-  const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims) {
+  const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo) {
     return TaskBinBezierParallel(threadIndex,threadCount,prims).split;
   }
 

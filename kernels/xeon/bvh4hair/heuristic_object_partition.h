@@ -33,11 +33,11 @@ namespace embree
 
     /*! finds the best split */
     template<bool Parallel = false>
-      static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& prims);
+      static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo);
 
     /*! finds the best split */
     template<bool Parallel = false>
-      static const Split find(size_t threadIndex, size_t threadCount, PrimRefList& prims);
+      static const Split find(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo);
 
   private:
 
