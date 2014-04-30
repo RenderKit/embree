@@ -18,6 +18,10 @@
 
 namespace embree
 {
+  //////////////////////////////////////////////////////////////////////////////
+  //                        Bin Mapping                                       //
+  //////////////////////////////////////////////////////////////////////////////
+
   __forceinline ObjectPartition::Mapping::Mapping(const BBox3fa& centBounds) 
   {
     const ssef diag = (ssef) centBounds.size();
@@ -46,6 +50,10 @@ namespace embree
     return scale[dim] == 0.0f;
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  //                             Binning                                      //
+  //////////////////////////////////////////////////////////////////////////////
+
   __forceinline ObjectPartition::BinInfo::BinInfo() 
   {
     for (size_t i=0; i<BINS; i++) {
@@ -65,13 +73,6 @@ namespace embree
       const int b1 = bin[1]; counts[b1][1]++; bounds[b1][1].extend(cbounds);
       const int b2 = bin[2]; counts[b2][2]++; bounds[b2][2].extend(cbounds);
     }
-  }
-
-  __forceinline void ObjectPartition::BinInfo::bin(BezierRefList& prims, const Mapping& mapping)
-  {
-    BezierRefList::iterator i=prims;
-    while (BezierRefList::item* block = i.next())
-      bin(block->base(),block->size(),mapping);
   }
 
   __forceinline void ObjectPartition::BinInfo::bin (const PrimRef* prims, size_t num, const Mapping& mapping)
@@ -106,6 +107,13 @@ namespace embree
       const int b01 = bin0.y; counts[b01][1]++; bounds[b01][1].extend(prim0);
       const int b02 = bin0.z; counts[b02][2]++; bounds[b02][2].extend(prim0);
     }
+  }
+
+  __forceinline void ObjectPartition::BinInfo::bin(BezierRefList& prims, const Mapping& mapping)
+  {
+    BezierRefList::iterator i=prims;
+    while (BezierRefList::item* block = i.next())
+      bin(block->base(),block->size(),mapping);
   }
 
   __forceinline void ObjectPartition::BinInfo::bin(PrimRefList& prims, const Mapping& mapping)
@@ -198,6 +206,10 @@ namespace embree
     return binner.best(mapping);
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  //                         Parallel Binning                                 //
+  //////////////////////////////////////////////////////////////////////////////
+
   template<typename List>
   ObjectPartition::TaskBinParallel<List>::TaskBinParallel(size_t threadIndex, size_t threadCount, List& prims, const PrimInfo& pinfo) 
     : iter(prims)
@@ -232,6 +244,10 @@ namespace embree
   const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo) {
     return TaskBinParallel<PrimRefList>(threadIndex,threadCount,prims,pinfo).split;
   }
+
+  //////////////////////////////////////////////////////////////////////////////
+  //                             Splitting                                    //
+  //////////////////////////////////////////////////////////////////////////////
 
   template<>
   void ObjectPartition::Split::split<false>(size_t threadIndex, size_t threadCount, 
