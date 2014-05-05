@@ -61,12 +61,8 @@ namespace embree
     BVH4Builder2 (BVH4* bvh, BuildSource* source, void* geometry, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
 
     /*! build job */
-    TASK_COMPLETE_FUNCTION_(BVH4Builder2,buildFunction);
-    void buildFunction(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
-
-    /*! finishes the build */
-    TASK_COMPLETE_FUNCTION_(BVH4Builder2,finish);
-    void finish(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
+    TASK_RUN_FUNCTION_(BVH4Builder2,buildFunction);
+    void buildFunction(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event);
 
     /*! creates a leaf node */
     NodeRef createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo);
@@ -120,9 +116,15 @@ namespace embree
     class SplitTask {
       ALIGNED_CLASS
     public:
+      SplitTask() : dst(dst) {} // FIXME
 
       /*! Default task construction. */
       SplitTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
+                BVH4Builder2* parent, NodeRef& node, size_t depth, 
+                TriRefList& prims, const PrimInfo& pinfo, const Split& split);
+
+      /*! Default task construction. */
+      SplitTask(size_t threadIndex, size_t threadCount, 
                 BVH4Builder2* parent, NodeRef& node, size_t depth, 
                 TriRefList& prims, const PrimInfo& pinfo, const Split& split);
 
@@ -130,10 +132,17 @@ namespace embree
       TASK_COMPLETE_FUNCTION_(SplitTask,recurse);
       void recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
       
-    private:
+      void recurse_parallel(size_t threadIndex, size_t threadCount);
+      
+      __forceinline friend bool operator< (const SplitTask& a, const SplitTask& b) {
+        //return halfArea(a.bounds.bounds) < halfArea(b.bounds.bounds);
+	return a.pinfo.size() < b.pinfo.size();
+      }
+
+    public:
       TaskScheduler::Task task;
       BVH4Builder2*    parent;         //!< Pointer to parent task.
-      NodeRef&    dst;            //!< Reference to output the node.
+      NodeRef*    dst;            //!< Reference to output the node.
       size_t          depth;          //!< Recursion depth of this node.
       TriRefList prims; //!< The list of primitives.
       PrimInfo        pinfo;          //!< Bounding info of primitives.
@@ -151,6 +160,8 @@ namespace embree
     PrimRefBlockAlloc<PrimRef> alloc;                 //!< Allocator for primitive blocks
     TriRefGen initStage;               //!< job to generate build primitives
     TaskScheduler::QUEUE taskQueue;     //!< Task queue to use
+
+    std::vector<SplitTask> tasks;
 
   public:
     BVH4* bvh;                      //!< Output BVH4

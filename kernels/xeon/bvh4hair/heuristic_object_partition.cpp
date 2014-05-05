@@ -210,6 +210,14 @@ namespace embree
     return binner.best(mapping,logBlockSize);
   }
 
+  const ObjectPartition::Split ObjectPartition::find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
+  {
+   BinInfo binner;
+   const Mapping mapping(pinfo);
+   binner.bin(prims+begin,end-begin,mapping);
+   return binner.best(mapping,logBlockSize);
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   //                         Parallel Binning                                 //
   //////////////////////////////////////////////////////////////////////////////
@@ -327,6 +335,132 @@ namespace embree
     }
   }
 
+  template<typename PrimRef>
+    __forceinline bool lt_split(const PrimRef *__restrict__ const aabb,
+                                const unsigned int dim,
+                                const float &c,
+                                const float &s,
+                                const int bestSplit) // FIXME: has to be singed int!!!!!!!!!
+    {
+      const ssef b_min(aabb->lower[dim]);
+      const ssef b_max(aabb->upper[dim]);
+      const ssef centroid_2 = b_min + b_max;
+      const ssei binID = floori((centroid_2 - c)*s);
+      return extract<0>(binID) < bestSplit;    
+    }
+    
+    
+    template<typename PrimRef>
+    __forceinline bool ge_split(const PrimRef *__restrict__ const aabb,
+                                const unsigned int dim,
+                                const float &c,
+                                const float &s,
+                                const int bestSplit) // FIXME: has to be singed int!!!!!!!!!
+    {
+      const ssef b_min(aabb->lower[dim]);
+      const ssef b_max(aabb->upper[dim]);
+      const ssef centroid_2 = b_min + b_max;
+      const ssei binID = floori((centroid_2 - c)*s);
+      return extract<0>(binID) >= bestSplit;    
+    }
+
+  void ObjectPartition::Split::partition(PrimRef *__restrict__ const prims,
+					 const size_t begin, const size_t end,
+					 BuildRecord& left, BuildRecord& right)
+  {
+    Centroid_Scene_AABB local_left; local_left.reset();
+    Centroid_Scene_AABB local_right; local_right.reset();
+    
+    assert(begin <= end);
+    PrimRef* l = prims + begin;
+    PrimRef* r = prims + end - 1;
+    
+    const float c = mapping.ofs[dim];
+    const float s = mapping.scale[dim];
+    const int bestSplitDim = dim;
+    const int bestSplit = pos;
+    
+    ssef left_centroidMinAABB = (ssef) local_left.centroid2.lower;
+    ssef left_centroidMaxAABB = (ssef) local_left.centroid2.upper;
+    ssef left_sceneMinAABB    = (ssef) local_left.geometry.lower;
+    ssef left_sceneMaxAABB    = (ssef) local_left.geometry.upper;
+    
+    ssef right_centroidMinAABB = (ssef) local_right.centroid2.lower;
+    ssef right_centroidMaxAABB = (ssef) local_right.centroid2.upper;
+    ssef right_sceneMinAABB    = (ssef) local_right.geometry.lower;
+    ssef right_sceneMaxAABB    = (ssef) local_right.geometry.upper;
+    
+    while(1)
+    {
+      while (likely(l <= r && lt_split(l,bestSplitDim,c,s,bestSplit))) {
+	const ssef b_min = load4f((float*)&l->lower);
+	const ssef b_max = load4f((float*)&l->upper);
+	const ssef centroid2 = b_min+b_max;
+	left_centroidMinAABB = min(left_centroidMinAABB,centroid2);
+	left_centroidMaxAABB = max(left_centroidMaxAABB,centroid2);
+	left_sceneMinAABB    = min(left_sceneMinAABB,b_min);
+	left_sceneMaxAABB    = max(left_sceneMaxAABB,b_max);
+	++l;
+      }
+      while (likely(l <= r && ge_split(r,bestSplitDim,c,s,bestSplit))) {
+	const ssef b_min = load4f((float*)&r->lower);
+	const ssef b_max = load4f((float*)&r->upper);
+	const ssef centroid2 = b_min+b_max;
+	right_centroidMinAABB = min(right_centroidMinAABB,centroid2);
+	right_centroidMaxAABB = max(right_centroidMaxAABB,centroid2);
+	right_sceneMinAABB    = min(right_sceneMinAABB,b_min);
+	right_sceneMaxAABB    = max(right_sceneMaxAABB,b_max);
+	--r;
+      }
+      if (r<l) break;
+      
+      const ssef r_min = load4f((float*)&l->lower);
+      const ssef r_max = load4f((float*)&l->upper);
+      const ssef r_centroid2 = r_min+r_max;
+      right_centroidMinAABB = min(right_centroidMinAABB,r_centroid2);
+      right_centroidMaxAABB = max(right_centroidMaxAABB,r_centroid2);
+      right_sceneMinAABB    = min(right_sceneMinAABB,r_min);
+      right_sceneMaxAABB    = max(right_sceneMaxAABB,r_max);
+      const ssef l_min = load4f((float*)&r->lower);
+      const ssef l_max = load4f((float*)&r->upper);
+      const ssef l_centroid2 = l_min+l_max;
+      left_centroidMinAABB = min(left_centroidMinAABB,l_centroid2);
+      left_centroidMaxAABB = max(left_centroidMaxAABB,l_centroid2);
+      left_sceneMinAABB    = min(left_sceneMinAABB,l_min);
+      left_sceneMaxAABB    = max(left_sceneMaxAABB,l_max);
+      store4f((float*)&l->lower,l_min);
+      store4f((float*)&l->upper,l_max);
+      store4f((float*)&r->lower,r_min);
+      store4f((float*)&r->upper,r_max);
+      l++; r--;
+    }
+    
+    local_left.centroid2.lower = (Vec3fa) left_centroidMinAABB;
+    local_left.centroid2.upper = (Vec3fa) left_centroidMaxAABB;
+    local_left.geometry.lower = (Vec3fa) left_sceneMinAABB;
+    local_left.geometry.upper = (Vec3fa) left_sceneMaxAABB;
+    
+    local_right.centroid2.lower = (Vec3fa) right_centroidMinAABB;
+    local_right.centroid2.upper = (Vec3fa) right_centroidMaxAABB;
+    local_right.geometry.lower = (Vec3fa) right_sceneMinAABB;
+    local_right.geometry.upper = (Vec3fa) right_sceneMaxAABB;
+    
+    unsigned int center = l - prims;
+    left.init(local_left,begin,center);
+    right.init(local_right,center,end);
+    
+    assert(area(left.bounds.geometry) >= 0.0f);
+    assert(area(left.bounds.centroid2) >= 0.0f);
+    assert(area(right.bounds.geometry) >= 0.0f);
+    assert(area(right.bounds.centroid2) >= 0.0f);
+    
+    assert( prims + begin <= l && l <= prims + end);
+    assert( prims + begin <= r && r <= prims + end);
+    
+    assert(l <= prims + end);
+    assert(center == begin+split.numLeft);
+  }
+  
   template<typename Prim>
   ObjectPartition::TaskSplitParallel<Prim>::TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Prim>& alloc, List& prims, 
 							      List& lprims_o, PrimInfo& linfo_o, List& rprims_o, PrimInfo& rinfo_o)
@@ -358,5 +492,14 @@ namespace embree
 					   BezierRefList& rprims_o, PrimInfo& rinfo_o) const
   {
     TaskSplitParallel<Bezier1>(threadIndex,threadCount,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+  }
+
+  template<>
+  void ObjectPartition::Split::split<true>(size_t threadIndex, size_t threadCount, 
+					   PrimRefBlockAlloc<PrimRef>& alloc, PrimRefList& prims, 
+					   PrimRefList& lprims_o, PrimInfo& linfo_o, 
+					   PrimRefList& rprims_o, PrimInfo& rinfo_o) const
+  {
+    TaskSplitParallel<PrimRef>(threadIndex,threadCount,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
   }
 }

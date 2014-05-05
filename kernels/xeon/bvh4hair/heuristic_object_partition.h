@@ -19,6 +19,7 @@
 #include "geometry/bezier1.h"
 #include "builders/primrefalloc.h"
 #include "heuristic_fallback.h"
+#include "../bvh4i/bvh4i_builder_util.h"
 
 namespace embree
 {
@@ -38,6 +39,9 @@ namespace embree
     /*! finds the best split */
     template<bool Parallel = false>
       static const Split find(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize = 0);
+
+    /*! finds the best split */
+    static const Split find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize = 0);
 
   private:
 
@@ -117,6 +121,10 @@ namespace embree
 		 PrimRefList& prims, 
 		 PrimRefList& lprims_o, PrimInfo& linfo_o, 
 		 PrimRefList& rprims_o, PrimInfo& rinfo_o) const;
+
+      /*! array partitioning */
+      void partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end,
+		     BuildRecord& left, BuildRecord& right);
       
     public:
       float sah;       //!< SAH cost of the split

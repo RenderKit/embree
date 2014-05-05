@@ -18,6 +18,7 @@
 #include "bvh4_builder_fast.h"
 #include "bvh4_statistics.h"
 #include "bvh4_builder_binner.h"
+#include "../bvh4hair/heuristic_object_partition.h"
 
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
@@ -467,6 +468,19 @@ namespace embree
         return false;
       }
       
+#if 1
+      /* calculate binning function */
+      PrimInfo pinfo(current.items(),current.bounds.geometry,current.bounds.centroid2);
+      ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,2);
+      
+      /* if we cannot find a valid split, enforce an arbitrary split */
+      if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
+      
+      /* partitioning of items */
+      else split.partition(prims, current.begin, current.end, leftChild, rightChild);
+
+#else
+
       /* calculate binning function */
       Mapping<16> mapping(current.bounds);
       
@@ -477,13 +491,15 @@ namespace embree
       /* find best split */
       Split split; 
       binner.best(split,mapping);
-      
+ 
       /* if we cannot find a valid split, enforce an arbitrary split */
       if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
       
       /* partitioning of items */
       else binner.partition(prims, current.begin, current.end, split, mapping, leftChild, rightChild);
-      
+
+#endif
+     
       if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
       if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();	
       return true;
