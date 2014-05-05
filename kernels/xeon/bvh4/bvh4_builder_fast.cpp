@@ -468,7 +468,6 @@ namespace embree
         return false;
       }
       
-#if 1
       /* calculate binning function */
       PrimInfo pinfo(current.items(),current.bounds.geometry,current.bounds.centroid2);
       ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,2);
@@ -478,27 +477,6 @@ namespace embree
       
       /* partitioning of items */
       else split.partition(prims, current.begin, current.end, leftChild, rightChild);
-
-#else
-
-      /* calculate binning function */
-      Mapping<16> mapping(current.bounds);
-      
-      /* binning of centroids */
-      Binner<16> binner;
-      binner.bin(prims,current.begin,current.end,mapping);
-      
-      /* find best split */
-      Split split; 
-      binner.best(split,mapping);
- 
-      /* if we cannot find a valid split, enforce an arbitrary split */
-      if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
-      
-      /* partitioning of items */
-      else binner.partition(prims, current.begin, current.end, split, mapping, leftChild, rightChild);
-
-#endif
      
       if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
       if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();	

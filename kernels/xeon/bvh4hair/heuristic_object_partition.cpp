@@ -26,18 +26,18 @@ namespace embree
   {
     num = min(maxBins,size_t(4.0f + 0.05f*pinfo.size()));
     const ssef diag = (ssef) pinfo.centBounds.size();
-    scale = select(diag != 0.0f,rcp(diag) * ssef(num),ssef(0.0f));
+    scale = select(diag != 0.0f,rcp(diag) * ssef(0.99f*num),ssef(0.0f));
     ofs  = (ssef) pinfo.centBounds.lower;
   }
   
   __forceinline Vec3ia ObjectPartition::Mapping::bin(const Vec3fa& p) const 
   {
     const ssei i = floori((ssef(p)-ofs)*scale);
-#if 0
+#if 1
     assert(i[0] >=0 && i[0] < num);
     assert(i[1] >=0 && i[1] < num);
     assert(i[2] >=0 && i[2] < num);
-    return i;
+    return Vec3ia(i);
 #else
     return Vec3ia(clamp(i,ssei(0),ssei(num-1)));
 #endif
