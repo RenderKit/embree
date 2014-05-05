@@ -55,7 +55,7 @@ namespace embree
   //                             Binning                                      //
   //////////////////////////////////////////////////////////////////////////////
 
-  __forceinline ObjectPartition::BinInfo::BinInfo() 
+  inline ObjectPartition::BinInfo::BinInfo() 
   {
     for (size_t i=0; i<maxBins; i++) {
       bounds[i][0] = bounds[i][1] = bounds[i][2] = bounds[i][3] = empty;
@@ -107,6 +107,47 @@ namespace embree
       const int b00 = bin0.x; counts[b00][0]++; bounds[b00][0].extend(prim0);
       const int b01 = bin0.y; counts[b01][1]++; bounds[b01][1].extend(prim0);
       const int b02 = bin0.z; counts[b02][2]++; bounds[b02][2].extend(prim0);
+    }
+  }
+
+  __forceinline void ObjectPartition::BinInfo::bin_copy (const PrimRef* prims, size_t num, const Mapping& mapping, PrimRef* dest)
+  {
+    if (num == 0) return;
+    
+    size_t i; for (i=0; i<num-1; i+=2)
+    {
+      /*! map even and odd primitive to bin */
+      const BBox3fa prim0 = prims[i+0].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const Vec3ia bin0 = mapping.bin(center0); 
+      const BBox3fa prim1 = prims[i+1].bounds(); const Vec3fa center1 = Vec3fa(center2(prim1)); const Vec3ia bin1 = mapping.bin(center1); 
+      
+      /*! increase bounds for bins for even primitive */
+      const int b00 = bin0.x; counts[b00][0]++; bounds[b00][0].extend(prim0);
+      const int b01 = bin0.y; counts[b01][1]++; bounds[b01][1].extend(prim0);
+      const int b02 = bin0.z; counts[b02][2]++; bounds[b02][2].extend(prim0);
+      
+      /*! increase bounds of bins for odd primitive */
+      const int b10 = bin1.x; counts[b10][0]++; bounds[b10][0].extend(prim1);
+      const int b11 = bin1.y; counts[b11][1]++; bounds[b11][1].extend(prim1);
+      const int b12 = bin1.z; counts[b12][2]++; bounds[b12][2].extend(prim1);
+
+      /*! copy to destination */
+      dest[i+0] = prims[i+0];
+      dest[i+1] = prims[i+1];
+    }
+    
+    /*! for uneven number of primitives */
+    if (i < num)
+    {
+      /*! map primitive to bin */
+      const BBox3fa prim0 = prims[i].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const Vec3ia bin0 = mapping.bin(center0); 
+      
+      /*! increase bounds of bins */
+      const int b00 = bin0.x; counts[b00][0]++; bounds[b00][0].extend(prim0);
+      const int b01 = bin0.y; counts[b01][1]++; bounds[b01][1].extend(prim0);
+      const int b02 = bin0.z; counts[b02][2]++; bounds[b02][2].extend(prim0);
+
+      /*! copy to destination */
+      dest[i+0] = prims[i+0];
     }
   }
 
@@ -501,5 +542,115 @@ namespace embree
 					   PrimRefList& rprims_o, PrimInfo& rinfo_o) const
   {
     TaskSplitParallel<PrimRef>(threadIndex,threadCount,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+  }
+
+
+  void ObjectPartition::ParallelBinner::task_parallelBinning(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event)
+  {
+    BinInfo& bin16 = this->global_bin16[taskIndex];
+    const size_t startID = this->rec.begin + (taskIndex+0)*this->rec.items()/taskCount;
+    const size_t endID   = this->rec.begin + (taskIndex+1)*this->rec.items()/taskCount;
+    bin16.bin_copy(src+startID,endID-startID,this->mapping,dst);
+  }
+  
+  void ObjectPartition::ParallelBinner::bin(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadIndex, const size_t threadCount) 
+  {
+    rec = current;
+    const PrimInfo pinfo(current.items(),current.bounds.geometry,current.bounds.centroid2);
+    mapping = Mapping(pinfo);
+    left.reset();
+    right.reset();
+    this->src = src;
+    this->dst = dst;
+    TaskScheduler::executeTask(threadIndex,threadCount,_task_parallelBinning,this,threadCount,"parallel_binning");
+    //LockStepTaskScheduler::dispatchTask(task_parallelBinning, this, threadIndex, threadCount );
+    
+    /* reduce binning information from all threads */
+    bin16 = global_bin16[0];
+    for (size_t i=1; i<threadCount; i++)
+      bin16.merge(global_bin16[i]);
+  }
+  
+  void ObjectPartition::ParallelBinner::best(ObjectPartition::Split& split) {
+    split = bin16.best(mapping,2); // FIXME: hardcoded 2
+  }
+  
+  void ObjectPartition::ParallelBinner::task_parallelPartition(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event)
+  {
+    const size_t startID = this->rec.begin + (taskIndex+0)*this->rec.items()/taskCount;
+    const size_t endID   = this->rec.begin + (taskIndex+1)*this->rec.items()/taskCount;
+    
+    /* load binning function */
+    const unsigned int splitPos = this->split.pos;
+    const unsigned int splitDim = this->split.dim;
+    const float centroidBase = this->mapping.ofs[splitDim];
+    const float centroidScale = this->mapping.scale[splitDim];
+    
+    /* compute items per thread that go to the 'left' and to the 'right' */
+    int lnum[maxBins];
+    lnum[0] = this->global_bin16[taskIndex].counts[0][splitDim];
+    for (size_t i=1; i<this->mapping.size(); i++)
+      lnum[i] = lnum[i-1] + this->global_bin16[taskIndex].counts[i][splitDim];
+    
+    const unsigned int localNumLeft = lnum[splitPos-1];
+    const unsigned int localNumRight = (endID-startID) - localNumLeft;
+    
+    const unsigned int startLeft  = this->lCounter.add(localNumLeft);
+    const unsigned int startRight = this->rCounter.add(localNumRight);
+
+    size_t numLeft = 0;
+    for (size_t i=0; i<splitPos; i++) 
+      numLeft += bin16.counts[i][splitDim];
+    
+    PrimRef* __restrict__ src = (PrimRef*)this->src;
+    PrimRef* __restrict__ dstLeft = dst + this->rec.begin + startLeft;
+    PrimRef* __restrict__ dstRight = dst + this->rec.begin + startRight + numLeft;
+    
+    size_t lLeft = this->rec.begin + startLeft, lRight = lLeft+localNumLeft;
+    size_t rLeft = this->rec.begin + startRight + numLeft, rRight = rLeft+localNumRight;
+    
+    /* split into left and right */
+    Centroid_Scene_AABB leftBounds; leftBounds.reset();
+    Centroid_Scene_AABB rightBounds; rightBounds.reset();
+    
+    for (size_t i=startID; i<endID; i++)
+    {
+      bool left = lt_split(&src[i],splitDim,centroidBase,centroidScale,splitPos);
+      if (likely(left)) {
+	leftBounds.extend(src[i].bounds()); 
+	*dstLeft++ = src[i];
+      } else {
+	rightBounds.extend(src[i].bounds()); 
+	*dstRight++ = src[i];
+      }
+    }
+    
+    this->left .extend_atomic(leftBounds); 
+    this->right.extend_atomic(rightBounds);  
+  }
+  
+  void ObjectPartition::ParallelBinner::partition(const PrimRef* src, PrimRef* dst, 
+						  Split& split_i, 
+						  BuildRecord &leftChild,
+						  BuildRecord &rightChild,
+						  const size_t threadIndex, const size_t threadCount)
+  {
+#if 1
+    split_i.partition((PrimRef*)src,rec.begin,rec.end,leftChild,rightChild);
+    memcpy(dst,src,(rec.end-rec.begin)*sizeof(PrimRef));
+#else
+    split = split_i;
+    left.reset(); lCounter.reset(0);
+    right.reset(); rCounter.reset(0); 
+    this->src = src;
+    this->dst = dst;
+    TaskScheduler::executeTask(threadIndex,threadCount,_task_parallelPartition,this,threadCount,"parallel_partition");
+    //LockStepTaskScheduler::dispatchTask( task_parallelPartition, this, threadIndex, threadCount );
+    unsigned center = rec.begin + lCounter;
+    //assert(lCounter == split.numLeft); // FIXME: enable
+    //assert(rCounter == rec.items() - lCounter);
+    leftChild.init(left,rec.begin,center);
+    rightChild.init(right,center,rec.end);
+#endif
   }
 }

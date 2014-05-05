@@ -42,7 +42,7 @@ namespace embree
 
     /*! finds the best split */
     static const Split find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize = 0);
-
+    
   private:
 
     /*! number of bins */
@@ -125,6 +125,10 @@ namespace embree
       /*! array partitioning */
       void partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end,
 		     BuildRecord& left, BuildRecord& right);
+
+      void partition_parallel(size_t threadIndex, size_t threadCount, 
+			      PrimRef* prims, PrimRef* dst, const size_t begin, const size_t end,
+			      BuildRecord& left, BuildRecord& right);
       
     public:
       float sah;       //!< SAH cost of the split
@@ -146,6 +150,9 @@ namespace embree
       /*! bins an array of primitives */
       void bin (const PrimRef* prims, size_t N, const Mapping& mapping);
   
+      /*! bins an array of primitives */
+      void bin_copy (const PrimRef* prims, size_t N, const Mapping& mapping, PrimRef* dest);
+  
       /*! bins a list of bezier curves */
       void bin (BezierRefList& prims, const Mapping& mapping);
       
@@ -158,7 +165,8 @@ namespace embree
       /*! finds the best split by scanning binning information */
       Split best(const Mapping& mapping, const size_t logBlockSize);
 
-    private:
+      //private:
+    public: // FIXME
       BBox3fa bounds[maxBins][4]; //!< geometry bounds for each bin in each dimension
       ssei    counts[maxBins];    //!< counts number of primitives that map into the bins
     };
@@ -216,6 +224,43 @@ namespace embree
       List& rprims_o;
       PrimInfo& linfo_o;
       PrimInfo& rinfo_o;
+    };
+
+  public:
+
+    class ParallelBinner
+    {
+    public:
+      
+      /*! parallel binbing of an array of primitives */
+      void bin(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads);
+      
+      /*! calculate the best possible split */
+      void best(Split& split);
+      
+      /* parallel partitioning of a list of primitives */
+      void partition(const PrimRef* src, PrimRef* dst, 
+		     Split& split, 
+		     BuildRecord &leftChild,
+		     BuildRecord &rightChild,
+		     const size_t threadID, const size_t numThreads);
+      
+    private:
+      TASK_RUN_FUNCTION(ParallelBinner,task_parallelBinning);
+      TASK_RUN_FUNCTION(ParallelBinner,task_parallelPartition);
+      
+    public:
+      BuildRecord rec;
+      Centroid_Scene_AABB left;
+      Centroid_Scene_AABB right;
+      Mapping mapping;
+      Split split;
+      const PrimRef* src;
+      PrimRef* dst;
+      __aligned(64) AlignedAtomicCounter32 lCounter;
+      __aligned(64) AlignedAtomicCounter32 rCounter;
+      BinInfo bin16;
+      __aligned(64) BinInfo global_bin16[MAX_MIC_THREADS]; // FIXME: hardcoded number of threads
     };
   };
 }

@@ -351,7 +351,7 @@ namespace embree
       this->src = src;
       this->dst = dst;
       TaskScheduler::executeTask(threadIndex,threadCount,_task_parallelBinning,this,threadCount,"parallel_binning");
-      //LockStepTaskScheduler::dispatchTask(task_parallelBinning, this, threadID, numThreads );
+      //LockStepTaskScheduler::dispatchTask(task_parallelBinning, this, threadIndex, threadCount );
       
       /* reduce binning information from all threads */
       Binner2<BINS>::reduce(global_bin16,threadCount,bin16);
@@ -426,7 +426,7 @@ namespace embree
       this->src = src;
       this->dst = dst;
       TaskScheduler::executeTask(threadIndex,threadCount,_task_parallelPartition,this,threadCount,"parallel_partition");
-      //LockStepTaskScheduler::dispatchTask( task_parallelPartition, this, threadID, numThreads );
+      //LockStepTaskScheduler::dispatchTask( task_parallelPartition, this, threadIndex, threadCount );
       unsigned center = rec.begin + split.numLeft;
       assert(lCounter == split.numLeft);
       assert(rCounter == rec.items() - lCounter);

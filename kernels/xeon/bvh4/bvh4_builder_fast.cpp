@@ -18,7 +18,6 @@
 #include "bvh4_builder_fast.h"
 #include "bvh4_statistics.h"
 #include "bvh4_builder_binner.h"
-#include "../bvh4hair/heuristic_object_partition.h"
 
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
@@ -501,6 +500,7 @@ namespace embree
       g_state->parallelBinner.bin(current,prims,tmp,threadID,numThreads);
       
       /* find best split */
+      //ObjectPartition::Split split; 
       Split split; 
       g_state->parallelBinner.best(split);
       

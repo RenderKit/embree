@@ -19,6 +19,7 @@
 #include "bvh4.h"
 #include "../bvh4i/bvh4i_builder_util.h"
 #include "../bvh4i/bvh4i_builder_binner.h"
+#include "../bvh4hair/heuristic_object_partition.h"
 
 namespace embree
 {
@@ -51,6 +52,7 @@ namespace embree
         __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK> workStack;
         __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* threadStack;
         ParallelBinner<16> parallelBinner;    
+	//ObjectPartition::ParallelBinner parallelBinner;
         LockStepTaskScheduler scheduler;
         LinearBarrierActive barrier;
       };
