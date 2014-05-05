@@ -32,6 +32,7 @@ namespace embree
     }
 
     /* approximate bounds */
+#if 1
     BBox3fa geomBound = empty, centBound = empty;
     size_t s = 0, t = 0, dt = max(size_t(1),numPrimitives/2048);
     for (size_t g=0; g<numGroups; g++) 
@@ -44,6 +45,20 @@ namespace embree
       }
       s += numPrims;
     }
+#else
+    BBox3fa geomBound = empty, centBound = empty;
+    size_t s = 0;
+    for (size_t g=0; g<numGroups; g++) 
+    {
+      size_t numPrims = geom->prims(g);
+      for (size_t i=0; i<numPrims; i++) {
+        BBox3fa bounds = geom->bounds(g,i);
+        geomBound.extend(bounds);
+        centBound.extend(center2(bounds));
+      }
+      s += numPrims;
+    }
+#endif
     new (&pinfo) PrimInfo(numPrimitives,geomBound,centBound);
 
     /* compute start group and primitives */

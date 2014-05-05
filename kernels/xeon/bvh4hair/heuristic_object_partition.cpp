@@ -22,23 +22,24 @@ namespace embree
   //                        Bin Mapping                                       //
   //////////////////////////////////////////////////////////////////////////////
 
-  __forceinline ObjectPartition::Mapping::Mapping(const BBox3fa& centBounds) 
+  __forceinline ObjectPartition::Mapping::Mapping(const PrimInfo& pinfo) 
   {
-    const ssef diag = (ssef) centBounds.size();
-    scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
-    ofs  = (ssef) centBounds.lower;
+    num = min(maxBins,size_t(4.0f + 0.05f*pinfo.size()));
+    const ssef diag = (ssef) pinfo.centBounds.size();
+    scale = select(diag != 0.0f,rcp(diag) * ssef(num),ssef(0.0f));
+    ofs  = (ssef) pinfo.centBounds.lower;
   }
   
   __forceinline Vec3ia ObjectPartition::Mapping::bin(const Vec3fa& p) const 
   {
     const ssei i = floori((ssef(p)-ofs)*scale);
 #if 0
-    assert(i[0] >=0 && i[0] < BINS);
-    assert(i[1] >=0 && i[1] < BINS);
-    assert(i[2] >=0 && i[2] < BINS);
+    assert(i[0] >=0 && i[0] < num);
+    assert(i[1] >=0 && i[1] < num);
+    assert(i[2] >=0 && i[2] < num);
     return i;
 #else
-    return Vec3ia(clamp(i,ssei(0),ssei(BINS-1)));
+    return Vec3ia(clamp(i,ssei(0),ssei(num-1)));
 #endif
   }
 
@@ -56,7 +57,7 @@ namespace embree
 
   __forceinline ObjectPartition::BinInfo::BinInfo() 
   {
-    for (size_t i=0; i<BINS; i++) {
+    for (size_t i=0; i<maxBins; i++) {
       bounds[i][0] = bounds[i][1] = bounds[i][2] = bounds[i][3] = empty;
       counts[i] = 0;
     }
@@ -125,7 +126,7 @@ namespace embree
 
   __forceinline void ObjectPartition::BinInfo::merge (const BinInfo& other)
   {
-    for (size_t i=0; i<BINS; i++) 
+    for (size_t i=0; i<maxBins; i++) 
     {
       counts[i] += other.counts[i];
       bounds[i][0].extend(other.bounds[i][0]);
@@ -136,11 +137,13 @@ namespace embree
   
   __forceinline ObjectPartition::Split ObjectPartition::BinInfo::best(const Mapping& mapping, const size_t blocks_shift)
   {
+    //PING;
+
     /* sweep from right to left and compute parallel prefix of merged bounds */
-    ssef rAreas[BINS];
-    ssei rCounts[BINS];
+    ssef rAreas[maxBins];
+    ssei rCounts[maxBins];
     ssei count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
-    for (size_t i=BINS-1; i>0; i--)
+    for (size_t i=mapping.size()-1; i>0; i--)
     {
       count += counts[i];
       rCounts[i] = count;
@@ -153,7 +156,7 @@ namespace embree
     ssei blocks_add = (1 << blocks_shift)-1;
     ssei ii = 1; ssef vbestSAH = pos_inf; ssei vbestPos = 0;
     count = 0; bx = empty; by = empty; bz = empty;
-    for (size_t i=1; i<BINS; i++, ii+=1)
+    for (size_t i=1; i<mapping.size(); i++, ii+=1)
     {
       count += counts[i-1];
       bx.extend(bounds[i-1][0]); float Ax = halfArea(bx);
@@ -193,7 +196,7 @@ namespace embree
   const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
   {
     BinInfo binner;
-    const Mapping mapping(pinfo.centBounds);
+    const Mapping mapping(pinfo);
     binner.bin(prims,mapping);
     return binner.best(mapping,logBlockSize);
   }
@@ -202,7 +205,7 @@ namespace embree
   const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
   {
     BinInfo binner;
-    const Mapping mapping(pinfo.centBounds);
+    const Mapping mapping(pinfo);
     binner.bin(prims,mapping);
     return binner.best(mapping,logBlockSize);
   }
@@ -217,7 +220,7 @@ namespace embree
   {
    /* parallel binning */			
     size_t numTasks = min(maxTasks,threadCount);
-    new (&mapping) Mapping(pinfo.centBounds);
+    new (&mapping) Mapping(pinfo);
     TaskScheduler::executeTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
 
     /* reduction of bin informations */
@@ -302,7 +305,7 @@ namespace embree
       for (size_t i=0; i<block->size(); i++) 
       {
         const PrimRef& prim = block->at(i); 
-	const Vec3fa center = prim.center2();
+	const Vec3fa center = center2(prim.bounds());
 	const ssei bin = ssei(mapping.bin_unsafe(center));
 
         if (bin[dim] < pos) 

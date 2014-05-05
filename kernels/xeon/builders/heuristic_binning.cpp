@@ -85,7 +85,9 @@ namespace embree
       bz = merge(bz,geomBounds[i-1][2]); float Az = halfArea(bz);
       const Vec3fa lCount = Vec3fa(blocks(count));
       const Vec3fa lArea = Vec3fa(Ax,Ay,Az);
-      const Vec3fa sah = lArea*lCount + rAreas[i]*rCounts[i];
+      const Vec3fa rCount = rCounts[i];
+      const Vec3fa rArea = rAreas[i];
+      const Vec3fa sah = lArea*lCount + rArea*rCount;
       bestPos = select(lt_mask(sah,bestSAH),ii ,bestPos);
       bestSAH = select(lt_mask(sah,bestSAH),sah,bestSAH);
     }
@@ -102,7 +104,6 @@ namespace embree
         split.cost = bestSAH[i];
       }
     }
-
     split.mapping = mapping;
     if (split.pos == 0) return;
     

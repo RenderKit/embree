@@ -206,7 +206,7 @@ namespace embree
     
     /*! split until node is full or SAH tells us to stop */
     do {
-      
+
       /*! find best child to split */
       float bestSAH = 0; 
       ssize_t bestChild = -1;
@@ -222,7 +222,7 @@ namespace embree
       /*! perform best found split and find new splits */
       PrimInfo linfo,rinfo;
       TriRefList lprims,rprims;
-      split.split<false>(threadIndex,threadCount,parent->alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
+      csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
       Split lsplit = ObjectPartition::find<false>(threadIndex,threadCount,lprims,linfo,2);
       Split rsplit = ObjectPartition::find<false>(threadIndex,threadCount,rprims,rinfo,2);
       cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
@@ -286,7 +286,7 @@ namespace embree
       /*! perform best found split and find new splits */
       PrimInfo linfo,rinfo;
       TriRefList lprims,rprims;
-      split.split<false>(threadIndex,threadCount,parent->alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
+      csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
       Split lsplit = ObjectPartition::find<false>(threadIndex,threadCount,lprims,linfo,2);
       Split rsplit = ObjectPartition::find<false>(threadIndex,threadCount,rprims,rinfo,2);
       cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
@@ -305,7 +305,7 @@ namespace embree
     delete this;
   }
 
-#if 0
+#if 1
   Builder* BVH4BuilderObjectSplit1 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
     return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
   }

@@ -64,6 +64,11 @@ namespace embree
       //return halfArea(geomBounds)*blocks(num); 
     }
 
+    /*! stream output */
+    friend std::ostream& operator<<(std::ostream& cout, const PrimInfo& pinfo) {
+      return cout << "PrimInfo { num = " << pinfo.num << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
+    }
+
   public:
     size_t num;          //!< number of primitives
     BBox3fa geomBounds;   //!< geometry bounds of primitives

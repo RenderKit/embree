@@ -42,7 +42,7 @@ namespace embree
   private:
 
     /*! number of bins */
-    static const size_t BINS = 16;
+    static const size_t maxBins = 32;
 
     /*! number of tasks */
     static const size_t maxTasks = 32;
@@ -62,7 +62,10 @@ namespace embree
       __forceinline Mapping() {}
 
       /*! calculates the mapping */
-      __forceinline Mapping(const BBox3fa& centBounds);
+      __forceinline Mapping(const PrimInfo& pinfo);
+
+      /*! returns number of bins */
+      __forceinline size_t size() const { return num; }
 
       /*! slower but safe binning */
       __forceinline Vec3ia bin(const Vec3fa& p) const;
@@ -73,7 +76,13 @@ namespace embree
       /*! returns true if the mapping is invalid in some dimension */
       __forceinline bool invalid(const int dim) const;
 
+      /*! stream output */
+      friend std::ostream& operator<<(std::ostream& cout, const Mapping& mapping) {
+	return cout << "Mapping { num = " << mapping.num << ", ofs = " << mapping.ofs << ", scale = " << mapping.scale << "}";
+      }
+
     public:
+      size_t num;
       ssef ofs,scale;        //!< linear function that maps to bin ID
     };
 
@@ -142,8 +151,8 @@ namespace embree
       Split best(const Mapping& mapping, const size_t logBlockSize);
 
     private:
-      BBox3fa bounds[BINS][4]; //!< geometry bounds for each bin in each dimension
-      ssei    counts[BINS];    //!< counts number of primitives that map into the bins
+      BBox3fa bounds[maxBins][4]; //!< geometry bounds for each bin in each dimension
+      ssei    counts[maxBins];    //!< counts number of primitives that map into the bins
     };
 
     /*! task for parallel binning */
