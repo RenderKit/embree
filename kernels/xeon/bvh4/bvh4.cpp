@@ -82,7 +82,7 @@ namespace embree
 
     SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4BuilderTopLevelFast);
 
-    SELECT_SYMBOL_DEFAULT(features,BVH4BuilderObjectSplit4Fast);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderObjectSplit4Fast);
     SELECT_SYMBOL_DEFAULT(features,BVH4BuilderObjectSplit4TriangleMeshFast);
 
     SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4BuilderMortonFast);
