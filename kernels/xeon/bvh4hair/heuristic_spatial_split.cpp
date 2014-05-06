@@ -138,7 +138,7 @@ namespace embree
       /* find best dimension */
       float bestSAH = inf;
       int   bestDim = -1;
-      float bestPos = 0.0f;
+      int   bestPos = 0.0f;
       for (size_t dim=0; dim<3; dim++) 
       {
 	/* ignore zero sized dimensions */
@@ -148,7 +148,7 @@ namespace embree
 	/* test if this is a better dimension */
 	if (vbestSAH[dim] < bestSAH && vbestPos[dim] != 0) {
 	  bestDim = dim;
-	  bestPos = mapping.pos(vbestPos[dim],dim);
+	  bestPos = vbestPos[dim]; //mapping.pos(vbestPos[dim],dim);
 	  bestSAH = vbestSAH[dim];
 	}
       }
@@ -163,23 +163,29 @@ namespace embree
       
       for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
       {
-	const float p0p = i->p0[bestDim];
-	const float p3p = i->p3[bestDim];
+	const int bin0 = mapping.bin(min(i->p0,i->p3))[bestDim];
+	const int bin1 = mapping.bin(max(i->p0,i->p3))[bestDim];
+
+	//const float p0p = i->p0[bestDim];
+	//const float p3p = i->p3[bestDim];
 	
 	/* sort to the left side */
-	if (p0p <= bestPos && p3p <= bestPos) {
+	//if (p0p <= bestPos && p3p <= bestPos) {
+	if (bin0 < bestPos && bin1 < bestPos) {
 	  lbounds.extend(i->bounds()); lnum++;
 	  continue;
 	}
 	
 	/* sort to the right side */
-	if (p0p >= bestPos && p3p >= bestPos) {
+	//if (p0p >= bestPos && p3p >= bestPos) {
+	if (bin0 >= bestPos && bin1 >= bestPos) {
 	  rbounds.extend(i->bounds()); rnum++;
 	  continue;
 	}
 	
 	Bezier1 left,right; 
-	if (i->split(bestDim,bestPos,left,right)) {
+	float fpos = mapping.pos(bestPos,bestDim);
+	if (i->split(bestDim,fpos,left,right)) {
 	  lbounds.extend(left .bounds()); lnum++;
 	  rbounds.extend(right.bounds()); rnum++;
 	  continue;
@@ -191,16 +197,18 @@ namespace embree
       if (lnum == 0 || rnum == 0) 
 	return Split(inf,-1,0.0f,mapping);
       
+#if 0
       float sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
       return Split(sah,bestDim,bestPos,mapping);
       
-#if 0 // FIXME: there is something wrong, this code block should work!!!
+#else // FIXME: there is something wrong, this code block should work!!!
       {
 	size_t lnum = 0, rnum = 0;
 	BBox3fa lbounds = empty, rbounds = empty;
 	for (size_t i=0; i<bestPos; i++) { lnum+=numBegin[i][bestDim]; lbounds.extend(bounds[i][bestDim]); }
 	for (size_t i=bestPos; i<BINS; i++) { rnum+=numEnd[i][bestDim]; rbounds.extend(bounds[i][bestDim]); }
-	split.sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
+	float sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
+	return Split(sah,bestDim,bestPos,mapping);
       }
 #endif
     }
@@ -257,12 +265,14 @@ namespace embree
       {
 	for (size_t i=0; i<block->size(); i++) 
 	{
-	  const Bezier1& prim = block->at(i); 
-	  const float p0p = prim.p0[dim];
-	  const float p3p = prim.p3[dim];
+	  const Bezier1& prim = block->at(i);
+	  const int bin0 = mapping.bin(min(prim.p0,prim.p3))[dim];
+	  const int bin1 = mapping.bin(max(prim.p0,prim.p3))[dim];
+	  //const float p0p = prim.p0[dim];
+	  //const float p3p = prim.p3[dim];
 	  
 	  /* sort to the left side */
-	  if (p0p <= pos && p3p <= pos)
+	  if (bin0 < pos && bin1 < pos)
 	  {
 	    linfo_o.add(prim.bounds(),prim.center());
 	    if (likely(lblock->insert(prim))) continue; 
@@ -272,7 +282,7 @@ namespace embree
 	  }
 	  
 	  /* sort to the right side */
-	  if (p0p >= pos && p3p >= pos)
+	  if (bin0 >= pos && bin1 >= pos)
 	  {
 	    rinfo_o.add(prim.bounds(),prim.center());
 	    if (likely(rblock->insert(prim))) continue;
@@ -283,7 +293,8 @@ namespace embree
 	  
 	  /* split and sort to left and right */
 	  Bezier1 left,right;
-	  if (prim.split(dim,pos,left,right)) 
+	  float fpos = mapping.pos(pos,dim);
+	  if (prim.split(dim,fpos,left,right)) 
 	  {
 	    linfo_o.add(left.bounds(),left.center());
 	    if (!lblock->insert(left)) {

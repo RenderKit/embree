@@ -383,7 +383,7 @@ namespace embree
                                 const unsigned int dim,
                                 const float &c,
                                 const float &s,
-                                const int bestSplit) // FIXME: has to be singed int!!!!!!!!!
+                                const int bestSplit)
     {
       const ssef b_min(aabb->lower[dim]);
       const ssef b_max(aabb->upper[dim]);
@@ -398,7 +398,7 @@ namespace embree
                                 const unsigned int dim,
                                 const float &c,
                                 const float &s,
-                                const int bestSplit) // FIXME: has to be singed int!!!!!!!!!
+                                const int bestSplit)
     {
       const ssef b_min(aabb->lower[dim]);
       const ssef b_max(aabb->upper[dim]);

@@ -80,10 +80,10 @@ namespace embree
       {
 	/*! construct an invalid split by default */
 	__forceinline Split() 
-	  : sah(inf), dim(-1), pos(0.0f) {}
+	  : sah(inf), dim(-1), pos(0) {}
 	
 	/*! constructs specified split */
-	__forceinline Split(float sah, int dim, float pos, const Mapping& mapping)
+	__forceinline Split(float sah, int dim, int pos, const Mapping& mapping)
 	  : sah(sah), dim(dim), pos(pos), mapping(mapping) {}
 	
 	/*! calculates surface area heuristic for performing the split */
@@ -100,7 +100,7 @@ namespace embree
       public:
 	float sah;          //!< SAH cost of the split
 	int   dim;          //!< split dimension
-	float pos;          //!< split position
+	int   pos;          //!< split position
 	Mapping mapping;    //!< mapping into bins
       };
       
