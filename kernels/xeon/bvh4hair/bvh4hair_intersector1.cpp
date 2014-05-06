@@ -73,7 +73,7 @@ namespace embree
       const Vec3fa org = madd(xfm.vx,(Vec3fa)ray_org.x,madd(xfm.vy,(Vec3fa)ray_org.y,xfm.vz*(Vec3fa)ray_org.z));
       const sse3f vorg  = sse3f(org);
       const sse3f vrdir = sse3f(rdir);
-      const BVH4Hair::BBoxSse3f bounds = node->getBounds();
+      const BBoxSSE3f bounds = node->getBounds();
       const sse3f tLowerXYZ = (bounds.lower - vorg) * vrdir;
       const sse3f tUpperXYZ = (bounds.upper - vorg) * vrdir;
 

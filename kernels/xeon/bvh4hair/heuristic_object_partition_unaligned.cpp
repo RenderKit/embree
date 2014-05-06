@@ -50,7 +50,7 @@ namespace embree
 	}
       }
       
-      return bestSpace;
+      return clamp(bestSpace);
     }
 #else
     template<>
@@ -67,7 +67,7 @@ namespace embree
 	  break;
 	}
       }
-      return frame(axis).transposed();
+      return clamp(frame(axis).transposed());
     }
 #endif
     
