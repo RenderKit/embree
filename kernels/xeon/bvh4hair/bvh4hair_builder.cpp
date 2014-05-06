@@ -873,7 +873,7 @@ namespace embree
         const Bezier1& curve = *iter; iter++;
         const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID);
         const Vec3fa& p0 = in->vertex(in->curve(curve.primID));
-        leaf[i] = Bezier1i(&p0,curve.geomID,curve.primID,-1); // FIXME: support mask
+        leaf[i] = Bezier1i(&p0,curve.geomID,curve.primID); 
       }
 
       /* free all primitive blocks */

@@ -145,7 +145,7 @@ namespace embree
     void BVH4HairIntersector1<PrimitiveIntersector>::intersect(const BVH4Hair* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      const typename PrimitiveIntersector::Precalculations pre(ray);
+      typename PrimitiveIntersector::Precalculations pre(ray);
 
       /*! stack state */
       StackItemNearFar stack[stackSize];  //!< stack of nodes 
@@ -276,7 +276,7 @@ namespace embree
     void BVH4HairIntersector1<PrimitiveIntersector>::occluded(const BVH4Hair* bvh, Ray& ray) 
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      const typename PrimitiveIntersector::Precalculations pre(ray);
+      typename PrimitiveIntersector::Precalculations pre(ray);
 
       /*! stack state */
       StackItemNearFar stack[stackSize];  //!< stack of nodes 

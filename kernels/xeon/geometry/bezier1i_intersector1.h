@@ -30,16 +30,42 @@ namespace embree
     struct Mailbox 
     {
 #if defined (__AVX__)
-      avxi ids;      
+      avxi geomIDs;      
+      avxi primIDs;
 #else
-      ssei ids;   
+      ssei geomIDs;   
+      ssei primIDs;
 #endif
       unsigned int index;
 
       __forceinline Mailbox() {
-        ids = -1;
+        geomIDs = -1;
+	primIDs = -1;
         index = 0;
       };
+
+      __forceinline bool hit(const unsigned geomID, const unsigned primID) const
+      {
+#if defined (__AVX__)
+	const avxb geomMask = geomIDs == geomID;
+	const avxb primMask = primIDs == primID;
+#else
+	const sseb geomMask = geomIDs == geomID;
+	const sseb primMask = primIDs == primID;
+#endif
+	return any(geomMask & primMask);
+      }
+
+      __forceinline void add(const unsigned geomID, const unsigned primID)
+      {
+	*(unsigned int*)&geomIDs[index] = geomID;
+	*(unsigned int*)&primIDs[index] = primID;
+#if defined (__AVX__)
+	index = (index + 1 ) % 8;
+#else
+	index = (index + 1 ) % 4;
+#endif
+      }
     };
 
     struct Precalculations 
@@ -125,9 +151,14 @@ namespace embree
 
     retry:
       if (unlikely(none(valid))) return;
-      
-      size_t i = select_min(valid,t);
       STAT3(normal.trav_prim_hits,1,1,1);
+      size_t i = select_min(valid,t);
+
+      /* ray masking test */
+#if defined(__USE_RAY_MASK__)
+      BezierCurves* g = ((Scene*)geom)->getBezierCurves(curve_in.geomID);
+      if (unlikely(g->mask & ray.mask) == 0) return;
+#endif  
 
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
@@ -166,21 +197,14 @@ namespace embree
 #endif
     }
 
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
     {
       for (size_t i=0; i<num; i++)
-	{
-//#if defined(PRE_SUBDIVISION_HACK)
-	  if (unlikely(any(pre.mbox.ids == curves[i].primID))) continue; // FIXME: works only for single hair set
-//#endif
-
-	  intersect(pre,ray,curves[i],geom);
-
-//#if defined(PRE_SUBDIVISION_HACK)
-	  *(unsigned int*)&pre.mbox.ids[pre.mbox.index] = curves[i].primID; // FIXME: works only for single hair set
-	  *(unsigned int*)&pre.mbox.index = (pre.mbox.index + 1 ) % 8;
-//#endif
-	}
+      {
+	if (unlikely(pre.mbox.hit(curves[i].geomID,curves[i].primID))) continue;
+	intersect(pre,ray,curves[i],geom);
+	pre.mbox.add(curves[i].geomID,curves[i].primID);
+      }
     }
 
     static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i& curve_in, const void* geom) 
@@ -214,7 +238,7 @@ namespace embree
       const avx4f p = p0 + u*v;
       const avxf t = p.z;
       const avxf d2 = p.x*p.x + p.y*p.y; 
-      const avxf r = p.w; //max(p.w,ray.org.w+ray.dir.w*t);
+      const avxf r = p.w;
       const avxf r2 = r*r;
       avxb valid = d2 <= r2 & avxf(ray.tnear) < t & t < avxf(ray.tfar);
       const float one_over_width = 1.0f/8.0f;
@@ -234,7 +258,7 @@ namespace embree
       const sse4f p = p0 + u*v;
       const ssef t = p.z;
       const ssef d2 = p.x*p.x + p.y*p.y; 
-      const ssef r = p.w; //max(p.w,ray.org.w+ray.dir.w*t);
+      const ssef r = p.w;
       const ssef r2 = r*r;
       sseb valid = d2 <= r2 & ssef(ray.tnear) < t & t < ssef(ray.tfar);
       const float one_over_width = 1.0f/4.0f;
@@ -243,6 +267,12 @@ namespace embree
 
       if (none(valid)) return false;
       STAT3(shadow.trav_prim_hits,1,1,1);
+
+      /* ray masking test */
+#if defined(__USE_RAY_MASK__)
+      BezierCurves* g = ((Scene*)geom)->getBezierCurves(curve_in.geomID);
+      if (unlikely(g->mask & ray.mask) == 0) return false;
+#endif  
 
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
@@ -270,7 +300,7 @@ namespace embree
       return true;
     }
 
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom) 
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom) 
     {
       for (size_t i=0; i<num; i++) 
         if (occluded(pre,ray,curves[i],geom))

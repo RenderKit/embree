@@ -44,7 +44,7 @@ namespace embree
 #endif
     const BezierCurves* curves = scene->getBezierCurves(geomID);
     const Vec3fa& p0 = curves->vertex(curves->curve(primID));
-    new (dst) Bezier1i(&p0,geomID,primID,curves->mask);
+    new (dst) Bezier1i(&p0,geomID,primID);
     prims++;
   }
   
@@ -61,7 +61,7 @@ namespace embree
     const BezierCurves* curves = scene->getBezierCurves(geomID);
     const int vtx = curves->curve(primID);
     const Vec3fa& p0 = curves->vertex(vtx);
-    new (dst) Bezier1i(&p0,geomID,primID,curves->mask);
+    new (dst) Bezier1i(&p0,geomID,primID);
     prims++;
   }
     

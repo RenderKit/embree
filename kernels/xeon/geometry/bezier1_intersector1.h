@@ -95,9 +95,15 @@ namespace embree
 
     retry:
       if (unlikely(none(valid))) return;
-      size_t i = select_min(valid,t);
       STAT3(normal.trav_prim_hits,1,1,1);
+      size_t i = select_min(valid,t);
 
+      /* ray masking test */
+#if defined(__USE_RAY_MASK__)
+      BezierCurves* g = ((Scene*)geom)->getBezierCurves(bezier.geomID);
+      if (unlikely(g->mask & ray.mask) == 0) return;
+#endif    
+      
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
       int geomID = bezier.geomID;
@@ -203,6 +209,12 @@ namespace embree
       if (none(valid)) return false;
       STAT3(shadow.trav_prim_hits,1,1,1);
 
+      /* ray masking test */
+#if defined(__USE_RAY_MASK__)
+      BezierCurves* g = ((Scene*)geom)->getBezierCurves(bezier.geomID);
+      if (unlikely(g->mask & ray.mask) == 0) return false;
+#endif  
+
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
       size_t i = select_min(valid,t);
@@ -210,7 +222,6 @@ namespace embree
       const Geometry* geometry = ((Scene*)geom)->get(geomID);
       if (likely(!geometry->hasOcclusionFilter1())) return true;
       
-
       while (true) 
       {
         /* calculate hit information */
