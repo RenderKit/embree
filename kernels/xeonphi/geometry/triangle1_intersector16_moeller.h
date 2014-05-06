@@ -315,7 +315,7 @@ namespace embree
 					  const mic3f &dir,
 					  const mic3f &org,
 					  Ray16& ray16, 
-					  const Scene     *__restrict__ const geometry,
+					  const Scene     *__restrict__ const scene,
 					  const Triangle1 * __restrict__ tptr)
     {
 	const mic_f zero = mic_f::zero();
@@ -399,7 +399,7 @@ namespace embree
 
             /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-            Geometry* geom = ((Scene*)bvh->geometry)->get(tri.geomID());
+            Geometry* geom = ((Scene*)scene)->get(tri.geomID());
             if (unlikely(geom->hasIntersectionFilter16())) {
               runIntersectionFilter16(valid,geom,ray16,u,v,t,Ng,geomID,primID);
               continue;
@@ -425,7 +425,7 @@ namespace embree
 					 const mic3f &org,
 					 Ray16& ray16, 
 					 mic_m &m_terminated,
-					 const Scene     *__restrict__ const geometry,
+					 const Scene     *__restrict__ const scene,
 					 const Triangle1 * __restrict__ tptr)
     {
       prefetch<PFHINT_L1>((mic_f*)tptr +  0); 
@@ -492,7 +492,7 @@ namespace embree
 #if defined(__INTERSECTION_FILTER__)
 	  const int geomID = tri.geomID();
 	  const int primID = tri.primID();
-	  const Geometry* geom = geometry->get(geomID);
+	  const Geometry* geom = scene->get(geomID);
 	  if (unlikely(geom->hasOcclusionFilter16()))
 	    valid = runOcclusionFilter16(valid,geom,ray16,u,v,t,Ng,geomID,primID);
 #endif

@@ -994,7 +994,7 @@ namespace embree
   {
     PING;
     enableTaskStealing = true;
-    enablePerCoreWorkQueueFill = false;
+    enablePerCoreWorkQueueFill = true;
 
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
@@ -1072,7 +1072,7 @@ namespace embree
     prims[numPrimitives+1] = prims[0];
     prims[numPrimitives+2] = prims[0];
     // === 'prims' became 'accel' === 
-    prims = 0;
+    prims = NULL;
     size_prims = 0;
   }
 

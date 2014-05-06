@@ -119,7 +119,7 @@ namespace embree
       }
 
     public:
-      unsigned mask;                    //!< for masking out geometry
+      unsigned int mask;                //!< for masking out geometry
       bool built;                       //!< geometry got built
       unsigned char numTimeSteps;       //!< number of time steps (1 or 2)
 

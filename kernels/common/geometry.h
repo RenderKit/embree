@@ -212,7 +212,7 @@ namespace embree
     Scene* parent;   //!< pointer to scene this mesh belongs to
     GeometryTy type;
     ssize_t numPrimitives;    //!< number of primitives of this geometry
-    unsigned id;       //!< internal geometry ID
+    unsigned int id;       //!< internal geometry ID
     RTCGeometryFlags flags;    //!< flags of geometry
     State state;       //!< state of the geometry 
     void* userPtr;     //!< user pointer

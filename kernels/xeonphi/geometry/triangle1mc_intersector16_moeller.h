@@ -31,8 +31,6 @@ namespace embree
    *  e2. */
   struct Triangle1mcIntersector16MoellerTrumbore
   {
-    //typedef Triangle1 Primitive;
-
 
     __forceinline static bool intersect1(const size_t rayIndex, 
 					 const mic_f &dir_xyz,
@@ -41,7 +39,7 @@ namespace embree
 					 mic_f &max_dist_xyz,
 					 const mic_i &and_mask,
 					 Ray16& ray16, 
-					 const Scene     *__restrict__ const geometry,
+					 const Scene     *__restrict__ const scene,
 					 const Triangle1mc * __restrict__ const tptr)
     {
       const mic_f zero = mic_f::zero();
@@ -98,7 +96,11 @@ namespace embree
 
 #if defined(__USE_RAY_MASK__)
       const mic_i rayMask(ray16.mask[rayIndex]);
-      const mic_i triMask = swDDDD(gather16i_4i_align(&tptr[0].v2,&tptr[1].v2,&tptr[2].v2,&tptr[3].v2));
+      const mic_i triMask0( scene->getTriangleMesh( tptr[0].geomID() )->mask );
+      const mic_i triMask1( scene->getTriangleMesh( tptr[1].geomID() )->mask );
+      const mic_i triMask2( scene->getTriangleMesh( tptr[2].geomID() )->mask );
+      const mic_i triMask3( scene->getTriangleMesh( tptr[3].geomID() )->mask );
+      const mic_i triMask = gather16i_4i_align(triMask0,triMask1,triMask2,triMask3);
       const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
       m_final &= m_ray_mask;	      
 #endif
@@ -108,10 +110,6 @@ namespace embree
       /* did the ray hit one of the four triangles? */
       if (unlikely(any(m_final)))
 	{
-	  const mic_f gnormalx = swBBBB(normal);
-	  const mic_f gnormaly = swCCCC(normal);
-	  const mic_f gnormalz = swAAAA(normal);
-
 	  /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__) 
 	  mic_f org_max_dist_xyz = max_dist_xyz;
@@ -128,8 +126,13 @@ namespace embree
 	      const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
 	      const int geomID = tri_ptr->geomID();
 	      const int primID = tri_ptr->primID();
+
+	      const mic_f gnormalx(normal[triIndex*4+1]);
+	      const mic_f gnormaly(normal[triIndex*4+2]);
+	      const mic_f gnormalz(normal[triIndex*4+0]);
+
                 
-	      const Geometry* const geom = geometry->get(geomID);
+	      const Geometry* const geom = scene->get(geomID);
 	      if (likely(!geom->hasIntersectionFilter16())) 
 		{
 
@@ -175,6 +178,10 @@ namespace embree
 	  prefetch<PFHINT_L1EX>(&ray16.primID);
 
 	  max_dist_xyz = min_dist;
+
+	  const mic_f gnormalx(normal[triIndex*4+1]);
+	  const mic_f gnormaly(normal[triIndex*4+2]);
+	  const mic_f gnormalz(normal[triIndex*4+0]);
 		  
 	  compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
 	  compactustore16f_low(m_tri,&ray16.u[rayIndex],u); 
@@ -201,15 +208,12 @@ namespace embree
 					const mic_i &and_mask,
 					Ray16& ray16, 
 					mic_m &m_terminated,
-					const Scene     *__restrict__ const geometry,
+					const Scene     *__restrict__ const scene,
 					const Triangle1mc * __restrict__ const tptr)
     {
       const mic_f zero = mic_f::zero();
-
-      prefetch<PFHINT_L1>(tptr + 3);
-      prefetch<PFHINT_L1>(tptr + 2);
-      prefetch<PFHINT_L1>(tptr + 1);
       prefetch<PFHINT_L1>(tptr + 0); 
+      prefetch<PFHINT_L1>(tptr + 2);
 
 	      
       const mic_f v0 = gather_4f_zlc(and_mask,
@@ -261,13 +265,18 @@ namespace embree
 
 #if defined(__USE_RAY_MASK__)
       const mic_i rayMask(ray16.mask[rayIndex]);
-      const mic_i triMask = swDDDD(gather16i_4i_align(&tptr[0].v2,&tptr[1].v2,&tptr[2].v2,&tptr[3].v2));
+      const mic_i triMask0( scene->getTriangleMesh( tptr[0].geomID() )->mask );
+      const mic_i triMask1( scene->getTriangleMesh( tptr[1].geomID() )->mask );
+      const mic_i triMask2( scene->getTriangleMesh( tptr[2].geomID() )->mask );
+      const mic_i triMask3( scene->getTriangleMesh( tptr[3].geomID() )->mask );
+      const mic_i triMask = gather16i_4i_align(triMask0,triMask1,triMask2,triMask3);
+
       const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
       m_final &= m_ray_mask;	      
 #endif
 
-#if defined(__INTERSECTION_FILTER__) 
-              
+
+#if defined(__INTERSECTION_FILTER__)               
       /* did the ray hit one of the four triangles? */
       while (any(m_final)) 
 	{
@@ -278,12 +287,13 @@ namespace embree
 	  const size_t triIndex = vecIndex >> 2;
 	  const Triangle1mc  *__restrict__ tri_ptr = tptr + triIndex;
 	  const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
-	  const mic_f gnormalx = mic_f(tri_ptr->Ng.x);
-	  const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
-	  const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
 	  const int geomID = tri_ptr->geomID();
 	  const int primID = tri_ptr->primID();                
-	  const Geometry* const geom = geometry->get(geomID);
+	  const Geometry* const geom = scene->get(geomID);
+	  const mic_f gnormalx(normal[triIndex*4+1]);
+	  const mic_f gnormaly(normal[triIndex*4+2]);
+	  const mic_f gnormalz(normal[triIndex*4+0]);
+
 	  if (likely(!geom->hasOcclusionFilter16())) break;
                 
 	  if (runOcclusionFilter16(geom,ray16,rayIndex,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) 

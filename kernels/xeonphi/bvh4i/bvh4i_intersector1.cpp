@@ -17,6 +17,7 @@
 #include "bvh4i_intersector1.h"
 
 #include "geometry/triangle1_intersector1_moeller.h"
+#include "geometry/triangle1mc_intersector1_moeller.h"
 #include "geometry/virtual_accel_intersector1.h"
 
 namespace embree
@@ -235,15 +236,14 @@ namespace embree
 	  const mic_i and_mask = broadcast4to16i(zlc4);
 
 
-	  bool hit = Triangle1mcIntersector16MoellerTrumbore::intersect1(rayIndex,
-									 dir_xyz,
-									 org_xyz,
-									 min_dist_xyz,
-									 max_dist_xyz,
-									 and_mask,
-									 ray16,
-									 (Scene*)bvh->geometry,
-									 tptr);
+	  bool hit = Triangle1mcIntersector1MoellerTrumbore::intersect1(dir_xyz,
+									org_xyz,
+									min_dist_xyz,
+									max_dist_xyz,
+									and_mask,
+									ray,
+									(Scene*)bvh->geometry,
+									tptr);
 	  if (hit)
 	    compactStack(stack_node,stack_dist,sindex,max_dist_xyz);
 
@@ -329,7 +329,7 @@ namespace embree
 
 
     DEFINE_INTERSECTOR1    (BVH4iTriangle1Intersector1, BVH4iIntersector1);
-    DEFINE_INTERSECTOR1    (BVH4iVirtualIntersector1, BVH4iIntersector1);
+    DEFINE_INTERSECTOR1    (BVH4iVirtualIntersector1  , BVH4iIntersector1);
     DEFINE_INTERSECTOR1    (BVH4mcTriangle1Intersector1, BVH4iIntersector1);
 
   }
