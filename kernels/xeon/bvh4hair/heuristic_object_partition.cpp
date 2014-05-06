@@ -26,7 +26,7 @@ namespace embree
     
     __forceinline ObjectPartition::Mapping::Mapping(const PrimInfo& pinfo) 
     {
-      num = min(maxBins,size_t(4.0f + 0.05f*pinfo.size()));
+      num = 16; //min(maxBins,size_t(4.0f + 0.05f*pinfo.size()));
       const ssef diag = (ssef) pinfo.centBounds.size();
       scale = select(diag != 0.0f,rcp(diag) * ssef(0.99f*num),ssef(0.0f));
       ofs  = (ssef) pinfo.centBounds.lower;

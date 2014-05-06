@@ -148,9 +148,9 @@ namespace embree
     {
       for (size_t i=0; i<num; i++) 
       {
-	if (unlikely(pre.mbox.hit(curves[i].geomID,curves[i].primID))) continue;
+	//if (unlikely(pre.mbox.hit(curves[i].geomID,curves[i].primID))) continue;
 	intersect(pre,ray,curves[i],geom);
-	pre.mbox.add(curves[i].geomID,curves[i].primID);
+	//pre.mbox.add(curves[i].geomID,curves[i].primID);
       }
     }
 
