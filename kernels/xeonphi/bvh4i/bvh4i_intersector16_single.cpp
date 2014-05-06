@@ -17,6 +17,7 @@
 #include "bvh4i_intersector16_single.h"
 #include "geometry/triangle1.h"
 #include "geometry/triangle1_intersector16_moeller.h"
+#include "geometry/triangle1mc_intersector16_moeller.h"
 #include "geometry/filter.h"
 
 namespace embree
@@ -196,8 +197,185 @@ namespace embree
 
       store16i(m_valid & toMask(terminated),&ray16.geomID,0);
     }
+
+
+    void BVH4mcIntersector16Single::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    {
+      /* near and node stack */
+      __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+
+      /* setup */
+      const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
+      const mic3f rdir16     = rcp_safe(ray16.dir);
+      const mic_f inf        = mic_f(pos_inf);
+      const mic_f zero       = mic_f::zero();
+
+      store16f(stack_dist,inf);
+
+      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+
+      stack_node[0] = BVH4i::invalidNode;
+      long rayIndex = -1;
+      while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
+        {
+	  stack_node[1] = bvh->root;
+	  size_t sindex = 2;
+
+	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+
+	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+
+	  while (1)
+	    {
+
+	      NodeRef curNode = stack_node[sindex-1];
+	      sindex--;
+
+	      traverse_single_intersect(curNode,
+					sindex,
+					rdir_xyz,
+					org_rdir_xyz,
+					min_dist_xyz,
+					max_dist_xyz,
+					stack_node,
+					stack_dist,
+					nodes,
+					leaf_mask);
+		   
+
+
+	      /* return if stack is empty */
+	      if (unlikely(curNode == BVH4i::invalidNode)) break;
+
+	      STAT3(normal.trav_leaves,1,1,1);
+	      STAT3(normal.trav_prims,4,4,4);
+
+	      /* intersect one ray against four triangles */
+
+	      //////////////////////////////////////////////////////////////////////////////////////////////////
+
+	      unsigned int items = curNode.items();
+	      unsigned int index = curNode.offsetIndex();
+	      const Triangle1mc *const tptr = (Triangle1mc*)accel + index;
+
+	      //const Triangle1mc* const tptr  = (Triangle1*) curNode.leaf(accel);
+
+	      
+	      const mic_i and_mask = broadcast4to16i(zlc4);
+
+
+	      bool hit = Triangle1mcIntersector16MoellerTrumbore::intersect1(rayIndex,
+									     dir_xyz,
+									     org_xyz,
+									     min_dist_xyz,
+									     max_dist_xyz,
+									     and_mask,
+									     ray16,
+									     (Scene*)bvh->geometry,
+									     tptr);
+	      if (hit)
+	      	compactStack(stack_node,stack_dist,sindex,max_dist_xyz);
+
+	      // ------------------------
+	    }	  
+	}
+    }
+    
+    void BVH4mcIntersector16Single::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    {
+      /* near and node stack */
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+
+      /* setup */
+      const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
+      const mic3f rdir16  = rcp_safe(ray16.dir);
+      mic_m terminated    = !m_valid;
+      const mic_f inf     = mic_f(pos_inf);
+      const mic_f zero    = mic_f::zero();
+
+      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+
+      stack_node[0] = BVH4i::invalidNode;
+
+      long rayIndex = -1;
+      while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
+        {
+	  stack_node[1] = bvh->root;
+	  size_t sindex = 2;
+
+	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const mic_i v_invalidNode(BVH4i::invalidNode);
+	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+
+	  while (1)
+	    {
+	      NodeRef curNode = stack_node[sindex-1];
+	      sindex--;
+
+	      traverse_single_occluded(curNode,
+				       sindex,
+				       rdir_xyz,
+				       org_rdir_xyz,
+				       min_dist_xyz,
+				       max_dist_xyz,
+				       stack_node,
+				       nodes,
+				       leaf_mask);
+
+	      /* return if stack is empty */
+	      if (unlikely(curNode == BVH4i::invalidNode)) break;
+
+	      STAT3(shadow.trav_leaves,1,1,1);
+	      STAT3(shadow.trav_prims,4,4,4);
+
+	      /* intersect one ray against four triangles */
+
+	      //////////////////////////////////////////////////////////////////////////////////////////////////
+
+	      unsigned int items = curNode.items();
+	      unsigned int index = curNode.offsetIndex();
+	      const Triangle1mc *const tptr = (Triangle1mc*)accel + index;
+
+	      const mic_i and_mask = broadcast4to16i(zlc4);
+
+	      const bool hit = Triangle1mcIntersector16MoellerTrumbore::occluded1(rayIndex,
+										  dir_xyz,
+										  org_xyz,
+										  min_dist_xyz,
+										  max_dist_xyz,
+										  and_mask,
+										  ray16,
+										  terminated,
+										  (Scene*)bvh->geometry,
+										  tptr);
+	      if (unlikely(hit)) break;
+	      
+
+	    }
+
+
+	  if (unlikely(all(toMask(terminated)))) break;
+	}
+
+
+      store16i(m_valid & toMask(terminated),&ray16.geomID,0);
+    }
     
     DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16SingleMoeller, BVH4iIntersector16Single);
+    DEFINE_INTERSECTOR16    (BVH4mcTriangle1Intersector16SingleMoeller, BVH4mcIntersector16Single);
 
   }
 }

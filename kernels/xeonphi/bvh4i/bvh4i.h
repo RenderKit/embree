@@ -500,15 +500,6 @@ namespace embree
     return o;
   } 
 
-  class __aligned(32) MemoryConservativeAccel
-  {
-  public:
-    Vec3fa *__restrict__ v0;
-    Vec3fa *__restrict__ v1;
-    Vec3fa *__restrict__ v2;
-    int geomID;
-    int primID;
-  };
 
   /* ---------------- */
   /* --- QUAD BVH --- */

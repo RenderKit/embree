@@ -120,6 +120,8 @@ namespace embree
     void recurseSAH(BuildRecord& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads);
 
   protected:
+    bool enablePerCoreWorkQueueFill;
+    bool enableTaskStealing;
     size_t numNodesToAllocate;
     BuildSource* source;          //!< input geometry
     Scene* scene;                 //!< input geometry

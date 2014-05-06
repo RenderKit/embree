@@ -20,7 +20,7 @@
 
 namespace embree
 {
-  struct Triangle1
+  struct __aligned(64) Triangle1
   {
   public:
 
@@ -71,4 +71,18 @@ namespace embree
     return o;
   } 
 
+
+  struct __aligned(32) Triangle1mc
+  {
+  public:
+    Vec3fa *__restrict__ v0;
+    Vec3fa *__restrict__ v1;
+    Vec3fa *__restrict__ v2;
+    int geometryID;
+    int primitiveID;    
+
+    __forceinline unsigned int primID() const { return primitiveID; }
+    __forceinline unsigned int geomID() const { return geometryID; }
+
+  };
 }

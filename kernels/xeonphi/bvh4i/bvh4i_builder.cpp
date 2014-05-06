@@ -22,9 +22,6 @@
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 #define SINGLE_THREADED_BUILD_THRESHOLD        512
-#define ENABLE_TASK_STEALING
-#define ENABLE_FILL_PER_CORE_WORK_QUEUES
-
 
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
@@ -101,7 +98,9 @@ namespace embree
       node(NULL), 
       accel(NULL), 
       size_prims(0),
-      numNodesToAllocate(BVH4i::N)
+      numNodesToAllocate(BVH4i::N),
+      enablePerCoreWorkQueueFill(true),
+      enableTaskStealing(true)
   {
     DBG(PING);
   }
@@ -548,9 +547,7 @@ namespace embree
     const size_t numCores = (numThreads+3)/4;
     const size_t globalCoreID   = threadID/4;
 
-#if defined(ENABLE_FILL_PER_CORE_WORK_QUEUES)
-
-    if (numThreads > 1)
+    if (enablePerCoreWorkQueueFill && numThreads > 1)
       {
 	const size_t globalThreadID = threadID;
 	const size_t localThreadID  = threadID % 4;
@@ -575,7 +572,6 @@ namespace embree
 	    local_workStack[globalCoreID].mutex.dec();
 	  }
       }
-#endif
 
     while(true)
       {
@@ -600,20 +596,21 @@ namespace embree
 
 	/* try task stealing */
         bool success = false;
-#if defined(ENABLE_TASK_STEALING)
-        for (size_t i=0; i<numThreads; i++)
-        {
-	  unsigned int next_threadID = (threadID+i);
-	  if (next_threadID >= numThreads) next_threadID -= numThreads;
-	  const unsigned int next_globalCoreID   = next_threadID/4;
+	if (enableTaskStealing)
+	  {
+	    for (size_t i=0; i<numThreads; i++)
+	      {
+		unsigned int next_threadID = (threadID+i);
+		if (next_threadID >= numThreads) next_threadID -= numThreads;
+		const unsigned int next_globalCoreID   = next_threadID/4;
 
-	  assert(next_globalCoreID < numCores);
-          if (local_workStack[next_globalCoreID].pop_smallest(br)) { 
-            success = true;
-            break;
-          }
-        }
-#endif
+		assert(next_globalCoreID < numCores);
+		if (local_workStack[next_globalCoreID].pop_smallest(br)) { 
+		  success = true;
+		  break;
+		}
+	      }
+	  }
         if (!success) break; 
 
 	local_workStack[globalCoreID].mutex.inc();

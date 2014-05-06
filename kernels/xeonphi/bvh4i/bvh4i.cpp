@@ -42,16 +42,19 @@ namespace embree
 #endif
 
   /*! intersector registration functions */
-  DECLARE_SYMBOL(Accel::Intersector1,BVH4iTriangle1Intersector1);
-  DECLARE_SYMBOL(Accel::Intersector1,BVH4iTriangle1Intersector1Scalar);
+  DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iTriangle1Intersector1);
+  DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iTriangle1Intersector1Scalar);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16SingleMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16HybridMoeller);
-  DECLARE_SYMBOL(Accel::Intersector1,BVH4iVirtualGeometryIntersector1);
+
+  DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iVirtualGeometryIntersector1);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iVirtualGeometryIntersector16);
-  DECLARE_SYMBOL(Accel::Intersector1,BVH4iBezierCurvesIntersector1);
+  DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iBezierCurvesIntersector1);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iBezierCurvesIntersector16);
 
+  DECLARE_SYMBOL(Accel::Intersector1 ,BVH4mcTriangle1Intersector1);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4mcTriangle1Intersector16SingleMoeller);
 
   void BVH4iRegister () 
   {
@@ -67,6 +70,9 @@ namespace embree
     SELECT_SYMBOL_KNC(features,BVH4iVirtualGeometryIntersector16);
     SELECT_SYMBOL_KNC(features,BVH4iBezierCurvesIntersector1);
     SELECT_SYMBOL_KNC(features,BVH4iBezierCurvesIntersector16);
+
+    SELECT_SYMBOL_KNC(features,BVH4mcTriangle1Intersector1);
+    SELECT_SYMBOL_KNC(features,BVH4mcTriangle1Intersector16SingleMoeller);
   }
 
 
@@ -85,6 +91,15 @@ namespace embree
 	intersectors.intersector16 = BVH4iTriangle1Intersector16SingleMoeller;
       }
     else throw std::runtime_error("unknown traverser "+g_traverser+" for BVH4i<Triangle1>");      
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH4mcTriangle1Intersectors(BVH4i* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH4mcTriangle1Intersector1; 
+    intersectors.intersector16 = BVH4mcTriangle1Intersector16SingleMoeller;
     return intersectors;
   }
 
@@ -150,7 +165,7 @@ namespace embree
     
     Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,BVH4iBuilder::BVH4I_BUILDER_MEMORY_CONSERVATIVE);
        
-    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
+    Accel::Intersectors intersectors = BVH4mcTriangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);    
   }
 

@@ -24,8 +24,8 @@ namespace embree
 {
   namespace isa
   {
-    /*! BVH4i Traverser. Packet traversal implementation for a Quad BVH. */
-      class BVH4iIntersector1
+    /*! BVH4i single ray traverser */
+    class BVH4iIntersector1
     {
       /* shortcuts for frequently used types */
       typedef typename BVH4i::NodeRef NodeRef;
@@ -35,6 +35,19 @@ namespace embree
       static void intersect(BVH4i* bvh, Ray& ray);
       static void occluded (BVH4i* bvh, Ray& ray);
     };
+
+    /*! BVH4mc single ray traverser */
+    class BVH4mcIntersector1
+    {
+      /* shortcuts for frequently used types */
+      typedef typename BVH4i::NodeRef NodeRef;
+      typedef typename BVH4i::Node Node;
+      
+    public:
+      static void intersect(BVH4i* bvh, Ray& ray);
+      static void occluded (BVH4i* bvh, Ray& ray);
+    };
+
   }
 }
   

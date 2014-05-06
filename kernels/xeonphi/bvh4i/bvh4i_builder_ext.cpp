@@ -993,6 +993,9 @@ namespace embree
   void BVH4iBuilderMemoryConservative::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
     PING;
+    enableTaskStealing = true;
+    enablePerCoreWorkQueueFill = false;
+
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
 
@@ -1024,21 +1027,26 @@ namespace embree
 	}
       
 	// === allocated memory for primrefs,nodes, and accel ===
+	const size_t numTopLevelNodes = 256;
 	const size_t size_primrefs = 0;
-	const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeof(PrimRef) + 4 * additional_size; // 4K
+	const size_t size_node     = (numNodes * BVH_NODE_PREALLOC_FACTOR + numTopLevelNodes) * sizeof(PrimRef); 
 	const size_t size_accel    = numPrims * sizeof(PrimRef) + additional_size;
 
-	numAllocatedNodes = size_node / sizeof(BVHNode);
-      
+	numAllocatedNodes = size_node / sizeof(BVHNode) - numTopLevelNodes;
+	
+	DBG_PRINT( numAllocatedNodes );
+	DBG_PRINT( size_node );
+	DBG_PRINT( size_accel );
+
 	DBG(DBG_PRINT(numAllocatedNodes));
 	DBG(DBG_PRINT(size_primrefs));
 	DBG(DBG_PRINT(size_node));
 	DBG(DBG_PRINT(size_accel));
 
 	// === to do: os_reserve ===
-	prims = (PrimRef*) os_malloc(size_accel);
-	node  = (BVHNode  *) os_malloc(size_node);
-	accel = (Triangle1*)(node + 256); // for global paritioning
+	prims = (PrimRef*)  os_malloc(size_accel);
+	node  = (BVHNode  *)os_malloc(size_node);
+	accel = (Triangle1*)(node + numTopLevelNodes); // for global paritioning
 
 	DBG_PRINT(prims);
 	DBG_PRINT(node);
@@ -1092,13 +1100,13 @@ namespace embree
 	Vec3fa *vptr1 = (Vec3fa*)&mesh->vertex(tri.v[1]);
 	Vec3fa *vptr2 = (Vec3fa*)&mesh->vertex(tri.v[2]);
 
-	MemoryConservativeAccel *acc = (MemoryConservativeAccel*)bptr;
+	Triangle1mc *acc = (Triangle1mc*)bptr;
 
 	acc->v0 = vptr0;
 	acc->v1 = vptr1;
 	acc->v2 = vptr2;
-	acc->geomID = geomID;
-	acc->primID = primID;
+	acc->geometryID  = geomID;
+	acc->primitiveID = primID;
       }
   }
 
