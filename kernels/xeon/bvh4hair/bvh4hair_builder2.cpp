@@ -397,12 +397,16 @@ namespace embree
       /* create unaligned node */
       else {
 	BVH4Hair::UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
-	node->set(NAABBox3fa(space,task.sinfo.geomBounds));
+	BBox3fa b = empty; // recomputing bounds as spatial splits might generate bounds slightly due to accuracy issues
+	for (size_t i=0; i<numChildren; i++) {
+	  csinfo[i] = ObjectPartitionUnaligned::computePrimInfo<Parallel>(threadIndex,threadCount,cprims[i],space);
+	  cbounds[i] = NAABBox3fa(space,csinfo[i].geomBounds);
+	  b.extend(csinfo[i].geomBounds);
+	}
+	node->set(NAABBox3fa(space,b));
 	for (ssize_t i=numChildren-1; i>=0; i--) {
-	  PrimInfo csinfoi = ObjectPartitionUnaligned::computePrimInfo<Parallel>(threadIndex,threadCount,cprims[i],space);
-	  NAABBox3fa cboundsi(space,csinfoi.geomBounds);
-	  node->set(i,csinfoi.geomBounds);
-	  new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cboundsi,csinfoi,csplit[i]);
+	  node->set(i,cbounds[i].bounds);
+	  new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csinfo[i],csplit[i]);
 	}
 	numTasks_o = numChildren;
 	*task.dst = bvh->encodeNode(node);
