@@ -46,6 +46,14 @@ namespace embree
   avxf coeff_P2[4];
   avxf coeff_P3[4];
 
+  ssef sse_coeff0[4];
+  ssef sse_coeff1[4];
+
+  ssef sse_coeff_P0[4];
+  ssef sse_coeff_P1[4];
+  ssef sse_coeff_P2[4];
+  ssef sse_coeff_P3[4];
+
   void init_globals()
   {
     {
@@ -113,6 +121,75 @@ namespace embree
       coeff_P2[1] = coeff_P3[1] - dt*d1;
       coeff_P2[2] = coeff_P3[2] - dt*d2;
       coeff_P2[3] = coeff_P3[3] - dt*d3;
+    }
+
+    ////////////////////////// SSE ////////////////////////
+
+    {
+      const float dt = 1.0f/4.0f;
+      const ssef t1 = ssef(step)*dt;
+      const ssef t0 = 1.0f-t1;
+      sse_coeff0[0] = t0 * t0 * t0;
+      sse_coeff0[1] = 3.0f * t1 * t0 * t0;
+      sse_coeff0[2] = 3.0f * t1 * t1 * t0;
+      sse_coeff0[3] = t1 * t1 * t1;
+    }
+    {
+      const float dt = 1.0f/4.0f;
+      const ssef t1 = ssef(step)*dt+ssef(dt);
+      const ssef t0 = 1.0f-t1;
+      sse_coeff1[0] = t0 * t0 * t0;
+      sse_coeff1[1] = 3.0f * t1 * t0 * t0;
+      sse_coeff1[2] = 3.0f * t1 * t1 * t0;
+      sse_coeff1[3] = t1 * t1 * t1;
+    }
+
+    {
+      const float dt = 1.0f/4.0f;
+      const ssef t1 = ssef(step)*dt;
+      const ssef t0 = 1.0f-t1;
+      sse_coeff_P0[0] = t0 * t0 * t0;
+      sse_coeff_P0[1] = 3.0f * t1 * t0 * t0;
+      sse_coeff_P0[2] = 3.0f * t1 * t1 * t0;
+      sse_coeff_P0[3] = t1 * t1 * t1;
+    }
+
+    {
+      const float dt = 1.0f/4.0f;
+      const ssef t1 = ssef(step)*dt;
+      const ssef t0 = 1.0f-t1;
+      const ssef d0 = -t0*t0;
+      const ssef d1 = t0*t0 - 2.0f*t0*t1;
+      const ssef d2 = 2.0f*t1*t0 - t1*t1;
+      const ssef d3 = t1*t1;
+      sse_coeff_P1[0] = sse_coeff_P0[0] + dt*d0;
+      sse_coeff_P1[1] = sse_coeff_P0[1] + dt*d1;
+      sse_coeff_P1[2] = sse_coeff_P0[2] + dt*d2;
+      sse_coeff_P1[3] = sse_coeff_P0[3] + dt*d3;
+    }
+
+    {
+      const float dt = 1.0f/4.0f;
+      const ssef t1 = ssef(step)*dt+ssef(dt);
+      const ssef t0 = 1.0f-t1;
+      sse_coeff_P3[0] = t0 * t0 * t0;
+      sse_coeff_P3[1] = 3.0f * t1 * t0 * t0;
+      sse_coeff_P3[2] = 3.0f * t1 * t1 * t0;
+      sse_coeff_P3[3] = t1 * t1 * t1;
+    }
+
+    {
+      const float dt = 1.0f/4.0f;
+      const ssef t1 = ssef(step)*dt+ssef(dt);
+      const ssef t0 = 1.0f-t1;
+      const ssef d0 = -t0*t0;
+      const ssef d1 = t0*t0 - 2.0f*t0*t1;
+      const ssef d2 = 2.0f*t1*t0 - t1*t1;
+      const ssef d3 = t1*t1;
+      sse_coeff_P2[0] = sse_coeff_P3[0] - dt*d0;
+      sse_coeff_P2[1] = sse_coeff_P3[1] - dt*d1;
+      sse_coeff_P2[2] = sse_coeff_P3[2] - dt*d2;
+      sse_coeff_P2[3] = sse_coeff_P3[3] - dt*d3;
     }
   }
 }

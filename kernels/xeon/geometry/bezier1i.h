@@ -144,6 +144,17 @@ namespace embree
       tangent = p21-p20;
     }
 
+#if defined(__SSE__)
+    __forceinline sse4f eval(const ssef& c0, const ssef& c1, const ssef& c2, const ssef& c3) const
+    {
+      const sse4f p00 = sse4f(v0);
+      const sse4f p01 = sse4f(v1);
+      const sse4f p02 = sse4f(v2);
+      const sse4f p03 = sse4f(v3);
+      return c0*p00 + c1*p01 + c2*p02 + c3*p03; // FIXME: use fmadd
+    }
+#endif
+
 #if defined(__AVX__)
     __forceinline avx4f eval(const avxf& c0, const avxf& c1, const avxf& c2, const avxf& c3) const
     {

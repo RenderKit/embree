@@ -23,13 +23,16 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1,BVH4HairBezier1iIntersector1);
 
   Builder* BVH4HairBuilder_ (BVH4Hair* bvh, Scene* scene);
-  Builder* BVH4HairBuilder2_ (BVH4Hair* bvh, Scene* scene);
+
+  DECLARE_FUNCTION_SYMBOL(Builder*   BVH4HairBuilder2_  (BVH4Hair* bvh, Scene* scene));
+  static                  Builder* (*BVH4HairBuilder2_) (BVH4Hair* bvh, Scene* scene);
 
   void BVH4HairRegister () 
   {
     int features = getCPUFeatures();
-    SELECT_SYMBOL_AVX_AVX2(features,BVH4HairBezier1Intersector1);
-    SELECT_SYMBOL_AVX_AVX2(features,BVH4HairBezier1iIntersector1);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4HairBuilder2_);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4HairBezier1Intersector1);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4HairBezier1iIntersector1);
   }
 
   BVH4Hair::BVH4Hair (const PrimitiveType& primTy, Scene* scene) 

@@ -23,37 +23,40 @@
 
 namespace embree
 {
-  /*! Generates a list of bezier curves from the scene. */
-  class TriRefGen
+  namespace isa
   {
-    static const size_t maxTasks = 32;
-    typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;
-
-  public:
-
-    TriRefGen () {}
-
-    /*! standard constructor that schedules the task */
-    TriRefGen (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene);
-    
-  public:
-    
-    /*! parallel task to iterate over the primitives */
-    TASK_RUN_FUNCTION(TriRefGen,task_gen_parallel);
-    
-    /* input data */
-  private:
-    const Scene* scene;                  //!< input geometry
-    PrimRefBlockAlloc<PrimRef>* alloc;   //!< allocator for build primitive blocks
-    
-    /* intermediate data */
-  private:
-    TaskScheduler::Task task;
-    PrimInfo pinfos[maxTasks];
-        
-    /* output data */
-  public:
-    TriRefList prims;             //!< list of build primitives
-    PrimInfo pinfo;                  //!< bounding information of primitives
-  };
+    /*! Generates a list of bezier curves from the scene. */
+    class TriRefGen
+    {
+      static const size_t maxTasks = 32;
+      typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;
+      
+    public:
+      
+      TriRefGen () {}
+      
+      /*! standard constructor that schedules the task */
+      TriRefGen (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene);
+      
+    public:
+      
+      /*! parallel task to iterate over the primitives */
+      TASK_RUN_FUNCTION(TriRefGen,task_gen_parallel);
+      
+      /* input data */
+    private:
+      const Scene* scene;                  //!< input geometry
+      PrimRefBlockAlloc<PrimRef>* alloc;   //!< allocator for build primitive blocks
+      
+      /* intermediate data */
+    private:
+      TaskScheduler::Task task;
+      PrimInfo pinfos[maxTasks];
+      
+      /* output data */
+    public:
+      TriRefList prims;             //!< list of build primitives
+      PrimInfo pinfo;                  //!< bounding information of primitives
+    };
+  }
 }

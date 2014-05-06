@@ -159,6 +159,7 @@ namespace embree
   typedef Vec3<ssei> sse3i;
   typedef Vec2<ssef> sse2f;
   typedef Vec3<ssef> sse3f;
+  typedef Vec4<ssef> sse4f;
   typedef AffineSpaceT<LinearSpace3<sse3f > > AffineSpaceSSE3f;
   typedef BBox<sse3f > BBoxSSE3f;
 #endif
@@ -191,6 +192,12 @@ typedef void (*ErrorFunc) ();
   namespace avx2  { extern type name; }                                 \
   void name##_error() { std::cerr << "Error: " << TOSTRING(name) << " not supported by your CPU" << std::endl; } \
   type name((type)name##_error);
+
+#define DECLARE_FUNCTION_SYMBOL(name)                  \
+  namespace isa   { name; }            \
+  namespace sse41 { name; }                                 \
+  namespace avx   { name; }                                 \
+  namespace avx2  { name; }                                
 
 #define SELECT_SYMBOL_DEFAULT(features,intersector) \
   intersector = isa::intersector;

@@ -22,6 +22,11 @@
 
 namespace embree
 {
+#if defined(__SSE__)
+  extern ssef sse_coeff0[4];
+  extern ssef sse_coeff1[4];
+#endif
+
 #if defined(__AVX__)
   extern avxf coeff0[4];
   extern avxf coeff1[4];
@@ -64,13 +69,17 @@ namespace embree
       return xfmPoint(space,p0)+xfmPoint(space,p3);
     }
 
-#if defined(__AVX__)
+
     /*! calculate the bounds of the curve */
     __forceinline const BBox3fa bounds() const 
     {
 #if 1
       const BezierCurve3D curve2D(p0,p1,p2,p3,0.0f,1.0f,0);
+#if defined(__AVX__)
       const avx4f pi = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+#else
+      const sse4f pi = curve2D.eval(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+#endif
       const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
       const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
       const Vec3fa upper_r = reduce_max(abs(pi.w));
@@ -90,7 +99,11 @@ namespace embree
       Vec3fa b3 = xfmPoint(space,p3); b3.w = p3.w;
 #if 1
       const BezierCurve3D curve2D(b0,b1,b2,b3,0.0f,1.0f,0);
+#if defined(__AVX__)
       const avx4f pi = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+#else
+      const sse4f pi = curve2D.eval(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+#endif
       const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
       const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
       const Vec3fa upper_r = reduce_max(abs(pi.w));
@@ -100,7 +113,6 @@ namespace embree
       return enlarge(b,Vec3fa(b.upper.w));
 #endif
     }
-#endif
     
     /*! subdivide the bezier curve */
     __forceinline void subdivide(Bezier1& left_o, Bezier1& right_o, const float T = 0.5f) const

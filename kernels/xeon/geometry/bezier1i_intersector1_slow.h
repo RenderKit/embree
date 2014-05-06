@@ -22,6 +22,45 @@
 
 namespace embree
 {
+  /* code block for correct cone intersection */
+#if 0
+/* subdivide 3 levels at once */ 
+      const BezierCurve3D curve2D(v0,v1,v2,v3,0.0f,1.0f,0);
+      const avx4f a = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+      const avx4f b = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
+      const avx3f a3(a.x,a.y,a.z);
+      const avx3f b3(b.x,b.y,b.z);
+
+      const avxf  rl0 = 1.0f/length(b3-a3); // FIXME: multiply equation with this
+      const avx3f p0 = a3, d0 = (b3-a3)*rl0;
+      const avxf  r0 = a.w, dr = (b.w-a.w)*rl0;
+      const float rl1 = 1.0f/length(ray.dir); // FIXME: normalization not required
+      const avx3f p1 = ray.org, d1 = ray.dir*rl1;
+
+      const avx3f dp = p1-p0;
+      const avxf dpdp = dot(dp,dp);
+      const avxf d1d1 = dot(d1,d1);
+      const avxf d0d1 = dot(d0,d1);
+      const avxf d0dp = dot(d0,dp);
+      const avxf d1dp = dot(d1,dp);
+      const avxf R = r0 + d0dp*dr;
+      const avxf A = d1d1 - sqr(d0d1) * (1.0f+dr*dr);
+      const avxf B = 2.0f * (d1dp - d0d1*(d0dp + R*dr));
+      const avxf C = dpdp - (sqr(d0dp) + sqr(R));
+      const avxf D = B*B - 4.0f*A*C;
+      avxb valid = D >= 0.0f;
+      if (none(valid)) return;
+      
+      const avxf Q = sqrt(D);
+      //const avxf t0 = (-B-Q)*rcp2A;
+      //const avxf t1 = (-B+Q)*rcp2A;
+      const avxf t0 = (-B-Q)/(2.0f*A);
+      const avxf u0 = d0dp+t0*d0d1;
+      const avxf t = t0*rl1;
+      const avxf u = u0*rl0;
+      valid &= (ray.tnear < t) & (t < ray.tfar) & (0.0f <= u) & (u <= 1.0f);
+#endif
+
   /*! Intersector for a single ray with a bezier curve. */
   struct Bezier1iIntersector1Slow
   {

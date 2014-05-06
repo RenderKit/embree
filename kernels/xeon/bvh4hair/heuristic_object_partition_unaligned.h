@@ -22,198 +22,201 @@
 
 namespace embree
 {
-  /*! Performs standard object binning */
-  struct ObjectPartitionUnaligned
+  namespace isa 
   {
-    struct Split;
-    typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
-
-  public:
-
-    /*! calculates some space aligned with the bezier curves */
-    template<bool Parallel>
-    static const LinearSpace3fa computeAlignedSpace(size_t threadIndex, size_t threadCount, BezierRefList& prims);
-
-    /*! calculates some space aligned with the bezier curves */
-    template<bool Parallel>
-    static const PrimInfo computePrimInfo(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
- 
-    /*! finds the best split */
-    template<bool Parallel = false>
-      static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves, const LinearSpace3fa& space, const PrimInfo& pinfo);
-
-  private:
-
-    /*! number of bins */
-    static const size_t BINS = 16;
-
-    /*! number of tasks */
-    static const size_t maxTasks = 32;
-
-    /*! Compute the number of blocks occupied for each dimension. */
-    //__forceinline static ssei blocks(const ssei& a) { return (a+ssei(3)) >> 2; }
-    __forceinline static ssei blocks(const ssei& a) { return a; }
-	
-    /*! Compute the number of blocks occupied in one dimension. */
-    //__forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
-    __forceinline static size_t  blocks(size_t a) { return a; }
- 
-    /*! mapping into bins */
-    struct Mapping
+    /*! Performs standard object binning */
+    struct ObjectPartitionUnaligned
     {
+      struct Split;
+      typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
+      
     public:
-      __forceinline Mapping() {}
-
-      /*! calculates the mapping */
-      __forceinline Mapping(const BBox3fa& centBounds, const LinearSpace3fa& space);
-
-      /*! slower but safe binning */
-      __forceinline ssei bin(const Vec3fa& p) const;
-
-      /*! faster but unsafe binning */
-      __forceinline ssei bin_unsafe(const Vec3fa& p) const;
-
-      /*! returns true if the mapping is invalid in some dimension */
-      __forceinline bool invalid(const int dim) const;
-
-    public:
-      ssef ofs,scale;        //!< linear function that maps to bin ID
-      LinearSpace3fa space;  //!< space the binning is performed in
-    };
-
-  public:
-
-    /*! stores all information to perform some split */
-    struct Split
-    {
-      /*! construct an invalid split by default */
-      __forceinline Split()
-	: sah(inf), dim(-1), pos(0) {}
-
-      /*! constructs specified split */
-      __forceinline Split(float sah, int dim, int pos, const Mapping& mapping)
-	: sah(sah), dim(dim), pos(pos), mapping(mapping) {}
-
-      /*! calculates surface area heuristic for performing the split */
-      __forceinline float splitSAH() const { return sah; }
-
-      /*! splitting into two sets */
+      
+      /*! calculates some space aligned with the bezier curves */
+      template<bool Parallel>
+      static const LinearSpace3fa computeAlignedSpace(size_t threadIndex, size_t threadCount, BezierRefList& prims);
+      
+      /*! calculates some space aligned with the bezier curves */
+      template<bool Parallel>
+      static const PrimInfo computePrimInfo(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
+      
+      /*! finds the best split */
       template<bool Parallel = false>
-      void split(size_t threadIndex, size_t threadCount, 
-		 PrimRefBlockAlloc<Bezier1>& alloc, 
-		 BezierRefList& prims, 
-		 BezierRefList& lprims_o, PrimInfo& linfo_o, 
-		 BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+	static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves, const LinearSpace3fa& space, const PrimInfo& pinfo);
+      
+    private:
+      
+      /*! number of bins */
+      static const size_t BINS = 16;
+      
+      /*! number of tasks */
+      static const size_t maxTasks = 32;
+      
+      /*! Compute the number of blocks occupied for each dimension. */
+      //__forceinline static ssei blocks(const ssei& a) { return (a+ssei(3)) >> 2; }
+      __forceinline static ssei blocks(const ssei& a) { return a; }
+      
+      /*! Compute the number of blocks occupied in one dimension. */
+      //__forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
+      __forceinline static size_t  blocks(size_t a) { return a; }
+      
+      /*! mapping into bins */
+      struct Mapping
+      {
+      public:
+	__forceinline Mapping() {}
+	
+	/*! calculates the mapping */
+	__forceinline Mapping(const BBox3fa& centBounds, const LinearSpace3fa& space);
+	
+	/*! slower but safe binning */
+	__forceinline ssei bin(const Vec3fa& p) const;
+	
+	/*! faster but unsafe binning */
+	__forceinline ssei bin_unsafe(const Vec3fa& p) const;
+	
+	/*! returns true if the mapping is invalid in some dimension */
+	__forceinline bool invalid(const int dim) const;
+	
+      public:
+	ssef ofs,scale;        //!< linear function that maps to bin ID
+	LinearSpace3fa space;  //!< space the binning is performed in
+      };
       
     public:
-      float sah;       //!< SAH cost of the split
-      int dim;         //!< split dimension
-      int pos;         //!< bin index for splitting
-      Mapping mapping; //!< mapping into bins
-    };
-
-  private:
-
-    /*! stores all binning information */
-    struct __aligned(64) BinInfo
-    {
-      BinInfo();
-
-      /*! bins an array of primitives */
-      void bin (const Bezier1* prims, size_t N, const Mapping& mapping);
-  
-      /*! bins a list of primitives */
-      void bin (BezierRefList& prims, const Mapping& mapping);
       
-      /*! merges in other binning information */
-      void merge (const BinInfo& other);
+      /*! stores all information to perform some split */
+      struct Split
+      {
+	/*! construct an invalid split by default */
+	__forceinline Split()
+	  : sah(inf), dim(-1), pos(0) {}
+	
+	/*! constructs specified split */
+	__forceinline Split(float sah, int dim, int pos, const Mapping& mapping)
+	  : sah(sah), dim(dim), pos(pos), mapping(mapping) {}
+	
+	/*! calculates surface area heuristic for performing the split */
+	__forceinline float splitSAH() const { return sah; }
+	
+	/*! splitting into two sets */
+	template<bool Parallel = false>
+	  void split(size_t threadIndex, size_t threadCount, 
+		     PrimRefBlockAlloc<Bezier1>& alloc, 
+		     BezierRefList& prims, 
+		     BezierRefList& lprims_o, PrimInfo& linfo_o, 
+		     BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+	
+      public:
+	float sah;       //!< SAH cost of the split
+	int dim;         //!< split dimension
+	int pos;         //!< bin index for splitting
+	Mapping mapping; //!< mapping into bins
+      };
       
-      /*! finds the best split by scanning binning information */
-      Split best(BezierRefList& prims, const Mapping& mapping);
-
     private:
-      BBox3fa bounds[BINS][4]; //!< geometry bounds for each bin in each dimension
-      ssei    counts[BINS];    //!< counts number of primitives that map into the bins
-    };
-
-    /*! task for parallel bounding calculations */
-    struct TaskBoundParallel
-    {
-      /*! construction executes the task */
-      TaskBoundParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
-
-    private:
-
-      /*! parallel bounding calculations */
-      TASK_RUN_FUNCTION(TaskBoundParallel,task_bound_parallel);
-    
-      /*! state for bounding stage */
-    private:
-      BezierRefList::iterator iter; //!< iterator for bounding stage 
-      LinearSpace3fa space; //!< space for bounding calculations
-
-      /*! output data */
-    public:
-      atomic_t num;         //!< number of primitives
-      BBox3fa centBounds;   //!< calculated centroid bounds
-      BBox3fa geomBounds;   //!< calculated geometry bounds
-    };
-
-    /*! task for parallel binning */
-    struct TaskBinParallel
-    {
-      /*! construction executes the task */
-      TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space, const BBox3fa& geomBounds, const BBox3fa& centBounds);
-
-    private:
-
-      /*! parallel binning */
-      TASK_RUN_FUNCTION(TaskBinParallel,task_bin_parallel);
       
-      /*! input data */
-    private:
-      LinearSpace3fa space; //!< space for bounding calculations
-      BBox3fa centBounds;   //!< centroid bounds
-      BBox3fa geomBounds;   //!< geometry bounds
-
-      /*! state for binning stage */
-    private:
-      BezierRefList::iterator iter;
-      Mapping mapping;
-      BinInfo binners[maxTasks];
-
-    public:
-      Split split;          //!< best split
+      /*! stores all binning information */
+      struct __aligned(64) BinInfo
+      {
+	BinInfo();
+	
+	/*! bins an array of primitives */
+	void bin (const Bezier1* prims, size_t N, const Mapping& mapping);
+	
+	/*! bins a list of primitives */
+	void bin (BezierRefList& prims, const Mapping& mapping);
+	
+	/*! merges in other binning information */
+	void merge (const BinInfo& other);
+	
+	/*! finds the best split by scanning binning information */
+	Split best(BezierRefList& prims, const Mapping& mapping);
+	
+      private:
+	BBox3fa bounds[BINS][4]; //!< geometry bounds for each bin in each dimension
+	ssei    counts[BINS];    //!< counts number of primitives that map into the bins
+      };
+      
+      /*! task for parallel bounding calculations */
+      struct TaskBoundParallel
+      {
+	/*! construction executes the task */
+	TaskBoundParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
+	
+      private:
+	
+	/*! parallel bounding calculations */
+	TASK_RUN_FUNCTION(TaskBoundParallel,task_bound_parallel);
+	
+	/*! state for bounding stage */
+      private:
+	BezierRefList::iterator iter; //!< iterator for bounding stage 
+	LinearSpace3fa space; //!< space for bounding calculations
+	
+	/*! output data */
+      public:
+	atomic_t num;         //!< number of primitives
+	BBox3fa centBounds;   //!< calculated centroid bounds
+	BBox3fa geomBounds;   //!< calculated geometry bounds
+      };
+      
+      /*! task for parallel binning */
+      struct TaskBinParallel
+      {
+	/*! construction executes the task */
+	TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space, const BBox3fa& geomBounds, const BBox3fa& centBounds);
+	
+      private:
+	
+	/*! parallel binning */
+	TASK_RUN_FUNCTION(TaskBinParallel,task_bin_parallel);
+	
+	/*! input data */
+      private:
+	LinearSpace3fa space; //!< space for bounding calculations
+	BBox3fa centBounds;   //!< centroid bounds
+	BBox3fa geomBounds;   //!< geometry bounds
+	
+	/*! state for binning stage */
+      private:
+	BezierRefList::iterator iter;
+	Mapping mapping;
+	BinInfo binners[maxTasks];
+	
+      public:
+	Split split;          //!< best split
+      };
+      
+      /*! task for parallel splitting */
+      struct TaskSplitParallel
+      {
+	/*! construction executes the task */
+	TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, 
+			  BezierRefList& prims, 
+			  BezierRefList& lprims_o, PrimInfo& linfo_o, 
+			  BezierRefList& rprims_o, PrimInfo& rinfo_o);
+	
+      private:
+	
+	/*! parallel split task function */
+	TASK_RUN_FUNCTION(TaskSplitParallel,task_split_parallel);
+	
+	/*! input data */
+      private:
+	const Split* split;
+	PrimRefBlockAlloc<Bezier1>& alloc;
+	BezierRefList prims;
+	PrimInfo linfos[maxTasks];
+	PrimInfo rinfos[maxTasks];
+	
+	/*! output data */
+      private:
+	BezierRefList& lprims_o; 
+	BezierRefList& rprims_o;
+	PrimInfo& linfo_o;
+	PrimInfo& rinfo_o;
+      };
     };
-
-    /*! task for parallel splitting */
-    struct TaskSplitParallel
-    {
-      /*! construction executes the task */
-      TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, 
-			BezierRefList& prims, 
-			BezierRefList& lprims_o, PrimInfo& linfo_o, 
-			BezierRefList& rprims_o, PrimInfo& rinfo_o);
-
-    private:
-
-      /*! parallel split task function */
-      TASK_RUN_FUNCTION(TaskSplitParallel,task_split_parallel);
-
-      /*! input data */
-    private:
-      const Split* split;
-      PrimRefBlockAlloc<Bezier1>& alloc;
-      BezierRefList prims;
-      PrimInfo linfos[maxTasks];
-      PrimInfo rinfos[maxTasks];
-
-      /*! output data */
-    private:
-      BezierRefList& lprims_o; 
-      BezierRefList& rprims_o;
-      PrimInfo& linfo_o;
-      PrimInfo& rinfo_o;
-    };
-  };
+  }
 }

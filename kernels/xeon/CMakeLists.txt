@@ -51,7 +51,14 @@ ADD_ISPC_LIBRARY(embree SHARED
   builders/splitter_fallback.cpp
   builders/splitter_parallel.cpp
   builders/primrefgen.cpp
+
+  builders/bezierrefgen.cpp 
   builders/trirefgen.cpp
+  bvh4hair/heuristic_object_partition_unaligned.cpp
+  bvh4hair/heuristic_object_partition.cpp
+  bvh4hair/heuristic_spatial_split.cpp
+  bvh4hair/heuristic_strand_partition.cpp
+  bvh4hair/heuristic_fallback.cpp
     
   geometry/bezier1.cpp
   geometry/bezier1i.cpp
@@ -68,7 +75,6 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp
   bvh4/bvh4_builder.cpp
-  bvh4/bvh4_builder2.cpp
   bvh4/bvh4_builder_fast.cpp
   bvh4/bvh4_builder_morton.cpp
   bvh4/bvh4_builder_binner.cpp
@@ -93,6 +99,11 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4mb/bvh4mb_builder.cpp
   bvh4mb/bvh4mb_intersector1.cpp   
   bvh4mb/bvh4mb_intersector4.cpp
+
+  bvh4hair/bvh4hair.cpp
+  bvh4hair/bvh4hair_statistics.cpp
+  bvh4hair/bvh4hair_builder2.cpp 
+  bvh4hair/bvh4hair_intersector1.cpp
 )
 
 IF (TARGET_SSE41) 
@@ -111,16 +122,13 @@ ENDIF ()
 IF (TARGET_AVX) 
   ADD_LIBRARY(embree_avx STATIC
 
-  bvh4hair/bvh4hair.cpp               # FIXME: should be in SSE2 section
-  bvh4hair/bvh4hair_builder.cpp       # FIXME: should be in SSE2 section
-  bvh4hair/bvh4hair_builder2.cpp      # FIXME: should be in SSE2 section
-  builders/bezierrefgen.cpp           # FIXME: should be in SSE2 section
+  builders/bezierrefgen.cpp 
+  builders/trirefgen.cpp
   bvh4hair/heuristic_object_partition_unaligned.cpp
   bvh4hair/heuristic_object_partition.cpp
   bvh4hair/heuristic_spatial_split.cpp
   bvh4hair/heuristic_strand_partition.cpp
   bvh4hair/heuristic_fallback.cpp
-  bvh4hair/bvh4hair_statistics.cpp    # FIXME: should be in SSE2 section
 
    geometry/triangle8.cpp
    geometry/ispc_wrapper_avx.cpp
@@ -128,6 +136,8 @@ IF (TARGET_AVX)
    geometry/instance_intersector1.cpp
    geometry/instance_intersector4.cpp
    geometry/instance_intersector8.cpp
+
+   bvh4/bvh4_builder2.cpp
 
    bvh4/bvh4_intersector1.cpp   
    bvh4/bvh4_intersector1_bezier.cpp   
@@ -157,6 +167,8 @@ IF (TARGET_AVX)
    bvh4mb/bvh4mb_intersector4.cpp
    bvh4mb/bvh4mb_intersector8.cpp
 
+   bvh4hair/bvh4hair_builder.cpp       # FIXME: remove
+   bvh4hair/bvh4hair_builder2.cpp
    bvh4hair/bvh4hair_intersector1.cpp
 )
 
