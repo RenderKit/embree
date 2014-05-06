@@ -148,69 +148,28 @@ namespace embree
 	/* test if this is a better dimension */
 	if (vbestSAH[dim] < bestSAH && vbestPos[dim] != 0) {
 	  bestDim = dim;
-	  bestPos = vbestPos[dim]; //mapping.pos(vbestPos[dim],dim);
+	  bestPos = vbestPos[dim];
 	  bestSAH = vbestSAH[dim];
 	}
       }
       
-      /* compute bounds of left and right side */
+      /* return invalid split if no split found */
       if (bestDim == -1) 
 	return Split(inf,-1,0.0f,mapping);
-      
-      /* calculate bounding box of left and right side */
-      BBox3fa lbounds = empty, rbounds = empty;
-      size_t lnum = 0, rnum = 0;
-      
-      for (BezierRefList::block_iterator_unsafe i = prims; i; i++)
-      {
-	const int bin0 = mapping.bin(min(i->p0,i->p3))[bestDim];
-	const int bin1 = mapping.bin(max(i->p0,i->p3))[bestDim];
 
-	//const float p0p = i->p0[bestDim];
-	//const float p3p = i->p3[bestDim];
-	
-	/* sort to the left side */
-	//if (p0p <= bestPos && p3p <= bestPos) {
-	if (bin0 < bestPos && bin1 < bestPos) {
-	  lbounds.extend(i->bounds()); lnum++;
-	  continue;
-	}
-	
-	/* sort to the right side */
-	//if (p0p >= bestPos && p3p >= bestPos) {
-	if (bin0 >= bestPos && bin1 >= bestPos) {
-	  rbounds.extend(i->bounds()); rnum++;
-	  continue;
-	}
-	
-	Bezier1 left,right; 
-	float fpos = mapping.pos(bestPos,bestDim);
-	if (i->split(bestDim,fpos,left,right)) {
-	  lbounds.extend(left .bounds()); lnum++;
-	  rbounds.extend(right.bounds()); rnum++;
-	  continue;
-	}
-	
-	lbounds.extend(i->bounds()); lnum++;
-      }
+      /* compute bounds of left and right side */
+      size_t lnum = 0, rnum = 0;
+      BBox3fa lbounds = empty, rbounds = empty;
+      for (size_t i=0; i<bestPos; i++) { lnum+=numBegin[i][bestDim]; lbounds.extend(bounds[i][bestDim]); }
+      for (size_t i=bestPos; i<BINS; i++) { rnum+=numEnd[i][bestDim]; rbounds.extend(bounds[i][bestDim]); }
       
+      /* return invalid split if no progress made */
       if (lnum == 0 || rnum == 0) 
 	return Split(inf,-1,0.0f,mapping);
       
-#if 0
+      /* calculate SAH and return best found split */
       float sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
       return Split(sah,bestDim,bestPos,mapping);
-      
-#else // FIXME: there is something wrong, this code block should work!!!
-      {
-	size_t lnum = 0, rnum = 0;
-	BBox3fa lbounds = empty, rbounds = empty;
-	for (size_t i=0; i<bestPos; i++) { lnum+=numBegin[i][bestDim]; lbounds.extend(bounds[i][bestDim]); }
-	for (size_t i=bestPos; i<BINS; i++) { rnum+=numEnd[i][bestDim]; rbounds.extend(bounds[i][bestDim]); }
-	float sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
-	return Split(sah,bestDim,bestPos,mapping);
-      }
-#endif
     }
     
     template<>
@@ -268,8 +227,6 @@ namespace embree
 	  const Bezier1& prim = block->at(i);
 	  const int bin0 = mapping.bin(min(prim.p0,prim.p3))[dim];
 	  const int bin1 = mapping.bin(max(prim.p0,prim.p3))[dim];
-	  //const float p0p = prim.p0[dim];
-	  //const float p3p = prim.p3[dim];
 	  
 	  /* sort to the left side */
 	  if (bin0 < pos && bin1 < pos)
