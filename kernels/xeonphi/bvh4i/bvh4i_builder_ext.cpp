@@ -1027,10 +1027,10 @@ namespace embree
 	}
       
 	// === allocated memory for primrefs,nodes, and accel ===
-	const size_t numTopLevelNodes = 256;
-	const size_t size_primrefs = 0;
+	const size_t numTopLevelNodes = 1024;
+	const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
 	const size_t size_node     = (numNodes * BVH_NODE_PREALLOC_FACTOR + numTopLevelNodes) * sizeof(PrimRef); 
-	const size_t size_accel    = numPrims * sizeof(PrimRef) + additional_size;
+	const size_t size_accel    = 0;
 
 	numAllocatedNodes = size_node / sizeof(BVHNode) - numTopLevelNodes;
 	
@@ -1044,7 +1044,7 @@ namespace embree
 	DBG(DBG_PRINT(size_accel));
 
 	// === to do: os_reserve ===
-	prims = (PrimRef*)  os_malloc(size_accel);
+	prims = (PrimRef*)  os_malloc(size_primrefs);
 	node  = (BVHNode  *)os_malloc(size_node);
 	accel = (Triangle1*)(node + numTopLevelNodes); // for global paritioning
 
@@ -1056,21 +1056,24 @@ namespace embree
 	assert(node   != 0);
 	assert(accel  != 0);
 
-
-	bvh->accel = accel;
+	bvh->accel = prims;
 	bvh->qbvh  = (BVH4i::Node*)node;
 	bvh->size_node  = size_node;
-	bvh->size_accel = size_accel;
-
-	size_prims = 0;    
+	bvh->size_accel = size_primrefs;
+	
       }    
   }
 
   void BVH4iBuilderMemoryConservative::createAccel(const size_t threadIndex, const size_t threadCount)
   {
     LockStepTaskScheduler::dispatchTask( task_createMemoryConservativeAccel, this, threadIndex, threadCount );  
-    accel = (Triangle1*)prims;
-    prims = NULL;
+    // === do some padding add the end of 'accel' ===
+    prims[numPrimitives+0] = prims[0];
+    prims[numPrimitives+1] = prims[0];
+    prims[numPrimitives+2] = prims[0];
+    // === 'prims' became 'accel' === 
+    prims = 0;
+    size_prims = 0;
   }
 
 
@@ -1094,6 +1097,9 @@ namespace embree
 	int primID = bptr->primID();
 
 	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+
+	assert(primID < mesh->numTriangles );
+
 	const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 
 	Vec3fa *vptr0 = (Vec3fa*)&mesh->vertex(tri.v[0]);

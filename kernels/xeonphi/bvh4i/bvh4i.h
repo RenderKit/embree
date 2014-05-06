@@ -404,7 +404,7 @@ namespace embree
   /* ----------- */
 
 #define BVH_INDEX_SHIFT  BVH4i::encodingBits
-#define BVH_ITEMS_MASK   (((unsigned int)1 << BVH_INDEX_SHIFT)-1)
+#define BVH_ITEMS_MASK   (((unsigned int)1 << BVH4i::leaf_shift)-1)
 #define BVH_LEAF_MASK    BVH4i::leaf_mask
 #define BVH_OFFSET_MASK  (~(BVH_ITEMS_MASK | BVH_LEAF_MASK))
 

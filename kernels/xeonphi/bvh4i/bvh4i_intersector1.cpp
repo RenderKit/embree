@@ -228,19 +228,25 @@ namespace embree
 
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	  const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel);
+	  unsigned int items = curNode.items();
+	  unsigned int index = curNode.offsetIndex();
+	  const Triangle1mc *const tptr = (Triangle1mc*)accel + index;
+	      
 	  const mic_i and_mask = broadcast4to16i(zlc4);
 
-	  // bool hit = Triangle1Intersector1MoellerTrumbore::intersect1(dir_xyz,
-	  // 							      org_xyz,
-	  // 							      min_dist_xyz,
-	  // 							      max_dist_xyz,
-	  // 							      and_mask,
-	  // 							      ray,
-	  // 							      (Scene*)bvh->geometry,
-	  // 							      tptr);
-	  // if (hit)
-	  //   compactStack(stack_node,stack_dist,sindex,max_dist_xyz);
+
+	  bool hit = Triangle1mcIntersector16MoellerTrumbore::intersect1(rayIndex,
+									 dir_xyz,
+									 org_xyz,
+									 min_dist_xyz,
+									 max_dist_xyz,
+									 and_mask,
+									 ray16,
+									 (Scene*)bvh->geometry,
+									 tptr);
+	  if (hit)
+	    compactStack(stack_node,stack_dist,sindex,max_dist_xyz);
+
 	}
     }
 
@@ -295,24 +301,27 @@ namespace embree
 
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	  const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel);
+	  unsigned int items = curNode.items();
+	  unsigned int index = curNode.offsetIndex();
+	  const Triangle1mc *const tptr = (Triangle1mc*)accel + index;
+
 	  const mic_i and_mask = broadcast4to16i(zlc4);
 
-	  // const mic_m m_final = Triangle1Intersector1MoellerTrumbore::occluded1(dir_xyz,
-	  // 									org_xyz,
-	  // 									min_dist_xyz,
-	  // 									max_dist_xyz,
-	  // 									and_mask,
-	  // 									ray,
-	  // 									(Scene*)bvh->geometry,
-	  // 									tptr);
+	  const mic_m m_final = Triangle1mcIntersector1MoellerTrumbore::occluded1(dir_xyz,
+										  org_xyz,
+										  min_dist_xyz,
+										  max_dist_xyz,
+										  and_mask,
+										  ray,
+										  (Scene*)bvh->geometry,
+										  tptr);
 
 
-	  // if (unlikely(any(m_final)))
-	  //   {
-	  //     ray.geomID = 0;
-	  //     return;
-	  //   }
+	  if (unlikely(any(m_final)))
+	    {
+	      ray.geomID = 0;
+	      return;
+	    }
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	}

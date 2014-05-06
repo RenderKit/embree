@@ -362,7 +362,6 @@ namespace embree
 										  (Scene*)bvh->geometry,
 										  tptr);
 	      if (unlikely(hit)) break;
-	      
 
 	    }
 

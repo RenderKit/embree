@@ -371,9 +371,22 @@ namespace embree
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
+#if 0
 	mic_f bmin,bmax;
 	tri.bounds(vertex,bmin,bmax);
+#else
+	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
+	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
+	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
 
+	const mic_f v0 = broadcast4to16f(vptr0);
+	const mic_f v1 = broadcast4to16f(vptr1);
+	const mic_f v2 = broadcast4to16f(vptr2);
+
+	mic_f bmin = min(min(v0,v1),v2);
+	mic_f bmax = max(max(v0,v1),v2);
+
+#endif
 	bounds_scene_min = min(bounds_scene_min,bmin);
 	bounds_scene_max = max(bounds_scene_max,bmax);
 	const mic_f centroid2 = bmin+bmax;
@@ -1311,8 +1324,9 @@ namespace embree
 
     if (!(subset(leaf_prim_bounds,entry))) 
       {
+	DBG_PRINT(entry);
 	DBG_PRINT(leaf_prim_bounds);
-	FATAL("check build record");
+	FATAL("checkLeafNode");
       }
 
 #if 0
@@ -1368,7 +1382,7 @@ namespace embree
 	DBG_PRINT(current);
 	DBG_PRINT(check_box);
 	DBG_PRINT(box);
-	FATAL("check build record");
+	FATAL("check build record => subset(check_box,box) && subset(box,check_box)");
       }
   }
 
