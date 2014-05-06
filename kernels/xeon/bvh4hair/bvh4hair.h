@@ -24,7 +24,6 @@
 #include "geometry/bezier1.h"
 #include "geometry/bezier1i.h"
 
-#define BVH4HAIR_WIDTH 4
 #define BVH4HAIR_COMPRESS_ALIGNED_NODES 0
 #define BVH4HAIR_COMPRESS_UNALIGNED_NODES 0
 
@@ -35,15 +34,9 @@ namespace embree
   {
     ALIGNED_CLASS;
   public:
-#if BVH4HAIR_WIDTH == 8
-    typedef avxb simdb;
-    typedef avxi simdi;
-    typedef avxf simdf;
-#elif BVH4HAIR_WIDTH == 4
     typedef sseb simdb;
     typedef ssei simdi;
     typedef ssef simdf;
-#endif
     
     /*! forward declaration of node type */
     struct Node;
@@ -67,7 +60,7 @@ namespace embree
 #endif
 
     /*! branching width of the tree */
-    static const size_t N = BVH4HAIR_WIDTH;
+    static const size_t N = 4;
 
     /*! Number of address bits the Node and primitives are aligned
         to. Maximally 2^alignment-2 many primitive blocks per leaf are
@@ -122,12 +115,6 @@ namespace embree
 	prefetchL1(((char*)ptr)+2*64);
 	prefetchL1(((char*)ptr)+3*64);
 #endif
-#if BVH4HAIR_WIDTH == 8
-	prefetchL1(((char*)ptr)+4*64);
-	prefetchL1(((char*)ptr)+5*64);
-	prefetchL1(((char*)ptr)+6*64);
-	prefetchL1(((char*)ptr)+7*64);
-#endif
       }
 
       __forceinline void prefetch_L2() const 
@@ -140,12 +127,6 @@ namespace embree
 	prefetchL2(((char*)ptr)+1*64);
 	prefetchL2(((char*)ptr)+2*64);
 	prefetchL2(((char*)ptr)+3*64);
-#endif
-#if BVH4HAIR_WIDTH == 8
-	prefetchL2(((char*)ptr)+4*64);
-	prefetchL2(((char*)ptr)+5*64);
-	prefetchL2(((char*)ptr)+6*64);
-	prefetchL2(((char*)ptr)+7*64);
 #endif
       }
 
@@ -267,7 +248,6 @@ namespace embree
       /*! returns 4 bounding boxes */
       __forceinline const BBoxSIMD3f getBounds(const size_t nearX, const size_t nearY, const size_t nearZ) const 
       {
-#if BVH4HAIR_WIDTH == 4
         const size_t farX  = nearX ^ 4, farY  = nearY ^ 4, farZ  = nearZ ^ 4;
         const ssef near_x = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_x+nearX)));
         const ssef near_y = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_y+nearY)));
@@ -275,15 +255,6 @@ namespace embree
         const ssef far_x  = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_x+farX )));
         const ssef far_y  = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_y+farY )));
         const ssef far_z  = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_z+farZ )));
-#else
-        const size_t farX  = nearX ^ 8, farY  = nearY ^ 8, farZ  = nearZ ^ 8;
-        const avxf near_x = avxf(_mm256_cvtepu8_epi32(*(ssei*)((char*)&this->lower_x+nearX)));
-        const avxf near_y = avxf(_mm256_cvtepu8_epi32(*(ssei*)((char*)&this->lower_y+nearY)));
-        const avxf near_z = avxf(_mm256_cvtepu8_epi32(*(ssei*)((char*)&this->lower_z+nearZ)));
-        const avxf far_x  = avxf(_mm256_cvtepu8_epi32(*(ssei*)((char*)&this->lower_x+farX )));
-        const avxf far_y  = avxf(_mm256_cvtepu8_epi32(*(ssei*)((char*)&this->lower_y+farY )));
-        const avxf far_z  = avxf(_mm256_cvtepu8_epi32(*(ssei*)((char*)&this->lower_z+farZ )));
-#endif
         const Vec3<simdf> offset = *(Vec3fa*)&this->offset;
         const Vec3<simdf> scale  = *(Vec3fa*)&this->scale;
         return BBoxSIMD3f(scale*Vec3<simdf>(near_x,near_y,near_z)+offset,
@@ -344,21 +315,12 @@ namespace embree
       __forceinline const BBoxSIMD3f getBounds(const size_t nearX, const size_t nearY, const size_t nearZ) const 
       {
         const size_t farX  = nearX ^ sizeof(simdf), farY  = nearY ^ sizeof(simdf), farZ  = nearZ ^ sizeof(simdf);
-#if BVH4HAIR_WIDTH == 4
         const ssef nearx = load4f((const char*)&lower_x+nearX);
         const ssef neary = load4f((const char*)&lower_y+nearY);
         const ssef nearz = load4f((const char*)&lower_z+nearZ);
         const ssef farx  = load4f((const char*)&lower_x+farX );
         const ssef fary  = load4f((const char*)&lower_y+farY );
         const ssef farz  = load4f((const char*)&lower_z+farZ );
-#else
-        const avxf nearx = load8f((const char*)&lower_x+nearX);
-        const avxf neary = load8f((const char*)&lower_y+nearY);
-        const avxf nearz = load8f((const char*)&lower_z+nearZ);
-        const avxf farx  = load8f((const char*)&lower_x+farX );
-        const avxf fary  = load8f((const char*)&lower_y+farY );
-        const avxf farz  = load8f((const char*)&lower_z+farZ );
-#endif
         return BBoxSIMD3f(Vec3<simdf>(nearx,neary,nearz),Vec3<simdf>(farx,fary,farz));
       }
 
@@ -464,21 +426,12 @@ namespace embree
       /*! returns 4 bounding boxes */
       __forceinline BBoxSIMD3f getBounds() const 
       {
-#if BVH4HAIR_WIDTH == 4
         const ssef lower_x = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_x));
         const ssef lower_y = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_y));
         const ssef lower_z = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_z));
         const ssef upper_x = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_x));
         const ssef upper_y = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_y));
         const ssef upper_z = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_z));
-#else
-        const avxf lower_x = avxf(_mm256_cvtepu8_epi32(*(ssei*)&this->lower_x));
-        const avxf lower_y = avxf(_mm256_cvtepu8_epi32(*(ssei*)&this->lower_y));
-        const avxf lower_z = avxf(_mm256_cvtepu8_epi32(*(ssei*)&this->lower_z));
-        const avxf upper_x = avxf(_mm256_cvtepu8_epi32(*(ssei*)&this->upper_x));
-        const avxf upper_y = avxf(_mm256_cvtepu8_epi32(*(ssei*)&this->upper_y));
-        const avxf upper_z = avxf(_mm256_cvtepu8_epi32(*(ssei*)&this->upper_z));
-#endif
         const Vec3<simdf> offset = *(Vec3fa*)&this->offset;
         const Vec3<simdf> scale  = *(Vec3fa*)&this->scale;
         return BBoxSIMD3f(scale*Vec3<simdf>(lower_x,lower_y,lower_z)+offset,

@@ -46,7 +46,7 @@ namespace embree
       const simdf tFarZ  = (bounds.upper.z - org.z) * rdir.z;
 #endif
       
-#if ((BVH4HAIR_WIDTH == 4) && defined(__SSE4_1__) || (BVH4HAIR_WIDTH == 8) && defined(__AVX2__))
+#if defined(__SSE4_1__)
       tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
       tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
       const simdb vmask = cast(tNear) > cast(tFar);
@@ -108,7 +108,7 @@ namespace embree
 #endif
 #endif
       
-#if ((BVH4HAIR_WIDTH == 4) && defined(__SSE4_1__) || (BVH4HAIR_WIDTH == 8) && defined(__AVX2__))
+#if defined(__SSE4_1__)
       const simdf tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
       const simdf tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
       const simdf tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
@@ -175,13 +175,8 @@ namespace embree
         simdf tFar = min(stackPtr->tFar,ray.tfar);
         
         /*! if popped node is too far, pop next one */
-#if BVH4HAIR_WIDTH == 4
         if (unlikely(_mm_cvtss_f32(tNear) > _mm_cvtss_f32(tFar)))
           continue;
-#else
-        if (unlikely(tNear[0] > tFar[0]))
-          continue;
-#endif
 
         /* downtraversal loop */
         while (true)
@@ -253,15 +248,6 @@ namespace embree
             continue;
           }
 
-#if BVH4HAIR_WIDTH == 8
-
-          while (mask) {
-            r = __bscf(mask);
-            c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
-          }
-          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
-          cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
-#else
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
@@ -269,7 +255,6 @@ namespace embree
           //assert(c != BVH4Hair::emptyNode); // FIXME: enable
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
-#endif
         }
         
         /*! this is a leaf node */
@@ -319,13 +304,8 @@ namespace embree
         simdf tFar = min(stackPtr->tFar,ray.tfar);
         
         /*! if popped node is too far, pop next one */
-#if BVH4HAIR_WIDTH == 4
         if (unlikely(_mm_cvtss_f32(tNear) > _mm_cvtss_f32(tFar)))
           continue;
-#else
-        if (unlikely(tNear[0] > tFar[0]))
-          continue;
-#endif
 
         /* downtraversal loop */
         while (true)
@@ -388,14 +368,6 @@ namespace embree
             continue;
           }
 
-#if BVH4HAIR_WIDTH == 8
-          while (mask) {
-            r = __bscf(mask);
-            c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
-          }
-          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
-          cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
-#else
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
@@ -403,7 +375,6 @@ namespace embree
           //assert(c != BVH4Hair::emptyNode); // FIXME: enable
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
-#endif
         }
         
         /*! this is a leaf node */
