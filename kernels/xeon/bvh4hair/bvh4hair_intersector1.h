@@ -37,64 +37,15 @@ namespace embree
 
       static const size_t stackSize = 1+3*BVH4Hair::maxDepth;
 
-      struct __aligned(16) StackItem 
-      {
-      public:
-        __forceinline static void swap2(StackItem& a, StackItem& b) 
-        { 
-#if defined(__AVX__)
-          ssef sse_a = load4f(&a);
-          ssef sse_b = load4f(&b);
-          store4f(&a,sse_b);
-          store4f(&b,sse_a);
-#else
-          StackItem t = b; b = a; a = t;
-#endif
-        }
-
-        __forceinline friend bool operator<(const StackItem& s1, const StackItem& s2) {
-          return s1.tNear > s2.tNear;
-        }
-
-        /*! Sort 2 stack items. */
-        __forceinline friend void sort(StackItem& s1, StackItem& s2) {
-          if (s2.tNear < s1.tNear) swap2(s2,s1);
-        }
-        
-        /*! Sort 3 stack items. */
-        __forceinline friend void sort(StackItem& s1, StackItem& s2, StackItem& s3)
-        {
-          if (s2.tNear < s1.tNear) swap2(s2,s1);
-          if (s3.tNear < s2.tNear) swap2(s3,s2);
-          if (s2.tNear < s1.tNear) swap2(s2,s1);
-        }
-    
-        /*! Sort 4 stack items. */
-        __forceinline friend void sort(StackItem& s1, StackItem& s2, StackItem& s3, StackItem& s4)
-        {
-          if (s2.tNear < s1.tNear) swap2(s2,s1);
-          if (s4.tNear < s3.tNear) swap2(s4,s3);
-          if (s3.tNear < s1.tNear) swap2(s3,s1);
-          if (s4.tNear < s2.tNear) swap2(s4,s2);
-          if (s3.tNear < s2.tNear) swap2(s3,s2);
-        }
-
-      public:
-        size_t ref;
-        float tNear,tFar;
-      };
-
     private:
-      static __forceinline size_t intersectBox(const BVH4Hair::AlignedNode* node, 
-                                               const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, 
-                                               const size_t nearX, const size_t nearY, const size_t nearZ,
-                                               ssef& tNear, ssef& tFar);
+      static size_t intersectBox(const BVH4Hair::AlignedNode* node, 
+				 const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, 
+				 const size_t nearX, const size_t nearY, const size_t nearZ,
+				 ssef& tNear, ssef& tFar);
 
-      static size_t intersectBox(const UnalignedNode* node, Ray& ray, const sse3f& org, const sse3f& dir, ssef& tNear, ssef& tFar);
+      static size_t intersectBox(const BVH4Hair::CompressedUnalignedNode* node, Ray& ray, const sse3f& org, const sse3f& dir, ssef& tNear, ssef& tFar);
+      static size_t intersectBox(const BVH4Hair::UncompressedUnalignedNode* node, Ray& ray, const sse3f& org, const sse3f& dir, ssef& tNear, ssef& tFar);
 
-      static void intersectBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier, const Scene* scene);
-      static bool occludedBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier, const Scene* scene);
-      
     public:
       static void intersect(const BVH4Hair* This, Ray& ray);
       static void occluded (const BVH4Hair* This, Ray& ray);

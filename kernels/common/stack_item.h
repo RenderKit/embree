@@ -309,4 +309,51 @@ namespace embree
     d.all = s4;  
   }  
 #endif
+
+  struct __aligned(16) StackItemNearFar 
+  {
+  public:
+    __forceinline static void swap2(StackItemNearFar& a, StackItemNearFar& b) 
+    { 
+#if defined(__AVX__)
+      ssef sse_a = load4f(&a);
+      ssef sse_b = load4f(&b);
+      store4f(&a,sse_b);
+      store4f(&b,sse_a);
+#else
+      StackItemNearFar t = b; b = a; a = t;
+#endif
+    }
+    
+    __forceinline friend bool operator<(const StackItemNearFar& s1, const StackItemNearFar& s2) {
+      return s1.tNear > s2.tNear;
+    }
+    
+    /*! Sort 2 stack items. */
+    __forceinline friend void sort(StackItemNearFar& s1, StackItemNearFar& s2) {
+      if (s2.tNear < s1.tNear) swap2(s2,s1);
+    }
+    
+    /*! Sort 3 stack items. */
+    __forceinline friend void sort(StackItemNearFar& s1, StackItemNearFar& s2, StackItemNearFar& s3)
+    {
+      if (s2.tNear < s1.tNear) swap2(s2,s1);
+      if (s3.tNear < s2.tNear) swap2(s3,s2);
+      if (s2.tNear < s1.tNear) swap2(s2,s1);
+    }
+    
+    /*! Sort 4 stack items. */
+    __forceinline friend void sort(StackItemNearFar& s1, StackItemNearFar& s2, StackItemNearFar& s3, StackItemNearFar& s4)
+    {
+      if (s2.tNear < s1.tNear) swap2(s2,s1);
+      if (s4.tNear < s3.tNear) swap2(s4,s3);
+      if (s3.tNear < s1.tNear) swap2(s3,s1);
+      if (s4.tNear < s2.tNear) swap2(s4,s2);
+      if (s3.tNear < s2.tNear) swap2(s3,s2);
+    }
+    
+  public:
+    size_t ref;
+    float tNear,tFar;
+  };
 }

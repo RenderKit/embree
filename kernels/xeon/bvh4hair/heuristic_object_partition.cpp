@@ -499,7 +499,7 @@ namespace embree
     assert( prims + begin <= r && r <= prims + end);
     
     assert(l <= prims + end);
-    assert(center == begin+split.numLeft);
+    //assert(center == begin+split.numLeft);
   }
   
   template<typename Prim>

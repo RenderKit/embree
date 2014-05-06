@@ -60,15 +60,14 @@ namespace embree
     }
 
     template<typename PrimitiveIntersector>
-    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::UnalignedNode* node, Ray& ray, 
+    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::CompressedUnalignedNode* node, Ray& ray, 
                                                                                   const sse3f& ray_org, const sse3f& ray_dir, 
                                                                                   ssef& tNear, ssef& tFar)
     {
-#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
       const LinearSpace3fa xfm = node->getXfm();
       //const Vec3fa dir = xfmVector(xfm,ray.dir);
       const Vec3fa dir = madd(xfm.vx,(Vec3fa)ray_dir.x,madd(xfm.vy,(Vec3fa)ray_dir.y,xfm.vz*(Vec3fa)ray_dir.z));
-      //const sse3f rdir = Vec3fa(one)/dir; // FIXME: not 100% safe
+      //const sse3f rdir = Vec3fa(one)/dir; 
       const sse3f rdir = rcp_safe(dir); 
       //const Vec3fa org = xfmPoint(xfm,ray.org);
       const Vec3fa org = madd(xfm.vx,(Vec3fa)ray_org.x,madd(xfm.vy,(Vec3fa)ray_org.y,xfm.vz*(Vec3fa)ray_org.z));
@@ -77,15 +76,45 @@ namespace embree
       const BVH4Hair::BBoxSse3f bounds = node->getBounds();
       const sse3f tLowerXYZ = (bounds.lower - vorg) * vrdir;
       const sse3f tUpperXYZ = (bounds.upper - vorg) * vrdir;
+
+      
+#if defined(__SSE4_1__)
+      const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
+      const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
+      tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
+      tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
+      const sseb vmask = tNear <= tFar;
+      return movemask(vmask);
 #else
+      const ssef tNearX = min(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tNearY = min(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tNearZ = min(tLowerXYZ.z,tUpperXYZ.z);
+      const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
+      tNear = max(tNearX,tNearY,tNearZ,tNear);
+      tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
+      const sseb vmask = tNear <= tFar;
+      return movemask(vmask);
+#endif
+    }
+
+    template<typename PrimitiveIntersector>
+    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::UncompressedUnalignedNode* node, Ray& ray, 
+                                                                                  const sse3f& ray_org, const sse3f& ray_dir, 
+                                                                                  ssef& tNear, ssef& tFar)
+    {
       const AffineSpaceSSE3f xfm = node->naabb;
       const sse3f dir = xfmVector(xfm,ray_dir);
-      //const sse3f nrdir = sse3f(ssef(-1.0f))/dir; // FIXME: not 100% safe
+      //const sse3f nrdir = sse3f(ssef(-1.0f))/dir;
       const sse3f nrdir = sse3f(ssef(-1.0f))*rcp_safe(dir);
       const sse3f org = xfmPoint(xfm,ray_org);
       const sse3f tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
       const sse3f tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
-#endif
       
 #if defined(__SSE4_1__)
       const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
@@ -119,9 +148,9 @@ namespace embree
       const typename PrimitiveIntersector::Precalculations pre(ray);
 
       /*! stack state */
-      StackItem stack[stackSize];  //!< stack of nodes 
-      StackItem* stackPtr = stack+1;        //!< current stack pointer
-      StackItem* stackEnd = stack+stackSize;
+      StackItemNearFar stack[stackSize];  //!< stack of nodes 
+      StackItemNearFar* stackPtr = stack+1;        //!< current stack pointer
+      StackItemNearFar* stackEnd = stack+stackSize;
       stack[0].ref = bvh->root;
       stack[0].tNear = ray.tnear;
       stack[0].tFar = ray.tfar;
@@ -146,7 +175,7 @@ namespace embree
         if (unlikely(stackPtr == stack)) break;
         /*for (size_t i=1; i<stackPtr-&stack[0]; i++)
           if (stack[i-1].tNear < stack[i+0].tNear)
-            StackItem::swap2(stack[i-1],stack[i+0]);*/
+            StackItemNearFar::swap2(stack[i-1],stack[i+0]);*/
         stackPtr--;
         NodeRef cur = NodeRef(stackPtr->ref);
         ssef tNear = stackPtr->tNear;
@@ -192,8 +221,8 @@ namespace embree
           const float n0 = tNear[r]; const float f0 = tFar[r]; 
           r = __bscf(mask);
           NodeRef c1 = node->child(r); c1.prefetch(); const float n1 = tNear[r]; const float f1 = tFar[r];
-          //assert(c0 != BVH4Hair::emptyNode); // FIXME: enable
-          //assert(c1 != BVH4Hair::emptyNode); // FIXME: enable
+          assert(c0 != BVH4Hair::emptyNode);
+          assert(c1 != BVH4Hair::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
             if (n0 < n1) { 
@@ -219,7 +248,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           NodeRef c = node->child(r); c.prefetch(); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
-          //assert(c != BVH4Hair::emptyNode); // FIXME: enable
+          assert(c != BVH4Hair::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
             cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
@@ -230,7 +259,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
-          //assert(c != BVH4Hair::emptyNode); // FIXME: enable
+          assert(c != BVH4Hair::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
         }
@@ -250,9 +279,9 @@ namespace embree
       const typename PrimitiveIntersector::Precalculations pre(ray);
 
       /*! stack state */
-      StackItem stack[stackSize];  //!< stack of nodes 
-      StackItem* stackPtr = stack+1;        //!< current stack pointer
-      StackItem* stackEnd = stack+stackSize;
+      StackItemNearFar stack[stackSize];  //!< stack of nodes 
+      StackItemNearFar* stackPtr = stack+1;        //!< current stack pointer
+      StackItemNearFar* stackEnd = stack+stackSize;
       stack[0].ref = bvh->root;
       stack[0].tNear = ray.tnear;
       stack[0].tFar = ray.tfar;
@@ -319,8 +348,8 @@ namespace embree
            const float n0 = tNear[r]; const float f0 = tFar[r]; 
           r = __bscf(mask);
           NodeRef c1 = node->child(r); c1.prefetch(); const float n1 = tNear[r]; const float f1 = tFar[r];
-          //assert(c0 != BVH4Hair::emptyNode); // FIXME: enable
-          //assert(c1 != BVH4Hair::emptyNode); // FIXME: enable
+          assert(c0 != BVH4Hair::emptyNode);
+          assert(c1 != BVH4Hair::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
             if (n0 < n1) { stackPtr->ref = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++; cur = c0; tNear = n0; tFar = f0; continue; }
@@ -338,7 +367,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           NodeRef c = node->child(r); c.prefetch(); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
-          //assert(c != BVH4Hair::emptyNode); // FIXME: enable
+          assert(c != BVH4Hair::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
             cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
@@ -349,7 +378,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
-          //assert(c != BVH4Hair::emptyNode); // FIXME: enable
+          assert(c != BVH4Hair::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
         }
