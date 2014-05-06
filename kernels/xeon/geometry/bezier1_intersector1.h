@@ -19,6 +19,7 @@
 #include "bezier1.h"
 #include "common/ray.h"
 #include "geometry/filter.h"
+#include "geometry/mailbox.h"
 
 namespace embree
 {
@@ -33,6 +34,7 @@ namespace embree
 	: ray_space(frame(ray.dir).transposed()) {} // FIXME: works only with normalized ray direction
 
       LinearSpace3fa ray_space;
+      Mailbox mbox;
     };
 
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1& bezier, const void* geom)
@@ -142,10 +144,14 @@ namespace embree
 #endif
     }
 
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Bezier1* curves, size_t num, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1* curves, size_t num, void* geom)
     {
-      for (size_t i=0; i<num; i++)
-        intersect(pre,ray,curves[i],geom);
+      for (size_t i=0; i<num; i++) 
+      {
+	if (unlikely(pre.mbox.hit(curves[i].geomID,curves[i].primID))) continue;
+	intersect(pre,ray,curves[i],geom);
+	pre.mbox.add(curves[i].geomID,curves[i].primID);
+      }
     }
 
     static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1& bezier, const void* geom) 
@@ -239,7 +245,7 @@ namespace embree
       return true;
     }
 
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Bezier1* curves, size_t num, void* geom) 
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Bezier1* curves, size_t num, void* geom) 
     {
       for (size_t i=0; i<num; i++) 
         if (occluded(pre,ray,curves[i],geom))

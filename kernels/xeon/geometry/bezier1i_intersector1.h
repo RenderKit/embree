@@ -19,6 +19,7 @@
 #include "bezier1i.h"
 #include "common/ray.h"
 #include "geometry/filter.h"
+#include "geometry/mailbox.h"
 
 namespace embree
 {
@@ -26,47 +27,6 @@ namespace embree
   struct Bezier1iIntersector1
   {
     typedef Bezier1i Primitive;
-
-    struct Mailbox 
-    {
-#if defined (__AVX__)
-      avxi geomIDs;      
-      avxi primIDs;
-#else
-      ssei geomIDs;   
-      ssei primIDs;
-#endif
-      unsigned int index;
-
-      __forceinline Mailbox() {
-        geomIDs = -1;
-	primIDs = -1;
-        index = 0;
-      };
-
-      __forceinline bool hit(const unsigned geomID, const unsigned primID) const
-      {
-#if defined (__AVX__)
-	const avxb geomMask = geomIDs == geomID;
-	const avxb primMask = primIDs == primID;
-#else
-	const sseb geomMask = geomIDs == geomID;
-	const sseb primMask = primIDs == primID;
-#endif
-	return any(geomMask & primMask);
-      }
-
-      __forceinline void add(const unsigned geomID, const unsigned primID)
-      {
-	*(unsigned int*)&geomIDs[index] = geomID;
-	*(unsigned int*)&primIDs[index] = primID;
-#if defined (__AVX__)
-	index = (index + 1 ) % 8;
-#else
-	index = (index + 1 ) % 4;
-#endif
-      }
-    };
 
     struct Precalculations 
     {
