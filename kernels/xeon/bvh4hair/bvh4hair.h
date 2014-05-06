@@ -34,19 +34,14 @@ namespace embree
   {
     ALIGNED_CLASS;
   public:
-    typedef sseb simdb;
-    typedef ssei simdi;
-    typedef ssef simdf;
-    
+
     /*! forward declaration of node type */
     struct Node;
     struct CompressedAlignedNode;
     struct UncompressedAlignedNode;
     struct CompressedUnalignedNode;
     struct UncompressedUnalignedNode;
-    typedef AffineSpaceT<LinearSpace3<Vec3<simdf> > > AffineSpaceSIMD3f;
-    typedef BBox<Vec3<simdf> > BBoxSIMD3f;
-
+    
 #if BVH4HAIR_COMPRESS_ALIGNED_NODES 
     typedef CompressedAlignedNode AlignedNode;
 #else
@@ -78,10 +73,8 @@ namespace embree
     static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | 2;
       
     /*! Maximal depth of the BVH. */
-    //static const size_t maxDepth = 32; // FIXME: enable this
-    //static const size_t maxBuildDepth = 32;
-    static const size_t maxDepth = 64;
-    static const size_t maxBuildDepth = 64;
+    static const size_t maxDepth = 32;
+    static const size_t maxBuildDepth = 32;
     
     /*! Maximal number of primitive blocks in a leaf. */
     static const size_t maxLeafBlocks = items_mask-2;
@@ -246,7 +239,7 @@ namespace embree
       }
 
       /*! returns 4 bounding boxes */
-      __forceinline const BBoxSIMD3f getBounds(const size_t nearX, const size_t nearY, const size_t nearZ) const 
+      __forceinline const BBoxSSE3f getBounds(const size_t nearX, const size_t nearY, const size_t nearZ) const 
       {
         const size_t farX  = nearX ^ 4, farY  = nearY ^ 4, farZ  = nearZ ^ 4;
         const ssef near_x = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_x+nearX)));
@@ -255,10 +248,10 @@ namespace embree
         const ssef far_x  = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_x+farX )));
         const ssef far_y  = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_y+farY )));
         const ssef far_z  = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_z+farZ )));
-        const Vec3<simdf> offset = *(Vec3fa*)&this->offset;
-        const Vec3<simdf> scale  = *(Vec3fa*)&this->scale;
-        return BBoxSIMD3f(scale*Vec3<simdf>(near_x,near_y,near_z)+offset,
-                          scale*Vec3<simdf>(far_x, far_y, far_z)+offset);
+        const sse3f offset = *(Vec3fa*)&this->offset;
+        const sse3f scale  = *(Vec3fa*)&this->scale;
+        return BBoxSSE3f(scale*sse3f(near_x,near_y,near_z)+offset,
+                          scale*sse3f(far_x, far_y, far_z)+offset);
       }
 
       /*! Returns the extend of the bounds of the ith child */
@@ -281,7 +274,7 @@ namespace embree
     /*! Node with aligned bounds */
     struct UncompressedAlignedNode : public Node
     {
-      enum { stride = sizeof(simdf) };
+      enum { stride = sizeof(ssef) };
 
       /*! Clears the node. */
       __forceinline void clear() {
@@ -312,16 +305,16 @@ namespace embree
       }
 
       /*! returns 4 bounding boxes */
-      __forceinline const BBoxSIMD3f getBounds(const size_t nearX, const size_t nearY, const size_t nearZ) const 
+      __forceinline const BBoxSSE3f getBounds(const size_t nearX, const size_t nearY, const size_t nearZ) const 
       {
-        const size_t farX  = nearX ^ sizeof(simdf), farY  = nearY ^ sizeof(simdf), farZ  = nearZ ^ sizeof(simdf);
+        const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
         const ssef nearx = load4f((const char*)&lower_x+nearX);
         const ssef neary = load4f((const char*)&lower_y+nearY);
         const ssef nearz = load4f((const char*)&lower_z+nearZ);
         const ssef farx  = load4f((const char*)&lower_x+farX );
         const ssef fary  = load4f((const char*)&lower_y+farY );
         const ssef farz  = load4f((const char*)&lower_z+farZ );
-        return BBoxSIMD3f(Vec3<simdf>(nearx,neary,nearz),Vec3<simdf>(farx,fary,farz));
+        return BBoxSSE3f(sse3f(nearx,neary,nearz),sse3f(farx,fary,farz));
       }
 
       /*! Returns the extend of the bounds of the ith child */
@@ -331,12 +324,12 @@ namespace embree
       }
 
     public:
-      simdf lower_x;           //!< X dimension of lower bounds of all 4 children.
-      simdf upper_x;           //!< X dimension of upper bounds of all 4 children.
-      simdf lower_y;           //!< Y dimension of lower bounds of all 4 children.
-      simdf upper_y;           //!< Y dimension of upper bounds of all 4 children.
-      simdf lower_z;           //!< Z dimension of lower bounds of all 4 children.
-      simdf upper_z;           //!< Z dimension of upper bounds of all 4 children.
+      ssef lower_x;           //!< X dimension of lower bounds of all 4 children.
+      ssef upper_x;           //!< X dimension of upper bounds of all 4 children.
+      ssef lower_y;           //!< Y dimension of lower bounds of all 4 children.
+      ssef upper_y;           //!< Y dimension of upper bounds of all 4 children.
+      ssef lower_z;           //!< Z dimension of lower bounds of all 4 children.
+      ssef upper_z;           //!< Z dimension of upper bounds of all 4 children.
     };
 
     /*! Compressed node with unaligned bounds */
@@ -424,7 +417,7 @@ namespace embree
       }
 
       /*! returns 4 bounding boxes */
-      __forceinline BBoxSIMD3f getBounds() const 
+      __forceinline BBoxSSE3f getBounds() const 
       {
         const ssef lower_x = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_x));
         const ssef lower_y = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_y));
@@ -432,10 +425,10 @@ namespace embree
         const ssef upper_x = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_x));
         const ssef upper_y = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_y));
         const ssef upper_z = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_z));
-        const Vec3<simdf> offset = *(Vec3fa*)&this->offset;
-        const Vec3<simdf> scale  = *(Vec3fa*)&this->scale;
-        return BBoxSIMD3f(scale*Vec3<simdf>(lower_x,lower_y,lower_z)+offset,
-                          scale*Vec3<simdf>(upper_x,upper_y,upper_z)+offset);
+        const sse3f offset = *(Vec3fa*)&this->offset;
+        const sse3f scale  = *(Vec3fa*)&this->scale;
+        return BBoxSSE3f(scale*sse3f(lower_x,lower_y,lower_z)+offset,
+                          scale*sse3f(upper_x,upper_y,upper_z)+offset);
       }
 
       /*! Returns the extend of the bounds of the ith child */
@@ -515,7 +508,7 @@ namespace embree
       }
 
     public:
-      AffineSpaceSIMD3f naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
+      AffineSpaceSSE3f naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
 
   public:

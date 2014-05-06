@@ -24,111 +24,90 @@ namespace embree
   {
     template<typename PrimitiveIntersector>
     __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::AlignedNode* node, 
-                                                                                  const simd3f& org, const simd3f& rdir, const simd3f& org_rdir, 
+                                                                                  const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, 
                                                                                   const size_t nearX, const size_t nearY, const size_t nearZ,
-                                                                                  simdf& tNear, simdf& tFar)
+                                                                                  ssef& tNear, ssef& tFar)
     {
-      const BVH4Hair::BBoxSIMD3f bounds = node->getBounds(nearX,nearY,nearZ);
+      const BBoxSSE3f bounds = node->getBounds(nearX,nearY,nearZ);
 
 #if defined (__AVX2__)
-      const simdf tNearX = msub(bounds.lower.x, rdir.x, org_rdir.x);
-      const simdf tNearY = msub(bounds.lower.y, rdir.y, org_rdir.y);
-      const simdf tNearZ = msub(bounds.lower.z, rdir.z, org_rdir.z);
-      const simdf tFarX  = msub(bounds.upper.x, rdir.x, org_rdir.x);
-      const simdf tFarY  = msub(bounds.upper.y, rdir.y, org_rdir.y);
-      const simdf tFarZ  = msub(bounds.upper.z, rdir.z, org_rdir.z);
+      const ssef tNearX = msub(bounds.lower.x, rdir.x, org_rdir.x);
+      const ssef tNearY = msub(bounds.lower.y, rdir.y, org_rdir.y);
+      const ssef tNearZ = msub(bounds.lower.z, rdir.z, org_rdir.z);
+      const ssef tFarX  = msub(bounds.upper.x, rdir.x, org_rdir.x);
+      const ssef tFarY  = msub(bounds.upper.y, rdir.y, org_rdir.y);
+      const ssef tFarZ  = msub(bounds.upper.z, rdir.z, org_rdir.z);
 #else
-      const simdf tNearX = (bounds.lower.x - org.x) * rdir.x;
-      const simdf tNearY = (bounds.lower.y - org.y) * rdir.y;
-      const simdf tNearZ = (bounds.lower.z - org.z) * rdir.z;
-      const simdf tFarX  = (bounds.upper.x - org.x) * rdir.x;
-      const simdf tFarY  = (bounds.upper.y - org.y) * rdir.y;
-      const simdf tFarZ  = (bounds.upper.z - org.z) * rdir.z;
+      const ssef tNearX = (bounds.lower.x - org.x) * rdir.x;
+      const ssef tNearY = (bounds.lower.y - org.y) * rdir.y;
+      const ssef tNearZ = (bounds.lower.z - org.z) * rdir.z;
+      const ssef tFarX  = (bounds.upper.x - org.x) * rdir.x;
+      const ssef tFarY  = (bounds.upper.y - org.y) * rdir.y;
+      const ssef tFarZ  = (bounds.upper.z - org.z) * rdir.z;
 #endif
       
 #if defined(__SSE4_1__)
       tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
       tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
-      const simdb vmask = cast(tNear) > cast(tFar);
+      const sseb vmask = cast(tNear) > cast(tFar);
       return movemask(vmask)^((1<<BVH4Hair::N)-1);
 #else
       tNear = max(tNearX,tNearY,tNearZ,tNear);
       tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
-      const simdb vmask = tNear <= tFar;
+      const sseb vmask = tNear <= tFar;
       return movemask(vmask);
 #endif
     }
 
     template<typename PrimitiveIntersector>
     __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::UnalignedNode* node, Ray& ray, 
-                                                                                  const avx3f& ray_org_dir, const simd3f& ray_org, const simd3f& ray_dir, 
-                                                                                  simdf& tNear, simdf& tFar)
+                                                                                  const sse3f& ray_org, const sse3f& ray_dir, 
+                                                                                  ssef& tNear, ssef& tFar)
     {
 #if BVH4HAIR_COMPRESS_UNALIGNED_NODES
       const LinearSpace3fa xfm = node->getXfm();
       //const Vec3fa dir = xfmVector(xfm,ray.dir);
       const Vec3fa dir = madd(xfm.vx,(Vec3fa)ray_dir.x,madd(xfm.vy,(Vec3fa)ray_dir.y,xfm.vz*(Vec3fa)ray_dir.z));
-      //const simd3f rdir = Vec3fa(one)/dir; // FIXME: not 100% safe
-      const simd3f rdir = rcp_safe(dir); 
+      //const sse3f rdir = Vec3fa(one)/dir; // FIXME: not 100% safe
+      const sse3f rdir = rcp_safe(dir); 
       //const Vec3fa org = xfmPoint(xfm,ray.org);
       const Vec3fa org = madd(xfm.vx,(Vec3fa)ray_org.x,madd(xfm.vy,(Vec3fa)ray_org.y,xfm.vz*(Vec3fa)ray_org.z));
-      const simd3f vorg  = simd3f(org);
-      const simd3f vrdir = simd3f(rdir);
-      const BVH4Hair::BBoxSIMD3f bounds = node->getBounds();
-      const simd3f tLowerXYZ = (bounds.lower - vorg) * vrdir;
-      const simd3f tUpperXYZ = (bounds.upper - vorg) * vrdir;
+      const sse3f vorg  = sse3f(org);
+      const sse3f vrdir = sse3f(rdir);
+      const BVH4Hair::BBoxSse3f bounds = node->getBounds();
+      const sse3f tLowerXYZ = (bounds.lower - vorg) * vrdir;
+      const sse3f tUpperXYZ = (bounds.upper - vorg) * vrdir;
 #else
-#if 1
-      const AffineSpaceSIMD3f xfm = node->naabb;
-      const simd3f dir = xfmVector(xfm,ray_dir);
-      //const simd3f nrdir = simd3f(simdf(-1.0f))/dir; // FIXME: not 100% safe
-      const simd3f nrdir = simd3f(simdf(-1.0f))*rcp_safe(dir);
-      const simd3f org = xfmPoint(xfm,ray_org);
-      const simd3f tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
-      const simd3f tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
-#else
-      const AffineSpaceSIMD3f xfm = node->naabb;
-      const avxf orgdirx = madd(avxf(xfm.l.vx.x),ray_org_dir.x,
-                                madd(avxf(xfm.l.vy.x),ray_org_dir.y,
-                                     madd(avxf(xfm.l.vz.x),ray_org_dir.z,
-                                          avxf(xfm.p.x,zero))));
-      const avxf orgdiry = madd(avxf(xfm.l.vx.y),ray_org_dir.x,
-                                madd(avxf(xfm.l.vy.y),ray_org_dir.y,
-                                     madd(avxf(xfm.l.vz.y),ray_org_dir.z,
-                                          avxf(xfm.p.y,zero))));
-      const avxf orgdirz = madd(avxf(xfm.l.vx.z),ray_org_dir.x,
-                                madd(avxf(xfm.l.vy.z),ray_org_dir.y,
-                                     madd(avxf(xfm.l.vz.z),ray_org_dir.z,
-                                          avxf(xfm.p.z,zero))));
-      const simd3f org(extract<0>(orgdirx),extract<0>(orgdiry),extract<0>(orgdirz));
-      const simd3f dir(extract<1>(orgdirx),extract<1>(orgdiry),extract<1>(orgdirz));
-      const simd3f nrdir = simd3f(simdf(-1.0f))/dir; //rcp_safe(dir); // FIXME: not 100% safe
-      const simd3f tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
-      const simd3f tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
-#endif
+      const AffineSpaceSSE3f xfm = node->naabb;
+      const sse3f dir = xfmVector(xfm,ray_dir);
+      //const sse3f nrdir = sse3f(ssef(-1.0f))/dir; // FIXME: not 100% safe
+      const sse3f nrdir = sse3f(ssef(-1.0f))*rcp_safe(dir);
+      const sse3f org = xfmPoint(xfm,ray_org);
+      const sse3f tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
+      const sse3f tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
 #endif
       
 #if defined(__SSE4_1__)
-      const simdf tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
-      const simdf tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
-      const simdf tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
-      const simdf tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
-      const simdf tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
-      const simdf tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
+      const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
+      const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
       tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
       tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
-      const simdb vmask = tNear <= tFar;
+      const sseb vmask = tNear <= tFar;
       return movemask(vmask);
 #else
-      const simdf tNearX = min(tLowerXYZ.x,tUpperXYZ.x);
-      const simdf tNearY = min(tLowerXYZ.y,tUpperXYZ.y);
-      const simdf tNearZ = min(tLowerXYZ.z,tUpperXYZ.z);
-      const simdf tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
-      const simdf tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
-      const simdf tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
+      const ssef tNearX = min(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tNearY = min(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tNearZ = min(tLowerXYZ.z,tUpperXYZ.z);
+      const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
       tNear = max(tNearX,tNearY,tNearZ,tNear);
       tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
-      const simdb vmask = tNear <= tFar;
+      const sseb vmask = tNear <= tFar;
       return movemask(vmask);
 #endif
     }
@@ -137,7 +116,7 @@ namespace embree
     void BVH4HairIntersector1<PrimitiveIntersector>::intersect(const BVH4Hair* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      const Precalculations pre(ray);
+      const typename PrimitiveIntersector::Precalculations pre(ray);
 
       /*! stack state */
       StackItem stack[stackSize];  //!< stack of nodes 
@@ -153,13 +132,12 @@ namespace embree
       const size_t nearZ = ray.dir.z >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
       
       /*! load the ray into SIMD registers */
-      const simd3f org(ray.org.x,ray.org.y,ray.org.z);
-      const simd3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
+      const sse3f org(ray.org.x,ray.org.y,ray.org.z);
+      const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
-      const simd3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+      const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
-      const simd3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
-      const avx3f org_dir(avxf(org.x,dir.x),avxf(org.y,dir.y),avxf(org.z,dir.z));
+      const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
 
       /* pop loop */
       while (true) pop:
@@ -171,8 +149,8 @@ namespace embree
             StackItem::swap2(stack[i-1],stack[i+0]);*/
         stackPtr--;
         NodeRef cur = NodeRef(stackPtr->ref);
-        simdf tNear = stackPtr->tNear;
-        simdf tFar = min(stackPtr->tFar,ray.tfar);
+        ssef tNear = stackPtr->tNear;
+        ssef tFar = min(stackPtr->tFar,ray.tfar);
         
         /*! if popped node is too far, pop next one */
         if (unlikely(_mm_cvtss_f32(tNear) > _mm_cvtss_f32(tFar)))
@@ -188,7 +166,7 @@ namespace embree
 
           /*! process nodes with unaligned bounds */
           else if (unlikely(cur.isUnalignedNode()))
-            mask = intersectBox(cur.unalignedNode(),ray,org_dir,org,dir,tNear,tFar);
+            mask = intersectBox(cur.unalignedNode(),ray,org,dir,tNear,tFar);
 
           /*! otherwise this is a leaf */
           else break;
@@ -269,7 +247,7 @@ namespace embree
     void BVH4HairIntersector1<PrimitiveIntersector>::occluded(const BVH4Hair* bvh, Ray& ray) 
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      const Precalculations pre(ray);
+      const typename PrimitiveIntersector::Precalculations pre(ray);
 
       /*! stack state */
       StackItem stack[stackSize];  //!< stack of nodes 
@@ -285,13 +263,12 @@ namespace embree
       const size_t nearZ = ray.dir.z >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
       
       /*! load the ray into SIMD registers */
-      const simd3f org(ray.org.x,ray.org.y,ray.org.z);
-      const simd3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
+      const sse3f org(ray.org.x,ray.org.y,ray.org.z);
+      const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
-      const simd3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+      const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
-      const simd3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
-      const avx3f org_dir(avxf(org.x,dir.x),avxf(org.y,dir.y),avxf(org.z,dir.z));
+      const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
 
       /* pop loop */
       while (true) pop:
@@ -300,8 +277,8 @@ namespace embree
         if (unlikely(stackPtr == stack)) break;
         stackPtr--;
         NodeRef cur = NodeRef(stackPtr->ref);
-        simdf tNear = stackPtr->tNear;
-        simdf tFar = min(stackPtr->tFar,ray.tfar);
+        ssef tNear = stackPtr->tNear;
+        ssef tFar = min(stackPtr->tFar,ray.tfar);
         
         /*! if popped node is too far, pop next one */
         if (unlikely(_mm_cvtss_f32(tNear) > _mm_cvtss_f32(tFar)))
@@ -317,7 +294,7 @@ namespace embree
 
           /*! process nodes with unaligned bounds */
           else if (unlikely(cur.isUnalignedNode()))
-            mask = intersectBox(cur.unalignedNode(),ray,org_dir,org,dir,tNear,tFar);
+            mask = intersectBox(cur.unalignedNode(),ray,org,dir,tNear,tFar);
 
           /*! otherwise this is a leaf */
           else break;

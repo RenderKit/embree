@@ -29,17 +29,11 @@ namespace embree
       class BVH4HairIntersector1 
     {
       /* shortcuts for frequently used types */
-      typedef typename PrimitiveIntersector::Precalculations Precalculations;
       typedef typename PrimitiveIntersector::Primitive Primitive;
-      typedef BVH4Hair::simdb simdb;
-      typedef BVH4Hair::simdi simdi;
-      typedef BVH4Hair::simdf simdf;
-      typedef Vec3<BVH4Hair::simdf> simd3f;
       typedef BVH4Hair::NodeRef NodeRef;
       typedef BVH4Hair::Node Node;
       typedef BVH4Hair::AlignedNode AlignedNode;
       typedef BVH4Hair::UnalignedNode UnalignedNode;
-      typedef BVH4Hair::AffineSpaceSIMD3f AffineSpaceSIMD3f;
 
       static const size_t stackSize = 1+3*BVH4Hair::maxDepth;
 
@@ -92,10 +86,11 @@ namespace embree
 
     private:
       static __forceinline size_t intersectBox(const BVH4Hair::AlignedNode* node, 
-                                               const simd3f& org, const simd3f& rdir, const simd3f& org_rdir, 
+                                               const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, 
                                                const size_t nearX, const size_t nearY, const size_t nearZ,
-                                               simdf& tNear, simdf& tFar);
-      static size_t intersectBox(const UnalignedNode* node, Ray& ray, const avx3f& ray_org_dir, const simd3f& org, const simd3f& dir, simdf& tNear, simdf& tFar);
+                                               ssef& tNear, ssef& tFar);
+
+      static size_t intersectBox(const UnalignedNode* node, Ray& ray, const sse3f& org, const sse3f& dir, ssef& tNear, ssef& tFar);
 
       static void intersectBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier, const Scene* scene);
       static bool occludedBezier(const LinearSpace3fa& ray_space, Ray& ray, const Bezier1& bezier, const Scene* scene);
