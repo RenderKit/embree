@@ -25,7 +25,7 @@ namespace embree
 {
   namespace isa
   {
-    class BVH4HairBuilder2 : public Builder
+    class BVH4HairBuilder : public Builder
     {
       ALIGNED_CLASS;
     public:
@@ -34,7 +34,7 @@ namespace embree
       void build(size_t threadIndex, size_t threadCount);
       
       /*! Constructor. */
-      BVH4HairBuilder2 (BVH4Hair* bvh, Scene* scene);
+      BVH4HairBuilder (BVH4Hair* bvh, Scene* scene);
       
     private:
       
@@ -81,7 +81,7 @@ namespace embree
       /*! recursive build function for aligned and non-aligned bounds */
       void recurseTask(size_t threadIndex, size_t threadCount, BuildTask& task);
       
-      TASK_RUN_FUNCTION(BVH4HairBuilder2,task_build_parallel);
+      TASK_RUN_FUNCTION(BVH4HairBuilder,task_build_parallel);
       
     public:
       Scene* scene;          //!< source

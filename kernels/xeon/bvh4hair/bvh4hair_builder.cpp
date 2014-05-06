@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4hair.h"
-#include "bvh4hair_builder2.h"
+#include "bvh4hair_builder.h"
 #include "bvh4hair_statistics.h"
 #include "common/scene_bezier_curves.h"
 #include "../builders/bezierrefgen.h"
@@ -44,14 +44,14 @@ namespace embree
   }
 
 
-    BVH4HairBuilder2::BVH4HairBuilder2 (BVH4Hair* bvh, Scene* scene)
+    BVH4HairBuilder::BVH4HairBuilder (BVH4Hair* bvh, Scene* scene)
       : scene(scene), minLeafSize(1), maxLeafSize(inf), bvh(bvh), remainingReplications(0)
     {
       if (BVH4Hair::maxLeafBlocks < this->maxLeafSize) 
 	this->maxLeafSize = BVH4Hair::maxLeafBlocks;
     }
     
-    void BVH4HairBuilder2::build(size_t threadIndex, size_t threadCount) 
+    void BVH4HairBuilder::build(size_t threadIndex, size_t threadCount) 
     {
       /* fast path for empty BVH */
       size_t numPrimitives = scene->numCurves;
@@ -68,7 +68,7 @@ namespace embree
 #if BVH4HAIR_COMPRESS_UNALIGNED_NODES
 	  std::cout << "Compressed";
 #endif
-	  std::cout << "BVH4Hair<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4HairBuilder2 ..." << std::flush;
+	  std::cout << "BVH4Hair<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4HairBuilder ..." << std::flush;
 	  t0 = getSeconds();
 	}
 	
@@ -132,7 +132,7 @@ namespace embree
       }
     }
 
-    BVH4Hair::NodeRef BVH4HairBuilder2::leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo)
+    BVH4Hair::NodeRef BVH4HairBuilder::leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo)
     {
       //size_t N = end-begin;
       size_t N = pinfo.size(); //BezierRefList::block_iterator_unsafe(prims).size();
@@ -178,7 +178,7 @@ namespace embree
     }
     
     template<bool Parallel>
-    Split BVH4HairBuilder2::find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const PrimInfo& sinfo)
+    Split BVH4HairBuilder::find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const PrimInfo& sinfo)
     {
       /* variable to track the SAH of the best splitting approach */
       float bestSAH = inf;
@@ -236,7 +236,7 @@ namespace embree
 #if !BVH4HAIR_COMPRESS_UNALIGNED_NODES
 
     template<bool Parallel>
-    __forceinline void BVH4HairBuilder2::processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& numTasks_o)
+    __forceinline void BVH4HairBuilder::processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& numTasks_o)
     {
       /* create enforced leaf */
       const float leafSAH  = BVH4Hair::intCost*task.pinfo.leafSAH();
@@ -324,7 +324,7 @@ namespace embree
 #else
 
     template<bool Parallel>
-    __forceinline void BVH4HairBuilder2::processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& numTasks_o)
+    __forceinline void BVH4HairBuilder::processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& numTasks_o)
     {
       /* create enforced leaf */
       const float leafSAH  = BVH4Hair::intCost*task.pinfo.leafSAH();
@@ -419,7 +419,7 @@ namespace embree
 
 #endif
     
-    void BVH4HairBuilder2::recurseTask(size_t threadIndex, size_t threadCount, BuildTask& task)
+    void BVH4HairBuilder::recurseTask(size_t threadIndex, size_t threadCount, BuildTask& task)
     {
       size_t numChildren;
       BuildTask tasks[BVH4Hair::N];
@@ -428,7 +428,7 @@ namespace embree
 	recurseTask(threadIndex,threadCount,tasks[i]);
     }
     
-    void BVH4HairBuilder2::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void BVH4HairBuilder::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
       while (numActiveTasks) 
       {
@@ -465,8 +465,8 @@ namespace embree
       }
     }
     
-    Builder* BVH4HairBuilder2_ (BVH4Hair* accel, Scene* scene) {
-      return new BVH4HairBuilder2(accel,scene);
+    Builder* BVH4HairBuilder_ (BVH4Hair* accel, Scene* scene) {
+      return new BVH4HairBuilder(accel,scene);
     }
   }
 }

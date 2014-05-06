@@ -22,13 +22,13 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1,BVH4HairBezier1Intersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4HairBezier1iIntersector1);
 
-  DECLARE_FUNCTION_SYMBOL(Builder*   BVH4HairBuilder2_  (BVH4Hair* bvh, Scene* scene));
-  static                  Builder* (*BVH4HairBuilder2_) (BVH4Hair* bvh, Scene* scene);
+  DECLARE_FUNCTION_SYMBOL(Builder*   BVH4HairBuilder_  (BVH4Hair* bvh, Scene* scene));
+  static                  Builder* (*BVH4HairBuilder_) (BVH4Hair* bvh, Scene* scene);
 
   void BVH4HairRegister () 
   {
     int features = getCPUFeatures();
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4HairBuilder2_);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4HairBuilder_);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4HairBezier1Intersector1);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4HairBezier1iIntersector1);
   }
@@ -65,7 +65,7 @@ namespace embree
   { 
     BVH4Hair* accel = new BVH4Hair(Bezier1Type::type,scene);
     Accel::Intersectors intersectors = BVH4HairBezier1Intersectors(accel);
-    Builder* builder = BVH4HairBuilder2_(accel,scene);
+    Builder* builder = BVH4HairBuilder_(accel,scene);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -73,7 +73,7 @@ namespace embree
   { 
     BVH4Hair* accel = new BVH4Hair(SceneBezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4HairBezier1iIntersectors(accel);
-    Builder* builder = BVH4HairBuilder2_(accel,scene);
+    Builder* builder = BVH4HairBuilder_(accel,scene);
     return new AccelInstance(accel,builder,intersectors);
   }
 
