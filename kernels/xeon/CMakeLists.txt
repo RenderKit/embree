@@ -167,7 +167,6 @@ IF (TARGET_AVX)
    bvh4mb/bvh4mb_intersector4.cpp
    bvh4mb/bvh4mb_intersector8.cpp
 
-   bvh4hair/bvh4hair_builder.cpp       # FIXME: remove
    bvh4hair/bvh4hair_builder2.cpp
    bvh4hair/bvh4hair_intersector1.cpp
 )

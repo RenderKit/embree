@@ -25,7 +25,7 @@
 #include "geometry/bezier1i.h"
 
 #define BVH4HAIR_COMPRESS_ALIGNED_NODES 0
-#define BVH4HAIR_COMPRESS_UNALIGNED_NODES 1
+#define BVH4HAIR_COMPRESS_UNALIGNED_NODES 0
 
 namespace embree
 {

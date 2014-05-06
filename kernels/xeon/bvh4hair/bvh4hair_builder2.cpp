@@ -63,10 +63,14 @@ namespace embree
       {
 	double t0 = 0.0;
 	if (g_verbose >= 2) 
-	  {
-	    std::cout << "building BVH4Hair<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4HairBuilder2 ..." << std::flush;
-	    t0 = getSeconds();
-	  }
+	{
+	  std::cout << "building ";
+#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
+	  std::cout << "Compressed";
+#endif
+	  std::cout << "BVH4Hair<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4HairBuilder2 ..." << std::flush;
+	  t0 = getSeconds();
+	}
 	
 	size_t N = 0;
 	float r = 0;
@@ -190,11 +194,11 @@ namespace embree
       /* perform spatial split in aligned space */
       SpatialSplit::Split alignedSpatialSplit;
       float alignedSpatialSAH = inf;
-      if (remainingReplications > 0) {
+      /*if (remainingReplications > 0) {
 	alignedSpatialSplit = SpatialSplit::find<Parallel>(threadIndex,threadCount,prims,pinfo);
 	alignedSpatialSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedSpatialSplit.splitSAH();
 	bestSAH = min(bestSAH,alignedSpatialSAH);
-      }
+	}*/
       
       /* perform standard binning in unaligned space */
       ObjectPartitionUnaligned::Split unalignedObjectSplit;

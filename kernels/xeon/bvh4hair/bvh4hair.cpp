@@ -22,8 +22,6 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1,BVH4HairBezier1Intersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4HairBezier1iIntersector1);
 
-  Builder* BVH4HairBuilder_ (BVH4Hair* bvh, Scene* scene);
-
   DECLARE_FUNCTION_SYMBOL(Builder*   BVH4HairBuilder2_  (BVH4Hair* bvh, Scene* scene));
   static                  Builder* (*BVH4HairBuilder2_) (BVH4Hair* bvh, Scene* scene);
 
@@ -67,13 +65,7 @@ namespace embree
   { 
     BVH4Hair* accel = new BVH4Hair(Bezier1Type::type,scene);
     Accel::Intersectors intersectors = BVH4HairBezier1Intersectors(accel);
-
-    Builder* builder = NULL;
-    if      (g_hair_builder == "builder1") builder = BVH4HairBuilder_(accel,scene);
-    else if (g_hair_builder == "builder2" ) builder = BVH4HairBuilder2_(accel,scene);
-    else if (g_hair_builder == "default" ) builder = BVH4HairBuilder2_(accel,scene);
-    else throw std::runtime_error("unknown hair builder");
-
+    Builder* builder = BVH4HairBuilder2_(accel,scene);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -81,13 +73,7 @@ namespace embree
   { 
     BVH4Hair* accel = new BVH4Hair(SceneBezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4HairBezier1iIntersectors(accel);
-
-    Builder* builder = NULL;
-    if      (g_hair_builder == "builder1") builder = BVH4HairBuilder_(accel,scene);
-    else if (g_hair_builder == "builder2" ) builder = BVH4HairBuilder2_(accel,scene);
-    else if (g_hair_builder == "default" ) builder = BVH4HairBuilder2_(accel,scene);
-    else throw std::runtime_error("unknown hair builder");
-
+    Builder* builder = BVH4HairBuilder2_(accel,scene);
     return new AccelInstance(accel,builder,intersectors);
   }
 
