@@ -143,6 +143,17 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);    
   }
 
+
+  Accel* BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene)
+  {
+    BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);
+    
+    Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,BVH4iBuilder::BVH4I_BUILDER_MEMORY_CONSERVATIVE);
+       
+    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
+    return new AccelInstance(accel,builder,intersectors);    
+  }
+
   Accel* BVH4i::BVH4iVirtualGeometryBinnedSAH(Scene* scene)
   {
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);    

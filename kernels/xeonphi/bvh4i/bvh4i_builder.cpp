@@ -29,7 +29,7 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-#define TIMER(x) 
+#define TIMER(x) x
 #define DBG(x) 
 
 //#define PROFILE
@@ -73,6 +73,10 @@ namespace embree
 
       case BVH4I_BUILDER_BEZIER_CURVES:
 	builder = new BVH4iBuilderBezierCurves((BVH4i*)accel,source,geometry);
+	break;
+
+      case BVH4I_BUILDER_MEMORY_CONSERVATIVE:
+	builder = new BVH4iBuilderMemoryConservative((BVH4i*)accel,source,geometry);
 	break;
 
       default:
@@ -361,23 +365,16 @@ namespace embree
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
+      const Vec3fa *__restrict__ const vertex = &mesh->vertex(0);
       for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
       { 			    
-	//DBG_PRINT(currentID);
 	const TriangleMesh::Triangle& tri = mesh->triangle(i);
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
-	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
-	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+	mic_f bmin,bmax;
+	tri.bounds(vertex,bmin,bmax);
 
-	const mic_f v0 = broadcast4to16f(vptr0);
-	const mic_f v1 = broadcast4to16f(vptr1);
-	const mic_f v2 = broadcast4to16f(vptr2);
-
-	const mic_f bmin = min(min(v0,v1),v2);
-	const mic_f bmax = max(max(v0,v1),v2);
 	bounds_scene_min = min(bounds_scene_min,bmin);
 	bounds_scene_max = max(bounds_scene_max,bmax);
 	const mic_f centroid2 = bmin+bmax;

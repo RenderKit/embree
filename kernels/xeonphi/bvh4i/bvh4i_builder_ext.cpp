@@ -979,4 +979,127 @@ namespace embree
       }
   }
 
+
+  // ==========================================================================================
+  // ==========================================================================================
+  // ==========================================================================================
+
+  void BVH4iBuilderMemoryConservative::printBuilderName()
+  {
+    std::cout << "building BVH4i with memory conservative binned SAH builder (MIC) ... " << std::endl;    
+    DBG(sleep(1));
+  }
+
+  void BVH4iBuilderMemoryConservative::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
+  {
+    PING;
+    size_t numPrimitivesOld = numPrimitives;
+    numPrimitives = totalNumPrimitives;
+
+    if (numPrimitivesOld != numPrimitives)
+      {
+	const size_t numPrims = numPrimitives;
+	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
+	const size_t numNodes = max((size_t)(numPrims),minAllocNodes);
+
+	if (g_verbose >= 2)
+	  {
+	  };
+
+	const size_t additional_size = 16 * CACHELINE_SIZE;
+
+	/* free previously allocated memory */
+
+	if (prims)  {
+	  assert(size_prims > 0);
+	  os_free(prims,size_prims);
+	}
+	if (node  ) {
+	  assert(bvh->size_node > 0);
+	  os_free(node ,bvh->size_node);
+	}
+	if (accel ) {
+	  assert(bvh->size_accel > 0);
+	  os_free(accel,bvh->size_accel);
+	}
+      
+	// === allocated memory for primrefs,nodes, and accel ===
+	const size_t size_primrefs = 0;
+	const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeof(PrimRef) + 4 * additional_size; // 4K
+	const size_t size_accel    = numPrims * sizeof(PrimRef) + additional_size;
+
+	numAllocatedNodes = size_node / sizeof(BVHNode);
+      
+	DBG(DBG_PRINT(numAllocatedNodes));
+	DBG(DBG_PRINT(size_primrefs));
+	DBG(DBG_PRINT(size_node));
+	DBG(DBG_PRINT(size_accel));
+
+	// === to do: os_reserve ===
+	prims = (PrimRef*) os_malloc(size_accel);
+	node  = (BVHNode  *) os_malloc(size_node);
+	accel = (Triangle1*)(node + 256); // for global paritioning
+
+	DBG_PRINT(prims);
+	DBG_PRINT(node);
+	DBG_PRINT(accel);
+
+	assert(prims  != 0);
+	assert(node   != 0);
+	assert(accel  != 0);
+
+
+	bvh->accel = accel;
+	bvh->qbvh  = (BVH4i::Node*)node;
+	bvh->size_node  = size_node;
+	bvh->size_accel = size_accel;
+
+	size_prims = 0;    
+      }    
+  }
+
+  void BVH4iBuilderMemoryConservative::createAccel(const size_t threadIndex, const size_t threadCount)
+  {
+    LockStepTaskScheduler::dispatchTask( task_createMemoryConservativeAccel, this, threadIndex, threadCount );  
+    accel = (Triangle1*)prims;
+    prims = NULL;
+  }
+
+
+  void BVH4iBuilderMemoryConservative::createMemoryConservativeAccel(const size_t threadID, const size_t numThreads)
+  {
+    DBG(PING);
+
+    const size_t startID = (threadID+0)*numPrimitives/numThreads;
+    const size_t endID   = (threadID+1)*numPrimitives/numThreads;
+
+
+    const PrimRef*  bptr = prims + startID;
+
+    for (size_t j=startID; j<endID; j++, bptr++)
+      {
+	prefetch<PFHINT_NTEX>(bptr + L1_PREFETCH_ITEMS);
+	prefetch<PFHINT_L2EX>(bptr + L2_PREFETCH_ITEMS);
+	assert(bptr->geomID() < scene->size() );
+
+	int geomID = bptr->geomID();
+	int primID = bptr->primID();
+
+	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	const TriangleMesh::Triangle & tri = mesh->triangle(primID);
+
+	Vec3fa *vptr0 = (Vec3fa*)&mesh->vertex(tri.v[0]);
+	Vec3fa *vptr1 = (Vec3fa*)&mesh->vertex(tri.v[1]);
+	Vec3fa *vptr2 = (Vec3fa*)&mesh->vertex(tri.v[2]);
+
+	MemoryConservativeAccel *acc = (MemoryConservativeAccel*)bptr;
+
+	acc->v0 = vptr0;
+	acc->v1 = vptr1;
+	acc->v2 = vptr2;
+	acc->geomID = geomID;
+	acc->primID = primID;
+      }
+  }
+
 };
