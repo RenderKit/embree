@@ -1,0 +1,96 @@
+
+<h3>What's New in Embree 2.2?</h3>
+<ul>
+  <li>Support for Motion Blur on Xeon Phi&trade;</li>
+  <li>Support for intersection filter callback functions</li>
+  <li>Support for buffer sharing with the application</li>
+  <li>Lots of AVX2 optimizations, e.g. ~20% faster 8-wide hybrid traversal</li>
+  <li>Experimental support for 8-wide (AVX/AVX2) and 16-wide BVHs (Xeon Phi)</li>
+</ul>    
+</ul>
+
+<h3>What's New in Embree 2.1?</h3>
+<ul>
+  <li>new future proof API with a strong focus on supporting dynamic scenes</li>
+  <li>lots of optimizations for 8-wide AVX2 (Intel Haswell&trade; architecture)</li>
+  <li>automatic runtime code selection for SSE, AVX, and AVX2</li>
+  <li>support for user-defined geometry</li>
+  <li>new and improved BVH builders:</li>
+<ul style="padding-left:20px">
+  <li>fast adaptive Morton code-based builder (w/o SAH-based top-level
+  rebuild)</li>
+  <li>both the SAH and Morton code-based builders got faster (Xeon Phi&trade;)</li>
+  <li>new variant of the SAH-based builder using triangle pre-splits (Xeon Phi&trade;)</li>
+</ul>    
+</ul>
+
+<h3>Example performance numbers for Embree 2.1</h3>
+
+BVH rebuild performance (including triangle accel generation,
+excluding memory allocation) for scenes with 2-12 million triangles:
+
+<ul>
+  <li>Intel&reg; Core&trade; i7 (Haswell-based CPU, 4 cores @ 3.0 GHz) </li>
+  <ul style="padding-left:20px">
+    <li>7-8 million triangles/s for the SAH-based BVH builder</li>
+    <li>30-36 million triangles/s for the Morton code-based BVH builder</li>
+  </ul>    
+  <li>Intel Xeon Phi&trade; 7120 </li>
+  <ul style="padding-left:20px">
+    <li>37-40 million triangles/s for the SAH-based BVH builder</li>
+    <li>140-160 million triangles/s for the Morton code-based BVH builder</li>
+  </ul>
+</ul>    
+  
+Rendering of the Crown model (crown.ecs) with 4 samples per pixel
+(-spp 4):
+
+<ul>
+  <li>Intel&reg; Core&trade; i7 (Haswell-based CPU, 4 cores CPU @ 3.0 GHz) </li>
+  <ul style="padding-left:20px">
+    <li>1024x1024 resolution: 7.8 million rays per sec</li>
+    <li>1920x1080 resolution: 9.9 million rays per sec</li>
+  </ul>    
+  <li>Intel Xeon Phi&trade; 7120 </li>
+  <ul style="padding-left:20px">
+    <li>1024x1024 resolution: 47.1 million rays per sec</li>
+    <li>1920x1080 resolution: 61.1 million rays per sec</li>
+  </ul>    
+</ul>
+
+
+<h3>What's New in Embree 2.0?</h3>
+<ul>
+  <li>support for the Intel Xeon Phi&trade; coprocessor platform </li>
+  <li>support for high-performance "packet" kernels on SSE, AVX, and Xeon Phi&trade;</li>
+  <li>integration with the Intel SPMD Program Compiler (ISPC)</li>
+  <li>instantiation and fast BVH reconstruction</li>
+  <li>example photo-realistic rendering engine for both C++ and ISPC</li>
+</ul>
+
+<h3>Embree Resources</h3>
+
+<p><a href="data/embree-siggraph-2012-final.pdf">Embree 1.1 Presentation</a> at SIGGRAPH 2012</p>
+        
+<p><a href="data/embree-siggraph-2013-final.pdf">Embree 2.0 Presentation</a> at SIGGRAPH 2013</p>
+        
+<p>Participate in <a href="http://software.intel.com/en-us/forums/embree-photo-realistic-ray-tracing-kernels">Embree Forum</a> Discussion.</p>
+
+<p>Read the <a
+href="http://software.intel.com/en-us/blogs/2014/01/24/introduction-to-embree-21-part-1">Embree
+Blog</a> for more details about Embree.</p>
+
+<h3>Embree Support and Contact</h3>
+
+<p>For questions and bug reports please write us at <a
+ href="mailto:embree_support@intel.com">embree_support@intel.com</a>.</p>
+
+<p>To receive notifications of updates and new features of Embree
+please subscribe to the <a
+ href="https://groups.google.com/d/forum/embree/">Embree mailing
+list</a>. </p>
+
+<p>For information about compiler optimizations, see our <a
+ href="http://software.intel.com/en-us/articles/optimization-notice#opt-en">Optimization
+ Notice</a>.</p>
+
