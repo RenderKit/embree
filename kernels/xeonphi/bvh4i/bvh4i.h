@@ -331,6 +331,7 @@ namespace embree
     static Accel* BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene);
     static Accel* BVH4iVirtualGeometryBinnedSAH(Scene* scene);
     static Accel* BVH4iBezierCurvesBinnedSAH(Scene* scene);
+    static Accel* BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene);
 
     /*! Calculates the SAH of the BVH */
     float sah ();
@@ -398,12 +399,12 @@ namespace embree
     }
 
 
-  /* ------------------ */
-  /* --- Binary BVH --- */
-  /* ------------------ */
+  /* ----------- */
+  /* --- BVH --- */
+  /* ----------- */
 
 #define BVH_INDEX_SHIFT  BVH4i::encodingBits
-#define BVH_ITEMS_MASK   (((unsigned int)1 << BVH_INDEX_SHIFT)-1)
+#define BVH_ITEMS_MASK   (((unsigned int)1 << BVH4i::leaf_shift)-1)
 #define BVH_LEAF_MASK    BVH4i::leaf_mask
 #define BVH_OFFSET_MASK  (~(BVH_ITEMS_MASK | BVH_LEAF_MASK))
 
@@ -513,8 +514,7 @@ namespace embree
   template<class T>
     __forceinline T qbvhCreateNode(const T& nodeID, const T& children) {
     return (nodeID << QBVH_INDEX_SHIFT) | children;
-  };
-
+  };  
 
   __forceinline mic_f initTriangle1(const mic_f &v0,
 				    const mic_f &v1,

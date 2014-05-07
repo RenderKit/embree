@@ -22,14 +22,11 @@
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 #define SINGLE_THREADED_BUILD_THRESHOLD        512
-#define ENABLE_TASK_STEALING
-#define ENABLE_FILL_PER_CORE_WORK_QUEUES
-
 
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-#define TIMER(x) 
+#define TIMER(x) x
 #define DBG(x) 
 
 //#define PROFILE
@@ -75,6 +72,10 @@ namespace embree
 	builder = new BVH4iBuilderBezierCurves((BVH4i*)accel,source,geometry);
 	break;
 
+      case BVH4I_BUILDER_MEMORY_CONSERVATIVE:
+	builder = new BVH4iBuilderMemoryConservative((BVH4i*)accel,source,geometry);
+	break;
+
       default:
 	throw std::runtime_error("ERROR: unknown BVH4iBuilder mode selected");	
       }
@@ -97,7 +98,9 @@ namespace embree
       node(NULL), 
       accel(NULL), 
       size_prims(0),
-      numNodesToAllocate(BVH4i::N)
+      numNodesToAllocate(BVH4i::N),
+      enablePerCoreWorkQueueFill(true),
+      enableTaskStealing(true)
   {
     DBG(PING);
   }
@@ -361,13 +364,17 @@ namespace embree
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
+      const Vec3fa *__restrict__ const vertex = &mesh->vertex(0);
       for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
       { 			    
-	//DBG_PRINT(currentID);
 	const TriangleMesh::Triangle& tri = mesh->triangle(i);
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
+#if 0
+	mic_f bmin,bmax;
+	tri.bounds(vertex,bmin,bmax);
+#else
 	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
 	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
 	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
@@ -376,8 +383,10 @@ namespace embree
 	const mic_f v1 = broadcast4to16f(vptr1);
 	const mic_f v2 = broadcast4to16f(vptr2);
 
-	const mic_f bmin = min(min(v0,v1),v2);
-	const mic_f bmax = max(max(v0,v1),v2);
+	mic_f bmin = min(min(v0,v1),v2);
+	mic_f bmax = max(max(v0,v1),v2);
+
+#endif
 	bounds_scene_min = min(bounds_scene_min,bmin);
 	bounds_scene_max = max(bounds_scene_max,bmax);
 	const mic_f centroid2 = bmin+bmax;
@@ -551,9 +560,7 @@ namespace embree
     const size_t numCores = (numThreads+3)/4;
     const size_t globalCoreID   = threadID/4;
 
-#if defined(ENABLE_FILL_PER_CORE_WORK_QUEUES)
-
-    if (numThreads > 1)
+    if (enablePerCoreWorkQueueFill && numThreads > 1)
       {
 	const size_t globalThreadID = threadID;
 	const size_t localThreadID  = threadID % 4;
@@ -578,7 +585,6 @@ namespace embree
 	    local_workStack[globalCoreID].mutex.dec();
 	  }
       }
-#endif
 
     while(true)
       {
@@ -603,20 +609,21 @@ namespace embree
 
 	/* try task stealing */
         bool success = false;
-#if defined(ENABLE_TASK_STEALING)
-        for (size_t i=0; i<numThreads; i++)
-        {
-	  unsigned int next_threadID = (threadID+i);
-	  if (next_threadID >= numThreads) next_threadID -= numThreads;
-	  const unsigned int next_globalCoreID   = next_threadID/4;
+	if (enableTaskStealing)
+	  {
+	    for (size_t i=0; i<numThreads; i++)
+	      {
+		unsigned int next_threadID = (threadID+i);
+		if (next_threadID >= numThreads) next_threadID -= numThreads;
+		const unsigned int next_globalCoreID   = next_threadID/4;
 
-	  assert(next_globalCoreID < numCores);
-          if (local_workStack[next_globalCoreID].pop_smallest(br)) { 
-            success = true;
-            break;
-          }
-        }
-#endif
+		assert(next_globalCoreID < numCores);
+		if (local_workStack[next_globalCoreID].pop_smallest(br)) { 
+		  success = true;
+		  break;
+		}
+	      }
+	  }
         if (!success) break; 
 
 	local_workStack[globalCoreID].mutex.inc();
@@ -1317,8 +1324,9 @@ namespace embree
 
     if (!(subset(leaf_prim_bounds,entry))) 
       {
+	DBG_PRINT(entry);
 	DBG_PRINT(leaf_prim_bounds);
-	FATAL("check build record");
+	FATAL("checkLeafNode");
       }
 
 #if 0
@@ -1374,7 +1382,7 @@ namespace embree
 	DBG_PRINT(current);
 	DBG_PRINT(check_box);
 	DBG_PRINT(box);
-	FATAL("check build record");
+	FATAL("check build record => subset(check_box,box) && subset(box,check_box)");
       }
   }
 

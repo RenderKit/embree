@@ -20,7 +20,7 @@
 
 namespace embree
 {
-  struct Triangle1
+  struct __aligned(64) Triangle1
   {
   public:
 
@@ -68,6 +68,27 @@ namespace embree
   __forceinline std::ostream &operator<<(std::ostream &o, const embree::Triangle1 &v)
   {
     o << "v0 " << v.v0 << " v1 " << v.v1 << " v2 " << v.v2 << " Ng " << v.Ng;
+    return o;
+  } 
+
+
+  struct __aligned(32) Triangle1mc
+  {
+  public:
+    Vec3fa *__restrict__ v0;
+    Vec3fa *__restrict__ v1;
+    Vec3fa *__restrict__ v2;
+    int geometryID;
+    int primitiveID;    
+
+    __forceinline unsigned int primID() const { return primitiveID; }
+    __forceinline unsigned int geomID() const { return geometryID; }
+
+  };
+
+  __forceinline std::ostream &operator<<(std::ostream &o, const embree::Triangle1mc &v)
+  {
+    o << "v0 " << v.v0 << " v1 " << v.v1 << " v2 " << v.v2 << " geomID " << v.geomID() << " primID " << v.primID();
     return o;
   } 
 

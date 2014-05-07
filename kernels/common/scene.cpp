@@ -82,6 +82,9 @@ namespace embree
 	    else if (g_builder == "high_quality" || g_builder == "presplits") {
 	      accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this));
 	    }
+	    else if (g_builder == "conservative" || g_builder == "memory_conservative") {
+	      accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this));
+	    }
 	    else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
 	  }
       }

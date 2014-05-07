@@ -35,7 +35,13 @@ namespace embree
 
   public:
 
-    enum { BVH4I_BUILDER_DEFAULT, BVH4I_BUILDER_PRESPLITS, BVH4I_BUILDER_VIRTUAL_GEOMETRY, BVH4I_BUILDER_BEZIER_CURVES};
+    enum { 
+      BVH4I_BUILDER_DEFAULT, 
+      BVH4I_BUILDER_PRESPLITS, 
+      BVH4I_BUILDER_VIRTUAL_GEOMETRY, 
+      BVH4I_BUILDER_BEZIER_CURVES,
+      BVH4I_BUILDER_MEMORY_CONSERVATIVE
+    };
  
     /*! Constructor. */
     BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry);
@@ -114,6 +120,8 @@ namespace embree
     void recurseSAH(BuildRecord& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads);
 
   protected:
+    bool enablePerCoreWorkQueueFill;
+    bool enableTaskStealing;
     size_t numNodesToAllocate;
     BuildSource* source;          //!< input geometry
     Scene* scene;                 //!< input geometry
@@ -212,6 +220,26 @@ namespace embree
     TASK_FUNCTION(BVH4iBuilderPreSplits,computePrimRefsFromPreSplitIDs);
     
   };
+
+
+  /*! derived memory conservative binned-SAH builder */  
+  class BVH4iBuilderMemoryConservative : public BVH4iBuilder
+  {
+  public:
+
+  BVH4iBuilderMemoryConservative(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
+      {
+      }
+
+    virtual void allocateData   (const size_t threadCount, const size_t newNumPrimitives);
+    virtual void printBuilderName();
+    virtual void createAccel    (const size_t threadIndex, const size_t threadCount);   
+
+  protected:
+    TASK_FUNCTION(BVH4iBuilderMemoryConservative,createMemoryConservativeAccel);
+ 
+  };
+
 
 
   /*! derived binned-SAH builder supporting virtual geometry */  
