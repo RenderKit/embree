@@ -35,5 +35,18 @@ namespace embree
       static void intersect(mic_i* valid, BVH4i* bvh, Ray16& ray);
       static void occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
     };
+
+    /*! BVH4i Traverser. Packet traversal implementation for a Quad BVH. */
+    class BVH4mcIntersector16Chunk
+    {
+      /* shortcuts for frequently used types */
+      typedef typename BVH4i::NodeRef NodeRef;
+      typedef typename BVH4i::Node Node;
+      
+    public:
+      static void intersect(mic_i* valid, BVH4i* bvh, Ray16& ray);
+      static void occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
+    };
+
   }
 }

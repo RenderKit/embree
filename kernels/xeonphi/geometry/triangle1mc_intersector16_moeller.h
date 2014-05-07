@@ -316,35 +316,33 @@ namespace embree
     // ==================================================================================================
     // ==================================================================================================
 
-#if 0
+
     __forceinline static void intersect16(const mic_m valid_leaf, 
 					  const unsigned int items,
 					  const mic3f &dir,
 					  const mic3f &org,
 					  Ray16& ray16, 
-					  const Scene     *__restrict__ const geometry,
-					  const Triangle1 * __restrict__ tptr)
+					  const Scene     *__restrict__ const scene,
+					  const Triangle1mc * __restrict__ tptr)
     {
       const mic_f zero = mic_f::zero();
       const mic_f one  = mic_f::one();
 	
       prefetch<PFHINT_L1>((mic_f*)tptr +  0); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  1); 
       prefetch<PFHINT_L2>((mic_f*)tptr +  2); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  3); 
 
       for (size_t i=0; i<items; i++,tptr++) 
 	{
-	  const Triangle1& tri = *tptr;
+	  const Triangle1mc& tri = *tptr;
 
 	  prefetch<PFHINT_L1>(tptr + 1 ); 
 
 	  STAT3(normal.trav_prims,1,popcnt(valid_i),16);
         
 	  /* load vertices and calculate edges */
-	  const mic_f v0 = broadcast4to16f(&tri.v0);
-	  const mic_f v1 = broadcast4to16f(&tri.v1);
-	  const mic_f v2 = broadcast4to16f(&tri.v2);
+	  const mic_f v0 = broadcast4to16f(tri.v0);
+	  const mic_f v1 = broadcast4to16f(tri.v1);
+	  const mic_f v2 = broadcast4to16f(tri.v2);
 	    
 
 	  const mic_f e1 = v0-v1;
@@ -354,7 +352,10 @@ namespace embree
 	  const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
 	  const mic3f C =  _v0 - org;
 	    
-	  const mic3f Ng = mic3f(tri.Ng);
+	  //const mic3f Ng = mic3f(tri.Ng);
+	  const mic_f normal_xyz = lcross_zxy(e1,e2);
+	  const mic3f Ng(swAAAA(normal_xyz),swBBBB(normal_xyz),swCCCC(normal_xyz));
+
 	  const mic_f den = dot(Ng,ray16.dir);
 
 	  const mic_f rcp_den = rcp(den);
@@ -400,13 +401,14 @@ namespace embree
 
 	  /* ray masking test */
 #if defined(__USE_RAY_MASK__)
-	  valid &= (tri.mask() & ray16.mask) != 0;
+	  const mic_i tri_mask = scene->getTriangleMesh( tri.geomID() )->mask;
+	  valid &= (tri_mask & ray16.mask) != 0;
 #endif
 	  if (unlikely(none(valid))) continue;
 
 	  /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-	  Geometry* geom = ((Scene*)bvh->geometry)->get(tri.geomID());
+	  Geometry* geom = ((Scene*)scene)->get(tri.geomID());
 	  if (unlikely(geom->hasIntersectionFilter16())) {
 	    runIntersectionFilter16(valid,geom,ray16,u,v,t,Ng,geomID,primID);
 	    continue;
@@ -432,8 +434,8 @@ namespace embree
 					 const mic3f &org,
 					 Ray16& ray16, 
 					 mic_m &m_terminated,
-					 const Scene     *__restrict__ const geometry,
-					 const Triangle1 * __restrict__ tptr)
+					 const Scene     *__restrict__ const scene,
+					 const Triangle1mc * __restrict__ tptr)
     {
       prefetch<PFHINT_L1>((mic_f*)tptr +  0); 
       prefetch<PFHINT_L2>((mic_f*)tptr +  1); 
@@ -444,16 +446,16 @@ namespace embree
       mic_m valid_leaf = m_valid_leaf;
       for (size_t i=0; i<items; i++,tptr++) 
 	{
-	  const Triangle1& tri = *tptr;
+	  const Triangle1mc& tri = *tptr;
 
 	  prefetch<PFHINT_L1>(tptr + 1 ); 
 
 	  STAT3(normal.trav_prims,1,popcnt(m_valid_leaf),16);
         
 	  /* load vertices and calculate edges */
-	  const mic_f v0 = broadcast4to16f(&tri.v0);
-	  const mic_f v1 = broadcast4to16f(&tri.v1);
-	  const mic_f v2 = broadcast4to16f(&tri.v2);
+	  const mic_f v0 = broadcast4to16f(tri.v0);
+	  const mic_f v1 = broadcast4to16f(tri.v1);
+	  const mic_f v2 = broadcast4to16f(tri.v2);
 	  const mic_f e1 = v0-v1;
 	  const mic_f e2 = v2-v0;
 
@@ -461,7 +463,9 @@ namespace embree
 	  const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
 	  const mic3f C =  _v0 - org;
 	    
-	  const mic3f Ng = mic3f(tri.Ng);
+	  const mic_f normal_xyz = lcross_zxy(e1,e2);
+	  const mic3f Ng(swAAAA(normal_xyz),swBBBB(normal_xyz),swCCCC(normal_xyz));
+
 	  const mic_f den = dot(Ng,dir);
 
 	  mic_m valid = valid_leaf;
@@ -491,7 +495,8 @@ namespace embree
 
 	  /* ray masking test */
 #if defined(__USE_RAY_MASK__)
-	  valid &= (mic_i(tri.mask()) & ray16.mask) != 0;
+	  const mic_i tri_mask = scene->getTriangleMesh( tri.geomID() )->mask;
+	  valid &= (tri_mask & ray16.mask) != 0;
 #endif
 	  if (unlikely(none(valid))) continue;
 	    
@@ -499,7 +504,7 @@ namespace embree
 #if defined(__INTERSECTION_FILTER__)
 	  const int geomID = tri.geomID();
 	  const int primID = tri.primID();
-	  const Geometry* geom = geometry->get(geomID);
+	  const Geometry* geom = scene->get(geomID);
 	  if (unlikely(geom->hasOcclusionFilter16()))
 	    valid = runOcclusionFilter16(valid,geom,ray16,u,v,t,Ng,geomID,primID);
 #endif
@@ -510,7 +515,6 @@ namespace embree
 	  if (unlikely(none(valid_leaf))) break;
 	}
     }
-#endif
 
   };
 }
