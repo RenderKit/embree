@@ -16,8 +16,6 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-#define USE_INTERSECTION_FILTER 1
-#define USE_OCCLUSION_FILTER 1
 #define USE_EYELIGHT_SHADING 0
 
 /* accumulation buffer */
@@ -39,8 +37,6 @@ extern Vec3fa g_ambient_intensity;
 /* hair material */
 const Vec3fa hair_K  = Vec3fa(0.8f,0.57f,0.32f);
 const Vec3fa hair_dK = Vec3fa(0.1f,0.12f,0.08f);
-//const Vec3fa hair_K  = Vec3fa(1.0f,1.0f,1.0f);
-//const Vec3fa hair_dK = Vec3fa(0.0f,0.0f,0.0f);
 const Vec3fa hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
 const Vec3fa hair_Kt = 0.8f*hair_K;    //!< transparency of hair
 
@@ -115,11 +111,7 @@ Vec3fa renderPixelTestEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy,
 /*! random number generator for floating point numbers in range [0,1] */
 inline float frand(int& seed) {
   seed = 7 * seed + 5;
-  /*seed = 13 * seed + 17;
-  seed = 3 * seed + 2;
-  seed = 127 * seed + 13;*/
   return (seed & 0xFFFF)/(float)0xFFFF;
-  //return drand48();
 }
 
 /*! Uniform hemisphere sampling. Up direction is the z direction. */
@@ -130,202 +122,6 @@ Vec3fa sampleSphere(const float u, const float v)
   return Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta, float(one_over_four_pi));
 }
 
-/* adds hair to the scene */
-void addHair (ISPCScene* scene)
-{
-  int seed = 879;
-#if 0
-  const int numCurves = 2;
-  const int numCurveSegments = 1;
-  const float R = 0.2f;
-#else
-  const int numCurves = 10000;
-  const int numCurveSegments = 1;
-  const float R = 0.002f;
-#endif
-  const int numCurvePoints = 3*numCurveSegments+1;
-
-  ISPCHairSet* hair = new ISPCHairSet;
-  hair->numVertices = numCurves*numCurvePoints;
-  hair->numHairs = numCurves*numCurveSegments;
-  hair->v = new Vec3fa[hair->numVertices];
-  hair->hairs = new ISPCHair[hair->numHairs];
-  Vertex* vertices = (Vertex*) hair->v;
-  ISPCHair* hairs  = hair->hairs;
-
-#if 0
-  vertices[0].x = 0.0f;
-  vertices[0].y = -1.0f;
-  vertices[0].z = 0.0f;
-  vertices[0].r = 0.1f;
-
-  vertices[1].x = 1.0f;
-  vertices[1].y = -1.0f;
-  vertices[1].z = 0.0f;
-  vertices[1].r = 0.1f;
-
-  vertices[2].x = 1.0f;
-  vertices[2].y = 1.0f;
-  vertices[2].z = 0.0f;
-  vertices[2].r = 0.1f;
-
-  vertices[3].x = 0.0f;
-  vertices[3].y = 1.0f;
-  vertices[3].z = 0.0f;
-  vertices[3].r = 0.1f;
-
-  hairs[0].vertex = 0;
-  hairs[0].id = 0;
-
-  scene->hairs[scene->numHairSets++] = hair;
-
-  return;
-#endif
-
-  for (size_t i=0; i<numCurves; i++)
-  {
-    float ru = drand48();//frand(seed);
-    float rv = drand48();//frand(seed);
-    //Vec3fa dp0 = sampleSphere(ru,rv); 
-    //Vec3f p0 = Vec3f(0,2,0) + dp0;
-    //Vec3f g = Vec3fa(1,-1,1);
-    Vec3fa du = normalize(Vec3fa(1,0,0));
-    Vec3fa dv = normalize(Vec3fa(0,0,1));
-    Vec3fa dp0 = normalize(Vec3fa(0,1,0));
-    Vec3f ddp0 = Vec3fa(1,0,1);
-    Vec3fa p0 = (2.0f*ru-1.0f)*du + (2.0f*rv-1.0f)*dv;
-    Vec3f pi = p0, dpi = dp0;
-    float ds = 0.1f;
-
-    for (size_t j=0; j<=numCurveSegments; j++) 
-    {
-      bool last = j == numCurveSegments;
-      float ds = 1.0f/float(numCurveSegments);
-      float t = float(j)*ds;
-      pi = p0 + t*dp0 + t*t*ddp0;
-      dpi = dp0 + 2.0f*t*ddp0;
-      //pi = p0 + t*dp0;
-
-      if (j>0) {
-        vertices[i*numCurvePoints+3*j-1].x = pi.x-0.5f*ds*dpi.x;
-        vertices[i*numCurvePoints+3*j-1].y = pi.y-0.5f*ds*dpi.y;
-        vertices[i*numCurvePoints+3*j-1].z = pi.z-0.5f*ds*dpi.z;
-        vertices[i*numCurvePoints+3*j-1].r = R; //last ? 0.0f : R;
-      }
-
-      vertices[i*numCurvePoints+3*j+0].x = pi.x;
-      vertices[i*numCurvePoints+3*j+0].y = pi.y;
-      vertices[i*numCurvePoints+3*j+0].z = pi.z;
-      vertices[i*numCurvePoints+3*j+0].r = last ? 0.0f : R;
-
-      if (j<numCurveSegments) {
-        vertices[i*numCurvePoints+3*j+1].x = pi.x+0.5f*ds*dpi.x;
-        vertices[i*numCurvePoints+3*j+1].y = pi.y+0.5f*ds*dpi.y;
-        vertices[i*numCurvePoints+3*j+1].z = pi.z+0.5f*ds*dpi.z;
-        vertices[i*numCurvePoints+3*j+1].r = R;
-      }
-
-      //dpi += 2.0f*ds*Vec3f(0,-1,0);
-      //pi += ds*dpi; 
-    }
-
-    for (size_t j=0; j<numCurveSegments; j++) {
-      hairs[i*numCurveSegments+j].vertex = i*numCurvePoints+3*j;
-      hairs[i*numCurveSegments+j].id = i;
-    }
-  }
-
-  scene->hairs[scene->numHairSets++] = hair;
-}
-
-/* adds triangulated sphere */
-void addSphere (ISPCScene* scene, Vec3f p, float r)
-{
-  const int numPhi = 50;
-  const int numTheta = 2*numPhi;
-
-  size_t numVertices = numTheta*(numPhi+1);
-  size_t numTriangles = 2*numTheta*(numPhi-1);
-
-  ISPCMesh* mesh = new ISPCMesh;
-  mesh->positions = new Vec3fa[numVertices];
-  mesh->normals = NULL;
-  mesh->texcoords = NULL;
-  mesh->triangles = new ISPCTriangle[numTriangles];
-  mesh->numVertices = numVertices;
-  mesh->numTriangles = numTriangles;
-
-  /* create sphere */
-  int tri = 0;
-  const float rcpNumTheta = rcp((float)numTheta);
-  const float rcpNumPhi   = rcp((float)numPhi);
-  Vertex* vertices = (Vertex*) mesh->positions;
-  ISPCTriangle* triangles = (ISPCTriangle*) mesh->triangles;
-  for (int phi=0; phi<=numPhi; phi++)
-  {
-    for (int theta=0; theta<numTheta; theta++)
-    {
-      const float phif   = phi*float(pi)*rcpNumPhi;
-      const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-
-      Vertex& v = vertices[phi*numTheta+theta];
-      v.x = p.x + r*sin(phif)*sin(thetaf);
-      v.y = p.y + r*cos(phif);
-      v.z = p.z + r*sin(phif)*cos(thetaf);
-    }
-    if (phi == 0) continue;
-
-    for (int theta=1; theta<=numTheta; theta++) 
-    {
-      int p00 = (phi-1)*numTheta+theta-1;
-      int p01 = (phi-1)*numTheta+theta%numTheta;
-      int p10 = phi*numTheta+theta-1;
-      int p11 = phi*numTheta+theta%numTheta;
-
-      if (phi > 1) {
-        triangles[tri].v0 = p10; 
-        triangles[tri].v1 = p00; 
-        triangles[tri].v2 = p01; 
-        tri++;
-      }
-
-      if (phi < numPhi) {
-        triangles[tri].v0 = p11; 
-        triangles[tri].v1 = p10;
-        triangles[tri].v2 = p01;
-        tri++;
-      }
-    }
-  }
-  scene->meshes[scene->numMeshes++] = mesh;
-}
-
-/* adds a ground plane to the scene */
-void addGroundPlane (ISPCScene* scene)
-{
-  ISPCMesh* mesh = new ISPCMesh;
-  mesh->positions = new Vec3fa[4];
-  mesh->normals = NULL;
-  mesh->texcoords = NULL;
-  mesh->triangles = new ISPCTriangle[2];
-  mesh->numVertices = 4;
-  mesh->numTriangles = 2;
-
-  /* set vertices */
-  Vertex* vertices = (Vertex*) mesh->positions;
-  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
-  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
-  vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  
-  /* set triangles */
-  ISPCTriangle* triangles = (ISPCTriangle*) mesh->triangles;
-  triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1; triangles[0].materialID = 0;
-  triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3; triangles[1].materialID = 0;
-
-  scene->meshes[scene->numMeshes++] = mesh;
-}
-
 RTCScene convertScene(ISPCScene* scene_in)
 {
   //scene_in->numHairSets = 0;
@@ -334,27 +130,17 @@ RTCScene convertScene(ISPCScene* scene_in)
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT,RTC_INTERSECT1);
 
-  DBG_PRINT(scene_in->numHairSets);
-
   /* add all hair sets to the scene */
   for (int i=0; i<scene_in->numHairSets; i++)
   {
     /* get ith hair set */
     ISPCHairSet* hair = scene_in->hairs[i];
 
-    DBG_PRINT(hair->numHairs);
-    DBG_PRINT(hair->numVertices);
-
     /* create a hair set */
     unsigned int geomID = rtcNewBezierCurves (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
     rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
-#if USE_INTERSECTION_FILTER
-  rtcSetIntersectionFilterFunction(scene_out,geomID,(RTCFilterFunc)filterDispatch);
-#endif
-#if USE_OCCLUSION_FILTER
-  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)filterDispatch);
-#endif
+    rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)filterDispatch);
   }
 
   /* add all meshes to the scene */
@@ -384,12 +170,7 @@ RTCScene convertScene(ISPCScene* scene_in)
     rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
     rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
 
-#if USE_INTERSECTION_FILTER
-  rtcSetIntersectionFilterFunction(scene_out,geomID,(RTCFilterFunc)filterDispatch);
-#endif
-#if USE_OCCLUSION_FILTER
-  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)filterDispatch);
-#endif
+    rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)filterDispatch);
   }
 
   /* commit changes to scene */
@@ -413,7 +194,6 @@ extern "C" void device_init (int8* cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
-  //renderPixel = renderPixelGeomIDPrimID;
 }
 
 /*! Anisotropic power cosine microfacet distribution. */
@@ -584,8 +364,6 @@ void occlusionFilter(void* ptr, RTCRay2& ray)
   if (T != Vec3fa(0.0f)) ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-#if USE_OCCLUSION_FILTER
-
 Vec3fa occluded(RTCScene scene, RTCRay2& ray)
 {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -598,52 +376,22 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
   return ray.transparency;
 }
 
-#else
-
-Vec3fa occluded(RTCScene scene, RTCRay2& ray)
-{
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = 0;
-  ray.filter = NULL;
-
-  Vec3fa T = 1.0f;
-  while (true) 
-  {
-    rtcIntersect(scene,(RTCRay&)ray);
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) break;
-    if (ray.geomID >= g_ispc_scene->numHairSets) return 0.0f; // make all surfaces opaque
-    T *= hair_Kt;
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.tnear = 1.001f*ray.tfar;
-    ray.tfar = inf;
-  }
-  return T;
-}
-
-#endif
-
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  //int seed = random(); //255*x+13*y+45*g_accu_count;
   int seed = 21344*x+121233*y+234532*g_accu_count;
 
   /* initialize ray */
   RTCRay2 ray;
   ray.org = p;
-  ray.org.w = 0.0f;
   ray.dir = normalize(x*vx + y*vy + vz);
-  Vec3fa dir1 = normalize((x+1)*vx + (y+1)*vy + vz);
-  ray.dir.w = 0.0f; //0.5f*0.707f*length(dir1-ray.dir);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
-  ray.filter = NULL; //(RTCFilterFunc) intersectionFilter;
+  ray.filter = NULL; 
   
   Vec3fa color = Vec3f(0.0f);
   Vec3fa weight = 1.0f;
@@ -662,8 +410,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
       return color + weight*g_ambient_intensity;
 
-    //return Vec3fa(ray.u,ray.v,0.0f);
-  
     /* calculate transmissivity of hair */
     AnisotropicBlinn brdf;
     float tnear_eps = 0.0001f;
@@ -715,10 +461,8 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     /* sample directional light */
     RTCRay2 shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
-    shadow.org.w = 0.0f; //ray.org.w+ray.tfar*ray.dir.w;
     shadow.dir = neg(g_dirlight_direction);
-    shadow.dir.w = 0.0f;
-    shadow.tnear = 0.001f;
+    shadow.tnear = tnear_eps;
     shadow.tfar = inf;
     Vec3fa T = occluded(g_scene,shadow);
     Vec3fa c = brdf.eval(neg(ray.dir),neg(g_dirlight_direction));
@@ -729,20 +473,18 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     Vec3fa wi;
     c = brdf.sample(neg(ray.dir),wi,frand(seed),frand(seed),frand(seed));
     if (wi.w <= 0.0f) return color;
-    if (dot(wi,brdf.dz) < 0.0f)
-      ray.org = ray.org + ray.tfar*ray.dir - tnear_eps*brdf.dz;
-    else
-      ray.org = ray.org + ray.tfar*ray.dir + tnear_eps*brdf.dz;
-    ray.org.w = 0.0f;
+
+    /* calculate secondary ray and offset it out of the hair */
+    float sign = dot(wi,brdf.dz) < 0.0f ? -1.0f : 1.0f;
+    ray.org = ray.org + ray.tfar*ray.dir + sign*tnear_eps*brdf.dz;
     ray.dir = wi;
-    ray.dir.w = 0.0f;
     ray.tnear = 0.001f;
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
     ray.time = 0;
-    ray.filter = NULL; //(RTCFilterFunc) intersectionFilter;
+    ray.filter = NULL;
     weight *= c/wi.w;
 
 #else    
@@ -765,10 +507,8 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   /* initialize ray */
   RTCRay2 ray;
   ray.org = p;
-  ray.org.w = 0.0f;
   ray.dir = normalize(x*vx + y*vy + vz);
   Vec3fa dir1 = normalize((x+1)*vx + (y+1)*vy + vz);
-  ray.dir.w = 0.0f; // 0.5f*0.707f*length(dir1-ray.dir);
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -862,22 +602,8 @@ extern "C" void device_render (int* pixels,
                                const Vec3f& p)
 {
   /* create scene */
-  if (g_scene == NULL) {
-    if (g_ispc_scene == NULL) {
-      ISPCScene* scene = new ISPCScene;
-      scene->materials = NULL;
-      scene->numMaterials = 0;
-      scene->meshes = new ISPCMesh*[1024*1024]; // FIXME: hardcoded maximal number of meshes
-      scene->numMeshes = 0;
-      scene->hairs = new ISPCHairSet*[1024]; // FIXME: hardcoded maximal number of hair sets
-      scene->numHairSets = 0;
-      g_ispc_scene = scene;
-      //addHair(scene);
-      //addSphere(scene,Vec3f(0,2,0),1.0f);
-      //addGroundPlane(scene);
-    }
+  if (g_scene == NULL)
     g_scene = convertScene(g_ispc_scene);
-  }
 
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
