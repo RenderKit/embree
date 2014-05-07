@@ -117,11 +117,11 @@ RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene,                    //!< 
   start vertex of the curve. The vertex buffer stores 4 control points
   per curve, each such control point consists of a single precision
   (x,y,z) position and radius, stored in that order in memory. */
-RTCORE_API unsigned rtcNewBezierCurves (RTCScene scene,                    //!< the scene the curves belong to
-                                                 RTCGeometryFlags flags,            //!< geometry flags
-                                                 size_t numCurves,                  //!< number of curves
-                                                 size_t numVertices,                //!< number of vertices
-                                                 size_t numTimeSteps = 1            //!< number of motion blur time steps
+RTCORE_API unsigned rtcNewHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
+					RTCGeometryFlags flags,            //!< geometry flags
+					size_t numCurves,                  //!< number of curves
+					size_t numVertices,                //!< number of vertices
+					size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
 
 /*! \brief Sets 32 bit ray mask. */

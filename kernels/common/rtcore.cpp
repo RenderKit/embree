@@ -581,10 +581,10 @@ namespace embree
     return -1;
   }
 
-  RTCORE_API unsigned rtcNewBezierCurves (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  RTCORE_API unsigned rtcNewHairGeometry (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     CATCH_BEGIN;
-    TRACE(rtcNewBezierCurves);
+    TRACE(rtcNewHairGeometry);
     VERIFY_HANDLE(scene);
     return ((Scene*)scene)->newBezierCurves(flags,numCurves,numVertices,numTimeSteps);
     CATCH_END;

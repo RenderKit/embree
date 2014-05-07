@@ -106,7 +106,7 @@ uniform unsigned int rtcNewTriangleMesh (RTCScene scene,              //!< the s
   start vertex of the curve. The vertex buffer stores 4 control points
   per curve, each such control point consists of a single precision
   (x,y,z) position and radius, stored in that order in memory. */
-uniform unsigned int rtcNewBezierCurves (RTCScene scene,                    //!< the scene the curves belong to
+uniform unsigned int rtcNewHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
                                                   uniform RTCGeometryFlags flags,    //!< geometry flags
                                                   uniform size_t numCurves,          //!< number of curves
                                                   uniform size_t numVertices,        //!< number of vertices

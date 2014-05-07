@@ -174,7 +174,7 @@ uniform unsigned int rtcNewTriangleMesh (RTCScene scene,
   return ispcNewTriangleMesh(scene,flags,numTriangles,numVertices,numTimeSteps);
 }
 
-uniform unsigned int rtcNewBezierCurves (RTCScene scene,
+uniform unsigned int rtcNewHairGeometry (RTCScene scene,
                                                   uniform RTCGeometryFlags flags,
                                                   uniform size_t numCurves,
                                                   uniform size_t numVertices,

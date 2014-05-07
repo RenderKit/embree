@@ -127,7 +127,7 @@ namespace embree
   }
   
   extern "C" unsigned ispcNewBezierCurves (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
-    return rtcNewBezierCurves(scene,flags,numCurves,numVertices,numTimeSteps);
+    return rtcNewHairGeometry(scene,flags,numCurves,numVertices,numTimeSteps);
   }
   
   extern "C" void ispcSetRayMask (RTCScene scene, unsigned geomID, int mask) {
