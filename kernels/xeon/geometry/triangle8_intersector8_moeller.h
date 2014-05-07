@@ -35,8 +35,9 @@ namespace embree
     /*! Intersects a 8 rays with 8 triangles. */
     static __forceinline void intersect(const avxb& valid_i, Ray8& ray, const Triangle8& tri, const void* geom)
     {
-      for (size_t i=0; i<4 && tri.valid(i); i++)
+      for (size_t i=0; i<8; i++)
       {
+        if (!tri.valid(i)) break;
         STAT3(normal.trav_prims,1,popcnt(valid_i),8);
 
         /* load edges and geometry normal */
@@ -126,8 +127,9 @@ namespace embree
     {
       avxb valid0 = valid_i;
 
-      for (size_t i=0; i<4 && tri.valid(i); i++)
+      for (size_t i=0; i<8; i++)
       {
+        if (!tri.valid(i)) break;
         STAT3(shadow.trav_prims,1,popcnt(valid_i),8);
 
         /* load edges and geometry normal */
