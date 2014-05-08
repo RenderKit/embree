@@ -1,6 +1,5 @@
 
-all: www/index.html www/api.html www/tutorials.html www/downloads.html www/renderer.html ../readme.txt
-# ../readme.pdf 
+all: www/index.html www/api.html www/tutorials.html www/downloads.html www/renderer.html ../readme.txt ../readme.pdf 
 
 replace=sed -e '/<CONTENT_OVERVIEW>/{r src/overview.html' -e 'd' -e '}' -e '/<CONTENT_NEW_FEATURES>/{r src/new_features.html' -e 'd' -e '};' -e '/<CONTENT_SUPPORT>/{r src/support.html' -e 'd' -e '};' -e '/<CONTENT_PLATFORMS>/{r src/platforms.html' -e 'd' -e '};' -e '/<CONTENT_DOWNLOADING>/{r src/downloading.html' -e 'd' -e '};' -e '/<CONTENT_COMPILATION>/{r src/compilation.html' -e 'd' -e '};' -e '/<CONTENT_API>/{r src/api.html' -e 'd' -e '};' -e '/<CONTENT_TUTORIALS>/{r src/tutorials.html' -e 'd' -e '};' -e '/<CONTENT_RENDERER>/{r src/renderer.html' -e 'd' -e '};' $(1) > $(2)
 
