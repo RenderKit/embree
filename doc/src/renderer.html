@@ -31,9 +31,9 @@ instructions below:</p>
 <p>Alternatively you can also use <code>git</code> to get the latest Embree Example
 Renderer 2.2:</p>
       
-<pre><code>$ git clone https://github.com/embree/embree-renderer.git embree-renderer
+<p><pre><code>$ git clone https://github.com/embree/embree-renderer.git embree-renderer
 $ cd embree-renderer
-$ git checkout v2.2</code></pre>
+$ git checkout v2.2</code></pre><p>
 
 <p>If you encounter bugs please report them to the <a
   href="https://github.com/embree/embree-renderer/issues">GitHub Issue
@@ -68,9 +68,9 @@ device_ispc project from the solution file.</p>
 <p>To compile the Embree Example Renderer using CMake create a build
 directory and execute "ccmake .." inside this directory.</p>
 
-<pre><code>mkdir build
+<p><pre><code>mkdir build
 cd build
-ccmake ..</code></pre>
+ccmake ..</code></pre><p>
 
 <p>This will open a configuration dialog where you should set the build
 mode to “Release” and the compiler to either GCC, CLANG, or ICC. You can
@@ -112,7 +112,7 @@ use Embree on Xeon Phi).</p>
 and leave the configuration. The code can now be compiled by executing
 make. The executables will be generated in the build folder.</p>
 
-<pre><code>make</code></pre>
+<p><pre><code>make</code></pre><p>
 
 <h3>Using the Embree Example Renderer</h3>
 
@@ -124,11 +124,11 @@ command line will render the Cornell Box scene with 16 samples per
 pixel and write the resulting image to the file cornell_box.tga in the
 current directory:</p>
 
-<pre><code>./renderer -c ../models/cornell_box.ecs -spp 16 -o cornell_box.tga</code></pre>
+<p><pre><code>./renderer -c ../models/cornell_box.ecs -spp 16 -o cornell_box.tga</code></pre><p>
 
 <p>To interactively display the same scene, enter the following command:</p>
 
-<pre><code>./renderer -c ../models/cornell_box.ecs</code></pre>
+<p><pre><code>./renderer -c ../models/cornell_box.ecs</code></pre><p>
 
 <p>A window will open and you can control the camera using the mouse and
 keyboard. Pressing c in interactive mode outputs the current camera
@@ -139,23 +139,23 @@ mode.</p>
 different device use the <code>-device</code> command line parameter
 as first argument:</p>
 
-<pre><code>./renderer -device singleray -c ../models/cornell_box.ecs
+<p><pre><code>./renderer -device singleray -c ../models/cornell_box.ecs
 ./renderer -device ispc -c ../models/cornell_box.ecs
 
 ./renderer -device singleray_xeonphi -c ../../models/cornell_box.ecs
 ./renderer -device ispc_xeonphi -c ../../models/cornell_box.ecs
-</code></pre>
+</code></pre><p>
 
 <h4>Network Mode</h4>
 
 <p>For using the network device start the render server on some machine:</p>
 
-<pre><code>renderer_server</code></pre>
+<p><pre><code>renderer_server</code></pre><p>
 
 <p>Make sure that port 8484 is not blocked by the firewall. Now you can 
 connect from a second machine to the render server:</p>
 
-<pre><code>renderer -connect ip_of_render_server -c ../../models/cornell_box.ecs</code></pre>
+<p><pre><code>renderer -connect ip_of_render_server -c ../../models/cornell_box.ecs</code></pre><p>
   
 <h4>Navigation</h4>
 
