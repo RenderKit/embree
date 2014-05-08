@@ -229,19 +229,12 @@ ENDIF ()
 INSTALL(DIRECTORY include/embree2 DESTINATION include FILES_MATCHING PATTERN "*.h")
 INSTALL(DIRECTORY include/embree2 DESTINATION include FILES_MATCHING PATTERN "*.isph")
 
-
 # ##################################################################
 # Create Documentation. Call via 'make doc'
 # ##################################################################
-FIND_PACKAGE(Doxygen)
-IF(DOXYGEN_FOUND)
-	CONFIGURE_FILE(
-		${CMAKE_CURRENT_SOURCE_DIR}/doc/dox/doxygen_config
-		${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-	ADD_CUSTOM_TARGET(doc
-		${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-		COMMENT "Generating Doxygen documentation" VERBATIM
-		)
-ENDIF(DOXYGEN_FOUND)
+
+ADD_CUSTOM_TARGET(doc
+  make -C ${CMAKE_CURRENT_SOURCE_DIR}/doc
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc 
+  COMMENT "Generating documentation" VERBATIM)
 
