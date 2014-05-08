@@ -1,0 +1,55 @@
+ OL.indents = 4 3 2
+ UL.indents = 3 2 1
+ UL.default_types = DISC DISC DISC
+ LI.square_bullet = *
+ LI.circle_bullet = *
+ HR.marker = -
+ HR.vspace.before = 1
+ HR.vspace.after = 1
+ H1.prefix = = 
+ H2.prefix = == 
+ H3.prefix = === 
+ H4.prefix = ==== 
+ H5.prefix = ===== 
+ H1.suffix = \  =
+ H2.suffix = \  ==
+ H3.suffix = \  ===
+ H4.suffix = \  ====
+ H5.suffix = \  =====
+ H1.vspace.before = 0
+ H2.vspace.before = 0
+ H3.vspace.before = 0
+ H4.vspace.before = 0
+ H5.vspace.before = 0
+ H1.vspace.after = 1
+ H2.vspace.after = 1
+ H3.vspace.after = 1
+ H4.vspace.after = 1
+ H5.vspace.after = 1
+ PRE.indent.left = 1
+ PRE.indent.right = 1
+ P.vspace.before = 0
+ P.vspace.after = 1
+ BLOCKQUOTE.vspace.before = 1
+ BLOCKQUOTE.vspace.after = 1
+ BLOCKQUOTE.indent.left = 2
+ BLOCKQUOTE.indent.right = 1
+ ADDRESS.vspace.before = 1
+ ADDRESS.vspace.after = 1
+ ADDRESS.indent.left = 2
+ ADDRESS.indent.right = 1
+ TABLE.vspace.before = 1
+ TABLE.vspace.after = 1
+ H1.attributes = NONE
+ H2.attributes = NONE
+ H3.attributes = NONE
+ H4.attributes = NONE
+ H5.attributes = NONE
+ U.attributes = NONE
+ B.attributes = NONE
+ EM.attributes = NONE
+ STRONG.attributes = NONE
+ STRIKE.attributes = NONE
+ A.attributes.internal_link = BOLD
+ A.attributes.external_link = BOLD
+ IMG.replace.all =
