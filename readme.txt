@@ -1,6 +1,4 @@
-Embree: High Performance Ray Tracing Kernels
-
-= Embree: High Performance Ray Tracing Kernels  =
+= Embree: High Performance Ray Tracing Kernels 2.3 (alpha)  =
 
 == Embree Overview  ==
 

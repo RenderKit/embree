@@ -42,7 +42,7 @@
 #include <vector>
 #include <algorithm>
 
-#define __EMBREE_VERSION__ "2.2"
+#include "../version.h"
 
 #define ERROR(x) \
   throw std::runtime_error(x)

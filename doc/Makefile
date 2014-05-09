@@ -11,24 +11,28 @@ replace=sed \
 -e '/<CONTENT_API>/{r src/api.html' -e 'd' -e '};' \
 -e '/<CONTENT_TUTORIALS>/{r src/tutorials.html' -e 'd' -e '};' \
 -e '/<CONTENT_RENDERER>/{r src/renderer.html' -e 'd' -e '};' \
+-e '/<EMBREE_VERSION>/{r version' -e 'd' -e '};' \
 $(1) > $(2)
 
-www/index.html: src/*.html src/www/frame_index.html
+version: ../kernels/version.h
+	sed 's/.*\"\(.*\)\".*/\1/g' $< > $@
+
+www/index.html: version src/*.html src/www/frame_index.html
 	$(call replace,src/www/frame_index.html,www/index.html)
 
-www/api.html: src/*.html src/www/frame_api.html
+www/api.html: version src/*.html src/www/frame_api.html
 	$(call replace,src/www/frame_api.html,www/api.html)
 
-www/tutorials.html: src/*.html src/www/frame_tutorials.html
+www/tutorials.html: version src/*.html src/www/frame_tutorials.html
 	$(call replace,src/www/frame_tutorials.html,www/tutorials.html)
 
-www/downloads.html: src/*.html src/www/frame_downloads.html
+www/downloads.html: version src/*.html src/www/frame_downloads.html
 	$(call replace,src/www/frame_downloads.html,www/downloads.html)
 
-www/renderer.html: src/*.html src/www/frame_renderer.html
+www/renderer.html: version src/*.html src/www/frame_renderer.html
 	$(call replace,src/www/frame_renderer.html,www/renderer.html)
 
-readme.html: src/*.html
+readme.html: version src/*.html
 	$(call replace,src/readme.html,readme.html)
 
 ../readme.txt: readme.html
@@ -41,6 +45,7 @@ readme.html: src/*.html
 	cp readme.pdf ..
 
 clean:
+	rm version
 	rm readme.txt
 	rm readme.pdf
 	rm readme.ps
