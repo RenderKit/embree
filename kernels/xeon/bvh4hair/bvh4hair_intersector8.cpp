@@ -14,16 +14,16 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4hair_intersector1.h"
-#include "geometry/bezier1_intersector1.h"
-#include "geometry/bezier1i_intersector1.h"
+#include "bvh4hair_intersector8.h"
+#include "geometry/bezier1_intersector8.h"
+#include "geometry/bezier1i_intersector8.h"
 
 namespace embree
 { 
   namespace isa
   {
     template<typename PrimitiveIntersector>
-    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::AlignedNode* node, 
+    __forceinline size_t BVH4HairIntersector8<PrimitiveIntersector>::intersectBox(const BVH4Hair::AlignedNode* node, 
                                                                                   const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, 
                                                                                   const size_t nearX, const size_t nearY, const size_t nearZ,
                                                                                   ssef& tNear, ssef& tFar)
@@ -60,7 +60,7 @@ namespace embree
     }
 
     template<typename PrimitiveIntersector>
-    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::CompressedUnalignedNode* node, Ray& ray, 
+    __forceinline size_t BVH4HairIntersector8<PrimitiveIntersector>::intersectBox(const BVH4Hair::CompressedUnalignedNode* node,
                                                                                   const sse3f& ray_org, const sse3f& ray_dir, 
                                                                                   ssef& tNear, ssef& tFar)
     {
@@ -103,7 +103,7 @@ namespace embree
     }
 
     template<typename PrimitiveIntersector>
-    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::UncompressedUnalignedNode* node, Ray& ray, 
+    __forceinline size_t BVH4HairIntersector8<PrimitiveIntersector>::intersectBox(const BVH4Hair::UncompressedUnalignedNode* node,
                                                                                   const sse3f& ray_org, const sse3f& ray_dir, 
                                                                                   ssef& tNear, ssef& tFar)
     {
@@ -141,30 +141,32 @@ namespace embree
     }
 
     template<typename PrimitiveIntersector>
-    void BVH4HairIntersector1<PrimitiveIntersector>::intersect(const BVH4Hair* bvh, Ray& ray)
+    __forceinline void BVH4HairIntersector8<PrimitiveIntersector>::intersect_k(const BVH4Hair* bvh, Ray8& ray, const size_t k)
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      typename PrimitiveIntersector::Precalculations pre(ray);
+      typename PrimitiveIntersector::Precalculations pre(ray,k);
 
       /*! stack state */
       StackItemNearFar stack[stackSize];  //!< stack of nodes 
       StackItemNearFar* stackPtr = stack+1;        //!< current stack pointer
       StackItemNearFar* stackEnd = stack+stackSize;
       stack[0].ref = bvh->root;
-      stack[0].tNear = ray.tnear;
-      stack[0].tFar = ray.tfar;
+      stack[0].tNear = ray.tnear[k];
+      stack[0].tFar = ray.tfar[k];
       
       /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray.dir.x >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
-      const size_t nearY = ray.dir.y >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
-      const size_t nearZ = ray.dir.z >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
+      const size_t nearX = ray.dir.x[k] >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
+      const size_t nearY = ray.dir.y[k] >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
+      const size_t nearZ = ray.dir.z[k] >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
       
       /*! load the ray into SIMD registers */
-      const sse3f org(ray.org.x,ray.org.y,ray.org.z);
-      const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
-      const Vec3fa ray_rdir = rcp_safe(ray.dir);
+      const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
+      const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
+      const sse3f org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
+      const sse3f dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
+      const Vec3fa ray_rdir = rcp_safe(ray_dir);
       const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-      const Vec3fa ray_org_rdir = ray.org*ray_rdir;
+      const Vec3fa ray_org_rdir = ray_org*ray_rdir;
       const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
 
       /* pop loop */
@@ -172,13 +174,10 @@ namespace embree
       {
         /*! pop next node */
         if (unlikely(stackPtr == stack)) break;
-        /*for (size_t i=1; i<stackPtr-&stack[0]; i++)
-          if (stack[i-1].tNear < stack[i+0].tNear)
-            StackItemNearFar::swap2(stack[i-1],stack[i+0]);*/
         stackPtr--;
         NodeRef cur = NodeRef(stackPtr->ref);
         ssef tNear = stackPtr->tNear;
-        ssef tFar = min(stackPtr->tFar,ray.tfar);
+        ssef tFar = min(stackPtr->tFar,ray.tfar[k]);
         
         /*! if popped node is too far, pop next one */
         if (unlikely(_mm_cvtss_f32(tNear) > _mm_cvtss_f32(tFar)))
@@ -194,7 +193,7 @@ namespace embree
 
           /*! process nodes with unaligned bounds */
           else if (unlikely(cur.isUnalignedNode()))
-            mask = intersectBox(cur.unalignedNode(),ray,org,dir,tNear,tFar);
+            mask = intersectBox(cur.unalignedNode(),org,dir,tNear,tFar);
 
           /*! otherwise this is a leaf */
           else break;
@@ -266,36 +265,45 @@ namespace embree
         /*! this is a leaf node */
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
-        PrimitiveIntersector::intersect(pre,ray,prim,num,bvh->scene);
+        PrimitiveIntersector::intersect(pre,ray,k,prim,num,bvh->scene);
       }
       AVX_ZERO_UPPER();
     }
 
     template<typename PrimitiveIntersector>
-    void BVH4HairIntersector1<PrimitiveIntersector>::occluded(const BVH4Hair* bvh, Ray& ray) 
+    void BVH4HairIntersector8<PrimitiveIntersector>::intersect(avxb* valid_in, const BVH4Hair* bvh, Ray8& ray)
+    {
+      int mask = movemask(*valid_in);
+      while (mask) intersect_k(bvh,ray,__bscf(mask));
+    }
+
+    template<typename PrimitiveIntersector>
+    void BVH4HairIntersector8<PrimitiveIntersector>::occluded_k(const BVH4Hair* bvh, Ray8& ray, const size_t k) 
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      typename PrimitiveIntersector::Precalculations pre(ray);
+      typename PrimitiveIntersector::Precalculations pre(ray,k);
 
       /*! stack state */
       StackItemNearFar stack[stackSize];  //!< stack of nodes 
       StackItemNearFar* stackPtr = stack+1;        //!< current stack pointer
       StackItemNearFar* stackEnd = stack+stackSize;
       stack[0].ref = bvh->root;
-      stack[0].tNear = ray.tnear;
-      stack[0].tFar = ray.tfar;
+      stack[0].tNear = ray.tnear[k];
+      stack[0].tFar = ray.tfar[k];
       
       /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray.dir.x >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
-      const size_t nearY = ray.dir.y >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
-      const size_t nearZ = ray.dir.z >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
+      const size_t nearX = ray.dir.x[k] >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
+      const size_t nearY = ray.dir.y[k] >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
+      const size_t nearZ = ray.dir.z[k] >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
       
       /*! load the ray into SIMD registers */
-      const sse3f org(ray.org.x,ray.org.y,ray.org.z);
-      const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
-      const Vec3fa ray_rdir = rcp_safe(ray.dir);
+      const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
+      const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
+      const sse3f org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
+      const sse3f dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
+      const Vec3fa ray_rdir = rcp_safe(ray_dir);
       const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-      const Vec3fa ray_org_rdir = ray.org*ray_rdir;
+      const Vec3fa ray_org_rdir = ray_org*ray_rdir;
       const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
 
       /* pop loop */
@@ -306,7 +314,7 @@ namespace embree
         stackPtr--;
         NodeRef cur = NodeRef(stackPtr->ref);
         ssef tNear = stackPtr->tNear;
-        ssef tFar = min(stackPtr->tFar,ray.tfar);
+        ssef tFar = min(stackPtr->tFar,ray.tfar[k]);
         
         /*! if popped node is too far, pop next one */
         if (unlikely(_mm_cvtss_f32(tNear) > _mm_cvtss_f32(tFar)))
@@ -322,7 +330,7 @@ namespace embree
 
           /*! process nodes with unaligned bounds */
           else if (unlikely(cur.isUnalignedNode()))
-            mask = intersectBox(cur.unalignedNode(),ray,org,dir,tNear,tFar);
+            mask = intersectBox(cur.unalignedNode(),org,dir,tNear,tFar);
 
           /*! otherwise this is a leaf */
           else break;
@@ -385,15 +393,22 @@ namespace embree
         /*! this is a leaf node */
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
-        if (PrimitiveIntersector::occluded(pre,ray,prim,num,bvh->scene)) {
-          ray.geomID = 0;
+        if (PrimitiveIntersector::occluded(pre,ray,k,prim,num,bvh->scene)) {
+          ray.geomID[k] = 0;
           break;
         }
       }
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR1(BVH4HairBezier1Intersector1,BVH4HairIntersector1<Bezier1Intersector1>);
-    DEFINE_INTERSECTOR1(BVH4HairBezier1iIntersector1,BVH4HairIntersector1<Bezier1iIntersector1>);
+    template<typename PrimitiveIntersector>
+    void BVH4HairIntersector8<PrimitiveIntersector>::occluded(avxb* valid_in, const BVH4Hair* bvh, Ray8& ray)
+    {
+      int mask = movemask(*valid_in);
+      while (mask) occluded_k(bvh,ray,__bscf(mask));
+    }
+
+    DEFINE_INTERSECTOR8(BVH4HairBezier1Intersector8,BVH4HairIntersector8<Bezier1Intersector8>);
+    DEFINE_INTERSECTOR8(BVH4HairBezier1iIntersector8,BVH4HairIntersector8<Bezier1iIntersector8>);
   }
 }

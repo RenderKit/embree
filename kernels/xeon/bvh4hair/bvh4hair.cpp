@@ -20,7 +20,12 @@
 namespace embree
 {
   DECLARE_SYMBOL(Accel::Intersector1,BVH4HairBezier1Intersector1);
+  DECLARE_SYMBOL(Accel::Intersector4,BVH4HairBezier1Intersector4);
+  DECLARE_SYMBOL(Accel::Intersector8,BVH4HairBezier1Intersector8);
+
   DECLARE_SYMBOL(Accel::Intersector1,BVH4HairBezier1iIntersector1);
+  DECLARE_SYMBOL(Accel::Intersector4,BVH4HairBezier1iIntersector4);
+  DECLARE_SYMBOL(Accel::Intersector8,BVH4HairBezier1iIntersector8);
 
   DECLARE_FUNCTION_SYMBOL(Builder*   BVH4HairBuilder_  (BVH4Hair* bvh, Scene* scene));
   static                  Builder* (*BVH4HairBuilder_) (BVH4Hair* bvh, Scene* scene);
@@ -29,8 +34,14 @@ namespace embree
   {
     int features = getCPUFeatures();
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4HairBuilder_);
+
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4HairBezier1Intersector1);
+    SELECT_SYMBOL_DEFAULT(features,BVH4HairBezier1Intersector4);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH4HairBezier1Intersector8);
+
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4HairBezier1iIntersector1);
+    SELECT_SYMBOL_DEFAULT(features,BVH4HairBezier1iIntersector4);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH4HairBezier1iIntersector8);
   }
 
   BVH4Hair::BVH4Hair (const PrimitiveType& primTy, Scene* scene) 
@@ -44,8 +55,8 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1 = BVH4HairBezier1Intersector1;
-    intersectors.intersector4 = NULL;
-    intersectors.intersector8 = NULL;
+    intersectors.intersector4 = BVH4HairBezier1Intersector4;
+    intersectors.intersector8 = BVH4HairBezier1Intersector8;
     intersectors.intersector16 = NULL;
     return intersectors;
   }
@@ -55,8 +66,8 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1 = BVH4HairBezier1iIntersector1;
-    intersectors.intersector4 = NULL;
-    intersectors.intersector8 = NULL;
+    intersectors.intersector4 = BVH4HairBezier1iIntersector4;
+    intersectors.intersector8 = BVH4HairBezier1iIntersector8;
     intersectors.intersector16 = NULL;
     return intersectors;
   }
