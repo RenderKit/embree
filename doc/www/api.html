@@ -242,7 +242,7 @@ from geometry IDs to its own geometry representation.</p>
 <h4>Triangle Meshes</h4>
 
 <p>Triangle meshes are created using the
-<code>rtcNewTriangle</code> mesh function call, and potentially
+<code>rtcNewTriangleMesh</code> function call, and potentially
 deleted using the <code>rtcDeleteGeometry</code> function call.</p>
 
 <p>The number of triangles, number of vertices, and number of time
@@ -293,32 +293,61 @@ Triangle* triangles = (Triangle*) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
 rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
 </code></pre></p>
 
-<p>A triangle mesh with linear motion blur support is created by
-setting the number of time steps to 2 at mesh construction
-time. Specifying a number of time steps of 0 or larger than 2 is invalid. For
-a triangle mesh with linear motion blur, the user has to set the
-<code>RTC_VERTEX_BUFFER0</code> and <code>RTC_VERTEX_BUFFER1</code>
-vertex arrays, one for each time step. If a scene contains triangle
-meshes with linear motion blur, the user has to set the
-<code>time</code> member of the ray to a value in the range [0,1]. The
-ray will intersect the scene with the vertices of the two time steps
-linearly interpolated to this specified time. Each ray can specify a
-different time, even inside a ray packet.</p>
+<p>Also see tutorial00 for an example of how to create triangle meshes.</p>
 
-<p>A 32 bit geometry mask can be assigned to triangle mesh geometries
-using the <code>rtcSetMask</code> call.</p>
+<h4>Hair Geometry</h4>
 
-<p><pre><code>rtcSetMask(scene,geomID,mask);</code></pre></p>
+<p>Creates a new hair geometry, 
 
-<p>Only if the bitwise <code>and</code> operation of this mask with
-the mask stored inside the ray is not 0, triangles of this mesh are
-hit by a ray. This feature can be used to disable selected triangle
-meshes for specifically tagged rays, e.g. to disable shadow casting
-for some geometry. This API feature is disabled in Embree by default
-at compile time, and can be enabled in cmake through the
-<code>RTCORE_ENABLE_RAY_MASK</code> parameter.</p>
+<p>Hair geometries are supported, which consist of multiple hairs
+represented as cubic bezier curves with varying radius per control
+point. Individual hairs are considered to be subpixel sized which
+allows the implementation to approximate the intersection
+calculation. This in particular means that zooming onto one hair might
+show geometric artefacts.</p>
 
-<p>See tutorial00 for an example of how to create triangle meshes.</p>
+<p>Hair geometries are created using the
+<code>rtcNewHairGeometry</code> function call, and potentially
+deleted using the <code>rtcDeleteGeometry</code> function call.</p>
+
+<p>The number of hair curves, number of vertices, and number of time
+  steps (1 for normal curves, and 2 for linear motion blur), have to
+  get specified at construction time. </p>
+
+<p>The curve indices can be set by mapping and writing to the index
+buffer (<code>RTC_INDEX_BUFFER</code>) and the control vertices can be
+set by mapping and writing into the vertex buffer
+(<code>RTC_VERTEX_BUFFER</code>). In case of linear motion blur, two
+vertex buffers (RTC_VERTEX_BUFFER0 and RTC_VERTEX_BUFFER1) have to get
+filled, one for each time step.</p>
+
+<p>The index buffer contains an array of 32 bit indices pointing to
+the ID of the first of four control vertices, while the vertex buffer
+stores all control pointing of a single precision position and radius
+stored in x,y,z,r order in memory. All buffers have to get unmapped
+before an <code>rtcCommit</code> call to the scene.</p>
+ 
+<p> Like for triangle meshes, thee user can also specify a geometry
+mask and additional flags that choose the strategy to handle that mesh
+in dynamic scenes.</p>
+
+<p>The following example demonstrates howto create some hair geometry:</p>
+
+<p><pre><code>
+unsigned geomID = rtcNewHairGeometry(scene,geomFlags,numCurves,numVertices,1); 
+
+struct Vertex   { float x,y,z,r; };
+
+Vertex* vertices = (Vertex*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER);
+// fill vertices here
+rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER);
+
+int* triangles = (int*) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+// fill indices here
+rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+</code></pre></p>
+
+<p>Also see tutorial07 for an example of how to create and use hair geometry.</p>
 
 <h4>User Defined Geometry</h4>
 
@@ -458,63 +487,6 @@ space.</code>
 
 <p>See tutorial04 for an example of how to use instances.</p>
 
-<h4>Buffer Sharing</h4> 
-
-<p>Embree supports sharing of buffers with the application. Each buffer
-that can be mapped for a specific geometry can also be shared with the
-application, by pass a pointer, offset, and stride of the application
-side buffer using the <code>rtcSetBuffer</code> API function.</p>
-
-<p><pre><code>void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, 
-                  void* ptr, size_t offset, size_t stride);</code></pre></p>
-
-<p>The <code>rtcSetBuffer</code> function has to get called before any
-call to <code>rtcMapBuffer</code> for that buffer, otherwise the
-buffer will get allocated internally and the call to
-<code>rtcSetBuffer</code> will fail. The buffer has to remain valid as
-long as the geometry exists, and the user is responsible to free the
-buffer when the geometry gets deleted. 
-
-When a buffer is shared, it is safe to modify that buffer without
-mapping and unmapping it. However, for dynamic scenes one still has to
-call <code>rtcModified</code> for modified geometries and the buffer
-data has to stay constant from the <code>rtcCommit</code> call to
-after the last ray query invokation.</p>
-
-<p>The <code>offset</code> parameter specifies a byte offset to the
-start of the first element and the <code>stride</code> parameter
-specifies a byte stride between the different elements of the shared
-buffer. This support for offset and stride allows the application
-quite some freedom in the data layout of these buffers, however, some
-restrictions apply. Index buffers always store 32 bit indices and
-vertex buffers always store single precision floating point data. The
-start address ptr+offset and stride always have to be aligned to 4
-bytes on Xeon CPUs and 16 bytes on Xeon Phi accelerators, otherwise
-the <code>rtcSetBuffer</code> function will fail. For vertex buffers,
-the 4 bytes after the z-coordinate of the last vertex have to be
-readable memory, thus padding is required for some layouts.</p>
-
-<p>The following is an example of howto create a mesh with shared index
-and vertex buffers:</p>
-
-<p><pre><code>unsigned geomID = rtcNewTriangleMesh(scene,geomFlags,numTriangles,numVertices,1);
-rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexPtr,0,3*sizeof(float));
-rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,indexPtr ,0,3*sizeof(int));
-</code></pre></p>
-
-<p>Sharing buffers can significantly reduce the memory required by the
-application, thus we recommend using this feature. When enabling the
-<code>RTC_COMPACT</code> scene flag, the spatial index structures of
-Embree might also share the vertex buffer, resulting in even higher
-memory savings.</p>
-
-<p>The support for offset and stride is enabled by default, but can
-get disabled at compile time using the
-<code>RTCORE_BUFFER_STRIDE</code> parameter in cmake. Disabling this
-feature enables the default offset and stride which increases
-performance of spatial index structure build, thus can be useful for
-dynamic content.</p>
-
 <h3>Ray Queries</h3>
 
 <p>The API supports finding the closest hit of a ray segment with the
@@ -622,6 +594,92 @@ set to 0. Other hit information of the ray is undefined after
 calling <code>rtcOccluded</code>.</p>
 
 <p>See tutorial00 for an example of how to trace rays.</p>
+
+<h3>Buffer Sharing</h3> 
+
+<p>Embree supports sharing of buffers with the application. Each buffer
+that can be mapped for a specific geometry can also be shared with the
+application, by pass a pointer, offset, and stride of the application
+side buffer using the <code>rtcSetBuffer</code> API function.</p>
+
+<p><pre><code>void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, 
+                  void* ptr, size_t offset, size_t stride);</code></pre></p>
+
+<p>The <code>rtcSetBuffer</code> function has to get called before any
+call to <code>rtcMapBuffer</code> for that buffer, otherwise the
+buffer will get allocated internally and the call to
+<code>rtcSetBuffer</code> will fail. The buffer has to remain valid as
+long as the geometry exists, and the user is responsible to free the
+buffer when the geometry gets deleted. 
+
+When a buffer is shared, it is safe to modify that buffer without
+mapping and unmapping it. However, for dynamic scenes one still has to
+call <code>rtcModified</code> for modified geometries and the buffer
+data has to stay constant from the <code>rtcCommit</code> call to
+after the last ray query invokation.</p>
+
+<p>The <code>offset</code> parameter specifies a byte offset to the
+start of the first element and the <code>stride</code> parameter
+specifies a byte stride between the different elements of the shared
+buffer. This support for offset and stride allows the application
+quite some freedom in the data layout of these buffers, however, some
+restrictions apply. Index buffers always store 32 bit indices and
+vertex buffers always store single precision floating point data. The
+start address ptr+offset and stride always have to be aligned to 4
+bytes on Xeon CPUs and 16 bytes on Xeon Phi accelerators, otherwise
+the <code>rtcSetBuffer</code> function will fail. For vertex buffers,
+the 4 bytes after the z-coordinate of the last vertex have to be
+readable memory, thus padding is required for some layouts.</p>
+
+<p>The following is an example of howto create a mesh with shared index
+and vertex buffers:</p>
+
+<p><pre><code>unsigned geomID = rtcNewTriangleMesh(scene,geomFlags,numTriangles,numVertices,1);
+rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexPtr,0,3*sizeof(float));
+rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,indexPtr ,0,3*sizeof(int));
+</code></pre></p>
+
+<p>Sharing buffers can significantly reduce the memory required by the
+application, thus we recommend using this feature. When enabling the
+<code>RTC_COMPACT</code> scene flag, the spatial index structures of
+Embree might also share the vertex buffer, resulting in even higher
+memory savings.</p>
+
+<p>The support for offset and stride is enabled by default, but can
+get disabled at compile time using the
+<code>RTCORE_BUFFER_STRIDE</code> parameter in cmake. Disabling this
+feature enables the default offset and stride which increases
+performance of spatial index structure build, thus can be useful for
+dynamic content.</p>
+
+<h3>Linear Motion Blur</h3>
+
+<p>A triangle mesh or hair geometry with linear motion blur support is created by
+setting the number of time steps to 2 at geometry construction
+time. Specifying a number of time steps of 0 or larger than 2 is invalid. For
+a triangle mesh or hair geometry with linear motion blur, the user has to set the
+<code>RTC_VERTEX_BUFFER0</code> and <code>RTC_VERTEX_BUFFER1</code>
+vertex arrays, one for each time step. If a scene contains geometris
+with linear motion blur, the user has to set the
+<code>time</code> member of the ray to a value in the range [0,1]. The
+ray will intersect the scene with the vertices of the two time steps
+linearly interpolated to this specified time. Each ray can specify a
+different time, even inside a ray packet.</p>
+
+<h3>Geometry Mask</h3>
+
+<p>A 32 bit geometry mask can be assigned to triangle meshs and hair geometries
+using the <code>rtcSetMask</code> call.</p>
+
+<p><pre><code>rtcSetMask(scene,geomID,mask);</code></pre></p>
+
+<p>Only if the bitwise <code>and</code> operation of this mask with
+the mask stored inside the ray is not 0, primitives of this geometry are
+hit by a ray. This feature can be used to disable selected triangle
+  mesh or hair geometries for specifically tagged rays, e.g. to disable shadow casting
+for some geometry. This API feature is disabled in Embree by default
+at compile time, and can be enabled in cmake through the
+<code>RTCORE_ENABLE_RAY_MASK</code> parameter.</p>
 
 <h3>Filter Functions</h3>
 

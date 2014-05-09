@@ -1,4 +1,6 @@
-= Embree Ray Tracing Kernels  =
+Embree: High Performance Ray Tracing Kernels
+
+= Embree: High Performance Ray Tracing Kernels  =
 
 == Embree Overview  ==
 
@@ -384,7 +386,7 @@ its own geometry representation.
 
 ==== Triangle Meshes  ====
 
-Triangle meshes are created using the rtcNewTriangle mesh function call, and
+Triangle meshes are created using the rtcNewTriangleMesh function call, and
 potentially deleted using the rtcDeleteGeometry function call.
 
 The number of triangles, number of vertices, and number of time steps (1 for
@@ -438,29 +440,57 @@ rtcCommit call to the scene.
  // fill triangle indices here
  rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
 
-A triangle mesh with linear motion blur support is created by setting the
-number of time steps to 2 at mesh construction time. Specifying a number of
-time steps of 0 or larger than 2 is invalid. For a triangle mesh with linear
-motion blur, the user has to set the RTC_VERTEX_BUFFER0 and RTC_VERTEX_BUFFER1
-vertex arrays, one for each time step. If a scene contains triangle meshes with
-linear motion blur, the user has to set the time member of the ray to a value
-in the range [0,1]. The ray will intersect the scene with the vertices of the
-two time steps linearly interpolated to this specified time. Each ray can
-specify a different time, even inside a ray packet.
+Also see tutorial00 for an example of how to create triangle meshes.
 
-A 32 bit geometry mask can be assigned to triangle mesh geometries using the
-rtcSetMask call.
+==== Hair Geometry  ====
 
- rtcSetMask(scene,geomID,mask);
+Creates a new hair geometry,
 
-Only if the bitwise and operation of this mask with the mask stored inside the
-ray is not 0, triangles of this mesh are hit by a ray. This feature can be used
-to disable selected triangle meshes for specifically tagged rays, e.g. to
-disable shadow casting for some geometry. This API feature is disabled in
-Embree by default at compile time, and can be enabled in cmake through the
-RTCORE_ENABLE_RAY_MASK parameter.
+Hair geometries are supported, which consist of multiple hairs represented as
+cubic bezier curves with varying radius per control point. Individual hairs are
+considered to be subpixel sized which allows the implementation to approximate
+the intersection calculation. This in particular means that zooming onto one
+hair might show geometric artefacts.
 
-See tutorial00 for an example of how to create triangle meshes.
+Hair geometries are created using the rtcNewHairGeometry function call, and
+potentially deleted using the rtcDeleteGeometry function call.
+
+The number of hair curves, number of vertices, and number of time steps (1 for
+normal curves, and 2 for linear motion blur), have to get specified at
+construction time.
+
+The curve indices can be set by mapping and writing to the index buffer
+(RTC_INDEX_BUFFER) and the control vertices can be set by mapping and writing
+into the vertex buffer (RTC_VERTEX_BUFFER). In case of linear motion blur, two
+vertex buffers (RTC_VERTEX_BUFFER0 and RTC_VERTEX_BUFFER1) have to get filled,
+one for each time step.
+
+The index buffer contains an array of 32 bit indices pointing to the ID of the
+first of four control vertices, while the vertex buffer stores all control
+pointing of a single precision position and radius stored in x,y,z,r order in
+memory. All buffers have to get unmapped before an rtcCommit call to the scene.
+
+Like for triangle meshes, thee user can also specify a geometry mask and
+additional flags that choose the strategy to handle that mesh in dynamic
+scenes.
+
+The following example demonstrates howto create some hair geometry:
+
+
+ unsigned geomID = rtcNewHairGeometry
+ (scene,geomFlags,numCurves,numVertices,1);
+
+ struct Vertex   { float x,y,z,r; };
+
+ Vertex* vertices = (Vertex*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER);
+ // fill vertices here
+ rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER);
+
+ int* triangles = (int*) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+ // fill indices here
+ rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+
+Also see tutorial07 for an example of how to create and use hair geometry.
 
 ==== User Defined Geometry  ====
 
@@ -589,54 +619,6 @@ the instantiated scene, to world space.
 
 See tutorial04 for an example of how to use instances.
 
-==== Buffer Sharing  ====
-
-Embree supports sharing of buffers with the application. Each buffer that can
-be mapped for a specific geometry can also be shared with the application, by
-pass a pointer, offset, and stride of the application side buffer using the
-rtcSetBuffer API function.
-
- void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type,
-                   void* ptr, size_t offset, size_t stride);
-
-The rtcSetBuffer function has to get called before any call to rtcMapBuffer for
-that buffer, otherwise the buffer will get allocated internally and the call to
-rtcSetBuffer will fail. The buffer has to remain valid as long as the geometry
-exists, and the user is responsible to free the buffer when the geometry gets
-deleted. When a buffer is shared, it is safe to modify that buffer without
-mapping and unmapping it. However, for dynamic scenes one still has to call
-rtcModified for modified geometries and the buffer data has to stay constant
-from the rtcCommit call to after the last ray query invokation.
-
-The offset parameter specifies a byte offset to the start of the first element
-and the stride parameter specifies a byte stride between the different elements
-of the shared buffer. This support for offset and stride allows the application
-quite some freedom in the data layout of these buffers, however, some
-restrictions apply. Index buffers always store 32 bit indices and vertex
-buffers always store single precision floating point data. The start address
-ptr+offset and stride always have to be aligned to 4 bytes on Xeon CPUs and 16
-bytes on Xeon Phi accelerators, otherwise the rtcSetBuffer function will fail.
-For vertex buffers, the 4 bytes after the z-coordinate of the last vertex have
-to be readable memory, thus padding is required for some layouts.
-
-The following is an example of howto create a mesh with shared index and vertex
-buffers:
-
- unsigned geomID = rtcNewTriangleMesh
- (scene,geomFlags,numTriangles,numVertices,1);
- rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexPtr,0,3*sizeof(float));
- rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,indexPtr ,0,3*sizeof(int));
-
-Sharing buffers can significantly reduce the memory required by the
-application, thus we recommend using this feature. When enabling the
-RTC_COMPACT scene flag, the spatial index structures of Embree might also share
-the vertex buffer, resulting in even higher memory savings.
-
-The support for offset and stride is enabled by default, but can get disabled
-at compile time using the RTCORE_BUFFER_STRIDE parameter in cmake. Disabling
-this feature enables the default offset and stride which increases performance
-of spatial index structure build, thus can be useful for dynamic content.
-
 === Ray Queries  ===
 
 The API supports finding the closest hit of a ray segment with the scene
@@ -746,6 +728,81 @@ rtcOccluded.
 
 See tutorial00 for an example of how to trace rays.
 
+=== Buffer Sharing  ===
+
+Embree supports sharing of buffers with the application. Each buffer that can
+be mapped for a specific geometry can also be shared with the application, by
+pass a pointer, offset, and stride of the application side buffer using the
+rtcSetBuffer API function.
+
+ void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type,
+                   void* ptr, size_t offset, size_t stride);
+
+The rtcSetBuffer function has to get called before any call to rtcMapBuffer for
+that buffer, otherwise the buffer will get allocated internally and the call to
+rtcSetBuffer will fail. The buffer has to remain valid as long as the geometry
+exists, and the user is responsible to free the buffer when the geometry gets
+deleted. When a buffer is shared, it is safe to modify that buffer without
+mapping and unmapping it. However, for dynamic scenes one still has to call
+rtcModified for modified geometries and the buffer data has to stay constant
+from the rtcCommit call to after the last ray query invokation.
+
+The offset parameter specifies a byte offset to the start of the first element
+and the stride parameter specifies a byte stride between the different elements
+of the shared buffer. This support for offset and stride allows the application
+quite some freedom in the data layout of these buffers, however, some
+restrictions apply. Index buffers always store 32 bit indices and vertex
+buffers always store single precision floating point data. The start address
+ptr+offset and stride always have to be aligned to 4 bytes on Xeon CPUs and 16
+bytes on Xeon Phi accelerators, otherwise the rtcSetBuffer function will fail.
+For vertex buffers, the 4 bytes after the z-coordinate of the last vertex have
+to be readable memory, thus padding is required for some layouts.
+
+The following is an example of howto create a mesh with shared index and vertex
+buffers:
+
+ unsigned geomID = rtcNewTriangleMesh
+ (scene,geomFlags,numTriangles,numVertices,1);
+ rtcSetBuffer(scene,geomID,RTC_VERTEX_BUFFER,vertexPtr,0,3*sizeof(float));
+ rtcSetBuffer(scene,geomID,RTC_INDEX_BUFFER ,indexPtr ,0,3*sizeof(int));
+
+Sharing buffers can significantly reduce the memory required by the
+application, thus we recommend using this feature. When enabling the
+RTC_COMPACT scene flag, the spatial index structures of Embree might also share
+the vertex buffer, resulting in even higher memory savings.
+
+The support for offset and stride is enabled by default, but can get disabled
+at compile time using the RTCORE_BUFFER_STRIDE parameter in cmake. Disabling
+this feature enables the default offset and stride which increases performance
+of spatial index structure build, thus can be useful for dynamic content.
+
+=== Linear Motion Blur  ===
+
+A triangle mesh or hair geometry with linear motion blur support is created by
+setting the number of time steps to 2 at geometry construction time. Specifying
+a number of time steps of 0 or larger than 2 is invalid. For a triangle mesh or
+hair geometry with linear motion blur, the user has to set the
+RTC_VERTEX_BUFFER0 and RTC_VERTEX_BUFFER1 vertex arrays, one for each time
+step. If a scene contains geometris with linear motion blur, the user has to
+set the time member of the ray to a value in the range [0,1]. The ray will
+intersect the scene with the vertices of the two time steps linearly
+interpolated to this specified time. Each ray can specify a different time,
+even inside a ray packet.
+
+=== Geometry Mask  ===
+
+A 32 bit geometry mask can be assigned to triangle meshs and hair geometries
+using the rtcSetMask call.
+
+ rtcSetMask(scene,geomID,mask);
+
+Only if the bitwise and operation of this mask with the mask stored inside the
+ray is not 0, primitives of this geometry are hit by a ray. This feature can be
+used to disable selected triangle mesh or hair geometries for specifically
+tagged rays, e.g. to disable shadow casting for some geometry. This API feature
+is disabled in Embree by default at compile time, and can be enabled in cmake
+through the RTCORE_ENABLE_RAY_MASK parameter.
+
 === Filter Functions  ===
 
 The API supports per geometry filter callback functions that are invoked for
@@ -813,9 +870,11 @@ See tutorial05 for an example of how to use the filter functions.
 Embree comes with a set of tutorials aimed at helping users understand how
 embree can be used and extended. All tutorials exist in an ISPC and C version
 to demonstrate the two versions of the API. Look for files names
-tutorialXX_device.ispc for the ISPC implementation of the tutorial, and files
-named tutorialXX_device.cpp for the single ray C version of the tutorial. The
-tutorials can be found in the following folders:
+ tutorialXX_device.ispc
+for the ISPC implementation of the tutorial, and files named
+ tutorialXX_device.cpp
+for the single ray C version of the tutorial. The tutorials can be found in the
+following folders:
 
   tutorials
       Root directory for all tutorials
@@ -835,22 +894,30 @@ tutorials can be found in the following folders:
   tutorials/tutorial06
       A simple path tracer for OBJ files.
 All tutorials come as C++ and ISPC version. To start the C++ version use the
-tutorialXX executables, to start the ISPC version use the tutorialXX_ispc
+
+ tutorialXX
+executables, to start the ISPC version use the
+
+ tutorialXX_ispc
 executables. You can select an initial camera using the -vp (camera position),
 -vi (camera lookat point), -vu (camera up vector), and -fov (vertical field of
 view) command line parameters:
 
-./tutorial00 -vp 10 10 10 -vi 0 0 0
+
+   ./tutorial00 -vp 10 10 10 -vi 0 0 0
 
 You can select the initial windows size using the -size command line parameter,
 or start the tutorials in fullscreen using the -fullscreen parameter:
 
-./tutorial00 -size 1024 1024 ./tutorial00 -fullscreen
+
+   ./tutorial00 -size 1024 1024
+   ./tutorial00 -fullscreen
 
 Implementation specific parameters can be passed to the ray tracing core
 through the -rtcore command line parameter, e.g.:
 
-./tutorial00 -rtcore verbose=2,threads=1,accel=bvh4.triangle1
+
+   ./tutorial00 -rtcore verbose=2,threads=1,accel=bvh4.triangle1
 
 The navigation in the interactive display mode follows the camera orbit model,
 where the camera revolves around the current center of interest. With the left
@@ -893,9 +960,14 @@ You can use the following keys:
 ==== Tutorial00  ====
 
 This tutorial demonstrates the creation of a static cube and ground plane using
-triangle meshes. It also demonstrates the use of the rtcIntersect and
-rtcOccluded functions to render primary visibility and hard shadows. The cube
-sides are colored based on the ID of the hit primitive.
+triangle meshes. It also demonstrates the use of the
+
+ rtcIntersect
+and
+
+ rtcOccluded
+functions to render primary visibility and hard shadows. The cube sides are
+colored based on the ID of the hit primitive.
 
 ==== Tutorial01  ====
 
@@ -943,190 +1015,6 @@ opaque occluder is hit.
 ==== Tutorial06  ====
 
 This tutorial is a simple path tracer, building on tutorial03.
-
-== Embree Example Renderer  ==
-
-The Embree Example Renderer is a photo-realistic path tracer that builds on the
-Embree high performance ray tracing kernels. The renderer is used to
-demonstrate how Embree is used in practice and to measure Embree's performance
-in a realistic application scenario. The Embree Example Renderer is not a full
-featured renderer and not designed to be used for production renderering. The
-Embree Example Renderer is released as Open Source under the AAppaacchhee 22..00
-lliicceennssee.
-
-The example renderer is only available in source form and can be downloaded
-using the following ZIP file:
-
-We provide binaries for the Embree Example Renderer for Linux (64 bit), MacOS
-(64 bit), and Windows (64 bit):
-
-eemmbbrreeee--rreennddeerreerr--22..22--lliinnuuxx..zziipp
-
-eemmbbrreeee--rreennddeerreerr--22..22--mmaaccooss..zziipp
-
-eemmbbrreeee--rreennddeerreerr--22..22--wwiinn..zziipp
-
-If you need to recompile the Embree Example Renderer for your platform, please
-download the sources and follow the compilation instructions below:
-
-eemmbbrreeee--rreennddeerreerr--22..22..zziipp
-
-eemmbbrreeee--rreennddeerreerr--22..11..zziipp
-
-Alternatively you can also use git to get the latest Embree Example Renderer
-2.2:
-
- $ git clone https://github.com/embree/embree-renderer.git embree-renderer
- $ cd embree-renderer
- $ git checkout v2.2
-
-If you encounter bugs please report them to the GGiittHHuubb IIssssuuee TTrraacckkeerr for the
-Embree Renderer.
-
-=== Compiling under Windows  ===
-
-For compilation under Windows you first have to install the Embree ray tracing
-kernels including the Intel SPMD Compiler (ISPC). After installation you have
-to set the EMBREE_INSTALL_DIR environment variable to the root folder of
-Embree.
-
-Use the Visual Studio 2008 or Visual Studio 2010 solution file to compile the
-Embree Example Renderer. Inside Visual Studio you can switch between the
-Microsoft Compiler and the Intel Compiler by right clicking on the solution and
-then selecting the compiler. The project compiles with both compilers in 32 bit
-and 64 bit mode. We recommend using 64 bit mode and the Intel Compiler for best
-performance.
-
-To enable AVX and AVX2 for the ISPC code select the build configurations
-ReleaseAVX and ReleaseAVX2. You have to compile the Embree kernels with the
-same or higher instruction set than the Embree example renderer.
-
-By default, the solution file requires ISPC to be installed properly. For
-compiling the solution without ISPC, simply delete the device_ispc project from
-the solution file.
-
-=== Compiling under Linux and MacOS  ===
-
-To compile the Embree Example Renderer using CMake create a build directory and
-execute "ccmake .." inside this directory.
-
- mkdir build
- cd build
- ccmake ..
-
-This will open a configuration dialog where you should set the build mode to
-“Release” and the compiler to either GCC, CLANG, or ICC. You can configure
-which parts of the Embree Example Renderer to build:
-
-
-BUILD_SINGLE_RAY_DEVICE          Single ray rendering device for CPUs.
-
-BUILD_SINGLE_RAY_DEVICE_XEON_PHI Single ray rendering device for Xeon Phi[TM].
-
-BUILD_ISPC_DEVICE                ISPC CPU rendering device operating on ray
-                                 packets of size 4 (SSE) or 8 (AVX).
-
-BUILD_ISPC_DEVICE_XEON_PHI       ISPC Xeon Phi[TM] rendering device operating
-                                 on ray packets of size 16.
-
-BUILD_NETWORK_DEVICE             Network device to render on render server.
-
-
-When enabling any ISPC renderer, you also have to install ISPC. If you select
-BUILD_ISPC_DEVICE, you should select which instructions sets to enable for ISPC
-(TARGET_SSE2, TARGET_SSE41, TARGET_AVX, and TARGET_AVX2).
-
-All target ISAs you select when compiling the Embree Example Render, have also
-to be enabled when compiling Embree. Due to some limitation of ISPC you have to
-enable more than one target ISA if you also enabled more than one target ISA
-when compiling Embree, otherwise you will get link errors.
-
-If you installed Embree, CMake will find it automatically and set the
-EMBREE_INCLUDE_PATH and EMBREE_LIBRARY variables.
-
-If you cannot install Embree on your system (e.g. when you don't have
-administrator rights) some additional configurations are required to use Embree
-from its build folder. Set the EMBREE_INCLUDE_PATH to the
-embree_root_directory/include folder and the EMBREE_LIBRARY to
-embree_root_directory/build/libembree.2.2.0.dylib for MacOS or
-embree_root_directory/build/libembree.so.2.2.0 for Linux. Under Linux you have
-to additionally add embree_root_directory/build to your LD_LIBRARY_PATH (and
-SINK_LD_LIBRARY_PATH in case you want to use Embree on Xeon Phi).
-
-Press c (for configure) and g (for generate) to generate a Makefile and leave
-the configuration. The code can now be compiled by executing make. The
-executables will be generated in the build folder.
-
- make
-
-=== Using the Embree Example Renderer  ===
-
-The example renderer also ships with a few simple test scenes, each consisting
-of a scene file (.xml or .obj) and a command script file (.ecs). The command
-script file contains command line parameters that set the camera parameters,
-lights and render settings. The following command line will render the Cornell
-Box scene with 16 samples per pixel and write the resulting image to the file
-cornell_box.tga in the current directory:
-
- ./renderer -c ../models/cornell_box.ecs -spp 16 -o cornell_box.tga
-
-To interactively display the same scene, enter the following command:
-
- ./renderer -c ../models/cornell_box.ecs
-
-A window will open and you can control the camera using the mouse and keyboard.
-Pressing c in interactive mode outputs the current camera parameters, pressing
-r enables or disables the progressive refinement mode.
-
-By default the renderer uses the single ray device. For selecting a different
-device use the -device command line parameter as first argument:
-
- ./renderer -device singleray -c ../models/cornell_box.ecs
- ./renderer -device ispc -c ../models/cornell_box.ecs
-
- ./renderer -device singleray_xeonphi -c ../../models/cornell_box.ecs
- ./renderer -device ispc_xeonphi -c ../../models/cornell_box.ecs
-
-==== Network Mode  ====
-
-For using the network device start the render server on some machine:
-
- renderer_server
-
-Make sure that port 8484 is not blocked by the firewall. Now you can connect
-from a second machine to the render server:
-
- renderer -connect ip_of_render_server -c ../../models/cornell_box.ecs
-
-==== Navigation  ====
-
-The navigation in the interactive display mode follows the camera orbit model,
-where the camera revolves around the current center of interest. The camera
-navigation assumes the y-axis to point upwards. If your scene is modelled using
-the z-axis as up axis we recommend rotating the scene.
-
-  Left Mouse Button
-      Rotate around center of interest
-  Middle Mouse Button
-      Pan
-  Right Mouse Button
-      Dolly (move camera closer or away from center of interest)
-  Strg+Left Mouse Button
-      Pick center of interest
-  Strg+Shift+Left Mouse Button
-      Pick focal distances
-  Alt+Left Mouse Button
-      Roll camera around view direction
-  L Key
-      Decrease lens radius by one world space unit
-  Shift+L Key
-      Increase lens radius by one world space unit
-=== Example Models  ===
-
-We provide also a more advanced model of the Imperial Crown of Austria to test
-the renderer with: CCrroowwnn00441133..zziipp ((7744MMBB)).
-
- Model courtesy MMaarrttiinn LLuubbiicchh.
 
 === Embree Support and Contact  ===
 
