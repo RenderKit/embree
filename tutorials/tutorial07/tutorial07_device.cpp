@@ -197,95 +197,7 @@ extern "C" void device_init (int8* cfg)
 }
 
 /*! Anisotropic power cosine microfacet distribution. */
-class AnisotropicBlinn {
-public:
-
-  __forceinline AnisotropicBlinn() {}
-
-  /*! Anisotropic power cosine distribution constructor. */
-  __forceinline AnisotropicBlinn(const Vec3fa& Kr, const Vec3fa& Kt, 
-				 const Vec3fa& dx, float nx, const Vec3fa& dy, float ny, const Vec3fa& dz) 
-    : Kr(Kr), Kt(Kt), dx(dx), nx(nx), dy(dy), ny(ny), dz(dz),
-      norm1(sqrtf((nx+1)*(ny+1)) * float(one_over_two_pi)),
-      norm2(sqrtf((nx+2)*(ny+2)) * float(one_over_two_pi)),
-      side(reduce_max(Kr)/(reduce_max(Kr)+reduce_max(Kt))) {}
-
-  /*! Evaluates the power cosine distribution. \param wh is the half
-   *  vector */
-  __forceinline float eval(const Vec3fa& wh) const 
-  {
-    const float cosPhiH   = dot(wh, dx);
-    const float sinPhiH   = dot(wh, dy);
-    const float cosThetaH = dot(wh, dz);
-    const float R = sqr(cosPhiH)+sqr(sinPhiH);
-    if (R == 0.0f) return norm2;
-    const float n = (nx*sqr(cosPhiH)+ny*sqr(sinPhiH))*rcp(R);
-    return norm2 * pow(abs(cosThetaH), n);
-  }
-
-  /*! Samples the distribution. \param s is the sample location
-   *  provided by the caller. */
-  __forceinline Vec3fa sample(const float sx, const float sy) const
-  {
-    const float phi = float(two_pi)*sx;
-    const float sinPhi0 = sqrtf(nx+1)*sinf(phi);
-    const float cosPhi0 = sqrtf(ny+1)*cosf(phi);
-    const float norm = rsqrt(sqr(sinPhi0)+sqr(cosPhi0));
-    const float sinPhi = sinPhi0*norm;
-    const float cosPhi = cosPhi0*norm;
-    const float n = nx*sqr(cosPhi)+ny*sqr(sinPhi);
-    const float cosTheta = powf(sy,rcp(n+1));
-    const float sinTheta = cos2sin(cosTheta);
-    const float pdf = norm1*powf(cosTheta,n);
-    const Vec3fa h(cosPhi * sinTheta, sinPhi * sinTheta, cosTheta);
-    const Vec3fa wh = h.x*dx + h.y*dy + h.z*dz;
-    return Vec3fa(wh,pdf);
-  }
-
-  __forceinline Vec3fa reflect(const Vec3fa& V, const Vec3fa& N) const {
-    return 2.0f*dot(V,N)*N-V;
-  }
-
-  __forceinline Vec3fa eval(const Vec3fa& wo, const Vec3fa& wi) const
-  {
-    const float cosThetaI = dot(wi,dz);
-    
-    /* reflection */
-    if (cosThetaI > 0.0f) {
-      const Vec3fa wh = normalize(wi + wo);
-      return Kr * eval(wh) * abs(cosThetaI);
-    } 
-    
-    /* transmission */
-    else {
-      const Vec3fa wh = normalize(reflect(wi,dz) + wo);
-      return Kt * eval(wh) * abs(cosThetaI);
-    }
-  }
-
-  __forceinline Vec3fa sample(const Vec3fa& wo, Vec3fa& wi, const float sx, const float sy, const float sz) const
-  {
-    //wi = Vec3fa(reflect(normalize(wo),normalize(dz)),1.0f); return Kr;
-    //wi = Vec3fa(neg(wo),1.0f); return Kt;
-    const Vec3fa wh = sample(sx,sy);
-    //if (dot(wo,wh) < 0.0f) return Vec3fa(zero,0.0f);
-
-    /* reflection */
-    if (sz < side) {
-      wi = Vec3fa(reflect(wo,wh),wh.w*side);
-      const float cosThetaI = dot(wi,dz);
-      return Kr * eval(wh) * abs(cosThetaI);
-    }
-
-    /* transmission */
-    else {
-      wi = Vec3fa(reflect(reflect(wo,wh),dz),wh.w*(1-side));
-      const float cosThetaI = dot(wi,dz);
-      return Kt * eval(wh) * abs(cosThetaI);
-    }
-  }
-
-public:
+struct AnisotropicBlinn {
   Vec3fa dx;       //!< x-direction of the distribution.
   float nx;        //!< Glossiness in x direction with range [0,infinity[ where 0 is a diffuse surface.
   Vec3fa dy;       //!< y-direction of the distribution.
@@ -296,6 +208,97 @@ public:
   Vec3fa Kr,Kt; 
   float side;
 };
+
+  /*! Anisotropic power cosine distribution constructor. */
+__forceinline void AnisotropicBlinn__Constructor(AnisotropicBlinn* This, const Vec3fa& Kr, const Vec3fa& Kt, 
+                                                 const Vec3fa& dx, float nx, const Vec3fa& dy, float ny, const Vec3fa& dz) 
+{
+  This->Kr = Kr;
+  This->Kt = Kt;
+  This->dx = dx;
+  This->nx = nx;
+  This->dy = dy;
+  This->ny = ny;
+  This->dz = dz;
+  This->norm1 = sqrtf((nx+1)*(ny+1)) * float(one_over_two_pi);
+  This->norm2 = sqrtf((nx+2)*(ny+2)) * float(one_over_two_pi);
+  This->side = reduce_max(Kr)/(reduce_max(Kr)+reduce_max(Kt));
+}
+
+/*! Evaluates the power cosine distribution. \param wh is the half
+ *  vector */
+__forceinline float AnisotropicBlinn__eval(const AnisotropicBlinn* This, const Vec3fa& wh)  
+{
+  const float cosPhiH   = dot(wh, This->dx);
+  const float sinPhiH   = dot(wh, This->dy);
+  const float cosThetaH = dot(wh, This->dz);
+  const float R = sqr(cosPhiH)+sqr(sinPhiH);
+  if (R == 0.0f) return This->norm2;
+  const float n = (This->nx*sqr(cosPhiH)+This->ny*sqr(sinPhiH))*rcp(R);
+  return This->norm2 * pow(abs(cosThetaH), n);
+}
+
+/*! Samples the distribution. \param s is the sample location
+ *  provided by the caller. */
+__forceinline Vec3fa AnisotropicBlinn__sample(const AnisotropicBlinn* This, const float sx, const float sy)
+{
+  const float phi = float(two_pi)*sx;
+  const float sinPhi0 = sqrtf(This->nx+1)*sinf(phi);
+  const float cosPhi0 = sqrtf(This->ny+1)*cosf(phi);
+  const float norm = rsqrt(sqr(sinPhi0)+sqr(cosPhi0));
+  const float sinPhi = sinPhi0*norm;
+  const float cosPhi = cosPhi0*norm;
+  const float n = This->nx*sqr(cosPhi)+This->ny*sqr(sinPhi);
+  const float cosTheta = powf(sy,rcp(n+1));
+  const float sinTheta = cos2sin(cosTheta);
+  const float pdf = This->norm1*powf(cosTheta,n);
+  const Vec3fa h(cosPhi * sinTheta, sinPhi * sinTheta, cosTheta);
+  const Vec3fa wh = h.x*This->dx + h.y*This->dy + h.z*This->dz;
+  return Vec3fa(wh,pdf);
+}
+
+__forceinline Vec3fa reflect(const Vec3fa& V, const Vec3fa& N) {
+  return 2.0f*dot(V,N)*N-V;
+}
+
+__forceinline Vec3fa AnisotropicBlinn__eval(const AnisotropicBlinn* This, const Vec3fa& wo, const Vec3fa& wi) 
+{
+  const float cosThetaI = dot(wi,This->dz);
+  
+  /* reflection */
+  if (cosThetaI > 0.0f) {
+    const Vec3fa wh = normalize(wi + wo);
+    return This->Kr * AnisotropicBlinn__eval(This,wh) * abs(cosThetaI);
+  } 
+  
+  /* transmission */
+  else {
+    const Vec3fa wh = normalize(reflect(wi,This->dz) + wo);
+    return This->Kt * AnisotropicBlinn__eval(This,wh) * abs(cosThetaI);
+  }
+}
+
+__forceinline Vec3fa AnisotropicBlinn__sample(const AnisotropicBlinn* This, const Vec3fa& wo, Vec3fa& wi, const float sx, const float sy, const float sz) 
+{
+  //wi = Vec3fa(reflect(normalize(wo),normalize(dz)),1.0f); return Kr;
+  //wi = Vec3fa(neg(wo),1.0f); return Kt;
+  const Vec3fa wh = AnisotropicBlinn__sample(This,sx,sy);
+  //if (dot(wo,wh) < 0.0f) return Vec3fa(zero,0.0f);
+  
+  /* reflection */
+  if (sz < This->side) {
+    wi = Vec3fa(reflect(wo,wh),wh.w*This->side);
+    const float cosThetaI = dot(wi,This->dz);
+    return This->Kr * AnisotropicBlinn__eval(This,wh) * abs(cosThetaI);
+  }
+  
+  /* transmission */
+  else {
+    wi = Vec3fa(reflect(reflect(wo,wh),This->dz),wh.w*(1-This->side));
+    const float cosThetaI = dot(wi,This->dz);
+    return This->Kt * AnisotropicBlinn__eval(This,wh) * abs(cosThetaI);
+  }
+}
 
 __forceinline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 {
@@ -309,7 +312,7 @@ __forceinline Vec3fa evalBezier(const int geomID, const int primID, const float 
   const Vec3fa p01 = *(Vec3fa*)&vertices[i+1];
   const Vec3fa p02 = *(Vec3fa*)&vertices[i+2];
   const Vec3fa p03 = *(Vec3fa*)&vertices[i+3];
-
+  
   const Vec3fa p10 = p00 * t0 + p01 * t1;
   const Vec3fa p11 = p01 * t0 + p02 * t1;
   const Vec3fa p12 = p02 * t0 + p03 * t1;
@@ -422,7 +425,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       const Vec3fa dz = normalize(cross(dy,dx));
 
       /* generate anisotropic BRDF */
-      new (&brdf) AnisotropicBlinn(hair_Kr,hair_Kt,dx,20.0f,dy,2.0f,dz);
+      AnisotropicBlinn__Constructor(&brdf,hair_Kr,hair_Kt,dx,20.0f,dy,2.0f,dz);
       brdf.Kr = hair_Kr;
       tnear_eps = 1.1f*evalBezier(ray.geomID,ray.primID,ray.u).w;
     }
@@ -440,7 +443,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
         const Vec3fa dz = normalize(cross(dy,dx));
         
         /* generate anisotropic BRDF */
-        new (&brdf) AnisotropicBlinn(hair_Kr,hair_Kt,dx,20.0f,dy,2.0f,dz);
+        AnisotropicBlinn__Constructor(&brdf,hair_Kr,hair_Kt,dx,20.0f,dy,2.0f,dz);
         brdf.Kr = hair_Kr;
         tnear_eps = 1.1f*mesh->texcoords[triangle->v0].x;
       }
@@ -454,7 +457,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
         const Vec3fa dy = normalize(cross(dz,dx));
         
         /* generate isotropic BRDF */
-        new (&brdf) AnisotropicBlinn(one,zero,dx,1.0f,dy,1.0f,dz);
+        AnisotropicBlinn__Constructor(&brdf,one,zero,dx,1.0f,dy,1.0f,dz);
       }
     }
     
@@ -465,13 +468,13 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     shadow.tnear = tnear_eps;
     shadow.tfar = inf;
     Vec3fa T = occluded(g_scene,shadow);
-    Vec3fa c = brdf.eval(neg(ray.dir),neg(g_dirlight_direction));
+    Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(g_dirlight_direction));
     color += weight*c*T*g_dirlight_intensity;
 
 #if 1
     /* sample BRDF */
     Vec3fa wi;
-    c = brdf.sample(neg(ray.dir),wi,frand(seed),frand(seed),frand(seed));
+    c = AnisotropicBlinn__sample(&brdf,neg(ray.dir),wi,frand(seed),frand(seed),frand(seed));
     if (wi.w <= 0.0f) return color;
 
     /* calculate secondary ray and offset it out of the hair */
