@@ -224,7 +224,7 @@ namespace embree
                            PickDataReceive* in_pReturnValue,
                            uint16_t         in_ReturnValueLength)
   {
-    Vec3f hitPos = zero;
+    Vec3fa hitPos = zero;
     bool hit = device_pick(in_pMiscData->x,
                            in_pMiscData->y,
                            in_pMiscData->vx,

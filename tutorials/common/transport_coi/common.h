@@ -64,7 +64,7 @@ namespace embree
   };
 
   struct PickDataReceive {
-    Vec3f pos;
+    Vec3fa pos;
     bool hit;
   };
 

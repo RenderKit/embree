@@ -16,7 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-#define USE_EYELIGHT_SHADING 0
+#define renderPixelTestEyeLight renderPixelStandard
+//#define renderPixelPathTrace renderPixelStandard
 
 /* accumulation buffer */
 uniform Vec3fa* uniform g_accu = NULL;
@@ -106,7 +107,7 @@ RTCScene g_scene = NULL;
 /* render function to use */
 renderPixelFunc renderPixel;
 
-Vec3f renderPixelTestEyeLight(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
+Vec3f renderPixelTestEyeLight(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
 
 /*! random number generator for floating point numbers in range [0,1] */
 inline float frand(int& seed) {
@@ -205,6 +206,8 @@ export void device_init (uniform int8* uniform cfg)
   /* set start render mode */
   renderPixel = renderPixelStandard;
 }
+
+#if !defined(__XEON_PHI__)
 
 /*! Anisotropic power cosine microfacet distribution. */
 struct AnisotropicBlinn {
@@ -332,6 +335,8 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
   //tangent = p21-p20;
 }
 
+#endif 
+
 /* extended ray structure that includes total transparency along the ray */
 struct RTCRay2
 {
@@ -361,6 +366,8 @@ void filterDispatch(void* uniform ptr, RTCRay2& ray) {
   if (ray.filter) ray.filter(ptr,*((varying RTCRay*)&ray)); // FIXME: use RTCRay& cast
 }
 
+#if !defined(__XEON_PHI__)
+
 /* occlusion filter function */
 void occlusionFilter(void* uniform ptr, RTCRay2& ray)
 {
@@ -388,7 +395,7 @@ Vec3f occluded(RTCScene scene, RTCRay2& ray)
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelPathTrace(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   int seed = 21344*x+121233*y+234532*g_accu_count;
 
@@ -514,6 +521,8 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   return color;
 }
 
+#endif
+
 Vec3f renderPixelTestEyeLight(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
@@ -585,11 +594,7 @@ task void renderTile(uniform int* uniform pixels,
     /* calculate pixel color */
     float fx = x + frand(seed);
     float fy = y + frand(seed);
-#if USE_EYELIGHT_SHADING == 1
-    Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
-#else
     Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
-#endif
 
     Vec3fa* dst = &g_accu[y*width+x];
     *dst = *dst + make_Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator

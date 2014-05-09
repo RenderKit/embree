@@ -49,7 +49,7 @@ MACRO (ispc_compile targets)
     STRING(REGEX REPLACE "," ";" target_list "${targets}")
     SET(ISPC_TARGETS ${targets})
   ELSE()
-    SET(ISPC_TARGETS generic-16 --emit-c++ --c++-include-file=${ISPC_DIR}/examples/intrinsics/knc.h)
+    SET(ISPC_TARGETS generic-16 --emit-c++ -D__XEON_PHI__ --c++-include-file=${ISPC_DIR}/examples/intrinsics/knc.h)
   ENDIF()
 
   SET(ISPC_OBJECTS "")
