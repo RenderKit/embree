@@ -152,3 +152,8 @@ inline varying Vec3f cross(const varying Vec3f a, const varying Vec3f b) {
 
 inline uniform Vec3f lerp(const uniform float s, const uniform Vec3f v0, const uniform Vec3f v1) { return (1.0f-s)*v0+s*v1; }
 inline varying Vec3f lerp(const varying float s, const varying Vec3f v0, const varying Vec3f v1) { return (1.0f-s)*v0+s*v1; }
+
+inline uniform Vec3f reflect(const uniform Vec3f& V, const uniform Vec3f& N) { return 2.0f*dot(V,N)*N-V; }
+inline varying Vec3f reflect(const uniform Vec3f& V, const varying Vec3f& N) { return 2.0f*dot(V,N)*N-V; }
+inline varying Vec3f reflect(const varying Vec3f& V, const uniform Vec3f& N) { return 2.0f*dot(V,N)*N-V; }
+inline varying Vec3f reflect(const varying Vec3f& V, const varying Vec3f& N) { return 2.0f*dot(V,N)*N-V; }

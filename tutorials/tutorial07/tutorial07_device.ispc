@@ -16,12 +16,31 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-/* scene data */
-RTCScene g_scene = NULL;
-uniform Vec3f* uniform colors = NULL;
+#define USE_EYELIGHT_SHADING 0
 
-/* render function to use */
-renderPixelFunc renderPixel;
+/* accumulation buffer */
+uniform Vec3fa* uniform g_accu = NULL;
+uniform size_t g_accu_width = 0;
+uniform size_t g_accu_height = 0;
+uniform size_t g_accu_count = 0;
+uniform Vec3f g_accu_vx;
+uniform Vec3f g_accu_vy;
+uniform Vec3f g_accu_vz;
+uniform Vec3f g_accu_p;
+uniform bool g_changed = false;
+
+/* light settings */
+extern uniform Vec3fa g_dirlight_direction;
+extern uniform Vec3fa g_dirlight_intensity;
+extern uniform Vec3fa g_ambient_intensity;
+
+/* hair material */
+uniform Vec3f hair_K;
+uniform Vec3f hair_dK;
+uniform Vec3f hair_Kr;    //!< reflectivity of hair
+uniform Vec3f hair_Kt;    //!< transparency of hair
+
+void filterDispatch(void* uniform ptr, struct RTCRay2& ray);
 
 struct ISPCTriangle 
 {
@@ -45,50 +64,84 @@ struct ISPCMaterial
   Vec3f Tf;              /*< transmission filter */
 };
 
-struct ISPCMesh
-{
-  uniform Vec3fa* positions;    //!< vertex position array
-  uniform Vec3fa* normals;       //!< vertex normal array
-  uniform Vec2f* texcoords;     //!< vertex texcoord array
-  uniform ISPCTriangle* triangles;  //!< list of triangles
-  int numVertices;
-  int numTriangles;
-  Vec3f dir;
-  float offset;
-};
-
 struct ISPCHair
 {
- int vertex,id;  //!< index of first control point and hair ID
+  int vertex;
+  int id;
 };
 
 struct ISPCHairSet
 {
- uniform Vec3fa *positions;   //!< hair control points (x,y,z,r)
- uniform ISPCHair *hairs;    //!< list of hairs
- int numVertices;
- int numHairs;
+  Vec3fa* v;       //!< hair control points (x,y,z,r)
+  ISPCHair* hairs; //!< for each hair, index to first control point
+  int numVertices;
+  int numHairs;
 };
 
+struct ISPCMesh
+{
+  Vec3fa* positions;    //!< vertex position array
+  Vec3fa* normals;       //!< vertex normal array
+  Vec2f* texcoords;     //!< vertex texcoord array
+  ISPCTriangle* triangles;  //!< list of triangles
+  int numVertices;
+  int numTriangles;
+};
 
 struct ISPCScene
 {
-  uniform ISPCMesh* uniform* meshes;         //!< list of meshes
-  uniform ISPCMaterial* materials;  //!< material list
+  ISPCMesh** meshes;         //!< list of meshes
+  ISPCMaterial* materials;  //!< material list
   int numMeshes;
   int numMaterials;
-  uniform ISPCHairSet** hairsets;
+  ISPCHairSet** hairs;
   int numHairSets;
   bool animate;
 };
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
+RTCScene g_scene = NULL;
+
+/* render function to use */
+renderPixelFunc renderPixel;
+
+Vec3f renderPixelTestEyeLight(int x, int y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
+
+/*! random number generator for floating point numbers in range [0,1] */
+inline float frand(int& seed) {
+  seed = 7 * seed + 5;
+  return (seed & 0xFFFF)/(float)0xFFFF;
+}
+
+/*! Uniform hemisphere sampling. Up direction is the z direction. */
+Vec3fa sampleSphere(const float u, const float v) 
+{
+  const float phi = 2.0f*(float)pi * u;
+  const float cosTheta = 1.0f - 2.0f * v, sinTheta = 2.0f * sqrt(v * (1.0f - v));
+  return make_Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta, one_over_four_pi);
+}
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 {
+  //scene_in->numHairSets = 0;
+  //scene_in->numMeshes = 0;
+
   /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT_VARYING);
+
+  /* add all hair sets to the scene */
+  for (uniform int i=0; i<scene_in->numHairSets; i++)
+  {
+    /* get ith hair set */
+    uniform ISPCHairSet* uniform hair = scene_in->hairs[i];
+
+    /* create a hair set */
+    uniform unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
+    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(uniform Vertex));
+    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair));
+    rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&filterDispatch);
+  }
 
   /* add all meshes to the scene */
   for (uniform int i=0; i<scene_in->numMeshes; i++)
@@ -97,297 +150,250 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
 
     /* create a triangle mesh */
-    uniform unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
-
-#if 0
-    /* share vertex buffer */
-    rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa      ));
-    //rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
-
-    /* set triangles */
-    uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
-    for (uniform int j=0; j<mesh->numTriangles; j++) {
-      triangles[j].v0 = mesh->triangles[j].v0;
-      triangles[j].v1 = mesh->triangles[j].v1;
-      triangles[j].v2 = mesh->triangles[j].v2;
-    }
-    rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
-
-#elif 0
-    uniform Vec3f* uniform positions = uniform new uniform Vec3f[mesh->numVertices+1];
-    for (uniform int j=0; j<mesh->numVertices; j++) {
-      positions[j].x = mesh->positions[j].x;
-      positions[j].y = mesh->positions[j].y;
-      positions[j].z = mesh->positions[j].z;
-    }
-    rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, positions, 0, sizeof(uniform Vec3f));
-    rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
-#else
-
+    uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
+    
     /* set vertices */
-    uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
-    for (uniform int j=0; j<mesh->numVertices; j++) {
+    uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
+    for (int j=0; j<mesh->numVertices; j++) {
       vertices[j].x = mesh->positions[j].x;
       vertices[j].y = mesh->positions[j].y;
       vertices[j].z = mesh->positions[j].z;
     }
-    rtcUnmapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
 
     /* set triangles */
-    uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
-    for (uniform int j=0; j<mesh->numTriangles; j++) {
+    uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
+    for (int j=0; j<mesh->numTriangles; j++) {
       triangles[j].v0 = mesh->triangles[j].v0;
       triangles[j].v1 = mesh->triangles[j].v1;
       triangles[j].v2 = mesh->triangles[j].v2;
     }
-    rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
-#endif
-  }
-
-
-#if 1
-  /* add all meshes to the scene */
-  for (uniform int i=0; i<scene_in->numHairSets; i++)
-  {
-  
-    /* get ith hair set */
-    uniform ISPCHairSet* uniform hairset = scene_in->hairsets[i];
-    
-    /* create a hair set */
-    uniform unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hairset->numHairs, hairset->numVertices);
-    uniform Vertex* uniform vertices = (uniform Vertex* uniform)rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER);
-
-    print("hairset->numVertices %d\n",hairset->numVertices);
-    for (uniform int j=0; j<hairset->numVertices; j++) {
-      vertices[j].x = hairset->positions[j].x;
-      vertices[j].y = hairset->positions[j].y;
-      vertices[j].z = hairset->positions[j].z;
-      vertices[j].r = hairset->positions[j].a;
-    }
-
     rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
+    rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
 
-    uniform ISPCHair* uniform hairs   = (uniform ISPCHair* uniform)rtcMapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
-
-    print("hairset->numHairs %d\n",hairset->numHairs);
-
-    for (uniform int j=0; j<hairset->numHairs; j++) {
-      hairs[j].vertex = hairset->hairs[j].vertex;
-      hairs[j].id     = hairset->hairs[j].id;
-    }
-    
-    rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER); 
-
+    rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&filterDispatch);
   }
-#endif
+
   /* commit changes to scene */
   rtcCommit (scene_out);
   return scene_out;
 }
 
-/* adds a cube to the scene */
-uniform unsigned int addCube (RTCScene scene_i)
-{
-  /* create a triangulated cube with 12 triangles and 8 vertices */
-  uniform unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 12, 8);
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
 
-  /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-  vertices[0].x = -1; vertices[0].y = -1; vertices[0].z = -1; 
-  vertices[1].x = -1; vertices[1].y = -1; vertices[1].z = +1; 
-  vertices[2].x = -1; vertices[2].y = +1; vertices[2].z = -1; 
-  vertices[3].x = -1; vertices[3].y = +1; vertices[3].z = +1; 
-  vertices[4].x = +1; vertices[4].y = -1; vertices[4].z = -1; 
-  vertices[5].x = +1; vertices[5].y = -1; vertices[5].z = +1; 
-  vertices[6].x = +1; vertices[6].y = +1; vertices[6].z = -1; 
-  vertices[7].x = +1; vertices[7].y = +1; vertices[7].z = +1; 
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-
-  /* create triangle color array */
-  colors = uniform new uniform Vec3f[12];
-
-  /* set triangles and colors */
-  uniform int tri = 0;
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-  
-  // left side
-  colors[tri] = make_Vec3f(1,0,0); triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
-  colors[tri] = make_Vec3f(1,0,0); triangles[tri].v0 = 1; triangles[tri].v1 = 2; triangles[tri].v2 = 3; tri++;
-
-  // right side
-  colors[tri] = make_Vec3f(0,1,0); triangles[tri].v0 = 4; triangles[tri].v1 = 5; triangles[tri].v2 = 6; tri++;
-  colors[tri] = make_Vec3f(0,1,0); triangles[tri].v0 = 5; triangles[tri].v1 = 7; triangles[tri].v2 = 6; tri++;
-
-  // bottom side
-  colors[tri] = make_Vec3f(0.5f);  triangles[tri].v0 = 0; triangles[tri].v1 = 1; triangles[tri].v2 = 4; tri++;
-  colors[tri] = make_Vec3f(0.5f);  triangles[tri].v0 = 1; triangles[tri].v1 = 5; triangles[tri].v2 = 4; tri++;
-
-  // top side
-  colors[tri] = make_Vec3f(1.0f);  triangles[tri].v0 = 2; triangles[tri].v1 = 6; triangles[tri].v2 = 3; tri++;
-  colors[tri] = make_Vec3f(1.0f);  triangles[tri].v0 = 3; triangles[tri].v1 = 6; triangles[tri].v2 = 7; tri++;
-
-  // front side
-  colors[tri] = make_Vec3f(0,0,1); triangles[tri].v0 = 0; triangles[tri].v1 = 4; triangles[tri].v2 = 2; tri++;
-  colors[tri] = make_Vec3f(0,0,1); triangles[tri].v0 = 2; triangles[tri].v1 = 4; triangles[tri].v2 = 6; tri++;
-
-  // back side
-  colors[tri] = make_Vec3f(1,1,0); triangles[tri].v0 = 1; triangles[tri].v1 = 3; triangles[tri].v2 = 5; tri++;
-  colors[tri] = make_Vec3f(1,1,0); triangles[tri].v0 = 3; triangles[tri].v1 = 7; triangles[tri].v2 = 5; tri++;
-
-  rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-
-  return mesh;
-}
-
-/*! random number generator for floating point numbers in range [0,1] */
-inline uniform float frand(uniform int& seed) {
-  seed = 1103515245 * seed + 12345;
-  seed = 235543534 * seed + 2341233;
-  seed = 43565 * seed + 2332443;
-  return (seed & 0xFFFF)/(uniform float)0xFFFF;
-}
-
-/*! Uniform hemisphere sampling. Up direction is the z direction. */
-uniform Vec3f sampleSphere(const uniform float& u, const uniform float& v) 
-{
-  const uniform float phi = 2.0f*(float)pi * u;
-  const uniform float cosTheta = 1.0f - 2.0f * v, sinTheta = 2.0f * sqrt(v * (1.0f - v));
-  return make_Vec3f(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
-}
-
-uniform Vec3f noise(uniform Vec3f p) {
-  return p / length(p);
-}
-
-/* adds hair to the scene */
-uniform unsigned int addHair (RTCScene scene_i)
-{
-#if 1
-  print("addHair\n");
-  uniform unsigned int geomID = rtcNewHairGeometry (scene_i, RTC_GEOMETRY_STATIC, 1, 4);
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
-  uniform int*    uniform indices  = (uniform int*    uniform) rtcMapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
-  vertices[0].x = 0; vertices[0].y = -2; vertices[0].z = 0; vertices[0].r = 0.5; 
-  vertices[1].x = 0; vertices[1].y = -1; vertices[1].z = 0; vertices[1].r = 0.5; 
-  vertices[2].x = 0; vertices[2].y =  0; vertices[2].z = 0; vertices[2].r = 0.5; 
-  vertices[3].x = 0; vertices[3].y =  1; vertices[3].z = 0; vertices[3].r = 0.5; 
-  indices[0] = 0;
-  rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
-  rtcUnmapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
-  return geomID;
-
-#else
-  uniform int seed = 0;
-  const uniform int numCurves = 1000;
-  const uniform int numCurveSegments = 4;
-  const uniform int numCurvePoints = 3*numCurveSegments+1;
-
-  /* create set of bezier curves */
-  uniform unsigned int geomID = rtcNewHairGeometry (scene_i, RTC_GEOMETRY_STATIC, numCurves*numCurveSegments, numCurves*numCurvePoints);
-
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
-  uniform int*    uniform indices  = (uniform int*    uniform) rtcMapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
-
-  for (uniform size_t i=0; i<numCurves; i++)
-  {
-    uniform float ru = frand(seed);
-    uniform float rv = frand(seed);
-    uniform Vec3f d = sampleSphere(ru,rv);
-    uniform Vec3f p = div(d,max(abs(d.x),max(abs(d.y),abs(d.z))));
-    for (uniform size_t j=0; j<=numCurveSegments; j++) 
-    {
-      uniform Vec3f p0 = p;
-      p = add(p,noise(p));
-      uniform Vec3f p1 = p;
-      p = add(p,noise(p));
-      
-      if (j>0) {
-        vertices[i*numCurvePoints+3*j-1].x = 2.0f*p0.x-p1.x;
-        vertices[i*numCurvePoints+3*j-1].y = 2.0f*p0.y-p1.y;
-        vertices[i*numCurvePoints+3*j-1].z = 2.0f*p0.z-p1.z;
-        vertices[i*numCurvePoints+3*j-1].r = 0.01f;
-      }
-      
-      vertices[i*numCurvePoints+3*j+0].x = p0.x;
-      vertices[i*numCurvePoints+3*j+0].y = p0.y;
-      vertices[i*numCurvePoints+3*j+0].z = p0.z;
-      vertices[i*numCurvePoints+3*j+0].r = 0.01f;
-
-      if (j<numCurveSegments) {
-        vertices[i*numCurvePoints+3*j+1].x = p1.x;
-        vertices[i*numCurvePoints+3*j+1].y = p1.y;
-        vertices[i*numCurvePoints+3*j+1].z = p1.z;
-        vertices[i*numCurvePoints+3*j+1].r = 0.01f;
-      }
-    }
-
-    for (uniform size_t j=0; j<numCurveSegments; j++) {
-      indices[i*numCurveSegments+j] = i*numCurvePoints+3*j;
-    }
-  }
-
-  rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER); 
-  rtcUnmapBuffer(scene_i,geomID,RTC_INDEX_BUFFER); 
-
-  return geomID;
-#endif
-}
-
-/* adds a ground plane to the scene */
-uniform unsigned int addGroundPlane (RTCScene scene_i)
-{
-  /* create a triangulated plane with 2 triangles and 4 vertices */
-  uniform unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
-
-  /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
-  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
-  vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-
-  /* set triangles */
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-  triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
-  triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-
-  return mesh;
-}
 
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
+  g_accu_vx = make_Vec3f(0.0f);
+  g_accu_vy = make_Vec3f(0.0f);
+  g_accu_vz = make_Vec3f(0.0f);
+  g_accu_p  = make_Vec3f(0.0f);
+
+  hair_K  = make_Vec3f(0.8f,0.57f,0.32f);
+  hair_dK = make_Vec3f(0.1f,0.12f,0.08f);
+  hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
+  hair_Kt = 0.8f*hair_K;    //!< transparency of hair
+
   /* initialize ray tracing core */
   rtcInit(cfg);
-
-  /* create scene */
-  //g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
-
-  /* add cube */
-  //addCube(g_scene);
-
-  /* add hairs */
-  //addHair(g_scene);
-
-  /* add ground plane */
-  //addGroundPlane(g_scene);
-
-  //addMeshes(g_scene,g_ispc_scene);
-
-  /* commit changes to scene */
-  //rtcCommit (g_scene);
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
 }
 
+/*! Anisotropic power cosine microfacet distribution. */
+struct AnisotropicBlinn {
+  Vec3f dx;       //!< x-direction of the distribution.
+  float nx;        //!< Glossiness in x direction with range [0,infinity[ where 0 is a diffuse surface.
+  Vec3f dy;       //!< y-direction of the distribution.
+  float ny;        //!< Exponent that determines the glossiness in y direction.
+  Vec3f dz;       //!< z-direction of the distribution.
+  float norm1;     //!< Normalization constant for calculating the pdf for sampling.
+  float norm2;     //!< Normalization constant for calculating the distribution.
+  Vec3f Kr,Kt; 
+  float side;
+};
+
+  /*! Anisotropic power cosine distribution constructor. */
+inline void AnisotropicBlinn__Constructor(varying AnisotropicBlinn* uniform This, const Vec3f Kr, const Vec3f Kt, 
+                                          const Vec3f dx, float nx, const Vec3f dy, float ny, const Vec3f dz) 
+{
+  This->Kr = Kr;
+  This->Kt = Kt;
+  This->dx = dx;
+  This->nx = nx;
+  This->dy = dy;
+  This->ny = ny;
+  This->dz = dz;
+  This->norm1 = sqrtf((nx+1)*(ny+1)) * one_over_two_pi;
+  This->norm2 = sqrtf((nx+2)*(ny+2)) * one_over_two_pi;
+  This->side = reduce_max(Kr)/(reduce_max(Kr)+reduce_max(Kt));
+}
+
+/*! Evaluates the power cosine distribution. \param wh is the half
+ *  vector */
+inline float AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This, const Vec3f& wh)  
+{
+  const float cosPhiH   = dot(wh, This->dx);
+  const float sinPhiH   = dot(wh, This->dy);
+  const float cosThetaH = dot(wh, This->dz);
+  const float R = sqr(cosPhiH)+sqr(sinPhiH);
+  if (R == 0.0f) return This->norm2;
+  const float n = (This->nx*sqr(cosPhiH)+This->ny*sqr(sinPhiH))*rcp(R);
+  return This->norm2 * pow(abs(cosThetaH), n);
+}
+
+/*! Samples the distribution. \param s is the sample location
+ *  provided by the caller. */
+inline Vec3fa AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform This, const float sx, const float sy)
+{
+  const float phi = two_pi*sx;
+  const float sinPhi0 = sqrtf(This->nx+1)*sinf(phi);
+  const float cosPhi0 = sqrtf(This->ny+1)*cosf(phi);
+  const float norm = rsqrt(sqr(sinPhi0)+sqr(cosPhi0));
+  const float sinPhi = sinPhi0*norm;
+  const float cosPhi = cosPhi0*norm;
+  const float n = This->nx*sqr(cosPhi)+This->ny*sqr(sinPhi);
+  const float cosTheta = powf(sy,rcp(n+1));
+  const float sinTheta = cos2sin(cosTheta);
+  const float pdf = This->norm1*powf(cosTheta,n);
+  const Vec3f h = make_Vec3f(cosPhi * sinTheta, sinPhi * sinTheta, cosTheta);
+  const Vec3f wh = h.x*This->dx + h.y*This->dy + h.z*This->dz;
+  return make_Vec3fa(wh,pdf);
+}
+
+inline Vec3f AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This, const Vec3f wo, const Vec3f wi) 
+{
+  const float cosThetaI = dot(wi,This->dz);
+  
+  /* reflection */
+  if (cosThetaI > 0.0f) {
+    const Vec3f wh = normalize(wi + wo);
+    return This->Kr * AnisotropicBlinn__eval(This,wh) * abs(cosThetaI);
+  } 
+  
+  /* transmission */
+  else {
+    const Vec3f wh = normalize(reflect(wi,This->dz) + wo);
+    return This->Kt * AnisotropicBlinn__eval(This,wh) * abs(cosThetaI);
+  }
+}
+
+inline Vec3f AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform This, const Vec3f& wo, Vec3fa& wi, const float sx, const float sy, const float sz) 
+{
+  //wi = Vec3f(reflect(normalize(wo),normalize(dz)),1.0f); return Kr;
+  //wi = Vec3f(neg(wo),1.0f); return Kt;
+  const Vec3fa wh = AnisotropicBlinn__sample(This,sx,sy);
+  //if (dot(wo,wh) < 0.0f) return Vec3f(0.0f,0.0f);
+  
+  /* reflection */
+  if (sz < This->side) {
+    wi = make_Vec3fa(reflect(wo,make_Vec3f(wh)),wh.w*This->side);
+    const float cosThetaI = dot(make_Vec3f(wi),This->dz);
+    return This->Kr * AnisotropicBlinn__eval(This,make_Vec3f(wh)) * abs(cosThetaI);
+  }
+  
+  /* transmission */
+  else {
+    wi = make_Vec3fa(reflect(reflect(wo,make_Vec3f(wh)),This->dz),wh.w*(1-This->side));
+    const float cosThetaI = dot(make_Vec3f(wi),This->dz);
+    return This->Kt * AnisotropicBlinn__eval(This,make_Vec3f(wh)) * abs(cosThetaI);
+  }
+}
+
+typedef uniform Vec3fa* uniform uniform_Vec3fa_ptr;
+
+inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
+{
+  const float t0 = 1.0f - t, t1 = t;
+  const ISPCHairSet* hair = g_ispc_scene->hairs[geomID]; // FIXME: works only because hairs are added first to scene
+  const Vec3fa* vertices = hair->v;
+  const ISPCHair* hairs = hair->hairs;
+  
+  const int i = hairs[primID].vertex;
+  const Vec3fa p00 = vertices[i+0];
+  const Vec3fa p01 = vertices[i+1];
+  const Vec3fa p02 = vertices[i+2];
+  const Vec3fa p03 = vertices[i+3];
+  
+  const Vec3fa p10 = p00 * t0 + p01 * t1;
+  const Vec3fa p11 = p01 * t0 + p02 * t1;
+  const Vec3fa p12 = p02 * t0 + p03 * t1;
+  const Vec3fa p20 = p10 * t0 + p11 * t1;
+  const Vec3fa p21 = p11 * t0 + p12 * t1;
+  const Vec3fa p30 = p20 * t0 + p21 * t1;
+  
+  return p30;
+  //tangent = p21-p20;
+}
+
+/* extended ray structure that includes total transparency along the ray */
+struct RTCRay2
+{
+  Vec3f org;     //!< Ray origin
+  Vec3f dir;     //!< Ray direction
+  float tnear;   //!< Start of ray segment
+  float tfar;    //!< End of ray segment
+  float time;    //!< Time of this ray for motion blur.
+  int mask;      //!< used to mask out objects during traversal
+  Vec3f Ng;      //!< Geometric normal.
+  float u;       //!< Barycentric u coordinate of hit
+  float v;       //!< Barycentric v coordinate of hit
+  int geomID;    //!< geometry ID
+  int primID;    //!< primitive ID
+  int instID;    //!< instance ID
+
+  // ray extensions
+  RTCFilterFuncVarying filter;
+  Vec3f transparency; //!< accumulated transparency value
+};
+
+bool enableFilterDispatch = false;
+
+/* filter dispatch function */
+void filterDispatch(void* uniform ptr, RTCRay2& ray) {
+  if (!enableFilterDispatch) return;
+  if (ray.filter) ray.filter(ptr,*((varying RTCRay*)&ray)); // FIXME: use RTCRay& cast
+}
+
+/* occlusion filter function */
+void occlusionFilter(void* uniform ptr, RTCRay2& ray)
+{
+  /* make all surfaces opaque */
+  if (ray.geomID >= g_ispc_scene->numHairSets) {
+    ray.transparency = make_Vec3f(0.0f);
+    return;
+  }
+  Vec3f T = hair_Kt;
+  T = T * ray.transparency; // FIXME: use *= operator
+  ray.transparency = T;
+  if (ne(T,make_Vec3f(0.0f))) ray.geomID = RTC_INVALID_GEOMETRY_ID; // FIXME: use != operator
+}
+
+Vec3f occluded(RTCScene scene, RTCRay2& ray)
+{
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = 0;
+  ray.filter = (RTCFilterFuncVarying) &occlusionFilter;
+  ray.transparency = make_Vec3f(1.0f);
+  rtcOccluded(scene,*((varying RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
+  return ray.transparency;
+}
+
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
+  int seed = 21344*x+121233*y+234532*g_accu_count;
+
   /* initialize ray */
-  RTCRay ray;
+  RTCRay2 ray;
   ray.org = p;
   ray.dir = normalize(x*vx + y*vy + vz);
   ray.tnear = 0.0f;
@@ -396,42 +402,160 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
+  ray.filter = NULL; 
   
-  /* intersect ray with scene */
-  rtcIntersect(g_scene,ray);
-  
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
-  else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
-
-#if 0
-  /* shade pixels */
   Vec3f color = make_Vec3f(0.0f);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
+  Vec3f weight = make_Vec3f(1.0f);
+  size_t depth = 0;
+
+  while (true)
   {
-    Vec3f diffuse = colors[ray.primID];
-    color = color + diffuse*0.5f; // FIXME: +=
-    Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
+    /* terminate ray path */
+    if (reduce_max(weight) < 0.01 || depth > 20) 
+      return color;
+
+    /* intersect ray with scene and gather all hits */
+    rtcIntersect(g_scene,*((varying RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
     
-    /* initialize shadow ray */
-    RTCRay shadow;
+    /* exit if we hit environment */
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+      return color + weight*make_Vec3f(g_ambient_intensity);
+
+    /* calculate transmissivity of hair */
+    AnisotropicBlinn brdf;
+    float tnear_eps = 0.0001f;
+
+    if (ray.geomID < g_ispc_scene->numHairSets) 
+    {
+      /* calculate tangent space */
+      const Vec3f dx = normalize(ray.Ng);
+      const Vec3f dy = normalize(cross(ray.dir,dx));
+      const Vec3f dz = normalize(cross(dy,dx));
+
+      /* generate anisotropic BRDF */
+      AnisotropicBlinn__Constructor(&brdf,hair_Kr,hair_Kt,dx,20.0f,dy,2.0f,dz);
+      brdf.Kr = hair_Kr;
+      Vec3fa p = evalBezier(ray.geomID,ray.primID,ray.u);
+      tnear_eps = 1.1f*p.w;
+    }
+    else 
+    {
+      int meshID = ray.geomID-g_ispc_scene->numHairSets;
+      ISPCMesh* mesh = g_ispc_scene->meshes[meshID];
+      ISPCTriangle* triangle = &mesh->triangles[ray.primID];
+      ISPCMaterial* material = &g_ispc_scene->materials[triangle->materialID];
+      if (material->illum == 1)
+      {
+        /* calculate tangent space */
+        const Vec3f dx = normalize(make_Vec3f(mesh->normals[triangle->v0]));
+        const Vec3f dy = normalize(cross(ray.dir,dx));
+        const Vec3f dz = normalize(cross(dy,dx));
+        
+        /* generate anisotropic BRDF */
+        AnisotropicBlinn__Constructor(&brdf,hair_Kr,hair_Kt,dx,20.0f,dy,2.0f,dz);
+        brdf.Kr = hair_Kr;
+        tnear_eps = 1.1f*mesh->texcoords[triangle->v0].x;
+      }
+      else
+      {
+        if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
+        
+        /* calculate tangent space */
+        const Vec3f dz = normalize(ray.Ng);
+        const Vec3f dx = normalize(cross(dz,ray.dir));
+        const Vec3f dy = normalize(cross(dz,dx));
+        
+        /* generate isotropic BRDF */
+        AnisotropicBlinn__Constructor(&brdf,make_Vec3f(1.0f),make_Vec3f(0.0f),dx,1.0f,dy,1.0f,dz);
+      }
+    }
+    
+    /* sample directional light */
+    RTCRay2 shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
-    shadow.dir = neg(lightDir);
-    shadow.tnear = 0.001f;
+    shadow.dir = neg(make_Vec3f(g_dirlight_direction));
+    shadow.tnear = tnear_eps;
     shadow.tfar = inf;
-    shadow.geomID = 1;
-    shadow.primID = 0;
-    shadow.mask = -1;
-    shadow.time = 0;
+    Vec3f T = occluded(g_scene,shadow);
+    Vec3f c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(make_Vec3f(g_dirlight_direction)));
+    color = color + weight*c*T*make_Vec3f(g_dirlight_intensity); // FIXME: use += operator
+
+#if 1
+    /* sample BRDF */
+    Vec3fa wi;
+    c = AnisotropicBlinn__sample(&brdf,neg(ray.dir),wi,frand(seed),frand(seed),frand(seed));
+    if (wi.w <= 0.0f) return color;
+
+    /* calculate secondary ray and offset it out of the hair */
+    float sign = dot(make_Vec3f(wi),brdf.dz) < 0.0f ? -1.0f : 1.0f;
+    ray.org = ray.org + ray.tfar*ray.dir + sign*tnear_eps*brdf.dz;
+    ray.dir = make_Vec3f(wi);
+    ray.tnear = 0.001f;
+    ray.tfar = inf;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
+    ray.mask = -1;
+    ray.time = 0;
+    ray.filter = NULL;
+    weight = weight * c/wi.w; // FIXME: use *= operator
+
+#else    
+
+    /* continue with transparency ray */
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.tnear = 1.001f*ray.tfar;
+    ray.tfar = inf;
+    weight *= brdf.Kt;
     
-    /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
-    
-    /* add light contribution */
-    if (shadow.geomID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME: +=
+#endif
+
+    depth++;
   }
   return color;
-#endif
+}
+
+Vec3f renderPixelTestEyeLight(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+{
+  /* initialize ray */
+  RTCRay2 ray;
+  ray.org = p;
+  ray.dir = normalize(x*vx + y*vy + vz);
+  Vec3f dir1 = normalize((x+1)*vx + (y+1)*vy + vz);
+  ray.tnear = 0.0f;
+  ray.tfar = inf;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = 0;
+
+  Vec3f color = make_Vec3f(0.0f);
+  float weight = 1.0f;
+
+  rtcIntersect(g_scene,*((varying RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
+  ray.filter = NULL; // (RTCFilterFunc) intersectionFilter;
+
+  if (ray.primID == -1)
+    return make_Vec3f(0.0f);
+  
+  Vec3f Ng;
+  if (ray.geomID < g_ispc_scene->numHairSets) 
+  {
+    const Vec3f dx = normalize(ray.Ng);
+    const Vec3f dy = normalize(cross(ray.dir,dx));
+    const Vec3f dz = normalize(cross(dy,dx));
+    Ng = dz;
+  }
+  else 
+  {
+    if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
+    const Vec3f dz = normalize(ray.Ng);
+    const Vec3f dx = normalize(cross(dz,ray.dir));
+    const Vec3f dy = normalize(cross(dz,dx));
+    Ng = dz;
+  }
+
+  color = color + make_Vec3f(0.2f + 0.5f * abs(dot(ray.dir,Ng))); // FIXME: use += operator
+  return color;
 }
 
 /* task that renders a single screen tile */
@@ -446,42 +570,81 @@ task void renderTile(uniform int* uniform pixels,
                      const uniform int numTilesX, 
                      const uniform int numTilesY)
 {
-  const uniform int tileY = taskIndex / numTilesX;
-  const uniform int tileX = taskIndex - tileY * numTilesX;
-  const uniform int x0 = tileX * TILE_SIZE_X;
-  const uniform int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform int y0 = tileY * TILE_SIZE_Y;
-  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  const int tileY = taskIndex / numTilesX;
+  const int tileX = taskIndex - tileY * numTilesX;
+  const int x0 = tileX * TILE_SIZE_X;
+  const int x1 = min(x0+TILE_SIZE_X,width);
+  const int y0 = tileY * TILE_SIZE_Y;
+  const int y1 = min(y0+TILE_SIZE_Y,height);
+  int seed = tileY*numTilesX+tileX+g_accu_count;
 
-  foreach (y = y0 ... y1, x = x0 ... x1)
+  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
+    //if (x != 0 || y != 0) continue;
+
     /* calculate pixel color */
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    float fx = x + frand(seed);
+    float fy = y + frand(seed);
+#if USE_EYELIGHT_SHADING == 1
+    Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
+#else
+    Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
+#endif
+
+    Vec3fa* dst = &g_accu[y*width+x];
+    *dst = *dst + make_Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
 
     /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    float f = rcp(max(0.001f,dst->w));
+    unsigned int r = (unsigned int) (255.0f * clamp(dst->x*f,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(dst->y*f,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(dst->z*f,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 }
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
-                    const uniform int width,
-                    const uniform int height,
-                    const uniform float time,
-                    const uniform Vec3f& vx, 
-                    const uniform Vec3f& vy, 
-                    const uniform Vec3f& vz, 
-                    const uniform Vec3f& p)
+                           const uniform int width,
+                           const uniform int height,
+                           const uniform float time,
+                           const uniform Vec3f& vx, 
+                           const uniform Vec3f& vy, 
+                           const uniform Vec3f& vz, 
+                           const uniform Vec3f& p)
 {
+  /* create scene */
   if (g_scene == NULL)
     g_scene = convertScene(g_ispc_scene);
 
-  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  /* create accumulator */
+  if (g_accu_width != width || g_accu_height != height) {
+    g_accu = uniform new uniform Vec3fa[width*height];
+    g_accu_width = width;
+    g_accu_height = height;
+    memset(g_accu,0,width*height*sizeof(uniform Vec3fa));
+  }
+
+  /* reset accumulator */
+  uniform bool camera_changed = g_changed; 
+  g_changed = false;
+  //g_changed = true;
+  camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx; // FIXME: use != operator
+  camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
+  camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
+  camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
+  g_accu_count++;
+  if (camera_changed) {
+    g_accu_count=0;
+    memset(g_accu,0,width*height*sizeof(uniform Vec3fa));
+  }
+
+  /* render frame */
+  uniform const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  uniform const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  enableFilterDispatch = true;
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
+  enableFilterDispatch = false;
   rtcDebug();
 }
 
@@ -489,7 +652,5 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
-  delete[] colors;
   rtcExit();
 }
-
