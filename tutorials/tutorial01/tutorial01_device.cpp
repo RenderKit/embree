@@ -28,8 +28,8 @@ const int numTheta = 2*numPhi;
 
 /* scene data */
 RTCScene g_scene = NULL;
-Vec3f position[numSpheres];
-Vec3f colors[numSpheres+1];
+Vec3fa position[numSpheres];
+Vec3fa colors[numSpheres+1];
 float radius[numSpheres];
 int disabledID = -1;
 
@@ -37,7 +37,7 @@ int disabledID = -1;
 renderPixelFunc renderPixel;
 
 /* adds a sphere to the scene */
-unsigned int createSphere (RTCGeometryFlags flags, const Vec3f pos, const float r)
+unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa pos, const float r)
 {
   /* create a triangulated sphere */
   unsigned int mesh = rtcNewTriangleMesh (g_scene, flags, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
@@ -128,7 +128,7 @@ extern "C" void device_init (int8* cfg)
   {
     const float phi = i*2.0f*float(pi)/numSpheres;
     const float r = 2.0f*float(pi)/numSpheres;
-    const Vec3f p = 2.0f*Vec3f(sin(phi),0.0f,-cos(phi));
+    const Vec3fa p = 2.0f*Vec3fa(sin(phi),0.0f,-cos(phi));
     RTCGeometryFlags flags = i%2 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
     //RTCGeometryFlags flags = RTC_GEOMETRY_DEFORMABLE;
     int id = createSphere(flags,p,r);
@@ -141,7 +141,7 @@ extern "C" void device_init (int8* cfg)
 
   /* add ground plane to scene */
   int id = addGroundPlane(g_scene);
-  colors[id] = Vec3f(1.0f,1.0f,1.0f);
+  colors[id] = Vec3fa(1.0f,1.0f,1.0f);
 
   /* commit changes to scene */
   rtcCommit (g_scene);
@@ -154,7 +154,7 @@ extern "C" void device_init (int8* cfg)
 void animateSphere (int taskIndex, Vertex* vertices, 
                          const float rcpNumTheta,
                          const float rcpNumPhi,
-                         const Vec3f pos, 
+                         const Vec3fa pos, 
                          const float r,
                          const float f)
 {
@@ -188,12 +188,12 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   rtcIntersect(g_scene,ray);
   
   /* shade pixels */
-  Vec3f color = Vec3f(0.0f);
+  Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3f diffuse = colors[ray.geomID];
+    Vec3fa diffuse = colors[ray.geomID];
     color = color + diffuse*0.1f; // FIXME: +=
-    Vec3f lightDir = normalize(Vec3f(-1,-1,-1));
+    Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
     
     /* initialize shadow ray */
     RTCRay shadow;
@@ -221,10 +221,10 @@ void renderTile(int taskIndex, int* pixels,
                      const int width,
                      const int height, 
                      const float time,
-                     const Vec3f& vx, 
-                     const Vec3f& vy, 
-                     const Vec3f& vz, 
-                     const Vec3f& p,
+                     const Vec3fa& vx, 
+                     const Vec3fa& vy, 
+                     const Vec3fa& vz, 
+                     const Vec3fa& p,
                      const int numTilesX, 
                      const int numTilesY)
 {
@@ -238,7 +238,7 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -255,7 +255,7 @@ void animateSphere (int id, float time)
   Vertex* vertices = (Vertex*) rtcMapBuffer(g_scene,id,RTC_VERTEX_BUFFER); 
   const float rcpNumTheta = rcp((float)numTheta);
   const float rcpNumPhi   = rcp((float)numPhi);
-  const Vec3f pos = position[id];
+  const Vec3fa pos = position[id];
   const float r = radius[id];
   const float f = 2.0f*(1.0f+0.5f*sin(time));
 
@@ -285,10 +285,10 @@ extern "C" void device_render (int* pixels,
                            const int width,
                            const int height, 
                            const float time,
-                           const Vec3f& vx, 
-                           const Vec3f& vy, 
-                           const Vec3f& vz, 
-                           const Vec3f& p)
+                           const Vec3fa& vx, 
+                           const Vec3fa& vy, 
+                           const Vec3fa& vz, 
+                           const Vec3fa& p)
 {
   /* animate sphere */
   for (int i=0; i<numSpheres; i++)

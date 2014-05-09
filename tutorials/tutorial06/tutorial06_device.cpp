@@ -32,10 +32,10 @@ struct ISPCMaterial
   float Ns;              /*< specular exponent */
   float Ni;              /*< optical density for the surface (index of refraction) */
   
-  Vec3f Ka;              /*< ambient reflectivity */
-  Vec3f Kd;              /*< diffuse reflectivity */
-  Vec3f Ks;              /*< specular reflectivity */
-  Vec3f Tf;              /*< transmission filter */
+  Vec3fa Ka;              /*< ambient reflectivity */
+  Vec3fa Kd;              /*< diffuse reflectivity */
+  Vec3fa Ks;              /*< specular reflectivity */
+  Vec3fa Tf;              /*< transmission filter */
 };
 
 struct ISPCMesh
@@ -64,7 +64,7 @@ RTCScene g_scene = NULL;
 renderPixelFunc renderPixel;
 
 /* light */
-Vec3f AmbientLight__L;
+Vec3fa AmbientLight__L;
 
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
@@ -76,7 +76,7 @@ extern "C" void device_init (int8* cfg)
   renderPixel = renderPixelStandard;
 
   /* set light */
-  AmbientLight__L = Vec3f(1,1,1);
+  AmbientLight__L = Vec3fa(1,1,1);
 }
 
 RTCScene convertScene(ISPCScene* scene_in)
@@ -118,25 +118,25 @@ RTCScene convertScene(ISPCScene* scene_in)
 }
 
 /*! Cosine weighted hemisphere sampling. Up direction is the z direction. */
-inline Vec3f cosineSampleHemisphere(float& pdf, const float u, const float v) 
+inline Vec3fa cosineSampleHemisphere(float& pdf, const float u, const float v) 
 {
   const float phi = 2.0f * (float)pi * u;
   const float cosTheta = sqrt(v), sinTheta = sqrt(1.0f - v);
   pdf = cosTheta*(1.0f/(float)pi);
-  return Vec3f(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+  return Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
 }
 
 /*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
-inline Vec3f cosineSampleHemisphere(float& pdf, const float& u, const float& v, const Vec3f& N) {
+inline Vec3fa cosineSampleHemisphere(float& pdf, const float& u, const float& v, const Vec3fa& N) {
   return frame(N)*cosineSampleHemisphere(pdf,u,v);
 }
 
-inline Vec3f AmbientLight__eval(const Vec3f& Ns, const Vec3f& wi) {
+inline Vec3fa AmbientLight__eval(const Vec3fa& Ns, const Vec3fa& wi) {
   return AmbientLight__L;
 }
 
-inline Vec3f AmbientLight__sample(const Vec3f& Ns, 
-                                  Vec3f& wi,
+inline Vec3fa AmbientLight__sample(const Vec3fa& Ns, 
+                                  Vec3fa& wi,
                                   float& tMax,
                                   const Vec2f& s) 
 {
@@ -145,14 +145,14 @@ inline Vec3f AmbientLight__sample(const Vec3f& Ns,
   return AmbientLight__L/pdf;
 }
 
-inline Vec3f Matte__eval(const int& materialID, const Vec3f& wo, const Vec3f& Ns, const Vec3f& wi) 
+inline Vec3fa Matte__eval(const int& materialID, const Vec3fa& wo, const Vec3fa& Ns, const Vec3fa& wi) 
 {
   ISPCMaterial* material = &g_ispc_scene->materials[materialID];
-  Vec3f diffuse = material->Kd;
+  Vec3fa diffuse = material->Kd;
   return diffuse * (1.0f/(float)pi) * clamp(dot(wi,Ns),0.0f,1.0f);
 }
 
-inline Vec3f Matte__sample(const int& materialID, const Vec3f& wo, const Vec3f& Ns, Vec3f& wi, const Vec2f& s) 
+inline Vec3fa Matte__sample(const int& materialID, const Vec3fa& wo, const Vec3fa& Ns, Vec3fa& wi, const Vec2f& s) 
 {
   float pdf; wi = cosineSampleHemisphere(pdf,s.x,s.y,Ns);
   return Matte__eval(materialID, wo, Ns, wi)/pdf;
@@ -165,16 +165,16 @@ inline float frand(int& seed) {
   return (seed & 0xFFFF)/(float)0xFFFF;
 }
 
-inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
+inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   const Vec3fa Ng = _Ng;
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-Vec3f renderPixelSeed(float x, float y, int& seed, const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p)
+Vec3fa renderPixelSeed(float x, float y, int& seed, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* radiance accumulator and weight */
-  Vec3f L = Vec3f(0.0f);
-  Vec3f Lw = Vec3f(1.0f);
+  Vec3fa L = Vec3fa(0.0f);
+  Vec3fa Lw = Vec3fa(1.0f);
 
   /* initialize ray */
   RTCRay ray;
@@ -196,12 +196,12 @@ Vec3f renderPixelSeed(float x, float y, int& seed, const Vec3f& vx, const Vec3f&
 
     /* intersect ray with scene */ 
     rtcIntersect(g_scene,ray);
-    Vec3f Ns = face_forward(ray.dir,normalize(ray.Ng));
-    Vec3f Ph = ray.org + ray.tfar*ray.dir;
+    Vec3fa Ns = face_forward(ray.dir,normalize(ray.Ng));
+    Vec3fa Ph = ray.org + ray.tfar*ray.dir;
 
     /* shade background with ambient light */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
-      Vec3f La = AmbientLight__eval(Ns,neg(ray.dir));
+      Vec3fa La = AmbientLight__eval(Ns,neg(ray.dir));
       L = L + Lw*La; // FIXME: +=
       break;
     }
@@ -220,9 +220,9 @@ Vec3f renderPixelSeed(float x, float y, int& seed, const Vec3f& vx, const Vec3f&
 #endif
 
     /* sample ambient light */
-    Vec3f wi; float tMax;
+    Vec3fa wi; float tMax;
     Vec2f s = Vec2f(frand(seed),frand(seed));
-    Vec3f Ll = AmbientLight__sample(Ns,wi,tMax,s);
+    Vec3fa Ll = AmbientLight__sample(Ns,wi,tMax,s);
         
     /* initialize shadow ray */
     RTCRay shadow;
@@ -240,13 +240,13 @@ Vec3f renderPixelSeed(float x, float y, int& seed, const Vec3f& vx, const Vec3f&
     
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
-      Vec3f Lm = Matte__eval(materialID,neg(ray.dir),Ns,wi);
+      Vec3fa Lm = Matte__eval(materialID,neg(ray.dir),Ns,wi);
       L = L + Lw*Ll*Lm; // FIXME: +=
     }
 
     /* calculate diffuce bounce */
     s = Vec2f(frand(seed),frand(seed));
-    Vec3f c = Matte__sample(materialID,neg(ray.dir), Ns, wi, s);
+    Vec3fa c = Matte__sample(materialID,neg(ray.dir), Ns, wi, s);
     Lw = Lw*c; // FIXME: *=
 
     /* setup secondary ray */
@@ -266,7 +266,7 @@ Vec3f renderPixelSeed(float x, float y, int& seed, const Vec3f& vx, const Vec3f&
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   int seed = x*233+y*234234+237;
-  Vec3f L = Vec3f(0.0f,0.0f,0.0f);
+  Vec3fa L = Vec3fa(0.0f,0.0f,0.0f);
   //for (int i=0; i<16; i++) {
   L = L + renderPixelSeed(x,y,seed,vx,vy,vz,p); // FIXME: +=
   //}
@@ -279,10 +279,10 @@ void renderTile(int taskIndex, int* pixels,
                      const int width,
                      const int height, 
                      const float time,
-                     const Vec3f& vx, 
-                     const Vec3f& vy, 
-                     const Vec3f& vz, 
-                     const Vec3f& p,
+                     const Vec3fa& vx, 
+                     const Vec3fa& vy, 
+                     const Vec3fa& vz, 
+                     const Vec3fa& p,
                      const int numTilesX, 
                      const int numTilesY)
 {
@@ -296,9 +296,8 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    //Vec3f color = Vec3f(0.0f,0.0f,0.0f);
-
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+    //    Vec3fa color = Vec3fa(0.0,0.0,0.0); 
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -313,10 +312,10 @@ extern "C" void device_render (int* pixels,
                            const int width,
                            const int height, 
                            const float time,
-                           const Vec3f& vx, 
-                           const Vec3f& vy, 
-                           const Vec3f& vz, 
-                           const Vec3f& p)
+                           const Vec3fa& vx, 
+                           const Vec3fa& vy, 
+                           const Vec3fa& vz, 
+                           const Vec3fa& p)
 {
   /* create scene */
   if (g_scene == NULL)

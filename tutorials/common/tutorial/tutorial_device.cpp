@@ -259,11 +259,11 @@ Vec3fa renderPixelUV16(float x, float y, const Vec3fa& vx, const Vec3fa& vy, con
 /* returns the point seen through specified pixel */
 extern "C" bool device_pick(const float x,
                             const float y, 
-                            const Vec3f& vx, 
-                            const Vec3f& vy, 
-                            const Vec3f& vz, 
-                            const Vec3f& p,
-                            Vec3f& hitPos)
+                            const Vec3fa& vx, 
+                            const Vec3fa& vy, 
+                            const Vec3fa& vz, 
+                            const Vec3fa& p,
+                            Vec3fa& hitPos)
 {
   /* initialize ray */
   RTCRay ray;
@@ -342,17 +342,17 @@ void renderTile(int taskIndex,
                 const int width,
                 const int height, 
                 const float time,
-                const Vec3f& vx, 
-                const Vec3f& vy, 
-                const Vec3f& vz, 
-                const Vec3f& p,
+                const Vec3fa& vx, 
+                const Vec3fa& vy, 
+                const Vec3fa& vz, 
+                const Vec3fa& p,
                 const int numTilesX, 
                 const int numTilesY);
 
 struct RenderTileTask
 {
   RenderTileTask (int* pixels, const int width, const int height, const float time, 
-                  const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p, const int numTilesX, const int numTilesY)
+                  const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY)
     : pixels(pixels), width(width), height(height), time(time), vx(vx), vy(vy), vz(vz), p(p), numTilesX(numTilesX), numTilesY(numTilesY) {}
 
 public:
@@ -360,10 +360,10 @@ public:
   const int width;
   const int height;
   const float time;
-  const Vec3f vx;
-  const Vec3f vy;
-  const Vec3f vz;
-  const Vec3f p;
+  const Vec3fa vx;
+  const Vec3fa vy;
+  const Vec3fa vz;
+  const Vec3fa p;
   const int numTilesX;
   const int numTilesY;
 };
@@ -374,7 +374,7 @@ void renderTile_parallel(RenderTileTask* task, size_t threadIndex, size_t thread
 
 void launch_renderTile (int numTiles, 
                         int* pixels, const int width, const int height, const float time, 
-                        const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p, const int numTilesX, const int numTilesY)
+                        const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY)
 {
   TaskScheduler::EventSync event;
   RenderTileTask parms(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);

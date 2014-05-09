@@ -32,10 +32,10 @@ struct ISPCMaterial
   float Ns;              /*< specular exponent */
   float Ni;              /*< optical density for the surface (index of refraction) */
   
-  Vec3f Ka;              /*< ambient reflectivity */
-  Vec3f Kd;              /*< diffuse reflectivity */
-  Vec3f Ks;              /*< specular reflectivity */
-  Vec3f Tf;              /*< transmission filter */
+  Vec3fa Ka;              /*< ambient reflectivity */
+  Vec3fa Kd;              /*< diffuse reflectivity */
+  Vec3fa Ks;              /*< specular reflectivity */
+  Vec3fa Tf;              /*< transmission filter */
 };
 
 struct ISPCMesh
@@ -220,7 +220,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   Ns = normalize(Ns);
 #endif
   uniform ISPCMaterial* material = &g_ispc_scene->materials[materialID];
-  color = material->Kd;
+  color = make_Vec3f(material->Kd);
 
   /* apply ambient light */
   Vec3f Nf = faceforward(Ns,neg(ray.dir),Ns);

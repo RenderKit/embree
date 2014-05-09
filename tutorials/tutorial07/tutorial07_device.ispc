@@ -27,7 +27,7 @@ uniform Vec3f g_accu_vx;
 uniform Vec3f g_accu_vy;
 uniform Vec3f g_accu_vz;
 uniform Vec3f g_accu_p;
-uniform bool g_changed = false;
+static uniform bool g_changed = false;
 
 /* light settings */
 extern uniform Vec3fa g_dirlight_direction;

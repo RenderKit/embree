@@ -291,7 +291,7 @@ namespace embree
       throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
   }
 
-  bool pick(const float x, const float y, const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p, Vec3f& hitPos)
+  bool pick(const float x, const float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, Vec3fa& hitPos)
   {
     PickDataSend send;
     send.x = x; send.y = y;
@@ -311,7 +311,7 @@ namespace embree
     return receive.hit;
   }
 
-  void render(const float time, const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p)
+  void render(const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
   {
     /* set parameters for rendering */
     RenderData parms;

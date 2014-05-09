@@ -34,24 +34,24 @@ struct Instance
   int userID;
   AffineSpace3f local2world;
   AffineSpace3f world2local;
-  Vec3f lower;
-  Vec3f upper;
+  Vec3fa lower;
+  Vec3fa upper;
 };
 
 void instanceBoundsFunc(const Instance* instance, size_t item, RTCBounds* bounds_o)
 {
-  Vec3f l = instance->lower;
-  Vec3f u = instance->upper;
-  Vec3f p000 = xfmPoint(instance->local2world,Vec3f(l.x,l.y,l.z));
-  Vec3f p001 = xfmPoint(instance->local2world,Vec3f(l.x,l.y,u.z));
-  Vec3f p010 = xfmPoint(instance->local2world,Vec3f(l.x,u.y,l.z));
-  Vec3f p011 = xfmPoint(instance->local2world,Vec3f(l.x,u.y,u.z));
-  Vec3f p100 = xfmPoint(instance->local2world,Vec3f(u.x,l.y,l.z));
-  Vec3f p101 = xfmPoint(instance->local2world,Vec3f(u.x,l.y,u.z));
-  Vec3f p110 = xfmPoint(instance->local2world,Vec3f(u.x,u.y,l.z));
-  Vec3f p111 = xfmPoint(instance->local2world,Vec3f(u.x,u.y,u.z));
-  Vec3f lower = min(min(min(p000,p001),min(p010,p011)),min(min(p100,p101),min(p110,p111)));
-  Vec3f upper = max(max(max(p000,p001),max(p010,p011)),max(max(p100,p101),max(p110,p111)));
+  Vec3fa l = instance->lower;
+  Vec3fa u = instance->upper;
+  Vec3fa p000 = xfmPoint(instance->local2world,Vec3fa(l.x,l.y,l.z));
+  Vec3fa p001 = xfmPoint(instance->local2world,Vec3fa(l.x,l.y,u.z));
+  Vec3fa p010 = xfmPoint(instance->local2world,Vec3fa(l.x,u.y,l.z));
+  Vec3fa p011 = xfmPoint(instance->local2world,Vec3fa(l.x,u.y,u.z));
+  Vec3fa p100 = xfmPoint(instance->local2world,Vec3fa(u.x,l.y,l.z));
+  Vec3fa p101 = xfmPoint(instance->local2world,Vec3fa(u.x,l.y,u.z));
+  Vec3fa p110 = xfmPoint(instance->local2world,Vec3fa(u.x,u.y,l.z));
+  Vec3fa p111 = xfmPoint(instance->local2world,Vec3fa(u.x,u.y,u.z));
+  Vec3fa lower = min(min(min(p000,p001),min(p010,p011)),min(min(p100,p101),min(p110,p111)));
+  Vec3fa upper = max(max(max(p000,p001),max(p010,p011)),max(max(p100,p101),max(p110,p111)));
   bounds_o->lower_x = lower.x;
   bounds_o->lower_y = lower.y;
   bounds_o->lower_z = lower.z;
@@ -62,8 +62,8 @@ void instanceBoundsFunc(const Instance* instance, size_t item, RTCBounds* bounds
 
 void instanceIntersectFunc(const Instance* instance, RTCRay& ray, size_t item)
 {
-  const Vec3f ray_org = ray.org;
-  const Vec3f ray_dir = ray.dir;
+  const Vec3fa ray_org = ray.org;
+  const Vec3fa ray_dir = ray.dir;
   const int geomID = ray.geomID;
   ray.org = xfmPoint (instance->world2local,ray_org);
   ray.dir = xfmVector(instance->world2local,ray_dir);
@@ -77,8 +77,8 @@ void instanceIntersectFunc(const Instance* instance, RTCRay& ray, size_t item)
 
 void instanceOccludedFunc(const Instance* instance, RTCRay& ray, size_t item)
 {
-  const Vec3f ray_org = ray.org;
-  const Vec3f ray_dir = ray.dir;
+  const Vec3fa ray_org = ray.org;
+  const Vec3fa ray_dir = ray.dir;
   ray.org = xfmPoint (instance->world2local,ray_org);
   ray.dir = xfmVector(instance->world2local,ray_dir);
   rtcOccluded(instance->object,ray);
@@ -86,17 +86,17 @@ void instanceOccludedFunc(const Instance* instance, RTCRay& ray, size_t item)
   ray.dir = ray_dir;
 }
 
-Instance* createInstance (RTCScene scene, RTCScene object, int userID, Vec3f lower, Vec3f upper)
+Instance* createInstance (RTCScene scene, RTCScene object, int userID, Vec3fa lower, Vec3fa upper)
 {
   Instance* instance = new Instance;
   instance->object = object;
   instance->userID = userID;
   instance->lower = lower;
   instance->upper = upper;
-  instance->local2world.l.vx = Vec3f(1,0,0);
-  instance->local2world.l.vy = Vec3f(0,1,0);
-  instance->local2world.l.vz = Vec3f(0,0,1);
-  instance->local2world.p    = Vec3f(0,0,0);
+  instance->local2world.l.vx = Vec3fa(1,0,0);
+  instance->local2world.l.vy = Vec3fa(0,1,0);
+  instance->local2world.l.vz = Vec3fa(0,0,1);
+  instance->local2world.p    = Vec3fa(0,0,0);
   instance->geometry = rtcNewUserGeometry(scene,1);
   rtcSetUserData(scene,instance->geometry,instance);
   rtcSetBoundsFunction(scene,instance->geometry,(RTCBoundsFunc)&instanceBoundsFunc);
@@ -119,7 +119,7 @@ void updateInstance (RTCScene scene, Instance* instance)
 struct Sphere
 {
   ALIGNED_STRUCT
-  Vec3f p;                      //!< position of the sphere
+  Vec3fa p;                      //!< position of the sphere
   float r;                      //!< radius of the sphere
   unsigned int geomID;
 };
@@ -138,7 +138,7 @@ void sphereBoundsFunc(const Sphere* spheres, size_t item, RTCBounds* bounds_o)
 void sphereIntersectFunc(const Sphere* spheres, RTCRay& ray, size_t item)
 {
   const Sphere& sphere = spheres[item];
-  const Vec3f v = ray.org-sphere.p;
+  const Vec3fa v = ray.org-sphere.p;
   const float A = dot(ray.dir,ray.dir);
   const float B = 2.0f*dot(v,ray.dir);
   const float C = dot(v,v) - sqr(sphere.r);
@@ -169,7 +169,7 @@ void sphereIntersectFunc(const Sphere* spheres, RTCRay& ray, size_t item)
 void sphereOccludedFunc(const Sphere* spheres, RTCRay& ray, size_t item)
 {
   const Sphere& sphere = spheres[item];
-  const Vec3f v = ray.org-sphere.p;
+  const Vec3fa v = ray.org-sphere.p;
   const float A = dot(ray.dir,ray.dir);
   const float B = 2.0f*dot(v,ray.dir);
   const float C = dot(v,v) - sqr(sphere.r);
@@ -187,7 +187,7 @@ void sphereOccludedFunc(const Sphere* spheres, RTCRay& ray, size_t item)
   }
 }
 
-Sphere* createAnalyticalSphere (RTCScene scene, Vec3f p, float r)
+Sphere* createAnalyticalSphere (RTCScene scene, Vec3fa p, float r)
 {
   unsigned int geomID = rtcNewUserGeometry(scene,1);
   Sphere* sphere = new Sphere;
@@ -217,7 +217,7 @@ Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
 //                      Triangular sphere geometry                          //
 // ======================================================================== //
 
-unsigned int createTriangulatedSphere (RTCScene scene, Vec3f p, float r)
+unsigned int createTriangulatedSphere (RTCScene scene, Vec3fa p, float r)
 {
   /* create triangle mesh */
   unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
@@ -305,7 +305,7 @@ Instance* g_instance1 = NULL;
 Instance* g_instance2 = NULL;
 Instance* g_instance3 = NULL;
 
-Vec3f colors[5][4];
+Vec3fa colors[5][4];
 
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
@@ -319,60 +319,60 @@ extern "C" void device_init (int8* cfg)
   /* create scene with 4 analytical spheres */
   g_scene0 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
   Sphere* spheres = createAnalyticalSpheres(g_scene0,4);
-  spheres[0].p = Vec3f( 0, 0,+1); spheres[0].r = 0.5f;
-  spheres[1].p = Vec3f(+1, 0, 0); spheres[1].r = 0.5f;
-  spheres[2].p = Vec3f( 0, 0,-1); spheres[2].r = 0.5f;
-  spheres[3].p = Vec3f(-1, 0, 0); spheres[3].r = 0.5f;
+  spheres[0].p = Vec3fa( 0, 0,+1); spheres[0].r = 0.5f;
+  spheres[1].p = Vec3fa(+1, 0, 0); spheres[1].r = 0.5f;
+  spheres[2].p = Vec3fa( 0, 0,-1); spheres[2].r = 0.5f;
+  spheres[3].p = Vec3fa(-1, 0, 0); spheres[3].r = 0.5f;
   rtcCommit(g_scene0);
 
   /* create scene with 4 triangulated spheres */
   g_scene1 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
-  createTriangulatedSphere(g_scene1,Vec3f( 0, 0,+1),0.5);
-  createTriangulatedSphere(g_scene1,Vec3f(+1, 0, 0),0.5);
-  createTriangulatedSphere(g_scene1,Vec3f( 0, 0,-1),0.5);
-  createTriangulatedSphere(g_scene1,Vec3f(-1, 0, 0),0.5);
+  createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,+1),0.5);
+  createTriangulatedSphere(g_scene1,Vec3fa(+1, 0, 0),0.5);
+  createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,-1),0.5);
+  createTriangulatedSphere(g_scene1,Vec3fa(-1, 0, 0),0.5);
   rtcCommit(g_scene1);
 
   /* create scene with 2 triangulated and 2 analytical spheres */
   g_scene2 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
-  createTriangulatedSphere(g_scene2,Vec3f( 0, 0,+1),0.5);
-  createAnalyticalSphere  (g_scene2,Vec3f(+1, 0, 0),0.5);
-  createTriangulatedSphere(g_scene2,Vec3f( 0, 0,-1),0.5);
-  createAnalyticalSphere  (g_scene2,Vec3f(-1, 0, 0),0.5);
+  createTriangulatedSphere(g_scene2,Vec3fa( 0, 0,+1),0.5);
+  createAnalyticalSphere  (g_scene2,Vec3fa(+1, 0, 0),0.5);
+  createTriangulatedSphere(g_scene2,Vec3fa( 0, 0,-1),0.5);
+  createAnalyticalSphere  (g_scene2,Vec3fa(-1, 0, 0),0.5);
   rtcCommit(g_scene2);
 
   /* instantiate geometry */
   createGroundPlane(g_scene);
-  g_instance0 = createInstance(g_scene,g_scene0,0,Vec3f(-2,-2,-2),Vec3f(+2,+2,+2));
-  g_instance1 = createInstance(g_scene,g_scene1,1,Vec3f(-2,-2,-2),Vec3f(+2,+2,+2));
-  g_instance2 = createInstance(g_scene,g_scene2,2,Vec3f(-2,-2,-2),Vec3f(+2,+2,+2));
-  g_instance3 = createInstance(g_scene,g_scene2,3,Vec3f(-2,-2,-2),Vec3f(+2,+2,+2));
+  g_instance0 = createInstance(g_scene,g_scene0,0,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  g_instance1 = createInstance(g_scene,g_scene1,1,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  g_instance2 = createInstance(g_scene,g_scene2,2,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  g_instance3 = createInstance(g_scene,g_scene2,3,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
 
   /* set all colors */
-  colors[0][0] = Vec3f(0.25,0,0);
-  colors[0][1] = Vec3f(0.50,0,0);
-  colors[0][2] = Vec3f(0.75,0,0);
-  colors[0][3] = Vec3f(1.00,0,0);
+  colors[0][0] = Vec3fa(0.25,0,0);
+  colors[0][1] = Vec3fa(0.50,0,0);
+  colors[0][2] = Vec3fa(0.75,0,0);
+  colors[0][3] = Vec3fa(1.00,0,0);
 
-  colors[1][0] = Vec3f(0,0.25,0);
-  colors[1][1] = Vec3f(0,0.50,0);
-  colors[1][2] = Vec3f(0,0.75,0);
-  colors[1][3] = Vec3f(0,1.00,0);
+  colors[1][0] = Vec3fa(0,0.25,0);
+  colors[1][1] = Vec3fa(0,0.50,0);
+  colors[1][2] = Vec3fa(0,0.75,0);
+  colors[1][3] = Vec3fa(0,1.00,0);
 
-  colors[2][0] = Vec3f(0,0,0.25);
-  colors[2][1] = Vec3f(0,0,0.50);
-  colors[2][2] = Vec3f(0,0,0.75);
-  colors[2][3] = Vec3f(0,0,1.00);
+  colors[2][0] = Vec3fa(0,0,0.25);
+  colors[2][1] = Vec3fa(0,0,0.50);
+  colors[2][2] = Vec3fa(0,0,0.75);
+  colors[2][3] = Vec3fa(0,0,1.00);
 
-  colors[3][0] = Vec3f(0.25,0.25,0);
-  colors[3][1] = Vec3f(0.50,0.50,0);
-  colors[3][2] = Vec3f(0.75,0.75,0);
-  colors[3][3] = Vec3f(1.00,1.00,0);
+  colors[3][0] = Vec3fa(0.25,0.25,0);
+  colors[3][1] = Vec3fa(0.50,0.50,0);
+  colors[3][2] = Vec3fa(0.75,0.75,0);
+  colors[3][3] = Vec3fa(1.00,1.00,0);
 
-  colors[4][0] = Vec3f(1.0,1.0,1.0);
-  colors[4][1] = Vec3f(1.0,1.0,1.0);
-  colors[4][2] = Vec3f(1.0,1.0,1.0);
-  colors[4][3] = Vec3f(1.0,1.0,1.0);
+  colors[4][0] = Vec3fa(1.0,1.0,1.0);
+  colors[4][1] = Vec3fa(1.0,1.0,1.0);
+  colors[4][2] = Vec3fa(1.0,1.0,1.0);
+  colors[4][3] = Vec3fa(1.0,1.0,1.0);
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -397,14 +397,14 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   rtcIntersect(g_scene,ray);
   
   /* shade pixels */
-  Vec3f color = Vec3f(0.0f);
+  Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3f diffuse = Vec3f(0.0f);
+    Vec3fa diffuse = Vec3fa(0.0f);
     if (ray.instID == 0) diffuse = colors[ray.instID][ray.primID];
     else                 diffuse = colors[ray.instID][ray.geomID];
     color = color + diffuse*0.5; // FIXME: +=
-    Vec3f lightDir = normalize(Vec3f(-1,-1,-1));
+    Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
     
     /* initialize shadow ray */
     RTCRay shadow;
@@ -432,10 +432,10 @@ void renderTile(int taskIndex, int* pixels,
                      const int width,
                      const int height, 
                      const float time,
-                     const Vec3f& vx, 
-                     const Vec3f& vy, 
-                     const Vec3f& vz, 
-                     const Vec3f& p,
+                     const Vec3fa& vx, 
+                     const Vec3fa& vy, 
+                     const Vec3fa& vz, 
+                     const Vec3fa& p,
                      const int numTilesX, 
                      const int numTilesY)
 {
@@ -449,7 +449,7 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -464,17 +464,17 @@ extern "C" void device_render (int* pixels,
                            const int width,
                            const int height, 
                            const float time,
-                           const Vec3f& vx, 
-                           const Vec3f& vy, 
-                           const Vec3f& vz, 
-                           const Vec3f& p)
+                           const Vec3fa& vx, 
+                           const Vec3fa& vy, 
+                           const Vec3fa& vz, 
+                           const Vec3fa& p)
 {
   /* move instances */
   float t = 0.7f*time;
-  g_instance0->local2world.p = 2.0f*Vec3f(+cos(t),0.0f,+sin(t));
-  g_instance1->local2world.p = 2.0f*Vec3f(-cos(t),0.0f,-sin(t));
-  g_instance2->local2world.p = 2.0f*Vec3f(-sin(t),0.0f,+cos(t));
-  g_instance3->local2world.p = 2.0f*Vec3f(+sin(t),0.0f,-cos(t));
+  g_instance0->local2world.p = 2.0f*Vec3fa(+cos(t),0.0f,+sin(t));
+  g_instance1->local2world.p = 2.0f*Vec3fa(-cos(t),0.0f,-sin(t));
+  g_instance2->local2world.p = 2.0f*Vec3fa(-sin(t),0.0f,+cos(t));
+  g_instance3->local2world.p = 2.0f*Vec3fa(+sin(t),0.0f,-cos(t));
   updateInstance(g_scene,g_instance0);
   updateInstance(g_scene,g_instance1);
   updateInstance(g_scene,g_instance2);

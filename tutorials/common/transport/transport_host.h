@@ -34,10 +34,10 @@ namespace embree
   void set_scene (OBJScene* in);
 
   /* pick event */
-  bool pick(const float x, const float y, const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p, Vec3f& hitPos);
+  bool pick(const float x, const float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, Vec3fa& hitPos);
 
   /* render frame and map framebuffer */
-  void render(const float time, const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p);
+  void render(const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
   /* map framebuffer */
   int* map ();

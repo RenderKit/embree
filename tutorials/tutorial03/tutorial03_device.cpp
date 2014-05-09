@@ -32,10 +32,10 @@ struct ISPCMaterial
   float Ns;              /*< specular exponent */
   float Ni;              /*< optical density for the surface (index of refraction) */
   
-  Vec3f Ka;              /*< ambient reflectivity */
-  Vec3f Kd;              /*< diffuse reflectivity */
-  Vec3f Ks;              /*< specular reflectivity */
-  Vec3f Tf;              /*< transmission filter */
+  Vec3fa Ka;              /*< ambient reflectivity */
+  Vec3fa Kd;              /*< diffuse reflectivity */
+  Vec3fa Ks;              /*< specular reflectivity */
+  Vec3fa Tf;              /*< transmission filter */
 };
 
 struct ISPCMesh
@@ -46,7 +46,23 @@ struct ISPCMesh
   ISPCTriangle* triangles;  //!< list of triangles
   int numVertices;
   int numTriangles;
+  Vec3fa dir;
+  float offset;
 };
+
+struct ISPCHair
+{
+ int vertex,id;  //!< index of first control point and hair ID
+};
+
+struct ISPCHairSet
+{
+ Vec3fa *positions;   //!< hair control points (x,y,z,r)
+ ISPCHair *hairs;    //!< list of hairs
+ int numVertices;
+ int numHairs;
+};
+
 
 struct ISPCScene
 {
@@ -54,6 +70,9 @@ struct ISPCScene
   ISPCMaterial* materials;  //!< material list
   int numMeshes;
   int numMaterials;
+  ISPCHairSet** hairsets;
+  int numHairSets;
+  bool animate;
 };
 
 /* scene data */
@@ -77,6 +96,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 {
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
+
 
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
@@ -102,13 +122,13 @@ RTCScene convertScene(ISPCScene* scene_in)
     rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
 
 #elif 0
-    Vec3f* positions = new Vec3f[mesh->numVertices+1];
+    Vec3fa* positions = new Vec3fa[mesh->numVertices+1];
     for (int j=0; j<mesh->numVertices; j++) {
       positions[j].x = mesh->positions[j].x;
       positions[j].y = mesh->positions[j].y;
       positions[j].z = mesh->positions[j].z;
     }
-    rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, positions, 0, sizeof(Vec3f));
+    rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, positions, 0, sizeof(Vec3fa));
     rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
 #else
 
@@ -155,10 +175,10 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   rtcIntersect(g_scene,ray);
   
   /* shade background black */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3f(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
   
   /* shade all rays that hit something */
-  Vec3f color = Vec3f(0.0f);
+  Vec3fa color = Vec3fa(0.0f);
 #if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
   ISPCMesh* mesh = g_ispc_scene->meshes[ray.geomID];
   ISPCTriangle* tri = &mesh->triangles[ray.primID];
@@ -167,18 +187,17 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   int materialID = tri->materialID;
 
   /* interpolate shading normal */
-  Vec3f n0 = Vec3f(mesh->normals[tri->v0]);
-  Vec3f n1 = Vec3f(mesh->normals[tri->v1]);
-  Vec3f n2 = Vec3f(mesh->normals[tri->v2]);
+  Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
+  Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
+  Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
   float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-  Vec3f Ns = w*n0 + u*n1 + v*n2;
+  Vec3fa Ns = w*n0 + u*n1 + v*n2;
   Ns = normalize(Ns);
-  //return abs(dot(Ns,ray.dir));
 
 #else
 
   int materialID = 0;
-  Vec3f Ns = Vec3f(0.0f);
+  Vec3fa Ns = Vec3fa(0.0f);
   foreach_unique (geomID in ray.geomID) 
   {
     ISPCMesh* mesh = g_ispc_scene->meshes[geomID];
@@ -191,9 +210,9 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       materialID = tri->materialID;
 
       /* interpolate shading normal */
-      Vec3f n0 = Vec3f(mesh->normals[tri->v0]);
-      Vec3f n1 = Vec3f(mesh->normals[tri->v1]);
-      Vec3f n2 = Vec3f(mesh->normals[tri->v2]);
+      Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
+      Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
+      Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
       float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
       Ns = w*n0 + u*n1 + v*n2;
     }
@@ -204,9 +223,9 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   color = material->Kd;
 
   /* apply ambient light */
-  Vec3f Nf = faceforward(Ns,neg(ray.dir),Ns);
+  Vec3fa Nf = faceforward(Ns,neg(ray.dir),Ns);
   //Vec3fa Ng = normalize(ray.Ng);
-  //Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
+  //Vec3fa Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
   color = color*dot(ray.dir,Nf);   // FIXME: *=
   return color;
 }
@@ -216,10 +235,10 @@ void renderTile(int taskIndex, int* pixels,
                      const int width,
                      const int height, 
                      const float time,
-                     const Vec3f& vx, 
-                     const Vec3f& vy, 
-                     const Vec3f& vz, 
-                     const Vec3f& p,
+                     const Vec3fa& vx, 
+                     const Vec3fa& vy, 
+                     const Vec3fa& vz, 
+                     const Vec3fa& p,
                      const int numTilesX, 
                      const int numTilesY)
 {
@@ -233,7 +252,7 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -248,10 +267,10 @@ extern "C" void device_render (int* pixels,
                            const int width,
                            const int height, 
                            const float time,
-                           const Vec3f& vx, 
-                           const Vec3f& vy, 
-                           const Vec3f& vz, 
-                           const Vec3f& p)
+                           const Vec3fa& vx, 
+                           const Vec3fa& vy, 
+                           const Vec3fa& vz, 
+                           const Vec3fa& p)
 {
   /* create scene */
   if (g_scene == NULL)

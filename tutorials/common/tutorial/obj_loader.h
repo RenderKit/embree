@@ -91,10 +91,10 @@ namespace embree
       float Ns;              /*< specular exponent */
       float Ni;              /*< optical density for the surface (index of refraction) */
       
-      Vec3f Ka;              /*< ambient reflectivity */
-      Vec3f Kd;              /*< diffuse reflectivity */
-      Vec3f Ks;              /*< specular reflectivity */
-      Vec3f Tf;              /*< transmission filter */
+      Vec3fa Ka;              /*< ambient reflectivity */
+      Vec3fa Kd;              /*< diffuse reflectivity */
+      Vec3fa Ks;              /*< specular reflectivity */
+      Vec3fa Tf;              /*< transmission filter */
     };
 
   public:

@@ -60,7 +60,7 @@ namespace embree
 
   struct PickDataSend {
     float x,y;
-    Vec3f vx,vy,vz,p;
+    Vec3fa vx,vy,vz,p;
   };
 
   struct PickDataReceive {
@@ -70,7 +70,7 @@ namespace embree
 
   struct RenderData {
     float time;
-    Vec3f vx,vy,vz,p;
+    Vec3fa vx,vy,vz,p;
     int width;
     int height;
   };

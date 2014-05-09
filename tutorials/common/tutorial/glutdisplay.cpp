@@ -140,7 +140,7 @@ namespace embree
       if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == GLUT_ACTIVE_SHIFT) 
       {
         AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
-        Vec3f p; bool hit = pick(x,y, pixel2world.l.vx, pixel2world.l.vy, pixel2world.l.vz, pixel2world.p, p);
+        Vec3fa p; bool hit = pick(x,y, pixel2world.l.vx, pixel2world.l.vy, pixel2world.l.vz, pixel2world.p, p);
 
         if (hit) {
           Vec3fa delta = p - g_camera.to;
@@ -153,7 +153,7 @@ namespace embree
       else if (button == GLUT_LEFT_BUTTON && glutGetModifiers() == (GLUT_ACTIVE_CTRL | GLUT_ACTIVE_SHIFT)) 
       {
         AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
-        Vec3f p; bool hit = pick(x,y, pixel2world.l.vx, pixel2world.l.vy, pixel2world.l.vz, pixel2world.p, p);
+        Vec3fa p; bool hit = pick(x,y, pixel2world.l.vx, pixel2world.l.vy, pixel2world.l.vz, pixel2world.p, p);
         if (hit) g_camera.to = p;
       }
 

@@ -60,8 +60,9 @@ Vec3fa renderPixelGeomID      (float x, float y, const Vec3fa& vx, const Vec3fa&
 
 __forceinline Vec3f  neg(const Vec3f& a ) { return -a; }
 __forceinline Vec3fa neg(const Vec3fa& a) { return -a; }
+__forceinline bool   ne (const Vec3fa& a, const Vec3fa& b) { return a != b; }
 
 /* parallel invokation of renderTile function */
 void launch_renderTile (int numTiles, 
                         int* pixels, const int width, const int height, const float time, 
-                        const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p, const int numTilesX, const int numTilesY);
+                        const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY);

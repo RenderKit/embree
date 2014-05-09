@@ -162,7 +162,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa &vx, const Vec3fa &vy,
 
 }
 
-void renderTile(int taskIndex, int *pixels, int width, int height, float time, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const Vec3f &p, int tileCountX, int tileCountY) {
+void renderTile(int taskIndex, int *pixels, int width, int height, float time, const Vec3fa &vx, const Vec3fa &vy, const Vec3fa &vz, const Vec3fa &p, int tileCountX, int tileCountY) {
 
     /* 2D indices of the tile in the window. */
     const Vec2i tileIndex(taskIndex % tileCountX, taskIndex / tileCountX);
@@ -198,7 +198,7 @@ extern "C" void device_init(int8 *configuration) {
 
 }
 
-extern "C" void device_render(int *pixels, int width, int height, float time, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const Vec3f &p) {
+extern "C" void device_render(int *pixels, int width, int height, float time, const Vec3fa &vx, const Vec3fa &vy, const Vec3fa &vz, const Vec3fa &p) {
 
     /* Refine the subdivision mesh as needed. */
     static int currentLevel = 0;  if (currentLevel != subdivisionLevel) rtcDeleteScene(g_scene), constructScene(), currentLevel = subdivisionLevel;

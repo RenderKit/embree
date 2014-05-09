@@ -18,7 +18,7 @@
 
 /* scene data */
 RTCScene g_scene = NULL;
-Vec3f* colors = NULL;
+Vec3fa* colors = NULL;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -42,35 +42,35 @@ unsigned int addCube (RTCScene scene_i)
   rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
 
   /* create triangle color array */
-  colors = new Vec3f[12];
+  colors = new Vec3fa[12];
 
   /* set triangles and colors */
   int tri = 0;
   Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
   
   // left side
-  colors[tri] = Vec3f(1,0,0); triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
-  colors[tri] = Vec3f(1,0,0); triangles[tri].v0 = 1; triangles[tri].v1 = 2; triangles[tri].v2 = 3; tri++;
+  colors[tri] = Vec3fa(1,0,0); triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
+  colors[tri] = Vec3fa(1,0,0); triangles[tri].v0 = 1; triangles[tri].v1 = 2; triangles[tri].v2 = 3; tri++;
 
   // right side
-  colors[tri] = Vec3f(0,1,0); triangles[tri].v0 = 4; triangles[tri].v1 = 5; triangles[tri].v2 = 6; tri++;
-  colors[tri] = Vec3f(0,1,0); triangles[tri].v0 = 5; triangles[tri].v1 = 7; triangles[tri].v2 = 6; tri++;
+  colors[tri] = Vec3fa(0,1,0); triangles[tri].v0 = 4; triangles[tri].v1 = 5; triangles[tri].v2 = 6; tri++;
+  colors[tri] = Vec3fa(0,1,0); triangles[tri].v0 = 5; triangles[tri].v1 = 7; triangles[tri].v2 = 6; tri++;
 
   // bottom side
-  colors[tri] = Vec3f(0.5f);  triangles[tri].v0 = 0; triangles[tri].v1 = 1; triangles[tri].v2 = 4; tri++;
-  colors[tri] = Vec3f(0.5f);  triangles[tri].v0 = 1; triangles[tri].v1 = 5; triangles[tri].v2 = 4; tri++;
+  colors[tri] = Vec3fa(0.5f);  triangles[tri].v0 = 0; triangles[tri].v1 = 1; triangles[tri].v2 = 4; tri++;
+  colors[tri] = Vec3fa(0.5f);  triangles[tri].v0 = 1; triangles[tri].v1 = 5; triangles[tri].v2 = 4; tri++;
 
   // top side
-  colors[tri] = Vec3f(1.0f);  triangles[tri].v0 = 2; triangles[tri].v1 = 6; triangles[tri].v2 = 3; tri++;
-  colors[tri] = Vec3f(1.0f);  triangles[tri].v0 = 3; triangles[tri].v1 = 6; triangles[tri].v2 = 7; tri++;
+  colors[tri] = Vec3fa(1.0f);  triangles[tri].v0 = 2; triangles[tri].v1 = 6; triangles[tri].v2 = 3; tri++;
+  colors[tri] = Vec3fa(1.0f);  triangles[tri].v0 = 3; triangles[tri].v1 = 6; triangles[tri].v2 = 7; tri++;
 
   // front side
-  colors[tri] = Vec3f(0,0,1); triangles[tri].v0 = 0; triangles[tri].v1 = 4; triangles[tri].v2 = 2; tri++;
-  colors[tri] = Vec3f(0,0,1); triangles[tri].v0 = 2; triangles[tri].v1 = 4; triangles[tri].v2 = 6; tri++;
+  colors[tri] = Vec3fa(0,0,1); triangles[tri].v0 = 0; triangles[tri].v1 = 4; triangles[tri].v2 = 2; tri++;
+  colors[tri] = Vec3fa(0,0,1); triangles[tri].v0 = 2; triangles[tri].v1 = 4; triangles[tri].v2 = 6; tri++;
 
   // back side
-  colors[tri] = Vec3f(1,1,0); triangles[tri].v0 = 1; triangles[tri].v1 = 3; triangles[tri].v2 = 5; tri++;
-  colors[tri] = Vec3f(1,1,0); triangles[tri].v0 = 3; triangles[tri].v1 = 7; triangles[tri].v2 = 5; tri++;
+  colors[tri] = Vec3fa(1,1,0); triangles[tri].v0 = 1; triangles[tri].v1 = 3; triangles[tri].v2 = 5; tri++;
+  colors[tri] = Vec3fa(1,1,0); triangles[tri].v0 = 3; triangles[tri].v1 = 7; triangles[tri].v2 = 5; tri++;
 
   rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
 
@@ -140,12 +140,12 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   rtcIntersect(g_scene,ray);
   
   /* shade pixels */
-  Vec3f color = Vec3f(0.0f);
+  Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3f diffuse = colors[ray.primID];
+    Vec3fa diffuse = colors[ray.primID];
     color = color + diffuse*0.5f; // FIXME: +=
-    Vec3f lightDir = normalize(Vec3f(-1,-1,-1));
+    Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
     
     /* initialize shadow ray */
     RTCRay shadow;
@@ -173,10 +173,10 @@ void renderTile(int taskIndex, int* pixels,
                      const int width,
                      const int height, 
                      const float time,
-                     const Vec3f& vx, 
-                     const Vec3f& vy, 
-                     const Vec3f& vz, 
-                     const Vec3f& p,
+                     const Vec3fa& vx, 
+                     const Vec3fa& vy, 
+                     const Vec3fa& vz, 
+                     const Vec3fa& p,
                      const int numTilesX, 
                      const int numTilesY)
 {
@@ -190,7 +190,7 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -205,10 +205,10 @@ extern "C" void device_render (int* pixels,
                     const int width,
                     const int height,
                     const float time,
-                    const Vec3f& vx, 
-                    const Vec3f& vy, 
-                    const Vec3f& vz, 
-                    const Vec3f& p)
+                    const Vec3fa& vx, 
+                    const Vec3fa& vy, 
+                    const Vec3fa& vz, 
+                    const Vec3fa& p)
 {
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;

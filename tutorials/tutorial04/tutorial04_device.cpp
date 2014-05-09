@@ -22,7 +22,7 @@ renderPixelFunc renderPixel;
 const int numPhi = 5;
 const int numTheta = 2*numPhi;
 
-unsigned int createTriangulatedSphere (RTCScene scene, Vec3f p, float r)
+unsigned int createTriangulatedSphere (RTCScene scene, Vec3fa p, float r)
 {
   /* create triangle mesh */
   unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
@@ -108,7 +108,7 @@ unsigned int g_instance1 = -1;
 unsigned int g_instance2 = -1;
 unsigned int g_instance3 = -1;
 
-Vec3f colors[4][4];
+Vec3fa colors[4][4];
 
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
@@ -121,10 +121,10 @@ extern "C" void device_init (int8* cfg)
 
   /* create scene with 4 triangulated spheres */
   g_scene1 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
-  createTriangulatedSphere(g_scene1,Vec3f( 0, 0,+1),0.5);
-  createTriangulatedSphere(g_scene1,Vec3f(+1, 0, 0),0.5);
-  createTriangulatedSphere(g_scene1,Vec3f( 0, 0,-1),0.5);
-  createTriangulatedSphere(g_scene1,Vec3f(-1, 0, 0),0.5);
+  createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,+1),0.5);
+  createTriangulatedSphere(g_scene1,Vec3fa(+1, 0, 0),0.5);
+  createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,-1),0.5);
+  createTriangulatedSphere(g_scene1,Vec3fa(-1, 0, 0),0.5);
   rtcCommit(g_scene1);
 
   /* instantiate geometry */
@@ -135,25 +135,25 @@ extern "C" void device_init (int8* cfg)
   createGroundPlane(g_scene);
 
   /* set all colors */
-  colors[0][0] = Vec3f(0.25,0,0);
-  colors[0][1] = Vec3f(0.50,0,0);
-  colors[0][2] = Vec3f(0.75,0,0);
-  colors[0][3] = Vec3f(1.00,0,0);
+  colors[0][0] = Vec3fa(0.25,0,0);
+  colors[0][1] = Vec3fa(0.50,0,0);
+  colors[0][2] = Vec3fa(0.75,0,0);
+  colors[0][3] = Vec3fa(1.00,0,0);
 
-  colors[1][0] = Vec3f(0,0.25,0);
-  colors[1][1] = Vec3f(0,0.50,0);
-  colors[1][2] = Vec3f(0,0.75,0);
-  colors[1][3] = Vec3f(0,1.00,0);
+  colors[1][0] = Vec3fa(0,0.25,0);
+  colors[1][1] = Vec3fa(0,0.50,0);
+  colors[1][2] = Vec3fa(0,0.75,0);
+  colors[1][3] = Vec3fa(0,1.00,0);
 
-  colors[2][0] = Vec3f(0,0,0.25);
-  colors[2][1] = Vec3f(0,0,0.50);
-  colors[2][2] = Vec3f(0,0,0.75);
-  colors[2][3] = Vec3f(0,0,1.00);
+  colors[2][0] = Vec3fa(0,0,0.25);
+  colors[2][1] = Vec3fa(0,0,0.50);
+  colors[2][2] = Vec3fa(0,0,0.75);
+  colors[2][3] = Vec3fa(0,0,1.00);
 
-  colors[3][0] = Vec3f(0.25,0.25,0);
-  colors[3][1] = Vec3f(0.50,0.50,0);
-  colors[3][2] = Vec3f(0.75,0.75,0);
-  colors[3][3] = Vec3f(1.00,1.00,0);
+  colors[3][0] = Vec3fa(0.25,0.25,0);
+  colors[3][1] = Vec3fa(0.50,0.50,0);
+  colors[3][2] = Vec3fa(0.75,0.75,0);
+  colors[3][3] = Vec3fa(1.00,1.00,0);
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -178,14 +178,14 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   rtcIntersect(g_scene,ray);
   
   /* shade pixels */
-  Vec3f color = Vec3f(0.0f);
+  Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3f diffuse = Vec3f(1,1,1);
+    Vec3fa diffuse = Vec3fa(1,1,1);
     if (ray.instID != -1)
       diffuse = colors[ray.instID][ray.geomID];
     color = color + diffuse*0.5; // FIXME: +=
-    Vec3f lightDir = normalize(Vec3f(-1,-1,-1));
+    Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
     
     /* initialize shadow ray */
     RTCRay shadow;
@@ -213,10 +213,10 @@ void renderTile(int taskIndex, int* pixels,
                      const int width,
                      const int height, 
                      const float time,
-                     const Vec3f& vx, 
-                     const Vec3f& vy, 
-                     const Vec3f& vz, 
-                     const Vec3f& p,
+                     const Vec3fa& vx, 
+                     const Vec3fa& vy, 
+                     const Vec3fa& vz, 
+                     const Vec3fa& p,
                      const int numTilesX, 
                      const int numTilesY)
 {
@@ -230,7 +230,7 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -245,27 +245,27 @@ extern "C" void device_render (int* pixels,
                            const int width,
                            const int height, 
                            const float time,
-                           const Vec3f& vx, 
-                           const Vec3f& vy, 
-                           const Vec3f& vz, 
-                           const Vec3f& p)
+                           const Vec3fa& vx, 
+                           const Vec3fa& vy, 
+                           const Vec3fa& vz, 
+                           const Vec3fa& p)
 {
   /* create identity matrix */
   AffineSpace3f xfm;
-  xfm.l.vx = Vec3f(1,0,0);
-  xfm.l.vy = Vec3f(0,1,0);
-  xfm.l.vz = Vec3f(0,0,1);
-  xfm.p    = Vec3f(0,0,0);
+  xfm.l.vx = Vec3fa(1,0,0);
+  xfm.l.vy = Vec3fa(0,1,0);
+  xfm.l.vz = Vec3fa(0,0,1);
+  xfm.p    = Vec3fa(0,0,0);
   float t = 0.7f*time;
 
   /* move instances */
-  xfm.p = 2.0f*Vec3f(+cos(t),0.0f,+sin(t));
+  xfm.p = 2.0f*Vec3fa(+cos(t),0.0f,+sin(t));
   rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR,(float*)&xfm);
-  xfm.p = 2.0f*Vec3f(-cos(t),0.0f,-sin(t));
+  xfm.p = 2.0f*Vec3fa(-cos(t),0.0f,-sin(t));
   rtcSetTransform(g_scene,g_instance1,RTC_MATRIX_COLUMN_MAJOR,(float*)&xfm);
-  xfm.p = 2.0f*Vec3f(-sin(t),0.0f,+cos(t));
+  xfm.p = 2.0f*Vec3fa(-sin(t),0.0f,+cos(t));
   rtcSetTransform(g_scene,g_instance2,RTC_MATRIX_COLUMN_MAJOR,(float*)&xfm);
-  xfm.p = 2.0f*Vec3f(+sin(t),0.0f,-cos(t));
+  xfm.p = 2.0f*Vec3fa(+sin(t),0.0f,-cos(t));
   rtcSetTransform(g_scene,g_instance3,RTC_MATRIX_COLUMN_MAJOR,(float*)&xfm);
 
   /* update scene */

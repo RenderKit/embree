@@ -32,10 +32,10 @@ struct ISPCMaterial
   float Ns;              /*< specular exponent */
   float Ni;              /*< optical density for the surface (index of refraction) */
   
-  Vec3f Ka;              /*< ambient reflectivity */
-  Vec3f Kd;              /*< diffuse reflectivity */
-  Vec3f Ks;              /*< specular reflectivity */
-  Vec3f Tf;              /*< transmission filter */
+  Vec3fa Ka;              /*< ambient reflectivity */
+  Vec3fa Kd;              /*< diffuse reflectivity */
+  Vec3fa Ks;              /*< specular reflectivity */
+  Vec3fa Tf;              /*< transmission filter */
 };
 
 struct ISPCMesh
@@ -148,7 +148,7 @@ inline Vec3f AmbientLight__sample(const Vec3f& Ns,
 inline Vec3f Matte__eval(const int& materialID, const Vec3f& wo, const Vec3f& Ns, const Vec3f& wi) 
 {
   uniform ISPCMaterial* material = &g_ispc_scene->materials[materialID];
-  Vec3f diffuse = material->Kd;
+  Vec3f diffuse = make_Vec3f(material->Kd);
   return diffuse * (1.0f/(float)pi) * clamp(dot(wi,Ns),0.0f,1.0f);
 }
 

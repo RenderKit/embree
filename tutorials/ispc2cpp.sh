@@ -4,6 +4,7 @@ echo Converting ISPC tutorial $1 to CPP tutorial $2
 cp $1 $2
 sed -i .backup  's/.isph\"/.h\"/g' $2
 sed -i .backup  's/RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
+sed -i .backup  's/RTC_INTERSECT_VARYING/RTC_INTERSECT1/g' $2
 sed -i .backup  's/uniform //g' $2
 sed -i .backup  's/ uniform//g' $2
 sed -i .backup  's/varying //g' $2
@@ -14,6 +15,9 @@ sed -i .backup  's/launch\[numTilesX\*numTilesY\] renderTile(/launch_renderTile(
 sed -i .backup  's/launch\[numPhi+1\] animateSphere(/launch_animateSphere(numPhi+1,/g' $2
 sed -i .backup  's/\*pi\*/\*float(pi)\*/g' $2
 sed -i .backup  's/\*pi\//\*float(pi)\//g' $2
+sed -i .backup  's/one_over_two_pi/float(one_over_two_pi)/g' $2
+sed -i .backup  's/one_over_four_pi/float(one_over_four_pi)/g' $2
+sed -i .backup  's/[^_]two_pi/float(two_pi)/g' $2
 #sed -i .backup  's/RTC_MATRIX_COLUMN_MAJOR/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
 sed -i .backup  's/sync;//g' $2
 sed -i .backup  's/make_//g' $2
@@ -28,7 +32,5 @@ sed -i .backup  's/RTCIntersectFuncVarying/RTCIntersectFunc/g' $2
 sed -i .backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
 sed -i .backup  's/\#if 1 \/\/ enables parallel execution/\#if 0/g' $2
 sed -i .backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
-sed -i .backup  's/Vec3f org/Vec3fa org/g' $2
-sed -i .backup  's/Vec3f dir/Vec3fa dir/g' $2
-sed -i .backup  's/Vec3f Ng/Vec3fa Ng/g' $2
+sed -i .backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
 

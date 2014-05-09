@@ -122,11 +122,11 @@ namespace embree
     g_ispc_scene = out;
   }
 
-  bool pick(const float x, const float y, const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p, Vec3f& hitPos) {
+  bool pick(const float x, const float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, Vec3fa& hitPos) {
     return device_pick(x,y,vx,vy,vz,p,hitPos);
   }
 
-  void render(const float time, const Vec3f& vx, const Vec3f& vy, const Vec3f& vz, const Vec3f& p) {
+  void render(const float time, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p) {
     device_render(g_pixels,g_width,g_height,time,vx,vy,vz,p);
   }
 
