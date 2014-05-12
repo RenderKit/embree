@@ -211,7 +211,7 @@ namespace embree
 					const mic_f &min_dist_xyz,
 					const mic_f &max_dist_xyz,
 					const mic_i &and_mask,
-					Ray16& ray16, 
+					const Ray16& ray16, 
 					mic_m &m_terminated,
 					const Scene     *__restrict__ const scene,
 					const Triangle1mc * __restrict__ const tptr)

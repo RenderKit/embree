@@ -19,34 +19,27 @@
 #include "bvh4i.h"
 #include "bvh4i_traversal.h"
 #include "common/ray16.h" 
+#include "geometry/triangle1.h"
+#include "geometry/triangle1_intersector16_moeller.h"
+#include "geometry/triangle1mc_intersector16_moeller.h"
+#include "geometry/filter.h"
 
 namespace embree
 {
   namespace isa
   {
     /*! BVH4i traverser. Single ray traversal implementation for a quad BVH. */
+    template<typename LeafIntersector>
     class BVH4iIntersector16Single
     {
       /* shortcuts for frequently used types */
       typedef typename BVH4i::NodeRef NodeRef;
       typedef typename BVH4i::Node Node;
       
+
     public:
       static void intersect(mic_i* valid, BVH4i* bvh, Ray16& ray);
       static void occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
     };
-
-    /*! Memory conservative BVH4i traverser. Single ray traversal implementation for a quad BVH. */
-    class BVH4mcIntersector16Single
-    {
-      /* shortcuts for frequently used types */
-      typedef typename BVH4i::NodeRef NodeRef;
-      typedef typename BVH4i::Node Node;
-      
-    public:
-      static void intersect(mic_i* valid, BVH4i* bvh, Ray16& ray);
-      static void occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
-    };
-
   }
 }
