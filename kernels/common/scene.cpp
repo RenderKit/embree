@@ -103,12 +103,12 @@ namespace embree
     if (g_tri_accel == "default") 
     {
       if (isStatic()) {
-        int mode =  4*(int)isCoherent() + 2*(int)isCompact() + 1*(int)isRobust(); 
+        int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
         switch (mode) {
-        case /*0b000*/ 0: 
+        case /*0b00*/ 0: 
 #if defined (__TARGET_AVX__)
-          if (has_feature(AVX2) && aflags == RTC_INTERSECT1) 
-          {
+          if (has_feature(AVX2)) 
+	  {
             if (isHighQuality()) accels.add(BVH4::BVH4Triangle8SpatialSplit(this)); 
             else                 accels.add(BVH4::BVH4Triangle8ObjectSplit(this)); 
           }
@@ -120,30 +120,19 @@ namespace embree
           }
           break;
 
-        case /*0b001*/ 1: accels.add(BVH4::BVH4Triangle4vObjectSplit(this)); break;
-        case /*0b010*/ 2: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
-        case /*0b011*/ 3: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
-        case /*0b100*/ 4: 
-          if (isHighQuality()) accels.add(BVH4::BVH4Triangle1SpatialSplit(this));
-          else                 accels.add(BVH4::BVH4Triangle1ObjectSplit(this)); 
-          break;
-        case /*0b101*/ 5: accels.add(BVH4::BVH4Triangle1vObjectSplit(this)); break;
-        case /*0b110*/ 6: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
-        case /*0b111*/ 7: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
+        case /*0b01*/ 1: accels.add(BVH4::BVH4Triangle4vObjectSplit(this)); break;
+        case /*0b10*/ 2: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
+        case /*0b11*/ 3: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
         }
       } 
       else 
       {
-        int mode =  4*(int)isCoherent() + 2*(int)isCompact() + 1*(int)isRobust();
+        int mode =  2*(int)isCompact() + 1*(int)isRobust();
         switch (mode) {
-        case /*0b000*/ 0: accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this)); break;
-        case /*0b001*/ 1: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
-        case /*0b010*/ 2: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
-        case /*0b011*/ 3: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
-        case /*0b100*/ 4: accels.add(BVH4::BVH4BVH4Triangle1ObjectSplit(this)); break;
-        case /*0b101*/ 5: accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this)); break;
-        case /*0b110*/ 6: accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this)); break;
-        case /*0b111*/ 7: accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this)); break;
+        case /*0b00*/ 0: accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this)); break;
+        case /*0b01*/ 1: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
+        case /*0b10*/ 2: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
+        case /*0b11*/ 3: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
         }
       }
     }
