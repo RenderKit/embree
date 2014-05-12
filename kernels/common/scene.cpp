@@ -100,7 +100,7 @@ namespace embree
     if (g_tri_accel == "default") 
     {
       if (isStatic()) {
-        int mode =  4*(int)isCoherent() + 2*(int)isCompact() + 1*(int)isRobust();
+        int mode =  4*(int)isCoherent() + 2*(int)isCompact() + 1*(int)isRobust(); 
         switch (mode) {
         case /*0b000*/ 0: 
 #if defined (__TARGET_AVX__)

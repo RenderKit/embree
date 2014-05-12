@@ -221,8 +221,8 @@ namespace embree
         const ssef t = T * rcpAbsDen;
         const Vec3fa N = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
         if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],N,geomID,tri.primID[i])) 
-          return true;
 #endif
+          return true;
       }
       return false;
 #else
