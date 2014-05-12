@@ -2105,10 +2105,12 @@ namespace embree
         size_t numPhi = rand()%100;
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
         numTriangles = rand()%(numTriangles+1);
-        switch (rand()%3) {
+        switch (rand()%5) {
         case 0: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
         case 1: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-        case 2: addUserGeometryEmpty(scene,pos,2.0f); break;
+        case 2: addHair  (scene,RTC_GEOMETRY_STATIC,pos,2.0f,numTriangles,0.0f); break;
+          //case 3: addHair  (scene,RTC_GEOMETRY_STATIC,pos,2.0f,numTriangles,1.0f); break;
+        case 4: addUserGeometryEmpty(scene,pos,2.0f); break;
         }
         AssertNoError();
       }

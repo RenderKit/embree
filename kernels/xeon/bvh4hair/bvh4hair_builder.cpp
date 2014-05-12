@@ -142,8 +142,10 @@ namespace embree
 	std::cout << "!" << std::flush;
 	N = (size_t)BVH4Hair::maxLeafBlocks;
       }
-      size_t numGeneratedPrimsOld = atomic_add(&numGeneratedPrims,N); 
-      if (numGeneratedPrimsOld%10000 > (numGeneratedPrimsOld+N)%10000) std::cout << "." << std::flush; 
+      if (g_verbose >= 1) {
+        size_t numGeneratedPrimsOld = atomic_add(&numGeneratedPrims,N); 
+        if (numGeneratedPrimsOld%10000 > (numGeneratedPrimsOld+N)%10000) std::cout << "." << std::flush; 
+      }
       //assert(N <= (size_t)BVH4Hair::maxLeafBlocks);
       if (&bvh->primTy == &Bezier1Type::type) {
 	Bezier1* leaf = (Bezier1*) bvh->allocPrimitiveBlocks(threadIndex,N);
