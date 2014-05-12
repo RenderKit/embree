@@ -43,6 +43,7 @@ namespace embree
       for (size_t i=0; i<scene->size(); i++) 
       {
 	TriangleMesh* geom = (TriangleMesh*) scene->get(i);
+        if (geom == NULL) continue;
 	if (geom->type != TRIANGLE_MESH || geom->numTimeSteps != 1 || !geom->isEnabled()) continue;
 	ssize_t gstart = 0;
 	ssize_t gend = geom->numTriangles;

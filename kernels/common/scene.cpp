@@ -260,7 +260,6 @@ namespace embree
   void Scene::remove(Geometry* geometry) 
   {
     Lock<AtomicMutex> lock(geometriesMutex);
-
     usedIDs.push_back(geometry->id);
     geometries[geometry->id] = NULL;
     delete geometry;

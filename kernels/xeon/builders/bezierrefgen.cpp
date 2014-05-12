@@ -43,6 +43,7 @@ namespace embree
       for (size_t i=0; i<scene->size(); i++) 
       {
 	BezierCurves* geom = (BezierCurves*) scene->get(i);
+        if (geom == NULL) continue;
 	if (geom->type != BEZIER_CURVES || !geom->isEnabled()) continue;
 	ssize_t gstart = 0;
 	ssize_t gend = geom->numCurves;

@@ -2015,7 +2015,11 @@ namespace embree
         int index = rand()%1024;
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
         if (geom[index] == -1) {
-          geom[index] = addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,10);
+          switch (rand()%3) {
+          case 0: geom[index] = addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
+          case 1: geom[index] = addHair  (scene,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
+          case 2: geom[index] = addUserGeometryEmpty(scene,pos,2.0f); break;
+          }
           AssertNoError();
         }
         else { 
