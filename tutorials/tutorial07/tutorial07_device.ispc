@@ -16,8 +16,11 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
+#if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
 #define renderPixelTestEyeLight renderPixelStandard
-//#define renderPixelPathTrace renderPixelStandard
+#else
+#define renderPixelPathTrace renderPixelStandard
+#endif
 
 /* accumulation buffer */
 uniform Vec3fa* uniform g_accu = NULL;
