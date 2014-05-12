@@ -834,7 +834,6 @@ namespace embree
     char* indexBuffer  = (char*) alignedMalloc(8+16*6*sizeof(int));
     char* vertexBuffer = (char*) alignedMalloc(12+16*9*sizeof(float)+4);
 
-
 #if !defined(__MIC__)    
     rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER,indexBuffer,1,3*sizeof(int));
     AssertError(RTC_INVALID_OPERATION);
@@ -877,9 +876,11 @@ namespace embree
     RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
     AssertNoError();
     unsigned geom0 = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50);
-    unsigned geom1 = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,50);
+    //unsigned geom1 = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,50);
+    unsigned geom1 = addHair  (scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,1);
     unsigned geom2 = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,-1),1.0f,50);
-    unsigned geom3 = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,50);
+    //unsigned geom3 = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,50);
+    unsigned geom3 = addHair  (scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,1);
     AssertNoError();
 
     for (size_t i=0; i<16; i++) 
