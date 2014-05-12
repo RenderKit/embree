@@ -154,7 +154,7 @@ namespace embree
         }
         accels.add(BVH4MB::BVH4MBTriangle1v(this));
         accels.add(new TwoLevelAccel("bvh4",this));
-        accels.add(BVH4::BVH4Bezier1i(this));
+        accels.add(BVH4Hair::BVH4HairBezier1(this));
       }
     }
 

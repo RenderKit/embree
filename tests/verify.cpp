@@ -927,31 +927,35 @@ namespace embree
     AssertNoError();
     size_t numPhi = 50;
     size_t numVertices = 2*numPhi*(numPhi+1);
-    unsigned geom0 = addSphere(scene,flags,Vec3fa(-1,0,-1),1.0f,numPhi);
-    unsigned geom1 = addSphere(scene,flags,Vec3fa(-1,0,+1),1.0f,numPhi);
-    unsigned geom2 = addSphere(scene,flags,Vec3fa(+1,0,-1),1.0f,numPhi);
-    unsigned geom3 = addSphere(scene,flags,Vec3fa(+1,0,+1),1.0f,numPhi);
-    Vec3fa pos0 = zero;
-    Vec3fa pos1 = zero;
-    Vec3fa pos2 = zero;
-    Vec3fa pos3 = zero;
+    Vec3fa pos0 = Vec3fa(-10,0,-10);
+    Vec3fa pos1 = Vec3fa(-10,0,+10);
+    Vec3fa pos2 = Vec3fa(+10,0,-10);
+    Vec3fa pos3 = Vec3fa(+10,0,+10);
+    unsigned geom0 = addSphere(scene,flags,pos0,1.0f,numPhi);
+    //unsigned geom1 = addSphere(scene,flags,pos1,1.0f,numPhi);
+    unsigned geom1 = addHair  (scene,flags,pos1,1.0f,1);
+    unsigned geom2 = addSphere(scene,flags,pos2,1.0f,numPhi);
+    //unsigned geom3 = addSphere(scene,flags,pos3,1.0f,numPhi);
+    unsigned geom3 = addHair  (scene,flags,pos3,1.0f,1);
     AssertNoError();
     
     for (size_t i=0; i<16; i++) 
     {
       bool move0 = i & 1, move1 = i & 2, move2 = i & 4, move3 = i & 8;
-      Vec3fa ds(20,0,20);
+      Vec3fa ds(2,0.1f,2);
       if (move0) { move_mesh(scene,geom0,numVertices,ds); pos0 += ds; }
-      if (move1) { move_mesh(scene,geom1,numVertices,ds); pos1 += ds; }
+      //if (move1) { move_mesh(scene,geom1,numVertices,ds); pos1 += ds; }
+      if (move1) { move_mesh(scene,geom1,4,ds); pos1 += ds; }
       if (move2) { move_mesh(scene,geom2,numVertices,ds); pos2 += ds; }
-      if (move3) { move_mesh(scene,geom3,numVertices,ds); pos3 += ds; }
+      //if (move3) { move_mesh(scene,geom3,numVertices,ds); pos3 += ds; }
+      if (move3) { move_mesh(scene,geom3,4,ds); pos3 += ds; }
       rtcCommit (scene);
       AssertNoError();
       {
-        RTCRay ray0 = makeRay(pos0+Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); 
-        RTCRay ray1 = makeRay(pos1+Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); 
-        RTCRay ray2 = makeRay(pos2+Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); 
-        RTCRay ray3 = makeRay(pos3+Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); 
+        RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); 
+        RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); 
+        RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); 
+        RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); 
         rtcIntersect(scene,ray0);
         rtcIntersect(scene,ray1);
         rtcIntersect(scene,ray2);
