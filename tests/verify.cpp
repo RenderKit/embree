@@ -1882,11 +1882,11 @@ namespace embree
 	  fflush(stdout);
   }
 
-  bool rtcore_overlapping(size_t numTriangles)
+  bool rtcore_overlapping_triangles(size_t N)
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,aflags);
     AssertNoError();
-    rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, numTriangles, 3);
+    rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, N, 3);
     AssertNoError();
 
     Vertex* vertices = (Vertex*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
@@ -1897,10 +1897,38 @@ namespace embree
     AssertNoError();
 
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,0,RTC_INDEX_BUFFER);
-    for (size_t i=0; i<numTriangles; i++) {
+    for (size_t i=0; i<N; i++) {
       triangles[i].v0 = 0;
       triangles[i].v1 = 1;
       triangles[i].v2 = 2;
+    }
+    rtcUnmapBuffer(scene,0,RTC_INDEX_BUFFER);
+    AssertNoError();
+
+    rtcCommit (scene);
+    AssertNoError();
+
+    return true;
+  }
+
+  bool rtcore_overlapping_hair(size_t N)
+  {
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,aflags);
+    AssertNoError();
+    rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, N, 4);
+    AssertNoError();
+
+    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
+    vertices[0].x = 0.0f; vertices[0].y = 0.0f; vertices[0].z = 0.0f; vertices[0].w = 0.1f;
+    vertices[1].x = 0.0f; vertices[1].y = 0.0f; vertices[1].z = 1.0f; vertices[1].w = 0.1f;
+    vertices[2].x = 0.0f; vertices[2].y = 1.0f; vertices[2].z = 1.0f; vertices[2].w = 0.1f;
+    vertices[3].x = 0.0f; vertices[3].y = 1.0f; vertices[3].z = 0.0f; vertices[3].w = 0.1f;
+    rtcUnmapBuffer(scene,0,RTC_VERTEX_BUFFER);
+    AssertNoError();
+
+    int* indices = (int*) rtcMapBuffer(scene,0,RTC_INDEX_BUFFER);
+    for (size_t i=0; i<N; i++) {
+      indices[i] = 0;
     }
     rtcUnmapBuffer(scene,0,RTC_INDEX_BUFFER);
     AssertNoError();
@@ -2252,7 +2280,8 @@ namespace embree
     POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
     POSITIVE("update_deformable",         rtcore_update(RTC_GEOMETRY_DEFORMABLE));
     POSITIVE("update_dynamic",            rtcore_update(RTC_GEOMETRY_DYNAMIC));
-    POSITIVE("overlapping_geometry",      rtcore_overlapping(100000));
+    POSITIVE("overlapping_triangles",     rtcore_overlapping_triangles(100000));
+    POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
 
 #if defined(__USE_RAY_MASK__)
