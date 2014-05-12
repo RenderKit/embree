@@ -54,7 +54,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   bvh4i/bvh4i_intersector16_bezier_curves.cpp
 
   bvh4i/bvh4i_intersector1.cpp
-  bvh4i/bvh4i_intersector1_scalar.cpp
   bvh4i/bvh4i_statistics.cpp
 
   bvh4mb/bvh4mb.cpp
