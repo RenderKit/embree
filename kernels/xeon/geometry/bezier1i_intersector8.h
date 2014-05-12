@@ -127,12 +127,14 @@ namespace embree
         const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
         Vec3fa P,T; curve3D.eval(uu,P,T);
         if (T == Vec3fa(zero)) { valid[i] = 0; goto retry; } // ignore denormalized curves
-        ray.u = uu;
-        ray.v = 0.0f;
-        ray.tfar = t[i];
-        ray.Ng = T;
-        ray.geomID = curve_in.geomID;
-        ray.primID = curve_in.primID;
+        ray.u[k] = uu;
+        ray.v[k] = 0.0f;
+        ray.tfar[k] = t[i];
+        ray.Ng.x[k] = T.x;
+        ray.Ng.y[k] = T.y;
+        ray.Ng.z[k] = T.z;
+        ray.geomID[k] = curve_in.geomID;
+        ray.primID[k] = curve_in.primID;
 #if defined(__INTERSECTION_FILTER__)
           return;
       }

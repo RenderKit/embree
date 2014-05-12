@@ -1027,10 +1027,11 @@ namespace embree
 
     RTCScene scene = rtcNewScene(sflags,aflags);
     unsigned geom0 = addSphere(scene,gflags,pos0,1.0f,50);
-    unsigned geom1 = addSphere(scene,gflags,pos1,1.0f,50);
-    //unsigned geom1 = addHair  (scene,gflags,pos1,1.0f,1);
+    //unsigned geom1 = addSphere(scene,gflags,pos1,1.0f,50);
+    unsigned geom1 = addHair  (scene,gflags,pos1,1.0f,1);
     unsigned geom2 = addSphere(scene,gflags,pos2,1.0f,50);
-    unsigned geom3 = addSphere(scene,gflags,pos3,1.0f,50);
+    //unsigned geom3 = addSphere(scene,gflags,pos3,1.0f,50);
+    unsigned geom3 = addHair  (scene,gflags,pos3,1.0f,1);
     rtcSetMask(scene,geom0,1);
     rtcSetMask(scene,geom1,2);
     rtcSetMask(scene,geom2,4);
@@ -1078,7 +1079,7 @@ namespace embree
 	bool ok4b = mask1 & 2 ? ray4.geomID[1] == 1 : ray4.geomID[1] == -1;
 	bool ok4c = mask2 & 4 ? ray4.geomID[2] == 2 : ray4.geomID[2] == -1;
 	bool ok4d = mask3 & 8 ? ray4.geomID[3] == 3 : ray4.geomID[3] == -1;
-	if (!ok4a || !ok4b || !ok4c || !ok4d) passed = false;
+	if (!ok4a || !ok4b || !ok4c || !ok4d) passed = false; 
       }
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
@@ -1100,7 +1101,7 @@ namespace embree
 	bool ok8b = mask1 & 2 ? ray8.geomID[1] == 1 : ray8.geomID[1] == -1;
 	bool ok8c = mask2 & 4 ? ray8.geomID[2] == 2 : ray8.geomID[2] == -1;
 	bool ok8d = mask3 & 8 ? ray8.geomID[3] == 3 : ray8.geomID[3] == -1;
-	if (!ok8a || !ok8b || !ok8c || !ok8d) passed = false;
+	if (!ok8a || !ok8b || !ok8c || !ok8d) passed = false; 
       }
 #endif
 
