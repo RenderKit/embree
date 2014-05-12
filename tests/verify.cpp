@@ -1757,7 +1757,8 @@ namespace embree
   {
     size_t count = 1000/N;
     RTCScene scene = rtcNewScene(sflags,aflags);
-    unsigned geom = addSphere(scene,gflags,zero,2.0f,100);
+    addSphere(scene,gflags,zero,2.0f,100);
+    addHair  (scene,gflags,zero,1.0f,100);
     rtcCommit (scene);
     size_t numFailures = 0;
     //size_t c0 = __rdtsc();
@@ -1815,7 +1816,8 @@ namespace embree
   {
     size_t count = 1000/N;
     RTCScene scene = rtcNewScene(sflags,aflags);
-    unsigned geom = addSphere(scene,gflags,zero,2.0f,100);
+    addSphere(scene,gflags,zero,2.0f,100);
+    addHair  (scene,gflags,zero,1.0f,100);
     rtcCommit (scene);
     size_t numFailures = 0;
     //size_t c0 = __rdtsc();
@@ -2286,7 +2288,7 @@ namespace embree
     rtcore_watertight_plane16(100000);
 #endif
 
-#if defined(__FIX_RAYS__)
+#if defined(__FIX_RAYS__) 
     rtcore_nan("nan_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1);
     rtcore_inf("inf_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1);
 
