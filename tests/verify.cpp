@@ -1370,7 +1370,7 @@ namespace embree
 
 #endif
 
-#if defined(__MIC__) && 1
+#if defined(__MIC__)
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
@@ -1478,16 +1478,17 @@ namespace embree
     fflush(stdout);
   }
 
-  bool rtcore_packet_write_test(RTCSceneFlags sflags, RTCGeometryFlags gflags)
+  bool rtcore_packet_write_test(RTCSceneFlags sflags, RTCGeometryFlags gflags, int type)
   {
     bool passed = true;
     RTCScene scene = rtcNewScene(sflags,aflags);
 
-    addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.0f);
-
-#if !defined(__MIC__)
-    addSphere(scene,gflags,Vec3fa(+1,0,+1),1.0f,50,-1,0.1f);
-#endif
+    switch (type) {
+    case 0: addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.0f); break;
+    case 1: addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.1f); break;
+    case 2: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1,0.0f); break;
+    case 3: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1,0.1f); break;
+    }
     rtcCommit (scene);
     
     for (size_t i=0; i<4; i++) 
@@ -1551,12 +1552,16 @@ namespace embree
     for (int i=0; i<numSceneFlags; i++) 
     {
       RTCSceneFlags flag = getSceneFlag(i);
-      bool ok0 = rtcore_packet_write_test(flag,RTC_GEOMETRY_STATIC);
-      if (ok0) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
-      passed &= ok0;
+      bool ok = true;
+      ok &= rtcore_packet_write_test(flag,RTC_GEOMETRY_STATIC,0);
+      ok &= rtcore_packet_write_test(flag,RTC_GEOMETRY_STATIC,1);
+      ok &= rtcore_packet_write_test(flag,RTC_GEOMETRY_STATIC,2);
+      ok &= rtcore_packet_write_test(flag,RTC_GEOMETRY_STATIC,3);
+      if (ok) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
+      passed &= ok;
     }
     printf(" %s\n",passed ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");
-	  fflush(stdout);
+    fflush(stdout);
   }
 
   void rtcore_watertight_sphere1(float pos)
