@@ -190,14 +190,14 @@ namespace embree
     }
 
 
-    __forceinline static mic_m occluded1(const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
-					 const mic_i &and_mask,
-					 Ray& ray, 
-					 const Scene     *__restrict__ const scene,
-					 const Triangle1mc * __restrict__ const tptr)
+    __forceinline static bool occluded1(const mic_f &dir_xyz,
+					const mic_f &org_xyz,
+					const mic_f &min_dist_xyz,
+					const mic_f &max_dist_xyz,
+					const mic_i &and_mask,
+					const Ray& ray, 
+					const Scene     *__restrict__ const scene,
+					const Triangle1mc * __restrict__ const tptr)
     {
       const mic_f zero = mic_f::zero();
       prefetch<PFHINT_L1>(tptr + 0); 
@@ -291,7 +291,7 @@ namespace embree
 	}
 #endif
 
-      return m_final;
+      return any(m_final);
     }
 
   };

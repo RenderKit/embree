@@ -19,10 +19,6 @@
 #include "bvh4i.h"
 #include "bvh4i_traversal.h"
 #include "common/ray16.h" 
-#include "geometry/triangle1.h"
-#include "geometry/triangle1_intersector16_moeller.h"
-#include "geometry/triangle1mc_intersector16_moeller.h"
-#include "geometry/filter.h"
 
 namespace embree
 {

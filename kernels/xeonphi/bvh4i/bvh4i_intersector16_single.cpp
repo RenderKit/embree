@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4i_intersector16_single.h"
+#include "bvh4i_leaf_intersector.h"
 
 namespace embree
 {
@@ -23,128 +24,8 @@ namespace embree
 
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
     static unsigned int M_LANE_7777 = 0x7777;               // needed due to compiler efficiency bug
-    static __aligned(64) int zlc4[4] = {0xffffffff,0xffffffff,0xffffffff,0};
-
-    // ============================================================================================
-    // ============================================================================================
-    // ============================================================================================
-
-    struct Triangle1LeafIntersector
-    {
-      static __forceinline bool intersect(BVH4i::NodeRef curNode,
-					  const size_t rayIndex, 
-					  const mic_f &dir_xyz,
-					  const mic_f &org_xyz,
-					  const mic_f &min_dist_xyz,
-					  mic_f &max_dist_xyz,
-					  Ray16& ray16, 
-					  const void *__restrict__ const accel,
-					  const Scene*__restrict__ const geometry)
-      {
-	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
-	const mic_i and_mask = broadcast4to16i(zlc4);
-	return Triangle1Intersector16MoellerTrumbore::intersect1(rayIndex,
-								 dir_xyz,
-								 org_xyz,
-								 min_dist_xyz,
-								 max_dist_xyz,
-								 and_mask,
-								 ray16,
-								 geometry,
-								 tptr);	
-      }
 
 
-      static __forceinline bool occluded(BVH4i::NodeRef curNode,
-					 const size_t rayIndex, 
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
-					 const Ray16& ray16, 
-					 mic_m &m_terminated,
-					 const void *__restrict__ const accel,
-					 const Scene*__restrict__ const geometry)
-      {
-	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
-	const mic_i and_mask = broadcast4to16i(zlc4);
-	return Triangle1Intersector16MoellerTrumbore::occluded1(rayIndex,
-								dir_xyz,
-								org_xyz,
-								min_dist_xyz,
-								max_dist_xyz,
-								and_mask,
-								ray16,
-								m_terminated,
-								geometry,
-								tptr);	
-      }
-
-    };
-
-
-    // ============================================================================================
-    // ============================================================================================
-    // ============================================================================================
-
-    struct Triangle1mcLeafIntersector
-    {
-      static __forceinline bool intersect(BVH4i::NodeRef curNode,
-					  const size_t rayIndex, 
-					  const mic_f &dir_xyz,
-					  const mic_f &org_xyz,
-					  const mic_f &min_dist_xyz,
-					  mic_f &max_dist_xyz,
-					  Ray16& ray16, 
-					  const void *__restrict__ const accel,
-					  const Scene*__restrict__ const geometry)
-      {
-	unsigned int items = curNode.items();
-	unsigned int index = curNode.offsetIndex();
-	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
-
-	const mic_i and_mask = broadcast4to16i(zlc4);
-	return Triangle1mcIntersector16MoellerTrumbore::intersect1(rayIndex,
-								   dir_xyz,
-								   org_xyz,
-								   min_dist_xyz,
-								   max_dist_xyz,
-								   and_mask,
-								   ray16,
-								   geometry,
-								   tptr);	
-      }
-
-
-      static __forceinline bool occluded(BVH4i::NodeRef curNode,
-					 const size_t rayIndex, 
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
-					 const Ray16& ray16, 
-					 mic_m &m_terminated,
-					 const void *__restrict__ const accel,
-					 const Scene*__restrict__ const geometry)
-      {
-	unsigned int items = curNode.items();
-	unsigned int index = curNode.offsetIndex();
-	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
-
-	const mic_i and_mask = broadcast4to16i(zlc4);
-	return Triangle1mcIntersector16MoellerTrumbore::occluded1(rayIndex,
-								  dir_xyz,
-								  org_xyz,
-								  min_dist_xyz,
-								  max_dist_xyz,
-								  and_mask,
-								  ray16,
-								  m_terminated,
-								  geometry,
-								  tptr);	
-      }
-
-    };
 
     // ============================================================================================
     // ============================================================================================
