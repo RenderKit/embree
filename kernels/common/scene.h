@@ -39,6 +39,9 @@ namespace embree
     /*! Scene construction */
     Scene (RTCSceneFlags flags, RTCAlgorithmFlags aflags);
 
+    void createTriangleAccel();
+    void createHairAccel();
+
     /*! Scene destruction */
     ~Scene ();
 

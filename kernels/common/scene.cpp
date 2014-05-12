@@ -20,6 +20,7 @@
 #include "bvh4/twolevel_accel.h"
 #include "bvh4/bvh4_builder_toplevel.h"
 #include "bvh4/bvh4.h"
+#include "bvh4hair/bvh4hair.h"
 #include "bvh4i/bvh4i.h"
 #include "bvh8i/bvh8i.h"
 #include "bvh4mb/bvh4mb.h"
@@ -31,13 +32,6 @@
 
 namespace embree
 {
-#if defined(__TARGET_AVX__)
-  class BVH4Hair {
-  public: static Accel* BVH4HairBezier1(Scene* scene); // FIXME: hack
-  public: static Accel* BVH4HairBezier1i(Scene* scene); // FIXME: hack
-  };
-#endif
-
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
       numTriangleMeshes(0), numTriangleMeshes2(0), numTriangles(0), numTriangles2(0), numCurves(0), numCurves2(0), numUserGeometries(0),
@@ -95,8 +89,17 @@ namespace embree
 
 
 #else
+    createTriangleAccel();
+    accels.add(BVH4MB::BVH4MBTriangle1v(this));
+    accels.add(new TwoLevelAccel("bvh4",this)); 
+    createHairAccel();
+#endif
+  }
 
-    /* create default acceleration structure */
+#if !defined(__MIC__)
+
+  void Scene::createTriangleAccel()
+  {
     if (g_tri_accel == "default") 
     {
       if (isStatic()) {
@@ -128,16 +131,6 @@ namespace embree
         case /*0b110*/ 6: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
         case /*0b111*/ 7: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
         }
-        accels.add(BVH4MB::BVH4MBTriangle1v(this)); 
-        accels.add(new TwoLevelAccel("bvh4",this)); 
-        
-#if defined(__TARGET_AVX__) 
-        // FIXME:
-        if      (g_hair_accel == "bvh4.bezier1i"    ) accels.add(BVH4::BVH4Bezier1i(this));
-        else if (g_hair_accel == "bvh4hair.bezier1" ) accels.add(BVH4Hair::BVH4HairBezier1(this));
-        else if (g_hair_accel == "bvh4hair.bezier1i") accels.add(BVH4Hair::BVH4HairBezier1i(this));
-        else accels.add(BVH4Hair::BVH4HairBezier1i(this));
-#endif
       } 
       else 
       {
@@ -152,47 +145,51 @@ namespace embree
         case /*0b110*/ 6: accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this)); break;
         case /*0b111*/ 7: accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this)); break;
         }
-        accels.add(BVH4MB::BVH4MBTriangle1v(this));
-        accels.add(new TwoLevelAccel("bvh4",this));
-        accels.add(BVH4Hair::BVH4HairBezier1(this));
       }
     }
-
-    /* create user specified acceleration structure */
-    else
-    {
-      if      (g_tri_accel == "bvh4.bvh4.triangle1.morton") accels.add(BVH4::BVH4BVH4Triangle1Morton(this));
-      else if (g_tri_accel == "bvh4.bvh4.triangle1")    accels.add(BVH4::BVH4BVH4Triangle1ObjectSplit(this));
-      else if (g_tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this));
-      else if (g_tri_accel == "bvh4.bvh4.triangle1v")   accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this));
-      else if (g_tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
-      else if (g_tri_accel == "bvh4.triangle1")         accels.add(BVH4::BVH4Triangle1(this));
-      else if (g_tri_accel == "bvh4.triangle4")         accels.add(BVH4::BVH4Triangle4(this));
+    else if (g_tri_accel == "bvh4.bvh4.triangle1.morton") accels.add(BVH4::BVH4BVH4Triangle1Morton(this));
+    else if (g_tri_accel == "bvh4.bvh4.triangle1")    accels.add(BVH4::BVH4BVH4Triangle1ObjectSplit(this));
+    else if (g_tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this));
+    else if (g_tri_accel == "bvh4.bvh4.triangle1v")   accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this));
+    else if (g_tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
+    else if (g_tri_accel == "bvh4.triangle1")         accels.add(BVH4::BVH4Triangle1(this));
+    else if (g_tri_accel == "bvh4.triangle4")         accels.add(BVH4::BVH4Triangle4(this));
 #if defined (__TARGET_AVX__)
-      else if (g_tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
+    else if (g_tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
 #endif
-      else if (g_tri_accel == "bvh4.triangle1v")        accels.add(BVH4::BVH4Triangle1v(this));
-      else if (g_tri_accel == "bvh4.triangle4v")        accels.add(BVH4::BVH4Triangle4v(this));
-      else if (g_tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
-      else if (g_tri_accel == "bvh4i.triangle1")        accels.add(BVH4i::BVH4iTriangle1(this));
-      else if (g_tri_accel == "bvh4i.triangle4")        accels.add(BVH4i::BVH4iTriangle4(this));
+    else if (g_tri_accel == "bvh4.triangle1v")        accels.add(BVH4::BVH4Triangle1v(this));
+    else if (g_tri_accel == "bvh4.triangle4v")        accels.add(BVH4::BVH4Triangle4v(this));
+    else if (g_tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
+    else if (g_tri_accel == "bvh4i.triangle1")        accels.add(BVH4i::BVH4iTriangle1(this));
+    else if (g_tri_accel == "bvh4i.triangle4")        accels.add(BVH4i::BVH4iTriangle4(this));
 #if defined (__TARGET_AVX__)
-      else if (g_tri_accel == "bvh4i.triangle8")        accels.add(BVH4i::BVH4iTriangle8(this));
+    else if (g_tri_accel == "bvh4i.triangle8")        accels.add(BVH4i::BVH4iTriangle8(this));
 #endif
-      else if (g_tri_accel == "bvh4i.triangle1.v1")     accels.add(BVH4i::BVH4iTriangle1_v1(this));
-      else if (g_tri_accel == "bvh4i.triangle1.v2")     accels.add(BVH4i::BVH4iTriangle1_v2(this));
-      else if (g_tri_accel == "bvh4i.triangle1.morton") accels.add(BVH4i::BVH4iTriangle1_morton(this));
-      else if (g_tri_accel == "bvh4i.triangle1.morton.enhanced") accels.add(BVH4i::BVH4iTriangle1_morton_enhanced(this));
+    else if (g_tri_accel == "bvh4i.triangle1.v1")     accels.add(BVH4i::BVH4iTriangle1_v1(this));
+    else if (g_tri_accel == "bvh4i.triangle1.v2")     accels.add(BVH4i::BVH4iTriangle1_v2(this));
+    else if (g_tri_accel == "bvh4i.triangle1.morton") accels.add(BVH4i::BVH4iTriangle1_morton(this));
+    else if (g_tri_accel == "bvh4i.triangle1.morton.enhanced") accels.add(BVH4i::BVH4iTriangle1_morton_enhanced(this));
 #if !defined(__WIN32__) && defined (__TARGET_AVX__)
-      else if (g_tri_accel == "bvh8i.triangle8")        accels.add(BVH8i::BVH8iTriangle8(this));
+    else if (g_tri_accel == "bvh8i.triangle8")        accels.add(BVH8i::BVH8iTriangle8(this));
 #endif
-      else throw std::runtime_error("unknown triangle acceleration structure "+g_tri_accel);
-
-      accels.add(new TwoLevelAccel("default",this));
-    }
-#endif
+    else throw std::runtime_error("unknown triangle acceleration structure "+g_tri_accel);
   }
-  
+
+  void Scene::createHairAccel()
+  {
+    if (g_hair_accel == "default") 
+    {
+      if (isCompact()) accels.add(BVH4Hair::BVH4HairBezier1i(this));
+      else             accels.add(BVH4Hair::BVH4HairBezier1 (this));
+    }
+    else if (g_hair_accel == "bvh4.bezier1i"    ) accels.add(BVH4::BVH4Bezier1i(this));
+    else if (g_hair_accel == "bvh4hair.bezier1" ) accels.add(BVH4Hair::BVH4HairBezier1(this));
+    else if (g_hair_accel == "bvh4hair.bezier1i") accels.add(BVH4Hair::BVH4HairBezier1i(this));
+    else throw std::runtime_error("unknown hair acceleration structure "+g_hair_accel);
+  }
+
+#endif
+
   Scene::~Scene () 
   {
     for (size_t i=0; i<geometries.size(); i++)
