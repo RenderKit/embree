@@ -992,9 +992,8 @@ namespace embree
 
   void BVH4iBuilderMemoryConservative::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
-    PING;
     enableTaskStealing = true;
-    enablePerCoreWorkQueueFill = true;
+    enablePerCoreWorkQueueFill = false;
 
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
@@ -1004,6 +1003,8 @@ namespace embree
 	const size_t numPrims = numPrimitives;
 	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
 	const size_t numNodes = max((size_t)(numPrims),minAllocNodes);
+
+	DBG_PRINT(numNodes);
 
 	if (g_verbose >= 2)
 	  {
@@ -1068,9 +1069,12 @@ namespace embree
   {
     LockStepTaskScheduler::dispatchTask( task_createMemoryConservativeAccel, this, threadIndex, threadCount );  
     // === do some padding add the end of 'accel' ===
-    prims[numPrimitives+0] = prims[0];
-    prims[numPrimitives+1] = prims[0];
-    prims[numPrimitives+2] = prims[0];
+
+    DBG_PRINT( numPrimitives );
+    prims[numPrimitives+0] = prims[numPrimitives-1];
+    prims[numPrimitives+1] = prims[numPrimitives-1];
+    prims[numPrimitives+2] = prims[numPrimitives-1];
+
     // === 'prims' became 'accel' === 
     prims = NULL;
     size_prims = 0;
@@ -1083,7 +1087,6 @@ namespace embree
 
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
-
 
     const PrimRef*  bptr = prims + startID;
 

@@ -88,7 +88,7 @@ namespace embree
 
   __forceinline std::ostream &operator<<(std::ostream &o, const embree::Triangle1mc &v)
   {
-    o << "v0 " << v.v0 << " v1 " << v.v1 << " v2 " << v.v2 << " geomID " << v.geomID() << " primID " << v.primID();
+    o << "v0 " << *v.v0 << " v1 " << *v.v1 << " v2 " << *v.v2 << " geomID " << v.geomID() << " primID " << v.primID();
     return o;
   } 
 

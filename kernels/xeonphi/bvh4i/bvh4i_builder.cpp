@@ -298,21 +298,6 @@ namespace embree
       std::cout << BVH4iStatistics(bvh).str();
     }
 
-#if defined(USE_QUANTIZATION)            
-    if (likely(numPrimitives > 0))
-      {
-	DBG_PRINT(sizeof(BVH4i::QuantizedNode));
-	DBG_PRINT(numNodes);
-	BVH4i::QuantizedNode *quantBVH = (BVH4i::QuantizedNode*) os_malloc(numNodes * sizeof(BVH4i::QuantizedNode));
-	for (size_t i=0;i<numNodes;i++)
-	  {	    
-	    quantBVH[i].init( bvh->qbvh[i] );
-	  }
-	bvh->qbvh = (BVH4i::Node*)quantBVH;
-	bvh->root = quantBVH->child0;
-      }
-#endif
-
   }
 
 
@@ -371,7 +356,7 @@ namespace embree
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-#if 0
+#if 1
 	mic_f bmin,bmax;
 	tri.bounds(vertex,bmin,bmax);
 #else
@@ -602,14 +587,16 @@ namespace embree
 		  break;
 	      }
 	    local_workStack[globalCoreID].mutex.inc();
-
+#if defined(DEBUG)
+	    checkBuildRecord(br);
+#endif
 	    recurseSAH(br,alloc,RECURSE,threadID,numThreads);
 	    local_workStack[globalCoreID].mutex.dec();
 	  }
 
 	/* try task stealing */
         bool success = false;
-	if (enableTaskStealing)
+	if (enableTaskStealing && numThreads > 4)
 	  {
 	    for (size_t i=0; i<numThreads; i++)
 	      {
@@ -625,7 +612,7 @@ namespace embree
 	      }
 	  }
         if (!success) break; 
-
+	
 	local_workStack[globalCoreID].mutex.inc();
 	recurseSAH(br,alloc,RECURSE,threadID,numThreads);
 	local_workStack[globalCoreID].mutex.dec();
@@ -1585,7 +1572,8 @@ namespace embree
     {
       BuildRecord br;
       if (!global_workStack.pop_nolock_largest(br)) break;
-      recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
+      DBG(DBG_PRINT(br));
+      recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);      
     }
 
     TIMER(msec = getSeconds()-msec);    

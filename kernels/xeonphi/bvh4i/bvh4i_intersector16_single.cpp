@@ -270,7 +270,6 @@ namespace embree
 	      
 	      const mic_i and_mask = broadcast4to16i(zlc4);
 
-
 	      bool hit = Triangle1mcIntersector16MoellerTrumbore::intersect1(rayIndex,
 									     dir_xyz,
 									     org_xyz,
@@ -284,8 +283,11 @@ namespace embree
 	      	compactStack(stack_node,stack_dist,sindex,max_dist_xyz);
 
 	      // ------------------------
-	    }	  
+	    }	
+	  // DBG_PRINT(ray16);
+	  // exit(0);
 	}
+
     }
     
     void BVH4mcIntersector16Single::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)

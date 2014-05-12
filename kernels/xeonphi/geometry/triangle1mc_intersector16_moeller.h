@@ -46,6 +46,11 @@ namespace embree
       prefetch<PFHINT_L1>(tptr + 2);
       prefetch<PFHINT_L1>(tptr + 0); 
 
+      /* DBG_PRINT(tptr[0]); */
+      /* DBG_PRINT(tptr[1]); */
+      /* DBG_PRINT(tptr[2]); */
+      /* DBG_PRINT(tptr[3]); */
+
       const mic_f v0 = gather_4f_zlc(and_mask,
 				     tptr[0].v0,
 				     tptr[1].v0,
