@@ -379,8 +379,8 @@ namespace embree
     /* map triangle and vertex buffer */
     Vertex* vertices0 = NULL;
     Vertex* vertices1 = NULL;
-    vertices0 = (Vertex*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-    if (numTimeSteps == 2) vertices1 = (Vertex*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
+    if (numTimeSteps >= 1) vertices0 = (Vertex*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
+    if (numTimeSteps >= 2) vertices1 = (Vertex*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
     /* create sphere geometry */
@@ -436,10 +436,50 @@ namespace embree
       }
     }
 
-    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-    if (numTimeSteps == 2) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
+    if (numTimeSteps >= 1) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
+    if (numTimeSteps >= 2) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
     rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
     return mesh;
+  }
+
+  unsigned addHair (RTCScene scene, RTCGeometryFlags flag, const Vec3fa& pos, const float r, size_t numHairs = 1, float motion = 0.0f)
+  {
+    size_t numTimeSteps = motion == 0.0f ? 1 : 2;
+    unsigned geomID = rtcNewHairGeometry (scene, flag, numHairs, numHairs*4, numTimeSteps);
+    
+    /* map triangle and vertex buffer */
+    Vec3fa* vertices0 = NULL;
+    Vec3fa* vertices1 = NULL;
+    if (numTimeSteps >= 1) vertices0 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER0); 
+    if (numTimeSteps >= 2) vertices1 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER1); 
+    int* indices = (int*) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+
+    for (size_t i=0; i<numHairs; i++) 
+    {
+      indices[i] = 4*i;
+      const Vec3fa p0 = pos + Vec3fa(i%7,i%13,i%31);
+      const Vec3fa p1 = p0 + Vec3fa(1,0,0);
+      const Vec3fa p2 = p0 + Vec3fa(0,1,1);
+      const Vec3fa p3 = p0 + Vec3fa(0,1,0);
+      
+      if (vertices0) {
+        vertices0[4*i+0] = Vec3fa(p0,r);
+        vertices0[4*i+1] = Vec3fa(p1,r);
+        vertices0[4*i+2] = Vec3fa(p2,r);
+        vertices0[4*i+3] = Vec3fa(p3,r);
+      }
+      if (vertices1) {
+        vertices1[4*i+0] = Vec3fa(p0+Vec3fa(motion),r);
+        vertices1[4*i+1] = Vec3fa(p1+Vec3fa(motion),r);
+        vertices1[4*i+2] = Vec3fa(p2+Vec3fa(motion),r);
+        vertices1[4*i+3] = Vec3fa(p3+Vec3fa(motion),r);
+      }
+    }
+
+    if (numTimeSteps >= 1) rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER0); 
+    if (numTimeSteps >= 2) rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER1); 
+    rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+    return geomID;
   }
 
   struct Sphere
@@ -709,7 +749,9 @@ namespace embree
   {
     RTCScene scene = rtcNewScene(sceneFlag,aflags);
     AssertNoError();
-    unsigned geom = rtcNewTriangleMesh (scene, geomFlag, 0, 0);
+    rtcNewTriangleMesh (scene, geomFlag, 0, 0);
+    AssertNoError();
+    rtcNewHairGeometry (scene, geomFlag, 0, 0);
     AssertNoError();
     rtcCommit (scene);
     AssertNoError();
@@ -722,14 +764,16 @@ namespace embree
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,aflags);
     AssertNoError();
-    unsigned geom = addSphere(scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
+    unsigned geom0 = addSphere(scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
+    AssertNoError();
+    unsigned geom1 = addHair(scene,RTC_GEOMETRY_STATIC,Vec3fa(0,0,0),0.5f,100);
     AssertNoError();
     rtcCommit (scene);
     AssertNoError();
 #if !defined(__EXIT_ON_ERROR__)
     rtcCommit (scene); // cannot commit static scene twice
     AssertAnyError();
-    rtcDisable(scene,geom); // static scene cannot get modified anymore after commit
+    rtcDisable(scene,geom0); // static scene cannot get modified anymore after commit
     AssertAnyError();
 #endif
     rtcDeleteScene (scene);
