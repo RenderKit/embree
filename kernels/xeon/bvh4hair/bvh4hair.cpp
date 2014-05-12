@@ -82,6 +82,7 @@ namespace embree
 
   Accel* BVH4Hair::BVH4HairBezier1i(Scene* scene)
   { 
+    scene->needVertices = true;
     BVH4Hair* accel = new BVH4Hair(SceneBezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4HairBezier1iIntersectors(accel);
     Builder* builder = BVH4HairBuilder_(accel,scene);

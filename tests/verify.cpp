@@ -2109,7 +2109,7 @@ namespace embree
         case 0: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
         case 1: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
         case 2: addHair  (scene,RTC_GEOMETRY_STATIC,pos,2.0f,numTriangles,0.0f); break;
-          //case 3: addHair  (scene,RTC_GEOMETRY_STATIC,pos,2.0f,numTriangles,1.0f); break;
+        case 3: addHair  (scene,RTC_GEOMETRY_STATIC,pos,2.0f,numTriangles,1.0f); break;
         case 4: addUserGeometryEmpty(scene,pos,2.0f); break;
         }
         AssertNoError();
@@ -2257,7 +2257,7 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
-
+    
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
     POSITIVE("barrier_sys",               test_barrier_sys());
