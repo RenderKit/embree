@@ -1020,12 +1020,17 @@ namespace embree
   bool rtcore_ray_masks_intersect(RTCSceneFlags sflags, RTCGeometryFlags gflags)
   {
     bool passed = true;
+    Vec3fa pos0 = Vec3fa(-10,0,-10);
+    Vec3fa pos1 = Vec3fa(-10,0,+10);
+    Vec3fa pos2 = Vec3fa(+10,0,-10);
+    Vec3fa pos3 = Vec3fa(+10,0,+10);
 
     RTCScene scene = rtcNewScene(sflags,aflags);
-    unsigned geom0 = addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50);
-    unsigned geom1 = addSphere(scene,gflags,Vec3fa(-1,0,+1),1.0f,50);
-    unsigned geom2 = addSphere(scene,gflags,Vec3fa(+1,0,-1),1.0f,50);
-    unsigned geom3 = addSphere(scene,gflags,Vec3fa(+1,0,+1),1.0f,50);
+    unsigned geom0 = addSphere(scene,gflags,pos0,1.0f,50);
+    unsigned geom1 = addSphere(scene,gflags,pos1,1.0f,50);
+    //unsigned geom1 = addHair  (scene,gflags,pos1,1.0f,1);
+    unsigned geom2 = addSphere(scene,gflags,pos2,1.0f,50);
+    unsigned geom3 = addSphere(scene,gflags,pos3,1.0f,50);
     rtcSetMask(scene,geom0,1);
     rtcSetMask(scene,geom1,2);
     rtcSetMask(scene,geom2,4);
@@ -1040,10 +1045,10 @@ namespace embree
       int mask3 = i+3;
 
       {
-	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
-	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
-	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
-	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
 	rtcIntersect(scene,ray0);
 	rtcIntersect(scene,ray1);
 	rtcIntersect(scene,ray2);
@@ -1057,10 +1062,10 @@ namespace embree
 
 #if !defined(__MIC__)
       {
-	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
-	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
-	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
-	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
 
 	RTCRay4 ray4;
 	setRay(ray4,0,ray0);
@@ -1079,10 +1084,10 @@ namespace embree
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
       if (has_feature(AVX))
       {
-	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
-	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
-	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
-	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
 
 	RTCRay8 ray8;
 	setRay(ray8,0,ray0);
@@ -1103,10 +1108,10 @@ namespace embree
 
 #if defined(__MIC__)
       {
-	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
-	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
-	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
-	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
 
 	RTCRay16 ray16;
 	setRay(ray16,0,ray0);
@@ -1132,11 +1137,16 @@ namespace embree
   bool rtcore_ray_masks_occluded(RTCSceneFlags sflags, RTCGeometryFlags gflags)
   {
     bool passed = true;
+    Vec3fa pos0 = Vec3fa(-10,0,-10);
+    Vec3fa pos1 = Vec3fa(-10,0,+10);
+    Vec3fa pos2 = Vec3fa(+10,0,-10);
+    Vec3fa pos3 = Vec3fa(+10,0,+10);
+
     RTCScene scene = rtcNewScene(sflags,aflags);
-    unsigned geom0 = addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50);
-    unsigned geom1 = addSphere(scene,gflags,Vec3fa(-1,0,+1),1.0f,50);
-    unsigned geom2 = addSphere(scene,gflags,Vec3fa(+1,0,-1),1.0f,50);
-    unsigned geom3 = addSphere(scene,gflags,Vec3fa(+1,0,+1),1.0f,50);
+    unsigned geom0 = addSphere(scene,gflags,pos0,1.0f,50);
+    unsigned geom1 = addSphere(scene,gflags,pos1,1.0f,50);
+    unsigned geom2 = addSphere(scene,gflags,pos2,1.0f,50);
+    unsigned geom3 = addSphere(scene,gflags,pos3,1.0f,50);
     rtcSetMask(scene,geom0,1);
     rtcSetMask(scene,geom1,2);
     rtcSetMask(scene,geom2,4);
@@ -1151,10 +1161,10 @@ namespace embree
       int mask3 = i+3;
 
       {
-	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
-	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
-	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
-	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
 	rtcOccluded(scene,ray0);
 	rtcOccluded(scene,ray1);
 	rtcOccluded(scene,ray2);
@@ -1169,10 +1179,10 @@ namespace embree
 
 #if !defined(__MIC__)
       {
-	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
-	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
-	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
-	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
 
 	RTCRay4 ray4;
 	setRay(ray4,0,ray0);
@@ -1191,10 +1201,10 @@ namespace embree
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
       if (has_feature(AVX)) 
       {
-	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
-	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
-	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
-	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
 
 	RTCRay8 ray8;
 	setRay(ray8,0,ray0);
@@ -1215,10 +1225,10 @@ namespace embree
 
 #if defined(__MIC__)
       {
-	RTCRay ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0)); ray0.mask = mask0;
-	RTCRay ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); ray1.mask = mask1;
-	RTCRay ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); ray2.mask = mask2;
-	RTCRay ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); ray3.mask = mask3;
+	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
+	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
+	RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
+	RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
 
 	RTCRay16 ray16;
 	setRay(ray16,0,ray0);
