@@ -27,7 +27,7 @@ Vec3fa g_accu_vx;
 Vec3fa g_accu_vy;
 Vec3fa g_accu_vz;
 Vec3fa g_accu_p;
-static bool g_changed = false;
+extern "C" bool g_changed;
 
 /* light settings */
 extern "C" Vec3fa g_dirlight_direction;
