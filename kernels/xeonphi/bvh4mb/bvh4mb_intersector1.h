@@ -23,7 +23,8 @@ namespace embree
 {
   namespace isa
   {
-    /*! BVH4mb Traverser. Packet traversal implementation for a Quad BVH. */
+    /*! BVH4mb Traverser. Single ray traversal implementation for a bvh4mb. */
+    template<typename LeafIntersector>
       class BVH4mbIntersector1
     {
       /* shortcuts for frequently used types */

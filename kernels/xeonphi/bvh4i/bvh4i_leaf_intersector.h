@@ -71,14 +71,14 @@ namespace embree
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
 	const mic_i and_mask = broadcast4to16i(zlc4);
-	return Triangle1Intersector1MoellerTrumbore::occluded1(dir_xyz,
-							       org_xyz,
-							       min_dist_xyz,
-							       max_dist_xyz,
-							       and_mask,
-							       ray,
-							       geometry,
-							       tptr);	
+	return any(Triangle1Intersector1MoellerTrumbore::occluded1(dir_xyz,
+								   org_xyz,
+								   min_dist_xyz,
+								   max_dist_xyz,
+								   and_mask,
+								   ray,
+								   geometry,
+								   tptr));	
       }
 
       // ============================================

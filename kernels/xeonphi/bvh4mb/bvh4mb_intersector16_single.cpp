@@ -25,8 +25,6 @@ namespace embree
 
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
 
-    static __aligned(64) int zlc4[4] = {0xffffffff,0xffffffff,0xffffffff,0};
-
     template<typename LeafIntersector>
     void BVH4mbIntersector16Single<LeafIntersector>::intersect(mic_i* valid_i, BVH4mb* bvh, Ray16& ray16)
     {      
