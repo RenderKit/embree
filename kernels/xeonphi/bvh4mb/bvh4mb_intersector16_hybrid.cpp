@@ -97,121 +97,23 @@ namespace embree
 		const mic_f time         = broadcast1to16f(&ray16.time[rayIndex]);
 
 		const unsigned int leaf_mask = BVH4I_LEAF_MASK;
-		const mic_m m7777 = 0x7777; 
-		const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero());
-		const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero());
 
 		while (1) 
 		  {
 		    NodeRef curNode = stack_node_single[sindex-1];
 		    sindex--;
             
-		    const mic_f one_time = (mic_f::one() - time);
-
-		    while (1) 
-		      {
-			/* test if this is a leaf node */
-			if (unlikely(curNode.isLeaf(leaf_mask))) break;
-        
-			const Node* __restrict__ const node = curNode.node(nodes);
-			const float* __restrict const plower = (float*)node->lower;
-			const float* __restrict const pupper = (float*)node->upper;
-
-			prefetch<PFHINT_L1>((char*)node + 0*64);
-			prefetch<PFHINT_L1>((char*)node + 1*64);
-			prefetch<PFHINT_L1>((char*)node + 2*64);
-			prefetch<PFHINT_L1>((char*)node + 3*64);
-
-
-			const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
-			const mic_f lower = one_time  * load16f((float*)nodeMB->lower) + time * load16f((float*)nodeMB->lower_t1);
-			const mic_f upper = one_time  * load16f((float*)nodeMB->upper) + time * load16f((float*)nodeMB->upper_t1);
-
-        
-			/* intersect single ray with 4 bounding boxes */
-			mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz);
-			mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz);
-
-			tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,lower,org_rdir_xyz);
-			tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,lower,org_rdir_xyz);
-
-			tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,upper,org_rdir_xyz);
-			tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,upper,org_rdir_xyz);
-
-			mic_m hitm = ~m7777; 
-			const mic_f tLower = tLowerXYZ;
-			const mic_f tUpper = tUpperXYZ;
-
-			sindex--;
-
-			curNode = stack_node_single[sindex]; // early pop of next node
-
-			const Node* __restrict__ const next = curNode.node(nodes);
-			prefetch<PFHINT_L2>((char*)next + 0);
-			prefetch<PFHINT_L2>((char*)next + 64);
-
-			const mic_f tNear = vreduce_max4(tLower);
-			const mic_f tFar  = vreduce_min4(tUpper);  
-			hitm = le(hitm,tNear,tFar);
-			const mic_f tNear_pos = select(hitm,tNear,inf);
-
-			/* if no child is hit, continue with early popped child */
-			if (unlikely(none(hitm))) continue;
-			sindex++;
-        
-			const unsigned long hiti = toInt(hitm);
-			const unsigned long pos_first = bitscan64(hiti);
-			const unsigned long num_hitm = countbits(hiti); 
-        
-			/* if a single child is hit, continue with that child */
-			curNode = ((unsigned int *)plower)[pos_first];
-			if (likely(num_hitm == 1)) continue;
-        
-			/* if two children are hit, push in correct order */
-			const unsigned long pos_second = bitscan64(pos_first,hiti);
-			if (likely(num_hitm == 2))
-			  {
-			    const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
-			    const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
-			    const unsigned int node_first  = curNode;
-			    const unsigned int node_second = ((unsigned int*)plower)[pos_second];
-          
-			    if (dist_first <= dist_second)
-			      {
-				stack_node_single[sindex] = node_second;
-				((unsigned int*)stack_dist_single)[sindex] = dist_second;                      
-				sindex++;
-				assert(sindex < 3*BVH4i::maxDepth+1);
-				continue;
-			      }
-			    else
-			      {
-				stack_node_single[sindex] = curNode;
-				((unsigned int*)stack_dist_single)[sindex] = dist_first;
-				curNode = node_second;
-				sindex++;
-				assert(sindex < 3*BVH4i::maxDepth+1);
-				continue;
-			      }
-			  }
-        
-			/* continue with closest child and push all others */
-			const mic_f min_dist = set_min_lanes(tNear_pos);
-			const unsigned int old_sindex = sindex;
-			sindex += countbits(hiti) - 1;
-			assert(sindex < 3*BVH4i::maxDepth+1);
-        
-			const mic_m closest_child = eq(hitm,min_dist,tNear);
-			const unsigned long closest_child_pos = bitscan64(closest_child);
-			const mic_i plower_node = load16i((int*)plower);
-			const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
-			curNode = ((unsigned int*)plower)[closest_child_pos];
-
-			compactustore16f(m_pos,&stack_dist_single[old_sindex],tNear); 
-			compactustore16i(m_pos,&stack_node_single[old_sindex],plower_node);
-		      }
-	  
-	    
+		    traverse_single_intersect(curNode,
+					      sindex,
+					      rdir_xyz,
+					      org_rdir_xyz,
+					      min_dist_xyz,
+					      max_dist_xyz,
+					      time,
+					      stack_node_single,
+					      stack_dist_single,
+					      nodes,
+					      leaf_mask);	    
 
 		    /* return if stack is empty */
 		    if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -417,115 +319,23 @@ namespace embree
 		const mic_f time         = broadcast1to16f(&ray16.time[rayIndex]);
 
 		const unsigned int leaf_mask = BVH4I_LEAF_MASK;
-		const mic_m m7777 = 0x7777; 
-		const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero());
-		const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero());
 
 		while (1) 
 		  {
 		    NodeRef curNode = stack_node_single[sindex-1];
 		    sindex--;
             
-		    const mic_f one_time = (mic_f::one() - time);
-
-		    while (1) 
-		      {
-			/* test if this is a leaf node */
-			if (unlikely(curNode.isLeaf(leaf_mask))) break;
-        
-			const Node* __restrict__ const node = curNode.node(nodes);
-			const float* __restrict const plower = (float*)node->lower;
-			const float* __restrict const pupper = (float*)node->upper;
-
-
-			prefetch<PFHINT_L1>((char*)node + 0*64);
-			prefetch<PFHINT_L1>((char*)node + 1*64);
-			prefetch<PFHINT_L1>((char*)node + 2*64);
-			prefetch<PFHINT_L1>((char*)node + 3*64);
-
-			const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
-			const mic_f lower = one_time  * load16f((float*)nodeMB->lower) + time * load16f((float*)nodeMB->lower_t1);
-			const mic_f upper = one_time  * load16f((float*)nodeMB->upper) + time * load16f((float*)nodeMB->upper_t1);
-
-			/* intersect single ray with 4 bounding boxes */
-			mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz);
-			mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz);
-
-			tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,lower,org_rdir_xyz);
-			tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,lower,org_rdir_xyz);
-
-			tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,upper,org_rdir_xyz);
-			tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,upper,org_rdir_xyz);
-
-			mic_m hitm = ~m7777; 
-			const mic_f tLower = tLowerXYZ;
-			const mic_f tUpper = tUpperXYZ;
-
-			sindex--;
-			curNode = stack_node_single[sindex]; // early pop of next node
-
-			const Node* __restrict__ const next = curNode.node(nodes);
-			prefetch<PFHINT_L2>((char*)next + 0);
-			prefetch<PFHINT_L2>((char*)next + 64);
-
-			const mic_f tNear = vreduce_max4(tLower);
-			const mic_f tFar  = vreduce_min4(tUpper);  
-			hitm = le(hitm,tNear,tFar);
-			const mic_f tNear_pos = select(hitm,tNear,inf);
-
-
-			/* if no child is hit, continue with early popped child */
-			if (unlikely(none(hitm))) continue;
-			sindex++;
-        
-			const unsigned long hiti = toInt(hitm);
-			const unsigned long pos_first = bitscan64(hiti);
-			const unsigned long num_hitm = countbits(hiti); 
-        
-			/* if a single child is hit, continue with that child */
-			curNode = ((unsigned int *)plower)[pos_first];
-			if (likely(num_hitm == 1)) continue;
-        
-			/* if two children are hit, push in correct order */
-			const unsigned long pos_second = bitscan64(pos_first,hiti);
-			if (likely(num_hitm == 2))
-			  {
-			    const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
-			    const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
-			    const unsigned int node_first  = curNode;
-			    const unsigned int node_second = ((unsigned int*)plower)[pos_second];
-          
-			    if (dist_first <= dist_second)
-			      {
-				stack_node_single[sindex] = node_second;
-				sindex++;
-				assert(sindex < 3*BVH4i::maxDepth+1);
-				continue;
-			      }
-			    else
-			      {
-				stack_node_single[sindex] = curNode;
-				curNode = node_second;
-				sindex++;
-				assert(sindex < 3*BVH4i::maxDepth+1);
-				continue;
-			      }
-			  }
-        
-			/* continue with closest child and push all others */
-			const mic_f min_dist = set_min_lanes(tNear_pos);
-			const unsigned int old_sindex = sindex;
-			sindex += countbits(hiti) - 1;
-			assert(sindex < 3*BVH4i::maxDepth+1);
-        
-			const mic_m closest_child = eq(hitm,min_dist,tNear);
-			const unsigned long closest_child_pos = bitscan64(closest_child);
-			const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
-			const mic_i plower_node = load16i((int*)plower);
-			curNode = ((unsigned int*)plower)[closest_child_pos];
-			compactustore16i(m_pos,&stack_node_single[old_sindex],plower_node);
-		      }
 	  
+		    traverse_single_occluded(curNode,
+					     sindex,
+					     rdir_xyz,
+					     org_rdir_xyz,
+					     min_dist_xyz,
+					     max_dist_xyz,
+					     time,
+					     stack_node_single,
+					     nodes,
+					     leaf_mask);
 	    
 
 		    /* return if stack is empty */
