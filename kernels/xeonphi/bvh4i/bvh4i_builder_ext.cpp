@@ -920,12 +920,6 @@ namespace embree
           const BBox3fa bounds = geom->bounds(i);
           const mic_f bmin = broadcast4to16f(&bounds.lower); 
           const mic_f bmax = broadcast4to16f(&bounds.upper);
-
-          // DBG(
-	  //   DBG_PRINT(currentID);
-	  //   DBG_PRINT(bmin);
-	  //   DBG_PRINT(bmax);
-	  //   );
           
           bounds_scene_min = min(bounds_scene_min,bmin);
           bounds_scene_max = max(bounds_scene_max,bmax);
@@ -1035,9 +1029,8 @@ namespace embree
 
 	numAllocatedNodes = size_node / sizeof(BVHNode) - numTopLevelNodes;
 	
-	DBG_PRINT( numAllocatedNodes );
-	DBG_PRINT( size_node );
-	DBG_PRINT( size_accel );
+	DBG(DBG_PRINT( size_node ));
+	DBG(DBG_PRINT( size_accel ));
 
 	DBG(DBG_PRINT(numAllocatedNodes));
 	DBG(DBG_PRINT(size_primrefs));
@@ -1048,10 +1041,6 @@ namespace embree
 	prims = (PrimRef*)  os_malloc(size_primrefs);
 	node  = (BVHNode  *)os_malloc(size_node);
 	accel = (Triangle1*)(node + numTopLevelNodes); // for global paritioning
-
-	DBG_PRINT(prims);
-	DBG_PRINT(node);
-	DBG_PRINT(accel);
 
 	assert(prims  != 0);
 	assert(node   != 0);
@@ -1068,6 +1057,7 @@ namespace embree
   void BVH4iBuilderMemoryConservative::createAccel(const size_t threadIndex, const size_t threadCount)
   {
     LockStepTaskScheduler::dispatchTask( task_createMemoryConservativeAccel, this, threadIndex, threadCount );  
+
     // === do some padding add the end of 'accel' ===
 
     DBG_PRINT( numPrimitives );
@@ -1083,8 +1073,6 @@ namespace embree
 
   void BVH4iBuilderMemoryConservative::createMemoryConservativeAccel(const size_t threadID, const size_t numThreads)
   {
-    DBG(PING);
-
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
 
