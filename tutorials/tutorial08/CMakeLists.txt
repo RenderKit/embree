@@ -16,6 +16,8 @@
 
 IF (__XEON__ AND BUILD_TUTORIALS)
 
+    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+
     ADD_EXECUTABLE(tutorial08
         extensions/api.cpp
         extensions/catmullclark.cpp
