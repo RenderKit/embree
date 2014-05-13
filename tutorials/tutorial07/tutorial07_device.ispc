@@ -582,18 +582,16 @@ task void renderTile(uniform int* uniform pixels,
                      const uniform int numTilesX, 
                      const uniform int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
-  const int x0 = tileX * TILE_SIZE_X;
-  const int x1 = min(x0+TILE_SIZE_X,width);
-  const int y0 = tileY * TILE_SIZE_Y;
-  const int y1 = min(y0+TILE_SIZE_Y,height);
+  const uniform int tileY = taskIndex / numTilesX;
+  const uniform int tileX = taskIndex - tileY * numTilesX;
+  const uniform int x0 = tileX * TILE_SIZE_X;
+  const uniform int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform int y0 = tileY * TILE_SIZE_Y;
+  const uniform int y1 = min(y0+TILE_SIZE_Y,height);
   int seed = tileY*numTilesX+tileX+g_accu_count;
 
-  for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
+  foreach (y = y0 ... y1, x = x0 ... x1)
   {
-    //if (x != 0 || y != 0) continue;
-
     /* calculate pixel color */
     float fx = x + frand(seed);
     float fy = y + frand(seed);
