@@ -168,7 +168,7 @@ namespace embree
 
     DEFINE_INTERSECTOR1    (BVH4iTriangle1Intersector1, BVH4iIntersector1<Triangle1LeafIntersector>);
     DEFINE_INTERSECTOR1    (BVH4iVirtualIntersector1  , BVH4iIntersector1<Triangle1LeafIntersector>);
-    DEFINE_INTERSECTOR1    (BVH4mcTriangle1Intersector1, BVH4iIntersector1<Triangle1mcLeafIntersector>);
+    DEFINE_INTERSECTOR1    (BVH4iTriangle1mcIntersector1, BVH4iIntersector1<Triangle1mcLeafIntersector>);
 
   }
 }

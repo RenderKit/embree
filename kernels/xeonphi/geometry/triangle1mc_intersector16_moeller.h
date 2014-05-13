@@ -43,13 +43,9 @@ namespace embree
 					 const Triangle1mc * __restrict__ const tptr)
     {
       const mic_f zero = mic_f::zero();
-      prefetch<PFHINT_L1>(tptr + 2);
       prefetch<PFHINT_L1>(tptr + 0); 
+      prefetch<PFHINT_L1>(tptr + 2);
 
-      /* DBG_PRINT(tptr[0]); */
-      /* DBG_PRINT(tptr[1]); */
-      /* DBG_PRINT(tptr[2]); */
-      /* DBG_PRINT(tptr[3]); */
 
       const mic_f v0 = gather_4f_zlc(and_mask,
 				     tptr[0].v0,
@@ -334,16 +330,14 @@ namespace embree
       const mic_f one  = mic_f::one();
 	
       prefetch<PFHINT_L1>((mic_f*)tptr +  0); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  2); 
+      prefetch<PFHINT_L1>((mic_f*)tptr +  2); 
 
       for (size_t i=0; i<items; i++,tptr++) 
 	{
+
 	  const Triangle1mc& tri = *tptr;
-
-	  prefetch<PFHINT_L1>(tptr + 1 ); 
-
 	  STAT3(normal.trav_prims,1,popcnt(valid_i),16);
-        
+
 	  /* load vertices and calculate edges */
 	  const mic_f v0 = broadcast4to16f(tri.v0);
 	  const mic_f v1 = broadcast4to16f(tri.v1);
@@ -359,7 +353,7 @@ namespace embree
 	    
 	  //const mic3f Ng = mic3f(tri.Ng);
 	  const mic_f normal_xyz = lcross_zxy(e1,e2);
-	  const mic3f Ng(swAAAA(normal_xyz),swBBBB(normal_xyz),swCCCC(normal_xyz));
+	  const mic3f Ng(swBBBB(normal_xyz),swCCCC(normal_xyz),swAAAA(normal_xyz));
 
 	  const mic_f den = dot(Ng,ray16.dir);
 
@@ -443,17 +437,13 @@ namespace embree
 					 const Triangle1mc * __restrict__ tptr)
     {
       prefetch<PFHINT_L1>((mic_f*)tptr +  0); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  1); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  2); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  3); 
+      prefetch<PFHINT_L1>((mic_f*)tptr +  2); 
 
       const mic_f zero = mic_f::zero();
       mic_m valid_leaf = m_valid_leaf;
       for (size_t i=0; i<items; i++,tptr++) 
 	{
 	  const Triangle1mc& tri = *tptr;
-
-	  prefetch<PFHINT_L1>(tptr + 1 ); 
 
 	  STAT3(normal.trav_prims,1,popcnt(m_valid_leaf),16);
         
@@ -469,7 +459,7 @@ namespace embree
 	  const mic3f C =  _v0 - org;
 	    
 	  const mic_f normal_xyz = lcross_zxy(e1,e2);
-	  const mic3f Ng(swAAAA(normal_xyz),swBBBB(normal_xyz),swCCCC(normal_xyz));
+	  const mic3f Ng(swBBBB(normal_xyz),swCCCC(normal_xyz),swAAAA(normal_xyz));
 
 	  const mic_f den = dot(Ng,dir);
 

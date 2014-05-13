@@ -34,7 +34,9 @@ namespace embree
 
     struct Triangle1LeafIntersector
     {
+      // ==================
       // === single ray === 
+      // ==================
       static __forceinline bool intersect(BVH4i::NodeRef curNode,
 					  const mic_f &dir_xyz,
 					  const mic_f &org_xyz,
@@ -77,8 +79,9 @@ namespace embree
 							       tptr);	
       }
 
-      // ==== single ray in packet ===
-
+      // ============================================
+      // ==== single ray mode for 16-wide packets ===
+      // ============================================
       static __forceinline bool intersect(BVH4i::NodeRef curNode,
 					  const size_t rayIndex, 
 					  const mic_f &dir_xyz,
@@ -129,6 +132,38 @@ namespace embree
 								tptr);	
       }
 
+      // ========================
+      // ==== 16-wide packets ===
+      // ========================
+
+      __forceinline static void intersect16(BVH4i::NodeRef curNode,
+					    const mic_m m_valid_leaf, 
+					    const mic3f &dir,
+					    const mic3f &org,
+					    Ray16& ray16, 
+					    const void *__restrict__ const accel,
+					    const Scene     *__restrict__ const geometry)
+      {
+	unsigned int items; 
+	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel,items);
+	Triangle1Intersector16MoellerTrumbore::intersect16(m_valid_leaf,items,dir,org,ray16,geometry,tptr);	
+      }
+
+      __forceinline static void occluded16(BVH4i::NodeRef curNode,
+					   const mic_m m_valid_leaf, 
+					   const mic3f &dir,
+					   const mic3f &org,
+					   Ray16& ray16, 
+					   mic_m &m_terminated,					    
+					   const void *__restrict__ const accel,
+					   const Scene     *__restrict__ const geometry)
+      {
+	unsigned int items; 
+	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel,items);
+	Triangle1Intersector16MoellerTrumbore::occluded16(m_valid_leaf,items,dir,org,ray16,m_terminated,geometry,tptr);
+      }
+
+
     };
 
 
@@ -138,8 +173,9 @@ namespace embree
 
     struct Triangle1mcLeafIntersector
     {
-
+      // ==================
       // === single ray === 
+      // ==================
       static __forceinline bool intersect(BVH4i::NodeRef curNode,
 					  const mic_f &dir_xyz,
 					  const mic_f &org_xyz,
@@ -188,8 +224,9 @@ namespace embree
 								 tptr);	
       }
 
-      // ==== single ray in packet ===
-
+      // ============================================
+      // ==== single ray mode for 16-wide packets ===
+      // ============================================
       static __forceinline bool intersect(BVH4i::NodeRef curNode,
 					  const size_t rayIndex, 
 					  const mic_f &dir_xyz,
@@ -243,6 +280,38 @@ namespace embree
 								  m_terminated,
 								  geometry,
 								  tptr);	
+      }
+
+      // ========================
+      // ==== 16-wide packets ===
+      // ========================
+      __forceinline static void intersect16(BVH4i::NodeRef curNode,
+					    const mic_m m_valid_leaf, 
+					    const mic3f &dir,
+					    const mic3f &org,
+					    Ray16& ray16, 
+					    const void *__restrict__ const accel,
+					    const Scene     *__restrict__ const geometry)
+      {
+	unsigned int items = curNode.items();
+	unsigned int index = curNode.offsetIndex();
+	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
+	Triangle1mcIntersector16MoellerTrumbore::intersect16(m_valid_leaf,items,dir,org,ray16,geometry,tptr);	
+      }
+
+      __forceinline static void occluded16(BVH4i::NodeRef curNode,
+					   const mic_m m_valid_leaf, 
+					   const mic3f &dir,
+					   const mic3f &org,
+					   Ray16& ray16, 
+					   mic_m &m_terminated,					    
+					   const void *__restrict__ const accel,
+					   const Scene     *__restrict__ const geometry)
+      {
+	unsigned int items = curNode.items();
+	unsigned int index = curNode.offsetIndex();
+	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
+	Triangle1mcIntersector16MoellerTrumbore::occluded16(m_valid_leaf,items,dir,org,ray16,m_terminated,geometry,tptr);
       }
 
     };
