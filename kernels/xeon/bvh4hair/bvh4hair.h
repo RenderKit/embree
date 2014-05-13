@@ -355,6 +355,8 @@ namespace embree
       /*! Sets non-axis aligned space of node and parent bounding box. */
       __forceinline void set(const NAABBox3fa& naabb) 
       {
+        const LinearSpace3fa& space = naabb.space;
+
 #if !defined(__WIN32__)
  		assert(127.0f*space.vx.x >= -127.0f && 127.0f*space.vx.x <= 127.0f && truncf(127.0f*space.vx.x) == 127.0f*space.vx.x);
 		assert(127.0f*space.vx.y >= -127.0f && 127.0f*space.vx.y <= 127.0f && truncf(127.0f*space.vx.y) == 127.0f*space.vx.y);
@@ -366,7 +368,7 @@ namespace embree
 		assert(127.0f*space.vz.y >= -127.0f && 127.0f*space.vz.y <= 127.0f && truncf(127.0f*space.vz.y) == 127.0f*space.vz.y);
 		assert(127.0f*space.vz.z >= -127.0f && 127.0f*space.vz.z <= 127.0f && truncf(127.0f*space.vz.z) == 127.0f*space.vz.z);
 #endif
-        const LinearSpace3fa& space = naabb.space;
+
         const BBox3fa& bounds = naabb.bounds;
         xfm_vx[0] = (char) (127.0f*space.vx.x); 
         xfm_vx[1] = (char) (127.0f*space.vx.y); 
