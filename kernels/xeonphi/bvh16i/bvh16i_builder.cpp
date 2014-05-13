@@ -33,7 +33,7 @@ namespace embree
 
   void BVH16iBuilder::printBuilderName()
   {
-    std::cout << "building BVH16i with binned SAH builder (MIC) ... " << std::endl;    
+    std::cout << "building experimental BVH16i with binned SAH builder (MIC) ... " << std::endl;    
   }
 
   void BVH16iBuilder::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
@@ -176,32 +176,7 @@ namespace embree
       size_t bvh16_used_slots = 0;
       const size_t bvh16_node_index = index16++;
       
-      DBG(DBG_PRINT(bvh16_node_index));
-      
-#if defined(ENABLE_EXTENDED_LEAVES)
-      if (numLeavesInSubTree <= 4)
-       	{
-       	  BVHNode *leaves = (BVHNode*)&bvh16[bvh16_node_index];
-	  const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-	  store16f_ngo((float*)&leaves[0],init_node);
-	  store16f_ngo((float*)&leaves[2],init_node);
-
-	  unsigned int numLeaves = 0;
-       	  getLeaves(bvh4_ext_min,(unsigned int)-1,leaves,numLeaves);
-
-	  bvh4i_node_dist[numLeaves-1]++;
-
-	  if (numLeavesInSubTree != numLeaves) FATAL("HERE");
-
-	  convertToBVH4Layout(leaves);
-
-	  parent_offset  = (unsigned int)(sizeof(BVH16i::Node) * bvh16_node_index);
-	  parent_offset |= BVH16I_EXTENDED_LEAF_MASK;
-	  
-	  return;
-	}
-#endif		    
-
+      DBG(DBG_PRINT(bvh16_node_index));     
 
       bvh16[bvh16_node_index].reset();
       
@@ -418,7 +393,7 @@ namespace embree
 	}
         else
 	{
-	  b16.child[i] = (b16.child[i] ^ BVH_LEAF_MASK) | QBVH_LEAF_MASK;
+	  //b16.child[i] = (b16.child[i] ^ BVH_LEAF_MASK) | QBVH_LEAF_MASK;
 	}
       
       DBG(std::cout << "DONE" << std::endl << std::flush);

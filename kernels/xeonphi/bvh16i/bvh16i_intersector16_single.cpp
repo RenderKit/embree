@@ -22,7 +22,6 @@
 //#define NEAR_FAR_OPT_INTERSECT
 //#define NEAR_FAR_OPT_OCCLUDED
 
-//#define ENABLE_EXTENDED_LEAVES
 
 __forceinline void sort(void * stack_dist,
 			void * stack_node,
@@ -37,15 +36,7 @@ __forceinline void sort(void * stack_dist,
  
 }
 
-		  // const BVH16i::Node* __restrict__ const next = (BVH16i::Node*)((char*)bvh16 + curNode.id());
-
-		  // prefetch<PFHINT_L2>(&next->min_x);
-		  // prefetch<PFHINT_L2>(&next->max_x);
-		  // prefetch<PFHINT_L2>(&next->min_y);
-		  // prefetch<PFHINT_L2>(&next->max_y);
-		  // prefetch<PFHINT_L2>(&next->min_z);
-		  // prefetch<PFHINT_L2>(&next->max_z);
-		  // prefetch<PFHINT_L2>(&next->child);
+// const BVH16i::Node* __restrict__ const next = (BVH16i::Node*)((char*)bvh16 + curNode.id());
 			
 namespace embree
 {
@@ -274,89 +265,7 @@ namespace embree
 		}
 
 	      /* return if stack is empty */
-	      if (unlikely(curNode == BVH16I_TERMINAL_TOKEN)) break;
-	  
-#if defined(ENABLE_EXTENDED_LEAVES)
-	      if (likely((curNode.isLeaf(BVH16I_EXTENDED_LEAF_MASK) == BVH16I_EXTENDED_LEAF_MASK)))
-		{
-		  curNode.id() ^= BVH16I_EXTENDED_LEAF_MASK;
-
-		  const BVH4i::Node* __restrict__ const node4 = (BVH4i::Node*)((char*)bvh16 + curNode.id());
-
-		  const float* __restrict const plower = (float*)node4->lower;
-		  const float* __restrict const pupper = (float*)node4->upper;
-
-		  prefetch<PFHINT_L1>((char*)node4 + 0);
-		  prefetch<PFHINT_L1>((char*)node4 + 64);
-        
-		  /* intersect single ray with 4 bounding boxes */
-		  const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-		  const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
-		  const mic_f tLower = mask_min(0x7777,tnear,tLowerXYZ,tUpperXYZ);
-		  const mic_f tUpper = mask_max(0x7777,tfar,tLowerXYZ,tUpperXYZ);
-
-		  const mic_f tNear = vreduce_max4(tLower);
-		  const mic_f tFar  = vreduce_min4(tUpper);  
-		  const mic_m hitm = le(0x8888,tNear,tFar);
-		  const mic_f tNear_pos = select(hitm,tNear,inf);
-
-		  STAT3(normal.trav_hit_boxes[countbits(hitm)],1,1,1);
-
-		  /* if no child is hit, continue with early popped child */
-		  if (unlikely(none(hitm))) continue;
-        
-		  const unsigned long hiti = toInt(hitm);
-		  const unsigned long pos_first = bitscan64(hiti);
-		  const unsigned long num_hitm = countbits(hiti); 
-        
-		  /* if a single child is hit, continue with that child */
-		  curNode = ((unsigned int *)plower)[pos_first];
-		  if (likely(num_hitm == 1)) 
-		    {
-		      
-		    }
-		  else if (likely(num_hitm == 2)) /* if two children are hit, push in correct order */
-		    {
-		      const unsigned long pos_second = bitscan64(pos_first,hiti);
-		      const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
-		      const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
-		      const unsigned int node_first  = curNode;
-		      const unsigned int node_second = ((unsigned int*)plower)[pos_second];
-          
-		      if (dist_first <= dist_second)
-			{
-			  stack_node[sindex] = node_second;
-			  ((unsigned int*)stack_dist)[sindex] = dist_second;                      
-			  sindex++;
-			  assert(sindex < 3*BVH4i::maxDepth+1);
-			}
-		      else
-			{
-			  stack_node[sindex] = curNode;
-			  ((unsigned int*)stack_dist)[sindex] = dist_first;
-			  curNode = node_second;
-			  sindex++;
-			  assert(sindex < 3*BVH4i::maxDepth+1);
-			}
-		    }
-		  else
-		    {        
-		      /* continue with closest child and push all others */
-		      const mic_f min_dist = set_min_lanes(tNear_pos);
-		      const unsigned int old_sindex = sindex;
-		      sindex += countbits(hiti) - 1;
-		      assert(sindex < 3*BVH4i::maxDepth+1);
-		      const mic_i plower_node = load16i((int*)plower);
-        
-		      const mic_m closest_child = eq(hitm,min_dist,tNear);
-		      const unsigned long closest_child_pos = bitscan64(closest_child);
-		      const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
-		      curNode = ((unsigned int*)plower)[closest_child_pos];
-		      compactustore16f(m_pos,&stack_dist[old_sindex],tNear);
-		      compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
-		    }		  
-		}
-#endif
+	      if (unlikely(curNode == BVH16I_TERMINAL_TOKEN)) break;	  
 
 
 	      STAT3(normal.trav_leaves,1,1,1);
@@ -366,7 +275,6 @@ namespace embree
 	      /* intersect one ray against four triangles */
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
-
 	      const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel);
 
 	      
@@ -739,84 +647,6 @@ namespace embree
 		}
 	  
 	    
-#if defined(ENABLE_EXTENDED_LEAVES)
-	      if (likely((curNode.isLeaf(BVH16I_EXTENDED_LEAF_MASK) == BVH16I_EXTENDED_LEAF_MASK)))
-		{
-		  curNode.id() ^= BVH16I_EXTENDED_LEAF_MASK;
-
-		  const BVH4i::Node* __restrict__ const node4 = (BVH4i::Node*)((char*)bvh16 + curNode.id());
-
-		  const float* __restrict const plower = (float*)node4->lower;
-		  const float* __restrict const pupper = (float*)node4->upper;
-
-		  prefetch<PFHINT_L1>((char*)node4 + 0);
-		  prefetch<PFHINT_L1>((char*)node4 + 64);
-        
-		  /* intersect single ray with 4 bounding boxes */
-		  const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-		  const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
-		  const mic_f tLower = mask_min(0x7777,tnear,tLowerXYZ,tUpperXYZ);
-		  const mic_f tUpper = mask_max(0x7777,tfar,tLowerXYZ,tUpperXYZ);
-
-		  const mic_f tNear = vreduce_max4(tLower);
-		  const mic_f tFar  = vreduce_min4(tUpper);  
-		  const mic_m hitm = le(0x8888,tNear,tFar);
-		  const mic_f tNear_pos = select(hitm,tNear,inf);
-
-		  STAT3(normal.trav_hit_boxes[countbits(hitm)],1,1,1);
-
-		  /* if no child is hit, continue with early popped child */
-		  if (unlikely(none(hitm))) continue;
-        
-		  const unsigned long hiti = toInt(hitm);
-		  const unsigned long pos_first = bitscan64(hiti);
-		  const unsigned long num_hitm = countbits(hiti); 
-        
-		  /* if a single child is hit, continue with that child */
-		  curNode = ((unsigned int *)plower)[pos_first];
-		  if (likely(num_hitm == 1)) 
-		    {
-		      
-		    }
-		  else if (likely(num_hitm == 2)) /* if two children are hit, push in correct order */
-		    {
-		      const unsigned long pos_second = bitscan64(pos_first,hiti);
-		      const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
-		      const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
-		      const unsigned int node_first  = curNode;
-		      const unsigned int node_second = ((unsigned int*)plower)[pos_second];
-          
-		      if (dist_first <= dist_second)
-			{
-			  stack_node[sindex] = node_second;
-			  sindex++;
-			  assert(sindex < 3*BVH4i::maxDepth+1);
-			}
-		      else
-			{
-			  stack_node[sindex] = curNode;
-			  curNode = node_second;
-			  sindex++;
-			  assert(sindex < 3*BVH4i::maxDepth+1);
-			}
-		    }
-		  else
-		    {        
-		      /* continue with closest child and push all others */
-		      const mic_f min_dist = set_min_lanes(tNear_pos);
-		      const unsigned int old_sindex = sindex;
-		      sindex += countbits(hiti) - 1;
-		      assert(sindex < 3*BVH4i::maxDepth+1);
-		      const mic_i plower_node = load16i((int*)plower);
-        
-		      const mic_m closest_child = eq(hitm,min_dist,tNear);
-		      const unsigned long closest_child_pos = bitscan64(closest_child);
-		      const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
-		      curNode = ((unsigned int*)plower)[closest_child_pos];
-		      compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
-		    }		  
-		}
-#endif
 
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH16I_TERMINAL_TOKEN)) break;
