@@ -44,47 +44,45 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <InterproceduralOptimization>true</InterproceduralOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <InterproceduralOptimization>true</InterproceduralOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <InterproceduralOptimization>true</InterproceduralOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <InterproceduralOptimization>true</InterproceduralOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <InterproceduralOptimization>true</InterproceduralOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
+    <InterproceduralOptimization>true</InterproceduralOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>Intel C++ Compiler XE 14.0</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -175,8 +173,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <UseProcessorExtensions>AVX2</UseProcessorExtensions>
-      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
@@ -203,8 +201,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <UseProcessorExtensions>AVX2</UseProcessorExtensions>
-      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
@@ -227,8 +225,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <UseProcessorExtensions>AVX2</UseProcessorExtensions>
-      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
@@ -254,8 +252,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <UseProcessorExtensions>AVX2</UseProcessorExtensions>
-      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
@@ -278,8 +276,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <UseProcessorExtensions>AVX2</UseProcessorExtensions>
-      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
@@ -305,8 +303,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <UseProcessorExtensions>AVX2</UseProcessorExtensions>
-      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
@@ -329,8 +327,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <UseProcessorExtensions>AVX2</UseProcessorExtensions>
-      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
@@ -356,8 +354,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <UseProcessorExtensions>AVX2</UseProcessorExtensions>
-      <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
@@ -372,11 +370,11 @@
     <ClCompile Include="bvh4i\bvh4i_intersector8_chunk.cpp" />
     <ClCompile Include="bvh4i\bvh4i_intersector8_chunk_avx2.cpp" />
     <ClCompile Include="bvh4i\bvh4i_intersector8_hybrid.cpp" />
-    <ClCompile Include="bvh4\bvh4_intersector1_bezier.cpp" />
     <ClCompile Include="geometry\instance_intersector1.cpp" />
     <ClCompile Include="geometry\instance_intersector4.cpp" />
     <ClCompile Include="geometry\instance_intersector8.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector1.cpp" />
+    <ClCompile Include="bvh4\bvh4_intersector1_bezier.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector4_chunk.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector4_hybrid.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector8_chunk.cpp" />
@@ -387,6 +385,9 @@
     <ClCompile Include="bvh8i\bvh8i_intersector1.cpp" />
     <ClCompile Include="bvh8i\bvh8i_intersector8_chunk.cpp" />
     <ClCompile Include="bvh8i\bvh8i_intersector8_hybrid.cpp" />
+    <ClCompile Include="bvh4hair\bvh4hair_intersector1.cpp" />
+    <ClCompile Include="bvh4hair\bvh4hair_intersector4.cpp" />
+    <ClCompile Include="bvh4hair\bvh4hair_intersector8.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuildStep Include="bvh4i\bvh4i_builder_binner.h" />
@@ -401,6 +402,7 @@
     <CustomBuildStep Include="geometry\instance_intersector4.h" />
     <CustomBuildStep Include="geometry\instance_intersector8.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector1.h" />
+    <ClInclude Include="bvh4\bvh4_intersector1_bezier.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector4_chunk.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector4_hybrid.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector8_chunk.h" />
@@ -408,10 +410,12 @@
     <CustomBuildStep Include="bvh4mb\bvh4mb_intersector1.h" />
     <CustomBuildStep Include="bvh4mb\bvh4mb_intersector4.h" />
     <CustomBuildStep Include="bvh4mb\bvh4mb_intersector8.h" />
-    <ClInclude Include="bvh4\bvh4_intersector1_bezier.h" />
     <ClInclude Include="bvh8i\bvh8i_intersector1.h" />
     <ClInclude Include="bvh8i\bvh8i_intersector8_chunk.h" />
     <ClInclude Include="bvh8i\bvh8i_intersector8_hybrid.h" />
+    <ClInclude Include="bvh4hair\bvh4hair_intersector1.h" />
+    <ClInclude Include="bvh4hair\bvh4hair_intersector4.h" />
+    <ClInclude Include="bvh4hair\bvh4hair_intersector8.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

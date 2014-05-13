@@ -582,11 +582,27 @@
 			>
 		</File>
 		<File
+			RelativePath=".\cy_hair_loader.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\cy_hair_loader.h"
+			>
+		</File>
+		<File
 			RelativePath=".\glutdisplay.cpp"
 			>
 		</File>
 		<File
 			RelativePath=".\glutdisplay.h"
+			>
+		</File>
+		<File
+			RelativePath=".\hair_loader.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\hair_loader.h"
 			>
 		</File>
 		<File

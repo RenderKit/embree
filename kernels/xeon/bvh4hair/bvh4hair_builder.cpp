@@ -19,6 +19,7 @@
 #include "bvh4hair_statistics.h"
 #include "common/scene_bezier_curves.h"
 #include "../builders/bezierrefgen.h"
+#include <algorithm>
 
 namespace embree
 {
@@ -26,25 +27,7 @@ namespace embree
  
   namespace isa
   {
-    /*! scales orthonormal transformation into the range -127 to +127 */
-  __forceinline const LinearSpace3fa compressTransform(const LinearSpace3fa& xfm)
-  {
-    assert(xfm.vx.x >= -1.0f && xfm.vx.x <= 1.0f);
-    assert(xfm.vx.y >= -1.0f && xfm.vx.y <= 1.0f);
-    assert(xfm.vx.z >= -1.0f && xfm.vx.z <= 1.0f);
-    assert(xfm.vy.x >= -1.0f && xfm.vy.x <= 1.0f);
-    assert(xfm.vy.y >= -1.0f && xfm.vy.y <= 1.0f);
-    assert(xfm.vy.z >= -1.0f && xfm.vy.z <= 1.0f);
-    assert(xfm.vz.x >= -1.0f && xfm.vz.x <= 1.0f);
-    assert(xfm.vz.y >= -1.0f && xfm.vz.y <= 1.0f);
-    assert(xfm.vz.z >= -1.0f && xfm.vz.z <= 1.0f);
-    return LinearSpace3fa (clamp(trunc(127.0f*xfm.vx),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f,
-                           clamp(trunc(127.0f*xfm.vy),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f,
-                           clamp(trunc(127.0f*xfm.vz),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f);
-  }
-
-
-    BVH4HairBuilder::BVH4HairBuilder (BVH4Hair* bvh, Scene* scene)
+	BVH4HairBuilder::BVH4HairBuilder (BVH4Hair* bvh, Scene* scene)
       : scene(scene), minLeafSize(1), maxLeafSize(inf), bvh(bvh), remainingReplications(0)
     {
       if (BVH4Hair::maxLeafBlocks < this->maxLeafSize) 
@@ -98,13 +81,13 @@ namespace embree
 	BuildTask task(&bvh->root,0,prims,pinfo,pinfo.geomBounds,pinfo,split);
 	numActiveTasks = 1;
 	tasks.push_back(task);
-	push_heap(tasks.begin(),tasks.end());
+	std::push_heap(tasks.begin(),tasks.end());
 	
 #if 1
 	while (tasks.front().pinfo.size() > 200000)
 	{
 	  BuildTask task = tasks.front();
-	  pop_heap(tasks.begin(),tasks.end());
+	  std::pop_heap(tasks.begin(),tasks.end());
 	  tasks.pop_back();
 	  
 	  size_t numChildren;
@@ -114,7 +97,7 @@ namespace embree
 	  for (size_t i=0; i<numChildren; i++) {
 	    atomic_add(&numActiveTasks,+1);
 	    tasks.push_back(ctasks[i]);
-	    push_heap(tasks.begin(),tasks.end());
+	    std::push_heap(tasks.begin(),tasks.end());
 	  }
 	  atomic_add(&numActiveTasks,-1);
 	}
@@ -303,7 +286,7 @@ namespace embree
       if (isAligned) 
       {
 	BVH4Hair::AlignedNode* node = bvh->allocAlignedNode(threadIndex);
-	for (ssize_t i=0; i<numChildren; i++) {
+	for (size_t i=0; i<numChildren; i++) {
 	  node->set(i,cpinfo[i].geomBounds);
 	  new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csinfo[i],csplit[i]);
 	}
@@ -314,7 +297,7 @@ namespace embree
       /* create unaligned node */
       else {
 	BVH4Hair::UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
-	for (ssize_t i=numChildren-1; i>=0; i--) {
+	for (size_t i=0; i<numChildren; i++) {
 	  node->set(i,cbounds[i]);
 	  new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csinfo[i],csplit[i]);
 	}
@@ -324,6 +307,23 @@ namespace embree
     }
 
 #else
+
+	/*! scales orthonormal transformation into the range -127 to +127 */
+  __forceinline const LinearSpace3fa compressTransform(const LinearSpace3fa& xfm)
+  {
+    assert(xfm.vx.x >= -1.0f && xfm.vx.x <= 1.0f);
+    assert(xfm.vx.y >= -1.0f && xfm.vx.y <= 1.0f);
+    assert(xfm.vx.z >= -1.0f && xfm.vx.z <= 1.0f);
+    assert(xfm.vy.x >= -1.0f && xfm.vy.x <= 1.0f);
+    assert(xfm.vy.y >= -1.0f && xfm.vy.y <= 1.0f);
+    assert(xfm.vy.z >= -1.0f && xfm.vy.z <= 1.0f);
+    assert(xfm.vz.x >= -1.0f && xfm.vz.x <= 1.0f);
+    assert(xfm.vz.y >= -1.0f && xfm.vz.y <= 1.0f);
+    assert(xfm.vz.z >= -1.0f && xfm.vz.z <= 1.0f);
+    return LinearSpace3fa (clamp(trunc(127.0f*xfm.vx),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f,
+                           clamp(trunc(127.0f*xfm.vy),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f,
+                           clamp(trunc(127.0f*xfm.vz),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f);
+  }
 
     template<bool Parallel>
     __forceinline void BVH4HairBuilder::processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& numTasks_o)
@@ -425,7 +425,7 @@ namespace embree
     {
       size_t numChildren;
       BuildTask tasks[BVH4Hair::N];
-      processTask(threadIndex,threadCount,task,tasks,numChildren);
+      processTask<false>(threadIndex,threadCount,task,tasks,numChildren);
       for (size_t i=0; i<numChildren; i++) 
 	recurseTask(threadIndex,threadCount,tasks[i]);
     }
@@ -455,7 +455,7 @@ namespace embree
 	{
 	  size_t numChildren;
 	  BuildTask ctasks[BVH4Hair::N];
-	  processTask(threadIndex,threadCount,task,ctasks,numChildren);
+	  processTask<false>(threadIndex,threadCount,task,ctasks,numChildren);
 	  taskMutex.lock();
 	  for (size_t i=0; i<numChildren; i++) {
 	    atomic_add(&numActiveTasks,+1);

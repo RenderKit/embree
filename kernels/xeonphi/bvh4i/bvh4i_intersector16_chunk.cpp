@@ -15,10 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4i_intersector16_chunk.h"
-#include "geometry/triangle1.h"
-#include "geometry/triangle1_intersector16_moeller.h"
-#include "geometry/triangle1mc_intersector16_moeller.h"
-#include "geometry/filter.h"
+#include "bvh4i_leaf_intersector.h"
 
 namespace embree
 {
@@ -26,7 +23,8 @@ namespace embree
   {
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
 
-    void BVH4iIntersector16Chunk::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
+    template<typename LeafIntersector>
+    void BVH4iIntersector16Chunk<LeafIntersector>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
       /* near and node stack */
       __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
@@ -87,19 +85,21 @@ namespace embree
         if (unlikely(curNode == BVH4i::invalidNode)) break;
         
         /* intersect leaf */
-        const mic_m valid_leaf = ray_tfar > curDist;
+        const mic_m m_valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
  
-	unsigned int items; 
-	const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel,items);
+	LeafIntersector::intersect16(curNode,m_valid_leaf,dir,org,ray,accel,(Scene*)bvh->geometry);
 
-	Triangle1Intersector16MoellerTrumbore::intersect16(valid_leaf,items,dir,org,ray,(Scene*)bvh->geometry,tptr);
+	// unsigned int items; 
+	// const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel,items);
+	// Triangle1Intersector16MoellerTrumbore::intersect16(valid_leaf,items,dir,org,ray,(Scene*)bvh->geometry,tptr);
 
-        ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
+        ray_tfar = select(m_valid_leaf,ray.tfar,ray_tfar);
       }
     }
 
-    void BVH4iIntersector16Chunk::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
+    template<typename LeafIntersector>
+    void BVH4iIntersector16Chunk<LeafIntersector>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
       /* allocate stack */
       __aligned(64) mic_f    stack_dist[3*BVH4i::maxDepth+1];
@@ -164,13 +164,14 @@ namespace embree
         if (unlikely(curNode == BVH4i::invalidNode)) break;
         
         /* intersect leaf */
-        mic_m valid_leaf = gt(m_active,ray_tfar,curDist);
+        mic_m m_valid_leaf = gt(m_active,ray_tfar,curDist);
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
 
-	unsigned int items; 
-	const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel,items);
+	LeafIntersector::occluded16(curNode,m_valid_leaf,dir,org,ray,m_terminated,accel,(Scene*)bvh->geometry);
 
-	Triangle1Intersector16MoellerTrumbore::occluded16(valid_leaf,items,dir,org,ray,m_terminated,(Scene*)bvh->geometry,tptr);
+	// unsigned int items; 
+	// const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel,items);
+	// Triangle1Intersector16MoellerTrumbore::occluded16(valid_leaf,items,dir,org,ray,m_terminated,(Scene*)bvh->geometry,tptr);
 
         if (unlikely(all(m_terminated))) break;
         ray_tfar = select(m_terminated,neg_inf,ray_tfar);
@@ -178,166 +179,9 @@ namespace embree
       store16i(valid & m_terminated,&ray.geomID,0);
     }
 
-    // ========================================================================================
-    // ========================================================================================
-    // ========================================================================================
 
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16ChunkMoeller,   BVH4iIntersector16Chunk<Triangle1LeafIntersector>);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16ChunkMoeller, BVH4iIntersector16Chunk<Triangle1mcLeafIntersector>);
 
-    void BVH4mcIntersector16Chunk::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
-    {
-      /* near and node stack */
-      __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
-      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
-
-      /* load ray */
-      const mic_m valid0   = *(mic_i*)valid_i != mic_i(0);
-      const mic3f rdir     = rcp_safe(ray.dir);
- 
-      const mic3f org_rdir = ray.org * rdir;
-      mic_f ray_tnear      = select(valid0,ray.tnear,pos_inf);
-      mic_f ray_tfar       = select(valid0,ray.tfar ,neg_inf);
-      const mic_f inf      = mic_f(pos_inf);
-      
-      /* allocate stack and push root node */
-      stack_node[0] = BVH4i::invalidNode;
-      stack_dist[0] = inf;
-      stack_node[1] = bvh->root;
-      stack_dist[1] = ray_tnear; 
-      NodeRef* __restrict__ sptr_node = stack_node + 2;
-      mic_f*   __restrict__ sptr_dist = stack_dist + 2;
-      
-      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
-      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
-
-      const mic3f org = ray.org;
-      const mic3f dir = ray.dir;
-
-      while (1)
-      {
-        /* pop next node from stack */
-        NodeRef curNode = *(sptr_node-1);
-        mic_f curDist   = *(sptr_dist-1);
-        sptr_node--;
-        sptr_dist--;
-	const mic_m m_stackDist = ray_tfar > curDist;
-
-	/* stack emppty ? */
-        if (unlikely(curNode == BVH4i::invalidNode))  break;
-        
-        /* cull node if behind closest hit point */
-        if (unlikely(none(m_stackDist))) {continue;}
-	        
-	const unsigned int leaf_mask = BVH4I_LEAF_MASK;
-
-	traverse_chunk_intersect(curNode,
-				 curDist,
-				 rdir,
-				 org_rdir,
-				 ray_tnear,
-				 ray_tfar,
-				 sptr_node,
-				 sptr_dist,
-				 nodes,
-				 leaf_mask);            		    	
-        
-        /* return if stack is empty */
-        if (unlikely(curNode == BVH4i::invalidNode)) break;
-        
-        /* intersect leaf */
-        const mic_m valid_leaf = ray_tfar > curDist;
-        STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
- 
-	unsigned int items = curNode.items();
-	unsigned int index = curNode.offsetIndex();
-	const Triangle1mc *const tptr = (Triangle1mc*)accel + index;
-
-	Triangle1mcIntersector16MoellerTrumbore::intersect16(valid_leaf,items,dir,org,ray,(Scene*)bvh->geometry,tptr);
-
-        ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
-      }
-    }
-
-    void BVH4mcIntersector16Chunk::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
-    {
-      /* allocate stack */
-      __aligned(64) mic_f    stack_dist[3*BVH4i::maxDepth+1];
-      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
-
-      /* load ray */
-      const mic_m valid = *(mic_i*)valid_i != mic_i(0);
-      mic_m m_terminated = !valid;
-      const mic3f rdir = rcp_safe(ray.dir);
-      const mic3f org_rdir = ray.org * rdir;
-      mic_f ray_tnear = select(valid,ray.tnear,pos_inf);
-      mic_f ray_tfar  = select(valid,ray.tfar ,neg_inf);
-      const mic_f inf = mic_f(pos_inf);
-      
-      /* push root node */
-      stack_node[0] = BVH4i::invalidNode;
-      stack_dist[0] = inf;
-      stack_node[1] = bvh->root;
-      stack_dist[1] = ray_tnear; 
-      NodeRef* __restrict__ sptr_node = stack_node + 2;
-      mic_f*   __restrict__ sptr_dist = stack_dist + 2;
-      
-      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
-      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
-
-      const mic3f org = ray.org;
-      const mic3f dir = ray.dir;
-
-      while (1)
-      {
-	const mic_m m_active = !m_terminated;
-
-        /* pop next node from stack */
-        NodeRef curNode = *(sptr_node-1);
-        mic_f curDist   = *(sptr_dist-1);
-        sptr_node--;
-        sptr_dist--;
-	const mic_m m_stackDist = gt(m_active,ray_tfar,curDist);
-
-	/* stack emppty ? */
-        if (unlikely(curNode == BVH4i::invalidNode))  break;
-        
-        /* cull node if behind closest hit point */
-
-        if (unlikely(none(m_stackDist))) { continue; }
-
-	const unsigned int leaf_mask = BVH4I_LEAF_MASK;
-
-	traverse_chunk_occluded(curNode,
-				curDist,
-				rdir,
-				org_rdir,
-				ray_tnear,
-				ray_tfar,
-				m_active,
-				sptr_node,
-				sptr_dist,
-				nodes,
-				leaf_mask);            		    	
-        
-        /* return if stack is empty */
-        if (unlikely(curNode == BVH4i::invalidNode)) break;
-        
-        /* intersect leaf */
-        mic_m valid_leaf = gt(m_active,ray_tfar,curDist);
-        STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
-
-	unsigned int items = curNode.items();
-	unsigned int index = curNode.offsetIndex();
-	const Triangle1mc *const tptr = (Triangle1mc*)accel + index;
-
-
-	Triangle1mcIntersector16MoellerTrumbore::occluded16(valid_leaf,items,dir,org,ray,m_terminated,(Scene*)bvh->geometry,tptr);
-
-        if (unlikely(all(m_terminated))) break;
-        ray_tfar = select(m_terminated,neg_inf,ray_tfar);
-      }
-      store16i(valid & m_terminated,&ray.geomID,0);
-    }
-
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16ChunkMoeller, BVH4iIntersector16Chunk);
   }
 }

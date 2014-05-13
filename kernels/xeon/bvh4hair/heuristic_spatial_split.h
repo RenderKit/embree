@@ -32,7 +32,7 @@ namespace embree
     public:
       
       /*! finds the best split */
-      template<bool Parallel = false>
+      template<bool Parallel>
 	static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves, const PrimInfo& pinfo);
       
     private:
@@ -90,7 +90,7 @@ namespace embree
 	__forceinline float splitSAH() const { return sah; }
 	
 	/*! splitting into two sets */
-	template<bool Parallel = false>
+	template<bool Parallel>
 	  void split(size_t threadIndex, size_t threadCount,
 		     PrimRefBlockAlloc<Bezier1>& alloc, 
 		     BezierRefList& curves, 

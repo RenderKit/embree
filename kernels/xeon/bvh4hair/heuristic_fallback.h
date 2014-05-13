@@ -61,7 +61,7 @@ namespace embree
       }
       
       __forceinline float leafSAH(size_t block_shift) const { 
-	return halfArea(geomBounds)*float((num+(1<<block_shift)-1) >> block_shift);
+	return halfArea(geomBounds)*float((num+(size_t(1)<<block_shift)-1) >> block_shift);
 	//return halfArea(geomBounds)*float((num+3) >> 2);
 	//return halfArea(geomBounds)*blocks(num); 
       }

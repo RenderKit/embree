@@ -356,18 +356,31 @@ namespace embree
       __forceinline void set(const NAABBox3fa& naabb) 
       {
         const LinearSpace3fa& space = naabb.space;
+
+#if !defined(__WIN32__)
+ 		assert(127.0f*space.vx.x >= -127.0f && 127.0f*space.vx.x <= 127.0f && truncf(127.0f*space.vx.x) == 127.0f*space.vx.x);
+		assert(127.0f*space.vx.y >= -127.0f && 127.0f*space.vx.y <= 127.0f && truncf(127.0f*space.vx.y) == 127.0f*space.vx.y);
+		assert(127.0f*space.vx.z >= -127.0f && 127.0f*space.vx.z <= 127.0f && truncf(127.0f*space.vx.z) == 127.0f*space.vx.z);
+		assert(127.0f*space.vy.x >= -127.0f && 127.0f*space.vy.x <= 127.0f && truncf(127.0f*space.vy.x) == 127.0f*space.vy.x);
+		assert(127.0f*space.vy.y >= -127.0f && 127.0f*space.vy.y <= 127.0f && truncf(127.0f*space.vy.y) == 127.0f*space.vy.y);
+		assert(127.0f*space.vy.z >= -127.0f && 127.0f*space.vy.z <= 127.0f && truncf(127.0f*space.vy.z) == 127.0f*space.vy.z);
+		assert(127.0f*space.vz.x >= -127.0f && 127.0f*space.vz.x <= 127.0f && truncf(127.0f*space.vz.x) == 127.0f*space.vz.x);
+		assert(127.0f*space.vz.y >= -127.0f && 127.0f*space.vz.y <= 127.0f && truncf(127.0f*space.vz.y) == 127.0f*space.vz.y);
+		assert(127.0f*space.vz.z >= -127.0f && 127.0f*space.vz.z <= 127.0f && truncf(127.0f*space.vz.z) == 127.0f*space.vz.z);
+#endif
+
         const BBox3fa& bounds = naabb.bounds;
-        xfm_vx[0] = (char) (127.0f*space.vx.x); assert(127.0f*space.vx.x >= -127.0f && 127.0f*space.vx.x <= 127.0f && truncf(127.0f*space.vx.x) == 127.0f*space.vx.x);
-        xfm_vx[1] = (char) (127.0f*space.vx.y); assert(127.0f*space.vx.y >= -127.0f && 127.0f*space.vx.y <= 127.0f && truncf(127.0f*space.vx.y) == 127.0f*space.vx.y);
-        xfm_vx[2] = (char) (127.0f*space.vx.z); assert(127.0f*space.vx.z >= -127.0f && 127.0f*space.vx.z <= 127.0f && truncf(127.0f*space.vx.z) == 127.0f*space.vx.z);
+        xfm_vx[0] = (char) (127.0f*space.vx.x); 
+        xfm_vx[1] = (char) (127.0f*space.vx.y); 
+        xfm_vx[2] = (char) (127.0f*space.vx.z); 
         xfm_vx[3] = 0;
-        xfm_vy[0] = (char) (127.0f*space.vy.x); assert(127.0f*space.vy.x >= -127.0f && 127.0f*space.vy.x <= 127.0f && truncf(127.0f*space.vy.x) == 127.0f*space.vy.x);
-        xfm_vy[1] = (char) (127.0f*space.vy.y); assert(127.0f*space.vy.y >= -127.0f && 127.0f*space.vy.y <= 127.0f && truncf(127.0f*space.vy.y) == 127.0f*space.vy.y);
-        xfm_vy[2] = (char) (127.0f*space.vy.z); assert(127.0f*space.vy.z >= -127.0f && 127.0f*space.vy.z <= 127.0f && truncf(127.0f*space.vy.z) == 127.0f*space.vy.z);
+        xfm_vy[0] = (char) (127.0f*space.vy.x); 
+        xfm_vy[1] = (char) (127.0f*space.vy.y); 
+        xfm_vy[2] = (char) (127.0f*space.vy.z); 
         xfm_vy[3] = 0;
-        xfm_vz[0] = (char) (127.0f*space.vz.x); assert(127.0f*space.vz.x >= -127.0f && 127.0f*space.vz.x <= 127.0f && truncf(127.0f*space.vz.x) == 127.0f*space.vz.x);
-        xfm_vz[1] = (char) (127.0f*space.vz.y); assert(127.0f*space.vz.y >= -127.0f && 127.0f*space.vz.y <= 127.0f && truncf(127.0f*space.vz.y) == 127.0f*space.vz.y);
-        xfm_vz[2] = (char) (127.0f*space.vz.z); assert(127.0f*space.vz.z >= -127.0f && 127.0f*space.vz.z <= 127.0f && truncf(127.0f*space.vz.z) == 127.0f*space.vz.z);
+        xfm_vz[0] = (char) (127.0f*space.vz.x); 
+        xfm_vz[1] = (char) (127.0f*space.vz.y); 
+        xfm_vz[2] = (char) (127.0f*space.vz.z); 
         xfm_vz[3] = 0;
         offset = 127.0f*bounds.lower;
         scale  = (127.0f*bounds.upper-127.0f*bounds.lower)/255.0f;

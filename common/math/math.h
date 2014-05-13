@@ -19,6 +19,7 @@
 #include "sys/platform.h"
 #include "sys/intrinsics.h"
 
+#include <math.h>
 #include <cmath>
 #include <float.h>
 #include <emmintrin.h>
@@ -26,7 +27,6 @@
 
 namespace embree
 {
-
 #if defined(__WIN32__)
   __forceinline bool finite ( const float x ) { return _finite(x) != 0; }
 #endif
@@ -132,7 +132,9 @@ namespace embree
   __forceinline                    int min(int     a, int     b)                                       { return a<b? a:b; }
   __forceinline                  int64 min(int64   a, int64   b)                                       { return a<b? a:b; }
   __forceinline                 size_t min(size_t  a, size_t  b)                                       { return a<b? a:b; }
+#if !defined(__WIN32__)
   __forceinline                ssize_t min(ssize_t a, ssize_t b)                                       { return a<b? a:b; }
+#endif
   __forceinline                  float min(float   a, float   b)                                       { return a<b? a:b; }
   __forceinline                 double min(double  a, double  b)                                       { return a<b? a:b; }
   template<typename T> __forceinline T min(const T& a, const T& b, const T& c)                         { return min(min(a,b),c); }
@@ -142,7 +144,9 @@ namespace embree
   __forceinline                    int max(int     a, int     b)                                       { return a<b? b:a; }
   __forceinline                  int64 max(int64   a, int64   b)                                       { return a<b? b:a; }
   __forceinline                 size_t max(size_t  a, size_t  b)                                       { return a<b? b:a; }
+#if !defined(__WIN32__)
   __forceinline                ssize_t max(ssize_t a, ssize_t b)                                       { return a<b? b:a; }
+#endif
   __forceinline                  float max(float   a, float   b)                                       { return a<b? b:a; }
   __forceinline                 double max(double  a, double  b)                                       { return a<b? b:a; }
   template<typename T> __forceinline T max(const T& a, const T& b, const T& c)                         { return max(max(a,b),c); }
