@@ -15,8 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4i_intersector16_hybrid.h"
-#include "geometry/triangle1_intersector16_moeller.h"
-#include "geometry/filter.h"
+#include "bvh4i_leaf_intersector.h"
 
 #define SWITCH_ON_DOWN_TRAVERSAL 1
 
@@ -26,9 +25,8 @@ namespace embree
   {
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
 
-    static __aligned(64) int zlc4[4] = {0xffffffff,0xffffffff,0xffffffff,0};
-
-    void BVH4iIntersector16Hybrid::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    template<typename LeafIntersector>
+    void BVH4iIntersector16Hybrid<LeafIntersector>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
@@ -118,19 +116,17 @@ namespace embree
 
 
 		    /* intersect one ray against four triangles */
-		    const Triangle1* const tptr  = (Triangle1*) curNode.leaf(accel);
-		    const mic_i and_mask = broadcast4to16i(zlc4);
 
+		    const bool hit = LeafIntersector::intersect(curNode,
+								rayIndex,
+								dir_xyz,
+								org_xyz,
+								min_dist_xyz,
+								max_dist_xyz,
+								ray16,
+								accel,
+								(Scene*)bvh->geometry);
 
-		    bool hit = Triangle1Intersector16MoellerTrumbore::intersect1(rayIndex,
-										 dir_xyz,
-										 org_xyz,
-										 min_dist_xyz,
-										 max_dist_xyz,
-										 and_mask,
-										 ray16,
-										 (Scene*)bvh->geometry,
-										 tptr);
 		    if (hit)
 		      compactStack(stack_node_single,stack_dist_single,sindex,max_dist_xyz);
 		  }
@@ -231,19 +227,17 @@ namespace embree
         
 
         /* intersect leaf */
-        const mic_m valid_leaf = ray_tfar > curDist;
+        const mic_m m_valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
 
-	unsigned int items; 
-	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel,items);
+	LeafIntersector::intersect16(curNode,m_valid_leaf,dir,org,ray16,accel,(Scene*)bvh->geometry);
 
-	Triangle1Intersector16MoellerTrumbore::intersect16(valid_leaf,items,dir,org,ray16,(Scene*)bvh->geometry,tptr);
-
-        ray_tfar = select(valid_leaf,ray16.tfar,ray_tfar);
+        ray_tfar = select(m_valid_leaf,ray16.tfar,ray_tfar);
       }
     }
     
-    void BVH4iIntersector16Hybrid::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    template<typename LeafIntersector>
+    void BVH4iIntersector16Hybrid<LeafIntersector>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* allocate stack */
       __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
@@ -330,19 +324,16 @@ namespace embree
 
 		    /* intersect one ray against four triangles */
 
-		    const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);
-		    const mic_i and_mask = broadcast4to16i(zlc4);
-
-		    const bool hit = Triangle1Intersector16MoellerTrumbore::occluded1(rayIndex,
-										      dir_xyz,
-										      org_xyz,
-										      min_dist_xyz,
-										      max_dist_xyz,
-										      and_mask,
-										      ray16,
-										      m_terminated,
-										      (Scene*)bvh->geometry,
-										      tptr);
+		    const bool hit = LeafIntersector::occluded(curNode,
+							       rayIndex,
+							       dir_xyz,
+							       org_xyz,
+							       min_dist_xyz,
+							       max_dist_xyz,
+							       ray16,
+							       m_terminated,
+							       accel,
+							       (Scene*)bvh->geometry);
 
 		    if (unlikely(hit)) break;
 		  }
@@ -451,16 +442,13 @@ namespace embree
         if (unlikely(curNode == BVH4i::invalidNode)) break;
         
         /* intersect leaf */
-        mic_m valid_leaf = gt(m_active,ray_tfar,curDist);
+        mic_m m_valid_leaf = gt(m_active,ray_tfar,curDist);
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
-        unsigned int items; 
-
-	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel,items);
 
 	const mic3f org = ray16.org;
 	const mic3f dir = ray16.dir;
-
-	Triangle1Intersector16MoellerTrumbore::occluded16(valid_leaf,items,dir,org,ray16,m_terminated,(Scene*)bvh->geometry,tptr);
+;
+	LeafIntersector::occluded16(curNode,m_valid_leaf,dir,org,ray16,m_terminated,accel,(Scene*)bvh->geometry);
 
         ray_tfar = select(m_terminated,neg_inf,ray_tfar);
         if (unlikely(all(m_terminated))) break;
@@ -468,6 +456,8 @@ namespace embree
       store16i(m_valid & m_terminated,&ray16.geomID,mic_i::zero());
     }
     
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16HybridMoeller, BVH4iIntersector16Hybrid);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16HybridMoeller, BVH4iIntersector16Hybrid<Triangle1LeafIntersector>);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16HybridMoeller, BVH4iIntersector16Hybrid<Triangle1mcLeafIntersector>);
+
   }
 }

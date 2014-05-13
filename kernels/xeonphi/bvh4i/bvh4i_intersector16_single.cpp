@@ -170,7 +170,6 @@ namespace embree
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	      const mic_i and_mask = broadcast4to16i(zlc4);
 	      const bool hit = LeafIntersector::occluded(curNode,
 							 rayIndex,
 							 dir_xyz,
