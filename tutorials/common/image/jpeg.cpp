@@ -133,9 +133,14 @@ namespace embree
         Ref<Image> image = new Image4c(width, height, filename);
 
         /*! Convert the image from unsigned char RGB to unsigned char RGBA. */
-        for (size_t y=0, i=0 ; y < height ; y++)
-            for (size_t x=0 ; x < width ; x++)
-                image->set(x, y, Color4((float) rgb[i++] / 255.0f, (float) rgb[i++] / 255.0f, (float) rgb[i++] / 255.0f, 1.0f));
+        for (size_t y=0, i=0 ; y < height ; y++) {
+          for (size_t x=0 ; x < width ; x++) {
+            const float r = (float) rgb[i++] / 255.0f;
+            const float g = (float) rgb[i++] / 255.0f;
+            const float b = (float) rgb[i++] / 255.0f;
+            image->set(x, y, Color4(r,g,b,1.0f));
+          }
+        }
 
         /*! Clean up. */
         jpeg_destroy_decompress(&cinfo);  free(rgb);  fclose(file);  return(image);
