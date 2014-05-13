@@ -1387,6 +1387,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\bvh4\bvh4_builder_fast.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4\bvh4_builder_fast.h"
+				>
+			</File>
+			<File
 				RelativePath=".\bvh4\bvh4_builder_morton.cpp"
 				>
 			</File>
@@ -2059,6 +2067,14 @@
 			Name="builders"
 			>
 			<File
+				RelativePath=".\builders\bezierrefgen.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\builders\bezierrefgen.h"
+				>
+			</File>
+			<File
 				RelativePath=".\bvh4hair\heuristic_fallback.cpp"
 				>
 			</File>
@@ -2100,6 +2116,14 @@
 			</File>
 			<File
 				RelativePath=".\bvh4hair\heuristic_strand_partition.h"
+				>
+			</File>
+			<File
+				RelativePath=".\builders\trirefgen.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\builders\trirefgen.h"
 				>
 			</File>
 		</Filter>

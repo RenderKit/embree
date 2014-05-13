@@ -44,7 +44,9 @@ namespace embree
 
     __forceinline ssei           ( const int32&  a ) : m128(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
     __forceinline ssei           ( const uint32& a ) : m128(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
+#if defined(__X86_64__)
     __forceinline ssei           ( const size_t a  ) : m128(_mm_set1_epi32((int)a)) {}
+#endif
     __forceinline ssei           ( int32  a, int32  b, int32  c, int32  d) : m128(_mm_set_epi32(d, c, b, a)) {}
 
     __forceinline explicit ssei( const __m128 a ) : m128(_mm_cvtps_epi32(a)) {}
