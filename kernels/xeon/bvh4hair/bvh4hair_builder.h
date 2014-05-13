@@ -71,11 +71,11 @@ namespace embree
       /*! creates a leaf node */
       BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo);
       
-      template<bool Parallel = false>
+      template<bool Parallel>
 	Split find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const PrimInfo& sinfo);
       
       /*! execute single task and create subtasks */
-      template<bool Parallel = false>
+      template<bool Parallel>
 	void processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& N);
       
       /*! recursive build function for aligned and non-aligned bounds */
@@ -95,7 +95,7 @@ namespace embree
       volatile atomic_t numActiveTasks;
       volatile atomic_t numGeneratedPrims;
       volatile atomic_t remainingReplications;
-      std::vector<BuildTask> tasks;
+      vector_t<BuildTask> tasks;
     };
   }
 }

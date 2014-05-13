@@ -19,6 +19,7 @@
 #include "bvh4hair_statistics.h"
 #include "common/scene_bezier_curves.h"
 #include "../builders/bezierrefgen.h"
+#include <algorithm>
 
 namespace embree
 {
@@ -80,13 +81,13 @@ namespace embree
 	BuildTask task(&bvh->root,0,prims,pinfo,pinfo.geomBounds,pinfo,split);
 	numActiveTasks = 1;
 	tasks.push_back(task);
-	push_heap(tasks.begin(),tasks.end());
+	std::push_heap(tasks.begin(),tasks.end());
 	
 #if 1
 	while (tasks.front().pinfo.size() > 200000)
 	{
 	  BuildTask task = tasks.front();
-	  pop_heap(tasks.begin(),tasks.end());
+	  std::pop_heap(tasks.begin(),tasks.end());
 	  tasks.pop_back();
 	  
 	  size_t numChildren;
@@ -96,7 +97,7 @@ namespace embree
 	  for (size_t i=0; i<numChildren; i++) {
 	    atomic_add(&numActiveTasks,+1);
 	    tasks.push_back(ctasks[i]);
-	    push_heap(tasks.begin(),tasks.end());
+	    std::push_heap(tasks.begin(),tasks.end());
 	  }
 	  atomic_add(&numActiveTasks,-1);
 	}
@@ -285,7 +286,7 @@ namespace embree
       if (isAligned) 
       {
 	BVH4Hair::AlignedNode* node = bvh->allocAlignedNode(threadIndex);
-	for (ssize_t i=0; i<numChildren; i++) {
+	for (size_t i=0; i<numChildren; i++) {
 	  node->set(i,cpinfo[i].geomBounds);
 	  new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csinfo[i],csplit[i]);
 	}
@@ -296,7 +297,7 @@ namespace embree
       /* create unaligned node */
       else {
 	BVH4Hair::UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
-	for (ssize_t i=numChildren-1; i>=0; i--) {
+	for (size_t i=0; i<numChildren; i++) {
 	  node->set(i,cbounds[i]);
 	  new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csinfo[i],csplit[i]);
 	}
@@ -424,7 +425,7 @@ namespace embree
     {
       size_t numChildren;
       BuildTask tasks[BVH4Hair::N];
-      processTask(threadIndex,threadCount,task,tasks,numChildren);
+      processTask<false>(threadIndex,threadCount,task,tasks,numChildren);
       for (size_t i=0; i<numChildren; i++) 
 	recurseTask(threadIndex,threadCount,tasks[i]);
     }
@@ -454,7 +455,7 @@ namespace embree
 	{
 	  size_t numChildren;
 	  BuildTask ctasks[BVH4Hair::N];
-	  processTask(threadIndex,threadCount,task,ctasks,numChildren);
+	  processTask<false>(threadIndex,threadCount,task,ctasks,numChildren);
 	  taskMutex.lock();
 	  for (size_t i=0; i<numChildren; i++) {
 	    atomic_add(&numActiveTasks,+1);

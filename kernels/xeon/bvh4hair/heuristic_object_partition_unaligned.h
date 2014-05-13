@@ -41,7 +41,7 @@ namespace embree
       static const PrimInfo computePrimInfo(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
       
       /*! finds the best split */
-      template<bool Parallel = false>
+      template<bool Parallel>
 	static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves, const LinearSpace3fa& space, const PrimInfo& pinfo);
       
     private:
@@ -100,7 +100,7 @@ namespace embree
 	__forceinline float splitSAH() const { return sah; }
 	
 	/*! splitting into two sets */
-	template<bool Parallel = false>
+	template<bool Parallel>
 	  void split(size_t threadIndex, size_t threadCount, 
 		     PrimRefBlockAlloc<Bezier1>& alloc, 
 		     BezierRefList& prims, 

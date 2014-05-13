@@ -34,7 +34,7 @@ namespace embree
       StrandSplit () {}
       
       /*! finds the two hair strands */
-      template<bool Parallel = false>
+      template<bool Parallel>
 	static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves);
       
     private:
@@ -59,7 +59,7 @@ namespace embree
 	__forceinline float splitSAH() const { return sah; }
 	
 	/*! splitting into two sets */
-	template<bool Parallel = false>
+	template<bool Parallel>
 	  void split(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
 		     BezierRefList& prims, 
 		     BezierRefList& lprims_o, PrimInfo& linfo_o, 

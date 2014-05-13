@@ -71,7 +71,7 @@ namespace embree
       __forceinline float splitSAH() const { return sah; }
       
       /*! single threaded splitting into two sets */
-      template<bool Parallel = false>
+      template<bool Parallel>
 	void split(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
 		   BezierRefList& prims, 
 		   BezierRefList& lprims_o, PrimInfo& linfo_o, 
@@ -88,7 +88,7 @@ namespace embree
 	}
       
       /*! multi threaded splitting into two sets */
-      template<bool Parallel = false>
+      template<bool Parallel>
 	void split_parallel(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
 			    BezierRefList& prims, 
 			    BezierRefList& lprims_o, PrimInfo& linfo_o, 
