@@ -48,8 +48,8 @@ namespace embree
     public:
       
       /*! construct fallback split by default */
-      __forceinline Split () 
-	: type(FALLBACK_SPLIT), sah(inf), isAligned(true) {}
+      __forceinline Split (bool isAligned = true) 
+	: type(FALLBACK_SPLIT), sah(inf), isAligned(isAligned) {}
       
       /*! construction from object partitioning */
       __forceinline Split (ObjectPartitionUnaligned::Split& split, bool isAligned) 
