@@ -36,7 +36,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4HairBuilder_);
 
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4HairBezier1Intersector1);
-    SELECT_SYMBOL_DEFAULT(features,BVH4HairBezier1Intersector4);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4HairBezier1Intersector4);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4HairBezier1Intersector8);
 
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4HairBezier1iIntersector1);

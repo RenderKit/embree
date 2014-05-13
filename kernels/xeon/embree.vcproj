@@ -1090,6 +1090,14 @@
 			Name="builders"
 			>
 			<File
+				RelativePath=".\builders\bezierrefgen.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\builders\bezierrefgen.h"
+				>
+			</File>
+			<File
 				RelativePath=".\builders\heuristic_binning.cpp"
 				>
 			</File>
@@ -1098,11 +1106,55 @@
 				>
 			</File>
 			<File
+				RelativePath=".\bvh4hair\heuristic_fallback.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_fallback.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_object_partition.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_object_partition.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_object_partition_unaligned.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_object_partition_unaligned.h"
+				>
+			</File>
+			<File
 				RelativePath=".\builders\heuristic_spatial.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\builders\heuristic_spatial.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_spatial_split.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_spatial_split.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_split.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_strand_partition.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_strand_partition.h"
 				>
 			</File>
 			<File
@@ -1147,6 +1199,14 @@
 			</File>
 			<File
 				RelativePath=".\builders\splitter_parallel.h"
+				>
+			</File>
+			<File
+				RelativePath=".\builders\trirefgen.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\builders\trirefgen.h"
 				>
 			</File>
 		</Filter>
@@ -1346,6 +1406,26 @@
 			Name="geometry"
 			>
 			<File
+				RelativePath=".\geometry\bezier1.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\bezier1.h"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\bezier1_intersector1.h"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\bezier1_intersector4.h"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\bezier1_intersector8.h"
+				>
+			</File>
+			<File
 				RelativePath=".\geometry\bezier1i.cpp"
 				>
 			</File>
@@ -1355,6 +1435,26 @@
 			</File>
 			<File
 				RelativePath=".\geometry\bezier1i_intersector1.h"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\bezier1i_intersector1_recursive.h"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\bezier1i_intersector1_slow.h"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\bezier1i_intersector4.h"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\bezier1i_intersector8.h"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\filter.h"
 				>
 			</File>
 			<File
@@ -1379,6 +1479,10 @@
 			</File>
 			<File
 				RelativePath=".\geometry\ispc_wrapper_sse.h"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry\mailbox.h"
 				>
 			</File>
 			<File
@@ -1529,6 +1633,50 @@
 					>
 				</File>
 			</Filter>
+		</Filter>
+		<Filter
+			Name="bvh4hair"
+			>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_builder.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_builder.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_intersector1.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_intersector1.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_intersector4.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_intersector4.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_statistics.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_statistics.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\embree.def"

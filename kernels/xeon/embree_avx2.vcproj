@@ -1735,6 +1735,34 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="bvh4hair"
+			>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_intersector1.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_intersector1.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_intersector4.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_intersector4.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_intersector8.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_intersector8.h"
+				>
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>

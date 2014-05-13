@@ -1379,6 +1379,14 @@
 			Name="bvh4"
 			>
 			<File
+				RelativePath=".\bvh4\bvh4_builder2.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4\bvh4_builder2.h"
+				>
+			</File>
+			<File
 				RelativePath=".\bvh4\bvh4_builder_morton.cpp"
 				>
 			</File>
@@ -2015,14 +2023,6 @@
 			Name="bvh4hair"
 			>
 			<File
-				RelativePath=".\bvh4hair\bvh4hair.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh4hair\bvh4hair.h"
-				>
-			</File>
-			<File
 				RelativePath=".\bvh4hair\bvh4hair_builder.cpp"
 				>
 			</File>
@@ -2039,11 +2039,67 @@
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\bvh4hair_statistics.cpp"
+				RelativePath=".\bvh4hair\bvh4hair_intersector4.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\bvh4hair_statistics.h"
+				RelativePath=".\bvh4hair\bvh4hair_intersector4.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_intersector8.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\bvh4hair_intersector8.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="builders"
+			>
+			<File
+				RelativePath=".\bvh4hair\heuristic_fallback.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_fallback.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_object_partition.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_object_partition.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_object_partition_unaligned.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_object_partition_unaligned.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_spatial_split.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_spatial_split.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_split.h"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_strand_partition.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\bvh4hair\heuristic_strand_partition.h"
 				>
 			</File>
 		</Filter>

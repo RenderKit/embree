@@ -171,6 +171,7 @@ IF (TARGET_AVX)
 
    bvh4hair/bvh4hair_builder.cpp
    bvh4hair/bvh4hair_intersector1.cpp
+   bvh4hair/bvh4hair_intersector4.cpp
    bvh4hair/bvh4hair_intersector8.cpp
 )
 
@@ -213,6 +214,7 @@ IF (TARGET_AVX2)
     bvh4i/bvh4i_builder_binner.cpp
 
     bvh4hair/bvh4hair_intersector1.cpp
+    bvh4hair/bvh4hair_intersector4.cpp
     bvh4hair/bvh4hair_intersector8.cpp
 )
 

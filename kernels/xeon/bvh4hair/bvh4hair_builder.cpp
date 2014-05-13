@@ -26,25 +26,7 @@ namespace embree
  
   namespace isa
   {
-    /*! scales orthonormal transformation into the range -127 to +127 */
-  __forceinline const LinearSpace3fa compressTransform(const LinearSpace3fa& xfm)
-  {
-    assert(xfm.vx.x >= -1.0f && xfm.vx.x <= 1.0f);
-    assert(xfm.vx.y >= -1.0f && xfm.vx.y <= 1.0f);
-    assert(xfm.vx.z >= -1.0f && xfm.vx.z <= 1.0f);
-    assert(xfm.vy.x >= -1.0f && xfm.vy.x <= 1.0f);
-    assert(xfm.vy.y >= -1.0f && xfm.vy.y <= 1.0f);
-    assert(xfm.vy.z >= -1.0f && xfm.vy.z <= 1.0f);
-    assert(xfm.vz.x >= -1.0f && xfm.vz.x <= 1.0f);
-    assert(xfm.vz.y >= -1.0f && xfm.vz.y <= 1.0f);
-    assert(xfm.vz.z >= -1.0f && xfm.vz.z <= 1.0f);
-    return LinearSpace3fa (clamp(trunc(127.0f*xfm.vx),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f,
-                           clamp(trunc(127.0f*xfm.vy),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f,
-                           clamp(trunc(127.0f*xfm.vz),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f);
-  }
-
-
-    BVH4HairBuilder::BVH4HairBuilder (BVH4Hair* bvh, Scene* scene)
+	BVH4HairBuilder::BVH4HairBuilder (BVH4Hair* bvh, Scene* scene)
       : scene(scene), minLeafSize(1), maxLeafSize(inf), bvh(bvh), remainingReplications(0)
     {
       if (BVH4Hair::maxLeafBlocks < this->maxLeafSize) 
@@ -324,6 +306,23 @@ namespace embree
     }
 
 #else
+
+	/*! scales orthonormal transformation into the range -127 to +127 */
+  __forceinline const LinearSpace3fa compressTransform(const LinearSpace3fa& xfm)
+  {
+    assert(xfm.vx.x >= -1.0f && xfm.vx.x <= 1.0f);
+    assert(xfm.vx.y >= -1.0f && xfm.vx.y <= 1.0f);
+    assert(xfm.vx.z >= -1.0f && xfm.vx.z <= 1.0f);
+    assert(xfm.vy.x >= -1.0f && xfm.vy.x <= 1.0f);
+    assert(xfm.vy.y >= -1.0f && xfm.vy.y <= 1.0f);
+    assert(xfm.vy.z >= -1.0f && xfm.vy.z <= 1.0f);
+    assert(xfm.vz.x >= -1.0f && xfm.vz.x <= 1.0f);
+    assert(xfm.vz.y >= -1.0f && xfm.vz.y <= 1.0f);
+    assert(xfm.vz.z >= -1.0f && xfm.vz.z <= 1.0f);
+    return LinearSpace3fa (clamp(trunc(127.0f*xfm.vx),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f,
+                           clamp(trunc(127.0f*xfm.vy),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f,
+                           clamp(trunc(127.0f*xfm.vz),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f);
+  }
 
     template<bool Parallel>
     __forceinline void BVH4HairBuilder::processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& numTasks_o)
