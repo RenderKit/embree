@@ -642,7 +642,7 @@ extern "C" void device_render (int* pixels,
   /* render frame */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  enableFilterDispatch = true;
+  enableFilterDispatch = renderPixel == renderPixelStandard;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
   enableFilterDispatch = false;
   rtcDebug();
