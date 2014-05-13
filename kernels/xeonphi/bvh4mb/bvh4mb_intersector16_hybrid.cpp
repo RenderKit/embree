@@ -218,198 +218,19 @@ namespace embree
 
 
 		    /* intersect one ray against four triangles */
-		    const mic_f zero = mic_f::zero();
+		    const bool hit = LeafIntersector::intersect(curNode,
+								rayIndex,
+								dir_xyz,
+								org_xyz,
+								min_dist_xyz,
+								max_dist_xyz,
+								ray16,
+								accel,
+								(Scene*)bvh->geometry);
+		    
+		    if (hit)
+		      compactStack(stack_node_single,stack_dist_single,sindex,max_dist_xyz);
 
-		    const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel);
-	      
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  0); 
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  1); 
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  2); 
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  3); 
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  4); 
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  5); 
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  6); 
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  7); 
-
-		    const mic_i and_mask = broadcast4to16i(zlc4);
-	     
-
-		    const mic_f v0_t0 = gather_4f_zlc(and_mask,
-						      (float*)&tptr[0].t0.v0,
-						      (float*)&tptr[1].t0.v0,
-						      (float*)&tptr[2].t0.v0,
-						      (float*)&tptr[3].t0.v0);
-	      
-		    const mic_f v1_t0 = gather_4f_zlc(and_mask,
-						      (float*)&tptr[0].t0.v1,
-						      (float*)&tptr[1].t0.v1,
-						      (float*)&tptr[2].t0.v1,
-						      (float*)&tptr[3].t0.v1);
-	      
-		    const mic_f v2_t0 = gather_4f_zlc(and_mask,
-						      (float*)&tptr[0].t0.v2,
-						      (float*)&tptr[1].t0.v2,
-						      (float*)&tptr[2].t0.v2,
-						      (float*)&tptr[3].t0.v2);
-
-		    const mic_f v0_t1 = gather_4f_zlc(and_mask,
-						      (float*)&tptr[0].t1.v0,
-						      (float*)&tptr[1].t1.v0,
-						      (float*)&tptr[2].t1.v0,
-						      (float*)&tptr[3].t1.v0);
-	      
-		    const mic_f v1_t1 = gather_4f_zlc(and_mask,
-						      (float*)&tptr[0].t1.v1,
-						      (float*)&tptr[1].t1.v1,
-						      (float*)&tptr[2].t1.v1,
-						      (float*)&tptr[3].t1.v1);
-	      
-		    const mic_f v2_t1 = gather_4f_zlc(and_mask,
-						      (float*)&tptr[0].t1.v2,
-						      (float*)&tptr[1].t1.v2,
-						      (float*)&tptr[2].t1.v2,
-						      (float*)&tptr[3].t1.v2);
-
-		    const mic_f v0 = v0_t0 * one_time + time * v0_t1;
-		    const mic_f v1 = v1_t0 * one_time + time * v1_t1;
-		    const mic_f v2 = v2_t0 * one_time + time * v2_t1;
-
-		    const mic_f e1 = v1 - v0;
-		    const mic_f e2 = v0 - v2;	     
-		    const mic_f normal = lcross_zxy(e1,e2);
-		    const mic_f org = v0 - org_xyz;
-		    const mic_f odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
-		    const mic_f den = ldot3_zxy(dir_xyz,normal);	      
-		    const mic_f rcp_den = rcp(den);
-		    const mic_f uu = ldot3_zxy(e2,odzxy); 
-		    const mic_f vv = ldot3_zxy(e1,odzxy); 
-		    const mic_f u = uu * rcp_den;
-		    const mic_f v = vv * rcp_den;
-
-#if defined(__BACKFACE_CULLING__)
-		    const mic_m m_init = (mic_m)0x1111 & (den > zero);
-#else
-		    const mic_m m_init = 0x1111;
-#endif
-
-		    const mic_m valid_u = ge(m_init,u,zero);
-		    const mic_m valid_v = ge(valid_u,v,zero);
-		    const mic_m m_aperture = le(valid_v,u+v,mic_f::one()); 
-
-		    const mic_f nom = ldot3_zxy(org,normal);
-		    if (unlikely(none(m_aperture))) continue;
-		    const mic_f t = rcp_den*nom;
-
-		    mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
-
-		    max_dist_xyz  = select(m_final,t,max_dist_xyz);		    
-
-#if defined(__USE_RAY_MASK__)
-		    const mic_i rayMask(ray16.mask[rayIndex]);
-		    const mic_i triMask = swDDDD(gather16i_4i_align(&tptr[0].t0.v2,&tptr[1].t0.v2,&tptr[2].t0.v2,&tptr[3].t0.v2));
-		    const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
-		    m_final &= m_ray_mask;	      
-#endif
-
-		    /* did the ray hot one of the four triangles? */
-		    if (unlikely(any(m_final)))
-		      {
-			prefetch<PFHINT_L1EX>(&ray16.tfar);  
-			prefetch<PFHINT_L1EX>(&ray16.u);
-			prefetch<PFHINT_L1EX>(&ray16.v);
-			prefetch<PFHINT_L1EX>(&ray16.Ng.x); 
-			prefetch<PFHINT_L1EX>(&ray16.Ng.y); 
-			prefetch<PFHINT_L1EX>(&ray16.Ng.z); 
-			prefetch<PFHINT_L1EX>(&ray16.geomID);
-			prefetch<PFHINT_L1EX>(&ray16.primID);
-
-			const mic_f min_dist = vreduce_min(max_dist_xyz);
-			const mic_m m_dist = eq(min_dist,max_dist_xyz);
-
-			const size_t vecIndex = bitscan(toInt(m_dist));
-			const size_t triIndex = vecIndex >> 2;
-
-			const BVH4mb::Triangle01  *__restrict__ tri_ptr = tptr + triIndex;
-
-			const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
-
-			const mic_f gnormalz = swAAAA(normal);
-			const mic_f gnormalx = swBBBB(normal);
-			const mic_f gnormaly = swCCCC(normal);
-		  
-			max_dist_xyz = min_dist;
-
-			compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
-			compactustore16f_low(m_tri,&ray16.u[rayIndex],u); 
-			compactustore16f_low(m_tri,&ray16.v[rayIndex],v); 
-			compactustore16f_low(m_tri,&ray16.Ng.x[rayIndex],gnormalx); 
-			compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
-			compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
-
-			ray16.geomID[rayIndex] = tri_ptr->t0.geomID();
-			ray16.primID[rayIndex] = tri_ptr->t0.primID();
-
-			/* compact the stack if size of stack >= 2 */
-			if (likely(sindex >= 2))
-			  {
-			    if (likely(sindex < 16))
-			      {
-				const unsigned int m_num_stack = mic_m::shift1[sindex] - 1;
-				const mic_m m_num_stack_low  = toMask(m_num_stack);
-				const mic_f snear_low  = load16f(stack_dist_single + 0);
-				const mic_i snode_low  = load16i((int*)stack_node_single + 0);
-				const mic_m m_stack_compact_low  = le(m_num_stack_low,snear_low,max_dist_xyz) | (mic_m)1;
-				compactustore16f_low(m_stack_compact_low,stack_dist_single + 0,snear_low);
-				compactustore16i_low(m_stack_compact_low,(int*)stack_node_single + 0,snode_low);
-				sindex = countbits(m_stack_compact_low);
-				assert(sindex < 16);
-			      }
-			    else if (likely(sindex < 32))
-			      {
-				const mic_m m_num_stack_high = toMask(mic_m::shift1[sindex-16] - 1); 
-				const mic_f snear_low  = load16f(stack_dist_single + 0);
-				const mic_f snear_high = load16f(stack_dist_single + 16);
-				const mic_i snode_low  = load16i((int*)stack_node_single + 0);
-				const mic_i snode_high = load16i((int*)stack_node_single + 16);
-				const mic_m m_stack_compact_low  = le(snear_low,max_dist_xyz) | (mic_m)1;
-				const mic_m m_stack_compact_high = le(m_num_stack_high,snear_high,max_dist_xyz);
-				compactustore16f(m_stack_compact_low,      stack_dist_single + 0,snear_low);
-				compactustore16i(m_stack_compact_low,(int*)stack_node_single + 0,snode_low);
-				compactustore16f(m_stack_compact_high,      stack_dist_single + countbits(m_stack_compact_low),snear_high);
-				compactustore16i(m_stack_compact_high,(int*)stack_node_single + countbits(m_stack_compact_low),snode_high);
-				assert ((unsigned int)m_num_stack_high == ((mic_m::shift1[sindex] - 1) >> 16));
-				sindex = countbits(m_stack_compact_low) + countbits(m_stack_compact_high);
-				assert(sindex < 32);
-			      }
-			    else
-			      {
-				const mic_m m_num_stack_32 = toMask(mic_m::shift1[sindex-32] - 1); 
-
-				const mic_f snear_0  = load16f(stack_dist_single + 0);
-				const mic_f snear_16 = load16f(stack_dist_single + 16);
-				const mic_f snear_32 = load16f(stack_dist_single + 32);
-				const mic_i snode_0  = load16i((int*)stack_node_single + 0);
-				const mic_i snode_16 = load16i((int*)stack_node_single + 16);
-				const mic_i snode_32 = load16i((int*)stack_node_single + 32);
-				const mic_m m_stack_compact_0  = le(               snear_0 ,max_dist_xyz) | (mic_m)1;
-				const mic_m m_stack_compact_16 = le(               snear_16,max_dist_xyz);
-				const mic_m m_stack_compact_32 = le(m_num_stack_32,snear_32,max_dist_xyz);
-
-				sindex = 0;
-				compactustore16f(m_stack_compact_0,      stack_dist_single + sindex,snear_0);
-				compactustore16i(m_stack_compact_0,(int*)stack_node_single + sindex,snode_0);
-				sindex += countbits(m_stack_compact_0);
-				compactustore16f(m_stack_compact_16,      stack_dist_single + sindex,snear_16);
-				compactustore16i(m_stack_compact_16,(int*)stack_node_single + sindex,snode_16);
-				sindex += countbits(m_stack_compact_16);
-				compactustore16f(m_stack_compact_32,      stack_dist_single + sindex,snear_32);
-				compactustore16i(m_stack_compact_32,(int*)stack_node_single + sindex,snode_32);
-				sindex += countbits(m_stack_compact_32);
-
-				assert(sindex < 48);		  
-			      }
-			  }
-		      }
 		  }	  
 	      }
 	    ray_tfar = select(valid0,ray16.tfar ,neg_inf);
@@ -714,102 +535,19 @@ namespace embree
 
 		    /* intersect one ray against four triangles */
 
-		    const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel);
-
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  0); 
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  1); 
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  2); 
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  3); 
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  4); 
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  5); 
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  6); 
-		    prefetch<PFHINT_L1>((mic_f*)tptr +  7); 
-
-		    const mic_i and_mask = broadcast4to16i(zlc4);
-	      
-		    const mic_f v0_t0 = gather_4f_zlc(and_mask,
-						      (float*)&tptr[0].t0.v0,
-						      (float*)&tptr[1].t0.v0,
-						      (float*)&tptr[2].t0.v0,
-						      (float*)&tptr[3].t0.v0);
-	      
-		    const mic_f v1_t0 = gather_4f_zlc(and_mask,
-						      (float*)&tptr[0].t0.v1,
-						      (float*)&tptr[1].t0.v1,
-						      (float*)&tptr[2].t0.v1,
-						      (float*)&tptr[3].t0.v1);
-	      
-		    const mic_f v2_t0 = gather_4f_zlc(and_mask,
-						      (float*)&tptr[0].t0.v2,
-						      (float*)&tptr[1].t0.v2,
-						      (float*)&tptr[2].t0.v2,
-						      (float*)&tptr[3].t0.v2);
-
-		    const mic_f v0_t1 = gather_4f_zlc(and_mask,
-						      (float*)&tptr[0].t1.v0,
-						      (float*)&tptr[1].t1.v0,
-						      (float*)&tptr[2].t1.v0,
-						      (float*)&tptr[3].t1.v0);
-	      
-		    const mic_f v1_t1 = gather_4f_zlc(and_mask,
-						      (float*)&tptr[0].t1.v1,
-						      (float*)&tptr[1].t1.v1,
-						      (float*)&tptr[2].t1.v1,
-						      (float*)&tptr[3].t1.v1);
-	      
-		    const mic_f v2_t1 = gather_4f_zlc(and_mask,
-						      (float*)&tptr[0].t1.v2,
-						      (float*)&tptr[1].t1.v2,
-						      (float*)&tptr[2].t1.v2,
-						      (float*)&tptr[3].t1.v2);
-
-		    const mic_f v0 = v0_t0 * one_time + time * v0_t1;
-		    const mic_f v1 = v1_t0 * one_time + time * v1_t1;
-		    const mic_f v2 = v2_t0 * one_time + time * v2_t1;
-
-		    const mic_f e1 = v1 - v0;
-		    const mic_f e2 = v0 - v2;	     
-		    const mic_f normal = lcross_zxy(e1,e2);
-		    const mic_f org = v0 - org_xyz;
-		    const mic_f odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
-		    const mic_f den = ldot3_zxy(dir_xyz,normal);	      
-		    const mic_f rcp_den = rcp(den);
-		    const mic_f uu = ldot3_zxy(e2,odzxy); 
-		    const mic_f vv = ldot3_zxy(e1,odzxy); 
-		    const mic_f u = uu * rcp_den;
-		    const mic_f v = vv * rcp_den;
-
-#if defined(__BACKFACE_CULLING__)
-		    const mic_m m_init = (mic_m)0x1111 & (den > zero);
-#else
-		    const mic_m m_init = 0x1111;
-#endif
-
-		    const mic_m valid_u = ge(m_init,u,zero);
-		    const mic_m valid_v = ge(valid_u,v,zero);
-		    const mic_m m_aperture = le(valid_v,u+v,mic_f::one()); 
-
-		    const mic_f nom = ldot3_zxy(org,normal);
-		    const mic_f t = rcp_den*nom;
-
-		    if (unlikely(none(m_aperture))) continue;
-
-		    mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
-
-#if defined(__USE_RAY_MASK__)
-		    const mic_i rayMask(ray16.mask[rayIndex]);
-		    const mic_i triMask = swDDDD(gather16i_4i_align(&tptr[0].t0.v2,&tptr[1].t0.v2,&tptr[2].t0.v2,&tptr[3].t0.v2));
-		    const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
-		    m_final &= m_ray_mask;	      
-#endif
-
-		    /* did the ray hot one of the four triangles? */
-		    if (unlikely(any(m_final)))
-		      {
-			m_terminated |= toMask(mic_m::shift1[rayIndex]);
-			break;
-		      }
+		    const bool hit = LeafIntersector::occluded(curNode,
+							       rayIndex,
+							       dir_xyz,
+							       org_xyz,
+							       min_dist_xyz,
+							       max_dist_xyz,
+							       ray16,
+							       m_terminated,
+							       accel,
+							       (Scene*)bvh->geometry);
+		    if (unlikely(hit)) break;
 		  }	  
+
 		if (unlikely(all(m_terminated))) 
 		  {
 		    store16i(m_valid,&ray16.geomID,mic_i::zero());
