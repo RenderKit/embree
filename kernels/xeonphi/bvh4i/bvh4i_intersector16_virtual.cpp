@@ -93,6 +93,7 @@ namespace embree
  
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
 	Primitive *accel_ptr = (Primitive*)accel + index;
@@ -334,9 +335,52 @@ namespace embree
 	}
     }
     
+#if 0
+    struct VirtualLeafIntersector
+    {
+      typedef typename VirtualAccelIntersector16::Primitive Primitive;
+
+      // ========================
+      // ==== 16-wide packets ===
+      // ========================
+      __forceinline static void intersect16(BVH4i::NodeRef curNode,
+					    const mic_m m_valid_leaf, 
+					    const mic3f &dir,
+					    const mic3f &org,
+					    Ray16& ray16, 
+					    const void *__restrict__ const accel,
+					    const Scene     *__restrict__ const geometry)
+      {
+	unsigned int items = curNode.items();
+	unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
+	Primitive *accel_ptr = (Primitive*)accel + index;
+
+        VirtualAccelIntersector16::intersect(m_valid_leaf,ray16,accel_ptr,items,geometry);
+      }
+
+      __forceinline static void occluded16(BVH4i::NodeRef curNode,
+					   const mic_m m_valid_leaf, 
+					   const mic3f &dir,
+					   const mic3f &org,
+					   Ray16& ray16, 
+					   mic_m &m_terminated,					    
+					   const void *__restrict__ const accel,
+					   const Scene     *__restrict__ const geometry)
+      {
+	unsigned int items = curNode.items();
+	unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
+	Primitive *accel_ptr = (Primitive *)accel + index;
+
+        m_terminated |= m_valid_leaf & VirtualAccelIntersector16::occluded(m_valid_leaf,ray16,accel_ptr,items,geometry);
+      }      
+    };
+#endif
     
-    DEFINE_INTERSECTOR16   (BVH4iVirtualGeometryIntersector16, BVH4iIntersector16Virtual<VirtualAccelIntersector16>);
-    DEFINE_INTERSECTOR1    (BVH4iVirtualGeometryIntersector1, BVH4iIntersector1Virtual<VirtualAccelIntersector1>);
+    //DEFINE_INTERSECTOR16   (BVH4iVirtualGeometryIntersector16, BVH4iIntersector16Virtual<VirtualAccelIntersector16>);
+
+    //DEFINE_INTERSECTOR16   (BVH4iVirtualGeometryIntersector16, BVH4iIntersector16Chunk<VirtualLeafIntersector>);
+
+    //DEFINE_INTERSECTOR1    (BVH4iVirtualGeometryIntersector1, BVH4iIntersector1Virtual<VirtualAccelIntersector1>);
 
   }
 }

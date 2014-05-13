@@ -20,6 +20,7 @@
 #include "bvh4i_traversal.h"
 #include "common/ray16.h" 
 #include "common/accelset.h"
+#include "bvh4i_intersector16_chunk.h"
 
 namespace embree
 {

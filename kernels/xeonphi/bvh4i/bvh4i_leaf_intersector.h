@@ -22,6 +22,8 @@
 #include "geometry/triangle1mc_intersector1_moeller.h"
 #include "geometry/triangle1_intersector16_moeller.h"
 #include "geometry/triangle1mc_intersector16_moeller.h"
+#include "geometry/virtual_accel_intersector1.h"
+#include "geometry/virtual_accel_intersector16.h"
 #include "geometry/filter.h"
 
 namespace embree
@@ -63,7 +65,7 @@ namespace embree
 					 const mic_f &org_xyz,
 					 const mic_f &min_dist_xyz,
 					 const mic_f &max_dist_xyz,
-					 const Ray& ray,
+					 Ray& ray,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
       {
@@ -205,7 +207,7 @@ namespace embree
 					 const mic_f &org_xyz,
 					 const mic_f &min_dist_xyz,
 					 const mic_f &max_dist_xyz,
-					 const Ray& ray,
+					 Ray& ray,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
       {
@@ -314,6 +316,85 @@ namespace embree
 	Triangle1mcIntersector16MoellerTrumbore::occluded16(m_valid_leaf,items,dir,org,ray16,m_terminated,geometry,tptr);
       }
 
+    };
+
+
+    // ============================================================================================
+    // ============================================================================================
+    // ============================================================================================
+
+    struct VirtualLeafIntersector
+    {
+      typedef typename VirtualAccelIntersector16::Primitive Primitive;
+
+      // ==================
+      // === single ray === 
+      // ==================
+      static __forceinline bool intersect(BVH4i::NodeRef curNode,
+					  const mic_f &dir_xyz,
+					  const mic_f &org_xyz,
+					  const mic_f &min_dist_xyz,
+					  mic_f &max_dist_xyz,
+					  Ray& ray, 
+					  const void *__restrict__ const accel,
+					  const Scene*__restrict__ const geometry)
+      {
+	unsigned int items = curNode.items();
+	unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
+	Primitive *accel_ptr = (Primitive*)accel + index;
+	int old_primID = ray.primID;
+	VirtualAccelIntersector1::intersect(ray,accel_ptr,items,geometry);
+	return old_primID != ray.primID;
+      }
+
+      static __forceinline bool occluded(BVH4i::NodeRef curNode,
+					 const mic_f &dir_xyz,
+					 const mic_f &org_xyz,
+					 const mic_f &min_dist_xyz,
+					 const mic_f &max_dist_xyz,
+					 Ray& ray,
+					 const void *__restrict__ const accel,
+					 const Scene*__restrict__ const geometry)
+      {
+	unsigned int items = curNode.items();
+	unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
+	Primitive *accel_ptr = (Primitive*)accel + index;
+
+	return VirtualAccelIntersector1::occluded((Ray&)ray,accel_ptr,items,(Scene*)geometry);
+      }
+
+      // ========================
+      // ==== 16-wide packets ===
+      // ========================
+      __forceinline static void intersect16(BVH4i::NodeRef curNode,
+					    const mic_m m_valid_leaf, 
+					    const mic3f &dir,
+					    const mic3f &org,
+					    Ray16& ray16, 
+					    const void *__restrict__ const accel,
+					    const Scene     *__restrict__ const geometry)
+      {
+	unsigned int items = curNode.items();
+	unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
+	Primitive *accel_ptr = (Primitive*)accel + index;
+        VirtualAccelIntersector16::intersect(m_valid_leaf,ray16,accel_ptr,items,geometry);
+      }
+
+      __forceinline static void occluded16(BVH4i::NodeRef curNode,
+					   const mic_m m_valid_leaf, 
+					   const mic3f &dir,
+					   const mic3f &org,
+					   Ray16& ray16, 
+					   mic_m &m_terminated,					    
+					   const void *__restrict__ const accel,
+					   const Scene     *__restrict__ const geometry)
+      {
+	unsigned int items = curNode.items();
+	unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
+	Primitive *accel_ptr = (Primitive *)accel + index;
+
+        m_terminated |= m_valid_leaf & VirtualAccelIntersector16::occluded(m_valid_leaf,ray16,accel_ptr,items,geometry);
+      }      
     };
 
 };
