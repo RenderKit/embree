@@ -650,7 +650,7 @@ export void device_render (uniform int* uniform pixels,
   /* render frame */
   uniform const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   uniform const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  enableFilterDispatch = true;
+  enableFilterDispatch = renderPixel == renderPixelStandard;
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
   enableFilterDispatch = false;
   rtcDebug();
