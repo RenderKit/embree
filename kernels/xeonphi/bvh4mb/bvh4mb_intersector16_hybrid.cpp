@@ -15,7 +15,8 @@
 // ======================================================================== //
 
 #include "bvh4mb_intersector16_hybrid.h"
-#include "geometry/triangle1.h"
+#include "bvh4mb_traversal.h"
+#include "bvh4mb_leaf_intersector.h"
 
 #define SWITCH_ON_DOWN_TRAVERSAL 1
 
@@ -27,7 +28,8 @@ namespace embree
 
     static __aligned(64) int zlc4[4] = {0xffffffff,0xffffffff,0xffffffff,0};
 
-    void BVH4mbIntersector16Hybrid::intersect(mic_i* valid_i, BVH4mb* bvh, Ray16& ray16)
+    template<typename LeafIntersector>
+    void BVH4mbIntersector16Hybrid<LeafIntersector>::intersect(mic_i* valid_i, BVH4mb* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
@@ -509,118 +511,26 @@ namespace embree
         /* return if stack is empty */
         if (unlikely(curNode == BVH4i::invalidNode)) break;
         
-	const mic3f org = ray16.org;
 
         /* intersect leaf */
-        const mic_m valid_leaf = ray_tfar > curDist;
+        const mic_m m_valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
 
-	unsigned int items; 
-	const BVH4mb::Triangle01* tris  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel,items);
-
-	const mic_f zero = mic_f::zero();
-	const mic_f one  = mic_f::one();
-	
-	prefetch<PFHINT_L1>((mic_f*)tris +  0); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  1); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  2); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  4); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  5); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  6); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  7); 
-
-	for (size_t i=0; i<items; i++) 
-	  {
-	    const Triangle1& tri_t0 = tris[i].t0;
-	    const Triangle1& tri_t1 = tris[i].t1;
-
-	    prefetch<PFHINT_L1>(&tris[i+1].t0); 
-	    prefetch<PFHINT_L1>(&tris[i+1].t1); 
-
-	    STAT3(normal.trav_prims,1,popcnt(valid_i),16);
-        
-	    /* load vertices and calculate edges */
-	    const mic3f v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
-	    const mic3f v0_t1( broadcast1to16f(&tri_t1.v0.x), broadcast1to16f(&tri_t1.v0.y), broadcast1to16f(&tri_t1.v0.z) );
-	    const mic3f v0 = v0_t0 * one_time + time * v0_t1;
-	    const mic3f v1_t0( broadcast1to16f(&tri_t0.v1.x), broadcast1to16f(&tri_t0.v1.y), broadcast1to16f(&tri_t0.v1.z) );
-	    const mic3f v1_t1( broadcast1to16f(&tri_t1.v1.x), broadcast1to16f(&tri_t1.v1.y), broadcast1to16f(&tri_t1.v1.z) );
-	    const mic3f v1 = v1_t0 * one_time + time * v1_t1;
-	    const mic3f v2_t0( broadcast1to16f(&tri_t0.v2.x), broadcast1to16f(&tri_t0.v2.y), broadcast1to16f(&tri_t0.v2.z) );
-	    const mic3f v2_t1( broadcast1to16f(&tri_t1.v2.x), broadcast1to16f(&tri_t1.v2.y), broadcast1to16f(&tri_t1.v2.z) );
-	    const mic3f v2 = v2_t0 * one_time + time * v2_t1;
-
-	    const mic3f e1 = v0-v1;
-	    const mic3f e2 = v2-v0;
-
-	    const mic3f Ng = cross(e1,e2);
-
-	    /* calculate denominator */
-	    const mic3f C =  v0 - org;	    
-	    const mic_f den = dot(Ng,ray16.dir);
-
-	    const mic_f rcp_den = rcp(den);
-
-	    mic_m valid = valid_leaf;
-
-#if defined(__BACKFACE_CULLING__)
-	    
-	    valid &= den > zero;
-#endif
-
-	    /* perform edge tests */
-	    const mic3f R = -cross(C,ray16.dir);
-	    const mic_f u = dot(R,e2)*rcp_den;
-	    const mic_f v = dot(R,e1)*rcp_den;
-	    valid = ge(valid,u,zero);
-	    valid = ge(valid,v,zero);
-	    valid = le(valid,u+v,one);
-
-	    prefetch<PFHINT_L1EX>(&ray16.u);      
-	    prefetch<PFHINT_L1EX>(&ray16.v);      
-	    prefetch<PFHINT_L1EX>(&ray16.tfar);      
+	LeafIntersector::intersect16(curNode,
+				     m_valid_leaf,
+				     ray16.dir,
+				     ray16.org,
+				     ray16,
+				     accel,
+				     (Scene*)bvh->geometry);
 
 
-	    if (unlikely(none(valid))) continue;
-
-	    const mic_f dot_C_Ng = dot(C,Ng);
-	    const mic_f t = dot_C_Ng * rcp_den;
-      
-	    /* perform depth test */
-	    valid = ge(valid, t,ray16.tnear);
-	    valid = ge(valid,ray16.tfar,t);
-
-	    const mic_i geomID = tri_t0.geomID();
-	    const mic_i primID = tri_t0.primID();
-	    prefetch<PFHINT_L1EX>(&ray16.geomID);      
-	    prefetch<PFHINT_L1EX>(&ray16.primID);      
-	    prefetch<PFHINT_L1EX>(&ray16.Ng.x);      
-	    prefetch<PFHINT_L1EX>(&ray16.Ng.y);      
-	    prefetch<PFHINT_L1EX>(&ray16.Ng.z);      
-
-	    /* ray masking test */
-#if defined(__USE_RAY_MASK__)
-	    valid &= (tri_t0.mask() & ray16.mask) != 0;
-#endif
-	    if (unlikely(none(valid))) continue;
-
-	    /* update hit information */
-	    store16f(valid,(float*)&ray16.u,u);
-	    store16f(valid,(float*)&ray16.v,v);
-	    store16f(valid,(float*)&ray16.tfar,t);
-	    store16i(valid,(float*)&ray16.geomID,geomID);
-	    store16i(valid,(float*)&ray16.primID,primID);
-	    store16f(valid,(float*)&ray16.Ng.x,Ng.x);
-	    store16f(valid,(float*)&ray16.Ng.y,Ng.y);
-	    store16f(valid,(float*)&ray16.Ng.z,Ng.z);
-	  }
-
-        ray_tfar = select(valid_leaf,ray16.tfar,ray_tfar);
+        ray_tfar = select(m_valid_leaf,ray16.tfar,ray_tfar);
       }
     }
-    
-    void BVH4mbIntersector16Hybrid::occluded(mic_i* valid_i, BVH4mb* bvh, Ray16& ray16)
+
+    template<typename LeafIntersector>    
+    void BVH4mbIntersector16Hybrid<LeafIntersector>::occluded(mic_i* valid_i, BVH4mb* bvh, Ray16& ray16)
     {
       /* allocate stack */
       __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
@@ -1007,93 +917,17 @@ namespace embree
         if (unlikely(curNode == BVH4i::invalidNode)) break;
         
         /* intersect leaf */
-        mic_m valid_leaf = gt(m_active,ray_tfar,curDist);
+        mic_m m_valid_leaf = gt(m_active,ray_tfar,curDist);
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
-        unsigned int items; 
-	const BVH4mb::Triangle01* tris  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel,items);
 
-	prefetch<PFHINT_L1>((mic_f*)tris +  0); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  1); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  2); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  4); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  5); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  6); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  7); 
-
-	mic_m valid0 = valid_leaf;
-
-	const mic3f org = ray16.org;
-	const mic3f dir = ray16.dir;
-
-	const mic_f zero = mic_f::zero();
-	const mic_f one  = mic_f::one();
-
-     
-	for (size_t i=0; i<items; i++) 
-	  {
-	    STAT3(shadow.trav_prims,1,popcnt(valid0),16);
-
-	    const Triangle1& tri_t0 = tris[i].t0;
-	    const Triangle1& tri_t1 = tris[i].t1;
-
-	    prefetch<PFHINT_L1>(&tris[i+1].t0); 
-	    prefetch<PFHINT_L1>(&tris[i+1].t1); 
-
-	    mic_m valid = valid0;
-        
-	    /* load vertices and calculate edges */
-	    const mic3f v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
-	    const mic3f v0_t1( broadcast1to16f(&tri_t1.v0.x), broadcast1to16f(&tri_t1.v0.y), broadcast1to16f(&tri_t1.v0.z) );
-	    const mic3f v0 = v0_t0 * one_time + time * v0_t1;
-	    const mic3f v1_t0( broadcast1to16f(&tri_t0.v1.x), broadcast1to16f(&tri_t0.v1.y), broadcast1to16f(&tri_t0.v1.z) );
-	    const mic3f v1_t1( broadcast1to16f(&tri_t1.v1.x), broadcast1to16f(&tri_t1.v1.y), broadcast1to16f(&tri_t1.v1.z) );
-	    const mic3f v1 = v1_t0 * one_time + time * v1_t1;
-	    const mic3f v2_t0( broadcast1to16f(&tri_t0.v2.x), broadcast1to16f(&tri_t0.v2.y), broadcast1to16f(&tri_t0.v2.z) );
-	    const mic3f v2_t1( broadcast1to16f(&tri_t1.v2.x), broadcast1to16f(&tri_t1.v2.y), broadcast1to16f(&tri_t1.v2.z) );
-	    const mic3f v2 = v2_t0 * one_time + time * v2_t1;
-
-	    const mic3f e1 = v0-v1;
-	    const mic3f e2 = v2-v0;
-
-	    const mic3f Ng = cross(e1,e2);
-
-        
-	    /* calculate denominator */
-	    const mic3f C =  v0 - org;
-
-	    const mic_f den = dot(dir,Ng);
-
-#if defined(__BACKFACE_CULLING__)
-	    valid &= den > zero;
-#endif
-	    const mic_f rcp_den = rcp(den);
-	    const mic3f R = cross(dir,C);
-	    const mic_f u = dot(R,e1)*rcp_den;
-	    const mic_f v = dot(R,e2)*rcp_den;
-	    valid = ge(valid,u,zero);
-	    valid = ge(valid,v,zero);
-	    valid = le(valid,u+v,one); 
-	    const mic_f t = dot(C,Ng) * rcp_den;
-	    evictL1(tris);
-
-	    if (unlikely(none(valid))) continue;
-      
-	    /* perform depth test */
-	    valid = ge(valid, t,ray16.tnear);
-	    valid = ge(valid,ray16.tfar,t);
-
-	    /* ray masking test */
-#if defined(__USE_RAY_MASK__)
-	    valid &= (tri_t0.mask() & ray16.mask) != 0;
-#endif
-	    if (unlikely(none(valid))) continue;
-
-	    /* update occlusion */
-	    valid0 &= !valid;
-	    if (unlikely(none(valid0))) break;
-	  }
-	m_terminated |= valid_leaf & (!valid0);	
+	LeafIntersector::occluded16(curNode,
+				    m_valid_leaf,
+				    ray16.dir,
+				    ray16.org,
+				    ray16,
+				    m_terminated,
+				    accel,
+				    (Scene*)bvh->geometry);
 
         ray_tfar = select(m_terminated,neg_inf,ray_tfar);
         if (unlikely(all(m_terminated))) break;
@@ -1101,6 +935,6 @@ namespace embree
       store16i(m_valid & m_terminated,&ray16.geomID,mic_i::zero());
     }
     
-    DEFINE_INTERSECTOR16    (BVH4mbTriangle1Intersector16HybridMoeller, BVH4mbIntersector16Hybrid);
+    DEFINE_INTERSECTOR16    (BVH4mbTriangle1Intersector16HybridMoeller, BVH4mbIntersector16Hybrid<Triangle1mbLeafIntersector>);
   }
 }
