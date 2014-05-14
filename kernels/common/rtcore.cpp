@@ -59,7 +59,6 @@ namespace embree
   void BVH4iRegister();
   void BVH8iRegister();
   void BVH4MBRegister();
-  void BVH16iRegister();
   void BVH4HairRegister();
 
   /*! intersector registration functions */
@@ -277,8 +276,6 @@ namespace embree
 #if !defined(__MIC__)
     BVH4Register();
     BVH4HairRegister();
-#else
-    BVH16iRegister();
 #endif
     BVH4MBRegister();
     BVH4iRegister();

@@ -26,14 +26,14 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-#define TIMER(x) x
+#define TIMER(x) 
 #define DBG(x) 
 
 //#define PROFILE
 #define PROFILE_ITERATIONS 100
 
 //#define USE_QUANTIZATION
-#define MEASURE_MEMORY_ALLOCATION_TIME 1
+#define MEASURE_MEMORY_ALLOCATION_TIME 0
 
 // TODO: CHECK     const float voxelArea    = current.cs_AABB.sceneArea();
 //                 const float centroidArea = current.cs_AABB.centroidArea();

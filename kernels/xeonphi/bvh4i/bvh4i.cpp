@@ -55,6 +55,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iTriangle1mcIntersector1);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1mcIntersector16SingleMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1mcIntersector16ChunkMoeller);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1mcIntersector16HybridMoeller);
 
   void BVH4iRegister () 
   {
@@ -73,6 +74,8 @@ namespace embree
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1mcIntersector1);
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1mcIntersector16SingleMoeller);
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1mcIntersector16ChunkMoeller);
+    SELECT_SYMBOL_KNC(features,BVH4iTriangle1mcIntersector16HybridMoeller);
+
   }
 
 
@@ -94,8 +97,8 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4iTriangle1mcIntersector1; 
-    if      (g_traverser == "default") intersectors.intersector16 = BVH4iTriangle1mcIntersector16ChunkMoeller;
-    //else if (g_traverser == "hybrid" ) intersectors.intersector16 = BVH4iTriangle1Intersector16HybridMoeller;
+    if      (g_traverser == "default") intersectors.intersector16 = BVH4iTriangle1mcIntersector16HybridMoeller;
+    else if (g_traverser == "hybrid" ) intersectors.intersector16 = BVH4iTriangle1mcIntersector16HybridMoeller;
     else if (g_traverser == "chunk"  ) intersectors.intersector16 = BVH4iTriangle1mcIntersector16ChunkMoeller;
     else if (g_traverser == "single" ) intersectors.intersector16 = BVH4iTriangle1mcIntersector16SingleMoeller;
     else throw std::runtime_error("unknown traverser "+g_traverser+" for BVH4i<Triangle1>");      
@@ -162,9 +165,10 @@ namespace embree
   {
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);
     
-    Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,BVH4iBuilder::BVH4I_BUILDER_MEMORY_CONSERVATIVE);
-       
+    Builder* builder = BVH4iBuilder::create(accel,&scene->flat_triangle_source_1,scene,BVH4iBuilder::BVH4I_BUILDER_MEMORY_CONSERVATIVE);       
     Accel::Intersectors intersectors = BVH4iTriangle1mcIntersectors(accel);
+    scene->needVertices = true;
+
     return new AccelInstance(accel,builder,intersectors);    
   }
 

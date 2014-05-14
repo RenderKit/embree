@@ -284,7 +284,7 @@ namespace embree
 
 	  if (likely(!geom->hasOcclusionFilter1())) break;
                 
-	  if (runOcclusionFilter1(geom,ray,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) 
+	  if (runOcclusionFilter1(geom,(Ray&)ray,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) 
 	    break;
 
 	  m_final ^= m_tri; /* clear bit */

@@ -90,10 +90,6 @@ namespace embree
  
 	LeafIntersector::intersect16(curNode,m_valid_leaf,dir,org,ray,accel,(Scene*)bvh->geometry);
 
-	// unsigned int items; 
-	// const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel,items);
-	// Triangle1Intersector16MoellerTrumbore::intersect16(valid_leaf,items,dir,org,ray,(Scene*)bvh->geometry,tptr);
-
         ray_tfar = select(m_valid_leaf,ray.tfar,ray_tfar);
       }
     }
@@ -169,10 +165,6 @@ namespace embree
 
 	LeafIntersector::occluded16(curNode,m_valid_leaf,dir,org,ray,m_terminated,accel,(Scene*)bvh->geometry);
 
-	// unsigned int items; 
-	// const Triangle1* tptr  = (Triangle1*) curNode.leaf(accel,items);
-	// Triangle1Intersector16MoellerTrumbore::occluded16(valid_leaf,items,dir,org,ray,m_terminated,(Scene*)bvh->geometry,tptr);
-
         if (unlikely(all(m_terminated))) break;
         ray_tfar = select(m_terminated,neg_inf,ray_tfar);
       }
@@ -182,6 +174,7 @@ namespace embree
 
     DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16ChunkMoeller,   BVH4iIntersector16Chunk<Triangle1LeafIntersector>);
     DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16ChunkMoeller, BVH4iIntersector16Chunk<Triangle1mcLeafIntersector>);
+    DEFINE_INTERSECTOR16   (BVH4iVirtualGeometryIntersector16, BVH4iIntersector16Chunk<VirtualLeafIntersector>);
 
   }
 }

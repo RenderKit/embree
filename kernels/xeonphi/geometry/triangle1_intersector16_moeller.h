@@ -290,7 +290,7 @@ namespace embree
 	  const Geometry* const geom = geometry->get(geomID);
 	  if (likely(!geom->hasOcclusionFilter16())) break;
                 
-	  if (runOcclusionFilter16(geom,ray16,rayIndex,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) 
+	  if (runOcclusionFilter16(geom,(Ray16&)ray16,rayIndex,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) 
 	    break;
 
 	  m_final ^= m_tri; /* clear bit */
