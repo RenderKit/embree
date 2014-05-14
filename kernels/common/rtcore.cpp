@@ -419,15 +419,24 @@ namespace embree
   {
     TRACE(rtcIntersect);
     STAT3(normal.travs,1,1,1);
+#if defined(DEBUG)
+    if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)&ray) & 0x0F) process_error(RTC_INVALID_ARGUMENT,"ray not aligned to 16 bytes");   
+#endif
     ((Scene*)scene)->intersect(ray);
   }
   
   RTCORE_API void rtcIntersect4 (const void* valid, RTCScene scene, RTCRay4& ray) 
   {
+    TRACE(rtcIntersect4);
 #if defined(__MIC__)
     process_error(RTC_INVALID_OPERATION,"rtcIntersect4 not supported on Xeon Phi");    
 #else
-    TRACE(rtcIntersect4);
+#if defined(DEBUG)
+    if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x0F)  process_error(RTC_INVALID_ARGUMENT,"mask not aligned to 16 bytes");   
+    if (((size_t)&ray ) & 0x0F)  process_error(RTC_INVALID_ARGUMENT,"ray not aligned to 16 bytes");   
+#endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,4);
     ((Scene*)scene)->intersect4(valid,ray);
@@ -440,6 +449,11 @@ namespace embree
 #if !defined(__TARGET_AVX__) && !defined(__TARGET_AVX2__)
     process_error(RTC_INVALID_OPERATION,"rtcIntersect8 not supported on Xeon Phi");                                    
 #else
+#if defined(DEBUG)
+    if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x1F)  process_error(RTC_INVALID_ARGUMENT,"mask not aligned to 32 bytes");   
+    if (((size_t)&ray ) & 0x1F)  process_error(RTC_INVALID_ARGUMENT,"ray not aligned to 32 bytes");   
+#endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,8);
     ((Scene*)scene)->intersect8(valid,ray);
@@ -452,6 +466,11 @@ namespace embree
 #if !defined(__TARGET_XEON_PHI__)
     process_error(RTC_INVALID_OPERATION,"rtcIntersect16 only supported on Xeon Phi");
 #else
+#if defined(DEBUG)
+    if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x3F)  process_error(RTC_INVALID_ARGUMENT,"mask not aligned to 64 bytes");   
+    if (((size_t)&ray ) & 0x3F)  process_error(RTC_INVALID_ARGUMENT,"ray not aligned to 64 bytes");   
+#endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,16);
     ((Scene*)scene)->intersect16(valid,ray);
@@ -462,6 +481,10 @@ namespace embree
   {
     TRACE(rtcOccluded);
     STAT3(shadow.travs,1,1,1);
+#if defined(DEBUG)
+    if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)&ray) & 0x0F) process_error(RTC_INVALID_ARGUMENT,"ray not aligned to 16 bytes");   
+#endif
     ((Scene*)scene)->occluded(ray);
   }
   
@@ -471,6 +494,11 @@ namespace embree
 #if defined(__MIC__)
     process_error(RTC_INVALID_OPERATION,"rtcOccluded4 not supported on Xeon Phi");
 #else
+#if defined(DEBUG)
+    if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x0F)  process_error(RTC_INVALID_ARGUMENT,"mask not aligned to 16 bytes");   
+    if (((size_t)&ray ) & 0x0F)  process_error(RTC_INVALID_ARGUMENT,"ray not aligned to 16 bytes");   
+#endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,4);
     ((Scene*)scene)->occluded4(valid,ray);
@@ -483,6 +511,11 @@ namespace embree
 #if !defined(__TARGET_AVX__) && !defined(__TARGET_AVX2__)
     process_error(RTC_INVALID_OPERATION,"rtcOccluded8 not supported on Xeon Phi");
 #else
+#if defined(DEBUG)
+    if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x1F)  process_error(RTC_INVALID_ARGUMENT,"mask not aligned to 32 bytes");   
+    if (((size_t)&ray ) & 0x1F)  process_error(RTC_INVALID_ARGUMENT,"ray not aligned to 32 bytes");   
+#endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,8);
     ((Scene*)scene)->occluded8(valid,ray);
@@ -495,6 +528,11 @@ namespace embree
 #if !defined(__TARGET_XEON_PHI__)
     process_error(RTC_INVALID_OPERATION,"rtcOccluded16 only supported on Xeon Phi");
 #else
+#if defined(DEBUG)
+    if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x3F)  process_error(RTC_INVALID_ARGUMENT,"mask not aligned to 64 bytes");   
+    if (((size_t)&ray ) & 0x3F)  process_error(RTC_INVALID_ARGUMENT,"ray not aligned to 64 bytes");   
+#endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,16);
     ((Scene*)scene)->occluded16(valid,ray);
@@ -534,23 +572,23 @@ namespace embree
     {
     case RTC_MATRIX_ROW_MAJOR:
       transform = AffineSpace3fa(Vec3fa(xfm[ 0],xfm[ 4],xfm[ 8]),
-                                Vec3fa(xfm[ 1],xfm[ 5],xfm[ 9]),
-                                Vec3fa(xfm[ 2],xfm[ 6],xfm[10]),
-                                Vec3fa(xfm[ 3],xfm[ 7],xfm[11]));
+                                 Vec3fa(xfm[ 1],xfm[ 5],xfm[ 9]),
+                                 Vec3fa(xfm[ 2],xfm[ 6],xfm[10]),
+                                 Vec3fa(xfm[ 3],xfm[ 7],xfm[11]));
       break;
 
     case RTC_MATRIX_COLUMN_MAJOR:
       transform = AffineSpace3fa(Vec3fa(xfm[ 0],xfm[ 1],xfm[ 2]),
-                                Vec3fa(xfm[ 3],xfm[ 4],xfm[ 5]),
-                                Vec3fa(xfm[ 6],xfm[ 7],xfm[ 8]),
-                                Vec3fa(xfm[ 9],xfm[10],xfm[11]));
+                                 Vec3fa(xfm[ 3],xfm[ 4],xfm[ 5]),
+                                 Vec3fa(xfm[ 6],xfm[ 7],xfm[ 8]),
+                                 Vec3fa(xfm[ 9],xfm[10],xfm[11]));
       break;
 
     case RTC_MATRIX_COLUMN_MAJOR_ALIGNED16:
       transform = AffineSpace3fa(Vec3fa(xfm[ 0],xfm[ 1],xfm[ 2]),
-                                Vec3fa(xfm[ 4],xfm[ 5],xfm[ 6]),
-                                Vec3fa(xfm[ 8],xfm[ 9],xfm[10]),
-                                Vec3fa(xfm[12],xfm[13],xfm[14]));
+                                 Vec3fa(xfm[ 4],xfm[ 5],xfm[ 6]),
+                                 Vec3fa(xfm[ 8],xfm[ 9],xfm[10]),
+                                 Vec3fa(xfm[12],xfm[13],xfm[14]));
       break;
 
     default: 

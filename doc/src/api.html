@@ -60,8 +60,8 @@ occurs when invoking some API function, this flag is set to an error
 code if it stores no previous error. The <code>rtcGetError</code>
 function reads and returns the currently stored error and clears the
 error flag again. For performance reasons the ray query functions do
-not set an error flag, but fail hard in some circumstances (e.g. if
-the user forgot to perform an <code>rtcCommit</code>).</p>
+not set an error flag in release mode, but do so if Embree is compiled
+in debug mode.</p>
 
 <p>Possible error codes returned by <code>rtcGetError</code> are:</p>
 

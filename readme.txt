@@ -241,8 +241,8 @@ Each user thread has its own error flag in the API. If an error occurs when
 invoking some API function, this flag is set to an error code if it stores no
 previous error. The rtcGetError function reads and returns the currently stored
 error and clears the error flag again. For performance reasons the ray query
-functions do not set an error flag, but fail hard in some circumstances (e.g.
-if the user forgot to perform an rtcCommit).
+functions do not set an error flag in release mode, but do so if Embree is
+compiled in debug mode.
 
 Possible error codes returned by rtcGetError are:
 
