@@ -117,9 +117,6 @@ CMAKE_BUILD_TYPE           between Debug mode (Debug)   Release
 COMPILER                   Select either GCC, ICC, or   GCC
                            CLANG as compiler.
 
-RTCORE_EXIT_ON_ERROR       Exits the application as     OFF
-                           soon an some error occurs.
-
 RTCORE_INTERSECTION_FILTER Enables the intersection     ON
                            filter feature.
 

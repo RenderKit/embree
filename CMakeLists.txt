@@ -39,11 +39,6 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/common/cmake ${CMAKE_MODULE_PA
 # Embree configuration
 ##############################################################
 
-SET(RTCORE_EXIT_ON_ERROR OFF CACHE BOOL "Exits the application if an error occurs.")
-IF (RTCORE_EXIT_ON_ERROR)
- ADD_DEFINITIONS(-D__EXIT_ON_ERROR__)
-ENDIF()
-
 SET(RTCORE_RAY_MASK OFF CACHE BOOL "Enables ray mask support.")
 IF (RTCORE_RAY_MASK)
  ADD_DEFINITIONS(-D__USE_RAY_MASK__)

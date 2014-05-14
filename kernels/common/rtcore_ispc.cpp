@@ -23,27 +23,22 @@ namespace embree
 
 #define CATCH_BEGIN try {
 #define CATCH_END                                                       \
-  } catch (std::bad_alloc&) {                                         \
-  if (VERBOSE) std::cerr << "Embree: Out of memory" << std::endl;     \
-  recordError(RTC_OUT_OF_MEMORY);                                       \
- } catch (std::exception& e) {                                          \
-  if (VERBOSE) std::cerr << "Embree: " << e.what() << std::endl;      \
-  recordError(RTC_UNKNOWN_ERROR);                                       \
+  } catch (std::bad_alloc&) {                                           \
+    process_error(RTC_OUT_OF_MEMORY,"out of memory");                   \
+  } catch (std::exception& e) {                                         \
+    process_error(RTC_UNKNOWN_ERROR,e.what());                          \
  } catch (...) {                                                        \
-  if (VERBOSE) std::cerr << "Embree: Unknown exception caught." << std::endl; \
-  recordError(RTC_UNKNOWN_ERROR);                                       \
- }
+  process_error(RTC_UNKNOWN_ERROR,"unknown exception caught");          \
+  }
 
 #define VERIFY_HANDLE(handle) \
   if (handle == NULL) {                                                 \
-    if (VERBOSE) std::cerr << "Embree: invalid argument" << std::endl; \
-    recordError(RTC_INVALID_ARGUMENT);                                  \
+    process_error(RTC_INVALID_ARGUMENT,"invalid argument");             \
   }
 
 #define VERIFY_GEOMID(id) \
   if (id == -1) {                                                 \
-    if (VERBOSE) std::cerr << "Embree: invalid argument" << std::endl; \
-    recordError(RTC_INVALID_ARGUMENT);                                  \
+    process_error(RTC_INVALID_ARGUMENT,"invalid argument");       \
   }
 
 #define TRACE(x) //std::cout << #x << std::endl;
@@ -58,6 +53,10 @@ namespace embree
   
   extern "C" RTCError ispcGetError() {
     return rtcGetError();
+  }
+
+  extern "C" void ispcSetErrorFunction(void* f) {
+    return rtcSetErrorFunction((RTC_ERROR_FUNCTION)f);
   }
   
   extern "C" void ispcDebug() {

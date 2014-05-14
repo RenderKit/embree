@@ -40,7 +40,7 @@ namespace embree
   {
 #if !defined(__BUFFER_STRIDE__)
     if (stride_in != stride) {
-      recordError(RTC_INVALID_OPERATION);
+      process_error(RTC_INVALID_OPERATION,"buffer stride feature disabled at compile time and specified stride does not match default stride");
       return;
     }
 #endif
@@ -52,15 +52,7 @@ namespace embree
     shared = true;
   }
 
-  void Buffer::alloc()
-  {
-    /* report error if buffer already allocated or shared */
-    if (shared || ptr) {
-      recordError(RTC_INVALID_OPERATION);
-      return;
-    }
-
-    /* allocate buffer */
+  void Buffer::alloc() {
     ptr = ptr_ofs = (char*) alignedMalloc(bytes);
   }
 
@@ -74,7 +66,7 @@ namespace embree
   {
     /* report error if buffer is already mapped */
     if (mapped) {
-      recordError(RTC_INVALID_OPERATION);
+      process_error(RTC_INVALID_OPERATION,"buffer is already mapped");
       return NULL;
     }
 
@@ -92,7 +84,7 @@ namespace embree
   {
     /* report error if buffer not mapped */
     if (!mapped) {
-      recordError(RTC_INVALID_OPERATION);
+      process_error(RTC_INVALID_OPERATION,"buffer is not mapped");
       return;
     }
 

@@ -47,12 +47,6 @@
 #define ERROR(x) \
   throw std::runtime_error(x)
 
-#if defined(__EXIT_ON_ERROR__)
-#define VERBOSE 1
-#else
-#define VERBOSE g_verbose
-#endif
-
 namespace embree
 {
   /* global settings */
@@ -67,8 +61,8 @@ namespace embree
   extern int g_scene_flags;
   extern size_t g_benchmark;
 
-  /*! records an error */
-  void recordError(RTCError error);
+  /*! processes an error */
+  void process_error(RTCError error, const char* code);
 
   /*! decoding of geometry flags */
   __forceinline bool isStatic    (RTCSceneFlags flags) { return (flags & 1) == RTC_SCENE_STATIC; }

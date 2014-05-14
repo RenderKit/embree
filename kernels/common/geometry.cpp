@@ -124,7 +124,7 @@ namespace embree
   void Geometry::setIntersectionFilterFunction (RTCFilterFunc filter, bool ispc) 
   {
     if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      recordError(RTC_INVALID_OPERATION); 
+      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
       return;
     }
     intersectionFilter1 = filter;
@@ -133,7 +133,7 @@ namespace embree
   void Geometry::setIntersectionFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
   { 
     if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      recordError(RTC_INVALID_OPERATION); 
+      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
       return;
     }
     intersectionFilter4 = filter;
@@ -144,7 +144,7 @@ namespace embree
   void Geometry::setIntersectionFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
   { 
     if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      recordError(RTC_INVALID_OPERATION); 
+      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
       return;
     }
     intersectionFilter8 = filter;
@@ -155,7 +155,7 @@ namespace embree
   void Geometry::setIntersectionFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
   { 
     if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      recordError(RTC_INVALID_OPERATION); 
+      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
       return;
     }
     intersectionFilter16 = filter;
@@ -166,7 +166,7 @@ namespace embree
   void Geometry::setOcclusionFilterFunction (RTCFilterFunc filter, bool ispc) 
   {
     if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      recordError(RTC_INVALID_OPERATION); 
+      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
       return;
     }
     occlusionFilter1 = filter;
@@ -175,7 +175,7 @@ namespace embree
   void Geometry::setOcclusionFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
   { 
     if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      recordError(RTC_INVALID_OPERATION); 
+      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
       return;
     }
     occlusionFilter4 = filter;
@@ -186,7 +186,7 @@ namespace embree
   void Geometry::setOcclusionFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
   { 
     if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      recordError(RTC_INVALID_OPERATION); 
+      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
       return;
     }
     occlusionFilter8 = filter;
@@ -197,7 +197,7 @@ namespace embree
   void Geometry::setOcclusionFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
   { 
     if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      recordError(RTC_INVALID_OPERATION); 
+      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
       return;
     }
     occlusionFilter16 = filter;

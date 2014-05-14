@@ -89,6 +89,12 @@ enum RTCError {
   currently stored error and clears the error flag again. */
 RTCORE_API RTCError rtcGetError();
 
+/*! \brief Type of error callback function. */
+typedef void (*RTC_ERROR_FUNCTION)(const RTCError code, const char* str);
+
+/*! \brief Sets a callback function that is called whenever an error occurs. */
+RTCORE_API void rtcSetErrorFunction(RTC_ERROR_FUNCTION func);
+
 /*! \brief Implementation specific (do not call).
 
   This function is implementation specific and only for debugging

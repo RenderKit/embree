@@ -104,7 +104,6 @@
 #define __TARGET_AVX__
 #define __TARGET_AVX2__
 #endif
-//#define __EXIT_ON_ERROR__
 //#define __USE_RAY_MASK__
 //#define __USE_STAT_COUNTERS__
 //#define __BACKFACE_CULLING__

@@ -21,6 +21,7 @@
 extern "C" void ispcInit(const uniform int8* uniform cfg);
 extern "C" void ispcExit();
 extern "C" uniform RTCError ispcGetError ();
+extern "C" void ispcSetErrorFunction (void* uniform ptr);
 extern "C" void ispcDebug();
 extern "C" RTCScene ispcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 extern "C" void ispcCommitScene (RTCScene scene);
@@ -88,6 +89,10 @@ void rtcExit() {
 
 uniform RTCError rtcGetError() {
   return ispcGetError();
+}
+
+void rtcSetErrorFunction(uniform RTC_ERROR_FUNCTION func) {
+  ispcSetErrorFunction(func);
 }
 
 void rtcDebug() {

@@ -56,7 +56,7 @@ namespace embree
   void TriangleMesh::setMask (unsigned mask) 
   {
     if (parent->isStatic() && parent->isBuild()) {
-      recordError(RTC_INVALID_OPERATION);
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return;
     }
     this->mask = mask; 
@@ -64,8 +64,8 @@ namespace embree
 
   void TriangleMesh::enable () 
   {
-    if (parent->isStatic() || anyMappedBuffers()) {
-      recordError(RTC_INVALID_OPERATION);
+    if (parent->isStatic()) {
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get enabled");
       return;
     }
     Geometry::enable();
@@ -73,8 +73,8 @@ namespace embree
 
   void TriangleMesh::update () 
   {
-    if (parent->isStatic() || anyMappedBuffers()) {
-      recordError(RTC_INVALID_OPERATION);
+    if (parent->isStatic()) {
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get updated");
       return;
     }
     Geometry::update();
@@ -82,8 +82,8 @@ namespace embree
 
   void TriangleMesh::disable () 
   {
-    if (parent->isStatic() || anyMappedBuffers()) {
-      recordError(RTC_INVALID_OPERATION);
+    if (parent->isStatic()) {
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get disabled");
       return;
     }
     Geometry::disable();
@@ -91,8 +91,8 @@ namespace embree
 
   void TriangleMesh::erase () 
   {
-    if (parent->isStatic() || anyMappedBuffers()) {
-      recordError(RTC_INVALID_OPERATION);
+    if (parent->isStatic()) {
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get deleted");
       return;
     }
     Geometry::erase();
@@ -101,13 +101,13 @@ namespace embree
   void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
   { 
     if (parent->isStatic() && parent->isBuild()) {
-      recordError(RTC_INVALID_OPERATION);
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return;
     }
 
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) {
-      recordError(RTC_INVALID_OPERATION);
+      process_error(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
       return;
     }
 
@@ -115,7 +115,7 @@ namespace embree
 #if defined(__MIC__)
     if (type == RTC_VERTEX_BUFFER0 || type == RTC_VERTEX_BUFFER1) {
       if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF)) {
-        recordError(RTC_INVALID_OPERATION);
+        process_error(RTC_INVALID_OPERATION,"data must be 16 bytes aligned");
         return;
       }
     }
@@ -140,14 +140,15 @@ namespace embree
       }
       break;
     default: 
-      recordError(RTC_INVALID_ARGUMENT); break;
+      process_error(RTC_INVALID_ARGUMENT,"unknown buffer type");
+      break;
     }
   }
 
   void* TriangleMesh::map(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild()) {
-      recordError(RTC_INVALID_OPERATION);
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return NULL;
     }
 
@@ -155,16 +156,14 @@ namespace embree
     case RTC_INDEX_BUFFER  : return triangles  .map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER0: return vertices[0].map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER1: return vertices[1].map(parent->numMappedBuffers);
-    default: 
-      recordError(RTC_INVALID_ARGUMENT); 
-      return NULL;
+    default                : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
     }
   }
 
   void TriangleMesh::unmap(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild()) {
-      recordError(RTC_INVALID_OPERATION);
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return;
     }
 
@@ -172,7 +171,7 @@ namespace embree
     case RTC_INDEX_BUFFER  : triangles  .unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER0: vertices[0].unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER1: vertices[1].unmap(parent->numMappedBuffers); break;
-    default                : recordError(RTC_INVALID_ARGUMENT); break;
+    default                : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
   }
 

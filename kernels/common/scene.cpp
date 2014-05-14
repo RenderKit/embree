@@ -199,12 +199,12 @@ namespace embree
   unsigned Scene::newTriangleMesh (RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
-      recordError(RTC_INVALID_OPERATION);
+      process_error(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
       return -1;
     }
 
     if (numTimeSteps == 0 || numTimeSteps > 2) {
-      recordError(RTC_INVALID_OPERATION);
+      process_error(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
       return -1;
     }
     
@@ -215,12 +215,12 @@ namespace embree
   unsigned Scene::newBezierCurves (RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
-      recordError(RTC_INVALID_OPERATION);
+      process_error(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
       return -1;
     }
 
     if (numTimeSteps == 0 || numTimeSteps > 2) {
-      recordError(RTC_INVALID_OPERATION);
+      process_error(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
       return -1;
     }
     
@@ -263,8 +263,13 @@ namespace embree
   {
     Lock<MutexSys> lock(mutex);
 
-    if ((isStatic() && isBuild()) || !ready()) {
-      recordError(RTC_INVALID_OPERATION);
+    if (isStatic() && isBuild()) {
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
+      return;
+    }
+
+    if (!ready()) {
+      process_error(RTC_INVALID_OPERATION,"not all buffers are unmapped");
       return;
     }
 
@@ -273,8 +278,8 @@ namespace embree
     for (size_t i=0; i<geometries.size(); i++) {
       if (geometries[i]) {
         if (!geometries[i]->verify()) {
-          std::cerr << "Embree: invalid geometry specified" << std::endl;
-          throw std::runtime_error("invalid geometry");
+          process_error(RTC_INVALID_OPERATION,"invalid geometry specified");
+          return;
         }
       }
     }

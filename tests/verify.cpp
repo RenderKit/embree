@@ -57,16 +57,12 @@ namespace embree
     printf(" %s\n",ok ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");          \
 	fflush(stdout);\
   }
-#if defined(__EXIT_ON_ERROR__)
-#define NEGATIVE(name,test)
-#else
 #define NEGATIVE(name,test) {                                       \
     printf("%30s ... ",name);                                           \
     bool notok = test;                                                  \
     printf(" %s\n",notok ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m"); \
 	fflush(stdout);\
   }
-#endif
 #define COUNT(name,test) {                                              \
     size_t notok = test;                                                \
     printf("%30s ... %s (%f%%)\n",name,notok ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)notok/(double)testN); \
@@ -770,12 +766,10 @@ namespace embree
     AssertNoError();
     rtcCommit (scene);
     AssertNoError();
-#if !defined(__EXIT_ON_ERROR__)
     rtcCommit (scene); // cannot commit static scene twice
     AssertAnyError();
     rtcDisable(scene,geom0); // static scene cannot get modified anymore after commit
     AssertAnyError();
-#endif
     rtcDeleteScene (scene);
     AssertNoError();
     return true;
@@ -789,16 +783,12 @@ namespace embree
     AssertNoError();
     rtcCommit (scene);
     AssertNoError();
-#if !defined(__EXIT_ON_ERROR__)
     rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER);
     AssertError(RTC_INVALID_OPERATION); // cannot modify index buffer of deformable geometry anymore after commit
-#endif
     rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER);
     AssertNoError();
-#if !defined(__EXIT_ON_ERROR__)
     rtcUnmapBuffer(scene,geom,RTC_INDEX_BUFFER);
     AssertError(RTC_INVALID_OPERATION); // cannot modify index buffer of deformable geometry anymore after commit
-#endif
     rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
     AssertNoError();
     rtcDeleteScene (scene);
@@ -808,7 +798,6 @@ namespace embree
 
   bool rtcore_unmapped_before_commit()
   {
-#if !defined(__EXIT_ON_ERROR__)
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,aflags);
     AssertNoError();
     unsigned geom0 = addSphere(scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
@@ -821,7 +810,6 @@ namespace embree
     AssertError(RTC_INVALID_OPERATION); // error, buffers still mapped
     rtcDeleteScene (scene);
     AssertNoError();
-#endif
     return true;
   }
 
