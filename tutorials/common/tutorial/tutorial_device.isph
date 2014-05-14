@@ -37,7 +37,8 @@ struct Triangle { int v0, v1, v2; };
 extern "C" uniform int64 get_tsc();
 
 /* declare some standard library functions */
-extern "C" void exit(int);
+extern "C" void abort ();
+extern "C" void exit(uniform int);
 extern "C" uniform int puts ( const uniform int8* uniform str );
 extern "C" uniform int putchar ( uniform int character );
 
