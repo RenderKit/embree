@@ -36,6 +36,11 @@ struct Triangle { int v0, v1, v2; };
 /* returns time stamp counter */
 extern "C" uniform int64 get_tsc();
 
+/* declare some standard library functions */
+extern "C" void exit(int);
+extern "C" uniform int puts ( const uniform int8* uniform str );
+extern "C" uniform int putchar ( uniform int character );
+
 /* face forward for shading normals */
 inline Vec3f faceforward( Vec3f N, Vec3f I, Vec3f Ng ) {
   return dot(I, Ng) < 0 ? N : neg(N);

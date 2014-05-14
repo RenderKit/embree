@@ -20,6 +20,26 @@
 /*! Function used to render a pixel. */
 renderPixelFunc renderPixel;
 
+/* error reporting function */
+void error_handler(const RTCError code, const char* str)
+{
+  printf("Embree: ");
+  switch (code) {
+  case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
+  case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
+  case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
+  case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
+  case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+  default                   : printf("invalid error code"); break;
+  }
+  if (str) { 
+    printf(" ("); 
+    while (*str) putchar(*str++); 
+    printf(")\n"); 
+  }
+  exit(code);
+}
+
 /*! Embree state identifier for the scene. */
 RTCScene g_scene = NULL;
 
@@ -191,6 +211,9 @@ extern "C" void device_init(int8 *configuration) {
 
     /*! Initialize Embree ray tracing state. */
     rtcInit(configuration);
+
+    /* set error handler */
+    rtcSetErrorFunction(error_handler);
 
     /*! Set the render mode to use on entry into the run loop. */
     renderPixel = renderPixelStandard;

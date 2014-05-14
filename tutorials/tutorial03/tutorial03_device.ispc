@@ -82,11 +82,34 @@ RTCScene g_scene = NULL;
 /* render function to use */
 renderPixelFunc renderPixel;
 
+/* error reporting function */
+void error_handler(const uniform RTCError code, const uniform int8* uniform str)
+{
+  print("Embree: ");
+  switch (code) {
+  case RTC_UNKNOWN_ERROR    : print("RTC_UNKNOWN_ERROR"); break;
+  case RTC_INVALID_ARGUMENT : print("RTC_INVALID_ARGUMENT"); break;
+  case RTC_INVALID_OPERATION: print("RTC_INVALID_OPERATION"); break;
+  case RTC_OUT_OF_MEMORY    : print("RTC_OUT_OF_MEMORY"); break;
+  case RTC_UNSUPPORTED_CPU  : print("RTC_UNSUPPORTED_CPU"); break;
+  default                   : print("invalid error code"); break;
+  }
+  if (str) { 
+    print(" ("); 
+    while (*str) putchar(*str++); 
+    print(")\n"); 
+  }
+  exit(code);
+}
+
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
+
+  /* set error handler */
+  rtcSetErrorFunction(error_handler);
 
   /* set start render mode */
   renderPixel = renderPixelStandard;

@@ -82,11 +82,34 @@ RTCScene g_scene = NULL;
 /* render function to use */
 renderPixelFunc renderPixel;
 
+/* error reporting function */
+void error_handler(const RTCError code, const int8* str)
+{
+  printf("Embree: ");
+  switch (code) {
+  case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
+  case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
+  case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
+  case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
+  case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+  default                   : printf("invalid error code"); break;
+  }
+  if (str) { 
+    printf(" ("); 
+    while (*str) putchar(*str++); 
+    printf(")\n"); 
+  }
+  exit(code);
+}
+
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
+
+  /* set error handler */
+  rtcSetErrorFunction(error_handler);
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -220,7 +243,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Ns = normalize(Ns);
 #endif
   ISPCMaterial* material = &g_ispc_scene->materials[materialID];
-  color = material->Kd;
+  color = Vec3fa(material->Kd);
 
   /* apply ambient light */
   Vec3fa Nf = faceforward(Ns,neg(ray.dir),Ns);

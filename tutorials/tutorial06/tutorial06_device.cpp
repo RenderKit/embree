@@ -63,6 +63,26 @@ RTCScene g_scene = NULL;
 /* render function to use */
 renderPixelFunc renderPixel;
 
+/* error reporting function */
+void error_handler(const RTCError code, const int8* str)
+{
+  printf("Embree: ");
+  switch (code) {
+  case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
+  case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
+  case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
+  case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
+  case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+  default                   : printf("invalid error code"); break;
+  }
+  if (str) { 
+    printf(" ("); 
+    while (*str) putchar(*str++); 
+    printf(")\n"); 
+  }
+  exit(code);
+}
+
 /* light */
 Vec3fa AmbientLight__L;
 
@@ -71,6 +91,9 @@ extern "C" void device_init (int8* cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
+
+  /* set error handler */
+  rtcSetErrorFunction(error_handler);
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -148,7 +171,7 @@ inline Vec3fa AmbientLight__sample(const Vec3fa& Ns,
 inline Vec3fa Matte__eval(const int& materialID, const Vec3fa& wo, const Vec3fa& Ns, const Vec3fa& wi) 
 {
   ISPCMaterial* material = &g_ispc_scene->materials[materialID];
-  Vec3fa diffuse = material->Kd;
+  Vec3fa diffuse = Vec3fa(material->Kd);
   return diffuse * (1.0f/(float)pi) * clamp(dot(wi,Ns),0.0f,1.0f);
 }
 

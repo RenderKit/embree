@@ -23,6 +23,26 @@ Vec3fa* colors = NULL;
 /* render function to use */
 renderPixelFunc renderPixel;
 
+/* error reporting function */
+void error_handler(const RTCError code, const int8* str)
+{
+  printf("Embree: ");
+  switch (code) {
+  case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
+  case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
+  case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
+  case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
+  case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+  default                   : printf("invalid error code"); break;
+  }
+  if (str) { 
+    printf(" ("); 
+    while (*str) putchar(*str++); 
+    printf(")\n"); 
+  }
+  exit(code);
+}
+
 /* extended ray structure that includes total transparency along the ray */
 struct RTCRay2
 {
@@ -155,6 +175,9 @@ extern "C" void device_init (int8* cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
+
+  /* set error handler */
+  rtcSetErrorFunction(error_handler);
 
   /* create scene */
   g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);

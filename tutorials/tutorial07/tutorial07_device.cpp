@@ -16,7 +16,11 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-#define USE_EYELIGHT_SHADING 0
+#if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
+#define renderPixelTestEyeLight renderPixelStandard
+#else
+#define renderPixelPathTrace renderPixelStandard
+#endif
 
 /* accumulation buffer */
 Vec3fa* g_accu = NULL;
@@ -103,10 +107,30 @@ struct ISPCScene
 extern "C" ISPCScene* g_ispc_scene;
 RTCScene g_scene = NULL;
 
+/* error reporting function */
+void error_handler(const RTCError code, const int8* str)
+{
+  printf("Embree: ");
+  switch (code) {
+  case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
+  case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
+  case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
+  case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
+  case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+  default                   : printf("invalid error code"); break;
+  }
+  if (str) { 
+    printf(" ("); 
+    while (*str) putchar(*str++); 
+    printf(")\n"); 
+  }
+  exit(code);
+}
+
 /* render function to use */
 renderPixelFunc renderPixel;
 
-Vec3fa renderPixelTestEyeLight(int x, int y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
+Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
 /*! random number generator for floating point numbers in range [0,1] */
 inline float frand(int& seed) {
@@ -202,9 +226,14 @@ extern "C" void device_init (int8* cfg)
   /* initialize ray tracing core */
   rtcInit(cfg);
 
+  /* set error handler */
+  rtcSetErrorFunction(error_handler);
+
   /* set start render mode */
   renderPixel = renderPixelStandard;
 }
+
+#if !defined(__XEON_PHI__)
 
 /*! Anisotropic power cosine microfacet distribution. */
 struct AnisotropicBlinn {
@@ -332,6 +361,8 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
   //tangent = p21-p20;
 }
 
+#endif 
+
 /* extended ray structure that includes total transparency along the ray */
 struct RTCRay2
 {
@@ -361,6 +392,8 @@ void filterDispatch(void* ptr, RTCRay2& ray) {
   if (ray.filter) ray.filter(ptr,*((RTCRay*)&ray)); // FIXME: use RTCRay& cast
 }
 
+#if !defined(__XEON_PHI__)
+
 /* occlusion filter function */
 void occlusionFilter(void* ptr, RTCRay2& ray)
 {
@@ -388,7 +421,7 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   int seed = 21344*x+121233*y+234532*g_accu_count;
 
@@ -514,6 +547,8 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   return color;
 }
 
+#endif
+
 Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
@@ -580,16 +615,10 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    //if (x != 0 || y != 0) continue;
-
     /* calculate pixel color */
     float fx = x + frand(seed);
     float fy = y + frand(seed);
-#if USE_EYELIGHT_SHADING == 1
-    Vec3fa color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
-#else
     Vec3fa color = renderPixel(fx,fy,vx,vy,vz,p);
-#endif
 
     Vec3fa* dst = &g_accu[y*width+x];
     *dst = *dst + Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
