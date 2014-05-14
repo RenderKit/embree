@@ -128,7 +128,6 @@ extern "C" void device_init (int8* cfg)
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
-  rtcInit(cfg);
 
   /* create scene */
   g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);

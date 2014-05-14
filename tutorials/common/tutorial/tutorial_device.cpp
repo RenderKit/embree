@@ -21,7 +21,7 @@ extern RTCScene g_scene;
 
 /* intensity scaling for traversal cost visualization */
 float scale = 0.001f;
-bool g_changed = false;
+extern "C" bool g_changed = false;
 
 /* stores pointer to currently used rendePixel function */
 extern renderPixelFunc renderPixel;
