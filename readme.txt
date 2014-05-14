@@ -262,6 +262,13 @@ RTC_OUT_OF_MEMORY     There is not enough memory left to
 RTC_UNSUPPORTED_CPU   The CPU is not supported as it does not support SSE2.
 
 
+Using the rtcSetErrorFunction call, it is also possible to set a callback
+function that is called whenever an error occurs. The callback function gets
+passed the error code, as well as some string that describes the error further.
+Passing NULL to rtcSetErrorFunction disables the set callback function again.
+The previously described error flags are also set if an error callback function
+is present.
+
 === Scene  ===
 
 A scene is a container for a set of geometries of potentially different types.

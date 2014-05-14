@@ -76,6 +76,14 @@ the user forgot to perform an <code>rtcCommit</code>).</p>
  <tr><td>RTC_UNSUPPORTED_CPU</td><td>The CPU is not supported as it does not support SSE2.</td></tr>
 </table>
 
+<p>Using the <code>rtcSetErrorFunction</code> call, it is also
+possible to set a callback function that is called whenever an error
+occurs. The callback function gets passed the error code, as well as
+some string that describes the error further. Passing NULL
+to <code>rtcSetErrorFunction</code> disables the set callback function
+again. The previously described error flags are also set if an error
+callback function is present.</p>
+
 <h3>Scene</h3>
 
 <p>A scene is a container for a set of geometries of potentially
