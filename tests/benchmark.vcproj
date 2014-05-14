@@ -72,8 +72,8 @@
 				IgnoreDefaultLibraryNames="libcpmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
-				StackReserveSize="4000000"
-				StackCommitSize="4000000"
+				StackReserveSize="0"
+				StackCommitSize="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -151,8 +151,8 @@
 				IgnoreDefaultLibraryNames="libcpmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
-				StackReserveSize="4000000"
-				StackCommitSize="4000000"
+				StackReserveSize="0"
+				StackCommitSize="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -228,8 +228,8 @@
 				Name="VCLinkerTool"
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				SubSystem="1"
-				StackReserveSize="4000000"
-				StackCommitSize="4000000"
+				StackReserveSize="0"
+				StackCommitSize="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -306,8 +306,8 @@
 				Name="VCLinkerTool"
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				SubSystem="1"
-				StackReserveSize="4000000"
-				StackCommitSize="4000000"
+				StackReserveSize="0"
+				StackCommitSize="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -383,8 +383,8 @@
 				Name="VCLinkerTool"
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				SubSystem="1"
-				StackReserveSize="4000000"
-				StackCommitSize="4000000"
+				StackReserveSize="0"
+				StackCommitSize="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -461,8 +461,8 @@
 				Name="VCLinkerTool"
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				SubSystem="1"
-				StackReserveSize="4000000"
-				StackCommitSize="4000000"
+				StackReserveSize="0"
+				StackCommitSize="0"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -539,8 +539,8 @@
 				Name="VCLinkerTool"
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				SubSystem="1"
-				StackReserveSize="4000000"
-				StackCommitSize="4000000"
+				StackReserveSize="0"
+				StackCommitSize="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -617,8 +617,8 @@
 				Name="VCLinkerTool"
 				AdditionalLibraryDirectories="$(SolutionDir)/tutorials/common/freeglut/$(PlatformName)"
 				SubSystem="1"
-				StackReserveSize="4000000"
-				StackCommitSize="4000000"
+				StackReserveSize="0"
+				StackCommitSize="0"
 				TargetMachine="17"
 			/>
 			<Tool

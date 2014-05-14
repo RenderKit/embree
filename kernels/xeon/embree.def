@@ -41,6 +41,7 @@ rtcSetOccludedFunction___un_3C_s[un__RTCScene]_3E_unuun_3C____un_3C_unv_3E_REFs[
 rtcInit___un_3C_Cunt_3E_sse4
 rtcExit___sse4
 rtcGetError___sse4
+rtcSetErrorFunction___un_3C____Cunenum[RTCError]un_3C_Cunt_3E__3E_sse4
 rtcDebug___sse4
 rtcNewScene___unenum[RTCSceneFlags]unenum[RTCAlgorithmFlags]sse2
 rtcCommit___un_3C_s[un__RTCScene]_3E_sse2
@@ -75,6 +76,7 @@ rtcSetOccludedFunction___un_3C_s[un__RTCScene]_3E_unuun_3C____un_3C_unv_3E_REFs[
 rtcInit___un_3C_Cunt_3E_sse2
 rtcExit___sse2
 rtcGetError___sse2
+rtcSetErrorFunction___un_3C____Cunenum[RTCError]un_3C_Cunt_3E__3E_sse2
 rtcDebug___sse2
 rtcNewScene___unenum[RTCSceneFlags]unenum[RTCAlgorithmFlags]avx2
 rtcCommit___un_3C_s[un__RTCScene]_3E_avx2
@@ -109,6 +111,7 @@ rtcSetOccludedFunction___un_3C_s[un__RTCScene]_3E_unuun_3C____un_3C_unv_3E_REFs[
 rtcInit___un_3C_Cunt_3E_avx2
 rtcExit___avx2
 rtcGetError___avx2
+rtcSetErrorFunction___un_3C____Cunenum[RTCError]un_3C_Cunt_3E__3E_avx2
 rtcDebug___avx2
 rtcNewScene___unenum[RTCSceneFlags]unenum[RTCAlgorithmFlags]avx
 rtcCommit___un_3C_s[un__RTCScene]_3E_avx
@@ -143,6 +146,7 @@ rtcSetOccludedFunction___un_3C_s[un__RTCScene]_3E_unuun_3C____un_3C_unv_3E_REFs[
 rtcInit___un_3C_Cunt_3E_avx
 rtcExit___avx
 rtcGetError___avx
+rtcSetErrorFunction___un_3C____Cunenum[RTCError]un_3C_Cunt_3E__3E_avx
 rtcDebug___avx
 rtcDebug
 rtcNewScene
@@ -187,6 +191,7 @@ rtcSetOcclusionFilterFunction
 rtcSetOcclusionFilterFunction4
 rtcSetOcclusionFilterFunction8
 rtcSetOcclusionFilterFunction16
+rtcSetErrorFunction
 rtcGetError
 rtcExit
 rtcInit

@@ -50,7 +50,6 @@ namespace embree
         
         const int vertex_start_id = hairset->v.size();
         
-        double x,y,z,w;
         unsigned int id = 0;
         for (int i=0; i<points; i++)
         {
