@@ -28,22 +28,6 @@ namespace embree
     {
       struct Triangle {
         unsigned int v[3];
-
-#if defined(__MIC__)
-      __forceinline void bounds(const Vec3fa *__restrict__ const vertex, mic_f &bmin, mic_f &bmax) const 
-      {
-	const float *__restrict__ const vptr0 = (float*)&vertex[v[0]];
-	const float *__restrict__ const vptr1 = (float*)&vertex[v[1]];
-	const float *__restrict__ const vptr2 = (float*)&vertex[v[2]];
-	const mic_f v0 = broadcast4to16f(vptr0);
-	const mic_f v1 = broadcast4to16f(vptr1);
-	const mic_f v2 = broadcast4to16f(vptr2);
-	bmin = min(min(v0,v1),v2);
-	bmax = max(max(v0,v1),v2);
-      }
-
-#endif
-
       };
 
     public:
@@ -131,11 +115,11 @@ namespace embree
 #if defined(__MIC__)
 
       template<unsigned int HINT=0>
-	__forceinline mic3f getTriangleVertices(const Triangle &tri) const 
+	__forceinline mic3f getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
       {
-	const float *__restrict__ const vptr0 = (float*)&vertex(tri.v[0]);
-	const float *__restrict__ const vptr1 = (float*)&vertex(tri.v[1]);
-	const float *__restrict__ const vptr2 = (float*)&vertex(tri.v[2]);
+	const float *__restrict__ const vptr0 = (float*)&vertex(tri.v[0],dim);
+	const float *__restrict__ const vptr1 = (float*)&vertex(tri.v[1],dim);
+	const float *__restrict__ const vptr2 = (float*)&vertex(tri.v[2],dim);
 	
 	if (HINT)
 	  {

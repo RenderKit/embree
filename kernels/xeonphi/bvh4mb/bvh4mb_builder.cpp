@@ -117,16 +117,11 @@ namespace embree
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
-	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
-	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+	const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-	const mic_f v0 = broadcast4to16f(vptr0);
-	const mic_f v1 = broadcast4to16f(vptr1);
-	const mic_f v2 = broadcast4to16f(vptr2);
+	mic_f bmin = min(min(v[0],v[1]),v[2]);
+	mic_f bmax = max(max(v[0],v[1]),v[2]);
 
-	const mic_f bmin = min(min(v0,v1),v2);
-	const mic_f bmax = max(max(v0,v1),v2);
 	bounds_scene_min = min(bounds_scene_min,bmin);
 	bounds_scene_max = max(bounds_scene_max,bmax);
 	const mic_f centroid2 = bmin+bmax;
@@ -206,18 +201,9 @@ namespace embree
     const mic_i pID(primID);
     const mic_i gID(geomID);
 
-    const float *__restrict__ const vptr0_t0 = (float*)&mesh->vertex(tri.v[0]);
-    const float *__restrict__ const vptr1_t0 = (float*)&mesh->vertex(tri.v[1]);
-    const float *__restrict__ const vptr2_t0 = (float*)&mesh->vertex(tri.v[2]);
+    const mic3f v_t0 = mesh->getTriangleVertices<PFHINT_L1>(tri);
 
-    prefetch<PFHINT_L1>(vptr1_t0);
-    prefetch<PFHINT_L1>(vptr2_t0);
-
-    const mic_f v0_t0 = broadcast4to16f(vptr0_t0); 
-    const mic_f v1_t0 = broadcast4to16f(vptr1_t0);
-    const mic_f v2_t0 = broadcast4to16f(vptr2_t0);
-
-    const mic_f tri_accel_t0 = initTriangle1(v0_t0,v1_t0,v2_t0,gID,pID,mic_i(mesh->mask));
+    const mic_f tri_accel_t0 = initTriangle1(v_t0[0],v_t0[1],v_t0[2],gID,pID,mic_i(mesh->mask));
 
     store16f_ngo(&acc->t0,tri_accel_t0);
 
@@ -228,15 +214,9 @@ namespace embree
     else
       {
 	assert( (int)mesh->numTimeSteps == 2 );
-	const float *__restrict__ const vptr0_t1 = (float*)&mesh->vertex(tri.v[0],1);
-	const float *__restrict__ const vptr1_t1 = (float*)&mesh->vertex(tri.v[1],1);
-	const float *__restrict__ const vptr2_t1 = (float*)&mesh->vertex(tri.v[2],1);
-	
-	const mic_f v0_t1 = broadcast4to16f(vptr0_t1); 
-	const mic_f v1_t1 = broadcast4to16f(vptr1_t1);
-	const mic_f v2_t1 = broadcast4to16f(vptr2_t1);
 
-	const mic_f tri_accel_t1 = initTriangle1(v0_t1,v1_t1,v2_t1,gID,pID,mic_i(mesh->mask));
+	const mic3f v_t1 = mesh->getTriangleVertices<PFHINT_L1>(tri,1);
+	const mic_f tri_accel_t1 = initTriangle1(v_t1[0],v_t1[1],v_t1[2],gID,pID,mic_i(mesh->mask));
 
 	store16f_ngo(&acc->t1,tri_accel_t1);
       }
