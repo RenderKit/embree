@@ -17,20 +17,20 @@ $(1) > $(2)
 version: ../kernels/version.h
 	sed 's/.*\"\(.*\)\".*/\1/g' $< > $@
 
-www/index.html: version src/*.html src/www/frame_index.html
-	$(call replace,src/www/frame_index.html,www/index.html)
+www/index.html: version src/*.html src/www/index.html
+	$(call replace,src/www/index.html,www/index.html)
 
-www/api.html: version src/*.html src/www/frame_api.html
-	$(call replace,src/www/frame_api.html,www/api.html)
+www/api.html: version src/*.html src/www/api.html
+	$(call replace,src/www/api.html,www/api.html)
 
-www/tutorials.html: version src/*.html src/www/frame_tutorials.html
-	$(call replace,src/www/frame_tutorials.html,www/tutorials.html)
+www/tutorials.html: version src/*.html src/www/tutorials.html
+	$(call replace,src/www/tutorials.html,www/tutorials.html)
 
-www/downloads.html: version src/*.html src/www/frame_downloads.html
-	$(call replace,src/www/frame_downloads.html,www/downloads.html)
+www/downloads.html: version src/*.html src/www/downloads.html
+	$(call replace,src/www/downloads.html,www/downloads.html)
 
-www/renderer.html: version src/*.html src/www/frame_renderer.html
-	$(call replace,src/www/frame_renderer.html,www/renderer.html)
+www/renderer.html: version src/*.html src/www/renderer.html
+	$(call replace,src/www/renderer.html,www/renderer.html)
 
 readme.html: version src/*.html
 	$(call replace,src/readme.html,readme.html)
