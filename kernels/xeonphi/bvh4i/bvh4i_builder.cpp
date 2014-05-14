@@ -32,7 +32,6 @@
 //#define PROFILE
 #define PROFILE_ITERATIONS 100
 
-//#define USE_QUANTIZATION
 #define MEASURE_MEMORY_ALLOCATION_TIME 0
 
 // TODO: CHECK     const float voxelArea    = current.cs_AABB.sceneArea();
@@ -350,11 +349,13 @@ namespace embree
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
       const Vec3fa *__restrict__ const vertex = &mesh->vertex(0);
-      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
+      const char *__restrict cptr = (char*)&mesh->triangle(offset);
+      const size_t stride = mesh->getTriangleBufferStride();
+      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr+=stride)	 
       { 			    
-	const TriangleMesh::Triangle& tri = mesh->triangle(i);
-	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
-	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
+	const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr;
+	prefetch<PFHINT_L2>(cptr + L2_PREFETCH_ITEMS);
+	prefetch<PFHINT_L1>(cptr + L1_PREFETCH_ITEMS);
 
 #if 1
 	mic_f bmin,bmax;

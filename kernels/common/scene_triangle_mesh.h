@@ -94,6 +94,7 @@ namespace embree
 
     public:
 
+
       __forceinline const Triangle& triangle(size_t i) const {
         assert(i < numTriangles);
         return triangles[i];
@@ -103,6 +104,14 @@ namespace embree
         assert(i < numVertices);
         assert(j < 2);
         return vertices[j][i];
+      }
+
+      __forceinline size_t getTriangleBufferStride() const {
+	return triangles.getBufferStride();
+      }
+
+      __forceinline size_t getVertexBufferStride() const {
+	return vertices[0].getBufferStride();
       }
 
       __forceinline BBox3fa bounds(size_t index) const 

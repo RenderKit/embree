@@ -63,6 +63,7 @@ namespace embree
     char* ptr;       //!< pointer to buffer data
     size_t bytes;    //!< size of buffer in bytes
     char* ptr_ofs;   //!< base pointer plus offset
+
     size_t stride;   //!< stride of the stream in bytes
     size_t num;      //!< number of elements in the stream
     bool shared;     //!< set if memory is shared with application
@@ -76,6 +77,7 @@ namespace embree
   public:
 
     /*! access to the ith element of the buffer stream */
+    //__forceinline T& operator[](size_t i) 
     __forceinline T& operator[](size_t i) 
     {
       assert(i<num);
@@ -91,10 +93,23 @@ namespace embree
     {
       assert(i<num);
 #if defined(__BUFFER_STRIDE__)
-      return *(const T*)(ptr_ofs + i*stride);
+      return *(T*)(ptr_ofs + i*stride);
 #else
       return *(const T*)(ptr_ofs + i*sizeof(T));
 #endif
     }
+
+    __forceinline size_t getBufferStride() const {
+#if defined(__BUFFER_STRIDE__)
+      return stride;
+#else
+      return sizeof(T);
+#endif
+    }
+
+    __forceinline char* getPtr() const {
+      return ptr;
+    }
+
   };
 }
