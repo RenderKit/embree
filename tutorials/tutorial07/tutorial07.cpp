@@ -660,7 +660,7 @@ float noise(float x, float y, float z)
     /* if scene is empty, create default scene */
     if (g_obj_scene.meshes.size() + g_obj_scene.hairsets.size() == 0) 
     {
-      addHairySphere(g_obj_scene,Vec3fa(0,1,0),1.0f);
+      addHairySphere(g_obj_scene,Vec3fa(0,1.5f,0),1.5f);
       addGroundPlane(g_obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
       g_camera.from = Vec3fa(-3,3,3);
       g_camera.to = Vec3fa(0,1,0);
