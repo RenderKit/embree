@@ -41,6 +41,7 @@ namespace embree
 	bmin = min(min(v0,v1),v2);
 	bmax = max(max(v0,v1),v2);
       }
+
 #endif
 
       };
@@ -126,6 +127,29 @@ namespace embree
       __forceinline bool anyMappedBuffers() const {
         return triangles.isMapped() || vertices[0].isMapped() || vertices[1].isMapped();
       }
+
+#if defined(__MIC__)
+
+      template<unsigned int HINT=0>
+	__forceinline mic3f getTriangleVertices(const Triangle &tri) const 
+      {
+	const float *__restrict__ const vptr0 = (float*)&vertex(tri.v[0]);
+	const float *__restrict__ const vptr1 = (float*)&vertex(tri.v[1]);
+	const float *__restrict__ const vptr2 = (float*)&vertex(tri.v[2]);
+	
+	if (HINT)
+	  {
+	    prefetch<HINT>(vptr1);
+	    prefetch<HINT>(vptr2);
+	  }
+
+	const mic_f v0 = broadcast4to16f(vptr0);
+	const mic_f v1 = broadcast4to16f(vptr1);
+	const mic_f v2 = broadcast4to16f(vptr2);
+	return mic3f(v0,v1,v2);
+      }
+
+#endif
 
     public:
       unsigned int mask;                //!< for masking out geometry
