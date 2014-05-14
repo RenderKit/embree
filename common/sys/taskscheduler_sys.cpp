@@ -153,7 +153,7 @@ namespace embree
     /* terminate this thread */
     if (terminateThreads) {
       mutex.unlock();
-      throw TaskScheduler::Terminate();
+      return;
     }
     
     /* take next task from stack */
@@ -185,7 +185,7 @@ namespace embree
 
   void TaskSchedulerSys::run(size_t threadIndex, size_t threadCount)
   {
-    while (true)
+    while (!terminateThreads)
       work(threadIndex,threadCount,true);
   }
 

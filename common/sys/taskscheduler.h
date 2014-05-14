@@ -134,8 +134,6 @@ namespace embree
 
   public:
 
-    class Terminate : public std::exception {};
-
     /*! single instance of task scheduler */
     static TaskScheduler* instance;
     

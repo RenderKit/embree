@@ -156,10 +156,7 @@ namespace embree
     Thread thread = *(Thread*) ptr;
     delete (Thread*) ptr;
 
-    
     thread.scheduler->run(thread.threadIndex,thread.threadCount);
-  }
-  catch (const Terminate&) {
   }
   catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;
