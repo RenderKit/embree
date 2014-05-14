@@ -150,7 +150,9 @@ namespace embree
     CATCH_BEGIN;
 
     if (g_initialized) {
+      g_mutex.unlock();
       process_error(RTC_INVALID_OPERATION,"already initialized");
+      g_mutex.lock();
       return;
     }
 
@@ -174,8 +176,12 @@ namespace embree
           if (parseSymbol(cfg,'=',pos))
             g_numThreads = parseInt(cfg,pos);
 #if defined(__MIC__)
-	  if (!(g_numThreads == 1 || (g_numThreads % 4) == 0))
-	    FATAL("MIC supports only number of threads % 4 == 0, or threads == 1");
+	  if (!(g_numThreads == 1 || (g_numThreads % 4) == 0)) {
+            g_mutex.unlock();
+            process_error(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");
+            g_mutex.lock();
+            return;
+          }
 #endif
         }
         else if (tok == "isa") {
@@ -263,7 +269,9 @@ namespace embree
     /* CPU has to support at least SSE2 */
 #if !defined (__MIC__)
     if (!has_feature(SSE2)) {
+      g_mutex.unlock();
       process_error(RTC_UNSUPPORTED_CPU,"CPU does not support SSE2");
+      g_mutex.lock();
       return;
     }
 #endif
