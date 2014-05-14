@@ -27,7 +27,7 @@ IF (__XEON__ AND BUILD_TUTORIALS)
         tutorial08.cpp
     )
 
-    TARGET_LINK_LIBRARIES(tutorial08 embree tutorial transport tutorial_device)
+    TARGET_LINK_LIBRARIES(tutorial08 embree tutorial image transport tutorial_device)
 
 ENDIF()
 

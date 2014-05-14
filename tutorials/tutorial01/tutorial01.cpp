@@ -16,6 +16,7 @@
 
 #include "tutorial/tutorial.h"
 #include "sys/taskscheduler.h"
+#include "image/image.h"
 
 namespace embree
 {
@@ -24,12 +25,13 @@ namespace embree
 
   /* configuration */
   static std::string g_rtcore = "";
+  static size_t g_numThreads = 0;
 
   /* output settings */
   static size_t g_width = 512;
   static size_t g_height = 512;
   static bool g_fullscreen = false;
-  static size_t g_numThreads = 0;
+  static FileName outFilename = "";
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
   {
@@ -60,6 +62,10 @@ namespace embree
       /* full screen mode */
       else if (tag == "-fullscreen") 
         g_fullscreen = true;
+
+      /* output filename */
+      else if (tag == "-o") 
+        outFilename = cin->getFileName();
       
       /* rtcore configuration */
       else if (tag == "-rtcore")
@@ -76,6 +82,23 @@ namespace embree
         std::cerr << std::endl;
       }
     }
+  }
+
+  void renderToFile(const FileName& fileName)
+  {
+    resize(g_width,g_height);
+    AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
+
+    render(0.0f,
+           pixel2world.l.vx,
+           pixel2world.l.vy,
+           pixel2world.l.vz,
+           pixel2world.p);
+    
+    void* ptr = map();
+    Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
+    storeImage(image, fileName);
+    unmap();
   }
 
   /* main function in embree namespace */
@@ -100,6 +123,12 @@ namespace embree
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
+
+    /* render to disk */
+    if (outFilename.str() != "") {
+      renderToFile(outFilename);
+      return 0;
+    } 
 
     /* initialize GLUT */
     initWindowState(tutorialName, g_width, g_height, g_fullscreen);
