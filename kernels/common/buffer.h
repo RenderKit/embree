@@ -93,6 +93,8 @@ namespace embree
     }
 
     /*! access to the ith element of the buffer stream */
+#if !defined(__MIC__)
+
     __forceinline const T& operator[](size_t i) const 
     {
       assert(i<num);
@@ -102,6 +104,20 @@ namespace embree
       return *(const T*)(ptr_ofs + i*sizeof(T));
 #endif
     }
+
+#else
+
+    __forceinline const T& operator[](unsigned int i) const 
+    {
+      assert(i<num);
+#if defined(__BUFFER_STRIDE__)
+      return *(T*)(ptr_ofs + i*stride);
+#else
+      return *(const T*)(ptr_ofs + i*sizeof(T));
+#endif
+    }
+
+#endif
 
     __forceinline unsigned int getBufferStride() const {
 #if defined(__BUFFER_STRIDE__)

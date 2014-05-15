@@ -289,14 +289,16 @@ namespace embree
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
 
-      const TriangleMesh::Triangle* tri = &mesh->triangle(offset);
+      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
+      const unsigned int stride = mesh->triangles.getBufferStride();
       
-      for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,tri++)	 
+      for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
 	{
+	  const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
 	  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 	  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 
-	  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(*tri);
+	  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 	  const mic_f bmin  = min(min(v[0],v[1]),v[2]);
 	  const mic_f bmax  = max(max(v[0],v[1]),v[2]);
 
@@ -354,9 +356,15 @@ namespace embree
       const size_t numTriangles = min(mesh->numTriangles-offset,endID-currentID);
        
       const unsigned int groupCode = (group << encodeShift);
-      for (size_t i=0; i<numTriangles; i++)	  
+
+      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
+      const unsigned int stride = mesh->triangles.getBufferStride();
+      
+      for (size_t i=0; i<numTriangles; i++,cptr_tri+=stride)	  
       {
-	const TriangleMesh::Triangle& tri = mesh->triangle(offset+i);
+	//const TriangleMesh::Triangle& tri = mesh->triangle(offset+i);
+	const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
+
 	prefetch<PFHINT_NT>(&tri + 16);
 
 	const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
