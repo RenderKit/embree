@@ -18,6 +18,8 @@
 
 namespace embree
 {
+#if !defined(__MIC__)
+
   struct __aligned(32) avxf 
   {
     __forceinline avxf() { }
@@ -54,8 +56,92 @@ namespace embree
   ssef sse_coeff_P2[4];
   ssef sse_coeff_P3[4];
 
+#else
+
+  mic_f coeff0[4];
+  mic_f coeff1[4];
+
+  mic_f coeff_P0[4];
+  mic_f coeff_P1[4];
+  mic_f coeff_P2[4];
+  mic_f coeff_P3[4];
+
+#endif
+
   void init_globals()
   {
+
+#if defined(__MIC__)
+
+    {
+      const float dt = 1.0f/8.0f;
+      const mic_f t1 = mic_f(step)*dt;
+      const mic_f t0 = 1.0f-t1;
+      coeff0[0] = t0 * t0 * t0;
+      coeff0[1] = 3.0f * t1 * t0 * t0;
+      coeff0[2] = 3.0f * t1 * t1 * t0;
+      coeff0[3] = t1 * t1 * t1;
+    }
+    {
+      const float dt = 1.0f/8.0f;
+      const mic_f t1 = mic_f(step)*dt+mic_f(dt);
+      const mic_f t0 = 1.0f-t1;
+      coeff1[0] = t0 * t0 * t0;
+      coeff1[1] = 3.0f * t1 * t0 * t0;
+      coeff1[2] = 3.0f * t1 * t1 * t0;
+      coeff1[3] = t1 * t1 * t1;
+    }
+
+    {
+      const float dt = 1.0f/8.0f;
+      const mic_f t1 = mic_f(step)*dt;
+      const mic_f t0 = 1.0f-t1;
+      coeff_P0[0] = t0 * t0 * t0;
+      coeff_P0[1] = 3.0f * t1 * t0 * t0;
+      coeff_P0[2] = 3.0f * t1 * t1 * t0;
+      coeff_P0[3] = t1 * t1 * t1;
+    }
+
+    {
+      const float dt = 1.0f/8.0f;
+      const mic_f t1 = mic_f(step)*dt;
+      const mic_f t0 = 1.0f-t1;
+      const mic_f d0 = -t0*t0;
+      const mic_f d1 = t0*t0 - 2.0f*t0*t1;
+      const mic_f d2 = 2.0f*t1*t0 - t1*t1;
+      const mic_f d3 = t1*t1;
+      coeff_P1[0] = coeff_P0[0] + dt*d0;
+      coeff_P1[1] = coeff_P0[1] + dt*d1;
+      coeff_P1[2] = coeff_P0[2] + dt*d2;
+      coeff_P1[3] = coeff_P0[3] + dt*d3;
+    }
+
+    {
+      const float dt = 1.0f/8.0f;
+      const mic_f t1 = mic_f(step)*dt+mic_f(dt);
+      const mic_f t0 = 1.0f-t1;
+      coeff_P3[0] = t0 * t0 * t0;
+      coeff_P3[1] = 3.0f * t1 * t0 * t0;
+      coeff_P3[2] = 3.0f * t1 * t1 * t0;
+      coeff_P3[3] = t1 * t1 * t1;
+    }
+
+    {
+      const float dt = 1.0f/8.0f;
+      const mic_f t1 = mic_f(step)*dt+mic_f(dt);
+      const mic_f t0 = 1.0f-t1;
+      const mic_f d0 = -t0*t0;
+      const mic_f d1 = t0*t0 - 2.0f*t0*t1;
+      const mic_f d2 = 2.0f*t1*t0 - t1*t1;
+      const mic_f d3 = t1*t1;
+      coeff_P2[0] = coeff_P3[0] - dt*d0;
+      coeff_P2[1] = coeff_P3[1] - dt*d1;
+      coeff_P2[2] = coeff_P3[2] - dt*d2;
+      coeff_P2[3] = coeff_P3[3] - dt*d3;
+    }
+
+#else
+
     {
       const float dt = 1.0f/8.0f;
       const avxf t1 = avxf(step)*dt;
@@ -191,5 +277,7 @@ namespace embree
       sse_coeff_P2[2] = sse_coeff_P3[2] - dt*d2;
       sse_coeff_P2[3] = sse_coeff_P3[3] - dt*d3;
     }
+#endif
   }
+
 }

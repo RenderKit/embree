@@ -17,6 +17,7 @@
 #include "bvh4i_intersector16_bezier_curves.h"
 #include "bvh4i_leaf_intersector.h"
 #include "geometry/bezier1i.h"
+#include "geometry/bezier1i_intersector16.h"
 
 namespace embree
 {
