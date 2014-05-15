@@ -342,6 +342,11 @@ namespace embree
     return _mm512_mask_extloadunpacklo_epi32(v, mask, addr, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
   }
 
+  __forceinline mic_i uload16i(const mic_m& mask,const int *const addr) {
+    mic_i r = _mm512_undefined_epi32();
+    r =_mm512_mask_extloadunpacklo_epi32(r, mask,addr, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
+    return _mm512_mask_extloadunpackhi_epi32(r, mask,addr+16, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);  
+  }
   
 
   __forceinline mic_i gather16i_4i(const int *__restrict__ const ptr0,

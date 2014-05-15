@@ -64,7 +64,11 @@ namespace embree
     size_t bytes;    //!< size of buffer in bytes
     char* ptr_ofs;   //!< base pointer plus offset
 
+#if defined(__MIC__)
+    unsigned int stride;
+#else
     size_t stride;   //!< stride of the stream in bytes
+#endif
     size_t num;      //!< number of elements in the stream
     bool shared;     //!< set if memory is shared with application
     bool mapped;     //!< set if buffer is mapped
@@ -99,13 +103,23 @@ namespace embree
 #endif
     }
 
-    __forceinline size_t getBufferStride() const {
+    __forceinline unsigned int getBufferStride() const {
 #if defined(__BUFFER_STRIDE__)
       return stride;
 #else
       return sizeof(T);
 #endif
     }
+
+#if defined(__MIC__)
+    __forceinline mic_i getStride() const {
+#if defined(__BUFFER_STRIDE__)
+      return mic_i(stride);
+#else
+      return mic_i(sizeof(T));
+#endif
+    }    
+#endif
 
     __forceinline char* getPtr() const {
       return ptr;

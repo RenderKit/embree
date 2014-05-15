@@ -117,10 +117,23 @@ namespace embree
       template<unsigned int HINT=0>
 	__forceinline mic3f getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
       {
+#if !defined(__BUFFER_STRIDE__)
+
 	const float *__restrict__ const vptr0 = (float*)&vertex(tri.v[0],dim);
 	const float *__restrict__ const vptr1 = (float*)&vertex(tri.v[1],dim);
 	const float *__restrict__ const vptr2 = (float*)&vertex(tri.v[2],dim);
+#else
+	const mic_i tri_v  = uload16i(0x7,(int*)&tri);
+	const mic_i stride = vertices[dim].getStride();
+	const mic_i offset = tri_v * stride;
+	const unsigned int *__restrict__ const offset_ptr = (unsigned int*)&offset;
+	const char  *__restrict__ const base  = vertices[dim].getPtr();
+	const float *__restrict__ const vptr0 = (float*)(base + offset_ptr[0]);
+	const float *__restrict__ const vptr1 = (float*)(base + offset_ptr[1]);
+	const float *__restrict__ const vptr2 = (float*)(base + offset_ptr[2]);
+
 	
+#endif	
 	if (HINT)
 	  {
 	    prefetch<HINT>(vptr1);
