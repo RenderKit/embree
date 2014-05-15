@@ -26,6 +26,7 @@ namespace embree
   namespace isa
   {
     /*! BVH4i Traverser. Packet traversal implementation for a Quad BVH. */
+    template<typename LeafIntersector>
     class BVH4iIntersector16BezierCurves
     {
       /* shortcuts for frequently used types */
@@ -38,6 +39,7 @@ namespace embree
       static void occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
     };
 
+    template<typename LeafIntersector>
     class BVH4iIntersector1BezierCurves
     {
       /* shortcuts for frequently used types */
