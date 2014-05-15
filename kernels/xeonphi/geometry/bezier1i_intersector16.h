@@ -29,7 +29,7 @@ namespace embree
       Mailbox mbox;
     };
 
-    static __forceinline void intersect(const Precalculations& pre, Ray16& ray, const size_t k, const Bezier1i& curve_in, const void* geom)
+    static __forceinline bool intersect(const Precalculations& pre, Ray16& ray, const size_t k, const Bezier1i& curve_in, const void* geom)
     {
       STAT3(normal.trav_prims,1,1,1);
 
@@ -79,14 +79,14 @@ namespace embree
 
 
     retry:
-      if (unlikely(none(valid))) return;
+      if (unlikely(none(valid))) return false;
       STAT3(normal.trav_prim_hits,1,1,1);
       size_t i = select_min(valid,t);
 
       /* ray masking test */
 #if defined(__USE_RAY_MASK__)
       BezierCurves* g = ((Scene*)geom)->getBezierCurves(curve_in.geomID);
-      if (unlikely(g->mask & ray.mask[k]) == 0) return;
+      if (unlikely(g->mask & ray.mask[k]) == 0) return false;
 #endif  
 
       /* intersection filter test */
@@ -110,7 +110,7 @@ namespace embree
         ray.geomID[k] = curve_in.geomID;
         ray.primID[k] = curve_in.primID;
 #if defined(__INTERSECTION_FILTER__)
-          return;
+          return true;
       }
 
       while (true) 
@@ -121,24 +121,15 @@ namespace embree
         if (T != Vec3fa(zero))
           if (runIntersectionFilter16(geometry,ray,k,uu,0.0f,t[i],T,geomID,curve_in.primID)) return;
         valid[i] = 0;
-        if (none(valid)) return;
+        if (none(valid)) return false;
         i = select_min(valid,t);
         STAT3(normal.trav_prim_hits,1,1,1);
       }
 #endif
+      return true;
     }
 
-    static __forceinline void intersect(Precalculations& pre, Ray16& ray, const size_t k, const Bezier1i* curves, size_t num, void* geom)
-    {
-      for (size_t i=0; i<num; i++)
-      {
-	//if (unlikely(pre.mbox.hit(curves[i].geomID,curves[i].primID))) continue;
-	intersect(pre,ray,k,curves[i],geom);
-	//pre.mbox.add(curves[i].geomID,curves[i].primID);
-      }
-    }
-
-    static __forceinline bool occluded(const Precalculations& pre, Ray16& ray, const size_t k, const Bezier1i& curve_in, const void* geom) 
+    static __forceinline bool occluded(const Precalculations& pre, const Ray16& ray, const size_t k, const Bezier1i& curve_in, const void* geom) 
     {
       STAT3(shadow.trav_prims,1,1,1);
 
@@ -219,13 +210,5 @@ namespace embree
       return true;
     }
 
-    static __forceinline bool occluded(Precalculations& pre, Ray16& ray, const size_t k, const Bezier1i* curves, size_t num, void* geom) 
-    {
-      for (size_t i=0; i<num; i++) 
-        if (occluded(pre,ray,k,curves[i],geom))
-          return true;
-
-      return false;
-    }
   };
 }
