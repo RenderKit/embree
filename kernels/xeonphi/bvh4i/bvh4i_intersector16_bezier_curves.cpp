@@ -47,6 +47,7 @@ namespace embree
 	for (size_t i=0;i<items;i++)
 	  ret |= Bezier1iIntersector16::intersect(pre,ray16,rayIndex,tptr[i],geometry); // add mailboxing
 
+	max_dist_xyz = ray16.tfar[rayIndex];
 	//if (unlikely(pre.mbox.hit(curves[i].geomID,curves[i].primID))) continue;
 	//pre.mbox.add(curves[i].geomID,curves[i].primID);
 
