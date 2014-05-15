@@ -60,8 +60,7 @@ namespace embree
 
       /* subdivide 3 levels at once */ 
       const mic4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-      const mic4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
-      //const mic4f p1(shift_left1(p0.x,w3.x),shift_left1(p0.y,w3.y),shift_left1(p0.z,w3.z),shift_left1(p0.w,w3.w));
+      const mic4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting, use just 15 segments
 
       /* approximative intersection with cone */
       const mic4f v = p1-p0;
@@ -90,42 +89,21 @@ namespace embree
 #endif  
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
-      int geomID = curve_in.geomID;
-      Geometry* geometry = ((Scene*)geom)->get(geomID);
-      if (!likely(geometry->hasIntersectionFilter16())) 
-      {
-#endif
-        /* update hit information */
-        const float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
-        const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
-        Vec3fa P,T; curve3D.eval(uu,P,T);
-        if (T == Vec3fa(zero)) { valid ^= (1 << i); goto retry; } // ignore denormalized curves
-        ray.u[k] = uu;
-        ray.v[k] = 0.0f;
-        ray.tfar[k] = t[i];
-        ray.Ng.x[k] = T.x;
-        ray.Ng.y[k] = T.y;
-        ray.Ng.z[k] = T.z;
-        ray.geomID[k] = curve_in.geomID;
-        ray.primID[k] = curve_in.primID;
-#if defined(__INTERSECTION_FILTER__)
-          return true;
-      }
 
-      while (true) 
-      {
-        const float uu = (float(i)+u[i])*one_over_width;
-        const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
-        Vec3fa P,T; curve3D.eval(uu,P,T);
-        if (T != Vec3fa(zero))
-          if (runIntersectionFilter16(geometry,ray,k,uu,0.0f,t[i],T,geomID,curve_in.primID)) return;
-        valid[i] = 0;
-        if (none(valid)) return false;
-        i = select_min(valid,t);
-        STAT3(normal.trav_prim_hits,1,1,1);
-      }
-#endif
+      /* update hit information */
+      const float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
+      const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+      Vec3fa P,T; curve3D.eval(uu,P,T);
+      if (T == Vec3fa(zero)) { valid ^= (1 << i); goto retry; } // ignore denormalized curves
+      ray.u[k] = uu;
+      ray.v[k] = 0.0f;
+      ray.tfar[k] = t[i];
+      ray.Ng.x[k] = T.x;
+      ray.Ng.y[k] = T.y;
+      ray.Ng.z[k] = T.z;
+      ray.geomID[k] = curve_in.geomID;
+      ray.primID[k] = curve_in.primID;
+
       return true;
     }
 
@@ -185,28 +163,6 @@ namespace embree
 #endif  
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
-
-      size_t i = select_min(valid,t);
-      int geomID = curve_in.geomID;
-      Geometry* geometry = ((Scene*)geom)->get(geomID);
-      if (likely(!geometry->hasOcclusionFilter16())) return true;
-      
-
-      while (true) 
-      {
-        /* calculate hit information */
-        const float uu = (float(i)+u[i])*one_over_width;
-        const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
-        Vec3fa P,T; curve3D.eval(uu,P,T);
-        if (T != Vec3fa(zero))
-          if (runOcclusionFilter16(geometry,ray,k,uu,0.0f,t[i],T,geomID,curve_in.primID)) break;
-        valid[i] = 0;
-        if (none(valid)) return false;
-        i = select_min(valid,t);
-        STAT3(shadow.trav_prim_hits,1,1,1);
-      }
-#endif
       return true;
     }
 
