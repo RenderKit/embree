@@ -210,12 +210,16 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   int materialID = tri->materialID;
 
   /* interpolate shading normal */
-  Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
-  Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
-  Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
-  float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-  Vec3f Ns = w*n0 + u*n1 + v*n2;
-  Ns = normalize(Ns);
+  if (mesh->normals) {
+    Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
+    Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
+    Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
+    float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+    Vec3f Ns = w*n0 + u*n1 + v*n2;
+    Ns = normalize(Ns);
+  } else {
+    Ns = ray.Ng;
+  }
 
 #else
 
@@ -233,11 +237,15 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
       materialID = tri->materialID;
 
       /* interpolate shading normal */
-      Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
-      Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
-      Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
-      float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-      Ns = w*n0 + u*n1 + v*n2;
+      if (mesh->normals) {
+        Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
+        Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
+        Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
+        float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+        Ns = w*n0 + u*n1 + v*n2;
+      } else {
+        Ns = normalize(ray.Ng);
+      }
     }
   }
   Ns = normalize(Ns);

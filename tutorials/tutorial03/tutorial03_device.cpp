@@ -99,9 +99,7 @@ void error_handler(const RTCError code, const int8* str)
     while (*str) putchar(*str++); 
     printf(")\n"); 
   }
-  //exit(code);
-  rtcExit();
-
+  abort();
 }
 
 /* called by the C++ code for initialization */
@@ -212,12 +210,16 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   int materialID = tri->materialID;
 
   /* interpolate shading normal */
-  Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
-  Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
-  Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
-  float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-  Vec3fa Ns = w*n0 + u*n1 + v*n2;
-  Ns = normalize(Ns);
+  if (mesh->normals) {
+    Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
+    Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
+    Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
+    float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+    Vec3fa Ns = w*n0 + u*n1 + v*n2;
+    Ns = normalize(Ns);
+  } else {
+    Ns = ray.Ng;
+  }
 
 #else
 
@@ -235,11 +237,15 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       materialID = tri->materialID;
 
       /* interpolate shading normal */
-      Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
-      Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
-      Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
-      float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-      Ns = w*n0 + u*n1 + v*n2;
+      if (mesh->normals) {
+        Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
+        Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
+        Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
+        float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+        Ns = w*n0 + u*n1 + v*n2;
+      } else {
+        Ns = normalize(ray.Ng);
+      }
     }
   }
   Ns = normalize(Ns);
