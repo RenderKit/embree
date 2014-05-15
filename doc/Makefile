@@ -1,5 +1,6 @@
 
-all: www/index.html www/api.html www/tutorials.html www/downloads.html www/renderer.html ../readme.txt ../readme.pdf 
+all: images www/index.html www/api.html www/tutorials.html www/downloads.html www/renderer.html ../readme.txt ../readme.pdf 
+images: images/tutorial00.jpg images/tutorial01.jpg images/tutorial02.jpg images/tutorial03.jpg images/tutorial04.jpg images/tutorial05.jpg images/tutorial06.jpg images/tutorial07.jpg
 
 replace=sed \
 -e '/<CONTENT_OVERVIEW>/{r src/overview.html' -e 'd' -e '}' \
@@ -32,6 +33,24 @@ www/downloads.html: version src/*.html src/www/downloads.html
 www/renderer.html: version src/*.html src/www/renderer.html
 	$(call replace,src/www/renderer.html,www/renderer.html)
 
+images/%.jpg: 
+	echo `basename -s .jpg $@`
+	../build/`basename -s .jpg $@` -size 512 512 -frames 0 16 -o images/`basename -s .jpg $@`.tga
+	convert images/`basename -s .jpg $@`.tga images/`basename -s .jpg $@`.jpg
+	rm images/`basename -s .jpg $@`.tga
+
+images/tutorial03.jpg: 
+	echo `basename -s .jpg $@`
+	../build/`basename -s .jpg $@` -c ~/Work/models/embree/crown/crown_paper.ecs -size 512 512 -frames 0 16 -o images/`basename -s .jpg $@`.tga
+	convert images/`basename -s .jpg $@`.tga images/`basename -s .jpg $@`.jpg
+	rm images/`basename -s .jpg $@`.tga
+
+images/tutorial06.jpg: 
+	echo `basename -s .jpg $@`
+	../build/`basename -s .jpg $@` -c ~/Work/models/embree/crown/crown_paper.ecs -size 512 512 -frames 0 16 -o images/`basename -s .jpg $@`.tga
+	convert images/`basename -s .jpg $@`.tga images/`basename -s .jpg $@`.jpg
+	rm images/`basename -s .jpg $@`.tga
+
 readme.html: version src/*.html
 	$(call replace,src/readme.html,readme.html)
 
@@ -51,3 +70,4 @@ clean:
 	rm readme.ps
 	rm readme.html
 	rm www/*.html
+	rm images/*.jpg

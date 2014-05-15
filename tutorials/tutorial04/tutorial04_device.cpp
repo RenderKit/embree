@@ -36,7 +36,9 @@ void error_handler(const RTCError code, const int8* str)
     while (*str) putchar(*str++); 
     printf(")\n"); 
   }
-  exit(code);
+  //exit(code);
+  rtcExit();
+
 }
 
 const int numPhi = 5;

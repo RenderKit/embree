@@ -80,8 +80,21 @@ void error_handler(const RTCError code, const int8* str)
     while (*str) putchar(*str++); 
     printf(")\n"); 
   }
-  exit(code);
+  //exit(code);
+  rtcExit();
+
 }
+
+/* accumulation buffer */
+Vec3fa* g_accu = NULL;
+size_t g_accu_width = 0;
+size_t g_accu_height = 0;
+size_t g_accu_count = 0;
+Vec3fa g_accu_vx;
+Vec3fa g_accu_vy;
+Vec3fa g_accu_vz;
+Vec3fa g_accu_p;
+extern "C" bool g_changed;
 
 /* light */
 Vec3fa AmbientLight__L;
@@ -89,6 +102,12 @@ Vec3fa AmbientLight__L;
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
 {
+  /* initialize last seen camera */
+  g_accu_vx = Vec3fa(0.0f);
+  g_accu_vy = Vec3fa(0.0f);
+  g_accu_vz = Vec3fa(0.0f);
+  g_accu_p  = Vec3fa(0.0f);
+
   /* initialize ray tracing core */
   rtcInit(cfg);
 
@@ -99,7 +118,7 @@ extern "C" void device_init (int8* cfg)
   renderPixel = renderPixelStandard;
 
   /* set light */
-  AmbientLight__L = Vec3fa(1,1,1);
+  AmbientLight__L = Vec3fa(0.9f,0.9f,0.9f);
 }
 
 RTCScene convertScene(ISPCScene* scene_in)
@@ -288,7 +307,7 @@ Vec3fa renderPixelSeed(float x, float y, int& seed, const Vec3fa& vx, const Vec3
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  int seed = x*233+y*234234+237;
+  int seed = 21344*x+121233*y+234532*g_accu_count;
   Vec3fa L = Vec3fa(0.0f,0.0f,0.0f);
   //for (int i=0; i<16; i++) {
   L = L + renderPixelSeed(x,y,seed,vx,vy,vz,p); // FIXME: +=
@@ -323,9 +342,12 @@ void renderTile(int taskIndex, int* pixels,
     //    Vec3fa color = Vec3fa(0.0,0.0,0.0); 
 
     /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    Vec3fa* dst = &g_accu[y*width+x];
+    *dst = *dst + Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
+    float f = rcp(max(0.001f,dst->w));
+    unsigned int r = (unsigned int) (255.0f * clamp(dst->x*f,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(dst->y*f,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(dst->z*f,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 }
@@ -343,6 +365,26 @@ extern "C" void device_render (int* pixels,
   /* create scene */
   if (g_scene == NULL)
     g_scene = convertScene(g_ispc_scene);
+
+  /* create accumulator */
+  if (g_accu_width != width || g_accu_height != height) {
+    g_accu = new Vec3fa[width*height];
+    g_accu_width = width;
+    g_accu_height = height;
+    memset(g_accu,0,width*height*sizeof(Vec3fa));
+  }
+
+  /* reset accumulator */
+  bool camera_changed = g_changed; g_changed = false;
+  camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx; // FIXME: use != operator
+  camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
+  camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
+  camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
+  g_accu_count++;
+  if (camera_changed) {
+    g_accu_count=0;
+    memset(g_accu,0,width*height*sizeof(Vec3fa));
+  }
 
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

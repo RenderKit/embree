@@ -124,7 +124,9 @@ void error_handler(const RTCError code, const int8* str)
     while (*str) putchar(*str++); 
     printf(")\n"); 
   }
-  exit(code);
+  //exit(code);
+  rtcExit();
+
 }
 
 /* render function to use */
@@ -213,11 +215,13 @@ RTCScene convertScene(ISPCScene* scene_in)
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
 {
+  /* initialize last seen camera */
   g_accu_vx = Vec3fa(0.0f);
   g_accu_vy = Vec3fa(0.0f);
   g_accu_vz = Vec3fa(0.0f);
   g_accu_p  = Vec3fa(0.0f);
 
+  /* initialize hair colors */
   hair_K  = Vec3fa(0.8f,0.57f,0.32f);
   hair_dK = Vec3fa(0.1f,0.12f,0.08f);
   hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
@@ -620,10 +624,9 @@ void renderTile(int taskIndex, int* pixels,
     float fy = y + frand(seed);
     Vec3fa color = renderPixel(fx,fy,vx,vy,vz,p);
 
+    /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];
     *dst = *dst + Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
-
-    /* write color to framebuffer */
     float f = rcp(max(0.001f,dst->w));
     unsigned int r = (unsigned int) (255.0f * clamp(dst->x*f,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(dst->y*f,0.0f,1.0f));
@@ -655,9 +658,7 @@ extern "C" void device_render (int* pixels,
   }
 
   /* reset accumulator */
-  bool camera_changed = g_changed; 
-  g_changed = false;
-  //g_changed = true;
+  bool camera_changed = g_changed; g_changed = false;
   camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx; // FIXME: use != operator
   camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
