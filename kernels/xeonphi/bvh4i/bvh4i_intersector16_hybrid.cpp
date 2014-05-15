@@ -228,7 +228,7 @@ namespace embree
 
         /* intersect leaf */
         const mic_m m_valid_leaf = ray_tfar > curDist;
-        STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
+        STAT3(normal.trav_leaves,1,popcnt(m_valid_leaf),16);
 
 	LeafIntersector::intersect16(curNode,m_valid_leaf,dir,org,ray16,accel,(Scene*)bvh->geometry);
 
@@ -443,7 +443,7 @@ namespace embree
         
         /* intersect leaf */
         mic_m m_valid_leaf = gt(m_active,ray_tfar,curDist);
-        STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
+        STAT3(shadow.trav_leaves,1,popcnt(m_valid_leaf),16);
 
 	const mic3f org = ray16.org;
 	const mic3f dir = ray16.dir;

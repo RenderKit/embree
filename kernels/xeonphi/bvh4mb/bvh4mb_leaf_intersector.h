@@ -577,7 +577,7 @@ namespace embree
 	    prefetch<PFHINT_L1>(&tris[i+1].t0); 
 	    prefetch<PFHINT_L1>(&tris[i+1].t1); 
 
-	    STAT3(normal.trav_prims,1,popcnt(valid_i),16);
+	    STAT3(normal.trav_prims,1,popcnt(m_valid_leaf),16);
         
 	    /* load vertices and calculate edges */
 	    const mic3f v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
@@ -688,7 +688,7 @@ namespace embree
 	    prefetch<PFHINT_L1>(&tris[i+1].t0); 
 	    prefetch<PFHINT_L1>(&tris[i+1].t1); 
 
-	    STAT3(normal.trav_prims,1,popcnt(valid_i),16);
+	    STAT3(normal.trav_prims,1,popcnt(m_valid_leaf_active),16);
         
 	    /* load vertices and calculate edges */
 	    const mic3f v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
