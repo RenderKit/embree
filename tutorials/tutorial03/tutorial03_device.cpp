@@ -196,12 +196,13 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
   
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(0.0f);
+
+
 #if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
   ISPCMesh* mesh = g_ispc_scene->meshes[ray.geomID];
   ISPCTriangle* tri = &mesh->triangles[ray.primID];
@@ -210,12 +211,13 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   int materialID = tri->materialID;
 
   /* interpolate shading normal */
+  Vec3fa Ns;
   if (mesh->normals) {
     Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
     Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
     Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
     float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-    Vec3fa Ns = w*n0 + u*n1 + v*n2;
+    Ns = w*n0 + u*n1 + v*n2;
     Ns = normalize(Ns);
   } else {
     Ns = ray.Ng;
@@ -260,6 +262,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   color = color*dot(ray.dir,Nf);   // FIXME: *=
   return color;
 }
+
 
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,

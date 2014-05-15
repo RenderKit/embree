@@ -50,6 +50,9 @@ namespace embree
     DBG(PING);
     DBG(DBG_PRINT(mode));
 
+    // std::cout << "sleeping..." << std::endl;
+    // sleep(10);
+
     Builder* builder = NULL;
 
     switch( mode )
