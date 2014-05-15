@@ -40,7 +40,8 @@ void error_handler(const RTCError code, const int8* str)
     while (*str) putchar(*str++); 
     printf(")\n"); 
   }
-  exit(code);
+  //exit(code);
+  rtcExit();
 }
 
 /* adds a cube to the scene */
@@ -128,7 +129,7 @@ extern "C" void device_init (int8* cfg)
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
-
+ 
   /* create scene */
   g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
 

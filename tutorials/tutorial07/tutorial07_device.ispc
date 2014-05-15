@@ -213,11 +213,13 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
+  /* initialize last seen camera */
   g_accu_vx = make_Vec3f(0.0f);
   g_accu_vy = make_Vec3f(0.0f);
   g_accu_vz = make_Vec3f(0.0f);
   g_accu_p  = make_Vec3f(0.0f);
 
+  /* initialize hair colors */
   hair_K  = make_Vec3f(0.8f,0.57f,0.32f);
   hair_dK = make_Vec3f(0.1f,0.12f,0.08f);
   hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
@@ -620,10 +622,9 @@ task void renderTile(uniform int* uniform pixels,
     float fy = y + frand(seed);
     Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
 
+    /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];
     *dst = *dst + make_Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
-
-    /* write color to framebuffer */
     float f = rcp(max(0.001f,dst->w));
     unsigned int r = (unsigned int) (255.0f * clamp(dst->x*f,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(dst->y*f,0.0f,1.0f));
@@ -655,9 +656,7 @@ export void device_render (uniform int* uniform pixels,
   }
 
   /* reset accumulator */
-  uniform bool camera_changed = g_changed; 
-  g_changed = false;
-  //g_changed = true;
+  uniform bool camera_changed = g_changed; g_changed = false;
   camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx; // FIXME: use != operator
   camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator

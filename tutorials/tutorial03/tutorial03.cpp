@@ -132,15 +132,15 @@ namespace embree
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
+
+    /* send model */
+    set_scene(&g_obj_scene);
     
     /* render to disk */
     if (outFilename.str() != "") {
       renderToFile(outFilename);
       return 0;
     } 
-
-    /* send model */
-    set_scene(&g_obj_scene);
 
     /* initialize GLUT */
     initWindowState(tutorialName, g_width, g_height, g_fullscreen);

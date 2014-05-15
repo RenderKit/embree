@@ -7,20 +7,7 @@ an ISPC and C version to demonstrate the two versions of the API. Look
 for files names <pre><code>tutorialXX_device.ispc</code></pre> for the ISPC
 implementation of the tutorial, and files named
 <pre><code>tutorialXX_device.cpp</code></pre> for the single ray C version of the
-tutorial. The tutorials can be found in the following folders:</p>
-
-<dl>
-    <dt>tutorials</dt>              <dd>Root directory for all tutorials</dd>
-    <dt>tutorials/tutorial00</dt>     <dd>Creates a simple static scene</dd>
-    <dt>tutorials/tutorial01</dt>     <dd>Creates a dynamic scene</dd>
-    <dt>tutorials/tutorial02</dt>     <dd>Shows how to use user-defined geometry</dd>
-    <dt>tutorials/tutorial03</dt>     <dd>A simple OBJ loader/viewer using Embree</dd>
-    <dt>tutorials/tutorial04</dt>     <dd>Demonstrates instancing of geometry</dd>
-    <dt>tutorials/tutorial05</dt>     <dd>Demonstrates the use of the filter functions to efficiently implement transparent objects.</dd>
-    <dt>tutorials/tutorial06</dt>     <dd>A simple path tracer for OBJ files.</dd>
-</dl>
-
-All tutorials come as C++ and ISPC version. To start the C++ version
+tutorial. To start the C++ version
 use the <pre><code>tutorialXX</code></pre> executables, to start the ISPC version
 use the <pre><code>tutorialXX_ispc</code></pre> executables.
 
@@ -76,60 +63,105 @@ its location. You can also use the arrow keys for navigation.</p>
 
 <h4>Tutorial00</h4>
 
-This tutorial demonstrates the creation of a static cube and ground
-plane using triangle meshes. It also demonstrates the use of the
-<pre><code>rtcIntersect</code></pre> and <pre><code>rtcOccluded</code></pre> functions to
+<table>
+<tr>
+  <td><img src="images/tutorial00.jpg" width="128" height="128"></td>
+  <td><p>This tutorial demonstrates the creation of a static cube and
+ground plane using triangle meshes. It also demonstrates the use of
+the <code>rtcIntersect</code> and <code>rtcOccluded</code> functions to
 render primary visibility and hard shadows. The cube sides are colored
-based on the ID of the hit primitive.
+based on the ID of the hit primitive.</p></td>
+</tr>
+</table>
 
 <h4>Tutorial01</h4>
 
-This tutorial demonstrates the creation of a dynamic scene, consisting
+<table>
+<tr>
+  <td><img src="images/tutorial01.jpg" width="128" height="128"></td>
+  <td><p>This tutorial demonstrates the creation of a dynamic scene, consisting
 of several deformed spheres. Half of the spheres use the
 RTC_GEOMETRY_DEFORMABLE flag, which allows Embree to use a refitting
 strategy for these spheres, the other half uses the
 RTC_GEOMETRY_DYNAMIC flag, causing a rebuild of their spatial data
 structure each frame. The spheres are colored based on the ID of the
-hit sphere geometry.
+hit sphere geometry.</p></td>
+</tr>
+</table>
 
 <h4>Tutorial02</h4>
 
-This tutorial shows the use of user defined geometry, to re-implement
+<table>
+<tr>
+  <td><img src="images/tutorial02.jpg" width="128" height="128"></td>
+  <td><p>This tutorial shows the use of user defined geometry, to re-implement
 instancing and to add analytic spheres. A two level scene is created,
 with a triangle mesh as ground plane, and several user geometries,
 that instance other scenes with a small number of spheres of different
 kind. The spheres are colored using the instance ID and geometry ID of
 the hit sphere, to demonstrate how the same geometry, instanced in
-different ways can be distinguished.
+different ways can be distinguished.</p></td>
+</tr>
+</table>
 
 <h4>Tutorial03</h4>
 
-This tutorial demonstrates a simple OBJ viewer that traces primary
+<table>
+<tr>
+  <td><img src="images/tutorial03.jpg" width="128" height="128"></td>
+  <td><p>This tutorial demonstrates a simple OBJ viewer that traces primary
 visibility rays only. A scene consisting of multiple meshes is
 created, each mesh sharing the index and vertex buffer with the
 application. Demonstrated is also how to support additional per vertex
-data, such as shading normals.
+data, such as shading normals.</p></td>
+</tr>
+</table>
 
 <h4>Tutorial04</h4>
 
-This tutorial demonstrates the in-build instancing feature of Embree,
+<table>
+<tr>
+  <td><img src="images/tutorial04.jpg" width="128" height="128"></td>
+  <td><p>This tutorial demonstrates the in-build instancing feature of Embree,
 by instancing a number of other scenes build from triangulated
 spheres. The spheres are again colored using the instance ID and
 geometry ID of the hit sphere, to demonstrate how the same geometry,
-instanced in different ways can be distinguished.
+instanced in different ways can be distinguished.</p></td>
+</tr>
+</table>
 
 <h4>Tutorial05</h4>
 
-This tutorial demonstrates the use of filter callback functions to
+<table>
+<tr>
+  <td><img src="images/tutorial05.jpg" width="128" height="128"></td>
+  <td><p>This tutorial demonstrates the use of filter callback functions to
 efficiently implement transparent objects. The filter function used
 for primary rays, lets the ray pass through the geometry if it is
 entirely transparent. Otherwise the shading loop handles the
 transparency properly, by potentially shooting secondary rays. The
 filter function used for shadow rays accumulates the transparency of
 all surfaces along the ray, and terminates traversal if an opaque
-occluder is hit.
+occluder is hit.</p></td>
+</tr>
+</table>
 
 <h4>Tutorial06</h4>
 
-This tutorial is a simple path tracer, building on tutorial03.
+<table>
+<tr>
+  <td><img src="images/tutorial06.jpg" width="128" height="128"></td>
+  <td><p>This tutorial is a simple path tracer, building on tutorial03. </p></td>
+</tr>
+</table>
+
+<h4>Tutorial07</h4>
+
+<table>
+<tr>
+  <td><img src="images/tutorial07.jpg" width="128" height="128"></td>
+  <td><p>This tutorial demonstrates the use of the hair geometry to
+  render a hairball.</p></td>
+</tr>
+</table>
 

@@ -875,31 +875,9 @@ to demonstrate the two versions of the API. Look for files names
  tutorialXX_device.ispc
 for the ISPC implementation of the tutorial, and files named
  tutorialXX_device.cpp
-for the single ray C version of the tutorial. The tutorials can be found in the
-following folders:
-
-  tutorials
-      Root directory for all tutorials
-  tutorials/tutorial00
-      Creates a simple static scene
-  tutorials/tutorial01
-      Creates a dynamic scene
-  tutorials/tutorial02
-      Shows how to use user-defined geometry
-  tutorials/tutorial03
-      A simple OBJ loader/viewer using Embree
-  tutorials/tutorial04
-      Demonstrates instancing of geometry
-  tutorials/tutorial05
-      Demonstrates the use of the filter functions to efficiently implement
-      transparent objects.
-  tutorials/tutorial06
-      A simple path tracer for OBJ files.
-All tutorials come as C++ and ISPC version. To start the C++ version use the
-
+for the single ray C version of the tutorial. To start the C++ version use the
  tutorialXX
 executables, to start the ISPC version use the
-
  tutorialXX_ispc
 executables. You can select an initial camera using the -vp (camera position),
 -vi (camera lookat point), -vu (camera up vector), and -fov (vertical field of
@@ -961,62 +939,78 @@ You can use the following keys:
       Exists the tutorial.
 ==== Tutorial00  ====
 
-This tutorial demonstrates the creation of a static cube and ground plane using
-triangle meshes. It also demonstrates the use of the
 
- rtcIntersect
-and
+ This tutorial demonstrates the creation of a static cube and ground plane
+ using triangle meshes. It also demonstrates the use of the rtcIntersect and
+ rtcOccluded functions to render primary visibility and hard shadows. The cube
+ sides are colored based on the ID of the hit primitive.
 
- rtcOccluded
-functions to render primary visibility and hard shadows. The cube sides are
-colored based on the ID of the hit primitive.
 
 ==== Tutorial01  ====
 
-This tutorial demonstrates the creation of a dynamic scene, consisting of
-several deformed spheres. Half of the spheres use the RTC_GEOMETRY_DEFORMABLE
-flag, which allows Embree to use a refitting strategy for these spheres, the
-other half uses the RTC_GEOMETRY_DYNAMIC flag, causing a rebuild of their
-spatial data structure each frame. The spheres are colored based on the ID of
-the hit sphere geometry.
+
+ This tutorial demonstrates the creation of a dynamic scene, consisting of
+ several deformed spheres. Half of the spheres use the RTC_GEOMETRY_DEFORMABLE
+ flag, which allows Embree to use a refitting strategy for these spheres, the
+ other half uses the RTC_GEOMETRY_DYNAMIC flag, causing a rebuild of their
+ spatial data structure each frame. The spheres are colored based on the ID of
+ the hit sphere geometry.
+
 
 ==== Tutorial02  ====
 
-This tutorial shows the use of user defined geometry, to re-implement
-instancing and to add analytic spheres. A two level scene is created, with a
-triangle mesh as ground plane, and several user geometries, that instance other
-scenes with a small number of spheres of different kind. The spheres are
-colored using the instance ID and geometry ID of the hit sphere, to demonstrate
-how the same geometry, instanced in different ways can be distinguished.
+
+ This tutorial shows the use of user defined geometry, to re-implement
+ instancing and to add analytic spheres. A two level scene is created, with a
+ triangle mesh as ground plane, and several user geometries, that instance
+ other scenes with a small number of spheres of different kind. The spheres are
+ colored using the instance ID and geometry ID of the hit sphere, to
+ demonstrate how the same geometry, instanced in different ways can be
+ distinguished.
+
 
 ==== Tutorial03  ====
 
-This tutorial demonstrates a simple OBJ viewer that traces primary visibility
-rays only. A scene consisting of multiple meshes is created, each mesh sharing
-the index and vertex buffer with the application. Demonstrated is also how to
-support additional per vertex data, such as shading normals.
+
+ This tutorial demonstrates a simple OBJ viewer that traces primary visibility
+ rays only. A scene consisting of multiple meshes is created, each mesh sharing
+ the index and vertex buffer with the application. Demonstrated is also how to
+ support additional per vertex data, such as shading normals.
+
 
 ==== Tutorial04  ====
 
-This tutorial demonstrates the in-build instancing feature of Embree, by
-instancing a number of other scenes build from triangulated spheres. The
-spheres are again colored using the instance ID and geometry ID of the hit
-sphere, to demonstrate how the same geometry, instanced in different ways can
-be distinguished.
+
+ This tutorial demonstrates the in-build instancing feature of Embree, by
+ instancing a number of other scenes build from triangulated spheres. The
+ spheres are again colored using the instance ID and geometry ID of the hit
+ sphere, to demonstrate how the same geometry, instanced in different ways can
+ be distinguished.
+
 
 ==== Tutorial05  ====
 
-This tutorial demonstrates the use of filter callback functions to efficiently
-implement transparent objects. The filter function used for primary rays, lets
-the ray pass through the geometry if it is entirely transparent. Otherwise the
-shading loop handles the transparency properly, by potentially shooting
-secondary rays. The filter function used for shadow rays accumulates the
-transparency of all surfaces along the ray, and terminates traversal if an
-opaque occluder is hit.
+
+ This tutorial demonstrates the use of filter callback functions to efficiently
+ implement transparent objects. The filter function used for primary rays, lets
+ the ray pass through the geometry if it is entirely transparent. Otherwise the
+ shading loop handles the transparency properly, by potentially shooting
+ secondary rays. The filter function used for shadow rays accumulates the
+ transparency of all surfaces along the ray, and terminates traversal if an
+ opaque occluder is hit.
+
 
 ==== Tutorial06  ====
 
-This tutorial is a simple path tracer, building on tutorial03.
+
+ This tutorial is a simple path tracer, building on tutorial03.
+
+
+==== Tutorial07  ====
+
+
+ This tutorial demonstrates the use of the hair geometry to render a hairball.
+
 
 === Embree Support and Contact  ===
 

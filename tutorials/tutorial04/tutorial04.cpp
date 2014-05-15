@@ -104,6 +104,10 @@ namespace embree
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+    /* set default camera */
+    g_camera.from = Vec3fa(2.5f,2.5f,2.5f);
+    g_camera.to   = Vec3fa(0.0f,0.0f,0.0f);
+
     /* create stream for parsing */
     Ref<ParseStream> stream = new ParseStream(new CommandLineStream(argc, argv));
 
