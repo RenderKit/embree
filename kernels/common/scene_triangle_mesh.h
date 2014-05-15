@@ -28,21 +28,6 @@ namespace embree
     {
       struct Triangle {
         unsigned int v[3];
-
-#if defined(__MIC__)
-      __forceinline void bounds(const Vec3fa *__restrict__ const vertex, mic_f &bmin, mic_f &bmax) const 
-      {
-	const float *__restrict__ const vptr0 = (float*)&vertex[v[0]];
-	const float *__restrict__ const vptr1 = (float*)&vertex[v[1]];
-	const float *__restrict__ const vptr2 = (float*)&vertex[v[2]];
-	const mic_f v0 = broadcast4to16f(vptr0);
-	const mic_f v1 = broadcast4to16f(vptr1);
-	const mic_f v2 = broadcast4to16f(vptr2);
-	bmin = min(min(v0,v1),v2);
-	bmax = max(max(v0,v1),v2);
-      }
-#endif
-
       };
 
     public:
@@ -94,6 +79,7 @@ namespace embree
 
     public:
 
+
       __forceinline const Triangle& triangle(size_t i) const {
         assert(i < numTriangles);
         return triangles[i];
@@ -103,6 +89,14 @@ namespace embree
         assert(i < numVertices);
         assert(j < 2);
         return vertices[j][i];
+      }
+
+      __forceinline size_t getTriangleBufferStride() const {
+	return triangles.getBufferStride();
+      }
+
+      __forceinline size_t getVertexBufferStride() const {
+	return vertices[0].getBufferStride();
       }
 
       __forceinline BBox3fa bounds(size_t index) const 
@@ -117,6 +111,42 @@ namespace embree
       __forceinline bool anyMappedBuffers() const {
         return triangles.isMapped() || vertices[0].isMapped() || vertices[1].isMapped();
       }
+
+#if defined(__MIC__)
+
+      template<unsigned int HINT=0>
+	__forceinline mic3f getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
+      {
+#if !defined(__BUFFER_STRIDE__)
+
+	const float *__restrict__ const vptr0 = (float*)&vertex(tri.v[0],dim);
+	const float *__restrict__ const vptr1 = (float*)&vertex(tri.v[1],dim);
+	const float *__restrict__ const vptr2 = (float*)&vertex(tri.v[2],dim);
+#else
+	const mic_i tri_v  = uload16i(0x7,(int*)&tri);
+	const mic_i stride = vertices[dim].getStride();
+	const mic_i offset = tri_v * stride;
+	const unsigned int *__restrict__ const offset_ptr = (unsigned int*)&offset;
+	const char  *__restrict__ const base  = vertices[dim].getPtr();
+	const float *__restrict__ const vptr0 = (float*)(base + offset_ptr[0]);
+	const float *__restrict__ const vptr1 = (float*)(base + offset_ptr[1]);
+	const float *__restrict__ const vptr2 = (float*)(base + offset_ptr[2]);
+
+	
+#endif	
+	if (HINT)
+	  {
+	    prefetch<HINT>(vptr1);
+	    prefetch<HINT>(vptr2);
+	  }
+
+	const mic_f v0 = broadcast4to16f(vptr0);
+	const mic_f v1 = broadcast4to16f(vptr1);
+	const mic_f v2 = broadcast4to16f(vptr2);
+	return mic3f(v0,v1,v2);
+      }
+
+#endif
 
     public:
       unsigned int mask;                //!< for masking out geometry

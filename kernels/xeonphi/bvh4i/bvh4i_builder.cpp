@@ -26,13 +26,12 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-#define TIMER(x) 
+#define TIMER(x)  
 #define DBG(x) 
 
 //#define PROFILE
 #define PROFILE_ITERATIONS 100
 
-//#define USE_QUANTIZATION
 #define MEASURE_MEMORY_ALLOCATION_TIME 0
 
 // TODO: CHECK     const float voxelArea    = current.cs_AABB.sceneArea();
@@ -349,29 +348,19 @@ namespace embree
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      const Vec3fa *__restrict__ const vertex = &mesh->vertex(0);
-      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
+      //const Vec3fa *__restrict__ const vertex = &mesh->vertex(0);
+      const char *__restrict cptr = (char*)&mesh->triangle(offset);
+      const size_t stride = mesh->getTriangleBufferStride();
+      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr+=stride)	 
       { 			    
-	const TriangleMesh::Triangle& tri = mesh->triangle(i);
-	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
-	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
+	const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr;
+	prefetch<PFHINT_L2>(cptr + L2_PREFETCH_ITEMS);
+	prefetch<PFHINT_L1>(cptr + L1_PREFETCH_ITEMS);
 
-#if 1
-	mic_f bmin,bmax;
-	tri.bounds(vertex,bmin,bmax);
-#else
-	const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
-	const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
-	const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+	const mic3f v = mesh->getTriangleVertices(tri);
+	const mic_f bmin  = min(min(v[0],v[1]),v[2]);
+	const mic_f bmax  = max(max(v[0],v[1]),v[2]);
 
-	const mic_f v0 = broadcast4to16f(vptr0);
-	const mic_f v1 = broadcast4to16f(vptr1);
-	const mic_f v2 = broadcast4to16f(vptr2);
-
-	mic_f bmin = min(min(v0,v1),v2);
-	mic_f bmax = max(max(v0,v1),v2);
-
-#endif
 	bounds_scene_min = min(bounds_scene_min,bmin);
 	bounds_scene_max = max(bounds_scene_max,bmax);
 	const mic_f centroid2 = bmin+bmax;
@@ -475,18 +464,9 @@ namespace embree
     const mic_i pID(primID);
     const mic_i gID(geomID);
 
-    const float *__restrict__ const vptr0 = (float*)&mesh->vertex(tri.v[0]);
-    const float *__restrict__ const vptr1 = (float*)&mesh->vertex(tri.v[1]);
-    const float *__restrict__ const vptr2 = (float*)&mesh->vertex(tri.v[2]);
+    const mic3f v = mesh->getTriangleVertices<PFHINT_L1>(tri);
 
-    prefetch<PFHINT_L1>(vptr1);
-    prefetch<PFHINT_L1>(vptr2);
-
-    const mic_f v0 = broadcast4to16f(vptr0); //WARNING: zero last component
-    const mic_f v1 = broadcast4to16f(vptr1);
-    const mic_f v2 = broadcast4to16f(vptr2);
-
-    const mic_f tri_accel = initTriangle1(v0,v1,v2,gID,pID,mic_i(mesh->mask));
+    const mic_f tri_accel = initTriangle1(v[0],v[1],v[2],gID,pID,mic_i(mesh->mask));
     store16f_ngo(acc,tri_accel);
   }
 

@@ -53,9 +53,7 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
     while (*str) putchar(*str++); 
     print(")\n"); 
   }
-  //exit(code);
-  rtcExit();
-
+  abort();
 }
 
 /* adds a sphere to the scene */
