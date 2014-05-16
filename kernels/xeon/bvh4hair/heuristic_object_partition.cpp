@@ -431,36 +431,7 @@ namespace embree
 	alloc.free(threadIndex,block);
       }
     }
-    
-    template<typename PrimRef>
-    __forceinline bool lt_split(const PrimRef *__restrict__ const aabb,
-                                const unsigned int dim,
-                                const float &c,
-                                const float &s,
-                                const int bestSplit)
-    {
-      const ssef b_min(aabb->lower[dim]);
-      const ssef b_max(aabb->upper[dim]);
-      const ssef centroid_2 = b_min + b_max;
-      const ssei binID = floori((centroid_2 - c)*s);
-      return extract<0>(binID) < bestSplit;    
-    }
-    
-    
-    template<typename PrimRef>
-    __forceinline bool ge_split(const PrimRef *__restrict__ const aabb,
-                                const unsigned int dim,
-                                const float &c,
-                                const float &s,
-                                const int bestSplit)
-    {
-      const ssef b_min(aabb->lower[dim]);
-      const ssef b_max(aabb->upper[dim]);
-      const ssef centroid_2 = b_min + b_max;
-      const ssei binID = floori((centroid_2 - c)*s);
-      return extract<0>(binID) >= bestSplit;    
-    }
-    
+        
     void ObjectPartition::Split::partition(PrimRef *__restrict__ const prims,
 					   const size_t begin, const size_t end,
 					   BuildRecord& left, BuildRecord& right)
@@ -489,7 +460,8 @@ namespace embree
       
       while(1)
       {
-	while (likely(l <= r && lt_split(l,bestSplitDim,c,s,bestSplit))) {
+	while (likely(l <= r && mapping.bin_unsafe(center2(l->bounds()))[bestSplitDim] < bestSplit)) 
+	{
 	  const ssef b_min = load4f((float*)&l->lower);
 	  const ssef b_max = load4f((float*)&l->upper);
 	  const ssef centroid2 = b_min+b_max;
@@ -499,7 +471,8 @@ namespace embree
 	  left_sceneMaxAABB    = max(left_sceneMaxAABB,b_max);
 	  ++l;
 	}
-	while (likely(l <= r && ge_split(r,bestSplitDim,c,s,bestSplit))) {
+	while (likely(l <= r && mapping.bin_unsafe(center2(r->bounds()))[bestSplitDim] >= bestSplit)) 
+	{
 	  const ssef b_min = load4f((float*)&r->lower);
 	  const ssef b_max = load4f((float*)&r->upper);
 	  const ssef centroid2 = b_min+b_max;
@@ -669,7 +642,7 @@ namespace embree
       
       for (size_t i=startID; i<endID; i++)
       {
-        if (likely(lt_split(&src[i],splitDim,centroidBase,centroidScale,splitPos))) {
+        if (likely(mapping.bin_unsafe(center2(src[i].bounds()))[splitDim] < splitPos)) {
           leftBounds.extend(src[i].bounds()); 
           *dstLeft++ = src[i];
         } else {
