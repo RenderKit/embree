@@ -41,10 +41,21 @@ namespace embree
         positions(NULL), normals(NULL), texcoords(NULL), triangles(NULL), dir(zero), offset(zero) {}
 
     ~ISPCMesh () {
+      // DBG_PRINT(positions);
+      // DBG_PRINT(normals);
+      // DBG_PRINT(texcoords);
+      // DBG_PRINT(triangles);
+
+#if 0 // FIXME: causing double frees on MIC
       if (positions) free(positions);
       if (normals) free(normals);
       if (texcoords) free(texcoords);
       if (triangles) free(triangles);
+#endif
+      positions = NULL;
+      normals   = NULL;
+      texcoords = NULL;
+      triangles = NULL;
     }
 
   public:
@@ -109,10 +120,12 @@ namespace embree
 
     ~ISPCScene () {
       delete[] materials;
+
       if (meshes) {
         for (size_t i=0; i<numMeshes; i++)
           if (meshes[i]) delete meshes[i];
-        free(meshes);
+	delete[] meshes;
+	meshes = NULL;
       }
     }
 
@@ -168,11 +181,6 @@ namespace embree
     assert( in_pMiscData->numTriangles*sizeof(OBJScene::Triangle) == in_pBufferLengths[3] );
     assert( in_pMiscData->numVertices*sizeof(Vec3fa) == in_pBufferLengths[1] );
 
-
-    // DBG_PRINT( in_pBufferLengths[0] );
-    // DBG_PRINT( in_pBufferLengths[1] );
-    // DBG_PRINT( in_pBufferLengths[2] );
-    // DBG_PRINT( in_pBufferLengths[3] );
 #define EXTRA_SPACE 2*64
 
     mesh->positions = (Vec3fa*)os_malloc(in_pBufferLengths[0]+EXTRA_SPACE);

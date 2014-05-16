@@ -249,7 +249,6 @@ namespace embree
   {
     COIRESULT result;
 
-    DBG_PRINT( scene->materials.size() );
     /* send scene */
     COIBUFFER materialBuffer;
     size_t materialBytes = max(size_t(16),scene->materials.size()*sizeof(OBJScene::Material));
