@@ -600,24 +600,24 @@ namespace embree
       TaskSplitParallel<PrimRef>(threadIndex,threadCount,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
     }
     
- // =======================================================================================================
+    // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
     
     void ObjectPartition::ParallelBinner::parallelBinning(const size_t threadID, const size_t numThreads)
     {
-      BinInfo& bin16 = this->global_bin16[threadID];
-      const size_t startID = this->rec.begin + (threadID+0)*this->rec.items()/numThreads;
-      const size_t endID   = this->rec.begin + (threadID+1)*this->rec.items()/numThreads;
-      
+      BinInfo& bin16 = global_bin16[threadID];
+      const size_t startID = pinfo.begin + (threadID+0)*pinfo.size()/numThreads;
+      const size_t endID   = pinfo.begin + (threadID+1)*pinfo.size()/numThreads;
       bin16.clear();
-      bin16.bin_copy(src,startID,endID,this->mapping,dst);
+      bin16.bin_copy(src,startID,endID,mapping,dst);
     }
     
-    void ObjectPartition::ParallelBinner::find(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads) 
+    float ObjectPartition::ParallelBinner::find(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads) 
     {
-      rec = current;
-      PrimInfo pinfo(current.items(),current.bounds.geometry,current.bounds.centroid2);
+      this->pinfo = pinfo;
+      //rec = current;
+      //PrimInfo pinfo(current.size(),current.bounds.geometry,current.bounds.centroid2);
       mapping = Mapping(pinfo);
       left.reset();
       right.reset();
@@ -631,40 +631,37 @@ namespace embree
 	bin16.merge(global_bin16[i]);
 
       split = bin16.best(mapping,2); // FIXME: hardcoded constant
+      return split.sah;
     }
-    
-    /*void ObjectPartition::ParallelBinner::best(Split& split) {
-      split = bin16.best(mapping,2); // FIXME: hardcoded constant
-      }*/
     
     void ObjectPartition::ParallelBinner::parallelPartition(const size_t threadID, const size_t numThreads)
     {
-      const size_t startID = this->rec.begin + (threadID+0)*this->rec.items()/numThreads;
-      const size_t endID   = this->rec.begin + (threadID+1)*this->rec.items()/numThreads;
+      const size_t startID = pinfo.begin + (threadID+0)*pinfo.size()/numThreads;
+      const size_t endID   = pinfo.begin + (threadID+1)*pinfo.size()/numThreads;
       
       /* load binning function */
-      const unsigned int splitPos = this->split.pos;
-      const unsigned int splitDim = this->split.dim;
-      const float centroidBase = this->mapping.ofs[splitDim];
-      const float centroidScale = this->mapping.scale[splitDim];
+      const unsigned int splitPos = split.pos;
+      const unsigned int splitDim = split.dim;
+      const float centroidBase = mapping.ofs[splitDim];
+      const float centroidScale = mapping.scale[splitDim];
       
       /* compute items per thread that go to the 'left' and to the 'right' */
       int lnum[maxBins];
-      lnum[0] = this->global_bin16[threadID].counts[0][splitDim];
+      lnum[0] = global_bin16[threadID].counts[0][splitDim];
       for (size_t i=1; i<mapping.size(); i++)
-        lnum[i] = lnum[i-1] + this->global_bin16[threadID].counts[i][splitDim];
+        lnum[i] = lnum[i-1] + global_bin16[threadID].counts[i][splitDim];
 
       size_t numLeft = bin16.getNumLeft(split);
       
       const unsigned int localNumLeft = lnum[splitPos-1];
       const unsigned int localNumRight = (endID-startID) - localNumLeft;
       
-      const unsigned int startLeft  = this->lCounter.add(localNumLeft);
-      const unsigned int startRight = this->rCounter.add(localNumRight);
+      const unsigned int startLeft  = lCounter.add(localNumLeft);
+      const unsigned int startRight = rCounter.add(localNumRight);
       
       PrimRef* __restrict__ src = (PrimRef*)this->src;
-      PrimRef* __restrict__ dstLeft = dst + this->rec.begin + startLeft;
-      PrimRef* __restrict__ dstRight = dst + this->rec.begin + startRight + numLeft;
+      PrimRef* __restrict__ dstLeft = dst + pinfo.begin + startLeft;
+      PrimRef* __restrict__ dstRight = dst + pinfo.begin + startRight + numLeft;
       
       /* split into left and right */
       CentGeomBBox3fa leftBounds; leftBounds.reset();
@@ -681,28 +678,23 @@ namespace embree
         }
       }
       
-      this->left .extend_atomic(leftBounds); 
-      this->right.extend_atomic(rightBounds);  
+      left .extend_atomic(leftBounds); 
+      right.extend_atomic(rightBounds);  
     }
     
-    void ObjectPartition::ParallelBinner::partition(const PrimRef* src, PrimRef* dst, 
-						    //Split& split_i, 
-                                         BuildRecord &leftChild,
-                                         BuildRecord &rightChild,
-                                         const size_t threadID, const size_t numThreads)
+    void ObjectPartition::ParallelBinner::partition(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, BuildRecord &leftChild, BuildRecord &rightChild, const size_t threadID, const size_t numThreads)
     {
-      //split = split_i;
       left.reset(); lCounter.reset(0);
       right.reset(); rCounter.reset(0); 
       this->src = src;
       this->dst = dst;
       LockStepTaskScheduler::dispatchTask( task_parallelPartition, this, threadID, numThreads );
       size_t numLeft = bin16.getNumLeft(split);
-      unsigned center = rec.begin + numLeft;
+      unsigned center = pinfo.begin + numLeft;
       assert(lCounter == numLeft);
-      assert(rCounter == rec.items() - lCounter);
-      leftChild.init(Centroid_Scene_AABB(left.geomBounds,left.centBounds),rec.begin,center);
-      rightChild.init(Centroid_Scene_AABB(right.geomBounds,right.centBounds),center,rec.end);
+      assert(rCounter == pinfo.size() - lCounter);
+      leftChild.init(Centroid_Scene_AABB(left.geomBounds,left.centBounds),pinfo.begin,center);
+      rightChild.init(Centroid_Scene_AABB(right.geomBounds,right.centBounds),center,pinfo.end);
     }
   }
 }

@@ -495,24 +495,16 @@ namespace embree
       
       /* use primitive array temporarily for parallel splits */
       PrimRef* tmp = (PrimRef*) primAllocator.base();
+      PrimInfo pinfo(current.begin,current.end,current.bounds.geometry,current.bounds.centroid2);
 
       /* parallel binning of centroids */
-      //ObjectPartition::Split split; 
-      //g_state->parallelBinner.find(current,prims,tmp,split,threadID,numThreads);
-      g_state->parallelBinner.find(current,prims,tmp,threadID,numThreads);
+      const float sah = g_state->parallelBinner.find(pinfo,prims,tmp,threadID,numThreads);
 
-      /* find best split */
-      //Split split; 
-      //ObjectPartition::Split split; 
-      //g_state->parallelBinner.best(split);
-            
       /* if we cannot find a valid split, enforce an arbitrary split */
-      if (unlikely(g_state->parallelBinner.split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
+      if (unlikely(sah == float(inf))) split_fallback(prims,current,leftChild,rightChild);
       
       /* parallel partitioning of items */
-      else 
-	g_state->parallelBinner.partition(tmp,prims,leftChild,rightChild,threadID,numThreads);
-	//split.partition(prims, current.begin, current.end, leftChild, rightChild);
+      else g_state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads);
       
       if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
       if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();

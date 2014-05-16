@@ -245,17 +245,17 @@ namespace embree
       public:
         
         /*! parallel binbing of an array of primitives */
-        void find(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads);
+        float find(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads);
         
         /* parallel partitioning of a list of primitives */
-        void partition(const PrimRef* src, PrimRef* dst, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads);
+        void partition(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads);
         
       private:
         TASK_FUNCTION(ParallelBinner,parallelBinning);
         TASK_FUNCTION(ParallelBinner,parallelPartition);
         
       public:
-        BuildRecord rec;
+	PrimInfo pinfo;
         PrimInfo left;
         PrimInfo right;
         Mapping mapping;
