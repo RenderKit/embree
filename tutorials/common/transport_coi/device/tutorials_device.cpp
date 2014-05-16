@@ -216,7 +216,7 @@ namespace embree
                                    uint16_t         in_ReturnValueLength)
   {
     g_meshID = 0;
-#if 1
+#if 0
     DBG_PRINT(in_pMiscData->numMeshes);
     DBG_PRINT(in_pMiscData->numMaterials);
     DBG_PRINT(in_pMiscData->numHairSets);

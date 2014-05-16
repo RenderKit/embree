@@ -133,7 +133,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     /* create a triangle mesh */
     uniform unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
 
-#if 0 // defined(__BUFFER_STRIDE__)
+#if !defined(__XEON_PHI__)
     /* share vertex buffer */
     rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa      ));
     rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
