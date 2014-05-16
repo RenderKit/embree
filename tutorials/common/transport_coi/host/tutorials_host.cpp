@@ -190,22 +190,30 @@ namespace embree
     size_t positionBytes = max(size_t(16),mesh->v.size()*sizeof(Vec3fa));
 
     void* positionPtr = mesh->v.size() ? &mesh->v.front() : NULL;
-    result = COIBufferCreate(positionBytes,COI_BUFFER_STREAMING_TO_SINK,0,positionPtr,1,&process,&buffers.position);
+    //result = COIBufferCreate(positionBytes,COI_BUFFER_STREAMING_TO_SINK,0,positionPtr,1,&process,&buffers.position);
+    result = COIBufferCreateFromMemory(positionBytes,COI_BUFFER_NORMAL,0,positionPtr,1,&process,&buffers.position);
+
     if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     size_t normalBytes = max(size_t(16),mesh->vn.size()*sizeof(Vec3fa));
     void* normalPtr = mesh->vn.size() ? &mesh->vn.front() : NULL;
-    result = COIBufferCreate(normalBytes,COI_BUFFER_STREAMING_TO_SINK,0,normalPtr,1,&process,&buffers.normal);
+    //result = COIBufferCreate(normalBytes,COI_BUFFER_STREAMING_TO_SINK,0,normalPtr,1,&process,&buffers.normal);
+    result = COIBufferCreateFromMemory(normalBytes,COI_BUFFER_NORMAL,0,normalPtr,1,&process,&buffers.normal);
+
     if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     size_t texcoordBytes = max(size_t(16),mesh->vt.size()*sizeof(Vec2f));
     void* texcoordPtr = mesh->vt.size() ? &mesh->vt.front() : NULL;
-    result = COIBufferCreate(texcoordBytes,COI_BUFFER_STREAMING_TO_SINK,0,texcoordPtr,1,&process,&buffers.texcoord);
+    //result = COIBufferCreate(texcoordBytes,COI_BUFFER_STREAMING_TO_SINK,0,texcoordPtr,1,&process,&buffers.texcoord);
+    result = COIBufferCreateFromMemory(texcoordBytes,COI_BUFFER_NORMAL,0,texcoordPtr,1,&process,&buffers.texcoord);
+
     if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     size_t triangleBytes = max(size_t(16),mesh->triangles.size()*sizeof(OBJScene::Triangle));
     void* trianglePtr = mesh->triangles.size() ? &mesh->triangles.front() : NULL;
-    result = COIBufferCreate(triangleBytes,COI_BUFFER_STREAMING_TO_SINK,0,trianglePtr,1,&process,&buffers.triangle);
+    //result = COIBufferCreate(triangleBytes,COI_BUFFER_STREAMING_TO_SINK,0,trianglePtr,1,&process,&buffers.triangle);
+    result = COIBufferCreateFromMemory(triangleBytes,COI_BUFFER_NORMAL,0,trianglePtr,1,&process,&buffers.triangle);
+
     if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     CreateMeshData parms;
@@ -271,8 +279,8 @@ namespace embree
     if (result != COI_SUCCESS) throw std::runtime_error("COIEventWait failed: "+std::string(COIResultGetName(result)));
 
     /* destroy buffers again */
-    //result = COIBufferDestroy(materialBuffer);
-    //if (result != COI_SUCCESS) throw std::runtime_error("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
+    result = COIBufferDestroy(materialBuffer);
+    if (result != COI_SUCCESS) throw std::runtime_error("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
 
     /* send all meshes */
     for (size_t i=0; i<scene->meshes.size(); i++) 

@@ -164,16 +164,26 @@ namespace embree
   {
     size_t meshID = g_meshID++;
     ISPCMesh* mesh = new ISPCMesh(in_pMiscData->numTriangles,in_pMiscData->numVertices);
+    assert( mesh );
+    assert( in_pMiscData->numTriangles*sizeof(OBJScene::Triangle) == in_pBufferLengths[3] );
+    assert( in_pMiscData->numVertices*sizeof(Vec3fa) == in_pBufferLengths[1] );
+
+
     // DBG_PRINT( in_pBufferLengths[0] );
     // DBG_PRINT( in_pBufferLengths[1] );
     // DBG_PRINT( in_pBufferLengths[2] );
     // DBG_PRINT( in_pBufferLengths[3] );
 #define EXTRA_SPACE 2*64
 
-    mesh->positions = (Vec3fa*)malloc(in_pBufferLengths[0]+EXTRA_SPACE);
-    mesh->normals   = (Vec3fa*)malloc(in_pBufferLengths[1]+EXTRA_SPACE);
-    mesh->texcoords = (Vec2f* )malloc(in_pBufferLengths[2]+EXTRA_SPACE);
-    mesh->triangles = (OBJScene::Triangle*)malloc(in_pBufferLengths[3]+EXTRA_SPACE);
+    mesh->positions = (Vec3fa*)os_malloc(in_pBufferLengths[0]+EXTRA_SPACE);
+    mesh->normals   = (Vec3fa*)os_malloc(in_pBufferLengths[1]+EXTRA_SPACE);
+    mesh->texcoords = (Vec2f* )os_malloc(in_pBufferLengths[2]+EXTRA_SPACE);
+    mesh->triangles = (OBJScene::Triangle*)os_malloc(in_pBufferLengths[3]+EXTRA_SPACE);
+
+    assert( mesh->positions );
+    assert( mesh->normals );
+    assert( mesh->texcoords );
+    assert( mesh->triangles );
 
     memcpy(mesh->positions,in_ppBufferPointers[0],in_pBufferLengths[0]);
     memcpy(mesh->normals  ,in_ppBufferPointers[1],in_pBufferLengths[1]);
