@@ -93,11 +93,11 @@ namespace embree
       {
 	/*! construct an invalid split by default */
 	__forceinline Split()
-	  : sah(inf), dim(-1), pos(0), numLeft(0) {}
+	  : sah(inf), dim(-1), pos(0) {}
 	
 	/*! constructs specified split */
-	__forceinline Split(float sah, int dim, int pos, const Mapping& mapping, int numLeft)
-	  : sah(sah), dim(dim), pos(pos), mapping(mapping), numLeft(numLeft) {}
+	__forceinline Split(float sah, int dim, int pos, const Mapping& mapping)
+	  : sah(sah), dim(dim), pos(pos), mapping(mapping) {}
 	
 	/*! calculates surface area heuristic for performing the split */
 	__forceinline float splitSAH() const { return sah; }
@@ -131,7 +131,6 @@ namespace embree
 	int dim;         //!< split dimension
 	int pos;         //!< bin index for splitting
 	Mapping mapping; //!< mapping into bins
-	int numLeft; // FIXME: remove
       };
       
     private:
@@ -171,6 +170,14 @@ namespace embree
 
 	  /*! finds the best split by scanning binning information */
 	  Split best(const Mapping& mapping, const size_t logBlockSize);
+
+	  __forceinline size_t getNumLeft(Split& split) 
+	  {
+	    size_t N = 0;
+	    for (size_t i=0; i<split.pos; i++)
+	      N += counts[i][split.dim];
+	    return N;
+	  }
 	  
 	  //private:
 	public: // FIXME

@@ -264,7 +264,7 @@ namespace embree
       
       /* sweep from left to right and compute SAH */
       ssei blocks_add = (1 << blocks_shift)-1;
-      ssei ii = 1; ssef vbestSAH = pos_inf; ssei vbestPos = 0; ssei vbestLeft = 0;
+      ssei ii = 1; ssef vbestSAH = pos_inf; ssei vbestPos = 0; 
       count = 0; bx = empty; by = empty; bz = empty;
       for (size_t i=1; i<mapping.size(); i++, ii+=1)
       {
@@ -277,7 +277,6 @@ namespace embree
 	const ssei lCount = (count     +blocks_add) >> blocks_shift; //blocks(count);
 	const ssei rCount = (rCounts[i]+blocks_add) >> blocks_shift; //blocks(rCounts[i]);
 	const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
-	vbestLeft= select(sah < vbestSAH,count,vbestLeft); // FIXME: remove
 	vbestPos = select(sah < vbestSAH,ii ,vbestPos);
 	vbestSAH = select(sah < vbestSAH,sah,vbestSAH);
       }
@@ -298,11 +297,10 @@ namespace embree
 	  bestDim = dim;
 	  bestPos = vbestPos[dim];
 	  bestSAH = vbestSAH[dim];
-	  bestLeft = vbestLeft[dim];
 	}
       }
       
-      return ObjectPartition::Split(bestSAH,bestDim,bestPos,mapping,bestLeft);
+      return ObjectPartition::Split(bestSAH,bestDim,bestPos,mapping);
     }
 
     template<>
@@ -668,6 +666,8 @@ namespace embree
       lnum[0] = this->global_bin16[threadID].counts[0][splitDim];
       for (size_t i=1; i<mapping.size(); i++)
         lnum[i] = lnum[i-1] + this->global_bin16[threadID].counts[i][splitDim];
+
+      size_t numLeft = bin16.getNumLeft(split);
       
       const unsigned int localNumLeft = lnum[splitPos-1];
       const unsigned int localNumRight = (endID-startID) - localNumLeft;
@@ -677,7 +677,7 @@ namespace embree
       
       PrimRef* __restrict__ src = (PrimRef*)this->src;
       PrimRef* __restrict__ dstLeft = dst + this->rec.begin + startLeft;
-      PrimRef* __restrict__ dstRight = dst + this->rec.begin + startRight + this->split.numLeft;
+      PrimRef* __restrict__ dstRight = dst + this->rec.begin + startRight + numLeft;
       
       /* split into left and right */
       Centroid_Scene_AABB leftBounds; leftBounds.reset();
@@ -710,8 +710,9 @@ namespace embree
       this->src = src;
       this->dst = dst;
       LockStepTaskScheduler::dispatchTask( task_parallelPartition, this, threadID, numThreads );
-      unsigned center = rec.begin + split.numLeft;
-      assert(lCounter == split.numLeft);
+      size_t numLeft = bin16.getNumLeft(split_i);
+      unsigned center = rec.begin + numLeft;
+      assert(lCounter == numLeft);
       assert(rCounter == rec.items() - lCounter);
       leftChild.init(left,rec.begin,center);
       rightChild.init(right,center,rec.end);
