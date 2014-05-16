@@ -447,73 +447,29 @@ namespace embree
       const float s = mapping.scale[dim];
       const int bestSplitDim = dim;
       const int bestSplit = pos;
-      
-      ssef left_centroidMinAABB = (ssef) local_left.centroid2.lower;
-      ssef left_centroidMaxAABB = (ssef) local_left.centroid2.upper;
-      ssef left_sceneMinAABB    = (ssef) local_left.geometry.lower;
-      ssef left_sceneMaxAABB    = (ssef) local_left.geometry.upper;
-      
-      ssef right_centroidMinAABB = (ssef) local_right.centroid2.lower;
-      ssef right_centroidMaxAABB = (ssef) local_right.centroid2.upper;
-      ssef right_sceneMinAABB    = (ssef) local_right.geometry.lower;
-      ssef right_sceneMaxAABB    = (ssef) local_right.geometry.upper;
-      
+            
       while(1)
       {
 	while (likely(l <= r && mapping.bin_unsafe(center2(l->bounds()))[bestSplitDim] < bestSplit)) 
 	{
-	  const ssef b_min = load4f((float*)&l->lower);
-	  const ssef b_max = load4f((float*)&l->upper);
-	  const ssef centroid2 = b_min+b_max;
-	  left_centroidMinAABB = min(left_centroidMinAABB,centroid2);
-	  left_centroidMaxAABB = max(left_centroidMaxAABB,centroid2);
-	  left_sceneMinAABB    = min(left_sceneMinAABB,b_min);
-	  left_sceneMaxAABB    = max(left_sceneMaxAABB,b_max);
+	  local_left.extend(l->bounds());
 	  ++l;
 	}
 	while (likely(l <= r && mapping.bin_unsafe(center2(r->bounds()))[bestSplitDim] >= bestSplit)) 
 	{
-	  const ssef b_min = load4f((float*)&r->lower);
-	  const ssef b_max = load4f((float*)&r->upper);
-	  const ssef centroid2 = b_min+b_max;
-	  right_centroidMinAABB = min(right_centroidMinAABB,centroid2);
-	  right_centroidMaxAABB = max(right_centroidMaxAABB,centroid2);
-	  right_sceneMinAABB    = min(right_sceneMinAABB,b_min);
-	  right_sceneMaxAABB    = max(right_sceneMaxAABB,b_max);
+	  local_right.extend(r->bounds());
 	  --r;
 	}
 	if (r<l) break;
 	
-	const ssef r_min = load4f((float*)&l->lower);
-	const ssef r_max = load4f((float*)&l->upper);
-	const ssef r_centroid2 = r_min+r_max;
-	right_centroidMinAABB = min(right_centroidMinAABB,r_centroid2);
-	right_centroidMaxAABB = max(right_centroidMaxAABB,r_centroid2);
-	right_sceneMinAABB    = min(right_sceneMinAABB,r_min);
-	right_sceneMaxAABB    = max(right_sceneMaxAABB,r_max);
-	const ssef l_min = load4f((float*)&r->lower);
-	const ssef l_max = load4f((float*)&r->upper);
-	const ssef l_centroid2 = l_min+l_max;
-	left_centroidMinAABB = min(left_centroidMinAABB,l_centroid2);
-	left_centroidMaxAABB = max(left_centroidMaxAABB,l_centroid2);
-	left_sceneMinAABB    = min(left_sceneMinAABB,l_min);
-	left_sceneMaxAABB    = max(left_sceneMaxAABB,l_max);
-	store4f((float*)&l->lower,l_min);
-	store4f((float*)&l->upper,l_max);
-	store4f((float*)&r->lower,r_min);
-	store4f((float*)&r->upper,r_max);
+	const BBox3fa bl = l->bounds();
+	const BBox3fa br = r->bounds();
+	local_left.extend(br);
+	local_right.extend(bl);
+	*(BBox3fa*)l = br;
+	*(BBox3fa*)r = bl;
 	l++; r--;
       }
-      
-      local_left.centroid2.lower = (Vec3fa) left_centroidMinAABB;
-      local_left.centroid2.upper = (Vec3fa) left_centroidMaxAABB;
-      local_left.geometry.lower = (Vec3fa) left_sceneMinAABB;
-      local_left.geometry.upper = (Vec3fa) left_sceneMaxAABB;
-      
-      local_right.centroid2.lower = (Vec3fa) right_centroidMinAABB;
-      local_right.centroid2.upper = (Vec3fa) right_centroidMaxAABB;
-      local_right.geometry.lower = (Vec3fa) right_sceneMinAABB;
-      local_right.geometry.upper = (Vec3fa) right_sceneMaxAABB;
       
       unsigned int center = l - prims;
       left.init(local_left,begin,center);
