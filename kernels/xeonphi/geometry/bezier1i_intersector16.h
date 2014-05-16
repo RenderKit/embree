@@ -15,6 +15,8 @@
 
 namespace embree
 {
+  typedef LinearSpace3<mic3f> LinearSpace_mic3f;
+    
   /*! Intersector for a single ray from a ray packet with a bezier curve. */
   struct Bezier1iIntersector16
   {
@@ -25,6 +27,11 @@ namespace embree
       __forceinline Precalculations (const Ray16& ray, const size_t k)
 	: ray_space(frame(Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed()) {} // FIXME: works only with normalized ray direction
 
+      __forceinline Precalculations (const LinearSpace_mic3f& ls16, const size_t k)
+	: ray_space(ls16.vx.x[k],ls16.vy.x[k],ls16.vz.x[k],
+		    ls16.vx.y[k],ls16.vy.y[k],ls16.vz.y[k],
+		    ls16.vx.z[k],ls16.vy.z[k],ls16.vz.z[k])
+      {}
       LinearSpace3fa ray_space;
       Mailbox mbox;
     };
@@ -38,6 +45,9 @@ namespace embree
       const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
       const float ray_tnear = ray.tnear[k];
       const float ray_tfar  = ray.tfar [k];
+      
+      prefetch<PFHINT_L1>((char*)curve_in.p + 0);
+      prefetch<PFHINT_L1>((char*)curve_in.p + 2);
 
       /* load bezier curve control points */
       const Vec3fa& v0 = curve_in.p[0];
@@ -77,7 +87,6 @@ namespace embree
       const float one_over_width = 1.0f/16.0f;
 
 
-    retry:
       if (unlikely(none(valid))) return false;
       STAT3(normal.trav_prim_hits,1,1,1);
       size_t i = select_min(valid,t);
@@ -94,7 +103,8 @@ namespace embree
       const float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
       const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
       Vec3fa P,T; curve3D.eval(uu,P,T);
-      if (T == Vec3fa(zero)) { valid ^= (1 << i); goto retry; } // ignore denormalized curves
+      assert( T != Vec3fa(zero) );
+      //if (T == Vec3fa(zero)) { valid ^= (1 << i); PING; goto retry; } // ignore denormalized curves
       ray.u[k] = uu;
       ray.v[k] = 0.0f;
       ray.tfar[k] = t[i];

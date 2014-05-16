@@ -74,7 +74,7 @@ namespace embree
 #if defined(__MIC__)
 
     {
-      const float dt = 1.0f/8.0f;
+      const float dt = 1.0f/16.0f;
       const mic_f t1 = mic_f(step)*dt;
       const mic_f t0 = 1.0f-t1;
       coeff0[0] = t0 * t0 * t0;
@@ -83,7 +83,7 @@ namespace embree
       coeff0[3] = t1 * t1 * t1;
     }
     {
-      const float dt = 1.0f/8.0f;
+      const float dt = 1.0f/16.0f;
       const mic_f t1 = mic_f(step)*dt+mic_f(dt);
       const mic_f t0 = 1.0f-t1;
       coeff1[0] = t0 * t0 * t0;
@@ -93,7 +93,7 @@ namespace embree
     }
 
     {
-      const float dt = 1.0f/8.0f;
+      const float dt = 1.0f/16.0f;
       const mic_f t1 = mic_f(step)*dt;
       const mic_f t0 = 1.0f-t1;
       coeff_P0[0] = t0 * t0 * t0;
@@ -103,7 +103,7 @@ namespace embree
     }
 
     {
-      const float dt = 1.0f/8.0f;
+      const float dt = 1.0f/16.0f;
       const mic_f t1 = mic_f(step)*dt;
       const mic_f t0 = 1.0f-t1;
       const mic_f d0 = -t0*t0;
@@ -117,7 +117,7 @@ namespace embree
     }
 
     {
-      const float dt = 1.0f/8.0f;
+      const float dt = 1.0f/16.0f;
       const mic_f t1 = mic_f(step)*dt+mic_f(dt);
       const mic_f t0 = 1.0f-t1;
       coeff_P3[0] = t0 * t0 * t0;
@@ -127,7 +127,7 @@ namespace embree
     }
 
     {
-      const float dt = 1.0f/8.0f;
+      const float dt = 1.0f/16.0f;
       const mic_f t1 = mic_f(step)*dt+mic_f(dt);
       const mic_f t0 = 1.0f-t1;
       const mic_f d0 = -t0*t0;

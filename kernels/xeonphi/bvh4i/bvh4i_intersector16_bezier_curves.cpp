@@ -120,6 +120,7 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
+      LinearSpace_mic3f ray16_space = frame(ray16.dir).transposed();
       /* setup */
       const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir16     = rcp_safe(ray16.dir);
@@ -135,8 +136,8 @@ namespace embree
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
         {
-	  Bezier1iIntersector16::Precalculations pre(ray16,rayIndex);
-
+	  Bezier1iIntersector16::Precalculations pre(ray16_space,rayIndex);
+	  
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
 
