@@ -51,8 +51,8 @@ namespace embree
       public:
         __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK> workStack;
         __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* threadStack;
-        ParallelBinner<16> parallelBinner;    
-	//ObjectPartition::ParallelBinner parallelBinner;
+        //ParallelBinner<16> parallelBinner;    
+	ObjectPartition::ParallelBinner parallelBinner;
         LockStepTaskScheduler scheduler;
         LinearBarrierActive barrier;
       };

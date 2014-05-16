@@ -61,6 +61,15 @@ namespace embree
 	
 	/*! calculates the mapping */
 	__forceinline Mapping(const PrimInfo& pinfo);
+
+	__forceinline Mapping (const Centroid_Scene_AABB& bounds) 
+        {
+	  size_t BINS = 16;
+	  num = BINS;
+          const ssef centroidDiagonal = (ssef) bounds.centroid2.size();
+          scale = select(centroidDiagonal != 0.0f,rcp(centroidDiagonal) * ssef(BINS * 0.99f),ssef(0.0f));
+          ofs = (ssef) bounds.centroid2.lower;
+        }
 	
 	/*! returns number of bins */
 	__forceinline size_t size() const { return num; }
@@ -91,11 +100,11 @@ namespace embree
       {
 	/*! construct an invalid split by default */
 	__forceinline Split()
-	  : sah(inf), dim(-1), pos(0) {}
+	  : sah(inf), dim(-1), pos(0), numLeft(0) {}
 	
 	/*! constructs specified split */
-	__forceinline Split(float sah, int dim, int pos, const Mapping& mapping)
-	  : sah(sah), dim(dim), pos(pos), mapping(mapping) {}
+	__forceinline Split(float sah, int dim, int pos, const Mapping& mapping, int numLeft)
+	  : sah(sah), dim(dim), pos(pos), mapping(mapping), numLeft(numLeft) {}
 	
 	/*! calculates surface area heuristic for performing the split */
 	__forceinline float splitSAH() const { return sah; }
@@ -129,6 +138,7 @@ namespace embree
 	int dim;         //!< split dimension
 	int pos;         //!< bin index for splitting
 	Mapping mapping; //!< mapping into bins
+	int numLeft; // FIXME: remove
       };
       
     private:
@@ -137,6 +147,9 @@ namespace embree
       struct __aligned(64) BinInfo
 	{
 	  BinInfo();
+
+	  /*! clears the bin info */
+	  void clear();
 	  
 	  /*! bins an array of bezier curves */
 	  void bin (const Bezier1* prims, size_t N, const Mapping& mapping);
@@ -146,6 +159,7 @@ namespace embree
 	  
 	  /*! bins an array of primitives */
 	  void bin_copy (const PrimRef* prims, size_t N, const Mapping& mapping, PrimRef* dest);
+	  void bin_copy (const PrimRef* prims, size_t begin, size_t end, const Mapping& mapping, PrimRef* dest);
 	  
 	  /*! bins a list of bezier curves */
 	  void bin (BezierRefList& prims, const Mapping& mapping);
@@ -155,6 +169,9 @@ namespace embree
 	  
 	  /*! merges in other binning information */
 	  void merge (const BinInfo& other);
+
+	   /*! merge multiple binning infos into one */
+	  static void reduce(const BinInfo binners[], size_t num, BinInfo& binner_o);
 	  
 	  /*! finds the best split by scanning binning information */
 	  Split best(const Mapping& mapping, const size_t logBlockSize);
@@ -221,41 +238,120 @@ namespace embree
       };
       
     public:
+
+    struct Mapping2
+    {
+    public:
       
+      __forceinline Mapping2 () {}
+      
+      __forceinline Mapping2 (const Centroid_Scene_AABB& bounds) 
+        {
+          const ssef centroidDiagonal = (ssef) bounds.centroid2.size();
+          scale = select(centroidDiagonal != 0.0f,rcp(centroidDiagonal) * ssef(16 * 0.99f),ssef(0.0f));
+          ofs = (ssef) bounds.centroid2.lower;
+        }
+      
+      /*! Computes the bin numbers for each dimension for a box. */
+      __forceinline ssei bin_unsafe(const BBox3fa& box) const {
+        return floori((ssef(center2(box)) - ofs)*scale);
+      }
+      
+      /*! Computes the bin numbers for each dimension for a box. */
+      __forceinline ssei bin(const BBox3fa& box) const {
+#if defined (__SSE4_1__)
+        return clamp(bin_unsafe(box),ssei(0),ssei(16-1));
+#else
+        ssei b = bin_unsafe(box);
+        assert(b[0] >=0 && b[0] < 16);
+        assert(b[1] >=0 && b[1] < 16);
+        assert(b[2] >=0 && b[2] < 16);
+        return b;
+#endif
+      }
+      
+    public:
+      ssef ofs;        //!< offset to compute bin
+      ssef scale;      //!< scaling factor to compute bin
+    };
+    
+      class Binner
+    {
+    public:
+      
+      /*! reset the binner */
+      __forceinline void reset()
+      {
+        for (size_t i=0;i<16;i++) 
+        {
+          bounds[i][0] = empty;
+          bounds[i][1] = empty;
+          bounds[i][2] = empty;
+          counts[i] = 0;
+        }
+      }
+      
+      /*! bin an array of primitives */
+      void bin(const PrimRef* __restrict__ const prims, const size_t begin, const size_t end, const Mapping2& mapping);
+      
+      /*! bin an array of primitives and copy to destination array */
+      void bin_copy(const PrimRef* __restrict__ const prims, const size_t begin, const size_t end, const Mapping2& mapping, PrimRef* __restrict__ const dst);
+      
+      /*! merge multiple binning infos into one */
+      static void reduce(const Binner binners[], size_t num, Binner& binner_o);
+      
+      /*! calculate the best possible split */
+      void best(Split& split, const Mapping2& mapping);
+      
+      /* inplace partitioning of a list of primitives */
+      void partition(PrimRef*__restrict__ const prims,
+                     const size_t begin,
+                     const size_t end,
+                     const Split& split,
+                     const Mapping2& mapping,
+                     BuildRecord& left,
+                     BuildRecord& right);
+      
+    public:
+      BBox3fa bounds[16][4];
+      ssei   counts[16];
+    };
+
       class ParallelBinner
-	{
-	public:
-	  
-	  /*! parallel binbing of an array of primitives */
-	  void bin(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads);
-	  
-	  /*! calculate the best possible split */
-	  void best(Split& split);
-	  
-	  /* parallel partitioning of a list of primitives */
-	  void partition(const PrimRef* src, PrimRef* dst, 
-			 Split& split, 
-			 BuildRecord &leftChild,
-			 BuildRecord &rightChild,
-			 const size_t threadID, const size_t numThreads);
-	  
-	private:
-	  TASK_RUN_FUNCTION(ParallelBinner,task_parallelBinning);
-	  TASK_RUN_FUNCTION(ParallelBinner,task_parallelPartition);
-	  
-	public:
-	  BuildRecord rec;
-	  Centroid_Scene_AABB left;
-	  Centroid_Scene_AABB right;
-	  Mapping mapping;
-	  Split split;
-	  const PrimRef* src;
-	  PrimRef* dst;
-	  __aligned(64) AlignedAtomicCounter32 lCounter;
-	  __aligned(64) AlignedAtomicCounter32 rCounter;
-	  BinInfo bin16;
-	  __aligned(64) BinInfo global_bin16[MAX_MIC_THREADS]; // FIXME: hardcoded number of threads
-	};
+      {
+      public:
+        
+        /*! parallel binbing of an array of primitives */
+        void bin(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads);
+        
+        /*! calculate the best possible split */
+        void best(Split& split);
+        
+        /* parallel partitioning of a list of primitives */
+        void partition(const PrimRef* src, PrimRef* dst, 
+                       Split& split, 
+                       BuildRecord &leftChild,
+                       BuildRecord &rightChild,
+                       const size_t threadID, const size_t numThreads);
+        
+      private:
+        TASK_FUNCTION(ParallelBinner,parallelBinning);
+        TASK_FUNCTION(ParallelBinner,parallelPartition);
+        
+      public:
+        BuildRecord rec;
+        Centroid_Scene_AABB left;
+        Centroid_Scene_AABB right;
+        Mapping2 mapping;
+        Split split;
+        const PrimRef* src;
+        PrimRef* dst;
+        __aligned(64) AlignedAtomicCounter32 lCounter;
+        __aligned(64) AlignedAtomicCounter32 rCounter;
+        Binner bin16;
+        __aligned(64) Binner global_bin16[MAX_MIC_THREADS];
+      };
+
     };
   }
 }
