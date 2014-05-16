@@ -23,33 +23,52 @@ namespace embree
 {
   namespace isa
   {
-    /*! stores bounding information for a set of primitives */
-    class PrimInfo
+    class CentGeomBBox3fa
     {
-      /*! Compute the number of blocks occupied in one dimension. */
-      //__forceinline static size_t  blocks(size_t a) { return a; }
-      //__forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
-      
     public:
-      __forceinline PrimInfo () 
-	: begin(0), end(0), geomBounds(empty), centBounds(empty) {}
+      __forceinline CentGeomBBox3fa () 
+	: geomBounds(empty), centBounds(empty) {}
       
-      __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
-	: begin(0), end(num), geomBounds(geomBounds), centBounds(centBounds) {}
+      __forceinline CentGeomBBox3fa (const BBox3fa& geomBounds, const BBox3fa& centBounds) 
+	: geomBounds(geomBounds), centBounds(centBounds) {}
       
-      __forceinline PrimInfo (size_t begin, size_t end, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
-	: begin(begin), end(end), geomBounds(geomBounds), centBounds(centBounds) {}
-      
-      __forceinline void add(const BBox3fa& geomBounds_, const BBox3fa& centBounds_, size_t num_ = 1) {
+      __forceinline void extend(const BBox3fa& geomBounds_, const BBox3fa& centBounds_) {
 	geomBounds.extend(geomBounds_);
 	centBounds.extend(centBounds_);
+      }
+
+      __forceinline void merge(const CentGeomBBox3fa& other) 
+      {
+	geomBounds.extend(other.geomBounds);
+	centBounds.extend(other.centBounds);
+      }
+      
+    public:
+      BBox3fa geomBounds;   //!< geometry bounds of primitives
+      BBox3fa centBounds;   //!< centroid bounds of primitives
+    };
+
+    /*! stores bounding information for a set of primitives */
+    class PrimInfo : public CentGeomBBox3fa
+    {
+    public:
+      __forceinline PrimInfo () 
+	: begin(0), end(0) {}
+      
+      __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
+	: begin(0), end(num), CentGeomBBox3fa(geomBounds,centBounds) {}
+      
+      __forceinline PrimInfo (size_t begin, size_t end, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
+	: begin(begin), end(end), CentGeomBBox3fa(geomBounds,centBounds) {}
+      
+      __forceinline void add(const BBox3fa& geomBounds_, const BBox3fa& centBounds_, size_t num_ = 1) {
+	CentGeomBBox3fa::extend(geomBounds_,centBounds_);
 	end += num_;
       }
       
       __forceinline void merge(const PrimInfo& other) 
       {
-	geomBounds.extend(other.geomBounds);
-	centBounds.extend(other.centBounds);
+	CentGeomBBox3fa::merge(other);
 	begin = min(begin,other.begin);
 	end   = max(end ,other.end  );
       }
@@ -77,8 +96,6 @@ namespace embree
       
     public:
       size_t begin,end;          //!< number of primitives
-      BBox3fa geomBounds;   //!< geometry bounds of primitives
-      BBox3fa centBounds;   //!< centroid bounds of primitives
     };
     
     /*! Performs fallback splits */
