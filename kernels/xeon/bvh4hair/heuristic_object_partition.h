@@ -118,7 +118,7 @@ namespace embree
 	
 	/*! array partitioning */
 	void partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end,
-		       BuildRecord& left, BuildRecord& right);
+		       BuildRecord& left, BuildRecord& right) const;
 	
 	void partition_parallel(size_t threadIndex, size_t threadCount, 
 				PrimRef* prims, PrimRef* dst, const size_t begin, const size_t end,

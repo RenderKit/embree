@@ -432,30 +432,23 @@ namespace embree
       }
     }
         
-    void ObjectPartition::Split::partition(PrimRef *__restrict__ const prims,
-					   const size_t begin, const size_t end,
-					   BuildRecord& left, BuildRecord& right)
+    void ObjectPartition::Split::partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, BuildRecord& left, BuildRecord& right) const
     {
-      Centroid_Scene_AABB local_left; local_left.reset();
-      Centroid_Scene_AABB local_right; local_right.reset();
+      CentGeomBBox3fa local_left; local_left.reset();
+      CentGeomBBox3fa local_right; local_right.reset();
       
       assert(begin <= end);
       PrimRef* l = prims + begin;
       PrimRef* r = prims + end - 1;
       
-      const float c = mapping.ofs[dim];
-      const float s = mapping.scale[dim];
-      const int bestSplitDim = dim;
-      const int bestSplit = pos;
-            
       while(1)
       {
-	while (likely(l <= r && mapping.bin_unsafe(center2(l->bounds()))[bestSplitDim] < bestSplit)) 
+	while (likely(l <= r && mapping.bin_unsafe(center2(l->bounds()))[dim] < pos)) 
 	{
 	  local_left.extend(l->bounds());
 	  ++l;
 	}
-	while (likely(l <= r && mapping.bin_unsafe(center2(r->bounds()))[bestSplitDim] >= bestSplit)) 
+	while (likely(l <= r && mapping.bin_unsafe(center2(r->bounds()))[dim] >= pos)) 
 	{
 	  local_right.extend(r->bounds());
 	  --r;
@@ -472,8 +465,8 @@ namespace embree
       }
       
       unsigned int center = l - prims;
-      left.init(local_left,begin,center);
-      right.init(local_right,center,end);
+      left.init(Centroid_Scene_AABB(local_left.geomBounds,local_left.centBounds),begin,center);
+      right.init(Centroid_Scene_AABB(local_right.geomBounds,local_right.centBounds),center,end);
       
       assert(area(left.bounds.geometry) >= 0.0f);
       assert(area(left.bounds.centroid2) >= 0.0f);
