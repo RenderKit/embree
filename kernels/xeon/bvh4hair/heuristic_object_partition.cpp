@@ -293,58 +293,6 @@ namespace embree
       return ObjectPartition::Split(bestSAH,bestDim,bestPos,mapping,bestLeft);
     }
 
-    void ObjectPartition::BinInfo::best2(Split& split, const Mapping& mapping)
-    {
-      ssef rAreas[16];
-      ssei rCounts[16];
-      
-      /* sweep from right to left and compute parallel prefix of merged bounds */
-      ssei count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
-      for (size_t i=16-1; i>0; i--)
-      {
-        count += counts[i];
-        rCounts[i] = count;
-        bx.extend(bounds[i][0]); rAreas[i][0] = area(bx);
-        by.extend(bounds[i][1]); rAreas[i][1] = area(by);
-        bz.extend(bounds[i][2]); rAreas[i][2] = area(bz);
-      }
-      
-      /* sweep from left to right and compute SAH */
-      ssei ii = 1; ssef bestSAH = pos_inf; ssei bestPos = 0; ssei bestLeft = 0;
-      count = 0; bx = empty; by = empty; bz = empty;
-      for (size_t i=1; i<16; i++, ii+=1)
-      {
-        count += counts[i-1];
-        bx.extend(bounds[i-1][0]); float Ax = area(bx);
-        by.extend(bounds[i-1][1]); float Ay = area(by);
-        bz.extend(bounds[i-1][2]); float Az = area(bz);
-        const ssef lArea = ssef(Ax,Ay,Az,Az);
-        const ssef rArea = rAreas[i];
-        const ssei lCount = (count     +ssei(3)) >> 2;
-        const ssei rCount = (rCounts[i]+ssei(3)) >> 2;
-        const ssef sah = lArea*ssef(ssei_t(lCount)) + rArea*ssef(ssei_t(rCount));
-        bestPos = select(sah < bestSAH,ii ,bestPos);
-        bestLeft= select(sah < bestSAH,count,bestLeft);
-        bestSAH = select(sah < bestSAH,sah,bestSAH);
-      }
-      
-      /* find best dimension */
-      for (size_t dim=0; dim<3; dim++) 
-      {
-        /* ignore zero sized dimensions */
-        if (unlikely(mapping.scale[dim] == 0.0f)) 
-          continue;
-        
-        /* test if this is a better dimension */
-        if (bestSAH[dim] < split.sah && bestPos[dim] != 0) {
-          split.dim = dim;
-          split.pos = bestPos[dim];
-          split.sah = bestSAH[dim];
-          split.numLeft = bestLeft[dim];
-        }
-      }
-    }
-    
     template<>
     const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
     {
@@ -841,8 +789,7 @@ namespace embree
     }
     
     void ObjectPartition::ParallelBinner::best(Split& split) {
-      bin16.best2(split,mapping);
-      //split = bin16.best(mapping,2); // FIXME: hardcoded constant
+      split = bin16.best(mapping,2); // FIXME: hardcoded constant
     }
     
     void ObjectPartition::ParallelBinner::parallelPartition(const size_t threadID, const size_t numThreads)

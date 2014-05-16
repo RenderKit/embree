@@ -180,8 +180,6 @@ namespace embree
 	  /*! finds the best split by scanning binning information */
 	  Split best(const Mapping& mapping, const size_t logBlockSize);
 	  
-	  void best2(Split& split, const Mapping& mapping);
-
 	  //private:
 	public: // FIXME
 	  BBox3fa bounds[maxBins][4]; //!< geometry bounds for each bin in each dimension
