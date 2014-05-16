@@ -173,6 +173,55 @@ namespace embree
       }
     }
 
+    void ObjectPartition::BinInfo::bin_copy2(const PrimRef* __restrict__ const prims,
+					     const size_t begin,
+					     const size_t end,
+					     const Mapping& mapping,
+					     PrimRef* __restrict__ const dest)
+    {
+      //reset();
+      clear();
+      if (end-begin == 0) return;
+      
+      /* unrolled binning loop */
+      size_t i; 
+      for (i=begin; i<end-1; i+=2)
+      {
+        /*! map even and odd primitive to bin */
+        const BBox3fa prim0 = prims[i+0].bounds(); const ssei bin0 = mapping.bin(prim0);
+        const BBox3fa prim1 = prims[i+1].bounds(); const ssei bin1 = mapping.bin(prim1);
+        
+        /*! increase bounds for bins for even primitive */
+        const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].extend(prim0);
+        const int b01 = bin0[1]; counts[b01][1]++; bounds[b01][1].extend(prim0);
+        const int b02 = bin0[2]; counts[b02][2]++; bounds[b02][2].extend(prim0);
+        
+        /*! increase bounds of bins for odd primitive */
+        const int b10 = bin1[0]; counts[b10][0]++; bounds[b10][0].extend(prim1);
+        const int b11 = bin1[1]; counts[b11][1]++; bounds[b11][1].extend(prim1);
+        const int b12 = bin1[2]; counts[b12][2]++; bounds[b12][2].extend(prim1);
+        
+        /*! copy to destination */
+        dest[i+0] = prims[i+0];
+        dest[i+1] = prims[i+1];
+      }
+      
+      /*! for uneven number of primitives */
+      if (i < end)
+      {
+        /*! map primitive to bin */
+        const BBox3fa prim0 = prims[i].bounds(); const ssei bin0 = mapping.bin(prim0);
+        
+        /*! increase bounds of bins */
+        const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].extend(prim0);
+        const int b01 = bin0[1]; counts[b01][1]++; bounds[b01][1].extend(prim0);
+        const int b02 = bin0[2]; counts[b02][2]++; bounds[b02][2].extend(prim0);
+        
+        /*! copy to destination */
+        dest[i+0] = prims[i+0];
+      }
+    }
+    
     __forceinline void ObjectPartition::BinInfo::bin_copy (const PrimRef* prims, size_t begin, size_t end, const Mapping& mapping, PrimRef* dest)
     {
       bin_copy(prims+begin,end-begin,mapping,dest+begin);
@@ -210,6 +259,22 @@ namespace embree
       {
         const BinInfo& binner = binners[tid];
         for (size_t bin=0; bin<maxBins; bin++) 
+        {
+          binner_o.bounds[bin][0].extend(binner.bounds[bin][0]);
+          binner_o.bounds[bin][1].extend(binner.bounds[bin][1]);
+          binner_o.bounds[bin][2].extend(binner.bounds[bin][2]);
+          binner_o.counts[bin] += binner.counts[bin];
+        }
+      }
+    }
+
+    void ObjectPartition::BinInfo::reduce2(const BinInfo binners[], size_t num, BinInfo& binner_o)
+    {
+      binner_o = binners[0];
+      for (size_t tid=1; tid<num; tid++) 
+      {
+        const BinInfo& binner = binners[tid];
+        for (size_t bin=0; bin<16; bin++) 
         {
           binner_o.bounds[bin][0].extend(binner.bounds[bin][0]);
           binner_o.bounds[bin][1].extend(binner.bounds[bin][1]);
@@ -275,6 +340,58 @@ namespace embree
       }
       
       return ObjectPartition::Split(bestSAH,bestDim,bestPos,mapping,bestLeft);
+    }
+
+    void ObjectPartition::BinInfo::best2(Split& split, const Mapping& mapping)
+    {
+      ssef rAreas[16];
+      ssei rCounts[16];
+      
+      /* sweep from right to left and compute parallel prefix of merged bounds */
+      ssei count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
+      for (size_t i=16-1; i>0; i--)
+      {
+        count += counts[i];
+        rCounts[i] = count;
+        bx.extend(bounds[i][0]); rAreas[i][0] = area(bx);
+        by.extend(bounds[i][1]); rAreas[i][1] = area(by);
+        bz.extend(bounds[i][2]); rAreas[i][2] = area(bz);
+      }
+      
+      /* sweep from left to right and compute SAH */
+      ssei ii = 1; ssef bestSAH = pos_inf; ssei bestPos = 0; ssei bestLeft = 0;
+      count = 0; bx = empty; by = empty; bz = empty;
+      for (size_t i=1; i<16; i++, ii+=1)
+      {
+        count += counts[i-1];
+        bx.extend(bounds[i-1][0]); float Ax = area(bx);
+        by.extend(bounds[i-1][1]); float Ay = area(by);
+        bz.extend(bounds[i-1][2]); float Az = area(bz);
+        const ssef lArea = ssef(Ax,Ay,Az,Az);
+        const ssef rArea = rAreas[i];
+        const ssei lCount = (count     +ssei(3)) >> 2;
+        const ssei rCount = (rCounts[i]+ssei(3)) >> 2;
+        const ssef sah = lArea*ssef(ssei_t(lCount)) + rArea*ssef(ssei_t(rCount));
+        bestPos = select(sah < bestSAH,ii ,bestPos);
+        bestLeft= select(sah < bestSAH,count,bestLeft);
+        bestSAH = select(sah < bestSAH,sah,bestSAH);
+      }
+      
+      /* find best dimension */
+      for (size_t dim=0; dim<3; dim++) 
+      {
+        /* ignore zero sized dimensions */
+        if (unlikely(mapping.scale[dim] == 0.0f)) 
+          continue;
+        
+        /* test if this is a better dimension */
+        if (bestSAH[dim] < split.sah && bestPos[dim] != 0) {
+          split.dim = dim;
+          split.pos = bestPos[dim];
+          split.sah = bestSAH[dim];
+          split.numLeft = bestLeft[dim];
+        }
+      }
     }
     
     template<>
@@ -750,11 +867,11 @@ namespace embree
 
     void ObjectPartition::ParallelBinner::parallelBinning(const size_t threadID, const size_t numThreads)
     {
-      Binner& bin16 = this->global_bin16[threadID];
+      BinInfo& bin16 = this->global_bin16[threadID];
       const size_t startID = this->rec.begin + (threadID+0)*this->rec.items()/numThreads;
       const size_t endID   = this->rec.begin + (threadID+1)*this->rec.items()/numThreads;
       
-      bin16.bin_copy(src,startID,endID,this->mapping,dst);
+      bin16.bin_copy2(src,startID,endID,this->mapping,dst);
     }
     
     void ObjectPartition::ParallelBinner::bin(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads) 
@@ -768,11 +885,12 @@ namespace embree
       LockStepTaskScheduler::dispatchTask(task_parallelBinning, this, threadID, numThreads );
       
       /* reduce binning information from all threads */
-      Binner::reduce(global_bin16,numThreads,bin16);
+      BinInfo::reduce2(global_bin16,numThreads,bin16);
     }
     
     void ObjectPartition::ParallelBinner::best(Split& split) {
-      bin16.best(split,mapping);
+      bin16.best2(split,mapping);
+      //split = bin16.best(mapping,2); // FIXME: hardcoded constant
     }
     
     void ObjectPartition::ParallelBinner::parallelPartition(const size_t threadID, const size_t numThreads)

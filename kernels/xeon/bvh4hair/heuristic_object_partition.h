@@ -163,6 +163,12 @@ namespace embree
 	  void bin_copy (const PrimRef* prims, size_t N, const Mapping& mapping, PrimRef* dest);
 	  void bin_copy (const PrimRef* prims, size_t begin, size_t end, const Mapping& mapping, PrimRef* dest);
 	  
+	  void bin_copy2(const PrimRef* __restrict__ const prims,
+		     const size_t begin,
+		     const size_t end,
+		     const Mapping& mapping,
+		     PrimRef* __restrict__ const dest);
+
 	  /*! bins a list of bezier curves */
 	  void bin (BezierRefList& prims, const Mapping& mapping);
 	  
@@ -175,9 +181,13 @@ namespace embree
 	   /*! merge multiple binning infos into one */
 	  static void reduce(const BinInfo binners[], size_t num, BinInfo& binner_o);
 	  
+	  static void reduce2(const BinInfo binners[], size_t num, BinInfo& binner_o);
+
 	  /*! finds the best split by scanning binning information */
 	  Split best(const Mapping& mapping, const size_t logBlockSize);
 	  
+	  void best2(Split& split, const Mapping& mapping);
+
 	  //private:
 	public: // FIXME
 	  BBox3fa bounds[maxBins][4]; //!< geometry bounds for each bin in each dimension
@@ -314,8 +324,8 @@ namespace embree
         PrimRef* dst;
         __aligned(64) AlignedAtomicCounter32 lCounter;
         __aligned(64) AlignedAtomicCounter32 rCounter;
-        Binner bin16;
-        __aligned(64) Binner global_bin16[MAX_MIC_THREADS];
+        BinInfo bin16;
+        __aligned(64) BinInfo global_bin16[MAX_MIC_THREADS];
       };
 
     };
