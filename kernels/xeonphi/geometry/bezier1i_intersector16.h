@@ -191,6 +191,7 @@ namespace embree
     static __forceinline bool occluded(const Precalculations& pre, const Ray16& ray, const size_t k, const Bezier1i& curve_in, const void* geom) 
     {
       STAT3(shadow.trav_prims,1,1,1);
+      FATAL("optimize");
 
       /* load ray */
       const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
