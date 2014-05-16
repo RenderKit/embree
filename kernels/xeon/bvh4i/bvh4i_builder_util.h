@@ -32,6 +32,11 @@ namespace embree
     BBox3fa centroid2;
     BBox3fa geometry;
 
+    __forceinline Centroid_Scene_AABB () {}
+
+    __forceinline Centroid_Scene_AABB (const BBox3fa& geom, const BBox3fa& cent)
+      : geometry(geom), centroid2(cent) {}
+
     __forceinline void reset() {
       centroid2 = geometry = empty;
     }
@@ -112,7 +117,7 @@ namespace embree
     size_t parentNode; 
 
     BuildRecord()
-      {
+    {
 	assert(sizeof(BuildRecord) == 128);
       }
 

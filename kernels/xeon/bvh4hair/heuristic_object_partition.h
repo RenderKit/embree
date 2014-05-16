@@ -61,7 +61,7 @@ namespace embree
 	
 	/*! calculates the mapping */
 	__forceinline Mapping(const PrimInfo& pinfo);
-	
+
 	/*! returns number of bins */
 	__forceinline size_t size() const { return num; }
 	
@@ -118,7 +118,7 @@ namespace embree
 	
 	/*! array partitioning */
 	void partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end,
-		       BuildRecord& left, BuildRecord& right);
+		       BuildRecord& left, BuildRecord& right) const;
 	
 	void partition_parallel(size_t threadIndex, size_t threadCount, 
 				PrimRef* prims, PrimRef* dst, const size_t begin, const size_t end,
@@ -137,6 +137,9 @@ namespace embree
       struct __aligned(64) BinInfo
 	{
 	  BinInfo();
+
+	  /*! clears the bin info */
+	  void clear();
 	  
 	  /*! bins an array of bezier curves */
 	  void bin (const Bezier1* prims, size_t N, const Mapping& mapping);
@@ -146,6 +149,7 @@ namespace embree
 	  
 	  /*! bins an array of primitives */
 	  void bin_copy (const PrimRef* prims, size_t N, const Mapping& mapping, PrimRef* dest);
+	  void bin_copy (const PrimRef* prims, size_t begin, size_t end, const Mapping& mapping, PrimRef* dest);
 	  
 	  /*! bins a list of bezier curves */
 	  void bin (BezierRefList& prims, const Mapping& mapping);
@@ -155,9 +159,23 @@ namespace embree
 	  
 	  /*! merges in other binning information */
 	  void merge (const BinInfo& other);
+	  void merge (const BinInfo& other, size_t numBins);
+
+	   /*! merge multiple binning infos into one */
+	  static void reduce(const BinInfo binners[], size_t num, BinInfo& binner_o);
 	  
+	  static void reduce2(const BinInfo binners[], size_t num, BinInfo& binner_o);
+
 	  /*! finds the best split by scanning binning information */
 	  Split best(const Mapping& mapping, const size_t logBlockSize);
+
+	  __forceinline size_t getNumLeft(Split& split) 
+	  {
+	    size_t N = 0;
+	    for (size_t i=0; i<split.pos; i++)
+	      N += counts[i][split.dim];
+	    return N;
+	  }
 	  
 	  //private:
 	public: // FIXME
@@ -221,41 +239,35 @@ namespace embree
       };
       
     public:
-      
+
       class ParallelBinner
-	{
-	public:
-	  
-	  /*! parallel binbing of an array of primitives */
-	  void bin(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads);
-	  
-	  /*! calculate the best possible split */
-	  void best(Split& split);
-	  
-	  /* parallel partitioning of a list of primitives */
-	  void partition(const PrimRef* src, PrimRef* dst, 
-			 Split& split, 
-			 BuildRecord &leftChild,
-			 BuildRecord &rightChild,
-			 const size_t threadID, const size_t numThreads);
-	  
-	private:
-	  TASK_RUN_FUNCTION(ParallelBinner,task_parallelBinning);
-	  TASK_RUN_FUNCTION(ParallelBinner,task_parallelPartition);
-	  
-	public:
-	  BuildRecord rec;
-	  Centroid_Scene_AABB left;
-	  Centroid_Scene_AABB right;
-	  Mapping mapping;
-	  Split split;
-	  const PrimRef* src;
-	  PrimRef* dst;
-	  __aligned(64) AlignedAtomicCounter32 lCounter;
-	  __aligned(64) AlignedAtomicCounter32 rCounter;
-	  BinInfo bin16;
-	  __aligned(64) BinInfo global_bin16[MAX_MIC_THREADS]; // FIXME: hardcoded number of threads
-	};
+      {
+      public:
+        
+        /*! parallel binbing of an array of primitives */
+        float find(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads);
+        
+        /* parallel partitioning of a list of primitives */
+        void partition(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads);
+        
+      private:
+        TASK_FUNCTION(ParallelBinner,parallelBinning);
+        TASK_FUNCTION(ParallelBinner,parallelPartition);
+        
+      public:
+	PrimInfo pinfo;
+        PrimInfo left;
+        PrimInfo right;
+        Mapping mapping;
+        Split split;
+        const PrimRef* src;
+        PrimRef* dst;
+        __aligned(64) AlignedAtomicCounter32 lCounter;
+        __aligned(64) AlignedAtomicCounter32 rCounter;
+        BinInfo bin16;
+        __aligned(64) BinInfo global_bin16[MAX_MIC_THREADS];
+      };
+
     };
   }
 }

@@ -495,20 +495,16 @@ namespace embree
       
       /* use primitive array temporarily for parallel splits */
       PrimRef* tmp = (PrimRef*) primAllocator.base();
+      PrimInfo pinfo(current.begin,current.end,current.bounds.geometry,current.bounds.centroid2);
 
       /* parallel binning of centroids */
-      g_state->parallelBinner.bin(current,prims,tmp,threadID,numThreads);
-      
-      /* find best split */
-      //ObjectPartition::Split split; 
-      Split split; 
-      g_state->parallelBinner.best(split);
-      
+      const float sah = g_state->parallelBinner.find(pinfo,prims,tmp,threadID,numThreads);
+
       /* if we cannot find a valid split, enforce an arbitrary split */
-      if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
+      if (unlikely(sah == float(inf))) split_fallback(prims,current,leftChild,rightChild);
       
       /* parallel partitioning of items */
-      else g_state->parallelBinner.partition(tmp,prims,split,leftChild,rightChild,threadID,numThreads);
+      else g_state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads);
       
       if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
       if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();

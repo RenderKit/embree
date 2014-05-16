@@ -23,58 +23,106 @@ namespace embree
 {
   namespace isa
   {
-    /*! stores bounding information for a set of primitives */
-    class PrimInfo
+    class CentGeomBBox3fa
     {
-      /*! Compute the number of blocks occupied in one dimension. */
-      //__forceinline static size_t  blocks(size_t a) { return a; }
-      //__forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
-      
     public:
-      __forceinline PrimInfo () 
-	: num(0), geomBounds(empty), centBounds(empty) {}
+      __forceinline CentGeomBBox3fa () 
+	: geomBounds(empty), centBounds(empty) {}
       
-      __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
-	: num(num), geomBounds(geomBounds), centBounds(centBounds) {}
+      __forceinline CentGeomBBox3fa (const BBox3fa& geomBounds, const BBox3fa& centBounds) 
+	: geomBounds(geomBounds), centBounds(centBounds) {}
       
-      __forceinline void add(const BBox3fa& geomBounds_, const BBox3fa& centBounds_, size_t num_ = 1) {
+      __forceinline void extend(const BBox3fa& geomBounds_, const BBox3fa& centBounds_) {
 	geomBounds.extend(geomBounds_);
 	centBounds.extend(centBounds_);
-	num += num_;
+      }
+
+      __forceinline void reset() {
+	geomBounds = empty;
+	centBounds = empty;
+      }
+
+      __forceinline void extend(const BBox3fa& geomBounds_) {
+	geomBounds.extend(geomBounds_);
+	centBounds.extend(center2(geomBounds_));
+      }
+
+      __forceinline void extend_atomic(const CentGeomBBox3fa& bounds) 
+      {
+	atomic_min_f32(&geomBounds.lower.x ,bounds.geomBounds.lower.x);
+	atomic_min_f32(&geomBounds.lower.y ,bounds.geomBounds.lower.y);
+	atomic_min_f32(&geomBounds.lower.z ,bounds.geomBounds.lower.z);
+	atomic_max_f32(&geomBounds.upper.x ,bounds.geomBounds.upper.x);
+	atomic_max_f32(&geomBounds.upper.y ,bounds.geomBounds.upper.y);
+	atomic_max_f32(&geomBounds.upper.z ,bounds.geomBounds.upper.z);
+
+	atomic_min_f32(&centBounds.lower.x ,bounds.centBounds.lower.x);
+	atomic_min_f32(&centBounds.lower.y ,bounds.centBounds.lower.y);
+	atomic_min_f32(&centBounds.lower.z ,bounds.centBounds.lower.z);
+	atomic_max_f32(&centBounds.upper.x ,bounds.centBounds.upper.x);
+	atomic_max_f32(&centBounds.upper.y ,bounds.centBounds.upper.y);
+	atomic_max_f32(&centBounds.upper.z ,bounds.centBounds.upper.z);
+      }
+
+      __forceinline void merge(const CentGeomBBox3fa& other) 
+      {
+	geomBounds.extend(other.geomBounds);
+	centBounds.extend(other.centBounds);
+      }
+      
+    public:
+      BBox3fa geomBounds;   //!< geometry bounds of primitives
+      BBox3fa centBounds;   //!< centroid bounds of primitives
+    };
+
+    /*! stores bounding information for a set of primitives */
+    class PrimInfo : public CentGeomBBox3fa
+    {
+    public:
+      __forceinline PrimInfo () 
+	: begin(0), end(0) {}
+      
+      __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
+	: begin(0), end(num), CentGeomBBox3fa(geomBounds,centBounds) {}
+      
+      __forceinline PrimInfo (size_t begin, size_t end, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
+	: begin(begin), end(end), CentGeomBBox3fa(geomBounds,centBounds) {}
+      
+      __forceinline void add(const BBox3fa& geomBounds_, const BBox3fa& centBounds_, size_t num_ = 1) {
+	CentGeomBBox3fa::extend(geomBounds_,centBounds_);
+	end += num_;
       }
       
       __forceinline void merge(const PrimInfo& other) 
       {
-	geomBounds.extend(other.geomBounds);
-	centBounds.extend(other.centBounds);
-	num += other.num;
+	CentGeomBBox3fa::merge(other);
+	begin = min(begin,other.begin);
+	end   = max(end ,other.end  );
       }
       
       /*! returns the number of primitives */
       __forceinline size_t size() const { 
-	return num; 
+	return end-begin; 
       }
       
       __forceinline float leafSAH() const { 
-	return halfArea(geomBounds)*float(num); 
+	return halfArea(geomBounds)*float(size()); 
 	//return halfArea(geomBounds)*blocks(num); 
       }
       
       __forceinline float leafSAH(size_t block_shift) const { 
-	return halfArea(geomBounds)*float((num+(size_t(1)<<block_shift)-1) >> block_shift);
+	return halfArea(geomBounds)*float((size()+(size_t(1)<<block_shift)-1) >> block_shift);
 	//return halfArea(geomBounds)*float((num+3) >> 2);
 	//return halfArea(geomBounds)*blocks(num); 
       }
       
       /*! stream output */
       friend std::ostream& operator<<(std::ostream& cout, const PrimInfo& pinfo) {
-	return cout << "PrimInfo { num = " << pinfo.num << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
+	return cout << "PrimInfo { begin = " << pinfo.begin << ", end = " << pinfo.end << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
       }
       
     public:
-      size_t num;          //!< number of primitives
-      BBox3fa geomBounds;   //!< geometry bounds of primitives
-      BBox3fa centBounds;   //!< centroid bounds of primitives
+      size_t begin,end;          //!< number of primitives
     };
     
     /*! Performs fallback splits */

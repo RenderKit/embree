@@ -43,7 +43,8 @@ namespace embree
     Builder* builder = NULL;
     if      (g_builder == "default"     ) builder = BVH4MBBuilderObjectSplit1(accel,&scene->flat_triangle_source_2,scene,1,inf);
     else if (g_builder == "objectsplit" ) builder = BVH4MBBuilderObjectSplit1(accel,&scene->flat_triangle_source_2,scene,1,inf);
-    else throw std::runtime_error("unknown builder "+g_builder+" for BVH4MB<Triangle1v>");
+    else builder = BVH4MBBuilderObjectSplit1(accel,&scene->flat_triangle_source_2,scene,1,inf); // FIXME: dont look for triangle builder type
+    //throw std::runtime_error("unknown builder "+g_builder+" for BVH4MB<Triangle1v>");
     
     Accel::Intersectors intersectors;
     intersectors.ptr = accel;
