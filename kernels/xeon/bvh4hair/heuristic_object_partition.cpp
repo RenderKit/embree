@@ -667,8 +667,8 @@ namespace embree
       PrimRef* __restrict__ dstRight = dst + this->rec.begin + startRight + numLeft;
       
       /* split into left and right */
-      Centroid_Scene_AABB leftBounds; leftBounds.reset();
-      Centroid_Scene_AABB rightBounds; rightBounds.reset();
+      CentGeomBBox3fa leftBounds; leftBounds.reset();
+      CentGeomBBox3fa rightBounds; rightBounds.reset();
       
       for (size_t i=startID; i<endID; i++)
       {
@@ -701,8 +701,8 @@ namespace embree
       unsigned center = rec.begin + numLeft;
       assert(lCounter == numLeft);
       assert(rCounter == rec.items() - lCounter);
-      leftChild.init(left,rec.begin,center);
-      rightChild.init(right,center,rec.end);
+      leftChild.init(Centroid_Scene_AABB(left.geomBounds,left.centBounds),rec.begin,center);
+      rightChild.init(Centroid_Scene_AABB(right.geomBounds,right.centBounds),center,rec.end);
     }
   }
 }

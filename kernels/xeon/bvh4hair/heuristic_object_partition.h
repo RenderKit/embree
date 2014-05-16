@@ -256,8 +256,8 @@ namespace embree
         
       public:
         BuildRecord rec;
-        Centroid_Scene_AABB left;
-        Centroid_Scene_AABB right;
+        PrimInfo left;
+        PrimInfo right;
         Mapping mapping;
         Split split;
         const PrimRef* src;

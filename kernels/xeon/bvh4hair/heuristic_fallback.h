@@ -37,6 +37,33 @@ namespace embree
 	centBounds.extend(centBounds_);
       }
 
+      __forceinline void reset() {
+	geomBounds = empty;
+	centBounds = empty;
+      }
+
+      __forceinline void extend(const BBox3fa& geomBounds_) {
+	geomBounds.extend(geomBounds_);
+	centBounds.extend(center2(geomBounds_));
+      }
+
+      __forceinline void extend_atomic(const CentGeomBBox3fa& bounds) 
+      {
+	atomic_min_f32(&geomBounds.lower.x ,bounds.geomBounds.lower.x);
+	atomic_min_f32(&geomBounds.lower.y ,bounds.geomBounds.lower.y);
+	atomic_min_f32(&geomBounds.lower.z ,bounds.geomBounds.lower.z);
+	atomic_max_f32(&geomBounds.upper.x ,bounds.geomBounds.upper.x);
+	atomic_max_f32(&geomBounds.upper.y ,bounds.geomBounds.upper.y);
+	atomic_max_f32(&geomBounds.upper.z ,bounds.geomBounds.upper.z);
+
+	atomic_min_f32(&centBounds.lower.x ,bounds.centBounds.lower.x);
+	atomic_min_f32(&centBounds.lower.y ,bounds.centBounds.lower.y);
+	atomic_min_f32(&centBounds.lower.z ,bounds.centBounds.lower.z);
+	atomic_max_f32(&centBounds.upper.x ,bounds.centBounds.upper.x);
+	atomic_max_f32(&centBounds.upper.y ,bounds.centBounds.upper.y);
+	atomic_max_f32(&centBounds.upper.z ,bounds.centBounds.upper.z);
+      }
+
       __forceinline void merge(const CentGeomBBox3fa& other) 
       {
 	geomBounds.extend(other.geomBounds);
