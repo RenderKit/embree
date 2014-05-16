@@ -46,20 +46,6 @@ namespace embree
 #endif
     }
 
-    __forceinline ssei ObjectPartition::Mapping::bin(const BBox3fa& bounds) const 
-    {
-      const ssef p = (ssef) center2(bounds);
-      const ssei i = floori((ssef(p)-ofs)*scale);
-#if 1
-      assert(i[0] >=0 && i[0] < num);
-      assert(i[1] >=0 && i[1] < num);
-      assert(i[2] >=0 && i[2] < num);
-      return i;
-#else
-      return clamp(i,ssei(0),ssei(num-1));
-#endif
-    }
-    
     __forceinline Vec3ia ObjectPartition::Mapping::bin_unsafe(const Vec3fa& p) const {
       return Vec3ia(floori((ssef(p)-ofs)*scale));
     }
@@ -628,11 +614,10 @@ namespace embree
       bin16.bin_copy(src,startID,endID,this->mapping,dst);
     }
     
-    void ObjectPartition::ParallelBinner::bin(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads) 
+    void ObjectPartition::ParallelBinner::find(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads) 
     {
       rec = current;
       PrimInfo pinfo(current.items(),current.bounds.geometry,current.bounds.centroid2);
-      //mapping = Mapping(current.bounds,current.items());
       mapping = Mapping(pinfo);
       left.reset();
       right.reset();
@@ -644,11 +629,13 @@ namespace embree
       bin16 = global_bin16[0];
       for (size_t i=1; i<numThreads; i++)
 	bin16.merge(global_bin16[i]);
-    }
-    
-    void ObjectPartition::ParallelBinner::best(Split& split) {
+
       split = bin16.best(mapping,2); // FIXME: hardcoded constant
     }
+    
+    /*void ObjectPartition::ParallelBinner::best(Split& split) {
+      split = bin16.best(mapping,2); // FIXME: hardcoded constant
+      }*/
     
     void ObjectPartition::ParallelBinner::parallelPartition(const size_t threadID, const size_t numThreads)
     {
@@ -699,18 +686,18 @@ namespace embree
     }
     
     void ObjectPartition::ParallelBinner::partition(const PrimRef* src, PrimRef* dst, 
-                                         Split& split_i, 
+						    //Split& split_i, 
                                          BuildRecord &leftChild,
                                          BuildRecord &rightChild,
                                          const size_t threadID, const size_t numThreads)
     {
-      split = split_i;
+      //split = split_i;
       left.reset(); lCounter.reset(0);
       right.reset(); rCounter.reset(0); 
       this->src = src;
       this->dst = dst;
       LockStepTaskScheduler::dispatchTask( task_parallelPartition, this, threadID, numThreads );
-      size_t numLeft = bin16.getNumLeft(split_i);
+      size_t numLeft = bin16.getNumLeft(split);
       unsigned center = rec.begin + numLeft;
       assert(lCounter == numLeft);
       assert(rCounter == rec.items() - lCounter);

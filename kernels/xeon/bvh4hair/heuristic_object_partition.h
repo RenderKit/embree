@@ -68,8 +68,6 @@ namespace embree
 	/*! slower but safe binning */
 	__forceinline Vec3ia bin(const Vec3fa& p) const;
 	
-	__forceinline ssei bin(const BBox3fa& prim) const;
-
 	/*! faster but unsafe binning */
 	__forceinline Vec3ia bin_unsafe(const Vec3fa& p) const;
 	
@@ -247,14 +245,14 @@ namespace embree
       public:
         
         /*! parallel binbing of an array of primitives */
-        void bin(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads);
+        void find(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads);
         
         /*! calculate the best possible split */
-        void best(Split& split);
+        //void best(Split& split);
         
         /* parallel partitioning of a list of primitives */
         void partition(const PrimRef* src, PrimRef* dst, 
-                       Split& split, 
+                       //Split& split, 
                        BuildRecord &leftChild,
                        BuildRecord &rightChild,
                        const size_t threadID, const size_t numThreads);

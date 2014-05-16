@@ -499,19 +499,19 @@ namespace embree
       /* parallel binning of centroids */
       //ObjectPartition::Split split; 
       //g_state->parallelBinner.find(current,prims,tmp,split,threadID,numThreads);
-      g_state->parallelBinner.bin(current,prims,tmp,threadID,numThreads);
+      g_state->parallelBinner.find(current,prims,tmp,threadID,numThreads);
 
       /* find best split */
       //Split split; 
-      ObjectPartition::Split split; 
-      g_state->parallelBinner.best(split);
+      //ObjectPartition::Split split; 
+      //g_state->parallelBinner.best(split);
             
       /* if we cannot find a valid split, enforce an arbitrary split */
-      if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
+      if (unlikely(g_state->parallelBinner.split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
       
       /* parallel partitioning of items */
       else 
-	g_state->parallelBinner.partition(tmp,prims,split,leftChild,rightChild,threadID,numThreads);
+	g_state->parallelBinner.partition(tmp,prims,leftChild,rightChild,threadID,numThreads);
 	//split.partition(prims, current.begin, current.end, leftChild, rightChild);
       
       if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
