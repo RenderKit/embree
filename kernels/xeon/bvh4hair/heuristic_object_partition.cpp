@@ -173,55 +173,6 @@ namespace embree
       }
     }
 
-    void ObjectPartition::BinInfo::bin_copy2(const PrimRef* __restrict__ const prims,
-					     const size_t begin,
-					     const size_t end,
-					     const Mapping& mapping,
-					     PrimRef* __restrict__ const dest)
-    {
-      //reset();
-      clear();
-      if (end-begin == 0) return;
-      
-      /* unrolled binning loop */
-      size_t i; 
-      for (i=begin; i<end-1; i+=2)
-      {
-        /*! map even and odd primitive to bin */
-        const BBox3fa prim0 = prims[i+0].bounds(); const ssei bin0 = mapping.bin(prim0);
-        const BBox3fa prim1 = prims[i+1].bounds(); const ssei bin1 = mapping.bin(prim1);
-        
-        /*! increase bounds for bins for even primitive */
-        const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].extend(prim0);
-        const int b01 = bin0[1]; counts[b01][1]++; bounds[b01][1].extend(prim0);
-        const int b02 = bin0[2]; counts[b02][2]++; bounds[b02][2].extend(prim0);
-        
-        /*! increase bounds of bins for odd primitive */
-        const int b10 = bin1[0]; counts[b10][0]++; bounds[b10][0].extend(prim1);
-        const int b11 = bin1[1]; counts[b11][1]++; bounds[b11][1].extend(prim1);
-        const int b12 = bin1[2]; counts[b12][2]++; bounds[b12][2].extend(prim1);
-        
-        /*! copy to destination */
-        dest[i+0] = prims[i+0];
-        dest[i+1] = prims[i+1];
-      }
-      
-      /*! for uneven number of primitives */
-      if (i < end)
-      {
-        /*! map primitive to bin */
-        const BBox3fa prim0 = prims[i].bounds(); const ssei bin0 = mapping.bin(prim0);
-        
-        /*! increase bounds of bins */
-        const int b00 = bin0[0]; counts[b00][0]++; bounds[b00][0].extend(prim0);
-        const int b01 = bin0[1]; counts[b01][1]++; bounds[b01][1].extend(prim0);
-        const int b02 = bin0[2]; counts[b02][2]++; bounds[b02][2].extend(prim0);
-        
-        /*! copy to destination */
-        dest[i+0] = prims[i+0];
-      }
-    }
-    
     __forceinline void ObjectPartition::BinInfo::bin_copy (const PrimRef* prims, size_t begin, size_t end, const Mapping& mapping, PrimRef* dest)
     {
       bin_copy(prims+begin,end-begin,mapping,dest+begin);
@@ -871,7 +822,8 @@ namespace embree
       const size_t startID = this->rec.begin + (threadID+0)*this->rec.items()/numThreads;
       const size_t endID   = this->rec.begin + (threadID+1)*this->rec.items()/numThreads;
       
-      bin16.bin_copy2(src,startID,endID,this->mapping,dst);
+      bin16.clear();
+      bin16.bin_copy(src,startID,endID,this->mapping,dst);
     }
     
     void ObjectPartition::ParallelBinner::bin(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads) 

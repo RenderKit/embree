@@ -163,12 +163,6 @@ namespace embree
 	  void bin_copy (const PrimRef* prims, size_t N, const Mapping& mapping, PrimRef* dest);
 	  void bin_copy (const PrimRef* prims, size_t begin, size_t end, const Mapping& mapping, PrimRef* dest);
 	  
-	  void bin_copy2(const PrimRef* __restrict__ const prims,
-		     const size_t begin,
-		     const size_t end,
-		     const Mapping& mapping,
-		     PrimRef* __restrict__ const dest);
-
 	  /*! bins a list of bezier curves */
 	  void bin (BezierRefList& prims, const Mapping& mapping);
 	  
