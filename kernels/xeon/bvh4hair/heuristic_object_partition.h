@@ -243,48 +243,6 @@ namespace embree
       
     public:
 
-      class Binner
-    {
-    public:
-      
-      /*! reset the binner */
-      __forceinline void reset()
-      {
-        for (size_t i=0;i<16;i++) 
-        {
-          bounds[i][0] = empty;
-          bounds[i][1] = empty;
-          bounds[i][2] = empty;
-          counts[i] = 0;
-        }
-      }
-      
-      /*! bin an array of primitives */
-      void bin(const PrimRef* __restrict__ const prims, const size_t begin, const size_t end, const Mapping& mapping);
-      
-      /*! bin an array of primitives and copy to destination array */
-      void bin_copy(const PrimRef* __restrict__ const prims, const size_t begin, const size_t end, const Mapping& mapping, PrimRef* __restrict__ const dst);
-      
-      /*! merge multiple binning infos into one */
-      static void reduce(const Binner binners[], size_t num, Binner& binner_o);
-      
-      /*! calculate the best possible split */
-      void best(Split& split, const Mapping& mapping);
-      
-      /* inplace partitioning of a list of primitives */
-      void partition(PrimRef*__restrict__ const prims,
-                     const size_t begin,
-                     const size_t end,
-                     const Split& split,
-                     const Mapping& mapping,
-                     BuildRecord& left,
-                     BuildRecord& right);
-      
-    public:
-      BBox3fa bounds[16][4];
-      ssei   counts[16];
-    };
-
       class ParallelBinner
       {
       public:
