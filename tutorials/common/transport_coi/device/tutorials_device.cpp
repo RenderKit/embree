@@ -164,10 +164,21 @@ namespace embree
   {
     size_t meshID = g_meshID++;
     ISPCMesh* mesh = new ISPCMesh(in_pMiscData->numTriangles,in_pMiscData->numVertices);
-    memcpy(mesh->positions = (Vec3fa*)malloc(in_pBufferLengths[0]),in_ppBufferPointers[0],in_pBufferLengths[0]);
-    memcpy(mesh->normals   = (Vec3fa*)malloc(in_pBufferLengths[1]),in_ppBufferPointers[1],in_pBufferLengths[1]);
-    memcpy(mesh->texcoords = (Vec2f* )malloc(in_pBufferLengths[2]),in_ppBufferPointers[2],in_pBufferLengths[2]);
-    memcpy(mesh->triangles = (OBJScene::Triangle*)malloc(in_pBufferLengths[3]),in_ppBufferPointers[3],in_pBufferLengths[3]);
+    // DBG_PRINT( in_pBufferLengths[0] );
+    // DBG_PRINT( in_pBufferLengths[1] );
+    // DBG_PRINT( in_pBufferLengths[2] );
+    // DBG_PRINT( in_pBufferLengths[3] );
+#define EXTRA_SPACE 2*64
+
+    mesh->positions = (Vec3fa*)malloc(in_pBufferLengths[0]+EXTRA_SPACE);
+    mesh->normals   = (Vec3fa*)malloc(in_pBufferLengths[1]+EXTRA_SPACE);
+    mesh->texcoords = (Vec2f* )malloc(in_pBufferLengths[2]+EXTRA_SPACE);
+    mesh->triangles = (OBJScene::Triangle*)malloc(in_pBufferLengths[3]+EXTRA_SPACE);
+
+    memcpy(mesh->positions,in_ppBufferPointers[0],in_pBufferLengths[0]);
+    memcpy(mesh->normals  ,in_ppBufferPointers[1],in_pBufferLengths[1]);
+    memcpy(mesh->texcoords,in_ppBufferPointers[2],in_pBufferLengths[2]);
+    memcpy(mesh->triangles,in_ppBufferPointers[3],in_pBufferLengths[3]);
     g_ispc_scene->meshes[meshID] = mesh;
   }
 
@@ -205,7 +216,7 @@ namespace embree
                                    uint16_t         in_ReturnValueLength)
   {
     g_meshID = 0;
-#if 0
+#if 1
     DBG_PRINT(in_pMiscData->numMeshes);
     DBG_PRINT(in_pMiscData->numMaterials);
     DBG_PRINT(in_pMiscData->numHairSets);

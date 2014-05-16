@@ -54,8 +54,14 @@ namespace embree
     /*! Mesh. */
     struct Mesh 
     {
+#if 0
       vector_t<Vec3fa> v;
       vector_t<Vec3fa> vn;
+#else
+      std::vector<Vec3fa> v;
+      std::vector<Vec3fa> vn;
+
+#endif
       std::vector<Vec2f> vt;
       std::vector<Triangle> triangles;
     };
@@ -73,7 +79,11 @@ namespace embree
     /*! Hair Set. */
     struct HairSet
     {
+#if 0
       vector_t<Vec3fa> v;       //!< hair control points (x,y,z,r)
+#else
+      std::vector<Vec3fa> v;       //!< hair control points (x,y,z,r)
+#endif
       std::vector<Hair> hairs;  //!< list of hairs
     };
     

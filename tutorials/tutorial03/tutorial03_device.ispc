@@ -102,6 +102,8 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   abort();
 }
 
+Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
+
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
@@ -113,6 +115,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
+  //renderPixel = renderPixelEyeLight;	
 }
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)

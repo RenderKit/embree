@@ -172,13 +172,28 @@ namespace embree
       COIBUFFER texcoord;      //!< vertex texcoord array
       COIBUFFER triangle;      //!< list of triangles
     } buffers;
+
+    assert( mesh->v.size() );
+    assert( mesh->triangles.size() );
+
+    if (mesh->vn.size() == 0)
+      for (size_t i=0;i<4;i++)
+	mesh->vn.push_back(Vec3f(0.0f,0.0f,0.0f));
+
+    if (mesh->vt.size() == 0)
+      for (size_t i=0;i<2;i++)
+	mesh->vt.push_back(Vec2f(0.0f,0.0f));
+    
+    assert( mesh->vn.size() );
+    assert( mesh->vt.size() );
     
     size_t positionBytes = max(size_t(16),mesh->v.size()*sizeof(Vec3fa));
+
     void* positionPtr = mesh->v.size() ? &mesh->v.front() : NULL;
     result = COIBufferCreate(positionBytes,COI_BUFFER_STREAMING_TO_SINK,0,positionPtr,1,&process,&buffers.position);
     if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
-    size_t normalBytes = max(size_t(16),mesh->vn.size()*sizeof(Vec3f));
+    size_t normalBytes = max(size_t(16),mesh->vn.size()*sizeof(Vec3fa));
     void* normalPtr = mesh->vn.size() ? &mesh->vn.front() : NULL;
     result = COIBufferCreate(normalBytes,COI_BUFFER_STREAMING_TO_SINK,0,normalPtr,1,&process,&buffers.normal);
     if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
@@ -226,6 +241,7 @@ namespace embree
   {
     COIRESULT result;
 
+    DBG_PRINT( scene->materials.size() );
     /* send scene */
     COIBUFFER materialBuffer;
     size_t materialBytes = max(size_t(16),scene->materials.size()*sizeof(OBJScene::Material));
@@ -255,12 +271,14 @@ namespace embree
     if (result != COI_SUCCESS) throw std::runtime_error("COIEventWait failed: "+std::string(COIResultGetName(result)));
 
     /* destroy buffers again */
-    result = COIBufferDestroy(materialBuffer);
-    if (result != COI_SUCCESS) throw std::runtime_error("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
+    //result = COIBufferDestroy(materialBuffer);
+    //if (result != COI_SUCCESS) throw std::runtime_error("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
 
     /* send all meshes */
     for (size_t i=0; i<scene->meshes.size(); i++) 
-      send_mesh(scene->meshes[i]);
+      {
+	send_mesh(scene->meshes[i]);
+      }
 
     /* send all hairsets */
     //DBG_PRINT( scene->hairsets.size() );
