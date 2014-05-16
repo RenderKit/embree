@@ -23,7 +23,7 @@
 #include "builders/heuristics.h"
 #include "builders/splitter_fallback.h"
 
-#define ROTATE_TREE 1
+#define ROTATE_TREE 1 // FIXME: enable
 
 #include "common/scene_triangle_mesh.h"
 

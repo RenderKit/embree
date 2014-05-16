@@ -23,7 +23,8 @@
 #include "builders/heuristics.h"
 #include "builders/splitter_fallback.h"
 
-#define ROTATE_TREE 1
+#define ROTATE_TREE 0
+#define PARALLEL false
 
 #include "common/scene_triangle_mesh.h"
 
@@ -48,13 +49,14 @@ namespace embree
       /* first generate primrefs */
       new (&initStage) TriRefGen(threadIndex,threadCount,&alloc,(Scene*)geometry);
       bvh->numPrimitives = initStage.pinfo.num;
-      
-      Split split = ObjectPartition::find<true>(threadIndex,threadCount,initStage.prims,initStage.pinfo,2);
+
+      Split split = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,initStage.prims,initStage.pinfo,2);
       tasks.push_back(SplitTask(threadIndex,threadCount,this,bvh->root,1,initStage.prims,initStage.pinfo,split));
-      
-#if 1
+
+#if PARALLEL
+  
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (tasks.front().pinfo.size() > 256000)//4*threadCount && tasks.size()+BVH4::N <= 1024) 
+      while (tasks.front().pinfo.size() > 256*1024)//4*threadCount && tasks.size()+BVH4::N <= 1024) 
       {
 	/* pop largest item for better load balancing */
 	SplitTask task = tasks.front();
@@ -65,21 +67,18 @@ namespace embree
 	task.recurse_parallel(threadIndex,threadCount);
       }
 #endif
-      
+
       /*! process each generated subtask in its own thread */
       TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,tasks.size(),"BVH4Builder2::build");
-      
-      //Split split = ObjectPartition::find<false>(threadIndex,threadCount,initStage.prims,initStage.pinfo,2);
-      //recurse(threadIndex,threadCount,event,bvh->root,1,initStage.prims,initStage.pinfo,split);
-      
+            
       /* finish build */
 #if ROTATE_TREE
       for (int i=0; i<5; i++) 
 	BVH4Rotate::rotate(bvh,bvh->root);
 #endif
+
       bvh->clearBarrier(bvh->root);
       bvh->bounds = initStage.pinfo.geomBounds;
-      //initStage.pinfo.clear();
       
       /* free all temporary blocks */
       Alloc::global.clear();
@@ -152,7 +151,6 @@ namespace embree
       TriRefList prims0, prims1;
       PrimInfo                 cinfo0, cinfo1;
       FallBackSplit::find(threadIndex,alloc,prims,prims0,cinfo0,prims1,cinfo1);
-      //FallBackSplitter::split(threadIndex,&alloc,source,prims,pinfo,prims0,cinfo0,prims1,cinfo1);
       
       /* second level */
       TriRefList cprims[4];
@@ -237,8 +235,8 @@ namespace embree
 	PrimInfo linfo,rinfo;
 	TriRefList lprims,rprims;
 	csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
-	Split lsplit = ObjectPartition::find<false>(threadIndex,threadCount,lprims,linfo,2);
-	Split rsplit = ObjectPartition::find<false>(threadIndex,threadCount,rprims,rinfo,2);
+	const Split lsplit = ObjectPartition::find<false>(threadIndex,threadCount,lprims,linfo,2);
+	const Split rsplit = ObjectPartition::find<false>(threadIndex,threadCount,rprims,rinfo,2);
 	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
 	cprims[numChildren] = rprims; cinfo[numChildren] = rinfo; csplit[numChildren] = rsplit;
 	numChildren++;
@@ -364,9 +362,9 @@ namespace embree
 	/*! perform best found split and find new splits */
 	PrimInfo linfo,rinfo;
 	TriRefList lprims,rprims;
-	csplit[bestChild].split<true>(threadIndex,threadCount,parent->alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
-	Split lsplit = ObjectPartition::find<true>(threadIndex,threadCount,lprims,linfo,2);
-	Split rsplit = ObjectPartition::find<true>(threadIndex,threadCount,rprims,rinfo,2);
+	csplit[bestChild].split<PARALLEL>(threadIndex,threadCount,parent->alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
+	const Split lsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,lprims,linfo,2);
+	const Split rsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,rprims,rinfo,2);
 	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
 	cprims[numChildren] = rprims; cinfo[numChildren] = rinfo; csplit[numChildren] = rsplit;
 	numChildren++;
@@ -383,30 +381,30 @@ namespace embree
       }
     }
     
-#if 0
-    Builder* BVH4BuilderObjectSplit1 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
+#if 1
+    /*Builder* BVH4Builder2ObjectSplit1 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
+      return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
+      }*/
+    
+    Builder* BVH4Builder2ObjectSplit4 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
       return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
     }
     
-    Builder* BVH4BuilderObjectSplit4 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
+    /*Builder* BVH4Builder2ObjectSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
       return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
     }
     
-    Builder* BVH4BuilderObjectSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
+    Builder* BVH4Builder2SpatialSplit1 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
       return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
     }
     
-    Builder* BVH4BuilderSpatialSplit1 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
+    Builder* BVH4Builder2SpatialSplit4 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
       return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
     }
     
-    Builder* BVH4BuilderSpatialSplit4 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
+    Builder* BVH4Builder2SpatialSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
       return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
-    }
-    
-    Builder* BVH4BuilderSpatialSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
-      return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
-    }
+      }*/
 #endif
   }
 }
