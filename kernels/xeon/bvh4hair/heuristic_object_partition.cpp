@@ -26,7 +26,8 @@ namespace embree
     
     __forceinline ObjectPartition::Mapping::Mapping(const PrimInfo& pinfo) 
     {
-      num = min(maxBins,size_t(4.0f + 0.05f*pinfo.size()));
+      //num = min(maxBins,size_t(4.0f + 0.05f*pinfo.size()));
+      num = min(size_t(16),size_t(4.0f + 0.05f*pinfo.size())); // FIXME
       const ssef diag = (ssef) pinfo.centBounds.size();
       scale = select(diag != 0.0f,rcp(diag) * ssef(0.99f*num),ssef(0.0f));
       ofs  = (ssef) pinfo.centBounds.lower;
@@ -195,6 +196,17 @@ namespace embree
     __forceinline void ObjectPartition::BinInfo::merge (const BinInfo& other)
     {
       for (size_t i=0; i<maxBins; i++) 
+      {
+	counts[i] += other.counts[i];
+	bounds[i][0].extend(other.bounds[i][0]);
+	bounds[i][1].extend(other.bounds[i][1]);
+	bounds[i][2].extend(other.bounds[i][2]);
+      }
+    }
+
+    __forceinline void ObjectPartition::BinInfo::merge (const BinInfo& other, size_t numBins)
+    {
+      for (size_t i=0; i<numBins; i++) 
       {
 	counts[i] += other.counts[i];
 	bounds[i][0].extend(other.bounds[i][0]);
@@ -621,7 +633,9 @@ namespace embree
     void ObjectPartition::ParallelBinner::bin(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads) 
     {
       rec = current;
-      mapping = Mapping(current.bounds);
+      PrimInfo pinfo(current.items(),current.bounds.geometry,current.bounds.centroid2);
+      //mapping = Mapping(current.bounds,current.items());
+      mapping = Mapping(pinfo);
       left.reset();
       right.reset();
       this->src = src;
@@ -629,7 +643,9 @@ namespace embree
       LockStepTaskScheduler::dispatchTask(task_parallelBinning, this, threadID, numThreads );
       
       /* reduce binning information from all threads */
-      BinInfo::reduce2(global_bin16,numThreads,bin16);
+      bin16 = global_bin16[0];
+      for (size_t i=1; i<numThreads; i++)
+	bin16.merge(global_bin16[i]);
     }
     
     void ObjectPartition::ParallelBinner::best(Split& split) {
@@ -648,9 +664,9 @@ namespace embree
       const float centroidScale = this->mapping.scale[splitDim];
       
       /* compute items per thread that go to the 'left' and to the 'right' */
-      int lnum[16];
+      int lnum[maxBins];
       lnum[0] = this->global_bin16[threadID].counts[0][splitDim];
-      for (size_t i=1; i<16; i++)
+      for (size_t i=1; i<mapping.size(); i++)
         lnum[i] = lnum[i-1] + this->global_bin16[threadID].counts[i][splitDim];
       
       const unsigned int localNumLeft = lnum[splitPos-1];

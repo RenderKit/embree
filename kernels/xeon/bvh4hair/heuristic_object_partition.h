@@ -62,15 +62,6 @@ namespace embree
 	/*! calculates the mapping */
 	__forceinline Mapping(const PrimInfo& pinfo);
 
-	__forceinline Mapping (const Centroid_Scene_AABB& bounds) 
-        {
-	  size_t BINS = 16;
-	  num = BINS;
-          const ssef centroidDiagonal = (ssef) bounds.centroid2.size();
-          scale = select(centroidDiagonal != 0.0f,rcp(centroidDiagonal) * ssef(BINS * 0.99f),ssef(0.0f));
-          ofs = (ssef) bounds.centroid2.lower;
-        }
-	
 	/*! returns number of bins */
 	__forceinline size_t size() const { return num; }
 	
@@ -171,6 +162,7 @@ namespace embree
 	  
 	  /*! merges in other binning information */
 	  void merge (const BinInfo& other);
+	  void merge (const BinInfo& other, size_t numBins);
 
 	   /*! merge multiple binning infos into one */
 	  static void reduce(const BinInfo binners[], size_t num, BinInfo& binner_o);
