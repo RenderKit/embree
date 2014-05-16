@@ -44,6 +44,20 @@ namespace embree
       return Vec3ia(clamp(i,ssei(0),ssei(num-1)));
 #endif
     }
+
+    __forceinline ssei ObjectPartition::Mapping::bin(const BBox3fa& bounds) const 
+    {
+      const ssef p = (ssef) center2(bounds);
+      const ssei i = floori((ssef(p)-ofs)*scale);
+#if 1
+      assert(i[0] >=0 && i[0] < num);
+      assert(i[1] >=0 && i[1] < num);
+      assert(i[2] >=0 && i[2] < num);
+      return i;
+#else
+      return clamp(i,ssei(0),ssei(num-1));
+#endif
+    }
     
     __forceinline Vec3ia ObjectPartition::Mapping::bin_unsafe(const Vec3fa& p) const {
       return Vec3ia(floori((ssef(p)-ofs)*scale));
@@ -581,7 +595,7 @@ namespace embree
     void ObjectPartition::Binner::bin(const PrimRef * __restrict__ const prims,
                            const size_t begin,
                            const size_t end,
-                           const Mapping2& mapping)
+                           const Mapping& mapping)
     {
       reset();
       if (end-begin == 0) return;
@@ -621,7 +635,7 @@ namespace embree
     void ObjectPartition::Binner::bin_copy(const PrimRef* __restrict__ const prims,
                                 const size_t begin,
                                 const size_t end,
-                                const Mapping2& mapping,
+                                const Mapping& mapping,
                                 PrimRef* __restrict__ const dest)
     {
       reset();
@@ -682,7 +696,7 @@ namespace embree
       }
     }
     
-    void ObjectPartition::Binner::best(Split& split, const Mapping2& mapping)
+    void ObjectPartition::Binner::best(Split& split, const Mapping& mapping)
     {
       ssef rAreas[16];
       ssei rCounts[16];
@@ -746,7 +760,7 @@ namespace embree
     void ObjectPartition::ParallelBinner::bin(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads) 
     {
       rec = current;
-      mapping = Mapping2(current.bounds);
+      mapping = Mapping(current.bounds);
       left.reset();
       right.reset();
       this->src = src;
