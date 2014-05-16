@@ -46,6 +46,12 @@ namespace embree
       return enlarge(b,Vec3fa(b.upper.w));
     }
 
+    template<int HINT>
+    __forceinline void prefetchControlPoints() const {
+      prefetch<HINT>(p + 0);
+      prefetch<HINT>(p + 2);
+    }
+
     const Vec3fa* p;      //!< pointer to first control point (x,y,z,r)
     unsigned int geomID;  //!< geometry ID
     unsigned int primID;  //!< primitive ID

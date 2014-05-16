@@ -44,8 +44,12 @@ namespace embree
 	const Bezier1i *__restrict__ const tptr = (Bezier1i*)accel + index;
 	const mic_i and_mask = broadcast4to16i(zlc4);
 	bool ret = false;
+
+	// for (size_t i=0;i<items;i++)
+	//   tptr[i].prefetchControlPoints<PFHINT_L2>();
+
 	for (size_t i=0;i<items;i++)
-	  ret |= Bezier1iIntersector16::intersect(pre,ray16,rayIndex,tptr[i],geometry); // add mailboxing
+	  ret |= Bezier1iIntersector16::intersect(pre,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry); // add mailboxing
 
 	max_dist_xyz = ray16.tfar[rayIndex];
 	//if (unlikely(pre.mbox.hit(curves[i].geomID,curves[i].primID))) continue;
