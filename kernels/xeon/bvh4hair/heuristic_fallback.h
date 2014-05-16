@@ -32,47 +32,51 @@ namespace embree
       
     public:
       __forceinline PrimInfo () 
-	: num(0), geomBounds(empty), centBounds(empty) {}
+	: begin(0), end(0), geomBounds(empty), centBounds(empty) {}
       
       __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
-	: num(num), geomBounds(geomBounds), centBounds(centBounds) {}
+	: begin(0), end(num), geomBounds(geomBounds), centBounds(centBounds) {}
+      
+      __forceinline PrimInfo (size_t begin, size_t end, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
+	: begin(begin), end(end), geomBounds(geomBounds), centBounds(centBounds) {}
       
       __forceinline void add(const BBox3fa& geomBounds_, const BBox3fa& centBounds_, size_t num_ = 1) {
 	geomBounds.extend(geomBounds_);
 	centBounds.extend(centBounds_);
-	num += num_;
+	end += num_;
       }
       
       __forceinline void merge(const PrimInfo& other) 
       {
 	geomBounds.extend(other.geomBounds);
 	centBounds.extend(other.centBounds);
-	num += other.num;
+	begin = min(begin,other.begin);
+	end   = max(end ,other.end  );
       }
       
       /*! returns the number of primitives */
       __forceinline size_t size() const { 
-	return num; 
+	return end-begin; 
       }
       
       __forceinline float leafSAH() const { 
-	return halfArea(geomBounds)*float(num); 
+	return halfArea(geomBounds)*float(size()); 
 	//return halfArea(geomBounds)*blocks(num); 
       }
       
       __forceinline float leafSAH(size_t block_shift) const { 
-	return halfArea(geomBounds)*float((num+(size_t(1)<<block_shift)-1) >> block_shift);
+	return halfArea(geomBounds)*float((size()+(size_t(1)<<block_shift)-1) >> block_shift);
 	//return halfArea(geomBounds)*float((num+3) >> 2);
 	//return halfArea(geomBounds)*blocks(num); 
       }
       
       /*! stream output */
       friend std::ostream& operator<<(std::ostream& cout, const PrimInfo& pinfo) {
-	return cout << "PrimInfo { num = " << pinfo.num << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
+	return cout << "PrimInfo { begin = " << pinfo.begin << ", end = " << pinfo.end << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
       }
       
     public:
-      size_t num;          //!< number of primitives
+      size_t begin,end;          //!< number of primitives
       BBox3fa geomBounds;   //!< geometry bounds of primitives
       BBox3fa centBounds;   //!< centroid bounds of primitives
     };

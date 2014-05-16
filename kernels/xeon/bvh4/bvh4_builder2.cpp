@@ -48,7 +48,7 @@ namespace embree
       
       /* first generate primrefs */
       new (&initStage) TriRefGen(threadIndex,threadCount,&alloc,(Scene*)geometry);
-      bvh->numPrimitives = initStage.pinfo.num;
+      bvh->numPrimitives = initStage.pinfo.size();
 
       Split split = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,initStage.prims,initStage.pinfo,2);
       tasks.push_back(SplitTask(threadIndex,threadCount,this,bvh->root,1,initStage.prims,initStage.pinfo,split));

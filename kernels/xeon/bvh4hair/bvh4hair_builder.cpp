@@ -189,7 +189,7 @@ namespace embree
       ObjectPartitionUnaligned::Split unalignedObjectSplit;
       float unalignedObjectSAH = inf;
       if (alignedObjectSAH > 0.7f*leafSAH) {
-	if (sinfo.num) 
+	if (sinfo.size()) 
 	  unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,bounds.space,sinfo);
 	else {
 	  const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,prims); 

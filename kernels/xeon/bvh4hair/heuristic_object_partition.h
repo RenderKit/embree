@@ -247,15 +247,8 @@ namespace embree
         /*! parallel binbing of an array of primitives */
         void find(BuildRecord& current, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads);
         
-        /*! calculate the best possible split */
-        //void best(Split& split);
-        
         /* parallel partitioning of a list of primitives */
-        void partition(const PrimRef* src, PrimRef* dst, 
-                       //Split& split, 
-                       BuildRecord &leftChild,
-                       BuildRecord &rightChild,
-                       const size_t threadID, const size_t numThreads);
+        void partition(const PrimRef* src, PrimRef* dst, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads);
         
       private:
         TASK_FUNCTION(ParallelBinner,parallelBinning);
