@@ -44,6 +44,7 @@ namespace embree
       };
       
       typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
+      typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList; //!< list of primitives
       
     public:
       
@@ -52,12 +53,12 @@ namespace embree
 	: type(FALLBACK_SPLIT), sah(inf), isAligned(isAligned) {}
       
       /*! construction from object partitioning */
-      __forceinline Split (ObjectPartitionUnaligned::Split& split, bool isAligned) 
+      __forceinline Split (ObjectPartitionUnaligned::Split& split, bool isAligned = false) 
 	: type(OBJECT_SPLIT_UNALIGNED), sah(split.splitSAH()), isAligned(isAligned) { new (&data) ObjectPartitionUnaligned::Split(split); }
       
       /*! construction from object partitioning */
-      __forceinline Split (ObjectPartition::Split& split, bool isAligned) 
-	: type(OBJECT_SPLIT), sah(split.splitSAH()), isAligned(isAligned) { new (&data) ObjectPartition::Split(split); }
+      __forceinline Split (const ObjectPartition::Split& split) 
+	: type(OBJECT_SPLIT), sah(split.splitSAH()), isAligned(true) { new (&data) ObjectPartition::Split(split); }
       
       /*! construction from spatial split */
       __forceinline Split (SpatialSplit::Split& split, bool isAligned) 
@@ -86,9 +87,26 @@ namespace embree
 	  default: throw std::runtime_error("internal error");
 	  }
 	}
+
+      /*! single threaded splitting into two sets */
+      template<bool Parallel>
+	void split(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>& alloc, 
+		   Scene* scene, PrimRefList& prims, 
+		   PrimRefList& lprims_o, PrimInfo& linfo_o, 
+		   PrimRefList& rprims_o, PrimInfo& rinfo_o) const
+	{
+	  switch (type) {
+	    //case OBJECT_SPLIT_UNALIGNED : ((ObjectPartitionUnaligned::Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+	  case OBJECT_SPLIT : ((ObjectPartition::Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+	  case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,scene,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+	    //case STRAND_SPLIT : ((StrandSplit::    Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+	  case FALLBACK_SPLIT: FallBackSplit::find(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+	  default: throw std::runtime_error("internal error");
+	  }
+	}
       
       /*! multi threaded splitting into two sets */
-      template<bool Parallel>
+      template<bool Parallel> // FIXME: delete?
 	void split_parallel(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
 			    Scene* scene, BezierRefList& prims, 
 			    BezierRefList& lprims_o, PrimInfo& linfo_o, 

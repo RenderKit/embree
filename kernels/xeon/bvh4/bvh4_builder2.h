@@ -42,7 +42,7 @@ namespace embree
       typedef typename BVH4::NodeRef NodeRef;
       
       /*! Split type of the split heuristic. */
-      typedef ObjectPartition::Split Split;
+      //typedef ObjectPartition::Split Split;
       typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;
       
     public:

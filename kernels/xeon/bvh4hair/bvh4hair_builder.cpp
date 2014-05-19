@@ -215,7 +215,7 @@ namespace embree
 
       /* return best split */
       if      (bestSAH == float(inf)        ) return Split();
-      else if (bestSAH == alignedObjectSAH  ) return Split(alignedObjectSplit,true);
+      else if (bestSAH == alignedObjectSAH  ) return Split(alignedObjectSplit);
       else if (bestSAH == alignedSpatialSAH ) return Split(alignedSpatialSplit,true);
       else if (bestSAH == unalignedObjectSAH) return Split(unalignedObjectSplit,false);
       else if (bestSAH == strandSAH         ) return Split(strandSplit,false);

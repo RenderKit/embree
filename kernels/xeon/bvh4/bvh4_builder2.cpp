@@ -265,7 +265,7 @@ namespace embree
 	/*! perform best found split and find new splits */
 	PrimInfo linfo,rinfo;
 	TriRefList lprims,rprims;
-	csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
+	csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,(Scene*)parent->geometry,cprims[bestChild],lprims,linfo,rprims,rinfo);
 	const Split lsplit = ObjectPartition::find<false>(threadIndex,threadCount,lprims,linfo,2);
 	const Split rsplit = ObjectPartition::find<false>(threadIndex,threadCount,rprims,rinfo,2);
 	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
@@ -339,7 +339,7 @@ namespace embree
 	/*! perform best found split and find new splits */
 	PrimInfo linfo,rinfo;
 	TriRefList lprims,rprims;
-	csplit[bestChild].split<PARALLEL>(threadIndex,threadCount,parent->alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
+	csplit[bestChild].split<PARALLEL>(threadIndex,threadCount,parent->alloc,(Scene*)parent->geometry,cprims[bestChild],lprims,linfo,rprims,rinfo);
 	const Split lsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,lprims,linfo,2);
 	const Split rsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,rprims,rinfo,2);
 	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
