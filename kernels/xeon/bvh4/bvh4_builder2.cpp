@@ -23,7 +23,7 @@
 #include "builders/heuristics.h"
 #include "builders/splitter_fallback.h"
 
-#define ROTATE_TREE 0
+#define ROTATE_TREE 1
 
 #include "common/scene_triangle_mesh.h"
 
