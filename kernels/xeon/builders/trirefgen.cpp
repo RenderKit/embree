@@ -20,8 +20,12 @@ namespace embree
 {
   namespace isa
   {
-    TriRefGen::TriRefGen(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene)
-      : scene(scene), alloc(alloc)
+    void TriRefGen::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, TriRefList& prims, PrimInfo& pinfo) {
+      TriRefGen gen(threadIndex,threadCount,alloc,scene,prims,pinfo);
+    }
+
+    TriRefGen::TriRefGen(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, TriRefList& prims, PrimInfo& pinfo)
+      : scene(scene), alloc(alloc), prims(prims), pinfo(pinfo)
     {
       /*! parallel stage */
       size_t numTasks = min(threadCount,maxTasks);
@@ -30,6 +34,27 @@ namespace embree
       /*! reduction stage */
       for (size_t i=0; i<numTasks; i++)
 	pinfo.merge(pinfos[i]);
+
+      /* approximate bounds */
+#if 0
+      BBox3fa geomBound = empty, centBound = empty;
+      size_t s = 0, t = 0, dt = max(size_t(1),size_t(scene->numTriangles/2048));
+      for (size_t g=0; g<scene->size(); g++) 
+      {
+	TriangleMesh* geom = (TriangleMesh*) scene->get(g);
+        if (geom == NULL) continue;
+	if (geom->type != TRIANGLE_MESH || geom->numTimeSteps != 1 || !geom->isEnabled()) continue;
+
+	size_t numPrims = geom->numTriangles;
+	for (size_t i=t-s; i<numPrims; i+=dt, t+=dt) {
+	  BBox3fa bounds = geom->bounds(i);
+	  geomBound.extend(bounds);
+	  centBound.extend(center2(bounds));
+	}
+      }
+      pinfo.geomBounds = geomBound;
+      pinfo.centBounds = centBound;
+#endif
     }
     
     void TriRefGen::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 

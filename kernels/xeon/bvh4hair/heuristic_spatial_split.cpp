@@ -30,14 +30,7 @@ namespace embree
     __forceinline ssei SpatialSplit::Mapping::bin(const Vec3fa& p) const 
     {
       const ssei i = floori((ssef(p)-ofs)*scale);
-#if 1
-      assert(i[0] >=0 && i[0] < BINS);
-      assert(i[1] >=0 && i[1] < BINS);
-      assert(i[2] >=0 && i[2] < BINS);
-      return i;
-#else
       return clamp(i,ssei(0),ssei(BINS-1));
-#endif
     }
     
     __forceinline float SpatialSplit::Mapping::pos(const int bin, const int dim) const {
@@ -56,7 +49,7 @@ namespace embree
       }
     }
     
-    __forceinline void SpatialSplit::BinInfo::bin (const Bezier1* prims, size_t N, const PrimInfo& pinfo, const Mapping& mapping)
+    __forceinline void SpatialSplit::BinInfo::bin (Scene* scene, const Bezier1* prims, size_t N, const PrimInfo& pinfo, const Mapping& mapping)
     {
       for (size_t i=0; i<N; i++)
       {
@@ -82,27 +75,69 @@ namespace embree
 	}
       }
     }
+
+    __forceinline void SpatialSplit::BinInfo::bin(Scene* scene, const PrimRef* prims, size_t N, const PrimInfo& pinfo, const Mapping& mapping)
+    {
+      for (size_t i=0; i<N; i++)
+      {
+	const PrimRef prim = prims[i];
+	TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
+	TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
+	
+	const Vec3fa v0 = mesh->vertex(tri.v[0]);
+	const Vec3fa v1 = mesh->vertex(tri.v[1]);
+	const Vec3fa v2 = mesh->vertex(tri.v[2]);
+	const ssei bin0 = mapping.bin(min(v0,v1,v2));
+	const ssei bin1 = mapping.bin(max(v0,v1,v2));
+	
+	for (size_t dim=0; dim<3; dim++) 
+	{
+	  size_t bin;
+	  PrimRef rest = prim;
+	  for (bin=bin0[dim]; bin<bin1[dim]; bin++) 
+	  {
+	    const float pos = mapping.pos(bin+1,dim);
+	    
+	    PrimRef left,right;
+	    splitTriangle(prim,dim,pos,v0,v1,v2,left,right);
+	    
+	    bounds[bin][dim].extend(left.bounds());
+	    rest = right;
+	  }
+	  numBegin[bin0[dim]][dim]++;
+	  numEnd  [bin1[dim]][dim]++;
+	  bounds  [bin][dim].extend(rest.bounds());
+	}
+      }
+    }
     
-    __forceinline void SpatialSplit::BinInfo::bin(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping)
+    __forceinline void SpatialSplit::BinInfo::bin(Scene* scene, BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping)
     {
       BezierRefList::iterator i=prims;
       while (BezierRefList::item* block = i.next())
-	bin(block->base(),block->size(),pinfo,mapping);
+	bin(scene,block->base(),block->size(),pinfo,mapping);
+    }
+
+    __forceinline void SpatialSplit::BinInfo::bin(Scene* scene, TriRefList& prims, const PrimInfo& pinfo, const Mapping& mapping)
+    {
+      TriRefList::iterator i=prims;
+      while (TriRefList::item* block = i.next())
+	bin(scene,block->base(),block->size(),pinfo,mapping);
     }
     
-    __forceinline void SpatialSplit::BinInfo::merge (const BinInfo& other)
+    __forceinline void SpatialSplit::BinInfo::merge (const BinInfo& other) // FIXME: dont iterate over all bins
     {
       for (size_t i=0; i<BINS; i++) 
       {
 	numBegin[i] += other.numBegin[i];
-	numEnd[i] += other.numEnd[i];
+	numEnd  [i] += other.numEnd  [i];
 	bounds[i][0].extend(other.bounds[i][0]);
 	bounds[i][1].extend(other.bounds[i][1]);
 	bounds[i][2].extend(other.bounds[i][2]);
       }
     }
     
-    __forceinline SpatialSplit::Split SpatialSplit::BinInfo::best(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping)
+    __forceinline SpatialSplit::Split SpatialSplit::BinInfo::best(const PrimInfo& pinfo, const Mapping& mapping, const size_t blocks_shift)
     {
       /* sweep from right to left and compute parallel prefix of merged bounds */
       ssef rAreas[BINS];
@@ -118,6 +153,7 @@ namespace embree
       }
       
       /* sweep from left to right and compute SAH */
+      ssei blocks_add = (1 << blocks_shift)-1;
       ssei ii = 1; ssef vbestSAH = pos_inf; ssei vbestPos = 0;
       count = 0; bx = empty; by = empty; bz = empty;
       for (size_t i=1; i<BINS; i++, ii+=1)
@@ -128,8 +164,8 @@ namespace embree
 	bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
 	const ssef lArea = ssef(Ax,Ay,Az,Az);
 	const ssef rArea = rAreas[i];
-	const ssei lCount = blocks(count);
-	const ssei rCount = blocks(rCounts[i]);
+	const ssei lCount = (count     +blocks_add) >> blocks_shift;
+	const ssei rCount = (rCounts[i]+blocks_add) >> blocks_shift;
 	const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
 	vbestPos  = select(sah < vbestSAH,ii ,vbestPos);
 	vbestSAH  = select(sah < vbestSAH,sah,vbestSAH);
@@ -160,29 +196,42 @@ namespace embree
       /* compute bounds of left and right side */
       size_t lnum = 0, rnum = 0;
       BBox3fa lbounds = empty, rbounds = empty;
-      for (size_t i=0; i<bestPos; i++) { lnum+=numBegin[i][bestDim]; lbounds.extend(bounds[i][bestDim]); }
-      for (size_t i=bestPos; i<BINS; i++) { rnum+=numEnd[i][bestDim]; rbounds.extend(bounds[i][bestDim]); }
+      for (size_t i=0; i<bestPos; i++)    { lnum+=numBegin[i][bestDim]; lbounds.extend(bounds[i][bestDim]); }
+      for (size_t i=bestPos; i<BINS; i++) { rnum+=numEnd[i][bestDim];   rbounds.extend(bounds[i][bestDim]); }
       
       /* return invalid split if no progress made */
       if (lnum == 0 || rnum == 0) 
 	return Split(inf,-1,0.0f,mapping);
       
-      /* calculate SAH and return best found split */
-      float sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
-      return Split(sah,bestDim,bestPos,mapping);
+      /* return best found split */
+      return Split(bestSAH,bestDim,bestPos,mapping);
     }
     
     template<>
-    const SpatialSplit::Split SpatialSplit::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo)
+    const SpatialSplit::Split SpatialSplit::find<false>(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
     {
       BinInfo binner;
       Mapping mapping(pinfo);
-      binner.bin(prims,pinfo,mapping);
-      return binner.best(prims,pinfo,mapping);
+      binner.bin(scene,prims,pinfo,mapping);
+      return binner.best(pinfo,mapping,logBlockSize);
+    }
+
+    template<>
+    const SpatialSplit::Split SpatialSplit::find<false>(size_t threadIndex, size_t threadCount, Scene* scene, TriRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
+    {
+      BinInfo binner;
+      Mapping mapping(pinfo);
+      binner.bin(scene,prims,pinfo,mapping);
+      return binner.best(pinfo,mapping,logBlockSize);
     }
     
-    SpatialSplit::TaskBinParallel::TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping) 
-      : iter(prims), pinfo(pinfo), mapping(mapping)
+    //////////////////////////////////////////////////////////////////////////////
+    //                         Parallel Binning                                 //
+    //////////////////////////////////////////////////////////////////////////////
+   
+    template<typename List>
+    SpatialSplit::TaskBinParallel<List>::TaskBinParallel(size_t threadIndex, size_t threadCount, Scene* scene, List& prims, const PrimInfo& pinfo, const Mapping& mapping, const size_t logBlockSize) 
+      : scene(scene), iter(prims), pinfo(pinfo), mapping(mapping)
     {
       /* parallel binning */
       size_t numTasks = min(maxTasks,threadCount);
@@ -194,25 +243,37 @@ namespace embree
 	bins.merge(binners[i]);
       
       /* calculation of best split */
-      split = bins.best(prims,pinfo,mapping);
+      split = bins.best(pinfo,mapping,logBlockSize);
     }
     
-    void SpatialSplit::TaskBinParallel::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    template<typename List>
+    void SpatialSplit::TaskBinParallel<List>::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
-      while (BezierRefList::item* block = iter.next())
-	binners[taskIndex].bin(block->base(),block->size(),pinfo,mapping);
+      while (typename List::item* block = iter.next())
+	binners[taskIndex].bin(scene,block->base(),block->size(),pinfo,mapping);
     }
     
     template<>
-    const SpatialSplit::Split SpatialSplit::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo) 
+    const SpatialSplit::Split SpatialSplit::find<true>(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize) 
     {
       const Mapping mapping(pinfo);
-      return TaskBinParallel(threadIndex,threadCount,prims,pinfo,mapping).split;
+      return TaskBinParallel<BezierRefList>(threadIndex,threadCount,scene,prims,pinfo,mapping,logBlockSize).split;
+    }
+
+    template<>
+    const SpatialSplit::Split SpatialSplit::find<true>(size_t threadIndex, size_t threadCount, Scene* scene, TriRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize) 
+    {
+      const Mapping mapping(pinfo);
+      return TaskBinParallel<TriRefList>(threadIndex,threadCount,scene,prims,pinfo,mapping,logBlockSize).split;
     }
     
+    //////////////////////////////////////////////////////////////////////////////
+    //                             Splitting                                    //
+    //////////////////////////////////////////////////////////////////////////////
+    
     template<>
-    void SpatialSplit::Split::split<false>(size_t threadIndex,size_t threadCount,  PrimRefBlockAlloc<Bezier1>& alloc, 
-					   BezierRefList& prims, 
+    void SpatialSplit::Split::split<false>(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
+					   Scene* scene, BezierRefList& prims, 
 					   BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					   BezierRefList& rprims_o, PrimInfo& rinfo_o) const
     {
@@ -276,12 +337,77 @@ namespace embree
 	alloc.free(threadIndex,block);
       }
     }
+
+    template<>
+    void SpatialSplit::Split::split<false>(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>& alloc, 
+					   Scene* scene, TriRefList& prims, 
+					   TriRefList& lprims_o, PrimInfo& linfo_o, 
+					   TriRefList& rprims_o, PrimInfo& rinfo_o) const
+    {
+      /* sort each trianlge to left, right, or left and right */
+      TriRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
+      TriRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
     
-    SpatialSplit::TaskSplitParallel::TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, 
-						       PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
-						       BezierRefList& lprims_o, PrimInfo& linfo_o, 
-						       BezierRefList& rprims_o, PrimInfo& rinfo_o)
-      : split(split), alloc(alloc), prims(prims), lprims_o(lprims_o), linfo_o(linfo_o), rprims_o(rprims_o), rinfo_o(rinfo_o)
+      /* sort each primitive to left, right, or left and right */
+      while (atomic_set<PrimRefBlock>::item* block = prims.take()) 
+      {
+	for (size_t i=0; i<block->size(); i++) 
+	{
+	  const PrimRef& prim = block->at(i); 
+	  const BBox3fa bounds = prim.bounds();
+	  
+	  /* sort to the left side */
+	  if (bounds.lower[dim] <= pos && bounds.upper[dim] <= pos)
+	  {
+	    linfo_o.add(bounds,center2(bounds));
+	    if (likely(lblock->insert(prim))) continue; 
+	    lblock = lprims_o.insert(alloc.malloc(threadIndex));
+	    lblock->insert(prim);
+	    continue;
+	  }
+	  
+	  /* sort to the right side */
+	  if (bounds.lower[dim] >= pos && bounds.upper[dim] >= pos)
+	  {
+	    rinfo_o.add(bounds,center2(bounds));
+	    if (likely(rblock->insert(prim))) continue;
+	    rblock = rprims_o.insert(alloc.malloc(threadIndex));
+	    rblock->insert(prim);
+	    continue;
+	  }
+	  
+	  /* split and sort to left and right */
+	  TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
+	  TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
+	  const Vec3fa v0 = mesh->vertex(tri.v[0]);
+	  const Vec3fa v1 = mesh->vertex(tri.v[1]);
+	  const Vec3fa v2 = mesh->vertex(tri.v[2]);
+	  
+	  PrimRef left,right;
+	  splitTriangle(prim,dim,pos,v0,v1,v2,left,right);
+	
+	  linfo_o.add(bounds,center2(bounds));
+	  if (!lblock->insert(left)) {
+	    lblock = lprims_o.insert(alloc.malloc(threadIndex));
+	    lblock->insert(left);
+	  }
+	  
+	  rinfo_o.add(bounds,center2(bounds));
+	  if (!rblock->insert(right)) {
+	    rblock = rprims_o.insert(alloc.malloc(threadIndex));
+	    rblock->insert(right);
+	  }
+	}
+	alloc.free(threadIndex,block);
+      }
+    }
+    
+    template<typename Prim>
+    SpatialSplit::TaskSplitParallel<Prim>::TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, 
+							     PrimRefBlockAlloc<Prim>& alloc, Scene* scene, List& prims, 
+							     List& lprims_o, PrimInfo& linfo_o, 
+							     List& rprims_o, PrimInfo& rinfo_o)
+      : split(split), alloc(alloc), scene(scene), prims(prims), lprims_o(lprims_o), linfo_o(linfo_o), rprims_o(rprims_o), rinfo_o(rinfo_o)
     {
       /* parallel calculation of centroid bounds */
       size_t numTasks = min(maxTasks,threadCount);
@@ -296,18 +422,28 @@ namespace embree
       }
     }
     
-    void SpatialSplit::TaskSplitParallel::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    template<typename Prim>
+    void SpatialSplit::TaskSplitParallel<Prim>::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
-      split->split<false>(threadIndex,threadCount,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
+      split->split<false>(threadIndex,threadCount,alloc,scene,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
     }
     
     template<>
     void SpatialSplit::Split::split<true>(size_t threadIndex, size_t threadCount, 
-					  PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+					  PrimRefBlockAlloc<Bezier1>& alloc, Scene* scene, BezierRefList& prims, 
 					  BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					  BezierRefList& rprims_o, PrimInfo& rinfo_o) const
     {
-      TaskSplitParallel(threadIndex,threadCount,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      TaskSplitParallel<Bezier1>(threadIndex,threadCount,this,alloc,scene,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+    }
+
+    template<>
+    void SpatialSplit::Split::split<true>(size_t threadIndex, size_t threadCount, 
+					  PrimRefBlockAlloc<PrimRef>& alloc, Scene* scene, TriRefList& prims, 
+					  TriRefList& lprims_o, PrimInfo& linfo_o, 
+					  TriRefList& rprims_o, PrimInfo& rinfo_o) const
+    {
+      TaskSplitParallel<PrimRef>(threadIndex,threadCount,this,alloc,scene,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
     }
   }
 }

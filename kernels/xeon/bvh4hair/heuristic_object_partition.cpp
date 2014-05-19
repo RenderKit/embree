@@ -26,8 +26,8 @@ namespace embree
     
     __forceinline ObjectPartition::Mapping::Mapping(const PrimInfo& pinfo) 
     {
-      //num = min(maxBins,size_t(4.0f + 0.05f*pinfo.size()));
-      num = min(size_t(16),size_t(4.0f + 0.05f*pinfo.size())); // FIXME
+      num = min(maxBins,size_t(4.0f + 0.05f*pinfo.size()));
+      //num = min(size_t(16),size_t(4.0f + 0.05f*pinfo.size())); // FIXME
       const ssef diag = (ssef) pinfo.centBounds.size();
       scale = select(diag != 0.0f,rcp(diag) * ssef(0.99f*num),ssef(0.0f));
       ofs  = (ssef) pinfo.centBounds.lower;
@@ -179,9 +179,9 @@ namespace embree
 	bin(block->base(),block->size(),mapping);
     }
     
-    __forceinline void ObjectPartition::BinInfo::merge (const BinInfo& other)
+    __forceinline void ObjectPartition::BinInfo::merge (const BinInfo& other) 
     {
-      for (size_t i=0; i<maxBins; i++) 
+      for (size_t i=0; i<maxBins; i++) // FIXME: dont iterate over all bins
       {
 	counts[i] += other.counts[i];
 	bounds[i][0].extend(other.bounds[i][0]);
@@ -260,8 +260,8 @@ namespace embree
 	bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
 	const ssef lArea = ssef(Ax,Ay,Az,Az);
 	const ssef rArea = rAreas[i];
-	const ssei lCount = (count     +blocks_add) >> blocks_shift; //blocks(count);
-	const ssei rCount = (rCounts[i]+blocks_add) >> blocks_shift; //blocks(rCounts[i]);
+	const ssei lCount = (count     +blocks_add) >> blocks_shift;
+	const ssei rCount = (rCounts[i]+blocks_add) >> blocks_shift;
 	const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
 	vbestPos = select(sah < vbestSAH,ii ,vbestPos);
 	vbestSAH = select(sah < vbestSAH,sah,vbestSAH);

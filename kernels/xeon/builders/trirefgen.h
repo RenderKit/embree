@@ -33,10 +33,10 @@ namespace embree
       
     public:
       
-      TriRefGen () {}
-      
       /*! standard constructor that schedules the task */
-      TriRefGen (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene);
+      TriRefGen (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, TriRefList& prims, PrimInfo& pinfo);
+      
+      static void generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, TriRefList& prims, PrimInfo& pinfo);
       
     public:
       
@@ -55,8 +55,8 @@ namespace embree
       
       /* output data */
     public:
-      TriRefList prims;             //!< list of build primitives
-      PrimInfo pinfo;                  //!< bounding information of primitives
+      TriRefList& prims;             //!< list of build primitives
+      PrimInfo& pinfo;                  //!< bounding information of primitives
     };
   }
 }

@@ -23,8 +23,8 @@ namespace embree
     numNodes = numLeaves = numPrimBlocks = numPrims = depth = 0;
     bvhSAH = leafSAH = 0.0f;
     statistics(bvh->root,bvh->bounds,depth);
-    bvhSAH /= area(bvh->bounds);
-    leafSAH /= area(bvh->bounds);
+    //bvhSAH /= area(bvh->bounds);
+    //leafSAH /= area(bvh->bounds);
     assert(depth <= BVH4::maxDepth);
   }
 
@@ -49,6 +49,7 @@ namespace embree
     if (g_benchmark) std::cout << "BENCHMARK_TRIANGLE_ACCEL " << bvhSAH << " " << bytesTotal << std::endl;
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream << "  primitives = " << bvh->numPrimitives << ", vertices = " << bvh->numVertices << std::endl;
+    stream.setf(std::ios::scientific, std::ios::floatfield);
     stream.precision(4);
     stream << "  sah = " << bvhSAH << ", leafSAH = " << leafSAH;
     stream.setf(std::ios::fixed, std::ios::floatfield);
