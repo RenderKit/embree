@@ -210,12 +210,8 @@ namespace embree
       if (lnum == 0 || rnum == 0) 
 	return Split(inf,-1,0.0f,mapping);
       
-      /* calculate SAH and return best found split */
-      //size_t blocks_add_ = (1 << blocks_shift)-1;
-      //lnum = (lnum+blocks_add_) >> blocks_shift;
-      //rnum = (rnum+blocks_add_) >> blocks_shift;
-      float sah = float(lnum)*halfArea(lbounds) + float(rnum)*halfArea(rbounds);
-      return Split(sah,bestDim,bestPos,mapping);
+      /* return best found split */
+      return Split(bestSAH,bestDim,bestPos,mapping);
     }
     
     template<>

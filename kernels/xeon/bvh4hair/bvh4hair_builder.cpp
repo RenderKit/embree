@@ -179,11 +179,11 @@ namespace embree
       /* perform spatial split in aligned space */
       SpatialSplit::Split alignedSpatialSplit;
       float alignedSpatialSAH = inf;
-      /*if (remainingReplications > 0) {
+      if (remainingReplications > 0) {
 	alignedSpatialSplit = SpatialSplit::find<Parallel>(threadIndex,threadCount,scene,prims,pinfo,0); // FIXME: hardcoded 0
 	alignedSpatialSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedSpatialSplit.splitSAH();
 	bestSAH = min(bestSAH,alignedSpatialSAH);
-	}*/
+      }
       
       /* perform standard binning in unaligned space */
       ObjectPartitionUnaligned::Split unalignedObjectSplit;
