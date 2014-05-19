@@ -179,9 +179,9 @@ namespace embree
 	bin(block->base(),block->size(),mapping);
     }
     
-    __forceinline void ObjectPartition::BinInfo::merge (const BinInfo& other)
+    __forceinline void ObjectPartition::BinInfo::merge (const BinInfo& other) 
     {
-      for (size_t i=0; i<maxBins; i++) 
+      for (size_t i=0; i<maxBins; i++) // FIXME: dont iterate over all bins
       {
 	counts[i] += other.counts[i];
 	bounds[i][0].extend(other.bounds[i][0]);

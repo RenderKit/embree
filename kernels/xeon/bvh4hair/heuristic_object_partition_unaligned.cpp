@@ -168,7 +168,7 @@ namespace embree
     
     __forceinline void ObjectPartitionUnaligned::BinInfo::merge (const BinInfo& other)
     {
-      for (size_t i=0; i<BINS; i++) 
+      for (size_t i=0; i<BINS; i++)  // FIXME: dont iterate over all bins
       {
 	counts[i] += other.counts[i];
 	bounds[i][0].extend(other.bounds[i][0]);

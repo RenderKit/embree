@@ -180,7 +180,7 @@ namespace embree
       SpatialSplit::Split alignedSpatialSplit;
       float alignedSpatialSAH = inf;
       /*if (remainingReplications > 0) {
-	alignedSpatialSplit = SpatialSplit::find<Parallel>(threadIndex,threadCount,prims,pinfo);
+	alignedSpatialSplit = SpatialSplit::find<Parallel>(threadIndex,threadCount,scene,prims,pinfo,0); // FIXME: hardcoded 0
 	alignedSpatialSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedSpatialSplit.splitSAH();
 	bestSAH = min(bestSAH,alignedSpatialSAH);
 	}*/
