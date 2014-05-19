@@ -61,6 +61,8 @@ namespace embree
   mic_f coeff0[4];
   mic_f coeff1[4];
 
+  mic_f coeff01[4]; // 15 steps
+
   mic_f coeff_P0[4];
   mic_f coeff_P1[4];
   mic_f coeff_P2[4];
@@ -74,8 +76,20 @@ namespace embree
 #if defined(__MIC__)
 
     {
-      const float dt = 1.0f/16.0f;
-      const mic_f t1 = mic_f(step)*dt;
+      __aligned(64) float STEP[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+      mic_f step16 = load16f(STEP); 
+      mic_f dt   = 1.0f/15.0f;
+      const mic_f t1 = step16*dt;
+      const mic_f t0 = 1.0f-t1;
+      coeff01[0] = t0 * t0 * t0;
+      coeff01[1] = 3.0f * t1 * t0 * t0;
+      coeff01[2] = 3.0f * t1 * t1 * t0;
+      coeff01[3] = t1 * t1 * t1;
+    }
+    mic_f step16 = mic_f(step); 
+    mic_f dt   = 1.0f/16.0f;
+    {
+      const mic_f t1 = step16*dt;
       const mic_f t0 = 1.0f-t1;
       coeff0[0] = t0 * t0 * t0;
       coeff0[1] = 3.0f * t1 * t0 * t0;
@@ -83,8 +97,7 @@ namespace embree
       coeff0[3] = t1 * t1 * t1;
     }
     {
-      const float dt = 1.0f/16.0f;
-      const mic_f t1 = mic_f(step)*dt+mic_f(dt);
+      const mic_f t1 = step16*dt+mic_f(dt);
       const mic_f t0 = 1.0f-t1;
       coeff1[0] = t0 * t0 * t0;
       coeff1[1] = 3.0f * t1 * t0 * t0;
@@ -93,8 +106,7 @@ namespace embree
     }
 
     {
-      const float dt = 1.0f/16.0f;
-      const mic_f t1 = mic_f(step)*dt;
+      const mic_f t1 = step16*dt;
       const mic_f t0 = 1.0f-t1;
       coeff_P0[0] = t0 * t0 * t0;
       coeff_P0[1] = 3.0f * t1 * t0 * t0;
@@ -103,8 +115,7 @@ namespace embree
     }
 
     {
-      const float dt = 1.0f/16.0f;
-      const mic_f t1 = mic_f(step)*dt;
+      const mic_f t1 = step16*dt;
       const mic_f t0 = 1.0f-t1;
       const mic_f d0 = -t0*t0;
       const mic_f d1 = t0*t0 - 2.0f*t0*t1;
@@ -117,8 +128,7 @@ namespace embree
     }
 
     {
-      const float dt = 1.0f/16.0f;
-      const mic_f t1 = mic_f(step)*dt+mic_f(dt);
+      const mic_f t1 = step16*dt+mic_f(dt);
       const mic_f t0 = 1.0f-t1;
       coeff_P3[0] = t0 * t0 * t0;
       coeff_P3[1] = 3.0f * t1 * t0 * t0;
@@ -127,8 +137,7 @@ namespace embree
     }
 
     {
-      const float dt = 1.0f/16.0f;
-      const mic_f t1 = mic_f(step)*dt+mic_f(dt);
+      const mic_f t1 = step16*dt+mic_f(dt);
       const mic_f t0 = 1.0f-t1;
       const mic_f d0 = -t0*t0;
       const mic_f d1 = t0*t0 - 2.0f*t0*t1;

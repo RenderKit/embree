@@ -23,6 +23,7 @@ namespace embree
 {
   extern mic_f coeff0[4];
   extern mic_f coeff1[4];
+  extern mic_f coeff01[4];
 
   extern mic_f coeff_P0[4];
   extern mic_f coeff_P1[4];
