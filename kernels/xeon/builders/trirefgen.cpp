@@ -20,8 +20,12 @@ namespace embree
 {
   namespace isa
   {
-    TriRefGen::TriRefGen(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene)
-      : scene(scene), alloc(alloc)
+    void TriRefGen::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, TriRefList& prims, PrimInfo& pinfo) {
+      TriRefGen gen(threadIndex,threadCount,alloc,scene,prims,pinfo);
+    }
+
+    TriRefGen::TriRefGen(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, TriRefList& prims, PrimInfo& pinfo)
+      : scene(scene), alloc(alloc), prims(prims), pinfo(pinfo)
     {
       /*! parallel stage */
       size_t numTasks = min(threadCount,maxTasks);

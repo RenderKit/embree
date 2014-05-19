@@ -45,12 +45,12 @@ namespace embree
       if (g_verbose >= 2 || g_benchmark)
 	t0 = getSeconds();
       
-      /* first generate primrefs */
-      new (&initStage) TriRefGen(threadIndex,threadCount,&alloc,(Scene*)geometry);
-      bvh->numPrimitives = initStage.pinfo.size();
-   
-      Split split = ObjectPartition::find<true>(threadIndex,threadCount,initStage.prims,initStage.pinfo,2);
-      tasks.push_back(SplitTask(threadIndex,threadCount,this,bvh->root,1,initStage.prims,initStage.pinfo,split));
+      /* generate list of build primitives */
+      TriRefList prims; PrimInfo pinfo;
+      TriRefGen::generate(threadIndex,threadCount,&alloc,(Scene*)geometry,prims,pinfo);
+      
+      Split split = ObjectPartition::find<true>(threadIndex,threadCount,prims,pinfo,2);
+      tasks.push_back(SplitTask(threadIndex,threadCount,this,bvh->root,1,prims,pinfo,split));
 
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
       while (tasks.front().pinfo.size() > 256*1024)
@@ -76,7 +76,8 @@ namespace embree
       /* layout top nodes */
       bvh->root = layout_top_nodes(threadIndex,bvh->root);
       //bvh->clearBarrier(bvh->root);
-      bvh->bounds = initStage.pinfo.geomBounds;
+      bvh->numPrimitives = pinfo.size();
+      bvh->bounds = pinfo.geomBounds;
       
       /* free all temporary blocks */
       Alloc::global.clear();

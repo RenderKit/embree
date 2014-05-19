@@ -154,7 +154,7 @@ namespace embree
       size_t minLeafSize;                 //!< minimal size of a leaf
       size_t maxLeafSize;                 //!< maximal size of a leaf
       PrimRefBlockAlloc<PrimRef> alloc;                 //!< Allocator for primitive blocks
-      TriRefGen initStage;               //!< job to generate build primitives
+      //TriRefGen initStage;               //!< job to generate build primitives
       TaskScheduler::QUEUE taskQueue;     //!< Task queue to use
       
       std::vector<SplitTask> tasks;
