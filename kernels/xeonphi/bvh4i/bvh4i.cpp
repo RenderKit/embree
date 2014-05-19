@@ -49,8 +49,6 @@ namespace embree
 
   DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iVirtualGeometryIntersector1);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iVirtualGeometryIntersector16);
-  DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iBezierCurvesIntersector1);
-  DECLARE_SYMBOL(Accel::Intersector16,BVH4iBezierCurvesIntersector16);
 
   DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iTriangle1mcIntersector1);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1mcIntersector16SingleMoeller);
@@ -68,8 +66,6 @@ namespace embree
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16HybridMoeller);
     SELECT_SYMBOL_KNC(features,BVH4iVirtualGeometryIntersector1);
     SELECT_SYMBOL_KNC(features,BVH4iVirtualGeometryIntersector16);
-    SELECT_SYMBOL_KNC(features,BVH4iBezierCurvesIntersector1);
-    SELECT_SYMBOL_KNC(features,BVH4iBezierCurvesIntersector16);
 
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1mcIntersector1);
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1mcIntersector16SingleMoeller);
@@ -115,14 +111,6 @@ namespace embree
     return intersectors;
   }
 
-  Accel::Intersectors BVH4iBezierCurvesIntersectors(BVH4i* bvh)
-  {
-    Accel::Intersectors intersectors;
-    intersectors.ptr = bvh;
-    intersectors.intersector1  = BVH4iBezierCurvesIntersector1;
-    intersectors.intersector16 = BVH4iBezierCurvesIntersector16;
-    return intersectors;
-  }
 
   Accel* BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene)
   { 
@@ -180,13 +168,6 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);    
   }
 
-  Accel* BVH4i::BVH4iBezierCurvesBinnedSAH(Scene* scene)
-  {
-    BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);    
-    Builder* builder = BVH4iBuilder::create(accel,NULL,scene,BVH4iBuilder::BVH4I_BUILDER_BEZIER_CURVES);   
-    Accel::Intersectors intersectors = BVH4iBezierCurvesIntersectors(accel);
-    return new AccelInstance(accel,builder,intersectors);    
-  }
 
   BVH4i::~BVH4i()
   {

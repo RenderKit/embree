@@ -27,6 +27,7 @@
 #else
 #include "xeonphi/bvh4i/bvh4i.h"
 #include "xeonphi/bvh4mb/bvh4mb.h"
+#include "xeonphi/bvh4hair/bvh4hair.h"
 #endif
 
 namespace embree
@@ -44,7 +45,7 @@ namespace embree
 #if defined(__MIC__)
     accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
     accels.add(BVH4i::BVH4iVirtualGeometryBinnedSAH(this));
-    accels.add(BVH4i::BVH4iBezierCurvesBinnedSAH(this));
+    accels.add(BVH4Hair::BVH4HairBinnedSAH(this));
 
     if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
       {

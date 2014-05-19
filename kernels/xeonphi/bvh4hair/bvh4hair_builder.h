@@ -16,42 +16,31 @@
 
 #pragma once
 
-#include "bvh4i.h"
-#include "bvh4i_traversal.h"
-#include "common/ray16.h" 
-#include "common/accelset.h"
+#include "bvh4i/bvh4i_builder.h"
+
+#define BVH_NODE_PREALLOC_FACTOR                 1.15f
 
 namespace embree
 {
-  namespace isa
+
+  /*! derived binned-SAH builder supporting hair primitives */  
+  class BVH4HairBuilder : public BVH4iBuilder
   {
-    /*! BVH4i Traverser. Packet traversal implementation for a Quad BVH. */
-    template<typename LeafIntersector>
-    class BVH4iIntersector16BezierCurves
-    {
-      /* shortcuts for frequently used types */
-      //typedef typename BezierCurvesIntersector16::Primitive Primitive;
-      typedef typename BVH4i::NodeRef NodeRef;
-      typedef typename BVH4i::Node Node;
-      
-    public:
-      static void intersect(mic_i* valid, BVH4i* bvh, Ray16& ray);
-      static void occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
-    };
+  public:
+  BVH4HairBuilder(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
+      {
+      }
 
-    template<typename LeafIntersector>
-    class BVH4iIntersector1BezierCurves
-    {
-      /* shortcuts for frequently used types */
-      //typedef typename BezierCurvesIntersector1::Primitive Primitive;
-      typedef typename BVH4i::NodeRef NodeRef;
-      typedef typename BVH4i::Node Node;
-      
-    public:
-      static void intersect(BVH4i* bvh, Ray& ray);
-      static void occluded(BVH4i* bvh, Ray& ray);
+    virtual size_t getNumPrimitives();
+    virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
+    virtual void createAccel    (const size_t threadIndex, const size_t threadCount);
+    virtual void printBuilderName();
 
-    };
+  protected:
+    TASK_FUNCTION(BVH4HairBuilder,computePrimRefsBezierCurves);
+    TASK_FUNCTION(BVH4HairBuilder,createBezierCurvesAccel);    
+  };
 
-  }
+
+
 }

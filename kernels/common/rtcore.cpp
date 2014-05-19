@@ -287,7 +287,7 @@ namespace embree
 #endif
     BVH4MBRegister();
     BVH4iRegister();
-    
+    BVH4HairRegister();    
 #if !defined(__WIN32__) && defined(__TARGET_AVX__)
     if (has_feature(AVX))
       BVH8iRegister();
