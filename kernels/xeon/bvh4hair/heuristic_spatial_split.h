@@ -27,13 +27,18 @@ namespace embree
     struct SpatialSplit
     {
       struct Split;
+      typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;    //!< list of triangles
       typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
       
     public:
       
       /*! finds the best split */
       template<bool Parallel>
-	static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves, const PrimInfo& pinfo);
+	static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves, const PrimInfo& pinfo, const size_t logBlockSize);
+      
+      /*! finds the best split */
+      template<bool Parallel>
+	static const Split find(size_t threadIndex, size_t threadCount, TriRefList& curves, const PrimInfo& pinfo, const size_t logBlockSize);
       
     private:
       
@@ -45,11 +50,11 @@ namespace embree
       
       /*! Compute the number of blocks occupied for each dimension. */
       //__forceinline static ssei blocks(const ssei& a) { return (a+ssei(3)) >> 2; }
-      __forceinline static ssei blocks(const ssei& a) { return a; }
+      //__forceinline static ssei blocks(const ssei& a) { return a; }
       
       /*! Compute the number of blocks occupied in one dimension. */
       //__forceinline static size_t  blocks(size_t a) { return (a+3) >> 2; }
-      __forceinline static size_t  blocks(size_t a) { return a; }
+      //__forceinline static size_t  blocks(size_t a) { return a; }
       
       /*! mapping into bins */
       struct Mapping
@@ -121,7 +126,7 @@ namespace embree
 	void merge (const BinInfo& other);
 	
 	/*! finds the best split by scanning binning information */
-	Split best(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping);
+	Split best(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping, const size_t logBlockSize);
 	
       private:
 	BBox3fa bounds[BINS][4];  //!< geometry bounds for each bin in each dimension
@@ -133,7 +138,7 @@ namespace embree
       struct TaskBinParallel
       {
 	/*! construction executes the task */
-	TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping);
+	TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping, const size_t logBlockSize);
 	
       private:
 	

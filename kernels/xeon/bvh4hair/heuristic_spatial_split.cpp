@@ -102,7 +102,7 @@ namespace embree
       }
     }
     
-    __forceinline SpatialSplit::Split SpatialSplit::BinInfo::best(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping)
+    __forceinline SpatialSplit::Split SpatialSplit::BinInfo::best(BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping, const size_t blocks_shift)
     {
       /* sweep from right to left and compute parallel prefix of merged bounds */
       ssef rAreas[BINS];
@@ -118,6 +118,7 @@ namespace embree
       }
       
       /* sweep from left to right and compute SAH */
+      ssei blocks_add = (1 << blocks_shift)-1;
       ssei ii = 1; ssef vbestSAH = pos_inf; ssei vbestPos = 0;
       count = 0; bx = empty; by = empty; bz = empty;
       for (size_t i=1; i<BINS; i++, ii+=1)
@@ -128,8 +129,8 @@ namespace embree
 	bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
 	const ssef lArea = ssef(Ax,Ay,Az,Az);
 	const ssef rArea = rAreas[i];
-	const ssei lCount = blocks(count);
-	const ssei rCount = blocks(rCounts[i]);
+	const ssei lCount = (count     +blocks_add) >> blocks_shift; //blocks(count);
+	const ssei rCount = (rCounts[i]+blocks_add) >> blocks_shift; //blocks(rCounts[i]);
 	const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
 	vbestPos  = select(sah < vbestSAH,ii ,vbestPos);
 	vbestSAH  = select(sah < vbestSAH,sah,vbestSAH);
@@ -173,15 +174,15 @@ namespace embree
     }
     
     template<>
-    const SpatialSplit::Split SpatialSplit::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo)
+    const SpatialSplit::Split SpatialSplit::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
     {
       BinInfo binner;
       Mapping mapping(pinfo);
       binner.bin(prims,pinfo,mapping);
-      return binner.best(prims,pinfo,mapping);
+      return binner.best(prims,pinfo,mapping,logBlockSize);
     }
     
-    SpatialSplit::TaskBinParallel::TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping) 
+    SpatialSplit::TaskBinParallel::TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping, const size_t logBlockSize) 
       : iter(prims), pinfo(pinfo), mapping(mapping)
     {
       /* parallel binning */
@@ -194,7 +195,7 @@ namespace embree
 	bins.merge(binners[i]);
       
       /* calculation of best split */
-      split = bins.best(prims,pinfo,mapping);
+      split = bins.best(prims,pinfo,mapping,logBlockSize);
     }
     
     void SpatialSplit::TaskBinParallel::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
@@ -204,10 +205,10 @@ namespace embree
     }
     
     template<>
-    const SpatialSplit::Split SpatialSplit::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo) 
+    const SpatialSplit::Split SpatialSplit::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize) 
     {
       const Mapping mapping(pinfo);
-      return TaskBinParallel(threadIndex,threadCount,prims,pinfo,mapping).split;
+      return TaskBinParallel(threadIndex,threadCount,prims,pinfo,mapping,logBlockSize).split;
     }
     
     template<>

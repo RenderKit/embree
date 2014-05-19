@@ -172,7 +172,7 @@ namespace embree
       /* perform standard binning in aligned space */
       ObjectPartition::Split alignedObjectSplit;
       float alignedObjectSAH = inf;
-      alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,prims,pinfo);
+      alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,prims,pinfo,0); // FIXME: hardcoded 0
       alignedObjectSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedObjectSplit.splitSAH();
       bestSAH = min(bestSAH,alignedObjectSAH);
       

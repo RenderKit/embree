@@ -260,8 +260,8 @@ namespace embree
 	bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
 	const ssef lArea = ssef(Ax,Ay,Az,Az);
 	const ssef rArea = rAreas[i];
-	const ssei lCount = (count     +blocks_add) >> blocks_shift; //blocks(count);
-	const ssei rCount = (rCounts[i]+blocks_add) >> blocks_shift; //blocks(rCounts[i]);
+	const ssei lCount = (count     +blocks_add) >> blocks_shift;
+	const ssei rCount = (rCounts[i]+blocks_add) >> blocks_shift;
 	const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
 	vbestPos = select(sah < vbestSAH,ii ,vbestPos);
 	vbestSAH = select(sah < vbestSAH,sah,vbestSAH);
