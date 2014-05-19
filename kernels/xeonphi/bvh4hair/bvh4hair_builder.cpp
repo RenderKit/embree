@@ -14,7 +14,7 @@ namespace embree
 
   void BVH4HairBuilder::printBuilderName()
   {
-    std::cout << "building BVH4i with BezierCurves SAH builder (MIC) ... " << std::endl;    
+    std::cout << "building BVH4Hair with binned SAH builder (MIC) ... " << std::endl;    
     DBG(sleep(1));
   }
 

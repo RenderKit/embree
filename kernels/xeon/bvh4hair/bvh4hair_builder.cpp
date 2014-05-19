@@ -209,7 +209,7 @@ namespace embree
 	bestSAH = min(bestSAH,strandSAH);
       }
       
-#if 0
+#if 1
       bestSAH = alignedObjectSAH;
 #endif
 

@@ -174,54 +174,67 @@ namespace embree
       return true;
     }
 
-    static __forceinline bool occluded(const Precalculations& pre, const Ray16& ray, const size_t k, const Bezier1i& curve_in, const void* geom) 
+    static __forceinline bool occluded(const Precalculations& pre, 
+				       const Ray16& ray, 
+				       const mic_f &dir_xyz,
+				       const mic_f &org_xyz,
+				       const size_t k, 
+				       const Bezier1i& curve_in, 
+				       const void* geom) 
     {
       STAT3(shadow.trav_prims,1,1,1);
-      FATAL("optimize");
+      const mic_f zero = mic_f::zero();
+      const mic_f one  = mic_f::one();
 
-      /* load ray */
-      const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
-      const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
-      const float ray_tnear = ray.tnear[k];
-      const float ray_tfar  = ray.tfar [k];
+      prefetch<PFHINT_L1>(curve_in.p + 0);
+      prefetch<PFHINT_L1>(curve_in.p + 3);
 
-      /* load bezier curve control points */
-      const Vec3fa v0 = curve_in.p[0];
-      const Vec3fa v1 = curve_in.p[1];
-      const Vec3fa v2 = curve_in.p[2];
-      const Vec3fa v3 = curve_in.p[3];
+      const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
+      const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
+      const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
 
-      const Vec3fa v0_ray_org = v0-ray_org;
-      const Vec3fa v1_ray_org = v1-ray_org;
-      const Vec3fa v2_ray_org = v2-ray_org;
-      const Vec3fa v3_ray_org = v3-ray_org;
 
-      /* transform control points into ray space */
-      Vec3fa w0 = xfmVector(pre.ray_space,v0_ray_org); w0.w = v0.w;
-      Vec3fa w1 = xfmVector(pre.ray_space,v1_ray_org); w1.w = v1.w;
-      Vec3fa w2 = xfmVector(pre.ray_space,v2_ray_org); w2.w = v2.w;
-      Vec3fa w3 = xfmVector(pre.ray_space,v3_ray_org); w3.w = v3.w;
-      BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
+      const mic_f p0123 = uload16f((float*)curve_in.p);
+      const mic_f p0123_org = p0123 - org_xyz;
 
-      /* subdivide 3 levels at once */ 
-      const mic4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-      const mic4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+      const mic_f p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);
+
+
+      const mic_f c0 = load16f(&coeff01[0]);
+      const mic_f c1 = load16f(&coeff01[1]);
+      const mic_f c2 = load16f(&coeff01[2]);
+      const mic_f c3 = load16f(&coeff01[3]);
+
+      const mic4f p0 = eval16(p0123_2D,c0,c1,c2,c3);
+
+      const mic4f p1(align_shift_right<1>(zero,p0[0]), 
+		     align_shift_right<1>(zero,p0[1]),
+		     align_shift_right<1>(zero,p0[2]), 
+		     align_shift_right<1>(zero,p0[3]));;
+
+      const mic_m m_segments = 0x7fff;
+
+      const float one_over_width = 1.0f/15.0f;
+
 
       /* approximative intersection with cone */
       const mic4f v = p1-p0;
       const mic4f w = -p0;
       const mic_f d0 = w.x*v.x + w.y*v.y;
       const mic_f d1 = v.x*v.x + v.y*v.y;
-      const mic_f u = clamp(d0*rcp(d1),mic_f(zero),mic_f(one));
+      const mic_f u = clamp(d0*rcp(d1),zero,one);
       const mic4f p = p0 + u*v;
       const mic_f t = p.z;
       const mic_f d2 = p.x*p.x + p.y*p.y; 
       const mic_f r = p.w;
       const mic_f r2 = r*r;
-      mic_m valid = d2 <= r2 & mic_f(ray_tnear) < t & t < mic_f(ray_tfar);
-      const float one_over_width = 1.0f/16.0f;
+      mic_m valid = le(m_segments,d2,r2);
+      valid = lt(valid,mic_f(ray.tnear[k]),t);
+      valid = lt(valid,t,mic_f(ray.tfar[k]));
 
-      if (none(valid)) return false;
+
+      if (unlikely(none(valid))) return false;
+
       STAT3(shadow.trav_prim_hits,1,1,1);
 
       /* ray masking test */

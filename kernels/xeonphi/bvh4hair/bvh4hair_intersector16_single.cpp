@@ -76,7 +76,7 @@ namespace embree
 	const Bezier1i *__restrict__ const tptr = (Bezier1i*)accel + index;
 
 	for (size_t i=0;i<items;i++)
-	  if (Bezier1iIntersector16::occluded(pre,ray16,rayIndex,tptr[i],geometry))
+	  if (Bezier1iIntersector16::occluded(pre,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry))
 	    return true;
 	return false;
       }
