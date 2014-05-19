@@ -74,6 +74,8 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const Bezier1i *__restrict__ const tptr = (Bezier1i*)accel + index;
+	prefetch<PFHINT_L1>(tptr + 0);
+	prefetch<PFHINT_L1>(tptr + 2);
 
 	for (size_t i=0;i<items;i++)
 	  if (Bezier1iIntersector16::occluded(pre,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry))
