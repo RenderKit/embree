@@ -91,9 +91,17 @@ namespace embree
 	template<bool Parallel>
 	  void split(size_t threadIndex, size_t threadCount,
 		     PrimRefBlockAlloc<Bezier1>& alloc, 
-		     BezierRefList& curves, 
+		     Scene* scene, BezierRefList& curves, 
 		     BezierRefList& lprims_o, PrimInfo& linfo_o, 
 		     BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
+
+	/*! splitting into two sets */
+	template<bool Parallel>
+	  void split(size_t threadIndex, size_t threadCount,
+		     PrimRefBlockAlloc<PrimRef>& alloc, 
+		     Scene* scene, TriRefList& curves, 
+		     TriRefList& lprims_o, PrimInfo& linfo_o, 
+		     TriRefList& rprims_o, PrimInfo& rinfo_o) const;
 	
       public:
 	float sah;          //!< SAH cost of the split
@@ -134,10 +142,11 @@ namespace embree
       };
       
       /*! task for parallel binning */
+      template<typename List>
       struct TaskBinParallel
       {
 	/*! construction executes the task */
-	TaskBinParallel(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const PrimInfo& pinfo, const Mapping& mapping, const size_t logBlockSize);
+	TaskBinParallel(size_t threadIndex, size_t threadCount, Scene* scene, List& prims, const PrimInfo& pinfo, const Mapping& mapping, const size_t logBlockSize);
 	
       private:
 	
@@ -146,7 +155,7 @@ namespace embree
 	
       private:
 	Scene* scene;
-	BezierRefList::iterator iter; 
+	typename List::iterator iter; 
 	PrimInfo pinfo;
 	Mapping mapping;
 	BinInfo binners[maxTasks];
@@ -155,14 +164,17 @@ namespace embree
 	Split split; //!< best split
       };
       
-      /*! task for parallel splitting */
+      /*! task for parallel splitting */ 
+      template<typename Prim>
       struct TaskSplitParallel
       {
+	typedef atomic_set<PrimRefBlockT<Prim> > List;
+
 	/*! construction executes the task */
-	TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, 
-			  BezierRefList& prims, 
-			  BezierRefList& lprims_o, PrimInfo& linfo_o, 
-			  BezierRefList& rprims_o, PrimInfo& rinfo_o);
+	TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Prim>& alloc, 
+			  Scene* scene, List& prims, 
+			  List& lprims_o, PrimInfo& linfo_o, 
+			  List& rprims_o, PrimInfo& rinfo_o);
 	
       private:
 	
@@ -172,16 +184,17 @@ namespace embree
 	/*! input data */
       private:
 	const Split* split;
-	PrimRefBlockAlloc<Bezier1>& alloc;
-	BezierRefList prims;
+	PrimRefBlockAlloc<Prim>& alloc;
+	Scene* scene;
+	List prims;
 	PrimInfo linfos[maxTasks];
 	PrimInfo rinfos[maxTasks];
 	
 	/*! output data */
       private:
-	BezierRefList& lprims_o; 
+	List& lprims_o; 
 	PrimInfo& linfo_o;
-	BezierRefList& rprims_o;
+	List& rprims_o;
 	PrimInfo& rinfo_o;
       };
     };

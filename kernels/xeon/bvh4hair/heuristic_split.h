@@ -73,14 +73,14 @@ namespace embree
       /*! single threaded splitting into two sets */
       template<bool Parallel>
 	void split(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
-		   BezierRefList& prims, 
+		   Scene* scene, BezierRefList& prims, 
 		   BezierRefList& lprims_o, PrimInfo& linfo_o, 
 		   BezierRefList& rprims_o, PrimInfo& rinfo_o) const
 	{
 	  switch (type) {
 	  case OBJECT_SPLIT_UNALIGNED : ((ObjectPartitionUnaligned::Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
 	  case OBJECT_SPLIT : ((ObjectPartition::Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
-	  case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+	  case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,scene,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
 	  case STRAND_SPLIT : ((StrandSplit::    Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
 	  case FALLBACK_SPLIT: FallBackSplit::find(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
 	  default: throw std::runtime_error("internal error");
@@ -90,14 +90,14 @@ namespace embree
       /*! multi threaded splitting into two sets */
       template<bool Parallel>
 	void split_parallel(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
-			    BezierRefList& prims, 
+			    Scene* scene, BezierRefList& prims, 
 			    BezierRefList& lprims_o, PrimInfo& linfo_o, 
 			    BezierRefList& rprims_o, PrimInfo& rinfo_o) const
 	{
 	  switch (type) {
 	  case OBJECT_SPLIT_UNALIGNED : ((ObjectPartitionUnaligned::Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
 	  case OBJECT_SPLIT : ((ObjectPartition::Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
-	  case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
+	  case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,sccene,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
 	  case STRAND_SPLIT : ((StrandSplit::    Split*)&data)->split<Parallel>(threadIndex,threadCount,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
 	  case FALLBACK_SPLIT: FallBackSplit::find(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
 	  default: throw std::runtime_error("internal error");
