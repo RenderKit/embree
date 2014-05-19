@@ -53,20 +53,20 @@ namespace embree
 	: type(FALLBACK_SPLIT), sah(inf), isAligned(isAligned) {}
       
       /*! construction from object partitioning */
-      __forceinline Split (ObjectPartitionUnaligned::Split& split, bool isAligned = false) 
-	: type(OBJECT_SPLIT_UNALIGNED), sah(split.splitSAH()), isAligned(isAligned) { new (&data) ObjectPartitionUnaligned::Split(split); }
+      __forceinline Split (ObjectPartitionUnaligned::Split& split) 
+	: type(OBJECT_SPLIT_UNALIGNED), sah(split.splitSAH()), isAligned(false) { new (&data) ObjectPartitionUnaligned::Split(split); }
       
       /*! construction from object partitioning */
       __forceinline Split (const ObjectPartition::Split& split) 
 	: type(OBJECT_SPLIT), sah(split.splitSAH()), isAligned(true) { new (&data) ObjectPartition::Split(split); }
       
       /*! construction from spatial split */
-      __forceinline Split (SpatialSplit::Split& split, bool isAligned) 
-	: type(SPATIAL_SPLIT), sah(split.splitSAH()), isAligned(isAligned) { new (&data) SpatialSplit::Split(split); }
+      __forceinline Split (SpatialSplit::Split& split) 
+	: type(SPATIAL_SPLIT), sah(split.splitSAH()), isAligned(true) { new (&data) SpatialSplit::Split(split); }
       
       /*! construction from strand split */
-      __forceinline Split (StrandSplit::Split& split, bool isAligned) 
-	: type(STRAND_SPLIT), sah(split.splitSAH()), isAligned(isAligned) { new (&data) StrandSplit::Split(split); }
+      __forceinline Split (StrandSplit::Split& split) 
+	: type(STRAND_SPLIT), sah(split.splitSAH()), isAligned(false) { new (&data) StrandSplit::Split(split); }
       
       /*! calculates surface area heuristic for performing the split */
       __forceinline float splitSAH() const { return sah; }

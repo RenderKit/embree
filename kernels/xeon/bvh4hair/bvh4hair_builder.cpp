@@ -216,9 +216,9 @@ namespace embree
       /* return best split */
       if      (bestSAH == float(inf)        ) return Split();
       else if (bestSAH == alignedObjectSAH  ) return Split(alignedObjectSplit);
-      else if (bestSAH == alignedSpatialSAH ) return Split(alignedSpatialSplit,true);
-      else if (bestSAH == unalignedObjectSAH) return Split(unalignedObjectSplit,false);
-      else if (bestSAH == strandSAH         ) return Split(strandSplit,false);
+      else if (bestSAH == alignedSpatialSAH ) return Split(alignedSpatialSplit);
+      else if (bestSAH == unalignedObjectSAH) return Split(unalignedObjectSplit);
+      else if (bestSAH == strandSAH         ) return Split(strandSplit);
       else throw std::runtime_error("bvh4hair_builder: internal error");
     }
     
