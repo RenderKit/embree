@@ -118,13 +118,16 @@ namespace embree
   
 #if defined(__SSE4_1__)
   __forceinline const ssei min( const ssei& a, const ssei& b ) { return _mm_min_epi32(a.m128, b.m128); }
+  __forceinline const ssei max( const ssei& a, const ssei& b ) { return _mm_max_epi32(a.m128, b.m128); }
+#else
+  __forceinline const ssei min( const ssei& a, const ssei& b ) { return ssei(min(a[0],b[0]),min(a[1],b[1]),min(a[2],b[2]),min(a[3],b[3])); }
+  __forceinline const ssei max( const ssei& a, const ssei& b ) { return ssei(max(a[0],b[0]),max(a[1],b[1]),max(a[2],b[2]),max(a[3],b[3])); }
+#endif
+
   __forceinline const ssei min( const ssei& a, const int32&  b ) { return min(a,ssei(b)); }
   __forceinline const ssei min( const int32&  a, const ssei& b ) { return min(ssei(a),b); }
-
-  __forceinline const ssei max( const ssei& a, const ssei& b ) { return _mm_max_epi32(a.m128, b.m128); }
   __forceinline const ssei max( const ssei& a, const int32&  b ) { return max(a,ssei(b)); }
   __forceinline const ssei max( const int32&  a, const ssei& b ) { return max(ssei(a),b); }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
