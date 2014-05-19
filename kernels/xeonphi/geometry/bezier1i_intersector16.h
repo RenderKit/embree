@@ -42,11 +42,23 @@ namespace embree
 				      const mic_f &c2,
 				      const mic_f &c3)
     {
+#if 0
       const Vec3fa *__restrict__ const p = (Vec3fa*)&p0123;
       const mic_f x = c0 * mic_f(p[0].x) + c1 * mic_f(p[1].x) + c2 * mic_f(p[2].x) + c3 * mic_f(p[3].x);
       const mic_f y = c0 * mic_f(p[0].y) + c1 * mic_f(p[1].y) + c2 * mic_f(p[2].y) + c3 * mic_f(p[3].y);
       const mic_f z = c0 * mic_f(p[0].z) + c1 * mic_f(p[1].z) + c2 * mic_f(p[2].z) + c3 * mic_f(p[3].z);
       const mic_f w = c0 * mic_f(p[0].w) + c1 * mic_f(p[1].w) + c2 * mic_f(p[2].w) + c3 * mic_f(p[3].w);
+#else
+      const mic_f p0 = permute<0>(p0123);
+      const mic_f p1 = permute<1>(p0123);
+      const mic_f p2 = permute<2>(p0123);
+      const mic_f p3 = permute<3>(p0123);
+
+      const mic_f x = c0 * swAAAA(p0) + c1 * swAAAA(p1) + c2 * swAAAA(p2) + c3 * swAAAA(p3);
+      const mic_f y = c0 * swBBBB(p0) + c1 * swBBBB(p1) + c2 * swBBBB(p2) + c3 * swBBBB(p3);
+      const mic_f z = c0 * swCCCC(p0) + c1 * swCCCC(p1) + c2 * swCCCC(p2) + c3 * swCCCC(p3);
+      const mic_f w = c0 * swDDDD(p0) + c1 * swDDDD(p1) + c2 * swDDDD(p2) + c3 * swDDDD(p3);
+#endif
       return mic4f(x,y,z,w);
     }
 
@@ -82,6 +94,9 @@ namespace embree
     {
       STAT3(normal.trav_prims,1,1,1);
 
+      const mic_f zero = mic_f::zero();
+      const mic_f one  = mic_f::one();
+
 #if 1
       const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
       const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
@@ -95,8 +110,34 @@ namespace embree
 
       const mic_f p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);
 
+
+#if 1
+      const mic_f c0 = load16f(&coeff01[0]);
+      const mic_f c1 = load16f(&coeff01[1]);
+      const mic_f c2 = load16f(&coeff01[2]);
+      const mic_f c3 = load16f(&coeff01[3]);
+
+      const mic4f p0 = eval16(p0123_2D,c0,c1,c2,c3);
+
+      const mic4f p1(align_shift_right<1>(zero,p0[0]), 
+		     align_shift_right<1>(zero,p0[1]),
+		     align_shift_right<1>(zero,p0[2]), 
+		     align_shift_right<1>(zero,p0[3]));;
+
+      const mic_m m_segments = 0x7fff;
+
+      const float one_over_width = 1.0f/15.0f;
+
+#else
+
       const mic4f p0 = eval16(p0123_2D,coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
       const mic4f p1 = eval16(p0123_2D,coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+
+      const mic_m m_segments = 0xffff;
+
+      const float one_over_width = 1.0f/16.0f;
+
+#endif
 
 #else
       /* load ray */
@@ -126,11 +167,10 @@ namespace embree
       BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
 
       /* subdivide 3 levels at once */ 
-      const mic4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+      const mic4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);      
       const mic4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting, use just 15 segments
 
 #endif
-
 
 
       /* approximative intersection with cone */
@@ -138,19 +178,18 @@ namespace embree
       const mic4f w = -p0;
       const mic_f d0 = w.x*v.x + w.y*v.y;
       const mic_f d1 = v.x*v.x + v.y*v.y;
-      const mic_f u = clamp(d0*rcp(d1),mic_f(zero),mic_f(one));
+      const mic_f u = clamp(d0*rcp(d1),zero,one);
       const mic4f p = p0 + u*v;
       const mic_f t = p.z;
       const mic_f d2 = p.x*p.x + p.y*p.y; 
       const mic_f r = p.w;
       const mic_f r2 = r*r;
-      mic_m valid = d2 <= r2 & mic_f(ray.tnear[k]) < t & t < mic_f(ray.tfar[k]);
-      const float one_over_width = 1.0f/16.0f;
+      mic_m valid = le(m_segments,d2,r2) & mic_f(ray.tnear[k]) < t & t < mic_f(ray.tfar[k]);
 
 
       if (unlikely(none(valid))) return false;
       STAT3(normal.trav_prim_hits,1,1,1);
-      size_t i = select_min(valid,t);
+      unsigned int i = select_min(valid,t);
 
       /* ray masking test */
 #if defined(__USE_RAY_MASK__)
@@ -159,6 +198,7 @@ namespace embree
 #endif  
 
       /* intersection filter test */
+
 
       /* update hit information */
       const float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
