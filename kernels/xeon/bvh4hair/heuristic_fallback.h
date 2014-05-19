@@ -96,8 +96,8 @@ namespace embree
       __forceinline void merge(const PrimInfo& other) 
       {
 	CentGeomBBox3fa::merge(other);
-	begin = min(begin,other.begin);
-	end   = max(end ,other.end  );
+	assert(begin == 0);
+	end += other.end;
       }
       
       /*! returns the number of primitives */

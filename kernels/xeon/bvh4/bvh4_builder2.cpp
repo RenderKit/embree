@@ -24,7 +24,7 @@
 #include "builders/splitter_fallback.h"
 
 #define ROTATE_TREE 0
-#define PARALLEL false
+#define PARALLEL true
 
 #include "common/scene_triangle_mesh.h"
 
@@ -40,7 +40,7 @@ namespace embree
 	return;
       
       if (g_verbose >= 2) 
-	std::cout << "building BVH4<" << bvh->primTy.name << "> with SAH builder ... " << std::flush;
+	std::cout << "building BVH4<" << bvh->primTy.name << "> with SAH builder2 ... " << std::flush;
       
       double t0 = 0.0, t1 = 0.0f;
       if (g_verbose >= 2 || g_benchmark)
@@ -50,13 +50,20 @@ namespace embree
       new (&initStage) TriRefGen(threadIndex,threadCount,&alloc,(Scene*)geometry);
       bvh->numPrimitives = initStage.pinfo.size();
 
+      PRINT(1);
+      double D0 = getSeconds();
       Split split = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,initStage.prims,initStage.pinfo,2);
       tasks.push_back(SplitTask(threadIndex,threadCount,this,bvh->root,1,initStage.prims,initStage.pinfo,split));
-
-#if PARALLEL
+      double D1 = getSeconds();
+      PRINT(initStage.pinfo.size());
+      PRINT(1000.0f*(D1-D0));
+      
+#if PARALLEL || true
   
+      double T0 = getSeconds();
+
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (tasks.front().pinfo.size() > 256*1024)//4*threadCount && tasks.size()+BVH4::N <= 1024) 
+      //while (tasks.front().pinfo.size() > 256*1024 && tasks.size() < 2)//4*threadCount && tasks.size()+BVH4::N <= 1024) 
       {
 	/* pop largest item for better load balancing */
 	SplitTask task = tasks.front();
@@ -66,18 +73,27 @@ namespace embree
 	/* process this item in parallel */
 	task.recurse_parallel(threadIndex,threadCount);
       }
+
+      double T1 = getSeconds();
+      
 #endif
 
       /*! process each generated subtask in its own thread */
       TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,tasks.size(),"BVH4Builder2::build");
             
+      double T2 = getSeconds();
+      PRINT(1000.0f*(T1-T0));
+      PRINT(1000.0f*(T2-T1));
+
       /* finish build */
 #if ROTATE_TREE
       for (int i=0; i<5; i++) 
 	BVH4Rotate::rotate(bvh,bvh->root);
 #endif
 
-      bvh->clearBarrier(bvh->root);
+      /* layout top nodes */
+      bvh->root = layout_top_nodes(threadIndex,bvh->root);
+      //bvh->clearBarrier(bvh->root);
       bvh->bounds = initStage.pinfo.geomBounds;
       
       /* free all temporary blocks */
@@ -96,6 +112,31 @@ namespace embree
 	BVH4Statistics stat(bvh);
 	std::cout << "BENCHMARK_BUILD " << 1000.0f*(t1-t0) << " " << 1E-6*double(source->size())/(t1-t0) << " " << stat.bytesUsed() << std::endl;
       }
+    }
+
+    BVH4::NodeRef BVH4Builder2::layout_top_nodes(size_t threadIndex, NodeRef node)
+    {
+      if (node.isBarrier()) {
+	node.clearBarrier();
+	return node;
+      }
+      else if (!node.isLeaf()) 
+      {
+	Node* src = node.node();
+	Node* dst = bvh->allocNode(threadIndex);
+
+	//std::pair<float,int> order[4];
+	//for (size_t i=0; i<BVH4::N; i++)
+	//  order[i] = std::pair<float,int>(=area(src->bounds(i)),i);
+	//std::sort(&order[0],&order[4]);
+
+	for (size_t i=0; i<BVH4::N; i++) {
+	  dst->set(i,src->bounds(i),layout_top_nodes(threadIndex,src->child(i)));
+	}
+	return bvh->encodeNode(dst);
+      }
+      else
+	return node;
     }
     
     BVH4Builder2::BVH4Builder2 (BVH4* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize)
@@ -362,9 +403,16 @@ namespace embree
 	/*! perform best found split and find new splits */
 	PrimInfo linfo,rinfo;
 	TriRefList lprims,rprims;
+	double K0 = getSeconds();
 	csplit[bestChild].split<PARALLEL>(threadIndex,threadCount,parent->alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
+	double K1 = getSeconds();
 	const Split lsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,lprims,linfo,2);
+	double K2 = getSeconds();
 	const Split rsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,rprims,rinfo,2);
+	double K3 = getSeconds();
+	PRINT(1000.0f*(K1-K0));
+	PRINT(1000.0f*(K2-K1));
+	PRINT(1000.0f*(K3-K2));
 	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
 	cprims[numChildren] = rprims; cinfo[numChildren] = rinfo; csplit[numChildren] = rsplit;
 	numChildren++;

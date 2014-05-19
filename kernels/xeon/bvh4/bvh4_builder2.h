@@ -72,6 +72,8 @@ namespace embree
       /*! Selects between full build and single-threaded split strategy. */
       void recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
 		   NodeRef& node, size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split);
+
+      NodeRef layout_top_nodes(size_t threadIndex, NodeRef node);
       
       /***********************************************************************************************************************
        *                                      Single Threaded Build Task
