@@ -43,13 +43,7 @@ namespace embree
       
       /*! Split type of the split heuristic. */
       typedef ObjectPartition::Split Split;
-      //typedef typename Heuristic::PrimInfo PrimInfo;
       typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;
-      
-      /*! Normal splitters based on heuristic */
-      //typedef PrimRefGen<Heuristic> PrimRefGenNormal;
-      //typedef MultiThreadedSplitter<Heuristic> MultiThreadedSplitterNormal;
-      //typedef Splitter<Heuristic> SplitterNormal;
       
     public:
       
@@ -70,6 +64,7 @@ namespace embree
       NodeRef createLargeLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo, size_t depth);
       
       /*! Selects between full build and single-threaded split strategy. */
+      template<bool PARALLEL>
       void recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
 		   NodeRef& node, size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split);
 
@@ -117,7 +112,6 @@ namespace embree
       class SplitTask {
 	ALIGNED_CLASS
 	  public:
-	SplitTask() : dst(dst) {} // FIXME
 	
 	/*! Default task construction. */
 	SplitTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
@@ -133,7 +127,7 @@ namespace embree
 	TASK_COMPLETE_FUNCTION_(SplitTask,recurse);
 	void recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
 	
-	void recurse_parallel(size_t threadIndex, size_t threadCount);
+	void recurse_parallel(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
 	
 	__forceinline friend bool operator< (const SplitTask& a, const SplitTask& b) {
 	  //return halfArea(a.bounds.bounds) < halfArea(b.bounds.bounds);
@@ -149,7 +143,7 @@ namespace embree
 	PrimInfo        pinfo;          //!< Bounding info of primitives.
 	Split           split;          //!< The best split for the primitives.
       };
-      
+
     private:
       BuildSource* source;      //!< build source interface
       void* geometry;           //!< input geometry
