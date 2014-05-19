@@ -124,10 +124,11 @@ namespace embree
 		  TriRefList& prims, const PrimInfo& pinfo, const Split& split);
 	
 	/*! Task entry function. */
-	TASK_COMPLETE_FUNCTION_(SplitTask,recurse);
-	void recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
+	TASK_COMPLETE_FUNCTION_(SplitTask,run);
+	void run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
 	
-	void recurse_parallel(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
+	template<bool PARALLEL>
+	void recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
 	
 	__forceinline friend bool operator< (const SplitTask& a, const SplitTask& b) {
 	  //return halfArea(a.bounds.bounds) < halfArea(b.bounds.bounds);

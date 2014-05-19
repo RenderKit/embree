@@ -24,7 +24,6 @@
 #include "builders/splitter_fallback.h"
 
 #define ROTATE_TREE 0
-#define PARALLEL true
 
 #include "common/scene_triangle_mesh.h"
 
@@ -50,10 +49,8 @@ namespace embree
       new (&initStage) TriRefGen(threadIndex,threadCount,&alloc,(Scene*)geometry);
       bvh->numPrimitives = initStage.pinfo.size();
    
-      Split split = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,initStage.prims,initStage.pinfo,2);
+      Split split = ObjectPartition::find<true>(threadIndex,threadCount,initStage.prims,initStage.pinfo,2);
       tasks.push_back(SplitTask(threadIndex,threadCount,this,bvh->root,1,initStage.prims,initStage.pinfo,split));
-
-#if PARALLEL
 
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
       while (tasks.front().pinfo.size() > 256*1024)
@@ -64,10 +61,8 @@ namespace embree
 	tasks.pop_back();
 	
 	/* process this item in parallel */
-	task.recurse_parallel(threadIndex,threadCount,NULL);
+	task.recurse<true>(threadIndex,threadCount,NULL);
       }
-
-#endif
 
       /*! process each generated subtask in its own thread */
       TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,tasks.size(),"BVH4Builder2::build");
@@ -158,8 +153,6 @@ namespace embree
 
     void BVH4Builder2::buildFunction(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
-      //Split split = ObjectPartition::find<true>(threadIndex,threadCount,initStage.prims,initStage.pinfo,2);
-      //recurse<false>(threadIndex,threadCount,event,bvh->root,1,initStage.prims,initStage.pinfo,split);
       SplitTask& task = tasks[taskIndex];
       recurse<false>(threadIndex,threadCount,event,*task.dst,task.depth,task.prims,task.pinfo,task.split);
     }
@@ -291,7 +284,7 @@ namespace embree
 				       TriRefList& prims, const PrimInfo& pinfo, const Split& split)
       : parent(parent), dst(&node), depth(depth), prims(prims), pinfo(pinfo), split(split)
     {
-      new (&task) TaskScheduler::Task(event,_recurse,this,"build::split");
+      new (&task) TaskScheduler::Task(event,_run,this,"build::split");
       TaskScheduler::addTask(threadIndex,parent->taskQueue,&task);
     }
     
@@ -300,66 +293,12 @@ namespace embree
 				       TriRefList& prims, const PrimInfo& pinfo, const Split& split)
       : parent(parent), dst(&node), depth(depth), prims(prims), pinfo(pinfo), split(split) {}
     
-    void BVH4Builder2::SplitTask::recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
-    {
-      /*! compute leaf and split cost */
-      const float leafSAH  = parent->primTy.intCost*pinfo.leafSAH(2);
-      const float splitSAH = BVH4::travCost*halfArea(pinfo.geomBounds)+parent->primTy.intCost*split.splitSAH();
-      assert(TriRefList::block_iterator_unsafe(prims).size() == pinfo.size());
-      assert(pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
-      
-      /*! create a leaf node when threshold reached or SAH tells us to stop */
-      if (pinfo.size() <= parent->minLeafSize || depth > BVH4::maxBuildDepth || (pinfo.size() <= parent->maxLeafSize && leafSAH <= splitSAH)) {
-	*dst = parent->createLargeLeaf(threadIndex,prims,pinfo,depth+1); delete this; return;
-      }
-      
-      /*! initialize child list */
-      TriRefList cprims[BVH4::N]; 
-      PrimInfo                 cinfo [BVH4::N]; 
-      Split                    csplit[BVH4::N]; 
-      cprims[0] = prims;
-      cinfo [0] = pinfo;
-      csplit[0] = split;
-      size_t numChildren = 1;
-      
-      /*! split until node is full or SAH tells us to stop */
-      do {
-	
-	/*! find best child to split */
-	float bestSAH = 0; 
-	ssize_t bestChild = -1;
-	for (size_t i=0; i<numChildren; i++) 
-	{
-	  float dSAH = csplit[i].splitSAH()-cinfo[i].leafSAH(2);
-	  if (cinfo[i].size() <= parent->minLeafSize) continue; 
-	  if (cinfo[i].size() > parent->maxLeafSize) dSAH = min(0.0f,dSAH); //< force split for large jobs
-	  if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
-	}
-	if (bestChild == -1) break;
-	
-	/*! perform best found split and find new splits */
-	PrimInfo linfo,rinfo;
-	TriRefList lprims,rprims;
-	csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
-	Split lsplit = ObjectPartition::find<false>(threadIndex,threadCount,lprims,linfo,2);
-	Split rsplit = ObjectPartition::find<false>(threadIndex,threadCount,rprims,rinfo,2);
-	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
-	cprims[numChildren] = rprims; cinfo[numChildren] = rinfo; csplit[numChildren] = rsplit;
-	numChildren++;
-	
-      } while (numChildren < BVH4::N);
-      
-      /*! create an inner node */
-      Node* node = parent->bvh->allocNode(threadIndex);
-      *dst = parent->bvh->encodeNode(node);
-      for (size_t i=0; i<numChildren; i++) {
-	node->set(i,cinfo[i].geomBounds,0);
-	parent->recurse<false>(threadIndex,threadCount,event,node->child(i),depth+1,cprims[i],cinfo[i],csplit[i]);
-      }
-      delete this;
+    void BVH4Builder2::SplitTask::run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) {
+      recurse<false>(threadIndex,threadCount,event);
     }
     
-    void BVH4Builder2::SplitTask::recurse_parallel(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
+    template<bool PARALLEL>
+    void BVH4Builder2::SplitTask::recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
     {
       /*! compute leaf and split cost */
       const float leafSAH  = parent->primTy.intCost*pinfo.leafSAH(2);
@@ -413,9 +352,7 @@ namespace embree
       *dst = parent->bvh->encodeNode(node);
       for (size_t i=0; i<numChildren; i++) {
 	node->set(i,cinfo[i].geomBounds,0);
-	//parent->recurse<true>(threadIndex,threadCount,event,node->child(i),depth+1,cprims[i],cinfo[i],csplit[i]);
-	parent->tasks.push_back(SplitTask(threadIndex,threadCount,parent,node->child(i),depth+1,cprims[i],cinfo[i],csplit[i]));
-	push_heap(parent->tasks.begin(),parent->tasks.end());
+	parent->recurse<PARALLEL>(threadIndex,threadCount,event,node->child(i),depth+1,cprims[i],cinfo[i],csplit[i]);
       }
     }
     
