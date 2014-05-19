@@ -50,7 +50,7 @@ namespace embree
     template<int HINT>
     __forceinline void prefetchControlPoints() const {
       prefetch<HINT>(p + 0);
-      prefetch<HINT>(p + 2);
+      prefetch<HINT>(p + 3);
     }
 
     const Vec3fa* p;      //!< pointer to first control point (x,y,z,r)

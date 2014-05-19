@@ -42,11 +42,12 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const Bezier1i *__restrict__ const tptr = (Bezier1i*)accel + index;
-	const mic_i and_mask = broadcast4to16i(zlc4);
 	bool ret = false;
+	prefetch<PFHINT_L1>(tptr + 0);
+	prefetch<PFHINT_L1>(tptr + 2);
 
 	// for (size_t i=0;i<items;i++)
-	//   tptr[i].prefetchControlPoints<PFHINT_L2>();
+	//    tptr[i].prefetchControlPoints<PFHINT_L2>();
 
 	for (size_t i=0;i<items;i++)
 	  ret |= Bezier1iIntersector16::intersect(pre,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry); // add mailboxing
