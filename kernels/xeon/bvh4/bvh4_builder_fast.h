@@ -34,6 +34,71 @@ namespace embree
       static const size_t SIZE_WORK_STACK = 64;
 
     public:
+
+      class __aligned(64) BuildRecord 
+      {
+      public:
+	Centroid_Scene_AABB bounds; //!< geometry and centroid bounds
+	
+	unsigned int begin;         //!< start of range
+	unsigned int end;           //!< end of range
+	unsigned int parentID;      //!< the ID of the node that points to us
+	unsigned int depth;         //!< depth from the root of the tree
+	
+	unsigned int flags;
+	float sArea;
+	size_t parentNode; 
+	
+	BuildRecord()
+	{
+	  assert(sizeof(BuildRecord) == 128);
+	}
+	
+	__forceinline void init(const unsigned int _begin, const unsigned int _end)
+	{
+	  begin  = _begin;
+	  end    = _end;
+	  parentID = (unsigned int)-1;
+	  sArea = area(bounds.geometry);
+	  flags = BUILD_RECORD_NODE;
+	}
+	
+	__forceinline void init(const Centroid_Scene_AABB& _bounds, const unsigned int _begin, const unsigned int _end)
+	{
+	  bounds = _bounds;
+	  init(_begin,_end);
+	}
+	
+	__forceinline unsigned int items() const {
+	  return end - begin;
+	}
+	
+	__forceinline float sceneArea() {
+	  return sArea;
+	}
+	
+	__forceinline bool operator<(const BuildRecord &br) const { return items() < br.items(); } 
+	__forceinline bool operator>(const BuildRecord &br) const { return items() > br.items(); } 
+	
+	__forceinline friend std::ostream &operator<<(std::ostream &o, const BuildRecord &br)
+	{
+	  o << "centroid2 = " << br.bounds.centroid2 << " ";
+	  o << "geometry = " << br.bounds.geometry << " ";
+	  o << "begin      " << br.begin << " ";
+	  o << "end        " << br.end << " ";
+	  o << "items      " << br.end-br.begin << " ";
+	  o << "parentID     " << br.parentID << " ";
+	  o << "flags      " << br.flags << " ";
+	  o << "sArea      " << br.sArea << " ";
+	  return o;
+	};
+	
+	/* FIXME: this can be removed */
+	enum { BUILD_RECORD_INIT  = 0, BUILD_RECORD_NODE  = 1, BUILD_RECORD_LEAF  = 2 };
+	__forceinline void createNode() { flags = BUILD_RECORD_NODE; }
+	__forceinline void createLeaf() { flags = BUILD_RECORD_LEAF; }
+	__forceinline bool isLeaf() { return flags == BUILD_RECORD_LEAF; }
+      };
       
       struct GlobalState
       {
@@ -112,6 +177,8 @@ namespace embree
       /*! recursive build function */
       void recurseSAH(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads);
       
+      static bool split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
+    
     protected:
       BuildSource* source;                     //!< input geometry
       Scene* scene;                            //!< input scene

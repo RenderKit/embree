@@ -544,6 +544,24 @@ namespace embree
         recurse(children[i],nodeAlloc,leafAlloc,mode,threadID,numThreads);
       }
     }
+
+    bool BVH4BuilderFast::split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+    {
+      const unsigned int center = (current.begin + current.end)/2;
+      
+      Centroid_Scene_AABB left; left.reset();
+      for (size_t i=current.begin; i<center; i++)
+        left.extend(primref[i].bounds());
+      leftChild.init(left,current.begin,center);
+      
+      Centroid_Scene_AABB right; right.reset();
+      for (size_t i=center; i<current.end; i++)
+        right.extend(primref[i].bounds());	
+      rightChild.init(right,center,current.end);
+      
+      return true;
+    }
+    
     
     // =======================================================================================================
     // =======================================================================================================
