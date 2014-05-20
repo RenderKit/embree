@@ -223,7 +223,7 @@ namespace embree
     
     void BVH4BuilderFast::createTriangle1Leaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      size_t items = current.items();
+      size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
       
@@ -255,7 +255,7 @@ namespace embree
     
     void BVH4BuilderFast::createTriangle4Leaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      size_t items = current.items();
+      size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
       
@@ -287,7 +287,7 @@ namespace embree
     
     void BVH4BuilderFast::createTriangle1vLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      size_t items = current.items();
+      size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
       
@@ -318,7 +318,7 @@ namespace embree
     
     void BVH4BuilderFast::createTriangle4vLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      size_t items = current.items();
+      size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
       
@@ -354,14 +354,8 @@ namespace embree
     
     bool BVH4BuilderFast::splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
     {
-      /* mark as leaf if leaf threshold reached */
-      if (current.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
-        current.createLeaf();
-        return false;
-      }
-      
       /* calculate binning function */
-      PrimInfo pinfo(current.items(),current.geomBounds,current.centBounds);
+      PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
       ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,2);
       
       /* if we cannot find a valid split, enforce an arbitrary split */
@@ -369,28 +363,14 @@ namespace embree
       
       /* partitioning of items */
       else {
-	PrimInfo linfo, rinfo;
-	split.partition(prims, current.begin, current.end, linfo, rinfo);
-	leftChild .init(Centroid_Scene_AABB(linfo.geomBounds,linfo.centBounds),linfo.begin,linfo.end);
-	rightChild.init(Centroid_Scene_AABB(rinfo.geomBounds,rinfo.centBounds),rinfo.begin,rinfo.end);
+	split.partition(prims, current.begin, current.end, leftChild, rightChild);
+	leftChild.init(); rightChild.init();
       }
-     
-      if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
-      if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();	
       return true;
     }
     
-    bool BVH4BuilderFast::splitParallel(BuildRecord &current, BuildRecord &leftChild, BuildRecord &rightChild, const size_t threadID, const size_t numThreads)
+    bool BVH4BuilderFast::splitParallel(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads)
     {
-      const unsigned int items = current.end - current.begin;
-      assert(items >= BUILD_RECORD_SPLIT_THRESHOLD);
-      
-      /* mark as leaf if leaf threshold reached */
-      if (items <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
-        current.createLeaf();
-        return false;
-      }
-      
       /* use primitive array temporarily for parallel splits */
       PrimRef* tmp = (PrimRef*) primAllocator.base();
       PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
@@ -403,20 +383,15 @@ namespace embree
       
       /* parallel partitioning of items */
       else {
-	PrimInfo linfo, rinfo;
-	g_state->parallelBinner.partition(pinfo,tmp,prims,linfo,rinfo,threadID,numThreads);
-	leftChild .init(Centroid_Scene_AABB(linfo.geomBounds,linfo.centBounds),linfo.begin,linfo.end);
-	rightChild.init(Centroid_Scene_AABB(rinfo.geomBounds,rinfo.centBounds),rinfo.begin,rinfo.end);
+	g_state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads);
+	leftChild.init(); rightChild.init();
       }
-      
-      if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
-      if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();
       return true;
     }
     
     __forceinline bool BVH4BuilderFast::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
     {
-      if (mode == BUILD_TOP_LEVEL && current.items() >= BUILD_RECORD_SPLIT_THRESHOLD)
+      if (mode == BUILD_TOP_LEVEL && current.size() >= BUILD_RECORD_SPLIT_THRESHOLD)
         return splitParallel(current,left,right,threadID,numThreads);		  
       else
         return splitSequential(current,left,right);
@@ -434,7 +409,7 @@ namespace embree
 #endif
       
       /* create leaf for few primitives */
-      if (current.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
+      if (current.size() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
         createSmallLeaf(this,current,leafAlloc,threadIndex);
         return;
       }
@@ -468,7 +443,7 @@ namespace embree
       if (mode == BUILD_TOP_LEVEL) {
         g_state->workStack.push_nolock(current);
       }
-      else if (mode == RECURSE_PARALLEL && current.items() > THRESHOLD_FOR_SUBTREE_RECURSION) {
+      else if (mode == RECURSE_PARALLEL && current.size() > THRESHOLD_FOR_SUBTREE_RECURSION) {
         if (!g_state->threadStack[threadID].push(current))
           recurseSAH(current,nodeAlloc,leafAlloc,RECURSE_SEQUENTIAL,threadID,numThreads);
       }
@@ -481,7 +456,7 @@ namespace embree
       __aligned(64) BuildRecord children[BVH4::N];
       
       /* create leaf node */
-      if (current.depth >= BVH4::maxBuildDepth || current.isLeaf()) {
+      if (current.depth >= BVH4::maxBuildDepth || current.size() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
         assert(mode != BUILD_TOP_LEVEL);
         createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
         return;
@@ -499,7 +474,7 @@ namespace embree
         for (unsigned int i=0; i<numChildren; i++)
         {
           /* ignore leaves as they cannot get split */
-          if (children[i].isLeaf())
+          if (children[i].size() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD)
             continue;
           
           /* remember child with largest area */
@@ -681,7 +656,7 @@ namespace embree
           break;
         
         /* guarantees to create no leaves in this stage */
-        if (br.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD)
+        if (br.size() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD)
           break;
 
         recurseSAH(br,nodeAlloc,leafAlloc,BUILD_TOP_LEVEL,threadIndex,threadCount);

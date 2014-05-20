@@ -38,67 +38,33 @@ namespace embree
       class __aligned(64) BuildRecord : public PrimInfo
       {
       public:
-	//Centroid_Scene_AABB bounds; //!< geometry and centroid bounds
-	//unsigned int begin;         //!< start of range
-	//unsigned int end;           //!< end of range
-	unsigned int parentID;      //!< the ID of the node that points to us
 	unsigned int depth;         //!< depth from the root of the tree
-	
-	unsigned int flags;
 	float sArea;
 	size_t parentNode; 
 	
-      BuildRecord() : PrimInfo(0)
+        BuildRecord() : PrimInfo(0) {}
+
+	__forceinline void init()
 	{
-	  assert(sizeof(BuildRecord) == 128);
-	}
-	
-	__forceinline void init(const unsigned int _begin, const unsigned int _end)
-	{
-	  begin  = _begin;
-	  end    = _end;
-	  parentID = (unsigned int)-1;
 	  sArea = area(geomBounds);
-	  flags = BUILD_RECORD_NODE;
 	}
-	
+
 	__forceinline void init(const Centroid_Scene_AABB& _bounds, const unsigned int _begin, const unsigned int _end)
 	{
-	  //bounds = _bounds;
 	  geomBounds = _bounds.geometry;
 	  centBounds = _bounds.centroid2;
-	  init(_begin,_end);
-	}
-	
-	__forceinline unsigned int items() const {
-	  return end - begin;
+	  begin  = _begin;
+	  end    = _end;
+	  sArea = area(geomBounds);
 	}
 	
 	__forceinline float sceneArea() {
 	  return sArea;
 	}
 	
-	__forceinline bool operator<(const BuildRecord &br) const { return items() < br.items(); } 
-	__forceinline bool operator>(const BuildRecord &br) const { return items() > br.items(); } 
+	__forceinline bool operator<(const BuildRecord &br) const { return size() < br.size(); } 
+	__forceinline bool operator>(const BuildRecord &br) const { return size() > br.size(); } 
 	
-	__forceinline friend std::ostream &operator<<(std::ostream &o, const BuildRecord &br)
-	{
-	  o << "centroid2 = " << br.centBounds << " ";
-	  o << "geometry = " << br.geomBounds << " ";
-	  o << "begin      " << br.begin << " ";
-	  o << "end        " << br.end << " ";
-	  o << "items      " << br.end-br.begin << " ";
-	  o << "parentID     " << br.parentID << " ";
-	  o << "flags      " << br.flags << " ";
-	  o << "sArea      " << br.sArea << " ";
-	  return o;
-	};
-	
-	/* FIXME: this can be removed */
-	enum { BUILD_RECORD_INIT  = 0, BUILD_RECORD_NODE  = 1, BUILD_RECORD_LEAF  = 2 };
-	__forceinline void createNode() { flags = BUILD_RECORD_NODE; }
-	__forceinline void createLeaf() { flags = BUILD_RECORD_LEAF; }
-	__forceinline bool isLeaf() { return flags == BUILD_RECORD_LEAF; }
       };
       
       struct GlobalState
