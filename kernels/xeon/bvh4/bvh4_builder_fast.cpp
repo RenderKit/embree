@@ -368,7 +368,12 @@ namespace embree
       if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
       
       /* partitioning of items */
-      else split.partition(prims, current.begin, current.end, leftChild, rightChild);
+      else {
+	PrimInfo linfo, rinfo;
+	split.partition(prims, current.begin, current.end, linfo, rinfo);
+	leftChild .init(Centroid_Scene_AABB(linfo.geomBounds,linfo.centBounds),linfo.begin,linfo.end);
+	rightChild.init(Centroid_Scene_AABB(rinfo.geomBounds,rinfo.centBounds),rinfo.begin,rinfo.end);
+      }
      
       if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
       if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();	
@@ -397,7 +402,12 @@ namespace embree
       if (unlikely(sah == float(inf))) split_fallback(prims,current,leftChild,rightChild);
       
       /* parallel partitioning of items */
-      else g_state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads);
+      else {
+	PrimInfo linfo, rinfo;
+	g_state->parallelBinner.partition(pinfo,tmp,prims,linfo,rinfo,threadID,numThreads);
+	leftChild .init(Centroid_Scene_AABB(linfo.geomBounds,linfo.centBounds),linfo.begin,linfo.end);
+	rightChild.init(Centroid_Scene_AABB(rinfo.geomBounds,rinfo.centBounds),rinfo.begin,rinfo.end);
+      }
       
       if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
       if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();

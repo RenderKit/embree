@@ -118,11 +118,7 @@ namespace embree
 	
 	/*! array partitioning */
 	void partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end,
-		       BuildRecord& left, BuildRecord& right) const;
-	
-	void partition_parallel(size_t threadIndex, size_t threadCount, 
-				PrimRef* prims, PrimRef* dst, const size_t begin, const size_t end,
-				BuildRecord& left, BuildRecord& right);
+		       PrimInfo& left, PrimInfo& right) const;
 	
       public:
 	float sah;       //!< SAH cost of the split
@@ -248,7 +244,7 @@ namespace embree
         float find(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads);
         
         /* parallel partitioning of a list of primitives */
-        void partition(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads);
+        void partition(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, PrimInfo& leftChild, PrimInfo& rightChild, const size_t threadID, const size_t numThreads);
         
       private:
         TASK_RUN_FUNCTION(ParallelBinner,parallelBinning);

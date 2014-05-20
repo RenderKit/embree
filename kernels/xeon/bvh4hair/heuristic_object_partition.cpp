@@ -432,7 +432,7 @@ namespace embree
       }
     }
         
-    void ObjectPartition::Split::partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, BuildRecord& left, BuildRecord& right) const
+    void ObjectPartition::Split::partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) const
     {
       CentGeomBBox3fa local_left; local_left.reset();
       CentGeomBBox3fa local_right; local_right.reset();
@@ -465,10 +465,12 @@ namespace embree
       }
       
       unsigned int center = l - prims;
-      left.init(Centroid_Scene_AABB(local_left.geomBounds,local_left.centBounds),begin,center);
-      right.init(Centroid_Scene_AABB(local_right.geomBounds,local_right.centBounds),center,end);
+      new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
+      new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
+      //left.init(Centroid_Scene_AABB(local_left.geomBounds,local_left.centBounds),begin,center);
+      //right.init(Centroid_Scene_AABB(local_right.geomBounds,local_right.centBounds),center,end);
       
-      assert(area(left.bounds.geometry) >= 0.0f);
+      /*assert(area(left.bounds.geometry) >= 0.0f);
       assert(area(left.bounds.centroid2) >= 0.0f);
       assert(area(right.bounds.geometry) >= 0.0f);
       assert(area(right.bounds.centroid2) >= 0.0f);
@@ -476,7 +478,7 @@ namespace embree
       assert( prims + begin <= l && l <= prims + end);
       assert( prims + begin <= r && r <= prims + end);
       
-      assert(l <= prims + end);
+      assert(l <= prims + end);*/
       //assert(center == begin+split.numLeft);
     }
     
@@ -604,7 +606,7 @@ namespace embree
       right.extend_atomic(rightBounds);  
     }
     
-    void ObjectPartition::ParallelBinner::partition(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, BuildRecord &leftChild, BuildRecord &rightChild, const size_t threadID, const size_t numThreads)
+    void ObjectPartition::ParallelBinner::partition(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, PrimInfo& leftChild, PrimInfo& rightChild, const size_t threadID, const size_t numThreads)
     {
       left.reset(); lCounter.reset(0);
       right.reset(); rCounter.reset(0); 
@@ -615,8 +617,10 @@ namespace embree
       unsigned center = pinfo.begin + numLeft;
       assert(lCounter == numLeft);
       assert(rCounter == pinfo.size() - lCounter);
-      leftChild.init(Centroid_Scene_AABB(left.geomBounds,left.centBounds),pinfo.begin,center);
-      rightChild.init(Centroid_Scene_AABB(right.geomBounds,right.centBounds),center,pinfo.end);
+      new (&leftChild ) PrimInfo(pinfo.begin,center,left.geomBounds,left.centBounds);
+      new (&rightChild) PrimInfo(center,pinfo.end,right.geomBounds,right.centBounds);
+      //leftChild.init(Centroid_Scene_AABB(left.geomBounds,left.centBounds),pinfo.begin,center);
+      //rightChild.init(Centroid_Scene_AABB(right.geomBounds,right.centBounds),center,pinfo.end);
     }
   }
 }

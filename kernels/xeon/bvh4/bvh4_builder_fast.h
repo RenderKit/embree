@@ -34,6 +34,7 @@ namespace embree
       static const size_t SIZE_WORK_STACK = 64;
 
     public:
+      
       struct GlobalState
       {
         ALIGNED_CLASS;
