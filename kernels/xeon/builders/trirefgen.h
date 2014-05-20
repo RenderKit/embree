@@ -25,23 +25,22 @@ namespace embree
 {
   namespace isa
   {
-    /*! Generates a list of bezier curves from the scene. */
-    class TriRefGen
+    /*! Generates a list of triangle build primitives from the scene. */
+    class TriRefListGen
     {
       static const size_t maxTasks = 32;
       typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;
-      
-    public:
-      
-      /*! standard constructor that schedules the task */
-      TriRefGen (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, TriRefList& prims, PrimInfo& pinfo);
-      
+
+    public:      
       static void generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, TriRefList& prims, PrimInfo& pinfo);
       
-    public:
+    private:
       
+      /*! standard constructor that schedules the task */
+      TriRefListGen (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, TriRefList& prims, PrimInfo& pinfo);
+            
       /*! parallel task to iterate over the primitives */
-      TASK_RUN_FUNCTION(TriRefGen,task_gen_parallel);
+      TASK_RUN_FUNCTION(TriRefListGen,task_gen_parallel);
       
       /* input data */
     private:
@@ -57,6 +56,31 @@ namespace embree
     public:
       TriRefList& prims;             //!< list of build primitives
       PrimInfo& pinfo;                  //!< bounding information of primitives
+    };
+
+    /*! Generates a list of triangle build primitives from the scene. */
+    class TriRefArrayGen
+    {
+    public:   
+      static void generate_sequential(size_t threadIndex, size_t threadCount, const Scene* scene, PrimRef* prims, PrimInfo& pinfo);
+      static void generate_parallel  (size_t threadIndex, size_t threadCount, const Scene* scene, PrimRef* prims, PrimInfo& pinfo);
+      
+    private:
+      
+      /*! standard constructor that schedules the task */
+      TriRefArrayGen (size_t threadIndex, size_t threadCount, const Scene* scene, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel);
+            
+      /*! parallel task to iterate over the primitives */
+      TASK_RUN_FUNCTION(TriRefArrayGen,task_gen_parallel);
+      
+      /* input data */
+    private:
+      const Scene* scene;                  //!< input geometry
+      
+      /* output data */
+    public:
+      PrimRef* prims_o;             //!< list of build primitives
+      PrimInfo& pinfo_o;            //!< bounding information of primitives
     };
   }
 }

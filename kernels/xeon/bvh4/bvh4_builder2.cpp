@@ -47,7 +47,7 @@ namespace embree
       
       /* generate list of build primitives */
       TriRefList prims; PrimInfo pinfo;
-      TriRefGen::generate(threadIndex,threadCount,&alloc,(Scene*)geometry,prims,pinfo);
+      TriRefListGen::generate(threadIndex,threadCount,&alloc,(Scene*)geometry,prims,pinfo);
       
       Split split = ObjectPartition::find<true>(threadIndex,threadCount,prims,pinfo,2);
       tasks.push_back(SplitTask(threadIndex,threadCount,this,bvh->root,1,prims,pinfo,split));

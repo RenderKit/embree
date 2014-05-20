@@ -18,6 +18,7 @@
 #include "bvh4_builder_fast.h"
 #include "bvh4_statistics.h"
 #include "bvh4_builder_binner.h"
+#include "builders/trirefgen.h"
 
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
@@ -215,112 +216,6 @@ namespace embree
         bvh->bytesPrimitives = primAllocator.bytesReserved;
       }
     }
-    
-    // =======================================================================================================
-    // =======================================================================================================
-    // =======================================================================================================
-    
-#if 1
-    void BVH4BuilderFast::computePrimRefs(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
-    {
-      const size_t startID = (threadID+0)*numPrimitives/numThreads;
-      const size_t endID   = (threadID+1)*numPrimitives/numThreads;
-      PrimRef *__restrict__ const                 prims  = this->prims;
-      
-      // === find first group containing startID ===
-      size_t g=0, offset = 0;
-      
-      if (mesh) {
-        g = mesh->id;
-        offset = startID;
-      }
-      else
-      {
-        size_t numSkipped = 0;
-        for (; g<numGroups; g++) {       
-          Geometry* geom = scene->get(g);
-          if (!geom || geom->type != TRIANGLE_MESH) continue;
-          TriangleMesh* mesh = (TriangleMesh*) geom;
-          if (mesh->numTimeSteps != 1) continue;
-          const size_t numTriangles = mesh->numTriangles;
-          if (numSkipped + numTriangles > startID) break;
-          numSkipped += numTriangles;
-        }
-        offset = startID - numSkipped;
-      }
-      
-      // === start with first group containing startID ===
-      Centroid_Scene_AABB bounds;
-      bounds.reset();
-      
-      size_t num = 0;
-      size_t currentID = startID;
-      for (; g<numGroups; g++) 
-      {
-        Geometry* geom = scene->get(g);
-        if (!geom || geom->type != TRIANGLE_MESH) continue;
-        TriangleMesh* mesh = (TriangleMesh*) geom;
-        if (mesh->numTimeSteps != 1) continue;
-        
-        for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
-        { 			    
-          const BBox3fa bounds1 = mesh->bounds(i);
-          bounds.extend(bounds1);
-          prims[currentID] = PrimRef(bounds1,g,i);
-        }
-        if (currentID == endID) break;
-        offset = 0;
-      }
-      global_bounds.extend_atomic(bounds);    
-    }
-    
-#else
-    
-    void BVH4BuilderFast::computePrimRefs(const size_t threadID, const size_t numThreads)
-    {
-      const size_t startID = (threadID+0)*numPrimitives/numThreads;
-      const size_t endID   = (threadID+1)*numPrimitives/numThreads;
-      
-      PrimRef *__restrict__ const prims  = this->prims;
-      
-      // === find first group containing startID ===
-      size_t g=0, numSkipped = 0;
-      if (mesh) {
-        g = mesh->id;
-        offset = startID;
-      }
-      else 
-      {
-        for (; g<numGroups; g++) {
-          const size_t numTriangles = source->prims(g);
-          if (numSkipped + numTriangles > startID) break;
-          numSkipped += numTriangles;
-        }
-        offset = startID - numSkipped;
-      }
-      
-      // === start with first group containing startID ===
-      Centroid_Scene_AABB bounds;
-      bounds.reset();
-      
-      size_t num = 0;
-      size_t currentID = startID;
-      for (; g<numGroups; g++) 
-      {
-        const size_t numTriangles = min(source->prims(g)-offset,endID-currentID);
-        
-        for (size_t i=0; i<numTriangles; i++, currentID++)	 
-        { 			    
-          const BBox3fa bounds1 = source->bounds(g,offset+i);
-          bounds.extend(bounds1);
-          prims[currentID] = PrimRef(bounds1,g,offset+i);
-        }
-        if (currentID == endID) break;
-        offset = 0;
-      }
-      global_bounds.extend_atomic(bounds);    
-    }
-#endif
     
     // =======================================================================================================
     // =======================================================================================================
@@ -687,8 +582,12 @@ namespace embree
       __aligned(64) Allocator leafAlloc(primAllocator);
      
       /* create prim refs */
-      global_bounds.reset();
-      computePrimRefs(0,1,0,1,NULL);
+      //global_bounds.reset();
+      //computePrimRefs(0,1,0,1,NULL);
+      PrimInfo pinfo;
+      TriRefArrayGen::generate_sequential(threadIndex, threadCount, scene, prims, pinfo);
+      global_bounds.geometry = pinfo.geomBounds;
+      global_bounds.centroid2= pinfo.centBounds;
       bvh->bounds = global_bounds.geometry;
 
       /* create initial build record */
@@ -718,8 +617,10 @@ namespace embree
 	return;
       
       /* calculate list of primrefs */
-      global_bounds.reset();
-      TaskScheduler::dispatchTask(_computePrimRefs, this, threadIndex, threadCount );
+      PrimInfo pinfo;
+      TriRefArrayGen::generate_parallel(threadIndex, threadCount, scene, prims, pinfo);
+      global_bounds.geometry = pinfo.geomBounds;
+      global_bounds.centroid2= pinfo.centBounds;
       bvh->bounds = global_bounds.geometry;
       
       /* initialize node and leaf allocator */

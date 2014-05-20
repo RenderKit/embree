@@ -81,6 +81,11 @@ namespace embree
     public:
       __forceinline PrimInfo () 
 	: begin(0), end(0) {}
+
+      __forceinline void reset() {
+	CentGeomBBox3fa::reset();
+	begin = end = 0;
+      }
       
       __forceinline PrimInfo (size_t num, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
 	: begin(0), end(num), CentGeomBBox3fa(geomBounds,centBounds) {}
@@ -91,6 +96,13 @@ namespace embree
       __forceinline void add(const BBox3fa& geomBounds_, const BBox3fa& centBounds_, size_t num_ = 1) {
 	CentGeomBBox3fa::extend(geomBounds_,centBounds_);
 	end += num_;
+      }
+
+      __forceinline void atomic_extend(const PrimInfo& pinfo) 
+      {
+	CentGeomBBox3fa::extend_atomic(pinfo);
+	atomic_add(&begin,pinfo.begin);
+	atomic_add(&end  ,pinfo.end  );
       }
       
       __forceinline void merge(const PrimInfo& other) 
@@ -122,7 +134,7 @@ namespace embree
       }
       
     public:
-      size_t begin,end;          //!< number of primitives
+      atomic_t begin,end;          //!< number of primitives
     };
     
     /*! Performs fallback splits */
