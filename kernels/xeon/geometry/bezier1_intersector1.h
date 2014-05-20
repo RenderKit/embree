@@ -174,7 +174,7 @@ namespace embree
 
       /* subdivide 3 levels at once */ 
       const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-      const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+      const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: use  _mm_alignr_epi8 (__m128i a, __m128i b, int n)
 
       /* approximative intersection with cone */
       const avx4f v = p1-p0;
@@ -194,7 +194,7 @@ namespace embree
 
       /* subdivide 2 levels at once */ 
       const sse4f p0 = curve2D.eval(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-      const sse4f p1 = curve2D.eval(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]);
+      const sse4f p1 = curve2D.eval(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]); 
 
       /* approximative intersection with cone */
       const sse4f v = p1-p0;
@@ -207,7 +207,7 @@ namespace embree
       const ssef d2 = p.x*p.x + p.y*p.y; 
       const ssef r = p.w;
       const ssef r2 = r*r;
-      sseb valid = d2 <= r2 & ssef(ray.tnear) < t & t < ssef(ray.tfar);
+      sseb valid = d2 <= r2 & ssef(ray.tnear) < t & t < ssef(ray.tfar); // FIXME: try to move t-test below (as well as calculations it depends on)
       const float one_over_width = 1.0f/4.0f;
 
 #endif

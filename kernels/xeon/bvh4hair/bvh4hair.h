@@ -81,7 +81,7 @@ namespace embree
 
     /*! Cost of one traversal step. */
     static const int travCostAligned = 1;
-    static const int travCostUnaligned = 3;
+    static const int travCostUnaligned = 3; // FIXME: find best cost
     static const int intCost = 6;
 
     /*! Pointer that points to a node or a list of primitives */
