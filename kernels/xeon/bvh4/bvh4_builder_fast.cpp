@@ -582,10 +582,9 @@ namespace embree
       __aligned(64) Allocator leafAlloc(primAllocator);
      
       /* create prim refs */
-      //global_bounds.reset();
-      //computePrimRefs(0,1,0,1,NULL);
       PrimInfo pinfo;
-      TriRefArrayGen::generate_sequential(threadIndex, threadCount, scene, prims, pinfo);
+      if (mesh) TriRefArrayGenFromTriangleMesh::generate_sequential(threadIndex, threadCount, mesh , prims, pinfo);
+      else      TriRefArrayGen                ::generate_sequential(threadIndex, threadCount, scene, prims, pinfo);
       global_bounds.geometry = pinfo.geomBounds;
       global_bounds.centroid2= pinfo.centBounds;
       bvh->bounds = global_bounds.geometry;
@@ -618,7 +617,8 @@ namespace embree
       
       /* calculate list of primrefs */
       PrimInfo pinfo;
-      TriRefArrayGen::generate_parallel(threadIndex, threadCount, scene, prims, pinfo);
+      if (mesh) TriRefArrayGenFromTriangleMesh::generate_parallel(threadIndex, threadCount, mesh , prims, pinfo);
+      else      TriRefArrayGen                ::generate_parallel(threadIndex, threadCount, scene, prims, pinfo);
       global_bounds.geometry = pinfo.geomBounds;
       global_bounds.centroid2= pinfo.centBounds;
       bvh->bounds = global_bounds.geometry;

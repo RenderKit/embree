@@ -109,6 +109,40 @@ namespace embree
       }
       pinfo_o.atomic_extend(pinfo);
     }
+
+    void TriRefArrayGenFromTriangleMesh::generate_sequential(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o) 
+    {
+      pinfo_o.reset();
+      TriRefArrayGenFromTriangleMesh gen(threadIndex,threadCount,mesh,prims_o,pinfo_o);
+      gen.task_gen_parallel(threadIndex,threadCount,0,1,NULL);
+      assert(pinfo_o.size() == mesh->numTriangles);
+    }
+
+    void TriRefArrayGenFromTriangleMesh::generate_parallel(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o) 
+    {
+      pinfo_o.reset();
+      TriRefArrayGenFromTriangleMesh gen(threadIndex,threadCount,mesh,prims_o,pinfo_o);
+      TaskScheduler::dispatchTask(_task_gen_parallel, &gen, threadIndex, threadCount);
+      assert(pinfo_o.size() == scene->numTriangles);
+    }
+
+    TriRefArrayGenFromTriangleMesh::TriRefArrayGenFromTriangleMesh(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o)
+      : mesh(mesh), prims_o(prims_o), pinfo_o(pinfo_o) {}
+
+    void TriRefArrayGenFromTriangleMesh::task_gen_parallel(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
+    {
+      ssize_t start = (taskIndex+0)*mesh->numTriangles/taskCount;
+      ssize_t end   = (taskIndex+1)*mesh->numTriangles/taskCount;
+      ssize_t cur   = 0;
+      
+      PrimInfo pinfo;
+      for (size_t j=start; j<end; j++) {
+	const PrimRef prim(mesh->bounds(j),mesh->id,j);
+	pinfo.add(prim.bounds(),prim.center2());
+	prims_o[j] = prim;
+      }
+      pinfo_o.atomic_extend(pinfo);
+    }
   }
 }
 

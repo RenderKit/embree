@@ -58,7 +58,7 @@ namespace embree
       PrimInfo& pinfo;                  //!< bounding information of primitives
     };
 
-    /*! Generates a list of triangle build primitives from the scene. */
+    /*! Generates an array of triangle build primitives from the scene. */
     class TriRefArrayGen
     {
     public:   
@@ -76,6 +76,31 @@ namespace embree
       /* input data */
     private:
       const Scene* scene;                  //!< input geometry
+      
+      /* output data */
+    public:
+      PrimRef* prims_o;             //!< list of build primitives
+      PrimInfo& pinfo_o;            //!< bounding information of primitives
+    };
+
+    /*! Generates an array of triangle build primitives from some triangle mesh. */
+    class TriRefArrayGenFromTriangleMesh
+    {
+    public:   
+      static void generate_sequential(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims, PrimInfo& pinfo);
+      static void generate_parallel  (size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims, PrimInfo& pinfo);
+      
+    private:
+      
+      /*! standard constructor */
+      TriRefArrayGenFromTriangleMesh (size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o);
+            
+      /*! parallel task to iterate over the primitives */
+      TASK_RUN_FUNCTION(TriRefArrayGenFromTriangleMesh,task_gen_parallel);
+      
+      /* input data */
+    private:
+      const TriangleMesh* mesh;      //!< input geometry
       
       /* output data */
     public:
