@@ -35,13 +35,12 @@ namespace embree
 
     public:
 
-      class __aligned(64) BuildRecord 
+      class __aligned(64) BuildRecord : public PrimInfo
       {
       public:
-	Centroid_Scene_AABB bounds; //!< geometry and centroid bounds
-	
-	unsigned int begin;         //!< start of range
-	unsigned int end;           //!< end of range
+	//Centroid_Scene_AABB bounds; //!< geometry and centroid bounds
+	//unsigned int begin;         //!< start of range
+	//unsigned int end;           //!< end of range
 	unsigned int parentID;      //!< the ID of the node that points to us
 	unsigned int depth;         //!< depth from the root of the tree
 	
@@ -49,7 +48,7 @@ namespace embree
 	float sArea;
 	size_t parentNode; 
 	
-	BuildRecord()
+      BuildRecord() : PrimInfo(0)
 	{
 	  assert(sizeof(BuildRecord) == 128);
 	}
@@ -59,13 +58,15 @@ namespace embree
 	  begin  = _begin;
 	  end    = _end;
 	  parentID = (unsigned int)-1;
-	  sArea = area(bounds.geometry);
+	  sArea = area(geomBounds);
 	  flags = BUILD_RECORD_NODE;
 	}
 	
 	__forceinline void init(const Centroid_Scene_AABB& _bounds, const unsigned int _begin, const unsigned int _end)
 	{
-	  bounds = _bounds;
+	  //bounds = _bounds;
+	  geomBounds = _bounds.geometry;
+	  centBounds = _bounds.centroid2;
 	  init(_begin,_end);
 	}
 	
@@ -82,8 +83,8 @@ namespace embree
 	
 	__forceinline friend std::ostream &operator<<(std::ostream &o, const BuildRecord &br)
 	{
-	  o << "centroid2 = " << br.bounds.centroid2 << " ";
-	  o << "geometry = " << br.bounds.geometry << " ";
+	  o << "centroid2 = " << br.centBounds << " ";
+	  o << "geometry = " << br.geomBounds << " ";
 	  o << "begin      " << br.begin << " ";
 	  o << "end        " << br.end << " ";
 	  o << "items      " << br.end-br.begin << " ";

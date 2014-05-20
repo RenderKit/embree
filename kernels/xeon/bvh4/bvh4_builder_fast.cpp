@@ -361,7 +361,7 @@ namespace embree
       }
       
       /* calculate binning function */
-      PrimInfo pinfo(current.items(),current.bounds.geometry,current.bounds.centroid2);
+      PrimInfo pinfo(current.items(),current.geomBounds,current.centBounds);
       ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,2);
       
       /* if we cannot find a valid split, enforce an arbitrary split */
@@ -393,7 +393,7 @@ namespace embree
       
       /* use primitive array temporarily for parallel splits */
       PrimRef* tmp = (PrimRef*) primAllocator.base();
-      PrimInfo pinfo(current.begin,current.end,current.bounds.geometry,current.bounds.centroid2);
+      PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
 
       /* parallel binning of centroids */
       const float sah = g_state->parallelBinner.find(pinfo,prims,tmp,threadID,numThreads);
@@ -455,7 +455,7 @@ namespace embree
       /* recurse into each child */
       for (size_t i=0; i<4; i++) 
       {
-        node->set(i,children[i].bounds.geometry);
+        node->set(i,children[i].geomBounds);
         children[i].parentNode = (size_t)&node->child(i);
         children[i].depth = current.depth+1;
         createLeaf(children[i],nodeAlloc,leafAlloc,threadIndex,threadCount);
@@ -538,7 +538,7 @@ namespace embree
       /* recurse into each child */
       for (unsigned int i=0; i<numChildren; i++) 
       {  
-        node->set(i,children[i].bounds.geometry);
+        node->set(i,children[i].geomBounds);
         children[i].parentNode = (size_t)&node->child(i);
         children[i].depth = current.depth+1;
         recurse(children[i],nodeAlloc,leafAlloc,mode,threadID,numThreads);
