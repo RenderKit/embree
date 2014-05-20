@@ -526,7 +526,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void ObjectPartition::ParallelBinner::parallelBinning(const size_t threadID, const size_t numThreads)
+    void ObjectPartition::ParallelBinner::parallelBinning(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
       BinInfo& bin16 = global_bin16[threadID];
       const size_t startID = pinfo.begin + (threadID+0)*pinfo.size()/numThreads;
@@ -545,7 +545,7 @@ namespace embree
       right.reset();
       this->src = src;
       this->dst = dst;
-      TaskScheduler::dispatchTask(task_parallelBinning, this, threadID, numThreads );
+      TaskScheduler::dispatchTask(_parallelBinning, this, threadID, numThreads );
       
       /* reduce binning information from all threads */
       bin16 = global_bin16[0];
@@ -556,7 +556,7 @@ namespace embree
       return split.sah;
     }
     
-    void ObjectPartition::ParallelBinner::parallelPartition(const size_t threadID, const size_t numThreads)
+    void ObjectPartition::ParallelBinner::parallelPartition(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
       const size_t startID = pinfo.begin + (threadID+0)*pinfo.size()/numThreads;
       const size_t endID   = pinfo.begin + (threadID+1)*pinfo.size()/numThreads;
@@ -610,7 +610,7 @@ namespace embree
       right.reset(); rCounter.reset(0); 
       this->src = src;
       this->dst = dst;
-      TaskScheduler::dispatchTask( task_parallelPartition, this, threadID, numThreads );
+      TaskScheduler::dispatchTask(_parallelPartition, this, threadID, numThreads);
       size_t numLeft = bin16.getNumLeft(split);
       unsigned center = pinfo.begin + numLeft;
       assert(lCounter == numLeft);

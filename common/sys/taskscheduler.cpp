@@ -174,7 +174,7 @@ namespace embree
   }
 
   __aligned(64) void* volatile TaskScheduler::data = NULL;
-  __aligned(64) void (* TaskScheduler::taskPtr)(void* data, const size_t threadID, const size_t numThreads) = NULL;
+  __aligned(64) TaskScheduler::runFunction TaskScheduler::taskPtr = NULL;
 
   __aligned(64) Barrier TaskScheduler::taskBarrier;
   __aligned(64) AlignedAtomicCounter32 TaskScheduler::taskCounter;
@@ -187,12 +187,14 @@ namespace embree
     taskBarrier.wait(threadID,numThreads);
   }
 
-  void TaskScheduler::dispatchTaskMainLoop(const size_t threadID, const size_t numThreads)
+  bool TaskScheduler::enter(const size_t threadID, const size_t numThreads)
   {
+    if (threadID == 0) return false;
     while (true) {
       bool dispatch = dispatchTask(threadID,numThreads);
       if (dispatch == true) break;
     }  
+    return true;
   }
 
   bool TaskScheduler::dispatchTask(const size_t threadID, const size_t numThreads)
@@ -205,13 +207,13 @@ namespace embree
     if (taskPtr == NULL) 
       return true;
 
-    (*taskPtr)((void*)data,threadID,numThreads);
+    (*taskPtr)((void*)data,threadID,numThreads,threadID,numThreads,NULL);
     syncThreads(threadID, numThreads);
     
     return false;
   }
 
-  void TaskScheduler::releaseThreads(const size_t numThreads)
+  void TaskScheduler::leave(const size_t threadID, const size_t numThreads)
   {
     taskPtr = NULL;
     data = NULL;

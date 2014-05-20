@@ -251,8 +251,8 @@ namespace embree
         void partition(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads);
         
       private:
-        TASK_FUNCTION(ParallelBinner,parallelBinning);
-        TASK_FUNCTION(ParallelBinner,parallelPartition);
+        TASK_RUN_FUNCTION(ParallelBinner,parallelBinning);
+        TASK_RUN_FUNCTION(ParallelBinner,parallelPartition);
         
       public:
 	PrimInfo pinfo;

@@ -161,6 +161,12 @@ namespace embree
 
     /*! waits for an event out of a task */
     static void waitForEvent(Event* event); // use only from main thread !!!
+
+      /*! enters lockstep taskscheduler, main thread returns false */
+    static bool enter(size_t threadIndex, size_t threadCount);
+
+    /*! leaves lockstep taskscheduler */
+    static void leave(size_t threadIndex, size_t threadCount);
     
   protected:
 
@@ -185,12 +191,6 @@ namespace embree
     /*! destroys all threads */
     void destroyThreads();
 
-    /*! enters lockstep taskscheduler */
-    //void enter(size_t threadIndex, size_t threadCount);
-
-    /*! leaves lockstep taskscheduler */
-    //void leave(size_t threadIndex, size_t threadCount);
-
     /* thread handling */
   protected:
     volatile bool terminateThreads;
@@ -207,9 +207,8 @@ namespace embree
     static const unsigned int CONTROL_THREAD_ID = 0;
 
     __aligned(64)static AlignedAtomicCounter32 taskCounter;
-    __aligned(64) static void (* taskPtr)(void* data, const size_t threadID, const size_t numThreads);
+    __aligned(64) static runFunction taskPtr;
     __aligned(64) static void* volatile data;
-
 
     static void init(const size_t numThreads);
 
@@ -220,7 +219,7 @@ namespace embree
     static void dispatchTaskMainLoop(const size_t threadID, const size_t numThreads);
     static void releaseThreads(const size_t numThreads);
   
-    static __forceinline bool dispatchTask(void (* task)(void* data, const size_t threadID, const size_t numThreads),
+    static __forceinline bool dispatchTask(runFunction task,
                                            void* data, 
 					   const size_t threadID,
 					   const size_t numThreads)

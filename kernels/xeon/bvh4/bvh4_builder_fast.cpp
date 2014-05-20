@@ -92,7 +92,6 @@ namespace embree
           if (!g_state.get()) 
             g_state.reset(new GlobalState(threadCount));
 
-          //TaskScheduler::init(threadCount);
           TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
         }
         dt_min = min(dt_min,dt);
@@ -125,7 +124,6 @@ namespace embree
           if (!g_state.get()) 
             g_state.reset(new GlobalState(threadCount));
 
-          //TaskScheduler::init(threadCount);
           TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
         }
       
@@ -223,7 +221,7 @@ namespace embree
     // =======================================================================================================
     
 #if 1
-    void BVH4BuilderFast::computePrimRefs(const size_t threadID, const size_t numThreads)
+    void BVH4BuilderFast::computePrimRefs(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
       const size_t startID = (threadID+0)*numPrimitives/numThreads;
       const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -646,7 +644,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4BuilderFast::buildSubTrees(const size_t threadID, const size_t numThreads)
+    void BVH4BuilderFast::buildSubTrees(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
       __aligned(64) Allocator nodeAlloc(nodeAllocator);
       __aligned(64) Allocator leafAlloc(primAllocator);
@@ -690,7 +688,7 @@ namespace embree
      
       /* create prim refs */
       global_bounds.reset();
-      computePrimRefs(0,1);
+      computePrimRefs(0,1,0,1,NULL);
       bvh->bounds = global_bounds.geometry;
 
       /* create initial build record */
@@ -716,14 +714,12 @@ namespace embree
       if (g_verbose >= 2) t0 = getSeconds();
       
       /* all worker threads enter tasking system */
-      if (threadIndex != 0) {
-        TaskScheduler::dispatchTaskMainLoop(threadIndex,threadCount); 
-        return;
-      }
+      if (TaskScheduler::enter(threadIndex,threadCount))
+	return;
       
       /* calculate list of primrefs */
       global_bounds.reset();
-      TaskScheduler::dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
+      TaskScheduler::dispatchTask(_computePrimRefs, this, threadIndex, threadCount );
       bvh->bounds = global_bounds.geometry;
       
       /* initialize node and leaf allocator */
@@ -763,10 +759,10 @@ namespace embree
       }
       
       /* now process all created subtasks on multiple threads */
-      TaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
+      TaskScheduler::dispatchTask(_buildSubTrees, this, threadIndex, threadCount );
       
       /* release all threads again */
-      TaskScheduler::releaseThreads(threadCount);
+      TaskScheduler::leave(threadIndex,threadCount);
       
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;
