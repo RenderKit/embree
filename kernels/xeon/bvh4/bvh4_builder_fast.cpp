@@ -352,7 +352,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    bool BVH4BuilderFast::splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+    void BVH4BuilderFast::splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
     {
       /* calculate binning function */
       PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
@@ -362,14 +362,10 @@ namespace embree
       if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
       
       /* partitioning of items */
-      else {
-	split.partition(prims, current.begin, current.end, leftChild, rightChild);
-	leftChild.init(); rightChild.init();
-      }
-      return true;
+      else split.partition(prims, current.begin, current.end, leftChild, rightChild);
     }
     
-    bool BVH4BuilderFast::splitParallel(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads)
+    void BVH4BuilderFast::splitParallel(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads)
     {
       /* use primitive array temporarily for parallel splits */
       PrimRef* tmp = (PrimRef*) primAllocator.base();
@@ -382,19 +378,15 @@ namespace embree
       if (unlikely(sah == float(inf))) split_fallback(prims,current,leftChild,rightChild);
       
       /* parallel partitioning of items */
-      else {
-	g_state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads);
-	leftChild.init(); rightChild.init();
-      }
-      return true;
+      else g_state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads);
     }
     
-    __forceinline bool BVH4BuilderFast::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
+    __forceinline void BVH4BuilderFast::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
     {
       if (mode == BUILD_TOP_LEVEL && current.size() >= BUILD_RECORD_SPLIT_THRESHOLD)
-        return splitParallel(current,left,right,threadID,numThreads);		  
+        splitParallel(current,left,right,threadID,numThreads);		  
       else
-        return splitSequential(current,left,right);
+        splitSequential(current,left,right);
     }
     
     // =======================================================================================================
@@ -487,10 +479,10 @@ namespace embree
         
         /*! split best child into left and right child */
         __aligned(64) BuildRecord left, right;
-        if (!split(children[bestChild],left,right,mode,threadID,numThreads)) 
-          continue;
+        split(children[bestChild],left,right,mode,threadID,numThreads);
         
         /* add new children left and right */
+	left.init(); right.init();
         left.depth = right.depth = current.depth+1;
         children[bestChild] = children[numChildren-1];
         children[numChildren-1] = left;

@@ -119,13 +119,13 @@ namespace embree
       enum { RECURSE_SEQUENTIAL = 1, RECURSE_PARALLEL = 2, BUILD_TOP_LEVEL = 3 };
       
       /*! splitting function that selects between sequential and parallel mode */
-      bool split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads);
+      void split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads);
       
       /*! perform sequential binning and splitting */
-      bool splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
+      void splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
       
       /*! perform parallel binning and splitting */
-      bool splitParallel(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t threads);
+      void splitParallel(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t threads);
       
       /*! creates a small leaf node */
       typedef void (*createLeafFunction)(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
