@@ -64,4 +64,6 @@ typedef Vec3f (* uniform renderPixelFunc)(float x, float y, const uniform Vec3f&
 
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
 
+Vec3f renderPixelEyeLight(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
+
 #define ALIGNED_STRUCT

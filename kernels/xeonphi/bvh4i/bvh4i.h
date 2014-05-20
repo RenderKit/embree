@@ -330,7 +330,6 @@ namespace embree
     static Accel* BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene);
     static Accel* BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene);
     static Accel* BVH4iVirtualGeometryBinnedSAH(Scene* scene);
-    static Accel* BVH4iBezierCurvesBinnedSAH(Scene* scene);
     static Accel* BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene);
 
     /*! Calculates the SAH of the BVH */

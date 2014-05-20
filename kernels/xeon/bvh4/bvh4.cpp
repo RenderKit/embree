@@ -75,6 +75,10 @@ namespace embree
   Builder* BVH4BuilderSpatialSplit1 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
   Builder* BVH4BuilderSpatialSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
   Builder* BVH4BuilderSpatialSplit8 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
+
+  namespace avx {
+    Builder* BVH4Builder2ObjectSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
+  };
   
   void BVH4Register () 
   {
@@ -290,6 +294,7 @@ namespace embree
     else if (g_builder == "objectsplit" ) builder = BVH4BuilderObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "objectsplit1") builder = BVH4BuilderObjectSplit1(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "objectsplit4") builder = BVH4BuilderObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
+    else if (g_builder == "builder2")     builder = avx::BVH4Builder2ObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "morton"      ) builder = BVH4BuilderMortonFast(accel,&scene->flat_triangle_source_1,scene,4,inf);
     else if (g_builder == "fast"        ) builder = BVH4BuilderObjectSplit4Fast(accel,&scene->flat_triangle_source_1,scene,4,inf);
     else throw std::runtime_error("unknown builder "+g_builder+" for BVH4<Triangle4>");

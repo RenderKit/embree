@@ -174,4 +174,5 @@ namespace embree
   /*! Shortcuts for common linear spaces. */
   typedef LinearSpace3<Vec3f> LinearSpace3f;
   typedef LinearSpace3<Vec3fa> LinearSpace3fa;
+
 }

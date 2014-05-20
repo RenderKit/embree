@@ -18,6 +18,7 @@
 #include "bvh4_builder_fast.h"
 #include "bvh4_statistics.h"
 #include "bvh4_builder_binner.h"
+#include "builders/trirefgen.h"
 
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
@@ -92,7 +93,6 @@ namespace embree
           if (!g_state.get()) 
             g_state.reset(new GlobalState(threadCount));
 
-          g_state->scheduler.init(threadCount);
           TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
         }
         dt_min = min(dt_min,dt);
@@ -125,7 +125,6 @@ namespace embree
           if (!g_state.get()) 
             g_state.reset(new GlobalState(threadCount));
 
-          g_state->scheduler.init(threadCount);
           TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
         }
       
@@ -222,121 +221,15 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-#if 1
-    void BVH4BuilderFast::computePrimRefs(const size_t threadID, const size_t numThreads)
-    {
-      const size_t startID = (threadID+0)*numPrimitives/numThreads;
-      const size_t endID   = (threadID+1)*numPrimitives/numThreads;
-      PrimRef *__restrict__ const                 prims  = this->prims;
-      
-      // === find first group containing startID ===
-      size_t g=0, offset = 0;
-      
-      if (mesh) {
-        g = mesh->id;
-        offset = startID;
-      }
-      else
-      {
-        size_t numSkipped = 0;
-        for (; g<numGroups; g++) {       
-          Geometry* geom = scene->get(g);
-          if (!geom || geom->type != TRIANGLE_MESH) continue;
-          TriangleMesh* mesh = (TriangleMesh*) geom;
-          if (mesh->numTimeSteps != 1) continue;
-          const size_t numTriangles = mesh->numTriangles;
-          if (numSkipped + numTriangles > startID) break;
-          numSkipped += numTriangles;
-        }
-        offset = startID - numSkipped;
-      }
-      
-      // === start with first group containing startID ===
-      Centroid_Scene_AABB bounds;
-      bounds.reset();
-      
-      size_t num = 0;
-      size_t currentID = startID;
-      for (; g<numGroups; g++) 
-      {
-        Geometry* geom = scene->get(g);
-        if (!geom || geom->type != TRIANGLE_MESH) continue;
-        TriangleMesh* mesh = (TriangleMesh*) geom;
-        if (mesh->numTimeSteps != 1) continue;
-        
-        for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
-        { 			    
-          const BBox3fa bounds1 = mesh->bounds(i);
-          bounds.extend(bounds1);
-          prims[currentID] = PrimRef(bounds1,g,i);
-        }
-        if (currentID == endID) break;
-        offset = 0;
-      }
-      global_bounds.extend_atomic(bounds);    
-    }
-    
-#else
-    
-    void BVH4BuilderFast::computePrimRefs(const size_t threadID, const size_t numThreads)
-    {
-      const size_t startID = (threadID+0)*numPrimitives/numThreads;
-      const size_t endID   = (threadID+1)*numPrimitives/numThreads;
-      
-      PrimRef *__restrict__ const prims  = this->prims;
-      
-      // === find first group containing startID ===
-      size_t g=0, numSkipped = 0;
-      if (mesh) {
-        g = mesh->id;
-        offset = startID;
-      }
-      else 
-      {
-        for (; g<numGroups; g++) {
-          const size_t numTriangles = source->prims(g);
-          if (numSkipped + numTriangles > startID) break;
-          numSkipped += numTriangles;
-        }
-        offset = startID - numSkipped;
-      }
-      
-      // === start with first group containing startID ===
-      Centroid_Scene_AABB bounds;
-      bounds.reset();
-      
-      size_t num = 0;
-      size_t currentID = startID;
-      for (; g<numGroups; g++) 
-      {
-        const size_t numTriangles = min(source->prims(g)-offset,endID-currentID);
-        
-        for (size_t i=0; i<numTriangles; i++, currentID++)	 
-        { 			    
-          const BBox3fa bounds1 = source->bounds(g,offset+i);
-          bounds.extend(bounds1);
-          prims[currentID] = PrimRef(bounds1,g,offset+i);
-        }
-        if (currentID == endID) break;
-        offset = 0;
-      }
-      global_bounds.extend_atomic(bounds);    
-    }
-#endif
-    
-    // =======================================================================================================
-    // =======================================================================================================
-    // =======================================================================================================
-    
     void BVH4BuilderFast::createTriangle1Leaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      size_t items = current.items();
+      size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
       
       /* allocate leaf node */
       Triangle1* accel = (Triangle1*) leafAlloc.malloc(items*sizeof(Triangle1));
-      *(NodeRef*)current.parentNode = This->bvh->encodeLeaf((char*)accel,items);
+      *current.parent = This->bvh->encodeLeaf((char*)accel,items);
       
       for (size_t i=0; i<items; i++) 
       {	
@@ -362,13 +255,13 @@ namespace embree
     
     void BVH4BuilderFast::createTriangle4Leaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      size_t items = current.items();
+      size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
       
       /* allocate leaf node */
       Triangle4* accel = (Triangle4*) leafAlloc.malloc(sizeof(Triangle4));
-      *(NodeRef*)current.parentNode = This->bvh->encodeLeaf((char*)accel,1);
+      *current.parent = This->bvh->encodeLeaf((char*)accel,1);
       
       ssei vgeomID = -1, vprimID = -1, vmask = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
@@ -394,13 +287,13 @@ namespace embree
     
     void BVH4BuilderFast::createTriangle1vLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      size_t items = current.items();
+      size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
       
       /* allocate leaf node */
       Triangle1v* accel = (Triangle1v*) leafAlloc.malloc(items*sizeof(Triangle1v));
-      *(NodeRef*)current.parentNode = This->bvh->encodeLeaf((char*)accel,items);
+      *current.parent = This->bvh->encodeLeaf((char*)accel,items);
       
       for (size_t i=0; i<items; i++) 
       {	
@@ -425,13 +318,13 @@ namespace embree
     
     void BVH4BuilderFast::createTriangle4vLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      size_t items = current.items();
+      size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
       
       /* allocate leaf node */
       Triangle4v* accel = (Triangle4v*) leafAlloc.malloc(sizeof(Triangle4v));
-      *(NodeRef*)current.parentNode = This->bvh->encodeLeaf((char*)accel,1);
+      *current.parent = This->bvh->encodeLeaf((char*)accel,1);
       
       ssei vgeomID = -1, vprimID = -1, vmask = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
@@ -459,16 +352,10 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    bool BVH4BuilderFast::splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+    void BVH4BuilderFast::splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
     {
-      /* mark as leaf if leaf threshold reached */
-      if (current.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
-        current.createLeaf();
-        return false;
-      }
-      
       /* calculate binning function */
-      PrimInfo pinfo(current.items(),current.bounds.geometry,current.bounds.centroid2);
+      PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
       ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,2);
       
       /* if we cannot find a valid split, enforce an arbitrary split */
@@ -476,51 +363,30 @@ namespace embree
       
       /* partitioning of items */
       else split.partition(prims, current.begin, current.end, leftChild, rightChild);
-     
-      if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
-      if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();	
-      return true;
     }
     
-    bool BVH4BuilderFast::splitParallel(BuildRecord &current, BuildRecord &leftChild, BuildRecord &rightChild, const size_t threadID, const size_t numThreads)
+    void BVH4BuilderFast::splitParallel(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads)
     {
-      const unsigned int items = current.end - current.begin;
-      assert(items >= BUILD_RECORD_SPLIT_THRESHOLD);
-      
-      /* mark as leaf if leaf threshold reached */
-      if (items <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
-        current.createLeaf();
-        return false;
-      }
-      
       /* use primitive array temporarily for parallel splits */
       PrimRef* tmp = (PrimRef*) primAllocator.base();
+      PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
 
       /* parallel binning of centroids */
-      g_state->parallelBinner.bin(current,prims,tmp,threadID,numThreads);
-      
-      /* find best split */
-      //ObjectPartition::Split split; 
-      Split split; 
-      g_state->parallelBinner.best(split);
-      
+      const float sah = g_state->parallelBinner.find(pinfo,prims,tmp,threadID,numThreads);
+
       /* if we cannot find a valid split, enforce an arbitrary split */
-      if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
+      if (unlikely(sah == float(inf))) split_fallback(prims,current,leftChild,rightChild);
       
       /* parallel partitioning of items */
-      else g_state->parallelBinner.partition(tmp,prims,split,leftChild,rightChild,threadID,numThreads);
-      
-      if (leftChild.items()  <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) leftChild.createLeaf();
-      if (rightChild.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) rightChild.createLeaf();
-      return true;
+      else g_state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads);
     }
     
-    __forceinline bool BVH4BuilderFast::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
+    __forceinline void BVH4BuilderFast::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
     {
-      if (mode == BUILD_TOP_LEVEL && current.items() >= BUILD_RECORD_SPLIT_THRESHOLD)
-        return splitParallel(current,left,right,threadID,numThreads);		  
+      if (mode == BUILD_TOP_LEVEL && current.size() >= BUILD_RECORD_SPLIT_THRESHOLD)
+        splitParallel(current,left,right,threadID,numThreads);		  
       else
-        return splitSequential(current,left,right);
+        splitSequential(current,left,right);
     }
     
     // =======================================================================================================
@@ -535,7 +401,7 @@ namespace embree
 #endif
       
       /* create leaf for few primitives */
-      if (current.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
+      if (current.size() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
         createSmallLeaf(this,current,leafAlloc,threadIndex);
         return;
       }
@@ -551,13 +417,13 @@ namespace embree
 
       /* allocate node */
       Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
-      *(NodeRef*)current.parentNode = bvh->encodeNode(node);
+      *current.parent = bvh->encodeNode(node);
       
       /* recurse into each child */
       for (size_t i=0; i<4; i++) 
       {
-        node->set(i,children[i].bounds.geometry);
-        children[i].parentNode = (size_t)&node->child(i);
+        node->set(i,children[i].geomBounds);
+        children[i].parent = &node->child(i);
         children[i].depth = current.depth+1;
         createLeaf(children[i],nodeAlloc,leafAlloc,threadIndex,threadCount);
       }
@@ -569,7 +435,7 @@ namespace embree
       if (mode == BUILD_TOP_LEVEL) {
         g_state->workStack.push_nolock(current);
       }
-      else if (mode == RECURSE_PARALLEL && current.items() > THRESHOLD_FOR_SUBTREE_RECURSION) {
+      else if (mode == RECURSE_PARALLEL && current.size() > THRESHOLD_FOR_SUBTREE_RECURSION) {
         if (!g_state->threadStack[threadID].push(current))
           recurseSAH(current,nodeAlloc,leafAlloc,RECURSE_SEQUENTIAL,threadID,numThreads);
       }
@@ -582,7 +448,7 @@ namespace embree
       __aligned(64) BuildRecord children[BVH4::N];
       
       /* create leaf node */
-      if (current.depth >= BVH4::maxBuildDepth || current.isLeaf()) {
+      if (current.depth >= BVH4::maxBuildDepth || current.size() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
         assert(mode != BUILD_TOP_LEVEL);
         createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
         return;
@@ -600,7 +466,7 @@ namespace embree
         for (unsigned int i=0; i<numChildren; i++)
         {
           /* ignore leaves as they cannot get split */
-          if (children[i].isLeaf())
+          if (children[i].size() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD)
             continue;
           
           /* remember child with largest area */
@@ -613,10 +479,10 @@ namespace embree
         
         /*! split best child into left and right child */
         __aligned(64) BuildRecord left, right;
-        if (!split(children[bestChild],left,right,mode,threadID,numThreads)) 
-          continue;
+        split(children[bestChild],left,right,mode,threadID,numThreads);
         
         /* add new children left and right */
+	left.init(); right.init();
         left.depth = right.depth = current.depth+1;
         children[bestChild] = children[numChildren-1];
         children[numChildren-1] = left;
@@ -634,23 +500,41 @@ namespace embree
       
       /* allocate node */
       Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
-      *(NodeRef*)current.parentNode = bvh->encodeNode(node);
+      *current.parent = bvh->encodeNode(node);
       
       /* recurse into each child */
       for (unsigned int i=0; i<numChildren; i++) 
       {  
-        node->set(i,children[i].bounds.geometry);
-        children[i].parentNode = (size_t)&node->child(i);
+        node->set(i,children[i].geomBounds);
+        children[i].parent = &node->child(i);
         children[i].depth = current.depth+1;
         recurse(children[i],nodeAlloc,leafAlloc,mode,threadID,numThreads);
       }
     }
+
+    bool BVH4BuilderFast::split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+    {
+      const unsigned int center = (current.begin + current.end)/2;
+      
+      Centroid_Scene_AABB left; left.reset();
+      for (size_t i=current.begin; i<center; i++)
+        left.extend(primref[i].bounds());
+      leftChild.init(left,current.begin,center);
+      
+      Centroid_Scene_AABB right; right.reset();
+      for (size_t i=center; i<current.end; i++)
+        right.extend(primref[i].bounds());	
+      rightChild.init(right,center,current.end);
+      
+      return true;
+    }
+    
     
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4BuilderFast::buildSubTrees(const size_t threadID, const size_t numThreads)
+    void BVH4BuilderFast::buildSubTrees(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
       __aligned(64) Allocator nodeAlloc(nodeAllocator);
       __aligned(64) Allocator leafAlloc(primAllocator);
@@ -693,15 +577,18 @@ namespace embree
       __aligned(64) Allocator leafAlloc(primAllocator);
      
       /* create prim refs */
-      global_bounds.reset();
-      computePrimRefs(0,1);
+      PrimInfo pinfo;
+      if (mesh) TriRefArrayGenFromTriangleMesh::generate_sequential(threadIndex, threadCount, mesh , prims, pinfo);
+      else      TriRefArrayGen                ::generate_sequential(threadIndex, threadCount, scene, prims, pinfo);
+      global_bounds.geometry = pinfo.geomBounds;
+      global_bounds.centroid2= pinfo.centBounds;
       bvh->bounds = global_bounds.geometry;
 
       /* create initial build record */
       BuildRecord br;
       br.init(global_bounds,0,numPrimitives);
       br.depth = 1;
-      br.parentNode = (size_t)&bvh->root;
+      br.parent = &bvh->root;
 
       /* build BVH in single thread */
       recurseSAH(br,nodeAlloc,leafAlloc,RECURSE_SEQUENTIAL,threadIndex,threadCount);
@@ -720,14 +607,15 @@ namespace embree
       if (g_verbose >= 2) t0 = getSeconds();
       
       /* all worker threads enter tasking system */
-      if (threadIndex != 0) {
-        g_state->scheduler.dispatchTaskMainLoop(threadIndex,threadCount); 
-        return;
-      }
+      if (TaskScheduler::enter(threadIndex,threadCount))
+	return;
       
       /* calculate list of primrefs */
-      global_bounds.reset();
-      g_state->scheduler.dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
+      PrimInfo pinfo;
+      if (mesh) TriRefArrayGenFromTriangleMesh::generate_parallel(threadIndex, threadCount, mesh , prims, pinfo);
+      else      TriRefArrayGen                ::generate_parallel(threadIndex, threadCount, scene, prims, pinfo);
+      global_bounds.geometry = pinfo.geomBounds;
+      global_bounds.centroid2= pinfo.centBounds;
       bvh->bounds = global_bounds.geometry;
       
       /* initialize node and leaf allocator */
@@ -740,7 +628,7 @@ namespace embree
       BuildRecord br;
       br.init(global_bounds,0,numPrimitives);
       br.depth = 1;
-      br.parentNode = (size_t)&bvh->root;
+      br.parent = &bvh->root;
       
       /* initialize thread-local work stacks */
       for (size_t i=0; i<threadCount; i++)
@@ -760,17 +648,17 @@ namespace embree
           break;
         
         /* guarantees to create no leaves in this stage */
-        if (br.items() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD)
+        if (br.size() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD)
           break;
 
         recurseSAH(br,nodeAlloc,leafAlloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
       }
       
       /* now process all created subtasks on multiple threads */
-      g_state->scheduler.dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
+      TaskScheduler::dispatchTask(_buildSubTrees, this, threadIndex, threadCount );
       
       /* release all threads again */
-      g_state->scheduler.releaseThreads(threadCount);
+      TaskScheduler::leave(threadIndex,threadCount);
       
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;

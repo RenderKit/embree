@@ -161,6 +161,12 @@ namespace embree
 
     /*! waits for an event out of a task */
     static void waitForEvent(Event* event); // use only from main thread !!!
+
+      /*! enters lockstep taskscheduler, main thread returns false */
+    static bool enter(size_t threadIndex, size_t threadCount);
+
+    /*! leaves lockstep taskscheduler */
+    static void leave(size_t threadIndex, size_t threadCount);
     
   protected:
 
@@ -195,6 +201,36 @@ namespace embree
       char align[64-sizeof(Event*)];
     };
     ThreadEvent* thread2event;
+
+    /* for lockstep taskscheduler*/
+  public:
+    static const unsigned int CONTROL_THREAD_ID = 0;
+
+    __aligned(64)static AlignedAtomicCounter32 taskCounter;
+    __aligned(64) static runFunction taskPtr;
+    __aligned(64) static void* volatile data;
+
+    static void init(const size_t numThreads);
+
+    static Barrier taskBarrier;
+
+    static bool dispatchTask(const size_t threadID, const size_t numThreads);
+
+    static void dispatchTaskMainLoop(const size_t threadID, const size_t numThreads);
+    static void releaseThreads(const size_t numThreads);
+  
+    static __forceinline bool dispatchTask(runFunction task,
+                                           void* data, 
+					   const size_t threadID,
+					   const size_t numThreads)
+    {
+      TaskScheduler::taskPtr = task;
+      TaskScheduler::data = data;
+      return TaskScheduler::dispatchTask(threadID, numThreads);
+    }
+
+    static void syncThreads(const size_t threadID, const size_t numThreads);
+
   };
 
 #define TASK_FUNCTION(Class,Name) \
@@ -256,8 +292,7 @@ namespace embree
 
 
   };
-
-
+  
   class __aligned(64) LockStepTaskScheduler4ThreadsLocalCore
   {
   public:

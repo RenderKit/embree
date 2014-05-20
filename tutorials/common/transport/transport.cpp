@@ -140,6 +140,7 @@ namespace embree
   void cleanup()
   {
     device_cleanup();
-    alignedFree(g_pixels); g_pixels = NULL;
+    alignedFree(g_pixels); 
+    g_pixels = NULL;
   }
 }

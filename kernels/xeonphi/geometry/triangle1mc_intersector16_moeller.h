@@ -336,7 +336,7 @@ namespace embree
 	{
 
 	  const Triangle1mc& tri = *tptr;
-	  STAT3(normal.trav_prims,1,popcnt(valid_i),16);
+	  STAT3(normal.trav_prims,1,popcnt(valid_leaf),16);
 
 	  /* load vertices and calculate edges */
 	  const mic_f v0 = broadcast4to16f(tri.v0);

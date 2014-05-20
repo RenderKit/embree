@@ -172,24 +172,24 @@ namespace embree
       /* perform standard binning in aligned space */
       ObjectPartition::Split alignedObjectSplit;
       float alignedObjectSAH = inf;
-      alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,prims,pinfo);
+      alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,prims,pinfo,0); // FIXME: hardcoded 0
       alignedObjectSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedObjectSplit.splitSAH();
       bestSAH = min(bestSAH,alignedObjectSAH);
       
       /* perform spatial split in aligned space */
       SpatialSplit::Split alignedSpatialSplit;
       float alignedSpatialSAH = inf;
-      /*if (remainingReplications > 0) {
-	alignedSpatialSplit = SpatialSplit::find<Parallel>(threadIndex,threadCount,prims,pinfo);
+      if (remainingReplications > 0) {
+	alignedSpatialSplit = SpatialSplit::find<Parallel>(threadIndex,threadCount,scene,prims,pinfo,0); // FIXME: hardcoded 0
 	alignedSpatialSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedSpatialSplit.splitSAH();
 	bestSAH = min(bestSAH,alignedSpatialSAH);
-	}*/
+      }
       
       /* perform standard binning in unaligned space */
       ObjectPartitionUnaligned::Split unalignedObjectSplit;
       float unalignedObjectSAH = inf;
       if (alignedObjectSAH > 0.7f*leafSAH) {
-	if (sinfo.num) 
+	if (sinfo.size()) 
 	  unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,bounds.space,sinfo);
 	else {
 	  const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,prims); 
@@ -209,12 +209,16 @@ namespace embree
 	bestSAH = min(bestSAH,strandSAH);
       }
       
+#if 1
+      bestSAH = alignedObjectSAH;
+#endif
+
       /* return best split */
       if      (bestSAH == float(inf)        ) return Split();
-      else if (bestSAH == alignedObjectSAH  ) return Split(alignedObjectSplit,true);
-      else if (bestSAH == alignedSpatialSAH ) return Split(alignedSpatialSplit,true);
-      else if (bestSAH == unalignedObjectSAH) return Split(unalignedObjectSplit,false);
-      else if (bestSAH == strandSAH         ) return Split(strandSplit,false);
+      else if (bestSAH == alignedObjectSAH  ) return Split(alignedObjectSplit);
+      else if (bestSAH == alignedSpatialSAH ) return Split(alignedSpatialSplit);
+      else if (bestSAH == unalignedObjectSAH) return Split(unalignedObjectSplit);
+      else if (bestSAH == strandSAH         ) return Split(strandSplit);
       else throw std::runtime_error("bvh4hair_builder: internal error");
     }
     
@@ -260,7 +264,7 @@ namespace embree
 	/*! split selected child */
 	PrimInfo linfo, rinfo;
 	BezierRefList lprims, rprims;
-	csplit[bestChild].split<Parallel>(threadIndex,threadCount,alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
+	csplit[bestChild].split<Parallel>(threadIndex,threadCount,alloc,scene,cprims[bestChild],lprims,linfo,rprims,rinfo);
 	const ssize_t replications = linfo.size()+rinfo.size()-cpinfo[bestChild].size(); assert(replications >= 0);
 	isAligned &= csplit[bestChild].isAligned;
 	LinearSpace3fa lspace,rspace;

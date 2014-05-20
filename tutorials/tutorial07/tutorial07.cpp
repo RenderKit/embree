@@ -423,6 +423,30 @@ float noise(float x, float y, float z)
     scene.meshes.push_back(mesh);
     //generateHairOnTriangleMesh(scene,mesh,0.5f*r,0.001f*r,80);
 
+
+#if 0
+    const float thickness = 0.01f*r;
+    OBJScene::HairSet* hairset = new OBJScene::HairSet;
+    srand48(123456789);
+    for (size_t t=0; t<2; t++) 
+      {
+	Vec3fa dp = uniformSampleSphere(drand48(),drand48());
+
+	Vec3fa l0 = p + r*       (dp + 0.00f*dp); l0.w = thickness;
+	Vec3fa l1 = p + r*       (dp + 0.25f*dp); l1.w = thickness;
+	Vec3fa l2 = p + r*noise3D(dp + 0.50f*dp); l2.w = thickness;
+	Vec3fa l3 = p + r*noise3D(dp + 0.75f*dp); l3.w = thickness;
+
+	const unsigned int v_index = hairset->v.size();
+	hairset->v.push_back(l0);
+	hairset->v.push_back(l1);
+	hairset->v.push_back(l2);
+	hairset->v.push_back(l3);
+
+	hairset->hairs.push_back( OBJScene::Hair(v_index,hairset->hairs.size()) );
+      }
+    scene.hairsets.push_back(hairset);
+#else
     const float thickness = 0.001f*r;
     OBJScene::HairSet* hairset = new OBJScene::HairSet;
 
@@ -444,6 +468,7 @@ float noise(float x, float y, float z)
       hairset->hairs.push_back( OBJScene::Hair(v_index,hairset->hairs.size()) );
     }
     scene.hairsets.push_back(hairset);
+#endif
   }
 
   void addGroundPlane (OBJScene& scene, const Vec3fa& p00, const Vec3fa& p01, const Vec3fa& p10, const Vec3fa& p11)
@@ -547,7 +572,9 @@ float noise(float x, float y, float z)
       }
 
       /* parse camera parameters */
-      else if (tag == "-vp") g_camera.from = cin->getVec3fa();
+      else if (tag == "-vp") {
+	g_camera.from = cin->getVec3fa();
+      }
       else if (tag == "-vi") g_camera.to = cin->getVec3fa();
       else if (tag == "-vd") g_camera.to = g_camera.from + cin->getVec3fa();
       else if (tag == "-vu") g_camera.up = cin->getVec3fa();
@@ -619,6 +646,10 @@ float noise(float x, float y, float z)
     g_camera.from = Vec3fa(3.21034f,0.320831f,-0.162478f);
     g_camera.to   = Vec3fa(2.57003f,0.524887f, 0.163145f);
 
+    g_camera.from = Vec3fa(-3,3,3);
+    g_camera.to = Vec3fa(0,1,0);
+    g_camera.up = Vec3fa(0,1,0);
+
     /* create stream for parsing */
     Ref<ParseStream> stream = new ParseStream(new CommandLineStream(argc, argv));
 
@@ -662,9 +693,6 @@ float noise(float x, float y, float z)
     {
       addHairySphere(g_obj_scene,Vec3fa(0,1.5f,0),1.5f);
       addGroundPlane(g_obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
-      g_camera.from = Vec3fa(-3,3,3);
-      g_camera.to = Vec3fa(0,1,0);
-      g_camera.up = Vec3fa(0,1,0);
     }
 
     /* send model */

@@ -39,7 +39,6 @@ namespace embree
       BVH4I_BUILDER_DEFAULT, 
       BVH4I_BUILDER_PRESPLITS, 
       BVH4I_BUILDER_VIRTUAL_GEOMETRY, 
-      BVH4I_BUILDER_BEZIER_CURVES,
       BVH4I_BUILDER_MEMORY_CONSERVATIVE
     };
  
@@ -260,26 +259,5 @@ namespace embree
     TASK_FUNCTION(BVH4iBuilderVirtualGeometry,createVirtualGeometryAccel);
     
   };
-
-
-  /*! derived binned-SAH builder supporting hair primitives */  
-  class BVH4iBuilderBezierCurves : public BVH4iBuilder
-  {
-  public:
-  BVH4iBuilderBezierCurves(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
-      {
-      }
-
-    virtual size_t getNumPrimitives();
-    virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
-    virtual void createAccel    (const size_t threadIndex, const size_t threadCount);
-    virtual void printBuilderName();
-
-  protected:
-    TASK_FUNCTION(BVH4iBuilderBezierCurves,computePrimRefsBezierCurves);
-    TASK_FUNCTION(BVH4iBuilderBezierCurves,createBezierCurvesAccel);    
-  };
-
-
 
 }

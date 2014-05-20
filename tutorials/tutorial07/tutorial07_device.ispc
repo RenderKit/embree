@@ -232,7 +232,8 @@ export void device_init (uniform int8* uniform cfg)
   rtcSetErrorFunction(error_handler);
 
   /* set start render mode */
-  renderPixel = renderPixelStandard;
+  //  renderPixel = renderPixelStandard;
+        renderPixel = renderPixelEyeLight;
 }
 
 #if !defined(__XEON_PHI__)

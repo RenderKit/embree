@@ -32,7 +32,7 @@ namespace embree
     }
 
     /* approximate bounds */
-#if 1
+#if 1 // FIXME: enable
     BBox3fa geomBound = empty, centBound = empty;
     size_t s = 0, t = 0, dt = max(size_t(1),numPrimitives/2048);
     for (size_t g=0; g<numGroups; g++) 

@@ -41,10 +41,21 @@ namespace embree
         positions(NULL), normals(NULL), texcoords(NULL), triangles(NULL), dir(zero), offset(zero) {}
 
     ~ISPCMesh () {
+      // DBG_PRINT(positions);
+      // DBG_PRINT(normals);
+      // DBG_PRINT(texcoords);
+      // DBG_PRINT(triangles);
+
+#if 0 // FIXME: causing double frees on MIC
       if (positions) free(positions);
       if (normals) free(normals);
       if (texcoords) free(texcoords);
       if (triangles) free(triangles);
+#endif
+      positions = NULL;
+      normals   = NULL;
+      texcoords = NULL;
+      triangles = NULL;
     }
 
   public:
@@ -109,10 +120,12 @@ namespace embree
 
     ~ISPCScene () {
       delete[] materials;
+
       if (meshes) {
         for (size_t i=0; i<numMeshes; i++)
           if (meshes[i]) delete meshes[i];
-        free(meshes);
+	delete[] meshes;
+	meshes = NULL;
       }
     }
 
@@ -164,10 +177,26 @@ namespace embree
   {
     size_t meshID = g_meshID++;
     ISPCMesh* mesh = new ISPCMesh(in_pMiscData->numTriangles,in_pMiscData->numVertices);
-    memcpy(mesh->positions = (Vec3fa*)malloc(in_pBufferLengths[0]),in_ppBufferPointers[0],in_pBufferLengths[0]);
-    memcpy(mesh->normals   = (Vec3fa*)malloc(in_pBufferLengths[1]),in_ppBufferPointers[1],in_pBufferLengths[1]);
-    memcpy(mesh->texcoords = (Vec2f* )malloc(in_pBufferLengths[2]),in_ppBufferPointers[2],in_pBufferLengths[2]);
-    memcpy(mesh->triangles = (OBJScene::Triangle*)malloc(in_pBufferLengths[3]),in_ppBufferPointers[3],in_pBufferLengths[3]);
+    assert( mesh );
+    assert( in_pMiscData->numTriangles*sizeof(OBJScene::Triangle) == in_pBufferLengths[3] );
+    assert( in_pMiscData->numVertices*sizeof(Vec3fa) == in_pBufferLengths[1] );
+
+#define EXTRA_SPACE 2*64
+
+    mesh->positions = (Vec3fa*)os_malloc(in_pBufferLengths[0]+EXTRA_SPACE);
+    mesh->normals   = (Vec3fa*)os_malloc(in_pBufferLengths[1]+EXTRA_SPACE);
+    mesh->texcoords = (Vec2f* )os_malloc(in_pBufferLengths[2]+EXTRA_SPACE);
+    mesh->triangles = (OBJScene::Triangle*)os_malloc(in_pBufferLengths[3]+EXTRA_SPACE);
+
+    assert( mesh->positions );
+    assert( mesh->normals );
+    assert( mesh->texcoords );
+    assert( mesh->triangles );
+
+    memcpy(mesh->positions,in_ppBufferPointers[0],in_pBufferLengths[0]);
+    memcpy(mesh->normals  ,in_ppBufferPointers[1],in_pBufferLengths[1]);
+    memcpy(mesh->texcoords,in_ppBufferPointers[2],in_pBufferLengths[2]);
+    memcpy(mesh->triangles,in_ppBufferPointers[3],in_pBufferLengths[3]);
     g_ispc_scene->meshes[meshID] = mesh;
   }
 

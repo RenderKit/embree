@@ -152,6 +152,7 @@ export void device_init (uniform int8* uniform cfg)
     const uniform float phi = i*2.0f*pi/numSpheres;
     const uniform float r = 2.0f*pi/numSpheres;
     const uniform Vec3f p = 2.0f*make_Vec3f(sin(phi),0.0f,-cos(phi));
+    //uniform RTCGeometryFlags flags = i%3 == 0 ? RTC_GEOMETRY_STATIC : i%3 == 1 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
     uniform RTCGeometryFlags flags = i%2 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
     //uniform RTCGeometryFlags flags = RTC_GEOMETRY_DEFORMABLE;
     uniform int id = createSphere(flags,p,r);

@@ -175,6 +175,8 @@ namespace embree
   typedef Vec3<mic_i> mic3i;
   typedef Vec2<mic_f> mic2f;
   typedef Vec3<mic_f> mic3f;
+  typedef Vec4<mic_f> mic4f;
+  typedef Vec4<mic_i> mic4i;
 #endif
 
 typedef void (*ErrorFunc) ();

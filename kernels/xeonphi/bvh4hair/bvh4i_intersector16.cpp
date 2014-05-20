@@ -17,6 +17,7 @@
 #include "bvh4i_intersector16_bezier_curves.h"
 #include "bvh4i_leaf_intersector.h"
 #include "geometry/bezier1i.h"
+#include "geometry/bezier1i_intersector16.h"
 
 namespace embree
 {
@@ -35,23 +36,27 @@ namespace embree
 					  mic_f &max_dist_xyz,
 					  Ray16& ray16, 
 					  const void *__restrict__ const accel,
-					  const Scene*__restrict__ const geometry)
+					  const Scene*__restrict__ const geometry,
+					  Bezier1iIntersector16::Precalculations &pre)
       {
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const Bezier1i *__restrict__ const tptr = (Bezier1i*)accel + index;
+	bool ret = false;
+	prefetch<PFHINT_L1>(tptr + 0);
+	prefetch<PFHINT_L1>(tptr + 2);
 
-	const mic_i and_mask = broadcast4to16i(zlc4);
-	return true;
-	// Triangle1mcIntersector16MoellerTrumbore::intersect1(rayIndex,
-	// 						    dir_xyz,
-	// 						    org_xyz,
-	// 						    min_dist_xyz,
-	// 						    max_dist_xyz,
-	// 						    and_mask,
-	// 						    ray16,
-	// 						    geometry,
-	// 						    tptr);	
+	// for (size_t i=0;i<items;i++)
+	//    tptr[i].prefetchControlPoints<PFHINT_L2>();
+
+	for (size_t i=0;i<items;i++)
+	  ret |= Bezier1iIntersector16::intersect(pre,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry); // add mailboxing
+
+	max_dist_xyz = ray16.tfar[rayIndex];
+	//if (unlikely(pre.mbox.hit(curves[i].geomID,curves[i].primID))) continue;
+	//pre.mbox.add(curves[i].geomID,curves[i].primID);
+
+	return ret;
       }
 
       static __forceinline bool occluded(BVH4i::NodeRef curNode,
@@ -63,24 +68,18 @@ namespace embree
 					 const Ray16& ray16, 
 					 mic_m &m_terminated,
 					 const void *__restrict__ const accel,
-					 const Scene*__restrict__ const geometry)
+					 const Scene*__restrict__ const geometry,
+					 Bezier1iIntersector16::Precalculations &pre)
       {
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
-	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
+	const Bezier1i *__restrict__ const tptr = (Bezier1i*)accel + index;
 
 	const mic_i and_mask = broadcast4to16i(zlc4);
-	return true;
-	// Triangle1mcIntersector16MoellerTrumbore::occluded1(rayIndex,
-	// 						   dir_xyz,
-	// 						   org_xyz,
-	// 						   min_dist_xyz,
-	// 						   max_dist_xyz,
-	// 						   and_mask,
-	// 						   ray16,
-	// 						   m_terminated,
-	// 						   geometry,
-	// 						   tptr);	
+	for (size_t i=0;i<items;i++)
+	  if (Bezier1iIntersector16::occluded(pre,ray16,rayIndex,tptr[i],geometry))
+	    return true;
+	return false;
       }
 
       static __forceinline bool intersect(BVH4i::NodeRef curNode,
@@ -126,6 +125,7 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
+      LinearSpace_mic3f ray16_space = frame(ray16.dir).transposed();
       /* setup */
       const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir16     = rcp_safe(ray16.dir);
@@ -141,6 +141,8 @@ namespace embree
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
         {
+	  Bezier1iIntersector16::Precalculations pre(ray16_space,rayIndex);
+	  
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
 
@@ -190,7 +192,8 @@ namespace embree
 							  max_dist_xyz,
 							  ray16,
 							  accel,
-							  (Scene*)bvh->geometry);
+							  (Scene*)bvh->geometry,
+							  pre);
 									   
 	      if (hit)
 		compactStack(stack_node,stack_dist,sindex,max_dist_xyz);
@@ -221,6 +224,8 @@ namespace embree
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
         {
+	  Bezier1iIntersector16::Precalculations pre(ray16,rayIndex);
+
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
 
@@ -267,7 +272,8 @@ namespace embree
 							 ray16,
 							 terminated,
 							 accel,
-							 (Scene*)bvh->geometry);
+							 (Scene*)bvh->geometry,
+							 pre);
 
 	      if (unlikely(hit)) break;
 	      //////////////////////////////////////////////////////////////////////////////////////////////////

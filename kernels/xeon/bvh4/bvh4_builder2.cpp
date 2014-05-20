@@ -39,22 +39,21 @@ namespace embree
 	return;
       
       if (g_verbose >= 2) 
-	std::cout << "building BVH4<" << bvh->primTy.name << "> with SAH builder ... " << std::flush;
+	std::cout << "building BVH4<" << bvh->primTy.name << "> with SAH builder2 ... " << std::flush;
       
       double t0 = 0.0, t1 = 0.0f;
       if (g_verbose >= 2 || g_benchmark)
 	t0 = getSeconds();
       
-      /* first generate primrefs */
-      new (&initStage) TriRefGen(threadIndex,threadCount,&alloc,(Scene*)geometry);
-      bvh->numPrimitives = initStage.pinfo.num;
+      /* generate list of build primitives */
+      TriRefList prims; PrimInfo pinfo;
+      TriRefListGen::generate(threadIndex,threadCount,&alloc,(Scene*)geometry,prims,pinfo);
       
-      Split split = ObjectPartition::find<true>(threadIndex,threadCount,initStage.prims,initStage.pinfo,2);
-      tasks.push_back(SplitTask(threadIndex,threadCount,this,bvh->root,1,initStage.prims,initStage.pinfo,split));
-      
-#if 1
+      Split split = ObjectPartition::find<true>(threadIndex,threadCount,prims,pinfo,2);
+      tasks.push_back(SplitTask(threadIndex,threadCount,this,bvh->root,1,prims,pinfo,split));
+
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (tasks.front().pinfo.size() > 256000)//4*threadCount && tasks.size()+BVH4::N <= 1024) 
+      while (tasks.front().pinfo.size() > 256*1024)
       {
 	/* pop largest item for better load balancing */
 	SplitTask task = tasks.front();
@@ -62,24 +61,23 @@ namespace embree
 	tasks.pop_back();
 	
 	/* process this item in parallel */
-	task.recurse_parallel(threadIndex,threadCount);
+	task.recurse<true>(threadIndex,threadCount,NULL);
       }
-#endif
-      
+
       /*! process each generated subtask in its own thread */
       TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,tasks.size(),"BVH4Builder2::build");
-      
-      //Split split = ObjectPartition::find<false>(threadIndex,threadCount,initStage.prims,initStage.pinfo,2);
-      //recurse(threadIndex,threadCount,event,bvh->root,1,initStage.prims,initStage.pinfo,split);
-      
+                  
       /* finish build */
 #if ROTATE_TREE
       for (int i=0; i<5; i++) 
 	BVH4Rotate::rotate(bvh,bvh->root);
 #endif
-      bvh->clearBarrier(bvh->root);
-      bvh->bounds = initStage.pinfo.geomBounds;
-      //initStage.pinfo.clear();
+
+      /* layout top nodes */
+      bvh->root = layout_top_nodes(threadIndex,bvh->root);
+      //bvh->clearBarrier(bvh->root);
+      bvh->numPrimitives = pinfo.size();
+      bvh->bounds = pinfo.geomBounds;
       
       /* free all temporary blocks */
       Alloc::global.clear();
@@ -98,6 +96,31 @@ namespace embree
 	std::cout << "BENCHMARK_BUILD " << 1000.0f*(t1-t0) << " " << 1E-6*double(source->size())/(t1-t0) << " " << stat.bytesUsed() << std::endl;
       }
     }
+
+    BVH4::NodeRef BVH4Builder2::layout_top_nodes(size_t threadIndex, NodeRef node)
+    {
+      if (node.isBarrier()) {
+	node.clearBarrier();
+	return node;
+      }
+      else if (!node.isLeaf()) 
+      {
+	Node* src = node.node();
+	Node* dst = bvh->allocNode(threadIndex);
+
+	//std::pair<float,int> order[4];
+	//for (size_t i=0; i<BVH4::N; i++)
+	//  order[i] = std::pair<float,int>(=area(src->bounds(i)),i);
+	//std::sort(&order[0],&order[4]);
+
+	for (size_t i=0; i<BVH4::N; i++) {
+	  dst->set(i,src->bounds(i),layout_top_nodes(threadIndex,src->child(i)));
+	}
+	return bvh->encodeNode(dst);
+      }
+      else
+	return node;
+    }
     
     BVH4Builder2::BVH4Builder2 (BVH4* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize)
       : source(source), geometry(geometry), primTy(bvh->primTy), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), bvh(bvh),
@@ -108,12 +131,40 @@ namespace embree
 	this->maxLeafSize = maxLeafPrims;
     }
     
+    template<>
+    void BVH4Builder2::recurse<true>(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
+				     NodeRef& node, size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split)
+    {
+      tasks.push_back(SplitTask(threadIndex,threadCount,this,node,depth,prims,pinfo,split));
+      push_heap(tasks.begin(),tasks.end());
+    }
+
+    template<>
+    void BVH4Builder2::recurse<false>(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
+				      NodeRef& node, size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split)
+    {
+      /* use full single threaded build for small jobs */
+      if (pinfo.size() < 4*1024) 
+	new BuildTask(threadIndex,threadCount,event,this,node,depth,prims,pinfo,split);
+      
+      /* use single threaded split for medium size jobs  */
+      else
+	new SplitTask(threadIndex,threadCount,event,this,node,depth,prims,pinfo,split);
+    }
+
     void BVH4Builder2::buildFunction(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
-      //Split split = ObjectPartition::find<false>(threadIndex,threadCount,initStage.prims,initStage.pinfo,2);
-      //recurse(threadIndex,threadCount,event,bvh->root,1,initStage.prims,initStage.pinfo,split);
       SplitTask& task = tasks[taskIndex];
-      recurse(threadIndex,threadCount,event,*task.dst,task.depth,task.prims,task.pinfo,task.split);
+      recurse<false>(threadIndex,threadCount,event,*task.dst,task.depth,task.prims,task.pinfo,task.split);
+    }
+
+    BVH4Builder2::BuildTask::BuildTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
+				       BVH4Builder2* parent, NodeRef& node, size_t depth, 
+				       TriRefList& prims, const PrimInfo& pinfo, const Split& split)
+      : threadIndex(threadIndex), threadCount(threadCount), parent(parent), dst(node), depth(depth), prims(prims), pinfo(pinfo), split(split)
+    {
+      new (&task) TaskScheduler::Task(event,_run,this,"build::full");
+      TaskScheduler::addTask(threadIndex,parent->taskQueue,&task);
     }
     
     typename BVH4Builder2::NodeRef BVH4Builder2::createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo)
@@ -152,7 +203,6 @@ namespace embree
       TriRefList prims0, prims1;
       PrimInfo                 cinfo0, cinfo1;
       FallBackSplit::find(threadIndex,alloc,prims,prims0,cinfo0,prims1,cinfo1);
-      //FallBackSplitter::split(threadIndex,&alloc,source,prims,pinfo,prims0,cinfo0,prims1,cinfo1);
       
       /* second level */
       TriRefList cprims[4];
@@ -166,27 +216,6 @@ namespace embree
       return bvh->encodeNode(node);
     }  
     
-    void BVH4Builder2::recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
-			       NodeRef& node, size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split)
-    {
-      /* use full single threaded build for small jobs */
-      if (pinfo.size() < 4*1024) 
-	new BuildTask(threadIndex,threadCount,event,this,node,depth,prims,pinfo,split);
-      
-      /* use single threaded split for medium size jobs  */
-      else 
-	new SplitTask(threadIndex,threadCount,event,this,node,depth,prims,pinfo,split);
-    }
-    
-    BVH4Builder2::BuildTask::BuildTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
-				       BVH4Builder2* parent, NodeRef& node, size_t depth, 
-				       TriRefList& prims, const PrimInfo& pinfo, const Split& split)
-      : threadIndex(threadIndex), threadCount(threadCount), parent(parent), dst(node), depth(depth), prims(prims), pinfo(pinfo), split(split)
-    {
-      new (&task) TaskScheduler::Task(event,_run,this,"build::full");
-      TaskScheduler::addTask(threadIndex,parent->taskQueue,&task);
-    }
-    
     void BVH4Builder2::BuildTask::run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
     {
       this->threadIndex = threadIndex;
@@ -197,6 +226,18 @@ namespace embree
 #endif
       dst.setBarrier();
       delete this;
+    }
+
+    const Split BVH4Builder2::find(size_t threadIndex, size_t threadCount, TriRefList& prims, const PrimInfo& pinfo)
+    {
+      ObjectPartition::Split osplit = ObjectPartition::find<false>(threadIndex,threadCount,      prims,pinfo,2); // FIXME: hardcoded constant
+      return osplit;
+      //SpatialSplit   ::Split ssplit = SpatialSplit   ::find<false>(threadIndex,threadCount,(Scene*)geometry,prims,pinfo,2); // FIXME: hardcoded constant
+      //if (pinfo.size() < 10) ssplit.sah = inf;
+      //const float bestSAH = min(osplit.sah,ssplit.sah);
+      //if      (bestSAH == osplit.sah) return osplit;
+      //else if (bestSAH == ssplit.sah) return ssplit;
+      //else                            return Split();
     }
     
     typename BVH4Builder2::NodeRef BVH4Builder2::BuildTask::recurse(size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split)
@@ -236,9 +277,11 @@ namespace embree
 	/*! perform best found split and find new splits */
 	PrimInfo linfo,rinfo;
 	TriRefList lprims,rprims;
-	csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
-	Split lsplit = ObjectPartition::find<false>(threadIndex,threadCount,lprims,linfo,2);
-	Split rsplit = ObjectPartition::find<false>(threadIndex,threadCount,rprims,rinfo,2);
+	csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,(Scene*)parent->geometry,cprims[bestChild],lprims,linfo,rprims,rinfo);
+	//const Split lsplit = ObjectPartition::find<false>(threadIndex,threadCount,lprims,linfo,2);
+	//const Split rsplit = ObjectPartition::find<false>(threadIndex,threadCount,rprims,rinfo,2);
+	const Split lsplit = parent->find(threadIndex,threadCount,lprims,linfo);
+	const Split rsplit = parent->find(threadIndex,threadCount,rprims,rinfo);
 	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
 	cprims[numChildren] = rprims; cinfo[numChildren] = rinfo; csplit[numChildren] = rsplit;
 	numChildren++;
@@ -256,7 +299,7 @@ namespace embree
 				       TriRefList& prims, const PrimInfo& pinfo, const Split& split)
       : parent(parent), dst(&node), depth(depth), prims(prims), pinfo(pinfo), split(split)
     {
-      new (&task) TaskScheduler::Task(event,_recurse,this,"build::split");
+      new (&task) TaskScheduler::Task(event,_run,this,"build::split");
       TaskScheduler::addTask(threadIndex,parent->taskQueue,&task);
     }
     
@@ -265,66 +308,12 @@ namespace embree
 				       TriRefList& prims, const PrimInfo& pinfo, const Split& split)
       : parent(parent), dst(&node), depth(depth), prims(prims), pinfo(pinfo), split(split) {}
     
-    void BVH4Builder2::SplitTask::recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
-    {
-      /*! compute leaf and split cost */
-      const float leafSAH  = parent->primTy.intCost*pinfo.leafSAH(2);
-      const float splitSAH = BVH4::travCost*halfArea(pinfo.geomBounds)+parent->primTy.intCost*split.splitSAH();
-      assert(TriRefList::block_iterator_unsafe(prims).size() == pinfo.size());
-      assert(pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
-      
-      /*! create a leaf node when threshold reached or SAH tells us to stop */
-      if (pinfo.size() <= parent->minLeafSize || depth > BVH4::maxBuildDepth || (pinfo.size() <= parent->maxLeafSize && leafSAH <= splitSAH)) {
-	*dst = parent->createLargeLeaf(threadIndex,prims,pinfo,depth+1); delete this; return;
-      }
-      
-      /*! initialize child list */
-      TriRefList cprims[BVH4::N]; 
-      PrimInfo                 cinfo [BVH4::N]; 
-      Split                    csplit[BVH4::N]; 
-      cprims[0] = prims;
-      cinfo [0] = pinfo;
-      csplit[0] = split;
-      size_t numChildren = 1;
-      
-      /*! split until node is full or SAH tells us to stop */
-      do {
-	
-	/*! find best child to split */
-	float bestSAH = 0; 
-	ssize_t bestChild = -1;
-	for (size_t i=0; i<numChildren; i++) 
-	{
-	  float dSAH = csplit[i].splitSAH()-cinfo[i].leafSAH(2);
-	  if (cinfo[i].size() <= parent->minLeafSize) continue; 
-	  if (cinfo[i].size() > parent->maxLeafSize) dSAH = min(0.0f,dSAH); //< force split for large jobs
-	  if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
-	}
-	if (bestChild == -1) break;
-	
-	/*! perform best found split and find new splits */
-	PrimInfo linfo,rinfo;
-	TriRefList lprims,rprims;
-	csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
-	Split lsplit = ObjectPartition::find<false>(threadIndex,threadCount,lprims,linfo,2);
-	Split rsplit = ObjectPartition::find<false>(threadIndex,threadCount,rprims,rinfo,2);
-	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
-	cprims[numChildren] = rprims; cinfo[numChildren] = rinfo; csplit[numChildren] = rsplit;
-	numChildren++;
-	
-      } while (numChildren < BVH4::N);
-      
-      /*! create an inner node */
-      Node* node = parent->bvh->allocNode(threadIndex);
-      *dst = parent->bvh->encodeNode(node);
-      for (size_t i=0; i<numChildren; i++) {
-	node->set(i,cinfo[i].geomBounds,0);
-	parent->recurse(threadIndex,threadCount,event,node->child(i),depth+1,cprims[i],cinfo[i],csplit[i]);
-      }
-      delete this;
+    void BVH4Builder2::SplitTask::run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) {
+      recurse<false>(threadIndex,threadCount,event);
     }
     
-    void BVH4Builder2::SplitTask::recurse_parallel(size_t threadIndex, size_t threadCount)
+    template<bool PARALLEL>
+    void BVH4Builder2::SplitTask::recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
     {
       /*! compute leaf and split cost */
       const float leafSAH  = parent->primTy.intCost*pinfo.leafSAH(2);
@@ -364,9 +353,9 @@ namespace embree
 	/*! perform best found split and find new splits */
 	PrimInfo linfo,rinfo;
 	TriRefList lprims,rprims;
-	csplit[bestChild].split<true>(threadIndex,threadCount,parent->alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
-	Split lsplit = ObjectPartition::find<true>(threadIndex,threadCount,lprims,linfo,2);
-	Split rsplit = ObjectPartition::find<true>(threadIndex,threadCount,rprims,rinfo,2);
+	csplit[bestChild].split<PARALLEL>(threadIndex,threadCount,parent->alloc,(Scene*)parent->geometry,cprims[bestChild],lprims,linfo,rprims,rinfo);
+	const Split lsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,lprims,linfo,2);
+	const Split rsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,rprims,rinfo,2);
 	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
 	cprims[numChildren] = rprims; cinfo[numChildren] = rinfo; csplit[numChildren] = rsplit;
 	numChildren++;
@@ -378,35 +367,34 @@ namespace embree
       *dst = parent->bvh->encodeNode(node);
       for (size_t i=0; i<numChildren; i++) {
 	node->set(i,cinfo[i].geomBounds,0);
-	parent->tasks.push_back(SplitTask(threadIndex,threadCount,parent,node->child(i),depth+1,cprims[i],cinfo[i],csplit[i]));
-	push_heap(parent->tasks.begin(),parent->tasks.end());
+	parent->recurse<PARALLEL>(threadIndex,threadCount,event,node->child(i),depth+1,cprims[i],cinfo[i],csplit[i]);
       }
     }
     
-#if 0
-    Builder* BVH4BuilderObjectSplit1 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
+#if 1
+    /*Builder* BVH4Builder2ObjectSplit1 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
+      return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
+      }*/
+    
+    Builder* BVH4Builder2ObjectSplit4 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
       return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
     }
     
-    Builder* BVH4BuilderObjectSplit4 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
+    /*Builder* BVH4Builder2ObjectSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
       return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
     }
     
-    Builder* BVH4BuilderObjectSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
+    Builder* BVH4Builder2SpatialSplit1 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
       return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
     }
     
-    Builder* BVH4BuilderSpatialSplit1 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
+    Builder* BVH4Builder2SpatialSplit4 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
       return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
     }
     
-    Builder* BVH4BuilderSpatialSplit4 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
+    Builder* BVH4Builder2SpatialSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
       return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
-    }
-    
-    Builder* BVH4BuilderSpatialSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
-      return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
-    }
+      }*/
 #endif
   }
 }
