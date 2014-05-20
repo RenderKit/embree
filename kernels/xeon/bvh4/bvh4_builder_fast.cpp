@@ -92,7 +92,7 @@ namespace embree
           if (!g_state.get()) 
             g_state.reset(new GlobalState(threadCount));
 
-          g_state->scheduler.init(threadCount);
+          //TaskScheduler::init(threadCount);
           TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
         }
         dt_min = min(dt_min,dt);
@@ -125,7 +125,7 @@ namespace embree
           if (!g_state.get()) 
             g_state.reset(new GlobalState(threadCount));
 
-          g_state->scheduler.init(threadCount);
+          //TaskScheduler::init(threadCount);
           TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
         }
       
@@ -717,13 +717,13 @@ namespace embree
       
       /* all worker threads enter tasking system */
       if (threadIndex != 0) {
-        g_state->scheduler.dispatchTaskMainLoop(threadIndex,threadCount); 
+        TaskScheduler::dispatchTaskMainLoop(threadIndex,threadCount); 
         return;
       }
       
       /* calculate list of primrefs */
       global_bounds.reset();
-      g_state->scheduler.dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
+      TaskScheduler::dispatchTask( task_computePrimRefs, this, threadIndex, threadCount );
       bvh->bounds = global_bounds.geometry;
       
       /* initialize node and leaf allocator */
@@ -763,10 +763,10 @@ namespace embree
       }
       
       /* now process all created subtasks on multiple threads */
-      g_state->scheduler.dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
+      TaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
       
       /* release all threads again */
-      g_state->scheduler.releaseThreads(threadCount);
+      TaskScheduler::releaseThreads(threadCount);
       
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;

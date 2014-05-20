@@ -545,7 +545,7 @@ namespace embree
       right.reset();
       this->src = src;
       this->dst = dst;
-      LockStepTaskScheduler::dispatchTask(task_parallelBinning, this, threadID, numThreads );
+      TaskScheduler::dispatchTask(task_parallelBinning, this, threadID, numThreads );
       
       /* reduce binning information from all threads */
       bin16 = global_bin16[0];
@@ -610,7 +610,7 @@ namespace embree
       right.reset(); rCounter.reset(0); 
       this->src = src;
       this->dst = dst;
-      LockStepTaskScheduler::dispatchTask( task_parallelPartition, this, threadID, numThreads );
+      TaskScheduler::dispatchTask( task_parallelPartition, this, threadID, numThreads );
       size_t numLeft = bin16.getNumLeft(split);
       unsigned center = pinfo.begin + numLeft;
       assert(lCounter == numLeft);

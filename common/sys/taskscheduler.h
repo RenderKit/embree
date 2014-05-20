@@ -185,6 +185,12 @@ namespace embree
     /*! destroys all threads */
     void destroyThreads();
 
+    /*! enters lockstep taskscheduler */
+    //void enter(size_t threadIndex, size_t threadCount);
+
+    /*! leaves lockstep taskscheduler */
+    //void leave(size_t threadIndex, size_t threadCount);
+
     /* thread handling */
   protected:
     volatile bool terminateThreads;
@@ -195,6 +201,37 @@ namespace embree
       char align[64-sizeof(Event*)];
     };
     ThreadEvent* thread2event;
+
+    /* for lockstep taskscheduler*/
+  public:
+    static const unsigned int CONTROL_THREAD_ID = 0;
+
+    __aligned(64)static AlignedAtomicCounter32 taskCounter;
+    __aligned(64) static void (* taskPtr)(void* data, const size_t threadID, const size_t numThreads);
+    __aligned(64) static void* volatile data;
+
+
+    static void init(const size_t numThreads);
+
+    static Barrier taskBarrier;
+
+    static bool dispatchTask(const size_t threadID, const size_t numThreads);
+
+    static void dispatchTaskMainLoop(const size_t threadID, const size_t numThreads);
+    static void releaseThreads(const size_t numThreads);
+  
+    static __forceinline bool dispatchTask(void (* task)(void* data, const size_t threadID, const size_t numThreads),
+                                           void* data, 
+					   const size_t threadID,
+					   const size_t numThreads)
+    {
+      TaskScheduler::taskPtr = task;
+      TaskScheduler::data = data;
+      return TaskScheduler::dispatchTask(threadID, numThreads);
+    }
+
+    static void syncThreads(const size_t threadID, const size_t numThreads);
+
   };
 
 #define TASK_FUNCTION(Class,Name) \
@@ -256,8 +293,7 @@ namespace embree
 
 
   };
-
-
+  
   class __aligned(64) LockStepTaskScheduler4ThreadsLocalCore
   {
   public:
