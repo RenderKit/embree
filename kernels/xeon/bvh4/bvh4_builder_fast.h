@@ -40,7 +40,7 @@ namespace embree
       public:
 	unsigned int depth;         //!< depth from the root of the tree
 	float sArea;
-	size_t parentNode; 
+	BVH4::NodeRef* parent; 
 	
         BuildRecord() : PrimInfo(0) {}
 

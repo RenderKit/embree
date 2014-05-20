@@ -229,7 +229,7 @@ namespace embree
       
       /* allocate leaf node */
       Triangle1* accel = (Triangle1*) leafAlloc.malloc(items*sizeof(Triangle1));
-      *(NodeRef*)current.parentNode = This->bvh->encodeLeaf((char*)accel,items);
+      *current.parent = This->bvh->encodeLeaf((char*)accel,items);
       
       for (size_t i=0; i<items; i++) 
       {	
@@ -261,7 +261,7 @@ namespace embree
       
       /* allocate leaf node */
       Triangle4* accel = (Triangle4*) leafAlloc.malloc(sizeof(Triangle4));
-      *(NodeRef*)current.parentNode = This->bvh->encodeLeaf((char*)accel,1);
+      *current.parent = This->bvh->encodeLeaf((char*)accel,1);
       
       ssei vgeomID = -1, vprimID = -1, vmask = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
@@ -293,7 +293,7 @@ namespace embree
       
       /* allocate leaf node */
       Triangle1v* accel = (Triangle1v*) leafAlloc.malloc(items*sizeof(Triangle1v));
-      *(NodeRef*)current.parentNode = This->bvh->encodeLeaf((char*)accel,items);
+      *current.parent = This->bvh->encodeLeaf((char*)accel,items);
       
       for (size_t i=0; i<items; i++) 
       {	
@@ -324,7 +324,7 @@ namespace embree
       
       /* allocate leaf node */
       Triangle4v* accel = (Triangle4v*) leafAlloc.malloc(sizeof(Triangle4v));
-      *(NodeRef*)current.parentNode = This->bvh->encodeLeaf((char*)accel,1);
+      *current.parent = This->bvh->encodeLeaf((char*)accel,1);
       
       ssei vgeomID = -1, vprimID = -1, vmask = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
@@ -425,13 +425,13 @@ namespace embree
 
       /* allocate node */
       Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
-      *(NodeRef*)current.parentNode = bvh->encodeNode(node);
+      *current.parent = bvh->encodeNode(node);
       
       /* recurse into each child */
       for (size_t i=0; i<4; i++) 
       {
         node->set(i,children[i].geomBounds);
-        children[i].parentNode = (size_t)&node->child(i);
+        children[i].parent = &node->child(i);
         children[i].depth = current.depth+1;
         createLeaf(children[i],nodeAlloc,leafAlloc,threadIndex,threadCount);
       }
@@ -508,13 +508,13 @@ namespace embree
       
       /* allocate node */
       Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
-      *(NodeRef*)current.parentNode = bvh->encodeNode(node);
+      *current.parent = bvh->encodeNode(node);
       
       /* recurse into each child */
       for (unsigned int i=0; i<numChildren; i++) 
       {  
         node->set(i,children[i].geomBounds);
-        children[i].parentNode = (size_t)&node->child(i);
+        children[i].parent = &node->child(i);
         children[i].depth = current.depth+1;
         recurse(children[i],nodeAlloc,leafAlloc,mode,threadID,numThreads);
       }
@@ -596,7 +596,7 @@ namespace embree
       BuildRecord br;
       br.init(global_bounds,0,numPrimitives);
       br.depth = 1;
-      br.parentNode = (size_t)&bvh->root;
+      br.parent = &bvh->root;
 
       /* build BVH in single thread */
       recurseSAH(br,nodeAlloc,leafAlloc,RECURSE_SEQUENTIAL,threadIndex,threadCount);
@@ -636,7 +636,7 @@ namespace embree
       BuildRecord br;
       br.init(global_bounds,0,numPrimitives);
       br.depth = 1;
-      br.parentNode = (size_t)&bvh->root;
+      br.parent = &bvh->root;
       
       /* initialize thread-local work stacks */
       for (size_t i=0; i<threadCount; i++)
