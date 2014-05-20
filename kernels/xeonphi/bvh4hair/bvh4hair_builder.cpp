@@ -4,8 +4,12 @@
 namespace embree
 {
 #define DBG(x) 
+
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
+#define SINGLE_THREADED_BUILD_THRESHOLD        512
+
+  static double dt = 0.0f;
 
   // ==========================================================================================
   // ==========================================================================================
@@ -158,6 +162,59 @@ namespace embree
 
      	*acc = Bezier1i( &geom->vertex( geom->curve( primID ) ), geomID, primID, geom->mask );
       }
+  }
+
+  
+  void BVH4HairBuilder::build(size_t threadIndex, size_t threadCount) 
+  {
+    DBG(PING);
+    const size_t totalNumPrimitives = getNumPrimitives();
+
+
+    DBG(DBG_PRINT(totalNumPrimitives));
+
+    /* print builder name */
+    if (unlikely(g_verbose >= 1)) printBuilderName();
+
+    /* allocate BVH data */
+    allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
+
+    LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); 
+
+    if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1) )
+      {
+	DBG(std::cout << "PARALLEL BUILD" << std::endl);
+
+	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
+      }
+    else
+      {
+	/* number of primitives is small, just use single threaded mode */
+	if (likely(numPrimitives > 0))
+	  {
+	    DBG(std::cout << "SERIAL BUILD" << std::endl);
+	    build_parallel(0,1,0,0,NULL);
+	  }
+	else
+	  {
+	    DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
+	    /* handle empty scene */
+	    for (size_t i=0;i<4;i++)
+	      bvh->qbvh[0].setInvalid(i);
+	    for (size_t i=0;i<4;i++)
+	      bvh->qbvh[1].setInvalid(i);
+	    bvh->qbvh[0].lower[0].child = BVH4i::NodeRef(128);
+	    bvh->root = bvh->qbvh[0].lower[0].child; 
+	    bvh->bounds = empty;
+	  }
+      }
+
+    if (g_verbose >= 2) {
+      double perf = totalNumPrimitives/dt*1E-6;
+      std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
+      std::cout << BVH4iStatistics(bvh).str();
+    }
+
   }
 
 };

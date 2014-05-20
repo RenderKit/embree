@@ -5,6 +5,7 @@
 
 namespace embree
 {
+#define DBG(x)
 
   DECLARE_SYMBOL(Accel::Intersector1 ,BVH4HairIntersector1Bezier1i);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4HairIntersector16Bezier1i);
@@ -34,5 +35,26 @@ namespace embree
     Accel::Intersectors intersectors = BVH4HairIntersectors(accel);
     return new AccelInstance(accel,builder,intersectors);    
   }
+
+  // =================================================================================
+  // =================================================================================
+  // =================================================================================
+
+
+  __aligned(64) float BVH4Hair::UnalignedNode::identityMatrix[16] = {
+    1,0,0,0,
+    0,1,0,0,
+    0,0,1,0,
+    0,0,0,1
+  };
+
+  void BVH4Hair::UnalignedNode::convertFromBVH4iNode(const BVH4i::Node &node)
+  {
+    setIdentityMatrix();
+    
+  }
+
+
+
 
 };

@@ -31,6 +31,7 @@ namespace embree
       {
       }
 
+    virtual void build(size_t threadIndex, size_t threadCount);
     virtual size_t getNumPrimitives();
     virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
     virtual void createAccel    (const size_t threadIndex, const size_t threadCount);
