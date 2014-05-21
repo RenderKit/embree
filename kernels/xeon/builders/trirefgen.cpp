@@ -123,7 +123,7 @@ namespace embree
       pinfo_o.reset();
       TriRefArrayGenFromTriangleMesh gen(threadIndex,threadCount,mesh,prims_o,pinfo_o);
       TaskScheduler::dispatchTask(_task_gen_parallel, &gen, threadIndex, threadCount);
-      assert(pinfo_o.size() == scene->numTriangles);
+      assert(pinfo_o.size() == mesh->numTriangles);
     }
 
     TriRefArrayGenFromTriangleMesh::TriRefArrayGenFromTriangleMesh(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o)
