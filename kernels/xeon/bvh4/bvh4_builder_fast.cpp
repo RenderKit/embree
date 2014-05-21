@@ -32,10 +32,6 @@
 
 #define DBG(x) 
 
-//#if defined(__USE_STAT_COUNTERS__)
-//#define PROFILE
-//#endif
-
 namespace embree
 {
   namespace isa
@@ -163,7 +159,6 @@ namespace embree
     
     void BVH4BuilderFast::init(size_t threadIndex, size_t threadCount)
     {
-      //bvh->clear();
       bvh->init(0); // FIXME
       numGroups = scene->size();
       
@@ -241,7 +236,6 @@ namespace embree
     {
       size_t items = current.size();
       size_t start = current.begin;
-      assert(items<=4);
       
       /* allocate leaf node */
       Triangle1* accel = (Triangle1*) leafAlloc.malloc(items*sizeof(Triangle1));
@@ -368,7 +362,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4BuilderFast::splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+    void BVH4BuilderFast::splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads)
     {
       /* calculate binning function */
       PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
@@ -402,7 +396,7 @@ namespace embree
       if (mode == BUILD_TOP_LEVEL && current.size() >= BUILD_RECORD_SPLIT_THRESHOLD)
         splitParallel(current,left,right,threadID,numThreads);		  
       else
-        splitSequential(current,left,right);
+        splitSequential(current,left,right,threadID,numThreads);
     }
     
     // =======================================================================================================
@@ -446,20 +440,20 @@ namespace embree
       BVH4::compact(node); // move empty nodes to the end
     }
     
-    __forceinline void BVH4BuilderFast::recurse(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads)
+    __forceinline void BVH4BuilderFast::recurse_continue(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads)
     {
       if (mode == BUILD_TOP_LEVEL) {
         g_state->workStack.push_nolock(current);
       }
       else if (mode == RECURSE_PARALLEL && current.size() > THRESHOLD_FOR_SUBTREE_RECURSION) {
         if (!g_state->threadStack[threadID].push(current))
-          recurseSAH(current,nodeAlloc,leafAlloc,RECURSE_SEQUENTIAL,threadID,numThreads);
+          recurse(current,nodeAlloc,leafAlloc,RECURSE_SEQUENTIAL,threadID,numThreads);
       }
       else
-        recurseSAH(current,nodeAlloc,leafAlloc,mode,threadID,numThreads);
+        recurse(current,nodeAlloc,leafAlloc,mode,threadID,numThreads);
     }
     
-    void BVH4BuilderFast::recurseSAH(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads)
+    void BVH4BuilderFast::recurse(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads)
     {
       __aligned(64) BuildRecord children[BVH4::N];
       
@@ -498,8 +492,8 @@ namespace embree
         split(children[bestChild],left,right,mode,threadID,numThreads);
         
         /* add new children left and right */
-	left.init(); right.init();
-        left.depth = right.depth = current.depth+1;
+	left.init(current.depth+1); 
+	right.init(current.depth+1);
         children[bestChild] = children[numChildren-1];
         children[numChildren-1] = left;
         children[numChildren+0] = right;
@@ -524,11 +518,11 @@ namespace embree
         node->set(i,children[i].geomBounds);
         children[i].parent = &node->child(i);
         children[i].depth = current.depth+1;
-        recurse(children[i],nodeAlloc,leafAlloc,mode,threadID,numThreads);
+        recurse_continue(children[i],nodeAlloc,leafAlloc,mode,threadID,numThreads);
       }
     }
 
-    bool BVH4BuilderFast::split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+    void BVH4BuilderFast::split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
     {
       const unsigned int center = (current.begin + current.end)/2;
       
@@ -541,8 +535,6 @@ namespace embree
       for (size_t i=center; i<current.end; i++)
         right.extend(primref[i].bounds());	
       rightChild.init(right,center,current.end);
-      
-      return true;
     }
     
     
@@ -574,9 +566,9 @@ namespace embree
         }
         
         /* process local work queue */
-	recurseSAH(br,nodeAlloc,leafAlloc,RECURSE_PARALLEL,threadID,numThreads);
+	recurse(br,nodeAlloc,leafAlloc,RECURSE_PARALLEL,threadID,numThreads);
         while (g_state->threadStack[threadID].pop_largest(br))
-          recurseSAH(br,nodeAlloc,leafAlloc,RECURSE_PARALLEL,threadID,numThreads);
+          recurse(br,nodeAlloc,leafAlloc,RECURSE_PARALLEL,threadID,numThreads);
       }
     }
 
@@ -607,7 +599,7 @@ namespace embree
       br.parent = &bvh->root;
 
       /* build BVH in single thread */
-      recurseSAH(br,nodeAlloc,leafAlloc,RECURSE_SEQUENTIAL,threadIndex,threadCount);
+      recurse(br,nodeAlloc,leafAlloc,RECURSE_SEQUENTIAL,threadIndex,threadCount);
 
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;
@@ -667,7 +659,7 @@ namespace embree
         if (br.size() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD)
           break;
 
-        recurseSAH(br,nodeAlloc,leafAlloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
+        recurse(br,nodeAlloc,leafAlloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
       }
       
       /* now process all created subtasks on multiple threads */

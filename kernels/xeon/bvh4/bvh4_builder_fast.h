@@ -46,8 +46,9 @@ namespace embree
 	
         BuildRecord() : PrimInfo(0) {}
 
-	__forceinline void init()
+	__forceinline void init(unsigned int depth)
 	{
+	  this->depth = depth;
 	  sArea = area(geomBounds);
 	}
 
@@ -124,7 +125,7 @@ namespace embree
       void split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads);
       
       /*! perform sequential binning and splitting */
-      void splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
+      void splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads);
       
       /*! perform parallel binning and splitting */
       void splitParallel(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t threads);
@@ -136,12 +137,12 @@ namespace embree
       void createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadIndex, size_t threadCount);
       
       /*! select between recursion and stack operations */
-      void recurse(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads);
+      void recurse_continue(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads);
       
       /*! recursive build function */
-      void recurseSAH(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads);
+      void recurse(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads);
       
-      static bool split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
+      static void split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
     
     public:
       Scene* scene;                            //!< input scene
