@@ -404,6 +404,8 @@ namespace embree
     {
       PrimRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
       PrimRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
+      linfo_o.reset();
+      rinfo_o.reset();
       
       while (PrimRefList::item* block = prims.take()) 
       {
@@ -434,8 +436,8 @@ namespace embree
         
     void ObjectPartition::Split::partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) const
     {
-      CentGeomBBox3fa local_left; local_left.reset();
-      CentGeomBBox3fa local_right; local_right.reset();
+      CentGeomBBox3fa local_left(empty);
+      CentGeomBBox3fa local_right(empty);
       
       assert(begin <= end);
       PrimRef* l = prims + begin;
@@ -588,8 +590,8 @@ namespace embree
       PrimRef* __restrict__ dstRight = dst + pinfo.begin + startRight + numLeft;
       
       /* split into left and right */
-      CentGeomBBox3fa leftBounds; leftBounds.reset();
-      CentGeomBBox3fa rightBounds; rightBounds.reset();
+      CentGeomBBox3fa leftBounds(empty);
+      CentGeomBBox3fa rightBounds(empty);
       
       for (size_t i=startID; i<endID; i++)
       {

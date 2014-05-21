@@ -26,9 +26,9 @@ namespace embree
     class CentGeomBBox3fa
     {
     public:
-      __forceinline CentGeomBBox3fa (int) {}
+      __forceinline CentGeomBBox3fa () {}
 
-      __forceinline CentGeomBBox3fa () 
+      __forceinline CentGeomBBox3fa (EmptyTy) 
 	: geomBounds(empty), centBounds(empty) {}
       
       __forceinline CentGeomBBox3fa (const BBox3fa& geomBounds, const BBox3fa& centBounds) 
@@ -81,10 +81,10 @@ namespace embree
     class PrimInfo : public CentGeomBBox3fa
     {
     public:
-      __forceinline PrimInfo (int) : CentGeomBBox3fa(0) {}
+      __forceinline PrimInfo () {}
 
-      __forceinline PrimInfo () 
-	: begin(0), end(0) {}
+      __forceinline PrimInfo (EmptyTy) 
+	: begin(0), end(0), CentGeomBBox3fa(empty) {}
 
       __forceinline void reset() {
 	CentGeomBBox3fa::reset();

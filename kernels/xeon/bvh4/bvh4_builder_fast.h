@@ -44,7 +44,7 @@ namespace embree
 	float sArea;
 	BVH4::NodeRef* parent; 
 	
-        BuildRecord() : PrimInfo(0) {}
+        BuildRecord() {}
 
 	__forceinline void init(unsigned int depth)
 	{
@@ -142,7 +142,7 @@ namespace embree
       /*! recursive build function */
       void recurse(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads);
       
-      static void split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
+      static void splitFallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
     
     public:
       Scene* scene;                            //!< input scene

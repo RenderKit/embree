@@ -262,13 +262,13 @@ namespace embree
 	if (bestChild == -1) break;
 	
 	/*! split selected child */
-	PrimInfo linfo, rinfo;
+	PrimInfo linfo(empty), rinfo(empty);
 	BezierRefList lprims, rprims;
 	csplit[bestChild].split<Parallel>(threadIndex,threadCount,alloc,scene,cprims[bestChild],lprims,linfo,rprims,rinfo);
 	const ssize_t replications = linfo.size()+rinfo.size()-cpinfo[bestChild].size(); assert(replications >= 0);
 	isAligned &= csplit[bestChild].isAligned;
 	LinearSpace3fa lspace,rspace;
-	PrimInfo lsinfo,rsinfo;
+	PrimInfo lsinfo(empty),rsinfo(empty);
 	if (!isAligned) {
 	  lspace = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,lprims); 
 	  rspace = ObjectPartitionUnaligned::computeAlignedSpace<Parallel>(threadIndex,threadCount,rprims); 

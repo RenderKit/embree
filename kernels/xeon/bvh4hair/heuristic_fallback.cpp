@@ -28,6 +28,8 @@ namespace embree
       BBox3fa lbounds = empty, rbounds = empty;
       BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
       BezierRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
+      linfo_o.reset();
+      rinfo_o.reset();
       
       while (BezierRefList::item* block = prims.take()) 
       {
@@ -64,7 +66,9 @@ namespace embree
       BBox3fa lbounds = empty, rbounds = empty;
       PrimRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
       PrimRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
-      
+      linfo_o.reset();
+      rinfo_o.reset();
+
       while (PrimRefList::item* block = prims.take()) 
       {
 	for (size_t i=0; i<block->size(); i++) 

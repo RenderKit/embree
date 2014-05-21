@@ -347,6 +347,8 @@ namespace embree
       /* sort each trianlge to left, right, or left and right */
       TriRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
       TriRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
+      linfo_o.reset();
+      rinfo_o.reset();
     
       /* sort each primitive to left, right, or left and right */
       while (atomic_set<PrimRefBlock>::item* block = prims.take()) 

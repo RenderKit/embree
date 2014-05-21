@@ -46,7 +46,7 @@ namespace embree
 	t0 = getSeconds();
       
       /* generate list of build primitives */
-      TriRefList prims; PrimInfo pinfo;
+      TriRefList prims; PrimInfo pinfo(empty);
       TriRefListGen::generate(threadIndex,threadCount,&alloc,(Scene*)geometry,prims,pinfo);
       
       Split split = ObjectPartition::find<true>(threadIndex,threadCount,prims,pinfo,2);
@@ -201,12 +201,12 @@ namespace embree
       
       /* first level */
       TriRefList prims0, prims1;
-      PrimInfo                 cinfo0, cinfo1;
+      PrimInfo   cinfo0, cinfo1;
       FallBackSplit::find(threadIndex,alloc,prims,prims0,cinfo0,prims1,cinfo1);
       
       /* second level */
       TriRefList cprims[4];
-      PrimInfo                 cinfo[4];
+      PrimInfo   cinfo[4];
       FallBackSplit::find(threadIndex,alloc,prims0,cprims[0],cinfo[0],cprims[1],cinfo[1]);
       FallBackSplit::find(threadIndex,alloc,prims1,cprims[2],cinfo[2],cprims[3],cinfo[3]);
       
@@ -255,8 +255,8 @@ namespace embree
       
       /*! initialize child list */
       TriRefList cprims[BVH4::N]; cprims[0] = prims;
-      PrimInfo                 cinfo [BVH4::N]; cinfo [0] = pinfo;
-      Split                    csplit[BVH4::N]; csplit[0] = split;
+      PrimInfo   cinfo [BVH4::N]; cinfo [0] = pinfo;
+      Split      csplit[BVH4::N]; csplit[0] = split;
       size_t numChildren = 1;
       
       /*! split until node is full or SAH tells us to stop */
@@ -275,7 +275,7 @@ namespace embree
 	if (bestChild == -1) break;
 	
 	/*! perform best found split and find new splits */
-	PrimInfo linfo,rinfo;
+	PrimInfo linfo(empty),rinfo(empty);
 	TriRefList lprims,rprims;
 	csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,(Scene*)parent->geometry,cprims[bestChild],lprims,linfo,rprims,rinfo);
 	//const Split lsplit = ObjectPartition::find<false>(threadIndex,threadCount,lprims,linfo,2);
@@ -328,8 +328,8 @@ namespace embree
       
       /*! initialize child list */
       TriRefList cprims[BVH4::N]; 
-      PrimInfo                 cinfo [BVH4::N]; 
-      Split                    csplit[BVH4::N]; 
+      PrimInfo   cinfo [BVH4::N]; 
+      Split      csplit[BVH4::N]; 
       cprims[0] = prims;
       cinfo [0] = pinfo;
       csplit[0] = split;
@@ -351,7 +351,7 @@ namespace embree
 	if (bestChild == -1) break;
 	
 	/*! perform best found split and find new splits */
-	PrimInfo linfo,rinfo;
+	PrimInfo linfo(empty), rinfo(empty);
 	TriRefList lprims,rprims;
 	csplit[bestChild].split<PARALLEL>(threadIndex,threadCount,parent->alloc,(Scene*)parent->geometry,cprims[bestChild],lprims,linfo,rprims,rinfo);
 	const Split lsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,lprims,linfo,2);

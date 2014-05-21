@@ -362,6 +362,21 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
+    void BVH4BuilderFast::splitFallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+    {
+      const unsigned int center = (current.begin + current.end)/2;
+      
+      Centroid_Scene_AABB left; left.reset();
+      for (size_t i=current.begin; i<center; i++)
+        left.extend(primref[i].bounds());
+      leftChild.init(left,current.begin,center);
+      
+      Centroid_Scene_AABB right; right.reset();
+      for (size_t i=center; i<current.end; i++)
+        right.extend(primref[i].bounds());	
+      rightChild.init(right,center,current.end);
+    }
+
     void BVH4BuilderFast::splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads)
     {
       /* calculate binning function */
@@ -369,7 +384,7 @@ namespace embree
       ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,2);
       
       /* if we cannot find a valid split, enforce an arbitrary split */
-      if (unlikely(split.pos == -1)) split_fallback(prims,current,leftChild,rightChild);
+      if (unlikely(split.pos == -1)) splitFallback(prims,current,leftChild,rightChild);
       
       /* partitioning of items */
       else split.partition(prims, current.begin, current.end, leftChild, rightChild);
@@ -385,7 +400,7 @@ namespace embree
       const float sah = g_state->parallelBinner.find(pinfo,prims,tmp,threadID,numThreads);
 
       /* if we cannot find a valid split, enforce an arbitrary split */
-      if (unlikely(sah == float(inf))) split_fallback(prims,current,leftChild,rightChild);
+      if (unlikely(sah == float(inf))) splitFallback(prims,current,leftChild,rightChild);
       
       /* parallel partitioning of items */
       else g_state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads);
@@ -418,12 +433,12 @@ namespace embree
       
       /* first split level */
       BuildRecord record0, record1;
-      split_fallback(prims,current,record0,record1);
+      splitFallback(prims,current,record0,record1);
       
       /* second split level */
       BuildRecord children[4];
-      split_fallback(prims,record0,children[0],children[1]);
-      split_fallback(prims,record1,children[2],children[3]);
+      splitFallback(prims,record0,children[0],children[1]);
+      splitFallback(prims,record1,children[2],children[3]);
 
       /* allocate node */
       Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
@@ -521,22 +536,6 @@ namespace embree
         recurse_continue(children[i],nodeAlloc,leafAlloc,mode,threadID,numThreads);
       }
     }
-
-    void BVH4BuilderFast::split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
-    {
-      const unsigned int center = (current.begin + current.end)/2;
-      
-      Centroid_Scene_AABB left; left.reset();
-      for (size_t i=current.begin; i<center; i++)
-        left.extend(primref[i].bounds());
-      leftChild.init(left,current.begin,center);
-      
-      Centroid_Scene_AABB right; right.reset();
-      for (size_t i=center; i<current.end; i++)
-        right.extend(primref[i].bounds());	
-      rightChild.init(right,center,current.end);
-    }
-    
     
     // =======================================================================================================
     // =======================================================================================================
@@ -585,7 +584,7 @@ namespace embree
       __aligned(64) Allocator leafAlloc(primAllocator);
      
       /* create prim refs */
-      PrimInfo pinfo;
+      PrimInfo pinfo(empty);
       if (mesh) TriRefArrayGenFromTriangleMesh::generate_sequential(threadIndex, threadCount, mesh , prims, pinfo);
       else      TriRefArrayGen                ::generate_sequential(threadIndex, threadCount, scene, prims, pinfo);
       global_bounds.geometry = pinfo.geomBounds;
@@ -619,7 +618,7 @@ namespace embree
 	return;
       
       /* calculate list of primrefs */
-      PrimInfo pinfo;
+      PrimInfo pinfo(empty);
       if (mesh) TriRefArrayGenFromTriangleMesh::generate_parallel(threadIndex, threadCount, mesh , prims, pinfo);
       else      TriRefArrayGen                ::generate_parallel(threadIndex, threadCount, scene, prims, pinfo);
       global_bounds.geometry = pinfo.geomBounds;

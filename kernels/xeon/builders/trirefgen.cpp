@@ -42,7 +42,7 @@ namespace embree
       ssize_t end   = (taskIndex+1)*scene->numTriangles/taskCount;
       ssize_t cur   = 0;
       
-      PrimInfo pinfo;
+      PrimInfo pinfo(empty);
       TriRefList::item* block = prims.insert(alloc->malloc(threadIndex)); 
       for (size_t i=0; i<scene->size(); i++) 
       {
@@ -89,7 +89,7 @@ namespace embree
       ssize_t end   = (taskIndex+1)*scene->numTriangles/taskCount;
       ssize_t cur   = 0;
       
-      PrimInfo pinfo;
+      PrimInfo pinfo(empty);
       for (size_t i=0; i<scene->size(); i++) 
       {
 	TriangleMesh* geom = (TriangleMesh*) scene->get(i);
@@ -135,7 +135,7 @@ namespace embree
       ssize_t end   = (taskIndex+1)*mesh->numTriangles/taskCount;
       ssize_t cur   = 0;
       
-      PrimInfo pinfo;
+      PrimInfo pinfo(empty);
       for (size_t j=start; j<end; j++) {
 	const PrimRef prim(mesh->bounds(j),mesh->id,j);
 	pinfo.add(prim.bounds(),prim.center2());

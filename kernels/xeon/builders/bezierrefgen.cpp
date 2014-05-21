@@ -21,7 +21,7 @@ namespace embree
   namespace isa
   {
     BezierRefGen::BezierRefGen(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>* alloc, const Scene* scene)
-      : scene(scene), alloc(alloc)
+      : scene(scene), alloc(alloc), pinfo(empty)
     {
       /*! parallel stage */
       size_t numTasks = min(threadCount,maxTasks);
@@ -38,7 +38,7 @@ namespace embree
       ssize_t end   = (taskIndex+1)*scene->numCurves/taskCount;
       ssize_t cur   = 0;
       
-      PrimInfo pinfo;
+      PrimInfo pinfo(empty);
       BezierRefList::item* block = prims.insert(alloc->malloc(threadIndex)); 
       for (size_t i=0; i<scene->size(); i++) 
       {
