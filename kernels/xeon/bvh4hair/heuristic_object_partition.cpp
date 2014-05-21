@@ -539,7 +539,7 @@ namespace embree
       bin16.bin_copy(src,startID,endID,mapping,dst);
     }
     
-    float ObjectPartition::ParallelBinner::find(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads) 
+    float ObjectPartition::ParallelBinner::find(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, const size_t logBlockSize, const size_t threadID, const size_t numThreads) 
     {
       this->pinfo = pinfo;
       //rec = current;
@@ -556,7 +556,7 @@ namespace embree
       for (size_t i=1; i<numThreads; i++)
 	bin16.merge(global_bin16[i]);
 
-      split = bin16.best(mapping,2); // FIXME: hardcoded constant
+      split = bin16.best(mapping,logBlockSize);
       return split.sah;
     }
     

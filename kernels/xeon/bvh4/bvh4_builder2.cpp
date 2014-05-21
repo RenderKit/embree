@@ -53,7 +53,7 @@ namespace embree
       tasks.push_back(SplitTask(threadIndex,threadCount,this,bvh->root,1,prims,pinfo,split));
 
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (tasks.front().pinfo.size() > 256*1024)
+      while (tasks.size() < threadCount)
       {
 	/* pop largest item for better load balancing */
 	SplitTask task = tasks.front();

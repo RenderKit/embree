@@ -241,7 +241,7 @@ namespace embree
       public:
         
         /*! parallel binbing of an array of primitives */
-        float find(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, const size_t threadID, const size_t numThreads);
+        float find(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, const size_t logBlockSize, const size_t threadID, const size_t numThreads);
         
         /* parallel partitioning of a list of primitives */
         void partition(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, PrimInfo& leftChild, PrimInfo& rightChild, const size_t threadID, const size_t numThreads);

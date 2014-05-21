@@ -27,10 +27,7 @@
 
 #include <algorithm>
 
-#define BVH_NODE_PREALLOC_FACTOR 1.0f
-//#define QBVH_BUILDER_LEAF_ITEM_THRESHOLD 4
 #define THRESHOLD_FOR_SUBTREE_RECURSION 128
-#define BUILD_RECORD_SPLIT_THRESHOLD 512
 
 #define DBG(x) 
 
@@ -382,7 +379,7 @@ namespace embree
     {
       /* calculate binning function */
       PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-      ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,2);
+      ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,logBlockSize);
       
       /* if we cannot find a valid split, enforce an arbitrary split */
       if (unlikely(split.pos == -1)) splitFallback(prims,current,leftChild,rightChild);
@@ -398,7 +395,7 @@ namespace embree
       PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
 
       /* parallel binning of centroids */
-      const float sah = g_state->parallelBinner.find(pinfo,prims,tmp,threadID,numThreads);
+      const float sah = g_state->parallelBinner.find(pinfo,prims,tmp,logBlockSize,threadID,numThreads);
 
       /* if we cannot find a valid split, enforce an arbitrary split */
       if (unlikely(sah == float(inf))) splitFallback(prims,current,leftChild,rightChild);
@@ -409,10 +406,8 @@ namespace embree
     
     __forceinline void BVH4BuilderFast::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
     {
-      if (mode == BUILD_TOP_LEVEL && current.size() >= BUILD_RECORD_SPLIT_THRESHOLD)
-        splitParallel(current,left,right,threadID,numThreads);		  
-      else
-        splitSequential(current,left,right,threadID,numThreads);
+      if (mode == BUILD_TOP_LEVEL) splitParallel(current,left,right,threadID,numThreads);		  
+      else                         splitSequential(current,left,right,threadID,numThreads);
     }
     
     // =======================================================================================================
@@ -633,18 +628,15 @@ namespace embree
         g_state->threadStack[i].reset();
       
       /* push initial build record to global work stack */
-      //g_state->workStack.reset();
       g_state->heap.reset();
-      //g_state->workStack.push_nolock(br);    
       g_state->heap.push(br);
 
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (g_state->heap.size() < 4*threadCount && g_state->heap.size()+BVH4::N <= SIZE_WORK_STACK) 
+      while (g_state->heap.size() < threadCount)
       {
         BuildRecord br;
 
         /* pop largest item for better load balancing */
-        //if (!g_state->workStack.pop_nolock_largest(br)) 
 	if (!g_state->heap.pop(br)) 
           break;
         
@@ -655,9 +647,6 @@ namespace embree
         recurse(br,nodeAlloc,leafAlloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
       }
 
-      /* sort subtasks by size */
-      std::sort(g_state->heap.begin(),g_state->heap.end(),BuildRecord::Greater());
-      
       /* now process all created subtasks on multiple threads */
       TaskScheduler::dispatchTask(_buildSubTrees, this, threadIndex, threadCount );
       

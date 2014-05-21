@@ -226,6 +226,7 @@ namespace embree
       return heap.size();
     }
 
+    T& front() { return heap[0]; }
     T* begin() { return &heap[0]; }
     T* end  () { return &heap[0]+heap.size(); }
 
