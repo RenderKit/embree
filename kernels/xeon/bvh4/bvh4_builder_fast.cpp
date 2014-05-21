@@ -44,23 +44,39 @@ namespace embree
 
     std::auto_ptr<BVH4BuilderFast::GlobalState> BVH4BuilderFast::g_state(NULL);
 
-    BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
-      : scene(scene), mesh(mesh), /*primTy(bvh->primTy),*/ bvh(bvh), numGroups(0), numPrimitives(0), prims(NULL), bytesPrims(0), createSmallLeaf(NULL)
+    BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+      : scene(scene), mesh(mesh), bvh(bvh), numGroups(0), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes)
     {
       needAllThreads = true;
       if (mesh) needAllThreads = mesh->numTriangles > 50000;
-
-      if      (&bvh->primTy == &SceneTriangle1::type ) { createSmallLeaf = createTriangle1Leaf; logBlockSize = 0; needVertices = false; primBytes = sizeof(Triangle1); }
-      else if (&bvh->primTy == &SceneTriangle4::type ) { createSmallLeaf = createTriangle4Leaf; logBlockSize = 2; needVertices = false; primBytes = sizeof(Triangle4); }
-      else if (&bvh->primTy == &SceneTriangle1v::type) { createSmallLeaf = createTriangle1vLeaf; logBlockSize = 0; needVertices = false; primBytes = sizeof(Triangle1v); }
-      else if (&bvh->primTy == &SceneTriangle4v::type) { createSmallLeaf = createTriangle4vLeaf; logBlockSize = 2; needVertices = false; primBytes = sizeof(Triangle4v); }
-      else if (&bvh->primTy == &TriangleMeshTriangle1::type ) { createSmallLeaf = createTriangle1Leaf; logBlockSize = 0; needVertices = false; primBytes = sizeof(Triangle1); }
-      else if (&bvh->primTy == &TriangleMeshTriangle4::type ) { createSmallLeaf = createTriangle4Leaf; logBlockSize = 2; needVertices = false; primBytes = sizeof(Triangle4); }
-      else if (&bvh->primTy == &TriangleMeshTriangle1v::type) { createSmallLeaf = createTriangle1vLeaf; logBlockSize = 0; needVertices = false; primBytes = sizeof(Triangle1v); }
-      else if (&bvh->primTy == &TriangleMeshTriangle4v::type) { createSmallLeaf = createTriangle4vLeaf; logBlockSize = 2; needVertices = false; primBytes = sizeof(Triangle4v); }
-      else throw std::runtime_error("BVH4BuilderFast: unknown primitive type");
     }
+
+    BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
+      : BVH4BuilderFast(bvh,scene,NULL,0,false,sizeof(Triangle1),minLeafSize,maxLeafSize) {}
+
+    BVH4Triangle4BuilderFast::BVH4Triangle4BuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
+      : BVH4BuilderFast(bvh,scene,NULL,2,false,sizeof(Triangle4),minLeafSize,maxLeafSize) {}
     
+    BVH4Triangle1vBuilderFast::BVH4Triangle1vBuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
+      : BVH4BuilderFast(bvh,scene,NULL,0,false,sizeof(Triangle1v),minLeafSize,maxLeafSize) {}
+
+    BVH4Triangle4vBuilderFast::BVH4Triangle4vBuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
+      : BVH4BuilderFast(bvh,scene,NULL,2,false,sizeof(Triangle4v),minLeafSize,maxLeafSize) {}
+
+
+    BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1),minLeafSize,maxLeafSize) {}
+
+    BVH4Triangle4BuilderFast::BVH4Triangle4BuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4),minLeafSize,maxLeafSize) {}
+    
+    BVH4Triangle1vBuilderFast::BVH4Triangle1vBuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1v),minLeafSize,maxLeafSize) {}
+
+    BVH4Triangle4vBuilderFast::BVH4Triangle4vBuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4v),minLeafSize,maxLeafSize) {}
+        
+
     BVH4BuilderFast::~BVH4BuilderFast () 
     {
       if (prims) os_free(prims,bytesPrims); prims = NULL;
@@ -221,7 +237,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4BuilderFast::createTriangle1Leaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle1BuilderFast::createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
       size_t items = current.size();
       size_t start = current.begin;
@@ -253,7 +269,7 @@ namespace embree
       }
     }
     
-    void BVH4BuilderFast::createTriangle4Leaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle4BuilderFast::createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
       size_t items = current.size();
       size_t start = current.begin;
@@ -285,7 +301,7 @@ namespace embree
       Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask));
     }
     
-    void BVH4BuilderFast::createTriangle1vLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle1vBuilderFast::createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
       size_t items = current.size();
       size_t start = current.begin;
@@ -316,7 +332,7 @@ namespace embree
       }
     }
     
-    void BVH4BuilderFast::createTriangle4vLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle4vBuilderFast::createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
       size_t items = current.size();
       size_t start = current.begin;
@@ -664,17 +680,14 @@ namespace embree
       if (g_verbose >= 2) dt = getSeconds()-t0;
     }
     
-    /*Builder* BVH4Triangle1BuilderFast (void* bvh, Scene* scene) { return new BVH4BuilderFast((BVH4*)bvh,scene,BVH4BuilderFast::createTriangle1Leaf,0); }
-    Builder* BVH4Triangle4BuilderFast (void* bvh, Scene* scene) { return new BVH4BuilderFast((BVH4*)bvh,scene,BVH4BuilderFast::createTriangle4Leaf,2); }
-    Builder* BVH4Triangle1vBuilderFast (void* bvh, Scene* scene) { return new BVH4BuilderFast((BVH4*)bvh,scene,BVH4BuilderFast::createTriangle1vLeaf,0); }
-    Builder* BVH4Triangle4vBuilderFast (void* bvh, Scene* scene) { return new BVH4BuilderFast((BVH4*)bvh,scene,BVH4BuilderFast::createTriangle4vLeaf,2); }*/
+    Builder* BVH4Triangle1BuilderFast  (void* bvh, Scene* scene) { return new class BVH4Triangle1BuilderFast ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4BuilderFast  (void* bvh, Scene* scene) { return new class BVH4Triangle4BuilderFast ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle1vBuilderFast (void* bvh, Scene* scene) { return new class BVH4Triangle1vBuilderFast((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4vBuilderFast (void* bvh, Scene* scene) { return new class BVH4Triangle4vBuilderFast((BVH4*)bvh,scene); }
 
-    Builder* BVH4BuilderObjectSplit4Fast (void* bvh, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize) {
-      return new BVH4BuilderFast((BVH4*)bvh,source,scene,NULL,minLeafSize,maxLeafSize);
-    }
-
-    Builder* BVH4BuilderObjectSplit4TriangleMeshFast (void* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize) {
-      return new BVH4BuilderFast((BVH4*)bvh,NULL,mesh->parent,mesh,minLeafSize,maxLeafSize);
-    }
+    Builder* BVH4Triangle1MeshBuilderFast  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle1BuilderFast ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4MeshBuilderFast  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4BuilderFast ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle1vMeshBuilderFast (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle1vBuilderFast((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4vMeshBuilderFast (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4vBuilderFast((BVH4*)bvh,mesh); }
   }
 }

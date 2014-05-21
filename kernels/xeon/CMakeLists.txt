@@ -140,6 +140,7 @@ IF (TARGET_AVX)
 
    bvh4/bvh4_builder_fast.cpp
    bvh4/bvh4_builder2.cpp
+   bvh4/bvh4_refit.cpp
 
    bvh4/bvh4_intersector1.cpp   
    bvh4/bvh4_intersector1_bezier.cpp   

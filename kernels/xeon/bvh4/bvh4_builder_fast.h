@@ -28,6 +28,8 @@ namespace embree
     class BVH4BuilderFast : public Builder
     {
       ALIGNED_CLASS;
+
+    protected:
       typedef BVH4::Node Node;
       typedef BVH4::NodeRef NodeRef;
       typedef GlobalAllocator::ThreadAllocator Allocator;
@@ -93,12 +95,8 @@ namespace embree
 
     public:
 
-      typedef void (*createLeafFunction)(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
-      
-//      BVH4BuilderFast (BVH4* bvh, Scene* scene, createLeafFunction createSmallLeaf, size_t logBlockSize, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
-      
       /*! Constructor. */
-      BVH4BuilderFast (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      BVH4BuilderFast (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
       
       /*! Destructor */
       ~BVH4BuilderFast ();
@@ -132,12 +130,8 @@ namespace embree
       void splitParallel(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t threads);
       
       /*! creates a small leaf node */
-      static void createTriangle1Leaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
-      static void createTriangle4Leaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
-      static void createTriangle1vLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
-      static void createTriangle4vLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
-      createLeafFunction createSmallLeaf;
-      
+      virtual void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID) = 0;
+
       /*! creates a large leaf node */
       void createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadIndex, size_t threadCount);
       
@@ -149,20 +143,19 @@ namespace embree
       
       static bool split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
     
-    protected:
+    public:
       Scene* scene;                            //!< input scene
       TriangleMesh* mesh;   //!< input mesh
       BVH4* bvh;                               //!< Output BVH
-      //const PrimitiveType& primTy;             //!< triangle type stored in BVH
       size_t logBlockSize;
       size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }
-       bool needVertices;
-	size_t primBytes; 
+      bool needVertices;
+      size_t primBytes; 
 
     protected:
       TaskScheduler::Task task;
       
-    protected:
+    public:
       PrimRef* prims;
       size_t bytesPrims;
       
@@ -174,6 +167,62 @@ namespace embree
     protected:
       __aligned(64) GlobalAllocator nodeAllocator;
       __aligned(64) GlobalAllocator primAllocator;
+    };
+
+    class BVH4Triangle1BuilderFast : public BVH4BuilderFast
+    {
+    public:
+
+      /*! Constructor for scene builder */
+      BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      
+      /*! Constructor for triangle mesh builder */
+      BVH4Triangle1BuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      
+      /*! creates a leaf node */
+      void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+    };
+
+    class BVH4Triangle4BuilderFast : public BVH4BuilderFast
+    {
+    public:
+
+      /*! Constructor for scene builder */
+      BVH4Triangle4BuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      
+      /*! Constructor for triangle mesh builder */
+      BVH4Triangle4BuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      
+      /*! creates a leaf node */
+      void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+    };
+
+    class BVH4Triangle1vBuilderFast : public BVH4BuilderFast
+    {
+    public:
+
+      /*! Constructor for scene builder */
+      BVH4Triangle1vBuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      
+      /*! Constructor for triangle mesh builder */
+      BVH4Triangle1vBuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      
+      /*! creates a leaf node */
+      void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+    };
+
+    class BVH4Triangle4vBuilderFast : public BVH4BuilderFast
+    {
+    public:
+
+      /*! Constructor for scene builder */
+      BVH4Triangle4vBuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      
+      /*! Constructor for triangle mesh builder */
+      BVH4Triangle4vBuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      
+      /*! creates a leaf node */
+      void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
   }
 }

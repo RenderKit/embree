@@ -242,11 +242,15 @@ namespace embree
       bvh->bounds = recurse_bottom(bvh->root);
     }
 
-    Builder* BVH4BuilderObjectSplit4TriangleMeshFast (void* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize);
+    Builder* BVH4Triangle1MeshBuilderFast  (void* bvh, TriangleMesh* mesh);
+    Builder* BVH4Triangle4MeshBuilderFast  (void* bvh, TriangleMesh* mesh);
+    Builder* BVH4Triangle1vMeshBuilderFast (void* bvh, TriangleMesh* mesh);
+    Builder* BVH4Triangle4vMeshBuilderFast (void* bvh, TriangleMesh* mesh);
 
-    Builder* BVH4BuilderRefitObjectSplit4TriangleMeshFast (void* accel, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize) {
-      Builder* builder = BVH4BuilderObjectSplit4TriangleMeshFast(accel,mesh,minLeafSize,maxLeafSize);
-      return new BVH4Refit((BVH4*)accel,builder,mesh);
-    }
+    Builder* BVH4Triangle1MeshRefitFast (void* accel, TriangleMesh* mesh) { return new BVH4Refit((BVH4*)accel,BVH4Triangle1MeshBuilderFast(accel,mesh),mesh); }
+    Builder* BVH4Triangle4MeshRefitFast (void* accel, TriangleMesh* mesh) { return new BVH4Refit((BVH4*)accel,BVH4Triangle4MeshBuilderFast(accel,mesh),mesh); }
+    Builder* BVH4Triangle1vMeshRefitFast (void* accel, TriangleMesh* mesh) { return new BVH4Refit((BVH4*)accel,BVH4Triangle1vMeshBuilderFast(accel,mesh),mesh); }
+    Builder* BVH4Triangle4vMeshRefitFast (void* accel, TriangleMesh* mesh) { return new BVH4Refit((BVH4*)accel,BVH4Triangle4vMeshBuilderFast(accel,mesh),mesh); }
   }
 }
+
