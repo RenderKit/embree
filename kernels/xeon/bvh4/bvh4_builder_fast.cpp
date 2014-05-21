@@ -25,6 +25,8 @@
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 
+#include <algorithm>
+
 #define BVH_NODE_PREALLOC_FACTOR 1.0f
 #define QBVH_BUILDER_LEAF_ITEM_THRESHOLD 4
 #define THRESHOLD_FOR_SUBTREE_RECURSION 128
@@ -41,7 +43,7 @@ namespace embree
     std::auto_ptr<BVH4BuilderFast::GlobalState> BVH4BuilderFast::g_state(NULL);
 
     BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-      : scene(scene), mesh(mesh), bvh(bvh), numGroups(0), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes)
+      : scene(scene), mesh(mesh), bvh(bvh), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes)
     {
       needAllThreads = true;
       if (mesh) needAllThreads = mesh->numTriangles > 50000;
@@ -160,7 +162,6 @@ namespace embree
     void BVH4BuilderFast::init(size_t threadIndex, size_t threadCount)
     {
       bvh->init(0); // FIXME
-      numGroups = scene->size();
       
       /* calculate size of scene */
       size_t numVertices = 0;
@@ -377,7 +378,7 @@ namespace embree
       rightChild.init(right,center,current.end);
     }
 
-    void BVH4BuilderFast::splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads)
+    __forceinline void BVH4BuilderFast::splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads)
     {
       /* calculate binning function */
       PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
@@ -458,7 +459,8 @@ namespace embree
     __forceinline void BVH4BuilderFast::recurse_continue(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads)
     {
       if (mode == BUILD_TOP_LEVEL) {
-        g_state->workStack.push_nolock(current);
+        //g_state->workStack.push_nolock(current);
+	g_state->push(current);
       }
       else if (mode == RECURSE_PARALLEL && current.size() > THRESHOLD_FOR_SUBTREE_RECURSION) {
         if (!g_state->threadStack[threadID].push(current))
@@ -532,7 +534,6 @@ namespace embree
       {  
         node->set(i,children[i].geomBounds);
         children[i].parent = &node->child(i);
-        children[i].depth = current.depth+1;
         recurse_continue(children[i],nodeAlloc,leafAlloc,mode,threadID,numThreads);
       }
     }
@@ -548,14 +549,15 @@ namespace embree
       
       while (true) 
       {
-        BuildRecord br;
-        if (!g_state->workStack.pop_largest(br)) // FIXME: might loose threads during build
+	BuildRecord br;
+	if (!g_state->pop_largest(br))
+	  //if (!g_state->workStack.pop_largest(br)) // FIXME: might loose threads during build
         {
           /* global work queue empty => try to steal from neighboring queues */	  
           bool success = false;
           for (size_t i=0; i<numThreads; i++)
           {
-            if (g_state->threadStack[(threadID+i)%numThreads].pop_smallest(br)) {
+            if (g_state->threadStack[(threadID+i)%numThreads].pop(br)) {
               success = true;
               break;
             }
@@ -566,7 +568,8 @@ namespace embree
         
         /* process local work queue */
 	recurse(br,nodeAlloc,leafAlloc,RECURSE_PARALLEL,threadID,numThreads);
-        while (g_state->threadStack[threadID].pop_largest(br))
+        //while (g_state->threadStack[threadID].pop_largest(br))
+	while (g_state->threadStack[threadID].pop(br))
           recurse(br,nodeAlloc,leafAlloc,RECURSE_PARALLEL,threadID,numThreads);
       }
     }
@@ -638,16 +641,19 @@ namespace embree
         g_state->threadStack[i].reset();
       
       /* push initial build record to global work stack */
-      g_state->workStack.reset();
-      g_state->workStack.push_nolock(br);    
-      
+      //g_state->workStack.reset();
+      g_state->workStack.clear();
+      //g_state->workStack.push_nolock(br);    
+      g_state->push(br);
+
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
       while (g_state->workStack.size() < 4*threadCount && g_state->workStack.size()+BVH4::N <= SIZE_WORK_STACK) 
       {
         BuildRecord br;
 
         /* pop largest item for better load balancing */
-        if (!g_state->workStack.pop_nolock_largest(br)) 
+        //if (!g_state->workStack.pop_nolock_largest(br)) 
+	if (!g_state->pop_largest(br)) 
           break;
         
         /* guarantees to create no leaves in this stage */
@@ -656,6 +662,9 @@ namespace embree
 
         recurse(br,nodeAlloc,leafAlloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
       }
+
+      /* sort subtasks by size */
+      std::sort(g_state->workStack.begin(),g_state->workStack.end(),BuildRecord::Greater());
       
       /* now process all created subtasks on multiple threads */
       TaskScheduler::dispatchTask(_buildSubTrees, this, threadIndex, threadCount );
