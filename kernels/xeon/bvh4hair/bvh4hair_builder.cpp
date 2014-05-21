@@ -209,10 +209,6 @@ namespace embree
 	bestSAH = min(bestSAH,strandSAH);
       }
       
-#if 1
-      bestSAH = alignedObjectSAH;
-#endif
-
       /* return best split */
       if      (bestSAH == float(inf)        ) return Split();
       else if (bestSAH == alignedObjectSAH  ) return Split(alignedObjectSplit);
