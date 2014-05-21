@@ -186,6 +186,14 @@ namespace embree
 	DBG(std::cout << "PARALLEL BUILD" << std::endl);
 
 	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
+
+#if 1
+	std::cout << "converting from bvh4i to bvh4hair..." << std::endl;
+	DBG_PRINT(numNodes);
+	bvh4hair->unaligned_nodes = (BVH4Hair::UnalignedNode*)os_malloc(sizeof(BVH4Hair::UnalignedNode) * numNodes);
+	for (size_t i=0;i<numNodes;i++)
+	  bvh4hair->unaligned_nodes[i].convertFromBVH4iNode(bvh4hair->qbvh[i],bvh4hair->unaligned_nodes);
+#endif
       }
     else
       {

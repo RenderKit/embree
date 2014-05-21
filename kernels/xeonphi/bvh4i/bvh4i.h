@@ -87,7 +87,10 @@ namespace embree
       __forceinline       Node* node(      void* base) const { return (      Node*)((      short*)base + (size_t)_id); }// lea reg,reg*2
       __forceinline const Node* node(const void* base) const { return (const Node*)((const short*)base + (size_t)_id); }// lea reg,reg*2
       
+
 #endif
+
+      __forceinline unsigned int nodeID() const { return (_id*2) / sizeof(Node);  }
       
       /*! returns leaf pointer */
       template<unsigned int scale=4>

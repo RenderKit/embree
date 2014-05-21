@@ -96,7 +96,8 @@ namespace embree
     struct __aligned(256) UnalignedNode
     {
       mic_f matrixColumnXYZW[3];
-      NodeRef child[4];
+
+      NodeRef children[4];
       unsigned int geomID[4];
       unsigned int primID[4];
 
@@ -113,9 +114,52 @@ namespace embree
 	matrixColumnXYZW[2] = c2;
       }
 
-      void convertFromBVH4iNode(const BVH4i::Node &node);
+      /* __forceinline const float &matrix(const size_t row, */
+      /* 					const size_t column, */
+      /* 					const size_t matrixID) const */
+      /* { */
+      /* 	assert(matrixID < 4); */
+      /* 	assert(row < 4); */
+      /* 	assert(column < 3); */
+      /* 	return matrixColumnXYZW[column][4*matrixID+row]; */
+      /* }  */
 
-      
+      __forceinline float &matrix(const size_t row,
+				  const size_t column,
+				  const size_t matrixID) 
+      {
+	assert(matrixID < 4);
+	assert(row < 4);
+	assert(column < 3);
+	return matrixColumnXYZW[column][4*matrixID+row];
+      } 
+
+      __forceinline void set_scale(const float sx, 
+				   const float sy,
+				   const float sz,
+				   const size_t matrixID) 
+      {
+	matrix(0,0,matrixID) = sx;
+	matrix(1,1,matrixID) = sy;
+	matrix(2,2,matrixID) = sz;
+      } 
+
+      __forceinline void set_translation(const float tx, 
+					 const float ty,
+					 const float tz,
+					 const size_t matrixID) 
+      {
+	matrix(3,0,matrixID) = tx;
+	matrix(3,1,matrixID) = ty;
+	matrix(3,2,matrixID) = tz;
+      } 
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { return children[i]; }
+
+      void convertFromBVH4iNode(const BVH4i::Node &node, UnalignedNode *ptr);
+     
     };
 
   BVH4Hair(const PrimitiveType& primTy, void* geometry = NULL) : BVH4i(primTy,geometry)
@@ -131,4 +175,21 @@ namespace embree
     UnalignedNode *unaligned_nodes;
 
   };
+
+
+  __forceinline std::ostream &operator<<(std::ostream &o, BVH4Hair::UnalignedNode &n)
+    {
+      for (size_t m=0;m<4;m++)
+	{
+	  o << "matrix " << m << ": " << std::endl;
+	  for (size_t y=0;y<4;y++)
+	    {
+	      for (size_t x=0;x<3;x++)
+		o << n.matrix(y,x,m) << " ";
+	      o << std::endl;
+	    }
+	}
+      return o;
+    } 
+
 };

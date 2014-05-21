@@ -17,6 +17,7 @@
 #pragma once
 
 #include "bvh4i/bvh4i_builder.h"
+#include "bvh4hair.h"
 
 #define BVH_NODE_PREALLOC_FACTOR                 1.15f
 
@@ -27,8 +28,11 @@ namespace embree
   class BVH4HairBuilder : public BVH4iBuilder
   {
   public:
-  BVH4HairBuilder(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
+    BVH4Hair *bvh4hair;
+    
+  BVH4HairBuilder(BVH4Hair* bvh, BuildSource* source, void* geometry) : BVH4iBuilder((BVH4i*)bvh,source,geometry) 
       {
+	bvh4hair = bvh;
       }
 
     virtual void build(size_t threadIndex, size_t threadCount);
