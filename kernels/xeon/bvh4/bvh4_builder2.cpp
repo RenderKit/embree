@@ -49,9 +49,10 @@ namespace embree
       TriRefList prims; PrimInfo pinfo(empty);
       TriRefListGen::generate(threadIndex,threadCount,&alloc,(Scene*)geometry,prims,pinfo);
       
-      Split split = ObjectPartition::find<true>(threadIndex,threadCount,prims,pinfo,2);
+      const Split split = find(threadIndex,threadCount,prims,pinfo); // FIXME: enable parallel
       tasks.push_back(SplitTask(threadIndex,threadCount,this,bvh->root,1,prims,pinfo,split));
 
+#if 1
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
       while (tasks.size() < threadCount)
       {
@@ -63,6 +64,7 @@ namespace embree
 	/* process this item in parallel */
 	task.recurse<true>(threadIndex,threadCount,NULL);
       }
+#endif
 
       /*! process each generated subtask in its own thread */
       TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,tasks.size(),"BVH4Builder2::build");
@@ -232,12 +234,11 @@ namespace embree
     {
       ObjectPartition::Split osplit = ObjectPartition::find<false>(threadIndex,threadCount,      prims,pinfo,2); // FIXME: hardcoded constant
       return osplit;
-      //SpatialSplit   ::Split ssplit = SpatialSplit   ::find<false>(threadIndex,threadCount,(Scene*)geometry,prims,pinfo,2); // FIXME: hardcoded constant
-      //if (pinfo.size() < 10) ssplit.sah = inf;
-      //const float bestSAH = min(osplit.sah,ssplit.sah);
-      //if      (bestSAH == osplit.sah) return osplit;
-      //else if (bestSAH == ssplit.sah) return ssplit;
-      //else                            return Split();
+      SpatialSplit   ::Split ssplit = SpatialSplit   ::find<false>(threadIndex,threadCount,(Scene*)geometry,prims,pinfo,2); // FIXME: hardcoded constant
+      const float bestSAH = min(osplit.sah,ssplit.sah);
+      if      (bestSAH == osplit.sah) return osplit; 
+      else if (bestSAH == ssplit.sah) return ssplit;
+      else                            return Split();
     }
     
     typename BVH4Builder2::NodeRef BVH4Builder2::BuildTask::recurse(size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split)
@@ -354,8 +355,10 @@ namespace embree
 	PrimInfo linfo(empty), rinfo(empty);
 	TriRefList lprims,rprims;
 	csplit[bestChild].split<PARALLEL>(threadIndex,threadCount,parent->alloc,(Scene*)parent->geometry,cprims[bestChild],lprims,linfo,rprims,rinfo);
-	const Split lsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,lprims,linfo,2);
-	const Split rsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,rprims,rinfo,2);
+	//const Split lsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,lprims,linfo,2);
+	//const Split rsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,rprims,rinfo,2);
+	const Split lsplit = parent->find(threadIndex,threadCount,lprims,linfo); // FIXME: not in parallel mode
+	const Split rsplit = parent->find(threadIndex,threadCount,rprims,rinfo);
 	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
 	cprims[numChildren] = rprims; cinfo[numChildren] = rinfo; csplit[numChildren] = rsplit;
 	numChildren++;

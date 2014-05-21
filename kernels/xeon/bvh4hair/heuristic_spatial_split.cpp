@@ -174,7 +174,7 @@ namespace embree
       /* find best dimension */
       float bestSAH = inf;
       int   bestDim = -1;
-      int   bestPos = 0.0f;
+      int   bestPos = 0;
       for (size_t dim=0; dim<3; dim++) 
       {
 	/* ignore zero sized dimensions */
@@ -191,20 +191,20 @@ namespace embree
       
       /* return invalid split if no split found */
       if (bestDim == -1) 
-	return Split(inf,-1,0.0f,mapping);
+	return Split(inf,-1,0,mapping,0,0);
 
       /* compute bounds of left and right side */
       size_t lnum = 0, rnum = 0;
       BBox3fa lbounds = empty, rbounds = empty;
       for (size_t i=0; i<bestPos; i++)    { lnum+=numBegin[i][bestDim]; lbounds.extend(bounds[i][bestDim]); }
-      for (size_t i=bestPos; i<BINS; i++) { rnum+=numEnd[i][bestDim];   rbounds.extend(bounds[i][bestDim]); }
+      for (size_t i=bestPos; i<BINS; i++) { rnum+=numEnd  [i][bestDim]; rbounds.extend(bounds[i][bestDim]); }
       
       /* return invalid split if no progress made */
       if (lnum == 0 || rnum == 0) 
-	return Split(inf,-1,0.0f,mapping);
+	return Split(inf,-1,0,mapping,lnum,rnum);
       
       /* return best found split */
-      return Split(bestSAH,bestDim,bestPos,mapping);
+      return Split(bestSAH,bestDim,bestPos,mapping,lnum,rnum);
     }
     
     template<>
@@ -280,7 +280,9 @@ namespace embree
       /* sort each curve to left, right, or left and right */
       BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
       BezierRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
-      
+      linfo_o.reset();
+      rinfo_o.reset();
+
       while (BezierRefList::item* block = prims.take()) 
       {
 	for (size_t i=0; i<block->size(); i++) 
@@ -290,7 +292,7 @@ namespace embree
 	  const int bin1 = mapping.bin(max(prim.p0,prim.p3))[dim];
 	  
 	  /* sort to the left side */
-	  if (bin0 < pos && bin1 < pos)
+	  if (bin0 < pos && bin1 < pos) // FIXME: optimize
 	  {
 	    linfo_o.add(prim.bounds(),prim.center());
 	    if (likely(lblock->insert(prim))) continue; 
@@ -300,7 +302,7 @@ namespace embree
 	  }
 	  
 	  /* sort to the right side */
-	  if (bin0 >= pos && bin1 >= pos)
+	  if (bin0 >= pos && bin1 >= pos)// FIXME: optimize
 	  {
 	    rinfo_o.add(prim.bounds(),prim.center());
 	    if (likely(rblock->insert(prim))) continue;
@@ -314,15 +316,19 @@ namespace embree
 	  float fpos = mapping.pos(pos,dim);
 	  if (prim.split(dim,fpos,left,right)) 
 	  {
-	    linfo_o.add(left.bounds(),left.center());
-	    if (!lblock->insert(left)) {
-	      lblock = lprims_o.insert(alloc.malloc(threadIndex));
-	      lblock->insert(left);
+	    if (!left.bounds().empty()) {
+	      linfo_o.add(left.bounds(),left.center());
+	      if (!lblock->insert(left)) {
+		lblock = lprims_o.insert(alloc.malloc(threadIndex));
+		lblock->insert(left);
+	      }
 	    }
-	    rinfo_o.add(right.bounds(),right.center());
-	    if (!rblock->insert(right)) {
-	      rblock = rprims_o.insert(alloc.malloc(threadIndex));
-	      rblock->insert(right);
+	    if (!right.bounds().empty()) {
+	      rinfo_o.add(right.bounds(),right.center());
+	      if (!rblock->insert(right)) {
+		rblock = rprims_o.insert(alloc.malloc(threadIndex));
+		rblock->insert(right);
+	      }
 	    }
 	    continue;
 	  }
@@ -357,9 +363,11 @@ namespace embree
 	{
 	  const PrimRef& prim = block->at(i); 
 	  const BBox3fa bounds = prim.bounds();
-	  
+	  const int bin0 = mapping.bin(bounds.lower)[dim];
+	  const int bin1 = mapping.bin(bounds.upper)[dim];
+
 	  /* sort to the left side */
-	  if (bounds.lower[dim] <= pos && bounds.upper[dim] <= pos)
+	  if (bin1 < pos)
 	  {
 	    linfo_o.add(bounds,center2(bounds));
 	    if (likely(lblock->insert(prim))) continue; 
@@ -369,7 +377,7 @@ namespace embree
 	  }
 	  
 	  /* sort to the right side */
-	  if (bounds.lower[dim] >= pos && bounds.upper[dim] >= pos)
+	  if (bin0 >= pos)
 	  {
 	    rinfo_o.add(bounds,center2(bounds));
 	    if (likely(rblock->insert(prim))) continue;
@@ -402,6 +410,8 @@ namespace embree
 	}
 	alloc.free(threadIndex,block);
       }
+      assert(lnum == linfo_o.size()); 
+      assert(rnum == rinfo_o.size());
     }
     
     template<typename Prim>

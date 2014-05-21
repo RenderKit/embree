@@ -81,8 +81,8 @@ namespace embree
 	  : sah(inf), dim(-1), pos(0) {}
 	
 	/*! constructs specified split */
-	__forceinline Split(float sah, int dim, int pos, const Mapping& mapping)
-	  : sah(sah), dim(dim), pos(pos), mapping(mapping) {}
+	__forceinline Split(float sah, int dim, int pos, const Mapping& mapping, int lnum, int rnum)
+	  : sah(sah), dim(dim), pos(pos), mapping(mapping), lnum(lnum), rnum(rnum) {}
 	
 	/*! calculates surface area heuristic for performing the split */
 	__forceinline float splitSAH() const { return sah; }
@@ -108,6 +108,7 @@ namespace embree
 	int   dim;          //!< split dimension
 	int   pos;          //!< split position
 	Mapping mapping;    //!< mapping into bins
+	int lnum,rnum;
       };
       
     private:

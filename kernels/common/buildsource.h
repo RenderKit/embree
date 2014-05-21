@@ -78,15 +78,13 @@ namespace embree
         right.extend(c);
       }
     }
-    assert(!left.empty());  // happens if split does not hit triangle
-    assert(!right.empty()); // happens if split does not hit triangle
+    //assert(!left.empty());  // happens if split does not hit triangle
+    //assert(!right.empty()); // happens if split does not hit triangle
 
-    /* safe clip against current bounds */
+    /* clip against current bounds */
     BBox3fa bounds = prim.bounds();
-    BBox3fa cleft(min(max(left.lower,bounds.lower),bounds.upper),
-                 max(min(left.upper,bounds.upper),bounds.lower));
-    BBox3fa cright(min(max(right.lower,bounds.lower),bounds.upper),
-                  max(min(right.upper,bounds.upper),bounds.lower));
+    BBox3fa cleft (max(left .lower,bounds.lower),min(left .upper,bounds.upper));
+    BBox3fa cright(max(right.lower,bounds.lower),min(right.upper,bounds.upper));
 
     new (&left_o ) PrimRef(cleft, prim.geomID(), prim.primID());
     new (&right_o) PrimRef(cright,prim.geomID(), prim.primID());

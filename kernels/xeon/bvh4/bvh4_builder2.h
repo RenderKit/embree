@@ -150,7 +150,7 @@ namespace embree
     private:
       BuildSource* source;      //!< build source interface
       void* geometry;           //!< input geometry
-      
+
     public:
       const PrimitiveType& primTy;          //!< triangle type stored in BVH4
       size_t minLeafSize;                 //!< minimal size of a leaf

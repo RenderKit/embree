@@ -37,7 +37,7 @@ namespace embree
     {
       const ssei i = floori((ssef(p)-ofs)*scale);
 #if 1
-      assert(i[0] >=0 && i[0] < num);
+      assert(i[0] >=0 && i[0] < num); 
       assert(i[1] >=0 && i[1] < num);
       assert(i[2] >=0 && i[2] < num);
       return Vec3ia(i);
@@ -414,7 +414,7 @@ namespace embree
 	  const PrimRef& prim = block->at(i); 
 	  const Vec3fa center = center2(prim.bounds());
 	  const ssei bin = ssei(mapping.bin_unsafe(center));
-	  
+
 	  if (bin[dim] < pos) 
 	  {
 	    linfo_o.add(prim.bounds(),center);
