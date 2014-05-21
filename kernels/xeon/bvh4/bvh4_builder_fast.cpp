@@ -366,12 +366,12 @@ namespace embree
     {
       const unsigned int center = (current.begin + current.end)/2;
       
-      Centroid_Scene_AABB left; left.reset();
+      CentGeomBBox3fa left; left.reset();
       for (size_t i=current.begin; i<center; i++)
         left.extend(primref[i].bounds());
       leftChild.init(left,current.begin,center);
       
-      Centroid_Scene_AABB right; right.reset();
+      CentGeomBBox3fa right; right.reset();
       for (size_t i=center; i<current.end; i++)
         right.extend(primref[i].bounds());	
       rightChild.init(right,center,current.end);
@@ -587,9 +587,9 @@ namespace embree
       PrimInfo pinfo(empty);
       if (mesh) TriRefArrayGenFromTriangleMesh::generate_sequential(threadIndex, threadCount, mesh , prims, pinfo);
       else      TriRefArrayGen                ::generate_sequential(threadIndex, threadCount, scene, prims, pinfo);
-      global_bounds.geometry = pinfo.geomBounds;
-      global_bounds.centroid2= pinfo.centBounds;
-      bvh->bounds = global_bounds.geometry;
+      global_bounds.geomBounds = pinfo.geomBounds;
+      global_bounds.centBounds = pinfo.centBounds;
+      bvh->bounds = global_bounds.geomBounds;
 
       /* create initial build record */
       BuildRecord br;
@@ -621,9 +621,9 @@ namespace embree
       PrimInfo pinfo(empty);
       if (mesh) TriRefArrayGenFromTriangleMesh::generate_parallel(threadIndex, threadCount, mesh , prims, pinfo);
       else      TriRefArrayGen                ::generate_parallel(threadIndex, threadCount, scene, prims, pinfo);
-      global_bounds.geometry = pinfo.geomBounds;
-      global_bounds.centroid2= pinfo.centBounds;
-      bvh->bounds = global_bounds.geometry;
+      global_bounds.geomBounds = pinfo.geomBounds;
+      global_bounds.centBounds = pinfo.centBounds;
+      bvh->bounds = global_bounds.geomBounds;
       
       /* initialize node and leaf allocator */
       nodeAllocator.reset();

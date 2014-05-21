@@ -52,10 +52,10 @@ namespace embree
 	  sArea = area(geomBounds);
 	}
 
-	__forceinline void init(const Centroid_Scene_AABB& _bounds, const unsigned int _begin, const unsigned int _end)
+	__forceinline void init(const CentGeomBBox3fa& _bounds, const unsigned int _begin, const unsigned int _end)
 	{
-	  geomBounds = _bounds.geometry;
-	  centBounds = _bounds.centroid2;
+	  geomBounds = _bounds.geomBounds;
+	  centBounds = _bounds.centBounds;
 	  begin  = _begin;
 	  end    = _end;
 	  sArea = area(geomBounds);
@@ -87,7 +87,6 @@ namespace embree
       public:
         __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK> workStack;
         __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* threadStack;
-        //ParallelBinner<16> parallelBinner;    
 	ObjectPartition::ParallelBinner parallelBinner;
         LinearBarrierActive barrier;
       };
@@ -163,7 +162,7 @@ namespace embree
     protected:
       size_t numGroups;
       size_t numPrimitives;
-      Centroid_Scene_AABB global_bounds;
+      CentGeomBBox3fa global_bounds; // FIXME: remove
       
     protected:
       __aligned(64) GlobalAllocator nodeAllocator;
