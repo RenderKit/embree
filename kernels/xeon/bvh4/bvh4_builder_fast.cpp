@@ -607,17 +607,14 @@ namespace embree
 
     void BVH4BuilderFast::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
-      /* wait for all threads to enter */
-      g_state->barrier.wait(threadIndex,threadCount);
-      
-      /* start measurement */
-      double t0 = 0.0f;
-      if (g_verbose >= 2) t0 = getSeconds();
-      
       /* all worker threads enter tasking system */
       if (TaskScheduler::enter(threadIndex,threadCount))
 	return;
-      
+
+      /* start measurement */
+      double t0 = 0.0f;
+      if (g_verbose >= 2) t0 = getSeconds();
+     
       /* calculate list of primrefs */
       PrimInfo pinfo(empty);
       if (mesh) TriRefArrayGenFromTriangleMesh::generate_parallel(threadIndex, threadCount, mesh , prims, pinfo);

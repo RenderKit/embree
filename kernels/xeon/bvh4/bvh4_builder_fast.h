@@ -89,7 +89,6 @@ namespace embree
         }
 
       public:
-	LinearBarrierActive barrier;
 	WorkHeap<BuildRecord> heap;
         __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* threadStack;
 	ObjectPartition::ParallelBinner parallelBinner;

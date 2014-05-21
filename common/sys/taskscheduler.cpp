@@ -189,6 +189,8 @@ namespace embree
 
   bool TaskScheduler::enter(const size_t threadID, const size_t numThreads)
   {
+    syncThreads(threadID, numThreads);
+
     if (threadID == 0) return false;
     while (true) {
       bool dispatch = dispatchTask(threadID,numThreads);
