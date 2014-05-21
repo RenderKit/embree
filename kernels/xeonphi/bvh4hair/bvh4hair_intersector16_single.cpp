@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 //#include "bvh4i_leaf_intersector.h"
+#include "bvh4i/bvh4i_traversal.h"
 #include "bvh4hair_intersector16_single.h"
 #include "geometry/bezier1i.h"
 #include "geometry/bezier1i_intersector16.h"
@@ -119,12 +120,102 @@ namespace embree
     };
 
 
+#if 0
+
     template<typename LeafIntersector>    
-    void BVH4HairIntersector16<LeafIntersector>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    void BVH4HairIntersector16<LeafIntersector>::intersect(mic_i* valid_i, BVH4Hair* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
-      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4i::maxDepth+1];
+
+      LinearSpace_mic3f ray16_space = frame(ray16.dir).transposed();
+
+      /* setup */
+      const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
+      const mic3f rdir16     = rcp_safe(ray16.dir);
+      const mic_f inf        = mic_f(pos_inf);
+      const mic_f zero       = mic_f::zero();
+
+      store16f(stack_dist,inf);
+
+      const void * __restrict__ accel = (void*)bvh->triPtr();
+
+      stack_node[0] = BVH4Hair::invalidNode;
+      long rayIndex = -1;
+      while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
+        {
+	  Bezier1iIntersector16::Precalculations pre(ray16_space,rayIndex);
+	  
+	  stack_node[1] = (size_t)bvh->unaligned_nodes;
+	  size_t sindex = 2;
+
+	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+
+	  const unsigned int leaf_mask = BVH4Hair::leaf_mask;
+
+	  while (1)
+	    {
+
+	      BVH4Hair::NodeRef curNode = stack_node[sindex-1];
+	      sindex--;
+
+#if 0
+	      traverse_single_intersect(curNode,
+					sindex,
+					rdir_xyz,
+					org_rdir_xyz,
+					min_dist_xyz,
+					max_dist_xyz,
+					stack_node,
+					stack_dist,
+					nodes,
+					leaf_mask);
+#endif		   
+
+
+	      /* return if stack is empty */
+	      if (unlikely(curNode == BVH4i::invalidNode)) break;
+
+	      STAT3(normal.trav_leaves,1,1,1);
+	      STAT3(normal.trav_prims,4,4,4);
+
+	      /* intersect one ray against four triangles */
+
+	      //////////////////////////////////////////////////////////////////////////////////////////////////
+	      
+	      BVH4i::NodeRef curNode4i = (unsigned int)curNode;
+	      const bool hit = LeafIntersector::intersect(curNode4i,
+							  rayIndex,
+							  dir_xyz,
+							  org_xyz,
+							  min_dist_xyz,
+							  max_dist_xyz,
+							  ray16,
+							  accel,
+							  (Scene*)bvh->geometry,
+							  pre);
+									   
+	      //if (hit) compactStack(stack_node,stack_dist,sindex,max_dist_xyz);
+
+	      // ------------------------
+	    }	  
+	}
+    }
+
+
+#else
+    template<typename LeafIntersector>    
+    void BVH4HairIntersector16<LeafIntersector>::intersect(mic_i* valid_i, BVH4Hair* bvh, Ray16& ray16)
+    {
+      /* near and node stack */
+      __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) BVH4i::NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       LinearSpace_mic3f ray16_space = frame(ray16.dir).transposed();
       /* setup */
@@ -135,7 +226,7 @@ namespace embree
 
       store16f(stack_dist,inf);
 
-      const Node * __restrict__ nodes = (Node*)bvh->nodePtr();
+      const BVH4i::Node * __restrict__ nodes = (BVH4i::Node*)bvh->nodePtr();
       const void * __restrict__ accel = (void*)bvh->triPtr();
 
       stack_node[0] = BVH4i::invalidNode;
@@ -159,7 +250,7 @@ namespace embree
 	  while (1)
 	    {
 
-	      NodeRef curNode = stack_node[sindex-1];
+	      BVH4i::NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
 
 	      traverse_single_intersect(curNode,
@@ -203,12 +294,13 @@ namespace embree
 	    }	  
 	}
     }
+#endif
     
     template<typename LeafIntersector>    
-    void BVH4HairIntersector16<LeafIntersector>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    void BVH4HairIntersector16<LeafIntersector>::occluded(mic_i* valid_i, BVH4Hair* bvh, Ray16& ray16)
     {
       /* near and node stack */
-      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) BVH4i::NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
       const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
@@ -217,7 +309,7 @@ namespace embree
       const mic_f inf     = mic_f(pos_inf);
       const mic_f zero    = mic_f::zero();
 
-      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const BVH4i::Node * __restrict__ nodes = (BVH4i::Node*)bvh->nodePtr();
       const void * __restrict__ accel = (void*)bvh->triPtr();
 
       stack_node[0] = BVH4i::invalidNode;
@@ -241,7 +333,7 @@ namespace embree
 
 	  while (1)
 	    {
-	      NodeRef curNode = stack_node[sindex-1];
+	      BVH4i::NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
 
 	      traverse_single_occluded(curNode,

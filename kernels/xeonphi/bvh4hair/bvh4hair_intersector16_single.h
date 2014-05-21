@@ -17,7 +17,7 @@
 #pragma once
 
 #include "bvh4i/bvh4i.h"
-#include "bvh4i/bvh4i_traversal.h"
+#include "bvh4hair/bvh4hair.h"
 #include "common/ray16.h" 
 #include "common/accelset.h"
 
@@ -29,14 +29,10 @@ namespace embree
     template<typename LeafIntersector>
     class BVH4HairIntersector16
     {
-      /* shortcuts for frequently used types */
-      //typedef typename BezierCurvesIntersector16::Primitive Primitive;
-      typedef typename BVH4i::NodeRef NodeRef;
-      typedef typename BVH4i::Node Node;
-      
+      /* shortcuts for frequently used types */      
     public:
-      static void intersect(mic_i* valid, BVH4i* bvh, Ray16& ray);
-      static void occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
+      static void intersect(mic_i* valid, BVH4Hair* bvh, Ray16& ray);
+      static void occluded (mic_i* valid, BVH4Hair* bvh, Ray16& ray);
     };
 
     template<typename LeafIntersector>
