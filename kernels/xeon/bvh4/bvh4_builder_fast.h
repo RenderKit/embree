@@ -162,7 +162,6 @@ namespace embree
     protected:
       size_t numGroups;
       size_t numPrimitives;
-      CentGeomBBox3fa global_bounds; // FIXME: remove
       
     protected:
       __aligned(64) GlobalAllocator nodeAllocator;

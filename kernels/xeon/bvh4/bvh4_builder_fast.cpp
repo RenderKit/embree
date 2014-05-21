@@ -587,13 +587,11 @@ namespace embree
       PrimInfo pinfo(empty);
       if (mesh) TriRefArrayGenFromTriangleMesh::generate_sequential(threadIndex, threadCount, mesh , prims, pinfo);
       else      TriRefArrayGen                ::generate_sequential(threadIndex, threadCount, scene, prims, pinfo);
-      global_bounds.geomBounds = pinfo.geomBounds;
-      global_bounds.centBounds = pinfo.centBounds;
-      bvh->bounds = global_bounds.geomBounds;
+      bvh->bounds = pinfo.geomBounds;
 
       /* create initial build record */
       BuildRecord br;
-      br.init(global_bounds,0,numPrimitives);
+      br.init(pinfo,0,numPrimitives);
       br.depth = 1;
       br.parent = &bvh->root;
 
@@ -621,9 +619,7 @@ namespace embree
       PrimInfo pinfo(empty);
       if (mesh) TriRefArrayGenFromTriangleMesh::generate_parallel(threadIndex, threadCount, mesh , prims, pinfo);
       else      TriRefArrayGen                ::generate_parallel(threadIndex, threadCount, scene, prims, pinfo);
-      global_bounds.geomBounds = pinfo.geomBounds;
-      global_bounds.centBounds = pinfo.centBounds;
-      bvh->bounds = global_bounds.geomBounds;
+      bvh->bounds = pinfo.geomBounds;
       
       /* initialize node and leaf allocator */
       nodeAllocator.reset();
@@ -633,7 +629,7 @@ namespace embree
 
       /* create initial build record */
       BuildRecord br;
-      br.init(global_bounds,0,numPrimitives);
+      br.init(pinfo,0,numPrimitives);
       br.depth = 1;
       br.parent = &bvh->root;
       
