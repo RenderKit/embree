@@ -92,6 +92,10 @@ namespace embree
       static std::auto_ptr<GlobalState> g_state;
 
     public:
+
+      typedef void (*createLeafFunction)(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+      
+//      BVH4BuilderFast (BVH4* bvh, Scene* scene, createLeafFunction createSmallLeaf, size_t logBlockSize, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
       
       /*! Constructor. */
       BVH4BuilderFast (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
@@ -128,7 +132,6 @@ namespace embree
       void splitParallel(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t threads);
       
       /*! creates a small leaf node */
-      typedef void (*createLeafFunction)(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
       static void createTriangle1Leaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
       static void createTriangle4Leaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
       static void createTriangle1vLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
@@ -147,12 +150,15 @@ namespace embree
       static bool split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
     
     protected:
-      BuildSource* source;                     //!< input geometry
       Scene* scene;                            //!< input scene
       TriangleMesh* mesh;   //!< input mesh
       BVH4* bvh;                               //!< Output BVH
-      const PrimitiveType& primTy;             //!< triangle type stored in BVH
-      
+      //const PrimitiveType& primTy;             //!< triangle type stored in BVH
+      size_t logBlockSize;
+      size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }
+       bool needVertices;
+	size_t primBytes; 
+
     protected:
       TaskScheduler::Task task;
       
