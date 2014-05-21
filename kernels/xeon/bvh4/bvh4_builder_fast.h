@@ -154,6 +154,8 @@ namespace embree
       size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }
       bool needVertices;
       size_t primBytes; 
+      size_t minLeafSize;
+      size_t maxLeafSize;
 
     protected:
       TaskScheduler::Task task;
@@ -175,10 +177,10 @@ namespace embree
     public:
 
       /*! Constructor for scene builder */
-      BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene);
       
       /*! Constructor for triangle mesh builder */
-      BVH4Triangle1BuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      BVH4Triangle1BuilderFast (BVH4* bvh, TriangleMesh* mesh);
       
       /*! creates a leaf node */
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
@@ -189,10 +191,10 @@ namespace embree
     public:
 
       /*! Constructor for scene builder */
-      BVH4Triangle4BuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      BVH4Triangle4BuilderFast (BVH4* bvh, Scene* scene);
       
       /*! Constructor for triangle mesh builder */
-      BVH4Triangle4BuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      BVH4Triangle4BuilderFast (BVH4* bvh, TriangleMesh* mesh);
       
       /*! creates a leaf node */
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
@@ -203,10 +205,10 @@ namespace embree
     public:
 
       /*! Constructor for scene builder */
-      BVH4Triangle1vBuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      BVH4Triangle1vBuilderFast (BVH4* bvh, Scene* scene);
       
       /*! Constructor for triangle mesh builder */
-      BVH4Triangle1vBuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      BVH4Triangle1vBuilderFast (BVH4* bvh, TriangleMesh* mesh);
       
       /*! creates a leaf node */
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
@@ -217,10 +219,10 @@ namespace embree
     public:
 
       /*! Constructor for scene builder */
-      BVH4Triangle4vBuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      BVH4Triangle4vBuilderFast (BVH4* bvh, Scene* scene);
       
       /*! Constructor for triangle mesh builder */
-      BVH4Triangle4vBuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      BVH4Triangle4vBuilderFast (BVH4* bvh, TriangleMesh* mesh);
       
       /*! creates a leaf node */
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);

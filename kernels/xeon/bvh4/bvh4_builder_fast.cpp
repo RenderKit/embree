@@ -28,7 +28,7 @@
 #include <algorithm>
 
 #define BVH_NODE_PREALLOC_FACTOR 1.0f
-#define QBVH_BUILDER_LEAF_ITEM_THRESHOLD 4
+//#define QBVH_BUILDER_LEAF_ITEM_THRESHOLD 4
 #define THRESHOLD_FOR_SUBTREE_RECURSION 128
 #define BUILD_RECORD_SPLIT_THRESHOLD 512
 
@@ -43,36 +43,36 @@ namespace embree
     std::auto_ptr<BVH4BuilderFast::GlobalState> BVH4BuilderFast::g_state(NULL);
 
     BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-      : scene(scene), mesh(mesh), bvh(bvh), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes)
+      : scene(scene), mesh(mesh), bvh(bvh), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
     {
       needAllThreads = true;
       if (mesh) needAllThreads = mesh->numTriangles > 50000;
     }
 
-    BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
-      : BVH4BuilderFast(bvh,scene,NULL,0,false,sizeof(Triangle1),minLeafSize,maxLeafSize) {}
+    BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene)
+      : BVH4BuilderFast(bvh,scene,NULL,0,false,sizeof(Triangle1),2,inf) {}
 
-    BVH4Triangle4BuilderFast::BVH4Triangle4BuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
-      : BVH4BuilderFast(bvh,scene,NULL,2,false,sizeof(Triangle4),minLeafSize,maxLeafSize) {}
+    BVH4Triangle4BuilderFast::BVH4Triangle4BuilderFast (BVH4* bvh, Scene* scene)
+      : BVH4BuilderFast(bvh,scene,NULL,2,false,sizeof(Triangle4),4,inf) {}
     
-    BVH4Triangle1vBuilderFast::BVH4Triangle1vBuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
-      : BVH4BuilderFast(bvh,scene,NULL,0,false,sizeof(Triangle1v),minLeafSize,maxLeafSize) {}
+    BVH4Triangle1vBuilderFast::BVH4Triangle1vBuilderFast (BVH4* bvh, Scene* scene)
+      : BVH4BuilderFast(bvh,scene,NULL,0,false,sizeof(Triangle1v),2,inf) {}
 
-    BVH4Triangle4vBuilderFast::BVH4Triangle4vBuilderFast (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
-      : BVH4BuilderFast(bvh,scene,NULL,2,false,sizeof(Triangle4v),minLeafSize,maxLeafSize) {}
+    BVH4Triangle4vBuilderFast::BVH4Triangle4vBuilderFast (BVH4* bvh, Scene* scene)
+      : BVH4BuilderFast(bvh,scene,NULL,2,false,sizeof(Triangle4v),4,inf) {}
 
 
-    BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1),minLeafSize,maxLeafSize) {}
+    BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1),2,inf) {}
 
-    BVH4Triangle4BuilderFast::BVH4Triangle4BuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4),minLeafSize,maxLeafSize) {}
+    BVH4Triangle4BuilderFast::BVH4Triangle4BuilderFast (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4),4,inf) {}
     
-    BVH4Triangle1vBuilderFast::BVH4Triangle1vBuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1v),minLeafSize,maxLeafSize) {}
+    BVH4Triangle1vBuilderFast::BVH4Triangle1vBuilderFast (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1v),2,inf) {}
 
-    BVH4Triangle4vBuilderFast::BVH4Triangle4vBuilderFast (BVH4* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4v),minLeafSize,maxLeafSize) {}
+    BVH4Triangle4vBuilderFast::BVH4Triangle4vBuilderFast (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4v),4,inf) {}
         
 
     BVH4BuilderFast::~BVH4BuilderFast () 
@@ -161,7 +161,7 @@ namespace embree
     
     void BVH4BuilderFast::init(size_t threadIndex, size_t threadCount)
     {
-      bvh->init(0); // FIXME
+      bvh->init(0);
       
       /* calculate size of scene */
       size_t numVertices = 0;
@@ -421,13 +421,11 @@ namespace embree
     
     void BVH4BuilderFast::createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadIndex, size_t threadCount)
     {
-#if defined(DEBUG)
       if (current.depth > BVH4::maxBuildDepthLeaf) 
-        throw std::runtime_error("ERROR: depth limit reached");
-#endif
+        throw std::runtime_error("depth limit reached");
       
       /* create leaf for few primitives */
-      if (current.size() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
+      if (current.size() <= minLeafSize) {
         createSmallLeaf(this,current,leafAlloc,threadIndex);
         return;
       }
@@ -459,8 +457,7 @@ namespace embree
     __forceinline void BVH4BuilderFast::recurse_continue(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads)
     {
       if (mode == BUILD_TOP_LEVEL) {
-        //g_state->workStack.push_nolock(current);
-	g_state->heap.push(current);
+      	g_state->heap.push(current);
       }
       else if (mode == RECURSE_PARALLEL && current.size() > THRESHOLD_FOR_SUBTREE_RECURSION) {
         if (!g_state->threadStack[threadID].push(current))
@@ -475,7 +472,7 @@ namespace embree
       __aligned(64) BuildRecord children[BVH4::N];
       
       /* create leaf node */
-      if (current.depth >= BVH4::maxBuildDepth || current.size() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD) {
+      if (current.depth >= BVH4::maxBuildDepth || current.size() <= minLeafSize) {
         assert(mode != BUILD_TOP_LEVEL);
         createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
         return;
@@ -493,7 +490,7 @@ namespace embree
         for (unsigned int i=0; i<numChildren; i++)
         {
           /* ignore leaves as they cannot get split */
-          if (children[i].size() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD)
+          if (children[i].size() <= minLeafSize)
             continue;
           
           /* remember child with largest area */
@@ -551,7 +548,6 @@ namespace embree
       {
 	BuildRecord br;
 	if (!g_state->heap.pop(br))
-	  //if (!g_state->workStack.pop_largest(br)) // FIXME: might loose threads during build
         {
           /* global work queue empty => try to steal from neighboring queues */	  
           bool success = false;
@@ -568,7 +564,6 @@ namespace embree
         
         /* process local work queue */
 	recurse(br,nodeAlloc,leafAlloc,RECURSE_PARALLEL,threadID,numThreads);
-        //while (g_state->threadStack[threadID].pop_largest(br))
 	while (g_state->threadStack[threadID].pop(br))
           recurse(br,nodeAlloc,leafAlloc,RECURSE_PARALLEL,threadID,numThreads);
       }
@@ -654,7 +649,7 @@ namespace embree
           break;
         
         /* guarantees to create no leaves in this stage */
-        if (br.size() <= QBVH_BUILDER_LEAF_ITEM_THRESHOLD)
+        if (br.size() <= minLeafSize)
           break;
 
         recurse(br,nodeAlloc,leafAlloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
