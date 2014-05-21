@@ -20,6 +20,7 @@
 #include "../bvh4i/bvh4i_builder_util.h"
 #include "../bvh4i/bvh4i_builder_binner.h"
 #include "../bvh4hair/heuristic_object_partition.h"
+#include "builders/workstack.h"
 
 namespace embree
 {
@@ -78,46 +79,20 @@ namespace embree
       struct GlobalState
       {
         ALIGNED_CLASS;
-
       public:
 
-        GlobalState (size_t numThreads) {
-          threadStack = new WorkStack<BuildRecord,SIZE_WORK_STACK>[numThreads];
-	  workStack.reserve(SIZE_WORK_STACK);
-	  mutex.reset();
-        }
+        GlobalState (size_t numThreads) 
+	  : threadStack(new WorkStack<BuildRecord,SIZE_WORK_STACK>[numThreads]) {}
         
         ~GlobalState () {
           delete[] threadStack;
         }
 
-	void push(BuildRecord& br)
-	{
-	  workStack.push_back(br);
-	  push_heap(workStack.begin(),workStack.end());
-	}
-
-	bool pop_largest(BuildRecord& br)
-	{
-	  mutex.lock();
-	  if  (workStack.size() == 0) {
-	    mutex.unlock();
-	    return false;
-	  }
-	  br = workStack.front();
-	  pop_heap(workStack.begin(),workStack.end());
-	  workStack.pop_back();
-	  mutex.unlock();
-	  return true;
-	}
-
       public:
-        //__aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK> workStack;
-	std::vector<BuildRecord> workStack;
+	LinearBarrierActive barrier;
+	WorkHeap<BuildRecord> heap;
         __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* threadStack;
 	ObjectPartition::ParallelBinner parallelBinner;
-        LinearBarrierActive barrier;
-	AlignedAtomicMutex __aligned(64) mutex;
       };
 
       static std::auto_ptr<GlobalState> g_state;

@@ -460,7 +460,7 @@ namespace embree
     {
       if (mode == BUILD_TOP_LEVEL) {
         //g_state->workStack.push_nolock(current);
-	g_state->push(current);
+	g_state->heap.push(current);
       }
       else if (mode == RECURSE_PARALLEL && current.size() > THRESHOLD_FOR_SUBTREE_RECURSION) {
         if (!g_state->threadStack[threadID].push(current))
@@ -550,7 +550,7 @@ namespace embree
       while (true) 
       {
 	BuildRecord br;
-	if (!g_state->pop_largest(br))
+	if (!g_state->heap.pop(br))
 	  //if (!g_state->workStack.pop_largest(br)) // FIXME: might loose threads during build
         {
           /* global work queue empty => try to steal from neighboring queues */	  
@@ -642,18 +642,18 @@ namespace embree
       
       /* push initial build record to global work stack */
       //g_state->workStack.reset();
-      g_state->workStack.clear();
+      g_state->heap.reset();
       //g_state->workStack.push_nolock(br);    
-      g_state->push(br);
+      g_state->heap.push(br);
 
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (g_state->workStack.size() < 4*threadCount && g_state->workStack.size()+BVH4::N <= SIZE_WORK_STACK) 
+      while (g_state->heap.size() < 4*threadCount && g_state->heap.size()+BVH4::N <= SIZE_WORK_STACK) 
       {
         BuildRecord br;
 
         /* pop largest item for better load balancing */
         //if (!g_state->workStack.pop_nolock_largest(br)) 
-	if (!g_state->pop_largest(br)) 
+	if (!g_state->heap.pop(br)) 
           break;
         
         /* guarantees to create no leaves in this stage */
@@ -664,7 +664,7 @@ namespace embree
       }
 
       /* sort subtasks by size */
-      std::sort(g_state->workStack.begin(),g_state->workStack.end(),BuildRecord::Greater());
+      std::sort(g_state->heap.begin(),g_state->heap.end(),BuildRecord::Greater());
       
       /* now process all created subtasks on multiple threads */
       TaskScheduler::dispatchTask(_buildSubTrees, this, threadIndex, threadCount );
