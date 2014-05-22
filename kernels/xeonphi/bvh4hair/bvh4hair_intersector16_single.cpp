@@ -127,9 +127,12 @@ namespace embree
       const mic_f x = ldot3_xyz(v,node.matrixColumnXYZW[0]);
       const mic_f y = ldot3_xyz(v,node.matrixColumnXYZW[1]);
       const mic_f z = ldot3_xyz(v,node.matrixColumnXYZW[2]);
-      const mic_f ret = select(0x8888,mic_f::zero(),select(0x4444,z,select(0x2222,y,x)));
+      //const mic_f ret = select(0x8888,mic_f::zero(),select(0x4444,z,select(0x2222,y,x)));
+      const mic_f ret = select(0x4444,z,select(0x2222,y,x));
       return ret;
     }
+
+    static unsigned int BVH4HAIR_LEAF_MASK = BVH4Hair::leaf_mask; // needed due to compiler efficiency bug
 
 #if 0
 
@@ -168,7 +171,7 @@ namespace embree
 
 	  const mic_f org_xyz1     = select(0x7777,org_xyz,mic_f::one());
 
-	  const size_t leaf_mask = BVH4Hair::leaf_mask;
+	  const size_t leaf_mask = BVH4HAIR_LEAF_MASK;
 
 	  while (1)
 	    {
@@ -197,14 +200,15 @@ namespace embree
 		  
 		  const mic_f rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz );
 		  		  
-		  mic_f tLowerXYZ = (mic_f::zero() - xfm_org_xyz) * rcp_xfm_dir_xyz;
-		  mic_f tUpperXYZ = (mic_f::one()  - xfm_org_xyz) * rcp_xfm_dir_xyz;
+		  const mic_f tLowerXYZ = (mic_f::zero() - xfm_org_xyz) * rcp_xfm_dir_xyz;
+		  const mic_f tUpperXYZ = (mic_f::one()  - xfm_org_xyz) * rcp_xfm_dir_xyz;
 
 		    
 		  mic_m hitm = eq(0x1111, xfm_org_xyz,xfm_org_xyz);
 
 		  const mic_f tLower = select(m7777,min(tLowerXYZ,tUpperXYZ),min_dist_xyz);
 		  const mic_f tUpper = select(m7777,max(tLowerXYZ,tUpperXYZ),max_dist_xyz);
+
 
 
 		  /* early pop of next node */
@@ -291,8 +295,6 @@ namespace embree
 
 
 		  const mic_f min_dist = set_min_lanes(tNear_pos);
-		  //const unsigned int old_sindex = sindex;
-		  //sindex += countbits(hiti) - 1;
 		  assert(sindex < 3*BVH4i::maxDepth+1);
         
 		  const mic_m closest_child = eq(hitm,min_dist,tNear);
@@ -311,12 +313,6 @@ namespace embree
 		      sindex++;
 		    }
 		}
-
-
-
-
-
-
 
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH4Hair::invalidNode)) break;
@@ -340,7 +336,21 @@ namespace embree
 							  (Scene*)bvh->geometry,
 							  pre);
 									   
-	      //if (hit) compactStack(stack_node,stack_dist,sindex,max_dist_xyz);
+	      if (hit) 
+		{
+		  //compactStack(stack_node,stack_dist,sindex,max_dist_xyz);
+
+		  const unsigned int current_dist = *(unsigned int*)&ray16.tfar[rayIndex];
+		  size_t new_sindex = 1;
+		  for (size_t s=1;s<sindex;s++)
+		    if (*(unsigned int*)&stack_dist[s] <= current_dist)
+		      {
+			stack_dist[new_sindex] = stack_dist[s];
+			stack_node[new_sindex] = stack_node[s];
+			new_sindex++;
+		      }
+		  sindex = new_sindex;
+		}
 
 	      // ------------------------
 	    }	  

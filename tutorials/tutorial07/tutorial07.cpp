@@ -427,7 +427,7 @@ float noise(float x, float y, float z)
     const float thickness = 0.01f*r;
     OBJScene::HairSet* hairset = new OBJScene::HairSet;
     srand48(123456789);
-    for (size_t t=0; t<8; t++) 
+    for (size_t t=0; t<128; t++) 
       {
 	Vec3fa dp = uniformSampleSphere(drand48(),drand48());
 

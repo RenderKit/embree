@@ -70,7 +70,7 @@ namespace embree
       __forceinline size_t isNode() const { return (_id & leaf_mask) == 0; }
       
       /*! returns node pointer */
-      __forceinline       void* node() const      { assert(isNode()); return (void*)((size_t)_id & offset_mask); }
+      __forceinline       void* node() const      { assert(isNode()); return (void*)((size_t)_id); }
 
       __forceinline       void* ptr() const      { return (void*)_id; }
 
