@@ -134,7 +134,7 @@ namespace embree
 	void merge (const BinInfo& other);
 	
 	/*! finds the best split by scanning binning information */
-	Split best(const PrimInfo& pinfo, const Mapping& mapping, const size_t logBlockSize);
+	Split best(const PrimInfo& pinfo, const Mapping& mapping, TriRefList* prims, Scene* scene, const size_t logBlockSize);
 	
       private:
 	BBox3fa bounds[BINS][4];  //!< geometry bounds for each bin in each dimension

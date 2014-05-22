@@ -49,10 +49,10 @@ namespace embree
       TriRefList prims; PrimInfo pinfo(empty);
       TriRefListGen::generate(threadIndex,threadCount,&alloc,(Scene*)geometry,prims,pinfo);
       
-      const Split split = find(threadIndex,threadCount,prims,pinfo); // FIXME: enable parallel
+      const Split split = find(threadIndex,threadCount,1,prims,pinfo); // FIXME: enable parallel
       tasks.push_back(SplitTask(threadIndex,threadCount,this,bvh->root,1,prims,pinfo,split));
 
-#if 1
+#if 0
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
       while (tasks.size() < threadCount)
       {
@@ -146,12 +146,12 @@ namespace embree
 				      NodeRef& node, size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split)
     {
       /* use full single threaded build for small jobs */
-      if (pinfo.size() < 4*1024) 
+      //if (pinfo.size() < 4*1024) 
 	new BuildTask(threadIndex,threadCount,event,this,node,depth,prims,pinfo,split);
       
       /* use single threaded split for medium size jobs  */
-      else
-	new SplitTask(threadIndex,threadCount,event,this,node,depth,prims,pinfo,split);
+      //else
+	//new SplitTask(threadIndex,threadCount,event,this,node,depth,prims,pinfo,split);
     }
 
     void BVH4Builder2::buildFunction(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
@@ -230,10 +230,9 @@ namespace embree
       delete this;
     }
 
-    const Split BVH4Builder2::find(size_t threadIndex, size_t threadCount, TriRefList& prims, const PrimInfo& pinfo)
+    const Split BVH4Builder2::find(size_t threadIndex, size_t threadCount, size_t depth, TriRefList& prims, const PrimInfo& pinfo)
     {
       ObjectPartition::Split osplit = ObjectPartition::find<false>(threadIndex,threadCount,      prims,pinfo,2); // FIXME: hardcoded constant
-      //return osplit;
       SpatialSplit   ::Split ssplit = SpatialSplit   ::find<false>(threadIndex,threadCount,(Scene*)geometry,prims,pinfo,2); // FIXME: hardcoded constant
       const float bestSAH = min(osplit.sah,ssplit.sah);
       if      (bestSAH == osplit.sah) return osplit; 
@@ -279,10 +278,8 @@ namespace embree
 	PrimInfo linfo(empty),rinfo(empty);
 	TriRefList lprims,rprims;
 	csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,(Scene*)parent->geometry,cprims[bestChild],lprims,linfo,rprims,rinfo);
-	//const Split lsplit = ObjectPartition::find<false>(threadIndex,threadCount,lprims,linfo,2);
-	//const Split rsplit = ObjectPartition::find<false>(threadIndex,threadCount,rprims,rinfo,2);
-	const Split lsplit = parent->find(threadIndex,threadCount,lprims,linfo);
-	const Split rsplit = parent->find(threadIndex,threadCount,rprims,rinfo);
+	const Split lsplit = parent->find(threadIndex,threadCount,depth,lprims,linfo);
+	const Split rsplit = parent->find(threadIndex,threadCount,depth,rprims,rinfo);
 	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
 	cprims[numChildren] = rprims; cinfo[numChildren] = rinfo; csplit[numChildren] = rsplit;
 	numChildren++;
@@ -355,10 +352,8 @@ namespace embree
 	PrimInfo linfo(empty), rinfo(empty);
 	TriRefList lprims,rprims;
 	csplit[bestChild].split<PARALLEL>(threadIndex,threadCount,parent->alloc,(Scene*)parent->geometry,cprims[bestChild],lprims,linfo,rprims,rinfo);
-	//const Split lsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,lprims,linfo,2);
-	//const Split rsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,rprims,rinfo,2);
-	const Split lsplit = parent->find(threadIndex,threadCount,lprims,linfo); // FIXME: not in parallel mode
-	const Split rsplit = parent->find(threadIndex,threadCount,rprims,rinfo);
+	const Split lsplit = parent->find(threadIndex,threadCount,depth,lprims,linfo); // FIXME: not in parallel mode
+	const Split rsplit = parent->find(threadIndex,threadCount,depth,rprims,rinfo);
 	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
 	cprims[numChildren] = rprims; cinfo[numChildren] = rinfo; csplit[numChildren] = rsplit;
 	numChildren++;

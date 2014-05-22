@@ -139,7 +139,7 @@ namespace embree
       }
     }
     
-    __forceinline SpatialSplit::Split SpatialSplit::BinInfo::best(const PrimInfo& pinfo, const Mapping& mapping, const size_t blocks_shift)
+    __forceinline SpatialSplit::Split SpatialSplit::BinInfo::best(const PrimInfo& pinfo, const Mapping& mapping, TriRefList* prims, Scene* scene, const size_t blocks_shift)
     {
       /* sweep from right to left and compute parallel prefix of merged bounds */
       ssef rAreas[BINS];
@@ -198,15 +198,70 @@ namespace embree
       /* compute bounds of left and right side */
       size_t lnum = 0, rnum = 0; // FIXME: this is not required
       BBox3fa lbounds = empty, rbounds = empty;
+
+#if 1
       for (size_t i=0; i<bestPos; i++)    { lnum+=numBegin[i][bestDim]; lbounds.extend(bounds[i][bestDim]); }
       for (size_t i=bestPos; i<BINS; i++) { rnum+=numEnd  [i][bestDim]; rbounds.extend(bounds[i][bestDim]); }
+
+#else
+      /* sort each primitive to left, right, or left and right */
+      for (TriRefList::block_iterator_unsafe i = *prims; i; i++) 
+      {
+	const PrimRef& prim = *i; 
+	const BBox3fa bounds = prim.bounds();
+	const int bin0 = mapping.bin(bounds.lower)[bestDim];
+	const int bin1 = mapping.bin(bounds.upper)[bestDim];
+
+	/* sort to the left side */
+	if (bin1 < bestPos)
+	{
+	  lnum++;
+	  lbounds.extend(bounds);
+	  continue;
+	}
+	  
+	/* sort to the right side */
+	if (bin0 >= bestPos)
+	{
+	  rnum++;
+	  rbounds.extend(bounds);
+	  continue;
+	}
+	  
+	/* split and sort to left and right */
+	TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
+	TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
+	const Vec3fa v0 = mesh->vertex(tri.v[0]);
+	const Vec3fa v1 = mesh->vertex(tri.v[1]);
+	const Vec3fa v2 = mesh->vertex(tri.v[2]);
+	  
+	PrimRef left,right;
+	float fpos = mapping.pos(bestPos,bestDim);
+	splitTriangle(prim,bestDim,fpos,v0,v1,v2,left,right);
+	
+	if (!left.bounds().empty()) {
+	  lnum++;
+	  lbounds.extend(left.bounds());
+	}
+	
+	if (!right.bounds().empty()) {
+	  rnum++;
+	  rbounds.extend(right.bounds());
+	}
+      }
+#endif
       
       /* return invalid split if no progress made */
       if (lnum == 0 || rnum == 0) 
 	return Split(inf,-1,0,mapping,lnum,rnum);
       
       /* return best found split */
-      return Split(bestSAH,bestDim,bestPos,mapping,lnum,rnum);
+      int blocks_add1 = (1 << blocks_shift)-1;
+      int bl = (lnum+blocks_add1) >> blocks_shift;
+      int br = (rnum+blocks_add1) >> blocks_shift;
+      float sah = bl*halfArea(lbounds) + br*halfArea(rbounds);
+      return Split(sah,bestDim,bestPos,mapping,lnum,rnum);
+      //return Split(bestSAH,bestDim,bestPos,mapping,lnum,rnum);
     }
     
     template<>
@@ -215,7 +270,7 @@ namespace embree
       BinInfo binner;
       Mapping mapping(pinfo);
       binner.bin(scene,prims,pinfo,mapping);
-      return binner.best(pinfo,mapping,logBlockSize);
+      return binner.best(pinfo,mapping,NULL,scene,logBlockSize);
     }
 
     template<>
@@ -224,7 +279,7 @@ namespace embree
       BinInfo binner;
       Mapping mapping(pinfo);
       binner.bin(scene,prims,pinfo,mapping);
-      return binner.best(pinfo,mapping,logBlockSize);
+      return binner.best(pinfo,mapping,&prims,scene,logBlockSize);
     }
     
     //////////////////////////////////////////////////////////////////////////////
@@ -245,7 +300,7 @@ namespace embree
 	bins.merge(binners[i]);
       
       /* calculation of best split */
-      split = bins.best(pinfo,mapping,logBlockSize);
+      split = bins.best(pinfo,mapping,NULL,scene,logBlockSize);
     }
     
     template<typename List>
@@ -352,6 +407,10 @@ namespace embree
 					   TriRefList& lprims_o, PrimInfo& linfo_o, 
 					   TriRefList& rprims_o, PrimInfo& rinfo_o) const
     {
+      PrimInfo pinfo; pinfo.reset(); // FIXME: remove
+      for (TriRefList::block_iterator_unsafe i = prims; i; i++) 
+	pinfo.add(i->bounds(),center2(i->bounds()));
+
       /* sort each trianlge to left, right, or left and right */
       TriRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
       TriRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
@@ -396,10 +455,11 @@ namespace embree
 	  const Vec3fa v2 = mesh->vertex(tri.v[2]);
 	  
 	  PrimRef left,right;
-	  splitTriangle(prim,dim,pos,v0,v1,v2,left,right);
+	  float fpos = mapping.pos(pos,dim);
+	  splitTriangle(prim,dim,fpos,v0,v1,v2,left,right);
 	
 	  if (!left.bounds().empty()) {
-	    linfo_o.add(bounds,center2(bounds));
+	    linfo_o.add(left.bounds(),center2(left.bounds()));
 	    if (!lblock->insert(left)) {
 	      lblock = lprims_o.insert(alloc.malloc(threadIndex));
 	      lblock->insert(left);
@@ -407,7 +467,7 @@ namespace embree
 	  }
 	  
 	  if (!right.bounds().empty()) {
-	    rinfo_o.add(bounds,center2(bounds));
+	    rinfo_o.add(right.bounds(),center2(right.bounds()));
 	    if (!rblock->insert(right)) {
 	      rblock = rprims_o.insert(alloc.malloc(threadIndex));
 	      rblock->insert(right);
@@ -416,8 +476,19 @@ namespace embree
 	}
 	alloc.free(threadIndex,block);
       }
+      //if (!subset(linfo_o.geomBounds,pinfo.geomBounds)) PRINT2(pinfo,linfo_o);
+      //if (!subset(rinfo_o.geomBounds,pinfo.geomBounds)) PRINT2(pinfo,rinfo_o);
+      //PRINT(area(linfo_o.geomBounds));
+      //PRINT(area(rinfo_o.geomBounds));
       /*assert(lnum == linfo_o.size()); 
 	assert(rnum == rinfo_o.size());*/
+      if (lnum != linfo_o.size()) PRINT2(lnum,linfo_o.size());
+      if (rnum != rinfo_o.size()) PRINT2(rnum,rinfo_o.size());
+
+      /*static int count = 0;
+      PRINT(lnum+rnum-pinfo.size());
+      count += lnum+rnum-pinfo.size();
+      PRINT(count);*/
     }
     
     template<typename Prim>
