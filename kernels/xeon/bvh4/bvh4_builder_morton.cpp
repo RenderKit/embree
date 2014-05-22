@@ -26,8 +26,6 @@
 
 #include "sys/tasklogger.h"
 
-#define BVH_NODE_PREALLOC_FACTOR 1.1f
-
 #define DBG(x) 
 
 //#define PROFILE
@@ -88,8 +86,8 @@ namespace embree
       if (morton) os_free(morton,bytesMorton);
       nodeAllocator.shrink(); 
       primAllocator.shrink();
-      bvh->bytesNodes = nodeAllocator.bytesReserved;
-      bvh->bytesPrimitives = primAllocator.bytesReserved;
+      bvh->bytesNodes = nodeAllocator.bytesAllocated;
+      bvh->bytesPrimitives = primAllocator.bytesAllocated;
     }
     
     void BVH4BuilderMorton::build(size_t threadIndex, size_t threadCount) 
@@ -148,7 +146,7 @@ namespace embree
     
     void BVH4BuilderMorton::init(size_t threadIndex, size_t threadCount)
     {
-      bvh->init(numPrimitives);
+      //bvh->init(numPrimitives);
       
       /* calculate size of scene */
       size_t numVertices = 0;
@@ -173,7 +171,9 @@ namespace embree
       bvh->numPrimitives = numPrimitives;
       //if (needVertices) bvh->numVertices = numVertices;
       //else bvh->numVertices = 0;
-      
+
+      bvh->init(numPrimitives);
+            
       size_t maxPrimsPerGroup = 0;
       if (mesh) 
         maxPrimsPerGroup = numPrimitives;
@@ -522,8 +522,10 @@ namespace embree
     
     void BVH4BuilderMorton::recurseSubMortonTrees(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
-      __aligned(64) Allocator nodeAlloc(nodeAllocator);
-      __aligned(64) Allocator leafAlloc(primAllocator);
+      //__aligned(64) Allocator nodeAlloc(nodeAllocator);
+      //__aligned(64) Allocator leafAlloc(primAllocator);
+      __aligned(64) Allocator nodeAlloc(bvh->alloc.ptr);
+      __aligned(64) Allocator leafAlloc(bvh->alloc.ptr);
       while (true)
       {
         const unsigned int taskID = atomic_add(&g_state->taskCounter,1);
@@ -1043,10 +1045,13 @@ namespace embree
       br.depth = 1;
       
       /* perform first splits in single threaded mode */
-      nodeAllocator.reset();
-      primAllocator.reset();
-      __aligned(64) Allocator nodeAlloc(nodeAllocator);
-      __aligned(64) Allocator leafAlloc(primAllocator);
+      bvh->alloc->clear();
+      //nodeAllocator.reset();
+      //primAllocator.reset();
+      //__aligned(64) Allocator nodeAlloc(nodeAllocator);
+      //__aligned(64) Allocator leafAlloc(primAllocator);
+      __aligned(64) Allocator nodeAlloc(bvh->alloc.ptr);
+      __aligned(64) Allocator leafAlloc(bvh->alloc.ptr);
       recurse(br,nodeAlloc,leafAlloc,RECURSE,threadIndex);	    
             
       /* stop measurement */
@@ -1099,10 +1104,13 @@ namespace embree
       br.depth = 1;
       
       /* perform first splits in single threaded mode */
-      nodeAllocator.reset();
-      primAllocator.reset();
-      __aligned(64) Allocator nodeAlloc(nodeAllocator);
-      __aligned(64) Allocator leafAlloc(primAllocator);
+      bvh->alloc->clear();
+      //nodeAllocator.reset();
+      //primAllocator.reset();
+      //__aligned(64) Allocator nodeAlloc(nodeAllocator);
+      //__aligned(64) Allocator leafAlloc(primAllocator);
+      __aligned(64) Allocator nodeAlloc(bvh->alloc.ptr);
+      __aligned(64) Allocator leafAlloc(bvh->alloc.ptr);
       recurse(br,nodeAlloc,leafAlloc,CREATE_TOP_LEVEL,threadIndex);	    
 
       /* sort all subtasks by size */
