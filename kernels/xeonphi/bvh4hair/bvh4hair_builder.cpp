@@ -40,6 +40,109 @@ namespace embree
     return numCurves;	
   }
 
+  void BVH4HairBuilder::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
+  {
+    DBG(PING);
+    size_t numPrimitivesOld = numPrimitives;
+    numPrimitives = totalNumPrimitives;
+
+    if (numPrimitivesOld != numPrimitives)
+      {
+	const size_t numPrims = numPrimitives+4;
+	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
+	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4Hair::UnalignedNode),sizeof(Bezier1i));
+      }
+  }
+
+  void BVH4HairBuilder::computePrimRefs(const size_t threadIndex, const size_t threadCount)
+  {
+    DBG(PING);
+    LockStepTaskScheduler::dispatchTask( task_computePrimRefsBezierCurves, this, threadIndex, threadCount );	
+  }
+
+  void BVH4HairBuilder::computePrimRefsBezierCurves(const size_t threadID, const size_t numThreads) 
+  {
+    DBG(PING);
+
+    const size_t numTotalGroups = scene->size();
+
+    /* count total number of virtual objects */
+    const size_t numBezierCurves = numPrimitives;
+    const size_t startID   = (threadID+0)*numBezierCurves/numThreads;
+    const size_t endID     = (threadID+1)*numBezierCurves/numThreads; 
+
+    DBG(
+	DBG_PRINT(numTotalGroups);
+	DBG_PRINT(numBezierCurves);
+	DBG_PRINT(startID);
+	DBG_PRINT(endID);
+	);
+    
+    Bezier1i *__restrict__ const bptr     = (Bezier1i*)this->prims;
+
+    // === find first group containing startID ===
+    unsigned int g=0, numSkipped = 0;
+    for (; g<numTotalGroups; g++) {       
+      if (unlikely(scene->get(g) == NULL)) continue;
+      if (unlikely((scene->get(g)->type != BEZIER_CURVES))) continue;
+      if (unlikely(!scene->get(g)->isEnabled())) continue;
+      BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(g);
+      const size_t numPrims = geom->numCurves;
+      if (numSkipped + numPrims > startID) break;
+      numSkipped += numPrims;
+    }
+
+    /* start with first group containing startID */
+    mic_f bounds_scene_min((float)pos_inf);
+    mic_f bounds_scene_max((float)neg_inf);
+    mic_f bounds_centroid_min((float)pos_inf);
+    mic_f bounds_centroid_max((float)neg_inf);
+
+    unsigned int num = 0;
+    unsigned int currentID = startID;
+    unsigned int offset = startID - numSkipped;
+
+    for (; g<numTotalGroups; g++) 
+      {
+	if (unlikely(scene->get(g) == NULL)) continue;
+	if (unlikely((scene->get(g)->type != BEZIER_CURVES))) continue;
+	if (unlikely(!scene->get(g)->isEnabled())) continue;
+
+	BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(g);
+
+        size_t N = geom->numCurves;
+        for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
+        { 			    
+	  const mic2f b2 = geom->bounds_mic2f(i);
+	  const mic_f bmin = b2.x;
+	  const mic_f bmax = b2.y;
+          
+          bounds_scene_min = min(bounds_scene_min,bmin);
+          bounds_scene_max = max(bounds_scene_max,bmax);
+          const mic_f centroid2 = bmin+bmax;
+          bounds_centroid_min = min(bounds_centroid_min,centroid2);
+          bounds_centroid_max = max(bounds_centroid_max,centroid2);
+
+	  bptr[currentID].p = geom->fristVertexPtr(i);
+          bptr[currentID].geomID = g;
+          bptr[currentID].primID = i;
+        }
+        if (currentID == endID) break;
+        offset = 0;
+      }
+
+    /* update global bounds */
+    Centroid_Scene_AABB bounds;
+    
+    store4f(&bounds.centroid2.lower,bounds_centroid_min);
+    store4f(&bounds.centroid2.upper,bounds_centroid_max);
+    store4f(&bounds.geometry.lower,bounds_scene_min);
+    store4f(&bounds.geometry.upper,bounds_scene_max);
+
+    global_bounds.extend_atomic(bounds);    
+  }
+
   // ==========================================================================================
   // ==========================================================================================
   // ==========================================================================================
@@ -132,10 +235,13 @@ namespace embree
         size_t N = geom->numCurves;
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
         { 			    
-          const BBox3fa bounds = geom->bounds(i);
-          const mic_f bmin = broadcast4to16f(&bounds.lower); 
-          const mic_f bmax = broadcast4to16f(&bounds.upper);
-          
+          //const BBox3fa bounds = geom->bounds(i);
+          //const mic_f bmin = broadcast4to16f(&bounds.lower); 
+          //const mic_f bmax = broadcast4to16f(&bounds.upper);
+	  const mic2f b2 = geom->bounds_mic2f(i);
+	  const mic_f bmin = b2.x;
+	  const mic_f bmax = b2.y;
+
           bounds_scene_min = min(bounds_scene_min,bmin);
           bounds_scene_max = max(bounds_scene_max,bmax);
           const mic_f centroid2 = bmin+bmax;

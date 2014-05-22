@@ -59,11 +59,14 @@ namespace embree
       }
 
     virtual size_t getNumPrimitives();
-    virtual void printBuilderName();
+    virtual void   printBuilderName();
+    virtual void   allocateData(const size_t threadCount, const size_t newNumPrimitives);
+    virtual void   computePrimRefs(const size_t threadIndex, const size_t threadCount);
+
     //virtual void build(size_t threadIndex, size_t threadCount);
 
   protected:
-    //TASK_FUNCTION(BVH4HairBuilder,computePrimRefsBezierCurves);
+    TASK_FUNCTION(BVH4HairBuilder,computePrimRefsBezierCurves);
     //TASK_FUNCTION(BVH4HairBuilder,createBezierCurvesAccel);    
   };
 

@@ -202,8 +202,6 @@ namespace embree
     DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
-    DBG(DBG_PRINT(numPrimitives));
-
 
     if (numPrimitivesOld != numPrimitives)
       {
