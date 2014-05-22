@@ -49,7 +49,7 @@ namespace embree
 
     public:
   
-      class __aligned(16) SmallBuildRecord 
+      class __aligned(16) BuildRecord 
       {
       public:
         unsigned int begin;
@@ -69,27 +69,28 @@ namespace embree
           parent = NULL;
         }
         
-        __forceinline bool operator<(const SmallBuildRecord& br) const { return size() < br.size(); } 
-        __forceinline bool operator>(const SmallBuildRecord& br) const { return size() > br.size(); } 
+        __forceinline bool operator<(const BuildRecord& br) const { return size() < br.size(); } 
+        __forceinline bool operator>(const BuildRecord& br) const { return size() > br.size(); } 
       };
 
       struct __aligned(8) MortonID32Bit
       {
         union {
           struct {
-            unsigned int code;
-            unsigned int index;
+	    unsigned int code;
+	    unsigned int index;
+	    //uint64 index;
           };
-          int64 all;
+          //int64 all;
         };
         
         __forceinline unsigned int get(const unsigned int shift, const unsigned and_mask) const {
           return (code >> shift) & and_mask;
         }
         
-        __forceinline void operator=(const MortonID32Bit& v) {   
+        /*__forceinline void operator=(const MortonID32Bit& v) {   
           all = v.all; 
-        };  
+	  };*/  
         
         __forceinline friend std::ostream &operator<<(std::ostream &o, const MortonID32Bit& mc) {
           o << "index " << mc.index << " code = " << mc.code;
@@ -130,8 +131,8 @@ namespace embree
         ThreadRadixCountTy* radixCount;
         
         size_t numBuildRecords;
-        __aligned(64) SmallBuildRecord buildRecords[NUM_TOP_LEVEL_BINS];
-        __aligned(64) WorkStack<SmallBuildRecord,NUM_TOP_LEVEL_BINS> workStack;
+        __aligned(64) BuildRecord buildRecords[NUM_TOP_LEVEL_BINS];
+        __aligned(64) WorkStack<BuildRecord,NUM_TOP_LEVEL_BINS> workStack;
         LinearBarrierActive barrier;
       };
       
@@ -177,34 +178,22 @@ namespace embree
       
     public:
       
-      //typedef void (*createSmallLeaf)(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
-      //typedef BBox3fa (*leafBounds)(NodeRef& ref);
+      virtual void createSmallLeaf(const BVH4BuilderMorton* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o) = 0;
       
-      /*! creates a leaf node */
-      /*static void createTriangle1Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
-      static void createTriangle4Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
-      static void createTriangle1vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
-      static void createTriangle4vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);*/
-      virtual void createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o) = 0;
-      
-      BBox3fa createLeaf(SmallBuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID);
+      BBox3fa createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID);
       
       /*! fallback split mode */
-      void split_fallback(SmallBuildRecord& current, SmallBuildRecord& leftChild, SmallBuildRecord& rightChild) const;
+      void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const;
       
       /*! split a build record into two */
-      void split(SmallBuildRecord& current, SmallBuildRecord& left, SmallBuildRecord& right) const;
+      void split(BuildRecord& current, BuildRecord& left, BuildRecord& right) const;
       
       /*! main recursive build function */
-      BBox3fa recurse(SmallBuildRecord& current, 
+      BBox3fa recurse(BuildRecord& current, 
                      Allocator& nodeAlloc, Allocator& leafAlloc,
                      const size_t mode, 
                      const size_t threadID);
       
-      /*static BBox3fa leafBoundsTriangle1(NodeRef& ref);
-      static BBox3fa leafBoundsTriangle4(NodeRef& ref);
-      static BBox3fa leafBoundsTriangle1v(NodeRef& ref);
-      static BBox3fa leafBoundsTriangle4v(NodeRef& ref);*/
       virtual BBox3fa leafBounds(NodeRef& ref) const = 0;
       BBox3fa node_bounds(NodeRef& ref) const;
       
@@ -215,11 +204,10 @@ namespace embree
       BBox3fa refit(NodeRef& index) const;
       
       /*! recreates morton codes when reaching a region where all codes are identical */
-      void recreateMortonCodes(SmallBuildRecord& current) const;
+      void recreateMortonCodes(BuildRecord& current) const;
       
     public:
       BVH4* bvh;               //!< Output BVH
-      //BuildSource* source;      //!< input geometry
       Scene* scene;
       TriangleMesh* mesh;
       size_t logBlockSize;
@@ -268,7 +256,7 @@ namespace embree
       BBox3fa leafBounds(NodeRef& ref) const;
 
       /*! creates a leaf node */
-      void createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+      void createSmallLeaf(const BVH4BuilderMorton* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
 
     class BVH4Triangle4BuilderMorton : public BVH4BuilderMorton
@@ -285,7 +273,7 @@ namespace embree
       BBox3fa leafBounds(NodeRef& ref) const;
 
       /*! creates a leaf node */
-      void createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+      void createSmallLeaf(const BVH4BuilderMorton* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
 
     class BVH4Triangle1vBuilderMorton : public BVH4BuilderMorton
@@ -302,7 +290,7 @@ namespace embree
       BBox3fa leafBounds(NodeRef& ref) const;
 
       /*! creates a leaf node */
-      void createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+      void createSmallLeaf(const BVH4BuilderMorton* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
 
     class BVH4Triangle4vBuilderMorton : public BVH4BuilderMorton
@@ -319,7 +307,7 @@ namespace embree
       BBox3fa leafBounds(NodeRef& ref) const;
 
       /*! creates a leaf node */
-      void createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+      void createSmallLeaf(const BVH4BuilderMorton* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
   }
 }

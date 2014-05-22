@@ -137,7 +137,6 @@ namespace embree
     
     void BVH4BuilderMorton::init(size_t threadIndex, size_t threadCount)
     {
-      //bvh->clear();
       bvh->init(numPrimitives);
       
       /* calculate size of scene */
@@ -161,14 +160,14 @@ namespace embree
         }
       }
       bvh->numPrimitives = numPrimitives;
-      if (bvh->primTy.needVertices) bvh->numVertices = numVertices;
-      else                          bvh->numVertices = 0;
+      //if (needVertices) bvh->numVertices = numVertices;
+      //else bvh->numVertices = 0;
       
       size_t maxPrimsPerGroup = 0;
       if (mesh) 
         maxPrimsPerGroup = numPrimitives;
       else {
-	for (size_t i=0; i<numGroups; i++) 
+	for (size_t i=0; i<numGroups; i++) // FIXME: encoding unsafe
         {
           Geometry* geom = scene->get(i);
           if (!geom || geom->type != TRIANGLE_MESH) continue;
@@ -183,7 +182,7 @@ namespace embree
       encodeMask = ((size_t)1 << encodeShift)-1;
       size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
       
-      if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups)
+      if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
       {
         std::cout << "ENCODING ERROR" << std::endl;
         DBG_PRINT(numGroups);
@@ -209,7 +208,7 @@ namespace embree
         if (needAllThreads) additionalBlocks = threadCount;
         
         /* allocate as much memory as likely needed and reserve conservative amounts of memory */
-        size_t numPrimBlocks = bvh->primTy.blocks(numPrimitives);
+        size_t numPrimBlocks = blocks(numPrimitives);
         size_t numAllocatedNodes = min(size_t(0.6*numPrimBlocks),numPrimitives);
         size_t numAllocatedPrimitives = min(size_t(1.2*numPrimBlocks),numPrimitives);
 #if defined(__X86_64__)
@@ -221,9 +220,9 @@ namespace embree
 #endif
         bytesMorton = ((numPrimitives+7)&(-8)) * sizeof(MortonID32Bit);
         size_t bytesAllocatedNodes      = numAllocatedNodes * sizeof(BVH4::Node);
-        size_t bytesAllocatedPrimitives = numAllocatedPrimitives * bvh->primTy.bytes;
+        size_t bytesAllocatedPrimitives = numAllocatedPrimitives * primBytes;
         size_t bytesReservedNodes       = numReservedNodes * sizeof(BVH4::Node);
-        size_t bytesReservedPrimitives  = numReservedPrimitives * bvh->primTy.bytes;
+        size_t bytesReservedPrimitives  = numReservedPrimitives * primBytes;
         size_t blocksReservedNodes      = (bytesReservedNodes     +Allocator::blockSize-1)/Allocator::blockSize;
         size_t blocksReservedPrimitives = (bytesReservedPrimitives+Allocator::blockSize-1)/Allocator::blockSize;
         bytesReservedNodes      = Allocator::blockSize*(blocksReservedNodes      + additionalBlocks);
@@ -373,9 +372,14 @@ namespace embree
           
           if (slots == 4)
           {
-            const ssei code = bitInterleave(ax,ay,az);
+            /*const ssei code = bitInterleave(ax,ay,az); // FIXME: enable
             storeu4i(&dest[currentID-4],unpacklo(code,ai));
-            storeu4i(&dest[currentID-2],unpackhi(code,ai));
+            storeu4i(&dest[currentID-2],unpackhi(code,ai));*/
+	    const ssei code = bitInterleave(ax,ay,az);
+	    for (size_t i=0; i<slots; i++) {
+	      dest[currentID-slots+i].index = ai[i];
+	      dest[currentID-slots+i].code = code[i];
+	    }
             slots = 0;
           }
         }
@@ -403,7 +407,7 @@ namespace embree
       computeMortonCodes(startID,endID,g_state->startGroup[threadID],g_state->startGroupOffset[threadID],dest);
     }
     
-    void BVH4BuilderMorton::recreateMortonCodes(SmallBuildRecord& current) const
+    void BVH4BuilderMorton::recreateMortonCodes(BuildRecord& current) const
     {
       assert(current.size() > 4);
       CentGeomBBox3fa global_bounds;
@@ -531,7 +535,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4Triangle1BuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle1BuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -570,7 +574,7 @@ namespace embree
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4Triangle4BuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle4BuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -609,7 +613,7 @@ namespace embree
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4Triangle1vBuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle1vBuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -647,7 +651,7 @@ namespace embree
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4Triangle4vBuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle4vBuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -686,14 +690,14 @@ namespace embree
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4BuilderMorton::split_fallback(SmallBuildRecord& current, SmallBuildRecord& leftChild, SmallBuildRecord& rightChild) const
+    void BVH4BuilderMorton::splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
     {
       const unsigned int center = (current.begin + current.end)/2;
       leftChild.init(current.begin,center);
       rightChild.init(center,current.end);
     }
     
-    BBox3fa BVH4BuilderMorton::createLeaf(SmallBuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID)
+    BBox3fa BVH4BuilderMorton::createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID)
     {
 #if defined(DEBUG)
       if (current.depth > BVH4::maxBuildDepthLeaf) 
@@ -708,13 +712,13 @@ namespace embree
       }
       
       /* first split level */
-      SmallBuildRecord record0, record1;
-      split_fallback(current,record0,record1);
+      BuildRecord record0, record1;
+      splitFallback(current,record0,record1);
       
       /* second split level */
-      SmallBuildRecord children[4];
-      split_fallback(record0,children[0],children[1]);
-      split_fallback(record1,children[2],children[3]);
+      BuildRecord children[4];
+      splitFallback(record0,children[0],children[1]);
+      splitFallback(record1,children[2],children[3]);
       
       /* allocate node */
       Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
@@ -733,9 +737,9 @@ namespace embree
       return bounds0;
     }  
     
-    __forceinline void BVH4BuilderMorton::split(SmallBuildRecord& current,
-                                                SmallBuildRecord& left,
-                                                SmallBuildRecord& right) const
+    __forceinline void BVH4BuilderMorton::split(BuildRecord& current,
+                                                BuildRecord& left,
+                                                BuildRecord& right) const
     {
       const unsigned int code_start = morton[current.begin].code;
       const unsigned int code_end   = morton[current.end-1].code;
@@ -781,7 +785,7 @@ namespace embree
       right.init(center,current.end);
     }
     
-    BBox3fa BVH4BuilderMorton::recurse(SmallBuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID) 
+    BBox3fa BVH4BuilderMorton::recurse(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID) 
     {
       /* stop toplevel recursion at some number of items */
       if (mode == CREATE_TOP_LEVEL && (current.size() <= topLevelItemThreshold || g_state->numBuildRecords >= MAX_TOP_LEVEL_BINS)) 
@@ -791,7 +795,7 @@ namespace embree
         return empty;
       }
       
-      __aligned(64) SmallBuildRecord children[BVH4::N];
+      __aligned(64) BuildRecord children[BVH4::N];
       
       /* create leaf node */
       if (unlikely(current.depth >= BVH4::maxBuildDepth || current.size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD)) {
@@ -822,7 +826,7 @@ namespace embree
         if (bestChild == -1) break;
         
         /*! split best child into left and right child */
-        __aligned(64) SmallBuildRecord left, right;
+        __aligned(64) BuildRecord left, right;
         split(children[bestChild],left,right);
                 
         /* add new children left and right */
@@ -982,7 +986,7 @@ namespace embree
         assert(morton[i-1].code <= morton[i].code);
 #endif	    
       
-      SmallBuildRecord br;
+      BuildRecord br;
       br.init(0,numPrimitives);
       br.parent = &bvh->root;
       br.depth = 1;
@@ -1010,22 +1014,22 @@ namespace embree
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();
-      
+
       /* compute scene bounds */
       global_bounds.reset();
       TaskScheduler::dispatchTask( _computeBounds, this, threadIndex, threadCount );
       bvh->bounds = global_bounds.geomBounds;
 
-	  /* compute morton codes */
+      /* compute morton codes */
       TaskScheduler::dispatchTask( _computeMortonCodes, this, threadIndex, threadCount );   
-      
+
       /* padding */
       MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) nodeAllocator.data;
       for (size_t i=numPrimitives; i<( (numPrimitives+7)&(-8) ); i++) {
         dest[i].code  = 0xffffffff; 
         dest[i].index = 0;
       }
-      
+
       /* sort morton codes */
       TaskScheduler::dispatchTask( _radixsort, this, threadIndex, threadCount );
 
@@ -1033,12 +1037,12 @@ namespace embree
       for (size_t i=1; i<numPrimitives; i++)
         assert(morton[i-1].code <= morton[i].code);
 #endif	    
-      
+
       /* build and extract top-level tree */
       g_state->numBuildRecords = 0;
       topLevelItemThreshold = (numPrimitives + threadCount-1)/(2*threadCount);
       
-      SmallBuildRecord br;
+      BuildRecord br;
       br.init(0,numPrimitives);
       br.parent = &bvh->root;
       br.depth = 1;
@@ -1049,10 +1053,10 @@ namespace embree
       __aligned(64) Allocator nodeAlloc(nodeAllocator);
       __aligned(64) Allocator leafAlloc(primAllocator);
       recurse(br,nodeAlloc,leafAlloc,CREATE_TOP_LEVEL,threadIndex);	    
-      
+
       /* sort all subtasks by size */
-      insertionsort_decending<SmallBuildRecord>(g_state->buildRecords,g_state->numBuildRecords);
-      
+      insertionsort_decending<BuildRecord>(g_state->buildRecords,g_state->numBuildRecords);
+
       /* build sub-trees */
       g_state->workStack.reset();
       TaskScheduler::dispatchTask( _recurseSubMortonTrees, this, threadIndex, threadCount );
