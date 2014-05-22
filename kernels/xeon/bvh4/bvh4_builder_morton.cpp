@@ -241,31 +241,27 @@ namespace embree
       }
       return bounds;
     }
-    
-     void BVH4BuilderMorton::computeBounds(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
+
+    void BVH4BuilderMorton::computeBounds(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
-      const size_t startID = (threadID+0)*numPrimitives/numThreads;
-      const size_t endID   = (threadID+1)*numPrimitives/numThreads;
+      const ssize_t start = (threadID+0)*numPrimitives/numThreads;
+      const ssize_t end   = (threadID+1)*numPrimitives/numThreads;
       
       CentGeomBBox3fa bounds; bounds.reset();
       
-      size_t currentID = startID;
-      size_t offset = g_state->startGroupOffset[threadID];
-      
-      for (size_t group = g_state->startGroup[threadID]; group<numGroups; group++) 
-      {       
-        Geometry* geom = scene->get(group);
-        if (!geom || geom->type != TRIANGLE_MESH) continue;
-        TriangleMesh* mesh = (TriangleMesh*) geom;
-        if (mesh->numTimeSteps != 1) continue;
-        
-        for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
-          bounds.extend(mesh->bounds(i));
-        
-        offset = 0;
-        if (currentID == endID) break;
+      for (ssize_t cur=0, i=0; i<scene->size(); i++) 
+      {
+	TriangleMesh* geom = (TriangleMesh*) scene->get(i);
+        if (geom == NULL) continue;
+	if (geom->type != TRIANGLE_MESH || geom->numTimeSteps != 1 || !geom->isEnabled()) continue;
+	ssize_t gstart = 0;
+	ssize_t gend = geom->numTriangles;
+	ssize_t s = max(start-cur,gstart);
+	ssize_t e = min(end  -cur,gend  );
+	for (size_t j=s; j<e; j++) bounds.extend(geom->bounds(j));
+	cur += geom->numTriangles;
+	if (cur >= end) break;  
       }
-      
       global_bounds.extend_atomic(bounds);    
     }
 
