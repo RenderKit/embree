@@ -69,7 +69,8 @@ namespace embree
 		   NodeRef& node, size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split);
 
       NodeRef layout_top_nodes(size_t threadIndex, NodeRef node);
-      
+
+      template<bool PARALLEL>
       const Split find(size_t threadIndex, size_t threadCount, size_t depth, TriRefList& prims, const PrimInfo& pinfo, bool spatial);
 
       /***********************************************************************************************************************
