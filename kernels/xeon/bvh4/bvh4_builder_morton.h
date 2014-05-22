@@ -113,7 +113,6 @@ namespace embree
 
         MortonBuilderState () 
         {
-          numBuildRecords = 0;
 	  taskCounter = 0;
           numThreads = getNumberOfLogicalThreads();
           startGroup = new unsigned int[numThreads];
@@ -133,9 +132,10 @@ namespace embree
         unsigned int* startGroupOffset;
         ThreadRadixCountTy* radixCount;
         
-        size_t numBuildRecords;
+        //size_t numBuildRecords;
 	atomic_t taskCounter;
-        __aligned(64) BuildRecord buildRecords[NUM_TOP_LEVEL_BINS];
+        //__aligned(64) BuildRecord buildRecords[NUM_TOP_LEVEL_BINS];
+	std::vector<BuildRecord> buildRecords;
         __aligned(64) WorkStack<BuildRecord,NUM_TOP_LEVEL_BINS> workStack;
         LinearBarrierActive barrier;
       };

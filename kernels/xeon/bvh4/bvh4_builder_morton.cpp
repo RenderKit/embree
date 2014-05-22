@@ -527,10 +527,10 @@ namespace embree
       while (true)
       {
         const unsigned int taskID = atomic_add(&g_state->taskCounter,1);
-        if (taskID >= g_state->numBuildRecords) break;
+        if (taskID >= g_state->buildRecords.size()) break;
 	recurse(g_state->buildRecords[taskID],nodeAlloc,leafAlloc,RECURSE,threadID);
         g_state->buildRecords[taskID].parent->setBarrier();
-        g_state->workStack.push(g_state->buildRecords[taskID]);
+        //g_state->workStack.push(g_state->buildRecords[taskID]);
       }
     }
     
@@ -830,10 +830,8 @@ namespace embree
     BBox3fa BVH4BuilderMorton::recurse(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID) 
     {
       /* stop toplevel recursion at some number of items */
-      if (mode == CREATE_TOP_LEVEL && (current.size() <= topLevelItemThreshold || g_state->numBuildRecords >= MAX_TOP_LEVEL_BINS)) 
-      {
-        assert(g_state->numBuildRecords < NUM_TOP_LEVEL_BINS);
-        g_state->buildRecords[g_state->numBuildRecords++] = current;
+      if (mode == CREATE_TOP_LEVEL && current.size() <= topLevelItemThreshold) {
+        g_state->buildRecords.push_back(current);
         return empty;
       }
       
@@ -1092,7 +1090,7 @@ namespace embree
 #endif	    
 
       /* build and extract top-level tree */
-      g_state->numBuildRecords = 0;
+      g_state->buildRecords.clear();
       topLevelItemThreshold = (numPrimitives + threadCount-1)/(2*threadCount);
       
       BuildRecord br;
@@ -1108,11 +1106,11 @@ namespace embree
       recurse(br,nodeAlloc,leafAlloc,CREATE_TOP_LEVEL,threadIndex);	    
 
       /* sort all subtasks by size */
-      std::sort(&g_state->buildRecords[0],&g_state->buildRecords[g_state->numBuildRecords],BuildRecord::Greater());
+      std::sort(g_state->buildRecords.begin(),g_state->buildRecords.end(),BuildRecord::Greater());
 
       /* build sub-trees */
       g_state->taskCounter = 0;
-      g_state->workStack.reset();
+      //g_state->workStack.reset();
       TaskScheduler::dispatchTask( _recurseSubMortonTrees, this, threadIndex, threadCount );
       
       /* refit toplevel part of tree */
