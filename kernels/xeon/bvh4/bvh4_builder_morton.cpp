@@ -960,7 +960,7 @@ namespace embree
       return bounds;
     }
     
-    __forceinline BBox3fa BVH4BuilderMorton::node_bounds(NodeRef& ref) const
+    __forceinline BBox3fa BVH4BuilderMorton::nodeBounds(NodeRef& ref) const
     {
       if (ref.isNode())
         return ref.node()->bounds();
@@ -968,12 +968,12 @@ namespace embree
         return leafBounds(ref);
     }
     
-    BBox3fa BVH4BuilderMorton::refit_toplevel(NodeRef& ref) const
+    BBox3fa BVH4BuilderMorton::refitTopLevel(NodeRef& ref) const
     { 
       /* stop here if we encounter a barrier */
       if (unlikely(ref.isBarrier())) {
         ref.clearBarrier();
-        return node_bounds(ref);
+        return nodeBounds(ref);
       }
       
       /* return point bound for empty nodes */
@@ -986,10 +986,10 @@ namespace embree
       
       /* recurse if this is an internal node */
       Node* node = ref.node();
-      const BBox3fa bounds0 = refit_toplevel(node->child(0));
-      const BBox3fa bounds1 = refit_toplevel(node->child(1));
-      const BBox3fa bounds2 = refit_toplevel(node->child(2));
-      const BBox3fa bounds3 = refit_toplevel(node->child(3));
+      const BBox3fa bounds0 = refitTopLevel(node->child(0));
+      const BBox3fa bounds1 = refitTopLevel(node->child(1));
+      const BBox3fa bounds2 = refitTopLevel(node->child(2));
+      const BBox3fa bounds3 = refitTopLevel(node->child(3));
       
       /* AOS to SOA transform */
       BBox<sse3f> bounds;
@@ -1108,7 +1108,7 @@ namespace embree
       recurse(br,nodeAlloc,leafAlloc,CREATE_TOP_LEVEL,threadIndex);	    
 
       /* sort all subtasks by size */
-      insertionsort_decending<BuildRecord>(g_state->buildRecords,g_state->numBuildRecords);
+      std::sort(&g_state->buildRecords[0],&g_state->buildRecords[g_state->numBuildRecords],BuildRecord::Greater());
 
       /* build sub-trees */
       g_state->taskCounter = 0;
@@ -1116,7 +1116,7 @@ namespace embree
       TaskScheduler::dispatchTask( _recurseSubMortonTrees, this, threadIndex, threadCount );
       
       /* refit toplevel part of tree */
-      refit_toplevel(bvh->root);
+      refitTopLevel(bvh->root);
       
       /* release all threads again */
       TaskScheduler::leave(threadIndex,threadCount);

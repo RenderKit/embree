@@ -39,7 +39,6 @@ namespace embree
       static const size_t MAX_TOP_LEVEL_BINS = 1024;
       static const size_t NUM_TOP_LEVEL_BINS = 1024 + 4*BVH4::maxBuildDepth;
 
-      //static const size_t MORTON_LEAF_THRESHOLD = 4;
       static const size_t LATTICE_BITS_PER_DIM = 10;
       static const size_t LATTICE_SIZE_PER_DIM = size_t(1) << LATTICE_BITS_PER_DIM;
       
@@ -49,7 +48,7 @@ namespace embree
 
     public:
   
-      class __aligned(16) BuildRecord 
+      class BuildRecord 
       {
       public:
         unsigned int begin;
@@ -67,10 +66,13 @@ namespace embree
           end = _end;
           depth = 1;
           parent = NULL;
-        }
+	}
         
-        __forceinline bool operator<(const BuildRecord& br) const { return size() < br.size(); } 
-        __forceinline bool operator>(const BuildRecord& br) const { return size() > br.size(); } 
+	struct Greater {
+	  __forceinline bool operator()(const BuildRecord& a, const BuildRecord& b) {
+	    return a.size() > b.size();
+	  }
+	};
       };
 
       struct __aligned(8) MortonID32Bit
@@ -112,6 +114,7 @@ namespace embree
         MortonBuilderState () 
         {
           numBuildRecords = 0;
+	  taskCounter = 0;
           numThreads = getNumberOfLogicalThreads();
           startGroup = new unsigned int[numThreads];
           startGroupOffset = new unsigned int[numThreads];
@@ -179,8 +182,10 @@ namespace embree
       
     public:
       
+      /*! creates leaf node */
       virtual void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o) = 0;
       
+      /*! creates leaf node that is larger than supported by BVH */
       BBox3fa createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID);
       
       /*! fallback split mode */
@@ -194,12 +199,15 @@ namespace embree
                      Allocator& nodeAlloc, Allocator& leafAlloc,
                      const size_t mode, 
                      const size_t threadID);
-      
+
+      /*! calculates bounding box of leaf node */
       virtual BBox3fa leafBounds(NodeRef& ref) const = 0;
-      BBox3fa node_bounds(NodeRef& ref) const;
+
+      /*! calculates bounding box of node */
+      BBox3fa nodeBounds(NodeRef& ref) const;
       
       /*! refit the toplevel part of the BVH */
-      BBox3fa refit_toplevel(NodeRef& index) const;
+      BBox3fa refitTopLevel(NodeRef& index) const;
       
       /*! refit the sub-BVHs */
       BBox3fa refit(NodeRef& index) const;
