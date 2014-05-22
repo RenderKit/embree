@@ -20,6 +20,7 @@
 
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
+#include "geometry/triangle8.h"
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 
@@ -48,26 +49,36 @@ namespace embree
     }
     
     BVH4Triangle1BuilderMorton::BVH4Triangle1BuilderMorton (BVH4* bvh, Scene* scene)
-      : BVH4BuilderMorton(bvh,scene,NULL,0,false,sizeof(Triangle1),2,inf) {}
+      : BVH4BuilderMorton(bvh,scene,NULL,0,false,sizeof(Triangle1),4,inf) {}
 
     BVH4Triangle4BuilderMorton::BVH4Triangle4BuilderMorton (BVH4* bvh, Scene* scene)
       : BVH4BuilderMorton(bvh,scene,NULL,2,false,sizeof(Triangle4),4,inf) {}
+
+#if defined(__AVX__)
+    BVH4Triangle8BuilderMorton::BVH4Triangle8BuilderMorton (BVH4* bvh, Scene* scene)
+      : BVH4BuilderMorton(bvh,scene,NULL,3,false,sizeof(Triangle8),8,inf) {}
+#endif
     
     BVH4Triangle1vBuilderMorton::BVH4Triangle1vBuilderMorton (BVH4* bvh, Scene* scene)
-      : BVH4BuilderMorton(bvh,scene,NULL,0,false,sizeof(Triangle1v),2,inf) {}
+      : BVH4BuilderMorton(bvh,scene,NULL,0,false,sizeof(Triangle1v),4,inf) {}
 
     BVH4Triangle4vBuilderMorton::BVH4Triangle4vBuilderMorton (BVH4* bvh, Scene* scene)
       : BVH4BuilderMorton(bvh,scene,NULL,2,false,sizeof(Triangle4v),4,inf) {}
 
 
     BVH4Triangle1BuilderMorton::BVH4Triangle1BuilderMorton (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderMorton(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1),2,inf) {}
+      : BVH4BuilderMorton(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1),4,inf) {}
 
     BVH4Triangle4BuilderMorton::BVH4Triangle4BuilderMorton (BVH4* bvh, TriangleMesh* mesh)
       : BVH4BuilderMorton(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4),4,inf) {}
+
+#if defined(__AVX__)
+    BVH4Triangle8BuilderMorton::BVH4Triangle8BuilderMorton (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4BuilderMorton(bvh,mesh->parent,mesh,2,false,sizeof(Triangle8),8,inf) {}
+#endif
     
     BVH4Triangle1vBuilderMorton::BVH4Triangle1vBuilderMorton (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderMorton(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1v),2,inf) {}
+      : BVH4BuilderMorton(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1v),4,inf) {}
 
     BVH4Triangle4vBuilderMorton::BVH4Triangle4vBuilderMorton (BVH4* bvh, TriangleMesh* mesh)
       : BVH4BuilderMorton(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4v),4,inf) {}
@@ -452,14 +463,11 @@ namespace embree
     
     void BVH4BuilderMorton::radixsort(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
-      //size_t taskID = TaskLogger::beginTask(threadID,"BVH4BuilderMorton::radixsort",0);
-
       const size_t startID = (threadID+0)*numPrimitives/numThreads;
       const size_t endID   = (threadID+1)*numPrimitives/numThreads;
       
       MortonID32Bit* __restrict__ mortonID[2];
       mortonID[0] = (MortonID32Bit*) morton; 
-      //mortonID[1] = (MortonID32Bit*) node;
       mortonID[1] = (MortonID32Bit*) nodeAllocator.data;
       MortonBuilderState::ThreadRadixCountTy* radixCount = g_state->radixCount;
       
@@ -510,8 +518,6 @@ namespace embree
         }
         if (b < 2) TaskScheduler::syncThreads(threadID,numThreads);
       }
-
-      //TaskLogger::endTask(threadID,taskID);
     }
     
     void BVH4BuilderMorton::recurseSubMortonTrees(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
@@ -520,14 +526,11 @@ namespace embree
       __aligned(64) Allocator leafAlloc(primAllocator);
       while (true)
       {
-        const unsigned int taskID = TaskScheduler::taskCounter.inc(); // FIXME: why using taskscheduler for this?
+        const unsigned int taskID = atomic_add(&g_state->taskCounter,1);
         if (taskID >= g_state->numBuildRecords) break;
-        
-        //size_t id = TaskLogger::beginTask(threadID,"BVH4BuilderMorton::subtree",0);
-        recurse(g_state->buildRecords[taskID],nodeAlloc,leafAlloc,RECURSE,threadID);
+	recurse(g_state->buildRecords[taskID],nodeAlloc,leafAlloc,RECURSE,threadID);
         g_state->buildRecords[taskID].parent->setBarrier();
         g_state->workStack.push(g_state->buildRecords[taskID]);
-        //TaskLogger::endTask(threadID,id);
       }
     }
     
@@ -535,24 +538,23 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4Triangle1BuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle1BuilderMorton::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
       size_t items = current.size();
       size_t start = current.begin;
-      assert(items<=4);
       
       /* allocate leaf node */
       Triangle1* accel = (Triangle1*) leafAlloc.malloc(items*sizeof(Triangle1));
-      *current.parent = This->bvh->encodeLeaf((char*)accel,items);
+      *current.parent = bvh->encodeLeaf((char*)accel,items);
       
       for (size_t i=0; i<items; i++) 
       {	
-        const size_t index = This->morton[start+i].index;
-        const size_t primID = index & This->encodeMask; 
-        const size_t geomID = index >> This->encodeShift; 
-        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const size_t index = morton[start+i].index;
+        const size_t primID = index & encodeMask; 
+        const size_t geomID = index >> encodeShift; 
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         
         const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
@@ -574,7 +576,7 @@ namespace embree
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4Triangle4BuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle4BuilderMorton::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -584,17 +586,17 @@ namespace embree
       
       /* allocate leaf node */
       Triangle4* accel = (Triangle4*) leafAlloc.malloc(sizeof(Triangle4));
-      *current.parent = This->bvh->encodeLeaf((char*)accel,1);
+      *current.parent = bvh->encodeLeaf((char*)accel,1);
       
       ssei vgeomID = -1, vprimID = -1, vmask = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<items; i++)
       {
-        const size_t index = This->morton[start+i].index;
-        const size_t primID = index & This->encodeMask; 
-        const size_t geomID = index >> This->encodeShift; 
-        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const size_t index = morton[start+i].index;
+        const size_t primID = index & encodeMask; 
+        const size_t geomID = index >> encodeShift; 
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -612,25 +614,65 @@ namespace embree
       //new (accel) Triangle4(v0,v1,v2,vgeomID,vprimID,vmask);
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
-    
-    void BVH4Triangle1vBuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+
+#if defined(__AVX__)
+    void BVH4Triangle8BuilderMorton::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
       size_t items = current.size();
       size_t start = current.begin;
-      assert(items<=4);
+      assert(items<=8);
+      
+      /* allocate leaf node */
+      Triangle8* accel = (Triangle8*) leafAlloc.malloc(sizeof(Triangle8));
+      *current.parent = bvh->encodeLeaf((char*)accel,1);
+      
+      avxi vgeomID = -1, vprimID = -1, vmask = -1;
+      avx3f v0 = zero, v1 = zero, v2 = zero;
+      
+      for (size_t i=0; i<items; i++)
+      {
+        const size_t index = morton[start+i].index;
+        const size_t primID = index & encodeMask; 
+        const size_t geomID = index >> encodeShift; 
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const Vec3fa& p0 = mesh->vertex(tri.v[0]);
+        const Vec3fa& p1 = mesh->vertex(tri.v[1]);
+        const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+        lower = min(lower,(ssef)p0,(ssef)p1,(ssef)p2);
+        upper = max(upper,(ssef)p0,(ssef)p1,(ssef)p2);
+        vgeomID [i] = geomID;
+        vprimID [i] = primID;
+        vmask   [i] = mesh->mask;
+        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+      }
+      //Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask));
+      new (accel) Triangle8(v0,v1,v2,vgeomID,vprimID,vmask);
+      box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+    }
+#endif
+    
+    void BVH4Triangle1vBuilderMorton::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    {
+      ssef lower(pos_inf);
+      ssef upper(neg_inf);
+      size_t items = current.size();
+      size_t start = current.begin;
       
       /* allocate leaf node */
       Triangle1v* accel = (Triangle1v*) leafAlloc.malloc(items*sizeof(Triangle1v));
-      *current.parent = This->bvh->encodeLeaf((char*)accel,items);
+      *current.parent = bvh->encodeLeaf((char*)accel,items);
       
       for (size_t i=0; i<items; i++) 
       {	
-        const size_t index = This->morton[start+i].index;
-        const size_t primID = index & This->encodeMask; 
-        const size_t geomID = index >> This->encodeShift; 
-        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const size_t index = morton[start+i].index;
+        const size_t primID = index & encodeMask; 
+        const size_t geomID = index >> encodeShift; 
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         
         const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
@@ -651,7 +693,7 @@ namespace embree
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4Triangle4vBuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle4vBuilderMorton::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -661,17 +703,17 @@ namespace embree
       
       /* allocate leaf node */
       Triangle4v* accel = (Triangle4v*) leafAlloc.malloc(sizeof(Triangle4v));
-      *current.parent = This->bvh->encodeLeaf((char*)accel,1);
+      *current.parent = bvh->encodeLeaf((char*)accel,1);
       
       ssei vgeomID = -1, vprimID = -1, vmask = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<items; i++)
       {
-        const size_t index = This->morton[start+i].index;
-        const size_t primID = index & This->encodeMask; 
-        const size_t geomID = index >> This->encodeShift; 
-        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const size_t index = morton[start+i].index;
+        const size_t primID = index & encodeMask; 
+        const size_t geomID = index >> encodeShift; 
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -705,9 +747,9 @@ namespace embree
 #endif
       
       /* create leaf for few primitives */
-      if (current.size() <= MORTON_LEAF_THRESHOLD) {
+      if (current.size() <= minLeafSize) {
         BBox3fa bounds;
-        createSmallLeaf(this,current,leafAlloc,threadID,bounds);
+        createSmallLeaf(current,leafAlloc,threadID,bounds);
         return bounds;
       }
       
@@ -798,7 +840,7 @@ namespace embree
       __aligned(64) BuildRecord children[BVH4::N];
       
       /* create leaf node */
-      if (unlikely(current.depth >= BVH4::maxBuildDepth || current.size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD)) {
+      if (unlikely(current.depth >= BVH4::maxBuildDepth || current.size() <= minLeafSize)) {
         return createLeaf(current,nodeAlloc,leafAlloc,threadID);
       }
       
@@ -814,7 +856,7 @@ namespace embree
         for (unsigned int i=0; i<numChildren; i++)
         {
           /* ignore leaves as they cannot get split */
-          if (children[i].size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD)
+          if (children[i].size() <= minLeafSize)
             continue;
           
           /* remember child with largest area */
@@ -840,7 +882,7 @@ namespace embree
       
       /* create leaf node if no split is possible */
       if (unlikely(numChildren == 1)) {
-        BBox3fa bounds; createSmallLeaf(this,current,leafAlloc,threadID,bounds); return bounds;
+        BBox3fa bounds; createSmallLeaf(current,leafAlloc,threadID,bounds); return bounds;
       }
       
       /* allocate node */
@@ -853,7 +895,7 @@ namespace embree
       {
         children[i].parent = &node->child(i);
         
-        if (children[i].size() <= BVH4BuilderMorton::MORTON_LEAF_THRESHOLD) {
+        if (children[i].size() <= minLeafSize) {
           const BBox3fa bounds = createLeaf(children[i],nodeAlloc,leafAlloc,threadID);
           bounds0.extend(bounds);
           node->set(i,bounds);
@@ -888,6 +930,17 @@ namespace embree
         bounds.extend(tri[i].bounds());
       return bounds;
     }
+
+#if defined(__AVX__)
+    __forceinline BBox3fa BVH4Triangle8BuilderMorton::leafBounds(NodeRef& ref) const
+    {
+      BBox3fa bounds = empty;
+      size_t num; Triangle8* tri = (Triangle8*) ref.leaf(num);
+      for (size_t i=0; i<num; i++) 
+        bounds.extend(tri[i].bounds());
+      return bounds;
+    }
+#endif
     
     __forceinline BBox3fa BVH4Triangle1vBuilderMorton::leafBounds(NodeRef& ref) const
     {
@@ -1058,6 +1111,7 @@ namespace embree
       insertionsort_decending<BuildRecord>(g_state->buildRecords,g_state->numBuildRecords);
 
       /* build sub-trees */
+      g_state->taskCounter = 0;
       g_state->workStack.reset();
       TaskScheduler::dispatchTask( _recurseSubMortonTrees, this, threadIndex, threadCount );
       
@@ -1073,11 +1127,17 @@ namespace embree
 
     Builder* BVH4Triangle1BuilderMorton  (void* bvh, Scene* scene) { return new class BVH4Triangle1BuilderMorton ((BVH4*)bvh,scene); }
     Builder* BVH4Triangle4BuilderMorton  (void* bvh, Scene* scene) { return new class BVH4Triangle4BuilderMorton ((BVH4*)bvh,scene); }
+#if defined(__AVX__)
+    Builder* BVH4Triangle8BuilderMorton  (void* bvh, Scene* scene) { return new class BVH4Triangle8BuilderMorton ((BVH4*)bvh,scene); }
+#endif
     Builder* BVH4Triangle1vBuilderMorton (void* bvh, Scene* scene) { return new class BVH4Triangle1vBuilderMorton((BVH4*)bvh,scene); }
     Builder* BVH4Triangle4vBuilderMorton (void* bvh, Scene* scene) { return new class BVH4Triangle4vBuilderMorton((BVH4*)bvh,scene); }
 
     Builder* BVH4Triangle1MeshBuilderMorton  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle1BuilderMorton ((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle4MeshBuilderMorton  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4BuilderMorton ((BVH4*)bvh,mesh); }
+#if defined(__AVX__)
+    Builder* BVH4Triangle8MeshBuilderMorton  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle8BuilderMorton ((BVH4*)bvh,mesh); }
+#endif
     Builder* BVH4Triangle1vMeshBuilderMorton (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle1vBuilderMorton((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle4vMeshBuilderMorton (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4vBuilderMorton((BVH4*)bvh,mesh); }
   }

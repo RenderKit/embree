@@ -84,11 +84,13 @@ namespace embree
 
   DECLARE_SCENE_BUILDER(BVH4Triangle1BuilderMorton);
   DECLARE_SCENE_BUILDER(BVH4Triangle4BuilderMorton);
+  DECLARE_SCENE_BUILDER(BVH4Triangle8BuilderMorton);
   DECLARE_SCENE_BUILDER(BVH4Triangle1vBuilderMorton);
   DECLARE_SCENE_BUILDER(BVH4Triangle4vBuilderMorton);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderMorton);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilderMorton);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshBuilderMorton);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshBuilderMorton);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshBuilderMorton);
 
@@ -131,15 +133,17 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshRefitFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshRefitFast);
 
-    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle1BuilderMorton);
-    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle4BuilderMorton);
-    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle1vBuilderMorton);
-    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle4vBuilderMorton);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1BuilderMorton);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4BuilderMorton);
+    SELECT_SYMBOL_AVX(features,BVH4Triangle8BuilderMorton);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vBuilderMorton);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vBuilderMorton);
     
-    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle1MeshBuilderMorton);
-    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle4MeshBuilderMorton);
-    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle1vMeshBuilderMorton);
-    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle4vMeshBuilderMorton);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilderMorton);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderMorton);
+    SELECT_SYMBOL_AVX(features,BVH4Triangle8MeshBuilderMorton);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshBuilderMorton);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderMorton);
 
     /* select intersectors1 */
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4Bezier1iIntersector1);
@@ -365,6 +369,7 @@ namespace embree
     if      (g_builder == "default"     ) builder = BVH4BuilderObjectSplit8(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "spatialsplit") builder = BVH4BuilderSpatialSplit8(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "objectsplit" ) builder = BVH4BuilderObjectSplit8(accel,&scene->flat_triangle_source_1,scene,1,inf);
+    else if (g_builder == "morton"      ) builder = BVH4Triangle8BuilderMorton(accel,scene);
     else throw std::runtime_error("unknown builder "+g_builder+" for BVH4<Triangle8>");
 
     return new AccelInstance(accel,builder,intersectors);
