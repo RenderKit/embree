@@ -8,6 +8,7 @@ namespace embree
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 #define SINGLE_THREADED_BUILD_THRESHOLD        512
+#define TIMER(x)  
 
   static double dt = 0.0f;
 
@@ -141,6 +142,149 @@ namespace embree
     store4f(&bounds.geometry.upper,bounds_scene_max);
 
     global_bounds.extend_atomic(bounds);    
+  }
+
+  void BVH4HairBuilder::build(size_t threadIndex, size_t threadCount) 
+  {
+    DBG(PING);
+    const size_t totalNumPrimitives = getNumPrimitives();
+
+
+    DBG(DBG_PRINT(totalNumPrimitives));
+
+    /* print builder name */
+    if (unlikely(g_verbose >= 1)) printBuilderName();
+
+    /* allocate BVH data */
+    allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
+
+    LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); 
+
+    if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1) )
+      {
+	DBG(std::cout << "PARALLEL BUILD" << std::endl);
+	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_hair,this,TaskScheduler::getNumThreads(),"build_parallel");
+      }
+    else
+      {
+	/* number of primitives is small, just use single threaded mode */
+	if (likely(numPrimitives > 0))
+	  {
+	    DBG(std::cout << "SERIAL BUILD" << std::endl);
+	    build_parallel_hair(0,1,0,0,NULL);
+	  }
+	else
+	  {
+	    DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
+	    /* handle empty scene */
+	    for (size_t i=0;i<4;i++)
+	      bvh->qbvh[0].setInvalid(i);
+	    for (size_t i=0;i<4;i++)
+	      bvh->qbvh[1].setInvalid(i);
+	    bvh->qbvh[0].lower[0].child = BVH4i::NodeRef(128);
+	    bvh->root = bvh->qbvh[0].lower[0].child; 
+	    bvh->bounds = empty;
+	  }
+      }
+
+    if (g_verbose >= 2) {
+      double perf = totalNumPrimitives/dt*1E-6;
+      std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
+      std::cout << BVH4iStatistics(bvh).str();
+    }
+
+  }
+
+  void BVH4HairBuilder::build_parallel_hair(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  {
+    PING;
+
+    TIMER(double msec = 0.0);
+
+    /* initialize thread-local work stacks */
+    if (threadIndex % 4 == 0)
+      local_workStack[threadIndex].reset();
+
+    /* all worker threads enter tasking system */
+    if (threadIndex != 0) {
+      LockStepTaskScheduler::dispatchTaskMainLoop(threadIndex,threadCount); 
+      return;
+    }
+
+    /* start measurement */
+    double t0 = 0.0f;
+#if !defined(PROFILE)
+    if (g_verbose >= 2) 
+#endif
+      t0 = getSeconds();
+
+    TIMER(msec = getSeconds());
+    
+    /* calculate list of primrefs */
+    global_bounds.reset();
+
+    computePrimRefs(threadIndex,threadCount);
+
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "task_computePrimRefs " << 1000. * msec << " ms" << std::endl << std::flush);
+    TIMER(msec = getSeconds());
+
+    /* allocate and initialize root node */
+    atomicID.reset(numNodesToAllocate);
+    node[0].lower = global_bounds.geometry.lower;
+    node[0].upper = global_bounds.geometry.upper;
+    
+    /* create initial build record */
+    BuildRecord br;
+    br.init(global_bounds,0,numPrimitives);
+    br.depth = 1;
+    br.parentID = 0;
+        
+    /* push initial build record to global work stack */
+    global_workStack.reset();
+    global_workStack.push_nolock(br);    
+
+    /* work in multithreaded toplevel mode until sufficient subtasks got generated */    
+    NodeAllocator alloc(atomicID,numAllocatedNodes);
+    const size_t coreCount = (threadCount+3)/4;
+    while (global_workStack.size() < coreCount &&
+	   global_workStack.size()+BVH4i::N <= SIZE_GLOBAL_WORK_STACK) 
+    {
+      BuildRecord br;
+      if (!global_workStack.pop_nolock_largest(br)) break;
+      DBG(DBG_PRINT(br));
+      recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);      
+    }
+
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "build_top_level " << 1000. * msec << " ms" << std::endl << std::flush);
+
+    /* fill per core work queues */    
+    TIMER(msec = getSeconds());    
+    LockStepTaskScheduler::dispatchTask(task_fillLocalWorkQueues, this, threadIndex, threadCount );
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "task_fillLocalWorkQueues " << 1000. * msec << " ms" << std::endl << std::flush);
+
+    /* now process all created subtasks on multiple threads */    
+    TIMER(msec = getSeconds());    
+    LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
+    numNodes = atomicID >> 2;
+    DBG(DBG_PRINT(atomicID));
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
+
+    
+    /* update BVH4 */
+    FATAL("FIX");
+    bvh->root = bvh->qbvh[0].lower[0].child; 
+    bvh->bounds = BBox3fa(*(Vec3fa*)&bvh->qbvh->lower[0],*(Vec3fa*)&bvh->qbvh->upper[0]);
+    
+    /* release all threads again */
+    LockStepTaskScheduler::releaseThreads(threadCount);
+
+    /* stop measurement */
+    if (g_verbose >= 2) 
+      dt = getSeconds()-t0;
   }
 
   // ==========================================================================================

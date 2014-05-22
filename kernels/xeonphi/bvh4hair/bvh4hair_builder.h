@@ -62,12 +62,13 @@ namespace embree
     virtual void   printBuilderName();
     virtual void   allocateData(const size_t threadCount, const size_t newNumPrimitives);
     virtual void   computePrimRefs(const size_t threadIndex, const size_t threadCount);
+    virtual void   build(size_t threadIndex, size_t threadCount);
 
-    //virtual void build(size_t threadIndex, size_t threadCount);
+    void build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event);
 
   protected:
+    TASK_RUN_FUNCTION(BVH4HairBuilder,build_parallel_hair);
     TASK_FUNCTION(BVH4HairBuilder,computePrimRefsBezierCurves);
-    //TASK_FUNCTION(BVH4HairBuilder,createBezierCurvesAccel);    
   };
 
 
