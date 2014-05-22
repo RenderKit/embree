@@ -28,7 +28,7 @@
 
 #define DBG(x) 
 
-//#define PROFILE
+#define PROFILE
 
 namespace embree 
 {
@@ -85,8 +85,6 @@ namespace embree
     {
       if (morton) os_free(morton,bytesMorton);
       bvh->alloc->shrink();
-      //bvh->bytesNodes = nodeAllocator.bytesAllocated;
-      //bvh->bytesPrimitives = primAllocator.bytesAllocated;
     }
     
     void BVH4BuilderMorton::build(size_t threadIndex, size_t threadCount) 
@@ -145,34 +143,13 @@ namespace embree
     
     void BVH4BuilderMorton::init(size_t threadIndex, size_t threadCount)
     {
-      //bvh->init(numPrimitives);
-      
       /* calculate size of scene */
-      size_t numVertices = 0;
       size_t numPrimitivesOld = numPrimitives;
-      numGroups = scene->size();
-      if (mesh) {
-        numPrimitives = mesh->numTriangles;
-        numVertices = mesh->numVertices;
-      }
-      else {
-        numPrimitives = 0;
-        for (size_t i=0; i<numGroups; i++) 
-        {
-          Geometry* geom = scene->get(i);
-          if (!geom || geom->type != TRIANGLE_MESH) continue;
-          TriangleMesh* mesh = (TriangleMesh*) geom;
-          if (mesh->numTimeSteps != 1) continue;
-          numPrimitives += mesh->numTriangles;
-          numVertices += mesh->numVertices;
-        }
-      }
+      if (mesh) numPrimitives = mesh->numTriangles;
+      else      numPrimitives = scene->numTriangles;
+      
       bvh->numPrimitives = numPrimitives;
-      //if (needVertices) bvh->numVertices = numVertices;
-      //else bvh->numVertices = 0;
-
-      bvh->init(numPrimitives);
-            
+      numGroups = scene->size();
       size_t maxPrimsPerGroup = 0;
       if (mesh) 
         maxPrimsPerGroup = numPrimitives;
@@ -193,62 +170,15 @@ namespace embree
       size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
       
       if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
-      {
-        std::cout << "ENCODING ERROR" << std::endl;
-        DBG_PRINT(numGroups);
-        DBG_PRINT(numPrimitives);
-        DBG_PRINT(maxPrimsPerGroup);
-        DBG_PRINT(encodeMask);
-        DBG_PRINT(maxGroups);
-        exit(1);
-      }
-      
-      if (mesh) {
-        numPrimitives = mesh->numTriangles;
-      }
+	throw std::runtime_error("encoding error in morton builder");
       
       /* preallocate arrays */
       if (numPrimitivesOld != numPrimitives)
       {
-        /* free previously allocated memory */
+	bvh->init(numPrimitives);
         if (morton) os_free(morton,bytesMorton);
-
-        /* add one additional memory block for each thread in multi-threaded mode */
-        size_t additionalBlocks = 1;
-        if (needAllThreads) additionalBlocks = threadCount;
-        
-        /* allocate as much memory as likely needed and reserve conservative amounts of memory */
-        size_t numPrimBlocks = blocks(numPrimitives);
-        size_t numAllocatedNodes = min(size_t(0.6*numPrimBlocks),numPrimitives);
-        size_t numAllocatedPrimitives = min(size_t(1.2*numPrimBlocks),numPrimitives);
-#if defined(__X86_64__)
-        size_t numReservedNodes = 2*numPrimitives;
-        size_t numReservedPrimitives = 2*numPrimitives;
-#else
-        size_t numReservedNodes = 1.5*numAllocatedNodes;
-        size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
-#endif
-        bytesMorton = ((numPrimitives+7)&(-8)) * sizeof(MortonID32Bit);
-        size_t bytesAllocatedNodes      = numAllocatedNodes * sizeof(BVH4::Node);
-        size_t bytesAllocatedPrimitives = numAllocatedPrimitives * primBytes;
-        size_t bytesReservedNodes       = numReservedNodes * sizeof(BVH4::Node);
-        size_t bytesReservedPrimitives  = numReservedPrimitives * primBytes;
-        size_t blocksReservedNodes      = (bytesReservedNodes     +Allocator::blockSize-1)/Allocator::blockSize;
-        size_t blocksReservedPrimitives = (bytesReservedPrimitives+Allocator::blockSize-1)/Allocator::blockSize;
-        bytesReservedNodes      = Allocator::blockSize*(blocksReservedNodes      + additionalBlocks);
-        bytesReservedPrimitives = Allocator::blockSize*(blocksReservedPrimitives + additionalBlocks);
-        bytesAllocatedNodes = max(bytesAllocatedNodes,bytesMorton); 
-        bytesReservedNodes  = max(bytesReservedNodes,bytesMorton); 
-
-        /* allocated memory for primrefs, nodes, and primitives */
+	bytesMorton = ((numPrimitives+7)&(-8)) * sizeof(MortonID32Bit);
         morton = (MortonID32Bit* ) os_malloc(bytesMorton); memset(morton,0,bytesMorton);
-        //nodeAllocator.init(bytesAllocatedNodes,bytesReservedNodes);
-        //primAllocator.init(bytesAllocatedPrimitives,bytesReservedPrimitives);
-        
-        /*bvh->nodes = nodeAllocator.data; 
-        bvh->bytesNodes = nodeAllocator.bytesReserved;
-        bvh->primitives = primAllocator.data; 
-        bvh->bytesPrimitives = primAllocator.bytesReserved;*/
       }
     }
     
@@ -290,8 +220,7 @@ namespace embree
 
     CentGeomBBox3fa BVH4BuilderMorton::computeBounds()
     {
-      CentGeomBBox3fa bounds;
-      bounds.reset();
+      CentGeomBBox3fa bounds; bounds.reset();
 
       if (mesh) 
       {
@@ -313,13 +242,12 @@ namespace embree
       return bounds;
     }
     
-    void BVH4BuilderMorton::computeBounds(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
+     void BVH4BuilderMorton::computeBounds(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
       const size_t startID = (threadID+0)*numPrimitives/numThreads;
       const size_t endID   = (threadID+1)*numPrimitives/numThreads;
       
-      CentGeomBBox3fa bounds;
-      bounds.reset();
+      CentGeomBBox3fa bounds; bounds.reset();
       
       size_t currentID = startID;
       size_t offset = g_state->startGroupOffset[threadID];
