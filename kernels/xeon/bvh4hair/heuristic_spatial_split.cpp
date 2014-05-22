@@ -91,24 +91,73 @@ namespace embree
 
 	const ssei bin0 = mapping.bin(prim.bounds().lower);
 	const ssei bin1 = mapping.bin(prim.bounds().upper);
-	
+
 	for (size_t dim=0; dim<3; dim++) 
 	{
+	  //BBox3fa bounds0[BINS];
+	  //for (size_t i=0; i<BINS; i++) bounds0[i] = empty;
+	  
 	  size_t bin;
 	  PrimRef rest = prim;
+	  size_t l = bin0[dim];
+	  size_t r = bin1[dim];
 	  for (bin=bin0[dim]; bin<bin1[dim]; bin++) 
 	  {
 	    const float pos = mapping.pos(bin+1,dim);
 	    
 	    PrimRef left,right;
-	    splitTriangle(prim,dim,pos,v0,v1,v2,left,right);
+	    splitTriangle(rest,dim,pos,v0,v1,v2,left,right);
+	    if (left.bounds().empty()) l++;
 	    
 	    bounds[bin][dim].extend(left.bounds());
+	    //bounds0[bin].extend(left.bounds());
 	    rest = right;
 	  }
-	  numBegin[bin0[dim]][dim]++;
-	  numEnd  [bin1[dim]][dim]++;
+	  if (rest.bounds().empty()) r--;
+	  //numBegin[bin0[dim]][dim]++;
+	  //numEnd  [bin1[dim]][dim]++;
+	  numBegin[l][dim]++;
+	  numEnd  [r][dim]++;
 	  bounds  [bin][dim].extend(rest.bounds());
+	  //bounds0[bin].extend(rest.bounds());
+
+	  /*for (bin=bin0[dim]; bin<bin1[dim]; bin++) 
+	  {
+	    BBox3fa lbounds0 = empty; for (size_t i=0; i<bin+1;    i++) lbounds0.extend(bounds0[i]);
+	    BBox3fa rbounds0 = empty; for (size_t i=bin+1; i<BINS; i++) rbounds0.extend(bounds0[i]);
+	    
+	    PrimRef left,right;
+	    const float pos = mapping.pos(bin+1,dim);
+	    splitTriangle(prim,dim,pos,v0,v1,v2,left,right);
+	    
+	    BBox3fa lbounds1 = left.bounds();
+	    BBox3fa rbounds1 = right.bounds();
+	    if (lbounds0 != lbounds1 || rbounds0 != rbounds1) {
+	      PING;
+	      PRINT(v0);
+	      PRINT(v1);
+	      PRINT(v2);
+	      PRINT(dim);
+	      PRINT(bin);
+	      PRINT(pos);
+	      PRINT(lbounds0);
+	      PRINT(lbounds1);
+	      PRINT(rbounds0);
+	      PRINT(rbounds1);
+
+	      PrimRef rest = prim;
+	      for (bin=bin0[dim]; bin<bin1[dim]; bin++) 
+	      {
+		const float pos = mapping.pos(bin+1,dim);
+		
+		PrimRef left,right;
+		splitTriangle(rest,dim,pos,v0,v1,v2,left,right);
+		PRINT2(bin,left.bounds());
+		rest = right;
+	      }
+	      PRINT2(bin,right.bounds());
+	    }
+	    }*/
 	}
       }
     }
@@ -198,70 +247,15 @@ namespace embree
       /* compute bounds of left and right side */
       size_t lnum = 0, rnum = 0; // FIXME: this is not required
       BBox3fa lbounds = empty, rbounds = empty;
-
-#if 1
       for (size_t i=0; i<bestPos; i++)    { lnum+=numBegin[i][bestDim]; lbounds.extend(bounds[i][bestDim]); }
       for (size_t i=bestPos; i<BINS; i++) { rnum+=numEnd  [i][bestDim]; rbounds.extend(bounds[i][bestDim]); }
 
-#else
-      /* sort each primitive to left, right, or left and right */
-      for (TriRefList::block_iterator_unsafe i = *prims; i; i++) 
-      {
-	const PrimRef& prim = *i; 
-	const BBox3fa bounds = prim.bounds();
-	const int bin0 = mapping.bin(bounds.lower)[bestDim];
-	const int bin1 = mapping.bin(bounds.upper)[bestDim];
-
-	/* sort to the left side */
-	if (bin1 < bestPos)
-	{
-	  lnum++;
-	  lbounds.extend(bounds);
-	  continue;
-	}
-	  
-	/* sort to the right side */
-	if (bin0 >= bestPos)
-	{
-	  rnum++;
-	  rbounds.extend(bounds);
-	  continue;
-	}
-	  
-	/* split and sort to left and right */
-	TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
-	TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-	const Vec3fa v0 = mesh->vertex(tri.v[0]);
-	const Vec3fa v1 = mesh->vertex(tri.v[1]);
-	const Vec3fa v2 = mesh->vertex(tri.v[2]);
-	  
-	PrimRef left,right;
-	float fpos = mapping.pos(bestPos,bestDim);
-	splitTriangle(prim,bestDim,fpos,v0,v1,v2,left,right);
-	
-	if (!left.bounds().empty()) {
-	  lnum++;
-	  lbounds.extend(left.bounds());
-	}
-	
-	if (!right.bounds().empty()) {
-	  rnum++;
-	  rbounds.extend(right.bounds());
-	}
-      }
-#endif
-      
       /* return invalid split if no progress made */
       if (lnum == 0 || rnum == 0) 
 	return Split(inf,-1,0,mapping,lnum,rnum);
       
       /* return best found split */
-      int blocks_add1 = (1 << blocks_shift)-1;
-      int bl = (lnum+blocks_add1) >> blocks_shift;
-      int br = (rnum+blocks_add1) >> blocks_shift;
-      float sah = bl*halfArea(lbounds) + br*halfArea(rbounds);
-      return Split(sah,bestDim,bestPos,mapping,lnum,rnum);
-      //return Split(bestSAH,bestDim,bestPos,mapping,lnum,rnum);
+      return Split(bestSAH,bestDim,bestPos,mapping,lnum,rnum);
     }
     
     template<>

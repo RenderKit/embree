@@ -70,7 +70,7 @@ namespace embree
 
       NodeRef layout_top_nodes(size_t threadIndex, NodeRef node);
       
-      const Split find(size_t threadIndex, size_t threadCount, size_t depth, TriRefList& prims, const PrimInfo& pinfo);
+      const Split find(size_t threadIndex, size_t threadCount, size_t depth, TriRefList& prims, const PrimInfo& pinfo, bool spatial);
 
       /***********************************************************************************************************************
        *                                      Single Threaded Build Task
