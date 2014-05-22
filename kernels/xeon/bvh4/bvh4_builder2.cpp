@@ -34,7 +34,8 @@ namespace embree
     void BVH4Builder2::build(size_t threadIndex, size_t threadCount) 
     {
       size_t numPrimitives = source->size();
-      bvh->init(numPrimitives);
+      bvh->init(2*numPrimitives); // FIXME: 2x
+      remainingReplications = numPrimitives;
       if (source->isEmpty()) 
 	return;
       
@@ -49,10 +50,9 @@ namespace embree
       TriRefList prims; PrimInfo pinfo(empty);
       TriRefListGen::generate(threadIndex,threadCount,&alloc,(Scene*)geometry,prims,pinfo);
       
-      const Split split = find(threadIndex,threadCount,prims,pinfo); // FIXME: enable parallel
+      const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,true);
       tasks.push_back(SplitTask(threadIndex,threadCount,this,bvh->root,1,prims,pinfo,split));
 
-#if 1
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
       while (tasks.size() < threadCount)
       {
@@ -64,8 +64,7 @@ namespace embree
 	/* process this item in parallel */
 	task.recurse<true>(threadIndex,threadCount,NULL);
       }
-#endif
-
+      
       /*! process each generated subtask in its own thread */
       TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,tasks.size(),"BVH4Builder2::build");
                   
@@ -109,12 +108,6 @@ namespace embree
       {
 	Node* src = node.node();
 	Node* dst = bvh->allocNode(threadIndex);
-
-	//std::pair<float,int> order[4];
-	//for (size_t i=0; i<BVH4::N; i++)
-	//  order[i] = std::pair<float,int>(=area(src->bounds(i)),i);
-	//std::sort(&order[0],&order[4]);
-
 	for (size_t i=0; i<BVH4::N; i++) {
 	  dst->set(i,src->bounds(i),layout_top_nodes(threadIndex,src->child(i)));
 	}
@@ -126,7 +119,7 @@ namespace embree
     
     BVH4Builder2::BVH4Builder2 (BVH4* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize)
       : source(source), geometry(geometry), primTy(bvh->primTy), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), bvh(bvh),
-	taskQueue(/*Heuristic::depthFirst ?*/ TaskScheduler::GLOBAL_BACK /*: TaskScheduler::GLOBAL_FRONT*/)
+	taskQueue(/*Heuristic::depthFirst ? TaskScheduler::GLOBAL_BACK : */TaskScheduler::GLOBAL_FRONT)
     {
       size_t maxLeafPrims = BVH4::maxLeafBlocks*primTy.blockSize;
       if (maxLeafPrims < this->maxLeafSize) 
@@ -230,11 +223,15 @@ namespace embree
       delete this;
     }
 
-    const Split BVH4Builder2::find(size_t threadIndex, size_t threadCount, TriRefList& prims, const PrimInfo& pinfo)
+    template<bool PARALLEL>
+    const Split BVH4Builder2::find(size_t threadIndex, size_t threadCount, size_t depth, TriRefList& prims, const PrimInfo& pinfo, bool spatial)
     {
-      ObjectPartition::Split osplit = ObjectPartition::find<false>(threadIndex,threadCount,      prims,pinfo,2); // FIXME: hardcoded constant
-      return osplit;
-      SpatialSplit   ::Split ssplit = SpatialSplit   ::find<false>(threadIndex,threadCount,(Scene*)geometry,prims,pinfo,2); // FIXME: hardcoded constant
+      ObjectPartition::Split osplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,      prims,pinfo,2); // FIXME: hardcoded constant
+      if (!spatial) {
+	if (osplit.sah == float(inf)) return Split();
+	else return osplit;
+      }
+      SpatialSplit   ::Split ssplit = SpatialSplit   ::find<PARALLEL>(threadIndex,threadCount,(Scene*)geometry,prims,pinfo,2); // FIXME: hardcoded constant
       const float bestSAH = min(osplit.sah,ssplit.sah);
       if      (bestSAH == osplit.sah) return osplit; 
       else if (bestSAH == ssplit.sah) return ssplit;
@@ -279,10 +276,20 @@ namespace embree
 	PrimInfo linfo(empty),rinfo(empty);
 	TriRefList lprims,rprims;
 	csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,(Scene*)parent->geometry,cprims[bestChild],lprims,linfo,rprims,rinfo);
-	//const Split lsplit = ObjectPartition::find<false>(threadIndex,threadCount,lprims,linfo,2);
-	//const Split rsplit = ObjectPartition::find<false>(threadIndex,threadCount,rprims,rinfo,2);
-	const Split lsplit = parent->find(threadIndex,threadCount,lprims,linfo);
-	const Split rsplit = parent->find(threadIndex,threadCount,rprims,rinfo);
+	if (linfo.size() == 0) {
+	  cprims[bestChild  ] = rprims; cinfo[bestChild  ] = rinfo; 
+	  csplit[bestChild  ] = parent->find<false>(threadIndex,threadCount,depth,rprims,rinfo,false);
+	  continue;
+	}
+	if (rinfo.size() == 0) {
+	  cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; 
+	  csplit[bestChild  ] = parent->find<false>(threadIndex,threadCount,depth,lprims,linfo,false);
+	  continue;
+	}
+	const ssize_t replications = linfo.size()+rinfo.size()-cinfo[bestChild].size(); assert(replications >= 0);
+	const ssize_t remaining = atomic_add(&parent->remainingReplications,-replications);
+	const Split lsplit = parent->find<false>(threadIndex,threadCount,depth,lprims,linfo,remaining > 0);
+	const Split rsplit = parent->find<false>(threadIndex,threadCount,depth,rprims,rinfo,remaining > 0);
 	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
 	cprims[numChildren] = rprims; cinfo[numChildren] = rinfo; csplit[numChildren] = rsplit;
 	numChildren++;
@@ -355,10 +362,20 @@ namespace embree
 	PrimInfo linfo(empty), rinfo(empty);
 	TriRefList lprims,rprims;
 	csplit[bestChild].split<PARALLEL>(threadIndex,threadCount,parent->alloc,(Scene*)parent->geometry,cprims[bestChild],lprims,linfo,rprims,rinfo);
-	//const Split lsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,lprims,linfo,2);
-	//const Split rsplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,rprims,rinfo,2);
-	const Split lsplit = parent->find(threadIndex,threadCount,lprims,linfo); // FIXME: not in parallel mode
-	const Split rsplit = parent->find(threadIndex,threadCount,rprims,rinfo);
+	if (linfo.size() == 0) {
+	  cprims[bestChild  ] = rprims; cinfo[bestChild  ] = rinfo; 
+	  csplit[bestChild  ] = parent->find<PARALLEL>(threadIndex,threadCount,depth,rprims,rinfo,false);
+	  continue;
+	}
+	if (rinfo.size() == 0) {
+	  cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; 
+	  csplit[bestChild  ] = parent->find<PARALLEL>(threadIndex,threadCount,depth,lprims,linfo,false);
+	  continue;
+	}
+	const ssize_t replications = linfo.size()+rinfo.size()-cinfo[bestChild].size(); assert(replications >= 0);
+	const ssize_t remaining = atomic_add(&parent->remainingReplications,-replications);
+	const Split lsplit = parent->find<PARALLEL>(threadIndex,threadCount,depth,lprims,linfo,remaining>0);
+	const Split rsplit = parent->find<PARALLEL>(threadIndex,threadCount,depth,rprims,rinfo,remaining>0);
 	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
 	cprims[numChildren] = rprims; cinfo[numChildren] = rinfo; csplit[numChildren] = rsplit;
 	numChildren++;

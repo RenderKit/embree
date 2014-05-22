@@ -77,8 +77,8 @@ namespace embree
       if (prims) os_free(prims,bytesPrims); prims = NULL;
       nodeAllocator.shrink(); 
       primAllocator.shrink();
-      bvh->bytesNodes = nodeAllocator.bytesReserved;
-      bvh->bytesPrimitives = primAllocator.bytesReserved;
+      bvh->bytesNodes = nodeAllocator.bytesAllocated;
+      bvh->bytesPrimitives = primAllocator.bytesAllocated;
     }
     
     void BVH4BuilderFast::build(size_t threadIndex, size_t threadCount) 

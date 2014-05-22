@@ -211,11 +211,53 @@ namespace embree
      /*! each thread handles block of that many bytes locally */
     enum { allocBlockSize = 4096 };
 
+    /*! Per thread structure holding the current memory block. */
+    struct __aligned(64) ThreadAllocator 
+    {
+      ALIGNED_CLASS_(64);
+    public:
+
+       /*! each thread handles block of that many bytes locally */
+      enum { blockSize = allocBlockSize };
+
+      /*! Default constructor. */
+      __forceinline ThreadAllocator (LinearAllocatorPerThread* alloc = NULL) 
+	: alloc(alloc), ptr(NULL), cur(0), end(0) {}
+
+      /* Allocate aligned memory from the threads memory block. */
+      __forceinline void* malloc(size_t bytes, size_t align = 16) 
+      {
+        cur += bytes + ((align - cur) & (align-1));
+        if (likely(cur <= end)) return &ptr[cur - bytes];
+        ptr = (char*) alloc->malloc(allocBlockSize);
+        cur = 0;
+        end = allocBlockSize;
+        if (bytes > allocBlockSize) 
+          throw std::runtime_error("allocated block is too large");
+        cur += bytes;
+        return &ptr[cur - bytes];
+      }
+
+      /*! clears the allocator */
+      void clear () {
+        ptr = NULL;
+        cur = end = 0;
+      }
+
+    public:
+      LinearAllocatorPerThread* alloc;
+      char*  ptr;      //!< pointer to memory block
+      size_t cur;      //!< Current location of the allocator.
+      size_t end;      //!< End of the memory block.
+    };
+
     /*! Allocator default construction. */
     LinearAllocatorPerThread () 
       : ptr(NULL), cur(0), end(0), bytesAllocated(0)
     {
-      thread = new ThreadAllocator[getNumberOfLogicalThreads()];
+      size_t numThreads = getNumberOfLogicalThreads();
+      thread = new ThreadAllocator[numThreads];
+      for (size_t i=0; i<numThreads; i++) thread[i].alloc = this;
       ptr = NULL;
     }
 
@@ -232,7 +274,7 @@ namespace embree
 
     /*! Aligned memory allocation */
     __forceinline void* malloc(size_t tinfo, size_t bytes, size_t align = 16) {
-      return thread[tinfo].malloc(bytes,align,this);
+      return thread[tinfo].malloc(bytes,align);
     }
 
     /*! clears the allocator */
@@ -290,6 +332,13 @@ namespace embree
       return cur;
     }
 
+    void shrink () {
+      if (ptr == NULL) return;
+      os_shrink(ptr,cur,end);
+      end = cur;
+      bytesAllocated = cur;
+    }
+
   private:
 
     /*! Allocates some number of bytes. */
@@ -302,41 +351,6 @@ namespace embree
         os_commit(p,bytes);
       return p;
     }
-
-    /*! Per thread structure holding the current memory block. */
-    struct __aligned(64) ThreadAllocator 
-    {
-      ALIGNED_CLASS_(64);
-    public:
-
-      /*! Default constructor. */
-      __forceinline ThreadAllocator () : ptr(NULL), cur(0), end(0) {}
-
-      /* Allocate aligned memory from the threads memory block. */
-      __forceinline void* malloc(size_t bytes, size_t align, LinearAllocatorPerThread* alloc) 
-      {
-        cur += bytes + ((align - cur) & (align-1));
-        if (likely(cur <= end)) return &ptr[cur - bytes];
-        ptr = (char*) alloc->malloc(allocBlockSize);
-        cur = 0;
-        end = allocBlockSize;
-        if (bytes > allocBlockSize) 
-          throw std::runtime_error("allocated block is too large");
-        cur += bytes;
-        return &ptr[cur - bytes];
-      }
-
-      /*! clears the allocator */
-      void clear () {
-        ptr = NULL;
-        cur = end = 0;
-      }
-
-    public:
-      char*  ptr;      //!< pointer to memory block
-      size_t cur;      //!< Current location of the allocator.
-      size_t end;      //!< End of the memory block.
-    };
 
   private:
     ThreadAllocator* thread;   //!< one allocator for each thread

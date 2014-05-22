@@ -294,6 +294,8 @@ namespace embree
     size_t bytesNodes;
     void* primitives;
     size_t bytesPrimitives;
+    /*__aligned(64) GlobalAllocator nodeAllocator;
+      __aligned(64) GlobalAllocator primAllocator;*/
     std::vector<BVH4*> objects;
   };
 

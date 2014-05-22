@@ -114,7 +114,6 @@ IF (TARGET_SSE41)
     bvh4/bvh4_intersector1.cpp   
     bvh4/bvh4_intersector4_chunk.cpp
     bvh4/bvh4_intersector4_hybrid.cpp
-    bvh4/bvh4_builder_morton.cpp
   )
   SET_TARGET_PROPERTIES(embree_sse41 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE41}")
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse41)
@@ -138,6 +137,7 @@ IF (TARGET_AVX)
    geometry/instance_intersector4.cpp
    geometry/instance_intersector8.cpp
 
+   bvh4/bvh4_builder_morton.cpp
    bvh4/bvh4_builder_fast.cpp
    bvh4/bvh4_builder2.cpp
    bvh4/bvh4_refit.cpp
