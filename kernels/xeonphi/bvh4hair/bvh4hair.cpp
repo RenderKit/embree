@@ -5,7 +5,7 @@
 
 namespace embree
 {
-#define DBG(x) 
+#define DBG(x) x
 
   DECLARE_SYMBOL(Accel::Intersector1 ,BVH4HairIntersector1Bezier1i);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4HairIntersector16Bezier1i);
@@ -50,20 +50,12 @@ namespace embree
 
   void BVH4Hair::UnalignedNode::convertFromBVH4iNode(const BVH4i::Node &bvh4i_node, UnalignedNode *ptr)
   {    
-    DBG(PING);
     setIdentityMatrix();
     for (size_t m=0;m<4;m++)
       {
 	const float dx = bvh4i_node.upper[m].x - bvh4i_node.lower[m].x;
 	const float dy = bvh4i_node.upper[m].y - bvh4i_node.lower[m].y;
 	const float dz = bvh4i_node.upper[m].z - bvh4i_node.lower[m].z;
-	DBG(
-	    DBG_PRINT(bvh4i_node);
-	    DBG_PRINT(dx);
-	    DBG_PRINT(dy);
-	    DBG_PRINT(dz);
-	    );
-
 	const float inv_dx = 1.0f / dx;
 	const float inv_dy = 1.0f / dy;
 	const float inv_dz = 1.0f / dz;
@@ -78,26 +70,19 @@ namespace embree
 	  {
 	    const size_t index = n4i.offsetIndex();
 	    const size_t items = n4i.items();
-	    
-	    DBG(
-		DBG_PRINT(index);
-		DBG_PRINT(items);
-		);
-
-	    child(m) = (size_t)n4i;
+	    if (n4i != BVH4i::emptyNode)
+	      child(m) = (size_t)n4i;
+	    else
+	      child(m) = (size_t)-1;
 	  }
 	else
 	  {
 	    const size_t nodeID = n4i.nodeID();
-	    DBG(
-		DBG_PRINT(nodeID);
-		);
 	    child(m) = (size_t)&ptr[nodeID]; 	    
 	  }
+	geomID[m] = 0;
+	primID[m] = 0;
       }
-    DBG(std::cout << *this << std::endl);
-
-    //exit(0);
   }
 
 
