@@ -163,16 +163,16 @@ namespace embree
       TaskScheduler::Task task;
       
       /*! task that calculates the bounding box of the scene */
-      TASK_FUNCTION(BVH4BuilderMorton,computeBounds);
+      TASK_RUN_FUNCTION(BVH4BuilderMorton,computeBounds);
       
       /*! task that calculates the morton codes for each primitive in the scene */
-      TASK_FUNCTION(BVH4BuilderMorton,computeMortonCodes);
+      TASK_RUN_FUNCTION(BVH4BuilderMorton,computeMortonCodes);
       
       /*! parallel sort of the morton codes */
-      TASK_FUNCTION(BVH4BuilderMorton,radixsort);
+      TASK_RUN_FUNCTION(BVH4BuilderMorton,radixsort);
       
       /*! task that builds a list of sub-trees */
-      TASK_FUNCTION(BVH4BuilderMorton,recurseSubMortonTrees);
+      TASK_RUN_FUNCTION(BVH4BuilderMorton,recurseSubMortonTrees);
       
     public:
       

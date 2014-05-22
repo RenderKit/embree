@@ -99,7 +99,7 @@ namespace embree
         if (needAllThreads) 
         {
           if (!g_state.get()) g_state.reset(new MortonBuilderState);
-          scheduler.init(threadCount);
+          TaskScheduler::init(threadCount);
           TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,threadCount,"build_parallel_morton");
         } else {
           build_sequential_morton(threadIndex,threadCount);
@@ -121,7 +121,7 @@ namespace embree
       if (needAllThreads) 
       {
         if (!g_state.get()) g_state.reset(new MortonBuilderState);
-        scheduler.init(threadCount);
+        TaskScheduler::init(threadCount);
         TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,threadCount,"build_parallel_morton");
       } else {
         build_sequential_morton(threadIndex,threadCount);
@@ -304,7 +304,7 @@ namespace embree
       return bounds;
     }
     
-    void BVH4BuilderMorton::computeBounds(const size_t threadID, const size_t numThreads)
+    void BVH4BuilderMorton::computeBounds(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
       const size_t startID = (threadID+0)*numPrimitives/numThreads;
       const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -393,7 +393,7 @@ namespace embree
       }
     }
     
-    void BVH4BuilderMorton::computeMortonCodes(const size_t threadID, const size_t numThreads)
+    void BVH4BuilderMorton::computeMortonCodes(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {      
       const size_t startID = (threadID+0)*numPrimitives/numThreads;
       const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -446,7 +446,7 @@ namespace embree
 #endif	    
     }
     
-    void BVH4BuilderMorton::radixsort(const size_t threadID, const size_t numThreads)
+    void BVH4BuilderMorton::radixsort(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
       //size_t taskID = TaskLogger::beginTask(threadID,"BVH4BuilderMorton::radixsort",0);
 
@@ -477,7 +477,7 @@ namespace embree
           const size_t index = src[i].get(shift, mask);
           radixCount[threadID][index]++;
         }
-        scheduler.syncThreads(threadID,numThreads);
+        TaskScheduler::syncThreads(threadID,numThreads);
         
         /* calculate total number of items for each bucket */
         __aligned(64) size_t total[RADIX_BUCKETS];
@@ -504,19 +504,19 @@ namespace embree
           const size_t index = src[i].get(shift, mask);
           dst[offset[index]++] = src[i];
         }
-        if (b < 2) scheduler.syncThreads(threadID,numThreads);
+        if (b < 2) TaskScheduler::syncThreads(threadID,numThreads);
       }
 
       //TaskLogger::endTask(threadID,taskID);
     }
     
-    void BVH4BuilderMorton::recurseSubMortonTrees(const size_t threadID, const size_t numThreads)
+    void BVH4BuilderMorton::recurseSubMortonTrees(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
       __aligned(64) Allocator nodeAlloc(nodeAllocator);
       __aligned(64) Allocator leafAlloc(primAllocator);
       while (true)
       {
-        const unsigned int taskID = scheduler.taskCounter.inc();
+        const unsigned int taskID = TaskScheduler::taskCounter.inc(); // FIXME: why using taskscheduler for this?
         if (taskID >= g_state->numBuildRecords) break;
         
         //size_t id = TaskLogger::beginTask(threadID,"BVH4BuilderMorton::subtree",0);
@@ -862,6 +862,11 @@ namespace embree
       return bounds0;
     }
     
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+    
+
     __forceinline BBox3fa BVH4Triangle1BuilderMorton::leafBounds(NodeRef& ref) const
     {
       BBox3fa bounds = empty;
@@ -950,7 +955,7 @@ namespace embree
       const float upper_y = reduce_max(bounds.upper.y);
       const float upper_z = reduce_max(bounds.upper.z);
       return BBox3fa(Vec3fa(lower_x,lower_y,lower_z),
-                    Vec3fa(upper_x,upper_y,upper_z));
+		     Vec3fa(upper_x,upper_y,upper_z));
     }
 
     void BVH4BuilderMorton::build_sequential_morton(size_t threadIndex, size_t threadCount) 
@@ -970,7 +975,7 @@ namespace embree
         computeMortonCodes(0,numPrimitives,0,0,morton);
 
       /* sort morton codes */
-      std::sort(&morton[0],&morton[numPrimitives]); // FIMXE: use radix sort
+      std::sort(&morton[0],&morton[numPrimitives]); // FIXME: use radix sort
       
 #if defined(DEBUG)
       for (size_t i=1; i<numPrimitives; i++)
@@ -995,29 +1000,24 @@ namespace embree
     
     void BVH4BuilderMorton::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t, size_t, TaskScheduler::Event* event) 
     {
-      /* wait for all threads to enter */
-      g_state->barrier.wait(threadIndex,threadCount);
+      /* initialize thread state */
+      initThreadState(threadIndex,threadCount);
+
+      /* all worker threads enter tasking system */
+      if (TaskScheduler::enter(threadIndex,threadCount))
+	return;
 
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();
       
-      /* initialize thread state */
-      initThreadState(threadIndex,threadCount);
-      
-	  /* let all thread except for control thread wait for work */
-      if (threadIndex != 0) {
-        scheduler.dispatchTaskMainLoop(threadIndex,threadCount);
-        return;
-      }
-      
       /* compute scene bounds */
       global_bounds.reset();
-      scheduler.dispatchTask( task_computeBounds, this, threadIndex, threadCount );
+      TaskScheduler::dispatchTask( _computeBounds, this, threadIndex, threadCount );
       bvh->bounds = global_bounds.geometry;
 
 	  /* compute morton codes */
-      scheduler.dispatchTask( task_computeMortonCodes, this, threadIndex, threadCount );   
+      TaskScheduler::dispatchTask( _computeMortonCodes, this, threadIndex, threadCount );   
       
       /* padding */
       MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) nodeAllocator.data;
@@ -1027,7 +1027,7 @@ namespace embree
       }
       
       /* sort morton codes */
-      scheduler.dispatchTask( task_radixsort, this, threadIndex, threadCount );
+      TaskScheduler::dispatchTask( _radixsort, this, threadIndex, threadCount );
 
 #if defined(DEBUG)
       for (size_t i=1; i<numPrimitives; i++)
@@ -1055,13 +1055,13 @@ namespace embree
       
       /* build sub-trees */
       g_state->workStack.reset();
-      scheduler.dispatchTask( task_recurseSubMortonTrees, this, threadIndex, threadCount );
+      TaskScheduler::dispatchTask( _recurseSubMortonTrees, this, threadIndex, threadCount );
       
       /* refit toplevel part of tree */
       refit_toplevel(bvh->root);
       
-      /* end task */
-      scheduler.releaseThreads(threadCount);
+      /* release all threads again */
+      TaskScheduler::leave(threadIndex,threadCount);
       
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;
@@ -1076,14 +1076,6 @@ namespace embree
     Builder* BVH4Triangle4MeshBuilderMorton  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4BuilderMorton ((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle1vMeshBuilderMorton (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle1vBuilderMorton((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle4vMeshBuilderMorton (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4vBuilderMorton((BVH4*)bvh,mesh); }
-    
-    /*Builder* BVH4BuilderMortonFast (void* bvh, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize) {
-      return new BVH4BuilderMorton((BVH4*)bvh,source,scene,NULL,minLeafSize,maxLeafSize);
-    }
-    
-    Builder* BVH4BuilderMortonTriangleMeshFast (void* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize) {
-      return new BVH4BuilderMorton((BVH4*)bvh,NULL,mesh->parent,mesh,minLeafSize,maxLeafSize);
-      }*/
   }
 }
 
