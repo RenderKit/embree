@@ -279,9 +279,9 @@ namespace embree
       }
     }
 
-    Centroid_Scene_AABB BVH4BuilderMorton::computeBounds()
+    CentGeomBBox3fa BVH4BuilderMorton::computeBounds()
     {
-      Centroid_Scene_AABB bounds;
+      CentGeomBBox3fa bounds;
       bounds.reset();
 
       if (mesh) 
@@ -309,7 +309,7 @@ namespace embree
       const size_t startID = (threadID+0)*numPrimitives/numThreads;
       const size_t endID   = (threadID+1)*numPrimitives/numThreads;
       
-      Centroid_Scene_AABB bounds;
+      CentGeomBBox3fa bounds;
       bounds.reset();
       
       size_t currentID = startID;
@@ -337,8 +337,8 @@ namespace embree
                                                MortonID32Bit* __restrict__ const dest)
     {
       /* compute mapping from world space into 3D grid */
-      const ssef base     = (ssef)global_bounds.centroid2.lower;
-      const ssef diagonal = (ssef)global_bounds.centroid2.upper - (ssef)global_bounds.centroid2.lower;
+      const ssef base     = (ssef)global_bounds.centBounds.lower;
+      const ssef diagonal = (ssef)global_bounds.centBounds.upper - (ssef)global_bounds.centBounds.lower;
       const ssef scale    = select(diagonal != 0, rcp(diagonal) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
       
       size_t currentID = startID;
@@ -406,7 +406,7 @@ namespace embree
     void BVH4BuilderMorton::recreateMortonCodes(SmallBuildRecord& current) const
     {
       assert(current.size() > 4);
-      Centroid_Scene_AABB global_bounds;
+      CentGeomBBox3fa global_bounds;
       global_bounds.reset();
       
       for (size_t i=current.begin; i<current.end; i++)
@@ -418,8 +418,8 @@ namespace embree
       }
       
       /* compute mapping from world space into 3D grid */
-      const ssef base     = (ssef)global_bounds.centroid2.lower;
-      const ssef diagonal = (ssef)global_bounds.centroid2.upper - (ssef)global_bounds.centroid2.lower;
+      const ssef base     = (ssef)global_bounds.centBounds.lower;
+      const ssef diagonal = (ssef)global_bounds.centBounds.upper - (ssef)global_bounds.centBounds.lower;
       const ssef scale    = select(diagonal != 0,rcp(diagonal) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
       
       for (size_t i=current.begin; i<current.end; i++)
@@ -966,7 +966,7 @@ namespace embree
 
       /* compute scene bounds */
       global_bounds = computeBounds();
-      bvh->bounds = global_bounds.geometry;
+      bvh->bounds = global_bounds.geomBounds;
 
       /* compute morton codes */
       if (mesh)
@@ -998,7 +998,7 @@ namespace embree
       if (g_verbose >= 2) dt = getSeconds()-t0;
     }
     
-    void BVH4BuilderMorton::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t, size_t, TaskScheduler::Event* event) 
+    void BVH4BuilderMorton::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
       /* initialize thread state */
       initThreadState(threadIndex,threadCount);
@@ -1014,7 +1014,7 @@ namespace embree
       /* compute scene bounds */
       global_bounds.reset();
       TaskScheduler::dispatchTask( _computeBounds, this, threadIndex, threadCount );
-      bvh->bounds = global_bounds.geometry;
+      bvh->bounds = global_bounds.geomBounds;
 
 	  /* compute morton codes */
       TaskScheduler::dispatchTask( _computeMortonCodes, this, threadIndex, threadCount );   

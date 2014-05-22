@@ -18,6 +18,7 @@
 
 #include "bvh4.h"
 #include "../bvh4i/bvh4i_builder_util.h"
+#include "../bvh4hair/heuristic_fallback.h"
 
 namespace embree
 {
@@ -152,7 +153,7 @@ namespace embree
       /*! single threaded build */
       void build_sequential_morton(size_t threadIndex, size_t threadCount);
 
-      Centroid_Scene_AABB computeBounds();
+      CentGeomBBox3fa computeBounds();
 
       void computeMortonCodes(const size_t startID, const size_t endID, 
                               const size_t startGroup, const size_t startOffset, 
@@ -243,7 +244,7 @@ namespace embree
       size_t numPrimitives;
       size_t numAllocatedPrimitives;
       size_t numAllocatedNodes;
-      Centroid_Scene_AABB global_bounds;
+      CentGeomBBox3fa global_bounds;
       //createSmallLeaf createSmallLeaf;
       //leafBounds leafBounds;
       LockStepTaskScheduler scheduler;
