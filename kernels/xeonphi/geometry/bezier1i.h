@@ -30,7 +30,7 @@ namespace embree
   extern mic_f coeff_P2[4];
   extern mic_f coeff_P3[4];
 
-  struct __aligned(32) Bezier1i
+  struct __aligned(16) Bezier1i
   {
   public:
 
@@ -38,8 +38,8 @@ namespace embree
     __forceinline Bezier1i () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Bezier1i (const Vec3fa* p, const unsigned int geomID, const unsigned int primID, const unsigned int mask)
-      : p(p), geomID(geomID), primID(primID), mask(mask) {}
+    __forceinline Bezier1i (const Vec3fa* p, const unsigned int geomID, const unsigned int primID)
+      : p(p), geomID(geomID), primID(primID) {}
 
     /*! calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const {
@@ -56,8 +56,8 @@ namespace embree
     const Vec3fa* p;      //!< pointer to first control point (x,y,z,r)
     unsigned int geomID;  //!< geometry ID
     unsigned int primID;  //!< primitive ID
-    unsigned int mask;    //!< geometry mask
-    unsigned int dummy[3];
+    /* unsigned int mask;    //!< geometry mask */
+    /* unsigned int dummy[3]; */
   };
 
 

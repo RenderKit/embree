@@ -18,14 +18,14 @@ namespace embree
 
   void BVH4HairBuilder::printBuilderName()
   {
-    std::cout << "building BVH4Hair with binned SAH builder (MIC) ... " << std::endl;    
-    DBG(sleep(1));
+    std::cout << "building BVH4Hair binned SAH builder (MIC) ... " << std::endl;    
+    
   }
+
 
   size_t BVH4HairBuilder::getNumPrimitives()
   {
     DBG(PING);
-    DBG(sleep(1));
 
     /* count total number of virtual objects */
     size_t numCurves = 0;       
@@ -40,24 +40,48 @@ namespace embree
     return numCurves;	
   }
 
-  void BVH4HairBuilder::computePrimRefs(const size_t threadIndex, const size_t threadCount)
+  // ==========================================================================================
+  // ==========================================================================================
+  // ==========================================================================================
+
+
+  void BVH4HairBuilderConvert::printBuilderName()
+  {
+    std::cout << "building BVH4Hair using BVH4i conversion (MIC) ... " << std::endl;    
+  }
+
+  size_t BVH4HairBuilderConvert::getNumPrimitives()
   {
     DBG(PING);
-    DBG(sleep(1));
+
+    /* count total number of virtual objects */
+    size_t numCurves = 0;       
+    for (size_t i=0;i<scene->size();i++)
+      {
+	if (unlikely(scene->get(i) == NULL)) continue;
+	if (unlikely((scene->get(i)->type != BEZIER_CURVES))) continue;
+	if (unlikely(!scene->get(i)->isEnabled())) continue;
+        BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(i);
+	numCurves += geom->numCurves;
+      }
+    return numCurves;	
+  }
+
+  void BVH4HairBuilderConvert::computePrimRefs(const size_t threadIndex, const size_t threadCount)
+  {
+    DBG(PING);
     LockStepTaskScheduler::dispatchTask( task_computePrimRefsBezierCurves, this, threadIndex, threadCount );	
   }
 
-  void BVH4HairBuilder::createAccel(const size_t threadIndex, const size_t threadCount)
+  void BVH4HairBuilderConvert::createAccel(const size_t threadIndex, const size_t threadCount)
   {
     DBG(PING);
-    DBG(sleep(1));
     LockStepTaskScheduler::dispatchTask( task_createBezierCurvesAccel, this, threadIndex, threadCount );
   }
 
-  void BVH4HairBuilder::computePrimRefsBezierCurves(const size_t threadID, const size_t numThreads) 
+  void BVH4HairBuilderConvert::computePrimRefsBezierCurves(const size_t threadID, const size_t numThreads) 
   {
     DBG(PING);
-    DBG(sleep(1));
 
     const size_t numTotalGroups = scene->size();
 
@@ -139,7 +163,7 @@ namespace embree
   }
 
 
-  void BVH4HairBuilder::createBezierCurvesAccel(const size_t threadID, const size_t numThreads)
+  void BVH4HairBuilderConvert::createBezierCurvesAccel(const size_t threadID, const size_t numThreads)
   {
     DBG(PING);
 
@@ -148,9 +172,9 @@ namespace embree
 
     Bezier1i *acc = (Bezier1i*)accel + startID;
 
-    const PrimRef* __restrict__  bptr = prims + startID;
+    const PrimRef*  bptr = prims + startID;
 
-    for (size_t j=startID; j<endID; j++, bptr++, acc++)
+    for (size_t j=startID; j<endID; j++, bptr++,acc++)
       {
      	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
      	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
@@ -160,12 +184,12 @@ namespace embree
 	const unsigned int primID = bptr->primID();
 	BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(geomID);
 
-     	*acc = Bezier1i( &geom->vertex( geom->curve( primID ) ), geomID, primID, geom->mask );
+     	*acc = Bezier1i( &geom->vertex( geom->curve( primID ) ), geomID, primID);
       }
   }
 
   
-  void BVH4HairBuilder::build(size_t threadIndex, size_t threadCount) 
+  void BVH4HairBuilderConvert::build(size_t threadIndex, size_t threadCount) 
   {
     DBG(PING);
     const size_t totalNumPrimitives = getNumPrimitives();
@@ -209,12 +233,10 @@ namespace embree
 	  }
       }
 
-#if 1
 	std::cout << "converting from bvh4i to bvh4hair..." << std::endl;
 	DBG_PRINT(bvh4hair);
 	DBG_PRINT(numNodes);
 	bvh4hair->unaligned_nodes = (BVH4Hair::UnalignedNode*)os_malloc(sizeof(BVH4Hair::UnalignedNode) * numNodes);
-	DBG_PRINT(bvh4hair->unaligned_nodes);
 	for (size_t i=0;i<numNodes;i++)
 	  {
 	    bvh4hair->unaligned_nodes[i].convertFromBVH4iNode(bvh4hair->qbvh[i],bvh4hair->unaligned_nodes);
@@ -222,8 +244,6 @@ namespace embree
 	    //DBG_PRINT(bvh4hair->qbvh[i]);
 	    //DBG_PRINT(bvh4hair->unaligned_nodes[i]);
 	  }
-#endif
-
 
     if (g_verbose >= 2) {
       double perf = totalNumPrimitives/dt*1E-6;

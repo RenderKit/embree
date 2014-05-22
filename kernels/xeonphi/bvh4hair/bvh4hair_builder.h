@@ -25,12 +25,12 @@ namespace embree
 {
 
   /*! derived binned-SAH builder supporting hair primitives */  
-  class BVH4HairBuilder : public BVH4iBuilder
+  class BVH4HairBuilderConvert : public BVH4iBuilder
   {
   public:
     BVH4Hair *bvh4hair;
     
-  BVH4HairBuilder(BVH4Hair* bvh, BuildSource* source, void* geometry) : BVH4iBuilder((BVH4i*)bvh,source,geometry) 
+  BVH4HairBuilderConvert(BVH4Hair* bvh, BuildSource* source, void* geometry) : BVH4iBuilder((BVH4i*)bvh,source,geometry) 
       {
 	bvh4hair = bvh;
       }
@@ -42,8 +42,29 @@ namespace embree
     virtual void printBuilderName();
 
   protected:
-    TASK_FUNCTION(BVH4HairBuilder,computePrimRefsBezierCurves);
-    TASK_FUNCTION(BVH4HairBuilder,createBezierCurvesAccel);    
+    TASK_FUNCTION(BVH4HairBuilderConvert,computePrimRefsBezierCurves);
+    TASK_FUNCTION(BVH4HairBuilderConvert,createBezierCurvesAccel);    
+  };
+
+
+  /*! derived binned-SAH builder supporting hair primitives */  
+  class BVH4HairBuilder : public BVH4iBuilder
+  {
+  public:
+    BVH4Hair *bvh4hair;
+    
+  BVH4HairBuilder(BVH4Hair* bvh, BuildSource* source, void* geometry) : BVH4iBuilder((BVH4i*)bvh,source,geometry) 
+      {
+	bvh4hair = bvh;
+      }
+
+    virtual size_t getNumPrimitives();
+    virtual void printBuilderName();
+    //virtual void build(size_t threadIndex, size_t threadCount);
+
+  protected:
+    //TASK_FUNCTION(BVH4HairBuilder,computePrimRefsBezierCurves);
+    //TASK_FUNCTION(BVH4HairBuilder,createBezierCurvesAccel);    
   };
 
 
