@@ -153,7 +153,6 @@ namespace embree
 
       /* intersection filter test */
 
-
       /* update hit information */
       const float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
 

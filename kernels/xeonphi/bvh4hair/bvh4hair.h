@@ -70,7 +70,9 @@ namespace embree
       __forceinline size_t isNode() const { return (_id & leaf_mask) == 0; }
       
       /*! returns node pointer */
-      __forceinline       Node* node()       { assert(isNode()); return (Node*)((size_t)_id & offset_mask); }
+      __forceinline       void* node() const      { assert(isNode()); return (void*)((size_t)_id); }
+
+      __forceinline       void* ptr() const      { return (void*)_id; }
 
       
       /*! returns leaf pointer */
@@ -88,6 +90,11 @@ namespace embree
       __forceinline size_t items() const {
         return _id & items_mask;
       }
+
+      __forceinline size_t offsetIndex() const {
+        return _id >> encodingBits;
+      }
+
       
     private:
       size_t _id;
@@ -127,6 +134,16 @@ namespace embree
       __forceinline float &matrix(const size_t row,
 				  const size_t column,
 				  const size_t matrixID) 
+      {
+	assert(matrixID < 4);
+	assert(row < 4);
+	assert(column < 3);
+	return matrixColumnXYZW[column][4*matrixID+row];
+      } 
+
+      __forceinline const float &matrix(const size_t row,
+					const size_t column,
+					const size_t matrixID) const
       {
 	assert(matrixID < 4);
 	assert(row < 4);
@@ -177,7 +194,7 @@ namespace embree
   };
 
 
-  __forceinline std::ostream &operator<<(std::ostream &o, BVH4Hair::UnalignedNode &n)
+  __forceinline std::ostream &operator<<(std::ostream &o, const BVH4Hair::UnalignedNode &n)
     {
       for (size_t m=0;m<4;m++)
 	{
@@ -189,6 +206,28 @@ namespace embree
 	      o << std::endl;
 	    }
 	}
+      o << "children: ";
+      for (size_t m=0;m<4;m++)
+	{
+	  o << n.child(m).ptr() << " ";
+	  if (n.child(m).isLeaf())
+	    o << "(LEAF: index " << n.child(m).offsetIndex() << " items " << n.child(m).items() << ") ";
+	  else
+	    o << "(NODE) ";
+	}
+      o << std::endl;
+
+      o << "geomID: ";
+      for (size_t m=0;m<4;m++)
+	o << n.geomID[m] << " ";
+      o << std::endl;
+
+      o << "primID: ";
+      for (size_t m=0;m<4;m++)
+	o << n.primID[m] << " ";
+      o << std::endl;
+      
+
       return o;
     } 
 

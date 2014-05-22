@@ -423,12 +423,11 @@ float noise(float x, float y, float z)
     scene.meshes.push_back(mesh);
     //generateHairOnTriangleMesh(scene,mesh,0.5f*r,0.001f*r,80);
 
-
 #if 0
     const float thickness = 0.01f*r;
     OBJScene::HairSet* hairset = new OBJScene::HairSet;
     srand48(123456789);
-    for (size_t t=0; t<2; t++) 
+    for (size_t t=0; t<128; t++) 
       {
 	Vec3fa dp = uniformSampleSphere(drand48(),drand48());
 
