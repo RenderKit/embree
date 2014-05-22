@@ -83,12 +83,14 @@ namespace embree
 	const PrimRef prim = prims[i];
 	TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
 	TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-	
 	const Vec3fa v0 = mesh->vertex(tri.v[0]);
 	const Vec3fa v1 = mesh->vertex(tri.v[1]);
 	const Vec3fa v2 = mesh->vertex(tri.v[2]);
-	const ssei bin0 = mapping.bin(min(v0,v1,v2));
-	const ssei bin1 = mapping.bin(max(v0,v1,v2));
+	//const ssei bin0 = mapping.bin(min(v0,v1,v2));
+	//const ssei bin1 = mapping.bin(max(v0,v1,v2));
+
+	const ssei bin0 = mapping.bin(prim.bounds().lower);
+	const ssei bin1 = mapping.bin(prim.bounds().upper);
 	
 	for (size_t dim=0; dim<3; dim++) 
 	{
@@ -194,7 +196,7 @@ namespace embree
 	return Split(inf,-1,0,mapping,0,0);
 
       /* compute bounds of left and right side */
-      size_t lnum = 0, rnum = 0;
+      size_t lnum = 0, rnum = 0; // FIXME: this is not required
       BBox3fa lbounds = empty, rbounds = empty;
       for (size_t i=0; i<bestPos; i++)    { lnum+=numBegin[i][bestDim]; lbounds.extend(bounds[i][bestDim]); }
       for (size_t i=bestPos; i<BINS; i++) { rnum+=numEnd  [i][bestDim]; rbounds.extend(bounds[i][bestDim]); }
@@ -396,22 +398,26 @@ namespace embree
 	  PrimRef left,right;
 	  splitTriangle(prim,dim,pos,v0,v1,v2,left,right);
 	
-	  linfo_o.add(bounds,center2(bounds));
-	  if (!lblock->insert(left)) {
-	    lblock = lprims_o.insert(alloc.malloc(threadIndex));
-	    lblock->insert(left);
+	  if (!left.bounds().empty()) {
+	    linfo_o.add(bounds,center2(bounds));
+	    if (!lblock->insert(left)) {
+	      lblock = lprims_o.insert(alloc.malloc(threadIndex));
+	      lblock->insert(left);
+	    }
 	  }
 	  
-	  rinfo_o.add(bounds,center2(bounds));
-	  if (!rblock->insert(right)) {
-	    rblock = rprims_o.insert(alloc.malloc(threadIndex));
-	    rblock->insert(right);
+	  if (!right.bounds().empty()) {
+	    rinfo_o.add(bounds,center2(bounds));
+	    if (!rblock->insert(right)) {
+	      rblock = rprims_o.insert(alloc.malloc(threadIndex));
+	      rblock->insert(right);
+	    }
 	  }
 	}
 	alloc.free(threadIndex,block);
       }
-      assert(lnum == linfo_o.size()); 
-      assert(rnum == rinfo_o.size());
+      /*assert(lnum == linfo_o.size()); 
+	assert(rnum == rinfo_o.size());*/
     }
     
     template<typename Prim>

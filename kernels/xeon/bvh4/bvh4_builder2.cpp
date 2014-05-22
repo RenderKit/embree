@@ -233,7 +233,7 @@ namespace embree
     const Split BVH4Builder2::find(size_t threadIndex, size_t threadCount, TriRefList& prims, const PrimInfo& pinfo)
     {
       ObjectPartition::Split osplit = ObjectPartition::find<false>(threadIndex,threadCount,      prims,pinfo,2); // FIXME: hardcoded constant
-      return osplit;
+      //return osplit;
       SpatialSplit   ::Split ssplit = SpatialSplit   ::find<false>(threadIndex,threadCount,(Scene*)geometry,prims,pinfo,2); // FIXME: hardcoded constant
       const float bestSAH = min(osplit.sah,ssplit.sah);
       if      (bestSAH == osplit.sah) return osplit; 
