@@ -161,6 +161,7 @@ namespace embree
       TaskScheduler::QUEUE taskQueue;     //!< Task queue to use
       
       std::vector<SplitTask> tasks;
+      atomic_t remainingReplications;
       
     public:
       BVH4* bvh;                      //!< Output BVH4
