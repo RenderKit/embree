@@ -23,7 +23,8 @@ namespace embree
     __forceinline SpatialSplit::Mapping::Mapping(const PrimInfo& pinfo) 
     {
       const ssef diag = (ssef) pinfo.geomBounds.size();
-      scale = select(diag != 0.0f,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
+      const float maxDiag = max(diag[0],diag[1],diag[2]);
+      scale = select(diag > 0.01f*maxDiag,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
       ofs  = (ssef) pinfo.geomBounds.lower;
     }
     
@@ -86,17 +87,11 @@ namespace embree
 	const Vec3fa v0 = mesh->vertex(tri.v[0]);
 	const Vec3fa v1 = mesh->vertex(tri.v[1]);
 	const Vec3fa v2 = mesh->vertex(tri.v[2]);
-	//const ssei bin0 = mapping.bin(min(v0,v1,v2));
-	//const ssei bin1 = mapping.bin(max(v0,v1,v2));
-
 	const ssei bin0 = mapping.bin(prim.bounds().lower);
 	const ssei bin1 = mapping.bin(prim.bounds().upper);
 
 	for (size_t dim=0; dim<3; dim++) 
 	{
-	  //BBox3fa bounds0[BINS];
-	  //for (size_t i=0; i<BINS; i++) bounds0[i] = empty;
-	  
 	  size_t bin;
 	  PrimRef rest = prim;
 	  size_t l = bin0[dim];
@@ -110,7 +105,6 @@ namespace embree
 	    if (left.bounds().empty()) l++;
 	    
 	    bounds[bin][dim].extend(left.bounds());
-	    //bounds0[bin].extend(left.bounds());
 	    rest = right;
 	  }
 	  if (rest.bounds().empty()) r--;
@@ -119,45 +113,6 @@ namespace embree
 	  numBegin[l][dim]++;
 	  numEnd  [r][dim]++;
 	  bounds  [bin][dim].extend(rest.bounds());
-	  //bounds0[bin].extend(rest.bounds());
-
-	  /*for (bin=bin0[dim]; bin<bin1[dim]; bin++) 
-	  {
-	    BBox3fa lbounds0 = empty; for (size_t i=0; i<bin+1;    i++) lbounds0.extend(bounds0[i]);
-	    BBox3fa rbounds0 = empty; for (size_t i=bin+1; i<BINS; i++) rbounds0.extend(bounds0[i]);
-	    
-	    PrimRef left,right;
-	    const float pos = mapping.pos(bin+1,dim);
-	    splitTriangle(prim,dim,pos,v0,v1,v2,left,right);
-	    
-	    BBox3fa lbounds1 = left.bounds();
-	    BBox3fa rbounds1 = right.bounds();
-	    if (lbounds0 != lbounds1 || rbounds0 != rbounds1) {
-	      PING;
-	      PRINT(v0);
-	      PRINT(v1);
-	      PRINT(v2);
-	      PRINT(dim);
-	      PRINT(bin);
-	      PRINT(pos);
-	      PRINT(lbounds0);
-	      PRINT(lbounds1);
-	      PRINT(rbounds0);
-	      PRINT(rbounds1);
-
-	      PrimRef rest = prim;
-	      for (bin=bin0[dim]; bin<bin1[dim]; bin++) 
-	      {
-		const float pos = mapping.pos(bin+1,dim);
-		
-		PrimRef left,right;
-		splitTriangle(rest,dim,pos,v0,v1,v2,left,right);
-		PRINT2(bin,left.bounds());
-		rest = right;
-	      }
-	      PRINT2(bin,right.bounds());
-	    }
-	    }*/
 	}
       }
     }
@@ -188,7 +143,7 @@ namespace embree
       }
     }
     
-    __forceinline SpatialSplit::Split SpatialSplit::BinInfo::best(const PrimInfo& pinfo, const Mapping& mapping, TriRefList* prims, Scene* scene, const size_t blocks_shift)
+    __forceinline SpatialSplit::Split SpatialSplit::BinInfo::best(const PrimInfo& pinfo, const Mapping& mapping, const size_t blocks_shift)
     {
       /* sweep from right to left and compute parallel prefix of merged bounds */
       ssef rAreas[BINS];
@@ -242,20 +197,10 @@ namespace embree
       
       /* return invalid split if no split found */
       if (bestDim == -1) 
-	return Split(inf,-1,0,mapping,0,0);
-
-      /* compute bounds of left and right side */
-      size_t lnum = 0, rnum = 0; // FIXME: this is not required
-      BBox3fa lbounds = empty, rbounds = empty;
-      for (size_t i=0; i<bestPos; i++)    { lnum+=numBegin[i][bestDim]; lbounds.extend(bounds[i][bestDim]); }
-      for (size_t i=bestPos; i<BINS; i++) { rnum+=numEnd  [i][bestDim]; rbounds.extend(bounds[i][bestDim]); }
-
-      /* return invalid split if no progress made */
-      if (lnum == 0 || rnum == 0) 
-	return Split(inf,-1,0,mapping,lnum,rnum);
+	return Split(inf,-1,0,mapping);
       
       /* return best found split */
-      return Split(bestSAH,bestDim,bestPos,mapping,lnum,rnum);
+      return Split(bestSAH,bestDim,bestPos,mapping);
     }
     
     template<>
@@ -264,7 +209,7 @@ namespace embree
       BinInfo binner;
       Mapping mapping(pinfo);
       binner.bin(scene,prims,pinfo,mapping);
-      return binner.best(pinfo,mapping,NULL,scene,logBlockSize);
+      return binner.best(pinfo,mapping,logBlockSize);
     }
 
     template<>
@@ -273,7 +218,7 @@ namespace embree
       BinInfo binner;
       Mapping mapping(pinfo);
       binner.bin(scene,prims,pinfo,mapping);
-      return binner.best(pinfo,mapping,&prims,scene,logBlockSize);
+      return binner.best(pinfo,mapping,logBlockSize);
     }
     
     //////////////////////////////////////////////////////////////////////////////
@@ -294,7 +239,7 @@ namespace embree
 	bins.merge(binners[i]);
       
       /* calculation of best split */
-      split = bins.best(pinfo,mapping,NULL,scene,logBlockSize);
+      split = bins.best(pinfo,mapping,logBlockSize);
     }
     
     template<typename List>
@@ -401,10 +346,6 @@ namespace embree
 					   TriRefList& lprims_o, PrimInfo& linfo_o, 
 					   TriRefList& rprims_o, PrimInfo& rinfo_o) const
     {
-      PrimInfo pinfo; pinfo.reset(); // FIXME: remove
-      for (TriRefList::block_iterator_unsafe i = prims; i; i++) 
-	pinfo.add(i->bounds(),center2(i->bounds()));
-
       /* sort each trianlge to left, right, or left and right */
       TriRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
       TriRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
@@ -470,19 +411,6 @@ namespace embree
 	}
 	alloc.free(threadIndex,block);
       }
-      //if (!subset(linfo_o.geomBounds,pinfo.geomBounds)) PRINT2(pinfo,linfo_o);
-      //if (!subset(rinfo_o.geomBounds,pinfo.geomBounds)) PRINT2(pinfo,rinfo_o);
-      //PRINT(area(linfo_o.geomBounds));
-      //PRINT(area(rinfo_o.geomBounds));
-      /*assert(lnum == linfo_o.size()); 
-	assert(rnum == rinfo_o.size());*/
-      if (lnum != linfo_o.size()) PRINT2(lnum,linfo_o.size());
-      if (rnum != rinfo_o.size()) PRINT2(rnum,rinfo_o.size());
-
-      /*static int count = 0;
-      PRINT(lnum+rnum-pinfo.size());
-      count += lnum+rnum-pinfo.size();
-      PRINT(count);*/
     }
     
     template<typename Prim>

@@ -81,8 +81,8 @@ namespace embree
 	  : sah(inf), dim(-1), pos(0) {}
 	
 	/*! constructs specified split */
-	__forceinline Split(float sah, int dim, int pos, const Mapping& mapping, int lnum, int rnum)
-	  : sah(sah), dim(dim), pos(pos), mapping(mapping), lnum(lnum), rnum(rnum) {}
+	__forceinline Split(float sah, int dim, int pos, const Mapping& mapping)
+	  : sah(sah), dim(dim), pos(pos), mapping(mapping) {}
 	
 	/*! calculates surface area heuristic for performing the split */
 	__forceinline float splitSAH() const { return sah; }
@@ -108,7 +108,6 @@ namespace embree
 	int   dim;          //!< split dimension
 	int   pos;          //!< split position
 	Mapping mapping;    //!< mapping into bins
-	int lnum,rnum;
       };
       
     private:
@@ -134,7 +133,7 @@ namespace embree
 	void merge (const BinInfo& other);
 	
 	/*! finds the best split by scanning binning information */
-	Split best(const PrimInfo& pinfo, const Mapping& mapping, TriRefList* prims, Scene* scene, const size_t logBlockSize);
+	Split best(const PrimInfo& pinfo, const Mapping& mapping, const size_t logBlockSize);
 	
       private:
 	BBox3fa bounds[BINS][4];  //!< geometry bounds for each bin in each dimension
