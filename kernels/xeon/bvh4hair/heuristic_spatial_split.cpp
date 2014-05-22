@@ -22,9 +22,11 @@ namespace embree
   {
     __forceinline SpatialSplit::Mapping::Mapping(const PrimInfo& pinfo) 
     {
+      const ssef lower = (ssef) pinfo.geomBounds.lower;
+      const ssef upper = (ssef) pinfo.geomBounds.upper;
+      const sseb ulpsized = upper - lower <= 128.0f*ssef(ulp)*max(abs(lower),abs(upper));
       const ssef diag = (ssef) pinfo.geomBounds.size();
-      const float maxDiag = max(diag[0],diag[1],diag[2]);
-      scale = select(diag > 0.01f*maxDiag,rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
+      scale = select(ulpsized,ssef(0.0f),rcp(diag) * ssef(BINS * 0.99f));
       ofs  = (ssef) pinfo.geomBounds.lower;
     }
     
@@ -186,7 +188,7 @@ namespace embree
 	/* ignore zero sized dimensions */
 	if (unlikely(mapping.invalid(dim)))
 	  continue;
-	
+
 	/* test if this is a better dimension */
 	if (vbestSAH[dim] < bestSAH && vbestPos[dim] != 0) {
 	  bestDim = dim;
