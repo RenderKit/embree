@@ -84,10 +84,9 @@ namespace embree
     BVH4BuilderMorton::~BVH4BuilderMorton () 
     {
       if (morton) os_free(morton,bytesMorton);
-      nodeAllocator.shrink(); 
-      primAllocator.shrink();
-      bvh->bytesNodes = nodeAllocator.bytesAllocated;
-      bvh->bytesPrimitives = primAllocator.bytesAllocated;
+      bvh->alloc->shrink();
+      //bvh->bytesNodes = nodeAllocator.bytesAllocated;
+      //bvh->bytesPrimitives = primAllocator.bytesAllocated;
     }
     
     void BVH4BuilderMorton::build(size_t threadIndex, size_t threadCount) 
@@ -243,13 +242,13 @@ namespace embree
 
         /* allocated memory for primrefs, nodes, and primitives */
         morton = (MortonID32Bit* ) os_malloc(bytesMorton); memset(morton,0,bytesMorton);
-        nodeAllocator.init(bytesAllocatedNodes,bytesReservedNodes);
-        primAllocator.init(bytesAllocatedPrimitives,bytesReservedPrimitives);
+        //nodeAllocator.init(bytesAllocatedNodes,bytesReservedNodes);
+        //primAllocator.init(bytesAllocatedPrimitives,bytesReservedPrimitives);
         
-        bvh->nodes = nodeAllocator.data; 
+        /*bvh->nodes = nodeAllocator.data; 
         bvh->bytesNodes = nodeAllocator.bytesReserved;
         bvh->primitives = primAllocator.data; 
-        bvh->bytesPrimitives = primAllocator.bytesReserved;
+        bvh->bytesPrimitives = primAllocator.bytesReserved;*/
       }
     }
     
@@ -414,7 +413,7 @@ namespace embree
       const size_t endID   = (threadID+1)*numPrimitives/numThreads;
       
       /* store the morton codes temporarily in 'node' memory */
-      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)nodeAllocator.data; 
+      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)bvh->alloc->base();
       computeMortonCodes(startID,endID,g_state->startGroup[threadID],g_state->startGroupOffset[threadID],dest);
     }
     
@@ -468,7 +467,7 @@ namespace embree
       
       MortonID32Bit* __restrict__ mortonID[2];
       mortonID[0] = (MortonID32Bit*) morton; 
-      mortonID[1] = (MortonID32Bit*) nodeAllocator.data;
+      mortonID[1] = (MortonID32Bit*) bvh->alloc->base();
       MortonBuilderState::ThreadRadixCountTy* radixCount = g_state->radixCount;
       
       /* we need 3 iterations to process all 32 bits */
@@ -522,8 +521,6 @@ namespace embree
     
     void BVH4BuilderMorton::recurseSubMortonTrees(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
-      //__aligned(64) Allocator nodeAlloc(nodeAllocator);
-      //__aligned(64) Allocator leafAlloc(primAllocator);
       __aligned(64) Allocator nodeAlloc(bvh->alloc.ptr);
       __aligned(64) Allocator leafAlloc(bvh->alloc.ptr);
       while (true)
@@ -532,7 +529,6 @@ namespace embree
         if (taskID >= g_state->buildRecords.size()) break;
 	recurse(g_state->buildRecords[taskID],nodeAlloc,leafAlloc,RECURSE,threadID);
         g_state->buildRecords[taskID].parent->setBarrier();
-        //g_state->workStack.push(g_state->buildRecords[taskID]);
       }
     }
     
@@ -1046,10 +1042,6 @@ namespace embree
       
       /* perform first splits in single threaded mode */
       bvh->alloc->clear();
-      //nodeAllocator.reset();
-      //primAllocator.reset();
-      //__aligned(64) Allocator nodeAlloc(nodeAllocator);
-      //__aligned(64) Allocator leafAlloc(primAllocator);
       __aligned(64) Allocator nodeAlloc(bvh->alloc.ptr);
       __aligned(64) Allocator leafAlloc(bvh->alloc.ptr);
       recurse(br,nodeAlloc,leafAlloc,RECURSE,threadIndex);	    
@@ -1080,7 +1072,7 @@ namespace embree
       TaskScheduler::dispatchTask( _computeMortonCodes, this, threadIndex, threadCount );   
 
       /* padding */
-      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) nodeAllocator.data;
+      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc->base();
       for (size_t i=numPrimitives; i<( (numPrimitives+7)&(-8) ); i++) {
         dest[i].code  = 0xffffffff; 
         dest[i].index = 0;
@@ -1105,10 +1097,6 @@ namespace embree
       
       /* perform first splits in single threaded mode */
       bvh->alloc->clear();
-      //nodeAllocator.reset();
-      //primAllocator.reset();
-      //__aligned(64) Allocator nodeAlloc(nodeAllocator);
-      //__aligned(64) Allocator leafAlloc(primAllocator);
       __aligned(64) Allocator nodeAlloc(bvh->alloc.ptr);
       __aligned(64) Allocator leafAlloc(bvh->alloc.ptr);
       recurse(br,nodeAlloc,leafAlloc,CREATE_TOP_LEVEL,threadIndex);	    

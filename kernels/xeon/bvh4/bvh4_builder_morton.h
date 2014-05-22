@@ -246,10 +246,6 @@ namespace embree
       //createSmallLeaf createSmallLeaf;
       //leafBounds leafBounds;
       LockStepTaskScheduler scheduler;
-      
-    protected:
-      __aligned(64) GlobalAllocator nodeAllocator;
-      __aligned(64) GlobalAllocator primAllocator;
     };
 
     class BVH4Triangle1BuilderMorton : public BVH4BuilderMorton

@@ -332,6 +332,13 @@ namespace embree
       return cur;
     }
 
+    void shrink () {
+      if (ptr == NULL) return;
+      os_shrink(ptr,cur,end);
+      end = cur;
+      bytesAllocated = cur;
+    }
+
   private:
 
     /*! Allocates some number of bytes. */
