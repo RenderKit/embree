@@ -29,9 +29,7 @@
 
 #define DBG(x) 
 
-//#if defined(__USE_STAT_COUNTERS__)
 //#define PROFILE
-//#endif
 
 namespace embree 
 {
@@ -41,49 +39,39 @@ namespace embree
 
     std::auto_ptr<BVH4BuilderMorton::MortonBuilderState> BVH4BuilderMorton::g_state(NULL);
     
-    BVH4BuilderMorton::BVH4BuilderMorton (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
-    : bvh(bvh), source(source), scene(scene), mesh(mesh), topLevelItemThreshold(0), encodeShift(0), encodeMask(0),
-      morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
+    BVH4BuilderMorton::BVH4BuilderMorton (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+      : bvh(bvh), scene(scene), mesh(mesh), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+	topLevelItemThreshold(0), encodeShift(0), encodeMask(0), morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
     {
       needAllThreads = true;
       if (mesh) needAllThreads = mesh->numTriangles > 50000;
-      
-      if (&bvh->primTy == &SceneTriangle1::type) {
-        createSmallLeaf = createTriangle1Leaf;
-        leafBounds = leafBoundsTriangle1;
-      }
-      else if (&bvh->primTy == &SceneTriangle4::type) {
-        createSmallLeaf = createTriangle4Leaf;
-        leafBounds = leafBoundsTriangle4;
-      }
-      else if (&bvh->primTy == &SceneTriangle1v::type) {
-        createSmallLeaf = createTriangle1vLeaf;
-        leafBounds = leafBoundsTriangle1v;
-      }
-      else if (&bvh->primTy == &SceneTriangle4v::type) {
-        createSmallLeaf = createTriangle4vLeaf;
-        leafBounds = leafBoundsTriangle4v;
-      }
-      else if (&bvh->primTy == &TriangleMeshTriangle1::type) {
-        createSmallLeaf = createTriangle1Leaf;
-        leafBounds = leafBoundsTriangle1;
-      }
-      else if (&bvh->primTy == &TriangleMeshTriangle4::type) {
-        createSmallLeaf = createTriangle4Leaf;
-        leafBounds = leafBoundsTriangle4;
-      }
-      else if (&bvh->primTy == &TriangleMeshTriangle1v::type) {
-        createSmallLeaf = createTriangle1vLeaf;
-        leafBounds = leafBoundsTriangle1v;
-      }
-      else if (&bvh->primTy == &TriangleMeshTriangle4v::type) {
-        createSmallLeaf = createTriangle4vLeaf;
-        leafBounds = leafBoundsTriangle4v;
-      }
-      else 
-        throw std::runtime_error("BVH4BuilderMorton: unknown primitive type");
     }
     
+    BVH4Triangle1BuilderMorton::BVH4Triangle1BuilderMorton (BVH4* bvh, Scene* scene)
+      : BVH4BuilderMorton(bvh,scene,NULL,0,false,sizeof(Triangle1),2,inf) {}
+
+    BVH4Triangle4BuilderMorton::BVH4Triangle4BuilderMorton (BVH4* bvh, Scene* scene)
+      : BVH4BuilderMorton(bvh,scene,NULL,2,false,sizeof(Triangle4),4,inf) {}
+    
+    BVH4Triangle1vBuilderMorton::BVH4Triangle1vBuilderMorton (BVH4* bvh, Scene* scene)
+      : BVH4BuilderMorton(bvh,scene,NULL,0,false,sizeof(Triangle1v),2,inf) {}
+
+    BVH4Triangle4vBuilderMorton::BVH4Triangle4vBuilderMorton (BVH4* bvh, Scene* scene)
+      : BVH4BuilderMorton(bvh,scene,NULL,2,false,sizeof(Triangle4v),4,inf) {}
+
+
+    BVH4Triangle1BuilderMorton::BVH4Triangle1BuilderMorton (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4BuilderMorton(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1),2,inf) {}
+
+    BVH4Triangle4BuilderMorton::BVH4Triangle4BuilderMorton (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4BuilderMorton(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4),4,inf) {}
+    
+    BVH4Triangle1vBuilderMorton::BVH4Triangle1vBuilderMorton (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4BuilderMorton(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1v),2,inf) {}
+
+    BVH4Triangle4vBuilderMorton::BVH4Triangle4vBuilderMorton (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4BuilderMorton(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4v),4,inf) {}
+        
     BVH4BuilderMorton::~BVH4BuilderMorton () 
     {
       if (morton) os_free(morton,bytesMorton);
@@ -180,8 +168,14 @@ namespace embree
       if (mesh) 
         maxPrimsPerGroup = numPrimitives;
       else {
-        for (size_t g=0; g<numGroups; g++) 
-          maxPrimsPerGroup = max(maxPrimsPerGroup,source->prims(g));
+	for (size_t i=0; i<numGroups; i++) 
+        {
+          Geometry* geom = scene->get(i);
+          if (!geom || geom->type != TRIANGLE_MESH) continue;
+          TriangleMesh* mesh = (TriangleMesh*) geom;
+	  if (mesh->numTimeSteps != 1) continue;
+	  maxPrimsPerGroup = max(maxPrimsPerGroup,mesh->numTriangles);
+        }
       }
 
       /* calculate groupID, primID encoding */
@@ -537,7 +531,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4BuilderMorton::createTriangle1Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle1BuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -576,7 +570,7 @@ namespace embree
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4BuilderMorton::createTriangle4Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle4BuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -615,7 +609,7 @@ namespace embree
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4BuilderMorton::createTriangle1vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle1vBuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -653,7 +647,7 @@ namespace embree
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4BuilderMorton::createTriangle4vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle4vBuilderMorton::createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -868,7 +862,7 @@ namespace embree
       return bounds0;
     }
     
-    __forceinline BBox3fa BVH4BuilderMorton::leafBoundsTriangle1(NodeRef& ref)
+    __forceinline BBox3fa BVH4Triangle1BuilderMorton::leafBounds(NodeRef& ref) const
     {
       BBox3fa bounds = empty;
       size_t num; Triangle1* tri = (Triangle1*) ref.leaf(num);
@@ -877,7 +871,7 @@ namespace embree
       return bounds;
     }
     
-    __forceinline BBox3fa BVH4BuilderMorton::leafBoundsTriangle4(NodeRef& ref)
+    __forceinline BBox3fa BVH4Triangle4BuilderMorton::leafBounds(NodeRef& ref) const
     {
       BBox3fa bounds = empty;
       size_t num; Triangle4* tri = (Triangle4*) ref.leaf(num);
@@ -886,7 +880,7 @@ namespace embree
       return bounds;
     }
     
-    __forceinline BBox3fa BVH4BuilderMorton::leafBoundsTriangle1v(NodeRef& ref)
+    __forceinline BBox3fa BVH4Triangle1vBuilderMorton::leafBounds(NodeRef& ref) const
     {
       BBox3fa bounds = empty;
       size_t num; Triangle1v* tri = (Triangle1v*) ref.leaf(num);
@@ -895,7 +889,7 @@ namespace embree
       return bounds;
     }
     
-    __forceinline BBox3fa BVH4BuilderMorton::leafBoundsTriangle4v(NodeRef& ref)
+    __forceinline BBox3fa BVH4Triangle4vBuilderMorton::leafBounds(NodeRef& ref) const
     {
       BBox3fa bounds = empty;
       size_t num; Triangle4v* tri = (Triangle4v*) ref.leaf(num);
@@ -1072,14 +1066,24 @@ namespace embree
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;
     }
+
+    Builder* BVH4Triangle1BuilderMorton  (void* bvh, Scene* scene) { return new class BVH4Triangle1BuilderMorton ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4BuilderMorton  (void* bvh, Scene* scene) { return new class BVH4Triangle4BuilderMorton ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle1vBuilderMorton (void* bvh, Scene* scene) { return new class BVH4Triangle1vBuilderMorton((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4vBuilderMorton (void* bvh, Scene* scene) { return new class BVH4Triangle4vBuilderMorton((BVH4*)bvh,scene); }
+
+    Builder* BVH4Triangle1MeshBuilderMorton  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle1BuilderMorton ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4MeshBuilderMorton  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4BuilderMorton ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle1vMeshBuilderMorton (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle1vBuilderMorton((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4vMeshBuilderMorton (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4vBuilderMorton((BVH4*)bvh,mesh); }
     
-    Builder* BVH4BuilderMortonFast (void* bvh, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize) {
+    /*Builder* BVH4BuilderMortonFast (void* bvh, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize) {
       return new BVH4BuilderMorton((BVH4*)bvh,source,scene,NULL,minLeafSize,maxLeafSize);
     }
     
     Builder* BVH4BuilderMortonTriangleMeshFast (void* bvh, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize) {
       return new BVH4BuilderMorton((BVH4*)bvh,NULL,mesh->parent,mesh,minLeafSize,maxLeafSize);
-    }
+      }*/
   }
 }
 

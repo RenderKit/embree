@@ -64,8 +64,8 @@ namespace embree
   DECLARE_BUILDER(BVH4BuilderObjectSplit4Fast);
   //DECLARE_TRIANGLEMESH_BUILDER_OLD(BVH4BuilderObjectSplit4TriangleMeshFast);
 
-  DECLARE_BUILDER(BVH4BuilderMortonFast);
-  DECLARE_TRIANGLEMESH_BUILDER_OLD(BVH4BuilderMortonTriangleMeshFast);
+  //DECLARE_BUILDER(BVH4BuilderMortonFast);
+  //DECLARE_TRIANGLEMESH_BUILDER_OLD(BVH4BuilderMortonTriangleMeshFast);
 
   DECLARE_SCENE_BUILDER(BVH4Triangle1BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle4BuilderFast);
@@ -81,6 +81,16 @@ namespace embree
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshRefitFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshRefitFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshRefitFast);
+
+  DECLARE_SCENE_BUILDER(BVH4Triangle1BuilderMorton);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4BuilderMorton);
+  DECLARE_SCENE_BUILDER(BVH4Triangle1vBuilderMorton);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4vBuilderMorton);
+
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderMorton);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilderMorton);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshBuilderMorton);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshBuilderMorton);
 
   Builder* BVH4BuilderObjectSplit1 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
   Builder* BVH4BuilderObjectSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
@@ -103,8 +113,8 @@ namespace embree
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderObjectSplit4Fast);
     //SELECT_SYMBOL_DEFAULT(features,BVH4BuilderObjectSplit4TriangleMeshFast);
 
-    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4BuilderMortonFast);
-    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4BuilderMortonTriangleMeshFast);
+    //SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4BuilderMortonFast);
+    //SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4BuilderMortonTriangleMeshFast);
     
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1BuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4BuilderFast);
@@ -120,6 +130,16 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshRefitFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshRefitFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshRefitFast);
+
+    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle1BuilderMorton);
+    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle4BuilderMorton);
+    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle1vBuilderMorton);
+    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle4vBuilderMorton);
+    
+    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle1MeshBuilderMorton);
+    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle4MeshBuilderMorton);
+    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle1vMeshBuilderMorton);
+    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4Triangle4vMeshBuilderMorton);
 
     /* select intersectors1 */
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4Bezier1iIntersector1);
@@ -298,7 +318,7 @@ namespace embree
     if      (g_builder == "default"     ) builder = BVH4BuilderObjectSplit1(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "spatialsplit") builder = BVH4BuilderSpatialSplit1(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "objectsplit" ) builder = BVH4BuilderObjectSplit1(accel,&scene->flat_triangle_source_1,scene,1,inf);
-    else if (g_builder == "morton"      ) builder = BVH4BuilderMortonFast(accel,&scene->flat_triangle_source_1,scene,4,inf);
+    else if (g_builder == "morton"      ) builder = BVH4Triangle1BuilderMorton(accel,scene);
     else if (g_builder == "fast"        ) builder = BVH4Triangle1BuilderFast(accel,scene);
     else throw std::runtime_error("unknown builder "+g_builder+" for BVH4<Triangle1>");
 
@@ -322,7 +342,7 @@ namespace embree
     else if (g_builder == "objectsplit1") builder = BVH4BuilderObjectSplit1(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "objectsplit4") builder = BVH4BuilderObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "builder2")     builder = avx::BVH4Builder2ObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
-    else if (g_builder == "morton"      ) builder = BVH4BuilderMortonFast(accel,&scene->flat_triangle_source_1,scene,4,inf);
+    else if (g_builder == "morton"      ) builder = BVH4Triangle4BuilderMorton(accel,scene);
     else if (g_builder == "fast"        ) builder = BVH4Triangle4BuilderFast(accel,scene);
     else throw std::runtime_error("unknown builder "+g_builder+" for BVH4<Triangle4>");
 
@@ -360,7 +380,7 @@ namespace embree
     if      (g_builder == "default"     ) builder = BVH4BuilderObjectSplit1(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "spatialsplit") builder = BVH4BuilderSpatialSplit1(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "objectsplit" ) builder = BVH4BuilderObjectSplit1(accel,&scene->flat_triangle_source_1,scene,1,inf);
-    else if (g_builder == "morton"      ) builder = BVH4BuilderMortonFast(accel,&scene->flat_triangle_source_1,scene,4,inf);
+    else if (g_builder == "morton"      ) builder = BVH4Triangle1vBuilderMorton(accel,scene);
     else if (g_builder == "fast"        ) builder = BVH4Triangle1vBuilderFast(accel,scene);
     else throw std::runtime_error("unknown builder "+g_builder+" for BVH4<Triangle1v>");
         
@@ -381,7 +401,7 @@ namespace embree
     if      (g_builder == "default"     ) builder = BVH4BuilderObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "spatialsplit") builder = BVH4BuilderSpatialSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "objectsplit" ) builder = BVH4BuilderObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
-    else if (g_builder == "morton"      ) builder = BVH4BuilderMortonFast(accel,&scene->flat_triangle_source_1,scene,4,inf);
+    else if (g_builder == "morton"      ) builder = BVH4Triangle4vBuilderMorton(accel,scene);
     else if (g_builder == "fast"        ) builder = BVH4Triangle4vBuilderFast(accel,scene);
     else throw std::runtime_error("unknown builder "+g_builder+" for BVH4<Triangle4v>");
 
@@ -407,7 +427,7 @@ namespace embree
   {
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle1::type,mesh->parent);
-    builder = BVH4BuilderMortonTriangleMeshFast(accel,mesh,4,inf);
+    builder = BVH4Triangle1MeshBuilderMorton(accel,mesh);
   } 
 
   void createTriangleMeshTriangle1(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
@@ -417,7 +437,7 @@ namespace embree
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1MeshBuilderFast(accel,mesh); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1MeshRefitFast(accel,mesh); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4BuilderMortonTriangleMeshFast(accel,mesh,4,inf); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle1MeshBuilderMorton(accel,mesh); break;
     default: throw std::runtime_error("internal error"); 
     }
   } 
@@ -429,7 +449,7 @@ namespace embree
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4MeshBuilderFast(accel,mesh); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4MeshRefitFast(accel,mesh); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4BuilderMortonTriangleMeshFast(accel,mesh,4,inf); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4MeshBuilderMorton(accel,mesh); break;
     default: throw std::runtime_error("internal error"); 
     }
   } 
@@ -441,7 +461,7 @@ namespace embree
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1vMeshBuilderFast(accel,mesh); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1vMeshRefitFast  (accel,mesh); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4BuilderMortonTriangleMeshFast(accel,mesh,4,inf); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle1vMeshBuilderMorton(accel,mesh); break;
     default: throw std::runtime_error("internal error"); 
     }
   } 
@@ -453,7 +473,7 @@ namespace embree
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4vMeshBuilderFast(accel,mesh); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4vMeshRefitFast(accel,mesh); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4BuilderMortonTriangleMeshFast(accel,mesh,4,inf); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4vMeshBuilderMorton(accel,mesh); break;
     default: throw std::runtime_error("internal error"); 
     }
   } 

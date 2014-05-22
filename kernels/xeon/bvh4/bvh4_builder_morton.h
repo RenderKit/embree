@@ -27,6 +27,7 @@ namespace embree
     {
       ALIGNED_CLASS;
       
+    protected:
       /*! Type shortcuts */
       typedef BVH4::Node    Node;
       typedef BVH4::NodeRef NodeRef;
@@ -134,7 +135,7 @@ namespace embree
       };
       
       /*! Constructor. */
-      BVH4BuilderMorton (BVH4* bvh, BuildSource* source, Scene* scene, TriangleMesh* mesh, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
+      BVH4BuilderMorton (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
       
       /*! Destruction */
       ~BVH4BuilderMorton ();
@@ -175,14 +176,15 @@ namespace embree
       
     public:
       
-      typedef void (*createLeafFunction)(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
-      typedef BBox3fa (*leafBoundsFunction)(NodeRef& ref);
+      //typedef void (*createSmallLeaf)(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+      //typedef BBox3fa (*leafBounds)(NodeRef& ref);
       
       /*! creates a leaf node */
-      static void createTriangle1Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+      /*static void createTriangle1Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
       static void createTriangle4Leaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
       static void createTriangle1vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
-      static void createTriangle4vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+      static void createTriangle4vLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);*/
+      virtual void createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o) = 0;
       
       BBox3fa createLeaf(SmallBuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID);
       
@@ -198,10 +200,11 @@ namespace embree
                      const size_t mode, 
                      const size_t threadID);
       
-      static BBox3fa leafBoundsTriangle1(NodeRef& ref);
+      /*static BBox3fa leafBoundsTriangle1(NodeRef& ref);
       static BBox3fa leafBoundsTriangle4(NodeRef& ref);
       static BBox3fa leafBoundsTriangle1v(NodeRef& ref);
-      static BBox3fa leafBoundsTriangle4v(NodeRef& ref);
+      static BBox3fa leafBoundsTriangle4v(NodeRef& ref);*/
+      virtual BBox3fa leafBounds(NodeRef& ref) const = 0;
       BBox3fa node_bounds(NodeRef& ref) const;
       
       /*! refit the toplevel part of the BVH */
@@ -215,17 +218,23 @@ namespace embree
       
     public:
       BVH4* bvh;               //!< Output BVH
-      BuildSource* source;      //!< input geometry
+      //BuildSource* source;      //!< input geometry
       Scene* scene;
       TriangleMesh* mesh;
-      
+      size_t logBlockSize;
+      size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }
+      bool needVertices;
+      size_t primBytes; 
+      size_t minLeafSize;
+      size_t maxLeafSize;
+
       size_t topLevelItemThreshold;
       size_t encodeShift;
       size_t encodeMask;
 
       static std::auto_ptr<MortonBuilderState> g_state;
             
-    protected:
+    public:
       MortonID32Bit* __restrict__ morton;
       size_t bytesMorton;
       
@@ -235,13 +244,81 @@ namespace embree
       size_t numAllocatedPrimitives;
       size_t numAllocatedNodes;
       Centroid_Scene_AABB global_bounds;
-      createLeafFunction createSmallLeaf;
-      leafBoundsFunction leafBounds;
+      //createSmallLeaf createSmallLeaf;
+      //leafBounds leafBounds;
       LockStepTaskScheduler scheduler;
       
     protected:
       __aligned(64) GlobalAllocator nodeAllocator;
       __aligned(64) GlobalAllocator primAllocator;
+    };
+
+    class BVH4Triangle1BuilderMorton : public BVH4BuilderMorton
+    {
+    public:
+
+      /*! Constructor for scene builder */
+      BVH4Triangle1BuilderMorton (BVH4* bvh, Scene* scene);
+      
+      /*! Constructor for triangle mesh builder */
+      BVH4Triangle1BuilderMorton (BVH4* bvh, TriangleMesh* mesh);
+      
+      /*! calculates bounding box of a leaf */
+      BBox3fa leafBounds(NodeRef& ref) const;
+
+      /*! creates a leaf node */
+      void createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+    };
+
+    class BVH4Triangle4BuilderMorton : public BVH4BuilderMorton
+    {
+    public:
+
+      /*! Constructor for scene builder */
+      BVH4Triangle4BuilderMorton (BVH4* bvh, Scene* scene);
+      
+      /*! Constructor for triangle mesh builder */
+      BVH4Triangle4BuilderMorton (BVH4* bvh, TriangleMesh* mesh);
+      
+      /*! calculates bounding box of a leaf */
+      BBox3fa leafBounds(NodeRef& ref) const;
+
+      /*! creates a leaf node */
+      void createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+    };
+
+    class BVH4Triangle1vBuilderMorton : public BVH4BuilderMorton
+    {
+    public:
+
+      /*! Constructor for scene builder */
+      BVH4Triangle1vBuilderMorton (BVH4* bvh, Scene* scene);
+      
+      /*! Constructor for triangle mesh builder */
+      BVH4Triangle1vBuilderMorton (BVH4* bvh, TriangleMesh* mesh);
+
+      /*! calculates bounding box of a leaf */
+      BBox3fa leafBounds(NodeRef& ref) const;
+
+      /*! creates a leaf node */
+      void createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+    };
+
+    class BVH4Triangle4vBuilderMorton : public BVH4BuilderMorton
+    {
+    public:
+
+      /*! Constructor for scene builder */
+      BVH4Triangle4vBuilderMorton (BVH4* bvh, Scene* scene);
+      
+      /*! Constructor for triangle mesh builder */
+      BVH4Triangle4vBuilderMorton (BVH4* bvh, TriangleMesh* mesh);
+
+      /*! calculates bounding box of a leaf */
+      BBox3fa leafBounds(NodeRef& ref) const;
+
+      /*! creates a leaf node */
+      void createSmallLeaf(const BVH4BuilderMorton* This, SmallBuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
   }
 }
