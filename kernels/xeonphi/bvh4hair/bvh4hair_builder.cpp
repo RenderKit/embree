@@ -52,7 +52,7 @@ namespace embree
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
 	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
-	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4Hair::UnalignedNode),sizeof(Bezier1i));
+	allocateMemoryPools(numPrims,numNodes);
       }
   }
 
@@ -144,6 +144,60 @@ namespace embree
     global_bounds.extend_atomic(bounds);    
   }
 
+
+  void BVH4HairBuilder::allocateMemoryPools(const size_t numPrims,
+					    const size_t numNodes)
+  {
+    const size_t additional_size = 16 * CACHELINE_SIZE;
+    const size_t sizeNodeInBytes    = sizeof(BVH4Hair::UnalignedNode);
+    const size_t sizePrimRefInBytes = sizeof(Bezier1i);
+    const size_t sizeAccelInBytes   = sizeof(Bezier1i);
+
+    /* free previously allocated memory */
+
+    if (prims)  {
+      assert(size_prims > 0);
+      os_free(prims,size_prims);
+    }
+    if (node  ) {
+      assert(bvh4hair->size_node > 0);
+      os_free(node ,bvh4hair->size_node);
+    }
+    if (accel ) {
+      assert(bvh4hair->size_accel > 0);
+      os_free(accel,bvh4hair->size_accel);
+    }
+      
+    // === allocated memory for primrefs,nodes, and accel ===
+    const size_t size_primrefs = numPrims * sizePrimRefInBytes + additional_size;
+    const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size;
+    const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
+
+    numAllocatedNodes = size_node / sizeNodeInBytes;
+      
+    DBG(DBG_PRINT(numAllocatedNodes));
+    DBG(DBG_PRINT(size_primrefs));
+    DBG(DBG_PRINT(size_node));
+    DBG(DBG_PRINT(size_accel));
+
+    prims = (Bezier1i                 *) os_malloc(size_primrefs); 
+    node  = (BVH4Hair::UnalignedNode  *) os_malloc(size_node);
+    accel = (Bezier1i                 *) os_malloc(size_accel);
+
+    assert(prims  != 0);
+    assert(node   != 0);
+    assert(accel  != 0);
+
+    bvh4hair->accel = accel;
+    bvh4hair->qbvh  = (BVH4i::Node*)node;
+    bvh4hair->size_node  = size_node;
+    bvh4hair->size_accel = size_accel;
+
+    size_prims = size_primrefs;    
+    size_t total = size_primrefs+size_node+size_accel;
+  }
+
+
   void BVH4HairBuilder::build(const size_t threadIndex, const size_t threadCount) 
   {
     DBG(PING);
@@ -178,19 +232,19 @@ namespace embree
 	    DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
 	    /* handle empty scene */
 	    for (size_t i=0;i<4;i++)
-	      bvh->qbvh[0].setInvalid(i);
+	      bvh4hair->qbvh[0].setInvalid(i);
 	    for (size_t i=0;i<4;i++)
-	      bvh->qbvh[1].setInvalid(i);
-	    bvh->qbvh[0].lower[0].child = BVH4i::NodeRef(128);
-	    bvh->root = bvh->qbvh[0].lower[0].child; 
-	    bvh->bounds = empty;
+	      bvh4hair->qbvh[1].setInvalid(i);
+	    bvh4hair->qbvh[0].lower[0].child = BVH4i::NodeRef(128);
+	    bvh4hair->root = bvh4hair->qbvh[0].lower[0].child; 
+	    bvh4hair->bounds = empty;
 	  }
       }
 
     if (g_verbose >= 2) {
       double perf = totalNumPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
-      std::cout << BVH4iStatistics(bvh).str();
+      //std::cout << BVH4iStatistics(bvh).str();
     }
 
   }
@@ -230,9 +284,11 @@ namespace embree
     TIMER(msec = getSeconds());
 
     /* allocate and initialize root node */
-    atomicID.reset(numNodesToAllocate);
-    node[0].lower = global_bounds.geometry.lower;
-    node[0].upper = global_bounds.geometry.upper;
+    atomicID.reset(1);
+    FATAL("1");
+
+    //node[0].lower = global_bounds.geometry.lower;
+    //node[0].upper = global_bounds.geometry.upper;
     
     /* create initial build record */
     BuildRecord br;
@@ -253,7 +309,7 @@ namespace embree
       BuildRecord br;
       if (!global_workStack.pop_nolock_largest(br)) break;
       DBG(DBG_PRINT(br));
-      recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);      
+      //recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);      
     }
 
     TIMER(msec = getSeconds()-msec);    
@@ -276,8 +332,8 @@ namespace embree
     
     /* update BVH4 */
     FATAL("FIX");
-    bvh->root = bvh->qbvh[0].lower[0].child; 
-    bvh->bounds = BBox3fa(*(Vec3fa*)&bvh->qbvh->lower[0],*(Vec3fa*)&bvh->qbvh->upper[0]);
+    bvh4hair->root = bvh4hair->qbvh[0].lower[0].child; 
+    bvh4hair->bounds = BBox3fa(*(Vec3fa*)&bvh4hair->qbvh->lower[0],*(Vec3fa*)&bvh4hair->qbvh->upper[0]);
     
     /* release all threads again */
     LockStepTaskScheduler::releaseThreads(threadCount);
@@ -286,6 +342,20 @@ namespace embree
     if (g_verbose >= 2) 
       dt = getSeconds()-t0;
   }
+
+  void BVH4HairBuilder::recurseSAH(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads)
+  {
+  }
+
+  void BVH4HairBuilder::buildSubTree(BuildRecord& current, 
+				     NodeAllocator& alloc, 
+				     const size_t mode,
+				     const size_t threadID, 
+				     const size_t numThreads)
+  {
+
+  }
+
 
   // ==========================================================================================
   // ==========================================================================================
