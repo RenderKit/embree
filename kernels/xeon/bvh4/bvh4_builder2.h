@@ -50,7 +50,7 @@ namespace embree
       public:
 	__forceinline BuildRecord () {}
 
-	__forceinline BuildRecord (size_t depth) : pinfo(empty) {}
+	__forceinline BuildRecord (size_t depth) : depth(depth), pinfo(empty) {}
 
 	__forceinline BuildRecord (size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split, NodeRef* dst)
 	: depth(depth), prims(prims), pinfo(pinfo), split(split), dst(dst) {}

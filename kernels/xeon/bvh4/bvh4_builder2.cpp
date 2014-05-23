@@ -361,9 +361,9 @@ namespace embree
       /*! create an inner node */
       Node* node = parent->bvh->allocNode(threadIndex);
       for (size_t i=0; i<numChildren; i++) {
-	BuildRecord next(record.depth+1,crecord[i].prims,crecord[i].pinfo,crecord[i].split,&node->child(i));
 	node->set(i,crecord[i].pinfo.geomBounds);
-	recurse(next);
+	crecord[i].dst = &node->child(i);
+	recurse(crecord[i]);
       }
       *record.dst = parent->bvh->encodeNode(node);
     }
