@@ -70,7 +70,7 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    static __forceinline void fill(Triangle4i* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
+    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
     {
       ssei geomID = -1, primID = -1;
       Vec3f* v0[4] = { NULL, NULL, NULL, NULL };
@@ -99,7 +99,7 @@ namespace embree
 	if (prims) prim = *prims;
       }
       
-      new (This) Triangle4i(v0,v1,v2,geomID,primID);
+      new (this) Triangle4i(v0,v1,v2,geomID,primID);
     }
 
   public:

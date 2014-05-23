@@ -98,58 +98,7 @@ namespace embree
 
       void recurse_task(size_t threadIndex, size_t threadCount, BuildRecord& record);
 
-      /***********************************************************************************************************************
-       *                                      Single Threaded Build Task
-       **********************************************************************************************************************/
-      
-      /*! Single-threaded task that builds a complete BVH4. */
-      class BuildTask {
-	ALIGNED_CLASS
-	  public:
-	
-	/*! Default task construction. */
-	BuildTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, BVH4Builder2* parent, const BuildRecord& record);
-	
-	/*! Task entry function. */
-	TASK_COMPLETE_FUNCTION_(BuildTask,run);
-	void run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
-	
-	/*! Recursively finishes the BVH4 construction. */
-	void recurse(BuildRecord& record);
-	
-      private:
-	size_t threadIndex;
-	size_t threadCount;
-	TaskScheduler::Task task;
-	
-	BVH4Builder2*                     parent;   //!< Pointer to parent task.
-	BuildRecord record;
-      };
-      
-      /***********************************************************************************************************************
-       *                                              Split Task
-       **********************************************************************************************************************/
-      
-      /*! Single-threaded task that builds a single node and creates subtasks for the children. */
-      class SplitTask {
-	ALIGNED_CLASS
-	  public:
-	
-	/*! Default task construction. */
-	SplitTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, BVH4Builder2* parent, const BuildRecord& record);
-	
-	/*! Task entry function. */
-	TASK_COMPLETE_FUNCTION_(SplitTask,run);
-	void run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
-	
-      public:
-	TaskScheduler::Task task;
-	BVH4Builder2*    parent;         //!< Pointer to parent task.
-	BuildRecord record;
-      };
-
     protected:
-      //BuildSource* source;      //!< build source interface
       Scene* scene;           //!< input geometry
       TriangleMesh* mesh;
 
@@ -158,8 +107,6 @@ namespace embree
       size_t minLeafSize;                 //!< minimal size of a leaf
       size_t maxLeafSize;                 //!< maximal size of a leaf
       PrimRefBlockAlloc<PrimRef> alloc;                 //!< Allocator for primitive blocks
-      //TriRefGen initStage;               //!< job to generate build primitives
-      TaskScheduler::QUEUE taskQueue;     //!< Task queue to use
       
       volatile atomic_t active;
       MutexSys taskMutex;

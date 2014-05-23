@@ -38,15 +38,6 @@ namespace embree
 {
   namespace isa
   {
-    BVH4Builder2::BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-      : scene(scene), mesh(mesh), bvh(bvh), primTy(bvh->primTy), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-	taskQueue(/*Heuristic::depthFirst ? TaskScheduler::GLOBAL_BACK : */TaskScheduler::GLOBAL_FRONT)
-    {
-      size_t maxLeafPrims = BVH4::maxLeafBlocks*primTy.blockSize;
-      if (maxLeafPrims < this->maxLeafSize) 
-	this->maxLeafSize = maxLeafPrims;
-    }
-
     template<>
     BVH4Builder2T<Triangle1>::BVH4Builder2T (BVH4* bvh, Scene* scene)
       : BVH4Builder2(bvh,scene,NULL,0,false,sizeof(Triangle1),2,inf) {}
@@ -98,7 +89,15 @@ namespace embree
     template<>
     BVH4Builder2T<Triangle4i>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
       : BVH4Builder2(bvh,mesh->parent,mesh,2,true,sizeof(Triangle4i),4,inf) {}
-   
+
+     BVH4Builder2::BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+      : scene(scene), mesh(mesh), bvh(bvh), primTy(bvh->primTy), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
+     {
+      size_t maxLeafPrims = BVH4::maxLeafBlocks*primTy.blockSize;
+      if (maxLeafPrims < this->maxLeafSize) 
+	this->maxLeafSize = maxLeafPrims;
+    }
+
     template<typename Triangle>
     typename BVH4Builder2::NodeRef BVH4Builder2T<Triangle>::createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo)
     {
@@ -109,9 +108,7 @@ namespace embree
       
       /* insert all triangles */
       TriRefList::block_iterator_unsafe iter(prims);
-      for (size_t i=0; i<blocks; i++) {
-	Triangle::fill(&leaf[i],iter,scene);
-      }
+      for (size_t i=0; i<blocks; i++) leaf[i].fill(iter,scene);
       assert(!iter);
       
       /* free all primitive blocks */
@@ -316,58 +313,6 @@ namespace embree
 	return node;
     }
     
-    BVH4Builder2::BuildTask::BuildTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, BVH4Builder2* parent, const BuildRecord& record)
-      : threadIndex(threadIndex), threadCount(threadCount), parent(parent), record(record)
-    {
-      new (&task) TaskScheduler::Task(event,_run,this,"build::full");
-      TaskScheduler::addTask(threadIndex,parent->taskQueue,&task);
-    }
- 
-    void BVH4Builder2::BuildTask::run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
-    {
-      this->threadIndex = threadIndex;
-      recurse(record);
-#if ROTATE_TREE
-      for (int i=0; i<5; i++) 
-	BVH4Rotate::rotate(parent->bvh,*record.dst); 
-#endif
-      record.dst->setBarrier();
-      delete this;
-    }
-    
-    void BVH4Builder2::BuildTask::recurse(BuildRecord& record)
-    {
-      BuildRecord children[BVH4::N];
-      size_t N = process<false>(threadIndex,threadCount,parent,record,children);
-      for (size_t i=0; i<N; i++)
-	recurse(children[i]);
-    }
-    
-    BVH4Builder2::SplitTask::SplitTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, BVH4Builder2* parent, const BuildRecord& record)
-      : parent(parent), record(record)
-    {
-      new (&task) TaskScheduler::Task(event,_run,this,"build::split");
-      TaskScheduler::addTask(threadIndex,parent->taskQueue,&task);
-    }
-    
-    void BVH4Builder2::SplitTask::run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) 
-    {
-      BuildRecord children[BVH4::N];
-      size_t N = process<false>(threadIndex,threadCount,parent,record,children);
-      
-      /* create new tasks */
-      for (size_t i=0; i<N; i++) 
-      {
-	/* use full single threaded build for small jobs */
-	if (children[i].pinfo.size() < 4*1024) 
-	  new BuildTask(threadIndex,threadCount,event,parent,children[i]);
-	
-	/* use single threaded split for medium size jobs  */
-	else
-	  new SplitTask(threadIndex,threadCount,event,parent,children[i]);
-      }
-    }
-
     void BVH4Builder2::build(size_t threadIndex, size_t threadCount) 
     {
       active = 0;

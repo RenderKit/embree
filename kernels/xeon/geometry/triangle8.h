@@ -100,7 +100,7 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    static __forceinline void fill(Triangle8* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
+    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
     {
       avxi geomID = -1, primID = -1, mask = -1;
       avx3f v0 = zero, v1 = zero, v2 = zero;
@@ -120,7 +120,7 @@ namespace embree
 	v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
 	v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      new (This) Triangle8(v0,v1,v2,geomID,primID,mask);
+      new (this) Triangle8(v0,v1,v2,geomID,primID,mask);
     }
 
   public:
