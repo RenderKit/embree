@@ -231,7 +231,7 @@ namespace embree
       	taskMutex.lock();
 	for (size_t i=0; i<N; i++) {
 	  tasks.push_back(children[i]);
-	  atomic_add(&active,1);
+	  atomic_add(&activeBuildRecords,1);
 	}
 	taskMutex.unlock();
       }
@@ -247,9 +247,7 @@ namespace embree
     
     void BVH4Builder2::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
-      //new SplitTask(threadIndex,threadCount,event,this,tasks[taskIndex]);
-      
-      while (active)
+      while (activeBuildRecords)
       {
 	taskMutex.lock();
 	if (tasks.size() == 0) {
@@ -260,7 +258,7 @@ namespace embree
 	tasks.pop_back();
 	taskMutex.unlock();
 	continue_build(threadIndex,threadCount,record);
-	atomic_add(&active,-1);
+	atomic_add(&activeBuildRecords,-1);
       }
     }
 
@@ -285,9 +283,7 @@ namespace embree
     
     void BVH4Builder2::build(size_t threadIndex, size_t threadCount) 
     {
-      active = 0;
-
-      size_t numPrimitives = scene->numTriangles; //source->size();
+      size_t numPrimitives = scene->numTriangles;
       bvh->init(2*numPrimitives); // FIXME: 2x
       remainingReplications = numPrimitives;
       if (numPrimitives == 0) 
@@ -308,7 +304,7 @@ namespace embree
       const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,true);
       BuildRecord record(1,prims,pinfo,split,&bvh->root);
       tasks.push_back(record);
-      active++;
+      activeBuildRecords=1;
 
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
       while (tasks.size() < threadCount)
@@ -317,7 +313,7 @@ namespace embree
 	BuildRecord task = tasks.front();
 	pop_heap(tasks.begin(),tasks.end());
 	tasks.pop_back();
-	active--;
+	activeBuildRecords--;
 	
 	/* process this item in parallel */
 	BuildRecord children[BVH4::N];
@@ -325,7 +321,7 @@ namespace embree
 	for (size_t i=0; i<N; i++) {
 	  tasks.push_back(children[i]);
 	  push_heap(tasks.begin(),tasks.end());
-	  active++;
+	  activeBuildRecords++;
 	}
       }
       

@@ -109,7 +109,7 @@ namespace embree
       size_t maxLeafSize;                 //!< maximal size of a leaf
       PrimRefBlockAlloc<PrimRef> alloc;                 //!< Allocator for primitive blocks
       
-      volatile atomic_t active;
+      volatile atomic_t activeBuildRecords;
       MutexSys taskMutex;
       std::vector<BuildRecord> tasks;
       atomic_t remainingReplications;
