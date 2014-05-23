@@ -161,6 +161,7 @@ namespace embree
       //TriRefGen initStage;               //!< job to generate build primitives
       TaskScheduler::QUEUE taskQueue;     //!< Task queue to use
       
+      volatile atomic_t active;
       MutexSys taskMutex;
       std::vector<BuildRecord> tasks;
       atomic_t remainingReplications;

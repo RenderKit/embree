@@ -262,7 +262,10 @@ namespace embree
 	BuildRecord children[BVH4::N];
 	size_t N = process<false>(threadIndex,threadCount,this,record,children);
       	taskMutex.lock();
-	for (size_t i=0; i<N; i++) tasks.push_back(children[i]);
+	for (size_t i=0; i<N; i++) {
+	  tasks.push_back(children[i]);
+	  atomic_add(&active,1);
+	}
 	taskMutex.unlock();
       }
     }
@@ -277,20 +280,21 @@ namespace embree
     
     void BVH4Builder2::buildFunction(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
-      new SplitTask(threadIndex,threadCount,event,this,tasks[taskIndex]);
+      //new SplitTask(threadIndex,threadCount,event,this,tasks[taskIndex]);
       
-      /*while (true)
+      while (active)
       {
 	taskMutex.lock();
 	if (tasks.size() == 0) {
 	  taskMutex.unlock();
-	  return;
+	  continue;
 	}
 	BuildRecord record = tasks.back();
 	tasks.pop_back();
 	taskMutex.unlock();
 	process_task(threadIndex,threadCount,record);
-	}*/
+	atomic_add(&active,-1);
+      }
     }
 
     BVH4::NodeRef BVH4Builder2::layout_top_nodes(size_t threadIndex, NodeRef node)
@@ -366,6 +370,8 @@ namespace embree
 
     void BVH4Builder2::build(size_t threadIndex, size_t threadCount) 
     {
+      active = 0;
+
       size_t numPrimitives = scene->numTriangles; //source->size();
       bvh->init(2*numPrimitives); // FIXME: 2x
       remainingReplications = numPrimitives;
@@ -387,6 +393,7 @@ namespace embree
       const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,true);
       BuildRecord record(1,prims,pinfo,split,&bvh->root);
       tasks.push_back(record);
+      active++;
 
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
       while (tasks.size() < threadCount)
@@ -395,6 +402,7 @@ namespace embree
 	BuildRecord task = tasks.front();
 	pop_heap(tasks.begin(),tasks.end());
 	tasks.pop_back();
+	active--;
 	
 	/* process this item in parallel */
 	BuildRecord children[BVH4::N];
@@ -402,12 +410,13 @@ namespace embree
 	for (size_t i=0; i<N; i++) {
 	  tasks.push_back(children[i]);
 	  push_heap(tasks.begin(),tasks.end());
+	  active++;
 	}
       }
       
       /*! process each generated subtask in its own thread */
-      TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,tasks.size(),"BVH4Builder2::build");
-      //TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,threadCount,"BVH4Builder2::build");
+      //TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,tasks.size(),"BVH4Builder2::build");
+      TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,threadCount,"BVH4Builder2::build");
                   
       /* finish build */
 #if ROTATE_TREE
