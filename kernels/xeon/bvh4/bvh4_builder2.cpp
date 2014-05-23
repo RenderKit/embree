@@ -163,7 +163,7 @@ namespace embree
     }
     
     template<bool PARALLEL>
-    __forceinline size_t BVH4Builder2::process(size_t threadIndex, size_t threadCount, BVH4Builder2* parent, BuildRecord& record, BuildRecord records_o[BVH4::N])
+    __forceinline size_t BVH4Builder2::createNode(size_t threadIndex, size_t threadCount, BVH4Builder2* parent, BuildRecord& record, BuildRecord records_o[BVH4::N])
     {
       /*! compute leaf and split cost */
       const float leafSAH  = parent->primTy.intCost*record.pinfo.leafSAH(parent->logBlockSize);
@@ -240,12 +240,12 @@ namespace embree
       return numChildren;
     }
 
-    void BVH4Builder2::process_task(size_t threadIndex, size_t threadCount, BuildRecord& record)
+    void BVH4Builder2::continue_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
     {
       /* finish small tasks */
       if (record.pinfo.size() < 4*1024) 
       {
-	recurse_task(threadIndex,threadCount,record);
+	finish_build(threadIndex,threadCount,record);
 #if ROTATE_TREE
 	for (int i=0; i<5; i++) 
 	  BVH4Rotate::rotate(bvh,*record.dst); 
@@ -257,7 +257,7 @@ namespace embree
       else
       {
 	BuildRecord children[BVH4::N];
-	size_t N = process<false>(threadIndex,threadCount,this,record,children);
+	size_t N = createNode<false>(threadIndex,threadCount,this,record,children);
       	taskMutex.lock();
 	for (size_t i=0; i<N; i++) {
 	  tasks.push_back(children[i]);
@@ -267,15 +267,15 @@ namespace embree
       }
     }
 
-    void BVH4Builder2::recurse_task(size_t threadIndex, size_t threadCount, BuildRecord& record)
+    void BVH4Builder2::finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
     {
       BuildRecord children[BVH4::N];
-      size_t N = process<false>(threadIndex,threadCount,this,record,children);
+      size_t N = createNode<false>(threadIndex,threadCount,this,record,children);
       for (size_t i=0; i<N; i++)
-	recurse_task(threadIndex,threadCount,children[i]);
+	finish_build(threadIndex,threadCount,children[i]);
     }
     
-    void BVH4Builder2::buildFunction(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void BVH4Builder2::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
       //new SplitTask(threadIndex,threadCount,event,this,tasks[taskIndex]);
       
@@ -289,7 +289,7 @@ namespace embree
 	BuildRecord record = tasks.back();
 	tasks.pop_back();
 	taskMutex.unlock();
-	process_task(threadIndex,threadCount,record);
+	continue_build(threadIndex,threadCount,record);
 	atomic_add(&active,-1);
       }
     }
@@ -351,7 +351,7 @@ namespace embree
 	
 	/* process this item in parallel */
 	BuildRecord children[BVH4::N];
-	size_t N = process<true>(threadIndex,threadCount,this,task,children);
+	size_t N = createNode<true>(threadIndex,threadCount,this,task,children);
 	for (size_t i=0; i<N; i++) {
 	  tasks.push_back(children[i]);
 	  push_heap(tasks.begin(),tasks.end());
@@ -360,8 +360,7 @@ namespace embree
       }
       
       /*! process each generated subtask in its own thread */
-      //TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,tasks.size(),"BVH4Builder2::build");
-      TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,threadCount,"BVH4Builder2::build");
+      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4Builder2::build");
                   
       /* finish build */
 #if ROTATE_TREE

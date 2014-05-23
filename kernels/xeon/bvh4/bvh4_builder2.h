@@ -40,11 +40,9 @@ namespace embree
       /*! Type shortcuts */
       typedef typename BVH4::Node    Node;
       typedef typename BVH4::NodeRef NodeRef;
-      
-      /*! Split type of the split heuristic. */
-      //typedef ObjectPartition::Split Split;
       typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;
 
+      /*! the build record stores all information to continue building some subtree */
       struct BuildRecord 
       {
       public:
@@ -56,7 +54,6 @@ namespace embree
 	: depth(depth), prims(prims), pinfo(pinfo), split(split), dst(dst) {}
 	
 	__forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) {
-	  //return halfArea(a.bounds.bounds) < halfArea(b.bounds.bounds);
 	  return a.pinfo.size() < b.pinfo.size();
 	}
 	
@@ -70,15 +67,15 @@ namespace embree
       
     public:
       
-      /*! builder entry point */
-      void build(size_t threadIndex, size_t threadCount);
-      
       /*! Constructor. */
       BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
 
+      /*! builder entry point */
+      void build(size_t threadIndex, size_t threadCount);
+   
       /*! build job */
-      TASK_RUN_FUNCTION_(BVH4Builder2,buildFunction);
-      void buildFunction(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event);
+      TASK_RUN_FUNCTION_(BVH4Builder2,build_parallel);
+      void build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event);
       
       /*! creates a leaf node */
       virtual NodeRef createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo) = 0;
@@ -86,17 +83,22 @@ namespace embree
       /*! creates a large leaf by adding additional internal nodes */
       NodeRef createLargeLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo, size_t depth);
       
+      /*! copies topmost nodes to improve memory layout */
       NodeRef layout_top_nodes(size_t threadIndex, NodeRef node);
 
+      /*! finds best possible split for a list of triangles */
       template<bool PARALLEL>
       const Split find(size_t threadIndex, size_t threadCount, size_t depth, TriRefList& prims, const PrimInfo& pinfo, bool spatial);
 
+      /*! creates a node from some build record */
       template<bool PARALLEL>
-      static size_t process(size_t threadIndex, size_t threadCount, BVH4Builder2* parent, BuildRecord& record, BuildRecord records_o[BVH4::N]);
+      static size_t createNode(size_t threadIndex, size_t threadCount, BVH4Builder2* parent, BuildRecord& record, BuildRecord records_o[BVH4::N]);
 
-      void process_task(size_t threadIndex, size_t threadCount, BuildRecord& record);
+      /*! continues build */
+      void continue_build(size_t threadIndex, size_t threadCount, BuildRecord& record);
 
-      void recurse_task(size_t threadIndex, size_t threadCount, BuildRecord& record);
+      /*! recursively finishes build */
+      void finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record);
 
     protected:
       Scene* scene;           //!< input geometry
