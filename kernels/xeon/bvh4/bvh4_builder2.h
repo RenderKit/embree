@@ -44,6 +44,18 @@ namespace embree
       /*! Split type of the split heuristic. */
       //typedef ObjectPartition::Split Split;
       typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;
+
+      struct BuildRecord 
+      {
+	BuildRecord (size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split, NodeRef* dst)
+	: depth(depth), prims(prims), pinfo(pinfo), split(split), dst(dst) {}
+
+	size_t depth;
+	TriRefList prims;
+	PrimInfo pinfo;
+	Split split;
+	NodeRef* dst; 
+      };
       
     public:
       
@@ -100,11 +112,12 @@ namespace embree
 	TaskScheduler::Task task;
 	
 	BVH4Builder2*                     parent;   //!< Pointer to parent task.
-	NodeRef&                         dst;      //!< Reference to output the node.
+	BuildRecord record;
+	/*NodeRef&                         dst;      //!< Reference to output the node.
 	size_t                           depth;    //!< Recursion depth of the root of this subtree.
 	TriRefList         prims;    //!< The list of primitives.
 	PrimInfo                         pinfo;    //!< Bounding info of primitives.
-	Split                            split;    //!< The best split for the primitives.
+	Split                            split;    //!< The best split for the primitives.*/
       };
       
       /***********************************************************************************************************************

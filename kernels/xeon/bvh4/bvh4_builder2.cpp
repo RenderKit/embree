@@ -217,7 +217,7 @@ namespace embree
     BVH4Builder2::BuildTask::BuildTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
 				       BVH4Builder2* parent, NodeRef& node, size_t depth, 
 				       TriRefList& prims, const PrimInfo& pinfo, const Split& split)
-      : threadIndex(threadIndex), threadCount(threadCount), parent(parent), dst(node), depth(depth), prims(prims), pinfo(pinfo), split(split)
+      : threadIndex(threadIndex), threadCount(threadCount), parent(parent), record(depth, prims, pinfo, split, &node) //dst(node), depth(depth), prims(prims), pinfo(pinfo), split(split)
     {
       new (&task) TaskScheduler::Task(event,_run,this,"build::full");
       TaskScheduler::addTask(threadIndex,parent->taskQueue,&task);
@@ -276,12 +276,12 @@ namespace embree
     void BVH4Builder2::BuildTask::run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
     {
       this->threadIndex = threadIndex;
-      dst = recurse(depth,prims,pinfo,split);
+      *record.dst = recurse(record.depth,record.prims,record.pinfo,record.split);
 #if ROTATE_TREE
       for (int i=0; i<5; i++) 
-	BVH4Rotate::rotate(parent->bvh,dst); 
+	BVH4Rotate::rotate(parent->bvh,*record.dst); 
 #endif
-      dst.setBarrier();
+      record.dst->setBarrier();
       delete this;
     }
 
