@@ -20,6 +20,10 @@ IF (TARGET_SSE41)
  ADD_DEFINITIONS(-D__TARGET_SSE41__)
 ENDIF()
 
+IF (TARGET_SSE42)
+ ADD_DEFINITIONS(-D__TARGET_SSE42__)
+ENDIF()
+
 IF (TARGET_AVX)
  ADD_DEFINITIONS(-D__TARGET_AVX__)
 ENDIF()
@@ -81,7 +85,6 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4/bvh4_builder_toplevel.cpp
   bvh4/bvh4_intersector1.cpp   
   bvh4/bvh4_intersector4_chunk.cpp
-  bvh4/bvh4_intersector4_hybrid.cpp
   bvh4/bvh4_statistics.cpp
   bvh4/virtual_accel.cpp
   bvh4/twolevel_accel.cpp
@@ -113,10 +116,17 @@ IF (TARGET_SSE41)
     bvh4/bvh4_builder_toplevel.cpp
     bvh4/bvh4_intersector1.cpp   
     bvh4/bvh4_intersector4_chunk.cpp
-    bvh4/bvh4_intersector4_hybrid.cpp
   )
   SET_TARGET_PROPERTIES(embree_sse41 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE41}")
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse41)
+ENDIF ()
+
+IF (TARGET_SSE42) 
+  ADD_LIBRARY(embree_sse42 STATIC
+    bvh4/bvh4_intersector4_hybrid.cpp
+  )
+  SET_TARGET_PROPERTIES(embree_sse42 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE42}")
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse42)
 ENDIF ()
 
 IF (TARGET_AVX) 

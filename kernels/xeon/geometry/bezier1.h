@@ -22,7 +22,7 @@
 
 namespace embree
 {
-#if defined(__SSE__)
+#if defined(__SSE__) // FIXME: move to other place
   extern ssef sse_coeff0[4];
   extern ssef sse_coeff1[4];
 #endif

@@ -72,6 +72,8 @@ __forceinline uint64 __rdpmc(int i) {
   return __readpmc(i);
 }
 
+#if defined(__SSE4_2__)
+
 __forceinline int __popcnt(int in) {
   return _mm_popcnt_u32(in);
 }
@@ -89,6 +91,8 @@ __forceinline long long __popcnt(long long in) {
 __forceinline size_t __popcnt(size_t in) {
   return _mm_popcnt_u64(in);
 }
+#endif
+
 #endif
 
 __forceinline int __bsf(int v) {
@@ -286,9 +290,11 @@ __forceinline uint64 __rdpmc(int i) {
 
 #if !defined(__MIC__)
 
+#if defined(__SSE4_2__)
 __forceinline unsigned int __popcnt(unsigned int in) {
   int r = 0; asm ("popcnt %1,%0" : "=r"(r) : "r"(in)); return r;
 }
+#endif
 
 __forceinline int __bsf(int v) {
   int r = 0; asm ("bsf %1,%0" : "=r"(r) : "r"(v)); return r;

@@ -62,11 +62,7 @@ namespace embree
   DECLARE_TOPLEVEL_BUILDER(BVH4BuilderTopLevelFast);
 
   DECLARE_BUILDER(BVH4BuilderObjectSplit4Fast);
-  //DECLARE_TRIANGLEMESH_BUILDER_OLD(BVH4BuilderObjectSplit4TriangleMeshFast);
-
-  //DECLARE_BUILDER(BVH4BuilderMortonFast);
-  //DECLARE_TRIANGLEMESH_BUILDER_OLD(BVH4BuilderMortonTriangleMeshFast);
-
+  
   DECLARE_SCENE_BUILDER(BVH4Triangle1BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle4BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle1vBuilderFast);
@@ -111,13 +107,7 @@ namespace embree
 
     /* select builders */
     SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4BuilderTopLevelFast);
-
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderObjectSplit4Fast);
-    //SELECT_SYMBOL_DEFAULT(features,BVH4BuilderObjectSplit4TriangleMeshFast);
-
-    //SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4BuilderMortonFast);
-    //SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4BuilderMortonTriangleMeshFast);
-    
+  
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1BuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4BuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vBuilderFast);
@@ -146,7 +136,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderMorton);
 
     /* select intersectors1 */
-    SELECT_SYMBOL_AVX_AVX2              (features,BVH4Bezier1iIntersector1);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle1Intersector1Moeller);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector1Moeller);
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4Triangle8Intersector1Moeller);
@@ -159,11 +149,13 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle1Intersector4ChunkMoeller);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector4ChunkMoeller);
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4Triangle8Intersector4ChunkMoeller);
-    SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector4HybridMoeller);
+    SELECT_SYMBOL_DEFAULT2              (features,BVH4Triangle4Intersector4HybridMoeller,BVH4Triangle4Intersector4ChunkMoeller); // hybrid not supported below SSE4.2
+    SELECT_SYMBOL_SSE42_AVX_AVX2        (features,BVH4Triangle4Intersector4HybridMoeller);
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4Triangle8Intersector4HybridMoeller);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX     (features,BVH4Triangle1vIntersector4ChunkPluecker);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector4ChunkPluecker);
-    SELECT_SYMBOL_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector4HybridPluecker);
+    SELECT_SYMBOL_DEFAULT2              (features,BVH4Triangle4vIntersector4HybridPluecker,BVH4Triangle4vIntersector4ChunkPluecker); // hybrid not supported below SSE4.2
+    SELECT_SYMBOL_SSE42_AVX             (features,BVH4Triangle4vIntersector4HybridPluecker);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX     (features,BVH4Triangle4iIntersector4ChunkPluecker);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector4Chunk);
 

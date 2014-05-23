@@ -135,7 +135,7 @@ namespace embree
   /// Reduction Operations
   ////////////////////////////////////////////////////////////////////////////////
   
-#if defined(__SSE4_1__)
+#if defined(__SSE4_2__)
   __forceinline size_t popcnt( const sseb& a ) { return __popcnt(_mm_movemask_ps(a)); }
 #else
   __forceinline size_t popcnt( const sseb& a ) { return bool(a[0])+bool(a[1])+bool(a[2])+bool(a[3]); }
