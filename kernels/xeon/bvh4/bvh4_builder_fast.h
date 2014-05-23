@@ -33,7 +33,8 @@ namespace embree
     protected:
       typedef BVH4::Node Node;
       typedef BVH4::NodeRef NodeRef;
-      typedef GlobalAllocator::ThreadAllocator Allocator;
+      //typedef GlobalAllocator::ThreadAllocator Allocator;
+      typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
       static const size_t SIZE_WORK_STACK = 64;
 
     public:
@@ -169,8 +170,8 @@ namespace embree
       size_t numPrimitives;
       
     protected:
-      __aligned(64) GlobalAllocator nodeAllocator;
-      __aligned(64) GlobalAllocator primAllocator;
+      //__aligned(64) GlobalAllocator nodeAllocator;
+      //__aligned(64) GlobalAllocator primAllocator;
     };
 
     class BVH4Triangle1BuilderFast : public BVH4BuilderFast

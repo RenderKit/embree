@@ -67,6 +67,10 @@ namespace embree
        if (maxLeafPrims < this->maxLeafSize) this->maxLeafSize = maxLeafPrims;
        needAllThreads = true;
     }
+    
+    BVH4Builder2::~BVH4Builder2() {
+      bvh->alloc.shrink();
+    }
 
     template<typename Triangle>
     typename BVH4Builder2::NodeRef BVH4Builder2T<Triangle>::createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo)

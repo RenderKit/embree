@@ -272,6 +272,8 @@ namespace embree
     __forceinline       void* base()       { return ptr; }
     __forceinline const void* base() const { return ptr; }
 
+    __forceinline       void* curPtr()       { return ptr+cur; }
+
     /*! Aligned memory allocation */
     __forceinline void* malloc(size_t tinfo, size_t bytes, size_t align = 16) {
       return thread[tinfo].malloc(bytes,align);

@@ -66,6 +66,9 @@ namespace embree
 		    size_t mode, size_t logBlockSize, size_t logSAHBlockSize, float intCost, bool needVertices, 
 		    size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
 
+      /*! Destructor*/
+      ~BVH4Builder2();
+
       /*! builder entry point */
       void build(size_t threadIndex, size_t threadCount);
    

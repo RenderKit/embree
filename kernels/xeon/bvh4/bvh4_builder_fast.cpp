@@ -93,10 +93,9 @@ namespace embree
     BVH4BuilderFast::~BVH4BuilderFast () 
     {
       if (prims) os_free(prims,bytesPrims); prims = NULL;
-      nodeAllocator.shrink(); 
-      primAllocator.shrink();
-      bvh->bytesNodes = nodeAllocator.bytesAllocated;
-      bvh->bytesPrimitives = primAllocator.bytesAllocated;
+      bvh->alloc.shrink(); 
+      //bvh->bytesNodes = nodeAllocator.bytesAllocated;
+      //bvh->bytesPrimitives = primAllocator.bytesAllocated;
     }
     
     void BVH4BuilderFast::build(size_t threadIndex, size_t threadCount) 
@@ -134,14 +133,14 @@ namespace embree
       std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
       std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
       std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << "  node allocator = " 
+      /*std::cout << "  node allocator = " 
                 << 1E-6*nodeAllocator.next << " MB, " 
                 << 1E-6*nodeAllocator.bytesAllocated << " MB, " 
                 << 1E-6*nodeAllocator.bytesReserved << " MB" << std::endl;
       std::cout << "  primitive allocator = " 
                 << 1E-6*primAllocator.next << " MB, " 
                 << 1E-6*primAllocator.bytesAllocated << " MB, " 
-                << 1E-6*primAllocator.bytesReserved << " MB" << std::endl;
+                << 1E-6*primAllocator.bytesReserved << " MB" << std::endl;*/
       std::cout << BVH4Statistics(bvh).str();
       
 #else
@@ -161,14 +160,14 @@ namespace embree
         double perf = numPrimitives/dt*1E-6;
 
         std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s)" << std::endl;
-        std::cout << "  node allocator = " 
+        /*std::cout << "  node allocator = " 
                   << 1E-6*nodeAllocator.next << " MB, " 
                   << 1E-6*nodeAllocator.bytesAllocated << " MB, " 
                   << 1E-6*nodeAllocator.bytesReserved << " MB" << std::endl;
         std::cout << "  primitive allocator = " 
                   << 1E-6*primAllocator.next << " MB, " 
                   << 1E-6*primAllocator.bytesAllocated << " MB, " 
-                  << 1E-6*primAllocator.bytesReserved << " MB" << std::endl;
+                  << 1E-6*primAllocator.bytesReserved << " MB" << std::endl;*/
         std::cout << BVH4Statistics(bvh).str();
       }
 #endif
@@ -176,7 +175,7 @@ namespace embree
     
     void BVH4BuilderFast::init(size_t threadIndex, size_t threadCount)
     {
-      bvh->init(0);
+      //bvh->init(0);
       
       /* calculate size of scene */
       size_t numVertices = 0;
@@ -196,6 +195,7 @@ namespace embree
           numVertices += mesh->numVertices;
         }
       }
+      bvh->init(numPrimitives);
       bvh->numPrimitives = numPrimitives;
       if (needVertices) bvh->numVertices = numVertices;
       else              bvh->numVertices = 0;
@@ -234,13 +234,13 @@ namespace embree
         
         /* allocated memory for primrefs, nodes, and primitives */
         prims = (PrimRef* ) os_malloc(bytesPrims);  memset(prims,0,bytesPrims);
-        nodeAllocator.init(bytesAllocatedNodes,bytesReservedNodes);
-        primAllocator.init(bytesAllocatedPrimitives,bytesReservedPrimitives);
+        //nodeAllocator.init(bytesAllocatedNodes,bytesReservedNodes);
+        //primAllocator.init(bytesAllocatedPrimitives,bytesReservedPrimitives);
         
-        bvh->nodes = nodeAllocator.data; 
+        /*bvh->nodes = nodeAllocator.data; 
         bvh->bytesNodes = nodeAllocator.bytesReserved;
         bvh->primitives = primAllocator.data; 
-        bvh->bytesPrimitives = primAllocator.bytesReserved;
+        bvh->bytesPrimitives = primAllocator.bytesReserved;*/
       }
     }
     
@@ -483,7 +483,7 @@ namespace embree
     void BVH4BuilderFast::splitParallel(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t numThreads)
     {
       /* use primitive array temporarily for parallel splits */
-      PrimRef* tmp = (PrimRef*) primAllocator.base();
+      PrimRef* tmp = (PrimRef*) bvh->alloc.curPtr();
       PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
 
       /* parallel binning of centroids */
@@ -628,8 +628,8 @@ namespace embree
     
     void BVH4BuilderFast::buildSubTrees(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
-      __aligned(64) Allocator nodeAlloc(nodeAllocator);
-      __aligned(64) Allocator leafAlloc(primAllocator);
+      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
+      __aligned(64) Allocator leafAlloc(&bvh->alloc);
       
       while (true) 
       {
@@ -663,10 +663,9 @@ namespace embree
       if (g_verbose >= 2) t0 = getSeconds();
       
       /* initialize node and leaf allocator */
-      nodeAllocator.reset();
-      primAllocator.reset();
-      __aligned(64) Allocator nodeAlloc(nodeAllocator);
-      __aligned(64) Allocator leafAlloc(primAllocator);
+      bvh->alloc.clear();
+      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
+      __aligned(64) Allocator leafAlloc(&bvh->alloc);
      
       /* create prim refs */
       PrimInfo pinfo(empty);
@@ -704,10 +703,9 @@ namespace embree
       bvh->bounds = pinfo.geomBounds;
       
       /* initialize node and leaf allocator */
-      nodeAllocator.reset();
-      primAllocator.reset();
-      __aligned(64) Allocator nodeAlloc(nodeAllocator);
-      __aligned(64) Allocator leafAlloc(primAllocator);
+      bvh->alloc.clear();
+      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
+      __aligned(64) Allocator leafAlloc(&bvh->alloc);
 
       /* create initial build record */
       BuildRecord br;
