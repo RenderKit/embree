@@ -335,25 +335,25 @@ namespace embree
 	if (bestChild == -1) break;
 	
 	/*! perform best found split and find new splits */
-	PrimInfo linfo(empty),rinfo(empty);
-	TriRefList lprims,rprims;
-	crecord[bestChild].split.split<false>(threadIndex,threadCount,parent->alloc,parent->scene,crecord[bestChild].prims,lprims,linfo,rprims,rinfo);
-	if (linfo.size() == 0) {
-	  crecord[bestChild].prims = rprims; crecord[bestChild].pinfo = rinfo; 
-	  crecord[bestChild].split = parent->find<false>(threadIndex,threadCount,record.depth,rprims,rinfo,false);
+	BuildRecord lrecord(record.depth+1);
+	BuildRecord rrecord(record.depth+1);
+	crecord[bestChild].split.split<false>(threadIndex,threadCount,parent->alloc,parent->scene,crecord[bestChild].prims,lrecord.prims,lrecord.pinfo,rrecord.prims,rrecord.pinfo);
+	if (lrecord.pinfo.size() == 0) {
+	  crecord[bestChild].prims = rrecord.prims; crecord[bestChild].pinfo = rrecord.pinfo; 
+	  crecord[bestChild].split = parent->find<false>(threadIndex,threadCount,record.depth,rrecord.prims,rrecord.pinfo,false);
 	  continue;
 	}
-	if (rinfo.size() == 0) {
-	  crecord[bestChild].prims = lprims; crecord[bestChild].pinfo = linfo; 
-	  crecord[bestChild].split = parent->find<false>(threadIndex,threadCount,record.depth,lprims,linfo,false);
+	if (rrecord.pinfo.size() == 0) {
+	  crecord[bestChild].prims = lrecord.prims; crecord[bestChild].pinfo = lrecord.pinfo; 
+	  crecord[bestChild].split = parent->find<false>(threadIndex,threadCount,record.depth,lrecord.prims,lrecord.pinfo,false);
 	  continue;
 	}
-	const ssize_t replications = linfo.size()+rinfo.size()-crecord[bestChild].pinfo.size(); assert(replications >= 0);
+	const ssize_t replications = lrecord.pinfo.size()+rrecord.pinfo.size()-crecord[bestChild].pinfo.size(); assert(replications >= 0);
 	const ssize_t remaining = atomic_add(&parent->remainingReplications,-replications);
-	const Split lsplit = parent->find<false>(threadIndex,threadCount,record.depth,lprims,linfo,remaining > 0);
-	const Split rsplit = parent->find<false>(threadIndex,threadCount,record.depth,rprims,rinfo,remaining > 0);
-	crecord[bestChild].prims = lprims; crecord[bestChild].pinfo = linfo; crecord[bestChild].split = lsplit;
-	crecord[numChildren].prims = rprims; crecord[numChildren].pinfo = rinfo; crecord[numChildren].split = rsplit;
+	lrecord.split = parent->find<false>(threadIndex,threadCount,record.depth,lrecord.prims,lrecord.pinfo,remaining > 0);
+	rrecord.split = parent->find<false>(threadIndex,threadCount,record.depth,rrecord.prims,rrecord.pinfo,remaining > 0);
+	crecord[bestChild] = lrecord;
+	crecord[numChildren] = rrecord;
 	numChildren++;
 	
       } while (numChildren < BVH4::N);
