@@ -60,18 +60,23 @@ namespace embree
       
       const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,true);
       BuildRecord record(1,prims,pinfo,split,&bvh->root);
-      tasks.push_back(SplitTask(threadIndex,threadCount,this,record));
+      tasks.push_back(record);
 
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
       while (tasks.size() < threadCount)
       {
 	/* pop largest item for better load balancing */
-	SplitTask task = tasks.front();
+	BuildRecord task = tasks.front();
 	pop_heap(tasks.begin(),tasks.end());
 	tasks.pop_back();
 	
 	/* process this item in parallel */
-	task.recurse_parallel(threadIndex,threadCount,NULL);
+	BuildRecord children[BVH4::N];
+	size_t N = process<true>(threadIndex,threadCount,this,task,children);
+	for (size_t i=0; i<N; i++) {
+	  tasks.push_back(children[i]);
+	  push_heap(tasks.begin(),tasks.end());
+	}
       }
       
       /*! process each generated subtask in its own thread */
@@ -187,30 +192,8 @@ namespace embree
     BVH4Builder2T<Triangle4i>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
       : BVH4Builder2(bvh,mesh->parent,mesh,2,true,sizeof(Triangle4i),4,inf) {}
    
-    
-    template<>
-    void BVH4Builder2::recurse<true>(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, const BuildRecord& record)
-    {
-      tasks.push_back(SplitTask(threadIndex,threadCount,this,record));
-      push_heap(tasks.begin(),tasks.end());
-    }
-
-    template<>
-    void BVH4Builder2::recurse<false>(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, const BuildRecord& record)
-    {
-      /* use full single threaded build for small jobs */
-      if (record.pinfo.size() < 4*1024) 
-	new BuildTask(threadIndex,threadCount,event,this,record);
-      
-      /* use single threaded split for medium size jobs  */
-      else
-	new SplitTask(threadIndex,threadCount,event,this,record);
-    }
-
-    void BVH4Builder2::buildFunction(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
-    {
-      SplitTask& task = tasks[taskIndex];
-      recurse<false>(threadIndex,threadCount,event,task.record);
+    void BVH4Builder2::buildFunction(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) {
+      new SplitTask(threadIndex,threadCount,event,this,tasks[taskIndex]);
     }
 
     BVH4Builder2::BuildTask::BuildTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, BVH4Builder2* parent, const BuildRecord& record)
@@ -402,16 +385,16 @@ namespace embree
     {
       BuildRecord children[BVH4::N];
       size_t N = process<false>(threadIndex,threadCount,parent,record,children);
-      for (size_t i=0; i<N; i++)
-	parent->recurse<false>(threadIndex,threadCount,event,children[i]);
-    }
-
-    void BVH4Builder2::SplitTask::recurse_parallel(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
-    {
-      BuildRecord children[BVH4::N];
-      size_t N = process<false>(threadIndex,threadCount,parent,record,children);
-      for (size_t i=0; i<N; i++)
-	parent->recurse<true>(threadIndex,threadCount,event,children[i]);
+      for (size_t i=0; i<N; i++) 
+      {
+	/* use full single threaded build for small jobs */
+	if (children[i].pinfo.size() < 4*1024) 
+	  new BuildTask(threadIndex,threadCount,event,parent,children[i]);
+	
+	/* use single threaded split for medium size jobs  */
+	else
+	  new SplitTask(threadIndex,threadCount,event,parent,children[i]);
+      }
     }
     
     Builder* BVH4Triangle1Builder2  (void* bvh, Scene* scene) { return new class BVH4Builder2T<Triangle1> ((BVH4*)bvh,scene); }

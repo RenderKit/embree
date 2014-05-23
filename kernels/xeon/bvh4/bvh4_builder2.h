@@ -55,6 +55,11 @@ namespace embree
 	__forceinline BuildRecord (size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split, NodeRef* dst)
 	: depth(depth), prims(prims), pinfo(pinfo), split(split), dst(dst) {}
 	
+	__forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) {
+	  //return halfArea(a.bounds.bounds) < halfArea(b.bounds.bounds);
+	  return a.pinfo.size() < b.pinfo.size();
+	}
+	
       public:
 	NodeRef*   dst;      //!< Reference to output the node.
 	size_t     depth;    //!< Recursion depth of the root of this subtree.
@@ -81,10 +86,6 @@ namespace embree
       /*! creates a large leaf by adding additional internal nodes */
       NodeRef createLargeLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo, size_t depth);
       
-      /*! Selects between full build and single-threaded split strategy. */
-      template<bool PARALLEL>
-	void recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, const BuildRecord& record);
-
       NodeRef layout_top_nodes(size_t threadIndex, NodeRef node);
 
       template<bool PARALLEL>
@@ -141,21 +142,10 @@ namespace embree
 	void run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
 	
 	void recurse         (size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
-	void recurse_parallel(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
-	
-	__forceinline friend bool operator< (const SplitTask& a, const SplitTask& b) {
-	  //return halfArea(a.bounds.bounds) < halfArea(b.bounds.bounds);
-	  return a.record.pinfo.size() < b.record.pinfo.size();
-	}
 	
       public:
 	TaskScheduler::Task task;
 	BVH4Builder2*    parent;         //!< Pointer to parent task.
-	/*NodeRef*    dst;            //!< Reference to output the node.
-	size_t          depth;          //!< Recursion depth of this node.
-	TriRefList prims; //!< The list of primitives.
-	PrimInfo        pinfo;          //!< Bounding info of primitives.
-	Split           split;          //!< The best split for the primitives.*/
 	BuildRecord record;
       };
 
@@ -172,7 +162,7 @@ namespace embree
       //TriRefGen initStage;               //!< job to generate build primitives
       TaskScheduler::QUEUE taskQueue;     //!< Task queue to use
       
-      std::vector<SplitTask> tasks;
+      std::vector<BuildRecord> tasks;
       atomic_t remainingReplications;
       
       size_t logBlockSize;
