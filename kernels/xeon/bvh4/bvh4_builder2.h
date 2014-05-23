@@ -68,7 +68,7 @@ namespace embree
     public:
       
       /*! Constructor. */
-      BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, size_t logSAHBlockSize, float intCost, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+      BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t mode, size_t logBlockSize, size_t logSAHBlockSize, float intCost, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
 
       /*! builder entry point */
       void build(size_t threadIndex, size_t threadCount);
@@ -114,6 +114,7 @@ namespace embree
       std::vector<BuildRecord> tasks;
       atomic_t remainingReplications;
 
+      bool enableSpatialSplits;
       size_t intCost;
       size_t logSAHBlockSize;
       size_t logBlockSize;
@@ -129,8 +130,8 @@ namespace embree
     class BVH4Builder2T : public BVH4Builder2
     {
     public:
-      BVH4Builder2T (BVH4* bvh, Scene* scene);
-      BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh);
+      BVH4Builder2T (BVH4* bvh, Scene* scene, size_t mode);
+      BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh, size_t mode);
       NodeRef createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo);
     };
   }
