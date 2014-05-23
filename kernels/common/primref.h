@@ -52,8 +52,7 @@ namespace embree
       compactustore16f_low(0xff,(float*)this,p);            
     };
 
-    __forceinline mic_f getLower() const { return broadcast4to16f((float*)&lower); }
-    __forceinline mic_f getUpper() const { return broadcast4to16f((float*)&upper); }
+    __forceinline mic2f getBounds() const { return mic2f(broadcast4to16f((float*)&lower),broadcast4to16f((float*)&upper)); }
 
 #endif
 

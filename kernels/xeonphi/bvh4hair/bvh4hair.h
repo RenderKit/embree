@@ -181,7 +181,6 @@ namespace embree
 
   BVH4Hair(const PrimitiveType& primTy, void* geometry = NULL) : BVH4i(primTy,geometry)
       {	
-	DBG_PRINT(sizeof(UnalignedNode));
 	assert( sizeof(UnalignedNode) == 256 );
 	unaligned_nodes = NULL;
       }

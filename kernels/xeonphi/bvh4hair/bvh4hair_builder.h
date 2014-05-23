@@ -35,10 +35,10 @@ namespace embree
 	bvh4hair = bvh;
       }
 
-    virtual void build(size_t threadIndex, size_t threadCount);
-    virtual size_t getNumPrimitives();
+    virtual void build          (const size_t threadIndex, const size_t threadCount);
     virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
     virtual void createAccel    (const size_t threadIndex, const size_t threadCount);
+    virtual size_t getNumPrimitives();
     virtual void printBuilderName();
 
   protected:
@@ -60,9 +60,9 @@ namespace embree
 
     virtual size_t getNumPrimitives();
     virtual void   printBuilderName();
-    virtual void   allocateData(const size_t threadCount, const size_t newNumPrimitives);
+    virtual void   allocateData   (const size_t threadCount, const size_t newNumPrimitives);
     virtual void   computePrimRefs(const size_t threadIndex, const size_t threadCount);
-    virtual void   build(size_t threadIndex, size_t threadCount);
+    virtual void   build          (const size_t threadIndex, const size_t threadCount);
 
     void build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event);
 

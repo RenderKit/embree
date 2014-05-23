@@ -25,7 +25,23 @@
 
 namespace embree
 {
-  class BVH4iBuilder : public Builder
+  class VirtualBuilderInterface : public Builder
+  {
+    ALIGNED_CLASS;
+  public:
+
+    virtual void build            (const size_t threadIndex, const size_t threadCount) = 0;
+    virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives) = 0;
+    virtual void computePrimRefs  (const size_t threadIndex, const size_t threadCount) = 0;
+    virtual void createAccel      (const size_t threadIndex, const size_t threadCount) = 0;
+    virtual void convertQBVHLayout(const size_t threadIndex, const size_t threadCount) = 0;
+
+    virtual size_t getNumPrimitives() = 0;
+    virtual void printBuilderName()   = 0;
+    
+  };
+
+  class BVH4iBuilder : public VirtualBuilderInterface
   {
     ALIGNED_CLASS;
   protected:
@@ -49,9 +65,8 @@ namespace embree
     /*! creates the builder */
     static Builder* create (void* accel, BuildSource* source, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
 
-    /* build function */
-    virtual void build(size_t threadIndex, size_t threadCount);
-
+    /* virtual function interface */
+    virtual void build            (const size_t threadIndex, const size_t threadCount);
     virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives);
     virtual void computePrimRefs  (const size_t threadIndex, const size_t threadCount);
     virtual void createAccel      (const size_t threadIndex, const size_t threadCount);
@@ -162,7 +177,6 @@ namespace embree
     BVHNode*   node;
     Triangle1* accel;
 
-  protected:
     size_t numPrimitives;
     size_t numNodes;
     size_t numAllocatedNodes;

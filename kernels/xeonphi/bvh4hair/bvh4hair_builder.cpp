@@ -144,7 +144,7 @@ namespace embree
     global_bounds.extend_atomic(bounds);    
   }
 
-  void BVH4HairBuilder::build(size_t threadIndex, size_t threadCount) 
+  void BVH4HairBuilder::build(const size_t threadIndex, const size_t threadCount) 
   {
     DBG(PING);
     const size_t totalNumPrimitives = getNumPrimitives();
@@ -439,7 +439,7 @@ namespace embree
   }
 
   
-  void BVH4HairBuilderConvert::build(size_t threadIndex, size_t threadCount) 
+  void BVH4HairBuilderConvert::build(const size_t threadIndex, const size_t threadCount) 
   {
     DBG(PING);
     const size_t totalNumPrimitives = getNumPrimitives();

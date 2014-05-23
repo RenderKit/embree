@@ -218,7 +218,7 @@ namespace embree
   }
 
 
-  void BVH4iBuilder::build(size_t threadIndex, size_t threadCount) 
+  void BVH4iBuilder::build(const size_t threadIndex, const size_t threadCount) 
   {
     DBG(PING);
     const size_t totalNumPrimitives = getNumPrimitives();
@@ -625,7 +625,7 @@ namespace embree
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
 
-    fastbin_copy(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
+    fastbin_copy<PrimRef>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
 
     LockStepTaskScheduler::syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
     
@@ -721,8 +721,11 @@ namespace embree
 	prefetch<PFHINT_NT>(l_source+2);
 	prefetch<PFHINT_L2>(l_source + L2_PREFETCH_ITEMS + 4);
 
-	const mic_f b_min = broadcast4to16f(&l_source->lower);
-	const mic_f b_max = broadcast4to16f(&l_source->upper);
+	const mic2f b = l_source->getBounds();
+	const mic_f b_min = b.x;
+	const mic_f b_max = b.y;
+	// const mic_f b_min = broadcast4to16f(&l_source->lower);
+	// const mic_f b_max = broadcast4to16f(&l_source->upper);
 	const mic_f b_centroid2 = b_min + b_max;
 
 	if (likely(lt_split(b_min,b_max,dim_mask,c,s,mic_f(bestSplit)))) 
@@ -872,7 +875,7 @@ namespace embree
     mic_f rightArea[3];
     mic_i leftNum[3];
 
-    fastbin(prims,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+    fastbin<PrimRef>(prims,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
 
     const unsigned int items = current.items();
     const float voxelArea = area(current.bounds.geometry);
@@ -921,7 +924,7 @@ namespace embree
 	leftChild.bounds.reset();
 	rightChild.bounds.reset();
 
-	const unsigned int mid = partitionPrimRefs<L2_PREFETCH_ITEMS>(prims ,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
+	const unsigned int mid = partitionPrimitives<L2_PREFETCH_ITEMS>(prims ,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
 
 	assert(area(leftChild.bounds.geometry) >= 0.0f);
 
@@ -1369,7 +1372,7 @@ namespace embree
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
 
-    fastbin_copy(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
+    fastbin_copy<PrimRef>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
 
     localTaskScheduler[globalCoreID].syncThreads(localThreadID);
 
