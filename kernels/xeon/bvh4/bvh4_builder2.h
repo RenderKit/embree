@@ -68,7 +68,7 @@ namespace embree
     public:
       
       /*! Constructor. */
-      BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+      BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
 
       /*! builder entry point */
       void build(size_t threadIndex, size_t threadCount);
@@ -102,10 +102,10 @@ namespace embree
 
     protected:
       Scene* scene;           //!< input geometry
-      TriangleMesh* mesh;
+      TriangleMesh* mesh;     //!< input triangle mesh
 
     public:
-      const PrimitiveType& primTy;          //!< triangle type stored in BVH4
+      const PrimitiveType& primTy;        //!< triangle type stored in BVH4
       size_t minLeafSize;                 //!< minimal size of a leaf
       size_t maxLeafSize;                 //!< maximal size of a leaf
       PrimRefBlockAlloc<PrimRef> alloc;                 //!< Allocator for primitive blocks
@@ -114,7 +114,8 @@ namespace embree
       MutexSys taskMutex;
       std::vector<BuildRecord> tasks;
       atomic_t remainingReplications;
-      
+
+      size_t logSAHBlockSize;
       size_t logBlockSize;
       size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }
       bool needVertices;

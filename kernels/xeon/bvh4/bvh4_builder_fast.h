@@ -99,7 +99,7 @@ namespace embree
     public:
 
       /*! Constructor. */
-      BVH4BuilderFast (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+      BVH4BuilderFast (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
       
       /*! Destructor */
       ~BVH4BuilderFast ();
@@ -151,6 +151,7 @@ namespace embree
       TriangleMesh* mesh;   //!< input mesh
       BVH4* bvh;                               //!< Output BVH
       size_t logBlockSize;
+      size_t logSAHBlockSize;
       size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }
       bool needVertices;
       size_t primBytes; 

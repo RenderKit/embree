@@ -41,8 +41,8 @@ namespace embree
 
     std::auto_ptr<BVH4BuilderFast::GlobalState> BVH4BuilderFast::g_state(NULL);
 
-    BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-      : scene(scene), mesh(mesh), bvh(bvh), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
+    BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+      : scene(scene), mesh(mesh), bvh(bvh), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), logSAHBlockSize(logSAHBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
     {
       needAllThreads = true;
       if (mesh) {
@@ -51,44 +51,44 @@ namespace embree
     }
 
     BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BuilderFast(bvh,scene,NULL,0,false,sizeof(Triangle1),2,inf) {}
+      : BVH4BuilderFast(bvh,scene,NULL,0,0,false,sizeof(Triangle1),2,inf) {}
 
     BVH4Triangle4BuilderFast::BVH4Triangle4BuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BuilderFast(bvh,scene,NULL,2,false,sizeof(Triangle4),4,inf) {}
+      : BVH4BuilderFast(bvh,scene,NULL,2,2,false,sizeof(Triangle4),4,inf) {}
 
 #if defined(__AVX__)
     BVH4Triangle8BuilderFast::BVH4Triangle8BuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BuilderFast(bvh,scene,NULL,2,false,sizeof(Triangle8),8,inf) {}
+      : BVH4BuilderFast(bvh,scene,NULL,3,2,false,sizeof(Triangle8),8,inf) {}
 #endif
     
     BVH4Triangle1vBuilderFast::BVH4Triangle1vBuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BuilderFast(bvh,scene,NULL,0,false,sizeof(Triangle1v),2,inf) {}
+      : BVH4BuilderFast(bvh,scene,NULL,0,0,false,sizeof(Triangle1v),2,inf) {}
 
     BVH4Triangle4vBuilderFast::BVH4Triangle4vBuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BuilderFast(bvh,scene,NULL,2,false,sizeof(Triangle4v),4,inf) {}
+      : BVH4BuilderFast(bvh,scene,NULL,2,2,false,sizeof(Triangle4v),4,inf) {}
     
     BVH4Triangle4iBuilderFast::BVH4Triangle4iBuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BuilderFast(bvh,scene,NULL,2,true,sizeof(Triangle4i),4,inf) {}
+      : BVH4BuilderFast(bvh,scene,NULL,2,2,true,sizeof(Triangle4i),4,inf) {}
 
     BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1),2,inf) {}
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,0,0,false,sizeof(Triangle1),2,inf) {}
 
     BVH4Triangle4BuilderFast::BVH4Triangle4BuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4),4,inf) {}
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,2,false,sizeof(Triangle4),4,inf) {}
 
 #if defined(__AVX__)
     BVH4Triangle8BuilderFast::BVH4Triangle8BuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,false,sizeof(Triangle8),8,inf) {}
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,3,2,false,sizeof(Triangle8),8,inf) {}
 #endif
     
     BVH4Triangle1vBuilderFast::BVH4Triangle1vBuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1v),2,inf) {}
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,0,0,false,sizeof(Triangle1v),2,inf) {}
 
     BVH4Triangle4vBuilderFast::BVH4Triangle4vBuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4v),4,inf) {}
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,2,false,sizeof(Triangle4v),4,inf) {}
     
     BVH4Triangle4iBuilderFast::BVH4Triangle4iBuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,true,sizeof(Triangle4i),4,inf) {}
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,2,true,sizeof(Triangle4i),4,inf) {}
    
     BVH4BuilderFast::~BVH4BuilderFast () 
     {

@@ -75,7 +75,7 @@ namespace embree
 
 #if defined(__AVX__)
     BVH4Triangle8BuilderMorton::BVH4Triangle8BuilderMorton (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderMorton(bvh,mesh->parent,mesh,2,false,sizeof(Triangle8),8,inf) {}
+      : BVH4BuilderMorton(bvh,mesh->parent,mesh,3,false,sizeof(Triangle8),8,inf) {}
 #endif
     
     BVH4Triangle1vBuilderMorton::BVH4Triangle1vBuilderMorton (BVH4* bvh, TriangleMesh* mesh)
