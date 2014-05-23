@@ -62,7 +62,7 @@ namespace embree
   DECLARE_TOPLEVEL_BUILDER(BVH4BuilderTopLevelFast);
 
   DECLARE_BUILDER(BVH4BuilderObjectSplit4Fast);
-  
+
   DECLARE_SCENE_BUILDER(BVH4Triangle1BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle4BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle1vBuilderFast);

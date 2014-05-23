@@ -237,18 +237,13 @@ typedef void (*ErrorFunc) ();
 #define SELECT_SYMBOL_KNC(features,intersector)
 #endif
 
-#define SELECT_SYMBOL_TEST(intersector)                               \
-  if (!intersector) printf("WARNING: could not select code for " TOSTRING(intersector) "\n")
-  
 #define SELECT_SYMBOL_DEFAULT_SSE41(features,intersector) \
   SELECT_SYMBOL_DEFAULT(features,intersector);                                 \
-  SELECT_SYMBOL_SSE41(features,intersector);                                   \
-  SELECT_SYMBOL_TEST(intersector);
+  SELECT_SYMBOL_SSE41(features,intersector);                                  
 
 #define SELECT_SYMBOL_DEFAULT_AVX(features,intersector) \
   SELECT_SYMBOL_DEFAULT(features,intersector);                     \
-  SELECT_SYMBOL_AVX(features,intersector);                         \
-  SELECT_SYMBOL_TEST(intersector);
+  SELECT_SYMBOL_AVX(features,intersector);                        
 
 #define SELECT_SYMBOL_AVX_AVX2(features,intersector) \
   SELECT_SYMBOL_AVX(features,intersector);                         \
@@ -257,31 +252,26 @@ typedef void (*ErrorFunc) ();
 #define SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,intersector) \
   SELECT_SYMBOL_DEFAULT(features,intersector);                     \
   SELECT_SYMBOL_AVX(features,intersector);                         \
-  SELECT_SYMBOL_AVX2(features,intersector);                        \
-  SELECT_SYMBOL_TEST(intersector);
+  SELECT_SYMBOL_AVX2(features,intersector);                       
 
 #define SELECT_SYMBOL_SSE42_AVX_AVX2(features,intersector) \
   SELECT_SYMBOL_SSE42(features,intersector);                       \
   SELECT_SYMBOL_AVX(features,intersector);                         \
-  SELECT_SYMBOL_AVX2(features,intersector);                        \
-  SELECT_SYMBOL_TEST(intersector);
+  SELECT_SYMBOL_AVX2(features,intersector);                       
 
 #define SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,intersector) \
   SELECT_SYMBOL_DEFAULT(features,intersector);                     \
   SELECT_SYMBOL_SSE41(features,intersector);                       \
   SELECT_SYMBOL_AVX(features,intersector);                         \
-  SELECT_SYMBOL_AVX2(features,intersector);                        \
-  SELECT_SYMBOL_TEST(intersector);
+  SELECT_SYMBOL_AVX2(features,intersector);                       
 
 #define SELECT_SYMBOL_SSE42_AVX(features,intersector) \
   SELECT_SYMBOL_SSE42(features,intersector);                       \
-  SELECT_SYMBOL_AVX(features,intersector);                         \
-  SELECT_SYMBOL_TEST(intersector);
+  SELECT_SYMBOL_AVX(features,intersector);                        
 
 #define SELECT_SYMBOL_DEFAULT_SSE41_AVX(features,intersector) \
   SELECT_SYMBOL_DEFAULT(features,intersector);                     \
   SELECT_SYMBOL_SSE41(features,intersector);                       \
-  SELECT_SYMBOL_AVX(features,intersector);                         \
-  SELECT_SYMBOL_TEST(intersector);
+  SELECT_SYMBOL_AVX(features,intersector);                        
 
 }
