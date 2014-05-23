@@ -125,6 +125,7 @@ namespace embree
       size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }  
     };
 
+    /*! specializes the builder for different leaf types */
     template<typename Triangle>
     class BVH4Builder2T : public BVH4Builder2
     {

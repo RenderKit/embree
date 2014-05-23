@@ -66,12 +66,48 @@ namespace embree
       pinfos[taskIndex] = pinfo;
     }
 
+    void TriRefListGenFromTriangleMesh::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, TriRefList& prims, PrimInfo& pinfo) {
+      TriRefListGenFromTriangleMesh(threadIndex,threadCount,alloc,mesh,prims,pinfo);
+    }
+
+    TriRefListGenFromTriangleMesh::TriRefListGenFromTriangleMesh(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, TriRefList& prims, PrimInfo& pinfo)
+      : mesh(mesh), alloc(alloc), prims(prims), pinfo(pinfo)
+    {
+      /*! parallel stage */
+      size_t numTasks = min(threadCount,maxTasks);
+      TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,numTasks,"build::trirefgen");
+      
+      /*! reduction stage */
+      for (size_t i=0; i<numTasks; i++)
+	pinfo.merge(pinfos[i]);
+    }
+    
+    void TriRefListGenFromTriangleMesh::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    {
+      ssize_t start = (taskIndex+0)*mesh->numTriangles/taskCount;
+      ssize_t end   = (taskIndex+1)*mesh->numTriangles/taskCount;
+      ssize_t cur   = 0;
+      
+      PrimInfo pinfo(empty);
+      TriRefList::item* block = prims.insert(alloc->malloc(threadIndex)); 
+
+      for (size_t j=0; j<mesh->numTriangles; j++) 
+      {
+	const PrimRef prim(mesh->bounds(j),mesh->id,j);
+	pinfo.add(prim.bounds(),prim.center2());
+	if (likely(block->insert(prim))) continue; 
+	block = prims.insert(alloc->malloc(threadIndex));
+	block->insert(prim);
+      }
+      pinfos[taskIndex] = pinfo;
+    }
+
     void TriRefArrayGen::generate_sequential(size_t threadIndex, size_t threadCount, const Scene* scene, PrimRef* prims_o, PrimInfo& pinfo_o) {
-      TriRefArrayGen gen(threadIndex,threadCount,scene,prims_o,pinfo_o,false);
+      TriRefArrayGen(threadIndex,threadCount,scene,prims_o,pinfo_o,false);
     }
 
     void TriRefArrayGen::generate_parallel(size_t threadIndex, size_t threadCount, const Scene* scene, PrimRef* prims_o, PrimInfo& pinfo_o) {
-      TriRefArrayGen gen(threadIndex,threadCount,scene,prims_o,pinfo_o,true);
+      TriRefArrayGen(threadIndex,threadCount,scene,prims_o,pinfo_o,true);
     }
 
     TriRefArrayGen::TriRefArrayGen(size_t threadIndex, size_t threadCount, const Scene* scene, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel)
