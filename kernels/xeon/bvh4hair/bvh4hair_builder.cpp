@@ -136,7 +136,7 @@ namespace embree
      
       Bezier1* leaf = (Bezier1*) bvh->allocPrimitiveBlocks(threadIndex,N);
       BezierRefList::block_iterator_unsafe iter(prims);
-      for (size_t i=0; i<N; i++) { leaf[i] = *iter; iter++; }
+      for (size_t i=0; i<N; i++) leaf[i].fill(iter,scene);
       assert(!iter);
       
       /* free all primitive blocks */
@@ -164,13 +164,9 @@ namespace embree
       
       Bezier1i* leaf = (Bezier1i*) bvh->allocPrimitiveBlocks(threadIndex,N);
       BezierRefList::block_iterator_unsafe iter(prims);
-      for (size_t i=0; i<N; i++) {
-	const Bezier1& curve = *iter; iter++;
-	const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID);
-	const Vec3fa& p0 = in->vertex(in->curve(curve.primID));
-	leaf[i] = Bezier1i(&p0,curve.geomID,curve.primID);
-      }
-      
+      for (size_t i=0; i<N; i++) leaf[i].fill(iter,scene);
+      assert(!iter);
+
       /* free all primitive blocks */
       while (BezierRefList::item* block = prims.take())
 	alloc.free(threadIndex,block);
