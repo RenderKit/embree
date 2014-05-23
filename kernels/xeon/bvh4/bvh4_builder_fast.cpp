@@ -749,22 +749,22 @@ namespace embree
       if (g_verbose >= 2) dt = getSeconds()-t0;
     }
     
-    Builder* BVH4Triangle1BuilderFast  (void* bvh, Scene* scene) { return new class BVH4Triangle1BuilderFast ((BVH4*)bvh,scene); }
-    Builder* BVH4Triangle4BuilderFast  (void* bvh, Scene* scene) { return new class BVH4Triangle4BuilderFast ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle1BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle1BuilderFast ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4BuilderFast ((BVH4*)bvh,scene); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8BuilderFast  (void* bvh, Scene* scene) { return new class BVH4Triangle8BuilderFast ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle8BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle8BuilderFast ((BVH4*)bvh,scene); }
 #endif
-    Builder* BVH4Triangle1vBuilderFast (void* bvh, Scene* scene) { return new class BVH4Triangle1vBuilderFast((BVH4*)bvh,scene); }
-    Builder* BVH4Triangle4vBuilderFast (void* bvh, Scene* scene) { return new class BVH4Triangle4vBuilderFast((BVH4*)bvh,scene); }
-    Builder* BVH4Triangle4iBuilderFast (void* bvh, Scene* scene) { return new class BVH4Triangle4iBuilderFast((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle1vBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle1vBuilderFast((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4vBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4vBuilderFast((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4iBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4iBuilderFast((BVH4*)bvh,scene); }
 
-    Builder* BVH4Triangle1MeshBuilderFast  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle1BuilderFast ((BVH4*)bvh,mesh); }
-    Builder* BVH4Triangle4MeshBuilderFast  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4BuilderFast ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle1MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle1BuilderFast ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4BuilderFast ((BVH4*)bvh,mesh); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshBuilderFast  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle8BuilderFast ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle8MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle8BuilderFast ((BVH4*)bvh,mesh); }
 #endif
-    Builder* BVH4Triangle1vMeshBuilderFast (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle1vBuilderFast((BVH4*)bvh,mesh); }
-    Builder* BVH4Triangle4vMeshBuilderFast (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4vBuilderFast((BVH4*)bvh,mesh); }
-    Builder* BVH4Triangle4iMeshBuilderFast (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4iBuilderFast((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle1vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle1vBuilderFast((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4vBuilderFast((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4iMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4iBuilderFast((BVH4*)bvh,mesh); }
   }
 }

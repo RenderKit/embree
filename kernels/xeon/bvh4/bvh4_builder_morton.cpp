@@ -1106,23 +1106,23 @@ namespace embree
       if (g_verbose >= 2) dt = getSeconds()-t0;
     }
 
-    Builder* BVH4Triangle1BuilderMorton  (void* bvh, Scene* scene) { return new class BVH4Triangle1BuilderMorton ((BVH4*)bvh,scene); }
-    Builder* BVH4Triangle4BuilderMorton  (void* bvh, Scene* scene) { return new class BVH4Triangle4BuilderMorton ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle1BuilderMorton  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle1BuilderMorton ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4BuilderMorton  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4BuilderMorton ((BVH4*)bvh,scene); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8BuilderMorton  (void* bvh, Scene* scene) { return new class BVH4Triangle8BuilderMorton ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle8BuilderMorton  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle8BuilderMorton ((BVH4*)bvh,scene); }
 #endif
-    Builder* BVH4Triangle1vBuilderMorton (void* bvh, Scene* scene) { return new class BVH4Triangle1vBuilderMorton((BVH4*)bvh,scene); }
-    Builder* BVH4Triangle4vBuilderMorton (void* bvh, Scene* scene) { return new class BVH4Triangle4vBuilderMorton((BVH4*)bvh,scene); }
-    Builder* BVH4Triangle4iBuilderMorton (void* bvh, Scene* scene) { return new class BVH4Triangle4iBuilderMorton((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle1vBuilderMorton (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle1vBuilderMorton((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4vBuilderMorton (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4vBuilderMorton((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4iBuilderMorton (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4iBuilderMorton((BVH4*)bvh,scene); }
 
-    Builder* BVH4Triangle1MeshBuilderMorton  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle1BuilderMorton ((BVH4*)bvh,mesh); }
-    Builder* BVH4Triangle4MeshBuilderMorton  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4BuilderMorton ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle1MeshBuilderMorton  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle1BuilderMorton ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4MeshBuilderMorton  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4BuilderMorton ((BVH4*)bvh,mesh); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshBuilderMorton  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle8BuilderMorton ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle8MeshBuilderMorton  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle8BuilderMorton ((BVH4*)bvh,mesh); }
 #endif
-    Builder* BVH4Triangle1vMeshBuilderMorton (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle1vBuilderMorton((BVH4*)bvh,mesh); }
-    Builder* BVH4Triangle4vMeshBuilderMorton (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4vBuilderMorton((BVH4*)bvh,mesh); }
-    Builder* BVH4Triangle4iMeshBuilderMorton (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4iBuilderMorton((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle1vMeshBuilderMorton (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle1vBuilderMorton((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4vMeshBuilderMorton (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4vBuilderMorton((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4iMeshBuilderMorton (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4iBuilderMorton((BVH4*)bvh,mesh); }
   }
 }
 

@@ -28,22 +28,28 @@ namespace embree
     bool needAllThreads;
   };
 
+  typedef Builder* (*TriangleMeshBuilderFuncOld)(void* accel, struct TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize);
+  typedef Builder* (*BuilderFunc)            (void* accel, struct BuildSource* source, struct Scene* scene, const size_t minLeafSize, const size_t maxLeafSize);
+
+  typedef Builder* (*TriangleMeshBuilderFunc)(void* accel, struct TriangleMesh* mesh, size_t mode); // FIXME: move to builder.h
+  typedef Builder* (*SceneBuilderFunc)       (void* accel, struct Scene* scene, size_t mode);
+
 #define ADD_BUILDER(NAME,BUILDER,LEAFMIN,LEAFMAX)              \
   builders.add(ISA,NAME,BUILDER,LEAFMIN,LEAFMAX);
 
 #define DECLARE_SCENE_BUILDER(symbol)                                         \
-  namespace isa   { extern Builder* symbol(void* accel, Scene* scene); } \
-  namespace sse41 { extern Builder* symbol(void* accel, Scene* scene); } \
-  namespace avx   { extern Builder* symbol(void* accel, Scene* scene); } \
-  namespace avx2  { extern Builder* symbol(void* accel, Scene* scene); } \
+  namespace isa   { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
+  namespace sse41 { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
+  namespace avx   { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
+  namespace avx2  { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
   void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
   SceneBuilderFunc symbol = (SceneBuilderFunc) symbol##_error;
 
 #define DECLARE_TRIANGLEMESH_BUILDER(symbol)                            \
-  namespace isa   { extern Builder* symbol(void* accel, TriangleMesh* mesh); } \
-  namespace sse41 { extern Builder* symbol(void* accel, TriangleMesh* mesh); } \
-  namespace avx   { extern Builder* symbol(void* accel, TriangleMesh* mesh); } \
-  namespace avx2  { extern Builder* symbol(void* accel, TriangleMesh* mesh); } \
+  namespace isa   { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
+  namespace sse41 { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
+  namespace avx   { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
+  namespace avx2  { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
   void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
   TriangleMeshBuilderFunc symbol = (TriangleMeshBuilderFunc) symbol##_error;
 

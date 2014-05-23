@@ -351,29 +351,24 @@ namespace embree
 	std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
 	std::cout << BVH4Statistics(bvh).str();
       }
-      
-      if (g_benchmark) {
-	BVH4Statistics stat(bvh);
-	std::cout << "BENCHMARK_BUILD " << 1000.0f*(t1-t0) << " " << 1E-6*double(numPrimitives)/(t1-t0) << " " << stat.bytesUsed() << std::endl;
-      }
     }
     
-    Builder* BVH4Triangle1Builder2  (void* bvh, Scene* scene) { return new class BVH4Builder2T<Triangle1> ((BVH4*)bvh,scene); }
-    Builder* BVH4Triangle4Builder2  (void* bvh, Scene* scene) { return new class BVH4Builder2T<Triangle4> ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle1Builder2  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Builder2T<Triangle1> ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4Builder2  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Builder2T<Triangle4> ((BVH4*)bvh,scene); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8Builder2  (void* bvh, Scene* scene) { return new class BVH4Builder2T<Triangle8> ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle8Builder2  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Builder2T<Triangle8> ((BVH4*)bvh,scene); }
 #endif
-    Builder* BVH4Triangle1vBuilder2 (void* bvh, Scene* scene) { return new class BVH4Builder2T<Triangle1v>((BVH4*)bvh,scene); }
-    Builder* BVH4Triangle4vBuilder2 (void* bvh, Scene* scene) { return new class BVH4Builder2T<Triangle4v>((BVH4*)bvh,scene); }
-    Builder* BVH4Triangle4iBuilder2 (void* bvh, Scene* scene) { return new class BVH4Builder2T<Triangle4i>((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle1vBuilder2 (void* bvh, Scene* scene, size_t mode) { return new class BVH4Builder2T<Triangle1v>((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4vBuilder2 (void* bvh, Scene* scene, size_t mode) { return new class BVH4Builder2T<Triangle4v>((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4iBuilder2 (void* bvh, Scene* scene, size_t mode) { return new class BVH4Builder2T<Triangle4i>((BVH4*)bvh,scene); }
 
-    Builder* BVH4Triangle1MeshBuilder2  (void* bvh, TriangleMesh* mesh) { return new class BVH4Builder2T<Triangle1> ((BVH4*)bvh,mesh); }
-    Builder* BVH4Triangle4MeshBuilder2  (void* bvh, TriangleMesh* mesh) { return new class BVH4Builder2T<Triangle4> ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle1MeshBuilder2  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Builder2T<Triangle1> ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4MeshBuilder2  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Builder2T<Triangle4> ((BVH4*)bvh,mesh); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshBuilder2  (void* bvh, TriangleMesh* mesh) { return new class BVH4Builder2T<Triangle8> ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle8MeshBuilder2  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Builder2T<Triangle8> ((BVH4*)bvh,mesh); }
 #endif
-    Builder* BVH4Triangle1vMeshBuilder2 (void* bvh, TriangleMesh* mesh) { return new class BVH4Builder2T<Triangle1v>((BVH4*)bvh,mesh); }
-    Builder* BVH4Triangle4vMeshBuilder2 (void* bvh, TriangleMesh* mesh) { return new class BVH4Builder2T<Triangle4v>((BVH4*)bvh,mesh); }
-    Builder* BVH4Triangle4iMeshBuilder2 (void* bvh, TriangleMesh* mesh) { return new class BVH4Builder2T<Triangle4i>((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle1vMeshBuilder2 (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Builder2T<Triangle1v>((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4vMeshBuilder2 (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Builder2T<Triangle4v>((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4iMeshBuilder2 (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Builder2T<Triangle4i>((BVH4*)bvh,mesh); }
   }
 }

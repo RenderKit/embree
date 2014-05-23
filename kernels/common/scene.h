@@ -287,11 +287,4 @@ namespace embree
     FlatTriangleAccelBuildSource flat_triangle_source_2;
     BezierBuildSource bezier_source_1;
   };
-
-  typedef Builder* (*TriangleMeshBuilderFuncOld)(void* accel, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize);
-  typedef Builder* (*BuilderFunc)            (void* accel, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize);
-
-  typedef Builder* (*TriangleMeshBuilderFunc)(void* accel, TriangleMesh* mesh); // FIXME: move to builder.h
-  typedef Builder* (*SceneBuilderFunc)       (void* accel, Scene* scene);
-
 }
