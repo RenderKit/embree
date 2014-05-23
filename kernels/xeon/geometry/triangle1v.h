@@ -40,7 +40,22 @@ namespace embree
     __forceinline unsigned primID() const { return v0.a; }
     __forceinline unsigned geomID() const { return v1.a; }
     __forceinline unsigned mask  () const { return v2.a; }
-    
+
+    /*! fill triangle from triangle list */
+    static __forceinline void fill(Triangle1v* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
+    {
+      const PrimRef& prim = *prims;
+      const unsigned geomID = prim.geomID();
+      const unsigned primID = prim.primID();
+      const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+      const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+      const Vec3fa& p0 = mesh->vertex(tri.v[0]);
+      const Vec3fa& p1 = mesh->vertex(tri.v[1]);
+      const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+      new (dst) Triangle1v(p0,p1,p2,mesh->id,primID,mesh->mask);
+      prims++;
+    }
+
   public:
     Vec3fa v0;          //!< first vertex and primitive ID
     Vec3fa v1;          //!< second vertex and geometry ID

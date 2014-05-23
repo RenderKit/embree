@@ -17,6 +17,7 @@
 #pragma once
 
 #include "common/default.h"
+#include "common/scene.h"
 #include "builders/primrefblock.h"
 
 namespace embree

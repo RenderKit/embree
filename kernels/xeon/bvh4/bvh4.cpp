@@ -63,6 +63,18 @@ namespace embree
 
   DECLARE_BUILDER(BVH4BuilderObjectSplit4Fast);
 
+  DECLARE_SCENE_BUILDER(BVH4Triangle1Builder2);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4Builder2);
+  DECLARE_SCENE_BUILDER(BVH4Triangle1vBuilder2);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4vBuilder2);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4iBuilder2);
+
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilder2);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilder2);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshBuilder2);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshBuilder2);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshBuilder2);
+
   DECLARE_SCENE_BUILDER(BVH4Triangle1BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle4BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle1vBuilderFast);
@@ -102,16 +114,24 @@ namespace embree
   Builder* BVH4BuilderSpatialSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
   Builder* BVH4BuilderSpatialSplit8 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
 
-  namespace avx {
-    Builder* BVH4Builder2ObjectSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
-  };
-  
   void BVH4Register () 
   {
     int features = getCPUFeatures();
 
     /* select builders */
     SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4BuilderTopLevelFast);
+
+    SELECT_SYMBOL_AVX(features,BVH4Triangle1Builder2);
+    SELECT_SYMBOL_AVX(features,BVH4Triangle4Builder2);
+    SELECT_SYMBOL_AVX(features,BVH4Triangle1vBuilder2);
+    SELECT_SYMBOL_AVX(features,BVH4Triangle4vBuilder2);
+    SELECT_SYMBOL_AVX(features,BVH4Triangle4iBuilder2);
+    
+    SELECT_SYMBOL_AVX(features,BVH4Triangle1MeshBuilder2);
+    SELECT_SYMBOL_AVX(features,BVH4Triangle4MeshBuilder2);
+    SELECT_SYMBOL_AVX(features,BVH4Triangle1vMeshBuilder2);
+    SELECT_SYMBOL_AVX(features,BVH4Triangle4vMeshBuilder2);
+    SELECT_SYMBOL_AVX(features,BVH4Triangle4iMeshBuilder2);
   
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1BuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4BuilderFast);
@@ -346,7 +366,7 @@ namespace embree
     else if (g_builder == "objectsplit" ) builder = BVH4BuilderObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "objectsplit1") builder = BVH4BuilderObjectSplit1(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "objectsplit4") builder = BVH4BuilderObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
-    else if (g_builder == "builder2")     builder = avx::BVH4Builder2ObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
+    else if (g_builder == "builder2")     builder = BVH4Triangle4Builder2(accel,scene);
     else if (g_builder == "morton"      ) builder = BVH4Triangle4BuilderMorton(accel,scene);
     else if (g_builder == "fast"        ) builder = BVH4Triangle4BuilderFast(accel,scene);
     else throw std::runtime_error("unknown builder "+g_builder+" for BVH4<Triangle4>");

@@ -99,6 +99,30 @@ namespace embree
 #endif
     }
 
+    /*! fill triangle from triangle list */
+    static __forceinline void pack(Triangle8* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
+    {
+      avxi geomID = -1, primID = -1, mask = -1;
+      avx3f v0 = zero, v1 = zero, v2 = zero;
+      
+      for (size_t i=0; i<8 && prims; i++, prims++)
+      {
+	const PrimRef& prim = *prims;
+	const TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
+	const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
+	const Vec3fa& p0 = mesh->vertex(tri.v[0]);
+	const Vec3fa& p1 = mesh->vertex(tri.v[1]);
+	const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+	geomID [i] = prim.geomID();
+	primID [i] = prim.primID();
+	mask   [i] = mesh->mask;
+	v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+	v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+	v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+      }
+      new (This) Triangle8(v0,v1,v2,geomID,primID,mask);
+    }
+
   public:
     avx3f v0;      //!< Base vertex of the triangles.
     avx3f e1;      //!< 1st edge of the triangles (v0-v1).

@@ -23,6 +23,12 @@
 #include "builders/heuristics.h"
 #include "builders/splitter_fallback.h"
 
+#include "geometry/triangle1.h"
+#include "geometry/triangle4.h"
+#include "geometry/triangle1v.h"
+#include "geometry/triangle4v.h"
+#include "geometry/triangle4i.h"
+
 #define ROTATE_TREE 1
 
 #include "common/scene_triangle_mesh.h"
@@ -33,10 +39,10 @@ namespace embree
   {
     void BVH4Builder2::build(size_t threadIndex, size_t threadCount) 
     {
-      size_t numPrimitives = source->size();
+      size_t numPrimitives = scene->numTriangles; //source->size();
       bvh->init(2*numPrimitives); // FIXME: 2x
       remainingReplications = numPrimitives;
-      if (source->isEmpty()) 
+      if (numPrimitives == 0) 
 	return;
       
       if (g_verbose >= 2) 
@@ -47,8 +53,9 @@ namespace embree
 	t0 = getSeconds();
       
       /* generate list of build primitives */
+      if (mesh) throw std::runtime_error("BVH4Builder2: generation from triangle mesh not yet implemented"); // FIXME
       TriRefList prims; PrimInfo pinfo(empty);
-      TriRefListGen::generate(threadIndex,threadCount,&alloc,(Scene*)geometry,prims,pinfo);
+      TriRefListGen::generate(threadIndex,threadCount,&alloc,scene,prims,pinfo);
       
       const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,true);
       tasks.push_back(SplitTask(threadIndex,threadCount,this,bvh->root,1,prims,pinfo,split));
@@ -88,13 +95,13 @@ namespace embree
       
       if (g_verbose >= 2) {
 	std::cout << "[DONE]" << std::endl;
-	std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(source->size())/(t1-t0) << " Mprim/s" << std::endl;
+	std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
 	std::cout << BVH4Statistics(bvh).str();
       }
       
       if (g_benchmark) {
 	BVH4Statistics stat(bvh);
-	std::cout << "BENCHMARK_BUILD " << 1000.0f*(t1-t0) << " " << 1E-6*double(source->size())/(t1-t0) << " " << stat.bytesUsed() << std::endl;
+	std::cout << "BENCHMARK_BUILD " << 1000.0f*(t1-t0) << " " << 1E-6*double(numPrimitives)/(t1-t0) << " " << stat.bytesUsed() << std::endl;
       }
     }
 
@@ -117,14 +124,55 @@ namespace embree
 	return node;
     }
     
-    BVH4Builder2::BVH4Builder2 (BVH4* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize)
-      : source(source), geometry(geometry), primTy(bvh->primTy), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), bvh(bvh),
+    BVH4Builder2::BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+      : scene(scene), mesh(mesh), bvh(bvh), primTy(bvh->primTy), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
 	taskQueue(/*Heuristic::depthFirst ? TaskScheduler::GLOBAL_BACK : */TaskScheduler::GLOBAL_FRONT)
     {
       size_t maxLeafPrims = BVH4::maxLeafBlocks*primTy.blockSize;
       if (maxLeafPrims < this->maxLeafSize) 
 	this->maxLeafSize = maxLeafPrims;
     }
+
+    template<>
+    BVH4Builder2T<Triangle1>::BVH4Builder2T (BVH4* bvh, Scene* scene)
+      : BVH4Builder2(bvh,scene,NULL,0,false,sizeof(Triangle1),2,inf) {}
+
+    template<>
+    BVH4Builder2T<Triangle4>::BVH4Builder2T (BVH4* bvh, Scene* scene)
+      : BVH4Builder2(bvh,scene,NULL,2,false,sizeof(Triangle4),4,inf) {}
+    
+    template<>
+    BVH4Builder2T<Triangle1v>::BVH4Builder2T (BVH4* bvh, Scene* scene)
+      : BVH4Builder2(bvh,scene,NULL,0,false,sizeof(Triangle1v),2,inf) {}
+
+    template<>
+    BVH4Builder2T<Triangle4v>::BVH4Builder2T (BVH4* bvh, Scene* scene)
+      : BVH4Builder2(bvh,scene,NULL,2,false,sizeof(Triangle4v),4,inf) {}
+    
+    template<>
+    BVH4Builder2T<Triangle4i>::BVH4Builder2T (BVH4* bvh, Scene* scene)
+      : BVH4Builder2(bvh,scene,NULL,2,true,sizeof(Triangle4i),4,inf) {}
+
+    template<>
+    BVH4Builder2T<Triangle1>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4Builder2(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1),2,inf) {}
+
+    template<>
+    BVH4Builder2T<Triangle4>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4Builder2(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4),4,inf) {}
+    
+    template<>
+    BVH4Builder2T<Triangle1v>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4Builder2(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1v),2,inf) {}
+
+    template<>
+    BVH4Builder2T<Triangle4v>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4Builder2(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4v),4,inf) {}
+    
+    template<>
+    BVH4Builder2T<Triangle4i>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4Builder2(bvh,mesh->parent,mesh,2,true,sizeof(Triangle4i),4,inf) {}
+   
     
     template<>
     void BVH4Builder2::recurse<true>(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
@@ -162,17 +210,18 @@ namespace embree
       TaskScheduler::addTask(threadIndex,parent->taskQueue,&task);
     }
     
-    typename BVH4Builder2::NodeRef BVH4Builder2::createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo)
+    template<typename Triangle>
+    typename BVH4Builder2::NodeRef BVH4Builder2T<Triangle>::createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo)
     {
       /* allocate leaf node */
       size_t blocks = primTy.blocks(pinfo.size());
-      char* leaf = bvh->allocPrimitiveBlocks(threadIndex,blocks);
+      Triangle* leaf = (Triangle*) bvh->allocPrimitiveBlocks(threadIndex,blocks);
       assert(blocks <= (size_t)BVH4::maxLeafBlocks);
       
       /* insert all triangles */
       TriRefList::block_iterator_unsafe iter(prims);
       for (size_t i=0; i<blocks; i++) {
-	primTy.pack(leaf+i*primTy.bytes,iter,geometry);
+	Triangle::fill(&leaf[i],iter,scene);
       }
       assert(!iter);
       
@@ -231,7 +280,7 @@ namespace embree
 	if (osplit.sah == float(inf)) return Split();
 	else return osplit;
       }
-      SpatialSplit   ::Split ssplit = SpatialSplit   ::find<PARALLEL>(threadIndex,threadCount,(Scene*)geometry,prims,pinfo,2); // FIXME: hardcoded constant
+      SpatialSplit   ::Split ssplit = SpatialSplit   ::find<PARALLEL>(threadIndex,threadCount,scene,prims,pinfo,2); // FIXME: hardcoded constant
       const float bestSAH = min(osplit.sah,ssplit.sah);
       if      (bestSAH == osplit.sah) return osplit; 
       else if (bestSAH == ssplit.sah) return ssplit;
@@ -275,7 +324,7 @@ namespace embree
 	/*! perform best found split and find new splits */
 	PrimInfo linfo(empty),rinfo(empty);
 	TriRefList lprims,rprims;
-	csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,(Scene*)parent->geometry,cprims[bestChild],lprims,linfo,rprims,rinfo);
+	csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,parent->scene,cprims[bestChild],lprims,linfo,rprims,rinfo);
 	if (linfo.size() == 0) {
 	  cprims[bestChild  ] = rprims; cinfo[bestChild  ] = rinfo; 
 	  csplit[bestChild  ] = parent->find<false>(threadIndex,threadCount,depth,rprims,rinfo,false);
@@ -361,7 +410,7 @@ namespace embree
 	/*! perform best found split and find new splits */
 	PrimInfo linfo(empty), rinfo(empty);
 	TriRefList lprims,rprims;
-	csplit[bestChild].split<PARALLEL>(threadIndex,threadCount,parent->alloc,(Scene*)parent->geometry,cprims[bestChild],lprims,linfo,rprims,rinfo);
+	csplit[bestChild].split<PARALLEL>(threadIndex,threadCount,parent->alloc,parent->scene,cprims[bestChild],lprims,linfo,rprims,rinfo);
 	if (linfo.size() == 0) {
 	  cprims[bestChild  ] = rprims; cinfo[bestChild  ] = rinfo; 
 	  csplit[bestChild  ] = parent->find<PARALLEL>(threadIndex,threadCount,depth,rprims,rinfo,false);
@@ -391,30 +440,16 @@ namespace embree
       }
     }
     
-#if 1
-    /*Builder* BVH4Builder2ObjectSplit1 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
-      return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
-      }*/
-    
-    Builder* BVH4Builder2ObjectSplit4 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
-      return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
-    }
-    
-    /*Builder* BVH4Builder2ObjectSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
-      return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
-    }
-    
-    Builder* BVH4Builder2SpatialSplit1 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
-      return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
-    }
-    
-    Builder* BVH4Builder2SpatialSplit4 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
-      return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
-    }
-    
-    Builder* BVH4Builder2SpatialSplit8 (void* accel, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize) {
-      return new BVH4Builder2((BVH4*)accel,source,geometry,minLeafSize,maxLeafSize);
-      }*/
-#endif
+    Builder* BVH4Triangle1Builder2  (void* bvh, Scene* scene) { return new class BVH4Builder2T<Triangle1> ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4Builder2  (void* bvh, Scene* scene) { return new class BVH4Builder2T<Triangle4> ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle1vBuilder2 (void* bvh, Scene* scene) { return new class BVH4Builder2T<Triangle1v>((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4vBuilder2 (void* bvh, Scene* scene) { return new class BVH4Builder2T<Triangle4v>((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4iBuilder2 (void* bvh, Scene* scene) { return new class BVH4Builder2T<Triangle4i>((BVH4*)bvh,scene); }
+
+    Builder* BVH4Triangle1MeshBuilder2  (void* bvh, TriangleMesh* mesh) { return new class BVH4Builder2T<Triangle1> ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4MeshBuilder2  (void* bvh, TriangleMesh* mesh) { return new class BVH4Builder2T<Triangle4> ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle1vMeshBuilder2 (void* bvh, TriangleMesh* mesh) { return new class BVH4Builder2T<Triangle1v>((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4vMeshBuilder2 (void* bvh, TriangleMesh* mesh) { return new class BVH4Builder2T<Triangle4v>((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4iMeshBuilder2 (void* bvh, TriangleMesh* mesh) { return new class BVH4Builder2T<Triangle4i>((BVH4*)bvh,mesh); }
   }
 }

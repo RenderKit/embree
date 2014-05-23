@@ -265,7 +265,7 @@ namespace embree
     }
     
     /*! Encodes a leaf */
-    __forceinline NodeRef encodeLeaf(char* tri, size_t num) {
+    __forceinline NodeRef encodeLeaf(void* tri, size_t num) {
       assert(!((size_t)tri & align_mask)); 
       return NodeRef((size_t)tri | (1+min(num,(size_t)maxLeafBlocks)));
     }

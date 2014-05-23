@@ -51,14 +51,14 @@ namespace embree
       void build(size_t threadIndex, size_t threadCount);
       
       /*! Constructor. */
-      BVH4Builder2 (BVH4* bvh, BuildSource* source, void* geometry, const size_t minLeafSize = 1, const size_t maxLeafSize = inf);
-      
+      BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+
       /*! build job */
       TASK_RUN_FUNCTION_(BVH4Builder2,buildFunction);
       void buildFunction(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event);
       
       /*! creates a leaf node */
-      NodeRef createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo);
+      virtual NodeRef createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo) = 0;
       
       /*! creates a large leaf by adding additional internal nodes */
       NodeRef createLargeLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo, size_t depth);
@@ -148,9 +148,10 @@ namespace embree
 	Split           split;          //!< The best split for the primitives.
       };
 
-    private:
-      BuildSource* source;      //!< build source interface
-      void* geometry;           //!< input geometry
+    protected:
+      //BuildSource* source;      //!< build source interface
+      Scene* scene;           //!< input geometry
+      TriangleMesh* mesh;
 
     public:
       const PrimitiveType& primTy;          //!< triangle type stored in BVH4
@@ -163,8 +164,22 @@ namespace embree
       std::vector<SplitTask> tasks;
       atomic_t remainingReplications;
       
+      size_t logBlockSize;
+      size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }
+      bool needVertices;
+      size_t primBytes; 
+
     public:
       BVH4* bvh;                      //!< Output BVH4
+    };
+
+    template<typename Triangle>
+    class BVH4Builder2T : public BVH4Builder2
+    {
+    public:
+      BVH4Builder2T (BVH4* bvh, Scene* scene);
+      BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh);
+      NodeRef createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo);
     };
   }
 }

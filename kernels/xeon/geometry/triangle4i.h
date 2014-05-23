@@ -69,6 +69,39 @@ namespace embree
       return bounds;
     }
 
+    /*! fill triangle from triangle list */
+    static __forceinline void fill(Triangle4i* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
+    {
+      ssei geomID = -1, primID = -1;
+      Vec3f* v0[4] = { NULL, NULL, NULL, NULL };
+      ssei v1 = zero, v2 = zero;
+      PrimRef& prim = *prims;
+      
+      for (size_t i=0; i<4; i++)
+      {
+	const TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
+	const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
+	if (prims) {
+	  geomID[i] = prim.geomID();
+	  primID[i] = prim.primID();
+	  v0[i] = (Vec3f*) &mesh->vertex(tri.v[0]); 
+	  v1[i] = (int*)&mesh->vertex(tri.v[1])-(int*)v0[i]; 
+	  v2[i] = (int*)&mesh->vertex(tri.v[2])-(int*)v0[i]; 
+	  prims++;
+	} else {
+	  assert(i);
+	  geomID[i] = -1;
+	  primID[i] = -1;
+	  v0[i] = v0[i-1];
+	  v1[i] = 0; 
+	  v2[i] = 0;
+	}
+	if (prims) prim = *prims;
+      }
+      
+      new (This) Triangle4i(v0,v1,v2,geomID,primID);
+    }
+
   public:
     const Vec3f* v0[4];  //!< Pointer to 1st vertex.
     ssei v1;             //!< Offset to 2nd vertex.
