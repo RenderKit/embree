@@ -276,7 +276,7 @@ namespace embree
     void BVH4Builder2::BuildTask::run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
     {
       this->threadIndex = threadIndex;
-      *record.dst = recurse(record); //.depth,record.prims,record.pinfo,record.split);
+      recurse(record); //.depth,record.prims,record.pinfo,record.split);
 #if ROTATE_TREE
       for (int i=0; i<5; i++) 
 	BVH4Rotate::rotate(parent->bvh,*record.dst); 
@@ -301,7 +301,7 @@ namespace embree
       else                            return Split();
     }
     
-    typename BVH4Builder2::NodeRef BVH4Builder2::BuildTask::recurse(BuildRecord& record) //size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split)
+    void BVH4Builder2::BuildTask::recurse(BuildRecord& record) //size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split)
     {
       /*! compute leaf and split cost */
       const float leafSAH  = parent->primTy.intCost*record.pinfo.leafSAH(parent->logBlockSize);
@@ -311,7 +311,7 @@ namespace embree
       
       /*! create a leaf node when threshold reached or SAH tells us to stop */
       if (record.pinfo.size() <= parent->minLeafSize || record.depth > BVH4::maxBuildDepth || (record.pinfo.size() <= parent->maxLeafSize && leafSAH <= splitSAH)) {
-	return parent->createLargeLeaf(threadIndex,record.prims,record.pinfo,record.depth+1);
+	*record.dst = parent->createLargeLeaf(threadIndex,record.prims,record.pinfo,record.depth+1); return;
       }
       
       /*! initialize child list */
@@ -362,10 +362,11 @@ namespace embree
       /*! create an inner node */
       Node* node = parent->bvh->allocNode(threadIndex);
       for (size_t i=0; i<numChildren; i++) {
-	BuildRecord next(record.depth+1,cprims[i],cinfo[i],csplit[i],NULL);
-	node->set(i,cinfo[i].geomBounds,recurse(next));
+	BuildRecord next(record.depth+1,cprims[i],cinfo[i],csplit[i],&node->child(i));
+	node->set(i,cinfo[i].geomBounds);
+	recurse(next);
       }
-      return parent->bvh->encodeNode(node);
+      *record.dst = parent->bvh->encodeNode(node);
     }
     
     BVH4Builder2::SplitTask::SplitTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
