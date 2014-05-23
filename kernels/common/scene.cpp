@@ -43,9 +43,9 @@ namespace embree
     geometries.reserve(128);
 
 #if defined(__MIC__)
-    accels.add(BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this));
-    accels.add(BVH4i::BVH4iVirtualGeometryBinnedSAH(this));
-    accels.add(BVH4Hair::BVH4HairBinnedSAH(this));
+    accels.add( BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this) );
+    accels.add( BVH4i::BVH4iVirtualGeometryBinnedSAH(this) );
+    accels.add( BVH4Hair::BVH4HairBinnedSAH(this) );
 
     if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
       {
@@ -54,7 +54,12 @@ namespace embree
 	    if (isStatic())
 	      {
 		if (g_verbose >= 1) std::cout << "STATIC BUILDER MODE" << std::endl;
-		accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
+		if ( isCompact() )
+		  accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this));		    
+		else if ( isHighQuality() )
+		  accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
+		else
+		  accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
 	      }
 	    else
 	      {
@@ -76,7 +81,8 @@ namespace embree
 	    else if (g_builder == "high_quality" || g_builder == "presplits") {
 	      accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this));
 	    }
-	    else if (g_builder == "conservative" || g_builder == "memory_conservative") {
+	    else if (g_builder == "compact" ||
+		     g_builder == "memory_conservative") {
 	      accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this));
 	    }
 	    else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");

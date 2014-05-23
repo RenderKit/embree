@@ -21,7 +21,7 @@ namespace embree
 {
   namespace isa
   {
-
+    
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
     static unsigned int M_LANE_7777 = 0x7777;               // needed due to compiler efficiency bug
 

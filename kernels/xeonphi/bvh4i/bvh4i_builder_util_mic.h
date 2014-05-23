@@ -81,7 +81,8 @@ namespace embree
     return prefix_sum(c);
   }
 
-  __forceinline void fastbin(const PrimRef * __restrict__ const aabb,
+  template<class Primitive>
+  __forceinline void fastbin(const Primitive * __restrict__ const aabb,
 			     const unsigned int thread_start,
 			     const unsigned int thread_end,
 			     const mic_f &centroidBoundsMin_2,
@@ -132,8 +133,10 @@ namespace embree
 
     if (unlikely(start % 2 != 0))
       {
-	const mic_f b_min = aabb[start].getLower();
-	const mic_f b_max = aabb[start].getUpper();
+	const mic2f bounds = aabb[start].getBounds();
+	const mic_f b_min = bounds.x;
+	const mic_f b_max = bounds.y;
+
 	const mic_f centroid_2 = b_min + b_max; 
 	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
@@ -179,8 +182,10 @@ namespace embree
 
     if (unlikely(end % 2 != 0))
       {
-	const mic_f b_min = aabb[end-1].getLower();
-	const mic_f b_max = aabb[end-1].getUpper();
+	const mic2f bounds = aabb[end-1].getBounds();
+	const mic_f b_min = bounds.x;
+	const mic_f b_max = bounds.y;
+
 	const mic_f centroid_2 = b_min + b_max; 
 	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
@@ -224,7 +229,7 @@ namespace embree
       }
     assert(end % 2 == 0);
 
-    const PrimRef * __restrict__ aptr = aabb + start;
+    const Primitive * __restrict__ aptr = aabb + start;
 
     prefetch<PFHINT_NT>(aptr);
     prefetch<PFHINT_L2>(aptr+2);
@@ -240,8 +245,10 @@ namespace embree
 #pragma unroll(2)
 	for (size_t i=0;i<2;i++)
 	  {
-	    const mic_f b_min = aptr[i].getLower();
-	    const mic_f b_max = aptr[i].getUpper();
+
+	    const mic2f bounds = aptr[i].getBounds();
+	    const mic_f b_min  = bounds.x;
+	    const mic_f b_max  = bounds.y;
 
 	    const mic_f centroid_2 = b_min + b_max;
 	    const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
@@ -465,8 +472,9 @@ namespace embree
 
 
 
-  __forceinline void fastbin_copy(const PrimRef * __restrict__ const aabb,
-				  PrimRef * __restrict__ const tmp_aabb,
+  template<class Primitive>
+  __forceinline void fastbin_copy(const Primitive * __restrict__ const aabb,
+				  Primitive * __restrict__ const tmp_aabb,
 				  const unsigned int thread_start,
 				  const unsigned int thread_end,
 				  const mic_f &centroidBoundsMin_2,
@@ -521,8 +529,10 @@ namespace embree
 
     if (start % 2 != 0)
       {
-	const mic_f b_min = aabb[start].getLower();
-	const mic_f b_max = aabb[start].getUpper();    
+	const mic2f bounds = aabb[start].getBounds();
+	const mic_f b_min  = bounds.x;
+	const mic_f b_max  = bounds.y;
+
 	const mic_f centroid_2 = b_min + b_max; 
 	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
@@ -569,8 +579,10 @@ namespace embree
 
     if (end % 2 != 0)
       {
-	const mic_f b_min = aabb[end-1].getLower();
-	const mic_f b_max = aabb[end-1].getUpper();    
+	const mic2f bounds = aabb[end-1].getBounds();
+	const mic_f b_min  = bounds.x;
+	const mic_f b_max  = bounds.y;
+
 	const mic_f centroid_2 = b_min + b_max; 
 	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
@@ -615,7 +627,7 @@ namespace embree
       }
     assert(end % 2 == 0);
 
-    const PrimRef * __restrict__ aptr = aabb + start;
+    const Primitive * __restrict__ aptr = aabb + start;
 
     prefetch<PFHINT_NT>(aptr);
     prefetch<PFHINT_L2>(aptr+2);
@@ -623,7 +635,7 @@ namespace embree
     prefetch<PFHINT_L2>(aptr+6);
     prefetch<PFHINT_L2>(aptr+8);
 
-    PrimRef * __restrict__ tmp_aptr   = tmp_aabb + start;
+    Primitive * __restrict__ tmp_aptr   = tmp_aabb + start;
 
     for (size_t j = start;j < end;j+=2,aptr+=2,tmp_aptr+=2)
       {
@@ -640,8 +652,9 @@ namespace embree
 #pragma unroll(2)
 	for (size_t i=0;i<2;i++)
 	  {
-	    const mic_f b_min = aptr[i].getLower();
-	    const mic_f b_max = aptr[i].getUpper();    
+	    const mic2f bounds = aptr[i].getBounds();
+	    const mic_f b_min  = bounds.x;
+	    const mic_f b_max  = bounds.y;
 
 	    const mic_f centroid_2 = b_min + b_max; 
 	    const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
@@ -717,15 +730,16 @@ namespace embree
     bin16.thread_count[2] = count2;     
   }
 
-
-  static __forceinline mic_m lt_split(const PrimRef *__restrict__ const aabb,
+template<class Primitive>
+  static __forceinline mic_m lt_split(const Primitive *__restrict__ const aabb,
 				      const unsigned int dim,
 				      const mic_f &c,
 				      const mic_f &s,
 				      const mic_f &bestSplit_f)
   {
-    const mic_f b_min = mic_f(aabb->lower[dim]);
-    const mic_f b_max = mic_f(aabb->upper[dim]);
+    const mic2f b = aabb->getBounds();
+    const mic_f b_min = b.x;
+    const mic_f b_max = b.y;
     const mic_f centroid_2 = b_min + b_max;
     const mic_f binID = (centroid_2 - c)*s;
     return lt(binID,bestSplit_f);    
@@ -745,14 +759,16 @@ namespace embree
   }
 
 
-  static __forceinline mic_m ge_split(const PrimRef *__restrict__ const aabb,
+template<class Primitive>
+  static __forceinline mic_m ge_split(const Primitive *__restrict__ const aabb,
 				      const unsigned int dim,
 				      const mic_f &c,
 				      const mic_f &s,
 				      const mic_f &bestSplit_f)
   {
-    const mic_f b_min = mic_f(aabb->lower[dim]);
-    const mic_f b_max = mic_f(aabb->upper[dim]);
+    const mic2f b = aabb->getBounds();
+    const mic_f b_min = b.x;
+    const mic_f b_max = b.y;
     const mic_f centroid_2 = b_min + b_max;
     const mic_f binID = (centroid_2 - c)*s;
     return ge(binID,bestSplit_f);    
@@ -770,21 +786,21 @@ namespace embree
     return ge(dim_mask,binID,bestSplit_f);    
   }
 
-  template<unsigned int DISTANCE>
-    __forceinline unsigned int partitionPrimRefs(PrimRef *__restrict__ aabb,
-						 const unsigned int begin,
-						 const unsigned int end,
-						 const unsigned int bestSplit,
-						 const unsigned int bestSplitDim,
-						 const mic_f &centroidBoundsMin_2,
-						 const mic_f &scale,
-						 Centroid_Scene_AABB & local_left,
-						 Centroid_Scene_AABB & local_right)
+  template<unsigned int DISTANCE, class Primitive>
+    __forceinline unsigned int partitionPrimitives(Primitive *__restrict__ aabb,
+						   const unsigned int begin,
+						   const unsigned int end,
+						   const unsigned int bestSplit,
+						   const unsigned int bestSplitDim,
+						   const mic_f &centroidBoundsMin_2,
+						   const mic_f &scale,
+						   Centroid_Scene_AABB & local_left,
+						   Centroid_Scene_AABB & local_right)
     {
       assert(begin <= end);
 
-      PrimRef *__restrict__ l = aabb + begin;
-      PrimRef *__restrict__ r = aabb + end;
+      Primitive *__restrict__ l = aabb + begin;
+      Primitive *__restrict__ r = aabb + end;
 
       const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
       const mic_f s = mic_f(scale[bestSplitDim]);
@@ -807,8 +823,11 @@ namespace embree
 	{
 	  while (likely(l < r)) 
 	    {
-	      const mic_f b_min = l->getLower();
-	      const mic_f b_max = l->getUpper();
+	      
+	      const mic2f bounds = l->getBounds();
+	      const mic_f b_min  = bounds.x;
+	      const mic_f b_max  = bounds.y;
+
 	      prefetch<PFHINT_L1EX>(l+2);	  
 	      if (unlikely(ge_split(b_min,b_max,dim_mask,c,s,bestSplit_f))) break;
 	      prefetch<PFHINT_L2EX>(l + DISTANCE + 4);	  
@@ -821,8 +840,10 @@ namespace embree
 	    }
 	  while (likely(l < r)) 
 	    {
-	      const mic_f b_min = r->getLower();
-	      const mic_f b_max = r->getUpper();
+	      const mic2f bounds = r->getBounds();
+	      const mic_f b_min  = bounds.x;
+	      const mic_f b_max  = bounds.y;
+
 	      prefetch<PFHINT_L1EX>(r-2);	  
 	      if (unlikely(lt_split(b_min,b_max,dim_mask,c,s,bestSplit_f))) break;
 	      prefetch<PFHINT_L2EX>(r - DISTANCE - 4);
@@ -835,8 +856,10 @@ namespace embree
 	    }
 
 	  if (unlikely(l == r)) {
-	    const mic_f b_min = r->getLower();
-	    const mic_f b_max = r->getUpper();
+	    const mic2f bounds = r->getBounds();
+	    const mic_f b_min  = bounds.x;
+	    const mic_f b_max  = bounds.y;
+
 	    if ( ge_split(b_min,b_max,dim_mask,c,s,bestSplit_f))
 	      {
 		const mic_f centroid2 = b_min+b_max;

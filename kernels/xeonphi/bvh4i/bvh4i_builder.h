@@ -25,14 +25,81 @@
 
 namespace embree
 {
-  class BVH4iBuilder : public Builder
+  class ParallelBuilderInterface : public Builder
   {
     ALIGNED_CLASS;
-  protected:
-
+  public:
     static const size_t ALLOCATOR_NODE_BLOCK_SIZE = 64;
     typedef AtomicIDBlock<ALLOCATOR_NODE_BLOCK_SIZE> NodeAllocator;    
 
+    /*! build mode */
+    enum { RECURSE = 1, FILL_LOCAL_QUEUES = 2, BUILD_TOP_LEVEL = 3 };
+
+    ParallelBuilderInterface(BuildSource* source, void* geometry)
+    : source(source), 
+      scene((Scene*)geometry), 
+      enablePerCoreWorkQueueFill(true),
+      enableTaskStealing(true),
+      numPrimitives((size_t)-1),
+      atomicID(0),
+      numNodes(0),
+      numAllocatedNodes(0)
+	{
+    
+	}
+
+    virtual void build            (const size_t threadIndex, const size_t threadCount) = 0;
+    virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives) = 0;
+    virtual void computePrimRefs  (const size_t threadIndex, const size_t threadCount) = 0;
+    virtual void createAccel      (const size_t threadIndex, const size_t threadCount) = 0;
+
+    virtual size_t getNumPrimitives() = 0;
+    virtual void printBuilderName()   = 0;
+
+    virtual void buildSubTree(BuildRecord& current, 
+			      NodeAllocator& alloc, 
+			      const size_t mode,
+			      const size_t threadID, 
+			      const size_t numThreads) = 0;
+
+
+  protected:
+    BuildSource* source;          //!< input geometry
+    Scene* scene;                 //!< input geometry
+    size_t numPrimitives;
+    size_t numNodes;
+    size_t numAllocatedNodes;
+
+    /*! bounds shared among threads */    
+    Centroid_Scene_AABB global_bounds;
+
+    /*! global node allocator */
+    AlignedAtomicCounter32  atomicID;
+
+    static const size_t SIZE_GLOBAL_WORK_STACK = 512;
+    static const size_t SIZE_LOCAL_WORK_STACK  = 16;
+
+    /*! global work queue */
+    __aligned(64) WorkStack<BuildRecord,SIZE_GLOBAL_WORK_STACK> global_workStack;
+
+    /*! local per core work queue */
+    __aligned(64) WorkStack<BuildRecord,SIZE_LOCAL_WORK_STACK> local_workStack[MAX_MIC_CORES];
+
+    /*! per core lock-step task scheduler */
+    __aligned(64) LockStepTaskScheduler4ThreadsLocalCore localTaskScheduler[MAX_MIC_CORES];
+
+    /*! flags to enable/disable per core work queues and task stealing */
+    bool enablePerCoreWorkQueueFill;
+    bool enableTaskStealing;
+
+    /*! parallel task functions */
+    TASK_FUNCTION(ParallelBuilderInterface,fillLocalWorkQueues);
+    TASK_FUNCTION(ParallelBuilderInterface,buildSubTrees);    
+  };
+
+  class BVH4iBuilder : public ParallelBuilderInterface
+  {
+    ALIGNED_CLASS;
   public:
 
     enum { 
@@ -49,9 +116,8 @@ namespace embree
     /*! creates the builder */
     static Builder* create (void* accel, BuildSource* source, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
 
-    /* build function */
-    virtual void build(size_t threadIndex, size_t threadCount);
-
+    /* virtual function interface */
+    virtual void build            (const size_t threadIndex, const size_t threadCount);
     virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives);
     virtual void computePrimRefs  (const size_t threadIndex, const size_t threadCount);
     virtual void createAccel      (const size_t threadIndex, const size_t threadCount);
@@ -59,6 +125,13 @@ namespace embree
 
     virtual size_t getNumPrimitives();
     virtual void printBuilderName();
+
+    virtual void buildSubTree(BuildRecord& current, 
+			      NodeAllocator& alloc, 
+			      const size_t mode,
+			      const size_t threadID, 
+			      const size_t numThreads);
+
 
   protected:
 
@@ -72,8 +145,6 @@ namespace embree
 
 
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
-    TASK_FUNCTION(BVH4iBuilder,fillLocalWorkQueues);
-    TASK_FUNCTION(BVH4iBuilder,buildSubTrees);
     TASK_FUNCTION(BVH4iBuilder,createTriangle1Accel);
     TASK_FUNCTION(BVH4iBuilder,convertToSOALayout);
     TASK_FUNCTION(BVH4iBuilder,parallelBinningGlobal);
@@ -84,8 +155,6 @@ namespace embree
 
   public:
 
-    /*! build mode */
-    enum { RECURSE = 1, FILL_LOCAL_QUEUES = 2, BUILD_TOP_LEVEL = 3 };
 
     /*! splitting function that selects between sequential and parallel mode */
     bool split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads);
@@ -119,21 +188,11 @@ namespace embree
     void recurseSAH(BuildRecord& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads);
 
   protected:
-    bool enablePerCoreWorkQueueFill;
-    bool enableTaskStealing;
-    size_t numNodesToAllocate;
-    BuildSource* source;          //!< input geometry
-    Scene* scene;                 //!< input geometry
     BVH4i* bvh;                   //!< Output BVH
 
 
     /* work record handling */
   protected:
-    static const size_t SIZE_GLOBAL_WORK_STACK = 512;
-    static const size_t SIZE_LOCAL_WORK_STACK  = 16;
-
-    __aligned(64) WorkStack<BuildRecord,SIZE_GLOBAL_WORK_STACK> global_workStack;
-    __aligned(64) WorkStack<BuildRecord,SIZE_LOCAL_WORK_STACK> local_workStack[MAX_MIC_CORES];
 
   public:
 
@@ -162,20 +221,10 @@ namespace embree
     BVHNode*   node;
     Triangle1* accel;
 
-  protected:
-    size_t numPrimitives;
-    size_t numNodes;
-    size_t numAllocatedNodes;
+    size_t numNodesToAllocate;
     size_t size_prims;
 
-    /*! bounds shared among threads */    
-    Centroid_Scene_AABB global_bounds;
 
-    /*! global node allocator */
-    AlignedAtomicCounter32  atomicID;
-
-    /*! per core lock-step task scheduler */
-    __aligned(64) LockStepTaskScheduler4ThreadsLocalCore localTaskScheduler[MAX_MIC_CORES];
 
     /*! node allocation */
     __forceinline unsigned int allocNode(int size)

@@ -45,6 +45,119 @@ namespace embree
 
   static double dt = 0.0f;
 
+  void ParallelBuilderInterface::fillLocalWorkQueues(const size_t threadID, const size_t numThreads)
+  {
+    __aligned(64) BuildRecord br;
+    const size_t numCores = (numThreads+3)/4;
+    const size_t coreID   = threadID/4;
+
+    if (threadID % 4 == 0)
+      {
+	unsigned int ID = coreID; // LockStepTaskScheduler::taskCounter.inc();
+	
+	while (true) 
+	  {
+	    /* get build record from global queue */
+	    if (ID >= global_workStack.size()) break;
+	    br = global_workStack.get(ID);
+	    bool success = local_workStack[coreID].push(br);	  
+	    if (!success) FATAL("can't fill local work queues");
+	    ID += numCores;
+	  }    
+
+      }
+  }
+
+  void ParallelBuilderInterface::buildSubTrees(const size_t threadID, const size_t numThreads)
+  {
+    NodeAllocator alloc(atomicID,numAllocatedNodes);
+    __aligned(64) BuildRecord br;
+    const size_t numCores = (numThreads+3)/4;
+    const size_t globalCoreID   = threadID/4;
+
+    if (enablePerCoreWorkQueueFill && numThreads > 1)
+      {
+	const size_t globalThreadID = threadID;
+	const size_t localThreadID  = threadID % 4;
+    
+	if (localThreadID != 0)
+	  {
+	    localTaskScheduler[globalCoreID].dispatchTaskMainLoop(localThreadID,globalThreadID);
+	  }
+	else
+	  {
+	    local_workStack[globalCoreID].mutex.inc();
+	    while (local_workStack[globalCoreID].size() < 8 && 
+		   local_workStack[globalCoreID].size()+BVH4i::N <= SIZE_LOCAL_WORK_STACK) 
+	      {
+		BuildRecord br;
+		if (!local_workStack[globalCoreID].pop_largest(br)) break;
+
+		//recurseSAH(br,alloc,FILL_LOCAL_QUEUES,globalThreadID,4);
+		buildSubTree(br,alloc,FILL_LOCAL_QUEUES,globalThreadID,4);
+	      }
+
+	    localTaskScheduler[globalCoreID].releaseThreads(localThreadID,globalThreadID);	
+	    local_workStack[globalCoreID].mutex.dec();
+	  }
+      }
+
+    while(true)
+      {
+      /* process local work queue */
+	while (1)
+	  {
+	    if (!local_workStack[globalCoreID].pop_largest(br)) 
+	      {
+		if (local_workStack[globalCoreID].mutex.val() > 0)
+		  {
+		    __pause(1024);
+		    continue;
+		  }
+		else
+		  break;
+	      }
+	    local_workStack[globalCoreID].mutex.inc();
+	    //recurseSAH(br,alloc,RECURSE,threadID,numThreads);
+	    buildSubTree(br,alloc,RECURSE,threadID,numThreads);
+	    local_workStack[globalCoreID].mutex.dec();
+	  }
+
+	/* try task stealing */
+        bool success = false;
+	if (enableTaskStealing && numThreads > 4)
+	  {
+	    for (size_t i=0; i<numThreads; i++)
+	      {
+		unsigned int next_threadID = (threadID+i);
+		if (next_threadID >= numThreads) next_threadID -= numThreads;
+		const unsigned int next_globalCoreID   = next_threadID/4;
+
+		assert(next_globalCoreID < numCores);
+		if (local_workStack[next_globalCoreID].pop_smallest(br)) { 
+		  success = true;
+		  break;
+		}
+	      }
+	  }
+        if (!success) break; 
+	
+	local_workStack[globalCoreID].mutex.inc();
+	//recurseSAH(br,alloc,RECURSE,threadID,numThreads);
+	buildSubTree(br,alloc,RECURSE,threadID,numThreads);
+
+	local_workStack[globalCoreID].mutex.dec();
+
+      }
+
+  }
+
+
+  // =============================================================================================
+  // =============================================================================================
+  // =============================================================================================
+
+
   Builder* BVH4iBuilder::create (void* accel, BuildSource* source, void* geometry, size_t mode ) 
   { 
     DBG(PING);
@@ -67,10 +180,6 @@ namespace embree
 	builder = new BVH4iBuilderVirtualGeometry((BVH4i*)accel,source,geometry);
 	break;
 
-      // case BVH4I_BUILDER_BEZIER_CURVES:
-      // 	builder = new BVH4iBuilderBezierCurves((BVH4i*)accel,source,geometry);
-      // 	break;
-
       case BVH4I_BUILDER_MEMORY_CONSERVATIVE:
 	builder = new BVH4iBuilderMemoryConservative((BVH4i*)accel,source,geometry);
 	break;
@@ -87,19 +196,13 @@ namespace embree
 
 
   BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry)
-    : source(source), 
-      scene((Scene*)geometry), 
-      bvh(bvh), 
-      numPrimitives((size_t)-1), 
-      numNodes(0), 
-      numAllocatedNodes(0), 
+    : ParallelBuilderInterface(source,geometry),
+      bvh(bvh),       
       prims(NULL), 
       node(NULL), 
       accel(NULL), 
       size_prims(0),
-      numNodesToAllocate(BVH4i::N),
-      enablePerCoreWorkQueueFill(true),
-      enableTaskStealing(true)
+      numNodesToAllocate(BVH4i::N)      
   {
     DBG(PING);
   }
@@ -202,8 +305,6 @@ namespace embree
     DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
-    DBG(DBG_PRINT(numPrimitives));
-
 
     if (numPrimitivesOld != numPrimitives)
       {
@@ -220,7 +321,7 @@ namespace embree
   }
 
 
-  void BVH4iBuilder::build(size_t threadIndex, size_t threadCount) 
+  void BVH4iBuilder::build(const size_t threadIndex, const size_t threadCount) 
   {
     DBG(PING);
     const size_t totalNumPrimitives = getNumPrimitives();
@@ -495,111 +596,15 @@ namespace embree
   }
 
 
-  void BVH4iBuilder::fillLocalWorkQueues(const size_t threadID, const size_t numThreads)
+  void BVH4iBuilder::buildSubTree(BuildRecord& current, 
+				  NodeAllocator& alloc, 
+				  const size_t mode,
+				  const size_t threadID, 
+				  const size_t numThreads)
   {
-    __aligned(64) BuildRecord br;
-    const size_t numCores = (numThreads+3)/4;
-    const size_t coreID   = threadID/4;
-
-    if (threadID % 4 == 0)
-      {
-	unsigned int ID = coreID; // LockStepTaskScheduler::taskCounter.inc();
-	
-	while (true) 
-	  {
-	    /* get build record from global queue */
-	    if (ID >= global_workStack.size()) break;
-	    br = global_workStack.get(ID);
-	    bool success = local_workStack[coreID].push(br);	  
-	    if (!success) FATAL("can't fill local work queues");
-	    ID += numCores;
-	  }    
-
-      }
+    recurseSAH(current,alloc,mode,threadID,numThreads);
   }
 
-  void BVH4iBuilder::buildSubTrees(const size_t threadID, const size_t numThreads)
-  {
-    NodeAllocator alloc(atomicID,numAllocatedNodes);
-    __aligned(64) BuildRecord br;
-    const size_t numCores = (numThreads+3)/4;
-    const size_t globalCoreID   = threadID/4;
-
-    if (enablePerCoreWorkQueueFill && numThreads > 1)
-      {
-	const size_t globalThreadID = threadID;
-	const size_t localThreadID  = threadID % 4;
-    
-	if (localThreadID != 0)
-	  {
-	    localTaskScheduler[globalCoreID].dispatchTaskMainLoop(localThreadID,globalThreadID);
-	  }
-	else
-	  {
-	    local_workStack[globalCoreID].mutex.inc();
-	    while (local_workStack[globalCoreID].size() < 8 && 
-		   local_workStack[globalCoreID].size()+BVH4i::N <= SIZE_LOCAL_WORK_STACK) 
-	      {
-		BuildRecord br;
-		if (!local_workStack[globalCoreID].pop_largest(br)) break;
-
-		recurseSAH(br,alloc,FILL_LOCAL_QUEUES,globalThreadID,4);
-	      }
-
-	    localTaskScheduler[globalCoreID].releaseThreads(localThreadID,globalThreadID);	
-	    local_workStack[globalCoreID].mutex.dec();
-	  }
-      }
-
-    while(true)
-      {
-      /* process local work queue */
-	while (1)
-	  {
-	    if (!local_workStack[globalCoreID].pop_largest(br)) 
-	      {
-		if (local_workStack[globalCoreID].mutex.val() > 0)
-		  {
-		    __pause(1024);
-		    continue;
-		  }
-		else
-		  break;
-	      }
-	    local_workStack[globalCoreID].mutex.inc();
-#if defined(DEBUG)
-	    checkBuildRecord(br);
-#endif
-	    recurseSAH(br,alloc,RECURSE,threadID,numThreads);
-	    local_workStack[globalCoreID].mutex.dec();
-	  }
-
-	/* try task stealing */
-        bool success = false;
-	if (enableTaskStealing && numThreads > 4)
-	  {
-	    for (size_t i=0; i<numThreads; i++)
-	      {
-		unsigned int next_threadID = (threadID+i);
-		if (next_threadID >= numThreads) next_threadID -= numThreads;
-		const unsigned int next_globalCoreID   = next_threadID/4;
-
-		assert(next_globalCoreID < numCores);
-		if (local_workStack[next_globalCoreID].pop_smallest(br)) { 
-		  success = true;
-		  break;
-		}
-	      }
-	  }
-        if (!success) break; 
-	
-	local_workStack[globalCoreID].mutex.inc();
-	recurseSAH(br,alloc,RECURSE,threadID,numThreads);
-	local_workStack[globalCoreID].mutex.dec();
-
-      }
-
-  }
 
   void reduceBinsParallel(const size_t currentThreadID,
 			  const size_t childThreadID,
@@ -627,7 +632,7 @@ namespace embree
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
 
-    fastbin_copy(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
+    fastbin_copy<PrimRef>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
 
     LockStepTaskScheduler::syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
     
@@ -723,8 +728,11 @@ namespace embree
 	prefetch<PFHINT_NT>(l_source+2);
 	prefetch<PFHINT_L2>(l_source + L2_PREFETCH_ITEMS + 4);
 
-	const mic_f b_min = broadcast4to16f(&l_source->lower);
-	const mic_f b_max = broadcast4to16f(&l_source->upper);
+	const mic2f b = l_source->getBounds();
+	const mic_f b_min = b.x;
+	const mic_f b_max = b.y;
+	// const mic_f b_min = broadcast4to16f(&l_source->lower);
+	// const mic_f b_max = broadcast4to16f(&l_source->upper);
 	const mic_f b_centroid2 = b_min + b_max;
 
 	if (likely(lt_split(b_min,b_max,dim_mask,c,s,mic_f(bestSplit)))) 
@@ -874,7 +882,7 @@ namespace embree
     mic_f rightArea[3];
     mic_i leftNum[3];
 
-    fastbin(prims,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+    fastbin<PrimRef>(prims,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
 
     const unsigned int items = current.items();
     const float voxelArea = area(current.bounds.geometry);
@@ -923,7 +931,7 @@ namespace embree
 	leftChild.bounds.reset();
 	rightChild.bounds.reset();
 
-	const unsigned int mid = partitionPrimRefs<L2_PREFETCH_ITEMS>(prims ,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
+	const unsigned int mid = partitionPrimitives<L2_PREFETCH_ITEMS>(prims ,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
 
 	assert(area(leftChild.bounds.geometry) >= 0.0f);
 
@@ -1203,6 +1211,10 @@ namespace embree
   
   void BVH4iBuilder::recurseSAH(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads)
   {
+#if defined(DEBUG)
+    checkBuildRecord(current);
+#endif
+
     __aligned(64) BuildRecord children[BVH4i::N];
 
     /* create leaf node */
@@ -1371,7 +1383,7 @@ namespace embree
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
 
-    fastbin_copy(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
+    fastbin_copy<PrimRef>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
 
     localTaskScheduler[globalCoreID].syncThreads(localThreadID);
 
