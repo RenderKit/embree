@@ -71,7 +71,7 @@ namespace embree
 	tasks.pop_back();
 	
 	/* process this item in parallel */
-	task.recurse<true>(threadIndex,threadCount,NULL);
+	task.recurse_parallel(threadIndex,threadCount,NULL);
       }
       
       /*! process each generated subtask in its own thread */
@@ -395,16 +395,23 @@ namespace embree
       : parent(parent), record(record) {}
     
     void BVH4Builder2::SplitTask::run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) {
-      recurse<false>(threadIndex,threadCount,event);
+      recurse(threadIndex,threadCount,event);
     }
     
-    template<bool PARALLEL>
     void BVH4Builder2::SplitTask::recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
     {
       BuildRecord children[BVH4::N];
-      size_t N = process<PARALLEL>(threadIndex,threadCount,parent,record,children);
+      size_t N = process<false>(threadIndex,threadCount,parent,record,children);
       for (size_t i=0; i<N; i++)
-	parent->recurse<PARALLEL>(threadIndex,threadCount,event,children[i]);
+	parent->recurse<false>(threadIndex,threadCount,event,children[i]);
+    }
+
+    void BVH4Builder2::SplitTask::recurse_parallel(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
+    {
+      BuildRecord children[BVH4::N];
+      size_t N = process<false>(threadIndex,threadCount,parent,record,children);
+      for (size_t i=0; i<N; i++)
+	parent->recurse<true>(threadIndex,threadCount,event,children[i]);
     }
     
     Builder* BVH4Triangle1Builder2  (void* bvh, Scene* scene) { return new class BVH4Builder2T<Triangle1> ((BVH4*)bvh,scene); }
