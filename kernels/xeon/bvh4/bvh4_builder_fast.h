@@ -175,56 +175,40 @@ namespace embree
     class BVH4Triangle1BuilderFast : public BVH4BuilderFast
     {
     public:
-
-      /*! Constructor for scene builder */
       BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene);
-      
-      /*! Constructor for triangle mesh builder */
       BVH4Triangle1BuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      
-      /*! creates a leaf node */
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
     class BVH4Triangle4BuilderFast : public BVH4BuilderFast
     {
     public:
-
-      /*! Constructor for scene builder */
       BVH4Triangle4BuilderFast (BVH4* bvh, Scene* scene);
-      
-      /*! Constructor for triangle mesh builder */
       BVH4Triangle4BuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      
-      /*! creates a leaf node */
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
     class BVH4Triangle1vBuilderFast : public BVH4BuilderFast
     {
     public:
-
-      /*! Constructor for scene builder */
       BVH4Triangle1vBuilderFast (BVH4* bvh, Scene* scene);
-      
-      /*! Constructor for triangle mesh builder */
       BVH4Triangle1vBuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      
-      /*! creates a leaf node */
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
     class BVH4Triangle4vBuilderFast : public BVH4BuilderFast
     {
     public:
-
-      /*! Constructor for scene builder */
       BVH4Triangle4vBuilderFast (BVH4* bvh, Scene* scene);
-      
-      /*! Constructor for triangle mesh builder */
       BVH4Triangle4vBuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      
-      /*! creates a leaf node */
+      void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+    };
+
+    class BVH4Triangle4iBuilderFast : public BVH4BuilderFast
+    {
+    public:
+      BVH4Triangle4iBuilderFast (BVH4* bvh, Scene* scene);
+      BVH4Triangle4iBuilderFast (BVH4* bvh, TriangleMesh* mesh);
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
   }

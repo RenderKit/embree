@@ -67,16 +67,19 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4Triangle4BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle1vBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle4vBuilderFast);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4iBuilderFast);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilderFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshBuilderFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshBuilderFast);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshBuilderFast);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshRefitFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshRefitFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshRefitFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshRefitFast);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshRefitFast);
 
   DECLARE_SCENE_BUILDER(BVH4Triangle1BuilderMorton);
   DECLARE_SCENE_BUILDER(BVH4Triangle4BuilderMorton);
@@ -112,11 +115,13 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4BuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vBuilderFast);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iBuilderFast);
     
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderFast);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderFast);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshRefitFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshRefitFast);
@@ -414,6 +419,7 @@ namespace embree
     if      (g_builder == "default"     ) builder = BVH4BuilderObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "spatialsplit") builder = BVH4BuilderSpatialSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "objectsplit" ) builder = BVH4BuilderObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
+    else if (g_builder == "fast"        ) builder = BVH4Triangle4iBuilderFast(accel,scene);
     else throw std::runtime_error("unknown builder "+g_builder+" for BVH4<Triangle4i>");
 
     scene->needVertices = true;

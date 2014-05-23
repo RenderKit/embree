@@ -24,6 +24,7 @@
 #include "geometry/triangle4.h"
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
+#include "geometry/triangle4i.h"
 
 #include <algorithm>
 
@@ -43,7 +44,9 @@ namespace embree
       : scene(scene), mesh(mesh), bvh(bvh), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
     {
       needAllThreads = true;
-      if (mesh) needAllThreads = mesh->numTriangles > 50000;
+      if (mesh) {
+	needAllThreads = mesh->numTriangles > 50000;
+      }
     }
 
     BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene)
@@ -57,7 +60,9 @@ namespace embree
 
     BVH4Triangle4vBuilderFast::BVH4Triangle4vBuilderFast (BVH4* bvh, Scene* scene)
       : BVH4BuilderFast(bvh,scene,NULL,2,false,sizeof(Triangle4v),4,inf) {}
-
+    
+    BVH4Triangle4iBuilderFast::BVH4Triangle4iBuilderFast (BVH4* bvh, Scene* scene)
+      : BVH4BuilderFast(bvh,scene,NULL,2,true,sizeof(Triangle4i),4,inf) {}
 
     BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, TriangleMesh* mesh)
       : BVH4BuilderFast(bvh,mesh->parent,mesh,0,false,sizeof(Triangle1),2,inf) {}
@@ -70,8 +75,10 @@ namespace embree
 
     BVH4Triangle4vBuilderFast::BVH4Triangle4vBuilderFast (BVH4* bvh, TriangleMesh* mesh)
       : BVH4BuilderFast(bvh,mesh->parent,mesh,2,false,sizeof(Triangle4v),4,inf) {}
-        
-
+    
+    BVH4Triangle4iBuilderFast::BVH4Triangle4iBuilderFast (BVH4* bvh, TriangleMesh* mesh)
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,true,sizeof(Triangle4i),4,inf) {}
+   
     BVH4BuilderFast::~BVH4BuilderFast () 
     {
       if (prims) os_free(prims,bytesPrims); prims = NULL;
@@ -354,6 +361,44 @@ namespace embree
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
       Triangle4v::store_nt(accel,Triangle4v(v0,v1,v2,vgeomID,vprimID,vmask));
+    }
+
+    void BVH4Triangle4iBuilderFast::createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    {
+      size_t items = current.size();
+      size_t start = current.begin;
+      assert(items<=4);
+      
+      /* allocate leaf node */
+      Triangle4i* accel = (Triangle4i*) leafAlloc.malloc(sizeof(Triangle4i));
+      *current.parent = This->bvh->encodeLeaf((char*)accel,1);
+      
+      ssei geomID = -1, primID = -1;
+      Vec3f* v0[4] = { NULL, NULL, NULL, NULL };
+      ssei v1 = zero, v2 = zero;
+      
+      for (size_t i=0; i<items; i++)
+      {
+	const PrimRef& prim = This->prims[start+i];
+	const TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
+	const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
+	geomID[i] = prim.geomID();
+	primID[i] = prim.primID();
+	v0[i] = (Vec3f*) &mesh->vertex(tri.v[0]); 
+	v1[i] = (int*)&mesh->vertex(tri.v[1])-(int*)v0[i]; 
+	v2[i] = (int*)&mesh->vertex(tri.v[2])-(int*)v0[i]; 
+      }
+
+      for (size_t i=items; i<4; i++)
+      {
+	geomID[i] = -1;
+	primID[i] = -1;
+	v0[i] = v0[0];
+	v1[i] = 0; 
+	v2[i] = 0;
+      }
+    
+      new (accel) Triangle4i(v0,v1,v2,geomID,primID);
     }
     
     // =======================================================================================================
@@ -661,10 +706,12 @@ namespace embree
     Builder* BVH4Triangle4BuilderFast  (void* bvh, Scene* scene) { return new class BVH4Triangle4BuilderFast ((BVH4*)bvh,scene); }
     Builder* BVH4Triangle1vBuilderFast (void* bvh, Scene* scene) { return new class BVH4Triangle1vBuilderFast((BVH4*)bvh,scene); }
     Builder* BVH4Triangle4vBuilderFast (void* bvh, Scene* scene) { return new class BVH4Triangle4vBuilderFast((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4iBuilderFast (void* bvh, Scene* scene) { return new class BVH4Triangle4iBuilderFast((BVH4*)bvh,scene); }
 
     Builder* BVH4Triangle1MeshBuilderFast  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle1BuilderFast ((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle4MeshBuilderFast  (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4BuilderFast ((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle1vMeshBuilderFast (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle1vBuilderFast((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle4vMeshBuilderFast (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4vBuilderFast((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4iMeshBuilderFast (void* bvh, TriangleMesh* mesh) { return new class BVH4Triangle4iBuilderFast((BVH4*)bvh,mesh); }
   }
 }
