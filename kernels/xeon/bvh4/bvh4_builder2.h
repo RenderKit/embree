@@ -134,14 +134,9 @@ namespace embree
 	/*! Default task construction. */
 	SplitTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, BVH4Builder2* parent, const BuildRecord& record);
 	
-	/*! Default task construction. */
-	SplitTask(size_t threadIndex, size_t threadCount, BVH4Builder2* parent, const BuildRecord& record);
-	
 	/*! Task entry function. */
 	TASK_COMPLETE_FUNCTION_(SplitTask,run);
 	void run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
-	
-	void recurse         (size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
 	
       public:
 	TaskScheduler::Task task;

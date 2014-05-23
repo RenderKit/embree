@@ -196,13 +196,6 @@ namespace embree
       new SplitTask(threadIndex,threadCount,event,this,tasks[taskIndex]);
     }
 
-    BVH4Builder2::BuildTask::BuildTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, BVH4Builder2* parent, const BuildRecord& record)
-      : threadIndex(threadIndex), threadCount(threadCount), parent(parent), record(record)
-    {
-      new (&task) TaskScheduler::Task(event,_run,this,"build::full");
-      TaskScheduler::addTask(threadIndex,parent->taskQueue,&task);
-    }
-    
     template<typename Triangle>
     typename BVH4Builder2::NodeRef BVH4Builder2T<Triangle>::createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo)
     {
@@ -252,18 +245,6 @@ namespace embree
       for (size_t i=0; i<4; i++) node->set(i,cinfo[i].geomBounds,createLargeLeaf(threadIndex,cprims[i],cinfo[i],depth+1));
       return bvh->encodeNode(node);
     }  
-    
-    void BVH4Builder2::BuildTask::run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
-    {
-      this->threadIndex = threadIndex;
-      recurse(record);
-#if ROTATE_TREE
-      for (int i=0; i<5; i++) 
-	BVH4Rotate::rotate(parent->bvh,*record.dst); 
-#endif
-      record.dst->setBarrier();
-      delete this;
-    }
 
     template<bool PARALLEL>
     const Split BVH4Builder2::find(size_t threadIndex, size_t threadCount, size_t depth, TriRefList& prims, const PrimInfo& pinfo, bool spatial)
@@ -359,6 +340,26 @@ namespace embree
       return numChildren;
     }
     
+    
+    BVH4Builder2::BuildTask::BuildTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, BVH4Builder2* parent, const BuildRecord& record)
+      : threadIndex(threadIndex), threadCount(threadCount), parent(parent), record(record)
+    {
+      new (&task) TaskScheduler::Task(event,_run,this,"build::full");
+      TaskScheduler::addTask(threadIndex,parent->taskQueue,&task);
+    }
+ 
+    void BVH4Builder2::BuildTask::run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
+    {
+      this->threadIndex = threadIndex;
+      recurse(record);
+#if ROTATE_TREE
+      for (int i=0; i<5; i++) 
+	BVH4Rotate::rotate(parent->bvh,*record.dst); 
+#endif
+      record.dst->setBarrier();
+      delete this;
+    }
+    
     void BVH4Builder2::BuildTask::recurse(BuildRecord& record)
     {
       BuildRecord children[BVH4::N];
@@ -374,17 +375,12 @@ namespace embree
       TaskScheduler::addTask(threadIndex,parent->taskQueue,&task);
     }
     
-    BVH4Builder2::SplitTask::SplitTask(size_t threadIndex, size_t threadCount, BVH4Builder2* parent, const BuildRecord& record)
-      : parent(parent), record(record) {}
-    
-    void BVH4Builder2::SplitTask::run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) {
-      recurse(threadIndex,threadCount,event);
-    }
-    
-    void BVH4Builder2::SplitTask::recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
+    void BVH4Builder2::SplitTask::run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) 
     {
       BuildRecord children[BVH4::N];
       size_t N = process<false>(threadIndex,threadCount,parent,record,children);
+      
+      /* create new tasks */
       for (size_t i=0; i<N; i++) 
       {
 	/* use full single threaded build for small jobs */
