@@ -119,12 +119,12 @@ namespace embree
     template<bool PARALLEL>
     const Split BVH4Builder2::find(size_t threadIndex, size_t threadCount, size_t depth, TriRefList& prims, const PrimInfo& pinfo, bool spatial)
     {
-      ObjectPartition::Split osplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,      prims,pinfo,logBlockSize);
+      ObjectPartition::Split osplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,      prims,pinfo,logSAHBlockSize);
       if (!enableSpatialSplits || !spatial) {
 	if (osplit.sah == float(inf)) return Split();
 	else return osplit;
       }
-      SpatialSplit   ::Split ssplit = SpatialSplit   ::find<PARALLEL>(threadIndex,threadCount,scene,prims,pinfo,logBlockSize);
+      SpatialSplit   ::Split ssplit = SpatialSplit   ::find<PARALLEL>(threadIndex,threadCount,scene,prims,pinfo,logSAHBlockSize);
       const float bestSAH = min(osplit.sah,ssplit.sah);
       if      (bestSAH == osplit.sah) return osplit; 
       else if (bestSAH == ssplit.sah) return ssplit;
@@ -135,7 +135,7 @@ namespace embree
     __forceinline size_t BVH4Builder2::createNode(size_t threadIndex, size_t threadCount, BVH4Builder2* parent, BuildRecord& record, BuildRecord records_o[BVH4::N])
     {
       /*! compute leaf and split cost */
-      const float leafSAH  = parent->intCost*record.pinfo.leafSAH(parent->logBlockSize);
+      const float leafSAH  = parent->intCost*record.pinfo.leafSAH(parent->logSAHBlockSize);
       const float splitSAH = BVH4::travCost*halfArea(record.pinfo.geomBounds)+parent->intCost*record.split.splitSAH();
       assert(TriRefList::block_iterator_unsafe(prims).size() == record.pinfo.size());
       assert(record.pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
@@ -157,7 +157,7 @@ namespace embree
 	ssize_t bestChild = -1;
 	for (size_t i=0; i<numChildren; i++) 
 	{
-	  float dSAH = records_o[i].split.splitSAH()-records_o[i].pinfo.leafSAH(parent->logBlockSize);
+	  float dSAH = records_o[i].split.splitSAH()-records_o[i].pinfo.leafSAH(parent->logSAHBlockSize);
 	  if (records_o[i].pinfo.size() <= parent->minLeafSize) continue; 
 	  if (records_o[i].pinfo.size() > parent->maxLeafSize) dSAH = min(0.0f,dSAH); //< force split for large jobs
 	  if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }

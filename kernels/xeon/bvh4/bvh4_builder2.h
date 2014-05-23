@@ -26,12 +26,6 @@ namespace embree
 {
   namespace isa
   {
-    /* BVH builder. The builder is multi-threaded and implements 3
-     * different build strategies: 1) Small tasks are finished in a
-     * single thread (BuildTask) 2) Medium sized tasks are split into
-     * two tasks using a single thread (SplitTask) and 3) Large tasks are
-     * split using multiple threads on one processor. */
-    
     class BVH4Builder2 : public Builder
     {
       ALIGNED_CLASS;
@@ -42,7 +36,7 @@ namespace embree
       typedef typename BVH4::NodeRef NodeRef;
       typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;
 
-      /*! the build record stores all information to continue building some subtree */
+      /*! the build record stores all information to continue the build of some subtree */
       struct BuildRecord 
       {
       public:
@@ -58,8 +52,8 @@ namespace embree
 	}
 	
       public:
-	NodeRef*   dst;      //!< Reference to output the node.
-	size_t     depth;    //!< Recursion depth of the root of this subtree.
+	NodeRef*   dst;      //!< Pointer to the parent node's reference to us
+	size_t     depth;    //!< Depth of the root of this subtree.
 	TriRefList prims;    //!< The list of primitives.
 	PrimInfo   pinfo;    //!< Bounding info of primitives.
 	Split      split;    //!< The best split for the primitives.
@@ -68,7 +62,9 @@ namespace embree
     public:
       
       /*! Constructor. */
-      BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t mode, size_t logBlockSize, size_t logSAHBlockSize, float intCost, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+      BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, 
+		    size_t mode, size_t logBlockSize, size_t logSAHBlockSize, float intCost, bool needVertices, 
+		    size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
 
       /*! builder entry point */
       void build(size_t threadIndex, size_t threadCount);
@@ -101,29 +97,32 @@ namespace embree
       void finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record);
 
     protected:
-      Scene* scene;           //!< input geometry
-      TriangleMesh* mesh;     //!< input triangle mesh
+      Scene* scene;                       //!< input geometry
+      TriangleMesh* mesh;                 //!< input triangle mesh
+      PrimRefBlockAlloc<PrimRef> alloc;   //!< Allocator for primitive blocks
+      BVH4* bvh;                          //!< Output BVH4
 
-    public:
-      size_t minLeafSize;                 //!< minimal size of a leaf
-      size_t maxLeafSize;                 //!< maximal size of a leaf
-      PrimRefBlockAlloc<PrimRef> alloc;                 //!< Allocator for primitive blocks
-      
+      /*! build record task list */
+    private:
       volatile atomic_t activeBuildRecords;
       MutexSys taskMutex;
       std::vector<BuildRecord> tasks;
-      atomic_t remainingReplications;
-
+     
+      /*! builder configuration*/
+    protected:
+      size_t minLeafSize;                 //!< minimal size of a leaf
+      size_t maxLeafSize;                 //!< maximal size of a leaf
       bool enableSpatialSplits;
+      size_t logSAHBlockSize;             //!< set to the logarithm of block size to use for SAH
+      atomic_t remainingReplications;     //!< remaining replications allowed by spatial splits
+      
+      /*! primitive information */
+    protected:
       size_t intCost;
-      size_t logSAHBlockSize;
       size_t logBlockSize;
-      size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }
       bool needVertices;
       size_t primBytes; 
-
-    public:
-      BVH4* bvh;                      //!< Output BVH4
+      size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }  
     };
 
     template<typename Triangle>
