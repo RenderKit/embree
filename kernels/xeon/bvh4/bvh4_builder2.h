@@ -104,7 +104,7 @@ namespace embree
 	void run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
 	
 	/*! Recursively finishes the BVH4 construction. */
-	NodeRef recurse(size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split);
+	NodeRef recurse(BuildRecord& record);
 	
       private:
 	size_t threadIndex;
