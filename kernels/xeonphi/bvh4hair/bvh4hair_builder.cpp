@@ -483,6 +483,8 @@ namespace embree
 	  }
       }
 
+    if (numNodes && numPrimitives)
+      {
 	std::cout << "converting from bvh4i to bvh4hair..." << std::endl;
 	DBG_PRINT(bvh4hair);
 	DBG_PRINT(numNodes);
@@ -494,6 +496,7 @@ namespace embree
 	    //DBG_PRINT(bvh4hair->qbvh[i]);
 	    //DBG_PRINT(bvh4hair->unaligned_nodes[i]);
 	  }
+      }
 
     if (g_verbose >= 2) {
       double perf = totalNumPrimitives/dt*1E-6;
