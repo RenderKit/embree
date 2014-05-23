@@ -301,7 +301,7 @@ namespace embree
       else                            return Split();
     }
     
-    void BVH4Builder2::BuildTask::recurse(BuildRecord& record) //size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split)
+    void BVH4Builder2::BuildTask::recurse(BuildRecord& record)
     {
       /*! compute leaf and split cost */
       const float leafSAH  = parent->primTy.intCost*record.pinfo.leafSAH(parent->logBlockSize);

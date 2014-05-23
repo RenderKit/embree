@@ -47,14 +47,18 @@ namespace embree
 
       struct BuildRecord 
       {
-	BuildRecord (size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split, NodeRef* dst)
-	: depth(depth), prims(prims), pinfo(pinfo), split(split), dst(dst) {}
+      public:
+	__forceinline BuildRecord () {}
 
-	size_t depth;
-	TriRefList prims;
-	PrimInfo pinfo;
-	Split split;
-	NodeRef* dst; 
+	__forceinline BuildRecord (size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split, NodeRef* dst)
+	: depth(depth), prims(prims), pinfo(pinfo), split(split), dst(dst) {}
+	
+      public:
+	NodeRef*   dst;      //!< Reference to output the node.
+	size_t     depth;    //!< Recursion depth of the root of this subtree.
+	TriRefList prims;    //!< The list of primitives.
+	PrimInfo   pinfo;    //!< Bounding info of primitives.
+	Split      split;    //!< The best split for the primitives.
       };
       
     public:
@@ -113,11 +117,6 @@ namespace embree
 	
 	BVH4Builder2*                     parent;   //!< Pointer to parent task.
 	BuildRecord record;
-	/*NodeRef&                         dst;      //!< Reference to output the node.
-	size_t                           depth;    //!< Recursion depth of the root of this subtree.
-	TriRefList         prims;    //!< The list of primitives.
-	PrimInfo                         pinfo;    //!< Bounding info of primitives.
-	Split                            split;    //!< The best split for the primitives.*/
       };
       
       /***********************************************************************************************************************
