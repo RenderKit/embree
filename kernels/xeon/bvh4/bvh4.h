@@ -273,12 +273,8 @@ namespace embree
   public:
     
     /*! calculates the amount of bytes allocated */
-    size_t bytesAllocated() 
-    {
-      if (nodes || primitives)
-        return bytesNodes+bytesPrimitives+numVertices*sizeof(Vec3fa);
-      else
-        return alloc.bytes()+numVertices*sizeof(Vec3fa);
+    size_t bytesAllocated() {
+      return alloc.bytes();
     }
 
   public:
@@ -290,12 +286,6 @@ namespace embree
 
     /*! data arrays for fast builders */
   public:
-    void* nodes;
-    size_t bytesNodes;
-    void* primitives;
-    size_t bytesPrimitives;
-    /*__aligned(64) GlobalAllocator nodeAllocator;
-      __aligned(64) GlobalAllocator primAllocator;*/
     std::vector<BVH4*> objects;
   };
 

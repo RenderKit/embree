@@ -214,13 +214,11 @@ namespace embree
 
   BVH4::BVH4 (const PrimitiveType& primTy, void* geometry)
   : primTy(primTy), geometry(geometry), root(emptyNode),
-    numPrimitives(0), numVertices(0),
-    nodes(NULL), bytesNodes(0), primitives(NULL), bytesPrimitives(0) {}
+    numPrimitives(0), numVertices(0) {}
 
   BVH4::~BVH4 () {
-    if (nodes) os_free(nodes, bytesNodes);
-    if (primitives) os_free(primitives, bytesPrimitives);
-    for (size_t i=0; i<objects.size(); i++) delete objects[i];
+    for (size_t i=0; i<objects.size(); i++) 
+      delete objects[i];
   }
 
   Accel::Intersectors BVH4Bezier1iIntersectors(BVH4* bvh)
