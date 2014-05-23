@@ -36,7 +36,7 @@ namespace embree
       /*! Constructor. */
       BVH4HairBuilder (BVH4Hair* bvh, Scene* scene);
       
-    private:
+    protected:
       
       typedef Bezier1 PrimRef;
       typedef PrimRefBlockT<Bezier1> PrimRefBlock;
@@ -69,7 +69,7 @@ namespace embree
     private:
       
       /*! creates a leaf node */
-      BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo);
+      virtual BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo) = 0;
       
       template<bool Parallel>
 	Split find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const PrimInfo& sinfo);
@@ -96,6 +96,15 @@ namespace embree
       volatile atomic_t numGeneratedPrims;
       volatile atomic_t remainingReplications;
       vector_t<BuildTask> tasks;
+    };
+
+    /*! specializes the builder for different leaf types */
+    template<typename Triangle>
+    class BVH4HairBuilderT : public BVH4HairBuilder
+    {
+    public:
+      BVH4HairBuilderT (BVH4Hair* bvh, Scene* scene, size_t mode);
+      BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo);
     };
   }
 }

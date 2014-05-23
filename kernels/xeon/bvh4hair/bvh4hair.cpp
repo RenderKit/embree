@@ -19,6 +19,9 @@
 
 namespace embree
 {
+  DECLARE_SCENE_BUILDER(BVH4HairBezier1Builder);
+  DECLARE_SCENE_BUILDER(BVH4HairBezier1iBuilder);
+
   DECLARE_SYMBOL(Accel::Intersector1,BVH4HairBezier1Intersector1);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4HairBezier1Intersector4);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4HairBezier1Intersector8);
@@ -27,13 +30,11 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector4,BVH4HairBezier1iIntersector4);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4HairBezier1iIntersector8);
 
-  DECLARE_FUNCTION_SYMBOL(Builder*   BVH4HairBuilder_  (BVH4Hair* bvh, Scene* scene));
-  static                  Builder* (*BVH4HairBuilder_) (BVH4Hair* bvh, Scene* scene);
-
   void BVH4HairRegister () 
   {
     int features = getCPUFeatures();
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4HairBuilder_);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4HairBezier1Builder);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4HairBezier1iBuilder);
 
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4HairBezier1Intersector1);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4HairBezier1Intersector4);
@@ -76,7 +77,7 @@ namespace embree
   { 
     BVH4Hair* accel = new BVH4Hair(Bezier1Type::type,scene);
     Accel::Intersectors intersectors = BVH4HairBezier1Intersectors(accel);
-    Builder* builder = BVH4HairBuilder_(accel,scene);
+    Builder* builder = BVH4HairBezier1Builder(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -85,7 +86,7 @@ namespace embree
     scene->needVertices = true;
     BVH4Hair* accel = new BVH4Hair(SceneBezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4HairBezier1iIntersectors(accel);
-    Builder* builder = BVH4HairBuilder_(accel,scene);
+    Builder* builder = BVH4HairBezier1iBuilder(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 

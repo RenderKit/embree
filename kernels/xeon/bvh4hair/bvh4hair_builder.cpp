@@ -27,7 +27,10 @@ namespace embree
  
   namespace isa
   {
-	BVH4HairBuilder::BVH4HairBuilder (BVH4Hair* bvh, Scene* scene)
+    template<> BVH4HairBuilderT<Bezier1 >::BVH4HairBuilderT (BVH4Hair* bvh, Scene* scene, size_t mode) : BVH4HairBuilder(bvh,scene) {}
+    template<> BVH4HairBuilderT<Bezier1i>::BVH4HairBuilderT (BVH4Hair* bvh, Scene* scene, size_t mode) : BVH4HairBuilder(bvh,scene) {}
+
+    BVH4HairBuilder::BVH4HairBuilder (BVH4Hair* bvh, Scene* scene)
       : scene(scene), minLeafSize(1), maxLeafSize(inf), bvh(bvh), remainingReplications(0)
     {
       if (BVH4Hair::maxLeafBlocks < this->maxLeafSize) 
@@ -115,10 +118,10 @@ namespace embree
       }
     }
 
-    BVH4Hair::NodeRef BVH4HairBuilder::leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo)
+    template<>
+    BVH4Hair::NodeRef BVH4HairBuilderT<Bezier1>::leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo)
     {
-      //size_t N = end-begin;
-      size_t N = pinfo.size(); //BezierRefList::block_iterator_unsafe(prims).size();
+      size_t N = pinfo.size();
       
       if (N > (size_t)BVH4Hair::maxLeafBlocks) {
 	//std::cout << "WARNING: Loosing " << N-BVH4Hair::maxLeafBlocks << " primitives during build!" << std::endl;
@@ -130,36 +133,49 @@ namespace embree
         if (numGeneratedPrimsOld%10000 > (numGeneratedPrimsOld+N)%10000) std::cout << "." << std::flush; 
       }
       //assert(N <= (size_t)BVH4Hair::maxLeafBlocks);
-      if (&bvh->primTy == &Bezier1Type::type) {
-	Bezier1* leaf = (Bezier1*) bvh->allocPrimitiveBlocks(threadIndex,N);
-	BezierRefList::block_iterator_unsafe iter(prims);
-	for (size_t i=0; i<N; i++) { leaf[i] = *iter; iter++; }
-	assert(!iter);
-	
-	/* free all primitive blocks */
-	while (BezierRefList::item* block = prims.take())
-	  alloc.free(threadIndex,block);
-	
-	return bvh->encodeLeaf((char*)leaf,N);
-      } 
-      else if (&bvh->primTy == &SceneBezier1i::type) {
-	Bezier1i* leaf = (Bezier1i*) bvh->allocPrimitiveBlocks(threadIndex,N);
-	BezierRefList::block_iterator_unsafe iter(prims);
-	for (size_t i=0; i<N; i++) {
-	  const Bezier1& curve = *iter; iter++;
-	  const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID);
-	  const Vec3fa& p0 = in->vertex(in->curve(curve.primID));
-	  leaf[i] = Bezier1i(&p0,curve.geomID,curve.primID);
-	}
-	
-	/* free all primitive blocks */
-	while (BezierRefList::item* block = prims.take())
-	  alloc.free(threadIndex,block);
-	
-	return bvh->encodeLeaf((char*)leaf,N);
+     
+      Bezier1* leaf = (Bezier1*) bvh->allocPrimitiveBlocks(threadIndex,N);
+      BezierRefList::block_iterator_unsafe iter(prims);
+      for (size_t i=0; i<N; i++) { leaf[i] = *iter; iter++; }
+      assert(!iter);
+      
+      /* free all primitive blocks */
+      while (BezierRefList::item* block = prims.take())
+	alloc.free(threadIndex,block);
+      
+      return bvh->encodeLeaf((char*)leaf,N);
+    }
+
+    template<>
+    BVH4Hair::NodeRef BVH4HairBuilderT<Bezier1i>::leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo)
+    {
+      size_t N = pinfo.size();
+      
+      if (N > (size_t)BVH4Hair::maxLeafBlocks) {
+	//std::cout << "WARNING: Loosing " << N-BVH4Hair::maxLeafBlocks << " primitives during build!" << std::endl;
+	std::cout << "!" << std::flush;
+	N = (size_t)BVH4Hair::maxLeafBlocks;
       }
-      else 
-	throw std::runtime_error("unknown primitive type");
+      if (g_verbose >= 1) {
+        size_t numGeneratedPrimsOld = atomic_add(&numGeneratedPrims,N); 
+        if (numGeneratedPrimsOld%10000 > (numGeneratedPrimsOld+N)%10000) std::cout << "." << std::flush; 
+      }
+      //assert(N <= (size_t)BVH4Hair::maxLeafBlocks);
+      
+      Bezier1i* leaf = (Bezier1i*) bvh->allocPrimitiveBlocks(threadIndex,N);
+      BezierRefList::block_iterator_unsafe iter(prims);
+      for (size_t i=0; i<N; i++) {
+	const Bezier1& curve = *iter; iter++;
+	const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID);
+	const Vec3fa& p0 = in->vertex(in->curve(curve.primID));
+	leaf[i] = Bezier1i(&p0,curve.geomID,curve.primID);
+      }
+      
+      /* free all primitive blocks */
+      while (BezierRefList::item* block = prims.take())
+	alloc.free(threadIndex,block);
+      
+      return bvh->encodeLeaf((char*)leaf,N);
     }
     
     template<bool Parallel>
@@ -466,9 +482,9 @@ namespace embree
 	}
       }
     }
-    
-    Builder* BVH4HairBuilder_ (BVH4Hair* accel, Scene* scene) {
-      return new BVH4HairBuilder(accel,scene);
-    }
+
+    /*! entry functions for the builder */
+    Builder* BVH4HairBezier1Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH4HairBuilderT<Bezier1> ((BVH4Hair*)bvh,scene,mode); }
+    Builder* BVH4HairBezier1iBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4HairBuilderT<Bezier1i> ((BVH4Hair*)bvh,scene,mode); }
   }
 }
