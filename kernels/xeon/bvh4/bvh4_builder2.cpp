@@ -38,99 +38,6 @@ namespace embree
 {
   namespace isa
   {
-    void BVH4Builder2::build(size_t threadIndex, size_t threadCount) 
-    {
-      size_t numPrimitives = scene->numTriangles; //source->size();
-      bvh->init(2*numPrimitives); // FIXME: 2x
-      remainingReplications = numPrimitives;
-      if (numPrimitives == 0) 
-	return;
-      
-      if (g_verbose >= 2) 
-	std::cout << "building BVH4<" << bvh->primTy.name << "> with SAH builder2 ... " << std::flush;
-      
-      double t0 = 0.0, t1 = 0.0f;
-      if (g_verbose >= 2 || g_benchmark)
-	t0 = getSeconds();
-      
-      /* generate list of build primitives */
-      if (mesh) throw std::runtime_error("BVH4Builder2: generation from triangle mesh not yet implemented"); // FIXME
-      TriRefList prims; PrimInfo pinfo(empty);
-      TriRefListGen::generate(threadIndex,threadCount,&alloc,scene,prims,pinfo);
-      
-      const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,true);
-      BuildRecord record(1,prims,pinfo,split,&bvh->root);
-      tasks.push_back(record);
-
-      /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (tasks.size() < threadCount)
-      {
-	/* pop largest item for better load balancing */
-	BuildRecord task = tasks.front();
-	pop_heap(tasks.begin(),tasks.end());
-	tasks.pop_back();
-	
-	/* process this item in parallel */
-	BuildRecord children[BVH4::N];
-	size_t N = process<true>(threadIndex,threadCount,this,task,children);
-	for (size_t i=0; i<N; i++) {
-	  tasks.push_back(children[i]);
-	  push_heap(tasks.begin(),tasks.end());
-	}
-      }
-      
-      /*! process each generated subtask in its own thread */
-      TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,tasks.size(),"BVH4Builder2::build");
-                  
-      /* finish build */
-#if ROTATE_TREE
-      for (int i=0; i<5; i++) 
-	BVH4Rotate::rotate(bvh,bvh->root);
-#endif
-
-      /* layout top nodes */
-      bvh->root = layout_top_nodes(threadIndex,bvh->root);
-      //bvh->clearBarrier(bvh->root);
-      bvh->numPrimitives = pinfo.size();
-      bvh->bounds = pinfo.geomBounds;
-      
-      /* free all temporary blocks */
-      Alloc::global.clear();
-      
-      if (g_verbose >= 2 || g_benchmark) 
-	t1 = getSeconds();
-      
-      if (g_verbose >= 2) {
-	std::cout << "[DONE]" << std::endl;
-	std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
-	std::cout << BVH4Statistics(bvh).str();
-      }
-      
-      if (g_benchmark) {
-	BVH4Statistics stat(bvh);
-	std::cout << "BENCHMARK_BUILD " << 1000.0f*(t1-t0) << " " << 1E-6*double(numPrimitives)/(t1-t0) << " " << stat.bytesUsed() << std::endl;
-      }
-    }
-
-    BVH4::NodeRef BVH4Builder2::layout_top_nodes(size_t threadIndex, NodeRef node)
-    {
-      if (node.isBarrier()) {
-	node.clearBarrier();
-	return node;
-      }
-      else if (!node.isLeaf()) 
-      {
-	Node* src = node.node();
-	Node* dst = bvh->allocNode(threadIndex);
-	for (size_t i=0; i<BVH4::N; i++) {
-	  dst->set(i,src->bounds(i),layout_top_nodes(threadIndex,src->child(i)));
-	}
-	return bvh->encodeNode(dst);
-      }
-      else
-	return node;
-    }
-    
     BVH4Builder2::BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
       : scene(scene), mesh(mesh), bvh(bvh), primTy(bvh->primTy), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
 	taskQueue(/*Heuristic::depthFirst ? TaskScheduler::GLOBAL_BACK : */TaskScheduler::GLOBAL_FRONT)
@@ -192,10 +99,6 @@ namespace embree
     BVH4Builder2T<Triangle4i>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
       : BVH4Builder2(bvh,mesh->parent,mesh,2,true,sizeof(Triangle4i),4,inf) {}
    
-    void BVH4Builder2::buildFunction(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) {
-      new SplitTask(threadIndex,threadCount,event,this,tasks[taskIndex]);
-    }
-
     template<typename Triangle>
     typename BVH4Builder2::NodeRef BVH4Builder2T<Triangle>::createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo)
     {
@@ -339,7 +242,75 @@ namespace embree
       *record.dst = parent->bvh->encodeNode(node);
       return numChildren;
     }
+
+    void BVH4Builder2::process_task(size_t threadIndex, size_t threadCount, BuildRecord& record)
+    {
+      /* finish small tasks */
+      if (record.pinfo.size() < 4*1024) 
+      {
+	recurse_task(threadIndex,threadCount,record);
+#if ROTATE_TREE
+	for (int i=0; i<5; i++) 
+	  BVH4Rotate::rotate(bvh,*record.dst); 
+#endif
+	record.dst->setBarrier();
+      }
+
+      /* and split large tasks */
+      else
+      {
+	BuildRecord children[BVH4::N];
+	size_t N = process<false>(threadIndex,threadCount,this,record,children);
+      	taskMutex.lock();
+	for (size_t i=0; i<N; i++) tasks.push_back(children[i]);
+	taskMutex.unlock();
+      }
+    }
+
+    void BVH4Builder2::recurse_task(size_t threadIndex, size_t threadCount, BuildRecord& record)
+    {
+      BuildRecord children[BVH4::N];
+      size_t N = process<false>(threadIndex,threadCount,this,record,children);
+      for (size_t i=0; i<N; i++)
+	recurse_task(threadIndex,threadCount,children[i]);
+    }
     
+    void BVH4Builder2::buildFunction(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    {
+      new SplitTask(threadIndex,threadCount,event,this,tasks[taskIndex]);
+      
+      /*while (true)
+      {
+	taskMutex.lock();
+	if (tasks.size() == 0) {
+	  taskMutex.unlock();
+	  return;
+	}
+	BuildRecord record = tasks.back();
+	tasks.pop_back();
+	taskMutex.unlock();
+	process_task(threadIndex,threadCount,record);
+	}*/
+    }
+
+    BVH4::NodeRef BVH4Builder2::layout_top_nodes(size_t threadIndex, NodeRef node)
+    {
+      if (node.isBarrier()) {
+	node.clearBarrier();
+	return node;
+      }
+      else if (!node.isLeaf()) 
+      {
+	Node* src = node.node();
+	Node* dst = bvh->allocNode(threadIndex);
+	for (size_t i=0; i<BVH4::N; i++) {
+	  dst->set(i,src->bounds(i),layout_top_nodes(threadIndex,src->child(i)));
+	}
+	return bvh->encodeNode(dst);
+      }
+      else
+	return node;
+    }
     
     BVH4Builder2::BuildTask::BuildTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, BVH4Builder2* parent, const BuildRecord& record)
       : threadIndex(threadIndex), threadCount(threadCount), parent(parent), record(record)
@@ -390,6 +361,81 @@ namespace embree
 	/* use single threaded split for medium size jobs  */
 	else
 	  new SplitTask(threadIndex,threadCount,event,parent,children[i]);
+      }
+    }
+
+    void BVH4Builder2::build(size_t threadIndex, size_t threadCount) 
+    {
+      size_t numPrimitives = scene->numTriangles; //source->size();
+      bvh->init(2*numPrimitives); // FIXME: 2x
+      remainingReplications = numPrimitives;
+      if (numPrimitives == 0) 
+	return;
+      
+      if (g_verbose >= 2) 
+	std::cout << "building BVH4<" << bvh->primTy.name << "> with SAH builder2 ... " << std::flush;
+      
+      double t0 = 0.0, t1 = 0.0f;
+      if (g_verbose >= 2 || g_benchmark)
+	t0 = getSeconds();
+      
+      /* generate list of build primitives */
+      if (mesh) throw std::runtime_error("BVH4Builder2: generation from triangle mesh not yet implemented"); // FIXME
+      TriRefList prims; PrimInfo pinfo(empty);
+      TriRefListGen::generate(threadIndex,threadCount,&alloc,scene,prims,pinfo);
+      
+      const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,true);
+      BuildRecord record(1,prims,pinfo,split,&bvh->root);
+      tasks.push_back(record);
+
+      /* work in multithreaded toplevel mode until sufficient subtasks got generated */
+      while (tasks.size() < threadCount)
+      {
+	/* pop largest item for better load balancing */
+	BuildRecord task = tasks.front();
+	pop_heap(tasks.begin(),tasks.end());
+	tasks.pop_back();
+	
+	/* process this item in parallel */
+	BuildRecord children[BVH4::N];
+	size_t N = process<true>(threadIndex,threadCount,this,task,children);
+	for (size_t i=0; i<N; i++) {
+	  tasks.push_back(children[i]);
+	  push_heap(tasks.begin(),tasks.end());
+	}
+      }
+      
+      /*! process each generated subtask in its own thread */
+      TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,tasks.size(),"BVH4Builder2::build");
+      //TaskScheduler::executeTask(threadIndex,threadCount,_buildFunction,this,threadCount,"BVH4Builder2::build");
+                  
+      /* finish build */
+#if ROTATE_TREE
+      for (int i=0; i<5; i++) 
+	BVH4Rotate::rotate(bvh,bvh->root);
+#endif
+
+      /* layout top nodes */
+      bvh->root = layout_top_nodes(threadIndex,bvh->root);
+      //bvh->clearBarrier(bvh->root);
+      bvh->numPrimitives = pinfo.size();
+      bvh->bounds = pinfo.geomBounds;
+      
+      /* free all temporary blocks */
+      Alloc::global.clear();
+      
+      if (g_verbose >= 2 || g_benchmark) 
+	t1 = getSeconds();
+      
+      if (g_verbose >= 2) {
+	std::cout << "[DONE]" << std::endl;
+	std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
+	std::cout << BVH4Statistics(bvh).str();
+      }
+      
+      if (g_benchmark) {
+	BVH4Statistics stat(bvh);
+	std::cout << "BENCHMARK_BUILD " << 1000.0f*(t1-t0) << " " << 1E-6*double(numPrimitives)/(t1-t0) << " " << stat.bytesUsed() << std::endl;
       }
     }
     

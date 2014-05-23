@@ -94,6 +94,10 @@ namespace embree
       template<bool PARALLEL>
       static size_t process(size_t threadIndex, size_t threadCount, BVH4Builder2* parent, BuildRecord& record, BuildRecord records_o[BVH4::N]);
 
+      void process_task(size_t threadIndex, size_t threadCount, BuildRecord& record);
+
+      void recurse_task(size_t threadIndex, size_t threadCount, BuildRecord& record);
+
       /***********************************************************************************************************************
        *                                      Single Threaded Build Task
        **********************************************************************************************************************/
@@ -157,6 +161,7 @@ namespace embree
       //TriRefGen initStage;               //!< job to generate build primitives
       TaskScheduler::QUEUE taskQueue;     //!< Task queue to use
       
+      MutexSys taskMutex;
       std::vector<BuildRecord> tasks;
       atomic_t remainingReplications;
       
