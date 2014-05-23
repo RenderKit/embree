@@ -166,13 +166,14 @@ namespace embree
     __forceinline friend std::ostream &operator<<(std::ostream &o, const BuildRecord &br)
     {
       o << "centroid2 = " << br.bounds.centroid2 << " ";
-      o << "geometry = " << br.bounds.geometry << " ";
-      o << "begin      " << br.begin << " ";
-      o << "end        " << br.end << " ";
-      o << "items      " << br.end-br.begin << " ";
-      o << "parentID     " << br.parentID << " ";
-      o << "flags      " << br.flags << " ";
-      o << "sArea      " << br.sArea << " ";
+      o << "geometry  = " << br.bounds.geometry << " ";
+      o << "begin       " << br.begin << " ";
+      o << "end         " << br.end << " ";
+      o << "items       " << br.end-br.begin << " ";
+      o << "parentID    " << br.parentID << " ";
+      o << "parentBoxID " << br.parentBoxID << " ";
+      o << "flags       " << br.flags << " ";
+      o << "sArea       " << br.sArea << " ";
       return o;
     };
 

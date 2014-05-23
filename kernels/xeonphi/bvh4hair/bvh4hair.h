@@ -203,7 +203,7 @@ namespace embree
 				    unsigned int items,
 				    const size_t m)
       {
-	assert(items < BVH4Hair::N);
+	assert(items <= BVH4Hair::N);
 	child(m) = ((size_t)offset << encodingBits) | BVH4Hair::leaf_mask | items;
       }
 
@@ -231,6 +231,7 @@ namespace embree
 
   __forceinline std::ostream &operator<<(std::ostream &o, const BVH4Hair::UnalignedNode &n)
     {
+      o << "ptr " << (void*)&n << std::endl;
       for (size_t m=0;m<4;m++)
 	{
 	  o << "matrix " << m << ": " << std::endl;

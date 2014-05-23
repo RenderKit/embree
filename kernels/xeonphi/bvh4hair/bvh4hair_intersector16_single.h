@@ -29,7 +29,6 @@ namespace embree
     template<typename LeafIntersector>
     class BVH4HairIntersector16
     {
-      /* shortcuts for frequently used types */      
     public:
       static void intersect(mic_i* valid, BVH4Hair* bvh, Ray16& ray);
       static void occluded (mic_i* valid, BVH4Hair* bvh, Ray16& ray);
@@ -38,14 +37,10 @@ namespace embree
     template<typename LeafIntersector>
     class BVH4HairIntersector1
     {
-      /* shortcuts for frequently used types */
-      //typedef typename BezierCurvesIntersector1::Primitive Primitive;
-      typedef typename BVH4i::NodeRef NodeRef;
-      typedef typename BVH4i::Node Node;
       
     public:
-      static void intersect(BVH4i* bvh, Ray& ray);
-      static void occluded(BVH4i* bvh, Ray& ray);
+      static void intersect(BVH4Hair* bvh, Ray& ray);
+      static void occluded(BVH4Hair* bvh, Ray& ray);
 
     };
 

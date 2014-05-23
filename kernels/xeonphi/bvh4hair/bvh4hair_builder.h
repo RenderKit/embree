@@ -82,11 +82,16 @@ namespace embree
       {
       }
 
+    virtual ~BVH4HairBuilder() 
+      {	
+      }
+
     virtual size_t getNumPrimitives();
     virtual void   printBuilderName();
     virtual void   allocateData   (const size_t threadCount, const size_t newNumPrimitives);
     virtual void   computePrimRefs(const size_t threadIndex, const size_t threadCount);
     virtual void   build          (const size_t threadIndex, const size_t threadCount);
+    virtual void   createAccel    (const size_t threadIndex, const size_t threadCount);
 
     virtual void buildSubTree(BuildRecord& current, 
 			      NodeAllocator& alloc, 

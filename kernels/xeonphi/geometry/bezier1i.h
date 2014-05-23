@@ -72,8 +72,6 @@ namespace embree
     const Vec3fa* p;      //!< pointer to first control point (x,y,z,r)
     unsigned int geomID;  //!< geometry ID
     unsigned int primID;  //!< primitive ID
-    /* unsigned int mask;    //!< geometry mask */
-    /* unsigned int dummy[3]; */
   };
 
 

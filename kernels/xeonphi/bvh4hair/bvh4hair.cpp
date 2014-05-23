@@ -30,8 +30,12 @@ namespace embree
 
   Accel* BVH4Hair::BVH4HairBinnedSAH(Scene* scene)
   {
-    BVH4Hair* accel = new BVH4Hair(SceneTriangle1::type,scene);    
+    BVH4Hair* accel  = new BVH4Hair(SceneTriangle1::type,scene);    
+#if 1
     Builder* builder = new BVH4HairBuilderConvert(accel,NULL,scene);   
+#else
+    Builder* builder = new BVH4HairBuilder(accel,NULL,scene);   
+#endif
     Accel::Intersectors intersectors = BVH4HairIntersectors(accel);
     return new AccelInstance(accel,builder,intersectors);    
   }

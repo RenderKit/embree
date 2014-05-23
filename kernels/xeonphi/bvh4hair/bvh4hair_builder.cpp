@@ -176,6 +176,10 @@ namespace embree
     numAllocatedNodes = size_node / sizeNodeInBytes;
       
     DBG(DBG_PRINT(numAllocatedNodes));
+    DBG(DBG_PRINT(sizeNodeInBytes));
+    DBG(DBG_PRINT(sizePrimRefInBytes));
+    DBG(DBG_PRINT(sizeAccelInBytes));
+
     DBG(DBG_PRINT(size_primrefs));
     DBG(DBG_PRINT(size_node));
     DBG(DBG_PRINT(size_accel));
@@ -194,7 +198,6 @@ namespace embree
     bvh4hair->size_accel = size_accel;
 
     size_prims = size_primrefs;    
-    size_t total = size_primrefs+size_node+size_accel;
   }
 
 
@@ -287,7 +290,10 @@ namespace embree
     atomicID.reset(1);
     node[0].setInvalid();
     node[0].setMatrix(global_bounds.geometry,0);
-    
+
+    DBG( DBG_PRINT( global_bounds.geometry ) );
+    DBG( DBG_PRINT( node[0] ) );
+
     /* create initial build record */
     BuildRecord br;
     br.init(global_bounds,0,numPrimitives);
@@ -329,16 +335,28 @@ namespace embree
     /* now process all created subtasks on multiple threads */    
     TIMER(msec = getSeconds());    
     LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
-    numNodes = atomicID; // >> 2;
     DBG(DBG_PRINT(atomicID));
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
 #endif
+
+    numNodes = atomicID; 
     
     /* update BVH4 */
-    //bvh4hair->root   = bvh4hair->qbvh[0].lower[0].child; 
-    bvh4hair->bounds = global_bounds.geometry;
-    
+    bvh4hair->root             = 0; // node[0].child(0);
+    bvh4hair->bounds           = global_bounds.geometry;
+    bvh4hair->unaligned_nodes  = node;
+    bvh4hair->accel            = prims;
+
+    DBG(
+	for (size_t i=0;i<2 /* min(numNodes,numPrimitives) */ ;i++)
+	  {
+	    DBG_PRINT(i);
+	    DBG_PRINT(node[i]);
+	  }	
+	std::cout << "BUILD DONE" << std::endl;
+	);
+
     /* release all threads again */
     LockStepTaskScheduler::releaseThreads(threadCount);
 
@@ -464,6 +482,8 @@ namespace embree
 
   __forceinline void BVH4HairBuilder::createLeaf(BuildRecord& current, NodeAllocator& alloc,const size_t threadIndex, const size_t threadCount)
   {
+    DBG(DBG_PRINT(current));
+
 #if defined(DEBUG)
     if (current.depth > BVH4Hair::maxBuildDepthLeaf) 
       throw std::runtime_error("ERROR: depth limit reached");
@@ -508,6 +528,9 @@ namespace embree
 				   const size_t threadID, 
 				   const size_t numThreads)
   {
+    DBG(PING);
+    DBG(DBG_PRINT(current));
+
     __aligned(64) BuildRecord children[BVH4Hair::N];
 
     /* create leaf node */
@@ -584,7 +607,12 @@ namespace embree
 				     const size_t threadID, 
 				     const size_t numThreads)
   {
+    DBG(PING);
+  }
 
+  void BVH4HairBuilder::createAccel(const size_t threadIndex, const size_t threadCount)
+  {
+    DBG(PING);
   }
 
 
@@ -759,7 +787,7 @@ namespace embree
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1) )
       {
 	DBG(std::cout << "PARALLEL BUILD" << std::endl);
-
+	
 	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
       }
     else
