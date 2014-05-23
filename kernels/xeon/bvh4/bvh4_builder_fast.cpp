@@ -646,7 +646,7 @@ namespace embree
             }
           }
           /* found nothing to steal ? */
-          if (!success) break; 
+          if (!success) break; // FIXME: may loose threads
         }
         
         /* process local work queue */
