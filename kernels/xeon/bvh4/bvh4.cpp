@@ -215,10 +215,7 @@ namespace embree
   BVH4::BVH4 (const PrimitiveType& primTy, void* geometry)
   : primTy(primTy), geometry(geometry), root(emptyNode),
     numPrimitives(0), numVertices(0),
-    nodes(NULL), bytesNodes(0), primitives(NULL), bytesPrimitives(0) 
-  {
-    alloc = new LinearAllocatorPerThread;
-  }
+    nodes(NULL), bytesNodes(0), primitives(NULL), bytesPrimitives(0) {}
 
   BVH4::~BVH4 () {
     if (nodes) os_free(nodes, bytesNodes);
@@ -700,8 +697,7 @@ namespace embree
     bytesReserved         = (bytesReserved+blockSize-1)/blockSize*blockSize;
 
     root = emptyNode;
-    //alloc->init(numNodes*sizeof(BVH4::Node) + numPrimitives*primTy.bytes);
-    alloc->init(bytesAllocated,bytesReserved);
+    alloc.init(bytesAllocated,bytesReserved);
   }
 
   void BVH4::clearBarrier(NodeRef& node)

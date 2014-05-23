@@ -90,7 +90,7 @@ namespace embree
     BVH4BuilderMorton::~BVH4BuilderMorton () 
     {
       if (morton) os_free(morton,bytesMorton);
-      bvh->alloc->shrink();
+      bvh->alloc.shrink();
     }
     
     void BVH4BuilderMorton::build(size_t threadIndex, size_t threadCount) 
@@ -343,7 +343,7 @@ namespace embree
       const size_t endID   = (threadID+1)*numPrimitives/numThreads;
       
       /* store the morton codes temporarily in 'node' memory */
-      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)bvh->alloc->base();
+      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)bvh->alloc.base();
       computeMortonCodes(startID,endID,g_state->startGroup[threadID],g_state->startGroupOffset[threadID],dest);
     }
     
@@ -397,7 +397,7 @@ namespace embree
       
       MortonID32Bit* __restrict__ mortonID[2];
       mortonID[0] = (MortonID32Bit*) morton; 
-      mortonID[1] = (MortonID32Bit*) bvh->alloc->base();
+      mortonID[1] = (MortonID32Bit*) bvh->alloc.base();
       MortonBuilderState::ThreadRadixCountTy* radixCount = g_state->radixCount;
       
       /* we need 3 iterations to process all 32 bits */
@@ -451,8 +451,8 @@ namespace embree
     
     void BVH4BuilderMorton::recurseSubMortonTrees(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
-      __aligned(64) Allocator nodeAlloc(bvh->alloc.ptr);
-      __aligned(64) Allocator leafAlloc(bvh->alloc.ptr);
+      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
+      __aligned(64) Allocator leafAlloc(&bvh->alloc);
       while (true)
       {
         const unsigned int taskID = atomic_add(&g_state->taskCounter,1);
@@ -1028,9 +1028,9 @@ namespace embree
       br.depth = 1;
       
       /* perform first splits in single threaded mode */
-      bvh->alloc->clear();
-      __aligned(64) Allocator nodeAlloc(bvh->alloc.ptr);
-      __aligned(64) Allocator leafAlloc(bvh->alloc.ptr);
+      bvh->alloc.clear();
+      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
+      __aligned(64) Allocator leafAlloc(&bvh->alloc);
       recurse(br,nodeAlloc,leafAlloc,RECURSE,threadIndex);	    
             
       /* stop measurement */
@@ -1059,7 +1059,7 @@ namespace embree
       TaskScheduler::dispatchTask( _computeMortonCodes, this, threadIndex, threadCount );   
 
       /* padding */
-      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc->base();
+      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc.base();
       for (size_t i=numPrimitives; i<( (numPrimitives+7)&(-8) ); i++) {
         dest[i].code  = 0xffffffff; 
         dest[i].index = 0;
@@ -1083,9 +1083,9 @@ namespace embree
       br.depth = 1;
       
       /* perform first splits in single threaded mode */
-      bvh->alloc->clear();
-      __aligned(64) Allocator nodeAlloc(bvh->alloc.ptr);
-      __aligned(64) Allocator leafAlloc(bvh->alloc.ptr);
+      bvh->alloc.clear();
+      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
+      __aligned(64) Allocator leafAlloc(&bvh->alloc);
       recurse(br,nodeAlloc,leafAlloc,CREATE_TOP_LEVEL,threadIndex);	    
 
       /* sort all subtasks by size */
