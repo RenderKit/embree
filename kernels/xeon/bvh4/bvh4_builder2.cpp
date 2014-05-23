@@ -315,9 +315,8 @@ namespace embree
       }
       
       /*! initialize child list */
-      TriRefList cprims[BVH4::N]; cprims[0] = record.prims;
-      PrimInfo   cinfo [BVH4::N]; cinfo [0] = record.pinfo;
-      Split      csplit[BVH4::N]; csplit[0] = record.split;
+      BuildRecord crecord[BVH4::N]; 
+      crecord[0] = record;
       size_t numChildren = 1;
       
       /*! split until node is full or SAH tells us to stop */
@@ -328,9 +327,9 @@ namespace embree
 	ssize_t bestChild = -1;
 	for (size_t i=0; i<numChildren; i++) 
 	{
-	  float dSAH = csplit[i].splitSAH()-cinfo[i].leafSAH(parent->logBlockSize);
-	  if (cinfo[i].size() <= parent->minLeafSize) continue; 
-	  if (cinfo[i].size() > parent->maxLeafSize) dSAH = min(0.0f,dSAH); //< force split for large jobs
+	  float dSAH = crecord[i].split.splitSAH()-crecord[i].pinfo.leafSAH(parent->logBlockSize);
+	  if (crecord[i].pinfo.size() <= parent->minLeafSize) continue; 
+	  if (crecord[i].pinfo.size() > parent->maxLeafSize) dSAH = min(0.0f,dSAH); //< force split for large jobs
 	  if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
 	}
 	if (bestChild == -1) break;
@@ -338,23 +337,23 @@ namespace embree
 	/*! perform best found split and find new splits */
 	PrimInfo linfo(empty),rinfo(empty);
 	TriRefList lprims,rprims;
-	csplit[bestChild].split<false>(threadIndex,threadCount,parent->alloc,parent->scene,cprims[bestChild],lprims,linfo,rprims,rinfo);
+	crecord[bestChild].split.split<false>(threadIndex,threadCount,parent->alloc,parent->scene,crecord[bestChild].prims,lprims,linfo,rprims,rinfo);
 	if (linfo.size() == 0) {
-	  cprims[bestChild  ] = rprims; cinfo[bestChild  ] = rinfo; 
-	  csplit[bestChild  ] = parent->find<false>(threadIndex,threadCount,record.depth,rprims,rinfo,false);
+	  crecord[bestChild].prims = rprims; crecord[bestChild].pinfo = rinfo; 
+	  crecord[bestChild].split = parent->find<false>(threadIndex,threadCount,record.depth,rprims,rinfo,false);
 	  continue;
 	}
 	if (rinfo.size() == 0) {
-	  cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; 
-	  csplit[bestChild  ] = parent->find<false>(threadIndex,threadCount,record.depth,lprims,linfo,false);
+	  crecord[bestChild].prims = lprims; crecord[bestChild].pinfo = linfo; 
+	  crecord[bestChild].split = parent->find<false>(threadIndex,threadCount,record.depth,lprims,linfo,false);
 	  continue;
 	}
-	const ssize_t replications = linfo.size()+rinfo.size()-cinfo[bestChild].size(); assert(replications >= 0);
+	const ssize_t replications = linfo.size()+rinfo.size()-crecord[bestChild].pinfo.size(); assert(replications >= 0);
 	const ssize_t remaining = atomic_add(&parent->remainingReplications,-replications);
 	const Split lsplit = parent->find<false>(threadIndex,threadCount,record.depth,lprims,linfo,remaining > 0);
 	const Split rsplit = parent->find<false>(threadIndex,threadCount,record.depth,rprims,rinfo,remaining > 0);
-	cprims[bestChild  ] = lprims; cinfo[bestChild  ] = linfo; csplit[bestChild  ] = lsplit;
-	cprims[numChildren] = rprims; cinfo[numChildren] = rinfo; csplit[numChildren] = rsplit;
+	crecord[bestChild].prims = lprims; crecord[bestChild].pinfo = linfo; crecord[bestChild].split = lsplit;
+	crecord[numChildren].prims = rprims; crecord[numChildren].pinfo = rinfo; crecord[numChildren].split = rsplit;
 	numChildren++;
 	
       } while (numChildren < BVH4::N);
@@ -362,8 +361,8 @@ namespace embree
       /*! create an inner node */
       Node* node = parent->bvh->allocNode(threadIndex);
       for (size_t i=0; i<numChildren; i++) {
-	BuildRecord next(record.depth+1,cprims[i],cinfo[i],csplit[i],&node->child(i));
-	node->set(i,cinfo[i].geomBounds);
+	BuildRecord next(record.depth+1,crecord[i].prims,crecord[i].pinfo,crecord[i].split,&node->child(i));
+	node->set(i,crecord[i].pinfo.geomBounds);
 	recurse(next);
       }
       *record.dst = parent->bvh->encodeNode(node);
