@@ -100,7 +100,7 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    static __forceinline void pack(Triangle8* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
+    static __forceinline void fill(Triangle8* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
     {
       avxi geomID = -1, primID = -1, mask = -1;
       avx3f v0 = zero, v1 = zero, v2 = zero;

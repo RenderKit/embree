@@ -188,6 +188,14 @@ namespace embree
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
+    class BVH4Triangle8BuilderFast : public BVH4BuilderFast
+    {
+    public:
+      BVH4Triangle8BuilderFast (BVH4* bvh, Scene* scene);
+      BVH4Triangle8BuilderFast (BVH4* bvh, TriangleMesh* mesh);
+      void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+    };
+
     class BVH4Triangle1vBuilderFast : public BVH4BuilderFast
     {
     public:

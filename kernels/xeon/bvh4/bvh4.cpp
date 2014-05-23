@@ -65,30 +65,35 @@ namespace embree
 
   DECLARE_SCENE_BUILDER(BVH4Triangle1Builder2);
   DECLARE_SCENE_BUILDER(BVH4Triangle4Builder2);
+  DECLARE_SCENE_BUILDER(BVH4Triangle8Builder2);
   DECLARE_SCENE_BUILDER(BVH4Triangle1vBuilder2);
   DECLARE_SCENE_BUILDER(BVH4Triangle4vBuilder2);
   DECLARE_SCENE_BUILDER(BVH4Triangle4iBuilder2);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilder2);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilder2);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshBuilder2);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshBuilder2);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshBuilder2);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshBuilder2);
 
   DECLARE_SCENE_BUILDER(BVH4Triangle1BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle4BuilderFast);
+  DECLARE_SCENE_BUILDER(BVH4Triangle8BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle1vBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle4vBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle4iBuilderFast);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilderFast);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshBuilderFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshBuilderFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshBuilderFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshBuilderFast);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshRefitFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshRefitFast);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshRefitFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshRefitFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshRefitFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshRefitFast);
@@ -123,43 +128,49 @@ namespace embree
 
     SELECT_SYMBOL_AVX(features,BVH4Triangle1Builder2);
     SELECT_SYMBOL_AVX(features,BVH4Triangle4Builder2);
+    SELECT_SYMBOL_AVX(features,BVH4Triangle8Builder2);
     SELECT_SYMBOL_AVX(features,BVH4Triangle1vBuilder2);
     SELECT_SYMBOL_AVX(features,BVH4Triangle4vBuilder2);
     SELECT_SYMBOL_AVX(features,BVH4Triangle4iBuilder2);
     
     SELECT_SYMBOL_AVX(features,BVH4Triangle1MeshBuilder2);
     SELECT_SYMBOL_AVX(features,BVH4Triangle4MeshBuilder2);
+    SELECT_SYMBOL_AVX(features,BVH4Triangle8MeshBuilder2);
     SELECT_SYMBOL_AVX(features,BVH4Triangle1vMeshBuilder2);
     SELECT_SYMBOL_AVX(features,BVH4Triangle4vMeshBuilder2);
     SELECT_SYMBOL_AVX(features,BVH4Triangle4iMeshBuilder2);
   
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1BuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4BuilderFast);
+    SELECT_SYMBOL_AVX        (features,BVH4Triangle8BuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iBuilderFast);
     
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderFast);
+    SELECT_SYMBOL_AVX        (features,BVH4Triangle8MeshBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderFast);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshRefitFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshRefitFast);
+    SELECT_SYMBOL_AVX        (features,BVH4Triangle8MeshRefitFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshRefitFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshRefitFast);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshRefitFast);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1BuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4BuilderMorton);
-    SELECT_SYMBOL_AVX(features,BVH4Triangle8BuilderMorton);
+    SELECT_SYMBOL_AVX        (features,BVH4Triangle8BuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iBuilderMorton);
     
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderMorton);
-    SELECT_SYMBOL_AVX(features,BVH4Triangle8MeshBuilderMorton);
+    SELECT_SYMBOL_AVX        (features,BVH4Triangle8MeshBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderMorton);
@@ -391,6 +402,7 @@ namespace embree
     else if (g_builder == "spatialsplit") builder = BVH4BuilderSpatialSplit8(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "objectsplit" ) builder = BVH4BuilderObjectSplit8(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "morton"      ) builder = BVH4Triangle8BuilderMorton(accel,scene);
+    else if (g_builder == "builder2"    ) builder = BVH4Triangle8Builder2(accel,scene);
     else throw std::runtime_error("unknown builder "+g_builder+" for BVH4<Triangle8>");
 
     return new AccelInstance(accel,builder,intersectors);
