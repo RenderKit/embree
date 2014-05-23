@@ -83,8 +83,7 @@ namespace embree
       
       /*! Selects between full build and single-threaded split strategy. */
       template<bool PARALLEL>
-      void recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
-		   NodeRef& node, size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split);
+	void recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, const BuildRecord& record);
 
       NodeRef layout_top_nodes(size_t threadIndex, NodeRef node);
 
@@ -104,9 +103,7 @@ namespace embree
 	  public:
 	
 	/*! Default task construction. */
-	BuildTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
-		  BVH4Builder2* parent, NodeRef& node, size_t depth, 
-		  TriRefList& prims, const PrimInfo& pinfo, const Split& split);
+	BuildTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, BVH4Builder2* parent, const BuildRecord& record);
 	
 	/*! Task entry function. */
 	TASK_COMPLETE_FUNCTION_(BuildTask,run);
@@ -125,7 +122,7 @@ namespace embree
       };
       
       /***********************************************************************************************************************
-       *                                      Single Threaded Split Task
+       *                                              Split Task
        **********************************************************************************************************************/
       
       /*! Single-threaded task that builds a single node and creates subtasks for the children. */
@@ -134,14 +131,10 @@ namespace embree
 	  public:
 	
 	/*! Default task construction. */
-	SplitTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, 
-		  BVH4Builder2* parent, NodeRef& node, size_t depth, 
-		  TriRefList& prims, const PrimInfo& pinfo, const Split& split);
+	SplitTask(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event, BVH4Builder2* parent, const BuildRecord& record);
 	
 	/*! Default task construction. */
-	SplitTask(size_t threadIndex, size_t threadCount, 
-		  BVH4Builder2* parent, NodeRef& node, size_t depth, 
-		  TriRefList& prims, const PrimInfo& pinfo, const Split& split);
+	SplitTask(size_t threadIndex, size_t threadCount, BVH4Builder2* parent, const BuildRecord& record);
 	
 	/*! Task entry function. */
 	TASK_COMPLETE_FUNCTION_(SplitTask,run);
@@ -152,17 +145,18 @@ namespace embree
 	
 	__forceinline friend bool operator< (const SplitTask& a, const SplitTask& b) {
 	  //return halfArea(a.bounds.bounds) < halfArea(b.bounds.bounds);
-	  return a.pinfo.size() < b.pinfo.size();
+	  return a.record.pinfo.size() < b.record.pinfo.size();
 	}
 	
       public:
 	TaskScheduler::Task task;
 	BVH4Builder2*    parent;         //!< Pointer to parent task.
-	NodeRef*    dst;            //!< Reference to output the node.
+	/*NodeRef*    dst;            //!< Reference to output the node.
 	size_t          depth;          //!< Recursion depth of this node.
 	TriRefList prims; //!< The list of primitives.
 	PrimInfo        pinfo;          //!< Bounding info of primitives.
-	Split           split;          //!< The best split for the primitives.
+	Split           split;          //!< The best split for the primitives.*/
+	BuildRecord record;
       };
 
     protected:
