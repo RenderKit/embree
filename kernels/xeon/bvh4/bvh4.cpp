@@ -221,6 +221,42 @@ namespace embree
       delete objects[i];
   }
 
+  void BVH4::init(size_t numPrimitives)
+  {
+    /* allocate as much memory as likely needed and reserve conservative amounts of memory */
+    size_t blockSize = LinearAllocatorPerThread::allocBlockSize;
+    
+    size_t numPrimBlocks = primTy.blocks(numPrimitives);
+    size_t numAllocatedNodes = min(size_t(0.6*numPrimBlocks),numPrimitives);
+    size_t numAllocatedPrimitives = min(size_t(1.2*numPrimBlocks),numPrimitives);
+#if defined(__X86_64__)
+    size_t numReservedNodes = 2*numPrimitives;
+    size_t numReservedPrimitives = 2*numPrimitives;
+#else
+    size_t numReservedNodes = 1.5*numAllocatedNodes;
+    size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
+#endif
+    
+    size_t bytesAllocated = 0;
+    //size_t bytesAllocated = numAllocatedNodes * sizeof(BVH4::Node) + numAllocatedPrimitives * primTy.bytes;
+    size_t bytesReserved  = numReservedNodes * sizeof(BVH4::Node) + numReservedPrimitives * primTy.bytes;
+    bytesReserved         = (bytesReserved+blockSize-1)/blockSize*blockSize;
+
+    root = emptyNode;
+    alloc.init(bytesAllocated,bytesReserved);
+  }
+
+  void BVH4::clearBarrier(NodeRef& node)
+  {
+    if (node.isBarrier())
+      node.clearBarrier();
+    else if (!node.isLeaf()) {
+      Node* n = node.node();
+      for (size_t c=0; c<4; c++)
+        clearBarrier(n->child(c));
+    }
+  }
+  
   Accel::Intersectors BVH4Bezier1iIntersectors(BVH4* bvh)
   {
     Accel::Intersectors intersectors;
@@ -672,41 +708,6 @@ namespace embree
     Builder* builder = BVH4Triangle4MeshRefitFast(accel,mesh,0);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
-  }
-
-  void BVH4::init(size_t numPrimitives)
-  {
-    /* allocate as much memory as likely needed and reserve conservative amounts of memory */
-    size_t blockSize = LinearAllocatorPerThread::allocBlockSize;
-    
-    size_t numPrimBlocks = primTy.blocks(numPrimitives);
-    size_t numAllocatedNodes = min(size_t(0.6*numPrimBlocks),numPrimitives);
-    size_t numAllocatedPrimitives = min(size_t(1.2*numPrimBlocks),numPrimitives);
-#if defined(__X86_64__)
-    size_t numReservedNodes = 2*numPrimitives;
-    size_t numReservedPrimitives = 2*numPrimitives;
-#else
-    size_t numReservedNodes = 1.5*numAllocatedNodes;
-    size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
-#endif
-    
-    size_t bytesAllocated = 0; //numAllocatedNodes * sizeof(BVH4::Node) + numAllocatedPrimitives * primTy.bytes;
-    size_t bytesReserved  = numReservedNodes * sizeof(BVH4::Node) + numReservedPrimitives * primTy.bytes;
-    bytesReserved         = (bytesReserved+blockSize-1)/blockSize*blockSize;
-
-    root = emptyNode;
-    alloc.init(bytesAllocated,bytesReserved);
-  }
-
-  void BVH4::clearBarrier(NodeRef& node)
-  {
-    if (node.isBarrier())
-      node.clearBarrier();
-    else if (!node.isLeaf()) {
-      Node* n = node.node();
-      for (size_t c=0; c<4; c++)
-        clearBarrier(n->child(c));
-    }
   }
 }
 
