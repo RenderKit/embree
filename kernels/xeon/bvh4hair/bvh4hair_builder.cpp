@@ -118,8 +118,8 @@ namespace embree
       }
     }
 
-    template<>
-    BVH4Hair::NodeRef BVH4HairBuilderT<Bezier1>::leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo)
+    template<typename Primitive>
+    BVH4Hair::NodeRef BVH4HairBuilderT<Primitive>::leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo)
     {
       size_t N = pinfo.size();
       
@@ -134,7 +134,7 @@ namespace embree
       }
       //assert(N <= (size_t)BVH4Hair::maxLeafBlocks);
      
-      Bezier1* leaf = (Bezier1*) bvh->allocPrimitiveBlocks(threadIndex,N);
+      Primitive* leaf = (Primitive*) bvh->allocPrimitiveBlocks(threadIndex,N);
       BezierRefList::block_iterator_unsafe iter(prims);
       for (size_t i=0; i<N; i++) leaf[i].fill(iter,scene);
       assert(!iter);
@@ -146,34 +146,6 @@ namespace embree
       return bvh->encodeLeaf((char*)leaf,N);
     }
 
-    template<>
-    BVH4Hair::NodeRef BVH4HairBuilderT<Bezier1i>::leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo)
-    {
-      size_t N = pinfo.size();
-      
-      if (N > (size_t)BVH4Hair::maxLeafBlocks) {
-	//std::cout << "WARNING: Loosing " << N-BVH4Hair::maxLeafBlocks << " primitives during build!" << std::endl;
-	std::cout << "!" << std::flush;
-	N = (size_t)BVH4Hair::maxLeafBlocks;
-      }
-      if (g_verbose >= 1) {
-        size_t numGeneratedPrimsOld = atomic_add(&numGeneratedPrims,N); 
-        if (numGeneratedPrimsOld%10000 > (numGeneratedPrimsOld+N)%10000) std::cout << "." << std::flush; 
-      }
-      //assert(N <= (size_t)BVH4Hair::maxLeafBlocks);
-      
-      Bezier1i* leaf = (Bezier1i*) bvh->allocPrimitiveBlocks(threadIndex,N);
-      BezierRefList::block_iterator_unsafe iter(prims);
-      for (size_t i=0; i<N; i++) leaf[i].fill(iter,scene);
-      assert(!iter);
-
-      /* free all primitive blocks */
-      while (BezierRefList::item* block = prims.take())
-	alloc.free(threadIndex,block);
-      
-      return bvh->encodeLeaf((char*)leaf,N);
-    }
-    
     template<bool Parallel>
     Split BVH4HairBuilder::find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const PrimInfo& sinfo)
     {
