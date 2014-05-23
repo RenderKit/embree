@@ -40,60 +40,60 @@ namespace embree
   {
     template<>
     BVH4Builder2T<Triangle1>::BVH4Builder2T (BVH4* bvh, Scene* scene)
-      : BVH4Builder2(bvh,scene,NULL,0,0,false,sizeof(Triangle1),2,inf) {}
+      : BVH4Builder2(bvh,scene,NULL,0,0,1.0f,false,sizeof(Triangle1),2,inf) {}
 
     template<>
     BVH4Builder2T<Triangle4>::BVH4Builder2T (BVH4* bvh, Scene* scene)
-      : BVH4Builder2(bvh,scene,NULL,2,2,false,sizeof(Triangle4),4,inf) {}
+      : BVH4Builder2(bvh,scene,NULL,2,2,1.0f,false,sizeof(Triangle4),4,inf) {}
 
 #if defined(__AVX__)
     template<>
     BVH4Builder2T<Triangle8>::BVH4Builder2T (BVH4* bvh, Scene* scene)
-      : BVH4Builder2(bvh,scene,NULL,3,2,false,sizeof(Triangle8),8,inf) {}
+      : BVH4Builder2(bvh,scene,NULL,3,2,1.0f,false,sizeof(Triangle8),8,inf) {}
 #endif
 
     template<>
     BVH4Builder2T<Triangle1v>::BVH4Builder2T (BVH4* bvh, Scene* scene)
-      : BVH4Builder2(bvh,scene,NULL,0,0,false,sizeof(Triangle1v),2,inf) {}
+      : BVH4Builder2(bvh,scene,NULL,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
 
     template<>
     BVH4Builder2T<Triangle4v>::BVH4Builder2T (BVH4* bvh, Scene* scene)
-      : BVH4Builder2(bvh,scene,NULL,2,2,false,sizeof(Triangle4v),4,inf) {}
+      : BVH4Builder2(bvh,scene,NULL,2,2,1.0f,false,sizeof(Triangle4v),4,inf) {}
     
     template<>
     BVH4Builder2T<Triangle4i>::BVH4Builder2T (BVH4* bvh, Scene* scene)
-      : BVH4Builder2(bvh,scene,NULL,2,2,true,sizeof(Triangle4i),4,inf) {}
+      : BVH4Builder2(bvh,scene,NULL,2,2,1.0f,true,sizeof(Triangle4i),4,inf) {}
 
     template<>
     BVH4Builder2T<Triangle1>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4Builder2(bvh,mesh->parent,mesh,0,0,false,sizeof(Triangle1),2,inf) {}
+      : BVH4Builder2(bvh,mesh->parent,mesh,0,0,1.0f,false,sizeof(Triangle1),2,inf) {}
 
     template<>
     BVH4Builder2T<Triangle4>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4Builder2(bvh,mesh->parent,mesh,2,2,false,sizeof(Triangle4),4,inf) {}
+      : BVH4Builder2(bvh,mesh->parent,mesh,2,2,1.0f,false,sizeof(Triangle4),4,inf) {}
     
 #if defined(__AVX__)
     template<>
     BVH4Builder2T<Triangle8>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4Builder2(bvh,mesh->parent,mesh,3,2,false,sizeof(Triangle8),8,inf) {}
+      : BVH4Builder2(bvh,mesh->parent,mesh,3,2,1.0f,false,sizeof(Triangle8),8,inf) {}
 #endif
 
     template<>
     BVH4Builder2T<Triangle1v>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4Builder2(bvh,mesh->parent,mesh,0,0,false,sizeof(Triangle1v),2,inf) {}
+      : BVH4Builder2(bvh,mesh->parent,mesh,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
 
     template<>
     BVH4Builder2T<Triangle4v>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4Builder2(bvh,mesh->parent,mesh,2,2,false,sizeof(Triangle4v),4,inf) {}
+      : BVH4Builder2(bvh,mesh->parent,mesh,2,2,1.0f,false,sizeof(Triangle4v),4,inf) {}
     
     template<>
     BVH4Builder2T<Triangle4i>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4Builder2(bvh,mesh->parent,mesh,2,2,true,sizeof(Triangle4i),4,inf) {}
+      : BVH4Builder2(bvh,mesh->parent,mesh,2,2,1.0f,true,sizeof(Triangle4i),4,inf) {}
 
-     BVH4Builder2::BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-      : scene(scene), mesh(mesh), bvh(bvh), primTy(bvh->primTy), logBlockSize(logBlockSize), logSAHBlockSize(logSAHBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
+    BVH4Builder2::BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, size_t logSAHBlockSize, float intCost, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+      : scene(scene), mesh(mesh), bvh(bvh), logBlockSize(logBlockSize), logSAHBlockSize(logSAHBlockSize), intCost(intCost), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
      {
-      size_t maxLeafPrims = BVH4::maxLeafBlocks*primTy.blockSize;
+       size_t maxLeafPrims = BVH4::maxLeafBlocks*(1<<logBlockSize);
       if (maxLeafPrims < this->maxLeafSize) 
 	this->maxLeafSize = maxLeafPrims;
     }
@@ -102,7 +102,7 @@ namespace embree
     typename BVH4Builder2::NodeRef BVH4Builder2T<Triangle>::createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo)
     {
       /* allocate leaf node */
-      size_t N = primTy.blocks(pinfo.size());
+      size_t N = blocks(pinfo.size());
       Triangle* leaf = (Triangle*) bvh->allocPrimitiveBlocks(threadIndex,N);
       assert(N <= (size_t)BVH4::maxLeafBlocks);
       
@@ -166,8 +166,8 @@ namespace embree
     __forceinline size_t BVH4Builder2::createNode(size_t threadIndex, size_t threadCount, BVH4Builder2* parent, BuildRecord& record, BuildRecord records_o[BVH4::N])
     {
       /*! compute leaf and split cost */
-      const float leafSAH  = parent->primTy.intCost*record.pinfo.leafSAH(parent->logBlockSize);
-      const float splitSAH = BVH4::travCost*halfArea(record.pinfo.geomBounds)+parent->primTy.intCost*record.split.splitSAH();
+      const float leafSAH  = parent->intCost*record.pinfo.leafSAH(parent->logBlockSize);
+      const float splitSAH = BVH4::travCost*halfArea(record.pinfo.geomBounds)+parent->intCost*record.split.splitSAH();
       assert(TriRefList::block_iterator_unsafe(prims).size() == record.pinfo.size());
       assert(record.pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
       
