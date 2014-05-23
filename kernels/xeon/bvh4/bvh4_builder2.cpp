@@ -145,7 +145,7 @@ namespace embree
 #if defined(__AVX__)
     template<>
     BVH4Builder2T<Triangle8>::BVH4Builder2T (BVH4* bvh, Scene* scene)
-      : BVH4Builder2(bvh,scene,NULL,3,false,sizeof(Triangle8),8,inf) {}
+      : BVH4Builder2(bvh,scene,NULL,2,false,sizeof(Triangle8),8,inf) {}
 #endif
 
     template<>
@@ -171,7 +171,7 @@ namespace embree
 #if defined(__AVX__)
     template<>
     BVH4Builder2T<Triangle8>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4Builder2(bvh,mesh->parent,mesh,3,false,sizeof(Triangle8),8,inf) {}
+      : BVH4Builder2(bvh,mesh->parent,mesh,2,false,sizeof(Triangle8),8,inf) {}
 #endif
 
     template<>
@@ -288,13 +288,13 @@ namespace embree
     template<bool PARALLEL>
     const Split BVH4Builder2::find(size_t threadIndex, size_t threadCount, size_t depth, TriRefList& prims, const PrimInfo& pinfo, bool spatial)
     {
-      ObjectPartition::Split osplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,      prims,pinfo,2); // FIXME: hardcoded constant
+      ObjectPartition::Split osplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,      prims,pinfo,logBlockSize);
       return osplit;
       if (!spatial) {
 	if (osplit.sah == float(inf)) return Split();
 	else return osplit;
       }
-      SpatialSplit   ::Split ssplit = SpatialSplit   ::find<PARALLEL>(threadIndex,threadCount,scene,prims,pinfo,2); // FIXME: hardcoded constant
+      SpatialSplit   ::Split ssplit = SpatialSplit   ::find<PARALLEL>(threadIndex,threadCount,scene,prims,pinfo,logBlockSize);
       const float bestSAH = min(osplit.sah,ssplit.sah);
       if      (bestSAH == osplit.sah) return osplit; 
       else if (bestSAH == ssplit.sah) return ssplit;
@@ -304,7 +304,7 @@ namespace embree
     typename BVH4Builder2::NodeRef BVH4Builder2::BuildTask::recurse(size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split)
     {
       /*! compute leaf and split cost */
-      const float leafSAH  = parent->primTy.intCost*pinfo.leafSAH(2);
+      const float leafSAH  = parent->primTy.intCost*pinfo.leafSAH(parent->logBlockSize);
       const float splitSAH = BVH4::travCost*halfArea(pinfo.geomBounds)+parent->primTy.intCost*split.splitSAH();
       assert(TriRefList::block_iterator_unsafe(prims).size() == pinfo.size());
       assert(pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
@@ -328,7 +328,7 @@ namespace embree
 	ssize_t bestChild = -1;
 	for (size_t i=0; i<numChildren; i++) 
 	{
-	  float dSAH = csplit[i].splitSAH()-cinfo[i].leafSAH(2);
+	  float dSAH = csplit[i].splitSAH()-cinfo[i].leafSAH(parent->logBlockSize);
 	  if (cinfo[i].size() <= parent->minLeafSize) continue; 
 	  if (cinfo[i].size() > parent->maxLeafSize) dSAH = min(0.0f,dSAH); //< force split for large jobs
 	  if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
@@ -387,7 +387,7 @@ namespace embree
     void BVH4Builder2::SplitTask::recurse(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)
     {
       /*! compute leaf and split cost */
-      const float leafSAH  = parent->primTy.intCost*pinfo.leafSAH(2);
+      const float leafSAH  = parent->primTy.intCost*pinfo.leafSAH(parent->logBlockSize);
       const float splitSAH = BVH4::travCost*halfArea(pinfo.geomBounds)+parent->primTy.intCost*split.splitSAH();
       assert(TriRefList::block_iterator_unsafe(prims).size() == pinfo.size());
       assert(pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
@@ -414,7 +414,7 @@ namespace embree
 	ssize_t bestChild = -1;
 	for (size_t i=0; i<numChildren; i++) 
 	{
-	  float dSAH = csplit[i].splitSAH()-cinfo[i].leafSAH(2);
+	  float dSAH = csplit[i].splitSAH()-cinfo[i].leafSAH(parent->logBlockSize);
 	  if (cinfo[i].size() <= parent->minLeafSize) continue; 
 	  if (cinfo[i].size() > parent->maxLeafSize) dSAH = min(0.0f,dSAH); //< force split for large jobs
 	  if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }

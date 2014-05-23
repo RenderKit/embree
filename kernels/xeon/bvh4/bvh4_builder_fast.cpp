@@ -58,7 +58,7 @@ namespace embree
 
 #if defined(__AVX__)
     BVH4Triangle8BuilderFast::BVH4Triangle8BuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BuilderFast(bvh,scene,NULL,3,false,sizeof(Triangle8),8,inf) {}
+      : BVH4BuilderFast(bvh,scene,NULL,2,false,sizeof(Triangle8),8,inf) {}
 #endif
     
     BVH4Triangle1vBuilderFast::BVH4Triangle1vBuilderFast (BVH4* bvh, Scene* scene)
@@ -78,7 +78,7 @@ namespace embree
 
 #if defined(__AVX__)
     BVH4Triangle8BuilderFast::BVH4Triangle8BuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,3,false,sizeof(Triangle8),8,inf) {}
+      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,false,sizeof(Triangle8),8,inf) {}
 #endif
     
     BVH4Triangle1vBuilderFast::BVH4Triangle1vBuilderFast (BVH4* bvh, TriangleMesh* mesh)
