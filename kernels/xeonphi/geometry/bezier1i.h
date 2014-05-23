@@ -47,6 +47,22 @@ namespace embree
       return enlarge(b,Vec3fa(b.upper.w));
     }
 
+    __forceinline mic2f getBounds() const 
+    {
+      const mic_f v0 = broadcast4to16f((float*)&p[0]);
+      const mic_f v1 = broadcast4to16f((float*)&p[1]);
+      const mic_f v2 = broadcast4to16f((float*)&p[2]);
+      const mic_f v3 = broadcast4to16f((float*)&p[3]);
+      
+      const mic_f b_min = min(min(v0,v1),min(v2,v3));
+      const mic_f b_max = max(max(v0,v1),max(v2,v3));
+      
+      const mic_f b_min_r = b_min - swDDDD(b_max);
+      const mic_f b_max_r = b_max + swDDDD(b_max);
+      
+      return mic2f(b_min_r,b_max_r);
+    }
+
     template<int HINT>
     __forceinline void prefetchControlPoints() const {
       prefetch<HINT>(p + 0);

@@ -364,9 +364,101 @@ namespace embree
     return true;
   }
 
-  __forceinline bool BVH4HairBuilder::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
+  __forceinline bool BVH4HairBuilder::split(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t mode, const size_t threadID, const size_t numThreads)
   {
-    return false;
+    /* mark as leaf if leaf threshold reached */
+    if (current.items() <= BVH4Hair::N) {
+      current.createLeaf();
+      return false;
+    }
+    
+    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
+    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
+
+    const mic_f centroidBoundsMin_2 = centroidMin;
+    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
+    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+
+    mic_f leftArea[3];
+    mic_f rightArea[3];
+    mic_i leftNum[3];
+
+    fastbin<Bezier1i>(prims,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+
+    const unsigned int items = current.items();
+    const float voxelArea = area(current.bounds.geometry);
+    Split split;
+    split.cost = items * voxelArea;
+
+    for (size_t dim = 0;dim < 3;dim++) 
+      {
+	if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
+
+	const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
+	const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
+	const mic_i lnum    = leftNum[dim];   // bin16.prefix_count(dim);
+
+	const mic_i rnum    = mic_i(items) - lnum;
+	const mic_i lblocks = (lnum + mic_i(3)) >> 2;
+	const mic_i rblocks = (rnum + mic_i(3)) >> 2;
+	const mic_m m_lnum  = lnum == 0;
+	const mic_m m_rnum  = rnum == 0;
+	const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
+
+	if (lt(cost,mic_f(split.cost)))
+	  {
+
+	    const mic_f min_cost    = vreduce_min(cost); 
+	    const mic_m m_pos       = min_cost == cost;
+	    const unsigned long pos = bitscan64(m_pos);	    
+
+	    assert(pos < 15);
+
+	    if (pos < 15)
+	      {
+		split.cost    = cost[pos];
+		split.pos     = pos+1;
+		split.dim     = dim;	    
+		split.numLeft = lnum[pos];
+	      }
+	  }
+      };
+
+    if (unlikely(split.pos == -1)) 
+      split_fallback(prims,current,leftChild,rightChild);
+   // /* partitioning of items */
+    else 
+      {
+	leftChild.bounds.reset();
+	rightChild.bounds.reset();
+
+	const unsigned int mid = partitionPrimitives<L2_PREFETCH_ITEMS>(prims ,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
+
+	assert(area(leftChild.bounds.geometry) >= 0.0f);
+	assert(current.begin + mid == current.begin + split.numLeft);
+
+	if (unlikely(current.begin + mid == current.begin || current.begin + mid == current.end)) 
+	  {
+	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
+	    DBG_PRINT(split);
+	    DBG_PRINT(current);
+	    DBG_PRINT(mid);
+	    split_fallback(prims,current,leftChild,rightChild);	    
+	  }
+	else
+	  {
+	    const unsigned int current_mid = current.begin + split.numLeft;
+	    leftChild.init(current.begin,current_mid);
+	    rightChild.init(current_mid,current.end);
+	  }
+
+      }
+
+
+
+    if (leftChild.items()  <= BVH4Hair::N) leftChild.createLeaf();
+    if (rightChild.items() <= BVH4Hair::N) rightChild.createLeaf();	
+    return true;
   }
   
 
