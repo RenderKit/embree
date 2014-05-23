@@ -86,12 +86,14 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4Triangle8BuilderMorton);
   DECLARE_SCENE_BUILDER(BVH4Triangle1vBuilderMorton);
   DECLARE_SCENE_BUILDER(BVH4Triangle4vBuilderMorton);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4iBuilderMorton);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderMorton);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilderMorton);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshBuilderMorton);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshBuilderMorton);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshBuilderMorton);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshBuilderMorton);
 
   Builder* BVH4BuilderObjectSplit1 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
   Builder* BVH4BuilderObjectSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
@@ -133,12 +135,14 @@ namespace embree
     SELECT_SYMBOL_AVX(features,BVH4Triangle8BuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vBuilderMorton);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iBuilderMorton);
     
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderMorton);
     SELECT_SYMBOL_AVX(features,BVH4Triangle8MeshBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderMorton);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderMorton);
 
     /* select intersectors1 */
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iIntersector1);
@@ -420,6 +424,7 @@ namespace embree
     else if (g_builder == "spatialsplit") builder = BVH4BuilderSpatialSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "objectsplit" ) builder = BVH4BuilderObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
     else if (g_builder == "fast"        ) builder = BVH4Triangle4iBuilderFast(accel,scene);
+    else if (g_builder == "morton"      ) builder = BVH4Triangle4iBuilderMorton(accel,scene);
     else throw std::runtime_error("unknown builder "+g_builder+" for BVH4<Triangle4i>");
 
     scene->needVertices = true;

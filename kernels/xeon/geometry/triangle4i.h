@@ -52,6 +52,23 @@ namespace embree
       return __bsf(~movemask(valid()));
     }
 
+    /*! calculate the bounds of the triangles */
+    __forceinline const BBox3fa bounds() const 
+    {
+      BBox3fa bounds = empty;
+      for (size_t i=0; i<4 && geomID[i] != -1; i++)
+      {
+	const int* base = (int*) v0[i];
+	const Vec3fa p0 = *(Vec3fa*)(base);
+	const Vec3fa p1 = *(Vec3fa*)(base+v1[i]);
+	const Vec3fa p2 = *(Vec3fa*)(base+v2[i]);
+	bounds.extend(p0);
+	bounds.extend(p1);
+	bounds.extend(p2);
+      }
+      return bounds;
+    }
+
   public:
     const Vec3f* v0[4];  //!< Pointer to 1st vertex.
     ssei v1;             //!< Offset to 2nd vertex.

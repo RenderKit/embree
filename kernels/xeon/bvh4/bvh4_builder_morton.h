@@ -251,85 +251,54 @@ namespace embree
     class BVH4Triangle1BuilderMorton : public BVH4BuilderMorton
     {
     public:
-
-      /*! Constructor for scene builder */
       BVH4Triangle1BuilderMorton (BVH4* bvh, Scene* scene);
-      
-      /*! Constructor for triangle mesh builder */
       BVH4Triangle1BuilderMorton (BVH4* bvh, TriangleMesh* mesh);
-      
-      /*! calculates bounding box of a leaf */
       BBox3fa leafBounds(NodeRef& ref) const;
-
-      /*! creates a leaf node */
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
 
     class BVH4Triangle4BuilderMorton : public BVH4BuilderMorton
     {
     public:
-
-      /*! Constructor for scene builder */
       BVH4Triangle4BuilderMorton (BVH4* bvh, Scene* scene);
-      
-      /*! Constructor for triangle mesh builder */
       BVH4Triangle4BuilderMorton (BVH4* bvh, TriangleMesh* mesh);
-      
-      /*! calculates bounding box of a leaf */
       BBox3fa leafBounds(NodeRef& ref) const;
-
-      /*! creates a leaf node */
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
 
     class BVH4Triangle8BuilderMorton : public BVH4BuilderMorton
     {
     public:
-
-      /*! Constructor for scene builder */
       BVH4Triangle8BuilderMorton (BVH4* bvh, Scene* scene);
-      
-      /*! Constructor for triangle mesh builder */
       BVH4Triangle8BuilderMorton (BVH4* bvh, TriangleMesh* mesh);
-      
-      /*! calculates bounding box of a leaf */
       BBox3fa leafBounds(NodeRef& ref) const;
-
-      /*! creates a leaf node */
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
 
     class BVH4Triangle1vBuilderMorton : public BVH4BuilderMorton
     {
     public:
-
-      /*! Constructor for scene builder */
       BVH4Triangle1vBuilderMorton (BVH4* bvh, Scene* scene);
-      
-      /*! Constructor for triangle mesh builder */
       BVH4Triangle1vBuilderMorton (BVH4* bvh, TriangleMesh* mesh);
-
-      /*! calculates bounding box of a leaf */
       BBox3fa leafBounds(NodeRef& ref) const;
-
-      /*! creates a leaf node */
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
 
     class BVH4Triangle4vBuilderMorton : public BVH4BuilderMorton
     {
     public:
-
-      /*! Constructor for scene builder */
       BVH4Triangle4vBuilderMorton (BVH4* bvh, Scene* scene);
-      
-      /*! Constructor for triangle mesh builder */
       BVH4Triangle4vBuilderMorton (BVH4* bvh, TriangleMesh* mesh);
-
-      /*! calculates bounding box of a leaf */
       BBox3fa leafBounds(NodeRef& ref) const;
+      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+    };
 
-      /*! creates a leaf node */
+    class BVH4Triangle4iBuilderMorton : public BVH4BuilderMorton
+    {
+    public:
+      BVH4Triangle4iBuilderMorton (BVH4* bvh, Scene* scene);
+      BVH4Triangle4iBuilderMorton (BVH4* bvh, TriangleMesh* mesh);
+      BBox3fa leafBounds(NodeRef& ref) const;
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
   }
