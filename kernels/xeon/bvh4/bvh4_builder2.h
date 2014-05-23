@@ -91,6 +91,8 @@ namespace embree
       template<bool PARALLEL>
       const Split find(size_t threadIndex, size_t threadCount, size_t depth, TriRefList& prims, const PrimInfo& pinfo, bool spatial);
 
+      size_t recurse(size_t threadIndex, size_t threadCount, BVH4Builder2* parent, BuildRecord& record, BuildRecord records_o[BVH4::N]);
+
       /***********************************************************************************************************************
        *                                      Single Threaded Build Task
        **********************************************************************************************************************/
@@ -110,7 +112,7 @@ namespace embree
 	void run(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event);
 	
 	/*! Recursively finishes the BVH4 construction. */
-	void recurse(BuildRecord& record);
+	void recurse(BVH4Builder2* parent, BuildRecord& record);
 	
       private:
 	size_t threadIndex;
