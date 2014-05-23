@@ -117,7 +117,8 @@ namespace embree
 
     unsigned int flags;
     float sArea;
-    size_t parentNode; 
+    unsigned int parentNode; 
+    unsigned int parentBoxID; 
 
     BuildRecord()
       {
@@ -126,11 +127,12 @@ namespace embree
 
     __forceinline void init(const unsigned int _begin, const unsigned int _end)
     {
-      begin  = _begin;
-      end    = _end;
-      parentID = (unsigned int)-1;
-      sArea = area(bounds.geometry);
-      flags = BUILD_RECORD_NODE;
+      begin       = _begin;
+      end         = _end;
+      parentID    = (unsigned int)-1;
+      parentBoxID = (unsigned int)-1;
+      sArea       = area(bounds.geometry);
+      flags       = BUILD_RECORD_NODE;
     }
 
     __forceinline void init(const Centroid_Scene_AABB& _bounds, const unsigned int _begin, const unsigned int _end)

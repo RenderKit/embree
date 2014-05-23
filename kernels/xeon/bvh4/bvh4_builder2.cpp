@@ -141,7 +141,7 @@ namespace embree
       /*! compute leaf and split cost */
       const float leafSAH  = parent->intCost*record.pinfo.leafSAH(parent->logSAHBlockSize);
       const float splitSAH = BVH4::travCost*halfArea(record.pinfo.geomBounds)+parent->intCost*record.split.splitSAH();
-      assert(TriRefList::block_iterator_unsafe(prims).size() == record.pinfo.size());
+      //assert(TriRefList::block_iterator_unsafe(prims).size() == record.pinfo.size());
       assert(record.pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
       
       /*! create a leaf node when threshold reached or SAH tells us to stop */

@@ -48,6 +48,13 @@ namespace embree
     0,0,0,1
   };
 
+  __aligned(64) float BVH4Hair::UnalignedNode::invalidMatrix[16] = {
+    NAN,0,0,0,
+    0,NAN,0,0,
+    0,0,NAN,0,
+    NAN,NAN,NAN,NAN
+  };
+
   void BVH4Hair::UnalignedNode::convertFromBVH4iNode(const BVH4i::Node &bvh4i_node, UnalignedNode *ptr)
   {    
     setIdentityMatrix();

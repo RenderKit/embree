@@ -109,6 +109,22 @@ namespace embree
       unsigned int primID[4];
 
       static float identityMatrix[16];
+      static float  invalidMatrix[16];
+
+      __forceinline void setInvalid()
+      {
+	const mic_f c0 = broadcast4to16f(&invalidMatrix[ 0]);
+	const mic_f c1 = broadcast4to16f(&invalidMatrix[ 4]);
+	const mic_f c2 = broadcast4to16f(&invalidMatrix[ 8]);
+	
+	matrixColumnXYZW[0] = c0;
+	matrixColumnXYZW[1] = c1;
+	matrixColumnXYZW[2] = c2;
+
+	children[0] = children[1] = children[2] = children[3] = NULL;
+	geomID[0] = geomID[1] = geomID[2] = geomID[3] = (unsigned int)-1;
+	primID[0] = primID[1] = primID[2] = primID[3] = (unsigned int)-1;
+      }
 
       __forceinline void setIdentityMatrix() 
       {
@@ -120,16 +136,6 @@ namespace embree
 	matrixColumnXYZW[1] = c1;
 	matrixColumnXYZW[2] = c2;
       }
-
-      /* __forceinline const float &matrix(const size_t row, */
-      /* 					const size_t column, */
-      /* 					const size_t matrixID) const */
-      /* { */
-      /* 	assert(matrixID < 4); */
-      /* 	assert(row < 4); */
-      /* 	assert(column < 3); */
-      /* 	return matrixColumnXYZW[column][4*matrixID+row]; */
-      /* }  */
 
       __forceinline float &matrix(const size_t row,
 				  const size_t column,
@@ -170,6 +176,36 @@ namespace embree
 	matrix(3,1,matrixID) = ty;
 	matrix(3,2,matrixID) = tz;
       } 
+
+      __forceinline void setMatrix(const BBox3fa &b, const size_t m)
+      {
+	const float dx = b.upper.x - b.lower.x;
+	const float dy = b.upper.y - b.lower.y;
+	const float dz = b.upper.z - b.lower.z;
+	const float inv_dx = 1.0f / dx;
+	const float inv_dy = 1.0f / dy;
+	const float inv_dz = 1.0f / dz;
+	const float min_x = b.lower.x;
+	const float min_y = b.lower.y;
+	const float min_z = b.lower.z;
+	set_scale(inv_dx,inv_dy,inv_dz,m);
+	set_translation(-min_x*inv_dx,-min_y*inv_dy,-min_z*inv_dz,m);
+	
+      }
+
+      __forceinline void createNode(UnalignedNode *b, const size_t m)
+      {
+	child(m) = (size_t)b;
+      }
+
+
+      __forceinline void createLeaf(unsigned int offset, 
+				    unsigned int items,
+				    const size_t m)
+      {
+	assert(items < BVH4Hair::N);
+	child(m) = ((size_t)offset << encodingBits) | BVH4Hair::leaf_mask | items;
+      }
 
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { return children[i]; }

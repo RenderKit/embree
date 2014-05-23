@@ -285,23 +285,28 @@ namespace embree
 
     /* allocate and initialize root node */
     atomicID.reset(1);
-    FATAL("1");
-
-    //node[0].lower = global_bounds.geometry.lower;
-    //node[0].upper = global_bounds.geometry.upper;
+    node[0].setInvalid();
+    node[0].setMatrix(global_bounds.geometry,0);
     
     /* create initial build record */
     BuildRecord br;
     br.init(global_bounds,0,numPrimitives);
     br.depth = 1;
-    br.parentID = 0;
+    br.parentID    = 0;
+    br.parentBoxID = 0;
+
+    /* node allocator */
+    NodeAllocator alloc(atomicID,numAllocatedNodes);
         
+#if 1
+    recurseSAH(br,alloc,RECURSE,threadIndex,threadCount);
+    
+#else
     /* push initial build record to global work stack */
     global_workStack.reset();
     global_workStack.push_nolock(br);    
 
     /* work in multithreaded toplevel mode until sufficient subtasks got generated */    
-    NodeAllocator alloc(atomicID,numAllocatedNodes);
     const size_t coreCount = (threadCount+3)/4;
     while (global_workStack.size() < coreCount &&
 	   global_workStack.size()+BVH4i::N <= SIZE_GLOBAL_WORK_STACK) 
@@ -324,16 +329,15 @@ namespace embree
     /* now process all created subtasks on multiple threads */    
     TIMER(msec = getSeconds());    
     LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
-    numNodes = atomicID >> 2;
+    numNodes = atomicID; // >> 2;
     DBG(DBG_PRINT(atomicID));
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
-
+#endif
     
     /* update BVH4 */
-    FATAL("FIX");
-    bvh4hair->root = bvh4hair->qbvh[0].lower[0].child; 
-    bvh4hair->bounds = BBox3fa(*(Vec3fa*)&bvh4hair->qbvh->lower[0],*(Vec3fa*)&bvh4hair->qbvh->upper[0]);
+    //bvh4hair->root   = bvh4hair->qbvh[0].lower[0].child; 
+    bvh4hair->bounds = global_bounds.geometry;
     
     /* release all threads again */
     LockStepTaskScheduler::releaseThreads(threadCount);
@@ -343,8 +347,143 @@ namespace embree
       dt = getSeconds()-t0;
   }
 
-  void BVH4HairBuilder::recurseSAH(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads)
+  bool split_fallback(Bezier1i * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
   {
+    const unsigned int center = (current.begin + current.end)/2;
+    
+    Centroid_Scene_AABB left; left.reset();
+    for (size_t i=current.begin; i<center; i++)
+      left.extend(primref[i].bounds());
+    leftChild.init(left,current.begin,center);
+    
+    Centroid_Scene_AABB right; right.reset();
+    for (size_t i=center; i<current.end; i++)
+      right.extend(primref[i].bounds());	
+    rightChild.init(right,center,current.end);
+    
+    return true;
+  }
+
+  __forceinline bool BVH4HairBuilder::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
+  {
+    return false;
+  }
+  
+
+  __forceinline void BVH4HairBuilder::createLeaf(BuildRecord& current, NodeAllocator& alloc,const size_t threadIndex, const size_t threadCount)
+  {
+#if defined(DEBUG)
+    if (current.depth > BVH4Hair::maxBuildDepthLeaf) 
+      throw std::runtime_error("ERROR: depth limit reached");
+#endif
+    
+    /* create leaf */
+    if (current.items() <= BVH4Hair::N) {
+      node[current.parentID].createLeaf(current.begin,current.items(),current.parentBoxID);
+      return;
+    }
+
+    /* first split level */
+    BuildRecord record0, record1;
+    split_fallback(prims,current,record0,record1);
+
+    /* second split level */
+    BuildRecord children[4];
+    split_fallback(prims,record0,children[0],children[1]);
+    split_fallback(prims,record1,children[2],children[3]);
+
+    /* allocate next four nodes */
+    size_t numChildren = 1;
+    const size_t currentIndex = alloc.get(1);
+
+    node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
+    
+    /* recurse into each child */
+    for (size_t i=0; i<numChildren; i++) 
+    {
+      node[currentIndex].setMatrix(children[i].bounds.geometry, i);
+      children[i].parentID    = currentIndex;
+      children[i].parentBoxID = i;
+      children[i].depth       = current.depth+1;
+      createLeaf(children[i],alloc,threadIndex,threadCount);
+    }
+  }  
+
+
+  void BVH4HairBuilder::recurseSAH(BuildRecord& current, 
+				   NodeAllocator& alloc,
+				   const size_t mode, 
+				   const size_t threadID, 
+				   const size_t numThreads)
+  {
+    __aligned(64) BuildRecord children[BVH4Hair::N];
+
+    /* create leaf node */
+    if (current.depth >= BVH4Hair::maxBuildDepth || current.isLeaf()) {
+      createLeaf(current,alloc,threadID,numThreads);
+      return;
+    }
+
+    /* fill all 4 children by always splitting the one with the largest surface area */
+    unsigned int numChildren = 1;
+    children[0] = current;
+
+    do {
+
+      /* find best child with largest bounding box area */
+      int bestChild = -1;
+      float bestArea = neg_inf;
+      for (unsigned int i=0; i<numChildren; i++)
+      {
+        /* ignore leaves as they cannot get split */
+        if (children[i].isLeaf())
+          continue;
+        
+        /* remember child with largest area */
+        if (children[i].sceneArea() > bestArea) { 
+          bestArea = children[i].sceneArea();
+          bestChild = i;
+        }
+      }
+      if (bestChild == -1) break;
+
+      /*! split best child into left and right child */
+      __aligned(64) BuildRecord left, right;
+      if (!split(children[bestChild],left,right,mode,threadID,numThreads)) 
+        continue;
+      
+      /* add new children left and right */
+      left.depth = right.depth = current.depth+1;
+      children[bestChild] = children[numChildren-1];
+      children[numChildren-1] = left;
+      children[numChildren+0] = right;
+      numChildren++;
+      
+    } while (numChildren < BVH4Hair::N);
+
+    /* create leaf node if no split is possible */
+    if (numChildren == 1) {
+      createLeaf(current,alloc,threadID,numThreads);
+      return;
+    }
+
+    /* allocate next four nodes */
+    const size_t currentIndex = alloc.get(1);
+    node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
+
+    /* init used/unused nodes */
+    node[currentIndex].setInvalid();
+
+    /* recurse into each child */
+    for (unsigned int i=0; i<numChildren; i++) 
+    {
+      //node[currentIndex+i].lower = (Vec3fa) children[i].bounds.geometry.lower;
+      //node[currentIndex+i].upper = (Vec3fa) children[i].bounds.geometry.upper;
+      node[currentIndex].setMatrix(children[i].bounds.geometry,i);
+      children[i].parentID    = currentIndex;
+      children[i].parentBoxID = i;
+      recurseSAH(children[i],alloc,mode,threadID,numThreads);
+    }    
   }
 
   void BVH4HairBuilder::buildSubTree(BuildRecord& current, 

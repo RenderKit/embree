@@ -103,6 +103,10 @@ namespace embree
     /*! recursive build function */
     void recurseSAH(BuildRecord& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads);
 
+    bool split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads);
+  
+    void createLeaf(BuildRecord& current, NodeAllocator& alloc,const size_t threadIndex, const size_t threadCount);
+
 
     TASK_RUN_FUNCTION(BVH4HairBuilder,build_parallel_hair);
     TASK_FUNCTION(BVH4HairBuilder,computePrimRefsBezierCurves);

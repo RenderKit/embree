@@ -92,8 +92,6 @@ namespace embree
 	      {
 		BuildRecord br;
 		if (!local_workStack[globalCoreID].pop_largest(br)) break;
-
-		//recurseSAH(br,alloc,FILL_LOCAL_QUEUES,globalThreadID,4);
 		buildSubTree(br,alloc,FILL_LOCAL_QUEUES,globalThreadID,4);
 	      }
 
@@ -118,7 +116,6 @@ namespace embree
 		  break;
 	      }
 	    local_workStack[globalCoreID].mutex.inc();
-	    //recurseSAH(br,alloc,RECURSE,threadID,numThreads);
 	    buildSubTree(br,alloc,RECURSE,threadID,numThreads);
 	    local_workStack[globalCoreID].mutex.dec();
 	  }
@@ -143,9 +140,7 @@ namespace embree
         if (!success) break; 
 	
 	local_workStack[globalCoreID].mutex.inc();
-	//recurseSAH(br,alloc,RECURSE,threadID,numThreads);
 	buildSubTree(br,alloc,RECURSE,threadID,numThreads);
-
 	local_workStack[globalCoreID].mutex.dec();
 
       }
