@@ -64,8 +64,8 @@ namespace embree
 	needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
      {
        size_t maxLeafPrims = BVH4::maxLeafBlocks*(1<<logBlockSize);
-      if (maxLeafPrims < this->maxLeafSize) 
-	this->maxLeafSize = maxLeafPrims;
+       if (maxLeafPrims < this->maxLeafSize) this->maxLeafSize = maxLeafPrims;
+       needAllThreads = true;
     }
 
     template<typename Triangle>
@@ -120,7 +120,7 @@ namespace embree
     const Split BVH4Builder2::find(size_t threadIndex, size_t threadCount, size_t depth, TriRefList& prims, const PrimInfo& pinfo, bool spatial)
     {
       ObjectPartition::Split osplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,      prims,pinfo,logSAHBlockSize);
-      if (!enableSpatialSplits || !spatial) {
+      if (!spatial) {
 	if (osplit.sah == float(inf)) return Split();
 	else return osplit;
       }
@@ -191,8 +191,8 @@ namespace embree
 	  remaining = atomic_add(&parent->remainingReplications,-replications);
 
 	/* find new splits */
-	lrecord.split = parent->find<PARALLEL>(threadIndex,threadCount,record.depth,lrecord.prims,lrecord.pinfo,remaining > 0);
-	rrecord.split = parent->find<PARALLEL>(threadIndex,threadCount,record.depth,rrecord.prims,rrecord.pinfo,remaining > 0);
+	lrecord.split = parent->find<PARALLEL>(threadIndex,threadCount,record.depth,lrecord.prims,lrecord.pinfo,parent->enableSpatialSplits && remaining > 0);
+	rrecord.split = parent->find<PARALLEL>(threadIndex,threadCount,record.depth,rrecord.prims,rrecord.pinfo,parent->enableSpatialSplits && remaining > 0);
 	records_o[bestChild  ] = lrecord;
 	records_o[numChildren] = rrecord;
 	numChildren++;
@@ -207,6 +207,14 @@ namespace embree
       }
       *record.dst = parent->bvh->encodeNode(node);
       return numChildren;
+    }
+
+    void BVH4Builder2::finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
+    {
+      BuildRecord children[BVH4::N];
+      size_t N = createNode<false>(threadIndex,threadCount,this,record,children);
+      for (size_t i=0; i<N; i++)
+	finish_build(threadIndex,threadCount,children[i]);
     }
 
     void BVH4Builder2::continue_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
@@ -236,14 +244,6 @@ namespace embree
       }
     }
 
-    void BVH4Builder2::finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
-    {
-      BuildRecord children[BVH4::N];
-      size_t N = createNode<false>(threadIndex,threadCount,this,record,children);
-      for (size_t i=0; i<N; i++)
-	finish_build(threadIndex,threadCount,children[i]);
-    }
-    
     void BVH4Builder2::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
       while (activeBuildRecords)
@@ -282,27 +282,38 @@ namespace embree
     
     void BVH4Builder2::build(size_t threadIndex, size_t threadCount) 
     {
-      size_t numPrimitives = scene->numTriangles;
-      bvh->init(2*numPrimitives); // FIXME: 2x
-      remainingReplications = numPrimitives;
+      /*! calculate number of primitives */
+      size_t numPrimitives = 0;
+      if (mesh) numPrimitives = mesh->numTriangles;
+      else      numPrimitives = scene->numTriangles;
+
+      /*! set maximal amount of primitive replications for spatial split mode */
+      if (enableSpatialSplits)
+	remainingReplications = numPrimitives;
+
+      /*! initialize internal buffers of BVH */
+      bvh->init(numPrimitives+remainingReplications);
+      
+      /*! skip build for empty scene */
       if (numPrimitives == 0) 
 	return;
       
-      if (g_verbose >= 2) 
-	std::cout << "building BVH4<" << bvh->primTy.name << "> with SAH builder2 ... " << std::flush;
-      
+      /*! verbose mode */
       double t0 = 0.0, t1 = 0.0f;
-      if (g_verbose >= 2 || g_benchmark)
+      if (g_verbose >= 2) {
+	std::cout << "building BVH4<" << bvh->primTy.name << "> with SAH builder2 ... " << std::flush;
 	t0 = getSeconds();
+      }
       
       /* generate list of build primitives */
-      if (mesh) throw std::runtime_error("BVH4Builder2: generation from triangle mesh not yet implemented"); // FIXME
       TriRefList prims; PrimInfo pinfo(empty);
-      TriRefListGen::generate(threadIndex,threadCount,&alloc,scene,prims,pinfo);
+      if (mesh) TriRefListGenFromTriangleMesh::generate(threadIndex,threadCount,&alloc,mesh ,prims,pinfo);
+      else      TriRefListGen                ::generate(threadIndex,threadCount,&alloc,scene,prims,pinfo);
       
-      const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,true);
-      BuildRecord record(1,prims,pinfo,split,&bvh->root);
-      tasks.push_back(record);
+      /* perform initial split */
+      const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);
+      const BuildRecord record(1,prims,pinfo,split,&bvh->root);
+      tasks.push_back(record); 
       activeBuildRecords=1;
 
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
@@ -327,7 +338,7 @@ namespace embree
       /*! process each generated subtask in its own thread */
       TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4Builder2::build");
                   
-      /* finish build */
+      /* perform tree rotations of top part of the tree */
 #if ROTATE_TREE
       for (int i=0; i<5; i++) 
 	BVH4Rotate::rotate(bvh,bvh->root);
@@ -339,19 +350,19 @@ namespace embree
       bvh->numPrimitives = pinfo.size();
       bvh->bounds = pinfo.geomBounds;
       
-      /* free all temporary blocks */
+      /* free all temporary memory blocks */
       Alloc::global.clear();
-      
-      if (g_verbose >= 2 || g_benchmark) 
-	t1 = getSeconds();
-      
+
+      /*! verbose mode */
       if (g_verbose >= 2) {
-	std::cout << "[DONE]" << std::endl;
+	t1 = getSeconds();
+      	std::cout << "[DONE]" << std::endl;
 	std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
 	std::cout << BVH4Statistics(bvh).str();
       }
     }
     
+    /*! entry functions for the builder */
     Builder* BVH4Triangle1Builder2  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Builder2T<Triangle1> ((BVH4*)bvh,scene,mode); }
     Builder* BVH4Triangle4Builder2  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Builder2T<Triangle4> ((BVH4*)bvh,scene,mode); }
 #if defined(__AVX__)
