@@ -21,6 +21,7 @@
 #include "common/scene.h"
 #include "geometry/primitive.h"
 #include "builders/builder_util.h"
+#include "builders/binning.h"
 
 namespace embree
 {
@@ -95,4 +96,33 @@ namespace embree
     TASK_FUNCTION(ParallelBuilderInterface,fillLocalWorkQueues);
     TASK_FUNCTION(ParallelBuilderInterface,buildSubTrees);    
   };
+
+
+ class ParallelBinnedSAHBuilder : public ParallelBuilderInterface
+  {
+    ALIGNED_CLASS;
+  public:
+
+  ParallelBinnedSAHBuilder(BuildSource* source, void* geometry) : ParallelBuilderInterface(source,geometry)
+      {
+      }
+
+  protected:
+
+    /* single structure for all worker threads */
+    __aligned(64) SharedBinningPartitionData global_sharedData;
+
+    /* one 16-bins structure per thread */
+    __aligned(64) Bin16 global_bin16[MAX_MIC_THREADS];
+
+    /* one shared binning/partitoning structure per core */
+    __aligned(64) SharedBinningPartitionData local_sharedData[MAX_MIC_CORES];
+
+
+    static void reduceBinsParallel(const size_t currentThreadID,
+				   const size_t childThreadID,
+				   void *ptr);
+
+  };
+
 };

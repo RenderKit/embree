@@ -106,4 +106,17 @@ namespace embree
       }
 
   }
+
+
+  void ParallelBinnedSAHBuilder::reduceBinsParallel(const size_t currentThreadID,
+						    const size_t childThreadID,
+						    void *ptr)
+  {
+    Bin16 *__restrict__ bin16 = (Bin16*)ptr;
+    bin16[childThreadID].prefetchL2();
+    bin16[currentThreadID].merge(bin16[childThreadID]);
+  }
+
+
+
 };

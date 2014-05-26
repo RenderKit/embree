@@ -88,7 +88,7 @@ namespace embree
 
 
   BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry)
-    : ParallelBuilderInterface(source,geometry),
+    : ParallelBinnedSAHBuilder(source,geometry),
       bvh(bvh),       
       prims(NULL), 
       node(NULL), 
@@ -173,11 +173,9 @@ namespace embree
     assert(node   != 0);
     assert(accel  != 0);
 
-#if 0
-    memset(prims,0,size_primrefs);
-    memset(node,0,size_node);
-    memset(accel,0,size_accel);
-#endif
+    // memset(prims,0,size_primrefs);
+    // memset(node,0,size_node);
+    // memset(accel,0,size_accel);
 
     bvh->accel = accel;
     bvh->qbvh  = (BVH4i::Node*)node;
@@ -498,14 +496,6 @@ namespace embree
   }
 
 
-  void reduceBinsParallel(const size_t currentThreadID,
-			  const size_t childThreadID,
-			  void *ptr)
-  {
-    Bin16 *__restrict__ bin16 = (Bin16*)ptr;
-    bin16[childThreadID].prefetchL2();
-    bin16[currentThreadID].merge(bin16[childThreadID]);
-  }
 
   void BVH4iBuilder::parallelBinningGlobal(const size_t threadID, const size_t numThreads)
   {
