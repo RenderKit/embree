@@ -25,7 +25,7 @@ namespace embree
     }
 
     TriRefListGen::TriRefListGen(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, TriRefList& prims, PrimInfo& pinfo)
-      : scene(scene), ty(ty), numTimeSteps(numTimeSteps), alloc(alloc), numPrimitives(0), prims(prims), pinfo(pinfo)
+      : scene(scene), ty(ty), numTimeSteps(numTimeSteps), alloc(alloc), numPrimitives(0), prims_o(prims), pinfo_o(pinfo)
     {
       /*! calculate number of primitives */
       if ((ty & TRIANGLE_MESH) && (numTimeSteps & 1)) numPrimitives += scene->numTriangles;
@@ -35,12 +35,8 @@ namespace embree
       if ((ty & USER_GEOMETRY)                      ) numPrimitives += scene->numUserGeometries1;
 
       /*! parallel stage */
-      size_t numTasks = min(threadCount,maxTasks);
-      TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,numTasks,"build::trirefgen");
-
-      /*! reduction stage */
-      for (size_t i=0; i<numTasks; i++)
-	pinfo.merge(pinfos[i]);
+      pinfo.reset();
+      TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
     }
     
     void TriRefListGen::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
@@ -50,7 +46,7 @@ namespace embree
       ssize_t cur   = 0;
       
       PrimInfo pinfo(empty);
-      TriRefList::item* block = prims.insert(alloc->malloc(threadIndex)); 
+      TriRefList::item* block = prims_o.insert(alloc->malloc(threadIndex)); 
       for (size_t i=0; i<scene->size(); i++) 
       {
 	const Geometry* geom = scene->get(i);
@@ -69,7 +65,7 @@ namespace embree
 	      const PrimRef prim(mesh->bounds(j),i,j);
 	      pinfo.add(prim.bounds(),prim.center2());
 	      if (likely(block->insert(prim))) continue; 
-	      block = prims.insert(alloc->malloc(threadIndex));
+	      block = prims_o.insert(alloc->malloc(threadIndex));
 	      block->insert(prim);
 	    }
 	    cur += mesh->numTriangles;
@@ -87,7 +83,7 @@ namespace embree
 	      const PrimRef prim(set->bounds(j),i,j);
 	      pinfo.add(prim.bounds(),prim.center2());
 	      if (likely(block->insert(prim))) continue; 
-	      block = prims.insert(alloc->malloc(threadIndex));
+	      block = prims_o.insert(alloc->malloc(threadIndex));
 	      block->insert(prim);
 	    }
 	    cur += set->numCurves;
@@ -104,7 +100,7 @@ namespace embree
 	    const PrimRef prim(set->bounds(j),i,j);
 	    pinfo.add(prim.bounds(),prim.center2());
 	    if (likely(block->insert(prim))) continue; 
-	    block = prims.insert(alloc->malloc(threadIndex));
+	    block = prims_o.insert(alloc->malloc(threadIndex));
 	    block->insert(prim);
 	  }
 	  cur += set->numItems;
@@ -113,7 +109,7 @@ namespace embree
 	}
 	if (cur >= end) break;  
       }
-      pinfos[taskIndex] = pinfo;
+      pinfo_o.atomic_extend(pinfo);
     }
 
     void TriRefListGenFromTriangleMesh::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, TriRefList& prims, PrimInfo& pinfo) {
@@ -121,15 +117,10 @@ namespace embree
     }
 
     TriRefListGenFromTriangleMesh::TriRefListGenFromTriangleMesh(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, TriRefList& prims, PrimInfo& pinfo)
-      : mesh(mesh), alloc(alloc), prims(prims), pinfo(pinfo)
+      : mesh(mesh), alloc(alloc), prims_o(prims), pinfo_o(pinfo)
     {
-      /*! parallel stage */
-      size_t numTasks = min(threadCount,maxTasks);
-      TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,numTasks,"build::trirefgen");
-      
-      /*! reduction stage */
-      for (size_t i=0; i<numTasks; i++)
-	pinfo.merge(pinfos[i]);
+      pinfo_o.reset();
+      TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
     }
     
     void TriRefListGenFromTriangleMesh::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
@@ -139,17 +130,17 @@ namespace embree
       ssize_t cur   = 0;
       
       PrimInfo pinfo(empty);
-      TriRefList::item* block = prims.insert(alloc->malloc(threadIndex)); 
+      TriRefList::item* block = prims_o.insert(alloc->malloc(threadIndex)); 
 
       for (size_t j=0; j<mesh->numTriangles; j++) 
       {
 	const PrimRef prim(mesh->bounds(j),mesh->id,j);
 	pinfo.add(prim.bounds(),prim.center2());
 	if (likely(block->insert(prim))) continue; 
-	block = prims.insert(alloc->malloc(threadIndex));
+	block = prims_o.insert(alloc->malloc(threadIndex));
 	block->insert(prim);
       }
-      pinfos[taskIndex] = pinfo;
+      pinfo_o.atomic_extend(pinfo);
     }
 
     void TriRefArrayGen::generate_sequential(size_t threadIndex, size_t threadCount, const Scene* scene, PrimRef* prims_o, PrimInfo& pinfo_o) {

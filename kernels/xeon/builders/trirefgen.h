@@ -28,7 +28,6 @@ namespace embree
     /*! Generates a list of triangle build primitives from the scene. */
     class TriRefListGen
     {
-      static const size_t maxTasks = 32;
       typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;
 
     public:      
@@ -42,29 +41,20 @@ namespace embree
       /*! parallel task to iterate over the primitives */
       TASK_RUN_FUNCTION(TriRefListGen,task_gen_parallel);
       
-      /* input data */
     private:
       const Scene* scene;                  //!< input geometry
       GeometryTy ty;                       //!< types of geometry to generate
       size_t numTimeSteps;                 //!< number of timesteps to generate
       PrimRefBlockAlloc<PrimRef>* alloc;   //!< allocator for build primitive blocks
       size_t numPrimitives;
-      
-      /* intermediate data */
-    private:
       TaskScheduler::Task task;
-      PrimInfo pinfos[maxTasks];
-      
-      /* output data */
-    public:
-      TriRefList& prims;             //!< list of build primitives
-      PrimInfo& pinfo;                  //!< bounding information of primitives
+      TriRefList& prims_o;                 //!< list of build primitives
+      PrimInfo& pinfo_o;                   //!< bounding information of primitives
     };
 
     /*! Generates a list of triangle build primitives from some triangle mesh. */
     class TriRefListGenFromTriangleMesh
     {
-      static const size_t maxTasks = 32;
       typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;
 
     public:      
@@ -86,12 +76,11 @@ namespace embree
       /* intermediate data */
     private:
       TaskScheduler::Task task;
-      PrimInfo pinfos[maxTasks];
       
       /* output data */
     public:
-      TriRefList& prims;             //!< list of build primitives
-      PrimInfo& pinfo;                  //!< bounding information of primitives
+      TriRefList& prims_o;             //!< list of build primitives
+      PrimInfo& pinfo_o;                  //!< bounding information of primitives
     };
 
     /*! Generates an array of triangle build primitives from the scene. */
