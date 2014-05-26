@@ -46,7 +46,7 @@ namespace embree
       GeometryTy ty;                       //!< types of geometry to generate
       size_t numTimeSteps;                 //!< number of timesteps to generate
       PrimRefBlockAlloc<PrimRef>* alloc;   //!< allocator for build primitive blocks
-      size_t numPrimitives;
+      size_t numPrimitives;                //!< number of generated primitives
       TaskScheduler::Task task;
       TriRefList& prims_o;                 //!< list of build primitives
       PrimInfo& pinfo_o;                   //!< bounding information of primitives
@@ -87,23 +87,23 @@ namespace embree
     class TriRefArrayGen
     {
     public:   
-      static void generate_sequential(size_t threadIndex, size_t threadCount, const Scene* scene, PrimRef* prims, PrimInfo& pinfo);
-      static void generate_parallel  (size_t threadIndex, size_t threadCount, const Scene* scene, PrimRef* prims, PrimInfo& pinfo);
+      static void generate_sequential(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims, PrimInfo& pinfo);
+      static void generate_parallel  (size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims, PrimInfo& pinfo);
       
     private:
       
       /*! standard constructor that schedules the task */
-      TriRefArrayGen (size_t threadIndex, size_t threadCount, const Scene* scene, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel);
+      TriRefArrayGen (size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel);
             
       /*! parallel task to iterate over the primitives */
       TASK_RUN_FUNCTION(TriRefArrayGen,task_gen_parallel);
       
       /* input data */
     private:
-      const Scene* scene;                  //!< input geometry
-      
-      /* output data */
-    public:
+      const Scene* scene;           //!< input geometry
+      GeometryTy ty;                //!< types of geometry to generate
+      size_t numTimeSteps;          //!< number of timesteps to generate
+      size_t numPrimitives;         //!< number of generated primitives
       PrimRef* prims_o;             //!< list of build primitives
       PrimInfo& pinfo_o;            //!< bounding information of primitives
     };

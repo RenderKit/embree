@@ -143,45 +143,92 @@ namespace embree
       pinfo_o.atomic_extend(pinfo);
     }
 
-    void TriRefArrayGen::generate_sequential(size_t threadIndex, size_t threadCount, const Scene* scene, PrimRef* prims_o, PrimInfo& pinfo_o) {
-      TriRefArrayGen(threadIndex,threadCount,scene,prims_o,pinfo_o,false);
+    void TriRefArrayGen::generate_sequential(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o) {
+      TriRefArrayGen(threadIndex,threadCount,scene,ty,numTimeSteps,prims_o,pinfo_o,false);
     }
 
-    void TriRefArrayGen::generate_parallel(size_t threadIndex, size_t threadCount, const Scene* scene, PrimRef* prims_o, PrimInfo& pinfo_o) {
-      TriRefArrayGen(threadIndex,threadCount,scene,prims_o,pinfo_o,true);
+    void TriRefArrayGen::generate_parallel(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o) {
+      TriRefArrayGen(threadIndex,threadCount,scene,ty,numTimeSteps,prims_o,pinfo_o,true);
     }
 
-    TriRefArrayGen::TriRefArrayGen(size_t threadIndex, size_t threadCount, const Scene* scene, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel)
-      : scene(scene), prims_o(prims_o), pinfo_o(pinfo_o)
+    TriRefArrayGen::TriRefArrayGen(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel)
+      : scene(scene), ty(ty), numTimeSteps(numTimeSteps), numPrimitives(0), prims_o(prims_o), pinfo_o(pinfo_o)
     {
+      /*! calculate number of primitives */
+      if ((ty & TRIANGLE_MESH) && (numTimeSteps & 1)) numPrimitives += scene->numTriangles;
+      if ((ty & TRIANGLE_MESH) && (numTimeSteps & 2)) numPrimitives += scene->numTriangles2;
+      if ((ty & BEZIER_CURVES) && (numTimeSteps & 1)) numPrimitives += scene->numBezierCurves;
+      if ((ty & BEZIER_CURVES) && (numTimeSteps & 2)) numPrimitives += scene->numBezierCurves2;
+      if ((ty & USER_GEOMETRY)                      ) numPrimitives += scene->numUserGeometries1;
+
+      /*! generate primref array */
       pinfo_o.reset();
       if (parallel) TaskScheduler::dispatchTask(_task_gen_parallel, this, threadIndex, threadCount);
       else          task_gen_parallel(threadIndex,threadCount,0,1,NULL);
-      assert(pinfo_o.size() == scene->numTriangles);
+      assert(pinfo_o.size() == numPrimitives);
     }
 
     void TriRefArrayGen::task_gen_parallel(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
-      ssize_t start = (taskIndex+0)*scene->numTriangles/taskCount;
-      ssize_t end   = (taskIndex+1)*scene->numTriangles/taskCount;
+      ssize_t start = (taskIndex+0)*numPrimitives/taskCount;
+      ssize_t end   = (taskIndex+1)*numPrimitives/taskCount;
       ssize_t cur   = 0;
       
       PrimInfo pinfo(empty);
       for (size_t i=0; i<scene->size(); i++) 
       {
-	TriangleMesh* geom = (TriangleMesh*) scene->get(i);
-        if (geom == NULL) continue;
-	if (geom->type != TRIANGLE_MESH || geom->numTimeSteps != 1 || !geom->isEnabled()) continue;
-	ssize_t gstart = 0;
-	ssize_t gend = geom->numTriangles;
-	ssize_t s = max(start-cur,gstart);
-	ssize_t e = min(end  -cur,gend  );
-	for (size_t j=s; j<e; j++) {
-	  const PrimRef prim(geom->bounds(j),i,j);
-	  pinfo.add(prim.bounds(),prim.center2());
-	  prims_o[cur+j] = prim;
+	const Geometry* geom = scene->get(i);
+        if (geom == NULL || !geom->isEnabled()) continue;
+	if (!(geom->type & ty)) continue;
+	
+	switch (geom->type) 
+	{
+	  /* handle triangle mesh */
+	case TRIANGLE_MESH: {
+	  const TriangleMesh* mesh = (const TriangleMesh*)geom;
+	  if (mesh->numTimeSteps & numTimeSteps) {
+	    ssize_t s = max(start-cur,ssize_t(0));
+	    ssize_t e = min(end  -cur,ssize_t(mesh->numTriangles));
+	    for (size_t j=s; j<e; j++) {
+	      const PrimRef prim(mesh->bounds(j),i,j);
+	      pinfo.add(prim.bounds(),prim.center2());
+	      prims_o[cur+j] = prim;
+	    }
+	    cur += mesh->numTriangles;
+	  }
+	  break;
 	}
-	cur += geom->numTriangles;
+	  
+	  /* handle bezier curve set */
+	case BEZIER_CURVES: {
+	  const BezierCurves* set = (const BezierCurves*)geom;
+	  if (set->numTimeSteps & numTimeSteps) {
+	    ssize_t s = max(start-cur,ssize_t(0));
+	    ssize_t e = min(end  -cur,ssize_t(set->numCurves));
+	    for (size_t j=s; j<e; j++) {
+	      const PrimRef prim(set->bounds(j),i,j);
+	      pinfo.add(prim.bounds(),prim.center2());		
+	      prims_o[cur+j] = prim;
+	    }
+	    cur += set->numCurves;
+	  }
+	  break;
+	}
+	  
+	  /* handle user geometry sets */
+	case USER_GEOMETRY: {
+	  const UserGeometryScene::Base* set = (const UserGeometryScene::Base*)geom;
+	  ssize_t s = max(start-cur,ssize_t(0));
+	  ssize_t e = min(end  -cur,ssize_t(set->numItems));
+	  for (size_t j=s; j<e; j++) {
+	    const PrimRef prim(set->bounds(j),i,j);
+	    pinfo.add(prim.bounds(),prim.center2());
+	    prims_o[cur+j] = prim;
+	  }
+	  cur += set->numItems;
+	  break;
+	}
+	}
 	if (cur >= end) break;  
       }
       pinfo_o.atomic_extend(pinfo);
