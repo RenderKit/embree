@@ -56,7 +56,7 @@ namespace embree
     
     if (g_verbose >= 2) {
       std::cout << "[DONE]" << std::endl;
-      std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(source->size())/(t1-t0) << " Mprim/s" << std::endl;
+      std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(source->number_of_prims())/(t1-t0) << " Mprim/s" << std::endl;
       //std::cout << BVH4MBStatistics(bvh).str();
     }
   }

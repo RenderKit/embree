@@ -120,62 +120,30 @@ namespace embree
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
-    void PrimRefListGenFromTriangleMesh::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, PrimRefList& prims, PrimInfo& pinfo) {
-      PrimRefListGenFromTriangleMesh(threadIndex,threadCount,alloc,mesh,prims,pinfo);
+    template<typename Ty>
+    void PrimRefListGenFromGeometry<Ty>::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Ty* geom, PrimRefList& prims, PrimInfo& pinfo) {
+      PrimRefListGenFromGeometry(threadIndex,threadCount,alloc,geom,prims,pinfo);
     }
 
-    PrimRefListGenFromTriangleMesh::PrimRefListGenFromTriangleMesh(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, PrimRefList& prims, PrimInfo& pinfo)
-      : mesh(mesh), alloc(alloc), prims_o(prims), pinfo_o(pinfo)
-    {
-      pinfo_o.reset();
-      TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
-    }
-    
-    void PrimRefListGenFromTriangleMesh::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
-    {
-      ssize_t start = (taskIndex+0)*mesh->numTriangles/taskCount;
-      ssize_t end   = (taskIndex+1)*mesh->numTriangles/taskCount;
-      ssize_t cur   = 0;
-      
-      PrimInfo pinfo(empty);
-      PrimRefList::item* block = prims_o.insert(alloc->malloc(threadIndex)); 
-
-      for (size_t j=0; j<mesh->numTriangles; j++) 
-      {
-	const PrimRef prim(mesh->bounds(j),mesh->id,j);
-	pinfo.add(prim.bounds(),prim.center2());
-	if (likely(block->insert(prim))) continue; 
-	block = prims_o.insert(alloc->malloc(threadIndex));
-	block->insert(prim);
-      }
-      pinfo_o.atomic_extend(pinfo);
-    }
-
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
-    void PrimRefListGenFromBezierCurves::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const BezierCurves* geom, PrimRefList& prims, PrimInfo& pinfo) {
-      PrimRefListGenFromBezierCurves(threadIndex,threadCount,alloc,geom,prims,pinfo);
-    }
-
-    PrimRefListGenFromBezierCurves::PrimRefListGenFromBezierCurves(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const BezierCurves* geom, PrimRefList& prims, PrimInfo& pinfo)
+    template<typename Ty>
+    PrimRefListGenFromGeometry<Ty>::PrimRefListGenFromGeometry(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Ty* geom, PrimRefList& prims, PrimInfo& pinfo)
       : geom(geom), alloc(alloc), prims_o(prims), pinfo_o(pinfo)
     {
       pinfo_o.reset();
-      TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
+      TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::primrefgen");
     }
     
-    void PrimRefListGenFromBezierCurves::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    template<typename Ty>
+    void PrimRefListGenFromGeometry<Ty>::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
-      ssize_t start = (taskIndex+0)*geom->numCurves/taskCount;
-      ssize_t end   = (taskIndex+1)*geom->numCurves/taskCount;
+      ssize_t start = (taskIndex+0)*geom->size1()/taskCount;
+      ssize_t end   = (taskIndex+1)*geom->size1()/taskCount;
       ssize_t cur   = 0;
       
       PrimInfo pinfo(empty);
       PrimRefList::item* block = prims_o.insert(alloc->malloc(threadIndex)); 
-
-      for (size_t j=0; j<geom->numCurves; j++) 
+      
+      for (size_t j=0; j<geom->size1(); j++) 
       {
 	const PrimRef prim(geom->bounds(j),geom->id,j);
 	pinfo.add(prim.bounds(),prim.center2());
@@ -185,46 +153,12 @@ namespace embree
       }
       pinfo_o.atomic_extend(pinfo);
     }
-
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
-    void PrimRefListGenFromUserGeometry::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const UserGeometryScene::Base* geom, PrimRefList& prims, PrimInfo& pinfo) {
-      PrimRefListGenFromUserGeometry(threadIndex,threadCount,alloc,geom,prims,pinfo);
-    }
-
-    PrimRefListGenFromUserGeometry::PrimRefListGenFromUserGeometry(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const UserGeometryScene::Base* geom, PrimRefList& prims, PrimInfo& pinfo)
-      : geom(geom), alloc(alloc), prims_o(prims), pinfo_o(pinfo)
-    {
-      pinfo_o.reset();
-      TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
-    }
     
-    void PrimRefListGenFromUserGeometry::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
-    {
-      ssize_t start = (taskIndex+0)*geom->numItems/taskCount;
-      ssize_t end   = (taskIndex+1)*geom->numItems/taskCount;
-      ssize_t cur   = 0;
-      
-      PrimInfo pinfo(empty);
-      PrimRefList::item* block = prims_o.insert(alloc->malloc(threadIndex)); 
-
-      for (size_t j=0; j<geom->numItems; j++) 
-      {
-	const PrimRef prim(geom->bounds(j),geom->id,j);
-	pinfo.add(prim.bounds(),prim.center2());
-	if (likely(block->insert(prim))) continue; 
-	block = prims_o.insert(alloc->malloc(threadIndex));
-	block->insert(prim);
-      }
-      pinfo_o.atomic_extend(pinfo);
-    }
+    template class PrimRefListGenFromGeometry<TriangleMesh>;
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
 
     void PrimRefArrayGen::generate_sequential(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o) {
       PrimRefArrayGen(threadIndex,threadCount,scene,ty,numTimeSteps,prims_o,pinfo_o,false);

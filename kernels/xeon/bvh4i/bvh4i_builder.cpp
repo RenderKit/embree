@@ -34,7 +34,7 @@ namespace embree
   template<typename Heuristic>
   void BVH4iBuilder<Heuristic>::build(size_t threadIndex, size_t threadCount) 
   {
-    size_t numPrimitives = source->size();
+    size_t numPrimitives = source->number_of_prims();
     bvh->init(numPrimitives,2*numPrimitives);
 
     bvh->qbvh = bvh->alloc_nodes->base();
@@ -65,7 +65,7 @@ namespace embree
     if (g_verbose >= 2) {
       double t1 = getSeconds();
       std::cout << "[DONE]" << std::endl;
-      std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(source->size())/(t1-t0) << " Mprim/s" << std::endl;
+      std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(source->number_of_prims())/(t1-t0) << " Mprim/s" << std::endl;
       std::cout << BVH4iStatistics(bvh).str();
     }
   }

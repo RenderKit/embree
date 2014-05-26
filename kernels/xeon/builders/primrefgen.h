@@ -52,78 +52,29 @@ namespace embree
       PrimInfo& pinfo_o;                   //!< bounding information of primitives
     };
 
-    /*! Generates a list of triangle build primitives from some triangle mesh. */
-    class PrimRefListGenFromTriangleMesh
+    /*! Generates a list of triangle build primitives from some geometry. */
+    template<typename Ty>
+    class PrimRefListGenFromGeometry
     {
       typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
 
     public:      
-      static void generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, PrimRefList& prims, PrimInfo& pinfo);
+      static void generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Ty* geom, PrimRefList& prims, PrimInfo& pinfo);
       
     private:
       
       /*! standard constructor that schedules the task */
-      PrimRefListGenFromTriangleMesh (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, PrimRefList& prims, PrimInfo& pinfo);
+      PrimRefListGenFromGeometry (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Ty* geom, PrimRefList& prims, PrimInfo& pinfo);
             
       /*! parallel task to iterate over the primitives */
-      TASK_RUN_FUNCTION(PrimRefListGenFromTriangleMesh,task_gen_parallel);
+      TASK_RUN_FUNCTION(PrimRefListGenFromGeometry,task_gen_parallel);
       
       /* input data */
     private:
-      const TriangleMesh* mesh;            //!< input geometry
+      const Ty* geom;                      //!< input geometry
       PrimRefBlockAlloc<PrimRef>* alloc;   //!< allocator for build primitive blocks
       TaskScheduler::Task task;
       PrimRefList& prims_o;                 //!< list of build primitives
-      PrimInfo& pinfo_o;                   //!< bounding information of primitives
-    };
-
-    /*! Generates a list of build primitives from some bezier curve set. */
-    class PrimRefListGenFromBezierCurves
-    {
-      typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
-
-    public:      
-      static void generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const BezierCurves* set, PrimRefList& prims, PrimInfo& pinfo);
-      
-    private:
-      
-      /*! standard constructor that schedules the task */
-      PrimRefListGenFromBezierCurves (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const BezierCurves* set, PrimRefList& prims, PrimInfo& pinfo);
-            
-      /*! parallel task to iterate over the primitives */
-      TASK_RUN_FUNCTION(PrimRefListGenFromBezierCurves,task_gen_parallel);
-      
-      /* input data */
-    private:
-      const BezierCurves* geom;             //!< input geometry
-      PrimRefBlockAlloc<PrimRef>* alloc;   //!< allocator for build primitive blocks
-      TaskScheduler::Task task;
-      PrimRefList& prims_o;                //!< list of build primitives
-      PrimInfo& pinfo_o;                   //!< bounding information of primitives
-    };
-
-    /*! Generates a list of build primitives from some user geometry set. */
-    class PrimRefListGenFromUserGeometry
-    {
-      typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
-
-    public:      
-      static void generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const UserGeometryScene::Base* set, PrimRefList& prims, PrimInfo& pinfo);
-      
-    private:
-      
-      /*! standard constructor that schedules the task */
-      PrimRefListGenFromUserGeometry (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const UserGeometryScene::Base* set, PrimRefList& prims, PrimInfo& pinfo);
-            
-      /*! parallel task to iterate over the primitives */
-      TASK_RUN_FUNCTION(PrimRefListGenFromUserGeometry,task_gen_parallel);
-      
-      /* input data */
-    private:
-      const UserGeometryScene::Base* geom; //!< input geometry
-      PrimRefBlockAlloc<PrimRef>* alloc;   //!< allocator for build primitive blocks
-      TaskScheduler::Task task;
-      PrimRefList& prims_o;                //!< list of build primitives
       PrimInfo& pinfo_o;                   //!< bounding information of primitives
     };
 

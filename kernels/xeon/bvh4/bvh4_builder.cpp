@@ -37,7 +37,7 @@ namespace embree
     if (source->isEmpty()) 
       return;
 #else
-    size_t numPrimitives = source->size();
+    size_t numPrimitives = source->number_of_prims();
     bvh->init(numPrimitives);
     if (source->isEmpty()) 
       return;
@@ -76,13 +76,13 @@ namespace embree
     
     if (g_verbose >= 2) {
       std::cout << "[DONE]" << std::endl;
-      std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(source->size())/(t1-t0) << " Mprim/s" << std::endl;
+      std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(source->number_of_prims())/(t1-t0) << " Mprim/s" << std::endl;
       std::cout << BVH4Statistics(bvh).str();
     }
 
     if (g_benchmark) {
       BVH4Statistics stat(bvh);
-      std::cout << "BENCHMARK_BUILD " << 1000.0f*(t1-t0) << " " << 1E-6*double(source->size())/(t1-t0) << " " << stat.bytesUsed() << std::endl;
+      std::cout << "BENCHMARK_BUILD " << 1000.0f*(t1-t0) << " " << 1E-6*double(source->number_of_prims())/(t1-t0) << " " << stat.bytesUsed() << std::endl;
     }
   }
 

@@ -51,6 +51,10 @@ namespace embree
 
     public:
 
+      __forceinline size_t size1() const {
+	return numTriangles;
+      }
+
       bool isEmpty () const { 
         return numTriangles == 0;
       }

@@ -366,7 +366,7 @@ namespace embree
           
           if (g_verbose >= 2) {
             double t1 = getSeconds();
-            double perf = source->size()/(t1-t0)*1E-6;
+            double perf = source->number_of_prims()/(t1-t0)*1E-6;
             std::cout << "[DONE] " << t1-t0 << "sec (" << perf << " Mtris/s)" << std::endl;
             //
           }

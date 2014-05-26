@@ -311,8 +311,8 @@ namespace embree
       
       /* generate list of build primitives */
       PrimRefList prims; PrimInfo pinfo(empty);
-      if (mesh) PrimRefListGenFromTriangleMesh::generate(threadIndex,threadCount,&alloc,mesh ,prims,pinfo);
-      else      PrimRefListGen                ::generate(threadIndex,threadCount,&alloc,scene,TRIANGLE_MESH,1,prims,pinfo);
+      if (mesh) PrimRefListGenFromGeometry<TriangleMesh>::generate(threadIndex,threadCount,&alloc,mesh ,prims,pinfo);
+      else      PrimRefListGen                          ::generate(threadIndex,threadCount,&alloc,scene,TRIANGLE_MESH,1,prims,pinfo);
       
       /* perform initial split */
       const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);

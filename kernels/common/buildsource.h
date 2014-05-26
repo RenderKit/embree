@@ -45,7 +45,7 @@ namespace embree
     }
 
     /*! calculates number of primitives */
-    size_t size() const 
+    size_t number_of_prims() const 
     {
       size_t N = 0;
       size_t G = groups();
