@@ -189,14 +189,14 @@ namespace embree
     
     void BVH4TriangleBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
-      if (mesh) PrimRefArrayGenFromTriangleMesh::generate_sequential(threadIndex, threadCount, mesh , prims, pinfo);
-      else      PrimRefArrayGen                ::generate_sequential(threadIndex, threadCount, scene, TRIANGLE_MESH, 1, prims, pinfo);
+      if (mesh) PrimRefArrayGenFromGeometry<TriangleMesh>::generate_sequential(threadIndex, threadCount, mesh , prims, pinfo);
+      else      PrimRefArrayGen                          ::generate_sequential(threadIndex, threadCount, scene, TRIANGLE_MESH, 1, prims, pinfo);
     }
 
     void BVH4TriangleBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
     {
-      if (mesh) PrimRefArrayGenFromTriangleMesh::generate_parallel(threadIndex, threadCount, mesh , prims, pinfo);
-      else      PrimRefArrayGen                ::generate_parallel(threadIndex, threadCount, scene, TRIANGLE_MESH, 1, prims, pinfo);
+      if (mesh) PrimRefArrayGenFromGeometry<TriangleMesh>::generate_parallel(threadIndex, threadCount, mesh , prims, pinfo);
+      else      PrimRefArrayGen                          ::generate_parallel(threadIndex, threadCount, scene, TRIANGLE_MESH, 1, prims, pinfo);
     }
  
     // =======================================================================================================

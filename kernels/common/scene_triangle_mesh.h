@@ -51,7 +51,7 @@ namespace embree
 
     public:
 
-      __forceinline size_t size1() const {
+      __forceinline size_t size() const {
 	return numTriangles;
       }
 

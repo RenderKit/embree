@@ -31,6 +31,10 @@ namespace embree
     public:
       Base (Scene* parent, GeometryTy ty, size_t items);
       
+      __forceinline size_t size() const {
+	return numItems;
+      }
+
       void enabling ();
       void disabling();
     };

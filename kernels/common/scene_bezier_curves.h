@@ -50,6 +50,10 @@ namespace embree
 
     public:
 
+      __forceinline size_t size() const {
+	return numCurves;
+      }
+
       __forceinline const int& curve(size_t i) const {
         assert(i < numCurves);
         return curves[i];
