@@ -312,7 +312,7 @@ namespace embree
       /* generate list of build primitives */
       TriRefList prims; PrimInfo pinfo(empty);
       if (mesh) TriRefListGenFromTriangleMesh::generate(threadIndex,threadCount,&alloc,mesh ,prims,pinfo);
-      else      TriRefListGen                ::generate(threadIndex,threadCount,&alloc,scene,prims,pinfo);
+      else      TriRefListGen                ::generate(threadIndex,threadCount,&alloc,scene,TRIANGLE_MESH,1,prims,pinfo);
       
       /* perform initial split */
       const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);

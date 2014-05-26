@@ -32,7 +32,7 @@ namespace embree
 
   void TwoLevelAccel::buildUserGeometryAccels(size_t threadIndex, size_t threadCount)
   {
-    if (scene->numUserGeometries == 0) 
+    if (scene->numUserGeometries1 == 0) 
       return;
 
     size_t N = scene->size();

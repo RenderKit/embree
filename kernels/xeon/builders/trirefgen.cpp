@@ -20,16 +20,23 @@ namespace embree
 {
   namespace isa
   {
-    void TriRefListGen::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, TriRefList& prims, PrimInfo& pinfo) {
-      TriRefListGen gen(threadIndex,threadCount,alloc,scene,prims,pinfo);
+    void TriRefListGen::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, TriRefList& prims, PrimInfo& pinfo) {
+      TriRefListGen gen(threadIndex,threadCount,alloc,scene,ty,numTimeSteps,prims,pinfo);
     }
 
-    TriRefListGen::TriRefListGen(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, TriRefList& prims, PrimInfo& pinfo)
-      : scene(scene), alloc(alloc), prims(prims), pinfo(pinfo)
+    TriRefListGen::TriRefListGen(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, TriRefList& prims, PrimInfo& pinfo)
+      : scene(scene), ty(ty), numTimeSteps(numTimeSteps), alloc(alloc), numPrimitives(0), prims(prims), pinfo(pinfo)
     {
       /*! parallel stage */
       size_t numTasks = min(threadCount,maxTasks);
       TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,numTasks,"build::trirefgen");
+
+      /*! calculate number of primitives */
+      if ((ty & TRIANGLE_MESH) && (numTimeSteps & 1)) numPrimitives += scene->numTriangles;
+      if ((ty & TRIANGLE_MESH) && (numTimeSteps & 2)) numPrimitives += scene->numTriangles2;
+      if ((ty & BEZIER_CURVES) && (numTimeSteps & 1)) numPrimitives += scene->numBezierCurves;
+      if ((ty & BEZIER_CURVES) && (numTimeSteps & 2)) numPrimitives += scene->numBezierCurves2;
+      if ((ty & USER_GEOMETRY) && (numTimeSteps & 1)) numPrimitives += scene->numUserGeometries1;
       
       /*! reduction stage */
       for (size_t i=0; i<numTasks; i++)

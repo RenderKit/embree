@@ -32,12 +32,12 @@ namespace embree
       typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;
 
     public:      
-      static void generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, TriRefList& prims, PrimInfo& pinfo);
+      static void generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, TriRefList& prims, PrimInfo& pinfo);
       
     private:
       
       /*! standard constructor that schedules the task */
-      TriRefListGen (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, TriRefList& prims, PrimInfo& pinfo);
+      TriRefListGen (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, TriRefList& prims, PrimInfo& pinfo);
             
       /*! parallel task to iterate over the primitives */
       TASK_RUN_FUNCTION(TriRefListGen,task_gen_parallel);
@@ -45,7 +45,10 @@ namespace embree
       /* input data */
     private:
       const Scene* scene;                  //!< input geometry
+      GeometryTy ty;                       //!< types of geometry to generate
+      size_t numTimeSteps;                 //!< number of timesteps to generate
       PrimRefBlockAlloc<PrimRef>* alloc;   //!< allocator for build primitive blocks
+      size_t numPrimitives;
       
       /* intermediate data */
     private:

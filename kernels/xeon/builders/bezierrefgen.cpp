@@ -34,8 +34,8 @@ namespace embree
     
     void BezierRefGen::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
-      ssize_t start = (taskIndex+0)*scene->numCurves/taskCount;
-      ssize_t end   = (taskIndex+1)*scene->numCurves/taskCount;
+      ssize_t start = (taskIndex+0)*scene->numBezierCurves/taskCount;
+      ssize_t end   = (taskIndex+1)*scene->numBezierCurves/taskCount;
       ssize_t cur   = 0;
       
       PrimInfo pinfo(empty);

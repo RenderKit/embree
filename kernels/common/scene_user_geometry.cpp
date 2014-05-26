@@ -41,11 +41,11 @@ namespace embree
   }
 
   void UserGeometryScene::Base::enabling () { 
-    atomic_add(&parent->numUserGeometries,+1); 
+    atomic_add(&parent->numUserGeometries1,numItems); 
   }
   
   void UserGeometryScene::Base::disabling() { 
-    atomic_add(&parent->numUserGeometries,-1); 
+    atomic_add(&parent->numUserGeometries1,-numItems); 
   }
 
   UserGeometryScene::UserGeometry::UserGeometry (Scene* parent, size_t items) 
@@ -158,7 +158,7 @@ namespace embree
   extern AccelSet::Intersector16 InstanceIntersector16;
 
   UserGeometryScene::Instance::Instance (Scene* parent, Accel* object) 
-    : Base(parent,INSTANCES,1), local2world(one), world2local(one), object(object)
+    : Base(parent,USER_GEOMETRY,1), local2world(one), world2local(one), object(object)
   {
     intersectors.ptr = this;
     intersectors.boundsPtr = this;

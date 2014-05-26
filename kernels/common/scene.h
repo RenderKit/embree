@@ -111,7 +111,7 @@ namespace embree
     __forceinline UserGeometryScene::Base* getUserGeometrySafe(size_t i) { 
       assert(i < geometries.size()); 
       if (geometries[i] == NULL) return NULL;
-      if (geometries[i]->type != USER_GEOMETRY && geometries[i]->type != INSTANCES) return NULL;
+      if (geometries[i]->type != USER_GEOMETRY /*&& geometries[i]->type != INSTANCES*/) return NULL;
       else return (UserGeometryScene::Base*) geometries[i]; 
     }
     __forceinline BezierCurves* getBezierCurves(size_t i) { 
@@ -218,8 +218,8 @@ namespace embree
         : scene(scene), numTimeSteps(numTimeSteps) {}
 
       bool isEmpty () const { 
-        if (numTimeSteps == 1) return scene->numCurves  == 0;
-        else                   return scene->numCurves2 == 0;
+        if (numTimeSteps == 1) return scene->numBezierCurves  == 0;
+        else                   return scene->numBezierCurves2 == 0;
       }
       
       size_t groups () const { 
@@ -278,9 +278,11 @@ namespace embree
     atomic_t numTriangleMeshes2;       //!< number of enabled motion blur triangle meshes // FIXME: remove
     atomic_t numTriangles;             //!< number of enabled triangles
     atomic_t numTriangles2;            //!< number of enabled motion blur triangles
-    atomic_t numCurves;                //!< number of enabled curves
-    atomic_t numCurves2;               //!< number of enabled motion blur curves
-    atomic_t numUserGeometries;        //!< number of enabled user geometries
+    atomic_t numBezierCurves;                //!< number of enabled curves
+    atomic_t numBezierCurves2;               //!< number of enabled motion blur curves
+
+    atomic_t numUserGeometries1;        //!< number of enabled user geometries
+    atomic_t numUserGeometries2;        //!< number of enabled user geometries
     
   public:
     FlatTriangleAccelBuildSource flat_triangle_source_1;

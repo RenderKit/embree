@@ -40,7 +40,7 @@ namespace embree
     void BVH4HairBuilder::build(size_t threadIndex, size_t threadCount) 
     {
       /* fast path for empty BVH */
-      size_t numPrimitives = scene->numCurves;
+      size_t numPrimitives = scene->numBezierCurves;
       bvh->init(numPrimitives,numPrimitives+(size_t)(g_hair_builder_replication_factor*numPrimitives));
       if (numPrimitives == 0) return;
       numGeneratedPrims = 0;
@@ -67,7 +67,7 @@ namespace embree
 	PrimInfo pinfo = gen.pinfo;
 	BezierRefList prims = gen.prims;
 	
-	bvh->numPrimitives = scene->numCurves;
+	bvh->numPrimitives = scene->numBezierCurves;
 	bvh->numVertices = 0;
 	if (&bvh->primTy == &SceneBezier1i::type) bvh->numVertices = numVertices;
 	
