@@ -17,7 +17,6 @@
 #include "scene.h"
 
 #if !defined(__MIC__)
-#include "bvh4/twolevel_accel.h"
 #include "bvh4/bvh4_builder_toplevel.h"
 #include "bvh4/bvh4.h"
 #include "bvh4hair/bvh4hair.h"
@@ -94,7 +93,6 @@ namespace embree
 #else
     createTriangleAccel();
     accels.add(BVH4MB::BVH4MBTriangle1v(this));
-    //accels.add(new TwoLevelAccel("bvh4",this)); 
     accels.add(BVH4::BVH4UserGeometry(this));
     createHairAccel();
 #endif

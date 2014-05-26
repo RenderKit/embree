@@ -86,8 +86,6 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4/bvh4_intersector1.cpp   
   bvh4/bvh4_intersector4_chunk.cpp
   bvh4/bvh4_statistics.cpp
-  bvh4/virtual_accel.cpp
-  bvh4/twolevel_accel.cpp
 
   bvh4i/bvh4i.cpp
   bvh4i/bvh4i_statistics.cpp
