@@ -11,6 +11,8 @@ namespace embree
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 
+#define ENABLE_OBB 1
+
 #define TIMER(x)  x
 
 #if defined(DEBUG)
@@ -460,15 +462,7 @@ namespace embree
 
   }
 
-  void BVH4HairBuilder::buildSubTree(BuildRecord& current, 
-				  NodeAllocator& alloc, 
-				  const size_t mode,
-				  const size_t threadID, 
-				  const size_t numThreads)
-  {
-    DBG(PING);
-    recurseSAH(current,alloc,/*mode*/ RECURSE,threadID,numThreads);
-  }
+
 
 
   void BVH4HairBuilder::build_parallel_hair(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
@@ -521,8 +515,7 @@ namespace embree
     NodeAllocator alloc(atomicID,numAllocatedNodes);
         
 #if 0
-    recurseSAH(br,alloc,RECURSE,threadIndex,threadCount);
-    
+    recurseSAH(br,alloc,RECURSE,threadIndex,threadCount);    
 #else
     /* push initial build record to global work stack */
     global_workStack.reset();
@@ -912,6 +905,279 @@ namespace embree
     }
     else
       recurseSAH(current,alloc,RECURSE,threadID,numThreads);
+  }
+
+  void BVH4HairBuilder::recurseOBB(BuildRecordOBB& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads)
+  {
+
+    //DBG(PING);
+    //DBG(DBG_PRINT(current));
+
+    __aligned(64) BuildRecordOBB children[BVH4Hair::N];
+
+    /* create leaf node */
+    if (current.depth >= BVH4Hair::maxBuildDepth || current.isLeaf()) {
+      createLeaf(current,alloc,threadID,numThreads);
+      return;
+    }
+
+    /* fill all 4 children by always splitting the one with the largest surface area */
+    unsigned int numChildren = 1;
+    children[0] = current;
+
+    do {
+
+      /* find best child with largest bounding box area */
+      int bestChild = -1;
+      float bestArea = neg_inf;
+      for (unsigned int i=0; i<numChildren; i++)
+      {
+        /* ignore leaves as they cannot get split */
+        if (children[i].isLeaf())
+          continue;
+        
+        /* remember child with largest area */
+        if (children[i].sceneArea() > bestArea) { 
+          bestArea = children[i].sceneArea();
+          bestChild = i;
+        }
+      }
+      if (bestChild == -1) break;
+
+      /*! split best child into left and right child */
+      __aligned(64) BuildRecordOBB left, right;
+      if (!splitSequentialOBB(children[bestChild],left,right)) 
+        continue;
+      
+      /* add new children left and right */
+      left.depth = right.depth = current.depth+1;
+      children[bestChild] = children[numChildren-1];
+      children[numChildren-1] = left;
+      children[numChildren+0] = right;
+      numChildren++;
+      
+    } while (numChildren < BVH4Hair::N);
+
+    /* create leaf node if no split is possible */
+    if (numChildren == 1) {
+      createLeaf(current,alloc,threadID,numThreads);
+      return;
+    }
+
+    /* allocate next four nodes */
+    const size_t currentIndex = alloc.get(1);
+    node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
+
+    /* init used/unused nodes */
+    node[currentIndex].setInvalid();
+
+    /* recurse into each child */
+    for (unsigned int i=0; i<numChildren; i++) 
+    {
+      //node[currentIndex].setMatrix(children[i].bounds.geometry,i);
+      PING;
+      children[i].parentID    = currentIndex;
+      children[i].parentBoxID = i;
+      recurseOBB(children[i],alloc,mode,threadID,numThreads);
+    }    
+    
+  }
+
+
+  __forceinline bool BVH4HairBuilder::splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild)
+  {
+    /* mark as leaf if leaf threshold reached */
+    if (current.items() <= BVH4Hair::N) {
+      current.createLeaf();
+      return false;
+    }
+    
+    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
+    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
+
+    const mic_f centroidBoundsMin_2 = centroidMin;
+    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
+    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+
+    mic_f leftArea[3];
+    mic_f rightArea[3];
+    mic_i leftNum[3];
+
+    fastbin<Bezier1i>(prims,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+
+    const unsigned int items = current.items();
+    const float voxelArea = area(current.bounds.geometry);
+    Split split;
+    split.cost = items * voxelArea;
+
+    for (size_t dim = 0;dim < 3;dim++) 
+      {
+	if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
+
+	const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
+	const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
+	const mic_i lnum    = leftNum[dim];   // bin16.prefix_count(dim);
+
+	const mic_i rnum    = mic_i(items) - lnum;
+	const mic_i lblocks = (lnum + mic_i(3)) >> 2;
+	const mic_i rblocks = (rnum + mic_i(3)) >> 2;
+	const mic_m m_lnum  = lnum == 0;
+	const mic_m m_rnum  = rnum == 0;
+	const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
+
+	if (lt(cost,mic_f(split.cost)))
+	  {
+
+	    const mic_f min_cost    = vreduce_min(cost); 
+	    const mic_m m_pos       = min_cost == cost;
+	    const unsigned long pos = bitscan64(m_pos);	    
+
+	    assert(pos < 15);
+
+	    if (pos < 15)
+	      {
+		split.cost    = cost[pos];
+		split.pos     = pos+1;
+		split.dim     = dim;	    
+		split.numLeft = lnum[pos];
+	      }
+	  }
+      };
+
+    if (unlikely(split.pos == -1)) 
+      split_fallback(prims,current,leftChild,rightChild);
+   // /* partitioning of items */
+    else 
+      {
+	leftChild.bounds.reset();
+	rightChild.bounds.reset();
+
+	const unsigned int mid = partitionPrimitives<L2_PREFETCH_ITEMS>(prims ,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
+
+	assert(area(leftChild.bounds.geometry) >= 0.0f);
+	assert(current.begin + mid == current.begin + split.numLeft);
+
+	if (unlikely(current.begin + mid == current.begin || current.begin + mid == current.end)) 
+	  {
+	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
+	    DBG_PRINT(split);
+	    DBG_PRINT(current);
+	    DBG_PRINT(mid);
+	    split_fallback(prims,current,leftChild,rightChild);	    
+	  }
+	else
+	  {
+	    const unsigned int current_mid = current.begin + split.numLeft;
+	    leftChild.init(current.begin,current_mid);
+	    rightChild.init(current_mid,current.end);
+	  }
+
+      }
+
+
+
+    if (leftChild.items()  <= BVH4Hair::N) leftChild.createLeaf();
+    if (rightChild.items() <= BVH4Hair::N) rightChild.createLeaf();	
+    return true;
+  }
+
+
+  void BVH4HairBuilder::buildSubTree(BuildRecord& current, 
+				     NodeAllocator& alloc, 
+				     const size_t mode,
+				     const size_t threadID, 
+				     const size_t numThreads)
+  {
+    DBG(PING);
+#if ENABLE_OBB == 1
+    BuildRecordOBB current_obb;
+    current_obb = current;
+
+    DBG_PRINT(current);
+    DBG_PRINT(current_obb);
+    computeUnalignedSpace(current_obb);
+    DBG_PRINT(current_obb);
+    computeUnalignedSpaceBounds(current_obb);
+    DBG_PRINT(current_obb);
+
+    
+    exit(0);
+
+    recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
+
+#else
+    recurseSAH(current,alloc,/*mode*/ RECURSE,threadID,numThreads);
+#endif
+  }
+
+  __forceinline void BVH4HairBuilder::computeUnalignedSpace( BuildRecordOBB& current )
+  {
+    Vec3fa axis(0,0,1);
+    for (size_t i=current.begin;i<current.end;i++)
+      {
+	const Bezier1i &b = prims[i];
+	const Vec3fa &p0 = b.p[0];
+	const Vec3fa &p3 = b.p[3];
+	const Vec3fa axis1 = normalize(p3 - p0);
+	if (length(p3 - p0) > 1E-9f) {
+	  axis = axis1;
+	  break;
+	}	
+      }
+    current.xfm = clamp(frame(axis).transposed());    
+  }
+
+  __forceinline mic_f xfmPoint(const Bezier1i &b, 
+			       const mic_f &c0,
+			       const mic_f &c1,
+			       const mic_f &c2)
+  {
+    const mic_f p0123 = uload16f((float*)b.p);
+    const mic_f p0123_1 = select(0x7777,p0123,mic_f::one());
+    const mic_f x = ldot3_xyz(p0123_1,c0);
+    const mic_f y = ldot3_xyz(p0123_1,c1);
+    const mic_f z = ldot3_xyz(p0123_1,c2);
+    const mic_f xyzw = select(0x7777,select(0x4444,z,select(0x2222,y,x)),p0123);
+    return xyzw;
+  }
+
+  __forceinline void BVH4HairBuilder::computeUnalignedSpaceBounds( BuildRecordOBB& current )
+  {
+    const mic_f c0 = broadcast4to16f((float*)&current.xfm.vx);
+    const mic_f c1 = broadcast4to16f((float*)&current.xfm.vy);
+    const mic_f c2 = broadcast4to16f((float*)&current.xfm.vz);
+
+    const mic_f p_inf( pos_inf );
+    const mic_f n_inf( neg_inf );
+
+    mic2f centroid2(p_inf, n_inf);
+    mic2f geometry(p_inf, n_inf);
+
+    for (size_t i=current.begin;i<current.end;i++)
+      {
+	const mic_f p0123 = xfmPoint(prims[i],c0,c1,c2);
+	const mic_f p0 = permute<0>(p0123);
+	const mic_f p1 = permute<1>(p0123);
+	const mic_f p2 = permute<2>(p0123);
+	const mic_f p3 = permute<3>(p0123);	
+	
+	const mic_f b_min = min(min(p0,p1),min(p2,p3));
+	const mic_f b_max = max(max(p0,p1),max(p2,p3));
+	const mic_f c2    = b_min + b_max;
+	centroid2.x = min(centroid2.x, c2);
+	centroid2.y = max(centroid2.y, c2);
+	geometry.x  = min(geometry.x, b_min); 
+	geometry.y  = max(geometry.y, b_max); 	
+      }    
+
+    store4f(&current.bounds.centroid2.lower,centroid2.x);
+    store4f(&current.bounds.centroid2.upper,centroid2.y);
+
+    store4f(&current.bounds.geometry.lower,geometry.x);
+    store4f(&current.bounds.geometry.upper,geometry.y);
+
+    current.sArea = area(current.bounds.geometry);
+
   }
 
 

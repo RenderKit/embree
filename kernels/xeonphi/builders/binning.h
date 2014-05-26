@@ -314,6 +314,141 @@ namespace embree
   }
 
 
+
+  template<class Primitive>
+  __forceinline void fastbin(const Primitive * __restrict__ const aabb,
+			     const unsigned int thread_start,
+			     const unsigned int thread_end,
+			     const mic_f &centroidBoundsMin_2,
+			     const mic_f &scale,
+			     const mic_f &c0,
+			     const mic_f &c1,
+			     const mic_f &c2,
+			     mic_f lArea[3],
+			     mic_f rArea[3],
+			     mic_i lNum[3])
+  {
+
+    const mic_f init_min = mic_f::inf();
+    const mic_f init_max = mic_f::minus_inf();
+    const mic_i zero     = mic_i::zero();
+
+    mic_f min_x0,min_x1,min_x2;
+    mic_f min_y0,min_y1,min_y2;
+    mic_f min_z0,min_z1,min_z2;
+    mic_f max_x0,max_x1,max_x2;
+    mic_f max_y0,max_y1,max_y2;
+    mic_f max_z0,max_z1,max_z2;
+    mic_i count0,count1,count2;
+
+    min_x0 = init_min;
+    min_x1 = init_min;
+    min_x2 = init_min;
+    min_y0 = init_min;
+    min_y1 = init_min;
+    min_y2 = init_min;
+    min_z0 = init_min;
+    min_z1 = init_min;
+    min_z2 = init_min;
+
+    max_x0 = init_max;
+    max_x1 = init_max;
+    max_x2 = init_max;
+    max_y0 = init_max;
+    max_y1 = init_max;
+    max_y2 = init_max;
+    max_z0 = init_max;
+    max_z1 = init_max;
+    max_z2 = init_max;
+
+    count0 = zero;
+    count1 = zero;
+    count2 = zero;
+
+    unsigned int start = thread_start;
+    unsigned int end   = thread_end;
+
+    const Primitive * __restrict__ aptr = aabb + start;
+
+    prefetch<PFHINT_NT>(aptr);
+    prefetch<PFHINT_L2>(aptr+2);
+    prefetch<PFHINT_L2>(aptr+4);
+    prefetch<PFHINT_L2>(aptr+6);
+    prefetch<PFHINT_L2>(aptr+8);
+
+    for (size_t j = start;j < end;j++,aptr++)
+      {
+	prefetch<PFHINT_L1>(aptr+2);
+	prefetch<PFHINT_L2>(aptr+12);
+	
+	const mic2f bounds = aptr[j].getBounds(c0,c1,c2);
+	const mic_f b_min  = bounds.x;
+	const mic_f b_max  = bounds.y;
+
+	const mic_f centroid_2 = b_min + b_max;
+	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
+
+	assert(0 <= binID[0] && binID[0] < 16);
+	assert(0 <= binID[1] && binID[1] < 16);
+	assert(0 <= binID[2] && binID[2] < 16);
+
+	const mic_i id = load16i(identity);
+	const mic_m m_update_x = eq(id,swAAAA(binID));
+	const mic_m m_update_y = eq(id,swBBBB(binID));
+	const mic_m m_update_z = eq(id,swCCCC(binID));
+
+	min_x0 = mask_min(m_update_x,min_x0,min_x0,swAAAA(b_min));
+	min_y0 = mask_min(m_update_x,min_y0,min_y0,swBBBB(b_min));
+	min_z0 = mask_min(m_update_x,min_z0,min_z0,swCCCC(b_min));
+	// ------------------------------------------------------------------------      
+	max_x0 = mask_max(m_update_x,max_x0,max_x0,swAAAA(b_max));
+	max_y0 = mask_max(m_update_x,max_y0,max_y0,swBBBB(b_max));
+	max_z0 = mask_max(m_update_x,max_z0,max_z0,swCCCC(b_max));
+	// ------------------------------------------------------------------------
+	min_x1 = mask_min(m_update_y,min_x1,min_x1,swAAAA(b_min));
+	min_y1 = mask_min(m_update_y,min_y1,min_y1,swBBBB(b_min));
+	min_z1 = mask_min(m_update_y,min_z1,min_z1,swCCCC(b_min));      
+	// ------------------------------------------------------------------------      
+	max_x1 = mask_max(m_update_y,max_x1,max_x1,swAAAA(b_max));
+	max_y1 = mask_max(m_update_y,max_y1,max_y1,swBBBB(b_max));
+	max_z1 = mask_max(m_update_y,max_z1,max_z1,swCCCC(b_max));
+	// ------------------------------------------------------------------------
+	min_x2 = mask_min(m_update_z,min_x2,min_x2,swAAAA(b_min));
+	min_y2 = mask_min(m_update_z,min_y2,min_y2,swBBBB(b_min));
+	min_z2 = mask_min(m_update_z,min_z2,min_z2,swCCCC(b_min));
+	// ------------------------------------------------------------------------      
+	max_x2 = mask_max(m_update_z,max_x2,max_x2,swAAAA(b_max));
+	max_y2 = mask_max(m_update_z,max_y2,max_y2,swBBBB(b_max));
+	max_z2 = mask_max(m_update_z,max_z2,max_z2,swCCCC(b_max));
+	// ------------------------------------------------------------------------
+	count0 = mask_add(m_update_x,count0,count0,mic_i::one());
+	count1 = mask_add(m_update_y,count1,count1,mic_i::one());
+	count2 = mask_add(m_update_z,count2,count2,mic_i::one());      
+      }
+
+    prefetch<PFHINT_L1EX>(&rArea[0]);
+    prefetch<PFHINT_L1EX>(&lArea[0]);
+    prefetch<PFHINT_L1EX>(&lNum[0]);
+    rArea[0] = prefix_area_rl(min_x0,min_y0,min_z0,max_x0,max_y0,max_z0);
+    lArea[0] = prefix_area_lr(min_x0,min_y0,min_z0,max_x0,max_y0,max_z0);
+    lNum[0]  = prefix_count(count0);
+
+    prefetch<PFHINT_L1EX>(&rArea[1]);
+    prefetch<PFHINT_L1EX>(&lArea[1]);
+    prefetch<PFHINT_L1EX>(&lNum[1]);
+    rArea[1] = prefix_area_rl(min_x1,min_y1,min_z1,max_x1,max_y1,max_z1);
+    lArea[1] = prefix_area_lr(min_x1,min_y1,min_z1,max_x1,max_y1,max_z1);
+    lNum[1]  = prefix_count(count1);
+
+    prefetch<PFHINT_L1EX>(&rArea[2]);
+    prefetch<PFHINT_L1EX>(&lArea[2]);
+    prefetch<PFHINT_L1EX>(&lNum[2]);
+    rArea[2] = prefix_area_rl(min_x2,min_y2,min_z2,max_x2,max_y2,max_z2);
+    lArea[2] = prefix_area_lr(min_x2,min_y2,min_z2,max_x2,max_y2,max_z2);
+    lNum[2]  = prefix_count(count2);
+  }
+
+
   class __aligned(64) Bin16
   {
   public:

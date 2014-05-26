@@ -59,12 +59,43 @@ namespace embree
   class BVH4HairBuilder : public ParallelBinnedSAHBuilder
   {
     ALIGNED_CLASS;
-
+    
   protected:
     static const size_t ALLOCATOR_NODE_BLOCK_SIZE = 64;
     typedef AtomicIDBlock<ALLOCATOR_NODE_BLOCK_SIZE> NodeAllocator;    
 
   public:
+
+    class __aligned(64) BuildRecordOBB : public BuildRecord
+    {
+    public:
+      BuildRecordOBB() {}
+
+      BuildRecordOBB(const BuildRecord &b) 
+	{
+	  *(BuildRecord*)this = b;
+	  xfm = LinearSpace3fa( zero );
+	}
+      __aligned(64) LinearSpace3fa xfm;
+
+
+      __forceinline friend std::ostream &operator<<(std::ostream &o, const BuildRecordOBB &br)
+	{
+	  o << "centroid2 = " << br.bounds.centroid2 << " ";
+	  o << "geometry  = " << br.bounds.geometry << " ";
+	  o << "begin       " << br.begin << " ";
+	  o << "end         " << br.end << " ";
+	  o << "items       " << br.end-br.begin << " ";
+	  o << "parentID    " << br.parentID << " ";
+	  o << "parentBoxID " << br.parentBoxID << " ";
+	  o << "flags       " << br.flags << " ";
+	  o << "sArea       " << br.sArea << " ";
+	  o << "matrix      " << br.xfm << " ";
+	  return o;
+	};
+
+    };
+
     BVH4Hair *bvh4hair;
     Bezier1i *prims;
     Bezier1i *accel;
@@ -84,7 +115,6 @@ namespace embree
       size_nodes(0),
       size_accel(0)
       {
-	enablePerCoreWorkQueueFill = false;
       }
 
     virtual ~BVH4HairBuilder() 
@@ -129,13 +159,19 @@ namespace embree
 
     void allocateMemoryPools(const size_t numPrims, const size_t numNodes);
 
-    /*! recursive build function */
+    /*! recursive build functions */
     void recurseSAH(BuildRecord& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads);
-  
     void createLeaf(BuildRecord& current, NodeAllocator& alloc,const size_t threadIndex, const size_t threadCount);
-
     void recurse(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads);
 
+    /*! unaligned splits */
+    void recurseOBB(BuildRecordOBB& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads);
+
+    /*! perform sequential binning and splitting */
+    bool splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild);
+
+    void computeUnalignedSpace( BuildRecordOBB& current );
+    void computeUnalignedSpaceBounds( BuildRecordOBB& current );
 
     TASK_RUN_FUNCTION(BVH4HairBuilder,build_parallel_hair);
     TASK_FUNCTION(BVH4HairBuilder,computePrimRefsBezierCurves);
