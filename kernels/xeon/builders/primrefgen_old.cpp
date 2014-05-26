@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "primrefgen.h"
+#include "primrefgen_old.h"
 #include "heuristics.h"
 
 namespace embree

@@ -19,7 +19,7 @@
 #include "bvh4mb.h"
 #include "builders/primrefalloc.h"
 #include "builders/primrefblock.h"
-#include "builders/primrefgen.h"
+#include "builders/primrefgen_old.h"
 #include "builders/splitter.h"
 #include "builders/splitter_parallel.h"
 #include "geometry/primitive.h"

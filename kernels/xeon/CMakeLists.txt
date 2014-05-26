@@ -54,7 +54,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   builders/splitter.cpp
   builders/splitter_fallback.cpp
   builders/splitter_parallel.cpp
-  builders/primrefgen.cpp
+  builders/primrefgen_old.cpp
 
   builders/bezierrefgen.cpp 
   builders/trirefgen.cpp
