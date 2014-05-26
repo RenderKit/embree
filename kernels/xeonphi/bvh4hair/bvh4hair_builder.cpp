@@ -201,6 +201,196 @@ namespace embree
   }
 
 
+  void BVH4HairBuilder::parallelBinningGlobal(const size_t threadID, const size_t numThreads)
+  {
+    BuildRecord &current = global_sharedData.rec;
+
+    const unsigned int items = current.items();
+    const unsigned int startID = current.begin + ((threadID+0)*items/numThreads);
+    const unsigned int endID   = current.begin + ((threadID+1)*items/numThreads);
+
+    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
+    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
+
+    const mic_f centroidBoundsMin_2 = centroidMin;
+    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
+    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+
+    Bezier1i  *__restrict__ const tmp_prims = (Bezier1i*)accel;
+
+    fastbin_copy<Bezier1i>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
+
+    LockStepTaskScheduler::syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
+    
+    if (threadID == 0)
+      {
+	const float voxelArea = area(current.bounds.geometry);
+
+	global_sharedData.split.cost = items * voxelArea;
+	
+	const Bin16 &bin16 = global_bin16[0];
+
+	for (size_t dim=0;dim<3;dim++)
+	  {
+	    if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
+
+	    const mic_f rArea = prefix_area_rl(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
+					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
+	    const mic_f lArea = prefix_area_lr(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
+					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
+	    const mic_i lnum  = prefix_count(bin16.count[dim]);
+
+	    const mic_i rnum    = mic_i(items) - lnum;
+	    const mic_i lblocks = (lnum + mic_i(3)) >> 2;
+	    const mic_i rblocks = (rnum + mic_i(3)) >> 2;
+	    const mic_m m_lnum  = lnum == 0;
+	    const mic_m m_rnum  = rnum == 0;
+	    const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
+
+	    if (lt(cost,mic_f(global_sharedData.split.cost)))
+	      {
+
+		const mic_f min_cost    = vreduce_min(cost); 
+		const mic_m m_pos       = min_cost == cost;
+		const unsigned long pos = bitscan64(m_pos);	    
+		
+		assert(pos < 15);
+		if (pos < 15)
+		  {
+		    global_sharedData.split.cost    = cost[pos];
+		    global_sharedData.split.pos     = pos+1;
+		    global_sharedData.split.dim     = dim;	    
+		    global_sharedData.split.numLeft = lnum[pos];
+		  }
+	      }
+	  }
+      }
+  }
+
+
+  void BVH4HairBuilder::parallelPartitioning(BuildRecord& current,
+					  Bezier1i * __restrict__ l_source,
+					  Bezier1i * __restrict__ r_source,
+					  Bezier1i * __restrict__ l_dest,
+					  Bezier1i * __restrict__ r_dest,
+					  const Split &split,
+					  Centroid_Scene_AABB &local_left,
+					  Centroid_Scene_AABB &local_right)
+  {
+    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
+    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
+
+    const mic_f centroidBoundsMin_2 = centroidMin;
+    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
+    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+ 
+    const unsigned int bestSplitDim = split.dim;
+    const unsigned int bestSplit    = split.pos;
+
+    const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
+    const mic_f s = mic_f(scale[bestSplitDim]);
+
+    mic_f leftSceneBoundsMin((float)pos_inf);
+    mic_f leftSceneBoundsMax((float)neg_inf);
+    mic_f leftCentroidBoundsMin((float)pos_inf);
+    mic_f leftCentroidBoundsMax((float)neg_inf);
+
+    mic_f rightSceneBoundsMin((float)pos_inf);
+    mic_f rightSceneBoundsMax((float)neg_inf);
+    mic_f rightCentroidBoundsMin((float)pos_inf);
+    mic_f rightCentroidBoundsMax((float)neg_inf);
+
+    const mic_m dim_mask = mic_m::shift1[bestSplitDim];
+
+    for (;l_source<r_source;)
+      {
+	evictL1(l_source-2);	
+	    
+	prefetch<PFHINT_NT>(l_source+2);
+	prefetch<PFHINT_L2>(l_source + L2_PREFETCH_ITEMS + 4);
+
+	const mic2f b = l_source->getBounds();
+	const mic_f b_min = b.x;
+	const mic_f b_max = b.y;
+	// const mic_f b_min = broadcast4to16f(&l_source->lower);
+	// const mic_f b_max = broadcast4to16f(&l_source->upper);
+	const mic_f b_centroid2 = b_min + b_max;
+
+	if (likely(lt_split(b_min,b_max,dim_mask,c,s,mic_f(bestSplit)))) 
+	  {
+	    *l_dest++ = *l_source++;
+
+	    leftSceneBoundsMin = min(leftSceneBoundsMin,b_min);
+	    leftSceneBoundsMax = max(leftSceneBoundsMax,b_max);
+
+	    leftCentroidBoundsMin = min(leftCentroidBoundsMin,b_centroid2);
+	    leftCentroidBoundsMax = max(leftCentroidBoundsMax,b_centroid2);
+	    
+	  }
+	else
+	  {
+	    *r_dest++ = *l_source++;
+
+	    rightSceneBoundsMin = min(rightSceneBoundsMin,b_min);
+	    rightSceneBoundsMax = max(rightSceneBoundsMax,b_max);
+	    rightCentroidBoundsMin = min(rightCentroidBoundsMin,b_centroid2);
+	    rightCentroidBoundsMax = max(rightCentroidBoundsMax,b_centroid2);
+	  }
+      }
+    
+    store4f(&local_left.geometry.lower,leftSceneBoundsMin);
+    store4f(&local_left.geometry.upper,leftSceneBoundsMax);
+    store4f(&local_left.centroid2.lower,leftCentroidBoundsMin);
+    store4f(&local_left.centroid2.upper,leftCentroidBoundsMax);
+
+    store4f(&local_right.geometry.lower,rightSceneBoundsMin);
+    store4f(&local_right.geometry.upper,rightSceneBoundsMax);
+    store4f(&local_right.centroid2.lower,rightCentroidBoundsMin);
+    store4f(&local_right.centroid2.upper,rightCentroidBoundsMax);
+
+
+  }
+
+  void BVH4HairBuilder::parallelPartitioningGlobal(const size_t threadID, const size_t numThreads)
+  {
+    BuildRecord &current = global_sharedData.rec;
+
+    const unsigned int items = current.items();
+    const unsigned int startID = current.begin + ((threadID+0)*items/numThreads);
+    const unsigned int endID   = current.begin + ((threadID+1)*items/numThreads);
+   
+ 
+    const unsigned int bestSplitDim     = global_sharedData.split.dim;
+    const unsigned int bestSplit        = global_sharedData.split.pos;
+    const unsigned int bestSplitNumLeft = global_sharedData.split.numLeft;
+
+
+    const mic_i lnum    = prefix_sum(global_bin16[threadID].thread_count[bestSplitDim]);
+    const unsigned int local_numLeft = lnum[bestSplit-1];
+    const unsigned int local_numRight = (endID-startID) - lnum[bestSplit-1];
+ 
+    const unsigned int thread_start_left  = global_sharedData.lCounter.add(local_numLeft);
+    const unsigned int thread_start_right = global_sharedData.rCounter.add(local_numRight);
+
+    Bezier1i  *__restrict__ const tmp_prims = (Bezier1i*)accel;
+
+    Bezier1i * __restrict__ l_source = tmp_prims + startID;
+    Bezier1i * __restrict__ r_source = tmp_prims + endID;
+
+    Bezier1i * __restrict__ l_dest     = prims + current.begin + thread_start_left;
+    Bezier1i * __restrict__ r_dest     = prims + current.begin + thread_start_right + bestSplitNumLeft;
+
+    __aligned(64) Centroid_Scene_AABB local_left;
+    __aligned(64) Centroid_Scene_AABB local_right; // just one local
+
+    parallelPartitioning(current,l_source,r_source,l_dest,r_dest,global_sharedData.split,local_left,local_right);
+
+    global_sharedData.left.extend_atomic(local_left); 
+    global_sharedData.right.extend_atomic(local_right);  
+  }
+
+
+
   void BVH4HairBuilder::build(const size_t threadIndex, const size_t threadCount) 
   {
     DBG(PING);

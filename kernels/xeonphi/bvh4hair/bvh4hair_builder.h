@@ -16,6 +16,10 @@
 
 #pragma once
 
+#include "builders/parallel_builder.h"
+#include "builders/builder_util.h"
+#include "builders/binning.h"
+
 #include "bvh4i/bvh4i_builder.h"
 #include "bvh4hair.h"
 #include "geometry/bezier1i.h"
@@ -52,7 +56,7 @@ namespace embree
 
 
   /*! derived binned-SAH builder supporting hair primitives */  
-  class BVH4HairBuilder : public ParallelBuilderInterface
+  class BVH4HairBuilder : public ParallelBinnedSAHBuilder
   {
     ALIGNED_CLASS;
 
@@ -71,7 +75,7 @@ namespace embree
     size_t size_nodes;
     
   BVH4HairBuilder(BVH4Hair* bvh, BuildSource* source, void* geometry) 
-    : ParallelBuilderInterface(source,geometry),
+    : ParallelBinnedSAHBuilder(source,geometry),
       bvh4hair(bvh),
       prims(NULL),
       node(NULL),
@@ -103,6 +107,16 @@ namespace embree
 
   protected:
 
+    /*! perform parallel splitting */
+    void parallelPartitioning(BuildRecord& current,
+			      Bezier1i * __restrict__ l_source,
+			      Bezier1i * __restrict__ r_source,
+			      Bezier1i * __restrict__ l_dest,
+			      Bezier1i * __restrict__ r_dest,
+			      const Split &split,
+			      Centroid_Scene_AABB &local_left,
+			      Centroid_Scene_AABB &local_right);			      
+
     void allocateMemoryPools(const size_t numPrims, const size_t numNodes);
 
     /*! recursive build function */
@@ -115,6 +129,9 @@ namespace embree
 
     TASK_RUN_FUNCTION(BVH4HairBuilder,build_parallel_hair);
     TASK_FUNCTION(BVH4HairBuilder,computePrimRefsBezierCurves);
+    TASK_FUNCTION(BVH4HairBuilder,parallelBinningGlobal);
+    TASK_FUNCTION(BVH4HairBuilder,parallelPartitioningGlobal);
+
   };
 
 

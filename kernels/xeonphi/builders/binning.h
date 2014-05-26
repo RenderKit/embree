@@ -21,6 +21,7 @@
 namespace embree
 {
 
+
   __aligned(64) static const int identity[16]         = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
   __aligned(64) static const int reverse_identity[16] = { 15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0 };
 
@@ -925,5 +926,15 @@ template<class Primitive>
   bool split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
 
 
+    /* shared structure for multi-threaded binning and partitioning */
+    struct __aligned(64) SharedBinningPartitionData
+    {
+      __aligned(64) BuildRecord rec;
+      __aligned(64) Centroid_Scene_AABB left;
+      __aligned(64) Centroid_Scene_AABB right;
+      __aligned(64) Split split;
+      __aligned(64) AlignedAtomicCounter32 lCounter;
+      __aligned(64) AlignedAtomicCounter32 rCounter;
+    };
 
 };

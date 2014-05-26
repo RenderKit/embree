@@ -27,7 +27,7 @@
 
 namespace embree
 {
-  class BVH4iBuilder : public ParallelBuilderInterface
+  class BVH4iBuilder : public ParallelBinnedSAHBuilder
   {
     ALIGNED_CLASS;
   public:
@@ -122,30 +122,6 @@ namespace embree
 
 
     /* work record handling */
-  protected:
-
-  public:
-
-    /* shared structure for multi-threaded binning and partitioning */
-    struct __aligned(64) SharedBinningPartitionData
-    {
-      __aligned(64) BuildRecord rec;
-      __aligned(64) Centroid_Scene_AABB left;
-      __aligned(64) Centroid_Scene_AABB right;
-      __aligned(64) Split split;
-      __aligned(64) AlignedAtomicCounter32 lCounter;
-      __aligned(64) AlignedAtomicCounter32 rCounter;
-    };
-
-    /* single structure for all worker threads */
-    __aligned(64) SharedBinningPartitionData global_sharedData;
-
-    /* one 16-bins structure per thread */
-    __aligned(64) Bin16 global_bin16[MAX_MIC_THREADS];
-
-    /* one shared binning/partitoning structure per core */
-    __aligned(64) SharedBinningPartitionData local_sharedData[MAX_MIC_CORES];
-
   protected:
     PrimRef*   prims;
     BVHNode*   node;
