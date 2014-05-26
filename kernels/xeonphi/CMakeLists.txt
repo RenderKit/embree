@@ -42,6 +42,8 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   geometry/instance_intersector1.cpp
   geometry/instance_intersector16.cpp
 
+  builders/parallel_builder.cpp
+
   bvh4i/bvh4i.cpp
   bvh4i/bvh4i_builder.cpp
   bvh4i/bvh4i_builder_ext.cpp

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "builders/parallel_builder.h"
+
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder_util.h"
 #include "bvh4i/bvh4i_builder_util_mic.h"
@@ -25,78 +27,6 @@
 
 namespace embree
 {
-  class ParallelBuilderInterface : public Builder
-  {
-    ALIGNED_CLASS;
-  public:
-    static const size_t ALLOCATOR_NODE_BLOCK_SIZE = 64;
-    typedef AtomicIDBlock<ALLOCATOR_NODE_BLOCK_SIZE> NodeAllocator;    
-
-    /*! build mode */
-    enum { RECURSE = 1, FILL_LOCAL_QUEUES = 2, BUILD_TOP_LEVEL = 3 };
-
-    ParallelBuilderInterface(BuildSource* source, void* geometry)
-    : source(source), 
-      scene((Scene*)geometry), 
-      enablePerCoreWorkQueueFill(true),
-      enableTaskStealing(true),
-      numPrimitives((size_t)-1),
-      atomicID(0),
-      numNodes(0),
-      numAllocatedNodes(0)
-	{
-    
-	}
-
-    virtual void build            (const size_t threadIndex, const size_t threadCount) = 0;
-    virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives) = 0;
-    virtual void computePrimRefs  (const size_t threadIndex, const size_t threadCount) = 0;
-    virtual void createAccel      (const size_t threadIndex, const size_t threadCount) = 0;
-
-    virtual size_t getNumPrimitives() = 0;
-    virtual void printBuilderName()   = 0;
-
-    virtual void buildSubTree(BuildRecord& current, 
-			      NodeAllocator& alloc, 
-			      const size_t mode,
-			      const size_t threadID, 
-			      const size_t numThreads) = 0;
-
-
-  protected:
-    BuildSource* source;          //!< input geometry
-    Scene* scene;                 //!< input geometry
-    size_t numPrimitives;
-    size_t numNodes;
-    size_t numAllocatedNodes;
-
-    /*! bounds shared among threads */    
-    Centroid_Scene_AABB global_bounds;
-
-    /*! global node allocator */
-    AlignedAtomicCounter32  atomicID;
-
-    static const size_t SIZE_GLOBAL_WORK_STACK = 512;
-    static const size_t SIZE_LOCAL_WORK_STACK  = 16;
-
-    /*! global work queue */
-    __aligned(64) WorkStack<BuildRecord,SIZE_GLOBAL_WORK_STACK> global_workStack;
-
-    /*! local per core work queue */
-    __aligned(64) WorkStack<BuildRecord,SIZE_LOCAL_WORK_STACK> local_workStack[MAX_MIC_CORES];
-
-    /*! per core lock-step task scheduler */
-    __aligned(64) LockStepTaskScheduler4ThreadsLocalCore localTaskScheduler[MAX_MIC_CORES];
-
-    /*! flags to enable/disable per core work queues and task stealing */
-    bool enablePerCoreWorkQueueFill;
-    bool enableTaskStealing;
-
-    /*! parallel task functions */
-    TASK_FUNCTION(ParallelBuilderInterface,fillLocalWorkQueues);
-    TASK_FUNCTION(ParallelBuilderInterface,buildSubTrees);    
-  };
-
   class BVH4iBuilder : public ParallelBuilderInterface
   {
     ALIGNED_CLASS;
