@@ -20,8 +20,7 @@
 #include "common/accel.h"
 #include "common/scene.h"
 #include "geometry/primitive.h"
-
-#include "bvh4i/bvh4i_builder_util.h"
+#include "builders/builder_util.h"
 
 namespace embree
 {
