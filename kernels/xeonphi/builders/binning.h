@@ -471,7 +471,7 @@ namespace embree
 
 
 
-  template<class Primitive>
+  template<class Primitive, bool NGO_OPTIMIZATION>
   __forceinline void fastbin_copy(const Primitive * __restrict__ const aabb,
 				  Primitive * __restrict__ const tmp_aabb,
 				  const unsigned int thread_start,
@@ -643,10 +643,15 @@ namespace embree
 	prefetch<PFHINT_NT>(aptr+2);
 	prefetch<PFHINT_L2>(aptr+12);
 
-	tmp_aptr[0] = aptr[0];
-	tmp_aptr[1] = aptr[1];
-
-	store16f_ngo(tmp_aptr,twoAABBs);
+	if (NGO_OPTIMIZATION)
+	  {
+	    store16f_ngo(tmp_aptr,twoAABBs);
+	  }
+	else
+	  {
+	    tmp_aptr[0] = aptr[0]; 
+	    tmp_aptr[1] = aptr[1]; 
+	  }
 
 #pragma unroll(2)
 	for (size_t i=0;i<2;i++)
@@ -923,7 +928,6 @@ template<class Primitive>
     float cost;
   };
 
-  bool split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
 
 
     /* shared structure for multi-threaded binning and partitioning */

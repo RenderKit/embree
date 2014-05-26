@@ -71,10 +71,10 @@ namespace embree
     size_t numAllocatedNodes;
 
     /*! bounds shared among threads */    
-    Centroid_Scene_AABB global_bounds;
+    __aligned(64) Centroid_Scene_AABB global_bounds;
 
     /*! global node allocator */
-    AlignedAtomicCounter32  atomicID;
+    __aligned(64) AlignedAtomicCounter32  atomicID;
 
     static const size_t SIZE_GLOBAL_WORK_STACK = 512;
     static const size_t SIZE_LOCAL_WORK_STACK  = 16;

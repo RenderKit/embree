@@ -514,7 +514,7 @@ namespace embree
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
 
-    fastbin_copy<PrimRef>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
+    fastbin_copy<PrimRef,true>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
 
     LockStepTaskScheduler::syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
     
@@ -1031,6 +1031,24 @@ namespace embree
       return splitSequential(current,left,right);
   }
 
+  bool BVH4iBuilder::split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+  {
+    const unsigned int center = (current.begin + current.end)/2;
+    
+    Centroid_Scene_AABB left; left.reset();
+    for (size_t i=current.begin; i<center; i++)
+      left.extend(primref[i].bounds());
+    leftChild.init(left,current.begin,center);
+    
+    Centroid_Scene_AABB right; right.reset();
+    for (size_t i=center; i<current.end; i++)
+      right.extend(primref[i].bounds());	
+    rightChild.init(right,center,current.end);
+    
+    return true;
+  }
+
+  
   // =======================================================================================================
   // =======================================================================================================
   // =======================================================================================================
@@ -1265,7 +1283,7 @@ namespace embree
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
 
-    fastbin_copy<PrimRef>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
+    fastbin_copy<PrimRef,true>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
 
     localTaskScheduler[globalCoreID].syncThreads(localThreadID);
 
@@ -1372,23 +1390,6 @@ namespace embree
   // =======================================================================================================
   // =======================================================================================================
   // =======================================================================================================
-
-  bool split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
-  {
-    const unsigned int center = (current.begin + current.end)/2;
-    
-    Centroid_Scene_AABB left; left.reset();
-    for (size_t i=current.begin; i<center; i++)
-      left.extend(primref[i].bounds());
-    leftChild.init(left,current.begin,center);
-    
-    Centroid_Scene_AABB right; right.reset();
-    for (size_t i=center; i<current.end; i++)
-      right.extend(primref[i].bounds());	
-    rightChild.init(right,center,current.end);
-    
-    return true;
-  }
 
 
   void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 

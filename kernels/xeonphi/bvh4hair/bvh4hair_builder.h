@@ -84,6 +84,7 @@ namespace embree
       size_nodes(0),
       size_accel(0)
       {
+	enablePerCoreWorkQueueFill = false;
       }
 
     virtual ~BVH4HairBuilder() 
@@ -107,6 +108,15 @@ namespace embree
 
   protected:
 
+    /*! splitting function that selects between sequential and parallel mode */
+    bool split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads);
+
+    /*! perform sequential binning and splitting */
+    bool splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
+
+    /*! perform parallel binning and splitting using all threads on all cores*/
+    bool splitParallelGlobal(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t threads);
+
     /*! perform parallel splitting */
     void parallelPartitioning(BuildRecord& current,
 			      Bezier1i * __restrict__ l_source,
@@ -121,8 +131,6 @@ namespace embree
 
     /*! recursive build function */
     void recurseSAH(BuildRecord& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads);
-
-    bool split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads);
   
     void createLeaf(BuildRecord& current, NodeAllocator& alloc,const size_t threadIndex, const size_t threadCount);
 

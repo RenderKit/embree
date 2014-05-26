@@ -25,8 +25,13 @@
 
 #define BVH_NODE_PREALLOC_FACTOR                 1.15f
 
+// TODO: 
+// - MINIMAL ALLOCATION FOR EMPTY SCENES
+
 namespace embree
 {
+
+
   class BVH4iBuilder : public ParallelBinnedSAHBuilder
   {
     ALIGNED_CLASS;
@@ -116,6 +121,9 @@ namespace embree
     
     /*! recursive build function */
     void recurseSAH(BuildRecord& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads);
+
+    /*! brute force splitting */
+    bool split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
 
   protected:
     BVH4i* bvh;                   //!< Output BVH

@@ -3,12 +3,19 @@
 
 namespace embree
 {
-#define DBG(x) 
+#define DBG(x) x
 
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 #define SINGLE_THREADED_BUILD_THRESHOLD        512
-#define TIMER(x)  
+#define THRESHOLD_FOR_SUBTREE_RECURSION         64
+#define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
+
+#define TIMER(x)  x
+
+#if defined(DEBUG)
+  extern AtomicMutex mtx;
+#endif
 
   static double dt = 0.0f;
 
@@ -49,9 +56,10 @@ namespace embree
 
     if (numPrimitivesOld != numPrimitives)
       {
-	const size_t numPrims = numPrimitives+4;
+	const size_t numPrims = numPrimitives;
 	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
-	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+	size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+	if (numPrimitives == 0) numNodes = 0;
 	allocateMemoryPools(numPrims,numNodes);
       }
   }
@@ -72,13 +80,13 @@ namespace embree
     const size_t numBezierCurves = numPrimitives;
     const size_t startID   = (threadID+0)*numBezierCurves/numThreads;
     const size_t endID     = (threadID+1)*numBezierCurves/numThreads; 
-
-    DBG(
-	DBG_PRINT(numTotalGroups);
-	DBG_PRINT(numBezierCurves);
-	DBG_PRINT(startID);
-	DBG_PRINT(endID);
-	);
+    
+     DBG(
+     	DBG_PRINT(numTotalGroups);
+     	DBG_PRINT(numBezierCurves);
+     	DBG_PRINT(startID);
+     	DBG_PRINT(endID);
+	 );
     
     Bezier1i *__restrict__ const bptr     = (Bezier1i*)this->prims;
 
@@ -212,13 +220,23 @@ namespace embree
     const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
     const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
 
+    // mtx.lock();
+    // PING;
+    // DBG_PRINT(threadID);
+    // DBG_PRINT(startID);
+    // DBG_PRINT(endID);
+    // DBG_PRINT(current.bounds);
+    // DBG_PRINT(prims);
+    // DBG_PRINT(accel);
+    // mtx.unlock();
+
     const mic_f centroidBoundsMin_2 = centroidMin;
     const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
     const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
 
     Bezier1i  *__restrict__ const tmp_prims = (Bezier1i*)accel;
 
-    fastbin_copy<Bezier1i>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
+    fastbin_copy<Bezier1i,false>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
 
     LockStepTaskScheduler::syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
     
@@ -442,9 +460,20 @@ namespace embree
 
   }
 
+  void BVH4HairBuilder::buildSubTree(BuildRecord& current, 
+				  NodeAllocator& alloc, 
+				  const size_t mode,
+				  const size_t threadID, 
+				  const size_t numThreads)
+  {
+    DBG(PING);
+    recurseSAH(current,alloc,/*mode*/ RECURSE,threadID,numThreads);
+  }
+
+
   void BVH4HairBuilder::build_parallel_hair(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
-    PING;
+    DBG(PING);
 
     TIMER(double msec = 0.0);
 
@@ -481,9 +510,6 @@ namespace embree
     node[0].setInvalid();
     node[0].setMatrix(global_bounds.geometry,0);
 
-    DBG( DBG_PRINT( global_bounds.geometry ) );
-    DBG( DBG_PRINT( node[0] ) );
-
     /* create initial build record */
     BuildRecord br;
     br.init(global_bounds,0,numPrimitives);
@@ -494,7 +520,7 @@ namespace embree
     /* node allocator */
     NodeAllocator alloc(atomicID,numAllocatedNodes);
         
-#if 1
+#if 0
     recurseSAH(br,alloc,RECURSE,threadIndex,threadCount);
     
 #else
@@ -510,8 +536,11 @@ namespace embree
       BuildRecord br;
       if (!global_workStack.pop_nolock_largest(br)) break;
       DBG(DBG_PRINT(br));
-      //recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);      
+      DBG_PRINT(br);
+      recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);      
+      DBG(DBG_PRINT(global_workStack.size()));
     }
+    DBG_PRINT(global_workStack.size());
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "build_top_level " << 1000. * msec << " ms" << std::endl << std::flush);
@@ -538,15 +567,6 @@ namespace embree
     bvh4hair->unaligned_nodes  = node;
     bvh4hair->accel            = prims;
 
-    DBG(
-	for (size_t i=0;i<2 /* min(numNodes,numPrimitives) */ ;i++)
-	  {
-	    DBG_PRINT(i);
-	    DBG_PRINT(node[i]);
-	  }	
-	std::cout << "BUILD DONE" << std::endl;
-	);
-
     /* release all threads again */
     LockStepTaskScheduler::releaseThreads(threadCount);
 
@@ -572,7 +592,39 @@ namespace embree
     return true;
   }
 
-  __forceinline bool BVH4HairBuilder::split(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t mode, const size_t threadID, const size_t numThreads)
+  __forceinline bool BVH4HairBuilder::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
+  {
+    DBG(PING);
+
+   if (unlikely(mode == BUILD_TOP_LEVEL))
+      {
+	DBG(DBG_PRINT("TOP_LEVEL"));
+
+	if (current.items() >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD)
+	  return splitParallelGlobal(current,left,right,threadID,numThreads);
+	else
+	  {
+	    DBG(std::cout << "WARNING in top-level build: too few items for parallel split " << current.items() << std::endl << std::flush);
+	    return splitSequential(current,left,right);
+	  }
+      }
+    // else if (unlikely(mode == FILL_LOCAL_QUEUES))
+    //   {
+    // 	if (current.items() >= THRESHOLD_FOR_SUBTREE_RECURSION)
+    // 	  return splitParallelLocal(current,left,right,threadID);
+    // 	else
+    // 	  {
+    // 	    DBG(std::cout << "WARNING in fill_local_queues build: too few items for parallel split " << current.items() << std::endl << std::flush);
+    // 	    return splitSequential(current,left,right);
+    // 	  }
+	
+    //   }
+    else
+      return splitSequential(current,left,right);    
+  }
+
+
+  __forceinline bool BVH4HairBuilder::splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
   {
     /* mark as leaf if leaf threshold reached */
     if (current.items() <= BVH4Hair::N) {
@@ -670,9 +722,68 @@ namespace embree
   }
   
 
+  bool BVH4HairBuilder::splitParallelGlobal( BuildRecord &current,
+					  BuildRecord &leftChild,
+					  BuildRecord &rightChild,
+					  const size_t threadID,
+					  const size_t numThreads)
+  {
+    DBG(PING);
+
+    const unsigned int items = current.end - current.begin;
+    assert(items >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD);
+  
+    /* mark as leaf if leaf threshold reached */
+    if (items <= BVH4Hair::N) {
+      current.createLeaf();
+      return false;
+    }
+
+     global_sharedData.rec = current;
+     global_sharedData.split.reset();
+     global_sharedData.left.reset();
+     global_sharedData.right.reset();
+     
+     LockStepTaskScheduler::dispatchTask( task_parallelBinningGlobal, this, threadID, numThreads );
+
+     if (unlikely(global_sharedData.split.pos == -1)) 
+       split_fallback(prims,current,leftChild,rightChild);
+     else
+       {
+	 global_sharedData.left.reset();
+	 global_sharedData.right.reset();
+
+	 global_sharedData.lCounter.reset(0);
+	 global_sharedData.rCounter.reset(0); 
+
+	 LockStepTaskScheduler::dispatchTask( task_parallelPartitioningGlobal, this, threadID, numThreads );
+
+	 const unsigned int mid = current.begin + global_sharedData.split.numLeft;
+
+	if (unlikely(current.begin == mid || mid == current.end)) 
+	  {
+	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
+	    DBG_PRINT(global_sharedData.split);
+	    DBG_PRINT(current);
+	    DBG_PRINT(mid);
+	    split_fallback(prims,current,leftChild,rightChild);	    
+	  }
+	else
+	  {
+	    leftChild.init(global_sharedData.left,current.begin,mid);
+	    rightChild.init(global_sharedData.right,mid,current.end);
+	  }	 
+       }
+     
+     if (leftChild.items()  <= BVH4Hair::N) leftChild.createLeaf();
+     if (rightChild.items() <= BVH4Hair::N) rightChild.createLeaf();
+     return true;
+  }
+
+
   __forceinline void BVH4HairBuilder::createLeaf(BuildRecord& current, NodeAllocator& alloc,const size_t threadIndex, const size_t threadCount)
   {
-    DBG(DBG_PRINT(current));
+    //DBG(DBG_PRINT(current));
 
 #if defined(DEBUG)
     if (current.depth > BVH4Hair::maxBuildDepthLeaf) 
@@ -718,8 +829,8 @@ namespace embree
 				   const size_t threadID, 
 				   const size_t numThreads)
   {
-    DBG(PING);
-    DBG(DBG_PRINT(current));
+    //DBG(PING);
+    //DBG(DBG_PRINT(current));
 
     __aligned(64) BuildRecord children[BVH4Hair::N];
 
@@ -782,22 +893,11 @@ namespace embree
     /* recurse into each child */
     for (unsigned int i=0; i<numChildren; i++) 
     {
-      //node[currentIndex+i].lower = (Vec3fa) children[i].bounds.geometry.lower;
-      //node[currentIndex+i].upper = (Vec3fa) children[i].bounds.geometry.upper;
       node[currentIndex].setMatrix(children[i].bounds.geometry,i);
       children[i].parentID    = currentIndex;
       children[i].parentBoxID = i;
       recurseSAH(children[i],alloc,mode,threadID,numThreads);
     }    
-  }
-
-  void BVH4HairBuilder::buildSubTree(BuildRecord& current, 
-				     NodeAllocator& alloc, 
-				     const size_t mode,
-				     const size_t threadID, 
-				     const size_t numThreads)
-  {
-    DBG(PING);
   }
 
   void BVH4HairBuilder::createAccel(const size_t threadIndex, const size_t threadCount)

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "common/primref.h"
+#include "common/default.h"
 
 namespace embree
 {
