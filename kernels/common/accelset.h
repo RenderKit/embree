@@ -128,7 +128,7 @@ namespace embree
       }
 
       /*! Calculates the bounds of an item */
-      __forceinline BBox3fa bounds (size_t item) 
+      __forceinline BBox3fa bounds (size_t item) const
       {
         BBox3fa box; 
         boundsFunc(intersectors.boundsPtr,item,(RTCBounds&)box);
