@@ -174,6 +174,35 @@ namespace embree
       size_t numPrimitives;
     };
 
+    class BVH4BezierBuilderFast : public BVH4BuilderFast
+    {
+    public:
+      BVH4BezierBuilderFast (BVH4* bvh, Scene* scene,       size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+      BVH4BezierBuilderFast (BVH4* bvh, BezierCurves* geom, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+      size_t number_of_primitives();
+      void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
+      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) ;
+    public:
+      Scene* scene;         //!< input scene
+      BezierCurves* geom;   //!< input mesh
+    };
+
+    class BVH4Bezier1BuilderFast : public BVH4BezierBuilderFast
+    {
+    public:
+      BVH4Bezier1BuilderFast (BVH4* bvh, Scene* scene);
+      BVH4Bezier1BuilderFast (BVH4* bvh, BezierCurves* geom);
+      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+    };
+
+    class BVH4Bezier1iBuilderFast : public BVH4BezierBuilderFast
+    {
+    public:
+      BVH4Bezier1iBuilderFast (BVH4* bvh, Scene* scene);
+      BVH4Bezier1iBuilderFast (BVH4* bvh, BezierCurves* geom);
+      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+    };
+
     class BVH4TriangleBuilderFast : public BVH4BuilderFast
     {
     public:

@@ -20,6 +20,8 @@
 #include "bvh4_builder_binner.h"
 #include "builders/primrefgen.h"
 
+#include "geometry/bezier1.h"
+#include "geometry/bezier1i.h"
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
@@ -49,6 +51,19 @@ namespace embree
       needAllThreads = true;
     }
 
+    BVH4BezierBuilderFast::BVH4BezierBuilderFast (BVH4* bvh, Scene* scene, 
+						  size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, 
+						  const size_t minLeafSize, const size_t maxLeafSize)
+      : scene(scene), geom(NULL), BVH4BuilderFast(bvh,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize) {}
+    
+    BVH4BezierBuilderFast::BVH4BezierBuilderFast (BVH4* bvh, BezierCurves* geom, 
+						  size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, 
+						  const size_t minLeafSize, const size_t maxLeafSize)
+      : scene(geom->parent), geom(geom), BVH4BuilderFast(bvh,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize) 
+    {
+      needAllThreads = geom->size() > 50000;
+    }
+
     BVH4TriangleBuilderFast::BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene, 
 						      size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, 
 						      const size_t minLeafSize, const size_t maxLeafSize)
@@ -70,6 +85,12 @@ namespace embree
     {
       needAllThreads = geom->size() > 50000;
     }
+
+    BVH4Bezier1BuilderFast::BVH4Bezier1BuilderFast (BVH4* bvh, Scene* scene)
+      : BVH4BezierBuilderFast(bvh,scene,0,0,false,sizeof(Bezier1),1,1) {}
+
+    BVH4Bezier1iBuilderFast::BVH4Bezier1iBuilderFast (BVH4* bvh, Scene* scene)
+      : BVH4BezierBuilderFast(bvh,scene,0,0,false,sizeof(Bezier1i),1,1) {}
 
     BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene)
       : BVH4TriangleBuilderFast(bvh,scene,0,0,false,sizeof(Triangle1),2,inf) {}
@@ -93,6 +114,13 @@ namespace embree
 
     BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, TriangleMesh* mesh)
       : BVH4TriangleBuilderFast(bvh,mesh,0,0,false,sizeof(Triangle1),2,inf) {}
+
+
+    BVH4Bezier1BuilderFast::BVH4Bezier1BuilderFast (BVH4* bvh, BezierCurves* geom)
+      : BVH4BezierBuilderFast(bvh,geom,0,0,false,sizeof(Bezier1),1,1) {}
+
+    BVH4Bezier1iBuilderFast::BVH4Bezier1iBuilderFast (BVH4* bvh, BezierCurves* geom)
+      : BVH4BezierBuilderFast(bvh,geom,0,0,false,sizeof(Bezier1i),1,1) {}
 
     BVH4Triangle4BuilderFast::BVH4Triangle4BuilderFast (BVH4* bvh, TriangleMesh* mesh)
       : BVH4TriangleBuilderFast(bvh,mesh,2,2,false,sizeof(Triangle4),4,inf) {}
@@ -185,6 +213,28 @@ namespace embree
       }
 #endif
     }
+
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
+    size_t BVH4BezierBuilderFast::number_of_primitives() 
+    {
+      if (geom) return geom->size();
+      else      return scene->numBezierCurves;
+    }
+    
+    void BVH4BezierBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
+    {
+      if (geom) PrimRefArrayGenFromGeometry<BezierCurves>::generate_sequential(threadIndex, threadCount, geom , prims, pinfo);
+      else      PrimRefArrayGen                          ::generate_sequential(threadIndex, threadCount, scene, BEZIER_CURVES, 1, prims, pinfo);
+    }
+
+    void BVH4BezierBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
+    {
+      if (geom) PrimRefArrayGenFromGeometry<BezierCurves>::generate_parallel(threadIndex, threadCount, geom , prims, pinfo);
+      else      PrimRefArrayGen                          ::generate_parallel(threadIndex, threadCount, scene, BEZIER_CURVES, 1, prims, pinfo);
+    }
     
     // =======================================================================================================
     // =======================================================================================================
@@ -234,6 +284,47 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
+    void BVH4Bezier1BuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    {
+      size_t items = current.size();
+      size_t start = current.begin;
+            
+      /* allocate leaf node */
+      Bezier1* accel = (Bezier1*) leafAlloc.malloc(items*sizeof(Bezier1));
+      *current.parent = bvh->encodeLeaf((char*)accel,items);
+      
+      for (size_t i=0; i<items; i++) 
+      {	
+	const size_t geomID = prims[start+i].geomID();
+        const size_t primID = prims[start+i].primID();
+	const BezierCurves* curves = scene->getBezierCurves(geomID);
+	const Vec3fa& p0 = curves->vertex(curves->curve(primID+0));
+	const Vec3fa& p1 = curves->vertex(curves->curve(primID+1));
+	const Vec3fa& p2 = curves->vertex(curves->curve(primID+2));
+	const Vec3fa& p3 = curves->vertex(curves->curve(primID+3));
+	new (&accel[i]) Bezier1(p0,p1,p2,p3,0.0f,1.0f,geomID,primID);
+      }
+    }
+
+    void BVH4Bezier1iBuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    {
+      size_t items = current.size();
+      size_t start = current.begin;
+            
+      /* allocate leaf node */
+      Bezier1i* accel = (Bezier1i*) leafAlloc.malloc(items*sizeof(Bezier1i));
+      *current.parent = bvh->encodeLeaf((char*)accel,items);
+      
+      for (size_t i=0; i<items; i++) 
+      {	
+	const size_t geomID = prims[start+i].geomID();
+        const size_t primID = prims[start+i].primID();
+	const BezierCurves* curves = scene->getBezierCurves(geomID);
+	const Vec3fa& p0 = curves->vertex(curves->curve(primID));
+	new (&accel[i]) Bezier1i(&p0,geomID,primID);
+      }
+    }
+
     void BVH4Triangle1BuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
       size_t items = current.size();
@@ -751,6 +842,8 @@ namespace embree
       if (g_verbose >= 2) dt = getSeconds()-t0;
     }
     
+    Builder* BVH4Bezier1BuilderFast    (void* bvh, Scene* scene, size_t mode) { return new class BVH4Bezier1BuilderFast ((BVH4*)bvh,scene); }
+    Builder* BVH4Bezier1iBuilderFast   (void* bvh, Scene* scene, size_t mode) { return new class BVH4Bezier1iBuilderFast ((BVH4*)bvh,scene); }
     Builder* BVH4Triangle1BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle1BuilderFast ((BVH4*)bvh,scene); }
     Builder* BVH4Triangle4BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4BuilderFast ((BVH4*)bvh,scene); }
 #if defined(__AVX__)
@@ -761,6 +854,8 @@ namespace embree
     Builder* BVH4Triangle4iBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4iBuilderFast((BVH4*)bvh,scene); }
     Builder* BVH4UserGeometryBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4UserGeometryBuilderFast((BVH4*)bvh,scene); }
 
+    Builder* BVH4Bezier1MeshBuilderFast    (void* bvh, BezierCurves* geom, size_t mode) { return new class BVH4Bezier1BuilderFast ((BVH4*)bvh,geom); }
+    Builder* BVH4Bezier1iMeshBuilderFast   (void* bvh, BezierCurves* geom, size_t mode) { return new class BVH4Bezier1iBuilderFast ((BVH4*)bvh,geom); }
     Builder* BVH4Triangle1MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle1BuilderFast ((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle4MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4BuilderFast ((BVH4*)bvh,mesh); }
 #if defined(__AVX__)
