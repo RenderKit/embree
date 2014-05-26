@@ -38,6 +38,18 @@ namespace embree
       if ((ty & BEZIER_CURVES) && (numTimeSteps & 2)) numPrimitives += scene->numBezierCurves2;
       if ((ty & USER_GEOMETRY)                      ) numPrimitives += scene->numUserGeometries1;
 
+      /*if (ty & USER_GEOMETRY) { // FIXME: remove
+	for (size_t i=0; i<scene->size(); i++) {
+	  Geometry* geom =  (Geometry*) scene->get(i);
+	  if (!geom || geom->type != USER_GEOMETRY) continue;
+	  AccelSet* accel = (UserGeometryBase*) geom; 
+	  if (geom->isModified()) {
+	    accel->build(threadIndex,threadCount);
+	    geom->state = Geometry::ENABLED;
+	  }
+	}
+	}*/
+
       /*! parallel stage */
       pinfo.reset();
       TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");

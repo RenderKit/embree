@@ -441,15 +441,13 @@ namespace embree
       
       /* allocate leaf node */
       AccelSetItem* accel = (AccelSetItem*) leafAlloc.malloc(sizeof(AccelSetItem)*items);
-      *current.parent = bvh->encodeLeaf((char*)accel,items);
+      *current.parent = bvh->encodeLeaf(accel,items);
       
       for (size_t i=0; i<items; i++)
       {
 	const PrimRef& prim = prims[start+i];
-        std::vector<AccelSet*>* accels = (std::vector<AccelSet*>*) geom;
-        AccelSetItem* dst = &accel[i];
-        dst->accel = (*accels)[prim.geomID()];
-        dst->item = prim.primID();
+	accel[i].accel = (AccelSet*) (UserGeometryBase*) scene->get(prim.geomID()); //(*accels)[prim.geomID()];
+        accel[i].item  = prim.primID();
       }
     }
     
@@ -699,7 +697,7 @@ namespace embree
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();
-     
+
       /* calculate list of primrefs */
       PrimInfo pinfo(empty);
       create_primitive_array_parallel(threadIndex, threadCount, pinfo);
