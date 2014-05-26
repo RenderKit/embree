@@ -100,27 +100,33 @@ namespace embree
     public:
 
       /*! Constructor. */
-      BVH4BuilderFast (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+      BVH4BuilderFast (BVH4* bvh, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
       
       /*! Destructor */
       ~BVH4BuilderFast ();
-
-      /* initializes the builder */
-      void init(size_t threadIndex, size_t threadCount);
-      
+   
       /* build function */
       void build(size_t threadIndex, size_t threadCount);
 
       /* single threaded build */
       void build_sequential(size_t threadIndex, size_t threadCount);
-      
+
     public:
       TASK_RUN_FUNCTION(BVH4BuilderFast,computePrimRefs);
       TASK_RUN_FUNCTION(BVH4BuilderFast,buildSubTrees);
       TASK_RUN_FUNCTION(BVH4BuilderFast,build_parallel);
 
     public:
-      
+
+      /*! compute number of primitives */
+      virtual size_t number_of_primitives() = 0;
+    
+      /*! creates build primitive array (sequential version) */
+      virtual void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo) = 0;
+    
+      /*! creates build primitive array (parallel version) */
+      virtual void create_primitive_array_parallel(size_t threadIndex, size_t threadCount, PrimInfo& pinfo) = 0;
+    
       /*! build mode */
       enum { RECURSE_SEQUENTIAL = 1, RECURSE_PARALLEL = 2, BUILD_TOP_LEVEL = 3 };
       
@@ -148,8 +154,6 @@ namespace embree
       static void splitFallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
     
     public:
-      Scene* scene;                            //!< input scene
-      TriangleMesh* mesh;   //!< input mesh
       BVH4* bvh;                               //!< Output BVH
       size_t logBlockSize;
       size_t logSAHBlockSize;
@@ -168,13 +172,22 @@ namespace embree
       
     protected:
       size_t numPrimitives;
-      
-    protected:
-      //__aligned(64) GlobalAllocator nodeAllocator;
-      //__aligned(64) GlobalAllocator primAllocator;
     };
 
-    class BVH4Triangle1BuilderFast : public BVH4BuilderFast
+    class BVH4TriangleBuilderFast : public BVH4BuilderFast
+    {
+    public:
+      BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene,       size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+      BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* mesh, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+      size_t number_of_primitives();
+      void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
+      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) ;
+    public:
+      Scene* scene;         //!< input scene
+      TriangleMesh* mesh;   //!< input mesh
+    };
+
+    class BVH4Triangle1BuilderFast : public BVH4TriangleBuilderFast
     {
     public:
       BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene);
@@ -182,7 +195,7 @@ namespace embree
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
-    class BVH4Triangle4BuilderFast : public BVH4BuilderFast
+    class BVH4Triangle4BuilderFast : public BVH4TriangleBuilderFast
     {
     public:
       BVH4Triangle4BuilderFast (BVH4* bvh, Scene* scene);
@@ -190,7 +203,7 @@ namespace embree
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
-    class BVH4Triangle8BuilderFast : public BVH4BuilderFast
+    class BVH4Triangle8BuilderFast : public BVH4TriangleBuilderFast
     {
     public:
       BVH4Triangle8BuilderFast (BVH4* bvh, Scene* scene);
@@ -198,7 +211,7 @@ namespace embree
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
-    class BVH4Triangle1vBuilderFast : public BVH4BuilderFast
+    class BVH4Triangle1vBuilderFast : public BVH4TriangleBuilderFast
     {
     public:
       BVH4Triangle1vBuilderFast (BVH4* bvh, Scene* scene);
@@ -206,7 +219,7 @@ namespace embree
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
-    class BVH4Triangle4vBuilderFast : public BVH4BuilderFast
+    class BVH4Triangle4vBuilderFast : public BVH4TriangleBuilderFast
     {
     public:
       BVH4Triangle4vBuilderFast (BVH4* bvh, Scene* scene);
@@ -214,7 +227,7 @@ namespace embree
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
-    class BVH4Triangle4iBuilderFast : public BVH4BuilderFast
+    class BVH4Triangle4iBuilderFast : public BVH4TriangleBuilderFast
     {
     public:
       BVH4Triangle4iBuilderFast (BVH4* bvh, Scene* scene);

@@ -41,56 +41,66 @@ namespace embree
 
     std::auto_ptr<BVH4BuilderFast::GlobalState> BVH4BuilderFast::g_state(NULL);
 
-    BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, Scene* scene, TriangleMesh* mesh, 
-				      size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, 
+    BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, 
 				      const size_t minLeafSize, const size_t maxLeafSize)
-      : scene(scene), mesh(mesh), bvh(bvh), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), logSAHBlockSize(logSAHBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
+      : bvh(bvh), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), logSAHBlockSize(logSAHBlockSize), needVertices(needVertices), primBytes(primBytes), 
+	minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
     {
       needAllThreads = true;
-      if (mesh) {
-	needAllThreads = mesh->numTriangles > 50000;
-      }
+    }
+
+    BVH4TriangleBuilderFast::BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene, 
+						      size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, 
+						      const size_t minLeafSize, const size_t maxLeafSize)
+      : scene(scene), mesh(NULL), BVH4BuilderFast(bvh,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize) {}
+
+    BVH4TriangleBuilderFast::BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* mesh, 
+						      size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, 
+						      const size_t minLeafSize, const size_t maxLeafSize)
+      : scene(mesh->parent), mesh(mesh), BVH4BuilderFast(bvh,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize) 
+    {
+      needAllThreads = mesh->numTriangles > 50000;
     }
 
     BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BuilderFast(bvh,scene,NULL,0,0,false,sizeof(Triangle1),2,inf) {}
+      : BVH4TriangleBuilderFast(bvh,scene,0,0,false,sizeof(Triangle1),2,inf) {}
 
     BVH4Triangle4BuilderFast::BVH4Triangle4BuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BuilderFast(bvh,scene,NULL,2,2,false,sizeof(Triangle4),4,inf) {}
+      : BVH4TriangleBuilderFast(bvh,scene,2,2,false,sizeof(Triangle4),4,inf) {}
 
 #if defined(__AVX__)
     BVH4Triangle8BuilderFast::BVH4Triangle8BuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BuilderFast(bvh,scene,NULL,3,2,false,sizeof(Triangle8),8,inf) {}
+      : BVH4TriangleBuilderFast(bvh,scene,3,2,false,sizeof(Triangle8),8,inf) {}
 #endif
     
     BVH4Triangle1vBuilderFast::BVH4Triangle1vBuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BuilderFast(bvh,scene,NULL,0,0,false,sizeof(Triangle1v),2,inf) {}
+      : BVH4TriangleBuilderFast(bvh,scene,0,0,false,sizeof(Triangle1v),2,inf) {}
 
     BVH4Triangle4vBuilderFast::BVH4Triangle4vBuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BuilderFast(bvh,scene,NULL,2,2,false,sizeof(Triangle4v),4,inf) {}
+      : BVH4TriangleBuilderFast(bvh,scene,2,2,false,sizeof(Triangle4v),4,inf) {}
     
     BVH4Triangle4iBuilderFast::BVH4Triangle4iBuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BuilderFast(bvh,scene,NULL,2,2,true,sizeof(Triangle4i),4,inf) {}
+      : BVH4TriangleBuilderFast(bvh,scene,2,2,true,sizeof(Triangle4i),4,inf) {}
 
     BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,0,0,false,sizeof(Triangle1),2,inf) {}
+      : BVH4TriangleBuilderFast(bvh,mesh,0,0,false,sizeof(Triangle1),2,inf) {}
 
     BVH4Triangle4BuilderFast::BVH4Triangle4BuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,2,false,sizeof(Triangle4),4,inf) {}
+      : BVH4TriangleBuilderFast(bvh,mesh,2,2,false,sizeof(Triangle4),4,inf) {}
 
 #if defined(__AVX__)
     BVH4Triangle8BuilderFast::BVH4Triangle8BuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,3,2,false,sizeof(Triangle8),8,inf) {}
+      : BVH4TriangleBuilderFast(bvh,mesh,3,2,false,sizeof(Triangle8),8,inf) {}
 #endif
     
     BVH4Triangle1vBuilderFast::BVH4Triangle1vBuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,0,0,false,sizeof(Triangle1v),2,inf) {}
+      : BVH4TriangleBuilderFast(bvh,mesh,0,0,false,sizeof(Triangle1v),2,inf) {}
 
     BVH4Triangle4vBuilderFast::BVH4Triangle4vBuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,2,false,sizeof(Triangle4v),4,inf) {}
+      : BVH4TriangleBuilderFast(bvh,mesh,2,2,false,sizeof(Triangle4v),4,inf) {}
     
     BVH4Triangle4iBuilderFast::BVH4Triangle4iBuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4BuilderFast(bvh,mesh->parent,mesh,2,2,true,sizeof(Triangle4i),4,inf) {}
+      : BVH4TriangleBuilderFast(bvh,mesh,2,2,true,sizeof(Triangle4i),4,inf) {}
    
     BVH4BuilderFast::~BVH4BuilderFast () 
     {
@@ -103,8 +113,18 @@ namespace embree
       if (g_verbose >= 1)
         std::cout << "building BVH4 with " << TOSTRING(isa) "::BVH4BuilderFast ... " << std::flush;
       
-      /* do some global inits first */
-      init(threadIndex,threadCount);
+      /* calculate size of scene */
+      size_t numPrimitivesOld = numPrimitives;
+      bvh->numPrimitives = numPrimitives = number_of_primitives();
+      bvh->init(numPrimitives);
+      
+      /* allocate build primitive array */
+      if (numPrimitivesOld != numPrimitives)
+      {
+	if (prims ) os_free(prims,bytesPrims);
+	bytesPrims = numPrimitives * sizeof(PrimRef);
+        prims = (PrimRef* ) os_malloc(bytesPrims);  memset(prims,0,bytesPrims);
+      }
       
 #if defined(PROFILE)
       
@@ -157,38 +177,38 @@ namespace embree
 #endif
     }
     
-    void BVH4BuilderFast::init(size_t threadIndex, size_t threadCount)
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
+    size_t BVH4TriangleBuilderFast::number_of_primitives() 
     {
-      /* calculate size of scene */
-      size_t numVertices = 0;
-      size_t numPrimitivesOld = numPrimitives;
-      if (mesh) {
-        numPrimitives = mesh->numTriangles;
-        numVertices = mesh->numVertices;
-      }
-      else {
-        numPrimitives = scene->numTriangles;
-      }
-      bvh->init(numPrimitives);
-      bvh->numPrimitives = numPrimitives;
-                  
-      if (numPrimitivesOld != numPrimitives)
-      {
-	if (prims ) os_free(prims,bytesPrims);
-	bytesPrims = numPrimitives * sizeof(PrimRef);
-        prims = (PrimRef* ) os_malloc(bytesPrims);  memset(prims,0,bytesPrims);
-      }
+      if (mesh) return mesh->numTriangles;
+      else      return scene->numTriangles;
     }
     
+    void BVH4TriangleBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
+    {
+      if (mesh) TriRefArrayGenFromTriangleMesh::generate_sequential(threadIndex, threadCount, mesh , prims, pinfo);
+      else      TriRefArrayGen                ::generate_sequential(threadIndex, threadCount, scene, prims, pinfo);
+    }
+
+    void BVH4TriangleBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
+    {
+      if (mesh) TriRefArrayGenFromTriangleMesh::generate_parallel(threadIndex, threadCount, mesh , prims, pinfo);
+      else      TriRefArrayGen                ::generate_parallel(threadIndex, threadCount, scene, prims, pinfo);
+    }
+ 
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4Triangle1BuilderFast::createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle1BuilderFast::createSmallLeaf(const BVH4BuilderFast* This_, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
+      const BVH4TriangleBuilderFast* This = (const BVH4TriangleBuilderFast*) This_;
       size_t items = current.size();
       size_t start = current.begin;
-      
+            
       /* allocate leaf node */
       Triangle1* accel = (Triangle1*) leafAlloc.malloc(items*sizeof(Triangle1));
       *current.parent = This->bvh->encodeLeaf((char*)accel,items);
@@ -215,8 +235,9 @@ namespace embree
       }
     }
     
-    void BVH4Triangle4BuilderFast::createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle4BuilderFast::createSmallLeaf(const BVH4BuilderFast* This_, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
+      const BVH4TriangleBuilderFast* This = (const BVH4TriangleBuilderFast*) This_;
       size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
@@ -249,8 +270,9 @@ namespace embree
 
 #if defined(__AVX__)
 
-    void BVH4Triangle8BuilderFast::createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle8BuilderFast::createSmallLeaf(const BVH4BuilderFast* This_, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
+      const BVH4TriangleBuilderFast* This = (const BVH4TriangleBuilderFast*) This_;
       size_t items = current.size();
       size_t start = current.begin;
       assert(items<=8);
@@ -283,8 +305,9 @@ namespace embree
     }
 #endif
     
-    void BVH4Triangle1vBuilderFast::createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle1vBuilderFast::createSmallLeaf(const BVH4BuilderFast* This_, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
+      const BVH4TriangleBuilderFast* This = (const BVH4TriangleBuilderFast*) This_;
       size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
@@ -314,8 +337,9 @@ namespace embree
       }
     }
     
-    void BVH4Triangle4vBuilderFast::createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle4vBuilderFast::createSmallLeaf(const BVH4BuilderFast* This_, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
+      const BVH4TriangleBuilderFast* This = (const BVH4TriangleBuilderFast*) This_;
       size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
@@ -346,8 +370,9 @@ namespace embree
       Triangle4v::store_nt(accel,Triangle4v(v0,v1,v2,vgeomID,vprimID,vmask));
     }
 
-    void BVH4Triangle4iBuilderFast::createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle4iBuilderFast::createSmallLeaf(const BVH4BuilderFast* This_, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
+      const BVH4TriangleBuilderFast* This = (const BVH4TriangleBuilderFast*) This_;
       size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
@@ -605,8 +630,7 @@ namespace embree
      
       /* create prim refs */
       PrimInfo pinfo(empty);
-      if (mesh) TriRefArrayGenFromTriangleMesh::generate_sequential(threadIndex, threadCount, mesh , prims, pinfo);
-      else      TriRefArrayGen                ::generate_sequential(threadIndex, threadCount, scene, prims, pinfo);
+      create_primitive_array_sequential(threadIndex, threadCount, pinfo);
       bvh->bounds = pinfo.geomBounds;
 
       /* create initial build record */
@@ -634,8 +658,7 @@ namespace embree
      
       /* calculate list of primrefs */
       PrimInfo pinfo(empty);
-      if (mesh) TriRefArrayGenFromTriangleMesh::generate_parallel(threadIndex, threadCount, mesh , prims, pinfo);
-      else      TriRefArrayGen                ::generate_parallel(threadIndex, threadCount, scene, prims, pinfo);
+      create_primitive_array_parallel(threadIndex, threadCount, pinfo);
       bvh->bounds = pinfo.geomBounds;
       
       /* initialize node and leaf allocator */
