@@ -41,6 +41,7 @@ namespace embree
       /*! parallel stage */
       pinfo.reset();
       TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
+      assert(pinfo_o.size() == numPrimitives);
     }
     
     void PrimRefListGen::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
@@ -131,6 +132,7 @@ namespace embree
     {
       pinfo_o.reset();
       TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::primrefgen");
+      assert(pinfo_o.size() == geom->size());
     }
     
     template<typename Ty>

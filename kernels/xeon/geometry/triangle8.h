@@ -43,7 +43,7 @@ namespace embree
 
     /*! Returns if the specified triangle is valid. */
     __forceinline bool valid(const size_t i) const { 
-      assert(i<4); 
+      assert(i<8); 
       return geomID[i] != -1; 
     }
 
