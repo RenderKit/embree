@@ -59,7 +59,7 @@ namespace embree
     BVH4Builder2::BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t mode,
 				size_t logBlockSize, size_t logSAHBlockSize, float intCost, 
 				bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-      : scene(scene), mesh(mesh), bvh(bvh), enableSpatialSplits(mode > 0),
+      : scene(scene), mesh(mesh), bvh(bvh), enableSpatialSplits(mode > 0), remainingReplications(0),
 	logBlockSize(logBlockSize), logSAHBlockSize(logSAHBlockSize), intCost(intCost), 
 	needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
      {

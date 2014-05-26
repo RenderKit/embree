@@ -282,7 +282,7 @@ namespace embree
     atomic_t numBezierCurves2;               //!< number of enabled motion blur curves
 
     atomic_t numUserGeometries1;        //!< number of enabled user geometries
-    atomic_t numUserGeometries2;        //!< number of enabled user geometries
+    //atomic_t numUserGeometries2;        //!< number of enabled user geometries
     
   public:
     FlatTriangleAccelBuildSource flat_triangle_source_1;
