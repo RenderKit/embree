@@ -20,6 +20,7 @@
 #include "common/accel.h"
 #include "common/scene.h"
 #include "geometry/primitive.h"
+#include "geometry/triangle1.h"
 
 namespace embree
 {

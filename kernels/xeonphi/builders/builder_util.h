@@ -17,7 +17,6 @@
 #pragma once
 
 #include "common/primref.h"
-#include "geometry/triangle1.h"
 
 namespace embree
 {

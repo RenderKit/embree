@@ -16,9 +16,7 @@
 
 #pragma once
 
-#include "bvh4i.h"
 #include "common/primref.h"
-#include "geometry/triangle1.h"
 
 namespace embree
 {
