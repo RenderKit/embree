@@ -18,7 +18,7 @@
 #include "bvh4_builder_fast.h"
 #include "bvh4_statistics.h"
 #include "bvh4_builder_binner.h"
-#include "builders/trirefgen.h"
+#include "builders/primrefgen.h"
 
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"

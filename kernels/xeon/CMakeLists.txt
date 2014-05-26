@@ -57,7 +57,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   builders/primrefgen_old.cpp
 
   builders/bezierrefgen.cpp 
-  builders/trirefgen.cpp
+  builders/primrefgen.cpp
   bvh4hair/heuristic_object_partition_unaligned.cpp
   bvh4hair/heuristic_object_partition.cpp
   bvh4hair/heuristic_spatial_split.cpp
@@ -133,7 +133,7 @@ IF (TARGET_AVX)
   ADD_LIBRARY(embree_avx STATIC
 
   builders/bezierrefgen.cpp 
-  builders/trirefgen.cpp
+  builders/primrefgen.cpp
   bvh4hair/heuristic_object_partition_unaligned.cpp
   bvh4hair/heuristic_object_partition.cpp
   bvh4hair/heuristic_spatial_split.cpp

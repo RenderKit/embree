@@ -20,7 +20,7 @@
 #include "builders/primrefblock.h"
 #include "geometry/primitive.h"
 #include "bvh4hair/heuristic_split.h"
-#include "builders/trirefgen.h"
+#include "builders/primrefgen.h"
 
 namespace embree
 {

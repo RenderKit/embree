@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "trirefgen.h"
+#include "primrefgen.h"
 
 namespace embree
 {
