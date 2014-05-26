@@ -221,13 +221,13 @@ namespace embree
     void BVH4UserGeometryBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
       if (geom) PrimRefArrayGenFromGeometry<UserGeometryBase>::generate_sequential(threadIndex, threadCount, geom , prims, pinfo);
-      else      PrimRefArrayGen                                     ::generate_sequential(threadIndex, threadCount, scene, USER_GEOMETRY, 1, prims, pinfo);
+      else      PrimRefArrayGen                              ::generate_sequential(threadIndex, threadCount, scene, USER_GEOMETRY, 1, prims, pinfo);
     }
 
     void BVH4UserGeometryBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
     {
       if (geom) PrimRefArrayGenFromGeometry<UserGeometryBase>::generate_parallel(threadIndex, threadCount, geom , prims, pinfo);
-      else      PrimRefArrayGen                                     ::generate_parallel(threadIndex, threadCount, scene, USER_GEOMETRY, 1, prims, pinfo);
+      else      PrimRefArrayGen                              ::generate_parallel(threadIndex, threadCount, scene, USER_GEOMETRY, 1, prims, pinfo);
     }
  
     // =======================================================================================================
@@ -501,6 +501,7 @@ namespace embree
     
     __forceinline void BVH4BuilderFast::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
     {
+      splitSequential(current,left,right,threadID,numThreads); return;
       if (mode == BUILD_TOP_LEVEL) splitParallel(current,left,right,threadID,numThreads);		  
       else                         splitSequential(current,left,right,threadID,numThreads);
     }
@@ -732,8 +733,10 @@ namespace embree
           break;
         
         /* guarantees to create no leaves in this stage */
-        if (br.size() <= minLeafSize)
+        if (br.size() <= minLeafSize) {
+	  g_state->heap.push(br);
           break;
+	}
 
         recurse(br,nodeAlloc,leafAlloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
       }
