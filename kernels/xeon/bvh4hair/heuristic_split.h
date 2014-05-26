@@ -44,7 +44,7 @@ namespace embree
       };
       
       typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
-      typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList; //!< list of primitives
+      typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;   //!< list of general primitives
       
     public:
       

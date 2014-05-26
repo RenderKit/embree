@@ -41,7 +41,9 @@ namespace embree
 
     std::auto_ptr<BVH4BuilderFast::GlobalState> BVH4BuilderFast::g_state(NULL);
 
-    BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+    BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, Scene* scene, TriangleMesh* mesh, 
+				      size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, 
+				      const size_t minLeafSize, const size_t maxLeafSize)
       : scene(scene), mesh(mesh), bvh(bvh), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), logSAHBlockSize(logSAHBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
     {
       needAllThreads = true;
@@ -94,8 +96,6 @@ namespace embree
     {
       if (prims) os_free(prims,bytesPrims); prims = NULL;
       bvh->alloc.shrink(); 
-      //bvh->bytesNodes = nodeAllocator.bytesAllocated;
-      //bvh->bytesPrimitives = primAllocator.bytesAllocated;
     }
     
     void BVH4BuilderFast::build(size_t threadIndex, size_t threadCount) 
@@ -133,14 +133,6 @@ namespace embree
       std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
       std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
       std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
-      /*std::cout << "  node allocator = " 
-                << 1E-6*nodeAllocator.next << " MB, " 
-                << 1E-6*nodeAllocator.bytesAllocated << " MB, " 
-                << 1E-6*nodeAllocator.bytesReserved << " MB" << std::endl;
-      std::cout << "  primitive allocator = " 
-                << 1E-6*primAllocator.next << " MB, " 
-                << 1E-6*primAllocator.bytesAllocated << " MB, " 
-                << 1E-6*primAllocator.bytesReserved << " MB" << std::endl;*/
       std::cout << BVH4Statistics(bvh).str();
       
 #else
@@ -160,23 +152,13 @@ namespace embree
         double perf = numPrimitives/dt*1E-6;
 
         std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s)" << std::endl;
-        /*std::cout << "  node allocator = " 
-                  << 1E-6*nodeAllocator.next << " MB, " 
-                  << 1E-6*nodeAllocator.bytesAllocated << " MB, " 
-                  << 1E-6*nodeAllocator.bytesReserved << " MB" << std::endl;
-        std::cout << "  primitive allocator = " 
-                  << 1E-6*primAllocator.next << " MB, " 
-                  << 1E-6*primAllocator.bytesAllocated << " MB, " 
-                  << 1E-6*primAllocator.bytesReserved << " MB" << std::endl;*/
-        std::cout << BVH4Statistics(bvh).str();
+	std::cout << BVH4Statistics(bvh).str();
       }
 #endif
     }
     
     void BVH4BuilderFast::init(size_t threadIndex, size_t threadCount)
     {
-      //bvh->init(0);
-      
       /* calculate size of scene */
       size_t numVertices = 0;
       size_t numPrimitivesOld = numPrimitives;
@@ -185,62 +167,16 @@ namespace embree
         numVertices = mesh->numVertices;
       }
       else {
-        numPrimitives = 0;
-        for (size_t i=0; i<scene->size(); i++) {
-          Geometry* geom = scene->get(i);
-          if (!geom || geom->type != TRIANGLE_MESH) continue;
-          TriangleMesh* mesh = (TriangleMesh*) geom;
-          if (mesh->numTimeSteps != 1) continue;
-          numPrimitives += mesh->numTriangles;
-          numVertices += mesh->numVertices;
-        }
+        numPrimitives = scene->numTriangles;
       }
       bvh->init(numPrimitives);
       bvh->numPrimitives = numPrimitives;
-      if (needVertices) bvh->numVertices = numVertices;
-      else              bvh->numVertices = 0;
-            
+                  
       if (numPrimitivesOld != numPrimitives)
       {
-        /* free previously allocated memory */
-        if (prims ) os_free(prims,bytesPrims);
-
-        /* add one additional memory block for each thread in multi-threaded mode */
-        size_t additionalBlocks = 1;
-        if (needAllThreads) additionalBlocks = threadCount;
-        
-        /* allocate as much memory as likely needed and reserve conservative amounts of memory */
-        size_t numPrimBlocks = blocks(numPrimitives);
-        size_t numAllocatedNodes = min(size_t(0.6*numPrimBlocks),numPrimitives);
-        size_t numAllocatedPrimitives = min(size_t(1.2*numPrimBlocks),numPrimitives);
-#if defined(__X86_64__)
-        size_t numReservedNodes = 2*numPrimitives;
-        size_t numReservedPrimitives = 2*numPrimitives;
-#else
-        size_t numReservedNodes = 1.5*numAllocatedNodes;
-        size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
-#endif
-
-        bytesPrims = numPrimitives * sizeof(PrimRef);
-        size_t bytesAllocatedNodes      = numAllocatedNodes * sizeof(BVH4::Node);
-        size_t bytesAllocatedPrimitives = numAllocatedPrimitives * primBytes;
-        bytesAllocatedPrimitives        = max(bytesAllocatedPrimitives,bytesPrims); // required as we store prims into primitive array for parallel splits
-        size_t bytesReservedNodes       = numReservedNodes * sizeof(BVH4::Node);
-        size_t bytesReservedPrimitives  = numReservedPrimitives * primBytes;
-        size_t blocksReservedNodes      = (bytesReservedNodes     +Allocator::blockSize-1)/Allocator::blockSize;
-        size_t blocksReservedPrimitives = (bytesReservedPrimitives+Allocator::blockSize-1)/Allocator::blockSize;
-        bytesReservedNodes      = Allocator::blockSize*(blocksReservedNodes      + additionalBlocks);
-        bytesReservedPrimitives = Allocator::blockSize*(blocksReservedPrimitives + additionalBlocks);
-        
-        /* allocated memory for primrefs, nodes, and primitives */
+	if (prims ) os_free(prims,bytesPrims);
+	bytesPrims = numPrimitives * sizeof(PrimRef);
         prims = (PrimRef* ) os_malloc(bytesPrims);  memset(prims,0,bytesPrims);
-        //nodeAllocator.init(bytesAllocatedNodes,bytesReservedNodes);
-        //primAllocator.init(bytesAllocatedPrimitives,bytesReservedPrimitives);
-        
-        /*bvh->nodes = nodeAllocator.data; 
-        bvh->bytesNodes = nodeAllocator.bytesReserved;
-        bvh->primitives = primAllocator.data; 
-        bvh->bytesPrimitives = primAllocator.bytesReserved;*/
       }
     }
     
@@ -755,6 +691,7 @@ namespace embree
     Builder* BVH4Triangle1vBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle1vBuilderFast((BVH4*)bvh,scene); }
     Builder* BVH4Triangle4vBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4vBuilderFast((BVH4*)bvh,scene); }
     Builder* BVH4Triangle4iBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4iBuilderFast((BVH4*)bvh,scene); }
+    //Builder* BVH4UserGeometryBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4UserGeometryBuilderFast((BVH4*)bvh,scene); }
 
     Builder* BVH4Triangle1MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle1BuilderFast ((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle4MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4BuilderFast ((BVH4*)bvh,mesh); }
@@ -764,5 +701,6 @@ namespace embree
     Builder* BVH4Triangle1vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle1vBuilderFast((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle4vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4vBuilderFast((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle4iMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4iBuilderFast((BVH4*)bvh,mesh); }
+    //Builder* BVH4UserGeometryMeshBuilderFast   (void* bvh, UserGeometryScene::UserGeometry* geom, size_t mode) { return new class BVH4UserGeometryBuilderFast((BVH4*)bvh,geom); }
   }
 }

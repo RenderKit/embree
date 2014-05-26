@@ -23,7 +23,7 @@
 
 namespace embree
 {
-  namespace UserGeometryScene
+  namespace UserGeometryScene // FIXME: remove this namespace
   {
     struct Base : public Geometry, public AccelSet
     {

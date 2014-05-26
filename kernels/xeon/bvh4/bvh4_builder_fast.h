@@ -21,6 +21,7 @@
 #include "../bvh4i/bvh4i_builder_binner.h"
 #include "../bvh4hair/heuristic_object_partition.h"
 #include "builders/workstack.h"
+#include "common/scene_user_geometry.h"
 
 namespace embree
 {
@@ -33,7 +34,6 @@ namespace embree
     protected:
       typedef BVH4::Node Node;
       typedef BVH4::NodeRef NodeRef;
-      //typedef GlobalAllocator::ThreadAllocator Allocator;
       typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
       static const size_t SIZE_WORK_STACK = 64;
 
@@ -219,6 +219,14 @@ namespace embree
     public:
       BVH4Triangle4iBuilderFast (BVH4* bvh, Scene* scene);
       BVH4Triangle4iBuilderFast (BVH4* bvh, TriangleMesh* mesh);
+      void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+    };
+
+    class BVH4UserGeometryBuilderFast : public BVH4BuilderFast
+    {
+    public:
+      BVH4UserGeometryBuilderFast (BVH4* bvh, Scene* scene);
+      BVH4UserGeometryBuilderFast (BVH4* bvh, UserGeometryScene::UserGeometry* geom);
       void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
   }
