@@ -18,8 +18,9 @@
 
 #include "builders/parallel_builder.h"
 #include "builders/builder_util.h"
+#include "builders/binning.h"
+
 #include "bvh4i/bvh4i.h"
-#include "bvh4i/bvh4i_builder_util_mic.h"
 #include "bvh4i_statistics.h"
 
 #define BVH_NODE_PREALLOC_FACTOR                 1.15f
