@@ -77,6 +77,56 @@ namespace embree
       PrimInfo& pinfo_o;                   //!< bounding information of primitives
     };
 
+    /*! Generates a list of build primitives from some bezier curve set. */
+    class PrimRefListGenFromBezierCurves
+    {
+      typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
+
+    public:      
+      static void generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const BezierCurves* set, PrimRefList& prims, PrimInfo& pinfo);
+      
+    private:
+      
+      /*! standard constructor that schedules the task */
+      PrimRefListGenFromBezierCurves (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const BezierCurves* set, PrimRefList& prims, PrimInfo& pinfo);
+            
+      /*! parallel task to iterate over the primitives */
+      TASK_RUN_FUNCTION(PrimRefListGenFromBezierCurves,task_gen_parallel);
+      
+      /* input data */
+    private:
+      const BezierCurves* geom;             //!< input geometry
+      PrimRefBlockAlloc<PrimRef>* alloc;   //!< allocator for build primitive blocks
+      TaskScheduler::Task task;
+      PrimRefList& prims_o;                //!< list of build primitives
+      PrimInfo& pinfo_o;                   //!< bounding information of primitives
+    };
+
+    /*! Generates a list of build primitives from some user geometry set. */
+    class PrimRefListGenFromUserGeometry
+    {
+      typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
+
+    public:      
+      static void generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const UserGeometryScene::Base* set, PrimRefList& prims, PrimInfo& pinfo);
+      
+    private:
+      
+      /*! standard constructor that schedules the task */
+      PrimRefListGenFromUserGeometry (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const UserGeometryScene::Base* set, PrimRefList& prims, PrimInfo& pinfo);
+            
+      /*! parallel task to iterate over the primitives */
+      TASK_RUN_FUNCTION(PrimRefListGenFromUserGeometry,task_gen_parallel);
+      
+      /* input data */
+    private:
+      const UserGeometryScene::Base* geom; //!< input geometry
+      PrimRefBlockAlloc<PrimRef>* alloc;   //!< allocator for build primitive blocks
+      TaskScheduler::Task task;
+      PrimRefList& prims_o;                //!< list of build primitives
+      PrimInfo& pinfo_o;                   //!< bounding information of primitives
+    };
+
     /*! Generates an array of triangle build primitives from the scene. */
     class PrimRefArrayGen
     {
@@ -106,20 +156,64 @@ namespace embree
     class PrimRefArrayGenFromTriangleMesh
     {
     public:   
-      static void generate_sequential(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims, PrimInfo& pinfo);
-      static void generate_parallel  (size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims, PrimInfo& pinfo);
+      static void generate_sequential(size_t threadIndex, size_t threadCount, const TriangleMesh* geom, PrimRef* prims, PrimInfo& pinfo);
+      static void generate_parallel  (size_t threadIndex, size_t threadCount, const TriangleMesh* geom, PrimRef* prims, PrimInfo& pinfo);
       
     private:
       
       /*! standard constructor */
-      PrimRefArrayGenFromTriangleMesh (size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o);
+      PrimRefArrayGenFromTriangleMesh (size_t threadIndex, size_t threadCount, const TriangleMesh* geom, PrimRef* prims_o, PrimInfo& pinfo_o);
             
       /*! parallel task to iterate over the primitives */
       TASK_RUN_FUNCTION(PrimRefArrayGenFromTriangleMesh,task_gen_parallel);
       
       /* input data */
     private:
-      const TriangleMesh* mesh;     //!< input geometry
+      const TriangleMesh* geom;     //!< input geometry
+      PrimRef* prims_o;             //!< list of build primitives
+      PrimInfo& pinfo_o;            //!< bounding information of primitives
+    };
+
+    /*! Generates an array of triangle build primitives from some triangle mesh. */
+    class PrimRefArrayGenFromBezierCurves
+    {
+    public:   
+      static void generate_sequential(size_t threadIndex, size_t threadCount, const BezierCurves* geom, PrimRef* prims, PrimInfo& pinfo);
+      static void generate_parallel  (size_t threadIndex, size_t threadCount, const BezierCurves* geom, PrimRef* prims, PrimInfo& pinfo);
+      
+    private:
+      
+      /*! standard constructor */
+      PrimRefArrayGenFromBezierCurves (size_t threadIndex, size_t threadCount, const BezierCurves* geom, PrimRef* prims_o, PrimInfo& pinfo_o);
+            
+      /*! parallel task to iterate over the primitives */
+      TASK_RUN_FUNCTION(PrimRefArrayGenFromBezierCurves,task_gen_parallel);
+      
+      /* input data */
+    private:
+      const BezierCurves* geom;     //!< input geometry
+      PrimRef* prims_o;             //!< list of build primitives
+      PrimInfo& pinfo_o;            //!< bounding information of primitives
+    };
+
+    /*! Generates an array of triangle build primitives from some triangle mesh. */
+    class PrimRefArrayGenFromUserGeometry
+    {
+    public:   
+      static void generate_sequential(size_t threadIndex, size_t threadCount, const UserGeometryScene::Base* geom, PrimRef* prims, PrimInfo& pinfo);
+      static void generate_parallel  (size_t threadIndex, size_t threadCount, const UserGeometryScene::Base* geom, PrimRef* prims, PrimInfo& pinfo);
+      
+    private:
+      
+      /*! standard constructor */
+      PrimRefArrayGenFromUserGeometry (size_t threadIndex, size_t threadCount, const UserGeometryScene::Base* geom, PrimRef* prims_o, PrimInfo& pinfo_o);
+            
+      /*! parallel task to iterate over the primitives */
+      TASK_RUN_FUNCTION(PrimRefArrayGenFromUserGeometry,task_gen_parallel);
+      
+      /* input data */
+    private:
+      const UserGeometryScene::Base* geom;     //!< input geometry
       PrimRef* prims_o;             //!< list of build primitives
       PrimInfo& pinfo_o;            //!< bounding information of primitives
     };

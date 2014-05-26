@@ -20,6 +20,10 @@ namespace embree
 {
   namespace isa
   {
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
     void PrimRefListGen::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRefList& prims, PrimInfo& pinfo) {
       PrimRefListGen gen(threadIndex,threadCount,alloc,scene,ty,numTimeSteps,prims,pinfo);
     }
@@ -112,6 +116,10 @@ namespace embree
       pinfo_o.atomic_extend(pinfo);
     }
 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
     void PrimRefListGenFromTriangleMesh::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, PrimRefList& prims, PrimInfo& pinfo) {
       PrimRefListGenFromTriangleMesh(threadIndex,threadCount,alloc,mesh,prims,pinfo);
     }
@@ -142,6 +150,81 @@ namespace embree
       }
       pinfo_o.atomic_extend(pinfo);
     }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    void PrimRefListGenFromBezierCurves::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const BezierCurves* geom, PrimRefList& prims, PrimInfo& pinfo) {
+      PrimRefListGenFromBezierCurves(threadIndex,threadCount,alloc,geom,prims,pinfo);
+    }
+
+    PrimRefListGenFromBezierCurves::PrimRefListGenFromBezierCurves(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const BezierCurves* geom, PrimRefList& prims, PrimInfo& pinfo)
+      : geom(geom), alloc(alloc), prims_o(prims), pinfo_o(pinfo)
+    {
+      pinfo_o.reset();
+      TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
+    }
+    
+    void PrimRefListGenFromBezierCurves::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    {
+      ssize_t start = (taskIndex+0)*geom->numCurves/taskCount;
+      ssize_t end   = (taskIndex+1)*geom->numCurves/taskCount;
+      ssize_t cur   = 0;
+      
+      PrimInfo pinfo(empty);
+      PrimRefList::item* block = prims_o.insert(alloc->malloc(threadIndex)); 
+
+      for (size_t j=0; j<geom->numCurves; j++) 
+      {
+	const PrimRef prim(geom->bounds(j),geom->id,j);
+	pinfo.add(prim.bounds(),prim.center2());
+	if (likely(block->insert(prim))) continue; 
+	block = prims_o.insert(alloc->malloc(threadIndex));
+	block->insert(prim);
+      }
+      pinfo_o.atomic_extend(pinfo);
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    void PrimRefListGenFromUserGeometry::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const UserGeometryScene::Base* geom, PrimRefList& prims, PrimInfo& pinfo) {
+      PrimRefListGenFromUserGeometry(threadIndex,threadCount,alloc,geom,prims,pinfo);
+    }
+
+    PrimRefListGenFromUserGeometry::PrimRefListGenFromUserGeometry(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const UserGeometryScene::Base* geom, PrimRefList& prims, PrimInfo& pinfo)
+      : geom(geom), alloc(alloc), prims_o(prims), pinfo_o(pinfo)
+    {
+      pinfo_o.reset();
+      TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
+    }
+    
+    void PrimRefListGenFromUserGeometry::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    {
+      ssize_t start = (taskIndex+0)*geom->numItems/taskCount;
+      ssize_t end   = (taskIndex+1)*geom->numItems/taskCount;
+      ssize_t cur   = 0;
+      
+      PrimInfo pinfo(empty);
+      PrimRefList::item* block = prims_o.insert(alloc->malloc(threadIndex)); 
+
+      for (size_t j=0; j<geom->numItems; j++) 
+      {
+	const PrimRef prim(geom->bounds(j),geom->id,j);
+	pinfo.add(prim.bounds(),prim.center2());
+	if (likely(block->insert(prim))) continue; 
+	block = prims_o.insert(alloc->malloc(threadIndex));
+	block->insert(prim);
+      }
+      pinfo_o.atomic_extend(pinfo);
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
 
     void PrimRefArrayGen::generate_sequential(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o) {
       PrimRefArrayGen(threadIndex,threadCount,scene,ty,numTimeSteps,prims_o,pinfo_o,false);
@@ -234,34 +317,114 @@ namespace embree
       pinfo_o.atomic_extend(pinfo);
     }
 
-    void PrimRefArrayGenFromTriangleMesh::generate_sequential(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o) 
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    void PrimRefArrayGenFromTriangleMesh::generate_sequential(size_t threadIndex, size_t threadCount, const TriangleMesh* geom, PrimRef* prims_o, PrimInfo& pinfo_o) 
     {
       pinfo_o.reset();
-      PrimRefArrayGenFromTriangleMesh gen(threadIndex,threadCount,mesh,prims_o,pinfo_o);
+      PrimRefArrayGenFromTriangleMesh gen(threadIndex,threadCount,geom,prims_o,pinfo_o);
       gen.task_gen_parallel(threadIndex,threadCount,0,1,NULL);
-      assert(pinfo_o.size() == mesh->numTriangles);
+      assert(pinfo_o.size() == geom->numTriangles);
     }
 
-    void PrimRefArrayGenFromTriangleMesh::generate_parallel(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o) 
+    void PrimRefArrayGenFromTriangleMesh::generate_parallel(size_t threadIndex, size_t threadCount, const TriangleMesh* geom, PrimRef* prims_o, PrimInfo& pinfo_o) 
     {
       pinfo_o.reset();
-      PrimRefArrayGenFromTriangleMesh gen(threadIndex,threadCount,mesh,prims_o,pinfo_o);
+      PrimRefArrayGenFromTriangleMesh gen(threadIndex,threadCount,geom,prims_o,pinfo_o);
       TaskScheduler::dispatchTask(_task_gen_parallel, &gen, threadIndex, threadCount);
-      assert(pinfo_o.size() == mesh->numTriangles);
+      assert(pinfo_o.size() == geom->numTriangles);
     }
 
-    PrimRefArrayGenFromTriangleMesh::PrimRefArrayGenFromTriangleMesh(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o)
-      : mesh(mesh), prims_o(prims_o), pinfo_o(pinfo_o) {}
+    PrimRefArrayGenFromTriangleMesh::PrimRefArrayGenFromTriangleMesh(size_t threadIndex, size_t threadCount, const TriangleMesh* geom, PrimRef* prims_o, PrimInfo& pinfo_o)
+      : geom(geom), prims_o(prims_o), pinfo_o(pinfo_o) {}
 
     void PrimRefArrayGenFromTriangleMesh::task_gen_parallel(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
-      ssize_t start = (taskIndex+0)*mesh->numTriangles/taskCount;
-      ssize_t end   = (taskIndex+1)*mesh->numTriangles/taskCount;
+      ssize_t start = (taskIndex+0)*geom->numTriangles/taskCount;
+      ssize_t end   = (taskIndex+1)*geom->numTriangles/taskCount;
       ssize_t cur   = 0;
       
       PrimInfo pinfo(empty);
       for (size_t j=start; j<end; j++) {
-	const PrimRef prim(mesh->bounds(j),mesh->id,j);
+	const PrimRef prim(geom->bounds(j),geom->id,j);
+	pinfo.add(prim.bounds(),prim.center2());
+	prims_o[j] = prim;
+      }
+      pinfo_o.atomic_extend(pinfo);
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    void PrimRefArrayGenFromBezierCurves::generate_sequential(size_t threadIndex, size_t threadCount, const BezierCurves* geom, PrimRef* prims_o, PrimInfo& pinfo_o) 
+    {
+      pinfo_o.reset();
+      PrimRefArrayGenFromBezierCurves gen(threadIndex,threadCount,geom,prims_o,pinfo_o);
+      gen.task_gen_parallel(threadIndex,threadCount,0,1,NULL);
+      assert(pinfo_o.size() == geom->numCurves);
+    }
+
+    void PrimRefArrayGenFromBezierCurves::generate_parallel(size_t threadIndex, size_t threadCount, const BezierCurves* geom, PrimRef* prims_o, PrimInfo& pinfo_o) 
+    {
+      pinfo_o.reset();
+      PrimRefArrayGenFromBezierCurves gen(threadIndex,threadCount,geom,prims_o,pinfo_o);
+      TaskScheduler::dispatchTask(_task_gen_parallel, &gen, threadIndex, threadCount);
+      assert(pinfo_o.size() == geom->numCurves);
+    }
+
+    PrimRefArrayGenFromBezierCurves::PrimRefArrayGenFromBezierCurves(size_t threadIndex, size_t threadCount, const BezierCurves* geom, PrimRef* prims_o, PrimInfo& pinfo_o)
+      : geom(geom), prims_o(prims_o), pinfo_o(pinfo_o) {}
+
+    void PrimRefArrayGenFromBezierCurves::task_gen_parallel(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
+    {
+      ssize_t start = (taskIndex+0)*geom->numCurves/taskCount;
+      ssize_t end   = (taskIndex+1)*geom->numCurves/taskCount;
+      ssize_t cur   = 0;
+      
+      PrimInfo pinfo(empty);
+      for (size_t j=start; j<end; j++) {
+	const PrimRef prim(geom->bounds(j),geom->id,j);
+	pinfo.add(prim.bounds(),prim.center2());
+	prims_o[j] = prim;
+      }
+      pinfo_o.atomic_extend(pinfo);
+    }
+
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+    void PrimRefArrayGenFromUserGeometry::generate_sequential(size_t threadIndex, size_t threadCount, const UserGeometryScene::Base* geom, PrimRef* prims_o, PrimInfo& pinfo_o) 
+    {
+      pinfo_o.reset();
+      PrimRefArrayGenFromUserGeometry gen(threadIndex,threadCount,geom,prims_o,pinfo_o);
+      gen.task_gen_parallel(threadIndex,threadCount,0,1,NULL);
+      assert(pinfo_o.size() == geom->numCurves);
+    }
+
+    void PrimRefArrayGenFromUserGeometry::generate_parallel(size_t threadIndex, size_t threadCount, const UserGeometryScene::Base* geom, PrimRef* prims_o, PrimInfo& pinfo_o) 
+    {
+      pinfo_o.reset();
+      PrimRefArrayGenFromUserGeometry gen(threadIndex,threadCount,geom,prims_o,pinfo_o);
+      TaskScheduler::dispatchTask(_task_gen_parallel, &gen, threadIndex, threadCount);
+      assert(pinfo_o.size() == geom->numCurves);
+    }
+
+    PrimRefArrayGenFromUserGeometry::PrimRefArrayGenFromUserGeometry(size_t threadIndex, size_t threadCount, const UserGeometryScene::Base* geom, PrimRef* prims_o, PrimInfo& pinfo_o)
+      : geom(geom), prims_o(prims_o), pinfo_o(pinfo_o) {}
+
+    void PrimRefArrayGenFromUserGeometry::task_gen_parallel(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
+    {
+      ssize_t start = (taskIndex+0)*geom->numItems/taskCount;
+      ssize_t end   = (taskIndex+1)*geom->numItems/taskCount;
+      ssize_t cur   = 0;
+      
+      PrimInfo pinfo(empty);
+      for (size_t j=start; j<end; j++) {
+	const PrimRef prim(geom->bounds(j),geom->id,j);
 	pinfo.add(prim.bounds(),prim.center2());
 	prims_o[j] = prim;
       }
