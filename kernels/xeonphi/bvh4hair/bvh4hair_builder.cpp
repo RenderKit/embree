@@ -3,7 +3,7 @@
 
 namespace embree
 {
-#define DBG(x) x
+#define DBG(x) 
 
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
@@ -536,7 +536,6 @@ namespace embree
       BuildRecord br;
       if (!global_workStack.pop_nolock_largest(br)) break;
       DBG(DBG_PRINT(br));
-      DBG_PRINT(br);
       recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);      
       DBG(DBG_PRINT(global_workStack.size()));
     }
@@ -896,9 +895,25 @@ namespace embree
       node[currentIndex].setMatrix(children[i].bounds.geometry,i);
       children[i].parentID    = currentIndex;
       children[i].parentBoxID = i;
-      recurseSAH(children[i],alloc,mode,threadID,numThreads);
+      recurse(children[i],alloc,mode,threadID,numThreads);
     }    
   }
+
+
+  __forceinline void BVH4HairBuilder::recurse(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads)
+  {
+    if (mode == BUILD_TOP_LEVEL) {
+      global_workStack.push_nolock(current);
+    }
+    else if (current.items() > THRESHOLD_FOR_SUBTREE_RECURSION || mode == FILL_LOCAL_QUEUES) {
+      const size_t coreID = threadID/4;
+      if (!local_workStack[coreID].push(current))
+        recurseSAH(current,alloc,RECURSE,threadID,numThreads);
+    }
+    else
+      recurseSAH(current,alloc,RECURSE,threadID,numThreads);
+  }
+
 
   void BVH4HairBuilder::createAccel(const size_t threadIndex, const size_t threadCount)
   {

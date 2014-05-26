@@ -134,6 +134,8 @@ namespace embree
   
     void createLeaf(BuildRecord& current, NodeAllocator& alloc,const size_t threadIndex, const size_t threadCount);
 
+    void recurse(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads);
+
 
     TASK_RUN_FUNCTION(BVH4HairBuilder,build_parallel_hair);
     TASK_FUNCTION(BVH4HairBuilder,computePrimRefsBezierCurves);
