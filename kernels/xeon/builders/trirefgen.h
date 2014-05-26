@@ -26,20 +26,20 @@ namespace embree
   namespace isa
   {
     /*! Generates a list of triangle build primitives from the scene. */
-    class TriRefListGen
+    class PrimRefListGen
     {
-      typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;
+      typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
 
     public:      
-      static void generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, TriRefList& prims, PrimInfo& pinfo);
+      static void generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRefList& prims, PrimInfo& pinfo);
       
     private:
       
       /*! standard constructor that schedules the task */
-      TriRefListGen (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, TriRefList& prims, PrimInfo& pinfo);
+      PrimRefListGen (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRefList& prims, PrimInfo& pinfo);
             
       /*! parallel task to iterate over the primitives */
-      TASK_RUN_FUNCTION(TriRefListGen,task_gen_parallel);
+      TASK_RUN_FUNCTION(PrimRefListGen,task_gen_parallel);
       
     private:
       const Scene* scene;                  //!< input geometry
@@ -48,43 +48,37 @@ namespace embree
       PrimRefBlockAlloc<PrimRef>* alloc;   //!< allocator for build primitive blocks
       size_t numPrimitives;                //!< number of generated primitives
       TaskScheduler::Task task;
-      TriRefList& prims_o;                 //!< list of build primitives
+      PrimRefList& prims_o;                 //!< list of build primitives
       PrimInfo& pinfo_o;                   //!< bounding information of primitives
     };
 
     /*! Generates a list of triangle build primitives from some triangle mesh. */
-    class TriRefListGenFromTriangleMesh
+    class PrimRefListGenFromTriangleMesh
     {
-      typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;
+      typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
 
     public:      
-      static void generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, TriRefList& prims, PrimInfo& pinfo);
+      static void generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, PrimRefList& prims, PrimInfo& pinfo);
       
     private:
       
       /*! standard constructor that schedules the task */
-      TriRefListGenFromTriangleMesh (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, TriRefList& prims, PrimInfo& pinfo);
+      PrimRefListGenFromTriangleMesh (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, PrimRefList& prims, PrimInfo& pinfo);
             
       /*! parallel task to iterate over the primitives */
-      TASK_RUN_FUNCTION(TriRefListGenFromTriangleMesh,task_gen_parallel);
+      TASK_RUN_FUNCTION(PrimRefListGenFromTriangleMesh,task_gen_parallel);
       
       /* input data */
     private:
       const TriangleMesh* mesh;            //!< input geometry
       PrimRefBlockAlloc<PrimRef>* alloc;   //!< allocator for build primitive blocks
-      
-      /* intermediate data */
-    private:
       TaskScheduler::Task task;
-      
-      /* output data */
-    public:
-      TriRefList& prims_o;             //!< list of build primitives
-      PrimInfo& pinfo_o;                  //!< bounding information of primitives
+      PrimRefList& prims_o;                 //!< list of build primitives
+      PrimInfo& pinfo_o;                   //!< bounding information of primitives
     };
 
     /*! Generates an array of triangle build primitives from the scene. */
-    class TriRefArrayGen
+    class PrimRefArrayGen
     {
     public:   
       static void generate_sequential(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims, PrimInfo& pinfo);
@@ -93,10 +87,10 @@ namespace embree
     private:
       
       /*! standard constructor that schedules the task */
-      TriRefArrayGen (size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel);
+      PrimRefArrayGen (size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel);
             
       /*! parallel task to iterate over the primitives */
-      TASK_RUN_FUNCTION(TriRefArrayGen,task_gen_parallel);
+      TASK_RUN_FUNCTION(PrimRefArrayGen,task_gen_parallel);
       
       /* input data */
     private:
@@ -109,7 +103,7 @@ namespace embree
     };
 
     /*! Generates an array of triangle build primitives from some triangle mesh. */
-    class TriRefArrayGenFromTriangleMesh
+    class PrimRefArrayGenFromTriangleMesh
     {
     public:   
       static void generate_sequential(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims, PrimInfo& pinfo);
@@ -118,17 +112,14 @@ namespace embree
     private:
       
       /*! standard constructor */
-      TriRefArrayGenFromTriangleMesh (size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o);
+      PrimRefArrayGenFromTriangleMesh (size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o);
             
       /*! parallel task to iterate over the primitives */
-      TASK_RUN_FUNCTION(TriRefArrayGenFromTriangleMesh,task_gen_parallel);
+      TASK_RUN_FUNCTION(PrimRefArrayGenFromTriangleMesh,task_gen_parallel);
       
       /* input data */
     private:
-      const TriangleMesh* mesh;      //!< input geometry
-      
-      /* output data */
-    public:
+      const TriangleMesh* mesh;     //!< input geometry
       PrimRef* prims_o;             //!< list of build primitives
       PrimInfo& pinfo_o;            //!< bounding information of primitives
     };

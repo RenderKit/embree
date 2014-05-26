@@ -20,11 +20,11 @@ namespace embree
 {
   namespace isa
   {
-    void TriRefListGen::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, TriRefList& prims, PrimInfo& pinfo) {
-      TriRefListGen gen(threadIndex,threadCount,alloc,scene,ty,numTimeSteps,prims,pinfo);
+    void PrimRefListGen::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRefList& prims, PrimInfo& pinfo) {
+      PrimRefListGen gen(threadIndex,threadCount,alloc,scene,ty,numTimeSteps,prims,pinfo);
     }
 
-    TriRefListGen::TriRefListGen(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, TriRefList& prims, PrimInfo& pinfo)
+    PrimRefListGen::PrimRefListGen(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRefList& prims, PrimInfo& pinfo)
       : scene(scene), ty(ty), numTimeSteps(numTimeSteps), alloc(alloc), numPrimitives(0), prims_o(prims), pinfo_o(pinfo)
     {
       /*! calculate number of primitives */
@@ -39,14 +39,14 @@ namespace embree
       TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
     }
     
-    void TriRefListGen::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void PrimRefListGen::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
       ssize_t start = (taskIndex+0)*numPrimitives/taskCount;
       ssize_t end   = (taskIndex+1)*numPrimitives/taskCount;
       ssize_t cur   = 0;
       
       PrimInfo pinfo(empty);
-      TriRefList::item* block = prims_o.insert(alloc->malloc(threadIndex)); 
+      PrimRefList::item* block = prims_o.insert(alloc->malloc(threadIndex)); 
       for (size_t i=0; i<scene->size(); i++) 
       {
 	const Geometry* geom = scene->get(i);
@@ -112,25 +112,25 @@ namespace embree
       pinfo_o.atomic_extend(pinfo);
     }
 
-    void TriRefListGenFromTriangleMesh::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, TriRefList& prims, PrimInfo& pinfo) {
-      TriRefListGenFromTriangleMesh(threadIndex,threadCount,alloc,mesh,prims,pinfo);
+    void PrimRefListGenFromTriangleMesh::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, PrimRefList& prims, PrimInfo& pinfo) {
+      PrimRefListGenFromTriangleMesh(threadIndex,threadCount,alloc,mesh,prims,pinfo);
     }
 
-    TriRefListGenFromTriangleMesh::TriRefListGenFromTriangleMesh(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, TriRefList& prims, PrimInfo& pinfo)
+    PrimRefListGenFromTriangleMesh::PrimRefListGenFromTriangleMesh(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const TriangleMesh* mesh, PrimRefList& prims, PrimInfo& pinfo)
       : mesh(mesh), alloc(alloc), prims_o(prims), pinfo_o(pinfo)
     {
       pinfo_o.reset();
       TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
     }
     
-    void TriRefListGenFromTriangleMesh::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void PrimRefListGenFromTriangleMesh::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
       ssize_t start = (taskIndex+0)*mesh->numTriangles/taskCount;
       ssize_t end   = (taskIndex+1)*mesh->numTriangles/taskCount;
       ssize_t cur   = 0;
       
       PrimInfo pinfo(empty);
-      TriRefList::item* block = prims_o.insert(alloc->malloc(threadIndex)); 
+      PrimRefList::item* block = prims_o.insert(alloc->malloc(threadIndex)); 
 
       for (size_t j=0; j<mesh->numTriangles; j++) 
       {
@@ -143,15 +143,15 @@ namespace embree
       pinfo_o.atomic_extend(pinfo);
     }
 
-    void TriRefArrayGen::generate_sequential(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o) {
-      TriRefArrayGen(threadIndex,threadCount,scene,ty,numTimeSteps,prims_o,pinfo_o,false);
+    void PrimRefArrayGen::generate_sequential(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o) {
+      PrimRefArrayGen(threadIndex,threadCount,scene,ty,numTimeSteps,prims_o,pinfo_o,false);
     }
 
-    void TriRefArrayGen::generate_parallel(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o) {
-      TriRefArrayGen(threadIndex,threadCount,scene,ty,numTimeSteps,prims_o,pinfo_o,true);
+    void PrimRefArrayGen::generate_parallel(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o) {
+      PrimRefArrayGen(threadIndex,threadCount,scene,ty,numTimeSteps,prims_o,pinfo_o,true);
     }
 
-    TriRefArrayGen::TriRefArrayGen(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel)
+    PrimRefArrayGen::PrimRefArrayGen(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel)
       : scene(scene), ty(ty), numTimeSteps(numTimeSteps), numPrimitives(0), prims_o(prims_o), pinfo_o(pinfo_o)
     {
       /*! calculate number of primitives */
@@ -168,7 +168,7 @@ namespace embree
       assert(pinfo_o.size() == numPrimitives);
     }
 
-    void TriRefArrayGen::task_gen_parallel(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
+    void PrimRefArrayGen::task_gen_parallel(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
       ssize_t start = (taskIndex+0)*numPrimitives/taskCount;
       ssize_t end   = (taskIndex+1)*numPrimitives/taskCount;
@@ -234,26 +234,26 @@ namespace embree
       pinfo_o.atomic_extend(pinfo);
     }
 
-    void TriRefArrayGenFromTriangleMesh::generate_sequential(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o) 
+    void PrimRefArrayGenFromTriangleMesh::generate_sequential(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o) 
     {
       pinfo_o.reset();
-      TriRefArrayGenFromTriangleMesh gen(threadIndex,threadCount,mesh,prims_o,pinfo_o);
+      PrimRefArrayGenFromTriangleMesh gen(threadIndex,threadCount,mesh,prims_o,pinfo_o);
       gen.task_gen_parallel(threadIndex,threadCount,0,1,NULL);
       assert(pinfo_o.size() == mesh->numTriangles);
     }
 
-    void TriRefArrayGenFromTriangleMesh::generate_parallel(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o) 
+    void PrimRefArrayGenFromTriangleMesh::generate_parallel(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o) 
     {
       pinfo_o.reset();
-      TriRefArrayGenFromTriangleMesh gen(threadIndex,threadCount,mesh,prims_o,pinfo_o);
+      PrimRefArrayGenFromTriangleMesh gen(threadIndex,threadCount,mesh,prims_o,pinfo_o);
       TaskScheduler::dispatchTask(_task_gen_parallel, &gen, threadIndex, threadCount);
       assert(pinfo_o.size() == mesh->numTriangles);
     }
 
-    TriRefArrayGenFromTriangleMesh::TriRefArrayGenFromTriangleMesh(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o)
+    PrimRefArrayGenFromTriangleMesh::PrimRefArrayGenFromTriangleMesh(size_t threadIndex, size_t threadCount, const TriangleMesh* mesh, PrimRef* prims_o, PrimInfo& pinfo_o)
       : mesh(mesh), prims_o(prims_o), pinfo_o(pinfo_o) {}
 
-    void TriRefArrayGenFromTriangleMesh::task_gen_parallel(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
+    void PrimRefArrayGenFromTriangleMesh::task_gen_parallel(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
     {
       ssize_t start = (taskIndex+0)*mesh->numTriangles/taskCount;
       ssize_t end   = (taskIndex+1)*mesh->numTriangles/taskCount;

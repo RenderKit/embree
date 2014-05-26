@@ -73,7 +73,7 @@ namespace embree
     }
 
     template<typename Triangle>
-    typename BVH4Builder2::NodeRef BVH4Builder2T<Triangle>::createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo)
+    typename BVH4Builder2::NodeRef BVH4Builder2T<Triangle>::createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo)
     {
       /* allocate leaf node */
       size_t N = blocks(pinfo.size());
@@ -81,18 +81,18 @@ namespace embree
       assert(N <= (size_t)BVH4::maxLeafBlocks);
       
       /* insert all triangles */
-      TriRefList::block_iterator_unsafe iter(prims);
+      PrimRefList::block_iterator_unsafe iter(prims);
       for (size_t i=0; i<N; i++) leaf[i].fill(iter,scene);
       assert(!iter);
       
       /* free all primitive blocks */
-      while (TriRefList::item* block = prims.take())
+      while (PrimRefList::item* block = prims.take())
 	alloc.free(threadIndex,block);
       
       return bvh->encodeLeaf(leaf,N);
     }
     
-    typename BVH4Builder2::NodeRef BVH4Builder2::createLargeLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo, size_t depth)
+    typename BVH4Builder2::NodeRef BVH4Builder2::createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
     {
 #if defined(_DEBUG)
       if (depth >= BVH4::maxBuildDepthLeaf) 
@@ -104,12 +104,12 @@ namespace embree
 	return createLeaf(threadIndex,prims,pinfo);
       
       /* first level */
-      TriRefList prims0, prims1;
+      PrimRefList prims0, prims1;
       PrimInfo   cinfo0, cinfo1;
       FallBackSplit::find(threadIndex,alloc,prims,prims0,cinfo0,prims1,cinfo1);
       
       /* second level */
-      TriRefList cprims[4];
+      PrimRefList cprims[4];
       PrimInfo   cinfo[4];
       FallBackSplit::find(threadIndex,alloc,prims0,cprims[0],cinfo[0],cprims[1],cinfo[1]);
       FallBackSplit::find(threadIndex,alloc,prims1,cprims[2],cinfo[2],cprims[3],cinfo[3]);
@@ -121,7 +121,7 @@ namespace embree
     }  
 
     template<bool PARALLEL>
-    const Split BVH4Builder2::find(size_t threadIndex, size_t threadCount, size_t depth, TriRefList& prims, const PrimInfo& pinfo, bool spatial)
+    const Split BVH4Builder2::find(size_t threadIndex, size_t threadCount, size_t depth, PrimRefList& prims, const PrimInfo& pinfo, bool spatial)
     {
       ObjectPartition::Split osplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,      prims,pinfo,logSAHBlockSize);
       if (!spatial) {
@@ -141,7 +141,7 @@ namespace embree
       /*! compute leaf and split cost */
       const float leafSAH  = parent->intCost*record.pinfo.leafSAH(parent->logSAHBlockSize);
       const float splitSAH = BVH4::travCost*halfArea(record.pinfo.geomBounds)+parent->intCost*record.split.splitSAH();
-      //assert(TriRefList::block_iterator_unsafe(prims).size() == record.pinfo.size());
+      //assert(PrimRefList::block_iterator_unsafe(prims).size() == record.pinfo.size());
       assert(record.pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
       
       /*! create a leaf node when threshold reached or SAH tells us to stop */
@@ -310,9 +310,9 @@ namespace embree
       }
       
       /* generate list of build primitives */
-      TriRefList prims; PrimInfo pinfo(empty);
-      if (mesh) TriRefListGenFromTriangleMesh::generate(threadIndex,threadCount,&alloc,mesh ,prims,pinfo);
-      else      TriRefListGen                ::generate(threadIndex,threadCount,&alloc,scene,TRIANGLE_MESH,1,prims,pinfo);
+      PrimRefList prims; PrimInfo pinfo(empty);
+      if (mesh) PrimRefListGenFromTriangleMesh::generate(threadIndex,threadCount,&alloc,mesh ,prims,pinfo);
+      else      PrimRefListGen                ::generate(threadIndex,threadCount,&alloc,scene,TRIANGLE_MESH,1,prims,pinfo);
       
       /* perform initial split */
       const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);

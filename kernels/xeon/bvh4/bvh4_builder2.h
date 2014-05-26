@@ -34,7 +34,7 @@ namespace embree
       /*! Type shortcuts */
       typedef typename BVH4::Node    Node;
       typedef typename BVH4::NodeRef NodeRef;
-      typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;
+      typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
 
       /*! the build record stores all information to continue the build of some subtree */
       struct BuildRecord 
@@ -44,7 +44,7 @@ namespace embree
 
 	__forceinline BuildRecord (size_t depth) : depth(depth), pinfo(empty) {}
 
-	__forceinline BuildRecord (size_t depth, TriRefList& prims, const PrimInfo& pinfo, const Split& split, NodeRef* dst)
+	__forceinline BuildRecord (size_t depth, PrimRefList& prims, const PrimInfo& pinfo, const Split& split, NodeRef* dst)
 	: depth(depth), prims(prims), pinfo(pinfo), split(split), dst(dst) {}
 	
 	__forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) {
@@ -54,7 +54,7 @@ namespace embree
       public:
 	NodeRef*   dst;      //!< Pointer to the parent node's reference to us
 	size_t     depth;    //!< Depth of the root of this subtree.
-	TriRefList prims;    //!< The list of primitives.
+	PrimRefList prims;    //!< The list of primitives.
 	PrimInfo   pinfo;    //!< Bounding info of primitives.
 	Split      split;    //!< The best split for the primitives.
       };
@@ -77,17 +77,17 @@ namespace embree
       void build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event);
       
       /*! creates a leaf node */
-      virtual NodeRef createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo) = 0;
+      virtual NodeRef createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo) = 0;
       
       /*! creates a large leaf by adding additional internal nodes */
-      NodeRef createLargeLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo, size_t depth);
+      NodeRef createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth);
       
       /*! copies topmost nodes to improve memory layout */
       NodeRef layout_top_nodes(size_t threadIndex, NodeRef node);
 
       /*! finds best possible split for a list of triangles */
       template<bool PARALLEL>
-      const Split find(size_t threadIndex, size_t threadCount, size_t depth, TriRefList& prims, const PrimInfo& pinfo, bool spatial);
+      const Split find(size_t threadIndex, size_t threadCount, size_t depth, PrimRefList& prims, const PrimInfo& pinfo, bool spatial);
 
       /*! creates a node from some build record */
       template<bool PARALLEL>
@@ -135,7 +135,7 @@ namespace embree
     public:
       BVH4Builder2T (BVH4* bvh, Scene* scene, size_t mode);
       BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh, size_t mode);
-      NodeRef createLeaf(size_t threadIndex, TriRefList& prims, const PrimInfo& pinfo);
+      NodeRef createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo);
     };
   }
 }
