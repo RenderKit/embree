@@ -140,7 +140,7 @@ namespace embree
       void splitParallel(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t threads);
       
       /*! creates a small leaf node */
-      virtual void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID) = 0;
+      virtual void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID) = 0;
 
       /*! creates a large leaf node */
       void createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadIndex, size_t threadCount);
@@ -192,7 +192,7 @@ namespace embree
     public:
       BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene);
       BVH4Triangle1BuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
     class BVH4Triangle4BuilderFast : public BVH4TriangleBuilderFast
@@ -200,7 +200,7 @@ namespace embree
     public:
       BVH4Triangle4BuilderFast (BVH4* bvh, Scene* scene);
       BVH4Triangle4BuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
     class BVH4Triangle8BuilderFast : public BVH4TriangleBuilderFast
@@ -208,7 +208,7 @@ namespace embree
     public:
       BVH4Triangle8BuilderFast (BVH4* bvh, Scene* scene);
       BVH4Triangle8BuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
     class BVH4Triangle1vBuilderFast : public BVH4TriangleBuilderFast
@@ -216,7 +216,7 @@ namespace embree
     public:
       BVH4Triangle1vBuilderFast (BVH4* bvh, Scene* scene);
       BVH4Triangle1vBuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
     class BVH4Triangle4vBuilderFast : public BVH4TriangleBuilderFast
@@ -224,7 +224,7 @@ namespace embree
     public:
       BVH4Triangle4vBuilderFast (BVH4* bvh, Scene* scene);
       BVH4Triangle4vBuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
     class BVH4Triangle4iBuilderFast : public BVH4TriangleBuilderFast
@@ -232,7 +232,7 @@ namespace embree
     public:
       BVH4Triangle4iBuilderFast (BVH4* bvh, Scene* scene);
       BVH4Triangle4iBuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
 
     class BVH4UserGeometryBuilderFast : public BVH4BuilderFast
@@ -240,7 +240,7 @@ namespace embree
     public:
       BVH4UserGeometryBuilderFast (BVH4* bvh, Scene* scene);
       BVH4UserGeometryBuilderFast (BVH4* bvh, UserGeometryScene::UserGeometry* geom);
-      void createSmallLeaf(const BVH4BuilderFast* This, BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     };
   }
 }

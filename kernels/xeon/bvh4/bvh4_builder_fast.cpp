@@ -203,21 +203,20 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4Triangle1BuilderFast::createSmallLeaf(const BVH4BuilderFast* This_, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle1BuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      const BVH4TriangleBuilderFast* This = (const BVH4TriangleBuilderFast*) This_;
       size_t items = current.size();
       size_t start = current.begin;
             
       /* allocate leaf node */
       Triangle1* accel = (Triangle1*) leafAlloc.malloc(items*sizeof(Triangle1));
-      *current.parent = This->bvh->encodeLeaf((char*)accel,items);
+      *current.parent = bvh->encodeLeaf((char*)accel,items);
       
       for (size_t i=0; i<items; i++) 
       {	
-        const size_t geomID = This->prims[start+i].geomID();
-        const size_t primID = This->prims[start+i].primID();
-        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const size_t geomID = prims[start+i].geomID();
+        const size_t primID = prims[start+i].primID();
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         
         const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
@@ -235,25 +234,24 @@ namespace embree
       }
     }
     
-    void BVH4Triangle4BuilderFast::createSmallLeaf(const BVH4BuilderFast* This_, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle4BuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      const BVH4TriangleBuilderFast* This = (const BVH4TriangleBuilderFast*) This_;
       size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
       
       /* allocate leaf node */
       Triangle4* accel = (Triangle4*) leafAlloc.malloc(sizeof(Triangle4));
-      *current.parent = This->bvh->encodeLeaf((char*)accel,1);
+      *current.parent = bvh->encodeLeaf((char*)accel,1);
       
       ssei vgeomID = -1, vprimID = -1, vmask = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<items; i++)
       {
-        const size_t geomID = This->prims[start+i].geomID();
-        const size_t primID = This->prims[start+i].primID();
-        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const size_t geomID = prims[start+i].geomID();
+        const size_t primID = prims[start+i].primID();
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -270,25 +268,24 @@ namespace embree
 
 #if defined(__AVX__)
 
-    void BVH4Triangle8BuilderFast::createSmallLeaf(const BVH4BuilderFast* This_, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle8BuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      const BVH4TriangleBuilderFast* This = (const BVH4TriangleBuilderFast*) This_;
       size_t items = current.size();
       size_t start = current.begin;
       assert(items<=8);
       
       /* allocate leaf node */
       Triangle8* accel = (Triangle8*) leafAlloc.malloc(sizeof(Triangle8));
-      *current.parent = This->bvh->encodeLeaf((char*)accel,1);
+      *current.parent = bvh->encodeLeaf((char*)accel,1);
       
       avxi vgeomID = -1, vprimID = -1, vmask = -1;
       avx3f v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<items; i++)
       {
-        const size_t geomID = This->prims[start+i].geomID();
-        const size_t primID = This->prims[start+i].primID();
-        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const size_t geomID = prims[start+i].geomID();
+        const size_t primID = prims[start+i].primID();
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -305,22 +302,21 @@ namespace embree
     }
 #endif
     
-    void BVH4Triangle1vBuilderFast::createSmallLeaf(const BVH4BuilderFast* This_, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle1vBuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      const BVH4TriangleBuilderFast* This = (const BVH4TriangleBuilderFast*) This_;
       size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
       
       /* allocate leaf node */
       Triangle1v* accel = (Triangle1v*) leafAlloc.malloc(items*sizeof(Triangle1v));
-      *current.parent = This->bvh->encodeLeaf((char*)accel,items);
+      *current.parent = bvh->encodeLeaf((char*)accel,items);
       
       for (size_t i=0; i<items; i++) 
       {	
-        const size_t geomID = This->prims[start+i].geomID();
-        const size_t primID = This->prims[start+i].primID();
-        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const size_t geomID = prims[start+i].geomID();
+        const size_t primID = prims[start+i].primID();
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         
         const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
@@ -337,25 +333,24 @@ namespace embree
       }
     }
     
-    void BVH4Triangle4vBuilderFast::createSmallLeaf(const BVH4BuilderFast* This_, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle4vBuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      const BVH4TriangleBuilderFast* This = (const BVH4TriangleBuilderFast*) This_;
       size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
       
       /* allocate leaf node */
       Triangle4v* accel = (Triangle4v*) leafAlloc.malloc(sizeof(Triangle4v));
-      *current.parent = This->bvh->encodeLeaf((char*)accel,1);
+      *current.parent = bvh->encodeLeaf((char*)accel,1);
       
       ssei vgeomID = -1, vprimID = -1, vmask = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<items; i++)
       {
-        const size_t geomID = This->prims[start+i].geomID();
-        const size_t primID = This->prims[start+i].primID();
-        const TriangleMesh* __restrict__ const mesh = This->scene->getTriangleMesh(geomID);
+        const size_t geomID = prims[start+i].geomID();
+        const size_t primID = prims[start+i].primID();
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -370,16 +365,15 @@ namespace embree
       Triangle4v::store_nt(accel,Triangle4v(v0,v1,v2,vgeomID,vprimID,vmask));
     }
 
-    void BVH4Triangle4iBuilderFast::createSmallLeaf(const BVH4BuilderFast* This_, BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4Triangle4iBuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      const BVH4TriangleBuilderFast* This = (const BVH4TriangleBuilderFast*) This_;
       size_t items = current.size();
       size_t start = current.begin;
       assert(items<=4);
       
       /* allocate leaf node */
       Triangle4i* accel = (Triangle4i*) leafAlloc.malloc(sizeof(Triangle4i));
-      *current.parent = This->bvh->encodeLeaf((char*)accel,1);
+      *current.parent = bvh->encodeLeaf((char*)accel,1);
       
       ssei geomID = -1, primID = -1;
       Vec3f* v0[4] = { NULL, NULL, NULL, NULL };
@@ -387,7 +381,7 @@ namespace embree
       
       for (size_t i=0; i<items; i++)
       {
-	const PrimRef& prim = This->prims[start+i];
+	const PrimRef& prim = prims[start+i];
 	const TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
 	const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
 	geomID[i] = prim.geomID();
@@ -474,7 +468,7 @@ namespace embree
       
       /* create leaf for few primitives */
       if (current.size() <= minLeafSize) {
-        createSmallLeaf(this,current,leafAlloc,threadIndex);
+        createSmallLeaf(current,leafAlloc,threadIndex);
         return;
       }
       
