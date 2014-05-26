@@ -239,8 +239,14 @@ namespace embree
     {
     public:
       BVH4UserGeometryBuilderFast (BVH4* bvh, Scene* scene);
-      BVH4UserGeometryBuilderFast (BVH4* bvh, UserGeometryScene::UserGeometry* geom);
+      BVH4UserGeometryBuilderFast (BVH4* bvh, UserGeometryBase* geom);
+      size_t number_of_primitives();
+      void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
+      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) ;
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+    public:
+      Scene* scene;                    //!< input scene
+      UserGeometryBase* geom;   //!< input geometry
     };
   }
 }

@@ -62,6 +62,15 @@ namespace embree
       needAllThreads = mesh->numTriangles > 50000;
     }
 
+    BVH4UserGeometryBuilderFast::BVH4UserGeometryBuilderFast (BVH4* bvh, Scene* scene)
+      : scene(scene), geom(NULL),        BVH4BuilderFast(bvh,0,0,false,sizeof(AccelSetItem),1,1) {}
+
+    BVH4UserGeometryBuilderFast::BVH4UserGeometryBuilderFast (BVH4* bvh, UserGeometryBase* geom)
+      : scene(geom->parent), geom(geom), BVH4BuilderFast(bvh,0,0,false,sizeof(AccelSetItem),1,1)
+    {
+      needAllThreads = geom->size() > 50000;
+    }
+
     BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene)
       : BVH4TriangleBuilderFast(bvh,scene,0,0,false,sizeof(Triangle1),2,inf) {}
 
@@ -197,6 +206,28 @@ namespace embree
     {
       if (mesh) PrimRefArrayGenFromGeometry<TriangleMesh>::generate_parallel(threadIndex, threadCount, mesh , prims, pinfo);
       else      PrimRefArrayGen                          ::generate_parallel(threadIndex, threadCount, scene, TRIANGLE_MESH, 1, prims, pinfo);
+    }
+
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
+    size_t BVH4UserGeometryBuilderFast::number_of_primitives() 
+    {
+      if (geom) return geom->size();
+      else      return scene->numUserGeometries1;
+    }
+    
+    void BVH4UserGeometryBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
+    {
+      if (geom) PrimRefArrayGenFromGeometry<UserGeometryBase>::generate_sequential(threadIndex, threadCount, geom , prims, pinfo);
+      else      PrimRefArrayGen                                     ::generate_sequential(threadIndex, threadCount, scene, USER_GEOMETRY, 1, prims, pinfo);
+    }
+
+    void BVH4UserGeometryBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
+    {
+      if (geom) PrimRefArrayGenFromGeometry<UserGeometryBase>::generate_parallel(threadIndex, threadCount, geom , prims, pinfo);
+      else      PrimRefArrayGen                                     ::generate_parallel(threadIndex, threadCount, scene, USER_GEOMETRY, 1, prims, pinfo);
     }
  
     // =======================================================================================================
@@ -401,6 +432,25 @@ namespace embree
       }
     
       new (accel) Triangle4i(v0,v1,v2,geomID,primID);
+    }
+
+    void BVH4UserGeometryBuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    {
+      size_t items = current.size();
+      size_t start = current.begin;
+      
+      /* allocate leaf node */
+      AccelSetItem* accel = (AccelSetItem*) leafAlloc.malloc(sizeof(AccelSetItem)*items);
+      *current.parent = bvh->encodeLeaf((char*)accel,items);
+      
+      for (size_t i=0; i<items; i++)
+      {
+	const PrimRef& prim = prims[start+i];
+        std::vector<AccelSet*>* accels = (std::vector<AccelSet*>*) geom;
+        AccelSetItem* dst = &accel[i];
+        dst->accel = (*accels)[prim.geomID()];
+        dst->item = prim.primID();
+      }
     }
     
     // =======================================================================================================
@@ -708,7 +758,7 @@ namespace embree
     Builder* BVH4Triangle1vBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle1vBuilderFast((BVH4*)bvh,scene); }
     Builder* BVH4Triangle4vBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4vBuilderFast((BVH4*)bvh,scene); }
     Builder* BVH4Triangle4iBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4iBuilderFast((BVH4*)bvh,scene); }
-    //Builder* BVH4UserGeometryBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4UserGeometryBuilderFast((BVH4*)bvh,scene); }
+    Builder* BVH4UserGeometryBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4UserGeometryBuilderFast((BVH4*)bvh,scene); }
 
     Builder* BVH4Triangle1MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle1BuilderFast ((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle4MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4BuilderFast ((BVH4*)bvh,mesh); }
@@ -718,6 +768,6 @@ namespace embree
     Builder* BVH4Triangle1vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle1vBuilderFast((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle4vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4vBuilderFast((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle4iMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4iBuilderFast((BVH4*)bvh,mesh); }
-    //Builder* BVH4UserGeometryMeshBuilderFast   (void* bvh, UserGeometryScene::UserGeometry* geom, size_t mode) { return new class BVH4UserGeometryBuilderFast((BVH4*)bvh,geom); }
+    Builder* BVH4UserGeometryMeshBuilderFast   (void* bvh, UserGeometryBase* geom, size_t mode) { return new class BVH4UserGeometryBuilderFast((BVH4*)bvh,geom); }
   }
 }

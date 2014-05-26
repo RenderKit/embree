@@ -23,61 +23,58 @@
 
 namespace embree
 {
-  namespace UserGeometryScene // FIXME: remove this namespace
+  struct UserGeometryBase : public Geometry, public AccelSet
   {
-    struct Base : public Geometry, public AccelSet
-    {
-
-    public:
-      Base (Scene* parent, GeometryTy ty, size_t items);
-      
-      __forceinline size_t size() const {
-	return numItems;
-      }
-
-      void enabling ();
-      void disabling();
-    };
-
-    struct UserGeometry : public Base
-    {
-    public:
-      UserGeometry (Scene* parent, size_t items); 
-      virtual void setUserData (void* ptr, bool ispc);
-      virtual void setBoundsFunction (RTCBoundsFunc bounds);
-      virtual void setIntersectFunction (RTCIntersectFunc intersect, bool ispc);
-      virtual void setIntersectFunction4 (RTCIntersectFunc4 intersect4, bool ispc);
-      virtual void setIntersectFunction8 (RTCIntersectFunc8 intersect8, bool ispc);
-      virtual void setIntersectFunction16 (RTCIntersectFunc16 intersect16, bool ispc);
-      virtual void setOccludedFunction (RTCOccludedFunc occluded, bool ispc);
-      virtual void setOccludedFunction4 (RTCOccludedFunc4 occluded4, bool ispc);
-      virtual void setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc);
-      virtual void setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc);
-      virtual void build(size_t threadIndex, size_t threadCount) {}
-
-    public:
-      void* ispcPtr;
-      void* ispcIntersect1;
-      void* ispcIntersect4;
-      void* ispcIntersect8;
-      void* ispcIntersect16;
-      void* ispcOccluded1;
-      void* ispcOccluded4;
-      void* ispcOccluded8;
-      void* ispcOccluded16;
-    };
-
-    struct Instance : public Base
-    {
-    public:
-      Instance (Scene* parent, Accel* object); 
-      virtual void setTransform(AffineSpace3fa& local2world);
-      virtual void build(size_t threadIndex, size_t threadCount) {}
     
-    public:
-      AffineSpace3fa local2world;
-      AffineSpace3fa world2local;
-      Accel* object;
-    };
-  }
+  public:
+    UserGeometryBase (Scene* parent, GeometryTy ty, size_t items);
+    
+    __forceinline size_t size() const {
+      return numItems;
+    }
+    
+    void enabling ();
+    void disabling();
+  };
+  
+  struct UserGeometry : public UserGeometryBase
+  {
+  public:
+    UserGeometry (Scene* parent, size_t items); 
+    virtual void setUserData (void* ptr, bool ispc);
+    virtual void setBoundsFunction (RTCBoundsFunc bounds);
+    virtual void setIntersectFunction (RTCIntersectFunc intersect, bool ispc);
+    virtual void setIntersectFunction4 (RTCIntersectFunc4 intersect4, bool ispc);
+    virtual void setIntersectFunction8 (RTCIntersectFunc8 intersect8, bool ispc);
+    virtual void setIntersectFunction16 (RTCIntersectFunc16 intersect16, bool ispc);
+    virtual void setOccludedFunction (RTCOccludedFunc occluded, bool ispc);
+    virtual void setOccludedFunction4 (RTCOccludedFunc4 occluded4, bool ispc);
+    virtual void setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc);
+    virtual void setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc);
+    virtual void build(size_t threadIndex, size_t threadCount) {}
+    
+  public:
+    void* ispcPtr;
+    void* ispcIntersect1;
+    void* ispcIntersect4;
+    void* ispcIntersect8;
+    void* ispcIntersect16;
+    void* ispcOccluded1;
+    void* ispcOccluded4;
+    void* ispcOccluded8;
+    void* ispcOccluded16;
+  };
+  
+  struct Instance : public UserGeometryBase
+  {
+  public:
+    Instance (Scene* parent, Accel* object); 
+    virtual void setTransform(AffineSpace3fa& local2world);
+    virtual void build(size_t threadIndex, size_t threadCount) {}
+    
+  public:
+    AffineSpace3fa local2world;
+    AffineSpace3fa world2local;
+    Accel* object;
+  };
 }

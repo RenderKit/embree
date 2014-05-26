@@ -21,12 +21,12 @@ namespace embree
   typedef void (*ISPCIntersectFunc4)(void* ptr, RTCRay4& ray, size_t item, __m128 valid);
   typedef void (*ISPCOccludedFunc4 )(void* ptr, RTCRay4& ray, size_t item, __m128 valid);
 
-  void ISPCWrapperSSE::intersect(const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay4& ray, size_t item) {
+  void ISPCWrapperSSE::intersect(const void* valid, const UserGeometry* geom, RTCRay4& ray, size_t item) {
     assert(geom->ispcIntersect4);
     ((ISPCIntersectFunc4)geom->ispcIntersect4)(geom->ispcPtr,ray,item,*(__m128*)valid);
   }
 
-  void ISPCWrapperSSE::occluded (const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay4& ray, size_t item) {
+  void ISPCWrapperSSE::occluded (const void* valid, const UserGeometry* geom, RTCRay4& ray, size_t item) { // FIXME: shouldn't we use UserGeometryBase type here
     assert(geom->ispcOccluded4);
     ((ISPCOccludedFunc4)geom->ispcOccluded4)(geom->ispcPtr,ray,item,*(__m128*)valid);
   }

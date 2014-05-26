@@ -98,7 +98,7 @@ namespace embree
 
 	  /* handle user geometry sets */
 	case USER_GEOMETRY: {
-	  const UserGeometryScene::Base* set = (const UserGeometryScene::Base*)geom;
+	  const UserGeometryBase* set = (const UserGeometryBase*)geom;
 	  ssize_t s = max(start-cur,ssize_t(0));
 	  ssize_t e = min(end  -cur,ssize_t(set->numItems));
 	  for (size_t j=s; j<e; j++) {
@@ -158,7 +158,7 @@ namespace embree
     
     template class PrimRefListGenFromGeometry<TriangleMesh>;
     template class PrimRefListGenFromGeometry<BezierCurves>;
-    template class PrimRefListGenFromGeometry<UserGeometryScene::Base>;
+    template class PrimRefListGenFromGeometry<UserGeometryBase>;
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -238,7 +238,7 @@ namespace embree
 	  
 	  /* handle user geometry sets */
 	case USER_GEOMETRY: {
-	  const UserGeometryScene::Base* set = (const UserGeometryScene::Base*)geom;
+	  const UserGeometryBase* set = (const UserGeometryBase*)geom;
 	  ssize_t s = max(start-cur,ssize_t(0));
 	  ssize_t e = min(end  -cur,ssize_t(set->numItems));
 	  for (size_t j=s; j<e; j++) {
@@ -299,8 +299,7 @@ namespace embree
 
     template class PrimRefArrayGenFromGeometry<TriangleMesh>;
     template class PrimRefArrayGenFromGeometry<BezierCurves>;
-    template class PrimRefArrayGenFromGeometry<UserGeometryScene::Base>;
-
+    template class PrimRefArrayGenFromGeometry<UserGeometryBase>;
   }
 }
 

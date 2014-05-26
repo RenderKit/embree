@@ -21,14 +21,14 @@ namespace embree
   typedef void (*ISPCIntersectFunc16)(void* ptr, RTCRay16& ray, size_t item, __mmask16 valid);
   typedef void (*ISPCOccludedFunc16 )(void* ptr, RTCRay16& ray, size_t item, __mmask16 valid);
 
-  void ISPCWrapperKNC::intersect(const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay16& ray, size_t item) 
+  void ISPCWrapperKNC::intersect(const void* valid, const UserGeometry* geom, RTCRay16& ray, size_t item) 
   {
     mic_i maski = *(mic_i*)valid;
     __mmask16 mask = maski != mic_i(0);
     ((ISPCIntersectFunc16)geom->ispcIntersect16)(geom->ispcPtr,ray,item,mask);
   }
 
-  void ISPCWrapperKNC::occluded (const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay16& ray, size_t item) 
+  void ISPCWrapperKNC::occluded (const void* valid, const UserGeometry* geom, RTCRay16& ray, size_t item) 
   {
     mic_i maski = *(mic_i*)valid;
     __mmask16 mask = maski != mic_i(0);

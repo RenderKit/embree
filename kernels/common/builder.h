@@ -31,7 +31,8 @@ namespace embree
   typedef Builder* (*TriangleMeshBuilderFuncOld)(void* accel, struct TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize);
   typedef Builder* (*BuilderFunc)            (void* accel, struct BuildSource* source, struct Scene* scene, const size_t minLeafSize, const size_t maxLeafSize);
 
-  typedef Builder* (*TriangleMeshBuilderFunc)(void* accel, struct TriangleMesh* mesh, size_t mode); // FIXME: move to builder.h
+  typedef Builder* (*TriangleMeshBuilderFunc)(void* accel, struct TriangleMesh* mesh, size_t mode); 
+  typedef Builder* (*UserGeometryBuilderFunc)(void* accel, struct UserGeometryBase* mesh, size_t mode);
   typedef Builder* (*SceneBuilderFunc)       (void* accel, struct Scene* scene, size_t mode);
 
 #define ADD_BUILDER(NAME,BUILDER,LEAFMIN,LEAFMAX)              \
@@ -53,7 +54,17 @@ namespace embree
   void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
   TriangleMeshBuilderFunc symbol = (TriangleMeshBuilderFunc) symbol##_error;
 
-#define DECLARE_TRIANGLEMESH_BUILDER_OLD(symbol)                            \
+#define DECLARE_USERGEOMETRY_BUILDER(symbol)                            \
+  namespace isa   { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
+  namespace sse41 { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
+  namespace avx   { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
+  namespace avx2  { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
+  void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
+  UserGeometryBuilderFunc symbol = (UserGeometryBuilderFunc) symbol##_error;
+
+
+// FIXME: remove DECLARE_TRIANGLEMESH_BUILDER_OLD
+#define DECLARE_TRIANGLEMESH_BUILDER_OLD(symbol) \
   namespace isa   { extern Builder* symbol(void* accel, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
   namespace sse41 { extern Builder* symbol(void* accel, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
   namespace avx   { extern Builder* symbol(void* accel, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize); } \
@@ -61,6 +72,7 @@ namespace embree
   void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
   TriangleMeshBuilderFuncOld symbol = (TriangleMeshBuilderFuncOld) symbol##_error;
   
+// FIXME: remove DECLARE_BUILDER
 #define DECLARE_BUILDER(symbol)                                         \
   namespace isa   { extern Builder* symbol(void* accel, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize); } \
   namespace sse41 { extern Builder* symbol(void* accel, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize); } \

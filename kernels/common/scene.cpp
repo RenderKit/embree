@@ -190,12 +190,12 @@ namespace embree
 
   unsigned Scene::newUserGeometry (size_t items) 
   {
-    Geometry* geom = new UserGeometryScene::UserGeometry(this,items);
+    Geometry* geom = new UserGeometry(this,items);
     return geom->id;
   }
   
   unsigned Scene::newInstance (Scene* scene) {
-    Geometry* geom = new UserGeometryScene::Instance(this,scene);
+    Geometry* geom = new Instance(this,scene);
     return geom->id;
   }
 

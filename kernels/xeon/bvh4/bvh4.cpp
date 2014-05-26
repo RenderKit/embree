@@ -83,6 +83,7 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4Triangle1vBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle4vBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle4iBuilderFast);
+  DECLARE_SCENE_BUILDER(BVH4UserGeometryBuilderFast);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilderFast);
@@ -90,6 +91,7 @@ namespace embree
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshBuilderFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshBuilderFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshBuilderFast);
+  DECLARE_USERGEOMETRY_BUILDER(BVH4UserGeometryMeshBuilderFast);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshRefitFast);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshRefitFast);
@@ -146,6 +148,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iBuilderFast);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4UserGeometryBuilderFast);
     
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderFast);
@@ -153,6 +156,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderFast);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4UserGeometryMeshBuilderFast);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshRefitFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshRefitFast);
@@ -667,6 +671,37 @@ namespace embree
     Builder* builder = BVH4BuilderObjectSplit4(accel,&scene->flat_triangle_source_1,scene,1,inf);
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
     scene->needVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  struct VirtualAccelObjectType : public PrimitiveType
+  {
+    VirtualAccelObjectType () 
+      : PrimitiveType("object",sizeof(AccelSetItem),1,false,1) {} 
+    
+    size_t blocks(size_t x) const {
+      return x;
+    }
+    
+    size_t size(const char* This) const {
+      return 1;
+    }
+    
+    void pack(char* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const {}
+  };
+
+  static VirtualAccelObjectType virtual_accel_object_ty;
+
+  Accel* BVH4::BVH4UserGeometry(Scene* scene)
+  {
+    BVH4* accel = new BVH4(virtual_accel_object_ty);
+    Accel::Intersectors intersectors;
+    intersectors.ptr = accel; 
+    intersectors.intersector1 = BVH4VirtualIntersector1;
+    intersectors.intersector4 = BVH4VirtualIntersector4Chunk;
+    intersectors.intersector8 = BVH4VirtualIntersector8Chunk;
+    intersectors.intersector16 = NULL;
+    Builder* builder = BVH4UserGeometryBuilderFast(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 

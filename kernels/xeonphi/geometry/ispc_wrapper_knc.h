@@ -21,7 +21,7 @@
 namespace embree
 {
   struct ISPCWrapperKNC {
-    static void intersect(const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay16& ray, size_t item);
-    static void occluded (const void* valid, const UserGeometryScene::UserGeometry* geom, RTCRay16& ray, size_t item);
+    static void intersect(const void* valid, const UserGeometry* geom, RTCRay16& ray, size_t item);
+    static void occluded (const void* valid, const UserGeometry* geom, RTCRay16& ray, size_t item);
   };
 }

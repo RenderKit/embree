@@ -677,7 +677,7 @@ namespace embree
 	if (unlikely(scene->get(i) == NULL)) continue;
 	if (unlikely((scene->get(i)->type != USER_GEOMETRY) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
-        UserGeometryScene::Base* geom = (UserGeometryScene::Base*) scene->get(i);
+        UserGeometryBase* geom = (UserGeometryBase*) scene->get(i);
 	numVirtualObjects += geom->size();
       }
     return numVirtualObjects;	
@@ -721,7 +721,7 @@ namespace embree
       if (unlikely(scene->get(g) == NULL)) continue;
       if (unlikely((scene->get(g)->type != USER_GEOMETRY) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
       if (unlikely(!scene->get(g)->isEnabled())) continue;
-      const UserGeometryScene::Base* const geom = (UserGeometryScene::Base*) scene->get(g);
+      const UserGeometryBase* const geom = (UserGeometryBase*) scene->get(g);
       const size_t numPrims = geom->size();
       if (numSkipped + numPrims > startID) break;
       numSkipped += numPrims;
@@ -743,7 +743,7 @@ namespace embree
 	if (unlikely((scene->get(g)->type != USER_GEOMETRY ) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
 	if (unlikely(!scene->get(g)->isEnabled())) continue;
 
-	UserGeometryScene::Base *virtual_geometry = (UserGeometryScene::Base *)scene->get(g);
+	UserGeometryBase *virtual_geometry = (UserGeometryBase *)scene->get(g);
 
         size_t N = virtual_geometry->size();
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
@@ -801,7 +801,7 @@ namespace embree
 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
 	assert(bptr->geomID() < scene->size() );
-        AccelSet* _accel = (AccelSet*)(UserGeometryScene::Base *) scene->get( bptr->geomID() );
+        AccelSet* _accel = (AccelSet*)(UserGeometryBase *) scene->get( bptr->geomID() );
 	acc->accel = _accel;
         acc->item = bptr->primID();
       }

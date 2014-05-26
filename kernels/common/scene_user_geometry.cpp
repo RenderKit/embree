@@ -34,42 +34,42 @@ namespace embree
   extern AccelSet::OccludedFunc16 ispcWrapperOccluded16;
 #endif
 
-  UserGeometryScene::Base::Base (Scene* parent, GeometryTy ty, size_t items)
+  UserGeometryBase::UserGeometryBase (Scene* parent, GeometryTy ty, size_t items)
     : Geometry(parent,ty,1,RTC_GEOMETRY_STATIC), AccelSet(items)
   {
     enabling();
   }
 
-  void UserGeometryScene::Base::enabling () { 
+  void UserGeometryBase::enabling () { 
     atomic_add(&parent->numUserGeometries1,numItems); 
   }
   
-  void UserGeometryScene::Base::disabling() { 
+  void UserGeometryBase::disabling() { 
     atomic_add(&parent->numUserGeometries1,-numItems); 
   }
 
-  UserGeometryScene::UserGeometry::UserGeometry (Scene* parent, size_t items) 
-    : Base(parent,USER_GEOMETRY,items),
+  UserGeometry::UserGeometry (Scene* parent, size_t items) 
+    : UserGeometryBase(parent,USER_GEOMETRY,items),
       ispcPtr(NULL),
       ispcIntersect1(NULL), ispcIntersect4(NULL), ispcIntersect8(NULL), ispcIntersect16(NULL),
       ispcOccluded1(NULL), ispcOccluded4(NULL), ispcOccluded8(NULL), ispcOccluded16(NULL) {}
   
-  void UserGeometryScene::UserGeometry::setUserData (void* ptr, bool ispc) 
+  void UserGeometry::setUserData (void* ptr, bool ispc) 
   {
     if (ispc) ispcPtr = ptr;
     else intersectors.ptr = ptr;
     intersectors.boundsPtr = ptr;
   }
   
-  void UserGeometryScene::UserGeometry::setBoundsFunction (RTCBoundsFunc bounds) {
+  void UserGeometry::setBoundsFunction (RTCBoundsFunc bounds) {
     this->boundsFunc = bounds;
   }
 
-  void UserGeometryScene::UserGeometry::setIntersectFunction (RTCIntersectFunc intersect1, bool ispc) {
+  void UserGeometry::setIntersectFunction (RTCIntersectFunc intersect1, bool ispc) {
     intersectors.intersector1.intersect = intersect1;
   }
 
-  void UserGeometryScene::UserGeometry::setIntersectFunction4 (RTCIntersectFunc4 intersect4, bool ispc) 
+  void UserGeometry::setIntersectFunction4 (RTCIntersectFunc4 intersect4, bool ispc) 
   {
     if (ispc) {
 #if !defined (__MIC__)
@@ -82,7 +82,7 @@ namespace embree
     }
   }
 
-  void UserGeometryScene::UserGeometry::setIntersectFunction8 (RTCIntersectFunc8 intersect8, bool ispc) 
+  void UserGeometry::setIntersectFunction8 (RTCIntersectFunc8 intersect8, bool ispc) 
   {
     if (ispc) {
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
@@ -95,7 +95,7 @@ namespace embree
     }
   }
 
-  void UserGeometryScene::UserGeometry::setIntersectFunction16 (RTCIntersectFunc16 intersect16, bool ispc) 
+  void UserGeometry::setIntersectFunction16 (RTCIntersectFunc16 intersect16, bool ispc) 
   {
     if (ispc) {
 #if defined(__MIC__)
@@ -108,11 +108,11 @@ namespace embree
     }
   }
 
-  void UserGeometryScene::UserGeometry::setOccludedFunction (RTCOccludedFunc occluded1, bool ispc) {
+  void UserGeometry::setOccludedFunction (RTCOccludedFunc occluded1, bool ispc) {
     intersectors.intersector1.occluded = occluded1;
   }
 
-  void UserGeometryScene::UserGeometry::setOccludedFunction4 (RTCOccludedFunc4 occluded4, bool ispc) 
+  void UserGeometry::setOccludedFunction4 (RTCOccludedFunc4 occluded4, bool ispc) 
   {
     if (ispc) {
 #if !defined (__MIC__)
@@ -125,7 +125,7 @@ namespace embree
     }
   }
 
-  void UserGeometryScene::UserGeometry::setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc) 
+  void UserGeometry::setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc) 
   {
     if (ispc) {
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
@@ -138,7 +138,7 @@ namespace embree
     }
   }
 
-  void UserGeometryScene::UserGeometry::setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc) 
+  void UserGeometry::setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc) 
   {
     if (ispc) {
 #if defined(__MIC__)
@@ -157,8 +157,8 @@ namespace embree
   extern AccelSet::Intersector8 InstanceIntersector8;
   extern AccelSet::Intersector16 InstanceIntersector16;
 
-  UserGeometryScene::Instance::Instance (Scene* parent, Accel* object) 
-    : Base(parent,USER_GEOMETRY,1), local2world(one), world2local(one), object(object)
+  Instance::Instance (Scene* parent, Accel* object) 
+    : UserGeometryBase(parent,USER_GEOMETRY,1), local2world(one), world2local(one), object(object)
   {
     intersectors.ptr = this;
     intersectors.boundsPtr = this;
@@ -169,7 +169,7 @@ namespace embree
     intersectors.intersector16 = InstanceIntersector16;
   }
   
-  void UserGeometryScene::Instance::setTransform(AffineSpace3fa& xfm)
+  void Instance::setTransform(AffineSpace3fa& xfm)
   {
     local2world = xfm;
     world2local = rcp(xfm);

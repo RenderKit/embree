@@ -108,11 +108,11 @@ namespace embree
       if (geometries[i]->type != TRIANGLE_MESH) return NULL;
       else return (TriangleMesh*) geometries[i]; 
     }
-    __forceinline UserGeometryScene::Base* getUserGeometrySafe(size_t i) { 
+    __forceinline UserGeometryBase* getUserGeometrySafe(size_t i) { 
       assert(i < geometries.size()); 
       if (geometries[i] == NULL) return NULL;
       if (geometries[i]->type != USER_GEOMETRY /*&& geometries[i]->type != INSTANCES*/) return NULL;
-      else return (UserGeometryScene::Base*) geometries[i]; 
+      else return (UserGeometryBase*) geometries[i]; 
     }
     __forceinline BezierCurves* getBezierCurves(size_t i) { 
       assert(i < geometries.size()); 
