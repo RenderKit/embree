@@ -83,6 +83,8 @@ namespace embree
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshBuilder2);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshBuilder2);
 
+  DECLARE_SCENE_BUILDER(BVH4Bezier1BuilderFast);
+  DECLARE_SCENE_BUILDER(BVH4Bezier1iBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle1BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle4BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle8BuilderFast);
@@ -148,6 +150,8 @@ namespace embree
     SELECT_SYMBOL_AVX(features,BVH4Triangle4vMeshBuilder2);
     SELECT_SYMBOL_AVX(features,BVH4Triangle4iMeshBuilder2);
   
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1BuilderFast);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1BuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4BuilderFast);
     SELECT_SYMBOL_AVX        (features,BVH4Triangle8BuilderFast);
@@ -395,9 +399,9 @@ namespace embree
 
   Accel* BVH4::BVH4Bezier1(Scene* scene)
   { 
-    BVH4* accel = NULL; //new BVH4(SceneBezier1::type,scene); // FIXME
+    BVH4* accel = new BVH4(Bezier1Type::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1Intersectors(accel);
-    Builder* builder = NULL; // BVH4BuilderObjectSplit1(accel,&scene->bezier_source_1,scene,1,inf); // FIXME
+    Builder* builder = BVH4Bezier1BuilderFast(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -405,7 +409,7 @@ namespace embree
   { 
     BVH4* accel = new BVH4(SceneBezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors(accel);
-    Builder* builder = BVH4BuilderObjectSplit1(accel,&scene->bezier_source_1,scene,1,inf);
+    Builder* builder = BVH4Bezier1iBuilderFast(accel,scene,0);
     scene->needVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }

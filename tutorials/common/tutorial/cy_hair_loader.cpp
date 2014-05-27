@@ -176,9 +176,5 @@ namespace embree
       }
 
     scene.hairsets.push_back(hairset);
-
-
-    int numPoints = hairset->v.size();
-    int numSegments = hairset->hairs.size();
   }
 }

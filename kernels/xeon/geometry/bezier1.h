@@ -333,5 +333,5 @@ namespace embree
     Bezier1Type ();
     size_t blocks(size_t x) const;
     size_t size(const char* This) const;
-  };
+  }; 
 }
