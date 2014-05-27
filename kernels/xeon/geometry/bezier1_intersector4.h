@@ -30,11 +30,20 @@ namespace embree
 
     struct Precalculations 
     {
-      __forceinline Precalculations (const Ray4& ray, size_t k)
-	: ray_space(frame(Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed()) {} // FIXME: works only with normalized ray direction
+      __forceinline Precalculations (const sseb& valid, const Ray4& ray) 
+      {
+	int mask = movemask(valid);
+	while (mask) {
+	  size_t k = __bscf(mask);
+	  ray_space[k] = frame(Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed(); // FIXME: works only with normalized ray direction
+	}
+      }
 
-      LinearSpace3fa ray_space;
-      Mailbox mbox;
+      __forceinline Precalculations (const Ray4& ray, size_t k) {
+	ray_space[k] = frame(Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed(); // FIXME: works only with normalized ray direction
+      }
+
+      LinearSpace3fa ray_space[4];
     };
 
     static __forceinline void intersect(const Precalculations& pre, Ray4& ray, size_t k, const Bezier1& bezier, const void* geom)
@@ -54,10 +63,10 @@ namespace embree
       const Vec3fa& v3 = bezier.p3;
 
       /* transform control points into ray space */
-      Vec3fa w0 = xfmVector(pre.ray_space,v0-ray_org); w0.w = v0.w;
-      Vec3fa w1 = xfmVector(pre.ray_space,v1-ray_org); w1.w = v1.w;
-      Vec3fa w2 = xfmVector(pre.ray_space,v2-ray_org); w2.w = v2.w;
-      Vec3fa w3 = xfmVector(pre.ray_space,v3-ray_org); w3.w = v3.w;
+      Vec3fa w0 = xfmVector(pre.ray_space[k],v0-ray_org); w0.w = v0.w;
+      Vec3fa w1 = xfmVector(pre.ray_space[k],v1-ray_org); w1.w = v1.w;
+      Vec3fa w2 = xfmVector(pre.ray_space[k],v2-ray_org); w2.w = v2.w;
+      Vec3fa w3 = xfmVector(pre.ray_space[k],v3-ray_org); w3.w = v3.w;
       BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
 
 #if defined (__AVX__)
@@ -156,11 +165,7 @@ namespace embree
     static __forceinline void intersect(Precalculations& pre, Ray4& ray, const size_t k, const Bezier1* curves, size_t num, void* geom)
     {
       for (size_t i=0; i<num; i++) 
-      {
-	//if (unlikely(pre.mbox.hit(curves[i].geomID,curves[i].primID))) continue;
 	intersect(pre,ray,k,curves[i],geom);
-	//pre.mbox.add(curves[i].geomID,curves[i].primID);
-      }
     }
 
     static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Bezier1* curves, size_t num, void* geom)
@@ -186,10 +191,10 @@ namespace embree
       const Vec3fa& v3 = bezier.p3;
 
       /* transform control points into ray space */
-      Vec3fa w0 = xfmVector(pre.ray_space,v0-ray_org); w0.w = v0.w;
-      Vec3fa w1 = xfmVector(pre.ray_space,v1-ray_org); w1.w = v1.w;
-      Vec3fa w2 = xfmVector(pre.ray_space,v2-ray_org); w2.w = v2.w;
-      Vec3fa w3 = xfmVector(pre.ray_space,v3-ray_org); w3.w = v3.w;
+      Vec3fa w0 = xfmVector(pre.ray_space[k],v0-ray_org); w0.w = v0.w;
+      Vec3fa w1 = xfmVector(pre.ray_space[k],v1-ray_org); w1.w = v1.w;
+      Vec3fa w2 = xfmVector(pre.ray_space[k],v2-ray_org); w2.w = v2.w;
+      Vec3fa w3 = xfmVector(pre.ray_space[k],v3-ray_org); w3.w = v3.w;
       BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
 
 #if defined (__AVX__)
@@ -276,10 +281,16 @@ namespace embree
       return false;
     }
 
-    static __forceinline void occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Bezier1* curves, size_t num, void* geom)
+    static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Bezier1* curves, size_t num, void* geom)
     {
+      sseb valid_o = false;
       int mask = movemask(valid_i);
-      while (mask) occluded(pre,ray,__bscf(mask),curves,num,geom);
+      while (mask) {
+	size_t k = __bscf(mask);
+	if (occluded(pre,ray,k,curves,num,geom))
+	  valid_o[k] = -1;
+      }
+      return valid_o;
     }
   };
 }

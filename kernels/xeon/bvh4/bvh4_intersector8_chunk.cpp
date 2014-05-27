@@ -291,8 +291,8 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    //DEFINE_INTERSECTOR8(BVH4Bezier1Intersector8, BVH4Intersector8Chunk<Bezier1Intersector8>);
-    //DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8, BVH4Intersector8Chunk<Bezier1iIntersector8>);
+    DEFINE_INTERSECTOR8(BVH4Bezier1Intersector8Chunk, BVH4Intersector8Chunk<Bezier1Intersector8>);
+    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Chunk, BVH4Intersector8Chunk<Bezier1iIntersector8>);
     DEFINE_INTERSECTOR8(BVH4Triangle1Intersector8ChunkMoeller, BVH4Intersector8Chunk<Triangle1Intersector8MoellerTrumbore>);
     DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoeller, BVH4Intersector8Chunk<Triangle4Intersector8MoellerTrumbore>);
     DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoeller, BVH4Intersector8Chunk<Triangle8Intersector8MoellerTrumbore>);
