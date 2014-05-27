@@ -34,7 +34,7 @@ namespace embree
       void build(size_t threadIndex, size_t threadCount);
       
       /*! Constructor. */
-      BVH4HairBuilder (BVH4Hair* bvh, Scene* scene);
+      BVH4HairBuilder (BVH4Hair* bvh, Scene* scene, size_t mode);
       
     protected:
       
@@ -87,6 +87,7 @@ namespace embree
       Scene* scene;          //!< source
       size_t minLeafSize;    //!< minimal size of a leaf
       size_t maxLeafSize;    //!< maximal size of a leaf
+      bool enableSpatialSplits; //!< turns on spatial splits
       
       BVH4Hair* bvh;         //!< output
       PrimRefBlockAlloc<PrimRef> alloc;                 //!< Allocator for primitive blocks

@@ -533,8 +533,8 @@ namespace embree
     ~BVH4Hair ();
 
     /*! BVH4Hair instantiations */
-    static Accel* BVH4HairBezier1(Scene* scene);
-    static Accel* BVH4HairBezier1i(Scene* scene);
+    static Accel* BVH4HairBezier1(Scene* scene, bool highQuality);
+    static Accel* BVH4HairBezier1i(Scene* scene, bool highQuality);
 
     /*! initializes the acceleration structure */
     void init (size_t numPrimitivesMin = 0, size_t numPrimitivesMax = 0);

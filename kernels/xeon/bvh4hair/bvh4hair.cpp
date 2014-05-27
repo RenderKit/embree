@@ -73,20 +73,20 @@ namespace embree
     return intersectors;
   }
   
-  Accel* BVH4Hair::BVH4HairBezier1(Scene* scene)
+  Accel* BVH4Hair::BVH4HairBezier1(Scene* scene, bool highQuality)
   { 
     BVH4Hair* accel = new BVH4Hair(Bezier1Type::type,scene);
     Accel::Intersectors intersectors = BVH4HairBezier1Intersectors(accel);
-    Builder* builder = BVH4HairBezier1Builder(accel,scene,0);
+    Builder* builder = BVH4HairBezier1Builder(accel,scene,highQuality);
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Hair::BVH4HairBezier1i(Scene* scene)
+  Accel* BVH4Hair::BVH4HairBezier1i(Scene* scene, bool highQuality)
   { 
     scene->needVertices = true;
     BVH4Hair* accel = new BVH4Hair(SceneBezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4HairBezier1iIntersectors(accel);
-    Builder* builder = BVH4HairBezier1iBuilder(accel,scene,0);
+    Builder* builder = BVH4HairBezier1iBuilder(accel,scene,highQuality);
     return new AccelInstance(accel,builder,intersectors);
   }
 

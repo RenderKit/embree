@@ -27,11 +27,11 @@ namespace embree
  
   namespace isa
   {
-    template<> BVH4HairBuilderT<Bezier1 >::BVH4HairBuilderT (BVH4Hair* bvh, Scene* scene, size_t mode) : BVH4HairBuilder(bvh,scene) {}
-    template<> BVH4HairBuilderT<Bezier1i>::BVH4HairBuilderT (BVH4Hair* bvh, Scene* scene, size_t mode) : BVH4HairBuilder(bvh,scene) {}
+    template<> BVH4HairBuilderT<Bezier1 >::BVH4HairBuilderT (BVH4Hair* bvh, Scene* scene, size_t mode) : BVH4HairBuilder(bvh,scene,mode) {}
+    template<> BVH4HairBuilderT<Bezier1i>::BVH4HairBuilderT (BVH4Hair* bvh, Scene* scene, size_t mode) : BVH4HairBuilder(bvh,scene,mode) {}
 
-    BVH4HairBuilder::BVH4HairBuilder (BVH4Hair* bvh, Scene* scene)
-      : scene(scene), minLeafSize(1), maxLeafSize(inf), bvh(bvh), remainingReplications(0)
+    BVH4HairBuilder::BVH4HairBuilder (BVH4Hair* bvh, Scene* scene, size_t mode)
+      : scene(scene), minLeafSize(1), maxLeafSize(inf), enableSpatialSplits(mode > 0), bvh(bvh), remainingReplications(0)
     {
       if (BVH4Hair::maxLeafBlocks < this->maxLeafSize) 
 	this->maxLeafSize = BVH4Hair::maxLeafBlocks;
@@ -163,7 +163,7 @@ namespace embree
       /* perform spatial split in aligned space */
       SpatialSplit::Split alignedSpatialSplit;
       float alignedSpatialSAH = inf;
-      if (remainingReplications > 0) {
+      if (enableSpatialSplits && remainingReplications > 0) {
 	alignedSpatialSplit = SpatialSplit::find<Parallel>(threadIndex,threadCount,scene,prims,pinfo,0); // FIXME: hardcoded 0
 	alignedSpatialSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedSpatialSplit.splitSAH();
 	bestSAH = min(bestSAH,alignedSpatialSAH);
