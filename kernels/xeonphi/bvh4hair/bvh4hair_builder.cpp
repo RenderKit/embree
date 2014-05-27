@@ -3,7 +3,7 @@
 
 namespace embree
 {
-#define DBG(x) 
+#define DBG(x) x
 
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
@@ -980,12 +980,41 @@ namespace embree
       children[i].parentBoxID = i;
       recurseOBB(children[i],alloc,mode,threadID,numThreads);
     }    
-    
+
+    DBG(DBG_PRINT(node[current.parentID]));
+  }
+
+  void BVH4HairBuilder::buildSubTree(BuildRecord& current, 
+				     NodeAllocator& alloc, 
+				     const size_t mode,
+				     const size_t threadID, 
+				     const size_t numThreads)
+  {
+    DBG(PING);
+#if ENABLE_OBB == 1
+
+
+    BuildRecordOBB current_obb;
+    current_obb = current;
+
+    computeUnalignedSpace(current_obb);
+    computeUnalignedSpaceBounds(current_obb);
+
+    //TODO:: node[current.parentID].setMatrix(current.xfm,current.parentBoxID);
+   
+    recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
+
+#else
+    recurseSAH(current,alloc,/*mode*/ RECURSE,threadID,numThreads);
+#endif
   }
 
 
   __forceinline bool BVH4HairBuilder::splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild)
   {
+    DBG(PING);
+    DBG(DBG_PRINT(current));
+
     /* mark as leaf if leaf threshold reached */
     if (current.items() <= BVH4Hair::N) {
       current.createLeaf();
@@ -1004,8 +1033,14 @@ namespace embree
     mic_i leftNum[3];
 
     const mic3f cmat = convert(current.xfm);
+
+    DBG(std::cout << "START BINNING" << std::endl << std::flush);
+    DBG(sleep(1));
     
     fastbin_xfm<Bezier1i>(prims,cmat,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+
+    DBG(std::cout << "BINNING DONE" << std::endl << std::flush);
+    DBG(sleep(1));
 
     const unsigned int items = current.items();
     const float voxelArea = area(current.bounds.geometry);
@@ -1046,9 +1081,14 @@ namespace embree
 	  }
       };
 
+    DBG(DBG_PRINT(split));
+
     if (unlikely(split.pos == -1)) 
-      split_fallback(prims,current,leftChild,rightChild);
-   // /* partitioning of items */
+      {
+	DBG(std::cout << "FALLBACK" << std::endl << std::flush);
+	split_fallback(prims,current,leftChild,rightChild);
+	// /* partitioning of items */
+      }
     else 
       {
 	leftChild.bounds.reset();
@@ -1076,6 +1116,15 @@ namespace embree
 
       }
 
+    computeUnalignedSpace(leftChild);
+    computeUnalignedSpaceBounds(leftChild);
+
+    DBG(DBG_PRINT(leftChild));
+
+    computeUnalignedSpace(rightChild);
+    computeUnalignedSpaceBounds(rightChild);
+
+    DBG(DBG_PRINT(rightChild));
 
 
     if (leftChild.items()  <= BVH4Hair::N) leftChild.createLeaf();
@@ -1084,33 +1133,6 @@ namespace embree
   }
 
 
-  void BVH4HairBuilder::buildSubTree(BuildRecord& current, 
-				     NodeAllocator& alloc, 
-				     const size_t mode,
-				     const size_t threadID, 
-				     const size_t numThreads)
-  {
-    DBG(PING);
-#if ENABLE_OBB == 1
-    BuildRecordOBB current_obb;
-    current_obb = current;
-
-    DBG_PRINT(current);
-    DBG_PRINT(current_obb);
-    computeUnalignedSpace(current_obb);
-    DBG_PRINT(current_obb);
-    computeUnalignedSpaceBounds(current_obb);
-    DBG_PRINT(current_obb);
-
-    
-    exit(0);
-
-    recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
-
-#else
-    recurseSAH(current,alloc,/*mode*/ RECURSE,threadID,numThreads);
-#endif
-  }
 
   __forceinline void BVH4HairBuilder::computeUnalignedSpace( BuildRecordOBB& current )
   {
@@ -1143,14 +1165,9 @@ namespace embree
 
     for (size_t i=current.begin;i<current.end;i++)
       {
-	const mic_f p0123 = xfmPoint(prims[i].p,c0,c1,c2);
-	const mic_f p0 = permute<0>(p0123);
-	const mic_f p1 = permute<1>(p0123);
-	const mic_f p2 = permute<2>(p0123);
-	const mic_f p3 = permute<3>(p0123);	
-	
-	const mic_f b_min = min(min(p0,p1),min(p2,p3));
-	const mic_f b_max = max(max(p0,p1),max(p2,p3));
+	const mic2f b = prims[i].getBounds(c0,c1,c2);
+	const mic_f b_min = b.x;
+	const mic_f b_max = b.y;
 	const mic_f c2    = b_min + b_max;
 	centroid2.x = min(centroid2.x, c2);
 	centroid2.y = max(centroid2.y, c2);
