@@ -298,10 +298,11 @@ namespace embree
 	const size_t geomID = prims[start+i].geomID();
         const size_t primID = prims[start+i].primID();
 	const BezierCurves* curves = scene->getBezierCurves(geomID);
-	const Vec3fa& p0 = curves->vertex(curves->curve(primID+0));
-	const Vec3fa& p1 = curves->vertex(curves->curve(primID+1));
-	const Vec3fa& p2 = curves->vertex(curves->curve(primID+2));
-	const Vec3fa& p3 = curves->vertex(curves->curve(primID+3));
+	const size_t id = curves->curve(primID);
+	const Vec3fa& p0 = curves->vertex(id+0);
+	const Vec3fa& p1 = curves->vertex(id+1);
+	const Vec3fa& p2 = curves->vertex(id+2);
+	const Vec3fa& p3 = curves->vertex(id+3);
 	new (&accel[i]) Bezier1(p0,p1,p2,p3,0.0f,1.0f,geomID,primID);
       }
     }
@@ -592,7 +593,6 @@ namespace embree
     
     __forceinline void BVH4BuilderFast::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
     {
-      splitSequential(current,left,right,threadID,numThreads); return;
       if (mode == BUILD_TOP_LEVEL) splitParallel(current,left,right,threadID,numThreads);		  
       else                         splitSequential(current,left,right,threadID,numThreads);
     }

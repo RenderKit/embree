@@ -444,7 +444,7 @@ namespace embree
       assert(begin <= end);
       PrimRef* l = prims + begin;
       PrimRef* r = prims + end - 1;
-      
+
       while(1)
       {
 	while (likely(l <= r && mapping.bin_unsafe(center2(l->bounds()))[dim] < pos)) 
