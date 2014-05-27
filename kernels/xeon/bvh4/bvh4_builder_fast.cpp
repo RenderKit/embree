@@ -32,6 +32,7 @@
 #include <algorithm>
 
 #define THRESHOLD_FOR_SUBTREE_RECURSION 128
+#define THRESHOLD_FOR_SINGLE_THREADED 50000 // FIXME: measure if this is really optimal, maybe disable only parallel splits
 
 #define DBG(x) 
 
@@ -61,7 +62,7 @@ namespace embree
 						  const size_t minLeafSize, const size_t maxLeafSize)
       : scene(geom->parent), geom(geom), BVH4BuilderFast(bvh,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize) 
     {
-      needAllThreads = geom->size() > 50000;
+      needAllThreads = geom->size() > THRESHOLD_FOR_SINGLE_THREADED;
     }
 
     BVH4TriangleBuilderFast::BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene, 
@@ -74,7 +75,7 @@ namespace embree
 						      const size_t minLeafSize, const size_t maxLeafSize)
       : scene(mesh->parent), mesh(mesh), BVH4BuilderFast(bvh,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize) 
     {
-      needAllThreads = mesh->numTriangles > 50000;
+      needAllThreads = mesh->numTriangles > THRESHOLD_FOR_SINGLE_THREADED;
     }
 
     BVH4UserGeometryBuilderFast::BVH4UserGeometryBuilderFast (BVH4* bvh, Scene* scene)
@@ -83,7 +84,7 @@ namespace embree
     BVH4UserGeometryBuilderFast::BVH4UserGeometryBuilderFast (BVH4* bvh, UserGeometryBase* geom)
       : scene(geom->parent), geom(geom), BVH4BuilderFast(bvh,0,0,false,sizeof(AccelSetItem),1,1)
     {
-      needAllThreads = geom->size() > 50000;
+      needAllThreads = geom->size() > THRESHOLD_FOR_SINGLE_THREADED;
     }
 
     BVH4Bezier1BuilderFast::BVH4Bezier1BuilderFast (BVH4* bvh, Scene* scene)
@@ -150,7 +151,7 @@ namespace embree
       /* calculate size of scene */
       size_t numPrimitivesOld = numPrimitives;
       bvh->numPrimitives = numPrimitives = number_of_primitives();
-      bvh->init(numPrimitives);
+      bvh->init(numPrimitives, needAllThreads ? threadCount : 1);
 
       /* skip build for empty scene */
       if (numPrimitives == 0) 
@@ -196,7 +197,7 @@ namespace embree
       
 #else
       
-      if (!needAllThreads) {
+      if (!needAllThreads || numPrimitives < THRESHOLD_FOR_SINGLE_THREADED) {
 	build_sequential(threadIndex,threadCount);
       } 
       else {

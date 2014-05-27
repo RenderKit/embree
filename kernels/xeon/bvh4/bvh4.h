@@ -246,7 +246,7 @@ namespace embree
     static Accel* BVH4Triangle4Refit(TriangleMesh* mesh);
 
     /*! initializes the acceleration structure */
-    void init (size_t numPrimitives = 0);
+    void init (size_t numPrimitives = 0, size_t numThreads = 1);
 
     /*! Clears the barrier bits of a subtree. */
     void clearBarrier(NodeRef& node);

@@ -240,7 +240,7 @@ namespace embree
       delete objects[i];
   }
 
-  void BVH4::init(size_t numPrimitives)
+  void BVH4::init(size_t numPrimitives, size_t numThreads)
   {
     /* allocate as much memory as likely needed and reserve conservative amounts of memory */
     size_t blockSize = LinearAllocatorPerThread::allocBlockSize;
@@ -259,7 +259,7 @@ namespace embree
     size_t bytesAllocated = 0; // FIXME: enable me
     //size_t bytesAllocated = numAllocatedNodes * sizeof(BVH4::Node) + numAllocatedPrimitives * primTy.bytes;
     size_t bytesReserved  = numReservedNodes * sizeof(BVH4::Node) + numReservedPrimitives * primTy.bytes;
-    bytesReserved         = (bytesReserved+blockSize-1)/blockSize*blockSize;
+    bytesReserved         = (bytesReserved+blockSize-1)/blockSize*blockSize + numThreads*blockSize*2;
 
     root = emptyNode;
     alloc.init(bytesAllocated,bytesReserved);
