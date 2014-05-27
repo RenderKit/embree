@@ -36,7 +36,7 @@ namespace embree
     void enabling ();
     void disabling();
   };
-  
+
   struct UserGeometry : public UserGeometryBase
   {
   public:

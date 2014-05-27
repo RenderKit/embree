@@ -28,12 +28,17 @@ namespace embree
     bool needAllThreads;
   };
 
-  typedef Builder* (*TriangleMeshBuilderFuncOld)(void* accel, struct TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize);
-  typedef Builder* (*BuilderFunc)            (void* accel, struct BuildSource* source, struct Scene* scene, const size_t minLeafSize, const size_t maxLeafSize);
+  class Scene;
+  struct TriangleMesh;
+  struct UserGeometryBase;
+  struct BuildSource;
 
-  typedef Builder* (*TriangleMeshBuilderFunc)(void* accel, struct TriangleMesh* mesh, size_t mode); 
-  typedef Builder* (*UserGeometryBuilderFunc)(void* accel, struct UserGeometryBase* mesh, size_t mode);
-  typedef Builder* (*SceneBuilderFunc)       (void* accel, struct Scene* scene, size_t mode);
+  typedef Builder* (*TriangleMeshBuilderFuncOld)(void* accel, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize);
+  typedef Builder* (*BuilderFunc)            (void* accel, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize);
+
+  typedef Builder* (*TriangleMeshBuilderFunc)(void* accel, TriangleMesh* mesh, size_t mode); 
+  typedef Builder* (*UserGeometryBuilderFunc)(void* accel, UserGeometryBase* mesh, size_t mode);
+  typedef Builder* (*SceneBuilderFunc)       (void* accel, Scene* scene, size_t mode);
 
 #define ADD_BUILDER(NAME,BUILDER,LEAFMIN,LEAFMAX)              \
   builders.add(ISA,NAME,BUILDER,LEAFMIN,LEAFMAX);

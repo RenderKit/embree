@@ -1002,14 +1002,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4\bvh4_intersector4_hybrid.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh4\bvh4_intersector4_hybrid.h"
-				>
-			</File>
-			<File
 				RelativePath=".\bvh4\bvh4_refit.cpp"
 				>
 			</File>
@@ -1031,22 +1023,6 @@
 			</File>
 			<File
 				RelativePath=".\bvh4\bvh4_statistics.h"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh4\twolevel_accel.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh4\twolevel_accel.h"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh4\virtual_accel.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh4\virtual_accel.h"
 				>
 			</File>
 		</Filter>
@@ -1106,27 +1082,27 @@
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_fallback.cpp"
+				RelativePath=".\builders\heuristic_fallback.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_fallback.h"
+				RelativePath=".\builders\heuristic_fallback.h"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_object_partition.cpp"
+				RelativePath=".\builders\heuristic_object_partition.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_object_partition.h"
+				RelativePath=".\builders\heuristic_object_partition.h"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_object_partition_unaligned.cpp"
+				RelativePath=".\builders\heuristic_object_partition_unaligned.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_object_partition_unaligned.h"
+				RelativePath=".\builders\heuristic_object_partition_unaligned.h"
 				>
 			</File>
 			<File
@@ -1138,23 +1114,23 @@
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_spatial_split.cpp"
+				RelativePath=".\builders\heuristic_spatial_split.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_spatial_split.h"
+				RelativePath=".\builders\heuristic_spatial_split.h"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_split.h"
+				RelativePath=".\builders\heuristic_split.h"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_strand_partition.cpp"
+				RelativePath=".\builders\heuristic_strand_partition.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_strand_partition.h"
+				RelativePath=".\builders\heuristic_strand_partition.h"
 				>
 			</File>
 			<File
@@ -1175,6 +1151,14 @@
 			</File>
 			<File
 				RelativePath=".\builders\primrefgen.h"
+				>
+			</File>
+			<File
+				RelativePath=".\builders\primrefgen_old.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\builders\primrefgen_old.h"
 				>
 			</File>
 			<File
@@ -1202,11 +1186,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\builders\trirefgen.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\builders\trirefgen.h"
+				RelativePath=".\builders\workstack.h"
 				>
 			</File>
 		</Filter>

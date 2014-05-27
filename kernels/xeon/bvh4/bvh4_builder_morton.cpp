@@ -255,7 +255,7 @@ namespace embree
       
       CentGeomBBox3fa bounds; bounds.reset();
       
-      for (ssize_t cur=0, i=0; i<scene->size(); i++) 
+      for (ssize_t cur=0, i=0; i<ssize_t(scene->size()); i++) 
       {
 	TriangleMesh* geom = (TriangleMesh*) scene->get(i);
         if (geom == NULL) continue;
@@ -264,7 +264,7 @@ namespace embree
 	ssize_t gend = geom->numTriangles;
 	ssize_t s = max(start-cur,gstart);
 	ssize_t e = min(end  -cur,gend  );
-	for (size_t j=s; j<e; j++) bounds.extend(geom->bounds(j));
+	for (ssize_t j=s; j<e; j++) bounds.extend(geom->bounds(j));
 	cur += geom->numTriangles;
 	if (cur >= end) break;  
       }

@@ -106,7 +106,7 @@ void instanceOccludedFunc(const Instance* instance, RTCRay& ray, size_t item)
   ray.dir = ray_dir;
 }
 
-Instance* createInstance (RTCScene scene, RTCScene object, int userID, Vec3fa lower, Vec3fa upper)
+Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec3fa& lower, const Vec3fa& upper)
 {
   Instance* instance = new Instance;
   instance->object = object;
@@ -207,7 +207,7 @@ void sphereOccludedFunc(const Sphere* spheres, RTCRay& ray, size_t item)
   }
 }
 
-Sphere* createAnalyticalSphere (RTCScene scene, Vec3fa p, float r)
+Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   unsigned int geomID = rtcNewUserGeometry(scene,1);
   Sphere* sphere = new Sphere;
@@ -237,7 +237,7 @@ Sphere* createAnalyticalSpheres (RTCScene scene, size_t N)
 //                      Triangular sphere geometry                          //
 // ======================================================================== //
 
-unsigned int createTriangulatedSphere (RTCScene scene, Vec3fa p, float r)
+unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
   unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));

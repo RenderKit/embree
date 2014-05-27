@@ -2075,47 +2075,47 @@
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_fallback.cpp"
+				RelativePath=".\builders\heuristic_fallback.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_fallback.h"
+				RelativePath=".\builders\heuristic_fallback.h"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_object_partition.cpp"
+				RelativePath=".\builders\heuristic_object_partition.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_object_partition.h"
+				RelativePath=".\builders\heuristic_object_partition.h"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_object_partition_unaligned.cpp"
+				RelativePath=".\builders\heuristic_object_partition_unaligned.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_object_partition_unaligned.h"
+				RelativePath=".\builders\heuristic_object_partition_unaligned.h"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_spatial_split.cpp"
+				RelativePath=".\builders\heuristic_spatial_split.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_spatial_split.h"
+				RelativePath=".\builders\heuristic_spatial_split.h"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_split.h"
+				RelativePath=".\builders\heuristic_split.h"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_strand_partition.cpp"
+				RelativePath=".\builders\heuristic_strand_partition.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\bvh4hair\heuristic_strand_partition.h"
+				RelativePath=".\builders\heuristic_strand_partition.h"
 				>
 			</File>
 			<File

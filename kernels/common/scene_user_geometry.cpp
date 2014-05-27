@@ -14,7 +14,6 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "scene_user_geometry.h"
 #include "scene.h"
 
 namespace embree
