@@ -64,7 +64,6 @@ namespace embree
 
     int load( const char *filename )
     {
-      DBG_PRINT(filename);
       init();
 
       FILE *file;
@@ -181,9 +180,5 @@ namespace embree
 
     int numPoints = hairset->v.size();
     int numSegments = hairset->hairs.size();
-    PRINT(numHairs);
-    PRINT(numSegments);
-    PRINT(numPoints);
-    
   }
 }

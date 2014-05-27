@@ -228,9 +228,6 @@ namespace embree
 
     int numPoints = hairset->v.size();
     int numSegments = hairset->hairs.size();
-    PRINT(numHairs);
-    PRINT(numSegments);
-    PRINT(numPoints);
 
 #if CONVERT_TO_BINARY
     FILE* fout = fopen(fileName.setExt(".bin").c_str(),"wb");
