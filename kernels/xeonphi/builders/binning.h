@@ -80,6 +80,31 @@ namespace embree
     return prefix_sum(c);
   }
 
+  static __forceinline mic_m lt_split(const mic_f &b_min,
+				      const mic_f &b_max,
+				      const mic_m &dim_mask,
+				      const mic_f &c,
+				      const mic_f &s,
+				      const mic_f &bestSplit_f)
+  {
+    const mic_f centroid_2 = b_min + b_max;
+    const mic_f binID = (centroid_2 - c)*s;
+    return lt(dim_mask,binID,bestSplit_f);    
+  }
+
+  static __forceinline mic_m ge_split(const mic_f &b_min,
+				      const mic_f &b_max,
+				      const mic_m &dim_mask,
+				      const mic_f &c,
+				      const mic_f &s,
+				      const mic_f &bestSplit_f)
+  {
+    const mic_f centroid_2 = b_min + b_max;
+    const mic_f binID = (centroid_2 - c)*s;
+    return ge(dim_mask,binID,bestSplit_f);    
+  }
+
+
   template<class Primitive>
   __forceinline void fastbin(const Primitive * __restrict__ const aabb,
 			     const unsigned int thread_start,
@@ -449,6 +474,119 @@ namespace embree
     lArea[2] = prefix_area_lr(min_x2,min_y2,min_z2,max_x2,max_y2,max_z2);
     lNum[2]  = prefix_count(count2);
   }
+
+
+  template<unsigned int DISTANCE, class Primitive>
+    __forceinline unsigned int partitionPrimitives_xfm(Primitive *__restrict__ aabb,
+						       const mic3f &cmat,
+						       const unsigned int begin,
+						       const unsigned int end,
+						       const unsigned int bestSplit,
+						       const unsigned int bestSplitDim,
+						       const mic_f &centroidBoundsMin_2,
+						       const mic_f &scale,
+						       Centroid_Scene_AABB & local_left,
+						       Centroid_Scene_AABB & local_right)
+    {
+      assert(begin <= end);
+
+      Primitive *__restrict__ l = aabb + begin;
+      Primitive *__restrict__ r = aabb + end;
+
+      const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
+      const mic_f s = mic_f(scale[bestSplitDim]);
+
+      mic_f left_centroidMinAABB = broadcast4to16f(&local_left.centroid2.lower);
+      mic_f left_centroidMaxAABB = broadcast4to16f(&local_left.centroid2.upper);
+      mic_f left_sceneMinAABB    = broadcast4to16f(&local_left.geometry.lower);
+      mic_f left_sceneMaxAABB    = broadcast4to16f(&local_left.geometry.upper);
+
+      mic_f right_centroidMinAABB = broadcast4to16f(&local_right.centroid2.lower);
+      mic_f right_centroidMaxAABB = broadcast4to16f(&local_right.centroid2.upper);
+      mic_f right_sceneMinAABB    = broadcast4to16f(&local_right.geometry.lower);
+      mic_f right_sceneMaxAABB    = broadcast4to16f(&local_right.geometry.upper);
+
+      const mic_f bestSplit_f = mic_f(bestSplit);
+
+      const mic_m dim_mask = mic_m::shift1[bestSplitDim];
+
+      const mic_f c0 = cmat.x;
+      const mic_f c1 = cmat.y;
+      const mic_f c2 = cmat.z;
+
+      while(1)
+	{
+	  while (likely(l < r)) 
+	    {
+	      
+	      const mic2f bounds = l->getBounds(c0,c1,c2);
+	      const mic_f b_min  = bounds.x;
+	      const mic_f b_max  = bounds.y;
+
+	      prefetch<PFHINT_L1EX>(l+2);	  
+	      if (unlikely(ge_split(b_min,b_max,dim_mask,c,s,bestSplit_f))) break;
+	      prefetch<PFHINT_L2EX>(l + DISTANCE + 4);	  
+	      const mic_f centroid2 = b_min+b_max;
+	      left_centroidMinAABB = min(left_centroidMinAABB,centroid2);
+	      left_centroidMaxAABB = max(left_centroidMaxAABB,centroid2);
+	      left_sceneMinAABB    = min(left_sceneMinAABB,b_min);
+	      left_sceneMaxAABB    = max(left_sceneMaxAABB,b_max);
+	      ++l;
+	    }
+	  while (likely(l < r)) 
+	    {
+	      const mic2f bounds = r->getBounds(c0,c1,c2);
+	      const mic_f b_min  = bounds.x;
+	      const mic_f b_max  = bounds.y;
+
+	      prefetch<PFHINT_L1EX>(r-2);	  
+	      if (unlikely(lt_split(b_min,b_max,dim_mask,c,s,bestSplit_f))) break;
+	      prefetch<PFHINT_L2EX>(r - DISTANCE - 4);
+	      const mic_f centroid2 = b_min+b_max;
+	      right_centroidMinAABB = min(right_centroidMinAABB,centroid2);
+	      right_centroidMaxAABB = max(right_centroidMaxAABB,centroid2);
+	      right_sceneMinAABB    = min(right_sceneMinAABB,b_min);
+	      right_sceneMaxAABB    = max(right_sceneMaxAABB,b_max);
+	      --r;
+	    }
+
+	  if (unlikely(l == r)) {
+	    const mic2f bounds = r->getBounds(c0,c1,c2);
+	    const mic_f b_min  = bounds.x;
+	    const mic_f b_max  = bounds.y;
+
+	    if ( ge_split(b_min,b_max,dim_mask,c,s,bestSplit_f))
+	      {
+		const mic_f centroid2 = b_min+b_max;
+		right_centroidMinAABB = min(right_centroidMinAABB,centroid2);
+		right_centroidMaxAABB = max(right_centroidMaxAABB,centroid2);
+		right_sceneMinAABB    = min(right_sceneMinAABB,b_min);
+		right_sceneMaxAABB    = max(right_sceneMaxAABB,b_max);
+	      }
+	    else 
+	      l++; 
+	    break;
+	  }
+
+	  xchg(*l,*r);
+	}
+
+
+      store4f(&local_left.centroid2.lower,left_centroidMinAABB);
+      store4f(&local_left.centroid2.upper,left_centroidMaxAABB);
+      store4f(&local_left.geometry.lower,left_sceneMinAABB);
+      store4f(&local_left.geometry.upper,left_sceneMaxAABB);
+
+      store4f(&local_right.centroid2.lower,right_centroidMinAABB);
+      store4f(&local_right.centroid2.upper,right_centroidMaxAABB);
+      store4f(&local_right.geometry.lower,right_sceneMinAABB);
+      store4f(&local_right.geometry.upper,right_sceneMaxAABB);
+
+      assert( aabb + begin <= l && l <= aabb + end);
+      assert( aabb + begin <= r && r <= aabb + end);
+
+      return l - (aabb + begin);
+    }
 
 
   class __aligned(64) Bin16
@@ -871,7 +1009,7 @@ namespace embree
     bin16.thread_count[2] = count2;     
   }
 
-template<class Primitive>
+  template<class Primitive>
   static __forceinline mic_m lt_split(const Primitive *__restrict__ const aabb,
 				      const unsigned int dim,
 				      const mic_f &c,
@@ -886,21 +1024,7 @@ template<class Primitive>
     return lt(binID,bestSplit_f);    
   }
 
-
-  static __forceinline mic_m lt_split(const mic_f &b_min,
-				      const mic_f &b_max,
-				      const mic_m &dim_mask,
-				      const mic_f &c,
-				      const mic_f &s,
-				      const mic_f &bestSplit_f)
-  {
-    const mic_f centroid_2 = b_min + b_max;
-    const mic_f binID = (centroid_2 - c)*s;
-    return lt(dim_mask,binID,bestSplit_f);    
-  }
-
-
-template<class Primitive>
+  template<class Primitive>
   static __forceinline mic_m ge_split(const Primitive *__restrict__ const aabb,
 				      const unsigned int dim,
 				      const mic_f &c,
@@ -915,17 +1039,7 @@ template<class Primitive>
     return ge(binID,bestSplit_f);    
   }
 
-  static __forceinline mic_m ge_split(const mic_f &b_min,
-				      const mic_f &b_max,
-				      const mic_m &dim_mask,
-				      const mic_f &c,
-				      const mic_f &s,
-				      const mic_f &bestSplit_f)
-  {
-    const mic_f centroid_2 = b_min + b_max;
-    const mic_f binID = (centroid_2 - c)*s;
-    return ge(dim_mask,binID,bestSplit_f);    
-  }
+
 
   template<unsigned int DISTANCE, class Primitive>
     __forceinline unsigned int partitionPrimitives(Primitive *__restrict__ aabb,

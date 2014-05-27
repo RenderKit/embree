@@ -1054,7 +1054,7 @@ namespace embree
 	leftChild.bounds.reset();
 	rightChild.bounds.reset();
 
-	const unsigned int mid = partitionPrimitives<L2_PREFETCH_ITEMS>(prims ,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
+	const unsigned int mid = partitionPrimitives_xfm<L2_PREFETCH_ITEMS>(prims,cmat,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
 
 	assert(area(leftChild.bounds.geometry) >= 0.0f);
 	assert(current.begin + mid == current.begin + split.numLeft);
