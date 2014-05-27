@@ -316,17 +316,15 @@ namespace embree
 
 
   template<class Primitive>
-  __forceinline void fastbin(const Primitive * __restrict__ const aabb,
-			     const unsigned int thread_start,
-			     const unsigned int thread_end,
-			     const mic_f &centroidBoundsMin_2,
-			     const mic_f &scale,
-			     const mic_f &c0,
-			     const mic_f &c1,
-			     const mic_f &c2,
-			     mic_f lArea[3],
-			     mic_f rArea[3],
-			     mic_i lNum[3])
+  __forceinline void fastbin_xfm(const Primitive * __restrict__ const aabb,
+				 const mic3f &cmat,
+				 const unsigned int thread_start,
+				 const unsigned int thread_end,
+				 const mic_f &centroidBoundsMin_2,
+				 const mic_f &scale,
+				 mic_f lArea[3],
+				 mic_f rArea[3],
+				 mic_i lNum[3])
   {
 
     const mic_f init_min = mic_f::inf();
@@ -375,6 +373,10 @@ namespace embree
     prefetch<PFHINT_L2>(aptr+4);
     prefetch<PFHINT_L2>(aptr+6);
     prefetch<PFHINT_L2>(aptr+8);
+
+    const mic_f c0 = cmat.x;
+    const mic_f c1 = cmat.y;
+    const mic_f c2 = cmat.z;
 
     for (size_t j = start;j < end;j++,aptr++)
       {

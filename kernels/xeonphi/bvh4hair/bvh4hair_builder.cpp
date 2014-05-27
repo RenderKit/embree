@@ -907,12 +907,13 @@ namespace embree
       recurseSAH(current,alloc,RECURSE,threadID,numThreads);
   }
 
+  // ===============================================================================================================================================
+  // ===============================================================================================================================================
+  // ===============================================================================================================================================
+
+
   void BVH4HairBuilder::recurseOBB(BuildRecordOBB& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads)
   {
-
-    //DBG(PING);
-    //DBG(DBG_PRINT(current));
-
     __aligned(64) BuildRecordOBB children[BVH4Hair::N];
 
     /* create leaf node */
@@ -974,8 +975,7 @@ namespace embree
     /* recurse into each child */
     for (unsigned int i=0; i<numChildren; i++) 
     {
-      //node[currentIndex].setMatrix(children[i].bounds.geometry,i);
-      PING;
+      node[currentIndex].setMatrix(children[i].xfm,i);
       children[i].parentID    = currentIndex;
       children[i].parentBoxID = i;
       recurseOBB(children[i],alloc,mode,threadID,numThreads);
@@ -1003,7 +1003,9 @@ namespace embree
     mic_f rightArea[3];
     mic_i leftNum[3];
 
-    fastbin<Bezier1i>(prims,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+    const mic3f cmat = convert(current.xfm);
+    
+    fastbin_xfm<Bezier1i>(prims,cmat,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
 
     const unsigned int items = current.items();
     const float voxelArea = area(current.bounds.geometry);
@@ -1127,20 +1129,6 @@ namespace embree
     current.xfm = clamp(frame(axis).transposed());    
   }
 
-  __forceinline mic_f xfmPoint(const Bezier1i &b, 
-			       const mic_f &c0,
-			       const mic_f &c1,
-			       const mic_f &c2)
-  {
-    const mic_f p0123 = uload16f((float*)b.p);
-    const mic_f p0123_1 = select(0x7777,p0123,mic_f::one());
-    const mic_f x = ldot3_xyz(p0123_1,c0);
-    const mic_f y = ldot3_xyz(p0123_1,c1);
-    const mic_f z = ldot3_xyz(p0123_1,c2);
-    const mic_f xyzw = select(0x7777,select(0x4444,z,select(0x2222,y,x)),p0123);
-    return xyzw;
-  }
-
   __forceinline void BVH4HairBuilder::computeUnalignedSpaceBounds( BuildRecordOBB& current )
   {
     const mic_f c0 = broadcast4to16f((float*)&current.xfm.vx);
@@ -1155,7 +1143,7 @@ namespace embree
 
     for (size_t i=current.begin;i<current.end;i++)
       {
-	const mic_f p0123 = xfmPoint(prims[i],c0,c1,c2);
+	const mic_f p0123 = xfmPoint(prims[i].p,c0,c1,c2);
 	const mic_f p0 = permute<0>(p0123);
 	const mic_f p1 = permute<1>(p0123);
 	const mic_f p2 = permute<2>(p0123);
