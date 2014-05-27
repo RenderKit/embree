@@ -57,7 +57,7 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
 }
 
 /* adds a sphere to the scene */
-uniform unsigned int createSphere (uniform RTCGeometryFlags flags, const uniform Vec3f pos, const uniform float r)
+uniform unsigned int createSphere (uniform RTCGeometryFlags flags, const uniform Vec3f& pos, const uniform float r)
 {
   /* create a triangulated sphere */
   uniform unsigned int mesh = rtcNewTriangleMesh (g_scene, flags, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
@@ -178,7 +178,7 @@ export void device_init (uniform int8* uniform cfg)
 task void animateSphere (uniform Vertex* uniform vertices, 
                          const uniform float rcpNumTheta,
                          const uniform float rcpNumPhi,
-                         const uniform Vec3f pos, 
+                         const uniform Vec3f& pos, 
                          const uniform float r,
                          const uniform float f)
 {

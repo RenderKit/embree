@@ -251,8 +251,8 @@ struct AnisotropicBlinn {
 };
 
   /*! Anisotropic power cosine distribution constructor. */
-inline void AnisotropicBlinn__Constructor(varying AnisotropicBlinn* uniform This, const Vec3f Kr, const Vec3f Kt, 
-                                          const Vec3f dx, float nx, const Vec3f dy, float ny, const Vec3f dz) 
+inline void AnisotropicBlinn__Constructor(varying AnisotropicBlinn* uniform This, const uniform Vec3f& Kr, const uniform Vec3f& Kt, 
+                                          const Vec3f& dx, float nx, const Vec3f& dy, float ny, const Vec3f& dz) 
 {
   This->Kr = Kr;
   This->Kt = Kt;
@@ -298,7 +298,7 @@ inline Vec3fa AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform T
   return make_Vec3fa(wh,pdf);
 }
 
-inline Vec3f AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This, const Vec3f wo, const Vec3f wi) 
+inline Vec3f AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This, const Vec3f& wo, const uniform Vec3f& wi) 
 {
   const float cosThetaI = dot(wi,This->dz);
   

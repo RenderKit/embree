@@ -106,7 +106,7 @@ void instanceOccludedFunc(const uniform Instance* uniform instance, varying RTCR
   ray.dir = ray_dir;
 }
 
-uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, uniform int userID, uniform Vec3f lower, uniform Vec3f upper)
+uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, uniform int userID, const uniform Vec3f& lower, const uniform Vec3f& upper)
 {
   uniform Instance* uniform instance = uniform new uniform Instance;
   instance->object = object;
@@ -207,7 +207,7 @@ void sphereOccludedFunc(const uniform Sphere* uniform spheres, varying RTCRay& r
   }
 }
 
-uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, uniform Vec3f p, uniform float r)
+uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Vec3f& p, uniform float r)
 {
   uniform unsigned int geomID = rtcNewUserGeometry(scene,1);
   uniform Sphere* uniform sphere = uniform new uniform Sphere;
@@ -237,7 +237,7 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform size_t 
 //                      Triangular sphere geometry                          //
 // ======================================================================== //
 
-uniform unsigned int createTriangulatedSphere (RTCScene scene, uniform Vec3f p, uniform float r)
+uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec3f& p, uniform float r)
 {
   /* create triangle mesh */
   uniform unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));

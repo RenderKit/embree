@@ -42,7 +42,7 @@ void error_handler(const RTCError code, const int8* str)
 const int numPhi = 5;
 const int numTheta = 2*numPhi;
 
-unsigned int createTriangulatedSphere (RTCScene scene, Vec3fa p, float r)
+unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
   unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2*numTheta*(numPhi-1), numTheta*(numPhi+1));
