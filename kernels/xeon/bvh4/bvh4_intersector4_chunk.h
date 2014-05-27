@@ -28,6 +28,7 @@ namespace embree
       class BVH4Intersector4Chunk
     {
       /* shortcuts for frequently used types */
+      typedef typename PrimitiveIntersector::Precalculations Precalculations;
       typedef typename PrimitiveIntersector::Primitive Primitive;
       typedef typename BVH4::NodeRef NodeRef;
       typedef typename BVH4::Node Node;

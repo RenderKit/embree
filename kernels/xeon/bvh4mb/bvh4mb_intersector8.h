@@ -29,6 +29,7 @@ namespace embree
       class BVH4MBIntersector8Chunk
     {
       /* shortcuts for frequently used types */
+      typedef typename TriangleIntersector::Precalculations Precalculations;
       typedef typename TriangleIntersector::Primitive Triangle;
       typedef typename BVH4MB::Base Base;
       typedef typename BVH4MB::Node Node;

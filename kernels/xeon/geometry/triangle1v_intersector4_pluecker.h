@@ -30,8 +30,12 @@ namespace embree
   struct Triangle1vIntersector4Pluecker
   {
     typedef Triangle1v Primitive;
-    
-    static __forceinline void intersect(const sseb& valid_i, Ray4& ray, const Triangle1v* __restrict__ tris, size_t num, const void* geom)
+
+    struct Precalculations {
+      __forceinline Precalculations (const sseb& valid, const Ray4& ray) {}
+    };
+
+    static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Triangle1v* __restrict__ tris, size_t num, const void* geom)
     {
       for (size_t i=0; i<num; i++) 
       {
@@ -118,7 +122,7 @@ namespace embree
       }
     }
 
-    static __forceinline sseb occluded(const sseb& valid_i, Ray4& ray, const Triangle1v* __restrict__ tris, size_t num, const void* geom)
+    static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Triangle1v* __restrict__ tris, size_t num, const void* geom)
     {
       sseb valid0 = valid_i;
 

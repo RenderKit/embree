@@ -25,13 +25,17 @@ namespace embree
   {
     typedef AccelSetItem Primitive;
 
+    struct Precalculations {
+      __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
+    };
+
     static __forceinline void intersect(const avxb& valid_i, Ray8& ray, const Primitive& prim, const void* geom) 
     {
       AVX_ZERO_UPPER();
       prim.accel->intersect8(&valid_i,(RTCRay8&)ray,prim.item);
     }
 
-    static __forceinline void intersect(const avxb& valid, Ray8& ray, const Primitive* tri, size_t num, const void* geom)
+    static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* tri, size_t num, const void* geom)
     {
       for (size_t i=0; i<num; i++)
         intersect(valid,ray,tri[i],geom);
@@ -44,7 +48,7 @@ namespace embree
       return ray.geomID == 0;
     }
 
-    static __forceinline avxb occluded(const avxb& valid, const Ray8& ray, const Primitive* tri, size_t num, const void* geom)
+    static __forceinline avxb occluded(const avxb& valid, Precalculations& pre, const Ray8& ray, const Primitive* tri, size_t num, const void* geom)
     {
       avxb terminated = !valid;
       for (size_t i=0; i<num; i++) {

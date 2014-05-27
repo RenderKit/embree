@@ -25,8 +25,12 @@ namespace embree
   struct Triangle4iIntersector8Pluecker
   {
     typedef Triangle4i Primitive;
-  
-    static __forceinline void intersect(const avxb& valid_i, Ray8& ray, const Triangle4i& tri, const void* geom)
+
+    struct Precalculations {
+      __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
+    };
+
+    static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle4i& tri, const void* geom)
     {
       for (size_t i=0; i<4; i++)
       {
@@ -118,13 +122,13 @@ namespace embree
       }
     }
 
-    static __forceinline void intersect(const avxb& valid, Ray8& ray, const Triangle4i* tri, size_t num, const void* geom)
+    static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Triangle4i* tri, size_t num, const void* geom)
     {
       for (size_t i=0; i<num; i++)
-        intersect(valid,ray,tri[i],geom);
+        intersect(valid,pre,ray,tri[i],geom);
     }
     
-    static __forceinline avxb occluded(const avxb& valid_i, Ray8& ray, const Triangle4i& tri, const void* geom)
+    static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle4i& tri, const void* geom)
     {
       avxb valid0 = valid_i;
 
@@ -211,11 +215,11 @@ namespace embree
       return !valid0;
     }
 
-    static __forceinline avxb occluded(const avxb& valid, Ray8& ray, const Triangle4i* tri, size_t num, const void* geom)
+    static __forceinline avxb occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Triangle4i* tri, size_t num, const void* geom)
     {
       avxb valid0 = valid;
       for (size_t i=0; i<num; i++) {
-        valid0 &= !occluded(valid0,ray,tri[i],geom);
+        valid0 &= !occluded(valid0,pre,ray,tri[i],geom);
         if (none(valid0)) break;
       }
       return !valid0;

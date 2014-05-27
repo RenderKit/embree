@@ -29,7 +29,7 @@ namespace embree
   namespace isa
   {
     template<typename PrimitiveIntersector4>
-    __forceinline void BVH4Intersector4Hybrid<PrimitiveIntersector4>::intersect1(const BVH4* bvh, NodeRef root, size_t k, Ray4& ray, 
+    __forceinline void BVH4Intersector4Hybrid<PrimitiveIntersector4>::intersect1(const BVH4* bvh, NodeRef root, size_t k, Precalculations& pre, Ray4& ray, 
                                                                                  const sse3f& ray_org, const sse3f& ray_dir, const sse3f& ray_rdir, 
                                                                                  const ssef& ray_tnear, const ssef& ray_tfar)
     {
@@ -155,7 +155,7 @@ namespace embree
         /*! this is a leaf node */
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
-        PrimitiveIntersector4::intersect(ray,k,prim,num,bvh->geometry);
+        PrimitiveIntersector4::intersect(pre,ray,k,prim,num,bvh->geometry);
         rayFar = ray.tfar[k];
       }
     }
@@ -179,7 +179,8 @@ namespace embree
       ray_tnear = select(valid0,ray_tnear,ssef(pos_inf));
       ray_tfar  = select(valid0,ray_tfar ,ssef(neg_inf));
       const ssef inf = ssef(pos_inf);
-      
+      Precalculations pre(valid0,ray);
+
       /* allocate stack and push root node */
       ssef    stack_near[stackSizeChunk]; 
       NodeRef stack_node[stackSizeChunk];
@@ -214,7 +215,7 @@ namespace embree
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-            intersect1(bvh,curNode,i,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar);
+            intersect1(bvh,curNode,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar);
           }
           ray_tfar = min(ray_tfar,ray.tfar);
           continue;
@@ -310,14 +311,14 @@ namespace embree
         const sseb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),4);
         size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
-        PrimitiveIntersector4::intersect(valid_leaf,ray,prim,items,bvh->geometry);
+        PrimitiveIntersector4::intersect(valid_leaf,pre,ray,prim,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
       AVX_ZERO_UPPER();
     }
 
     template<typename PrimitiveIntersector4>
-    __forceinline bool BVH4Intersector4Hybrid<PrimitiveIntersector4>::occluded1(const BVH4* bvh, NodeRef root, size_t k, Ray4& ray, 
+    __forceinline bool BVH4Intersector4Hybrid<PrimitiveIntersector4>::occluded1(const BVH4* bvh, NodeRef root, size_t k, Precalculations& pre, Ray4& ray, 
                                                                                 const sse3f& ray_org, const sse3f& ray_dir, const sse3f& ray_rdir, 
                                                                                 const ssef& ray_tnear, const ssef& ray_tfar)
     {
@@ -428,7 +429,7 @@ namespace embree
         /*! this is a leaf node */
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
-        if (PrimitiveIntersector4::occluded(ray,k,prim,num,bvh->geometry)) {
+        if (PrimitiveIntersector4::occluded(pre,ray,k,prim,num,bvh->geometry)) {
           ray.geomID[k] = 0;
           return true;
         }
@@ -456,7 +457,8 @@ namespace embree
       ray_tnear = select(valid,ray_tnear,ssef(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,ssef(neg_inf));
       const ssef inf = ssef(pos_inf);
-      
+      Precalculations pre(valid,ray);
+
       /* allocate stack and push root node */
       ssef    stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
@@ -491,7 +493,7 @@ namespace embree
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-            if (occluded1(bvh,curNode,i,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar))
+            if (occluded1(bvh,curNode,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar))
               terminated[i] = -1;
           }
           if (all(terminated)) break;
@@ -588,7 +590,7 @@ namespace embree
         const sseb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),4);
         size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
-        terminated |= PrimitiveIntersector4::occluded(!terminated,ray,prim,items,bvh->geometry);
+        terminated |= PrimitiveIntersector4::occluded(!terminated,pre,ray,prim,items,bvh->geometry);
         if (all(terminated)) break;
         ray_tfar = select(terminated,ssef(neg_inf),ray_tfar);
       }

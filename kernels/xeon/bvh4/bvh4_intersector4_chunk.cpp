@@ -42,6 +42,7 @@ namespace embree
       ssef ray_tnear = select(valid0,ray.tnear,ssef(pos_inf));
       ssef ray_tfar  = select(valid0,ray.tfar ,ssef(neg_inf));
       const ssef inf = ssef(pos_inf);
+      Precalculations pre(valid0,ray);
       
       /* allocate stack and push root node */
       ssef    stack_near[stackSize];
@@ -159,7 +160,7 @@ namespace embree
         const sseb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),4);
         size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
-        PrimitiveIntersector4::intersect(valid_leaf,ray,prim,items,bvh->geometry);
+        PrimitiveIntersector4::intersect(valid_leaf,pre,ray,prim,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
       AVX_ZERO_UPPER();
@@ -176,7 +177,8 @@ namespace embree
       ssef ray_tnear = select(valid,ray.tnear,ssef(pos_inf));
       ssef ray_tfar  = select(valid,ray.tfar ,ssef(neg_inf));
       const ssef inf = ssef(pos_inf);
-      
+      Precalculations pre(valid,ray);
+
       /* allocate stack and push root node */
       ssef    stack_near[stackSize];
       NodeRef stack_node[stackSize];
@@ -292,7 +294,7 @@ namespace embree
         const sseb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),4);
         size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
-        terminated |= PrimitiveIntersector4::occluded(!terminated,ray,prim,items,bvh->geometry);
+        terminated |= PrimitiveIntersector4::occluded(!terminated,pre,ray,prim,items,bvh->geometry);
         if (all(terminated)) break;
         ray_tfar = select(terminated,ssef(neg_inf),ray_tfar);
       }

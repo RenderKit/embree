@@ -31,6 +31,7 @@ class BVH8iIntersector8Chunk
     {
 
       /* shortcuts for frequently used types */
+      typedef typename TriangleIntersector8::Precalculations Precalculations;
       typedef typename TriangleIntersector8::Primitive Triangle;
       typedef typename BVH4i::NodeRef NodeRef;
       typedef typename BVH8i::Node Node;

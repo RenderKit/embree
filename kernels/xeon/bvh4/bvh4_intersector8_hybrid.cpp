@@ -48,6 +48,7 @@ namespace embree
       ray_tnear = select(valid0,ray_tnear,avxf(pos_inf));
       ray_tfar  = select(valid0,ray_tfar ,avxf(neg_inf));
       const avxf inf = avxf(pos_inf);
+      Precalculations pre(valid0,ray);
 
       /* compute near/far per ray */
       avx3i nearXYZ;
@@ -89,13 +90,12 @@ namespace embree
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-            intersect1(bvh, curNode, i, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
+            intersect1(bvh, curNode, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
           }
           ray_tfar = min(ray_tfar,ray.tfar);
           continue;
         }
 #endif
-
 
         while (1)
         {
@@ -196,7 +196,7 @@ namespace embree
 
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
-        PrimitiveIntersector8::intersect(valid_leaf,ray,prim,items,bvh->geometry);
+        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
       AVX_ZERO_UPPER();
@@ -223,7 +223,8 @@ namespace embree
       ray_tnear = select(valid,ray_tnear,avxf(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,avxf(neg_inf));
       const avxf inf = avxf(pos_inf);
-      
+      Precalculations pre(valid,ray);
+
       /* compute near/far per ray */
       avx3i nearXYZ;
       nearXYZ.x = select(rdir.x >= 0.0f,avxi(0*(int)sizeof(ssef)),avxi(1*(int)sizeof(ssef)));
@@ -264,7 +265,7 @@ namespace embree
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-            if (occluded1(bvh,curNode,i,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
+            if (occluded1(bvh,curNode,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
               terminated[i] = -1;
           }
           if (all(terminated)) break;
@@ -373,7 +374,7 @@ namespace embree
 
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
-        terminated |= PrimitiveIntersector8::occluded(!terminated,ray,prim,items,bvh->geometry);
+        terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,prim,items,bvh->geometry);
         if (all(terminated)) break;
         ray_tfar = select(terminated,avxf(neg_inf),ray_tfar);
       }

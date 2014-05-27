@@ -43,7 +43,8 @@ namespace embree
       ssef ray_tnear = select(valid0,ray.tnear,pos_inf);
       ssef ray_tfar  = select(valid0,ray.tfar ,neg_inf);
       const ssef inf = ssef(pos_inf);
-      
+      Precalculations pre(valid0,ray);
+
       /* allocate stack and push root node */
       ssef    stack_near[3*BVH4i::maxDepth+1];
       NodeRef stack_node[3*BVH4i::maxDepth+1];
@@ -147,7 +148,7 @@ namespace embree
         const sseb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),4);
         size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel, items);
-        TriangleIntersector4::intersect(valid_leaf,ray,tri,items,bvh->geometry);
+        TriangleIntersector4::intersect(valid_leaf,pre,ray,tri,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
       AVX_ZERO_UPPER();
@@ -168,7 +169,8 @@ namespace embree
       ssef ray_tnear = select(valid,ray.tnear,pos_inf);
       ssef ray_tfar  = select(valid,ray.tfar ,neg_inf);
       const ssef inf = ssef(pos_inf);
-      
+      Precalculations pre(valid,ray);
+
       /* allocate stack and push root node */
       ssef    stack_near[3*BVH4i::maxDepth+1];
       NodeRef stack_node[3*BVH4i::maxDepth+1];
@@ -272,7 +274,7 @@ namespace embree
         const sseb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),4);
         size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel, items);
-        terminated |= TriangleIntersector4::occluded(!terminated,ray,tri,items,bvh->geometry);
+        terminated |= TriangleIntersector4::occluded(!terminated,pre,ray,tri,items,bvh->geometry);
         if (all(terminated)) break;
         ray_tfar = select(terminated,neg_inf,ray_tfar);
       }

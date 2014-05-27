@@ -33,8 +33,12 @@ namespace embree
   {
     typedef Triangle4 Primitive;
 
+    struct Precalculations {
+      __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
+    };
+
     /*! Intersects a 8 rays with 4 triangles. */
-    static __forceinline void intersect(const avxb& valid_i, Ray8& ray, const Triangle4& tri, const void* geom)
+    static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle4& tri, const void* geom)
     {
       for (size_t i=0; i<4; i++)
       {
@@ -117,14 +121,14 @@ namespace embree
       }
     }
 
-    static __forceinline void intersect(const avxb& valid, Ray8& ray, const Triangle4* tri, size_t num, const void* geom)
+    static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Triangle4* tri, size_t num, const void* geom)
     {
       for (size_t i=0; i<num; i++)
-        intersect(valid,ray,tri[i],geom);
+        intersect(valid,pre,ray,tri[i],geom);
     }
 
     /*! Test for 4 rays if they are occluded by any of the 4 triangle. */
-    static __forceinline avxb occluded(const avxb& valid_i, Ray8& ray, const Triangle4& tri, const void* geom)
+    static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle4& tri, const void* geom)
     {
       avxb valid0 = valid_i;
 
@@ -203,18 +207,18 @@ namespace embree
       return !valid0;
     }
 
-    static __forceinline avxb occluded(const avxb& valid, Ray8& ray, const Triangle4* tri, size_t num, const void* geom)
+    static __forceinline avxb occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Triangle4* tri, size_t num, const void* geom)
     {
       avxb valid0 = valid;
       for (size_t i=0; i<num; i++) {
-        valid0 &= !occluded(valid0,ray,tri[i],geom);
+        valid0 &= !occluded(valid0,pre,ray,tri[i],geom);
         if (none(valid0)) break;
       }
       return !valid0;
     }
 
     /*! Intersect a ray with the 4 triangles and updates the hit. */
-    static __forceinline void intersect(Ray8& ray, size_t k, const Triangle4& tri, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray8& ray, size_t k, const Triangle4& tri, void* geom)
     {
       /* calculate denominator */
       STAT3(normal.trav_prims,1,1,1);
@@ -292,14 +296,14 @@ namespace embree
 #endif
     }
 
-    static __forceinline void intersect(Ray8& ray, size_t k, const Triangle4* tri, size_t num, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray8& ray, size_t k, const Triangle4* tri, size_t num, void* geom)
     {
       for (size_t i=0; i<num; i++)
-        intersect(ray,k,tri[i],geom);
+        intersect(pre,ray,k,tri[i],geom);
     }
 
     /*! Test if the ray is occluded by one of the triangles. */
-    static __forceinline bool occluded(Ray8& ray, size_t k, const Triangle4& tri, void* geom)
+    static __forceinline bool occluded(Precalculations& pre, Ray8& ray, size_t k, const Triangle4& tri, void* geom)
     {
       /* calculate denominator */
       STAT3(shadow.trav_prims,1,1,1);
@@ -366,10 +370,10 @@ namespace embree
       return true;
     }
 
-    static __forceinline bool occluded(Ray8& ray, size_t k, const Triangle4* tri, size_t num, void* geom) 
+    static __forceinline bool occluded(Precalculations& pre, Ray8& ray, size_t k, const Triangle4* tri, size_t num, void* geom) 
     {
       for (size_t i=0; i<num; i++) 
-        if (occluded(ray,k,tri[i],geom))
+        if (occluded(pre,ray,k,tri[i],geom))
           return true;
 
       return false;

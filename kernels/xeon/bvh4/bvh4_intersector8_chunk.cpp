@@ -40,7 +40,8 @@ namespace embree
       avxf ray_tnear = select(valid0,ray.tnear,pos_inf);
       avxf ray_tfar  = select(valid0,ray.tfar ,neg_inf);
       const avxf inf = avxf(pos_inf);
-      
+      Precalculations pre(valid0,ray);
+
       /* allocate stack and push root node */
       avxf    stack_near[stackSize];
       NodeRef stack_node[stackSize];
@@ -152,7 +153,7 @@ namespace embree
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
-        PrimitiveIntersector8::intersect(valid_leaf,ray,prim,items,bvh->geometry);
+        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
       AVX_ZERO_UPPER();
@@ -169,7 +170,8 @@ namespace embree
       avxf ray_tnear = select(valid,ray.tnear,pos_inf);
       avxf ray_tfar  = select(valid,ray.tfar ,neg_inf);
       const avxf inf = avxf(pos_inf);
-      
+      Precalculations pre(valid,ray);
+
       /* allocate stack and push root node */
       avxf    stack_near[stackSize];
       NodeRef stack_node[stackSize];
@@ -281,7 +283,7 @@ namespace embree
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
-        terminated |= valid_leaf & PrimitiveIntersector8::occluded(valid_leaf,ray,prim,items,bvh->geometry);
+        terminated |= valid_leaf & PrimitiveIntersector8::occluded(valid_leaf,pre,ray,prim,items,bvh->geometry);
         if (all(terminated)) break;
         ray_tfar = select(terminated,neg_inf,ray_tfar);
       }

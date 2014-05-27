@@ -33,7 +33,11 @@ namespace embree
   {
     typedef Triangle1 Primitive;
 
-    static __forceinline void intersect(const avxb& valid_i, Ray8& ray, const Triangle1* __restrict__ tris, size_t num, const void* geom)
+    struct Precalculations {
+      __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
+    };
+
+    static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle1* __restrict__ tris, size_t num, const void* geom)
     {
       for (size_t i=0; i<num; i++) 
       {
@@ -113,7 +117,7 @@ namespace embree
       }
     }
 
-    static __forceinline avxb occluded(const avxb& valid_i, Ray8& ray, const Triangle1* __restrict__ tris, size_t num, const void* geom)
+    static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle1* __restrict__ tris, size_t num, const void* geom)
     {
       avxb valid0 = valid_i;
      

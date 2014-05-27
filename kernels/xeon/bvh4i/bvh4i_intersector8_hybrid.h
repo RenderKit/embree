@@ -29,6 +29,7 @@ namespace embree
       class BVH4iIntersector8Hybrid 
     {
       /* shortcuts for frequently used types */
+      typedef typename PrimitiveIntersector8::Precalculations Precalculations;
       typedef typename PrimitiveIntersector8::Primitive Primitive;
       typedef typename BVH4i::NodeRef NodeRef;
       typedef typename BVH4i::Node Node;
@@ -37,8 +38,8 @@ namespace embree
       static const size_t stackSizeChunk = 4*BVH4i::maxDepth+1;
 
     public:
-      static void intersect1(const BVH4i* bvh, NodeRef root, size_t k, Ray8& ray, avx3f ray_org, avx3f ray_dir, avx3f ray_rdir, avxf ray_tnear, avxf ray_tfar);
-      static bool occluded1 (const BVH4i* bvh, NodeRef root, size_t k, Ray8& ray, avx3f ray_org, avx3f ray_dir, avx3f ray_rdir, avxf ray_tnear, avxf ray_tfar);
+      static void intersect1(const BVH4i* bvh, NodeRef root, size_t k, Precalculations& pre, Ray8& ray, avx3f ray_org, avx3f ray_dir, avx3f ray_rdir, avxf ray_tnear, avxf ray_tfar);
+      static bool occluded1 (const BVH4i* bvh, NodeRef root, size_t k, Precalculations& pre, Ray8& ray, avx3f ray_org, avx3f ray_dir, avx3f ray_rdir, avxf ray_tnear, avxf ray_tfar);
 
       static void intersect(avxb* valid, BVH4i* bvh, Ray8& ray);
       static void occluded (avxb* valid, BVH4i* bvh, Ray8& ray);

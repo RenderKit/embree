@@ -87,6 +87,7 @@ namespace embree
     void BVH4MBIntersector8Chunk<TriangleIntersector>::intersect(avxb* valid_i, BVH4MB* bvh, Ray8& ray)
     {
       avxb valid = *valid_i;
+      Precalculations pre(valid,ray);
       STAT3(normal.travs,1,popcnt(valid),4);
       
       StackItemBVH4MBPacket8 stack[2+3*BVH4MB::maxDepth];
@@ -165,7 +166,7 @@ namespace embree
         {
           STAT3(normal.trav_leaves,1,popcnt(valid),4);
           size_t num; Triangle* tri = (Triangle*) cur->leaf(num);
-          TriangleIntersector::intersect(valid,ray,tri,num,bvh->geometry);
+          TriangleIntersector::intersect(valid,pre,ray,tri,num,bvh->geometry);
           ray_tfar = select(valid,ray.tfar,avxf(neg_inf));
         }
       }
@@ -208,6 +209,7 @@ namespace embree
     void BVH4MBIntersector8Chunk<TriangleIntersector>::occluded(avxb* valid_i, BVH4MB* bvh, Ray8& ray)
     {
       avxb valid = *valid_i;
+      Precalculations pre(valid,ray);
       STAT3(shadow.travs,1,popcnt(valid),4);
       avxb terminated = !valid;
       
@@ -241,7 +243,7 @@ namespace embree
         {
           STAT3(shadow.trav_leaves,1,popcnt(valid),4);
           size_t num; Triangle* tri = (Triangle*) cur->leaf(num);
-          terminated |= TriangleIntersector::occluded(valid,ray,tri,num,bvh->geometry);
+          terminated |= TriangleIntersector::occluded(valid,pre,ray,tri,num,bvh->geometry);
           if (all(terminated)) break;
           
           /* let terminated rays miss all boxes */

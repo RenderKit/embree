@@ -25,11 +25,12 @@ namespace embree
   namespace isa 
   {
     /*! BVH4 Traverser. Hybrid Packet traversal implementation for a Quad BVH. */
-    template<typename PrimitiveIntersector8>
+    template<typename PrimitiveIntersector>
     class BVH4Intersector8Hybrid 
     {
       /* shortcuts for frequently used types */
-      typedef typename PrimitiveIntersector8::Primitive Primitive;
+      typedef typename PrimitiveIntersector::Precalculations Precalculations;
+      typedef typename PrimitiveIntersector::Primitive Primitive;
       typedef typename BVH4::NodeRef NodeRef;
       typedef typename BVH4::Node Node;
       typedef StackItemT<NodeRef> StackItem;
@@ -37,7 +38,7 @@ namespace embree
       static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
       
     public:
-      static __forceinline void intersect1(const BVH4* bvh, NodeRef root, const size_t k, Ray8& ray, const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
+      static __forceinline void intersect1(const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray, const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
       {
         /*! stack state */
         StackItemInt32<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
@@ -164,12 +165,12 @@ namespace embree
 		/*! this is a leaf node */
 		STAT3(normal.trav_leaves, 1, 1, 1);
 		size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
-		PrimitiveIntersector8::intersect(ray, k, prim, num, bvh->geometry);
+		PrimitiveIntersector::intersect(pre, ray, k, prim, num, bvh->geometry);
 		rayFar = ray.tfar[k];
 	      }
 	  }
 
-	  static __forceinline bool occluded1(const BVH4* bvh, NodeRef root, const size_t k, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
+	  static __forceinline bool occluded1(const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
 	  {
 	    /*! stack state */
 	    NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -281,7 +282,7 @@ namespace embree
 		/*! this is a leaf node */
 		STAT3(shadow.trav_leaves,1,1,1);
 		size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
-		if (PrimitiveIntersector8::occluded(ray,k,prim,num,bvh->geometry)) {
+		if (PrimitiveIntersector::occluded(pre,ray,k,prim,num,bvh->geometry)) {
 		  ray.geomID[k] = 0;
 		  return true;
 		}
