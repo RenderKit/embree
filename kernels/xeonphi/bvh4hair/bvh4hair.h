@@ -30,12 +30,17 @@ namespace embree
     AffineSpace3fa scale = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19f),b.upper-b.lower));
     AffineSpace3fa trans = AffineSpace3fa::translate(-b.lower);
 
-#if 0
+#if 1
+    std::cout << std::endl;
+    DBG_PRINT(b);
     DBG_PRINT(scale);
     DBG_PRINT(trans);
     DBG_PRINT( AffineSpace3fa(mat) );
-    DBG_PRINT( trans * scale );
     DBG_PRINT( scale * trans );
+    DBG_PRINT( scale * trans * AffineSpace3fa(mat));
+    DBG_PRINT( xfmPoint( scale * trans, b.lower) );
+    DBG_PRINT( xfmPoint( scale * trans, b.upper) );
+
 #endif
 
     return  scale * trans * AffineSpace3fa(mat);

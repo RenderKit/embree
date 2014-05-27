@@ -1010,12 +1010,7 @@ namespace embree
     DBG_PRINT(current_obb.xfm);
     DBG_PRINT(current_obb.bounds.geometry);
     DBG_PRINT(aspace);
-
-    Vec3fa b_min_xfm = xfmPoint(aspace,current_obb.bounds.geometry.lower);
-    Vec3fa b_max_xfm = xfmPoint(aspace,current_obb.bounds.geometry.upper);
-
-    DBG_PRINT( b_min_xfm );
-    DBG_PRINT( b_max_xfm );
+    
 
     // for (size_t i=current.begin;i<current.end;i++)
     //   {
@@ -1065,7 +1060,7 @@ namespace embree
     fastbin_xfm<Bezier1i>(prims,cmat,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
 
     const unsigned int items = current.items();
-    const float voxelArea = area(current.bounds.geometry);
+    const float voxelArea = area(current.bounds.geometry); 
     Split split;
     split.cost = items * voxelArea;
 
@@ -1108,6 +1103,7 @@ namespace embree
     if (unlikely(split.pos == -1)) 
       {
 	DBG(std::cout << "FALLBACK" << std::endl << std::flush);
+	DBG(exit(0));
 	split_fallback(prims,current,leftChild,rightChild);
 	// /* partitioning of items */
       }
@@ -1142,11 +1138,13 @@ namespace embree
     computeUnalignedSpaceBounds(leftChild);
 
     DBG(DBG_PRINT(leftChild));
+    DBG(DBG_PRINT(Vec3fa(leftChild.bounds.geometry.upper - leftChild.bounds.geometry.lower)));
 
     computeUnalignedSpace(rightChild);
     computeUnalignedSpaceBounds(rightChild);
 
     DBG(DBG_PRINT(rightChild));
+    DBG(DBG_PRINT(Vec3fa(rightChild.bounds.geometry.upper - rightChild.bounds.geometry.lower)));
 
 
     if (leftChild.items()  <= BVH4Hair::N) leftChild.createLeaf();
@@ -1155,11 +1153,10 @@ namespace embree
   }
 
 
-
   __forceinline void BVH4HairBuilder::computeUnalignedSpace( BuildRecordOBB& current )
   {
+#if 0
     Vec3fa axis(0,0,1);
-#if 1
     for (size_t i=current.begin;i<current.end;i++)
       {
 	const Bezier1i &b = prims[i];
@@ -1171,8 +1168,14 @@ namespace embree
 	  break;
 	}	
       }
+#else
+    //Vec3fa axis(1,0,0);
+    Vec3fa axis(1,0,0);
+
 #endif
     current.xfm = frame(axis).transposed();    
+    //current.xfm = frame(axis); // .transposed();    
+
     DBG(DBG_PRINT(current.xfm));
   }
 
@@ -1206,6 +1209,28 @@ namespace embree
     store4f(&current.bounds.geometry.lower,geometry.x);
     store4f(&current.bounds.geometry.upper,geometry.y);
 
+    DBG(
+	for (size_t i=current.begin;i<current.end;i++)
+	  {
+	    for (size_t j=0;j<4;j++)
+	      {
+		const Vec3fa v = prims[i].p[j];
+		//const Vec3fa xfm_v = xfmPoint(current.xfm,v);
+		const Vec3fa xfm_v = Vec3fa(dot(current.xfm.vx,v),
+					    dot(current.xfm.vy,v),
+					    dot(current.xfm.vz,v));
+		if (disjoint(current.bounds.geometry,xfm_v))
+		  {
+		    DBG_PRINT(v);
+		    DBG_PRINT(xfm_v);
+		    DBG_PRINT(current.xfm);
+		    DBG_PRINT(current.bounds.geometry);
+		    exit(0);
+		  }
+	      }
+	  }
+	
+	);
     current.sArea = area(current.bounds.geometry);
 
   }
