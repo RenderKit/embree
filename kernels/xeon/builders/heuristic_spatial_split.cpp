@@ -275,7 +275,7 @@ namespace embree
 					   BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					   BezierRefList& rprims_o, PrimInfo& rinfo_o) const
     {
-      /* sort each curve to left, right, or left and right */
+      assert(valid());
       BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
       BezierRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
       linfo_o.reset();
@@ -348,7 +348,7 @@ namespace embree
 					   TriRefList& lprims_o, PrimInfo& linfo_o, 
 					   TriRefList& rprims_o, PrimInfo& rinfo_o) const
     {
-      /* sort each trianlge to left, right, or left and right */
+      assert(valid());
       TriRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
       TriRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
       linfo_o.reset();

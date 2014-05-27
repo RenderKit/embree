@@ -569,7 +569,7 @@ namespace embree
       ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,logBlockSize);
       
       /* if we cannot find a valid split, enforce an arbitrary split */
-      if (unlikely(split.pos == -1)) splitFallback(prims,current,leftChild,rightChild);
+      if (unlikely(!split.valid())) splitFallback(prims,current,leftChild,rightChild);
       
       /* partitioning of items */
       else split.partition(prims, current.begin, current.end, leftChild, rightChild);

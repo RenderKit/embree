@@ -97,6 +97,9 @@ namespace embree
 	__forceinline Split(float sah, int dim, int pos, const Mapping& mapping)
 	  : sah(sah), dim(dim), pos(pos), mapping(mapping) {}
 	
+	/*! tests if this split is valid */
+	__forceinline bool valid() const { return dim != -1; }
+
 	/*! calculates surface area heuristic for performing the split */
 	__forceinline float splitSAH() const { return sah; }
 	

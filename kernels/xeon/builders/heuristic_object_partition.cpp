@@ -365,6 +365,7 @@ namespace embree
 					      BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					      BezierRefList& rprims_o, PrimInfo& rinfo_o) const
     {
+      assert(valid());
       BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
       BezierRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
       linfo_o.reset();
@@ -404,6 +405,7 @@ namespace embree
 					      PrimRefList& lprims_o, PrimInfo& linfo_o, 
 					      PrimRefList& rprims_o, PrimInfo& rinfo_o) const
     {
+      assert(valid());
       PrimRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
       PrimRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
       linfo_o.reset();
@@ -438,6 +440,7 @@ namespace embree
         
     void ObjectPartition::Split::partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) const
     {
+      assert(valid());
       CentGeomBBox3fa local_left(empty);
       CentGeomBBox3fa local_right(empty);
       
@@ -471,19 +474,8 @@ namespace embree
       unsigned int center = l - prims;
       new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
       new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
-      //left.init(Centroid_Scene_AABB(local_left.geomBounds,local_left.centBounds),begin,center);
-      //right.init(Centroid_Scene_AABB(local_right.geomBounds,local_right.centBounds),center,end);
-      
-      /*assert(area(left.bounds.geometry) >= 0.0f);
-      assert(area(left.bounds.centroid2) >= 0.0f);
-      assert(area(right.bounds.geometry) >= 0.0f);
-      assert(area(right.bounds.centroid2) >= 0.0f);
-      
-      assert( prims + begin <= l && l <= prims + end);
-      assert( prims + begin <= r && r <= prims + end);
-      
-      assert(l <= prims + end);*/
-      //assert(center == begin+split.numLeft);
+      assert(area(left.geomBounds) >= 0.0f);
+      assert(area(right.geomBounds) >= 0.0f);
     }
     
     template<typename Prim>
@@ -544,8 +536,6 @@ namespace embree
     float ObjectPartition::ParallelBinner::find(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, const size_t logBlockSize, const size_t threadID, const size_t numThreads) 
     {
       this->pinfo = pinfo;
-      //rec = current;
-      //PrimInfo pinfo(current.size(),current.bounds.geometry,current.bounds.centroid2);
       mapping = Mapping(pinfo);
       left.reset();
       right.reset();
@@ -623,8 +613,6 @@ namespace embree
       assert(rCounter == pinfo.size() - lCounter);
       new (&leftChild ) PrimInfo(pinfo.begin,center,left.geomBounds,left.centBounds);
       new (&rightChild) PrimInfo(center,pinfo.end,right.geomBounds,right.centBounds);
-      //leftChild.init(Centroid_Scene_AABB(left.geomBounds,left.centBounds),pinfo.begin,center);
-      //rightChild.init(Centroid_Scene_AABB(right.geomBounds,right.centBounds),center,pinfo.end);
     }
   }
 }
