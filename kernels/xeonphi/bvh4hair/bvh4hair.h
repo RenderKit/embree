@@ -189,8 +189,25 @@ namespace embree
 	const float min_y = b.lower.y;
 	const float min_z = b.lower.z;
 	set_scale(inv_dx,inv_dy,inv_dz,m);
-	set_translation(-min_x*inv_dx,-min_y*inv_dy,-min_z*inv_dz,m);
-	
+	set_translation(-min_x*inv_dx,-min_y*inv_dy,-min_z*inv_dz,m);	
+      }
+
+      __forceinline void setMatrix(const LinearSpace3fa &mat, const size_t m)
+      {
+	matrix(0,0,m) = mat.vx.x;
+	matrix(1,0,m) = mat.vx.y;
+	matrix(2,0,m) = mat.vx.z;
+	matrix(3,0,m) = mat.vx.w;
+
+	matrix(0,1,m) = mat.vy.x;
+	matrix(1,1,m) = mat.vy.y;
+	matrix(2,1,m) = mat.vy.z;
+	matrix(3,1,m) = mat.vy.w;
+
+	matrix(0,2,m) = mat.vz.x;
+	matrix(1,2,m) = mat.vz.y;
+	matrix(2,2,m) = mat.vz.z;
+	matrix(3,2,m) = mat.vz.w;
       }
 
       __forceinline void createNode(UnalignedNode *b, const size_t m)

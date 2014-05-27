@@ -3,7 +3,7 @@
 
 namespace embree
 {
-#define DBG(x) 
+#define DBG(x) x
 
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
@@ -907,12 +907,13 @@ namespace embree
       recurseSAH(current,alloc,RECURSE,threadID,numThreads);
   }
 
+  // ===============================================================================================================================================
+  // ===============================================================================================================================================
+  // ===============================================================================================================================================
+
+
   void BVH4HairBuilder::recurseOBB(BuildRecordOBB& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads)
   {
-
-    //DBG(PING);
-    //DBG(DBG_PRINT(current));
-
     __aligned(64) BuildRecordOBB children[BVH4Hair::N];
 
     /* create leaf node */
@@ -974,18 +975,46 @@ namespace embree
     /* recurse into each child */
     for (unsigned int i=0; i<numChildren; i++) 
     {
-      //node[currentIndex].setMatrix(children[i].bounds.geometry,i);
-      PING;
+      node[currentIndex].setMatrix(children[i].xfm,i);
       children[i].parentID    = currentIndex;
       children[i].parentBoxID = i;
       recurseOBB(children[i],alloc,mode,threadID,numThreads);
     }    
-    
+
+    DBG(DBG_PRINT(node[current.parentID]));
+  }
+
+  void BVH4HairBuilder::buildSubTree(BuildRecord& current, 
+				     NodeAllocator& alloc, 
+				     const size_t mode,
+				     const size_t threadID, 
+				     const size_t numThreads)
+  {
+    DBG(PING);
+#if ENABLE_OBB == 1
+
+
+    BuildRecordOBB current_obb;
+    current_obb = current;
+
+    computeUnalignedSpace(current_obb);
+    computeUnalignedSpaceBounds(current_obb);
+
+    //TODO:: node[current.parentID].setMatrix(current.xfm,current.parentBoxID);
+   
+    recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
+
+#else
+    recurseSAH(current,alloc,/*mode*/ RECURSE,threadID,numThreads);
+#endif
   }
 
 
   __forceinline bool BVH4HairBuilder::splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild)
   {
+    DBG(PING);
+    DBG(DBG_PRINT(current));
+
     /* mark as leaf if leaf threshold reached */
     if (current.items() <= BVH4Hair::N) {
       current.createLeaf();
@@ -1003,7 +1032,15 @@ namespace embree
     mic_f rightArea[3];
     mic_i leftNum[3];
 
-    fastbin<Bezier1i>(prims,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+    const mic3f cmat = convert(current.xfm);
+
+    DBG(std::cout << "START BINNING" << std::endl << std::flush);
+    DBG(sleep(1));
+    
+    fastbin_xfm<Bezier1i>(prims,cmat,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+
+    DBG(std::cout << "BINNING DONE" << std::endl << std::flush);
+    DBG(sleep(1));
 
     const unsigned int items = current.items();
     const float voxelArea = area(current.bounds.geometry);
@@ -1044,15 +1081,20 @@ namespace embree
 	  }
       };
 
+    DBG(DBG_PRINT(split));
+
     if (unlikely(split.pos == -1)) 
-      split_fallback(prims,current,leftChild,rightChild);
-   // /* partitioning of items */
+      {
+	DBG(std::cout << "FALLBACK" << std::endl << std::flush);
+	split_fallback(prims,current,leftChild,rightChild);
+	// /* partitioning of items */
+      }
     else 
       {
 	leftChild.bounds.reset();
 	rightChild.bounds.reset();
 
-	const unsigned int mid = partitionPrimitives<L2_PREFETCH_ITEMS>(prims ,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
+	const unsigned int mid = partitionPrimitives_xfm<L2_PREFETCH_ITEMS>(prims,cmat,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
 
 	assert(area(leftChild.bounds.geometry) >= 0.0f);
 	assert(current.begin + mid == current.begin + split.numLeft);
@@ -1074,6 +1116,15 @@ namespace embree
 
       }
 
+    computeUnalignedSpace(leftChild);
+    computeUnalignedSpaceBounds(leftChild);
+
+    DBG(DBG_PRINT(leftChild));
+
+    computeUnalignedSpace(rightChild);
+    computeUnalignedSpaceBounds(rightChild);
+
+    DBG(DBG_PRINT(rightChild));
 
 
     if (leftChild.items()  <= BVH4Hair::N) leftChild.createLeaf();
@@ -1082,33 +1133,6 @@ namespace embree
   }
 
 
-  void BVH4HairBuilder::buildSubTree(BuildRecord& current, 
-				     NodeAllocator& alloc, 
-				     const size_t mode,
-				     const size_t threadID, 
-				     const size_t numThreads)
-  {
-    DBG(PING);
-#if ENABLE_OBB == 1
-    BuildRecordOBB current_obb;
-    current_obb = current;
-
-    DBG_PRINT(current);
-    DBG_PRINT(current_obb);
-    computeUnalignedSpace(current_obb);
-    DBG_PRINT(current_obb);
-    computeUnalignedSpaceBounds(current_obb);
-    DBG_PRINT(current_obb);
-
-    
-    exit(0);
-
-    recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
-
-#else
-    recurseSAH(current,alloc,/*mode*/ RECURSE,threadID,numThreads);
-#endif
-  }
 
   __forceinline void BVH4HairBuilder::computeUnalignedSpace( BuildRecordOBB& current )
   {
@@ -1127,20 +1151,6 @@ namespace embree
     current.xfm = clamp(frame(axis).transposed());    
   }
 
-  __forceinline mic_f xfmPoint(const Bezier1i &b, 
-			       const mic_f &c0,
-			       const mic_f &c1,
-			       const mic_f &c2)
-  {
-    const mic_f p0123 = uload16f((float*)b.p);
-    const mic_f p0123_1 = select(0x7777,p0123,mic_f::one());
-    const mic_f x = ldot3_xyz(p0123_1,c0);
-    const mic_f y = ldot3_xyz(p0123_1,c1);
-    const mic_f z = ldot3_xyz(p0123_1,c2);
-    const mic_f xyzw = select(0x7777,select(0x4444,z,select(0x2222,y,x)),p0123);
-    return xyzw;
-  }
-
   __forceinline void BVH4HairBuilder::computeUnalignedSpaceBounds( BuildRecordOBB& current )
   {
     const mic_f c0 = broadcast4to16f((float*)&current.xfm.vx);
@@ -1155,14 +1165,9 @@ namespace embree
 
     for (size_t i=current.begin;i<current.end;i++)
       {
-	const mic_f p0123 = xfmPoint(prims[i],c0,c1,c2);
-	const mic_f p0 = permute<0>(p0123);
-	const mic_f p1 = permute<1>(p0123);
-	const mic_f p2 = permute<2>(p0123);
-	const mic_f p3 = permute<3>(p0123);	
-	
-	const mic_f b_min = min(min(p0,p1),min(p2,p3));
-	const mic_f b_max = max(max(p0,p1),max(p2,p3));
+	const mic2f b = prims[i].getBounds(c0,c1,c2);
+	const mic_f b_min = b.x;
+	const mic_f b_max = b.y;
 	const mic_f c2    = b_min + b_max;
 	centroid2.x = min(centroid2.x, c2);
 	centroid2.y = max(centroid2.y, c2);
