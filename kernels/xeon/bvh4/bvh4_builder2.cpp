@@ -305,7 +305,9 @@ namespace embree
       /*! verbose mode */
       double t0 = 0.0, t1 = 0.0f;
       if (g_verbose >= 2) {
-	std::cout << "building BVH4<" << bvh->primTy.name << "> with SAH builder2 ... " << std::flush;
+	std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4Builder2(";
+	if (enableSpatialSplits) std::cout << "spatialsplits";
+	std::cout << ") ... " << std::flush;
 	t0 = getSeconds();
       }
       

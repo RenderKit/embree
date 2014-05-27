@@ -16,6 +16,8 @@
 
 #include "bvh4_intersector8_chunk.h"
 
+#include "geometry/bezier1_intersector8.h"
+#include "geometry/bezier1i_intersector8.h"
 #include "geometry/triangle1_intersector8_moeller.h"
 #include "geometry/triangle4_intersector8_moeller.h"
 #include "geometry/triangle8_intersector8_moeller.h"
@@ -286,7 +288,9 @@ namespace embree
       store8i(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
     }
-    
+
+    //DEFINE_INTERSECTOR8(BVH4Bezier1Intersector8, BVH4Intersector8Chunk<Bezier1Intersector8>);
+    //DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8, BVH4Intersector8Chunk<Bezier1iIntersector8>);
     DEFINE_INTERSECTOR8(BVH4Triangle1Intersector8ChunkMoeller, BVH4Intersector8Chunk<Triangle1Intersector8MoellerTrumbore>);
     DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoeller, BVH4Intersector8Chunk<Triangle4Intersector8MoellerTrumbore>);
     DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoeller, BVH4Intersector8Chunk<Triangle8Intersector8MoellerTrumbore>);

@@ -148,7 +148,7 @@ namespace embree
     void BVH4BuilderFast::build(size_t threadIndex, size_t threadCount) 
     {
       if (g_verbose >= 1)
-        std::cout << "building BVH4 with " << TOSTRING(isa) "::BVH4BuilderFast ... " << std::flush;
+        std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderFast ... " << std::flush;
       
       /* calculate size of scene */
       size_t numPrimitivesOld = numPrimitives;
@@ -158,7 +158,7 @@ namespace embree
       /* allocate build primitive array */
       if (numPrimitivesOld != numPrimitives)
       {
-	if (prims ) os_free(prims,bytesPrims);
+	if (prims) os_free(prims,bytesPrims);
 	bytesPrims = numPrimitives * sizeof(PrimRef);
         prims = (PrimRef* ) os_malloc(bytesPrims);  memset(prims,0,bytesPrims);
       }
@@ -173,11 +173,8 @@ namespace embree
         if (!needAllThreads) {
           build_sequential(threadIndex,threadCount);
         } 
-        else 
-        {
-          if (!g_state.get()) 
-            g_state.reset(new GlobalState(threadCount));
-
+        else {
+          if (!g_state.get()) g_state.reset(new GlobalState(threadCount));
           TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
         }
         dt_min = min(dt_min,dt);
@@ -197,11 +194,8 @@ namespace embree
         if (!needAllThreads) {
           build_sequential(threadIndex,threadCount);
         } 
-        else 
-        {
-          if (!g_state.get()) 
-            g_state.reset(new GlobalState(threadCount));
-
+        else {
+          if (!g_state.get()) g_state.reset(new GlobalState(threadCount));
           TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
         }
       

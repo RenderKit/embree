@@ -163,6 +163,12 @@ namespace embree
       }
     }
 
+    static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Bezier1* curves, size_t num, void* geom)
+    {
+      int mask = movemask(valid_i);
+      while (mask) intersect(pre,ray,__bscf(mask),curves,num,geom);
+    }
+
     static __forceinline bool occluded(const Precalculations& pre, Ray4& ray, const size_t k, const Bezier1& bezier, const void* geom) 
     {
       STAT3(shadow.trav_prims,1,1,1);
@@ -268,6 +274,12 @@ namespace embree
           return true;
 
       return false;
+    }
+
+    static __forceinline void occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Bezier1* curves, size_t num, void* geom)
+    {
+      int mask = movemask(valid_i);
+      while (mask) occluded(pre,ray,__bscf(mask),curves,num,geom);
     }
   };
 }
