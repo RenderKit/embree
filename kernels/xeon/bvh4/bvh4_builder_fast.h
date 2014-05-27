@@ -17,9 +17,9 @@
 #pragma once
 
 #include "bvh4.h"
-#include "../bvh4i/bvh4i_builder_util.h"
-#include "../bvh4i/bvh4i_builder_binner.h"
-#include "../bvh4hair/heuristic_object_partition.h"
+#include "../bvh4i/bvh4i_builder_util.h" // FIXME: remove
+#include "../bvh4i/bvh4i_builder_binner.h" // FIXME: remove
+#include "builders/heuristic_object_partition.h"
 #include "builders/workstack.h"
 #include "common/scene_user_geometry.h"
 

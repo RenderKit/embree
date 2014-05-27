@@ -58,11 +58,11 @@ ADD_ISPC_LIBRARY(embree SHARED
 
   builders/bezierrefgen.cpp 
   builders/primrefgen.cpp
-  bvh4hair/heuristic_object_partition_unaligned.cpp
-  bvh4hair/heuristic_object_partition.cpp
-  bvh4hair/heuristic_spatial_split.cpp
-  bvh4hair/heuristic_strand_partition.cpp
-  bvh4hair/heuristic_fallback.cpp
+  builders/heuristic_object_partition_unaligned.cpp
+  builders/heuristic_object_partition.cpp
+  builders/heuristic_spatial_split.cpp
+  builders/heuristic_strand_partition.cpp
+  builders/heuristic_fallback.cpp
     
   geometry/bezier1.cpp
   geometry/bezier1i.cpp
@@ -132,11 +132,11 @@ IF (TARGET_AVX)
 
   builders/bezierrefgen.cpp 
   builders/primrefgen.cpp
-  bvh4hair/heuristic_object_partition_unaligned.cpp
-  bvh4hair/heuristic_object_partition.cpp
-  bvh4hair/heuristic_spatial_split.cpp
-  bvh4hair/heuristic_strand_partition.cpp
-  bvh4hair/heuristic_fallback.cpp
+  builders/heuristic_object_partition_unaligned.cpp
+  builders/heuristic_object_partition.cpp
+  builders/heuristic_spatial_split.cpp
+  builders/heuristic_strand_partition.cpp
+  builders/heuristic_fallback.cpp
 
    geometry/triangle8.cpp
    geometry/ispc_wrapper_avx.cpp

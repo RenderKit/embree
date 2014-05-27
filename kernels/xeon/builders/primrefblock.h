@@ -21,33 +21,29 @@
 
 namespace embree
 {
-#if 0 // FIXME: remove
-  /*! Data of a block. */
-  class PrimRefBlock
+  /*! Block of build primitives */
+  template<typename PrimRef>
+    class PrimRefBlockT
   {
   public:
-
-    /*! Element type */
+    
     typedef PrimRef T;
-
+    
     /*! Number of primitive references inside a block */
-    //static const size_t blockSize = 127; 
     static const size_t blockSize = 511;
-    //static const size_t blockSize = 1023;
-    //static const size_t blockSize = 2047;
-
+    
     /*! default constructor */
-    PrimRefBlock () : num(0) {}
-
+    PrimRefBlockT () : num(0) {}
+    
     /*! frees the block */
     __forceinline void clear(size_t n = 0) { num = n; }
-
+    
     /*! return base pointer */
     __forceinline PrimRef* base() { return ptr; }
-
+    
     /*! returns number of elements */
     __forceinline size_t size() const { return num; }
-
+    
     /*! inserts a primitive reference */
     __forceinline bool insert(const PrimRef& ref) {
       if (unlikely(num >= blockSize)) return false;
@@ -58,7 +54,7 @@ namespace embree
     /*! access the i-th primitive reference */
     __forceinline       PrimRef& operator[] (size_t i)       { return ptr[i]; }
     __forceinline const PrimRef& operator[] (size_t i) const { return ptr[i]; }
-
+    
     /*! access the i-th primitive reference */
     __forceinline       PrimRef& at (size_t i)       { return ptr[i]; }
     __forceinline const PrimRef& at (size_t i) const { return ptr[i]; }
@@ -66,52 +62,7 @@ namespace embree
   private:
     PrimRef ptr[blockSize];   //!< Block with primitive references
     size_t num;               //!< Number of primitive references in block
-    //char align[sizeof(PrimRef)-sizeof(size_t)-sizeof(size_t)];
   };
-#endif
-
-/*! Block of build primitives */
-    template<typename PrimRef>
-    class PrimRefBlockT
-    {
-    public:
-
-      typedef PrimRef T;
-
-      /*! Number of primitive references inside a block */
-      static const size_t blockSize = 511;
-
-      /*! default constructor */
-      PrimRefBlockT () : num(0) {}
-
-      /*! frees the block */
-      __forceinline void clear(size_t n = 0) { num = n; }
-      
-      /*! return base pointer */
-      __forceinline PrimRef* base() { return ptr; }
-
-      /*! returns number of elements */
-      __forceinline size_t size() const { return num; }
-
-      /*! inserts a primitive reference */
-      __forceinline bool insert(const PrimRef& ref) {
-        if (unlikely(num >= blockSize)) return false;
-        ptr[num++] = ref;
-        return true;
-      }
-
-      /*! access the i-th primitive reference */
-      __forceinline       PrimRef& operator[] (size_t i)       { return ptr[i]; }
-      __forceinline const PrimRef& operator[] (size_t i) const { return ptr[i]; }
-    
-      /*! access the i-th primitive reference */
-      __forceinline       PrimRef& at (size_t i)       { return ptr[i]; }
-      __forceinline const PrimRef& at (size_t i) const { return ptr[i]; }
-    
-    private:
-      PrimRef ptr[blockSize];   //!< Block with primitive references
-      size_t num;               //!< Number of primitive references in block
-    };
-
-    typedef PrimRefBlockT<PrimRef> PrimRefBlock;
+  
+  typedef PrimRefBlockT<PrimRef> PrimRefBlock;
 }

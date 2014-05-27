@@ -20,7 +20,7 @@
 #include "primrefalloc.h"
 #include "primrefblock.h"
 #include "geometry/bezier1.h"
-#include "bvh4hair/heuristic_fallback.h"
+#include "heuristic_fallback.h"
 
 namespace embree
 {
