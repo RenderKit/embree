@@ -147,13 +147,18 @@ namespace embree
     
     void BVH4BuilderFast::build(size_t threadIndex, size_t threadCount) 
     {
-      if (g_verbose >= 1)
-        std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderFast ... " << std::flush;
-      
       /* calculate size of scene */
       size_t numPrimitivesOld = numPrimitives;
       bvh->numPrimitives = numPrimitives = number_of_primitives();
       bvh->init(numPrimitives);
+
+      /* skip build for empty scene */
+      if (numPrimitives == 0) 
+	return;
+      
+      /* verbose mode */
+      if (g_verbose >= 1)
+        std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderFast ... " << std::flush;
       
       /* allocate build primitive array */
       if (numPrimitivesOld != numPrimitives)
@@ -191,18 +196,19 @@ namespace embree
       
 #else
       
-        if (!needAllThreads) {
-          build_sequential(threadIndex,threadCount);
-        } 
-        else {
-          if (!g_state.get()) g_state.reset(new GlobalState(threadCount));
-          TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
-        }
+      if (!needAllThreads) {
+	build_sequential(threadIndex,threadCount);
+      } 
+      else {
+	if (!g_state.get()) g_state.reset(new GlobalState(threadCount));
+	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
+      }
       
+      /* verbose mode */
       if (g_verbose >= 2) {
-        double perf = numPrimitives/dt*1E-6;
-
-        std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s)" << std::endl;
+	double perf = numPrimitives/dt*1E-6;
+	
+	std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s)" << std::endl;
 	std::cout << BVH4Statistics(bvh).str();
       }
 #endif
