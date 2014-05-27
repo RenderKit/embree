@@ -232,8 +232,7 @@ export void device_init (uniform int8* uniform cfg)
   rtcSetErrorFunction(error_handler);
 
   /* set start render mode */
-  //  renderPixel = renderPixelStandard;
-        renderPixel = renderPixelEyeLight;
+  renderPixel = renderPixelStandard;
 }
 
 #if !defined(__XEON_PHI__)
@@ -387,7 +386,7 @@ struct RTCRay2
   Vec3f transparency; //!< accumulated transparency value
 };
 
-bool enableFilterDispatch = false;
+uniform bool enableFilterDispatch = false;
 
 /* filter dispatch function */
 void filterDispatch(void* uniform ptr, RTCRay2& ray) {
@@ -570,7 +569,7 @@ Vec3f renderPixelTestEyeLight(float x, float y, const uniform Vec3f& vx, const u
   float weight = 1.0f;
 
   rtcIntersect(g_scene,*((varying RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
-  ray.filter = NULL; // (RTCFilterFunc) intersectionFilter;
+  ray.filter = NULL; 
 
   if (ray.primID == -1)
     return make_Vec3f(0.0f);
@@ -671,7 +670,7 @@ export void device_render (uniform int* uniform pixels,
   /* render frame */
   uniform const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   uniform const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  enableFilterDispatch = renderPixel == renderPixelStandard; // FIXME: this line causes crash on HSW machine
+  enableFilterDispatch = renderPixel == renderPixelStandard; 
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
   enableFilterDispatch = false;
   rtcDebug();
