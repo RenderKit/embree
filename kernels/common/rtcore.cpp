@@ -264,6 +264,20 @@ namespace embree
       std::cout << "  Compiler : " << getCompilerName() << std::endl;
       std::cout << "  Platform : " << getPlatformName() << std::endl;
       std::cout << "  CPU      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
+      std::cout << "  Features : ";
+#if defined(__USE_RAY_MASK__)
+      std::cout << "raymasks ";
+#endif
+#if defined (__BACKFACE_CULLING__)
+      std::cout << "backfaceculling ";
+#endif
+#if defined(__INTERSECTION_FILTER__)
+      std::cout << "intersection_filter ";
+#endif
+#if defined(__BUFFER_STRIDE__)
+      std::cout << "bufferstride ";
+#endif
+      std::cout << std::endl;
     }
 
     /* CPU has to support at least SSE2 */
