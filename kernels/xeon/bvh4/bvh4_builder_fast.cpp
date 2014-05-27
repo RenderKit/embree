@@ -151,6 +151,9 @@ namespace embree
       /* calculate size of scene */
       size_t numPrimitivesOld = numPrimitives;
       bvh->numPrimitives = numPrimitives = number_of_primitives();
+      needAllThreads = numPrimitives > THRESHOLD_FOR_SINGLE_THREADED;
+
+      /* initialize BVH */
       bvh->init(numPrimitives, needAllThreads ? threadCount : 1);
 
       /* skip build for empty scene */
@@ -197,7 +200,7 @@ namespace embree
       
 #else
       
-      if (!needAllThreads || numPrimitives < THRESHOLD_FOR_SINGLE_THREADED) {
+      if (!needAllThreads) {
 	build_sequential(threadIndex,threadCount);
       } 
       else {
