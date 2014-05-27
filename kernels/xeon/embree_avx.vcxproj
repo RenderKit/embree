@@ -398,11 +398,11 @@
     <ClCompile Include="bvh4hair\bvh4hair_intersector4.cpp" />
     <ClCompile Include="bvh4hair\bvh4hair_intersector8.cpp" />
     <ClCompile Include="builders\bezierrefgen.cpp" />
-    <ClCompile Include="bvh4hair\heuristic_fallback.cpp" />
-    <ClCompile Include="bvh4hair\heuristic_object_partition.cpp" />
-    <ClCompile Include="bvh4hair\heuristic_object_partition_unaligned.cpp" />
-    <ClCompile Include="bvh4hair\heuristic_spatial_split.cpp" />
-    <ClCompile Include="bvh4hair\heuristic_strand_partition.cpp" />
+    <ClCompile Include="builders\heuristic_fallback.cpp" />
+    <ClCompile Include="builders\heuristic_object_partition.cpp" />
+    <ClCompile Include="builders\heuristic_object_partition_unaligned.cpp" />
+    <ClCompile Include="builders\heuristic_spatial_split.cpp" />
+    <ClCompile Include="builders\heuristic_strand_partition.cpp" />
     <ClCompile Include="builders\trirefgen.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -443,12 +443,12 @@
     <ClInclude Include="bvh4hair\bvh4hair_intersector4.h" />
     <ClInclude Include="bvh4hair\bvh4hair_intersector8.h" />
     <ClInclude Include="builders\bezierrefgen.h" />
-    <ClInclude Include="bvh4hair\heuristic_fallback.h" />
-    <ClInclude Include="bvh4hair\heuristic_object_partition.h" />
-    <ClInclude Include="bvh4hair\heuristic_object_partition_unaligned.h" />
-    <ClInclude Include="bvh4hair\heuristic_spatial_split.h" />
-    <ClInclude Include="bvh4hair\heuristic_split.h" />
-    <ClInclude Include="bvh4hair\heuristic_strand_partition.h" />
+    <ClInclude Include="builders\heuristic_fallback.h" />
+    <ClInclude Include="builders\heuristic_object_partition.h" />
+    <ClInclude Include="builders\heuristic_object_partition_unaligned.h" />
+    <ClInclude Include="builders\heuristic_spatial_split.h" />
+    <ClInclude Include="builders\heuristic_split.h" />
+    <ClInclude Include="builders\heuristic_strand_partition.h" />
     <ClInclude Include="builders\trirefgen.h" />
   </ItemGroup>
   <ItemGroup>
