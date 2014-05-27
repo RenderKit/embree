@@ -233,7 +233,7 @@ namespace embree
     void push(T& br)
     {
       heap.push_back(br);
-      push_heap(heap.begin(),heap.end());
+      std::push_heap(heap.begin(),heap.end());
     }
 
     bool pop(T& br)
@@ -244,7 +244,7 @@ namespace embree
 	return false;
       }
       br = heap.front();
-      pop_heap(heap.begin(),heap.end());
+      std::pop_heap(heap.begin(),heap.end());
       heap.pop_back();
       mutex.unlock();
       return true;
@@ -252,6 +252,6 @@ namespace embree
     
   private:
     AlignedAtomicMutex __aligned(64) mutex;
-    std::vector<T> heap;
+    vector_t<T> heap;
   };
 }

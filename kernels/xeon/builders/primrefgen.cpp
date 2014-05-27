@@ -78,7 +78,7 @@ namespace embree
 	  if (mesh->numTimeSteps & numTimeSteps) {
 	    ssize_t s = max(start-cur,ssize_t(0));
 	    ssize_t e = min(end  -cur,ssize_t(mesh->numTriangles));
-	    for (size_t j=s; j<e; j++) {
+	    for (ssize_t j=s; j<e; j++) {
 	      const PrimRef prim(mesh->bounds(j),i,j);
 	      pinfo.add(prim.bounds(),prim.center2());
 	      if (likely(block->insert(prim))) continue; 
@@ -96,7 +96,7 @@ namespace embree
 	  if (set->numTimeSteps & numTimeSteps) {
 	    ssize_t s = max(start-cur,ssize_t(0));
 	    ssize_t e = min(end  -cur,ssize_t(set->numCurves));
-	    for (size_t j=s; j<e; j++) {
+	    for (ssize_t j=s; j<e; j++) {
 	      const PrimRef prim(set->bounds(j),i,j);
 	      pinfo.add(prim.bounds(),prim.center2());
 	      if (likely(block->insert(prim))) continue; 
@@ -113,7 +113,7 @@ namespace embree
 	  const UserGeometryBase* set = (const UserGeometryBase*)geom;
 	  ssize_t s = max(start-cur,ssize_t(0));
 	  ssize_t e = min(end  -cur,ssize_t(set->numItems));
-	  for (size_t j=s; j<e; j++) {
+	  for (ssize_t j=s; j<e; j++) {
 	    const PrimRef prim(set->bounds(j),i,j);
 	    pinfo.add(prim.bounds(),prim.center2());
 	    if (likely(block->insert(prim))) continue; 
@@ -157,7 +157,7 @@ namespace embree
       PrimInfo pinfo(empty);
       PrimRefList::item* block = prims_o.insert(alloc->malloc(threadIndex)); 
       
-      for (size_t j=start; j<end; j++) 
+      for (ssize_t j=start; j<end; j++) 
       {
 	const PrimRef prim(geom->bounds(j),geom->id,j);
 	pinfo.add(prim.bounds(),prim.center2());
@@ -222,7 +222,7 @@ namespace embree
 	  if (mesh->numTimeSteps & numTimeSteps) {
 	    ssize_t s = max(start-cur,ssize_t(0));
 	    ssize_t e = min(end  -cur,ssize_t(mesh->numTriangles));
-	    for (size_t j=s; j<e; j++) {
+	    for (ssize_t j=s; j<e; j++) {
 	      const PrimRef prim(mesh->bounds(j),i,j);
 	      pinfo.add(prim.bounds(),prim.center2());
 	      prims_o[cur+j] = prim;
@@ -238,7 +238,7 @@ namespace embree
 	  if (set->numTimeSteps & numTimeSteps) {
 	    ssize_t s = max(start-cur,ssize_t(0));
 	    ssize_t e = min(end  -cur,ssize_t(set->numCurves));
-	    for (size_t j=s; j<e; j++) {
+	    for (ssize_t j=s; j<e; j++) {
 	      const PrimRef prim(set->bounds(j),i,j);
 	      pinfo.add(prim.bounds(),prim.center2());		
 	      prims_o[cur+j] = prim;
@@ -253,7 +253,7 @@ namespace embree
 	  const UserGeometryBase* set = (const UserGeometryBase*)geom;
 	  ssize_t s = max(start-cur,ssize_t(0));
 	  ssize_t e = min(end  -cur,ssize_t(set->numItems));
-	  for (size_t j=s; j<e; j++) {
+	  for (ssize_t j=s; j<e; j++) {
 	    const PrimRef prim(set->bounds(j),i,j);
 	    pinfo.add(prim.bounds(),prim.center2());
 	    prims_o[cur+j] = prim;
@@ -301,7 +301,7 @@ namespace embree
       ssize_t cur   = 0;
       
       PrimInfo pinfo(empty);
-      for (size_t j=start; j<end; j++) {
+      for (ssize_t j=start; j<end; j++) {
 	const PrimRef prim(geom->bounds(j),geom->id,j);
 	pinfo.add(prim.bounds(),prim.center2());
 	prims_o[j] = prim;

@@ -54,7 +54,7 @@ namespace embree
     /*! Mesh. */
     struct Mesh 
     {
-#if 0
+#if 1 // FIXME: have to enable this for Visual Studio compiler
       vector_t<Vec3fa> v;
       vector_t<Vec3fa> vn;
 #else
@@ -79,7 +79,7 @@ namespace embree
     /*! Hair Set. */
     struct HairSet
     {
-#if 0
+#if 1 // FIXME: have to enable this for Visual Studio compiler
       vector_t<Vec3fa> v;       //!< hair control points (x,y,z,r)
 #else
       std::vector<Vec3fa> v;       //!< hair control points (x,y,z,r)
@@ -108,7 +108,7 @@ namespace embree
     };
 
   public:
-    std::vector<Material> materials;   //!< material list
+    vector_t<Material> materials;   //!< material list
     std::vector<Mesh*> meshes;         //!< list of meshes
     std::vector<HairSet*> hairsets;    //!< list of hair sets
   };
