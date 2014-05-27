@@ -25,6 +25,23 @@
 namespace embree
 {
 
+  __forceinline AffineSpace3fa getAffineSpace3fa(const LinearSpace3fa &mat, BBox3fa &b)
+  {
+    AffineSpace3fa scale = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19f),b.upper-b.lower));
+    AffineSpace3fa trans = AffineSpace3fa::translate(-b.lower);
+
+#if 0
+    DBG_PRINT(scale);
+    DBG_PRINT(trans);
+    DBG_PRINT( AffineSpace3fa(mat) );
+    DBG_PRINT( trans * scale );
+    DBG_PRINT( scale * trans );
+#endif
+
+    return  scale * trans * AffineSpace3fa(mat);
+  }
+
+
 
   class BVH4Hair : public BVH4i
   {
@@ -192,22 +209,25 @@ namespace embree
 	set_translation(-min_x*inv_dx,-min_y*inv_dy,-min_z*inv_dz,m);	
       }
 
-      __forceinline void setMatrix(const LinearSpace3fa &mat, const size_t m)
+   
+      __forceinline void setMatrix(const LinearSpace3fa &mat, BBox3fa &b, const size_t m)
       {
-	matrix(0,0,m) = mat.vx.x;
-	matrix(1,0,m) = mat.vx.y;
-	matrix(2,0,m) = mat.vx.z;
-	matrix(3,0,m) = mat.vx.w;
+	AffineSpace3fa space = getAffineSpace3fa(mat,b);
 
-	matrix(0,1,m) = mat.vy.x;
-	matrix(1,1,m) = mat.vy.y;
-	matrix(2,1,m) = mat.vy.z;
-	matrix(3,1,m) = mat.vy.w;
+	matrix(0,0,m) = space.l.vx.x;
+	matrix(1,0,m) = space.l.vx.y;
+	matrix(2,0,m) = space.l.vx.z;
+	matrix(3,0,m) = space.p.x;
 
-	matrix(0,2,m) = mat.vz.x;
-	matrix(1,2,m) = mat.vz.y;
-	matrix(2,2,m) = mat.vz.z;
-	matrix(3,2,m) = mat.vz.w;
+	matrix(0,1,m) = space.l.vy.x;
+	matrix(1,1,m) = space.l.vy.y;
+	matrix(2,1,m) = space.l.vy.z;
+	matrix(3,1,m) = space.p.y;
+
+	matrix(0,2,m) = space.l.vz.x;
+	matrix(1,2,m) = space.l.vz.y;
+	matrix(2,2,m) = space.l.vz.z;
+	matrix(3,2,m) = space.p.z;
       }
 
       __forceinline void createNode(UnalignedNode *b, const size_t m)

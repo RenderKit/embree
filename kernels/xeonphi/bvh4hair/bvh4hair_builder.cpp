@@ -890,6 +890,9 @@ namespace embree
       children[i].parentBoxID = i;
       recurse(children[i],alloc,mode,threadID,numThreads);
     }    
+
+    DBG(DBG_PRINT(node[currentIndex]));
+
   }
 
 
@@ -972,16 +975,19 @@ namespace embree
     /* init used/unused nodes */
     node[currentIndex].setInvalid();
 
+
     /* recurse into each child */
     for (unsigned int i=0; i<numChildren; i++) 
     {
-      node[currentIndex].setMatrix(children[i].xfm,i);
+      node[currentIndex].setMatrix(children[i].xfm,children[i].bounds.geometry,i);
       children[i].parentID    = currentIndex;
       children[i].parentBoxID = i;
       recurseOBB(children[i],alloc,mode,threadID,numThreads);
     }    
 
-    DBG(DBG_PRINT(node[current.parentID]));
+    DBG(DBG_PRINT(currentIndex));
+    DBG(DBG_PRINT(node[currentIndex]));
+
   }
 
   void BVH4HairBuilder::buildSubTree(BuildRecord& current, 
@@ -1000,8 +1006,30 @@ namespace embree
     computeUnalignedSpace(current_obb);
     computeUnalignedSpaceBounds(current_obb);
 
+    AffineSpace3fa aspace = getAffineSpace3fa(current_obb.xfm,current.bounds.geometry);
+    DBG_PRINT(current_obb.xfm);
+    DBG_PRINT(current_obb.bounds.geometry);
+    DBG_PRINT(aspace);
+
+    Vec3fa b_min_xfm = xfmPoint(aspace,current_obb.bounds.geometry.lower);
+    Vec3fa b_max_xfm = xfmPoint(aspace,current_obb.bounds.geometry.upper);
+
+    DBG_PRINT( b_min_xfm );
+    DBG_PRINT( b_max_xfm );
+
+    // for (size_t i=current.begin;i<current.end;i++)
+    //   {
+    // 	DBG_PRINT(i);
+    // 	Vec3fa v = *prims[i].p;
+    // 	DBG_PRINT(v);
+    // 	Vec3fa v_xfm = xfmPoint(aspace,v);
+    // 	DBG_PRINT(v_xfm);	
+    //   }
+    
+
     //TODO:: node[current.parentID].setMatrix(current.xfm,current.parentBoxID);
    
+    DBG(DBG_PRINT(node[current.parentID]));
     recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
 
 #else
@@ -1033,14 +1061,8 @@ namespace embree
     mic_i leftNum[3];
 
     const mic3f cmat = convert(current.xfm);
-
-    DBG(std::cout << "START BINNING" << std::endl << std::flush);
-    DBG(sleep(1));
     
     fastbin_xfm<Bezier1i>(prims,cmat,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
-
-    DBG(std::cout << "BINNING DONE" << std::endl << std::flush);
-    DBG(sleep(1));
 
     const unsigned int items = current.items();
     const float voxelArea = area(current.bounds.geometry);
@@ -1137,6 +1159,7 @@ namespace embree
   __forceinline void BVH4HairBuilder::computeUnalignedSpace( BuildRecordOBB& current )
   {
     Vec3fa axis(0,0,1);
+#if 1
     for (size_t i=current.begin;i<current.end;i++)
       {
 	const Bezier1i &b = prims[i];
@@ -1148,7 +1171,9 @@ namespace embree
 	  break;
 	}	
       }
-    current.xfm = clamp(frame(axis).transposed());    
+#endif
+    current.xfm = frame(axis).transposed();    
+    DBG(DBG_PRINT(current.xfm));
   }
 
   __forceinline void BVH4HairBuilder::computeUnalignedSpaceBounds( BuildRecordOBB& current )
