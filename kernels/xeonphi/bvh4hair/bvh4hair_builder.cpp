@@ -1193,7 +1193,9 @@ namespace embree
 
     for (size_t i=current.begin;i<current.end;i++)
       {
+	//const mic2f b = prims[i].getBounds(current.xfm);
 	const mic2f b = prims[i].getBounds(c0,c1,c2);
+
 	const mic_f b_min = b.x;
 	const mic_f b_max = b.y;
 	const mic_f c2    = b_min + b_max;
@@ -1202,7 +1204,7 @@ namespace embree
 	geometry.x  = min(geometry.x, b_min); 
 	geometry.y  = max(geometry.y, b_max); 	
       }    
-
+    
     store4f(&current.bounds.centroid2.lower,centroid2.x);
     store4f(&current.bounds.centroid2.upper,centroid2.y);
 
@@ -1215,10 +1217,7 @@ namespace embree
 	    for (size_t j=0;j<4;j++)
 	      {
 		const Vec3fa v = prims[i].p[j];
-		//const Vec3fa xfm_v = xfmPoint(current.xfm,v);
-		const Vec3fa xfm_v = Vec3fa(dot(current.xfm.vx,v),
-					    dot(current.xfm.vy,v),
-					    dot(current.xfm.vz,v));
+		const Vec3fa xfm_v = xfmPoint(current.xfm,v);
 		if (disjoint(current.bounds.geometry,xfm_v))
 		  {
 		    DBG_PRINT(v);
