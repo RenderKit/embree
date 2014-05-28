@@ -73,9 +73,10 @@ namespace embree
     static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | 2;
       
     /*! Maximal depth of the BVH. */
-    static const size_t maxDepth = 32;
     static const size_t maxBuildDepth = 32;
-    
+    static const size_t maxBuildDepthLeaf = maxBuildDepth+16;
+    static const size_t maxDepth = maxBuildDepthLeaf+maxBuildDepthLeaf+maxBuildDepth;   
+ 
     /*! Maximal number of primitive blocks in a leaf. */
     static const size_t maxLeafBlocks = items_mask-2;
 

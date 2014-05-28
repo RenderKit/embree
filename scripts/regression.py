@@ -59,16 +59,16 @@ dash = '/'
 ########################## configuration ##########################
 
 #compilers_win = ['V100']
-#compilers_win = ['ICC']
-compilers_win  = ['V100', 'ICC']
+compilers_win = ['ICC']
+#compilers_win  = ['V100', 'ICC']
 #compilers_unix = ['ICC']
 compilers_unix = ['GCC', 'ICC']
 #compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
 #builds_win = ['Debug']
-#builds_win = ['Release']
-builds_win = ['Release', 'ReleaseAVX', 'Debug']
+builds_win = ['Release']
+#builds_win = ['Release', 'ReleaseAVX', 'Debug']
 #builds_win = ['Release', 'ReleaseAVX', 'ReleaseAVX2', 'Debug']
 #builds_unix = ['Debug']
 #builds_unix = ['Release']
@@ -76,8 +76,8 @@ builds_unix = ['Release', 'Debug']
 builds = []
 
 #platforms_win  = ['win32']
-#platforms_win  = ['x64']
-platforms_win  = ['win32', 'x64']
+platforms_win  = ['x64']
+#platforms_win  = ['win32', 'x64']
 platforms_unix = ['x64']
 platforms      = []
 
@@ -146,20 +146,23 @@ def compileLoop(OS):
 
 ########################## rendering ##########################
 
-def configName(OS, compiler, platform, build):
-  return OS + '_' + compiler + '_' + platform + '_' + build + '_' + scene 
+def configName(OS, compiler, platform, build, tutorial, scene):
+  cfg = OS + '_' + compiler + '_' + platform + '_' + build + '_' + tutorial
+  if scene != '':
+    cfg += '_' + scene
+  return cfg
 
 def render(OS, compiler, platform, build, tutorial, scene):
-  if OS == 'windows': command = platform + '\\' + build + '\\' + tutorial
-  else:               command = 'build' + '/' + tutorial
-  base = configName(OS, scene, compiler, platform, build)
-  logFile = testDir + dash + base + tutorial + '.log'
-  imageFile = testDir + dash + base + tutorial + '.tga'
+  base = configName(OS, compiler, platform, build, tutorial, scene)
+  logFile = testDir + dash + base + '.log'
+  imageFile = testDir + dash + base + '.tga'
   if not os.path.exists(logFile):
+    if OS == 'windows': command = platform + '\\' + build + '\\' + tutorial + ' '
+    else:               command = 'build' + '/' + tutorial + ' '
     if scene != '':
-	    command += '-c scene '
-	if tutorial == 'regression':
-	    command += '-regressions 2000 '
+	    command += '-c ' + modelDir + dash + scene + dash + '_paper.ecs'
+    if tutorial == 'regression':
+	    command += '-regressions 200 '
     command += '-o ' + imageFile + ' > ' + logFile
     os.system(command)
 
@@ -168,34 +171,34 @@ def renderLoop(OS):
       for platform in platforms:
         for build in builds:
           print(compiler + ' ' + platform + ' ' + build)
-          compile(OS,compiler,platform,build)
+#          compile(OS,compiler,platform,build)
           
           render(OS, compiler, platform, build, 'verify', '')
           render(OS, compiler, platform, build, 'benchmark', '')
 
           render(OS, compiler, platform, build, 'tutorial00', '')
           render(OS, compiler, platform, build, 'tutorial01', '')
-          render(OS, compiler, platform, build, 'tutorial02', modelDir + dash + 'crown' + dash + 'crown_paper.ecs')
+          render(OS, compiler, platform, build, 'tutorial02', 'crown')
           render(OS, compiler, platform, build, 'tutorial03', '')
           render(OS, compiler, platform, build, 'tutorial04', '')
           render(OS, compiler, platform, build, 'tutorial05', '')
-          render(OS, compiler, platform, build, 'tutorial06', modelDir + dash + 'crown' + dash + 'crown_paper.ecs')
+          render(OS, compiler, platform, build, 'tutorial06', 'crown')
           render(OS, compiler, platform, build, 'tutorial07', '')
 
           render(OS, compiler, platform, build, 'tutorial00_ispc', '')
           render(OS, compiler, platform, build, 'tutorial01_ispc', '')
-          render(OS, compiler, platform, build, 'tutorial02_ispc', modelDir + dash + 'crown' + dash + 'crown_paper.ecs')
+          render(OS, compiler, platform, build, 'tutorial02_ispc', 'crown')
           render(OS, compiler, platform, build, 'tutorial03_ispc', '')
           render(OS, compiler, platform, build, 'tutorial04_ispc', '')
           render(OS, compiler, platform, build, 'tutorial05_ispc', '')
-          render(OS, compiler, platform, build, 'tutorial06_ispc', modelDir + dash + 'crown' + dash + 'crown_paper.ecs')
+          render(OS, compiler, platform, build, 'tutorial06_ispc', 'crown')
           render(OS, compiler, platform, build, 'tutorial07_ispc', '')
           
 
 ########################## command line parsing ##########################
 
 def printUsage():
-  sys.stderr.write('Usage: ' + sys.argv[0] + ' render  <os> <testDir>\n')
+  sys.stderr.write('Usage: ' + sys.argv[0] + ' render  <os> <testDir> <modelDir>\n')
   sys.stderr.write('       ' + sys.argv[0] + ' extract <os> <testDir>\n')
   sys.exit(1)
 
@@ -220,6 +223,8 @@ else:
 if mode == 'render':
   if len(sys.argv) < 4: printUsage()
   testDir = sys.argv[3]
+  if len(sys.argv) > 4: 
+    modelDir = sys.argv[4]
   renderLoop(OS)
   sys.exit(1)
 
