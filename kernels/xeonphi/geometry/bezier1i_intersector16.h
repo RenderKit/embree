@@ -154,7 +154,10 @@ namespace embree
       /* intersection filter test */
 
       /* update hit information */
-      const float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
+      float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
+
+      uu = max(uu,0.0f);
+      uu = min(uu,1.0f);
 
       mic_f P,T;
       eval(uu,p0123,P,T);

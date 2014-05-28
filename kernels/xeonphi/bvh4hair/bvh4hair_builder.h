@@ -39,6 +39,8 @@ namespace embree
     static const size_t ALLOCATOR_NODE_BLOCK_SIZE = 64;
     typedef AtomicIDBlock<ALLOCATOR_NODE_BLOCK_SIZE> NodeAllocator;    
 
+    static const size_t MAX_ITEMS_PER_LEAF = 2;
+
   public:
 
     class __aligned(64) BuildRecordOBB : public BuildRecord

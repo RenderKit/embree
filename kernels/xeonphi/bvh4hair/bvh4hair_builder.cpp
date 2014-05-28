@@ -11,7 +11,7 @@ namespace embree
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 
-#define ENABLE_OBB 1
+#define ENABLE_OBB_BVH4 1
 
 #define TIMER(x)  
 
@@ -21,6 +21,7 @@ namespace embree
 
   static double dt = 0.0f;
 
+  // TODO: ENABLE PER CORE BVH4 BUILD
   // ==========================================================================================
   // ==========================================================================================
   // ==========================================================================================
@@ -457,6 +458,7 @@ namespace embree
     if (g_verbose >= 2) {
       double perf = totalNumPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
+      std::cout << "unaligned nodes " << atomicID << " -> " << sizeof(BVH4Hair::UnalignedNode) * atomicID << std::endl;
       //std::cout << BVH4iStatistics(bvh).str();
     }
 
@@ -619,7 +621,7 @@ namespace embree
   __forceinline bool BVH4HairBuilder::splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
   {
     /* mark as leaf if leaf threshold reached */
-    if (current.items() <= BVH4Hair::N) {
+    if (current.items() <= MAX_ITEMS_PER_LEAF) {
       current.createLeaf();
       return false;
     }
@@ -708,8 +710,8 @@ namespace embree
 
 
 
-    if (leftChild.items()  <= BVH4Hair::N) leftChild.createLeaf();
-    if (rightChild.items() <= BVH4Hair::N) rightChild.createLeaf();	
+    if (leftChild.items()  <= MAX_ITEMS_PER_LEAF) leftChild.createLeaf();
+    if (rightChild.items() <= MAX_ITEMS_PER_LEAF) rightChild.createLeaf();	
     return true;
   }
   
@@ -726,7 +728,7 @@ namespace embree
     assert(items >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD);
   
     /* mark as leaf if leaf threshold reached */
-    if (items <= BVH4Hair::N) {
+    if (items <= MAX_ITEMS_PER_LEAF) {
       current.createLeaf();
       return false;
     }
@@ -767,8 +769,8 @@ namespace embree
 	  }	 
        }
      
-     if (leftChild.items()  <= BVH4Hair::N) leftChild.createLeaf();
-     if (rightChild.items() <= BVH4Hair::N) rightChild.createLeaf();
+     if (leftChild.items()  <= MAX_ITEMS_PER_LEAF) leftChild.createLeaf();
+     if (rightChild.items() <= MAX_ITEMS_PER_LEAF) rightChild.createLeaf();
      return true;
   }
 
@@ -783,7 +785,7 @@ namespace embree
 #endif
     
     /* create leaf */
-    if (current.items() <= BVH4Hair::N) {
+    if (current.items() <= MAX_ITEMS_PER_LEAF) {
       node[current.parentID].createLeaf(current.begin,current.items(),current.parentBoxID);
       return;
     }
@@ -803,6 +805,8 @@ namespace embree
 
     node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
     
+    node[currentIndex].prefetchNode<PFHINT_L2EX>();
+
     /* recurse into each child */
     for (size_t i=0; i<numChildren; i++) 
     {
@@ -879,7 +883,9 @@ namespace embree
     const size_t currentIndex = alloc.get(1);
     node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
 
+
     /* init used/unused nodes */
+    node[currentIndex].prefetchNode<PFHINT_L2EX>();
     node[currentIndex].setInvalid();
 
     /* recurse into each child */
@@ -970,6 +976,7 @@ namespace embree
 
     /* allocate next four nodes */
     const size_t currentIndex = alloc.get(1);
+    node[currentIndex].prefetchNode<PFHINT_L2EX>();
     node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
 
     /* init used/unused nodes */
@@ -997,8 +1004,7 @@ namespace embree
 				     const size_t numThreads)
   {
     DBG(PING);
-#if ENABLE_OBB == 1
-
+#if ENABLE_OBB_BVH4 == 1
 
     BuildRecordOBB current_obb;
     current_obb = current;
@@ -1023,7 +1029,7 @@ namespace embree
     DBG(DBG_PRINT(current));
 
     /* mark as leaf if leaf threshold reached */
-    if (current.items() <= BVH4Hair::N) {
+    if (current.items() <= MAX_ITEMS_PER_LEAF) {
       current.createLeaf();
       return false;
     }
@@ -1131,8 +1137,8 @@ namespace embree
     DBG(DBG_PRINT(Vec3fa(rightChild.bounds.geometry.upper - rightChild.bounds.geometry.lower)));
 
 
-    if (leftChild.items()  <= BVH4Hair::N) leftChild.createLeaf();
-    if (rightChild.items() <= BVH4Hair::N) rightChild.createLeaf();	
+    if (leftChild.items()  <= MAX_ITEMS_PER_LEAF) leftChild.createLeaf();
+    if (rightChild.items() <= MAX_ITEMS_PER_LEAF) rightChild.createLeaf();	
     return true;
   }
 
@@ -1171,6 +1177,8 @@ namespace embree
 
     for (size_t i=current.begin;i<current.end;i++)
       {
+	prefetch<PFHINT_NT>(&prims[i+4]);
+	prefetch<PFHINT_L2>(&prims[i+16]);
 	const mic2f b = prims[i].getBounds(c0,c1,c2);
 	const mic_f b_min = b.x;
 	const mic_f b_max = b.y;

@@ -123,7 +123,6 @@ namespace embree
 
   void send_hairset (OBJScene::HairSet* hairset)
   {
-    PING;
     COIRESULT result;
     struct {
       COIBUFFER position;    //!< vertex position array
