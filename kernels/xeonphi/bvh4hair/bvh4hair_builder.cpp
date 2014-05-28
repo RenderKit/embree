@@ -3,7 +3,7 @@
 
 namespace embree
 {
-#define DBG(x) x
+#define DBG(x) 
 
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
@@ -11,7 +11,7 @@ namespace embree
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 
-#define ENABLE_OBB 1
+#define ENABLE_OBB 0
 
 #define TIMER(x)  x
 
@@ -1007,20 +1007,6 @@ namespace embree
     computeUnalignedSpaceBounds(current_obb);
 
     AffineSpace3fa aspace = getAffineSpace3fa(current_obb.xfm,current.bounds.geometry);
-    DBG_PRINT(current_obb.xfm);
-    DBG_PRINT(current_obb.bounds.geometry);
-    DBG_PRINT(aspace);
-    
-
-    // for (size_t i=current.begin;i<current.end;i++)
-    //   {
-    // 	DBG_PRINT(i);
-    // 	Vec3fa v = *prims[i].p;
-    // 	DBG_PRINT(v);
-    // 	Vec3fa v_xfm = xfmPoint(aspace,v);
-    // 	DBG_PRINT(v_xfm);	
-    //   }
-    
 
     //TODO:: node[current.parentID].setMatrix(current.xfm,current.parentBoxID);
    
@@ -1155,8 +1141,8 @@ namespace embree
 
   __forceinline void BVH4HairBuilder::computeUnalignedSpace( BuildRecordOBB& current )
   {
-#if 0
     Vec3fa axis(0,0,1);
+#if 1
     for (size_t i=current.begin;i<current.end;i++)
       {
 	const Bezier1i &b = prims[i];
@@ -1168,14 +1154,8 @@ namespace embree
 	  break;
 	}	
       }
-#else
-    //Vec3fa axis(1,0,0);
-    Vec3fa axis(1,0,0);
-
 #endif
     current.xfm = frame(axis).transposed();    
-    //current.xfm = frame(axis); // .transposed();    
-
     DBG(DBG_PRINT(current.xfm));
   }
 

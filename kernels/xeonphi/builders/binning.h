@@ -409,13 +409,13 @@ namespace embree
 	prefetch<PFHINT_L2>(aptr+12);
 	
 	const mic2f bounds = aptr->getBounds(c0,c1,c2);
+
 	const mic_f b_min  = bounds.x;
 	const mic_f b_max  = bounds.y;
 
 	const mic_f centroid_2 = b_min + b_max;
-	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
-	
-
+	const mic_i binID_noclamp = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
+	const mic_i binID = min(max(binID_noclamp,mic_i::zero()),mic_i(15));
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
 	assert(0 <= binID[2] && binID[2] < 16);
