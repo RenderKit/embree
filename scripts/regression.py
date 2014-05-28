@@ -76,9 +76,9 @@ supported_builds['GCC']  = [ 'Debug', 'Release', 'ReleaseAVX', 'ReleaseAVX2']
 supported_builds['CLANG']= [ 'Debug', 'Release', 'ReleaseAVX', 'ReleaseAVX2']
 
 #builds_win = ['Debug']
-builds_win = ['Release']
+#builds_win = ['Release']
 #builds_win = ['Release', 'Debug', 'ReleaseAVX']
-#builds_win = ['Release', 'Debug', 'ReleaseAVX', 'ReleaseAVX2']
+builds_win = ['Release', 'Debug', 'ReleaseAVX', 'ReleaseAVX2']
 #builds_unix = ['Debug']
 builds_unix = ['Release']
 #builds_unix = ['Release', 'Debug', 'ReleaseAVX']
@@ -91,8 +91,8 @@ platforms_win  = ['x64']
 platforms_unix = ['x64']
 platforms      = []
 
-models = [ 'conference' ]
-#models = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
+#models = [ 'conference' ]
+models = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
 
 modelDir  = ''
 testDir = ''
@@ -199,7 +199,7 @@ def render(OS, compiler, platform, build, tutorial, scene, flags):
     if scene != '':
       command += '-c ' + modelDir + dash + scene + dash + scene + '_regression.ecs '
     if tutorial == 'regression':
-      command += '-regressions 200 '
+      command += '-regressions 2000 '
     if tutorial[0:8] == 'tutorial':
       command += '-rtcore verbose=2 -size 1024 1024 -o ' + imageFile
     command += ' > ' + logFile
