@@ -58,7 +58,7 @@ namespace embree
     //                             Binning                                      //
     //////////////////////////////////////////////////////////////////////////////
     
-    inline ObjectPartition::BinInfo::BinInfo() {
+    ObjectPartition::BinInfo::BinInfo() {
       clear();
     }
 

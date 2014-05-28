@@ -80,9 +80,9 @@ supported_builds['CLANG']= [ 'Debug', 'Release', 'ReleaseAVX', 'ReleaseAVX2']
 #builds_win = ['Release', 'Debug', 'ReleaseAVX']
 builds_win = ['Release', 'Debug', 'ReleaseAVX', 'ReleaseAVX2']
 #builds_unix = ['Debug']
-builds_unix = ['Release']
+#builds_unix = ['Release']
 #builds_unix = ['Release', 'Debug', 'ReleaseAVX']
-#builds_unix = ['Release', 'Debug', 'ReleaseAVX', 'ReleaseAVX2']
+builds_unix = ['Release', 'Debug', 'ReleaseAVX', 'ReleaseAVX2']
 builds = []
 
 #platforms_win  = ['win32']
@@ -148,7 +148,7 @@ def compile(OS,compiler,platform,build):
       sys.exit(1)
 
     # first compile Embree
-    command = 'mkdir build; cd build; cmake'
+    command = 'mkdir -p build && cd build && cmake > /dev/null'
     command += compilerOption
     command += ' -D RTCORE_RAY_MASK=OFF'
     command += ' -D RTCORE_BACKFACE_CULLING=OFF'
@@ -158,12 +158,20 @@ def compile(OS,compiler,platform,build):
     command += ' -D TARGET_SSE2=ON';
     command += ' -D TARGET_SSE41=ON';
     command += ' -D TARGET_SSE42=ON';
-    command += ' -D TARGET_AVX=ON'
-    command += ' -D TARGET_AVX2=ON'
+
+    if build == 'ReleaseAVX' or build == 'ReleaseAVX2':
+      command += ' -D TARGET_AVX=ON'
+    else:
+      command += ' -D TARGET_AVX=OFF'
+
+    if build == 'ReleaseAVX2':
+      command += ' -D TARGET_AVX2=ON'
+    else:
+      command += ' -D TARGET_AVX2=OFF'
 
     command += ' -D CMAKE_BUILD_TYPE=' + build
-    command += ' ..; make clean; make -j 8'
-    command += ' > ' + logFile
+    command += ' .. && make clean && make -j 8'
+    command += ' &> ../' + logFile
     return os.system(command)
 
 def compileLoop(OS):
@@ -183,7 +191,9 @@ def render(OS, compiler, platform, build, tutorial, scene, flags):
   base = configName(OS, compiler, platform, build, tutorial, scene, flags)
   logFile = testDir + dash + base + '.log'
   imageFile = testDir + dash + base + '.tga'
-  if not os.path.exists(logFile):
+  if os.path.exists(logFile):
+    sys.stdout.write(" [skipped]\n")
+  else:
     if OS == 'windows': command = platform + '\\' + build + '\\' + tutorial + ' '
     else:               command = 'build' + '/' + tutorial + ' '
     if scene != '':

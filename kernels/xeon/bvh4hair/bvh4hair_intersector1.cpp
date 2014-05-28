@@ -59,6 +59,7 @@ namespace embree
 #endif
     }
 
+#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
     template<typename PrimitiveIntersector>
     __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::CompressedUnalignedNode* node, Ray& ray, 
                                                                                   const sse3f& ray_org, const sse3f& ray_dir, 
@@ -101,6 +102,7 @@ namespace embree
       return movemask(vmask);
 #endif
     }
+#endif
 
     template<typename PrimitiveIntersector>
     __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::UncompressedUnalignedNode* node, Ray& ray, 

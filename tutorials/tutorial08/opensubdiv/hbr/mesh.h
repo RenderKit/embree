@@ -144,6 +144,7 @@ template <typename T> HbrMesh<T>::~HbrMesh() {
 
 }
 
+template <>
 void HbrMesh<Vec3f>::Finish(RTCScene sceneID) {
 
     /*! Construct an Embree subdivision mesh object (mesh is assumed to have no boundary edges). */
