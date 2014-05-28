@@ -69,8 +69,11 @@ namespace embree
     private:
       
       /*! creates a leaf node */
-      virtual BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo) = 0;
+      virtual BVH4Hair::NodeRef createLeaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo) = 0;
       
+      /*! creates a large leaf that could be larger than supported by the BVH */
+      BVH4Hair::NodeRef createLargeLeaf(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo, size_t depth);
+    
       template<bool Parallel>
 	Split find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const PrimInfo& sinfo);
       
@@ -105,7 +108,7 @@ namespace embree
     {
     public:
       BVH4HairBuilderT (BVH4Hair* bvh, Scene* scene, size_t mode);
-      BVH4Hair::NodeRef leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo);
+      BVH4Hair::NodeRef createLeaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo);
     };
   }
 }
