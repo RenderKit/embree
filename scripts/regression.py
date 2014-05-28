@@ -60,7 +60,7 @@ dash = '/'
 
 #compilers_win = ['V100']
 #compilers_win = ['ICC']
-compilers_win  = ['V90', 'V100', 'V110', 'V120', 'ICC']
+compilers_win  = ['V100', 'V110', 'V120', 'ICC']
 #compilers_unix = ['ICC']
 compilers_unix = ['GCC', 'ICC']
 #compilers_unix = ['GCC', 'CLANG', 'ICC']
