@@ -32,8 +32,8 @@ namespace embree
     public:
       
       /*! Type shortcuts */
-      typedef typename BVH4::Node    Node;
-      typedef typename BVH4::NodeRef NodeRef;
+      typedef BVH4::Node    Node;
+      typedef BVH4::NodeRef NodeRef;
       typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
 
       /*! the build record stores all information to continue the build of some subtree */

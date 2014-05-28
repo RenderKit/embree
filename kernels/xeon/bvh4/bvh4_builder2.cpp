@@ -63,7 +63,7 @@ namespace embree
 	logBlockSize(logBlockSize), logSAHBlockSize(logSAHBlockSize), intCost(intCost), 
 	needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
      {
-       size_t maxLeafPrims = BVH4::maxLeafBlocks*(1<<logBlockSize);
+       size_t maxLeafPrims = BVH4::maxLeafBlocks*(size_t(1)<<logBlockSize);
        if (maxLeafPrims < this->maxLeafSize) this->maxLeafSize = maxLeafPrims;
        needAllThreads = true;
     }
@@ -92,7 +92,7 @@ namespace embree
       return bvh->encodeLeaf(leaf,N);
     }
     
-    typename BVH4Builder2::NodeRef BVH4Builder2::createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
+    BVH4Builder2::NodeRef BVH4Builder2::createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
     {
 #if defined(_DEBUG)
       if (depth >= BVH4::maxBuildDepthLeaf) 

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -45,44 +45,52 @@
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -162,7 +170,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -189,7 +197,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -213,7 +221,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -239,7 +247,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -262,7 +270,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>CONFIG_AVX;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -288,7 +296,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>CONFIG_AVX;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -311,7 +319,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>CONFIG_AVX2;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -337,7 +345,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>CONFIG_AVX2;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -354,6 +362,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="builders\primrefgen.cpp" />
     <ClCompile Include="bvh4i\bvh4i_builder_binner.cpp" />
     <ClCompile Include="bvh4i\bvh4i_builder_fast.cpp" />
     <ClCompile Include="bvh4i\bvh4i_builder_morton.cpp" />
@@ -363,6 +372,7 @@
     <ClCompile Include="bvh4i\bvh4i_intersector4_chunk.cpp" />
     <ClCompile Include="bvh4i\bvh4i_intersector8_chunk.cpp" />
     <ClCompile Include="bvh4i\bvh4i_intersector8_hybrid.cpp" />
+    <ClCompile Include="bvh4\bvh4_refit.cpp" />
     <ClCompile Include="geometry\instance_intersector1.cpp" />
     <ClCompile Include="geometry\instance_intersector4.cpp" />
     <ClCompile Include="geometry\instance_intersector8.cpp" />
@@ -380,11 +390,6 @@
     <ClCompile Include="bvh4mb\bvh4mb_intersector1.cpp" />
     <ClCompile Include="bvh4mb\bvh4mb_intersector4.cpp" />
     <ClCompile Include="bvh4mb\bvh4mb_intersector8.cpp" />
-    <ClCompile Include="bvh8i\bvh8i.cpp" />
-    <ClCompile Include="bvh8i\bvh8i_builder.cpp" />
-    <ClCompile Include="bvh8i\bvh8i_intersector1.cpp" />
-    <ClCompile Include="bvh8i\bvh8i_intersector8_chunk.cpp" />
-    <ClCompile Include="bvh8i\bvh8i_intersector8_hybrid.cpp" />
     <ClCompile Include="bvh4hair\bvh4hair_builder.cpp" />
     <ClCompile Include="bvh4hair\bvh4hair_intersector1.cpp" />
     <ClCompile Include="bvh4hair\bvh4hair_intersector4.cpp" />
@@ -395,7 +400,6 @@
     <ClCompile Include="builders\heuristic_object_partition_unaligned.cpp" />
     <ClCompile Include="builders\heuristic_spatial_split.cpp" />
     <ClCompile Include="builders\heuristic_strand_partition.cpp" />
-    <ClCompile Include="builders\trirefgen.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuildStep Include="bvh4i\bvh4i_builder_binner.h" />
@@ -404,6 +408,7 @@
     <CustomBuildStep Include="bvh4i\bvh4i_builder_morton_enhanced.h" />
     <CustomBuildStep Include="bvh4i\bvh4i_builder_util.h" />
     <CustomBuildStep Include="bvh4i\bvh4i_intersector1.h" />
+    <ClInclude Include="builders\primrefgen.h" />
     <ClInclude Include="bvh4i\bvh4i_intersector1_scalar.h" />
     <CustomBuildStep Include="bvh4i\bvh4i_intersector4_chunk.h" />
     <CustomBuildStep Include="bvh4i\bvh4i_intersector8_chunk.h" />
@@ -411,6 +416,7 @@
     <CustomBuildStep Include="geometry\instance_intersector1.h" />
     <CustomBuildStep Include="geometry\instance_intersector4.h" />
     <CustomBuildStep Include="geometry\instance_intersector8.h" />
+    <ClInclude Include="bvh4\bvh4_refit.h" />
     <ClInclude Include="geometry\ispc_wrapper_avx.h" />
     <CustomBuildStep Include="geometry\triangle8.h" />
     <ClInclude Include="bvh4\bvh4_builder2.h" />
@@ -425,11 +431,6 @@
     <CustomBuildStep Include="bvh4mb\bvh4mb_intersector1.h" />
     <CustomBuildStep Include="bvh4mb\bvh4mb_intersector4.h" />
     <CustomBuildStep Include="bvh4mb\bvh4mb_intersector8.h" />
-    <ClInclude Include="bvh8i\bvh8i.h" />
-    <ClInclude Include="bvh8i\bvh8i_builder.h" />
-    <ClInclude Include="bvh8i\bvh8i_intersector1.h" />
-    <ClInclude Include="bvh8i\bvh8i_intersector8_chunk.h" />
-    <ClInclude Include="bvh8i\bvh8i_intersector8_hybrid.h" />
     <ClInclude Include="bvh4hair\bvh4hair_builder.h" />
     <ClInclude Include="bvh4hair\bvh4hair_intersector1.h" />
     <ClInclude Include="bvh4hair\bvh4hair_intersector4.h" />
@@ -441,7 +442,6 @@
     <ClInclude Include="builders\heuristic_spatial_split.h" />
     <ClInclude Include="builders\heuristic_split.h" />
     <ClInclude Include="builders\heuristic_strand_partition.h" />
-    <ClInclude Include="builders\trirefgen.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\common\sys\sys.vcxproj">

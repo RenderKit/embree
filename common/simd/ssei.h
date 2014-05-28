@@ -189,14 +189,16 @@ namespace embree
 #endif
   }
 
-#if defined(__SSE4_1__) && !defined(__clang__)
-  __forceinline const ssei select( const int m, const ssei& t, const ssei& f ) { 
-    return _mm_castps_si128(_mm_blend_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), m)); 
+#if defined(__SSE4_1__) 
+#if defined(__clang__) || defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+  __forceinline const ssei select(const int mask, const ssei& t, const ssei& f) {
+	  return select(sseb(mask), t, f);
   }
 #else
-  __forceinline const ssei select( const int mask, const ssei& t, const ssei& f ) { 
-    return select(sseb(mask),t,f);
+  __forceinline const ssei select(const int m, const ssei& t, const ssei& f) {
+	  return _mm_castps_si128(_mm_blend_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), m));
   }
+#endif
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////
