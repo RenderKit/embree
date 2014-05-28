@@ -82,13 +82,26 @@ platforms_unix = ['x64']
 platforms      = []
 
 devices = [ 'singleray', 'ispc' ]
+models = [ 'crown', 'conference', 'bentley', 'headlight', 'powerplant', 'sponza', 'xyz_dragon' ]
 
 modelDir  = ''
 testDir = ''
 
+def configName(OS, compiler, platform, build, tutorial, scene):
+  cfg = OS + '_' + compiler + '_' + platform + '_' + build
+  if tutorial != '':
+    cfg += '_' + tutorial
+  if scene != '':
+    cfg += '_' + scene
+  return cfg
+
 ########################## compiling ##########################
 
 def compile(OS,compiler,platform,build):
+
+  base = configName(OS, compiler, platform, build, '', '')
+  logFile = testDir + dash + base + '.log'
+
   if OS == 'windows':
   
     cfg = '/p:Configuration=' + build + ';'
@@ -103,8 +116,8 @@ def compile(OS,compiler,platform,build):
       sys.exit(1)
 
     # compile Embree
-    command =  'msbuild embree_vs2010.sln' + ' ' + cfg + ' /t:rebuild /verbosity:m'
-    os.system(command)
+    command =  'msbuild embree_vs2010.sln' + ' /nologo ' + cfg + ' /t:rebuild /verbosity:q > ' + logFile
+    return os.system(command)
   
   else:
 
@@ -134,25 +147,23 @@ def compile(OS,compiler,platform,build):
     command += ' -D TARGET_AVX2=ON'
 
     command += ' -D CMAKE_BUILD_TYPE=' + build
-    command += ' ..; make clean; make -j 8';
-    os.system(command)
+    command += ' ..; make clean; make -j 8'
+    command += ' > ' + logFile
+    return os.system(command)
 
 def compileLoop(OS):
     for compiler in compilers:
       for platform in platforms:
         for build in builds:
-          print(OS + ' ' + compiler + ' ' + platform + ' ' + build)
+          sys.stdout.write(OS + ' ' + compiler + ' ' + platform + ' ' + build)
           compile(OS,compiler,platform,isas,build)
 
 ########################## rendering ##########################
 
-def configName(OS, compiler, platform, build, tutorial, scene):
-  cfg = OS + '_' + compiler + '_' + platform + '_' + build + '_' + tutorial
-  if scene != '':
-    cfg += '_' + scene
-  return cfg
-
 def render(OS, compiler, platform, build, tutorial, scene):
+  sys.stdout.write("  "+tutorial+" ")
+  if scene != '': sys.stdout.write(' '+scene)
+  sys.stdout.flush()
   base = configName(OS, compiler, platform, build, tutorial, scene)
   logFile = testDir + dash + base + '.log'
   imageFile = testDir + dash + base + '.tga'
@@ -160,39 +171,51 @@ def render(OS, compiler, platform, build, tutorial, scene):
     if OS == 'windows': command = platform + '\\' + build + '\\' + tutorial + ' '
     else:               command = 'build' + '/' + tutorial + ' '
     if scene != '':
-	    command += '-c ' + modelDir + dash + scene + dash + '_paper.ecs'
+      command += '-c ' + modelDir + dash + scene + dash + scene + '_paper.ecs '
     if tutorial == 'regression':
-	    command += '-regressions 200 '
-    command += '-o ' + imageFile + ' > ' + logFile
-    os.system(command)
+      command += '-regressions 200 '
+    if tutorial[0:8] == 'tutorial':
+      command += '-rtcore verbose=2 -o ' + imageFile
+    command += ' > ' + logFile
+    ret = os.system(command)
+    if ret == 0: sys.stdout.write(" [passed]\n")
+    else       : sys.stdout.write(" [failed]\n")
 
 def renderLoop(OS):
     for compiler in compilers:
       for platform in platforms:
         for build in builds:
-          print(compiler + ' ' + platform + ' ' + build)
-#          compile(OS,compiler,platform,build)
-          
-          render(OS, compiler, platform, build, 'verify', '')
-          render(OS, compiler, platform, build, 'benchmark', '')
+          sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build)
+          sys.stdout.flush()
+          ret = compile(OS,compiler,platform,build)
+          if ret != 0: sys.stdout.write(" [failed]\n")
+          else: 
+            sys.stdout.write(" [passed]\n")
+                      
+            render(OS, compiler, platform, build, 'verify', '')
+            render(OS, compiler, platform, build, 'benchmark', '')
 
-          render(OS, compiler, platform, build, 'tutorial00', '')
-          render(OS, compiler, platform, build, 'tutorial01', '')
-          render(OS, compiler, platform, build, 'tutorial02', 'crown')
-          render(OS, compiler, platform, build, 'tutorial03', '')
-          render(OS, compiler, platform, build, 'tutorial04', '')
-          render(OS, compiler, platform, build, 'tutorial05', '')
-          render(OS, compiler, platform, build, 'tutorial06', 'crown')
-          render(OS, compiler, platform, build, 'tutorial07', '')
+            render(OS, compiler, platform, build, 'tutorial00', '')
+            render(OS, compiler, platform, build, 'tutorial01', '')
+            render(OS, compiler, platform, build, 'tutorial02', '')
+            for model in models:
+              render(OS, compiler, platform, build, 'tutorial03', model)
+            render(OS, compiler, platform, build, 'tutorial04', '')
+            render(OS, compiler, platform, build, 'tutorial05', '')
+            for model in models:
+              render(OS, compiler, platform, build, 'tutorial06', model)
+            render(OS, compiler, platform, build, 'tutorial07', '')
 
-          render(OS, compiler, platform, build, 'tutorial00_ispc', '')
-          render(OS, compiler, platform, build, 'tutorial01_ispc', '')
-          render(OS, compiler, platform, build, 'tutorial02_ispc', 'crown')
-          render(OS, compiler, platform, build, 'tutorial03_ispc', '')
-          render(OS, compiler, platform, build, 'tutorial04_ispc', '')
-          render(OS, compiler, platform, build, 'tutorial05_ispc', '')
-          render(OS, compiler, platform, build, 'tutorial06_ispc', 'crown')
-          render(OS, compiler, platform, build, 'tutorial07_ispc', '')
+            render(OS, compiler, platform, build, 'tutorial00_ispc', '')
+            render(OS, compiler, platform, build, 'tutorial01_ispc', '')
+            render(OS, compiler, platform, build, 'tutorial02_ispc', '')
+            for model in models:
+              render(OS, compiler, platform, build, 'tutorial03_ispc', model)
+            render(OS, compiler, platform, build, 'tutorial04_ispc', '')
+            render(OS, compiler, platform, build, 'tutorial05_ispc', '')
+            for model in models:
+              render(OS, compiler, platform, build, 'tutorial06_ispc', model)
+            render(OS, compiler, platform, build, 'tutorial07_ispc', '')
           
 
 ########################## command line parsing ##########################
@@ -211,14 +234,14 @@ if OS == 'windows':
   compilers = compilers_win
   platforms = platforms_win
   builds = builds_win
-  modelDir = '%HOMEPATH%\\models'
+  modelDir = '%HOMEPATH%\\models\\embree'
 
 else:
   dash = '/'
   compilers = compilers_unix
   platforms = platforms_unix
   builds = builds_unix
-  modelDir = '~/models'
+  modelDir = '~/models/embree'
 
 if mode == 'render':
   if len(sys.argv) < 4: printUsage()

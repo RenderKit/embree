@@ -298,7 +298,7 @@ namespace embree
       for (size_t group = startGroup; group<numGroups; group++) 
       {       
         Geometry* geom = scene->get(group);
-        if (!geom || geom->type != TRIANGLE_MESH) continue;
+        if (!geom || !geom->isEnabled() || geom->type != TRIANGLE_MESH) continue;
         TriangleMesh* mesh = (TriangleMesh*) geom;
         if (mesh->numTimeSteps != 1) continue;
         const size_t numTriangles = min(mesh->numTriangles-offset,endID-currentID);
