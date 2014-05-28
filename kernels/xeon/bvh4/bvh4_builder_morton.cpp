@@ -255,19 +255,27 @@ namespace embree
       
       CentGeomBBox3fa bounds; bounds.reset();
       
-      for (ssize_t cur=0, i=0; i<ssize_t(scene->size()); i++) 
+	  if (mesh) 
       {
-	TriangleMesh* geom = (TriangleMesh*) scene->get(i);
-        if (geom == NULL) continue;
-	if (geom->type != TRIANGLE_MESH || geom->numTimeSteps != 1 || !geom->isEnabled()) continue;
-	ssize_t gstart = 0;
-	ssize_t gend = geom->numTriangles;
-	ssize_t s = max(start-cur,gstart);
-	ssize_t e = min(end  -cur,gend  );
-	for (ssize_t j=s; j<e; j++) bounds.extend(geom->bounds(j));
-	cur += geom->numTriangles;
-	if (cur >= end) break;  
+        for (size_t i=start; i<end; i++)	 
+          bounds.extend(mesh->bounds(i));
       }
+	  else
+	  {
+	    for (ssize_t cur=0, i=0; i<ssize_t(scene->size()); i++) 
+        {
+          TriangleMesh* geom = (TriangleMesh*) scene->get(i);
+          if (geom == NULL) continue;
+	      if (geom->type != TRIANGLE_MESH || geom->numTimeSteps != 1 || !geom->isEnabled()) continue;
+	      ssize_t gstart = 0;
+	      ssize_t gend = geom->numTriangles;
+	      ssize_t s = max(start-cur,gstart);
+	      ssize_t e = min(end  -cur,gend  );
+	      for (ssize_t j=s; j<e; j++) bounds.extend(geom->bounds(j));
+	        cur += geom->numTriangles;
+	      if (cur >= end) break;  
+        }
+	  }
       global_bounds.extend_atomic(bounds);    
     }
 
