@@ -35,7 +35,7 @@ namespace embree
       __forceinline typename atomic_set<PrimRefBlockT<PrimRef> >::item* malloc(size_t thread, AllocatorBase* alloc) 
       {
 	/* try to take a block from local list */
-	atomic_set<PrimRefBlockT<PrimRef> >::item* ptr = local_free_blocks.take_unsafe();
+	typename atomic_set<PrimRefBlockT<PrimRef> >::item* ptr = local_free_blocks.take_unsafe();
 	if (ptr) return new (ptr) typename atomic_set<PrimRefBlockT<PrimRef> >::item();
 	
 	/* if this failed again we have to allocate more memory */

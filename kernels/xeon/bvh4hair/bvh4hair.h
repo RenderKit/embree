@@ -182,6 +182,7 @@ namespace embree
     };
 
     /*! Compressed node with aligned bounds */
+#if BVH4HAIR_COMPRESS_ALIGNED_NODES
     struct CompressedAlignedNode : public Node
     {
       enum { stride = 4 };
@@ -271,6 +272,7 @@ namespace embree
       unsigned char lower_z[N];   //!< Z dimension of lower bounds of all 4 children.
       unsigned char upper_z[N];   //!< Z dimension of upper bounds of all 4 children.
     };
+#endif
 
     /*! Node with aligned bounds */
     struct UncompressedAlignedNode : public Node
@@ -334,6 +336,7 @@ namespace embree
     };
 
     /*! Compressed node with unaligned bounds */
+#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
     struct CompressedUnalignedNode : public Node
     {
       /*! Clears the node. */
@@ -465,6 +468,7 @@ namespace embree
       unsigned char upper_y[N];   //!< Y dimension of upper bounds of all 4 children.
       unsigned char upper_z[N];   //!< Z dimension of upper bounds of all 4 children.
     };
+#endif
 
     /*! Node with unaligned bounds */
     struct UncompressedUnalignedNode : public Node

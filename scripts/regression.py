@@ -158,12 +158,21 @@ def compile(OS,compiler,platform,build):
     command += ' -D TARGET_SSE2=ON';
     command += ' -D TARGET_SSE41=ON';
     command += ' -D TARGET_SSE42=ON';
-    command += ' -D TARGET_AVX=ON'
-    command += ' -D TARGET_AVX2=ON'
+
+    if build == 'ReleaseAVX' or build == 'ReleaseAVX2':
+      command += ' -D TARGET_AVX=ON'
+    else:
+      command += ' -D TARGET_AVX=OFF'
+
+    if build == 'ReleaseAVX2':
+      command += ' -D TARGET_AVX2=ON'
+    else:
+      command += ' -D TARGET_AVX2=OFF'
 
     command += ' -D CMAKE_BUILD_TYPE=' + build
     command += ' ..; make clean; make -j 8'
-    command += ' > ' + logFile
+    command += ' > ../' + logFile
+    print(command)
     return os.system(command)
 
 def compileLoop(OS):
