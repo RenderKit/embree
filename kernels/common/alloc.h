@@ -306,6 +306,7 @@ namespace embree
     {
       clear();
       const size_t numThreads = getNumberOfLogicalThreads();
+	  bytesReserve = max(bytesAllocate,bytesReserve);
       size_t bytesReserved = max(bytesReserve,size_t(allocBlockSize*numThreads));
       if (bytesReserved != size_t(end) || bytesAllocate != bytesAllocated) 
       {
@@ -313,7 +314,7 @@ namespace embree
         if (ptr) os_free(ptr,end);
         ptr = (char*) os_reserve(bytesReserved);
         os_commit(ptr,bytesAllocated);
-        memset(ptr,0,bytesAllocated);
+        //memset(ptr,0,bytesAllocated);
         end = bytesReserved;
       }
     }

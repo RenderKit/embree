@@ -152,9 +152,9 @@ namespace embree
       size_t numPrimitivesOld = numPrimitives;
       bvh->numPrimitives = numPrimitives = number_of_primitives();
       needAllThreads = numPrimitives > THRESHOLD_FOR_SINGLE_THREADED;
-
+	  
       /* initialize BVH */
-      bvh->init(numPrimitives, needAllThreads ? threadCount : 1);
+      bvh->init(numPrimitives, needAllThreads ? (threadCount+1) : 1); // threadCount+1 for toplevel build
 
       /* skip build for empty scene */
       if (numPrimitives == 0) 
@@ -583,7 +583,7 @@ namespace embree
     {
       /* use primitive array temporarily for parallel splits */
       PrimRef* tmp = (PrimRef*) bvh->alloc.curPtr();
-      PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
+	  PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
 
       /* parallel binning of centroids */
       const float sah = g_state->parallelBinner.find(pinfo,prims,tmp,logBlockSize,threadID,numThreads);
