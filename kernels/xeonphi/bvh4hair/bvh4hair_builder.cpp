@@ -13,7 +13,7 @@ namespace embree
 
 #define ENABLE_OBB 1
 
-#define TIMER(x)  x
+#define TIMER(x)  
 
 #if defined(DEBUG)
   extern AtomicMutex mtx;
@@ -1006,8 +1006,6 @@ namespace embree
     computeUnalignedSpace(current_obb);
     computeUnalignedSpaceBounds(current_obb);
 
-    AffineSpace3fa aspace = getAffineSpace3fa(current_obb.xfm,current.bounds.geometry);
-
     //TODO:: node[current.parentID].setMatrix(current.xfm,current.parentBoxID);
    
     DBG(DBG_PRINT(node[current.parentID]));
@@ -1173,9 +1171,7 @@ namespace embree
 
     for (size_t i=current.begin;i<current.end;i++)
       {
-	//const mic2f b = prims[i].getBounds(current.xfm);
 	const mic2f b = prims[i].getBounds(c0,c1,c2);
-
 	const mic_f b_min = b.x;
 	const mic_f b_max = b.y;
 	const mic_f c2    = b_min + b_max;
@@ -1218,226 +1214,6 @@ namespace embree
   void BVH4HairBuilder::createAccel(const size_t threadIndex, const size_t threadCount)
   {
     DBG(PING);
-  }
-
-
-  // ==========================================================================================
-  // ==========================================================================================
-  // ==========================================================================================
-
-
-  void BVH4HairBuilderConvert::printBuilderName()
-  {
-    std::cout << "building BVH4Hair using BVH4i conversion (MIC) ... " << std::endl;    
-  }
-
-  size_t BVH4HairBuilderConvert::getNumPrimitives()
-  {
-    DBG(PING);
-
-    /* count total number of virtual objects */
-    size_t numCurves = 0;       
-    for (size_t i=0;i<scene->size();i++)
-      {
-	if (unlikely(scene->get(i) == NULL)) continue;
-	if (unlikely((scene->get(i)->type != BEZIER_CURVES))) continue;
-	if (unlikely(!scene->get(i)->isEnabled())) continue;
-        BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(i);
-	numCurves += geom->numCurves;
-      }
-    return numCurves;	
-  }
-
-  void BVH4HairBuilderConvert::computePrimRefs(const size_t threadIndex, const size_t threadCount)
-  {
-    DBG(PING);
-    LockStepTaskScheduler::dispatchTask( task_computePrimRefsBezierCurves, this, threadIndex, threadCount );	
-  }
-
-  void BVH4HairBuilderConvert::createAccel(const size_t threadIndex, const size_t threadCount)
-  {
-    DBG(PING);
-    LockStepTaskScheduler::dispatchTask( task_createBezierCurvesAccel, this, threadIndex, threadCount );
-  }
-
-  void BVH4HairBuilderConvert::computePrimRefsBezierCurves(const size_t threadID, const size_t numThreads) 
-  {
-    DBG(PING);
-
-    const size_t numTotalGroups = scene->size();
-
-    /* count total number of virtual objects */
-    const size_t numBezierCurves = numPrimitives;
-    const size_t startID   = (threadID+0)*numBezierCurves/numThreads;
-    const size_t endID     = (threadID+1)*numBezierCurves/numThreads; 
-
-    DBG(
-	DBG_PRINT(numTotalGroups);
-	DBG_PRINT(numBezierCurves);
-	DBG_PRINT(startID);
-	DBG_PRINT(endID);
-	);
-    
-    PrimRef *__restrict__ const prims     = this->prims;
-
-    // === find first group containing startID ===
-    unsigned int g=0, numSkipped = 0;
-    for (; g<numTotalGroups; g++) {       
-      if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely((scene->get(g)->type != BEZIER_CURVES))) continue;
-      if (unlikely(!scene->get(g)->isEnabled())) continue;
-      BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(g);
-      const size_t numPrims = geom->numCurves;
-      if (numSkipped + numPrims > startID) break;
-      numSkipped += numPrims;
-    }
-
-    /* start with first group containing startID */
-    mic_f bounds_scene_min((float)pos_inf);
-    mic_f bounds_scene_max((float)neg_inf);
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
-
-    unsigned int num = 0;
-    unsigned int currentID = startID;
-    unsigned int offset = startID - numSkipped;
-
-    for (; g<numTotalGroups; g++) 
-      {
-	if (unlikely(scene->get(g) == NULL)) continue;
-	if (unlikely((scene->get(g)->type != BEZIER_CURVES))) continue;
-	if (unlikely(!scene->get(g)->isEnabled())) continue;
-
-	BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(g);
-
-        size_t N = geom->numCurves;
-        for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
-        { 			    
-          //const BBox3fa bounds = geom->bounds(i);
-          //const mic_f bmin = broadcast4to16f(&bounds.lower); 
-          //const mic_f bmax = broadcast4to16f(&bounds.upper);
-	  const mic2f b2 = geom->bounds_mic2f(i);
-	  const mic_f bmin = b2.x;
-	  const mic_f bmax = b2.y;
-
-          bounds_scene_min = min(bounds_scene_min,bmin);
-          bounds_scene_max = max(bounds_scene_max,bmax);
-          const mic_f centroid2 = bmin+bmax;
-          bounds_centroid_min = min(bounds_centroid_min,centroid2);
-          bounds_centroid_max = max(bounds_centroid_max,centroid2);
-
-          store4f(&prims[currentID].lower,bmin);
-          store4f(&prims[currentID].upper,bmax);	
-          prims[currentID].lower.a = g;
-          prims[currentID].upper.a = i;
-        }
-        if (currentID == endID) break;
-        offset = 0;
-      }
-
-    /* update global bounds */
-    Centroid_Scene_AABB bounds;
-    
-    store4f(&bounds.centroid2.lower,bounds_centroid_min);
-    store4f(&bounds.centroid2.upper,bounds_centroid_max);
-    store4f(&bounds.geometry.lower,bounds_scene_min);
-    store4f(&bounds.geometry.upper,bounds_scene_max);
-
-    global_bounds.extend_atomic(bounds);    
-  }
-
-
-  void BVH4HairBuilderConvert::createBezierCurvesAccel(const size_t threadID, const size_t numThreads)
-  {
-    DBG(PING);
-
-    const size_t startID = (threadID+0)*numPrimitives/numThreads;
-    const size_t endID   = (threadID+1)*numPrimitives/numThreads;
-
-    Bezier1i *acc = (Bezier1i*)accel + startID;
-
-    const PrimRef*  bptr = prims + startID;
-
-    for (size_t j=startID; j<endID; j++, bptr++,acc++)
-      {
-     	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
-     	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
-     	assert(bptr->geomID() < scene->size() );
-	
-	const unsigned int geomID = bptr->geomID();
-	const unsigned int primID = bptr->primID();
-	BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(geomID);
-
-     	*acc = Bezier1i( &geom->vertex( geom->curve( primID ) ), geomID, primID);
-      }
-  }
-
-  
-  void BVH4HairBuilderConvert::build(const size_t threadIndex, const size_t threadCount) 
-  {
-    DBG(PING);
-    const size_t totalNumPrimitives = getNumPrimitives();
-
-
-    DBG(DBG_PRINT(totalNumPrimitives));
-
-    /* print builder name */
-    if (unlikely(g_verbose >= 1)) printBuilderName();
-
-    /* allocate BVH data */
-    allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
-
-    LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); 
-
-    if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1) )
-      {
-	DBG(std::cout << "PARALLEL BUILD" << std::endl);
-	
-	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
-      }
-    else
-      {
-	/* number of primitives is small, just use single threaded mode */
-	if (likely(numPrimitives > 0))
-	  {
-	    DBG(std::cout << "SERIAL BUILD" << std::endl);
-	    build_parallel(0,1,0,0,NULL);
-	  }
-	else
-	  {
-	    DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
-	    /* handle empty scene */
-	    for (size_t i=0;i<4;i++)
-	      bvh->qbvh[0].setInvalid(i);
-	    for (size_t i=0;i<4;i++)
-	      bvh->qbvh[1].setInvalid(i);
-	    bvh->qbvh[0].lower[0].child = BVH4i::NodeRef(128);
-	    bvh->root = bvh->qbvh[0].lower[0].child; 
-	    bvh->bounds = empty;
-	  }
-      }
-
-    if (numNodes && numPrimitives)
-      {
-	std::cout << "converting from bvh4i to bvh4hair..." << std::endl;
-	DBG_PRINT(bvh4hair);
-	DBG_PRINT(numNodes);
-	bvh4hair->unaligned_nodes = (BVH4Hair::UnalignedNode*)os_malloc(sizeof(BVH4Hair::UnalignedNode) * numNodes);
-	for (size_t i=0;i<numNodes;i++)
-	  {
-	    bvh4hair->unaligned_nodes[i].convertFromBVH4iNode(bvh4hair->qbvh[i],bvh4hair->unaligned_nodes);
-	    //DBG_PRINT(i);
-	    //DBG_PRINT(bvh4hair->qbvh[i]);
-	    //DBG_PRINT(bvh4hair->unaligned_nodes[i]);
-	  }
-      }
-
-    if (g_verbose >= 2) {
-      double perf = totalNumPrimitives/dt*1E-6;
-      std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
-      std::cout << BVH4iStatistics(bvh).str();
-    }
-
   }
 
 };

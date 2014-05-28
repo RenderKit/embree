@@ -31,31 +31,6 @@ namespace embree
 {
 
   /*! derived binned-SAH builder supporting hair primitives */  
-  class BVH4HairBuilderConvert : public BVH4iBuilder
-  {
-    ALIGNED_CLASS;
-
-  public:
-    BVH4Hair *bvh4hair;
-    
-  BVH4HairBuilderConvert(BVH4Hair* bvh, BuildSource* source, void* geometry) : BVH4iBuilder((BVH4i*)bvh,source,geometry) 
-      {
-	bvh4hair = bvh;
-      }
-
-    virtual void build          (const size_t threadIndex, const size_t threadCount);
-    virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
-    virtual void createAccel    (const size_t threadIndex, const size_t threadCount);
-    virtual size_t getNumPrimitives();
-    virtual void printBuilderName();
-
-  protected:
-    TASK_FUNCTION(BVH4HairBuilderConvert,computePrimRefsBezierCurves);
-    TASK_FUNCTION(BVH4HairBuilderConvert,createBezierCurvesAccel);    
-  };
-
-
-  /*! derived binned-SAH builder supporting hair primitives */  
   class BVH4HairBuilder : public ParallelBinnedSAHBuilder
   {
     ALIGNED_CLASS;

@@ -233,6 +233,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
+
 }
 
 #if !defined(__XEON_PHI__)
