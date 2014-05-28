@@ -38,6 +38,7 @@ namespace embree
   /* configuration */
   static std::string g_rtcore = "";
   static size_t testN = 100000;
+  static size_t regressionN = 200;
 
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
@@ -61,11 +62,6 @@ namespace embree
     printf("%30s ... ",name);                                           \
     bool notok = test;                                                  \
     printf(" %s\n",notok ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m"); \
-	fflush(stdout);\
-  }
-#define COUNT(name,test) {                                              \
-    size_t notok = test;                                                \
-    printf("%30s ... %s (%f%%)\n",name,notok ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)notok/(double)testN); \
 	fflush(stdout);\
   }
 
@@ -323,6 +319,12 @@ namespace embree
       /* rtcore configuration */
       else if (tag == "-rtcore" && i+1<argc) {
         g_rtcore = argv[++i];
+      }
+
+      /* get number of regression test iterations to perform */
+      else if (tag == "-regressions") {
+        if (i+1 >= argc) throw std::runtime_error("command line parsing error");
+        regressionN = atoi(argv[++i]);
       }
 
       /* skip unknown command line parameter */
@@ -1566,10 +1568,11 @@ namespace embree
       numFailures += ray.primID == -1;
     }
     rtcDeleteScene (scene);
+    double failRate = double(numFailures) / double(testN);
+    bool failed = failRate > 0.00002;
 
-    printf("%30s ... %s (%f%%)\n","watertight_sphere1",
-           numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
-	  fflush(stdout);
+    printf("%30s ... %s (%f%%)\n","watertight_sphere1", failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    fflush(stdout);
   }
   
   void rtcore_watertight_sphere4(float pos)
@@ -1592,9 +1595,11 @@ namespace embree
         numFailures += ray4.primID[j] == -1;
     }
     rtcDeleteScene (scene);
-    printf("%30s ... %s (%f%%)\n","watertight_sphere4",
-           numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
-	  fflush(stdout);
+    double failRate = double(numFailures) / double(testN);
+    bool failed = failRate > 0.00002;
+
+    printf("%30s ... %s (%f%%)\n","watertight_sphere4", failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    fflush(stdout);
   }
 
   void rtcore_watertight_sphere8(float pos)
@@ -1617,9 +1622,11 @@ namespace embree
         numFailures += ray8.primID[j] == -1;
     }
     rtcDeleteScene (scene);
-    printf("%30s ... %s (%f%%)\n","watertight_sphere8",
-           numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
-	  fflush(stdout);
+    double failRate = double(numFailures) / double(testN);
+    bool failed = failRate > 0.00002;
+
+    printf("%30s ... %s (%f%%)\n","watertight_sphere8", failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    fflush(stdout);
   }
 
   void rtcore_watertight_sphere16(float pos)
@@ -1642,9 +1649,11 @@ namespace embree
         numFailures += ray16.primID[j] == -1;
     }
     rtcDeleteScene (scene);
-    printf("%30s ... %s (%f%%)\n","watertight_sphere16",
-           numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
-	  fflush(stdout);
+    double failRate = double(numFailures) / double(testN);
+    bool failed = failRate > 0.00002;
+
+    printf("%30s ... %s (%f%%)\n","watertight_sphere16", failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    fflush(stdout);
   }
   
   void rtcore_watertight_plane1(float pos)
@@ -1661,9 +1670,11 @@ namespace embree
       numFailures += ray.primID == -1;
     }
     rtcDeleteScene (scene);
-    printf("%30s ... %s (%f%%)\n","watertight_plane1",
-           numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
-	fflush(stdout);
+    double failRate = double(numFailures) / double(testN);
+    bool failed = failRate > 0.00002;
+
+    printf("%30s ... %s (%f%%)\n","watertight_plane1", failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    fflush(stdout);
   }
 
   void rtcore_watertight_plane4(float pos)
@@ -1686,9 +1697,11 @@ namespace embree
         numFailures += ray4.primID[j] == -1;
     }
     rtcDeleteScene (scene);
-    printf("%30s ... %s (%f%%)\n","watertight_plane4",
-           numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
-  	fflush(stdout);
+    double failRate = double(numFailures) / double(testN);
+    bool failed = failRate > 0.00002;
+
+    printf("%30s ... %s (%f%%)\n","watertight_plane4", failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    fflush(stdout);
   }
 
   void rtcore_watertight_plane8(float pos)
@@ -1711,9 +1724,11 @@ namespace embree
         numFailures += ray8.primID[j] == -1;
     }
     rtcDeleteScene (scene);
-    printf("%30s ... %s (%f%%)\n","watertight_plane8",
-           numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
-	  fflush(stdout);
+    double failRate = double(numFailures) / double(testN);
+    bool failed = failRate > 0.00002;
+
+    printf("%30s ... %s (%f%%)\n","watertight_plane8",failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    fflush(stdout);
   }
 
   void rtcore_watertight_plane16(float pos)
@@ -1736,9 +1751,11 @@ namespace embree
         numFailures += ray16.primID[j] == -1;
     }
     rtcDeleteScene (scene);
-    printf("%30s ... %s (%f%%)\n","watertight_plane16",
-           numFailures ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*(double)numFailures/(double)testN);
-	  fflush(stdout);
+    double failRate = double(numFailures) / double(testN);
+    bool failed = failRate > 0.00002;
+
+    printf("%30s ... %s (%f%%)\n","watertight_plane16", failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    fflush(stdout);
   }
 
   void rtcore_nan(const char* name, RTCSceneFlags sflags, RTCGeometryFlags gflags, int N)
@@ -2080,11 +2097,12 @@ namespace embree
 
   bool rtcore_regression_static()
   {
-    for (size_t i=0; i<200; i++) 
+    for (size_t i=0; i<regressionN; i++) 
     {
       if (i%20 == 0) std::cout << "." << std::flush;
 
-      RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,aflags);
+      RTCSceneFlags sflag = getSceneFlag(i); 
+      RTCScene scene = rtcNewScene(sflag,aflags);
       AssertNoError();
 
       for (size_t j=0; j<20; j++) 
@@ -2128,7 +2146,7 @@ namespace embree
       numVertices[i] = 0;
     }
 
-    for (size_t i=0; i<200; i++) 
+    for (size_t i=0; i<regressionN; i++) 
     {
       if (i%20 == 0) std::cout << "." << std::flush;
 

@@ -119,7 +119,7 @@ namespace embree
     }
 
     template<typename Primitive>
-    BVH4Hair::NodeRef BVH4HairBuilderT<Primitive>::leaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo)
+    BVH4Hair::NodeRef BVH4HairBuilderT<Primitive>::createLeaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo)
     {
       size_t N = pinfo.size();
       
@@ -145,6 +145,37 @@ namespace embree
       
       return bvh->encodeLeaf((char*)leaf,N);
     }
+
+    BVH4Hair::NodeRef BVH4HairBuilder::createLargeLeaf(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo, size_t depth)
+    {
+#if defined(_DEBUG)
+      if (depth >= BVH4Hair::maxBuildDepthLeaf) 
+	throw std::runtime_error("ERROR: Loosing primitives during build.");
+#endif
+      
+      /* create leaf for few primitives */
+      if (pinfo.size() <= BVH4Hair::maxLeafBlocks)
+	return createLeaf(threadIndex,depth,prims,pinfo);
+      
+      /* first level */
+      BezierRefList prims0, prims1;
+      PrimInfo   cinfo0, cinfo1;
+      FallBackSplit::find(threadIndex,alloc,prims,prims0,cinfo0,prims1,cinfo1);
+      
+      /* second level */
+      BezierRefList cprims[4];
+      PrimInfo   cinfo[4];
+      FallBackSplit::find(threadIndex,alloc,prims0,cprims[0],cinfo[0],cprims[1],cinfo[1]);
+      FallBackSplit::find(threadIndex,alloc,prims1,cprims[2],cinfo[2],cprims[3],cinfo[3]);
+      
+      /*! create an inner node */
+      BVH4Hair::AlignedNode* node = bvh->allocAlignedNode(threadIndex);
+      for (size_t i=0; i<4; i++) {
+        node->set(i,cinfo[i].geomBounds);
+        node->set(i,createLargeLeaf(threadIndex,cprims[i],cinfo[i],depth+1));
+      }
+      return bvh->encodeNode(node);
+    }  
 
     template<bool Parallel>
     Split BVH4HairBuilder::find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const PrimInfo& sinfo)
@@ -212,7 +243,7 @@ namespace embree
       const float splitSAH = BVH4Hair::travCostUnaligned*halfArea(task.bounds.bounds)+BVH4Hair::intCost*task.split.splitSAH();
       
       if (task.pinfo.size() <= minLeafSize || task.depth >= BVH4Hair::maxBuildDepth || (task.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
-	*task.dst = leaf(threadIndex,task.depth,task.prims,task.pinfo);
+	*task.dst = createLargeLeaf(threadIndex,task.prims,task.pinfo,task.depth);
 	numTasks_o = 0;
 	return;
       }
@@ -317,7 +348,7 @@ namespace embree
       const float splitSAH = BVH4Hair::travCostUnaligned*halfArea(task.bounds.bounds)+BVH4Hair::intCost*task.split.splitSAH();
 
       if (task.pinfo.size() <= minLeafSize || task.depth >= BVH4Hair::maxBuildDepth || (task.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
-	*task.dst = leaf(threadIndex,task.depth,task.prims,task.pinfo);
+	*task.dst = createLargeLeaf(threadIndex,task.prims,task.pinfo,task.depth);
 	numTasks_o = 0;
 	return;
       }
