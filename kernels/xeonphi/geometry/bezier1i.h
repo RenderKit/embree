@@ -37,17 +37,22 @@ namespace embree
 		 broadcast4to16f((float*)&mat.vz));
   }
 
-  __forceinline mic_f xfmPoint(const Vec3fa  * __restrict__ const p, 
-			       const mic_f &c0,
-			       const mic_f &c1,
-			       const mic_f &c2)
+  __forceinline mic_f xfmPoint4f(const Vec3fa &p, 
+				 const mic_f &c0,
+				 const mic_f &c1,
+				 const mic_f &c2)
   {
+#if 0
     const mic_f p0123 = uload16f((float*)p);
     const mic_f p0123_1 = select(0x7777,p0123,mic_f::one());
     const mic_f x = ldot3_xyz(p0123_1,c0);
     const mic_f y = ldot3_xyz(p0123_1,c1);
     const mic_f z = ldot3_xyz(p0123_1,c2);
     const mic_f xyzw = select(0x7777,select(0x4444,z,select(0x2222,y,x)),p0123);
+#else
+    const mic_f xyz  = c0 * mic_f(p.x) + c1 * mic_f(p.y) + c2 * mic_f(p.z);
+    const mic_f xyzw = select(0x7777,xyz,mic_f(p.w));
+#endif
     return xyzw;
   }
 
@@ -85,13 +90,34 @@ namespace embree
       return mic2f(b_min_r,b_max_r);
     }
 
+
+    __forceinline mic2f getBounds(LinearSpace3fa &xfm) const 
+    {
+      const Vec3fa q0 = xfmPoint(xfm,p[0]);
+      const Vec3fa q1 = xfmPoint(xfm,p[1]);
+      const Vec3fa q2 = xfmPoint(xfm,p[2]);
+      const Vec3fa q3 = xfmPoint(xfm,p[3]);
+      
+      const Vec3fa b_min = min(min(q0,q1),min(q2,q3));
+      const Vec3fa b_max = max(max(q0,q1),max(q2,q3));
+
+      const Vec3fa max_radius = max(max(p[0].w,p[1].w),max(p[2].w,p[3].w));
+      
+      const Vec3fa b_min_r = b_min - max_radius;
+      const Vec3fa b_max_r = b_max + max_radius;
+
+      const mic_f b_lower = broadcast4to16f((float*)&b_min_r);
+      const mic_f b_upper = broadcast4to16f((float*)&b_max_r);
+      
+      return mic2f(b_lower,b_upper);
+    }
+
     __forceinline mic2f getBounds(const mic_f &c0,const mic_f &c1,const mic_f &c2) const 
     {
-      const mic_f v0123 = xfmPoint(p,c0,c1,c2);
-      const mic_f v0 = permute<0>(v0123);
-      const mic_f v1 = permute<1>(v0123);
-      const mic_f v2 = permute<2>(v0123);
-      const mic_f v3 = permute<3>(v0123);	
+      const mic_f v0 = xfmPoint4f(p[0],c0,c1,c2);
+      const mic_f v1 = xfmPoint4f(p[1],c0,c1,c2);
+      const mic_f v2 = xfmPoint4f(p[2],c0,c1,c2);
+      const mic_f v3 = xfmPoint4f(p[3],c0,c1,c2);
 
       const mic_f b_min = min(min(v0,v1),min(v2,v3));
       const mic_f b_max = max(max(v0,v1),max(v2,v3));
