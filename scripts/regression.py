@@ -82,24 +82,26 @@ platforms_unix = ['x64']
 platforms      = []
 
 devices = [ 'singleray', 'ispc' ]
-models = [ 'crown', 'conference', 'bentley', 'headlight', 'powerplant', 'sponza', 'xyz_dragon' ]
+models = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
 
 modelDir  = ''
 testDir = ''
 
-def configName(OS, compiler, platform, build, tutorial, scene):
+def configName(OS, compiler, platform, build, tutorial, scene, flags):
   cfg = OS + '_' + compiler + '_' + platform + '_' + build
   if tutorial != '':
     cfg += '_' + tutorial
   if scene != '':
     cfg += '_' + scene
+  if flags != '':
+    cfg += '_' + flags
   return cfg
 
 ########################## compiling ##########################
 
 def compile(OS,compiler,platform,build):
 
-  base = configName(OS, compiler, platform, build, '', '')
+  base = configName(OS, compiler, platform, build, '', '', '')
   logFile = testDir + dash + base + '.log'
 
   if OS == 'windows':
@@ -160,22 +162,23 @@ def compileLoop(OS):
 
 ########################## rendering ##########################
 
-def render(OS, compiler, platform, build, tutorial, scene):
-  sys.stdout.write("  "+tutorial+" ")
+def render(OS, compiler, platform, build, tutorial, scene, flags):
+  sys.stdout.write("  "+tutorial)
   if scene != '': sys.stdout.write(' '+scene)
+  if flags != '': sys.stdout.write(' '+flags)
   sys.stdout.flush()
-  base = configName(OS, compiler, platform, build, tutorial, scene)
+  base = configName(OS, compiler, platform, build, tutorial, scene, flags)
   logFile = testDir + dash + base + '.log'
   imageFile = testDir + dash + base + '.tga'
   if not os.path.exists(logFile):
     if OS == 'windows': command = platform + '\\' + build + '\\' + tutorial + ' '
     else:               command = 'build' + '/' + tutorial + ' '
     if scene != '':
-      command += '-c ' + modelDir + dash + scene + dash + scene + '_paper.ecs '
+      command += '-c ' + modelDir + dash + scene + dash + scene + '_regression.ecs '
     if tutorial == 'regression':
       command += '-regressions 200 '
     if tutorial[0:8] == 'tutorial':
-      command += '-rtcore verbose=2 -o ' + imageFile
+      command += '-rtcore verbose=2 -size 1024 1024 -o ' + imageFile
     command += ' > ' + logFile
     ret = os.system(command)
     if ret == 0: sys.stdout.write(" [passed]\n")
@@ -192,30 +195,37 @@ def renderLoop(OS):
           else: 
             sys.stdout.write(" [passed]\n")
                       
-            render(OS, compiler, platform, build, 'verify', '')
-            render(OS, compiler, platform, build, 'benchmark', '')
+            render(OS, compiler, platform, build, 'verify', '', '')
+            render(OS, compiler, platform, build, 'benchmark', '', '')
 
-            render(OS, compiler, platform, build, 'tutorial00', '')
-            render(OS, compiler, platform, build, 'tutorial01', '')
-            render(OS, compiler, platform, build, 'tutorial02', '')
+            render(OS, compiler, platform, build, 'tutorial00', '', '')
+            render(OS, compiler, platform, build, 'tutorial01', '', '')
+            render(OS, compiler, platform, build, 'tutorial02', '', '')
             for model in models:
-              render(OS, compiler, platform, build, 'tutorial03', model)
-            render(OS, compiler, platform, build, 'tutorial04', '')
-            render(OS, compiler, platform, build, 'tutorial05', '')
+              render(OS, compiler, platform, build, 'tutorial03', model, 'static')
+              render(OS, compiler, platform, build, 'tutorial03', model, 'dynamic')
+              render(OS, compiler, platform, build, 'tutorial03', model, 'high_quality')
+              render(OS, compiler, platform, build, 'tutorial03', model, 'robust')
+              render(OS, compiler, platform, build, 'tutorial03', model, 'compact')
+
+            render(OS, compiler, platform, build, 'tutorial04', '', '')
+            render(OS, compiler, platform, build, 'tutorial05', '', '')
             for model in models:
               render(OS, compiler, platform, build, 'tutorial06', model)
-            render(OS, compiler, platform, build, 'tutorial07', '')
+            render(OS, compiler, platform, build, 'tutorial07', '', '')
 
-            render(OS, compiler, platform, build, 'tutorial00_ispc', '')
-            render(OS, compiler, platform, build, 'tutorial01_ispc', '')
-            render(OS, compiler, platform, build, 'tutorial02_ispc', '')
+            render(OS, compiler, platform, build, 'tutorial00_ispc', '', '')
+            render(OS, compiler, platform, build, 'tutorial01_ispc', '', '')
+            render(OS, compiler, platform, build, 'tutorial02_ispc', '', '')
             for model in models:
-              render(OS, compiler, platform, build, 'tutorial03_ispc', model)
-            render(OS, compiler, platform, build, 'tutorial04_ispc', '')
-            render(OS, compiler, platform, build, 'tutorial05_ispc', '')
+              render(OS, compiler, platform, build, 'tutorial03_ispc', model, '')
+            render(OS, compiler, platform, build, 'tutorial04_ispc', '', '')
+            render(OS, compiler, platform, build, 'tutorial05_ispc', '', '')
             for model in models:
-              render(OS, compiler, platform, build, 'tutorial06_ispc', model)
-            render(OS, compiler, platform, build, 'tutorial07_ispc', '')
+              render(OS, compiler, platform, build, 'tutorial06_ispc', model, '')
+            render(OS, compiler, platform, build, 'tutorial07_ispc', '', 'static')
+            render(OS, compiler, platform, build, 'tutorial07_ispc', '', 'dynamic')
+            render(OS, compiler, platform, build, 'tutorial07_ispc', '', 'high_quality')
           
 
 ########################## command line parsing ##########################
