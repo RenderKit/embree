@@ -59,8 +59,8 @@ dash = '/'
 ########################## configuration ##########################
 
 #compilers_win = ['V100']
-compilers_win = ['ICC']
-#compilers_win  = ['V100', 'ICC']
+#compilers_win = ['ICC']
+compilers_win  = ['V90', 'V100', 'V110', 'V120', 'ICC']
 #compilers_unix = ['ICC']
 compilers_unix = ['GCC', 'ICC']
 #compilers_unix = ['GCC', 'CLANG', 'ICC']
@@ -91,7 +91,8 @@ platforms_win  = ['x64']
 platforms_unix = ['x64']
 platforms      = []
 
-models = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
+models = [ 'conference' ]
+#models = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
 
 modelDir  = ''
 testDir = ''
@@ -121,7 +122,10 @@ def compile(OS,compiler,platform,build):
 #   if (compiler == 'ICC'): cfg += '"Intel C++ Compiler 12.1" '
 #   if (compiler == 'ICC'): cfg += '"Intel C++ Compiler XE 12.1" '
     if (compiler == 'ICC'): cfg += '"Intel C++ Compiler XE 14.0" '
+    elif (compiler == 'V90'): cfg += 'v90 '
     elif (compiler == 'V100'): cfg += 'v100 '
+    elif (compiler == 'V110'): cfg += 'v110 '
+    elif (compiler == 'V120'): cfg += 'v120 '
     else: 
       sys.stderr.write('unknown compiler: ' + compiler + '\n')
       sys.exit(1)
