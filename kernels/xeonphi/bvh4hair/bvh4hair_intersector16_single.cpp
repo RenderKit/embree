@@ -54,7 +54,10 @@ namespace embree
 	prefetch<PFHINT_L1>(tptr + 4);
 
 	for (size_t i=0;i<items;i++)
-	  ret |= Bezier1iIntersector16::intersect(pre,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry); // add mailboxing
+	  {
+	    STAT3(normal.trav_prims,1,1,1);
+	    ret |= Bezier1iIntersector16::intersect(pre,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry); // add mailboxing
+	  }
 
 	max_dist_xyz = ray16.tfar[rayIndex];
 
@@ -80,8 +83,11 @@ namespace embree
 	prefetch<PFHINT_L1>(tptr + 4);
 
 	for (size_t i=0;i<items;i++)
-	  if (Bezier1iIntersector16::occluded(pre,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry))
-	    return true;
+	  {
+	    STAT3(shadow.trav_prims,1,1,1);
+	    if (Bezier1iIntersector16::occluded(pre,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry))
+	      return true;
+	  }
 
 	return false;
       }
@@ -204,7 +210,6 @@ namespace embree
 	      if (unlikely(curNode == BVH4Hair::invalidNode)) break;
 
 	      STAT3(normal.trav_leaves,1,1,1);
-	      STAT3(normal.trav_prims,4,4,4);
 
 	      /* intersect one ray against four triangles */
 
@@ -283,7 +288,6 @@ namespace embree
 	      if (unlikely(curNode == BVH4Hair::invalidNode)) break;
 
 	      STAT3(shadow.trav_leaves,1,1,1);
-	      STAT3(shadow.trav_prims,4,4,4);
 
 	      /* intersect one ray against four triangles */
 
@@ -379,7 +383,6 @@ namespace embree
 	      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
 	      STAT3(normal.trav_leaves,1,1,1);
-	      STAT3(normal.trav_prims,4,4,4);
 
 	      /* intersect one ray against four triangles */
 
@@ -458,7 +461,6 @@ namespace embree
 	      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
 	      STAT3(shadow.trav_leaves,1,1,1);
-	      STAT3(shadow.trav_prims,4,4,4);
 
 	      /* intersect one ray against four triangles */
 
