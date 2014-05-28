@@ -11,7 +11,7 @@ namespace embree
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 
-#define ENABLE_OBB 0
+#define ENABLE_OBB 1
 
 #define TIMER(x)  x
 
