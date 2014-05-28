@@ -43,12 +43,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/Gs999999"
+				AdditionalOptions="/Gs999999 /arch:AVX2"
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;__AVX2__;WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -113,12 +113,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/Gs999999"
+				AdditionalOptions="/Gs999999 /arch:AVX2"
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;__AVX2__;WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -183,12 +183,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/Gs999999"
+				AdditionalOptions="/Gs999999 /arch:AVX2"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;__AVX2___;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
 				EnableFunctionLevelLinking="true"
@@ -253,12 +253,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/Gs999999"
+				AdditionalOptions="/Gs999999 /arch:AVX2"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;__AVX2___;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
 				EnableFunctionLevelLinking="true"
@@ -322,12 +322,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/Gs999999"
+				AdditionalOptions="/Gs999999 /arch:AVX2"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
-				PreprocessorDefinitions="CONFIG_AVX;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;__AVX2___;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
 				EnableFunctionLevelLinking="true"
@@ -392,12 +392,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/Gs999999"
+				AdditionalOptions="/Gs999999 /arch:AVX2"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
-				PreprocessorDefinitions="CONFIG_AVX;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;__AVX2___;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
 				EnableFunctionLevelLinking="true"
@@ -461,12 +461,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/Gs999999"
+				AdditionalOptions="/Gs999999 /arch:AVX2"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
-				PreprocessorDefinitions="CONFIG_AVX2;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;__AVX2___;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
 				EnableFunctionLevelLinking="true"
@@ -531,12 +531,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/Gs999999"
+				AdditionalOptions="/Gs999999 /arch:AVX2"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="$(ProjectDir);$(SolutionDir)/kernels;$(SolutionDir)/common;$(SolutionDir)/include"
-				PreprocessorDefinitions="CONFIG_AVX2;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;__AVX2___;WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				StructMemberAlignment="0"
 				EnableFunctionLevelLinking="true"
@@ -1705,34 +1705,6 @@
 						Name="VCCustomBuildTool"
 					/>
 				</FileConfiguration>
-			</File>
-		</Filter>
-		<Filter
-			Name="bvh8i"
-			>
-			<File
-				RelativePath=".\bvh8i\bvh8i_intersector1.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh8i\bvh8i_intersector1.h"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh8i\bvh8i_intersector8_chunk.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh8i\bvh8i_intersector8_chunk.h"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh8i\bvh8i_intersector8_hybrid.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bvh8i\bvh8i_intersector8_hybrid.h"
-				>
 			</File>
 		</Filter>
 		<Filter

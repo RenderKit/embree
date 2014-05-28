@@ -221,13 +221,13 @@ namespace embree
     return _mm256_blendv_ps(f, t, m); 
   }
 
-#if !defined(__clang__)
-  __forceinline const avxf select( const int m, const avxf& t, const avxf& f ) { 
-    return _mm256_blend_ps(f, t, m);
+#if defined(__clang__) || defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+  __forceinline const avxf select(const int m, const avxf& t, const avxf& f) {
+	  return select(avxb(m), t, f); // workaround for clang and Microsoft compiler bugs
   }
 #else
   __forceinline const avxf select( const int m, const avxf& t, const avxf& f ) { 
-    return select(avxb(m),t,f);
+	  return _mm256_blend_ps(f, t, m);
   }
 #endif
 

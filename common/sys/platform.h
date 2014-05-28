@@ -252,6 +252,9 @@ typedef int32 ssize_t;
 #pragma warning(disable:4244) // 'argument' : conversion from 'ssize_t' to 'unsigned int', possible loss of data
 #pragma warning(disable:4355) // 'this' : used in base member initializer list
 #pragma warning(disable:4996) // 'std::copy': Function call with parameters that may be unsafe 
+#pragma warning(disable:391 ) // '<=' : signed / unsigned mismatch
+#pragma warning(disable:4018) // '<' : signed / unsigned mismatch
+
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////

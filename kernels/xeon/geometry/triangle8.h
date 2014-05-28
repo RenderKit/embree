@@ -152,7 +152,6 @@ namespace embree
 #endif
 
 
-#if defined(__TARGET_AVX__)
   struct Triangle8Type : public PrimitiveType {
     Triangle8Type ();
     size_t blocks(size_t x) const;
@@ -173,5 +172,4 @@ namespace embree
     void pack(char* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const;
     BBox3fa update(char* prim, size_t num, void* geom) const;
   };
-#endif
 }

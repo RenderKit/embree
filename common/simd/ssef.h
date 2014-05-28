@@ -215,14 +215,16 @@ namespace embree
 #endif
  }
 
-#if defined(__SSE4_1__) && !defined(__clang__)
-  __forceinline const ssef select( const int mask, const ssef& t, const ssef& f ) { 
-    return _mm_blend_ps(f, t, mask); 
-  }
+#if defined(__SSE4_1__) 
+#if defined(__clang__) || defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+__forceinline const ssef select(const int mask, const ssef& t, const ssef& f) {
+ return select(sseb(mask), t, f);
+}
 #else
-  __forceinline const ssef select( const int mask, const ssef& t, const ssef& f ) { 
-    return select(sseb(mask),t,f);
-  }
+ __forceinline const ssef select(const int mask, const ssef& t, const ssef& f) {
+	 return _mm_blend_ps(f, t, mask);
+ }
+#endif
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////
