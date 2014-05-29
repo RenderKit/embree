@@ -223,6 +223,7 @@ namespace embree
 	strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*strandSplit.splitSAH();
 	bestSAH = min(bestSAH,strandSAH);
       }
+
       
       /* return best split */
       if      (bestSAH == float(inf)        ) return Split();

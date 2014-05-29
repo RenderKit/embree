@@ -250,11 +250,182 @@ namespace embree
     }
 
 
-
-
-
-
     // ==================================================================
+    // ==================================================================
+    // ==================================================================
+
+
+    static __forceinline bool intersect(const Precalculations& pre, 
+					Ray& ray, 
+					const mic_f &dir_xyz,
+					const mic_f &org_xyz,
+					const Bezier1i& curve_in, 
+					const void* geom)
+    {
+      STAT3(normal.trav_prims,1,1,1);
+
+      const mic_f zero = mic_f::zero();
+      const mic_f one  = mic_f::one();
+
+      prefetch<PFHINT_L1>(curve_in.p + 0);
+      prefetch<PFHINT_L1>(curve_in.p + 3);
+
+      const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
+      const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
+      const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
+
+
+      const mic_f p0123 = uload16f((float*)curve_in.p);
+      const mic_f p0123_org = p0123 - org_xyz;
+
+      const mic_f p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);
+
+
+      const mic_f c0 = load16f(&coeff01[0]);
+      const mic_f c1 = load16f(&coeff01[1]);
+      const mic_f c2 = load16f(&coeff01[2]);
+      const mic_f c3 = load16f(&coeff01[3]);
+
+      const mic4f p0 = eval16(p0123_2D,c0,c1,c2,c3);
+
+      const mic4f p1(align_shift_right<1>(zero,p0[0]), 
+		     align_shift_right<1>(zero,p0[1]),
+		     align_shift_right<1>(zero,p0[2]), 
+		     align_shift_right<1>(zero,p0[3]));;
+
+      const mic_m m_segments = 0x7fff;
+
+      const float one_over_width = 1.0f/15.0f;
+
+
+      /* approximative intersection with cone */
+      const mic4f v = p1-p0;
+      const mic4f w = -p0;
+      const mic_f d0 = w.x*v.x + w.y*v.y;
+      const mic_f d1 = v.x*v.x + v.y*v.y;
+      const mic_f u = clamp(d0*rcp(d1),zero,one);
+      const mic4f p = p0 + u*v;
+      const mic_f t = p.z;
+      const mic_f d2 = p.x*p.x + p.y*p.y; 
+      const mic_f r = p.w;
+      const mic_f r2 = r*r;
+      mic_m valid = le(m_segments,d2,r2);
+      valid = lt(valid,mic_f(ray.tnear),t);
+      valid = lt(valid,t,mic_f(ray.tfar));
+
+
+      if (unlikely(none(valid))) return false;
+      STAT3(normal.trav_prim_hits,1,1,1);
+      unsigned int i = select_min(valid,t);
+
+      /* ray masking test */
+#if defined(__USE_RAY_MASK__)
+      BezierCurves* g = ((Scene*)geom)->getBezierCurves(curve_in.geomID);
+      if (unlikely(g->mask & ray.mask) == 0) return false;
+#endif  
+
+      /* intersection filter test */
+
+      /* update hit information */
+      float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
+
+      uu = max(uu,0.0f);
+      uu = min(uu,1.0f);
+
+      mic_f P,T;
+      eval(uu,p0123,P,T);
+      ray.Ng.x = T[0];
+      ray.Ng.y = T[1];
+      ray.Ng.z = T[2];
+
+      //assert( T != Vec3fa(zero) );
+      //if (T == Vec3fa(zero)) { valid ^= (1 << i); PING; goto retry; } // ignore denormalized curves
+      ray.u = uu;
+      ray.v = 0.0f;
+      ray.tfar = t[i];
+      ray.geomID = curve_in.geomID;
+      ray.primID = curve_in.primID;
+
+      return true;
+    }
+
+    static __forceinline bool occluded(const Precalculations& pre, 
+				       const Ray& ray, 
+				       const mic_f &dir_xyz,
+				       const mic_f &org_xyz,
+				       const Bezier1i& curve_in, 
+				       const void* geom) 
+    {
+      STAT3(shadow.trav_prims,1,1,1);
+      const mic_f zero = mic_f::zero();
+      const mic_f one  = mic_f::one();
+
+      prefetch<PFHINT_L1>(curve_in.p + 0);
+      prefetch<PFHINT_L1>(curve_in.p + 3);
+
+      const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
+      const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
+      const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
+
+
+      const mic_f p0123 = uload16f((float*)curve_in.p);
+      const mic_f p0123_org = p0123 - org_xyz;
+
+      const mic_f p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);
+
+
+      const mic_f c0 = load16f(&coeff01[0]);
+      const mic_f c1 = load16f(&coeff01[1]);
+      const mic_f c2 = load16f(&coeff01[2]);
+      const mic_f c3 = load16f(&coeff01[3]);
+
+      const mic4f p0 = eval16(p0123_2D,c0,c1,c2,c3);
+
+      const mic4f p1(align_shift_right<1>(zero,p0[0]), 
+		     align_shift_right<1>(zero,p0[1]),
+		     align_shift_right<1>(zero,p0[2]), 
+		     align_shift_right<1>(zero,p0[3]));;
+
+      const mic_m m_segments = 0x7fff;
+
+      const float one_over_width = 1.0f/15.0f;
+
+
+      /* approximative intersection with cone */
+      const mic4f v = p1-p0;
+      const mic4f w = -p0;
+      const mic_f d0 = w.x*v.x + w.y*v.y;
+      const mic_f d1 = v.x*v.x + v.y*v.y;
+      const mic_f u = clamp(d0*rcp(d1),zero,one);
+      const mic4f p = p0 + u*v;
+      const mic_f t = p.z;
+      const mic_f d2 = p.x*p.x + p.y*p.y; 
+      const mic_f r = p.w;
+      const mic_f r2 = r*r;
+      mic_m valid = le(m_segments,d2,r2);
+      valid = lt(valid,mic_f(ray.tnear),t);
+      valid = lt(valid,t,mic_f(ray.tfar));
+
+
+      if (unlikely(none(valid))) return false;
+
+      STAT3(shadow.trav_prim_hits,1,1,1);
+
+      /* ray masking test */
+#if defined(__USE_RAY_MASK__)
+      BezierCurves* g = ((Scene*)geom)->getBezierCurves(curve_in.geomID);
+      if (unlikely(g->mask & ray.mask) == 0) return false;
+#endif  
+
+      /* intersection filter test */
+      return true;
+    }
+
+
+
+
+
+
 
 
 
