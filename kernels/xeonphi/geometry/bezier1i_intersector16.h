@@ -165,7 +165,8 @@ namespace embree
       ray.Ng.y[k] = T[1];
       ray.Ng.z[k] = T[2];
 
-      //assert( T != Vec3fa(zero) );
+      assert( T != mic_f::zero() );
+
       //if (T == Vec3fa(zero)) { valid ^= (1 << i); PING; goto retry; } // ignore denormalized curves
       ray.u[k] = uu;
       ray.v[k] = 0.0f;
@@ -338,7 +339,7 @@ namespace embree
       ray.Ng.y = T[1];
       ray.Ng.z = T[2];
 
-      //assert( T != Vec3fa(zero) );
+      assert( T != mic_f::zero() );
       //if (T == Vec3fa(zero)) { valid ^= (1 << i); PING; goto retry; } // ignore denormalized curves
       ray.u = uu;
       ray.v = 0.0f;

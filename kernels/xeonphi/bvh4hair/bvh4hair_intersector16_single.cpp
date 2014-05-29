@@ -390,8 +390,79 @@ namespace embree
     template<typename LeafIntersector>    
     void BVH4HairIntersector1<LeafIntersector>::occluded(BVH4Hair* bvh, Ray& ray)
     {
-      // FIXME
-      FATAL("HERE");
+
+      /* near and node stack */
+      __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4i::maxDepth+1];
+
+      LinearSpace_mic3f ray_space = frame(mic3f(ray.dir)).transposed();
+
+      /* setup */
+      const mic_f inf        = mic_f(pos_inf);
+      const mic_f zero       = mic_f::zero();
+
+      store16f(stack_dist,inf);
+
+      const void * __restrict__ accel = (void*)bvh->triPtr();
+
+      stack_node[0] = BVH4Hair::invalidNode;
+
+      Bezier1iIntersector16::Precalculations pre(ray_space,0);
+	  
+      stack_node[1] = bvh->unaligned_nodes->child(0);
+      size_t sindex = 2;
+
+      const mic_f org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
+      const mic_f dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
+      const mic_f min_dist_xyz = broadcast1to16f(&ray.tnear);
+      mic_f       max_dist_xyz = broadcast1to16f(&ray.tfar);
+
+      const mic_f org_xyz1     = select(0x7777,org_xyz,mic_f::one());
+
+      const size_t leaf_mask = BVH4HAIR_LEAF_MASK;
+
+      while (1)
+	{
+
+	  BVH4Hair::NodeRef curNode = stack_node[sindex-1];
+	  sindex--;
+
+	  traverse_single_occluded(curNode,
+				   sindex,
+				   dir_xyz,
+				   org_xyz1,
+				   min_dist_xyz,
+				   max_dist_xyz,
+				   stack_node,
+				   leaf_mask);
+
+	  /* return if stack is empty */
+	  if (unlikely(curNode == BVH4Hair::invalidNode)) break;
+
+	  STAT3(normal.trav_leaves,1,1,1);
+	  STAT3(normal.trav_prims,4,4,4);
+
+	  /* intersect one ray against four triangles */
+
+	  //////////////////////////////////////////////////////////////////////////////////////////////////
+	  BVH4i::NodeRef curNode4i = (unsigned int)curNode;
+	  const bool hit = LeafIntersector::occluded(curNode4i,
+						     dir_xyz,
+						     org_xyz,
+						     min_dist_xyz,
+						     max_dist_xyz,
+						     ray,
+						     accel,
+						     (Scene*)bvh->geometry,
+						     pre);
+									   
+	  if (unlikely(hit)) 
+	    {
+	      ray.geomID = 0;
+	      return;
+	    }
+	  // ------------------------
+	}	         
     }
     
     
