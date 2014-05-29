@@ -85,7 +85,7 @@ namespace embree
 	hitm = le(hitm,tNear,tFar);
 
 	const mic_f tNear_pos = select(hitm,tNear,inf);
-
+	// todo: packstore 0x1111, avoids index>>2
 	STAT3(normal.trav_hit_boxes[countbits(hitm)],1,1,1);
 
 	/* if no child is hit, continue with early popped child */
@@ -103,6 +103,7 @@ namespace embree
 
 	if (likely(num_hitm == 1)) continue;
         
+
 	/* if two children are hit, push in correct order */
 	const unsigned long pos_second = bitscan64(pos_first,hiti);
 	if (likely(num_hitm == 2))
@@ -145,6 +146,13 @@ namespace embree
 	const unsigned long closest_child_pos = bitscan64(closest_child);
 	const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
 	curNode = u_node->child(closest_child_pos>>2);
+
+	const BVH4Hair::UnalignedNode *__restrict__ const u_node_prefetch = (BVH4Hair::UnalignedNode *)curNode.node();
+
+	prefetch<PFHINT_L1>((char*)u_node_prefetch + 0*64);
+	prefetch<PFHINT_L1>((char*)u_node_prefetch + 1*64);
+	prefetch<PFHINT_L1>((char*)u_node_prefetch + 2*64);
+	prefetch<PFHINT_L1>((char*)u_node_prefetch + 3*64);
 
 	assert(curNode  != BVH4Hair::emptyNode);
 
