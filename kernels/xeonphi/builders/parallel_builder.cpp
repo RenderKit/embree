@@ -35,6 +35,8 @@ namespace embree
     const size_t numCores = (numThreads+3)/4;
     const size_t globalCoreID   = threadID/4;
 
+    const size_t MIN_LOCAL_WORK_QUEUE_ENTRIES = 8;
+
     if (enablePerCoreWorkQueueFill && numThreads > 1)
       {
 	const size_t globalThreadID = threadID;
@@ -47,7 +49,7 @@ namespace embree
 	else
 	  {
 	    local_workStack[globalCoreID].mutex.inc();
-	    while (local_workStack[globalCoreID].size() < 8 && 
+	    while (local_workStack[globalCoreID].size() < MIN_LOCAL_WORK_QUEUE_ENTRIES && 
 		   local_workStack[globalCoreID].size()+ 4 <= SIZE_LOCAL_WORK_STACK) 
 	      {
 		BuildRecord br;

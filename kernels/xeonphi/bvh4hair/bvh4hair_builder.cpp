@@ -622,9 +622,6 @@ namespace embree
     /* node allocator */
     NodeAllocator alloc(atomicID,numAllocatedNodes);
         
-#if 0
-    recurseSAH(br,alloc,RECURSE,threadIndex,threadCount);    
-#else
     /* push initial build record to global work stack */
     global_workStack.reset();
     global_workStack.push_nolock(br);    
@@ -657,7 +654,6 @@ namespace embree
     DBG(DBG_PRINT(atomicID));
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
-#endif
 
     numNodes = atomicID; 
     
@@ -708,17 +704,17 @@ namespace embree
 	    return splitSequential(current,left,right);
 	  }
       }
-    // else if (unlikely(mode == FILL_LOCAL_QUEUES))
-    //   {
-    // 	if (current.items() >= THRESHOLD_FOR_SUBTREE_RECURSION)
-    // 	  return splitParallelLocal(current,left,right,threadID);
-    // 	else
-    // 	  {
-    // 	    DBG(std::cout << "WARNING in fill_local_queues build: too few items for parallel split " << current.items() << std::endl << std::flush);
-    // 	    return splitSequential(current,left,right);
-    // 	  }
+    else if (unlikely(mode == FILL_LOCAL_QUEUES))
+       {
+     	if (current.items() >= THRESHOLD_FOR_SUBTREE_RECURSION)
+     	  return splitParallelLocal(current,left,right,threadID);
+    	else
+     	  {
+     	    DBG(std::cout << "WARNING in fill_local_queues build: too few items for parallel split " << current.items() << std::endl << std::flush);
+     	    return splitSequential(current,left,right);
+     	  }
 	
-    //   }
+       }
     else
       return splitSequential(current,left,right);    
   }
@@ -1176,16 +1172,25 @@ namespace embree
     DBG(PING);
 #if ENABLE_OBB_BVH4 == 1
 
-    BuildRecordOBB current_obb;
-    current_obb = current;
+    if (mode == FILL_LOCAL_QUEUES)
+      {
+	recurseSAH(current,alloc,mode,threadID,numThreads);
+	return;
+      }
+    else
+      {
 
-    computeUnalignedSpace(current_obb);
-    computeUnalignedSpaceBounds(current_obb);
+	BuildRecordOBB current_obb;
+	current_obb = current;
 
-    //TODO:: node[current.parentID].setMatrix(current.xfm,current.parentBoxID);
+	computeUnalignedSpace(current_obb);
+	computeUnalignedSpaceBounds(current_obb);
+
+	//TODO:: node[current.parentID].setMatrix(current.xfm,current.parentBoxID);
    
-    DBG(DBG_PRINT(node[current.parentID]));
-    recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
+	DBG(DBG_PRINT(node[current.parentID]));
+	recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
+      }
 
 #else
     recurseSAH(current,alloc,/*mode*/ RECURSE,threadID,numThreads);
