@@ -223,16 +223,6 @@ namespace embree
     const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
     const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
 
-    // mtx.lock();
-    // PING;
-    // DBG_PRINT(threadID);
-    // DBG_PRINT(startID);
-    // DBG_PRINT(endID);
-    // DBG_PRINT(current.bounds);
-    // DBG_PRINT(prims);
-    // DBG_PRINT(accel);
-    // mtx.unlock();
-
     const mic_f centroidBoundsMin_2 = centroidMin;
     const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
     const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
@@ -410,6 +400,122 @@ namespace embree
     global_sharedData.right.extend_atomic(local_right);  
   }
 
+
+  void BVH4HairBuilder::parallelBinningLocal(const size_t localThreadID,const size_t globalThreadID)
+  {
+    const size_t globalCoreID = globalThreadID/4;
+    BuildRecord &current = local_sharedData[globalCoreID].rec;
+
+    const unsigned int items   = current.items();
+    const unsigned int startID = current.begin + ((localThreadID+0)*items/4);
+    const unsigned int endID   = current.begin + ((localThreadID+1)*items/4);
+    
+    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
+    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
+
+    const mic_f centroidBoundsMin_2 = centroidMin;
+    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
+    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+
+    Bezier1i  *__restrict__ const tmp_prims = (Bezier1i*)accel;
+
+    fastbin_copy<Bezier1i,false>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
+
+    localTaskScheduler[globalCoreID].syncThreads(localThreadID);
+
+    if (localThreadID == 0)
+      {
+	Bin16 &bin16 = global_bin16[globalThreadID];
+
+	for (size_t i=1;i<4;i++)
+	  bin16.merge(global_bin16[globalThreadID+i]);
+
+	const float voxelArea = area(current.bounds.geometry);
+
+	local_sharedData[globalCoreID].split.cost = items * voxelArea;	
+
+	for (size_t dim=0;dim<3;dim++)
+	  {
+	    if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
+
+	    const mic_f rArea = prefix_area_rl(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
+					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
+	    const mic_f lArea = prefix_area_lr(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
+					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
+	    const mic_i lnum  = prefix_count(bin16.count[dim]);
+
+	    const mic_i rnum    = mic_i(items) - lnum;
+	    const mic_i lblocks = (lnum + mic_i(3)) >> 2;
+	    const mic_i rblocks = (rnum + mic_i(3)) >> 2;
+	    const mic_m m_lnum  = lnum == 0;
+	    const mic_m m_rnum  = rnum == 0;
+	    const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
+
+	    if (lt(cost,mic_f(local_sharedData[globalCoreID].split.cost)))
+	      {
+
+		const mic_f min_cost    = vreduce_min(cost); 
+		const mic_m m_pos       = min_cost == cost;
+		const unsigned long pos = bitscan64(m_pos);	    
+
+		assert(pos < 15);
+		if (pos < 15)
+		  {
+		    local_sharedData[globalCoreID].split.cost    = cost[pos];
+		    local_sharedData[globalCoreID].split.pos     = pos+1;
+		    local_sharedData[globalCoreID].split.dim     = dim;	    
+		    local_sharedData[globalCoreID].split.numLeft = lnum[pos];
+		  }
+	      }
+	  }
+      }
+
+  }
+
+
+  void BVH4HairBuilder::parallelPartitioningLocal(const size_t localThreadID,const size_t globalThreadID)
+  {
+    const size_t threads = 4;
+    const size_t globalCoreID = globalThreadID/threads;
+
+    SharedBinningPartitionData &sd = local_sharedData[globalCoreID];    
+    BuildRecord &current = sd.rec;
+    Bin16 &bin16 = global_bin16[globalThreadID];
+
+    // ----------------------------------------------
+
+    const unsigned int items = current.items();
+    const unsigned int startID = current.begin + ((localThreadID+0)*items/threads);
+    const unsigned int endID   = current.begin + ((localThreadID+1)*items/threads);
+   
+    const unsigned int bestSplitDim     = sd.split.dim;
+    const unsigned int bestSplit        = sd.split.pos;
+    const unsigned int bestSplitNumLeft = sd.split.numLeft;
+
+    const mic_i lnum    = prefix_sum(bin16.thread_count[bestSplitDim]);
+    const unsigned int local_numLeft = lnum[bestSplit-1];
+    const unsigned int local_numRight = (endID-startID) - lnum[bestSplit-1];
+ 
+    const unsigned int thread_start_left  = sd.lCounter.add(local_numLeft);
+    const unsigned int thread_start_right = sd.rCounter.add(local_numRight);
+
+    Bezier1i  *__restrict__ const tmp_prims = (Bezier1i*)accel;
+
+    Bezier1i * __restrict__ l_source = tmp_prims + startID;
+    Bezier1i * __restrict__ r_source = tmp_prims + endID;
+
+    Bezier1i * __restrict__ l_dest     = prims + current.begin + thread_start_left;
+    Bezier1i * __restrict__ r_dest     = prims + current.begin + thread_start_right + bestSplitNumLeft;
+
+    __aligned(64) Centroid_Scene_AABB local_left;
+    __aligned(64) Centroid_Scene_AABB local_right; 
+
+    parallelPartitioning(current,l_source,r_source,l_dest,r_dest,sd.split,local_left,local_right);
+
+    sd.left.extend_atomic(local_left); 
+    sd.right.extend_atomic(local_right);  
+    
+  }
 
 
   void BVH4HairBuilder::build(const size_t threadIndex, const size_t threadCount) 
@@ -767,6 +873,70 @@ namespace embree
 	    leftChild.init(global_sharedData.left,current.begin,mid);
 	    rightChild.init(global_sharedData.right,mid,current.end);
 	  }	 
+       }
+     
+     if (leftChild.items()  <= MAX_ITEMS_PER_LEAF) leftChild.createLeaf();
+     if (rightChild.items() <= MAX_ITEMS_PER_LEAF) rightChild.createLeaf();
+     return true;
+  }
+
+
+  bool BVH4HairBuilder::splitParallelLocal(BuildRecord &current,
+					   BuildRecord &leftChild,
+					   BuildRecord &rightChild,
+					   const size_t threadID)
+  {
+    const unsigned int items    = current.end - current.begin;
+    const size_t globalCoreID   = threadID / 4;
+    const size_t localThreadID  = threadID % 4;
+    const size_t globalThreadID = threadID;
+    
+    assert(items >= THRESHOLD_FOR_SUBTREE_RECURSION);
+  
+    /* mark as leaf if leaf threshold reached */
+    if (items <= MAX_ITEMS_PER_LEAF) {
+      current.createLeaf();
+      return false;
+    }
+
+    SharedBinningPartitionData &sd = local_sharedData[globalCoreID]; 
+
+    sd.rec = current;
+    sd.split.reset();
+    sd.left.reset();
+    sd.right.reset();
+
+    localTaskScheduler[globalCoreID].dispatchTask( task_parallelBinningLocal, this, localThreadID, globalThreadID );
+
+    if (unlikely(sd.split.pos == -1)) 
+      split_fallback(prims,current,leftChild,rightChild);
+    else
+      {
+
+	 sd.left.reset();
+	 sd.right.reset();
+
+	 sd.lCounter.reset(0);
+	 sd.rCounter.reset(0); 
+
+	 localTaskScheduler[globalCoreID].dispatchTask( task_parallelPartitioningLocal, this, localThreadID, globalThreadID );
+
+	 const unsigned int mid = current.begin + sd.split.numLeft;
+
+	 if (unlikely(mid == current.begin || mid == current.end)) 
+	   {
+	     std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
+	     DBG_PRINT(sd.split);
+	     DBG_PRINT(current);
+	     DBG_PRINT(mid);
+	     split_fallback(prims,current,leftChild,rightChild);	    
+	   }
+	 else
+	   {
+	     leftChild.init(sd.left,current.begin,mid);
+	     rightChild.init(sd.right,mid,current.end);
+	   }
+	 
        }
      
      if (leftChild.items()  <= MAX_ITEMS_PER_LEAF) leftChild.createLeaf();

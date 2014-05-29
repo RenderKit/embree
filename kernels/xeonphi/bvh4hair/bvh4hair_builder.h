@@ -124,6 +124,9 @@ namespace embree
     /*! perform parallel binning and splitting using all threads on all cores*/
     bool splitParallelGlobal(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t threads);
 
+    /*! perform parallel binning and splitting using only the threads per core*/
+    bool splitParallelLocal(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID);
+
     /*! perform parallel splitting */
     void parallelPartitioning(BuildRecord& current,
 			      Bezier1i * __restrict__ l_source,
@@ -154,6 +157,8 @@ namespace embree
     TASK_FUNCTION(BVH4HairBuilder,computePrimRefsBezierCurves);
     TASK_FUNCTION(BVH4HairBuilder,parallelBinningGlobal);
     TASK_FUNCTION(BVH4HairBuilder,parallelPartitioningGlobal);
+    LOCAL_TASK_FUNCTION(BVH4HairBuilder,parallelBinningLocal);
+    LOCAL_TASK_FUNCTION(BVH4HairBuilder,parallelPartitioningLocal);
 
   };
 

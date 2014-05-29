@@ -62,7 +62,7 @@ namespace embree
 		  
 	const mic_f rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz );
 		  		  
-	const mic_f tLowerXYZ = (mic_f::zero() - xfm_org_xyz) * rcp_xfm_dir_xyz;
+	const mic_f tLowerXYZ = -(xfm_org_xyz * rcp_xfm_dir_xyz);
 	const mic_f tUpperXYZ = (mic_f::one()  - xfm_org_xyz) * rcp_xfm_dir_xyz;
 
 		    
