@@ -146,15 +146,6 @@ namespace embree
       valid = lt(valid,mic_f(ray.tnear[k]),t);
       valid = lt(valid,t,mic_f(ray.tfar[k]));
 
-      /* DBG_PRINT(curve_in.geomID); */
-      /* DBG_PRINT(curve_in.primID); */
-      /* DBG_PRINT(p0123); */
-      /* DBG_PRINT(r); */
-      /* DBG_PRINT(d2); */
-      /* DBG_PRINT(r2); */
-      /* DBG_PRINT(d2-r2); */
-      /* DBG_PRINT(valid); */
-
       if (unlikely(none(valid))) return false;
       STAT3(normal.trav_prim_hits,1,1,1);
 
@@ -165,6 +156,23 @@ namespace embree
 #endif  
 
       /* update hit information */
+#if defined(__INTERSECTION_FILTER__) 
+      const Geometry* const gg = ((Scene*)geom)->get(curve_in.geomID);
+      if (likely(!gg->hasIntersectionFilter16())) 
+	{
+	  while(any(valid)) 
+	    {
+	      unsigned int i = select_min(valid,t);
+	      float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
+	      mic_f P,T;
+	      eval(uu,p0123,P,T);
+
+	      /* if (runIntersectionFilter16(geom,ray,k,mic_f(uu),mic_f(0.0f),mic_f(t[i]),mic_f(T[0]),mic_f(T[1]),mic_f(T[2]),(unsigned int)1 << i,curve_in.geomID,curve_in.primID)) */
+	      /* 	break; */
+	      valid ^= (unsigned int)1 << i;
+	    }
+	}
+#else
       unsigned int i = select_min(valid,t);
       float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
       mic_f P,T;
@@ -178,6 +186,7 @@ namespace embree
       ray.tfar[k] = t[i];
       ray.geomID[k] = curve_in.geomID;
       ray.primID[k] = curve_in.primID;
+#endif
       return true;
     }
 
