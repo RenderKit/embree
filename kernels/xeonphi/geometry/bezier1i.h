@@ -19,16 +19,18 @@
 #include "common/default.h"
 #include "primitive.h"
 
+#define EVAL_BOUNDS 1
+
 namespace embree
 {
-  extern mic_f coeff0[4];
-  extern mic_f coeff1[4];
-  extern mic_f coeff01[4];
+  extern mic4f coeff0;
+  extern mic4f coeff1;
+  extern mic4f coeff01;
 
-  extern mic_f coeff_P0[4];
-  extern mic_f coeff_P1[4];
-  extern mic_f coeff_P2[4];
-  extern mic_f coeff_P3[4];
+  extern mic4f coeff_P0;
+  extern mic4f coeff_P1;
+  extern mic4f coeff_P2;
+  extern mic4f coeff_P3;
 
   __forceinline mic3f convert(const LinearSpace3fa &mat)
   {
@@ -42,19 +44,28 @@ namespace embree
 				 const mic_f &c1,
 				 const mic_f &c2)
   {
-#if 0
-    const mic_f p0123 = uload16f((float*)p);
-    const mic_f p0123_1 = select(0x7777,p0123,mic_f::one());
-    const mic_f x = ldot3_xyz(p0123_1,c0);
-    const mic_f y = ldot3_xyz(p0123_1,c1);
-    const mic_f z = ldot3_xyz(p0123_1,c2);
-    const mic_f xyzw = select(0x7777,select(0x4444,z,select(0x2222,y,x)),p0123);
-#else
     const mic_f xyz  = c0 * mic_f(p.x) + c1 * mic_f(p.y) + c2 * mic_f(p.z);
     const mic_f xyzw = select(0x7777,xyz,mic_f(p.w));
-#endif
     return xyzw;
   }
+
+
+    static __forceinline mic4f eval16(const mic_f &p0,
+				      const mic_f &p1,
+				      const mic_f &p2,
+				      const mic_f &p3)
+    {
+      const mic_f c0 = coeff01.x;
+      const mic_f c1 = coeff01.y;
+      const mic_f c2 = coeff01.z;
+      const mic_f c3 = coeff01.w;
+
+      const mic_f x = c0 * swAAAA(p0) + c1 * swAAAA(p1) + c2 * swAAAA(p2) + c3 * swAAAA(p3);
+      const mic_f y = c0 * swBBBB(p0) + c1 * swBBBB(p1) + c2 * swBBBB(p2) + c3 * swBBBB(p3);
+      const mic_f z = c0 * swCCCC(p0) + c1 * swCCCC(p1) + c2 * swCCCC(p2) + c3 * swCCCC(p3);
+      const mic_f w = c0 * swDDDD(p0) + c1 * swDDDD(p1) + c2 * swDDDD(p2) + c3 * swDDDD(p3);
+      return mic4f(x,y,z,w);
+    }
 
 
   struct __aligned(16) Bezier1i
@@ -81,12 +92,28 @@ namespace embree
       const mic_f v2 = broadcast4to16f((float*)&p[2]);
       const mic_f v3 = broadcast4to16f((float*)&p[3]);
       
+#if EVAL_BOUNDS==1
+      const mic4f v = eval16(v0,v1,v2,v3);
+      const mic_f min_x = min(vreduce_min(v.x),v3[0]);
+      const mic_f max_x = max(vreduce_max(v.x),v3[0]);
+      const mic_f min_y = min(vreduce_min(v.y),v3[1]);
+      const mic_f max_y = max(vreduce_max(v.y),v3[1]);
+      const mic_f min_z = min(vreduce_min(v.z),v3[2]);
+      const mic_f max_z = max(vreduce_max(v.z),v3[2]);
+      const mic_f b_min = select(0x4444,min_z,select(0x2222,min_y,min_x));
+      const mic_f b_max = select(0x4444,max_z,select(0x2222,max_y,max_x));
+
+      const mic_f r_max = max(max(v0,v1),max(v2,v3));
+      const mic_f b_min_r = b_min - swDDDD(r_max);
+      const mic_f b_max_r = b_max + swDDDD(r_max);
+
+#else
       const mic_f b_min = min(min(v0,v1),min(v2,v3));
       const mic_f b_max = max(max(v0,v1),max(v2,v3));
       
       const mic_f b_min_r = b_min - swDDDD(b_max);
       const mic_f b_max_r = b_max + swDDDD(b_max);
-      
+#endif      
       return mic2f(b_min_r,b_max_r);
     }
 
@@ -119,11 +146,27 @@ namespace embree
       const mic_f v2 = xfmPoint4f(p[2],c0,c1,c2);
       const mic_f v3 = xfmPoint4f(p[3],c0,c1,c2);
 
+#if EVAL_BOUNDS==1
+      const mic4f v = eval16(v0,v1,v2,v3);
+      const mic_f min_x = min(vreduce_min(v.x),v3[0]);
+      const mic_f max_x = max(vreduce_max(v.x),v3[0]);
+      const mic_f min_y = min(vreduce_min(v.y),v3[1]);
+      const mic_f max_y = max(vreduce_max(v.y),v3[1]);
+      const mic_f min_z = min(vreduce_min(v.z),v3[2]);
+      const mic_f max_z = max(vreduce_max(v.z),v3[2]);
+      const mic_f b_min = select(0x4444,min_z,select(0x2222,min_y,min_x));
+      const mic_f b_max = select(0x4444,max_z,select(0x2222,max_y,max_x));
+
+      const mic_f r_max = max(max(v0,v1),max(v2,v3));
+      const mic_f b_min_r = b_min - swDDDD(r_max);
+      const mic_f b_max_r = b_max + swDDDD(r_max);
+
+#else
       const mic_f b_min = min(min(v0,v1),min(v2,v3));
       const mic_f b_max = max(max(v0,v1),max(v2,v3));
-      
       const mic_f b_min_r = b_min - swDDDD(b_max);
       const mic_f b_max_r = b_max + swDDDD(b_max);
+#endif      
       
       return mic2f(b_min_r,b_max_r);
     }       

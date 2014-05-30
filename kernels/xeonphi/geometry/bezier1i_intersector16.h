@@ -42,11 +42,7 @@ namespace embree
 				      const mic_f &c2,
 				      const mic_f &c3)
     {
-      /* const Vec3fa *__restrict__ const p = (Vec3fa*)&p0123; */
-      /* const mic_f x = c0 * mic_f(p[0].x) + c1 * mic_f(p[1].x) + c2 * mic_f(p[2].x) + c3 * mic_f(p[3].x); */
-      /* const mic_f y = c0 * mic_f(p[0].y) + c1 * mic_f(p[1].y) + c2 * mic_f(p[2].y) + c3 * mic_f(p[3].y); */
-      /* const mic_f z = c0 * mic_f(p[0].z) + c1 * mic_f(p[1].z) + c2 * mic_f(p[2].z) + c3 * mic_f(p[3].z); */
-      /* const mic_f w = c0 * mic_f(p[0].w) + c1 * mic_f(p[1].w) + c2 * mic_f(p[2].w) + c3 * mic_f(p[3].w); */
+#if 1
       const mic_f p0 = permute<0>(p0123);
       const mic_f p1 = permute<1>(p0123);
       const mic_f p2 = permute<2>(p0123);
@@ -56,6 +52,12 @@ namespace embree
       const mic_f y = c0 * swBBBB(p0) + c1 * swBBBB(p1) + c2 * swBBBB(p2) + c3 * swBBBB(p3);
       const mic_f z = c0 * swCCCC(p0) + c1 * swCCCC(p1) + c2 * swCCCC(p2) + c3 * swCCCC(p3);
       const mic_f w = c0 * swDDDD(p0) + c1 * swDDDD(p1) + c2 * swDDDD(p2) + c3 * swDDDD(p3);
+#else
+      const mic_f x = madd(c0,mic_f(p0123[0]),madd(c1,mic_f(p0123[4]),madd(c2,mic_f(p0123[8]),c3* mic_f(p0123[12]))));
+      const mic_f y = madd(c0,mic_f(p0123[1]),madd(c1,mic_f(p0123[5]),madd(c2,mic_f(p0123[9]),c3* mic_f(p0123[13]))));
+      const mic_f z = madd(c0,mic_f(p0123[2]),madd(c1,mic_f(p0123[6]),madd(c2,mic_f(p0123[10]),c3* mic_f(p0123[14]))));
+      const mic_f w = madd(c0,mic_f(p0123[3]),madd(c1,mic_f(p0123[7]),madd(c2,mic_f(p0123[11]),c3* mic_f(p0123[15]))));
+#endif
       return mic4f(x,y,z,w);
     }
 
@@ -81,7 +83,9 @@ namespace embree
       tangent = p21-p20;
     }
 
-    static __forceinline bool intersect(const Precalculations& pre, 
+    static __forceinline bool intersect(const mic_f& pre_vx, 
+					const mic_f& pre_vy, 
+					const mic_f& pre_vz, 					
 					Ray16& ray, 
 					const mic_f &dir_xyz,
 					const mic_f &org_xyz,
@@ -91,16 +95,16 @@ namespace embree
     {
       STAT3(normal.trav_prims,1,1,1);
 
+      const mic_f c0 = load16f(&coeff01[0]);
+      const mic_f c1 = load16f(&coeff01[1]);
+      const mic_f c2 = load16f(&coeff01[2]);
+      const mic_f c3 = load16f(&coeff01[3]);
 
       const mic_f zero = mic_f::zero();
       const mic_f one  = mic_f::one();
 
       prefetch<PFHINT_L1>(curve_in.p + 0);
       prefetch<PFHINT_L1>(curve_in.p + 3);
-
-      const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
-      const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
-      const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
 
 
       const mic_f p0123 = uload16f((float*)curve_in.p);
@@ -110,17 +114,13 @@ namespace embree
       const mic_f p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);
 
 
-      const mic_f c0 = load16f(&coeff01[0]);
-      const mic_f c1 = load16f(&coeff01[1]);
-      const mic_f c2 = load16f(&coeff01[2]);
-      const mic_f c3 = load16f(&coeff01[3]);
 
       const mic4f p0 = eval16(p0123_2D,c0,c1,c2,c3);
       
-      const mic_f last_x = p0123_2D[12 + 0];
-      const mic_f last_y = p0123_2D[13 + 0];
-      const mic_f last_z = p0123_2D[14 + 0];
-      const mic_f last_w = p0123_2D[15 + 0];
+      const mic_f last_x = mic_f(p0123_2D[12 + 0]);
+      const mic_f last_y = mic_f(p0123_2D[13 + 0]);
+      const mic_f last_z = mic_f(p0123_2D[14 + 0]);
+      const mic_f last_w = mic_f(p0123_2D[15 + 0]);
 
       const mic4f p1(align_shift_right<1>(last_x,p0[0]),  
        		     align_shift_right<1>(last_y,p0[1]), 
@@ -193,7 +193,9 @@ namespace embree
       return true;
     }
 
-    static __forceinline bool occluded(const Precalculations& pre, 
+    static __forceinline bool occluded(const mic_f& pre_vx, 
+				       const mic_f& pre_vy, 
+				       const mic_f& pre_vz, 					
 				       const Ray16& ray, 
 				       const mic_f &dir_xyz,
 				       const mic_f &org_xyz,
@@ -207,11 +209,6 @@ namespace embree
 
       prefetch<PFHINT_L1>(curve_in.p + 0);
       prefetch<PFHINT_L1>(curve_in.p + 3);
-
-      const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
-      const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
-      const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
-
 
       const mic_f p0123 = uload16f((float*)curve_in.p);
       const mic_f p0123_org = p0123 - org_xyz;
@@ -272,7 +269,9 @@ namespace embree
     // ==================================================================
 
 
-    static __forceinline bool intersect(const Precalculations& pre, 
+    static __forceinline bool intersect(const mic_f& pre_vx, 
+					const mic_f& pre_vy, 
+					const mic_f& pre_vz, 					
 					Ray& ray, 
 					const mic_f &dir_xyz,
 					const mic_f &org_xyz,
@@ -286,11 +285,6 @@ namespace embree
 
       prefetch<PFHINT_L1>(curve_in.p + 0);
       prefetch<PFHINT_L1>(curve_in.p + 3);
-
-      const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
-      const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
-      const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
-
 
       const mic_f p0123 = uload16f((float*)curve_in.p);
       const mic_f p0123_org = p0123 - org_xyz;
@@ -366,7 +360,9 @@ namespace embree
       return true;
     }
 
-    static __forceinline bool occluded(const Precalculations& pre, 
+    static __forceinline bool occluded(const mic_f& pre_vx, 
+				       const mic_f& pre_vy, 
+				       const mic_f& pre_vz, 					
 				       const Ray& ray, 
 				       const mic_f &dir_xyz,
 				       const mic_f &org_xyz,
@@ -379,11 +375,6 @@ namespace embree
 
       prefetch<PFHINT_L1>(curve_in.p + 0);
       prefetch<PFHINT_L1>(curve_in.p + 3);
-
-      const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
-      const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
-      const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
-
 
       const mic_f p0123 = uload16f((float*)curve_in.p);
       const mic_f p0123_org = p0123 - org_xyz;

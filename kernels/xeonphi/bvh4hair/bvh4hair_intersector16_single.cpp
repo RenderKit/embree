@@ -40,6 +40,10 @@ namespace embree
 					  const Scene*__restrict__ const geometry,
 					  Bezier1iIntersector16::Precalculations &pre)
       {
+	const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
+	const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
+	const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
+
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const Bezier1i *__restrict__ const tptr = (Bezier1i*)accel + index;
@@ -48,7 +52,7 @@ namespace embree
 	prefetch<PFHINT_L1>(tptr + 4);
 
 	for (size_t i=0;i<items;i++)
-	    ret |= Bezier1iIntersector16::intersect(pre,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry); 
+	  ret |= Bezier1iIntersector16::intersect(pre_vx,pre_vy,pre_vz,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry); 
 
 	max_dist_xyz = ray16.tfar[rayIndex];
 
@@ -67,6 +71,10 @@ namespace embree
 					 const Scene*__restrict__ const geometry,
 					 Bezier1iIntersector16::Precalculations &pre)
       {
+	const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
+	const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
+	const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
+
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const Bezier1i *__restrict__ const tptr = (Bezier1i*)accel + index;
@@ -75,7 +83,7 @@ namespace embree
 
 	for (size_t i=0;i<items;i++)
 	  {
-	    if (Bezier1iIntersector16::occluded(pre,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry))
+	    if (Bezier1iIntersector16::occluded(pre_vx,pre_vy,pre_vz,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry))
 	      return true;
 	  }
 
@@ -92,6 +100,10 @@ namespace embree
 					  const Scene*__restrict__ const geometry,
 					  Bezier1iIntersector16::Precalculations &pre)
       {
+	const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
+	const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
+	const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
+
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex(); 
 	const Bezier1i *__restrict__ const tptr = (Bezier1i*)accel + index;
@@ -103,7 +115,7 @@ namespace embree
 	prefetch<PFHINT_L1>(tptr + 4);
 
 	for (size_t i=0;i<items;i++)
-	  ret |= Bezier1iIntersector16::intersect(pre,ray,dir_xyz,org_xyz,tptr[i],geometry); // add mailboxing
+	  ret |= Bezier1iIntersector16::intersect(pre_vx,pre_vy,pre_vz,ray,dir_xyz,org_xyz,tptr[i],geometry); // add mailboxing
 
 	max_dist_xyz = ray.tfar;
 	return ret;
@@ -121,6 +133,10 @@ namespace embree
 					 const Scene*__restrict__ const geometry,
 					 Bezier1iIntersector16::Precalculations &pre)
       {
+	const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
+	const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
+	const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
+
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex(); 
 	const Bezier1i *__restrict__ const tptr = (Bezier1i*)accel + index;
@@ -129,7 +145,7 @@ namespace embree
 	prefetch<PFHINT_L1>(tptr + 4);
 
 	for (size_t i=0;i<items;i++)
-	  if (Bezier1iIntersector16::occluded(pre,ray,dir_xyz,org_xyz,tptr[i],geometry))
+	  if (Bezier1iIntersector16::occluded(pre_vx,pre_vy,pre_vz,ray,dir_xyz,org_xyz,tptr[i],geometry))
 	    return true;
 
 	return false;

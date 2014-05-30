@@ -76,10 +76,9 @@ namespace embree
 #if defined(__MIC__)
 
     {
-      __aligned(64) float STEP[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+      __aligned(64) float STEP[16] = {0/16.0f,1/16.0f,2/16.0f,3/16.0f,4/16.0f,5/16.0f,6/16.0f,7/16.0f,8/16.0f,9/16.0f,10/16.0f,11/16.0f,12/16.0f,13/16.0f,14/16.0f,15/16.0f};
       mic_f step16 = load16f(STEP); 
-      mic_f dt   = 1.0f/16.0f;
-      const mic_f t1 = step16*dt;
+      const mic_f t1 = step16;
       const mic_f t0 = 1.0f-t1;
       coeff01[0] = t0 * t0 * t0;
       coeff01[1] = 3.0f * t1 * t0 * t0;

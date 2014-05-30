@@ -614,8 +614,8 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int x1 = min(x0+TILE_SIZE_X,width);
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
-  //int seed = tileY*numTilesX+tileX+g_accu_count;
-  int seed = tileY*numTilesX+tileX+2;
+  int seed = tileY*numTilesX+tileX+g_accu_count;
+  //  int seed = tileY*numTilesX+tileX+2;
 
   foreach (y = y0 ... y1, x = x0 ... x1)
   {
@@ -625,7 +625,7 @@ task void renderTile(uniform int* uniform pixels,
     Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
 
     /* write color to framebuffer */
-#if 0
+#if 1
     Vec3fa* dst = &g_accu[y*width+x];
     *dst = *dst + make_Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
     float f = rcp(max(0.001f,dst->w));
