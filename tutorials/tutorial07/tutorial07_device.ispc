@@ -614,8 +614,7 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int x1 = min(x0+TILE_SIZE_X,width);
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
-  int seed = tileY*numTilesX+tileX+g_accu_count;
-  //  int seed = tileY*numTilesX+tileX+2;
+  int seed = tileY*numTilesX+tileX+programIndex + g_accu_count;
 
   foreach (y = y0 ... y1, x = x0 ... x1)
   {
@@ -623,21 +622,14 @@ task void renderTile(uniform int* uniform pixels,
     float fx = x + frand(seed);
     float fy = y + frand(seed);
     Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
-
+    //Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
     /* write color to framebuffer */
-#if 1
     Vec3fa* dst = &g_accu[y*width+x];
     *dst = *dst + make_Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
     float f = rcp(max(0.001f,dst->w));
     unsigned int r = (unsigned int) (255.0f * clamp(dst->x*f,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(dst->y*f,0.0f,1.0f));
     unsigned int b = (unsigned int) (255.0f * clamp(dst->z*f,0.0f,1.0f));
-#else
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-
-#endif
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 }

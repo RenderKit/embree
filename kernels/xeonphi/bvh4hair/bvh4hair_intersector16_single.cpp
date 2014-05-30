@@ -242,12 +242,13 @@ namespace embree
 		}
 	      // ------------------------
 	    }	  
-	}
       DBG(
 	  DBG_PRINT(ray16);
 	  sleep(4);
 	  exit(0);
 	  );
+
+	}
     }
 
     template<typename LeafIntersector>    

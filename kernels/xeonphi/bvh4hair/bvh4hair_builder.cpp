@@ -633,11 +633,8 @@ namespace embree
     {
       BuildRecord br;
       if (!global_workStack.pop_nolock_largest(br)) break;
-      DBG(DBG_PRINT(br));
       recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);      
-      DBG(DBG_PRINT(global_workStack.size()));
     }
-    DBG_PRINT(global_workStack.size());
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "build_top_level " << 1000. * msec << " ms" << std::endl << std::flush);

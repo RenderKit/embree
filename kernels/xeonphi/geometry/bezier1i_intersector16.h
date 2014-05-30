@@ -31,7 +31,7 @@ namespace embree
 	: ray_space(ls16.vx.x[k],ls16.vy.x[k],ls16.vz.x[k],
 		    ls16.vx.y[k],ls16.vy.y[k],ls16.vz.y[k],
 		    ls16.vx.z[k],ls16.vy.z[k],ls16.vz.z[k])
-      {}
+	{}
       __aligned(64) LinearSpace3fa ray_space;
       Mailbox mbox;
     };
@@ -140,26 +140,23 @@ namespace embree
       const mic_f t = p.z;
       const mic_f d2 = p.x*p.x + p.y*p.y; 
       const mic_f r = p.w;
-      const mic_f r2 = r*r; //+mic_f(1E-07f);
+      const mic_f r2 = r*r;
 
       mic_m valid = le(d2,r2);
       valid = lt(valid,mic_f(ray.tnear[k]),t);
       valid = lt(valid,t,mic_f(ray.tfar[k]));
 
-#if 0
-      DBG_PRINT(curve_in.geomID);
-      DBG_PRINT(curve_in.primID);
-      DBG_PRINT(p0123);
-      DBG_PRINT(r);
-      DBG_PRINT(d2);
-      DBG_PRINT(r2);
-      DBG_PRINT(d2-r2);
-      DBG_PRINT(valid);
-#endif
+      /* DBG_PRINT(curve_in.geomID); */
+      /* DBG_PRINT(curve_in.primID); */
+      /* DBG_PRINT(p0123); */
+      /* DBG_PRINT(r); */
+      /* DBG_PRINT(d2); */
+      /* DBG_PRINT(r2); */
+      /* DBG_PRINT(d2-r2); */
+      /* DBG_PRINT(valid); */
 
       if (unlikely(none(valid))) return false;
       STAT3(normal.trav_prim_hits,1,1,1);
-      unsigned int i = select_min(valid,t);
 
       /* ray masking test */
 #if defined(__USE_RAY_MASK__)
@@ -167,29 +164,20 @@ namespace embree
       if (unlikely(g->mask & ray.mask[k]) == 0) return false;
 #endif  
 
-      /* intersection filter test */
-
       /* update hit information */
+      unsigned int i = select_min(valid,t);
       float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
-
-      uu = max(uu,0.0f);
-      uu = min(uu,1.0f);
-
       mic_f P,T;
       eval(uu,p0123,P,T);
+      assert( T != mic_f::zero() );
       ray.Ng.x[k] = T[0];
       ray.Ng.y[k] = T[1];
       ray.Ng.z[k] = T[2];
-
-      assert( T != mic_f::zero() );
-
-      //if (T == Vec3fa(zero)) { valid ^= (1 << i); PING; goto retry; } // ignore denormalized curves
       ray.u[k] = uu;
       ray.v[k] = 0.0f;
       ray.tfar[k] = t[i];
       ray.geomID[k] = curve_in.geomID;
       ray.primID[k] = curve_in.primID;
-
       return true;
     }
 
@@ -223,14 +211,18 @@ namespace embree
 
       const mic4f p0 = eval16(p0123_2D,c0,c1,c2,c3);
 
-      const mic4f p1(align_shift_right<1>(zero,p0[0]), 
-		     align_shift_right<1>(zero,p0[1]),
-		     align_shift_right<1>(zero,p0[2]), 
-		     align_shift_right<1>(zero,p0[3]));;
+      const mic_f last_x = mic_f(p0123_2D[12 + 0]);
+      const mic_f last_y = mic_f(p0123_2D[13 + 0]);
+      const mic_f last_z = mic_f(p0123_2D[14 + 0]);
+      const mic_f last_w = mic_f(p0123_2D[15 + 0]);
 
-      const mic_m m_segments = 0x7fff;
+      const mic4f p1(align_shift_right<1>(last_x,p0[0]),  
+       		     align_shift_right<1>(last_y,p0[1]), 
+      		     align_shift_right<1>(last_z,p0[2]),  
+       		     align_shift_right<1>(last_w,p0[3]));
 
-      const float one_over_width = 1.0f/15.0f;
+
+      const float one_over_width = 1.0f/16.0f;
 
 
       /* approximative intersection with cone */
@@ -244,7 +236,7 @@ namespace embree
       const mic_f d2 = p.x*p.x + p.y*p.y; 
       const mic_f r = p.w;
       const mic_f r2 = r*r;
-      mic_m valid = le(m_segments,d2,r2);
+      mic_m valid = le(d2,r2);
       valid = lt(valid,mic_f(ray.tnear[k]),t);
       valid = lt(valid,t,mic_f(ray.tfar[k]));
 
@@ -259,7 +251,7 @@ namespace embree
       if (unlikely(g->mask & ray.mask[k]) == 0) return false;
 #endif  
 
-      /* intersection filter test */
+
       return true;
     }
 
@@ -299,14 +291,17 @@ namespace embree
 
       const mic4f p0 = eval16(p0123_2D,c0,c1,c2,c3);
 
-      const mic4f p1(align_shift_right<1>(zero,p0[0]), 
-		     align_shift_right<1>(zero,p0[1]),
-		     align_shift_right<1>(zero,p0[2]), 
-		     align_shift_right<1>(zero,p0[3]));;
+      const mic_f last_x = mic_f(p0123_2D[12 + 0]);
+      const mic_f last_y = mic_f(p0123_2D[13 + 0]);
+      const mic_f last_z = mic_f(p0123_2D[14 + 0]);
+      const mic_f last_w = mic_f(p0123_2D[15 + 0]);
 
-      const mic_m m_segments = 0x7fff;
+      const mic4f p1(align_shift_right<1>(last_x,p0[0]),  
+       		     align_shift_right<1>(last_y,p0[1]), 
+      		     align_shift_right<1>(last_z,p0[2]),  
+       		     align_shift_right<1>(last_w,p0[3]));
 
-      const float one_over_width = 1.0f/15.0f;
+      const float one_over_width = 1.0f/16.0f;
 
 
       /* approximative intersection with cone */
@@ -320,14 +315,13 @@ namespace embree
       const mic_f d2 = p.x*p.x + p.y*p.y; 
       const mic_f r = p.w;
       const mic_f r2 = r*r;
-      mic_m valid = le(m_segments,d2,r2);
+      mic_m valid = le(d2,r2);
       valid = lt(valid,mic_f(ray.tnear),t);
       valid = lt(valid,t,mic_f(ray.tfar));
 
 
       if (unlikely(none(valid))) return false;
       STAT3(normal.trav_prim_hits,1,1,1);
-      unsigned int i = select_min(valid,t);
 
       /* ray masking test */
 #if defined(__USE_RAY_MASK__)
@@ -335,7 +329,7 @@ namespace embree
       if (unlikely(g->mask & ray.mask) == 0) return false;
 #endif  
 
-      /* intersection filter test */
+      unsigned int i = select_min(valid,t);
 
       /* update hit information */
       float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
@@ -345,12 +339,12 @@ namespace embree
 
       mic_f P,T;
       eval(uu,p0123,P,T);
+      assert( T != mic_f::zero() );
+
       ray.Ng.x = T[0];
       ray.Ng.y = T[1];
       ray.Ng.z = T[2];
 
-      assert( T != mic_f::zero() );
-      //if (T == Vec3fa(zero)) { valid ^= (1 << i); PING; goto retry; } // ignore denormalized curves
       ray.u = uu;
       ray.v = 0.0f;
       ray.tfar = t[i];
@@ -389,15 +383,15 @@ namespace embree
 
       const mic4f p0 = eval16(p0123_2D,c0,c1,c2,c3);
 
-      const mic4f p1(align_shift_right<1>(zero,p0[0]), 
-		     align_shift_right<1>(zero,p0[1]),
-		     align_shift_right<1>(zero,p0[2]), 
-		     align_shift_right<1>(zero,p0[3]));;
+      const mic_f last_x = mic_f(p0123_2D[12 + 0]);
+      const mic_f last_y = mic_f(p0123_2D[13 + 0]);
+      const mic_f last_z = mic_f(p0123_2D[14 + 0]);
+      const mic_f last_w = mic_f(p0123_2D[15 + 0]);
 
-      const mic_m m_segments = 0x7fff;
-
-      const float one_over_width = 1.0f/15.0f;
-
+      const mic4f p1(align_shift_right<1>(last_x,p0[0]),  
+       		     align_shift_right<1>(last_y,p0[1]), 
+      		     align_shift_right<1>(last_z,p0[2]),  
+       		     align_shift_right<1>(last_w,p0[3]));
 
       /* approximative intersection with cone */
       const mic4f v = p1-p0;
@@ -410,7 +404,7 @@ namespace embree
       const mic_f d2 = p.x*p.x + p.y*p.y; 
       const mic_f r = p.w;
       const mic_f r2 = r*r;
-      mic_m valid = le(m_segments,d2,r2);
+      mic_m valid = le(d2,r2);
       valid = lt(valid,mic_f(ray.tnear),t);
       valid = lt(valid,t,mic_f(ray.tfar));
 
@@ -425,17 +419,7 @@ namespace embree
       if (unlikely(g->mask & ray.mask) == 0) return false;
 #endif  
 
-      /* intersection filter test */
       return true;
     }
-
-
-
-
-
-
-
-
-
   };
 }
