@@ -26,8 +26,32 @@ namespace embree
     const mic_f x = ldot3_xyz(v,node.matrixColumnXYZW[0]);
     const mic_f y = ldot3_xyz(v,node.matrixColumnXYZW[1]);
     const mic_f z = ldot3_xyz(v,node.matrixColumnXYZW[2]);
-    //const mic_f ret = select(0x8888,mic_f::zero(),select(0x4444,z,select(0x2222,y,x)));
     const mic_f ret = select(0x4444,z,select(0x2222,y,x));
+    return ret;
+  }
+
+  static __forceinline mic_f xfm_row_vector(const mic_f &row0,
+					    const mic_f &row1,
+					    const mic_f &row2,
+					    const mic_f &v)
+  {
+    const mic_f x = swAAAA(v);
+    const mic_f y = swBBBB(v);
+    const mic_f z = swCCCC(v);
+    const mic_f ret = x * row0 + y * row1 + z * row2;
+    return ret;
+  }
+
+  static __forceinline mic_f xfm_row_point(const mic_f &row0,
+					   const mic_f &row1,
+					   const mic_f &row2,
+					   const mic_f &v)
+  {
+    const mic_f x = swAAAA(v);
+    const mic_f y = swBBBB(v);
+    const mic_f z = swCCCC(v);
+    const mic_f trans  = select(0x4444,swDDDD(row2),select(0x2222,swDDDD(row1),swDDDD(row0)));   
+    const mic_f ret = x * row0 + y * row1 + z * row2 + trans;
     return ret;
   }
 
@@ -43,6 +67,8 @@ namespace embree
 					       const size_t leaf_mask)
   {
     const mic_m m7777 = 0x7777; 
+
+
     while (1) 
       {
 	if (unlikely(curNode.isLeaf(leaf_mask))) break;
@@ -54,12 +80,14 @@ namespace embree
 	prefetch<PFHINT_L1>((char*)u_node + 1*64);
 	prefetch<PFHINT_L1>((char*)u_node + 2*64);
 	prefetch<PFHINT_L1>((char*)u_node + 3*64);
+	
+	const mic_f row0 = u_node->matrixColumnXYZW[0];
+	const mic_f row1 = u_node->matrixColumnXYZW[1];
+	const mic_f row2 = u_node->matrixColumnXYZW[2];
 
+	const mic_f xfm_dir_xyz = xfm_row_vector(row0,row1,row2,dir_xyz);
+	const mic_f xfm_org_xyz = xfm_row_point (row0,row1,row2,org_xyz1);
 
-	const mic_f xfm_org_xyz = xfm(org_xyz1,*u_node);
-	const mic_f xfm_dir_xyz = xfm(dir_xyz ,*u_node);
-
-		  
 	const mic_f rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz );
 		  		  
 	const mic_f tLowerXYZ = -(xfm_org_xyz * rcp_xfm_dir_xyz);

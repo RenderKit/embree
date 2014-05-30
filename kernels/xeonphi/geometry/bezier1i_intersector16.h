@@ -91,6 +91,7 @@ namespace embree
     {
       STAT3(normal.trav_prims,1,1,1);
 
+
       const mic_f zero = mic_f::zero();
       const mic_f one  = mic_f::one();
 
@@ -103,6 +104,7 @@ namespace embree
 
 
       const mic_f p0123 = uload16f((float*)curve_in.p);
+
       const mic_f p0123_org = p0123 - org_xyz;
 
       const mic_f p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);
@@ -114,32 +116,46 @@ namespace embree
       const mic_f c3 = load16f(&coeff01[3]);
 
       const mic4f p0 = eval16(p0123_2D,c0,c1,c2,c3);
+      
+      const mic_f last_x = p0123_2D[12 + 0];
+      const mic_f last_y = p0123_2D[13 + 0];
+      const mic_f last_z = p0123_2D[14 + 0];
+      const mic_f last_w = p0123_2D[15 + 0];
 
-      const mic4f p1(align_shift_right<1>(zero,p0[0]), 
-		     align_shift_right<1>(zero,p0[1]),
-		     align_shift_right<1>(zero,p0[2]), 
-		     align_shift_right<1>(zero,p0[3]));;
+      const mic4f p1(align_shift_right<1>(last_x,p0[0]),  
+       		     align_shift_right<1>(last_y,p0[1]), 
+      		     align_shift_right<1>(last_z,p0[2]),  
+       		     align_shift_right<1>(last_w,p0[3]));
 
-      const mic_m m_segments = 0x7fff;
 
-      const float one_over_width = 1.0f/15.0f;
-
+      const float one_over_width = 1.0f/16.0f;
 
       /* approximative intersection with cone */
       const mic4f v = p1-p0;
       const mic4f w = -p0;
       const mic_f d0 = w.x*v.x + w.y*v.y;
       const mic_f d1 = v.x*v.x + v.y*v.y;
-      const mic_f u = clamp(d0*rcp(d1),zero,one);
+      const mic_f u = clamp(d0*rcp_nr(d1),zero,one);
       const mic4f p = p0 + u*v;
       const mic_f t = p.z;
       const mic_f d2 = p.x*p.x + p.y*p.y; 
       const mic_f r = p.w;
-      const mic_f r2 = r*r;
-      mic_m valid = le(m_segments,d2,r2);
+      const mic_f r2 = r*r; //+mic_f(1E-07f);
+
+      mic_m valid = le(d2,r2);
       valid = lt(valid,mic_f(ray.tnear[k]),t);
       valid = lt(valid,t,mic_f(ray.tfar[k]));
 
+#if 0
+      DBG_PRINT(curve_in.geomID);
+      DBG_PRINT(curve_in.primID);
+      DBG_PRINT(p0123);
+      DBG_PRINT(r);
+      DBG_PRINT(d2);
+      DBG_PRINT(r2);
+      DBG_PRINT(d2-r2);
+      DBG_PRINT(valid);
+#endif
 
       if (unlikely(none(valid))) return false;
       STAT3(normal.trav_prim_hits,1,1,1);

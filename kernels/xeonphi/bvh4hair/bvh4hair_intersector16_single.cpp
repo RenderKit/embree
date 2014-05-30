@@ -165,7 +165,9 @@ namespace embree
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
         {
 	  Bezier1iIntersector16::Precalculations pre(ray16_space,rayIndex);
-	  
+	  DBG(std::cout << std::endl);
+	  DBG(DBG_PRINT(rayIndex));
+
 	  stack_node[1] = bvh->unaligned_nodes->child(0);
 	  size_t sindex = 2;
 
@@ -199,10 +201,13 @@ namespace embree
 
 	      STAT3(normal.trav_leaves,1,1,1);
 
-	      /* intersect one ray against four triangles */
+	      /* intersect one ray against bezier curves */
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 	      BVH4i::NodeRef curNode4i = (unsigned int)curNode;
+
+	      DBG(DBG_PRINT(curNode));
+
 	      const bool hit = LeafIntersector::intersect(curNode4i,
 							  rayIndex,
 							  dir_xyz,
@@ -222,6 +227,11 @@ namespace embree
 	      // ------------------------
 	    }	  
 	}
+      DBG(
+	  DBG_PRINT(ray16);
+	  sleep(4);
+	  exit(0);
+	  );
     }
 
     template<typename LeafIntersector>    
@@ -277,7 +287,7 @@ namespace embree
 
 	      STAT3(shadow.trav_leaves,1,1,1);
 
-	      /* intersect one ray against four triangles */
+	      /* intersect one ray against bezier curves */
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 	      BVH4i::NodeRef curNode4i = (unsigned int)curNode;
@@ -364,7 +374,7 @@ namespace embree
 	  STAT3(normal.trav_leaves,1,1,1);
 	  STAT3(normal.trav_prims,4,4,4);
 
-	  /* intersect one ray against four triangles */
+	  /* intersect one ray against four bezier curves */
 
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 	  BVH4i::NodeRef curNode4i = (unsigned int)curNode;
@@ -442,7 +452,7 @@ namespace embree
 	  STAT3(normal.trav_leaves,1,1,1);
 	  STAT3(normal.trav_prims,4,4,4);
 
-	  /* intersect one ray against four triangles */
+	  /* intersect one ray against bezier curves */
 
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 	  BVH4i::NodeRef curNode4i = (unsigned int)curNode;

@@ -212,20 +212,37 @@ namespace embree
       {
 
 	AffineSpace3fa space = getAffineSpace3fa(mat,b);
+#if 0
 	matrix(0,0,m) = space.l.vx.x;
 	matrix(1,0,m) = space.l.vy.x;
 	matrix(2,0,m) = space.l.vz.x;
-	matrix(3,0,m) = space.p.x;
 
 	matrix(0,1,m) = space.l.vx.y;
 	matrix(1,1,m) = space.l.vy.y;
 	matrix(2,1,m) = space.l.vz.y;
-	matrix(3,1,m) = space.p.y;
 
 	matrix(0,2,m) = space.l.vx.z;
 	matrix(1,2,m) = space.l.vy.z;
 	matrix(2,2,m) = space.l.vz.z;
+#else
+
+	matrix(0,0,m) = space.l.vx.x;
+	matrix(1,0,m) = space.l.vx.y;
+	matrix(2,0,m) = space.l.vx.z;
+
+	matrix(0,1,m) = space.l.vy.x;
+	matrix(1,1,m) = space.l.vy.y;
+	matrix(2,1,m) = space.l.vy.z;
+
+	matrix(0,2,m) = space.l.vz.x;
+	matrix(1,2,m) = space.l.vz.y;
+	matrix(2,2,m) = space.l.vz.z;
+
+#endif
+	matrix(3,0,m) = space.p.x;
+	matrix(3,1,m) = space.p.y;
 	matrix(3,2,m) = space.p.z;
+
       }
 
       __forceinline void createNode(UnalignedNode *b, const size_t m)

@@ -61,7 +61,7 @@ namespace embree
   mic_f coeff0[4];
   mic_f coeff1[4];
 
-  mic_f coeff01[4]; // 15 steps
+  mic_f coeff01[4]; 
 
   mic_f coeff_P0[4];
   mic_f coeff_P1[4];
@@ -78,7 +78,7 @@ namespace embree
     {
       __aligned(64) float STEP[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
       mic_f step16 = load16f(STEP); 
-      mic_f dt   = 1.0f/15.0f;
+      mic_f dt   = 1.0f/16.0f;
       const mic_f t1 = step16*dt;
       const mic_f t0 = 1.0f-t1;
       coeff01[0] = t0 * t0 * t0;
