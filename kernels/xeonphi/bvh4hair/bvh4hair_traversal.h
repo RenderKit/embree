@@ -21,15 +21,6 @@
 namespace embree
 {
 
-  static __forceinline mic_f xfm(const mic_f &v, const BVH4Hair::UnalignedNode &node)
-  {
-    const mic_f x = ldot3_xyz(v,node.matrixColumnXYZW[0]);
-    const mic_f y = ldot3_xyz(v,node.matrixColumnXYZW[1]);
-    const mic_f z = ldot3_xyz(v,node.matrixColumnXYZW[2]);
-    const mic_f ret = select(0x4444,z,select(0x2222,y,x));
-    return ret;
-  }
-
   static __forceinline mic_f xfm_row_vector(const mic_f &row0,
 					    const mic_f &row1,
 					    const mic_f &row2,
@@ -55,6 +46,15 @@ namespace embree
     return ret;
   }
 
+  static __forceinline mic_f xfm(const mic_f &v, const BVH4Hair::UnalignedNode &node)
+  {
+    // alternative: 'rows' at 'columns' for lane dot products
+    const mic_f x = ldot3_xyz(v,node.matrixRowXYZW[0]);
+    const mic_f y = ldot3_xyz(v,node.matrixRowXYZW[1]);
+    const mic_f z = ldot3_xyz(v,node.matrixRowXYZW[2]);
+    const mic_f ret = select(0x4444,z,select(0x2222,y,x));
+    return ret;
+  }
 
   __forceinline void traverse_single_intersect(BVH4Hair::NodeRef &curNode,
 					       size_t &sindex,
@@ -81,9 +81,9 @@ namespace embree
 	prefetch<PFHINT_L1>((char*)u_node + 2*64);
 	prefetch<PFHINT_L1>((char*)u_node + 3*64);
 	
-	const mic_f row0 = u_node->matrixColumnXYZW[0];
-	const mic_f row1 = u_node->matrixColumnXYZW[1];
-	const mic_f row2 = u_node->matrixColumnXYZW[2];
+	const mic_f row0 = u_node->matrixRowXYZW[0];
+	const mic_f row1 = u_node->matrixRowXYZW[1];
+	const mic_f row2 = u_node->matrixRowXYZW[2];
 
 	const mic_f xfm_dir_xyz = xfm_row_vector(row0,row1,row2,dir_xyz);
 	const mic_f xfm_org_xyz = xfm_row_point (row0,row1,row2,org_xyz1);
@@ -145,8 +145,7 @@ namespace embree
 	    assert(node_second != BVH4Hair::emptyNode);
           
 	    if (dist_first <= dist_second)
-	      {
-			  
+	      {			  
 		stack_node[sindex] = node_second;
 		((unsigned int*)stack_dist)[sindex] = dist_second;                      
 		sindex++;
@@ -175,12 +174,6 @@ namespace embree
 	const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
 	curNode = u_node->child(closest_child_pos>>2);
 
-	const BVH4Hair::UnalignedNode *__restrict__ const u_node_prefetch = (BVH4Hair::UnalignedNode *)curNode.node();
-
-	prefetch<PFHINT_L1>((char*)u_node_prefetch + 0*64);
-	prefetch<PFHINT_L1>((char*)u_node_prefetch + 1*64);
-	prefetch<PFHINT_L1>((char*)u_node_prefetch + 2*64);
-	prefetch<PFHINT_L1>((char*)u_node_prefetch + 3*64);
 
 	assert(curNode  != BVH4Hair::emptyNode);
 
@@ -220,13 +213,16 @@ namespace embree
 	prefetch<PFHINT_L1>((char*)u_node + 3*64);
 
 
-	const mic_f xfm_org_xyz = xfm(org_xyz1,*u_node);
-	const mic_f xfm_dir_xyz = xfm(dir_xyz ,*u_node);
+	const mic_f row0 = u_node->matrixRowXYZW[0];
+	const mic_f row1 = u_node->matrixRowXYZW[1];
+	const mic_f row2 = u_node->matrixRowXYZW[2];
 
-		  
+	const mic_f xfm_dir_xyz = xfm_row_vector(row0,row1,row2,dir_xyz);
+	const mic_f xfm_org_xyz = xfm_row_point (row0,row1,row2,org_xyz1);
+
 	const mic_f rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz );
 		  		  
-	const mic_f tLowerXYZ = (mic_f::zero() - xfm_org_xyz) * rcp_xfm_dir_xyz;
+	const mic_f tLowerXYZ = -(xfm_org_xyz * rcp_xfm_dir_xyz);
 	const mic_f tUpperXYZ = (mic_f::one()  - xfm_org_xyz) * rcp_xfm_dir_xyz;
 
 		    
@@ -234,7 +230,6 @@ namespace embree
 
 	const mic_f tLower = select(m7777,min(tLowerXYZ,tUpperXYZ),min_dist_xyz);
 	const mic_f tUpper = select(m7777,max(tLowerXYZ,tUpperXYZ),max_dist_xyz);
-
 
 
 	/* early pop of next node */

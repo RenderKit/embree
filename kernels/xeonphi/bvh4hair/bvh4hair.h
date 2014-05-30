@@ -102,7 +102,7 @@ namespace embree
 
     struct __aligned(256) UnalignedNode
     {
-      mic_f matrixColumnXYZW[3];
+      mic_f matrixRowXYZW[3];
 
       NodeRef children[4];
       unsigned int geomID[4];
@@ -126,9 +126,9 @@ namespace embree
 	const mic_f c1 = broadcast4to16f(&invalidMatrix[ 4]);
 	const mic_f c2 = broadcast4to16f(&invalidMatrix[ 8]);
 	
-	matrixColumnXYZW[0] = c0;
-	matrixColumnXYZW[1] = c1;
-	matrixColumnXYZW[2] = c2;
+	matrixRowXYZW[0] = c0;
+	matrixRowXYZW[1] = c1;
+	matrixRowXYZW[2] = c2;
 
 	children[0] = children[1] = children[2] = children[3] = NULL;
 	geomID[0] = geomID[1] = geomID[2] = geomID[3] = (unsigned int)-1;
@@ -141,9 +141,9 @@ namespace embree
 	const mic_f c1 = broadcast4to16f(&identityMatrix[ 4]);
 	const mic_f c2 = broadcast4to16f(&identityMatrix[ 8]);
 	
-	matrixColumnXYZW[0] = c0;
-	matrixColumnXYZW[1] = c1;
-	matrixColumnXYZW[2] = c2;
+	matrixRowXYZW[0] = c0;
+	matrixRowXYZW[1] = c1;
+	matrixRowXYZW[2] = c2;
       }
 
       __forceinline float &matrix(const size_t row,
@@ -153,7 +153,7 @@ namespace embree
 	assert(matrixID < 4);
 	assert(row < 4);
 	assert(column < 3);
-	return matrixColumnXYZW[column][4*matrixID+row];
+	return matrixRowXYZW[column][4*matrixID+row];
       } 
 
       __forceinline const float &matrix(const size_t row,
@@ -163,7 +163,7 @@ namespace embree
 	assert(matrixID < 4);
 	assert(row < 4);
 	assert(column < 3);
-	return matrixColumnXYZW[column][4*matrixID+row];
+	return matrixRowXYZW[column][4*matrixID+row];
       } 
 
       __forceinline void set_scale(const float sx, 
