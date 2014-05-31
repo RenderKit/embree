@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2013 Intel Corporation                                    //
+// Copyright 2009-2014 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -33,9 +33,6 @@
 #define PROFILE_ITERATIONS 100
 
 #define MEASURE_MEMORY_ALLOCATION_TIME 0
-
-// TODO: CHECK     const float voxelArea    = current.cs_AABB.sceneArea();
-//                 const float centroidArea = current.cs_AABB.centroidArea();
 
 namespace embree
 {
