@@ -598,7 +598,7 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
-
+#if 1
     benchmark_mutex_sys();
     benchmark_barrier_sys();
     benchmark_barrier_sys_oversubscribed();
@@ -616,9 +616,9 @@ namespace embree
 #if defined(__X86_64__)
     BUILD   ("create_static_geometry_120_10000", rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,6,8334));
 #endif
-
     BUILD   ("create_dynamic_geometry_120",       rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,6,1));
     BUILD   ("create_dynamic_geometry_1k",        rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,17,1));
+#endif
     BUILD   ("create_dynamic_geometry_10k",       rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,51,1));
     BUILD   ("create_dynamic_geometry_100k",      rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,159,1));
     BUILD   ("create_dynamic_geometry_1000k_1",   rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,501,1));

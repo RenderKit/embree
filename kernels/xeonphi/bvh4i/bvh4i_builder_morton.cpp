@@ -870,14 +870,14 @@ namespace embree
     const unsigned int bitmask = 1 << bitpos_diff;
     
     /* find location where bit differs using binary search */
-    size_t begin = current.begin;
-    size_t end   = current.end;
+    unsigned int begin = current.begin;
+    unsigned int end   = current.end;
     while (begin + 1 != end) {
-      const size_t mid = (begin+end)/2;
-      const unsigned bit = morton[mid].code & bitmask;
+      const unsigned int mid = (begin+end)/2;
+      const unsigned int bit = morton[mid].code & bitmask;
       if (bit == 0) begin = mid; else end = mid;
     }
-    size_t center = end;
+    unsigned int center = end;
 #if defined(DEBUG)      
     for (unsigned int i=begin;  i<center; i++) assert((morton[i].code & bitmask) == 0);
     for (unsigned int i=center; i<end;    i++) assert((morton[i].code & bitmask) == bitmask);

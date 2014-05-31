@@ -461,7 +461,7 @@ namespace embree
 				  const unsigned int entries,
 				  const unsigned int data = 0) 
     {
-      assert(entries > 0 && entries <= 4);
+      assert(entries <= 4);
       lower.a = (offset << BVH_INDEX_SHIFT) | BVH_LEAF_MASK | entries;
       upper.a = data;
     }
