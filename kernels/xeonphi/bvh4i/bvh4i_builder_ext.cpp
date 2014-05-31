@@ -833,8 +833,6 @@ namespace embree
 	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
 	const size_t numNodes = max((size_t)(numPrims),minAllocNodes);
 
-	DBG_PRINT(numNodes);
-
 	if (g_verbose >= 2)
 	  {
 	  };
@@ -895,7 +893,6 @@ namespace embree
 
     // === do some padding add the end of 'accel' ===
 
-    DBG_PRINT( numPrimitives );
     prims[numPrimitives+0] = prims[numPrimitives-1];
     prims[numPrimitives+1] = prims[numPrimitives-1];
     prims[numPrimitives+2] = prims[numPrimitives-1];
