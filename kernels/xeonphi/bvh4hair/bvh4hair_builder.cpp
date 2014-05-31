@@ -1,3 +1,19 @@
+// ======================================================================== //
+// Copyright 2009-2014 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
 #include "bvh4hair/bvh4hair_builder.h"
 #include "geometry/bezier1i.h"
 
@@ -5,7 +21,7 @@ namespace embree
 {
 #define DBG(x) 
 
-#define L1_PREFETCH_ITEMS 2
+#define L1_PREFETCH_ITEMS 4
 #define L2_PREFETCH_ITEMS 16
 #define SINGLE_THREADED_BUILD_THRESHOLD        512
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
@@ -21,7 +37,6 @@ namespace embree
 
   static double dt = 0.0f;
 
-  // TODO: ENABLE PER CORE BVH4 BUILD
   // ==========================================================================================
   // ==========================================================================================
   // ==========================================================================================
@@ -29,10 +44,9 @@ namespace embree
 
   void BVH4HairBuilder::printBuilderName()
   {
-    std::cout << "building BVH4Hair binned SAH builder (MIC) ... " << std::endl;    
+    std::cout << "building BVH4Hair using binned SAH builder (MIC) ... " << std::endl;    
     
   }
-
 
   size_t BVH4HairBuilder::getNumPrimitives()
   {
@@ -83,14 +97,7 @@ namespace embree
     const size_t numBezierCurves = numPrimitives;
     const size_t startID   = (threadID+0)*numBezierCurves/numThreads;
     const size_t endID     = (threadID+1)*numBezierCurves/numThreads; 
-    
-     DBG(
-     	DBG_PRINT(numTotalGroups);
-     	DBG_PRINT(numBezierCurves);
-     	DBG_PRINT(startID);
-     	DBG_PRINT(endID);
-	 );
-    
+        
     Bezier1i *__restrict__ const bptr     = (Bezier1i*)this->prims;
 
     // === find first group containing startID ===
@@ -940,8 +947,6 @@ namespace embree
 
   __forceinline void BVH4HairBuilder::createLeaf(BuildRecord& current, NodeAllocator& alloc,const size_t threadIndex, const size_t threadCount)
   {
-    //DBG(DBG_PRINT(current));
-
 #if defined(DEBUG)
     if (current.depth > BVH4Hair::maxBuildDepthLeaf) 
       throw std::runtime_error("ERROR: depth limit reached");
@@ -988,9 +993,6 @@ namespace embree
 				   const size_t threadID, 
 				   const size_t numThreads)
   {
-    //DBG(PING);
-    //DBG(DBG_PRINT(current));
-
     __aligned(64) BuildRecord children[BVH4Hair::N];
 
     /* create leaf node */
@@ -1154,10 +1156,6 @@ namespace embree
       children[i].parentBoxID = i;
       recurseOBB(children[i],alloc,mode,threadID,numThreads);
     }    
-
-    DBG(DBG_PRINT(currentIndex));
-    DBG(DBG_PRINT(node[currentIndex]));
-
   }
 
   void BVH4HairBuilder::buildSubTree(BuildRecord& current, 
@@ -1185,7 +1183,6 @@ namespace embree
 
 	//TODO:: node[current.parentID].setMatrix(current.xfm,current.parentBoxID);
    
-	DBG(DBG_PRINT(node[current.parentID]));
 	recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
       }
 
@@ -1260,17 +1257,13 @@ namespace embree
 	  }
       };
 
-    DBG(DBG_PRINT(split));
-
     if (unlikely(split.pos == -1)) 
       {
-	DBG(std::cout << "FALLBACK" << std::endl << std::flush);
-	DBG(exit(0));
 	split_fallback(prims,current,leftChild,rightChild);
-	// /* partitioning of items */
       }
     else 
       {
+	/* partitioning of items */
 	leftChild.bounds.reset();
 	rightChild.bounds.reset();
 
@@ -1299,14 +1292,8 @@ namespace embree
     computeUnalignedSpace(leftChild);
     computeUnalignedSpaceBounds(leftChild);
 
-    DBG(DBG_PRINT(leftChild));
-    DBG(DBG_PRINT(Vec3fa(leftChild.bounds.geometry.upper - leftChild.bounds.geometry.lower)));
-
     computeUnalignedSpace(rightChild);
     computeUnalignedSpaceBounds(rightChild);
-
-    DBG(DBG_PRINT(rightChild));
-    DBG(DBG_PRINT(Vec3fa(rightChild.bounds.geometry.upper - rightChild.bounds.geometry.lower)));
 
 
     if (leftChild.items()  <= MAX_ITEMS_PER_LEAF) leftChild.createLeaf();

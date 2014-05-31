@@ -1,3 +1,11 @@
+// ======================================================================== //
+// Copyright 2009-2014 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
 //                                                                          //
 // Unless required by applicable law or agreed to in writing, software      //
 // distributed under the License is distributed on an "AS IS" BASIS,        //
@@ -33,7 +41,6 @@ namespace embree
 		    ls16.vx.z[k],ls16.vy.z[k],ls16.vz.z[k])
 	{}
       __aligned(64) LinearSpace3fa ray_space;
-      Mailbox mbox;
     };
 
     static __forceinline mic4f eval16(const mic_f &p0123,
