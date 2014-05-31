@@ -58,6 +58,7 @@ namespace embree
         end = _end;
         depth = 1;
         parentID = 0;
+	assert(begin < end);
       }
       
       __forceinline bool operator<(const SmallBuildRecord& br) const { return size() < br.size(); } 

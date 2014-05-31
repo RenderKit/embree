@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4i_builder_morton.h"
+#include "builders/builder_util.h"
 
 #define BVH_NODE_PREALLOC_FACTOR          1.2f
 #define NUM_MORTON_IDS_PER_BLOCK            8
@@ -31,6 +32,10 @@
 
 namespace embree 
 {
+#if defined(DEBUG)
+  extern AtomicMutex mtx;
+#endif
+
   // =======================================================================================================
   // =======================================================================================================
   // =======================================================================================================
@@ -733,7 +738,8 @@ namespace embree
 		
 
   __forceinline BBox3fa BVH4iBuilderMorton::createSmallLeaf(SmallBuildRecord& current) const
-  {
+  {    
+    assert(current.size() > 0);
     mic_f bounds_min(pos_inf);
     mic_f bounds_max(neg_inf);
 
@@ -754,6 +760,7 @@ namespace embree
 	const unsigned int index = morton[start+i].index;
 	const unsigned int primID = index & encodeMask; 
 	const unsigned int geomID = index >> encodeShift; 
+
 
 	const mic_i morton_index(morton[start+i].index);
 	const mic_i morton_primID = morton_index & morton_mask;
@@ -782,6 +789,7 @@ namespace embree
     __aligned(64) BBox3fa bounds;
     store4f(&bounds.lower,bounds_min);
     store4f(&bounds.upper,bounds_max);
+
     return bounds;
   }
 
@@ -851,6 +859,7 @@ namespace embree
     if (unlikely(bitpos == 32)) 
     {
       recreateMortonCodes(current);
+
       const unsigned int code_start = morton[current.begin].code;
       const unsigned int code_end   = morton[current.end-1].code;
       bitpos = clz(code_start^code_end);
@@ -966,6 +975,8 @@ namespace embree
 				     const size_t mode, 
 				     const size_t numThreads) 
   {
+    assert(current.size() > 0);
+
     /* stop toplevel recursion at some number of items */
     if (unlikely(mode == CREATE_TOP_LEVEL))
       {
@@ -1169,6 +1180,7 @@ namespace embree
       assert(dest[i].code  == 0xffffffff); 
       assert(dest[i].index == 0);
     }
+
 #endif	    
 
     TIMER(msec = getSeconds()-msec);    
@@ -1213,7 +1225,10 @@ namespace embree
 #endif
 
     /* sort all subtasks by size */
+
     quicksort_insertionsort_decending<SmallBuildRecord,16>(buildRecords,0,numBuildRecords-1);
+
+
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "create top level " << 1000. * msec << " ms" << std::endl << std::flush);
@@ -1223,6 +1238,8 @@ namespace embree
     
     /* build sub-trees */
     LockStepTaskScheduler::dispatchTask( task_recurseSubMortonTrees, this, threadIndex, threadCount );
+
+    DBG(DBG_PRINT(atomicID));
 
     numNodes = atomicID >> 2;
 

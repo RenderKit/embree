@@ -467,7 +467,7 @@ namespace embree
     }
 
 
-  template<class T, int THRESHOLD> 
+  template<class T, ssize_t THRESHOLD> 
     void quicksort_insertionsort_ascending(T *__restrict__ t, 
 					   const ssize_t begin, 
 					   const ssize_t end)
@@ -497,15 +497,15 @@ namespace embree
 		  t[left] = temp;
 		}
       
-	      const int pivot = right;
-	      quicksort_ascending(t, begin, pivot);
-	      quicksort_ascending(t, pivot + 1, end);
+	      const ssize_t pivot = right;
+	      quicksort_insertionsort_ascending<T,THRESHOLD>(t, begin, pivot);
+	      quicksort_insertionsort_ascending<T,THRESHOLD>(t, pivot + 1, end);
 	    }
 	}
     }
     
   
-  template<class T, int THRESHOLD> 
+  template<class T, ssize_t THRESHOLD> 
     void quicksort_insertionsort_decending(T *__restrict__ t, 
 					   const ssize_t begin, 
 					   const ssize_t end)
@@ -536,9 +536,9 @@ namespace embree
 		  t[left] = temp;
 		}
       
-	      const int pivot = right;
-	      quicksort_decending(t, begin, pivot);
-	      quicksort_decending(t, pivot + 1, end);
+	      const ssize_t pivot = right;
+	      quicksort_insertionsort_decending<T,THRESHOLD>(t, begin, pivot);
+	      quicksort_insertionsort_decending<T,THRESHOLD>(t, pivot + 1, end);
 	    }
 	}
     }
