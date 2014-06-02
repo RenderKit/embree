@@ -43,35 +43,32 @@
 <p>Embree comes with a set of tutorials aimed at helping users
 understand how embree can be used and extended. All tutorials exist in
 an ISPC and C version to demonstrate the two versions of the API. Look
-for files names <pre><code>tutorialXX_device.ispc</code></pre> for the ISPC
+for files names <code>tutorialXX_device.ispc</code> for the ISPC
 implementation of the tutorial, and files named
-<pre><code>tutorialXX_device.cpp</code></pre> for the single ray C version of the
+<code>tutorialXX_device.cpp</code> for the single ray C version of the
 tutorial. To start the C++ version
-use the <pre><code>tutorialXX</code></pre> executables, to start the ISPC version
-use the <pre><code>tutorialXX_ispc</code></pre> executables.
+use the <code>tutorialXX</code> executables, to start the ISPC version
+use the <code>tutorialXX_ispc</code> executables.
 
 You can select an initial camera using the -vp (camera position), -vi
 (camera lookat point), -vu (camera up vector), and -fov (vertical
 field of view) command line parameters:
 
-<p><pre><code>
-  ./tutorial00 -vp 10 10 10 -vi 0 0 0
+<p><pre><code>./tutorial00 -vp 10 10 10 -vi 0 0 0
 </code></pre></p>
 
 You can select the initial windows size using the -size command line
 parameter, or start the tutorials in fullscreen using the -fullscreen
 parameter:
 
-<p><pre><code>
-  ./tutorial00 -size 1024 1024
-  ./tutorial00 -fullscreen
+<p><pre><code>./tutorial00 -size 1024 1024
+./tutorial00 -fullscreen
 </code></pre></p>
 
 Implementation specific parameters can be passed to the ray tracing
 core through the -rtcore command line parameter, e.g.:
 
-<p><pre><code>
-  ./tutorial00 -rtcore verbose=2,threads=1,accel=bvh4.triangle1
+<p><pre><code>./tutorial00 -rtcore verbose=2,threads=1,accel=bvh4.triangle1
 </code></pre></p>
 
 <p>The navigation in the interactive display mode follows the camera
