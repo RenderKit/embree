@@ -9,6 +9,7 @@ replace=sed \
 -e '/<CONTENT_PLATFORMS>/{r src/platforms.html' -e 'd' -e '};' \
 -e '/<CONTENT_DOWNLOADING>/{r src/downloading.html' -e 'd' -e '};' \
 -e '/<CONTENT_COMPILATION>/{r src/compilation.html' -e 'd' -e '};' \
+-e '/<CONTENT_INSTALL>/{r src/install.html' -e 'd' -e '};' \
 -e '/<CONTENT_API>/{r src/api.html' -e 'd' -e '};' \
 -e '/<CONTENT_TUTORIALS>/{r src/tutorials.html' -e 'd' -e '};' \
 -e '/<CONTENT_RENDERER>/{r src/renderer.html' -e 'd' -e '};' \
@@ -63,11 +64,26 @@ readme.html: version src/*.html
 	ps2pdf readme.ps 
 	cp readme.pdf ..
 
+readme_bin.html: version src/*.html
+	$(call replace,src/readme_bin.html,readme_bin.html)
+
+readme_bin.txt: readme_bin.html
+	html2text -nobs -rcfile html2text.conf readme_bin.html > readme_bin.txt
+	cat src/apache.txt readme_bin.txt > ../readme_bin.txt
+
+readme_bin.pdf: readme_bin.html
+	html2ps -t -f html2ps.conf readme_bin.html > readme_bin.ps
+	ps2pdf readme_bin.ps 
+
 clean:
-	rm version
-	rm readme.txt
-	rm readme.pdf
-	rm readme.ps
-	rm readme.html
-	rm www/*.html
+	rm -f version
+	rm -f readme.txt
+	rm -f readme.pdf
+	rm -f readme.ps
+	rm -f readme.html
+	rm -f readme_bin.txt
+	rm -f readme_bin.pdf
+	rm -f readme_bin.ps
+	rm -f readme_bin.html
+	rm -f www/*.html
 #	rm images/*.jpg
