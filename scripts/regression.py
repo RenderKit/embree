@@ -131,7 +131,7 @@ def compile(OS,compiler,platform,build):
       sys.exit(1)
 
     # compile Embree
-    command =  'msbuild embree_vs2010.sln' + ' /nologo ' + cfg + ' /t:rebuild /verbosity:q > ' + logFile
+    command =  'msbuild embree.sln' + ' /nologo ' + cfg + ' /t:rebuild /verbosity:q > ' + logFile
     return os.system(command)
   
   else:

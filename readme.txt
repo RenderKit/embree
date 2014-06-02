@@ -180,13 +180,12 @@ download and install the ISPC binaries from ispc.github.com. After
 installation, put the path to ispc.exe permanently into your PATH environment
 variable. You have to restart Visual Studio for this change to take effect.
 
-For compilation of Embree under Windows use the Visual Studio 2008 solution
-file embree_vs2008.sln or Visual Studio 2010 solution file embree_vs2010.sln.
-The project compiles in 32 bit and 64 bit mode. The solution is by default
-setup to use the Microsoft Compiler. You can switch to the Intel Compiler by
-right clicking onto the solution in the Solution Explorer and then selecting
-the Intel Compiler. We recommend using 64 bit mode and the Intel Compiler for
-best performance.
+For compilation of Embree under Windows use the Visual Studio 2010 solution
+file embree.sln. The project compiles in 32 bit and 64 bit mode. The solution
+is by default setup to use the Microsoft Compiler. You can switch to the Intel
+Compiler by right clicking onto the solution in the Solution Explorer and then
+selecting the Intel Compiler. We recommend using 64 bit mode and the Intel
+Compiler for best performance.
 
 In Visual Studio, you will find 4 build configurations, Debug (for SSE2 debug
 mode), Release (for SSE2 release mode), ReleaseAVX (for AVX release mode), and
