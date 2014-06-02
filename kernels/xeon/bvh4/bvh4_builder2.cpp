@@ -327,7 +327,7 @@ namespace embree
       {
 	/* pop largest item for better load balancing */
 	BuildRecord task = tasks.front();
-	pop_heap(tasks.begin(),tasks.end());
+	std::pop_heap(tasks.begin(),tasks.end());
 	tasks.pop_back();
 	activeBuildRecords--;
 	
@@ -336,7 +336,7 @@ namespace embree
 	size_t N = createNode<true>(threadIndex,threadCount,this,task,children);
 	for (size_t i=0; i<N; i++) {
 	  tasks.push_back(children[i]);
-	  push_heap(tasks.begin(),tasks.end());
+	  std::push_heap(tasks.begin(),tasks.end());
 	  activeBuildRecords++;
 	}
       }

@@ -35,7 +35,8 @@ namespace embree
       typedef typename BVH4::Node Node;
       typedef StackItemT<NodeRef> StackItem;
       static const size_t stackSizeSingle = 1+3*BVH4::maxDepth;
-      static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
+      static const size_t stackSizeChunk = 2*BVH4::maxDepth+1;
+	  //static const size_t stackSizeChunk = 4*BVH4::maxDepth+1; // FIXME: this line creates stack problems in verify using VS2010
       
     public:
       static __forceinline void intersect1(const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray, const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)

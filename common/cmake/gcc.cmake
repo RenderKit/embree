@@ -24,7 +24,7 @@ SET(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mabm -mbmi -mbmi2 -fabi-version=6"
 SET(CMAKE_CXX_COMPILER "g++")
 SET(CMAKE_C_COMPILER "gcc")
 SET(CMAKE_CXX_FLAGS "-fPIC")
-SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -g -O2 -ftree-ter")
+SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -g -O2")
 SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -Wstrict-aliasing=0 -ffast-math ")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -g -O3 -Wstrict-aliasing=0 -ffast-math ")
 SET(CMAKE_EXE_LINKER_FLAGS "")
