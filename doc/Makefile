@@ -1,5 +1,5 @@
 
-all: images www/index.html www/api.html www/tutorials.html www/downloads.html www/renderer.html ../readme.txt ../readme.pdf 
+all: www/index.html www/api.html www/tutorials.html www/downloads.html www/renderer.html ../readme.txt ../readme.pdf 
 images: images/tutorial00.jpg images/tutorial01.jpg images/tutorial02.jpg images/tutorial03.jpg images/tutorial04.jpg images/tutorial05.jpg images/tutorial06.jpg images/tutorial07.jpg
 
 replace=sed \
@@ -55,8 +55,8 @@ readme.html: version src/*.html
 	$(call replace,src/readme.html,readme.html)
 
 ../readme.txt: readme.html
-	html2text -rcfile html2text.conf readme.html > readme.txt
-	cp readme.txt ..
+	html2text -nobs -rcfile html2text.conf readme.html > readme.txt
+	cat src/apache.txt readme.txt > ../readme.txt
 
 ../readme.pdf: readme.html
 	html2ps -t -f html2ps.conf readme.html > readme.ps

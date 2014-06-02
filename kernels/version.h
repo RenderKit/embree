@@ -1,1 +1,1 @@
-#define __EMBREE_VERSION__ "2.3 (alpha)"
+#define __EMBREE_VERSION__ "2.3"

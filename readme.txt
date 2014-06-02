@@ -1,4 +1,20 @@
-= Embree: High Performance Ray Tracing Kernels 2.3 (alpha)  =
+## ======================================================================== ##
+## Copyright 2009-2014 Intel Corporation                                    ##
+##                                                                          ##
+## Licensed under the Apache License, Version 2.0 (the "License");          ##
+## you may not use this file except in compliance with the License.         ##
+## You may obtain a copy of the License at                                  ##
+##                                                                          ##
+##     http://www.apache.org/licenses/LICENSE-2.0                           ##
+##                                                                          ##
+## Unless required by applicable law or agreed to in writing, software      ##
+## distributed under the License is distributed on an "AS IS" BASIS,        ##
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. ##
+## See the License for the specific language governing permissions and      ##
+## limitations under the License.                                           ##
+## ======================================================================== ##
+
+= Embree: High Performance Ray Tracing Kernels 2.3  =
 
 == Embree Overview  ==
 
@@ -11,10 +27,10 @@ the 16-wide Xeon Phi[TM] vector instructions. Embree supports runtime code
 selection to choose the traversal and build algorithms that best matches the
 instruction set of your CPU. We recommend using Embree through its API to get
 the highest benefit from future improvements. Embree is released as Open Source
-under the AAppaacchhee 22..00 lliicceennssee.
+under the Apache 2.0 license.
 
 Embree supports applications written with the Intel SPMD Programm Compiler
-(ISPC, hhttttpp::////iissppcc..ggiitthhuubb..ccoomm) by also providing an ISPC interface to the core
+(ISPC, http://ispc.github.com) by also providing an ISPC interface to the core
 ray tracing algorithms. This makes it possible to write a renderer in ISPC that
 leverages SSE, AVX, AVX2, and Xeon Phi[TM] instructions without any code
 change. ISPC also supports runtime code selection, thus ISPC will select the
@@ -33,9 +49,9 @@ Embree also supports dynamic scenes by implementing high performance two-level
 spatial index structure construction algorithms.
 
 In addition to the ray tracing kernels, Embree provides some tutorials to
-demonstrate how to use the EEmmbbrreeee AAPPII. The example photorealistic renderer that
+demonstrate how to use the Embree API. The example photorealistic renderer that
 was originally included in the Embree kernel package is now available in a
-separate GIT repository (see EEmmbbrreeee EExxaammppllee RReennddeerreerr).
+separate GIT repository (see Embree Example Renderer).
 
 == Supported Platforms  ==
 
@@ -54,13 +70,13 @@ host side code compiles with GCC, CLANG, and the Intel Compiler.
 
 Embree requires the Intel SPMD Compiler (ISPC) to compile. We have tested ISPC
 version 1.6.0, but more recent versions of ISPC should also work. You can
-download and install the ISPC binaries from iissppcc..ggiitthhuubb..ccoomm. After
+download and install the ISPC binaries from ispc.github.com. After
 installation, put the path to the ispc executable permanently into your PATH.
 
  export PATH=path-to-ispc:$PATH
 
 You additionally have to install CMake and the developer version of GLUT. Under
-MaxOS, these dependencies can be installed using MMaaccPPoorrttss:
+MaxOS, these dependencies can be installed using MacPorts:
 
  sudo port install cmake freeglut
 
@@ -102,7 +118,7 @@ most usages. The following table described all parameters that can be
 configured:
 
 
-PPaarraammeetteerr                  DDeessccrriippttiioonn                  DDeeffaauulltt VVaalluuee
+Parameter                  Description                  Default Value
 
 BUILD_TUTORIALS            Builds the C++ version of    ON
                            the Embree tutorials.
@@ -160,7 +176,7 @@ Xeon Phi[TM].
 
 Embree requires the Intel SPMD Compiler (ISPC) to compile. We have tested ISPC
 version 1.6.0, but more recent versions of ISPC should also work. You can
-download and install the ISPC binaries from iissppcc..ggiitthhuubb..ccoomm. After
+download and install the ISPC binaries from ispc.github.com. After
 installation, put the path to ispc.exe permanently into your PATH environment
 variable. You have to restart Visual Studio for this change to take effect.
 
@@ -247,7 +263,7 @@ compiled in debug mode.
 Possible error codes returned by rtcGetError are:
 
 
-EErrrroorr CCooddee            DDeessccrriippttiioonn
+Error Code            Description
 
 RTC_NO_ERROR          No error occured.
 
@@ -287,7 +303,7 @@ Using the following scene flags the user can select between creating a static
 and dynamic scene.
 
 
-SScceennee FFllaagg        DDeessccrriippttiioonn
+Scene Flag        Description
 
 RTC_SCENE_STATIC  scene optimized for static geometry
 
@@ -318,7 +334,7 @@ The following flags can be used to tune the used acceleration structure. These
 flags are only hints and may be ignored by the implementation.
 
 
-SScceennee FFllaagg             DDeessccrriippttiioonn
+Scene Flag             Description
 
 RTC_SCENE_COMPACT      Creates a compact data structure and avoids algorithms
                        that consume much memory.
@@ -335,7 +351,7 @@ The following flags can be used to tune the traversal algorithm that is used by
 Embree. These flags are only hints and may be ignored by the implementation.
 
 
-SScceennee FFllaagg       DDeessccrriippttiioonn
+Scene Flag       Description
 
 RTC_SCENE_ROBUST Avoid optimizations that reduce arithmetic accuracy.
 
@@ -350,7 +366,7 @@ traversers for some highly optimized data structure for single rays, then this
 data structure cannot be used if the user specifies any ray packet query.
 
 
-AAllggoorriitthhmm FFllaagg  DDeessccrriippttiioonn
+Algorithm Flag  Description
 
 RTC_INTERSECT1  Enables the rtcIntersect and rtcOccluded functions (single ray
                 interface) for this scene
@@ -404,7 +420,7 @@ The following geometry flags can be specified at construction time of the
 triangle mesh:
 
 
-GGeeoommeettrryy FFllaagg           DDeessccrriippttiioonn
+Geometry Flag           Description
 
                         The mesh is considered static and should get modified
 RTC_GEOMETRY_STATIC     rarely by the application. This flag has to get used in
@@ -597,7 +613,7 @@ The rtcSetTransform call can be passed an affine transformation matrix with
 different data layouts:
 
 
-LLaayyoouutt                            DDeessccrriippttiioonn
+Layout                            Description
 
 RTC_MATRIX_ROW_MAJOR              The 3x4 float matrix is layed out in row
                                   major form.
@@ -645,7 +661,7 @@ major release number does not change. The ray contains the following data
 members:
 
 
-MMeemmbbeerr IInn//OOuutt DDeessccrriippttiioonn
+Member In/Out Description
 
 org    in     ray origin
 
@@ -1014,10 +1030,10 @@ You can use the following keys:
 
 === Embree Support and Contact  ===
 
-For questions and bug reports please write us at eemmbbrreeee__ssuuppppoorrtt@@iinntteell..ccoomm.
+For questions and bug reports please write us at embree_support@intel.com.
 
 To receive notifications of updates and new features of Embree please subscribe
-to the EEmmbbrreeee mmaaiilliinngg lliisstt.
+to the Embree mailing list.
 
-For information about compiler optimizations, see our OOppttiimmiizzaattiioonn NNoottiiccee.
+For information about compiler optimizations, see our Optimization Notice.
 
