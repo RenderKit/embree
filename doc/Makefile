@@ -70,4 +70,4 @@ clean:
 	rm readme.ps
 	rm readme.html
 	rm www/*.html
-	rm images/*.jpg
+#	rm images/*.jpg
