@@ -109,7 +109,7 @@ namespace embree
     private:
       volatile atomic_t activeBuildRecords;
       MutexSys taskMutex;
-      std::vector<BuildRecord> tasks;
+      vector_t<BuildRecord> tasks;
      
       /*! builder configuration*/
     protected:
