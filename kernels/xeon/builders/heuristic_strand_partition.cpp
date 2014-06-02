@@ -30,7 +30,7 @@ namespace embree
       /* find 2nd axis that is most misaligned with first axis */
       float bestCos = 1.0f;
       Vec3fa axis1 = axis0;
-      for (i; i; i++) {
+      for (; i; i++) {
 	Vec3fa axisi = i->p3 - i->p0;
 	float leni = length(axisi);
 	if (leni == 0.0f) continue;

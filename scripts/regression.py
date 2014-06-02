@@ -169,7 +169,11 @@ def compile(OS,compiler,platform,build):
     else:
       command += ' -D TARGET_AVX2=OFF'
 
-    command += ' -D CMAKE_BUILD_TYPE=' + build
+    if build == 'Debug':
+      command += ' -D CMAKE_BUILD_TYPE=Debug'
+    else:
+      command += ' -D CMAKE_BUILD_TYPE=Release'
+    
     command += ' .. && make clean && make -j 8'
     command += ' &> ../' + logFile
     return os.system(command)
