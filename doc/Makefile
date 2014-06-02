@@ -68,8 +68,8 @@ readme_bin.html: version src/*.html
 	$(call replace,src/readme_bin.html,readme_bin.html)
 
 readme_bin.txt: readme_bin.html
-	html2text -nobs -rcfile html2text.conf readme_bin.html > readme_bin.txt
-	cat src/apache.txt readme_bin.txt > ../readme_bin.txt
+	html2text -nobs -rcfile html2text.conf readme_bin.html > readme_bin_temp.txt
+	cat src/apache.txt readme_bin_temp.txt > readme_bin.txt
 
 readme_bin.pdf: readme_bin.html
 	html2ps -t -f html2ps.conf readme_bin.html > readme_bin.ps
@@ -81,6 +81,7 @@ clean:
 	rm -f readme.pdf
 	rm -f readme.ps
 	rm -f readme.html
+	rm -f readme_bin_temp.txt
 	rm -f readme_bin.txt
 	rm -f readme_bin.pdf
 	rm -f readme_bin.ps
