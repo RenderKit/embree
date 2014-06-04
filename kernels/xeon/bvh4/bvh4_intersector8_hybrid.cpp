@@ -383,8 +383,9 @@ namespace embree
     }
     
     DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoeller, BVH4Intersector8Hybrid<Triangle4Intersector8MoellerTrumbore<true> >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoellerNoFilter, BVH4Intersector8Hybrid<Triangle4Intersector8MoellerTrumbore<false> >);
     DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoeller, BVH4Intersector8Hybrid<Triangle8Intersector8MoellerTrumbore<true> >);
+    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoellerNoFilter, BVH4Intersector8Hybrid<Triangle8Intersector8MoellerTrumbore<false> >);
     DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8HybridPluecker, BVH4Intersector8Hybrid<Triangle4vIntersector8Pluecker>);
-
   }
 }

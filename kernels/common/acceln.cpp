@@ -144,4 +144,10 @@ namespace embree
     for (size_t i=0; i<M; i++) 
       bounds.extend(validAccels[i]->bounds);
   }
+
+  void AccelN::select(bool filter4, bool filter8)
+  {
+    for (size_t i=0; i<N; i++) 
+      accels[i]->intersectors.select(filter4,filter8);
+  }
 }

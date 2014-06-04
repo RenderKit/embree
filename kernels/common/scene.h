@@ -282,7 +282,8 @@ namespace embree
     atomic_t numBezierCurves2;               //!< number of enabled motion blur curves
 
     atomic_t numUserGeometries1;        //!< number of enabled user geometries
-    //atomic_t numUserGeometries2;        //!< number of enabled user geometries
+    atomic_t numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
+    atomic_t numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
     
   public:
     FlatTriangleAccelBuildSource flat_triangle_source_1;

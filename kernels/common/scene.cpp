@@ -33,7 +33,8 @@ namespace embree
 {
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
-      numTriangleMeshes(0), numTriangleMeshes2(0), numTriangles(0), numTriangles2(0), numBezierCurves(0), numBezierCurves2(0), numUserGeometries1(0),
+      numTriangleMeshes(0), numTriangleMeshes2(0), numTriangles(0), numTriangles2(0), numBezierCurves(0), numBezierCurves2(0), numUserGeometries1(0), 
+      numIntersectionFilters4(0), numIntersectionFilters8(0),
       flat_triangle_source_1(this,1), flat_triangle_source_2(this,2), bezier_source_1(this,1)
   {
     if (g_scene_flags != -1)
@@ -304,6 +305,9 @@ namespace embree
       }
     }
 #endif
+
+    /* select fast code path if no intersection filter is present */
+    accels.select(numIntersectionFilters4,numIntersectionFilters8);
 
     /* spawn build task */
     TaskScheduler::EventSync event;
