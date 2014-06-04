@@ -72,7 +72,7 @@ namespace embree
           
           /*! single ray intersection with 4 boxes */
           const Node* node = cur.node();
-          const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
+          const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
 #if defined (__AVX2__)
           const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
           const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);
@@ -356,7 +356,7 @@ namespace embree
           
           /*! single ray intersection with 4 boxes */
           const Node* node = cur.node();
-          const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
+          const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
 #if defined (__AVX2__)
           const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
           const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);

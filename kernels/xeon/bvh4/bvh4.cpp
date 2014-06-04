@@ -287,7 +287,7 @@ namespace embree
       node.clearBarrier();
     else if (!node.isLeaf()) {
       Node* n = node.node();
-      for (size_t c=0; c<4; c++)
+      for (size_t c=0; c<N; c++)
         clearBarrier(n->child(c));
     }
   }
