@@ -124,7 +124,7 @@ namespace embree
       /*! Sets bounding box of child. */
       __forceinline void set(size_t i, const BBox3fa& bounds) 
       {
-        assert(i < 4);
+        assert(i < N);
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
         upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
       }
@@ -145,7 +145,7 @@ namespace embree
       /*! Returns bounds of specified child. */
       __forceinline BBox3fa bounds(size_t i) const 
       {
-        assert(i < 4);
+        assert(i < N);
         const Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
         const Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
         return BBox3fa(lower,upper);
@@ -158,8 +158,8 @@ namespace embree
       }
 
       /*! Returns reference to specified child */
-      __forceinline       NodeRef& child(size_t i)       { assert(i<4); return children[i]; }
-      __forceinline const NodeRef& child(size_t i) const { assert(i<4); return children[i]; }
+      __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
     public:
       ssef lower_x;           //!< X dimension of lower bounds of all 4 children.
@@ -168,7 +168,7 @@ namespace embree
       ssef upper_y;           //!< Y dimension of upper bounds of all 4 children.
       ssef lower_z;           //!< Z dimension of lower bounds of all 4 children.
       ssef upper_z;           //!< Z dimension of upper bounds of all 4 children.
-      NodeRef children[4];    //!< Pointer to the 4 children (can be a node or leaf)
+      NodeRef children[N];    //!< Pointer to the 4 children (can be a node or leaf)
     };
 
     /*! swap the children of two nodes */
