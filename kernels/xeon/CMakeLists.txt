@@ -87,15 +87,6 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4/bvh4_intersector4_chunk.cpp
   bvh4/bvh4_statistics.cpp
 
-  bvh4i/bvh4i.cpp
-  bvh4i/bvh4i_statistics.cpp
-  bvh4i/bvh4i_rotate.cpp
-  bvh4i/bvh4i_builder.cpp
-  bvh4i/bvh4i_builder_binner.cpp
-  bvh4i/bvh4i_intersector1.cpp   
-  bvh4i/bvh4i_intersector4_chunk.cpp   
-  bvh4i/bvh4i_intersector1_scalar.cpp   
- 
   bvh4mb/bvh4mb.cpp
   bvh4mb/bvh4mb_builder.cpp
   bvh4mb/bvh4mb_intersector1.cpp   
@@ -156,23 +147,6 @@ IF (TARGET_AVX)
    bvh4/bvh4_intersector8_chunk.cpp
    bvh4/bvh4_intersector8_hybrid.cpp
 
-   bvh4i/bvh4i_intersector1.cpp   
-   bvh4i/bvh4i_intersector1_scalar.cpp   
-   bvh4i/bvh4i_intersector4_chunk.cpp   
-   bvh4i/bvh4i_intersector8_chunk.cpp   
-   bvh4i/bvh4i_intersector8_hybrid.cpp
-
-   bvh4i/bvh4i_builder_fast.cpp
-   bvh4i/bvh4i_builder_binner.cpp
-   bvh4i/bvh4i_builder_morton.cpp
-   bvh4i/bvh4i_builder_morton_enhanced.cpp
-
-   bvh8i/bvh8i.cpp
-   bvh8i/bvh8i_builder.cpp
-   bvh8i/bvh8i_intersector1.cpp   
-   bvh8i/bvh8i_intersector8_chunk.cpp
-   bvh8i/bvh8i_intersector8_hybrid.cpp
-
    bvh4mb/bvh4mb_intersector1.cpp   
    bvh4mb/bvh4mb_intersector4.cpp
    bvh4mb/bvh4mb_intersector8.cpp
@@ -209,24 +183,10 @@ IF (TARGET_AVX2)
     bvh4/bvh4_intersector4_hybrid.cpp
     bvh4/bvh4_intersector8_chunk.cpp
     bvh4/bvh4_intersector8_hybrid.cpp
-    bvh4i/bvh4i_intersector8_chunk_avx2.cpp  
-    bvh4i/bvh4i_intersector8_hybrid.cpp
-
-    bvh4i/bvh4i_intersector1.cpp   
-    bvh4i/bvh4i_intersector1_scalar.cpp   
-    bvh4i/bvh4i_intersector4_chunk.cpp   
-    bvh4i/bvh4i_intersector8_chunk.cpp
 
     bvh4mb/bvh4mb_intersector1.cpp
     bvh4mb/bvh4mb_intersector4.cpp
     bvh4mb/bvh4mb_intersector8.cpp
-
-    bvh8i/bvh8i_intersector1.cpp   
-    bvh8i/bvh8i_intersector8_chunk.cpp
-    bvh8i/bvh8i_intersector8_hybrid.cpp
-
-    bvh4i/bvh4i_builder_fast.cpp
-    bvh4i/bvh4i_builder_binner.cpp
 
     bvh4hair/bvh4hair_intersector1.cpp
     bvh4hair/bvh4hair_intersector4.cpp

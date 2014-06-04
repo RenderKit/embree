@@ -17,7 +17,7 @@
 #pragma once
 
 #include "bvh4.h"
-#include "../bvh4i/bvh4i_builder_util.h"
+#include "bvh4_builder_util.h"
 
 namespace embree
 {

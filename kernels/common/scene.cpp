@@ -21,8 +21,6 @@
 #include "bvh4/bvh4.h"
 #include "bvh8/bvh8.h"
 #include "bvh4hair/bvh4hair.h"
-#include "bvh4i/bvh4i.h"
-#include "bvh8i/bvh8i.h"
 #include "bvh4mb/bvh4mb.h"
 #else
 #include "xeonphi/bvh4i/bvh4i.h"
@@ -153,17 +151,7 @@ namespace embree
     else if (g_tri_accel == "bvh4.triangle1v")        accels.add(BVH4::BVH4Triangle1v(this));
     else if (g_tri_accel == "bvh4.triangle4v")        accels.add(BVH4::BVH4Triangle4v(this));
     else if (g_tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
-    else if (g_tri_accel == "bvh4i.triangle1")        accels.add(BVH4i::BVH4iTriangle1(this));
-    else if (g_tri_accel == "bvh4i.triangle4")        accels.add(BVH4i::BVH4iTriangle4(this));
-#if defined (__TARGET_AVX__)
-    else if (g_tri_accel == "bvh4i.triangle8")        accels.add(BVH4i::BVH4iTriangle8(this));
-#endif
-    else if (g_tri_accel == "bvh4i.triangle1.v1")     accels.add(BVH4i::BVH4iTriangle1_v1(this));
-    else if (g_tri_accel == "bvh4i.triangle1.v2")     accels.add(BVH4i::BVH4iTriangle1_v2(this));
-    else if (g_tri_accel == "bvh4i.triangle1.morton") accels.add(BVH4i::BVH4iTriangle1_morton(this));
-    else if (g_tri_accel == "bvh4i.triangle1.morton.enhanced") accels.add(BVH4i::BVH4iTriangle1_morton_enhanced(this));
 #if !defined(__WIN32__) && defined (__TARGET_AVX__)
-    else if (g_tri_accel == "bvh8i.triangle8")        accels.add(BVH8i::BVH8iTriangle8(this));
     else if (g_tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
 #endif
     else throw std::runtime_error("unknown triangle acceleration structure "+g_tri_accel);

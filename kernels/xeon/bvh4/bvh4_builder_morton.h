@@ -17,7 +17,7 @@
 #pragma once
 
 #include "bvh4.h"
-#include "../bvh4i/bvh4i_builder_util.h" // FIXME: remove
+#include "bvh4_builder_util.h" // FIXME: remove
 #include "../builders/heuristic_fallback.h"
 
 namespace embree
