@@ -43,13 +43,35 @@ namespace embree
     float time;        //!< Time of this ray for motion blur.
     int mask;          //!< used to mask out objects during traversal
 
-  public:
     Vec3fa Ng;         //!< Not normalized geometry normal
     float u;           //!< Barycentric u coordinate of hit
     float v;           //!< Barycentric v coordinate of hit
     int geomID;        //!< geometry ID
     int primID;        //!< primitive ID
     int instID;        //!< instance ID
+
+#if defined(__MIC__)    
+    __forceinline void update(const mic_m &m_mask,
+			      const mic_f &new_t,
+			      const mic_f &new_u,
+			      const mic_f &new_v,
+			      const mic_f &new_gnormalx,
+			      const mic_f &new_gnormaly,
+			      const mic_f &new_gnormalz,
+			      const int new_geomID,
+			      const int new_primID)
+    {
+      geomID = new_geomID;
+      primID = new_primID;
+
+      compactustore16f_low(m_mask,&tfar,new_t);
+      compactustore16f_low(m_mask,&u,new_u); 
+      compactustore16f_low(m_mask,&v,new_v); 
+      compactustore16f_low(m_mask,&Ng.x,new_gnormalx); 
+      compactustore16f_low(m_mask,&Ng.y,new_gnormaly); 
+      compactustore16f_low(m_mask,&Ng.z,new_gnormalz);       
+    }
+#endif
   };
 
   /*! Outputs ray to stream. */

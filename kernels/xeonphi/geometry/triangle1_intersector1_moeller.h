@@ -127,29 +127,15 @@ namespace embree
 	      const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
 	      const int geomID = tri_ptr->geomID();
 	      const int primID = tri_ptr->primID();
-
-	      // if ( (tri_ptr->mask() & ray.mask) == 0 ) {
-	      //   m_final ^= m_tri;
-	      //   continue;
-	      // }
                 
 	      const Geometry* geom = geometry->get(geomID);
 	      if (likely(!geom->hasIntersectionFilter1())) 
 		{
-		  compactustore16f_low(m_tri,&ray.tfar,min_dist);
-		  compactustore16f_low(m_tri,&ray.u,u); 
-		  compactustore16f_low(m_tri,&ray.v,v); 
-		  compactustore16f_low(m_tri,&ray.Ng.x,gnormalx); 
-		  compactustore16f_low(m_tri,&ray.Ng.y,gnormaly); 
-		  compactustore16f_low(m_tri,&ray.Ng.z,gnormalz); 
-		  ray.geomID = geomID;
-		  ray.primID = primID;
-		  max_dist_xyz = min_dist;
+		  ray.update(m_tri,min_dist,u,v,gnormalx,gnormaly,gnormalz,geomID,primID);
 		  break;
 		}
                 
 	      if (runIntersectionFilter1(geom,ray,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) {
-		max_dist_xyz = min_dist;
 		break;
 	      }
 	      m_final ^= m_tri;
@@ -176,15 +162,7 @@ namespace embree
 
 	  max_dist_xyz = min_dist;
 
-	  compactustore16f_low(m_tri,&ray.tfar,min_dist);
-	  compactustore16f_low(m_tri,&ray.u,u); 
-	  compactustore16f_low(m_tri,&ray.v,v); 
-	  compactustore16f_low(m_tri,&ray.Ng.x,gnormalx); 
-	  compactustore16f_low(m_tri,&ray.Ng.y,gnormaly); 
-	  compactustore16f_low(m_tri,&ray.Ng.z,gnormalz); 
-
-	  ray.geomID = tri_ptr->geomID();
-	  ray.primID = tri_ptr->primID();
+	  ray.update(m_tri,min_dist,u,v,gnormalx,gnormaly,gnormalz,tri_ptr->geomID(),tri_ptr->primID());
 #endif
 	  return true;
 

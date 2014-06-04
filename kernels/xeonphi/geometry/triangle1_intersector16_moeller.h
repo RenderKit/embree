@@ -110,6 +110,8 @@ namespace embree
       /* did the ray hit one of the four triangles? */
       if (unlikely(any(m_final)))
 	{
+	  STAT3(normal.trav_prim_hits,1,1,1);
+
 	  /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__) 
 	  mic_f org_max_dist_xyz = max_dist_xyz;
@@ -133,28 +135,19 @@ namespace embree
 	      const Geometry* const geom = geometry->get(geomID);
 	      if (likely(!geom->hasIntersectionFilter16())) 
 		{
-
-		  compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
-		  compactustore16f_low(m_tri,&ray16.u[rayIndex],u); 
-		  compactustore16f_low(m_tri,&ray16.v[rayIndex],v); 
-		  compactustore16f_low(m_tri,&ray16.Ng.x[rayIndex],gnormalx); 
-		  compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
-		  compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
-		  ray16.geomID[rayIndex] = geomID;
-		  ray16.primID[rayIndex] = primID;
-		  max_dist_xyz = min_dist;
+		  ray16.update(m_tri,rayIndex,min_dist,u,v,gnormalx,gnormaly,gnormalz,geomID,primID);
 		  break;
 		}
                 
 	      if (runIntersectionFilter16(geom,ray16,rayIndex,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) {
-		max_dist_xyz = min_dist;
 		break;
 	      }
 	      m_final ^= m_tri;
 	    }
 	  max_dist_xyz = ray16.tfar[rayIndex];
 #else
-	  STAT3(normal.trav_prim_hits,1,1,1);
+	  ray16.prefetchHitData<PFHINT_L1EX>();
+
 	  max_dist_xyz  = select(m_final,t,max_dist_xyz);
 	  const mic_f min_dist = vreduce_min(max_dist_xyz);
 	  const mic_m m_dist = eq(min_dist,max_dist_xyz);
@@ -169,18 +162,10 @@ namespace embree
 	  const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
 	  const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
                 
-	  ray16.prefetchHitData<PFHINT_L1EX>();
 	  max_dist_xyz = min_dist;
-		  
-	  compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
-	  compactustore16f_low(m_tri,&ray16.u[rayIndex],u); 
-	  compactustore16f_low(m_tri,&ray16.v[rayIndex],v); 
-	  compactustore16f_low(m_tri,&ray16.Ng.x[rayIndex],gnormalx); 
-	  compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
-	  compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
 
-	  ray16.geomID[rayIndex] = tri_ptr->geomID();
-	  ray16.primID[rayIndex] = tri_ptr->primID();
+	
+	  ray16.update(m_tri,rayIndex,min_dist,u,v,gnormalx,gnormaly,gnormalz,tri_ptr->geomID(),tri_ptr->primID());
 #endif
 	  return true;
       
@@ -381,6 +366,7 @@ namespace embree
 #endif
 	    if (unlikely(none(valid))) continue;
 
+
             /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
             Geometry* geom = ((Scene*)scene)->get(tri.geomID());
@@ -391,14 +377,7 @@ namespace embree
 #endif
 
 	    /* update hit information */
-	    store16f(valid,(float*)&ray16.u,u);
-	    store16f(valid,(float*)&ray16.v,v);
-	    store16f(valid,(float*)&ray16.tfar,t);
-	    store16i(valid,(float*)&ray16.geomID,geomID);
-	    store16i(valid,(float*)&ray16.primID,primID);
-	    store16f(valid,(float*)&ray16.Ng.x,Ng.x);
-	    store16f(valid,(float*)&ray16.Ng.y,Ng.y);
-	    store16f(valid,(float*)&ray16.Ng.z,Ng.z);
+	    ray16.update(valid,t,u,v,Ng.x,Ng.y,Ng.z,geomID,primID);
 	  }
 
     }
