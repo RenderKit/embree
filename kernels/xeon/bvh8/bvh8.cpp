@@ -21,6 +21,9 @@
 namespace embree
 {
   DECLARE_SYMBOL(Accel::Intersector1,BVH8Triangle8Intersector1Moeller);
+  DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8ChunkMoeller);
+  DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoeller);
+
   DECLARE_SCENE_BUILDER(BVH8Triangle8Builder2);
 
   void BVH8Register () 
@@ -31,7 +34,11 @@ namespace embree
     SELECT_SYMBOL_AVX(features,BVH8Triangle8Builder2);
 
     /* select intersectors1 */
-    SELECT_SYMBOL_AVX_AVX2              (features,BVH8Triangle8Intersector1Moeller);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector1Moeller);
+
+    /* select intersectors8 */
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector8ChunkMoeller);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector8HybridMoeller);
   }
 
   BVH8::BVH8 (const PrimitiveType& primTy, void* geometry)
@@ -84,7 +91,8 @@ namespace embree
     intersectors.ptr = bvh;
     intersectors.intersector1 = BVH8Triangle8Intersector1Moeller;
     intersectors.intersector4 = NULL;
-    intersectors.intersector8 = NULL;
+    //intersectors.intersector8 = BVH8Triangle8Intersector8ChunkMoeller;
+    intersectors.intersector8 = BVH8Triangle8Intersector8HybridMoeller;
     intersectors.intersector16 = NULL;
     return intersectors;
   }
