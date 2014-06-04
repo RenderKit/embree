@@ -29,7 +29,7 @@ using namespace embree;
 
 #define __ALIGN(x) __declspec(align(x))
 
-#define DBG(x) x
+#define DBG(x) 
 
 namespace embree
 {
@@ -277,12 +277,14 @@ namespace embree
 	}
 #endif
 
+#if 0
       for (size_t i=0;i<bvh8i_used_slots;i++)
         {
           DBG_PRINT(i);
           if (b8.children[i].isNode())
             DBG_PRINT(b8.data[i]);
         }
+#endif
 
       //assert(bvh8i_used_slots == 8);
 
