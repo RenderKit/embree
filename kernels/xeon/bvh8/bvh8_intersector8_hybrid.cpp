@@ -108,16 +108,16 @@ namespace embree
           size_t r = __bscf(mask);
           if (likely(mask == 0)) {
             cur = node->child(r);
-            assert(cur != BVH4i::emptyNode);
+            assert(cur != BVH8::emptyNode);
             continue;
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const unsigned int d0 = ((unsigned int*)&tNear)[r];
+          NodeRef c0 = node->child(r); c0.prefetch(); const unsigned int d0 = ((unsigned int*)&tNear)[r];
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); const unsigned int d1 = ((unsigned int*)&tNear)[r];
-          assert(c0 != BVH4i::emptyNode);
-          assert(c1 != BVH4i::emptyNode);
+          NodeRef c1 = node->child(r); c1.prefetch(); const unsigned int d1 = ((unsigned int*)&tNear)[r];
+          assert(c0 != BVH8::emptyNode);
+          assert(c1 != BVH8::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
             if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
@@ -134,8 +134,8 @@ namespace embree
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          NodeRef c = node->child(r); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-          assert(c0 != BVH4i::emptyNode);
+          NodeRef c = node->child(r); c.prefetch(); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          assert(c0 != BVH8::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
             cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -145,8 +145,8 @@ namespace embree
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          c = node->child(r); d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-          assert(c != BVH4i::emptyNode);
+          c = node->child(r); c.prefetch(); d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          assert(c != BVH8::emptyNode);
 	  if (likely(mask == 0)) {
 	    sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
 	    cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -156,7 +156,7 @@ namespace embree
 	  while(1)
 	    {
 	      r = __bscf(mask);
-	      c = node->child(r); d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+	      c = node->child(r); c.prefetch(); d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
 	      if (unlikely(mask == 0)) break;
 	    }
 	  cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -408,9 +408,9 @@ namespace embree
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const unsigned int d0 = ((unsigned int*)&tNear)[r];
+          NodeRef c0 = node->child(r); c0.prefetch(); const unsigned int d0 = ((unsigned int*)&tNear)[r];
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); const unsigned int d1 = ((unsigned int*)&tNear)[r];
+          NodeRef c1 = node->child(r); c1.prefetch(); const unsigned int d1 = ((unsigned int*)&tNear)[r];
           assert(c0 != BVH8::emptyNode);
           assert(c1 != BVH8::emptyNode);
           if (likely(mask == 0)) {
@@ -425,14 +425,14 @@ namespace embree
           
           /*! three children are hit */
           r = __bscf(mask);
-          cur = node->child(r); 
+          cur = node->child(r); cur.prefetch();
           assert(cur != BVH8::emptyNode);
           if (likely(mask == 0)) continue;
 
 	  while(1)
 	    {
 	      r = __bscf(mask);
-	      NodeRef c = node->child(r); *stackPtr = c; stackPtr++;
+	      NodeRef c = node->child(r); c.prefetch(); *stackPtr = c; stackPtr++;
 	      if (unlikely(mask == 0)) break;
 	    }
 	  cur = (NodeRef) stackPtr[-1]; stackPtr--;
