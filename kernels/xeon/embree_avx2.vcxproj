@@ -312,7 +312,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|Win32'">
     <ClCompile>
-      <AdditionalOptions>/Gs999999 /arch:AVX2 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Gs999999 %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
@@ -339,7 +339,7 @@
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalOptions>/Gs999999 /arch:AVX2 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Gs999999 %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>

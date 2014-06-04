@@ -278,6 +278,17 @@ namespace embree
       std::cout << "bufferstride ";
 #endif
       std::cout << std::endl;
+
+#if defined (__MIC__)
+#if defined(__BUFFER_STRIDE__)
+      std::cout << "  WARNING: enabled 'bufferstride' support will lower BVH build performance" << std::endl;
+#endif
+#endif
+
+#if defined(__INTERSECTION_FILTER__)
+      std::cout << "  WARNING: enabled 'intersection filter' support will reduce hybrid traversal performance" << std::endl;
+#endif
+
     }
 
     /* CPU has to support at least SSE2 */

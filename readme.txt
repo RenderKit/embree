@@ -952,7 +952,7 @@ You can use the following keys:
       Exists the tutorial.
   q
       Exists the tutorial.
-==== Tutorial00  ====
+=== Tutorial00  ===
 
 
  This tutorial demonstrates the creation of a static cube and ground plane
@@ -961,7 +961,7 @@ You can use the following keys:
  sides are colored based on the ID of the hit primitive.
 
 
-==== Tutorial01  ====
+=== Tutorial01  ===
 
 
  This tutorial demonstrates the creation of a dynamic scene, consisting of
@@ -972,7 +972,7 @@ You can use the following keys:
  the hit sphere geometry.
 
 
-==== Tutorial02  ====
+=== Tutorial02  ===
 
 
  This tutorial shows the use of user defined geometry, to re-implement
@@ -984,7 +984,7 @@ You can use the following keys:
  distinguished.
 
 
-==== Tutorial03  ====
+=== Tutorial03  ===
 
 
  This tutorial demonstrates a simple OBJ viewer that traces primary visibility
@@ -993,7 +993,7 @@ You can use the following keys:
  support additional per vertex data, such as shading normals.
 
 
-==== Tutorial04  ====
+=== Tutorial04  ===
 
 
  This tutorial demonstrates the in-build instancing feature of Embree, by
@@ -1003,7 +1003,7 @@ You can use the following keys:
  be distinguished.
 
 
-==== Tutorial05  ====
+=== Tutorial05  ===
 
 
  This tutorial demonstrates the use of filter callback functions to efficiently
@@ -1015,13 +1015,13 @@ You can use the following keys:
  opaque occluder is hit.
 
 
-==== Tutorial06  ====
+=== Tutorial06  ===
 
 
  This tutorial is a simple path tracer, building on tutorial03.
 
 
-==== Tutorial07  ====
+=== Tutorial07  ===
 
 
  This tutorial demonstrates the use of the hair geometry to render a hairball.
