@@ -283,12 +283,12 @@ namespace embree
     }
     
     DEFINE_INTERSECTOR4(BVH4iTriangle1Intersector4ChunkMoeller, BVH4iIntersector4Chunk<Triangle1Intersector4MoellerTrumbore>);
-    DEFINE_INTERSECTOR4(BVH4iTriangle4Intersector4ChunkMoeller, BVH4iIntersector4Chunk<Triangle4Intersector4MoellerTrumbore>);
+    DEFINE_INTERSECTOR4(BVH4iTriangle4Intersector4ChunkMoeller, BVH4iIntersector4Chunk<Triangle4Intersector4MoellerTrumbore<true> >);
     DEFINE_INTERSECTOR4(BVH4iTriangle1vIntersector4ChunkPluecker, BVH4iIntersector4Chunk<Triangle1vIntersector4Pluecker>);
     DEFINE_INTERSECTOR4(BVH4iTriangle4vIntersector4ChunkPluecker, BVH4iIntersector4Chunk<Triangle4vIntersector4Pluecker>);
     DEFINE_INTERSECTOR4(BVH4iVirtualIntersector4Chunk, BVH4iIntersector4Chunk<VirtualAccelIntersector4>);
 #if defined (__AVX__)
-    DEFINE_INTERSECTOR4(BVH4iTriangle8Intersector4ChunkMoeller, BVH4iIntersector4Chunk<Triangle8Intersector4MoellerTrumbore>);
+    DEFINE_INTERSECTOR4(BVH4iTriangle8Intersector4ChunkMoeller, BVH4iIntersector4Chunk<Triangle8Intersector4MoellerTrumbore<true> >);
 #endif
 
   }

@@ -604,8 +604,8 @@ namespace embree
     }
 
 
-    DEFINE_INTERSECTOR8(BVH4iTriangle4Intersector8HybridMoeller, BVH4iIntersector8Hybrid<Triangle4Intersector8MoellerTrumbore>);
-    DEFINE_INTERSECTOR8(BVH4iTriangle8Intersector8HybridMoeller, BVH4iIntersector8Hybrid<Triangle8Intersector8MoellerTrumbore>);
+    DEFINE_INTERSECTOR8(BVH4iTriangle4Intersector8HybridMoeller, BVH4iIntersector8Hybrid<Triangle4Intersector8MoellerTrumbore<true> >);
+    DEFINE_INTERSECTOR8(BVH4iTriangle8Intersector8HybridMoeller, BVH4iIntersector8Hybrid<Triangle8Intersector8MoellerTrumbore<true> >);
 
   }
 }

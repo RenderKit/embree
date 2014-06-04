@@ -628,7 +628,7 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR8(BVH8iTriangle8Intersector8HybridMoeller,BVH8iIntersector8Hybrid<Triangle8Intersector8MoellerTrumbore>);
+    DEFINE_INTERSECTOR8(BVH8iTriangle8Intersector8HybridMoeller,BVH8iIntersector8Hybrid<Triangle8Intersector8MoellerTrumbore<true> >);
 
   }
 }  

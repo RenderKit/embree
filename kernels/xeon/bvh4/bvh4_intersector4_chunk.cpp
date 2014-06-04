@@ -305,9 +305,9 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4Bezier1Intersector4Chunk, BVH4Intersector4Chunk<Bezier1Intersector4>);
     DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Chunk, BVH4Intersector4Chunk<Bezier1iIntersector4>);
     DEFINE_INTERSECTOR4(BVH4Triangle1Intersector4ChunkMoeller, BVH4Intersector4Chunk<Triangle1Intersector4MoellerTrumbore>);
-    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoeller, BVH4Intersector4Chunk<Triangle4Intersector4MoellerTrumbore>);
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoeller, BVH4Intersector4Chunk<Triangle4Intersector4MoellerTrumbore<true> >);
 #if defined (__AVX__)
-    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoeller, BVH4Intersector4Chunk<Triangle8Intersector4MoellerTrumbore>);
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoeller, BVH4Intersector4Chunk<Triangle8Intersector4MoellerTrumbore<true> >);
 #endif
     DEFINE_INTERSECTOR4(BVH4Triangle1vIntersector4ChunkPluecker, BVH4Intersector4Chunk<Triangle1vIntersector4Pluecker>);
     DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<Triangle4vIntersector4Pluecker>);
