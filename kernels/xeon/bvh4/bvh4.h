@@ -174,7 +174,7 @@ namespace embree
     /*! swap the children of two nodes */
     __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
     {
-      assert(i<4 && j<4);
+      assert(i<N && j<N);
       std::swap(a->children[i],b->children[j]);
       std::swap(a->lower_x[i],b->lower_x[j]);
       std::swap(a->lower_y[i],b->lower_y[j]);
@@ -188,7 +188,7 @@ namespace embree
     __forceinline static void compact(Node* a)
     {
       /* find right most filled node */
-      ssize_t j=4;
+      ssize_t j=N;
       for (j=j-1; j>=0; j--)
         if (a->child(j) != emptyNode)
           break;
@@ -254,11 +254,11 @@ namespace embree
     LinearAllocatorPerThread alloc;
 
     __forceinline Node* allocNode(size_t thread) {
-      Node* node = (Node*) alloc.malloc(thread,sizeof(Node),1 << 7); node->clear(); return node; // FIXME: why 7 bits alinged, and not 4 bits
+      Node* node = (Node*) alloc.malloc(thread,sizeof(Node),1 << alignment); node->clear(); return node;
     }
 
     __forceinline char* allocPrimitiveBlocks(size_t thread, size_t num) {
-      return (char*) alloc.malloc(thread,num*primTy.bytes,1 << 6); // FIXME: why 6 bits alinged, and not 4 bits
+      return (char*) alloc.malloc(thread,num*primTy.bytes,1 << alignment);
     }
 
     /*! Encodes a node */
