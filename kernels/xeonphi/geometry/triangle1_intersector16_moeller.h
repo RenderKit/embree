@@ -169,15 +169,7 @@ namespace embree
 	  const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
 	  const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
                 
-	  prefetch<PFHINT_L1EX>(&ray16.tfar);  
-	  prefetch<PFHINT_L1EX>(&ray16.u);
-	  prefetch<PFHINT_L1EX>(&ray16.v);
-	  prefetch<PFHINT_L1EX>(&ray16.Ng.x); 
-	  prefetch<PFHINT_L1EX>(&ray16.Ng.y); 
-	  prefetch<PFHINT_L1EX>(&ray16.Ng.z); 
-	  prefetch<PFHINT_L1EX>(&ray16.geomID);
-	  prefetch<PFHINT_L1EX>(&ray16.primID);
-
+	  ray16.prefetchHitData<PFHINT_L1EX>();
 	  max_dist_xyz = min_dist;
 		  
 	  compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
@@ -369,11 +361,6 @@ namespace embree
 	    valid = ge(valid,v,zero);
 	    valid = le(valid,u+v,one);
 
-	    prefetch<PFHINT_L1EX>(&ray16.u);      
-	    prefetch<PFHINT_L1EX>(&ray16.v);      
-	    prefetch<PFHINT_L1EX>(&ray16.tfar);      
-
-
 	    if (unlikely(none(valid))) continue;
 
 	    const mic_f dot_C_Ng = dot(C,Ng);
@@ -385,11 +372,8 @@ namespace embree
 
 	    const mic_i geomID = tri.geomID();
 	    const mic_i primID = tri.primID();
-	    prefetch<PFHINT_L1EX>(&ray16.geomID);      
-	    prefetch<PFHINT_L1EX>(&ray16.primID);      
-	    prefetch<PFHINT_L1EX>(&ray16.Ng.x);      
-	    prefetch<PFHINT_L1EX>(&ray16.Ng.y);      
-	    prefetch<PFHINT_L1EX>(&ray16.Ng.z);      
+
+	    ray16.prefetchHitData<PFHINT_L1EX>();
 
 	    /* ray masking test */
 #if defined(__USE_RAY_MASK__)

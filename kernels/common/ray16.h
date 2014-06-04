@@ -43,13 +43,26 @@ namespace embree
     mic_f time;     //!< Time of this ray for motion blur.
     mic_i mask;     //!< used to mask out objects during traversal
 
-  public:
     mic3f Ng;       //!< Geometry normal
     mic_f u;        //!< Barycentric u coordinate of hit
     mic_f v;        //!< Barycentric v coordinate of hit
     mic_i geomID;   //!< geometry ID
     mic_i primID;   //!< primitive ID
     mic_i instID;   //!< instance ID
+
+    template<int PFHINT>
+    __forceinline void prefetchHitData() const
+    {
+      prefetch<PFHINT>(&tfar);
+      prefetch<PFHINT>(&u);
+      prefetch<PFHINT>(&v);
+      prefetch<PFHINT>(&Ng.x);
+      prefetch<PFHINT>(&Ng.y);
+      prefetch<PFHINT>(&Ng.z);
+      prefetch<PFHINT>(&geomID);
+      prefetch<PFHINT>(&primID);
+    }
+
   };
 
   /*! Outputs ray to stream. */
