@@ -887,32 +887,25 @@ See tutorial05 for an example of how to use the filter functions.
 Embree comes with a set of tutorials aimed at helping users understand how
 embree can be used and extended. All tutorials exist in an ISPC and C version
 to demonstrate the two versions of the API. Look for files names
- tutorialXX_device.ispc
-for the ISPC implementation of the tutorial, and files named
- tutorialXX_device.cpp
-for the single ray C version of the tutorial. To start the C++ version use the
- tutorialXX
-executables, to start the ISPC version use the
- tutorialXX_ispc
-executables. You can select an initial camera using the -vp (camera position),
--vi (camera lookat point), -vu (camera up vector), and -fov (vertical field of
-view) command line parameters:
+tutorialXX_device.ispc for the ISPC implementation of the tutorial, and files
+named tutorialXX_device.cpp for the single ray C version of the tutorial. To
+start the C++ version use the tutorialXX executables, to start the ISPC version
+use the tutorialXX_ispc executables. You can select an initial camera using the
+-vp (camera position), -vi (camera lookat point), -vu (camera up vector), and -
+fov (vertical field of view) command line parameters:
 
-
-   ./tutorial00 -vp 10 10 10 -vi 0 0 0
+ ./tutorial00 -vp 10 10 10 -vi 0 0 0
 
 You can select the initial windows size using the -size command line parameter,
 or start the tutorials in fullscreen using the -fullscreen parameter:
 
-
-   ./tutorial00 -size 1024 1024
-   ./tutorial00 -fullscreen
+ ./tutorial00 -size 1024 1024
+ ./tutorial00 -fullscreen
 
 Implementation specific parameters can be passed to the ray tracing core
 through the -rtcore command line parameter, e.g.:
 
-
-   ./tutorial00 -rtcore verbose=2,threads=1,accel=bvh4.triangle1
+ ./tutorial00 -rtcore verbose=2,threads=1,accel=bvh4.triangle1
 
 The navigation in the interactive display mode follows the camera orbit model,
 where the camera revolves around the current center of interest. With the left
