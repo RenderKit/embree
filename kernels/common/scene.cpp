@@ -17,8 +17,9 @@
 #include "scene.h"
 
 #if !defined(__MIC__)
-#include "bvh4/bvh4_builder_toplevel.h"
+#include "bvh4/bvh4_builder_toplevel.h" // FIXME: remove
 #include "bvh4/bvh4.h"
+#include "bvh8/bvh8.h"
 #include "bvh4hair/bvh4hair.h"
 #include "bvh4i/bvh4i.h"
 #include "bvh8i/bvh8i.h"
@@ -163,6 +164,7 @@ namespace embree
     else if (g_tri_accel == "bvh4i.triangle1.morton.enhanced") accels.add(BVH4i::BVH4iTriangle1_morton_enhanced(this));
 #if !defined(__WIN32__) && defined (__TARGET_AVX__)
     else if (g_tri_accel == "bvh8i.triangle8")        accels.add(BVH8i::BVH8iTriangle8(this));
+    else if (g_tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
 #endif
     else throw std::runtime_error("unknown triangle acceleration structure "+g_tri_accel);
   }

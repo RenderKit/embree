@@ -26,7 +26,7 @@ namespace embree
 {
   /*! Multi BVH with 4 children. Each node stores the bounding box of
    * it's 4 children as well as 4 child pointers. */
-  class BVH4 : public Bounded
+  class BVH8 : public Bounded
   {
     ALIGNED_CLASS;
   public:
@@ -35,12 +35,12 @@ namespace embree
     struct Node;
 
     /*! branching width of the tree */
-    static const size_t N = 4;
+    static const size_t N = 8;
 
     /*! Number of address bits the Node and primitives are aligned
         to. Maximally 2^alignment-2 many primitive blocks per leaf are
         supported. */
-    static const size_t alignment = 4;
+    static const size_t alignment = 5;
 
     /*! Masks the bits that store the number of items per leaf. */
     static const size_t align_mask = (1 << alignment)-1;  
@@ -79,6 +79,8 @@ namespace embree
       __forceinline void prefetch() const {
 	prefetchL1(((char*)ptr)+0*64);
 	prefetchL1(((char*)ptr)+1*64);
+	prefetchL1(((char*)ptr)+2*64);
+	prefetchL1(((char*)ptr)+3*64);
       }
 
       /*! Sets the barrier bit. */
@@ -111,7 +113,9 @@ namespace embree
       size_t ptr;
     };
 
-    /*! BVH4 Node */
+#if defined (__AVX__)
+
+    /*! BVH8 Node */
     struct Node
     {
       /*! Clears the node. */
@@ -152,22 +156,22 @@ namespace embree
       }
 
       /*! Returns bounds of all children */
-      __forceinline void bounds(BBox<ssef>& bounds0, BBox<ssef>& bounds1, BBox<ssef>& bounds2, BBox<ssef>& bounds3) const {
+      /*__forceinline void bounds(BBox<ssef>& bounds0, BBox<ssef>& bounds1, BBox<ssef>& bounds2, BBox<ssef>& bounds3) const {
         transpose(lower_x,lower_y,lower_z,ssef(zero),bounds0.lower,bounds1.lower,bounds2.lower,bounds3.lower);
         transpose(upper_x,upper_y,upper_z,ssef(zero),bounds0.upper,bounds1.upper,bounds2.upper,bounds3.upper);
-      }
+	}*/
 
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
     public:
-      ssef lower_x;           //!< X dimension of lower bounds of all 4 children.
-      ssef upper_x;           //!< X dimension of upper bounds of all 4 children.
-      ssef lower_y;           //!< Y dimension of lower bounds of all 4 children.
-      ssef upper_y;           //!< Y dimension of upper bounds of all 4 children.
-      ssef lower_z;           //!< Z dimension of lower bounds of all 4 children.
-      ssef upper_z;           //!< Z dimension of upper bounds of all 4 children.
+      avxf lower_x;           //!< X dimension of lower bounds of all 4 children.
+      avxf upper_x;           //!< X dimension of upper bounds of all 4 children.
+      avxf lower_y;           //!< Y dimension of lower bounds of all 4 children.
+      avxf upper_y;           //!< Y dimension of upper bounds of all 4 children.
+      avxf lower_z;           //!< Z dimension of lower bounds of all 4 children.
+      avxf upper_z;           //!< Z dimension of upper bounds of all 4 children.
       NodeRef children[N];    //!< Pointer to the 4 children (can be a node or leaf)
     };
 
@@ -203,47 +207,18 @@ namespace embree
         }
       }
     }
+#endif
     
   public:
 
-    /*! BVH4 default constructor. */
-    BVH4 (const PrimitiveType& primTy, void* geometry = NULL);
+    /*! BVH8 default constructor. */
+    BVH8 (const PrimitiveType& primTy, void* geometry = NULL);
 
-    /*! BVH4 destruction */
-    ~BVH4 ();
+    /*! BVH8 destruction */
+    ~BVH8 ();
 
-    /*! BVH4 instantiations */
-    static Accel* BVH4Bezier1(Scene* scene);
-    static Accel* BVH4Bezier1i(Scene* scene);
-    static Accel* BVH4Triangle1(Scene* scene);
-    static Accel* BVH4Triangle4(Scene* scene);
-    static Accel* BVH4Triangle8(Scene* scene);
-    static Accel* BVH4Triangle1v(Scene* scene);
-    static Accel* BVH4Triangle4v(Scene* scene);
-    static Accel* BVH4Triangle4i(Scene* scene);
-    static Accel* BVH4UserGeometry(Scene* scene);
-    
-    static Accel* BVH4BVH4Triangle1Morton(Scene* scene);
-    static Accel* BVH4BVH4Triangle1ObjectSplit(Scene* scene);
-    static Accel* BVH4BVH4Triangle4ObjectSplit(Scene* scene);
-    static Accel* BVH4BVH4Triangle1vObjectSplit(Scene* scene);
-    static Accel* BVH4BVH4Triangle4vObjectSplit(Scene* scene);
-
-    static Accel* BVH4Triangle1SpatialSplit(Scene* scene);
-    static Accel* BVH4Triangle4SpatialSplit(Scene* scene);
-    static Accel* BVH4Triangle8SpatialSplit(Scene* scene);
-    static Accel* BVH4Triangle1ObjectSplit(Scene* scene);
-    static Accel* BVH4Triangle4ObjectSplit(Scene* scene);
-    static Accel* BVH4Triangle8ObjectSplit(Scene* scene);
-    static Accel* BVH4Triangle1vObjectSplit(Scene* scene);
-    static Accel* BVH4Triangle4vObjectSplit(Scene* scene);
-    static Accel* BVH4Triangle4iObjectSplit(Scene* scene);
-
-    static Accel* BVH4Triangle1ObjectSplit(TriangleMesh* mesh);
-    static Accel* BVH4Triangle4ObjectSplit(TriangleMesh* mesh);
-    static Accel* BVH4Triangle1vObjectSplit(TriangleMesh* mesh);
-    static Accel* BVH4Triangle4vObjectSplit(TriangleMesh* mesh);
-    static Accel* BVH4Triangle4Refit(TriangleMesh* mesh);
+    /*! BVH8 instantiations */
+    static Accel* BVH8Triangle8(Scene* scene);
 
     /*! initializes the acceleration structure */
     void init (size_t numPrimitives = 0, size_t numThreads = 1);
@@ -253,6 +228,7 @@ namespace embree
 
     LinearAllocatorPerThread alloc;
 
+#if defined (__AVX__)
     __forceinline Node* allocNode(size_t thread) {
       Node* node = (Node*) alloc.malloc(thread,sizeof(Node),1 << alignment); node->clear(); return node;
     }
@@ -271,6 +247,7 @@ namespace embree
       assert(!((size_t)tri & align_mask)); 
       return NodeRef((size_t)tri | (1+min(num,(size_t)maxLeafBlocks)));
     }
+#endif
 
   public:
     
@@ -288,17 +265,6 @@ namespace embree
 
     /*! data arrays for fast builders */
   public:
-    std::vector<BVH4*> objects;
+    std::vector<BVH8*> objects;
   };
-
-  // FIXME: move the below code to somewhere else
-  typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, BVH4*& accel, Builder*& builder); 
-  typedef Builder* (*BVH4BuilderTopLevelFunc)(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
-
-#define DECLARE_TOPLEVEL_BUILDER(symbol)                                         \
-  namespace isa   { extern Builder* symbol(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  namespace sse41 { extern Builder* symbol(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  namespace avx   { extern Builder* symbol(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  namespace avx2  { extern Builder* symbol(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  BVH4BuilderTopLevelFunc symbol;
 }

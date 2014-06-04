@@ -57,6 +57,7 @@ namespace embree
   /* register functions for accels */
   void BVH4Register();
   void BVH4iRegister();
+  void BVH8Register();
   void BVH8iRegister();
   void BVH4MBRegister();
   void BVH4HairRegister();
@@ -312,8 +313,10 @@ namespace embree
     BVH4iRegister();
     BVH4HairRegister();    
 #if !defined(__WIN32__) && defined(__TARGET_AVX__)
-    if (has_feature(AVX))
+    if (has_feature(AVX)) {
+      BVH8Register();
       BVH8iRegister();
+    }
 #endif
     
     InstanceIntersectorsRegister();
