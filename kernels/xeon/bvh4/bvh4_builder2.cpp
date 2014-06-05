@@ -586,7 +586,11 @@ namespace embree
 	t1 = getSeconds();
       	std::cout << "[DONE]" << std::endl;
 	std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
-	std::cout << BVH4Statistics(bvh).str();
+        BVH4Statistics stat(bvh);
+	std::cout << stat.str();
+
+        if (g_benchmark)
+          std::cout << "BENCHMARK_BUILD " << 1000.0f*(t1-t0) << " " << 1E-6*double(numPrimitives)/(t1-t0) << " " << stat.bytesUsed() << std::endl;
       }
     }
     
