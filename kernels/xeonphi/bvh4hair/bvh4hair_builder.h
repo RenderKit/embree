@@ -77,7 +77,8 @@ namespace embree
     Bezier1i *prims;
     Bezier1i *accel;
     BVH4Hair::UnalignedNode*   node;
-
+    //BVH4Hair::AlignedNode*   node;
+    
     size_t size_prims;
     size_t size_accel;
     size_t size_nodes;

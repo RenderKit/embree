@@ -184,7 +184,8 @@ namespace embree
 	  DBG(std::cout << std::endl);
 	  DBG(DBG_PRINT(rayIndex));
 
-	  stack_node[1] = bvh->unaligned_nodes->child(0);
+	  stack_node[1] = bvh->root; 
+
 	  size_t sindex = 2;
 
 	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
@@ -193,6 +194,8 @@ namespace embree
 	  mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 
 	  const mic_f org_xyz1     = select(0x7777,org_xyz,mic_f::one());
+	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
 
 	  const size_t leaf_mask = BVH4HAIR_LEAF_MASK;
 
@@ -206,6 +209,8 @@ namespace embree
 					sindex,
 					dir_xyz,
 					org_xyz1,
+					rdir_xyz,
+					org_rdir_xyz,
 					min_dist_xyz,
 					max_dist_xyz,
 					stack_node,
@@ -273,7 +278,7 @@ namespace embree
         {
 	  Bezier1iIntersector16::Precalculations pre(ray16,rayIndex);
 
-	  stack_node[1] = bvh->unaligned_nodes->child(0);
+	  stack_node[1] = bvh->root; 
 	  size_t sindex = 2;
 
 	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
@@ -281,6 +286,8 @@ namespace embree
 	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 	  const mic_f org_xyz1     = select(0x7777,org_xyz,mic_f::one());
+	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
 
 	  const size_t leaf_mask = BVH4HAIR_LEAF_MASK;
 
@@ -293,6 +300,8 @@ namespace embree
 				       sindex,
 				       dir_xyz,
 				       org_xyz1,
+				       rdir_xyz,
+				       org_rdir_xyz,
 				       min_dist_xyz,
 				       max_dist_xyz,
 				       stack_node,
@@ -357,7 +366,7 @@ namespace embree
 
       Bezier1iIntersector16::Precalculations pre(ray_space,0);
 	  
-      stack_node[1] = bvh->unaligned_nodes->child(0);
+      stack_node[1] = bvh->root; 
       size_t sindex = 2;
 
       const mic_f org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
@@ -366,6 +375,8 @@ namespace embree
       mic_f       max_dist_xyz = broadcast1to16f(&ray.tfar);
 
       const mic_f org_xyz1     = select(0x7777,org_xyz,mic_f::one());
+      const mic_f rdir_xyz     = rcp_safe(dir_xyz);
+      const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
 
       const size_t leaf_mask = BVH4HAIR_LEAF_MASK;
 
@@ -379,6 +390,8 @@ namespace embree
 				    sindex,
 				    dir_xyz,
 				    org_xyz1,
+				    rdir_xyz,
+				    org_rdir_xyz,
 				    min_dist_xyz,
 				    max_dist_xyz,
 				    stack_node,
@@ -436,11 +449,14 @@ namespace embree
 
       Bezier1iIntersector16::Precalculations pre(ray_space,0);
 	  
-      stack_node[1] = bvh->unaligned_nodes->child(0);
+      stack_node[1] = bvh->root; 
       size_t sindex = 2;
 
       const mic_f org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
       const mic_f dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
+      const mic_f rdir_xyz     = rcp_safe(dir_xyz);
+      const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
+
       const mic_f min_dist_xyz = broadcast1to16f(&ray.tnear);
       mic_f       max_dist_xyz = broadcast1to16f(&ray.tfar);
 
@@ -458,6 +474,8 @@ namespace embree
 				   sindex,
 				   dir_xyz,
 				   org_xyz1,
+				   rdir_xyz,
+				   org_rdir_xyz,
 				   min_dist_xyz,
 				   max_dist_xyz,
 				   stack_node,

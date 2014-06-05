@@ -27,7 +27,7 @@ namespace embree
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 
-#define ENABLE_OBB_BVH4 1
+#define ENABLE_OBB_BVH4 0
 
 #define TIMER(x)  
 
@@ -204,6 +204,8 @@ namespace embree
 
     prims = (Bezier1i                 *) os_malloc(size_primrefs); 
     node  = (BVH4Hair::UnalignedNode  *) os_malloc(size_node);
+    //node  = (BVH4Hair::AlignedNode  *) os_malloc(size_node);
+
     accel = (Bezier1i                 *) os_malloc(size_accel);
 
     assert(prims  != 0);
@@ -211,7 +213,6 @@ namespace embree
     assert(accel  != 0);
 
     bvh4hair->accel = accel;
-    bvh4hair->qbvh  = (BVH4i::Node*)node;
     bvh4hair->size_node  = size_node;
     bvh4hair->size_accel = size_accel;
 
@@ -558,12 +559,8 @@ namespace embree
 	  {
 	    DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
 	    /* handle empty scene */
-	    for (size_t i=0;i<4;i++)
-	      bvh4hair->qbvh[0].setInvalid(i);
-	    for (size_t i=0;i<4;i++)
-	      bvh4hair->qbvh[1].setInvalid(i);
-	    bvh4hair->qbvh[0].lower[0].child = BVH4i::NodeRef(128);
-	    bvh4hair->root = bvh4hair->qbvh[0].lower[0].child; 
+	    bvh4hair->setFirstNodesToInvalid();
+	    bvh4hair->root = BVH4Hair::emptyNode;
 	    bvh4hair->bounds = empty;
 	  }
       }
@@ -662,9 +659,10 @@ namespace embree
     numNodes = atomicID; 
     
     /* update BVH4 */
-    bvh4hair->root             = 0; // node[0].child(0);
+    
+    bvh4hair->root             = node[0].child(0);
     bvh4hair->bounds           = global_bounds.geometry;
-    bvh4hair->unaligned_nodes  = node;
+    bvh4hair->unaligned_nodes  = (BVH4Hair::UnalignedNode*)node;
     bvh4hair->accel            = prims;
 
     /* release all threads again */
@@ -1088,6 +1086,10 @@ namespace embree
 
   void BVH4HairBuilder::recurseOBB(BuildRecordOBB& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads)
   {
+#if ENABLE_OBB_BVH4 == 0
+    FATAL("recurseOBB disabled");
+#endif
+
     __aligned(64) BuildRecordOBB children[BVH4Hair::N];
 
     /* create leaf node */
