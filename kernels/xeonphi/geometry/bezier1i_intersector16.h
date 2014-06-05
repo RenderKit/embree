@@ -188,14 +188,9 @@ namespace embree
       mic_f P,T;
       eval(uu,p0123,P,T);
       assert( T != mic_f::zero() );
-      ray.Ng.x[k] = T[0];
-      ray.Ng.y[k] = T[1];
-      ray.Ng.z[k] = T[2];
-      ray.u[k] = uu;
-      ray.v[k] = 0.0f;
-      ray.tfar[k] = t[i];
-      ray.geomID[k] = curve_in.geomID;
-      ray.primID[k] = curve_in.primID;
+
+      ray.update((mic_m)1,k,mic_f(t[i]),mic_f(uu),mic_f::zero(),swAAAA(T),swBBBB(T),swCCCC(T),curve_in.geomID,curve_in.primID);
+
       return true;
     }
 
@@ -391,14 +386,9 @@ namespace embree
       mic_f P,T;
       eval(uu,p0123,P,T);
       assert( T != mic_f::zero() );
-      ray.Ng.x = T[0];
-      ray.Ng.y = T[1];
-      ray.Ng.z = T[2];
-      ray.u = uu;
-      ray.v = 0.0f;
-      ray.tfar = t[i];
-      ray.geomID = curve_in.geomID;
-      ray.primID = curve_in.primID;
+
+      ray.update((mic_m)1,mic_f(t[i]),mic_f(uu),mic_f::zero(),swAAAA(T),swBBBB(T),swCCCC(T),curve_in.geomID,curve_in.primID);
+
       return true;
     }
 
@@ -469,7 +459,7 @@ namespace embree
 
 #if defined(__INTERSECTION_FILTER__) 
       const Geometry* const gg = ((Scene*)geom)->get(curve_in.geomID);
-      if (likely(gg->hasOcclusionFilter1())) 
+      if (unlikely(gg->hasOcclusionFilter1())) 
 	{
 	  while(any(valid)) 
 	    {
