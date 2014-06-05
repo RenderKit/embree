@@ -69,9 +69,10 @@ namespace embree
 					       const size_t leaf_mask)
   {
     const mic_m m7777 = 0x7777; 
-    const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero());
-    const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero());
+    /* const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero()); */
+    /* const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero()); */
 
+    const mic_i invalidNode = mic_i::neg_one();
 
     while (1) 
       {
@@ -133,7 +134,7 @@ namespace embree
         
 	    /* if a single child is hit, continue with that child */
 	    curNode = u_node->child(pos_first>>2);
-	    assert(curNode != BVH4Hair::emptyNode);
+	    assert(curNode != BVH4Hair::invalidNode);
 
 	    if (likely(num_hitm == 1)) continue;
         
@@ -147,8 +148,8 @@ namespace embree
 		const BVH4Hair::NodeRef node_first  = curNode;
 		const BVH4Hair::NodeRef node_second = u_node->child(pos_second>>2);
 
-		assert(node_first  != BVH4Hair::emptyNode);
-		assert(node_second != BVH4Hair::emptyNode);
+		assert(node_first  != BVH4Hair::invalidNode);
+		assert(node_second != BVH4Hair::invalidNode);
           
 		if (dist_first <= dist_second)
 		  {			  
@@ -181,47 +182,55 @@ namespace embree
 	    curNode = u_node->child(closest_child_pos>>2);
 
 
-	    assert(curNode  != BVH4Hair::emptyNode);
+	    assert(curNode  != BVH4Hair::invalidNode);
 
 	    long i = -1;
 	    while((i = bitscan64(i,m_pos)) != BITSCAN_NO_BIT_SET_64)	    
 	      {
 		((unsigned int*)stack_dist)[sindex] = ((unsigned int*)&tNear)[i];		      
 		stack_node[sindex] = u_node->child(i>>2);
-		assert(stack_node[sindex]  != BVH4Hair::emptyNode);
+		assert(stack_node[sindex]  != BVH4Hair::invalidNode);
 		sindex++;
 	      }
 	  }
 	else
 	  {
-	    FATAL("HERE INTERSECT");
 
-	    const size_t curNodeAligned = (size_t)curNode ^ BVH4Hair::alignednode_mask;
+	    const BVH4Hair::AlignedNode* __restrict__ node = (BVH4Hair::AlignedNode*)curNode.node(); // curNode.node();
 
-	    const BVH4Hair::AlignedNode* __restrict__ const node = (BVH4Hair::AlignedNode*)curNodeAligned; // curNode.node();
+	    prefetch<PFHINT_L1>((char*)node + 0);
+	    prefetch<PFHINT_L1>((char*)node + 64);
 
 	    STAT3(normal.trav_nodes,1,1,1);
+
+	    node = (BVH4Hair::AlignedNode*)((size_t)node ^ BVH4Hair::alignednode_mask);
 
 	    const float* __restrict const plower = (float*)node->lower;
 	    const float* __restrict const pupper = (float*)node->upper;
 
-	    prefetch<PFHINT_L1>((char*)node + 0);
-	    prefetch<PFHINT_L1>((char*)node + 64);
         
 	    /* intersect single ray with 4 bounding boxes */
 
-	    mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz);
-	    mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz);
+	    mic_m hitm = ne(0x8888,load16i((int*)plower),invalidNode);
 
-	    tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
+	    const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
+	    const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+	    const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
+	    const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
-	    tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
+	    
+	    /* mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz); */
+	    /* mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz); */
 
-	    mic_m hitm = ~m7777; 
-	    const mic_f tLower = tLowerXYZ;
-	    const mic_f tUpper = tUpperXYZ;
+	    /* tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz); */
+	    /* tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz); */
+
+	    /* tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz); */
+	    /* tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz); */
+
+	    /* mic_m hitm = ~m7777;  */
+	    /* const mic_f tLower = tLowerXYZ; */
+	    /* const mic_f tUpper = tUpperXYZ; */
 
 	    /* early pop of next node */
 	    sindex--;
@@ -247,7 +256,7 @@ namespace embree
 	    const unsigned long num_hitm = countbits(hiti); 
         
 	    /* if a single child is hit, continue with that child */
-	    curNode = node->child(pos_first>>2);
+	    curNode = node->child(pos_first);
 
 	    /* DBG_PRINT(curNode); */
 
@@ -260,10 +269,10 @@ namespace embree
 		const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
 		const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
 		const BVH4Hair::NodeRef node_first  = curNode;
-		const BVH4Hair::NodeRef node_second = node->child(pos_second>>2);
+		const BVH4Hair::NodeRef node_second = node->child(pos_second);
 
-		assert(node_first  != 0);
-		assert(node_second != 0);
+		assert(node_first  != BVH4Hair::invalidNode);
+		assert(node_second != BVH4Hair::invalidNode);
           
 		if (dist_first <= dist_second)
 		  {			  
@@ -291,17 +300,17 @@ namespace embree
 	    const mic_m closest_child = eq(hitm,min_dist,tNear);
 	    const unsigned long closest_child_pos = bitscan64(closest_child);
 	    const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
-	    curNode = node->child(closest_child_pos>>2);
+	    curNode = node->child(closest_child_pos);
 
 
-	    assert(curNode  != 0);
+	    assert(curNode  != BVH4Hair::invalidNode);
 
 	    long i = -1;
 	    while((i = bitscan64(i,m_pos)) != BITSCAN_NO_BIT_SET_64)	    
 	      {
 		((unsigned int*)stack_dist)[sindex] = ((unsigned int*)&tNear)[i];		      
-		stack_node[sindex] = node->child(i>>2);
-		assert(stack_node[sindex]  != BVH4Hair::emptyNode);
+		stack_node[sindex] = node->child(i);
+		assert(stack_node[sindex]  != BVH4Hair::invalidNode);
 		sindex++;
 	      }	    
 	  }
@@ -323,8 +332,9 @@ namespace embree
 					      const size_t leaf_mask)
   {
     const mic_m m7777 = 0x7777; 
-    const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero());
-    const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero());
+    /* const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero()); */
+    /* const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero()); */
+    const mic_i invalidNode = mic_i::neg_one();
 
     while (1) 
       {
@@ -388,7 +398,7 @@ namespace embree
         
 	    /* if a single child is hit, continue with that child */
 	    curNode = u_node->child(pos_first>>2);
-	    assert(curNode != BVH4Hair::emptyNode);
+	    assert(curNode != BVH4Hair::invalidNode);
 
 	    if (likely(num_hitm == 1)) continue;
         
@@ -401,8 +411,8 @@ namespace embree
 		const BVH4Hair::NodeRef node_first  = curNode;
 		const BVH4Hair::NodeRef node_second = u_node->child(pos_second>>2);
 
-		assert(node_first  != BVH4Hair::emptyNode);
-		assert(node_second != BVH4Hair::emptyNode);
+		assert(node_first  != BVH4Hair::invalidNode);
+		assert(node_second != BVH4Hair::invalidNode);
           
 		if (dist_first <= dist_second)
 		  {
@@ -433,20 +443,18 @@ namespace embree
 	    const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
 	    curNode = u_node->child(closest_child_pos>>2);
 
-	    assert(curNode  != BVH4Hair::emptyNode);
+	    assert(curNode  != BVH4Hair::invalidNode);
 
 	    long i = -1;
 	    while((i = bitscan64(i,m_pos)) != BITSCAN_NO_BIT_SET_64)	    
 	      {
 		stack_node[sindex] = u_node->child(i>>2);
-		assert(stack_node[sindex]  != BVH4Hair::emptyNode);
+		assert(stack_node[sindex]  != BVH4Hair::invalidNode);
 		sindex++;
 	      }
 	  }
 	else
 	  {
-	    FATAL("HERE OCCLUDED");
-
 	    const size_t curNodeAligned = (size_t)curNode ^ BVH4Hair::alignednode_mask;
 
 	    const BVH4Hair::AlignedNode* __restrict__ const node = (BVH4Hair::AlignedNode*)curNodeAligned; // curNode.node();
@@ -461,18 +469,25 @@ namespace embree
         
 	    /* intersect single ray with 4 bounding boxes */
 
-	    mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz);
-	    mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz);
+	    /* mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz); */
+	    /* mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz); */
 
-	    tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
+	    /* tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz); */
+	    /* tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz); */
 
-	    tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
+	    /* tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz); */
+	    /* tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz); */
 
-	    mic_m hitm = ~m7777; 
-	    const mic_f tLower = tLowerXYZ;
-	    const mic_f tUpper = tUpperXYZ;
+	    /* mic_m hitm = ~m7777;  */
+	    /* const mic_f tLower = tLowerXYZ; */
+	    /* const mic_f tUpper = tUpperXYZ; */
+
+	    mic_m hitm = ne(0x8888,load16i((int*)plower),invalidNode);
+
+	    const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
+	    const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+	    const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
+	    const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
 	    /* early pop of next node */
 	    sindex--;
@@ -497,8 +512,8 @@ namespace embree
 	    const unsigned long num_hitm = countbits(hiti); 
         
 	    /* if a single child is hit, continue with that child */
-	    curNode = node->child(pos_first>>2);
-	    assert(curNode != BVH4Hair::emptyNode);
+	    curNode = node->child(pos_first);
+	    assert(curNode != BVH4Hair::invalidNode);
 
 	    if (likely(num_hitm == 1)) continue;
         
@@ -509,10 +524,10 @@ namespace embree
 		const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
 		const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
 		const BVH4Hair::NodeRef node_first  = curNode;
-		const BVH4Hair::NodeRef node_second = node->child(pos_second>>2);
+		const BVH4Hair::NodeRef node_second = node->child(pos_second);
 
-		assert(node_first  != BVH4Hair::emptyNode);
-		assert(node_second != BVH4Hair::emptyNode);
+		assert(node_first  != BVH4Hair::invalidNode);
+		assert(node_second != BVH4Hair::invalidNode);
           
 		if (dist_first <= dist_second)
 		  {
@@ -541,15 +556,15 @@ namespace embree
 	    const mic_m closest_child = eq(hitm,min_dist,tNear);
 	    const unsigned long closest_child_pos = bitscan64(closest_child);
 	    const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
-	    curNode = node->child(closest_child_pos>>2);
+	    curNode = node->child(closest_child_pos);
 
-	    assert(curNode  != BVH4Hair::emptyNode);
+	    assert(curNode  != BVH4Hair::invalidNode);
 
 	    long i = -1;
 	    while((i = bitscan64(i,m_pos)) != BITSCAN_NO_BIT_SET_64)	    
 	      {
-		stack_node[sindex] = node->child(i>>2);
-		assert(stack_node[sindex]  != BVH4Hair::emptyNode);
+		stack_node[sindex] = node->child(i);
+		assert(stack_node[sindex]  != BVH4Hair::invalidNode);
 		sindex++;
 	      }
 	    

@@ -27,7 +27,7 @@ namespace embree
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 
-#define ENABLE_OBB_BVH4 0
+#define ENABLE_OBB_BVH4 1
 
 #define TIMER(x)  
 
@@ -632,7 +632,7 @@ namespace embree
 
     /* work in multithreaded toplevel mode until sufficient subtasks got generated */    
     const size_t coreCount = (threadCount+3)/4;
-    while (global_workStack.size() < coreCount &&
+    while (global_workStack.size() <= coreCount &&
 	   global_workStack.size()+BVH4i::N <= SIZE_GLOBAL_WORK_STACK) 
     {
       BuildRecord br;
@@ -661,6 +661,8 @@ namespace embree
     /* update BVH4 */
     
     bvh4hair->root             = node[0].child(0);
+    //bvh4hair->root             = ((BVH4Hair::AlignedNode*)node)[0].child(3);
+
     bvh4hair->bounds           = global_bounds.geometry;
     bvh4hair->unaligned_nodes  = (BVH4Hair::UnalignedNode*)node;
     bvh4hair->accel            = prims;
@@ -698,7 +700,7 @@ namespace embree
       {
 	DBG(DBG_PRINT("TOP_LEVEL"));
 
-	if (current.items() >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD)
+	if (current.items() >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD && numThreads > 1)
 	  return splitParallelGlobal(current,left,right,threadID,numThreads);
 	else
 	  {
@@ -1044,6 +1046,7 @@ namespace embree
 
     /* allocate next four nodes */
     const size_t currentIndex = alloc.get(1);
+    
     node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
 
 
@@ -1143,6 +1146,8 @@ namespace embree
 
     /* allocate next four nodes */
     const size_t currentIndex = alloc.get(1);
+    /* recurseOBB */
+
     node[currentIndex].prefetchNode<PFHINT_L2EX>();
     node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
 
