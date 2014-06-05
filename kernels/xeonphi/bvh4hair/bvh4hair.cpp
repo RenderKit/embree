@@ -35,7 +35,7 @@ namespace embree
 
   }
 
-  Accel::Intersectors BVH4HairIntersectors(BVH4i* bvh)
+  Accel::Intersectors BVH4HairIntersectors(BVH4Hair* bvh)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
@@ -70,43 +70,6 @@ namespace embree
     0,0,NAN,0,
     NAN,NAN,NAN,NAN
   };
-
-  void BVH4Hair::UnalignedNode::convertFromBVH4iNode(const BVH4i::Node &bvh4i_node, UnalignedNode *ptr)
-  {    
-    setIdentityMatrix();
-    for (size_t m=0;m<4;m++)
-      {
-	const float dx = bvh4i_node.upper[m].x - bvh4i_node.lower[m].x;
-	const float dy = bvh4i_node.upper[m].y - bvh4i_node.lower[m].y;
-	const float dz = bvh4i_node.upper[m].z - bvh4i_node.lower[m].z;
-	const float inv_dx = 1.0f / dx;
-	const float inv_dy = 1.0f / dy;
-	const float inv_dz = 1.0f / dz;
-	const float min_x = bvh4i_node.lower[m].x;
-	const float min_y = bvh4i_node.lower[m].y;
-	const float min_z = bvh4i_node.lower[m].z;
-	set_scale(inv_dx,inv_dy,inv_dz,m);
-	set_translation(-min_x*inv_dx,-min_y*inv_dy,-min_z*inv_dz,m);
-
-	BVH4i::NodeRef n4i = bvh4i_node.child(m);
-	if (n4i.isLeaf())
-	  {
-	    const size_t index = n4i.offsetIndex();
-	    const size_t items = n4i.items();
-	    if (n4i != BVH4i::emptyNode)
-	      child(m) = (size_t)n4i;
-	    else
-	      child(m) = (size_t)-1;
-	  }
-	else
-	  {
-	    const size_t nodeID = n4i.nodeID();
-	    child(m) = (size_t)&ptr[nodeID]; 	    
-	  }
-	geomID[m] = 0;
-	primID[m] = 0;
-      }
-  }
 
 
 

@@ -20,13 +20,13 @@
 #include "common/accel.h"
 #include "common/scene.h"
 #include "geometry/primitive.h"
-#include "bvh4i/bvh4i.h"
+//#include "bvh4i/bvh4i.h"
 
 namespace embree
 {
 
 
-  class BVH4Hair : public BVH4i
+  class BVH4Hair : public Bounded // BVH4i
   {
   public:
     /*! branching width of the tree */
@@ -41,14 +41,16 @@ namespace embree
     static const size_t alignednode_mask = 1 << (leaf_shift+1);
 
     
+    /*! Maximal depth of the BVH. */
+    static const size_t maxBuildDepth = 26;
+    static const size_t maxBuildDepthLeaf = maxBuildDepth+6;
+    static const size_t maxDepth = maxBuildDepth + maxBuildDepthLeaf;
+
     /*! Empty node */
     static const size_t emptyNode = leaf_mask;
 
     /*! Invalid node */
     static const size_t invalidNode = (size_t)-1;
-
-    /*! Maximal depth of the BVH. */
-    static const size_t maxBuildDepth = 32;
 
 
     struct NodeRef
@@ -264,8 +266,6 @@ namespace embree
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { return children[i]; }
-
-      void convertFromBVH4iNode(const BVH4i::Node &node, UnalignedNode *ptr);
      
     };
 
@@ -314,9 +314,15 @@ namespace embree
 	upper[i].data = 0;
       }
 
+      __forceinline void setInvalid()
+      {
+	for (size_t i=0;i<4;i++)
+	  setInvalid(i);
+      }
+
       __forceinline void createNode(void *ptr, const size_t m)
       {
-	size_t offset64 = (size_t)ptr;
+	size_t offset64 = (size_t)ptr | alignednode_mask;
 	unsigned int lower_part  = (unsigned int)(offset64 & 0xffffffff);
 	unsigned int upper_part = (unsigned int)(offset64 >> 32);
 	lower[m].data  = lower_part;
@@ -348,32 +354,69 @@ namespace embree
 	upper[m].z = b.upper.z;
       }
 
-
-      __forceinline std::ostream& operator<<(std::ostream &o)
+      __forceinline void setMatrix(const LinearSpace3fa &mat, BBox3fa &b, const size_t m)
       {
-	for (size_t i=0;i<4;i++)
-	  {
-	    o << "lower: [" << lower[i].x << "," << lower[i].y << "," << lower[i].z << "," << lower[i].data << "] ";
-	    o << "upper: [" << upper[i].x << "," << upper[i].y << "," << upper[i].z << "," << upper[i].data << "] ";
-	    o << std::endl;
-	  }
-	return o;
+	FATAL("not implemented");
       }
+
     };
 
+    NodeRef root;                      //!< Root node (can also be a leaf).
 
-  BVH4Hair(const PrimitiveType& primTy, void* geometry = NULL) : BVH4i(primTy,geometry)
+    const PrimitiveType& primTy;   //!< triangle type stored in BVH
+    void* geometry;                    //!< pointer to geometry for intersection
+    UnalignedNode *unaligned_nodes;
+    void *accel;
+    size_t size_node;
+    size_t size_accel;
+
+    __forceinline       void* nodePtr()       { return unaligned_nodes; }
+    __forceinline const void* nodePtr() const { return unaligned_nodes; }
+
+    __forceinline       void* triPtr()       { return accel; }
+    __forceinline const void* triPtr() const { return accel; }
+
+
+  /* BVH4Hair(const PrimitiveType& primTy, void* geometry = NULL) : BVH4i(primTy,geometry) */
+  /*     {	 */
+  /* 	assert( sizeof(UnalignedNode) == 256 ); */
+  /* 	unaligned_nodes = NULL; */
+  /*     } */
+
+  BVH4Hair(const PrimitiveType& primTy, void* geometry = NULL) : primTy(primTy), 
+      geometry(geometry), 
+      root(emptyNode), 
+      accel(NULL),
+      size_node(0),
+      size_accel(0)
       {	
 	assert( sizeof(UnalignedNode) == 256 );
 	unaligned_nodes = NULL;
       }
+
+      __forceinline void setFirstNodesToInvalid()
+      {
+	unaligned_nodes[0].setInvalid();
+	unaligned_nodes[1].setInvalid();
+      }
+
     
     static Accel* BVH4HairBinnedSAH(Scene* scene);
     
 
-    UnalignedNode *unaligned_nodes;
 
   };
+
+  __forceinline std::ostream& operator<<(std::ostream &o, const BVH4Hair::AlignedNode &n)
+    {
+      for (size_t i=0;i<4;i++)
+	{
+	  o << "lower: [" << n.lower[i].x << "," << n.lower[i].y << "," << n.lower[i].z << "," << n.lower[i].data << "] ";
+	  o << "upper: [" << n.upper[i].x << "," << n.upper[i].y << "," << n.upper[i].z << "," << n.upper[i].data << "] ";
+	  o << std::endl;
+	  }
+      return o;
+    }
 
 
   __forceinline std::ostream &operator<<(std::ostream &o, const BVH4Hair::UnalignedNode &n)
