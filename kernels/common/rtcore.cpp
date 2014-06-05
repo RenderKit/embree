@@ -60,6 +60,10 @@ namespace embree
   void BVH4MBRegister();
   void BVH4HairRegister();
 
+#if defined(__MIC__)
+  void BVH4iRegister();
+#endif
+
   /*! intersector registration functions */
   DECLARE_SYMBOL(RTCBoundsFunc,InstanceBoundsFunc);
   DECLARE_SYMBOL(AccelSet::Intersector1,InstanceIntersector1);
@@ -305,7 +309,8 @@ namespace embree
 
 #if !defined(__MIC__)
     BVH4Register();
-    BVH4HairRegister();
+#else
+    BVH4iRegister();
 #endif
     BVH4MBRegister();
     BVH4HairRegister();    
