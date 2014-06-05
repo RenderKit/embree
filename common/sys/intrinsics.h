@@ -212,6 +212,10 @@ __forceinline int32 atomic_add(volatile int32* p, const int32 v) {
   return _InterlockedExchangeAdd((volatile long*)p,v);
 }
 
+__forceinline int32 atomic_sub(volatile int32* p, const int32 v) {
+  return _InterlockedExchangeAdd((volatile long*)p,-v);
+}
+
 __forceinline int32 atomic_xchg(volatile int32 *p, int32 v) {
   return _InterlockedExchange((volatile long*)p, v);
 }
@@ -226,6 +230,10 @@ typedef int64 atomic64_t;
 
 __forceinline int64 atomic_add(volatile int64* m, const int64 v) {
   return _InterlockedExchangeAdd64(m,v);
+}
+
+__forceinline int64 atomic_sub(volatile int64* m, const int64 v) {
+  return _InterlockedExchangeAdd64(m,-v);
 }
 
 __forceinline int64 atomic_xchg(volatile int64 *p, int64 v) {
@@ -483,6 +491,10 @@ __forceinline int64 atomic_add( int64 volatile* value, int64 input ) {
   return __sync_fetch_and_add(value, input);
 }
 
+__forceinline int64 atomic_sub( int64 volatile* value, int64 input ) {
+  return __sync_fetch_and_add(value, -input);
+}
+
 __forceinline int64 atomic_xchg( int64 volatile* value, int64 input ) {
   return __sync_lock_test_and_set(value, input);
 }
@@ -499,6 +511,10 @@ __forceinline int32 atomic_add( int32 volatile* value, int32 input ) {
   return __sync_fetch_and_add(value, input);
 }
 
+__forceinline int32 atomic_sub( int32 volatile* value, int32 input ) {
+  return __sync_fetch_and_add(value, -input);
+}
+
 __forceinline int32 atomic_xchg( int32 volatile* value, int32 input ) {
   return __sync_lock_test_and_set(value, input);
 }
@@ -511,6 +527,10 @@ typedef int8 atomic8_t;
 
 __forceinline int8 atomic_add( int8 volatile* value, int8 input ) {
   return __sync_fetch_and_add(value, input);
+}
+
+__forceinline int8 atomic_sub( int8 volatile* value, int8 input ) {
+  return __sync_fetch_and_add(value, -input);
 }
 
 __forceinline int8 atomic_xchg( int8 volatile* value, int8 input ) {

@@ -29,6 +29,7 @@ namespace embree
    *  Intersection". In contrast to the paper we precalculate some
    *  factors and factor the calculations differently to allow
    *  precalculating the cross product e1 x e2. */
+  template<bool enableIntersectionFilter>
   struct Triangle8Intersector4MoellerTrumbore
   {
     typedef Triangle8 Primitive;
@@ -104,11 +105,13 @@ namespace embree
 
         /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-        Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (unlikely(geometry->hasIntersectionFilter4())) {
-          runIntersectionFilter4(valid,geometry,ray,u,v,t,Ng,geomID,primID);
-          continue;
-        }
+	if (enableIntersectionFilter) {
+	  Geometry* geometry = ((Scene*)geom)->get(geomID);
+	  if (unlikely(geometry->hasIntersectionFilter4())) {
+	    runIntersectionFilter4(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+	    continue;
+	  }
+	}
 #endif
 
         /* update hit information */
@@ -191,18 +194,20 @@ namespace embree
 
         /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-        const int geomID = tri.geomID[i];
-        Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (unlikely(geometry->hasOcclusionFilter4()))
-        {
-          /* calculate hit information */
-          const ssef rcpAbsDen = rcp(absDen);
-          const ssef u = U*rcpAbsDen;
-          const ssef v = V*rcpAbsDen;
-          const ssef t = T*rcpAbsDen;
-          const int primID = tri.primID[i];
-          valid = runOcclusionFilter4(valid,geometry,ray,u,v,t,Ng,geomID,primID);
-        }
+	if (enableIntersectionFilter) {
+	  const int geomID = tri.geomID[i];
+	  Geometry* geometry = ((Scene*)geom)->get(geomID);
+	  if (unlikely(geometry->hasOcclusionFilter4()))
+	  {
+	    /* calculate hit information */
+	    const ssef rcpAbsDen = rcp(absDen);
+	    const ssef u = U*rcpAbsDen;
+	    const ssef v = V*rcpAbsDen;
+	    const ssef t = T*rcpAbsDen;
+	    const int primID = tri.primID[i];
+	    valid = runOcclusionFilter4(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+	  }
+	}
 #endif
 
         /* update occlusion */
@@ -271,7 +276,7 @@ namespace embree
       while (true) 
       {
         Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (likely(!geometry->hasIntersectionFilter4())) 
+        if (likely(!enableIntersectionFilter || !geometry->hasIntersectionFilter4())) 
         {
 #endif
           /* update hit information */
@@ -353,7 +358,7 @@ namespace embree
       while (true) 
       {
         Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (likely(!geometry->hasOcclusionFilter4())) break;
+        if (likely(!enableIntersectionFilter || !geometry->hasOcclusionFilter4())) break;
 
         /* calculate hit information */
         const avxf rcpAbsDen = rcp(absDen);

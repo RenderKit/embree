@@ -356,8 +356,13 @@ namespace embree
   __forceinline size_t select_min(const mic_f& v) { return __bsf(movemask(v == vreduce_min(v))); }
   __forceinline size_t select_max(const mic_f& v) { return __bsf(movemask(v == vreduce_max(v))); }
 
-  __forceinline size_t select_min(const mic_m& valid, const mic_f& v) { const mic_f a = select(valid,v,mic_f(pos_inf)); return __bsf(movemask(valid & (a == vreduce_min(a)))); }
+  __forceinline size_t select_min(const mic_m& valid, const mic_f& v, const mic_f &max_value) { const mic_f a = select(valid,v,max_value); return __bsf(movemask(a == vreduce_min(a))); }
+
+  __forceinline size_t select_max(const mic_m& valid, const mic_f& v, const mic_f &min_value) { const mic_f a = select(valid,v,min_value); return __bsf(movemask(a == vreduce_max(a))); }
+
   __forceinline size_t select_max(const mic_m& valid, const mic_f& v) { const mic_f a = select(valid,v,mic_f(neg_inf)); return __bsf(movemask(valid & (a == vreduce_max(a)))); }
+
+  __forceinline size_t select_min(const mic_m& valid, const mic_f& v) { const mic_f a = select(valid,v,mic_f(pos_inf)); return __bsf(movemask(valid & (a == vreduce_min(a)))); }
   
   __forceinline mic_f prefix_sum(const mic_f& a)
   {

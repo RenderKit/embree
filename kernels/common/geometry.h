@@ -59,6 +59,10 @@ namespace embree
       return numPrimitives && (state >= ENABLING) && (state <= MODIFIED); 
     }
 
+    __forceinline bool isDisabled() const { 
+      return !isEnabled();
+    }
+
     __forceinline bool isModified() const { 
       return numPrimitives && ((state == MODIFIED) || (state == ENABLING)); 
     }

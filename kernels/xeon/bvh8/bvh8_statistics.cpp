@@ -14,78 +14,87 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4i_statistics.h"
+#include "bvh8_statistics.h"
 
 namespace embree
 {
-  BVH4iStatistics::BVH4iStatistics (BVH4i* bvh) : bvh(bvh)
+  BVH8Statistics::BVH8Statistics (BVH8* bvh) : bvh(bvh)
   {
-    numNodes = numLeaves = numPrimBlocks = numPrimBlocks4 = numPrims = depth = 0;
+    numNodes = numLeaves = numPrimBlocks = numPrims = depth = 0;
     bvhSAH = leafSAH = 0.0f;
     statistics(bvh->root,bvh->bounds,depth);
-    bvhSAH /= area(bvh->bounds);
-    leafSAH /= area(bvh->bounds);
-    assert(depth <= BVH4i::maxDepth);
+    //bvhSAH /= area(bvh->bounds);
+    //leafSAH /= area(bvh->bounds);
+    assert(depth <= BVH8::maxDepth);
   }
 
-  std::string BVH4iStatistics::str()  
+  size_t BVH8Statistics::bytesUsed()
+  {
+    size_t bytesNodes = numNodes*sizeof(Node);
+    size_t bytesTris  = numPrimBlocks*bvh->primTy.bytes;
+    size_t numVertices = bvh->numVertices;
+    size_t bytesVertices = numVertices*sizeof(Vec3fa); 
+    return bytesNodes+bytesTris+bytesVertices;
+  }
+
+  std::string BVH8Statistics::str()  
   {
     std::ostringstream stream;
     size_t bytesNodes = numNodes*sizeof(Node);
     size_t bytesTris  = numPrimBlocks*bvh->primTy.bytes;
-    //size_t numVertices = bvh->numVertices;
-    //size_t bytesVertices = numVertices*sizeof(Vec3fa); 
-    size_t bytesTotal = bytesNodes+bytesTris;//+bytesVertices;
-    size_t bytesTotalAllocated = bvh->bytes();
-    double leafFill1 = double(numPrims)/double(bvh->primTy.blockSize*numPrimBlocks);
-    double leafFill4 = double(numPrims)/double(4.0*numPrimBlocks4);
+    size_t numVertices = bvh->numVertices;
+    size_t bytesVertices = numVertices*sizeof(Vec3fa); 
+    size_t bytesTotal = bytesNodes+bytesTris+bytesVertices;
+    size_t bytesTotalAllocated = bvh->bytesAllocated();
+    if (g_benchmark) std::cout << "BENCHMARK_TRIANGLE_ACCEL " << bvhSAH << " " << bytesTotal << std::endl;
     stream.setf(std::ios::fixed, std::ios::floatfield);
+    stream << "  primitives = " << bvh->numPrimitives << ", vertices = " << bvh->numVertices << std::endl;
+    stream.setf(std::ios::scientific, std::ios::floatfield);
     stream.precision(4);
     stream << "  sah = " << bvhSAH << ", leafSAH = " << leafSAH;
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream.precision(1);
-    stream << ", depth = " << depth;
-    stream << ", size = " << bytesTotalAllocated/1E6 << " MB (" << bytesTotal/1E6 << " MB used)" << std::endl;
+    stream << ", depth = " << depth << std::endl;
+    stream << "  used = " << bytesTotal/1E6 << " MB, allocated = " << bytesTotalAllocated/1E6 << " MB, perPrimitive = " << double(bytesTotal)/double(bvh->numPrimitives) << " B" << std::endl;
     stream.precision(1);
     stream << "  nodes = "  << numNodes << " "
            << "(" << bytesNodes/1E6  << " MB) "
            << "(" << 100.0*double(bytesNodes)/double(bytesTotal) << "% of total) "
-           << "(" << 100.0*(numNodes-1+numLeaves)/double(BVH4i::N*numNodes) << "% used)" 
+           << "(" << 100.0*(numNodes-1+numLeaves)/(BVH8::N*numNodes) << "% used)" 
            << std::endl;
     stream << "  leaves = " << numLeaves << " "
            << "(" << bytesTris/1E6  << " MB) "
            << "(" << 100.0*double(bytesTris)/double(bytesTotal) << "% of total) "
-           << "(" << 100.0*leafFill1 << "% used, " << 100.0*leafFill4 << "% used)" 
+           << "(" << 100.0*double(numPrims)/double(bvh->primTy.blockSize*numPrimBlocks) << "% used)" 
            << std::endl;
-    //stream << "  vertices = " << numVertices << " "
-    //       << "(" << bytesVertices/1E6 << " MB) " 
-    //       << "(" << 100.0*double(bytesVertices)/double(bytesTotal) << "% of total) "
-    //       << "(" << 100.0*12.0f/float(sizeof(Vec3fa)) << "% used)" 
-    //       << std::endl;
+    stream << "  vertices = " << numVertices << " "
+           << "(" << bytesVertices/1E6 << " MB) " 
+           << "(" << 100.0*double(bytesVertices)/double(bytesTotal) << "% of total) "
+           << "(" << 100.0*12.0f/float(sizeof(Vec3fa)) << "% used)" 
+           << std::endl;
     return stream.str();
   }
 
-  void BVH4iStatistics::statistics(NodeRef node, const BBox3fa& bounds, size_t& depth)
+  void BVH8Statistics::statistics(NodeRef node, const BBox3fa& bounds, size_t& depth)
   {
     float A = bounds.empty() ? 0.0f : area(bounds);
-    
+
     if (node.isNode())
     {
       numNodes++;
       depth = 0;
       size_t cdepth = 0;
-      Node* n = node.node(bvh->nodePtr());
-
-      bvhSAH += A*BVH4i::travCost;
-      for (size_t i=0; i<BVH4i::N; i++) {
+      Node* n = node.node();
+      bvhSAH += A*BVH8::travCost;
+      for (size_t i=0; i<BVH8::N; i++) {
         statistics(n->child(i),n->bounds(i),cdepth); 
         depth=max(depth,cdepth);
       }
-      for (size_t i=0; i<BVH4i::N; i++) {
-        if (n->child(i) == BVH4i::emptyNode) {
-          for (; i<BVH4i::N; i++) {
-            if (n->child(i) != BVH4i::emptyNode)
-              throw std::runtime_error("invalid node");
+      for (size_t i=0; i<BVH8::N; i++) {
+        if (n->child(i) == BVH8::emptyNode) {
+          for (; i<BVH8::N; i++) {
+            if (n->child(i) != BVH8::emptyNode)
+	      throw std::runtime_error("invalid node");
           }
           break;
         }
@@ -96,18 +105,14 @@ namespace embree
     else
     {
       depth = 0;
-      size_t num; const char* tri = node.leaf(bvh->triPtr(),num);
+      size_t num; const char* tri = node.leaf(num);
       if (!num) return;
       
       numLeaves++;
       numPrimBlocks += num;
-      size_t prims = 0;
       for (size_t i=0; i<num; i++) {
-       prims += bvh->primTy.size(tri+i*bvh->primTy.bytes);
+        numPrims += bvh->primTy.size(tri+i*bvh->primTy.bytes);
       }
-      numPrims += prims;
-      numPrimBlocks4 += (prims+3)/4;
-
       float sah = A * bvh->primTy.intCost * num;
       bvhSAH += sah;
       leafSAH += sah;

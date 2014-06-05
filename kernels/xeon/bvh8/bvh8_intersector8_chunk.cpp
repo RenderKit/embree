@@ -14,25 +14,23 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4i_intersector8_chunk.h"
-
-#include "geometry/triangle1_intersector8_moeller.h"
-#include "geometry/triangle4_intersector8_moeller.h"
-#include "geometry/triangle1v_intersector8_pluecker.h"
-#include "geometry/triangle4v_intersector8_pluecker.h"
-#include "geometry/virtual_accel_intersector8.h"
+#include "bvh8_intersector8_chunk.h"
 #include "geometry/triangle8_intersector8_moeller.h"
+
+
+#define DBG(x) 
+
+#define START_SINDEX 5
 
 namespace embree
 {
   namespace isa
-  {
-    template<typename TriangleIntersector8>
-    void BVH4iIntersector8Chunk<TriangleIntersector8>::intersect(avxb* valid_i, BVH4i* bvh, Ray8& ray)
+  {    
+    
+    template<typename TriangleIntersector8>    
+    void BVH8Intersector8Chunk<TriangleIntersector8>::intersect(avxb* valid_i, BVH8* bvh, Ray8& ray)
     {
-      /* load node and primitive array */
-      const Node     * __restrict__ nodes = (Node    *)bvh->nodePtr();
-      const Triangle * __restrict__ accel = (Triangle*)bvh->triPtr();
+#if defined(__AVX__)
       
       /* load ray */
       const avxb valid0 = *valid_i;
@@ -42,11 +40,11 @@ namespace embree
       avxf ray_tfar  = select(valid0,ray.tfar ,neg_inf);
       const avxf inf = avxf(pos_inf);
       Precalculations pre(valid0,ray);
-
+      
       /* allocate stack and push root node */
-      avxf    stack_near[3*BVH4i::maxDepth+1];
-      NodeRef stack_node[3*BVH4i::maxDepth+1];
-      stack_node[0] = BVH4i::invalidNode;
+      avxf    stack_near[3*BVH8::maxDepth+1];
+      NodeRef stack_node[3*BVH8::maxDepth+1];
+      stack_node[0] = BVH8::invalidNode;
       stack_near[0] = inf;
       stack_node[1] = bvh->root;
       stack_near[1] = ray_tnear; 
@@ -59,7 +57,7 @@ namespace embree
         sptr_node--;
         sptr_near--;
         NodeRef curNode = *sptr_node;
-        if (unlikely(curNode == BVH4i::invalidNode)) 
+        if (unlikely(curNode == BVH8::invalidNode)) 
           break;
         
         /* cull node if behind closest hit point */
@@ -75,7 +73,7 @@ namespace embree
           
           const avxb valid_node = ray_tfar > curDist;
           STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
-          const Node* __restrict__ const node = curNode.node(nodes);
+          const Node* __restrict__ const node = (BVH8::Node*)curNode.node();
           
           /* pop of next node */
           sptr_node--;
@@ -83,11 +81,10 @@ namespace embree
           curNode = *sptr_node; // FIXME: this trick creates issues with stack depth
           curDist = *sptr_near;
           
-#pragma unroll(4)
-          for (unsigned i=0; i<4; i++)
+          for (unsigned i=0; i<8; i++)
           {
             const NodeRef child = node->children[i];
-            if (unlikely(child == BVH4i::emptyNode)) break;
+            if (unlikely(child == BVH8::emptyNode)) break;
             
 #if defined(__AVX2__)
             const avxf lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
@@ -117,48 +114,51 @@ namespace embree
             {
               const avxf childDist = select(lhit,lnearP,inf);
               const NodeRef child = node->children[i];
-              sptr_node++;
-              sptr_near++;
               
               /* push cur node onto stack and continue with hit child */
               if (any(childDist < curDist))
               {
-                *(sptr_node-1) = curNode;
-                *(sptr_near-1) = curDist; 
+                *sptr_node = curNode;
+                *sptr_near = curDist; 
+		sptr_node++;
+		sptr_near++;
+
                 curDist = childDist;
                 curNode = child;
               }
               
               /* push hit child onto stack*/
               else {
-                *(sptr_node-1) = child;
-                *(sptr_near-1) = childDist; 
+                *sptr_node = child;
+                *sptr_near = childDist; 
+		sptr_node++;
+		sptr_near++;
+
               }
-              assert(sptr_node - stack_node < BVH4i::maxDepth);
+              assert(sptr_node - stack_node < BVH8::maxDepth);
             }	      
           }
         }
         
         /* return if stack is empty */
-        if (unlikely(curNode == BVH4i::invalidNode)) 
+        if (unlikely(curNode == BVH8::invalidNode)) 
           break;
         
         /* intersect leaf */
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
-        size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel, items);
+        size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(items);
         TriangleIntersector8::intersect(valid_leaf,pre,ray,tri,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
       AVX_ZERO_UPPER();
+#endif       
     }
     
-    template<typename TriangleIntersector8>
-    void BVH4iIntersector8Chunk<TriangleIntersector8>::occluded(avxb* valid_i, BVH4i* bvh, Ray8& ray)
+     template<typename TriangleIntersector8>
+    void BVH8Intersector8Chunk<TriangleIntersector8>::occluded(avxb* valid_i, BVH8* bvh, Ray8& ray)
     {
-      /* load node and primitive array */
-      const Node     * __restrict__ nodes = (Node    *)bvh->nodePtr();
-      const Triangle * __restrict__ accel = (Triangle*)bvh->triPtr();
+#if defined(__AVX__)
       
       /* load ray */
       const avxb valid = *valid_i;
@@ -171,9 +171,9 @@ namespace embree
       Precalculations pre(valid,ray);
 
       /* allocate stack and push root node */
-      avxf    stack_near[3*BVH4i::maxDepth+1];
-      NodeRef stack_node[3*BVH4i::maxDepth+1];
-      stack_node[0] = BVH4i::invalidNode;
+      avxf    stack_near[3*BVH8::maxDepth+1];
+      NodeRef stack_node[3*BVH8::maxDepth+1];
+      stack_node[0] = BVH8::invalidNode;
       stack_near[0] = inf;
       stack_node[1] = bvh->root;
       stack_near[1] = ray_tnear; 
@@ -186,7 +186,7 @@ namespace embree
         sptr_node--;
         sptr_near--;
         NodeRef curNode = *sptr_node;
-        if (unlikely(curNode == BVH4i::invalidNode)) 
+        if (unlikely(curNode == BVH8::invalidNode)) 
           break;
         
         /* cull node if behind closest hit point */
@@ -202,7 +202,7 @@ namespace embree
           
           const avxb valid_node = ray_tfar > curDist;
           STAT3(shadow.trav_nodes,1,popcnt(valid_node),8);
-          const Node* __restrict__ const node = curNode.node(nodes);
+          const Node* __restrict__ const node = (Node*)curNode.node();
           
           /* pop of next node */
           sptr_node--;
@@ -210,11 +210,10 @@ namespace embree
           curNode = *sptr_node; // FIXME: this trick creates issues with stack depth
           curDist = *sptr_near;
           
-#pragma unroll(4)
-          for (unsigned i=0; i<4; i++)
+          for (unsigned i=0; i<8; i++)
           {
             const NodeRef child = node->children[i];
-            if (unlikely(child == BVH4i::emptyNode)) break;
+            if (unlikely(child == BVH8::emptyNode)) break;
             
 #if defined(__AVX2__)
             const avxf lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
@@ -260,32 +259,28 @@ namespace embree
                 *(sptr_node-1) = child;
                 *(sptr_near-1) = childDist; 
               }
-              assert(sptr_node - stack_node < BVH4i::maxDepth);
+              assert(sptr_node - stack_node < BVH8::maxDepth);
             }	      
           }
         }
         
         /* return if stack is empty */
-        if (unlikely(curNode == BVH4i::invalidNode)) 
+        if (unlikely(curNode == BVH8::invalidNode)) 
           break;
         
         /* intersect leaf */
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
-        size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(accel, items);
+        size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(items);
         terminated |= TriangleIntersector8::occluded(!terminated,pre,ray,tri,items,bvh->geometry);
         if (all(terminated)) break;
         ray_tfar = select(terminated,neg_inf,ray_tfar);
       }
       store8i(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
+#endif      
     }
-
-    DEFINE_INTERSECTOR8(BVH4iTriangle1Intersector8ChunkMoeller, BVH4iIntersector8Chunk<Triangle1Intersector8MoellerTrumbore>);
-    DEFINE_INTERSECTOR8(BVH4iTriangle4Intersector8ChunkMoeller, BVH4iIntersector8Chunk<Triangle4Intersector8MoellerTrumbore>);
-    DEFINE_INTERSECTOR8(BVH4iTriangle1vIntersector8ChunkPluecker, BVH4iIntersector8Chunk<Triangle1vIntersector8Pluecker>);
-    DEFINE_INTERSECTOR8(BVH4iTriangle4vIntersector8ChunkPluecker, BVH4iIntersector8Chunk<Triangle4vIntersector8Pluecker>);
-    DEFINE_INTERSECTOR8(BVH4iTriangle8Intersector8ChunkMoeller, BVH4iIntersector8Chunk<Triangle8Intersector8MoellerTrumbore>);
-    DEFINE_INTERSECTOR8(BVH4iVirtualIntersector8Chunk, BVH4iIntersector8Chunk<VirtualAccelIntersector8>);
+    
+    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8ChunkMoeller,BVH8Intersector8Chunk<Triangle8Intersector8MoellerTrumbore<true> >);
   }
-}
+}  

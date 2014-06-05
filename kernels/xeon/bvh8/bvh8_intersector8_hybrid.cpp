@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh8i_intersector8_hybrid.h"
+#include "bvh8_intersector8_hybrid.h"
 #include "geometry/triangle8_intersector8_moeller.h"
 
 
@@ -30,12 +30,12 @@ namespace embree
   { 
 
     template<typename TriangleIntersector8>
-    __forceinline void BVH8iIntersector8Hybrid<TriangleIntersector8>::intersect1(const BVH8i* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
+    __forceinline void BVH8Intersector8Hybrid<TriangleIntersector8>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
     {
       /*! stack state */
-      StackItemInt64 stack[stackSizeSingle];  //!< stack of nodes 
-      StackItemInt64* stackPtr = stack+1;        //!< current stack pointer
-      StackItemInt64* stackEnd = stack+stackSizeSingle;
+      StackItemInt32<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
+      StackItemInt32<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
+      StackItemInt32<NodeRef>* stackEnd = stack+stackSizeSingle;
       stack[0].ptr = root;
       stack[0].dist = neg_inf;
       
@@ -50,9 +50,6 @@ namespace embree
       const avx3f org_rdir(org*rdir);
       avxf rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
      
-      const Node     * __restrict__ nodes = (Node    *)bvh->nodePtr();
-      const Triangle * __restrict__ accel = (Triangle*)bvh->triPtr();
- 
       /* pop loop */
       while (true) pop:
       {
@@ -73,7 +70,7 @@ namespace embree
           STAT3(normal.trav_nodes,1,1,1);
           
           /*! single ray intersection with 4 boxes */
-          const Node* node = (Node*)cur.node(nodes);
+          const Node* node = (Node*)cur.node();
           const size_t farX  = nearX ^ sizeof(avxf), farY  = nearY ^ sizeof(avxf), farZ  = nearZ ^ sizeof(avxf);
 #if defined (__AVX2__)
           const avxf tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
@@ -111,16 +108,16 @@ namespace embree
           size_t r = __bscf(mask);
           if (likely(mask == 0)) {
             cur = node->child(r);
-            assert(cur != BVH4i::emptyNode);
+            assert(cur != BVH8::emptyNode);
             continue;
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const unsigned int d0 = ((unsigned int*)&tNear)[r];
+          NodeRef c0 = node->child(r); c0.prefetch(); const unsigned int d0 = ((unsigned int*)&tNear)[r];
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); const unsigned int d1 = ((unsigned int*)&tNear)[r];
-          assert(c0 != BVH4i::emptyNode);
-          assert(c1 != BVH4i::emptyNode);
+          NodeRef c1 = node->child(r); c1.prefetch(); const unsigned int d1 = ((unsigned int*)&tNear)[r];
+          assert(c0 != BVH8::emptyNode);
+          assert(c1 != BVH8::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
             if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
@@ -137,8 +134,8 @@ namespace embree
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          NodeRef c = node->child(r); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-          assert(c0 != BVH4i::emptyNode);
+          NodeRef c = node->child(r); c.prefetch(); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          assert(c0 != BVH8::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
             cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -148,8 +145,8 @@ namespace embree
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          c = node->child(r); d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-          assert(c != BVH4i::emptyNode);
+          c = node->child(r); c.prefetch(); d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          assert(c != BVH8::emptyNode);
 	  if (likely(mask == 0)) {
 	    sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
 	    cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -159,7 +156,7 @@ namespace embree
 	  while(1)
 	    {
 	      r = __bscf(mask);
-	      c = node->child(r); d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+	      c = node->child(r); c.prefetch(); d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
 	      if (unlikely(mask == 0)) break;
 	    }
 	  cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -168,15 +165,15 @@ namespace embree
         
         /*! this is a leaf node */
         STAT3(normal.trav_leaves,1,1,1);
-        size_t num; Triangle* prim = (Triangle*) cur.leaf(accel,num);
-        TriangleIntersector8::intersect(pre,ray,k,prim,num,bvh->geometry);
+        size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
+	TriangleIntersector8::intersect(pre,ray,k,prim,num,bvh->geometry);
         rayFar = ray.tfar[k];
       }
     }
    
     
     template<typename TriangleIntersector8>    
-    void BVH8iIntersector8Hybrid<TriangleIntersector8>::intersect(avxb* valid_i, BVH8i* bvh, Ray8& ray)
+    void BVH8Intersector8Hybrid<TriangleIntersector8>::intersect(avxb* valid_i, BVH8* bvh, Ray8& ray)
     {
       /* load ray */
       const avxb valid0 = *valid_i;
@@ -200,7 +197,7 @@ namespace embree
       /* allocate stack and push root node */
       avxf    stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
-      stack_node[0] = BVH4i::invalidNode;
+      stack_node[0] = BVH8::invalidNode;
       stack_near[0] = inf;
       stack_node[1] = bvh->root;
       stack_near[1] = ray_tnear; 
@@ -208,9 +205,6 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       avxf*    __restrict__ sptr_near = stack_near + 2;
       
-      const Node     * __restrict__ nodes = (Node    *)bvh->nodePtr();
-      const Triangle * __restrict__ accel = (Triangle*)bvh->triPtr();
-
       while (1)
       {
         /* pop next node from stack */
@@ -218,7 +212,7 @@ namespace embree
         sptr_node--;
         sptr_near--;
         NodeRef curNode = *sptr_node;
-        if (unlikely(curNode == BVH4i::invalidNode)) {
+        if (unlikely(curNode == BVH8::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -240,6 +234,7 @@ namespace embree
           continue;
         }
 #endif
+
         while (1)
         {
           /* test if this is a leaf node */
@@ -248,7 +243,7 @@ namespace embree
           
           const avxb valid_node = ray_tfar > curDist;
           STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
-          const Node* __restrict__ const node = (Node*)curNode.node(nodes);
+          const Node* __restrict__ const node = (Node*)curNode.node();
           
           /* pop of next node */
           assert(sptr_node > stack_node);
@@ -260,7 +255,7 @@ namespace embree
           for (unsigned i=0; i<8; i++)
           {
             const NodeRef child = node->children[i];
-            if (unlikely(child == BVH4i::emptyNode)) break;
+            if (unlikely(child == BVH8::emptyNode)) break;
             
 #if defined(__AVX2__)
             const avxf lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
@@ -291,7 +286,7 @@ namespace embree
               assert(sptr_node < stackEnd);
               const avxf childDist = select(lhit,lnearP,inf);
               const NodeRef child = node->children[i];
-              assert(child != BVH4i::emptyNode);
+              assert(child != BVH8::emptyNode);
               
               /* push cur node onto stack and continue with hit child */
               if (any(childDist < curDist))
@@ -316,7 +311,7 @@ namespace embree
         }
         
         /* return if stack is empty */
-        if (unlikely(curNode == BVH4i::invalidNode)) {
+        if (unlikely(curNode == BVH8::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -325,7 +320,7 @@ namespace embree
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; 
-	const Triangle8* prim = (Triangle8*) curNode.leaf(accel,items);
+	const Triangle8* prim = (Triangle8*) curNode.leaf(items);
         TriangleIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
@@ -335,7 +330,7 @@ namespace embree
 
 
     template<typename TriangleIntersector8>
-    __forceinline bool BVH8iIntersector8Hybrid<TriangleIntersector8>::occluded1(const BVH8i* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
+    __forceinline bool BVH8Intersector8Hybrid<TriangleIntersector8>::occluded1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
     {
       /*! stack state */
       NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -354,9 +349,6 @@ namespace embree
       const avx3f norg = -org, org_rdir(org*rdir);
       const avxf rayNear(ray_tnear[k]), rayFar(ray_tfar[k]); 
 
-      const Node     * __restrict__ nodes = (Node    *)bvh->nodePtr();
-      const Triangle * __restrict__ accel = (Triangle*)bvh->triPtr();
-      
       /* pop loop */
       while (true) pop:
       {
@@ -373,7 +365,7 @@ namespace embree
           STAT3(shadow.trav_nodes,1,1,1);
           
           /*! single ray intersection with 4 boxes */
-          const Node* node = (Node*)cur.node(nodes);
+          const Node* node = (Node*)cur.node();
           const size_t farX  = nearX ^ sizeof(avxf), farY  = nearY ^ sizeof(avxf), farZ  = nearZ ^ sizeof(avxf);
 #if defined (__AVX2__)
           const avxf tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
@@ -411,16 +403,16 @@ namespace embree
           size_t r = __bscf(mask);
           if (likely(mask == 0)) {
             cur = node->child(r);
-            assert(cur != BVH4i::emptyNode);
+            assert(cur != BVH8::emptyNode);
             continue;
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); const unsigned int d0 = ((unsigned int*)&tNear)[r];
+          NodeRef c0 = node->child(r); c0.prefetch(); const unsigned int d0 = ((unsigned int*)&tNear)[r];
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); const unsigned int d1 = ((unsigned int*)&tNear)[r];
-          assert(c0 != BVH4i::emptyNode);
-          assert(c1 != BVH4i::emptyNode);
+          NodeRef c1 = node->child(r); c1.prefetch(); const unsigned int d1 = ((unsigned int*)&tNear)[r];
+          assert(c0 != BVH8::emptyNode);
+          assert(c1 != BVH8::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd);
             if (d0 < d1) { *stackPtr = c1; stackPtr++; cur = c0; continue; }
@@ -433,14 +425,14 @@ namespace embree
           
           /*! three children are hit */
           r = __bscf(mask);
-          cur = node->child(r); 
-          assert(cur != BVH4i::emptyNode);
+          cur = node->child(r); cur.prefetch();
+          assert(cur != BVH8::emptyNode);
           if (likely(mask == 0)) continue;
 
 	  while(1)
 	    {
 	      r = __bscf(mask);
-	      NodeRef c = node->child(r); *stackPtr = c; stackPtr++;
+	      NodeRef c = node->child(r); c.prefetch(); *stackPtr = c; stackPtr++;
 	      if (unlikely(mask == 0)) break;
 	    }
 	  cur = (NodeRef) stackPtr[-1]; stackPtr--;
@@ -450,12 +442,12 @@ namespace embree
           
           // /*! four children are hit */
           // cur = node->child(3);
-          // assert(cur != BVH4i::emptyNode);
+          // assert(cur != BVH8::emptyNode);
         }
         
         /*! this is a leaf node */
         STAT3(shadow.trav_leaves,1,1,1);
-        size_t num; Triangle* prim = (Triangle*) cur.leaf(accel,num);
+        size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
         if (TriangleIntersector8::occluded(pre,ray,k,prim,num,bvh->geometry)) {
           ray.geomID[k] = 0;
           return true;
@@ -465,7 +457,7 @@ namespace embree
     }
 
      template<typename TriangleIntersector8>
-    void BVH8iIntersector8Hybrid<TriangleIntersector8>::occluded(avxb* valid_i, BVH8i* bvh, Ray8& ray)
+    void BVH8Intersector8Hybrid<TriangleIntersector8>::occluded(avxb* valid_i, BVH8* bvh, Ray8& ray)
     {
       /* load ray */
       const avxb valid = *valid_i;
@@ -495,7 +487,7 @@ namespace embree
       /* allocate stack and push root node */
       avxf    stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
-      stack_node[0] = BVH4i::invalidNode;
+      stack_node[0] = BVH8::invalidNode;
       stack_near[0] = inf;
       stack_node[1] = bvh->root;
       stack_near[1] = ray_tnear; 
@@ -503,9 +495,6 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       avxf*    __restrict__ sptr_near = stack_near + 2;
 
-      const Node     * __restrict__ nodes = (Node    *)bvh->nodePtr();
-      const Triangle * __restrict__ accel = (Triangle*)bvh->triPtr();
-      
       while (1)
       {
         /* pop next node from stack */
@@ -513,7 +502,7 @@ namespace embree
         sptr_node--;
         sptr_near--;
         NodeRef curNode = *sptr_node;
-        if (unlikely(curNode == BVH4i::invalidNode)) {
+        if (unlikely(curNode == BVH8::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -546,7 +535,7 @@ namespace embree
           
           const avxb valid_node = ray_tfar > curDist;
           STAT3(shadow.trav_nodes,1,popcnt(valid_node),8);
-          const Node* __restrict__ const node = (Node*)curNode.node(nodes);
+          const Node* __restrict__ const node = (Node*)curNode.node();
           
           /* pop of next node */
           assert(sptr_node > stack_node);
@@ -558,7 +547,7 @@ namespace embree
           for (unsigned i=0; i<8; i++)
           {
             const NodeRef child = node->children[i];
-            if (unlikely(child == BVH4i::emptyNode)) break;
+            if (unlikely(child == BVH8::emptyNode)) break;
             
 #if defined(__AVX2__)
             const avxf lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
@@ -587,7 +576,7 @@ namespace embree
             if (likely(any(lhit)))
             {
               assert(sptr_node < stackEnd);
-              assert(child != BVH4i::emptyNode);
+              assert(child != BVH8::emptyNode);
               const avxf childDist = select(lhit,lnearP,inf);
               sptr_node++;
               sptr_near++;
@@ -611,7 +600,7 @@ namespace embree
         }
         
         /* return if stack is empty */
-        if (unlikely(curNode == BVH4i::invalidNode)) {
+        if (unlikely(curNode == BVH8::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -619,7 +608,7 @@ namespace embree
         /* intersect leaf */
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
-        size_t items; const Triangle* prim = (Triangle*) curNode.leaf(accel,items);
+        size_t items; const Triangle* prim = (Triangle*) curNode.leaf(items);
         terminated |= TriangleIntersector8::occluded(!terminated,pre,ray,prim,items,bvh->geometry);
         if (all(terminated)) break;
         ray_tfar = select(terminated,avxf(neg_inf),ray_tfar);
@@ -628,7 +617,7 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR8(BVH8iTriangle8Intersector8HybridMoeller,BVH8iIntersector8Hybrid<Triangle8Intersector8MoellerTrumbore>);
+    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8HybridMoeller,BVH8Intersector8Hybrid<Triangle8Intersector8MoellerTrumbore<true> >);
 
   }
 }  

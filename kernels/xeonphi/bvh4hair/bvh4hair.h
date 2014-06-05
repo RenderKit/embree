@@ -38,6 +38,8 @@ namespace embree
     static const size_t leaf_shift   = 3;
     static const size_t leaf_mask    = 1<<leaf_shift;  
     static const size_t items_mask   = leaf_mask-1;  
+    static const size_t alignednode_mask = 1 << (leaf_shift+1);
+
     
     /*! Empty node */
     static const size_t emptyNode = leaf_mask;
@@ -266,6 +268,99 @@ namespace embree
       void convertFromBVH4iNode(const BVH4i::Node &node, UnalignedNode *ptr);
      
     };
+
+
+    struct __aligned(128) AlignedNode
+    {
+    public:
+      struct NodeStruct {
+        float x,y,z;           // x,y, and z coordinates of bounds
+        unsigned int data;     // encodes 1 is-leaf bit, 25 offset bits, and 6 num-items bits
+      } lower[4], upper[4];    // lower and upper bounds of all 4 children
+
+      template<int PFHINT>
+	__forceinline void prefetchNode()
+	{
+	  prefetch<PFHINT>((char*)this + 0 * 64);
+	  prefetch<PFHINT>((char*)this + 1 * 64);
+	}
+
+      /*! Returns bounds of specified child. */
+      __forceinline BBox3fa bounds(size_t i) const {
+	assert( i < 4 );
+        Vec3fa l = *(Vec3fa*)&lower[i];
+        Vec3fa u = *(Vec3fa*)&upper[i];
+        return BBox3fa(l,u);
+      }
+
+      __forceinline mic_f lowerXYZ(size_t i) const {
+	return broadcast4to16f(&lower[i]);
+      }
+
+      __forceinline mic_f upperXYZ(size_t i) const {
+	return broadcast4to16f(&upper[i]);
+      }
+
+      __forceinline void setInvalid(size_t i)
+      {
+	lower[i].x = pos_inf;
+	lower[i].y = pos_inf;
+	lower[i].z = pos_inf;
+	lower[i].data = 0;
+
+	upper[i].x = neg_inf;
+	upper[i].y = neg_inf;
+	upper[i].z = neg_inf;
+	upper[i].data = 0;
+      }
+
+      __forceinline void createNode(void *ptr, const size_t m)
+      {
+	size_t offset64 = (size_t)ptr;
+	unsigned int lower_part  = (unsigned int)(offset64 & 0xffffffff);
+	unsigned int upper_part = (unsigned int)(offset64 >> 32);
+	lower[m].data  = lower_part;
+	upper[m].data  = upper_part;
+
+      }
+
+      __forceinline       NodeRef child(size_t i)       { return NodeRef(((size_t)upper[i].data << 32) | lower[i].data); }
+      __forceinline const NodeRef child(size_t i) const { return NodeRef(((size_t)upper[i].data << 32) | lower[i].data); }
+
+
+      __forceinline void createLeaf(unsigned int offset, 
+				    unsigned int items,
+				    const size_t m)
+      {
+	assert(items <= BVH4Hair::N);
+	lower[m].data = (offset << encodingBits) | BVH4Hair::leaf_mask | items;
+	upper[m].data = 0.0;
+      }
+
+      __forceinline void setMatrix(const BBox3fa &b, const size_t m)
+      {
+	lower[m].x = b.lower.x;
+	lower[m].y = b.lower.y;
+	lower[m].z = b.lower.z;
+
+	upper[m].x = b.upper.x;
+	upper[m].y = b.upper.y;
+	upper[m].z = b.upper.z;
+      }
+
+
+      __forceinline std::ostream& operator<<(std::ostream &o)
+      {
+	for (size_t i=0;i<4;i++)
+	  {
+	    o << "lower: [" << lower[i].x << "," << lower[i].y << "," << lower[i].z << "," << lower[i].data << "] ";
+	    o << "upper: [" << upper[i].x << "," << upper[i].y << "," << upper[i].z << "," << upper[i].data << "] ";
+	    o << std::endl;
+	  }
+	return o;
+      }
+    };
+
 
   BVH4Hair(const PrimitiveType& primTy, void* geometry = NULL) : BVH4i(primTy,geometry)
       {	

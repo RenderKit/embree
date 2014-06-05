@@ -43,13 +43,73 @@ namespace embree
     mic_f time;     //!< Time of this ray for motion blur.
     mic_i mask;     //!< used to mask out objects during traversal
 
-  public:
     mic3f Ng;       //!< Geometry normal
     mic_f u;        //!< Barycentric u coordinate of hit
     mic_f v;        //!< Barycentric v coordinate of hit
     mic_i geomID;   //!< geometry ID
     mic_i primID;   //!< primitive ID
     mic_i instID;   //!< instance ID
+
+    template<int PFHINT>
+    __forceinline void prefetchHitData() const
+    {
+      prefetch<PFHINT>(&geomID);
+      prefetch<PFHINT>(&primID);
+      prefetch<PFHINT>(&tfar);
+      prefetch<PFHINT>(&u);
+      prefetch<PFHINT>(&v);
+      prefetch<PFHINT>(&Ng.x);
+      prefetch<PFHINT>(&Ng.y);
+      prefetch<PFHINT>(&Ng.z);
+    }
+
+    __forceinline void update(const mic_m &m_mask,
+			      const size_t rayIndex,
+			      const mic_f &new_t,
+			      const mic_f &new_u,
+			      const mic_f &new_v,
+			      const mic_f &new_gnormalx,
+			      const mic_f &new_gnormaly,
+			      const mic_f &new_gnormalz,
+			      const int new_geomID,
+			      const int new_primID)
+    {
+      geomID[rayIndex] = new_geomID;
+      primID[rayIndex] = new_primID;
+
+      compactustore16f_low(m_mask,&tfar[rayIndex],new_t);
+      compactustore16f_low(m_mask,&u[rayIndex],new_u); 
+      compactustore16f_low(m_mask,&v[rayIndex],new_v); 
+      compactustore16f_low(m_mask,&Ng.x[rayIndex],new_gnormalx); 
+      compactustore16f_low(m_mask,&Ng.y[rayIndex],new_gnormaly); 
+      compactustore16f_low(m_mask,&Ng.z[rayIndex],new_gnormalz);       
+
+    }
+
+
+    __forceinline void update(const mic_m &m_mask,
+			      const mic_f &new_t,
+			      const mic_f &new_u,
+			      const mic_f &new_v,
+			      const mic_f &new_gnormalx,
+			      const mic_f &new_gnormaly,
+			      const mic_f &new_gnormalz,
+			      const mic_i &new_geomID,
+			      const mic_i &new_primID)
+    {
+      store16f(m_mask,(float*)&tfar,new_t);
+      store16f(m_mask,(float*)&u,new_u);
+      store16f(m_mask,(float*)&v,new_v);
+      store16f(m_mask,(float*)&Ng.x,new_gnormalx);
+      store16f(m_mask,(float*)&Ng.y,new_gnormaly);
+      store16f(m_mask,(float*)&Ng.z,new_gnormalz);
+      store16i(m_mask,(int*)&geomID,new_geomID);
+      store16i(m_mask,(int*)&primID,new_primID);     
+
+
+    }
+			      
+
   };
 
   /*! Outputs ray to stream. */

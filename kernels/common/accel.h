@@ -228,11 +228,27 @@ namespace embree
         }
       }
 
+      void select(bool filter4, bool filter8)
+      {
+	if (intersector4_filter) {
+	  if (filter4) intersector4 = intersector4_filter;
+	  else         intersector4 = intersector4_nofilter;
+	}
+	if (intersector8_filter) {
+	  if (filter8) intersector8 = intersector8_filter;
+	  else         intersector8 = intersector8_nofilter;
+	}
+      }
+
     public:
       void* ptr;
       Intersector1 intersector1;
       Intersector4 intersector4;
+      Intersector4 intersector4_filter;
+      Intersector4 intersector4_nofilter;
       Intersector8 intersector8;
+      Intersector8 intersector8_filter;
+      Intersector8 intersector8_nofilter;
       Intersector16 intersector16;
     } intersectors;
   };

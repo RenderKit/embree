@@ -127,12 +127,12 @@ namespace embree
 
     /*! BVH4i Node */
 
-    struct Node
+    struct __aligned(128) Node
     {
     public:
       struct NodeStruct {
         float x,y,z;           // x,y, and z coordinates of bounds
-        NodeRef child;         // encodes 1 is-leaf bit, 25 offset bits, and 6 num-items bits
+        NodeRef child;         // encodes is-leaf bit, offset bits, and num-items bits
       } lower[4], upper[4];    // lower and upper bounds of all 4 children
 
       /*! Returns bounds of specified child. */

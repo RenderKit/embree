@@ -16,29 +16,37 @@
 
 #pragma once
 
-#include "bvh8i.h"
-#include "../common/stack_item.h"
-#include "../common/ray8.h"
+#include "bvh8.h"
 
 namespace embree
 {
-    
-  namespace isa
+  class BVH8Statistics 
   {
-    /*! BVH8i Traverser. Packet traversal implementation for a Quad BVH. */
-template<typename TriangleIntersector8>    
-class BVH8iIntersector8Chunk
-    {
+    typedef BVH8::Node Node;
+    typedef BVH8::NodeRef NodeRef;
 
-      /* shortcuts for frequently used types */
-      typedef typename TriangleIntersector8::Precalculations Precalculations;
-      typedef typename TriangleIntersector8::Primitive Triangle;
-      typedef typename BVH4i::NodeRef NodeRef;
-      typedef typename BVH8i::Node Node;
+  public:
 
-    public:
-      static void intersect(avxb* valid, BVH8i* bvh, Ray8& ray);
-      static void occluded (avxb* valid, BVH8i* bvh, Ray8& ray);
-    };
-  }
+    /* Constructor gathers statistics. */
+    BVH8Statistics (BVH8* bvh);
+
+    /*! Convert statistics into a string */
+    std::string str();
+
+    /*! memory required to store BVH8 */
+    size_t bytesUsed();
+
+  private:
+    void statistics(NodeRef node, const BBox3fa& bounds, size_t& depth);
+
+  private:
+    BVH8* bvh;
+    float bvhSAH;                      //!< SAH cost of the BVH8.
+    float leafSAH;                      //!< SAH cost of the BVH8.
+    size_t numNodes;                   //!< Number of internal nodes.
+    size_t numLeaves;                  //!< Number of leaf nodes.
+    size_t numPrimBlocks;              //!< Number of primitive blocks.
+    size_t numPrims;                   //!< Number of primitives.
+    size_t depth;                      //!< Depth of the tree.
+  };
 }

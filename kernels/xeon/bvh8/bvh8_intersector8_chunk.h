@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "bvh8i.h"
+#include "bvh8.h"
 #include "../common/stack_item.h"
 #include "../common/ray8.h"
 
@@ -25,26 +25,20 @@ namespace embree
     
   namespace isa
   {
-    /*! BVH8i Traverser. Packet traversal implementation for a Quad BVH. */
+    /*! BVH8 Traverser. Packet traversal implementation for a Quad BVH. */
 template<typename TriangleIntersector8>    
-class BVH8iIntersector8Hybrid
+class BVH8Intersector8Chunk
     {
 
       /* shortcuts for frequently used types */
       typedef typename TriangleIntersector8::Precalculations Precalculations;
       typedef typename TriangleIntersector8::Primitive Triangle;
-      typedef typename BVH4i::NodeRef NodeRef;
-      typedef typename BVH8i::Node Node;
-      typedef StackItemT<NodeRef> StackItem;
-      static const size_t stackSizeSingle = 1+3*BVH4i::maxDepth;
-      static const size_t stackSizeChunk = 4*BVH4i::maxDepth+1;
-
-      static void intersect1(const BVH8i* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray, const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ);
-      static bool occluded1 (const BVH8i* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray, const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ);
+      typedef typename BVH8::NodeRef NodeRef;
+      typedef typename BVH8::Node Node;
 
     public:
-      static void intersect(avxb* valid, BVH8i* bvh, Ray8& ray);
-      static void occluded (avxb* valid, BVH8i* bvh, Ray8& ray);
+      static void intersect(avxb* valid, BVH8* bvh, Ray8& ray);
+      static void occluded (avxb* valid, BVH8* bvh, Ray8& ray);
     };
   }
 }

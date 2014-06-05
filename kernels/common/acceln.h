@@ -45,7 +45,8 @@ namespace embree
     void print(size_t ident);
     void immutable();
     void build (size_t threadIndex, size_t threadCount);
-
+    void select(bool filter4, bool filter8);
+      
   public:
     Accel* accels[16];
     size_t N;

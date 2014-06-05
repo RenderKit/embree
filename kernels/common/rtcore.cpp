@@ -56,10 +56,13 @@ namespace embree
 
   /* register functions for accels */
   void BVH4Register();
-  void BVH4iRegister();
-  void BVH8iRegister();
+  void BVH8Register();
   void BVH4MBRegister();
   void BVH4HairRegister();
+
+#if defined(__MIC__)
+  void BVH4iRegister();
+#endif
 
   /*! intersector registration functions */
   DECLARE_SYMBOL(RTCBoundsFunc,InstanceBoundsFunc);
@@ -283,12 +286,10 @@ namespace embree
 #if defined(__BUFFER_STRIDE__)
       std::cout << "  WARNING: enabled 'bufferstride' support will lower BVH build performance" << std::endl;
 #endif
-#endif
-
 #if defined(__INTERSECTION_FILTER__)
       std::cout << "  WARNING: enabled 'intersection filter' support will reduce hybrid traversal performance" << std::endl;
 #endif
-
+#endif
     }
 
     /* CPU has to support at least SSE2 */
@@ -308,14 +309,15 @@ namespace embree
 
 #if !defined(__MIC__)
     BVH4Register();
-    BVH4HairRegister();
+#else
+    BVH4iRegister();
 #endif
     BVH4MBRegister();
-    BVH4iRegister();
     BVH4HairRegister();    
 #if !defined(__WIN32__) && defined(__TARGET_AVX__)
-    if (has_feature(AVX))
-      BVH8iRegister();
+    if (has_feature(AVX)) {
+      BVH8Register();
+    }
 #endif
     
     InstanceIntersectorsRegister();

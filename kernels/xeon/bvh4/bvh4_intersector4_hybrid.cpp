@@ -72,7 +72,7 @@ namespace embree
           
           /*! single ray intersection with 4 boxes */
           const Node* node = cur.node();
-          const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
+          const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
 #if defined (__AVX2__)
           const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
           const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);
@@ -356,7 +356,7 @@ namespace embree
           
           /*! single ray intersection with 4 boxes */
           const Node* node = cur.node();
-          const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
+          const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
 #if defined (__AVX2__)
           const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
           const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);
@@ -598,9 +598,11 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoeller, BVH4Intersector4Hybrid<Triangle4Intersector4MoellerTrumbore>);
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoeller, BVH4Intersector4Hybrid<Triangle4Intersector4MoellerTrumbore<true> >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoellerNoFilter, BVH4Intersector4Hybrid<Triangle4Intersector4MoellerTrumbore<false> >);
 #if defined (__AVX__)
-    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoeller, BVH4Intersector4Hybrid<Triangle8Intersector4MoellerTrumbore>);
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoeller, BVH4Intersector4Hybrid<Triangle8Intersector4MoellerTrumbore<true> >);
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoellerNoFilter, BVH4Intersector4Hybrid<Triangle8Intersector4MoellerTrumbore<false> >);
 #endif
     DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4HybridPluecker, BVH4Intersector4Hybrid<Triangle4vIntersector4Pluecker>);
   }
