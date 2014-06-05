@@ -118,7 +118,7 @@ namespace embree
 
     unsigned int flags;
     float sArea;
-    unsigned int parentNode; 
+    unsigned int dummy; 
     unsigned int parentBoxID; 
 
     BuildRecord()
