@@ -118,7 +118,7 @@ namespace embree
 
     unsigned int flags;
     float sArea;
-    unsigned int dummy; 
+    unsigned int parentType;    // only used with mixed AABB/OBB trees 
     unsigned int parentBoxID; 
 
     BuildRecord()
@@ -179,6 +179,9 @@ namespace embree
     };
 
     enum { BUILD_RECORD_INIT  = 0, BUILD_RECORD_NODE  = 1, BUILD_RECORD_LEAF  = 2 };
+
+    enum { NODE_TYPE_AABB  = 0, NODE_TYPE_OBB = 1};
+
     __forceinline void createNode() { flags = BUILD_RECORD_NODE; }
     __forceinline void createLeaf() { flags = BUILD_RECORD_LEAF; }
     __forceinline bool isLeaf() { return flags == BUILD_RECORD_LEAF; }

@@ -619,9 +619,10 @@ namespace embree
     /* create initial build record */
     BuildRecord br;
     br.init(global_bounds,0,numPrimitives);
-    br.depth = 1;
+    br.depth       = 1;
     br.parentID    = 0;
     br.parentBoxID = 0;
+    br.parentType  = BuildRecord::NODE_TYPE_OBB;
 
     /* node allocator */
     NodeAllocator alloc(atomicID,numAllocatedNodes);
@@ -981,6 +982,7 @@ namespace embree
       node[currentIndex].setMatrix(children[i].bounds.geometry, i);
       children[i].parentID    = currentIndex;
       children[i].parentBoxID = i;
+      children[i].parentType  = current.parentType;
       children[i].depth       = current.depth+1;
       createLeaf(children[i],alloc,threadIndex,threadCount);
     }
@@ -1060,6 +1062,7 @@ namespace embree
       node[currentIndex].setMatrix(children[i].bounds.geometry,i);
       children[i].parentID    = currentIndex;
       children[i].parentBoxID = i;
+      children[i].parentType  = current.parentType;
       recurse(children[i],alloc,mode,threadID,numThreads);
     }    
 
@@ -1148,12 +1151,12 @@ namespace embree
     const size_t currentIndex = alloc.get(1);
     /* recurseOBB */
 
-    node[currentIndex].prefetchNode<PFHINT_L2EX>();
     node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
+
+    node[currentIndex].prefetchNode<PFHINT_L2EX>();
 
     /* init used/unused nodes */
     node[currentIndex].setInvalid();
-
 
     /* recurse into each child */
     for (unsigned int i=0; i<numChildren; i++) 
@@ -1161,6 +1164,7 @@ namespace embree
       node[currentIndex].setMatrix(children[i].xfm,children[i].bounds.geometry,i);
       children[i].parentID    = currentIndex;
       children[i].parentBoxID = i;
+      children[i].parentType  = BuildRecord::NODE_TYPE_OBB;
       recurseOBB(children[i],alloc,mode,threadID,numThreads);
     }    
   }
