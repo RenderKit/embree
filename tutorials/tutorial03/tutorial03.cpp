@@ -33,6 +33,8 @@ namespace embree
   static size_t g_height = 512;
   static bool g_fullscreen = false;
   static FileName outFilename = "";
+  static int g_numFrames = 1;
+  static int g_skipFrames = 0;
 
   /* scene */
   OBJScene g_obj_scene;
@@ -77,6 +79,12 @@ namespace embree
       else if (tag == "-o")
         outFilename = cin->getFileName();
 
+      /* number of frames to render in benchmark mode */
+      else if (tag == "-frames") {
+        g_skipFrames = cin->getInt();
+        g_numFrames  = cin->getInt();
+      }
+
       /* rtcore configuration */
       else if (tag == "-rtcore")
         g_rtcore = cin->getString();
@@ -99,11 +107,27 @@ namespace embree
     resize(g_width,g_height);
     AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
 
-    render(0.0f,
-           pixel2world.l.vx,
-           pixel2world.l.vy,
-           pixel2world.l.vz,
-           pixel2world.p);
+    for (size_t i=0; i<g_skipFrames; i++) 
+      render(0.0f,
+             pixel2world.l.vx,
+             pixel2world.l.vy,
+             pixel2world.l.vz,
+             pixel2world.p);
+
+    double dt = 0.0f;
+    for (size_t i=0; i<g_numFrames; i++) 
+    {
+      std::cout << "frame [" << i << "/" << g_numFrames << "]" << std::endl;
+      double t0 = getSeconds();
+      render(0.0f,
+             pixel2world.l.vx,
+             pixel2world.l.vy,
+             pixel2world.l.vz,
+             pixel2world.p);
+      dt += getSeconds()-t0;
+    }
+    if (g_numFrames > 1) 
+      std::cout << "BENCHMARK_RENDER " << double(g_numFrames)/dt << std::endl;
     
     void* ptr = map();
     Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);

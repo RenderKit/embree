@@ -23,8 +23,8 @@ namespace embree
     numNodes = numLeaves = numPrimBlocks = numPrims = depth = 0;
     bvhSAH = leafSAH = 0.0f;
     statistics(bvh->root,bvh->bounds,depth);
-    //bvhSAH /= area(bvh->bounds);
-    //leafSAH /= area(bvh->bounds);
+    bvhSAH /= area(bvh->bounds);
+    leafSAH /= area(bvh->bounds);
     assert(depth <= BVH8::maxDepth);
   }
 

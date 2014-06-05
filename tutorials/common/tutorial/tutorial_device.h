@@ -56,7 +56,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 Vec3fa renderPixelUV      (float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 Vec3fa renderPixelGeomIDPrimID(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 Vec3fa renderPixelGeomID      (float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
-
+Vec3fa renderPixelCycles(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
 __forceinline Vec3f  neg(const Vec3f& a ) { return -a; }
 __forceinline Vec3fa neg(const Vec3fa& a) { return -a; }

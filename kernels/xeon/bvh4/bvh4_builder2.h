@@ -99,6 +99,9 @@ namespace embree
       /*! recursively finishes build */
       void finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record);
 
+      /*! performs some brute force restructuring of the tree */
+      void restructureTree(NodeRef& ref, size_t depth);
+
     protected:
       Scene* scene;                       //!< input geometry
       TriangleMesh* mesh;                 //!< input triangle mesh
