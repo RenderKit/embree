@@ -287,13 +287,16 @@ namespace embree
 	return;
       
       /*! verbose mode */
-      double t0 = 0.0, t1 = 0.0f;
       if (g_verbose >= 2) {
 	std::cout << "building BVH8<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH8Builder2(";
 	if (enableSpatialSplits) std::cout << "spatialsplits";
 	std::cout << ") ... " << std::flush;
-	t0 = getSeconds();
       }
+
+      /*! benchmark mode */
+      double t0 = 0.0, t1 = 0.0f;
+      if (g_verbose >= 2 || g_benchmark)
+	t0 = getSeconds();
       
       /* generate list of build primitives */
       PrimRefList prims; PrimInfo pinfo(empty);
@@ -343,12 +346,20 @@ namespace embree
       /* free all temporary memory blocks */
       Alloc::global.clear();
 
+      if (g_verbose >= 2 || g_benchmark) 
+	t1 = getSeconds();
+
       /*! verbose mode */
       if (g_verbose >= 2) {
-	t1 = getSeconds();
       	std::cout << "[DONE]" << std::endl;
 	std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
 	std::cout << BVH8Statistics(bvh).str();
+      }
+
+      /* benchmark mode */
+      if (g_benchmark) {
+	BVH8Statistics stat(bvh);
+	std::cout << "BENCHMARK_BUILD " << t1-t0 << " " << double(numPrimitives)/(t1-t0) << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
       }
     }
     

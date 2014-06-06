@@ -82,7 +82,7 @@ namespace embree
 
     if (g_benchmark) {
       BVH4Statistics stat(bvh);
-      std::cout << "BENCHMARK_BUILD " << 1000.0f*(t1-t0) << " " << 1E-6*double(source->number_of_prims())/(t1-t0) << " " << stat.bytesUsed() << std::endl;
+      std::cout << "BENCHMARK_BUILD " << t1-t0 << " " << double(source->number_of_prims())/(t1-t0) << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
     }
   }
 

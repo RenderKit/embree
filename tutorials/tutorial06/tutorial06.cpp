@@ -33,9 +33,10 @@ namespace embree
   static size_t g_height = 512;
   static bool g_fullscreen = false;
   static FileName outFilename = "";
-  static int g_numFrames = 1;
-  static int g_skipFrames = 0;
-
+  static int g_skipBenchmarkFrames = 0;
+  static int g_numBenchmarkFrames = 0;
+  static bool g_interactive = true;
+  
   /* scene */
   OBJScene g_obj_scene;
   static FileName filename = "default.obj";
@@ -76,13 +77,16 @@ namespace embree
         g_fullscreen = true;
 
       /* output filename */
-      else if (tag == "-o")
+      else if (tag == "-o") {
         outFilename = cin->getFileName();
+	g_interactive = false;
+      }
 
       /* number of frames to render in benchmark mode */
-      else if (tag == "-frames") {
-        g_skipFrames = cin->getInt();
-        g_numFrames  = cin->getInt();
+      else if (tag == "-benchmark") {
+        g_skipBenchmarkFrames = cin->getInt();
+        g_numBenchmarkFrames  = cin->getInt();
+	g_interactive = false;
       }
 
       /* rtcore configuration */
@@ -101,34 +105,35 @@ namespace embree
       }
     }
   }
+  
+  void renderBenchmark(const FileName& fileName)
+  {
+    resize(g_width,g_height);
+    AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
+
+    double dt = 0.0f;
+    size_t numTotalFrames = g_skipBenchmarkFrames + g_numBenchmarkFrames;
+    for (size_t i=0; i<numTotalFrames; i++) 
+    {
+      double t0 = getSeconds();
+      render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
+      double t1 = getSeconds();
+      std::cout << "frame [" << i << " / " << numTotalFrames << "] ";
+      std::cout << 1.0/(t1-t0) << "fps ";
+      if (i < g_skipBenchmarkFrames) std::cout << "(skipped)";
+      std::cout << std::endl;
+      if (i >= g_skipBenchmarkFrames) dt += t1-t0;
+    }
+    std::cout << "frame [" << g_skipBenchmarkFrames << " - " << numTotalFrames << "] " << std::flush;
+    std::cout << double(g_numBenchmarkFrames)/dt << "fps " << std::endl;
+    std::cout << "BENCHMARK_RENDER " << double(g_numBenchmarkFrames)/dt << std::endl;
+  }
 
   void renderToFile(const FileName& fileName)
   {
     resize(g_width,g_height);
     AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
-
-    for (size_t i=0; i<g_skipFrames; i++) 
-      render(0.0f,
-             pixel2world.l.vx,
-             pixel2world.l.vy,
-             pixel2world.l.vz,
-             pixel2world.p);
-
-    double dt = 0.0f;
-    for (size_t i=0; i<g_numFrames; i++) 
-    {
-      std::cout << "frame [" << i << "/" << g_numFrames << "]" << std::endl;
-      double t0 = getSeconds();
-      render(0.0f,
-             pixel2world.l.vx,
-             pixel2world.l.vy,
-             pixel2world.l.vz,
-             pixel2world.p);
-      dt += getSeconds()-t0;
-    }
-    if (g_numFrames > 1) 
-      std::cout << "BENCHMARK_RENDER " << double(g_numFrames)/dt << std::endl;
-    
+    render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
     void* ptr = map();
     Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
     storeImage(image, fileName);
@@ -145,6 +150,8 @@ namespace embree
     parseCommandLine(stream, FileName());
     if (g_numThreads) 
       g_rtcore += ",threads=" + std::stringOf(g_numThreads);
+    if (g_numBenchmarkFrames)
+      g_rtcore += ",benchmark=1";
 
     /* initialize task scheduler */
 #if !defined(__EXPORT_ALL_SYMBOLS__)
@@ -160,17 +167,19 @@ namespace embree
     /* send model */
     set_scene(&g_obj_scene);
     
-    /* render to disk */
-    if (outFilename.str() != "") {
-      renderToFile(outFilename);
-      return 0;
-    } 
-
-    /* initialize GLUT */
-    initWindowState(tutorialName, g_width, g_height, g_fullscreen);
+    /* benchmark mode */
+    if (g_numBenchmarkFrames)
+      renderBenchmark(outFilename);
     
-    /* enter the GLUT run loop */
-    enterWindowRunLoop();
+    /* render to disk */
+    if (outFilename.str() != "")
+      renderToFile(outFilename);
+    
+    /* interactive mode */
+    if (g_interactive) {
+      initWindowState(tutorialName, g_width, g_height, g_fullscreen);
+      enterWindowRunLoop();
+    }
 
     return 0;
   }

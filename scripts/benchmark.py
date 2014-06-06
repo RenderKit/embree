@@ -39,52 +39,48 @@ def baseName(name,model):
   return name + '_' + model
 
 def render(name,model):
-  executable = './' + tutorial
+  executable = tutorial
   base = baseName(name,model)
   os.system('mkdir -p ' + statDir)
   logFile = statDir + dash + base + '.log'
-  imgFile = statDir + dash + base + '.tga'
   if not os.path.exists(logFile):
     command = executable
     command += ' -c ' + modelDir + dash + model + dash + model + '_regression.ecs'
-    command += ' -rtcore verbose=2,benchmark=1,' + arg
-    command += ' -size 1024 1024 -frames 4 8'
-    command += ' -o ' + imgFile + ' > ' + logFile
-    print(command)
+    for arg in args:
+      command += ' ' + arg
+    command += ' -size 1024 1024 -benchmark 4 8 > ' + logFile
     os.system(command)
 
 def renderLoop():
+    printHeader()
     for model in models:
-      print(name + '_' + model)
+      sys.stdout.write('  ' + '{0:<20}'.format(model) + ' | ')
       render(name,model)
+      extract(name,model)
+      printData(name,model)
 
 ########################## data extraction ##########################
 
-tri_sah    = {}
-tri_memory = {}
-hair_sah    = {}
-hair_memory = {}
+memory = {}
+buildperf = {}
+sah    = {}
 fps   = {}
 
 def extract(name,model):
   base = baseName(name,model)
   logFileName = statDir + dash + base + '.log'
-  tri_sah   [base] = 0
-  tri_memory[base] = 0
-  hair_sah   [base] = 0
-  hair_memory[base] = 0
-  fps        [base] = 0
+  memory[base] = 0
+  buildperf[base] = 0
+  sah   [base] = 0
+  fps   [base] = 0
   try:
     logFile = open(logFileName, 'r')
     for line in logFile:
-      if line.count('BENCHMARK_HAIR_ACCEL ') == 1:
-        numbers = map(float, line[21:].split(" "))
-        hair_sah   [base] = numbers[0]
-        hair_memory[base] = numbers[1]
-      if line.count('BENCHMARK_TRIANGLE_ACCEL ') == 1:
-        numbers = map(float, line[25:].split(" "))
-        tri_sah   [base] = numbers[0]
-        tri_memory[base] = numbers[1]
+      if line.count('BENCHMARK_BUILD ') == 1:
+        numbers = map(float, line[16:].split(" "))
+        buildperf[base] = numbers[1]
+        sah   [base] = numbers[2]
+        memory[base] = numbers[3]
       if line.count('BENCHMARK_RENDER ') == 1:
         numbers = map(float, line[17:].split(" "))
         fps[base] = numbers[0]
@@ -99,30 +95,28 @@ def extractLoop():
 
 def printData(name,model):
   base = baseName(name,model)
-  line  = '  ' + '{0:<40}'.format(name) + ' | '
-  line += (' %#6.1f' %  tri_sah[base])
-  line += ('   %#6.1f MB' %  (1E-6*tri_memory[base]))
-  line += (' %#6.1f' %  hair_sah[base])
-  line += ('   %#6.1f MB' %  (1E-6*hair_memory[base]))
-  line += ('  %#6.3f' %  fps[base])
-  print(line)
+  line = (' %#6.1f MB' %  (1E-6*memory[base]))
+  line += (' %#6.1f M/s' %  (1E-6*buildperf[base]))
+  line += (' %#6.1f ' %  sah[base])
+  line += (' %#6.3f fps' %  fps[base])
+  line += '\n'
+  sys.stdout.write(line)
 
-def printDataLoop():
+def printHeader():
   tableWidth = 40 + 60
-
-  print('')
-  
-  title = ''
-  line  = '  ' + '{0:<40}'.format(title) + ' |  TriSAH   TriMemory HairSAH HairMemory     Fps'
+  line  = '  ' + '{0:<20}'.format('') + ' |     Memory      Build    SAH      Render'
   print(line)
-
   line = ''
   while (len(line) < tableWidth): line = line + '-'
   print(line)
 
+def printDataLoop():
+  print('')
+  printHeader()
   for model in models:
     print(model)
     for name in names:
+      sys.stdout.write('  ' + '{0:<20}'.format(name) + ' | ')
       printData(name,model)
 
   print('')
@@ -130,18 +124,18 @@ def printDataLoop():
 ########################## command line parsing ##########################
 
 def printUsage():
-  sys.stderr.write('Usage: ' + sys.argv[0] + ' tutorial?? name args\n')
-  sys.stderr.write('       ' + sys.argv[0] + ' print    name1 name2 ...\n')
+  sys.stderr.write('Usage: ' + sys.argv[0] + ' run name tutorialXX args\n')
+  sys.stderr.write('       ' + sys.argv[0] + ' print name1 name2 ...\n')
   sys.exit(1)
 
 if len(sys.argv) < 3:
   printUsage()
   sys.exit(1)
 
-if sys.argv[1][0:8] == 'tutorial':
-  tutorial = sys.argv[1]
+if sys.argv[1] == 'run':
   name = sys.argv[2]
-  arg = sys.argv[3]
+  tutorial = sys.argv[3]
+  args = sys.argv[4:]
   renderLoop()
   sys.exit(1)
 
