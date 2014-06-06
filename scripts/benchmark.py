@@ -57,7 +57,7 @@ def renderLoop():
       sys.stdout.write('  ' + '{0:<20}'.format(model) + ' | ')
       render(name,model)
       extract(name,model)
-      printData(name,model)
+      printData(name,model,'')
 
 ########################## data extraction ##########################
 
@@ -93,12 +93,15 @@ def extractLoop():
     for model in models:
       extract(name,model)
 
-def printData(name,model):
+def printData(name,model,prevname):
   base = baseName(name,model)
   line = (' %#6.1f MB' %  (1E-6*memory[base]))
   line += (' %#6.1f M/s' %  (1E-6*buildperf[base]))
   line += (' %#6.1f ' %  sah[base])
   line += (' %#6.3f fps' %  fps[base])
+  if (prevname != ''):
+    prevbase = baseName(prevname,model)
+    line += (' (%#+5.1f%%)' %  (100.0*fps[base]/fps[prevbase]-100.0))
   line += '\n'
   sys.stdout.write(line)
 
@@ -115,9 +118,11 @@ def printDataLoop():
   printHeader()
   for model in models:
     print(model)
+    prevname = ''
     for name in names:
       sys.stdout.write('  ' + '{0:<20}'.format(name) + ' | ')
-      printData(name,model)
+      printData(name,model,prevname)
+      prevname = name
 
   print('')
 
