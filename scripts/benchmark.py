@@ -57,7 +57,7 @@ def renderLoop():
       sys.stdout.write('  ' + '{0:<20}'.format(model) + ' | ')
       render(name,model)
       extract(name,model)
-      printData(name,model,'')
+      printData(name,model)
 
 ########################## data extraction ##########################
 
@@ -65,14 +65,18 @@ memory = {}
 buildperf = {}
 sah    = {}
 fps   = {}
+fpsgain = {}
 
-def extract(name,model):
+def extract(name,model,prevname):
   base = baseName(name,model)
+  prevBase = baseName(prevname,model)
+  avgBase = baseName(name,'average')
   logFileName = statDir + dash + base + '.log'
-  memory[base] = 0
+  memory   [base] = 0
   buildperf[base] = 0
-  sah   [base] = 0
-  fps   [base] = 0
+  sah      [base] = 0
+  fps      [base] = 0
+  fpsgain  [base] = 0
   try:
     logFile = open(logFileName, 'r')
     for line in logFile:
@@ -84,24 +88,39 @@ def extract(name,model):
       if line.count('BENCHMARK_RENDER ') == 1:
         numbers = map(float, line[17:].split(" "))
         fps[base] = numbers[0]
+        if (prevname != ''):
+          fpsgain[base] = 100.0*fps[base]/fps[prevBase]-100.0
   except IOError :
     print('cannot open ' + logFileName)
 
+  memory   [avgBase] += memory   [base] / len(models)
+  buildperf[avgBase] += buildperf[base] / len(models)
+  sah      [avgBase] += sah      [base] / len(models)
+  fps      [avgBase] += fps      [base] / len(models)
+  if (prevname != ''):
+    fpsgain  [avgBase] += fpsgain  [base] / len(models)
+
 # Extract all data
 def extractLoop():
+  prevname = ''
   for name in names:
+    avgBase = baseName(name,'average')
+    memory   [avgBase] = 0
+    buildperf[avgBase] = 0
+    sah      [avgBase] = 0
+    fps      [avgBase] = 0
+    fpsgain  [avgBase] = 0
     for model in models:
-      extract(name,model)
+      extract(name,model,prevname)
+    prevname = name
 
-def printData(name,model,prevname):
+def printData(name,model):
   base = baseName(name,model)
   line = (' %#6.1f MB' %  (1E-6*memory[base]))
   line += (' %#6.1f M/s' %  (1E-6*buildperf[base]))
   line += (' %#6.1f ' %  sah[base])
   line += (' %#6.3f fps' %  fps[base])
-  if (prevname != ''):
-    prevbase = baseName(prevname,model)
-    line += (' (%#+5.1f%%)' %  (100.0*fps[base]/fps[prevbase]-100.0))
+  line += (' (%#+5.1f%%)' %  fpsgain[base])
   line += '\n'
   sys.stdout.write(line)
 
@@ -118,11 +137,14 @@ def printDataLoop():
   printHeader()
   for model in models:
     print(model)
-    prevname = ''
     for name in names:
       sys.stdout.write('  ' + '{0:<20}'.format(name) + ' | ')
-      printData(name,model,prevname)
-      prevname = name
+      printData(name,model)
+  if len(models) > 1:
+    print('average')
+    for name in names:
+      sys.stdout.write('  ' + '{0:<20}'.format(name) + ' | ')
+      printData(name,'average')
 
   print('')
 
