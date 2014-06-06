@@ -52,11 +52,17 @@ def render(name,model):
     os.system(command)
 
 def renderLoop():
+    avgBase = baseName(name,'average')
+    memory   [avgBase] = 0
+    buildperf[avgBase] = 0
+    sah      [avgBase] = 0
+    fps      [avgBase] = 0
+    fpsgain  [avgBase] = 0
     printHeader()
     for model in models:
       sys.stdout.write('  ' + '{0:<20}'.format(model) + ' | ')
       render(name,model)
-      extract(name,model)
+      extract(name,model,'')
       printData(name,model)
 
 ########################## data extraction ##########################
