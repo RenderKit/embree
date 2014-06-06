@@ -63,6 +63,7 @@ namespace embree
 
     __forceinline static mic_i zero() { return _mm512_setzero_epi32(); }
     __forceinline static mic_i one () { return _mm512_set_1to16_epi32(1); }
+    __forceinline static mic_i neg_one () { return _mm512_set_1to16_epi32(-1); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access

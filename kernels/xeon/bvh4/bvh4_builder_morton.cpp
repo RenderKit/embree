@@ -140,9 +140,14 @@ namespace embree
       }
 
       if (g_verbose >= 2) {
-        double perf = numPrimitives/dt*1E-6;
-        std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s)" << std::endl;
+        std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
         std::cout << BVH4Statistics(bvh).str();
+      }
+
+      /* benchmark mode */
+      if (g_benchmark) {
+	BVH4Statistics stat(bvh);
+	std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
       }
 #endif
     }

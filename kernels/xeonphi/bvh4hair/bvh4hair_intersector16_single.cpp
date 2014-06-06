@@ -430,7 +430,6 @@ namespace embree
     template<typename LeafIntersector>    
     void BVH4HairIntersector1<LeafIntersector>::occluded(BVH4Hair* bvh, Ray& ray)
     {
-
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4i::maxDepth+1];

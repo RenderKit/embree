@@ -20,13 +20,12 @@
 #include "common/accel.h"
 #include "common/scene.h"
 #include "geometry/primitive.h"
-//#include "bvh4i/bvh4i.h"
 
 namespace embree
 {
 
 
-  class BVH4Hair : public Bounded // BVH4i
+  class BVH4Hair : public Bounded 
   {
   public:
     /*! branching width of the tree */
@@ -50,7 +49,7 @@ namespace embree
     static const size_t emptyNode = leaf_mask;
 
     /*! Invalid node */
-    static const size_t invalidNode = (size_t)-1;
+    static const size_t invalidNode = (size_t)-1; //0;
 
 
     struct NodeRef
@@ -134,7 +133,7 @@ namespace embree
 	matrixRowXYZW[1] = c1;
 	matrixRowXYZW[2] = c2;
 
-	children[0] = children[1] = children[2] = children[3] = NULL;
+	children[0] = children[1] = children[2] = children[3] = BVH4Hair::invalidNode;
 	geomID[0] = geomID[1] = geomID[2] = geomID[3] = (unsigned int)-1;
 	primID[0] = primID[1] = primID[2] = primID[3] = (unsigned int)-1;
       }
@@ -306,12 +305,12 @@ namespace embree
 	lower[i].x = pos_inf;
 	lower[i].y = pos_inf;
 	lower[i].z = pos_inf;
-	lower[i].data = 0;
+	lower[i].data = (unsigned int)BVH4Hair::invalidNode;
 
 	upper[i].x = neg_inf;
 	upper[i].y = neg_inf;
 	upper[i].z = neg_inf;
-	upper[i].data = 0;
+	upper[i].data = (unsigned int)BVH4Hair::invalidNode;
       }
 
       __forceinline void setInvalid()
@@ -330,8 +329,16 @@ namespace embree
 
       }
 
-      __forceinline       NodeRef child(size_t i)       { return NodeRef(((size_t)upper[i].data << 32) | lower[i].data); }
-      __forceinline const NodeRef child(size_t i) const { return NodeRef(((size_t)upper[i].data << 32) | lower[i].data); }
+      __forceinline       NodeRef child(size_t i)       { 
+	const unsigned int *__restrict const l_ptr = (unsigned int*)lower;
+	const unsigned int *__restrict const u_ptr = (unsigned int*)upper;
+	return NodeRef(((size_t)u_ptr[i] << 32) | l_ptr[i]); 
+      }
+      __forceinline const NodeRef child(size_t i) const { 
+	const unsigned int *__restrict const l_ptr = (unsigned int*)lower;
+	const unsigned int *__restrict const u_ptr = (unsigned int*)upper;
+	return NodeRef(((size_t)u_ptr[i] << 32) | l_ptr[i]); 
+      }
 
 
       __forceinline void createLeaf(unsigned int offset, 
@@ -376,12 +383,6 @@ namespace embree
     __forceinline       void* triPtr()       { return accel; }
     __forceinline const void* triPtr() const { return accel; }
 
-
-  /* BVH4Hair(const PrimitiveType& primTy, void* geometry = NULL) : BVH4i(primTy,geometry) */
-  /*     {	 */
-  /* 	assert( sizeof(UnalignedNode) == 256 ); */
-  /* 	unaligned_nodes = NULL; */
-  /*     } */
 
   BVH4Hair(const PrimitiveType& primTy, void* geometry = NULL) : primTy(primTy), 
       geometry(geometry), 

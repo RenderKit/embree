@@ -36,6 +36,9 @@ namespace embree
     /*! memory required to store BVH4 */
     size_t bytesUsed();
 
+    /*! returns sah cost */
+    float sah() const { return bvhSAH; }
+
   private:
     void statistics(NodeRef node, const BBox3fa& bounds, size_t& depth);
 
