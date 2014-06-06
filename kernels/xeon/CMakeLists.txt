@@ -90,7 +90,7 @@ ADD_ISPC_LIBRARY(embree SHARED
 
   bvh4mb/bvh4mb.cpp
   bvh4mb/bvh4mb_builder.cpp
-#  bvh4mb/bvh4mb_builder2.cpp
+  bvh4mb/bvh4mb_builder2.cpp
   bvh4mb/bvh4mb_intersector1.cpp   
   bvh4mb/bvh4mb_intersector4.cpp
 
@@ -149,6 +149,7 @@ IF (TARGET_AVX)
    bvh4/bvh4_intersector8_chunk.cpp
    bvh4/bvh4_intersector8_hybrid.cpp
 
+   bvh4mb/bvh4mb_builder2.cpp
    bvh4mb/bvh4mb_intersector1.cpp   
    bvh4mb/bvh4mb_intersector4.cpp
    bvh4mb/bvh4mb_intersector8.cpp

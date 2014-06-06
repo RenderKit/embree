@@ -24,12 +24,16 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector4,BVH4MBTriangle1vIntersector4ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4MBTriangle1vIntersector8ChunkMoeller);
 
+  DECLARE_SCENE_BUILDER(BVH4MBTriangle1vBuilder2);
+
   Builder* BVH4MBBuilderObjectSplit1 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
   Builder* BVH4MBBuilderObjectSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
 
   void BVH4MBRegister () 
   {
     int features = getCPUFeatures();
+
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4MBTriangle1vBuilder2);
 
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector1Moeller);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector4ChunkMoeller);
@@ -42,6 +46,7 @@ namespace embree
 
     Builder* builder = NULL;
     if      (g_builder == "default"     ) builder = BVH4MBBuilderObjectSplit1(accel,&scene->flat_triangle_source_2,scene,1,inf);
+    //if      (g_builder == "default"     ) builder = BVH4MBTriangle1vBuilder2(accel,scene,0);
     else if (g_builder == "objectsplit" ) builder = BVH4MBBuilderObjectSplit1(accel,&scene->flat_triangle_source_2,scene,1,inf);
     else builder = BVH4MBBuilderObjectSplit1(accel,&scene->flat_triangle_source_2,scene,1,inf); // FIXME: dont look for triangle builder type
     //throw std::runtime_error("unknown builder "+g_builder+" for BVH4MB<Triangle1v>");
