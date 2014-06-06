@@ -79,6 +79,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp
   bvh4/bvh4_builder.cpp
+  bvh4/bvh4_builder2.cpp
   bvh4/bvh4_builder_fast.cpp
   bvh4/bvh4_builder_morton.cpp
   bvh4/bvh4_builder_binner.cpp
@@ -89,6 +90,7 @@ ADD_ISPC_LIBRARY(embree SHARED
 
   bvh4mb/bvh4mb.cpp
   bvh4mb/bvh4mb_builder.cpp
+#  bvh4mb/bvh4mb_builder2.cpp
   bvh4mb/bvh4mb_intersector1.cpp   
   bvh4mb/bvh4mb_intersector4.cpp
 
@@ -155,7 +157,6 @@ IF (TARGET_AVX)
    bvh4hair/bvh4hair_intersector1.cpp
    bvh4hair/bvh4hair_intersector4.cpp
    bvh4hair/bvh4hair_intersector8.cpp
-
 
    bvh8/bvh8.cpp
    bvh8/bvh8_builder2.cpp

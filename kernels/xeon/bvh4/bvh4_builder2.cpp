@@ -75,6 +75,7 @@ namespace embree
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
+#if __AVX__
     struct RestructureNode
     {
       struct Partition3
@@ -137,7 +138,7 @@ namespace embree
         //printf("set0 = "); for (size_t i=0; i<32; i++) if (best.set0 & (1<< i)) printf("1"); else printf("0"); printf("\n");
         //printf("set1 = "); for (size_t i=0; i<32; i++) if (best.set1 & (1<< i)) printf("1"); else printf("0"); printf("\n");
         //printf("set2 = "); for (size_t i=0; i<32; i++) if (best.set2 & (1<< i)) printf("1"); else printf("0"); printf("\n");
-        assert(__popcnt(best.set0 | best.set1 | best.set2) == numItems);
+        //assert(__popcnt(best.set0 | best.set1 | best.set2) == numItems);
 
         int i0 = 0; node0->clear();
         int set0 = best.set0;
@@ -286,7 +287,7 @@ namespace embree
         restructureTree(node->child(c),depth+1);
       }
     }
-
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
     template<typename Triangle>
