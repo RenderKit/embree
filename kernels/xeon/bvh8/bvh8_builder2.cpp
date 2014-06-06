@@ -100,7 +100,11 @@ namespace embree
       
       /*! create an inner node */
       Node* node = bvh->allocNode(threadIndex);
-      for (size_t i=0; i<4; i++) node->set(i,cinfo[i].geomBounds,createLargeLeaf(threadIndex,cprims[i],cinfo[i],depth+1));
+      for (size_t i=0; i<4; i++) 
+	if (cinfo[i].size())
+	  node->set(i,cinfo[i].geomBounds,createLargeLeaf(threadIndex,cprims[i],cinfo[i],depth+1));
+
+      BVH8::compact(node); // move empty nodes to the end
       return bvh->encodeNode(node);
     }  
 
@@ -310,7 +314,7 @@ namespace embree
       activeBuildRecords=1;
 
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (tasks.size() < threadCount)
+      while (tasks.size() > 0 && tasks.size() < threadCount)
       {
 	/* pop largest item for better load balancing */
 	BuildRecord task = tasks.front();

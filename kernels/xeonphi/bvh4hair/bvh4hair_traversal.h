@@ -174,7 +174,7 @@ namespace embree
 
 
 	    const mic_f min_dist = set_min_lanes(tNear_pos);
-	    assert(sindex < 3*BVH4i::maxDepth+1);
+	    assert(sindex < 3*BVH4Hair::maxDepth+1);
         
 	    const mic_m closest_child = eq(hitm,min_dist,tNear);
 	    const unsigned long closest_child_pos = bitscan64(closest_child);
@@ -295,7 +295,7 @@ namespace embree
 
 	    /* continue with closest child and push all others */
 	    const mic_f min_dist = set_min_lanes(tNear_pos);
-	    assert(sindex < 3*BVH4i::maxDepth+1);
+	    assert(sindex < 3*BVH4Hair::maxDepth+1);
         
 	    const mic_m closest_child = eq(hitm,min_dist,tNear);
 	    const unsigned long closest_child_pos = bitscan64(closest_child);
