@@ -161,6 +161,7 @@ IF (TARGET_AVX)
    bvh8/bvh8_builder2.cpp
    bvh8/bvh8_statistics.cpp
    bvh8/bvh8_intersector1.cpp  
+   bvh8/bvh8_intersector4_hybrid.cpp   
    bvh8/bvh8_intersector8_chunk.cpp   
    bvh8/bvh8_intersector8_hybrid.cpp   
 )
@@ -193,6 +194,7 @@ IF (TARGET_AVX2)
     bvh4hair/bvh4hair_intersector8.cpp
 
     bvh8/bvh8_intersector1.cpp   
+    bvh8/bvh8_intersector4_hybrid.cpp 
     bvh8/bvh8_intersector8_chunk.cpp   
     bvh8/bvh8_intersector8_hybrid.cpp   
 )

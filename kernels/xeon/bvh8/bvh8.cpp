@@ -21,8 +21,11 @@
 namespace embree
 {
   DECLARE_SYMBOL(Accel::Intersector1,BVH8Triangle8Intersector1Moeller);
+  DECLARE_SYMBOL(Accel::Intersector4,BVH8Triangle8Intersector4HybridMoeller);
+  DECLARE_SYMBOL(Accel::Intersector4,BVH8Triangle8Intersector4HybridMoellerNoFilter);
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoeller);
+  DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoellerNoFilter);
 
   DECLARE_SCENE_BUILDER(BVH8Triangle8Builder2);
 
@@ -36,9 +39,14 @@ namespace embree
     /* select intersectors1 */
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector1Moeller);
 
+    /* select intersectors4 */
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector4HybridMoeller);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector4HybridMoellerNoFilter);
+
     /* select intersectors8 */
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector8ChunkMoeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector8HybridMoeller);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector8HybridMoellerNoFilter);
   }
 
   BVH8::BVH8 (const PrimitiveType& primTy, void* geometry)
@@ -90,9 +98,10 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1 = BVH8Triangle8Intersector1Moeller;
-    intersectors.intersector4 = NULL;
-    //intersectors.intersector8 = BVH8Triangle8Intersector8ChunkMoeller;
-    intersectors.intersector8 = BVH8Triangle8Intersector8HybridMoeller;
+    intersectors.intersector4_filter = BVH8Triangle8Intersector4HybridMoeller;
+    intersectors.intersector4_nofilter = BVH8Triangle8Intersector4HybridMoellerNoFilter;
+    intersectors.intersector8_filter = BVH8Triangle8Intersector8HybridMoeller;
+    intersectors.intersector8_nofilter = BVH8Triangle8Intersector8HybridMoellerNoFilter;
     intersectors.intersector16 = NULL;
     return intersectors;
   }
@@ -102,6 +111,22 @@ namespace embree
     BVH8* accel = new BVH8(SceneTriangle8::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
     Builder* builder = BVH8Triangle8Builder2(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH8::BVH8Triangle8ObjectSplit(Scene* scene)
+  {
+    BVH8* accel = new BVH8(SceneTriangle8::type,scene);
+    Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
+    Builder* builder = BVH8Triangle8Builder2(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH8::BVH8Triangle8SpatialSplit(Scene* scene)
+  {
+    BVH8* accel = new BVH8(SceneTriangle8::type,scene);
+    Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
+    Builder* builder = BVH8Triangle8Builder2(accel,scene,1);
     return new AccelInstance(accel,builder,intersectors);
   }
 }

@@ -81,7 +81,7 @@ namespace embree
           curNode = *sptr_node; // FIXME: this trick creates issues with stack depth
           curDist = *sptr_near;
           
-          for (unsigned i=0; i<8; i++)
+          for (unsigned i=0; i<BVH8::N; i++)
           {
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH8::emptyNode)) break;
@@ -210,7 +210,7 @@ namespace embree
           curNode = *sptr_node; // FIXME: this trick creates issues with stack depth
           curDist = *sptr_near;
           
-          for (unsigned i=0; i<8; i++)
+          for (unsigned i=0; i<BVH8::N; i++)
           {
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH8::emptyNode)) break;
