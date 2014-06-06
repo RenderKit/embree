@@ -58,7 +58,7 @@ namespace embree
     static const size_t maxDepth = maxBuildDepthLeaf+maxBuildDepthLeaf+maxBuildDepth;
     
     /*! Maximal number of primitive blocks in a leaf. */
-    static const size_t maxLeafBlocks = items_mask-1;
+    static const size_t maxLeafBlocks = 6; //items_mask-1;
 
     /*! Cost of one traversal step. */
     static const int travCost = 1;
