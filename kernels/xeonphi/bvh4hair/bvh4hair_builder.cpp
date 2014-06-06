@@ -621,8 +621,8 @@ namespace embree
     br.init(global_bounds,0,numPrimitives);
     br.depth       = 1;
     br.parentID    = 0;
-    br.parentBoxID = 0;
-    br.parentType  = BuildRecord::NODE_TYPE_OBB;
+    //br.parentPtr   = &((BVH4Hair::AlignedNode*)node)[0].ref[0]; // &node[0].child(0);
+    br.parentPtr   = &node[0].child(0);
 
     /* node allocator */
     NodeAllocator alloc(atomicID,numAllocatedNodes);
@@ -633,7 +633,7 @@ namespace embree
 
     /* work in multithreaded toplevel mode until sufficient subtasks got generated */    
     const size_t coreCount = (threadCount+3)/4;
-    while (global_workStack.size() <= coreCount &&
+    while (global_workStack.size() < coreCount &&
 	   global_workStack.size()+BVH4i::N <= SIZE_GLOBAL_WORK_STACK) 
     {
       BuildRecord br;
@@ -662,8 +662,8 @@ namespace embree
     /* update BVH4 */
     
     bvh4hair->root             = node[0].child(0);
-    //bvh4hair->root             = ((BVH4Hair::AlignedNode*)node)[0].child(3);
-
+    //bvh4hair->root             = ((BVH4Hair::AlignedNode*)node)[0].ref[0];
+    DBG_PRINT( bvh4hair->root );
     bvh4hair->bounds           = global_bounds.geometry;
     bvh4hair->unaligned_nodes  = (BVH4Hair::UnalignedNode*)node;
     bvh4hair->accel            = prims;
@@ -955,7 +955,8 @@ namespace embree
     
     /* create leaf */
     if (current.items() <= MAX_ITEMS_PER_LEAF) {
-      node[current.parentID].createLeaf(current.begin,current.items(),current.parentBoxID);
+      //node[current.parentID].createLeaf(current.begin,current.items(),current.parentBoxID);
+      createLeaf(current.parentPtr,current.begin,current.items());
       return;
     }
 
@@ -972,7 +973,9 @@ namespace embree
     size_t numChildren = 1;
     const size_t currentIndex = alloc.get(1);
 
-    node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
+    //node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
+
+    createNode(current.parentPtr,&node[currentIndex]);
     
     node[currentIndex].prefetchNode<PFHINT_L2EX>();
 
@@ -980,10 +983,9 @@ namespace embree
     for (size_t i=0; i<numChildren; i++) 
     {
       node[currentIndex].setMatrix(children[i].bounds.geometry, i);
-      children[i].parentID    = currentIndex;
-      children[i].parentBoxID = i;
-      children[i].parentType  = current.parentType;
-      children[i].depth       = current.depth+1;
+      children[i].parentID  = currentIndex;
+      children[i].parentPtr = &node[currentIndex].child(i);
+      children[i].depth     = current.depth+1;
       createLeaf(children[i],alloc,threadIndex,threadCount);
     }
   }  
@@ -1049,24 +1051,26 @@ namespace embree
     /* allocate next four nodes */
     const size_t currentIndex = alloc.get(1);
     
-    node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
+    BVH4Hair::UnalignedNode *current_node = (BVH4Hair::UnalignedNode *)&node[currentIndex];
+    //BVH4Hair::AlignedNode *const current_node = (BVH4Hair::AlignedNode *)&node[currentIndex];
+
+    createNode(current.parentPtr,current_node);
 
 
     /* init used/unused nodes */
-    node[currentIndex].prefetchNode<PFHINT_L2EX>();
-    node[currentIndex].setInvalid();
+    current_node->prefetchNode<PFHINT_L2EX>();
+    current_node->setInvalid();
 
     /* recurse into each child */
     for (unsigned int i=0; i<numChildren; i++) 
     {
-      node[currentIndex].setMatrix(children[i].bounds.geometry,i);
+      current_node->setMatrix(children[i].bounds.geometry,i);
       children[i].parentID    = currentIndex;
-      children[i].parentBoxID = i;
-      children[i].parentType  = current.parentType;
+      children[i].parentPtr   = &current_node->child(i);      
       recurse(children[i],alloc,mode,threadID,numThreads);
     }    
 
-    DBG(DBG_PRINT(node[currentIndex]));
+    DBG(DBG_PRINT(*current_node));
 
   }
 
@@ -1151,7 +1155,8 @@ namespace embree
     const size_t currentIndex = alloc.get(1);
     /* recurseOBB */
 
-    node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
+    createNode(current.parentPtr,&node[currentIndex]);
+    //node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
 
     node[currentIndex].prefetchNode<PFHINT_L2EX>();
 
@@ -1163,8 +1168,7 @@ namespace embree
     {
       node[currentIndex].setMatrix(children[i].xfm,children[i].bounds.geometry,i);
       children[i].parentID    = currentIndex;
-      children[i].parentBoxID = i;
-      children[i].parentType  = BuildRecord::NODE_TYPE_OBB;
+      children[i].parentPtr   = &node[currentIndex].child(i);
       recurseOBB(children[i],alloc,mode,threadID,numThreads);
     }    
   }
