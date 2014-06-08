@@ -195,11 +195,11 @@ namespace embree
 	  }
 	else
 	  {
-
 	    const BVH4Hair::AlignedNode* __restrict__ node = (BVH4Hair::AlignedNode*)curNode.node(); // curNode.node();
 
 	    prefetch<PFHINT_L1>((char*)node + 0);
 	    prefetch<PFHINT_L1>((char*)node + 64);
+	    prefetch<PFHINT_L1>((char*)node + 128);
 
 	    STAT3(normal.trav_nodes,1,1,1);
 
@@ -256,7 +256,7 @@ namespace embree
 	    const unsigned long num_hitm = countbits(hiti); 
         
 	    /* if a single child is hit, continue with that child */
-	    curNode = node->child(pos_first);
+	    curNode = node->child_ref(pos_first);
 
 	    /* DBG_PRINT(curNode); */
 
@@ -269,7 +269,7 @@ namespace embree
 		const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
 		const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
 		const BVH4Hair::NodeRef node_first  = curNode;
-		const BVH4Hair::NodeRef node_second = node->child(pos_second);
+		const BVH4Hair::NodeRef node_second = node->child_ref(pos_second);
 
 		assert(node_first  != BVH4Hair::invalidNode);
 		assert(node_second != BVH4Hair::invalidNode);
@@ -300,7 +300,7 @@ namespace embree
 	    const mic_m closest_child = eq(hitm,min_dist,tNear);
 	    const unsigned long closest_child_pos = bitscan64(closest_child);
 	    const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
-	    curNode = node->child(closest_child_pos);
+	    curNode = node->child_ref(closest_child_pos);
 
 
 	    assert(curNode  != BVH4Hair::invalidNode);
@@ -309,7 +309,7 @@ namespace embree
 	    while((i = bitscan64(i,m_pos)) != BITSCAN_NO_BIT_SET_64)	    
 	      {
 		((unsigned int*)stack_dist)[sindex] = ((unsigned int*)&tNear)[i];		      
-		stack_node[sindex] = node->child(i);
+		stack_node[sindex] = node->child_ref(i);
 		assert(stack_node[sindex]  != BVH4Hair::invalidNode);
 		sindex++;
 	      }	    
@@ -335,7 +335,7 @@ namespace embree
     /* const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero()); */
     /* const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero()); */
     const mic_i invalidNode = mic_i::neg_one();
-
+    
     while (1) 
       {
 	if (unlikely(curNode.isLeaf(leaf_mask))) break;
@@ -512,7 +512,7 @@ namespace embree
 	    const unsigned long num_hitm = countbits(hiti); 
         
 	    /* if a single child is hit, continue with that child */
-	    curNode = node->child(pos_first);
+	    curNode = node->child_ref(pos_first);
 	    assert(curNode != BVH4Hair::invalidNode);
 
 	    if (likely(num_hitm == 1)) continue;
@@ -524,7 +524,7 @@ namespace embree
 		const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
 		const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
 		const BVH4Hair::NodeRef node_first  = curNode;
-		const BVH4Hair::NodeRef node_second = node->child(pos_second);
+		const BVH4Hair::NodeRef node_second = node->child_ref(pos_second);
 
 		assert(node_first  != BVH4Hair::invalidNode);
 		assert(node_second != BVH4Hair::invalidNode);
@@ -556,14 +556,14 @@ namespace embree
 	    const mic_m closest_child = eq(hitm,min_dist,tNear);
 	    const unsigned long closest_child_pos = bitscan64(closest_child);
 	    const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
-	    curNode = node->child(closest_child_pos);
+	    curNode = node->child_ref(closest_child_pos);
 
 	    assert(curNode  != BVH4Hair::invalidNode);
 
 	    long i = -1;
 	    while((i = bitscan64(i,m_pos)) != BITSCAN_NO_BIT_SET_64)	    
 	      {
-		stack_node[sindex] = node->child(i);
+		stack_node[sindex] = node->child_ref(i);
 		assert(stack_node[sindex]  != BVH4Hair::invalidNode);
 		sindex++;
 	      }

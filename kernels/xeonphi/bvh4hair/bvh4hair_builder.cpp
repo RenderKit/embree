@@ -28,6 +28,7 @@ namespace embree
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 
 #define ENABLE_OBB_BVH4 1
+#define ENABLE_AABB_NODES 1
 
 #define TIMER(x)  
 
@@ -621,8 +622,12 @@ namespace embree
     br.init(global_bounds,0,numPrimitives);
     br.depth       = 1;
     br.parentID    = 0;
-    //br.parentPtr   = &((BVH4Hair::AlignedNode*)node)[0].ref[0]; // &node[0].child(0);
+#if ENABLE_AABB_NODES == 1
+    BVH4Hair::AlignedNode* aligned_node = (BVH4Hair::AlignedNode*)node;
+    br.parentPtr   = &aligned_node[0].ref[0]; 
+#else
     br.parentPtr   = &node[0].child(0);
+#endif
 
     /* node allocator */
     NodeAllocator alloc(atomicID,numAllocatedNodes);
@@ -633,7 +638,7 @@ namespace embree
 
     /* work in multithreaded toplevel mode until sufficient subtasks got generated */    
     const size_t coreCount = (threadCount+3)/4;
-    while (global_workStack.size() < coreCount &&
+    while (global_workStack.size() <= coreCount &&
 	   global_workStack.size()+BVH4i::N <= SIZE_GLOBAL_WORK_STACK) 
     {
       BuildRecord br;
@@ -661,9 +666,11 @@ namespace embree
     
     /* update BVH4 */
     
+#if ENABLE_AABB_NODES == 1
+    bvh4hair->root   = aligned_node[0].ref[0]; 
+#else
     bvh4hair->root             = node[0].child(0);
-    //bvh4hair->root             = ((BVH4Hair::AlignedNode*)node)[0].ref[0];
-    DBG_PRINT( bvh4hair->root );
+#endif
     bvh4hair->bounds           = global_bounds.geometry;
     bvh4hair->unaligned_nodes  = (BVH4Hair::UnalignedNode*)node;
     bvh4hair->accel            = prims;
@@ -959,6 +966,7 @@ namespace embree
       createLeaf(current.parentPtr,current.begin,current.items());
       return;
     }
+    std::cout << "fallback" << std::endl;
 
     /* first split level */
     BuildRecord record0, record1;
@@ -1051,10 +1059,17 @@ namespace embree
     /* allocate next four nodes */
     const size_t currentIndex = alloc.get(1);
     
+#if ENABLE_AABB_NODES == 1
+    BVH4Hair::AlignedNode *const current_node = (BVH4Hair::AlignedNode *)&node[currentIndex];
+#else
     BVH4Hair::UnalignedNode *current_node = (BVH4Hair::UnalignedNode *)&node[currentIndex];
-    //BVH4Hair::AlignedNode *const current_node = (BVH4Hair::AlignedNode *)&node[currentIndex];
+#endif
 
+#if ENABLE_AABB_NODES == 1
+    createNode(current.parentPtr,current_node,BVH4Hair::alignednode_mask);
+#else
     createNode(current.parentPtr,current_node);
+#endif
 
 
     /* init used/unused nodes */

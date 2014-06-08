@@ -284,6 +284,7 @@ namespace embree
 	{
 	  prefetch<PFHINT>((char*)this + 0 * 64);
 	  prefetch<PFHINT>((char*)this + 1 * 64);
+	  prefetch<PFHINT>((char*)this + 2 * 64);
 	}
 
       /*! Returns bounds of specified child. */
@@ -321,15 +322,15 @@ namespace embree
 	  setInvalid(i);
       }
 
-      __forceinline void createNode(void *ptr, const size_t m)
-      {
-	size_t offset64 = (size_t)ptr | alignednode_mask;
-	unsigned int lower_part  = (unsigned int)(offset64 & 0xffffffff);
-	unsigned int upper_part = (unsigned int)(offset64 >> 32);
-	lower[m].data  = lower_part;
-	upper[m].data  = upper_part;
-	ref[m] = offset64;
-      }
+      /* __forceinline void createNode(void *ptr, const size_t m) */
+      /* { */
+      /* 	size_t offset64 = (size_t)ptr | alignednode_mask; */
+      /* 	unsigned int lower_part  = (unsigned int)(offset64 & 0xffffffff); */
+      /* 	unsigned int upper_part = (unsigned int)(offset64 >> 32); */
+      /* 	lower[m].data  = lower_part; */
+      /* 	upper[m].data  = upper_part; */
+      /* 	ref[m] = offset64; */
+      /* } */
 
 #if 0
       __forceinline       NodeRef child(size_t i)       { 
@@ -345,24 +346,31 @@ namespace embree
 #else
 
       __forceinline       NodeRef &child(size_t i)       { 
-	return  ref[i>>2];
+	return  ref[i];
       }
       __forceinline const NodeRef &child(size_t i) const { 
+	return  ref[i];
+      }
+
+      __forceinline       NodeRef &child_ref(size_t i)       { 
+	return  ref[i>>2];
+      }
+      __forceinline const NodeRef &child_ref(size_t i) const { 
 	return  ref[i>>2];
       }
       
 #endif
 
-      __forceinline void createLeaf(unsigned int offset, 
-				    unsigned int items,
-				    const size_t m)
-      {
-	assert(items <= BVH4Hair::N);
-	const unsigned int v = (offset << encodingBits) | BVH4Hair::leaf_mask | items;
-	lower[m].data = v;
-	upper[m].data = 0.0;
-	ref[m] = v;
-      }
+      /* __forceinline void createLeaf(unsigned int offset,  */
+      /* 				    unsigned int items, */
+      /* 				    const size_t m) */
+      /* { */
+      /* 	assert(items <= BVH4Hair::N); */
+      /* 	const unsigned int v = (offset << encodingBits) | BVH4Hair::leaf_mask | items; */
+      /* 	lower[m].data = v; */
+      /* 	upper[m].data = 0.0; */
+      /* 	ref[m] = v; */
+      /* } */
 
       __forceinline void setMatrix(const BBox3fa &b, const size_t m)
       {
@@ -373,6 +381,10 @@ namespace embree
 	upper[m].x = b.upper.x;
 	upper[m].y = b.upper.y;
 	upper[m].z = b.upper.z;
+
+	lower[m].data = 0;
+	upper[m].data = 0;
+
       }
 
       __forceinline void setMatrix(const LinearSpace3fa &mat, BBox3fa &b, const size_t m)

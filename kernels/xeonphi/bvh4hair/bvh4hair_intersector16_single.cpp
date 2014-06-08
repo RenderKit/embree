@@ -21,6 +21,9 @@
 
 #define DBG(x) 
 
+#define ENABLE_AABB_NODES = 1
+
+
 namespace embree
 {
   namespace isa
@@ -261,6 +264,7 @@ namespace embree
     {
       /* near and node stack */
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
+      return;
 
       /* setup */
       const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);

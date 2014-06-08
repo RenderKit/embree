@@ -127,10 +127,11 @@ namespace embree
       }
 
     __forceinline void createNode(void *parentPtr,
-				  void *childPtr)
+				  void *childPtr,
+				  const size_t flags = 0)
     {
       size_t *ptr = (size_t*)parentPtr;
-      *ptr = (size_t)childPtr;      
+      *ptr = (size_t)childPtr | flags;      
     }
 
 
