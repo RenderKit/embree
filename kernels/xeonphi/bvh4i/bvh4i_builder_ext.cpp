@@ -900,6 +900,18 @@ namespace embree
     // === 'prims' became 'accel' === 
     prims = NULL;
     size_prims = 0;
+
+#if 1    
+    BVH4i::Node* bvh4 = (BVH4i::Node*)node;
+    PING;
+    DBG_PRINT( numNodes );
+    for (size_t i=0;i<numNodes;i++)
+      {
+	BVH4i::QuantizedNode qnode;
+	qnode.init( bvh4[i] );
+	*(BVH4i::QuantizedNode*)&bvh4[i] = qnode; // offset translation?
+      }
+#endif
   }
 
 

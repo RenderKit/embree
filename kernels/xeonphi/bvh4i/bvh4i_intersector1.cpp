@@ -61,16 +61,16 @@ namespace embree
 	  NodeRef curNode = stack_node[sindex-1];
 	  sindex--;
 
-	  traverse_single_intersect(curNode,
-				    sindex,
-				    rdir_xyz,
-				    org_rdir_xyz,
-				    min_dist_xyz,
-				    max_dist_xyz,
-				    stack_node,
-				    stack_dist,
-				    nodes,
-				    leaf_mask);            		    
+	  traverse_single_intersect<false>(curNode,
+					   sindex,
+					   rdir_xyz,
+					   org_rdir_xyz,
+					   min_dist_xyz,
+					   max_dist_xyz,
+					   stack_node,
+					   stack_dist,
+					   nodes,
+					   leaf_mask);            		    
 
 	  /* return if stack is empty */
 	  if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -126,15 +126,15 @@ namespace embree
 	  sindex--;
             
 	  
-	  traverse_single_occluded(curNode,
-				   sindex,
-				   rdir_xyz,
-				   org_rdir_xyz,
-				   min_dist_xyz,
-				   max_dist_xyz,
-				   stack_node,
-				   nodes,
-				   leaf_mask);	    
+	  traverse_single_occluded<false>(curNode,
+					  sindex,
+					  rdir_xyz,
+					  org_rdir_xyz,
+					  min_dist_xyz,
+					  max_dist_xyz,
+					  stack_node,
+					  nodes,
+					  leaf_mask);	    
 
 	  /* return if stack is empty */
 	  if (unlikely(curNode == BVH4i::invalidNode)) break;
