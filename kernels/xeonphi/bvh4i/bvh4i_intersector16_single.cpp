@@ -196,8 +196,12 @@ namespace embree
 
 
     
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16SingleMoeller, BVH4iIntersector16Single<Triangle1LeafIntersector>);
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16SingleMoeller, BVH4iIntersector16Single<Triangle1mcLeafIntersector>);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16SingleMoeller        , BVH4iIntersector16Single< Triangle1LeafIntersector<true> >);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16SingleMoellerNoFilter, BVH4iIntersector16Single< Triangle1LeafIntersector<false> >);
+
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16SingleMoeller        , BVH4iIntersector16Single< Triangle1mcLeafIntersector<true> >);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16SingleMoellerNoFilter, BVH4iIntersector16Single< Triangle1mcLeafIntersector<false> >);
+
 
   }
 }

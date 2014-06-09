@@ -172,9 +172,15 @@ namespace embree
     }
 
 
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16ChunkMoeller,   BVH4iIntersector16Chunk<Triangle1LeafIntersector>);
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16ChunkMoeller, BVH4iIntersector16Chunk<Triangle1mcLeafIntersector>);
-    DEFINE_INTERSECTOR16   (BVH4iVirtualGeometryIntersector16, BVH4iIntersector16Chunk<VirtualLeafIntersector>);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16ChunkMoeller,           BVH4iIntersector16Chunk< Triangle1LeafIntersector<true> >);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16ChunkMoellerNoFilter,   BVH4iIntersector16Chunk< Triangle1LeafIntersector<false> >);
+
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16ChunkMoeller, BVH4iIntersector16Chunk< Triangle1mcLeafIntersector<true> >);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16ChunkMoellerNoFilter, BVH4iIntersector16Chunk< Triangle1mcLeafIntersector<false> >);
+
+    DEFINE_INTERSECTOR16   (BVH4iVirtualGeometryIntersector16        , BVH4iIntersector16Chunk< VirtualLeafIntersector<true> >);
+    DEFINE_INTERSECTOR16   (BVH4iVirtualGeometryIntersector16NoFilter, BVH4iIntersector16Chunk< VirtualLeafIntersector<false> >);
+
 
   }
 }

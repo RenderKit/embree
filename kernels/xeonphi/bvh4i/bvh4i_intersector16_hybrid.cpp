@@ -456,8 +456,11 @@ namespace embree
       store16i(m_valid & m_terminated,&ray16.geomID,mic_i::zero());
     }
     
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16HybridMoeller, BVH4iIntersector16Hybrid<Triangle1LeafIntersector>);
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16HybridMoeller, BVH4iIntersector16Hybrid<Triangle1mcLeafIntersector>);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16HybridMoeller, BVH4iIntersector16Hybrid< Triangle1LeafIntersector<true> >);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16HybridMoellerNoFilter, BVH4iIntersector16Hybrid< Triangle1LeafIntersector<false> >);
+
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16HybridMoeller, BVH4iIntersector16Hybrid< Triangle1mcLeafIntersector<true> >);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16HybridMoellerNoFilter, BVH4iIntersector16Hybrid< Triangle1mcLeafIntersector<false> >);
 
   }
 }

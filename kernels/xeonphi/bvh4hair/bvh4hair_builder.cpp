@@ -28,7 +28,7 @@ namespace embree
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 
 #define ENABLE_OBB_BVH4 1
-#define ENABLE_AABB_NODES 1
+#define ENABLE_AABB_NODES 0
 
 #define TIMER(x)  
 
@@ -638,7 +638,7 @@ namespace embree
 
     /* work in multithreaded toplevel mode until sufficient subtasks got generated */    
     const size_t coreCount = (threadCount+3)/4;
-    while (global_workStack.size() <= coreCount &&
+    while (global_workStack.size() < coreCount &&
 	   global_workStack.size()+BVH4i::N <= SIZE_GLOBAL_WORK_STACK) 
     {
       BuildRecord br;
