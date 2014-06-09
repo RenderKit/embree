@@ -560,7 +560,6 @@ namespace embree
 	  {
 	    DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
 	    /* handle empty scene */
-	    bvh4hair->setFirstNodesToInvalid();
 	    bvh4hair->root = BVH4Hair::emptyNode;
 	    bvh4hair->bounds = empty;
 	  }

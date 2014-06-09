@@ -283,7 +283,8 @@ namespace embree
 
     atomic_t numUserGeometries1;        //!< number of enabled user geometries
     atomic_t numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
-    atomic_t numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
+    atomic_t numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
+    atomic_t numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
     
   public:
     FlatTriangleAccelBuildSource flat_triangle_source_1;

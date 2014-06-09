@@ -421,12 +421,6 @@ namespace embree
 	unaligned_nodes = NULL;
       }
 
-      __forceinline void setFirstNodesToInvalid()
-      {
-	unaligned_nodes[0].setInvalid();
-	unaligned_nodes[1].setInvalid();
-      }
-
     
     static Accel* BVH4HairBinnedSAH(Scene* scene);
     
