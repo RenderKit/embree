@@ -193,9 +193,10 @@ namespace embree
       {
       }
 
-    virtual void allocateData   (const size_t threadCount, const size_t newNumPrimitives);
+    virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives);
     virtual void printBuilderName();
-    virtual void createAccel    (const size_t threadIndex, const size_t threadCount);   
+    virtual void createAccel      (const size_t threadIndex, const size_t threadCount);   
+    virtual void convertQBVHLayout(const size_t threadIndex, const size_t threadCount);
 
   protected:
     TASK_FUNCTION(BVH4iBuilderMemoryConservative,createMemoryConservativeAccel);

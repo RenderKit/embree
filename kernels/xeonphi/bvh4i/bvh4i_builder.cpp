@@ -1174,12 +1174,12 @@ namespace embree
 
     /* recurse into each child */
     for (unsigned int i=0; i<numChildren; i++) 
-    {
-      node[currentIndex+i].lower = (Vec3fa) children[i].bounds.geometry.lower;
-      node[currentIndex+i].upper = (Vec3fa) children[i].bounds.geometry.upper;
-      children[i].parentID = currentIndex+i;
-      recurse(children[i],alloc,mode,threadID,numThreads);
-    }
+      {
+	node[currentIndex+i].lower = (Vec3fa) children[i].bounds.geometry.lower;
+	node[currentIndex+i].upper = (Vec3fa) children[i].bounds.geometry.upper;
+	children[i].parentID = currentIndex+i;
+	recurse(children[i],alloc,mode,threadID,numThreads);
+      }
 
   }
 
@@ -1438,6 +1438,7 @@ namespace embree
 
     /* work in multithreaded toplevel mode until sufficient subtasks got generated */    
     NodeAllocator alloc(atomicID,numAllocatedNodes);
+
     const size_t coreCount = (threadCount+3)/4;
     while (global_workStack.size() < coreCount &&
 	   global_workStack.size()+BVH4i::N <= SIZE_GLOBAL_WORK_STACK) 

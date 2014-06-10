@@ -31,6 +31,7 @@ namespace embree
   public:
     static const size_t ALLOCATOR_NODE_BLOCK_SIZE = 64;
     typedef AtomicIDBlock<ALLOCATOR_NODE_BLOCK_SIZE> NodeAllocator;    
+    typedef AtomicIDBlock<1> GlobalNodeAllocator;    
 
     /*! build mode */
     enum { RECURSE = 1, FILL_LOCAL_QUEUES = 2, BUILD_TOP_LEVEL = 3 };

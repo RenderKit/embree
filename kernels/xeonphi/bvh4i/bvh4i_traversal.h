@@ -73,6 +73,7 @@ namespace embree
 	    BVH4i::QuantizedNode* __restrict__ const compressed_node = (BVH4i::QuantizedNode*)node;
 	    prefetch<PFHINT_L1>((char*)node + 0);
 		  
+	    //DBG_PRINT(*compressed_node);
 	    const mic_f startXYZ = compressed_node->decompress_startXYZ();
 	    const mic_f diffXYZ  = compressed_node->decompress_diffXYZ();
 	    const mic_f clower   = compressed_node->decompress_lowerXYZ(startXYZ,diffXYZ);
