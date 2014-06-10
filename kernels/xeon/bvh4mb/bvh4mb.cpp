@@ -45,8 +45,8 @@ namespace embree
     BVH4MB* accel = new BVH4MB(SceneTriangle1vMB::type,scene);
 
     Builder* builder = NULL;
-    if      (g_builder == "default"     ) builder = BVH4MBBuilderObjectSplit1(accel,&scene->flat_triangle_source_2,scene,1,inf);
-    //if      (g_builder == "default"     ) builder = BVH4MBTriangle1vBuilder2(accel,scene,0);
+    //if      (g_builder == "default"     ) builder = BVH4MBBuilderObjectSplit1(accel,&scene->flat_triangle_source_2,scene,1,inf);
+    if      (g_builder == "default"     ) builder = BVH4MBTriangle1vBuilder2(accel,scene,0);
     else if (g_builder == "objectsplit" ) builder = BVH4MBBuilderObjectSplit1(accel,&scene->flat_triangle_source_2,scene,1,inf);
     else builder = BVH4MBBuilderObjectSplit1(accel,&scene->flat_triangle_source_2,scene,1,inf); // FIXME: dont look for triangle builder type
     //throw std::runtime_error("unknown builder "+g_builder+" for BVH4MB<Triangle1v>");

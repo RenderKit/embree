@@ -70,7 +70,6 @@ namespace embree
     }
     
     BVH4Builder2::~BVH4Builder2() {
-      PING;
       bvh->alloc.shrink();
     }
 

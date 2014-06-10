@@ -39,8 +39,8 @@ namespace embree
 {
   namespace isa
   {
-    template<> BVH4MBBuilder2T<Triangle1v>::BVH4MBBuilder2T (BVH4MB* bvh, Scene* scene, size_t mode) : BVH4MBBuilder2(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
-    template<> BVH4MBBuilder2T<Triangle1v>::BVH4MBBuilder2T (BVH4MB* bvh, TriangleMesh* mesh, size_t mode) : BVH4MBBuilder2(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
+    template<> BVH4MBBuilder2T<Triangle1vMB>::BVH4MBBuilder2T (BVH4MB* bvh, Scene* scene, size_t mode) : BVH4MBBuilder2(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
+    template<> BVH4MBBuilder2T<Triangle1vMB>::BVH4MBBuilder2T (BVH4MB* bvh, TriangleMesh* mesh, size_t mode) : BVH4MBBuilder2(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
 
     BVH4MBBuilder2::BVH4MBBuilder2 (BVH4MB* bvh, Scene* scene, TriangleMesh* mesh, size_t mode,
 				size_t logBlockSize, size_t logSAHBlockSize, float intCost, 
@@ -499,7 +499,7 @@ namespace embree
       /*! calculate number of primitives */
       size_t numPrimitives = 0;
       if (mesh) numPrimitives = mesh->numTriangles;
-      else      numPrimitives = scene->numTriangles;
+      else      numPrimitives = scene->numTriangles2;
 
       /*! set maximal amount of primitive replications for spatial split mode */
       if (enableSpatialSplits)
@@ -597,6 +597,6 @@ namespace embree
     }
     
     /*! entry functions for the builder */
-    Builder* BVH4MBTriangle1vBuilder2 (void* bvh, Scene* scene, size_t mode) { return new class BVH4MBBuilder2T<Triangle1v>((BVH4MB*)bvh,scene,mode); }
+    Builder* BVH4MBTriangle1vBuilder2 (void* bvh, Scene* scene, size_t mode) { return new class BVH4MBBuilder2T<Triangle1vMB>((BVH4MB*)bvh,scene,mode); }
   }
 }
