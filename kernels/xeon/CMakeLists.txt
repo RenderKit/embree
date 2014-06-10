@@ -79,6 +79,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp
   bvh4/bvh4_builder.cpp
+  bvh4/bvh4_builder2.cpp
   bvh4/bvh4_builder_fast.cpp
   bvh4/bvh4_builder_morton.cpp
   bvh4/bvh4_builder_binner.cpp

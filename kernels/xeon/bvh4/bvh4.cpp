@@ -144,19 +144,19 @@ namespace embree
     /* select builders */
     SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4BuilderTopLevelFast);
 
-    SELECT_SYMBOL_AVX(features,BVH4Triangle1Builder2);
-    SELECT_SYMBOL_AVX(features,BVH4Triangle4Builder2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1Builder2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4Builder2);
     SELECT_SYMBOL_AVX(features,BVH4Triangle8Builder2);
-    SELECT_SYMBOL_AVX(features,BVH4Triangle1vBuilder2);
-    SELECT_SYMBOL_AVX(features,BVH4Triangle4vBuilder2);
-    SELECT_SYMBOL_AVX(features,BVH4Triangle4iBuilder2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vBuilder2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vBuilder2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iBuilder2);
     
-    SELECT_SYMBOL_AVX(features,BVH4Triangle1MeshBuilder2);
-    SELECT_SYMBOL_AVX(features,BVH4Triangle4MeshBuilder2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilder2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilder2);
     SELECT_SYMBOL_AVX(features,BVH4Triangle8MeshBuilder2);
-    SELECT_SYMBOL_AVX(features,BVH4Triangle1vMeshBuilder2);
-    SELECT_SYMBOL_AVX(features,BVH4Triangle4vMeshBuilder2);
-    SELECT_SYMBOL_AVX(features,BVH4Triangle4iMeshBuilder2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshBuilder2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilder2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilder2);
   
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1BuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilderFast);
