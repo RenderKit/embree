@@ -116,7 +116,7 @@ namespace embree
           curNode = *sptr_node;
           curDist = *sptr_near;
           
-          for (size_t i=0; i<4; i++)
+          for (size_t i=0; i<BVH4::N; i++)
           {
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH4::emptyNode)) break;
@@ -292,7 +292,7 @@ namespace embree
           curNode = *sptr_node;
           curDist = *sptr_near;
           
-          for (size_t i=0; i<4; i++)
+          for (size_t i=0; i<BVH4::N; i++)
           {
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH4::emptyNode)) break;

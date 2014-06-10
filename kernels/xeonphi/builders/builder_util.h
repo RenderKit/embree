@@ -118,8 +118,9 @@ namespace embree
 
     unsigned int flags;
     float sArea;
-    unsigned int parentType;    // only used with mixed AABB/OBB trees 
-    unsigned int parentBoxID; 
+    //unsigned int parentType;    // only used with mixed AABB/OBB trees 
+    //unsigned int parentBoxID; 
+    void *parentPtr;
 
     BuildRecord()
       {
@@ -131,7 +132,8 @@ namespace embree
       begin       = _begin;
       end         = _end;
       parentID    = (unsigned int)-1;
-      parentBoxID = (unsigned int)-1;
+      //parentBoxID = (unsigned int)-1;
+      parentPtr   = NULL;
       sArea       = area(bounds.geometry);
       flags       = BUILD_RECORD_NODE;
     }
@@ -172,15 +174,13 @@ namespace embree
       o << "end         " << br.end << " ";
       o << "items       " << br.end-br.begin << " ";
       o << "parentID    " << br.parentID << " ";
-      o << "parentBoxID " << br.parentBoxID << " ";
+      o << "parentPtr   " << br.parentPtr << " ";
       o << "flags       " << br.flags << " ";
       o << "sArea       " << br.sArea << " ";
       return o;
     };
 
     enum { BUILD_RECORD_INIT  = 0, BUILD_RECORD_NODE  = 1, BUILD_RECORD_LEAF  = 2 };
-
-    enum { NODE_TYPE_AABB  = 0, NODE_TYPE_OBB = 1};
 
     __forceinline void createNode() { flags = BUILD_RECORD_NODE; }
     __forceinline void createLeaf() { flags = BUILD_RECORD_LEAF; }

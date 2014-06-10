@@ -99,16 +99,16 @@ namespace embree
 		    NodeRef curNode = stack_node_single[sindex-1];
 		    sindex--;
             
-		    traverse_single_intersect(curNode,
-					      sindex,
-					      rdir_xyz,
-					      org_rdir_xyz,
-					      min_dist_xyz,
-					      max_dist_xyz,
-					      stack_node_single,
-					      stack_dist_single,
-					      nodes,
-					      leaf_mask);
+		    traverse_single_intersect<false>(curNode,
+						     sindex,
+						     rdir_xyz,
+						     org_rdir_xyz,
+						     min_dist_xyz,
+						     max_dist_xyz,
+						     stack_node_single,
+						     stack_dist_single,
+						     nodes,
+						     leaf_mask);
 	    
 
 		    /* return if stack is empty */
@@ -456,8 +456,11 @@ namespace embree
       store16i(m_valid & m_terminated,&ray16.geomID,mic_i::zero());
     }
     
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16HybridMoeller, BVH4iIntersector16Hybrid<Triangle1LeafIntersector>);
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16HybridMoeller, BVH4iIntersector16Hybrid<Triangle1mcLeafIntersector>);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16HybridMoeller, BVH4iIntersector16Hybrid< Triangle1LeafIntersector<true> >);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16HybridMoellerNoFilter, BVH4iIntersector16Hybrid< Triangle1LeafIntersector<false> >);
+
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16HybridMoeller, BVH4iIntersector16Hybrid< Triangle1mcLeafIntersector<true> >);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16HybridMoellerNoFilter, BVH4iIntersector16Hybrid< Triangle1mcLeafIntersector<false> >);
 
   }
 }

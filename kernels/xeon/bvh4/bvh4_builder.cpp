@@ -149,6 +149,7 @@ namespace embree
     /*! create an inner node */
     Node* node = bvh->allocNode(threadIndex);
     for (size_t i=0; i<4; i++) node->set(i,cinfo[i].geomBounds,createLargeLeaf(threadIndex,cprims[i],cinfo[i],depth+1));
+    BVH4::compact(node); // move empty nodes to the end
     return bvh->encodeNode(node);
   }  
   

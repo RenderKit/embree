@@ -70,6 +70,7 @@ namespace embree
     }
     
     BVH4Builder2::~BVH4Builder2() {
+      PING;
       bvh->alloc.shrink();
     }
 
@@ -139,7 +140,7 @@ namespace embree
         //printf("set0 = "); for (size_t i=0; i<32; i++) if (best.set0 & (1<< i)) printf("1"); else printf("0"); printf("\n");
         //printf("set1 = "); for (size_t i=0; i<32; i++) if (best.set1 & (1<< i)) printf("1"); else printf("0"); printf("\n");
         //printf("set2 = "); for (size_t i=0; i<32; i++) if (best.set2 & (1<< i)) printf("1"); else printf("0"); printf("\n");
-        assert(__popcnt(best.set0 | best.set1 | best.set2) == numItems);
+        //assert(__popcnt(best.set0 | best.set1 | best.set2) == numItems);
 
         int i0 = 0; node0->clear();
         int set0 = best.set0;
@@ -290,7 +291,6 @@ namespace embree
     }
 #endif
 
-
 ///////////////////////////////////////////////////////////////////////////////////////
     template<typename Triangle>
     typename BVH4Builder2::NodeRef BVH4Builder2T<Triangle>::createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo)
@@ -336,7 +336,11 @@ namespace embree
       
       /*! create an inner node */
       Node* node = bvh->allocNode(threadIndex);
-      for (size_t i=0; i<4; i++) node->set(i,cinfo[i].geomBounds,createLargeLeaf(threadIndex,cprims[i],cinfo[i],depth+1));
+      for (size_t i=0; i<4; i++) 
+	if (cinfo[i].size())
+	  node->set(i,cinfo[i].geomBounds,createLargeLeaf(threadIndex,cprims[i],cinfo[i],depth+1));
+
+      BVH4::compact(node); // move empty nodes to the end
       return bvh->encodeNode(node);
     }  
 
@@ -546,7 +550,7 @@ namespace embree
       activeBuildRecords=1;
 
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (tasks.size() < threadCount)
+      while (tasks.size() > 0 && tasks.size() < threadCount)
       {
 	/* pop largest item for better load balancing */
 	BuildRecord task = tasks.front();

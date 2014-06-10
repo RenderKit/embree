@@ -21,12 +21,16 @@
 
 #define DBG(x) 
 
+#define ENABLE_AABB_NODES = 1
+
+
 namespace embree
 {
   namespace isa
   {
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
 
+  template< bool ENABLE_INTERSECTION_FILTER>
     struct Bezier1iLeafIntersector
     {
       static __forceinline bool intersect(BVH4i::NodeRef curNode,
@@ -38,7 +42,7 @@ namespace embree
 					  Ray16& ray16, 
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry,
-					  Bezier1iIntersector16::Precalculations &pre)
+					  Precalculations &pre)
       {
 	const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
 	const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
@@ -52,7 +56,7 @@ namespace embree
 	prefetch<PFHINT_L1>(tptr + 4);
 
 	for (size_t i=0;i<items;i++)
-	  ret |= Bezier1iIntersector16::intersect(pre_vx,pre_vy,pre_vz,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry); 
+	  ret |= Bezier1iIntersector16<ENABLE_INTERSECTION_FILTER>::intersect(pre_vx,pre_vy,pre_vz,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry); 
 
 	max_dist_xyz = ray16.tfar[rayIndex];
 
@@ -69,7 +73,7 @@ namespace embree
 					 mic_m &m_terminated,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry,
-					 Bezier1iIntersector16::Precalculations &pre)
+					 Precalculations &pre)
       {
 	const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
 	const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
@@ -83,7 +87,7 @@ namespace embree
 
 	for (size_t i=0;i<items;i++)
 	  {
-	    if (Bezier1iIntersector16::occluded(pre_vx,pre_vy,pre_vz,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry))
+	    if (Bezier1iIntersector16<ENABLE_INTERSECTION_FILTER>::occluded(pre_vx,pre_vy,pre_vz,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry))
 	      return true;
 	  }
 
@@ -98,7 +102,7 @@ namespace embree
 					  Ray& ray, 
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry,
-					  Bezier1iIntersector16::Precalculations &pre)
+					  Precalculations &pre)
       {
 	const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
 	const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
@@ -115,7 +119,7 @@ namespace embree
 	prefetch<PFHINT_L1>(tptr + 4);
 
 	for (size_t i=0;i<items;i++)
-	  ret |= Bezier1iIntersector16::intersect(pre_vx,pre_vy,pre_vz,ray,dir_xyz,org_xyz,tptr[i],geometry); // add mailboxing
+	  ret |= Bezier1iIntersector16<ENABLE_INTERSECTION_FILTER>::intersect(pre_vx,pre_vy,pre_vz,ray,dir_xyz,org_xyz,tptr[i],geometry); // add mailboxing
 
 	max_dist_xyz = ray.tfar;
 	return ret;
@@ -131,7 +135,7 @@ namespace embree
 					 Ray& ray,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry,
-					 Bezier1iIntersector16::Precalculations &pre)
+					 Precalculations &pre)
       {
 	const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
 	const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
@@ -145,7 +149,7 @@ namespace embree
 	prefetch<PFHINT_L1>(tptr + 4);
 
 	for (size_t i=0;i<items;i++)
-	  if (Bezier1iIntersector16::occluded(pre_vx,pre_vy,pre_vz,ray,dir_xyz,org_xyz,tptr[i],geometry))
+	  if (Bezier1iIntersector16<ENABLE_INTERSECTION_FILTER>::occluded(pre_vx,pre_vy,pre_vz,ray,dir_xyz,org_xyz,tptr[i],geometry))
 	    return true;
 
 	return false;
@@ -180,7 +184,7 @@ namespace embree
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
         {
-	  Bezier1iIntersector16::Precalculations pre(ray16_space,rayIndex);
+	  Precalculations pre(ray16_space,rayIndex);
 	  DBG(std::cout << std::endl);
 	  DBG(DBG_PRINT(rayIndex));
 
@@ -261,6 +265,7 @@ namespace embree
     {
       /* near and node stack */
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
+      return;
 
       /* setup */
       const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
@@ -276,7 +281,7 @@ namespace embree
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
         {
-	  Bezier1iIntersector16::Precalculations pre(ray16,rayIndex);
+	  Precalculations pre(ray16,rayIndex);
 
 	  stack_node[1] = bvh->root; 
 	  size_t sindex = 2;
@@ -364,7 +369,7 @@ namespace embree
 
       stack_node[0] = BVH4Hair::invalidNode;
 
-      Bezier1iIntersector16::Precalculations pre(ray_space,0);
+      Precalculations pre(ray_space,0);
 	  
       stack_node[1] = bvh->root; 
       size_t sindex = 2;
@@ -446,7 +451,7 @@ namespace embree
 
       stack_node[0] = BVH4Hair::invalidNode;
 
-      Bezier1iIntersector16::Precalculations pre(ray_space,0);
+      Precalculations pre(ray_space,0);
 	  
       stack_node[1] = bvh->root; 
       size_t sindex = 2;
@@ -509,9 +514,12 @@ namespace embree
 	}	         
     }
     
+
+    DEFINE_INTERSECTOR1    (BVH4HairIntersector1Bezier1i , BVH4HairIntersector1< Bezier1iLeafIntersector<true> >);
+    DEFINE_INTERSECTOR1    (BVH4HairIntersector1Bezier1iNoFilter , BVH4HairIntersector1< Bezier1iLeafIntersector<false> >);
     
-    DEFINE_INTERSECTOR16   (BVH4HairIntersector16Bezier1i, BVH4HairIntersector16<Bezier1iLeafIntersector>);
-    DEFINE_INTERSECTOR1    (BVH4HairIntersector1Bezier1i , BVH4HairIntersector1<Bezier1iLeafIntersector>);
+    DEFINE_INTERSECTOR16   (BVH4HairIntersector16Bezier1i, BVH4HairIntersector16< Bezier1iLeafIntersector<true> >);
+    DEFINE_INTERSECTOR16   (BVH4HairIntersector16Bezier1iNoFilter, BVH4HairIntersector16< Bezier1iLeafIntersector<false> >);
 
   }
 }

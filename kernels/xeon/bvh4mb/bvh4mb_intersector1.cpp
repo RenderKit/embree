@@ -70,9 +70,15 @@ namespace embree
         if (likely(cur->isNode()))
         {
           STAT3(normal.trav_nodes,1,1,1);
-          
+	  
           /*! single ray intersection with 4 boxes */
           const Node* node = cur->node();
+	  /*PRINT2(node->lower_x, node->lower_dx);
+	  PRINT2(node->lower_y, node->lower_dy);
+	  PRINT2(node->lower_z, node->lower_dz);
+	  PRINT2(node->upper_x, node->upper_dx);
+	  PRINT2(node->upper_y, node->upper_dy);
+	  PRINT2(node->upper_z, node->upper_dz);*/
           const ssef* pNearX = (const ssef*)((const char*)node+nearX);
           const ssef* pNearY = (const ssef*)((const char*)node+nearY);
           const ssef* pNearZ = (const ssef*)((const char*)node+nearZ);

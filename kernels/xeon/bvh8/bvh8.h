@@ -219,6 +219,8 @@ namespace embree
 
     /*! BVH8 instantiations */
     static Accel* BVH8Triangle8(Scene* scene);
+    static Accel* BVH8Triangle8ObjectSplit(Scene* scene);
+    static Accel* BVH8Triangle8SpatialSplit(Scene* scene);
 
     /*! initializes the acceleration structure */
     void init (size_t numPrimitives = 0, size_t numThreads = 1);

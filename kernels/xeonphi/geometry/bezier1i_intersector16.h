@@ -26,22 +26,25 @@ namespace embree
   typedef LinearSpace3<mic3f> LinearSpace_mic3f;
     
   /*! Intersector for a single ray from a ray packet with a bezier curve. */
+
+  struct __aligned(64) Precalculations 
+  {
+    __forceinline Precalculations (const Ray16& ray, const size_t k)
+      : ray_space(frame(Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed()) {} // FIXME: works only with normalized ray direction
+
+    __forceinline Precalculations (const LinearSpace_mic3f& ls16, const size_t k)
+      : ray_space(ls16.vx.x[k],ls16.vy.x[k],ls16.vz.x[k],
+		  ls16.vx.y[k],ls16.vy.y[k],ls16.vz.y[k],
+		  ls16.vx.z[k],ls16.vy.z[k],ls16.vz.z[k])
+      {}
+    __aligned(64) LinearSpace3fa ray_space;
+  };
+
+  template< bool ENABLE_INTERSECTION_FILTER>
   struct Bezier1iIntersector16
   {
     typedef Bezier1i Primitive;
 
-    struct __aligned(64) Precalculations 
-    {
-      __forceinline Precalculations (const Ray16& ray, const size_t k)
-	: ray_space(frame(Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed()) {} // FIXME: works only with normalized ray direction
-
-      __forceinline Precalculations (const LinearSpace_mic3f& ls16, const size_t k)
-	: ray_space(ls16.vx.x[k],ls16.vy.x[k],ls16.vz.x[k],
-		    ls16.vx.y[k],ls16.vy.y[k],ls16.vz.y[k],
-		    ls16.vx.z[k],ls16.vy.z[k],ls16.vz.z[k])
-	{}
-      __aligned(64) LinearSpace3fa ray_space;
-    };
 
     static __forceinline mic4f eval16(const mic_f &p0123,
 				      const mic_f &c0,
@@ -161,26 +164,27 @@ namespace embree
 #endif  
 
       /* update hit information */
-#if defined(__INTERSECTION_FILTER__) 
-      const Geometry* const gg = ((Scene*)geom)->get(curve_in.geomID);
-      if (unlikely(gg->hasIntersectionFilter16())) 
+      if (ENABLE_INTERSECTION_FILTER) 
 	{
-	  while(any(valid)) 
+	  const Geometry* const gg = ((Scene*)geom)->get(curve_in.geomID);
+	  if (unlikely(gg->hasIntersectionFilter16())) 
 	    {
-	      const float one_over_width = 1.0f/16.0f;
-	      unsigned int i = select_min(valid,t);
-	      float uu = (float(i)+u[i])*one_over_width; 
-	      mic_f P,T;
-	      eval(uu,p0123,P,T);
-	      assert( T != mic_f::zero() );
+	      while(any(valid)) 
+		{
+		  const float one_over_width = 1.0f/16.0f;
+		  unsigned int i = select_min(valid,t);
+		  float uu = (float(i)+u[i])*one_over_width; 
+		  mic_f P,T;
+		  eval(uu,p0123,P,T);
+		  assert( T != mic_f::zero() );
 
-	      if (runIntersectionFilter16(gg,ray,k,mic_f(uu),mic_f(0.0f),mic_f(t[i]),mic_f(T[0]),mic_f(T[1]),mic_f(T[2]),(mic_m)((unsigned int)1 << i),curve_in.geomID,curve_in.primID))
-		break;
-	      valid ^= (unsigned int)1 << i;
+		  if (runIntersectionFilter16(gg,ray,k,mic_f(uu),mic_f(0.0f),mic_f(t[i]),mic_f(T[0]),mic_f(T[1]),mic_f(T[2]),(mic_m)((unsigned int)1 << i),curve_in.geomID,curve_in.primID))
+		    break;
+		  valid ^= (unsigned int)1 << i;
+		}
+	      if (unlikely(none(valid))) return false;
 	    }
-	  if (unlikely(none(valid))) return false;
 	}
-#endif
 
       const float one_over_width = 1.0f/16.0f;
       unsigned int i = select_min(valid,t);
@@ -264,26 +268,27 @@ namespace embree
       if (unlikely(g->mask & ray.mask[k]) == 0) return false;
 #endif  
 
-#if defined(__INTERSECTION_FILTER__) 
-      const Geometry* const gg = ((Scene*)geom)->get(curve_in.geomID);
-      if (likely(gg->hasOcclusionFilter16())) 
+
+      if (ENABLE_INTERSECTION_FILTER) 
 	{
-	  while(any(valid)) 
+	  const Geometry* const gg = ((Scene*)geom)->get(curve_in.geomID);
+	  if (likely(gg->hasOcclusionFilter16())) 
 	    {
-	      unsigned int i = select_min(valid,t);
-	      float uu = (float(i)+u[i])*one_over_width; 
-	      mic_f P,T;
-	      eval(uu,p0123,P,T);
-	      assert( T != mic_f::zero() );
+	      while(any(valid)) 
+		{
+		  unsigned int i = select_min(valid,t);
+		  float uu = (float(i)+u[i])*one_over_width; 
+		  mic_f P,T;
+		  eval(uu,p0123,P,T);
+		  assert( T != mic_f::zero() );
 
-	      if (runOcclusionFilter16(gg,(Ray16&)ray,k,mic_f(uu),mic_f(0.0f),mic_f(t[i]),mic_f(T[0]),mic_f(T[1]),mic_f(T[2]),(mic_m)((unsigned int)1 << i),curve_in.geomID,curve_in.primID))
-	      	return true;
-	      valid ^= (unsigned int)1 << i;
+		  if (runOcclusionFilter16(gg,(Ray16&)ray,k,mic_f(uu),mic_f(0.0f),mic_f(t[i]),mic_f(T[0]),mic_f(T[1]),mic_f(T[2]),(mic_m)((unsigned int)1 << i),curve_in.geomID,curve_in.primID))
+		    return true;
+		  valid ^= (unsigned int)1 << i;
+		}
 	    }
+	  return false;
 	}
-      return false;
-#endif
-
       return true;
     }
 
@@ -361,25 +366,26 @@ namespace embree
       if (unlikely(g->mask & ray.mask) == 0) return false;
 #endif  
 
-#if defined(__INTERSECTION_FILTER__) 
-      const Geometry* const gg = ((Scene*)geom)->get(curve_in.geomID);
-      if (unlikely(gg->hasIntersectionFilter1())) 
+      if (ENABLE_INTERSECTION_FILTER) 
 	{
-	  while(any(valid)) 
+	  const Geometry* const gg = ((Scene*)geom)->get(curve_in.geomID);
+	  if (unlikely(gg->hasIntersectionFilter1())) 
 	    {
-	      unsigned int i = select_min(valid,t);
-	      float uu = (float(i)+u[i])*one_over_width; 
-	      mic_f P,T;
-	      eval(uu,p0123,P,T);
-	      assert( T != mic_f::zero() );
+	      while(any(valid)) 
+		{
+		  unsigned int i = select_min(valid,t);
+		  float uu = (float(i)+u[i])*one_over_width; 
+		  mic_f P,T;
+		  eval(uu,p0123,P,T);
+		  assert( T != mic_f::zero() );
 
-	      if (runIntersectionFilter1(gg,ray,mic_f(uu),mic_f(0.0f),mic_f(t[i]),mic_f(T[0]),mic_f(T[1]),mic_f(T[2]),(mic_m)((unsigned int)1 << i),curve_in.geomID,curve_in.primID))
-		break;
-	      valid ^= (unsigned int)1 << i;
+		  if (runIntersectionFilter1(gg,ray,mic_f(uu),mic_f(0.0f),mic_f(t[i]),mic_f(T[0]),mic_f(T[1]),mic_f(T[2]),(mic_m)((unsigned int)1 << i),curve_in.geomID,curve_in.primID))
+		    break;
+		  valid ^= (unsigned int)1 << i;
+		}
+	      if (unlikely(none(valid))) return false;
 	    }
-	  if (unlikely(none(valid))) return false;
 	}
-#endif
 
       unsigned int i = select_min(valid,t);
       float uu = (float(i)+u[i])*one_over_width; 
@@ -457,26 +463,27 @@ namespace embree
       if (unlikely(g->mask & ray.mask) == 0) return false;
 #endif  
 
-#if defined(__INTERSECTION_FILTER__) 
-      const Geometry* const gg = ((Scene*)geom)->get(curve_in.geomID);
-      if (unlikely(gg->hasOcclusionFilter1())) 
+      if (ENABLE_INTERSECTION_FILTER) 
 	{
-	  while(any(valid)) 
+	  const Geometry* const gg = ((Scene*)geom)->get(curve_in.geomID);
+	  if (unlikely(gg->hasOcclusionFilter1())) 
 	    {
-	      unsigned int i = select_min(valid,t);
-	      const float one_over_width = 1.0f/16.0f;
-	      float uu = (float(i)+u[i])*one_over_width; 
-	      mic_f P,T;
-	      eval(uu,p0123,P,T);
-	      assert( T != mic_f::zero() );
+	      while(any(valid)) 
+		{
+		  unsigned int i = select_min(valid,t);
+		  const float one_over_width = 1.0f/16.0f;
+		  float uu = (float(i)+u[i])*one_over_width; 
+		  mic_f P,T;
+		  eval(uu,p0123,P,T);
+		  assert( T != mic_f::zero() );
 
-	      if (runOcclusionFilter1(gg,(Ray&)ray,mic_f(uu),mic_f(0.0f),mic_f(t[i]),mic_f(T[0]),mic_f(T[1]),mic_f(T[2]),(mic_m)((unsigned int)1 << i),curve_in.geomID,curve_in.primID))
-	      	return true;
-	      valid ^= (unsigned int)1 << i;
+		  if (runOcclusionFilter1(gg,(Ray&)ray,mic_f(uu),mic_f(0.0f),mic_f(t[i]),mic_f(T[0]),mic_f(T[1]),mic_f(T[2]),(mic_m)((unsigned int)1 << i),curve_in.geomID,curve_in.primID))
+		    return true;
+		  valid ^= (unsigned int)1 << i;
+		}
 	    }
+	  return false;
 	}
-      return false;
-#endif
 
       return true;
     }

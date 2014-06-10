@@ -64,7 +64,7 @@ namespace embree
 	  o << "end         " << br.end << " ";
 	  o << "items       " << br.end-br.begin << " ";
 	  o << "parentID    " << br.parentID << " ";
-	  o << "parentBoxID " << br.parentBoxID << " ";
+	  o << "parentPtr   " << br.parentPtr << " ";
 	  o << "flags       " << br.flags << " ";
 	  o << "sArea       " << br.sArea << " ";
 	  o << "matrix      " << br.xfm << " ";
@@ -115,6 +115,25 @@ namespace embree
     void build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event);
 
   protected:
+
+    __forceinline void createLeaf(void *parentPtr,
+				  unsigned int offset, 
+				  unsigned int items)
+      {
+	assert(items <= BVH4Hair::N);
+	const unsigned int v = (offset << BVH4Hair::encodingBits) | BVH4Hair::leaf_mask | items;
+	size_t *ptr = (size_t*)parentPtr;
+	*ptr = (size_t)v;
+      }
+
+    __forceinline void createNode(void *parentPtr,
+				  void *childPtr,
+				  const size_t flags = 0)
+    {
+      size_t *ptr = (size_t*)parentPtr;
+      *ptr = (size_t)childPtr | flags;      
+    }
+
 
     /*! splitting function that selects between sequential and parallel mode */
     bool split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads);

@@ -115,7 +115,7 @@ namespace embree
       static float  invalidMatrix[16];
 
       template<int PFHINT>
-	__forceinline void prefetchNode()
+	__forceinline void prefetchNode() const
 	{
 	  prefetch<PFHINT>((char*)this + 0 * 64);
 	  prefetch<PFHINT>((char*)this + 1 * 64);
@@ -269,7 +269,7 @@ namespace embree
     };
 
 
-    struct __aligned(128) AlignedNode
+    struct __aligned(64) AlignedNode
     {
     public:
       struct NodeStruct {
@@ -277,11 +277,14 @@ namespace embree
         unsigned int data;     // encodes 1 is-leaf bit, 25 offset bits, and 6 num-items bits
       } lower[4], upper[4];    // lower and upper bounds of all 4 children
 
+      NodeRef ref[8];
+
       template<int PFHINT>
-	__forceinline void prefetchNode()
+	__forceinline void prefetchNode() const
 	{
 	  prefetch<PFHINT>((char*)this + 0 * 64);
 	  prefetch<PFHINT>((char*)this + 1 * 64);
+	  prefetch<PFHINT>((char*)this + 2 * 64);
 	}
 
       /*! Returns bounds of specified child. */
@@ -319,16 +322,17 @@ namespace embree
 	  setInvalid(i);
       }
 
-      __forceinline void createNode(void *ptr, const size_t m)
-      {
-	size_t offset64 = (size_t)ptr | alignednode_mask;
-	unsigned int lower_part  = (unsigned int)(offset64 & 0xffffffff);
-	unsigned int upper_part = (unsigned int)(offset64 >> 32);
-	lower[m].data  = lower_part;
-	upper[m].data  = upper_part;
+      /* __forceinline void createNode(void *ptr, const size_t m) */
+      /* { */
+      /* 	size_t offset64 = (size_t)ptr | alignednode_mask; */
+      /* 	unsigned int lower_part  = (unsigned int)(offset64 & 0xffffffff); */
+      /* 	unsigned int upper_part = (unsigned int)(offset64 >> 32); */
+      /* 	lower[m].data  = lower_part; */
+      /* 	upper[m].data  = upper_part; */
+      /* 	ref[m] = offset64; */
+      /* } */
 
-      }
-
+#if 0
       __forceinline       NodeRef child(size_t i)       { 
 	const unsigned int *__restrict const l_ptr = (unsigned int*)lower;
 	const unsigned int *__restrict const u_ptr = (unsigned int*)upper;
@@ -339,16 +343,34 @@ namespace embree
 	const unsigned int *__restrict const u_ptr = (unsigned int*)upper;
 	return NodeRef(((size_t)u_ptr[i] << 32) | l_ptr[i]); 
       }
+#else
 
-
-      __forceinline void createLeaf(unsigned int offset, 
-				    unsigned int items,
-				    const size_t m)
-      {
-	assert(items <= BVH4Hair::N);
-	lower[m].data = (offset << encodingBits) | BVH4Hair::leaf_mask | items;
-	upper[m].data = 0.0;
+      __forceinline       NodeRef &child(size_t i)       { 
+	return  ref[i];
       }
+      __forceinline const NodeRef &child(size_t i) const { 
+	return  ref[i];
+      }
+
+      __forceinline       NodeRef &child_ref(size_t i)       { 
+	return  ref[i>>2];
+      }
+      __forceinline const NodeRef &child_ref(size_t i) const { 
+	return  ref[i>>2];
+      }
+      
+#endif
+
+      /* __forceinline void createLeaf(unsigned int offset,  */
+      /* 				    unsigned int items, */
+      /* 				    const size_t m) */
+      /* { */
+      /* 	assert(items <= BVH4Hair::N); */
+      /* 	const unsigned int v = (offset << encodingBits) | BVH4Hair::leaf_mask | items; */
+      /* 	lower[m].data = v; */
+      /* 	upper[m].data = 0.0; */
+      /* 	ref[m] = v; */
+      /* } */
 
       __forceinline void setMatrix(const BBox3fa &b, const size_t m)
       {
@@ -359,6 +381,10 @@ namespace embree
 	upper[m].x = b.upper.x;
 	upper[m].y = b.upper.y;
 	upper[m].z = b.upper.z;
+
+	lower[m].data = 0;
+	upper[m].data = 0;
+
       }
 
       __forceinline void setMatrix(const LinearSpace3fa &mat, BBox3fa &b, const size_t m)
@@ -393,12 +419,6 @@ namespace embree
       {	
 	assert( sizeof(UnalignedNode) == 256 );
 	unaligned_nodes = NULL;
-      }
-
-      __forceinline void setFirstNodesToInvalid()
-      {
-	unaligned_nodes[0].setInvalid();
-	unaligned_nodes[1].setInvalid();
       }
 
     

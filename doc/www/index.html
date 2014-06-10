@@ -84,6 +84,12 @@ included in the Embree kernel package is now available in a separate
 GIT repository (see <a href="renderer.html">Embree Example
 Renderer</a>).</p>
 
+<h3>What's New in Embree 2.3.1?</h3>
+<ul>
+  <li>Compile time enabled intersection filter functions do not reduce performance if no intersection filter is used in the scene (Xeon and Xeon Phi)</li>
+  <li>BVH8 for AVX/AVX2 targets improves performance for single ray tracing on Haswell by up to 12%.</li>
+</ul>    
+
 <h3>What's New in Embree 2.3?</h3>
 <ul>
   <li>Support for ray tracing hair geometry (Xeon and Xeon Phi)</li>
@@ -94,7 +100,6 @@ Renderer</a>).</p>
   <li>Faster binned-SAH builder on Xeon Phi</li>
   <li>Lots of code cleanups/simplifications/improvements (Xeon and Xeon Phi)</li>
 </ul>    
-</ul>
 
 <h3>What's New in Embree 2.2?</h3>
 <ul>
@@ -104,7 +109,6 @@ Renderer</a>).</p>
   <li>Lots of AVX2 optimizations, e.g. ~20% faster 8-wide hybrid traversal</li>
   <li>Experimental support for 8-wide (AVX/AVX2) and 16-wide BVHs (Xeon Phi)</li>
 </ul>    
-</ul>
 
 <h3>What's New in Embree 2.1?</h3>
 <ul>
@@ -119,7 +123,6 @@ Renderer</a>).</p>
   <li>both the SAH and Morton code-based builders got faster (Xeon Phi&trade;)</li>
   <li>new variant of the SAH-based builder using triangle pre-splits (Xeon Phi&trade;)</li>
 </ul>    
-</ul>
 
 <h3>Example performance numbers for Embree 2.1</h3>
 

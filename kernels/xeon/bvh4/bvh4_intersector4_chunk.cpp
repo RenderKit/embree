@@ -90,7 +90,7 @@ namespace embree
           curDist = *sptr_near;
           
 #pragma unroll(4)
-          for (unsigned i=0; i<4; i++)
+          for (unsigned i=0; i<BVH4::N; i++)
           {
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH4::emptyNode)) break;
@@ -225,7 +225,7 @@ namespace embree
           curDist = *sptr_near;
           
 #pragma unroll(4)
-          for (unsigned i=0; i<4; i++)
+          for (unsigned i=0; i<BVH4::N; i++)
           {
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH4::emptyNode)) break;

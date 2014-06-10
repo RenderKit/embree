@@ -103,6 +103,7 @@ namespace embree
 
     /*! A base node is either a node or a list of triangles. */
     typedef BaseNode<Node,alignment> Base;
+    typedef Base* NodeRef;
 
     /*! Maximal depth of the BVH. */
     static const size_t maxBuildDepth = 32;
@@ -132,6 +133,17 @@ namespace embree
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
         upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
         child[i] = childID;
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, Base* childID) {
+	child[i] = childID;
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const BBox3fa& bounds) {
+        lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
+        upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
       }
 
       /*! Sets bounding box and ID of child. */
@@ -242,6 +254,24 @@ namespace embree
     const PrimitiveType& primTy;       //!< primitive type stored in the BVH
     void* geometry;                    //!< pointer to geometry for intersection
     Base* root;                      //!< Root node (can also be a leaf).
+
+    __forceinline Node* allocNode(size_t thread) {
+      Node* node = (Node*) alloc.malloc(thread,sizeof(Node),1 << alignment); node->clear(); return node;
+    }
+
+    __forceinline char* allocPrimitiveBlocks(size_t thread, size_t num) {
+      return (char*) alloc.malloc(thread,num*primTy.bytes,1 << alignment);
+    }
+
+    /*! Encodes a node */
+    __forceinline NodeRef encodeNode(Node* node) { 
+      return Base::encodeNode(node);
+    }
+    
+    /*! Encodes a leaf */
+    __forceinline NodeRef encodeLeaf(void* tri, size_t num) {
+      return Base::encodeLeaf((char*)tri,num);
+    }
 
   private:
     float statistics(Base* node, float area, size_t& depth);

@@ -29,11 +29,12 @@
 namespace embree
 {
 
-    // ============================================================================================
-    // ============================================================================================
-    // ============================================================================================
-    static __aligned(64) int zlc4[4] = {0xffffffff,0xffffffff,0xffffffff,0};
+  // ============================================================================================
+  // ============================================================================================
+  // ============================================================================================
+  static __aligned(64) int zlc4[4] = {0xffffffff,0xffffffff,0xffffffff,0};
 
+  template<bool ENABLE_INTERSECTION_FILTER>
     struct Triangle1LeafIntersector
     {
       // ==================
@@ -50,14 +51,14 @@ namespace embree
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
 	const mic_i and_mask = broadcast4to16i(zlc4);
-	return Triangle1Intersector1MoellerTrumbore::intersect1(dir_xyz,
-								 org_xyz,
-								 min_dist_xyz,
-								 max_dist_xyz,
-								 and_mask,
-								 ray,
-								 geometry,
-								 tptr);	
+	return Triangle1Intersector1MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::intersect1(dir_xyz,
+											    org_xyz,
+											    min_dist_xyz,
+											    max_dist_xyz,
+											    and_mask,
+											    ray,
+											    geometry,
+											    tptr);	
       }
 
       static __forceinline bool occluded(BVH4i::NodeRef curNode,
@@ -71,14 +72,14 @@ namespace embree
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
 	const mic_i and_mask = broadcast4to16i(zlc4);
-	return any(Triangle1Intersector1MoellerTrumbore::occluded1(dir_xyz,
-								   org_xyz,
-								   min_dist_xyz,
-								   max_dist_xyz,
-								   and_mask,
-								   ray,
-								   geometry,
-								   tptr));	
+	return any(Triangle1Intersector1MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::occluded1(dir_xyz,
+											       org_xyz,
+											       min_dist_xyz,
+											       max_dist_xyz,
+											       and_mask,
+											       ray,
+											       geometry,
+											       tptr));	
       }
 
       // ============================================
@@ -96,15 +97,15 @@ namespace embree
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
 	const mic_i and_mask = broadcast4to16i(zlc4);
-	return Triangle1Intersector16MoellerTrumbore::intersect1(rayIndex,
-								 dir_xyz,
-								 org_xyz,
-								 min_dist_xyz,
-								 max_dist_xyz,
-								 and_mask,
-								 ray16,
-								 geometry,
-								 tptr);	
+	return Triangle1Intersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::intersect1(rayIndex,
+											     dir_xyz,
+											     org_xyz,
+											     min_dist_xyz,
+											     max_dist_xyz,
+											     and_mask,
+											     ray16,
+											     geometry,
+											     tptr);	
       }
 
 
@@ -122,16 +123,16 @@ namespace embree
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
 	const mic_i and_mask = broadcast4to16i(zlc4);
-	return Triangle1Intersector16MoellerTrumbore::occluded1(rayIndex,
-								dir_xyz,
-								org_xyz,
-								min_dist_xyz,
-								max_dist_xyz,
-								and_mask,
-								ray16,
-								m_terminated,
-								geometry,
-								tptr);	
+	return Triangle1Intersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::occluded1(rayIndex,
+											    dir_xyz,
+											    org_xyz,
+											    min_dist_xyz,
+											    max_dist_xyz,
+											    and_mask,
+											    ray16,
+											    m_terminated,
+											    geometry,
+											    tptr);	
       }
 
       // ========================
@@ -148,7 +149,7 @@ namespace embree
       {
 	unsigned int items; 
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel,items);
-	Triangle1Intersector16MoellerTrumbore::intersect16(m_valid_leaf,items,dir,org,ray16,geometry,tptr);	
+	Triangle1Intersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::intersect16(m_valid_leaf,items,dir,org,ray16,geometry,tptr);	
       }
 
       __forceinline static void occluded16(BVH4i::NodeRef curNode,
@@ -162,17 +163,18 @@ namespace embree
       {
 	unsigned int items; 
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel,items);
-	Triangle1Intersector16MoellerTrumbore::occluded16(m_valid_leaf,items,dir,org,ray16,m_terminated,geometry,tptr);
+	Triangle1Intersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::occluded16(m_valid_leaf,items,dir,org,ray16,m_terminated,geometry,tptr);
       }
 
 
     };
 
 
-    // ============================================================================================
-    // ============================================================================================
-    // ============================================================================================
+  // ============================================================================================
+  // ============================================================================================
+  // ============================================================================================
 
+  template<bool ENABLE_INTERSECTION_FILTER>
     struct Triangle1mcLeafIntersector
     {
       // ==================
@@ -192,14 +194,14 @@ namespace embree
 	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
 	const mic_i and_mask = broadcast4to16i(zlc4);
 
-	return Triangle1mcIntersector1MoellerTrumbore::intersect1(dir_xyz,
-								 org_xyz,
-								 min_dist_xyz,
-								 max_dist_xyz,
-								 and_mask,
-								 ray,
-								 geometry,
-								 tptr);	
+	return Triangle1mcIntersector1MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::intersect1(dir_xyz,
+											      org_xyz,
+											      min_dist_xyz,
+											      max_dist_xyz,
+											      and_mask,
+											      ray,
+											      geometry,
+											      tptr);	
       }
 
       static __forceinline bool occluded(BVH4i::NodeRef curNode,
@@ -216,14 +218,14 @@ namespace embree
 	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
 	const mic_i and_mask = broadcast4to16i(zlc4);
 
-	return Triangle1mcIntersector1MoellerTrumbore::occluded1(dir_xyz,
-								 org_xyz,
-								 min_dist_xyz,
-								 max_dist_xyz,
-								 and_mask,
-								 ray,
-								 geometry,
-								 tptr);	
+	return Triangle1mcIntersector1MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::occluded1(dir_xyz,
+											     org_xyz,
+											     min_dist_xyz,
+											     max_dist_xyz,
+											     and_mask,
+											     ray,
+											     geometry,
+											     tptr);	
       }
 
       // ============================================
@@ -244,15 +246,15 @@ namespace embree
 	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
 
 	const mic_i and_mask = broadcast4to16i(zlc4);
-	return Triangle1mcIntersector16MoellerTrumbore::intersect1(rayIndex,
-								   dir_xyz,
-								   org_xyz,
-								   min_dist_xyz,
-								   max_dist_xyz,
-								   and_mask,
-								   ray16,
-								   geometry,
-								   tptr);	
+	return Triangle1mcIntersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::intersect1(rayIndex,
+											       dir_xyz,
+											       org_xyz,
+											       min_dist_xyz,
+											       max_dist_xyz,
+											       and_mask,
+											       ray16,
+											       geometry,
+											       tptr);	
       }
 
 
@@ -272,16 +274,16 @@ namespace embree
 	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
 
 	const mic_i and_mask = broadcast4to16i(zlc4);
-	return Triangle1mcIntersector16MoellerTrumbore::occluded1(rayIndex,
-								  dir_xyz,
-								  org_xyz,
-								  min_dist_xyz,
-								  max_dist_xyz,
-								  and_mask,
-								  ray16,
-								  m_terminated,
-								  geometry,
-								  tptr);	
+	return Triangle1mcIntersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::occluded1(rayIndex,
+											      dir_xyz,
+											      org_xyz,
+											      min_dist_xyz,
+											      max_dist_xyz,
+											      and_mask,
+											      ray16,
+											      m_terminated,
+											      geometry,
+											      tptr);	
       }
 
       // ========================
@@ -298,7 +300,7 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
-	Triangle1mcIntersector16MoellerTrumbore::intersect16(m_valid_leaf,items,dir,org,ray16,geometry,tptr);	
+	Triangle1mcIntersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::intersect16(m_valid_leaf,items,dir,org,ray16,geometry,tptr);	
       }
 
       __forceinline static void occluded16(BVH4i::NodeRef curNode,
@@ -313,7 +315,7 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
-	Triangle1mcIntersector16MoellerTrumbore::occluded16(m_valid_leaf,items,dir,org,ray16,m_terminated,geometry,tptr);
+	Triangle1mcIntersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::occluded16(m_valid_leaf,items,dir,org,ray16,m_terminated,geometry,tptr);
       }
 
     };
@@ -323,6 +325,7 @@ namespace embree
     // ============================================================================================
     // ============================================================================================
 
+    template<bool ENABLE_INTERSECTION_FILTER>
     struct VirtualLeafIntersector
     {
       typedef typename VirtualAccelIntersector16::Primitive Primitive;

@@ -252,7 +252,7 @@ namespace embree
           curNode = *sptr_node;
           curDist = *sptr_near;
           
-          for (unsigned i=0; i<8; i++)
+          for (unsigned i=0; i<BVH8::N; i++)
           {
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH8::emptyNode)) break;
@@ -429,20 +429,12 @@ namespace embree
           assert(cur != BVH8::emptyNode);
           if (likely(mask == 0)) continue;
 
-	  while(1)
-	    {
-	      r = __bscf(mask);
-	      NodeRef c = node->child(r); c.prefetch(); *stackPtr = c; stackPtr++;
-	      if (unlikely(mask == 0)) break;
-	    }
+	  while (1) {
+	    r = __bscf(mask);
+	    NodeRef c = node->child(r); c.prefetch(); *stackPtr = c; stackPtr++;
+	    if (unlikely(mask == 0)) break;
+	  }
 	  cur = (NodeRef) stackPtr[-1]; stackPtr--;
-
-          // assert(stackPtr < stackEnd);
-          // *stackPtr = cur; stackPtr++;
-          
-          // /*! four children are hit */
-          // cur = node->child(3);
-          // assert(cur != BVH8::emptyNode);
         }
         
         /*! this is a leaf node */
@@ -544,7 +536,7 @@ namespace embree
           curNode = *sptr_node;
           curDist = *sptr_near;
           
-          for (unsigned i=0; i<8; i++)
+          for (unsigned i=0; i<BVH8::N; i++)
           {
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH8::emptyNode)) break;
@@ -618,7 +610,7 @@ namespace embree
     }
     
     DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8HybridMoeller,BVH8Intersector8Hybrid<Triangle8Intersector8MoellerTrumbore<true> >);
-
+    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8HybridMoellerNoFilter,BVH8Intersector8Hybrid<Triangle8Intersector8MoellerTrumbore<false> >);
   }
 }  
 
