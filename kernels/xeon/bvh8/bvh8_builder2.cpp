@@ -310,7 +310,7 @@ namespace embree
       activeBuildRecords=1;
 
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (tasks.size() < threadCount)
+      while (tasks.size() > 0 && tasks.size() < threadCount)
       {
 	/* pop largest item for better load balancing */
 	BuildRecord task = tasks.front();
