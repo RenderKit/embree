@@ -168,7 +168,7 @@ namespace embree
 
   }
 
-
+  template<bool DECOMPRESS_NODE>
   __forceinline void traverse_single_occluded(BVH4i::NodeRef &curNode,
 					      size_t &sindex,
 					      const mic_f &rdir_xyz,
@@ -190,24 +190,44 @@ namespace embree
 	STAT3(shadow.trav_nodes,1,1,1);
 
 	const BVH4i::Node* __restrict__ const node = curNode.node(nodes);
-	const float* __restrict const plower = (float*)node->lower;
-	const float* __restrict const pupper = (float*)node->upper;
 
-	prefetch<PFHINT_L1>((char*)node + 0);
-	prefetch<PFHINT_L1>((char*)node + 64);
-        
-	/* intersect single ray with 4 bounding boxes */
-
-	mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz);
+	mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz); 
 	mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz);
-
-	tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
-	tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
-
-	tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
-	tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
-
 	mic_m hitm = ~m7777; 
+
+	if (!DECOMPRESS_NODE)
+	  {
+	    const float* __restrict const plower = (float*)node->lower;
+	    const float* __restrict const pupper = (float*)node->upper;
+
+	    prefetch<PFHINT_L1>((char*)node + 0);
+	    prefetch<PFHINT_L1>((char*)node + 64);
+	    
+	    /* intersect single ray with 4 bounding boxes */
+
+	    tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
+	    tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
+
+	    tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
+	    tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
+	  }
+	else
+	  {
+	    BVH4i::QuantizedNode* __restrict__ const compressed_node = (BVH4i::QuantizedNode*)node;
+	    prefetch<PFHINT_L1>((char*)node + 0);
+		  
+	    const mic_f startXYZ = compressed_node->decompress_startXYZ();
+	    const mic_f diffXYZ  = compressed_node->decompress_diffXYZ();
+	    const mic_f clower   = compressed_node->decompress_lowerXYZ(startXYZ,diffXYZ);
+	    const mic_f cupper   = compressed_node->decompress_upperXYZ(startXYZ,diffXYZ);
+
+	    tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,clower,org_rdir_xyz);
+	    tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,clower,org_rdir_xyz);
+
+	    tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,cupper,org_rdir_xyz);
+	    tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,cupper,org_rdir_xyz);	    
+	  }
+
 	const mic_f tLower = tLowerXYZ;
 	const mic_f tUpper = tUpperXYZ;
 
@@ -237,7 +257,7 @@ namespace embree
 	const unsigned long num_hitm = countbits(hiti); 
         
 	/* if a single child is hit, continue with that child */
-	curNode = ((unsigned int *)plower)[pos_first];
+	curNode = ((unsigned int *)node)[pos_first];
 	if (likely(num_hitm == 1)) continue;
         
 	/* if two children are hit, push in correct order */
@@ -247,7 +267,7 @@ namespace embree
 	    const unsigned int dist_first  = ((unsigned int*)&tNear)[pos_first];
 	    const unsigned int dist_second = ((unsigned int*)&tNear)[pos_second];
 	    const unsigned int node_first  = curNode;
-	    const unsigned int node_second = ((unsigned int*)plower)[pos_second];
+	    const unsigned int node_second = ((unsigned int*)node)[pos_second];
           
 	    if (dist_first <= dist_second)
 	      {
@@ -276,7 +296,7 @@ namespace embree
 	const mic_m closest_child = eq(hitm,min_dist,tNear);
 	const unsigned long closest_child_pos = bitscan64(closest_child);
 	const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
-	curNode = ((unsigned int*)plower)[closest_child_pos];
+	curNode = ((unsigned int*)node)[closest_child_pos];
 	compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
       }
 
