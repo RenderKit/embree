@@ -36,9 +36,9 @@ namespace embree
       stack[0].dist = neg_inf;
       
       /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_dir.x[k] >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
-      const size_t nearY = ray_dir.y[k] >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
-      const size_t nearZ = ray_dir.z[k] >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
+      const size_t nearX = ray_dir.x[k] >= 0.0f ? 0*sizeof(avxf) : 1*sizeof(avxf);
+      const size_t nearY = ray_dir.y[k] >= 0.0f ? 2*sizeof(avxf) : 3*sizeof(avxf);
+      const size_t nearZ = ray_dir.z[k] >= 0.0f ? 4*sizeof(avxf) : 5*sizeof(avxf);
       
       /*! load the ray into SIMD registers */
       const avx3f org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
@@ -336,9 +336,9 @@ namespace embree
       stack[0]  = root;
       
       /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_dir.x[k] >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
-      const size_t nearY = ray_dir.y[k] >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
-      const size_t nearZ = ray_dir.z[k] >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
+      const size_t nearX = ray_dir.x[k] >= 0.0f ? 0*sizeof(avxf) : 1*sizeof(avxf);
+      const size_t nearY = ray_dir.y[k] >= 0.0f ? 2*sizeof(avxf) : 3*sizeof(avxf);
+      const size_t nearZ = ray_dir.z[k] >= 0.0f ? 4*sizeof(avxf) : 5*sizeof(avxf);
       
       /*! load the ray into SIMD registers */
       const avx3f org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
