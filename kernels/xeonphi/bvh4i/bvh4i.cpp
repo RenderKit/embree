@@ -116,27 +116,27 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4iTriangle1Intersector1;
-    if      (g_traverser == "default" || g_traverser == "hybrid") 
+    if      (g_tri_traverser == "default" || g_tri_traverser == "hybrid") 
       {
 	intersectors.intersector16          = BVH4iTriangle1Intersector16HybridMoeller;
 	intersectors.intersector16_filter   = BVH4iTriangle1Intersector16HybridMoeller;
 	intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16HybridMoellerNoFilter;
       }
-    else if (g_traverser == "chunk"  ) 
+    else if (g_tri_traverser == "chunk"  ) 
       {
 	intersectors.intersector16          = BVH4iTriangle1Intersector16ChunkMoeller;
 	intersectors.intersector16_filter   = BVH4iTriangle1Intersector16ChunkMoeller;
 	intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16ChunkMoellerNoFilter;
 
       }
-    else if (g_traverser == "single" ) 
+    else if (g_tri_traverser == "single" ) 
       {
 	intersectors.intersector16          = BVH4iTriangle1Intersector16SingleMoeller;
 	intersectors.intersector16_filter   = BVH4iTriangle1Intersector16SingleMoeller;
 	intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16SingleMoellerNoFilter;
 
       }
-    else throw std::runtime_error("unknown traverser "+g_traverser+" for BVH4i<Triangle1>");      
+    else throw std::runtime_error("unknown traverser "+g_tri_traverser+" for BVH4i<Triangle1>");      
     return intersectors;
   }
 
@@ -145,28 +145,28 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4iTriangle1mcIntersector1; 
-    if      (g_traverser == "default" || g_traverser == "hybrid") 
+    if      (g_tri_traverser == "default" || g_tri_traverser == "hybrid") 
       {
 	intersectors.intersector16          = BVH4iTriangle1mcIntersector16HybridMoeller;
 	intersectors.intersector16_filter   = BVH4iTriangle1mcIntersector16HybridMoeller;
 	intersectors.intersector16_nofilter = BVH4iTriangle1mcIntersector16HybridMoellerNoFilter;
 
       }
-    else if (g_traverser == "chunk"  ) 
+    else if (g_tri_traverser == "chunk"  ) 
       {
 	intersectors.intersector16          = BVH4iTriangle1mcIntersector16ChunkMoeller;
 	intersectors.intersector16_filter   = BVH4iTriangle1mcIntersector16ChunkMoeller;
 	intersectors.intersector16_nofilter = BVH4iTriangle1mcIntersector16ChunkMoellerNoFilter;
 
       }
-    else if (g_traverser == "single" ) 
+    else if (g_tri_traverser == "single" ) 
       {
 	intersectors.intersector16          = BVH4iTriangle1mcIntersector16SingleMoeller;
 	intersectors.intersector16_filter   = BVH4iTriangle1mcIntersector16SingleMoeller;
 	intersectors.intersector16_nofilter = BVH4iTriangle1mcIntersector16SingleMoellerNoFilter;
 
       }
-    else throw std::runtime_error("unknown traverser "+g_traverser+" for BVH4i<Triangle1>");      
+    else throw std::runtime_error("unknown traverser "+g_tri_traverser+" for BVH4i<Triangle1>");      
     return intersectors;
   }
 

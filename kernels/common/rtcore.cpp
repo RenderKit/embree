@@ -72,19 +72,66 @@ namespace embree
   DECLARE_SYMBOL(AccelSet::Intersector16,InstanceIntersector16);
   
   /* global settings */
-  std::string g_tri_accel = "default";    //!< triangle acceleration structure to use
+  std::string g_tri_accel = "default";        //!< acceleration structure to use for triangles
+  std::string g_tri_builder = "default";      //!< builder to use for triangles
+  std::string g_tri_traverser = "default";    //!< traverser to use for triangles
+  std::string g_tri_accel_mb = "default";     //!< acceleration structure to use for motion blur triangles
+  std::string g_tri_builder_mb = "default";   //!< builder to use for motion blur triangles
+  std::string g_tri_traverser_mb = "default";    //!< traverser to use for triangles
   std::string g_hair_accel = "default";    //!< hair acceleration structure to use
   std::string g_hair_builder = "default"; 
-  std::string g_hair_accel_mode = "aOuOuST"; //!< flags for hair acceleration structure
-  std::string g_builder = "default";      //!< builder to use
-  std::string g_traverser = "default";    //!< traverser to use
+  std::string g_hair_traverser = "default";    //!< traverser to use for hair
+  double      g_hair_builder_replication_factor = 2.0f; // FIXME: add this also for triangles
+
   int g_scene_flags = -1;       //!< scene flags to use
   size_t g_verbose = 0;                   //!< verbosity of output
   size_t g_numThreads = 0;                //!< number of threads to use in builders
   size_t g_benchmark = 0;
 
-  double g_hair_builder_replication_factor = 2.0f;
+  void initSettings()
+  {
+    g_tri_accel = "default";
+    g_tri_builder = "default";
+    g_tri_traverser = "default";
 
+    g_tri_accel_mb = "default";
+    g_tri_builder_mb = "default";
+    g_tri_traverser_mb = "default";
+
+    g_hair_accel = "default";
+    g_hair_builder = "default";
+    g_hair_traverser = "default";
+    g_hair_builder_replication_factor = 2.0f;
+    
+    g_scene_flags = -1;
+    g_verbose = 0;
+    g_numThreads = 0;
+    g_benchmark = 0;
+  }
+
+  void printSettings()
+  {
+    std::cout << "general:" << std::endl;
+    std::cout << "  build threads = " << g_numThreads << std::endl;
+    std::cout << "  verbosity     = " << g_verbose << std::endl;
+
+    std::cout << "triangles:" << std::endl;
+    std::cout << "  accel         = " << g_tri_accel << std::endl;
+    std::cout << "  builder       = " << g_tri_builder << std::endl;
+    std::cout << "  traverser     = " << g_tri_traverser << std::endl;
+
+    std::cout << "motion blur triangles:" << std::endl;
+    std::cout << "  accel         = " << g_tri_accel_mb << std::endl;
+    std::cout << "  builder       = " << g_tri_builder_mb << std::endl;
+    std::cout << "  traverser     = " << g_tri_traverser_mb << std::endl;
+
+    std::cout << "hair:" << std::endl;
+    std::cout << "  accel         = " << g_hair_accel << std::endl;
+    std::cout << "  builder       = " << g_hair_builder << std::endl;
+    std::cout << "  traverser     = " << g_hair_traverser << std::endl;
+    std::cout << "  replications  = " << g_hair_builder_replication_factor << std::endl;
+  }
+  
   /* error flag */
   static tls_t g_error = NULL;
   static std::vector<RTCError*> g_errors;
@@ -158,90 +205,67 @@ namespace embree
       g_mutex.lock();
       return;
     }
+    g_initialized = true;
 
     /* reset global state */
-    g_initialized = true;
-    g_tri_accel = "default";
-    g_builder = "default";
-    g_traverser = "default";
-    g_scene_flags = -1;
-    g_verbose = 0;
-    g_numThreads = 0;
-    g_benchmark = 0;
-
+    initSettings();
+    
     if (cfg != NULL) 
     {
       size_t pos = 0;
       do {
         std::string tok = parseIdentifier (cfg,pos);
 
-        if (tok == "threads") {
-          if (parseSymbol(cfg,'=',pos))
-            g_numThreads = parseInt(cfg,pos);
+        if (tok == "threads" && parseSymbol(cfg,'=',pos)) 
+	{
+	  g_numThreads = parseInt(cfg,pos);
 #if defined(__MIC__)
 	  if (!(g_numThreads == 1 || (g_numThreads % 4) == 0)) {
-            g_mutex.unlock();
-            process_error(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");
-            g_mutex.lock();
+	    g_mutex.unlock();
+	    process_error(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");
+	    g_mutex.lock();
             return;
           }
 #endif
         }
-        else if (tok == "isa") {
-          if (parseSymbol (cfg,'=',pos)) {
-            std::string isa = parseIdentifier (cfg,pos);
-            if      (isa == "sse" ) cpu_features = SSE;
-            else if (isa == "sse2") cpu_features = SSE2;
-            else if (isa == "sse3") cpu_features = SSE3;
-            else if (isa == "ssse3") cpu_features = SSSE3;
-            else if (isa == "sse41") cpu_features = SSE41;
-            else if (isa == "sse42") cpu_features = SSE42;
-            else if (isa == "avx") cpu_features = AVX;
-            else if (isa == "avxi") cpu_features = AVXI;
-            else if (isa == "avx2") cpu_features = AVX2;
-          }
-        }
-        else if (tok == "accel") {
-          if (parseSymbol (cfg,'=',pos))
+        else if (tok == "isa" && parseSymbol (cfg,'=',pos)) 
+	{
+	  std::string isa = parseIdentifier (cfg,pos);
+	  if      (isa == "sse" ) cpu_features = SSE;
+	  else if (isa == "sse2") cpu_features = SSE2;
+	  else if (isa == "sse3") cpu_features = SSE3;
+	  else if (isa == "ssse3") cpu_features = SSSE3;
+	  else if (isa == "sse41") cpu_features = SSE41;
+	  else if (isa == "sse42") cpu_features = SSE42;
+	  else if (isa == "avx") cpu_features = AVX;
+	  else if (isa == "avxi") cpu_features = AVXI;
+	  else if (isa == "avx2") cpu_features = AVX2;
+	}
+        else if ((tok == "tri_accel" || tok == "accel") && parseSymbol (cfg,'=',pos))
             g_tri_accel = parseIdentifier (cfg,pos);
-        } 
-        else if (tok == "triaccel" || tok == "tri_accel") {
-          if (parseSymbol (cfg,'=',pos))
+	else if ((tok == "tri_builder" || tok == "builder") && parseSymbol (cfg,'=',pos))
+	    g_tri_builder = parseIdentifier (cfg,pos);
+	else if ((tok == "tri_traverser" || tok == "traverser") && parseSymbol (cfg,'=',pos))
+            g_tri_traverser = parseIdentifier (cfg,pos);
+      	else if ((tok == "tri_accel_mb" || tok == "accel_mb") && parseSymbol (cfg,'=',pos))
             g_tri_accel = parseIdentifier (cfg,pos);
-        } 
-        else if (tok == "hairaccel" || tok == "hair_accel") {
-          if (parseSymbol (cfg,'=',pos))
+	else if ((tok == "tri_builder_mb" || tok == "builder_mb") && parseSymbol (cfg,'=',pos))
+	    g_tri_builder = parseIdentifier (cfg,pos);
+        else if ((tok == "tri_traverser_mb" || tok == "traverser_mb") && parseSymbol (cfg,'=',pos))
+            g_tri_traverser = parseIdentifier (cfg,pos);
+        else if (tok == "hair_accel" && parseSymbol (cfg,'=',pos))
             g_hair_accel = parseIdentifier (cfg,pos);
-        } 
-        else if (tok == "hair_builder") {
-          if (parseSymbol (cfg,'=',pos))
+	else if (tok == "hair_builder" && parseSymbol (cfg,'=',pos))
             g_hair_builder = parseIdentifier (cfg,pos);
-        } 
-        else if (tok == "hair_builder_mode") {
-          if (parseSymbol (cfg,'=',pos))
-            g_hair_accel_mode = parseIdentifier (cfg,pos);
-          DBG_PRINT(g_hair_accel_mode);
-        } 
-        else if (tok == "hair_builder_replication_factor") {
-          if (parseSymbol (cfg,'=',pos))
+	else if (tok == "hair_traverser" && parseSymbol (cfg,'=',pos))
+            g_hair_traverser = parseIdentifier (cfg,pos);
+	else if (tok == "hair_builder_replication_factor" && parseSymbol (cfg,'=',pos))
             g_hair_builder_replication_factor = parseInt (cfg,pos);
-        } 
-        else if (tok == "builder") {
-          if (parseSymbol (cfg,'=',pos))
-            g_builder = parseIdentifier (cfg,pos);
-        }
-        else if (tok == "traverser") {
-          if (parseSymbol (cfg,'=',pos))
-            g_traverser = parseIdentifier (cfg,pos);
-        }
-        else if (tok == "verbose") {
-          if (parseSymbol (cfg,'=',pos))
+	
+        else if (tok == "verbose" && parseSymbol (cfg,'=',pos))
             g_verbose = parseInt (cfg,pos);
-        }
-        else if (tok == "benchmark") {
-          if (parseSymbol (cfg,'=',pos))
+	else if (tok == "benchmark" && parseSymbol (cfg,'=',pos))
             g_benchmark = parseInt (cfg,pos);
-        }
         else if (tok == "flags") {
           g_scene_flags = 0;
           if (parseSymbol (cfg,'=',pos)) {
@@ -320,15 +344,8 @@ namespace embree
     InstanceIntersectorsRegister();
 
     if (g_verbose >= 2) 
-    {
-      PRINT(cfg);
-      PRINT(g_numThreads);
-      PRINT(g_verbose);
-      PRINT(g_tri_accel);
-      PRINT(g_builder);
-      PRINT(g_traverser);
-    }
-
+      printSettings();
+    
     TaskScheduler::create(g_numThreads);
 
     CATCH_END;

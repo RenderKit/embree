@@ -48,7 +48,7 @@ namespace embree
 
     if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
       {
-	if (g_builder == "default") 
+	if (g_tri_builder == "default") 
 	  {
 	    if (isStatic())
 	      {
@@ -68,23 +68,23 @@ namespace embree
 	  }
 	else
 	  {
-	    if (g_builder == "sah" || g_builder == "bvh4i" || g_builder == "bvh4i.sah") {
+	    if (g_tri_builder == "sah" || g_tri_builder == "bvh4i" || g_tri_builder == "bvh4i.sah") {
 	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
 	    }
-	    else if (g_builder == "fast" || g_builder == "morton") {
+	    else if (g_tri_builder == "fast" || g_tri_builder == "morton") {
 	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this));
 	    }
-	    else if (g_builder == "fast_enhanced" || g_builder == "morton.enhanced") {
+	    else if (g_tri_builder == "fast_enhanced" || g_tri_builder == "morton.enhanced") {
 	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this));
 	    }
-	    else if (g_builder == "high_quality" || g_builder == "presplits") {
+	    else if (g_tri_builder == "high_quality" || g_tri_builder == "presplits") {
 	      accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this));
 	    }
-	    else if (g_builder == "compact" ||
-		     g_builder == "memory_conservative") {
+	    else if (g_tri_builder == "compact" ||
+		     g_tri_builder == "memory_conservative") {
 	      accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this));
 	    }
-	    else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
+	    else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4i<Triangle1>");
 	  }
       }
     else throw std::runtime_error("unknown accel "+g_tri_accel);

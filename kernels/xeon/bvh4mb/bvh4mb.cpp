@@ -26,9 +26,6 @@ namespace embree
 
   DECLARE_SCENE_BUILDER(BVH4MBTriangle1vBuilder2);
 
-  Builder* BVH4MBBuilderObjectSplit1 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
-  Builder* BVH4MBBuilderObjectSplit4 (void* bvh, BuildSource* source, void* geometry, const size_t minLeafSize, const size_t maxLeafSize);
-
   void BVH4MBRegister () 
   {
     int features = getCPUFeatures();
@@ -45,11 +42,9 @@ namespace embree
     BVH4MB* accel = new BVH4MB(SceneTriangle1vMB::type,scene);
 
     Builder* builder = NULL;
-    //if      (g_builder == "default"     ) builder = BVH4MBBuilderObjectSplit1(accel,&scene->flat_triangle_source_2,scene,1,inf);
-    if      (g_builder == "default"     ) builder = BVH4MBTriangle1vBuilder2(accel,scene,0);
-    else if (g_builder == "objectsplit" ) builder = BVH4MBBuilderObjectSplit1(accel,&scene->flat_triangle_source_2,scene,1,inf);
-    else builder = BVH4MBBuilderObjectSplit1(accel,&scene->flat_triangle_source_2,scene,1,inf); // FIXME: dont look for triangle builder type
-    //throw std::runtime_error("unknown builder "+g_builder+" for BVH4MB<Triangle1v>");
+    if      (g_tri_builder_mb == "default"     ) builder = BVH4MBTriangle1vBuilder2(accel,scene,0);
+    else if (g_tri_builder_mb == "objectsplit" ) builder = BVH4MBTriangle1vBuilder2(accel,scene,0);
+    else throw std::runtime_error("unknown builder "+g_tri_builder_mb+" for BVH4MB<Triangle1v>");
     
     Accel::Intersectors intersectors;
     intersectors.ptr = accel;
@@ -60,21 +55,6 @@ namespace embree
 
     return new AccelInstance(accel,builder,intersectors);
   }
-
-  Accel* BVH4MB::BVH4MBTriangle1vObjectSplit(TriangleMesh* mesh)
-  {
-    BVH4MB* accel = new BVH4MB(TriangleMeshTriangle1vMB::type,mesh->parent);
-    Builder* builder = BVH4MBBuilderObjectSplit1(accel,mesh,mesh,1,inf);
-
-    Accel::Intersectors intersectors;
-    intersectors.ptr = accel;
-    intersectors.intersector1 = BVH4MBTriangle1vIntersector1Moeller;
-    intersectors.intersector4 = BVH4MBTriangle1vIntersector4ChunkMoeller;
-    intersectors.intersector8 = BVH4MBTriangle1vIntersector8ChunkMoeller;
-    intersectors.intersector16 = NULL;
-
-    return new AccelInstance(accel,builder,intersectors);
-  }  
 
   void BVH4MB::clear() 
   {

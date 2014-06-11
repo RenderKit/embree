@@ -53,11 +53,12 @@ namespace embree
   extern size_t g_numThreads;
   extern size_t g_verbose;
   extern std::string g_tri_accel;
+  extern std::string g_tri_builder;
+  extern std::string g_tri_traverser;
+  extern std::string g_tri_accel_mb;
+  extern std::string g_tri_builder_mb;
   extern std::string g_hair_accel;
   extern std::string g_hair_builder;
-  extern std::string g_hair_accel_mode;
-  extern std::string g_builder;
-  extern std::string g_traverser;
   extern int g_scene_flags;
   extern size_t g_benchmark;
 

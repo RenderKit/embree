@@ -21,7 +21,6 @@
 
 namespace embree
 {
-
   DECLARE_SYMBOL(Accel::Intersector1,BVH4mbTriangle1Intersector1);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4mbTriangle1Intersector16ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4mbTriangle1Intersector16SingleMoeller);
@@ -45,11 +44,11 @@ namespace embree
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4mbTriangle1Intersector1;
 
-    if      (g_traverser == "default") intersectors.intersector16 = BVH4mbTriangle1Intersector16HybridMoeller;
-    else if (g_traverser == "hybrid" ) intersectors.intersector16 = BVH4mbTriangle1Intersector16HybridMoeller;
-    else if (g_traverser == "chunk"  ) intersectors.intersector16 = BVH4mbTriangle1Intersector16ChunkMoeller;
-    else if (g_traverser == "single" ) intersectors.intersector16 = BVH4mbTriangle1Intersector16SingleMoeller;
-    else throw std::runtime_error("unknown traverser "+g_traverser+" for BVH4mb<Triangle1>");      
+    if      (g_tri_traverser == "default") intersectors.intersector16 = BVH4mbTriangle1Intersector16HybridMoeller;
+    else if (g_tri_traverser == "hybrid" ) intersectors.intersector16 = BVH4mbTriangle1Intersector16HybridMoeller;
+    else if (g_tri_traverser == "chunk"  ) intersectors.intersector16 = BVH4mbTriangle1Intersector16ChunkMoeller;
+    else if (g_tri_traverser == "single" ) intersectors.intersector16 = BVH4mbTriangle1Intersector16SingleMoeller;
+    else throw std::runtime_error("unknown traverser "+g_tri_traverser+" for BVH4mb<Triangle1>");      
 
     return intersectors;
   }

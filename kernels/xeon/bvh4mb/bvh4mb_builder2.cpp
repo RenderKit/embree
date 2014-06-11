@@ -20,9 +20,6 @@
 //#include "bvh4mb_rotate.h"
 //#include "bvh4mb_statistics.h"
 
-#include "builders/heuristics.h"
-#include "builders/splitter_fallback.h"
-
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
