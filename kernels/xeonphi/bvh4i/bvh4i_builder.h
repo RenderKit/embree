@@ -166,6 +166,49 @@ namespace embree
       *(unsigned int *)ptr = (index << BVH_INDEX_SHIFT);
     }
 
+    __forceinline void storeNodesAndSetParentPtrs(void *ptr,
+				     BuildRecord *__restrict__ const br,
+				     const size_t numChildren)
+    {
+#if 0
+      BVHNode *bvh = (BVHNode*)ptr;
+      for (size_t i=0;i<numChildren;i++)
+	{
+	  bvh[i].lower = (Vec3fa) br[i].bounds.geometry.lower;
+	  bvh[i].upper = (Vec3fa) br[i].bounds.geometry.upper;
+	}
+
+      for (size_t i=0;i<numChildren;i++)
+	br[i].parentPtr = &bvh[i].lower.a;
+#else
+      BVH4i::Node &bvh = *(BVH4i::Node*)ptr;
+
+      for (size_t i=0;i<numChildren;i++)
+	{
+	  *(Vec3fa*)&bvh.lower[i] = (Vec3fa) br[i].bounds.geometry.lower;
+	  *(Vec3fa*)&bvh.upper[i] = (Vec3fa) br[i].bounds.geometry.upper;
+	}
+
+      for (size_t i=0;i<numChildren;i++)
+	br[i].parentPtr = &bvh.lower[i].child;
+
+#endif
+    }
+
+    __forceinline void initBVH4iNode(void * __restrict__ const ptr)
+    {
+#if 0
+      const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+      store16f_ngo((mic_f*)ptr+0,init_node);
+      store16f_ngo((mic_f*)ptr+1,init_node);      
+#else
+      const mic_f lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
+      const mic_f upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+      store16f_ngo((mic_f*)ptr+0,lower);
+      store16f_ngo((mic_f*)ptr+1,upper);            
+#endif
+    }
+
 
   };
 

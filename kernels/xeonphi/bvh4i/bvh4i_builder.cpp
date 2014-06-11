@@ -436,7 +436,7 @@ namespace embree
 
   void BVH4iBuilder::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
   {
-    LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );    
+    //LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );    
   }
 
   __forceinline void computeAccelerationData(const unsigned int &geomID,
@@ -1081,19 +1081,26 @@ namespace embree
 
     //node[current.parentID].createNode(currentIndex,numChildren);
     createNode(current.parentPtr,currentIndex,numChildren);
-    
+
+    for (size_t i=0; i<numChildren; i++) 
+	children[i].depth = current.depth+1;
+
+#if 0    
     /* recurse into each child */
     for (size_t i=0; i<numChildren; i++) 
       {
 	node[currentIndex+i].lower = children[i].bounds.geometry.lower;
 	node[currentIndex+i].upper = children[i].bounds.geometry.upper;
-	//children[i].parentID = currentIndex+i;
-
-	children[i].parentPtr = &node[currentIndex+i].lower.a;
-
-	children[i].depth = current.depth+1;
-	createLeaf(children[i],alloc,threadIndex,threadCount);
       }
+
+    for (size_t i=0; i<numChildren; i++) 
+      children[i].parentPtr = &node[currentIndex+i].lower.a;
+#else
+    storeNodesAndSetParentPtrs(&node[currentIndex],children,numChildren);
+    
+#endif
+    for (size_t i=0; i<numChildren; i++) 
+	createLeaf(children[i],alloc,threadIndex,threadCount);
   }  
 
   __forceinline void BVH4iBuilder::recurse(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads)
@@ -1174,21 +1181,31 @@ namespace embree
     createNode(current.parentPtr,currentIndex,numChildren);
 
     /* init used/unused nodes */
+    
+#if 0
     const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
     store16f_ngo((float*)&node[currentIndex+0],init_node);
     store16f_ngo((float*)&node[currentIndex+2],init_node);
+#else
+    initBVH4iNode(&node[currentIndex]);
+#endif
 
+    
     /* recurse into each child */
+#if 0
     for (unsigned int i=0; i<numChildren; i++) 
       {
 	node[currentIndex+i].lower = (Vec3fa) children[i].bounds.geometry.lower;
 	node[currentIndex+i].upper = (Vec3fa) children[i].bounds.geometry.upper;
-	//children[i].parentID = currentIndex+i;
-
-	children[i].parentPtr = &node[currentIndex+i].lower.a;
-
-	recurse(children[i],alloc,mode,threadID,numThreads);
       }
+
+    for (unsigned int i=0; i<numChildren; i++) 
+	children[i].parentPtr = &node[currentIndex+i].lower.a;
+#else
+    storeNodesAndSetParentPtrs(&node[currentIndex],children,numChildren);
+#endif
+    for (unsigned int i=0; i<numChildren; i++) 
+	recurse(children[i],alloc,mode,threadID,numThreads);
 
   }
 
@@ -1439,7 +1456,7 @@ namespace embree
     BuildRecord br;
     br.init(global_bounds,0,numPrimitives);
     br.depth = 1;
-    br.parentPtr = &node->lower.a;
+    br.parentPtr = &bvh->root;
         
     /* push initial build record to global work stack */
     global_workStack.reset();
@@ -1490,7 +1507,6 @@ namespace embree
 
     
     /* update BVH4 */
-    bvh->root = bvh->qbvh[0].lower[0].child; 
     bvh->bounds = BBox3fa(*(Vec3fa*)&bvh->qbvh->lower[0],*(Vec3fa*)&bvh->qbvh->upper[0]);
     
     /* release all threads again */
