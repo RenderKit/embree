@@ -63,7 +63,7 @@ namespace embree
 	  o << "begin       " << br.begin << " ";
 	  o << "end         " << br.end << " ";
 	  o << "items       " << br.end-br.begin << " ";
-	  o << "parentID    " << br.parentID << " ";
+	  //o << "parentID    " << br.parentID << " ";
 	  o << "parentPtr   " << br.parentPtr << " ";
 	  o << "flags       " << br.flags << " ";
 	  o << "sArea       " << br.sArea << " ";
