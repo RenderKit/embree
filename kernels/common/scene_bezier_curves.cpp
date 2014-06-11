@@ -53,42 +53,6 @@ namespace embree
     this->mask = mask; 
   }
 
-  void BezierCurves::enable () 
-  {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get enabled");
-      return;
-    }
-    Geometry::enable();
-  }
-
-  void BezierCurves::update () 
-  {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get updated");
-      return;
-    }
-    Geometry::update();
-  }
-
-  void BezierCurves::disable () 
-  {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get disabled");
-      return;
-    }
-    Geometry::disable();
-  }
-
-  void BezierCurves::erase () 
-  {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get deleted");
-      return;
-    }
-    Geometry::erase();
-  }
-
   void BezierCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
   { 
     if (parent->isStatic() && parent->isBuild()) {

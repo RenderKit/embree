@@ -34,10 +34,6 @@ namespace embree
       
     public:
       void setMask (unsigned mask);
-      void enable ();
-      void update ();
-      void disable ();
-      void erase ();
       void immutable ();
       bool verify ();
       void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
