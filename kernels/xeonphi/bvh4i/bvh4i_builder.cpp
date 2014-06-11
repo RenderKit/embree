@@ -329,60 +329,58 @@ namespace embree
     PrimRef *__restrict__ dest = &prims[currentID];
 
     for (; g<numGroups; g++) 
-    {
-      if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
-      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
-      if (unlikely(!mesh->isEnabled())) continue;
-      if (unlikely(mesh->numTimeSteps != 1)) continue;
+      {
+	if (unlikely(scene->get(g) == NULL)) continue;
+	if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+	if (unlikely(!mesh->isEnabled())) continue;
+	if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      //const Vec3fa *__restrict__ const vertex = &mesh->vertex(0);
-      const char *__restrict cptr = (char*)&mesh->triangle(offset);
-      const size_t stride = mesh->getTriangleBufferStride();
-      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr+=stride)	 
-      { 			    
-	const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr;
-	prefetch<PFHINT_L2>(cptr + L2_PREFETCH_ITEMS);
-	prefetch<PFHINT_L1>(cptr + L1_PREFETCH_ITEMS);
+	//const Vec3fa *__restrict__ const vertex = &mesh->vertex(0);
+	const char *__restrict cptr = (char*)&mesh->triangle(offset);
+	const size_t stride = mesh->getTriangleBufferStride();
+	for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr+=stride)	 
+	  { 			    
+	    const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr;
+	    prefetch<PFHINT_L2>(cptr + L2_PREFETCH_ITEMS);
+	    prefetch<PFHINT_L1>(cptr + L1_PREFETCH_ITEMS);
 
-	const mic3f v = mesh->getTriangleVertices(tri);
-	const mic_f bmin  = min(min(v[0],v[1]),v[2]);
-	const mic_f bmax  = max(max(v[0],v[1]),v[2]);
+	    const mic3f v = mesh->getTriangleVertices(tri);
+	    const mic_f bmin  = min(min(v[0],v[1]),v[2]);
+	    const mic_f bmax  = max(max(v[0],v[1]),v[2]);
 
-	bounds_scene_min = min(bounds_scene_min,bmin);
-	bounds_scene_max = max(bounds_scene_max,bmax);
-	const mic_f centroid2 = bmin+bmax;
-	bounds_centroid_min = min(bounds_centroid_min,centroid2);
-	bounds_centroid_max = max(bounds_centroid_max,centroid2);
+	    bounds_scene_min = min(bounds_scene_min,bmin);
+	    bounds_scene_max = max(bounds_scene_max,bmax);
+	    const mic_f centroid2 = bmin+bmax;
+	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
 
-	store4f(&local_prims[numLocalPrims].lower,bmin);
-	store4f(&local_prims[numLocalPrims].upper,bmax);	
-	local_prims[numLocalPrims].lower.a = g;
-	local_prims[numLocalPrims].upper.a = i;
+	    store4f(&local_prims[numLocalPrims].lower,bmin);
+	    store4f(&local_prims[numLocalPrims].upper,bmax);	
+	    local_prims[numLocalPrims].lower.a = g;
+	    local_prims[numLocalPrims].upper.a = i;
 
-	//DBG_PRINT( local_prims[numLocalPrims] );
-
-	numLocalPrims++;
-	if (unlikely(((size_t)dest % 64) != 0) && numLocalPrims == 1)
-	  {
-	    *dest = local_prims[0];
-	    dest++;
-	    numLocalPrims--;
-	  }
-	else
-	  {
-	    const mic_f twoAABBs = load16f(local_prims);
-	    if (numLocalPrims == 2)
+	    numLocalPrims++;
+	    if (unlikely(((size_t)dest % 64) != 0) && numLocalPrims == 1)
 	      {
-		numLocalPrims = 0;
-		store16f_ngo(dest,twoAABBs);
-		dest+=2;
+		*dest = local_prims[0];
+		dest++;
+		numLocalPrims--;
 	      }
-	  }	
+	    else
+	      {
+		const mic_f twoAABBs = load16f(local_prims);
+		if (numLocalPrims == 2)
+		  {
+		    numLocalPrims = 0;
+		    store16f_ngo(dest,twoAABBs);
+		    dest+=2;
+		  }
+	      }	
+	  }
+	if (currentID == endID) break;
+	offset = 0;
       }
-      if (currentID == endID) break;
-      offset = 0;
-    }
 
     /* is there anything left in the local queue? */
     if (numLocalPrims % 2 != 0)
@@ -804,7 +802,7 @@ namespace embree
 
     if (unlikely(split.pos == -1)) 
       split_fallback(prims,current,leftChild,rightChild);
-   // /* partitioning of items */
+    // /* partitioning of items */
     else 
       {
 	leftChild.bounds.reset();
@@ -880,26 +878,26 @@ namespace embree
       return false;
     }
 
-     global_sharedData.rec = current;
-     global_sharedData.split.reset();
-     global_sharedData.left.reset();
-     global_sharedData.right.reset();
+    global_sharedData.rec = current;
+    global_sharedData.split.reset();
+    global_sharedData.left.reset();
+    global_sharedData.right.reset();
      
-     LockStepTaskScheduler::dispatchTask( task_parallelBinningGlobal, this, threadID, numThreads );
+    LockStepTaskScheduler::dispatchTask( task_parallelBinningGlobal, this, threadID, numThreads );
 
-     if (unlikely(global_sharedData.split.pos == -1)) 
-       split_fallback(prims,current,leftChild,rightChild);
-     else
-       {
-	 global_sharedData.left.reset();
-	 global_sharedData.right.reset();
+    if (unlikely(global_sharedData.split.pos == -1)) 
+      split_fallback(prims,current,leftChild,rightChild);
+    else
+      {
+	global_sharedData.left.reset();
+	global_sharedData.right.reset();
 
-	 global_sharedData.lCounter.reset(0);
-	 global_sharedData.rCounter.reset(0); 
+	global_sharedData.lCounter.reset(0);
+	global_sharedData.rCounter.reset(0); 
 
-	 LockStepTaskScheduler::dispatchTask( task_parallelPartitioningGlobal, this, threadID, numThreads );
+	LockStepTaskScheduler::dispatchTask( task_parallelPartitioningGlobal, this, threadID, numThreads );
 
-	 const unsigned int mid = current.begin + global_sharedData.split.numLeft;
+	const unsigned int mid = current.begin + global_sharedData.split.numLeft;
 
 	if (unlikely(current.begin == mid || mid == current.end)) 
 	  {
@@ -914,16 +912,16 @@ namespace embree
 	    leftChild.init(global_sharedData.left,current.begin,mid);
 	    rightChild.init(global_sharedData.right,mid,current.end);
 	  }	 
-       }
+      }
 
 #if defined(DEBUG)
-     checkBuildRecord(leftChild);
-     checkBuildRecord(rightChild);
+    checkBuildRecord(leftChild);
+    checkBuildRecord(rightChild);
 #endif
      
-     if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
-     if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();
-     return true;
+    if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
+    if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();
+    return true;
   }
 
 
@@ -964,40 +962,40 @@ namespace embree
     else
       {
 
-	 sd.left.reset();
-	 sd.right.reset();
+	sd.left.reset();
+	sd.right.reset();
 
-	 sd.lCounter.reset(0);
-	 sd.rCounter.reset(0); 
+	sd.lCounter.reset(0);
+	sd.rCounter.reset(0); 
 
-	 localTaskScheduler[globalCoreID].dispatchTask( task_parallelPartitioningLocal, this, localThreadID, globalThreadID );
+	localTaskScheduler[globalCoreID].dispatchTask( task_parallelPartitioningLocal, this, localThreadID, globalThreadID );
 
-	 const unsigned int mid = current.begin + sd.split.numLeft;
+	const unsigned int mid = current.begin + sd.split.numLeft;
 
-	 if (unlikely(mid == current.begin || mid == current.end)) 
-	   {
-	     std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
-	     DBG_PRINT(sd.split);
-	     DBG_PRINT(current);
-	     DBG_PRINT(mid);
-	     split_fallback(prims,current,leftChild,rightChild);	    
-	   }
-	 else
-	   {
-	     leftChild.init(sd.left,current.begin,mid);
-	     rightChild.init(sd.right,mid,current.end);
-	   }
+	if (unlikely(mid == current.begin || mid == current.end)) 
+	  {
+	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
+	    DBG_PRINT(sd.split);
+	    DBG_PRINT(current);
+	    DBG_PRINT(mid);
+	    split_fallback(prims,current,leftChild,rightChild);	    
+	  }
+	else
+	  {
+	    leftChild.init(sd.left,current.begin,mid);
+	    rightChild.init(sd.right,mid,current.end);
+	  }
 	 
-       }
+      }
 
 #if defined(DEBUG)
     checkBuildRecord(leftChild);
     checkBuildRecord(rightChild);
 #endif
      
-     if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
-     if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();
-     return true;
+    if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
+    if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();
+    return true;
   }
 
 
@@ -1086,16 +1084,16 @@ namespace embree
     
     /* recurse into each child */
     for (size_t i=0; i<numChildren; i++) 
-    {
-      node[currentIndex+i].lower = children[i].bounds.geometry.lower;
-      node[currentIndex+i].upper = children[i].bounds.geometry.upper;
-      //children[i].parentID = currentIndex+i;
+      {
+	node[currentIndex+i].lower = children[i].bounds.geometry.lower;
+	node[currentIndex+i].upper = children[i].bounds.geometry.upper;
+	//children[i].parentID = currentIndex+i;
 
-      children[i].parentPtr = &node[currentIndex+i].lower.a;
+	children[i].parentPtr = &node[currentIndex+i].lower.a;
 
-      children[i].depth = current.depth+1;
-      createLeaf(children[i],alloc,threadIndex,threadCount);
-    }
+	children[i].depth = current.depth+1;
+	createLeaf(children[i],alloc,threadIndex,threadCount);
+      }
   }  
 
   __forceinline void BVH4iBuilder::recurse(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads)
@@ -1136,17 +1134,17 @@ namespace embree
       int bestChild = -1;
       float bestArea = neg_inf;
       for (unsigned int i=0; i<numChildren; i++)
-      {
-        /* ignore leaves as they cannot get split */
-        if (children[i].isLeaf())
-          continue;
+	{
+	  /* ignore leaves as they cannot get split */
+	  if (children[i].isLeaf())
+	    continue;
         
-        /* remember child with largest area */
-        if (children[i].sceneArea() > bestArea) { 
-          bestArea = children[i].sceneArea();
-          bestChild = i;
-        }
-      }
+	  /* remember child with largest area */
+	  if (children[i].sceneArea() > bestArea) { 
+	    bestArea = children[i].sceneArea();
+	    bestChild = i;
+	  }
+	}
       if (bestChild == -1) break;
 
       /*! split best child into left and right child */
@@ -1441,7 +1439,6 @@ namespace embree
     BuildRecord br;
     br.init(global_bounds,0,numPrimitives);
     br.depth = 1;
-    //br.parentID = 0;
     br.parentPtr = &node->lower.a;
         
     /* push initial build record to global work stack */
@@ -1454,12 +1451,12 @@ namespace embree
     const size_t coreCount = (threadCount+3)/4;
     while (global_workStack.size() < coreCount &&
 	   global_workStack.size()+BVH4i::N <= SIZE_GLOBAL_WORK_STACK) 
-    {
-      BuildRecord br;
-      if (!global_workStack.pop_nolock_largest(br)) break;
-      DBG(DBG_PRINT(br));
-      recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);      
-    }
+      {
+	BuildRecord br;
+	if (!global_workStack.pop_nolock_largest(br)) break;
+	DBG(DBG_PRINT(br));
+	recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);      
+      }
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "build_top_level " << 1000. * msec << " ms" << std::endl << std::flush);
