@@ -28,7 +28,11 @@
 #include "geometry/triangle4i.h"
 
 #define ROTATE_TREE 1
+//#if defined __AVX__
+//#define RESTRUCTURE_TREE 1
+//#else
 #define RESTRUCTURE_TREE 0
+//#endif
 
 #include "common/scene_triangle_mesh.h"
 
@@ -276,7 +280,6 @@ namespace embree
 
     void BVH4Builder2::restructureTree(NodeRef& ref, size_t depth)
     {
-      if (depth > 5) return;
       if (ref.isLeaf()) return;
       Node* node = ref.node();
       RestructureNode temp(node);
