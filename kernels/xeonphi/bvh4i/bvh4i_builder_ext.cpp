@@ -887,6 +887,23 @@ namespace embree
       }    
   }
 
+  void BVH4iBuilderMemoryConservative::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
+  {
+    LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );    
+
+#if 1    
+    BVH4i::Node* bvh4 = (BVH4i::Node*)node;
+    std::cout << "SINGLE THREADED CONVERSION TO COMPRESSED LAYOUT" << std::endl;
+    DBG_PRINT( numNodes );
+    for (size_t i=0;i<numNodes;i++)
+      {
+	BVH4i::QuantizedNode qnode;
+	qnode.init( bvh4[i] );
+	*(BVH4i::QuantizedNode*)&bvh4[i] = qnode; // offset translation?
+      }
+#endif
+  }
+
   void BVH4iBuilderMemoryConservative::createAccel(const size_t threadIndex, const size_t threadCount)
   {
     LockStepTaskScheduler::dispatchTask( task_createMemoryConservativeAccel, this, threadIndex, threadCount );  
@@ -901,17 +918,6 @@ namespace embree
     prims = NULL;
     size_prims = 0;
 
-#if 1    
-    BVH4i::Node* bvh4 = (BVH4i::Node*)node;
-    PING;
-    DBG_PRINT( numNodes );
-    for (size_t i=0;i<numNodes;i++)
-      {
-	BVH4i::QuantizedNode qnode;
-	qnode.init( bvh4[i] );
-	*(BVH4i::QuantizedNode*)&bvh4[i] = qnode; // offset translation?
-      }
-#endif
   }
 
 

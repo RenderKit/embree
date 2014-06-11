@@ -267,7 +267,6 @@ namespace embree
 	const mic_f nlower = load16f(node.lower);
 	const mic_f nupper = load16f(node.upper);
 	const mic_m isInvalid = eq(0x7777,nlower,pos_inf);
-	//DBG_PRINT(isInvalid);
 
 	const mic_f node_lowerXYZ = select(mic_m(0x7777) ^ isInvalid,nlower,minXYZ); 
 	const mic_f node_upperXYZ = select(mic_m(0x7777) ^ isInvalid,nupper,minXYZ); 
@@ -402,7 +401,7 @@ namespace embree
       o << "start " << v.start << " diff " << v.diff << std::endl;
       o << "lower " << v.decompress_lowerXYZ(v.decompress_startXYZ(),v.decompress_diffXYZ()) << std::endl;
       o << "upper " << v.decompress_upperXYZ(v.decompress_startXYZ(),v.decompress_diffXYZ()) << std::endl;
-      o << "child0 " << v.child(0) << " child1 " << v.child(1) << " child2 " << v.child(2) << " child3 " << v.child(3) << std::endl;
+      o << "child0 " << v.child(0).nodeID() << " child1 " << v.child(1).nodeID() << " child2 " << v.child(2).nodeID() << " child3 " << v.child(3).nodeID() << std::endl;
       return o;
     }
 
