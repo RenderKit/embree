@@ -78,11 +78,8 @@ parameters that can be configured:</p>
 <p>You need at least Intel Compiler 11.1 or GCC 4.4 to enable AVX and
 Intel Compiler 12.1 or GCC 4.7 to enable AVX2. </p>
 
-<p>If the intersection filter feature is not required, some additional
-performance (between 1%-8%) can be achieved when disabling this
-feature at compile time. The buffer stride feature has no impact on
-rendering performance, but disabling can increase performance for
-building spatial hierarchies, in particular on Xeon Phi&trade;.</p>
+<p>Enabling the buffer stride feature reduces performance for
+building spatial hierarchies on Xeon Phi&trade;.</p>
 
  <h2>Compiling Embree on Windows</h2>
 
