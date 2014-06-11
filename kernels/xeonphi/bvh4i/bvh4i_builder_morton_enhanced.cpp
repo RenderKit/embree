@@ -40,8 +40,8 @@ namespace embree
   extern AtomicMutex mtx;
   __aligned(64) static double dt = 0.0f;
 
-  BVH4iBuilderMortonEnhanced::BVH4iBuilderMortonEnhanced (BVH4i* _bvh, BuildSource* _source, void* _geometry)
-    : BVH4iBuilderMorton(_bvh,_source,_geometry){}
+  BVH4iBuilderMortonEnhanced::BVH4iBuilderMortonEnhanced (BVH4i* _bvh, void* _geometry)
+    : BVH4iBuilderMorton(_bvh,_geometry){}
 
   void BVH4iBuilderMortonEnhanced::build(size_t threadIndex, size_t threadCount) 
   {

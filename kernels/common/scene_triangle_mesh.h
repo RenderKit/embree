@@ -18,13 +18,13 @@
 
 #include "common/default.h"
 #include "common/geometry.h"
-#include "common/buildsource.h"
+#include "common/primref.h"
 #include "common/buffer.h"
 
 namespace embree
 {
     /*! Triangle Mesh */
-    struct TriangleMesh : public Geometry, public BuildSource
+    struct TriangleMesh : public Geometry
     {
       struct Triangle {
         unsigned int v[3];
@@ -78,8 +78,6 @@ namespace embree
         for (size_t i=begin; i<end; i++) b.extend(bounds(i));
         *bounds_o = b;
       }
-
-      void split (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) const;
 
     public:
 

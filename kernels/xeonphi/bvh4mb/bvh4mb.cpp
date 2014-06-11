@@ -56,7 +56,7 @@ namespace embree
   Accel* BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(Scene* scene)
   { 
     BVH4mb* accel = new BVH4mb(SceneTriangle1::type);   
-    Builder* builder = BVH4mbBuilder::create(accel,&scene->flat_triangle_source_1,scene);    
+    Builder* builder = BVH4mbBuilder::create(accel,scene);    
     Accel::Intersectors intersectors = BVH4mbTriangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }

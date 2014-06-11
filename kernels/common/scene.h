@@ -24,9 +24,6 @@
 
 #include "common/acceln.h"
 #include "geometry.h"
-#include "common/buildsource.h"
-
-//#define PRE_SUBDIVISION_HACK
 
 namespace embree
 {
@@ -111,7 +108,7 @@ namespace embree
     __forceinline UserGeometryBase* getUserGeometrySafe(size_t i) { 
       assert(i < geometries.size()); 
       if (geometries[i] == NULL) return NULL;
-      if (geometries[i]->type != USER_GEOMETRY /*&& geometries[i]->type != INSTANCES*/) return NULL;
+      if (geometries[i]->type != USER_GEOMETRY) return NULL;
       else return (UserGeometryBase*) geometries[i]; 
     }
     __forceinline BezierCurves* getBezierCurves(size_t i) { 
@@ -136,128 +133,6 @@ namespace embree
     /* test if scene got already build */
     __forceinline bool isBuild() const { return is_build; }
 
-    struct FlatTriangleAccelBuildSource : public BuildSource
-    {
-      FlatTriangleAccelBuildSource (Scene* scene, size_t numTimeSteps = 1)
-        : scene(scene), numTimeSteps(numTimeSteps) {}
-
-      bool isEmpty () const { 
-        if (numTimeSteps == 1) return scene->numTriangleMeshes  == 0;
-        else                   return scene->numTriangleMeshes2 == 0;
-      }
-      
-      size_t groups () const { 
-        return scene->geometries.size();
-      }
-      
-      size_t prims (size_t group, size_t* numVertices) const 
-      {
-        if (scene->get(group) == NULL || scene->get(group)->type != TRIANGLE_MESH) return 0;
-        TriangleMesh* mesh = scene->getTriangleMesh(group);
-        if (mesh == NULL || !mesh->isEnabled() || mesh->numTimeSteps != numTimeSteps) return 0;
-        if (numVertices) *numVertices = mesh->numVertices;
-        return mesh->numTriangles;
-      }
-
-      const BBox3fa bounds(size_t group, size_t prim) const 
-      {
-	assert(scene->get(group) != NULL);
-	assert(scene->get(group)->type == TRIANGLE_MESH);
-
-        TriangleMesh* mesh = scene->getTriangleMesh(group);
-        if (mesh == NULL) return empty;
-        return mesh->bounds(prim);
-      }
-
-      void bounds(size_t group, size_t begin, size_t end, BBox3fa* bounds_o) const 
-      {
-	assert(scene->get(group) != NULL);
-	assert(scene->get(group)->type == TRIANGLE_MESH);
-
-        TriangleMesh* mesh = scene->getTriangleMesh(group);
-        if (mesh == NULL) { 
-          for (size_t i=0; i<end-begin; i++)
-            bounds_o[i] = empty;
-        } else {
-          for (size_t i=begin; i<end; i++)
-            bounds_o[i-begin] = mesh->bounds(i);
-        }
-      }
-
-      const Vec3fa vertex(size_t group, size_t prim, size_t vtxID) const 
-      {
-	assert(scene->get(group) != NULL);
-	assert(scene->get(group)->type == TRIANGLE_MESH);
-
-        const TriangleMesh* mesh = scene->getTriangleMesh(group);
-        const TriangleMesh::Triangle& tri = mesh->triangle(prim);
-	return mesh->vertex(tri.v[vtxID]);
-      }
-      
-      void split (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) const 
-      {
-	assert(scene->get(prim.geomID()));
-	assert(scene->get(prim.geomID())->type == TRIANGLE_MESH);
-
-        const TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
-        const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
-        const Vec3fa& v0 = mesh->vertex(tri.v[0]);
-        const Vec3fa& v1 = mesh->vertex(tri.v[1]);
-        const Vec3fa& v2 = mesh->vertex(tri.v[2]);
-        splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
-      }
-      
-    public:
-      Scene* scene;
-      size_t numTimeSteps;
-    };
-
-    struct BezierBuildSource : public BuildSource
-    {
-      BezierBuildSource (Scene* scene, size_t numTimeSteps = 1)
-        : scene(scene), numTimeSteps(numTimeSteps) {}
-
-      bool isEmpty () const { 
-        if (numTimeSteps == 1) return scene->numBezierCurves  == 0;
-        else                   return scene->numBezierCurves2 == 0;
-      }
-      
-      size_t groups () const { 
-        return scene->geometries.size();
-      }
-      
-      size_t prims (size_t group, size_t* numVertices) const 
-      {
-        if (scene->get(group) == NULL || scene->get(group)->type != BEZIER_CURVES) return 0;
-        BezierCurves* curves = scene->getBezierCurves(group);
-        if (!curves->isEnabled() || curves->numTimeSteps != numTimeSteps) return 0;
-        if (numVertices) *numVertices = curves->numVertices;
-#if defined(PRE_SUBDIVISION_HACK)
-        return 8*curves->numCurves;
-#else
-        return curves->numCurves;
-#endif
-      }
-
-      const BBox3fa bounds(size_t group, size_t prim) const 
-      {
-	assert(scene->get(group) != NULL);
-	assert(scene->get(group)->type == BEZIER_CURVES);
-        BezierCurves* curves = scene->getBezierCurves(group);
-        if (curves == NULL) return empty;
-#if defined(PRE_SUBDIVISION_HACK)
-        return curves->subBounds(prim/8,prim%8);
-#else
-        return curves->bounds(prim);
-#endif
-      }
-
-    public:
-      Scene* scene;
-      size_t numTimeSteps;
-    };
-
-    
   public:
     std::vector<int> usedIDs;
     std::vector<Geometry*> geometries; //!< list of all user geometries
@@ -285,10 +160,5 @@ namespace embree
     atomic_t numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
     atomic_t numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
     atomic_t numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
-    
-  public:
-    FlatTriangleAccelBuildSource flat_triangle_source_1;
-    FlatTriangleAccelBuildSource flat_triangle_source_2;
-    BezierBuildSource bezier_source_1;
   };
 }

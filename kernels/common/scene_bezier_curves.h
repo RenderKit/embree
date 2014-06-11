@@ -18,7 +18,7 @@
 
 #include "common/default.h"
 #include "common/geometry.h"
-#include "common/buildsource.h"
+#include "common/primref.h"
 #include "common/buffer.h"
 
 namespace embree

@@ -44,15 +44,6 @@ namespace embree
     else                   { atomic_add(&parent->numTriangleMeshes2,-1); atomic_add(&parent->numTriangles2,-numTriangles); }
   }
 
-  void TriangleMesh::split (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) const
-  {
-    const TriangleMesh::Triangle& tri = triangle(prim.primID());
-    const Vec3fa& v0 = vertex(tri.v[0]);
-    const Vec3fa& v1 = vertex(tri.v[1]);
-    const Vec3fa& v2 = vertex(tri.v[2]);
-    splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
-  }
-  
   void TriangleMesh::setMask (unsigned mask) 
   {
     if (parent->isStatic() && parent->isBuild()) {

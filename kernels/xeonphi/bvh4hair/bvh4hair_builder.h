@@ -83,8 +83,8 @@ namespace embree
     size_t size_accel;
     size_t size_nodes;
     
-  BVH4HairBuilder(BVH4Hair* bvh, BuildSource* source, void* geometry) 
-    : ParallelBinnedSAHBuilder(source,geometry),
+  BVH4HairBuilder(BVH4Hair* bvh, void* geometry) 
+    : ParallelBinnedSAHBuilder(geometry),
       bvh4hair(bvh),
       prims(NULL),
       node(NULL),

@@ -27,9 +27,9 @@ namespace embree
 #define GENERATE_SUBTREES_MAX_TREE_DEPTH 6
 #define SERIAL_REFIT_THRESHOLD 1024
 
-  Builder* BVH4mbBuilder::create (void* accel, BuildSource* source, void* geometry, size_t mode ) 
+  Builder* BVH4mbBuilder::create (void* accel, void* geometry, size_t mode ) 
   { 
-    Builder* builder = new BVH4mbBuilder((BVH4mb*)accel,source,geometry);
+    Builder* builder = new BVH4mbBuilder((BVH4mb*)accel,geometry);
     return builder;
   }
 

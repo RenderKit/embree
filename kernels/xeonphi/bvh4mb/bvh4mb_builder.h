@@ -29,12 +29,12 @@ namespace embree
   public:
 
     /*! creates the builder */
-    static Builder* create (void* accel, BuildSource* source, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
+    static Builder* create (void* accel, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
 
-  BVH4mbBuilder(BVH4mb* bvh, BuildSource* source, void* geometry) : BVH4iBuilder((BVH4i*)bvh,source,geometry) 
-      {
-	numNodesToAllocate = 2 * BVH4i::N; /* 8 */
-      }
+    BVH4mbBuilder (BVH4mb* bvh, void* geometry) : BVH4iBuilder((BVH4i*)bvh,geometry) 
+    {
+      numNodesToAllocate = 2 * BVH4i::N; /* 8 */
+    }
     virtual void computePrimRefs  (const size_t threadIndex, const size_t threadCount);
     virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives);
     virtual void convertQBVHLayout(const size_t threadIndex, const size_t threadCount);

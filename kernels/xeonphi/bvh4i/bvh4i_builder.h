@@ -45,11 +45,11 @@ namespace embree
     };
  
     /*! Constructor. */
-    BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry);
+    BVH4iBuilder (BVH4i* bvh, void* geometry);
     virtual ~BVH4iBuilder();
 
     /*! creates the builder */
-    static Builder* create (void* accel, BuildSource* source, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
+    static Builder* create (void* accel, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
 
     /* virtual function interface */
     virtual void build            (const size_t threadIndex, const size_t threadCount);
@@ -157,9 +157,7 @@ namespace embree
   {
   public:
 
-  BVH4iBuilderPreSplits(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
-      {
-      }
+    BVH4iBuilderPreSplits (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry) {}
 
     virtual void allocateData   (const size_t threadCount, const size_t newNumPrimitives);
     virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
@@ -188,10 +186,8 @@ namespace embree
   class BVH4iBuilderMemoryConservative : public BVH4iBuilder
   {
   public:
-
-  BVH4iBuilderMemoryConservative(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
-      {
-      }
+    
+    BVH4iBuilderMemoryConservative (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry) {}
 
     virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives);
     virtual void printBuilderName();
@@ -209,9 +205,7 @@ namespace embree
   class BVH4iBuilderVirtualGeometry : public BVH4iBuilder
   {
   public:
-  BVH4iBuilderVirtualGeometry(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
-      {
-      }
+    BVH4iBuilderVirtualGeometry (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry) {}
 
     virtual size_t getNumPrimitives();
     virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
@@ -223,5 +217,4 @@ namespace embree
     TASK_FUNCTION(BVH4iBuilderVirtualGeometry,createVirtualGeometryAccel);
     
   };
-
 }

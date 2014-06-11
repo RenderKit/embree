@@ -47,7 +47,7 @@ namespace embree
   // =============================================================================================
 
 
-  Builder* BVH4iBuilder::create (void* accel, BuildSource* source, void* geometry, size_t mode ) 
+  Builder* BVH4iBuilder::create (void* accel, void* geometry, size_t mode ) 
   { 
     DBG(PING);
     DBG(DBG_PRINT(mode));
@@ -58,19 +58,19 @@ namespace embree
       {
 
       case BVH4I_BUILDER_DEFAULT:
-	builder = new BVH4iBuilder((BVH4i*)accel,source,geometry);
+	builder = new BVH4iBuilder((BVH4i*)accel,geometry);
 	break;
 
       case BVH4I_BUILDER_PRESPLITS:
-	builder = new BVH4iBuilderPreSplits((BVH4i*)accel,source,geometry);
+	builder = new BVH4iBuilderPreSplits((BVH4i*)accel,geometry);
 	break;
 
       case BVH4I_BUILDER_VIRTUAL_GEOMETRY:
-	builder = new BVH4iBuilderVirtualGeometry((BVH4i*)accel,source,geometry);
+	builder = new BVH4iBuilderVirtualGeometry((BVH4i*)accel,geometry);
 	break;
 
       case BVH4I_BUILDER_MEMORY_CONSERVATIVE:
-	builder = new BVH4iBuilderMemoryConservative((BVH4i*)accel,source,geometry);
+	builder = new BVH4iBuilderMemoryConservative((BVH4i*)accel,geometry);
 	break;
 
       default:
@@ -84,8 +84,8 @@ namespace embree
   // =======================================================================================================
 
 
-  BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry)
-    : ParallelBinnedSAHBuilder(source,geometry),
+  BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, void* geometry)
+    : ParallelBinnedSAHBuilder(geometry),
       bvh(bvh),       
       prims(NULL), 
       node(NULL), 
