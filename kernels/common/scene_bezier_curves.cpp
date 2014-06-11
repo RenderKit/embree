@@ -21,9 +21,7 @@ namespace embree
 {
   BezierCurves::BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
     : Geometry(parent,BEZIER_CURVES,numCurves,flags), 
-      mask(-1), built(false), numTimeSteps(numTimeSteps),
-      numCurves(numCurves), needCurves(false),
-      numVertices(numVertices), needVertices(false)
+      mask(-1), numTimeSteps(numTimeSteps), numCurves(numCurves), numVertices(numVertices)
   {
     curves.init(numCurves,sizeof(int));
     for (size_t i=0; i<numTimeSteps; i++) {
@@ -136,9 +134,8 @@ namespace embree
 
   void BezierCurves::immutable () 
   {
-    built = true;
-    bool freeCurves    = !needCurves;
-    bool freeVertices  = !(needVertices || parent->needVertices);
+    bool freeCurves    = true; //!parent->needCurves;
+    bool freeVertices  = !parent->needVertices;
     if (freeCurves   ) curves.free();
     if (freeVertices ) vertices[0].free();
     if (freeVertices ) vertices[1].free();

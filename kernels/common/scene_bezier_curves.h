@@ -33,37 +33,40 @@ namespace embree
       BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps); 
       
     public:
+      void enabling();
+      void disabling();
       void setMask (unsigned mask);
-      void immutable ();
-      bool verify ();
       void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
       void* map(RTCBufferType type);
       void unmap(RTCBufferType type);
       void setUserData (void* ptr, bool ispc);
-
-      void enabling();
-      void disabling();
-
+      void immutable ();
+      bool verify ();
+      
     public:
 
+      /*! returns number of bezier curves */
       __forceinline size_t size() const {
 	return numCurves;
       }
 
+      /*! returns the i'th curve */
       __forceinline const int& curve(size_t i) const {
         assert(i < numCurves);
         return curves[i];
       }
 
+      /*! returns i'th vertex of j'th timestep */
       __forceinline const Vec3fa& vertex(size_t i, size_t j = 0) const {
         assert(i < numVertices);
-        assert(j < 2);
+        assert(j < numTimeSteps);
         return (Vec3fa&)vertices[j][i];
       }
 
+      /*! returns i'th radius of j'th timestep */
       __forceinline float radius(size_t i, size_t j = 0) const {
         assert(i < numVertices);
-        assert(j < 2);
+        assert(j < numTimeSteps);
         return vertices[j][i].r;
       }
 
@@ -78,6 +81,7 @@ namespace embree
       }
 
 
+      /*! calculates bounding box of i'th bezier curve */
       __forceinline BBox3fa bounds(size_t i) const 
       {
         const int index = curve(i);
@@ -89,16 +93,12 @@ namespace embree
         const Vec3fa& v1 = vertex(index+1);
         const Vec3fa& v2 = vertex(index+2);
         const Vec3fa& v3 = vertex(index+3);
-
         const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
-
         return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
       }
 
-      __forceinline const Vec3fa *fristVertexPtr(size_t i) const 
-      {
-        const int index = curve(i);
-        return &vertex(index+0);
+      __forceinline const Vec3fa *fristVertexPtr(size_t i) const {
+        return &vertex(curve(i));
       }
 
 #if defined(__MIC__)
@@ -168,21 +168,14 @@ namespace embree
         return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
       }
 
-      __forceinline bool anyMappedBuffers() const {
-        return curves.isMapped() || vertices[0].isMapped() || vertices[1].isMapped();
-      }
-
     public:
       unsigned int mask;                //!< for masking out geometry
-      bool built;                       //!< geometry got built
       unsigned char numTimeSteps;       //!< number of time steps (1 or 2)
 
       BufferT<int> curves;              //!< array of curve indices
-      bool needCurves;                  //!< set if curve indices required by acceleration structure
       size_t numCurves;                 //!< number of triangles
 
       BufferT<Vertex> vertices[2];      //!< vertex array
-      bool needVertices;                //!< set if vertex array required by acceleration structure
       size_t numVertices;               //!< number of vertices
     };
 }
