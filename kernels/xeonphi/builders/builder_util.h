@@ -113,14 +113,14 @@ namespace embree
 
     unsigned int begin;         //!< start of range
     unsigned int end;           //!< end of range
-    unsigned int parentID;      //!< the ID of the node that points to us
+    unsigned int _parentID;     //!< the ID of the node that points to us
     unsigned int depth;         //!< depth from the root of the tree
 
     unsigned int flags;
     float sArea;
     //unsigned int parentType;    // only used with mixed AABB/OBB trees 
     //unsigned int parentBoxID; 
-    void *parentPtr;
+    void *parentPtr;             //!< pointer to child NodeRef in parent node
 
     BuildRecord()
       {
@@ -131,7 +131,7 @@ namespace embree
     {
       begin       = _begin;
       end         = _end;
-      parentID    = (unsigned int)-1;
+      //parentID    = (unsigned int)-1;
       //parentBoxID = (unsigned int)-1;
       parentPtr   = NULL;
       sArea       = area(bounds.geometry);
@@ -173,7 +173,7 @@ namespace embree
       o << "begin       " << br.begin << " ";
       o << "end         " << br.end << " ";
       o << "items       " << br.end-br.begin << " ";
-      o << "parentID    " << br.parentID << " ";
+      //o << "parentID    " << br.parentID << " ";
       o << "parentPtr   " << br.parentPtr << " ";
       o << "flags       " << br.flags << " ";
       o << "sArea       " << br.sArea << " ";

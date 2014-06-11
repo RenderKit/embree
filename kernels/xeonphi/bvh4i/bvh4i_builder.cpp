@@ -1059,9 +1059,11 @@ namespace embree
     
     /* create leaf */
     if (current.items() <= BVH4i::N) {
-      node[current.parentID].createLeaf(current.begin,current.items());
+      //node[current.parentID].createLeaf(current.begin,current.items());
+      createLeaf(current.parentPtr,current.begin,current.items());
+
 #if defined(DEBUG)
-      checkLeafNode(node[current.parentID]);      
+      //checkLeafNode(node[current.parentID]);      
 #endif
       return;
     }
@@ -1079,14 +1081,18 @@ namespace embree
     size_t numChildren = 4;
     const size_t currentIndex = alloc.get(numNodesToAllocate);
 
-    node[current.parentID].createNode(currentIndex,numChildren);
+    //node[current.parentID].createNode(currentIndex,numChildren);
+    createNode(current.parentPtr,currentIndex,numChildren);
     
     /* recurse into each child */
     for (size_t i=0; i<numChildren; i++) 
     {
       node[currentIndex+i].lower = children[i].bounds.geometry.lower;
       node[currentIndex+i].upper = children[i].bounds.geometry.upper;
-      children[i].parentID = currentIndex+i;
+      //children[i].parentID = currentIndex+i;
+
+      children[i].parentPtr = &node[currentIndex+i].lower.a;
+
       children[i].depth = current.depth+1;
       createLeaf(children[i],alloc,threadIndex,threadCount);
     }
@@ -1165,7 +1171,9 @@ namespace embree
 
     /* allocate next four nodes */
     const size_t currentIndex = alloc.get(numNodesToAllocate);
-    node[current.parentID].createNode(currentIndex,numChildren);
+    //node[current.parentID].createNode(currentIndex,numChildren);
+
+    createNode(current.parentPtr,currentIndex,numChildren);
 
     /* init used/unused nodes */
     const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
@@ -1177,7 +1185,10 @@ namespace embree
       {
 	node[currentIndex+i].lower = (Vec3fa) children[i].bounds.geometry.lower;
 	node[currentIndex+i].upper = (Vec3fa) children[i].bounds.geometry.upper;
-	children[i].parentID = currentIndex+i;
+	//children[i].parentID = currentIndex+i;
+
+	children[i].parentPtr = &node[currentIndex+i].lower.a;
+
 	recurse(children[i],alloc,mode,threadID,numThreads);
       }
 
@@ -1430,7 +1441,8 @@ namespace embree
     BuildRecord br;
     br.init(global_bounds,0,numPrimitives);
     br.depth = 1;
-    br.parentID = 0;
+    //br.parentID = 0;
+    br.parentPtr = &node->lower.a;
         
     /* push initial build record to global work stack */
     global_workStack.reset();

@@ -150,6 +150,23 @@ namespace embree
       return currentIndex;
     }
 
+
+    __forceinline void createLeaf(void *ptr,
+				  const unsigned int offset,
+				  const unsigned int entries) 
+    {
+      assert(entries <= 4);
+      *(unsigned int *)ptr = (offset << BVH_INDEX_SHIFT) | BVH_LEAF_MASK | entries;
+    }
+
+    __forceinline void createNode(void *ptr,
+				  const unsigned int index,			  
+				  const unsigned int children = 0) {
+      assert((index %2) == 0);
+      *(unsigned int *)ptr = (index << BVH_INDEX_SHIFT) | children;
+    }
+
+
   };
 
   /*! derived binned-SAH builder supporting triangle pre-splits */  
