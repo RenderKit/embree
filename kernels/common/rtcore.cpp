@@ -487,7 +487,7 @@ namespace embree
   RTCORE_API void rtcIntersect8 (const void* valid, RTCScene scene, RTCRay8& ray) 
   {
     TRACE(rtcIntersect8);
-#if !defined(__TARGET_AVX__) && !defined(__TARGET_AVX2__)
+#if defined(__MIC__)
     process_error(RTC_INVALID_OPERATION,"rtcIntersect8 not supported on Xeon Phi");                                    
 #else
 #if defined(DEBUG)
@@ -504,7 +504,7 @@ namespace embree
   RTCORE_API void rtcIntersect16 (const void* valid, RTCScene scene, RTCRay16& ray) 
   {
     TRACE(rtcIntersect16);
-#if !defined(__TARGET_XEON_PHI__)
+#if !defined(__MIC__)
     process_error(RTC_INVALID_OPERATION,"rtcIntersect16 only supported on Xeon Phi");
 #else
 #if defined(DEBUG)
@@ -549,7 +549,7 @@ namespace embree
   RTCORE_API void rtcOccluded8 (const void* valid, RTCScene scene, RTCRay8& ray) 
   {
     TRACE(rtcOccluded8);
-#if !defined(__TARGET_AVX__) && !defined(__TARGET_AVX2__)
+#if defined(__MIC__)
     process_error(RTC_INVALID_OPERATION,"rtcOccluded8 not supported on Xeon Phi");
 #else
 #if defined(DEBUG)
@@ -566,7 +566,7 @@ namespace embree
   RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray) 
   {
     TRACE(rtcOccluded16);
-#if !defined(__TARGET_XEON_PHI__)
+#if !defined(__MIC__)
     process_error(RTC_INVALID_OPERATION,"rtcOccluded16 only supported on Xeon Phi");
 #else
 #if defined(DEBUG)

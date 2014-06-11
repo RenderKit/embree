@@ -29,6 +29,7 @@ namespace embree
     struct ObjectPartition
     {
       struct Split;
+      struct SplitInfo;
       typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;   //!< list of primitives
       typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
       
@@ -41,6 +42,10 @@ namespace embree
       /*! finds the best split */
       template<bool Parallel>
 	static const Split find(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize);
+
+      /*! finds the best split and returns extended split information */
+      template<bool Parallel>
+      static const Split find(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o);
       
       /*! finds the best split */
       static const Split find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize);
@@ -129,58 +134,90 @@ namespace embree
 	int pos;         //!< bin index for splitting
 	Mapping mapping; //!< mapping into bins
       };
+
+      /*! stores extended information about the split */
+      struct SplitInfo
+      {
+	__forceinline SplitInfo () {}
+	
+	__forceinline SplitInfo (size_t leftCount, const BBox3fa& leftBounds, size_t rightCount, const BBox3fa& rightBounds)
+	  : leftCount(leftCount), rightCount(rightCount), leftBounds(leftBounds), rightBounds(rightBounds) {}
+
+      public:
+	size_t leftCount,rightCount;
+	BBox3fa leftBounds,rightBounds;
+      };
       
     private:
       
       /*! stores all binning information */
       struct __aligned(64) BinInfo
+      {
+	BinInfo();
+	
+	/*! clears the bin info */
+	void clear();
+	
+	/*! bins an array of bezier curves */
+	void bin (const Bezier1* prims, size_t N, const Mapping& mapping);
+	
+	/*! bins an array of primitives */
+	void bin (const PrimRef* prims, size_t N, const Mapping& mapping);
+	
+	/*! bins an array of primitives */
+	void bin_copy (const PrimRef* prims, size_t N, const Mapping& mapping, PrimRef* dest);
+	void bin_copy (const PrimRef* prims, size_t begin, size_t end, const Mapping& mapping, PrimRef* dest);
+	
+	/*! bins a list of bezier curves */
+	void bin (BezierRefList& prims, const Mapping& mapping);
+	
+	/*! bins a list of primitives */
+	void bin (PrimRefList& prims, const Mapping& mapping);
+	
+	/*! merges in other binning information */
+	void merge (const BinInfo& other);
+	void merge (const BinInfo& other, size_t numBins);
+	
+	/*! merge multiple binning infos into one */
+	static void reduce(const BinInfo binners[], size_t num, BinInfo& binner_o);
+	
+	static void reduce2(const BinInfo binners[], size_t num, BinInfo& binner_o);
+	
+	/*! finds the best split by scanning binning information */
+	Split best(const Mapping& mapping, const size_t logBlockSize);
+	
+	/*! calculates number of primitives on the left */
+	__forceinline size_t getNumLeft(Split& split) 
 	{
-	  BinInfo();
+	  size_t N = 0;
+	  for (size_t i=0; i<split.pos; i++)
+	    N += counts[i][split.dim];
+	  return N;
+	}
 
-	  /*! clears the bin info */
-	  void clear();
-	  
-	  /*! bins an array of bezier curves */
-	  void bin (const Bezier1* prims, size_t N, const Mapping& mapping);
-	  
-	  /*! bins an array of primitives */
-	  void bin (const PrimRef* prims, size_t N, const Mapping& mapping);
-	  
-	  /*! bins an array of primitives */
-	  void bin_copy (const PrimRef* prims, size_t N, const Mapping& mapping, PrimRef* dest);
-	  void bin_copy (const PrimRef* prims, size_t begin, size_t end, const Mapping& mapping, PrimRef* dest);
-	  
-	  /*! bins a list of bezier curves */
-	  void bin (BezierRefList& prims, const Mapping& mapping);
-	  
-	  /*! bins a list of primitives */
-	  void bin (PrimRefList& prims, const Mapping& mapping);
-	  
-	  /*! merges in other binning information */
-	  void merge (const BinInfo& other);
-	  void merge (const BinInfo& other, size_t numBins);
-
-	   /*! merge multiple binning infos into one */
-	  static void reduce(const BinInfo binners[], size_t num, BinInfo& binner_o);
-	  
-	  static void reduce2(const BinInfo binners[], size_t num, BinInfo& binner_o);
-
-	  /*! finds the best split by scanning binning information */
-	  Split best(const Mapping& mapping, const size_t logBlockSize);
-
-	  __forceinline size_t getNumLeft(Split& split) 
-	  {
-	    size_t N = 0;
-	    for (size_t i=0; i<split.pos; i++)
-	      N += counts[i][split.dim];
-	    return N;
+	/*! calculates extended split information */
+	__forceinline void getSplitInfo(const Mapping& mapping, const Split& split, SplitInfo& info) const
+	{
+	  size_t leftCount = 0;
+	  BBox3fa leftBounds = empty;
+	  for (size_t i=0; i<split.pos; i++) {
+	    leftCount += counts[i][split.dim];
+	    leftBounds.extend(bounds[i][split.dim]);
 	  }
-	  
-	  //private:
-	public: // FIXME
-	  BBox3fa bounds[maxBins][4]; //!< geometry bounds for each bin in each dimension
-	  ssei    counts[maxBins];    //!< counts number of primitives that map into the bins
-	};
+	  size_t rightCount = 0;
+	  BBox3fa rightBounds = empty;
+	  for (size_t i=split.pos; i<mapping.size(); i++) {
+	    rightCount += counts[i][split.dim];
+	    rightBounds.extend(bounds[i][split.dim]);
+	  }
+	  new (&info) SplitInfo(leftCount,leftBounds,rightCount,rightBounds);
+	}
+	
+	//private:
+      public: // FIXME
+	BBox3fa bounds[maxBins][4]; //!< geometry bounds for each bin in each dimension
+	ssei    counts[maxBins];    //!< counts number of primitives that map into the bins
+      };
       
       /*! task for parallel binning */
       template<typename List>
@@ -195,9 +232,10 @@ namespace embree
 	TASK_RUN_FUNCTION(TaskBinParallel,task_bin_parallel);
 	
 	/*! state for binning stage */
-      private:
+      public:
 	typename List::iterator iter; //!< iterator for binning stage
 	Mapping mapping;
+	BinInfo binner;
 	BinInfo binners[maxTasks];
 	
       public:
