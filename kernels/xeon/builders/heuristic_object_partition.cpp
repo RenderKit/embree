@@ -314,6 +314,17 @@ namespace embree
       binner.bin(prims+begin,end-begin,mapping);
       return binner.best(mapping,logBlockSize);
     }
+
+    template<>
+    const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o)
+    {
+      BinInfo binner;
+      const Mapping mapping(pinfo);
+      binner.bin(prims,mapping);
+      const ObjectPartition::Split split = binner.best(mapping,logBlockSize);
+      binner.getSplitInfo(mapping,split,sinfo_o);
+      return split;
+    }
     
     //////////////////////////////////////////////////////////////////////////////
     //                         Parallel Binning                                 //
@@ -329,12 +340,12 @@ namespace embree
       TaskScheduler::executeTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
       
       /* reduction of bin informations */
-      BinInfo bins = binners[0];
+      binner = binners[0];
       for (size_t i=1; i<numTasks; i++)
-	bins.merge(binners[i]);
+	binner.merge(binners[i]);
       
       /* calculation of best split */
-      split = bins.best(mapping,logBlockSize);
+      split = binner.best(mapping,logBlockSize);
     }
     
     template<typename List>
@@ -354,6 +365,15 @@ namespace embree
       return TaskBinParallel<PrimRefList>(threadIndex,threadCount,prims,pinfo,logBlockSize).split;
     }
     
+    template<>
+    const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o) 
+    {
+      TaskBinParallel<PrimRefList> task(threadIndex,threadCount,prims,pinfo,logBlockSize);
+      task.binner.getSplitInfo(task.mapping,task.split,sinfo_o);
+      return task.split;
+    }
+    
+
     //////////////////////////////////////////////////////////////////////////////
     //                             Splitting                                    //
     //////////////////////////////////////////////////////////////////////////////
