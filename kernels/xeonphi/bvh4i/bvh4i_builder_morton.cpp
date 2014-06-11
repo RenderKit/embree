@@ -719,7 +719,7 @@ namespace embree
       {
 	prefetch<PFHINT_L1EX>(bptr+4);
 	prefetch<PFHINT_L2EX>(bptr+4*4);
-	convertToBVH4Layout(bptr);
+	convertToBVH4Layout<true>(bptr);
 	evictL1(bptr);
       }
   }
@@ -785,7 +785,7 @@ namespace embree
 
     store4f(&node[current.parentID].lower,bounds_min);
     store4f(&node[current.parentID].upper,bounds_max);
-    node[current.parentID].createLeaf(start,items,items);
+    node[current.parentID].createLeaf(start,items);
     __aligned(64) BBox3fa bounds;
     store4f(&bounds.lower,bounds_min);
     store4f(&bounds.upper,bounds_max);

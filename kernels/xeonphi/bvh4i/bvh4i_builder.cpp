@@ -431,7 +431,7 @@ namespace embree
       {
 	prefetch<PFHINT_L1EX>(bptr+4);
 	prefetch<PFHINT_L2EX>(bptr+4*4);
-	convertToBVH4Layout(bptr);
+	convertToBVH4Layout<false>(bptr);
 	evictL1(bptr);
       }
   }

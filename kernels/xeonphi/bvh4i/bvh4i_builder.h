@@ -163,7 +163,7 @@ namespace embree
 				  const unsigned int index,			  
 				  const unsigned int children = 0) {
       assert((index %2) == 0);
-      *(unsigned int *)ptr = (index << BVH_INDEX_SHIFT) | children;
+      *(unsigned int *)ptr = (index << BVH_INDEX_SHIFT);
     }
 
 
