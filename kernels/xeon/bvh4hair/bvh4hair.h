@@ -81,7 +81,7 @@ namespace embree
     static const size_t maxLeafBlocks = items_mask-2;
 
     /*! Cost of one traversal step. */
-    static const int travCostAligned = 1;
+    static const int travCostAligned = 2;
     static const int travCostUnaligned = 3; // FIXME: find best cost
     static const int intCost = 6;
 
