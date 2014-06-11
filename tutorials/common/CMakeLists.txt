@@ -20,7 +20,7 @@ ADD_SUBDIRECTORY(lexers)
 ADD_SUBDIRECTORY(transport)
 ADD_SUBDIRECTORY(tutorial)
 
-IF (TARGET_XEON_PHI)
+IF (XEON_PHI_ISA)
   SET (__XEON__ 0)
   ADD_SUBDIRECTORY(tutorial tutorial_xeonphi)
   ADD_SUBDIRECTORY(transport_coi/host)

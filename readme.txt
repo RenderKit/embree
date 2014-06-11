@@ -22,8 +22,8 @@ Embree is a collection of high-performance ray tracing kernels, developed at
 Intel. The target user of Embree are graphics application engineers that want
 to improve the performance of their application by leveraging the optimized ray
 tracing kernels of Embree. The kernels are optimized for photo-realistic
-rendering on the latest Intel� processors with support for SSE, AVX, AVX2, and
-the 16-wide Xeon Phi[TM] vector instructions. Embree supports runtime code
+rendering on the latest Intel® processors with support for SSE, AVX, AVX2, and
+the 16-wide Xeon Phi™ vector instructions. Embree supports runtime code
 selection to choose the traversal and build algorithms that best matches the
 instruction set of your CPU. We recommend using Embree through its API to get
 the highest benefit from future improvements. Embree is released as Open Source
@@ -32,16 +32,16 @@ under the Apache 2.0 license.
 Embree supports applications written with the Intel SPMD Programm Compiler
 (ISPC, http://ispc.github.com) by also providing an ISPC interface to the core
 ray tracing algorithms. This makes it possible to write a renderer in ISPC that
-leverages SSE, AVX, AVX2, and Xeon Phi[TM] instructions without any code
-change. ISPC also supports runtime code selection, thus ISPC will select the
-best code path for your application, while Embree selects the optimal code path
-for the ray tracing algorithms.
+leverages SSE, AVX, AVX2, and Xeon Phi™ instructions without any code change.
+ISPC also supports runtime code selection, thus ISPC will select the best code
+path for your application, while Embree selects the optimal code path for the
+ray tracing algorithms.
 
 Embree contains algorithms optimized for incoherent workloads (e.g. Monte Carlo
 ray tracing algorithms) and coherent workloads (e.g. primary visibility and
 hard shadow rays). For standard CPUs, the single-ray traversal kernels in
 Embree provide the best performance for incoherent workloads and are very easy
-to integrate into existing rendering applications. For Xeon Phi[TM], a renderer
+to integrate into existing rendering applications. For Xeon Phi™, a renderer
 written in ISPC using the default hybrid ray/packet traversal algorithms have
 shown to perform best, but requires writing the renderer in ISPC. In general
 for coherent workloads, ISPC outperforms the single ray mode on each platform.
@@ -62,9 +62,9 @@ also varies across different operating systems. Embree is optimized for Intel
 CPUs supporting SSE, AVX, and AVX2 instructions, and requires at least a CPU
 with support for SSE2.
 
-The Xeon Phi[TM] version of Embree only works under Linux in 64bit mode. For
-compilation of the the Xeon Phi[TM] code the Intel Compiler is required. The
-host side code compiles with GCC, CLANG, and the Intel Compiler.
+The Xeon Phi™ version of Embree only works under Linux in 64bit mode. For
+compilation of the the Xeon Phi™ code the Intel Compiler is required. The host
+side code compiles with GCC, CLANG, and the Intel Compiler.
 
 == Compiling Embree on Linux and Mac OS X  ==
 
@@ -76,7 +76,7 @@ installation, put the path to the ispc executable permanently into your PATH.
  export PATH=path-to-ispc:$PATH
 
 You additionally have to install CMake and the developer version of GLUT. Under
-MaxOS, these dependencies can be installed using MacPorts:
+Mac OS X, these dependencies can be installed using MacPorts:
 
  sudo port install cmake freeglut
 
@@ -118,61 +118,40 @@ most usages. The following table described all parameters that can be
 configured:
 
 
-Parameter                  Description               Default Value
+Parameter                  Description                                                                 Default
+                                                                                                       Value
 
-BUILD_TUTORIALS            Builds the C++ version of ON
-                           the Embree tutorials.
+BUILD_TUTORIALS            Builds the C++ version of the Embree tutorials.                             ON
 
-BUILD_TUTORIALS_ISPC       Builds the ISPC version   ON
-                           of the Embree tutorials.
+BUILD_TUTORIALS_ISPC       Builds the ISPC version of the Embree tutorials.                            ON
 
-                           Can be used to switch
-CMAKE_BUILD_TYPE           between Debug mode        Release
-                           (Debug) and Release mode
-                           (Release)
+CMAKE_BUILD_TYPE           Can be used to switch between Debug mode (Debug) and Release mode (Release) Release
 
-COMPILER                   Select either GCC, ICC,   GCC
-                           or CLANG as compiler.
+COMPILER                   Select either GCC, ICC, or CLANG as compiler.                               GCC
 
-RTCORE_INTERSECTION_FILTER Enables the intersection  ON
-                           filter feature.
+RTCORE_INTERSECTION_FILTER Enables the intersection filter feature.                                    ON
 
-RTCORE_BUFFER_STRIDE       Enables buffer stride     ON
-                           feature.
+RTCORE_BUFFER_STRIDE       Enables buffer stride feature.                                              ON
 
-RTCORE_RAY_MASK            Enables the ray masking   OFF
-                           feature.
+RTCORE_RAY_MASK            Enables the ray masking feature.                                            OFF
 
-RTCORE_SPINLOCKS           Enables faster spinlocks  ON (Linux), OFF (Mac OS X,
-                           for some builders.        Windows)
+                                                                                                       ON
+                                                                                                       (Linux),
+RTCORE_SPINLOCKS           Enables faster spinlocks for some builders.                                 OFF (Mac
+                                                                                                       OS X,
+                                                                                                       Windows)
 
-                           Enables SSE2 for ISPC
-TARGET_SSE2                tutorials. SSE2 kernels   ON
-                           are always build.
+XEON_ISA                   Select highest ISA on Xeon™ CPUs (SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, AVX, AVX2
+                           AVX-I, AVX2)
 
-                           Enables SSE4.1 for
-TARGET_SSE41               kernels and ISPC          ON
-                           tutorials.
-
-TARGET_AVX                 Enables AVX for kernels   ON
-                           and ISPC tutorials.
-
-TARGET_AVX2                Enables AVX2 for kernels  ON
-                           and ISPC tutorials.
-
-                           Enables generation of
-TARGET_XEON_PHI            Xeon Phi[TM] version of   OFF
-                           kernels and tutorials.
+XEON_PHI_ISA               Enables generation of Xeon Phi™ version of kernels and tutorials.         OFF
 
 
 You need at least Intel Compiler 11.1 or GCC 4.4 to enable AVX and Intel
 Compiler 12.1 or GCC 4.7 to enable AVX2.
 
-If the intersection filter feature is not required, some additional performance
-(between 1%-8%) can be achieved when disabling this feature at compile time.
-The buffer stride feature has no impact on rendering performance, but disabling
-can increase performance for building spatial hierarchies, in particular on
-Xeon Phi[TM].
+Enabling the buffer stride feature reduces performance for building spatial
+hierarchies on Xeon Phi™.
 
 == Compiling Embree on Windows  ==
 
