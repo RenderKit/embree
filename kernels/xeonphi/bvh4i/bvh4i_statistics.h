@@ -65,14 +65,12 @@ namespace embree
   std::string BVH4iStatistics<NodeType>::str()  
   {
     std::ostringstream stream;
-    size_t bytesNodes = numNodes*sizeof(Node);
-    size_t bytesTris  = numPrimBlocks*bvh->primTy.bytes;
-    //size_t numVertices = bvh->numVertices;
-    //size_t bytesVertices = numVertices*sizeof(Vec3fa); 
+    size_t bytesNodes = bvh->size_node; // numNodes*sizeof(Node);
+    size_t bytesTris  = bvh->size_accel;
     size_t bytesTotal = bytesNodes+bytesTris;//+bytesVertices;
     size_t bytesTotalAllocated = bvh->bytes();
-    double leafFill1 = double(numPrims)/double(bvh->primTy.blockSize*numPrimBlocks);
-    double leafFill4 = double(numPrims)/double(4.0*numPrimBlocks4);
+    /* double leafFill1 = double(numPrims)/double(bvh->primTy.blockSize*numPrimBlocks); */
+    /* double leafFill4 = double(numPrims)/double(4.0*numPrimBlocks4); */
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream.precision(4);
     stream << "  sah = " << bvhSAH << ", leafSAH = " << leafSAH;
@@ -84,18 +82,13 @@ namespace embree
     stream << "  nodes = "  << numNodes << " "
            << "(" << bytesNodes/1E6  << " MB) "
            << "(" << 100.0*double(bytesNodes)/double(bytesTotal) << "% of total) "
-           << "(" << 100.0*(numNodes-1+numLeaves)/double(BVH4i::N*numNodes) << "% used)" 
+           << "(" << 100.0*double(sizeof(NodeType)*numNodes)/double(bytesNodes) << "% used)" 
            << std::endl;
     stream << "  leaves = " << numLeaves << " "
            << "(" << bytesTris/1E6  << " MB) "
            << "(" << 100.0*double(bytesTris)/double(bytesTotal) << "% of total) "
-           << "(" << 100.0*leafFill1 << "% used, " << 100.0*leafFill4 << "% used)" 
+      //           << "(" << 100.0*leafFill1 << "% used, " << 100.0*leafFill4 << "% used)" 
            << std::endl;
-    //stream << "  vertices = " << numVertices << " "
-    //       << "(" << bytesVertices/1E6 << " MB) " 
-    //       << "(" << 100.0*double(bytesVertices)/double(bytesTotal) << "% of total) "
-    //       << "(" << 100.0*12.0f/float(sizeof(Vec3fa)) << "% used)" 
-    //       << std::endl;
     return stream.str();
   }
 

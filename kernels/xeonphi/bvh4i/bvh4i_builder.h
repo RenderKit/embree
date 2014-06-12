@@ -23,7 +23,7 @@
 #include "bvh4i/bvh4i.h"
 #include "bvh4i_statistics.h"
 
-#define BVH_NODE_PREALLOC_FACTOR                 1.15f
+#define BVH_NODE_PREALLOC_FACTOR                 0.8f
 
 // TODO: 
 // - MINIMAL ALLOCATION FOR EMPTY SCENES
