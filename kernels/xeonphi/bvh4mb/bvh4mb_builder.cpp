@@ -255,7 +255,8 @@ namespace embree
 	unsigned int accel_entries = ref.items();
 	unsigned int accel_offset  = ref.offsetIndex(); // ???
 	BBox3fa leaf_bounds = empty;
-	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)accel + accel_offset;
+	//BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)accel + accel_offset;
+	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)ref.leaf<8>(accel);
 	for (size_t i=0;i<accel_entries;i++)
 	  {
 	    leaf_bounds.extend( accelMB[i].t1.bounds() );
