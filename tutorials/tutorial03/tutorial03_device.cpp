@@ -102,6 +102,8 @@ void error_handler(const RTCError code, const int8* str)
   abort();
 }
 
+Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
+
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
 {
@@ -113,6 +115,7 @@ extern "C" void device_init (int8* cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
+  //renderPixel = renderPixelEyeLight;	
 }
 
 RTCScene convertScene(ISPCScene* scene_in)
@@ -130,28 +133,9 @@ RTCScene convertScene(ISPCScene* scene_in)
     /* create a triangle mesh */
     unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
 
-#if 1
+#if !defined(__XEON_PHI__)
     /* share vertex buffer */
     rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa      ));
-    //rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
-
-    /* set triangles */
-    Triangle* triangles = (Triangle*) rtcMapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
-    for (int j=0; j<mesh->numTriangles; j++) {
-      triangles[j].v0 = mesh->triangles[j].v0;
-      triangles[j].v1 = mesh->triangles[j].v1;
-      triangles[j].v2 = mesh->triangles[j].v2;
-    }
-    rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
-
-#elif 0
-    Vec3fa* positions = new Vec3fa[mesh->numVertices+1];
-    for (int j=0; j<mesh->numVertices; j++) {
-      positions[j].x = mesh->positions[j].x;
-      positions[j].y = mesh->positions[j].y;
-      positions[j].z = mesh->positions[j].z;
-    }
-    rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, positions, 0, sizeof(Vec3fa));
     rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
 #else
 
@@ -196,12 +180,13 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
   
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(0.0f);
-
+  Vec3fa Ns = Vec3fa(0.0f);
 
 #if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
   ISPCMesh* mesh = g_ispc_scene->meshes[ray.geomID];
@@ -211,13 +196,12 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   int materialID = tri->materialID;
 
   /* interpolate shading normal */
-  Vec3fa Ns;
   if (mesh->normals) {
     Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
     Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
     Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
     float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-    Ns = w*n0 + u*n1 + v*n2;
+    Vec3fa Ns = w*n0 + u*n1 + v*n2;
     Ns = normalize(Ns);
   } else {
     Ns = ray.Ng;
@@ -226,7 +210,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 #else
 
   int materialID = 0;
-  Vec3fa Ns = Vec3fa(0.0f);
   foreach_unique (geomID in ray.geomID) 
   {
     ISPCMesh* mesh = g_ispc_scene->meshes[geomID];
@@ -262,7 +245,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   color = color*dot(ray.dir,Nf);   // FIXME: *=
   return color;
 }
-
 
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,

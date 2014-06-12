@@ -23,16 +23,6 @@ struct DifferentialGeometry
   Vec3f Ns;
 };
 
-struct Sample3f
-{
-  Vec3f v;
-  float pdf;
-};
-
-inline Sample3f make_Sample3f(const Vec3f v, const float pdf) { // FIXME: &
-  Sample3f s; s.v = v; s.pdf = pdf; return s;
-}
-
 inline RTCRay make_Ray(const Vec3f& org, const Vec3f& dir, const float tnear, const float tfar)
 {
   RTCRay ray;
@@ -48,7 +38,7 @@ inline RTCRay make_Ray(const Vec3f& org, const Vec3f& dir, const float tnear, co
 }
 
 /*! Cosine weighted hemisphere sampling. Up direction is the z direction. */
-inline Sample3f cosineSampleHemisphere(const float u, const float v) 
+inline Sample3f CosineSampleHemisphere(const float u, const float v) 
 {
   const float phi = 2.0f * (float)pi * u;
   const float cosTheta = sqrt(v), sinTheta = sqrt(1.0f - v);
@@ -56,15 +46,15 @@ inline Sample3f cosineSampleHemisphere(const float u, const float v)
 }
 
 /*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
-inline Sample3f cosineSampleHemisphere(const float& u, const float& v, const Vec3f& N) 
+inline Sample3f CosineSampleHemisphere(const float& u, const float& v, const Vec3f& N) 
 {
-  const Sample3f v = cosineSampleHemisphere(u,v);
-  return make_Sample3f(frame(N)*v.v,v.pdf);
+  const Sample3f s = CosineSampleHemisphere(u,v);
+  return make_Sample3f(frame(N)*s.v,s.pdf);
 }
 
 /*! Uniform sampling of spherical cone. Cone direction is the z
  *  direction. */
-inline Sample3f uniformSampleCone(const float u, const float v, const float angle) {
+inline Sample3f UniformSampleCone(const float u, const float v, const float angle) {
   const float phi = (float)(2.0f * M_PI) * u;
   const float cosTheta = 1.0f - v*(1.0f - cos(angle));
   const float sinTheta = cos2sin(cosTheta);
@@ -72,8 +62,8 @@ inline Sample3f uniformSampleCone(const float u, const float v, const float angl
 }
 
 /*! Uniform sampling of spherical cone. Cone direction is provided as argument. */
-inline Sample3f uniformSampleCone(const float u, const float v, const float angle, const Vec3f N) { // FIXME: &
-  const Sample3f s = uniformSampleCone(u,v,angle);
+inline Sample3f UniformSampleCone(const float u, const float v, const float angle, const Vec3f N) { // FIXME: &
+  const Sample3f s = UniformSampleCone(u,v,angle);
   return make_Sample3f(frame(N)*s.v,s.pdf);
 }
 
@@ -111,24 +101,24 @@ struct ISPCMesh
 
 struct ISPCAmbientLight
 {
-  Vec3f L;                  //!< radiance of ambient light
+  Vec3fa L;                  //!< radiance of ambient light
 };
 
 inline Vec3f AmbientLight__eval(const uniform ISPCAmbientLight& light, const Vec3f& wo) {
-  return light.L;
+  return make_Vec3f(light.L);
 }
 
 inline Vec3f AmbientLight__sample(const uniform ISPCAmbientLight& light, const DifferentialGeometry& dg, varying Sample3f& wi, varying float& tMax, varying const Vec2f& s) 
 {
-  wi = cosineSampleHemisphere(s.x,s.y,dg.Ns);
+  wi = CosineSampleHemisphere(s.x,s.y,dg.Ns);
   tMax = 1e20f;
-  return light.L;
+  return make_Vec3f(light.L);
 }
 
 struct ISPCPointLight
 {
-  Vec3f P;                  //!< position of point light
-  Vec3f I;                  //!< radiant intensity of point light
+  Vec3fa P;                  //!< position of point light
+  Vec3fa I;                  //!< radiant intensity of point light
 };
 
 varying Vec3f PointLight__sample(const uniform ISPCPointLight& light, 
@@ -137,17 +127,17 @@ varying Vec3f PointLight__sample(const uniform ISPCPointLight& light,
                                  varying float& tMax,
                                  varying const Vec2f& s) 
 {
-  Vec3f d = light.P - dg.P;
+  Vec3f d = make_Vec3f(light.P) - dg.P;
   float distance = length(d);
   wi = make_Sample3f(d*rcp(distance), distance*distance);
   tMax = distance;
-  return light.I;
+  return make_Vec3f(light.I);
 }
 
 struct ISPCDirectionalLight
 {
-  Vec3f D;                  //!< Light direction
-  Vec3f E;                  //!< Irradiance (W/m^2)
+  Vec3fa D;                  //!< Light direction
+  Vec3fa E;                  //!< Irradiance (W/m^2)
 };
 
 varying Vec3f DirectionalLight__sample(const uniform ISPCDirectionalLight& light, 
@@ -156,15 +146,15 @@ varying Vec3f DirectionalLight__sample(const uniform ISPCDirectionalLight& light
                                        varying float& tMax,
                                        varying const Vec2f& s) 
 {
-  wi = make_Sample3f(neg(normalize(light.D)),1.0f); 
+  wi = make_Sample3f(neg(normalize(make_Vec3f(light.D))),1.0f); 
   tMax = inf; 
-  return light.E;
+  return make_Vec3f(light.E);
 }
 
 struct ISPCDistantLight
 {
-  Vec3f D;             //!< Light direction
-  Vec3f L;             //!< Radiance (W/(m^2*sr))
+  Vec3fa D;             //!< Light direction
+  Vec3fa L;             //!< Radiance (W/(m^2*sr))
   float halfAngle;     //!< Half illumination angle
   float radHalfAngle;  //!< Half illumination angle in radians
   float cosHalfAngle;  //!< Cosine of half illumination angle
@@ -172,7 +162,7 @@ struct ISPCDistantLight
 
 varying Vec3f DistantLight__eval(const uniform ISPCDistantLight& light, varying const Vec3f& wo) 
 {
-  if (dot(wo,light.D) >= light.cosHalfAngle) return light.L;
+  if (dot(wo,make_Vec3f(light.D)) >= light.cosHalfAngle) return make_Vec3f(light.L);
   return make_Vec3f(0.0f);
 }
 
@@ -182,9 +172,9 @@ varying Vec3f DistantLight__sample(const uniform ISPCDistantLight& light,
                                    varying float& tMax,
                                    varying const Vec2f& s) 
 {
-  wi = uniformSampleCone(s.x,s.y,light.radHalfAngle,light.D);
+  wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,make_Vec3f(light.D));
   tMax = 1e20f;
-  return light.L;
+  return make_Vec3f(light.L);
 }
 
 struct ISPCScene
@@ -315,15 +305,40 @@ inline Vec3f Matte__eval(const int& materialID, const Vec3f& wo, const Different
 
 inline Vec3f Matte__sample(const int& materialID, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi, const Vec2f& s) 
 {
-  wi = cosineSampleHemisphere(s.x,s.y,dg.Ns);
+  wi = CosineSampleHemisphere(s.x,s.y,dg.Ns);
   return Matte__eval(materialID, wo, dg, wi.v);
 }
 
-inline float frand(int& seed) {
-  seed = 1103515245 * seed + 12345;
-  seed = 235543534 * seed + 2341233;
-  seed = 43565 * seed + 2332443;
-  return (seed & 0xFFFF)/(float)0xFFFF;
+/* for details about this random number generator see: P. L'Ecuyer,
+   "Maximally Equidistributed Combined Tausworthe Generators",
+   Mathematics of Computation, 65, 213 (1996), 203--213:
+   http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps */
+
+struct rnd_state {
+  unsigned int s1, s2, s3, s4;
+};
+
+unsigned int irand(rnd_state& state)
+{
+  #define TAUSWORTHE(s,a,b,c,d) ((s&c)<<d) ^ (((s <<a) ^ s)>>b)
+  state.s1 = TAUSWORTHE(state.s1,  6U, 13U, 4294967294U, 18U);
+  state.s2 = TAUSWORTHE(state.s2,  2U, 27U, 4294967288U,  2U);
+  state.s3 = TAUSWORTHE(state.s3, 13U, 21U, 4294967280U,  7U);
+  state.s4 = TAUSWORTHE(state.s4,  3U, 12U, 4294967168U, 13U);
+  return (state.s1 ^ state.s2 ^ state.s3 ^ state.s4);
+} 
+
+void init_rnd_state(rnd_state& state, int x, int y, int z, int w)
+{
+  state.s1 = x*13;
+  state.s2 = y*276;
+  state.s3 = z*78689;
+  state.s4 = w*183837438;
+  irand(state);
+}
+
+inline float frand(rnd_state& state) {
+  return (float)(irand(state) & 0xFFFFFFF)/(float)0xFFFFFFFUL;
 }
 
 inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
@@ -331,7 +346,7 @@ inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-Vec3f renderPixelSeed(float x, float y, int& seed, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelFunction(float x, float y, rnd_state& state, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* radiance accumulator and weight */
   Vec3f L = make_Vec3f(0.0f);
@@ -397,7 +412,7 @@ Vec3f renderPixelSeed(float x, float y, int& seed, const uniform Vec3f& vx, cons
     /* iterate over ambient lights */
     for (uniform size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
-      Vec3f Ll = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi,tMax,make_Vec2f(frand(seed),frand(seed)));
+      Vec3f Ll = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi,tMax,make_Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
       RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
@@ -408,7 +423,7 @@ Vec3f renderPixelSeed(float x, float y, int& seed, const uniform Vec3f& vx, cons
     /* iterate over point lights */
     for (uniform size_t i=0; i<g_ispc_scene->numPointLights; i++)
     {
-      Vec3f Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,make_Vec2f(frand(seed),frand(seed)));
+      Vec3f Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,make_Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
       RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
@@ -419,7 +434,7 @@ Vec3f renderPixelSeed(float x, float y, int& seed, const uniform Vec3f& vx, cons
     /* iterate over directional lights */
     for (uniform size_t i=0; i<g_ispc_scene->numDirectionalLights; i++)
     {
-      Vec3f Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,make_Vec2f(frand(seed),frand(seed)));
+      Vec3f Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,make_Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
       RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
@@ -430,8 +445,7 @@ Vec3f renderPixelSeed(float x, float y, int& seed, const uniform Vec3f& vx, cons
     /* iterate over distant lights */
     for (uniform size_t i=0; i<g_ispc_scene->numDistantLights; i++)
     {
-      Vec3f Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,make_Vec2f(frand(seed),frand(seed)));
-      //print("wi = % % % %\n",wi.v.x,wi.v.y,wi.v.z,wi.pdf);
+      Vec3f Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,make_Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
       RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
@@ -440,7 +454,7 @@ Vec3f renderPixelSeed(float x, float y, int& seed, const uniform Vec3f& vx, cons
     }
 
     /* calculate diffuce bounce */
-    Vec3f c = Matte__sample(materialID,wo, dg, wi, make_Vec2f(frand(seed),frand(seed)));
+    Vec3f c = Matte__sample(materialID,wo, dg, wi, make_Vec2f(frand(state),frand(state)));
     if (wi.pdf <= 0.0f) break;
     Lw = Lw*c/wi.pdf; // FIXME: *=
 
@@ -460,10 +474,13 @@ Vec3f renderPixelSeed(float x, float y, int& seed, const uniform Vec3f& vx, cons
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
-  int seed = 21344*x+121233*y+234532*g_accu_count;
+  rnd_state state;
+  init_rnd_state(state,x,y,x*y,g_accu_count);
+
+  //int state = 21344*x+121233*y+234532*g_accu_count;
   Vec3f L = make_Vec3f(0.0f,0.0f,0.0f);
   //for (uniform int i=0; i<16; i++) {
-  L = L + renderPixelSeed(x,y,seed,vx,vy,vz,p); // FIXME: +=
+  L = L + renderPixelFunction(x,y,state,vx,vy,vz,p); // FIXME: +=
   //}
   //L = L*(1.0f/16.0f);
   return L;

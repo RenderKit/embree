@@ -152,6 +152,7 @@ extern "C" void device_init (int8* cfg)
     const float phi = i*2.0f*float(pi)/numSpheres;
     const float r = 2.0f*float(pi)/numSpheres;
     const Vec3fa p = 2.0f*Vec3fa(sin(phi),0.0f,-cos(phi));
+    //RTCGeometryFlags flags = i%3 == 0 ? RTC_GEOMETRY_STATIC : i%3 == 1 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
     RTCGeometryFlags flags = i%2 ? RTC_GEOMETRY_DEFORMABLE : RTC_GEOMETRY_DYNAMIC;
     //RTCGeometryFlags flags = RTC_GEOMETRY_DEFORMABLE;
     int id = createSphere(flags,p,r);

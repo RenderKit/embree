@@ -67,3 +67,13 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
 Vec3f renderPixelEyeLight(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
 
 #define ALIGNED_STRUCT
+
+struct Sample3f
+{
+  Vec3f v;
+  float pdf;
+};
+
+inline Sample3f make_Sample3f(const Vec3f v, const float pdf) { // FIXME: &
+  Sample3f s; s.v = v; s.pdf = pdf; return s;
+}

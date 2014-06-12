@@ -16,6 +16,57 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+struct DifferentialGeometry
+{
+  Vec3fa P;
+  Vec3fa Ng;
+  Vec3fa Ns;
+};
+
+inline RTCRay Ray(const Vec3fa& org, const Vec3fa& dir, const float tnear, const float tfar)
+{
+  RTCRay ray;
+  ray.org = org;
+  ray.dir = dir;
+  ray.tnear = tnear;
+  ray.tfar = tfar;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = 0;
+  return ray;
+}
+
+/*! Cosine weighted hemisphere sampling. Up direction is the z direction. */
+inline Sample3f CosineSampleHemisphere(const float u, const float v) 
+{
+  const float phi = 2.0f * (float)pi * u;
+  const float cosTheta = sqrt(v), sinTheta = sqrt(1.0f - v);
+  return Sample3f(Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta),cosTheta*(1.0f/(float)pi));
+}
+
+/*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
+inline Sample3f CosineSampleHemisphere(const float& u, const float& v, const Vec3fa& N) 
+{
+  const Sample3f s = CosineSampleHemisphere(u,v);
+  return Sample3f(frame(N)*s.v,s.pdf);
+}
+
+/*! Uniform sampling of spherical cone. Cone direction is the z
+ *  direction. */
+inline Sample3f UniformSampleCone(const float u, const float v, const float angle) {
+  const float phi = (float)(2.0f * M_PI) * u;
+  const float cosTheta = 1.0f - v*(1.0f - cos(angle));
+  const float sinTheta = cos2sin(cosTheta);
+  return Sample3f(Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta), 1.0f/((float)(4.0f*M_PI)*sqr(sin(0.5f*angle))));
+}
+
+/*! Uniform sampling of spherical cone. Cone direction is provided as argument. */
+inline Sample3f UniformSampleCone(const float u, const float v, const float angle, const Vec3fa N) { // FIXME: &
+  const Sample3f s = UniformSampleCone(u,v,angle);
+  return Sample3f(frame(N)*s.v,s.pdf);
+}
+
 struct ISPCTriangle 
 {
   int v0;                /*< first triangle vertex */
@@ -48,12 +99,106 @@ struct ISPCMesh
   int numTriangles;
 };
 
+struct ISPCAmbientLight
+{
+  Vec3fa L;                  //!< radiance of ambient light
+};
+
+inline Vec3fa AmbientLight__eval(const ISPCAmbientLight& light, const Vec3fa& wo) {
+  return Vec3fa(light.L);
+}
+
+inline Vec3fa AmbientLight__sample(const ISPCAmbientLight& light, const DifferentialGeometry& dg, Sample3f& wi, float& tMax, const Vec2f& s) 
+{
+  wi = CosineSampleHemisphere(s.x,s.y,dg.Ns);
+  tMax = 1e20f;
+  return Vec3fa(light.L);
+}
+
+struct ISPCPointLight
+{
+  Vec3fa P;                  //!< position of point light
+  Vec3fa I;                  //!< radiant intensity of point light
+};
+
+Vec3fa PointLight__sample(const ISPCPointLight& light, 
+                                 const DifferentialGeometry& dg, 
+                                 Sample3f& wi,
+                                 float& tMax,
+                                 const Vec2f& s) 
+{
+  Vec3fa d = Vec3fa(light.P) - dg.P;
+  float distance = length(d);
+  wi = Sample3f(d*rcp(distance), distance*distance);
+  tMax = distance;
+  return Vec3fa(light.I);
+}
+
+struct ISPCDirectionalLight
+{
+  Vec3fa D;                  //!< Light direction
+  Vec3fa E;                  //!< Irradiance (W/m^2)
+};
+
+Vec3fa DirectionalLight__sample(const ISPCDirectionalLight& light, 
+                                       const DifferentialGeometry& dg, 
+                                       Sample3f& wi,
+                                       float& tMax,
+                                       const Vec2f& s) 
+{
+  wi = Sample3f(neg(normalize(Vec3fa(light.D))),1.0f); 
+  tMax = inf; 
+  return Vec3fa(light.E);
+}
+
+struct ISPCDistantLight
+{
+  Vec3fa D;             //!< Light direction
+  Vec3fa L;             //!< Radiance (W/(m^2*sr))
+  float halfAngle;     //!< Half illumination angle
+  float radHalfAngle;  //!< Half illumination angle in radians
+  float cosHalfAngle;  //!< Cosine of half illumination angle
+};
+
+Vec3fa DistantLight__eval(const ISPCDistantLight& light, const Vec3fa& wo) 
+{
+  if (dot(wo,Vec3fa(light.D)) >= light.cosHalfAngle) return Vec3fa(light.L);
+  return Vec3fa(0.0f);
+}
+
+Vec3fa DistantLight__sample(const ISPCDistantLight& light,
+                                   const DifferentialGeometry& dg, 
+                                   Sample3f& wi,
+                                   float& tMax,
+                                   const Vec2f& s) 
+{
+  wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,Vec3fa(light.D));
+  tMax = 1e20f;
+  return Vec3fa(light.L);
+}
+
 struct ISPCScene
 {
-  ISPCMesh** meshes;         //!< list of meshes
-  ISPCMaterial* materials;  //!< material list
-  int numMeshes;
-  int numMaterials;
+  ISPCMesh** meshes;   //!< list of meshes
+  ISPCMaterial* materials;     //!< material list
+  int numMeshes;                       //!< number of meshes
+  int numMaterials;                    //!< number of materials
+
+  void** hairsets;
+  int numHairSets;
+  bool animate;
+
+  ISPCAmbientLight* ambientLights; //!< list of ambient lights
+  int numAmbientLights;                    //!< number of ambient lights
+  
+  ISPCPointLight* pointLights;     //!< list of point lights
+  int numPointLights;                      //!< number of point lights
+  
+  ISPCDirectionalLight* dirLights; //!< list of directional lights
+  int numDirectionalLights;                //!< number of directional lights
+
+  ISPCDistantLight* distantLights; //!< list of distant lights
+  int numDistantLights;                    //!< number of distant lights
 };
 
 /* scene data */
@@ -94,9 +239,6 @@ Vec3fa g_accu_vz;
 Vec3fa g_accu_p;
 extern "C" bool g_changed;
 
-/* light */
-Vec3fa AmbientLight__L;
-
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
 {
@@ -114,15 +256,12 @@ extern "C" void device_init (int8* cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
-
-  /* set light */
-  AmbientLight__L = Vec3fa(0.9f,0.9f,0.9f);
 }
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
   /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT,RTC_INTERSECT1);
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
 
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
@@ -157,52 +296,49 @@ RTCScene convertScene(ISPCScene* scene_in)
   return scene_out;
 }
 
-/*! Cosine weighted hemisphere sampling. Up direction is the z direction. */
-inline Vec3fa cosineSampleHemisphere(float& pdf, const float u, const float v) 
-{
-  const float phi = 2.0f * (float)pi * u;
-  const float cosTheta = sqrt(v), sinTheta = sqrt(1.0f - v);
-  pdf = cosTheta*(1.0f/(float)pi);
-  return Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
-}
-
-/*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
-inline Vec3fa cosineSampleHemisphere(float& pdf, const float& u, const float& v, const Vec3fa& N) {
-  return frame(N)*cosineSampleHemisphere(pdf,u,v);
-}
-
-inline Vec3fa AmbientLight__eval(const Vec3fa& Ns, const Vec3fa& wi) {
-  return AmbientLight__L;
-}
-
-inline Vec3fa AmbientLight__sample(const Vec3fa& Ns, 
-                                  Vec3fa& wi,
-                                  float& tMax,
-                                  const Vec2f& s) 
-{
-  float pdf; wi = cosineSampleHemisphere(pdf,s.x,s.y,Ns);
-  tMax = 1e20f;
-  return AmbientLight__L/pdf;
-}
-
-inline Vec3fa Matte__eval(const int& materialID, const Vec3fa& wo, const Vec3fa& Ns, const Vec3fa& wi) 
+inline Vec3fa Matte__eval(const int& materialID, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
 {
   ISPCMaterial* material = &g_ispc_scene->materials[materialID];
   Vec3fa diffuse = Vec3fa(material->Kd);
-  return diffuse * (1.0f/(float)pi) * clamp(dot(wi,Ns),0.0f,1.0f);
+  return diffuse * (1.0f/(float)pi) * clamp(dot(wi,dg.Ns),0.0f,1.0f);
 }
 
-inline Vec3fa Matte__sample(const int& materialID, const Vec3fa& wo, const Vec3fa& Ns, Vec3fa& wi, const Vec2f& s) 
+inline Vec3fa Matte__sample(const int& materialID, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi, const Vec2f& s) 
 {
-  float pdf; wi = cosineSampleHemisphere(pdf,s.x,s.y,Ns);
-  return Matte__eval(materialID, wo, Ns, wi)/pdf;
+  wi = CosineSampleHemisphere(s.x,s.y,dg.Ns);
+  return Matte__eval(materialID, wo, dg, wi.v);
 }
 
-inline float frand(int& seed) {
-  seed = 1103515245 * seed + 12345;
-  seed = 235543534 * seed + 2341233;
-  seed = 43565 * seed + 2332443;
-  return (seed & 0xFFFF)/(float)0xFFFF;
+/* for details about this random number generator see: P. L'Ecuyer,
+   "Maximally Equidistributed Combined Tausworthe Generators",
+   Mathematics of Computation, 65, 213 (1996), 203--213:
+   http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps */
+
+struct rnd_state {
+  unsigned int s1, s2, s3, s4;
+};
+
+unsigned int irand(rnd_state& state)
+{
+  #define TAUSWORTHE(s,a,b,c,d) ((s&c)<<d) ^ (((s <<a) ^ s)>>b)
+  state.s1 = TAUSWORTHE(state.s1,  6U, 13U, 4294967294U, 18U);
+  state.s2 = TAUSWORTHE(state.s2,  2U, 27U, 4294967288U,  2U);
+  state.s3 = TAUSWORTHE(state.s3, 13U, 21U, 4294967280U,  7U);
+  state.s4 = TAUSWORTHE(state.s4,  3U, 12U, 4294967168U, 13U);
+  return (state.s1 ^ state.s2 ^ state.s3 ^ state.s4);
+} 
+
+void init_rnd_state(rnd_state& state, int x, int y, int z, int w)
+{
+  state.s1 = x*13;
+  state.s2 = y*276;
+  state.s3 = z*78689;
+  state.s4 = w*183837438;
+  irand(state);
+}
+
+inline float frand(rnd_state& state) {
+  return (float)(irand(state) & 0xFFFFFFF)/(float)0xFFFFFFFUL;
 }
 
 inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
@@ -210,7 +346,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-Vec3fa renderPixelSeed(float x, float y, int& seed, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+Vec3fa renderPixelFunction(float x, float y, rnd_state& state, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* radiance accumulator and weight */
   Vec3fa L = Vec3fa(0.0f);
@@ -236,16 +372,28 @@ Vec3fa renderPixelSeed(float x, float y, int& seed, const Vec3fa& vx, const Vec3
 
     /* intersect ray with scene */ 
     rtcIntersect(g_scene,ray);
-    Vec3fa Ns = face_forward(ray.dir,normalize(ray.Ng));
-    Vec3fa Ph = ray.org + ray.tfar*ray.dir;
+    const Vec3fa wo = neg(ray.dir);
+    
+    /* invoke environment lights if nothing hit */
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+    {
+      /* iterate over all ambient lights */
+      for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
+        L = L + Lw*AmbientLight__eval(g_ispc_scene->ambientLights[i],wo); // FIXME: +=
 
-    /* shade background with ambient light */
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
-      Vec3fa La = AmbientLight__eval(Ns,neg(ray.dir));
-      L = L + Lw*La; // FIXME: +=
+      /* iteratr over all distant lights */
+      for (size_t i=0; i<g_ispc_scene->numDistantLights; i++)
+        L = L + Lw*DistantLight__eval(g_ispc_scene->distantLights[i],wo); // FIXME: +=
+
       break;
     }
-        
+
+    /* compute differential geometry */
+    DifferentialGeometry dg;
+    dg.P  = ray.org+ray.tfar*ray.dir;
+    dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
+    dg.Ns = face_forward(ray.dir,normalize(ray.Ng)); // FIXME: implement
+
     /* shade all rays that hit something */
 #if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
     int materialID = g_ispc_scene->meshes[ray.geomID]->triangles[ray.primID].materialID; 
@@ -259,39 +407,60 @@ Vec3fa renderPixelSeed(float x, float y, int& seed, const Vec3fa& vx, const Vec3
     }
 #endif
 
-    /* sample ambient light */
-    Vec3fa wi; float tMax;
-    Vec2f s = Vec2f(frand(seed),frand(seed));
-    Vec3fa Ll = AmbientLight__sample(Ns,wi,tMax,s);
-        
-    /* initialize shadow ray */
-    RTCRay shadow;
-    shadow.org = Ph;
-    shadow.dir = wi;
-    shadow.tnear = 0.001f;
-    shadow.tfar = inf;
-    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
-    shadow.primID = RTC_INVALID_GEOMETRY_ID;
-    shadow.mask = -1;
-    shadow.time = 0;
+    Sample3f wi; float tMax;
     
-    /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
-    
-    /* add light contribution */
-    if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
-      Vec3fa Lm = Matte__eval(materialID,neg(ray.dir),Ns,wi);
-      L = L + Lw*Ll*Lm; // FIXME: +=
+    /* iterate over ambient lights */
+    for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
+    {
+      Vec3fa Ll = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
+      if (wi.pdf <= 0.0f) continue;
+      RTCRay shadow = Ray(dg.P,wi.v,0.001f,tMax);
+      rtcOccluded(g_scene,shadow);
+      if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
+      L = L + Lw*Ll/wi.pdf*Matte__eval(materialID,wo,dg,wi.v); // FIXME: +=
+    }
+
+    /* iterate over point lights */
+    for (size_t i=0; i<g_ispc_scene->numPointLights; i++)
+    {
+      Vec3fa Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
+      if (wi.pdf <= 0.0f) continue;
+      RTCRay shadow = Ray(dg.P,wi.v,0.001f,tMax);
+      rtcOccluded(g_scene,shadow);
+      if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
+      L = L + Lw*Ll/wi.pdf*Matte__eval(materialID,wo,dg,wi.v); // FIXME: +=
+    }
+
+    /* iterate over directional lights */
+    for (size_t i=0; i<g_ispc_scene->numDirectionalLights; i++)
+    {
+      Vec3fa Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
+      if (wi.pdf <= 0.0f) continue;
+      RTCRay shadow = Ray(dg.P,wi.v,0.001f,tMax);
+      rtcOccluded(g_scene,shadow);
+      if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
+      L = L + Lw*Ll/wi.pdf*Matte__eval(materialID,wo,dg,wi.v); // FIXME: +=
+    }
+
+    /* iterate over distant lights */
+    for (size_t i=0; i<g_ispc_scene->numDistantLights; i++)
+    {
+      Vec3fa Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
+      if (wi.pdf <= 0.0f) continue;
+      RTCRay shadow = Ray(dg.P,wi.v,0.001f,tMax);
+      rtcOccluded(g_scene,shadow);
+      if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
+      L = L + Lw*Ll/wi.pdf*Matte__eval(materialID,wo,dg,wi.v); // FIXME: +=
     }
 
     /* calculate diffuce bounce */
-    s = Vec2f(frand(seed),frand(seed));
-    Vec3fa c = Matte__sample(materialID,neg(ray.dir), Ns, wi, s);
-    Lw = Lw*c; // FIXME: *=
+    Vec3fa c = Matte__sample(materialID,wo, dg, wi, Vec2f(frand(state),frand(state)));
+    if (wi.pdf <= 0.0f) break;
+    Lw = Lw*c/wi.pdf; // FIXME: *=
 
     /* setup secondary ray */
-    ray.org = Ph;
-    ray.dir = normalize(wi);
+    ray.org = dg.P;
+    ray.dir = normalize(wi.v);
     ray.tnear = 0.001f;
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -305,10 +474,13 @@ Vec3fa renderPixelSeed(float x, float y, int& seed, const Vec3fa& vx, const Vec3
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  int seed = 21344*x+121233*y+234532*g_accu_count;
+  rnd_state state;
+  init_rnd_state(state,x,y,x*y,g_accu_count);
+
+  //int state = 21344*x+121233*y+234532*g_accu_count;
   Vec3fa L = Vec3fa(0.0f,0.0f,0.0f);
   //for (int i=0; i<16; i++) {
-  L = L + renderPixelSeed(x,y,seed,vx,vy,vz,p); // FIXME: +=
+  L = L + renderPixelFunction(x,y,state,vx,vy,vz,p); // FIXME: +=
   //}
   //L = L*(1.0f/16.0f);
   return L;
@@ -337,7 +509,6 @@ void renderTile(int taskIndex, int* pixels,
   {
     /* calculate pixel color */
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
-    //    Vec3fa color = Vec3fa(0.0,0.0,0.0); 
 
     /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];
