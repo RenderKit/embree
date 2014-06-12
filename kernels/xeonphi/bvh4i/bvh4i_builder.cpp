@@ -295,11 +295,16 @@ namespace embree
     if (g_verbose >= 2) {
       double perf = totalNumPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
-      std::cout << BVH4iStatistics(bvh).str();
+      std::cout << getStatistics();
     }
 
   }
 
+
+  std::string BVH4iBuilder::getStatistics()
+  {
+    return BVH4iStatistics<BVH4i::Node>(bvh).str();
+  }
 
   // =======================================================================================================
   // =======================================================================================================

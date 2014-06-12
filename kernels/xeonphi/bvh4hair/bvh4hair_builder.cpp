@@ -1414,4 +1414,10 @@ namespace embree
     DBG(PING);
   }
 
+  std::string BVH4HairBuilder::getStatistics()
+  {
+    return std::string("not implemented");
+  }
+
+
 };

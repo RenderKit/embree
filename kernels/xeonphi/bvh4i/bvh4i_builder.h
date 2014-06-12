@@ -74,6 +74,9 @@ namespace embree
     virtual void storeNodeDataUpdateParentPtrs(void *ptr,
 					       BuildRecord *__restrict__ const br,
 					       const size_t numChildren);
+
+    virtual std::string getStatistics();
+    
   protected:
 
     void allocateMemoryPools(const size_t numPrims, 
@@ -229,6 +232,8 @@ namespace embree
     virtual void storeNodeDataUpdateParentPtrs(void *ptr,
 					       BuildRecord *__restrict__ const br,
 					       const size_t numChildren);
+
+    virtual std::string getStatistics();
 
   protected:
     TASK_FUNCTION(BVH4iBuilderMemoryConservative,createMemoryConservativeAccel);

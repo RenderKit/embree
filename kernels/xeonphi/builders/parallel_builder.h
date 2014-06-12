@@ -62,6 +62,8 @@ namespace embree
 			      const size_t numThreads) = 0;
 
 
+    virtual std::string getStatistics() = 0;
+
   protected:
     Scene* scene;                 //!< input geometry
     size_t numPrimitives;

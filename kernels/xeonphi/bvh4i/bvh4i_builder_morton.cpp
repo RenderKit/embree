@@ -192,7 +192,7 @@ namespace embree
     std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numTotalPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
     std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numTotalPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
     std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numTotalPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
-    std::cout << BVH4iStatistics(bvh).str();
+    std::cout << BVH4iStatistics<BVH4i::Node>(bvh).str();
 
 #else
     DBG(DBG_PRINT(numPrimitives));
@@ -228,7 +228,7 @@ namespace embree
     if (g_verbose >= 2) {
       double perf = numPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
-      std::cout << BVH4iStatistics(bvh).str();
+      std::cout << BVH4iStatistics<BVH4i::Node>(bvh).str();
     }
 #endif
   }

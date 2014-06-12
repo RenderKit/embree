@@ -221,6 +221,25 @@ namespace embree
 	return uload16f_low_uint8(0x7777,upper,mic_f::zero());
       }
 
+      __forceinline bool isPoint(size_t i) const {
+	mic_m m_lane = ((unsigned int)0x7) << (4*i);
+	mic_m m_box  = eq(m_lane,lowerXYZ(),upperXYZ());
+	return (unsigned int)m_box == (unsigned int)m_lane;
+      }
+
+      __forceinline BBox3fa bounds(size_t i) const {
+	assert( i < 4 );
+	const mic_f s = decompress_startXYZ();
+	const mic_f d = decompress_diffXYZ();
+
+	const mic_f decompress_lower_XYZ = decompress_lowerXYZ(s,d);
+	const mic_f decompress_upper_XYZ = decompress_upperXYZ(s,d);
+
+        Vec3fa l = ((Vec3fa*)&decompress_lower_XYZ)[i];
+        Vec3fa u = ((Vec3fa*)&decompress_upper_XYZ)[i];
+        return BBox3fa(l,u);
+      }
+
       __forceinline mic_f decompress_upperXYZ(const mic_f &s, const mic_f &d)  const
       {
 	return s + d * upperXYZ();

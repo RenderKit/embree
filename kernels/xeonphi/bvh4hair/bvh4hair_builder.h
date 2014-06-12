@@ -112,6 +112,8 @@ namespace embree
 			      const size_t threadID, 
 			      const size_t numThreads);
 
+    virtual std::string getStatistics();
+
     void build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event);
 
   protected:
