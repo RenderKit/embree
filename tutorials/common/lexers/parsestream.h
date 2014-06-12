@@ -82,6 +82,13 @@ namespace embree
       return Vec2f(x,y);
     }
 
+    Vec3f getVec3f() {
+      float x = (float)atof(get().c_str());
+      float y = (float)atof(get().c_str());
+      float z = (float)atof(get().c_str());
+      return Vec3f(x,y,z);
+    }
+
     Vec3fa getVec3fa() {
       float x = (float)atof(get().c_str());
       float y = (float)atof(get().c_str());

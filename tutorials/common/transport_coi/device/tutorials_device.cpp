@@ -96,30 +96,56 @@ namespace embree
     }
   };
 
-
   /* ISPC compatible scene */
   struct ISPCScene
   {
     ALIGNED_CLASS;
   public:
-    ISPCScene (int numMeshes, int numMaterials, void* materials_in, int numHairSets)
-      : numMeshes(numMeshes), numMaterials(numMaterials),numHairSets(numHairSets),
-        meshes(NULL), materials(NULL) 
+    ISPCScene (int numMeshes, int numHairSets, 
+               void* materials_in, int numMaterials,
+               void* ambientLights_in, int numAmbientLights,
+               void* pointLights_in, int numPointLights,
+               void* directionalLights_in, int numDirectionalLights,
+               void* distantLights_in, int numDistantLights)
+
+      : meshes(NULL), numMeshes(numMeshes), numHairSets(numHairSets), 
+        materials(NULL), numMaterials(numMaterials),
+        ambientLights(NULL), numAmbientLights(numAmbientLights),
+        pointLights(NULL), numPointLights(numPointLights),
+        directionalLights(NULL), numDirectionalLights(numDirectionalLights),
+        distantLights(NULL), numDistantLights(numDistantLights)
+      {
+        meshes = new ISPCMesh*[numMeshes];
+        for (size_t i=0; i<numMeshes; i++)
+          meshes[i] = NULL;
+
+        hairsets = new ISPCHairSet*[numHairSets];
+        for (size_t i=0; i<numHairSets; i++)
+          hairsets[i] = NULL;
+        
+        materials = new OBJScene::Material[numMaterials];
+        memcpy(materials,materials_in,numMaterials*sizeof(OBJScene::Material));
+
+        ambientLights = new OBJScene::AmbientLight[numAmbientLights];
+        memcpy(ambientLights,ambientLights_in,numAmbientLights*sizeof(OBJScene::AmbientLight));
+
+        pointLights = new OBJScene::PointLight[numPointLights];
+        memcpy(pointLights,pointLights_in,numPointLights*sizeof(OBJScene::PointLight));
+
+        directionalLights = new OBJScene::DirectionalLight[numDirectionalLights];
+        memcpy(directionalLights,directionalLights_in,numDirectionalLights*sizeof(OBJScene::DirectionalLight));
+
+        distantLights = new OBJScene::DistantLight[numDistantLights];
+        memcpy(distantLights,distantLights_in,numDistantLights*sizeof(OBJScene::DistantLight));
+      }
+
+    ~ISPCScene () 
     {
-      meshes = new ISPCMesh*[numMeshes];
-      for (size_t i=0; i<numMeshes; i++)
-        meshes[i] = NULL;
-
-      hairsets = new ISPCHairSet*[numHairSets];
-      for (size_t i=0; i<numHairSets; i++)
-        hairsets[i] = NULL;
-
-      materials = new OBJScene::Material[numMaterials];
-      memcpy(materials,materials_in,numMaterials*sizeof(OBJScene::Material));
-    }
-
-    ~ISPCScene () {
       delete[] materials;
+      delete[] ambientLights;
+      delete[] pointLights;
+      delete[] directionalLights;
+      delete[] distantLights;
 
       if (meshes) {
         for (size_t i=0; i<numMeshes; i++)
@@ -134,9 +160,22 @@ namespace embree
     OBJScene::Material* materials;  //!< material list
     int numMeshes;
     int numMaterials;
+
     ISPCHairSet** hairsets;
     int numHairSets;
     bool animate;
+
+    OBJScene::AmbientLight* ambientLights;
+    int numAmbientLights;
+
+    OBJScene::PointLight* pointLights;
+    int numPointLights;
+
+    OBJScene::DirectionalLight* directionalLights;
+    int numDirectionalLights;
+
+    OBJScene::DistantLight* distantLights;
+    int numDistantLights;
   };
 
   /* scene */
@@ -181,18 +220,11 @@ namespace embree
     assert( in_pMiscData->numTriangles*sizeof(OBJScene::Triangle) == in_pBufferLengths[3] );
     assert( in_pMiscData->numVertices*sizeof(Vec3fa) == in_pBufferLengths[1] );
 
-#define EXTRA_SPACE 2*64
-
+    const size_t EXTRA_SPACE = 2*64;
     mesh->positions = (Vec3fa*)os_malloc(in_pBufferLengths[0]+EXTRA_SPACE);
     mesh->normals   = (Vec3fa*)os_malloc(in_pBufferLengths[1]+EXTRA_SPACE);
     mesh->texcoords = (Vec2f* )os_malloc(in_pBufferLengths[2]+EXTRA_SPACE);
     mesh->triangles = (OBJScene::Triangle*)os_malloc(in_pBufferLengths[3]+EXTRA_SPACE);
-
-    assert( mesh->positions );
-    assert( mesh->normals );
-    assert( mesh->texcoords );
-    assert( mesh->triangles );
-
     memcpy(mesh->positions,in_ppBufferPointers[0],in_pBufferLengths[0]);
     memcpy(mesh->normals  ,in_ppBufferPointers[1],in_pBufferLengths[1]);
     memcpy(mesh->texcoords,in_ppBufferPointers[2],in_pBufferLengths[2]);
@@ -210,16 +242,6 @@ namespace embree
   {
     size_t hairsetID = g_hairsetID++;
     ISPCHairSet* hairset = new ISPCHairSet(in_pMiscData->numHairs,in_pMiscData->numVertices);
-
-#if 0
-    PING;
-    DBG_PRINT(hairsetID);
-    DBG_PRINT(in_pMiscData->numVertices);
-    DBG_PRINT(in_pMiscData->numHairs);
-    DBG_PRINT(in_pBufferLengths[0]);
-    DBG_PRINT(in_pBufferLengths[1]);
-#endif
-
     memcpy(hairset->positions = (Vec3fa*)malloc(in_pBufferLengths[0]),in_ppBufferPointers[0],in_pBufferLengths[0]);
     memcpy(hairset->hairs = (ISPCHair*)malloc(in_pBufferLengths[1]),in_ppBufferPointers[1],in_pBufferLengths[1]);
     g_ispc_scene->hairsets[hairsetID] = hairset;
@@ -234,15 +256,13 @@ namespace embree
                                    uint16_t         in_ReturnValueLength)
   {
     g_meshID = 0;
-#if 0
-    DBG_PRINT(in_pMiscData->numMeshes);
-    DBG_PRINT(in_pMiscData->numMaterials);
-    DBG_PRINT(in_pMiscData->numHairSets);
-#endif
-    g_ispc_scene = new ISPCScene(in_pMiscData->numMeshes,in_pMiscData->numMaterials,in_ppBufferPointers[0],in_pMiscData->numHairSets);
-    //g_ispc_scene->pointLightPosition = in_pMiscData->pointLightPosition;
-    //g_ispc_scene->pointLightIntensity = in_pMiscData->pointLightIntensity;
-    //g_ispc_scene->ambientLightIntensity = in_pMiscData->ambientLightIntensity;
+    g_ispc_scene = new ISPCScene(in_pMiscData->numMeshes,
+                                 in_pMiscData->numHairSets,
+                                 in_ppBufferPointers[0],in_pMiscData->numMaterials,
+                                 in_ppBufferPointers[1],in_pMiscData->numAmbientLights,
+                                 in_ppBufferPointers[2],in_pMiscData->numPointLights,
+                                 in_ppBufferPointers[3],in_pMiscData->numDirectionalLights,
+                                 in_ppBufferPointers[4],in_pMiscData->numDistantLights);
   }
 
   extern "C" void run_pick(uint32_t         in_BufferCount,
