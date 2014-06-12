@@ -854,34 +854,50 @@ namespace embree
 	}
       
 	// === allocated memory for primrefs,nodes, and accel ===
-	const size_t numTopLevelNodes = 512;
+	const size_t sizeNodeInBytes  = sizeof(BVH4i::QuantizedNode);
+	//const size_t sizeNodeInBytes  = sizeof(BVH4i::Node);
+
+	const size_t numTopLevelNodes = 256;
 	const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
-	const size_t size_node     = (numNodes * BVH_NODE_PREALLOC_FACTOR + numTopLevelNodes) * sizeof(BVH4i::Node); 
+	// FIXME too conservative due to global paritioning
+	//const size_t size_node     = (numNodes * BVH_NODE_PREALLOC_FACTOR + numTopLevelNodes) * sizeNodeInBytes + additional_size;
+	const size_t size_node     = size_primrefs + numTopLevelNodes * sizeNodeInBytes; 
+
 	const size_t size_accel    = 0;
 
-	numAllocatedNodes = size_node / sizeof(BVH4i::Node) - numTopLevelNodes;
+	numAllocated64BytesBlocks = size_node / sizeof(mic_i) - numTopLevelNodes;
 	
-	DBG(DBG_PRINT( size_node ));
-	DBG(DBG_PRINT( size_accel ));
+#if DEBUG
+	DBG_PRINT( sizeof(BVH4i::QuantizedNode) );
+	DBG_PRINT( num64BytesBlocksPerNode );
+	DBG_PRINT( numPrims );
+	DBG_PRINT( numNodes );
+	DBG_PRINT( sizeNodeInBytes );
 
-	DBG(DBG_PRINT(numAllocatedNodes));
-	DBG(DBG_PRINT(size_primrefs));
-	DBG(DBG_PRINT(size_node));
-	DBG(DBG_PRINT(size_accel));
+	DBG_PRINT( size_node );
+	DBG_PRINT( size_accel );
+
+	DBG_PRINT(numAllocated64BytesBlocks);
+	DBG_PRINT(size_primrefs);
+	DBG_PRINT(size_node);
+	DBG_PRINT(size_accel);
+	DBG_PRINT( numTopLevelNodes * sizeNodeInBytes );
+	DBG_PRINT( size_node - numTopLevelNodes * sizeNodeInBytes );
+	
+#endif
 
 	// === to do: os_reserve ===
-	prims = (PrimRef*)  os_malloc(size_primrefs);
-	//node  = (BVHNode  *)os_malloc(size_node);
-	node  = (BVH4i::Node  *)os_malloc(size_node);
+	prims = (PrimRef*) os_malloc(size_primrefs);
+	node  = (mic_i  *) os_malloc(size_node);
 
-	accel = (Triangle1*)(node + numTopLevelNodes); // for global paritioning
+	accel = (Triangle1*)((char*)node + numTopLevelNodes * sizeNodeInBytes); // for global paritioning
 
 	assert(prims  != 0);
 	assert(node   != 0);
 	assert(accel  != 0);
 
-	bvh->accel = prims;
-	bvh->qbvh  = (BVH4i::Node*)node;
+	bvh->accel      = prims;
+	bvh->qbvh       = (BVH4i::Node*)node;
 	bvh->size_node  = size_node;
 	bvh->size_accel = size_primrefs;
 	
@@ -892,7 +908,7 @@ namespace embree
   {
     //LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );    
 
-#if 1    
+#if 0    
     BVH4i::Node* bvh4 = (BVH4i::Node*)node;
     std::cout << "SINGLE THREADED CONVERSION TO COMPRESSED LAYOUT" << std::endl;
     DBG_PRINT( numNodes );
@@ -904,6 +920,20 @@ namespace embree
       }
 #endif
   }
+
+  void BVH4iBuilderMemoryConservative::storeNodeDataUpdateParentPtrs(void *ptr,
+								     BuildRecord *__restrict__ const br,
+								     const size_t numChildren)
+  {
+    BVH4i::QuantizedNode *__restrict__ cnode = (BVH4i::QuantizedNode*)ptr;
+    for (size_t i=0;i<numChildren;i++)
+      br[i].parentPtr = &cnode->child(i);
+
+    BVH4i::Node tmp;
+    storeNode(&tmp,br,numChildren);    
+    cnode->init(tmp);
+  }
+
 
   void BVH4iBuilderMemoryConservative::createAccel(const size_t threadIndex, const size_t threadCount)
   {

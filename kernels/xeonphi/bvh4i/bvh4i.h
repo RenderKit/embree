@@ -157,7 +157,7 @@ namespace embree
 	return (unsigned int)m_box == (unsigned int)m_lane;
       }
 
-      __forceinline void setInvalid(size_t i)
+      __forceinline void setInvalid(size_t i) // FIXME
       {
 	lower[i].x = pos_inf;
 	lower[i].y = pos_inf;
@@ -203,8 +203,8 @@ namespace embree
       NodeRef child3;
 
       /*! Returns reference to specified child */
-      __forceinline       NodeRef child(size_t i)       { return ((unsigned int*)this)[3+4*i]; }
-      __forceinline const NodeRef child(size_t i) const { return ((unsigned int*)this)[3+4*i]; }
+      __forceinline       NodeRef &child(size_t i)       { return ((NodeRef*)this)[3+4*i]; }
+      __forceinline const NodeRef &child(size_t i) const { return ((NodeRef*)this)[3+4*i]; }
 
       __forceinline mic_f lowerXYZ() const
       {
@@ -236,7 +236,7 @@ namespace embree
 	return broadcast4to16f(&diff);
       }
 
-      __forceinline void init( const Node &node)
+      __forceinline void init( const Node &node) // FIXME
       {
 	mic_f l0 = node.lowerXYZ(0);
 	mic_f l1 = node.lowerXYZ(1);
@@ -296,7 +296,7 @@ namespace embree
 	const mic_f decompress_lower_XYZ = decompress_lowerXYZ(s,d);
 	const mic_f decompress_upper_XYZ = decompress_upperXYZ(s,d);
 
-#ifdef DEBUG
+#if 0 // DEBUG
 	if ( any(gt(0x7777,decompress_lower_XYZ,node_lowerXYZ)) ) 
 	   { 
 	     DBG_PRINT(node_lowerXYZ);  

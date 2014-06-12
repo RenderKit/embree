@@ -192,16 +192,18 @@ namespace embree
     const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size;
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
-    numAllocatedNodes = size_node / sizeNodeInBytes;
+    numAllocated64BytesBlocks = size_node / sizeof(mic_i);
       
-    DBG(DBG_PRINT(numAllocatedNodes));
-    DBG(DBG_PRINT(sizeNodeInBytes));
-    DBG(DBG_PRINT(sizePrimRefInBytes));
-    DBG(DBG_PRINT(sizeAccelInBytes));
+#if DEBUG
+    DBG_PRINT(numAllocated64BytesBlocks);
+    DBG_PRINT(sizeNodeInBytes);
+    DBG_PRINT(sizePrimRefInBytes);
+    DBG_PRINT(sizeAccelInBytes);
 
-    DBG(DBG_PRINT(size_primrefs));
-    DBG(DBG_PRINT(size_node));
-    DBG(DBG_PRINT(size_accel));
+    DBG_PRINT(size_primrefs);
+    DBG_PRINT(size_node);
+    DBG_PRINT(size_accel);
+#endif
 
     prims = (Bezier1i                 *) os_malloc(size_primrefs); 
     node  = (BVH4Hair::UnalignedNode  *) os_malloc(size_node);
@@ -629,7 +631,7 @@ namespace embree
 #endif
 
     /* node allocator */
-    NodeAllocator alloc(atomicID,numAllocatedNodes);
+    NodeAllocator alloc(atomicID,numAllocated64BytesBlocks);
         
     /* push initial build record to global work stack */
     global_workStack.reset();

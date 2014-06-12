@@ -566,6 +566,8 @@ namespace embree
       const unsigned int currentIndex = localNodeID + localNodeIDs;
 
       if (unlikely(currentIndex >= maxNodes)) {
+	DBG_PRINT(currentIndex);
+	DBG_PRINT(maxNodes);
         FATAL("not enough nodes allocated");
       }
       
