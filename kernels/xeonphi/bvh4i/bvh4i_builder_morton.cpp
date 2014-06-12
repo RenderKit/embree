@@ -42,8 +42,8 @@ namespace embree
 
   __aligned(64) static double dt = 0.0f;
 
-  BVH4iBuilderMorton::BVH4iBuilderMorton (BVH4i* bvh, BuildSource* source, void* geometry)
-  : bvh(bvh), source(source), scene((Scene*)geometry), topLevelItemThreshold(0), encodeShift(0), encodeMask(0), numBuildRecords(0), 
+  BVH4iBuilderMorton::BVH4iBuilderMorton (BVH4i* bvh, void* geometry)
+  : bvh(bvh), scene((Scene*)geometry), topLevelItemThreshold(0), encodeShift(0), encodeMask(0), numBuildRecords(0), 
     morton(NULL), node(NULL), accel(NULL), numGroups(0), numPrimitives(0), numNodes(0), numAllocatedNodes(0), size_morton(0)
   {
   }
@@ -719,7 +719,7 @@ namespace embree
       {
 	prefetch<PFHINT_L1EX>(bptr+4);
 	prefetch<PFHINT_L2EX>(bptr+4*4);
-	convertToBVH4Layout(bptr);
+	convertToBVH4Layout<true>(bptr);
 	evictL1(bptr);
       }
   }
@@ -785,7 +785,7 @@ namespace embree
 
     store4f(&node[current.parentID].lower,bounds_min);
     store4f(&node[current.parentID].upper,bounds_max);
-    node[current.parentID].createLeaf(start,items,items);
+    node[current.parentID].createLeaf(start,items);
     __aligned(64) BBox3fa bounds;
     store4f(&bounds.lower,bounds_min);
     store4f(&bounds.upper,bounds_max);

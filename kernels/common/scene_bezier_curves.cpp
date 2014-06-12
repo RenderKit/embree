@@ -21,9 +21,7 @@ namespace embree
 {
   BezierCurves::BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
     : Geometry(parent,BEZIER_CURVES,numCurves,flags), 
-      mask(-1), built(false), numTimeSteps(numTimeSteps),
-      numCurves(numCurves), needCurves(false),
-      numVertices(numVertices), needVertices(false)
+      mask(-1), numTimeSteps(numTimeSteps), numCurves(numCurves), numVertices(numVertices)
   {
     curves.init(numCurves,sizeof(int));
     for (size_t i=0; i<numTimeSteps; i++) {
@@ -51,42 +49,6 @@ namespace embree
       return;
     }
     this->mask = mask; 
-  }
-
-  void BezierCurves::enable () 
-  {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get enabled");
-      return;
-    }
-    Geometry::enable();
-  }
-
-  void BezierCurves::update () 
-  {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get updated");
-      return;
-    }
-    Geometry::update();
-  }
-
-  void BezierCurves::disable () 
-  {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get disabled");
-      return;
-    }
-    Geometry::disable();
-  }
-
-  void BezierCurves::erase () 
-  {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get deleted");
-      return;
-    }
-    Geometry::erase();
   }
 
   void BezierCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
@@ -172,9 +134,8 @@ namespace embree
 
   void BezierCurves::immutable () 
   {
-    built = true;
-    bool freeCurves    = !needCurves;
-    bool freeVertices  = !(needVertices || parent->needVertices);
+    bool freeCurves    = true; //!parent->needCurves;
+    bool freeVertices  = !parent->needVertices;
     if (freeCurves   ) curves.free();
     if (freeVertices ) vertices[0].free();
     if (freeVertices ) vertices[1].free();

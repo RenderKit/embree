@@ -103,14 +103,14 @@ namespace embree
     };
 
     /*! Constructor. */
-    BVH4iBuilderMorton (BVH4i* bvh, BuildSource* source, void* geometry);
+    BVH4iBuilderMorton (BVH4i* bvh, void* geometry);
 
     /*! Destructor. */
     ~BVH4iBuilderMorton();
 
     /*! creates the builder */
-    static Builder* create (void* accel, BuildSource* source, void* geometry) { 
-      return new BVH4iBuilderMorton((BVH4i*)accel,source,geometry);
+    static Builder* create (void* accel, void* geometry) { 
+      return new BVH4iBuilderMorton((BVH4i*)accel,geometry);
     }
 
     /* build function */
@@ -180,7 +180,6 @@ namespace embree
 
   public:
     BVH4i      * bvh;         //!< Output BVH
-    BuildSource* source;      //!< input geometry
     Scene      * scene;
 
     size_t topLevelItemThreshold;

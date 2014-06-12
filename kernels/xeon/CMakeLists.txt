@@ -49,13 +49,6 @@ ADD_ISPC_LIBRARY(embree SHARED
   ../common/scene_triangle_mesh.cpp
   ../common/scene_bezier_curves.cpp
   
-  builders/heuristic_binning.cpp
-  builders/heuristic_spatial.cpp
-  builders/splitter.cpp
-  builders/splitter_fallback.cpp
-  builders/splitter_parallel.cpp
-  builders/primrefgen_old.cpp
-
   builders/bezierrefgen.cpp 
   builders/primrefgen.cpp
   builders/heuristic_object_partition_unaligned.cpp
@@ -78,7 +71,6 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4/bvh4.cpp
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp
-  bvh4/bvh4_builder.cpp
   bvh4/bvh4_builder2.cpp
   bvh4/bvh4_builder_fast.cpp
   bvh4/bvh4_builder_morton.cpp
@@ -89,7 +81,6 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4/bvh4_statistics.cpp
 
   bvh4mb/bvh4mb.cpp
-  bvh4mb/bvh4mb_builder.cpp
   bvh4mb/bvh4mb_builder2.cpp
   bvh4mb/bvh4mb_intersector1.cpp   
   bvh4mb/bvh4mb_intersector4.cpp

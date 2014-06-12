@@ -620,7 +620,7 @@ namespace embree
     BuildRecord br;
     br.init(global_bounds,0,numPrimitives);
     br.depth       = 1;
-    br.parentID    = 0;
+    //br.parentID    = 0;
 #if ENABLE_AABB_NODES == 1
     BVH4Hair::AlignedNode* aligned_node = (BVH4Hair::AlignedNode*)node;
     br.parentPtr   = &aligned_node[0].ref[0]; 
@@ -990,7 +990,7 @@ namespace embree
     for (size_t i=0; i<numChildren; i++) 
     {
       node[currentIndex].setMatrix(children[i].bounds.geometry, i);
-      children[i].parentID  = currentIndex;
+      //children[i].parentID  = currentIndex;
       children[i].parentPtr = &node[currentIndex].child(i);
       children[i].depth     = current.depth+1;
       createLeaf(children[i],alloc,threadIndex,threadCount);
@@ -1079,7 +1079,7 @@ namespace embree
     for (unsigned int i=0; i<numChildren; i++) 
     {
       current_node->setMatrix(children[i].bounds.geometry,i);
-      children[i].parentID    = currentIndex;
+      //children[i].parentID    = currentIndex;
       children[i].parentPtr   = &current_node->child(i);      
       recurse(children[i],alloc,mode,threadID,numThreads);
     }    
@@ -1181,7 +1181,7 @@ namespace embree
     for (unsigned int i=0; i<numChildren; i++) 
     {
       node[currentIndex].setMatrix(children[i].xfm,children[i].bounds.geometry,i);
-      children[i].parentID    = currentIndex;
+      //children[i].parentID    = currentIndex;
       children[i].parentPtr   = &node[currentIndex].child(i);
       recurseOBB(children[i],alloc,mode,threadID,numThreads);
     }    

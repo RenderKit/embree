@@ -32,6 +32,11 @@ namespace embree
 
   void Geometry::enable () 
   {
+    if (parent->isStatic()) {
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get enabled");
+      return;
+    }
+
     if (isDisabled()) {
       atomic_add(&parent->numIntersectionFilters4,(intersectionFilter4 != NULL) + (occlusionFilter4 != NULL));
       atomic_add(&parent->numIntersectionFilters8,(intersectionFilter8 != NULL) + (occlusionFilter8 != NULL));
@@ -60,6 +65,11 @@ namespace embree
 
   void Geometry::update() 
   {
+    if (parent->isStatic()) {
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get updated");
+      return;
+    }
+
     switch (state) {
     case ENABLING:
       break;
@@ -79,6 +89,11 @@ namespace embree
 
   void Geometry::disable () 
   {
+    if (parent->isStatic()) {
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get disabled");
+      return;
+    }
+
     if (isEnabled()) {
       atomic_sub(&parent->numIntersectionFilters4,(intersectionFilter4 != NULL) + (occlusionFilter4 != NULL));
       atomic_sub(&parent->numIntersectionFilters8,(intersectionFilter8 != NULL) + (occlusionFilter8 != NULL));
@@ -109,6 +124,11 @@ namespace embree
 
   void Geometry::erase () 
   {
+    if (parent->isStatic()) {
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get deleted");
+      return;
+    }
+
     switch (state) {
     case ENABLING:
       state = ERASING;

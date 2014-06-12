@@ -27,9 +27,9 @@ namespace embree
 #define GENERATE_SUBTREES_MAX_TREE_DEPTH 6
 #define SERIAL_REFIT_THRESHOLD 1024
 
-  Builder* BVH4mbBuilder::create (void* accel, BuildSource* source, void* geometry, size_t mode ) 
+  Builder* BVH4mbBuilder::create (void* accel, void* geometry, size_t mode ) 
   { 
-    Builder* builder = new BVH4mbBuilder((BVH4mb*)accel,source,geometry);
+    Builder* builder = new BVH4mbBuilder((BVH4mb*)accel,geometry);
     return builder;
   }
 
@@ -249,6 +249,7 @@ namespace embree
 
   void BVH4mbBuilder::refit(const size_t index)
   {   
+#if 0
     BVHNode& entry = node[index];
     if (unlikely(entry.isLeaf()))
       {
@@ -286,11 +287,14 @@ namespace embree
       parentBounds.extend( next[i] );
 
     *(BBox3fa*)&node[index+4] = parentBounds;    
-
+#else
+    FATAL("HERE");
+#endif
   }    
 
   void BVH4mbBuilder::check_tree(const unsigned index)
   {
+#if 0
     BVHNode& entry = node[index];
     if (unlikely(entry.isLeaf()))
       {
@@ -333,11 +337,14 @@ namespace embree
 	    check_tree(childIndex);
 	  }
       }
-    
+#else
+    FATAL("HERE");
+#endif    
   }
 
   BBox3fa BVH4mbBuilder::refit_subtree(const size_t index)
   {
+#if 0
     BBox3fa local[4];
 
     BVHNode& entry = node[index];
@@ -382,6 +389,9 @@ namespace embree
     store16f_ngo(next + 2,load16f(&local[2]));
     
     return bounds;
+#else
+    FATAL("HERE");
+#endif
     
   }
 
@@ -390,6 +400,7 @@ namespace embree
 
   void BVH4mbBuilder::generate_subtrees(const size_t index,const size_t depth, size_t &subtrees)
   {
+#if 0
     BVHNode& entry = node[index];
 
     if (depth == GENERATE_SUBTREES_MAX_TREE_DEPTH || entry.isLeaf())
@@ -407,11 +418,15 @@ namespace embree
 	const size_t childIndex = childrenID + i;	    	    
 	generate_subtrees(childIndex,depth+1,subtrees);
       }      
+#else
+    FATAL("HERE");
+#endif
   }
 
 
   BBox3fa BVH4mbBuilder::refit_toplevel(const size_t index,const size_t depth)
   {
+#if 0
     BVHNode& entry = node[index];
 
     if (depth == GENERATE_SUBTREES_MAX_TREE_DEPTH || entry.isLeaf())
@@ -444,6 +459,10 @@ namespace embree
     store16f_ngo(next + 2,load16f(&local[2]));
     
     return bounds;
+#else
+    FATAL("HERE");
+#endif
+
   }
 
   __forceinline void convertToBVH4MBLayout(BVHNode *__restrict__ const bptr)

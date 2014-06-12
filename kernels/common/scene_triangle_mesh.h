@@ -16,113 +16,81 @@
 
 #pragma once
 
-#include "common/default.h"
 #include "common/geometry.h"
-#include "common/buildsource.h"
 #include "common/buffer.h"
 
 namespace embree
 {
-    /*! Triangle Mesh */
-    struct TriangleMesh : public Geometry, public BuildSource
+  /*! Triangle Mesh */
+  struct TriangleMesh : public Geometry
+  {
+    struct Triangle {
+      unsigned int v[3];
+    };
+    
+  public:
+    TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps); 
+    
+    /* geometry interface */
+  public:
+    void enabling();
+    void disabling();
+    void setMask (unsigned mask);
+    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
+    void* map(RTCBufferType type);
+    void unmap(RTCBufferType type);
+    void setUserData (void* ptr, bool ispc);
+    void immutable ();
+    bool verify ();
+    
+  public:
+
+    /*! returns number of triangles */
+    __forceinline size_t size() const {
+      return numTriangles;
+    }
+    
+    /*! returns i'th triangle*/
+    __forceinline const Triangle& triangle(size_t i) const {
+      assert(i < numTriangles);
+      return triangles[i];
+    }
+    
+    /*! returns i'th vertex of j'th timestep */
+    __forceinline const Vec3fa& vertex(size_t i, size_t j = 0) const 
     {
-      struct Triangle {
-        unsigned int v[3];
-      };
+      assert(i < numVertices);
+      assert(j < numTimeSteps);
+      return vertices[j][i];
+    }
+    
+    /*! returns the stride in bytes of the triangle buffer */
+    __forceinline size_t getTriangleBufferStride() const {
+      return triangles.getBufferStride();
+    }
 
-    public:
-      TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps); 
-      
-    public:
-      void setMask (unsigned mask);
-      void enable ();
-      void update ();
-      void disable ();
-      void erase ();
-      void immutable ();
-      bool verify ();
-      void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
-      void* map(RTCBufferType type);
-      void unmap(RTCBufferType type);
-      void setUserData (void* ptr, bool ispc);
-
-      void enabling();
-      void disabling();
-
-    public:
-
-      __forceinline size_t size() const {
-	return numTriangles;
-      }
-
-      bool isEmpty () const { 
-        return numTriangles == 0;
-      }
-      
-      size_t groups () const { 
-        return 1;
-      }
-      
-      size_t prims (size_t group, size_t* pnumVertices) const {
-        if (pnumVertices) *pnumVertices = numVertices*numTimeSteps;
-        return numTriangles;
-      }
-
-      const BBox3fa bounds(size_t group, size_t prim) const {
-        return bounds(prim);
-      }
-
-      void bounds(size_t group, size_t begin, size_t end, BBox3fa* bounds_o) const 
-      {
-        BBox3fa b = empty;
-        for (size_t i=begin; i<end; i++) b.extend(bounds(i));
-        *bounds_o = b;
-      }
-
-      void split (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) const;
-
-    public:
-
-
-      __forceinline const Triangle& triangle(size_t i) const {
-        assert(i < numTriangles);
-        return triangles[i];
-      }
-
-      __forceinline const Vec3fa& vertex(size_t i, size_t j = 0) const {
-        assert(i < numVertices);
-        assert(j < 2);
-        return vertices[j][i];
-      }
-
-      __forceinline size_t getTriangleBufferStride() const {
-	return triangles.getBufferStride();
-      }
-
-      __forceinline size_t getVertexBufferStride() const {
-	return vertices[0].getBufferStride();
-      }
-
-      __forceinline BBox3fa bounds(size_t index) const 
-      {
-        const Triangle& tri = triangle(index);
-        const Vec3fa& v0 = vertex(tri.v[0]);
-        const Vec3fa& v1 = vertex(tri.v[1]);
-        const Vec3fa& v2 = vertex(tri.v[2]);
-	return BBox3fa( min(min(v0,v1),v2), max(max(v0,v1),v2) );
-      }
-
-      __forceinline bool anyMappedBuffers() const {
-        return triangles.isMapped() || vertices[0].isMapped() || vertices[1].isMapped();
-      }
-
+    /*! returns the stride in butes of the vertex buffer */
+    __forceinline size_t getVertexBufferStride() const {
+      return vertices[0].getBufferStride();
+    }
+    
+    /*! calculates the bounds of the i'th triangle */
+    __forceinline BBox3fa bounds(size_t i) const 
+    {
+      const Triangle& tri = triangle(i);
+      const Vec3fa& v0 = vertex(tri.v[0]);
+      const Vec3fa& v1 = vertex(tri.v[1]);
+      const Vec3fa& v2 = vertex(tri.v[2]);
+      return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
+    }
+    
 #if defined(__MIC__)
-
-      template<unsigned int HINT=0>
-	__forceinline mic3f getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
+    
+    template<unsigned int HINT=0>
+      __forceinline mic3f getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
       {
 #if !defined(__BUFFER_STRIDE__)
-
+	
 	const float *__restrict__ const vptr0 = (float*)&vertex(tri.v[0],dim);
 	const float *__restrict__ const vptr1 = (float*)&vertex(tri.v[1],dim);
 	const float *__restrict__ const vptr2 = (float*)&vertex(tri.v[2],dim);
@@ -135,34 +103,31 @@ namespace embree
 	const float *__restrict__ const vptr0 = (float*)(base + offset_ptr[0]);
 	const float *__restrict__ const vptr1 = (float*)(base + offset_ptr[1]);
 	const float *__restrict__ const vptr2 = (float*)(base + offset_ptr[2]);
-
+	
 	
 #endif	
 	if (HINT)
-	  {
-	    prefetch<HINT>(vptr1);
-	    prefetch<HINT>(vptr2);
-	  }
-
+	{
+	  prefetch<HINT>(vptr1);
+	  prefetch<HINT>(vptr2);
+	}
+	
 	const mic_f v0 = broadcast4to16f(vptr0);
 	const mic_f v1 = broadcast4to16f(vptr1);
 	const mic_f v2 = broadcast4to16f(vptr2);
 	return mic3f(v0,v1,v2);
       }
-
+    
 #endif
-
-    public:
-      unsigned int mask;                //!< for masking out geometry
-      bool built;                       //!< geometry got built
-      unsigned char numTimeSteps;       //!< number of time steps (1 or 2)
-
-      BufferT<Triangle> triangles;      //!< array of triangles
-      bool needTriangles;               //!< set if triangle array required by acceleration structure
-      size_t numTriangles;              //!< number of triangles
-
-      BufferT<Vec3fa> vertices[2];      //!< vertex array
-      bool needVertices;                //!< set if vertex array required by acceleration structure
-      size_t numVertices;               //!< number of vertices
-    };
+    
+  public:
+    unsigned int mask;                //!< for masking out geometry
+    unsigned char numTimeSteps;       //!< number of time steps (1 or 2)
+    
+    BufferT<Triangle> triangles;      //!< array of triangles
+    size_t numTriangles;              //!< number of triangles
+    
+    BufferT<Vec3fa> vertices[2];      //!< vertex array
+    size_t numVertices;               //!< number of vertices
+  };
 }

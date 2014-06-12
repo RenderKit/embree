@@ -21,9 +21,8 @@ namespace embree
 {
   TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
     : Geometry(parent,TRIANGLE_MESH,numTriangles,flags), 
-      mask(-1), built(false), numTimeSteps(numTimeSteps),
-      numTriangles(numTriangles), needTriangles(false),
-      numVertices(numVertices), needVertices(false)
+      mask(-1), numTimeSteps(numTimeSteps),
+      numTriangles(numTriangles), numVertices(numVertices)
   {
     triangles.init(numTriangles,sizeof(Triangle));
     for (size_t i=0; i<numTimeSteps; i++) {
@@ -44,15 +43,6 @@ namespace embree
     else                   { atomic_add(&parent->numTriangleMeshes2,-1); atomic_add(&parent->numTriangles2,-numTriangles); }
   }
 
-  void TriangleMesh::split (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) const
-  {
-    const TriangleMesh::Triangle& tri = triangle(prim.primID());
-    const Vec3fa& v0 = vertex(tri.v[0]);
-    const Vec3fa& v1 = vertex(tri.v[1]);
-    const Vec3fa& v2 = vertex(tri.v[2]);
-    splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
-  }
-  
   void TriangleMesh::setMask (unsigned mask) 
   {
     if (parent->isStatic() && parent->isBuild()) {
@@ -60,42 +50,6 @@ namespace embree
       return;
     }
     this->mask = mask; 
-  }
-
-  void TriangleMesh::enable () 
-  {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get enabled");
-      return;
-    }
-    Geometry::enable();
-  }
-
-  void TriangleMesh::update () 
-  {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get updated");
-      return;
-    }
-    Geometry::update();
-  }
-
-  void TriangleMesh::disable () 
-  {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get disabled");
-      return;
-    }
-    Geometry::disable();
-  }
-
-  void TriangleMesh::erase () 
-  {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get deleted");
-      return;
-    }
-    Geometry::erase();
   }
 
   void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
@@ -181,9 +135,8 @@ namespace embree
 
   void TriangleMesh::immutable () 
   {
-    built = true;
-    bool freeTriangles = !(needTriangles || parent->needTriangles);
-    bool freeVertices  = !(needVertices  || parent->needVertices);
+    bool freeTriangles = !parent->needTriangles;
+    bool freeVertices  = !parent->needVertices;
     if (freeTriangles) triangles.free();
     if (freeVertices ) vertices[0].free();
     if (freeVertices ) vertices[1].free();

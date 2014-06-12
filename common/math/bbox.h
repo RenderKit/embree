@@ -76,13 +76,16 @@ namespace embree
   template<typename T> __forceinline const T center2(const BBox<T>& box) { return box.lower + box.upper; }
 
   /*! computes the volume of a bounding box */
-  __forceinline float volume( const BBox<Vec3fa>& b ) { return reduce_mul(b.size()); }
+  __forceinline float volume    ( const BBox<Vec3fa>& b ) { return reduce_mul(b.size()); }
+  __forceinline float safeVolume( const BBox<Vec3fa>& b ) { if (b.empty()) return 0.0f; else return volume(b); }
+
   /*! computes the volume of a bounding box */
   __forceinline float volume( const BBox<Vec3f>& b )  { return reduce_mul(b.size()); }
 
   /*! computes the surface area of a bounding box */
   template<typename T> __forceinline const T area( const BBox<Vec2<T> >& b ) { const Vec2<T> d = size(b); return d.x*d.y; }
   __forceinline float     area( const BBox<Vec3fa>& b ) { const Vec3fa d = b.size(); return 2.0f*(d.x*(d.y+d.z)+d.y*d.z); }
+  __forceinline float safeArea( const BBox<Vec3fa>& b ) { if (b.empty()) return 0.0f; else return area(b); }
   __forceinline float halfArea( const BBox<Vec3fa>& b ) { const Vec3fa d = b.size(); return d.x*(d.y+d.z)+d.y*d.z; }
 
   /*! merges bounding boxes and points */

@@ -20,9 +20,6 @@
 #include "bvh4_rotate.h"
 #include "bvh4_statistics.h"
 
-#include "builders/heuristics.h"
-#include "builders/splitter_fallback.h"
-
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
@@ -31,7 +28,11 @@
 #include "geometry/triangle4i.h"
 
 #define ROTATE_TREE 1
+//#if defined __AVX__
+//#define RESTRUCTURE_TREE 1
+//#else
 #define RESTRUCTURE_TREE 0
+//#endif
 
 #include "common/scene_triangle_mesh.h"
 
@@ -279,7 +280,6 @@ namespace embree
 
     void BVH4Builder2::restructureTree(NodeRef& ref, size_t depth)
     {
-      if (depth > 5) return;
       if (ref.isLeaf()) return;
       Node* node = ref.node();
       RestructureNode temp(node);
@@ -346,7 +346,12 @@ namespace embree
     template<bool PARALLEL>
     const Split BVH4Builder2::find(size_t threadIndex, size_t threadCount, size_t depth, PrimRefList& prims, const PrimInfo& pinfo, bool spatial)
     {
-      ObjectPartition::Split osplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,      prims,pinfo,logSAHBlockSize);
+      ObjectPartition::SplitInfo oinfo;
+      ObjectPartition::Split osplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,prims,pinfo,logSAHBlockSize,oinfo);
+      if (spatial) {
+	const BBox3fa overlap = intersect(oinfo.leftBounds,oinfo.rightBounds);
+	if (safeArea(overlap) < 0.2f*safeArea(pinfo.geomBounds)) spatial = false;
+      }
       if (!spatial) {
 	if (osplit.sah == float(inf)) return Split();
 	else return osplit;

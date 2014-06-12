@@ -20,9 +20,6 @@
 //#include "bvh8_rotate.h"
 #include "bvh8_statistics.h"
 
-#include "builders/heuristics.h"
-#include "builders/splitter_fallback.h"
-
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
@@ -111,7 +108,12 @@ namespace embree
     template<bool PARALLEL>
     const Split BVH8Builder2::find(size_t threadIndex, size_t threadCount, size_t depth, PrimRefList& prims, const PrimInfo& pinfo, bool spatial)
     {
-      ObjectPartition::Split osplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,      prims,pinfo,logSAHBlockSize);
+      ObjectPartition::SplitInfo oinfo;
+      ObjectPartition::Split osplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,prims,pinfo,logSAHBlockSize,oinfo);
+      if (spatial) {
+	const BBox3fa overlap = intersect(oinfo.leftBounds,oinfo.rightBounds);
+	if (safeArea(overlap) < 0.2f*safeArea(pinfo.geomBounds)) spatial = false;
+      }
       if (!spatial) {
 	if (osplit.sah == float(inf)) return Split();
 	else return osplit;

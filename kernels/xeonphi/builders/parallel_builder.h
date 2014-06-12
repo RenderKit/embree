@@ -36,9 +36,8 @@ namespace embree
     /*! build mode */
     enum { RECURSE = 1, FILL_LOCAL_QUEUES = 2, BUILD_TOP_LEVEL = 3 };
 
-    ParallelBuilderInterface(BuildSource* source, void* geometry)
-    : source(source), 
-      scene((Scene*)geometry), 
+    ParallelBuilderInterface(void* geometry)
+    : scene((Scene*)geometry), 
       enablePerCoreWorkQueueFill(true),
       enableTaskStealing(true),
       numPrimitives((size_t)-1),
@@ -65,7 +64,6 @@ namespace embree
 
 
   protected:
-    BuildSource* source;          //!< input geometry
     Scene* scene;                 //!< input geometry
     size_t numPrimitives;
     size_t numNodes;
@@ -104,9 +102,7 @@ namespace embree
     ALIGNED_CLASS;
   public:
 
-  ParallelBinnedSAHBuilder(BuildSource* source, void* geometry) : ParallelBuilderInterface(source,geometry)
-      {
-      }
+    ParallelBinnedSAHBuilder (void* geometry) : ParallelBuilderInterface(geometry) {}
 
   protected:
 

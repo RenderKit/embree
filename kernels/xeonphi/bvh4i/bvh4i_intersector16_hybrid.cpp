@@ -25,8 +25,8 @@ namespace embree
   {
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
 
-    template<typename LeafIntersector>
-    void BVH4iIntersector16Hybrid<LeafIntersector>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
+    void BVH4iIntersector16Hybrid<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
@@ -99,16 +99,16 @@ namespace embree
 		    NodeRef curNode = stack_node_single[sindex-1];
 		    sindex--;
             
-		    traverse_single_intersect<false>(curNode,
-						     sindex,
-						     rdir_xyz,
-						     org_rdir_xyz,
-						     min_dist_xyz,
-						     max_dist_xyz,
-						     stack_node_single,
-						     stack_dist_single,
-						     nodes,
-						     leaf_mask);
+		    traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
+									     sindex,
+									     rdir_xyz,
+									     org_rdir_xyz,
+									     min_dist_xyz,
+									     max_dist_xyz,
+									     stack_node_single,
+									     stack_dist_single,
+									     nodes,
+									     leaf_mask);
 	    
 
 		    /* return if stack is empty */
@@ -165,14 +165,38 @@ namespace embree
 #pragma unroll(4)
           for (unsigned int i=0; i<4; i++)
           {
-	    const NodeRef child = node->lower[i].child;
+	    BVH4i::NodeRef child;
+	    mic_f lclipMinX,lclipMinY,lclipMinZ;
+	    mic_f lclipMaxX,lclipMaxY,lclipMaxZ;
 
-            const mic_f lclipMinX = msub(node->lower[i].x,rdir16.x,org_rdir16.x);
-            const mic_f lclipMinY = msub(node->lower[i].y,rdir16.y,org_rdir16.y);
-            const mic_f lclipMinZ = msub(node->lower[i].z,rdir16.z,org_rdir16.z);
-            const mic_f lclipMaxX = msub(node->upper[i].x,rdir16.x,org_rdir16.x);
-            const mic_f lclipMaxY = msub(node->upper[i].y,rdir16.y,org_rdir16.y);
-            const mic_f lclipMaxZ = msub(node->upper[i].z,rdir16.z,org_rdir16.z);
+	    if (!ENABLE_COMPRESSED_BVH4I_NODES)
+	      {
+		child = node->lower[i].child;
+
+		lclipMinX = msub(node->lower[i].x,rdir16.x,org_rdir16.x);
+		lclipMinY = msub(node->lower[i].y,rdir16.y,org_rdir16.y);
+		lclipMinZ = msub(node->lower[i].z,rdir16.z,org_rdir16.z);
+		lclipMaxX = msub(node->upper[i].x,rdir16.x,org_rdir16.x);
+		lclipMaxY = msub(node->upper[i].y,rdir16.y,org_rdir16.y);
+		lclipMaxZ = msub(node->upper[i].z,rdir16.z,org_rdir16.z);
+	      }
+	    else
+	      {
+		BVH4i::QuantizedNode* __restrict__ const compressed_node = (BVH4i::QuantizedNode*)node;
+		child = compressed_node->child(i);
+
+		const mic_f startXYZ = compressed_node->decompress_startXYZ();
+		const mic_f diffXYZ  = compressed_node->decompress_diffXYZ();
+		const mic_f clower   = compressed_node->decompress_lowerXYZ(startXYZ,diffXYZ);
+		const mic_f cupper   = compressed_node->decompress_upperXYZ(startXYZ,diffXYZ);
+
+		lclipMinX = msub(mic_f(clower[4*i+0]),rdir16.x,org_rdir16.x);
+		lclipMinY = msub(mic_f(clower[4*i+1]),rdir16.y,org_rdir16.y);
+		lclipMinZ = msub(mic_f(clower[4*i+2]),rdir16.z,org_rdir16.z);
+		lclipMaxX = msub(mic_f(cupper[4*i+0]),rdir16.x,org_rdir16.x);
+		lclipMaxY = msub(mic_f(cupper[4*i+1]),rdir16.y,org_rdir16.y);
+		lclipMaxZ = msub(mic_f(cupper[4*i+2]),rdir16.z,org_rdir16.z);		
+	      }
 	    
 	    if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
 
@@ -236,8 +260,8 @@ namespace embree
       }
     }
     
-    template<typename LeafIntersector>
-    void BVH4iIntersector16Hybrid<LeafIntersector>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
+    void BVH4iIntersector16Hybrid<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* allocate stack */
       __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
@@ -307,15 +331,15 @@ namespace embree
 		    NodeRef curNode = stack_node_single[sindex-1];
 		    sindex--;
             
-		    traverse_single_occluded<false>(curNode,
-						    sindex,
-						    rdir_xyz,
-						    org_rdir_xyz,
-						    min_dist_xyz,
-						    max_dist_xyz,
-						    stack_node_single,
-						    nodes,
-						    leaf_mask);	    
+		    traverse_single_occluded<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
+									    sindex,
+									    rdir_xyz,
+									    org_rdir_xyz,
+									    min_dist_xyz,
+									    max_dist_xyz,
+									    stack_node_single,
+									    nodes,
+									    leaf_mask);	    
 
 		    /* return if stack is empty */
 		    if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -376,14 +400,38 @@ namespace embree
 #pragma unroll(4)
           for (size_t i=0; i<4; i++)
 	    {
-	      const NodeRef child = node->lower[i].child;
-            
-	      const mic_f lclipMinX = msub(node->lower[i].x,rdir16.x,org_rdir16.x);
-	      const mic_f lclipMinY = msub(node->lower[i].y,rdir16.y,org_rdir16.y);
-	      const mic_f lclipMinZ = msub(node->lower[i].z,rdir16.z,org_rdir16.z);
-	      const mic_f lclipMaxX = msub(node->upper[i].x,rdir16.x,org_rdir16.x);
-	      const mic_f lclipMaxY = msub(node->upper[i].y,rdir16.y,org_rdir16.y);
-	      const mic_f lclipMaxZ = msub(node->upper[i].z,rdir16.z,org_rdir16.z);	    
+	    BVH4i::NodeRef child;
+	    mic_f lclipMinX,lclipMinY,lclipMinZ;
+	    mic_f lclipMaxX,lclipMaxY,lclipMaxZ;
+
+	    if (!ENABLE_COMPRESSED_BVH4I_NODES)
+	      {
+		child = node->lower[i].child;
+
+		lclipMinX = msub(node->lower[i].x,rdir16.x,org_rdir16.x);
+		lclipMinY = msub(node->lower[i].y,rdir16.y,org_rdir16.y);
+		lclipMinZ = msub(node->lower[i].z,rdir16.z,org_rdir16.z);
+		lclipMaxX = msub(node->upper[i].x,rdir16.x,org_rdir16.x);
+		lclipMaxY = msub(node->upper[i].y,rdir16.y,org_rdir16.y);
+		lclipMaxZ = msub(node->upper[i].z,rdir16.z,org_rdir16.z);
+	      }
+	    else
+	      {
+		BVH4i::QuantizedNode* __restrict__ const compressed_node = (BVH4i::QuantizedNode*)node;
+		child = compressed_node->child(i);
+
+		const mic_f startXYZ = compressed_node->decompress_startXYZ();
+		const mic_f diffXYZ  = compressed_node->decompress_diffXYZ();
+		const mic_f clower   = compressed_node->decompress_lowerXYZ(startXYZ,diffXYZ);
+		const mic_f cupper   = compressed_node->decompress_upperXYZ(startXYZ,diffXYZ);
+
+		lclipMinX = msub(mic_f(clower[4*i+0]),rdir16.x,org_rdir16.x);
+		lclipMinY = msub(mic_f(clower[4*i+1]),rdir16.y,org_rdir16.y);
+		lclipMinZ = msub(mic_f(clower[4*i+2]),rdir16.z,org_rdir16.z);
+		lclipMaxX = msub(mic_f(cupper[4*i+0]),rdir16.x,org_rdir16.x);
+		lclipMaxY = msub(mic_f(cupper[4*i+1]),rdir16.y,org_rdir16.y);
+		lclipMaxZ = msub(mic_f(cupper[4*i+2]),rdir16.z,org_rdir16.z);		
+	      }
 
 	      if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
 
@@ -456,11 +504,17 @@ namespace embree
       store16i(m_valid & m_terminated,&ray16.geomID,mic_i::zero());
     }
     
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16HybridMoeller, BVH4iIntersector16Hybrid< Triangle1LeafIntersector<true> >);
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16HybridMoellerNoFilter, BVH4iIntersector16Hybrid< Triangle1LeafIntersector<false> >);
 
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16HybridMoeller, BVH4iIntersector16Hybrid< Triangle1mcLeafIntersector<true> >);
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16HybridMoellerNoFilter, BVH4iIntersector16Hybrid< Triangle1mcLeafIntersector<false> >);
+    typedef BVH4iIntersector16Hybrid< Triangle1LeafIntersector  < true >, false  > Triangle1Intersector16HybridMoellerFilter;
+    typedef BVH4iIntersector16Hybrid< Triangle1LeafIntersector  < false >, false > Triangle1Intersector16HybridMoellerNoFilter;
+    typedef BVH4iIntersector16Hybrid< Triangle1mcLeafIntersector< true >, true  > Triangle1mcIntersector16HybridMoellerFilter;
+    typedef BVH4iIntersector16Hybrid< Triangle1mcLeafIntersector< false >, true > Triangle1mcIntersector16HybridMoellerNoFilter;
+
+
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16HybridMoeller          , Triangle1Intersector16HybridMoellerFilter);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16HybridMoellerNoFilter  , Triangle1Intersector16HybridMoellerNoFilter);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16HybridMoeller        , Triangle1mcIntersector16HybridMoellerFilter);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16HybridMoellerNoFilter, Triangle1mcIntersector16HybridMoellerNoFilter);
 
   }
 }

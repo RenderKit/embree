@@ -63,7 +63,7 @@ namespace embree
 	  o << "begin       " << br.begin << " ";
 	  o << "end         " << br.end << " ";
 	  o << "items       " << br.end-br.begin << " ";
-	  o << "parentID    " << br.parentID << " ";
+	  //o << "parentID    " << br.parentID << " ";
 	  o << "parentPtr   " << br.parentPtr << " ";
 	  o << "flags       " << br.flags << " ";
 	  o << "sArea       " << br.sArea << " ";
@@ -83,8 +83,8 @@ namespace embree
     size_t size_accel;
     size_t size_nodes;
     
-  BVH4HairBuilder(BVH4Hair* bvh, BuildSource* source, void* geometry) 
-    : ParallelBinnedSAHBuilder(source,geometry),
+  BVH4HairBuilder(BVH4Hair* bvh, void* geometry) 
+    : ParallelBinnedSAHBuilder(geometry),
       bvh4hair(bvh),
       prims(NULL),
       node(NULL),

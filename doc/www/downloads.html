@@ -116,7 +116,7 @@ the path to the ispc executable permanently into your PATH.</p>
 <p><pre><code>export PATH=path-to-ispc:$PATH</code></pre></p>
 
 <p>You additionally have to install CMake and the developer version of
-GLUT. Under MaxOS, these dependencies can be installed using
+GLUT. Under Mac OS X, these dependencies can be installed using
 <a href="http://www.macports.org/">MacPorts</a>:</p>
 
 <p><pre><code>sudo port install cmake freeglut</code></pre></p>
@@ -174,21 +174,15 @@ parameters that can be configured:</p>
   <tr><td>RTCORE_SPINLOCKS</td>          <td>Enables faster spinlocks
   for some builders.</td><td>ON (Linux), OFF (Mac OS X, Windows)</td></tr>
 
-  <tr><td>TARGET_SSE2</td>          <td>Enables SSE2 for ISPC tutorials. SSE2 kernels are always build.</td><td>ON</td></tr>
-  <tr><td>TARGET_SSE41</td>         <td>Enables SSE4.1 for kernels and ISPC tutorials.</td><td>ON</td></tr>
-  <tr><td>TARGET_AVX</td>           <td>Enables AVX for kernels and ISPC tutorials.</td><td>ON</td></tr>
-  <tr><td>TARGET_AVX2</td>           <td>Enables AVX2 for kernels and ISPC tutorials.</td><td>ON</td></tr>
-  <tr><td>TARGET_XEON_PHI</td>       <td>Enables generation of Xeon Phi&trade; version of kernels and tutorials.</td><td>OFF</td></tr>
+  <tr><td>XEON_ISA</td>            <td>Select highest ISA on Xeon&trade CPUs (SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, AVX, AVX-I, AVX2)</td><td>AVX2</td></tr>
+  <tr><td>XEON_PHI_ISA</td>        <td>Enables generation of Xeon Phi&trade; version of kernels and tutorials.</td><td>OFF</td></tr>
 </table>
 
 <p>You need at least Intel Compiler 11.1 or GCC 4.4 to enable AVX and
 Intel Compiler 12.1 or GCC 4.7 to enable AVX2. </p>
 
-<p>If the intersection filter feature is not required, some additional
-performance (between 1%-8%) can be achieved when disabling this
-feature at compile time. The buffer stride feature has no impact on
-rendering performance, but disabling can increase performance for
-building spatial hierarchies, in particular on Xeon Phi&trade;.</p>
+<p>Enabling the buffer stride feature reduces performance for
+building spatial hierarchies on Xeon Phi&trade;.</p>
 
  <h2>Compiling Embree on Windows</h2>
 

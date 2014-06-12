@@ -26,11 +26,11 @@ namespace embree
   public:
 
     /*! Constructor. */
-    BVH4iBuilderMortonEnhanced (BVH4i* bvh, BuildSource* source, void* geometry);
+    BVH4iBuilderMortonEnhanced (BVH4i* bvh, void* geometry);
 
     /*! creates the builder */
-    static Builder* create (void* accel, BuildSource* source, void* geometry) { 
-      return new BVH4iBuilderMortonEnhanced((BVH4i*)accel,source,geometry);
+    static Builder* create (void* accel, void* geometry) { 
+      return new BVH4iBuilderMortonEnhanced((BVH4i*)accel,geometry);
     }
 
     /*! parallel task to iterate over the triangles */

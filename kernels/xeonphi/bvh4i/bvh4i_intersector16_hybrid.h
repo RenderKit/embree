@@ -25,7 +25,7 @@ namespace embree
   namespace isa
   {
     /*! BVH4i Traverser. Hybrid single-packet traversal implementation for a BVH4i. */
-    template<typename LeafIntersector>
+    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
       class BVH4iIntersector16Hybrid
     {
       /* shortcuts for frequently used types */

@@ -33,8 +33,7 @@ namespace embree
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
       numTriangleMeshes(0), numTriangleMeshes2(0), numTriangles(0), numTriangles2(0), numBezierCurves(0), numBezierCurves2(0), numUserGeometries1(0), 
-      numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
-      flat_triangle_source_1(this,1), flat_triangle_source_2(this,2), bezier_source_1(this,1)
+      numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0)
   {
     if (g_scene_flags != -1)
       flags = (RTCSceneFlags) g_scene_flags;
@@ -48,7 +47,7 @@ namespace embree
 
     if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
       {
-	if (g_builder == "default") 
+	if (g_tri_builder == "default") 
 	  {
 	    if (isStatic())
 	      {
@@ -68,23 +67,23 @@ namespace embree
 	  }
 	else
 	  {
-	    if (g_builder == "sah" || g_builder == "bvh4i" || g_builder == "bvh4i.sah") {
+	    if (g_tri_builder == "sah" || g_tri_builder == "bvh4i" || g_tri_builder == "bvh4i.sah") {
 	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
 	    }
-	    else if (g_builder == "fast" || g_builder == "morton") {
+	    else if (g_tri_builder == "fast" || g_tri_builder == "morton") {
 	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this));
 	    }
-	    else if (g_builder == "fast_enhanced" || g_builder == "morton.enhanced") {
+	    else if (g_tri_builder == "fast_enhanced" || g_tri_builder == "morton.enhanced") {
 	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this));
 	    }
-	    else if (g_builder == "high_quality" || g_builder == "presplits") {
+	    else if (g_tri_builder == "high_quality" || g_tri_builder == "presplits") {
 	      accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this));
 	    }
-	    else if (g_builder == "compact" ||
-		     g_builder == "memory_conservative") {
+	    else if (g_tri_builder == "compact" ||
+		     g_tri_builder == "memory_conservative") {
 	      accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this));
 	    }
-	    else throw std::runtime_error("unknown builder "+g_builder+" for BVH4i<Triangle1>");
+	    else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4i<Triangle1>");
 	  }
       }
     else throw std::runtime_error("unknown accel "+g_tri_accel);

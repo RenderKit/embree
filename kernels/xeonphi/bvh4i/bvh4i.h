@@ -457,26 +457,20 @@ namespace embree
       return bvhItemOffset(lower.a);
     }
 
-    __forceinline unsigned int getData() const {
-      return upper.a;
-    }
-
     __forceinline void createLeaf(const unsigned int offset,
-				  const unsigned int entries,
-				  const unsigned int data = 0) 
+				  const unsigned int entries) 
     {
       assert(entries <= 4);
       lower.a = (offset << BVH_INDEX_SHIFT) | BVH_LEAF_MASK | entries;
-      upper.a = data;
+      upper.a = 0;
     }
 
     __forceinline void createNode(const unsigned int index,			  
-				  const unsigned int children = 0, 
-				  const unsigned int items_subtree = 0) {
+				  const unsigned int children) {
       assert((index %2) == 0);
 
       lower.a = (index << BVH_INDEX_SHIFT) | children;
-      upper.a = items_subtree;
+      upper.a = 0;
     }
 
     
@@ -541,6 +535,7 @@ namespace embree
     return final;
   }
 
+  template<bool REMOVE_NUM_CHILDREN>
   __forceinline void convertToBVH4Layout(BVHNode *__restrict__ const bptr)
   {
     const mic_i box01 = load16i((int*)(bptr + 0));
@@ -559,8 +554,10 @@ namespace embree
     const mic_i min_d_node = qbvhCreateNode(childID,mic_i::zero());
     const mic_i min_d_leaf = box_min0123; //(box_min0123 ^ BVH_LEAF_MASK) | QBVH_LEAF_MASK;
     const mic_i min_d      = select(min_d_mask,min_d_leaf,min_d_node);
-    const mic_i bvh4_min   = select(0x7777,box_min0123,min_d);
+    
+    const mic_i bvh4_min = (REMOVE_NUM_CHILDREN) ? select(0x7777,box_min0123,min_d) : box_min0123;
     const mic_i bvh4_max   = box_max0123;
+
     store16i_nt((int*)(bptr + 0),bvh4_min);
     store16i_nt((int*)(bptr + 2),bvh4_max);
   }

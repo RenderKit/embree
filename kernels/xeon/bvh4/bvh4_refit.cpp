@@ -15,9 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4_refit.h"
-#include "bvh4_builder.h"
 #include "bvh4_statistics.h"
-#include "builders/heuristics.h"
 #include "sys/tasklogger.h"
 
 #include <algorithm>

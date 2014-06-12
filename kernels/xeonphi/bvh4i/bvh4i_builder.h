@@ -45,11 +45,11 @@ namespace embree
     };
  
     /*! Constructor. */
-    BVH4iBuilder (BVH4i* bvh, BuildSource* source, void* geometry);
+    BVH4iBuilder (BVH4i* bvh, void* geometry);
     virtual ~BVH4iBuilder();
 
     /*! creates the builder */
-    static Builder* create (void* accel, BuildSource* source, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
+    static Builder* create (void* accel, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
 
     /* virtual function interface */
     virtual void build            (const size_t threadIndex, const size_t threadCount);
@@ -72,16 +72,16 @@ namespace embree
 
     void allocateMemoryPools(const size_t numPrims, 
 			     const size_t numNodes,
-			     const size_t sizeNodeInBytes  = sizeof(BVHNode),
+			     const size_t sizeNodeInBytes  = sizeof(BVH4i::Node),
 			     const size_t sizeAccelInBytes = sizeof(Triangle1));
 
     void checkBuildRecord(const BuildRecord &current);
-    void checkLeafNode(const BVHNode &node);
+    void checkLeafNode(const BVH4i::NodeRef &ref, const BBox3fa &bounds);
 
 
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
     TASK_FUNCTION(BVH4iBuilder,createTriangle1Accel);
-    TASK_FUNCTION(BVH4iBuilder,convertToSOALayout);
+    //TASK_FUNCTION(BVH4iBuilder,convertToSOALayout);
     TASK_FUNCTION(BVH4iBuilder,parallelBinningGlobal);
     TASK_FUNCTION(BVH4iBuilder,parallelPartitioningGlobal);
     TASK_RUN_FUNCTION(BVH4iBuilder,build_parallel);
@@ -131,24 +131,50 @@ namespace embree
 
     /* work record handling */
   protected:
-    PrimRef*   prims;
-    BVHNode*   node;
-    Triangle1* accel;
+    PrimRef*       prims;
+    BVH4i::Node*   node;
+    Triangle1*     accel;
 
-    size_t numNodesToAllocate;
     size_t size_prims;
 
 
 
-    /*! node allocation */
-    __forceinline unsigned int allocNode(int size)
+    __forceinline void createLeaf(void *ptr,
+				  const unsigned int offset,
+				  const unsigned int entries) 
     {
-      const unsigned int currentIndex = atomicID.add(size);
-      if (unlikely(currentIndex >= numAllocatedNodes)) {
-        FATAL("not enough nodes allocated");
-      }
-      return currentIndex;
+      assert(entries <= 4);
+      *(unsigned int *)ptr = (offset << BVH_INDEX_SHIFT) | BVH_LEAF_MASK | entries;
     }
+
+    __forceinline void createNode(void *ptr,
+				  const unsigned int index,			  
+				  const unsigned int children = 0) {
+      *(unsigned int *)ptr = ((index*4) << BVH_INDEX_SHIFT);
+    }
+
+    __forceinline void storeNode(void *ptr,
+				 BuildRecord *__restrict__ const br,
+				 const size_t numChildren)
+    {
+      mic_f lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
+      mic_f upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+      BVH4i::Node &bvh = *(BVH4i::Node*)ptr;
+
+      mic_m m_lane = 0xf;
+      for (size_t i=0;i<numChildren;i++)
+	{
+	  const mic_f b_lower = broadcast4to16f(&br[i].bounds.geometry.lower);
+	  const mic_f b_upper = broadcast4to16f(&br[i].bounds.geometry.upper);
+	  lower = select(m_lane,b_lower,lower);
+	  upper = select(m_lane,b_upper,upper);
+	  m_lane = (unsigned int)m_lane << 4;
+	}      
+
+      store16f_ngo((mic_f*)ptr+0,lower);
+      store16f_ngo((mic_f*)ptr+1,upper);            
+    }
+
 
   };
 
@@ -157,9 +183,7 @@ namespace embree
   {
   public:
 
-  BVH4iBuilderPreSplits(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
-      {
-      }
+    BVH4iBuilderPreSplits (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry) {}
 
     virtual void allocateData   (const size_t threadCount, const size_t newNumPrimitives);
     virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
@@ -188,10 +212,8 @@ namespace embree
   class BVH4iBuilderMemoryConservative : public BVH4iBuilder
   {
   public:
-
-  BVH4iBuilderMemoryConservative(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
-      {
-      }
+    
+    BVH4iBuilderMemoryConservative (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry) {}
 
     virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives);
     virtual void printBuilderName();
@@ -209,9 +231,7 @@ namespace embree
   class BVH4iBuilderVirtualGeometry : public BVH4iBuilder
   {
   public:
-  BVH4iBuilderVirtualGeometry(BVH4i* bvh, BuildSource* source, void* geometry) : BVH4iBuilder(bvh,source,geometry) 
-      {
-      }
+    BVH4iBuilderVirtualGeometry (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry) {}
 
     virtual size_t getNumPrimitives();
     virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
@@ -223,5 +243,4 @@ namespace embree
     TASK_FUNCTION(BVH4iBuilderVirtualGeometry,createVirtualGeometryAccel);
     
   };
-
 }
