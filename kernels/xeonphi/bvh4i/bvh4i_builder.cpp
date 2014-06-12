@@ -1075,32 +1075,21 @@ namespace embree
     split_fallback(prims,record0,children[0],children[1]);
     split_fallback(prims,record1,children[2],children[3]);
 
+
     /* allocate next four nodes */
     size_t numChildren = 4;
+    for (size_t i=0; i<numChildren; i++) 
+      children[i].depth = current.depth+1;
+
     const size_t currentIndex = alloc.get(numNodesToAllocate);
 
-    //node[current.parentID].createNode(currentIndex,numChildren);
     createNode(current.parentPtr,currentIndex,numChildren);
 
-    for (size_t i=0; i<numChildren; i++) 
-	children[i].depth = current.depth+1;
-
-#if 0    
-    /* recurse into each child */
-    for (size_t i=0; i<numChildren; i++) 
-      {
-	node[currentIndex+i].lower = children[i].bounds.geometry.lower;
-	node[currentIndex+i].upper = children[i].bounds.geometry.upper;
-      }
-
-    for (size_t i=0; i<numChildren; i++) 
-      children[i].parentPtr = &node[currentIndex+i].lower.a;
-#else
     storeBVH4iNodesAndSetParentPtrs(&node[currentIndex],children,numChildren);
     
-#endif
+    /* recursivly create leaves */
     for (size_t i=0; i<numChildren; i++) 
-	createLeaf(children[i],alloc,threadIndex,threadCount);
+      createLeaf(children[i],alloc,threadIndex,threadCount);
   }  
 
   __forceinline void BVH4iBuilder::recurse(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads)
@@ -1176,24 +1165,12 @@ namespace embree
 
     /* allocate next four nodes */
     const size_t currentIndex = alloc.get(numNodesToAllocate);
-    //node[current.parentID].createNode(currentIndex,numChildren);
-
-    createNode(current.parentPtr,currentIndex,numChildren);
 
     /* init used/unused nodes */
-    
-#if 0
-    for (unsigned int i=0; i<numChildren; i++) 
-      {
-	node[currentIndex+i].lower = (Vec3fa) children[i].bounds.geometry.lower;
-	node[currentIndex+i].upper = (Vec3fa) children[i].bounds.geometry.upper;
-      }
 
-    for (unsigned int i=0; i<numChildren; i++) 
-	children[i].parentPtr = &node[currentIndex+i].lower.a;
-#else
+    createNode(current.parentPtr,currentIndex,numChildren);
+    
     storeBVH4iNodesAndSetParentPtrs(&node[currentIndex],children,numChildren);
-#endif
 
     /* recurse into each child */
 
@@ -1440,14 +1417,10 @@ namespace embree
     TIMER(std::cout << "task_computePrimRefs " << 1000. * msec << " ms" << std::endl << std::flush);
     TIMER(msec = getSeconds());
 
-    /* allocate and initialize root node */
-    // atomicID.reset(numNodesToAllocate);
-    // node[0].lower = global_bounds.geometry.lower;
-    // node[0].upper = global_bounds.geometry.upper;
-
+    /* initialize atomic node counter */
     atomicID.reset(0);
 
-    /* update BVH4 */
+    /* update BVH4i */
     bvh->bounds = global_bounds.geometry;
     
     /* create initial build record */
