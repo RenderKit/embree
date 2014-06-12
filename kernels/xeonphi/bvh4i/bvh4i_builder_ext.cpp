@@ -829,12 +829,9 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives;
-	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE: 16;
-	const size_t numNodes = max((size_t)((numPrims+3)/4),minAllocNodes);
+	const size_t minAllocNodes = numPrims ? (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE : 16;
 
-	if (g_verbose >= 2)
-	  {
-	  };
+	const size_t numNodes = max((size_t)((numPrims+3)/4),minAllocNodes);
 
 	const size_t additional_size = 16 * CACHELINE_SIZE;
 
@@ -861,7 +858,7 @@ namespace embree
 	const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
 	// FIXME too conservative due to global paritioning
 	//const size_t size_node     = (numNodes * BVH_NODE_PREALLOC_FACTOR + numTopLevelNodes) * sizeNodeInBytes + additional_size;
-	const size_t size_node     = size_primrefs + numTopLevelNodes * sizeNodeInBytes; 
+	const size_t size_node     = max(size_primrefs + numTopLevelNodes * sizeNodeInBytes,(size_t)(numNodes * BVH_NODE_PREALLOC_FACTOR + numTopLevelNodes) * sizeNodeInBytes); 
 
 	const size_t size_accel    = 0;
 

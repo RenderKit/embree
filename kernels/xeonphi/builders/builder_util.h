@@ -559,6 +559,15 @@ namespace embree
     {
       localNodeID  = counter.add(LOCAL_NODE_IDS);
       localNodeIDs = 0;      
+
+      const unsigned int currentIndex = localNodeID + localNodeIDs;
+
+      if (unlikely(currentIndex >= maxNodes)) {
+	DBG_PRINT(currentIndex);
+	DBG_PRINT(maxNodes);	
+        FATAL("AtomicIDBlock: not enough nodes allocated");
+      }
+
     }
 
     __forceinline unsigned int get(const unsigned int i) 

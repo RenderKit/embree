@@ -207,7 +207,7 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives+4;
-	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE: 16;
+	const size_t minAllocNodes = numPrims ? (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE : 16;
 	const size_t numNodes = max((size_t)((numPrims+3)/4 * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
 	allocateMemoryPools(numPrims,numNodes);
       }
@@ -216,7 +216,7 @@ namespace embree
   
   void BVH4iBuilder::printBuilderName()
   {
-    std::cout << "building BVH4i with SAH builder (MIC) ... " << std::endl;    
+    std::cout << "building BVH4i with SAH builder (MIC) ... " << std::endl;        
   }
 
 
@@ -230,7 +230,12 @@ namespace embree
     DBG(DBG_PRINT(totalNumPrimitives));
 
     /* print builder name */
-    if (unlikely(g_verbose >= 1)) printBuilderName();
+    if (unlikely(g_verbose >= 1)) {
+      printBuilderName();
+      DBG_PRINT(totalNumPrimitives);
+      DBG_PRINT(threadCount);
+
+    }
 
     /* allocate BVH data */
     allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);

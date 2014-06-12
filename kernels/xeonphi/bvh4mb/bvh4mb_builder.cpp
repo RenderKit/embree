@@ -186,7 +186,7 @@ namespace embree
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
 	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
-	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(BVH4mb::Triangle01));
+	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4mb::Node),sizeof(BVH4mb::Triangle01));
       }
   }
 
@@ -247,14 +247,13 @@ namespace embree
     LockStepTaskScheduler::dispatchTask( task_createTriangle01AccelMB, this, threadIndex, threadCount );   
   }
 
-  void BVH4mbBuilder::refit(const size_t index)
+  BBox3fa BVH4mbBuilder::refit(const BVH4i::NodeRef &ref)
   {   
-#if 0
-    BVHNode& entry = node[index];
-    if (unlikely(entry.isLeaf()))
+    //BVHNode& entry = node[index];
+    if (unlikely(ref.isLeaf()))
       {
-	unsigned int accel_entries = entry.items();
-	unsigned int accel_offset  = entry.itemListOfs();
+	unsigned int accel_entries = ref.items();
+	unsigned int accel_offset  = ref.offsetIndex(); // ???
 	BBox3fa leaf_bounds = empty;
 	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)accel + accel_offset;
 	for (size_t i=0;i<accel_entries;i++)
@@ -262,34 +261,42 @@ namespace embree
 	    leaf_bounds.extend( accelMB[i].t1.bounds() );
 	  }
 
-	*(BBox3fa*)&node[index+4] = leaf_bounds;
-	return;
+	//*(BBox3fa*)&node[index+4] = leaf_bounds;
+	return leaf_bounds;
       }
 
-    const size_t childrenID = entry.firstChildID();
-    const size_t items    = entry.items();
-    BBox3fa* next = (BBox3fa*)&node[childrenID+4];
-    
-    /* init second node */
-    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-    store16f_ngo(next + 0,init_node);
-    store16f_ngo(next + 2,init_node);
-
+    BVH4mb::Node *n = (BVH4mb::Node*)ref.node(node);
     BBox3fa parentBounds = empty;
-    for (size_t i=0; i<items; i++) 
-    {
-      const size_t childIndex = childrenID + i;	    	    
-      refit(childIndex);
-    }      
+    for (size_t i=0;i<4;i++)
+      {
+	if (n->child(i) == BVH4i::invalidNode) break;
+	BBox3fa bounds = refit( n->child(i) );
+	*(Vec3fa*)&n->lower_t1[i] = bounds.lower;
+	*(Vec3fa*)&n->upper_t1[i] = bounds.upper;
+	parentBounds.extend( bounds );
+      }
+    return parentBounds;
+    // const size_t childrenID = entry.firstChildID();
+    // const size_t items    = entry.items();
+    // BBox3fa* next = (BBox3fa*)&node[childrenID+4];
+    
+    // /* init second node */
+    // const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    // store16f_ngo(next + 0,init_node);
+    // store16f_ngo(next + 2,init_node);
 
+    // BBox3fa parentBounds = empty;
+    // for (size_t i=0; i<items; i++) 
+    // {
+    //   const size_t childIndex = childrenID + i;	    	    
+    //   refit(childIndex);
+    // }      
 
-    for (size_t i=0; i<items; i++) 
-      parentBounds.extend( next[i] );
+    // for (size_t i=0; i<items; i++) 
+    //   parentBounds.extend( next[i] );
 
-    *(BBox3fa*)&node[index+4] = parentBounds;    
-#else
-    FATAL("HERE");
-#endif
+    // *(BBox3fa*)&node[index+4] = parentBounds;    
+    
   }    
 
   void BVH4mbBuilder::check_tree(const unsigned index)
@@ -530,8 +537,9 @@ namespace embree
     TIMER(double msec = 0.0);
 
 
-    if (numPrimitives < SERIAL_REFIT_THRESHOLD)
+    if (numPrimitives < SERIAL_REFIT_THRESHOLD || 1)
       {
+	std::cout << "WORKAROUND" << std::endl;
 	refit(0);
       }
     else
@@ -572,7 +580,7 @@ namespace embree
 
     TIMER(msec = getSeconds());
 
-    LockStepTaskScheduler::dispatchTask( task_convertToSOALayoutMB, this, threadIndex, threadCount );    
+    //LockStepTaskScheduler::dispatchTask( task_convertToSOALayoutMB, this, threadIndex, threadCount );    
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "convert " << 1000. * msec << " ms" << std::endl << std::flush);

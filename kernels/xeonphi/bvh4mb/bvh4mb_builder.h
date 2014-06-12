@@ -31,9 +31,8 @@ namespace embree
     /*! creates the builder */
     static Builder* create (void* accel, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
 
-    BVH4mbBuilder (BVH4mb* bvh, void* geometry) : BVH4iBuilder((BVH4i*)bvh,geometry) 
+    BVH4mbBuilder (BVH4mb* bvh, void* geometry) : BVH4iBuilder((BVH4i*)bvh,geometry,sizeof(BVH4mb::Node)) 
     {
-      //numNodesToAllocate = 2 * BVH4i::N; /* 8 */
     }
     virtual void computePrimRefs  (const size_t threadIndex, const size_t threadCount);
     virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives);
@@ -49,7 +48,7 @@ namespace embree
     BBox3fa refit_subtree (const size_t index);
 
     /* scalar refit */
-    void refit(const size_t index);
+    BBox3fa refit(const BVH4i::NodeRef &ref);
 
     /* check bvh4mb tree */
     void check_tree(const unsigned index);
