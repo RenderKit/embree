@@ -72,16 +72,16 @@ namespace embree
 
     void allocateMemoryPools(const size_t numPrims, 
 			     const size_t numNodes,
-			     const size_t sizeNodeInBytes  = sizeof(BVHNode),
+			     const size_t sizeNodeInBytes  = sizeof(BVH4i::Node),
 			     const size_t sizeAccelInBytes = sizeof(Triangle1));
 
     void checkBuildRecord(const BuildRecord &current);
-    void checkLeafNode(const BVHNode &node);
+    void checkLeafNode(const BVH4i::NodeRef &ref, const BBox3fa &bounds);
 
 
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
     TASK_FUNCTION(BVH4iBuilder,createTriangle1Accel);
-    TASK_FUNCTION(BVH4iBuilder,convertToSOALayout);
+    //TASK_FUNCTION(BVH4iBuilder,convertToSOALayout);
     TASK_FUNCTION(BVH4iBuilder,parallelBinningGlobal);
     TASK_FUNCTION(BVH4iBuilder,parallelPartitioningGlobal);
     TASK_RUN_FUNCTION(BVH4iBuilder,build_parallel);
@@ -132,7 +132,8 @@ namespace embree
     /* work record handling */
   protected:
     PrimRef*   prims;
-    BVHNode*   node;
+    BVH4i::Node*   node;
+
     Triangle1* accel;
 
     size_t numNodesToAllocate;
@@ -162,8 +163,7 @@ namespace embree
     __forceinline void createNode(void *ptr,
 				  const unsigned int index,			  
 				  const unsigned int children = 0) {
-      assert((index %2) == 0);
-      *(unsigned int *)ptr = (index << BVH_INDEX_SHIFT);
+      *(unsigned int *)ptr = ((index*4) << BVH_INDEX_SHIFT);
     }
 
     __forceinline void storeBVH4iNodesAndSetParentPtrs(void *ptr,

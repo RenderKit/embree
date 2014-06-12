@@ -91,7 +91,8 @@ namespace embree
       node(NULL), 
       accel(NULL), 
       size_prims(0),
-      numNodesToAllocate(BVH4i::N)      
+      numNodesToAllocate(1)
+      //numNodesToAllocate(BVH4i::N)            
   {
     DBG(PING);
   }
@@ -155,16 +156,16 @@ namespace embree
     const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size;
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
-    numAllocatedNodes = size_node / sizeof(BVHNode);
+    numAllocatedNodes = size_node / sizeof(BVH4i::Node);
       
     DBG(DBG_PRINT(numAllocatedNodes));
     DBG(DBG_PRINT(size_primrefs));
     DBG(DBG_PRINT(size_node));
     DBG(DBG_PRINT(size_accel));
 
-    prims = (PrimRef  *) os_malloc(size_primrefs); 
-    node  = (BVHNode  *) os_malloc(size_node);
-    accel = (Triangle1*) os_malloc(size_accel);
+    prims = (PrimRef  *)     os_malloc(size_primrefs); 
+    node  = (BVH4i::Node  *) os_malloc(size_node);
+    accel = (Triangle1*)     os_malloc(size_accel);
 
     assert(prims  != 0);
     assert(node   != 0);
@@ -174,8 +175,8 @@ namespace embree
     // memset(node,0,size_node);
     // memset(accel,0,size_accel);
 
-    bvh->accel = accel;
-    bvh->qbvh  = (BVH4i::Node*)node;
+    bvh->accel      = accel;
+    bvh->qbvh       = node;
     bvh->size_node  = size_node;
     bvh->size_accel = size_accel;
 
@@ -196,8 +197,8 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives+4;
-	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
-	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE: 16;
+	const size_t numNodes = max((size_t)((numPrims+3)/4 * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
 	allocateMemoryPools(numPrims,numNodes);
       }
   }
@@ -397,42 +398,23 @@ namespace embree
     global_bounds.extend_atomic(bounds);    
   }
 
-  __forceinline void reorderBVHNodesOnArea(BVHNode *__restrict__ const bptr)
-  {
-    float node_area[4];
-    size_t valid = 0;
-    for (size_t i=0;i<4;i++) 
-      {
-	node_area[i] = area( bptr[i] );
-	if ( node_area[i] > 0.0f) valid++;
-      }
-    
-    if (valid == 0) return;
+  // void BVH4iBuilder::convertToSOALayout(const size_t threadID, const size_t numThreads)
+  // {
+  //   const size_t startID = (threadID+0)*numNodes/numThreads;
+  //   const size_t endID   = (threadID+1)*numNodes/numThreads;
 
-    assert( valid >= 2 );
-    for (size_t j=0;j<valid-1;j++)
-      for (size_t i=j+1;i<valid;i++)
-	if ( area( bptr[j] ) > area( bptr[i] ) )
-	  std::swap( bptr[j], bptr[i] );
-  }
+  //   BVHNode  * __restrict__  bptr = ( BVHNode*)node + startID*4;
 
-  void BVH4iBuilder::convertToSOALayout(const size_t threadID, const size_t numThreads)
-  {
-    const size_t startID = (threadID+0)*numNodes/numThreads;
-    const size_t endID   = (threadID+1)*numNodes/numThreads;
+  //   BVH4i::Node * __restrict__  qptr = (BVH4i::Node*)node + startID;
 
-    BVHNode  * __restrict__  bptr = ( BVHNode*)node + startID*4;
-
-    BVH4i::Node * __restrict__  qptr = (BVH4i::Node*)node + startID;
-
-    for (unsigned int n=startID;n<endID;n++,qptr++,bptr+=4)
-      {
-	prefetch<PFHINT_L1EX>(bptr+4);
-	prefetch<PFHINT_L2EX>(bptr+4*4);
-	convertToBVH4Layout<false>(bptr);
-	evictL1(bptr);
-      }
-  }
+  //   for (unsigned int n=startID;n<endID;n++,qptr++,bptr+=4)
+  //     {
+  // 	prefetch<PFHINT_L1EX>(bptr+4);
+  // 	prefetch<PFHINT_L2EX>(bptr+4*4);
+  // 	convertToBVH4Layout<false>(bptr);
+  // 	evictL1(bptr);
+  //     }
+  // }
 
   void BVH4iBuilder::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
   {
@@ -1061,7 +1043,7 @@ namespace embree
       createLeaf(current.parentPtr,current.begin,current.items());
 
 #if defined(DEBUG)
-      //checkLeafNode(node[current.parentID]);      
+      checkLeafNode(*(BVH4i::NodeRef*)current.parentPtr,current.bounds.geometry);      
 #endif
       return;
     }
@@ -1179,13 +1161,13 @@ namespace embree
 
   }
 
-  void BVH4iBuilder::checkLeafNode(const BVHNode &entry)
+  void BVH4iBuilder::checkLeafNode(const BVH4i::NodeRef &ref, const BBox3fa &bounds)
   {
-    if (!entry.isLeaf())
+    if (!ref.isLeaf())
       FATAL("no leaf");
 
-    unsigned int accel_entries = entry.items();
-    unsigned int accel_offset  = entry.itemListOfs();
+    unsigned int accel_entries = ref.items();
+    unsigned int accel_offset  = ref.offsetIndex();
 
     BBox3fa leaf_prim_bounds = empty;
     for (size_t i=0;i<accel_entries;i++)
@@ -1194,35 +1176,12 @@ namespace embree
 	leaf_prim_bounds.extend( prims[ accel_offset + i ].upper );
       }
 
-    if (!(subset(leaf_prim_bounds,entry))) 
+    if (!(subset(leaf_prim_bounds,bounds))) 
       {
-	DBG_PRINT(entry);
+	DBG_PRINT(bounds);
 	DBG_PRINT(leaf_prim_bounds);
 	FATAL("checkLeafNode");
       }
-
-#if 0
-    BBox3fa leaf_tri_bounds = empty;
-    for (size_t i=0;i<accel_entries;i++)
-      {
-	const unsigned int geomID = prims[ accel_offset + i ].geomID();
-	const unsigned int primID = prims[ accel_offset + i ].primID();
-
-	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-	const TriangleMesh::Triangle & tri = mesh->triangle(primID);
-
-	leaf_tri_bounds.extend( mesh->vertex(tri.v[0]) );
-	leaf_tri_bounds.extend( mesh->vertex(tri.v[1]) );
-	leaf_tri_bounds.extend( mesh->vertex(tri.v[2]) );	
-      }
-
-    if (!(subset(leaf_prim_bounds,entry) && subset(leaf_tri_bounds,leaf_prim_bounds))) 
-      {
-	DBG_PRINT(leaf_prim_bounds);
-	DBG_PRINT(leaf_tri_bounds);
-	FATAL("check build record");
-      }
-#endif
 
   }
 
@@ -1458,7 +1417,7 @@ namespace embree
     /* now process all created subtasks on multiple threads */    
     TIMER(msec = getSeconds());    
     LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
-    numNodes = atomicID >> 2;
+    numNodes = atomicID;
     DBG(DBG_PRINT(atomicID));
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);

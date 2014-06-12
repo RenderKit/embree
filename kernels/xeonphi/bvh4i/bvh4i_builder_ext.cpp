@@ -71,7 +71,6 @@ namespace embree
   void BVH4iBuilderPreSplits::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
     DBG(PING);
-    DBG(sleep(1));
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
     DBG(DBG_PRINT(numPrimitives));
@@ -80,8 +79,8 @@ namespace embree
       {
 	const size_t preSplitPrims = (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR);
 	const size_t numPrims = numPrimitives+preSplitPrims;
-	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
-	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE: 16;
+	const size_t numNodes = max((size_t)((numPrims+3)/4 * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
 
 	numMaxPrimitives = numPrims;
 	numMaxPreSplits  = numPrims - numPrimitives;
@@ -830,8 +829,8 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives;
-	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
-	const size_t numNodes = max((size_t)(numPrims),minAllocNodes);
+	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE: 16;
+	const size_t numNodes = max((size_t)((numPrims+3)/4),minAllocNodes);
 
 	if (g_verbose >= 2)
 	  {
@@ -855,12 +854,12 @@ namespace embree
 	}
       
 	// === allocated memory for primrefs,nodes, and accel ===
-	const size_t numTopLevelNodes = 1024;
+	const size_t numTopLevelNodes = 512;
 	const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
-	const size_t size_node     = (numNodes * BVH_NODE_PREALLOC_FACTOR + numTopLevelNodes) * sizeof(PrimRef); 
+	const size_t size_node     = (numNodes * BVH_NODE_PREALLOC_FACTOR + numTopLevelNodes) * sizeof(BVH4i::Node); 
 	const size_t size_accel    = 0;
 
-	numAllocatedNodes = size_node / sizeof(BVHNode) - numTopLevelNodes;
+	numAllocatedNodes = size_node / sizeof(BVH4i::Node) - numTopLevelNodes;
 	
 	DBG(DBG_PRINT( size_node ));
 	DBG(DBG_PRINT( size_accel ));
@@ -872,7 +871,9 @@ namespace embree
 
 	// === to do: os_reserve ===
 	prims = (PrimRef*)  os_malloc(size_primrefs);
-	node  = (BVHNode  *)os_malloc(size_node);
+	//node  = (BVHNode  *)os_malloc(size_node);
+	node  = (BVH4i::Node  *)os_malloc(size_node);
+
 	accel = (Triangle1*)(node + numTopLevelNodes); // for global paritioning
 
 	assert(prims  != 0);
@@ -889,7 +890,7 @@ namespace embree
 
   void BVH4iBuilderMemoryConservative::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
   {
-    LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );    
+    //LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );    
 
 #if 1    
     BVH4i::Node* bvh4 = (BVH4i::Node*)node;

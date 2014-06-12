@@ -23,8 +23,8 @@ namespace embree
   {
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
 
-    template<typename LeafIntersector>
-    void BVH4iIntersector16Chunk<LeafIntersector>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
+    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
+    void BVH4iIntersector16Chunk<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
       /* near and node stack */
       __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
@@ -70,16 +70,16 @@ namespace embree
 	        
 	const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
-	traverse_chunk_intersect(curNode,
-				 curDist,
-				 rdir,
-				 org_rdir,
-				 ray_tnear,
-				 ray_tfar,
-				 sptr_node,
-				 sptr_dist,
-				 nodes,
-				 leaf_mask);            		    	
+	traverse_chunk_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
+								curDist,
+								rdir,
+								org_rdir,
+								ray_tnear,
+								ray_tfar,
+								sptr_node,
+								sptr_dist,
+								nodes,
+								leaf_mask);            		    	
         
         /* return if stack is empty */
         if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -94,8 +94,8 @@ namespace embree
       }
     }
 
-    template<typename LeafIntersector>
-    void BVH4iIntersector16Chunk<LeafIntersector>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
+    template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES>
+    void BVH4iIntersector16Chunk<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
     {
       /* allocate stack */
       __aligned(64) mic_f    stack_dist[3*BVH4i::maxDepth+1];
@@ -144,17 +144,17 @@ namespace embree
 
 	const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
-	traverse_chunk_occluded(curNode,
-				curDist,
-				rdir,
-				org_rdir,
-				ray_tnear,
-				ray_tfar,
-				m_active,
-				sptr_node,
-				sptr_dist,
-				nodes,
-				leaf_mask);            		    	
+	traverse_chunk_occluded<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
+							       curDist,
+							       rdir,
+							       org_rdir,
+							       ray_tnear,
+							       ray_tfar,
+							       m_active,
+							       sptr_node,
+							       sptr_dist,
+							       nodes,
+							       leaf_mask);            		    	
         
         /* return if stack is empty */
         if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -171,15 +171,19 @@ namespace embree
       store16i(valid & m_terminated,&ray.geomID,0);
     }
 
+    typedef BVH4iIntersector16Chunk< Triangle1LeafIntersector  < true  >, false > Triangle1Intersector16ChunkMoellerFilter;
+    typedef BVH4iIntersector16Chunk< Triangle1LeafIntersector  < false >, false > Triangle1Intersector16ChunkMoellerNoFilter;
+    typedef BVH4iIntersector16Chunk< Triangle1mcLeafIntersector< true  >, true  > Triangle1mcIntersector16ChunkMoellerFilter;
+    typedef BVH4iIntersector16Chunk< Triangle1mcLeafIntersector< false >, true  > Triangle1mcIntersector16ChunkMoellerNoFilter;
+    typedef BVH4iIntersector16Chunk< VirtualLeafIntersector    < true  >, false > VirtualIntersector16ChunkMoellerFilter;
+    typedef BVH4iIntersector16Chunk< VirtualLeafIntersector    < false >, false > VirtualIntersector16ChunkMoellerNoFilter;
 
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16ChunkMoeller,           BVH4iIntersector16Chunk< Triangle1LeafIntersector<true> >);
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16ChunkMoellerNoFilter,   BVH4iIntersector16Chunk< Triangle1LeafIntersector<false> >);
-
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16ChunkMoeller, BVH4iIntersector16Chunk< Triangle1mcLeafIntersector<true> >);
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16ChunkMoellerNoFilter, BVH4iIntersector16Chunk< Triangle1mcLeafIntersector<false> >);
-
-    DEFINE_INTERSECTOR16   (BVH4iVirtualGeometryIntersector16        , BVH4iIntersector16Chunk< VirtualLeafIntersector<true> >);
-    DEFINE_INTERSECTOR16   (BVH4iVirtualGeometryIntersector16NoFilter, BVH4iIntersector16Chunk< VirtualLeafIntersector<false> >);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16ChunkMoeller          , Triangle1Intersector16ChunkMoellerFilter);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16ChunkMoellerNoFilter  , Triangle1Intersector16ChunkMoellerNoFilter);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16ChunkMoeller        , Triangle1mcIntersector16ChunkMoellerFilter);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16ChunkMoellerNoFilter, Triangle1mcIntersector16ChunkMoellerNoFilter);
+    DEFINE_INTERSECTOR16   (BVH4iVirtualGeometryIntersector16        , VirtualIntersector16ChunkMoellerFilter);
+    DEFINE_INTERSECTOR16   (BVH4iVirtualGeometryIntersector16NoFilter, VirtualIntersector16ChunkMoellerNoFilter);
 
 
   }

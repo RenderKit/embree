@@ -370,6 +370,7 @@ namespace embree
       }
   }
 
+  template<bool DECOMPRESS_NODE>
   __forceinline void traverse_chunk_intersect(BVH4i::NodeRef &curNode,
 					      mic_f &curDist,
 					      const mic3f &rdir,
@@ -403,14 +404,38 @@ namespace embree
 #pragma unroll(4)
 	for (unsigned int i=0; i<4; i++)
           {
-	    const BVH4i::NodeRef child = node->lower[i].child;
+	    BVH4i::NodeRef child;
+	    mic_f lclipMinX,lclipMinY,lclipMinZ;
+	    mic_f lclipMaxX,lclipMaxY,lclipMaxZ;
 
-            const mic_f lclipMinX = msub(node->lower[i].x,rdir.x,org_rdir.x);
-            const mic_f lclipMinY = msub(node->lower[i].y,rdir.y,org_rdir.y);
-            const mic_f lclipMinZ = msub(node->lower[i].z,rdir.z,org_rdir.z);
-            const mic_f lclipMaxX = msub(node->upper[i].x,rdir.x,org_rdir.x);
-            const mic_f lclipMaxY = msub(node->upper[i].y,rdir.y,org_rdir.y);
-            const mic_f lclipMaxZ = msub(node->upper[i].z,rdir.z,org_rdir.z);
+	    if (!DECOMPRESS_NODE)
+	      {
+		child = node->lower[i].child;
+
+		lclipMinX = msub(node->lower[i].x,rdir.x,org_rdir.x);
+		lclipMinY = msub(node->lower[i].y,rdir.y,org_rdir.y);
+		lclipMinZ = msub(node->lower[i].z,rdir.z,org_rdir.z);
+		lclipMaxX = msub(node->upper[i].x,rdir.x,org_rdir.x);
+		lclipMaxY = msub(node->upper[i].y,rdir.y,org_rdir.y);
+		lclipMaxZ = msub(node->upper[i].z,rdir.z,org_rdir.z);
+	      }
+	    else
+	      {
+		BVH4i::QuantizedNode* __restrict__ const compressed_node = (BVH4i::QuantizedNode*)node;
+		child = compressed_node->child(i);
+
+		const mic_f startXYZ = compressed_node->decompress_startXYZ();
+		const mic_f diffXYZ  = compressed_node->decompress_diffXYZ();
+		const mic_f clower   = compressed_node->decompress_lowerXYZ(startXYZ,diffXYZ);
+		const mic_f cupper   = compressed_node->decompress_upperXYZ(startXYZ,diffXYZ);
+
+		lclipMinX = msub(mic_f(clower[4*i+0]),rdir.x,org_rdir.x);
+		lclipMinY = msub(mic_f(clower[4*i+1]),rdir.y,org_rdir.y);
+		lclipMinZ = msub(mic_f(clower[4*i+2]),rdir.z,org_rdir.z);
+		lclipMaxX = msub(mic_f(cupper[4*i+0]),rdir.x,org_rdir.x);
+		lclipMaxY = msub(mic_f(cupper[4*i+1]),rdir.y,org_rdir.y);
+		lclipMaxZ = msub(mic_f(cupper[4*i+2]),rdir.z,org_rdir.z);		
+	      }
 
 	    if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
 	    
@@ -443,12 +468,14 @@ namespace embree
 		    *(sptr_dist-1) = childDist; 
 		  }
 	      }	      
+
           }
       }
 
   }
 
 
+  template<bool DECOMPRESS_NODE>
   __forceinline void traverse_chunk_occluded(BVH4i::NodeRef &curNode,
 					     mic_f &curDist,
 					     const mic3f &rdir,
@@ -481,14 +508,38 @@ namespace embree
 #pragma unroll(4)
 	for (unsigned int i=0; i<4; i++)
           {
-	    const BVH4i::NodeRef child = node->lower[i].child;
-            
-            const mic_f lclipMinX = msub(node->lower[i].x,rdir.x,org_rdir.x);
-            const mic_f lclipMinY = msub(node->lower[i].y,rdir.y,org_rdir.y);
-            const mic_f lclipMinZ = msub(node->lower[i].z,rdir.z,org_rdir.z);
-            const mic_f lclipMaxX = msub(node->upper[i].x,rdir.x,org_rdir.x);
-            const mic_f lclipMaxY = msub(node->upper[i].y,rdir.y,org_rdir.y);
-            const mic_f lclipMaxZ = msub(node->upper[i].z,rdir.z,org_rdir.z);	    
+	    BVH4i::NodeRef child;
+	    mic_f lclipMinX,lclipMinY,lclipMinZ;
+	    mic_f lclipMaxX,lclipMaxY,lclipMaxZ;
+
+	    if (!DECOMPRESS_NODE)
+	      {
+		child = node->lower[i].child;
+
+		lclipMinX = msub(node->lower[i].x,rdir.x,org_rdir.x);
+		lclipMinY = msub(node->lower[i].y,rdir.y,org_rdir.y);
+		lclipMinZ = msub(node->lower[i].z,rdir.z,org_rdir.z);
+		lclipMaxX = msub(node->upper[i].x,rdir.x,org_rdir.x);
+		lclipMaxY = msub(node->upper[i].y,rdir.y,org_rdir.y);
+		lclipMaxZ = msub(node->upper[i].z,rdir.z,org_rdir.z);
+	      }
+	    else
+	      {
+		BVH4i::QuantizedNode* __restrict__ const compressed_node = (BVH4i::QuantizedNode*)node;
+		child = compressed_node->child(i);
+
+		const mic_f startXYZ = compressed_node->decompress_startXYZ();
+		const mic_f diffXYZ  = compressed_node->decompress_diffXYZ();
+		const mic_f clower   = compressed_node->decompress_lowerXYZ(startXYZ,diffXYZ);
+		const mic_f cupper   = compressed_node->decompress_upperXYZ(startXYZ,diffXYZ);
+
+		lclipMinX = msub(mic_f(clower[4*i+0]),rdir.x,org_rdir.x);
+		lclipMinY = msub(mic_f(clower[4*i+1]),rdir.y,org_rdir.y);
+		lclipMinZ = msub(mic_f(clower[4*i+2]),rdir.z,org_rdir.z);
+		lclipMaxX = msub(mic_f(cupper[4*i+0]),rdir.x,org_rdir.x);
+		lclipMaxY = msub(mic_f(cupper[4*i+1]),rdir.y,org_rdir.y);
+		lclipMaxZ = msub(mic_f(cupper[4*i+2]),rdir.z,org_rdir.z);		
+	      }
 
 	    if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
 
