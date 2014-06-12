@@ -1096,7 +1096,7 @@ namespace embree
     for (size_t i=0; i<numChildren; i++) 
       children[i].parentPtr = &node[currentIndex+i].lower.a;
 #else
-    storeNodesAndSetParentPtrs(&node[currentIndex],children,numChildren);
+    storeBVH4iNodesAndSetParentPtrs(&node[currentIndex],children,numChildren);
     
 #endif
     for (size_t i=0; i<numChildren; i++) 
@@ -1183,16 +1183,6 @@ namespace embree
     /* init used/unused nodes */
     
 #if 0
-    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-    store16f_ngo((float*)&node[currentIndex+0],init_node);
-    store16f_ngo((float*)&node[currentIndex+2],init_node);
-#else
-    initBVH4iNode(&node[currentIndex]);
-#endif
-
-    
-    /* recurse into each child */
-#if 0
     for (unsigned int i=0; i<numChildren; i++) 
       {
 	node[currentIndex+i].lower = (Vec3fa) children[i].bounds.geometry.lower;
@@ -1202,8 +1192,11 @@ namespace embree
     for (unsigned int i=0; i<numChildren; i++) 
 	children[i].parentPtr = &node[currentIndex+i].lower.a;
 #else
-    storeNodesAndSetParentPtrs(&node[currentIndex],children,numChildren);
+    storeBVH4iNodesAndSetParentPtrs(&node[currentIndex],children,numChildren);
 #endif
+
+    /* recurse into each child */
+
     for (unsigned int i=0; i<numChildren; i++) 
 	recurse(children[i],alloc,mode,threadID,numThreads);
 
@@ -1448,9 +1441,14 @@ namespace embree
     TIMER(msec = getSeconds());
 
     /* allocate and initialize root node */
-    atomicID.reset(numNodesToAllocate);
-    node[0].lower = global_bounds.geometry.lower;
-    node[0].upper = global_bounds.geometry.upper;
+    // atomicID.reset(numNodesToAllocate);
+    // node[0].lower = global_bounds.geometry.lower;
+    // node[0].upper = global_bounds.geometry.upper;
+
+    atomicID.reset(0);
+
+    /* update BVH4 */
+    bvh->bounds = global_bounds.geometry;
     
     /* create initial build record */
     BuildRecord br;
@@ -1506,9 +1504,7 @@ namespace embree
     TIMER(std::cout << "task_convertToSOALayout " << 1000. * msec << " ms" << std::endl << std::flush);
 
     
-    /* update BVH4 */
-    bvh->bounds = BBox3fa(*(Vec3fa*)&bvh->qbvh->lower[0],*(Vec3fa*)&bvh->qbvh->upper[0]);
-    
+
     /* release all threads again */
     LockStepTaskScheduler::releaseThreads(threadCount);
 

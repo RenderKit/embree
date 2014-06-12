@@ -120,12 +120,16 @@ namespace embree
   {
     /* build all acceleration structures */
     M = 0;
+
     for (size_t i=0; i<N; i++) 
     {
+
       accels[i]->build(threadIndex,threadCount);
+
       if (accels[i]->bounds.empty()) continue;
       validAccels[M++] = accels[i];
     }
+
 
     if (M == 1) {
       intersectors = validAccels[0]->intersectors;
