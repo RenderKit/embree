@@ -90,9 +90,7 @@ namespace embree
       prims(NULL), 
       node(NULL), 
       accel(NULL), 
-      size_prims(0),
-      numNodesToAllocate(1)
-      //numNodesToAllocate(BVH4i::N)            
+      size_prims(0)
   {
     DBG(PING);
   }
@@ -274,7 +272,7 @@ namespace embree
 	      bvh->qbvh[0].setInvalid(i);
 	    for (size_t i=0;i<4;i++)
 	      bvh->qbvh[1].setInvalid(i);
-	    bvh->qbvh[0].lower[0].child = BVH4i::NodeRef(128);
+	    bvh->qbvh[0].lower[0].child = BVH4i::invalidNode; //BVH4i::NodeRef(128);
 	    bvh->root = bvh->qbvh[0].lower[0].child; 
 	    bvh->bounds = empty;
 	  }
@@ -1063,11 +1061,14 @@ namespace embree
     for (size_t i=0; i<numChildren; i++) 
       children[i].depth = current.depth+1;
 
-    const size_t currentIndex = alloc.get(numNodesToAllocate);
+    const size_t currentIndex = alloc.get(1);
 
     createNode(current.parentPtr,currentIndex,numChildren);
 
-    storeBVH4iNodesAndSetParentPtrs(&node[currentIndex],children,numChildren);
+    for (size_t i=0;i<numChildren;i++)
+      children[i].parentPtr = &node[currentIndex].child(i);
+
+    storeNode(&node[currentIndex],children,numChildren);
     
     /* recursivly create leaves */
     for (size_t i=0; i<numChildren; i++) 
@@ -1146,13 +1147,16 @@ namespace embree
     }
 
     /* allocate next four nodes */
-    const size_t currentIndex = alloc.get(numNodesToAllocate);
+    const size_t currentIndex = alloc.get(1);
 
     /* init used/unused nodes */
 
     createNode(current.parentPtr,currentIndex,numChildren);
     
-    storeBVH4iNodesAndSetParentPtrs(&node[currentIndex],children,numChildren);
+    for (size_t i=0;i<numChildren;i++)
+      children[i].parentPtr = &node[currentIndex].child(i);
+
+    storeNode(&node[currentIndex],children,numChildren);
 
     /* recurse into each child */
 

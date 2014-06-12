@@ -131,25 +131,12 @@ namespace embree
 
     /* work record handling */
   protected:
-    PrimRef*   prims;
+    PrimRef*       prims;
     BVH4i::Node*   node;
+    Triangle1*     accel;
 
-    Triangle1* accel;
-
-    size_t numNodesToAllocate;
     size_t size_prims;
 
-
-
-    /*! node allocation */
-    __forceinline unsigned int allocNode(int size)
-    {
-      const unsigned int currentIndex = atomicID.add(size);
-      if (unlikely(currentIndex >= numAllocatedNodes)) {
-        FATAL("not enough nodes allocated");
-      }
-      return currentIndex;
-    }
 
 
     __forceinline void createLeaf(void *ptr,
@@ -166,9 +153,9 @@ namespace embree
       *(unsigned int *)ptr = ((index*4) << BVH_INDEX_SHIFT);
     }
 
-    __forceinline void storeBVH4iNodesAndSetParentPtrs(void *ptr,
-						       BuildRecord *__restrict__ const br,
-						       const size_t numChildren)
+    __forceinline void storeNode(void *ptr,
+				 BuildRecord *__restrict__ const br,
+				 const size_t numChildren)
     {
       mic_f lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
       mic_f upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
@@ -186,10 +173,6 @@ namespace embree
 
       store16f_ngo((mic_f*)ptr+0,lower);
       store16f_ngo((mic_f*)ptr+1,upper);            
-
-      for (size_t i=0;i<numChildren;i++)
-	br[i].parentPtr = &bvh.lower[i].child;
-
     }
 
 

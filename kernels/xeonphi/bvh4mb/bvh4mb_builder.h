@@ -33,7 +33,7 @@ namespace embree
 
     BVH4mbBuilder (BVH4mb* bvh, void* geometry) : BVH4iBuilder((BVH4i*)bvh,geometry) 
     {
-      numNodesToAllocate = 2 * BVH4i::N; /* 8 */
+      //numNodesToAllocate = 2 * BVH4i::N; /* 8 */
     }
     virtual void computePrimRefs  (const size_t threadIndex, const size_t threadCount);
     virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives);
