@@ -36,6 +36,52 @@ namespace embree
   extern AtomicMutex mtx;
 #endif
 
+  // FIXME: EMOVE IF OBSOLETE
+
+  /* ---------------- */
+  /* --- QUAD BVH --- */
+  /* ---------------- */
+
+#define QBVH_INDEX_SHIFT    BVH4i::encodingBits
+#define QBVH_LEAF_BIT_SHIFT BVH4i::leaf_shift 
+#define QBVH_LEAF_MASK      ((unsigned int)1 << QBVH_LEAF_BIT_SHIFT) 
+
+  typedef BVH4i::Node QBVHNode;
+
+  template<class T>
+    __forceinline T qbvhCreateNode(const T& nodeID, const T& children) {
+    return (nodeID << QBVH_INDEX_SHIFT) | children;
+  };  
+
+  template<bool REMOVE_NUM_CHILDREN>
+  __forceinline void convertToBVH4Layout(BVHNode *__restrict__ const bptr)
+  {
+    const mic_i box01 = load16i((int*)(bptr + 0));
+    const mic_i box23 = load16i((int*)(bptr + 2));
+
+    const mic_i box_min01 = permute<2,0,2,0>(box01);
+    const mic_i box_max01 = permute<3,1,3,1>(box01);
+
+    const mic_i box_min23 = permute<2,0,2,0>(box23);
+    const mic_i box_max23 = permute<3,1,3,1>(box23);
+    const mic_i box_min0123 = select(0x00ff,box_min01,box_min23);
+    const mic_i box_max0123 = select(0x00ff,box_max01,box_max23);
+
+    const mic_m min_d_mask = bvhLeaf(box_min0123) != mic_i::zero();
+    const mic_i childID    = bvhChildID(box_min0123);
+    const mic_i min_d_node = qbvhCreateNode(childID,mic_i::zero());
+    const mic_i min_d_leaf = box_min0123; //(box_min0123 ^ BVH_LEAF_MASK) | QBVH_LEAF_MASK;
+    const mic_i min_d      = select(min_d_mask,min_d_leaf,min_d_node);
+    
+    const mic_i bvh4_min = (REMOVE_NUM_CHILDREN) ? select(0x7777,box_min0123,min_d) : box_min0123;
+    const mic_i bvh4_max   = box_max0123;
+
+    store16i_nt((int*)(bptr + 0),bvh4_min);
+    store16i_nt((int*)(bptr + 2),bvh4_max);
+  }
+
+
+
   // =======================================================================================================
   // =======================================================================================================
   // =======================================================================================================

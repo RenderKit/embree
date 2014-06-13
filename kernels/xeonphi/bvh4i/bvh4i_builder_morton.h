@@ -24,6 +24,104 @@
 
 namespace embree
 {
+
+    // FIXME: REMOVE IF OBSOLETE
+
+    /* ----------- */
+    /* --- BVH --- */
+    /* ----------- */
+
+#define BVH_INDEX_SHIFT  BVH4i::encodingBits
+#define BVH_ITEMS_MASK   (((unsigned int)1 << BVH4i::leaf_shift)-1)
+#define BVH_LEAF_MASK    BVH4i::leaf_mask
+#define BVH_OFFSET_MASK  (~(BVH_ITEMS_MASK | BVH_LEAF_MASK))
+
+    template<class T> 
+      __forceinline T bvhItemOffset(const T& children) {
+      return (children & ~BVH_LEAF_MASK) >> BVH_INDEX_SHIFT;
+    }
+
+    template<class T> 
+      __forceinline T bvhItems(const T& children) {
+      return children & BVH_ITEMS_MASK;
+    }
+  
+    template<class T> 
+      __forceinline T bvhChildren(const T& children) {
+      return children & BVH_ITEMS_MASK;
+    }
+
+    template<class T> 
+      __forceinline T bvhChildID(const T& children) {
+      return (children & BVH_OFFSET_MASK) >> BVH_INDEX_SHIFT;
+    };
+
+    template<class T> 
+      __forceinline T bvhLeaf(const T& children) {
+      return (children & BVH_LEAF_MASK);
+    };
+
+    class __aligned(32) BVHNode : public BBox3fa
+    {
+    public:
+      __forceinline unsigned int isLeaf() const {
+	return bvhLeaf(lower.a);
+      };
+
+      __forceinline int firstChildID() const {
+	return bvhChildID(lower.a);
+      };
+      __forceinline int items() const {
+	return bvhItems(lower.a);
+      }
+      __forceinline unsigned int itemListOfs() const {
+	return bvhItemOffset(lower.a);
+      }
+
+      __forceinline void createLeaf(const unsigned int offset,
+				    const unsigned int entries) 
+      {
+	assert(entries <= 4);
+	lower.a = (offset << BVH_INDEX_SHIFT) | BVH_LEAF_MASK | entries;
+	upper.a = 0;
+      }
+
+      __forceinline void createNode(const unsigned int index,			  
+				    const unsigned int children) {
+	assert((index %2) == 0);
+
+	lower.a = (index << BVH_INDEX_SHIFT) | children;
+	upper.a = 0;
+      }
+
+    
+      __forceinline void operator=(const BVHNode& v) {     
+	const mic_f v_lower = broadcast4to16f((float*)&v.lower);
+	const mic_f v_upper = broadcast4to16f((float*)&v.upper);
+	store4f((float*)&lower,v_lower);
+	store4f((float*)&upper,v_upper);
+      };
+    };
+
+    __forceinline std::ostream &operator<<(std::ostream &o, const embree::BVHNode &v)
+      {
+	if (v.isLeaf())
+	  {
+	    o << "LEAF" << " ";
+	    o << "offset " << v.itemListOfs() << " ";
+	    o << "items  " << v.items() << " ";
+	  }
+	else
+	  {
+	    o << "NODE" << " ";
+	    o << "firstChildID " << v.firstChildID() << " children " << v.items() << " ";
+	  }  
+	o << "min [" << v.lower <<"] ";
+	o << "max [" << v.upper <<"] ";
+
+	return o;
+      } 
+
   class BVH4iBuilderMorton : public Builder
   {
     ALIGNED_CLASS;
@@ -64,14 +162,13 @@ namespace embree
       __forceinline bool operator<(const SmallBuildRecord& br) const { return size() < br.size(); } 
       __forceinline bool operator>(const SmallBuildRecord& br) const { return size() > br.size(); } 
 
-    __forceinline friend std::ostream &operator<<(std::ostream &o, const SmallBuildRecord &br)
-      {
-	o << "begin " << br.begin << " end " << br.end << " size " << br.size() << " depth " << br.depth << " parentID " << br.parentID;
-	return o;
-      }
+      __forceinline friend std::ostream &operator<<(std::ostream &o, const SmallBuildRecord &br)
+	{
+	  o << "begin " << br.begin << " end " << br.end << " size " << br.size() << " depth " << br.depth << " parentID " << br.parentID;
+	  return o;
+	}
 
     };
-
     
 
     struct __aligned(8) MortonID32Bit

@@ -25,9 +25,6 @@
 
 #define BVH_NODE_PREALLOC_FACTOR                 1.14f
 
-// TODO: 
-// - MINIMAL ALLOCATION FOR EMPTY SCENES
-
 namespace embree
 {
 
@@ -90,7 +87,6 @@ namespace embree
 
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
     TASK_FUNCTION(BVH4iBuilder,createTriangle1Accel);
-    //TASK_FUNCTION(BVH4iBuilder,convertToSOALayout);
     TASK_FUNCTION(BVH4iBuilder,parallelBinningGlobal);
     TASK_FUNCTION(BVH4iBuilder,parallelPartitioningGlobal);
     TASK_RUN_FUNCTION(BVH4iBuilder,build_parallel);
@@ -141,7 +137,7 @@ namespace embree
     /* work record handling */
   protected:
     PrimRef  *    prims;
-    mic_i    *    node; // node array in 64 byte blocks
+    mic_i    *    node;  // node array in 64 byte blocks
     Triangle1*    accel;
 
     size_t size_prims;
@@ -153,13 +149,13 @@ namespace embree
 				  const unsigned int entries) 
     {
       assert(entries <= 4);
-      *(unsigned int *)ptr = (offset << BVH_INDEX_SHIFT) | BVH_LEAF_MASK | entries;
+      *(unsigned int *)ptr = (offset << BVH4i::encodingBits) | BVH4i::leaf_mask | entries;
     }
 
     __forceinline void createNode(void *ptr,
 				  const unsigned int index,			  
 				  const unsigned int children = 0) {
-      *(unsigned int *)ptr = ((index*2) << BVH_INDEX_SHIFT);
+      *(unsigned int *)ptr = ((index*2) << BVH4i::encodingBits);
     }
 
     __forceinline void storeNode(void *ptr,
