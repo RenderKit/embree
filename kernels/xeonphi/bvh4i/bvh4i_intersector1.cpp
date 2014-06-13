@@ -24,8 +24,8 @@ namespace embree
   {
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
     
-    template<typename LeafIntersector>
-    void BVH4iIntersector1<LeafIntersector>::intersect(BVH4i* bvh, Ray& ray)
+    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
+    void BVH4iIntersector1<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::intersect(BVH4i* bvh, Ray& ray)
     {
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
@@ -61,16 +61,16 @@ namespace embree
 	  NodeRef curNode = stack_node[sindex-1];
 	  sindex--;
 
-	  traverse_single_intersect<false>(curNode,
-					   sindex,
-					   rdir_xyz,
-					   org_rdir_xyz,
-					   min_dist_xyz,
-					   max_dist_xyz,
-					   stack_node,
-					   stack_dist,
-					   nodes,
-					   leaf_mask);            		    
+	  traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
+								   sindex,
+								   rdir_xyz,
+								   org_rdir_xyz,
+								   min_dist_xyz,
+								   max_dist_xyz,
+								   stack_node,
+								   stack_dist,
+								   nodes,
+								   leaf_mask);            		    
 
 	  /* return if stack is empty */
 	  if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -93,8 +93,8 @@ namespace embree
 	}
     }
 
-    template<typename LeafIntersector>
-    void BVH4iIntersector1<LeafIntersector>::occluded(BVH4i* bvh, Ray& ray)
+    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
+    void BVH4iIntersector1<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::occluded(BVH4i* bvh, Ray& ray)
     {
       /* near and node stack */
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
@@ -126,15 +126,15 @@ namespace embree
 	  sindex--;
             
 	  
-	  traverse_single_occluded<false>(curNode,
-					  sindex,
-					  rdir_xyz,
-					  org_rdir_xyz,
-					  min_dist_xyz,
-					  max_dist_xyz,
-					  stack_node,
-					  nodes,
-					  leaf_mask);	    
+	  traverse_single_occluded< ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
+								   sindex,
+								   rdir_xyz,
+								   org_rdir_xyz,
+								   min_dist_xyz,
+								   max_dist_xyz,
+								   stack_node,
+								   nodes,
+								   leaf_mask);	    
 
 	  /* return if stack is empty */
 	  if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -164,14 +164,21 @@ namespace embree
     }
 
 
-    DEFINE_INTERSECTOR1    (BVH4iTriangle1Intersector1        , BVH4iIntersector1< Triangle1LeafIntersector<true> >);
-    DEFINE_INTERSECTOR1    (BVH4iTriangle1Intersector1NoFilter, BVH4iIntersector1< Triangle1LeafIntersector<false> >);
+    typedef BVH4iIntersector1< Triangle1LeafIntersector  < true  >, false > Triangle1Intersector1MoellerFilter;
+    typedef BVH4iIntersector1< Triangle1LeafIntersector  < false >, false > Triangle1Intersector1MoellerNoFilter;
+    typedef BVH4iIntersector1< Triangle1mcLeafIntersector< true  >, true  > Triangle1mcIntersector1MoellerFilter;
+    typedef BVH4iIntersector1< Triangle1mcLeafIntersector< false >, true  > Triangle1mcIntersector1MoellerNoFilter;
+    typedef BVH4iIntersector1< VirtualLeafIntersector    < true  >, false > VirtualIntersector1MoellerFilter;
+    typedef BVH4iIntersector1< VirtualLeafIntersector    < false >, false > VirtualIntersector1MoellerNoFilter;
 
-    DEFINE_INTERSECTOR1    (BVH4iTriangle1mcIntersector1        , BVH4iIntersector1< Triangle1mcLeafIntersector<true> >);
-    DEFINE_INTERSECTOR1    (BVH4iTriangle1mcIntersector1NoFilter, BVH4iIntersector1< Triangle1mcLeafIntersector<false> >);
+    DEFINE_INTERSECTOR1    (BVH4iTriangle1Intersector1        , Triangle1Intersector1MoellerFilter);
+    DEFINE_INTERSECTOR1    (BVH4iTriangle1Intersector1NoFilter, Triangle1Intersector1MoellerNoFilter);
 
-    DEFINE_INTERSECTOR1    (BVH4iVirtualGeometryIntersector1        , BVH4iIntersector1< VirtualLeafIntersector<true> >);
-    DEFINE_INTERSECTOR1    (BVH4iVirtualGeometryIntersector1NoFilter, BVH4iIntersector1< VirtualLeafIntersector<false> >);
+    DEFINE_INTERSECTOR1    (BVH4iTriangle1mcIntersector1        , Triangle1mcIntersector1MoellerFilter);
+    DEFINE_INTERSECTOR1    (BVH4iTriangle1mcIntersector1NoFilter, Triangle1mcIntersector1MoellerNoFilter);
+
+    DEFINE_INTERSECTOR1    (BVH4iVirtualGeometryIntersector1        , VirtualIntersector1MoellerFilter);
+    DEFINE_INTERSECTOR1    (BVH4iVirtualGeometryIntersector1NoFilter, VirtualIntersector1MoellerNoFilter);
 
 
   }
