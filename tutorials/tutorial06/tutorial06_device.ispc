@@ -238,7 +238,7 @@ struct ISPCDistantLight
 
 varying Vec3f DistantLight__eval(const uniform ISPCDistantLight& light, varying const Vec3f& wo) 
 {
-  if (dot(wo,make_Vec3f(light.D)) >= light.cosHalfAngle) return make_Vec3f(light.L);
+  if (-dot(wo,make_Vec3f(light.D)) >= light.cosHalfAngle) return make_Vec3f(light.L);
   return make_Vec3f(0.0f);
 }
 
@@ -388,18 +388,16 @@ inline Vec3f BRDF__eval(const BRDF& brdf, const Vec3f& wo, const DifferentialGeo
   const float Md = max(max(brdf.Kd.x,brdf.Kd.y),brdf.Kd.z);
   const float Ms = max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z);
   const float Mt = max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z);
-  //print("Mdst = % % %\n",Md,Ms,Mt);
   if (Md > 0.0f) {
     R = R + (1.0f/(float)(M_PI)) * clamp(dot(wi,dg.Ns)) * brdf.Kd; // FIXME: +=
   }
   if (Ms > 0.0f && brdf.Ns < 1E10) { // FIXME: inf
     const Sample3f refl = reflect_(wo,dg.Ns);
-    //if (dot(refl.v,wi) > 0.0f) 
-    R = R + (brdf.Ns+2) * one_over_two_pi * pow(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks; // FIXME: +=
+    if (dot(refl.v,wi) > 0.0f) 
+      R = R + (brdf.Ns+2) * one_over_two_pi * pow(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks; // FIXME: +=
   }
   if (Mt > 0.0f) {
   }
-  //print("R = % % %\n",R.x,R.y,R.z);
   return R;
 }
 
@@ -451,13 +449,17 @@ inline Vec3f BRDF__sample(const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, co
       //print("wi = % % % %\n",wi.v.x,wi.v.y,wi.v.z,wi.pdf);
       float T = 1.0f-fresnelDielectric(cosThetaO,cosThetaI,brdf.Ni);
       //print("T = %\n",T);
-      ct = make_Vec3f(T);
+      ct = brdf.Kt * make_Vec3f(T);
     }
   }
 
-  const float Cd = max(max(Lw.x*cd.x,Lw.y*cd.y),Lw.z*cd.z); // FIXME: mul with filter
-  const float Cs = max(max(Lw.x*cs.x,Lw.y*cs.y),Lw.z*cs.z);
-  const float Ct = max(max(Lw.x*ct.x,Lw.y*ct.y),Lw.z*ct.z);
+  const Vec3f md = Lw*cd/wid.pdf;
+  const Vec3f ms = Lw*cs/wis.pdf;
+  const Vec3f mt = Lw*ct/wit.pdf;
+
+  const float Cd = wid.pdf == 0.0f ? 0.0f : max(max(md.x,md.y),md.z);
+  const float Cs = wis.pdf == 0.0f ? 0.0f : max(max(ms.x,ms.y),ms.z);
+  const float Ct = wit.pdf == 0.0f ? 0.0f : max(max(mt.x,mt.y),mt.z);
   const float C  = Cd + Cs + Ct;
 
   if (C == 0.0f) {
@@ -470,20 +472,17 @@ inline Vec3f BRDF__sample(const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, co
   const float CPt = Ct/C;
 
   if (s.x < CPd) {
-    wid.pdf *= CPd;
-    wi_o = wid;
+    wi_o = make_Sample3f(wid.v,wid.pdf*CPd);
     return cd;
   } 
   else if (s.x < CPd + CPs)
   {
-    wis.pdf *= CPs;
-    wi_o = wis;
+    wi_o = make_Sample3f(wis.v,wis.pdf*CPs);
     return cs;
   }
   else 
   {
-    wit.pdf *= CPt;
-    wi_o = wit;
+    wi_o = make_Sample3f(wit.v,wit.pdf*CPt);
     return ct;
   }
 }
@@ -549,7 +548,7 @@ Vec3f renderPixelFunction(float x, float y, rnd_state& state, const uniform Vec3
   ray.time = 0;
 
   /* iterative path tracer loop */
-  for (uniform int i=0; i<10; i++)
+  for (uniform int i=0; i<1; i++)
   {
     /* terminate if contribution too low */
     if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
@@ -564,11 +563,11 @@ Vec3f renderPixelFunction(float x, float y, rnd_state& state, const uniform Vec3
     {
       /* iterate over all ambient lights */
       for (uniform size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
-        L = L + Lw*AmbientLight__eval(g_ispc_scene->ambientLights[i],wo); // FIXME: +=
+        L = L + Lw*AmbientLight__eval(g_ispc_scene->ambientLights[i],ray.dir); // FIXME: +=
 
       /* iteratr over all distant lights */
       for (uniform size_t i=0; i<g_ispc_scene->numDistantLights; i++)
-        L = L + Lw*DistantLight__eval(g_ispc_scene->distantLights[i],wo); // FIXME: +=
+        L = L + Lw*DistantLight__eval(g_ispc_scene->distantLights[i],ray.dir); // FIXME: +=
 
       break;
     }
@@ -615,16 +614,31 @@ Vec3f renderPixelFunction(float x, float y, rnd_state& state, const uniform Vec3
     //print("brdf.Ns = %\n",brdf.Ns);
     //print("brdf.Ni = %\n",brdf.Ni);
 
+    /* calculate diffuce bounce */
+    Sample3f wi1;
+    Vec3f c = BRDF__sample(brdf,Lw, wo, dg, wi1, make_Vec2f(frand(state),frand(state)));
+    //print("L = % % %\n",L.x,L.y,L.z);
+    //print("sample.c = % % %\n",c.x,c.y,c.z);
+    //print("sample.wi1 = % % % %\n",wi1.v.x,wi1.v.y,wi1.v.z,wi1.pdf);
+
     /* iterate over ambient lights */
     Sample3f wi; float tMax;
     for (uniform size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
-      Vec3f Ll = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi,tMax,make_Vec2f(frand(state),frand(state)));
+      /*Vec3f Ll = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi,tMax,make_Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
       RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*BRDF__eval(brdf,wo,dg,wi.v); // FIXME: +=
+      */
+      Vec3f Ll = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
+      if (wi1.pdf <= 0.0f) continue;
+      RTCRay shadow = make_Ray(dg.P,wi1.v,0.001f,inf);
+      rtcOccluded(g_scene,shadow);
+      if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
+      L = L + Lw*Ll/wi1.pdf*c; // FIXME: +=
+      
       //print("LL = % % %\n",L.x,L.y,L.z);
     }
 
@@ -661,19 +675,14 @@ Vec3f renderPixelFunction(float x, float y, rnd_state& state, const uniform Vec3
       L = L + Lw*Ll/wi.pdf*BRDF__eval(brdf,wo,dg,wi.v); // FIXME: +=
     }
 
-    /* calculate diffuce bounce */
-    Vec3f c = BRDF__sample(brdf,Lw, wo, dg, wi, make_Vec2f(frand(state),frand(state)));
-    //print("L = % % %\n",L.x,L.y,L.z);
-    //print("sample.c = % % %\n",c.x,c.y,c.z);
-    //print("sample.wi = % % % %\n",wi.v.x,wi.v.y,wi.v.z,wi.pdf);
 
-    if (wi.pdf <= 0.0f) break;
-    Lw = Lw*c/wi.pdf; // FIXME: *=
+    if (wi1.pdf <= 0.0f) break;
+    Lw = Lw*c/wi1.pdf; // FIXME: *=
     //print("Lw = % % %\n",Lw.x,Lw.y,Lw.z);
 
     /* setup secondary ray */
     ray.org = dg.P;
-    ray.dir = normalize(wi.v);
+    ray.dir = normalize(wi1.v);
     ray.tnear = 0.001f;
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
