@@ -201,10 +201,9 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
     Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
     float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-    Vec3fa Ns = w*n0 + u*n1 + v*n2;
-    Ns = normalize(Ns);
+    Ns = normalize(w*n0 + u*n1 + v*n2);
   } else {
-    Ns = ray.Ng;
+    Ns = normalize(ray.Ng);
   }
 
 #else

@@ -238,7 +238,7 @@ struct ISPCDistantLight
 
 Vec3fa DistantLight__eval(const ISPCDistantLight& light, const Vec3fa& wo) 
 {
-  if (dot(wo,Vec3fa(light.D)) >= light.cosHalfAngle) return Vec3fa(light.L);
+  if (-dot(wo,Vec3fa(light.D)) >= light.cosHalfAngle) return Vec3fa(light.L);
   return Vec3fa(0.0f);
 }
 
@@ -388,18 +388,16 @@ inline Vec3fa BRDF__eval(const BRDF& brdf, const Vec3fa& wo, const DifferentialG
   const float Md = max(max(brdf.Kd.x,brdf.Kd.y),brdf.Kd.z);
   const float Ms = max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z);
   const float Mt = max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z);
-  //printf("Mdst = % % %\n",Md,Ms,Mt);
   if (Md > 0.0f) {
     R = R + (1.0f/(float)(M_PI)) * clamp(dot(wi,dg.Ns)) * brdf.Kd; // FIXME: +=
   }
   if (Ms > 0.0f && brdf.Ns < 1E10) { // FIXME: inf
     const Sample3f refl = reflect_(wo,dg.Ns);
-    //if (dot(refl.v,wi) > 0.0f) 
-    R = R + (brdf.Ns+2) * float(one_over_two_pi) * pow(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks; // FIXME: +=
+    if (dot(refl.v,wi) > 0.0f) 
+      R = R + (brdf.Ns+2) * float(one_over_two_pi) * pow(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks; // FIXME: +=
   }
   if (Mt > 0.0f) {
   }
-  //printf("R = % % %\n",R.x,R.y,R.z);
   return R;
 }
 
@@ -447,17 +445,18 @@ inline Vec3fa BRDF__sample(const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo,
     {
       float cosThetaO = clamp(dot(wo,dg.Ns));
       float cosThetaI; wit = refract(wo,dg.Ns,brdf.Ni,cosThetaO,cosThetaI);
-      //printf("wo = % % %\n",wo.x,wo.y,wo.z);
-      //printf("wi = % % % %\n",wi.v.x,wi.v.y,wi.v.z,wi.pdf);
       float T = 1.0f-fresnelDielectric(cosThetaO,cosThetaI,brdf.Ni);
-      //printf("T = %\n",T);
-      ct = Vec3fa(T);
+      ct = brdf.Kt * Vec3fa(T);
     }
   }
 
-  const float Cd = max(max(Lw.x*cd.x,Lw.y*cd.y),Lw.z*cd.z); // FIXME: mul with filter
-  const float Cs = max(max(Lw.x*cs.x,Lw.y*cs.y),Lw.z*cs.z);
-  const float Ct = max(max(Lw.x*ct.x,Lw.y*ct.y),Lw.z*ct.z);
+  const Vec3fa md = Lw*cd/wid.pdf;
+  const Vec3fa ms = Lw*cs/wis.pdf;
+  const Vec3fa mt = Lw*ct/wit.pdf;
+
+  const float Cd = wid.pdf == 0.0f ? 0.0f : max(max(md.x,md.y),md.z);
+  const float Cs = wis.pdf == 0.0f ? 0.0f : max(max(ms.x,ms.y),ms.z);
+  const float Ct = wit.pdf == 0.0f ? 0.0f : max(max(mt.x,mt.y),mt.z);
   const float C  = Cd + Cs + Ct;
 
   if (C == 0.0f) {
@@ -470,20 +469,17 @@ inline Vec3fa BRDF__sample(const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo,
   const float CPt = Ct/C;
 
   if (s.x < CPd) {
-    wid.pdf *= CPd;
-    wi_o = wid;
+    wi_o = Sample3f(wid.v,wid.pdf*CPd);
     return cd;
   } 
   else if (s.x < CPd + CPs)
   {
-    wis.pdf *= CPs;
-    wi_o = wis;
+    wi_o = Sample3f(wis.v,wis.pdf*CPs);
     return cs;
   }
   else 
   {
-    wit.pdf *= CPt;
-    wi_o = wit;
+    wi_o = Sample3f(wit.v,wit.pdf*CPt);
     return ct;
   }
 }
@@ -531,8 +527,6 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 
 Vec3fa renderPixelFunction(float x, float y, rnd_state& state, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  //printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-
   /* radiance accumulator and weight */
   Vec3fa L = Vec3fa(0.0f);
   Vec3fa Lw = Vec3fa(1.0f);
@@ -549,7 +543,7 @@ Vec3fa renderPixelFunction(float x, float y, rnd_state& state, const Vec3fa& vx,
   ray.time = 0;
 
   /* iterative path tracer loop */
-  for (int i=0; i<10; i++)
+  for (int i=0; i<1; i++)
   {
     /* terminate if contribution too low */
     if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
@@ -564,11 +558,11 @@ Vec3fa renderPixelFunction(float x, float y, rnd_state& state, const Vec3fa& vx,
     {
       /* iterate over all ambient lights */
       for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
-        L = L + Lw*AmbientLight__eval(g_ispc_scene->ambientLights[i],wo); // FIXME: +=
+        L = L + Lw*AmbientLight__eval(g_ispc_scene->ambientLights[i],ray.dir); // FIXME: +=
 
       /* iteratr over all distant lights */
       for (size_t i=0; i<g_ispc_scene->numDistantLights; i++)
-        L = L + Lw*DistantLight__eval(g_ispc_scene->distantLights[i],wo); // FIXME: +=
+        L = L + Lw*DistantLight__eval(g_ispc_scene->distantLights[i],ray.dir); // FIXME: +=
 
       break;
     }
@@ -608,27 +602,46 @@ Vec3fa renderPixelFunction(float x, float y, rnd_state& state, const Vec3fa& vx,
     brdf.Kt = (1.0f-d)*Vec3fa(material->Kt);
     brdf.Ni = material->Ni;
 
-    //printf("brdf.Ka = % % %\n",brdf.Ka.x,brdf.Ka.y,brdf.Ka.z);
-    //printf("brdf.Kd = % % %\n",brdf.Kd.x,brdf.Kd.y,brdf.Kd.z);
-    //printf("brdf.Ks = % % %\n",brdf.Ks.x,brdf.Ks.y,brdf.Ks.z);
-    //printf("brdf.Kt = % % %\n",brdf.Kt.x,brdf.Kt.y,brdf.Kt.z);
-    //printf("brdf.Ns = %\n",brdf.Ns);
-    //printf("brdf.Ni = %\n",brdf.Ni);
+    /* calculate diffuce bounce */
+    Sample3f wi1;
+    Vec3fa c = BRDF__sample(brdf,Lw, wo, dg, wi1, Vec2f(frand(state),frand(state)));
 
     /* iterate over ambient lights */
-    Sample3f wi; float tMax;
     for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
-      Vec3fa Ll = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
-      if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = Ray(dg.P,wi.v,0.001f,tMax);
-      rtcOccluded(g_scene,shadow);
-      if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      L = L + Lw*Ll/wi.pdf*BRDF__eval(brdf,wo,dg,wi.v); // FIXME: +=
-      //printf("LL = % % %\n",L.x,L.y,L.z);
+      Vec3fa L0 = Vec3fa(0.0f);
+      Sample3f wi0; float tMax0;
+      Vec3fa Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,Vec2f(frand(state),frand(state)));
+      if (wi0.pdf > 0.0f) {
+        RTCRay shadow = Ray(dg.P,wi0.v,0.001f,tMax0);
+        rtcOccluded(g_scene,shadow);
+        if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
+          L0 = Ll0/wi0.pdf*BRDF__eval(brdf,wo,dg,wi0.v);
+        }
+      }
+
+      Vec3fa L1 = Vec3fa(0.0f);
+      Vec3fa Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
+      if (wi1.pdf > 0.0f) {
+        RTCRay shadow = Ray(dg.P,wi1.v,0.001f,inf);
+        rtcOccluded(g_scene,shadow);
+        if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
+          L1 = Ll1/wi1.pdf*c;
+        }
+      }
+
+      float s = wi0.pdf*wi0.pdf + wi1.pdf*wi1.pdf;
+      if (s > 0) {
+        float w0 = 0;
+        float w1 = 1;
+        //float w0 = wi0.pdf*wi0.pdf/s;
+        //float w1 = wi1.pdf*wi1.pdf/s;
+        L = L + Lw*(w0*L0+w1*L1);
+      }
     }
 
     /* iterate over point lights */
+    Sample3f wi; float tMax;
     for (size_t i=0; i<g_ispc_scene->numPointLights; i++)
     {
       Vec3fa Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
@@ -661,19 +674,13 @@ Vec3fa renderPixelFunction(float x, float y, rnd_state& state, const Vec3fa& vx,
       L = L + Lw*Ll/wi.pdf*BRDF__eval(brdf,wo,dg,wi.v); // FIXME: +=
     }
 
-    /* calculate diffuce bounce */
-    Vec3fa c = BRDF__sample(brdf,Lw, wo, dg, wi, Vec2f(frand(state),frand(state)));
-    //printf("L = % % %\n",L.x,L.y,L.z);
-    //printf("sample.c = % % %\n",c.x,c.y,c.z);
-    //printf("sample.wi = % % % %\n",wi.v.x,wi.v.y,wi.v.z,wi.pdf);
 
-    if (wi.pdf <= 0.0f) break;
-    Lw = Lw*c/wi.pdf; // FIXME: *=
-    //printf("Lw = % % %\n",Lw.x,Lw.y,Lw.z);
+    if (wi1.pdf <= 0.0f) break;
+    Lw = Lw*c/wi1.pdf; // FIXME: *=
 
     /* setup secondary ray */
     ray.org = dg.P;
-    ray.dir = normalize(wi.v);
+    ray.dir = normalize(wi1.v);
     ray.tnear = 0.001f;
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -681,7 +688,6 @@ Vec3fa renderPixelFunction(float x, float y, rnd_state& state, const Vec3fa& vx,
     ray.mask = -1;
     ray.time = 0;
   }
-  //printf("Lend = % % %\n",L.x,L.y,L.z);
   return L;
 }
 
