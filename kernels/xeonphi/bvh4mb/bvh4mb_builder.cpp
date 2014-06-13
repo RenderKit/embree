@@ -19,7 +19,7 @@
 namespace embree
 {
 #define DBG(x) 
-#define TIMER(x) x
+#define TIMER(x) 
 
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
@@ -461,8 +461,7 @@ namespace embree
 
     if (numPrimitives < SERIAL_REFIT_THRESHOLD)
       {
-	std::cout << "WORKAROUND" << std::endl;
-	refit(0);
+	refit(bvh->root);
       }
     else
       {
@@ -470,7 +469,7 @@ namespace embree
 	// ------------------------
 	atomicID.reset(0);
 	subtrees = 0;
-	generate_subtrees(0,0,subtrees);
+	generate_subtrees(bvh->root,0,subtrees);
 	// ------------------------
 	TIMER(msec = getSeconds()-msec);    
 	TIMER(std::cout << "generate subtrees " << 1000. * msec << " ms" << std::endl << std::flush);
@@ -486,14 +485,14 @@ namespace embree
 
 	TIMER(msec = getSeconds());
 	// ------------------------    
-	refit_toplevel(0,0);
+	refit_toplevel(bvh->root,0);
 	// ------------------------
 	TIMER(msec = getSeconds()-msec);    
 	TIMER(std::cout << "refit toplevel " << 1000. * msec << " ms" << std::endl << std::flush);
 
       }
 
-#if 1 // defined(DEBUG)
+#if defined(DEBUG)
     std::cout << "checking tree..." << std::flush;
     check_tree(bvh->root);
     std::cout << "done" << std::endl << std::flush;
