@@ -172,7 +172,7 @@ Vec3fa DistantLight__sample(const ISPCDistantLight& light,
                                    float& tMax,
                                    const Vec2f& s) 
 {
-  wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,Vec3fa(light.D));
+  wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,Vec3fa(neg(light.D)));
   tMax = 1e20f;
   return Vec3fa(light.L);
 }
@@ -300,13 +300,49 @@ inline Vec3fa Matte__eval(const int& materialID, const Vec3fa& wo, const Differe
 {
   ISPCMaterial* material = &g_ispc_scene->materials[materialID];
   Vec3fa diffuse = Vec3fa(material->Kd);
-  return diffuse * (1.0f/(float)pi) * clamp(dot(wi,dg.Ns),0.0f,1.0f);
+  return diffuse * (1.0f/(float)pi) * clamp(dot(normalize(wi),dg.Ns),0.0f,1.0f);
 }
 
 inline Vec3fa Matte__sample(const int& materialID, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi, const Vec2f& s) 
 {
   wi = CosineSampleHemisphere(s.x,s.y,dg.Ns);
   return Matte__eval(materialID, wo, dg, wi.v);
+}
+
+/* for details about this random number generator see: P. L'Ecuyer,
+   "Maximally Equidistributed Combined Tausworthe Generators",
+   Mathematics of Computation, 65, 213 (1996), 203--213:
+   http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps */
+
+struct rnd_state {
+  unsigned int s1, s2, s3, s4;
+};
+
+unsigned int irand(rnd_state& state)
+{
+  #define TAUSWORTHE(s,a,b,c,d) ((s&c)<<d) ^ (((s <<a) ^ s)>>b)
+  state.s1 = TAUSWORTHE(state.s1,  6U, 13U, 4294967294U, 18U);
+  state.s2 = TAUSWORTHE(state.s2,  2U, 27U, 4294967288U,  2U);
+  state.s3 = TAUSWORTHE(state.s3, 13U, 21U, 4294967280U,  7U);
+  state.s4 = TAUSWORTHE(state.s4,  3U, 12U, 4294967168U, 13U);
+  return state.s1 ^ state.s2 ^ state.s3 ^ state.s4;
+} 
+
+void init_rnd(rnd_state& state, unsigned int x, unsigned int y, unsigned int z, unsigned int w)
+{
+  x = x * 4294967294U;
+  y = y * 4294967288U;
+  z = z * 4294967280U;
+  w = w * 4294967168U;
+  state.s1 = x >=   2 ? x : x +   2;
+  state.s2 = y >=   8 ? y : y +   8;
+  state.s3 = z >=  16 ? z : z +  16;
+  state.s4 = w >= 128 ? w : w + 128;
+  for (int i=0; i<10; i++) irand(state);
+}
+
+inline float frand(rnd_state& state) {
+  return (float)(irand(state) & 0xFFFFFFF)/(float)0xFFFFFFFUL;
 }
 
 inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
@@ -443,7 +479,7 @@ Vec3fa renderPixelFunction(float x, float y, rnd_state& state, const Vec3fa& vx,
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   rnd_state state;
-  init_rnd_state(state,x,y,x*y,g_accu_count);
+  init_rnd(state,x,y,x*y,g_accu_count);
 
   //int state = 21344*x+121233*y+234532*g_accu_count;
   Vec3fa L = Vec3fa(0.0f,0.0f,0.0f);

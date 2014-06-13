@@ -39,7 +39,7 @@ namespace embree
   
   /* scene */
   OBJScene g_obj_scene;
-  static FileName filename = "default.obj";
+  static FileName filename = "";
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
   {
@@ -191,7 +191,8 @@ namespace embree
 #endif
 
     /* load scene */
-    loadOBJ(filename,g_obj_scene);
+    if (filename.str() != "")
+      loadOBJ(filename,g_obj_scene);
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());

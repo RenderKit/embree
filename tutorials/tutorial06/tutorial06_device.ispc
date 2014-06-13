@@ -172,7 +172,7 @@ varying Vec3f DistantLight__sample(const uniform ISPCDistantLight& light,
                                    varying float& tMax,
                                    varying const Vec2f& s) 
 {
-  wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,make_Vec3f(light.D));
+  wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,make_Vec3f(neg(light.D)));
   tMax = 1e20f;
   return make_Vec3f(light.L);
 }
@@ -300,7 +300,7 @@ inline Vec3f Matte__eval(const int& materialID, const Vec3f& wo, const Different
 {
   uniform ISPCMaterial* material = &g_ispc_scene->materials[materialID];
   Vec3f diffuse = make_Vec3f(material->Kd);
-  return diffuse * (1.0f/(float)pi) * clamp(dot(wi,dg.Ns),0.0f,1.0f);
+  return diffuse * (1.0f/(float)pi) * clamp(dot(normalize(wi),dg.Ns),0.0f,1.0f);
 }
 
 inline Vec3f Matte__sample(const int& materialID, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi, const Vec2f& s) 
@@ -309,7 +309,7 @@ inline Vec3f Matte__sample(const int& materialID, const Vec3f& wo, const Differe
   return Matte__eval(materialID, wo, dg, wi.v);
 }
 
-g/* for details about this random number generator see: P. L'Ecuyer,
+/* for details about this random number generator see: P. L'Ecuyer,
    "Maximally Equidistributed Combined Tausworthe Generators",
    Mathematics of Computation, 65, 213 (1996), 203--213:
    http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps */
@@ -330,6 +330,10 @@ unsigned int irand(rnd_state& state)
 
 void init_rnd(rnd_state& state, unsigned int x, unsigned int y, unsigned int z, unsigned int w)
 {
+  x = x * 4294967294U;
+  y = y * 4294967288U;
+  z = z * 4294967280U;
+  w = w * 4294967168U;
   state.s1 = x >=   2 ? x : x +   2;
   state.s2 = y >=   8 ? y : y +   8;
   state.s3 = z >=  16 ? z : z +  16;
