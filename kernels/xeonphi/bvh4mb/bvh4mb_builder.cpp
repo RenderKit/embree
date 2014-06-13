@@ -408,7 +408,7 @@ namespace embree
       }
   }
 
-  void BVH4mbBuilder::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
+  void BVH4mbBuilder::finalize(const size_t threadIndex, const size_t threadCount)
   {
     TIMER(double msec = 0.0);
 

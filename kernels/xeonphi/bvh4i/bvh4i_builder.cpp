@@ -433,9 +433,8 @@ namespace embree
   }
 
   
-  void BVH4iBuilder::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
+  void BVH4iBuilder::finalize(const size_t threadIndex, const size_t threadCount)
   {
-    //LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );    
   }
 
   __forceinline void computeAccelerationData(const unsigned int &geomID,
@@ -1460,11 +1459,10 @@ namespace embree
     createAccel(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_createAccel " << 1000. * msec << " ms" << std::endl << std::flush);
-
     
-    /* convert to SOA node layout */
+    /* finalize build */
     TIMER(msec = getSeconds());     
-    convertQBVHLayout(threadIndex, threadCount );
+    finalize(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_convertToSOALayout " << 1000. * msec << " ms" << std::endl << std::flush);
 

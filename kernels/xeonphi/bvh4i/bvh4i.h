@@ -262,20 +262,10 @@ namespace embree
 	mic_f l2 = node.lowerXYZ(2);
 	mic_f l3 = node.lowerXYZ(3);
 
-	/* l0 = select(eq(0x7777,l0,mic_f(1E38)),pos_inf,l0); */
-	/* l1 = select(eq(0x7777,l1,mic_f(1E38)),pos_inf,l1); */
-	/* l2 = select(eq(0x7777,l2,mic_f(1E38)),pos_inf,l2); */
-	/* l3 = select(eq(0x7777,l3,mic_f(1E38)),pos_inf,l3); */
-
 	mic_f u0 = node.upperXYZ(0);
 	mic_f u1 = node.upperXYZ(1);
 	mic_f u2 = node.upperXYZ(2);
 	mic_f u3 = node.upperXYZ(3);
-
-	/* u0 = select(eq(0x7777,u0,mic_f(1E38)),neg_inf,u0); */
-	/* u1 = select(eq(0x7777,u1,mic_f(1E38)),neg_inf,u1); */
-	/* u2 = select(eq(0x7777,u2,mic_f(1E38)),neg_inf,u2); */
-	/* u3 = select(eq(0x7777,u3,mic_f(1E38)),neg_inf,u3); */
 
 	const mic_f minXYZ = select(0x7777,min(min(l0,l1),min(l2,l3)),mic_f::zero());
 	const mic_f maxXYZ = select(0x7777,max(max(u0,u1),max(u2,u3)),mic_f::one());
@@ -297,17 +287,11 @@ namespace embree
 	store4f(&diff ,diffXYZ * (1.0f/255.0f));
 	compactustore16f_low_uint8(0x7777,lower,local_lowerXYZ);
 	compactustore16f_low_uint8(0x7777,upper,local_upperXYZ);
-#if 0
-	child0 = node.child(0).isNode() ? (unsigned int)((node.child(0) / sizeof(BVH4i::Node))*sizeof(BVH4i::QuantizedNode)) : (unsigned int)node.child(0);
-	child1 = node.child(1).isNode() ? (unsigned int)((node.child(1) / sizeof(BVH4i::Node))*sizeof(BVH4i::QuantizedNode)) : (unsigned int)node.child(1);
-	child2 = node.child(2).isNode() ? (unsigned int)((node.child(2) / sizeof(BVH4i::Node))*sizeof(BVH4i::QuantizedNode)) : (unsigned int)node.child(2);
-	child3 = node.child(3).isNode() ? (unsigned int)((node.child(3) / sizeof(BVH4i::Node))*sizeof(BVH4i::QuantizedNode)) : (unsigned int)node.child(3);
-#else
+
 	child0 = node.child(0);
 	child1 = node.child(1);
 	child2 = node.child(2);
 	child3 = node.child(3);
-#endif
 
 	const mic_f s = decompress_startXYZ();
 	const mic_f d = decompress_diffXYZ();
@@ -364,7 +348,6 @@ namespace embree
 
     /*! Data of the BVH */
   public:
-    //const size_t maxLeafPrims;          //!< maximal number of triangles per leaf
     NodeRef root;                      //!< Root node (can also be a leaf).
 
     const PrimitiveType& primTy;   //!< triangle type stored in BVH

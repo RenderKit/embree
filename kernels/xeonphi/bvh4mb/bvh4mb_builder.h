@@ -22,7 +22,6 @@
 namespace embree
 {
 
-
   /*! derived binned-SAH builder supporting virtual geometry */  
   class BVH4mbBuilder : public BVH4iBuilder
   {
@@ -36,7 +35,7 @@ namespace embree
     }
     virtual void computePrimRefs  (const size_t threadIndex, const size_t threadCount);
     virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives);
-    virtual void convertQBVHLayout(const size_t threadIndex, const size_t threadCount);
+    virtual void finalize         (const size_t threadIndex, const size_t threadCount);
     virtual void createAccel      (const size_t threadIndex, const size_t threadCount);
     virtual void printBuilderName();
     virtual size_t getNumPrimitives();

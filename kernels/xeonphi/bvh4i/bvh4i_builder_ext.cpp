@@ -901,7 +901,7 @@ namespace embree
       }    
   }
 
-  void BVH4iBuilderMemoryConservative::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
+  void BVH4iBuilderMemoryConservative::finalize(const size_t threadIndex, const size_t threadCount)
   {
 
   }
