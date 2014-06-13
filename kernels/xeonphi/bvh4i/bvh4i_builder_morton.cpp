@@ -229,6 +229,7 @@ namespace embree
 	bvh->root = BVH4i::invalidNode;
 	bvh->bounds = empty;
 	bvh->qbvh = NULL;
+	bvh->accel = NULL;
 	bvh->size_node  = 0;
 	bvh->size_accel = 0;
 
@@ -278,13 +279,6 @@ namespace embree
 	DBG(std::cout << "SERIAL BUILD" << std::endl << std::flush);
 	build_parallel_morton(0,1,0,0,NULL);
       }
-
-    bvh->accel = accel;
-    bvh->qbvh  = (BVH4i::Node*)node;
-    bvh->size_node  = size_node;
-    bvh->size_accel = size_accel;
-    bvh->root = bvh->qbvh[0].lower[0].child; 
-    bvh->bounds = global_bounds.geometry;
 
     if (g_verbose >= 2) {
       double perf = numPrimitives/dt*1E-6;
@@ -1349,6 +1343,13 @@ namespace embree
     LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_convertToSOALayout " << 1000. * msec << " ms" << std::endl << std::flush);
+
+    bvh->accel = accel;
+    bvh->qbvh  = (BVH4i::Node*)node;
+    bvh->size_node  = size_node;
+    bvh->size_accel = size_accel;
+    bvh->root = bvh->qbvh[0].lower[0].child; 
+    bvh->bounds = global_bounds.geometry;
 
     /* end task */
     LockStepTaskScheduler::releaseThreads(threadCount);

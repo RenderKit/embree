@@ -240,6 +240,7 @@ namespace embree
 	bvh->root = BVH4i::invalidNode;
 	bvh->bounds = empty;
 	bvh->qbvh = NULL;
+	bvh->accel = NULL;
 	bvh->size_node  = 0;
 	bvh->size_accel = 0;
 	return;
