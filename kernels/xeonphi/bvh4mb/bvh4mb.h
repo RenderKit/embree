@@ -48,6 +48,12 @@ namespace embree
         return BBox3fa(l,u);
       }
 
+      __forceinline BBox3fa bounds_t1(size_t i) const {
+        Vec3fa l = *(Vec3fa*)&lower_t1[i];
+        Vec3fa u = *(Vec3fa*)&upper_t1[i];
+        return BBox3fa(l,u);
+      }
+
       __forceinline void setInvalid(size_t i)
       {
 	lower[i].x = pos_inf;
