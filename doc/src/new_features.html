@@ -1,7 +1,8 @@
 <h3>What's New in Embree 2.3.1?</h3>
 <ul>
   <li>Compile time enabled intersection filter functions do not reduce performance if no intersection filter is used in the scene (Xeon and Xeon Phi)</li>
-  <li>BVH8 for AVX/AVX2 targets improves performance for single ray tracing on Haswell by up to 12%.</li>
+  <li>BVH8 for AVX/AVX2 targets improves performance for single ray tracing on Haswell by up to 12% and by up to 5% for hybrid</li>
+  <li>Memory conservative BVH for Xeon Phi uses now BVH node quantization to lower memory footprint</li>
 </ul>    
 
 <h3>What's New in Embree 2.3?</h3>

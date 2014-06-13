@@ -58,7 +58,6 @@ namespace embree
 
     TASK_FUNCTION(BVH4mbBuilder,refitBVH4MB);    
     TASK_FUNCTION(BVH4mbBuilder,createTriangle01AccelMB);    
-    //TASK_FUNCTION(BVH4mbBuilder,convertToSOALayoutMB);    
     TASK_FUNCTION(BVH4mbBuilder,computePrimRefsTrianglesMB);    
 
   };

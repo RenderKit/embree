@@ -112,7 +112,6 @@ namespace embree
 
       for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
       { 			    
-	//DBG_PRINT(currentID);
 	const TriangleMesh::Triangle& tri = mesh->triangle(i);
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
@@ -132,8 +131,6 @@ namespace embree
 	store4f(&local_prims[numLocalPrims].upper,bmax);	
 	local_prims[numLocalPrims].lower.a = g;
 	local_prims[numLocalPrims].upper.a = i;
-
-	//DBG_PRINT( local_prims[numLocalPrims] );
 
 	numLocalPrims++;
 	if (unlikely(((size_t)dest % 64) != 0) && numLocalPrims == 1)
@@ -394,49 +391,6 @@ namespace embree
     return parentBounds;
 
   }
-
-  // __forceinline void convertToBVH4MBLayout(BVHNode *__restrict__ const bptr)
-  // {
-  //   const mic_i box01 = load16i((int*)(bptr + 0));
-  //   const mic_i box23 = load16i((int*)(bptr + 2));
-
-  //   const mic_i box_min01 = permute<2,0,2,0>(box01);
-  //   const mic_i box_max01 = permute<3,1,3,1>(box01);
-
-  //   const mic_i box_min23 = permute<2,0,2,0>(box23);
-  //   const mic_i box_max23 = permute<3,1,3,1>(box23);
-  //   const mic_i box_min0123 = select(0x00ff,box_min01,box_min23);
-  //   const mic_i box_max0123 = select(0x00ff,box_max01,box_max23);
-
-  //   const mic_m min_d_mask = bvhLeaf(box_min0123) != mic_i::zero();
-  //   const mic_i childID    = bvhChildID(box_min0123);
-  //   const mic_i min_d_node = qbvhCreateNode(childID,mic_i::zero());
-  //   const mic_i min_d_leaf = ((box_min0123 ^ BVH_LEAF_MASK)<<0) | QBVH_LEAF_MASK; // * 2 as accel size is 128 bytes now
-  //   const mic_i min_d      = select(min_d_mask,min_d_leaf,min_d_node);
-  //   const mic_i bvh4_min   = select(0x7777,box_min0123,min_d);
-  //   const mic_i bvh4_max   = box_max0123;
-  //   store16i_nt((int*)(bptr + 0),bvh4_min);
-  //   store16i_nt((int*)(bptr + 2),bvh4_max);
-  // }
-
-  // void BVH4mbBuilder::convertToSOALayoutMB(const size_t threadID, const size_t numThreads)
-  // {
-  //   const size_t startID = (threadID+0)*numNodes/numThreads;
-  //   const size_t endID   = (threadID+1)*numNodes/numThreads;
-
-  //   BVHNode  * __restrict__  bptr = ( BVHNode*)node + startID*4;
-
-  //   BVH4i::Node * __restrict__  qptr = (BVH4i::Node*)node + startID;
-
-  //   for (unsigned int n=startID;n<endID;n++,qptr++,bptr+=4) 
-  //     {
-  // 	prefetch<PFHINT_L1EX>(bptr+4);
-  // 	prefetch<PFHINT_L2EX>(bptr+4*4);
-  // 	convertToBVH4MBLayout(bptr);
-  // 	evictL1(bptr);
-  //     }
-  // }
-
 
   void BVH4mbBuilder::refitBVH4MB(const size_t threadID, const size_t numThreads)
   {
