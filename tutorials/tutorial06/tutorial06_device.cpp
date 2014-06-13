@@ -309,38 +309,6 @@ inline Vec3fa Matte__sample(const int& materialID, const Vec3fa& wo, const Diffe
   return Matte__eval(materialID, wo, dg, wi.v);
 }
 
-/* for details about this random number generator see: P. L'Ecuyer,
-   "Maximally Equidistributed Combined Tausworthe Generators",
-   Mathematics of Computation, 65, 213 (1996), 203--213:
-   http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps */
-
-struct rnd_state {
-  unsigned int s1, s2, s3, s4;
-};
-
-unsigned int irand(rnd_state& state)
-{
-  #define TAUSWORTHE(s,a,b,c,d) ((s&c)<<d) ^ (((s <<a) ^ s)>>b)
-  state.s1 = TAUSWORTHE(state.s1,  6U, 13U, 4294967294U, 18U);
-  state.s2 = TAUSWORTHE(state.s2,  2U, 27U, 4294967288U,  2U);
-  state.s3 = TAUSWORTHE(state.s3, 13U, 21U, 4294967280U,  7U);
-  state.s4 = TAUSWORTHE(state.s4,  3U, 12U, 4294967168U, 13U);
-  return (state.s1 ^ state.s2 ^ state.s3 ^ state.s4);
-} 
-
-void init_rnd_state(rnd_state& state, int x, int y, int z, int w)
-{
-  state.s1 = x*13;
-  state.s2 = y*276;
-  state.s3 = z*78689;
-  state.s4 = w*183837438;
-  irand(state);
-}
-
-inline float frand(rnd_state& state) {
-  return (float)(irand(state) & 0xFFFFFFF)/(float)0xFFFFFFFUL;
-}
-
 inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   const Vec3fa Ng = _Ng;
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);

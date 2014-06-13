@@ -309,7 +309,7 @@ inline Vec3f Matte__sample(const int& materialID, const Vec3f& wo, const Differe
   return Matte__eval(materialID, wo, dg, wi.v);
 }
 
-/* for details about this random number generator see: P. L'Ecuyer,
+g/* for details about this random number generator see: P. L'Ecuyer,
    "Maximally Equidistributed Combined Tausworthe Generators",
    Mathematics of Computation, 65, 213 (1996), 203--213:
    http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps */
@@ -325,16 +325,16 @@ unsigned int irand(rnd_state& state)
   state.s2 = TAUSWORTHE(state.s2,  2U, 27U, 4294967288U,  2U);
   state.s3 = TAUSWORTHE(state.s3, 13U, 21U, 4294967280U,  7U);
   state.s4 = TAUSWORTHE(state.s4,  3U, 12U, 4294967168U, 13U);
-  return (state.s1 ^ state.s2 ^ state.s3 ^ state.s4);
+  return state.s1 ^ state.s2 ^ state.s3 ^ state.s4;
 } 
 
-void init_rnd_state(rnd_state& state, int x, int y, int z, int w)
+void init_rnd(rnd_state& state, unsigned int x, unsigned int y, unsigned int z, unsigned int w)
 {
-  state.s1 = x*13;
-  state.s2 = y*276;
-  state.s3 = z*78689;
-  state.s4 = w*183837438;
-  irand(state);
+  state.s1 = x >=   2 ? x : x +   2;
+  state.s2 = y >=   8 ? y : y +   8;
+  state.s3 = z >=  16 ? z : z +  16;
+  state.s4 = w >= 128 ? w : w + 128;
+  for (uniform int i=0; i<10; i++) irand(state);
 }
 
 inline float frand(rnd_state& state) {
@@ -475,7 +475,7 @@ Vec3f renderPixelFunction(float x, float y, rnd_state& state, const uniform Vec3
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   rnd_state state;
-  init_rnd_state(state,x,y,x*y,g_accu_count);
+  init_rnd(state,x,y,x*y,g_accu_count);
 
   //int state = 21344*x+121233*y+234532*g_accu_count;
   Vec3f L = make_Vec3f(0.0f,0.0f,0.0f);

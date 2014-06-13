@@ -77,3 +77,4 @@ struct Sample3f
 inline Sample3f make_Sample3f(const Vec3f v, const float pdf) { // FIXME: &
   Sample3f s; s.v = v; s.pdf = pdf; return s;
 }
+
