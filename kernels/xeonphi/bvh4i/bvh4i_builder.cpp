@@ -230,12 +230,20 @@ namespace embree
     DBG(DBG_PRINT(totalNumPrimitives));
 
     /* print builder name */
-    if (unlikely(g_verbose >= 1)) {
+    if (unlikely(g_verbose >= 2)) {
       printBuilderName();
-      DBG_PRINT(totalNumPrimitives);
-      DBG_PRINT(threadCount);
-
     }
+
+    if (likely(totalNumPrimitives == 0))
+      {
+	DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
+	bvh->root = BVH4i::invalidNode;
+	bvh->bounds = empty;
+	bvh->qbvh = NULL;
+	bvh->size_node  = 0;
+	bvh->size_accel = 0;
+	return;
+      }
 
     /* allocate BVH data */
     allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
@@ -277,24 +285,10 @@ namespace embree
       }
     else
       {
+	assert( numPrimitives > 0 );
 	/* number of primitives is small, just use single threaded mode */
-	if (likely(numPrimitives > 0))
-	  {
-	    DBG(std::cout << "SERIAL BUILD" << std::endl);
-	    build_parallel(0,1,0,0,NULL);
-	  }
-	else
-	  {
-	    DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
-	    /* handle empty scene */
-	    for (size_t i=0;i<4;i++)
-	      bvh->qbvh[0].setInvalid(i);
-	    for (size_t i=0;i<4;i++)
-	      bvh->qbvh[1].setInvalid(i);
-	    bvh->qbvh[0].lower[0].child = BVH4i::invalidNode; //BVH4i::NodeRef(128);
-	    bvh->root = bvh->qbvh[0].lower[0].child; 
-	    bvh->bounds = empty;
-	  }
+	DBG(std::cout << "SERIAL BUILD" << std::endl);
+	build_parallel(0,1,0,0,NULL);
       }
 
     if (g_verbose >= 2) {

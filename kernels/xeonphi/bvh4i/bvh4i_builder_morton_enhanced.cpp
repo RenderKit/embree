@@ -51,7 +51,22 @@ namespace embree
       std::cout << "building BVH4i with Enhanced Morton builder (MIC)... " << std::endl << std::flush;
     }
 
-    initEncodingAllocateData(threadCount);
+    initEncodingAllocateData();
+
+    if (likely(numPrimitives == 0))
+      {
+	DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
+	bvh->root = BVH4i::invalidNode;
+	bvh->bounds = empty;
+	bvh->qbvh = NULL;
+	bvh->size_node  = 0;
+	bvh->size_accel = 0;
+	return;
+      }
+
+    /* allocate memory arrays */
+    allocateData(threadCount);
+
     LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); 
 
     DBG_PRINT( numPrimitives );
@@ -90,24 +105,16 @@ namespace embree
     else
       {
 	/* number of primitives is small, just use single threaded mode */
-	if (likely(numPrimitives > 0))
-	  {
-	    DBG(std::cout << "SERIAL BUILD" << std::endl << std::flush);
-	    build_parallel_morton_enhanced(0,1,0,0,NULL);
-	  }
-	else
-	  {
-	    DBG(std::cout << "EMPTY SCENE BUILD" << std::endl << std::flush);
-	    /* handle empty scene */
-	    for (size_t i=0;i<4;i++)
-	      bvh->qbvh[0].setInvalid(i);
-	    for (size_t i=0;i<4;i++)
-	      bvh->qbvh[1].setInvalid(i);
-	    bvh->qbvh[0].lower[0].child = BVH4i::NodeRef(128);
-	    bvh->root = bvh->qbvh[0].lower[0].child; 
-	    bvh->bounds = BBox3fa(*(Vec3fa*)&bvh->qbvh->lower[0],*(Vec3fa*)&bvh->qbvh->upper[0]);	    
-	  }
+	DBG(std::cout << "SERIAL BUILD" << std::endl << std::flush);
+	build_parallel_morton_enhanced(0,1,0,0,NULL);
       }
+
+    bvh->accel = accel;
+    bvh->qbvh  = (BVH4i::Node*)node;
+    bvh->size_node  = size_node;
+    bvh->size_accel = size_accel;
+    bvh->root = bvh->qbvh[0].lower[0].child; 
+    bvh->bounds = global_bounds.geometry;
 
     if (g_verbose >= 2) {
       double perf = numPrimitives/dt*1E-6;

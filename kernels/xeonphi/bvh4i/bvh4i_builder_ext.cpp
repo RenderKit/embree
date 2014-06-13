@@ -822,7 +822,7 @@ namespace embree
   {
     enableTaskStealing = true;
     enablePerCoreWorkQueueFill = false;
-
+    
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
 

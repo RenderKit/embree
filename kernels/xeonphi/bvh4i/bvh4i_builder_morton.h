@@ -213,8 +213,11 @@ namespace embree
     /* build function */
     void build(size_t threadIndex, size_t threadCount);
 
-    /*! initialized the builder */
-    void initEncodingAllocateData(size_t threadCount);
+    /*! initialized morton encoding */
+    void initEncodingAllocateData();
+    
+    /*! allocate data arrays */
+    void allocateData(size_t threadCount);
 
     /*! precalculate some per thread data */
     void initThreadState(const size_t threadID, const size_t numThreads);
@@ -307,6 +310,10 @@ namespace embree
     size_t numNodes;
     size_t numAllocatedNodes;
     size_t size_morton;
+    size_t size_node;
+    size_t size_accel;
+
+    size_t numPrimitivesOld;
 
     __aligned(64) Centroid_Scene_AABB global_bounds;
 
