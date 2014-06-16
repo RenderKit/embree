@@ -155,12 +155,7 @@ namespace embree
       stack[0].ref = bvh->root;
       stack[0].tNear = ray.tnear;
       stack[0].tFar = ray.tfar;
-      
-      /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray.dir.x >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
-      const size_t nearY = ray.dir.y >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
-      const size_t nearZ = ray.dir.z >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
-      
+            
       /*! load the ray into SIMD registers */
       const sse3f org(ray.org.x,ray.org.y,ray.org.z);
       const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
@@ -168,6 +163,11 @@ namespace embree
       const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
       const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+
+      /*! offsets to select the side that becomes the lower or upper bound */
+      const size_t nearX = ray_rdir.x >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
+      const size_t nearY = ray_rdir.y >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
+      const size_t nearZ = ray_rdir.z >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
 
       /* pop loop */
       while (true) pop:
@@ -286,12 +286,7 @@ namespace embree
       stack[0].ref = bvh->root;
       stack[0].tNear = ray.tnear;
       stack[0].tFar = ray.tfar;
-      
-      /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray.dir.x >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
-      const size_t nearY = ray.dir.y >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
-      const size_t nearZ = ray.dir.z >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
-      
+            
       /*! load the ray into SIMD registers */
       const sse3f org(ray.org.x,ray.org.y,ray.org.z);
       const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
@@ -299,6 +294,11 @@ namespace embree
       const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
       const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+
+      /*! offsets to select the side that becomes the lower or upper bound */
+      const size_t nearX = ray_rdir.x >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
+      const size_t nearY = ray_rdir.y >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
+      const size_t nearZ = ray_rdir.z >= 0.0f ? 0*BVH4Hair::AlignedNode::stride : 1*BVH4Hair::AlignedNode::stride;
 
       /* pop loop */
       while (true) pop:

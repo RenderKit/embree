@@ -47,18 +47,18 @@ namespace embree
         StackItemInt32<NodeRef>* stackEnd = stack + stackSizeSingle;
         stack[0].ptr = root;
         stack[0].dist = neg_inf;
-        
-        /*! offsets to select the side that becomes the lower or upper bound */
-        const size_t nearX = nearXYZ.x[k];
-        const size_t nearY = nearXYZ.y[k];
-        const size_t nearZ = nearXYZ.z[k];
-        
+                
         /*! load the ray into SIMD registers */
         const sse3f org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
         const sse3f rdir(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
         const sse3f org_rdir(org*rdir);
         ssef rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
         
+        /*! offsets to select the side that becomes the lower or upper bound */
+        const size_t nearX = nearXYZ.x[k];
+        const size_t nearY = nearXYZ.y[k];
+        const size_t nearZ = nearXYZ.z[k];
+
         /* pop loop */
         while (true) pop:
           {

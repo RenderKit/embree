@@ -39,18 +39,18 @@ namespace embree
       StackItem* stackEnd = stack+stackSizeSingle;
       stack[0].ptr = root;
       stack[0].dist = neg_inf;
-      
-      /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_dir.x[k] >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
-      const size_t nearY = ray_dir.y[k] >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
-      const size_t nearZ = ray_dir.z[k] >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
-      
+            
       /*! load the ray into SIMD registers */
       const sse3f org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
       const sse3f rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
       const sse3f norg = -org, org_rdir(org*rdir);
       ssef rayNear(ray_tnear[k]), rayFar(ray_tfar[k]); 
       
+      /*! offsets to select the side that becomes the lower or upper bound */
+      const size_t nearX = ray_rdir.x[k] >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
+      const size_t nearY = ray_rdir.y[k] >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
+      const size_t nearZ = ray_rdir.z[k] >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
+
       /* pop loop */
       while (true) pop:
       {
@@ -327,18 +327,18 @@ namespace embree
       NodeRef* stackPtr = stack+1;        //!< current stack pointer
       NodeRef* stackEnd = stack+stackSizeSingle;
       stack[0]  = root;
-      
-      /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_dir.x[k] >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
-      const size_t nearY = ray_dir.y[k] >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
-      const size_t nearZ = ray_dir.z[k] >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
-      
+            
       /*! load the ray into SIMD registers */
       const sse3f org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
       const sse3f rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
       const sse3f norg = -org, org_rdir(org*rdir);
       const ssef rayNear(ray_tnear[k]), rayFar(ray_tfar[k]); 
       
+      /*! offsets to select the side that becomes the lower or upper bound */
+      const size_t nearX = ray_rdir.x[k] >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
+      const size_t nearY = ray_rdir.y[k] >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
+      const size_t nearZ = ray_rdir.z[k] >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
+
       /* pop loop */
       while (true) pop:
       {
