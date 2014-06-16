@@ -154,6 +154,8 @@ def compile(OS,compiler,platform,build):
     command += ' -D RTCORE_BACKFACE_CULLING=OFF'
     command += ' -D RTCORE_INTERSECTION_FILTER=ON'
     command += ' -D RTCORE_BUFFER_STRIDE=ON'
+    command += ' -D RTCORE_STAT_COUNTERS=OFF'
+    command += ' -D RTCORE_TASK_LOGGER=OFF'
 
     if build == 'ReleaseAVX' or build == 'ReleaseAVX2':
       command += ' -D XEON_ISA=AVX'
