@@ -28,7 +28,7 @@ namespace embree
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 
 #define ENABLE_OBB_BVH4 1
-#define ENABLE_AABB_NODES 0
+#define ENABLE_AABB_NODES 1
 
 #define TIMER(x)  
 
