@@ -23,40 +23,40 @@
 #include "bvh4i/bvh4i.h"
 #include "bvh4i_statistics.h"
 
-#define BVH_NODE_PREALLOC_FACTOR                 1.15f
-
-// TODO: 
-// - MINIMAL ALLOCATION FOR EMPTY SCENES
+#define BVH_NODE_PREALLOC_FACTOR                 1.14f
 
 namespace embree
 {
 
 
+
+  /*! creates the builder */
+  
   class BVH4iBuilder : public ParallelBinnedSAHBuilder
   {
     ALIGNED_CLASS;
   public:
-
+    
     enum { 
       BVH4I_BUILDER_DEFAULT, 
       BVH4I_BUILDER_PRESPLITS, 
       BVH4I_BUILDER_VIRTUAL_GEOMETRY, 
       BVH4I_BUILDER_MEMORY_CONSERVATIVE
     };
+
+    static Builder* create (void* accel, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
  
     /*! Constructor. */
-    BVH4iBuilder (BVH4i* bvh, void* geometry);
+    BVH4iBuilder (BVH4i* bvh, void* geometry, const size_t bvh4iNodeSize = sizeof(BVH4i::Node));
     virtual ~BVH4iBuilder();
 
-    /*! creates the builder */
-    static Builder* create (void* accel, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
 
     /* virtual function interface */
     virtual void build            (const size_t threadIndex, const size_t threadCount);
     virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives);
     virtual void computePrimRefs  (const size_t threadIndex, const size_t threadCount);
     virtual void createAccel      (const size_t threadIndex, const size_t threadCount);
-    virtual void convertQBVHLayout(const size_t threadIndex, const size_t threadCount);
+    virtual void finalize(const size_t threadIndex, const size_t threadCount);
 
     virtual size_t getNumPrimitives();
     virtual void printBuilderName();
@@ -68,6 +68,12 @@ namespace embree
 			      const size_t numThreads);
 
 
+    virtual void storeNodeDataUpdateParentPtrs(void *ptr,
+					       BuildRecord *__restrict__ const br,
+					       const size_t numChildren);
+
+    virtual std::string getStatistics();
+    
   protected:
 
     void allocateMemoryPools(const size_t numPrims, 
@@ -81,7 +87,6 @@ namespace embree
 
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
     TASK_FUNCTION(BVH4iBuilder,createTriangle1Accel);
-    //TASK_FUNCTION(BVH4iBuilder,convertToSOALayout);
     TASK_FUNCTION(BVH4iBuilder,parallelBinningGlobal);
     TASK_FUNCTION(BVH4iBuilder,parallelPartitioningGlobal);
     TASK_RUN_FUNCTION(BVH4iBuilder,build_parallel);
@@ -131,26 +136,26 @@ namespace embree
 
     /* work record handling */
   protected:
-    PrimRef*       prims;
-    BVH4i::Node*   node;
-    Triangle1*     accel;
+    PrimRef  *    prims;
+    mic_i    *    node;  // node array in 64 byte blocks
+    Triangle1*    accel;
 
     size_t size_prims;
 
-
+    const size_t num64BytesBlocksPerNode;
 
     __forceinline void createLeaf(void *ptr,
 				  const unsigned int offset,
 				  const unsigned int entries) 
     {
       assert(entries <= 4);
-      *(unsigned int *)ptr = (offset << BVH_INDEX_SHIFT) | BVH_LEAF_MASK | entries;
+      *(unsigned int *)ptr = (offset << BVH4i::encodingBits) | BVH4i::leaf_mask | entries;
     }
 
     __forceinline void createNode(void *ptr,
 				  const unsigned int index,			  
 				  const unsigned int children = 0) {
-      *(unsigned int *)ptr = ((index*4) << BVH_INDEX_SHIFT);
+      *(unsigned int *)ptr = ((index*2) << BVH4i::encodingBits);
     }
 
     __forceinline void storeNode(void *ptr,
@@ -213,12 +218,18 @@ namespace embree
   {
   public:
     
-    BVH4iBuilderMemoryConservative (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry) {}
+    BVH4iBuilderMemoryConservative (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry,sizeof(BVH4i::QuantizedNode)) {}
 
     virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives);
     virtual void printBuilderName();
     virtual void createAccel      (const size_t threadIndex, const size_t threadCount);   
-    virtual void convertQBVHLayout(const size_t threadIndex, const size_t threadCount);
+    virtual void finalize(const size_t threadIndex, const size_t threadCount);
+
+    virtual void storeNodeDataUpdateParentPtrs(void *ptr,
+					       BuildRecord *__restrict__ const br,
+					       const size_t numChildren);
+
+    virtual std::string getStatistics();
 
   protected:
     TASK_FUNCTION(BVH4iBuilderMemoryConservative,createMemoryConservativeAccel);

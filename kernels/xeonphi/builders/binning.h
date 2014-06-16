@@ -277,9 +277,9 @@ namespace embree
 	    const mic_f centroid_2 = b_min + b_max;
 	    const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
 
-	    assert(0 <= binID[0] && binID[0] < 16);
-	    assert(0 <= binID[1] && binID[1] < 16);
-	    assert(0 <= binID[2] && binID[2] < 16);
+	    /* assert(0 <= binID[0] && binID[0] < 16); */
+	    /* assert(0 <= binID[1] && binID[1] < 16); */
+	    /* assert(0 <= binID[2] && binID[2] < 16); */
 
 	    const mic_i id = load16i(identity);
 	    const mic_m m_update_x = eq(id,swAAAA(binID));

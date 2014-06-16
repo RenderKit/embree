@@ -218,7 +218,7 @@ namespace embree
     ISPCMesh* mesh = new ISPCMesh(in_pMiscData->numTriangles,in_pMiscData->numVertices);
     assert( mesh );
     assert( in_pMiscData->numTriangles*sizeof(OBJScene::Triangle) == in_pBufferLengths[3] );
-    assert( in_pMiscData->numVertices*sizeof(Vec3fa) == in_pBufferLengths[1] );
+    //assert( in_pMiscData->numVertices*sizeof(Vec3fa) == in_pBufferLengths[1] );
 
     const size_t EXTRA_SPACE = 2*64;
     mesh->positions = (Vec3fa*)os_malloc(in_pBufferLengths[0]+EXTRA_SPACE);
