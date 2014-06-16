@@ -273,9 +273,14 @@ namespace embree
 
     struct __aligned(64) UnalignedNode
     {
+      UnalignedNode()
+	{
+	  assert(sizeof(UnalignedNode) == 192);
+	}
 
       static float identityMatrix[16];
       static float  invalidMatrix[16];
+
 
       struct NodeStruct {
         float x,y,z;           // x,y, and z coordinates of bounds
@@ -433,10 +438,17 @@ namespace embree
     struct __aligned(64) AlignedNode
     {
     public:
+
+      AlignedNode() 
+	{
+	  assert( sizeof(AlignedNode) == 192 );
+	}
       struct NodeStruct {
         float x,y,z;           // x,y, and z coordinates of bounds
         NodeRef data;          
       } lower[4], upper[4];    
+
+      mic_i dummy;
 
       template<int PFHINT>
 	__forceinline void prefetchNode() const

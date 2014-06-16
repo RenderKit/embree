@@ -86,7 +86,8 @@ namespace embree
 	    const BVH4Hair::UnalignedNode *__restrict__ const u_node = (BVH4Hair::UnalignedNode *)curNode.node(nodes);
 
 	    u_node->prefetchNode<PFHINT_L1>();
-	
+
+	    
 	    const mic_f row0 = u_node->getRow(0);
 	    const mic_f row1 = u_node->getRow(1);
 	    const mic_f row2 = u_node->getRow(2);
@@ -308,25 +309,20 @@ namespace embree
 	      }
 
 	    /* continue with closest child and push all others */
+	    assert(curNode  != BVH4Hair::invalidNode);
+
 	    const mic_f min_dist = set_min_lanes(tNear_pos);
-	    assert(sindex < 3*BVH4Hair::maxDepth+1);
+	    const unsigned int old_sindex = sindex;
+	    sindex += countbits(hiti) - 1;
+	    assert(sindex < 3*BVH4i::maxDepth+1);
+	    const mic_i children = node->getChildren();
         
 	    const mic_m closest_child = eq(hitm,min_dist,tNear);
 	    const unsigned long closest_child_pos = bitscan64(closest_child);
 	    const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
 	    curNode = node->child_ref(closest_child_pos);
-
-
-	    assert(curNode  != BVH4Hair::invalidNode);
-
-	    long i = -1;
-	    while((i = bitscan64(i,m_pos)) != BITSCAN_NO_BIT_SET_64)	    
-	      {
-		((unsigned int*)stack_dist)[sindex] = ((unsigned int*)&tNear)[i];		      
-		stack_node[sindex] = node->child_ref(i);
-		assert(stack_node[sindex]  != BVH4Hair::invalidNode);
-		sindex++;
-	      }	    
+	    compactustore16f(m_pos,&stack_dist[old_sindex],tNear);
+	    compactustore16i(m_pos,&stack_node[old_sindex],children);
 	  }
       }
     
@@ -458,22 +454,16 @@ namespace embree
 	    /* continue with closest child and push all others */
 
 	    const mic_f min_dist = set_min_lanes(tNear_pos);
-	    assert(sindex < 3*BVH4Hair::maxDepth+1);
+	    const unsigned int old_sindex = sindex;
+	    sindex += countbits(hiti) - 1;
+	    assert(sindex < 3*BVH4i::maxDepth+1);
+	    const mic_i children = u_node->getChildren();
         
 	    const mic_m closest_child = eq(hitm,min_dist,tNear);
 	    const unsigned long closest_child_pos = bitscan64(closest_child);
 	    const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
 	    curNode = u_node->child_ref(closest_child_pos);
-
-	    assert(curNode  != BVH4Hair::invalidNode);
-
-	    long i = -1;
-	    while((i = bitscan64(i,m_pos)) != BITSCAN_NO_BIT_SET_64)	    
-	      {
-		stack_node[sindex] = u_node->child_ref(i);
-		assert(stack_node[sindex]  != BVH4Hair::invalidNode);
-		sindex++;
-	      }
+	    compactustore16i(m_pos,&stack_node[old_sindex],children);
 	  }
 	else
 	  {
@@ -555,26 +545,17 @@ namespace embree
 	      }
 
 	    /* continue with closest child and push all others */
-
-
 	    const mic_f min_dist = set_min_lanes(tNear_pos);
-	    assert(sindex < 3*BVH4Hair::maxDepth+1);
+	    const unsigned int old_sindex = sindex;
+	    sindex += countbits(hiti) - 1;
+	    assert(sindex < 3*BVH4i::maxDepth+1);
+	    const mic_i children = node->getChildren();
         
 	    const mic_m closest_child = eq(hitm,min_dist,tNear);
 	    const unsigned long closest_child_pos = bitscan64(closest_child);
 	    const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
 	    curNode = node->child_ref(closest_child_pos);
-
-	    assert(curNode  != BVH4Hair::invalidNode);
-
-	    long i = -1;
-	    while((i = bitscan64(i,m_pos)) != BITSCAN_NO_BIT_SET_64)	    
-	      {
-		stack_node[sindex] = node->child_ref(i);
-		assert(stack_node[sindex]  != BVH4Hair::invalidNode);
-		sindex++;
-	      }
-	    
+	    compactustore16i(m_pos,&stack_node[old_sindex],children);
 	  }
       }  
   }
