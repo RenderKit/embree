@@ -1350,6 +1350,14 @@ namespace embree
       }
 #endif
     current.xfm = frame(axis).transposed();    
+
+#if 0
+    PING;
+    DBG_PRINT( current.xfm );
+    current.PreQuantizeMatrix();
+    DBG_PRINT( current.xfm );
+
+#endif
     DBG(DBG_PRINT(current.xfm));
   }
 

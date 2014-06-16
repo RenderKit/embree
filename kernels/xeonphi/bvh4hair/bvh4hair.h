@@ -110,57 +110,6 @@ namespace embree
     };
 
 
-    /* struct NodeRef */
-    /* { */
-    /*   /\*! Default constructor *\/ */
-    /*   __forceinline NodeRef () {} */
-
-    /*   /\*! Construction from integer *\/ */
-    /*   __forceinline NodeRef (size_t id) : _id(id) { } */
-
-    /*   /\*! Cast to size_t*\/ */
-    /*   __forceinline operator size_t() const { return _id; } */
-     
-    /*   /\*! checks if this is a leaf *\/ */
-    /*   __forceinline size_t isLeaf() const { return _id & leaf_mask; } */
-
-    /*   /\*! checks if this is a leaf *\/ */
-    /*   __forceinline size_t isLeaf(const size_t mask) const { return _id & mask; } */
-      
-    /*   /\*! checks if this is a node *\/ */
-    /*   __forceinline size_t isNode() const { return (_id & leaf_mask) == 0; } */
-      
-    /*   /\*! returns node pointer *\/ */
-    /*   __forceinline       void* node() const      { assert(isNode()); return (void*)((size_t)_id); } */
-
-    /*   __forceinline       void* ptr() const      { return (void*)_id; } */
-
-      
-    /*   /\*! returns leaf pointer *\/ */
-    /*   __forceinline char* leaf(size_t& num) const { */
-    /*     assert(isLeaf()); */
-    /*     num = (_id & (size_t)items_mask); */
-    /*     return (char*)(_id & offset_mask); */
-    /*   } */
-
-
-    /*   __forceinline size_t offset() const { */
-    /*     return _id & offset_mask; */
-    /*   } */
-
-    /*   __forceinline size_t items() const { */
-    /*     return _id & items_mask; */
-    /*   } */
-
-    /*   __forceinline size_t offsetIndex() const { */
-    /*     return _id >> encodingBits; */
-    /*   } */
-
-      
-    /* private: */
-    /*   size_t _id; */
-    /* }; */
-
     struct __aligned(64) UnalignedNode
     {
       mic_f matrixRowXYZW[3];
@@ -376,16 +325,6 @@ namespace embree
 	for (size_t i=0;i<4;i++)
 	  setInvalid(i);
       }
-
-      /* __forceinline void createNode(void *ptr, const size_t m) */
-      /* { */
-      /* 	size_t offset64 = (size_t)ptr | alignednode_mask; */
-      /* 	unsigned int lower_part  = (unsigned int)(offset64 & 0xffffffff); */
-      /* 	unsigned int upper_part = (unsigned int)(offset64 >> 32); */
-      /* 	lower[m].data  = lower_part; */
-      /* 	upper[m].data  = upper_part; */
-      /* 	ref[m] = offset64; */
-      /* } */
 
 
       __forceinline       NodeRef &child(size_t i)       { 

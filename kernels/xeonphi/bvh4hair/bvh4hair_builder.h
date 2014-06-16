@@ -51,8 +51,38 @@ namespace embree
 	  *(BuildRecord*)this = b;
 	  xfm = LinearSpace3fa( zero );
 	}
+
       __aligned(64) LinearSpace3fa xfm;
 
+      __forceinline void PreQuantizeMatrix()
+      {
+	mic_f col0 = broadcast4to16f(&xfm.vx) * 127.0f;
+	mic_f col1 = broadcast4to16f(&xfm.vy) * 127.0f;
+	mic_f col2 = broadcast4to16f(&xfm.vz) * 127.0f;
+	
+	mic_i char_col0,char_col1,char_col2;
+	store16f_int8(&char_col0,col0);
+	store16f_int8(&char_col1,col1);
+	store16f_int8(&char_col2,col2);
+
+	mic_f new_col0 = load16f_int8((char*)&char_col0);
+	mic_f new_col1 = load16f_int8((char*)&char_col1);
+	mic_f new_col2 = load16f_int8((char*)&char_col2);
+
+	store4f(&xfm.vx,new_col0);
+	store4f(&xfm.vy,new_col1);
+	store4f(&xfm.vz,new_col2);
+
+#if 0
+	DBG_PRINT( col0 );
+	DBG_PRINT( col1 );
+	DBG_PRINT( col2 );
+
+	DBG_PRINT( new_col0 );
+	DBG_PRINT( new_col1 );
+	DBG_PRINT( new_col2 );
+#endif
+      }
 
       __forceinline friend std::ostream &operator<<(std::ostream &o, const BuildRecordOBB &br)
 	{
