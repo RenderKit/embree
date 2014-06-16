@@ -1186,7 +1186,9 @@ namespace embree
       //children[i].parentID    = currentIndex;
       children[i].parentPtr   = &node[currentIndex].child(i);
       recurseOBB(children[i],alloc,mode,threadID,numThreads);
+
     }    
+
   }
 
   void BVH4HairBuilder::buildSubTree(BuildRecord& current, 
@@ -1351,10 +1353,11 @@ namespace embree
 #endif
     current.xfm = frame(axis).transposed();    
 
+    current.PreQuantizeMatrix();
+
 #if 0
     PING;
     DBG_PRINT( current.xfm );
-    current.PreQuantizeMatrix();
     DBG_PRINT( current.xfm );
 
 #endif
