@@ -79,7 +79,7 @@ namespace embree
       {
 	const size_t preSplitPrims = (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR);
 	const size_t numPrims = numPrimitives+preSplitPrims;
-	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE: 16;
+	const size_t minAllocNodes = numPrims ? (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE: 16;
 	const size_t numNodes = max((size_t)((numPrims+3)/4 * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
 
 	numMaxPrimitives = numPrims;
@@ -812,6 +812,8 @@ namespace embree
   // ==========================================================================================
   // ==========================================================================================
 
+//FIXME: use 8-bytes compact prim ref is used
+
   void BVH4iBuilderMemoryConservative::printBuilderName()
   {
     std::cout << "building BVH4i with memory conservative binned SAH builder (MIC) ... " << std::endl;    
@@ -821,7 +823,7 @@ namespace embree
   void BVH4iBuilderMemoryConservative::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
     enableTaskStealing = true;
-    enablePerCoreWorkQueueFill = false;
+    enablePerCoreWorkQueueFill = true; 
     
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
@@ -829,75 +831,12 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives;
-	const size_t minAllocNodes = numPrims ? (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE : 16;
-
+	const size_t minAllocNodes = numPrims ? (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE: 16;
 	const size_t numNodes = max((size_t)((numPrims+3)/4),minAllocNodes);
+	const size_t sizeNodeInBytes   = sizeof(BVH4i::QuantizedNode);
+	const size_t sizeAccelInBytes  = sizeof(Triangle1mc);
 
-	const size_t additional_size = 16 * CACHELINE_SIZE;
-
-	/* free previously allocated memory */
-
-	if (prims)  {
-	  assert(size_prims > 0);
-	  os_free(prims,size_prims);
-	}
-	if (node  ) {
-	  assert(bvh->size_node > 0);
-	  os_free(node ,bvh->size_node);
-	}
-	if (accel ) {
-	  assert(bvh->size_accel > 0);
-	  os_free(accel,bvh->size_accel);
-	}
-      
-	// === allocated memory for primrefs,nodes, and accel ===
-	const size_t sizeNodeInBytes  = sizeof(BVH4i::QuantizedNode);
-	//const size_t sizeNodeInBytes  = sizeof(BVH4i::Node);
-
-	const size_t numTopLevelNodes = 256;
-	const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
-	// FIXME too conservative due to global paritioning
-	//const size_t size_node     = (numNodes * BVH_NODE_PREALLOC_FACTOR + numTopLevelNodes) * sizeNodeInBytes + additional_size;
-	const size_t size_node     = max(size_primrefs + numTopLevelNodes * sizeNodeInBytes,(size_t)(numNodes * BVH_NODE_PREALLOC_FACTOR + numTopLevelNodes) * sizeNodeInBytes); 
-
-	const size_t size_accel    = 0;
-
-	numAllocated64BytesBlocks = size_node / sizeof(mic_i) - numTopLevelNodes;
-	
-#if DEBUG
-	DBG_PRINT( sizeof(BVH4i::QuantizedNode) );
-	DBG_PRINT( num64BytesBlocksPerNode );
-	DBG_PRINT( numPrims );
-	DBG_PRINT( numNodes );
-	DBG_PRINT( sizeNodeInBytes );
-
-	DBG_PRINT( size_node );
-	DBG_PRINT( size_accel );
-
-	DBG_PRINT(numAllocated64BytesBlocks);
-	DBG_PRINT(size_primrefs);
-	DBG_PRINT(size_node);
-	DBG_PRINT(size_accel);
-	DBG_PRINT( numTopLevelNodes * sizeNodeInBytes );
-	DBG_PRINT( size_node - numTopLevelNodes * sizeNodeInBytes );
-	
-#endif
-
-	// === to do: os_reserve ===
-	prims = (PrimRef*) os_malloc(size_primrefs);
-	node  = (mic_i  *) os_malloc(size_node);
-
-	accel = (Triangle1*)((char*)node + numTopLevelNodes * sizeNodeInBytes); // for global paritioning
-
-	assert(prims  != 0);
-	assert(node   != 0);
-	assert(accel  != 0);
-
-	bvh->accel      = prims;
-	bvh->qbvh       = (BVH4i::Node*)node;
-	bvh->size_node  = size_node;
-	bvh->size_accel = size_primrefs;
-	
+	allocateMemoryPools(numPrims,numNodes,sizeNodeInBytes,sizeAccelInBytes);	
       }    
   }
 
@@ -942,9 +881,10 @@ namespace embree
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
 
-    const PrimRef*  bptr = prims + startID;
+    PrimRef*  __restrict bptr    = prims + startID;
+    Triangle1mc*  __restrict acc = (Triangle1mc*)accel + startID;
 
-    for (size_t j=startID; j<endID; j++, bptr++)
+    for (size_t j=startID; j<endID; j++, bptr++,acc++)
       {
 	prefetch<PFHINT_NTEX>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2EX>(bptr + L2_PREFETCH_ITEMS);
@@ -962,8 +902,6 @@ namespace embree
 	Vec3fa *vptr0 = (Vec3fa*)&mesh->vertex(tri.v[0]);
 	Vec3fa *vptr1 = (Vec3fa*)&mesh->vertex(tri.v[1]);
 	Vec3fa *vptr2 = (Vec3fa*)&mesh->vertex(tri.v[2]);
-
-	Triangle1mc *acc = (Triangle1mc*)bptr;
 
 	acc->v0 = vptr0;
 	acc->v1 = vptr1;

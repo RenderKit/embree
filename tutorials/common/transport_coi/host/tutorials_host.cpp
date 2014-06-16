@@ -293,6 +293,13 @@ namespace embree
     parms.numDirectionalLights = scene->directionalLights.size();
     parms.numDistantLights = scene->distantLights.size();
 
+#if 1
+    DBG_PRINT(  scene->ambientLights.size() );
+    DBG_PRINT(  scene->pointLights.size() );
+    DBG_PRINT(  scene->directionalLights.size() );
+    DBG_PRINT(  scene->distantLights.size() );
+
+#endif
     COIEVENT event;
     memset(&event,0,sizeof(event));
 
