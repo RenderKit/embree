@@ -260,14 +260,14 @@ namespace embree
     COIBUFFER ambientLightsBuffer;
     size_t ambientLightsBytes = max(size_t(16),scene->ambientLights.size()*sizeof(OBJScene::AmbientLight));
     void* ambientLightsPtr = scene->ambientLights.size() ? &scene->ambientLights.front() : NULL;
-    result = COIBufferCreate(ambientLightsBytes,COI_BUFFER_STREAMING_TO_SINK,0,ambientLightsPtr,1,&process,&&buffers[1]);
+    result = COIBufferCreate(ambientLightsBytes,COI_BUFFER_STREAMING_TO_SINK,0,ambientLightsPtr,1,&process,&buffers[1]);
     if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     /* send point lights */
     COIBUFFER pointLightsBuffer;
     size_t pointLightsBytes = max(size_t(16),scene->pointLights.size()*sizeof(OBJScene::PointLight));
     void* pointLightsPtr = scene->pointLights.size() ? &scene->pointLights.front() : NULL;
-    result = COIBufferCreate(pointLightsBytes,COI_BUFFER_STREAMING_TO_SINK,0,pointLightsPtr,1,&process,&&buffers[2]);
+    result = COIBufferCreate(pointLightsBytes,COI_BUFFER_STREAMING_TO_SINK,0,pointLightsPtr,1,&process,&buffers[2]);
     if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     /* send directional lights */
@@ -304,8 +304,8 @@ namespace embree
     if (result != COI_SUCCESS) throw std::runtime_error("COIEventWait failed: "+std::string(COIResultGetName(result)));
 
     /* destroy buffers again */
-    result = COIBufferDestroy(materialBuffer);
-    if (result != COI_SUCCESS) throw std::runtime_error("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
+    // result = COIBufferDestroy(materialBuffer);
+    // if (result != COI_SUCCESS) throw std::runtime_error("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
 
     /* send all meshes */
     for (size_t i=0; i<scene->meshes.size(); i++) 

@@ -110,6 +110,8 @@ namespace embree
     struct AmbientLight
     {
     public:
+      AmbientLight () {}
+
       AmbientLight (const Vec3fa& L) : L(L) {}
 
     public:
@@ -119,6 +121,8 @@ namespace embree
     struct PointLight
     {
     public:
+      PointLight () {}
+
       PointLight (const Vec3fa& P, const Vec3fa& I) : P(P), I(I) {}
 
     public:
@@ -129,6 +133,8 @@ namespace embree
     struct DirectionalLight
     {
     public:
+      DirectionalLight () {}
+
       DirectionalLight (const Vec3fa& D, const Vec3fa& E) : D(D), E(E) {}
 
     public:
@@ -139,6 +145,8 @@ namespace embree
     struct DistantLight
     {
     public:
+      DistantLight() {}
+
       DistantLight (const Vec3fa& D, const Vec3fa& L, const float halfAngle) 
       : D(D), L(L), halfAngle(halfAngle), radHalfAngle(deg2rad(halfAngle)), cosHalfAngle(cos(deg2rad(halfAngle))) {}
 
