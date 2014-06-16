@@ -112,7 +112,6 @@ namespace embree
 
       for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
       { 			    
-	//DBG_PRINT(currentID);
 	const TriangleMesh::Triangle& tri = mesh->triangle(i);
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
@@ -132,8 +131,6 @@ namespace embree
 	store4f(&local_prims[numLocalPrims].upper,bmax);	
 	local_prims[numLocalPrims].lower.a = g;
 	local_prims[numLocalPrims].upper.a = i;
-
-	//DBG_PRINT( local_prims[numLocalPrims] );
 
 	numLocalPrims++;
 	if (unlikely(((size_t)dest % 64) != 0) && numLocalPrims == 1)
@@ -186,7 +183,7 @@ namespace embree
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
 	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
-	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(BVH4mb::Triangle01));
+	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4mb::Node),sizeof(BVH4mb::Triangle01));
       }
   }
 
@@ -247,273 +244,178 @@ namespace embree
     LockStepTaskScheduler::dispatchTask( task_createTriangle01AccelMB, this, threadIndex, threadCount );   
   }
 
-  void BVH4mbBuilder::refit(const size_t index)
+  
+  BBox3fa BVH4mbBuilder::refit(const BVH4i::NodeRef &ref)
   {   
-    BVHNode& entry = node[index];
-    if (unlikely(entry.isLeaf()))
+    if (unlikely(ref.isLeaf()))
       {
-	unsigned int accel_entries = entry.items();
-	unsigned int accel_offset  = entry.itemListOfs();
+	unsigned int items = ref.items();
 	BBox3fa leaf_bounds = empty;
-	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)accel + accel_offset;
-	for (size_t i=0;i<accel_entries;i++)
-	  {
-	    leaf_bounds.extend( accelMB[i].t1.bounds() );
-	  }
+	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)ref.leaf<8>(accel);
 
-	*(BBox3fa*)&node[index+4] = leaf_bounds;
-	return;
-      }
-
-    const size_t childrenID = entry.firstChildID();
-    const size_t items    = entry.items();
-    BBox3fa* next = (BBox3fa*)&node[childrenID+4];
-    
-    /* init second node */
-    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-    store16f_ngo(next + 0,init_node);
-    store16f_ngo(next + 2,init_node);
-
-    BBox3fa parentBounds = empty;
-    for (size_t i=0; i<items; i++) 
-    {
-      const size_t childIndex = childrenID + i;	    	    
-      refit(childIndex);
-    }      
-
-
-    for (size_t i=0; i<items; i++) 
-      parentBounds.extend( next[i] );
-
-    *(BBox3fa*)&node[index+4] = parentBounds;    
-
-  }    
-
-  void BVH4mbBuilder::check_tree(const unsigned index)
-  {
-    BVHNode& entry = node[index];
-    if (unlikely(entry.isLeaf()))
-      {
-	unsigned int accel_entries = entry.items();
-	unsigned int accel_offset  = entry.itemListOfs();
-	BBox3fa leaf_bounds = empty;
-	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)accel + accel_offset;
-	for (size_t i=0;i<accel_entries;i++)
-	  leaf_bounds.extend( accelMB[i].t1.bounds() );
-	if (leaf_bounds != *(BBox3fa*)&node[index+4])
-	  {
-	    DBG_PRINT(leaf_bounds);
-	    DBG_PRINT(*(BBox3fa*)&node[index+4]);
-	    DBG_PRINT(index);
-	    FATAL("LEAF");
-	  }
-      }
-    else
-      {
-	const size_t childrenID = entry.firstChildID();
-	const size_t items    = entry.items();
-	BBox3fa* next = (BBox3fa*)&node[childrenID+4];
-
-	BBox3fa bounds = empty;
-	for (size_t i=0; i<items; i++) 
-	  bounds.extend ( next[i]  );
-
-	if (index != 0)
-	  if ( bounds != *(BBox3fa*)&node[index+4])
-	    {
-	      DBG_PRINT(bounds);
-	      DBG_PRINT(*(BBox3fa*)&node[index+4]);
-	      DBG_PRINT(index);
-	    FATAL("NODE");
-	    }
-
-	for (size_t i=0; i<items; i++) 
-	  {
-	    const size_t childIndex = childrenID + i;	    	    
-	    check_tree(childIndex);
-	  }
-      }
-    
-  }
-
-  BBox3fa BVH4mbBuilder::refit_subtree(const size_t index)
-  {
-    BBox3fa local[4];
-
-    BVHNode& entry = node[index];
-    if (unlikely(entry.isLeaf()))
-      {
-	unsigned int accel_entries = entry.items();
-	unsigned int accel_offset  = entry.itemListOfs();
-	BBox3fa leaf_bounds = empty;
-	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)accel + accel_offset;
-
-	for (size_t i=0;i<accel_entries;i++)
+	for (size_t i=0;i<items;i++)
 	  prefetch<PFHINT_L1>(&accelMB[i].t1);
 
-	for (size_t i=0;i<accel_entries;i++)
+	for (size_t i=0;i<items;i++)
 	  leaf_bounds.extend( accelMB[i].t1.bounds() );
+
 	return leaf_bounds;
       }
 
-    prefetch<PFHINT_L1>(local + 0);
-    prefetch<PFHINT_L1>(local + 2);
+    mic_f node_lower_t1 = broadcast4to16f(&BVH4i::initQBVHNode[0]);
+    mic_f node_upper_t1 = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+    mic_m m_lane = 0xf;
 
-    const size_t childrenID = entry.firstChildID();
-    const size_t items    = entry.items();
-    BBox3fa* next = (BBox3fa*)&node[childrenID+4];
+    BVH4mb::Node *n = (BVH4mb::Node*)ref.node(node);
+    BBox3fa parentBounds = empty;
+    for (size_t i=0;i<4;i++)
+      {
+	if (n->child(i) == BVH4i::invalidNode) break;
+	BBox3fa bounds = refit( n->child(i) );
+	const mic_f b_lower = broadcast4to16f(&bounds.lower);
+	const mic_f b_upper = broadcast4to16f(&bounds.upper);
+	node_lower_t1 = select(m_lane,b_lower,node_lower_t1);
+	node_upper_t1 = select(m_lane,b_upper,node_upper_t1);
+	m_lane = (unsigned int)m_lane << 4;
+	parentBounds.extend( bounds );
+      }
+    store16f_ngo((mic_f*)n->lower_t1,node_lower_t1);
+    store16f_ngo((mic_f*)n->upper_t1,node_upper_t1);            
 
-    /* init second node */
-    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-    store16f(local + 0,init_node);
-    store16f(local + 2,init_node);
+    return parentBounds;
+  }    
 
+  BBox3fa BVH4mbBuilder::check_tree(const BVH4i::NodeRef &ref)
+  {
 
-    BBox3fa bounds = empty;
-    for (size_t i=0; i<items; i++) 
-    {
-      const size_t childIndex = childrenID + i;	    	    
-      BBox3fa childBounds = refit_subtree(childIndex);
-      local[i] = childBounds;
-      bounds.extend ( childBounds );
-    }      
+    if (unlikely(ref.isLeaf()))
+      {
+	unsigned int items = ref.items();
+	BBox3fa leaf_bounds = empty;
+	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)ref.leaf<8>(accel);
+	for (size_t i=0;i<items;i++)
+	  {
+	    leaf_bounds.extend( accelMB[i].t1.bounds() );
+	  }
+	return leaf_bounds;
+      }
 
-    store16f_ngo(next + 0,load16f(&local[0]));
-    store16f_ngo(next + 2,load16f(&local[2]));
-    
-    return bounds;
-    
+    BVH4mb::Node *n = (BVH4mb::Node*)ref.node(node);
+    BBox3fa parentBounds = empty;
+    for (size_t i=0;i<4;i++)
+      {
+	if (n->child(i) == BVH4i::invalidNode) break;
+	BBox3fa bounds = check_tree( n->child(i) );
+	
+	if (bounds != n->bounds_t1(i))
+	  {
+	    DBG_PRINT(bounds);
+	    DBG_PRINT(n->bounds_t1(i));
+	    DBG_PRINT(ref);
+	    FATAL("bounds don't match");
+	  }
+	parentBounds.extend( n->bounds_t1(i) );
+      }
+    return parentBounds;
   }
 
 
-
-
-  void BVH4mbBuilder::generate_subtrees(const size_t index,const size_t depth, size_t &subtrees)
+  void BVH4mbBuilder::generate_subtrees(const BVH4i::NodeRef &ref,const size_t depth, size_t &subtrees)
   {
-    BVHNode& entry = node[index];
-
-    if (depth == GENERATE_SUBTREES_MAX_TREE_DEPTH || entry.isLeaf())
+    if (depth == GENERATE_SUBTREES_MAX_TREE_DEPTH || ref.isLeaf())
       {
-	unsigned int *subtrees_array = (unsigned int*)prims;
-	subtrees_array[subtrees++] = index;
+	BVH4i::NodeRef *subtrees_array = (BVH4i::NodeRef *)prims;
+	subtrees_array[subtrees++] = ref;
 	return;
       }
 
-    const size_t childrenID = entry.firstChildID();
-    const size_t items      = entry.items();
+    BVH4mb::Node *n = (BVH4mb::Node*)ref.node(node);
 
-    for (size_t i=0; i<items; i++) 
+    for (size_t i=0;i<4;i++)
       {
-	const size_t childIndex = childrenID + i;	    	    
-	generate_subtrees(childIndex,depth+1,subtrees);
-      }      
-  }
-
-
-  BBox3fa BVH4mbBuilder::refit_toplevel(const size_t index,const size_t depth)
-  {
-    BVHNode& entry = node[index];
-
-    if (depth == GENERATE_SUBTREES_MAX_TREE_DEPTH || entry.isLeaf())
-      {
-	return *(BBox3fa*)&node[index+4];
-      }
-
-    const size_t childrenID = entry.firstChildID();
-    const size_t items    = entry.items();
-    BBox3fa* next = (BBox3fa*)&node[childrenID+4];
-
-    __aligned(64) BBox3fa local[4];
-
-    /* init second node */
-    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-    store16f(local + 0,init_node);
-    store16f(local + 2,init_node);
-
-
-    BBox3fa bounds = empty;
-    for (size_t i=0; i<items; i++) 
-    {
-      const size_t childIndex = childrenID + i;	    	    
-      BBox3fa childBounds = refit_toplevel(childIndex,depth+1);
-      local[i] = childBounds;
-      bounds.extend ( childBounds );
-    }      
-
-    store16f_ngo(next + 0,load16f(&local[0]));
-    store16f_ngo(next + 2,load16f(&local[2]));
-    
-    return bounds;
-  }
-
-  __forceinline void convertToBVH4MBLayout(BVHNode *__restrict__ const bptr)
-  {
-    const mic_i box01 = load16i((int*)(bptr + 0));
-    const mic_i box23 = load16i((int*)(bptr + 2));
-
-    const mic_i box_min01 = permute<2,0,2,0>(box01);
-    const mic_i box_max01 = permute<3,1,3,1>(box01);
-
-    const mic_i box_min23 = permute<2,0,2,0>(box23);
-    const mic_i box_max23 = permute<3,1,3,1>(box23);
-    const mic_i box_min0123 = select(0x00ff,box_min01,box_min23);
-    const mic_i box_max0123 = select(0x00ff,box_max01,box_max23);
-
-    const mic_m min_d_mask = bvhLeaf(box_min0123) != mic_i::zero();
-    const mic_i childID    = bvhChildID(box_min0123);
-    const mic_i min_d_node = qbvhCreateNode(childID,mic_i::zero());
-    const mic_i min_d_leaf = ((box_min0123 ^ BVH_LEAF_MASK)<<0) | QBVH_LEAF_MASK; // * 2 as accel size is 128 bytes now
-    const mic_i min_d      = select(min_d_mask,min_d_leaf,min_d_node);
-    const mic_i bvh4_min   = select(0x7777,box_min0123,min_d);
-    const mic_i bvh4_max   = box_max0123;
-    store16i_nt((int*)(bptr + 0),bvh4_min);
-    store16i_nt((int*)(bptr + 2),bvh4_max);
-  }
-
-  void BVH4mbBuilder::convertToSOALayoutMB(const size_t threadID, const size_t numThreads)
-  {
-    const size_t startID = (threadID+0)*numNodes/numThreads;
-    const size_t endID   = (threadID+1)*numNodes/numThreads;
-
-    BVHNode  * __restrict__  bptr = ( BVHNode*)node + startID*4;
-
-    BVH4i::Node * __restrict__  qptr = (BVH4i::Node*)node + startID;
-
-    for (unsigned int n=startID;n<endID;n++,qptr++,bptr+=4) 
-      {
-	prefetch<PFHINT_L1EX>(bptr+4);
-	prefetch<PFHINT_L2EX>(bptr+4*4);
-	convertToBVH4MBLayout(bptr);
-	evictL1(bptr);
+	if (n->child(i) == BVH4i::invalidNode) break;
+	generate_subtrees(n->child(i),depth+1,subtrees);
       }
   }
 
+
+  BBox3fa BVH4mbBuilder::refit_toplevel(const BVH4i::NodeRef &ref,const size_t depth)
+  {
+    if (unlikely(ref.isLeaf()))
+      {
+	unsigned int items = ref.items();
+	BBox3fa leaf_bounds = empty;
+	BVH4mb::Triangle01* accelMB = (BVH4mb::Triangle01*)ref.leaf<8>(accel);
+
+	for (size_t i=0;i<items;i++)
+	  prefetch<PFHINT_L1>(&accelMB[i].t1);
+
+	for (size_t i=0;i<items;i++)
+	  leaf_bounds.extend( accelMB[i].t1.bounds() );
+
+	return leaf_bounds;
+      }
+
+    if (depth == GENERATE_SUBTREES_MAX_TREE_DEPTH)
+      {
+	BVH4mb::Node *n = (BVH4mb::Node*)ref.node(node);
+	BBox3fa parentBounds = empty;
+	for (size_t i=0;i<4;i++)
+	  {
+	    if (n->child(i) == BVH4i::invalidNode) break;
+	    parentBounds.extend( n->bounds_t1(i) );
+	  }
+	return parentBounds;
+      }
+
+    mic_f node_lower_t1 = broadcast4to16f(&BVH4i::initQBVHNode[0]);
+    mic_f node_upper_t1 = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+    mic_m m_lane = 0xf;
+
+    BVH4mb::Node *n = (BVH4mb::Node*)ref.node(node);
+    BBox3fa parentBounds = empty;
+    for (size_t i=0;i<4;i++)
+      {
+	if (n->child(i) == BVH4i::invalidNode) break;
+	BBox3fa bounds = refit_toplevel( n->child(i), depth + 1 );
+	const mic_f b_lower = broadcast4to16f(&bounds.lower);
+	const mic_f b_upper = broadcast4to16f(&bounds.upper);
+	node_lower_t1 = select(m_lane,b_lower,node_lower_t1);
+	node_upper_t1 = select(m_lane,b_upper,node_upper_t1);
+	m_lane = (unsigned int)m_lane << 4;
+	parentBounds.extend( bounds );
+      }
+    store16f_ngo((mic_f*)n->lower_t1,node_lower_t1);
+    store16f_ngo((mic_f*)n->upper_t1,node_upper_t1);            
+
+    return parentBounds;
+
+  }
 
   void BVH4mbBuilder::refitBVH4MB(const size_t threadID, const size_t numThreads)
   {
     const size_t startID = (threadID+0)*subtrees/numThreads;
     const size_t endID   = (threadID+1)*subtrees/numThreads;
 
-    unsigned int *subtrees_array = (unsigned int*)prims;
+    BVH4i::NodeRef *subtrees_array = (BVH4i::NodeRef *)prims;
 
     while(1)
       {
 	unsigned int ID = atomicID.inc();
 	if (ID >= subtrees) break;
-	const unsigned int index = subtrees_array[ID];
-	BBox3fa bounds = refit_subtree(index);
-	*(BBox3fa*)&node[index+4] = bounds;		
+	const BVH4i::NodeRef &ref = subtrees_array[ID];
+	BBox3fa bounds = refit(ref);
       }
   }
 
-  void BVH4mbBuilder::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
+  void BVH4mbBuilder::finalize(const size_t threadIndex, const size_t threadCount)
   {
     TIMER(double msec = 0.0);
 
 
     if (numPrimitives < SERIAL_REFIT_THRESHOLD)
       {
-	refit(0);
+	refit(bvh->root);
       }
     else
       {
@@ -521,7 +423,7 @@ namespace embree
 	// ------------------------
 	atomicID.reset(0);
 	subtrees = 0;
-	generate_subtrees(0,0,subtrees);
+	generate_subtrees(bvh->root,0,subtrees);
 	// ------------------------
 	TIMER(msec = getSeconds()-msec);    
 	TIMER(std::cout << "generate subtrees " << 1000. * msec << " ms" << std::endl << std::flush);
@@ -537,7 +439,7 @@ namespace embree
 
 	TIMER(msec = getSeconds());
 	// ------------------------    
-	refit_toplevel(0,0);
+	refit_toplevel(bvh->root,0);
 	// ------------------------
 	TIMER(msec = getSeconds()-msec);    
 	TIMER(std::cout << "refit toplevel " << 1000. * msec << " ms" << std::endl << std::flush);
@@ -546,14 +448,14 @@ namespace embree
 
 #if defined(DEBUG)
     std::cout << "checking tree..." << std::flush;
-    check_tree(0);
+    check_tree(bvh->root);
     std::cout << "done" << std::endl << std::flush;
 #endif
 
 
     TIMER(msec = getSeconds());
 
-    LockStepTaskScheduler::dispatchTask( task_convertToSOALayoutMB, this, threadIndex, threadCount );    
+    //LockStepTaskScheduler::dispatchTask( task_convertToSOALayoutMB, this, threadIndex, threadCount );    
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "convert " << 1000. * msec << " ms" << std::endl << std::flush);

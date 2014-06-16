@@ -46,7 +46,7 @@ namespace embree
 
   void ParallelBuilderInterface::buildSubTrees(const size_t threadID, const size_t numThreads)
   {
-    NodeAllocator alloc(atomicID,numAllocatedNodes);
+    NodeAllocator alloc(atomicID,numAllocated64BytesBlocks);
     __aligned(64) BuildRecord br;
     const size_t numCores = (numThreads+3)/4;
     const size_t globalCoreID   = threadID/4;

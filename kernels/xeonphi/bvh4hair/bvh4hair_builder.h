@@ -25,8 +25,6 @@
 #include "geometry/bezier1i.h"
 
 
-#define BVH_NODE_PREALLOC_FACTOR                 1.15f
-
 namespace embree
 {
 
@@ -63,7 +61,6 @@ namespace embree
 	  o << "begin       " << br.begin << " ";
 	  o << "end         " << br.end << " ";
 	  o << "items       " << br.end-br.begin << " ";
-	  //o << "parentID    " << br.parentID << " ";
 	  o << "parentPtr   " << br.parentPtr << " ";
 	  o << "flags       " << br.flags << " ";
 	  o << "sArea       " << br.sArea << " ";
@@ -111,6 +108,8 @@ namespace embree
 			      const size_t mode,
 			      const size_t threadID, 
 			      const size_t numThreads);
+
+    virtual std::string getStatistics();
 
     void build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event);
 

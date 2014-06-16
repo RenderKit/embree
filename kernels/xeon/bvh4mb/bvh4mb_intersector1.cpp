@@ -34,15 +34,7 @@ namespace embree
       float popDist = neg_inf;                //!< pre-popped distance of top node from the stack
       StackItem stack[1+3*BVH4MB::maxDepth];  //!< stack of nodes that still need to get traversed
       StackItem* stackPtr = stack+1;          //!< current stack pointer
-      
-      /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray.dir.x >= 0 ? 0*2*sizeof(ssef) : 1*2*sizeof(ssef);
-      const size_t nearY = ray.dir.y >= 0 ? 2*2*sizeof(ssef) : 3*2*sizeof(ssef);
-      const size_t nearZ = ray.dir.z >= 0 ? 4*2*sizeof(ssef) : 5*2*sizeof(ssef);
-      const size_t farX  = nearX ^ 32;
-      const size_t farY  = nearY ^ 32;
-      const size_t farZ  = nearZ ^ 32;
-      
+            
       /*! load the ray into SIMD registers */
       const sse3f norg(-ray.org.x,-ray.org.y,-ray.org.z);
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
@@ -50,6 +42,14 @@ namespace embree
       const ssef rayNear(ray.tnear);
       ssef rayFar(ray.tfar);
       
+      /*! offsets to select the side that becomes the lower or upper bound */
+      const size_t nearX = ray_rdir.x >= 0 ? 0*2*sizeof(ssef) : 1*2*sizeof(ssef);
+      const size_t nearY = ray_rdir.y >= 0 ? 2*2*sizeof(ssef) : 3*2*sizeof(ssef);
+      const size_t nearZ = ray_rdir.z >= 0 ? 4*2*sizeof(ssef) : 5*2*sizeof(ssef);
+      const size_t farX  = nearX ^ 32;
+      const size_t farY  = nearY ^ 32;
+      const size_t farZ  = nearZ ^ 32;
+
       while (true)
       {
         /*! pop next node */
@@ -159,15 +159,7 @@ namespace embree
       Base* stack[1+3*BVH4MB::maxDepth];  //!< stack of nodes that still need to get traversed
       Base** stackPtr = stack+1;          //!< current stack pointer
       stack[0] = bvh->root;               //!< push first node onto stack
-      
-      /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = (ray.dir.x >= 0) ? 0*2*sizeof(ssef) : 1*2*sizeof(ssef);
-      const size_t nearY = (ray.dir.y >= 0) ? 2*2*sizeof(ssef) : 3*2*sizeof(ssef);
-      const size_t nearZ = (ray.dir.z >= 0) ? 4*2*sizeof(ssef) : 5*2*sizeof(ssef);
-      const size_t farX  = nearX ^ 32;
-      const size_t farY  = nearY ^ 32;
-      const size_t farZ  = nearZ ^ 32;
-      
+            
       /*! load the ray into SIMD registers */
       const sse3f norg(-ray.org.x,-ray.org.y,-ray.org.z);
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
@@ -175,6 +167,14 @@ namespace embree
       const ssef rayNear(ray.tnear);
       const ssef rayFar (ray.tfar);
       
+      /*! offsets to select the side that becomes the lower or upper bound */
+      const size_t nearX = (ray_rdir.x >= 0) ? 0*2*sizeof(ssef) : 1*2*sizeof(ssef);
+      const size_t nearY = (ray_rdir.y >= 0) ? 2*2*sizeof(ssef) : 3*2*sizeof(ssef);
+      const size_t nearZ = (ray_rdir.z >= 0) ? 4*2*sizeof(ssef) : 5*2*sizeof(ssef);
+      const size_t farX  = nearX ^ 32;
+      const size_t farY  = nearY ^ 32;
+      const size_t farZ  = nearZ ^ 32;
+
       /*! pop node from stack */
       while (true)
       {

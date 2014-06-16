@@ -233,6 +233,7 @@ extern "C" void device_init (int8* cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
+
 }
 
 #if !defined(__XEON_PHI__)
@@ -569,7 +570,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   float weight = 1.0f;
 
   rtcIntersect(g_scene,*((RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
-  ray.filter = NULL; // (RTCFilterFunc) intersectionFilter;
+  ray.filter = NULL; 
 
   if (ray.primID == -1)
     return Vec3fa(0.0f);
@@ -613,7 +614,7 @@ void renderTile(int taskIndex, int* pixels,
   const int x1 = min(x0+TILE_SIZE_X,width);
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
-  int seed = tileY*numTilesX+tileX+g_accu_count;
+  int seed = tileY*numTilesX+tileX+0 + g_accu_count;
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
@@ -621,7 +622,7 @@ void renderTile(int taskIndex, int* pixels,
     float fx = x + frand(seed);
     float fy = y + frand(seed);
     Vec3fa color = renderPixel(fx,fy,vx,vy,vz,p);
-
+    //Vec3fa color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
     /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];
     *dst = *dst + Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
@@ -670,7 +671,7 @@ extern "C" void device_render (int* pixels,
   /* render frame */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  enableFilterDispatch = renderPixel == renderPixelStandard;
+  enableFilterDispatch = renderPixel == renderPixelStandard; 
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
   enableFilterDispatch = false;
   rtcDebug();

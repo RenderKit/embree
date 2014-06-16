@@ -84,18 +84,20 @@ namespace embree
   // =======================================================================================================
 
 
-  BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, void* geometry)
+  
+  BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, void* geometry, const size_t bvh4iNodeSize)
     : ParallelBinnedSAHBuilder(geometry),
       bvh(bvh),       
       prims(NULL), 
       node(NULL), 
       accel(NULL), 
       size_prims(0),
-      numNodesToAllocate(BVH4i::N)      
+      num64BytesBlocksPerNode(bvh4iNodeSize / 64)
   {
     DBG(PING);
   }
 
+  
   BVH4iBuilder::~BVH4iBuilder()
   {
     DBG(PING);
@@ -106,6 +108,7 @@ namespace embree
     }    
   }
 
+  
   size_t BVH4iBuilder::getNumPrimitives()
   {
     /* count total number of triangles */
@@ -123,6 +126,7 @@ namespace embree
   
   }
 
+  
   void BVH4iBuilder::allocateMemoryPools(const size_t numPrims, 
 					 const size_t numNodes,
 					 const size_t sizeNodeInBytes,
@@ -155,15 +159,21 @@ namespace embree
     const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size;
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
-    numAllocatedNodes = size_node / sizeof(BVHNode);
-      
-    DBG(DBG_PRINT(numAllocatedNodes));
-    DBG(DBG_PRINT(size_primrefs));
-    DBG(DBG_PRINT(size_node));
-    DBG(DBG_PRINT(size_accel));
+    numAllocated64BytesBlocks = size_node / sizeof(mic_f);
+    
+#if DEBUG  
+    DBG_PRINT(numPrims);
+    DBG_PRINT(numNodes);
+    DBG_PRINT(sizeNodeInBytes);
+    DBG_PRINT(sizeAccelInBytes);
+    DBG_PRINT(numAllocated64BytesBlocks);
+    DBG_PRINT(size_primrefs);
+    DBG_PRINT(size_node);
+    DBG_PRINT(size_accel);
+#endif
 
     prims = (PrimRef  *) os_malloc(size_primrefs); 
-    node  = (BVHNode  *) os_malloc(size_node);
+    node  = (mic_i    *) os_malloc(size_node);
     accel = (Triangle1*) os_malloc(size_accel);
 
     assert(prims  != 0);
@@ -174,8 +184,8 @@ namespace embree
     // memset(node,0,size_node);
     // memset(accel,0,size_accel);
 
-    bvh->accel = accel;
-    bvh->qbvh  = (BVH4i::Node*)node;
+    bvh->accel      = accel;
+    bvh->qbvh       = (BVH4i::Node*)node;
     bvh->size_node  = size_node;
     bvh->size_accel = size_accel;
 
@@ -186,7 +196,8 @@ namespace embree
     std::cout << "allocation time " << 1000. * msec << " ms for " << (float)(total) / 1024.0f / 1024.0f << " MB " << std::endl << std::flush;
 #endif
   }
-  
+
+    
   void BVH4iBuilder::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
     DBG(PING);
@@ -196,18 +207,20 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives+4;
-	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
-	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+	const size_t minAllocNodes = numPrims ? (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE : 16;
+	const size_t numNodes = max((size_t)((numPrims+3)/4 * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
 	allocateMemoryPools(numPrims,numNodes);
       }
   }
 
+  
   void BVH4iBuilder::printBuilderName()
   {
-    std::cout << "building BVH4i with SAH builder (MIC) ... " << std::endl;    
+    std::cout << "building BVH4i with SAH builder (MIC) ... " << std::endl;        
   }
 
 
+  
   void BVH4iBuilder::build(const size_t threadIndex, const size_t threadCount) 
   {
     DBG(PING);
@@ -217,7 +230,21 @@ namespace embree
     DBG(DBG_PRINT(totalNumPrimitives));
 
     /* print builder name */
-    if (unlikely(g_verbose >= 1)) printBuilderName();
+    if (unlikely(g_verbose >= 2)) {
+      printBuilderName();
+    }
+
+    if (likely(totalNumPrimitives == 0))
+      {
+	DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
+	bvh->root = BVH4i::invalidNode;
+	bvh->bounds = empty;
+	bvh->qbvh = NULL;
+	bvh->accel = NULL;
+	bvh->size_node  = 0;
+	bvh->size_accel = 0;
+	return;
+      }
 
     /* allocate BVH data */
     allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
@@ -259,39 +286,42 @@ namespace embree
       }
     else
       {
+	assert( numPrimitives > 0 );
 	/* number of primitives is small, just use single threaded mode */
-	if (likely(numPrimitives > 0))
-	  {
-	    DBG(std::cout << "SERIAL BUILD" << std::endl);
-	    build_parallel(0,1,0,0,NULL);
-	  }
-	else
-	  {
-	    DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
-	    /* handle empty scene */
-	    for (size_t i=0;i<4;i++)
-	      bvh->qbvh[0].setInvalid(i);
-	    for (size_t i=0;i<4;i++)
-	      bvh->qbvh[1].setInvalid(i);
-	    bvh->qbvh[0].lower[0].child = BVH4i::NodeRef(128);
-	    bvh->root = bvh->qbvh[0].lower[0].child; 
-	    bvh->bounds = empty;
-	  }
+	DBG(std::cout << "SERIAL BUILD" << std::endl);
+	build_parallel(0,1,0,0,NULL);
       }
 
     if (g_verbose >= 2) {
       double perf = totalNumPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
-      std::cout << BVH4iStatistics(bvh).str();
+      std::cout << getStatistics();
     }
 
   }
 
 
+  std::string BVH4iBuilder::getStatistics()
+  {
+    return BVH4iStatistics<BVH4i::Node>(bvh).str();
+  }
+
   // =======================================================================================================
   // =======================================================================================================
   // =======================================================================================================
 
+  void BVH4iBuilder::storeNodeDataUpdateParentPtrs(void *ptr,
+						   BuildRecord *__restrict__ const br,
+						   const size_t numChildren)
+  {
+    BVH4i::Node *__restrict__ n = (BVH4i::Node*)ptr;
+    for (size_t i=0;i<numChildren;i++)
+      br[i].parentPtr = &n->child(i);
+
+    storeNode(n,br,numChildren);    
+  }
+
+  
   void BVH4iBuilder::computePrimRefsTriangles(const size_t threadID, const size_t numThreads) 
   {
     const size_t numGroups = scene->size();
@@ -397,46 +427,9 @@ namespace embree
     global_bounds.extend_atomic(bounds);    
   }
 
-  __forceinline void reorderBVHNodesOnArea(BVHNode *__restrict__ const bptr)
+  
+  void BVH4iBuilder::finalize(const size_t threadIndex, const size_t threadCount)
   {
-    float node_area[4];
-    size_t valid = 0;
-    for (size_t i=0;i<4;i++) 
-      {
-	node_area[i] = area( bptr[i] );
-	if ( node_area[i] > 0.0f) valid++;
-      }
-    
-    if (valid == 0) return;
-
-    assert( valid >= 2 );
-    for (size_t j=0;j<valid-1;j++)
-      for (size_t i=j+1;i<valid;i++)
-	if ( area( bptr[j] ) > area( bptr[i] ) )
-	  std::swap( bptr[j], bptr[i] );
-  }
-
-  void BVH4iBuilder::convertToSOALayout(const size_t threadID, const size_t numThreads)
-  {
-    const size_t startID = (threadID+0)*numNodes/numThreads;
-    const size_t endID   = (threadID+1)*numNodes/numThreads;
-
-    BVHNode  * __restrict__  bptr = ( BVHNode*)node + startID*4;
-
-    BVH4i::Node * __restrict__  qptr = (BVH4i::Node*)node + startID;
-
-    for (unsigned int n=startID;n<endID;n++,qptr++,bptr+=4)
-      {
-	prefetch<PFHINT_L1EX>(bptr+4);
-	prefetch<PFHINT_L2EX>(bptr+4*4);
-	convertToBVH4Layout<false>(bptr);
-	evictL1(bptr);
-      }
-  }
-
-  void BVH4iBuilder::convertQBVHLayout(const size_t threadIndex, const size_t threadCount)
-  {
-    //LockStepTaskScheduler::dispatchTask( task_convertToSOALayout, this, threadIndex, threadCount );    
   }
 
   __forceinline void computeAccelerationData(const unsigned int &geomID,
@@ -456,11 +449,13 @@ namespace embree
     store16f_ngo(acc,tri_accel);
   }
 
+  
   void BVH4iBuilder::createAccel(const size_t threadIndex, const size_t threadCount)
   {
     LockStepTaskScheduler::dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );   
   }
 
+  
   void BVH4iBuilder::createTriangle1Accel(const size_t threadID, const size_t numThreads)
   {
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
@@ -480,7 +475,7 @@ namespace embree
       }
   }
 
-
+  
   void BVH4iBuilder::buildSubTree(BuildRecord& current, 
 				  NodeAllocator& alloc, 
 				  const size_t mode,
@@ -492,6 +487,7 @@ namespace embree
 
 
 
+  
   void BVH4iBuilder::parallelBinningGlobal(const size_t threadID, const size_t numThreads)
   {
     BuildRecord &current = global_sharedData.rec;
@@ -558,6 +554,7 @@ namespace embree
       }
   }
 
+  
   void BVH4iBuilder::parallelPartitioning(BuildRecord& current,
 					  PrimRef * __restrict__ l_source,
 					  PrimRef * __restrict__ r_source,
@@ -693,6 +690,7 @@ namespace embree
 
   }
 
+  
   void BVH4iBuilder::parallelPartitioningGlobal(const size_t threadID, const size_t numThreads)
   {
     BuildRecord &current = global_sharedData.rec;
@@ -736,6 +734,7 @@ namespace embree
   // =======================================================================================================
   // =======================================================================================================
 
+  
   bool BVH4iBuilder::splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
   {
 #if defined(DEBUG)
@@ -859,6 +858,7 @@ namespace embree
     return true;
   }
 
+  
   bool BVH4iBuilder::splitParallelGlobal( BuildRecord &current,
 					  BuildRecord &leftChild,
 					  BuildRecord &rightChild,
@@ -925,7 +925,7 @@ namespace embree
   }
 
 
-
+  
   bool BVH4iBuilder::splitParallelLocal(BuildRecord &current,
 					BuildRecord &leftChild,
 					BuildRecord &rightChild,
@@ -998,7 +998,7 @@ namespace embree
     return true;
   }
 
-
+  
   __forceinline bool BVH4iBuilder::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
   {
     if (unlikely(mode == BUILD_TOP_LEVEL))
@@ -1026,6 +1026,7 @@ namespace embree
       return splitSequential(current,left,right);
   }
 
+  
   bool BVH4iBuilder::split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
   {
     const unsigned int center = (current.begin + current.end)/2;
@@ -1047,7 +1048,8 @@ namespace embree
   // =======================================================================================================
   // =======================================================================================================
   // =======================================================================================================
-  
+
+    
   __forceinline void BVH4iBuilder::createLeaf(BuildRecord& current, NodeAllocator& alloc,const size_t threadIndex, const size_t threadCount)
   {
 #if defined(DEBUG)
@@ -1057,11 +1059,10 @@ namespace embree
     
     /* create leaf */
     if (current.items() <= BVH4i::N) {
-      //node[current.parentID].createLeaf(current.begin,current.items());
       createLeaf(current.parentPtr,current.begin,current.items());
 
 #if defined(DEBUG)
-      //checkLeafNode(node[current.parentID]);      
+      checkLeafNode(*(BVH4i::NodeRef*)current.parentPtr,current.bounds.geometry);      
 #endif
       return;
     }
@@ -1081,17 +1082,18 @@ namespace embree
     for (size_t i=0; i<numChildren; i++) 
       children[i].depth = current.depth+1;
 
-    const size_t currentIndex = alloc.get(numNodesToAllocate);
+    const size_t currentIndex = alloc.get(num64BytesBlocksPerNode);
 
     createNode(current.parentPtr,currentIndex,numChildren);
 
-    storeBVH4iNodesAndSetParentPtrs(&node[currentIndex],children,numChildren);
-    
+    storeNodeDataUpdateParentPtrs(&node[currentIndex],children,numChildren);
+
     /* recursivly create leaves */
     for (size_t i=0; i<numChildren; i++) 
       createLeaf(children[i],alloc,threadIndex,threadCount);
   }  
 
+  
   __forceinline void BVH4iBuilder::recurse(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads)
   {
     if (mode == BUILD_TOP_LEVEL) {
@@ -1105,6 +1107,7 @@ namespace embree
     else
       recurseSAH(current,alloc,RECURSE,threadID,numThreads);
   }
+  
   
   void BVH4iBuilder::recurseSAH(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads)
   {
@@ -1164,13 +1167,13 @@ namespace embree
     }
 
     /* allocate next four nodes */
-    const size_t currentIndex = alloc.get(numNodesToAllocate);
+    const size_t currentIndex = alloc.get(num64BytesBlocksPerNode);
 
     /* init used/unused nodes */
 
     createNode(current.parentPtr,currentIndex,numChildren);
-    
-    storeBVH4iNodesAndSetParentPtrs(&node[currentIndex],children,numChildren);
+
+    storeNodeDataUpdateParentPtrs(&node[currentIndex],children,numChildren);
 
     /* recurse into each child */
 
@@ -1179,13 +1182,14 @@ namespace embree
 
   }
 
-  void BVH4iBuilder::checkLeafNode(const BVHNode &entry)
+  
+  void BVH4iBuilder::checkLeafNode(const BVH4i::NodeRef &ref, const BBox3fa &bounds)
   {
-    if (!entry.isLeaf())
+    if (!ref.isLeaf())
       FATAL("no leaf");
 
-    unsigned int accel_entries = entry.items();
-    unsigned int accel_offset  = entry.itemListOfs();
+    unsigned int accel_entries = ref.items();
+    unsigned int accel_offset  = ref.offsetIndex();
 
     BBox3fa leaf_prim_bounds = empty;
     for (size_t i=0;i<accel_entries;i++)
@@ -1194,39 +1198,17 @@ namespace embree
 	leaf_prim_bounds.extend( prims[ accel_offset + i ].upper );
       }
 
-    if (!(subset(leaf_prim_bounds,entry))) 
+    if (!(subset(leaf_prim_bounds,bounds))) 
       {
-	DBG_PRINT(entry);
+	DBG_PRINT(bounds);
 	DBG_PRINT(leaf_prim_bounds);
 	FATAL("checkLeafNode");
       }
 
-#if 0
-    BBox3fa leaf_tri_bounds = empty;
-    for (size_t i=0;i<accel_entries;i++)
-      {
-	const unsigned int geomID = prims[ accel_offset + i ].geomID();
-	const unsigned int primID = prims[ accel_offset + i ].primID();
-
-	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-	const TriangleMesh::Triangle & tri = mesh->triangle(primID);
-
-	leaf_tri_bounds.extend( mesh->vertex(tri.v[0]) );
-	leaf_tri_bounds.extend( mesh->vertex(tri.v[1]) );
-	leaf_tri_bounds.extend( mesh->vertex(tri.v[2]) );	
-      }
-
-    if (!(subset(leaf_prim_bounds,entry) && subset(leaf_tri_bounds,leaf_prim_bounds))) 
-      {
-	DBG_PRINT(leaf_prim_bounds);
-	DBG_PRINT(leaf_tri_bounds);
-	FATAL("check build record");
-      }
-#endif
-
   }
 
 
+  
   void BVH4iBuilder::checkBuildRecord(const BuildRecord &current)
   {
     BBox3fa check_box;
@@ -1258,6 +1240,7 @@ namespace embree
       }
   }
 
+  
   void BVH4iBuilder::parallelBinningLocal(const size_t localThreadID,const size_t globalThreadID)
   {
     const size_t globalCoreID = globalThreadID/4;
@@ -1329,7 +1312,7 @@ namespace embree
 
   }
 
-
+  
   void BVH4iBuilder::parallelPartitioningLocal(const size_t localThreadID,const size_t globalThreadID)
   {
     const size_t threads = 4;
@@ -1374,6 +1357,7 @@ namespace embree
     
   }
 
+  
   void BVH4iBuilder::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
     LockStepTaskScheduler::dispatchTask( task_computePrimRefsTriangles, this, threadIndex, threadCount );
@@ -1384,7 +1368,7 @@ namespace embree
   // =======================================================================================================
   // =======================================================================================================
 
-
+  
   void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
     TIMER(double msec = 0.0);
@@ -1434,7 +1418,7 @@ namespace embree
     global_workStack.push_nolock(br);    
 
     /* work in multithreaded toplevel mode until sufficient subtasks got generated */    
-    NodeAllocator alloc(atomicID,numAllocatedNodes);
+    NodeAllocator alloc(atomicID,numAllocated64BytesBlocks);
 
     const size_t coreCount = (threadCount+3)/4;
     while (global_workStack.size() < coreCount &&
@@ -1458,8 +1442,10 @@ namespace embree
     /* now process all created subtasks on multiple threads */    
     TIMER(msec = getSeconds());    
     LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
-    numNodes = atomicID >> 2;
-    DBG(DBG_PRINT(atomicID));
+    numNodes = atomicID;
+#ifdef DEBUG
+    DBG_PRINT(atomicID);
+#endif
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
@@ -1468,11 +1454,10 @@ namespace embree
     createAccel(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_createAccel " << 1000. * msec << " ms" << std::endl << std::flush);
-
     
-    /* convert to SOA node layout */
+    /* finalize build */
     TIMER(msec = getSeconds());     
-    convertQBVHLayout(threadIndex, threadCount );
+    finalize(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_convertToSOALayout " << 1000. * msec << " ms" << std::endl << std::flush);
 

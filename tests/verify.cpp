@@ -1377,6 +1377,7 @@ namespace embree
 	rtcIntersect16(valid16,scene,ray16);
         bool ok0 = (primID & 2) ? (ray16.geomID[0] == -1) : (ray16.geomID[0] == 0);
         if (!ok0) passed = false;
+
       }
 #endif
       }
@@ -1470,6 +1471,7 @@ namespace embree
       bool ok1 = rtcore_filter_occluded(flag,RTC_GEOMETRY_STATIC);
       if (ok1) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
       passed &= ok1;
+
     }
     printf(" %s\n",passed ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");
     fflush(stdout);
@@ -2260,7 +2262,8 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
-	
+
+
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
     POSITIVE("barrier_sys",               test_barrier_sys());
@@ -2325,7 +2328,7 @@ namespace embree
     rtcore_watertight_plane16(100000);
 #endif
 
-#if defined(__FIX_RAYS__) 
+#if defined(__FIX_RAYS__) // FIXME: this mode is deactivated, did never really work
     rtcore_nan("nan_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1);
     rtcore_inf("inf_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1);
 

@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh8.h"
-#include "bvh8_builder2.h"
+#include "bvh8_builder.h"
 //#include "bvh8_refit.h"
 //#include "bvh8_rotate.h"
 #include "bvh8_statistics.h"
@@ -35,9 +35,9 @@ namespace embree
 {
   namespace isa
   {
-    template<> BVH8Builder2T<Triangle8 >::BVH8Builder2T (BVH8* bvh, Scene* scene, size_t mode) : BVH8Builder2(bvh,scene,NULL,mode,3,2,1.0f,false,sizeof(Triangle8),8,inf) {}
+    template<> BVH8BuilderT<Triangle8 >::BVH8BuilderT (BVH8* bvh, Scene* scene, size_t mode) : BVH8Builder(bvh,scene,NULL,mode,3,2,1.0f,false,sizeof(Triangle8),8,inf) {}
 
-    BVH8Builder2::BVH8Builder2 (BVH8* bvh, Scene* scene, TriangleMesh* mesh, size_t mode,
+    BVH8Builder::BVH8Builder (BVH8* bvh, Scene* scene, TriangleMesh* mesh, size_t mode,
 				size_t logBlockSize, size_t logSAHBlockSize, float intCost, 
 				bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
       : scene(scene), mesh(mesh), bvh(bvh), enableSpatialSplits(mode > 0), remainingReplications(0),
@@ -49,12 +49,12 @@ namespace embree
        needAllThreads = true;
     }
     
-    BVH8Builder2::~BVH8Builder2() {
+    BVH8Builder::~BVH8Builder() {
       bvh->alloc.shrink();
     }
 
     template<typename Triangle>
-    typename BVH8Builder2::NodeRef BVH8Builder2T<Triangle>::createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo)
+    typename BVH8Builder::NodeRef BVH8BuilderT<Triangle>::createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo)
     {
       /* allocate leaf node */
       size_t N = blocks(pinfo.size());
@@ -73,7 +73,7 @@ namespace embree
       return bvh->encodeLeaf(leaf,N);
     }
     
-    BVH8Builder2::NodeRef BVH8Builder2::createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
+    BVH8Builder::NodeRef BVH8Builder::createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
     {
 #if defined(_DEBUG)
       if (depth >= BVH8::maxBuildDepthLeaf) 
@@ -106,7 +106,7 @@ namespace embree
     }  
 
     template<bool PARALLEL>
-    const Split BVH8Builder2::find(size_t threadIndex, size_t threadCount, size_t depth, PrimRefList& prims, const PrimInfo& pinfo, bool spatial)
+    const Split BVH8Builder::find(size_t threadIndex, size_t threadCount, size_t depth, PrimRefList& prims, const PrimInfo& pinfo, bool spatial)
     {
       ObjectPartition::SplitInfo oinfo;
       ObjectPartition::Split osplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,prims,pinfo,logSAHBlockSize,oinfo);
@@ -126,7 +126,7 @@ namespace embree
     }
     
     template<bool PARALLEL>
-    __forceinline size_t BVH8Builder2::createNode(size_t threadIndex, size_t threadCount, BVH8Builder2* parent, BuildRecord& record, BuildRecord records_o[BVH8::N])
+    __forceinline size_t BVH8Builder::createNode(size_t threadIndex, size_t threadCount, BVH8Builder* parent, BuildRecord& record, BuildRecord records_o[BVH8::N])
     {
       /*! compute leaf and split cost */
       const float leafSAH  = parent->intCost*record.pinfo.leafSAH(parent->logSAHBlockSize);
@@ -203,7 +203,7 @@ namespace embree
       return numChildren;
     }
 
-    void BVH8Builder2::finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
+    void BVH8Builder::finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
     {
       BuildRecord children[BVH8::N];
       size_t N = createNode<false>(threadIndex,threadCount,this,record,children);
@@ -211,7 +211,7 @@ namespace embree
 	finish_build(threadIndex,threadCount,children[i]);
     }
 
-    void BVH8Builder2::continue_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
+    void BVH8Builder::continue_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
     {
       /* finish small tasks */
       if (record.pinfo.size() < 4*1024) 
@@ -238,7 +238,7 @@ namespace embree
       }
     }
 
-    void BVH8Builder2::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void BVH8Builder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
       while (activeBuildRecords)
       {
@@ -255,7 +255,7 @@ namespace embree
       }
     }
 
-    BVH8::NodeRef BVH8Builder2::layout_top_nodes(size_t threadIndex, NodeRef node)
+    BVH8::NodeRef BVH8Builder::layout_top_nodes(size_t threadIndex, NodeRef node)
     {
       if (node.isBarrier()) {
 	node.clearBarrier();
@@ -274,7 +274,7 @@ namespace embree
 	return node;
     }
     
-    void BVH8Builder2::build(size_t threadIndex, size_t threadCount) 
+    void BVH8Builder::build(size_t threadIndex, size_t threadCount) 
     {
       /*! calculate number of primitives */
       size_t numPrimitives = 0;
@@ -294,7 +294,7 @@ namespace embree
       
       /*! verbose mode */
       if (g_verbose >= 2) {
-	std::cout << "building BVH8<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH8Builder2(";
+	std::cout << "building BVH8<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH8Builder(";
 	if (enableSpatialSplits) std::cout << "spatialsplits";
 	std::cout << ") ... " << std::flush;
       }
@@ -335,7 +335,7 @@ namespace embree
       }
       
       /*! process each generated subtask in its own thread */
-      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH8Builder2::build");
+      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH8Builder::build");
                   
       /* perform tree rotations of top part of the tree */
 #if ROTATE_TREE
@@ -370,6 +370,6 @@ namespace embree
     }
     
     /*! entry functions for the builder */
-    Builder* BVH8Triangle8Builder2  (void* bvh, Scene* scene, size_t mode) { return new class BVH8Builder2T<Triangle8> ((BVH8*)bvh,scene,mode); }
+    Builder* BVH8Triangle8Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH8BuilderT<Triangle8> ((BVH8*)bvh,scene,mode); }
   }
 }

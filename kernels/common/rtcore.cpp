@@ -332,10 +332,10 @@ namespace embree
     BVH4Register();
 #else
     BVH4iRegister();
-#endif
+#endif 
     BVH4MBRegister();
     BVH4HairRegister();    
-#if !defined(__WIN32__) && defined(__TARGET_AVX__)
+#if defined(__TARGET_AVX__)
     if (has_feature(AVX)) {
       BVH8Register();
     }

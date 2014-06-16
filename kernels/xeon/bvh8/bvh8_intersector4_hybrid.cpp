@@ -34,18 +34,18 @@ namespace embree
       StackItem* stackEnd = stack+stackSizeSingle;
       stack[0].ptr = root;
       stack[0].dist = neg_inf;
-      
-      /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_dir.x[k] >= 0.0f ? 0*sizeof(avxf) : 1*sizeof(avxf);
-      const size_t nearY = ray_dir.y[k] >= 0.0f ? 2*sizeof(avxf) : 3*sizeof(avxf);
-      const size_t nearZ = ray_dir.z[k] >= 0.0f ? 4*sizeof(avxf) : 5*sizeof(avxf);
-      
+            
       /*! load the ray into SIMD registers */
       const avx3f org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
       const avx3f rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
       const avx3f org_rdir(org*rdir);
       avxf rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
      
+      /*! offsets to select the side that becomes the lower or upper bound */
+      const size_t nearX = ray_rdir.x[k] >= 0.0f ? 0*sizeof(avxf) : 1*sizeof(avxf);
+      const size_t nearY = ray_rdir.y[k] >= 0.0f ? 2*sizeof(avxf) : 3*sizeof(avxf);
+      const size_t nearZ = ray_rdir.z[k] >= 0.0f ? 4*sizeof(avxf) : 5*sizeof(avxf);
+
       /* pop loop */
       while (true) pop:
       {
@@ -174,13 +174,6 @@ namespace embree
       const sseb valid0 = *valid_i;
       sse3f ray_org = ray.org, ray_dir = ray.dir;
       ssef ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-#if defined(__FIX_RAYS__)
-      const ssef float_range = 0.1f*FLT_MAX;
-      ray_org = clamp(ray_org,sse3f(-float_range),sse3f(+float_range));
-      ray_dir = clamp(ray_dir,sse3f(-float_range),sse3f(+float_range));
-      ray_tnear = max(ray_tnear,FLT_MIN); 
-      ray_tfar  = min(ray_tfar,float(inf)); 
-#endif
       const sse3f rdir = rcp_safe(ray_dir);
       const sse3f org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid0,ray_tnear,ssef(pos_inf));
@@ -334,17 +327,17 @@ namespace embree
       NodeRef* stackPtr = stack+1;        //!< current stack pointer
       NodeRef* stackEnd = stack+stackSizeSingle;
       stack[0]  = root;
-      
-      /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_dir.x[k] >= 0.0f ? 0*sizeof(avxf) : 1*sizeof(avxf);
-      const size_t nearY = ray_dir.y[k] >= 0.0f ? 2*sizeof(avxf) : 3*sizeof(avxf);
-      const size_t nearZ = ray_dir.z[k] >= 0.0f ? 4*sizeof(avxf) : 5*sizeof(avxf);
-      
+            
       /*! load the ray into SIMD registers */
       const avx3f org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
       const avx3f rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
       const avx3f norg = -org, org_rdir(org*rdir);
       const avxf rayNear(ray_tnear[k]), rayFar(ray_tfar[k]); 
+
+      /*! offsets to select the side that becomes the lower or upper bound */
+      const size_t nearX = ray_rdir.x[k] >= 0.0f ? 0*sizeof(avxf) : 1*sizeof(avxf);
+      const size_t nearY = ray_rdir.y[k] >= 0.0f ? 2*sizeof(avxf) : 3*sizeof(avxf);
+      const size_t nearZ = ray_rdir.z[k] >= 0.0f ? 4*sizeof(avxf) : 5*sizeof(avxf);
 
       /* pop loop */
       while (true) pop:
@@ -453,13 +446,6 @@ namespace embree
       sseb terminated = !valid;
       sse3f ray_org = ray.org, ray_dir = ray.dir;
       ssef ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-#if defined(__FIX_RAYS__)
-      const ssef float_range = 0.1f*FLT_MAX;
-      ray_org = clamp(ray_org,sse3f(-float_range),sse3f(+float_range));
-      ray_dir = clamp(ray_dir,sse3f(-float_range),sse3f(+float_range));
-      ray_tnear = max(ray_tnear,FLT_MIN); 
-      ray_tfar  = min(ray_tfar,float(inf)); 
-#endif
       const sse3f rdir = rcp_safe(ray_dir);
       const sse3f org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,ssef(pos_inf));

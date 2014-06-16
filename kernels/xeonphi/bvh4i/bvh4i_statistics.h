@@ -20,9 +20,10 @@
 
 namespace embree
 {
+  template<typename NodeType>
   class BVH4iStatistics 
   {
-    typedef BVH4i::Node Node;
+    typedef NodeType Node;
     typedef BVH4i::NodeRef NodeRef;
 
   public:
@@ -47,4 +48,87 @@ namespace embree
     size_t numPrims;                   //!< Number of primitives.
     size_t depth;                      //!< Depth of the tree.
   };
+
+
+  template<typename NodeType>
+  BVH4iStatistics<NodeType>::BVH4iStatistics (BVH4i* bvh) : bvh(bvh)
+  {
+    numNodes = numLeaves = numPrimBlocks = numPrimBlocks4 = numPrims = depth = 0;
+    bvhSAH = leafSAH = 0.0f;
+    if (bvh->root != BVH4i::invalidNode)
+      statistics(bvh->root,bvh->bounds,depth);
+    bvhSAH /= area(bvh->bounds);
+    leafSAH /= area(bvh->bounds);
+    assert(depth <= BVH4i::maxDepth);
+  }
+
+  template<typename NodeType>
+  std::string BVH4iStatistics<NodeType>::str()  
+  {
+    std::ostringstream stream;
+    size_t bytesNodes = bvh->size_node; // numNodes*sizeof(Node);
+    size_t bytesTris  = bvh->size_accel;
+    size_t bytesTotal = bytesNodes+bytesTris;//+bytesVertices;
+    size_t bytesTotalAllocated = bvh->bytes();
+    /* double leafFill1 = double(numPrims)/double(bvh->primTy.blockSize*numPrimBlocks); */
+    /* double leafFill4 = double(numPrims)/double(4.0*numPrimBlocks4); */
+    stream.setf(std::ios::fixed, std::ios::floatfield);
+    stream.precision(4);
+    stream << "  sah = " << bvhSAH << ", leafSAH = " << leafSAH;
+    stream.setf(std::ios::fixed, std::ios::floatfield);
+    stream.precision(1);
+    stream << ", depth = " << depth;
+    stream << ", size = " << bytesTotalAllocated/1E6 << " MB (" << bytesTotal/1E6 << " MB used)" << std::endl;
+    stream.precision(1);
+    stream << "  nodes = "  << numNodes << " "
+           << "(" << bytesNodes/1E6  << " MB) "
+           << "(" << 100.0*double(bytesNodes)/double(bytesTotal) << "% of total) "
+           << "(" << 100.0*double(sizeof(NodeType)*numNodes)/double(bytesNodes) << "% used)" 
+           << std::endl;
+    stream << "  leaves = " << numLeaves << " "
+           << "(" << bytesTris/1E6  << " MB) "
+           << "(" << 100.0*double(bytesTris)/double(bytesTotal) << "% of total) "
+      //           << "(" << 100.0*leafFill1 << "% used, " << 100.0*leafFill4 << "% used)" 
+           << std::endl;
+    return stream.str();
+  }
+
+  template<typename NodeType>
+  void BVH4iStatistics<NodeType>::statistics(NodeRef node, BBox3fa bounds, size_t& depth)
+  {
+    float A = bounds.empty() ? 0.0f : area(bounds);
+    
+    if (node.isNode())
+    {
+      numNodes++;
+      depth = 0;
+      size_t cdepth = 0;
+      Node* n = (Node*)node.node((Node*)bvh->nodePtr());
+
+      bvhSAH += A*BVH4i::travCost;
+
+      for (size_t i=0; i<BVH4i::N; i++) {
+	if (n->isPoint(i)) {continue;}
+        statistics(n->child(i),n->bounds(i),cdepth); 
+        depth=max(depth,cdepth);
+      }
+      depth++;
+      return;
+    }
+    else
+    {
+      depth = 0;
+      unsigned int prims; const char* tri = node.leaf(bvh->triPtr(),prims);
+      if (!prims) return;
+      
+      numLeaves++;
+      numPrimBlocks  += 1;
+      numPrims       += prims;
+      numPrimBlocks4 += (prims+3)/4;
+      float sah = A * bvh->primTy.intCost * 1;
+      bvhSAH += sah;
+      leafSAH += sah;
+    }
+  }
+
 }

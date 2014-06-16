@@ -98,11 +98,27 @@
 
 #if defined(__WIN32__) 
 #if defined(CONFIG_AVX)
-#define __TARGET_AVX__
+  #define __TARGET_AVX__
+  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+    #define __SSE3__
+    #define __SSSE3__
+    #define __SSE4_1__
+    #define __SSE4_2__
+    #define __AVX__
+    #define __AVX2__
+  #endif
 #endif
 #if defined(CONFIG_AVX2)
-#define __TARGET_AVX__
-#define __TARGET_AVX2__
+  #define __TARGET_AVX__
+  #define __TARGET_AVX2__
+  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+    #define __SSE3__
+    #define __SSSE3__
+    #define __SSE4_1__
+    #define __SSE4_2__
+    #define __AVX__
+    #define __AVX2__
+  #endif
 #endif
 //#define __USE_RAY_MASK__
 //#define __USE_STAT_COUNTERS__
@@ -111,7 +127,6 @@
 #define __BUFFER_STRIDE__
 //#define __SPINLOCKS__
 //#define __LOG_TASKS__
-//#define __FIX_RAYS__
 #endif
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)

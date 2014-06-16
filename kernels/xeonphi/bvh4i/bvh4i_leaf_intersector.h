@@ -300,7 +300,7 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
-	Triangle1mcIntersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::intersect16(m_valid_leaf,items,dir,org,ray16,geometry,tptr);	
+	Triangle1mcIntersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::intersect16(m_valid_leaf,items,dir,org,ray16,geometry,tptr);
       }
 
       __forceinline static void occluded16(BVH4i::NodeRef curNode,

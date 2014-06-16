@@ -35,9 +35,10 @@ namespace embree
     int numMaterials;
     int numMeshes;
     int numHairSets;
-    //Vec3f pointLightPosition;
-    //Vec3f pointLightIntensity;
-    //Vec3f ambientLightIntensity;
+    int numAmbientLights;
+    int numPointLights;
+    int numDirectionalLights;
+    int numDistantLights;
   };
 
   struct CreateMeshData

@@ -44,28 +44,7 @@ namespace embree
       StackItemInt32<NodeRef>* stackEnd = stack+stackSize;
       stack[0].ptr = bvh->root;
       stack[0].dist = neg_inf;
-      
-      /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray.dir.x >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
-      const size_t nearY = ray.dir.y >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
-      const size_t nearZ = ray.dir.z >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
-      
-#if 0 // FIXME: why is this slower
-      /*! load the ray */
-      Vec3fa ray_org = ray.org;
-      Vec3fa ray_dir = ray.dir;
-      ssef ray_near  = max(ray.tnear,FLT_MIN); // we do not support negative tnear values in this kernel due to integer optimizations
-      ssef ray_far   = ray.tfar; 
-#if defined(__FIX_RAYS__)
-      const float float_range = 0.1f*FLT_MAX;
-      ray_org = clamp(ray_org,Vec3fa(-float_range),Vec3fa(+float_range));
-      ray_dir = clamp(ray_dir,Vec3fa(-float_range),Vec3fa(+float_range));
-      ray_far = min(ray_far,float(inf)); 
-#endif
-      const Vec3fa ray_rdir = rcp_safe(ray_dir);
-      const sse3f org(ray_org), dir(ray_dir);
-      const sse3f norg(-ray_org), rdir(ray_rdir), org_rdir(ray_org*ray_rdir);
-#else
+            
       /*! load the ray into SIMD registers */
       const sse3f norg(-ray.org.x,-ray.org.y,-ray.org.z);
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
@@ -74,7 +53,11 @@ namespace embree
       const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
       const ssef  ray_near(ray.tnear);
       ssef ray_far(ray.tfar);
-#endif
+
+      /*! offsets to select the side that becomes the lower or upper bound */
+      const size_t nearX = ray_rdir.x >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
+      const size_t nearY = ray_rdir.y >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
+      const size_t nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
 
       /* pop loop */
       while (true) pop:
@@ -198,27 +181,6 @@ namespace embree
       NodeRef* stackEnd = stack+stackSize;
       stack[0] = bvh->root;
       
-      /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray.dir.x >= 0 ? 0*sizeof(ssef) : 1*sizeof(ssef);
-      const size_t nearY = ray.dir.y >= 0 ? 2*sizeof(ssef) : 3*sizeof(ssef);
-      const size_t nearZ = ray.dir.z >= 0 ? 4*sizeof(ssef) : 5*sizeof(ssef);
-      
-#if 0 // FIXME: why is this slower
-      /*! load the ray */
-      Vec3fa ray_org = ray.org;
-      Vec3fa ray_dir = ray.dir;
-      ssef ray_near  = max(ray.tnear,FLT_MIN); // we do not support negative tnear values in this kernel due to integer optimizations
-      ssef ray_far   = ray.tfar; 
-#if defined(__FIX_RAYS__)
-      const float float_range = 0.1f*FLT_MAX;
-      ray_org = clamp(ray_org,Vec3fa(-float_range),Vec3fa(+float_range));
-      ray_dir = clamp(ray_dir,Vec3fa(-float_range),Vec3fa(+float_range));
-      ray_far = min(ray_far,float(inf)); 
-#endif
-      const Vec3fa ray_rdir = rcp_safe(ray_dir);
-      const sse3f org(ray_org), dir(ray_dir);
-      const sse3f norg(-ray_org), rdir(ray_rdir), org_rdir(ray_org*ray_rdir);
-#else
       /*! load the ray into SIMD registers */
       const sse3f norg(-ray.org.x,-ray.org.y,-ray.org.z);
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
@@ -227,7 +189,11 @@ namespace embree
       const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
       const ssef  ray_near(ray.tnear);
       ssef ray_far(ray.tfar);
-#endif
+
+      /*! offsets to select the side that becomes the lower or upper bound */
+      const size_t nearX = ray_rdir.x >= 0 ? 0*sizeof(ssef) : 1*sizeof(ssef);
+      const size_t nearY = ray_rdir.y >= 0 ? 2*sizeof(ssef) : 3*sizeof(ssef);
+      const size_t nearZ = ray_rdir.z >= 0 ? 4*sizeof(ssef) : 5*sizeof(ssef);      
       
       /* pop loop */
       while (true) pop:

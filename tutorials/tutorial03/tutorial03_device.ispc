@@ -186,6 +186,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   
   /* shade all rays that hit something */
   Vec3f color = make_Vec3f(0.0f);
+  Vec3f Ns = make_Vec3f(0.0f);
 
 #if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
   uniform ISPCMesh* varying mesh = g_ispc_scene->meshes[ray.geomID];
@@ -200,16 +201,14 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
     Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
     float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-    Vec3f Ns = w*n0 + u*n1 + v*n2;
-    Ns = normalize(Ns);
+    Ns = normalize(w*n0 + u*n1 + v*n2);
   } else {
-    Ns = ray.Ng;
+    Ns = normalize(ray.Ng);
   }
 
 #else
 
   int materialID = 0;
-  Vec3f Ns = make_Vec3f(0.0f);
   foreach_unique (geomID in ray.geomID) 
   {
     uniform ISPCMesh* uniform mesh = g_ispc_scene->meshes[geomID];

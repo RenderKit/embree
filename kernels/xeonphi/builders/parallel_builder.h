@@ -31,7 +31,6 @@ namespace embree
   public:
     static const size_t ALLOCATOR_NODE_BLOCK_SIZE = 64;
     typedef AtomicIDBlock<ALLOCATOR_NODE_BLOCK_SIZE> NodeAllocator;    
-    typedef AtomicIDBlock<1> GlobalNodeAllocator;    
 
     /*! build mode */
     enum { RECURSE = 1, FILL_LOCAL_QUEUES = 2, BUILD_TOP_LEVEL = 3 };
@@ -43,7 +42,7 @@ namespace embree
       numPrimitives((size_t)-1),
       atomicID(0),
       numNodes(0),
-      numAllocatedNodes(0)
+      numAllocated64BytesBlocks(0)
 	{
     
 	}
@@ -63,11 +62,13 @@ namespace embree
 			      const size_t numThreads) = 0;
 
 
+    virtual std::string getStatistics() = 0;
+
   protected:
     Scene* scene;                 //!< input geometry
     size_t numPrimitives;
     size_t numNodes;
-    size_t numAllocatedNodes;
+    size_t numAllocated64BytesBlocks;
 
     /*! bounds shared among threads */    
     __aligned(64) Centroid_Scene_AABB global_bounds;

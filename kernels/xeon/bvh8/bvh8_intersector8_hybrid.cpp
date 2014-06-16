@@ -225,7 +225,7 @@ namespace embree
         
         /* switch to single ray traversal */
 #if !defined(__WIN32__) || defined(__X86_64__)
-        unsigned int bits = movemask(active);
+        size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
             intersect1(bvh,curNode,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ);
@@ -456,13 +456,6 @@ namespace embree
       avxb terminated = !valid;
       avx3f ray_org = ray.org, ray_dir = ray.dir;
       avxf ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-#if defined(__FIX_RAYS__)
-      const avxf float_range = 0.1f*FLT_MAX;
-      ray_org = clamp(ray_org,avx3f(-float_range),avx3f(+float_range));
-      ray_dir = clamp(ray_dir,avx3f(-float_range),avx3f(+float_range));
-      ray_tnear = max(ray_tnear,FLT_MIN); 
-      ray_tfar  = min(ray_tfar,float(inf)); 
-#endif
       const avx3f rdir = rcp_safe(ray_dir);
       const avx3f org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,avxf(pos_inf));

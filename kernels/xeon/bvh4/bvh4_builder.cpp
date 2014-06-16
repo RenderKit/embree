@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4.h"
-#include "bvh4_builder2.h"
+#include "bvh4_builder.h"
 #include "bvh4_refit.h"
 #include "bvh4_rotate.h"
 #include "bvh4_statistics.h"
@@ -40,25 +40,25 @@ namespace embree
 {
   namespace isa
   {
-    template<> BVH4Builder2T<Triangle1 >::BVH4Builder2T (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder2(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1),2,inf) {}
-    template<> BVH4Builder2T<Triangle4 >::BVH4Builder2T (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder2(bvh,scene,NULL,mode,2,2,1.0f,false,sizeof(Triangle4),4,inf) {}
+    template<> BVH4BuilderT<Triangle1 >::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1),2,inf) {}
+    template<> BVH4BuilderT<Triangle4 >::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,2,2,1.0f,false,sizeof(Triangle4),4,inf) {}
 #if defined(__AVX__)
-    template<> BVH4Builder2T<Triangle8 >::BVH4Builder2T (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder2(bvh,scene,NULL,mode,3,2,1.0f,false,sizeof(Triangle8),8,inf) {}
+    template<> BVH4BuilderT<Triangle8 >::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,3,2,1.0f,false,sizeof(Triangle8),8,inf) {}
 #endif
-    template<> BVH4Builder2T<Triangle1v>::BVH4Builder2T (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder2(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
-    template<> BVH4Builder2T<Triangle4v>::BVH4Builder2T (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder2(bvh,scene,NULL,mode,2,2,1.0f,false,sizeof(Triangle4v),4,inf) {}
-    template<> BVH4Builder2T<Triangle4i>::BVH4Builder2T (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder2(bvh,scene,NULL,mode,2,2,1.0f,true ,sizeof(Triangle4i),4,inf) {}
+    template<> BVH4BuilderT<Triangle1v>::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
+    template<> BVH4BuilderT<Triangle4v>::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,2,2,1.0f,false,sizeof(Triangle4v),4,inf) {}
+    template<> BVH4BuilderT<Triangle4i>::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,2,2,1.0f,true ,sizeof(Triangle4i),4,inf) {}
 
-    template<> BVH4Builder2T<Triangle1 >::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder2(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1),2,inf) {}
-    template<> BVH4Builder2T<Triangle4 >::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder2(bvh,mesh->parent,mesh,mode,2,2,1.0f,false,sizeof(Triangle4),4,inf) {}
+    template<> BVH4BuilderT<Triangle1 >::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1),2,inf) {}
+    template<> BVH4BuilderT<Triangle4 >::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,2,2,1.0f,false,sizeof(Triangle4),4,inf) {}
 #if defined(__AVX__)
-    template<> BVH4Builder2T<Triangle8 >::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder2(bvh,mesh->parent,mesh,mode,3,2,1.0f,false,sizeof(Triangle8),8,inf) {}
+    template<> BVH4BuilderT<Triangle8 >::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,3,2,1.0f,false,sizeof(Triangle8),8,inf) {}
 #endif
-    template<> BVH4Builder2T<Triangle1v>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder2(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
-    template<> BVH4Builder2T<Triangle4v>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder2(bvh,mesh->parent,mesh,mode,2,2,1.0f,false,sizeof(Triangle4v),4,inf) {}
-    template<> BVH4Builder2T<Triangle4i>::BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder2(bvh,mesh->parent,mesh,mode,2,2,1.0f,true ,sizeof(Triangle4i),4,inf) {}
+    template<> BVH4BuilderT<Triangle1v>::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
+    template<> BVH4BuilderT<Triangle4v>::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,2,2,1.0f,false,sizeof(Triangle4v),4,inf) {}
+    template<> BVH4BuilderT<Triangle4i>::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,2,2,1.0f,true ,sizeof(Triangle4i),4,inf) {}
 
-    BVH4Builder2::BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t mode,
+    BVH4Builder::BVH4Builder (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t mode,
 				size_t logBlockSize, size_t logSAHBlockSize, float intCost, 
 				bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
       : scene(scene), mesh(mesh), bvh(bvh), enableSpatialSplits(mode > 0), remainingReplications(0),
@@ -70,7 +70,7 @@ namespace embree
        needAllThreads = true;
     }
     
-    BVH4Builder2::~BVH4Builder2() {
+    BVH4Builder::~BVH4Builder() {
       bvh->alloc.shrink();
     }
 
@@ -278,7 +278,7 @@ namespace embree
       size_t numItems;
     };
 
-    void BVH4Builder2::restructureTree(NodeRef& ref, size_t depth)
+    void BVH4Builder::restructureTree(NodeRef& ref, size_t depth)
     {
       if (ref.isLeaf()) return;
       Node* node = ref.node();
@@ -292,7 +292,7 @@ namespace embree
 
 ///////////////////////////////////////////////////////////////////////////////////////
     template<typename Triangle>
-    typename BVH4Builder2::NodeRef BVH4Builder2T<Triangle>::createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo)
+    typename BVH4Builder::NodeRef BVH4BuilderT<Triangle>::createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo)
     {
       /* allocate leaf node */
       size_t N = blocks(pinfo.size());
@@ -311,7 +311,7 @@ namespace embree
       return bvh->encodeLeaf(leaf,N);
     }
     
-    BVH4Builder2::NodeRef BVH4Builder2::createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
+    BVH4Builder::NodeRef BVH4Builder::createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
     {
 #if defined(_DEBUG)
       if (depth >= BVH4::maxBuildDepthLeaf) 
@@ -344,7 +344,7 @@ namespace embree
     }  
 
     template<bool PARALLEL>
-    const Split BVH4Builder2::find(size_t threadIndex, size_t threadCount, size_t depth, PrimRefList& prims, const PrimInfo& pinfo, bool spatial)
+    const Split BVH4Builder::find(size_t threadIndex, size_t threadCount, size_t depth, PrimRefList& prims, const PrimInfo& pinfo, bool spatial)
     {
       ObjectPartition::SplitInfo oinfo;
       ObjectPartition::Split osplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,prims,pinfo,logSAHBlockSize,oinfo);
@@ -364,7 +364,7 @@ namespace embree
     }
     
     template<bool PARALLEL>
-    __forceinline size_t BVH4Builder2::createNode(size_t threadIndex, size_t threadCount, BVH4Builder2* parent, BuildRecord& record, BuildRecord records_o[BVH4::N])
+    __forceinline size_t BVH4Builder::createNode(size_t threadIndex, size_t threadCount, BVH4Builder* parent, BuildRecord& record, BuildRecord records_o[BVH4::N])
     {
       /*! compute leaf and split cost */
       const float leafSAH  = parent->intCost*record.pinfo.leafSAH(parent->logSAHBlockSize);
@@ -441,7 +441,7 @@ namespace embree
       return numChildren;
     }
 
-    void BVH4Builder2::finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
+    void BVH4Builder::finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
     {
       BuildRecord children[BVH4::N];
       size_t N = createNode<false>(threadIndex,threadCount,this,record,children);
@@ -449,7 +449,7 @@ namespace embree
 	finish_build(threadIndex,threadCount,children[i]);
     }
 
-    void BVH4Builder2::continue_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
+    void BVH4Builder::continue_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
     {
       /* finish small tasks */
       if (record.pinfo.size() < 4*1024) 
@@ -476,7 +476,7 @@ namespace embree
       }
     }
 
-    void BVH4Builder2::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void BVH4Builder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
       while (activeBuildRecords)
       {
@@ -493,7 +493,7 @@ namespace embree
       }
     }
 
-    BVH4::NodeRef BVH4Builder2::layout_top_nodes(size_t threadIndex, NodeRef node)
+    BVH4::NodeRef BVH4Builder::layout_top_nodes(size_t threadIndex, NodeRef node)
     {
       if (node.isBarrier()) {
 	node.clearBarrier();
@@ -512,7 +512,7 @@ namespace embree
 	return node;
     }
     
-    void BVH4Builder2::build(size_t threadIndex, size_t threadCount) 
+    void BVH4Builder::build(size_t threadIndex, size_t threadCount) 
     {
       /*! calculate number of primitives */
       size_t numPrimitives = 0;
@@ -532,7 +532,7 @@ namespace embree
       
       /*! verbose mode */
       if (g_verbose >= 2) {
-	std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4Builder2(";
+	std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4Builder(";
 	if (enableSpatialSplits) std::cout << "spatialsplits";
 	std::cout << ") ... " << std::flush;
       }
@@ -573,7 +573,7 @@ namespace embree
       }
       
       /*! process each generated subtask in its own thread */
-      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4Builder2::build");
+      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4Builder::build");
                   
       /* perform tree rotations of top part of the tree */
 #if ROTATE_TREE
@@ -613,22 +613,22 @@ namespace embree
     }
     
     /*! entry functions for the builder */
-    Builder* BVH4Triangle1Builder2  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Builder2T<Triangle1> ((BVH4*)bvh,scene,mode); }
-    Builder* BVH4Triangle4Builder2  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Builder2T<Triangle4> ((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle1Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle1> ((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle4Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle4> ((BVH4*)bvh,scene,mode); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8Builder2  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Builder2T<Triangle8> ((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle8Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle8> ((BVH4*)bvh,scene,mode); }
 #endif
-    Builder* BVH4Triangle1vBuilder2 (void* bvh, Scene* scene, size_t mode) { return new class BVH4Builder2T<Triangle1v>((BVH4*)bvh,scene,mode); }
-    Builder* BVH4Triangle4vBuilder2 (void* bvh, Scene* scene, size_t mode) { return new class BVH4Builder2T<Triangle4v>((BVH4*)bvh,scene,mode); }
-    Builder* BVH4Triangle4iBuilder2 (void* bvh, Scene* scene, size_t mode) { return new class BVH4Builder2T<Triangle4i>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle1vBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle1v>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle4vBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle4v>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle4iBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle4i>((BVH4*)bvh,scene,mode); }
 
-    Builder* BVH4Triangle1MeshBuilder2  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Builder2T<Triangle1> ((BVH4*)bvh,mesh,mode); }
-    Builder* BVH4Triangle4MeshBuilder2  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Builder2T<Triangle4> ((BVH4*)bvh,mesh,mode); }
+    Builder* BVH4Triangle1MeshBuilder  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle1> ((BVH4*)bvh,mesh,mode); }
+    Builder* BVH4Triangle4MeshBuilder  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle4> ((BVH4*)bvh,mesh,mode); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshBuilder2  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Builder2T<Triangle8> ((BVH4*)bvh,mesh,mode); }
+    Builder* BVH4Triangle8MeshBuilder  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle8> ((BVH4*)bvh,mesh,mode); }
 #endif
-    Builder* BVH4Triangle1vMeshBuilder2 (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Builder2T<Triangle1v>((BVH4*)bvh,mesh,mode); }
-    Builder* BVH4Triangle4vMeshBuilder2 (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Builder2T<Triangle4v>((BVH4*)bvh,mesh,mode); }
-    Builder* BVH4Triangle4iMeshBuilder2 (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Builder2T<Triangle4i>((BVH4*)bvh,mesh,mode); }
+    Builder* BVH4Triangle1vMeshBuilder (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle1v>((BVH4*)bvh,mesh,mode); }
+    Builder* BVH4Triangle4vMeshBuilder (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle4v>((BVH4*)bvh,mesh,mode); }
+    Builder* BVH4Triangle4iMeshBuilder (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle4i>((BVH4*)bvh,mesh,mode); }
   }
 }

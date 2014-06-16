@@ -17,9 +17,9 @@
 #include "bvh4i_builder_morton.h"
 #include "builders/builder_util.h"
 
-#define BVH_NODE_PREALLOC_FACTOR          1.2f
+#define MORTON_BVH_NODE_PREALLOC_FACTOR     1.2f
 #define NUM_MORTON_IDS_PER_BLOCK            8
-#define SINGLE_THREADED_BUILD_THRESHOLD  (MAX_MIC_THREADS*8)
+#define SINGLE_THREADED_BUILD_THRESHOLD     (MAX_MIC_THREADS*64)
 
 //#define PROFILE
 #define PROFILE_ITERATIONS 200
@@ -36,6 +36,51 @@ namespace embree
   extern AtomicMutex mtx;
 #endif
 
+  // FIXME: REMOVE IF OBSOLETE
+
+  /* ---------------- */
+  /* --- QUAD BVH --- */
+  /* ---------------- */
+
+#define QBVH_INDEX_SHIFT    BVH4i::encodingBits
+#define QBVH_LEAF_BIT_SHIFT BVH4i::leaf_shift 
+#define QBVH_LEAF_MASK      ((unsigned int)1 << QBVH_LEAF_BIT_SHIFT) 
+
+  typedef BVH4i::Node QBVHNode;
+
+  template<class T>
+    __forceinline T qbvhCreateNode(const T& nodeID, const T& children) {
+    return (nodeID << QBVH_INDEX_SHIFT) | children;
+  };  
+
+  template<bool REMOVE_NUM_CHILDREN>
+  __forceinline void convertToBVH4Layout(BVHNode *__restrict__ const bptr)
+  {
+    const mic_i box01 = load16i((int*)(bptr + 0));
+    const mic_i box23 = load16i((int*)(bptr + 2));
+
+    const mic_i box_min01 = permute<2,0,2,0>(box01);
+    const mic_i box_max01 = permute<3,1,3,1>(box01);
+
+    const mic_i box_min23 = permute<2,0,2,0>(box23);
+    const mic_i box_max23 = permute<3,1,3,1>(box23);
+    const mic_i box_min0123 = select(0x00ff,box_min01,box_min23);
+    const mic_i box_max0123 = select(0x00ff,box_max01,box_max23);
+
+    const mic_m min_d_mask = bvhLeaf(box_min0123) != mic_i::zero();
+    const mic_i childID    = bvhChildID(box_min0123);
+    const mic_i min_d_node = qbvhCreateNode(childID,mic_i::zero());
+    const mic_i min_d_leaf = box_min0123; //(box_min0123 ^ BVH_LEAF_MASK) | QBVH_LEAF_MASK;
+    const mic_i min_d      = select(min_d_mask,min_d_leaf,min_d_node);
+    
+    const mic_i bvh4_min = (REMOVE_NUM_CHILDREN) ? select(0x7777,box_min0123,min_d) : box_min0123;
+    const mic_i bvh4_max   = box_max0123;
+
+    store16i_nt((int*)(bptr + 0),bvh4_min);
+    store16i_nt((int*)(bptr + 2),bvh4_max);
+  }
+
+
   // =======================================================================================================
   // =======================================================================================================
   // =======================================================================================================
@@ -44,7 +89,7 @@ namespace embree
 
   BVH4iBuilderMorton::BVH4iBuilderMorton (BVH4i* bvh, void* geometry)
   : bvh(bvh), scene((Scene*)geometry), topLevelItemThreshold(0), encodeShift(0), encodeMask(0), numBuildRecords(0), 
-    morton(NULL), node(NULL), accel(NULL), numGroups(0), numPrimitives(0), numNodes(0), numAllocatedNodes(0), size_morton(0)
+    morton(NULL), node(NULL), accel(NULL), numGroups(0), numPrimitives(0), numNodes(0), numAllocatedNodes(0), size_morton(0), size_node(0), size_accel(0), numPrimitivesOld(-1)
   {
   }
 
@@ -57,10 +102,9 @@ namespace embree
   }
 
 
-  void BVH4iBuilderMorton::initEncodingAllocateData(size_t threadCount)
+  void BVH4iBuilderMorton::initEncodingAllocateData()
   {
     /* calculate total number of primrefs */
-    size_t numPrimitivesOld = numPrimitives;
     numGroups     = scene->size();
     numPrimitives = 0;
 
@@ -104,34 +148,50 @@ namespace embree
       DBG_PRINT(maxGroups);
       FATAL("ENCODING ERROR");      
     }
+  }
 
+  void BVH4iBuilderMorton::allocateData(size_t threadCount)
+  {
     /* preallocate arrays */
     const size_t additional_size = 16 * CACHELINE_SIZE;
-    if (numPrimitivesOld != numPrimitives || numPrimitives == 0)
+    if (numPrimitivesOld != numPrimitives)
     {
+      DBG(
+	  DBG_PRINT( numPrimitivesOld );
+	  DBG_PRINT( numPrimitives );
+	  );
+
+      numPrimitivesOld = numPrimitives;
       /* free previously allocated memory */
       if (morton) {
 	assert(size_morton > 0);
 	os_free(morton,size_morton);
       }
-      if (node  ) { 
-	assert(bvh->size_node > 0);
-	os_free(node  ,bvh->size_node);
+      if (node) { 
+	assert(size_node > 0);
+	os_free(node  ,size_node);
       }
       if (accel ) {
-	assert(bvh->size_accel > 0);
-	os_free(accel ,bvh->size_accel);
+	assert(size_accel > 0);
+	os_free(accel ,size_accel);
       }
       
       /* allocated memory for primrefs,nodes, and accel */
-      const size_t minAllocNodes = numPrimitives ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
+      const size_t minAllocNodes = numPrimitives ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 8: 16;
       const size_t numPrims      = numPrimitives+4;
-      const size_t numNodes      = max((size_t)(numPrimitives * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+      const size_t numNodes      = max((size_t)(numPrimitives * MORTON_BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+
 
       const size_t size_morton_tmp = numPrims * sizeof(MortonID32Bit) + additional_size;
-      const size_t size_node       = numNodes * sizeof(BVHNode) + additional_size;
-      const size_t size_accel      = numPrims * sizeof(Triangle1) + additional_size;
+      size_node         = numNodes * sizeof(BVHNode) + additional_size;
+      size_accel        = numPrims * sizeof(Triangle1) + additional_size;
       numAllocatedNodes = size_node / sizeof(BVHNode);
+
+      DBG(
+	  DBG_PRINT( minAllocNodes );
+	  DBG_PRINT( numNodes );
+	  DBG_PRINT( numAllocatedNodes );
+	  );
 
       DBG(DBG_PRINT(size_morton_tmp));
       DBG(DBG_PRINT(size_node));
@@ -145,16 +205,9 @@ namespace embree
       assert(node   != 0);
       assert(accel  != 0);
 
-#if 0
-      memset(morton,0,size_morton_tmp);
-      memset(node  ,0,size_node);
-      memset(accel ,0,size_accel);	
-#endif
-
-      bvh->accel = accel;
-      bvh->qbvh  = (BVH4i::Node*)node;
-      bvh->size_node  = size_node;
-      bvh->size_accel = size_accel;
+      // memset(morton,0,size_morton_tmp);
+      // memset(node  ,0,size_node);
+      // memset(accel ,0,size_accel);	
 
       size_morton = size_morton_tmp;
     }
@@ -167,7 +220,24 @@ namespace embree
       std::cout << "building BVH4i with Morton builder (MIC)... " << std::flush;
 
     /* do some global inits first */
-    initEncodingAllocateData(TaskScheduler::getNumThreads());
+    initEncodingAllocateData();
+
+
+    if (likely(numPrimitives == 0))
+      {
+	DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
+	bvh->root = BVH4i::invalidNode;
+	bvh->bounds = empty;
+	bvh->qbvh = NULL;
+	bvh->accel = NULL;
+	bvh->size_node  = 0;
+	bvh->size_accel = 0;
+
+	return;
+      }
+
+    /* allocate memory arrays */
+    allocateData(threadCount);
 
 #if defined(PROFILE)
     size_t numTotalPrimitives = numPrimitives;
@@ -192,7 +262,7 @@ namespace embree
     std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numTotalPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
     std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numTotalPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
     std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numTotalPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
-    std::cout << BVH4iStatistics(bvh).str();
+    std::cout << BVH4iStatistics<BVH4i::Node>(bvh).str();
 
 #else
     DBG(DBG_PRINT(numPrimitives));
@@ -206,29 +276,14 @@ namespace embree
     else
       {
 	/* number of primitives is small, just use single threaded mode */
-	if (likely(numPrimitives > 0))
-	  {
-	    DBG(std::cout << "SERIAL BUILD" << std::endl << std::flush);
-	    build_parallel_morton(0,1,0,0,NULL);
-	  }
-	else
-	  {
-	    DBG(std::cout << "EMPTY SCENE BUILD" << std::endl << std::flush);
-	    /* handle empty scene */
-	    for (size_t i=0;i<4;i++)
-	      bvh->qbvh[0].setInvalid(i);
-	    for (size_t i=0;i<4;i++)
-	      bvh->qbvh[1].setInvalid(i);
-	    bvh->qbvh[0].lower[0].child = BVH4i::NodeRef(128);
-	    bvh->root = bvh->qbvh[0].lower[0].child; 
-	    bvh->bounds = empty;
-	  }
+	DBG(std::cout << "SERIAL BUILD" << std::endl << std::flush);
+	build_parallel_morton(0,1,0,0,NULL);
       }
 
     if (g_verbose >= 2) {
       double perf = numPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
-      std::cout << BVH4iStatistics(bvh).str();
+      std::cout << BVH4iStatistics<BVH4i::Node>(bvh).str();
     }
 #endif
   }
@@ -1289,7 +1344,10 @@ namespace embree
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_convertToSOALayout " << 1000. * msec << " ms" << std::endl << std::flush);
 
-    /* set root and bounding box */
+    bvh->accel = accel;
+    bvh->qbvh  = (BVH4i::Node*)node;
+    bvh->size_node  = size_node;
+    bvh->size_accel = size_accel;
     bvh->root = bvh->qbvh[0].lower[0].child; 
     bvh->bounds = global_bounds.geometry;
 

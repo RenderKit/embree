@@ -82,14 +82,10 @@ namespace embree
       
       /*! returns node pointer */
 
-      //__forceinline       Node* node(      void* base) const { return (      Node*)((      char*)base + _id); }
-      //__forceinline const Node* node(const void* base) const { return (const Node*)((const char*)base + _id); }
-
-      // use free adressing mode: lea reg,reg*2
+      // use free adressing mode: lea reg,reg*2 as adressing is done with respect to 32 bytes blocks
       __forceinline       Node* node(      void* base) const { return (      Node*)((      short*)base + (size_t)_id); }
       __forceinline const Node* node(const void* base) const { return (const Node*)((const short*)base + (size_t)_id); }
       
-
 
       __forceinline unsigned int nodeID() const { return (_id*2) / sizeof(Node);  }
       
@@ -157,7 +153,7 @@ namespace embree
 	return (unsigned int)m_box == (unsigned int)m_lane;
       }
 
-      __forceinline void setInvalid(size_t i)
+      __forceinline void setInvalid(size_t i) // FIXME
       {
 	lower[i].x = pos_inf;
 	lower[i].y = pos_inf;
@@ -203,8 +199,8 @@ namespace embree
       NodeRef child3;
 
       /*! Returns reference to specified child */
-      __forceinline       NodeRef child(size_t i)       { return ((unsigned int*)this)[3+4*i]; }
-      __forceinline const NodeRef child(size_t i) const { return ((unsigned int*)this)[3+4*i]; }
+      __forceinline       NodeRef &child(size_t i)       { return ((NodeRef*)this)[3+4*i]; }
+      __forceinline const NodeRef &child(size_t i) const { return ((NodeRef*)this)[3+4*i]; }
 
       __forceinline mic_f lowerXYZ() const
       {
@@ -219,6 +215,25 @@ namespace embree
       __forceinline mic_f upperXYZ()  const
       {
 	return uload16f_low_uint8(0x7777,upper,mic_f::zero());
+      }
+
+      __forceinline bool isPoint(size_t i) const {
+	mic_m m_lane = ((unsigned int)0x7) << (4*i);
+	mic_m m_box  = eq(m_lane,lowerXYZ(),upperXYZ());
+	return (unsigned int)m_box == (unsigned int)m_lane;
+      }
+
+      __forceinline BBox3fa bounds(size_t i) const {
+	assert( i < 4 );
+	const mic_f s = decompress_startXYZ();
+	const mic_f d = decompress_diffXYZ();
+
+	const mic_f decompress_lower_XYZ = decompress_lowerXYZ(s,d);
+	const mic_f decompress_upper_XYZ = decompress_upperXYZ(s,d);
+
+        Vec3fa l = ((Vec3fa*)&decompress_lower_XYZ)[i];
+        Vec3fa u = ((Vec3fa*)&decompress_upper_XYZ)[i];
+        return BBox3fa(l,u);
       }
 
       __forceinline mic_f decompress_upperXYZ(const mic_f &s, const mic_f &d)  const
@@ -236,27 +251,17 @@ namespace embree
 	return broadcast4to16f(&diff);
       }
 
-      __forceinline void init( const Node &node)
+      __forceinline void init( const Node &node) 
       {
 	mic_f l0 = node.lowerXYZ(0);
 	mic_f l1 = node.lowerXYZ(1);
 	mic_f l2 = node.lowerXYZ(2);
 	mic_f l3 = node.lowerXYZ(3);
 
-	/* l0 = select(eq(0x7777,l0,mic_f(1E38)),pos_inf,l0); */
-	/* l1 = select(eq(0x7777,l1,mic_f(1E38)),pos_inf,l1); */
-	/* l2 = select(eq(0x7777,l2,mic_f(1E38)),pos_inf,l2); */
-	/* l3 = select(eq(0x7777,l3,mic_f(1E38)),pos_inf,l3); */
-
 	mic_f u0 = node.upperXYZ(0);
 	mic_f u1 = node.upperXYZ(1);
 	mic_f u2 = node.upperXYZ(2);
 	mic_f u3 = node.upperXYZ(3);
-
-	/* u0 = select(eq(0x7777,u0,mic_f(1E38)),neg_inf,u0); */
-	/* u1 = select(eq(0x7777,u1,mic_f(1E38)),neg_inf,u1); */
-	/* u2 = select(eq(0x7777,u2,mic_f(1E38)),neg_inf,u2); */
-	/* u3 = select(eq(0x7777,u3,mic_f(1E38)),neg_inf,u3); */
 
 	const mic_f minXYZ = select(0x7777,min(min(l0,l1),min(l2,l3)),mic_f::zero());
 	const mic_f maxXYZ = select(0x7777,max(max(u0,u1),max(u2,u3)),mic_f::one());
@@ -278,17 +283,13 @@ namespace embree
 	store4f(&diff ,diffXYZ * (1.0f/255.0f));
 	compactustore16f_low_uint8(0x7777,lower,local_lowerXYZ);
 	compactustore16f_low_uint8(0x7777,upper,local_upperXYZ);
-#if 0
-	child0 = node.child(0).isNode() ? (unsigned int)((node.child(0) / sizeof(BVH4i::Node))*sizeof(BVH4i::QuantizedNode)) : (unsigned int)node.child(0);
-	child1 = node.child(1).isNode() ? (unsigned int)((node.child(1) / sizeof(BVH4i::Node))*sizeof(BVH4i::QuantizedNode)) : (unsigned int)node.child(1);
-	child2 = node.child(2).isNode() ? (unsigned int)((node.child(2) / sizeof(BVH4i::Node))*sizeof(BVH4i::QuantizedNode)) : (unsigned int)node.child(2);
-	child3 = node.child(3).isNode() ? (unsigned int)((node.child(3) / sizeof(BVH4i::Node))*sizeof(BVH4i::QuantizedNode)) : (unsigned int)node.child(3);
-#else
+
 	child0 = node.child(0);
 	child1 = node.child(1);
 	child2 = node.child(2);
 	child3 = node.child(3);
-#endif
+
+#if DEBUG
 
 	const mic_f s = decompress_startXYZ();
 	const mic_f d = decompress_diffXYZ();
@@ -296,7 +297,6 @@ namespace embree
 	const mic_f decompress_lower_XYZ = decompress_lowerXYZ(s,d);
 	const mic_f decompress_upper_XYZ = decompress_upperXYZ(s,d);
 
-#ifdef DEBUG
 	if ( any(gt(0x7777,decompress_lower_XYZ,node_lowerXYZ)) ) 
 	   { 
 	     DBG_PRINT(node_lowerXYZ);  
@@ -312,9 +312,6 @@ namespace embree
       }
 
     };
-
-
-
 
   public:
 
@@ -345,11 +342,10 @@ namespace embree
 
     /*! Data of the BVH */
   public:
-    //const size_t maxLeafPrims;          //!< maximal number of triangles per leaf
-    NodeRef root;                      //!< Root node (can also be a leaf).
+    NodeRef root;                  //!< Root node (can also be a leaf).
 
     const PrimitiveType& primTy;   //!< triangle type stored in BVH
-    void* geometry;                    //!< pointer to geometry for intersection
+    void* geometry;                //!< pointer to geometry for intersection
 
  /*! Memory allocation */
   public:
@@ -375,9 +371,6 @@ namespace embree
     struct Helper { float x,y,z; int a; }; 
 
     static Helper initQBVHNode[4];
-
-
-    
 
   private:
     float sah (NodeRef& node, BBox3fa bounds);
@@ -406,116 +399,6 @@ namespace embree
     }
 
 
-  /* ----------- */
-  /* --- BVH --- */
-  /* ----------- */
-
-#define BVH_INDEX_SHIFT  BVH4i::encodingBits
-#define BVH_ITEMS_MASK   (((unsigned int)1 << BVH4i::leaf_shift)-1)
-#define BVH_LEAF_MASK    BVH4i::leaf_mask
-#define BVH_OFFSET_MASK  (~(BVH_ITEMS_MASK | BVH_LEAF_MASK))
-
-  template<class T> 
-    __forceinline T bvhItemOffset(const T& children) {
-    return (children & ~BVH_LEAF_MASK) >> BVH_INDEX_SHIFT;
-  }
-
-  template<class T> 
-  __forceinline T bvhItems(const T& children) {
-    return children & BVH_ITEMS_MASK;
-  }
-  
-  template<class T> 
-  __forceinline T bvhChildren(const T& children) {
-    return children & BVH_ITEMS_MASK;
-  }
-
-  template<class T> 
-  __forceinline T bvhChildID(const T& children) {
-    return (children & BVH_OFFSET_MASK) >> BVH_INDEX_SHIFT;
-  };
-
-  template<class T> 
-  __forceinline T bvhLeaf(const T& children) {
-    return (children & BVH_LEAF_MASK);
-  };
-
-  class __aligned(32) BVHNode : public BBox3fa
-  {
-  public:
-    __forceinline unsigned int isLeaf() const {
-      return bvhLeaf(lower.a);
-    };
-
-    __forceinline int firstChildID() const {
-      return bvhChildID(lower.a);
-    };
-    __forceinline int items() const {
-      return bvhItems(lower.a);
-    }
-    __forceinline unsigned int itemListOfs() const {
-      return bvhItemOffset(lower.a);
-    }
-
-    __forceinline void createLeaf(const unsigned int offset,
-				  const unsigned int entries) 
-    {
-      assert(entries <= 4);
-      lower.a = (offset << BVH_INDEX_SHIFT) | BVH_LEAF_MASK | entries;
-      upper.a = 0;
-    }
-
-    __forceinline void createNode(const unsigned int index,			  
-				  const unsigned int children) {
-      assert((index %2) == 0);
-
-      lower.a = (index << BVH_INDEX_SHIFT) | children;
-      upper.a = 0;
-    }
-
-    
-    __forceinline void operator=(const BVHNode& v) {     
-      const mic_f v_lower = broadcast4to16f((float*)&v.lower);
-      const mic_f v_upper = broadcast4to16f((float*)&v.upper);
-      store4f((float*)&lower,v_lower);
-      store4f((float*)&upper,v_upper);
-    };
-  };
-
-  __forceinline std::ostream &operator<<(std::ostream &o, const embree::BVHNode &v)
-  {
-    if (v.isLeaf())
-      {
-	o << "LEAF" << " ";
-	o << "offset " << v.itemListOfs() << " ";
-	o << "items  " << v.items() << " ";
-      }
-    else
-      {
-	o << "NODE" << " ";
-	o << "firstChildID " << v.firstChildID() << " children " << v.items() << " ";
-      }  
-    o << "min [" << v.lower <<"] ";
-    o << "max [" << v.upper <<"] ";
-
-    return o;
-  } 
-
-
-  /* ---------------- */
-  /* --- QUAD BVH --- */
-  /* ---------------- */
-
-#define QBVH_INDEX_SHIFT    BVH4i::encodingBits
-#define QBVH_LEAF_BIT_SHIFT BVH4i::leaf_shift 
-#define QBVH_LEAF_MASK      ((unsigned int)1 << QBVH_LEAF_BIT_SHIFT) 
-
-  typedef BVH4i::Node QBVHNode;
-
-  template<class T>
-    __forceinline T qbvhCreateNode(const T& nodeID, const T& children) {
-    return (nodeID << QBVH_INDEX_SHIFT) | children;
-  };  
 
   __forceinline mic_f initTriangle1(const mic_f &v0,
 				    const mic_f &v1,
@@ -535,32 +418,7 @@ namespace embree
     return final;
   }
 
-  template<bool REMOVE_NUM_CHILDREN>
-  __forceinline void convertToBVH4Layout(BVHNode *__restrict__ const bptr)
-  {
-    const mic_i box01 = load16i((int*)(bptr + 0));
-    const mic_i box23 = load16i((int*)(bptr + 2));
 
-    const mic_i box_min01 = permute<2,0,2,0>(box01);
-    const mic_i box_max01 = permute<3,1,3,1>(box01);
-
-    const mic_i box_min23 = permute<2,0,2,0>(box23);
-    const mic_i box_max23 = permute<3,1,3,1>(box23);
-    const mic_i box_min0123 = select(0x00ff,box_min01,box_min23);
-    const mic_i box_max0123 = select(0x00ff,box_max01,box_max23);
-
-    const mic_m min_d_mask = bvhLeaf(box_min0123) != mic_i::zero();
-    const mic_i childID    = bvhChildID(box_min0123);
-    const mic_i min_d_node = qbvhCreateNode(childID,mic_i::zero());
-    const mic_i min_d_leaf = box_min0123; //(box_min0123 ^ BVH_LEAF_MASK) | QBVH_LEAF_MASK;
-    const mic_i min_d      = select(min_d_mask,min_d_leaf,min_d_node);
-    
-    const mic_i bvh4_min = (REMOVE_NUM_CHILDREN) ? select(0x7777,box_min0123,min_d) : box_min0123;
-    const mic_i bvh4_max   = box_max0123;
-
-    store16i_nt((int*)(bptr + 0),bvh4_min);
-    store16i_nt((int*)(bptr + 2),bvh4_max);
-  }
 
 
 

@@ -107,10 +107,57 @@ namespace embree
       Vec3fa Tf;              /*< transmission filter */
     };
 
+    struct AmbientLight
+    {
+    public:
+      AmbientLight (const Vec3fa& L) : L(L) {}
+
+    public:
+      Vec3fa L;                  //!< radiance of ambient light
+    };
+
+    struct PointLight
+    {
+    public:
+      PointLight (const Vec3fa& P, const Vec3fa& I) : P(P), I(I) {}
+
+    public:
+      Vec3fa P;                  //!< position of point light
+      Vec3fa I;                  //!< radiant intensity of point light
+    };
+
+    struct DirectionalLight
+    {
+    public:
+      DirectionalLight (const Vec3fa& D, const Vec3fa& E) : D(D), E(E) {}
+
+    public:
+      Vec3fa D;                  //!< Light direction
+      Vec3fa E;                  //!< Irradiance (W/m^2)
+    };
+
+    struct DistantLight
+    {
+    public:
+      DistantLight (const Vec3fa& D, const Vec3fa& L, const float halfAngle) 
+      : D(D), L(L), halfAngle(halfAngle), radHalfAngle(deg2rad(halfAngle)), cosHalfAngle(cos(deg2rad(halfAngle))) {}
+
+    public:
+      Vec3fa D;             //!< Light direction
+      Vec3fa L;             //!< Radiance (W/(m^2*sr))
+      float halfAngle;     //!< Half illumination angle
+      float radHalfAngle;  //!< Half illumination angle in radians
+      float cosHalfAngle;  //!< Cosine of half illumination angle
+    };
+
   public:
-    vector_t<Material> materials;   //!< material list
-    std::vector<Mesh*> meshes;         //!< list of meshes
-    std::vector<HairSet*> hairsets;    //!< list of hair sets
+    vector_t<Material> materials;                      //!< material list
+    std::vector<Mesh*> meshes;                         //!< list of meshes
+    std::vector<HairSet*> hairsets;                    //!< list of hair sets
+    std::vector<AmbientLight> ambientLights;           //!< list of ambient lights
+    std::vector<PointLight> pointLights;               //!< list of point lights
+    std::vector<DirectionalLight> directionalLights;   //!< list of directional lights
+    std::vector<DistantLight> distantLights;           //!< list of distant lights
   };
   
   /*! read from disk */

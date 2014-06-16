@@ -22,7 +22,6 @@
 namespace embree
 {
 
-
   /*! derived binned-SAH builder supporting virtual geometry */  
   class BVH4mbBuilder : public BVH4iBuilder
   {
@@ -31,28 +30,26 @@ namespace embree
     /*! creates the builder */
     static Builder* create (void* accel, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);
 
-    BVH4mbBuilder (BVH4mb* bvh, void* geometry) : BVH4iBuilder((BVH4i*)bvh,geometry) 
+    BVH4mbBuilder (BVH4mb* bvh, void* geometry) : BVH4iBuilder((BVH4i*)bvh,geometry,sizeof(BVH4mb::Node)) 
     {
-      numNodesToAllocate = 2 * BVH4i::N; /* 8 */
     }
     virtual void computePrimRefs  (const size_t threadIndex, const size_t threadCount);
     virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives);
-    virtual void convertQBVHLayout(const size_t threadIndex, const size_t threadCount);
+    virtual void finalize         (const size_t threadIndex, const size_t threadCount);
     virtual void createAccel      (const size_t threadIndex, const size_t threadCount);
     virtual void printBuilderName();
     virtual size_t getNumPrimitives();
 
 
     /* parallel refit bvh4mb tree */
-    void generate_subtrees(const size_t index,const size_t depth, size_t &subtrees);
-    BBox3fa refit_toplevel(const size_t index,const size_t depth);
-    BBox3fa refit_subtree (const size_t index);
+    void generate_subtrees(const BVH4i::NodeRef &ref,const size_t depth, size_t &subtrees);
+    BBox3fa refit_toplevel(const BVH4i::NodeRef &ref,const size_t depth);
 
     /* scalar refit */
-    void refit(const size_t index);
+    BBox3fa refit(const BVH4i::NodeRef &ref);
 
     /* check bvh4mb tree */
-    void check_tree(const unsigned index);
+    BBox3fa check_tree(const BVH4i::NodeRef &ref);
 
   protected:
     AtomicCounter atomicID;
@@ -60,7 +57,6 @@ namespace embree
 
     TASK_FUNCTION(BVH4mbBuilder,refitBVH4MB);    
     TASK_FUNCTION(BVH4mbBuilder,createTriangle01AccelMB);    
-    TASK_FUNCTION(BVH4mbBuilder,convertToSOALayoutMB);    
     TASK_FUNCTION(BVH4mbBuilder,computePrimRefsTrianglesMB);    
 
   };

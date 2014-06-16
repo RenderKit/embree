@@ -26,14 +26,14 @@ namespace embree
 {
   namespace isa
   {
-    class BVH4Builder2 : public Builder
+    class BVH4MBBuilder : public Builder
     {
       ALIGNED_CLASS;
     public:
       
       /*! Type shortcuts */
-      typedef BVH4::Node    Node;
-      typedef BVH4::NodeRef NodeRef;
+      typedef BVH4MB::Node    Node;
+      typedef BVH4MB::NodeRef NodeRef;
       typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
 
       /*! the build record stores all information to continue the build of some subtree */
@@ -62,18 +62,18 @@ namespace embree
     public:
       
       /*! Constructor. */
-      BVH4Builder2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, 
+      BVH4MBBuilder (BVH4MB* bvh, Scene* scene, TriangleMesh* mesh, 
 		    size_t mode, size_t logBlockSize, size_t logSAHBlockSize, float intCost, bool needVertices, 
 		    size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
 
       /*! Destructor*/
-      ~BVH4Builder2();
+      ~BVH4MBBuilder();
 
       /*! builder entry point */
       void build(size_t threadIndex, size_t threadCount);
    
       /*! build job */
-      TASK_RUN_FUNCTION_(BVH4Builder2,build_parallel);
+      TASK_RUN_FUNCTION_(BVH4MBBuilder,build_parallel);
       void build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event);
       
       /*! creates a leaf node */
@@ -91,7 +91,7 @@ namespace embree
 
       /*! creates a node from some build record */
       template<bool PARALLEL>
-      static size_t createNode(size_t threadIndex, size_t threadCount, BVH4Builder2* parent, BuildRecord& record, BuildRecord records_o[BVH4::N]);
+      static size_t createNode(size_t threadIndex, size_t threadCount, BVH4MBBuilder* parent, BuildRecord& record, BuildRecord records_o[BVH4MB::N]);
 
       /*! continues build */
       void continue_build(size_t threadIndex, size_t threadCount, BuildRecord& record);
@@ -106,7 +106,7 @@ namespace embree
       Scene* scene;                       //!< input geometry
       TriangleMesh* mesh;                 //!< input triangle mesh
       PrimRefBlockAlloc<PrimRef> alloc;   //!< Allocator for primitive blocks
-      BVH4* bvh;                          //!< Output BVH4
+      BVH4MB* bvh;                          //!< Output BVH4MB
 
       /*! build record task list */
     private:
@@ -133,11 +133,11 @@ namespace embree
 
     /*! specializes the builder for different leaf types */
     template<typename Triangle>
-    class BVH4Builder2T : public BVH4Builder2
+    class BVH4MBBuilderT : public BVH4MBBuilder
     {
     public:
-      BVH4Builder2T (BVH4* bvh, Scene* scene, size_t mode);
-      BVH4Builder2T (BVH4* bvh, TriangleMesh* mesh, size_t mode);
+      BVH4MBBuilderT (BVH4MB* bvh, Scene* scene, size_t mode);
+      BVH4MBBuilderT (BVH4MB* bvh, TriangleMesh* mesh, size_t mode);
       NodeRef createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo);
     };
   }

@@ -31,8 +31,8 @@ namespace embree
     // ============================================================================================
     // ============================================================================================
 
-    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4_NODES>
-    void BVH4iIntersector16Single<LeafIntersector,ENABLE_COMPRESSED_BVH4_NODES>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
+    void BVH4iIntersector16Single<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
@@ -71,7 +71,7 @@ namespace embree
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
 
-	      traverse_single_intersect<ENABLE_COMPRESSED_BVH4_NODES>(curNode,
+	      traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
 								      sindex,
 								      rdir_xyz,
 								      org_rdir_xyz,
@@ -112,8 +112,8 @@ namespace embree
 	}
     }
 
-    template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4_NODES>    
-    void BVH4iIntersector16Single<LeafIntersector,ENABLE_COMPRESSED_BVH4_NODES>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES>    
+    void BVH4iIntersector16Single<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
@@ -150,7 +150,7 @@ namespace embree
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
 
-	      traverse_single_occluded< ENABLE_COMPRESSED_BVH4_NODES >(curNode,
+	      traverse_single_occluded< ENABLE_COMPRESSED_BVH4I_NODES >(curNode,
 								       sindex,
 								       rdir_xyz,
 								       org_rdir_xyz,

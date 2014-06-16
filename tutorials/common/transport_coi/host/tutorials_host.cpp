@@ -247,30 +247,57 @@ namespace embree
   void set_scene (OBJScene* scene)
   {
     COIRESULT result;
+    COIBUFFER buffers[5];
+    COI_ACCESS_FLAGS flags[5] = { COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ };
 
-    /* send scene */
-    COIBUFFER materialBuffer;
+    /* send materials */
     size_t materialBytes = max(size_t(16),scene->materials.size()*sizeof(OBJScene::Material));
     void* materialPtr = scene->materials.size() ? &scene->materials.front() : NULL;
-    result = COIBufferCreate(materialBytes,COI_BUFFER_STREAMING_TO_SINK,0,materialPtr,1,&process,&materialBuffer);
+    result = COIBufferCreate(materialBytes,COI_BUFFER_STREAMING_TO_SINK,0,materialPtr,1,&process,&buffers[0]);
+    if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
+    /* send ambient lights */
+    COIBUFFER ambientLightsBuffer;
+    size_t ambientLightsBytes = max(size_t(16),scene->ambientLights.size()*sizeof(OBJScene::AmbientLight));
+    void* ambientLightsPtr = scene->ambientLights.size() ? &scene->ambientLights.front() : NULL;
+    result = COIBufferCreate(ambientLightsBytes,COI_BUFFER_STREAMING_TO_SINK,0,ambientLightsPtr,1,&process,&&buffers[1]);
+    if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
+    /* send point lights */
+    COIBUFFER pointLightsBuffer;
+    size_t pointLightsBytes = max(size_t(16),scene->pointLights.size()*sizeof(OBJScene::PointLight));
+    void* pointLightsPtr = scene->pointLights.size() ? &scene->pointLights.front() : NULL;
+    result = COIBufferCreate(pointLightsBytes,COI_BUFFER_STREAMING_TO_SINK,0,pointLightsPtr,1,&process,&&buffers[2]);
+    if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
+    /* send directional lights */
+    COIBUFFER directionalLightsBuffer;
+    size_t directionalLightsBytes = max(size_t(16),scene->directionalLights.size()*sizeof(OBJScene::DirectionalLight));
+    void* directionalLightsPtr = scene->directionalLights.size() ? &scene->directionalLights.front() : NULL;
+    result = COIBufferCreate(directionalLightsBytes,COI_BUFFER_STREAMING_TO_SINK,0,directionalLightsPtr,1,&process,&buffers[3]);
+    if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
+    /* send distant lights */
+    COIBUFFER distantLightsBuffer;
+    size_t distantLightsBytes = max(size_t(16),scene->distantLights.size()*sizeof(OBJScene::DistantLight));
+    void* distantLightsPtr = scene->distantLights.size() ? &scene->distantLights.front() : NULL;
+    result = COIBufferCreate(distantLightsBytes,COI_BUFFER_STREAMING_TO_SINK,0,distantLightsPtr,1,&process,&buffers[4]);
     if (result != COI_SUCCESS) throw std::runtime_error("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
     
     CreateSceneData parms;
     parms.numMaterials = scene->materials.size();
     parms.numMeshes    = scene->meshes.size();
     parms.numHairSets  = scene->hairsets.size();
-
-    //parms.animate = g_animate;
-    //parms.pointLightPosition = pointLightPosition;
-    //parms.pointLightIntensity = pointLightIntensity;
-    //parms.ambientLightIntensity = ambientLightIntensity;
-    COI_ACCESS_FLAGS flags[1] = { COI_SINK_READ };
+    parms.numAmbientLights = scene->ambientLights.size();
+    parms.numPointLights = scene->pointLights.size();
+    parms.numDirectionalLights = scene->directionalLights.size();
+    parms.numDistantLights = scene->distantLights.size();
 
     COIEVENT event;
     memset(&event,0,sizeof(event));
 
     /* run set scene runfunction */
-    result = COIPipelineRunFunction (pipeline, runCreateScene, 1, &materialBuffer, flags, 0, NULL, &parms, sizeof(parms), NULL, 0, &event);
+    result = COIPipelineRunFunction (pipeline, runCreateScene, 5, buffers, flags, 0, NULL, &parms, sizeof(parms), NULL, 0, &event);
     if (result != COI_SUCCESS) throw std::runtime_error("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
 
     result = COIEventWait(1,&event,-1,1,NULL,NULL);
@@ -282,15 +309,11 @@ namespace embree
 
     /* send all meshes */
     for (size_t i=0; i<scene->meshes.size(); i++) 
-      {
-	send_mesh(scene->meshes[i]);
-      }
+      send_mesh(scene->meshes[i]);
 
     /* send all hairsets */
-    //DBG_PRINT( scene->hairsets.size() );
     for (size_t i=0; i<scene->hairsets.size(); i++) 
       send_hairset(scene->hairsets[i]);
-
   }
 
   void resize(int32_t width, int32_t height)

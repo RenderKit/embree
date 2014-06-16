@@ -66,3 +66,17 @@ __forceinline bool   ne (const Vec3fa& a, const Vec3fa& b) { return a != b; }
 void launch_renderTile (int numTiles, 
                         int* pixels, const int width, const int height, const float time, 
                         const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY);
+
+struct Sample3f
+{
+  Sample3f () {}
+
+  Sample3f (const Vec3fa& v, const float pdf) 
+    : v(v), pdf(pdf) {}
+
+  Vec3fa v;
+  float pdf;
+};
+
+
+
