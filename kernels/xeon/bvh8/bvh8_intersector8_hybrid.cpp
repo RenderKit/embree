@@ -225,7 +225,7 @@ namespace embree
         
         /* switch to single ray traversal */
 #if !defined(__WIN32__) || defined(__X86_64__)
-        unsigned int bits = movemask(active);
+        size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
             intersect1(bvh,curNode,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ);
