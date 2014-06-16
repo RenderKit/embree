@@ -293,7 +293,7 @@ namespace embree
     parms.numDirectionalLights = scene->directionalLights.size();
     parms.numDistantLights = scene->distantLights.size();
 
-#if 1
+#if 0
     DBG_PRINT(  scene->ambientLights.size() );
     DBG_PRINT(  scene->pointLights.size() );
     DBG_PRINT(  scene->directionalLights.size() );

@@ -984,7 +984,7 @@ namespace embree
 
     //node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
 
-    createNode(current.parentPtr,&node[currentIndex]);
+    createNode(current.parentPtr,currentIndex);
     
     node[currentIndex].prefetchNode<PFHINT_L2EX>();
 
@@ -1067,9 +1067,9 @@ namespace embree
 #endif
 
 #if ENABLE_AABB_NODES == 1
-    createNode(current.parentPtr,current_node,BVH4Hair::alignednode_mask);
+    createNode(current.parentPtr,currentIndex,BVH4Hair::alignednode_mask);
 #else
-    createNode(current.parentPtr,current_node);
+    createNode(current.parentPtr,currentIndex);
 #endif
 
 
@@ -1171,7 +1171,7 @@ namespace embree
     const size_t currentIndex = alloc.get(1);
     /* recurseOBB */
 
-    createNode(current.parentPtr,&node[currentIndex]);
+    createNode(current.parentPtr,currentIndex);
     //node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
 
     node[currentIndex].prefetchNode<PFHINT_L2EX>();
@@ -1350,6 +1350,14 @@ namespace embree
       }
 #endif
     current.xfm = frame(axis).transposed();    
+
+#if 0
+    PING;
+    DBG_PRINT( current.xfm );
+    current.PreQuantizeMatrix();
+    DBG_PRINT( current.xfm );
+
+#endif
     DBG(DBG_PRINT(current.xfm));
   }
 

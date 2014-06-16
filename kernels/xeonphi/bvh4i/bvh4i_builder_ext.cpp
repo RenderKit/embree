@@ -30,6 +30,8 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
+//FIXME: use 8-bytes compact prim ref is used
+
 namespace embree
 {
 
@@ -65,15 +67,12 @@ namespace embree
   void BVH4iBuilderPreSplits::printBuilderName()
   {
     std::cout << "building BVH4i with presplits-based SAH builder (MIC) ... " << std::endl;    
-    DBG(sleep(1));
   }
 
   void BVH4iBuilderPreSplits::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
-    DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
-    DBG(DBG_PRINT(numPrimitives));
 
     if (numPrimitivesOld != numPrimitives)
       {
@@ -177,11 +176,6 @@ namespace embree
 			 AlignedAtomicCounter32 &counter,
 			 PrimRef *__restrict__ prims)
   {
-    DBG(
-	DBG_PRINT(primBounds);
-	DBG_PRINT(depth);
-	);
-
     if (depth == 0) 
       {	    
 	const unsigned int index = counter.inc();
@@ -195,11 +189,6 @@ namespace embree
 
 	const float pos = (primBounds.upper[dim] + primBounds.lower[dim]) * 0.5f;
 	splitTri(primBounds,dim,pos,vtxA,vtxB,vtxC,left,right);
-
-	DBG(
-	    DBG_PRINT(left);
-	    DBG_PRINT(right);
-	    );
 
 	subdivideTriangle( left ,vtxA,vtxB,vtxC, depth-1,counter,prims);
 	subdivideTriangle( right,vtxA,vtxB,vtxC, depth-1,counter,prims);
@@ -236,17 +225,6 @@ namespace embree
     const size_t step = (numMaxPreSplits+NUM_PRESPLITS_PER_TRIANGLE-1) / NUM_PRESPLITS_PER_TRIANGLE;
     const size_t startPreSplits = (step <= preSplits) ? preSplits - step : preSplits;
 
-
-    DBG(
-	DBG_PRINT(numPrimitives);
-	DBG_PRINT(preSplits);
-	DBG_PRINT(preSplits_padded);
-	DBG_PRINT(dest0);
-	DBG_PRINT(dest1);
-	DBG_PRINT(step);
-	DBG_PRINT(startPreSplits);
-	);
-
     TIMER(msec = getSeconds());
 
     LockStepTaskScheduler::dispatchTask( task_radixSortPreSplitIDs, this, threadIndex, threadCount );
@@ -265,17 +243,12 @@ namespace embree
 
     numPrimitives = dest0;
 
-    DBG(
-	DBG_PRINT(numPrimitives);
-	);
-
   }
 
 
 
   void BVH4iBuilderPreSplits::countAndComputePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
   {
-    DBG(PING);
     const size_t numGroups = scene->size();
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -499,8 +472,6 @@ namespace embree
 
 
 	/* calculate total number of items for each bucket */
-
-
 	mic_i count[16];
 #pragma unroll(16)
 	for (size_t i=0; i<16; i++)
@@ -684,33 +655,22 @@ namespace embree
 
   void BVH4iBuilderVirtualGeometry::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
-    DBG(PING);
     LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
   }
 
   void BVH4iBuilderVirtualGeometry::createAccel(const size_t threadIndex, const size_t threadCount)
   {
-    DBG(PING);
     LockStepTaskScheduler::dispatchTask( task_createVirtualGeometryAccel, this, threadIndex, threadCount );
   }
 
   void BVH4iBuilderVirtualGeometry::computePrimRefsVirtualGeometry(const size_t threadID, const size_t numThreads) 
   {
-    DBG(PING);
-
     const size_t numTotalGroups = scene->size();
 
     /* count total number of virtual objects */
     const size_t numVirtualObjects = numPrimitives;
     const size_t startID   = (threadID+0)*numVirtualObjects/numThreads;
     const size_t endID     = (threadID+1)*numVirtualObjects/numThreads; 
-
-    DBG(
-	DBG_PRINT(numTotalGroups);
-	DBG_PRINT(numVirtualObjects);
-	DBG_PRINT(startID);
-	DBG_PRINT(endID);
-	);
     
     PrimRef *__restrict__ const prims     = this->prims;
 
@@ -750,12 +710,6 @@ namespace embree
 	    const BBox3fa bounds = virtual_geometry->bounds(i);
 	    const mic_f bmin = broadcast4to16f(&bounds.lower); 
 	    const mic_f bmax = broadcast4to16f(&bounds.upper);
-
-	    DBG(
-		DBG_PRINT(currentID);
-		DBG_PRINT(bmin);
-		DBG_PRINT(bmax);
-		);
           
 	    bounds_scene_min = min(bounds_scene_min,bmin);
 	    bounds_scene_max = max(bounds_scene_max,bmax);
@@ -786,8 +740,6 @@ namespace embree
 
   void BVH4iBuilderVirtualGeometry::createVirtualGeometryAccel(const size_t threadID, const size_t numThreads)
   {
-    DBG(PING);
-
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
 
@@ -812,12 +764,10 @@ namespace embree
   // ==========================================================================================
   // ==========================================================================================
 
-//FIXME: use 8-bytes compact prim ref is used
 
   void BVH4iBuilderMemoryConservative::printBuilderName()
   {
     std::cout << "building BVH4i with memory conservative binned SAH builder (MIC) ... " << std::endl;    
-    DBG(sleep(1));
   }
 
   void BVH4iBuilderMemoryConservative::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
