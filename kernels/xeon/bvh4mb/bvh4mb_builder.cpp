@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4mb.h"
-#include "bvh4mb_builder2.h"
+#include "bvh4mb_builder.h"
 //#include "bvh4mb_refit.h"
 //#include "bvh4mb_rotate.h"
 //#include "bvh4mb_statistics.h"
@@ -36,10 +36,10 @@ namespace embree
 {
   namespace isa
   {
-    template<> BVH4MBBuilder2T<Triangle1vMB>::BVH4MBBuilder2T (BVH4MB* bvh, Scene* scene, size_t mode) : BVH4MBBuilder2(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
-    template<> BVH4MBBuilder2T<Triangle1vMB>::BVH4MBBuilder2T (BVH4MB* bvh, TriangleMesh* mesh, size_t mode) : BVH4MBBuilder2(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
+    template<> BVH4MBBuilderT<Triangle1vMB>::BVH4MBBuilderT (BVH4MB* bvh, Scene* scene, size_t mode) : BVH4MBBuilder(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
+    template<> BVH4MBBuilderT<Triangle1vMB>::BVH4MBBuilderT (BVH4MB* bvh, TriangleMesh* mesh, size_t mode) : BVH4MBBuilder(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
 
-    BVH4MBBuilder2::BVH4MBBuilder2 (BVH4MB* bvh, Scene* scene, TriangleMesh* mesh, size_t mode,
+    BVH4MBBuilder::BVH4MBBuilder (BVH4MB* bvh, Scene* scene, TriangleMesh* mesh, size_t mode,
 				size_t logBlockSize, size_t logSAHBlockSize, float intCost, 
 				bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
       : scene(scene), mesh(mesh), bvh(bvh), enableSpatialSplits(mode > 0), remainingReplications(0),
@@ -51,7 +51,7 @@ namespace embree
        needAllThreads = true;
     }
     
-    BVH4MBBuilder2::~BVH4MBBuilder2() {
+    BVH4MBBuilder::~BVH4MBBuilder() {
       //bvh->alloc.shrink(); // FIXME
     }
 
@@ -258,7 +258,7 @@ namespace embree
       size_t numItems;
     };
 
-    void BVH4MBBuilder2::restructureTree(NodeRef& ref, size_t depth)
+    void BVH4MBBuilder::restructureTree(NodeRef& ref, size_t depth)
     {
       if (depth > 5) return;
       if (ref.isLeaf()) return;
@@ -273,7 +273,7 @@ namespace embree
 
 ///////////////////////////////////////////////////////////////////////////////////////
     template<typename Triangle>
-    typename BVH4MBBuilder2::NodeRef BVH4MBBuilder2T<Triangle>::createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo)
+    typename BVH4MBBuilder::NodeRef BVH4MBBuilderT<Triangle>::createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo)
     {
       /* allocate leaf node */
       size_t N = blocks(pinfo.size());
@@ -292,7 +292,7 @@ namespace embree
       return bvh->encodeLeaf(leaf,N);
     }
     
-    BVH4MBBuilder2::NodeRef BVH4MBBuilder2::createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
+    BVH4MBBuilder::NodeRef BVH4MBBuilder::createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
     {
 #if defined(_DEBUG)
       if (depth >= BVH4MB::maxBuildDepthLeaf) 
@@ -325,7 +325,7 @@ namespace embree
     }  
 
     template<bool PARALLEL>
-    const Split BVH4MBBuilder2::find(size_t threadIndex, size_t threadCount, size_t depth, PrimRefList& prims, const PrimInfo& pinfo, bool spatial)
+    const Split BVH4MBBuilder::find(size_t threadIndex, size_t threadCount, size_t depth, PrimRefList& prims, const PrimInfo& pinfo, bool spatial)
     {
       ObjectPartition::Split osplit = ObjectPartition::find<PARALLEL>(threadIndex,threadCount,      prims,pinfo,logSAHBlockSize);
       if (!spatial) {
@@ -340,7 +340,7 @@ namespace embree
     }
     
     template<bool PARALLEL>
-    __forceinline size_t BVH4MBBuilder2::createNode(size_t threadIndex, size_t threadCount, BVH4MBBuilder2* parent, BuildRecord& record, BuildRecord records_o[BVH4MB::N])
+    __forceinline size_t BVH4MBBuilder::createNode(size_t threadIndex, size_t threadCount, BVH4MBBuilder* parent, BuildRecord& record, BuildRecord records_o[BVH4MB::N])
     {
       /*! compute leaf and split cost */
       const float leafSAH  = parent->intCost*record.pinfo.leafSAH(parent->logSAHBlockSize);
@@ -417,7 +417,7 @@ namespace embree
       return numChildren;
     }
 
-    void BVH4MBBuilder2::finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
+    void BVH4MBBuilder::finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
     {
       BuildRecord children[BVH4MB::N];
       size_t N = createNode<false>(threadIndex,threadCount,this,record,children);
@@ -425,7 +425,7 @@ namespace embree
 	finish_build(threadIndex,threadCount,children[i]);
     }
 
-    void BVH4MBBuilder2::continue_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
+    void BVH4MBBuilder::continue_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
     {
       /* finish small tasks */
       if (record.pinfo.size() < 4*1024) 
@@ -453,7 +453,7 @@ namespace embree
       }
     }
 
-    void BVH4MBBuilder2::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void BVH4MBBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
       while (activeBuildRecords)
       {
@@ -471,7 +471,7 @@ namespace embree
     }
 
 #if 0
-    BVH4MB::NodeRef BVH4MBBuilder2::layout_top_nodes(size_t threadIndex, NodeRef node)
+    BVH4MB::NodeRef BVH4MBBuilder::layout_top_nodes(size_t threadIndex, NodeRef node)
     {
       if (node.isBarrier()) {
 	node.clearBarrier();
@@ -491,7 +491,7 @@ namespace embree
     }
 #endif
 
-    void BVH4MBBuilder2::build(size_t threadIndex, size_t threadCount) 
+    void BVH4MBBuilder::build(size_t threadIndex, size_t threadCount) 
     {
       /*! calculate number of primitives */
       size_t numPrimitives = 0;
@@ -512,7 +512,7 @@ namespace embree
       
       /*! verbose mode */
       if (g_verbose >= 2) {
-	std::cout << "building BVH4MB<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4MBBuilder2(";
+	std::cout << "building BVH4MB<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4MBBuilder(";
 	if (enableSpatialSplits) std::cout << "spatialsplits";
 	std::cout << ") ... " << std::flush;
       }
@@ -553,7 +553,7 @@ namespace embree
       }
       
       /*! process each generated subtask in its own thread */
-      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4MBBuilder2::build");
+      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4MBBuilder::build");
                   
       /* perform tree rotations of top part of the tree */
 /*#if ROTATE_TREE
@@ -594,6 +594,6 @@ namespace embree
     }
     
     /*! entry functions for the builder */
-    Builder* BVH4MBTriangle1vBuilder2 (void* bvh, Scene* scene, size_t mode) { return new class BVH4MBBuilder2T<Triangle1vMB>((BVH4MB*)bvh,scene,mode); }
+    Builder* BVH4MBTriangle1vBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4MBBuilderT<Triangle1vMB>((BVH4MB*)bvh,scene,mode); }
   }
 }

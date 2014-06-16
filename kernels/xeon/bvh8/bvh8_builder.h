@@ -26,7 +26,7 @@ namespace embree
 {
   namespace isa
   {
-    class BVH8Builder2 : public Builder
+    class BVH8Builder : public Builder
     {
       ALIGNED_CLASS;
     public:
@@ -62,18 +62,18 @@ namespace embree
     public:
       
       /*! Constructor. */
-      BVH8Builder2 (BVH8* bvh, Scene* scene, TriangleMesh* mesh, 
+      BVH8Builder (BVH8* bvh, Scene* scene, TriangleMesh* mesh, 
 		    size_t mode, size_t logBlockSize, size_t logSAHBlockSize, float intCost, bool needVertices, 
 		    size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
 
       /*! Destructor*/
-      ~BVH8Builder2();
+      ~BVH8Builder();
 
       /*! builder entry point */
       void build(size_t threadIndex, size_t threadCount);
    
       /*! build job */
-      TASK_RUN_FUNCTION_(BVH8Builder2,build_parallel);
+      TASK_RUN_FUNCTION_(BVH8Builder,build_parallel);
       void build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event);
       
       /*! creates a leaf node */
@@ -91,7 +91,7 @@ namespace embree
 
       /*! creates a node from some build record */
       template<bool PARALLEL>
-      static size_t createNode(size_t threadIndex, size_t threadCount, BVH8Builder2* parent, BuildRecord& record, BuildRecord records_o[BVH8::N]);
+      static size_t createNode(size_t threadIndex, size_t threadCount, BVH8Builder* parent, BuildRecord& record, BuildRecord records_o[BVH8::N]);
 
       /*! continues build */
       void continue_build(size_t threadIndex, size_t threadCount, BuildRecord& record);
@@ -130,11 +130,11 @@ namespace embree
 
     /*! specializes the builder for different leaf types */
     template<typename Triangle>
-    class BVH8Builder2T : public BVH8Builder2
+    class BVH8BuilderT : public BVH8Builder
     {
     public:
-      BVH8Builder2T (BVH8* bvh, Scene* scene, size_t mode);
-      BVH8Builder2T (BVH8* bvh, TriangleMesh* mesh, size_t mode);
+      BVH8BuilderT (BVH8* bvh, Scene* scene, size_t mode);
+      BVH8BuilderT (BVH8* bvh, TriangleMesh* mesh, size_t mode);
       NodeRef createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo);
     };
   }

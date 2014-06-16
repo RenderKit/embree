@@ -24,13 +24,13 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector4,BVH4MBTriangle1vIntersector4ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4MBTriangle1vIntersector8ChunkMoeller);
 
-  DECLARE_SCENE_BUILDER(BVH4MBTriangle1vBuilder2);
+  DECLARE_SCENE_BUILDER(BVH4MBTriangle1vBuilder);
 
   void BVH4MBRegister () 
   {
     int features = getCPUFeatures();
 
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4MBTriangle1vBuilder2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4MBTriangle1vBuilder);
 
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector1Moeller);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4MBTriangle1vIntersector4ChunkMoeller);
@@ -42,8 +42,8 @@ namespace embree
     BVH4MB* accel = new BVH4MB(SceneTriangle1vMB::type,scene);
 
     Builder* builder = NULL;
-    if      (g_tri_builder_mb == "default"     ) builder = BVH4MBTriangle1vBuilder2(accel,scene,0);
-    else if (g_tri_builder_mb == "objectsplit" ) builder = BVH4MBTriangle1vBuilder2(accel,scene,0);
+    if      (g_tri_builder_mb == "default"     ) builder = BVH4MBTriangle1vBuilder(accel,scene,0);
+    else if (g_tri_builder_mb == "objectsplit" ) builder = BVH4MBTriangle1vBuilder(accel,scene,0);
     else throw std::runtime_error("unknown builder "+g_tri_builder_mb+" for BVH4MB<Triangle1v>");
     
     Accel::Intersectors intersectors;
