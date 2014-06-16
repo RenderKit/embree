@@ -198,6 +198,11 @@ namespace embree
 	/*! calculates extended split information */
 	__forceinline void getSplitInfo(const Mapping& mapping, const Split& split, SplitInfo& info) const
 	{
+          if (split.dim == -1) {
+            new (&info) SplitInfo(0,empty,0,empty);
+            return;
+          }
+
 	  size_t leftCount = 0;
 	  BBox3fa leftBounds = empty;
 	  for (size_t i=0; i<split.pos; i++) {
