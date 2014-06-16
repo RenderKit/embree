@@ -489,35 +489,31 @@ inline Vec3f BRDF__sample(const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, co
    Mathematics of Computation, 65, 213 (1996), 203--213:
    http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps */
 
-struct rnd_state {
-  unsigned int s1, s2, s3, s4;
+struct rand_state {
+  unsigned int s1, s2, s3;
 };
 
-unsigned int irand(rnd_state& state)
+unsigned int irand(rand_state& state)
 {
-  #define TAUSWORTHE(s,a,b,c,d) ((s&c)<<d) ^ (((s <<a) ^ s)>>b)
-  state.s1 = TAUSWORTHE(state.s1,  6U, 13U, 4294967294U, 18U);
-  state.s2 = TAUSWORTHE(state.s2,  2U, 27U, 4294967288U,  2U);
-  state.s3 = TAUSWORTHE(state.s3, 13U, 21U, 4294967280U,  7U);
-  state.s4 = TAUSWORTHE(state.s4,  3U, 12U, 4294967168U, 13U);
-  return state.s1 ^ state.s2 ^ state.s3 ^ state.s4;
-} 
+  state.s1 = ((state.s1 & 4294967294U) << 12U) ^ (((state.s1<<13U)^state.s1)>>19U);
+  state.s2 = ((state.s2 & 4294967288U) <<  4U) ^ (((state.s2<< 2U)^state.s2)>>25U);
+  state.s3 = ((state.s3 & 4294967280U) << 17U) ^ (((state.s3<< 3U)^state.s3)>>11U);
+  return state.s1 ^ state.s2 ^ state.s3;
+}
 
-void init_rnd(rnd_state& state, unsigned int x, unsigned int y, unsigned int z, unsigned int w)
+void init_rand(rand_state& state, unsigned int x, unsigned int y, unsigned int z)
 {
-  x = x * 4294967294U;
-  y = y * 4294967288U;
+  x = x * 4294967288U;
+  y = y * 4294967294U;
   z = z * 4294967280U;
-  w = w * 4294967168U;
   state.s1 = x >=   2 ? x : x +   2;
   state.s2 = y >=   8 ? y : y +   8;
   state.s3 = z >=  16 ? z : z +  16;
-  state.s4 = w >= 128 ? w : w + 128;
   for (uniform int i=0; i<10; i++) irand(state);
 }
 
-inline float frand(rnd_state& state) {
-  return (float)(irand(state) & 0xFFFFFFF)/(float)0xFFFFFFFUL;
+inline float frand(rand_state& state) {
+  return irand(state)*2.3283064365386963e-10f;
 }
 
 inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
@@ -525,7 +521,7 @@ inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-Vec3f renderPixelFunction(float x, float y, rnd_state& state, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* radiance accumulator and weight */
   Vec3f L = make_Vec3f(0.0f);
@@ -694,10 +690,9 @@ Vec3f renderPixelFunction(float x, float y, rnd_state& state, const uniform Vec3
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
-  rnd_state state;
-  init_rnd(state,x,y,x*y,g_accu_count);
+  rand_state state;
+  init_rand(state,123*x+456,345*y+564,452*g_accu_count+878);
 
-  //int state = 21344*x+121233*y+234532*g_accu_count;
   Vec3f L = make_Vec3f(0.0f,0.0f,0.0f);
   //for (uniform int i=0; i<16; i++) {
   L = L + renderPixelFunction(x,y,state,vx,vy,vz,p); // FIXME: +=
