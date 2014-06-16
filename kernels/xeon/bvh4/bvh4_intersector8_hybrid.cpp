@@ -36,13 +36,6 @@ namespace embree
       avx3f ray_org = ray.org;
       avx3f ray_dir = ray.dir;
       avxf ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-#if defined(__FIX_RAYS__)
-      const avxf float_range = 1.8E19;
-      ray_org = clamp(ray_org,avx3f(-float_range),avx3f(+float_range));
-      ray_dir = clamp(ray_dir,avx3f(-float_range),avx3f(+float_range));
-      ray_tnear = max(ray_tnear,FLT_MIN); 
-      ray_tfar  = min(ray_tfar,float(inf)); 
-#endif
       const avx3f rdir = rcp_safe(ray_dir);
       const avx3f org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid0,ray_tnear,avxf(pos_inf));
@@ -211,13 +204,6 @@ namespace embree
       avxb terminated = !valid;
       avx3f ray_org = ray.org, ray_dir = ray.dir;
       avxf ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-#if defined(__FIX_RAYS__)
-      const avxf float_range = 0.1f*FLT_MAX;
-      ray_org = clamp(ray_org,avx3f(-float_range),avx3f(+float_range));
-      ray_dir = clamp(ray_dir,avx3f(-float_range),avx3f(+float_range));
-      ray_tnear = max(ray_tnear,FLT_MIN); 
-      ray_tfar  = min(ray_tfar,float(inf)); 
-#endif
       const avx3f rdir = rcp_safe(ray_dir);
       const avx3f org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,avxf(pos_inf));

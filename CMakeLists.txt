@@ -90,11 +90,6 @@ IF (RTCORE_EXPORT_ALL_SYMBOLS)
  ADD_DEFINITIONS(-D__EXPORT_ALL_SYMBOLS__)
 ENDIF()
 
-SET(RTCORE_FIX_RAYS OFF CACHE BOOL "Makes traversal algorithms NAN and INF safe")
-IF (RTCORE_FIX_RAYS)
- ADD_DEFINITIONS(-D__FIX_RAYS__)
-ENDIF()
-
 ##############################################################
 # ISA configuration
 ##############################################################

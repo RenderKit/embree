@@ -2325,7 +2325,7 @@ namespace embree
     rtcore_watertight_plane16(100000);
 #endif
 
-#if defined(__FIX_RAYS__) 
+#if defined(__FIX_RAYS__) // FIXME: this mode is deactivated, did never really work
     rtcore_nan("nan_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1);
     rtcore_inf("inf_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1);
 

@@ -111,7 +111,6 @@
 #define __BUFFER_STRIDE__
 //#define __SPINLOCKS__
 //#define __LOG_TASKS__
-//#define __FIX_RAYS__
 #endif
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)

@@ -167,13 +167,6 @@ namespace embree
       const sseb valid0 = *valid_i;
       sse3f ray_org = ray.org, ray_dir = ray.dir;
       ssef ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-#if defined(__FIX_RAYS__)
-      const ssef float_range = 0.1f*FLT_MAX;
-      ray_org = clamp(ray_org,sse3f(-float_range),sse3f(+float_range));
-      ray_dir = clamp(ray_dir,sse3f(-float_range),sse3f(+float_range));
-      ray_tnear = max(ray_tnear,FLT_MIN); 
-      ray_tfar  = min(ray_tfar,float(inf)); 
-#endif
       const sse3f rdir = rcp_safe(ray_dir);
       const sse3f org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid0,ray_tnear,ssef(pos_inf));
@@ -445,13 +438,6 @@ namespace embree
       sseb terminated = !valid;
       sse3f ray_org = ray.org, ray_dir = ray.dir;
       ssef ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-#if defined(__FIX_RAYS__)
-      const ssef float_range = 0.1f*FLT_MAX;
-      ray_org = clamp(ray_org,sse3f(-float_range),sse3f(+float_range));
-      ray_dir = clamp(ray_dir,sse3f(-float_range),sse3f(+float_range));
-      ray_tnear = max(ray_tnear,FLT_MIN); 
-      ray_tfar  = min(ray_tfar,float(inf)); 
-#endif
       const sse3f rdir = rcp_safe(ray_dir);
       const sse3f org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,ssef(pos_inf));
