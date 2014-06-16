@@ -392,17 +392,17 @@ namespace embree
 #if 0
 	for (size_t i=0;i<3;i++)
 	  {
-	    c_matrix(i,0,m) = (char)(127.0f * mat.vx[i]);
-	    c_matrix(i,1,m) = (char)(127.0f * mat.vy[i]);
-	    c_matrix(i,2,m) = (char)(127.0f * mat.vz[i]);
-	  }
-#else
-	for (size_t i=0;i<3;i++)
-	  {
 	    c_matrix(0,i,m) = (char)(127.0f * mat.vx[i]);
 	    c_matrix(1,i,m) = (char)(127.0f * mat.vy[i]);
 	    c_matrix(2,i,m) = (char)(127.0f * mat.vz[i]);
 	  }
+#else
+	const mic_f vx = broadcast4to16f(&mat.vx) * 127.0f;
+	const mic_f vy = broadcast4to16f(&mat.vy) * 127.0f;
+	const mic_f vz = broadcast4to16f(&mat.vz) * 127.0f;
+	store4f_int8(&c_matrix(0,0,m),vx);
+	store4f_int8(&c_matrix(1,0,m),vy);
+	store4f_int8(&c_matrix(2,0,m),vz);
 
 #endif
 	

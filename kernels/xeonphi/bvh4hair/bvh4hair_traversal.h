@@ -20,6 +20,7 @@
 
 namespace embree
 {
+  //TODO: pre-multiply v with 1/127.0f
 
   static __forceinline mic_f xfm_row_vector(const mic_f &row0,
 					    const mic_f &row1,
