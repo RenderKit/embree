@@ -59,15 +59,15 @@ namespace embree
   {
     
     __forceinline static void swap2(StackItemInt32<T>& a, StackItemInt32<T>& b) { 
-#if defined(__AVX__) // FIXME: works only if sizeof(T) is 8 bytes large
+      //#if defined(__AVX__) // FIXME: works only if sizeof(T) is 8 bytes large
       /* use sse registers to copy stack items */
-      ssef sse_a = load4f(&a);
-      ssef sse_b = load4f(&b);
-      store4f(&a,sse_b);
-      store4f(&b,sse_a);
-#else
+      //ssef sse_a = load4f(&a); // FIXME: this code does not work with GCC 4.8.2
+      //ssef sse_b = load4f(&b);
+      //store4f(&a,sse_b);
+      //store4f(&b,sse_a);
+      //#else
       StackItemInt32<T> t = b; b = a; a = t;
-#endif
+      //#endif
     }
 
     /*! Sort 2 stack items. */
