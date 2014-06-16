@@ -79,6 +79,8 @@ namespace embree
     size_t size_prims;
     size_t size_accel;
     size_t size_nodes;
+
+    const size_t num64BytesBlocksPerNode;
     
   BVH4HairBuilder(BVH4Hair* bvh, void* geometry) 
     : ParallelBinnedSAHBuilder(geometry),
@@ -88,7 +90,8 @@ namespace embree
       accel(NULL),
       size_prims(0),
       size_nodes(0),
-      size_accel(0)
+      size_accel(0),
+      num64BytesBlocksPerNode(4)
       {
       }
 
@@ -121,16 +124,16 @@ namespace embree
       {
 	assert(items <= BVH4Hair::N);
 	const unsigned int v = (offset << BVH4Hair::encodingBits) | BVH4Hair::leaf_mask | items;
-	size_t *ptr = (size_t*)parentPtr;
-	*ptr = (size_t)v;
+	unsigned int *ptr = (unsigned int*)parentPtr;
+	*ptr = v;
       }
 
     __forceinline void createNode(void *parentPtr,
-				  void *childPtr,
+				  unsigned int index,
 				  const size_t flags = 0)
     {
-      size_t *ptr = (size_t*)parentPtr;
-      *ptr = (size_t)childPtr | flags;      
+      unsigned int *ptr = (unsigned int*)parentPtr;
+      *ptr = (index*sizeof(BVH4Hair::UnalignedNode)) | flags;      
     }
 
 

@@ -179,6 +179,7 @@ namespace embree
       store16f(stack_dist,inf);
 
       const void * __restrict__ accel = (void*)bvh->triPtr();
+      const void * __restrict__ nodes = (void*)bvh->nodePtr();
 
       stack_node[0] = BVH4Hair::invalidNode;
       long rayIndex = -1;
@@ -219,6 +220,7 @@ namespace embree
 					max_dist_xyz,
 					stack_node,
 					stack_dist,
+					nodes,
 					leaf_mask);
 
 	      /* return if stack is empty */
@@ -275,6 +277,7 @@ namespace embree
       const mic_f zero    = mic_f::zero();
 
       const void * __restrict__ accel = (void*)bvh->triPtr();
+      const void * __restrict__ nodes = (void*)bvh->nodePtr();
 
       stack_node[0] = BVH4Hair::invalidNode;
 
@@ -310,6 +313,7 @@ namespace embree
 				       min_dist_xyz,
 				       max_dist_xyz,
 				       stack_node,
+				       nodes,
 				       leaf_mask);
 
 
@@ -366,6 +370,7 @@ namespace embree
       store16f(stack_dist,inf);
 
       const void * __restrict__ accel = (void*)bvh->triPtr();
+      const void * __restrict__ nodes = (void*)bvh->nodePtr();
 
       stack_node[0] = BVH4Hair::invalidNode;
 
@@ -401,6 +406,7 @@ namespace embree
 				    max_dist_xyz,
 				    stack_node,
 				    stack_dist,
+				    nodes,
 				    leaf_mask);
 
 	  /* return if stack is empty */
@@ -448,6 +454,7 @@ namespace embree
       store16f(stack_dist,inf);
 
       const void * __restrict__ accel = (void*)bvh->triPtr();
+      const void * __restrict__ nodes = (void*)bvh->nodePtr();
 
       stack_node[0] = BVH4Hair::invalidNode;
 
@@ -483,6 +490,7 @@ namespace embree
 				   min_dist_xyz,
 				   max_dist_xyz,
 				   stack_node,
+				   nodes,
 				   leaf_mask);
 
 	  /* return if stack is empty */

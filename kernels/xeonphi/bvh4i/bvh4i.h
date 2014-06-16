@@ -38,10 +38,10 @@ namespace embree
 
     /*! Masks the bits that store the number of items per leaf. */
     static const unsigned int encodingBits = 4;
-    static const unsigned int offset_mask = 0xFFFFFFFF << encodingBits;
-    static const unsigned int leaf_shift = 3;
-    static const unsigned int leaf_mask = 1<<leaf_shift;  
-    static const unsigned int items_mask = leaf_mask-1;  
+    static const unsigned int offset_mask  = 0xFFFFFFFF << encodingBits;
+    static const unsigned int leaf_shift   = 3;
+    static const unsigned int leaf_mask    = 1<<leaf_shift;  
+    static const unsigned int items_mask   = leaf_mask-1;  
     
     /*! Empty node */
     static const unsigned int emptyNode = leaf_mask;
