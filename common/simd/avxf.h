@@ -83,7 +83,6 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const avxf cast      (const __m256i& a) { return _mm256_castsi256_ps(a); }
   __forceinline const avxf cast      (const avxi& a   ) { return _mm256_castsi256_ps(a); }
   __forceinline const avxi cast      (const avxf& a   ) { return _mm256_castps_si256(a); }
   __forceinline const avxf operator +( const avxf& a ) { return a; }

@@ -155,19 +155,12 @@ def compile(OS,compiler,platform,build):
     command += ' -D RTCORE_INTERSECTION_FILTER=ON'
     command += ' -D RTCORE_BUFFER_STRIDE=ON'
 
-    command += ' -D TARGET_SSE2=ON';
-    command += ' -D TARGET_SSE41=ON';
-    command += ' -D TARGET_SSE42=ON';
-
     if build == 'ReleaseAVX' or build == 'ReleaseAVX2':
-      command += ' -D TARGET_AVX=ON'
+      command += ' -D XEON_ISA=AVX'
+    elif build == 'ReleaseAVX2':
+      command += ' -D XEON_ISA=AVX2'
     else:
-      command += ' -D TARGET_AVX=OFF'
-
-    if build == 'ReleaseAVX2':
-      command += ' -D TARGET_AVX2=ON'
-    else:
-      command += ' -D TARGET_AVX2=OFF'
+      command += ' -D XEON_ISA=SSE4.2'
 
     if build == 'Debug':
       command += ' -D CMAKE_BUILD_TYPE=Debug'
