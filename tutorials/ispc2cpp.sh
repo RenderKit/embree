@@ -15,6 +15,7 @@ sed -i .backup  's/extern/extern \"C\"/g' $2
 sed -i .backup  's/export/extern \"C\"/g' $2
 sed -i .backup  's/launch\[numTilesX\*numTilesY\] renderTile(/launch_renderTile(numTilesX\*numTilesY,/g' $2
 sed -i .backup  's/launch\[numPhi+1\] animateSphere(/launch_animateSphere(numPhi+1,/g' $2
+sed -i .backup  's/M_PI/float(pi)/g' $2
 sed -i .backup  's/\*pi\*/\*float(pi)\*/g' $2
 sed -i .backup  's/\*pi\//\*float(pi)\//g' $2
 sed -i .backup  's/one_over_pi/float(one_over_pi)/g' $2

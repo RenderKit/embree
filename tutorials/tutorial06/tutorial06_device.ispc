@@ -56,13 +56,13 @@ inline Sample3f cosineSampleHemisphere(const float& u, const float& v, const Vec
  *  is the z direction. */
 inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const float _exp) 
 {
-  const float phi = 2.0f * (M_PI) * u;
+  const float phi = 2.0f * M_PI * u;
   const float cosTheta = pow(v,1.0f/(_exp+1.0f));
   const float sinTheta = cos2sin(cosTheta);
   return make_Sample3f(make_Vec3f(cos(phi) * sinTheta, 
 				   sin(phi) * sinTheta, 
 				   cosTheta), 
-                       (_exp+1.0f)*pow(cosTheta,_exp)*0.5f/(M_PI));
+                       (_exp+1.0f)*pow(cosTheta,_exp)*0.5f/M_PI);
 }
 
 /*! Samples hemisphere with power cosine distribution. Up direction
@@ -389,7 +389,7 @@ inline Vec3f BRDF__eval(const BRDF& brdf, const Vec3f& wo, const DifferentialGeo
   const float Ms = max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z);
   const float Mt = max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z);
   if (Md > 0.0f) {
-    R = R + (1.0f/(float)(M_PI)) * clamp(dot(wi,dg.Ns)) * brdf.Kd; // FIXME: +=
+    R = R + (1.0f/M_PI) * clamp(dot(wi,dg.Ns)) * brdf.Kd; // FIXME: +=
   }
   if (Ms > 0.0f && brdf.Ns < 1E10) { // FIXME: inf
     const Sample3f refl = reflect_(wo,dg.Ns);
