@@ -16,6 +16,7 @@
 
 #include "bvh4hair/bvh4hair_builder.h"
 #include "geometry/bezier1i.h"
+#include "bvh4hair/bvh4hair_statistics.h"
 
 namespace embree
 {
@@ -538,7 +539,20 @@ namespace embree
     DBG(DBG_PRINT(totalNumPrimitives));
 
     /* print builder name */
-    if (unlikely(g_verbose >= 1)) printBuilderName();
+    if (unlikely(g_verbose >= 2)) 
+      printBuilderName();
+
+    if (likely(totalNumPrimitives == 0))
+      {
+	DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
+	bvh4hair->root = BVH4Hair::invalidNode;
+	bvh4hair->bounds = empty;
+	bvh4hair->accel = NULL;
+	bvh4hair->size_node  = 0;
+	bvh4hair->size_accel = 0;
+	return;
+      }
+
 
     /* allocate BVH data */
     allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
@@ -553,25 +567,15 @@ namespace embree
     else
       {
 	/* number of primitives is small, just use single threaded mode */
-	if (likely(numPrimitives > 0))
-	  {
-	    DBG(std::cout << "SERIAL BUILD" << std::endl);
-	    build_parallel_hair(0,1,0,0,NULL);
-	  }
-	else
-	  {
-	    DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
-	    /* handle empty scene */
-	    bvh4hair->root = BVH4Hair::emptyNode;
-	    bvh4hair->bounds = empty;
-	  }
+	assert( numPrimitives > 0 );
+	DBG(std::cout << "SERIAL BUILD" << std::endl);
+	build_parallel_hair(0,1,0,0,NULL);
       }
 
     if (g_verbose >= 2) {
       double perf = totalNumPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
-      std::cout << "unaligned nodes " << atomicID << " -> " << sizeof(BVH4Hair::UnalignedNode) * atomicID << std::endl;
-      //std::cout << BVH4iStatistics(bvh).str();
+      std::cout << BVH4HairStatistics<BVH4Hair::UnalignedNode>(bvh4hair).str();
     }
 
   }
@@ -1200,8 +1204,6 @@ namespace embree
 
 	computeUnalignedSpace(current_obb);
 	computeUnalignedSpaceBounds(current_obb);
-
-	//TODO:: node[current.parentID].setMatrix(current.xfm,current.parentBoxID);
    
 	recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
       }

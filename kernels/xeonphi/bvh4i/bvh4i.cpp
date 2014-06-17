@@ -25,21 +25,12 @@
 namespace embree
 {
 
-#if 1
   __aligned(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
     { pos_inf, pos_inf, pos_inf,BVH4i::invalidNode},
     { neg_inf, neg_inf, neg_inf,BVH4i::invalidNode},
     { pos_inf, pos_inf, pos_inf,BVH4i::invalidNode},
     { neg_inf, neg_inf, neg_inf,BVH4i::invalidNode}
    };
-#else
-  __aligned(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
-    {1E38f,1E38f,1E38f,BVH_LEAF_MASK},
-    {1E38f,1E38f,1E38f,BVH_LEAF_MASK},
-    {1E38f,1E38f,1E38f,BVH_LEAF_MASK},
-    {1E38f,1E38f,1E38f,BVH_LEAF_MASK}
-  };
-#endif
 
   /*! intersector registration functions */
   DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iTriangle1Intersector1);

@@ -153,12 +153,12 @@ namespace embree
 	return (unsigned int)m_box == (unsigned int)m_lane;
       }
 
-      __forceinline void setInvalid(size_t i) // FIXME
+      __forceinline void setInvalid(size_t i) 
       {
 	lower[i].x = pos_inf;
 	lower[i].y = pos_inf;
 	lower[i].z = pos_inf;
-	lower[i].child = invalidNode; // NodeRef(leaf_mask);
+	lower[i].child = invalidNode; 
 
 	upper[i].x = neg_inf;
 	upper[i].y = neg_inf;

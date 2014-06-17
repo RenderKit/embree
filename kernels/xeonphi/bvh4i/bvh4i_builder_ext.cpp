@@ -610,7 +610,7 @@ namespace embree
 
 	  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-	  // TODO: use store4f
+	  // FIXME: use store4f
 	  Vec3fa vtxA = *(Vec3fa*)&v[0];
 	  Vec3fa vtxB = *(Vec3fa*)&v[1];
 	  Vec3fa vtxC = *(Vec3fa*)&v[2];

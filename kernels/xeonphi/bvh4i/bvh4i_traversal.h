@@ -165,6 +165,12 @@ namespace embree
 	curNode = ((unsigned int*)node)[closest_child_pos];
 	compactustore16f(m_pos,&stack_dist[old_sindex],tNear);
 	compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
+
+	if (unlikely(((unsigned int*)stack_dist)[sindex-2] < ((unsigned int*)stack_dist)[sindex-1]))
+	  {
+	    std::swap(((unsigned int*)stack_dist)[sindex-1],((unsigned int*)stack_dist)[sindex-2]);
+	    std::swap(((unsigned int*)stack_node)[sindex-1],((unsigned int*)stack_node)[sindex-2]);
+	  }
       }
 
   }
