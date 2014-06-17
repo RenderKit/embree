@@ -21,9 +21,6 @@
 
 #define DBG(x) 
 
-#define ENABLE_AABB_NODES = 1
-
-
 namespace embree
 {
   namespace isa
