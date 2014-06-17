@@ -28,7 +28,7 @@ namespace embree
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 
 #define ENABLE_OBB_BVH4 1
-#define ENABLE_AABB_NODES 0
+#define ENABLE_AABB_NODES 1
 
 #define TIMER(x)  
 
@@ -623,12 +623,7 @@ namespace embree
     br.init(global_bounds,0,numPrimitives);
     br.depth       = 1;
     //br.parentID    = 0;
-#if ENABLE_AABB_NODES == 1
-    BVH4Hair::AlignedNode* aligned_node = (BVH4Hair::AlignedNode*)node;
-    br.parentPtr   = &aligned_node[0].ref[0]; 
-#else
     br.parentPtr   = &node[0].child(0);
-#endif
 
     /* node allocator */
     NodeAllocator alloc(atomicID,numAllocated64BytesBlocks);
@@ -667,11 +662,7 @@ namespace embree
     
     /* update BVH4 */
     
-#if ENABLE_AABB_NODES == 1
-    bvh4hair->root   = aligned_node[0].ref[0]; 
-#else
     bvh4hair->root             = node[0].child(0);
-#endif
     bvh4hair->bounds           = global_bounds.geometry;
     bvh4hair->unaligned_nodes  = (BVH4Hair::UnalignedNode*)node;
     bvh4hair->accel            = prims;
@@ -1060,11 +1051,7 @@ namespace embree
     /* allocate next four nodes */
     const size_t currentIndex = alloc.get(1);
     
-#if ENABLE_AABB_NODES == 1
-    BVH4Hair::AlignedNode *const current_node = (BVH4Hair::AlignedNode *)&node[currentIndex];
-#else
     BVH4Hair::UnalignedNode *current_node = (BVH4Hair::UnalignedNode *)&node[currentIndex];
-#endif
 
 #if ENABLE_AABB_NODES == 1
     createNode(current.parentPtr,currentIndex,BVH4Hair::alignednode_mask);
@@ -1186,7 +1173,9 @@ namespace embree
       //children[i].parentID    = currentIndex;
       children[i].parentPtr   = &node[currentIndex].child(i);
       recurseOBB(children[i],alloc,mode,threadID,numThreads);
+
     }    
+
   }
 
   void BVH4HairBuilder::buildSubTree(BuildRecord& current, 
@@ -1351,10 +1340,11 @@ namespace embree
 #endif
     current.xfm = frame(axis).transposed();    
 
+    current.PreQuantizeMatrix();
+
 #if 0
     PING;
     DBG_PRINT( current.xfm );
-    current.PreQuantizeMatrix();
     DBG_PRINT( current.xfm );
 
 #endif

@@ -592,6 +592,11 @@ namespace embree
   __forceinline void store16f_int8(void* addr, const mic_f& v2) {
     _mm512_extstore_ps(addr,v2,_MM_DOWNCONV_PS_SINT8,0);
   }
+
+  __forceinline void store4f_int8(void* addr, const mic_f& v1) {
+    assert((unsigned long)addr % 4 == 0);
+    _mm512_mask_extpackstorelo_ps(addr,0xf, v1, _MM_DOWNCONV_PS_SINT8 , 0);
+  }
   
   __forceinline void store4f(void* addr, const mic_f& v1) {
     assert((unsigned long)addr % 16 == 0);

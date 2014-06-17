@@ -20,6 +20,7 @@
 
 namespace embree
 {
+  //TODO: pre-multiply v with 1/127.0f
 
   static __forceinline mic_f xfm_row_vector(const mic_f &row0,
 					    const mic_f &row1,
@@ -49,9 +50,10 @@ namespace embree
   static __forceinline mic_f xfm(const mic_f &v, const BVH4Hair::UnalignedNode &node)
   {
     // alternative: 'rows' at 'columns' for lane dot products
-    const mic_f x = ldot3_xyz(v,node.matrixRowXYZW[0]);
-    const mic_f y = ldot3_xyz(v,node.matrixRowXYZW[1]);
-    const mic_f z = ldot3_xyz(v,node.matrixRowXYZW[2]);
+
+    const mic_f x = ldot3_xyz(v,node.getRow(0));
+    const mic_f y = ldot3_xyz(v,node.getRow(1));
+    const mic_f z = ldot3_xyz(v,node.getRow(2));
     const mic_f ret = select(0x4444,z,select(0x2222,y,x));
     return ret;
   }
@@ -84,26 +86,35 @@ namespace embree
 	    STAT3(normal.trav_nodes,1,1,1);
 	    const BVH4Hair::UnalignedNode *__restrict__ const u_node = (BVH4Hair::UnalignedNode *)curNode.node(nodes);
 
-	    prefetch<PFHINT_L1>((char*)u_node + 0*64);
-	    prefetch<PFHINT_L1>((char*)u_node + 1*64);
-	    prefetch<PFHINT_L1>((char*)u_node + 2*64);
-	    prefetch<PFHINT_L1>((char*)u_node + 3*64);
-	
-	    const mic_f row0 = u_node->matrixRowXYZW[0];
-	    const mic_f row1 = u_node->matrixRowXYZW[1];
-	    const mic_f row2 = u_node->matrixRowXYZW[2];
+	    u_node->prefetchNode<PFHINT_L1>();
 
+	    
+	    const mic_f row0 = u_node->getRow(0);
+	    const mic_f row1 = u_node->getRow(1);
+	    const mic_f row2 = u_node->getRow(2);
+		  	
+#if 0	  
 	    const mic_f xfm_dir_xyz = xfm_row_vector(row0,row1,row2,dir_xyz);
-	    const mic_f xfm_org_xyz = xfm_row_point (row0,row1,row2,org_xyz1);
+	    const mic_f xfm_org_xyz = xfm_row_point (row0,row1,row2,org_xyz1); // only use xfm_row_vector
 
 	    const mic_f rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz );
-		  		  
+
 	    const mic_f tLowerXYZ = -(xfm_org_xyz * rcp_xfm_dir_xyz);
 	    const mic_f tUpperXYZ = (mic_f::one()  - xfm_org_xyz) * rcp_xfm_dir_xyz;
+#else
+	    const mic_f xfm_dir_xyz = xfm_row_vector(row0,row1,row2,dir_xyz);
+	    const mic_f xfm_org_xyz = xfm_row_vector(row0,row1,row2,org_xyz1); // only use xfm_row_vector
 
+	    const mic_f rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz );
+
+	    const mic_f xfm_org_rdir_xyz = xfm_org_xyz * rcp_xfm_dir_xyz;
+	    const mic_f tLowerXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->lower),xfm_org_rdir_xyz);
+	    const mic_f tUpperXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->upper),xfm_org_rdir_xyz);
+
+#endif
 		    
 	    //mic_m hitm = eq(0x1111, xfm_org_xyz,xfm_org_xyz);
-	    mic_m hitm = ne(0x8888,load16i((int*)u_node->children),invalidNode);
+	    mic_m hitm = ne(0x8888,invalidNode,u_node->getChildren());
 
 	    const mic_f tLower = select(m7777,min(tLowerXYZ,tUpperXYZ),min_dist_xyz);
 	    const mic_f tUpper = select(m7777,max(tLowerXYZ,tUpperXYZ),max_dist_xyz);
@@ -202,7 +213,7 @@ namespace embree
 	    const unsigned int old_sindex = sindex;
 	    sindex += countbits(hiti) - 1;
 	    assert(sindex < 3*BVH4i::maxDepth+1);
-	    const mic_i children = load16i((int*)u_node->children);
+	    const mic_i children = u_node->getChildren();
         
 	    const mic_m closest_child = eq(hitm,min_dist,tNear);
 	    const unsigned long closest_child_pos = bitscan64(closest_child);
@@ -218,9 +229,7 @@ namespace embree
 	  {
 	    const BVH4Hair::AlignedNode* __restrict__ node = (BVH4Hair::AlignedNode*)curNode.node(nodes); // curNode.node();
 
-	    prefetch<PFHINT_L1>((char*)node + 0);
-	    prefetch<PFHINT_L1>((char*)node + 64);
-	    prefetch<PFHINT_L1>((char*)node + 128);
+	    node->prefetchNode<PFHINT_L1>();
 
 	    STAT3(normal.trav_nodes,1,1,1);
 
@@ -232,7 +241,7 @@ namespace embree
         
 	    /* intersect single ray with 4 bounding boxes */
 
-	    mic_m hitm = ne(0x8888,load16i((int*)plower),invalidNode);
+	    mic_m hitm = ne(0x8888,invalidNode,node->getChildren());
 
 	    const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
 	    const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
@@ -240,20 +249,6 @@ namespace embree
 	    const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
 	    
-	    /* mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz); */
-	    /* mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz); */
-
-	    /* tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz); */
-	    /* tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz); */
-
-	    /* tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz); */
-	    /* tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz); */
-
-	    /* mic_m hitm = ~m7777;  */
-	    /* const mic_f tLower = tLowerXYZ; */
-	    /* const mic_f tUpper = tUpperXYZ; */
-
-	    /* early pop of next node */
 	    sindex--;
 	    curNode = stack_node[sindex];
 
@@ -315,25 +310,20 @@ namespace embree
 	      }
 
 	    /* continue with closest child and push all others */
+	    assert(curNode  != BVH4Hair::invalidNode);
+
 	    const mic_f min_dist = set_min_lanes(tNear_pos);
-	    assert(sindex < 3*BVH4Hair::maxDepth+1);
+	    const unsigned int old_sindex = sindex;
+	    sindex += countbits(hiti) - 1;
+	    assert(sindex < 3*BVH4i::maxDepth+1);
+	    const mic_i children = node->getChildren();
         
 	    const mic_m closest_child = eq(hitm,min_dist,tNear);
 	    const unsigned long closest_child_pos = bitscan64(closest_child);
 	    const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
 	    curNode = node->child_ref(closest_child_pos);
-
-
-	    assert(curNode  != BVH4Hair::invalidNode);
-
-	    long i = -1;
-	    while((i = bitscan64(i,m_pos)) != BITSCAN_NO_BIT_SET_64)	    
-	      {
-		((unsigned int*)stack_dist)[sindex] = ((unsigned int*)&tNear)[i];		      
-		stack_node[sindex] = node->child_ref(i);
-		assert(stack_node[sindex]  != BVH4Hair::invalidNode);
-		sindex++;
-	      }	    
+	    compactustore16f(m_pos,&stack_dist[old_sindex],tNear);
+	    compactustore16i(m_pos,&stack_node[old_sindex],children);
 	  }
       }
     
@@ -368,26 +358,34 @@ namespace embree
 	    STAT3(normal.trav_nodes,1,1,1);
 	    const BVH4Hair::UnalignedNode *__restrict__ const u_node = (BVH4Hair::UnalignedNode *)curNode.node(nodes);
 
-	    prefetch<PFHINT_L1>((char*)u_node + 0*64);
-	    prefetch<PFHINT_L1>((char*)u_node + 1*64);
-	    prefetch<PFHINT_L1>((char*)u_node + 2*64);
-	    prefetch<PFHINT_L1>((char*)u_node + 3*64);
+	    u_node->prefetchNode<PFHINT_L1>();
 
+	    const mic_f row0 = u_node->getRow(0);
+	    const mic_f row1 = u_node->getRow(1);
+	    const mic_f row2 = u_node->getRow(2);
 
-	    const mic_f row0 = u_node->matrixRowXYZW[0];
-	    const mic_f row1 = u_node->matrixRowXYZW[1];
-	    const mic_f row2 = u_node->matrixRowXYZW[2];
-
+#if 0	  
 	    const mic_f xfm_dir_xyz = xfm_row_vector(row0,row1,row2,dir_xyz);
-	    const mic_f xfm_org_xyz = xfm_row_point (row0,row1,row2,org_xyz1);
+	    const mic_f xfm_org_xyz = xfm_row_point (row0,row1,row2,org_xyz1); // only use xfm_row_vector
 
 	    const mic_f rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz );
-		  		  
+
 	    const mic_f tLowerXYZ = -(xfm_org_xyz * rcp_xfm_dir_xyz);
 	    const mic_f tUpperXYZ = (mic_f::one()  - xfm_org_xyz) * rcp_xfm_dir_xyz;
+#else
+	    const mic_f xfm_dir_xyz = xfm_row_vector(row0,row1,row2,dir_xyz);
+	    const mic_f xfm_org_xyz = xfm_row_vector(row0,row1,row2,org_xyz1); // only use xfm_row_vector
+
+	    const mic_f rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz );
+
+	    const mic_f xfm_org_rdir_xyz = xfm_org_xyz * rcp_xfm_dir_xyz;
+	    const mic_f tLowerXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->lower),xfm_org_rdir_xyz);
+	    const mic_f tUpperXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->upper),xfm_org_rdir_xyz);
+
+#endif
 
 		    
-	    mic_m hitm = ne(0x8888,load16i((int*)u_node->children),invalidNode);
+	    mic_m hitm = ne(0x8888,u_node->getChildren(),invalidNode);
 
 	    const mic_f tLower = select(m7777,min(tLowerXYZ,tUpperXYZ),min_dist_xyz);
 	    const mic_f tUpper = select(m7777,max(tLowerXYZ,tUpperXYZ),max_dist_xyz);
@@ -457,22 +455,16 @@ namespace embree
 	    /* continue with closest child and push all others */
 
 	    const mic_f min_dist = set_min_lanes(tNear_pos);
-	    assert(sindex < 3*BVH4Hair::maxDepth+1);
+	    const unsigned int old_sindex = sindex;
+	    sindex += countbits(hiti) - 1;
+	    assert(sindex < 3*BVH4i::maxDepth+1);
+	    const mic_i children = u_node->getChildren();
         
 	    const mic_m closest_child = eq(hitm,min_dist,tNear);
 	    const unsigned long closest_child_pos = bitscan64(closest_child);
 	    const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
 	    curNode = u_node->child_ref(closest_child_pos);
-
-	    assert(curNode  != BVH4Hair::invalidNode);
-
-	    long i = -1;
-	    while((i = bitscan64(i,m_pos)) != BITSCAN_NO_BIT_SET_64)	    
-	      {
-		stack_node[sindex] = u_node->child_ref(i);
-		assert(stack_node[sindex]  != BVH4Hair::invalidNode);
-		sindex++;
-	      }
+	    compactustore16i(m_pos,&stack_node[old_sindex],children);
 	  }
 	else
 	  {
@@ -485,25 +477,10 @@ namespace embree
 	    const float* __restrict const plower = (float*)node->lower;
 	    const float* __restrict const pupper = (float*)node->upper;
 
-	    prefetch<PFHINT_L1>((char*)node + 0);
-	    prefetch<PFHINT_L1>((char*)node + 64);
-        
-	    /* intersect single ray with 4 bounding boxes */
+	    node->prefetchNode<PFHINT_L1>();
 
-	    /* mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz); */
-	    /* mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz); */
 
-	    /* tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz); */
-	    /* tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz); */
-
-	    /* tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz); */
-	    /* tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz); */
-
-	    /* mic_m hitm = ~m7777;  */
-	    /* const mic_f tLower = tLowerXYZ; */
-	    /* const mic_f tUpper = tUpperXYZ; */
-
-	    mic_m hitm = ne(0x8888,load16i((int*)plower),invalidNode);
+	    mic_m hitm = ne(0x8888,node->getChildren(),invalidNode);
 
 	    const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
 	    const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
@@ -569,26 +546,17 @@ namespace embree
 	      }
 
 	    /* continue with closest child and push all others */
-
-
 	    const mic_f min_dist = set_min_lanes(tNear_pos);
-	    assert(sindex < 3*BVH4Hair::maxDepth+1);
+	    const unsigned int old_sindex = sindex;
+	    sindex += countbits(hiti) - 1;
+	    assert(sindex < 3*BVH4i::maxDepth+1);
+	    const mic_i children = node->getChildren();
         
 	    const mic_m closest_child = eq(hitm,min_dist,tNear);
 	    const unsigned long closest_child_pos = bitscan64(closest_child);
 	    const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
 	    curNode = node->child_ref(closest_child_pos);
-
-	    assert(curNode  != BVH4Hair::invalidNode);
-
-	    long i = -1;
-	    while((i = bitscan64(i,m_pos)) != BITSCAN_NO_BIT_SET_64)	    
-	      {
-		stack_node[sindex] = node->child_ref(i);
-		assert(stack_node[sindex]  != BVH4Hair::invalidNode);
-		sindex++;
-	      }
-	    
+	    compactustore16i(m_pos,&stack_node[old_sindex],children);
 	  }
       }  
   }

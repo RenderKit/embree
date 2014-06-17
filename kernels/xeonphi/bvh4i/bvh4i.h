@@ -128,8 +128,8 @@ namespace embree
     public:
       struct NodeStruct {
         float x,y,z;           // x,y, and z coordinates of bounds
-        NodeRef child;         // encodes is-leaf bit, offset bits, and num-items bits
-      } lower[4], upper[4];    // lower and upper bounds of all 4 children
+        NodeRef child;         
+      } lower[4], upper[4];    
 
       /*! Returns bounds of specified child. */
       __forceinline BBox3fa bounds(size_t i) const {
