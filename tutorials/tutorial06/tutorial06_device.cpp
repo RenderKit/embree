@@ -610,13 +610,17 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     /* invoke environment lights if nothing hit */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
     {
+#if 0
       /* iterate over all ambient lights */
       for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
         L = L + Lw*AmbientLight__eval(g_ispc_scene->ambientLights[i],ray.dir); // FIXME: +=
+#endif
 
-      /* iteratr over all distant lights */
+#if 0
+      /* iterate over all distant lights */
       for (size_t i=0; i<g_ispc_scene->numDistantLights; i++)
         L = L + Lw*DistantLight__eval(g_ispc_scene->distantLights[i],ray.dir); // FIXME: +=
+#endif
 
       break;
     }
@@ -625,7 +629,8 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     DifferentialGeometry dg;
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
-    Vec3fa _Ns = interpolate_normal(ray);
+    //Vec3fa _Ns = interpolate_normal(ray);
+    Vec3fa _Ns = normalize(ray.Ng);
     dg.Ns = face_forward(ray.dir,_Ns);
 
     /* shade all rays that hit something */
@@ -665,6 +670,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     /* iterate over ambient lights */
     for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
+#if 1
       Vec3fa L0 = Vec3fa(0.0f);
       Sample3f wi0; float tMax0;
       Vec3fa Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,Vec2f(frand(state),frand(state)));
@@ -676,6 +682,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
         }
         L = L + Lw*L0;
       }
+#endif
 
 #if 0
       Vec3fa L1 = Vec3fa(0.0f);
@@ -686,8 +693,11 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
         if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
           L1 = Ll1/wi1.pdf*c;
         }
+        L = L + Lw*L1;
       }
+#endif
 
+#if 0
       float s = wi0.pdf*wi0.pdf + wi1.pdf*wi1.pdf;
       if (s > 0) {
         float w0 = 0;
@@ -698,9 +708,11 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       }
 #endif
     }
-    
-    /* iterate over point lights */
+#endif
+
     Sample3f wi; float tMax;
+
+    /* iterate over point lights */
     for (size_t i=0; i<g_ispc_scene->numPointLights; i++)
     {
       Vec3fa Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
@@ -732,7 +744,6 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*BRDF__eval(brdf,wo,dg,wi.v); // FIXME: +=
     }
-#endif
 
     if (wi1.pdf <= 0.0f) break;
     Lw = Lw*c/wi1.pdf; // FIXME: *=
