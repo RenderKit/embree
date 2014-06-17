@@ -14,7 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "common/default.h"
+#include "sys/platform.h"
+#include "simd/sse.h"
 
 namespace embree
 {
