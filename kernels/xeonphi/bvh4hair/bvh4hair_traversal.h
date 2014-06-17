@@ -223,6 +223,18 @@ namespace embree
 
 	compactustore16f(m_pos,&stack_dist[old_sindex],tNear);
 	compactustore16i(m_pos,&stack_node[old_sindex],children);
+
+	if (unlikely(((unsigned int*)stack_dist)[sindex-3] < ((unsigned int*)stack_dist)[sindex-2]))
+	  {
+	    std::swap(((unsigned int*)stack_dist)[sindex-2],((unsigned int*)stack_dist)[sindex-3]);
+	    std::swap(((unsigned int*)stack_node)[sindex-2],((unsigned int*)stack_node)[sindex-3]);
+	  }
+
+	if (unlikely(((unsigned int*)stack_dist)[sindex-2] < ((unsigned int*)stack_dist)[sindex-1]))
+	  {
+	    std::swap(((unsigned int*)stack_dist)[sindex-1],((unsigned int*)stack_dist)[sindex-2]);
+	    std::swap(((unsigned int*)stack_node)[sindex-1],((unsigned int*)stack_node)[sindex-2]);
+	  }
       }
  
   }
