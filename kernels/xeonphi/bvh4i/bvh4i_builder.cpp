@@ -277,7 +277,6 @@ namespace embree
 	std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << totalNumPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
 	std::cout << "  max = " << 1000.0f*dt_max << "ms (" << totalNumPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
 	std::cout << "---" << std::endl << std::flush;
-	std::cout << BVH4iStatistics(bvh).str();
 
 #else
 
