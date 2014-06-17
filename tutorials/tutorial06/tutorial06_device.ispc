@@ -401,7 +401,7 @@ inline Vec3f BRDF__eval(const BRDF& brdf, const Vec3f& wo, const DifferentialGeo
   return R;
 }
 
-inline Vec3f BRDF__sample(const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, const Vec2f& s)  
+inline Vec3f BRDF__sample(const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, bool& outside, const Vec2f& s)  
 {
   Vec3f cd = make_Vec3f(0.0f); 
   Sample3f wid = make_Sample3f(make_Vec3f(0.0f),0.0f);
@@ -423,9 +423,11 @@ inline Vec3f BRDF__sample(const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, co
     {
       float F = 1.0f;
       if (brdf.Ni != 1.0f) {
+        float Ni = brdf.Ni;
+        if (outside) Ni = 1.0f/brdf.Ni;
         float cosThetaO = clamp(dot(wo,dg.Ns));
-        float cosThetaI; Sample3f wt = refract(wo,dg.Ns,brdf.Ni,cosThetaO,cosThetaI);
-        F = fresnelDielectric(cosThetaO,cosThetaI,brdf.Ni);
+        float cosThetaI; Sample3f wt = refract(wo,dg.Ns,Ni,cosThetaO,cosThetaI);
+        F = fresnelDielectric(cosThetaO,cosThetaI,Ni);
       }
       wis = reflect_(wo,dg.Ns);
       cs = F * brdf.Ks;
@@ -440,13 +442,17 @@ inline Vec3f BRDF__sample(const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, co
     {
       wit = make_Sample3f(neg(wo),1.0f);
       ct = brdf.Kt;
+      outside = !outside;
     }
     else
     {
+      float Ni = brdf.Ni;
+      if (outside) Ni = 1.0f/brdf.Ni;
       float cosThetaO = clamp(dot(wo,dg.Ns));
-      float cosThetaI; wit = refract(wo,dg.Ns,brdf.Ni,cosThetaO,cosThetaI);
-      float T = 1.0f-fresnelDielectric(cosThetaO,cosThetaI,brdf.Ni);
+      float cosThetaI; wit = refract(wo,dg.Ns,Ni,cosThetaO,cosThetaI);
+      float T = 1.0f-fresnelDielectric(cosThetaO,cosThetaI,Ni);
       ct = brdf.Kt * make_Vec3f(T);
+      outside = !outside;
     }
   }
 
@@ -523,6 +529,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
   /* radiance accumulator and weight */
   Vec3f L = make_Vec3f(0.0f);
   Vec3f Lw = make_Vec3f(1.0f);
+  bool outside = true;
 
   /* initialize ray */
   RTCRay ray;
@@ -564,10 +571,10 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     DifferentialGeometry dg;
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
-    dg.Ns = face_forward(ray.dir,normalize(ray.Ng)); // FIXME: implement
+    dg.Ns = face_forward(ray.dir,normalize(ray.Ng));
 
     /* shade all rays that hit something */
-#if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
+#if 0 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
     int materialID = g_ispc_scene->meshes[ray.geomID]->triangles[ray.primID].materialID; 
 #else
     int materialID = 0;
@@ -595,10 +602,11 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     brdf.Kt = (1.0f-d)*make_Vec3f(material->Kt);
     brdf.Ni = material->Ni;
 
-    /* calculate diffuce bounce */
-    Sample3f wi1;
-    Vec3f c = BRDF__sample(brdf,Lw, wo, dg, wi1, make_Vec2f(frand(state),frand(state)));
+    /* sample BRDF at hit point */
+    Sample3f wi1; 
+    Vec3f c = BRDF__sample(brdf,Lw, wo, dg, wi1, outside, make_Vec2f(frand(state),frand(state)));
 
+#if 0
     /* iterate over ambient lights */
     for (uniform size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
@@ -611,8 +619,10 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
         if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
           L0 = Ll0/wi0.pdf*BRDF__eval(brdf,wo,dg,wi0.v);
         }
+        L = L + Lw*L0;
       }
 
+#if 0
       Vec3f L1 = make_Vec3f(0.0f);
       Vec3f Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
       if (wi1.pdf > 0.0f) {
@@ -631,8 +641,9 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
         //float w1 = wi1.pdf*wi1.pdf/s;
         L = L + Lw*(w0*L0+w1*L1);
       }
+#endif
     }
-
+    
     /* iterate over point lights */
     Sample3f wi; float tMax;
     for (uniform size_t i=0; i<g_ispc_scene->numPointLights; i++)
@@ -666,7 +677,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*BRDF__eval(brdf,wo,dg,wi.v); // FIXME: +=
     }
-
+#endif
 
     if (wi1.pdf <= 0.0f) break;
     Lw = Lw*c/wi1.pdf; // FIXME: *=
