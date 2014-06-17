@@ -503,9 +503,6 @@ unsigned int irand(rand_state& state)
 
 void init_rand(rand_state& state, unsigned int x, unsigned int y, unsigned int z)
 {
-  x = x * 4294967288U;
-  y = y * 4294967294U;
-  z = z * 4294967280U;
   state.s1 = x >=   2 ? x : x +   2;
   state.s2 = y >=   8 ? y : y +   8;
   state.s3 = z >=  16 ? z : z +  16;
@@ -539,7 +536,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
   ray.time = 0;
 
   /* iterative path tracer loop */
-  for (uniform int i=0; i<1; i++)
+  for (uniform int i=0; i<10; i++)
   {
     /* terminate if contribution too low */
     if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
@@ -691,7 +688,10 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   rand_state state;
-  init_rand(state,123*x+456,345*y+564,452*g_accu_count+878);
+  init_rand(state,
+            253*x+35*y+152*g_accu_count+54,
+            1253*x+345*y+1452*g_accu_count+564,
+            10253*x+3435*y+52*g_accu_count+13);
 
   Vec3f L = make_Vec3f(0.0f,0.0f,0.0f);
   //for (uniform int i=0; i<16; i++) {
