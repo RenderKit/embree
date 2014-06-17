@@ -1204,8 +1204,6 @@ namespace embree
 
 	computeUnalignedSpace(current_obb);
 	computeUnalignedSpaceBounds(current_obb);
-
-	//TODO:: node[current.parentID].setMatrix(current.xfm,current.parentBoxID);
    
 	recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
       }
