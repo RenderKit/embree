@@ -666,11 +666,10 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     Sample3f wi1; 
     Vec3f c = BRDF__sample(brdf,Lw, wo, dg, wi1, outside, make_Vec2f(frand(state),frand(state)));
 
-#if 0
     /* iterate over ambient lights */
     for (uniform size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
-#if 1
+#if 0
       Vec3f L0 = make_Vec3f(0.0f);
       Sample3f wi0; float tMax0;
       Vec3f Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,make_Vec2f(frand(state),frand(state)));
@@ -684,7 +683,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       }
 #endif
 
-#if 0
+#if 1
       Vec3f L1 = make_Vec3f(0.0f);
       Vec3f Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
       if (wi1.pdf > 0.0f) {
@@ -708,7 +707,6 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       }
 #endif
     }
-#endif
 
     Sample3f wi; float tMax;
 
