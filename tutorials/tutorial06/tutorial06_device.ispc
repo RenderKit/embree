@@ -524,6 +524,60 @@ inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
+inline Vec3f interpolate_normal(RTCRay& ray)
+{
+#if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
+  uniform ISPCMesh* varying mesh = g_ispc_scene->meshes[ray.geomID];
+  uniform ISPCTriangle* varying tri = &mesh->triangles[ray.primID];
+
+  /* load material ID */
+  int materialID = tri->materialID;
+
+  /* interpolate shading normal */
+  if (mesh->normals) {
+    Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
+    Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
+    Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
+    float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+    return normalize(w*n0 + u*n1 + v*n2);
+  } else {
+    return normalize(ray.Ng);
+  }
+
+#else
+
+  Vec3f Ns = make_Vec3f(0.0f);
+  int materialID = 0;
+  foreach_unique (geomID in ray.geomID) 
+  {
+    if (geomID >= 0 && geomID < g_ispc_scene->numMeshes)  { // FIXME: workaround for ISPC bug
+
+    uniform ISPCMesh* uniform mesh = g_ispc_scene->meshes[geomID];
+    
+    foreach_unique (primID in ray.primID) 
+    {
+      uniform ISPCTriangle* uniform tri = &mesh->triangles[primID];
+      
+      /* load material ID */
+      materialID = tri->materialID;
+
+      /* interpolate shading normal */
+      if (mesh->normals) {
+        Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
+        Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
+        Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
+        float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+        Ns = w*n0 + u*n1 + v*n2;
+      } else {
+        Ns = normalize(ray.Ng);
+      }
+    }
+    }
+  }
+  return normalize(Ns);
+#endif
+}
+
 Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* radiance accumulator and weight */
@@ -543,7 +597,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
   ray.time = 0;
 
   /* iterative path tracer loop */
-  for (uniform int i=0; i<10; i++)
+  for (uniform int i=0; i<20; i++)
   {
     /* terminate if contribution too low */
     if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
@@ -571,7 +625,8 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     DifferentialGeometry dg;
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
-    dg.Ns = face_forward(ray.dir,normalize(ray.Ng));
+    Vec3f _Ns = interpolate_normal(ray);
+    dg.Ns = face_forward(ray.dir,_Ns);
 
     /* shade all rays that hit something */
 #if 0 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
