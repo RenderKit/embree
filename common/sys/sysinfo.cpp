@@ -43,9 +43,9 @@ namespace embree
 #elif defined(__WIN32__) && defined(__X86_64__)
     return "Windows (64bit)";
 #elif defined(__MACOSX__) && !defined(__X86_64__)
-    return "MacOS (32bit)";
+    return "Mac OS X (32bit)";
 #elif defined(__MACOSX__) && defined(__X86_64__)
-    return "MacOS (64bit)";
+    return "Mac OS X (64bit)";
 #elif defined(__UNIX__) && !defined(__X86_64__)
     return "Unix (32bit)";
 #elif defined(__UNIX__) && defined(__X86_64__)
@@ -315,7 +315,7 @@ namespace embree
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-/// MacOS Platform
+/// Mac OS X Platform
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef __MACOSX__
