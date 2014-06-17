@@ -69,7 +69,8 @@ namespace embree
 					       BVH4Hair::NodeRef *__restrict__ const stack_node,
 					       float   *__restrict__ const stack_dist,
 					       const void      * __restrict__ const nodes,
-					       const unsigned int leaf_mask)
+					       const unsigned int leaf_mask,
+					       const unsigned int alignednode_mask)
   {
     const mic_m m7777 = 0x7777; 
 
@@ -88,7 +89,7 @@ namespace embree
 	
 	STAT3(normal.trav_nodes,1,1,1);	    
 
-	if (likely(((size_t)curNode & BVH4Hair::alignednode_mask) == 0)) // unaligned nodes
+	if (likely((curNode & alignednode_mask) == 0)) // unaligned nodes
 	  {	    
 	    u_node->prefetchNode<PFHINT_L1>();
 	    
@@ -107,6 +108,9 @@ namespace embree
 		   
 	    const mic_f tLower = select(m7777,min(tLowerXYZ,tUpperXYZ),min_dist_xyz);
 	    const mic_f tUpper = select(m7777,max(tLowerXYZ,tUpperXYZ),max_dist_xyz);
+	    ref = u_node->nodeRefPtr();
+
+	    hitm = ne(0x8888,invalidNode,load16i((const int*)ref));
 
 	    /* early pop of next node */
 	    sindex--;
@@ -114,9 +118,7 @@ namespace embree
 
 	    tNear = vreduce_max4(tLower);
 	    tFar  = vreduce_min4(tUpper);  
-	    ref = u_node->nodeRefPtr();
 
-	    hitm = ne(0x8888,invalidNode,load16i((const int*)ref));
 
 	  }
 	else
@@ -151,6 +153,7 @@ namespace embree
 	  }
 
 	hitm = le(hitm,tNear,tFar);
+	const mic_f tNear_pos = select(hitm,tNear,inf);
 
 	STAT3(normal.trav_hit_boxes[countbits(hitm)],1,1,1);
 
@@ -206,7 +209,6 @@ namespace embree
 	  }
 
 	/* continue with closest child and push all others */
-	const mic_f tNear_pos = select(hitm,tNear,inf);
 
 	const mic_f min_dist = set_min_lanes(tNear_pos);
 	const unsigned int old_sindex = sindex;
@@ -318,6 +320,7 @@ namespace embree
 	  }
 
 	hitm = le(hitm,tNear,tFar);
+	const mic_f tNear_pos = select(hitm,tNear,inf);
 
 	STAT3(normal.trav_hit_boxes[countbits(hitm)],1,1,1);
 
@@ -371,7 +374,6 @@ namespace embree
 	  }
 
 	/* continue with closest child and push all others */
-	const mic_f tNear_pos = select(hitm,tNear,inf);
 
 	const mic_f min_dist = set_min_lanes(tNear_pos);
 	const unsigned int old_sindex = sindex;
@@ -398,7 +400,7 @@ __forceinline void compactStack(BVH4Hair::NodeRef *__restrict__ const stack_node
 {
   size_t new_sindex = 1;
   for (size_t s=1;s<sindex;s++)
-    if (*(unsigned int*)&stack_dist[s] <= current_dist)
+    if (((unsigned int*)stack_dist)[s] <= current_dist)
       {
 	stack_dist[new_sindex] = stack_dist[s];
 	stack_node[new_sindex] = stack_node[s];
