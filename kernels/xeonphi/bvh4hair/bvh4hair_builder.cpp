@@ -16,6 +16,7 @@
 
 #include "bvh4hair/bvh4hair_builder.h"
 #include "geometry/bezier1i.h"
+#include "bvh4hair/bvh4hair_statistics.h"
 
 namespace embree
 {
@@ -29,6 +30,9 @@ namespace embree
 
 #define ENABLE_OBB_BVH4 1
 #define ENABLE_AABB_NODES 1
+
+  //#define BVH4HAIR_NODE_PREALLOC_FACTOR                 1.3f
+#define BVH4HAIR_NODE_PREALLOC_FACTOR                 3.0f
 
 #define TIMER(x)  
 
@@ -75,8 +79,8 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives;
-	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
-	size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+	const size_t minAllocNodes = numPrims ? (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE : 16;
+	size_t numNodes = max((size_t)((numPrims+2)/3 * BVH4HAIR_NODE_PREALLOC_FACTOR),minAllocNodes);
 	if (numPrimitives == 0) numNodes = 0;
 	allocateMemoryPools(numPrims,numNodes);
       }
@@ -189,10 +193,10 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizePrimRefInBytes + additional_size;
-    const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size;
-    const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
+    const size_t size_node     = numNodes * sizeNodeInBytes    + additional_size;
+    const size_t size_accel    = numPrims * sizeAccelInBytes   + additional_size;
 
-    numAllocated64BytesBlocks = size_node / sizeof(mic_i);
+    numAllocated64BytesBlocks = size_node / sizeof(BVH4Hair::UnalignedNode); // FIXME: do memory handling in 64 byte blocks
       
 #if DEBUG
     DBG_PRINT(numAllocated64BytesBlocks);
@@ -207,8 +211,6 @@ namespace embree
 
     prims = (Bezier1i                 *) os_malloc(size_primrefs); 
     node  = (BVH4Hair::UnalignedNode  *) os_malloc(size_node);
-    //node  = (BVH4Hair::AlignedNode  *) os_malloc(size_node);
-
     accel = (Bezier1i                 *) os_malloc(size_accel);
 
     assert(prims  != 0);
@@ -538,7 +540,20 @@ namespace embree
     DBG(DBG_PRINT(totalNumPrimitives));
 
     /* print builder name */
-    if (unlikely(g_verbose >= 1)) printBuilderName();
+    if (unlikely(g_verbose >= 2)) 
+      printBuilderName();
+
+    if (likely(totalNumPrimitives == 0))
+      {
+	DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
+	bvh4hair->root = BVH4Hair::invalidNode;
+	bvh4hair->bounds = empty;
+	bvh4hair->accel = NULL;
+	bvh4hair->size_node  = 0;
+	bvh4hair->size_accel = 0;
+	return;
+      }
+
 
     /* allocate BVH data */
     allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
@@ -553,25 +568,15 @@ namespace embree
     else
       {
 	/* number of primitives is small, just use single threaded mode */
-	if (likely(numPrimitives > 0))
-	  {
-	    DBG(std::cout << "SERIAL BUILD" << std::endl);
-	    build_parallel_hair(0,1,0,0,NULL);
-	  }
-	else
-	  {
-	    DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
-	    /* handle empty scene */
-	    bvh4hair->root = BVH4Hair::emptyNode;
-	    bvh4hair->bounds = empty;
-	  }
+	assert( numPrimitives > 0 );
+	DBG(std::cout << "SERIAL BUILD" << std::endl);
+	build_parallel_hair(0,1,0,0,NULL);
       }
 
     if (g_verbose >= 2) {
       double perf = totalNumPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
-      std::cout << "unaligned nodes " << atomicID << " -> " << sizeof(BVH4Hair::UnalignedNode) * atomicID << std::endl;
-      //std::cout << BVH4iStatistics(bvh).str();
+      std::cout << BVH4HairStatistics<BVH4Hair::UnalignedNode>(bvh4hair).str();
     }
 
   }
@@ -1200,8 +1205,6 @@ namespace embree
 
 	computeUnalignedSpace(current_obb);
 	computeUnalignedSpaceBounds(current_obb);
-
-	//TODO:: node[current.parentID].setMatrix(current.xfm,current.parentBoxID);
    
 	recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
       }

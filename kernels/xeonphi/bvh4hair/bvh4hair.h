@@ -44,6 +44,7 @@ namespace embree
     static const size_t maxBuildDepth = 26;
     static const size_t maxBuildDepthLeaf = maxBuildDepth+6;
     static const size_t maxDepth = maxBuildDepth + maxBuildDepthLeaf;
+    static const int travCost = 1;
 
     /*! Empty node */
     static const unsigned int emptyNode = leaf_mask;
@@ -136,6 +137,14 @@ namespace embree
       __forceinline mic_f getRow(size_t i) const
       {
 	return load16f_int8(xfm[i]);
+      }
+
+      /*! Returns bounds of specified child. */
+      __forceinline BBox3fa bounds(size_t i) const {
+	assert( i < 4 );
+        Vec3fa l = *(Vec3fa*)&lower[i];
+        Vec3fa u = *(Vec3fa*)&upper[i];
+        return BBox3fa(l,u);
       }
 
       __forceinline void setInvalid(size_t i) 
@@ -535,7 +544,7 @@ namespace embree
 
     NodeRef root;                      //!< Root node (can also be a leaf).
 
-    const PrimitiveType& primTy;   //!< triangle type stored in BVH
+    const PrimitiveType& primTy;       //!< primitive type stored in BVH
     void* geometry;                    //!< pointer to geometry for intersection
     UnalignedNode *unaligned_nodes;
     void *accel;
@@ -545,8 +554,12 @@ namespace embree
     __forceinline       void* nodePtr()       { return unaligned_nodes; }
     __forceinline const void* nodePtr() const { return unaligned_nodes; }
 
-    __forceinline       void* triPtr()       { return accel; }
-    __forceinline const void* triPtr() const { return accel; }
+    __forceinline       void* primitivesPtr()       { return accel; }
+    __forceinline const void* primitivesPtr() const { return accel; }
+
+    size_t bytes () const {
+      return size_node+size_accel;
+    }
 
 
   BVH4Hair(const PrimitiveType& primTy, void* geometry = NULL) : primTy(primTy), 

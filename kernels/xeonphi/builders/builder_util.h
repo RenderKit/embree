@@ -118,8 +118,6 @@ namespace embree
 
     unsigned int flags;
     float sArea;
-    //unsigned int parentType;    // only used with mixed AABB/OBB trees 
-    //unsigned int parentBoxID; 
     void *parentPtr;             //!< pointer to child NodeRef in parent node
 
     BuildRecord()
@@ -131,8 +129,6 @@ namespace embree
     {
       begin       = _begin;
       end         = _end;
-      //parentID    = (unsigned int)-1;
-      //parentBoxID = (unsigned int)-1;
       parentPtr   = NULL;
       sArea       = area(bounds.geometry);
       flags       = BUILD_RECORD_NODE;

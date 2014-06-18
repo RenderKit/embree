@@ -97,6 +97,38 @@ namespace embree
       else if (tag == "-threads")
         g_numThreads = cin->getInt();
 
+       /* ambient light source */
+      else if (tag == "-ambientlight") 
+      {
+        const Vec3fa L = cin->getVec3fa();
+        g_obj_scene.ambientLights.push_back(OBJScene::AmbientLight(L));
+      }
+
+      /* point light source */
+      else if (tag == "-pointlight") 
+      {
+        const Vec3fa P = cin->getVec3fa();
+        const Vec3fa I = cin->getVec3fa();
+        g_obj_scene.pointLights.push_back(OBJScene::PointLight(P,I));
+      }
+
+      /* directional light source */
+      else if (tag == "-directionallight" || tag == "-dirlight") 
+      {
+        const Vec3fa D = cin->getVec3fa();
+        const Vec3fa E = cin->getVec3fa();
+        g_obj_scene.directionalLights.push_back(OBJScene::DirectionalLight(D,E));
+      }
+
+      /* distant light source */
+      else if (tag == "-distantlight") 
+      {
+        const Vec3fa D = cin->getVec3fa();
+        const Vec3fa L = cin->getVec3fa();
+        const float halfAngle = cin->getFloat();
+        g_obj_scene.distantLights.push_back(OBJScene::DistantLight(D,L,halfAngle));
+      }
+
       /* skip unknown command line parameter */
       else {
         std::cerr << "unknown command line parameter: " << tag << " ";

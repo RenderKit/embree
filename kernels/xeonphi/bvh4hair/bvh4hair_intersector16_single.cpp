@@ -174,7 +174,7 @@ namespace embree
 
       store16f(stack_dist,inf);
 
-      const void * __restrict__ accel = (void*)bvh->triPtr();
+      const void * __restrict__ accel = (void*)bvh->primitivesPtr();
       const void * __restrict__ nodes = (void*)bvh->nodePtr();
 
       stack_node[0] = BVH4Hair::invalidNode;
@@ -273,7 +273,7 @@ namespace embree
       const mic_f inf     = mic_f(pos_inf);
       const mic_f zero    = mic_f::zero();
 
-      const void * __restrict__ accel = (void*)bvh->triPtr();
+      const void * __restrict__ accel = (void*)bvh->primitivesPtr();
       const void * __restrict__ nodes = (void*)bvh->nodePtr();
 
       stack_node[0] = BVH4Hair::invalidNode;
@@ -365,7 +365,7 @@ namespace embree
 
       store16f(stack_dist,inf);
 
-      const void * __restrict__ accel = (void*)bvh->triPtr();
+      const void * __restrict__ accel = (void*)bvh->primitivesPtr();
       const void * __restrict__ nodes = (void*)bvh->nodePtr();
 
       stack_node[0] = BVH4Hair::invalidNode;
@@ -451,7 +451,7 @@ namespace embree
 
       store16f(stack_dist,inf);
 
-      const void * __restrict__ accel = (void*)bvh->triPtr();
+      const void * __restrict__ accel = (void*)bvh->primitivesPtr();
       const void * __restrict__ nodes = (void*)bvh->nodePtr();
 
       stack_node[0] = BVH4Hair::invalidNode;
