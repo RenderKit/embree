@@ -68,7 +68,7 @@ compilers      = []
 
 supported_builds = {}
 supported_builds['V90']  = [ 'Debug', 'Release']
-supported_builds['V100'] = [ 'Debug', 'Release', 'ReleaseAVX' ]
+supported_builds['V100'] = [ 'Debug', 'Release' ]
 supported_builds['V110'] = [ 'Debug', 'Release', 'ReleaseAVX']
 supported_builds['V120'] = [ 'Debug', 'Release', 'ReleaseAVX']
 supported_builds['ICC']  = [ 'Debug', 'Release', 'ReleaseAVX', 'ReleaseAVX2']
