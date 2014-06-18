@@ -31,8 +31,7 @@ namespace embree
 #define ENABLE_OBB_BVH4 1
 #define ENABLE_AABB_NODES 1
 
-  //#define BVH4HAIR_NODE_PREALLOC_FACTOR                 1.3f
-#define BVH4HAIR_NODE_PREALLOC_FACTOR                 3.0f
+#define BVH4HAIR_NODE_PREALLOC_FACTOR                 1.3f
 
 #define TIMER(x)  
 
