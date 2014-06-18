@@ -121,14 +121,21 @@ GLUT. Under Mac OS X, these dependencies can be installed using
 
 <p><pre><code>sudo port install cmake freeglut</code></pre></p>
 
-<p>Under Linux you can install these dependencies using yum. Depending
+<p>Under Linux you can install these dependencies
+  using <code>yum</code> or <code>apt-get</code>. Depending
 on your Linux distribution, some of these packages might already be
 installed or might have slightly different names.</p>
 
+<p>Type the following to install the dependencies using <code>yum</code>:</p>
  <p><pre><code>sudo yum install cmake.x86_64
 sudo yum install freeglut.x86_64 freeglut-devel.x86_64
 sudo yum install libXmu.x86_64 libXi.x86_64 
 sudo yum install libXmu-devel.x86_64 libXi-devel.x86_64</code></pre></p>
+
+<p>Type the following to install the dependencies using <code>apt-get</code>:</p>
+ <p><pre><code>sudo apt-get install cmake-curses-gui
+sudo apt-get install freeglut3-dev
+sudo apt-get install libxmu-dev libxi-dev</code></pre></p>
         
 <p>Finally you can compile Embree using CMake. Create a build directory
 and execute "ccmake .." inside this directory.</p>

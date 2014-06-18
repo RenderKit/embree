@@ -14,7 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-= Embree: High Performance Ray Tracing Kernels 2.3.1 (alpha)  =
+= Embree: High Performance Ray Tracing Kernels 2.3.1  =
 
 == Embree Overview  ==
 
@@ -80,14 +80,22 @@ Mac OS X, these dependencies can be installed using MacPorts:
 
  sudo port install cmake freeglut
 
-Under Linux you can install these dependencies using yum. Depending on your
-Linux distribution, some of these packages might already be installed or might
-have slightly different names.
+Under Linux you can install these dependencies using yum or apt-get. Depending
+on your Linux distribution, some of these packages might already be installed
+or might have slightly different names.
+
+Type the following to install the dependencies using yum:
 
  sudo yum install cmake.x86_64
  sudo yum install freeglut.x86_64 freeglut-devel.x86_64
  sudo yum install libXmu.x86_64 libXi.x86_64
  sudo yum install libXmu-devel.x86_64 libXi-devel.x86_64
+
+Type the following to install the dependencies using apt-get:
+
+ sudo apt-get install cmake-curses-gui
+ sudo apt-get install freeglut3-dev
+ sudo apt-get install libxmu-dev libxi-dev
 
 Finally you can compile Embree using CMake. Create a build directory and
 execute "ccmake .." inside this directory.
