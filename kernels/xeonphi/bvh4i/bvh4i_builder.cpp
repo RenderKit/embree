@@ -156,7 +156,7 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
-    const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size;
+    const size_t size_node     = numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size;
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
     numAllocated64BytesBlocks = size_node / sizeof(mic_f);
@@ -207,9 +207,9 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives+4;
-	const size_t minAllocNodes = numPrims ? (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE : 16;
-	const size_t numNodes = max((size_t)((numPrims+3)/4 * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
-	allocateMemoryPools(numPrims,numNodes);
+	const size_t minAllocNodes = (threadCount+1) * 2 * ALLOCATOR_NODE_BLOCK_SIZE; //FIXME: better minAllocNodes estimate
+	const size_t numNodes = max((size_t)((numPrims+3)/4),minAllocNodes);
+	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(Triangle1));
       }
   }
 
@@ -226,6 +226,7 @@ namespace embree
     DBG(PING);
     const size_t totalNumPrimitives = getNumPrimitives();
 
+    //DBG_PRINT(totalNumPrimitives);
 
     DBG(DBG_PRINT(totalNumPrimitives));
 

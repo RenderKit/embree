@@ -78,8 +78,8 @@ namespace embree
       {
 	const size_t preSplitPrims = (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR);
 	const size_t numPrims = numPrimitives+preSplitPrims;
-	const size_t minAllocNodes = numPrims ? (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE: 16;
-	const size_t numNodes = max((size_t)((numPrims+3)/4 * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+	const size_t minAllocNodes = (threadCount+1) * 2 * ALLOCATOR_NODE_BLOCK_SIZE;
+	const size_t numNodes = max((size_t)((numPrims+3)/4),minAllocNodes);
 
 	numMaxPrimitives = numPrims;
 	numMaxPreSplits  = numPrims - numPrimitives;
@@ -781,7 +781,7 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives;
-	const size_t minAllocNodes = numPrims ? (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE: 16;
+	const size_t minAllocNodes = (threadCount+1) * 2 * ALLOCATOR_NODE_BLOCK_SIZE;
 	const size_t numNodes = max((size_t)((numPrims+3)/4),minAllocNodes);
 	const size_t sizeNodeInBytes   = sizeof(BVH4i::QuantizedNode);
 	const size_t sizeAccelInBytes  = sizeof(Triangle1mc);

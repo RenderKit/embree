@@ -17,7 +17,7 @@
 #include "bvh4i_builder_morton.h"
 #include "builders/builder_util.h"
 
-#define MORTON_BVH_NODE_PREALLOC_FACTOR     1.2f
+#define MORTON_BVH4I_NODE_PREALLOC_FACTOR     1.2f
 #define NUM_MORTON_IDS_PER_BLOCK            8
 #define SINGLE_THREADED_BUILD_THRESHOLD     (MAX_MIC_THREADS*64)
 
@@ -179,7 +179,7 @@ namespace embree
       /* allocated memory for primrefs,nodes, and accel */
       const size_t minAllocNodes = numPrimitives ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 8: 16;
       const size_t numPrims      = numPrimitives+4;
-      const size_t numNodes      = max((size_t)(numPrimitives * MORTON_BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+      const size_t numNodes      = max((size_t)(numPrimitives * MORTON_BVH4I_NODE_PREALLOC_FACTOR),minAllocNodes);
 
 
       const size_t size_morton_tmp = numPrims * sizeof(MortonID32Bit) + additional_size;

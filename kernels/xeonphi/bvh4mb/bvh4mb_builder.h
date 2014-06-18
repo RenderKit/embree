@@ -39,6 +39,7 @@ namespace embree
     virtual void createAccel      (const size_t threadIndex, const size_t threadCount);
     virtual void printBuilderName();
     virtual size_t getNumPrimitives();
+    virtual std::string getStatistics();
 
 
     /* parallel refit bvh4mb tree */
