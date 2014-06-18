@@ -73,15 +73,6 @@ namespace embree
 	store4f(&xfm.vy,new_col1);
 	store4f(&xfm.vz,new_col2);
 
-#if 0
-	DBG_PRINT( col0 );
-	DBG_PRINT( col1 );
-	DBG_PRINT( col2 );
-
-	DBG_PRINT( new_col0 );
-	DBG_PRINT( new_col1 );
-	DBG_PRINT( new_col2 );
-#endif
       }
 
       __forceinline friend std::ostream &operator<<(std::ostream &o, const BuildRecordOBB &br)
@@ -104,7 +95,6 @@ namespace embree
     Bezier1i *prims;
     Bezier1i *accel;
     BVH4Hair::UnalignedNode*   node;
-    //BVH4Hair::AlignedNode*   node;
     
     size_t size_prims;
     size_t size_accel;

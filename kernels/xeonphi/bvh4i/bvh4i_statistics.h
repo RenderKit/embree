@@ -83,7 +83,7 @@ namespace embree
     stream << "  nodes = "  << numNodes << " "
            << "(" << bytesNodes/1E6  << " MB) "
            << "(" << 100.0*double(bytesNodes)/double(bytesTotal) << "% of total) "
-           << "(" << 100.0*double(sizeof(NodeType)*numNodes)/double(bytesNodes) << "% used)" 
+           << "(" << 100.0*double(sizeof(NodeType)*numNodes)/double(bytesNodes) << "% of allocated nodes used)" 
            << std::endl;
     stream << "  leaves = " << numLeaves << " "
            << "(" << bytesTris/1E6  << " MB) "

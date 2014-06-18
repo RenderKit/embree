@@ -31,6 +31,9 @@ namespace embree
 #define ENABLE_OBB_BVH4 1
 #define ENABLE_AABB_NODES 1
 
+  //#define BVH4HAIR_NODE_PREALLOC_FACTOR                 1.3f
+#define BVH4HAIR_NODE_PREALLOC_FACTOR                 3.0f
+
 #define TIMER(x)  
 
 #if defined(DEBUG)
@@ -76,8 +79,8 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives;
-	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
-	size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+	const size_t minAllocNodes = numPrims ? (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE : 16;
+	size_t numNodes = max((size_t)((numPrims+2)/3 * BVH4HAIR_NODE_PREALLOC_FACTOR),minAllocNodes);
 	if (numPrimitives == 0) numNodes = 0;
 	allocateMemoryPools(numPrims,numNodes);
       }
@@ -190,10 +193,10 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizePrimRefInBytes + additional_size;
-    const size_t size_node     = numNodes * BVH_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size;
-    const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
+    const size_t size_node     = numNodes * sizeNodeInBytes    + additional_size;
+    const size_t size_accel    = numPrims * sizeAccelInBytes   + additional_size;
 
-    numAllocated64BytesBlocks = size_node / sizeof(mic_i);
+    numAllocated64BytesBlocks = size_node / sizeof(BVH4Hair::UnalignedNode); // FIXME: do memory handling in 64 byte blocks
       
 #if DEBUG
     DBG_PRINT(numAllocated64BytesBlocks);
@@ -208,8 +211,6 @@ namespace embree
 
     prims = (Bezier1i                 *) os_malloc(size_primrefs); 
     node  = (BVH4Hair::UnalignedNode  *) os_malloc(size_node);
-    //node  = (BVH4Hair::AlignedNode  *) os_malloc(size_node);
-
     accel = (Bezier1i                 *) os_malloc(size_accel);
 
     assert(prims  != 0);
