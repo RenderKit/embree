@@ -70,25 +70,22 @@ namespace embree
     size_t bytesTris  = bvh->size_accel;
     size_t bytesTotal = bytesNodes+bytesTris;//+bytesVertices;
     size_t bytesTotalAllocated = bvh->bytes();
-    /* double leafFill1 = double(numPrims)/double(bvh->primTy.blockSize*numPrimBlocks); */
-    /* double leafFill4 = double(numPrims)/double(4.0*numPrimBlocks4); */
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream.precision(4);
     stream << "  sah = " << bvhSAH << ", leafSAH = " << leafSAH;
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream.precision(1);
     stream << ", depth = " << depth;
-    stream << ", size = " << bytesTotalAllocated/1E6 << " MB (" << bytesTotal/1E6 << " MB used)" << std::endl;
+    stream << ", size = " << bytesTotalAllocated/1E6 << " MB " << std::endl;
     stream.precision(1);
     stream << "  nodes = "  << numNodes << " "
-           << "(" << bytesNodes/1E6  << " MB) "
-           << "(" << 100.0*double(bytesNodes)/double(bytesTotal) << "% of total) "
+           << "(" << double(sizeof(NodeType)*numNodes)/1E6 << " MB used of " << bytesNodes/1E6  << " MB pre-allocated) "
+           << "(" << 100.0*double(bytesNodes)/double(bytesTotal) << "% of total " << bytesTotalAllocated/1E6 << " MB) "
            << "(" << 100.0*double(sizeof(NodeType)*numNodes)/double(bytesNodes) << "% of allocated nodes used)" 
            << std::endl;
     stream << "  leaves = " << numLeaves << " "
            << "(" << bytesTris/1E6  << " MB) "
-           << "(" << 100.0*double(bytesTris)/double(bytesTotal) << "% of total) "
-      //           << "(" << 100.0*leafFill1 << "% used, " << 100.0*leafFill4 << "% used)" 
+           << "(" << 100.0*double(bytesTris)/double(bytesTotal) << "% of total " << bytesTotalAllocated/1E6 << " MB) "
            << std::endl;
     return stream.str();
   }

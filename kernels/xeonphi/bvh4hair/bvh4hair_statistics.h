@@ -77,11 +77,11 @@ namespace embree
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream.precision(1);
     stream << ", depth = " << depth;
-    stream << ", size = " << bytesTotalAllocated/1E6 << " MB (" << bytesTotal/1E6 << " MB used)" << std::endl;
+    stream << ", size = " << bytesTotalAllocated/1E6 << " MB " << std::endl;
     stream.precision(1);
     stream << "  nodes = "  << numNodes << " "
-           << "(" << bytesNodes/1E6  << " MB) "
-           << "(" << 100.0*double(bytesNodes)/double(bytesTotal) << "% of total) "
+           << "(" << double(sizeof(NodeType)*numNodes)/1E6 << " MB used of " << bytesNodes/1E6  << " MB pre-allocated) "
+           << "(" << 100.0*double(bytesNodes)/double(bytesTotal) << "% of total " << bytesTotalAllocated/1E6 << " MB) "
            << "(" << 100.0*double(sizeof(NodeType)*numNodes)/double(bytesNodes) << "% of allocated nodes used)" 
            << std::endl;
     stream << "  AABB nodes " << numAlignedNodes 
@@ -90,7 +90,7 @@ namespace embree
 	   << " (" << 100.0*double(numUnalignedNodes)/double(numNodes) << "% of total) " << std::endl;
     stream << "  leaves = " << numLeaves << " "
            << "(" << bytesPrims/1E6  << " MB) "
-           << "(" << 100.0*double(bytesPrims)/double(bytesTotal) << "% of total) "
+           << "(" << 100.0*double(bytesPrims)/double(bytesTotal) << "% of total " << bytesTotalAllocated/1E6 << " MB) "
            << std::endl;
     return stream.str();
   }

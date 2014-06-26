@@ -181,8 +181,8 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives+4;
-	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 4: 16;
-	const size_t numNodes = max((size_t)(numPrims * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+	const size_t minAllocNodes = (threadCount+1) * 2 * ALLOCATOR_NODE_BLOCK_SIZE;
+	const size_t numNodes = max((size_t)((numPrims+3)/4),minAllocNodes);
 	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4mb::Node),sizeof(BVH4mb::Triangle01));
       }
   }
@@ -406,6 +406,11 @@ namespace embree
 	const BVH4i::NodeRef &ref = subtrees_array[ID];
 	BBox3fa bounds = refit(ref);
       }
+  }
+
+  std::string BVH4mbBuilder::getStatistics()
+  {
+    return BVH4iStatistics<BVH4mb::Node>(bvh).str();
   }
 
   void BVH4mbBuilder::finalize(const size_t threadIndex, const size_t threadCount)
