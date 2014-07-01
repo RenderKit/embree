@@ -79,7 +79,7 @@ namespace embree
       {
 	const size_t numPrims = numPrimitives;
 	const size_t minAllocNodes = (threadCount+1) * 2 * ALLOCATOR_NODE_BLOCK_SIZE;
-	size_t numNodes = max((size_t)((numPrims+2)/3 * BVH4HAIR_NODE_PREALLOC_FACTOR),minAllocNodes);
+	size_t numNodes = max((size_t)((numPrims+1)/2 * BVH4HAIR_NODE_PREALLOC_FACTOR),minAllocNodes);
 	if (numPrimitives == 0) numNodes = 0;
 	allocateMemoryPools(numPrims,numNodes);
       }
@@ -548,8 +548,6 @@ namespace embree
 	bvh4hair->root = BVH4Hair::invalidNode;
 	bvh4hair->bounds = empty;
 	bvh4hair->accel = NULL;
-	bvh4hair->size_node  = 0;
-	bvh4hair->size_accel = 0;
 	return;
       }
 
