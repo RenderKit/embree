@@ -570,14 +570,14 @@ namespace embree
     {
       const unsigned int currentIndex = localNodeID + localNodeIDs;
 
-      if (unlikely(currentIndex >= maxNodes)) {
+      if (unlikely(currentIndex + i >= maxNodes)) {
 	DBG_PRINT(currentIndex);
 	DBG_PRINT(maxNodes);
         FATAL("not enough nodes allocated");
       }
       
       localNodeIDs += i;
-      if (unlikely(localNodeIDs == LOCAL_NODE_IDS)) {
+      if (unlikely(localNodeIDs >= LOCAL_NODE_IDS)) {
         localNodeID = counter.add(LOCAL_NODE_IDS);
         localNodeIDs = 0;	
       }

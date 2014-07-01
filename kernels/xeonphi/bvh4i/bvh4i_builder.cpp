@@ -19,9 +19,13 @@
 #include "bvh4i/bvh4i_statistics.h"
 
 
+
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 #define SINGLE_THREADED_BUILD_THRESHOLD        512
+
+#define INTERSECTION_COST 1.0f
+
 
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
@@ -761,7 +765,7 @@ namespace embree
     const unsigned int items = current.items();
     const float voxelArea = area(current.bounds.geometry);
     Split split;
-    split.cost = items * voxelArea;
+    split.cost = items * voxelArea * INTERSECTION_COST;
 
     for (size_t dim = 0;dim < 3;dim++) 
       {
