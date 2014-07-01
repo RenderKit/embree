@@ -1031,17 +1031,30 @@ namespace embree
   
   bool BVH4iBuilder::split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
   {
-    const unsigned int center = (current.begin + current.end)/2;
+    //DBG_PRINT(current);
+    unsigned int center = (current.begin + current.end)/2;
+
+    center &= ~3;
+    //DBG_PRINT( center );
+
+    if ((center % 4) != 0) FATAL("HERE");
+    if (center == current.begin) FATAL("HERE");
+    if (center == current.end) FATAL("HERE");
     
     Centroid_Scene_AABB left; left.reset();
     for (size_t i=current.begin; i<center; i++)
       left.extend(primref[i].bounds());
     leftChild.init(left,current.begin,center);
+    assert(leftChild.items > 0);
     
     Centroid_Scene_AABB right; right.reset();
     for (size_t i=center; i<current.end; i++)
       right.extend(primref[i].bounds());	
     rightChild.init(right,center,current.end);
+    assert(rightChild.items > 0);
+
+    //DBG_PRINT(left);
+    //DBG_PRINT(right);
     
     return true;
   }
