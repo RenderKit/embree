@@ -42,6 +42,7 @@ namespace embree
     float bvhSAH;                      //!< SAH cost of the BVH4.
     float leafSAH;                      //!< SAH cost of the BVH4.
     size_t numNodes;                   //!< Number of internal nodes.
+    size_t numValidBoxes;              //!< Number of valid boxes per node.
     size_t numLeaves;                  //!< Number of leaf nodes.
     size_t numPrimBlocks;              //!< Number of primitive blocks.
     size_t numPrimBlocks4;             //!< Number of primitive blocks, assuming block size of 4
@@ -87,6 +88,8 @@ namespace embree
            << "(" << bytesTris/1E6  << " MB) "
            << "(" << 100.0*double(bytesTris)/double(bytesTotal) << "% of total " << bytesTotalAllocated/1E6 << " MB) "
            << std::endl;
+    stream << " node utilization " << 100.0*double(numValidBoxes)/double(numNodes*4) << "%" << std::endl;
+    stream << " leaf utilization " << 100.0*double(numPrims)/double(numPrimBlocks*4) << "%" << std::endl;
     return stream.str();
   }
 
@@ -106,6 +109,7 @@ namespace embree
 
       for (size_t i=0; i<BVH4i::N; i++) {
 	if (n->child(i) == BVH4i::invalidNode) {continue; }
+	numValidBoxes++;
         statistics(n->child(i),n->bounds(i),cdepth); 
         depth=max(depth,cdepth);
       }
