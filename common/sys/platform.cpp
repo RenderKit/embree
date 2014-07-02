@@ -164,7 +164,6 @@ namespace embree
     else
       bytesNew = (bytesNew+4095)&(-4096);
 
-#endif
 
     char *ptr = (char*)mremap(old_ptr,bytesOld,bytesNew,MREMAP_MAYMOVE);
 
@@ -179,6 +178,11 @@ namespace embree
       throw std::bad_alloc();
     }
     return ptr;
+#else
+    FATAL("not implemented");
+    return NULL;
+#endif
+
   }
 
 
