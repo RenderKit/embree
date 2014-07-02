@@ -2263,6 +2263,8 @@ namespace embree
     /* perform tests */
     rtcInit(g_rtcore.c_str());
 
+    //POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
+    
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
     POSITIVE("barrier_sys",               test_barrier_sys());

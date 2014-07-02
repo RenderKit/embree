@@ -42,6 +42,7 @@ namespace embree
     float bvhSAH;                      //!< SAH cost of the BVH4.
     float leafSAH;                     //!< SAH cost of the BVH4.
     size_t numNodes;                   //!< Number of internal nodes.
+    size_t numValidBoxes;              //!< Number of valid boxes per node.
     size_t numAlignedNodes;            //!< Number of internal aligned nodes.
     size_t numUnalignedNodes;          //!< Number of internal aligned nodes.
     size_t numLeaves;                  //!< Number of leaf nodes.
@@ -55,6 +56,7 @@ namespace embree
   BVH4HairStatistics<NodeType>::BVH4HairStatistics (BVH4Hair* bvh) : bvh(bvh)
   {
     numNodes = numLeaves = numPrimBlocks = numAlignedNodes = numUnalignedNodes = numPrims = depth = 0;
+    numValidBoxes = 0;
     bvhSAH = leafSAH = 0.0f;
     if (bvh->root != BVH4Hair::invalidNode)
       statistics(bvh->root,bvh->bounds,depth);
@@ -92,6 +94,9 @@ namespace embree
            << "(" << bytesPrims/1E6  << " MB) "
            << "(" << 100.0*double(bytesPrims)/double(bytesTotal) << "% of total " << bytesTotalAllocated/1E6 << " MB) "
            << std::endl;
+    stream << "  node utilization " << 100.0*double(numValidBoxes)/double(numNodes*4.0) << "%" << std::endl;
+    stream << "  leaf utilization " << 100.0*double(numPrims)/double(numPrimBlocks*2) << "%" << std::endl;
+
     return stream.str();
   }
 
@@ -116,6 +121,7 @@ namespace embree
 
       for (size_t i=0; i<BVH4Hair::N; i++) {
 	if (n->child(i) == BVH4Hair::invalidNode) {continue; }
+	numValidBoxes++;
         statistics(n->child(i),n->bounds(i),cdepth); 
         depth=max(depth,cdepth);
       }

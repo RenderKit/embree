@@ -514,7 +514,7 @@ namespace embree
       {
 	const float voxelArea = area(current.bounds.geometry);
 
-	global_sharedData.split.cost = items * voxelArea;
+	global_sharedData.split.cost = items * voxelArea * INTERSECTION_COST;
 	
 	const Bin16 &bin16 = global_bin16[0];
 
@@ -1040,13 +1040,13 @@ namespace embree
     for (size_t i=current.begin; i<center; i++)
       left.extend(primref[i].bounds());
     leftChild.init(left,current.begin,center);
-    assert(leftChild.items > 0);
+    assert(leftChild.items() > 0);
     
     Centroid_Scene_AABB right; right.reset();
     for (size_t i=center; i<current.end; i++)
       right.extend(primref[i].bounds());	
     rightChild.init(right,center,current.end);
-    assert(rightChild.items > 0);
+    assert(rightChild.items() > 0);
     
     return true;
   }
@@ -1279,7 +1279,7 @@ namespace embree
 
 	const float voxelArea = area(current.bounds.geometry);
 
-	local_sharedData[globalCoreID].split.cost = items * voxelArea;	
+	local_sharedData[globalCoreID].split.cost = items * voxelArea  * INTERSECTION_COST;	
 
 	for (size_t dim=0;dim<3;dim++)
 	  {

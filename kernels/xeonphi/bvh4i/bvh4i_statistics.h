@@ -55,6 +55,7 @@ namespace embree
   BVH4iStatistics<NodeType>::BVH4iStatistics (BVH4i* bvh) : bvh(bvh)
   {
     numNodes = numLeaves = numPrimBlocks = numPrimBlocks4 = numPrims = depth = 0;
+    numValidBoxes = 0;
     bvhSAH = leafSAH = 0.0f;
     if (bvh->root != BVH4i::invalidNode)
       statistics(bvh->root,bvh->bounds,depth);

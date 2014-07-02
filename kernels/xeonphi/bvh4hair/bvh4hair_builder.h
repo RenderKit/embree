@@ -187,7 +187,7 @@ namespace embree
     void recurse(BuildRecord& current, NodeAllocator& alloc,const size_t mode, const size_t threadID, const size_t numThreads);
 
     /*! unaligned splits */
-    void recurseOBB(BuildRecordOBB& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads);
+    void recurseOBB(BuildRecordOBB& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads, const bool forceOBBs);
 
     /*! perform sequential binning and splitting */
     bool splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild);
