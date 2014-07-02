@@ -190,7 +190,7 @@ namespace embree
     void recurseOBB(BuildRecordOBB& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads, const bool forceOBBs);
 
     /*! perform sequential binning and splitting */
-    bool splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild);
+    bool splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild, const bool binAABB = false);
 
     void computeUnalignedSpace( BuildRecordOBB& current );
     void computeUnalignedSpaceBounds( BuildRecordOBB& current );
