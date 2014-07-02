@@ -149,6 +149,10 @@ namespace embree
       __forceinline unsigned int size() const {
         return end - begin;
       }
+
+      __forceinline unsigned int items() const {
+        return end - begin;
+      }
       
       __forceinline void init(const unsigned int _begin, const unsigned int _end)			 
       {

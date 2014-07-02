@@ -786,8 +786,11 @@ namespace embree
 
   void BVH4iBuilderMorton::split_fallback(SmallBuildRecord& current, SmallBuildRecord& leftChild, SmallBuildRecord& rightChild) const
   {
-    unsigned int center = (current.begin + current.end)/2;
-    center &= ~3;
+    unsigned int blocks4 = (current.items()+3)/4;
+    unsigned int center = current.begin + (blocks4/2)*4; 
+
+    assert(center != current.begin);
+    assert(center != current.end);
 
     leftChild.init(current.begin,center);
     rightChild.init(center,current.end);

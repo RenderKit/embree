@@ -29,7 +29,7 @@ namespace embree
 
   /*! factor to modify size of pre-allocated node array */
 
-#define BVH4I_NODE_PREALLOC_FACTOR               0.7f
+#define BVH4I_NODE_PREALLOC_FACTOR               0.6f
 
 
   /*! creates the builder */

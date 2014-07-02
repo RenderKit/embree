@@ -88,8 +88,8 @@ namespace embree
            << "(" << bytesTris/1E6  << " MB) "
            << "(" << 100.0*double(bytesTris)/double(bytesTotal) << "% of total " << bytesTotalAllocated/1E6 << " MB) "
            << std::endl;
-    stream << " node utilization " << 100.0*double(numValidBoxes)/double(numNodes*4) << "%" << std::endl;
-    stream << " leaf utilization " << 100.0*double(numPrims)/double(numPrimBlocks*4) << "%" << std::endl;
+    stream << "  node utilization " << 100.0*double(numValidBoxes)/double(numNodes*4) << "%" << std::endl;
+    stream << "  leaf utilization " << 100.0*double(numPrims)/double(numPrimBlocks*4) << "%" << std::endl;
     return stream.str();
   }
 
