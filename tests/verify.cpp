@@ -2294,6 +2294,7 @@ namespace embree
     POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
 
+
 #if defined(__USE_RAY_MASK__)
     rtcore_ray_masks_all();
 #endif
@@ -2325,6 +2326,7 @@ namespace embree
 #if defined(__MIC__)
     rtcore_watertight_sphere16(100000);
     rtcore_watertight_plane16(100000);
+
 #endif
 
 #if defined(__FIX_RAYS__) // FIXME: this mode is deactivated, did never really work
@@ -2348,6 +2350,7 @@ namespace embree
     rtcore_inf("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
 #endif
 #endif
+
 
     POSITIVE("regression_static",         rtcore_regression_static());
     POSITIVE("regression_dynamic",        rtcore_regression_dynamic());
