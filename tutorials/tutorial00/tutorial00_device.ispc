@@ -191,6 +191,32 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   return color;
 }
 
+unsigned int rand_lcg(unsigned int &rng_state)
+{
+    // LCG values from Numerical Recipes
+    rng_state = 1664525 * rng_state + 1013904223;
+    return rng_state;
+}
+ 
+unsigned int rand_xorshift(unsigned int &rng_state)
+{
+    // Xorshift algorithm from George Marsaglia's paper
+    rng_state ^= (rng_state << 13);
+    rng_state ^= (rng_state >> 17);
+    rng_state ^= (rng_state << 5);
+    return rng_state;
+}
+
+unsigned int wang_hash(unsigned int &seed)
+{
+    seed = (seed ^ 61) ^ (seed >> 16);
+    seed *= 9;
+    seed = seed ^ (seed >> 4);
+    seed *= 0x27d4eb2d;
+    seed = seed ^ (seed >> 15);
+    return seed;
+}
+
 /* task that renders a single screen tile */
 task void renderTile(uniform int* uniform pixels,
                      const uniform int width,
@@ -210,10 +236,21 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
 
+  //unsigned int seed = tileY*numTilesX+tileX+programIndex;
+
+  //seed = wang_hash( seed );
+   
   foreach (y = y0 ... y1, x = x0 ... x1)
   {
+   unsigned int seed = y * width + x + programIndex;
+   rand_xorshift(seed);
+   rand_xorshift(seed);
+
     /* calculate pixel color */
-    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    //Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    //float f = ((float)rand_xorshift(seed)) * (1.0f / 4294967296.0f);
+    float f = ((float)wang_hash(seed)) * (1.0f / 4294967296.0f);
+    Vec3f color = make_Vec3f(f);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

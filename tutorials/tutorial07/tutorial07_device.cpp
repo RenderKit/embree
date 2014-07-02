@@ -614,10 +614,12 @@ void renderTile(int taskIndex, int* pixels,
   const int x1 = min(x0+TILE_SIZE_X,width);
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
-  int seed = tileY*numTilesX+tileX+0 + g_accu_count;
+  //int seed = tileY*numTilesX+tileX+0 + g_accu_count;
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
+   int seed = (y*width+x+0) * g_accu_count;
+
     /* calculate pixel color */
     float fx = x + frand(seed);
     float fy = y + frand(seed);
