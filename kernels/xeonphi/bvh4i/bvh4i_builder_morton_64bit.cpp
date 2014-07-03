@@ -36,7 +36,90 @@ namespace embree
   extern AtomicMutex mtx;
 #endif
 
+template<class T>
+  __forceinline T bitInterleave64(const T& xin, const T& yin, const T& zin){
+    T x = xin & 0x1fffff; 
+    T y = yin & 0x1fffff; 
+    T z = zin & 0x1fffff; 
 
+    x = (x | x << 32) & 0x1f00000000ffff;  
+    x = (x | x << 16) & 0x1f0000ff0000ff;  
+    x = (x | x << 8) & 0x100f00f00f00f00f; 
+    x = (x | x << 4) & 0x10c30c30c30c30c3; 
+    x = (x | x << 2) & 0x1249249249249249;
+
+    y = (y | y << 32) & 0x1f00000000ffff;  
+    y = (y | y << 16) & 0x1f0000ff0000ff;  
+    y = (y | y << 8) & 0x100f00f00f00f00f; 
+    y = (y | y << 4) & 0x10c30c30c30c30c3; 
+    y = (y | y << 2) & 0x1249249249249249;
+
+    z = (z | z << 32) & 0x1f00000000ffff;  
+    z = (z | z << 16) & 0x1f0000ff0000ff;  
+    z = (z | z << 8) & 0x100f00f00f00f00f; 
+    z = (z | z << 4) & 0x10c30c30c30c30c3; 
+    z = (z | z << 2) & 0x1249249249249249;
+
+    return x | (y << 1) | (z << 2);
+}
+
+  __aligned(64) static const unsigned int mortonLUT[256] =
+{
+    0x00000000, 0x00000001, 0x00000008, 0x00000009, 0x00000040, 0x00000041, 0x00000048, 0x00000049, 0x00000200,
+    0x00000201, 0x00000208, 0x00000209, 0x00000240, 0x00000241, 0x00000248, 0x00000249, 0x00001000,
+    0x00001001, 0x00001008, 0x00001009, 0x00001040, 0x00001041, 0x00001048, 0x00001049, 0x00001200,
+    0x00001201, 0x00001208, 0x00001209, 0x00001240, 0x00001241, 0x00001248, 0x00001249, 0x00008000,
+    0x00008001, 0x00008008, 0x00008009, 0x00008040, 0x00008041, 0x00008048, 0x00008049, 0x00008200,
+    0x00008201, 0x00008208, 0x00008209, 0x00008240, 0x00008241, 0x00008248, 0x00008249, 0x00009000,
+    0x00009001, 0x00009008, 0x00009009, 0x00009040, 0x00009041, 0x00009048, 0x00009049, 0x00009200,
+    0x00009201, 0x00009208, 0x00009209, 0x00009240, 0x00009241, 0x00009248, 0x00009249, 0x00040000,
+    0x00040001, 0x00040008, 0x00040009, 0x00040040, 0x00040041, 0x00040048, 0x00040049, 0x00040200,
+    0x00040201, 0x00040208, 0x00040209, 0x00040240, 0x00040241, 0x00040248, 0x00040249, 0x00041000,
+    0x00041001, 0x00041008, 0x00041009, 0x00041040, 0x00041041, 0x00041048, 0x00041049, 0x00041200,
+    0x00041201, 0x00041208, 0x00041209, 0x00041240, 0x00041241, 0x00041248, 0x00041249, 0x00048000,
+    0x00048001, 0x00048008, 0x00048009, 0x00048040, 0x00048041, 0x00048048, 0x00048049, 0x00048200,
+    0x00048201, 0x00048208, 0x00048209, 0x00048240, 0x00048241, 0x00048248, 0x00048249, 0x00049000,
+    0x00049001, 0x00049008, 0x00049009, 0x00049040, 0x00049041, 0x00049048, 0x00049049, 0x00049200,
+    0x00049201, 0x00049208, 0x00049209, 0x00049240, 0x00049241, 0x00049248, 0x00049249, 0x00200000,
+    0x00200001, 0x00200008, 0x00200009, 0x00200040, 0x00200041, 0x00200048, 0x00200049, 0x00200200,
+    0x00200201, 0x00200208, 0x00200209, 0x00200240, 0x00200241, 0x00200248, 0x00200249, 0x00201000,
+    0x00201001, 0x00201008, 0x00201009, 0x00201040, 0x00201041, 0x00201048, 0x00201049, 0x00201200,
+    0x00201201, 0x00201208, 0x00201209, 0x00201240, 0x00201241, 0x00201248, 0x00201249, 0x00208000,
+    0x00208001, 0x00208008, 0x00208009, 0x00208040, 0x00208041, 0x00208048, 0x00208049, 0x00208200,
+    0x00208201, 0x00208208, 0x00208209, 0x00208240, 0x00208241, 0x00208248, 0x00208249, 0x00209000,
+    0x00209001, 0x00209008, 0x00209009, 0x00209040, 0x00209041, 0x00209048, 0x00209049, 0x00209200,
+    0x00209201, 0x00209208, 0x00209209, 0x00209240, 0x00209241, 0x00209248, 0x00209249, 0x00240000,
+    0x00240001, 0x00240008, 0x00240009, 0x00240040, 0x00240041, 0x00240048, 0x00240049, 0x00240200,
+    0x00240201, 0x00240208, 0x00240209, 0x00240240, 0x00240241, 0x00240248, 0x00240249, 0x00241000,
+    0x00241001, 0x00241008, 0x00241009, 0x00241040, 0x00241041, 0x00241048, 0x00241049, 0x00241200,
+    0x00241201, 0x00241208, 0x00241209, 0x00241240, 0x00241241, 0x00241248, 0x00241249, 0x00248000,
+    0x00248001, 0x00248008, 0x00248009, 0x00248040, 0x00248041, 0x00248048, 0x00248049, 0x00248200,
+    0x00248201, 0x00248208, 0x00248209, 0x00248240, 0x00248241, 0x00248248, 0x00248249, 0x00249000,
+    0x00249001, 0x00249008, 0x00249009, 0x00249040, 0x00249041, 0x00249048, 0x00249049, 0x00249200,
+    0x00249201, 0x00249208, 0x00249209, 0x00249240, 0x00249241, 0x00249248, 0x00249249
+};
+
+
+  __forceinline size_t getMortonCode_LUT(const unsigned int &v)
+  {
+    const unsigned int byte0 = (v >> 0)  & 0xff;
+    const unsigned int byte1 = (v >> 8)  & 0xff;
+    const unsigned int byte2 = (v >> 16) & 0xff;
+
+    return (size_t)mortonLUT[byte0] | ((size_t)mortonLUT[byte1] << 24) | ((size_t)mortonLUT[byte2] << 48);
+
+  }
+  __forceinline size_t bitInterleave64_LUT(const unsigned int& xin, const unsigned int& yin, const unsigned int& zin){
+    unsigned int x = xin & 0x1fffff; 
+    unsigned int y = yin & 0x1fffff; 
+    unsigned int z = zin & 0x1fffff; 
+
+    x = getMortonCode_LUT( x );
+    y = getMortonCode_LUT( y );
+    z = getMortonCode_LUT( z );
+
+    return x | (y << 1) | (z << 2);
+}
 
   // =======================================================================================================
   // =======================================================================================================
@@ -115,9 +198,6 @@ namespace embree
 #if DEBUG
       DBG_PRINT( minAllocNodes );
       DBG_PRINT( numNodes );
-      DBG_PRINT(bvh->size_node);
-      DBG_PRINT(bvh->size_accel);
-      DBG_PRINT(numAllocatedNodes);
 #endif
 
     }
@@ -126,6 +206,13 @@ namespace embree
     bvh->qbvh  = (BVH4i::Node*)node;
     bvh->size_node  = size_node;
     bvh->size_accel = size_accel;
+
+#if DEBUG
+    DBG_PRINT(bvh->size_node);
+    DBG_PRINT(bvh->size_accel);
+    DBG_PRINT(numAllocatedNodes);
+#endif
+
   }
 
   void BVH4iBuilderMorton64Bit::build(size_t threadIndex, size_t threadCount) 
@@ -328,7 +415,8 @@ namespace embree
     size_t currentID = startID;
     size_t offset = thread_startGroupOffset[threadID];
 
-
+    
+    size_t global_code = 0;
 
     for (size_t group = thread_startGroup[threadID]; group<numGroups; group++) 
     {       
@@ -365,11 +453,18 @@ namespace embree
 	const size_t binIDy = binID[1];
 	const size_t binIDz = binID[2];
 
-	const size_t code  = bitInterleave(binIDx,binIDy,binIDz); // check
+	//const size_t code  = bitInterleave64(binIDx,binIDy,binIDz); // check
+	const size_t code  = bitInterleave64_LUT(binIDx,binIDy,binIDz); // check
+
+	// const size_t code2  = bitInterleave64_LUT(binIDx,binIDy,binIDz); // check
+
+	// if (code != code2)
+	//   FATAL("HERE");
+
 	dest->code = code;
 	dest++;
 	prefetch<PFHINT_L2EX>(dest + 4*4);
-
+	global_code |= code;
         currentID++;
       }
 
@@ -377,6 +472,7 @@ namespace embree
       if (currentID == endID) break;
     }
 
+    //DBG_PRINT(__bsr(global_code));
   }
   
   void BVH4iBuilderMorton64Bit::radixsort(const size_t threadID, const size_t numThreads)
@@ -489,7 +585,7 @@ namespace embree
 	evictL2(&src[i]);
       }
 
-      if (b<3) LockStepTaskScheduler::syncThreads(threadID,numThreads);
+      if (b<7) LockStepTaskScheduler::syncThreads(threadID,numThreads);
 
     }
   }

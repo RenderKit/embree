@@ -407,7 +407,7 @@ namespace embree
       }
 
       __forceinline unsigned int getByte(const size_t b) const {
-	assert(b < 4);
+	assert(b < 8);
 	const unsigned char *__restrict const ptr = (const unsigned char*)&code;
 	return ptr[b];
       }
@@ -451,13 +451,13 @@ namespace embree
     TaskScheduler::Task task;
     
     /*! task that calculates the bounding box of the scene */
-    TASK_FUNCTION(BVH4iBuilderMorton,computeBounds);
+    TASK_FUNCTION(BVH4iBuilderMorton64Bit,computeBounds);
 
     /*! task that calculates the morton codes for each primitive in the scene */
-    TASK_FUNCTION(BVH4iBuilderMorton,computeMortonCodes);
+    TASK_FUNCTION(BVH4iBuilderMorton64Bit,computeMortonCodes);
     
     /*! parallel sort of the morton codes */
-    TASK_FUNCTION(BVH4iBuilderMorton,radixsort);
+    TASK_FUNCTION(BVH4iBuilderMorton64Bit,radixsort);
 
 
   public:
