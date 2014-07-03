@@ -447,7 +447,7 @@ namespace embree
     void initThreadState(const size_t threadID, const size_t numThreads);
 
     /*! main build task */
-    TASK_RUN_FUNCTION(BVH4iBuilderMorton,build_parallel_morton);
+    TASK_RUN_FUNCTION(BVH4iBuilderMorton64Bit,build_parallel_morton64);
     TaskScheduler::Task task;
     
     /*! task that calculates the bounding box of the scene */

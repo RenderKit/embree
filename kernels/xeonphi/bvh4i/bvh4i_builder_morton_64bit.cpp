@@ -175,7 +175,7 @@ namespace embree
     size_t iterations = PROFILE_ITERATIONS;
     for (size_t i=0; i<iterations; i++) 
     {
-      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,TaskScheduler::getNumThreads(),"build_parallel_morton");
+      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton64,this,TaskScheduler::getNumThreads(),"build_parallel_morton");
 
       dt_min = min(dt_min,dt);
       dt_avg = dt_avg + dt;
@@ -199,7 +199,7 @@ namespace embree
 	DBG_PRINT( TaskScheduler::getNumThreads() );
 	std::cout << "PARALLEL BUILD" << std::endl << std::flush;
 #endif
-	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,TaskScheduler::getNumThreads(),"build_parallel");
+	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton64,this,TaskScheduler::getNumThreads(),"build_parallel");
       }
     else
       {
@@ -207,7 +207,7 @@ namespace embree
 #if DEBUG
 	std::cout << "SERIAL BUILD" << std::endl << std::flush;
 #endif
-	build_parallel_morton(0,1,0,0,NULL);
+	build_parallel_morton64(0,1,0,0,NULL);
       }
 
     if (g_verbose >= 2) {
@@ -537,7 +537,7 @@ namespace embree
       assert(morton[i-1].code <= morton[i].code);
 
     for (size_t i=numPrimitives; i<((numPrimitives+7)&(-8)); i++) {
-      assert(dest[i].code  == 0xffffffff); 
+      assert(dest[i].code  == (size_t)-1); 
       assert(dest[i].groupID == 0);
       assert(dest[i].primID == 0);
     }
@@ -554,7 +554,7 @@ namespace embree
     exit(0);
   }
 
-  void BVH4iBuilderMorton64Bit::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  void BVH4iBuilderMorton64Bit::build_parallel_morton64(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
     TIMER(double msec = 0.0);
 
