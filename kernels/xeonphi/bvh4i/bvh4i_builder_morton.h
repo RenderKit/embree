@@ -336,4 +336,173 @@ namespace embree
 
   };
 
+
+
+
+
+
+
+
+  class BVH4iBuilderMorton64Bit : public Builder
+  {
+    ALIGNED_CLASS;
+
+    enum { RECURSE = 1, CREATE_TOP_LEVEL = 2 };
+
+    static const size_t GLOBAL_WORK_STACK_ENTRIES = 512;
+    static const size_t MAX_TOP_LEVEL_BINS = 1024;
+    static const size_t ALLOCATOR_NODE_BLOCK_SIZE = 64;
+    static const size_t MORTON_LEAF_THRESHOLD = 4;
+    static const size_t LATTICE_BITS_PER_DIM = 21;
+    static const size_t LATTICE_SIZE_PER_DIM = size_t(1) << LATTICE_BITS_PER_DIM;
+    typedef AtomicIDBlock<ALLOCATOR_NODE_BLOCK_SIZE> NodeAllocator;
+
+  public:
+
+    class __aligned(16) SmallBuildRecord 
+    {
+    public:
+      unsigned int begin;
+      unsigned int end;
+      unsigned int depth;
+      void *parentPtr;
+      
+      __forceinline unsigned int size() const {
+        return end - begin;
+      }
+
+      __forceinline unsigned int items() const {
+        return end - begin;
+      }
+      
+      __forceinline void init(const unsigned int _begin, const unsigned int _end)			 
+      {
+        begin = _begin;
+        end = _end;
+        depth = 1;
+        parentPtr = NULL;
+	assert(begin < end);
+      }
+      
+      __forceinline bool operator<(const SmallBuildRecord& br) const { return size() < br.size(); } 
+      __forceinline bool operator>(const SmallBuildRecord& br) const { return size() > br.size(); } 
+
+      __forceinline friend std::ostream &operator<<(std::ostream &o, const SmallBuildRecord &br)
+	{
+	  o << "begin " << br.begin << " end " << br.end << " size " << br.size() << " depth " << br.depth << " parentPtr " << br.parentPtr;
+	  return o;
+	}
+
+    };
+    
+
+    struct __aligned(16) MortonID64Bit
+    {
+      size_t code;
+      unsigned int groupID;
+      unsigned int primID;
+            
+      __forceinline unsigned int get(const unsigned int shift, const unsigned and_mask) const {
+        return (code >> shift) & and_mask;
+      }
+
+      __forceinline unsigned int getByte(const size_t b) const {
+	assert(b < 4);
+	const unsigned char *__restrict const ptr = (const unsigned char*)&code;
+	return ptr[b];
+      }
+      
+      __forceinline void operator=(const MortonID64Bit& v) {
+        ((size_t*)this)[0] = ((size_t*)&v)[0];
+        ((size_t*)this)[1] = ((size_t*)&v)[1];
+      };
+      
+      __forceinline friend std::ostream &operator<<(std::ostream &o, const MortonID64Bit& mc) {
+        o << "primID " << mc.primID << " groupID " << mc.groupID << " code = " << mc.code;
+        return o;
+      }
+
+      __forceinline bool operator<(const MortonID64Bit &m) const { return code < m.code; } 
+      __forceinline bool operator>(const MortonID64Bit &m) const { return code > m.code; } 
+    };
+
+    /*! Constructor. */
+    BVH4iBuilderMorton64Bit(BVH4i* bvh, void* geometry);
+
+    /*! Destructor. */
+    ~BVH4iBuilderMorton64Bit();
+
+    /*! creates the builder */
+    static Builder* create (void* accel, void* geometry) { 
+      return new BVH4iBuilderMorton64Bit((BVH4i*)accel,geometry);
+    }
+
+    /* build function */
+    void build(size_t threadIndex, size_t threadCount);
+    
+    /*! allocate data arrays */
+    void allocateData(size_t threadCount);
+
+    /*! precalculate some per thread data */
+    void initThreadState(const size_t threadID, const size_t numThreads);
+
+    /*! main build task */
+    TASK_RUN_FUNCTION(BVH4iBuilderMorton,build_parallel_morton);
+    TaskScheduler::Task task;
+    
+    /*! task that calculates the bounding box of the scene */
+    TASK_FUNCTION(BVH4iBuilderMorton,computeBounds);
+
+    /*! task that calculates the morton codes for each primitive in the scene */
+    TASK_FUNCTION(BVH4iBuilderMorton,computeMortonCodes);
+    
+    /*! parallel sort of the morton codes */
+    TASK_FUNCTION(BVH4iBuilderMorton,radixsort);
+
+
+  public:
+
+    void build_main(const size_t threadID, const size_t numThreads);
+
+
+  public:
+    BVH4i      * bvh;         //!< Output BVH
+    Scene      * scene;
+
+    __aligned(64) LinearBarrierActive barrier;
+    __aligned(64) SmallBuildRecord buildRecords[MAX_TOP_LEVEL_BINS];    
+    __aligned(64) unsigned int thread_startGroup[MAX_MIC_THREADS];      
+    __aligned(64) unsigned int thread_startGroupOffset[MAX_MIC_THREADS];
+
+
+    /*! state for radix sort */
+  public:
+    static const size_t RADIX_BITS = 8;
+    static const size_t RADIX_BUCKETS = (1 << RADIX_BITS);
+    static const size_t RADIX_BUCKETS_MASK = (RADIX_BUCKETS-1);
+    __aligned(64) unsigned int radixCount[MAX_MIC_THREADS][RADIX_BUCKETS];
+
+  protected:
+    MortonID64Bit* __restrict__ morton;
+    mic_i        * __restrict__ node;
+    Triangle1    * __restrict__ accel;
+
+    size_t numPrimitives;
+    size_t numGroups;
+    size_t numNodes;
+    size_t numAllocatedNodes;
+    size_t size_morton;
+    size_t size_node;
+    size_t size_accel;
+
+    size_t numPrimitivesOld;
+
+    __aligned(64) Centroid_Scene_AABB global_bounds;
+
+    /*! node allocator */
+    __aligned(64) AlignedAtomicCounter32  atomicID;
+    __aligned(64) AlignedAtomicCounter32  numBuildRecordCounter;
+
+  };
+
 }

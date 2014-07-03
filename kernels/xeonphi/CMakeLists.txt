@@ -48,6 +48,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   bvh4i/bvh4i_builder.cpp
   bvh4i/bvh4i_builder_ext.cpp
   bvh4i/bvh4i_builder_morton.cpp
+  bvh4i/bvh4i_builder_morton_64bit.cpp
   bvh4i/bvh4i_builder_morton_enhanced.cpp
   bvh4i/bvh4i_intersector16_chunk.cpp
   bvh4i/bvh4i_intersector16_single.cpp
