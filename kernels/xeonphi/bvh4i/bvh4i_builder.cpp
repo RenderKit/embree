@@ -207,12 +207,11 @@ namespace embree
     DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
-
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives+4;
-	const size_t minAllocNodes = (threadCount+1) * 2 * ALLOCATOR_NODE_BLOCK_SIZE; //FIXME: better minAllocNodes estimate
-	const size_t numNodes = max((size_t)((numPrims+3)/4),minAllocNodes);
+	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; //FIXME: better minAllocNodes estimate
+	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
 	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(Triangle1));
       }
   }
@@ -515,7 +514,7 @@ namespace embree
       {
 	const float voxelArea = area(current.bounds.geometry);
 
-	global_sharedData.split.cost = items * voxelArea;
+	global_sharedData.split.cost = items * voxelArea * INTERSECTION_COST;
 	
 	const Bin16 &bin16 = global_bin16[0];
 
@@ -1031,30 +1030,23 @@ namespace embree
   
   bool BVH4iBuilder::split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
   {
-    //DBG_PRINT(current);
-    unsigned int center = (current.begin + current.end)/2;
+    unsigned int blocks4 = (current.items()+3)/4;
+    unsigned int center = current.begin + (blocks4/2)*4; // (current.begin + current.end)/2;
 
-    center &= ~3;
-    //DBG_PRINT( center );
-
-    if ((center % 4) != 0) FATAL("HERE");
-    if (center == current.begin) FATAL("HERE");
-    if (center == current.end) FATAL("HERE");
+    assert(center != current.begin);
+    assert(center != current.end);
     
     Centroid_Scene_AABB left; left.reset();
     for (size_t i=current.begin; i<center; i++)
       left.extend(primref[i].bounds());
     leftChild.init(left,current.begin,center);
-    assert(leftChild.items > 0);
+    assert(leftChild.items() > 0);
     
     Centroid_Scene_AABB right; right.reset();
     for (size_t i=center; i<current.end; i++)
       right.extend(primref[i].bounds());	
     rightChild.init(right,center,current.end);
-    assert(rightChild.items > 0);
-
-    //DBG_PRINT(left);
-    //DBG_PRINT(right);
+    assert(rightChild.items() > 0);
     
     return true;
   }
@@ -1287,7 +1279,7 @@ namespace embree
 
 	const float voxelArea = area(current.bounds.geometry);
 
-	local_sharedData[globalCoreID].split.cost = items * voxelArea;	
+	local_sharedData[globalCoreID].split.cost = items * voxelArea  * INTERSECTION_COST;	
 
 	for (size_t dim=0;dim<3;dim++)
 	  {

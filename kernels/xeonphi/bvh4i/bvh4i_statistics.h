@@ -55,6 +55,7 @@ namespace embree
   BVH4iStatistics<NodeType>::BVH4iStatistics (BVH4i* bvh) : bvh(bvh)
   {
     numNodes = numLeaves = numPrimBlocks = numPrimBlocks4 = numPrims = depth = 0;
+    numValidBoxes = 0;
     bvhSAH = leafSAH = 0.0f;
     if (bvh->root != BVH4i::invalidNode)
       statistics(bvh->root,bvh->bounds,depth);
@@ -88,8 +89,8 @@ namespace embree
            << "(" << bytesTris/1E6  << " MB) "
            << "(" << 100.0*double(bytesTris)/double(bytesTotal) << "% of total " << bytesTotalAllocated/1E6 << " MB) "
            << std::endl;
-    stream << " node utilization " << 100.0*double(numValidBoxes)/double(numNodes*4) << "%" << std::endl;
-    stream << " leaf utilization " << 100.0*double(numPrims)/double(numPrimBlocks*4) << "%" << std::endl;
+    stream << "  node utilization " << 100.0*double(numValidBoxes)/double(numNodes*4) << "%" << std::endl;
+    stream << "  leaf utilization " << 100.0*double(numPrims)/double(numPrimBlocks*4) << "%" << std::endl;
     return stream.str();
   }
 
