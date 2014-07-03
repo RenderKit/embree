@@ -141,6 +141,7 @@ namespace embree
     msec = getSeconds();
 #endif
 
+
     const size_t additional_size = 16 * CACHELINE_SIZE;
 
     /* free previously allocated memory */
@@ -1450,9 +1451,6 @@ namespace embree
     TIMER(msec = getSeconds());    
     LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
     numNodes = atomicID;
-#ifdef DEBUG
-    DBG_PRINT(atomicID);
-#endif
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
