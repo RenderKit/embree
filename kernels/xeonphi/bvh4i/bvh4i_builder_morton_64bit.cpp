@@ -24,8 +24,8 @@
 //#define PROFILE
 #define PROFILE_ITERATIONS 200
 
-#define TIMER(x) 
-#define DBG(x) 
+#define TIMER(x) x
+#define DBG(x) x
 
 #define L1_PREFETCH_ITEMS 8
 #define L2_PREFETCH_ITEMS 44
@@ -136,7 +136,7 @@ namespace embree
       }
     
     /* do some global inits first */
-    size_t numPrimitives = 0;       
+    numPrimitives = 0;       
     for (size_t i=0;i<scene->size();i++)
       {
 	if (unlikely(scene->get(i) == NULL)) continue;
@@ -147,6 +147,9 @@ namespace embree
 	numGroups++;
 	numPrimitives += mesh->numTriangles;
       }
+
+    DBG_PRINT(numGroups);
+    DBG_PRINT(numPrimitives);
 
     if (likely(numPrimitives == 0))
       {
@@ -392,7 +395,7 @@ namespace embree
 
 
     /* we need 4 iterations to process all 32 bits */
-    for (size_t b=0; b<4; b++)
+    for (size_t b=0; b<8; b++)
     {
       const MortonID64Bit* __restrict__ const src = (MortonID64Bit*)mortonID[((b+0)%2)];
       MortonID64Bit*       __restrict__ const dst = (MortonID64Bit*)mortonID[((b+1)%2)];

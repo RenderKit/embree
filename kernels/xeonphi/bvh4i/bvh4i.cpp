@@ -188,6 +188,14 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
+  Accel* BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(Scene* scene)
+  { 
+    BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);   
+    Builder* builder = BVH4iBuilderMorton64Bit::create(accel,scene);  
+    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
   Accel* BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene)
   { 
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);

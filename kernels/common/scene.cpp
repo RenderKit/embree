@@ -83,6 +83,10 @@ namespace embree
 		     g_tri_builder == "memory_conservative") {
 	      accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this));
 	    }
+	    else if (g_tri_builder == "morton64") {
+	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(this));
+	    }
+
 	    else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4i<Triangle1>");
 	  }
       }
