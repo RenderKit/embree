@@ -17,7 +17,7 @@
 #include "bvh4i_builder_morton.h"
 #include "builders/builder_util.h"
 
-#define MORTON_BVH4I_NODE_PREALLOC_FACTOR     1.2f
+#define MORTON_BVH4I_NODE_PREALLOC_FACTOR     0.8f
 #define NUM_MORTON_IDS_PER_BLOCK            8
 #define SINGLE_THREADED_BUILD_THRESHOLD     (MAX_MIC_THREADS*64)
 
@@ -129,16 +129,15 @@ namespace embree
     encodeMask = ((size_t)1 << encodeShift)-1;
     size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
 
-    DBG(DBG_PRINT(numGroups));
-    DBG(DBG_PRINT(maxPrimsPerGroup));
-    DBG(DBG_PRINT(numPrimitives));
-    DBG(DBG_PRINT(encodeMask));
-    DBG(DBG_PRINT(encodeShift));
-    DBG(DBG_PRINT(maxGroups));
-    DBG(DBG_PRINT(size_morton));
-    DBG(DBG_PRINT(bvh->size_node));
-    DBG(DBG_PRINT(bvh->size_accel));
-
+#if DEBUG
+    DBG_PRINT(numGroups);
+    DBG_PRINT(maxPrimsPerGroup);
+    DBG_PRINT(numPrimitives);
+    DBG_PRINT(encodeMask);
+    DBG_PRINT(encodeShift);
+    DBG_PRINT(maxGroups);
+    DBG_PRINT(size_morton);
+#endif
     if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups)
     {
       DBG_PRINT(numGroups);
@@ -177,21 +176,23 @@ namespace embree
       }
       
       /* allocated memory for primrefs,nodes, and accel */
-      const size_t minAllocNodes = numPrimitives ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE * 8: 16;
+      const size_t minAllocNodes = (threadCount+1) * 2* ALLOCATOR_NODE_BLOCK_SIZE;
+
+
       const size_t numPrims      = numPrimitives+4;
-      const size_t numNodes      = max((size_t)(numPrimitives * MORTON_BVH4I_NODE_PREALLOC_FACTOR),minAllocNodes);
+      const size_t numNodes      = (size_t)((numPrimitives+3)/4);
+
+
+      const size_t sizeNodeInBytes = sizeof(BVH4i::Node);
+      const size_t sizeAccelInBytes = sizeof(Triangle1);
 
 
       const size_t size_morton_tmp = numPrims * sizeof(MortonID32Bit) + additional_size;
-      size_node         = numNodes * sizeof(BVHNode) + additional_size;
-      size_accel        = numPrims * sizeof(Triangle1) + additional_size;
+
+      size_node         = (numNodes * MORTON_BVH4I_NODE_PREALLOC_FACTOR + minAllocNodes) * sizeNodeInBytes + additional_size;
+      size_accel        = numPrims * sizeAccelInBytes + additional_size;
       numAllocatedNodes = size_node / sizeof(BVHNode);
 
-      DBG(
-	  DBG_PRINT( minAllocNodes );
-	  DBG_PRINT( numNodes );
-	  DBG_PRINT( numAllocatedNodes );
-	  );
 
       DBG(DBG_PRINT(size_morton_tmp));
       DBG(DBG_PRINT(size_node));
@@ -210,18 +211,33 @@ namespace embree
       // memset(accel ,0,size_accel);	
 
       size_morton = size_morton_tmp;
+
+
+#if DEBUG
+      DBG_PRINT( minAllocNodes );
+      DBG_PRINT( numNodes );
+      DBG_PRINT(bvh->size_node);
+      DBG_PRINT(bvh->size_accel);
+      DBG_PRINT(numAllocatedNodes);
+#endif
+
     }
 
+    bvh->accel = accel;
+    bvh->qbvh  = (BVH4i::Node*)node;
+    bvh->size_node  = size_node;
+    bvh->size_accel = size_accel;
   }
 
   void BVH4iBuilderMorton::build(size_t threadIndex, size_t threadCount) 
   {
-    if (g_verbose >= 2)
-      std::cout << "building BVH4i with Morton builder (MIC)... " << std::flush;
-
+    if (unlikely(g_verbose >= 2))
+      {
+	std::cout << "building BVH4i with Morton builder (MIC)... " << std::flush;
+      }
+    
     /* do some global inits first */
     initEncodingAllocateData();
-
 
     if (likely(numPrimitives == 0))
       {
@@ -230,14 +246,11 @@ namespace embree
 	bvh->bounds = empty;
 	bvh->qbvh = NULL;
 	bvh->accel = NULL;
-	bvh->size_node  = 0;
-	bvh->size_accel = 0;
-
 	return;
       }
 
     /* allocate memory arrays */
-    allocateData(threadCount);
+    allocateData(TaskScheduler::getNumThreads());
 
 #if defined(PROFILE)
     size_t numTotalPrimitives = numPrimitives;
@@ -270,13 +283,18 @@ namespace embree
 
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1))
       {
-	DBG(std::cout << "PARALLEL BUILD" << std::endl << std::flush);
+#if DEBUG
+	DBG_PRINT( TaskScheduler::getNumThreads() );
+	std::cout << "PARALLEL BUILD" << std::endl << std::flush;
+#endif
 	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,TaskScheduler::getNumThreads(),"build_parallel");
       }
     else
       {
 	/* number of primitives is small, just use single threaded mode */
-	DBG(std::cout << "SERIAL BUILD" << std::endl << std::flush);
+#if DEBUG
+	std::cout << "SERIAL BUILD" << std::endl << std::flush;
+#endif
 	build_parallel_morton(0,1,0,0,NULL);
       }
 
@@ -286,6 +304,7 @@ namespace embree
       std::cout << BVH4iStatistics<BVH4i::Node>(bvh).str();
     }
 #endif
+    
   }
 
     
@@ -1349,10 +1368,6 @@ namespace embree
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_convertToSOALayout " << 1000. * msec << " ms" << std::endl << std::flush);
 
-    bvh->accel = accel;
-    bvh->qbvh  = (BVH4i::Node*)node;
-    bvh->size_node  = size_node;
-    bvh->size_accel = size_accel;
     bvh->root = bvh->qbvh[0].lower[0].child; 
     bvh->bounds = global_bounds.geometry;
 

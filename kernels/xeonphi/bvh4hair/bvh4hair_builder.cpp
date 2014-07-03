@@ -47,6 +47,10 @@ namespace embree
   // ==========================================================================================
   // ==========================================================================================
 
+  enum {
+    BVH4HAIR_AABB_NODE = 1,
+    BVH4HAIR_OBB_NODE  = 2
+  };
 
   void BVH4HairBuilder::printBuilderName()
   {
@@ -804,7 +808,7 @@ namespace embree
 	const unsigned int mid = partitionPrimitives<L2_PREFETCH_ITEMS>(prims ,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
 
 	assert(area(leftChild.bounds.geometry) >= 0.0f);
-	assert(current.begin + mid == current.begin + split.numLeft);
+	//assert(current.begin + mid == current.begin + split.numLeft) // can happen
 
 	if (unlikely(current.begin + mid == current.begin || current.begin + mid == current.end)) 
 	  {
@@ -1144,7 +1148,7 @@ namespace embree
 
       /*! split best child into left and right child */
       __aligned(64) BuildRecordOBB left, right;
-      if (!splitSequentialOBB(children[bestChild],left,right)) 
+      if (!splitSequentialOBB(children[bestChild],left,right,false)) 
         continue;
       
       /* add new children left and right */
@@ -1166,7 +1170,6 @@ namespace embree
     const size_t currentIndex = alloc.get(1);
     /* recurseOBB */
 
-    createNode(current.parentPtr,currentIndex);
     //node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
 
     node[currentIndex].prefetchNode<PFHINT_L2EX>();
@@ -1174,15 +1177,34 @@ namespace embree
     /* init used/unused nodes */
     node[currentIndex].setInvalid();
 
+    unsigned int all_AABB_nodes = BVH4HAIR_AABB_NODE;
+    for (unsigned int i=0; i<numChildren; i++) 
+      all_AABB_nodes &= children[i].node_type;
+
+    if (0 && all_AABB_nodes == BVH4HAIR_AABB_NODE)
+      {
+	// === full AABB node ===
+	createNode(current.parentPtr,currentIndex,BVH4Hair::alignednode_mask);
+
+	for (unsigned int i=0; i<numChildren; i++) 
+	  node[currentIndex].setMatrix(children[i].bounds.geometry,i);
+
+      }
+    else
+      {
+	// === default OBB node ===
+	createNode(current.parentPtr,currentIndex);
+
+	for (unsigned int i=0; i<numChildren; i++) 
+	    node[currentIndex].setMatrix(children[i].xfm,children[i].bounds.geometry,i);
+      }  
+
     /* recurse into each child */
     for (unsigned int i=0; i<numChildren; i++) 
-    {
-      node[currentIndex].setMatrix(children[i].xfm,children[i].bounds.geometry,i);
-      //children[i].parentID    = currentIndex;
-      children[i].parentPtr   = &node[currentIndex].child(i);
-      recurseOBB(children[i],alloc,mode,threadID,numThreads,forceOBBs);
-
-    }    
+      {
+	children[i].parentPtr = &node[currentIndex].child(i);
+	recurseOBB(children[i],alloc,mode,threadID,numThreads,forceOBBs);
+      }  
 
   }
 
@@ -1223,11 +1245,17 @@ namespace embree
     DBG(PING);
     DBG(DBG_PRINT(current));
 
+    //computeUnalignedSpace(current);
+    //computeUnalignedSpaceBounds(current);
+
     /* mark as leaf if leaf threshold reached */
     if (current.items() <= MAX_ITEMS_PER_LEAF) {
       current.createLeaf();
       return false;
     }
+
+
+    current.node_type = BVH4HAIR_OBB_NODE;
 
     const unsigned int items = current.items();
     const float voxelArea = area(current.bounds.geometry); 
@@ -1245,6 +1273,7 @@ namespace embree
     mic_f leftArea[3];
     mic_f rightArea[3];
     mic_i leftNum[3];
+
 
     const mic3f cmat = convert(current.xfm);
     
@@ -1320,6 +1349,14 @@ namespace embree
 	      }
 	  };
 
+	if (splitAABB.cost < split.cost)
+	  current.node_type = BVH4HAIR_AABB_NODE;
+
+#if 0
+	PING;
+	DBG_PRINT(split.cost);
+	DBG_PRINT(splitAABB.cost);
+#endif
       }
 
     if (unlikely(split.pos == -1)) 
@@ -1360,9 +1397,18 @@ namespace embree
     computeUnalignedSpace(rightChild);
     computeUnalignedSpaceBounds(rightChild);
 
+    //leftChild.xfm  = current.xfm;
+    //rightChild.xfm = current.xfm;
 
-    if (leftChild.items()  <= MAX_ITEMS_PER_LEAF) leftChild.createLeaf();
-    if (rightChild.items() <= MAX_ITEMS_PER_LEAF) rightChild.createLeaf();	
+    //if (leftChild.items()  <= MAX_ITEMS_PER_LEAF) leftChild.createLeaf();
+    //if (rightChild.items() <= MAX_ITEMS_PER_LEAF) rightChild.createLeaf();
+
+    if (current.node_type == BVH4HAIR_AABB_NODE)
+      {
+	leftChild.node_type  = BVH4HAIR_AABB_NODE;
+	rightChild.node_type = BVH4HAIR_AABB_NODE;
+      }
+
     return true;
   }
 

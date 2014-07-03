@@ -226,16 +226,16 @@ namespace embree
   
   void BVH4iBuilder::build(const size_t threadIndex, const size_t threadCount) 
   {
-    DBG(PING);
     const size_t totalNumPrimitives = getNumPrimitives();
-
-    //DBG_PRINT(totalNumPrimitives);
-
-    DBG(DBG_PRINT(totalNumPrimitives));
 
     /* print builder name */
     if (unlikely(g_verbose >= 2)) {
       printBuilderName();
+#if DEBUG
+      DBG_PRINT(totalNumPrimitives);
+      DBG_PRINT(threadIndex);
+      DBG_PRINT(threadCount);
+#endif
     }
 
     if (likely(totalNumPrimitives == 0))
