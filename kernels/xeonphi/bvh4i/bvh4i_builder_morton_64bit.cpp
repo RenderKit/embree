@@ -25,7 +25,7 @@
 #define PROFILE_ITERATIONS 200
 
 #define TIMER(x) x
-#define DBG(x) x
+#define DBG(x) 
 
 #define L1_PREFETCH_ITEMS 8
 #define L2_PREFETCH_ITEMS 44
@@ -266,7 +266,6 @@ template<class T>
     __aligned(64) BBox3fa bounds;
     store4f(&bounds.lower,bounds_min);
     store4f(&bounds.upper,bounds_max);
-
     return bounds;
   }
 
@@ -329,6 +328,12 @@ template<class T>
       return false;
     }
 
+#if DEBUG
+    for (size_t i=current.begin+1;  i<current.end; i++) 
+      assert(morton[i-1].code <= morton[i].code);
+
+#endif
+
     const size_t code_start = morton[current.begin].code;
     const size_t code_end   = morton[current.end-1].code;
     size_t bitpos = clz(code_start^code_end);
@@ -336,8 +341,12 @@ template<class T>
     /* if all items mapped to same morton code, then create new morton codes for the items */
     if (unlikely(bitpos == 64)) 
     {
-      PING;
-      size_t center = (current.begin + current.end)/2; 
+      size_t blocks4 = (current.items()+3)/4;
+      size_t center = current.begin + (blocks4/2)*4; 
+
+      assert(current.begin < center);
+      assert(center < current.end);
+      
       left.init(current.begin,center);
       right.init(center,current.end);
       return true;
@@ -345,8 +354,8 @@ template<class T>
 
     /* split the items at the topmost different morton code bit */
     const size_t bitpos_diff = 63-bitpos;
-    const size_t bitmask = 1 << bitpos_diff;
-    
+    const size_t bitmask = (size_t)1 << bitpos_diff;
+
     /* find location where bit differs using binary search */
     size_t begin = current.begin;
     size_t end   = current.end;
@@ -355,11 +364,16 @@ template<class T>
       const size_t bit = morton[mid].code & bitmask;
       if (bit == 0) begin = mid; else end = mid;
     }
+
     size_t center = end;
+
 #if defined(DEBUG)      
-    for (size_t i=begin;  i<center; i++) assert((morton[i].code & bitmask) == 0);
-    for (size_t i=center; i<end;    i++) assert((morton[i].code & bitmask) == bitmask);
+    for (size_t i=current.begin;  i<center; i++) assert((morton[i].code & bitmask) == 0);
+    for (size_t i=center; i<current.end;    i++) assert((morton[i].code & bitmask) == bitmask);
 #endif
+
+    assert(current.begin < center);
+    assert(center < current.end);
     
     left.init(current.begin,center);
     right.init(center,current.end);
@@ -446,7 +460,9 @@ template<class T>
 					   const size_t numThreads) 
   {
     assert(current.size() > 0);
-
+#if DEBUG
+    //DBG_PRINT(current);
+#endif
     /* stop toplevel recursion at some number of items */
     if (unlikely(mode == CREATE_TOP_LEVEL))
       {
@@ -558,10 +574,16 @@ template<class T>
 	if (n->child(i) == BVH4i::invalidNode) break;
 	
 	if (n->child(i).isLeaf())
-	  parentBounds.extend( n->bounds(i) );
+	  {
+	    parentBounds.extend( n->bounds(i) );
+	    //DBG_PRINT( n->bounds(i) );
+	  }
 	else
 	  {
 	    BBox3fa bounds = refit( n->child(i) );
+
+	    //DBG_PRINT( bounds );
+
 	    n->setBounds(i,bounds);
 	    parentBounds.extend( bounds );
 	  }
@@ -1001,8 +1023,6 @@ template<class T>
     TIMER(std::cout << "task_computeBounds " << 1000. * msec << " ms" << std::endl << std::flush);
     TIMER(DBG_PRINT(global_bounds));
 
-
-
     /* compute morton codes */
     TIMER(msec = getSeconds());
     LockStepTaskScheduler::dispatchTask( task_computeMortonCodes, this, threadIndex, threadCount );   
@@ -1052,7 +1072,32 @@ template<class T>
     br.parentLocalID = 0;
     br.depth = 1;
 
-    exit(0);
+    NodeAllocator alloc(atomicID,numAllocatedNodes);
+    recurse(br,alloc,RECURSE,0);
+
+    numNodes = atomicID >> 2;
+
+    DBG_PRINT(numNodes);
+
+    TIMER(msec = getSeconds());
+
+    /* refit toplevel part of tree */
+    BBox3fa rootBounds = refit(node->child(0));
+
+    DBG_PRINT(rootBounds);
+
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "refit top level " << 1000. * msec << " ms" << std::endl << std::flush);
+
+
+    bvh->root   = node->child(0); 
+    bvh->bounds = rootBounds;
+
+    DBG_PRINT( bvh->root );
+    DBG_PRINT( bvh->bounds );
+
+    std::cout << "BUILD DONE"  << std::endl;
+
   }
 
   void BVH4iBuilderMorton64Bit::build_parallel_morton64(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
@@ -1078,10 +1123,6 @@ template<class T>
 
     /* performs build of tree */
     build_main(threadIndex,threadCount);
-
-    FATAL("HERE");
-    bvh->root = bvh->qbvh[0].lower[0].child; 
-    bvh->bounds = global_bounds.geometry;
 
     /* end task */
     LockStepTaskScheduler::releaseThreads(threadCount);

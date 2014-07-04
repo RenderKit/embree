@@ -501,7 +501,7 @@ namespace embree
     __forceinline void createNode(BVH4i::NodeRef &ref,
 				  const unsigned int index,			  
 				  const unsigned int children = 0) {
-      ref = ((index*2) << BVH4i::encodingBits);
+      ref = ((index*4) << BVH4i::encodingBits);
     }
 
   public:
