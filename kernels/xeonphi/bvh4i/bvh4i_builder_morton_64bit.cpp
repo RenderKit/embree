@@ -296,9 +296,16 @@ template<class T>
     const size_t currentIndex = alloc.get(1);
    
     /* init used/unused nodes */
-    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-    store16f_ngo((float*)&node[currentIndex+0],init_node);
-    store16f_ngo((float*)&node[currentIndex+2],init_node);
+    // const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    // store16f_ngo((float*)&node[currentIndex+0],init_node);
+    // store16f_ngo((float*)&node[currentIndex+2],init_node);
+
+    mic_f init_lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
+    mic_f init_upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+
+    store16f_ngo((float*)&node[currentIndex].lower,init_lower);
+    store16f_ngo((float*)&node[currentIndex].upper,init_upper);
+
 
     __aligned(64) BBox3fa bounds; 
     bounds = empty;
@@ -313,7 +320,7 @@ template<class T>
     store4f(&node[current.parentNodeID].lower[current.parentLocalID],broadcast4to16f(&bounds.lower));
     store4f(&node[current.parentNodeID].upper[current.parentLocalID],broadcast4to16f(&bounds.upper));
 
-    createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,numChildren);
+    createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,0); // numChildren);
 
     return bounds;
   }  
@@ -438,9 +445,13 @@ template<class T>
     const size_t currentIndex = allocNode(BVH4i::N);    
 
     /* init used/unused nodes */
-    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-    store16f_ngo((float*)&node[currentIndex+0],init_node);
-    store16f_ngo((float*)&node[currentIndex+2],init_node);
+    //const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+
+    mic_f init_lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
+    mic_f init_upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+
+    store16f_ngo((float*)&node[currentIndex].lower,init_lower);
+    store16f_ngo((float*)&node[currentIndex].upper,init_upper);
 
     /* recurse into each child */
     for (size_t i=0; i<numChildren; i++) 
@@ -449,7 +460,7 @@ template<class T>
 	children[i].parentLocalID = i;
       }
 
-    createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,numChildren);
+    createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,0); //numChildren);
     return numChildren;
   }
 
@@ -529,9 +540,15 @@ template<class T>
     const size_t currentIndex = alloc.get(1);    
 
     /* init used/unused nodes */
-    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-    store16f_ngo((float*)&node[currentIndex+0],init_node);
-    store16f_ngo((float*)&node[currentIndex+2],init_node);
+    // const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    // store16f_ngo((float*)&node[currentIndex+0],init_node);
+    // store16f_ngo((float*)&node[currentIndex+2],init_node);
+
+    mic_f init_lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
+    mic_f init_upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+
+    store16f_ngo((float*)&node[currentIndex].lower,init_lower);
+    store16f_ngo((float*)&node[currentIndex].upper,init_upper);
 
     /* recurse into each child */
     __aligned(64) BBox3fa bounds;
