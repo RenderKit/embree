@@ -18,7 +18,7 @@
 #include "builders/builder_util.h"
 
 #define MORTON_BVH4I_NODE_PREALLOC_FACTOR   0.8f
-#define NUM_MORTON_IDS_PER_BLOCK            8
+#define NUM_MORTON_IDS_PER_BLOCK            4
 #define SINGLE_THREADED_BUILD_THRESHOLD     (MAX_MIC_THREADS*64)
 
 //#define PROFILE
@@ -110,15 +110,10 @@ template<class T>
 
   }
   __forceinline size_t bitInterleave64_LUT(const unsigned int& xin, const unsigned int& yin, const unsigned int& zin){
-    unsigned int x = xin & 0x1fffff; 
-    unsigned int y = yin & 0x1fffff; 
-    unsigned int z = zin & 0x1fffff; 
-
-    x = getMortonCode_LUT( x );
-    y = getMortonCode_LUT( y );
-    z = getMortonCode_LUT( z );
-
-    return x | (y << 1) | (z << 2);
+    const unsigned int x = xin & 0x1fffff; 
+    const unsigned int y = yin & 0x1fffff; 
+    const unsigned int z = zin & 0x1fffff; 
+    return getMortonCode_LUT( x ) | (getMortonCode_LUT( y ) << 1) | (getMortonCode_LUT( z ) << 2);
 }
 
   // =======================================================================================================
@@ -128,7 +123,7 @@ template<class T>
   __aligned(64) static double dt = 0.0f;
 
   BVH4iBuilderMorton64Bit::BVH4iBuilderMorton64Bit(BVH4i* bvh, void* geometry)
-    : bvh(bvh), scene((Scene*)geometry), morton(NULL), node(NULL), accel(NULL), numPrimitives(0), numGroups(0),numNodes(0), numAllocatedNodes(0), size_morton(0), size_node(0), size_accel(0), numPrimitivesOld(-1)
+    : bvh(bvh), scene((Scene*)geometry), morton(NULL), node(NULL), accel(NULL), numPrimitives(0), numGroups(0),numNodes(0), numAllocatedNodes(0), size_morton(0), size_node(0), size_accel(0), numPrimitivesOld(-1), topLevelItemThreshold(0), numBuildRecords(0)
   {
   }
 
@@ -183,10 +178,10 @@ template<class T>
 
       size_node         = (numNodes * MORTON_BVH4I_NODE_PREALLOC_FACTOR + minAllocNodes) * sizeNodeInBytes + additional_size;
       size_accel        = numPrims * sizeAccelInBytes + additional_size;
-      numAllocatedNodes = size_node / sizeof(BVHNode);
+      numAllocatedNodes = size_node / sizeof(BVH4i::Node);
 
       morton = (MortonID64Bit* ) os_malloc(size_morton_tmp); 
-      node   = (mic_i*)          os_malloc(size_node  );     
+      node   = (BVH4i::Node*)    os_malloc(size_node  );     
       accel  = (Triangle1*)      os_malloc(size_accel );     
 
       assert(morton != 0);
@@ -215,6 +210,395 @@ template<class T>
 
   }
 
+  void BVH4iBuilderMorton64Bit::split_fallback(SmallBuildRecord& current, SmallBuildRecord& leftChild, SmallBuildRecord& rightChild) 
+  {
+    unsigned int blocks4 = (current.items()+3)/4;
+    unsigned int center = current.begin + (blocks4/2)*4; 
+
+    assert(center != current.begin);
+    assert(center != current.end);
+
+    leftChild.init(current.begin,center);
+    rightChild.init(center,current.end);
+  }
+		
+
+  __forceinline BBox3fa BVH4iBuilderMorton64Bit::createSmallLeaf(SmallBuildRecord& current) 
+  {    
+    assert(current.size() > 0);
+    mic_f bounds_min(pos_inf);
+    mic_f bounds_max(neg_inf);
+
+    Vec3fa lower(pos_inf);
+    Vec3fa upper(neg_inf);
+    unsigned int items = current.size();
+    unsigned int start = current.begin;
+    assert(items<=4);
+
+    prefetch<PFHINT_L2>(&morton[start+8]);
+
+    for (size_t i=0; i<items; i++) 
+      {	
+	const unsigned int primID = morton[start+i].primID;
+	const unsigned int geomID = morton[start+i].groupID;
+
+	const mic_i morton_primID = morton[start+i].primID;
+	const mic_i morton_geomID = morton[start+i].groupID;
+
+	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+
+	const mic3f v = mesh->getTriangleVertices(tri);
+	const mic_f v0 = v[0];
+	const mic_f v1 = v[1];
+	const mic_f v2 = v[2];
+
+	const mic_f tri_accel = initTriangle1(v0,v1,v2,morton_geomID,morton_primID,mic_i(mesh->mask));
+
+	bounds_min = min(bounds_min,min(v0,min(v1,v2)));
+	bounds_max = max(bounds_max,max(v0,max(v1,v2)));
+	store16f_ngo(&accel[start+i],tri_accel);
+      }
+
+    store4f(&node[current.parentNodeID].lower[current.parentLocalID],bounds_min);
+    store4f(&node[current.parentNodeID].upper[current.parentLocalID],bounds_max);
+    createLeaf(node[current.parentNodeID].lower[current.parentLocalID].child,start,items);
+    __aligned(64) BBox3fa bounds;
+    store4f(&bounds.lower,bounds_min);
+    store4f(&bounds.upper,bounds_max);
+
+    return bounds;
+  }
+
+
+  BBox3fa BVH4iBuilderMorton64Bit::createLeaf(SmallBuildRecord& current, NodeAllocator& alloc)
+  {
+#if defined(DEBUG)
+    if (current.depth > BVH4i::maxBuildDepthLeaf) 
+      throw std::runtime_error("ERROR: depth limit reached");
+#endif
+    
+    /* create leaf for few primitives */
+    if (current.size() <= MORTON_LEAF_THRESHOLD) {     
+      return createSmallLeaf(current);
+    }
+
+    /* first split level */
+    SmallBuildRecord record0, record1;
+    split_fallback(current,record0,record1);
+
+    /* second split level */
+    SmallBuildRecord children[4];
+    split_fallback(record0,children[0],children[1]);
+    split_fallback(record1,children[2],children[3]);
+
+    /* allocate next four nodes */
+    size_t numChildren = 4;
+    const size_t currentIndex = alloc.get(1);
+   
+    /* init used/unused nodes */
+    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    store16f_ngo((float*)&node[currentIndex+0],init_node);
+    store16f_ngo((float*)&node[currentIndex+2],init_node);
+
+    __aligned(64) BBox3fa bounds; 
+    bounds = empty;
+    /* recurse into each child */
+    for (size_t i=0; i<numChildren; i++) {
+      children[i].parentNodeID  = currentIndex;
+      children[i].parentLocalID = i;
+      children[i].depth = current.depth+1;
+      bounds.extend( createLeaf(children[i],alloc) );
+    }
+
+    store4f(&node[current.parentNodeID].lower[current.parentLocalID],broadcast4to16f(&bounds.lower));
+    store4f(&node[current.parentNodeID].upper[current.parentLocalID],broadcast4to16f(&bounds.upper));
+
+    createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,numChildren);
+
+    return bounds;
+  }  
+
+  __forceinline bool BVH4iBuilderMorton64Bit::split(SmallBuildRecord& current,
+						    SmallBuildRecord& left,
+						    SmallBuildRecord& right) 
+  {
+    /* mark as leaf if leaf threshold reached */
+    if (unlikely(current.size() <= BVH4iBuilderMorton64Bit::MORTON_LEAF_THRESHOLD)) {
+      //current.createLeaf();
+      return false;
+    }
+
+    const size_t code_start = morton[current.begin].code;
+    const size_t code_end   = morton[current.end-1].code;
+    size_t bitpos = clz(code_start^code_end);
+
+    /* if all items mapped to same morton code, then create new morton codes for the items */
+    if (unlikely(bitpos == 64)) 
+    {
+      PING;
+      size_t center = (current.begin + current.end)/2; 
+      left.init(current.begin,center);
+      right.init(center,current.end);
+      return true;
+    }
+
+    /* split the items at the topmost different morton code bit */
+    const size_t bitpos_diff = 63-bitpos;
+    const size_t bitmask = 1 << bitpos_diff;
+    
+    /* find location where bit differs using binary search */
+    size_t begin = current.begin;
+    size_t end   = current.end;
+    while (begin + 1 != end) {
+      const size_t mid = (begin+end)/2;
+      const size_t bit = morton[mid].code & bitmask;
+      if (bit == 0) begin = mid; else end = mid;
+    }
+    size_t center = end;
+#if defined(DEBUG)      
+    for (size_t i=begin;  i<center; i++) assert((morton[i].code & bitmask) == 0);
+    for (size_t i=center; i<end;    i++) assert((morton[i].code & bitmask) == bitmask);
+#endif
+    
+    left.init(current.begin,center);
+    right.init(center,current.end);
+    return true;
+  }
+
+  size_t BVH4iBuilderMorton64Bit::createQBVHNode(SmallBuildRecord& current, SmallBuildRecord *__restrict__ const children)
+  {
+
+    /* create leaf node */
+    if (unlikely(current.size() <= BVH4iBuilderMorton64Bit::MORTON_LEAF_THRESHOLD)) {
+      children[0] = current;
+      return 1;
+    }
+
+    /* fill all 4 children by always splitting the one with the largest number of primitives */
+    __assume_aligned(children,sizeof(SmallBuildRecord));
+
+    size_t numChildren = 1;
+    children[0] = current;
+
+    do {
+
+      /* find best child with largest number of items*/
+      int bestChild = -1;
+      unsigned bestItems = 0;
+      for (unsigned int i=0; i<numChildren; i++)
+      {
+        /* ignore leaves as they cannot get split */
+        if (children[i].size() <= BVH4iBuilderMorton64Bit::MORTON_LEAF_THRESHOLD)
+          continue;
+        
+        /* remember child with largest number of items */
+        if (children[i].size() > bestItems) { 
+          bestItems = children[i].size();
+          bestChild = i;
+        }
+      }
+      if (bestChild == -1) break;
+
+      /*! split best child into left and right child */
+      __aligned(64) SmallBuildRecord left, right;
+      if (!split(children[bestChild],left,right))
+        continue;
+      
+      /* add new children left and right */
+      left.depth = right.depth = current.depth+1;
+      children[bestChild] = children[numChildren-1];
+      children[numChildren-1] = left;
+      children[numChildren+0] = right;
+      numChildren++;
+      
+    } while (numChildren < BVH4i::N);
+
+    /* create leaf node if no split is possible */
+    if (unlikely(numChildren == 1)) {
+      children[0] = current;
+      return 1;
+    }
+
+    /* allocate next four nodes and prefetch them */
+    const size_t currentIndex = allocNode(BVH4i::N);    
+
+    /* init used/unused nodes */
+    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    store16f_ngo((float*)&node[currentIndex+0],init_node);
+    store16f_ngo((float*)&node[currentIndex+2],init_node);
+
+    /* recurse into each child */
+    for (size_t i=0; i<numChildren; i++) 
+      {
+	children[i].parentNodeID  = currentIndex;
+	children[i].parentLocalID = i;
+      }
+
+    createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,numChildren);
+    return numChildren;
+  }
+
+  
+  BBox3fa BVH4iBuilderMorton64Bit::recurse(SmallBuildRecord& current, 
+					   NodeAllocator& alloc,
+					   const size_t mode, 
+					   const size_t numThreads) 
+  {
+    assert(current.size() > 0);
+
+    /* stop toplevel recursion at some number of items */
+    if (unlikely(mode == CREATE_TOP_LEVEL))
+      {
+	if (current.size()  <= topLevelItemThreshold &&
+	    numBuildRecords >= numThreads) {
+	  buildRecords[numBuildRecords++] = current;
+	  return empty;
+	}
+      }
+
+    __aligned(64) SmallBuildRecord children[BVH4i::N];
+
+    /* create leaf node */
+    if (unlikely(current.size() <= BVH4iBuilderMorton64Bit::MORTON_LEAF_THRESHOLD)) {
+      return createSmallLeaf(current);
+    }
+    if (unlikely(current.depth >= BVH4i::maxBuildDepth)) {
+      return createLeaf(current,alloc); 
+    }
+
+    /* fill all 4 children by always splitting the one with the largest number of primitives */
+    size_t numChildren = 1;
+    children[0] = current;
+
+    do {
+
+      /* find best child with largest number of items*/
+      int bestChild = -1;
+      unsigned bestItems = 0;
+      for (unsigned int i=0; i<numChildren; i++)
+      {
+        /* ignore leaves as they cannot get split */
+        if (children[i].size() <= BVH4iBuilderMorton64Bit::MORTON_LEAF_THRESHOLD)
+          continue;
+        
+        /* remember child with largest number of items */
+        if (children[i].size() > bestItems) { 
+          bestItems = children[i].size();
+          bestChild = i;
+        }
+      }
+      if (bestChild == -1) break;
+
+      /*! split best child into left and right child */
+      __aligned(64) SmallBuildRecord left, right;
+      if (!split(children[bestChild],left,right))
+        continue;
+      
+      /* add new children left and right */
+      left.depth = right.depth = current.depth+1;
+      children[bestChild] = children[numChildren-1];
+      children[numChildren-1] = left;
+      children[numChildren+0] = right;
+      numChildren++;
+      
+    } while (numChildren < BVH4i::N);
+
+    /* create leaf node if no split is possible */
+    if (unlikely(numChildren == 1)) {
+      return createSmallLeaf(current);
+    }
+
+    /* allocate next four nodes and prefetch them */
+    const size_t currentIndex = alloc.get(1);    
+
+    /* init used/unused nodes */
+    const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
+    store16f_ngo((float*)&node[currentIndex+0],init_node);
+    store16f_ngo((float*)&node[currentIndex+2],init_node);
+
+    /* recurse into each child */
+    __aligned(64) BBox3fa bounds;
+    bounds = empty;
+    for (size_t i=0; i<numChildren; i++) 
+    {
+      children[i].parentNodeID = currentIndex;
+      children[i].parentLocalID = i;
+
+      if (children[i].size() <= BVH4iBuilderMorton64Bit::MORTON_LEAF_THRESHOLD)
+	{
+	  bounds.extend( createSmallLeaf(children[i]) );
+	}
+      else
+	bounds.extend( recurse(children[i],alloc,mode,numThreads) );
+    }
+
+    store4f(&node[current.parentNodeID].lower[current.parentLocalID],broadcast4to16f(&bounds.lower));
+    store4f(&node[current.parentNodeID].upper[current.parentLocalID],broadcast4to16f(&bounds.upper));
+    createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,numChildren);
+
+    return bounds;
+  }
+
+
+  BBox3fa BVH4iBuilderMorton64Bit::refit(const BVH4i::NodeRef &ref)
+  {    
+    if (unlikely(ref.isLeaf()))
+      {
+	FATAL("HERE");
+	return BBox3fa( empty );
+      }
+
+    BVH4i::Node *n = (BVH4i::Node*)ref.node(node);
+
+    BBox3fa parentBounds = empty;
+
+    for (size_t i=0;i<BVH4i::N;i++)
+      {
+	if (n->child(i) == BVH4i::invalidNode) break;
+	
+	if (n->child(i).isLeaf())
+	  parentBounds.extend( n->bounds(i) );
+	else
+	  {
+	    BBox3fa bounds = refit( n->child(i) );
+	    n->setBounds(i,bounds);
+	    parentBounds.extend( bounds );
+	  }
+      }
+    return parentBounds;
+  }    
+
+  BBox3fa BVH4iBuilderMorton64Bit::refit_toplevel(const BVH4i::NodeRef &ref)
+  {    
+    if (unlikely(ref.isLeaf()))
+      {
+	FATAL("HERE");
+	return BBox3fa( empty );
+      }
+
+    BVH4i::Node *n = (BVH4i::Node*)ref.node(node);
+
+    BBox3fa parentBounds = empty;
+
+    for (size_t i=0;i<BVH4i::N;i++)
+      {
+	if (n->child(i) == BVH4i::invalidNode) break;
+	
+	if (n->child(i).isLeaf() || n->upper[i].child == (unsigned int)-1)
+	  parentBounds.extend( n->bounds(i) );
+	else
+	  {
+	    BBox3fa bounds = refit( n->child(i) );
+	    n->setBounds(i,bounds);
+	    parentBounds.extend( bounds );
+	  }
+      }
+    return parentBounds;
+
+  }
+
+
   void BVH4iBuilderMorton64Bit::build(size_t threadIndex, size_t threadCount) 
   {
     if (unlikely(g_verbose >= 2))
@@ -234,9 +618,6 @@ template<class T>
 	numGroups++;
 	numPrimitives += mesh->numTriangles;
       }
-
-    DBG_PRINT(numGroups);
-    DBG_PRINT(numPrimitives);
 
     if (likely(numPrimitives == 0))
       {
@@ -415,8 +796,9 @@ template<class T>
     size_t currentID = startID;
     size_t offset = thread_startGroupOffset[threadID];
 
-    
-    size_t global_code = 0;
+    size_t slot = 0;
+
+    __aligned(64) MortonID64Bit local[4];
 
     for (size_t group = thread_startGroup[threadID]; group<numGroups; group++) 
     {       
@@ -433,7 +815,7 @@ template<class T>
       
       for (size_t i=0; i<numTriangles; i++,cptr_tri+=stride)	  
       {
-	prefetch<PFHINT_NTEX>(dest);
+	//prefetch<PFHINT_NTEX>(dest);
 
 	const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
 
@@ -446,31 +828,45 @@ template<class T>
 	const mic_f cent  = bmin+bmax;
 	const mic_i binID = convert_uint32((cent-base)*scale);
 
-	dest->primID  = offset+i;
-	dest->groupID = group;
+	// dest->primID  = offset+i;
+	// dest->groupID = group;
 
-	const size_t binIDx = binID[0];
-	const size_t binIDy = binID[1];
-	const size_t binIDz = binID[2];
+	local[slot].primID  = offset+i;
+	local[slot].groupID = group;
 
-	//const size_t code  = bitInterleave64(binIDx,binIDy,binIDz); // check
-	const size_t code  = bitInterleave64_LUT(binIDx,binIDy,binIDz); // check
+	const unsigned int binIDx = binID[0];
+	const unsigned int binIDy = binID[1];
+	const unsigned int binIDz = binID[2];
 
-	// const size_t code2  = bitInterleave64_LUT(binIDx,binIDy,binIDz); // check
+	const size_t code  = bitInterleave64_LUT(binIDx,binIDy,binIDz); 
+	local[slot].code   = code;
+	slot++;
 
-	// if (code != code2)
-	//   FATAL("HERE");
+	if (unlikely(slot == NUM_MORTON_IDS_PER_BLOCK))
+	  {
+	    mic_i m64 = load16i((int*)local);
+	    assert((size_t)dest % 64 == 0);
+	    store16i_ngo(dest,m64);	    
+	    slot = 0;
+	    dest += NUM_MORTON_IDS_PER_BLOCK;
+	  }
 
-	dest->code = code;
-	dest++;
-	prefetch<PFHINT_L2EX>(dest + 4*4);
-	global_code |= code;
+	// dest->code = code;
+	// dest++;
+	// prefetch<PFHINT_L2EX>(dest + 4*4);
         currentID++;
       }
 
       offset = 0;
       if (currentID == endID) break;
     }
+
+    if (unlikely(slot != 0))
+      {
+	mic_i m64 = load16i((int*)local);
+	assert((size_t)dest % 64 == 0);
+	store16i_ngo(dest,m64);	    
+      }
 
     //DBG_PRINT(__bsr(global_code));
   }
@@ -483,7 +879,7 @@ template<class T>
     assert(startID % NUM_MORTON_IDS_PER_BLOCK == 0);
     assert(endID % NUM_MORTON_IDS_PER_BLOCK == 0);
 
-    assert(((numThreads)*numBlocks/numThreads) * NUM_MORTON_IDS_PER_BLOCK == ((numPrimitives+7)&(-8)));
+    assert(((numThreads)*numBlocks/numThreads) * NUM_MORTON_IDS_PER_BLOCK == ((numPrimitives+3)&(-4)));
 
     MortonID64Bit* __restrict__ mortonID[2];
     mortonID[0] = (MortonID64Bit*) morton; 
@@ -614,7 +1010,7 @@ template<class T>
     /* padding */
     MortonID64Bit* __restrict__ const dest = (MortonID64Bit*)morton;
     
-    for (size_t i=numPrimitives; i<((numPrimitives+7)&(-8)); i++) {
+    for (size_t i=numPrimitives; i<((numPrimitives+3)&(-4)); i++) {
       dest[i].code    = (size_t)-1; 
       dest[i].groupID = 0;
       dest[i].primID  = 0;
@@ -629,10 +1025,10 @@ template<class T>
     LockStepTaskScheduler::dispatchTask( task_radixsort, this, threadIndex, threadCount );
 
 #if defined(DEBUG)
-    for (size_t i=1; i<((numPrimitives+7)&(-8)); i++)
+    for (size_t i=1; i<((numPrimitives+3)&(-4)); i++)
       assert(morton[i-1].code <= morton[i].code);
 
-    for (size_t i=numPrimitives; i<((numPrimitives+7)&(-8)); i++) {
+    for (size_t i=numPrimitives; i<((numPrimitives+3)&(-4)); i++) {
       assert(dest[i].code  == (size_t)-1); 
       assert(dest[i].groupID == 0);
       assert(dest[i].primID == 0);
@@ -646,6 +1042,15 @@ template<class T>
     TIMER(msec = getSeconds());
 
     /* build and extract top-level tree */
+    numBuildRecords = 0;
+    atomicID.reset(1);
+    topLevelItemThreshold = max((numPrimitives + threadCount-1)/((threadCount)),(size_t)64);
+
+    SmallBuildRecord br;
+    br.init(0,numPrimitives);
+    br.parentNodeID = 0;
+    br.parentLocalID = 0;
+    br.depth = 1;
 
     exit(0);
   }

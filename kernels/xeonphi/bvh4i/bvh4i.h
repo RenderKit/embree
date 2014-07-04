@@ -139,6 +139,17 @@ namespace embree
         return BBox3fa(l,u);
       }
 
+      __forceinline void setBounds(size_t i, const BBox3fa &b) {
+	assert( i < 4 );
+	lower[i].x = b.lower.x;
+	lower[i].y = b.lower.y;
+	lower[i].z = b.lower.z;
+
+	upper[i].x = b.upper.x;
+	upper[i].y = b.upper.y;
+	upper[i].z = b.upper.z;
+      }
+
       __forceinline mic_f lowerXYZ(size_t i) const {
 	return broadcast4to16f(&lower[i]);
       }

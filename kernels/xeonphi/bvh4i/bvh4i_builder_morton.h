@@ -365,7 +365,8 @@ namespace embree
       unsigned int begin;
       unsigned int end;
       unsigned int depth;
-      void *parentPtr;
+      unsigned int parentNodeID;
+      unsigned int parentLocalID;
       
       __forceinline unsigned int size() const {
         return end - begin;
@@ -377,10 +378,12 @@ namespace embree
       
       __forceinline void init(const unsigned int _begin, const unsigned int _end)			 
       {
-        begin = _begin;
-        end = _end;
-        depth = 1;
-        parentPtr = NULL;
+        begin         = _begin;
+        end           = _end;
+        depth         = 1;
+	parentNodeID  = 0;
+	parentLocalID = 0;
+
 	assert(begin < end);
       }
       
@@ -389,7 +392,7 @@ namespace embree
 
       __forceinline friend std::ostream &operator<<(std::ostream &o, const SmallBuildRecord &br)
 	{
-	  o << "begin " << br.begin << " end " << br.end << " size " << br.size() << " depth " << br.depth << " parentPtr " << br.parentPtr;
+	  o << "begin " << br.begin << " end " << br.end << " size " << br.size() << " depth " << br.depth << " parentNodeID " << br.parentNodeID << " parentLocalID " << br.parentLocalID;
 	  return o;
 	}
 
@@ -460,6 +463,47 @@ namespace embree
     TASK_FUNCTION(BVH4iBuilderMorton64Bit,radixsort);
 
 
+    /*! creates a leaf node */
+    BBox3fa createSmallLeaf(SmallBuildRecord& current) ;
+
+    /*! creates a leaf node */
+    BBox3fa createLeaf(SmallBuildRecord& current, NodeAllocator& alloc);
+
+    /*! fallback split mode */
+    void split_fallback(SmallBuildRecord& current, SmallBuildRecord& leftChild, SmallBuildRecord& rightChild) ;
+
+    /*! split a build record into two */
+    bool split(SmallBuildRecord& current, SmallBuildRecord& left, SmallBuildRecord& right) ;
+
+    /*! create the top-levels of the tree */
+    size_t createQBVHNode(SmallBuildRecord& current, SmallBuildRecord *__restrict__ const children);
+
+    /*! main recursive build function */
+    BBox3fa recurse(SmallBuildRecord& current, 
+		   NodeAllocator& alloc,
+		   const size_t mode, 
+		   const size_t numThreads);
+    
+    /*! refit the toplevel part of the BVH */
+    BBox3fa refit_toplevel(const BVH4i::NodeRef &ref);
+
+    /*! refit the sub-BVHs */
+    BBox3fa refit(const BVH4i::NodeRef &ref);
+
+    __forceinline void createLeaf(BVH4i::NodeRef &ref,
+				  const unsigned int offset,
+				  const unsigned int entries) 
+    {
+      assert(entries <= 4);
+      ref = (offset << BVH4i::encodingBits) | BVH4i::leaf_mask | entries;
+    }
+
+    __forceinline void createNode(BVH4i::NodeRef &ref,
+				  const unsigned int index,			  
+				  const unsigned int children = 0) {
+      ref = ((index*2) << BVH4i::encodingBits);
+    }
+
   public:
 
     void build_main(const size_t threadID, const size_t numThreads);
@@ -483,9 +527,9 @@ namespace embree
     __aligned(64) unsigned int radixCount[MAX_MIC_THREADS][RADIX_BUCKETS];
 
   protected:
-    MortonID64Bit* __restrict__ morton;
-    mic_i        * __restrict__ node;
-    Triangle1    * __restrict__ accel;
+    MortonID64Bit * __restrict__ morton;
+    BVH4i::Node   * __restrict__ node;
+    Triangle1     * __restrict__ accel;
 
     size_t numPrimitives;
     size_t numGroups;
@@ -494,7 +538,8 @@ namespace embree
     size_t size_morton;
     size_t size_node;
     size_t size_accel;
-
+    size_t topLevelItemThreshold;
+    size_t numBuildRecords;
     size_t numPrimitivesOld;
 
     __aligned(64) Centroid_Scene_AABB global_bounds;
@@ -502,6 +547,15 @@ namespace embree
     /*! node allocator */
     __aligned(64) AlignedAtomicCounter32  atomicID;
     __aligned(64) AlignedAtomicCounter32  numBuildRecordCounter;
+
+    __forceinline unsigned int allocNode(int size)
+    {
+      const unsigned int currentIndex = atomicID.add(size);
+      if (unlikely(currentIndex >= numAllocatedNodes)) {
+        FATAL("not enough nodes allocated");
+      }
+      return currentIndex;
+    }
 
   };
 
