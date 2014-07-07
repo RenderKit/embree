@@ -16,17 +16,16 @@
 
 #include "bvh4i_rotate.h"
 
+#define DBG(x) 
+
 namespace embree
 {
-  /*! Computes half surface area of box. */
-  // __forceinline float halfArea3f(const BBox<Vec3fa>& box) {
-  //   const Vec3fa d = box.size();
-  //   const Vec3fa a = d*shuffle<1,2,0,3>(d);
-  //   return a[0]+a[1]+a[2];
-  // }
 
   size_t BVH4iRotate::rotate(BVH4i* bvh, NodeRef parentRef, size_t depth)
   {
+    DBG( DBG_PRINT(parentRef) );
+    DBG( DBG_PRINT(depth) );
+
     assert(depth < BVH4i::maxBuildDepth);
 
     /*! nothing to rotate if we reached a leaf node. */
@@ -43,7 +42,12 @@ namespace embree
     /* compute current area of all children */
     float childArea[4];
     for (size_t i=0;i<4;i++)
-      childArea[i] = parent->areaBounds( i );
+      {
+	childArea[i] = parent->areaBounds( i );
+	DBG( DBG_PRINT(i) );
+	DBG( DBG_PRINT(childArea[i]) );
+
+      }
 
     /*! get node bounds */
     BBox3fa child1_0,child1_1,child1_2,child1_3;
@@ -60,6 +64,8 @@ namespace embree
     int bestChild1 = -1, bestChild2 = -1, bestChild2Child = -1;
     for (size_t c2=0; c2<4; c2++)
     {
+      DBG( DBG_PRINT(c2) );
+
       /*! ignore leaf nodes as we cannot descent into them */
       if (parent->child(c2).isLeaf()) continue;
       Node* child2 = parent->child(c2).node(bvh->nodePtr());
@@ -81,8 +87,9 @@ namespace embree
       cost0[2] = area(merge(child2c0,child2c1,child1_0,child2c3));
       cost0[3] = area(merge(child2c0,child2c1,child2c2,child1_0));
       const float min0 = min(cost0[0],cost0[1],cost0[2],cost0[3]);
-      int pos0 = (int)__bsf(mic_f(min0) == broadcast4to16f(cost0));
 
+      int pos0 = (int)__bsf(mic_f(min0) == broadcast4to16f(cost0));
+      assert(0 <= pos0 && pos0 < 4);
       /*! put child1_1 at each child2 position */
       __aligned(16) float cost1[4];
       cost1[0] = area(merge(child1_1,child2c1,child2c2,child2c3));
@@ -92,6 +99,7 @@ namespace embree
 
       const float min1 = min(cost1[0],cost1[1],cost1[2],cost1[3]);
       int pos1 = (int)__bsf(mic_f(min1) == broadcast4to16f(cost1));
+      assert(0 <= pos1 && pos1 < 4);
 
       /*! put child1_2 at each child2 position */
       __aligned(16) float cost2[4];
@@ -101,6 +109,7 @@ namespace embree
       cost2[3] = area(merge(child2c0,child2c1,child2c2,child1_2));
       const float min2 = min(cost2[0],cost2[1],cost2[2],cost2[3]);
       int pos2 = (int)__bsf(mic_f(min2) == broadcast4to16f(cost2));
+      assert(0 <= pos2 && pos2 < 4);
 
       /*! put child1_3 at each child2 position */
       __aligned(16) float cost3[4];
@@ -110,44 +119,35 @@ namespace embree
       cost3[3] = area(merge(child2c0,child2c1,child2c2,child1_3));
       const float min3 = min(cost3[0],cost3[1],cost3[2],cost3[3]);
       int pos3 = (int)__bsf(mic_f(min3) == broadcast4to16f(cost3));
+      assert(0 <= pos3 && pos3 < 4);
 
       /*! find best other child */
       float area0123[4] = { min0,min1,min2,min3 };
       int pos[4] = { pos0,pos1,pos2,pos3 };
 
       for (size_t i=0;i<4;i++)
-	{
-	  const float area_i = area0123[i] - childArea[i];
+	{	  
+	  const float area_i = area0123[i] - childArea[c2];
+
+	  DBG( DBG_PRINT(i) );
+	  DBG( DBG_PRINT(area_i) );
+	  DBG( DBG_PRINT(bestArea) );
+
 	  if ((depth+1)+cdepth[i] > BVH4i::maxBuildDepth) continue;
 	  if (i == c2) continue;
 
 	  /*! accept a swap when it reduces cost and is not swapping a node with itself */
-	  if (area0123[i] < bestArea) {
-	    bestArea = area0123[i];
+	  if (area_i < bestArea) {
+	    bestArea = area_i;
 	    bestChild1 = i;
 	    bestChild2 = c2;
 	    bestChild2Child = pos[i];
-	    
+
+	    DBG( DBG_PRINT(bestChild1) );
+	    DBG( DBG_PRINT(bestChild2) );
 	  }
 	  
 	}
-
-      // Vec3fa area0123 = Vec3fa(extract<0>(min0),extract<0>(min1),extract<0>(min2),extract<0>(min3)) - Vec3fa(childArea[c2]);
-      // int pos[4] = { pos0,pos1,pos2,pos3 };
-      // sseb valid = ssei(int(depth+1))+cdepth <= ssei(BVH4::maxBuildDepth); // only select swaps that fulfill depth constraints
-      // valid &= ssei(c2) != ssei(step);
-      // if (none(valid)) continue;
-      // size_t c1 = select_min(valid,area0123);
-      // float area = area0123[c1]; 
-      // assert(c1 != c2);
-      
-      // /*! accept a swap when it reduces cost and is not swapping a node with itself */
-      // if (area < bestArea) {
-      //   bestArea = area;
-      //   bestChild1 = c1;
-      //   bestChild2 = c2;
-      //   bestChild2Child = pos[c1];
-      // }
     }
 
     /*! if we did not find a swap that improves the SAH then do nothing */

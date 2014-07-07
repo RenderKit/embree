@@ -16,6 +16,7 @@
 
 #include "bvh4i_builder_morton.h"
 #include "builders/builder_util.h"
+#include "bvh4i_rotate.h"
 
 #define MORTON_BVH4I_NODE_PREALLOC_FACTOR   0.8f
 #define NUM_MORTON_IDS_PER_BLOCK            4
@@ -1114,6 +1115,11 @@ template<class T>
     DBG_PRINT( bvh->bounds );
 
     std::cout << "BUILD DONE"  << std::endl;
+
+    for (size_t r=0;r<4;r++)
+      BVH4iRotate::rotate(bvh,bvh->root);
+
+    std::cout << "TREE ROTATION DONE"  << std::endl;
 
   }
 

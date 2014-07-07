@@ -17,6 +17,7 @@
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder.h"
 #include "bvh4i/bvh4i_statistics.h"
+#include "bvh4i/bvh4i_rotate.h"
 
 
 
@@ -432,6 +433,7 @@ namespace embree
   
   void BVH4iBuilder::finalize(const size_t threadIndex, const size_t threadCount)
   {
+    //BVH4iRotate::rotate(bvh,bvh->root);
   }
 
   __forceinline void computeAccelerationData(const unsigned int &geomID,
@@ -1464,7 +1466,7 @@ namespace embree
     TIMER(msec = getSeconds());     
     finalize(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "task_convertToSOALayout " << 1000. * msec << " ms" << std::endl << std::flush);
+    TIMER(std::cout << "task_finalize " << 1000. * msec << " ms" << std::endl << std::flush);
 
     
 
