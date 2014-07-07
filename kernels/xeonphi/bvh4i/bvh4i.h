@@ -139,6 +139,15 @@ namespace embree
         return BBox3fa(l,u);
       }
 
+      __forceinline BBox3fa bounds() const {
+	return merge( bounds(0),bounds(1),bounds(2),bounds(3) );
+      }
+
+      __forceinline float areaBounds(size_t i) const {
+	assert( i < 4 );
+        return area( bounds(i) );
+      }
+
       __forceinline void setBounds(size_t i, const BBox3fa &b) {
 	assert( i < 4 );
 	lower[i].x = b.lower.x;
@@ -192,6 +201,9 @@ namespace embree
 	  }
 	return o;
       }
+
+
+
     };
 
 
@@ -383,6 +395,41 @@ namespace embree
     struct Helper { float x,y,z; int a; }; 
 
     static Helper initQBVHNode[4];
+
+    /*! swap the children of two nodes */
+    __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
+    {
+      assert(i<N && j<N);
+      const mic_f lower_a = broadcast4to16f(&a->lower[i]);
+      const mic_f upper_a = broadcast4to16f(&a->upper[i]);
+      const mic_f lower_b = broadcast4to16f(&b->lower[i]);
+      const mic_f upper_b = broadcast4to16f(&b->upper[i]);
+
+      store4f(&a->lower[i],lower_b);
+      store4f(&a->upper[i],upper_b);
+      store4f(&b->lower[i],lower_a);
+      store4f(&b->upper[i],upper_a);
+    }
+
+    /*! compacts a node (moves empty children to the end) */
+    __forceinline static void compact(Node* a)
+    {
+      /* find right most filled node */
+      ssize_t j=N;
+      for (j=j-1; j>=0; j--)
+        if (a->child(j) != emptyNode)
+          break;
+
+      /* replace empty nodes with filled nodes */
+      for (ssize_t i=0; i<j; i++) {
+        if (a->child(i) == emptyNode) {
+          swap(a,i,a,j);
+          for (j=j-1; j>i; j--)
+            if (a->child(j) != emptyNode)
+              break;
+        }
+      }
+    }
 
   private:
     float sah (NodeRef& node, BBox3fa bounds);
