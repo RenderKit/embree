@@ -139,6 +139,11 @@ namespace embree
         return BBox3fa(l,u);
       }
 
+      __forceinline size_t numChildren() const {
+	mic_i c = load16i((int*)lower);
+	return countbits(ne(0x8888,c,mic_i(BVH4i::invalidNode))); 
+      }
+
       __forceinline BBox3fa bounds() const {
 	return merge( bounds(0),bounds(1),bounds(2),bounds(3) );
       }
@@ -402,13 +407,13 @@ namespace embree
       assert(i<N && j<N);
       const mic_f lower_a = broadcast4to16f(&a->lower[i]);
       const mic_f upper_a = broadcast4to16f(&a->upper[i]);
-      const mic_f lower_b = broadcast4to16f(&b->lower[i]);
-      const mic_f upper_b = broadcast4to16f(&b->upper[i]);
+      const mic_f lower_b = broadcast4to16f(&b->lower[j]);
+      const mic_f upper_b = broadcast4to16f(&b->upper[j]);
 
       store4f(&a->lower[i],lower_b);
       store4f(&a->upper[i],upper_b);
-      store4f(&b->lower[i],lower_a);
-      store4f(&b->upper[i],upper_a);
+      store4f(&b->lower[j],lower_a);
+      store4f(&b->upper[j],upper_a);
     }
 
     /*! compacts a node (moves empty children to the end) */

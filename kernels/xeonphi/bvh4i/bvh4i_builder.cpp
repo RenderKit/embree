@@ -433,7 +433,10 @@ namespace embree
   
   void BVH4iBuilder::finalize(const size_t threadIndex, const size_t threadCount)
   {
-    //BVH4iRotate::rotate(bvh,bvh->root);
+#if 0
+    for (size_t i=0;i<5;i++)
+      BVH4iRotate::rotate(bvh,bvh->root);
+#endif
   }
 
   __forceinline void computeAccelerationData(const unsigned int &geomID,

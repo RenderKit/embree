@@ -152,13 +152,23 @@ namespace embree
 
     /*! if we did not find a swap that improves the SAH then do nothing */
     if (bestChild1 == -1) return 1+max(cdepth[0],cdepth[1],cdepth[2],cdepth[3]);
-
+    
+    // PING;
+    // DBG_PRINT(bestArea);
     /*! perform the best found tree rotation */
     Node* child2 = parent->child(bestChild2).node(bvh->nodePtr());
-
+    // DBG_PRINT(bestChild1);
+    // DBG_PRINT(*parent);
+    // DBG_PRINT(area(parent->bounds()));
+    // DBG_PRINT(bestChild2Child);
+    // DBG_PRINT(*child2);
+    // DBG_PRINT(area(child2->bounds()));
     BVH4i::swap(parent,bestChild1,child2,bestChild2Child);
-
     parent->setBounds(bestChild2,child2->bounds());
+    // DBG_PRINT(area(parent->bounds()));
+    // DBG_PRINT(area(child2->bounds()));
+    // DBG_PRINT(*parent);
+    // DBG_PRINT(*child2);
 
     BVH4i::compact(parent);
     BVH4i::compact(child2);
@@ -167,6 +177,5 @@ namespace embree
      *  pulled up in the tree could have been on the critical path. */
     cdepth[bestChild1]++; // bestChild1 was pushed down one level
     return 1+max(cdepth[0],cdepth[1],cdepth[2],cdepth[3]); 
-    return 0;
   }
 }
