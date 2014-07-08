@@ -21,10 +21,10 @@
 #define NUM_MORTON_IDS_PER_BLOCK            8
 #define SINGLE_THREADED_BUILD_THRESHOLD     (MAX_MIC_THREADS*64)
 
-//#define PROFILE
+#define PROFILE
 #define PROFILE_ITERATIONS 200
 
-#define TIMER(x) x
+#define TIMER(x) 
 #define DBG(x) 
 
 #define L1_PREFETCH_ITEMS 8

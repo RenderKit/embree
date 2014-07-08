@@ -468,6 +468,9 @@ namespace embree
     /*! task that builds a list of sub-trees */
     TASK_FUNCTION(BVH4iBuilderMorton64Bit,recurseSubMortonTrees);
 
+    /*! task that does tree roations on a list of sub-trees */
+    TASK_FUNCTION(BVH4iBuilderMorton64Bit,doTreeRotationsOnSubTrees);
+
 
     /*! creates a leaf node */
     BBox3fa createSmallLeaf(SmallBuildRecord& current) ;

@@ -630,7 +630,7 @@ namespace embree
 
   void BVH4iBuilderPreSplits::finalize(const size_t threadIndex, const size_t threadCount)
   {
-#if 1
+#if 0
     std::cout << "TREE ROTATIONS" << std::endl;
     for (size_t i=0;i<4;i++)
       BVH4iRotate::rotate(bvh,bvh->root);

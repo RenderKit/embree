@@ -31,7 +31,7 @@
 #define L1_PREFETCH_ITEMS 8
 #define L2_PREFETCH_ITEMS 44
 
-#define TOP_LEVEL_MARKER 0x80000000
+#define NUM_TREE_ROTATIONS 1
 
 namespace embree 
 {
@@ -68,23 +68,39 @@ template<class T>
 
   __aligned(64) static const unsigned int mortonLUT[256] =
 {
-    0x00000000, 0x00000001, 0x00000008, 0x00000009, 0x00000040, 0x00000041, 0x00000048, 0x00000049, 0x00000200,
-    0x00000201, 0x00000208, 0x00000209, 0x00000240, 0x00000241, 0x00000248, 0x00000249, 0x00001000,
-    0x00001001, 0x00001008, 0x00001009, 0x00001040, 0x00001041, 0x00001048, 0x00001049, 0x00001200,
-    0x00001201, 0x00001208, 0x00001209, 0x00001240, 0x00001241, 0x00001248, 0x00001249, 0x00008000,
-    0x00008001, 0x00008008, 0x00008009, 0x00008040, 0x00008041, 0x00008048, 0x00008049, 0x00008200,
-    0x00008201, 0x00008208, 0x00008209, 0x00008240, 0x00008241, 0x00008248, 0x00008249, 0x00009000,
-    0x00009001, 0x00009008, 0x00009009, 0x00009040, 0x00009041, 0x00009048, 0x00009049, 0x00009200,
-    0x00009201, 0x00009208, 0x00009209, 0x00009240, 0x00009241, 0x00009248, 0x00009249, 0x00040000,
-    0x00040001, 0x00040008, 0x00040009, 0x00040040, 0x00040041, 0x00040048, 0x00040049, 0x00040200,
-    0x00040201, 0x00040208, 0x00040209, 0x00040240, 0x00040241, 0x00040248, 0x00040249, 0x00041000,
-    0x00041001, 0x00041008, 0x00041009, 0x00041040, 0x00041041, 0x00041048, 0x00041049, 0x00041200,
-    0x00041201, 0x00041208, 0x00041209, 0x00041240, 0x00041241, 0x00041248, 0x00041249, 0x00048000,
-    0x00048001, 0x00048008, 0x00048009, 0x00048040, 0x00048041, 0x00048048, 0x00048049, 0x00048200,
-    0x00048201, 0x00048208, 0x00048209, 0x00048240, 0x00048241, 0x00048248, 0x00048249, 0x00049000,
-    0x00049001, 0x00049008, 0x00049009, 0x00049040, 0x00049041, 0x00049048, 0x00049049, 0x00049200,
-    0x00049201, 0x00049208, 0x00049209, 0x00049240, 0x00049241, 0x00049248, 0x00049249, 0x00200000,
-    0x00200001, 0x00200008, 0x00200009, 0x00200040, 0x00200041, 0x00200048, 0x00200049, 0x00200200,
+    0x00000000, 0x00000001, 0x00000008, 0x00000009, 
+    0x00000040, 0x00000041, 0x00000048, 0x00000049, 
+    0x00000200, 0x00000201, 0x00000208, 0x00000209, 
+    0x00000240, 0x00000241, 0x00000248, 0x00000249, 
+    0x00001000, 0x00001001, 0x00001008, 0x00001009, 
+    0x00001040, 0x00001041, 0x00001048, 0x00001049, 
+    0x00001200, 0x00001201, 0x00001208, 0x00001209, 
+    0x00001240, 0x00001241, 0x00001248, 0x00001249, 
+    0x00008000, 0x00008001, 0x00008008, 0x00008009, 
+    0x00008040, 0x00008041, 0x00008048, 0x00008049, 
+    0x00008200, 0x00008201, 0x00008208, 0x00008209, 
+    0x00008240, 0x00008241, 0x00008248, 0x00008249, 
+    0x00009000, 0x00009001, 0x00009008, 0x00009009, 
+    0x00009040, 0x00009041, 0x00009048, 0x00009049, 
+    0x00009200, 0x00009201, 0x00009208, 0x00009209, 
+    0x00009240, 0x00009241, 0x00009248, 0x00009249, 
+    0x00040000, 0x00040001, 0x00040008, 0x00040009, 
+    0x00040040, 0x00040041, 0x00040048, 0x00040049, 
+    0x00040200, 0x00040201, 0x00040208, 0x00040209, 
+    0x00040240, 0x00040241, 0x00040248, 0x00040249, 
+    0x00041000, 0x00041001, 0x00041008, 0x00041009, 
+    0x00041040, 0x00041041, 0x00041048, 0x00041049, 
+    0x00041200, 0x00041201, 0x00041208, 0x00041209, 
+    0x00041240, 0x00041241, 0x00041248, 0x00041249, 
+    0x00048000, 0x00048001, 0x00048008, 0x00048009, 
+    0x00048040, 0x00048041, 0x00048048, 0x00048049, 
+    0x00048200, 0x00048201, 0x00048208, 0x00048209, 
+    0x00048240, 0x00048241, 0x00048248, 0x00048249, 
+    0x00049000, 0x00049001, 0x00049008, 0x00049009, 
+    0x00049040, 0x00049041, 0x00049048, 0x00049049, 
+    0x00049200, 0x00049201, 0x00049208, 0x00049209, 
+    0x00049240, 0x00049241, 0x00049248, 0x00049249, 
+    0x00200000, 0x00200001, 0x00200008, 0x00200009, 0x00200040, 0x00200041, 0x00200048, 0x00200049, 0x00200200,
     0x00200201, 0x00200208, 0x00200209, 0x00200240, 0x00200241, 0x00200248, 0x00200249, 0x00201000,
     0x00201001, 0x00201008, 0x00201009, 0x00201040, 0x00201041, 0x00201048, 0x00201049, 0x00201200,
     0x00201201, 0x00201208, 0x00201209, 0x00201240, 0x00201241, 0x00201248, 0x00201249, 0x00208000,
@@ -612,7 +628,7 @@ template<class T>
 	
 	if (n->child(i).isLeaf())
 	  parentBounds.extend( n->bounds(i) );
-	else if (n->upper[i].child == TOP_LEVEL_MARKER)
+	else if (n->upper[i].child == BVH4I_TOP_LEVEL_MARKER)
 	  {
 	    BVH4i::Node *c = (BVH4i::Node*)n->child(i).node(node);
 	    parentBounds.extend( c->bounds() );	    
@@ -1058,15 +1074,37 @@ template<class T>
       
       SmallBuildRecord &br = buildRecords[taskID];
 
-      BBox3fa bounds = recurse(br,alloc);
+      BBox3fa bounds = recurse(br,alloc);     
       
       /* mark toplevel of tree */
       node[br.parentNodeID].setBounds(br.parentLocalID,bounds);
-      node[br.parentNodeID].upper[br.parentLocalID].child = TOP_LEVEL_MARKER;
+      node[br.parentNodeID].upper[br.parentLocalID].child = BVH4I_TOP_LEVEL_MARKER;
 
       TIMER(items += br.size());
     }    
 
+  }
+
+
+  void BVH4iBuilderMorton64Bit::doTreeRotationsOnSubTrees(const size_t threadID, const size_t numThreads)
+  {
+    while (true)
+    {
+      const unsigned int taskID = LockStepTaskScheduler::taskCounter.inc();
+      if (taskID >= numBuildRecords) break;
+      
+      SmallBuildRecord &br = buildRecords[taskID];
+
+      BVH4i::NodeRef local_root = node[br.parentNodeID].child(br.parentLocalID);
+      if (local_root.isLeaf()) continue;
+
+      size_t depth = BVH4iRotate::rotate(bvh,local_root);
+
+      BVH4i::Node* local_root_ptr = local_root.node(bvh->nodePtr());
+
+      node[br.parentNodeID].setBounds(br.parentLocalID,local_root_ptr->bounds());
+      node[br.parentNodeID].upper[br.parentLocalID].child = BVH4I_TOP_LEVEL_MARKER;
+    }    
   }
 
 
@@ -1174,7 +1212,7 @@ template<class T>
 #else
     BBox3fa rootBounds = refit_toplevel(node->child(0));
 #endif
-    DBG_PRINT(rootBounds);
+
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "refit top level " << 1000. * msec << " ms" << std::endl << std::flush);
@@ -1189,11 +1227,21 @@ template<class T>
     DBG_PRINT(numNodes);
 #endif
 
-#if 0
-    std::cout << "TREE ROTATIONS" << std::endl;
-    for (size_t i=0;i<5;i++)
-      BVH4iRotate::rotate(bvh,bvh->root);
-    std::cout << "TREE ROTATION DONE"  << std::endl;
+#if 1
+    TIMER(msec = getSeconds());
+
+    /* build sub-trees */
+
+    for (size_t i=0;i<NUM_TREE_ROTATIONS;i++)
+      {
+	DBG_PRINT(i);
+	LockStepTaskScheduler::dispatchTask( task_doTreeRotationsOnSubTrees, this, threadIndex, threadCount );
+	BVH4iRotate::rotate(bvh,bvh->root,1,true);
+      }
+
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "task_doTreeRotationsOnSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
+
 #endif
 
 

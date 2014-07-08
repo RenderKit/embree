@@ -21,7 +21,7 @@
 namespace embree
 {
 
-  size_t BVH4iRotate::rotate(BVH4i* bvh, NodeRef parentRef, size_t depth)
+  size_t BVH4iRotate::rotate(BVH4i* bvh, NodeRef parentRef, size_t depth, const bool onlyTopLevel)
   {
     DBG( DBG_PRINT(parentRef) );
     DBG( DBG_PRINT(depth) );
@@ -42,7 +42,10 @@ namespace embree
       cdepth[c] = 0;
 
     for (size_t c=0; c<parentChildren; c++)
-      cdepth[c] = (int)rotate(bvh,parent->child(c),depth+1);
+      {
+	if (onlyTopLevel && parent->upper[c].child == BVH4I_TOP_LEVEL_MARKER) { continue; }
+	cdepth[c] = (int)rotate(bvh,parent->child(c),depth+1,onlyTopLevel);
+      }
 
     /* compute current area of all children */
     float childArea[4];

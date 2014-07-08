@@ -22,6 +22,8 @@
 #include "geometry/primitive.h"
 #include "geometry/triangle1.h"
 
+#define BVH4I_TOP_LEVEL_MARKER 0x80000000
+
 namespace embree
 {
   /*! Multi BVH with 4 children. Each node stores the bounding box of

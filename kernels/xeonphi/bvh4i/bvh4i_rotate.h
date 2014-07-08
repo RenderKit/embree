@@ -28,6 +28,6 @@ namespace embree
     typedef BVH4i::NodeRef NodeRef;
 
   public:
-    static size_t rotate(BVH4i* bvh, NodeRef parentRef, size_t depth = 1);
+    static size_t rotate(BVH4i* bvh, NodeRef parentRef, size_t depth = 1,const bool onlyTopLevel = false);
   };
 }
