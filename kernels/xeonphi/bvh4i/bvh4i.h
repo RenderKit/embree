@@ -141,16 +141,18 @@ namespace embree
 
       __forceinline size_t numChildren() const {
 	mic_i c = load16i((int*)lower);
-	return countbits(ne(0x8888,c,mic_i(BVH4i::invalidNode))); 
+	const size_t children = countbits(ne(0x8888,c,mic_i(BVH4i::invalidNode))); 
+	assert(children >=2 && children <= 4);
+	return children;
       }
 
       __forceinline BBox3fa bounds() const {
 	return merge( bounds(0),bounds(1),bounds(2),bounds(3) );
       }
 
-      __forceinline float areaBounds(size_t i) const {
+      __forceinline float halfAreaBounds(size_t i) const {
 	assert( i < 4 );
-        return area( bounds(i) );
+        return halfArea( bounds(i) );
       }
 
       __forceinline void setBounds(size_t i, const BBox3fa &b) {

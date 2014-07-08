@@ -1116,7 +1116,12 @@ template<class T>
 
     std::cout << "BUILD DONE"  << std::endl;
 
-    BVH4iRotate::rotate(bvh,bvh->root);
+    std::cout << "TREE ROTATIONS" << std::endl;
+#if 1
+    for (size_t i=0;i<4;i++)
+      BVH4iRotate::rotate(bvh,bvh->root);
+#endif
+
 
     std::cout << "TREE ROTATION DONE"  << std::endl;
 

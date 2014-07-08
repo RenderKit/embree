@@ -212,7 +212,7 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives+4;
-	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; //FIXME: better minAllocNodes estimate
+	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 
 	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
 	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(Triangle1));
       }
@@ -433,10 +433,7 @@ namespace embree
   
   void BVH4iBuilder::finalize(const size_t threadIndex, const size_t threadCount)
   {
-#if 0
-    for (size_t i=0;i<5;i++)
-      BVH4iRotate::rotate(bvh,bvh->root);
-#endif
+
   }
 
   __forceinline void computeAccelerationData(const unsigned int &geomID,

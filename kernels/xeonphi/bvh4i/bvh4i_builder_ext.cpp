@@ -16,8 +16,9 @@
 
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder.h"
+#include "bvh4i/bvh4i_rotate.h"
 
-#define PRESPLIT_SPACE_FACTOR         0.30f
+#define PRESPLIT_SPACE_FACTOR         1.30f
 #define PRESPLIT_AREA_THRESHOLD      20.0f
 #define PRESPLIT_MIN_AREA             0.01f
 #define NUM_PRESPLITS_PER_TRIANGLE    16
@@ -76,10 +77,9 @@ namespace embree
 
     if (numPrimitivesOld != numPrimitives)
       {
-	const size_t preSplitPrims = (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR);
-	const size_t numPrims = numPrimitives+preSplitPrims;
-	const size_t minAllocNodes = (threadCount+1) * 2 * ALLOCATOR_NODE_BLOCK_SIZE;
-	const size_t numNodes = max((size_t)((numPrims+3)/4),minAllocNodes);
+	const size_t numPrims = (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR);
+	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE;
+	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
 
 	numMaxPrimitives = numPrims;
 	numMaxPreSplits  = numPrims - numPrimitives;
@@ -628,6 +628,14 @@ namespace embree
 
   }
 
+  void BVH4iBuilderPreSplits::finalize(const size_t threadIndex, const size_t threadCount)
+  {
+#if 1
+    std::cout << "TREE ROTATIONS" << std::endl;
+    for (size_t i=0;i<4;i++)
+      BVH4iRotate::rotate(bvh,bvh->root);
+#endif
+  }
 
   /* =================================================================================== */
   /* =================================================================================== */

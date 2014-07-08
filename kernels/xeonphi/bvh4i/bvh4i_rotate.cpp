@@ -33,17 +33,22 @@ namespace embree
     assert(parentRef != BVH4i::invalidNode);
 
     Node* parent = parentRef.node(bvh->nodePtr());
+    const size_t parentChildren = parent->numChildren();
 
     /*! rotate all children first */
+
     size_t cdepth[4];
-    for (size_t c=0; c<4; c++)
+    for (size_t c=0; c<parentChildren; c++)
+      cdepth[c] = 0;
+
+    for (size_t c=0; c<parentChildren; c++)
       cdepth[c] = (int)rotate(bvh,parent->child(c),depth+1);
 
     /* compute current area of all children */
     float childArea[4];
     for (size_t i=0;i<4;i++)
       {
-	childArea[i] = parent->areaBounds( i );
+	childArea[i] = parent->halfAreaBounds( i );
 	DBG( DBG_PRINT(i) );
 	DBG( DBG_PRINT(childArea[i]) );
 
@@ -68,6 +73,8 @@ namespace embree
 
       /*! ignore leaf nodes as we cannot descent into them */
       if (parent->child(c2).isLeaf()) continue;
+      assert(parent->child(c2) != BVH4i::invalidNode);
+
       Node* child2 = parent->child(c2).node(bvh->nodePtr());
 
 
@@ -82,20 +89,20 @@ namespace embree
 
       /*! put child1_0 at each child2 position */
       __aligned(16) float cost0[4];
-      cost0[0] = area(merge(child1_0,child2c1,child2c2,child2c3));
-      cost0[1] = area(merge(child2c0,child1_0,child2c2,child2c3));
-      cost0[2] = area(merge(child2c0,child2c1,child1_0,child2c3));
-      cost0[3] = area(merge(child2c0,child2c1,child2c2,child1_0));
+      cost0[0] = halfArea(merge(child1_0,child2c1,child2c2,child2c3));
+      cost0[1] = halfArea(merge(child2c0,child1_0,child2c2,child2c3));
+      cost0[2] = halfArea(merge(child2c0,child2c1,child1_0,child2c3));
+      cost0[3] = halfArea(merge(child2c0,child2c1,child2c2,child1_0));
       const float min0 = min(cost0[0],cost0[1],cost0[2],cost0[3]);
 
       int pos0 = (int)__bsf(mic_f(min0) == broadcast4to16f(cost0));
       assert(0 <= pos0 && pos0 < 4);
       /*! put child1_1 at each child2 position */
       __aligned(16) float cost1[4];
-      cost1[0] = area(merge(child1_1,child2c1,child2c2,child2c3));
-      cost1[1] = area(merge(child2c0,child1_1,child2c2,child2c3));
-      cost1[2] = area(merge(child2c0,child2c1,child1_1,child2c3));
-      cost1[3] = area(merge(child2c0,child2c1,child2c2,child1_1));
+      cost1[0] = halfArea(merge(child1_1,child2c1,child2c2,child2c3));
+      cost1[1] = halfArea(merge(child2c0,child1_1,child2c2,child2c3));
+      cost1[2] = halfArea(merge(child2c0,child2c1,child1_1,child2c3));
+      cost1[3] = halfArea(merge(child2c0,child2c1,child2c2,child1_1));
 
       const float min1 = min(cost1[0],cost1[1],cost1[2],cost1[3]);
       int pos1 = (int)__bsf(mic_f(min1) == broadcast4to16f(cost1));
@@ -103,20 +110,20 @@ namespace embree
 
       /*! put child1_2 at each child2 position */
       __aligned(16) float cost2[4];
-      cost2[0] = area(merge(child1_2,child2c1,child2c2,child2c3));
-      cost2[1] = area(merge(child2c0,child1_2,child2c2,child2c3));
-      cost2[2] = area(merge(child2c0,child2c1,child1_2,child2c3));
-      cost2[3] = area(merge(child2c0,child2c1,child2c2,child1_2));
+      cost2[0] = halfArea(merge(child1_2,child2c1,child2c2,child2c3));
+      cost2[1] = halfArea(merge(child2c0,child1_2,child2c2,child2c3));
+      cost2[2] = halfArea(merge(child2c0,child2c1,child1_2,child2c3));
+      cost2[3] = halfArea(merge(child2c0,child2c1,child2c2,child1_2));
       const float min2 = min(cost2[0],cost2[1],cost2[2],cost2[3]);
       int pos2 = (int)__bsf(mic_f(min2) == broadcast4to16f(cost2));
       assert(0 <= pos2 && pos2 < 4);
 
       /*! put child1_3 at each child2 position */
       __aligned(16) float cost3[4];
-      cost3[0] = area(merge(child1_3,child2c1,child2c2,child2c3));
-      cost3[1] = area(merge(child2c0,child1_3,child2c2,child2c3));
-      cost3[2] = area(merge(child2c0,child2c1,child1_3,child2c3));
-      cost3[3] = area(merge(child2c0,child2c1,child2c2,child1_3));
+      cost3[0] = halfArea(merge(child1_3,child2c1,child2c2,child2c3));
+      cost3[1] = halfArea(merge(child2c0,child1_3,child2c2,child2c3));
+      cost3[2] = halfArea(merge(child2c0,child2c1,child1_3,child2c3));
+      cost3[3] = halfArea(merge(child2c0,child2c1,child2c2,child1_3));
       const float min3 = min(cost3[0],cost3[1],cost3[2],cost3[3]);
       int pos3 = (int)__bsf(mic_f(min3) == broadcast4to16f(cost3));
       assert(0 <= pos3 && pos3 < 4);
@@ -125,7 +132,7 @@ namespace embree
       float area0123[4] = { min0,min1,min2,min3 };
       int pos[4] = { pos0,pos1,pos2,pos3 };
 
-      for (size_t i=0;i<4;i++)
+      for (size_t i=0;i<parentChildren;i++)
 	{	  
 	  const float area_i = area0123[i] - childArea[c2];
 
@@ -159,19 +166,22 @@ namespace embree
     Node* child2 = parent->child(bestChild2).node(bvh->nodePtr());
     // DBG_PRINT(bestChild1);
     // DBG_PRINT(*parent);
-    // DBG_PRINT(area(parent->bounds()));
+    // DBG_PRINT(halfArea(parent->bounds()));
     // DBG_PRINT(bestChild2Child);
     // DBG_PRINT(*child2);
-    // DBG_PRINT(area(child2->bounds()));
+    // DBG_PRINT(halfArea(child2->bounds()));
+    assert( parent->child(bestChild1) != BVH4i::invalidNode);
+    assert( child2->child(bestChild2Child) != BVH4i::invalidNode);
+
     BVH4i::swap(parent,bestChild1,child2,bestChild2Child);
     parent->setBounds(bestChild2,child2->bounds());
-    // DBG_PRINT(area(parent->bounds()));
-    // DBG_PRINT(area(child2->bounds()));
+    // DBG_PRINT(halfArea(parent->bounds()));
+    // DBG_PRINT(halfArea(child2->bounds()));
     // DBG_PRINT(*parent);
     // DBG_PRINT(*child2);
 
-    BVH4i::compact(parent);
-    BVH4i::compact(child2);
+    //BVH4i::compact(parent);
+    //BVH4i::compact(child2);
     
     /*! This returned depth is conservative as the child that was
      *  pulled up in the tree could have been on the critical path. */
