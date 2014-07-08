@@ -171,17 +171,49 @@ namespace embree
     // DBG_PRINT(*child2);
     // DBG_PRINT(halfArea(child2->bounds()));
     assert( parent->child(bestChild1) != BVH4i::invalidNode);
+    assert( parent->child(bestChild2) != BVH4i::invalidNode);
+
     assert( child2->child(bestChild2Child) != BVH4i::invalidNode);
 
+
+#if DEBUG
+    const float old_parent_sah = halfArea(parent->bounds());
+    const float old_child2_sah = halfArea(child2->bounds());
+
+    //DBG_PRINT(   );
+
+#endif
+
     BVH4i::swap(parent,bestChild1,child2,bestChild2Child);
+
     parent->setBounds(bestChild2,child2->bounds());
+
+
     // DBG_PRINT(halfArea(parent->bounds()));
     // DBG_PRINT(halfArea(child2->bounds()));
     // DBG_PRINT(*parent);
     // DBG_PRINT(*child2);
 
-    //BVH4i::compact(parent);
-    //BVH4i::compact(child2);
+    BVH4i::compact(parent);
+    BVH4i::compact(child2);
+
+#if DEBUG
+    const float new_parent_sah = halfArea(parent->bounds());
+    const float new_child2_sah = halfArea(child2->bounds());
+
+
+    //DBG_PRINT( old_parent_sah );
+    //DBG_PRINT( new_parent_sah );
+
+    //DBG_PRINT( old_parent_sah+old_child2_sah );
+    //DBG_PRINT( new_parent_sah+new_child2_sah );
+
+    assert( new_parent_sah <= old_parent_sah);
+    assert( new_child2_sah <= old_child2_sah);
+    assert( parent->numChildren() >= 2 && parent->numChildren() <= 4);
+    assert( child2->numChildren() >= 2 && child2->numChildren() <= 4);
+
+#endif
     
     /*! This returned depth is conservative as the child that was
      *  pulled up in the tree could have been on the critical path. */

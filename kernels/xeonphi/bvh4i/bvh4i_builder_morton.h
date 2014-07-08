@@ -462,6 +462,12 @@ namespace embree
     /*! parallel sort of the morton codes */
     TASK_FUNCTION(BVH4iBuilderMorton64Bit,radixsort);
 
+    /*! builds top of the tree in parallel */
+    TASK_FUNCTION(BVH4iBuilderMorton64Bit,createTopLevelTree);
+
+    /*! task that builds a list of sub-trees */
+    TASK_FUNCTION(BVH4iBuilderMorton64Bit,recurseSubMortonTrees);
+
 
     /*! creates a leaf node */
     BBox3fa createSmallLeaf(SmallBuildRecord& current) ;
@@ -476,13 +482,11 @@ namespace embree
     bool split(SmallBuildRecord& current, SmallBuildRecord& left, SmallBuildRecord& right) ;
 
     /*! create the top-levels of the tree */
-    size_t createQBVHNode(SmallBuildRecord& current, SmallBuildRecord *__restrict__ const children);
+    size_t createSingleBVH4iNode(SmallBuildRecord& current, SmallBuildRecord *__restrict__ const children);
 
     /*! main recursive build function */
     BBox3fa recurse(SmallBuildRecord& current, 
-		   NodeAllocator& alloc,
-		   const size_t mode, 
-		   const size_t numThreads);
+		    NodeAllocator& alloc);
     
     /*! refit the toplevel part of the BVH */
     BBox3fa refit_toplevel(const BVH4i::NodeRef &ref);
@@ -513,7 +517,6 @@ namespace embree
     BVH4i      * bvh;         //!< Output BVH
     Scene      * scene;
 
-    __aligned(64) LinearBarrierActive barrier;
     __aligned(64) SmallBuildRecord buildRecords[MAX_TOP_LEVEL_BINS];    
     __aligned(64) unsigned int thread_startGroup[MAX_MIC_THREADS];      
     __aligned(64) unsigned int thread_startGroupOffset[MAX_MIC_THREADS];
@@ -542,13 +545,14 @@ namespace embree
     size_t numBuildRecords;
     size_t numPrimitivesOld;
 
+
     __aligned(64) Centroid_Scene_AABB global_bounds;
 
     /*! node allocator */
     __aligned(64) AlignedAtomicCounter32  atomicID;
     __aligned(64) AlignedAtomicCounter32  numBuildRecordCounter;
 
-    __forceinline unsigned int allocNode(int size)
+    __forceinline unsigned int allocGlobalNode(int size)
     {
       const unsigned int currentIndex = atomicID.add(size);
       if (unlikely(currentIndex >= numAllocatedNodes)) {

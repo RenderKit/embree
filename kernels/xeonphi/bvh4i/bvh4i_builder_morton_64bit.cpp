@@ -31,6 +31,8 @@
 #define L1_PREFETCH_ITEMS 8
 #define L2_PREFETCH_ITEMS 44
 
+#define TOP_LEVEL_MARKER 0x80000000
+
 namespace embree 
 {
 #if defined(DEBUG)
@@ -261,8 +263,8 @@ template<class T>
 	store16f_ngo(&accel[start+i],tri_accel);
       }
 
-    store4f(&node[current.parentNodeID].lower[current.parentLocalID],bounds_min);
-    store4f(&node[current.parentNodeID].upper[current.parentLocalID],bounds_max);
+    store3f(&node[current.parentNodeID].lower[current.parentLocalID],bounds_min);
+    store3f(&node[current.parentNodeID].upper[current.parentLocalID],bounds_max);
     createLeaf(node[current.parentNodeID].lower[current.parentLocalID].child,start,items);
     __aligned(64) BBox3fa bounds;
     store4f(&bounds.lower,bounds_min);
@@ -297,10 +299,6 @@ template<class T>
     const size_t currentIndex = alloc.get(1);
    
     /* init used/unused nodes */
-    // const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-    // store16f_ngo((float*)&node[currentIndex+0],init_node);
-    // store16f_ngo((float*)&node[currentIndex+2],init_node);
-
     mic_f init_lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
     mic_f init_upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
 
@@ -318,8 +316,8 @@ template<class T>
       bounds.extend( createLeaf(children[i],alloc) );
     }
 
-    store4f(&node[current.parentNodeID].lower[current.parentLocalID],broadcast4to16f(&bounds.lower));
-    store4f(&node[current.parentNodeID].upper[current.parentLocalID],broadcast4to16f(&bounds.upper));
+    store3f(&node[current.parentNodeID].lower[current.parentLocalID],broadcast4to16f(&bounds.lower));
+    store3f(&node[current.parentNodeID].upper[current.parentLocalID],broadcast4to16f(&bounds.upper));
 
     createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,0); // numChildren);
 
@@ -388,7 +386,7 @@ template<class T>
     return true;
   }
 
-  size_t BVH4iBuilderMorton64Bit::createQBVHNode(SmallBuildRecord& current, SmallBuildRecord *__restrict__ const children)
+  size_t BVH4iBuilderMorton64Bit::createSingleBVH4iNode(SmallBuildRecord& current, SmallBuildRecord *__restrict__ const children)
   {
 
     /* create leaf node */
@@ -443,7 +441,7 @@ template<class T>
     }
 
     /* allocate next four nodes and prefetch them */
-    const size_t currentIndex = allocNode(BVH4i::N);    
+    const size_t currentIndex = allocGlobalNode(1);    
 
     /* init used/unused nodes */
     //const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
@@ -461,30 +459,17 @@ template<class T>
 	children[i].parentLocalID = i;
       }
 
-    createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,0); //numChildren);
+    createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex);
     return numChildren;
   }
 
   
   BBox3fa BVH4iBuilderMorton64Bit::recurse(SmallBuildRecord& current, 
-					   NodeAllocator& alloc,
-					   const size_t mode, 
-					   const size_t numThreads) 
+					   NodeAllocator& alloc) 
   {
     assert(current.size() > 0);
-#if DEBUG
-    //DBG_PRINT(current);
-#endif
-    /* stop toplevel recursion at some number of items */
-    if (unlikely(mode == CREATE_TOP_LEVEL))
-      {
-	if (current.size()  <= topLevelItemThreshold &&
-	    numBuildRecords >= numThreads) {
-	  buildRecords[numBuildRecords++] = current;
-	  return empty;
-	}
-      }
 
+    /* stop toplevel recursion at some number of items */
     __aligned(64) SmallBuildRecord children[BVH4i::N];
 
     /* create leaf node */
@@ -537,14 +522,10 @@ template<class T>
       return createSmallLeaf(current);
     }
 
-    /* allocate next four nodes and prefetch them */
+    /* allocate next four nodes */
     const size_t currentIndex = alloc.get(1);    
 
     /* init used/unused nodes */
-    // const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-    // store16f_ngo((float*)&node[currentIndex+0],init_node);
-    // store16f_ngo((float*)&node[currentIndex+2],init_node);
-
     mic_f init_lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
     mic_f init_upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
 
@@ -554,6 +535,7 @@ template<class T>
     /* recurse into each child */
     __aligned(64) BBox3fa bounds;
     bounds = empty;
+    size_t child_nodes = 0;
     for (size_t i=0; i<numChildren; i++) 
     {
       children[i].parentNodeID = currentIndex;
@@ -564,11 +546,13 @@ template<class T>
 	  bounds.extend( createSmallLeaf(children[i]) );
 	}
       else
-	bounds.extend( recurse(children[i],alloc,mode,numThreads) );
+	{
+	  bounds.extend( recurse(children[i],alloc) ); // recurse 
+	}
     }
 
-    store4f(&node[current.parentNodeID].lower[current.parentLocalID],broadcast4to16f(&bounds.lower));
-    store4f(&node[current.parentNodeID].upper[current.parentLocalID],broadcast4to16f(&bounds.upper));
+    store3f(&node[current.parentNodeID].lower[current.parentLocalID],broadcast4to16f(&bounds.lower));
+    store3f(&node[current.parentNodeID].upper[current.parentLocalID],broadcast4to16f(&bounds.upper));
     createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,numChildren);
 
     return bounds;
@@ -579,7 +563,9 @@ template<class T>
   {    
     if (unlikely(ref.isLeaf()))
       {
-	FATAL("HERE");
+#if DEBUG
+	FATAL("refit");
+#endif
 	return BBox3fa( empty );
       }
 
@@ -594,13 +580,10 @@ template<class T>
 	if (n->child(i).isLeaf())
 	  {
 	    parentBounds.extend( n->bounds(i) );
-	    //DBG_PRINT( n->bounds(i) );
 	  }
 	else
 	  {
 	    BBox3fa bounds = refit( n->child(i) );
-
-	    //DBG_PRINT( bounds );
 
 	    n->setBounds(i,bounds);
 	    parentBounds.extend( bounds );
@@ -613,7 +596,9 @@ template<class T>
   {    
     if (unlikely(ref.isLeaf()))
       {
-	FATAL("HERE");
+#if DEBUG
+	FATAL("refit_toplevel");
+#endif
 	return BBox3fa( empty );
       }
 
@@ -625,11 +610,17 @@ template<class T>
       {
 	if (n->child(i) == BVH4i::invalidNode) break;
 	
-	if (n->child(i).isLeaf() || n->upper[i].child == (unsigned int)-1)
+	if (n->child(i).isLeaf())
 	  parentBounds.extend( n->bounds(i) );
+	else if (n->upper[i].child == TOP_LEVEL_MARKER)
+	  {
+	    BVH4i::Node *c = (BVH4i::Node*)n->child(i).node(node);
+	    parentBounds.extend( c->bounds() );	    
+	    n->setBounds(i,c->bounds() );
+	  }
 	else
 	  {
-	    BBox3fa bounds = refit( n->child(i) );
+	    BBox3fa bounds = refit_toplevel( n->child(i) );
 	    n->setBounds(i,bounds);
 	    parentBounds.extend( bounds );
 	  }
@@ -1027,6 +1018,58 @@ template<class T>
   }
 
 
+  void BVH4iBuilderMorton64Bit::createTopLevelTree(const size_t threadID, const size_t numThreads)
+  {
+    size_t taskID = threadID;
+    __aligned(64) SmallBuildRecord children[BVH4i::N];
+
+    
+    while(taskID < numBuildRecords)
+      {
+	SmallBuildRecord &sbr = buildRecords[taskID];
+	if (sbr.size() > topLevelItemThreshold)
+	  {
+	    const size_t numChildren = createSingleBVH4iNode(sbr,children);
+	    buildRecords[taskID] = children[0];
+	    if (numChildren > 1)
+	      {
+		const unsigned int dest = numBuildRecordCounter.add(numChildren-1);
+		for (size_t i=0;i<numChildren-1;i++)
+		  buildRecords[dest + i] = children[i+1];
+	      }
+	  }
+	taskID += numThreads;
+      }   
+  }
+
+  void BVH4iBuilderMorton64Bit::recurseSubMortonTrees(const size_t threadID, const size_t numThreads)
+  {
+    NodeAllocator alloc(atomicID,numAllocatedNodes);
+    
+    double msec;
+    TIMER(msec = getSeconds());
+    TIMER(size_t items = 0);
+
+
+    while (true)
+    {
+      const unsigned int taskID = LockStepTaskScheduler::taskCounter.inc();
+      if (taskID >= numBuildRecords) break;
+      
+      SmallBuildRecord &br = buildRecords[taskID];
+
+      BBox3fa bounds = recurse(br,alloc);
+      
+      /* mark toplevel of tree */
+      node[br.parentNodeID].setBounds(br.parentLocalID,bounds);
+      node[br.parentNodeID].upper[br.parentLocalID].child = TOP_LEVEL_MARKER;
+
+      TIMER(items += br.size());
+    }    
+
+  }
+
+
   void BVH4iBuilderMorton64Bit::build_main (const size_t threadIndex, const size_t threadCount)
   { 
     DBG(PING);
@@ -1090,18 +1133,47 @@ template<class T>
     br.parentLocalID = 0;
     br.depth = 1;
 
+#if 1
+    buildRecords[0] = br;
+    numBuildRecords = 1;
+    size_t iterations = 0;
+    while(numBuildRecords < threadCount*3)
+      {
+	numBuildRecordCounter.reset(numBuildRecords);
+	LockStepTaskScheduler::dispatchTask( task_createTopLevelTree, this, threadIndex, threadCount );
+	iterations++;
+
+	if (unlikely(numBuildRecords == numBuildRecordCounter)) { break; }
+
+	numBuildRecords = numBuildRecordCounter;
+      }
+#else
     NodeAllocator alloc(atomicID,numAllocatedNodes);
-    recurse(br,alloc,RECURSE,0);
+    BBox3fa recurse_bounds = recurse(br,alloc);
+    DBG_PRINT( recurse_bounds );
+#endif
+
+    TIMER(msec = getSeconds());
+    
+    /* build sub-trees */
+    LockStepTaskScheduler::dispatchTask( task_recurseSubMortonTrees, this, threadIndex, threadCount );
+
+    DBG(DBG_PRINT(atomicID));
 
     numNodes = atomicID >> 2;
 
-    DBG_PRINT(numNodes);
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "task_recurseSubMortonTrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
     TIMER(msec = getSeconds());
 
-    /* refit toplevel part of tree */
-    BBox3fa rootBounds = refit(node->child(0));
 
+    /* refit toplevel part of tree */
+#if 0
+    BBox3fa rootBounds = refit(node->child(0));
+#else
+    BBox3fa rootBounds = refit_toplevel(node->child(0));
+#endif
     DBG_PRINT(rootBounds);
 
     TIMER(msec = getSeconds()-msec);    
@@ -1111,19 +1183,20 @@ template<class T>
     bvh->root   = node->child(0); 
     bvh->bounds = rootBounds;
 
+#if DEBUG
     DBG_PRINT( bvh->root );
     DBG_PRINT( bvh->bounds );
+    DBG_PRINT(numNodes);
+#endif
 
-    std::cout << "BUILD DONE"  << std::endl;
-
+#if 0
     std::cout << "TREE ROTATIONS" << std::endl;
-#if 1
-    for (size_t i=0;i<4;i++)
+    for (size_t i=0;i<5;i++)
       BVH4iRotate::rotate(bvh,bvh->root);
+    std::cout << "TREE ROTATION DONE"  << std::endl;
 #endif
 
 
-    std::cout << "TREE ROTATION DONE"  << std::endl;
 
   }
 
