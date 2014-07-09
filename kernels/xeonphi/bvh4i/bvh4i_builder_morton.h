@@ -338,6 +338,35 @@ namespace embree
 
 
 
+    struct __aligned(16) MortonID64Bit
+    {
+      size_t code;
+      unsigned int groupID;
+      unsigned int primID;
+            
+      __forceinline unsigned int get(const unsigned int shift, const unsigned and_mask) const {
+        return (code >> shift) & and_mask;
+      }
+
+      __forceinline unsigned int getByte(const size_t b) const {
+	assert(b < 8);
+	const unsigned char *__restrict const ptr = (const unsigned char*)&code;
+	return ptr[b];
+      }
+      
+      __forceinline void operator=(const MortonID64Bit& v) {
+        ((size_t*)this)[0] = ((size_t*)&v)[0];
+        ((size_t*)this)[1] = ((size_t*)&v)[1];
+      };
+      
+      __forceinline friend std::ostream &operator<<(std::ostream &o, const MortonID64Bit& mc) {
+        o << "primID " << mc.primID << " groupID " << mc.groupID << " code = " << mc.code;
+        return o;
+      }
+
+      __forceinline bool operator<(const MortonID64Bit &m) const { return code < m.code; } 
+      __forceinline bool operator>(const MortonID64Bit &m) const { return code > m.code; } 
+    };
 
 
 
@@ -399,35 +428,6 @@ namespace embree
     };
     
 
-    struct __aligned(16) MortonID64Bit
-    {
-      size_t code;
-      unsigned int groupID;
-      unsigned int primID;
-            
-      __forceinline unsigned int get(const unsigned int shift, const unsigned and_mask) const {
-        return (code >> shift) & and_mask;
-      }
-
-      __forceinline unsigned int getByte(const size_t b) const {
-	assert(b < 8);
-	const unsigned char *__restrict const ptr = (const unsigned char*)&code;
-	return ptr[b];
-      }
-      
-      __forceinline void operator=(const MortonID64Bit& v) {
-        ((size_t*)this)[0] = ((size_t*)&v)[0];
-        ((size_t*)this)[1] = ((size_t*)&v)[1];
-      };
-      
-      __forceinline friend std::ostream &operator<<(std::ostream &o, const MortonID64Bit& mc) {
-        o << "primID " << mc.primID << " groupID " << mc.groupID << " code = " << mc.code;
-        return o;
-      }
-
-      __forceinline bool operator<(const MortonID64Bit &m) const { return code < m.code; } 
-      __forceinline bool operator>(const MortonID64Bit &m) const { return code > m.code; } 
-    };
 
     /*! Constructor. */
     BVH4iBuilderMorton64Bit(BVH4i* bvh, void* geometry);
