@@ -45,6 +45,10 @@ namespace embree
   {
     __aligned(64) unsigned int radixCount[256];
     
+    PING;
+    DBG_PRINT( size );
+    DBG_PRINT( byteIndex );
+
 #pragma unroll(16)
     for (size_t i=0; i<16; i++)
       store16i(&radixCount[i*16],mic_i::zero());
@@ -54,6 +58,9 @@ namespace embree
 	const unsigned int index = morton[i].getByte(byteIndex);
 	radixCount[index]++;
       }
+
+    for (size_t i=0;i<256;i++)
+      std::cout << "i " << i << " - radixCount " << radixCount[i] << std::endl;
 
     __aligned(64) unsigned int startCount[256+16];
     __aligned(64) unsigned int endCount[256+16];
@@ -69,17 +76,38 @@ namespace embree
 	endCount[i]   = c;
       }
 
+    for (size_t i=0;i<256;i++)
+      std::cout << "i " << i << " - startCount " << startCount[i] << std::endl;
+
+
     size_t nextCount = 1;
     for (size_t i=0; i<size; i++) 
       {
+	DBG_PRINT(i);
 	unsigned int index;
-	while( endCount[ index = morton[i].getByte(byteIndex) ] != i ) 
-	  std::swap(morton[i],morton[endCount[index]++]);
+	while( 1 ) 
+	  {
+	    DBG_PRINT(morton[i]);
+	    index = morton[i].getByte(byteIndex);
+	    DBG_PRINT(index);
+	    DBG_PRINT(endCount[index]);
+
+	    if (unlikely(endCount[ index ] == i)) break;
+	    std::cout << "swap " << i << " " << endCount[index] << std::endl;	    
+	    assert( i < size );
+	    assert( endCount[index] < size );
+	    DBG_PRINT( morton[endCount[index]] );
+	    std::swap(morton[i],morton[endCount[index]]);
+	    endCount[index]++;
+	  }
 	endCount[ index ]++;
 	while( endCount[ nextCount - 1 ] == startCount[ nextCount ] ) nextCount++;
+	DBG_PRINT(nextCount);
+	DBG_PRINT(endCount[ nextCount - 1]);
 	i = endCount[ nextCount - 1];
       }
     byteIndex--;
+    DBG_PRINT(byteIndex);
     if ( byteIndex != 0 )
       {
 	for (size_t i=0;i<256;i++)
@@ -87,7 +115,7 @@ namespace embree
 	    const size_t new_size = endCount[i] - startCount[i];
 	    if (likely(new_size == 0)) continue;
 	    if (new_size < INPLACE_RADIX_SORT_THRESHOLD)
-	      insertionsort_ascending(&morton[startCount[i]],new_size);
+	      insertionsort_ascending<MortonID64Bit>(&morton[startCount[i]],new_size);
 	    else
 	      inPlaceRadixSort64Bit(&morton[startCount[i]],new_size,byteIndex);
 	  }
@@ -1188,6 +1216,11 @@ namespace embree
     TIMER(msec = getSeconds());
     LockStepTaskScheduler::dispatchTask( task_radixsort, this, threadIndex, threadCount );
 
+    std::cout << "sorting..." << std::endl << std::flush;
+
+    inPlaceRadixSort64Bit(morton,numPrimitives,7);
+
+    
 #if defined(DEBUG)
     for (size_t i=1; i<((numPrimitives+3)&(-4)); i++)
       assert(morton[i-1].code <= morton[i].code);
