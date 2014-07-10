@@ -23,6 +23,11 @@ execute_process(COMMAND which ispc OUTPUT_VARIABLE ISPC_EXECUTABLE)
 execute_process(COMMAND dirname ${ISPC_EXECUTABLE} OUTPUT_VARIABLE ISPC_DIR_TEMP)
 STRING(REGEX REPLACE "\n" "" ISPC_DIR "${ISPC_DIR_TEMP}")
 
+SET(EMBREE_ISPC_ADDRESSING 32 CACHE INT
+	"32vs64 bit addressing in ispc")
+MARK_AS_ADVANCED(EMBREE_ISPC_ADDRESSING)
+
+
 MACRO (ispc_compile targets)
   IF (__XEON__)
     SET (ISPC_TARGET_EXT o)
@@ -96,6 +101,7 @@ MACRO (ispc_compile targets)
       -I ${CMAKE_CURRENT_SOURCE_DIR} 
       ${ISPC_INCLUDE_DIR_PARMS}
       --arch=${ISPC_ARCHITECTURE}
+			--addressing=${EMBREE_ISPC_ADDRESSING}
       --pic
       -O3
       --target=${ISPC_TARGETS}
