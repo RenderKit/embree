@@ -33,15 +33,17 @@
 
 #define NUM_TREE_ROTATIONS 1
 
+#define CHECK_SORTED_MORTON_CODES
+
 namespace embree 
 {
 #if defined(DEBUG)
   extern AtomicMutex mtx;
 #endif
 
-#define INPLACE_RADIX_SORT_THRESHOLD 16
+#define INPLACE_RADIX_SORT_THRESHOLD 64
 
-  void inPlaceRadixSort64Bit(MortonID64Bit *const morton, const size_t size, size_t byteIndex)
+  void inPlaceRadixSort64Bit(MortonID64Bit *__restrict__ const morton, const size_t size, size_t byteIndex)
   {
     __aligned(64) unsigned int radixCount[256];
     
@@ -62,13 +64,14 @@ namespace embree
 
     __aligned(64) unsigned int endCount[256+16];
 
+#pragma unroll(256)
     for (size_t i=0;i<256;i++)
       endCount[i] = startCount[i];
 
     size_t nextCount = 1;
     for (size_t i=0; i<size;) 
       {
-	size_t index;
+	unsigned int index;
 	while( 1 ) 
 	  {
 	    index = morton[i].getByte(byteIndex);
@@ -76,7 +79,11 @@ namespace embree
 	    if (unlikely(endCount[ index ] == i)) { break; }
 	    assert( i < size );
 	    assert( endCount[index] < size );
-	    std::swap(morton[i],morton[endCount[index]]);
+	    prefetch<PFHINT_NT>((char*)&morton[endCount[index]] + 64);
+
+	    //std::swap(morton[i],morton[endCount[index]]);
+	    xchg(morton[i],morton[endCount[index]]);
+ 
 	    assert( morton[endCount[index]].getByte(byteIndex) == index);
 	    endCount[index]++;
 
@@ -115,6 +122,90 @@ namespace embree
 	      }
 	    else
 	      inPlaceRadixSort64Bit(&morton[startCount[i]],new_size,byteIndex);
+	  }
+      }
+  }
+
+
+  void inPlaceRadixSort64BitPtr(MortonID64Bit *__restrict__ const morton, const size_t size, size_t byteIndex)
+  {
+    __aligned(64) unsigned int radixCount[256];
+    
+#pragma unroll(16)
+    for (size_t i=0; i<16; i++)
+      store16i(&radixCount[i*16],mic_i::zero());
+
+    for (size_t i=0; i<size; i++) 
+      radixCount[morton[i].getByte(byteIndex)]++;
+
+    __aligned(64) MortonID64Bit *startCount[256+16];
+
+    startCount[0]   = morton;
+    startCount[256] = NULL;
+
+    for (size_t i=1;i<256;i++)
+      startCount[i] = startCount[i-1] + radixCount[i-1];
+
+    __aligned(64) MortonID64Bit *endCount[256+16];
+
+#pragma unroll(256)
+    for (size_t i=0;i<256;i++)
+      endCount[i] = startCount[i];
+
+    MortonID64Bit *m_current = morton;
+    MortonID64Bit *m_end     = morton + size;
+
+    size_t nextCount = 1;
+    for (;m_current<m_end;) 
+      {
+	unsigned int index;
+	while( 1 ) 
+	  {
+	    index = m_current->getByte(byteIndex);
+	    assert(index < 256);
+	    if (unlikely(endCount[ index ] == m_current)) { break; }
+	    assert( m_current < m_end );
+	    assert( endCount[index] < m_end );
+	    xchg(*m_current,*endCount[index]);
+ 
+	    assert( endCount[index]->getByte(byteIndex) == index);
+	    endCount[index]++;
+
+	  }
+	endCount[ index ]++;
+	while( endCount[ nextCount - 1 ] == startCount[ nextCount ] ) nextCount++;
+	m_current = endCount[ nextCount - 1];
+      }
+
+#ifdef DEBUG
+    for (size_t i=1; i<size;i++) 
+      {
+	assert( morton[i-1].getByte(byteIndex) <= morton[i].getByte(byteIndex) );
+      }
+#endif
+
+    byteIndex--;
+
+    if ( byteIndex != 0 )
+      {
+	for (size_t i=0;i<256;i++)
+	  {
+	    const size_t new_size = endCount[i] - startCount[i];
+	    if (likely(new_size == 0)) continue;
+	    if (new_size < INPLACE_RADIX_SORT_THRESHOLD)
+	      {
+		insertionsort_ascending<MortonID64Bit>(startCount[i],new_size);
+
+#ifdef DEBUG
+		for (size_t j=1; j<new_size;j++) 
+		  {
+		    assert( (startCount[i]+j-1)->getByte(byteIndex) <= (startCount[i]+j)->getByte(byteIndex) );
+		  }
+#endif
+
+	      }
+	    else
+	      inPlaceRadixSort64BitPtr(startCount[i],new_size,byteIndex);
 	  }
       }
   }
@@ -1211,14 +1302,14 @@ namespace embree
  
     /* sort morton codes */
     TIMER(msec = getSeconds());
-    //LockStepTaskScheduler::dispatchTask( task_radixsort, this, threadIndex, threadCount );
+    LockStepTaskScheduler::dispatchTask( task_radixsort, this, threadIndex, threadCount );
 
-    inPlaceRadixSort64Bit(morton,numPrimitives,7);
+    //inPlaceRadixSort64BitPtr(morton,numPrimitives,7);
    
     TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "task_radixsort " << 1000. * msec << " ms" << std::endl << std::flush);
+    TIMER(std::cout << "task_radixsort " << 1000. * msec << " ms -> " << numPrimitives / msec / 1E+6 << "M key/value pairs per sec" <<  std::endl << std::flush);
 
-#if defined(DEBUG)
+#if defined(CHECK_SORTED_MORTON_CODES)
     for (size_t i=1; i<((numPrimitives+3)&(-4)); i++)
       assert(morton[i-1].code <= morton[i].code);
 

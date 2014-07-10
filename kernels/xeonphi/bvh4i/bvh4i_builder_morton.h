@@ -369,7 +369,13 @@ namespace embree
     };
 
 
-
+    __forceinline void xchg(MortonID64Bit &a, MortonID64Bit &b)
+    {
+      const mic_f ai = broadcast4to16f((float*)&a);
+      const mic_f bi = broadcast4to16f((float*)&b);
+      store4f((float*)&a,bi);
+      store4f((float*)&b,ai);
+    }
 
 
   class BVH4iBuilderMorton64Bit : public Builder
