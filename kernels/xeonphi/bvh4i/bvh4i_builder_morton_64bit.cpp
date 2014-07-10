@@ -25,15 +25,17 @@
 //#define PROFILE
 #define PROFILE_ITERATIONS 200
 
-#define TIMER(x) 
+#define TIMER(x) x
 #define DBG(x) 
 
 #define L1_PREFETCH_ITEMS 8
 #define L2_PREFETCH_ITEMS 44
 
-#define NUM_TREE_ROTATIONS 5
+#define NUM_TREE_ROTATIONS 1
 
 //#define CHECK_SORTED_MORTON_CODES
+
+// TODO: do tree rotations after building each buildrecord
 
 namespace embree 
 {
@@ -1386,21 +1388,26 @@ namespace embree
     DBG_PRINT(numNodes);
 #endif
 
-#if 1
     TIMER(msec = getSeconds());
 
     /* build sub-trees */
 
+#if 0
+
+    BVH4iRotate::rotate(bvh,bvh->root);
+
+
+#else
     for (size_t i=0;i<NUM_TREE_ROTATIONS;i++)
       {
 	LockStepTaskScheduler::dispatchTask( task_doTreeRotationsOnSubTrees, this, threadIndex, threadCount );
 	BVH4iRotate::rotate(bvh,bvh->root,1,true);
       }
+#endif
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_doTreeRotationsOnSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
-#endif
 
 
 

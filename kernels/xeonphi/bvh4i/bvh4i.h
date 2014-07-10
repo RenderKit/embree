@@ -157,6 +157,17 @@ namespace embree
         return halfArea( bounds(i) );
       }
 
+      __forceinline mic_f halfAreaBounds() const {
+	const mic_f l = load16f(lower);
+	const mic_f u = load16f(upper);
+	const mic_f diag = u-l;
+	const mic_f dx = swAAAA(diag);
+	const mic_f dy = swBBBB(diag);
+	const mic_f dz = swCCCC(diag);
+	const mic_f half_area = dx*(dy+dz)+dy*dz; 
+	return half_area;
+      }
+
       __forceinline void setBounds(size_t i, const BBox3fa &b) {
 	assert( i < 4 );
 	lower[i].x = b.lower.x;
@@ -166,6 +177,15 @@ namespace embree
 	upper[i].x = b.upper.x;
 	upper[i].y = b.upper.y;
 	upper[i].z = b.upper.z;
+      }
+
+      __forceinline void setBounds(size_t i, const Node *__restrict__ const n) {
+	assert( i < 4 );
+	const mic_f l = min(min(n->lowerXYZ(0),n->lowerXYZ(1)),min(n->lowerXYZ(2),n->lowerXYZ(3)));
+	const mic_f u = max(max(n->upperXYZ(0),n->upperXYZ(1)),max(n->upperXYZ(2),n->upperXYZ(3)));
+
+	store3f(&lower[i],l);
+	store3f(&upper[i],u);
       }
 
       __forceinline mic_f lowerXYZ(size_t i) const {
@@ -198,6 +218,13 @@ namespace embree
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { return lower[i].child; }
       __forceinline const NodeRef& child(size_t i) const { return lower[i].child; }
+
+      template<int PFHINT>
+	__forceinline void prefetchNode() const
+	{
+	  prefetch<PFHINT>(lower);
+	  prefetch<PFHINT>(upper);
+	}
 
 
       __forceinline std::ostream& operator<<(std::ostream &o)
@@ -342,6 +369,12 @@ namespace embree
 	  }
 #endif
       }
+
+      template<int PFHINT>
+	__forceinline void prefetchNode() const
+	{
+	  prefetch<PFHINT>(this);
+	}
 
     };
 

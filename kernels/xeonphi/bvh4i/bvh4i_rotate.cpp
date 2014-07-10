@@ -18,8 +18,55 @@
 
 #define DBG(x) 
 
+#define FAST_ROTATE
+
 namespace embree
 {
+
+  __forceinline void mergedHalfArea( const BVH4i::Node *__restrict__ const parent,
+				     const BVH4i::Node *__restrict__ const child2,
+				     const size_t parentIndex,
+				     float &cost,
+				     int &pos) 
+  { 
+    const mic_f parent_min = parent->lowerXYZ(parentIndex);
+    const mic_f parent_max = parent->upperXYZ(parentIndex);
+
+    const mic_m lane0 = 0xf;
+    const mic_m lane1 = 0xf0;
+    const mic_m lane2 = 0xf00;
+    const mic_m lane3 = 0xf000;
+
+    const mic_f child2c0_min = select(lane0,parent_min,child2->lowerXYZ(0));
+    const mic_f child2c0_max = select(lane0,parent_max,child2->upperXYZ(0));
+
+    const mic_f child2c1_min = select(lane1,parent_min,child2->lowerXYZ(1));
+    const mic_f child2c1_max = select(lane1,parent_max,child2->upperXYZ(1));
+
+    const mic_f child2c2_min = select(lane2,parent_min,child2->lowerXYZ(2));
+    const mic_f child2c2_max = select(lane2,parent_max,child2->upperXYZ(2));
+
+    const mic_f child2c3_min = select(lane3,parent_min,child2->lowerXYZ(3));
+    const mic_f child2c3_max = select(lane3,parent_max,child2->upperXYZ(3));
+
+    const mic_f merged_min = min(min(child2c0_min,child2c1_min),min(child2c2_min,child2c3_min));
+    const mic_f merged_max = max(max(child2c0_max,child2c1_max),max(child2c2_max,child2c3_max));
+
+    const mic_f diag = merged_max - merged_min;
+    const mic_f dx = swAAAA(diag);
+    const mic_f dy = swBBBB(diag);
+    const mic_f dz = swCCCC(diag);
+
+    const mic_f half_area = dx*(dy+dz)+dy*dz; 
+
+    const mic_f min_area = set_min_lanes(half_area);
+
+    const mic_m m_min_area = eq(0x1111,min_area,half_area);
+    const unsigned int i_min_area = bitscan(m_min_area);
+
+    pos = i_min_area >> 2;
+    cost = half_area[i_min_area];
+  }
 
   size_t BVH4iRotate::rotate(BVH4i* bvh, NodeRef parentRef, size_t depth, const bool onlyTopLevel)
   {
@@ -44,14 +91,25 @@ namespace embree
     for (size_t c=0; c<parentChildren; c++)
       {
 	if (onlyTopLevel && parent->upper[c].child == BVH4I_TOP_LEVEL_MARKER) { continue; }
+	// Node* child = parent->child(c).node(bvh->nodePtr());
+	// child->prefetchNode<PFHINT_L2>();
+
 	cdepth[c] = (int)rotate(bvh,parent->child(c),depth+1,onlyTopLevel);
       }
 
     /* compute current area of all children */
+
     float childArea[4];
+
+#if defined(FAST_ROTATE)
+    const mic_f _childArea = parent->halfAreaBounds();
+    compactustore16f_low(0x1111,childArea,_childArea);
+#else
     for (size_t i=0;i<4;i++)
       {
 	childArea[i] = parent->halfAreaBounds( i );
+	if (childArea[i] != _childArea[4*i])
+	  FATAL("HERE");
 	DBG( DBG_PRINT(i) );
 	DBG( DBG_PRINT(childArea[i]) );
 
@@ -63,7 +121,7 @@ namespace embree
     child1_1 = parent->bounds( 1 );
     child1_2 = parent->bounds( 2 );
     child1_3 = parent->bounds( 3 );
-
+#endif
 
     /*! Find best rotation. We pick a first child (child1) and a sub-child 
       (child2child) of a different second child (child2), and swap child1 
@@ -75,12 +133,12 @@ namespace embree
       DBG( DBG_PRINT(c2) );
 
       /*! ignore leaf nodes as we cannot descent into them */
-      if (parent->child(c2).isLeaf()) continue;
+      if (unlikely(parent->child(c2).isLeaf())) continue;
       assert(parent->child(c2) != BVH4i::invalidNode);
 
       Node* child2 = parent->child(c2).node(bvh->nodePtr());
 
-
+#if !defined(FAST_ROTATE)
       /*! transpose child bounds */
       BBox3fa child2c0,child2c1,child2c2,child2c3;
       //child2->bounds(child2c0,child2c1,child2c2,child2c3);
@@ -97,9 +155,17 @@ namespace embree
       cost0[2] = halfArea(merge(child2c0,child2c1,child1_0,child2c3));
       cost0[3] = halfArea(merge(child2c0,child2c1,child2c2,child1_0));
       const float min0 = min(cost0[0],cost0[1],cost0[2],cost0[3]);
-
       int pos0 = (int)__bsf(mic_f(min0) == broadcast4to16f(cost0));
       assert(0 <= pos0 && pos0 < 4);
+
+      float test_cost;
+      int test_pos;
+
+      mergedHalfArea(parent,child2,0,test_cost,test_pos);
+
+      assert(min0 == test_cost);
+      assert(pos0 == test_pos);
+
       /*! put child1_1 at each child2 position */
       __aligned(16) float cost1[4];
       cost1[0] = halfArea(merge(child1_1,child2c1,child2c2,child2c3));
@@ -111,6 +177,10 @@ namespace embree
       int pos1 = (int)__bsf(mic_f(min1) == broadcast4to16f(cost1));
       assert(0 <= pos1 && pos1 < 4);
 
+      mergedHalfArea(parent,child2,1,test_cost,test_pos);
+      assert(min1 == test_cost);
+      assert(pos1 == test_pos);
+
       /*! put child1_2 at each child2 position */
       __aligned(16) float cost2[4];
       cost2[0] = halfArea(merge(child1_2,child2c1,child2c2,child2c3));
@@ -120,6 +190,10 @@ namespace embree
       const float min2 = min(cost2[0],cost2[1],cost2[2],cost2[3]);
       int pos2 = (int)__bsf(mic_f(min2) == broadcast4to16f(cost2));
       assert(0 <= pos2 && pos2 < 4);
+
+      mergedHalfArea(parent,child2,2,test_cost,test_pos);
+      assert(min2 == test_cost);
+      assert(pos2 == test_pos);
 
       /*! put child1_3 at each child2 position */
       __aligned(16) float cost3[4];
@@ -131,10 +205,22 @@ namespace embree
       int pos3 = (int)__bsf(mic_f(min3) == broadcast4to16f(cost3));
       assert(0 <= pos3 && pos3 < 4);
 
+      mergedHalfArea(parent,child2,3,test_cost,test_pos);
+      assert(min3 == test_cost);
+      assert(pos3 == test_pos);
+
       /*! find best other child */
       float area0123[4] = { min0,min1,min2,min3 };
       int pos[4] = { pos0,pos1,pos2,pos3 };
+#else
+      
+      float area0123[4];
+      int pos[4];
 
+      for (size_t i=0;i<4;i++)      
+	mergedHalfArea(parent,child2,i,area0123[i],pos[i]);
+
+#endif
       for (size_t i=0;i<parentChildren;i++)
 	{	  
 	  const float area_i = area0123[i] - childArea[c2];
@@ -189,8 +275,13 @@ namespace embree
 
     BVH4i::swap(parent,bestChild1,child2,bestChild2Child);
 
-    parent->setBounds(bestChild2,child2->bounds());
 
+#if defined(FAST_ROTATE)
+    parent->setBounds(bestChild2,child2);
+
+#else
+    parent->setBounds(bestChild2,child2->bounds());
+#endif
 
     // DBG_PRINT(halfArea(parent->bounds()));
     // DBG_PRINT(halfArea(child2->bounds()));
