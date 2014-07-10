@@ -33,7 +33,7 @@
 
 #define NUM_TREE_ROTATIONS 1
 
-#define CHECK_SORTED_MORTON_CODES
+//#define CHECK_SORTED_MORTON_CODES
 
 namespace embree 
 {
@@ -141,16 +141,20 @@ namespace embree
     __aligned(64) MortonID64Bit *startCount[256+16];
 
     startCount[0]   = morton;
-    startCount[256] = NULL;
 
     for (size_t i=1;i<256;i++)
-      startCount[i] = startCount[i-1] + radixCount[i-1];
+      {
+	prefetch<PFHINT_L1EX>(&startCount[i+8]);
+	startCount[i] = startCount[i-1] + radixCount[i-1];
+      }
 
     __aligned(64) MortonID64Bit *endCount[256+16];
 
-#pragma unroll(256)
+#pragma unroll(4)
     for (size_t i=0;i<256;i++)
       endCount[i] = startCount[i];
+
+    startCount[256] = NULL;
 
     MortonID64Bit *m_current = morton;
     MortonID64Bit *m_end     = morton + size;
@@ -1397,7 +1401,6 @@ namespace embree
 
     for (size_t i=0;i<NUM_TREE_ROTATIONS;i++)
       {
-	DBG_PRINT(i);
 	LockStepTaskScheduler::dispatchTask( task_doTreeRotationsOnSubTrees, this, threadIndex, threadCount );
 	BVH4iRotate::rotate(bvh,bvh->root,1,true);
       }

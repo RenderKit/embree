@@ -21,7 +21,7 @@
 #define NUM_MORTON_IDS_PER_BLOCK            8
 #define SINGLE_THREADED_BUILD_THRESHOLD     (MAX_MIC_THREADS*64)
 
-#define PROFILE
+//#define PROFILE
 #define PROFILE_ITERATIONS 200
 
 #define TIMER(x) 
@@ -1263,7 +1263,7 @@ namespace embree
 #endif	    
 
     TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "task_radixsort " << 1000. * msec << " ms" << std::endl << std::flush);
+    TIMER(std::cout << "task_radixsort " << 1000. * msec << " ms -> " << numPrimitives / msec / 1E+6 << "M key/value pairs per sec" <<  std::endl << std::flush);
 
     TIMER(msec = getSeconds());
 
