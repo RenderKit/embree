@@ -31,7 +31,7 @@
 #define L1_PREFETCH_ITEMS 8
 #define L2_PREFETCH_ITEMS 44
 
-#define NUM_TREE_ROTATIONS 1
+#define NUM_TREE_ROTATIONS 5
 
 //#define CHECK_SORTED_MORTON_CODES
 
@@ -1378,7 +1378,7 @@ namespace embree
 
 
     bvh->root   = node->child(0); 
-    bvh->bounds = rootBounds;
+    bvh->bounds = node->child(0).isLeaf() ? node->bounds(0) : rootBounds;
 
 #if DEBUG
     DBG_PRINT( bvh->root );

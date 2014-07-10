@@ -1167,7 +1167,7 @@ namespace embree
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computeBounds " << 1000. * msec << " ms" << std::endl << std::flush);
     TIMER(DBG_PRINT(global_bounds));
-
+    
 
 
     /* compute morton codes */
@@ -1264,7 +1264,7 @@ namespace embree
     TIMER(std::cout << "refit top level " << 1000. * msec << " ms" << std::endl << std::flush);
 
     bvh->root   = node->child(0); 
-    bvh->bounds = rootBounds;
+    bvh->bounds = node->child(0).isLeaf() ? node->bounds(0) : rootBounds;
   }
 
   void BVH4iBuilderMorton::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
