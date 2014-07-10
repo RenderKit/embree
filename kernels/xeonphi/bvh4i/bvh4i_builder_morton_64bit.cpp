@@ -41,73 +41,60 @@ namespace embree
 
 #define INPLACE_RADIX_SORT_THRESHOLD 16
 
-  void inPlaceRadixSort64Bit(MortonID64Bit *const __restrict__ morton, const size_t size, size_t byteIndex)
+  void inPlaceRadixSort64Bit(MortonID64Bit *const morton, const size_t size, size_t byteIndex)
   {
     __aligned(64) unsigned int radixCount[256];
     
-    PING;
-    DBG_PRINT( size );
-    DBG_PRINT( byteIndex );
-
 #pragma unroll(16)
     for (size_t i=0; i<16; i++)
       store16i(&radixCount[i*16],mic_i::zero());
 
     for (size_t i=0; i<size; i++) 
-      {
-	const unsigned int index = morton[i].getByte(byteIndex);
-	radixCount[index]++;
-      }
-
-    for (size_t i=0;i<256;i++)
-      std::cout << "i " << i << " - radixCount " << radixCount[i] << std::endl;
+      radixCount[morton[i].getByte(byteIndex)]++;
 
     __aligned(64) unsigned int startCount[256+16];
-    __aligned(64) unsigned int endCount[256+16];
 
     startCount[0]   = 0;
-    endCount  [0]   = 0;
     startCount[256] = (unsigned int)-1;
 
     for (size_t i=1;i<256;i++)
-      {
-	const unsigned int c = startCount[i-1] + radixCount[i-1];
-	startCount[i] = c;
-	endCount[i]   = c;
-      }
+      startCount[i] = startCount[i-1] + radixCount[i-1];
+
+    __aligned(64) unsigned int endCount[256+16];
 
     for (size_t i=0;i<256;i++)
-      std::cout << "i " << i << " - startCount " << startCount[i] << std::endl;
-
+      endCount[i] = startCount[i];
 
     size_t nextCount = 1;
-    for (size_t i=0; i<size; i++) 
+    for (size_t i=0; i<size;) 
       {
-	DBG_PRINT(i);
-	unsigned int index;
+	size_t index;
 	while( 1 ) 
 	  {
-	    DBG_PRINT(morton[i]);
 	    index = morton[i].getByte(byteIndex);
-	    DBG_PRINT(index);
-	    DBG_PRINT(endCount[index]);
-
-	    if (unlikely(endCount[ index ] == i)) break;
-	    std::cout << "swap " << i << " " << endCount[index] << std::endl;	    
+	    assert(index < 256);
+	    if (unlikely(endCount[ index ] == i)) { break; }
 	    assert( i < size );
 	    assert( endCount[index] < size );
-	    DBG_PRINT( morton[endCount[index]] );
 	    std::swap(morton[i],morton[endCount[index]]);
+	    assert( morton[endCount[index]].getByte(byteIndex) == index);
 	    endCount[index]++;
+
 	  }
 	endCount[ index ]++;
 	while( endCount[ nextCount - 1 ] == startCount[ nextCount ] ) nextCount++;
-	DBG_PRINT(nextCount);
-	DBG_PRINT(endCount[ nextCount - 1]);
 	i = endCount[ nextCount - 1];
       }
+
+#ifdef DEBUG
+    for (size_t i=1; i<size;i++) 
+      {
+	assert( morton[i-1].getByte(byteIndex) <= morton[i].getByte(byteIndex) );
+      }
+#endif
+
     byteIndex--;
-    DBG_PRINT(byteIndex);
+
     if ( byteIndex != 0 )
       {
 	for (size_t i=0;i<256;i++)
@@ -115,7 +102,17 @@ namespace embree
 	    const size_t new_size = endCount[i] - startCount[i];
 	    if (likely(new_size == 0)) continue;
 	    if (new_size < INPLACE_RADIX_SORT_THRESHOLD)
-	      insertionsort_ascending<MortonID64Bit>(&morton[startCount[i]],new_size);
+	      {
+		insertionsort_ascending<MortonID64Bit>(&morton[startCount[i]],new_size);
+
+#ifdef DEBUG
+		for (size_t j=1; j<new_size;j++) 
+		  {
+		    assert( morton[startCount[i]+j-1].getByte(byteIndex) <= morton[startCount[i]+j].getByte(byteIndex) );
+		  }
+#endif
+
+	      }
 	    else
 	      inPlaceRadixSort64Bit(&morton[startCount[i]],new_size,byteIndex);
 	  }
@@ -1214,13 +1211,13 @@ namespace embree
  
     /* sort morton codes */
     TIMER(msec = getSeconds());
-    LockStepTaskScheduler::dispatchTask( task_radixsort, this, threadIndex, threadCount );
-
-    std::cout << "sorting..." << std::endl << std::flush;
+    //LockStepTaskScheduler::dispatchTask( task_radixsort, this, threadIndex, threadCount );
 
     inPlaceRadixSort64Bit(morton,numPrimitives,7);
+   
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "task_radixsort " << 1000. * msec << " ms" << std::endl << std::flush);
 
-    
 #if defined(DEBUG)
     for (size_t i=1; i<((numPrimitives+3)&(-4)); i++)
       assert(morton[i-1].code <= morton[i].code);
@@ -1232,9 +1229,6 @@ namespace embree
     }
 
 #endif	    
-
-    TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "task_radixsort " << 1000. * msec << " ms" << std::endl << std::flush);
 
     TIMER(msec = getSeconds());
 

@@ -350,7 +350,7 @@ namespace embree
 
       __forceinline unsigned int getByte(const size_t b) const {
 	assert(b < 8);
-	const unsigned char *__restrict const ptr = (const unsigned char*)&code;
+	const unsigned char *const ptr = (const unsigned char*)&code;
 	return ptr[b];
       }
       
