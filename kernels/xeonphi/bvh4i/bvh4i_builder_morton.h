@@ -265,13 +265,11 @@ namespace embree
     bool split(SmallBuildRecord& current, SmallBuildRecord& left, SmallBuildRecord& right) const;
 
     /*! create the top-levels of the tree */
-    size_t createQBVHNode(SmallBuildRecord& current, SmallBuildRecord *__restrict__ const children);
+    size_t createSingleBVH4iNode(SmallBuildRecord& current, SmallBuildRecord *__restrict__ const children);
 
     /*! main recursive build function */
     BBox3fa recurse(SmallBuildRecord& current, 
-		   NodeAllocator& alloc,
-		   const size_t mode, 
-		   const size_t numThreads);
+		   NodeAllocator& alloc);
     
     /*! refit the toplevel part of the BVH */
     void refit_toplevel(const size_t index) const;
@@ -291,7 +289,6 @@ namespace embree
     unsigned int encodeShift;
     unsigned int encodeMask;
 
-    __aligned(64) LinearBarrierActive barrier;
     __aligned(64) SmallBuildRecord buildRecords[MAX_TOP_LEVEL_BINS];    
     __aligned(64) unsigned int thread_startGroup[MAX_MIC_THREADS];      
     __aligned(64) unsigned int thread_startGroupOffset[MAX_MIC_THREADS];

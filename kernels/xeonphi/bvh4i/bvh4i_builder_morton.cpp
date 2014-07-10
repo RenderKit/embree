@@ -741,7 +741,7 @@ namespace embree
 	SmallBuildRecord &sbr = buildRecords[taskID];
 	if (sbr.size() > topLevelItemThreshold)
 	  {
-	    const size_t numChildren = createQBVHNode(sbr,children);
+	    const size_t numChildren = createSingleBVH4iNode(sbr,children);
 	    buildRecords[taskID] = children[0];
 	    if (numChildren > 1)
 	      {
@@ -770,7 +770,7 @@ namespace embree
       
       SmallBuildRecord &br = buildRecords[taskID];
 
-      recurse(br,alloc,RECURSE,threadID);
+      recurse(br,alloc);
       
       /* mark toplevel of tree */
       node[br.parentID].upper.a = -1;
@@ -976,7 +976,7 @@ namespace embree
     return true;
   }
 
-  size_t BVH4iBuilderMorton::createQBVHNode(SmallBuildRecord& current, SmallBuildRecord *__restrict__ const children)
+  size_t BVH4iBuilderMorton::createSingleBVH4iNode(SmallBuildRecord& current, SmallBuildRecord *__restrict__ const children)
   {
 
     /* create leaf node */
@@ -1050,21 +1050,9 @@ namespace embree
 
   
   BBox3fa BVH4iBuilderMorton::recurse(SmallBuildRecord& current, 
-				     NodeAllocator& alloc,
-				     const size_t mode, 
-				     const size_t numThreads) 
+				     NodeAllocator& alloc) 
   {
     assert(current.size() > 0);
-
-    /* stop toplevel recursion at some number of items */
-    if (unlikely(mode == CREATE_TOP_LEVEL))
-      {
-	if (current.size()  <= topLevelItemThreshold &&
-	    numBuildRecords >= numThreads) {
-	  buildRecords[numBuildRecords++] = current;
-	  return empty;
-	}
-      }
 
     __aligned(64) SmallBuildRecord children[BVH4i::N];
 
@@ -1138,7 +1126,7 @@ namespace embree
 	  bounds.extend( createSmallLeaf(children[i]) );
 	}
       else
-	bounds.extend( recurse(children[i],alloc,mode,numThreads) );
+	bounds.extend( recurse(children[i],alloc) );
     }
 
     node[current.parentID].lower = bounds.lower;
@@ -1278,8 +1266,6 @@ namespace embree
     br.depth = 1;
 
 
-#if 1
-
     buildRecords[0] = br;
     numBuildRecords = 1;
     size_t iterations = 0;
@@ -1293,15 +1279,6 @@ namespace embree
 
 	numBuildRecords = numBuildRecordCounter;
       }
-#else
-
-    /* perform first splits in single threaded mode */
-    NodeAllocator alloc(atomicID,numAllocatedNodes);
-
-    recurse(br,alloc,CREATE_TOP_LEVEL,threadIndex);	    
-
-
-#endif
 
     /* sort all subtasks by size */
 
