@@ -200,7 +200,8 @@ namespace embree
   { 
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);
     
-    Builder* builder = BVH4iBuilderMortonEnhanced::create(accel,scene);
+    std::cout << "USE NEW ENHANCED MORTON BUILDER" << std::endl;
+    Builder* builder = BVH4iBuilderMorton::create(accel,scene);
     
     Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);

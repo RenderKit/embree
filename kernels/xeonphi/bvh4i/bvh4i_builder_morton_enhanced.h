@@ -18,6 +18,7 @@
 
 #include "bvh4i_builder_morton.h"
 
+#if 0
 namespace embree
 {
   class BVH4iBuilderMortonEnhanced : public BVH4iBuilderMorton
@@ -61,3 +62,4 @@ namespace embree
 
   };
 }
+#endif

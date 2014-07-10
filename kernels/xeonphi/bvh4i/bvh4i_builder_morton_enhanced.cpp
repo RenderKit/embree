@@ -18,6 +18,7 @@
 #include "bvh4i/bvh4i_builder_morton_enhanced.h"
 #include "limits.h"
 
+#if 0
 
 #define SINGLE_THREADED_BUILD_THRESHOLD  (MAX_MIC_THREADS*8)
 
@@ -555,3 +556,4 @@ namespace embree
   };
 
 };
+#endif

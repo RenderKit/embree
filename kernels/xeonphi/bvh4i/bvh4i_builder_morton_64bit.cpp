@@ -25,7 +25,7 @@
 //#define PROFILE
 #define PROFILE_ITERATIONS 200
 
-#define TIMER(x) x
+#define TIMER(x) 
 #define DBG(x) 
 
 #define L1_PREFETCH_ITEMS 8
@@ -625,8 +625,6 @@ namespace embree
     const size_t currentIndex = allocGlobalNode(1);    
 
     /* init used/unused nodes */
-    //const mic_f init_node = load16f((float*)BVH4i::initQBVHNode);
-
     mic_f init_lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
     mic_f init_upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
 
@@ -1338,7 +1336,6 @@ namespace embree
     br.parentLocalID = 0;
     br.depth = 1;
 
-#if 1
     buildRecords[0] = br;
     numBuildRecords = 1;
     size_t iterations = 0;
@@ -1352,11 +1349,6 @@ namespace embree
 
 	numBuildRecords = numBuildRecordCounter;
       }
-#else
-    NodeAllocator alloc(atomicID,numAllocatedNodes);
-    BBox3fa recurse_bounds = recurse(br,alloc);
-    DBG_PRINT( recurse_bounds );
-#endif
 
     TIMER(msec = getSeconds());
     
@@ -1365,7 +1357,7 @@ namespace embree
 
     DBG(DBG_PRINT(atomicID));
 
-    numNodes = atomicID >> 2;
+    numNodes = atomicID;
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_recurseSubMortonTrees " << 1000. * msec << " ms" << std::endl << std::flush);
