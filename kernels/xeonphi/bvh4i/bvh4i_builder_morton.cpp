@@ -16,6 +16,7 @@
 
 #include "bvh4i_builder_morton.h"
 #include "builders/builder_util.h"
+#include "bvh4i_rotate.h"
 
 #define MORTON_BVH4I_NODE_PREALLOC_FACTOR     0.8f
 #define NUM_MORTON_IDS_PER_BLOCK            8
@@ -43,9 +44,9 @@ namespace embree
 
   __aligned(64) static double dt = 0.0f;
 
-  BVH4iBuilderMorton::BVH4iBuilderMorton (BVH4i* bvh, void* geometry)
+  BVH4iBuilderMorton::BVH4iBuilderMorton (BVH4i* bvh, void* geometry, const bool tree_rotations)
   : bvh(bvh), scene((Scene*)geometry), topLevelItemThreshold(0), encodeShift(0), encodeMask(0), numBuildRecords(0), 
-    morton(NULL), node(NULL), accel(NULL), numGroups(0), numPrimitives(0), numNodes(0), numAllocatedNodes(0), size_morton(0), size_node(0), size_accel(0), numPrimitivesOld(-1)
+    morton(NULL), node(NULL), accel(NULL), numGroups(0), numPrimitives(0), numNodes(0), numAllocatedNodes(0), size_morton(0), size_node(0), size_accel(0), numPrimitivesOld(-1), enableTreeRotations(tree_rotations)
   {
   }
 
@@ -1081,6 +1082,12 @@ namespace embree
     store3f(&node[current.parentNodeID].upper[current.parentLocalID],broadcast4to16f(&bounds.upper));
     createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,numChildren);
 
+    if (enableTreeRotations)
+      {
+	BVH4i::NodeRef local_root = node[current.parentNodeID].child(current.parentLocalID);
+	BVH4iRotate::rotateNode(bvh,local_root);
+      }
+
     return bounds;
   }
 
@@ -1150,6 +1157,10 @@ namespace embree
 	    parentBounds.extend( bounds );
 	  }
       }
+
+    if (enableTreeRotations)
+      BVH4iRotate::rotateNode(bvh,ref);
+
     return parentBounds;
 
   }

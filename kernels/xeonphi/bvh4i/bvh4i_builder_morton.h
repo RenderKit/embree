@@ -109,14 +109,14 @@ namespace embree
   public:    
 
     /*! Constructor. */
-    BVH4iBuilderMorton (BVH4i* bvh, void* geometry);
+    BVH4iBuilderMorton (BVH4i* bvh, void* geometry, const bool tree_rotations = false);
 
     /*! Destructor. */
     ~BVH4iBuilderMorton();
 
     /*! creates the builder */
-    static Builder* create (void* accel, void* geometry) { 
-      return new BVH4iBuilderMorton((BVH4i*)accel,geometry);
+    static Builder* create (void* accel, void* geometry, bool tree_rotations) { 
+      return new BVH4iBuilderMorton((BVH4i*)accel,geometry,tree_rotations);
     }
 
     /* build function */
@@ -216,6 +216,7 @@ namespace embree
     size_t topLevelItemThreshold;
     size_t numBuildRecords;
     size_t numPrimitivesOld;
+    bool enableTreeRotations;
 
     __aligned(64) Centroid_Scene_AABB global_bounds;
 

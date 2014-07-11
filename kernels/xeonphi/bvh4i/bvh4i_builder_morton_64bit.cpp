@@ -737,14 +737,11 @@ namespace embree
     createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,numChildren);
 
 
-#if 1
-
     for (size_t i=0;i<NUM_TREE_ROTATIONS;i++)
       {
 	BVH4i::NodeRef local_root = node[current.parentNodeID].child(current.parentLocalID);
 	BVH4iRotate::rotateNode(bvh,local_root);
       }
-#endif
 
     return bounds;
   }
