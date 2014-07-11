@@ -22,20 +22,19 @@
 #define NUM_MORTON_IDS_PER_BLOCK            4
 #define SINGLE_THREADED_BUILD_THRESHOLD     (MAX_MIC_THREADS*64)
 
-//#define PROFILE
+#define PROFILE
 #define PROFILE_ITERATIONS 200
 
-#define TIMER(x) x
+#define TIMER(x) 
 #define DBG(x) 
 
 #define L1_PREFETCH_ITEMS 8
 #define L2_PREFETCH_ITEMS 44
 
 #define NUM_TREE_ROTATIONS 1
+//#define NUM_TREE_ROTATIONS (unsigned int)-1
 
 //#define CHECK_SORTED_MORTON_CODES
-
-// TODO: do tree rotations after building each buildrecord
 
 namespace embree 
 {
@@ -504,6 +503,7 @@ namespace embree
 
     createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,0); // numChildren);
 
+
     return bounds;
   }  
 
@@ -736,6 +736,16 @@ namespace embree
     store3f(&node[current.parentNodeID].upper[current.parentLocalID],broadcast4to16f(&bounds.upper));
     createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,numChildren);
 
+
+#if 1
+
+    for (size_t i=0;i<NUM_TREE_ROTATIONS;i++)
+      {
+	BVH4i::NodeRef local_root = node[current.parentNodeID].child(current.parentLocalID);
+	BVH4iRotate::rotateNode(bvh,local_root);
+      }
+#endif
+
     return bounds;
   }
 
@@ -806,6 +816,10 @@ namespace embree
 	    parentBounds.extend( bounds );
 	  }
       }
+
+    for (size_t i=0;i<NUM_TREE_ROTATIONS;i++)
+      BVH4iRotate::rotateNode(bvh,ref);
+
     return parentBounds;
 
   }
@@ -1245,6 +1259,18 @@ namespace embree
       node[br.parentNodeID].setBounds(br.parentLocalID,bounds);
       node[br.parentNodeID].upper[br.parentLocalID].child = BVH4I_TOP_LEVEL_MARKER;
 
+#if 1
+      for (size_t i=0;i<NUM_TREE_ROTATIONS;i++)
+	{
+	  BVH4i::NodeRef local_root = node[br.parentNodeID].child(br.parentLocalID);
+	  if (!local_root.isLeaf())
+	    {
+	      //size_t depth = BVH4iRotate::rotate(bvh,local_root);
+	      BVH4iRotate::rotateNode(bvh,local_root);
+	    }
+	}
+#endif
+
       TIMER(items += br.size());
     }    
 
@@ -1394,15 +1420,16 @@ namespace embree
 
 #if 0
 
-    BVH4iRotate::rotate(bvh,bvh->root);
+    for (size_t i=0;i<2;i++)
+      BVH4iRotate::rotate(bvh,bvh->root);
 
 
 #else
-    for (size_t i=0;i<NUM_TREE_ROTATIONS;i++)
-      {
-	LockStepTaskScheduler::dispatchTask( task_doTreeRotationsOnSubTrees, this, threadIndex, threadCount );
-	BVH4iRotate::rotate(bvh,bvh->root,1,true);
-      }
+    // for (size_t i=0;i<1;i++)
+    //   {
+    // 	LockStepTaskScheduler::dispatchTask( task_doTreeRotationsOnSubTrees, this, threadIndex, threadCount );
+    // 	BVH4iRotate::rotate(bvh,bvh->root,1,true);
+    //   }
 #endif
 
     TIMER(msec = getSeconds()-msec);    
