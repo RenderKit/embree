@@ -31,9 +31,11 @@ namespace embree
 #define ENABLE_OBB_BVH4 1
 #define ENABLE_AABB_NODES 1
 
-#define BVH4HAIR_NODE_PREALLOC_FACTOR                 0.7f
+#define BVH4HAIR_NODE_PREALLOC_FACTOR  0.7f
+#define INTERSECTION_COST              1.0f
 
-#define INTERSECTION_COST 1.0f
+#define AABB_OBB_SWITCH_THRESHOLD      1.1f
+  //#define THRESHOLD_SWITCH
 
 #define TIMER(x)  
 
@@ -1101,7 +1103,24 @@ namespace embree
         recurseSAH(current,alloc,RECURSE,threadID,numThreads);
     }
     else
-      recurseSAH(current,alloc,RECURSE,threadID,numThreads);
+      {
+	BuildRecordOBB current_obb;
+	current_obb = current;
+
+	computeUnalignedSpace(current_obb);
+	computeUnalignedSpaceBounds(current_obb);
+   
+#if defined(THRESHOLD_SWITCH)
+	if (area( current_obb.bounds.geometry ) < area( current.bounds.geometry ) * AABB_OBB_SWITCH_THRESHOLD)
+	  recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
+	else
+	  recurseSAH(current,alloc,RECURSE,threadID,numThreads);
+#else
+	recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
+#endif
+
+
+      }
   }
 
   // ===============================================================================================================================================
@@ -1109,7 +1128,7 @@ namespace embree
   // ===============================================================================================================================================
 
 
-  void BVH4HairBuilder::recurseOBB(BuildRecordOBB& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads, const bool forceOBBs)
+  void BVH4HairBuilder::recurseOBB(BuildRecordOBB& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads)
   {
 #if ENABLE_OBB_BVH4 == 0
     FATAL("recurseOBB disabled");
@@ -1177,33 +1196,17 @@ namespace embree
     /* init used/unused nodes */
     node[currentIndex].setInvalid();
 
-    unsigned int all_AABB_nodes = BVH4HAIR_AABB_NODE;
+    // === default OBB node ===
+    createNode(current.parentPtr,currentIndex);
+
     for (unsigned int i=0; i<numChildren; i++) 
-      all_AABB_nodes &= children[i].node_type;
-
-    if (0 && all_AABB_nodes == BVH4HAIR_AABB_NODE)
-      {
-	// === full AABB node ===
-	createNode(current.parentPtr,currentIndex,BVH4Hair::alignednode_mask);
-
-	for (unsigned int i=0; i<numChildren; i++) 
-	  node[currentIndex].setMatrix(children[i].bounds.geometry,i);
-
-      }
-    else
-      {
-	// === default OBB node ===
-	createNode(current.parentPtr,currentIndex);
-
-	for (unsigned int i=0; i<numChildren; i++) 
-	    node[currentIndex].setMatrix(children[i].xfm,children[i].bounds.geometry,i);
-      }  
+      node[currentIndex].setMatrix(children[i].xfm,children[i].bounds.geometry,i);
 
     /* recurse into each child */
     for (unsigned int i=0; i<numChildren; i++) 
       {
 	children[i].parentPtr = &node[currentIndex].child(i);
-	recurseOBB(children[i],alloc,mode,threadID,numThreads,forceOBBs);
+	recurseOBB(children[i],alloc,mode,threadID,numThreads);
       }  
 
   }
@@ -1225,13 +1228,17 @@ namespace embree
     else
       {
 
+#if 0
+	recurseSAH(current,alloc,/*mode*/ RECURSE,threadID,numThreads);
+#else
 	BuildRecordOBB current_obb;
 	current_obb = current;
 
 	computeUnalignedSpace(current_obb);
 	computeUnalignedSpaceBounds(current_obb);
    
-	recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads,false);
+	recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
+#endif
       }
 
 #else
@@ -1254,8 +1261,6 @@ namespace embree
       return false;
     }
 
-
-    current.node_type = BVH4HAIR_OBB_NODE;
 
     const unsigned int items = current.items();
     const float voxelArea = area(current.bounds.geometry); 
@@ -1349,14 +1354,6 @@ namespace embree
 	      }
 	  };
 
-	if (splitAABB.cost < split.cost)
-	  current.node_type = BVH4HAIR_AABB_NODE;
-
-#if 0
-	PING;
-	DBG_PRINT(split.cost);
-	DBG_PRINT(splitAABB.cost);
-#endif
       }
 
     if (unlikely(split.pos == -1)) 
@@ -1402,12 +1399,6 @@ namespace embree
 
     //if (leftChild.items()  <= MAX_ITEMS_PER_LEAF) leftChild.createLeaf();
     //if (rightChild.items() <= MAX_ITEMS_PER_LEAF) rightChild.createLeaf();
-
-    if (current.node_type == BVH4HAIR_AABB_NODE)
-      {
-	leftChild.node_type  = BVH4HAIR_AABB_NODE;
-	rightChild.node_type = BVH4HAIR_AABB_NODE;
-      }
 
     return true;
   }
