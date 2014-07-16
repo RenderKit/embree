@@ -233,6 +233,8 @@ namespace embree
     /* print builder name */
     if (unlikely(g_verbose >= 2)) {
       printBuilderName();
+      DBG_PRINT(totalNumPrimitives);
+
 #if DEBUG
       DBG_PRINT(totalNumPrimitives);
       DBG_PRINT(threadIndex);

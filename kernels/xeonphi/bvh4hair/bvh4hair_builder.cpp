@@ -35,7 +35,7 @@ namespace embree
 #define INTERSECTION_COST              1.0f
 
 #define AABB_OBB_SWITCH_THRESHOLD      1.1f
-  //#define THRESHOLD_SWITCH
+#define THRESHOLD_SWITCH
 
 #define TIMER(x)  
 
@@ -1097,7 +1097,7 @@ namespace embree
     if (mode == BUILD_TOP_LEVEL) {
       global_workStack.push_nolock(current);
     }
-    else if (current.items() > THRESHOLD_FOR_SUBTREE_RECURSION || mode == FILL_LOCAL_QUEUES) {
+    else if (mode == FILL_LOCAL_QUEUES) {
       const size_t coreID = threadID/4;
       if (!local_workStack[coreID].push(current))
         recurseSAH(current,alloc,RECURSE,threadID,numThreads);
@@ -1228,16 +1228,20 @@ namespace embree
     else
       {
 
-#if 0
-	recurseSAH(current,alloc,/*mode*/ RECURSE,threadID,numThreads);
-#else
 	BuildRecordOBB current_obb;
 	current_obb = current;
 
 	computeUnalignedSpace(current_obb);
 	computeUnalignedSpaceBounds(current_obb);
-   
+
+#if 1  
+	if (area( current_obb.bounds.geometry ) < area( current.bounds.geometry ) * AABB_OBB_SWITCH_THRESHOLD)
+	  recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
+	else
+	  recurseSAH(current,alloc,/*mode*/ RECURSE,threadID,numThreads);
+#else
 	recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
+
 #endif
       }
 
