@@ -1234,7 +1234,7 @@ namespace embree
 	computeUnalignedSpace(current_obb);
 	computeUnalignedSpaceBounds(current_obb);
 
-#if 1  
+#if defined( THRESHOLD_SWITCH ) 
 	if (area( current_obb.bounds.geometry ) < area( current.bounds.geometry ) * AABB_OBB_SWITCH_THRESHOLD)
 	  recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
 	else
