@@ -246,7 +246,7 @@ namespace embree
   }
 
   /* initialize GLUT */
-  void initWindowState(int argc, char** argv, const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode)
+  void initWindowState(int& argc, char** argv, const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode)
   {
     g_width = width;
     g_height = height;
