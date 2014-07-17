@@ -45,6 +45,11 @@ namespace embree
     accels.add( BVH4i::BVH4iVirtualGeometryBinnedSAH(this) );
     accels.add( BVH4Hair::BVH4HairBinnedSAH(this) );
 
+    if (g_verbose >= 1)
+      {
+	std::cout << "scene flags: static " << isStatic() << " compact = " << isCompact() << " high quality = " << isHighQuality() << " robust = " << isRobust() << std::endl;
+      }
+  
     if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
       {
 	if (g_tri_builder == "default") 
