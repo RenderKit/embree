@@ -31,9 +31,11 @@ namespace embree
 #define ENABLE_OBB_BVH4 1
 #define ENABLE_AABB_NODES 1
 
-#define BVH4HAIR_NODE_PREALLOC_FACTOR                 0.7f
+#define BVH4HAIR_NODE_PREALLOC_FACTOR  0.7f
+#define INTERSECTION_COST              1.0f
 
-#define INTERSECTION_COST 1.0f
+#define AABB_OBB_SWITCH_THRESHOLD      1.1f
+#define THRESHOLD_SWITCH
 
 #define TIMER(x)  
 
@@ -47,6 +49,10 @@ namespace embree
   // ==========================================================================================
   // ==========================================================================================
 
+  enum {
+    BVH4HAIR_AABB_NODE = 1,
+    BVH4HAIR_OBB_NODE  = 2
+  };
 
   void BVH4HairBuilder::printBuilderName()
   {
@@ -194,7 +200,7 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizePrimRefInBytes + additional_size;
-    const size_t size_node     = numNodes * sizeNodeInBytes    + additional_size;
+    const size_t size_node     = (float)(numNodes * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
     const size_t size_accel    = numPrims * sizeAccelInBytes   + additional_size;
 
     numAllocated64BytesBlocks = size_node / sizeof(BVH4Hair::UnalignedNode); // FIXME: do memory handling in 64 byte blocks
@@ -804,7 +810,7 @@ namespace embree
 	const unsigned int mid = partitionPrimitives<L2_PREFETCH_ITEMS>(prims ,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
 
 	assert(area(leftChild.bounds.geometry) >= 0.0f);
-	assert(current.begin + mid == current.begin + split.numLeft);
+	//assert(current.begin + mid == current.begin + split.numLeft) // can happen
 
 	if (unlikely(current.begin + mid == current.begin || current.begin + mid == current.end)) 
 	  {
@@ -1091,13 +1097,30 @@ namespace embree
     if (mode == BUILD_TOP_LEVEL) {
       global_workStack.push_nolock(current);
     }
-    else if (current.items() > THRESHOLD_FOR_SUBTREE_RECURSION || mode == FILL_LOCAL_QUEUES) {
+    else if (mode == FILL_LOCAL_QUEUES) {
       const size_t coreID = threadID/4;
       if (!local_workStack[coreID].push(current))
         recurseSAH(current,alloc,RECURSE,threadID,numThreads);
     }
     else
-      recurseSAH(current,alloc,RECURSE,threadID,numThreads);
+      {
+	BuildRecordOBB current_obb;
+	current_obb = current;
+
+	computeUnalignedSpace(current_obb);
+	computeUnalignedSpaceBounds(current_obb);
+   
+#if defined(THRESHOLD_SWITCH)
+	if (area( current_obb.bounds.geometry ) < area( current.bounds.geometry ) * AABB_OBB_SWITCH_THRESHOLD)
+	  recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
+	else
+	  recurseSAH(current,alloc,RECURSE,threadID,numThreads);
+#else
+	recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
+#endif
+
+
+      }
   }
 
   // ===============================================================================================================================================
@@ -1105,7 +1128,7 @@ namespace embree
   // ===============================================================================================================================================
 
 
-  void BVH4HairBuilder::recurseOBB(BuildRecordOBB& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads, const bool forceOBBs)
+  void BVH4HairBuilder::recurseOBB(BuildRecordOBB& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads)
   {
 #if ENABLE_OBB_BVH4 == 0
     FATAL("recurseOBB disabled");
@@ -1144,7 +1167,7 @@ namespace embree
 
       /*! split best child into left and right child */
       __aligned(64) BuildRecordOBB left, right;
-      if (!splitSequentialOBB(children[bestChild],left,right)) 
+      if (!splitSequentialOBB(children[bestChild],left,right,false)) 
         continue;
       
       /* add new children left and right */
@@ -1166,7 +1189,6 @@ namespace embree
     const size_t currentIndex = alloc.get(1);
     /* recurseOBB */
 
-    createNode(current.parentPtr,currentIndex);
     //node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
 
     node[currentIndex].prefetchNode<PFHINT_L2EX>();
@@ -1174,15 +1196,18 @@ namespace embree
     /* init used/unused nodes */
     node[currentIndex].setInvalid();
 
+    // === default OBB node ===
+    createNode(current.parentPtr,currentIndex);
+
+    for (unsigned int i=0; i<numChildren; i++) 
+      node[currentIndex].setMatrix(children[i].xfm,children[i].bounds.geometry,i);
+
     /* recurse into each child */
     for (unsigned int i=0; i<numChildren; i++) 
-    {
-      node[currentIndex].setMatrix(children[i].xfm,children[i].bounds.geometry,i);
-      //children[i].parentID    = currentIndex;
-      children[i].parentPtr   = &node[currentIndex].child(i);
-      recurseOBB(children[i],alloc,mode,threadID,numThreads,forceOBBs);
-
-    }    
+      {
+	children[i].parentPtr = &node[currentIndex].child(i);
+	recurseOBB(children[i],alloc,mode,threadID,numThreads);
+      }  
 
   }
 
@@ -1208,8 +1233,16 @@ namespace embree
 
 	computeUnalignedSpace(current_obb);
 	computeUnalignedSpaceBounds(current_obb);
-   
-	recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads,false);
+
+#if defined( THRESHOLD_SWITCH ) 
+	if (area( current_obb.bounds.geometry ) < area( current.bounds.geometry ) * AABB_OBB_SWITCH_THRESHOLD)
+	  recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
+	else
+	  recurseSAH(current,alloc,/*mode*/ RECURSE,threadID,numThreads);
+#else
+	recurseOBB(current_obb,alloc,/*mode*/ RECURSE,threadID,numThreads);
+
+#endif
       }
 
 #else
@@ -1223,11 +1256,15 @@ namespace embree
     DBG(PING);
     DBG(DBG_PRINT(current));
 
+    //computeUnalignedSpace(current);
+    //computeUnalignedSpaceBounds(current);
+
     /* mark as leaf if leaf threshold reached */
     if (current.items() <= MAX_ITEMS_PER_LEAF) {
       current.createLeaf();
       return false;
     }
+
 
     const unsigned int items = current.items();
     const float voxelArea = area(current.bounds.geometry); 
@@ -1245,6 +1282,7 @@ namespace embree
     mic_f leftArea[3];
     mic_f rightArea[3];
     mic_i leftNum[3];
+
 
     const mic3f cmat = convert(current.xfm);
     
@@ -1360,9 +1398,12 @@ namespace embree
     computeUnalignedSpace(rightChild);
     computeUnalignedSpaceBounds(rightChild);
 
+    //leftChild.xfm  = current.xfm;
+    //rightChild.xfm = current.xfm;
 
-    if (leftChild.items()  <= MAX_ITEMS_PER_LEAF) leftChild.createLeaf();
-    if (rightChild.items() <= MAX_ITEMS_PER_LEAF) rightChild.createLeaf();	
+    //if (leftChild.items()  <= MAX_ITEMS_PER_LEAF) leftChild.createLeaf();
+    //if (rightChild.items() <= MAX_ITEMS_PER_LEAF) rightChild.createLeaf();
+
     return true;
   }
 

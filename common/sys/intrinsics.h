@@ -421,6 +421,10 @@ __forceinline unsigned int clz(const unsigned int x) {
   return _lzcnt_u32(x); 
 }
 
+__forceinline size_t clz(const size_t x) {
+  return _lzcnt_u64(x); 
+}
+
 __forceinline unsigned int bitscan(unsigned int v) {
   return _mm_tzcnt_32(v); 
 }

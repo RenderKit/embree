@@ -113,7 +113,7 @@ namespace embree
 
     unsigned int begin;         //!< start of range
     unsigned int end;           //!< end of range
-    unsigned int _parentID;     //!< the ID of the node that points to us
+    unsigned int unused;       
     unsigned int depth;         //!< depth from the root of the tree
 
     unsigned int flags;
@@ -553,6 +553,7 @@ namespace embree
 
     __forceinline AtomicIDBlock(AlignedAtomicCounter32& global, unsigned int maxNodes) : counter(global), maxNodes(maxNodes)
     {
+#if 0
       localNodeID  = counter.add(LOCAL_NODE_IDS);
       localNodeIDs = 0;      
 
@@ -563,13 +564,30 @@ namespace embree
 	DBG_PRINT(maxNodes);	
         FATAL("AtomicIDBlock: not enough nodes allocated");
       }
-
+#else
+      localNodeID = (unsigned int)-1;
+      localNodeIDs = (unsigned int)-1;
+#endif
     }
 
     __forceinline unsigned int get(const unsigned int i) 
     {
+      /* not initialized */
+      if (unlikely(localNodeIDs == (unsigned int)-1)) 
+	{
+	  localNodeID  = counter.add(LOCAL_NODE_IDS);
+	  localNodeIDs = 0;      	  
+	}
+
+      /* no space in current block left? */
+      if (unlikely(localNodeIDs + i >= LOCAL_NODE_IDS)) {
+        localNodeID = counter.add(LOCAL_NODE_IDS);
+        localNodeIDs = 0;	
+      }
+
       const unsigned int currentIndex = localNodeID + localNodeIDs;
 
+      /* did we exceed the pre-allocated memory? */
       if (unlikely(currentIndex + i >= maxNodes)) {
 	DBG_PRINT(currentIndex);
 	DBG_PRINT(maxNodes);
@@ -577,10 +595,11 @@ namespace embree
       }
       
       localNodeIDs += i;
-      if (unlikely(localNodeIDs >= LOCAL_NODE_IDS)) {
-        localNodeID = counter.add(LOCAL_NODE_IDS);
-        localNodeIDs = 0;	
-      }
+      /* if (unlikely(localNodeIDs >= LOCAL_NODE_IDS)) { */
+      /*   localNodeID = counter.add(LOCAL_NODE_IDS); */
+      /*   localNodeIDs = 0;	 */
+      /* } */
+      assert( currentIndex + i < maxNodes);
       return currentIndex;
     }
   };

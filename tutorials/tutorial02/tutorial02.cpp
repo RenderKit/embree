@@ -131,7 +131,7 @@ namespace embree
     } 
 
     /* initialize GLUT */
-    initWindowState(tutorialName, g_width, g_height, g_fullscreen);
+    initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
     
     /* enter the GLUT run loop */
     enterWindowRunLoop();

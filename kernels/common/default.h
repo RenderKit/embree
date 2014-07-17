@@ -61,6 +61,7 @@ namespace embree
   extern std::string g_hair_builder;
   extern int g_scene_flags;
   extern size_t g_benchmark;
+  extern float g_memory_preallocation_factor;
 
   /*! processes an error */
   void process_error(RTCError error, const char* code);

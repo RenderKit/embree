@@ -142,7 +142,7 @@ namespace embree
         } 
 
         /*! Initialize GLUT window state. */
-        initWindowState("tutorial08", g_width, g_height, g_fullscreen);
+        initWindowState(argc,argv,"tutorial08", g_width, g_height, g_fullscreen);
 
         /*! Keyboard bindings. */
         mapKeyToFunction('+', increaseSubdivisionLevel);  mapKeyToFunction('=', increaseSubdivisionLevel);  mapKeyToFunction('-', decreaseSubdivisionLevel);

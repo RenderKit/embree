@@ -17,6 +17,7 @@
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder.h"
 #include "bvh4i/bvh4i_statistics.h"
+#include "bvh4i/bvh4i_rotate.h"
 
 
 
@@ -141,6 +142,7 @@ namespace embree
     msec = getSeconds();
 #endif
 
+
     const size_t additional_size = 16 * CACHELINE_SIZE;
 
     /* free previously allocated memory */
@@ -160,7 +162,7 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
-    const size_t size_node     = numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size;
+    const size_t size_node     = (float)(numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
     numAllocated64BytesBlocks = size_node / sizeof(mic_f);
@@ -210,7 +212,7 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives+4;
-	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; //FIXME: better minAllocNodes estimate
+	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 
 	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
 	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(Triangle1));
       }
@@ -226,16 +228,18 @@ namespace embree
   
   void BVH4iBuilder::build(const size_t threadIndex, const size_t threadCount) 
   {
-    DBG(PING);
     const size_t totalNumPrimitives = getNumPrimitives();
-
-    //DBG_PRINT(totalNumPrimitives);
-
-    DBG(DBG_PRINT(totalNumPrimitives));
 
     /* print builder name */
     if (unlikely(g_verbose >= 2)) {
       printBuilderName();
+      DBG_PRINT(totalNumPrimitives);
+
+#if DEBUG
+      DBG_PRINT(totalNumPrimitives);
+      DBG_PRINT(threadIndex);
+      DBG_PRINT(threadCount);
+#endif
     }
 
     if (likely(totalNumPrimitives == 0))
@@ -431,6 +435,7 @@ namespace embree
   
   void BVH4iBuilder::finalize(const size_t threadIndex, const size_t threadCount)
   {
+
   }
 
   __forceinline void computeAccelerationData(const unsigned int &geomID,
@@ -1450,9 +1455,6 @@ namespace embree
     TIMER(msec = getSeconds());    
     LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
     numNodes = atomicID;
-#ifdef DEBUG
-    DBG_PRINT(atomicID);
-#endif
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
@@ -1466,7 +1468,7 @@ namespace embree
     TIMER(msec = getSeconds());     
     finalize(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "task_convertToSOALayout " << 1000. * msec << " ms" << std::endl << std::flush);
+    TIMER(std::cout << "task_finalize " << 1000. * msec << " ms" << std::endl << std::flush);
 
     
 
