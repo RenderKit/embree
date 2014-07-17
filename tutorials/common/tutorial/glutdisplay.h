@@ -30,7 +30,7 @@ namespace embree
   void enterWindowRunLoop();
 
   /* initialize GLUT */
-  void initWindowState(const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode = true);
+  void initWindowState(int argc, char** argv, const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode = true);
 
   /* set a callback for a key */
   void mapKeyToFunction(unsigned char key, void (*func)(unsigned char key, int x, int y));

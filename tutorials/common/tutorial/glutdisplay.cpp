@@ -246,7 +246,7 @@ namespace embree
   }
 
   /* initialize GLUT */
-  void initWindowState(const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode)
+  void initWindowState(int argc, char** argv, const std::string name, const size_t width, const size_t height, const bool fullscreen, const bool mouseMode)
   {
     g_width = width;
     g_height = height;
@@ -254,7 +254,6 @@ namespace embree
 
     g_fullscreen = fullscreen;
     flip14 = mouseMode;
-    int argc = 0; char** argv = NULL; 
     glutInit(&argc, argv);
     glutInitWindowSize((GLsizei)g_width, (GLsizei)g_height);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
