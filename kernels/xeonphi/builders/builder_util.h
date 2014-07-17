@@ -113,7 +113,7 @@ namespace embree
 
     unsigned int begin;         //!< start of range
     unsigned int end;           //!< end of range
-    unsigned int node_type;     //!< used by mixed node builders
+    unsigned int unused;       
     unsigned int depth;         //!< depth from the root of the tree
 
     unsigned int flags;
