@@ -30,27 +30,29 @@
 RTCORE_ALIGN(16) struct RTCRay1 
 {
   /* ray data */
-  float org[3];      //!< Ray origin
-  float align0;      //!< unused member to force alignment of following members
+  uniform float org[3];      //!< Ray origin
+  uniform float align0;      //!< unused member to force alignment of following members
   
-  float dir[3];      //!< Ray direction
-  float align1;      //!< unused member to force alignment of following members
+  uniform float dir[3];      //!< Ray direction
+  uniform float align1;      //!< unused member to force alignment of following members
   
-  float tnear;       //!< Start of ray segment
-  float tfar;        //!< End of ray segment (set to hit distance)
-  float time;        //!< Time of this ray for motion blur
-  int   mask;        //!< Used to mask out objects during traversal
+  uniform float tnear;       //!< Start of ray segment
+  uniform float tfar;        //!< End of ray segment (set to hit distance)
+  uniform float time;        //!< Time of this ray for motion blur
+  uniform int   mask;        //!< Used to mask out objects during traversal
   
   /* hit data */
-  float Ng[3];       //!< Unnormalized geometry normal
-  float align2;
+  uniform float Ng[3];       //!< Unnormalized geometry normal
+  uniform float align2;
   
-  float u;           //!< Barycentric u coordinate of hit
-  float v;           //!< Barycentric v coordinate of hit
+  uniform float u;           //!< Barycentric u coordinate of hit
+  uniform float v;           //!< Barycentric v coordinate of hit
 
-  int geomID;        //!< geometry ID
-  int primID;        //!< primitive ID
-  int instID;        //!< instance ID
+  uniform int geomID;        //!< geometry ID
+  uniform int primID;        //!< primitive ID
+  uniform int instID;        //!< instance ID
+
+  varying float align[0]; //!< this variable causes ISPC to align the struct on the stack
 };
 
 /*! Ray structure for packets of 4 rays. */
