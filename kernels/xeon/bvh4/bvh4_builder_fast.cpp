@@ -36,6 +36,8 @@
 
 #define DBG(x) 
 
+//#define PROFILE
+
 namespace embree
 {
   namespace isa
