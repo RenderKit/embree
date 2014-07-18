@@ -141,8 +141,8 @@ namespace embree
         switch (mode) {
         case /*0b00*/ 0: accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this)); break;
         case /*0b01*/ 1: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
-        case /*0b10*/ 2: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
-        case /*0b11*/ 3: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
+        case /*0b10*/ 2: accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this)); break;
+        case /*0b11*/ 3: accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this)); break;
         }
       }
     }
