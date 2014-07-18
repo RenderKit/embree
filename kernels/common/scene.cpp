@@ -45,6 +45,11 @@ namespace embree
     accels.add( BVH4i::BVH4iVirtualGeometryBinnedSAH(this) );
     accels.add( BVH4Hair::BVH4HairBinnedSAH(this) );
 
+    if (g_verbose >= 1)
+      {
+	std::cout << "scene flags: static " << isStatic() << " compact = " << isCompact() << " high quality = " << isHighQuality() << " robust = " << isRobust() << std::endl;
+      }
+  
     if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
       {
 	if (g_tri_builder == "default") 
@@ -83,6 +88,10 @@ namespace embree
 		     g_tri_builder == "memory_conservative") {
 	      accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this));
 	    }
+	    else if (g_tri_builder == "morton64") {
+	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(this));
+	    }
+
 	    else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4i<Triangle1>");
 	  }
       }
@@ -132,8 +141,8 @@ namespace embree
         switch (mode) {
         case /*0b00*/ 0: accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this)); break;
         case /*0b01*/ 1: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
-        case /*0b10*/ 2: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
-        case /*0b11*/ 3: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
+        case /*0b10*/ 2: accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this)); break;
+        case /*0b11*/ 3: accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this)); break;
         }
       }
     }

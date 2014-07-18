@@ -104,8 +104,9 @@
     #define __SSSE3__
     #define __SSE4_1__
     #define __SSE4_2__
-    #define __AVX__
-    #define __AVX2__
+    #if !defined(__AVX__)
+      #define __AVX__
+    #endif
   #endif
 #endif
 #if defined(CONFIG_AVX2)
@@ -116,9 +117,13 @@
     #define __SSSE3__
     #define __SSE4_1__
     #define __SSE4_2__
-    #define __AVX__
-    #define __AVX2__
-  #endif
+    #if !defined(__AVX__)
+      #define __AVX__
+    #endif
+    #if !defined(__AVX2__)
+      #define __AVX2__
+    #endif
+#endif
 #endif
 //#define __USE_RAY_MASK__
 //#define __USE_STAT_COUNTERS__
@@ -312,6 +317,7 @@ namespace embree
   void  os_commit (void* ptr, size_t bytes);
   void  os_shrink (void* ptr, size_t bytesNew, size_t bytesOld);
   void  os_free   (void* ptr, size_t bytes);
+  void* os_realloc(void* ptr, size_t bytesNew, size_t bytesOld);
 
   /*! returns performance counter in seconds */
   double getSeconds();

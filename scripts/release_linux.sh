@@ -1,4 +1,28 @@
 #!/bin/bash
+
+mkdir -p build
+cd build
+cmake \
+-D CMAKE_SKIP_RPATH=ON \
+-D BUILD_TUTORIALS=ON \
+-D BUILD_TUTORIALS_ISPC=ON \
+-D CMAKE_BUILD_TYPE=Release \
+-D COMPILER=ICC \
+-D RTCORE_BACKFACE_CULLING=OFF \
+-D RTCORE_BUFFER_STRIDE=ON \
+-D RTCORE_EXPORT_ALL_SYMBOLS=OFF \
+-D RTCORE_INTERSECTION_FILTER=ON \
+-D RTCORE_RAY_MASK=OFF \
+-D RTCORE_SPINLOCKS=ON \
+-D RTCORE_STAT_COUNTERS=OFF \
+-D USE_IMAGE_MAGICK=OFF \
+-D USE_LIBJPEG=OFF \
+-D USE_OPENEXR=OFF \
+-D XEON_ISA=AVX2 \
+-D XEON_PHI_ISA=ON ..
+make -j 8    
+cd ..
+
 mkdir -p $1/bin/x64
 
 cp build/verify $1/bin/x64
@@ -44,10 +68,10 @@ cp build/tutorial06_xeonphi_device $1/bin/x64
 cp build/tutorial07_xeonphi_device $1/bin/x64
 
 mkdir -p $1/lib/x64
-cp build/libembree.so.2.3.0 $1/lib/x64
-ln -sf libembree.so.2.3.0 $1/lib/x64/libembree.so.2 
-cp build/libembree_xeonphi.so.2.3.0 $1/lib/x64
-ln -sf libembree_xeonphi.so.2.3.0 $1/lib/x64/libembree_xeonphi.so.2 
+cp build/libembree.so.2.3.1 $1/lib/x64
+ln -sf libembree.so.2.3.1 $1/lib/x64/libembree.so.2 
+cp build/libembree_xeonphi.so.2.3.1 $1/lib/x64
+ln -sf libembree_xeonphi.so.2.3.1 $1/lib/x64/libembree_xeonphi.so.2 
 
 mkdir -p $1/include
 cp -r include/embree2 $1/include

@@ -21,14 +21,12 @@
 
 #define DBG(x) 
 
-#define ENABLE_AABB_NODES = 1
-
-
 namespace embree
 {
   namespace isa
   {
-    static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
+    static unsigned int BVH4HAIR_LEAF_MASK        = BVH4Hair::leaf_mask;        // needed due to compiler efficiency bug
+    static unsigned int BVH4HAIR_ALIGNEDNODE_MASK = BVH4Hair::alignednode_mask; // needed due to compiler efficiency bug
 
   template< bool ENABLE_INTERSECTION_FILTER>
     struct Bezier1iLeafIntersector
@@ -159,8 +157,6 @@ namespace embree
 
 
 
-    static unsigned int BVH4HAIR_LEAF_MASK = BVH4Hair::leaf_mask; // needed due to compiler efficiency bug
-
     template<typename LeafIntersector>    
     void BVH4HairIntersector16<LeafIntersector>::intersect(mic_i* valid_i, BVH4Hair* bvh, Ray16& ray16)
     {
@@ -178,7 +174,8 @@ namespace embree
 
       store16f(stack_dist,inf);
 
-      const void * __restrict__ accel = (void*)bvh->triPtr();
+      const void * __restrict__ accel = (void*)bvh->primitivesPtr();
+      const void * __restrict__ nodes = (void*)bvh->nodePtr();
 
       stack_node[0] = BVH4Hair::invalidNode;
       long rayIndex = -1;
@@ -197,11 +194,11 @@ namespace embree
 	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 
-	  const mic_f org_xyz1     = select(0x7777,org_xyz,mic_f::one());
 	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
 	  const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
 
-	  const size_t leaf_mask = BVH4HAIR_LEAF_MASK;
+	  const unsigned int leaf_mask = BVH4HAIR_LEAF_MASK;
+	  const unsigned int alignednode_mask = BVH4HAIR_ALIGNEDNODE_MASK;
 
 	  while (1)
 	    {
@@ -212,15 +209,17 @@ namespace embree
 	      traverse_single_intersect(curNode,
 					sindex,
 					dir_xyz,
-					org_xyz1,
+					org_xyz,
 					rdir_xyz,
 					org_rdir_xyz,
 					min_dist_xyz,
 					max_dist_xyz,
 					stack_node,
 					stack_dist,
-					leaf_mask);
-
+					nodes,
+					leaf_mask,
+					alignednode_mask);
+	      
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH4Hair::invalidNode)) break;
 
@@ -274,7 +273,8 @@ namespace embree
       const mic_f inf     = mic_f(pos_inf);
       const mic_f zero    = mic_f::zero();
 
-      const void * __restrict__ accel = (void*)bvh->triPtr();
+      const void * __restrict__ accel = (void*)bvh->primitivesPtr();
+      const void * __restrict__ nodes = (void*)bvh->nodePtr();
 
       stack_node[0] = BVH4Hair::invalidNode;
 
@@ -290,11 +290,10 @@ namespace embree
 	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
 	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-	  const mic_f org_xyz1     = select(0x7777,org_xyz,mic_f::one());
 	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
 	  const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
 
-	  const size_t leaf_mask = BVH4HAIR_LEAF_MASK;
+	  const unsigned int leaf_mask    = BVH4HAIR_LEAF_MASK;
 
 	  while (1)
 	    {
@@ -304,12 +303,13 @@ namespace embree
 	      traverse_single_occluded(curNode,
 				       sindex,
 				       dir_xyz,
-				       org_xyz1,
+				       org_xyz,
 				       rdir_xyz,
 				       org_rdir_xyz,
 				       min_dist_xyz,
 				       max_dist_xyz,
 				       stack_node,
+				       nodes,
 				       leaf_mask);
 
 
@@ -365,7 +365,8 @@ namespace embree
 
       store16f(stack_dist,inf);
 
-      const void * __restrict__ accel = (void*)bvh->triPtr();
+      const void * __restrict__ accel = (void*)bvh->primitivesPtr();
+      const void * __restrict__ nodes = (void*)bvh->nodePtr();
 
       stack_node[0] = BVH4Hair::invalidNode;
 
@@ -383,7 +384,8 @@ namespace embree
       const mic_f rdir_xyz     = rcp_safe(dir_xyz);
       const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
 
-      const size_t leaf_mask = BVH4HAIR_LEAF_MASK;
+      const unsigned int leaf_mask = BVH4HAIR_LEAF_MASK;
+      const unsigned int alignednode_mask = BVH4HAIR_ALIGNEDNODE_MASK;
 
       while (1)
 	{
@@ -401,7 +403,9 @@ namespace embree
 				    max_dist_xyz,
 				    stack_node,
 				    stack_dist,
-				    leaf_mask);
+				    nodes,
+				    leaf_mask,
+				    alignednode_mask);
 
 	  /* return if stack is empty */
 	  if (unlikely(curNode == BVH4Hair::invalidNode)) break;
@@ -447,7 +451,8 @@ namespace embree
 
       store16f(stack_dist,inf);
 
-      const void * __restrict__ accel = (void*)bvh->triPtr();
+      const void * __restrict__ accel = (void*)bvh->primitivesPtr();
+      const void * __restrict__ nodes = (void*)bvh->nodePtr();
 
       stack_node[0] = BVH4Hair::invalidNode;
 
@@ -483,6 +488,7 @@ namespace embree
 				   min_dist_xyz,
 				   max_dist_xyz,
 				   stack_node,
+				   nodes,
 				   leaf_mask);
 
 	  /* return if stack is empty */

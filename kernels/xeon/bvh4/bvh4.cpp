@@ -266,7 +266,7 @@ namespace embree
     size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
 #endif
     
-    size_t bytesAllocated = numAllocatedNodes * sizeof(BVH4::Node) + numAllocatedPrimitives * primTy.bytes;
+    size_t bytesAllocated = 0; // numAllocatedNodes * sizeof(BVH4::Node) + numAllocatedPrimitives * primTy.bytes; // do not enable !
     size_t bytesReserved  = numReservedNodes  * sizeof(BVH4::Node) + numReservedPrimitives  * primTy.bytes;
     bytesReserved         = (bytesReserved+blockSize-1)/blockSize*blockSize + numThreads*blockSize*2;
 
@@ -532,7 +532,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle4i(Scene* scene)
   {
-    BVH4* accel = new BVH4(Triangle4iType::type,scene);
+    BVH4* accel = new BVH4(SceneTriangle4i::type,scene);
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
 
     Builder* builder = NULL;
@@ -602,6 +602,18 @@ namespace embree
     }
   } 
 
+  void createTriangleMeshTriangle4i(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
+  {
+    if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
+    accel = new BVH4(TriangleMeshTriangle4i::type,mesh->parent);
+    switch (mesh->flags) {
+    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4iMeshBuilderFast(accel,mesh,0); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4iMeshRefitFast(accel,mesh,0); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4iMeshBuilderMorton(accel,mesh,0); break;
+    default: throw std::runtime_error("internal error"); 
+    }
+  } 
+
   Accel* BVH4::BVH4BVH4Triangle1Morton(Scene* scene)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle1::type,scene);
@@ -639,6 +651,14 @@ namespace embree
     BVH4* accel = new BVH4(TriangleMeshTriangle4v::type,scene);
     Accel::Intersectors intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
     Builder* builder = BVH4BuilderTopLevelFast(accel,scene,&createTriangleMeshTriangle4v);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4::BVH4BVH4Triangle4iObjectSplit(Scene* scene)
+  {
+    BVH4* accel = new BVH4(TriangleMeshTriangle4i::type,scene);
+    Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
+    Builder* builder = BVH4BuilderTopLevelFast(accel,scene,&createTriangleMeshTriangle4i);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -716,7 +736,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle4iObjectSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(Triangle4iType::type,scene);
+    BVH4* accel = new BVH4(SceneTriangle4i::type,scene);
     Builder* builder = BVH4Triangle4iBuilder(accel,scene,0);
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
     scene->needVertices = true;

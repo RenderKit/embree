@@ -14,7 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "common/default.h"
+#include "sys/platform.h"
+
+#if defined(__MIC__)
+#include "simd/mic.h"
+#else
+#include "simd/sse.h"
+#endif
 
 namespace embree
 {

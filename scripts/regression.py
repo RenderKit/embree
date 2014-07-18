@@ -68,7 +68,7 @@ compilers      = []
 
 supported_builds = {}
 supported_builds['V90']  = [ 'Debug', 'Release']
-supported_builds['V100'] = [ 'Debug', 'Release', 'ReleaseAVX' ]
+supported_builds['V100'] = [ 'Debug', 'Release' ]
 supported_builds['V110'] = [ 'Debug', 'Release', 'ReleaseAVX']
 supported_builds['V120'] = [ 'Debug', 'Release', 'ReleaseAVX']
 supported_builds['ICC']  = [ 'Debug', 'Release', 'ReleaseAVX', 'ReleaseAVX2']
@@ -86,8 +86,8 @@ builds_unix = ['Release', 'Debug', 'ReleaseAVX', 'ReleaseAVX2']
 builds = []
 
 #platforms_win  = ['win32']
-platforms_win  = ['x64']
-#platforms_win  = ['win32', 'x64']
+#platforms_win  = ['x64']
+platforms_win  = ['win32', 'x64']
 platforms_unix = ['x64']
 platforms      = []
 
@@ -154,20 +154,15 @@ def compile(OS,compiler,platform,build):
     command += ' -D RTCORE_BACKFACE_CULLING=OFF'
     command += ' -D RTCORE_INTERSECTION_FILTER=ON'
     command += ' -D RTCORE_BUFFER_STRIDE=ON'
-
-    command += ' -D TARGET_SSE2=ON';
-    command += ' -D TARGET_SSE41=ON';
-    command += ' -D TARGET_SSE42=ON';
+    command += ' -D RTCORE_STAT_COUNTERS=OFF'
+    command += ' -D RTCORE_TASK_LOGGER=OFF'
 
     if build == 'ReleaseAVX' or build == 'ReleaseAVX2':
-      command += ' -D TARGET_AVX=ON'
+      command += ' -D XEON_ISA=AVX'
+    elif build == 'ReleaseAVX2':
+      command += ' -D XEON_ISA=AVX2'
     else:
-      command += ' -D TARGET_AVX=OFF'
-
-    if build == 'ReleaseAVX2':
-      command += ' -D TARGET_AVX2=ON'
-    else:
-      command += ' -D TARGET_AVX2=OFF'
+      command += ' -D XEON_ISA=SSE4.2'
 
     if build == 'Debug':
       command += ' -D CMAKE_BUILD_TYPE=Debug'

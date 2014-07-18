@@ -16,8 +16,9 @@
 
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder.h"
+#include "bvh4i/bvh4i_rotate.h"
 
-#define PRESPLIT_SPACE_FACTOR         0.30f
+#define PRESPLIT_SPACE_FACTOR         1.30f
 #define PRESPLIT_AREA_THRESHOLD      20.0f
 #define PRESPLIT_MIN_AREA             0.01f
 #define NUM_PRESPLITS_PER_TRIANGLE    16
@@ -29,6 +30,8 @@
 
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
+
+//FIXME: use 8-bytes compact prim ref is used
 
 namespace embree
 {
@@ -65,22 +68,18 @@ namespace embree
   void BVH4iBuilderPreSplits::printBuilderName()
   {
     std::cout << "building BVH4i with presplits-based SAH builder (MIC) ... " << std::endl;    
-    DBG(sleep(1));
   }
 
   void BVH4iBuilderPreSplits::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
-    DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
-    DBG(DBG_PRINT(numPrimitives));
 
     if (numPrimitivesOld != numPrimitives)
       {
-	const size_t preSplitPrims = (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR);
-	const size_t numPrims = numPrimitives+preSplitPrims;
-	const size_t minAllocNodes = numPrims ? threadCount * ALLOCATOR_NODE_BLOCK_SIZE: 16;
-	const size_t numNodes = max((size_t)((numPrims+3)/4 * BVH_NODE_PREALLOC_FACTOR),minAllocNodes);
+	const size_t numPrims = (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR);
+	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE;
+	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
 
 	numMaxPrimitives = numPrims;
 	numMaxPreSplits  = numPrims - numPrimitives;
@@ -177,11 +176,6 @@ namespace embree
 			 AlignedAtomicCounter32 &counter,
 			 PrimRef *__restrict__ prims)
   {
-    DBG(
-	DBG_PRINT(primBounds);
-	DBG_PRINT(depth);
-	);
-
     if (depth == 0) 
       {	    
 	const unsigned int index = counter.inc();
@@ -195,11 +189,6 @@ namespace embree
 
 	const float pos = (primBounds.upper[dim] + primBounds.lower[dim]) * 0.5f;
 	splitTri(primBounds,dim,pos,vtxA,vtxB,vtxC,left,right);
-
-	DBG(
-	    DBG_PRINT(left);
-	    DBG_PRINT(right);
-	    );
 
 	subdivideTriangle( left ,vtxA,vtxB,vtxC, depth-1,counter,prims);
 	subdivideTriangle( right,vtxA,vtxB,vtxC, depth-1,counter,prims);
@@ -236,17 +225,6 @@ namespace embree
     const size_t step = (numMaxPreSplits+NUM_PRESPLITS_PER_TRIANGLE-1) / NUM_PRESPLITS_PER_TRIANGLE;
     const size_t startPreSplits = (step <= preSplits) ? preSplits - step : preSplits;
 
-
-    DBG(
-	DBG_PRINT(numPrimitives);
-	DBG_PRINT(preSplits);
-	DBG_PRINT(preSplits_padded);
-	DBG_PRINT(dest0);
-	DBG_PRINT(dest1);
-	DBG_PRINT(step);
-	DBG_PRINT(startPreSplits);
-	);
-
     TIMER(msec = getSeconds());
 
     LockStepTaskScheduler::dispatchTask( task_radixSortPreSplitIDs, this, threadIndex, threadCount );
@@ -265,17 +243,12 @@ namespace embree
 
     numPrimitives = dest0;
 
-    DBG(
-	DBG_PRINT(numPrimitives);
-	);
-
   }
 
 
 
   void BVH4iBuilderPreSplits::countAndComputePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
   {
-    DBG(PING);
     const size_t numGroups = scene->size();
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -499,8 +472,6 @@ namespace embree
 
 
 	/* calculate total number of items for each bucket */
-
-
 	mic_i count[16];
 #pragma unroll(16)
 	for (size_t i=0; i<16; i++)
@@ -639,7 +610,7 @@ namespace embree
 
 	  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-	  // TODO: use store4f
+	  // FIXME: use store4f
 	  Vec3fa vtxA = *(Vec3fa*)&v[0];
 	  Vec3fa vtxB = *(Vec3fa*)&v[1];
 	  Vec3fa vtxC = *(Vec3fa*)&v[2];
@@ -657,6 +628,14 @@ namespace embree
 
   }
 
+  void BVH4iBuilderPreSplits::finalize(const size_t threadIndex, const size_t threadCount)
+  {
+#if 0
+    std::cout << "TREE ROTATIONS" << std::endl;
+    for (size_t i=0;i<4;i++)
+      BVH4iRotate::rotate(bvh,bvh->root);
+#endif
+  }
 
   /* =================================================================================== */
   /* =================================================================================== */
@@ -684,33 +663,22 @@ namespace embree
 
   void BVH4iBuilderVirtualGeometry::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
-    DBG(PING);
     LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
   }
 
   void BVH4iBuilderVirtualGeometry::createAccel(const size_t threadIndex, const size_t threadCount)
   {
-    DBG(PING);
     LockStepTaskScheduler::dispatchTask( task_createVirtualGeometryAccel, this, threadIndex, threadCount );
   }
 
   void BVH4iBuilderVirtualGeometry::computePrimRefsVirtualGeometry(const size_t threadID, const size_t numThreads) 
   {
-    DBG(PING);
-
     const size_t numTotalGroups = scene->size();
 
     /* count total number of virtual objects */
     const size_t numVirtualObjects = numPrimitives;
     const size_t startID   = (threadID+0)*numVirtualObjects/numThreads;
     const size_t endID     = (threadID+1)*numVirtualObjects/numThreads; 
-
-    DBG(
-	DBG_PRINT(numTotalGroups);
-	DBG_PRINT(numVirtualObjects);
-	DBG_PRINT(startID);
-	DBG_PRINT(endID);
-	);
     
     PrimRef *__restrict__ const prims     = this->prims;
 
@@ -750,12 +718,6 @@ namespace embree
 	    const BBox3fa bounds = virtual_geometry->bounds(i);
 	    const mic_f bmin = broadcast4to16f(&bounds.lower); 
 	    const mic_f bmax = broadcast4to16f(&bounds.upper);
-
-	    DBG(
-		DBG_PRINT(currentID);
-		DBG_PRINT(bmin);
-		DBG_PRINT(bmax);
-		);
           
 	    bounds_scene_min = min(bounds_scene_min,bmin);
 	    bounds_scene_max = max(bounds_scene_max,bmax);
@@ -786,8 +748,6 @@ namespace embree
 
   void BVH4iBuilderVirtualGeometry::createVirtualGeometryAccel(const size_t threadID, const size_t numThreads)
   {
-    DBG(PING);
-
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
 
@@ -812,16 +772,16 @@ namespace embree
   // ==========================================================================================
   // ==========================================================================================
 
+
   void BVH4iBuilderMemoryConservative::printBuilderName()
   {
     std::cout << "building BVH4i with memory conservative binned SAH builder (MIC) ... " << std::endl;    
-    DBG(sleep(1));
   }
 
   void BVH4iBuilderMemoryConservative::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
     enableTaskStealing = true;
-    enablePerCoreWorkQueueFill = false;
+    enablePerCoreWorkQueueFill = true; 
     
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
@@ -829,75 +789,12 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives;
-	const size_t minAllocNodes = numPrims ? (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE : 16;
-
+	const size_t minAllocNodes = (threadCount+1) * 2 * ALLOCATOR_NODE_BLOCK_SIZE;
 	const size_t numNodes = max((size_t)((numPrims+3)/4),minAllocNodes);
+	const size_t sizeNodeInBytes   = sizeof(BVH4i::QuantizedNode);
+	const size_t sizeAccelInBytes  = sizeof(Triangle1mc);
 
-	const size_t additional_size = 16 * CACHELINE_SIZE;
-
-	/* free previously allocated memory */
-
-	if (prims)  {
-	  assert(size_prims > 0);
-	  os_free(prims,size_prims);
-	}
-	if (node  ) {
-	  assert(bvh->size_node > 0);
-	  os_free(node ,bvh->size_node);
-	}
-	if (accel ) {
-	  assert(bvh->size_accel > 0);
-	  os_free(accel,bvh->size_accel);
-	}
-      
-	// === allocated memory for primrefs,nodes, and accel ===
-	const size_t sizeNodeInBytes  = sizeof(BVH4i::QuantizedNode);
-	//const size_t sizeNodeInBytes  = sizeof(BVH4i::Node);
-
-	const size_t numTopLevelNodes = 256;
-	const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
-	// FIXME too conservative due to global paritioning
-	//const size_t size_node     = (numNodes * BVH_NODE_PREALLOC_FACTOR + numTopLevelNodes) * sizeNodeInBytes + additional_size;
-	const size_t size_node     = max(size_primrefs + numTopLevelNodes * sizeNodeInBytes,(size_t)(numNodes * BVH_NODE_PREALLOC_FACTOR + numTopLevelNodes) * sizeNodeInBytes); 
-
-	const size_t size_accel    = 0;
-
-	numAllocated64BytesBlocks = size_node / sizeof(mic_i) - numTopLevelNodes;
-	
-#if DEBUG
-	DBG_PRINT( sizeof(BVH4i::QuantizedNode) );
-	DBG_PRINT( num64BytesBlocksPerNode );
-	DBG_PRINT( numPrims );
-	DBG_PRINT( numNodes );
-	DBG_PRINT( sizeNodeInBytes );
-
-	DBG_PRINT( size_node );
-	DBG_PRINT( size_accel );
-
-	DBG_PRINT(numAllocated64BytesBlocks);
-	DBG_PRINT(size_primrefs);
-	DBG_PRINT(size_node);
-	DBG_PRINT(size_accel);
-	DBG_PRINT( numTopLevelNodes * sizeNodeInBytes );
-	DBG_PRINT( size_node - numTopLevelNodes * sizeNodeInBytes );
-	
-#endif
-
-	// === to do: os_reserve ===
-	prims = (PrimRef*) os_malloc(size_primrefs);
-	node  = (mic_i  *) os_malloc(size_node);
-
-	accel = (Triangle1*)((char*)node + numTopLevelNodes * sizeNodeInBytes); // for global paritioning
-
-	assert(prims  != 0);
-	assert(node   != 0);
-	assert(accel  != 0);
-
-	bvh->accel      = prims;
-	bvh->qbvh       = (BVH4i::Node*)node;
-	bvh->size_node  = size_node;
-	bvh->size_accel = size_primrefs;
-	
+	allocateMemoryPools(numPrims,numNodes,sizeNodeInBytes,sizeAccelInBytes);	
       }    
   }
 
@@ -942,9 +839,10 @@ namespace embree
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
 
-    const PrimRef*  bptr = prims + startID;
+    PrimRef*  __restrict bptr    = prims + startID;
+    Triangle1mc*  __restrict acc = (Triangle1mc*)accel + startID;
 
-    for (size_t j=startID; j<endID; j++, bptr++)
+    for (size_t j=startID; j<endID; j++, bptr++,acc++)
       {
 	prefetch<PFHINT_NTEX>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2EX>(bptr + L2_PREFETCH_ITEMS);
@@ -962,8 +860,6 @@ namespace embree
 	Vec3fa *vptr0 = (Vec3fa*)&mesh->vertex(tri.v[0]);
 	Vec3fa *vptr1 = (Vec3fa*)&mesh->vertex(tri.v[1]);
 	Vec3fa *vptr2 = (Vec3fa*)&mesh->vertex(tri.v[2]);
-
-	Triangle1mc *acc = (Triangle1mc*)bptr;
 
 	acc->v0 = vptr0;
 	acc->v1 = vptr1;

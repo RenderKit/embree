@@ -60,6 +60,11 @@ namespace embree
     VirtualFree(ptr,0,MEM_RELEASE);
   }
 
+  void *os_realloc (void* ptr, size_t bytesNew, size_t bytesOld)
+  {
+    FATAL("not implemented");
+  }
+
   double getSeconds() {
     LARGE_INTEGER freq, val;
     QueryPerformanceFrequency(&freq);
@@ -145,6 +150,41 @@ namespace embree
       throw std::bad_alloc();
     }
   }
+
+  void*  os_realloc (void* old_ptr, size_t bytesNew, size_t bytesOld)
+  {
+#if defined(__MIC__)
+    if (bytesOld > 16*4096)
+      bytesOld = (bytesOld+2*1024*1024-1)&(-2*1024*1024);
+    else
+      bytesOld = (bytesOld+4095)&(-4096);
+
+    if (bytesNew > 16*4096)
+      bytesNew = (bytesNew+2*1024*1024-1)&(-2*1024*1024);
+    else
+      bytesNew = (bytesNew+4095)&(-4096);
+
+
+    char *ptr = (char*)mremap(old_ptr,bytesOld,bytesNew,MREMAP_MAYMOVE);
+
+#if defined(DEBUG)
+    DBG_PRINT(old_ptr);
+    DBG_PRINT(bytesNew);
+    DBG_PRINT(bytesOld);
+    DBG_PRINT((void*)ptr);
+#endif
+    if (ptr == NULL || ptr == MAP_FAILED) {
+      perror("os_realloc ");
+      throw std::bad_alloc();
+    }
+    return ptr;
+#else
+    FATAL("not implemented");
+    return NULL;
+#endif
+
+  }
+
 
 #if defined(__MIC__)
 

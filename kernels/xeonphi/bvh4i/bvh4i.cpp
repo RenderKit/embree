@@ -17,7 +17,6 @@
 #include "bvh4i.h"
 #include "bvh4i_builder.h"
 #include "bvh4i_builder_morton.h"
-#include "bvh4i_builder_morton_enhanced.h"
 
 #include "common/accelinstance.h"
 #include "geometry/triangle1.h"
@@ -25,21 +24,12 @@
 namespace embree
 {
 
-#if 1
   __aligned(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
     { pos_inf, pos_inf, pos_inf,BVH4i::invalidNode},
     { neg_inf, neg_inf, neg_inf,BVH4i::invalidNode},
     { pos_inf, pos_inf, pos_inf,BVH4i::invalidNode},
     { neg_inf, neg_inf, neg_inf,BVH4i::invalidNode}
    };
-#else
-  __aligned(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
-    {1E38f,1E38f,1E38f,BVH_LEAF_MASK},
-    {1E38f,1E38f,1E38f,BVH_LEAF_MASK},
-    {1E38f,1E38f,1E38f,BVH_LEAF_MASK},
-    {1E38f,1E38f,1E38f,BVH_LEAF_MASK}
-  };
-#endif
 
   /*! intersector registration functions */
   DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iTriangle1Intersector1);
@@ -192,7 +182,15 @@ namespace embree
   Accel* BVH4i::BVH4iTriangle1ObjectSplitMorton(Scene* scene)
   { 
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);   
-    Builder* builder = BVH4iBuilderMorton::create(accel,scene);  
+    Builder* builder = BVH4iBuilderMorton::create(accel,scene,false);  
+    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(Scene* scene)
+  { 
+    BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);   
+    Builder* builder = BVH4iBuilderMorton64Bit::create(accel,scene);  
     Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -200,8 +198,7 @@ namespace embree
   Accel* BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene)
   { 
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);
-    
-    Builder* builder = BVH4iBuilderMortonEnhanced::create(accel,scene);
+    Builder* builder = BVH4iBuilderMorton::create(accel,scene,true);  
     
     Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);

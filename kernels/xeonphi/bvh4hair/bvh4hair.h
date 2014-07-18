@@ -32,25 +32,25 @@ namespace embree
     static const size_t N = 4;
 
     /*! Masks the bits that store the number of items per leaf. */
-    static const size_t encodingBits = 4;
-    static const size_t offset_mask  = ((size_t)-1) << encodingBits;
-    static const size_t leaf_shift   = 3;
-    static const size_t leaf_mask    = 1<<leaf_shift;  
-    static const size_t items_mask   = leaf_mask-1;  
-    static const size_t alignednode_mask = 1 << (leaf_shift+1);
+    static const unsigned int encodingBits     = 4;
+    static const unsigned int offset_mask      = ((unsigned int)-1) << encodingBits;
+    static const unsigned int leaf_shift       = 3;
+    static const unsigned int leaf_mask        = 1<<leaf_shift;  
+    static const unsigned int items_mask       = leaf_mask-1;  
+    static const unsigned int alignednode_mask = 1 << (leaf_shift+1);
 
     
     /*! Maximal depth of the BVH. */
     static const size_t maxBuildDepth = 26;
     static const size_t maxBuildDepthLeaf = maxBuildDepth+6;
     static const size_t maxDepth = maxBuildDepth + maxBuildDepthLeaf;
+    static const int travCost = 1;
 
     /*! Empty node */
-    static const size_t emptyNode = leaf_mask;
+    static const unsigned int emptyNode = leaf_mask;
 
     /*! Invalid node */
-    static const size_t invalidNode = (size_t)-1; //0;
-
+    static const unsigned int invalidNode = (unsigned int)-1; //0;
 
     struct NodeRef
     {
@@ -58,58 +58,334 @@ namespace embree
       __forceinline NodeRef () {}
 
       /*! Construction from integer */
-      __forceinline NodeRef (size_t id) : _id(id) { }
+      __forceinline NodeRef (unsigned id) : _id(id) { }
 
-      /*! Cast to size_t*/
-      __forceinline operator size_t() const { return _id; }
+      /*! Cast to unsigned */
+      __forceinline operator unsigned int() const { return _id; }
      
       /*! checks if this is a leaf */
-      __forceinline size_t isLeaf() const { return _id & leaf_mask; }
+      __forceinline unsigned int isLeaf() const { return _id & leaf_mask; }
 
       /*! checks if this is a leaf */
-      __forceinline size_t isLeaf(const size_t mask) const { return _id & mask; }
+      __forceinline unsigned int isLeaf(const unsigned int mask) const { return _id & mask; }
       
       /*! checks if this is a node */
-      __forceinline size_t isNode() const { return (_id & leaf_mask) == 0; }
+      __forceinline unsigned isNode() const { return (_id & leaf_mask) == 0; }
       
       /*! returns node pointer */
-      __forceinline       void* node() const      { assert(isNode()); return (void*)((size_t)_id); }
 
-      __forceinline       void* ptr() const      { return (void*)_id; }
-
+      __forceinline       void* node(      void* base) const { return (      void*)((      char*)base + (size_t)_id); }
+      __forceinline const void* node(const void* base) const { return (const void*)((const char*)base + (size_t)_id); }
+      
       
       /*! returns leaf pointer */
-      __forceinline char* leaf(size_t& num) const {
+      template<unsigned int scale=4>
+	__forceinline const char* leaf(const void* base, unsigned int& num) const {
         assert(isLeaf());
-        num = (_id & (size_t)items_mask);
-        return (char*)(_id & offset_mask);
+        num = _id & items_mask;
+        return (const char*)base + (_id & offset_mask)*scale;
       }
 
+      /*! returns leaf pointer */
+	template<unsigned int scale=4>
+	__forceinline const char* leaf(const void* base) const {
+	  assert(isLeaf());
+	  return (const char*)base + (_id & offset_mask)*scale;
+	}
 
-      __forceinline size_t offset() const {
-        return _id & offset_mask;
-      }
+	  __forceinline unsigned int offset() const {
+	    return _id & offset_mask;
+	  }
 
-      __forceinline size_t items() const {
-        return _id & items_mask;
-      }
-
-      __forceinline size_t offsetIndex() const {
+      __forceinline unsigned int offsetIndex() const {
         return _id >> encodingBits;
       }
 
+      __forceinline unsigned int items() const {
+        return _id & items_mask;
+      }
       
+      __forceinline unsigned int &id() { return _id; }
     private:
-      size_t _id;
+      unsigned int _id;
     };
 
-    struct __aligned(256) UnalignedNode
+
+    struct __aligned(64) UnalignedNode
+    {
+      UnalignedNode()
+	{
+	  assert(sizeof(UnalignedNode) == 192);
+	}
+
+      static float identityMatrix[16];
+      static float  invalidMatrix[16];
+
+
+      struct NodeStruct {
+        float x,y,z;           // x,y, and z coordinates of bounds
+        NodeRef data;         
+      } lower[4], upper[4];    
+
+      char xfm[4][16];
+
+      __forceinline mic_i getChildren() const
+      {
+	return load16i((int*)lower);
+      }
+
+      __forceinline mic_f getRow(size_t i) const
+      {
+	return load16f_int8(xfm[i]);
+      }
+
+      /*! Returns bounds of specified child. */
+      __forceinline BBox3fa bounds(size_t i) const {
+	assert( i < 4 );
+        Vec3fa l = *(Vec3fa*)&lower[i];
+        Vec3fa u = *(Vec3fa*)&upper[i];
+        return BBox3fa(l,u);
+      }
+
+      __forceinline void setInvalid(size_t i) 
+      {
+	lower[i].x = pos_inf;
+	lower[i].y = pos_inf;
+	lower[i].z = pos_inf;
+	lower[i].data = invalidNode;
+
+	upper[i].x = neg_inf;
+	upper[i].y = neg_inf;
+	upper[i].z = neg_inf;
+	upper[i].data = invalidNode;
+		
+      }
+
+      __forceinline void setInvalid() 
+      {
+	for (size_t i=0;i<4;i++)
+	  setInvalid(i);
+
+	for (size_t y=0;y<4;y++)
+	  for (size_t x=0;x<16;x++)
+	    xfm[y][x] = 0;
+      }
+      
+      template<int PFHINT>
+	__forceinline void prefetchNode() const
+	{
+	  prefetch<PFHINT>((char*)this + 0 * 64);
+	  prefetch<PFHINT>((char*)this + 1 * 64);
+	  prefetch<PFHINT>((char*)this + 2 * 64);
+	}
+
+
+      __forceinline const char &c_matrix(const size_t row,
+					 const size_t column,
+					 const size_t matrixID) const
+      {
+	assert(matrixID < 4);
+	assert(row < 3);
+	assert(column < 3);
+	return xfm[row][matrixID*4+column];
+      } 
+
+      __forceinline char &c_matrix(const size_t row,
+				   const size_t column,
+				   const size_t matrixID) 
+      {
+	assert(matrixID < 4);
+	assert(row < 3);
+	assert(column < 3);
+	return xfm[row][matrixID*4+column];
+      } 
+
+      __forceinline float matrix(const size_t row,
+				 const size_t column,
+				 const size_t matrixID) const
+      {
+	assert(matrixID < 4);
+	assert(row < 3);
+	assert(column < 3);
+	return ((float)c_matrix(row,column,matrixID)) * 1.0f/127.0f;
+      } 
+
+      
+
+      __forceinline void setMatrix(const BBox3fa &b, const size_t m)
+      {
+	lower[m].x = b.lower.x;
+	lower[m].y = b.lower.y;
+	lower[m].z = b.lower.z;
+
+	upper[m].x = b.upper.x;
+	upper[m].y = b.upper.y;
+	upper[m].z = b.upper.z;
+
+	c_matrix(0,0,m) = 127;
+	c_matrix(1,1,m) = 127;
+	c_matrix(2,2,m) = 127;
+      }
+   
+      __forceinline void setMatrix(const LinearSpace3fa &mat, BBox3fa &b, const size_t m)
+      {
+	lower[m].x = b.lower.x;
+	lower[m].y = b.lower.y;
+	lower[m].z = b.lower.z;
+
+	upper[m].x = b.upper.x;
+	upper[m].y = b.upper.y;
+	upper[m].z = b.upper.z;
+
+#if 0
+	for (size_t i=0;i<3;i++)
+	  {
+	    c_matrix(0,i,m) = (char)(127.0f * mat.vx[i]);
+	    c_matrix(1,i,m) = (char)(127.0f * mat.vy[i]);
+	    c_matrix(2,i,m) = (char)(127.0f * mat.vz[i]);
+	  }
+#else
+	const mic_f vx = broadcast4to16f(&mat.vx) * 127.0f;
+	const mic_f vy = broadcast4to16f(&mat.vy) * 127.0f;
+	const mic_f vz = broadcast4to16f(&mat.vz) * 127.0f;
+	store4f_int8(&c_matrix(0,0,m),vx);
+	store4f_int8(&c_matrix(1,0,m),vy);
+	store4f_int8(&c_matrix(2,0,m),vz);
+
+#endif
+	
+
+      }
+
+      __forceinline void createNode(unsigned int i, const size_t m)
+      {
+	child(m) = i;
+      }
+
+
+      __forceinline void createLeaf(unsigned int offset, 
+				    unsigned int items,
+				    const size_t m)
+      {
+	assert(items <= BVH4Hair::N);
+	child(m) = (offset << encodingBits) | BVH4Hair::leaf_mask | items;
+      }
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { return lower[i].data; }
+      __forceinline const NodeRef& child(size_t i) const { return lower[i].data; }
+
+      __forceinline       NodeRef& child_ref(size_t i)       { return ((BVH4Hair::NodeRef*)lower)[i]; }
+      __forceinline const NodeRef& child_ref(size_t i) const { return ((BVH4Hair::NodeRef*)lower)[i]; }
+     
+      __forceinline NodeRef *nodeRefPtr() const { return (NodeRef*)lower; }
+
+    };
+
+    
+    struct __aligned(64) AlignedNode
+    {
+    public:
+
+      AlignedNode() 
+	{
+	  assert( sizeof(AlignedNode) == 192 );
+	}
+      struct NodeStruct {
+        float x,y,z;           // x,y, and z coordinates of bounds
+        NodeRef data;          
+      } lower[4], upper[4];    
+
+      mic_i dummy;
+
+      template<int PFHINT>
+	__forceinline void prefetchNode() const
+	{
+	  prefetch<PFHINT>((char*)this + 0 * 64);
+	  prefetch<PFHINT>((char*)this + 1 * 64);
+	}
+
+      /*! Returns bounds of specified child. */
+      __forceinline BBox3fa bounds(size_t i) const {
+	assert( i < 4 );
+        Vec3fa l = *(Vec3fa*)&lower[i];
+        Vec3fa u = *(Vec3fa*)&upper[i];
+        return BBox3fa(l,u);
+      }
+
+      __forceinline mic_f lowerXYZ(size_t i) const {
+	return broadcast4to16f(&lower[i]);
+      }
+
+      __forceinline mic_f upperXYZ(size_t i) const {
+	return broadcast4to16f(&upper[i]);
+      }
+
+      __forceinline mic_i getChildren() const
+      {
+	return load16i((int*)lower);
+      }
+
+      __forceinline void setInvalid(size_t i)
+      {
+	lower[i].x = pos_inf;
+	lower[i].y = pos_inf;
+	lower[i].z = pos_inf;
+	lower[i].data = (unsigned int)BVH4Hair::invalidNode;
+
+	upper[i].x = neg_inf;
+	upper[i].y = neg_inf;
+	upper[i].z = neg_inf;
+	upper[i].data = (unsigned int)BVH4Hair::invalidNode;
+      }
+
+      __forceinline void setInvalid()
+      {
+	for (size_t i=0;i<4;i++)
+	  setInvalid(i);
+      }
+
+
+      __forceinline       NodeRef &child(size_t i)       { 
+	return  lower[i].data;
+      }
+      __forceinline const NodeRef &child(size_t i) const { 
+	return  lower[i].data;
+      }
+
+      __forceinline       NodeRef& child_ref(size_t i)       { return ((NodeRef*)lower)[i]; }
+      __forceinline const NodeRef& child_ref(size_t i) const { return ((NodeRef*)lower)[i]; }
+
+      __forceinline NodeRef *nodeRefPtr() const { return (NodeRef*)lower; }
+
+      __forceinline void setMatrix(const BBox3fa &b, const size_t m)
+      {
+	lower[m].x = b.lower.x;
+	lower[m].y = b.lower.y;
+	lower[m].z = b.lower.z;
+
+	upper[m].x = b.upper.x;
+	upper[m].y = b.upper.y;
+	upper[m].z = b.upper.z;
+
+	lower[m].data = 0;
+	upper[m].data = 0;
+
+      }
+
+      __forceinline void setMatrix(const LinearSpace3fa &mat, BBox3fa &b, const size_t m)
+      {
+	FATAL("not implemented");
+      }
+
+    };
+
+
+    struct __aligned(64) GeneralUnalignedNode
     {
       mic_f matrixRowXYZW[3];
 
-      NodeRef children[4];
-      unsigned int geomID[4];
-      unsigned int primID[4];
+      NodeRef children[16];
 
       static float identityMatrix[16];
       static float  invalidMatrix[16];
@@ -123,6 +399,16 @@ namespace embree
 	  prefetch<PFHINT>((char*)this + 3 * 64);
 	}
 
+      __forceinline mic_f getRow(size_t i) const
+      {
+	return matrixRowXYZW[i];
+      }
+
+      __forceinline mic_i getChildren() const
+      {
+	return load16i((int*)children);
+      }
+
       __forceinline void setInvalid()
       {
 	const mic_f c0 = broadcast4to16f(&invalidMatrix[ 0]);
@@ -133,9 +419,8 @@ namespace embree
 	matrixRowXYZW[1] = c1;
 	matrixRowXYZW[2] = c2;
 
-	children[0] = children[1] = children[2] = children[3] = BVH4Hair::invalidNode;
-	geomID[0] = geomID[1] = geomID[2] = geomID[3] = (unsigned int)-1;
-	primID[0] = primID[1] = primID[2] = primID[3] = (unsigned int)-1;
+	for (size_t i=0;i<16;i++)
+	  children[i] = BVH4Hair::invalidNode;
       }
 
       __forceinline void setIdentityMatrix() 
@@ -215,20 +500,6 @@ namespace embree
       {
 
 	AffineSpace3fa space = getAffineSpace3fa(mat,b);
-#if 0
-	matrix(0,0,m) = space.l.vx.x;
-	matrix(1,0,m) = space.l.vy.x;
-	matrix(2,0,m) = space.l.vz.x;
-
-	matrix(0,1,m) = space.l.vx.y;
-	matrix(1,1,m) = space.l.vy.y;
-	matrix(2,1,m) = space.l.vz.y;
-
-	matrix(0,2,m) = space.l.vx.z;
-	matrix(1,2,m) = space.l.vy.z;
-	matrix(2,2,m) = space.l.vz.z;
-#else
-
 	matrix(0,0,m) = space.l.vx.x;
 	matrix(1,0,m) = space.l.vx.y;
 	matrix(2,0,m) = space.l.vx.z;
@@ -241,16 +512,15 @@ namespace embree
 	matrix(1,2,m) = space.l.vz.y;
 	matrix(2,2,m) = space.l.vz.z;
 
-#endif
 	matrix(3,0,m) = space.p.x;
 	matrix(3,1,m) = space.p.y;
 	matrix(3,2,m) = space.p.z;
 
       }
 
-      __forceinline void createNode(UnalignedNode *b, const size_t m)
+      __forceinline void createNode(unsigned int i, const size_t m)
       {
-	child(m) = (size_t)b;
+	child(m) = i;
       }
 
 
@@ -259,144 +529,22 @@ namespace embree
 				    const size_t m)
       {
 	assert(items <= BVH4Hair::N);
-	child(m) = ((size_t)offset << encodingBits) | BVH4Hair::leaf_mask | items;
+	child(m) = (offset << encodingBits) | BVH4Hair::leaf_mask | items;
       }
 
       /*! Returns reference to specified child */
-      __forceinline       NodeRef& child(size_t i)       { return children[i]; }
-      __forceinline const NodeRef& child(size_t i) const { return children[i]; }
+      __forceinline       NodeRef& child(size_t i)       { return children[3+4*i]; }
+      __forceinline const NodeRef& child(size_t i) const { return children[3+4*i]; }
+
+      __forceinline       NodeRef& child_ref(size_t i)       { return children[i]; }
+      __forceinline const NodeRef& child_ref(size_t i) const { return children[i]; }
      
     };
 
 
-    struct __aligned(64) AlignedNode
-    {
-    public:
-      struct NodeStruct {
-        float x,y,z;           // x,y, and z coordinates of bounds
-        unsigned int data;     // encodes 1 is-leaf bit, 25 offset bits, and 6 num-items bits
-      } lower[4], upper[4];    // lower and upper bounds of all 4 children
-
-      NodeRef ref[8];
-
-      template<int PFHINT>
-	__forceinline void prefetchNode() const
-	{
-	  prefetch<PFHINT>((char*)this + 0 * 64);
-	  prefetch<PFHINT>((char*)this + 1 * 64);
-	  prefetch<PFHINT>((char*)this + 2 * 64);
-	}
-
-      /*! Returns bounds of specified child. */
-      __forceinline BBox3fa bounds(size_t i) const {
-	assert( i < 4 );
-        Vec3fa l = *(Vec3fa*)&lower[i];
-        Vec3fa u = *(Vec3fa*)&upper[i];
-        return BBox3fa(l,u);
-      }
-
-      __forceinline mic_f lowerXYZ(size_t i) const {
-	return broadcast4to16f(&lower[i]);
-      }
-
-      __forceinline mic_f upperXYZ(size_t i) const {
-	return broadcast4to16f(&upper[i]);
-      }
-
-      __forceinline void setInvalid(size_t i)
-      {
-	lower[i].x = pos_inf;
-	lower[i].y = pos_inf;
-	lower[i].z = pos_inf;
-	lower[i].data = (unsigned int)BVH4Hair::invalidNode;
-
-	upper[i].x = neg_inf;
-	upper[i].y = neg_inf;
-	upper[i].z = neg_inf;
-	upper[i].data = (unsigned int)BVH4Hair::invalidNode;
-      }
-
-      __forceinline void setInvalid()
-      {
-	for (size_t i=0;i<4;i++)
-	  setInvalid(i);
-      }
-
-      /* __forceinline void createNode(void *ptr, const size_t m) */
-      /* { */
-      /* 	size_t offset64 = (size_t)ptr | alignednode_mask; */
-      /* 	unsigned int lower_part  = (unsigned int)(offset64 & 0xffffffff); */
-      /* 	unsigned int upper_part = (unsigned int)(offset64 >> 32); */
-      /* 	lower[m].data  = lower_part; */
-      /* 	upper[m].data  = upper_part; */
-      /* 	ref[m] = offset64; */
-      /* } */
-
-#if 0
-      __forceinline       NodeRef child(size_t i)       { 
-	const unsigned int *__restrict const l_ptr = (unsigned int*)lower;
-	const unsigned int *__restrict const u_ptr = (unsigned int*)upper;
-	return NodeRef(((size_t)u_ptr[i] << 32) | l_ptr[i]); 
-      }
-      __forceinline const NodeRef child(size_t i) const { 
-	const unsigned int *__restrict const l_ptr = (unsigned int*)lower;
-	const unsigned int *__restrict const u_ptr = (unsigned int*)upper;
-	return NodeRef(((size_t)u_ptr[i] << 32) | l_ptr[i]); 
-      }
-#else
-
-      __forceinline       NodeRef &child(size_t i)       { 
-	return  ref[i];
-      }
-      __forceinline const NodeRef &child(size_t i) const { 
-	return  ref[i];
-      }
-
-      __forceinline       NodeRef &child_ref(size_t i)       { 
-	return  ref[i>>2];
-      }
-      __forceinline const NodeRef &child_ref(size_t i) const { 
-	return  ref[i>>2];
-      }
-      
-#endif
-
-      /* __forceinline void createLeaf(unsigned int offset,  */
-      /* 				    unsigned int items, */
-      /* 				    const size_t m) */
-      /* { */
-      /* 	assert(items <= BVH4Hair::N); */
-      /* 	const unsigned int v = (offset << encodingBits) | BVH4Hair::leaf_mask | items; */
-      /* 	lower[m].data = v; */
-      /* 	upper[m].data = 0.0; */
-      /* 	ref[m] = v; */
-      /* } */
-
-      __forceinline void setMatrix(const BBox3fa &b, const size_t m)
-      {
-	lower[m].x = b.lower.x;
-	lower[m].y = b.lower.y;
-	lower[m].z = b.lower.z;
-
-	upper[m].x = b.upper.x;
-	upper[m].y = b.upper.y;
-	upper[m].z = b.upper.z;
-
-	lower[m].data = 0;
-	upper[m].data = 0;
-
-      }
-
-      __forceinline void setMatrix(const LinearSpace3fa &mat, BBox3fa &b, const size_t m)
-      {
-	FATAL("not implemented");
-      }
-
-    };
-
     NodeRef root;                      //!< Root node (can also be a leaf).
 
-    const PrimitiveType& primTy;   //!< triangle type stored in BVH
+    const PrimitiveType& primTy;       //!< primitive type stored in BVH
     void* geometry;                    //!< pointer to geometry for intersection
     UnalignedNode *unaligned_nodes;
     void *accel;
@@ -406,8 +554,12 @@ namespace embree
     __forceinline       void* nodePtr()       { return unaligned_nodes; }
     __forceinline const void* nodePtr() const { return unaligned_nodes; }
 
-    __forceinline       void* triPtr()       { return accel; }
-    __forceinline const void* triPtr() const { return accel; }
+    __forceinline       void* primitivesPtr()       { return accel; }
+    __forceinline const void* primitivesPtr() const { return accel; }
+
+    size_t bytes () const {
+      return size_node+size_accel;
+    }
 
 
   BVH4Hair(const PrimitiveType& primTy, void* geometry = NULL) : primTy(primTy), 
@@ -417,7 +569,7 @@ namespace embree
       size_node(0),
       size_accel(0)
       {	
-	assert( sizeof(UnalignedNode) == 256 );
+	assert( sizeof(UnalignedNode) == 192 );
 	unaligned_nodes = NULL;
       }
 
@@ -456,24 +608,13 @@ namespace embree
       o << "children: ";
       for (size_t m=0;m<4;m++)
 	{
-	  o << n.child(m).ptr() << " ";
+	  o << n.child(m) << " ";
 	  if (n.child(m).isLeaf())
 	    o << "(LEAF: index " << n.child(m).offsetIndex() << " items " << n.child(m).items() << ") ";
 	  else
 	    o << "(NODE) ";
 	}
       o << std::endl;
-
-      o << "geomID: ";
-      for (size_t m=0;m<4;m++)
-	o << n.geomID[m] << " ";
-      o << std::endl;
-
-      o << "primID: ";
-      for (size_t m=0;m<4;m++)
-	o << n.primID[m] << " ";
-      o << std::endl;
-      
 
       return o;
     } 

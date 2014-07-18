@@ -401,7 +401,7 @@ inline Vec3fa BRDF__eval(const BRDF& brdf, const Vec3fa& wo, const DifferentialG
   return R;
 }
 
-inline Vec3fa BRDF__sample(const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, const Vec2f& s)  
+inline Vec3fa BRDF__sample(const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, bool& outside, const Vec2f& s)  
 {
   Vec3fa cd = Vec3fa(0.0f); 
   Sample3f wid = Sample3f(Vec3fa(0.0f),0.0f);
@@ -423,9 +423,11 @@ inline Vec3fa BRDF__sample(const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo,
     {
       float F = 1.0f;
       if (brdf.Ni != 1.0f) {
+        float Ni = brdf.Ni;
+        if (outside) Ni = 1.0f/brdf.Ni;
         float cosThetaO = clamp(dot(wo,dg.Ns));
-        float cosThetaI; Sample3f wt = refract(wo,dg.Ns,brdf.Ni,cosThetaO,cosThetaI);
-        F = fresnelDielectric(cosThetaO,cosThetaI,brdf.Ni);
+        float cosThetaI; Sample3f wt = refract(wo,dg.Ns,Ni,cosThetaO,cosThetaI);
+        F = fresnelDielectric(cosThetaO,cosThetaI,Ni);
       }
       wis = reflect_(wo,dg.Ns);
       cs = F * brdf.Ks;
@@ -440,13 +442,17 @@ inline Vec3fa BRDF__sample(const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo,
     {
       wit = Sample3f(neg(wo),1.0f);
       ct = brdf.Kt;
+      outside = !outside;
     }
     else
     {
+      float Ni = brdf.Ni;
+      if (outside) Ni = 1.0f/brdf.Ni;
       float cosThetaO = clamp(dot(wo,dg.Ns));
-      float cosThetaI; wit = refract(wo,dg.Ns,brdf.Ni,cosThetaO,cosThetaI);
-      float T = 1.0f-fresnelDielectric(cosThetaO,cosThetaI,brdf.Ni);
+      float cosThetaI; wit = refract(wo,dg.Ns,Ni,cosThetaO,cosThetaI);
+      float T = 1.0f-fresnelDielectric(cosThetaO,cosThetaI,Ni);
       ct = brdf.Kt * Vec3fa(T);
+      outside = !outside;
     }
   }
 
@@ -503,9 +509,6 @@ unsigned int irand(rand_state& state)
 
 void init_rand(rand_state& state, unsigned int x, unsigned int y, unsigned int z)
 {
-  x = x * 4294967288U;
-  y = y * 4294967294U;
-  z = z * 4294967280U;
   state.s1 = x >=   2 ? x : x +   2;
   state.s2 = y >=   8 ? y : y +   8;
   state.s3 = z >=  16 ? z : z +  16;
@@ -521,11 +524,66 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
+inline Vec3fa interpolate_normal(RTCRay& ray)
+{
+#if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
+  ISPCMesh* mesh = g_ispc_scene->meshes[ray.geomID];
+  ISPCTriangle* tri = &mesh->triangles[ray.primID];
+
+  /* load material ID */
+  int materialID = tri->materialID;
+
+  /* interpolate shading normal */
+  if (mesh->normals) {
+    Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
+    Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
+    Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
+    float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+    return normalize(w*n0 + u*n1 + v*n2);
+  } else {
+    return normalize(ray.Ng);
+  }
+
+#else
+
+  Vec3fa Ns = Vec3fa(0.0f);
+  int materialID = 0;
+  foreach_unique (geomID in ray.geomID) 
+  {
+    if (geomID >= 0 && geomID < g_ispc_scene->numMeshes)  { // FIXME: workaround for ISPC bug
+
+    ISPCMesh* mesh = g_ispc_scene->meshes[geomID];
+    
+    foreach_unique (primID in ray.primID) 
+    {
+      ISPCTriangle* tri = &mesh->triangles[primID];
+      
+      /* load material ID */
+      materialID = tri->materialID;
+
+      /* interpolate shading normal */
+      if (mesh->normals) {
+        Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
+        Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
+        Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
+        float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+        Ns = w*n0 + u*n1 + v*n2;
+      } else {
+        Ns = normalize(ray.Ng);
+      }
+    }
+    }
+  }
+  return normalize(Ns);
+#endif
+}
+
 Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* radiance accumulator and weight */
   Vec3fa L = Vec3fa(0.0f);
   Vec3fa Lw = Vec3fa(1.0f);
+  bool outside = true;
 
   /* initialize ray */
   RTCRay ray;
@@ -539,7 +597,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
   ray.time = 0;
 
   /* iterative path tracer loop */
-  for (int i=0; i<1; i++)
+  for (int i=0; i<20; i++)
   {
     /* terminate if contribution too low */
     if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
@@ -552,13 +610,17 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     /* invoke environment lights if nothing hit */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
     {
+#if 0
       /* iterate over all ambient lights */
       for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
         L = L + Lw*AmbientLight__eval(g_ispc_scene->ambientLights[i],ray.dir); // FIXME: +=
+#endif
 
-      /* iteratr over all distant lights */
+#if 0
+      /* iterate over all distant lights */
       for (size_t i=0; i<g_ispc_scene->numDistantLights; i++)
         L = L + Lw*DistantLight__eval(g_ispc_scene->distantLights[i],ray.dir); // FIXME: +=
+#endif
 
       break;
     }
@@ -567,10 +629,12 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     DifferentialGeometry dg;
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
-    dg.Ns = face_forward(ray.dir,normalize(ray.Ng)); // FIXME: implement
+    //Vec3fa _Ns = interpolate_normal(ray);
+    Vec3fa _Ns = normalize(ray.Ng);
+    dg.Ns = face_forward(ray.dir,_Ns);
 
     /* shade all rays that hit something */
-#if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
+#if 1 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
     int materialID = g_ispc_scene->meshes[ray.geomID]->triangles[ray.primID].materialID; 
 #else
     int materialID = 0;
@@ -598,13 +662,15 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     brdf.Kt = (1.0f-d)*Vec3fa(material->Kt);
     brdf.Ni = material->Ni;
 
-    /* calculate diffuce bounce */
-    Sample3f wi1;
-    Vec3fa c = BRDF__sample(brdf,Lw, wo, dg, wi1, Vec2f(frand(state),frand(state)));
+    /* sample BRDF at hit point */
+    Sample3f wi1; 
+    Vec3fa c = BRDF__sample(brdf,Lw, wo, dg, wi1, outside, Vec2f(frand(state),frand(state)));
 
+#if 0
     /* iterate over ambient lights */
     for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
+#if 1
       Vec3fa L0 = Vec3fa(0.0f);
       Sample3f wi0; float tMax0;
       Vec3fa Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,Vec2f(frand(state),frand(state)));
@@ -614,8 +680,11 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
         if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
           L0 = Ll0/wi0.pdf*BRDF__eval(brdf,wo,dg,wi0.v);
         }
+        L = L + Lw*L0;
       }
+#endif
 
+#if 0
       Vec3fa L1 = Vec3fa(0.0f);
       Vec3fa Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
       if (wi1.pdf > 0.0f) {
@@ -624,8 +693,11 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
         if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
           L1 = Ll1/wi1.pdf*c;
         }
+        L = L + Lw*L1;
       }
+#endif
 
+#if 0
       float s = wi0.pdf*wi0.pdf + wi1.pdf*wi1.pdf;
       if (s > 0) {
         float w0 = 0;
@@ -634,10 +706,13 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
         //float w1 = wi1.pdf*wi1.pdf/s;
         L = L + Lw*(w0*L0+w1*L1);
       }
+#endif
     }
+#endif
+
+    Sample3f wi; float tMax;
 
     /* iterate over point lights */
-    Sample3f wi; float tMax;
     for (size_t i=0; i<g_ispc_scene->numPointLights; i++)
     {
       Vec3fa Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
@@ -670,7 +745,6 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       L = L + Lw*Ll/wi.pdf*BRDF__eval(brdf,wo,dg,wi.v); // FIXME: +=
     }
 
-
     if (wi1.pdf <= 0.0f) break;
     Lw = Lw*c/wi1.pdf; // FIXME: *=
 
@@ -691,7 +765,10 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   rand_state state;
-  init_rand(state,123*x+456,345*y+564,452*g_accu_count+878);
+  init_rand(state,
+            253*x+35*y+152*g_accu_count+54,
+            1253*x+345*y+1452*g_accu_count+564,
+            10253*x+3435*y+52*g_accu_count+13);
 
   Vec3fa L = Vec3fa(0.0f,0.0f,0.0f);
   //for (int i=0; i<16; i++) {

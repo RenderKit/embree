@@ -77,7 +77,6 @@ namespace embree
   __forceinline const avxi operator +( const avxi& a ) { return a; }
   __forceinline const avxi operator -( const avxi& a ) { return _mm256_sub_epi32(_mm256_setzero_si256(), a.m256); }
   __forceinline const avxi abs       ( const avxi& a ) { return _mm256_abs_epi32(a.m256); }
-  __forceinline const avxi cast      ( const __m256& a ) { return _mm256_castps_si256(a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators

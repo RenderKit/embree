@@ -51,8 +51,29 @@ namespace embree
 	  *(BuildRecord*)this = b;
 	  xfm = LinearSpace3fa( zero );
 	}
+
       __aligned(64) LinearSpace3fa xfm;
 
+      __forceinline void PreQuantizeMatrix()
+      {
+	mic_f col0 = broadcast4to16f(&xfm.vx) * 127.0f;
+	mic_f col1 = broadcast4to16f(&xfm.vy) * 127.0f;
+	mic_f col2 = broadcast4to16f(&xfm.vz) * 127.0f;
+	
+	mic_i char_col0,char_col1,char_col2;
+	store16f_int8(&char_col0,col0);
+	store16f_int8(&char_col1,col1);
+	store16f_int8(&char_col2,col2);
+
+	mic_f new_col0 = load16f_int8((char*)&char_col0);
+	mic_f new_col1 = load16f_int8((char*)&char_col1);
+	mic_f new_col2 = load16f_int8((char*)&char_col2);
+
+	store4f(&xfm.vx,new_col0);
+	store4f(&xfm.vy,new_col1);
+	store4f(&xfm.vz,new_col2);
+
+      }
 
       __forceinline friend std::ostream &operator<<(std::ostream &o, const BuildRecordOBB &br)
 	{
@@ -74,11 +95,12 @@ namespace embree
     Bezier1i *prims;
     Bezier1i *accel;
     BVH4Hair::UnalignedNode*   node;
-    //BVH4Hair::AlignedNode*   node;
     
     size_t size_prims;
     size_t size_accel;
     size_t size_nodes;
+
+    const size_t num64BytesBlocksPerNode;
     
   BVH4HairBuilder(BVH4Hair* bvh, void* geometry) 
     : ParallelBinnedSAHBuilder(geometry),
@@ -88,7 +110,8 @@ namespace embree
       accel(NULL),
       size_prims(0),
       size_nodes(0),
-      size_accel(0)
+      size_accel(0),
+      num64BytesBlocksPerNode(4)
       {
       }
 
@@ -121,16 +144,16 @@ namespace embree
       {
 	assert(items <= BVH4Hair::N);
 	const unsigned int v = (offset << BVH4Hair::encodingBits) | BVH4Hair::leaf_mask | items;
-	size_t *ptr = (size_t*)parentPtr;
-	*ptr = (size_t)v;
+	unsigned int *ptr = (unsigned int*)parentPtr;
+	*ptr = v;
       }
 
     __forceinline void createNode(void *parentPtr,
-				  void *childPtr,
+				  unsigned int index,
 				  const size_t flags = 0)
     {
-      size_t *ptr = (size_t*)parentPtr;
-      *ptr = (size_t)childPtr | flags;      
+      unsigned int *ptr = (unsigned int*)parentPtr;
+      *ptr = (index*sizeof(BVH4Hair::UnalignedNode)) | flags;      
     }
 
 
@@ -167,7 +190,7 @@ namespace embree
     void recurseOBB(BuildRecordOBB& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads);
 
     /*! perform sequential binning and splitting */
-    bool splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild);
+    bool splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild, const bool binAABB = false);
 
     void computeUnalignedSpace( BuildRecordOBB& current );
     void computeUnalignedSpaceBounds( BuildRecordOBB& current );

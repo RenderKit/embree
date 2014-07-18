@@ -16,20 +16,20 @@
 
 #pragma once
 
-#include "bvh4i.h"
+#include "bvh4hair.h"
 
 namespace embree
 {
   template<typename NodeType>
-  class BVH4iStatistics 
+  class BVH4HairStatistics 
   {
     typedef NodeType Node;
-    typedef BVH4i::NodeRef NodeRef;
+    typedef BVH4Hair::NodeRef NodeRef;
 
   public:
 
     /* Constructor gathers statistics. */
-    BVH4iStatistics (BVH4i* bvh);
+    BVH4HairStatistics (BVH4Hair* bvh);
 
     /*! Convert statistics into a string */
     std::string str();
@@ -38,39 +38,40 @@ namespace embree
     void statistics(NodeRef node, BBox3fa bounds, size_t& depth);
 
   private:
-    BVH4i* bvh;
+    BVH4Hair* bvh;
     float bvhSAH;                      //!< SAH cost of the BVH4.
-    float leafSAH;                      //!< SAH cost of the BVH4.
+    float leafSAH;                     //!< SAH cost of the BVH4.
     size_t numNodes;                   //!< Number of internal nodes.
     size_t numValidBoxes;              //!< Number of valid boxes per node.
+    size_t numAlignedNodes;            //!< Number of internal aligned nodes.
+    size_t numUnalignedNodes;          //!< Number of internal aligned nodes.
     size_t numLeaves;                  //!< Number of leaf nodes.
     size_t numPrimBlocks;              //!< Number of primitive blocks.
-    size_t numPrimBlocks4;             //!< Number of primitive blocks, assuming block size of 4
     size_t numPrims;                   //!< Number of primitives.
     size_t depth;                      //!< Depth of the tree.
   };
 
 
   template<typename NodeType>
-  BVH4iStatistics<NodeType>::BVH4iStatistics (BVH4i* bvh) : bvh(bvh)
+  BVH4HairStatistics<NodeType>::BVH4HairStatistics (BVH4Hair* bvh) : bvh(bvh)
   {
-    numNodes = numLeaves = numPrimBlocks = numPrimBlocks4 = numPrims = depth = 0;
+    numNodes = numLeaves = numPrimBlocks = numAlignedNodes = numUnalignedNodes = numPrims = depth = 0;
     numValidBoxes = 0;
     bvhSAH = leafSAH = 0.0f;
-    if (bvh->root != BVH4i::invalidNode)
+    if (bvh->root != BVH4Hair::invalidNode)
       statistics(bvh->root,bvh->bounds,depth);
     bvhSAH /= area(bvh->bounds);
     leafSAH /= area(bvh->bounds);
-    assert(depth <= BVH4i::maxDepth);
+    assert(depth <= BVH4Hair::maxDepth);
   }
 
   template<typename NodeType>
-  std::string BVH4iStatistics<NodeType>::str()  
+  std::string BVH4HairStatistics<NodeType>::str()  
   {
     std::ostringstream stream;
-    size_t bytesNodes = bvh->size_node; // numNodes*sizeof(Node);
-    size_t bytesTris  = bvh->size_accel;
-    size_t bytesTotal = bytesNodes+bytesTris;//+bytesVertices;
+    size_t bytesNodes = bvh->size_node; 
+    size_t bytesPrims  = bvh->size_accel;
+    size_t bytesTotal = bytesNodes+bytesPrims;
     size_t bytesTotalAllocated = bvh->bytes();
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream.precision(4);
@@ -85,31 +86,41 @@ namespace embree
            << "(" << 100.0*double(bytesNodes)/double(bytesTotal) << "% of total " << bytesTotalAllocated/1E6 << " MB) "
            << "(" << 100.0*double(sizeof(NodeType)*numNodes)/double(bytesNodes) << "% of allocated nodes used)" 
            << std::endl;
+    stream << "  AABB nodes " << numAlignedNodes 
+	   << " (" << 100.0*double(numAlignedNodes)/double(numNodes) << "% of total) "
+	   << " / OBB nodes " << numUnalignedNodes
+	   << " (" << 100.0*double(numUnalignedNodes)/double(numNodes) << "% of total) " << std::endl;
     stream << "  leaves = " << numLeaves << " "
-           << "(" << bytesTris/1E6  << " MB) "
-           << "(" << 100.0*double(bytesTris)/double(bytesTotal) << "% of total " << bytesTotalAllocated/1E6 << " MB) "
+           << "(" << bytesPrims/1E6  << " MB) "
+           << "(" << 100.0*double(bytesPrims)/double(bytesTotal) << "% of total " << bytesTotalAllocated/1E6 << " MB) "
            << std::endl;
-    stream << "  node utilization " << 100.0*double(numValidBoxes)/double(numNodes*4) << "%" << std::endl;
-    stream << "  leaf utilization " << 100.0*double(numPrims)/double(numPrimBlocks*4) << "%" << std::endl;
+    stream << "  node utilization " << 100.0*double(numValidBoxes)/double(numNodes*4.0) << "%" << std::endl;
+    stream << "  leaf utilization " << 100.0*double(numPrims)/double(numPrimBlocks*2) << "%" << std::endl;
+
     return stream.str();
   }
 
   template<typename NodeType>
-  void BVH4iStatistics<NodeType>::statistics(NodeRef node, BBox3fa bounds, size_t& depth)
+  void BVH4HairStatistics<NodeType>::statistics(NodeRef node, BBox3fa bounds, size_t& depth)
   {
     float A = bounds.empty() ? 0.0f : area(bounds);
     
     if (node.isNode())
     {
+      if (node & BVH4Hair::alignednode_mask) 
+	numAlignedNodes++;
+      else
+	numUnalignedNodes++;
+      node = (unsigned int)node & (~BVH4Hair::alignednode_mask);
       numNodes++;
       depth = 0;
       size_t cdepth = 0;
       Node* n = (Node*)node.node((Node*)bvh->nodePtr());
 
-      bvhSAH += A*BVH4i::travCost;
+      bvhSAH += A*BVH4Hair::travCost;
 
-      for (size_t i=0; i<BVH4i::N; i++) {
-	if (n->child(i) == BVH4i::invalidNode) {continue; }
+      for (size_t i=0; i<BVH4Hair::N; i++) {
+	if (n->child(i) == BVH4Hair::invalidNode) {continue; }
 	numValidBoxes++;
         statistics(n->child(i),n->bounds(i),cdepth); 
         depth=max(depth,cdepth);
@@ -120,13 +131,12 @@ namespace embree
     else
     {
       depth = 0;
-      unsigned int prims; const char* tri = node.leaf(bvh->triPtr(),prims);
+      unsigned int prims; const char* tri = node.leaf(bvh->primitivesPtr(),prims);
       if (!prims) return;
       
       numLeaves++;
       numPrimBlocks  += 1;
       numPrims       += prims;
-      numPrimBlocks4 += (prims+3)/4;
       float sah = A * bvh->primTy.intCost * 1;
       bvhSAH += sah;
       leafSAH += sah;

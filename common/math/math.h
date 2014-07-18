@@ -224,6 +224,35 @@ namespace embree
     return x | (y << 1) | (z << 2);
   }
 
+  /*! bit interleave operation for 64bit data types*/
+  template<class T>
+    __forceinline T bitInterleave64(const T& xin, const T& yin, const T& zin){
+    T x = xin & 0x1fffff; 
+    T y = yin & 0x1fffff; 
+    T z = zin & 0x1fffff; 
+
+    x = (x | x << 32) & 0x1f00000000ffff;  
+    x = (x | x << 16) & 0x1f0000ff0000ff;  
+    x = (x | x << 8) & 0x100f00f00f00f00f; 
+    x = (x | x << 4) & 0x10c30c30c30c30c3; 
+    x = (x | x << 2) & 0x1249249249249249;
+
+    y = (y | y << 32) & 0x1f00000000ffff;  
+    y = (y | y << 16) & 0x1f0000ff0000ff;  
+    y = (y | y << 8) & 0x100f00f00f00f00f; 
+    y = (y | y << 4) & 0x10c30c30c30c30c3; 
+    y = (y | y << 2) & 0x1249249249249249;
+
+    z = (z | z << 32) & 0x1f00000000ffff;  
+    z = (z | z << 16) & 0x1f0000ff0000ff;  
+    z = (z | z << 8) & 0x100f00f00f00f00f; 
+    z = (z | z << 4) & 0x10c30c30c30c30c3; 
+    z = (z | z << 2) & 0x1249249249249249;
+
+    return x | (y << 1) | (z << 2);
+  }
+
+
 #if _WIN32
   __forceinline double drand48() {
     return double(rand())/double(RAND_MAX);
