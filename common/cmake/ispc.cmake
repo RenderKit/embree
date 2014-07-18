@@ -20,9 +20,11 @@ MACRO (INCLUDE_DIRECTORIES_ISPC)
 ENDMACRO ()
 
 execute_process(COMMAND which ispc OUTPUT_VARIABLE ISPC_EXECUTABLE)
-IF (EXISTS ${ISPC_EXECUTABLE})
+#IF (EXISTS "/home/benthin/Projects/ispc/ispc") 
+#"${ISPC_EXECUTABLE}")
+#message(${ISPC_EXECUTABLE})
   execute_process(COMMAND dirname ${ISPC_EXECUTABLE} OUTPUT_VARIABLE ISPC_DIR_TEMP)
-ENDIF()
+#ENDIF()
 STRING(REGEX REPLACE "\n" "" ISPC_DIR "${ISPC_DIR_TEMP}")
 
 MACRO (ispc_compile targets)

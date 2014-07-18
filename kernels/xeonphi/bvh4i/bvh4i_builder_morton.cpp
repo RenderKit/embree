@@ -18,7 +18,7 @@
 #include "builders/builder_util.h"
 #include "bvh4i_rotate.h"
 
-#define MORTON_BVH4I_NODE_PREALLOC_FACTOR     0.8f
+#define MORTON_BVH4I_NODE_PREALLOC_FACTOR   0.9f
 #define NUM_MORTON_IDS_PER_BLOCK            8
 #define SINGLE_THREADED_BUILD_THRESHOLD     (MAX_MIC_THREADS*64)
 
@@ -194,11 +194,16 @@ namespace embree
   {
     if (unlikely(g_verbose >= 2))
       {
-	std::cout << "building BVH4i with Morton builder (MIC)... " << std::flush;
+	std::cout << "building BVH4i with 32-bit Morton builder (MIC)... " << std::flush;
       }
     
     /* do some global inits first */
     initEncodingAllocateData();
+
+    // if (unlikely(g_verbose >= 2))
+    //   {
+    // 	DBG_PRINT(numPrimitives);
+    //   }
 
     if (likely(numPrimitives == 0))
       {
