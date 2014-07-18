@@ -194,11 +194,16 @@ namespace embree
   {
     if (unlikely(g_verbose >= 2))
       {
-	std::cout << "building BVH4i with Morton builder (MIC)... " << std::flush;
+	std::cout << "building BVH4i with 32-bit Morton builder (MIC)... " << std::flush;
       }
     
     /* do some global inits first */
     initEncodingAllocateData();
+
+    // if (unlikely(g_verbose >= 2))
+    //   {
+    // 	DBG_PRINT(numPrimitives);
+    //   }
 
     if (likely(numPrimitives == 0))
       {
