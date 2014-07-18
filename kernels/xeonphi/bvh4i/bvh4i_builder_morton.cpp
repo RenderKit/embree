@@ -18,7 +18,7 @@
 #include "builders/builder_util.h"
 #include "bvh4i_rotate.h"
 
-#define MORTON_BVH4I_NODE_PREALLOC_FACTOR     0.8f
+#define MORTON_BVH4I_NODE_PREALLOC_FACTOR   0.9f
 #define NUM_MORTON_IDS_PER_BLOCK            8
 #define SINGLE_THREADED_BUILD_THRESHOLD     (MAX_MIC_THREADS*64)
 
