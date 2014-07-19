@@ -179,8 +179,11 @@ namespace embree
 #endif
 
     prims = (PrimRef  *) os_malloc(size_primrefs); 
+    DBG_PRINT(prims);
     node  = (mic_i    *) os_malloc(size_node);
+    DBG_PRINT(node);
     accel = (Triangle1*) os_malloc(size_accel);
+    DBG_PRINT(accel);
 
     assert(prims  != 0);
     assert(node   != 0);
@@ -254,7 +257,7 @@ namespace embree
 
     /* allocate BVH data */
     allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
-
+    
     LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); 
 
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1) )
@@ -374,16 +377,19 @@ namespace embree
 	//const Vec3fa *__restrict__ const vertex = &mesh->vertex(0);
 	const char *__restrict cptr = (char*)&mesh->triangle(offset);
 	const size_t stride = mesh->getTriangleBufferStride();
+	
 	for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr+=stride)	 
 	  { 			    
 	    const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr;
 	    prefetch<PFHINT_L2>(cptr + L2_PREFETCH_ITEMS);
 	    prefetch<PFHINT_L1>(cptr + L1_PREFETCH_ITEMS);
 
+	    assert( tri.v[0] < mesh->numVertices );
+	    assert( tri.v[1] < mesh->numVertices );
+	    assert( tri.v[2] < mesh->numVertices );
+
+
 	    const mic3f v = mesh->getTriangleVertices(tri);
-	    assert( v[0] < mesh->numVertices );
-	    assert( v[1] < mesh->numVertices );
-	    assert( v[2] < mesh->numVertices );
 
 	    const mic_f bmin  = min(min(v[0],v[1]),v[2]);
 	    const mic_f bmax  = max(max(v[0],v[1]),v[2]);

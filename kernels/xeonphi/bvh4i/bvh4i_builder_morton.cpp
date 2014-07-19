@@ -343,11 +343,11 @@ namespace embree
 	  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 	  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 
-	  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	  assert( tri.v[0] < mesh->numVertices );
+	  assert( tri.v[1] < mesh->numVertices );
+	  assert( tri.v[2] < mesh->numVertices );
 
-	  assert( v[0] < mesh->numVertices );
-	  assert( v[1] < mesh->numVertices );
-	  assert( v[2] < mesh->numVertices );
+	  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
 	  const mic_f bmin  = min(min(v[0],v[1]),v[2]);
 	  const mic_f bmax  = max(max(v[0],v[1]),v[2]);
