@@ -179,11 +179,8 @@ namespace embree
 #endif
 
     prims = (PrimRef  *) os_malloc(size_primrefs); 
-    DBG_PRINT(prims);
     node  = (mic_i    *) os_malloc(size_node);
-    DBG_PRINT(node);
     accel = (Triangle1*) os_malloc(size_accel);
-    DBG_PRINT(accel);
 
     assert(prims  != 0);
     assert(node   != 0);
