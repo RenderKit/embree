@@ -125,6 +125,7 @@ namespace embree
 	const mic_f v1 = broadcast4to16f(vptr1);
 	const mic_f v2 = broadcast4to16f(vptr2);
 	return mic3f(v0,v1,v2);
+	//return mic3f(select(0x7777,v0,mic_f::zero()),select(0x7777,v1,mic_f::zero()),select(0x7777,v2,mic_f::zero()));
       }
     
 #endif

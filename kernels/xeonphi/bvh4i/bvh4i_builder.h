@@ -178,8 +178,8 @@ namespace embree
 	  m_lane = (unsigned int)m_lane << 4;
 	}      
 
-      store16f_ngo((mic_f*)ptr+0,lower);
-      store16f_ngo((mic_f*)ptr+1,upper);            
+      store16f_ngo((mic_f*)ptr+0,lower); 
+      store16f_ngo((mic_f*)ptr+1,upper);             
     }
 
 

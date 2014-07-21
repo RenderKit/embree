@@ -159,6 +159,8 @@ namespace embree
       node   = (BVH4i::Node*)    os_malloc(size_node  );     
       accel  = (Triangle1*)      os_malloc(size_accel );     
 
+      memset((char*)accel + numPrims * sizeAccelInBytes,0,additional_size); // clear out as a 4-wide access is possible
+
       assert(morton != 0);
       assert(node   != 0);
       assert(accel  != 0);

@@ -49,7 +49,7 @@ namespace embree
       {
 	std::cout << "scene flags: static " << isStatic() << " compact = " << isCompact() << " high quality = " << isHighQuality() << " robust = " << isRobust() << std::endl;
       }
-  
+
     if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
       {
 	if (g_tri_builder == "default") 

@@ -224,6 +224,9 @@ namespace embree
     assert(node   != 0);
     assert(accel  != 0);
 
+    memset((char*)accel + numPrims * sizeAccelInBytes,0,additional_size); // clear out as a 4-wide access is possible
+
+
     bvh4hair->accel = accel;
     bvh4hair->size_node  = size_node;
     bvh4hair->size_accel = size_accel;

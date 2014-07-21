@@ -99,6 +99,14 @@ namespace embree
   {
     float A = bounds.empty() ? 0.0f : area(bounds);
     
+    if (!isfinite(A))
+      {
+	DBG_PRINT(node);
+	DBG_PRINT(bounds);
+	DBG_PRINT(depth);
+	FATAL("error in sah");
+      }
+
     if (node.isNode())
     {
       numNodes++;
@@ -109,8 +117,16 @@ namespace embree
       bvhSAH += A*BVH4i::travCost;
 
       for (size_t i=0; i<BVH4i::N; i++) {
-	if (n->child(i) == BVH4i::invalidNode) {continue; }
+	if (n->child(i) == BVH4i::invalidNode) { break; }
 	numValidBoxes++;
+
+	BBox3fa b = n->bounds(i);
+	if (!(isfinite(b.lower.x) && isfinite(b.lower.y) && isfinite(b.lower.z)))
+	  FATAL("lower");
+
+	if (!(isfinite(b.upper.x) && isfinite(b.upper.y) && isfinite(b.upper.z)))
+	  FATAL("upper");
+
         statistics(n->child(i),n->bounds(i),cdepth); 
         depth=max(depth,cdepth);
       }
