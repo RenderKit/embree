@@ -100,34 +100,20 @@ namespace embree
 	const float *__restrict__ const vptr1 = (float*)&vertex(tri.v[1],dim);
 	const float *__restrict__ const vptr2 = (float*)&vertex(tri.v[2],dim);
 #else
-#if 0
-	const mic_i tri_v  = uload16i(0x7,(int*)&tri);
-	const mic_i stride = vertices[dim].getStride();
-
-	const mic_i offset = tri_v * stride;
-	__aligned(64) unsigned int offset_ptr[16];
-	store16i(offset_ptr,offset);
-
-	const char  *__restrict__ const base  = vertices[dim].getPtr();
-	const float *__restrict__ const vptr0 = (float*)(base + offset_ptr[0]);
-	const float *__restrict__ const vptr1 = (float*)(base + offset_ptr[1]);
-	const float *__restrict__ const vptr2 = (float*)(base + offset_ptr[2]);
-
-#else
 	const mic_i stride = vertices[dim].getStride();
 
 	mic_i offset0 = stride * mic_i(tri.v[0]);
 	mic_i offset1 = stride * mic_i(tri.v[1]);
 	mic_i offset2 = stride * mic_i(tri.v[2]);
 
-	const char  *__restrict__ const base  = vertices[dim].getPtr();
-	const float *__restrict__ const vptr0 = (float*)(base + offset0[0]);
-	const float *__restrict__ const vptr1 = (float*)(base + offset1[0]);
-	const float *__restrict__ const vptr2 = (float*)(base + offset2[0]);
+	const unsigned int off0 = offset0[0];
+	const unsigned int off1 = offset1[0];
+	const unsigned int off2 = offset2[0];
 
-#endif
-	
-	
+	const char  *__restrict__ const base  = vertices[dim].getPtr();
+	const float *__restrict__ const vptr0 = (float*)(base + off0);
+	const float *__restrict__ const vptr1 = (float*)(base + off1);
+	const float *__restrict__ const vptr2 = (float*)(base + off2);
 #endif	
 	if (HINT)
 	{
