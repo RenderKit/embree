@@ -93,9 +93,9 @@ namespace embree
 #if defined(__MIC__)
     if (bytes > 16*4096) {
       flags |= MAP_HUGETLB | MAP_POPULATE;
-     bytes = (bytes+2*1024*1024-1)&(-2*1024*1024);
+      bytes = (bytes+2*1024*1024-1)&(-(size_t(2)*1024*1024));
     } else {
-      bytes = (bytes+4095)&(-4096);
+      bytes = (bytes+4095)&(-size_t(4096));
     }
 #endif
     char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
@@ -109,9 +109,9 @@ namespace embree
 #if defined(__MIC__)
     if (bytes > 16*4096) {
       flags |= MAP_HUGETLB;
-      bytes = (bytes+2*1024*1024-1)&(-2*1024*1024);
+      bytes = (bytes+2*1024*1024-1)&(-size_t(2*1024*1024));
     } else {
-      bytes = (bytes+4095)&(-4096);
+      bytes = (bytes+4095)&(-size_t(4096));
     }
 #endif
     char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
@@ -141,9 +141,9 @@ namespace embree
 
 #if defined(__MIC__)
     if (bytes > 16*4096) {
-      bytes = (bytes+2*1024*1024-1)&(-2*1024*1024);
+      bytes = (bytes+2*1024*1024-1)&(-size_t(2*1024*1024));
     } else {
-      bytes = (bytes+4095)&(-4096);
+      bytes = (bytes+4095)&(-size_t(4096));
     }
 #endif
     if (munmap(ptr,bytes) == -1) {
@@ -155,14 +155,14 @@ namespace embree
   {
 #if defined(__MIC__)
     if (bytesOld > 16*4096)
-      bytesOld = (bytesOld+2*1024*1024-1)&(-2*1024*1024);
+      bytesOld = (bytesOld+2*1024*1024-1)&(-size_t(2*1024*1024));
     else
-      bytesOld = (bytesOld+4095)&(-4096);
+      bytesOld = (bytesOld+4095)&(-size_t(4096));
 
     if (bytesNew > 16*4096)
-      bytesNew = (bytesNew+2*1024*1024-1)&(-2*1024*1024);
+      bytesNew = (bytesNew+2*1024*1024-1)&(-size_t(2*1024*1024));
     else
-      bytesNew = (bytesNew+4095)&(-4096);
+      bytesNew = (bytesNew+4095)&(-size_t(4096));
 
 
     char *ptr = (char*)mremap(old_ptr,bytesOld,bytesNew,MREMAP_MAYMOVE);
