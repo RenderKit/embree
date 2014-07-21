@@ -22,6 +22,8 @@
 #include "geometry/primitive.h"
 #include "geometry/triangle1.h"
 
+#define BVH4I_TOP_LEVEL_MARKER 0x80000000
+
 namespace embree
 {
   /*! Multi BVH with 4 children. Each node stores the bounding box of
@@ -139,6 +141,53 @@ namespace embree
         return BBox3fa(l,u);
       }
 
+      __forceinline size_t numChildren() const {
+	mic_i c = load16i((int*)lower);
+	const size_t children = countbits(ne(0x8888,c,mic_i(BVH4i::invalidNode))); 
+	assert(children >=2 && children <= 4);
+	return children;
+      }
+
+      __forceinline BBox3fa bounds() const {
+	return merge( bounds(0),bounds(1),bounds(2),bounds(3) );
+      }
+
+      __forceinline float halfAreaBounds(size_t i) const {
+	assert( i < 4 );
+        return halfArea( bounds(i) );
+      }
+
+      __forceinline mic_f halfAreaBounds() const {
+	const mic_f l = load16f(lower);
+	const mic_f u = load16f(upper);
+	const mic_f diag = u-l;
+	const mic_f dx = swAAAA(diag);
+	const mic_f dy = swBBBB(diag);
+	const mic_f dz = swCCCC(diag);
+	const mic_f half_area = dx*(dy+dz)+dy*dz; 
+	return half_area;
+      }
+
+      __forceinline void setBounds(size_t i, const BBox3fa &b) {
+	assert( i < 4 );
+	lower[i].x = b.lower.x;
+	lower[i].y = b.lower.y;
+	lower[i].z = b.lower.z;
+
+	upper[i].x = b.upper.x;
+	upper[i].y = b.upper.y;
+	upper[i].z = b.upper.z;
+      }
+
+      __forceinline void setBounds(size_t i, const Node *__restrict__ const n) {
+	assert( i < 4 );
+	const mic_f l = min(min(n->lowerXYZ(0),n->lowerXYZ(1)),min(n->lowerXYZ(2),n->lowerXYZ(3)));
+	const mic_f u = max(max(n->upperXYZ(0),n->upperXYZ(1)),max(n->upperXYZ(2),n->upperXYZ(3)));
+
+	store3f(&lower[i],l);
+	store3f(&upper[i],u);
+      }
+
       __forceinline mic_f lowerXYZ(size_t i) const {
 	return broadcast4to16f(&lower[i]);
       }
@@ -170,6 +219,13 @@ namespace embree
       __forceinline       NodeRef& child(size_t i)       { return lower[i].child; }
       __forceinline const NodeRef& child(size_t i) const { return lower[i].child; }
 
+      template<int PFHINT>
+	__forceinline void prefetchNode() const
+	{
+	  prefetch<PFHINT>(lower);
+	  prefetch<PFHINT>(upper);
+	}
+
 
       __forceinline std::ostream& operator<<(std::ostream &o)
       {
@@ -181,6 +237,9 @@ namespace embree
 	  }
 	return o;
       }
+
+
+
     };
 
 
@@ -311,6 +370,12 @@ namespace embree
 #endif
       }
 
+      template<int PFHINT>
+	__forceinline void prefetchNode() const
+	{
+	  prefetch<PFHINT>(this);
+	}
+
     };
 
   public:
@@ -336,6 +401,7 @@ namespace embree
     static Accel* BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene);
     static Accel* BVH4iVirtualGeometryBinnedSAH(Scene* scene);
     static Accel* BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene);
+    static Accel* BVH4iTriangle1ObjectSplitMorton64Bit(Scene* scene);
 
     /*! Calculates the SAH of the BVH */
     float sah ();
@@ -371,6 +437,41 @@ namespace embree
     struct Helper { float x,y,z; int a; }; 
 
     static Helper initQBVHNode[4];
+
+    /*! swap the children of two nodes */
+    __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
+    {
+      assert(i<N && j<N);
+      const mic_f lower_a = broadcast4to16f(&a->lower[i]);
+      const mic_f upper_a = broadcast4to16f(&a->upper[i]);
+      const mic_f lower_b = broadcast4to16f(&b->lower[j]);
+      const mic_f upper_b = broadcast4to16f(&b->upper[j]);
+
+      store4f(&a->lower[i],lower_b);
+      store4f(&a->upper[i],upper_b);
+      store4f(&b->lower[j],lower_a);
+      store4f(&b->upper[j],upper_a);
+    }
+
+    /*! compacts a node (moves empty children to the end) */
+    __forceinline static void compact(Node* a)
+    {
+      /* find right most filled node */
+      ssize_t j=N;
+      for (j=j-1; j>=0; j--)
+        if (a->child(j) != emptyNode)
+          break;
+
+      /* replace empty nodes with filled nodes */
+      for (ssize_t i=0; i<j; i++) {
+        if (a->child(i) == emptyNode) {
+          swap(a,i,a,j);
+          for (j=j-1; j>i; j--)
+            if (a->child(j) != emptyNode)
+              break;
+        }
+      }
+    }
 
   private:
     float sah (NodeRef& node, BBox3fa bounds);

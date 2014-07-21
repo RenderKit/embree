@@ -17,7 +17,6 @@
 #include "bvh4i.h"
 #include "bvh4i_builder.h"
 #include "bvh4i_builder_morton.h"
-#include "bvh4i_builder_morton_enhanced.h"
 
 #include "common/accelinstance.h"
 #include "geometry/triangle1.h"
@@ -183,7 +182,15 @@ namespace embree
   Accel* BVH4i::BVH4iTriangle1ObjectSplitMorton(Scene* scene)
   { 
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);   
-    Builder* builder = BVH4iBuilderMorton::create(accel,scene);  
+    Builder* builder = BVH4iBuilderMorton::create(accel,scene,false);  
+    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(Scene* scene)
+  { 
+    BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);   
+    Builder* builder = BVH4iBuilderMorton64Bit::create(accel,scene);  
     Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -191,8 +198,7 @@ namespace embree
   Accel* BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene)
   { 
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);
-    
-    Builder* builder = BVH4iBuilderMortonEnhanced::create(accel,scene);
+    Builder* builder = BVH4iBuilderMorton::create(accel,scene,true);  
     
     Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);

@@ -603,6 +603,11 @@ namespace embree
     _mm512_mask_extpackstorelo_ps(addr,0xf, v1, _MM_DOWNCONV_PS_NONE , 0);
   }
 
+  __forceinline void store3f(void* addr, const mic_f& v1) {
+    assert((unsigned long)addr % 16 == 0);
+    _mm512_mask_extpackstorelo_ps(addr,0x7, v1, _MM_DOWNCONV_PS_NONE , 0);
+  }
+
   __forceinline void store4f_nt(void* addr, const mic_f& v1) {
     assert((unsigned long)addr % 16 == 0);
     _mm512_mask_extpackstorelo_ps(addr,0xf, v1, _MM_DOWNCONV_PS_NONE , _MM_HINT_NT);

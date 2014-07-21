@@ -2263,6 +2263,8 @@ namespace embree
     /* perform tests */
     rtcInit(g_rtcore.c_str());
 
+    //POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
+    
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
     POSITIVE("barrier_sys",               test_barrier_sys());
@@ -2293,6 +2295,7 @@ namespace embree
     POSITIVE("overlapping_triangles",     rtcore_overlapping_triangles(100000));
     POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
+
 
 #if defined(__USE_RAY_MASK__)
     rtcore_ray_masks_all();
@@ -2325,6 +2328,7 @@ namespace embree
 #if defined(__MIC__)
     rtcore_watertight_sphere16(100000);
     rtcore_watertight_plane16(100000);
+
 #endif
 
 #if defined(__FIX_RAYS__) // FIXME: this mode is deactivated, did never really work
@@ -2348,6 +2352,7 @@ namespace embree
     rtcore_inf("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
 #endif
 #endif
+
 
     POSITIVE("regression_static",         rtcore_regression_static());
     POSITIVE("regression_dynamic",        rtcore_regression_dynamic());

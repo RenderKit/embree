@@ -451,6 +451,10 @@ namespace embree
   __forceinline void store16i_uint8(const mic_m& mask, void* __restrict__ addr, const mic_i& v2) {
     _mm512_mask_extstore_epi32(addr,mask,v2,_MM_DOWNCONV_EPI32_UINT8,_MM_HINT_NONE);
   }
+
+  __forceinline mic_i convert_uint32(const __m512 f) { 
+    return _mm512_cvtfxpnt_round_adjustps_epu32(f,_MM_FROUND_TO_ZERO,_MM_EXPADJ_NONE);
+  }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators

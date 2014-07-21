@@ -29,7 +29,7 @@ namespace embree
 
   /*! factor to modify size of pre-allocated node array */
 
-#define BVH4I_NODE_PREALLOC_FACTOR               0.9f
+#define BVH4I_NODE_PREALLOC_FACTOR               0.715f 
 
 
   /*! creates the builder */
@@ -58,7 +58,7 @@ namespace embree
     virtual void allocateData     (const size_t threadCount, const size_t newNumPrimitives);
     virtual void computePrimRefs  (const size_t threadIndex, const size_t threadCount);
     virtual void createAccel      (const size_t threadIndex, const size_t threadCount);
-    virtual void finalize(const size_t threadIndex, const size_t threadCount);
+    virtual void finalize         (const size_t threadIndex, const size_t threadCount);
 
     virtual size_t getNumPrimitives();
     virtual void printBuilderName();
@@ -194,6 +194,7 @@ namespace embree
 
     virtual void allocateData   (const size_t threadCount, const size_t newNumPrimitives);
     virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
+    virtual void finalize       (const size_t threadIndex, const size_t threadCount);
     virtual void printBuilderName();
 
   protected:
