@@ -89,22 +89,31 @@ namespace embree
     template<unsigned int HINT=0>
       __forceinline mic3f getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
       {
+
+	assert( tri.v[0] < numVertices );
+	assert( tri.v[1] < numVertices );
+	assert( tri.v[2] < numVertices );
+
 #if !defined(__BUFFER_STRIDE__)
 	
 	const float *__restrict__ const vptr0 = (float*)&vertex(tri.v[0],dim);
 	const float *__restrict__ const vptr1 = (float*)&vertex(tri.v[1],dim);
 	const float *__restrict__ const vptr2 = (float*)&vertex(tri.v[2],dim);
 #else
-	const mic_i tri_v  = uload16i(0x7,(int*)&tri);
 	const mic_i stride = vertices[dim].getStride();
-	const mic_i offset = tri_v * stride;
-	const unsigned int *__restrict__ const offset_ptr = (unsigned int*)&offset;
+
+	mic_i offset0 = stride * mic_i(tri.v[0]);
+	mic_i offset1 = stride * mic_i(tri.v[1]);
+	mic_i offset2 = stride * mic_i(tri.v[2]);
+
+	const unsigned int off0 = offset0[0];
+	const unsigned int off1 = offset1[0];
+	const unsigned int off2 = offset2[0];
+
 	const char  *__restrict__ const base  = vertices[dim].getPtr();
-	const float *__restrict__ const vptr0 = (float*)(base + offset_ptr[0]);
-	const float *__restrict__ const vptr1 = (float*)(base + offset_ptr[1]);
-	const float *__restrict__ const vptr2 = (float*)(base + offset_ptr[2]);
-	
-	
+	const float *__restrict__ const vptr0 = (float*)(base + off0);
+	const float *__restrict__ const vptr1 = (float*)(base + off1);
+	const float *__restrict__ const vptr2 = (float*)(base + off2);
 #endif	
 	if (HINT)
 	{

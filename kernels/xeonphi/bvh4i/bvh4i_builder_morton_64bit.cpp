@@ -22,7 +22,7 @@
 #define NUM_MORTON_IDS_PER_BLOCK            4
 #define SINGLE_THREADED_BUILD_THRESHOLD     (MAX_MIC_THREADS*64)
 
-#define PROFILE
+//#define PROFILE
 #define PROFILE_ITERATIONS 200
 
 #define TIMER(x) 
@@ -32,101 +32,12 @@
 #define L2_PREFETCH_ITEMS 44
 
 #define NUM_TREE_ROTATIONS 1
-//#define NUM_TREE_ROTATIONS (unsigned int)-1
 
 //#define CHECK_SORTED_MORTON_CODES
 
 namespace embree 
 {
-#if defined(DEBUG)
-  extern AtomicMutex mtx;
-#endif
-
 #define INPLACE_RADIX_SORT_THRESHOLD 64
-
-  void inPlaceRadixSort64Bit(MortonID64Bit *__restrict__ const morton, const size_t size, size_t byteIndex)
-  {
-    __aligned(64) unsigned int radixCount[256];
-    
-#pragma unroll(16)
-    for (size_t i=0; i<16; i++)
-      store16i(&radixCount[i*16],mic_i::zero());
-
-    for (size_t i=0; i<size; i++) 
-      radixCount[morton[i].getByte(byteIndex)]++;
-
-    __aligned(64) unsigned int startCount[256+16];
-
-    startCount[0]   = 0;
-    startCount[256] = (unsigned int)-1;
-
-    for (size_t i=1;i<256;i++)
-      startCount[i] = startCount[i-1] + radixCount[i-1];
-
-    __aligned(64) unsigned int endCount[256+16];
-
-#pragma unroll(256)
-    for (size_t i=0;i<256;i++)
-      endCount[i] = startCount[i];
-
-    size_t nextCount = 1;
-    for (size_t i=0; i<size;) 
-      {
-	unsigned int index;
-	while( 1 ) 
-	  {
-	    index = morton[i].getByte(byteIndex);
-	    assert(index < 256);
-	    if (unlikely(endCount[ index ] == i)) { break; }
-	    assert( i < size );
-	    assert( endCount[index] < size );
-	    prefetch<PFHINT_NT>((char*)&morton[endCount[index]] + 64);
-
-	    //std::swap(morton[i],morton[endCount[index]]);
-	    xchg(morton[i],morton[endCount[index]]);
- 
-	    assert( morton[endCount[index]].getByte(byteIndex) == index);
-	    endCount[index]++;
-
-	  }
-	endCount[ index ]++;
-	while( endCount[ nextCount - 1 ] == startCount[ nextCount ] ) nextCount++;
-	i = endCount[ nextCount - 1];
-      }
-
-#ifdef DEBUG
-    for (size_t i=1; i<size;i++) 
-      {
-	assert( morton[i-1].getByte(byteIndex) <= morton[i].getByte(byteIndex) );
-      }
-#endif
-
-    byteIndex--;
-
-    if ( byteIndex != 0 )
-      {
-	for (size_t i=0;i<256;i++)
-	  {
-	    const size_t new_size = endCount[i] - startCount[i];
-	    if (likely(new_size == 0)) continue;
-	    if (new_size < INPLACE_RADIX_SORT_THRESHOLD)
-	      {
-		insertionsort_ascending<MortonID64Bit>(&morton[startCount[i]],new_size);
-
-#ifdef DEBUG
-		for (size_t j=1; j<new_size;j++) 
-		  {
-		    assert( morton[startCount[i]+j-1].getByte(byteIndex) <= morton[startCount[i]+j].getByte(byteIndex) );
-		  }
-#endif
-
-	      }
-	    else
-	      inPlaceRadixSort64Bit(&morton[startCount[i]],new_size,byteIndex);
-	  }
-      }
-  }
-
 
   void inPlaceRadixSort64BitPtr(MortonID64Bit *__restrict__ const morton, const size_t size, size_t byteIndex)
   {
@@ -826,7 +737,7 @@ namespace embree
   {
     if (unlikely(g_verbose >= 2))
       {
-	std::cout << "building BVH4i with 64Bit Morton builder (MIC)... " << std::flush;
+	std::cout << "building BVH4i with 64-bit Morton builder (MIC)... " << std::flush;
       }
     
     /* do some global inits first */
@@ -1394,7 +1305,7 @@ namespace embree
 #if 0
     BBox3fa rootBounds = refit(node->child(0));
 #else
-    BBox3fa rootBounds = refit_toplevel(node->child(0));
+    BBox3fa rootBounds = refit_toplevel(node->child(0)); // get correct bounds 
 #endif
 
 
@@ -1413,21 +1324,15 @@ namespace embree
 
     TIMER(msec = getSeconds());
 
-    /* build sub-trees */
-
-#if 0
-
-    for (size_t i=0;i<2;i++)
-      BVH4iRotate::rotate(bvh,bvh->root);
+    // for (size_t i=0;i<2;i++)
+    //   BVH4iRotate::rotate(bvh,bvh->root);
 
 
-#else
     // for (size_t i=0;i<1;i++)
     //   {
     // 	LockStepTaskScheduler::dispatchTask( task_doTreeRotationsOnSubTrees, this, threadIndex, threadCount );
     // 	BVH4iRotate::rotate(bvh,bvh->root,1,true);
     //   }
-#endif
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_doTreeRotationsOnSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);

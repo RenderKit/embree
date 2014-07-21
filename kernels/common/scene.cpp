@@ -45,6 +45,11 @@ namespace embree
     accels.add( BVH4i::BVH4iVirtualGeometryBinnedSAH(this) );
     accels.add( BVH4Hair::BVH4HairBinnedSAH(this) );
 
+    if (g_verbose >= 1)
+      {
+	std::cout << "scene flags: static " << isStatic() << " compact = " << isCompact() << " high quality = " << isHighQuality() << " robust = " << isRobust() << std::endl;
+      }
+  
     if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
       {
 	if (g_tri_builder == "default") 
@@ -112,7 +117,7 @@ namespace embree
         switch (mode) {
         case /*0b00*/ 0: 
 #if defined (__TARGET_AVX__)
-          if (has_feature(AVX)) 
+          if (has_feature(AVX2)) // on AVX machines BVH8 gives lower performance, only enable on AVX2!
 	  {
             if (isHighQuality()) accels.add(BVH8::BVH8Triangle8SpatialSplit(this)); 
             else                 accels.add(BVH8::BVH8Triangle8ObjectSplit(this)); 
@@ -136,8 +141,8 @@ namespace embree
         switch (mode) {
         case /*0b00*/ 0: accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this)); break;
         case /*0b01*/ 1: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
-        case /*0b10*/ 2: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
-        case /*0b11*/ 3: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
+        case /*0b10*/ 2: accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this)); break;
+        case /*0b11*/ 3: accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this)); break;
         }
       }
     }

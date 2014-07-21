@@ -145,10 +145,22 @@ namespace embree
   bool TriangleMesh::verify () 
   {
     float range = sqrtf(0.5f*FLT_MAX);
-    for (size_t i=0; i<numTriangles; i++) {
-      if (triangles[i].v[0] >= numVertices) return false;
-      if (triangles[i].v[1] >= numVertices) return false;
-      if (triangles[i].v[2] >= numVertices) return false;
+    for (size_t i=0; i<numTriangles; i++) {     
+      if (triangles[i].v[0] >= numVertices) { 
+#if DEBUG
+	DBG_PRINT(i); DBG_PRINT( triangles[i].v[0] ); 
+#endif
+	return false; }
+      if (triangles[i].v[1] >= numVertices) { 
+#if DEBUG
+	DBG_PRINT(i); DBG_PRINT( triangles[i].v[1] ); 
+#endif
+	return false; }
+      if (triangles[i].v[2] >= numVertices) { 
+#if DEBUG
+	DBG_PRINT(i); DBG_PRINT( triangles[i].v[2] ); 
+#endif
+	return false; }
     }
     for (size_t j=0; j<numTimeSteps; j++) {
       BufferT<Vec3fa>& verts = vertices[j];
