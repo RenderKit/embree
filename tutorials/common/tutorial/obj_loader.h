@@ -162,10 +162,10 @@ namespace embree
     vector_t<Material> materials;                      //!< material list
     std::vector<Mesh*> meshes;                         //!< list of meshes
     std::vector<HairSet*> hairsets;                    //!< list of hair sets
-    std::vector<AmbientLight> ambientLights;           //!< list of ambient lights
-    std::vector<PointLight> pointLights;               //!< list of point lights
-    std::vector<DirectionalLight> directionalLights;   //!< list of directional lights
-    std::vector<DistantLight> distantLights;           //!< list of distant lights
+    vector_t<AmbientLight> ambientLights;           //!< list of ambient lights
+    vector_t<PointLight> pointLights;               //!< list of point lights
+    vector_t<DirectionalLight> directionalLights;   //!< list of directional lights
+    vector_t<DistantLight> distantLights;           //!< list of distant lights
   };
   
   /*! read from disk */
