@@ -129,4 +129,12 @@ namespace embree
   {
     return broadcast4to16f(&v);
   }
+
+  __forceinline mic_i mul_uint64( const mic_i& a, const mic_i& b) { 
+    const mic_i low  = _mm512_mullo_epi32(a, b);
+    const mic_i high = _mm512_mulhi_epu32(a, b);
+    return select(0x5555,low,high);
+  }
+
+
 }

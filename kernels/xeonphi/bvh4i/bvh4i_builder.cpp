@@ -162,7 +162,7 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
-    const size_t size_node     = (float)(numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
+    const size_t size_node     = (double)(numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
     numAllocated64BytesBlocks = size_node / sizeof(mic_f);
@@ -1439,6 +1439,18 @@ namespace embree
 
     /* update BVH4i */
     bvh->bounds = global_bounds.geometry;
+
+
+#if DEBUG
+    assert( isfinite(bvh->bounds.lower.x) );
+    assert( isfinite(bvh->bounds.lower.y) );
+    assert( isfinite(bvh->bounds.lower.z) );
+
+    assert( isfinite(bvh->bounds.upper.x) );
+    assert( isfinite(bvh->bounds.upper.y) );
+    assert( isfinite(bvh->bounds.upper.z) );
+
+#endif
 
 
     /* create initial build record */
