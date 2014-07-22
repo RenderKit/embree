@@ -85,11 +85,11 @@ namespace embree
     }
     
 #if defined(__MIC__)
-    
+
+
     template<unsigned int HINT=0>
       __forceinline mic3f getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
       {
-
 	assert( tri.v[0] < numVertices );
 	assert( tri.v[1] < numVertices );
 	assert( tri.v[2] < numVertices );
@@ -99,31 +99,66 @@ namespace embree
 	const float *__restrict__ const vptr0 = (float*)&vertex(tri.v[0],dim);
 	const float *__restrict__ const vptr1 = (float*)&vertex(tri.v[1],dim);
 	const float *__restrict__ const vptr2 = (float*)&vertex(tri.v[2],dim);
+
+	const mic_f v0 = broadcast4to16f(vptr0); 
+	const mic_f v1 = broadcast4to16f(vptr1); 
+	const mic_f v2 = broadcast4to16f(vptr2); 
+
 #else
 	const mic_i stride = vertices[dim].getStride();
 
-	mic_i offset0 = stride * mic_i(tri.v[0]);
-	mic_i offset1 = stride * mic_i(tri.v[1]);
-	mic_i offset2 = stride * mic_i(tri.v[2]);
+	/* mic_i offset0 = stride * mic_i(tri.v[0]); */
+	/* mic_i offset1 = stride * mic_i(tri.v[1]); */
+	/* mic_i offset2 = stride * mic_i(tri.v[2]); */
 
-	const unsigned int off0 = offset0[0];
-	const unsigned int off1 = offset1[0];
-	const unsigned int off2 = offset2[0];
+	/* const unsigned int off0 = offset0[0]; */
+	/* const unsigned int off1 = offset1[0]; */
+	/* const unsigned int off2 = offset2[0]; */
+
+	/* const char  *__restrict__ const base  = vertices[dim].getPtr(); */
+	/* const float *__restrict__ const vptr0 = (float*)(base + off0); */
+	/* const float *__restrict__ const vptr1 = (float*)(base + off1); */
+	/* const float *__restrict__ const vptr2 = (float*)(base + off2); */
+
+	/* if (HINT) */
+	/* { */
+	/*   prefetch<HINT>(vptr1); */
+	/*   prefetch<HINT>(vptr2); */
+	/* } */
+
+	/* const mic_f v0 = broadcast4to16f(vptr0);  */
+	/* const mic_f v1 = broadcast4to16f(vptr1);  */
+	/* const mic_f v2 = broadcast4to16f(vptr2);  */
+
+	const mic_i offset0_64 = mul_uint64(stride,mic_i(tri.v[0]));
+	const mic_i offset1_64 = mul_uint64(stride,mic_i(tri.v[1]));
+	const mic_i offset2_64 = mul_uint64(stride,mic_i(tri.v[2]));
 
 	const char  *__restrict__ const base  = vertices[dim].getPtr();
-	const float *__restrict__ const vptr0 = (float*)(base + off0);
-	const float *__restrict__ const vptr1 = (float*)(base + off1);
-	const float *__restrict__ const vptr2 = (float*)(base + off2);
-#endif	
+	const size_t off0 = offset0_64.uint64(0);
+	const size_t off1 = offset1_64.uint64(0);
+	const size_t off2 = offset2_64.uint64(0);
+
+	const float *__restrict__ const vptr0_64 = (float*)(base + off0);
+	const float *__restrict__ const vptr1_64 = (float*)(base + off1);
+	const float *__restrict__ const vptr2_64 = (float*)(base + off2);
+
 	if (HINT)
 	{
-	  prefetch<HINT>(vptr1);
-	  prefetch<HINT>(vptr2);
+	  prefetch<HINT>(vptr1_64);
+	  prefetch<HINT>(vptr2_64);
 	}
+
+	assert( vptr0_64 == (float*)&vertex(tri.v[0],dim) );
+	assert( vptr1_64 == (float*)&vertex(tri.v[1],dim) );
+	assert( vptr2_64 == (float*)&vertex(tri.v[2],dim) );
+
+	const mic_f v0 = broadcast4to16f(vptr0_64);
+	const mic_f v1 = broadcast4to16f(vptr1_64);
+	const mic_f v2 = broadcast4to16f(vptr2_64);
+
+#endif	
 	
-	const mic_f v0 = broadcast4to16f(vptr0);
-	const mic_f v1 = broadcast4to16f(vptr1);
-	const mic_f v2 = broadcast4to16f(vptr2);
 	return mic3f(v0,v1,v2);
 	//return mic3f(select(0x7777,v0,mic_f::zero()),select(0x7777,v1,mic_f::zero()),select(0x7777,v2,mic_f::zero()));
       }

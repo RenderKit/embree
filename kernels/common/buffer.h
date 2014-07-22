@@ -107,7 +107,7 @@ namespace embree
 
 #else
 
-    __forceinline const T& operator[](unsigned int i) const 
+    __forceinline const T& operator[](size_t i) const 
     {
       assert(i<num);
 #if defined(__BUFFER_STRIDE__)
