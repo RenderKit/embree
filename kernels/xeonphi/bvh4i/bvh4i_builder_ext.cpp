@@ -78,6 +78,9 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR);
+PRINT(numPrims);
+	const size_t CORRECT_numPrims = (size_t)((size_t)numPrimitives * PRESPLIT_SPACE_FACTOR);
+PRINT(CORRECT_numPrims);
 	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE;
 	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
 

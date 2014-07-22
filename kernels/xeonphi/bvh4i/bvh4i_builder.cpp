@@ -162,7 +162,7 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
-    const size_t size_node     = (float)(numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
+    const size_t size_node     = (numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
     numAllocated64BytesBlocks = size_node / sizeof(mic_f);
@@ -330,8 +330,8 @@ namespace embree
   void BVH4iBuilder::computePrimRefsTriangles(const size_t threadID, const size_t numThreads) 
   {
     const size_t numGroups = scene->size();
-    const size_t startID = (threadID+0)*numPrimitives/numThreads;
-    const size_t endID   = (threadID+1)*numPrimitives/numThreads;
+    const size_t startID = ((threadID+0)*numPrimitives)/numThreads;
+    const size_t endID   = ((threadID+1)*numPrimitives)/numThreads;
     
     PrimRef *__restrict__ const prims     = this->prims;
 
@@ -345,7 +345,7 @@ namespace embree
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
       const size_t numTriangles = mesh->numTriangles;
-      if (numSkipped + numTriangles > startID) break;
+      if (numSkipped + numTriangles >= startID) break;
       numSkipped += numTriangles;
     }
 
