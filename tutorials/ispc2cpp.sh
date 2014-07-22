@@ -38,3 +38,5 @@ sed -i.backup  's/\#if 1 \/\/ enables parallel execution/\#if 0/g' $2
 sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
 
+sed -i.backup  's/new Vec3fa\[12\]/(Vec3fa\*) alignedMalloc(12\*sizeof(Vec3fa))/g' $2
+sed -i.backup  's/delete\[\] colors/alignedFree(colors)/g' $2
