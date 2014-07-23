@@ -41,7 +41,7 @@ namespace embree
     
     BVH4BuilderMorton::BVH4BuilderMorton (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
       : bvh(bvh), scene(scene), mesh(mesh), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-	topLevelItemThreshold(0), encodeShift(0), encodeMask(0), morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
+	topLevelItemThreshold(0), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
     {
       needAllThreads = true;
       if (mesh) needAllThreads = mesh->numTriangles > 50000;
@@ -96,7 +96,7 @@ namespace embree
     void BVH4BuilderMorton::build(size_t threadIndex, size_t threadCount) 
     {
       if (g_verbose >= 2)
-        std::cout << "building BVH4 with " << TOSTRING(isa) << "::BVH4BuilderMorton ... " << std::flush;
+        std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::BVH4BuilderMorton ... " << std::flush;
       
       /* do some global inits first */
       init(threadIndex,threadCount);
@@ -173,15 +173,15 @@ namespace embree
 	  if (mesh->numTimeSteps != 1) continue;
 	  maxPrimsPerGroup = max(maxPrimsPerGroup,mesh->numTriangles);
         }
-      }
 
-      /* calculate groupID, primID encoding */
-      encodeShift = __bsr(maxPrimsPerGroup) + 1;
-      encodeMask = ((size_t)1 << encodeShift)-1;
-      size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
+        /* calculate groupID, primID encoding */
+        encodeShift = __bsr(maxPrimsPerGroup) + 1;
+        encodeMask = ((size_t)1 << encodeShift)-1;
+        size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
       
-      if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
-	throw std::runtime_error("encoding error in morton builder");
+        if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
+          throw std::runtime_error("encoding error in morton builder");
+      }
       
       /* preallocate arrays */
       if (numPrimitivesOld != numPrimitives)
@@ -260,7 +260,7 @@ namespace embree
       
       CentGeomBBox3fa bounds; bounds.reset();
       
-	  if (mesh) 
+      if (mesh) 
       {
         for (size_t i=start; i<end; i++)	 
           bounds.extend(mesh->bounds(i));
@@ -315,7 +315,8 @@ namespace embree
           const ssef upper = (ssef)b.upper;
           const ssef centroid = lower+upper;
           const ssei binID = ssei((centroid-base)*scale);
-          const unsigned int index = (group << encodeShift) | (offset+i);
+          unsigned int index = offset+i;
+          if (this->mesh == NULL) index |= group << encodeShift;
           ax[slots] = extract<0>(binID);
           ay[slots] = extract<1>(binID);
           az[slots] = extract<2>(binID);
@@ -371,7 +372,8 @@ namespace embree
         const size_t index  = morton[i].index;
         const size_t primID = index & encodeMask; 
         const size_t geomID = index >> encodeShift; 
-        global_bounds.extend(scene->getTriangleMesh(geomID)->bounds(primID));
+        const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
+        global_bounds.extend(mesh->bounds(primID));
       }
       
       /* compute mapping from world space into 3D grid */
@@ -384,7 +386,8 @@ namespace embree
         const size_t index  = morton[i].index;
         const size_t primID = index & encodeMask; 
         const size_t geomID = index >> encodeShift; 
-        const BBox3fa b = scene->getTriangleMesh(geomID)->bounds(primID);
+        const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
+        const BBox3fa b = mesh->bounds(primID);
         const ssef lower = (ssef)b.lower;
         const ssef upper = (ssef)b.upper;
         const ssef centroid = lower+upper;
@@ -494,8 +497,8 @@ namespace embree
       {	
         const size_t index = morton[start+i].index;
         const size_t primID = index & encodeMask; 
-        const size_t geomID = index >> encodeShift; 
-        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+        const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         
         const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
@@ -536,8 +539,8 @@ namespace embree
       {
         const size_t index = morton[start+i].index;
         const size_t primID = index & encodeMask; 
-        const size_t geomID = index >> encodeShift; 
-        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+        const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -576,8 +579,8 @@ namespace embree
       {
         const size_t index = morton[start+i].index;
         const size_t primID = index & encodeMask; 
-        const size_t geomID = index >> encodeShift; 
-        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+        const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -612,8 +615,8 @@ namespace embree
       {	
         const size_t index = morton[start+i].index;
         const size_t primID = index & encodeMask; 
-        const size_t geomID = index >> encodeShift; 
-        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+        const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         
         const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
@@ -653,8 +656,8 @@ namespace embree
       {
         const size_t index = morton[start+i].index;
         const size_t primID = index & encodeMask; 
-        const size_t geomID = index >> encodeShift; 
-        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+        const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -693,8 +696,8 @@ namespace embree
       {
 	const size_t index = morton[start+i].index;
         const size_t primID = index & encodeMask; 
-        const size_t geomID = index >> encodeShift; 
-	const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+        const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
 	const TriangleMesh::Triangle& tri = mesh->triangle(primID);
 	const Vec3fa& p0 = mesh->vertex(tri.v[0]);
         const Vec3fa& p1 = mesh->vertex(tri.v[1]);

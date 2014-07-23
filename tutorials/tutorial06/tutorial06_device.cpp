@@ -67,7 +67,7 @@ inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const 
 
 /*! Samples hemisphere with power cosine distribution. Up direction
  *  is provided as argument. */
-inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const Vec3fa N, const float _exp) {
+inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const Vec3fa& N, const float _exp) {
   const Sample3f s = powerCosineSampleHemisphere(u,v,_exp);
   return Sample3f(frame(N)*s.v,s.pdf);
 }
@@ -82,7 +82,7 @@ inline Sample3f UniformSampleCone(const float u, const float v, const float angl
 }
 
 /*! Uniform sampling of spherical cone. Cone direction is provided as argument. */
-inline Sample3f UniformSampleCone(const float u, const float v, const float angle, const Vec3fa N) { // FIXME: &
+inline Sample3f UniformSampleCone(const float u, const float v, const float angle, const Vec3fa& N) { // FIXME: &
   const Sample3f s = UniformSampleCone(u,v,angle);
   return Sample3f(frame(N)*s.v,s.pdf);
 }
@@ -109,7 +109,7 @@ inline Sample3f reflect_(const Vec3fa &V, const Vec3fa &N, const float cosi) {
  *  medium. The vectors V and N have to point towards the same side
  *  of the surface. The cosine between V and N is given as input and
  *  the cosine of -N and transmission ray is computed as output. */
-inline Sample3f refract(const Vec3fa V, const Vec3fa N, const float eta, 
+inline Sample3f refract(const Vec3fa& V, const Vec3fa& N, const float eta, 
                         const float cosi, float &cost)
 {
   const float k = 1.0f-eta*eta*(1.0f-cosi*cosi);
@@ -666,11 +666,10 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     Sample3f wi1; 
     Vec3fa c = BRDF__sample(brdf,Lw, wo, dg, wi1, outside, Vec2f(frand(state),frand(state)));
 
-#if 0
     /* iterate over ambient lights */
     for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
-#if 1
+#if 0
       Vec3fa L0 = Vec3fa(0.0f);
       Sample3f wi0; float tMax0;
       Vec3fa Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,Vec2f(frand(state),frand(state)));
@@ -684,7 +683,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       }
 #endif
 
-#if 0
+#if 1
       Vec3fa L1 = Vec3fa(0.0f);
       Vec3fa Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
       if (wi1.pdf > 0.0f) {
@@ -708,7 +707,6 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       }
 #endif
     }
-#endif
 
     Sample3f wi; float tMax;
 

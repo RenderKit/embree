@@ -162,7 +162,7 @@ namespace embree
 	const mic_f b_max = bounds.y;
 
 	const mic_f centroid_2 = b_min + b_max; 
-	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
+	const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
@@ -211,7 +211,7 @@ namespace embree
 	const mic_f b_max = bounds.y;
 
 	const mic_f centroid_2 = b_min + b_max; 
-	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
+	const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
@@ -275,11 +275,11 @@ namespace embree
 	    const mic_f b_max  = bounds.y;
 
 	    const mic_f centroid_2 = b_min + b_max;
-	    const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
+	    const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 
-	    /* assert(0 <= binID[0] && binID[0] < 16); */
-	    /* assert(0 <= binID[1] && binID[1] < 16); */
-	    /* assert(0 <= binID[2] && binID[2] < 16); */
+	    assert(0 <= binID[0] && binID[0] < 16);
+	    assert(0 <= binID[1] && binID[1] < 16);
+	    assert(0 <= binID[2] && binID[2] < 16);
 
 	    const mic_i id = load16i(identity);
 	    const mic_m m_update_x = eq(id,swAAAA(binID));
@@ -414,7 +414,7 @@ namespace embree
 	const mic_f b_max  = bounds.y;
 
 	const mic_f centroid_2 = b_min + b_max;
-	const mic_i binID_noclamp = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
+	const mic_i binID_noclamp = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 	const mic_i binID = min(max(binID_noclamp,mic_i::zero()),mic_i(15));
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
@@ -809,7 +809,7 @@ namespace embree
 	const mic_f b_max  = bounds.y;
 
 	const mic_f centroid_2 = b_min + b_max; 
-	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
+	const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
@@ -859,11 +859,11 @@ namespace embree
 	const mic_f b_max  = bounds.y;
 
 	const mic_f centroid_2 = b_min + b_max; 
-	const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
+	const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
-	/* assert(0 <= binID[0] && binID[0] < 16); */
-	/* assert(0 <= binID[1] && binID[1] < 16); */
-	/* assert(0 <= binID[2] && binID[2] < 16); */
+	assert(0 <= binID[0] && binID[0] < 16);
+	assert(0 <= binID[1] && binID[1] < 16);
+	assert(0 <= binID[2] && binID[2] < 16);
 	// ------------------------------------------------------------------------      
 	const mic_i id = load16i(identity);
 	const mic_m m_update_x = eq(id,swAAAA(binID));
@@ -937,11 +937,11 @@ namespace embree
 	    const mic_f b_max  = bounds.y;
 
 	    const mic_f centroid_2 = b_min + b_max; 
-	    const mic_i binID = mic_i((centroid_2 - centroidBoundsMin_2)*scale);
+	    const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 
-	    /* assert(0 <= binID[0] && binID[0] < 16); */
-	    /* assert(0 <= binID[1] && binID[1] < 16); */
-	    /* assert(0 <= binID[2] && binID[2] < 16); */
+	    assert(0 <= binID[0] && binID[0] < 16); 
+	    assert(0 <= binID[1] && binID[1] < 16); 
+	    assert(0 <= binID[2] && binID[2] < 16); 
 
 	    const mic_i id = load16i(identity);
 	    const mic_m m_update_x = eq(id,swAAAA(binID));

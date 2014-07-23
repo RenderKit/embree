@@ -72,6 +72,10 @@ namespace embree
     __forceinline int&       operator[](const size_t index)       { return i[index]; };
     __forceinline const int& operator[](const size_t index) const { return i[index]; };
 
+    __forceinline unsigned int&       uint(const size_t index) const      { assert(index < 16); return ((unsigned int*)i)[index]; };
+    __forceinline size_t&             uint64(const size_t index)  const     { assert(index < 8); return ((size_t*)i)[index]; };
+
+
   };
   
   ////////////////////////////////////////////////////////////////////////////////
@@ -450,6 +454,10 @@ namespace embree
   
   __forceinline void store16i_uint8(const mic_m& mask, void* __restrict__ addr, const mic_i& v2) {
     _mm512_mask_extstore_epi32(addr,mask,v2,_MM_DOWNCONV_EPI32_UINT8,_MM_HINT_NONE);
+  }
+
+  __forceinline mic_i convert_uint32(const __m512 f) { 
+    return _mm512_cvtfxpnt_round_adjustps_epu32(f,_MM_FROUND_TO_ZERO,_MM_EXPADJ_NONE);
   }
   
   ////////////////////////////////////////////////////////////////////////////////

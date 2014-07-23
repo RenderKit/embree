@@ -17,11 +17,16 @@
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder.h"
 #include "bvh4i/bvh4i_statistics.h"
+#include "bvh4i/bvh4i_rotate.h"
+
 
 
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 #define SINGLE_THREADED_BUILD_THRESHOLD        512
+
+#define INTERSECTION_COST 1.0f
+
 
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
@@ -137,6 +142,7 @@ namespace embree
     msec = getSeconds();
 #endif
 
+
     const size_t additional_size = 16 * CACHELINE_SIZE;
 
     /* free previously allocated memory */
@@ -156,7 +162,7 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
-    const size_t size_node     = numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size;
+    const size_t size_node     = (double)(numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
     numAllocated64BytesBlocks = size_node / sizeof(mic_f);
@@ -184,6 +190,8 @@ namespace embree
     // memset(node,0,size_node);
     // memset(accel,0,size_accel);
 
+    memset((char*)accel + numPrims * sizeAccelInBytes,0,additional_size); // clear out as a 4-wide access is possible
+
     bvh->accel      = accel;
     bvh->qbvh       = (BVH4i::Node*)node;
     bvh->size_node  = size_node;
@@ -203,12 +211,11 @@ namespace embree
     DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
-
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives+4;
-	const size_t minAllocNodes = (threadCount+1) * 2 * ALLOCATOR_NODE_BLOCK_SIZE; //FIXME: better minAllocNodes estimate
-	const size_t numNodes = max((size_t)((numPrims+3)/4),minAllocNodes);
+	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 
+	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
 	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(Triangle1));
       }
   }
@@ -223,16 +230,18 @@ namespace embree
   
   void BVH4iBuilder::build(const size_t threadIndex, const size_t threadCount) 
   {
-    DBG(PING);
     const size_t totalNumPrimitives = getNumPrimitives();
-
-    //DBG_PRINT(totalNumPrimitives);
-
-    DBG(DBG_PRINT(totalNumPrimitives));
 
     /* print builder name */
     if (unlikely(g_verbose >= 2)) {
       printBuilderName();
+      DBG_PRINT(totalNumPrimitives);
+
+#if DEBUG
+      DBG_PRINT(totalNumPrimitives);
+      DBG_PRINT(threadIndex);
+      DBG_PRINT(threadCount);
+#endif
     }
 
     if (likely(totalNumPrimitives == 0))
@@ -242,14 +251,12 @@ namespace embree
 	bvh->bounds = empty;
 	bvh->qbvh = NULL;
 	bvh->accel = NULL;
-	bvh->size_node  = 0;
-	bvh->size_accel = 0;
 	return;
       }
 
     /* allocate BVH data */
     allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
-
+    
     LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); 
 
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1) )
@@ -369,13 +376,26 @@ namespace embree
 	//const Vec3fa *__restrict__ const vertex = &mesh->vertex(0);
 	const char *__restrict cptr = (char*)&mesh->triangle(offset);
 	const size_t stride = mesh->getTriangleBufferStride();
+	
 	for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr+=stride)	 
 	  { 			    
 	    const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr;
 	    prefetch<PFHINT_L2>(cptr + L2_PREFETCH_ITEMS);
 	    prefetch<PFHINT_L1>(cptr + L1_PREFETCH_ITEMS);
 
+	    assert( tri.v[0] < mesh->numVertices );
+	    assert( tri.v[1] < mesh->numVertices );
+	    assert( tri.v[2] < mesh->numVertices );
+
+#if DEBUG
+	    for (size_t k=0;k<3;k++)
+	      if (!(isfinite( mesh->vertex( tri.v[k] ).x) && isfinite( mesh->vertex( tri.v[k] ).y) && isfinite( mesh->vertex( tri.v[k] ).z)))
+		FATAL("!isfinite in vertex for tri.v[k]");
+
+#endif
+
 	    const mic3f v = mesh->getTriangleVertices(tri);
+
 	    const mic_f bmin  = min(min(v[0],v[1]),v[2]);
 	    const mic_f bmax  = max(max(v[0],v[1]),v[2]);
 
@@ -430,6 +450,7 @@ namespace embree
   
   void BVH4iBuilder::finalize(const size_t threadIndex, const size_t threadCount)
   {
+
   }
 
   __forceinline void computeAccelerationData(const unsigned int &geomID,
@@ -444,6 +465,12 @@ namespace embree
     const mic_i gID(geomID);
 
     const mic3f v = mesh->getTriangleVertices<PFHINT_L1>(tri);
+
+#if DEBUG
+    for (size_t k=0;k<3;k++)
+      if (!(isfinite( mesh->vertex( tri.v[k] ).x) && isfinite( mesh->vertex( tri.v[k] ).y) && isfinite( mesh->vertex( tri.v[k] ).z)))
+	FATAL("!isfinite in vertex for tri.v[k]");
+#endif
 
     const mic_f tri_accel = initTriangle1(v[0],v[1],v[2],gID,pID,mic_i(mesh->mask));
     store16f_ngo(acc,tri_accel);
@@ -513,7 +540,7 @@ namespace embree
       {
 	const float voxelArea = area(current.bounds.geometry);
 
-	global_sharedData.split.cost = items * voxelArea;
+	global_sharedData.split.cost = items * voxelArea * INTERSECTION_COST;
 	
 	const Bin16 &bin16 = global_bin16[0];
 
@@ -763,7 +790,7 @@ namespace embree
     const unsigned int items = current.items();
     const float voxelArea = area(current.bounds.geometry);
     Split split;
-    split.cost = items * voxelArea;
+    split.cost = items * voxelArea * INTERSECTION_COST;
 
     for (size_t dim = 0;dim < 3;dim++) 
       {
@@ -1029,17 +1056,23 @@ namespace embree
   
   bool BVH4iBuilder::split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
   {
-    const unsigned int center = (current.begin + current.end)/2;
+    unsigned int blocks4 = (current.items()+3)/4;
+    unsigned int center = current.begin + (blocks4/2)*4; // (current.begin + current.end)/2;
+
+    assert(center != current.begin);
+    assert(center != current.end);
     
     Centroid_Scene_AABB left; left.reset();
     for (size_t i=current.begin; i<center; i++)
       left.extend(primref[i].bounds());
     leftChild.init(left,current.begin,center);
+    assert(leftChild.items() > 0);
     
     Centroid_Scene_AABB right; right.reset();
     for (size_t i=center; i<current.end; i++)
       right.extend(primref[i].bounds());	
     rightChild.init(right,center,current.end);
+    assert(rightChild.items() > 0);
     
     return true;
   }
@@ -1272,7 +1305,7 @@ namespace embree
 
 	const float voxelArea = area(current.bounds.geometry);
 
-	local_sharedData[globalCoreID].split.cost = items * voxelArea;	
+	local_sharedData[globalCoreID].split.cost = items * voxelArea  * INTERSECTION_COST;	
 
 	for (size_t dim=0;dim<3;dim++)
 	  {
@@ -1406,7 +1439,20 @@ namespace embree
 
     /* update BVH4i */
     bvh->bounds = global_bounds.geometry;
-    
+
+
+#if DEBUG
+    assert( isfinite(bvh->bounds.lower.x) );
+    assert( isfinite(bvh->bounds.lower.y) );
+    assert( isfinite(bvh->bounds.lower.z) );
+
+    assert( isfinite(bvh->bounds.upper.x) );
+    assert( isfinite(bvh->bounds.upper.y) );
+    assert( isfinite(bvh->bounds.upper.z) );
+
+#endif
+
+
     /* create initial build record */
     BuildRecord br;
     br.init(global_bounds,0,numPrimitives);
@@ -1443,9 +1489,6 @@ namespace embree
     TIMER(msec = getSeconds());    
     LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
     numNodes = atomicID;
-#ifdef DEBUG
-    DBG_PRINT(atomicID);
-#endif
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
@@ -1459,7 +1502,7 @@ namespace embree
     TIMER(msec = getSeconds());     
     finalize(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "task_convertToSOALayout " << 1000. * msec << " ms" << std::endl << std::flush);
+    TIMER(std::cout << "task_finalize " << 1000. * msec << " ms" << std::endl << std::flush);
 
     
 

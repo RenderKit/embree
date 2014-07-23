@@ -82,6 +82,7 @@ namespace embree
   std::string g_hair_builder = "default"; 
   std::string g_hair_traverser = "default";    //!< traverser to use for hair
   double      g_hair_builder_replication_factor = 2.0f; // FIXME: add this also for triangles
+  float       g_memory_preallocation_factor = 1.0f; 
 
   int g_scene_flags = -1;       //!< scene flags to use
   size_t g_verbose = 0;                   //!< verbosity of output
@@ -103,6 +104,8 @@ namespace embree
     g_hair_traverser = "default";
     g_hair_builder_replication_factor = 2.0f;
     
+    g_memory_preallocation_factor = 1.0f;
+
     g_scene_flags = -1;
     g_verbose = 0;
     g_numThreads = 0;
@@ -130,6 +133,11 @@ namespace embree
     std::cout << "  builder       = " << g_hair_builder << std::endl;
     std::cout << "  traverser     = " << g_hair_traverser << std::endl;
     std::cout << "  replications  = " << g_hair_builder_replication_factor << std::endl;
+
+#if defined(__MIC__)
+    std::cout << "memory allocation:" << std::endl;
+    std::cout << "  preallocation_factor  = " << g_memory_preallocation_factor << std::endl;
+#endif
   }
   
   /* error flag */
@@ -154,6 +162,14 @@ namespace embree
     size_t begin = pos;
     while (isdigit(str[pos])) pos++;
     return atoi(str+begin);
+  }
+
+  float parseFloat(const char* str, size_t& pos) 
+  {
+    skipSpace(str,pos);
+    size_t begin = pos;
+    while (isdigit(str[pos]) || str[pos] == '.') pos++;
+    return atof(str+begin);
   }
 
   std::string parseIdentifier(const char* str, size_t& pos) 
@@ -281,6 +297,11 @@ namespace embree
             } while (parseSymbol (cfg,',',pos));
           }
         }
+	else if (tok == "memory_preallocation_factor" && parseSymbol (cfg,'=',pos))
+	  {
+	    g_memory_preallocation_factor = parseFloat (cfg,pos);
+	    DBG_PRINT( g_memory_preallocation_factor );
+	  }
         
       } while (findNext (cfg,',',pos));
     }

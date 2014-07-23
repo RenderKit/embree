@@ -210,7 +210,7 @@ namespace embree
     
     /* interactive mode */
     if (g_interactive) {
-      initWindowState(tutorialName, g_width, g_height, g_fullscreen);
+      initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
       enterWindowRunLoop();
     }
 
