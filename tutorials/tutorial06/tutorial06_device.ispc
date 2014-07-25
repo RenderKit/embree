@@ -15,6 +15,8 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.isph"
+#include "shapesampler.isph"
+#include "optics.isph"
 
 struct DifferentialGeometry
 {
@@ -37,112 +39,6 @@ inline RTCRay make_Ray(const Vec3f& org, const Vec3f& dir, const float tnear, co
   return ray;
 }
 
-/*! Cosine weighted hemisphere sampling. Up direction is the z direction. */
-inline Sample3f cosineSampleHemisphere(const float u, const float v) 
-{
-  const float phi = 2.0f * (float)pi * u;
-  const float cosTheta = sqrt(v), sinTheta = sqrt(1.0f - v);
-  return make_Sample3f(make_Vec3f(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta),cosTheta*(1.0f/(float)pi));
-}
-
-/*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
-inline Sample3f cosineSampleHemisphere(const float& u, const float& v, const Vec3f& N) 
-{
-  const Sample3f s = cosineSampleHemisphere(u,v);
-  return make_Sample3f(frame(N)*s.v,s.pdf);
-}
-
-/*! Samples hemisphere with power cosine distribution. Up direction
- *  is the z direction. */
-inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const float _exp) 
-{
-  const float phi = 2.0f * M_PI * u;
-  const float cosTheta = pow(v,1.0f/(_exp+1.0f));
-  const float sinTheta = cos2sin(cosTheta);
-  return make_Sample3f(make_Vec3f(cos(phi) * sinTheta, 
-				   sin(phi) * sinTheta, 
-				   cosTheta), 
-                       (_exp+1.0f)*pow(cosTheta,_exp)*0.5f/M_PI);
-}
-
-/*! Samples hemisphere with power cosine distribution. Up direction
- *  is provided as argument. */
-inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const Vec3f N, const float _exp) {
-  const Sample3f s = powerCosineSampleHemisphere(u,v,_exp);
-  return make_Sample3f(frame(N)*s.v,s.pdf);
-}
-
-/*! Uniform sampling of spherical cone. Cone direction is the z
- *  direction. */
-inline Sample3f UniformSampleCone(const float u, const float v, const float angle) {
-  const float phi = (float)(2.0f * M_PI) * u;
-  const float cosTheta = 1.0f - v*(1.0f - cos(angle));
-  const float sinTheta = cos2sin(cosTheta);
-  return make_Sample3f(make_Vec3f(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta), 1.0f/((float)(4.0f*M_PI)*sqr(sin(0.5f*angle))));
-}
-
-/*! Uniform sampling of spherical cone. Cone direction is provided as argument. */
-inline Sample3f UniformSampleCone(const float u, const float v, const float angle, const Vec3f N) { // FIXME: &
-  const Sample3f s = UniformSampleCone(u,v,angle);
-  return make_Sample3f(frame(N)*s.v,s.pdf);
-}
-
-
-
-
-
-/*! Reflects a viewing vector V at a normal N. */
-inline Sample3f reflect_(const Vec3f& V, const Vec3f& N) {
-  float cosi = dot(V,N);
-  return make_Sample3f(2.0f*cosi*N-V, 1.0f);
-}
-
-/*! Reflects a viewing vector V at a normal N. Cosine between V
- *  and N is given as input. */
-inline Sample3f reflect_(const Vec3f &V, const Vec3f &N, const float cosi) {
-  return make_Sample3f(2.0f*cosi*N-V, 1.0f);
-}
-
-/*! Refracts a viewing vector V at a normal N using the relative
- *  refraction index eta. Eta is refraction index of outside medium
- *  (where N points into) divided by refraction index of the inside
- *  medium. The vectors V and N have to point towards the same side
- *  of the surface. The cosine between V and N is given as input and
- *  the cosine of -N and transmission ray is computed as output. */
-inline Sample3f refract(const Vec3f V, const Vec3f N, const float eta, 
-                        const float cosi, float &cost)
-{
-  const float k = 1.0f-eta*eta*(1.0f-cosi*cosi);
-  if (k < 0.0f) { cost = 0.0f; return make_Sample3f(make_Vec3f(0.f),0.0f); }
-  cost = sqrt(k);
-  return make_Sample3f(eta*(cosi*N-V)-cost*N, 1.0f); //sqr(eta));
-}
-
-/*! Computes fresnel coefficient for media interface with relative
- *  refraction index eta. Eta is the outside refraction index
- *  divided by the inside refraction index. Both cosines have to be
- *  positive. */
-inline float fresnelDielectric(const float cosi, const float cost, const float eta)
-{
-  const float Rper = (eta*cosi -     cost) * rcp(eta*cosi +     cost);
-  const float Rpar = (    cosi - eta*cost) * rcp(    cosi + eta*cost);
-  return 0.5f*(Rpar*Rpar + Rper*Rper);
-}
-
-/*! Computes fresnel coefficient for media interface with relative
- *  refraction index eta. Eta is the outside refraction index
- *  divided by the inside refraction index. The cosine has to be
- *  positive. */
-inline float fresnelDielectric(const float cosi, const float eta)
-{
-  const float k = 1.0f-eta*eta*(1.0f-cosi*cosi);
-  if (k < 0.0f) return 1.0f;
-  const float cost = sqrt(k);
-  return fresnelDielectric(cosi, cost, eta);
-}
-
-
-
 struct ISPCTriangle 
 {
   int v0;                /*< first triangle vertex */
@@ -151,7 +47,9 @@ struct ISPCTriangle
   int materialID;        /*< material of triangle */
 };
 
-struct ISPCMaterial
+
+
+struct ISPCOBJMaterial
 {
   int illum;             /*< illumination model */
   
@@ -175,6 +73,10 @@ struct ISPCMesh
   int numTriangles;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+//                             Ambient Light                                  //
+////////////////////////////////////////////////////////////////////////////////
+
 struct ISPCAmbientLight
 {
   Vec3fa L;                  //!< radiance of ambient light
@@ -190,6 +92,10 @@ inline Vec3f AmbientLight__sample(const uniform ISPCAmbientLight& light, const D
   tMax = 1e20f;
   return make_Vec3f(light.L);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//                             Point Light                                    //
+////////////////////////////////////////////////////////////////////////////////
 
 struct ISPCPointLight
 {
@@ -210,6 +116,10 @@ varying Vec3f PointLight__sample(const uniform ISPCPointLight& light,
   return make_Vec3f(light.I);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//                        Directional Light                                   //
+////////////////////////////////////////////////////////////////////////////////
+
 struct ISPCDirectionalLight
 {
   Vec3fa D;                  //!< Light direction
@@ -226,6 +136,10 @@ varying Vec3f DirectionalLight__sample(const uniform ISPCDirectionalLight& light
   tMax = inf; 
   return make_Vec3f(light.E);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//                          Distant Light                                     //
+////////////////////////////////////////////////////////////////////////////////
 
 struct ISPCDistantLight
 {
@@ -253,10 +167,14 @@ varying Vec3f DistantLight__sample(const uniform ISPCDistantLight& light,
   return make_Vec3f(light.L);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//                               Scene                                        //
+////////////////////////////////////////////////////////////////////////////////
+
 struct ISPCScene
 {
   uniform ISPCMesh* uniform* meshes;   //!< list of meshes
-  uniform ISPCMaterial* materials;     //!< material list
+  uniform ISPCOBJMaterial* materials;     //!< material list
   int numMeshes;                       //!< number of meshes
   int numMaterials;                    //!< number of materials
 
@@ -648,7 +566,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     
     /* calculate BRDF */ // FIXME: avoid gathers
     BRDF brdf;
-    uniform ISPCMaterial* material = &g_ispc_scene->materials[materialID];
+    uniform ISPCOBJMaterial* material = &g_ispc_scene->materials[materialID];
     float d = material->d;
     //if (material->map_d) { d *= material->map_d.get(s,t); }
     brdf.Ka = make_Vec3f(material->Ka);

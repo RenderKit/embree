@@ -15,6 +15,8 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
+#include "shapesampler.h"
+#include "optics.h"
 
 struct DifferentialGeometry
 {
@@ -23,7 +25,7 @@ struct DifferentialGeometry
   Vec3fa Ns;
 };
 
-inline RTCRay Ray(const Vec3fa& org, const Vec3fa& dir, const float tnear, const float tfar)
+inline RTCRay make_Ray(const Vec3fa& org, const Vec3fa& dir, const float tnear, const float tfar)
 {
   RTCRay ray;
   ray.org = org;
@@ -37,112 +39,6 @@ inline RTCRay Ray(const Vec3fa& org, const Vec3fa& dir, const float tnear, const
   return ray;
 }
 
-/*! Cosine weighted hemisphere sampling. Up direction is the z direction. */
-inline Sample3f cosineSampleHemisphere(const float u, const float v) 
-{
-  const float phi = 2.0f * (float)pi * u;
-  const float cosTheta = sqrt(v), sinTheta = sqrt(1.0f - v);
-  return Sample3f(Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta),cosTheta*(1.0f/(float)pi));
-}
-
-/*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
-inline Sample3f cosineSampleHemisphere(const float& u, const float& v, const Vec3fa& N) 
-{
-  const Sample3f s = cosineSampleHemisphere(u,v);
-  return Sample3f(frame(N)*s.v,s.pdf);
-}
-
-/*! Samples hemisphere with power cosine distribution. Up direction
- *  is the z direction. */
-inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const float _exp) 
-{
-  const float phi = 2.0f * float(pi) * u;
-  const float cosTheta = pow(v,1.0f/(_exp+1.0f));
-  const float sinTheta = cos2sin(cosTheta);
-  return Sample3f(Vec3fa(cos(phi) * sinTheta, 
-				   sin(phi) * sinTheta, 
-				   cosTheta), 
-                       (_exp+1.0f)*pow(cosTheta,_exp)*0.5f/float(pi));
-}
-
-/*! Samples hemisphere with power cosine distribution. Up direction
- *  is provided as argument. */
-inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const Vec3fa& N, const float _exp) {
-  const Sample3f s = powerCosineSampleHemisphere(u,v,_exp);
-  return Sample3f(frame(N)*s.v,s.pdf);
-}
-
-/*! Uniform sampling of spherical cone. Cone direction is the z
- *  direction. */
-inline Sample3f UniformSampleCone(const float u, const float v, const float angle) {
-  const float phi = (float)(2.0f * float(pi)) * u;
-  const float cosTheta = 1.0f - v*(1.0f - cos(angle));
-  const float sinTheta = cos2sin(cosTheta);
-  return Sample3f(Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta), 1.0f/((float)(4.0f*float(pi))*sqr(sin(0.5f*angle))));
-}
-
-/*! Uniform sampling of spherical cone. Cone direction is provided as argument. */
-inline Sample3f UniformSampleCone(const float u, const float v, const float angle, const Vec3fa& N) { // FIXME: &
-  const Sample3f s = UniformSampleCone(u,v,angle);
-  return Sample3f(frame(N)*s.v,s.pdf);
-}
-
-
-
-
-
-/*! Reflects a viewing vector V at a normal N. */
-inline Sample3f reflect_(const Vec3fa& V, const Vec3fa& N) {
-  float cosi = dot(V,N);
-  return Sample3f(2.0f*cosi*N-V, 1.0f);
-}
-
-/*! Reflects a viewing vector V at a normal N. Cosine between V
- *  and N is given as input. */
-inline Sample3f reflect_(const Vec3fa &V, const Vec3fa &N, const float cosi) {
-  return Sample3f(2.0f*cosi*N-V, 1.0f);
-}
-
-/*! Refracts a viewing vector V at a normal N using the relative
- *  refraction index eta. Eta is refraction index of outside medium
- *  (where N points into) divided by refraction index of the inside
- *  medium. The vectors V and N have to point towards the same side
- *  of the surface. The cosine between V and N is given as input and
- *  the cosine of -N and transmission ray is computed as output. */
-inline Sample3f refract(const Vec3fa& V, const Vec3fa& N, const float eta, 
-                        const float cosi, float &cost)
-{
-  const float k = 1.0f-eta*eta*(1.0f-cosi*cosi);
-  if (k < 0.0f) { cost = 0.0f; return Sample3f(Vec3fa(0.f),0.0f); }
-  cost = sqrt(k);
-  return Sample3f(eta*(cosi*N-V)-cost*N, 1.0f); //sqr(eta));
-}
-
-/*! Computes fresnel coefficient for media interface with relative
- *  refraction index eta. Eta is the outside refraction index
- *  divided by the inside refraction index. Both cosines have to be
- *  positive. */
-inline float fresnelDielectric(const float cosi, const float cost, const float eta)
-{
-  const float Rper = (eta*cosi -     cost) * rcp(eta*cosi +     cost);
-  const float Rpar = (    cosi - eta*cost) * rcp(    cosi + eta*cost);
-  return 0.5f*(Rpar*Rpar + Rper*Rper);
-}
-
-/*! Computes fresnel coefficient for media interface with relative
- *  refraction index eta. Eta is the outside refraction index
- *  divided by the inside refraction index. The cosine has to be
- *  positive. */
-inline float fresnelDielectric(const float cosi, const float eta)
-{
-  const float k = 1.0f-eta*eta*(1.0f-cosi*cosi);
-  if (k < 0.0f) return 1.0f;
-  const float cost = sqrt(k);
-  return fresnelDielectric(cosi, cost, eta);
-}
-
-
-
 struct ISPCTriangle 
 {
   int v0;                /*< first triangle vertex */
@@ -151,7 +47,9 @@ struct ISPCTriangle
   int materialID;        /*< material of triangle */
 };
 
-struct ISPCMaterial
+
+
+struct ISPCOBJMaterial
 {
   int illum;             /*< illumination model */
   
@@ -175,6 +73,10 @@ struct ISPCMesh
   int numTriangles;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+//                             Ambient Light                                  //
+////////////////////////////////////////////////////////////////////////////////
+
 struct ISPCAmbientLight
 {
   Vec3fa L;                  //!< radiance of ambient light
@@ -190,6 +92,10 @@ inline Vec3fa AmbientLight__sample(const ISPCAmbientLight& light, const Differen
   tMax = 1e20f;
   return Vec3fa(light.L);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//                             Point Light                                    //
+////////////////////////////////////////////////////////////////////////////////
 
 struct ISPCPointLight
 {
@@ -210,6 +116,10 @@ Vec3fa PointLight__sample(const ISPCPointLight& light,
   return Vec3fa(light.I);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//                        Directional Light                                   //
+////////////////////////////////////////////////////////////////////////////////
+
 struct ISPCDirectionalLight
 {
   Vec3fa D;                  //!< Light direction
@@ -226,6 +136,10 @@ Vec3fa DirectionalLight__sample(const ISPCDirectionalLight& light,
   tMax = inf; 
   return Vec3fa(light.E);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//                          Distant Light                                     //
+////////////////////////////////////////////////////////////////////////////////
 
 struct ISPCDistantLight
 {
@@ -253,10 +167,14 @@ Vec3fa DistantLight__sample(const ISPCDistantLight& light,
   return Vec3fa(light.L);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//                               Scene                                        //
+////////////////////////////////////////////////////////////////////////////////
+
 struct ISPCScene
 {
   ISPCMesh** meshes;   //!< list of meshes
-  ISPCMaterial* materials;     //!< material list
+  ISPCOBJMaterial* materials;     //!< material list
   int numMeshes;                       //!< number of meshes
   int numMaterials;                    //!< number of materials
 
@@ -648,7 +566,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     
     /* calculate BRDF */ // FIXME: avoid gathers
     BRDF brdf;
-    ISPCMaterial* material = &g_ispc_scene->materials[materialID];
+    ISPCOBJMaterial* material = &g_ispc_scene->materials[materialID];
     float d = material->d;
     //if (material->map_d) { d *= material->map_d.get(s,t); }
     brdf.Ka = Vec3fa(material->Ka);
@@ -674,7 +592,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       Sample3f wi0; float tMax0;
       Vec3fa Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,Vec2f(frand(state),frand(state)));
       if (wi0.pdf > 0.0f) {
-        RTCRay shadow = Ray(dg.P,wi0.v,0.001f,tMax0);
+        RTCRay shadow = make_Ray(dg.P,wi0.v,0.001f,tMax0);
         rtcOccluded(g_scene,shadow);
         if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
           L0 = Ll0/wi0.pdf*BRDF__eval(brdf,wo,dg,wi0.v);
@@ -687,7 +605,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       Vec3fa L1 = Vec3fa(0.0f);
       Vec3fa Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
       if (wi1.pdf > 0.0f) {
-        RTCRay shadow = Ray(dg.P,wi1.v,0.001f,inf);
+        RTCRay shadow = make_Ray(dg.P,wi1.v,0.001f,inf);
         rtcOccluded(g_scene,shadow);
         if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
           L1 = Ll1/wi1.pdf*c;
@@ -715,7 +633,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     {
       Vec3fa Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = Ray(dg.P,wi.v,0.001f,tMax);
+      RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*BRDF__eval(brdf,wo,dg,wi.v); // FIXME: +=
@@ -726,7 +644,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     {
       Vec3fa Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = Ray(dg.P,wi.v,0.001f,tMax);
+      RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*BRDF__eval(brdf,wo,dg,wi.v); // FIXME: +=
@@ -737,7 +655,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     {
       Vec3fa Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = Ray(dg.P,wi.v,0.001f,tMax);
+      RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*BRDF__eval(brdf,wo,dg,wi.v); // FIXME: +=

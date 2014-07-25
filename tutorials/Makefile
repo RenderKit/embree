@@ -7,4 +7,6 @@ all:
 	@./ispc2cpp.sh tutorial04/tutorial04_device.ispc tutorial04/tutorial04_device.cpp
 	@./ispc2cpp.sh tutorial05/tutorial05_device.ispc tutorial05/tutorial05_device.cpp
 	@./ispc2cpp.sh tutorial06/tutorial06_device.ispc tutorial06/tutorial06_device.cpp
+	@./ispc2cpp.sh tutorial06/shapesampler.isph tutorial06/shapesampler.h
+	@./ispc2cpp.sh tutorial06/optics.isph tutorial06/optics.h
 	@./ispc2cpp.sh tutorial07/tutorial07_device.ispc tutorial07/tutorial07_device.cpp

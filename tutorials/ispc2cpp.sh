@@ -24,7 +24,10 @@ sed -i.backup  's/one_over_four_pi/float(one_over_four_pi)/g' $2
 sed -i.backup  's/[^_]two_pi/float(two_pi)/g' $2
 #sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
 sed -i.backup  's/sync;//g' $2
-sed -i.backup  's/make_//g' $2
+sed -i.backup  's/make_Vec2f/Vec2f/g' $2
+sed -i.backup  's/make_Vec3f/Vec3f/g' $2
+sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2
+sed -i.backup  's/make_Sample3f/Sample3f/g' $2
 sed -i.backup  's/\#if 0 \/\/ FIXME: pointer gather/\#if 1 \/\/ FIXME: pointer gather/g' $2
 sed -i.backup  's/foreach (y = y0 ... y1, x = x0 ... x1)/for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)/g' $2
 sed -i.backup  's/foreach (phi = 0 ... numPhi+1, theta = 0 ... numTheta)/for (int phi = 0; phi <numPhi+1; phi++) for (int theta = 0; theta<numTheta; theta++)/g' $2
