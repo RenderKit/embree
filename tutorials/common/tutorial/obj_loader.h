@@ -111,6 +111,22 @@ namespace embree
       Vec3fa Tf;              /*< transmission filter */
     };
 
+    struct MetalMaterial
+    {
+    public:
+      MetalMaterial ()
+      : ty(MATERIAL_METAL), reflectance(1.0f), eta(1.4f), k(0.0f), roughness(0.01f) {}
+      
+    public:
+      int ty;
+      int align[3];
+      
+      Vec3fa reflectance;
+      Vec3fa eta;
+      Vec3fa k;
+      float roughness;
+    };
+
     /*! Material */
     struct Material
     {

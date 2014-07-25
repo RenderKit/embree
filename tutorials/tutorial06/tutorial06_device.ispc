@@ -316,13 +316,61 @@ inline Vec3f OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//                        Metal Material                                      //
+////////////////////////////////////////////////////////////////////////////////
+
+struct MetalMaterial
+{
+  int ty;
+  int align[3];
+
+  Vec3fa reflectance;
+  Vec3fa eta;
+  Vec3fa k;
+  float roughness;
+};
+
+inline void MetalMaterial__preprocess(uniform MetalMaterial* material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, bool outside)  
+{
+}
+
+inline Vec3f MetalMaterial__eval(MetalMaterial* This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) 
+{
+  const FresnelConductor fresnel = make_FresnelConductor(make_Vec3f(This->eta),make_Vec3f(This->k));
+  const PowerCosineDistribution distribution = make_PowerCosineDistribution(rcp(This->roughness));
+
+  const float cosThetaO = dot(wo,dg.Ns);
+  const float cosThetaI = dot(wi,dg.Ns);
+  if (cosThetaI <= 0.0f | cosThetaO <= 0.0f) return make_Vec3f(0.f);
+  const Vec3f wh = normalize(wi+wo);
+  const float cosThetaH = dot(wh, dg.Ns);
+  const float cosTheta = dot(wi, wh); // = dot(wo, wh);
+  const Vec3f F = eval(fresnel,cosTheta);
+  const float D = eval(distribution,cosThetaH);
+  const float G = min(1.0f, min(2.0f * cosThetaH * cosThetaO / cosTheta, 
+                                2.0f * cosThetaH * cosThetaI / cosTheta));
+  return (make_Vec3f(This->reflectance)*F) * D * G * rcp(4.0f*cosThetaO);
+}
+
+inline Vec3f MetalMaterial__sample(MetalMaterial* This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, bool& outside, const Vec2f& s)  
+{
+  const PowerCosineDistribution distribution = make_PowerCosineDistribution(rcp(This->roughness));
+
+  if (dot(wo,dg.Ns) <= 0.0f) return make_Vec3f(0.0f);
+  sample(distribution,wo,dg.Ns,wi_o,s);
+  if (dot(wi_o.v,dg.Ns) <= 0.0f) return make_Vec3f(0.0f);
+  return MetalMaterial__eval(This,brdf,wo,dg,wi_o.v);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 //                              Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
 inline void Material__preprocess(ISPCMaterial* material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, bool outside)  
 {
   switch (material->ty) {
-  case MATERIAL_OBJ: OBJMaterial__preprocess((uniform OBJMaterial*)material,brdf,wo,dg,outside); break;
+  case MATERIAL_OBJ  : OBJMaterial__preprocess  ((uniform OBJMaterial*)  material,brdf,wo,dg,outside); break;
+  case MATERIAL_METAL: MetalMaterial__preprocess((uniform MetalMaterial*)material,brdf,wo,dg,outside); break;
   default: break;
   }
 }
@@ -330,7 +378,8 @@ inline void Material__preprocess(ISPCMaterial* material, BRDF& brdf, const Vec3f
 inline Vec3f Material__eval(ISPCMaterial* material, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
 {
   switch (material->ty) {
-  case MATERIAL_OBJ: return OBJMaterial__eval((uniform OBJMaterial*)material, brdf, wo, dg, wi); break;
+  case MATERIAL_OBJ  : return OBJMaterial__eval  ((uniform OBJMaterial*)  material, brdf, wo, dg, wi); break;
+  case MATERIAL_METAL: return MetalMaterial__eval((uniform MetalMaterial*)material, brdf, wo, dg, wi); break;
   default: return make_Vec3f(0.0f); 
   }
 }
@@ -338,7 +387,8 @@ inline Vec3f Material__eval(ISPCMaterial* material, const BRDF& brdf, const Vec3
 inline Vec3f Material__sample(ISPCMaterial* material, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, bool& outside, const Vec2f& s)  
 {
   switch (material->ty) {
-  case MATERIAL_OBJ: return OBJMaterial__sample((uniform OBJMaterial*)material, brdf, Lw, wo, dg, wi_o, outside, s); break;
+  case MATERIAL_OBJ  : return OBJMaterial__sample  ((uniform OBJMaterial*)  material, brdf, Lw, wo, dg, wi_o, outside, s); break;
+  case MATERIAL_METAL: return MetalMaterial__sample((uniform MetalMaterial*)material, brdf, Lw, wo, dg, wi_o, outside, s); break;
   default: return make_Vec3f(0.0f); 
   }
 }

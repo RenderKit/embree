@@ -316,13 +316,61 @@ inline Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//                        Metal Material                                      //
+////////////////////////////////////////////////////////////////////////////////
+
+struct MetalMaterial
+{
+  int ty;
+  int align[3];
+
+  Vec3fa reflectance;
+  Vec3fa eta;
+  Vec3fa k;
+  float roughness;
+};
+
+inline void MetalMaterial__preprocess(MetalMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, bool outside)  
+{
+}
+
+inline Vec3fa MetalMaterial__eval(MetalMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
+{
+  const FresnelConductor fresnel = make_FresnelConductor(This->eta,This->k);
+  const PowerCosineDistribution distribution = make_PowerCosineDistribution(rcp(This->roughness));
+
+  const float cosThetaO = dot(wo,dg.Ns);
+  const float cosThetaI = dot(wi,dg.Ns);
+  if (cosThetaI <= 0.0f | cosThetaO <= 0.0f) return Vec3fa(0.f);
+  const Vec3fa wh = normalize(wi+wo);
+  const float cosThetaH = dot(wh, dg.Ns);
+  const float cosTheta = dot(wi, wh); // = dot(wo, wh);
+  const Vec3fa F = eval(fresnel,cosTheta);
+  const float D = eval(distribution,cosThetaH);
+  const float G = min(1.0f, min(2.0f * cosThetaH * cosThetaO / cosTheta, 
+                                2.0f * cosThetaH * cosThetaI / cosTheta));
+  return (This->reflectance*F) * D * G * rcp(4.0f*cosThetaO);
+}
+
+inline Vec3fa MetalMaterial__sample(MetalMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, bool& outside, const Vec2f& s)  
+{
+  const PowerCosineDistribution distribution = make_PowerCosineDistribution(rcp(This->roughness));
+
+  if (dot(wo,dg.Ns) <= 0.0f) return Vec3fa(0.0f);
+  sample(distribution,wo,dg.Ns,wi_o,s);
+  if (dot(wi_o.v,dg.Ns) <= 0.0f) return Vec3fa(0.0f);
+  return MetalMaterial__eval(This,brdf,wo,dg,wi_o.v);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 //                              Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
 inline void Material__preprocess(ISPCMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, bool outside)  
 {
   switch (material->ty) {
-  case MATERIAL_OBJ: OBJMaterial__preprocess((OBJMaterial*)material,brdf,wo,dg,outside); break;
+  case MATERIAL_OBJ  : OBJMaterial__preprocess  ((OBJMaterial*)  material,brdf,wo,dg,outside); break;
+  case MATERIAL_METAL: MetalMaterial__preprocess((MetalMaterial*)material,brdf,wo,dg,outside); break;
   default: break;
   }
 }
@@ -330,7 +378,8 @@ inline void Material__preprocess(ISPCMaterial* material, BRDF& brdf, const Vec3f
 inline Vec3fa Material__eval(ISPCMaterial* material, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
 {
   switch (material->ty) {
-  case MATERIAL_OBJ: return OBJMaterial__eval((OBJMaterial*)material, brdf, wo, dg, wi); break;
+  case MATERIAL_OBJ  : return OBJMaterial__eval  ((OBJMaterial*)  material, brdf, wo, dg, wi); break;
+  case MATERIAL_METAL: return MetalMaterial__eval((MetalMaterial*)material, brdf, wo, dg, wi); break;
   default: return Vec3fa(0.0f); 
   }
 }
@@ -338,7 +387,8 @@ inline Vec3fa Material__eval(ISPCMaterial* material, const BRDF& brdf, const Vec
 inline Vec3fa Material__sample(ISPCMaterial* material, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, bool& outside, const Vec2f& s)  
 {
   switch (material->ty) {
-  case MATERIAL_OBJ: return OBJMaterial__sample((OBJMaterial*)material, brdf, Lw, wo, dg, wi_o, outside, s); break;
+  case MATERIAL_OBJ  : return OBJMaterial__sample  ((OBJMaterial*)  material, brdf, Lw, wo, dg, wi_o, outside, s); break;
+  case MATERIAL_METAL: return MetalMaterial__sample((MetalMaterial*)material, brdf, Lw, wo, dg, wi_o, outside, s); break;
   default: return Vec3fa(0.0f); 
   }
 }

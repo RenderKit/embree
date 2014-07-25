@@ -92,9 +92,21 @@ inline Vec3f eval(uniform const FresnelConductor& THIS, const float cosTheta) {
   return fresnelConductor(cosTheta,THIS.eta,THIS.k);
 }
 
+#if defined(ISPC)
+inline Vec3f eval(varying const FresnelConductor& THIS, const float cosTheta) {
+  return fresnelConductor(cosTheta,THIS.eta,THIS.k);
+}
+#endif
+
 inline uniform FresnelConductor make_FresnelConductor(const uniform Vec3f eta, const uniform Vec3f k) {
   uniform FresnelConductor m; m.eta = eta; m.k = k; return m;
 }
+
+#if defined(ISPC)
+inline varying FresnelConductor make_FresnelConductor(const varying Vec3f eta, const varying Vec3f k) {
+  varying FresnelConductor m; m.eta = eta; m.k = k; return m;
+}
+#endif
 
 // =======================================================
 struct FresnelDielectric 
@@ -115,6 +127,12 @@ inline uniform FresnelDielectric make_FresnelDielectric(const uniform float etai
   uniform FresnelDielectric m; m.etai = etai; m.etat = etat; return m;
 }
 
+#if defined(ISPC)
+inline varying FresnelDielectric make_FresnelDielectric(const varying float etai, const varying float etat) {
+  varying FresnelDielectric m; m.etai = etai; m.etat = etat; return m;
+}
+#endif
+
 // =======================================================
 struct PowerCosineDistribution {
   float exp;
@@ -124,6 +142,13 @@ inline float eval(const uniform PowerCosineDistribution &THIS, const float cosTh
   return (THIS.exp+2) * (1.0f/(2.0f*(M_PI))) * pow(abs(cosThetaH), THIS.exp);
 }
 
+#if defined(ISPC)
+
+inline float eval(const varying PowerCosineDistribution &THIS, const float cosThetaH) {
+  return (THIS.exp+2) * (1.0f/(2.0f*(M_PI))) * pow(abs(cosThetaH), THIS.exp);
+}
+#endif
+
 /*! Samples the power cosine distribution. */
 inline void sample(const uniform PowerCosineDistribution& THIS, const Vec3f wo, const Vec3f& N, Sample3f &wi, const Vec2f s)  
 {
@@ -132,8 +157,24 @@ inline void sample(const uniform PowerCosineDistribution& THIS, const Vec3f wo, 
   wi = make_Sample3f(r.v,wh.pdf/(4.0f*abs(dot(wo,wh.v))));
 }
 
+/*! Samples the power cosine distribution. */
+#if defined(ISPC)
+inline void sample(const varying PowerCosineDistribution& THIS, const Vec3f wo, const Vec3f& N, Sample3f &wi, const Vec2f s)  
+{
+  Sample3f wh = powerCosineSampleHemisphere(s.x,s.y,N,THIS.exp);
+  Sample3f r = reflect_(wo,wh.v);
+  wi = make_Sample3f(r.v,wh.pdf/(4.0f*abs(dot(wo,wh.v))));
+}
+#endif
+
 inline uniform PowerCosineDistribution make_PowerCosineDistribution(const uniform float _exp) { 
   uniform PowerCosineDistribution m; m.exp = _exp; return m;
 }
+
+#if defined(ISPC)
+inline varying PowerCosineDistribution make_PowerCosineDistribution(const varying float _exp) { 
+  varying PowerCosineDistribution m; m.exp = _exp; return m;
+}
+#endif
 
 /*! @} */
