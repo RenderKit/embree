@@ -162,11 +162,8 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
-<<<<<<< HEAD
-    const size_t size_node     = (numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
-=======
+    // const size_t size_node     = (numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
     const size_t size_node     = (double)(numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
->>>>>>> dfba80bb34ecc1fe6721c519cead063270863543
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
     numAllocated64BytesBlocks = size_node / sizeof(mic_f);
