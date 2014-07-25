@@ -146,7 +146,7 @@ namespace embree
 
       const size_t size_morton_tmp = numPrims * sizeof(MortonID32Bit) + additional_size;
 
-      size_node         = (float)((numNodes * MORTON_BVH4I_NODE_PREALLOC_FACTOR + minAllocNodes) * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
+      size_node         = (double)((numNodes * MORTON_BVH4I_NODE_PREALLOC_FACTOR + minAllocNodes) * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
       size_accel        = numPrims * sizeAccelInBytes + additional_size;
       numAllocatedNodes = size_node / sizeof(BVH4i::Node);
 
@@ -158,6 +158,8 @@ namespace embree
       morton = (MortonID32Bit* ) os_malloc(size_morton_tmp); 
       node   = (BVH4i::Node*)    os_malloc(size_node  );     
       accel  = (Triangle1*)      os_malloc(size_accel );     
+
+      memset((char*)accel + numPrims * sizeAccelInBytes,0,additional_size); // clear out as a 4-wide access is possible
 
       assert(morton != 0);
       assert(node   != 0);

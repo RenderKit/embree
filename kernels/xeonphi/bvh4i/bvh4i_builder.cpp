@@ -162,7 +162,11 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
+<<<<<<< HEAD
     const size_t size_node     = (numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
+=======
+    const size_t size_node     = (double)(numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
+>>>>>>> dfba80bb34ecc1fe6721c519cead063270863543
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
     numAllocated64BytesBlocks = size_node / sizeof(mic_f);
@@ -189,6 +193,8 @@ namespace embree
     // memset(prims,0,size_primrefs);
     // memset(node,0,size_node);
     // memset(accel,0,size_accel);
+
+    memset((char*)accel + numPrims * sizeAccelInBytes,0,additional_size); // clear out as a 4-wide access is possible
 
     bvh->accel      = accel;
     bvh->qbvh       = (BVH4i::Node*)node;
@@ -385,6 +391,12 @@ namespace embree
 	    assert( tri.v[1] < mesh->numVertices );
 	    assert( tri.v[2] < mesh->numVertices );
 
+#if DEBUG
+	    for (size_t k=0;k<3;k++)
+	      if (!(isfinite( mesh->vertex( tri.v[k] ).x) && isfinite( mesh->vertex( tri.v[k] ).y) && isfinite( mesh->vertex( tri.v[k] ).z)))
+		FATAL("!isfinite in vertex for tri.v[k]");
+
+#endif
 
 	    const mic3f v = mesh->getTriangleVertices(tri);
 
@@ -457,6 +469,12 @@ namespace embree
     const mic_i gID(geomID);
 
     const mic3f v = mesh->getTriangleVertices<PFHINT_L1>(tri);
+
+#if DEBUG
+    for (size_t k=0;k<3;k++)
+      if (!(isfinite( mesh->vertex( tri.v[k] ).x) && isfinite( mesh->vertex( tri.v[k] ).y) && isfinite( mesh->vertex( tri.v[k] ).z)))
+	FATAL("!isfinite in vertex for tri.v[k]");
+#endif
 
     const mic_f tri_accel = initTriangle1(v[0],v[1],v[2],gID,pID,mic_i(mesh->mask));
     store16f_ngo(acc,tri_accel);
@@ -1425,7 +1443,20 @@ namespace embree
 
     /* update BVH4i */
     bvh->bounds = global_bounds.geometry;
-    
+
+
+#if DEBUG
+    assert( isfinite(bvh->bounds.lower.x) );
+    assert( isfinite(bvh->bounds.lower.y) );
+    assert( isfinite(bvh->bounds.lower.z) );
+
+    assert( isfinite(bvh->bounds.upper.x) );
+    assert( isfinite(bvh->bounds.upper.y) );
+    assert( isfinite(bvh->bounds.upper.z) );
+
+#endif
+
+
     /* create initial build record */
     BuildRecord br;
     br.init(global_bounds,0,numPrimitives);

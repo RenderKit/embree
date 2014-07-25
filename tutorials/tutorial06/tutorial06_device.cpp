@@ -67,7 +67,7 @@ inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const 
 
 /*! Samples hemisphere with power cosine distribution. Up direction
  *  is provided as argument. */
-inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const Vec3fa N, const float _exp) {
+inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const Vec3fa& N, const float _exp) {
   const Sample3f s = powerCosineSampleHemisphere(u,v,_exp);
   return Sample3f(frame(N)*s.v,s.pdf);
 }
@@ -82,7 +82,7 @@ inline Sample3f UniformSampleCone(const float u, const float v, const float angl
 }
 
 /*! Uniform sampling of spherical cone. Cone direction is provided as argument. */
-inline Sample3f UniformSampleCone(const float u, const float v, const float angle, const Vec3fa N) { // FIXME: &
+inline Sample3f UniformSampleCone(const float u, const float v, const float angle, const Vec3fa& N) { // FIXME: &
   const Sample3f s = UniformSampleCone(u,v,angle);
   return Sample3f(frame(N)*s.v,s.pdf);
 }
@@ -109,7 +109,7 @@ inline Sample3f reflect_(const Vec3fa &V, const Vec3fa &N, const float cosi) {
  *  medium. The vectors V and N have to point towards the same side
  *  of the surface. The cosine between V and N is given as input and
  *  the cosine of -N and transmission ray is computed as output. */
-inline Sample3f refract(const Vec3fa V, const Vec3fa N, const float eta, 
+inline Sample3f refract(const Vec3fa& V, const Vec3fa& N, const float eta, 
                         const float cosi, float &cost)
 {
   const float k = 1.0f-eta*eta*(1.0f-cosi*cosi);

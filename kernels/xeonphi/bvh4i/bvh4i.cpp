@@ -103,6 +103,7 @@ namespace embree
 
   Accel::Intersectors BVH4iTriangle1Intersectors(BVH4i* bvh)
   {
+
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4iTriangle1Intersector1;
@@ -252,8 +253,9 @@ namespace embree
     if (node.isNode()) 
     {
       Node* n = node.node(nodePtr());
-      for (size_t c=0; c<4; c++) 
-        f += sah(n->child(c),n->bounds(c));
+      for (size_t c=0; c<BVH4i::N; c++) 
+	if (n->child(c) != BVH4i::invalidNode)
+	  f += sah(n->child(c),n->bounds(c));
       return f;
     }
     else 
