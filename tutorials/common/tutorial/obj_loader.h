@@ -95,6 +95,9 @@ namespace embree
     public:
       OBJMaterial ()
       : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(1.f) {};
+
+      OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns)
+      : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Tf(1.f) {};
       
     public:
       int ty;
@@ -115,6 +118,9 @@ namespace embree
     {
     public:
       MetalMaterial ()
+      : ty(MATERIAL_METAL), reflectance(1.0f), eta(1.4f), k(0.0f), roughness(0.01f) {}
+
+      MetalMaterial (const Vec3fa& reflectance, const Vec3fa& eta, const Vec3fa& k, const float roughness)
       : ty(MATERIAL_METAL), reflectance(1.0f), eta(1.4f), k(0.0f), roughness(0.01f) {}
       
     public:
