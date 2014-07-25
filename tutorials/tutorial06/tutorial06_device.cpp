@@ -47,20 +47,23 @@ struct ISPCTriangle
   int materialID;        /*< material of triangle */
 };
 
+enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_GLASS, MATERIAL_METAL };
 
-
-struct ISPCOBJMaterial
+struct BRDF
 {
-  int illum;             /*< illumination model */
-  
-  float d;               /*< dissolve factor, 1=opaque, 0=transparent */
-  float Ns;              /*< specular exponent */
-  float Ni;              /*< optical density for the surface (index of refraction) */
-  
+  float Ns;               /*< specular exponent */
+  float Ni;               /*< optical density for the surface (index of refraction) */
   Vec3fa Ka;              /*< ambient reflectivity */
   Vec3fa Kd;              /*< diffuse reflectivity */
   Vec3fa Ks;              /*< specular reflectivity */
   Vec3fa Kt;              /*< transmission filter */
+};
+
+struct ISPCMaterial
+{
+  int ty;
+  int align0,align1,align2;
+  Vec3fa v[7];
 };
 
 struct ISPCMesh
@@ -168,13 +171,186 @@ Vec3fa DistantLight__sample(const ISPCDistantLight& light,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//                          OBJ Material                                      //
+////////////////////////////////////////////////////////////////////////////////
+
+struct OBJMaterial
+{
+  int ty;
+  int align[3];
+
+  int illum;             /*< illumination model */
+  float d;               /*< dissolve factor, 1=opaque, 0=transparent */
+  float Ns;              /*< specular exponent */
+  float Ni;              /*< optical density for the surface (index of refraction) */
+  
+  Vec3fa Ka;              /*< ambient reflectivity */
+  Vec3fa Kd;              /*< diffuse reflectivity */
+  Vec3fa Ks;              /*< specular reflectivity */
+  Vec3fa Kt;              /*< transmission filter */
+  Vec3fa v[2];
+};
+
+inline void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, bool outside)  
+{
+    float d = material->d;
+    //if (material->map_d) { d *= material->map_d.get(s,t); }
+    brdf.Ka = Vec3fa(material->Ka);
+    //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
+    brdf.Kd = d * Vec3fa(material->Kd);  
+    //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
+    brdf.Ks = d * Vec3fa(material->Ks);  
+    //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
+    brdf.Ns = material->Ns;  
+    //if (material->map_Ns) { brdf.Ns *= material->map_Ns.get(dg.st); }
+    brdf.Kt = (1.0f-d)*Vec3fa(material->Kt);
+    brdf.Ni = material->Ni;
+}
+
+inline Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
+{
+  Vec3fa R = Vec3fa(0.0f,0.0f,0.0f);
+  const float Md = max(max(brdf.Kd.x,brdf.Kd.y),brdf.Kd.z);
+  const float Ms = max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z);
+  const float Mt = max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z);
+  if (Md > 0.0f) {
+    R = R + (1.0f/float(pi)) * clamp(dot(wi,dg.Ns)) * brdf.Kd; // FIXME: +=
+  }
+  if (Ms > 0.0f && brdf.Ns < 1E10) { // FIXME: inf
+    const Sample3f refl = reflect_(wo,dg.Ns);
+    if (dot(refl.v,wi) > 0.0f) 
+      R = R + (brdf.Ns+2) * float(one_over_two_pi) * pow(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks; // FIXME: +=
+  }
+  if (Mt > 0.0f) {
+  }
+  return R;
+}
+
+inline Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, bool& outside, const Vec2f& s)  
+{
+  Vec3fa cd = Vec3fa(0.0f); 
+  Sample3f wid = Sample3f(Vec3fa(0.0f),0.0f);
+  if (max(max(brdf.Kd.x,brdf.Kd.y),brdf.Kd.z) > 0.0f) {
+    wid = cosineSampleHemisphere(s.x,s.y,dg.Ns);
+    cd = float(one_over_pi) * clamp(dot(wid.v,dg.Ns)) * brdf.Kd;
+  }
+
+  Vec3fa cs = Vec3fa(0.0f); 
+  Sample3f wis = Sample3f(Vec3fa(0.0f),0.0f);
+  if (max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z) > 0.0f)
+  {
+    if (brdf.Ns < 1E10) { // FIXME: inf
+      const Sample3f refl = reflect_(wo,dg.Ns);
+      wis = powerCosineSampleHemisphere(s.x,s.y,refl.v,brdf.Ns);
+      cs = (brdf.Ns+2) * float(one_over_two_pi) * pow(dot(refl.v,wis.v),brdf.Ns) * clamp(dot(wis.v,dg.Ns)) * brdf.Ks;
+    }
+    else
+    {
+      float F = 1.0f;
+      if (brdf.Ni != 1.0f) {
+        float Ni = brdf.Ni;
+        if (outside) Ni = 1.0f/brdf.Ni;
+        float cosThetaO = clamp(dot(wo,dg.Ns));
+        float cosThetaI; Sample3f wt = refract(wo,dg.Ns,Ni,cosThetaO,cosThetaI);
+        F = fresnelDielectric(cosThetaO,cosThetaI,Ni);
+      }
+      wis = reflect_(wo,dg.Ns);
+      cs = F * brdf.Ks;
+    }
+  }
+
+  Vec3fa ct = Vec3fa(0.0f); 
+  Sample3f wit = Sample3f(Vec3fa(0.0f),0.0f);
+  if (max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) > 0.0f)
+  {
+    if (brdf.Ni == 1.0f)
+    {
+      wit = Sample3f(neg(wo),1.0f);
+      ct = brdf.Kt;
+      outside = !outside;
+    }
+    else
+    {
+      float Ni = brdf.Ni;
+      if (outside) Ni = 1.0f/brdf.Ni;
+      float cosThetaO = clamp(dot(wo,dg.Ns));
+      float cosThetaI; wit = refract(wo,dg.Ns,Ni,cosThetaO,cosThetaI);
+      float T = 1.0f-fresnelDielectric(cosThetaO,cosThetaI,Ni);
+      ct = brdf.Kt * Vec3fa(T);
+      outside = !outside;
+    }
+  }
+
+  const Vec3fa md = Lw*cd/wid.pdf;
+  const Vec3fa ms = Lw*cs/wis.pdf;
+  const Vec3fa mt = Lw*ct/wit.pdf;
+
+  const float Cd = wid.pdf == 0.0f ? 0.0f : max(max(md.x,md.y),md.z);
+  const float Cs = wis.pdf == 0.0f ? 0.0f : max(max(ms.x,ms.y),ms.z);
+  const float Ct = wit.pdf == 0.0f ? 0.0f : max(max(mt.x,mt.y),mt.z);
+  const float C  = Cd + Cs + Ct;
+
+  if (C == 0.0f) {
+    wi_o = Sample3f(Vec3fa(0,0,0),0);
+    return Vec3fa(0,0,0);
+  }
+
+  const float CPd = Cd/C;
+  const float CPs = Cs/C;
+  const float CPt = Ct/C;
+
+  if (s.x < CPd) {
+    wi_o = Sample3f(wid.v,wid.pdf*CPd);
+    return cd;
+  } 
+  else if (s.x < CPd + CPs)
+  {
+    wi_o = Sample3f(wis.v,wis.pdf*CPs);
+    return cs;
+  }
+  else 
+  {
+    wi_o = Sample3f(wit.v,wit.pdf*CPt);
+    return ct;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//                              Material                                      //
+////////////////////////////////////////////////////////////////////////////////
+
+inline void Material__preprocess(ISPCMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, bool outside)  
+{
+  switch (material->ty) {
+  case MATERIAL_OBJ: OBJMaterial__preprocess((OBJMaterial*)material,brdf,wo,dg,outside); break;
+  default: break;
+  }
+}
+
+inline Vec3fa Material__eval(ISPCMaterial* material, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
+{
+  switch (material->ty) {
+  case MATERIAL_OBJ: return OBJMaterial__eval((OBJMaterial*)material, brdf, wo, dg, wi); break;
+  default: return Vec3fa(0.0f); 
+  }
+}
+
+inline Vec3fa Material__sample(ISPCMaterial* material, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, bool& outside, const Vec2f& s)  
+{
+  switch (material->ty) {
+  case MATERIAL_OBJ: return OBJMaterial__sample((OBJMaterial*)material, brdf, Lw, wo, dg, wi_o, outside, s); break;
+  default: return Vec3fa(0.0f); 
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 //                               Scene                                        //
 ////////////////////////////////////////////////////////////////////////////////
 
 struct ISPCScene
 {
   ISPCMesh** meshes;   //!< list of meshes
-  ISPCOBJMaterial* materials;     //!< material list
+  ISPCMaterial* materials;     //!< material list
   int numMeshes;                       //!< number of meshes
   int numMaterials;                    //!< number of materials
 
@@ -288,124 +464,6 @@ RTCScene convertScene(ISPCScene* scene_in)
   /* commit changes to scene */
   rtcCommit (scene_out);
   return scene_out;
-}
-
-struct BRDF
-{
-  float Ns;               /*< specular exponent */
-  float Ni;               /*< optical density for the surface (index of refraction) */
-  Vec3fa Ka;              /*< ambient reflectivity */
-  Vec3fa Kd;              /*< diffuse reflectivity */
-  Vec3fa Ks;              /*< specular reflectivity */
-  Vec3fa Kt;              /*< transmission filter */
-};
-
-inline Vec3fa BRDF__eval(const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
-{
-  Vec3fa R = Vec3fa(0.0f,0.0f,0.0f);
-  const float Md = max(max(brdf.Kd.x,brdf.Kd.y),brdf.Kd.z);
-  const float Ms = max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z);
-  const float Mt = max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z);
-  if (Md > 0.0f) {
-    R = R + (1.0f/float(pi)) * clamp(dot(wi,dg.Ns)) * brdf.Kd; // FIXME: +=
-  }
-  if (Ms > 0.0f && brdf.Ns < 1E10) { // FIXME: inf
-    const Sample3f refl = reflect_(wo,dg.Ns);
-    if (dot(refl.v,wi) > 0.0f) 
-      R = R + (brdf.Ns+2) * float(one_over_two_pi) * pow(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks; // FIXME: +=
-  }
-  if (Mt > 0.0f) {
-  }
-  return R;
-}
-
-inline Vec3fa BRDF__sample(const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, bool& outside, const Vec2f& s)  
-{
-  Vec3fa cd = Vec3fa(0.0f); 
-  Sample3f wid = Sample3f(Vec3fa(0.0f),0.0f);
-  if (max(max(brdf.Kd.x,brdf.Kd.y),brdf.Kd.z) > 0.0f) {
-    wid = cosineSampleHemisphere(s.x,s.y,dg.Ns);
-    cd = float(one_over_pi) * clamp(dot(wid.v,dg.Ns)) * brdf.Kd;
-  }
-
-  Vec3fa cs = Vec3fa(0.0f); 
-  Sample3f wis = Sample3f(Vec3fa(0.0f),0.0f);
-  if (max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z) > 0.0f)
-  {
-    if (brdf.Ns < 1E10) { // FIXME: inf
-      const Sample3f refl = reflect_(wo,dg.Ns);
-      wis = powerCosineSampleHemisphere(s.x,s.y,refl.v,brdf.Ns);
-      cs = (brdf.Ns+2) * float(one_over_two_pi) * pow(dot(refl.v,wis.v),brdf.Ns) * clamp(dot(wis.v,dg.Ns)) * brdf.Ks;
-    }
-    else
-    {
-      float F = 1.0f;
-      if (brdf.Ni != 1.0f) {
-        float Ni = brdf.Ni;
-        if (outside) Ni = 1.0f/brdf.Ni;
-        float cosThetaO = clamp(dot(wo,dg.Ns));
-        float cosThetaI; Sample3f wt = refract(wo,dg.Ns,Ni,cosThetaO,cosThetaI);
-        F = fresnelDielectric(cosThetaO,cosThetaI,Ni);
-      }
-      wis = reflect_(wo,dg.Ns);
-      cs = F * brdf.Ks;
-    }
-  }
-
-  Vec3fa ct = Vec3fa(0.0f); 
-  Sample3f wit = Sample3f(Vec3fa(0.0f),0.0f);
-  if (max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) > 0.0f)
-  {
-    if (brdf.Ni == 1.0f)
-    {
-      wit = Sample3f(neg(wo),1.0f);
-      ct = brdf.Kt;
-      outside = !outside;
-    }
-    else
-    {
-      float Ni = brdf.Ni;
-      if (outside) Ni = 1.0f/brdf.Ni;
-      float cosThetaO = clamp(dot(wo,dg.Ns));
-      float cosThetaI; wit = refract(wo,dg.Ns,Ni,cosThetaO,cosThetaI);
-      float T = 1.0f-fresnelDielectric(cosThetaO,cosThetaI,Ni);
-      ct = brdf.Kt * Vec3fa(T);
-      outside = !outside;
-    }
-  }
-
-  const Vec3fa md = Lw*cd/wid.pdf;
-  const Vec3fa ms = Lw*cs/wis.pdf;
-  const Vec3fa mt = Lw*ct/wit.pdf;
-
-  const float Cd = wid.pdf == 0.0f ? 0.0f : max(max(md.x,md.y),md.z);
-  const float Cs = wis.pdf == 0.0f ? 0.0f : max(max(ms.x,ms.y),ms.z);
-  const float Ct = wit.pdf == 0.0f ? 0.0f : max(max(mt.x,mt.y),mt.z);
-  const float C  = Cd + Cs + Ct;
-
-  if (C == 0.0f) {
-    wi_o = Sample3f(Vec3fa(0,0,0),0);
-    return Vec3fa(0,0,0);
-  }
-
-  const float CPd = Cd/C;
-  const float CPs = Cs/C;
-  const float CPt = Ct/C;
-
-  if (s.x < CPd) {
-    wi_o = Sample3f(wid.v,wid.pdf*CPd);
-    return cd;
-  } 
-  else if (s.x < CPd + CPs)
-  {
-    wi_o = Sample3f(wis.v,wis.pdf*CPs);
-    return cs;
-  }
-  else 
-  {
-    wi_o = Sample3f(wit.v,wit.pdf*CPt);
-    return ct;
-  }
 }
 
 /* for details about this random number generator see: P. L'Ecuyer,
@@ -566,23 +624,12 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     
     /* calculate BRDF */ // FIXME: avoid gathers
     BRDF brdf;
-    ISPCOBJMaterial* material = &g_ispc_scene->materials[materialID];
-    float d = material->d;
-    //if (material->map_d) { d *= material->map_d.get(s,t); }
-    brdf.Ka = Vec3fa(material->Ka);
-    //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
-    brdf.Kd = d * Vec3fa(material->Kd);  
-    //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
-    brdf.Ks = d * Vec3fa(material->Ks);  
-    //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
-    brdf.Ns = material->Ns;  
-    //if (material->map_Ns) { brdf.Ns *= material->map_Ns.get(dg.st); }
-    brdf.Kt = (1.0f-d)*Vec3fa(material->Kt);
-    brdf.Ni = material->Ni;
+    ISPCMaterial* material = &g_ispc_scene->materials[materialID];
+    Material__preprocess(material,brdf,wo,dg,outside);
 
     /* sample BRDF at hit point */
-    Sample3f wi1; 
-    Vec3fa c = BRDF__sample(brdf,Lw, wo, dg, wi1, outside, Vec2f(frand(state),frand(state)));
+    Sample3f wi1;
+    Vec3fa c = Material__sample(material,brdf,Lw, wo, dg, wi1, outside, Vec2f(frand(state),frand(state)));
 
     /* iterate over ambient lights */
     for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
@@ -595,7 +642,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
         RTCRay shadow = make_Ray(dg.P,wi0.v,0.001f,tMax0);
         rtcOccluded(g_scene,shadow);
         if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
-          L0 = Ll0/wi0.pdf*BRDF__eval(brdf,wo,dg,wi0.v);
+          L0 = Ll0/wi0.pdf*Material__eval(material,brdf,wo,dg,wi0.v);
         }
         L = L + Lw*L0;
       }
@@ -636,7 +683,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      L = L + Lw*Ll/wi.pdf*BRDF__eval(brdf,wo,dg,wi.v); // FIXME: +=
+      L = L + Lw*Ll/wi.pdf*Material__eval(material,brdf,wo,dg,wi.v); // FIXME: +=
     }
 
     /* iterate over directional lights */
@@ -647,7 +694,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      L = L + Lw*Ll/wi.pdf*BRDF__eval(brdf,wo,dg,wi.v); // FIXME: +=
+      L = L + Lw*Ll/wi.pdf*Material__eval(material,brdf,wo,dg,wi.v); // FIXME: +=
     }
 
     /* iterate over distant lights */
@@ -658,7 +705,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      L = L + Lw*Ll/wi.pdf*BRDF__eval(brdf,wo,dg,wi.v); // FIXME: +=
+      L = L + Lw*Ll/wi.pdf*Material__eval(material,brdf,wo,dg,wi.v); // FIXME: +=
     }
 
     if (wi1.pdf <= 0.0f) break;

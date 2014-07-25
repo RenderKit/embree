@@ -26,8 +26,10 @@ struct ISPCTriangle
 
 struct ISPCMaterial
 {
+  int type;
+  int align[3];
+
   int illum;             /*< illumination model */
-  
   float d;               /*< dissolve factor, 1=opaque, 0=transparent */
   float Ns;              /*< specular exponent */
   float Ni;              /*< optical density for the surface (index of refraction) */
@@ -36,6 +38,7 @@ struct ISPCMaterial
   Vec3fa Kd;              /*< diffuse reflectivity */
   Vec3fa Ks;              /*< specular reflectivity */
   Vec3fa Tf;              /*< transmission filter */
+  Vec3fa v[2];
 };
 
 struct ISPCMesh

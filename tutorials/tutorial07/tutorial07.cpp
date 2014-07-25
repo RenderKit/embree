@@ -122,7 +122,7 @@ namespace embree
 
   void tessellateHair(OBJScene& scene)
   {
-    OBJScene::Material material; material.illum = 1;
+    OBJScene::OBJMaterial material; material.illum = 1;
     int materialID = scene.materials.size();
     scene.materials.push_back(material);
 

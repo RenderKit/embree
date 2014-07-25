@@ -141,7 +141,7 @@ namespace embree
     }
 
     /* generate default material */
-    model.materials.push_back(OBJScene::Material());
+    model.materials.push_back(OBJScene::OBJMaterial());
     curMaterial = 0;
 
     char line[10000];
@@ -244,7 +244,7 @@ namespace embree
         parseSep(token+=6);
         std::string name(token);
         material[name] = cur = model.materials.size();
-        model.materials.push_back(OBJScene::Material());
+        model.materials.push_back(OBJScene::OBJMaterial());
         continue;
       }
 
@@ -252,14 +252,14 @@ namespace embree
 
       if (!strncmp(token, "illum", 5)) { parseSep(token += 5);  continue; }
 
-      if (!strncmp(token, "d",  1)) { parseSep(token += 1);  model.materials[cur].d  = getFloat(token); continue; }
-      if (!strncmp(token, "Ns", 2)) { parseSep(token += 2);  model.materials[cur].Ns = getFloat(token); continue; }
-      if (!strncmp(token, "Ni", 2)) { parseSep(token += 2);  model.materials[cur].Ni = getFloat(token); continue; }
+      if (!strncmp(token, "d",  1)) { parseSep(token += 1);  model.materials[cur].obj().d  = getFloat(token); continue; }
+      if (!strncmp(token, "Ns", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ns = getFloat(token); continue; }
+      if (!strncmp(token, "Ni", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ni = getFloat(token); continue; }
 
-      if (!strncmp(token, "Ka", 2)) { parseSep(token += 2);  model.materials[cur].Ka = getVec3f(token); continue; }
-      if (!strncmp(token, "Kd", 2)) { parseSep(token += 2);  model.materials[cur].Kd = getVec3f(token); continue; }
-      if (!strncmp(token, "Ks", 2)) { parseSep(token += 2);  model.materials[cur].Ks = getVec3f(token); continue; }
-      if (!strncmp(token, "Tf", 2)) { parseSep(token += 2);  model.materials[cur].Tf = getVec3f(token); continue; }
+      if (!strncmp(token, "Ka", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ka = getVec3f(token); continue; }
+      if (!strncmp(token, "Kd", 2)) { parseSep(token += 2);  model.materials[cur].obj().Kd = getVec3f(token); continue; }
+      if (!strncmp(token, "Ks", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ks = getVec3f(token); continue; }
+      if (!strncmp(token, "Tf", 2)) { parseSep(token += 2);  model.materials[cur].obj().Tf = getVec3f(token); continue; }
     }
     cin.close();
   }

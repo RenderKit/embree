@@ -87,16 +87,20 @@ namespace embree
       std::vector<Hair> hairs;  //!< list of hairs
     };
     
+    enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_GLASS, MATERIAL_METAL };
+
     /*! OBJ material */
-    struct Material
+    struct OBJMaterial
     {
     public:
-      Material ()
-      : illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(1.f) {};
+      OBJMaterial ()
+      : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(1.f) {};
       
     public:
+      int ty;
+      int align[3];
+
       int illum;             /*< illumination model */
-      
       float d;               /*< dissolve factor, 1=opaque, 0=transparent */
       float Ns;              /*< specular exponent */
       float Ni;              /*< optical density for the surface (index of refraction) */
@@ -105,6 +109,20 @@ namespace embree
       Vec3fa Kd;              /*< diffuse reflectivity */
       Vec3fa Ks;              /*< specular reflectivity */
       Vec3fa Tf;              /*< transmission filter */
+    };
+
+    /*! Material */
+    struct Material
+    {
+    public:
+      Material () { memset(this,0,sizeof(Material)); }
+      Material (const OBJMaterial& in) { *((OBJMaterial*)this) = in; }
+      OBJMaterial& obj() { return *(OBJMaterial*)this; }
+      
+    public:
+      int ty;
+      int align[3];
+      Vec3fa v[7];
     };
 
     struct AmbientLight
