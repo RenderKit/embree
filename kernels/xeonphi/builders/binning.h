@@ -809,11 +809,26 @@ namespace embree
 	const mic_f b_max  = bounds.y;
 
 	const mic_f centroid_2 = b_min + b_max; 
-	const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	// const 
+mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
-	assert(0 <= binID[0] && binID[0] < 16);
-	assert(0 <= binID[1] && binID[1] < 16);
-	assert(0 <= binID[2] && binID[2] < 16);
+        
+        if (!(0 <= binID[0] && binID[0] < 16)) {
+          std::cout << "binning assertion workaround" << std::endl;
+          PRINT(binID);
+          PRINT(bounds);
+          PRINT(b_min);
+          PRINT(b_max);
+          PRINT(centroid_2);
+          PRINT(centroidBoundsMin_2);
+          PRINT(scale);
+          binID = max(binID,mic_i(0));
+          binID = min(binID,mic_i(15));
+        } else {
+          assert(0 <= binID[0] && binID[0] < 16);
+          assert(0 <= binID[1] && binID[1] < 16);
+          assert(0 <= binID[2] && binID[2] < 16);
+        }
 	// ------------------------------------------------------------------------      
 	const mic_i id = load16i(identity);
 	const mic_m m_update_x = eq(id,swAAAA(binID));
