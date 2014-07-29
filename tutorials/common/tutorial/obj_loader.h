@@ -21,6 +21,7 @@
 #include "sys/stl/vector.h"
 #include "math/vec2.h"
 #include "math/vec3.h"
+#include "math/affinespace.h"
 
 #include <vector>
 #include <memory>
@@ -209,5 +210,5 @@ namespace embree
   };
   
   /*! read from disk */
-  void loadOBJ(const FileName& fileName, OBJScene& mesh, const Vec3fa& offset = zero);
+  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh);
 }

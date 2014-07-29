@@ -22,7 +22,7 @@
 namespace embree
 {
   /*! read from disk */
-  void loadXML(const FileName& fileName, OBJScene& scene);
+  void loadXML(const FileName& fileName, const AffineSpace3f& space, OBJScene& scene);
 }
 
 #endif

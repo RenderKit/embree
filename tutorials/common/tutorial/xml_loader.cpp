@@ -128,11 +128,85 @@ namespace embree
     std::string str;      //!< Storage for string values.
   };
 
+  /*! Parameter container. Implements parameter container as a mapping
+   *  from a string to variant values. This container is used to pass
+   *  parameters for constructing objects from the API to the
+   *  constructors of that objects. All the extraction functions
+   *  return a default values in case the parameter is not found. */
+  class Parms
+  {
+  public:
+
+    /*! clears the parameter container */
+    void clear() {
+      m.clear();
+    }
+
+    /*! Extracts a named boolean out of the container. */
+    bool getBool(const char* name, bool def = false) const {
+      std::map<std::string,Variant>::const_iterator i = m.find(name);
+      if (i == m.end() || (*i).second.type != Variant::BOOL1) return def;
+      return (*i).second.getBool();
+    }
+
+    /*! Extracts a named integer out of the container. */
+    int getInt(const char* name, int def = zero) const {
+      std::map<std::string,Variant>::const_iterator i = m.find(name);
+      if (i == m.end() || (*i).second.type != Variant::INT1) return def;
+      return (*i).second.getInt();
+    }
+
+    /*! Extracts a named float out of the container. */
+    float getFloat(const char* name, float def = zero) const {
+      std::map<std::string,Variant>::const_iterator i = m.find(name);
+      if (i == m.end() || (*i).second.type != Variant::FLOAT1) return def;
+      return (*i).second.getFloat();
+    }
+
+    /*! Extracts a named Vec2f out of the container. */
+    Vec2f getVec2f(const char* name, const Vec2f& def = zero) const {
+      std::map<std::string,Variant>::const_iterator i = m.find(name);
+      if (i == m.end() || (*i).second.type != Variant::FLOAT2) return def;
+      return (*i).second.getVec2f();
+    }
+
+    /*! Extracts a named Vec3f out of the container. */
+    Vec3f getVec3f(const char* name, const Vec3f& def = zero) const {
+      std::map<std::string,Variant>::const_iterator i = m.find(name);
+      if (i == m.end() || (*i).second.type != Variant::FLOAT3) return def;
+      return (*i).second.getVec3f();
+    }
+
+    /*! Extracts a named Vec3f out of the container. */
+    Vec3fa getVec3fa(const char* name, const Vec3fa& def = zero) const {
+      std::map<std::string,Variant>::const_iterator i = m.find(name);
+      if (i == m.end() || (*i).second.type != Variant::FLOAT3) return def;
+      return (*i).second.getVec3fa();
+    }
+
+    /*! Extracts a named string out of the container. */
+    std::string getString(const char* name, std::string def = "") const {
+      std::map<std::string,Variant>::const_iterator i = m.find(name);
+      if (i == m.end() || (*i).second.type != Variant::STRING) return def;
+      return (*i).second.getString();
+    }
+
+    /*! Adds a new named element to the container. */
+    void add(const std::string& name, Variant data) {
+      m[name] = data;
+    }
+
+  private:
+
+    /*! Implementation of the container as an STL map. */
+    std::map<std::string,Variant> m;
+  };
+
   class XMLLoader
   {
   public:
 
-    XMLLoader(const FileName& fileName, OBJScene& scene);
+    XMLLoader(const FileName& fileName, const AffineSpace3f& space, OBJScene& scene);
    ~XMLLoader();
 
   public:
@@ -143,7 +217,7 @@ namespace embree
     void loadAmbientLight(const Ref<XML>& xml, const AffineSpace3f& space);
     void loadTriangleLight(const Ref<XML>& xml, const AffineSpace3f& space);
     void loadHDRILight(const Ref<XML>& xml, const AffineSpace3f& space);
-    std::map<std::string,Variant> loadMaterialParms(const Ref<XML>& parms);
+    Parms loadMaterialParms(const Ref<XML>& parms);
     int loadMaterial(const Ref<XML>& xml, std::string* name = NULL);
     void loadTriangleMesh(const Ref<XML>& xml, const AffineSpace3f& space);
     void loadSphere(const Ref<XML>& xml, const AffineSpace3f& space);
@@ -431,22 +505,22 @@ namespace embree
     //image =  rtLoadImage(path + load<std::string>(xml->child("image"))));
   }
 
-  std::map<std::string,Variant> XMLLoader::loadMaterialParms(const Ref<XML>& parms)
+  Parms XMLLoader::loadMaterialParms(const Ref<XML>& parms)
   {
-    std::map<std::string,Variant> material;
+    Parms material;
     for (size_t i=0; i<parms->children.size(); i++) 
     {
       Ref<XML> entry = parms->children[i];
       std::string name = entry->parm("name");
-      if      (entry->name == "int"    ) { material[name] = load<int>  (entry); }
-      else if (entry->name == "int2"   ) { material[name] = load<Vec2i>(entry); }
-      else if (entry->name == "int3"   ) { material[name] = load<Vec3i>(entry); }
-      else if (entry->name == "int4"   ) { material[name] = load<Vec4i>(entry); }
-      else if (entry->name == "float"  ) { material[name] = load<float>(entry); }
-      else if (entry->name == "float2" ) { material[name] = load<Vec2f>(entry); }
-      else if (entry->name == "float3" ) { material[name] = load<Vec3f>(entry); }
-      else if (entry->name == "float4" ) { material[name] = load<Vec4f>(entry); }
-      else if (entry->name == "texture") { material[name] = (path + load<std::string>(entry)).str(); }
+      if      (entry->name == "int"    ) { material.add(name,load<int>  (entry)); }
+      else if (entry->name == "int2"   ) { material.add(name, load<Vec2i>(entry)); }
+      else if (entry->name == "int3"   ) { material.add(name, load<Vec3i>(entry)); }
+      else if (entry->name == "int4"   ) { material.add(name, load<Vec4i>(entry)); }
+      else if (entry->name == "float"  ) { material.add(name, load<float>(entry)); }
+      else if (entry->name == "float2" ) { material.add(name, load<Vec2f>(entry)); }
+      else if (entry->name == "float3" ) { material.add(name, load<Vec3f>(entry)); }
+      else if (entry->name == "float4" ) { material.add(name, load<Vec4f>(entry)); }
+      else if (entry->name == "texture") { material.add(name, (path + load<std::string>(entry)).str()); }
       else throw std::runtime_error(entry->loc.str()+": invalid type: "+entry->name);
     }
     return material;
@@ -459,26 +533,26 @@ namespace embree
       return materialMap[xml->parm("id")];
     }
 
-    Ref<XML> parms = xml->child("parameters");
-    if (materialCache.find(parms) != materialCache.end()) {
-      return materialCache[parms];
+    Ref<XML> parameters = xml->child("parameters");
+    if (materialCache.find(parameters) != materialCache.end()) {
+      return materialCache[parameters];
     }
 
     std::string type = load<std::string>(xml->child("code")).c_str();
-    std::map<std::string,Variant> options = loadMaterialParms(parms);
+    Parms parms = loadMaterialParms(parameters);
 
     OBJScene::Material material;
     if (type == "OBJ") 
     {
-      //map_d = options.getTexture("map_d");  
-      const float d = options.getFloat("d", 1.0f);
-      //map_Kd = options.getTexture("map_Kd");  
-      const Vec3fa Kd = options.getVec3fa("Kd", one);
-      //map_Ks = options.getTexture("map_Ks");  
-      const Vec3fa Ks = options.getVec3fa("Ks", zero);
-      //map_Ns = options.getTexture("map_Ns");  
-      const Vec3fa Ns = options.getFloat("Ns", 10.0f);
-      //map_Bump = options.getTexture("map_Bump");
+      //map_d = parms.getTexture("map_d");  
+      const float d = parms.getFloat("d", 1.0f);
+      //map_Kd = parms.getTexture("map_Kd");  
+      const Vec3fa Kd = parms.getVec3fa("Kd", one);
+      //map_Ks = parms.getTexture("map_Ks");  
+      const Vec3fa Ks = parms.getVec3fa("Ks", zero);
+      //map_Ns = parms.getTexture("map_Ns");  
+      const float Ns = parms.getFloat("Ns", 10.0f);
+      //map_Bump = parms.getTexture("map_Bump");
       new (&material) OBJScene::OBJMaterial(d,Kd,Ks,Ns);
     }
     else if (type == "Metal")
@@ -495,31 +569,31 @@ namespace embree
     }
     int materialID = scene.materials.size();
     scene.materials.push_back(material);
-    materialCache[parms] = materialID;
+    materialCache[parameters] = materialID;
     return materialID;
   }
 
   void XMLLoader::loadTriangleMesh(const Ref<XML>& xml, const AffineSpace3f& space) 
   {
     std::string materialName;
-    int material = loadMaterial(xml->child("material"),&materialName);
+    int materialID = loadMaterial(xml->child("material"),&materialName);
     std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
     std::vector<Vec3f> motions   = loadVec3fArray(xml->childOpt("motions"  ));
     std::vector<Vec3f> normals   = loadVec3fArray(xml->childOpt("normals"  ));
     std::vector<Vec2f> texcoords = loadVec2fArray(xml->childOpt("texcoords"));
     std::vector<Vec3i> triangles = loadVec3iArray(xml->childOpt("triangles"));
 
-    Mesh* mesh = new OBJScene::Mesh;
+    OBJScene::Mesh* mesh = new OBJScene::Mesh;
     for (size_t i=0; i<positions.size(); i++)
-      mesh->positions.push_back(positions[i]);
+      mesh->v.push_back(positions[i]);
     for (size_t i=0; i<normals.size(); i++)
-      mesh->normals.push_back(normals[i]);     
+      mesh->vn.push_back(normals[i]);     
     for (size_t i=0; i<texcoords.size(); i++)
-      mesh->texcoords.push_back(texcoords[i]);
+      mesh->vt.push_back(texcoords[i]);
     for (size_t i=0; i<triangles.size(); i++)
       mesh->triangles.push_back(OBJScene::Triangle(triangles[i].x,triangles[i].y,triangles[i].z,materialID));
 
-    scene.push_back(mesh);
+    scene.meshes.push_back(mesh);
   }
 
   void XMLLoader::loadSphere(const Ref<XML>& xml, const AffineSpace3f& space) {
@@ -532,7 +606,7 @@ namespace embree
 
   void XMLLoader::loadTransformNode(const Ref<XML>& xml, const AffineSpace3f& space_in) 
   {
-    Affinespace3f space = space_in*load<AffineSpace3f>(xml->children[0]);
+    AffineSpace3f space = space_in*load<AffineSpace3f>(xml->children[0]);
     for (size_t i=1; i<xml->children.size(); i++)
       loadScene(xml->children[i],space);
   }
@@ -561,16 +635,16 @@ namespace embree
     else 
     {
       if (xml->name == "xml") {
-        loadXML(path + xml->parm("src"),space);
+        loadXML(path + xml->parm("src"),space,scene);
       }
       else if (xml->name == "obj") {
-        loadOBJ(path + xml->parm("src"),space);
+        loadOBJ(path + xml->parm("src"),space,scene);
       }
       else if (xml->name == "extern") {
         FileName fname = path + xml->parm("src");
-        if      (fname.ext() == "xml") loadXML(path + xml->parm("src"),space);
-        else if (fname.ext() == "obj") loadOBJ(path + xml->parm("src"),space);
-        else throw std::runtime_error("unknown file type:" << fname.str());
+        if      (fname.ext() == "xml") loadXML(path + xml->parm("src"),space,scene);
+        else if (fname.ext() == "obj") loadOBJ(path + xml->parm("src"),space,scene);
+        else throw std::runtime_error("unknown file type:" + fname.str());
       }
       //else if (xml->name == "ref") {
       //  prims = sceneMap[xml->parm("id")];
@@ -595,11 +669,9 @@ namespace embree
       
       else throw std::runtime_error(xml->loc.str()+": unknown tag: "+xml->name);
     }
-
-    return prims;
   }
 
-  XMLLoader::XMLLoader(const FileName& fileName, OBJScene& scene) : binFile(NULL), scene(scene)
+  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3f& space, OBJScene& scene) : binFile(NULL), scene(scene)
   {
     path = fileName.path();
     binFileName = fileName.setExt(".bin");
@@ -608,19 +680,16 @@ namespace embree
     Ref<XML> xml = parseXML(fileName);
     if (xml->name != "scene") throw std::runtime_error(xml->loc.str()+": invalid scene tag");
     for (size_t i=0; i<xml->children.size(); i++) {
-      loadScene(xml->children[i],AffineSpace3f(one));
+      loadScene(xml->children[i],space);
     }
   }
 
   XMLLoader::~XMLLoader() {
-    if (transforms.size()) transforms.pop();
     if (binFile) fclose(binFile);
-    rtClearImageCache();
-    rtClearTextureCache();
   }
 
   /*! read from disk */
-  void loadXML(const FileName& fileName, OBJScene& scene) {
-    XMLLoader loader(fileName,scene);
+  void loadXML(const FileName& fileName, const AffineSpace3f& space, OBJScene& scene) {
+    XMLLoader loader(fileName,space,scene);
   }
 }

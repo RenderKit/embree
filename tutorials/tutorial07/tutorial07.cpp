@@ -667,7 +667,7 @@ float noise(float x, float y, float z)
 
     /* load scene */
     if (objFilename.str() != "" && objFilename.str() != "none")
-      loadOBJ(objFilename,g_obj_scene,offset);
+      loadOBJ(objFilename,AffineSpace3f::translate(-offset),g_obj_scene);
 
     /* load hair */
     if (hairFilename.str() != "" && hairFilename.str() != "none") {

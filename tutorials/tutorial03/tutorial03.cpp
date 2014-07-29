@@ -192,7 +192,7 @@ namespace embree
 
     /* load scene */
     if (filename.str() != "")
-      loadOBJ(filename,g_obj_scene);
+      loadOBJ(filename,one,g_obj_scene);
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
