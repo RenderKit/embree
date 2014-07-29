@@ -585,9 +585,9 @@ namespace embree
 
     OBJScene::Mesh* mesh = new OBJScene::Mesh;
     for (size_t i=0; i<positions.size(); i++)
-      mesh->v.push_back(positions[i]);
+      mesh->v.push_back(xfmPoint(space,positions[i]));
     for (size_t i=0; i<normals.size(); i++)
-      mesh->vn.push_back(normals[i]);     
+      mesh->vn.push_back(xfmVector(space,normals[i]));     
     for (size_t i=0; i<texcoords.size(); i++)
       mesh->vt.push_back(texcoords[i]);
     for (size_t i=0; i<triangles.size(); i++)
