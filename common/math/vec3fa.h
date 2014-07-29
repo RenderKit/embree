@@ -142,6 +142,10 @@ namespace embree
     }
 #endif
 
+    __forceinline Vec3fa pow ( const Vec3fa& a, const float& b ) { 
+      return Vec3fa(powf(a.x,b),powf(a.y,b),powf(a.z,b)); // FIXME: use vectorize pow
+    }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Ternary Operators
   ////////////////////////////////////////////////////////////////////////////////

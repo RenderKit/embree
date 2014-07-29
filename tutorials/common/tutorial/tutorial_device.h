@@ -60,6 +60,7 @@ Vec3fa renderPixelCycles(float x, float y, const Vec3fa& vx, const Vec3fa& vy, c
 
 __forceinline Vec3f  neg(const Vec3f& a ) { return -a; }
 __forceinline Vec3fa neg(const Vec3fa& a) { return -a; }
+__forceinline bool   eq (const Vec3fa& a, const Vec3fa& b) { return a == b; }
 __forceinline bool   ne (const Vec3fa& a, const Vec3fa& b) { return a != b; }
 
 /* parallel invokation of renderTile function */
