@@ -563,6 +563,14 @@ namespace embree
       const float roughness     = parms.getFloat("roughness",0.01f);
       new (&material) OBJScene::MetalMaterial(reflectance,eta,k,roughness);
     }
+    else if (type == "Velvet")
+    {
+      const Vec3fa reflectance = parms.getVec3fa("reflectance",one);
+      const float backScattering = parms.getFloat("backScattering",zero);
+      const Vec3fa horizonScatteringColor = parms.getVec3fa("horizonScatteringColor",one);
+      const float horizonScatteringFallOff = parms.getFloat("horizonScatteringFallOff",zero);
+      new (&material) OBJScene::VelvetMaterial(reflectance,backScattering,horizonScatteringColor,horizonScatteringFallOff);
+    }
     else {
       std::cout << "Warning: unsupported material " << type << std::endl;
       new (&material) OBJScene::OBJMaterial(1.0f,0.5f,0.0f,0.0f);

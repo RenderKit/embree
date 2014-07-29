@@ -47,7 +47,7 @@ struct ISPCTriangle
   int materialID;        /*< material of triangle */
 };
 
-enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_GLASS, MATERIAL_METAL };
+enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_GLASS, MATERIAL_METAL, MATERIAL_VELVET };
 
 struct BRDF
 {
@@ -168,6 +168,96 @@ varying Vec3f DistantLight__sample(const uniform ISPCDistantLight& light,
   wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,make_Vec3f(neg(light.D)));
   tMax = 1e20f;
   return make_Vec3f(light.L);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//                          Minneart BRDF                                     //
+////////////////////////////////////////////////////////////////////////////////
+
+struct Minneart
+{
+  /*! The reflectance parameter. The vale 0 means no reflection,
+   *  and 1 means full reflection. */
+  Vec3f R;
+  
+  /*! The amount of backscattering. A value of 0 means lambertian
+   *  diffuse, and inf means maximum backscattering. */
+  float b;
+};
+
+Vec3f Minneart__eval(const varying Minneart* uniform This,
+                     const Vec3f &wo, const DifferentialGeometry &dg, const Vec3f &wi) 
+{
+  const float cosThetaI = clamp(dot(wi,dg.Ns));
+  const float backScatter = pow(clamp(dot(wo,wi)), This->b);
+  return (backScatter * cosThetaI * one_over_pi) * This->R;
+}
+
+Vec3f Minneart__sample(const varying Minneart* uniform This,
+                       const Vec3f &wo, 
+                       const DifferentialGeometry &dg, 
+                       Sample3f &wi, 
+                       const Vec2f &s)  
+{
+  wi = cosineSampleHemisphere(s.x,s.y,dg.Ns);
+  return Minneart__eval(This, wo, dg, wi.v);
+}
+
+void Minneart__Constructor(varying Minneart* uniform This, const varying Vec3f R, const varying float b) 
+{
+  This->R = R;
+  This->b = b;
+}
+
+varying Minneart make_Minneart(const varying Vec3f R, const varying float f) { 
+  varying Minneart m; Minneart__Constructor(&m,R,f); return m; 
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//                            Velvet BRDF                                     //
+////////////////////////////////////////////////////////////////////////////////
+
+struct Velvety
+{
+  uniform BRDF base;
+
+  /*! The reflectance parameter. The vale 0 means no reflection,
+   *  and 1 means full reflection. */
+  Vec3f R;
+  
+  /*! The falloff of horizon scattering. 0 no falloff,
+   *  and inf means maximum falloff. */
+  float f;
+};
+
+Vec3f Velvety__eval(const varying Velvety* uniform This,
+                    const Vec3f &wo, const DifferentialGeometry &dg, const Vec3f &wi) 
+{
+  const float cosThetaO = clamp(dot(wo,dg.Ns));
+  const float cosThetaI = clamp(dot(wi,dg.Ns));
+  const float sinThetaO = sqrt(1.0f - cosThetaO * cosThetaO);
+  const float horizonScatter = pow(sinThetaO, This->f);
+  return (horizonScatter * cosThetaI * one_over_pi) * This->R;
+}
+
+Vec3f Velvety__sample(const varying Velvety* uniform This,
+                      const Vec3f &wo, 
+                      const DifferentialGeometry &dg, 
+                      Sample3f &wi, 
+                      const Vec2f &s)  
+{
+  wi = cosineSampleHemisphere(s.x,s.y,dg.Ns);
+  return Velvety__eval(This, wo, dg, wi.v);
+}
+
+void Velvety__Constructor(varying Velvety* uniform this, const varying Vec3f R, const varying float f) 
+{
+  this->R = R;
+  this->f = f;
+}
+
+varying Velvety make_Velvety(const varying Vec3f R, const varying float f) { 
+  varying Velvety m; Velvety__Constructor(&m,R,f); return m; 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -363,6 +453,62 @@ inline Vec3f MetalMaterial__sample(MetalMaterial* This, const BRDF& brdf, const 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//                        Velvet Material                                      //
+////////////////////////////////////////////////////////////////////////////////
+
+struct VelvetMaterial
+{
+  int ty;
+  int align[3];
+
+  Vec3fa reflectance;
+  Vec3fa horizonScatteringColor;
+  float backScattering;
+  float horizonScatteringFallOff;
+};
+
+inline void VelvetMaterial__preprocess(uniform VelvetMaterial* material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, bool outside)  
+{
+}
+
+inline Vec3f VelvetMaterial__eval(VelvetMaterial* This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) 
+{
+  Minneart minneart; Minneart__Constructor(&minneart,make_Vec3f(This->reflectance),This->backScattering);
+  Velvety velvety; Velvety__Constructor (&velvety,make_Vec3f(This->horizonScatteringColor),This->horizonScatteringFallOff);
+  return Minneart__eval(&minneart,wo,dg,wi) + Velvety__eval(&velvety,wo,dg,wi);
+}
+
+inline Vec3f VelvetMaterial__sample(VelvetMaterial* This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, bool& outside, const Vec2f& s)  
+{
+  Minneart minneart; Minneart__Constructor(&minneart,make_Vec3f(This->reflectance),This->backScattering);
+  Velvety velvety; Velvety__Constructor (&velvety,make_Vec3f(This->horizonScatteringColor),This->horizonScatteringFallOff);
+
+  Sample3f wi0; Vec3f c0 = Minneart__sample(&minneart,wo,dg,wi0,s);
+  Sample3f wi1; Vec3f c1 = Velvety__sample(&velvety,wo,dg,wi1,s);
+
+  const Vec3f m0 = Lw*c0/wi0.pdf;
+  const Vec3f m1 = Lw*c1/wi1.pdf;
+
+  const float C0 = wi0.pdf == 0.0f ? 0.0f : max(max(m0.x,m0.y),m0.z);
+  const float C1 = wi1.pdf == 0.0f ? 0.0f : max(max(m1.x,m1.y),m1.z);
+  const float C  = C0 + C1;
+
+  if (C == 0.0f) {
+    wi_o = make_Sample3f(make_Vec3f(0,0,0),0);
+    return make_Vec3f(0,0,0);
+  }
+
+  const float CP0 = C0/C;
+  const float CP1 = C1/C;
+  if (s.x < CP0) {
+    wi_o = make_Sample3f(wi0.v,wi0.pdf*CP0); return c0;
+  } 
+  else {
+    wi_o = make_Sample3f(wi1.v,wi1.pdf*CP1); return c1;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 //                              Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -371,6 +517,7 @@ inline void Material__preprocess(ISPCMaterial* material, BRDF& brdf, const Vec3f
   switch (material->ty) {
   case MATERIAL_OBJ  : OBJMaterial__preprocess  ((uniform OBJMaterial*)  material,brdf,wo,dg,outside); break;
   case MATERIAL_METAL: MetalMaterial__preprocess((uniform MetalMaterial*)material,brdf,wo,dg,outside); break;
+  case MATERIAL_VELVET: VelvetMaterial__preprocess((uniform VelvetMaterial*)material,brdf,wo,dg,outside); break;
   default: break;
   }
 }
@@ -380,6 +527,7 @@ inline Vec3f Material__eval(ISPCMaterial* material, const BRDF& brdf, const Vec3
   switch (material->ty) {
   case MATERIAL_OBJ  : return OBJMaterial__eval  ((uniform OBJMaterial*)  material, brdf, wo, dg, wi); break;
   case MATERIAL_METAL: return MetalMaterial__eval((uniform MetalMaterial*)material, brdf, wo, dg, wi); break;
+  case MATERIAL_VELVET: return VelvetMaterial__eval((uniform VelvetMaterial*)material, brdf, wo, dg, wi); break;
   default: return make_Vec3f(0.0f); 
   }
 }
@@ -389,6 +537,7 @@ inline Vec3f Material__sample(ISPCMaterial* material, const BRDF& brdf, const Ve
   switch (material->ty) {
   case MATERIAL_OBJ  : return OBJMaterial__sample  ((uniform OBJMaterial*)  material, brdf, Lw, wo, dg, wi_o, outside, s); break;
   case MATERIAL_METAL: return MetalMaterial__sample((uniform MetalMaterial*)material, brdf, Lw, wo, dg, wi_o, outside, s); break;
+  case MATERIAL_VELVET: return VelvetMaterial__sample((uniform VelvetMaterial*)material, brdf, Lw, wo, dg, wi_o, outside, s); break;
   default: return make_Vec3f(0.0f); 
   }
 }

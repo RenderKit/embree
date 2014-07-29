@@ -88,7 +88,7 @@ namespace embree
       std::vector<Hair> hairs;  //!< list of hairs
     };
     
-    enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_GLASS, MATERIAL_METAL };
+    enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_GLASS, MATERIAL_METAL, MATERIAL_VELVET };
 
     /*! OBJ material */
     struct OBJMaterial
@@ -118,11 +118,8 @@ namespace embree
     struct MetalMaterial
     {
     public:
-      MetalMaterial ()
-      : ty(MATERIAL_METAL), reflectance(1.0f), eta(1.4f), k(0.0f), roughness(0.01f) {}
-
       MetalMaterial (const Vec3fa& reflectance, const Vec3fa& eta, const Vec3fa& k, const float roughness)
-      : ty(MATERIAL_METAL), reflectance(1.0f), eta(1.4f), k(0.0f), roughness(0.01f) {}
+      : ty(MATERIAL_METAL), reflectance(reflectance), eta(eta), k(k), roughness(roughness) {}
       
     public:
       int ty;
@@ -132,6 +129,21 @@ namespace embree
       Vec3fa eta;
       Vec3fa k;
       float roughness;
+    };
+
+    struct VelvetMaterial
+    {
+      VelvetMaterial (const Vec3fa& reflectance, const float backScattering, const Vec3fa& horizonScatteringColor, const float horizonScatteringFallOff)
+      : ty(MATERIAL_VELVET), reflectance(reflectance), backScattering(backScattering), horizonScatteringColor(horizonScatteringColor), horizonScatteringFallOff(horizonScatteringFallOff) {}
+
+    public:
+      int ty;
+      int align[3];
+
+      Vec3fa reflectance;
+      Vec3fa horizonScatteringColor;
+      float backScattering;
+      float horizonScatteringFallOff;
     };
 
     /*! Material */
