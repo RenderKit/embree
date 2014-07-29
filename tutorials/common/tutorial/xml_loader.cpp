@@ -571,6 +571,14 @@ namespace embree
       const float horizonScatteringFallOff = parms.getFloat("horizonScatteringFallOff",zero);
       new (&material) OBJScene::VelvetMaterial(reflectance,backScattering,horizonScatteringColor,horizonScatteringFallOff);
     }
+    else if (type == "Dielectric")
+    {
+      const Vec3fa transmissionOutside = parms.getVec3fa("transmissionOutside",one);
+      const Vec3fa transmissionInside  = parms.getVec3fa("transmission",one);
+      const float etaOutside = parms.getFloat("etaOutside",1.0f);
+      const float etaInside  = parms.getFloat("etaInside",1.4f);
+      new (&material) OBJScene::DielectricMaterial(transmissionOutside,transmissionInside,etaOutside,etaInside);
+    }
     else {
       std::cout << "Warning: unsupported material " << type << std::endl;
       new (&material) OBJScene::OBJMaterial(1.0f,0.5f,0.0f,0.0f);
