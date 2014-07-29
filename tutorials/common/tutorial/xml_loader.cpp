@@ -579,6 +579,14 @@ namespace embree
       const float etaInside  = parms.getFloat("etaInside",1.4f);
       new (&material) OBJScene::DielectricMaterial(transmissionOutside,transmissionInside,etaOutside,etaInside);
     }
+    else if (type == "MetallicPaint")
+    {
+      const Vec3fa shadeColor    = parms.getVec3fa("shadeColor",one);
+      const Vec3fa glitterColor  = parms.getVec3fa("glitterColor",zero);
+      const float glitterSpread = parms.getFloat("glitterSpread",1.0f);
+      const float eta           = parms.getFloat("eta",1.4f);
+      new (&material) OBJScene::MetallicPaintMaterial(shadeColor,glitterColor,glitterSpread,eta);
+    }
     else {
       std::cout << "Warning: unsupported material " << type << std::endl;
       new (&material) OBJScene::OBJMaterial(1.0f,0.5f,0.0f,0.0f);

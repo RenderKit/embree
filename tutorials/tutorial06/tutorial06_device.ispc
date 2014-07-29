@@ -47,7 +47,7 @@ struct ISPCTriangle
   int materialID;        /*< material of triangle */
 };
 
-enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_GLASS, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC };
+enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_GLASS, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT };
 
 struct BRDF
 {
@@ -311,6 +311,153 @@ varying Velvety make_Velvety(const varying Vec3f R, const varying float f) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//                  Dielectric Reflection BRDF                                //
+////////////////////////////////////////////////////////////////////////////////
+
+struct DielectricReflection
+{
+  float eta;
+};
+
+inline Vec3f DielectricReflection__eval(const varying DielectricReflection* uniform This, const Vec3f &wo, const DifferentialGeometry &dg, const Vec3f &wi) {
+  return make_Vec3f(0.f);
+}
+
+inline Vec3f DielectricReflection__sample(const varying DielectricReflection* uniform This, const Vec3f &wo, const DifferentialGeometry &dg, Sample3f &wi, const Vec2f &s)
+{
+  const float cosThetaO = clamp(dot(wo,dg.Ns));
+  wi = reflect_(wo,dg.Ns,cosThetaO);
+  return make_Vec3f(fresnelDielectric(cosThetaO,This->eta));
+}
+
+inline void DielectricReflection__Constructor(varying DielectricReflection* uniform This,
+                                              const varying float etai,
+                                              const varying float etat)
+{
+  This->eta = etai*rcp(etat);
+}
+
+inline varying DielectricReflection make_DielectricReflection(const varying float etai, const varying float etat) {
+  varying DielectricReflection v; DielectricReflection__Constructor(&v,etai,etat); return v;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//                                Lambertian BRDF                             //
+////////////////////////////////////////////////////////////////////////////////
+
+struct Lambertian
+{
+  Vec3f R;
+};
+
+inline Vec3f Lambertian__eval(const varying Lambertian* uniform This,
+                              const Vec3f &wo, const DifferentialGeometry &dg, const Vec3f &wi) 
+{
+  return This->R * (1.0f/(float)(M_PI)) * clamp(dot(wi,dg.Ns));
+}
+
+inline Vec3f Lambertian__sample(const varying Lambertian* uniform This,
+                                const Vec3f &wo, 
+                                const DifferentialGeometry &dg, 
+                                Sample3f &wi, 
+                                const Vec2f &s)  
+{
+  wi = cosineSampleHemisphere(s.x,s.y,dg.Ns);
+  return Lambertian__eval(This, wo, dg, wi.v);
+}
+
+inline void Lambertian__Constructor(varying Lambertian* uniform This, const varying Vec3f R)
+{
+  This->R = R;
+}
+
+inline varying Lambertian make_Lambertian(const varying Vec3f R) {
+  varying Lambertian v; Lambertian__Constructor(&v,R); return v;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//              Lambertian BRDF with Dielectric Layer on top                  //
+////////////////////////////////////////////////////////////////////////////////
+
+struct DielectricLayerLambertian
+{
+  Vec3f T;             //!< Transmission coefficient of dielectricum
+  float etait;         //!< Relative refraction index etai/etat of both media
+  float etati;         //!< relative refraction index etat/etai of both media
+  Lambertian ground;   //!< the BRDF of the ground layer
+};
+
+inline Vec3f DielectricLayerLambertian__eval(const varying DielectricLayerLambertian* uniform This,
+                                             const Vec3f &wo, const DifferentialGeometry &dg, const Vec3f &wi) 
+{
+  const float cosThetaO = dot(wo,dg.Ns);
+  const float cosThetaI = dot(wi,dg.Ns);
+  if (cosThetaI <= 0.0f | cosThetaO <= 0.0f) return make_Vec3f(0.f);
+
+  float cosThetaO1; 
+  const Sample3f wo1 = refract(wo,dg.Ns,This->etait,cosThetaO,cosThetaO1);
+  float cosThetaI1; 
+  const Sample3f wi1 = refract(wi,dg.Ns,This->etait,cosThetaI,cosThetaI1);
+  const float Fi = 1.0f - fresnelDielectric(cosThetaI,cosThetaI1,This->etait);
+  const Vec3f Fg = Lambertian__eval(&This->ground,neg(wo1.v),dg,neg(wi1.v));
+  const float Fo = 1.0f - fresnelDielectric(cosThetaO,cosThetaO1,This->etait);
+  return Fo * This->T * Fg * This->T * Fi;
+}
+
+inline Vec3f DielectricLayerLambertian__sample(const varying DielectricLayerLambertian* uniform This,
+                                               const Vec3f &wo, 
+                                               const DifferentialGeometry &dg, 
+                                               Sample3f &wi, 
+                                               const Vec2f &s)  
+{
+  /*! refract ray into medium */
+  float cosThetaO = dot(wo,dg.Ns);
+  if (cosThetaO <= 0.0f) return make_Vec3f(0.f);
+  float cosThetaO1; Sample3f wo1 = refract(wo,dg.Ns,This->etait,cosThetaO,cosThetaO1);
+  
+  /*! sample ground BRDF */
+  Sample3f wi1 = make_Sample3f(make_Vec3f(0.f),1.f); 
+  Vec3f Fg = Lambertian__sample(&This->ground,neg(wo1.v),dg,wi1,s);
+
+  /*! refract ray out of medium */
+  float cosThetaI1 = dot(wi1.v,dg.Ns);
+  if (cosThetaI1 <= 0.0f) return make_Vec3f(0.f);
+  
+  float cosThetaI; 
+  Sample3f wi0 = refract(neg(wi1.v),neg(dg.Ns),This->etati,cosThetaI1,cosThetaI);
+  if (wi0.pdf == 0.0f) return make_Vec3f(0.f);
+  
+  /*! accumulate contribution of path */
+  wi = make_Sample3f(wi0.v,wi1.pdf);
+  float Fi = 1.0f - fresnelDielectric(cosThetaI,cosThetaI1,This->etait);
+  float Fo = 1.0f - fresnelDielectric(cosThetaO,cosThetaO1,This->etait);
+  return Fo * This->T * Fg * This->T * Fi;
+}
+
+inline void DielectricLayerLambertian__Constructor(varying DielectricLayerLambertian* uniform This,
+                                                   const varying Vec3f T, 
+                                                   const varying float etai, 
+                                                   const varying float etat, 
+                                                   const varying Lambertian ground)
+{
+  This->T = T;
+  This->etait = etai*rcp(etat);
+  This->etati = etat*rcp(etai);
+  This->ground = ground;
+}
+
+inline varying DielectricLayerLambertian make_DielectricLayerLambertian(const varying Vec3f T, 
+                                                                        const varying float etai, 
+                                                                        const varying float etat, 
+                                                                        const varying Lambertian ground)
+{
+  varying DielectricLayerLambertian m; 
+  DielectricLayerLambertian__Constructor(&m,T,etai,etat,ground);
+  return m;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 //                          OBJ Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -474,7 +621,7 @@ inline Vec3f MetalMaterial__sample(MetalMaterial* This, const BRDF& brdf, const 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//                        Velvet Material                                      //
+//                        Velvet Material                                     //
 ////////////////////////////////////////////////////////////////////////////////
 
 struct VelvetMaterial
@@ -557,6 +704,39 @@ inline Vec3f DielectricMaterial__sample(DielectricMaterial* material, const BRDF
   return sample_component2(cs,wis,mediumFront,ct,wit,mediumBack,Lw,wi_o,medium,s.x);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//                     MetallicPaint Material                                 //
+////////////////////////////////////////////////////////////////////////////////
+
+struct MetallicPaintMaterial
+{
+  int ty;
+  int align[3];
+  Vec3fa shadeColor;
+  Vec3fa glitterColor;
+  float glitterSpread;
+  float eta;
+};
+
+inline void MetallicPaintMaterial__preprocess(uniform MetallicPaintMaterial* material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  
+{
+}
+
+inline Vec3f MetallicPaintMaterial__eval(MetallicPaintMaterial* This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) 
+{
+  DielectricReflection reflection; DielectricReflection__Constructor(&reflection, 1.0f, This->eta);
+  DielectricLayerLambertian lambertian; DielectricLayerLambertian__Constructor(&lambertian, make_Vec3f(1.0f), 1.0f, This->eta, make_Lambertian(make_Vec3f(This->shadeColor)));
+  return DielectricReflection__eval(&reflection,wo,dg,wi) + DielectricLayerLambertian__eval(&lambertian,wo,dg,wi);
+}
+
+inline Vec3f MetallicPaintMaterial__sample(MetallicPaintMaterial* This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+{
+  DielectricReflection reflection; DielectricReflection__Constructor(&reflection, 1.0f, This->eta);
+  DielectricLayerLambertian lambertian; DielectricLayerLambertian__Constructor(&lambertian, make_Vec3f(1.0f), 1.0f, This->eta, make_Lambertian(make_Vec3f(This->shadeColor)));
+  Sample3f wi0; Vec3f c0 = DielectricReflection__sample(&reflection,wo,dg,wi0,s);
+  Sample3f wi1; Vec3f c1 = DielectricLayerLambertian__sample(&lambertian,wo,dg,wi1,s);
+  return sample_component2(c0,wi0,medium,c1,wi1,medium,Lw,wi_o,medium,s.x);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //                              Material                                      //
@@ -569,6 +749,7 @@ inline void Material__preprocess(ISPCMaterial* material, BRDF& brdf, const Vec3f
   case MATERIAL_METAL: MetalMaterial__preprocess((uniform MetalMaterial*)material,brdf,wo,dg,medium); break;
   case MATERIAL_VELVET: VelvetMaterial__preprocess((uniform VelvetMaterial*)material,brdf,wo,dg,medium); break;
   case MATERIAL_DIELECTRIC: DielectricMaterial__preprocess((uniform DielectricMaterial*)material,brdf,wo,dg,medium); break;
+  case MATERIAL_METALLIC_PAINT: MetallicPaintMaterial__preprocess((uniform MetallicPaintMaterial*)material,brdf,wo,dg,medium); break;
   default: break;
   }
 }
@@ -580,6 +761,7 @@ inline Vec3f Material__eval(ISPCMaterial* material, const BRDF& brdf, const Vec3
   case MATERIAL_METAL: return MetalMaterial__eval((uniform MetalMaterial*)material, brdf, wo, dg, wi); break;
   case MATERIAL_VELVET: return VelvetMaterial__eval((uniform VelvetMaterial*)material, brdf, wo, dg, wi); break;
   case MATERIAL_DIELECTRIC: return DielectricMaterial__eval((uniform DielectricMaterial*)material, brdf, wo, dg, wi); break;
+  case MATERIAL_METALLIC_PAINT: return MetallicPaintMaterial__eval((uniform MetallicPaintMaterial*)material, brdf, wo, dg, wi); break;
   default: return make_Vec3f(0.0f); 
   }
 }
@@ -591,6 +773,7 @@ inline Vec3f Material__sample(ISPCMaterial* material, const BRDF& brdf, const Ve
   case MATERIAL_METAL: return MetalMaterial__sample((uniform MetalMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
   case MATERIAL_VELVET: return VelvetMaterial__sample((uniform VelvetMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
   case MATERIAL_DIELECTRIC: return DielectricMaterial__sample((uniform DielectricMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+  case MATERIAL_METALLIC_PAINT: return MetallicPaintMaterial__sample((uniform MetallicPaintMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
   default: return make_Vec3f(0.0f); 
   }
 }
