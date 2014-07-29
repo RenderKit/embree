@@ -48,12 +48,13 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   bvh4i/bvh4i_builder.cpp
   bvh4i/bvh4i_builder_ext.cpp
   bvh4i/bvh4i_builder_morton.cpp
-  bvh4i/bvh4i_builder_morton_enhanced.cpp
+  bvh4i/bvh4i_builder_morton_64bit.cpp
   bvh4i/bvh4i_intersector16_chunk.cpp
   bvh4i/bvh4i_intersector16_single.cpp
   bvh4i/bvh4i_intersector16_hybrid.cpp
   bvh4i/bvh4i_intersector1.cpp
   bvh4i/bvh4i_statistics.cpp
+  bvh4i/bvh4i_rotate.cpp
 
   bvh4mb/bvh4mb.cpp
   bvh4mb/bvh4mb_builder.cpp
@@ -68,5 +69,5 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
 )
 
 TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi)
-SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES VERSION 2.3.1 SOVERSION 2)
+SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES VERSION 2.3.2 SOVERSION 2)
 INSTALL(TARGETS embree_xeonphi DESTINATION lib)

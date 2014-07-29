@@ -122,7 +122,7 @@ namespace embree
 
   void tessellateHair(OBJScene& scene)
   {
-    OBJScene::Material material; material.illum = 1;
+    OBJScene::OBJMaterial material; material.illum = 1;
     int materialID = scene.materials.size();
     scene.materials.push_back(material);
 
@@ -704,7 +704,7 @@ float noise(float x, float y, float z)
     } 
 
     /* initialize GLUT */
-    initWindowState(tutorialName, g_width, g_height, g_fullscreen);
+    initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
 
     /* enter the GLUT run loop */
     enterWindowRunLoop();

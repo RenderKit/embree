@@ -87,16 +87,23 @@ namespace embree
       std::vector<Hair> hairs;  //!< list of hairs
     };
     
+    enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_GLASS, MATERIAL_METAL };
+
     /*! OBJ material */
-    struct Material
+    struct OBJMaterial
     {
     public:
-      Material ()
-      : illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(1.f) {};
+      OBJMaterial ()
+      : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(1.f) {};
+
+      OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns)
+      : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Tf(1.f) {};
       
     public:
+      int ty;
+      int align[3];
+
       int illum;             /*< illumination model */
-      
       float d;               /*< dissolve factor, 1=opaque, 0=transparent */
       float Ns;              /*< specular exponent */
       float Ni;              /*< optical density for the surface (index of refraction) */
@@ -105,6 +112,39 @@ namespace embree
       Vec3fa Kd;              /*< diffuse reflectivity */
       Vec3fa Ks;              /*< specular reflectivity */
       Vec3fa Tf;              /*< transmission filter */
+    };
+
+    struct MetalMaterial
+    {
+    public:
+      MetalMaterial ()
+      : ty(MATERIAL_METAL), reflectance(1.0f), eta(1.4f), k(0.0f), roughness(0.01f) {}
+
+      MetalMaterial (const Vec3fa& reflectance, const Vec3fa& eta, const Vec3fa& k, const float roughness)
+      : ty(MATERIAL_METAL), reflectance(1.0f), eta(1.4f), k(0.0f), roughness(0.01f) {}
+      
+    public:
+      int ty;
+      int align[3];
+      
+      Vec3fa reflectance;
+      Vec3fa eta;
+      Vec3fa k;
+      float roughness;
+    };
+
+    /*! Material */
+    struct Material
+    {
+    public:
+      Material () { memset(this,0,sizeof(Material)); }
+      Material (const OBJMaterial& in) { *((OBJMaterial*)this) = in; }
+      OBJMaterial& obj() { return *(OBJMaterial*)this; }
+      
+    public:
+      int ty;
+      int align[3];
+      Vec3fa v[7];
     };
 
     struct AmbientLight
@@ -162,10 +202,10 @@ namespace embree
     vector_t<Material> materials;                      //!< material list
     std::vector<Mesh*> meshes;                         //!< list of meshes
     std::vector<HairSet*> hairsets;                    //!< list of hair sets
-    std::vector<AmbientLight> ambientLights;           //!< list of ambient lights
-    std::vector<PointLight> pointLights;               //!< list of point lights
-    std::vector<DirectionalLight> directionalLights;   //!< list of directional lights
-    std::vector<DistantLight> distantLights;           //!< list of distant lights
+    vector_t<AmbientLight> ambientLights;           //!< list of ambient lights
+    vector_t<PointLight> pointLights;               //!< list of point lights
+    vector_t<DirectionalLight> directionalLights;   //!< list of directional lights
+    vector_t<DistantLight> distantLights;           //!< list of distant lights
   };
   
   /*! read from disk */
