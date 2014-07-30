@@ -156,7 +156,7 @@ struct ISPCPointLight
   Vec3fa I;                  //!< radiant intensity of point light
 };
 
-varying Vec3f PointLight__sample(const uniform ISPCPointLight& light, 
+inline varying Vec3f PointLight__sample(const uniform ISPCPointLight& light, 
                                  varying const DifferentialGeometry& dg, 
                                  varying Sample3f& wi,
                                  varying float& tMax,
@@ -179,7 +179,7 @@ struct ISPCDirectionalLight
   Vec3fa E;                  //!< Irradiance (W/m^2)
 };
 
-varying Vec3f DirectionalLight__sample(const uniform ISPCDirectionalLight& light, 
+inline varying Vec3f DirectionalLight__sample(const uniform ISPCDirectionalLight& light, 
                                        varying const DifferentialGeometry& dg, 
                                        varying Sample3f& wi,
                                        varying float& tMax,
@@ -203,13 +203,13 @@ struct ISPCDistantLight
   float cosHalfAngle;  //!< Cosine of half illumination angle
 };
 
-varying Vec3f DistantLight__eval(const uniform ISPCDistantLight& light, varying const Vec3f& wo) 
+inline varying Vec3f DistantLight__eval(const uniform ISPCDistantLight& light, varying const Vec3f& wo) 
 {
   if (-dot(wo,make_Vec3f(light.D)) >= light.cosHalfAngle) return make_Vec3f(light.L);
   return make_Vec3f(0.0f);
 }
 
-varying Vec3f DistantLight__sample(const uniform ISPCDistantLight& light,
+inline varying Vec3f DistantLight__sample(const uniform ISPCDistantLight& light,
                                    varying const DifferentialGeometry& dg, 
                                    varying Sample3f& wi,
                                    varying float& tMax,
@@ -235,7 +235,7 @@ struct Minneart
   float b;
 };
 
-Vec3f Minneart__eval(const varying Minneart* uniform This,
+inline Vec3f Minneart__eval(const varying Minneart* uniform This,
                      const Vec3f &wo, const DifferentialGeometry &dg, const Vec3f &wi) 
 {
   const float cosThetaI = clamp(dot(wi,dg.Ns));
@@ -243,7 +243,7 @@ Vec3f Minneart__eval(const varying Minneart* uniform This,
   return (backScatter * cosThetaI * one_over_pi) * This->R;
 }
 
-Vec3f Minneart__sample(const varying Minneart* uniform This,
+inline Vec3f Minneart__sample(const varying Minneart* uniform This,
                        const Vec3f &wo, 
                        const DifferentialGeometry &dg, 
                        Sample3f &wi, 
@@ -253,13 +253,13 @@ Vec3f Minneart__sample(const varying Minneart* uniform This,
   return Minneart__eval(This, wo, dg, wi.v);
 }
 
-void Minneart__Constructor(varying Minneart* uniform This, const varying Vec3f R, const varying float b) 
+inline void Minneart__Constructor(varying Minneart* uniform This, const varying Vec3f R, const varying float b) 
 {
   This->R = R;
   This->b = b;
 }
 
-varying Minneart make_Minneart(const varying Vec3f R, const varying float f) { 
+inline varying Minneart make_Minneart(const varying Vec3f R, const varying float f) { 
   varying Minneart m; Minneart__Constructor(&m,R,f); return m; 
 }
 
@@ -280,7 +280,7 @@ struct Velvety
   float f;
 };
 
-Vec3f Velvety__eval(const varying Velvety* uniform This,
+inline Vec3f Velvety__eval(const varying Velvety* uniform This,
                     const Vec3f &wo, const DifferentialGeometry &dg, const Vec3f &wi) 
 {
   const float cosThetaO = clamp(dot(wo,dg.Ns));
@@ -290,7 +290,7 @@ Vec3f Velvety__eval(const varying Velvety* uniform This,
   return (horizonScatter * cosThetaI * one_over_pi) * This->R;
 }
 
-Vec3f Velvety__sample(const varying Velvety* uniform This,
+inline Vec3f Velvety__sample(const varying Velvety* uniform This,
                       const Vec3f &wo, 
                       const DifferentialGeometry &dg, 
                       Sample3f &wi, 
@@ -300,13 +300,13 @@ Vec3f Velvety__sample(const varying Velvety* uniform This,
   return Velvety__eval(This, wo, dg, wi.v);
 }
 
-void Velvety__Constructor(varying Velvety* uniform This, const varying Vec3f R, const varying float f) 
+inline void Velvety__Constructor(varying Velvety* uniform This, const varying Vec3f R, const varying float f) 
 {
   This->R = R;
   This->f = f;
 }
 
-varying Velvety make_Velvety(const varying Vec3f R, const varying float f) { 
+inline varying Velvety make_Velvety(const varying Vec3f R, const varying float f) { 
   varying Velvety m; Velvety__Constructor(&m,R,f); return m; 
 }
 
