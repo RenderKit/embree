@@ -88,7 +88,7 @@ namespace embree
       std::vector<Hair> hairs;  //!< list of hairs
     };
     
-    enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_GLASS, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE, MATERIAL_MIRROR };
+    enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_DIELECTRIC, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE, MATERIAL_MIRROR };
 
     struct MatteMaterial
     {
@@ -112,6 +112,19 @@ namespace embree
       int ty;
       int align[3];
       Vec3fa reflectance;
+    };
+
+    struct ThinDielectricMaterial
+    {
+    public:
+      ThinDielectricMaterial (const Vec3fa& transmission, const float eta, const float thickness)
+      : ty(MATERIAL_THIN_DIELECTRIC), transmission(log(transmission)*thickness), eta(eta) {}
+      
+    public:
+      int ty;
+      int align[3];
+      Vec3fa transmission;
+      float eta;
     };
 
     /*! OBJ material */

@@ -547,7 +547,7 @@ namespace embree
       const Vec3fa reflectance = parms.getVec3fa("reflectance",one);
       new (&material) OBJScene::MatteMaterial(reflectance);
     }
-    if (type == "Mirror")
+    else if (type == "Mirror")
     {
       const Vec3fa reflectance = parms.getVec3fa("reflectance",one);
       new (&material) OBJScene::MirrorMaterial(reflectance);
@@ -564,6 +564,13 @@ namespace embree
       const float Ns = parms.getFloat("Ns", 10.0f);
       //map_Bump = parms.getTexture("map_Bump");
       new (&material) OBJScene::OBJMaterial(d,Kd,Ks,Ns);
+    }
+    else if (type == "ThinDielectric" || type == "ThinGlass")
+    {
+      const Vec3fa transmission = parms.getVec3fa("transmission",one);
+      const float eta          = parms.getFloat("eta",1.4f);
+      const float thickness    = parms.getFloat("thickness",0.1f);
+      new (&material) OBJScene::ThinDielectricMaterial(transmission,eta,thickness);
     }
     else if (type == "Metal")
     {
