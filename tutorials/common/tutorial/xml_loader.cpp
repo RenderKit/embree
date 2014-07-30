@@ -542,7 +542,12 @@ namespace embree
     Parms parms = loadMaterialParms(parameters);
 
     OBJScene::Material material;
-    if (type == "OBJ") 
+    if (type == "Matte")
+    {
+      const Vec3fa reflectance = parms.getVec3fa("reflectance",one);
+      new (&material) OBJScene::MatteMaterial(reflectance);
+    }
+    else if (type == "OBJ") 
     {
       //map_d = parms.getTexture("map_d");  
       const float d = parms.getFloat("d", 1.0f);

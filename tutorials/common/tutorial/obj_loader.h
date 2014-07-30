@@ -88,7 +88,19 @@ namespace embree
       std::vector<Hair> hairs;  //!< list of hairs
     };
     
-    enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_GLASS, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT };
+    enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_GLASS, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE };
+
+    struct MatteMaterial
+    {
+    public:
+      MatteMaterial (const Vec3fa& reflectance)
+      : ty(MATERIAL_MATTE), reflectance(reflectance) {}
+      
+    public:
+      int ty;
+      int align[3];
+      Vec3fa reflectance;
+    };
 
     /*! OBJ material */
     struct OBJMaterial

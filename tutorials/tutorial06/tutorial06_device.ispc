@@ -47,7 +47,7 @@ struct ISPCTriangle
   int materialID;        /*< material of triangle */
 };
 
-enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_GLASS, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT };
+enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_GLASS, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE };
 
 struct BRDF
 {
@@ -458,6 +458,34 @@ inline varying DielectricLayerLambertian make_DielectricLayerLambertian(const va
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//                        Matte Material                                 //
+////////////////////////////////////////////////////////////////////////////////
+
+struct MatteMaterial
+{
+  int ty;
+  int align[3];
+
+  Vec3fa reflectance;
+};
+
+inline void MatteMaterial__preprocess(uniform MatteMaterial* material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  
+{
+}
+
+inline Vec3f MatteMaterial__eval(MatteMaterial* This, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) 
+{
+  Lambertian lambertian = make_Lambertian(make_Vec3f(This->reflectance));
+  Lambertian__eval(&lambertian,wo,dg,wi);
+}
+
+inline Vec3f MatteMaterial__sample(MatteMaterial* This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+{
+  Lambertian lambertian = make_Lambertian(make_Vec3f(This->reflectance));
+  Lambertian__sample(&lambertian,wo,dg,wi_o,s);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 //                          OBJ Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -750,6 +778,7 @@ inline void Material__preprocess(ISPCMaterial* material, BRDF& brdf, const Vec3f
   case MATERIAL_VELVET: VelvetMaterial__preprocess((uniform VelvetMaterial*)material,brdf,wo,dg,medium); break;
   case MATERIAL_DIELECTRIC: DielectricMaterial__preprocess((uniform DielectricMaterial*)material,brdf,wo,dg,medium); break;
   case MATERIAL_METALLIC_PAINT: MetallicPaintMaterial__preprocess((uniform MetallicPaintMaterial*)material,brdf,wo,dg,medium); break;
+  case MATERIAL_MATTE: MatteMaterial__preprocess((uniform MatteMaterial*)material,brdf,wo,dg,medium); break;
   default: break;
   }
 }
@@ -761,7 +790,7 @@ inline Vec3f Material__eval(ISPCMaterial* material, const BRDF& brdf, const Vec3
   case MATERIAL_METAL: return MetalMaterial__eval((uniform MetalMaterial*)material, brdf, wo, dg, wi); break;
   case MATERIAL_VELVET: return VelvetMaterial__eval((uniform VelvetMaterial*)material, brdf, wo, dg, wi); break;
   case MATERIAL_DIELECTRIC: return DielectricMaterial__eval((uniform DielectricMaterial*)material, brdf, wo, dg, wi); break;
-  case MATERIAL_METALLIC_PAINT: return MetallicPaintMaterial__eval((uniform MetallicPaintMaterial*)material, brdf, wo, dg, wi); break;
+  case MATERIAL_MATTE: return MatteMaterial__eval((uniform MatteMaterial*)material, brdf, wo, dg, wi); break;
   default: return make_Vec3f(0.0f); 
   }
 }
@@ -774,6 +803,7 @@ inline Vec3f Material__sample(ISPCMaterial* material, const BRDF& brdf, const Ve
   case MATERIAL_VELVET: return VelvetMaterial__sample((uniform VelvetMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
   case MATERIAL_DIELECTRIC: return DielectricMaterial__sample((uniform DielectricMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
   case MATERIAL_METALLIC_PAINT: return MetallicPaintMaterial__sample((uniform MetallicPaintMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+  case MATERIAL_MATTE: return MatteMaterial__sample((uniform MatteMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
   default: return make_Vec3f(0.0f); 
   }
 }
