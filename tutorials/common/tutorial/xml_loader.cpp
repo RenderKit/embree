@@ -547,6 +547,11 @@ namespace embree
       const Vec3fa reflectance = parms.getVec3fa("reflectance",one);
       new (&material) OBJScene::MatteMaterial(reflectance);
     }
+    if (type == "Mirror")
+    {
+      const Vec3fa reflectance = parms.getVec3fa("reflectance",one);
+      new (&material) OBJScene::MirrorMaterial(reflectance);
+    }
     else if (type == "OBJ") 
     {
       //map_d = parms.getTexture("map_d");  
