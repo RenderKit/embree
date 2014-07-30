@@ -572,13 +572,23 @@ namespace embree
       const float thickness    = parms.getFloat("thickness",0.1f);
       new (&material) OBJScene::ThinDielectricMaterial(transmission,eta,thickness);
     }
+    else if (type == "Plastic")
+    {
+      const Vec3fa pigmentColor = parms.getVec3fa("pigmentColor",one);
+      const float eta          = parms.getFloat("eta",1.4f);
+      const float roughness    = parms.getFloat("roughness",0.01f);
+      new (&material) OBJScene::MetallicPaintMaterial(pigmentColor,pigmentColor,roughness,eta);
+    }
     else if (type == "Metal")
     {
       const Vec3fa reflectance  = parms.getVec3fa("reflectance",one);
       const Vec3fa eta          = parms.getVec3fa("eta",Vec3fa(1.4f));
       const Vec3fa k            = parms.getVec3fa("k",Vec3fa(0.0f));
       const float roughness     = parms.getFloat("roughness",0.01f);
-      new (&material) OBJScene::MetalMaterial(reflectance,eta,k,roughness);
+      if (roughness == 0.0f)
+        new (&material) OBJScene::MetalMaterial(reflectance,eta,k);
+      else 
+        new (&material) OBJScene::MetalMaterial(reflectance,eta,k,roughness);
     }
     else if (type == "Velvet")
     {

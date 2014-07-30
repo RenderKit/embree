@@ -47,7 +47,7 @@ struct ISPCTriangle
   int materialID;        /*< material of triangle */
 };
 
-enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_DIELECTRIC, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE, MATERIAL_MIRROR };
+enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_DIELECTRIC, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE, MATERIAL_MIRROR, MATERIAL_REFLECTIVE_METAL };
 
 struct BRDF
 {
@@ -674,6 +674,34 @@ inline Vec3fa MetalMaterial__sample(MetalMaterial* This, const BRDF& brdf, const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//                        ReflectiveMetal Material                            //
+////////////////////////////////////////////////////////////////////////////////
+
+struct ReflectiveMetalMaterial
+{
+  int ty;
+  int align[3];
+
+  Vec3fa reflectance;
+  Vec3fa eta;
+  Vec3fa k;
+  float roughness;
+};
+
+inline void ReflectiveMetalMaterial__preprocess(ReflectiveMetalMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  {
+}
+
+inline Vec3fa ReflectiveMetalMaterial__eval(ReflectiveMetalMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) {
+  return Vec3fa(0.0f);
+}
+
+inline Vec3fa ReflectiveMetalMaterial__sample(ReflectiveMetalMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+{
+  wi_o = reflect_(wo,dg.Ns);
+  return Vec3fa(This->reflectance) * fresnelConductor(dot(wo,dg.Ns),Vec3fa(This->eta),Vec3fa(This->k));
+}
+
+////////////////////////////////////////////////////////////////////////////////
 //                        Velvet Material                                     //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -832,6 +860,7 @@ inline void Material__preprocess(ISPCMaterial* material, BRDF& brdf, const Vec3f
   switch (material->ty) {
   case MATERIAL_OBJ  : OBJMaterial__preprocess  ((OBJMaterial*)  material,brdf,wo,dg,medium); break;
   case MATERIAL_METAL: MetalMaterial__preprocess((MetalMaterial*)material,brdf,wo,dg,medium); break;
+  case MATERIAL_REFLECTIVE_METAL: ReflectiveMetalMaterial__preprocess((ReflectiveMetalMaterial*)material,brdf,wo,dg,medium); break;
   case MATERIAL_VELVET: VelvetMaterial__preprocess((VelvetMaterial*)material,brdf,wo,dg,medium); break;
   case MATERIAL_DIELECTRIC: DielectricMaterial__preprocess((DielectricMaterial*)material,brdf,wo,dg,medium); break;
   case MATERIAL_METALLIC_PAINT: MetallicPaintMaterial__preprocess((MetallicPaintMaterial*)material,brdf,wo,dg,medium); break;
@@ -847,6 +876,7 @@ inline Vec3fa Material__eval(ISPCMaterial* material, const BRDF& brdf, const Vec
   switch (material->ty) {
   case MATERIAL_OBJ  : return OBJMaterial__eval  ((OBJMaterial*)  material, brdf, wo, dg, wi); break;
   case MATERIAL_METAL: return MetalMaterial__eval((MetalMaterial*)material, brdf, wo, dg, wi); break;
+  case MATERIAL_REFLECTIVE_METAL: return ReflectiveMetalMaterial__eval((ReflectiveMetalMaterial*)material, brdf, wo, dg, wi); break;
   case MATERIAL_VELVET: return VelvetMaterial__eval((VelvetMaterial*)material, brdf, wo, dg, wi); break;
   case MATERIAL_DIELECTRIC: return DielectricMaterial__eval((DielectricMaterial*)material, brdf, wo, dg, wi); break;
   case MATERIAL_METALLIC_PAINT: return MetallicPaintMaterial__eval((MetallicPaintMaterial*)material, brdf, wo, dg, wi); break;
@@ -862,6 +892,7 @@ inline Vec3fa Material__sample(ISPCMaterial* material, const BRDF& brdf, const V
   switch (material->ty) {
   case MATERIAL_OBJ  : return OBJMaterial__sample  ((OBJMaterial*)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
   case MATERIAL_METAL: return MetalMaterial__sample((MetalMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+  case MATERIAL_REFLECTIVE_METAL: return ReflectiveMetalMaterial__sample((ReflectiveMetalMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
   case MATERIAL_VELVET: return VelvetMaterial__sample((VelvetMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
   case MATERIAL_DIELECTRIC: return DielectricMaterial__sample((DielectricMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
   case MATERIAL_METALLIC_PAINT: return MetallicPaintMaterial__sample((MetallicPaintMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
