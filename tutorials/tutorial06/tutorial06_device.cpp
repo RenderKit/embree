@@ -18,26 +18,14 @@
 #include "shapesampler.h"
 #include "optics.h"
 
+
+
 struct DifferentialGeometry
 {
   Vec3fa P;
   Vec3fa Ng;
   Vec3fa Ns;
 };
-
-inline RTCRay make_Ray(const Vec3fa& org, const Vec3fa& dir, const float tnear, const float tfar)
-{
-  RTCRay ray;
-  ray.org = org;
-  ray.dir = dir;
-  ray.tnear = tnear;
-  ray.tfar = tfar;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = 0;
-  return ray;
-}
 
 struct ISPCTriangle 
 {
@@ -157,10 +145,10 @@ struct ISPCPointLight
 };
 
 inline Vec3fa PointLight__sample(const ISPCPointLight& light, 
-                                 const DifferentialGeometry& dg, 
-                                 Sample3f& wi,
-                                 float& tMax,
-                                 const Vec2f& s) 
+					const DifferentialGeometry& dg, 
+					Sample3f& wi,
+					float& tMax,
+					const Vec2f& s) 
 {
   Vec3fa d = Vec3fa(light.P) - dg.P;
   float distance = length(d);
@@ -180,10 +168,10 @@ struct ISPCDirectionalLight
 };
 
 inline Vec3fa DirectionalLight__sample(const ISPCDirectionalLight& light, 
-                                       const DifferentialGeometry& dg, 
-                                       Sample3f& wi,
-                                       float& tMax,
-                                       const Vec2f& s) 
+					      const DifferentialGeometry& dg, 
+					      Sample3f& wi,
+					      float& tMax,
+					      const Vec2f& s) 
 {
   wi = Sample3f(neg(normalize(Vec3fa(light.D))),1.0f); 
   tMax = inf; 
@@ -469,17 +457,17 @@ struct MatteMaterial
   Vec3fa reflectance;
 };
 
-inline void MatteMaterial__preprocess(MatteMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
+ void MatteMaterial__preprocess(MatteMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
 
-inline Vec3fa MatteMaterial__eval(MatteMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
+ Vec3fa MatteMaterial__eval(MatteMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
 {
   Lambertian lambertian = make_Lambertian(Vec3fa(This->reflectance));
   return Lambertian__eval(&lambertian,wo,dg,wi);
 }
 
-inline Vec3fa MatteMaterial__sample(MatteMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+ Vec3fa MatteMaterial__sample(MatteMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
   Lambertian lambertian = make_Lambertian(Vec3fa(This->reflectance));
   return Lambertian__sample(&lambertian,wo,dg,wi_o,s);
@@ -496,15 +484,15 @@ struct MirrorMaterial
   Vec3fa reflectance;
 };
 
-inline void MirrorMaterial__preprocess(MirrorMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
+ void MirrorMaterial__preprocess(MirrorMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
 
-inline Vec3fa MirrorMaterial__eval(MirrorMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) {
+ Vec3fa MirrorMaterial__eval(MirrorMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) {
   return Vec3fa(0.0f);
 }
 
-inline Vec3fa MirrorMaterial__sample(MirrorMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+ Vec3fa MirrorMaterial__sample(MirrorMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
   wi_o = reflect_(wo,dg.Ns);
   return Vec3fa(This->reflectance);
@@ -531,7 +519,7 @@ struct OBJMaterial
   Vec3fa v[2];
 };
 
-inline void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
+ void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
     float d = material->d;
     //if (material->map_d) { d *= material->map_d.get(s,t); }
@@ -547,7 +535,7 @@ inline void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec
     brdf.Ni = material->Ni;
 }
 
-inline Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
+ Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
 {
   Vec3fa R = Vec3fa(0.0f,0.0f,0.0f);
   const float Md = max(max(brdf.Kd.x,brdf.Kd.y),brdf.Kd.z);
@@ -566,7 +554,7 @@ inline Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const V
   return R;
 }
 
-inline Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+ Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
   Vec3fa cd = Vec3fa(0.0f); 
   Sample3f wid = Sample3f(Vec3fa(0.0f),0.0f);
@@ -641,11 +629,11 @@ struct MetalMaterial
   float roughness;
 };
 
-inline void MetalMaterial__preprocess(MetalMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
+ void MetalMaterial__preprocess(MetalMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
 
-inline Vec3fa MetalMaterial__eval(MetalMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
+ Vec3fa MetalMaterial__eval(MetalMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
 {
   const FresnelConductor fresnel = make_FresnelConductor(Vec3fa(This->eta),Vec3fa(This->k));
   const PowerCosineDistribution distribution = make_PowerCosineDistribution(rcp(This->roughness));
@@ -663,7 +651,7 @@ inline Vec3fa MetalMaterial__eval(MetalMaterial* This, const BRDF& brdf, const V
   return (Vec3fa(This->reflectance)*F) * D * G * rcp(4.0f*cosThetaO);
 }
 
-inline Vec3fa MetalMaterial__sample(MetalMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+ Vec3fa MetalMaterial__sample(MetalMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
   const PowerCosineDistribution distribution = make_PowerCosineDistribution(rcp(This->roughness));
 
@@ -688,14 +676,14 @@ struct ReflectiveMetalMaterial
   float roughness;
 };
 
-inline void ReflectiveMetalMaterial__preprocess(ReflectiveMetalMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  {
+ void ReflectiveMetalMaterial__preprocess(ReflectiveMetalMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  {
 }
 
-inline Vec3fa ReflectiveMetalMaterial__eval(ReflectiveMetalMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) {
+ Vec3fa ReflectiveMetalMaterial__eval(ReflectiveMetalMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) {
   return Vec3fa(0.0f);
 }
 
-inline Vec3fa ReflectiveMetalMaterial__sample(ReflectiveMetalMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+ Vec3fa ReflectiveMetalMaterial__sample(ReflectiveMetalMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
   wi_o = reflect_(wo,dg.Ns);
   return Vec3fa(This->reflectance) * fresnelConductor(dot(wo,dg.Ns),Vec3fa(This->eta),Vec3fa(This->k));
@@ -716,18 +704,18 @@ struct VelvetMaterial
   float horizonScatteringFallOff;
 };
 
-inline void VelvetMaterial__preprocess(VelvetMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
+ void VelvetMaterial__preprocess(VelvetMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
 
-inline Vec3fa VelvetMaterial__eval(VelvetMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
+ Vec3fa VelvetMaterial__eval(VelvetMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
 {
   Minneart minneart; Minneart__Constructor(&minneart,Vec3fa(This->reflectance),This->backScattering);
   Velvety velvety; Velvety__Constructor (&velvety,Vec3fa(This->horizonScatteringColor),This->horizonScatteringFallOff);
   return Minneart__eval(&minneart,wo,dg,wi) + Velvety__eval(&velvety,wo,dg,wi);
 }
 
-inline Vec3fa VelvetMaterial__sample(VelvetMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+ Vec3fa VelvetMaterial__sample(VelvetMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
   Minneart minneart; Minneart__Constructor(&minneart,Vec3fa(This->reflectance),This->backScattering);
   Velvety velvety; Velvety__Constructor (&velvety,Vec3fa(This->horizonScatteringColor),This->horizonScatteringFallOff);
@@ -751,15 +739,15 @@ struct DielectricMaterial
   float etaInside;
 };
 
-inline void DielectricMaterial__preprocess(DielectricMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
+ void DielectricMaterial__preprocess(DielectricMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
 
-inline Vec3fa DielectricMaterial__eval(DielectricMaterial* material, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) {
+ Vec3fa DielectricMaterial__eval(DielectricMaterial* material, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) {
   return Vec3fa(0.0f);
 }
 
-inline Vec3fa DielectricMaterial__sample(DielectricMaterial* material, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+ Vec3fa DielectricMaterial__sample(DielectricMaterial* material, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
   float eta = 0.0f;
   Medium mediumOutside = make_Medium(Vec3fa(material->transmissionOutside),material->etaOutside);
@@ -797,15 +785,15 @@ struct ThinDielectricMaterial
   float eta;
 };
 
-inline void ThinDielectricMaterial__preprocess(ThinDielectricMaterial* This, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
+ void ThinDielectricMaterial__preprocess(ThinDielectricMaterial* This, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
-
-inline Vec3fa ThinDielectricMaterial__eval(ThinDielectricMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) {
+ 
+ Vec3fa ThinDielectricMaterial__eval(ThinDielectricMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) {
   return Vec3fa(0.0f);
 }
 
-inline Vec3fa ThinDielectricMaterial__sample(ThinDielectricMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+ Vec3fa ThinDielectricMaterial__sample(ThinDielectricMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
   float cosThetaO = clamp(dot(wo,dg.Ns));
   if (cosThetaO <= 0.0f) return Vec3fa(0.0f);
@@ -831,18 +819,18 @@ struct MetallicPaintMaterial
   float eta;
 };
 
-inline void MetallicPaintMaterial__preprocess(MetallicPaintMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
+ void MetallicPaintMaterial__preprocess(MetallicPaintMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
 
-inline Vec3fa MetallicPaintMaterial__eval(MetallicPaintMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
+ Vec3fa MetallicPaintMaterial__eval(MetallicPaintMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
 {
   DielectricReflection reflection; DielectricReflection__Constructor(&reflection, 1.0f, This->eta);
   DielectricLayerLambertian lambertian; DielectricLayerLambertian__Constructor(&lambertian, Vec3fa(1.0f), 1.0f, This->eta, make_Lambertian(Vec3fa(This->shadeColor)));
   return DielectricReflection__eval(&reflection,wo,dg,wi) + DielectricLayerLambertian__eval(&lambertian,wo,dg,wi);
 }
 
-inline Vec3fa MetallicPaintMaterial__sample(MetallicPaintMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+ Vec3fa MetallicPaintMaterial__sample(MetallicPaintMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
   DielectricReflection reflection; DielectricReflection__Constructor(&reflection, 1.0f, This->eta);
   DielectricLayerLambertian lambertian; DielectricLayerLambertian__Constructor(&lambertian, Vec3fa(1.0f), 1.0f, This->eta, make_Lambertian(Vec3fa(This->shadeColor)));
@@ -855,8 +843,12 @@ inline Vec3fa MetallicPaintMaterial__sample(MetallicPaintMaterial* This, const B
 //                              Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
-inline void Material__preprocess(ISPCMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
+inline void Material__preprocess(ISPCMaterial* materials, int materialID, int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
+  
+  {
+    
+  ISPCMaterial* material = &materials[materialID];
   switch (material->ty) {
   case MATERIAL_OBJ  : OBJMaterial__preprocess  ((OBJMaterial*)  material,brdf,wo,dg,medium); break;
   case MATERIAL_METAL: MetalMaterial__preprocess((MetalMaterial*)material,brdf,wo,dg,medium); break;
@@ -869,46 +861,61 @@ inline void Material__preprocess(ISPCMaterial* material, BRDF& brdf, const Vec3f
   case MATERIAL_THIN_DIELECTRIC: ThinDielectricMaterial__preprocess((ThinDielectricMaterial*)material,brdf,wo,dg,medium); break;
   default: break;
   }
-}
-
-inline Vec3fa Material__eval(ISPCMaterial* material, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
-{
-  switch (material->ty) {
-  case MATERIAL_OBJ  : return OBJMaterial__eval  ((OBJMaterial*)  material, brdf, wo, dg, wi); break;
-  case MATERIAL_METAL: return MetalMaterial__eval((MetalMaterial*)material, brdf, wo, dg, wi); break;
-  case MATERIAL_REFLECTIVE_METAL: return ReflectiveMetalMaterial__eval((ReflectiveMetalMaterial*)material, brdf, wo, dg, wi); break;
-  case MATERIAL_VELVET: return VelvetMaterial__eval((VelvetMaterial*)material, brdf, wo, dg, wi); break;
-  case MATERIAL_DIELECTRIC: return DielectricMaterial__eval((DielectricMaterial*)material, brdf, wo, dg, wi); break;
-  case MATERIAL_METALLIC_PAINT: return MetallicPaintMaterial__eval((MetallicPaintMaterial*)material, brdf, wo, dg, wi); break;
-  case MATERIAL_MATTE: return MatteMaterial__eval((MatteMaterial*)material, brdf, wo, dg, wi); break;
-  case MATERIAL_MIRROR: return MirrorMaterial__eval((MirrorMaterial*)material, brdf, wo, dg, wi); break;
-  case MATERIAL_THIN_DIELECTRIC: return ThinDielectricMaterial__eval((ThinDielectricMaterial*)material, brdf, wo, dg, wi); break;
-  default: return Vec3fa(0.0f); 
   }
 }
 
-inline Vec3fa Material__sample(ISPCMaterial* material, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+inline Vec3fa Material__eval(ISPCMaterial* materials, int materialID, int numMaterials, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
 {
+  Vec3fa c = Vec3fa(0.0f);
+  
+  {
+    
+  ISPCMaterial* material = &materials[materialID];
   switch (material->ty) {
-  case MATERIAL_OBJ  : return OBJMaterial__sample  ((OBJMaterial*)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-  case MATERIAL_METAL: return MetalMaterial__sample((MetalMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-  case MATERIAL_REFLECTIVE_METAL: return ReflectiveMetalMaterial__sample((ReflectiveMetalMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-  case MATERIAL_VELVET: return VelvetMaterial__sample((VelvetMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-  case MATERIAL_DIELECTRIC: return DielectricMaterial__sample((DielectricMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-  case MATERIAL_METALLIC_PAINT: return MetallicPaintMaterial__sample((MetallicPaintMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-  case MATERIAL_MATTE: return MatteMaterial__sample((MatteMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-  case MATERIAL_MIRROR: return MirrorMaterial__sample((MirrorMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-  case MATERIAL_THIN_DIELECTRIC: return ThinDielectricMaterial__sample((ThinDielectricMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-  default: return Vec3fa(0.0f); 
+  case MATERIAL_OBJ  : c = OBJMaterial__eval  ((OBJMaterial*)  material, brdf, wo, dg, wi); break;
+  case MATERIAL_METAL: c = MetalMaterial__eval((MetalMaterial*)material, brdf, wo, dg, wi); break;
+  case MATERIAL_REFLECTIVE_METAL: c = ReflectiveMetalMaterial__eval((ReflectiveMetalMaterial*)material, brdf, wo, dg, wi); break;
+  case MATERIAL_VELVET: c = VelvetMaterial__eval((VelvetMaterial*)material, brdf, wo, dg, wi); break;
+  case MATERIAL_DIELECTRIC: c = DielectricMaterial__eval((DielectricMaterial*)material, brdf, wo, dg, wi); break;
+  case MATERIAL_METALLIC_PAINT: c = MetallicPaintMaterial__eval((MetallicPaintMaterial*)material, brdf, wo, dg, wi); break;
+  case MATERIAL_MATTE: c = MatteMaterial__eval((MatteMaterial*)material, brdf, wo, dg, wi); break;
+  case MATERIAL_MIRROR: c = MirrorMaterial__eval((MirrorMaterial*)material, brdf, wo, dg, wi); break;
+  case MATERIAL_THIN_DIELECTRIC: c = ThinDielectricMaterial__eval((ThinDielectricMaterial*)material, brdf, wo, dg, wi); break;
+  default: c = Vec3fa(0.0f); 
   }
+  }
+  return c;
+}
+
+inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numMaterials, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+{  
+  Vec3fa c = Vec3fa(0.0f);
+  
+  {
+    
+  ISPCMaterial* material = &materials[materialID];
+  switch (material->ty) {
+  case MATERIAL_OBJ  : c = OBJMaterial__sample  ((OBJMaterial*)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+  case MATERIAL_METAL: c = MetalMaterial__sample((MetalMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+  case MATERIAL_REFLECTIVE_METAL: c = ReflectiveMetalMaterial__sample((ReflectiveMetalMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+  case MATERIAL_VELVET: c = VelvetMaterial__sample((VelvetMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+  case MATERIAL_DIELECTRIC: c = DielectricMaterial__sample((DielectricMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+  case MATERIAL_METALLIC_PAINT: c = MetallicPaintMaterial__sample((MetallicPaintMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+  case MATERIAL_MATTE: c = MatteMaterial__sample((MatteMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+  case MATERIAL_MIRROR: c = MirrorMaterial__sample((MirrorMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+  case MATERIAL_THIN_DIELECTRIC: c = ThinDielectricMaterial__sample((ThinDielectricMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+  default: c = Vec3fa(0.0f); 
+  }
+  }
+  return c;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 //                               Scene                                        //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct ISPCScene
-{
+struct ISPCScene {
+
   ISPCMesh** meshes;   //!< list of meshes
   ISPCMaterial* materials;     //!< material list
   int numMeshes;                       //!< number of meshes
@@ -929,7 +936,7 @@ struct ISPCScene
 
   ISPCDistantLight* distantLights; //!< list of distant lights
   int numDistantLights;                    //!< number of distant lights
-};
+}; // ISPCScene
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
@@ -956,13 +963,13 @@ void error_handler(const RTCError code, const int8* str)
     printf(")\n"); 
   }
   abort();
-}
+} // error handler
 
 /* accumulation buffer */
 Vec3fa* g_accu = NULL;
-size_t g_accu_width = 0;
-size_t g_accu_height = 0;
-size_t g_accu_count = 0;
+unsigned int g_accu_width = 0;
+unsigned int g_accu_height = 0;
+unsigned int g_accu_count = 0;
 Vec3fa g_accu_vx;
 Vec3fa g_accu_vy;
 Vec3fa g_accu_vz;
@@ -986,7 +993,7 @@ extern "C" void device_init (int8* cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
-}
+} // device_init
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
@@ -1024,7 +1031,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   /* commit changes to scene */
   rtcCommit (scene_out);
   return scene_out;
-}
+} // convertScene
 
 /* for details about this random number generator see: P. L'Ecuyer,
    "Maximally Equidistributed Combined Tausworthe Generators",
@@ -1035,7 +1042,7 @@ struct rand_state {
   unsigned int s1, s2, s3;
 };
 
-unsigned int irand(rand_state& state)
+inline unsigned int irand(rand_state& state)
 {
   state.s1 = ((state.s1 & 4294967294U) << 12U) ^ (((state.s1<<13U)^state.s1)>>19U);
   state.s2 = ((state.s2 & 4294967288U) <<  4U) ^ (((state.s2<< 2U)^state.s2)>>25U);
@@ -1043,7 +1050,7 @@ unsigned int irand(rand_state& state)
   return state.s1 ^ state.s2 ^ state.s3;
 }
 
-void init_rand(rand_state& state, unsigned int x, unsigned int y, unsigned int z)
+inline void init_rand(rand_state& state, unsigned int x, unsigned int y, unsigned int z)
 {
   state.s1 = x >=   2 ? x : x +   2;
   state.s2 = y >=   8 ? y : y +   8;
@@ -1060,6 +1067,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
+#if 0
 inline Vec3fa interpolate_normal(RTCRay& ray)
 {
 #if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
@@ -1113,6 +1121,7 @@ inline Vec3fa interpolate_normal(RTCRay& ray)
   return normalize(Ns);
 #endif
 }
+#endif
 
 Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
@@ -1122,18 +1131,10 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
   Medium medium = make_Medium_Vacuum();
 
   /* initialize ray */
-  RTCRay ray;
-  ray.org = p;
-  ray.dir = normalize(x*vx + y*vy + vz);
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = 0;
+  RTCRay ray = RTCRay(p,normalize(x*vx + y*vy + vz),0.0f,inf);
 
   /* iterative path tracer loop */
-  for (int i=0; i<20; i++)
+  for (int i=0; i<8; i++)
   {
     /* terminate if contribution too low */
     if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
@@ -1190,12 +1191,14 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     
     /* calculate BRDF */ // FIXME: avoid gathers
     BRDF brdf;
-    ISPCMaterial* material = &g_ispc_scene->materials[materialID];
-    Material__preprocess(material,brdf,wo,dg,medium);
+    int numMaterials = g_ispc_scene->numMaterials;
+    //ISPCMaterial* material = &g_ispc_scene->materials[materialID];
+    ISPCMaterial* material_array = &g_ispc_scene->materials[0];
+    Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
 
     /* sample BRDF at hit point */
     Sample3f wi1;
-    c = c * Material__sample(material,brdf,Lw, wo, dg, wi1, medium, Vec2f(frand(state),frand(state)));
+    c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, Vec2f(frand(state),frand(state)));
 
     /* iterate over ambient lights */
     for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
@@ -1205,10 +1208,10 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       Sample3f wi0; float tMax0;
       Vec3fa Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,Vec2f(frand(state),frand(state)));
       if (wi0.pdf > 0.0f) {
-        RTCRay shadow = make_Ray(dg.P,wi0.v,0.001f,tMax0);
+        RTCRay shadow = RTCRay(dg.P,wi0.v,0.001f,tMax0);
         rtcOccluded(g_scene,shadow);
         if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
-          L0 = Ll0/wi0.pdf*Material__eval(material,brdf,wo,dg,wi0.v);
+          L0 = Ll0/wi0.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi0.v);
         }
         L = L + Lw*L0;
       }
@@ -1218,7 +1221,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       Vec3fa L1 = Vec3fa(0.0f);
       Vec3fa Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
       if (wi1.pdf > 0.0f) {
-        RTCRay shadow = make_Ray(dg.P,wi1.v,0.001f,inf);
+        RTCRay shadow = RTCRay(dg.P,wi1.v,0.001f,inf);
         rtcOccluded(g_scene,shadow);
         if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
           L1 = Ll1/wi1.pdf*c;
@@ -1246,10 +1249,10 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     {
       Vec3fa Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
+      RTCRay shadow = RTCRay(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      L = L + Lw*Ll/wi.pdf*Material__eval(material,brdf,wo,dg,wi.v); // FIXME: +=
+      L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v); // FIXME: +=
     }
 
     /* iterate over directional lights */
@@ -1257,10 +1260,10 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     {
       Vec3fa Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
+      RTCRay shadow = RTCRay(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      L = L + Lw*Ll/wi.pdf*Material__eval(material,brdf,wo,dg,wi.v); // FIXME: +=
+      L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v); // FIXME: +=
     }
 
     /* iterate over distant lights */
@@ -1268,24 +1271,17 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     {
       Vec3fa Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
+      RTCRay shadow = RTCRay(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      L = L + Lw*Ll/wi.pdf*Material__eval(material,brdf,wo,dg,wi.v); // FIXME: +=
+      L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v); // FIXME: +=
     }
 
     if (wi1.pdf <= 0.0f) break;
     Lw = Lw*c/wi1.pdf; // FIXME: *=
 
     /* setup secondary ray */
-    ray.org = dg.P;
-    ray.dir = normalize(wi1.v);
-    ray.tnear = 0.001f;
-    ray.tfar = inf;
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.primID = RTC_INVALID_GEOMETRY_ID;
-    ray.mask = -1;
-    ray.time = 0;
+    ray = RTCRay(dg.P,normalize(wi1.v),0.001f,inf);
   }
   return L;
 }
@@ -1342,7 +1338,7 @@ void renderTile(int taskIndex, int* pixels,
     unsigned int b = (unsigned int) (255.0f * clamp(dst->z*f,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
-}
+} // renderTile
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
@@ -1383,11 +1379,11 @@ extern "C" void device_render (int* pixels,
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
   rtcDebug();
-}
+} // device_render
 
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
   rtcExit();
-}
+} // device_cleanup
