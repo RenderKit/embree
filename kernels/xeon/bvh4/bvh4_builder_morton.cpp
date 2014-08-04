@@ -289,9 +289,9 @@ namespace embree
                                                MortonID32Bit* __restrict__ const dest)
     {
       /* compute mapping from world space into 3D grid */
-      const ssef base     = (ssef)global_bounds.centBounds.lower;
-      const ssef diagonal = (ssef)global_bounds.centBounds.upper - (ssef)global_bounds.centBounds.lower;
-      const ssef scale    = select(diagonal != 0, rcp(diagonal) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
+      const ssef base  = (ssef)global_bounds.centBounds.lower;
+      const ssef diag  = (ssef)global_bounds.centBounds.upper - (ssef)global_bounds.centBounds.lower;
+      const ssef scale = select(diag > ssef(1E-19), rcp(diag) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
       
       size_t currentID = startID;
       size_t offset = startOffset;
@@ -377,9 +377,9 @@ namespace embree
       }
       
       /* compute mapping from world space into 3D grid */
-      const ssef base     = (ssef)global_bounds.centBounds.lower;
-      const ssef diagonal = (ssef)global_bounds.centBounds.upper - (ssef)global_bounds.centBounds.lower;
-      const ssef scale    = select(diagonal != 0,rcp(diagonal) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
+      const ssef base  = (ssef)global_bounds.centBounds.lower;
+      const ssef diag  = (ssef)global_bounds.centBounds.upper - (ssef)global_bounds.centBounds.lower;
+      const ssef scale = select(diag > ssef(1E-19), rcp(diag) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
       
       for (size_t i=current.begin; i<current.end; i++)
       {
