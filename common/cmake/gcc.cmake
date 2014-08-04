@@ -14,7 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(FLAGS_SSSE3 "-msse3")
+SET(FLAGS_SSE3  "-msse3")
 SET(FLAGS_SSSE3 "-mssse3")
 SET(FLAGS_SSE41 "-msse4.1")
 SET(FLAGS_SSE42 "-msse4.2")
