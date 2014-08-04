@@ -18,8 +18,8 @@
 
 #include "bvh4mb.h"
 #include "embree2/rtcore.h"
-#include "../common/stack_item.h"
-#include "../common/ray.h"
+#include "common/stack_item.h"
+#include "common/ray.h"
 
 namespace embree
 {
