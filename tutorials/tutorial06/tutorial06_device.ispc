@@ -945,6 +945,11 @@ RTCScene g_scene = NULL;
 /* render function to use */
 renderPixelFunc renderPixel;
 
+/* occlusion filter function */
+void occlusionFilterReject(void* uniform ptr, RTCRay& ray) {
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+}
+
 /* error reporting function */
 void error_handler(const uniform RTCError code, const uniform int8* uniform str)
 {
@@ -1026,6 +1031,19 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     }
     rtcUnmapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
     rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+
+    uniform bool allOpaque = true;
+    uniform bool allTransparent = true;
+    for (uniform size_t j=0; j<mesh->numTriangles; j++) {
+      uniform ISPCTriangle triangle = mesh->triangles[j];
+      if (g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_DIELECTRIC ||
+	  g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_THIN_DIELECTRIC)
+	allOpaque = false;
+      else 
+	allTransparent = false;
+    }
+    if (allTransparent)
+      rtcSetOcclusionFilterFunction(scene_out,geometry,(RTCFilterFuncVarying)&occlusionFilterReject);
   }
 
   /* commit changes to scene */
