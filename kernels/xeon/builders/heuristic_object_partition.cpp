@@ -29,7 +29,7 @@ namespace embree
       num = min(maxBins,size_t(4.0f + 0.05f*pinfo.size()));
       //num = min(size_t(16),size_t(4.0f + 0.05f*pinfo.size())); // FIXME
       const ssef diag = (ssef) pinfo.centBounds.size();
-      scale = select(diag != 0.0f,rcp(diag) * ssef(0.99f*num),ssef(0.0f));
+      scale = select(diag > ssef(1E-19),rcp(diag) * ssef(0.99f*num),ssef(0.0f));
       ofs  = (ssef) pinfo.centBounds.lower;
     }
     
