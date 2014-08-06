@@ -50,7 +50,7 @@ namespace embree
       const avx3f norg = -org, org_rdir(org*rdir);
       avxf rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
      
-      /* pop loop */
+/* pop loop */
       while (true) pop:
       {
         /*! pop next node */
