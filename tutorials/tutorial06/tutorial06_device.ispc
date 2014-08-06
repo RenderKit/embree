@@ -544,7 +544,7 @@ __device__ Vec3f OBJMaterial__eval(OBJMaterial* uniform material, const BRDF& br
   if (Md > 0.0f) {
     R = R + (1.0f/M_PI) * clamp(dot(wi,dg.Ns)) * brdf.Kd; // FIXME: +=
   }
-  if (Ms > 0.0f && brdf.Ns < 1E10) { // FIXME: inf
+  if (Ms > 0.0f) {
     const Sample3f refl = reflect_(wo,dg.Ns);
     if (dot(refl.v,wi) > 0.0f) 
       R = R + (brdf.Ns+2) * one_over_two_pi * pow(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks; // FIXME: +=
