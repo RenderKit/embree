@@ -797,7 +797,7 @@ __device__ Vec3f ThinDielectricMaterial__sample(ThinDielectricMaterial* uniform 
 {
   float cosThetaO = clamp(dot(wo,dg.Ns));
   if (cosThetaO <= 0.0f) return make_Vec3f(0.0f);
-  float R = fresnelDielectric(cosThetaO,This->eta);
+  float R = fresnelDielectric(cosThetaO,rcp(This->eta));
   Sample3f wit = make_Sample3f(neg(wo),1.0f);
   Sample3f wis = reflect_(wo,dg.Ns);
   Vec3f ct = exp(make_Vec3f(This->transmission)*rcp(cosThetaO))*make_Vec3f(1.0f-R);
@@ -1165,7 +1165,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     /* invoke environment lights if nothing hit */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
     {
-#if 1
+#if 0
       /* iterate over all ambient lights */
       for (uniform size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
         L = L + Lw*AmbientLight__eval(g_ispc_scene->ambientLights[i],ray.dir); // FIXME: +=
