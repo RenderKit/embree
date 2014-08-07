@@ -272,6 +272,7 @@ namespace embree
 
     root = emptyNode;
     alloc.init(bytesAllocated,bytesReserved);
+    //memset(alloc.base(),0,bytesAllocated); // FIXME: remove
   }
 
   void BVH4::clearBarrier(NodeRef& node)
