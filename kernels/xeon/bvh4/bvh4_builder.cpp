@@ -525,7 +525,8 @@ namespace embree
 
       /*! initialize internal buffers of BVH */
       bvh->init(numPrimitives+remainingReplications);
-      
+      //alloc.init(1.4f*(numPrimitives+remainingReplications),1.4f*(numPrimitives+remainingReplications));
+
       /*! skip build for empty scene */
       if (numPrimitives == 0) 
 	return;
