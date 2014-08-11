@@ -93,60 +93,63 @@ namespace embree
 
       float childArea[4];
 
-      const mic_f _childArea = parent->halfAreaBounds();
-      compactustore16f_low(0x1111,childArea,_childArea);
-
-      /*! Find best rotation. We pick a first child (child1) and a sub-child 
-	(child2child) of a different second child (child2), and swap child1 
-	and child2child. We perform the best such swap. */
-      float bestArea = 0;
-      int bestChild1 = -1, bestChild2 = -1, bestChild2Child = -1;
-      for (size_t c2=0; c2<4; c2++)
+      while(1)
 	{
-	  /*! ignore leaf nodes as we cannot descent into them */
-	  if (unlikely(parent->child(c2).isLeaf())) continue;
-	  assert(parent->child(c2) != BVH4i::invalidNode);
+	  const mic_f _childArea = parent->halfAreaBounds();
+	  compactustore16f_low(0x1111,childArea,_childArea);
+
+	  /*! Find best rotation. We pick a first child (child1) and a sub-child 
+	    (child2child) of a different second child (child2), and swap child1 
+	    and child2child. We perform the best such swap. */
+	  float bestArea = 0.0f;
+	  int bestChild1 = -1, bestChild2 = -1, bestChild2Child = -1;
+	  for (size_t c2=0; c2<4; c2++)
+	    {
+	      /*! ignore leaf nodes as we cannot descent into them */
+	      if (unlikely(parent->child(c2).isLeaf())) continue;
+	      assert(parent->child(c2) != BVH4i::invalidNode);
 	
-	  Node* child2 = parent->child(c2).node(bvh->nodePtr());
-	  child2->prefetchNode<PFHINT_L1>();
+	      Node* child2 = parent->child(c2).node(bvh->nodePtr());
+	      child2->prefetchNode<PFHINT_L1>();
 
       
-	  for (size_t i=0;i<parentChildren;i++)      
-	    {
-	      if (i == c2) continue;
-	      float area;
-	      int pos;
-	      mergedHalfArea(parent,child2,i,area,pos);
+	      for (size_t i=0;i<parentChildren;i++)      
+		{
+		  if (unlikely(i == c2)) continue;
+		  float area;
+		  int pos;
+		  mergedHalfArea(parent,child2,i,area,pos);
 
-	      const float area_i = area - childArea[c2];
+		  const float area_i = area - childArea[c2];
 
-	      /*! accept a swap when it reduces cost and is not swapping a node with itself */
-	      if (area_i < bestArea) {
-		bestArea = area_i;
-		bestChild1 = i;
-		bestChild2 = c2;
-		bestChild2Child = pos;
-	      }
+		  /*! accept a swap when it reduces cost and is not swapping a node with itself */
+		  if (unlikely(area_i < bestArea)) {
+		    bestArea = area_i;
+		    bestChild1 = i;
+		    bestChild2 = c2;
+		    bestChild2Child = pos;
+		  }
 	  
-	    }
-	}    
+		}
+	    }    
 
-      /*! if we did not find a swap that improves the SAH then do nothing */
-      if (bestChild1 == -1) return;
+	  /*! if we did not find a swap that improves the SAH then do nothing */
+	  if (bestChild1 == -1) return;
     
-      /*! perform the best found tree rotation */
-      Node* child2 = parent->child(bestChild2).node(bvh->nodePtr());
-      assert( parent->child(bestChild1) != BVH4i::invalidNode);
-      assert( parent->child(bestChild2) != BVH4i::invalidNode);
-      assert( child2->child(bestChild2Child) != BVH4i::invalidNode);
+	  /*! perform the best found tree rotation */
+	  Node* child2 = parent->child(bestChild2).node(bvh->nodePtr());
+	  assert( parent->child(bestChild1) != BVH4i::invalidNode);
+	  assert( parent->child(bestChild2) != BVH4i::invalidNode);
+	  assert( child2->child(bestChild2Child) != BVH4i::invalidNode);
 
-      BVH4i::swap(parent,bestChild1,child2,bestChild2Child);
+	  BVH4i::swap(parent,bestChild1,child2,bestChild2Child);
 
 
-      parent->setBounds(bestChild2,child2);
+	  parent->setBounds(bestChild2,child2);
 
-      BVH4i::compact(parent);
-      BVH4i::compact(child2);
+	  BVH4i::compact(parent);
+	  BVH4i::compact(child2);
+	}
     }
 
   };

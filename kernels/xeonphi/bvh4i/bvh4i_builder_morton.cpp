@@ -102,7 +102,11 @@ namespace embree
       DBG_PRINT(maxPrimsPerGroup);
       DBG_PRINT(encodeMask);
       DBG_PRINT(maxGroups);
-      FATAL("ENCODING ERROR");      
+      unsigned int primIDEncodingBits   = encodeShift;
+      unsigned int groupIDEncodingBits = __bsr((unsigned int)numGroups) + 1;
+      DBG_PRINT( primIDEncodingBits );
+      DBG_PRINT( groupIDEncodingBits );
+      FATAL("ENCODING ERROR: primIDEncodingBits + groupIDEncodingBits > 32");      
     }
   }
 
