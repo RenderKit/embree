@@ -137,6 +137,7 @@ namespace embree
     {
       depth = 0;
       unsigned int prims; const char* tri = node.leaf(bvh->triPtr(),prims);
+      assert(prims > 0);
       if (!prims) return;
       
       numLeaves++;
