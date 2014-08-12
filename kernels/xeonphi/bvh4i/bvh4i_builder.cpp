@@ -515,14 +515,16 @@ namespace embree
   struct EdgeTriangle
   {
     Edge edge[3];
-    
+    unsigned int geomID;
+
     EdgeTriangle() {}
 
-    EdgeTriangle(const TriangleMesh::Triangle &tri)
+    EdgeTriangle(const TriangleMesh::Triangle &tri, unsigned int gID)
     {
       edge[0] = Edge(tri.v[0],tri.v[1]);
       edge[1] = Edge(tri.v[1],tri.v[2]);
       edge[2] = Edge(tri.v[2],tri.v[0]);
+      geomID = gID;
     }
 
   };
@@ -532,11 +534,14 @@ namespace embree
     o << "edge0: " << e.edge[0] << std::endl;
     o << "edge1: " << e.edge[1] << std::endl;
     o << "edge2: " << e.edge[2] << std::endl;    
+    o << "geomID: " << e.geomID << std::endl;    
     return o;  
   }
 
   bool shareEdge(EdgeTriangle &a, EdgeTriangle &b)
   {
+    if (a.geomID != b.geomID) return false;
+
     for (size_t i=0;i<3;i++)
       for (size_t j=0;j<3;j++)
 	if (a.edge[i].v64 == b.edge[j].v64) return true;
@@ -545,24 +550,25 @@ namespace embree
   unsigned int findPairs(EdgeTriangle tri[4], size_t triangles)
   {
     unsigned int pairs = 0;
-    for (size_t i=0;i<triangles-1;i++)
-      for (size_t j=i+1;j<triangles;j++)
-	{
-	  // DBG_PRINT(i);
-	  // DBG_PRINT(j);
-
-	  // DBG_PRINT(tri[i]);
-	  // DBG_PRINT(tri[j]);
-
-	  if (shareEdge(tri[i],tri[j]))
+    while(triangles >=2)
+      {
+	bool found = false;
+	for (size_t i=1;i<triangles;i++)
+	  if (shareEdge(tri[0],tri[i]))
 	    {
 	      pairs++;
-	      tri[j] = tri[triangles-1];
+	      tri[i] = tri[triangles-1];
 	      triangles--;
+	      tri[0] = tri[triangles-1];
+	      triangles--;
+	      found = true;
 	      break;
 	    }
+	if (found == false) break;
 	}
-    return pairs;
+    if (pairs == 2 || (triangles < 4 && pairs == 1)) return 1;
+    return 0;
+    //return pairs;
   }
   
   void processLeaves(BVH4i::NodeRef node,BVH4i::Node *nodes, Triangle1* tris, Scene *scene, PrimRef *ref, size_t &leaves, size_t &pairs)
@@ -588,7 +594,7 @@ namespace embree
 	    const unsigned int geomID = ref[index+i].geomID();
 	    const unsigned int primID = ref[index+i].primID();
 	    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-	    edgeTri[i] = mesh->triangle(primID);
+	    edgeTri[i] = EdgeTriangle(mesh->triangle(primID),geomID);
 	  }
 
 	pairs += findPairs(edgeTri,prims);
@@ -601,11 +607,15 @@ namespace embree
     LockStepTaskScheduler::dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );   
 
 #if 0
+    const size_t numGroups = scene->size();
+    DBG_PRINT(numGroups);
+
     size_t leaves = 0;
     size_t pairs = 0;
     processLeaves(bvh->root,bvh->qbvh,(Triangle1*)bvh->accel,scene,prims,leaves,pairs);
     DBG_PRINT(leaves);
     DBG_PRINT(pairs);
+    DBG_PRINT(100.0f * pairs / leaves);
 #endif    
   }
 
