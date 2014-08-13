@@ -146,11 +146,11 @@ namespace embree
 
     const size_t num64BytesBlocksPerNode;
 
-    __forceinline void createNode(void *ptr,
-				  const unsigned int index,			  
-				  const unsigned int children = 0) {
-      *(unsigned int *)ptr = ((index*2) << BVH4i::encodingBits);
-    }
+    /* __forceinline void createNode(void *ptr, */
+    /* 				  const unsigned int index,			   */
+    /* 				  const unsigned int children = 0) { */
+    /*   *(unsigned int *)ptr = ((index*2) << BVH4i::encodingBits); */
+    /* } */
 
     __forceinline void storeNode(void *ptr,
 				 BuildRecord *__restrict__ const br,

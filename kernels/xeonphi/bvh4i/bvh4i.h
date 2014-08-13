@@ -529,10 +529,10 @@ namespace embree
     ref = (offset << BVH4i::encodingBits) | BVH4i::leaf_mask | (entries-1);
   }
 
+  template<unsigned int scale>
   __forceinline void createBVH4iNode(BVH4i::NodeRef &ref,
-				     const unsigned int index,			  
-				     const unsigned int children = 0) {
-    ref = ((index*4) << BVH4i::encodingBits);
+				     const unsigned int index) {
+    ref = ((index*scale) << BVH4i::encodingBits);
   }
 
 

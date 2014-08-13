@@ -1261,7 +1261,7 @@ namespace embree
 
     const size_t currentIndex = alloc.get(num64BytesBlocksPerNode);
 
-    createNode(current.parentPtr,currentIndex,numChildren);
+    createBVH4iNode<2>(*(BVH4i::NodeRef*)current.parentPtr,currentIndex);
 
     storeNodeDataUpdateParentPtrs(&node[currentIndex],children,numChildren);
 
@@ -1348,7 +1348,7 @@ namespace embree
 
     /* init used/unused nodes */
 
-    createNode(current.parentPtr,currentIndex,numChildren);
+    createBVH4iNode<2>(*(BVH4i::NodeRef*)current.parentPtr,currentIndex);
 
     storeNodeDataUpdateParentPtrs(&node[currentIndex],children,numChildren);
 

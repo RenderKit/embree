@@ -415,7 +415,7 @@ namespace embree
     store3f(&node[current.parentNodeID].lower[current.parentLocalID],broadcast4to16f(&bounds.lower));
     store3f(&node[current.parentNodeID].upper[current.parentLocalID],broadcast4to16f(&bounds.upper));
 
-    createBVH4iNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,0); // numChildren);
+    createBVH4iNode<4>(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex);
 
 
     return bounds;
@@ -554,7 +554,7 @@ namespace embree
 	children[i].parentLocalID = i;
       }
 
-    createBVH4iNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex);
+    createBVH4iNode<4>(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex);
     return numChildren;
   }
 
@@ -648,7 +648,7 @@ namespace embree
 
     store3f(&node[current.parentNodeID].lower[current.parentLocalID],broadcast4to16f(&bounds.lower));
     store3f(&node[current.parentNodeID].upper[current.parentLocalID],broadcast4to16f(&bounds.upper));
-    createBVH4iNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,numChildren);
+    createBVH4iNode<4>(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex);
 
 
     for (size_t i=0;i<NUM_TREE_ROTATIONS;i++)
