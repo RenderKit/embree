@@ -816,7 +816,7 @@ namespace embree
 
     store3f(&node[current.parentNodeID].lower[current.parentLocalID],bounds_min);
     store3f(&node[current.parentNodeID].upper[current.parentLocalID],bounds_max);
-    createLeaf(node[current.parentNodeID].lower[current.parentLocalID].child,start,items);
+    createBVH4iLeaf(node[current.parentNodeID].lower[current.parentLocalID].child,start,items);
     __aligned(64) BBox3fa bounds;
     store4f(&bounds.lower,bounds_min);
     store4f(&bounds.upper,bounds_max);
@@ -871,7 +871,7 @@ namespace embree
     store3f(&node[current.parentNodeID].lower[current.parentLocalID],broadcast4to16f(&bounds.lower));
     store3f(&node[current.parentNodeID].upper[current.parentLocalID],broadcast4to16f(&bounds.upper));
 
-    createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,0); // numChildren);
+    createBVH4iNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,0); // numChildren);
 
     return bounds;
   }  
@@ -1002,7 +1002,7 @@ namespace embree
 	children[i].parentLocalID = i;
       }
 
-    createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex);
+    createBVH4iNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex);
 
     return numChildren;
   }
@@ -1096,7 +1096,7 @@ namespace embree
 
     store3f(&node[current.parentNodeID].lower[current.parentLocalID],broadcast4to16f(&bounds.lower));
     store3f(&node[current.parentNodeID].upper[current.parentLocalID],broadcast4to16f(&bounds.upper));
-    createNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,numChildren);
+    createBVH4iNode(node[current.parentNodeID].lower[current.parentLocalID].child,currentIndex,numChildren);
 
     if (enableTreeRotations)
       {

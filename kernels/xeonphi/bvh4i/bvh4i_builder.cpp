@@ -549,6 +549,10 @@ namespace embree
   }
   unsigned int findPairs(EdgeTriangle tri[4], size_t triangles)
   {
+    PING;
+    for (size_t i=0;i<triangles;i++)
+      DBG_PRINT(tri[i]);
+
     unsigned int pairs = 0;
     while(triangles >=2)
       {
@@ -556,12 +560,15 @@ namespace embree
 	for (size_t i=1;i<triangles;i++)
 	  if (shareEdge(tri[0],tri[i]))
 	    {
+	      std::cout << "found pair: 0 and " << i << std::endl;
+	      DBG_PRINT(tri[0]);
+	      DBG_PRINT(tri[i]);
 	      pairs++;
 	      tri[i] = tri[triangles-1];
 	      triangles--;
 	      tri[0] = tri[triangles-1];
 	      triangles--;
-	      found = true;
+	      found = true;	      
 	      break;
 	    }
 	if (found == false) break;
@@ -1229,7 +1236,7 @@ namespace embree
     
     /* create leaf */
     if (current.items() <= BVH4i::N) {
-      createLeaf(current.parentPtr,current.begin,current.items());
+      createBVH4iLeaf(*(BVH4i::NodeRef*)current.parentPtr,current.begin,current.items());
 
 #if defined(DEBUG)
       checkLeafNode(*(BVH4i::NodeRef*)current.parentPtr,current.bounds.geometry);      
