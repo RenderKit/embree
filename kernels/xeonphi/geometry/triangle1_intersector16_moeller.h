@@ -20,6 +20,8 @@
 #include "common/ray16.h"
 #include "geometry/filter.h"
 
+//#define COMPUTE_NORMAL
+
 namespace embree
 {
   /*! Intersector for individual precomputed triangles with 16
@@ -46,7 +48,32 @@ namespace embree
 					   const Scene     *__restrict__ const geometry,
 					   const Triangle1 * __restrict__ const tptr)
       {
+	__aligned(64) float norm[16];
+
 	const mic_f zero = mic_f::zero();
+#if 0
+	prefetch<PFHINT_L1>(tptr + 1);
+	prefetch<PFHINT_L1>(tptr + 0); 
+	      
+	const TrianglePair1 * __restrict__ const pptr = (TrianglePair1*)tptr;
+	const mic_f v0 = gather_4f_zlc(and_mask,
+				       (float*)&pptr[0].v0,
+				       (float*)&pptr[0].v0,
+				       (float*)&pptr[1].v0,
+				       (float*)&pptr[1].v0);
+	      
+	const mic_f v1 = gather_4f_zlc(and_mask,
+				       (float*)&pptr[0].v1,
+				       (float*)&pptr[0].v1,
+				       (float*)&pptr[1].v1,
+				       (float*)&pptr[1].v1);
+	      
+	const mic_f v2 = gather_4f_zlc(and_mask,
+				       (float*)&pptr[0].v2,
+				       (float*)&pptr[0].v3,
+				       (float*)&pptr[1].v2,
+				       (float*)&pptr[1].v3);
+#else
 	prefetch<PFHINT_L1>(tptr + 3);
 	prefetch<PFHINT_L1>(tptr + 2);
 	prefetch<PFHINT_L1>(tptr + 1);
@@ -69,7 +96,7 @@ namespace embree
 				       (float*)&tptr[1].v2,
 				       (float*)&tptr[2].v2,
 				       (float*)&tptr[3].v2);
-
+#endif
 	const mic_f e1 = v1 - v0;
 	const mic_f e2 = v0 - v2;	     
 	const mic_f normal = lcross_zxy(e1,e2);
@@ -96,7 +123,7 @@ namespace embree
 
 	if (unlikely(none(m_aperture))) return false;
 	const mic_f t = rcp_den*nom;
-
+	store16f(norm,normal);
 	mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
 
@@ -129,9 +156,17 @@ namespace embree
 		    const size_t triIndex = vecIndex >> 2;
 		    const Triangle1  *__restrict__ tri_ptr = tptr + triIndex;
 		    const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+
+#ifndef COMPUTE_NORMAL
 		    const mic_f gnormalx = mic_f(tri_ptr->Ng.x);
 		    const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
 		    const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
+#else
+		    const mic_f gnormalz = mic_f(norm[vecIndex+0]);
+		    const mic_f gnormalx = mic_f(norm[vecIndex+1]);
+		    const mic_f gnormaly = mic_f(norm[vecIndex+2]);
+#endif                
+
 		    const int geomID = tri_ptr->geomID();
 		    const int primID = tri_ptr->primID();
                 
@@ -163,10 +198,15 @@ namespace embree
 
 		const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
 
+#ifndef COMPUTE_NORMAL
 		const mic_f gnormalx = mic_f(tri_ptr->Ng.x);
 		const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
 		const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
-                
+#else
+		const mic_f gnormalz = mic_f(norm[vecIndex+0]);
+		const mic_f gnormalx = mic_f(norm[vecIndex+1]);
+		const mic_f gnormaly = mic_f(norm[vecIndex+2]);
+#endif                
 		max_dist_xyz = min_dist;
 
 	
@@ -265,9 +305,16 @@ namespace embree
 		const size_t triIndex = vecIndex >> 2;
 		const Triangle1  *__restrict__ tri_ptr = tptr + triIndex;
 		const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+#ifndef COMPUTE_NORMAL
 		const mic_f gnormalx = mic_f(tri_ptr->Ng.x);
 		const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
 		const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
+#else
+		const mic_f gnormalz = mic_f(normal[vecIndex+0]);
+		const mic_f gnormalx = mic_f(normal[vecIndex+1]);
+		const mic_f gnormaly = mic_f(normal[vecIndex+2]);
+#endif                
+
 		const int geomID = tri_ptr->geomID();
 		const int primID = tri_ptr->primID();                
 		const Geometry* const geom = geometry->get(geomID);
@@ -330,8 +377,13 @@ namespace embree
 	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
 	    const mic3f C =  _v0 - org;
 	    
+#ifndef COMPUTE_NORMAL
 	    const mic3f Ng = mic3f(tri.Ng);
-	    const mic_f den = dot(Ng,ray16.dir);
+#else
+	    const mic_f _Ng = lcross_zxy(e1,e2);
+	    const mic3f Ng(swBBBB(_Ng),swCCCC(_Ng),swAAAA(_Ng));
+#endif
+	    const mic_f den = dot(ray16.dir,Ng);
 
 	    const mic_f rcp_den = rcp(den);
 
@@ -424,8 +476,14 @@ namespace embree
 	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
 	    const mic3f C =  _v0 - org;
 	    
+#ifndef COMPUTE_NORMAL
 	    const mic3f Ng = mic3f(tri.Ng);
-	    const mic_f den = dot(Ng,dir);
+#else
+	    const mic_f _Ng = lcross_zxy(e1,e2);
+	    const mic3f Ng(swBBBB(_Ng),swCCCC(_Ng),swAAAA(_Ng));
+#endif
+
+	    const mic_f den = dot(dir,Ng);
 
 	    mic_m valid = valid_leaf;
 

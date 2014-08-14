@@ -477,64 +477,42 @@ namespace embree
   }
 
 
-  struct Edge
-  {
-    union {
-      struct {
-	unsigned int v[2];
-      };
-      size_t v64;
-    };
-
-    Edge() {}
-
-    Edge(unsigned int a,
-	 unsigned int b)
-    {
-      if ( a < b ) 
-	{
-	  v[0] = a;
-	  v[1] = b;
-	}
-      else
-	{
-	  v[1] = a;
-	  v[0] = b;
-	}
-      assert( v[0] < v[1] );
-    }
-
-  };
-
-  __forceinline std::ostream &operator<<(std::ostream &o, const Edge &e)
-  {
-    o << e.v[0] << " " << e.v[1] << "(" << e.v64 << ") ";
-    return o;  
-  }
-
   struct EdgeTriangle
   {
-    Edge edge[3];
+    unsigned int v[3];
     unsigned int geomID;
+    unsigned int primID;
 
     EdgeTriangle() {}
 
-    EdgeTriangle(const TriangleMesh::Triangle &tri, unsigned int gID)
+    EdgeTriangle(const TriangleMesh::Triangle &tri, unsigned int gID, unsigned int pID)
     {
-      edge[0] = Edge(tri.v[0],tri.v[1]);
-      edge[1] = Edge(tri.v[1],tri.v[2]);
-      edge[2] = Edge(tri.v[2],tri.v[0]);
+      v[0] = tri.v[0];
+      v[1] = tri.v[1];
+      v[2] = tri.v[2];
       geomID = gID;
+      primID = pID;
+    }
+
+    size_t edge(const size_t i) const
+    {
+      assert(i < 3);
+      unsigned int a = v[i];
+      unsigned int b = v[(i+1)%3];
+      if (b < a) std::swap(a,b);
+      return (size_t)a | ((size_t)b << 32);
     }
 
   };
 
   __forceinline std::ostream &operator<<(std::ostream &o, const EdgeTriangle &e)
   {
-    o << "edge0: " << e.edge[0] << std::endl;
-    o << "edge1: " << e.edge[1] << std::endl;
-    o << "edge2: " << e.edge[2] << std::endl;    
+    o << "vtx: " << e.v[0] << " " << e.v[1] << " " << e.v[2] << std::endl;
+    o << "edge0: "  << e.edge(0) << std::endl;
+    o << "edge1: "  << e.edge(1) << std::endl;
+    o << "edge2: "  << e.edge(2) << std::endl;    
     o << "geomID: " << e.geomID << std::endl;    
+    o << "primID: " << e.primID << std::endl;    
     return o;  
   }
 
@@ -544,26 +522,87 @@ namespace embree
 
     for (size_t i=0;i<3;i++)
       for (size_t j=0;j<3;j++)
-	if (a.edge[i].v64 == b.edge[j].v64) return true;
+	if (a.edge(i) == b.edge(j)) {
+	  return true;
+	}
     return false;
   }
-  unsigned int findPairs(EdgeTriangle tri[4], size_t triangles)
-  {
-    PING;
-    for (size_t i=0;i<triangles;i++)
-      DBG_PRINT(tri[i]);
 
-    unsigned int pairs = 0;
-    while(triangles >=2)
+  unsigned int getVertexNotInTriangle(EdgeTriangle &tri0, EdgeTriangle &tri1)
+  {
+    for (size_t i=0;i<3;i++)
       {
+	if (tri1.v[i] != tri0.v[0] &&
+	    tri1.v[i] != tri0.v[1] &&
+	    tri1.v[i] != tri0.v[2]) return tri1.v[i];
+      }
+    return tri0.v[2];
+  }
+
+  struct TrianglePair
+  {
+    unsigned int v[4];
+    unsigned int geomID;
+    unsigned int primID[2];
+    unsigned int flags;
+
+    TrianglePair() {};
+
+    TrianglePair(EdgeTriangle &tri0, EdgeTriangle &tri1)
+    {
+      v[0] = tri0.v[0];
+      v[1] = tri0.v[1];
+      v[2] = tri0.v[2];
+      v[3] = getVertexNotInTriangle(tri0,tri1);
+      primID[0] = tri0.primID;
+      primID[1] = tri1.primID;
+      geomID    = tri0.geomID;
+    }
+
+  };
+
+  __forceinline std::ostream &operator<<(std::ostream &o, const TrianglePair &p)
+  {
+    o << "vtx ";
+    for (size_t i=0;i<4;i++) o << p.v[i] << " ";
+    o << std::endl;
+    o << "geomID: " << p.geomID << std::endl;    
+    o << "primID[0]: " << p.primID[0] << std::endl;    
+    o << "primID[1]: " << p.primID[1] << std::endl;    
+    return o;  
+  }
+
+  unsigned int findPairs(EdgeTriangle tri[4], size_t triangles,TrianglePair *trianglePair,size_t &numTrianglePairs)
+  {
+    numTrianglePairs = 0;
+    while(triangles > 0)
+      {
+	unsigned int neighbors[4] = { 0,0,0,0 };
+
+	/* count valid neighbors per triangle */
+	for (size_t i=0;i<triangles-1;i++)
+	  for (size_t j=i+1;j<triangles;j++)
+	    if (shareEdge(tri[i],tri[j]))
+	      {
+		neighbors[i]++;
+		neighbors[j]++;
+	      }
+
+	/* process triangles with single shared edge first */
+	for (size_t i=1;i<triangles;i++)
+	  if (neighbors[i] == 1)
+	    {
+	      std::swap(tri[0],tri[i]);
+	      std::swap(neighbors[0],neighbors[i]);
+	      break;
+	    }
+	
+	/* try to find pair with tri[0] */
 	bool found = false;
 	for (size_t i=1;i<triangles;i++)
 	  if (shareEdge(tri[0],tri[i]))
 	    {
-	      std::cout << "found pair: 0 and " << i << std::endl;
-	      DBG_PRINT(tri[0]);
-	      DBG_PRINT(tri[i]);
-	      pairs++;
+	      trianglePair[numTrianglePairs++] = TrianglePair(tri[0],tri[i]);
 	      tri[i] = tri[triangles-1];
 	      triangles--;
 	      tri[0] = tri[triangles-1];
@@ -571,11 +610,20 @@ namespace embree
 	      found = true;	      
 	      break;
 	    }
-	if (found == false) break;
+
+	/* no pair found create dummy pair */
+
+	if (found == false) 
+	  {
+	    trianglePair[numTrianglePairs++] = TrianglePair(tri[0],tri[0]);	    
+
+	    tri[0] = tri[triangles-1];
+	    triangles--;	    
+	  }
 	}
-    if (pairs == 2 || (triangles < 4 && pairs == 1)) return 1;
+
+    if (numTrianglePairs <= 2) return 1;
     return 0;
-    //return pairs;
   }
   
   void processLeaves(BVH4i::NodeRef node,BVH4i::Node *nodes, Triangle1* tris, Scene *scene, PrimRef *ref, size_t &leaves, size_t &pairs)
@@ -601,11 +649,30 @@ namespace embree
 	    const unsigned int geomID = ref[index+i].geomID();
 	    const unsigned int primID = ref[index+i].primID();
 	    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-	    edgeTri[i] = EdgeTriangle(mesh->triangle(primID),geomID);
+	    edgeTri[i] = EdgeTriangle(mesh->triangle(primID),geomID,primID);
 	  }
 
-	pairs += findPairs(edgeTri,prims);
+	TrianglePair trianglePair[4];
+	size_t numTrianglePairs = 0;
+	pairs += findPairs(edgeTri,prims,trianglePair,numTrianglePairs);
+	for (size_t i=0;i<numTrianglePairs;i++)
+	  {
+	    TrianglePair1 &p = *(TrianglePair1*)&tris[index+i];
 
+	    const unsigned int geomID  = trianglePair[i].geomID;
+	    const unsigned int primID0 = trianglePair[i].primID[0];
+	    const unsigned int primID1 = trianglePair[i].primID[1];
+
+	    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+
+	    const Vec3fa &v0 = mesh->vertex(trianglePair[i].v[0]);
+	    const Vec3fa &v1 = mesh->vertex(trianglePair[i].v[1]);
+	    const Vec3fa &v2 = mesh->vertex(trianglePair[i].v[2]);
+	    const Vec3fa &v3 = mesh->vertex(trianglePair[i].v[3]);
+	    p = TrianglePair1(v0,v1,v2,v3,geomID,primID0,primID1,mesh->mask);
+	  }
+	
+	
       }
   }
 
