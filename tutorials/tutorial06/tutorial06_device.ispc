@@ -998,6 +998,10 @@ export void device_init (uniform int8* uniform cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
+#if 1
+  renderPixel = renderPixelEyeLight;
+#endif
+
 } // device_init
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)

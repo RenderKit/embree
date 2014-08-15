@@ -39,12 +39,12 @@ namespace embree
     static const size_t N = 4;
 
     /*! Masks the bits that store the number of items per leaf. */
-    static const unsigned int encodingBits = 4;
-    static const unsigned int offset_mask  = 0xFFFFFFFF << encodingBits;
-    static const unsigned int leaf_shift   = 3;
-    static const unsigned int leaf_mask    = 1<<leaf_shift;  
-    static const unsigned int items_mask   = (1<<(leaf_shift-1))-1;//leaf_mask-1;  
-    
+    static const unsigned int encodingBits  = 4;
+    static const unsigned int offset_mask   = 0xFFFFFFFF << encodingBits;
+    static const unsigned int leaf_shift    = 3;
+    static const unsigned int leaf_mask     = 1<<leaf_shift;  
+    static const unsigned int items_mask    = (1<<(leaf_shift-1))-1;//leaf_mask-1;  
+    static const unsigned int aux_flag_mask = 1<<(leaf_shift-1);
     /*! Empty node */
     static const unsigned int emptyNode = leaf_mask;
 
@@ -80,7 +80,13 @@ namespace embree
       __forceinline unsigned int isLeaf(const unsigned int mask) const { return _id & mask; }
       
       /*! checks if this is a node */
-      __forceinline unsigned isNode() const { return (_id & leaf_mask) == 0; }
+      __forceinline unsigned int isNode() const { return (_id & leaf_mask) == 0; }
+
+      /*! checks if the aux flag is set */
+      __forceinline unsigned int isAuxFlagSet() const { return _id & aux_flag_mask; }
+
+      /*! checks if the aux flag is set */
+      __forceinline unsigned int clearAuxFlag() const { return _id & (~aux_flag_mask); }
       
       /*! returns node pointer */
 

@@ -20,7 +20,7 @@
 #include "common/ray16.h"
 #include "geometry/filter.h"
 
-//#define COMPUTE_NORMAL
+#define COMPUTE_NORMAL
 
 namespace embree
 {
@@ -38,7 +38,8 @@ namespace embree
       typedef Triangle1 Primitive;
 
 
-      __forceinline static bool intersect1(const size_t rayIndex, 
+      __forceinline static bool intersect1(const BVH4i::NodeRef curNode,
+					   const size_t rayIndex, 
 					   const mic_f &dir_xyz,
 					   const mic_f &org_xyz,
 					   const mic_f &min_dist_xyz,
@@ -51,52 +52,64 @@ namespace embree
 	__aligned(64) float norm[16];
 
 	const mic_f zero = mic_f::zero();
+	mic_f v0,v1,v2;
 #if 0
-	prefetch<PFHINT_L1>(tptr + 1);
-	prefetch<PFHINT_L1>(tptr + 0); 
+	if (likely(curNode.isAuxFlagSet()))
+	  {
+	    prefetch<PFHINT_L1>(tptr + 0);
+	    prefetch<PFHINT_L1>(tptr + 1); 
+	    const TrianglePair1 * __restrict__ const pptr = (TrianglePair1*)tptr;
+	    const mic_f _v0 = gather_4f_zlc(and_mask,
+					    (float*)&pptr[0].v0,
+					    (float*)&pptr[0].v0,
+					    (float*)&pptr[1].v0,
+					    (float*)&pptr[1].v0);
+	    
+	    const mic_f _v1 = gather_4f_zlc(and_mask,
+					    (float*)&pptr[0].v1,
+					    (float*)&pptr[0].v1,
+					    (float*)&pptr[1].v1,
+					    (float*)&pptr[1].v1);
 	      
-	const TrianglePair1 * __restrict__ const pptr = (TrianglePair1*)tptr;
-	const mic_f v0 = gather_4f_zlc(and_mask,
-				       (float*)&pptr[0].v0,
-				       (float*)&pptr[0].v0,
-				       (float*)&pptr[1].v0,
-				       (float*)&pptr[1].v0);
-	      
-	const mic_f v1 = gather_4f_zlc(and_mask,
-				       (float*)&pptr[0].v1,
-				       (float*)&pptr[0].v1,
-				       (float*)&pptr[1].v1,
-				       (float*)&pptr[1].v1);
-	      
-	const mic_f v2 = gather_4f_zlc(and_mask,
-				       (float*)&pptr[0].v2,
-				       (float*)&pptr[0].v3,
-				       (float*)&pptr[1].v2,
-				       (float*)&pptr[1].v3);
-#else
-	prefetch<PFHINT_L1>(tptr + 3);
-	prefetch<PFHINT_L1>(tptr + 2);
-	prefetch<PFHINT_L1>(tptr + 1);
-	prefetch<PFHINT_L1>(tptr + 0); 
-	      
-	const mic_f v0 = gather_4f_zlc(and_mask,
-				       (float*)&tptr[0].v0,
-				       (float*)&tptr[1].v0,
-				       (float*)&tptr[2].v0,
-				       (float*)&tptr[3].v0);
-	      
-	const mic_f v1 = gather_4f_zlc(and_mask,
-				       (float*)&tptr[0].v1,
-				       (float*)&tptr[1].v1,
-				       (float*)&tptr[2].v1,
-				       (float*)&tptr[3].v1);
-	      
-	const mic_f v2 = gather_4f_zlc(and_mask,
-				       (float*)&tptr[0].v2,
-				       (float*)&tptr[1].v2,
-				       (float*)&tptr[2].v2,
-				       (float*)&tptr[3].v2);
+	    const mic_f _v2 = gather_4f_zlc(and_mask,
+					    (float*)&pptr[0].v2,
+					    (float*)&pptr[0].v3,
+					    (float*)&pptr[1].v2,
+					    (float*)&pptr[1].v3);
+	    v0 = _v0;
+	    v1 = _v1;
+	    v2 = _v2;
+	  }
+	else
 #endif
+	  {
+	    prefetch<PFHINT_L1>(tptr + 3);
+	    prefetch<PFHINT_L1>(tptr + 2);
+	    prefetch<PFHINT_L1>(tptr + 1);
+	    prefetch<PFHINT_L1>(tptr + 0); 
+	      
+	    const mic_f _v0 = gather_4f_zlc(and_mask,
+					   (float*)&tptr[0].v0,
+					   (float*)&tptr[1].v0,
+					   (float*)&tptr[2].v0,
+					   (float*)&tptr[3].v0);
+	      
+	    const mic_f _v1 = gather_4f_zlc(and_mask,
+					   (float*)&tptr[0].v1,
+					   (float*)&tptr[1].v1,
+					   (float*)&tptr[2].v1,
+					   (float*)&tptr[3].v1);
+	      
+	    const mic_f _v2 = gather_4f_zlc(and_mask,
+					   (float*)&tptr[0].v2,
+					   (float*)&tptr[1].v2,
+					   (float*)&tptr[2].v2,
+					   (float*)&tptr[3].v2);
+	    v0 = _v0;
+	    v1 = _v1;
+	    v2 = _v2;
+	  }
+
 	const mic_f e1 = v1 - v0;
 	const mic_f e2 = v0 - v2;	     
 	const mic_f normal = lcross_zxy(e1,e2);
@@ -219,7 +232,8 @@ namespace embree
       }
 
 
-      __forceinline static bool occluded1(const size_t rayIndex, 
+      __forceinline static bool occluded1(const BVH4i::NodeRef curNode,					   
+					  const size_t rayIndex, 
 					  const mic_f &dir_xyz,
 					  const mic_f &org_xyz,
 					  const mic_f &min_dist_xyz,
@@ -232,30 +246,63 @@ namespace embree
       {
 	const mic_f zero = mic_f::zero();
 
-	prefetch<PFHINT_L1>(tptr + 3);
-	prefetch<PFHINT_L1>(tptr + 2);
-	prefetch<PFHINT_L1>(tptr + 1);
-	prefetch<PFHINT_L1>(tptr + 0); 
-
+	mic_f v0,v1,v2;
+#if 0
+	if (likely(curNode.isAuxFlagSet()))
+	  {
+	    prefetch<PFHINT_L1>(tptr + 0);
+	    prefetch<PFHINT_L1>(tptr + 1); 
+	    const TrianglePair1 * __restrict__ const pptr = (TrianglePair1*)tptr;
+	    const mic_f _v0 = gather_4f_zlc(and_mask,
+					    (float*)&pptr[0].v0,
+					    (float*)&pptr[0].v0,
+					    (float*)&pptr[1].v0,
+					    (float*)&pptr[1].v0);
+	    
+	    const mic_f _v1 = gather_4f_zlc(and_mask,
+					    (float*)&pptr[0].v1,
+					    (float*)&pptr[0].v1,
+					    (float*)&pptr[1].v1,
+					    (float*)&pptr[1].v1);
 	      
-	const mic_f v0 = gather_4f_zlc(and_mask,
-				       (float*)&tptr[0].v0,
-				       (float*)&tptr[1].v0,
-				       (float*)&tptr[2].v0,
-				       (float*)&tptr[3].v0);
+	    const mic_f _v2 = gather_4f_zlc(and_mask,
+					    (float*)&pptr[0].v2,
+					    (float*)&pptr[0].v3,
+					    (float*)&pptr[1].v2,
+					    (float*)&pptr[1].v3);
+	    v0 = _v0;
+	    v1 = _v1;
+	    v2 = _v2;
+	  }
+	else
+#endif
+	  {
+	    prefetch<PFHINT_L1>(tptr + 3);
+	    prefetch<PFHINT_L1>(tptr + 2);
+	    prefetch<PFHINT_L1>(tptr + 1);
+	    prefetch<PFHINT_L1>(tptr + 0); 
 	      
-	const mic_f v1 = gather_4f_zlc(and_mask,
-				       (float*)&tptr[0].v1,
-				       (float*)&tptr[1].v1,
-				       (float*)&tptr[2].v1,
-				       (float*)&tptr[3].v1);
+	    const mic_f _v0 = gather_4f_zlc(and_mask,
+					   (float*)&tptr[0].v0,
+					   (float*)&tptr[1].v0,
+					   (float*)&tptr[2].v0,
+					   (float*)&tptr[3].v0);
 	      
-	const mic_f v2 = gather_4f_zlc(and_mask,
-				       (float*)&tptr[0].v2,
-				       (float*)&tptr[1].v2,
-				       (float*)&tptr[2].v2,
-				       (float*)&tptr[3].v2);
-
+	    const mic_f _v1 = gather_4f_zlc(and_mask,
+					   (float*)&tptr[0].v1,
+					   (float*)&tptr[1].v1,
+					   (float*)&tptr[2].v1,
+					   (float*)&tptr[3].v1);
+	      
+	    const mic_f _v2 = gather_4f_zlc(and_mask,
+					   (float*)&tptr[0].v2,
+					   (float*)&tptr[1].v2,
+					   (float*)&tptr[2].v2,
+					   (float*)&tptr[3].v2);
+	    v0 = _v0;
+	    v1 = _v1;
+	    v2 = _v2;
+	  }
 	const mic_f e1 = v1 - v0;
 	const mic_f e2 = v0 - v2;	     
 	const mic_f normal = lcross_zxy(e1,e2);

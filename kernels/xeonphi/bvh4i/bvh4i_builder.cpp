@@ -528,6 +528,18 @@ namespace embree
     return false;
   }
 
+  int sharedEdgeIndex(EdgeTriangle &a, EdgeTriangle &b)
+  {
+    if (a.geomID != b.geomID) return false;
+
+    for (size_t i=0;i<3;i++)
+      for (size_t j=0;j<3;j++)
+	if (a.edge(i) == b.edge(j)) {
+	  return i;
+	}
+    return -1;
+  }
+
   unsigned int getVertexNotInTriangle(EdgeTriangle &tri0, EdgeTriangle &tri1)
   {
     for (size_t i=0;i<3;i++)
@@ -550,9 +562,11 @@ namespace embree
 
     TrianglePair(EdgeTriangle &tri0, EdgeTriangle &tri1)
     {
-      v[0] = tri0.v[0];
-      v[1] = tri0.v[1];
-      v[2] = tri0.v[2];
+      int sharedIndex = sharedEdgeIndex(tri0,tri1);
+      assert(sharedIndex != -1);
+      v[0] = tri0.v[(sharedIndex+0)%3];
+      v[1] = tri0.v[(sharedIndex+1)%3];
+      v[2] = tri0.v[(sharedIndex+2)%3];
       v[3] = getVertexNotInTriangle(tri0,tri1);
       primID[0] = tri0.primID;
       primID[1] = tri1.primID;
@@ -588,14 +602,16 @@ namespace embree
 		neighbors[j]++;
 	      }
 
+	// TODO: full scan
 	/* process triangles with single shared edge first */
-	for (size_t i=1;i<triangles;i++)
-	  if (neighbors[i] == 1)
-	    {
-	      std::swap(tri[0],tri[i]);
-	      std::swap(neighbors[0],neighbors[i]);
-	      break;
-	    }
+	if (neighbors[0] != 1)
+	  for (size_t i=1;i<triangles;i++)
+	    if (neighbors[i] == 1)
+	      {
+		std::swap(tri[0],tri[i]);
+		std::swap(neighbors[0],neighbors[i]);
+		break;
+	      }
 	
 	/* try to find pair with tri[0] */
 	bool found = false;
@@ -626,7 +642,7 @@ namespace embree
     return 0;
   }
   
-  void processLeaves(BVH4i::NodeRef node,BVH4i::Node *nodes, Triangle1* tris, Scene *scene, PrimRef *ref, size_t &leaves, size_t &pairs)
+  void processLeaves(BVH4i::NodeRef &node,BVH4i::Node *nodes, Triangle1* tris, Scene *scene, PrimRef *ref, size_t &leaves, size_t &pairs)
   {
     if (node.isNode())
       {
@@ -642,7 +658,10 @@ namespace embree
 	leaves++;
 	unsigned int prims = node.items();
 	unsigned int index = node.offsetIndex();
-	
+
+#if 1
+	node.clearAuxFlag();
+
 	EdgeTriangle edgeTri[4];
 	for (size_t i=0;i<prims;i++)
 	  {
@@ -650,28 +669,39 @@ namespace embree
 	    const unsigned int primID = ref[index+i].primID();
 	    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	    edgeTri[i] = EdgeTriangle(mesh->triangle(primID),geomID,primID);
+	    //DBG_PRINT(tris[index+i]);
+
 	  }
 
 	TrianglePair trianglePair[4];
 	size_t numTrianglePairs = 0;
 	pairs += findPairs(edgeTri,prims,trianglePair,numTrianglePairs);
-	for (size_t i=0;i<numTrianglePairs;i++)
-	  {
-	    TrianglePair1 &p = *(TrianglePair1*)&tris[index+i];
 
-	    const unsigned int geomID  = trianglePair[i].geomID;
-	    const unsigned int primID0 = trianglePair[i].primID[0];
-	    const unsigned int primID1 = trianglePair[i].primID[1];
+	// DBG_PRINT(prims);
+	//DBG_PRINT(numTrianglePairs);
+	if (numTrianglePairs <= 2)
+	  for (size_t i=0;i<numTrianglePairs;i++)
+	    {
+	      //DBG_PRINT(i);
+	      
+	      TrianglePair1 &p = *(TrianglePair1*)&tris[index+i];
+	      
 
-	    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	      const unsigned int geomID  = trianglePair[i].geomID;
+	      const unsigned int primID0 = trianglePair[i].primID[0];
+	      const unsigned int primID1 = trianglePair[i].primID[1];
 
-	    const Vec3fa &v0 = mesh->vertex(trianglePair[i].v[0]);
-	    const Vec3fa &v1 = mesh->vertex(trianglePair[i].v[1]);
-	    const Vec3fa &v2 = mesh->vertex(trianglePair[i].v[2]);
-	    const Vec3fa &v3 = mesh->vertex(trianglePair[i].v[3]);
-	    p = TrianglePair1(v0,v1,v2,v3,geomID,primID0,primID1,mesh->mask);
-	  }
-	
+	      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+
+	      const Vec3fa &v0 = mesh->vertex(trianglePair[i].v[0]);
+	      const Vec3fa &v1 = mesh->vertex(trianglePair[i].v[1]);
+	      const Vec3fa &v2 = mesh->vertex(trianglePair[i].v[2]);
+	      const Vec3fa &v3 = mesh->vertex(trianglePair[i].v[3]);
+	      p = TrianglePair1(v0,v1,v2,v3,geomID,primID0,primID1,mesh->mask);
+	      node = node | BVH4i::aux_flag_mask;
+	      //DBG_PRINT(p);
+	    }
+#endif	
 	
       }
   }
