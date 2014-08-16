@@ -49,16 +49,42 @@ namespace embree
 					   const Scene     *__restrict__ const geometry,
 					   const Triangle1 * __restrict__ const tptr)
       {
-	__aligned(64) float norm[16];
+	//	__aligned(64) float norm[16];
 
 	const mic_f zero = mic_f::zero();
 	mic_f v0,v1,v2;
 #if 0
+	prefetch<PFHINT_L1>(tptr + 1);
+	prefetch<PFHINT_L1>(tptr + 0); 
+
 	if (likely(curNode.isAuxFlagSet()))
 	  {
-	    prefetch<PFHINT_L1>(tptr + 0);
-	    prefetch<PFHINT_L1>(tptr + 1); 
 	    const TrianglePair1 * __restrict__ const pptr = (TrianglePair1*)tptr;
+#if 1
+	    const mic_f _v0 = gather_2f_zlc(and_mask,0xff00,
+					    (float*)&pptr[0].v0,
+					    (float*)&pptr[1].v0);
+
+	    const mic_f _v1 = gather_2f_zlc(and_mask,0xff00,
+					    (float*)&pptr[0].v1,
+					    (float*)&pptr[1].v1);
+
+	    /* const mic_f _v2 = gather_2f_zlc(and_mask,0xf0f0, */
+	    /* 				    (float*)&pptr[0].v2, */
+	    /* 				    (float*)&pptr[1].v3); */
+
+	    const mic_f p0 = load16f(&pptr[0]);
+	    const mic_f p1 = load16f(&pptr[1]);
+
+	    const mic_f _v2 = cast(cast(select(0x00ff,align_shift_right<8>(p0,p0),p1)) & and_mask);
+	    /* const mic_f _v2 = gather_4f_zlc(and_mask, */
+	    /* 				    (float*)&pptr[0].v2, */
+	    /* 				    (float*)&pptr[0].v3, */
+	    /* 				    (float*)&pptr[1].v2, */
+	    /* 				    (float*)&pptr[1].v3); */
+
+
+#else
 	    const mic_f _v0 = gather_4f_zlc(and_mask,
 					    (float*)&pptr[0].v0,
 					    (float*)&pptr[0].v0,
@@ -76,17 +102,19 @@ namespace embree
 					    (float*)&pptr[0].v3,
 					    (float*)&pptr[1].v2,
 					    (float*)&pptr[1].v3);
+#endif
 	    v0 = _v0;
 	    v1 = _v1;
 	    v2 = _v2;
+
 	  }
 	else
 #endif
 	  {
 	    prefetch<PFHINT_L1>(tptr + 3);
 	    prefetch<PFHINT_L1>(tptr + 2);
-	    prefetch<PFHINT_L1>(tptr + 1);
-	    prefetch<PFHINT_L1>(tptr + 0); 
+	    prefetch<PFHINT_L1>(tptr + 1); 
+	    prefetch<PFHINT_L1>(tptr + 0);  
 	      
 	    const mic_f _v0 = gather_4f_zlc(and_mask,
 					   (float*)&tptr[0].v0,
@@ -136,7 +164,7 @@ namespace embree
 
 	if (unlikely(none(m_aperture))) return false;
 	const mic_f t = rcp_den*nom;
-	store16f(norm,normal);
+	//store16f(norm,normal);
 	mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
 
@@ -175,9 +203,9 @@ namespace embree
 		    const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
 		    const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
 #else
-		    const mic_f gnormalz = mic_f(norm[vecIndex+0]);
-		    const mic_f gnormalx = mic_f(norm[vecIndex+1]);
-		    const mic_f gnormaly = mic_f(norm[vecIndex+2]);
+		    const mic_f gnormalz = mic_f(normal[vecIndex+0]);
+		    const mic_f gnormalx = mic_f(normal[vecIndex+1]);
+		    const mic_f gnormaly = mic_f(normal[vecIndex+2]);
 #endif                
 
 		    const int geomID = tri_ptr->geomID();
@@ -216,9 +244,9 @@ namespace embree
 		const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
 		const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
 #else
-		const mic_f gnormalz = mic_f(norm[vecIndex+0]);
-		const mic_f gnormalx = mic_f(norm[vecIndex+1]);
-		const mic_f gnormaly = mic_f(norm[vecIndex+2]);
+		const mic_f gnormalz = mic_f(normal[vecIndex+0]);
+		const mic_f gnormalx = mic_f(normal[vecIndex+1]);
+		const mic_f gnormaly = mic_f(normal[vecIndex+2]);
 #endif                
 		max_dist_xyz = min_dist;
 
@@ -248,10 +276,11 @@ namespace embree
 
 	mic_f v0,v1,v2;
 #if 0
+	prefetch<PFHINT_L1>(tptr + 1);
+	prefetch<PFHINT_L1>(tptr + 0); 
+
 	if (likely(curNode.isAuxFlagSet()))
 	  {
-	    prefetch<PFHINT_L1>(tptr + 0);
-	    prefetch<PFHINT_L1>(tptr + 1); 
 	    const TrianglePair1 * __restrict__ const pptr = (TrianglePair1*)tptr;
 	    const mic_f _v0 = gather_4f_zlc(and_mask,
 					    (float*)&pptr[0].v0,
