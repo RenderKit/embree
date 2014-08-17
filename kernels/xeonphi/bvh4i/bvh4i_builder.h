@@ -146,19 +146,11 @@ namespace embree
 
     const size_t num64BytesBlocksPerNode;
 
-    __forceinline void createLeaf(void *ptr,
-				  const unsigned int offset,
-				  const unsigned int entries) 
-    {
-      assert(entries <= 4);
-      *(unsigned int *)ptr = (offset << BVH4i::encodingBits) | BVH4i::leaf_mask | entries;
-    }
-
-    __forceinline void createNode(void *ptr,
-				  const unsigned int index,			  
-				  const unsigned int children = 0) {
-      *(unsigned int *)ptr = ((index*2) << BVH4i::encodingBits);
-    }
+    /* __forceinline void createNode(void *ptr, */
+    /* 				  const unsigned int index,			   */
+    /* 				  const unsigned int children = 0) { */
+    /*   *(unsigned int *)ptr = ((index*2) << BVH4i::encodingBits); */
+    /* } */
 
     __forceinline void storeNode(void *ptr,
 				 BuildRecord *__restrict__ const br,

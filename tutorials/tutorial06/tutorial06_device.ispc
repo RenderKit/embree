@@ -544,7 +544,7 @@ __device__ Vec3f OBJMaterial__eval(OBJMaterial* uniform material, const BRDF& br
   if (Md > 0.0f) {
     R = R + (1.0f/M_PI) * clamp(dot(wi,dg.Ns)) * brdf.Kd; // FIXME: +=
   }
-  if (Ms > 0.0f && brdf.Ns < 1E10) { // FIXME: inf
+  if (Ms > 0.0f) {
     const Sample3f refl = reflect_(wo,dg.Ns);
     if (dot(refl.v,wi) > 0.0f) 
       R = R + (brdf.Ns+2) * one_over_two_pi * pow(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks; // FIXME: +=
@@ -797,7 +797,7 @@ __device__ Vec3f ThinDielectricMaterial__sample(ThinDielectricMaterial* uniform 
 {
   float cosThetaO = clamp(dot(wo,dg.Ns));
   if (cosThetaO <= 0.0f) return make_Vec3f(0.0f);
-  float R = fresnelDielectric(cosThetaO,This->eta);
+  float R = fresnelDielectric(cosThetaO,rcp(This->eta));
   Sample3f wit = make_Sample3f(neg(wo),1.0f);
   Sample3f wis = reflect_(wo,dg.Ns);
   Vec3f ct = exp(make_Vec3f(This->transmission)*rcp(cosThetaO))*make_Vec3f(1.0f-R);
@@ -945,6 +945,11 @@ RTCScene g_scene = NULL;
 /* render function to use */
 renderPixelFunc renderPixel;
 
+/* occlusion filter function */
+void occlusionFilterReject(void* uniform ptr, RTCRay& ray) {
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+}
+
 /* error reporting function */
 void error_handler(const uniform RTCError code, const uniform int8* uniform str)
 {
@@ -993,6 +998,10 @@ export void device_init (uniform int8* uniform cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
+#if 1
+  renderPixel = renderPixelEyeLight;
+#endif
+
 } // device_init
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
@@ -1026,6 +1035,19 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     }
     rtcUnmapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
     rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+
+    uniform bool allOpaque = true;
+    uniform bool allTransparent = true;
+    for (uniform size_t j=0; j<mesh->numTriangles; j++) {
+      uniform ISPCTriangle triangle = mesh->triangles[j];
+      if (g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_DIELECTRIC ||
+	  g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_THIN_DIELECTRIC)
+	allOpaque = false;
+      else 
+	allTransparent = false;
+    }
+    if (allTransparent)
+      rtcSetOcclusionFilterFunction(scene_out,geometry,(RTCFilterFuncVarying)&occlusionFilterReject);
   }
 
   /* commit changes to scene */
@@ -1147,7 +1169,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     /* invoke environment lights if nothing hit */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
     {
-#if 1
+#if 0
       /* iterate over all ambient lights */
       for (uniform size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
         L = L + Lw*AmbientLight__eval(g_ispc_scene->ambientLights[i],ray.dir); // FIXME: +=

@@ -502,6 +502,16 @@ namespace embree
     return cast(v);
   }
 
+  __forceinline mic_f gather_2f_zlc(const mic_i &v_mask,
+				    const mic_m &mask,
+                                    const void *__restrict__ const ptr0,
+                                    const void *__restrict__ const ptr1) 
+  {
+    mic_i v = v_mask &  broadcast4to16i((const int*)ptr0);
+    v = mask_and(mask,v,v_mask, broadcast4to16i((const int*)ptr1));
+    return cast(v);
+  }
+
 
   __forceinline mic_f gather16f_4f_align(const void *__restrict__ const ptr0,
 					 const void *__restrict__ const ptr1,

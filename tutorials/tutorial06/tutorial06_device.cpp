@@ -544,7 +544,7 @@ struct OBJMaterial
   if (Md > 0.0f) {
     R = R + (1.0f/float(pi)) * clamp(dot(wi,dg.Ns)) * brdf.Kd; // FIXME: +=
   }
-  if (Ms > 0.0f && brdf.Ns < 1E10) { // FIXME: inf
+  if (Ms > 0.0f) {
     const Sample3f refl = reflect_(wo,dg.Ns);
     if (dot(refl.v,wi) > 0.0f) 
       R = R + (brdf.Ns+2) * float(one_over_two_pi) * pow(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks; // FIXME: +=
@@ -797,7 +797,7 @@ struct ThinDielectricMaterial
 {
   float cosThetaO = clamp(dot(wo,dg.Ns));
   if (cosThetaO <= 0.0f) return Vec3fa(0.0f);
-  float R = fresnelDielectric(cosThetaO,This->eta);
+  float R = fresnelDielectric(cosThetaO,rcp(This->eta));
   Sample3f wit = Sample3f(neg(wo),1.0f);
   Sample3f wis = reflect_(wo,dg.Ns);
   Vec3fa ct = exp(Vec3fa(This->transmission)*rcp(cosThetaO))*Vec3fa(1.0f-R);
@@ -945,6 +945,11 @@ RTCScene g_scene = NULL;
 /* render function to use */
 renderPixelFunc renderPixel;
 
+/* occlusion filter function */
+void occlusionFilterReject(void* ptr, RTCRay& ray) {
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+}
+
 /* error reporting function */
 void error_handler(const RTCError code, const int8* str)
 {
@@ -1026,6 +1031,19 @@ RTCScene convertScene(ISPCScene* scene_in)
     }
     rtcUnmapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
     rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+
+    bool allOpaque = true;
+    bool allTransparent = true;
+    for (size_t j=0; j<mesh->numTriangles; j++) {
+      ISPCTriangle triangle = mesh->triangles[j];
+      if (g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_DIELECTRIC ||
+	  g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_THIN_DIELECTRIC)
+	allOpaque = false;
+      else 
+	allTransparent = false;
+    }
+    if (allTransparent)
+      rtcSetOcclusionFilterFunction(scene_out,geometry,(RTCFilterFunc)&occlusionFilterReject);
   }
 
   /* commit changes to scene */
@@ -1147,7 +1165,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     /* invoke environment lights if nothing hit */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
     {
-#if 1
+#if 0
       /* iterate over all ambient lights */
       for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
         L = L + Lw*AmbientLight__eval(g_ispc_scene->ambientLights[i],ray.dir); // FIXME: +=

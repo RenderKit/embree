@@ -25,6 +25,7 @@
 namespace embree
 {
 
+
   class __aligned(16) SmallBuildRecord 
   {
   public:
@@ -233,19 +234,6 @@ namespace embree
       return currentIndex;
     }
 
-    __forceinline void createLeaf(BVH4i::NodeRef &ref,
-				  const unsigned int offset,
-				  const unsigned int entries) 
-    {
-      assert(entries <= 4);
-      ref = (offset << BVH4i::encodingBits) | BVH4i::leaf_mask | entries;
-    }
-
-    __forceinline void createNode(BVH4i::NodeRef &ref,
-				  const unsigned int index,			  
-				  const unsigned int children = 0) {
-      ref = ((index*4) << BVH4i::encodingBits);
-    }
 
   };
 
@@ -375,19 +363,6 @@ namespace embree
     /*! refit the sub-BVHs */
     BBox3fa refit(const BVH4i::NodeRef &ref);
 
-    __forceinline void createLeaf(BVH4i::NodeRef &ref,
-				  const unsigned int offset,
-				  const unsigned int entries) 
-    {
-      assert(entries <= 4);
-      ref = (offset << BVH4i::encodingBits) | BVH4i::leaf_mask | entries;
-    }
-
-    __forceinline void createNode(BVH4i::NodeRef &ref,
-				  const unsigned int index,			  
-				  const unsigned int children = 0) {
-      ref = ((index*4) << BVH4i::encodingBits);
-    }
 
   public:
 

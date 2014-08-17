@@ -430,6 +430,9 @@ namespace embree
       PrimRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
       linfo_o.reset();
       rinfo_o.reset();
+
+      size_t numLeft = 0; CentGeomBBox3fa leftBounds(empty);
+      size_t numRight = 0; CentGeomBBox3fa rightBounds(empty);
       
       while (PrimRefList::item* block = prims.take()) 
       {
@@ -441,14 +444,20 @@ namespace embree
 
 	  if (bin[dim] < pos) 
 	  {
-	    linfo_o.add(prim.bounds(),center);
+	    leftBounds.extend(prim.bounds()); numLeft++;
+	    //linfo_o.add(prim.bounds(),center);
+	    //if (++lblock->num > PrimRefBlock::blockSize)
+	    //lblock = lprims_o.insert(alloc.malloc(threadIndex));
 	    if (likely(lblock->insert(prim))) continue; 
 	    lblock = lprims_o.insert(alloc.malloc(threadIndex));
 	    lblock->insert(prim);
 	  } 
 	  else 
 	  {
-	    rinfo_o.add(prim.bounds(),center);
+	    rightBounds.extend(prim.bounds()); numRight++;
+	    //rinfo_o.add(prim.bounds(),center);
+	    //if (++rblock->num > PrimRefBlock::blockSize)
+	    //rblock = rprims_o.insert(alloc.malloc(threadIndex));
 	    if (likely(rblock->insert(prim))) continue;
 	    rblock = rprims_o.insert(alloc.malloc(threadIndex));
 	    rblock->insert(prim);
@@ -456,6 +465,9 @@ namespace embree
 	}
 	alloc.free(threadIndex,block);
       }
+
+      linfo_o.add(leftBounds.geomBounds,leftBounds.centBounds,numLeft);
+      rinfo_o.add(rightBounds.geomBounds,rightBounds.centBounds,numRight);
     }
         
     void ObjectPartition::Split::partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) const

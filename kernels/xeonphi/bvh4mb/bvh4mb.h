@@ -82,6 +82,7 @@ namespace embree
     };
 
 
+
   public:
 
     /*! BVH4 default constructor. */
@@ -111,5 +112,10 @@ namespace embree
       o << std::endl;
       return o;
     } 
+
+  __forceinline mic_i getTriMasks(const BVH4mb::Triangle01 * __restrict__ const tptr)
+  {
+    return swDDDD(gather16i_4i_align(&tptr[0].t0.v2,&tptr[1].t0.v2,&tptr[2].t0.v2,&tptr[3].t0.v2));
+  }
 
 }

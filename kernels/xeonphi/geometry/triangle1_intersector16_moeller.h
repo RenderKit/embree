@@ -20,6 +20,8 @@
 #include "common/ray16.h"
 #include "geometry/filter.h"
 
+#define COMPUTE_NORMAL
+
 namespace embree
 {
   /*! Intersector for individual precomputed triangles with 16
@@ -36,7 +38,8 @@ namespace embree
       typedef Triangle1 Primitive;
 
 
-      __forceinline static bool intersect1(const size_t rayIndex, 
+      __forceinline static bool intersect1(const BVH4i::NodeRef curNode,
+					   const size_t rayIndex, 
 					   const mic_f &dir_xyz,
 					   const mic_f &org_xyz,
 					   const mic_f &min_dist_xyz,
@@ -46,29 +49,94 @@ namespace embree
 					   const Scene     *__restrict__ const geometry,
 					   const Triangle1 * __restrict__ const tptr)
       {
+	//	__aligned(64) float norm[16];
+
 	const mic_f zero = mic_f::zero();
-	prefetch<PFHINT_L1>(tptr + 3);
-	prefetch<PFHINT_L1>(tptr + 2);
+	mic_f v0,v1,v2;
+#if 0
 	prefetch<PFHINT_L1>(tptr + 1);
 	prefetch<PFHINT_L1>(tptr + 0); 
+
+	if (likely(curNode.isAuxFlagSet()))
+	  {
+	    const TrianglePair1 * __restrict__ const pptr = (TrianglePair1*)tptr;
+#if 1
+	    const mic_f _v0 = gather_2f_zlc(and_mask,0xff00,
+					    (float*)&pptr[0].v0,
+					    (float*)&pptr[1].v0);
+
+	    const mic_f _v1 = gather_2f_zlc(and_mask,0xff00,
+					    (float*)&pptr[0].v1,
+					    (float*)&pptr[1].v1);
+
+	    /* const mic_f _v2 = gather_2f_zlc(and_mask,0xf0f0, */
+	    /* 				    (float*)&pptr[0].v2, */
+	    /* 				    (float*)&pptr[1].v3); */
+
+	    const mic_f p0 = load16f(&pptr[0]);
+	    const mic_f p1 = load16f(&pptr[1]);
+
+	    const mic_f _v2 = cast(cast(select(0x00ff,align_shift_right<8>(p0,p0),p1)) & and_mask);
+	    /* const mic_f _v2 = gather_4f_zlc(and_mask, */
+	    /* 				    (float*)&pptr[0].v2, */
+	    /* 				    (float*)&pptr[0].v3, */
+	    /* 				    (float*)&pptr[1].v2, */
+	    /* 				    (float*)&pptr[1].v3); */
+
+
+#else
+	    const mic_f _v0 = gather_4f_zlc(and_mask,
+					    (float*)&pptr[0].v0,
+					    (float*)&pptr[0].v0,
+					    (float*)&pptr[1].v0,
+					    (float*)&pptr[1].v0);
+	    
+	    const mic_f _v1 = gather_4f_zlc(and_mask,
+					    (float*)&pptr[0].v1,
+					    (float*)&pptr[0].v1,
+					    (float*)&pptr[1].v1,
+					    (float*)&pptr[1].v1);
 	      
-	const mic_f v0 = gather_4f_zlc(and_mask,
-				       (float*)&tptr[0].v0,
-				       (float*)&tptr[1].v0,
-				       (float*)&tptr[2].v0,
-				       (float*)&tptr[3].v0);
+	    const mic_f _v2 = gather_4f_zlc(and_mask,
+					    (float*)&pptr[0].v2,
+					    (float*)&pptr[0].v3,
+					    (float*)&pptr[1].v2,
+					    (float*)&pptr[1].v3);
+#endif
+	    v0 = _v0;
+	    v1 = _v1;
+	    v2 = _v2;
+
+	  }
+	else
+#endif
+	  {
+	    prefetch<PFHINT_L1>(tptr + 3);
+	    prefetch<PFHINT_L1>(tptr + 2);
+	    prefetch<PFHINT_L1>(tptr + 1); 
+	    prefetch<PFHINT_L1>(tptr + 0);  
 	      
-	const mic_f v1 = gather_4f_zlc(and_mask,
-				       (float*)&tptr[0].v1,
-				       (float*)&tptr[1].v1,
-				       (float*)&tptr[2].v1,
-				       (float*)&tptr[3].v1);
+	    const mic_f _v0 = gather_4f_zlc(and_mask,
+					   (float*)&tptr[0].v0,
+					   (float*)&tptr[1].v0,
+					   (float*)&tptr[2].v0,
+					   (float*)&tptr[3].v0);
 	      
-	const mic_f v2 = gather_4f_zlc(and_mask,
-				       (float*)&tptr[0].v2,
-				       (float*)&tptr[1].v2,
-				       (float*)&tptr[2].v2,
-				       (float*)&tptr[3].v2);
+	    const mic_f _v1 = gather_4f_zlc(and_mask,
+					   (float*)&tptr[0].v1,
+					   (float*)&tptr[1].v1,
+					   (float*)&tptr[2].v1,
+					   (float*)&tptr[3].v1);
+	      
+	    const mic_f _v2 = gather_4f_zlc(and_mask,
+					   (float*)&tptr[0].v2,
+					   (float*)&tptr[1].v2,
+					   (float*)&tptr[2].v2,
+					   (float*)&tptr[3].v2);
+	    v0 = _v0;
+	    v1 = _v1;
+	    v2 = _v2;
+	  }
 
 	const mic_f e1 = v1 - v0;
 	const mic_f e2 = v0 - v2;	     
@@ -96,13 +164,13 @@ namespace embree
 
 	if (unlikely(none(m_aperture))) return false;
 	const mic_f t = rcp_den*nom;
-
+	//store16f(norm,normal);
 	mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
 
 #if defined(__USE_RAY_MASK__)
 	const mic_i rayMask(ray16.mask[rayIndex]);
-	const mic_i triMask = swDDDD(gather16i_4i_align(&tptr[0].v2,&tptr[1].v2,&tptr[2].v2,&tptr[3].v2));
+	const mic_i triMask = getTriMasks(tptr); 
 	const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
 	m_final &= m_ray_mask;	      
 #endif
@@ -129,9 +197,17 @@ namespace embree
 		    const size_t triIndex = vecIndex >> 2;
 		    const Triangle1  *__restrict__ tri_ptr = tptr + triIndex;
 		    const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+
+#ifndef COMPUTE_NORMAL
 		    const mic_f gnormalx = mic_f(tri_ptr->Ng.x);
 		    const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
 		    const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
+#else
+		    const mic_f gnormalz = mic_f(normal[vecIndex+0]);
+		    const mic_f gnormalx = mic_f(normal[vecIndex+1]);
+		    const mic_f gnormaly = mic_f(normal[vecIndex+2]);
+#endif                
+
 		    const int geomID = tri_ptr->geomID();
 		    const int primID = tri_ptr->primID();
                 
@@ -163,10 +239,15 @@ namespace embree
 
 		const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
 
+#ifndef COMPUTE_NORMAL
 		const mic_f gnormalx = mic_f(tri_ptr->Ng.x);
 		const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
 		const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
-                
+#else
+		const mic_f gnormalz = mic_f(normal[vecIndex+0]);
+		const mic_f gnormalx = mic_f(normal[vecIndex+1]);
+		const mic_f gnormaly = mic_f(normal[vecIndex+2]);
+#endif                
 		max_dist_xyz = min_dist;
 
 	
@@ -179,7 +260,8 @@ namespace embree
       }
 
 
-      __forceinline static bool occluded1(const size_t rayIndex, 
+      __forceinline static bool occluded1(const BVH4i::NodeRef curNode,					   
+					  const size_t rayIndex, 
 					  const mic_f &dir_xyz,
 					  const mic_f &org_xyz,
 					  const mic_f &min_dist_xyz,
@@ -192,30 +274,64 @@ namespace embree
       {
 	const mic_f zero = mic_f::zero();
 
-	prefetch<PFHINT_L1>(tptr + 3);
-	prefetch<PFHINT_L1>(tptr + 2);
+	mic_f v0,v1,v2;
+#if 0
 	prefetch<PFHINT_L1>(tptr + 1);
 	prefetch<PFHINT_L1>(tptr + 0); 
 
+	if (likely(curNode.isAuxFlagSet()))
+	  {
+	    const TrianglePair1 * __restrict__ const pptr = (TrianglePair1*)tptr;
+	    const mic_f _v0 = gather_4f_zlc(and_mask,
+					    (float*)&pptr[0].v0,
+					    (float*)&pptr[0].v0,
+					    (float*)&pptr[1].v0,
+					    (float*)&pptr[1].v0);
+	    
+	    const mic_f _v1 = gather_4f_zlc(and_mask,
+					    (float*)&pptr[0].v1,
+					    (float*)&pptr[0].v1,
+					    (float*)&pptr[1].v1,
+					    (float*)&pptr[1].v1);
 	      
-	const mic_f v0 = gather_4f_zlc(and_mask,
-				       (float*)&tptr[0].v0,
-				       (float*)&tptr[1].v0,
-				       (float*)&tptr[2].v0,
-				       (float*)&tptr[3].v0);
+	    const mic_f _v2 = gather_4f_zlc(and_mask,
+					    (float*)&pptr[0].v2,
+					    (float*)&pptr[0].v3,
+					    (float*)&pptr[1].v2,
+					    (float*)&pptr[1].v3);
+	    v0 = _v0;
+	    v1 = _v1;
+	    v2 = _v2;
+	  }
+	else
+#endif
+	  {
+	    prefetch<PFHINT_L1>(tptr + 3);
+	    prefetch<PFHINT_L1>(tptr + 2);
+	    prefetch<PFHINT_L1>(tptr + 1);
+	    prefetch<PFHINT_L1>(tptr + 0); 
 	      
-	const mic_f v1 = gather_4f_zlc(and_mask,
-				       (float*)&tptr[0].v1,
-				       (float*)&tptr[1].v1,
-				       (float*)&tptr[2].v1,
-				       (float*)&tptr[3].v1);
+	    const mic_f _v0 = gather_4f_zlc(and_mask,
+					   (float*)&tptr[0].v0,
+					   (float*)&tptr[1].v0,
+					   (float*)&tptr[2].v0,
+					   (float*)&tptr[3].v0);
 	      
-	const mic_f v2 = gather_4f_zlc(and_mask,
-				       (float*)&tptr[0].v2,
-				       (float*)&tptr[1].v2,
-				       (float*)&tptr[2].v2,
-				       (float*)&tptr[3].v2);
-
+	    const mic_f _v1 = gather_4f_zlc(and_mask,
+					   (float*)&tptr[0].v1,
+					   (float*)&tptr[1].v1,
+					   (float*)&tptr[2].v1,
+					   (float*)&tptr[3].v1);
+	      
+	    const mic_f _v2 = gather_4f_zlc(and_mask,
+					   (float*)&tptr[0].v2,
+					   (float*)&tptr[1].v2,
+					   (float*)&tptr[2].v2,
+					   (float*)&tptr[3].v2);
+	    v0 = _v0;
+	    v1 = _v1;
+	    v2 = _v2;
+	  }
 	const mic_f e1 = v1 - v0;
 	const mic_f e2 = v0 - v2;	     
 	const mic_f normal = lcross_zxy(e1,e2);
@@ -247,7 +363,7 @@ namespace embree
 
 #if defined(__USE_RAY_MASK__)
 	const mic_i rayMask(ray16.mask[rayIndex]);
-	const mic_i triMask = swDDDD(gather16i_4i_align(&tptr[0].v2,&tptr[1].v2,&tptr[2].v2,&tptr[3].v2));
+	const mic_i triMask = getTriMasks(tptr); 
 	const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
 	m_final &= m_ray_mask;	      
 #endif
@@ -265,9 +381,16 @@ namespace embree
 		const size_t triIndex = vecIndex >> 2;
 		const Triangle1  *__restrict__ tri_ptr = tptr + triIndex;
 		const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+#ifndef COMPUTE_NORMAL
 		const mic_f gnormalx = mic_f(tri_ptr->Ng.x);
 		const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
 		const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
+#else
+		const mic_f gnormalz = mic_f(normal[vecIndex+0]);
+		const mic_f gnormalx = mic_f(normal[vecIndex+1]);
+		const mic_f gnormaly = mic_f(normal[vecIndex+2]);
+#endif                
+
 		const int geomID = tri_ptr->geomID();
 		const int primID = tri_ptr->primID();                
 		const Geometry* const geom = geometry->get(geomID);
@@ -330,8 +453,13 @@ namespace embree
 	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
 	    const mic3f C =  _v0 - org;
 	    
+#ifndef COMPUTE_NORMAL
 	    const mic3f Ng = mic3f(tri.Ng);
-	    const mic_f den = dot(Ng,ray16.dir);
+#else
+	    const mic_f _Ng = lcross_zxy(e1,e2);
+	    const mic3f Ng(swBBBB(_Ng),swCCCC(_Ng),swAAAA(_Ng));
+#endif
+	    const mic_f den = dot(ray16.dir,Ng);
 
 	    const mic_f rcp_den = rcp(den);
 
@@ -424,8 +552,14 @@ namespace embree
 	    const mic3f _v0 = mic3f(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
 	    const mic3f C =  _v0 - org;
 	    
+#ifndef COMPUTE_NORMAL
 	    const mic3f Ng = mic3f(tri.Ng);
-	    const mic_f den = dot(Ng,dir);
+#else
+	    const mic_f _Ng = lcross_zxy(e1,e2);
+	    const mic3f Ng(swBBBB(_Ng),swCCCC(_Ng),swAAAA(_Ng));
+#endif
+
+	    const mic_f den = dot(dir,Ng);
 
 	    mic_m valid = valid_leaf;
 

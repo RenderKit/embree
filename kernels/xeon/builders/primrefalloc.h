@@ -39,7 +39,8 @@ namespace embree
 	if (ptr) return new (ptr) typename atomic_set<PrimRefBlockT<PrimRef> >::item();
 	
 	/* if this failed again we have to allocate more memory */
-	ptr = (typename atomic_set<PrimRefBlockT<PrimRef> >::item*) alloc->malloc(sizeof(typename atomic_set<PrimRefBlockT<PrimRef> >::item));
+	//ptr = (typename atomic_set<PrimRefBlockT<PrimRef> >::item*) alloc->malloc_global(sizeof(typename atomic_set<PrimRefBlockT<PrimRef> >::item));
+        ptr = (typename atomic_set<PrimRefBlockT<PrimRef> >::item*) alloc->malloc(sizeof(typename atomic_set<PrimRefBlockT<PrimRef> >::item));
         
 	/* return first block */
 	return new (ptr) typename atomic_set<PrimRefBlockT<PrimRef> >::item();
@@ -56,13 +57,15 @@ namespace embree
   public:
     
     /*! Allocator default construction. */
-    PrimRefBlockAlloc () {
+    PrimRefBlockAlloc () /*: ptr(NULL), cur(0), end(0), bytesAllocated(0)*/ {
       threadPrimBlockAllocator = new ThreadPrimBlockAllocator[getNumberOfLogicalThreads()];
     }
     
     /*! Allocator destructor. */
     virtual ~PrimRefBlockAlloc() {
       delete[] threadPrimBlockAllocator; threadPrimBlockAllocator = NULL;
+      /*if (ptr) os_free(ptr,end); ptr = NULL;
+	cur = end = 0;*/
     }
     
     /*! Allocate a primitive block */
@@ -74,9 +77,50 @@ namespace embree
     __forceinline void free(size_t thread, typename atomic_set<PrimRefBlockT<PrimRef> >::item* block) {
       return threadPrimBlockAllocator[thread].free(block);
     }
+
+#if 0
+    /*! initializes the allocator */
+    void init (size_t numAllocate, size_t numReserve) 
+    {
+      size_t bytesAllocate = numAllocate*sizeof(PrimRef);
+      size_t bytesReserve = numReserve*sizeof(PrimRef);
+      const size_t numThreads = getNumberOfLogicalThreads();
+      bytesReserve = max(bytesAllocate,bytesReserve);
+      size_t bytesReserved = max(bytesReserve,size_t(sizeof(typename atomic_set<PrimRefBlockT<PrimRef> >::item)*numThreads));
+      if (bytesReserved != size_t(end) || bytesAllocate != bytesAllocated) 
+      {
+        bytesAllocated = bytesAllocate;
+        if (ptr) os_free(ptr,end);
+        ptr = (char*) os_reserve(bytesReserved);
+        os_commit(ptr,bytesAllocated);
+        memset(ptr,0,bytesAllocated); // FIXME: disable
+        end = bytesReserved;
+      }
+    }
+
+  private:
+
+    /*! Allocates some number of bytes. */
+    void* malloc_global(size_t bytes) 
+    {
+      ssize_t i = atomic_add(&cur,bytes);
+      if (unlikely(i > end)) throw std::runtime_error("build out of memory");
+      void* p = &ptr[i];
+      if (i+(ssize_t)bytes > bytesAllocated)
+        os_commit(p,bytes);
+      return p;
+    }
+#endif
     
   private:
     ThreadPrimBlockAllocator* threadPrimBlockAllocator;  //!< Thread local allocator
+
+#if 0
+    char*  ptr;                //!< pointer to memory
+    atomic_t cur;              //!< Current location of the allocator.
+    atomic_t end;              //!< End of the memory block.
+    atomic_t bytesAllocated;
+#endif
   };
   
   typedef PrimRefBlockAlloc<PrimRef> PrimRefAlloc;

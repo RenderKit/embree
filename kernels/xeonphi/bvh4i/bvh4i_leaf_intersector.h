@@ -97,7 +97,8 @@ namespace embree
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
 	const mic_i and_mask = broadcast4to16i(zlc4);
-	return Triangle1Intersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::intersect1(rayIndex,
+	return Triangle1Intersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::intersect1(curNode,
+											     rayIndex,
 											     dir_xyz,
 											     org_xyz,
 											     min_dist_xyz,
@@ -123,7 +124,8 @@ namespace embree
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
 	const mic_i and_mask = broadcast4to16i(zlc4);
-	return Triangle1Intersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::occluded1(rayIndex,
+	return Triangle1Intersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::occluded1(curNode,
+											    rayIndex,
 											    dir_xyz,
 											    org_xyz,
 											    min_dist_xyz,

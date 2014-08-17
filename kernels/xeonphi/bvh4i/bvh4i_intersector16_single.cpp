@@ -93,7 +93,7 @@ namespace embree
 	      /* intersect one ray against four triangles */
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
-
+	      // PING;
 	      const bool hit = LeafIntersector::intersect(curNode,
 							  rayIndex,
 							  dir_xyz,

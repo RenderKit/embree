@@ -825,7 +825,7 @@ namespace embree
       g_state->heap.push(br);
 
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (g_state->heap.size() < threadCount)
+      while (g_state->heap.size() < 2*threadCount)
       {
         BuildRecord br;
 
@@ -841,6 +841,8 @@ namespace embree
 
         recurse(br,nodeAlloc,leafAlloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
       }
+
+      std::sort(g_state->heap.begin(),g_state->heap.end(),BuildRecord::Greater());
 
       /* now process all created subtasks on multiple threads */
       TaskScheduler::dispatchTask(_buildSubTrees, this, threadIndex, threadCount );
