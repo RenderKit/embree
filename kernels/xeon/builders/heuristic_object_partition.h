@@ -50,6 +50,10 @@ namespace embree
       /*! finds the best split */
       static const Split find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize);
       
+      /*! computes bounding box of bezier curves for motion blur */
+      template<bool Parallel>
+      static const std::pair<BBox3fa,BBox3fa> computePrimInfoMB(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims);
+
     private:
       
       /*! number of bins */
@@ -149,6 +153,29 @@ namespace embree
       };
       
     private:
+
+      /*! task for parallel bounding calculations */
+      struct TaskPrimInfoMBParallel
+      {
+	/*! construction executes the task */
+	TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims);
+	
+      private:
+	
+	/*! parallel bounding calculations */
+	TASK_RUN_FUNCTION(TaskPrimInfoMBParallel,task_bound_parallel);
+	
+	/*! state for bounding stage */
+      private:
+        Scene* scene;
+	BezierRefList::iterator iter; //!< iterator for bounding stage 
+	
+	/*! output data */
+      public:
+        BBox3fa bounds0; 
+        BBox3fa bounds1;
+      };
+
       
       /*! stores all binning information */
       struct __aligned(64) BinInfo

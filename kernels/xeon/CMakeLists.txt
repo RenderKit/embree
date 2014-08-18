@@ -88,6 +88,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4hair/bvh4hair.cpp
   bvh4hair/bvh4hair_statistics.cpp
   bvh4hair/bvh4hair_builder.cpp 
+  bvh4hair/bvh4hair_builder_mb.cpp 
   bvh4hair/bvh4hair_intersector1.cpp
   bvh4hair/bvh4hair_intersector4.cpp
 )
@@ -146,6 +147,7 @@ IF (TARGET_AVX)
    bvh4mb/bvh4mb_intersector8.cpp
 
    bvh4hair/bvh4hair_builder.cpp
+   bvh4hair/bvh4hair_builder_mb.cpp
    bvh4hair/bvh4hair_intersector1.cpp
    bvh4hair/bvh4hair_intersector4.cpp
    bvh4hair/bvh4hair_intersector8.cpp

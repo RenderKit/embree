@@ -41,6 +41,9 @@ namespace embree
     struct UncompressedAlignedNode;
     struct CompressedUnalignedNode;
     struct UncompressedUnalignedNode;
+
+    struct AlignedNodeMB;
+    struct UnalignedNodeMB;
     
 #if BVH4HAIR_COMPRESS_ALIGNED_NODES 
     typedef CompressedAlignedNode AlignedNode;
@@ -67,10 +70,10 @@ namespace embree
     static const size_t items_mask = (1 << (alignment-1))-1;  
 
     /*! Empty node */
-    static const size_t emptyNode = 2;
+    static const size_t emptyNode = 4;
 
     /*! Invalid node, used as marker in traversal */
-    static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | 2;
+    static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | emptyNode;
       
     /*! Maximal depth of the BVH. */
     static const size_t maxBuildDepth = 32;
@@ -78,7 +81,7 @@ namespace embree
     static const size_t maxDepth = maxBuildDepthLeaf+maxBuildDepthLeaf+maxBuildDepth;   
  
     /*! Maximal number of primitive blocks in a leaf. */
-    static const size_t maxLeafBlocks = items_mask-2;
+    static const size_t maxLeafBlocks = items_mask-emptyNode;
 
     /*! Cost of one traversal step. */
     static const int travCostAligned = 2;
@@ -133,8 +136,14 @@ namespace embree
       /*! checks if this is a node with aligned bounding boxes */
       __forceinline int isAlignedNode() const { return (ptr & (size_t)align_mask) == 0; }
 
-      /*! checks if this is a node with aligned bounding boxes */
+      /*! checks if this is a node with unaligned bounding boxes */
       __forceinline int isUnalignedNode() const { return (ptr & (size_t)align_mask) == 1; }
+
+      /*! checks if this is a node with aligned bounding boxes */
+      __forceinline int isAlignedNodeMB() const { return (ptr & (size_t)align_mask) == 2; }
+
+      /*! checks if this is a motion blur node with unaligned bounding boxes */
+      __forceinline int isUnalignedNodeMB() const { return (ptr & (size_t)align_mask) == 3; }
       
       /*! returns node pointer */
       __forceinline       Node* node()       { assert(isNode()); return (      Node*)((size_t)ptr & ~(size_t)align_mask); }
@@ -147,11 +156,19 @@ namespace embree
       /*! returns unaligned node pointer */
       __forceinline       UnalignedNode* unalignedNode()       { assert(isUnalignedNode()); return (      UnalignedNode*)((size_t)ptr & ~(size_t)align_mask); }
       __forceinline const UnalignedNode* unalignedNode() const { assert(isUnalignedNode()); return (const UnalignedNode*)((size_t)ptr & ~(size_t)align_mask); }
+
+      /*! returns aligned motion blur node pointer */
+      __forceinline       AlignedNodeMB* alignedNodeMB()       { assert(isAlignedNodeMB()); return (      AlignedNodeMB*)ptr; }
+      __forceinline const AlignedNodeMB* alignedNodeMB() const { assert(isAlignedNodeMB()); return (const AlignedNodeMB*)ptr; }
+
+      /*! returns unaligned motion blur node pointer */
+      __forceinline       UnalignedNodeMB* unalignedNodeMB()       { assert(isUnalignedNodeMB()); return (      UnalignedNodeMB*)((size_t)ptr & ~(size_t)align_mask); }
+      __forceinline const UnalignedNodeMB* unalignedNodeMB() const { assert(isUnalignedNodeMB()); return (const UnalignedNodeMB*)((size_t)ptr & ~(size_t)align_mask); }
       
       /*! returns leaf pointer */
       __forceinline char* leaf(size_t& num) const {
         assert(isLeaf());
-        num = (ptr & (size_t)items_mask)-2;
+        num = (ptr & (size_t)items_mask)-emptyNode;
         return (char*)(ptr & ~(size_t)align_mask);
       }
 
@@ -529,6 +546,158 @@ namespace embree
       AffineSpaceSSE3f naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
 
+
+    /*! Motion blur node with aligned bounds */
+    struct AlignedNodeMB : public Node
+    {
+      enum { stride = sizeof(ssef) };
+
+      /*! Clears the node. */
+      __forceinline void clear() {
+        lower0_x = lower0_y = lower0_z = pos_inf; 
+        upper0_x = upper0_y = upper0_z = neg_inf;
+        lower1_x = lower1_y = lower1_z = pos_inf; 
+        upper1_x = upper1_y = upper1_z = neg_inf;
+        Node::clear();
+      }
+
+      /*! Sets bounding box. */
+      __forceinline void set(const size_t i, const BBox3fa& b0, const BBox3fa& b1) 
+      {
+        assert(i < N);
+        lower0_x[i] = b0.lower.x; lower0_y[i] = b0.lower.y; lower0_z[i] = b0.lower.z;
+        upper0_x[i] = b0.upper.x; upper0_y[i] = b0.upper.y; upper0_z[i] = b0.upper.z;
+        lower1_x[i] = b1.lower.x; lower1_y[i] = b1.lower.y; lower1_z[i] = b1.lower.z;
+        upper1_x[i] = b1.upper.x; upper1_y[i] = b1.upper.y; upper1_z[i] = b1.upper.z;
+      }
+
+      /*! Sets ID of child. */
+      __forceinline void set(size_t i, const NodeRef& childID) {
+        Node::set(i,childID);
+      }
+
+      /*! Returns bounds of specified child. */
+      /*__forceinline const BBox3fa bounds(const size_t i) const { 
+        assert(i < N);
+        const Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
+        const Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
+        return BBox3fa(lower,upper);
+        }*/
+
+      /*! returns 4 bounding boxes */
+      __forceinline const BBoxSSE3f getBounds(const float t, const size_t nearX, const size_t nearY, const size_t nearZ) const 
+      {
+        const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
+        const ssef near0x = load4f((const char*)&lower0_x+nearX);
+        const ssef near0y = load4f((const char*)&lower0_y+nearY);
+        const ssef near0z = load4f((const char*)&lower0_z+nearZ);
+        const ssef far0x  = load4f((const char*)&lower0_x+farX );
+        const ssef far0y  = load4f((const char*)&lower0_y+farY );
+        const ssef far0z  = load4f((const char*)&lower0_z+farZ );
+
+        const ssef near1x = load4f((const char*)&lower1_x+nearX);
+        const ssef near1y = load4f((const char*)&lower1_y+nearY);
+        const ssef near1z = load4f((const char*)&lower1_z+nearZ);
+        const ssef far1x  = load4f((const char*)&lower1_x+farX );
+        const ssef far1y  = load4f((const char*)&lower1_y+farY );
+        const ssef far1z  = load4f((const char*)&lower1_z+farZ );
+
+        const ssef nearx = (1.0f-t)*near0x+t*near1x;
+        const ssef neary = (1.0f-t)*near0y+t*near1y;
+        const ssef nearz = (1.0f-t)*near0z+t*near1z;
+        const ssef farx  = (1.0f-t)*far0x+t*far1x;
+        const ssef fary  = (1.0f-t)*far0y+t*far1y;
+        const ssef farz  = (1.0f-t)*far0z+t*far1z;
+        return BBoxSSE3f(sse3f(nearx,neary,nearz),sse3f(farx,fary,farz));
+      }
+
+      /*! Returns the extend of the bounds of the ith child */
+      /*__forceinline Vec3fa extend(const size_t i) const {
+        assert(i < N);
+        return bounds(i).size();
+        }*/
+
+    public:
+      ssef lower0_x;           //!< X dimension of lower bounds of all 4 children.
+      ssef upper0_x;           //!< X dimension of upper bounds of all 4 children.
+      ssef lower0_y;           //!< Y dimension of lower bounds of all 4 children.
+      ssef upper0_y;           //!< Y dimension of upper bounds of all 4 children.
+      ssef lower0_z;           //!< Z dimension of lower bounds of all 4 children.
+      ssef upper0_z;           //!< Z dimension of upper bounds of all 4 children.
+
+      ssef lower1_x;           //!< X dimension of lower bounds of all 4 children.
+      ssef upper1_x;           //!< X dimension of upper bounds of all 4 children.
+      ssef lower1_y;           //!< Y dimension of lower bounds of all 4 children.
+      ssef upper1_y;           //!< Y dimension of upper bounds of all 4 children.
+      ssef lower1_z;           //!< Z dimension of lower bounds of all 4 children.
+      ssef upper1_z;           //!< Z dimension of upper bounds of all 4 children.
+    };
+
+    /*! Motion blur node with unaligned bounds */
+    struct UnalignedNodeMB : public Node
+    {
+      /*! Clears the node. */
+      __forceinline void clear() 
+      {
+        space0 = space1 = one;
+        t0s0.lower = t0s0.upper = Vec3fa(1E10);
+        t1s0_t0s1.lower = t1s0_t0s1.upper = Vec3fa(zero);
+        t1s1.lower = t1s1.upper = Vec3fa(1E10);
+        Node::clear();
+      }
+
+      /*! Sets spaces. */
+      __forceinline void set(size_t i, const LinearSpace3fa& s0, const LinearSpace3fa& s1) 
+      {
+        assert(i < N);
+
+        space0.vx.x[i] = s0.vx.x; space0.vx.y[i] = s0.vx.y; space0.vx.z[i] = s0.vx.z;
+        space0.vy.x[i] = s0.vy.x; space0.vy.y[i] = s0.vy.y; space0.vy.z[i] = s0.vy.z;
+        space0.vz.x[i] = s0.vz.x; space0.vz.y[i] = s0.vz.y; space0.vz.z[i] = s0.vz.z;
+
+        space1.vx.x[i] = s1.vx.x; space1.vx.y[i] = s1.vx.y; space1.vx.z[i] = s1.vx.z;
+        space1.vy.x[i] = s1.vy.x; space1.vy.y[i] = s1.vy.y; space1.vy.z[i] = s1.vy.z;
+        space1.vz.x[i] = s1.vz.x; space1.vz.y[i] = s1.vz.y; space1.vz.z[i] = s1.vz.z;
+      }
+
+      /*! Sets bounding boxes. */
+      __forceinline void set(size_t i, const BBox3fa& a, const BBox3fa& b, const BBox3fa& c)
+      {
+        assert(i < N);
+
+        t0s0.lower.x[i] = a.lower.x; t0s0.lower.y[i] = a.lower.y; t0s0.lower.z[i] = a.lower.z;
+        t0s0.upper.x[i] = a.upper.x; t0s0.upper.y[i] = a.upper.y; t0s0.upper.z[i] = a.upper.z;
+
+        t1s0_t0s1.lower.x[i] = b.lower.x; t1s0_t0s1.lower.y[i] = b.lower.y; t1s0_t0s1.lower.z[i] = b.lower.z;
+        t1s0_t0s1.upper.x[i] = b.upper.x; t1s0_t0s1.upper.y[i] = b.upper.y; t1s0_t0s1.upper.z[i] = b.upper.z;
+
+        t1s1.lower.x[i] = c.lower.x; t1s1.lower.y[i] = c.lower.y; t1s1.lower.z[i] = c.lower.z;
+        t1s1.upper.x[i] = c.upper.x; t1s1.upper.y[i] = c.upper.y; t1s1.upper.z[i] = c.upper.z;
+      }
+
+      /*! Sets ID of child. */
+      __forceinline void set(size_t i, const NodeRef& childID) {
+        Node::set(i,childID);
+      }
+
+      /*! Returns the extend of the bounds of the ith child */
+      /*__forceinline Vec3fa extend(size_t i) const {
+        assert(i<N);
+        const Vec3fa vx(naabb.l.vx.x[i],naabb.l.vx.y[i],naabb.l.vx.z[i]);
+        const Vec3fa vy(naabb.l.vy.x[i],naabb.l.vy.y[i],naabb.l.vy.z[i]);
+        const Vec3fa vz(naabb.l.vz.x[i],naabb.l.vz.y[i],naabb.l.vz.z[i]);
+        const Vec3fa p (naabb.p   .x[i],naabb.p   .y[i],naabb.p   .z[i]);
+        return rsqrt(vx*vx + vy*vy + vz*vz);
+        }*/
+
+    public:
+      LinearSpaceSSE3f space0;   
+      LinearSpaceSSE3f space1;   
+      BBoxSSE3f t0s0;
+      BBoxSSE3f t1s0_t0s1;
+      BBoxSSE3f t1s1;
+    };
+
   public:
 
     /*! BVH4Hair default constructor. */
@@ -557,12 +726,22 @@ namespace embree
       UnalignedNode* node = (UnalignedNode*) alloc.malloc(thread,sizeof(UnalignedNode),1 << 4); node->clear(); return node;
     }
 
+    /*! allocates a new aligned node */
+    __forceinline AlignedNodeMB* allocAlignedNodeMB(size_t thread) {
+      AlignedNodeMB* node = (AlignedNodeMB*) alloc.malloc(thread,sizeof(AlignedNodeMB),1 << 4); node->clear(); return node;
+    }
+
+    /*! allocates a new unaligned node */
+    __forceinline UnalignedNodeMB* allocUnalignedNodeMB(size_t thread) {
+      UnalignedNodeMB* node = (UnalignedNodeMB*) alloc.malloc(thread,sizeof(UnalignedNodeMB),1 << 4); node->clear(); return node;
+    }
+
     /*! allocates a block of primitives */
     __forceinline char* allocPrimitiveBlocks(size_t thread, size_t num) {
       return (char*) alloc.malloc(thread,num*primTy.bytes,1 << 4);
     }
 
-    /*! Encodes an alingned node */
+    /*! Encodes an aligned node */
     __forceinline NodeRef encodeNode(AlignedNode* node) { 
       return NodeRef((size_t) node);
     }
@@ -571,11 +750,21 @@ namespace embree
     __forceinline NodeRef encodeNode(UnalignedNode* node) { 
       return NodeRef(((size_t) node) | 1);
     }
+
+    /*! Encodes an aligned node */
+    __forceinline NodeRef encodeNode(AlignedNodeMB* node) { 
+      return NodeRef(((size_t) node) | 2);
+    }
+
+    /*! Encodes an unaligned node */
+    __forceinline NodeRef encodeNode(UnalignedNodeMB* node) { 
+      return NodeRef(((size_t) node) | 3);
+    }
     
     /*! Encodes a leaf */
     __forceinline NodeRef encodeLeaf(char* data, size_t num) {
       assert(!((size_t)data & align_mask)); 
-      return NodeRef((size_t)data | (2+min(num,(size_t)maxLeafBlocks)));
+      return NodeRef((size_t)data | (emptyNode+min(num,(size_t)maxLeafBlocks)));
     }
 
   public:

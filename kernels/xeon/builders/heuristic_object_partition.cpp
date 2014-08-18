@@ -325,6 +325,55 @@ namespace embree
       binner.getSplitInfo(mapping,split,sinfo_o);
       return split;
     }
+
+    template<>
+    const std::pair<BBox3fa,BBox3fa> ObjectPartition::computePrimInfoMB<false>(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims)
+    {
+      BBox3fa bounds0 = empty;
+      BBox3fa bounds1 = empty;
+      for (BezierRefList::block_iterator_unsafe i = prims; i; i++) 
+      {
+        const BezierCurves* curves = scene->getBezierCurves(i->geomID);
+        const int curve = curves->curve(i->primID);
+        bounds0.extend(curves->bounds(curve,0));
+          bounds1.extend(curves->bounds(curve,1));
+      }
+      return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
+    }
+    
+    template<>
+    const std::pair<BBox3fa,BBox3fa> ObjectPartition::computePrimInfoMB<true>(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims)
+    {
+      const TaskPrimInfoMBParallel bounds(threadIndex,threadCount,scene,prims);
+      return std::pair<BBox3fa,BBox3fa>(bounds.bounds0,bounds.bounds1);
+    }
+
+    ObjectPartition::TaskPrimInfoMBParallel::TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims) 
+      : scene(scene), iter(prims), bounds0(empty), bounds1(empty)
+    {
+      size_t numTasks = min(maxTasks,threadCount);
+      TaskScheduler::executeTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_bound_parallel");
+    }
+    
+    void ObjectPartition::TaskPrimInfoMBParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    {
+      size_t N = 0;
+      BBox3fa bounds0 = empty;
+      BBox3fa bounds1 = empty;
+      while (BezierRefList::item* block = iter.next()) 
+      {
+	for (size_t i=0; i<block->size(); i++) 
+        {
+          const Bezier1& ref = block->at(i);
+          const BezierCurves* curves = scene->getBezierCurves(ref.geomID);
+          const int curve = curves->curve(ref.primID);
+          bounds0.extend(curves->bounds(curve,0));
+          bounds1.extend(curves->bounds(curve,1));
+	}
+      }
+      this->bounds0.extend_atomic(bounds0);
+      this->bounds1.extend_atomic(bounds1);
+    }
     
     //////////////////////////////////////////////////////////////////////////////
     //                         Parallel Binning                                 //

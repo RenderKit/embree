@@ -22,6 +22,9 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4HairBezier1Builder);
   DECLARE_SCENE_BUILDER(BVH4HairBezier1iBuilder);
 
+  DECLARE_SCENE_BUILDER(BVH4HairBezier1BuilderMB);
+  DECLARE_SCENE_BUILDER(BVH4HairBezier1iBuilderMB);
+
   DECLARE_SYMBOL(Accel::Intersector1,BVH4HairBezier1Intersector1);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4HairBezier1Intersector4);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4HairBezier1Intersector8);
@@ -35,6 +38,9 @@ namespace embree
     int features = getCPUFeatures();
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4HairBezier1Builder);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4HairBezier1iBuilder);
+
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4HairBezier1BuilderMB);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4HairBezier1iBuilderMB);
 
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4HairBezier1Intersector1);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4HairBezier1Intersector4);
@@ -77,7 +83,9 @@ namespace embree
   { 
     BVH4Hair* accel = new BVH4Hair(Bezier1Type::type,scene);
     Accel::Intersectors intersectors = BVH4HairBezier1Intersectors(accel);
-    Builder* builder = BVH4HairBezier1Builder(accel,scene,highQuality);
+    Builder* builder = NULL;
+    if (g_hair_builder == "mb") builder = BVH4HairBezier1BuilderMB(accel,scene,highQuality);
+    else                        builder = BVH4HairBezier1Builder(accel,scene,highQuality);
     return new AccelInstance(accel,builder,intersectors);
   }
 

@@ -80,19 +80,34 @@ namespace embree
 	return (unsigned int)logf(r0);
       }
 
-
       /*! calculates bounding box of i'th bezier curve */
-      __forceinline BBox3fa bounds(size_t i) const 
+      __forceinline BBox3fa bounds(size_t i, size_t j = 0) const 
       {
         const int index = curve(i);
-        const float r0 = radius(index+0);
-        const float r1 = radius(index+1);
-        const float r2 = radius(index+2);
-        const float r3 = radius(index+3);
-        const Vec3fa& v0 = vertex(index+0);
-        const Vec3fa& v1 = vertex(index+1);
-        const Vec3fa& v2 = vertex(index+2);
-        const Vec3fa& v3 = vertex(index+3);
+        const float r0 = radius(index+0,j);
+        const float r1 = radius(index+1,j);
+        const float r2 = radius(index+2,j);
+        const float r3 = radius(index+3,j);
+        const Vec3fa& v0 = vertex(index+0,j);
+        const Vec3fa& v1 = vertex(index+1,j);
+        const Vec3fa& v2 = vertex(index+2,j);
+        const Vec3fa& v3 = vertex(index+3,j);
+        const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
+        return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
+      }
+
+      /*! calculates bounding box of i'th bezier curve */
+      __forceinline BBox3fa bounds(const LinearSpace3fa& space, size_t i, size_t j = 0) const 
+      {
+        const int index = curve(i);
+        const float r0 = radius(index+0,j);
+        const float r1 = radius(index+1,j);
+        const float r2 = radius(index+2,j);
+        const float r3 = radius(index+3,j);
+        const Vec3fa& v0 = xfmPoint(space,vertex(index+0,j));
+        const Vec3fa& v1 = xfmPoint(space,vertex(index+1,j));
+        const Vec3fa& v2 = xfmPoint(space,vertex(index+2,j));
+        const Vec3fa& v3 = xfmPoint(space,vertex(index+3,j));
         const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
         return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
       }
