@@ -21,6 +21,7 @@
 #include "geometry/filter.h"
 
 #define COMPUTE_NORMAL
+//#define INTERSECT_TRIANGLE_PAIRS
 
 namespace embree
 {
@@ -53,14 +54,14 @@ namespace embree
 
 	const mic_f zero = mic_f::zero();
 	mic_f v0,v1,v2;
-#if 0
+#if defined(INTERSECT_TRIANGLE_PAIRS)
+
 	prefetch<PFHINT_L1>(tptr + 1);
 	prefetch<PFHINT_L1>(tptr + 0); 
 
 	if (likely(curNode.isAuxFlagSet()))
 	  {
 	    const TrianglePair1 * __restrict__ const pptr = (TrianglePair1*)tptr;
-#if 1
 	    const mic_f _v0 = gather_2f_zlc(and_mask,0xff00,
 					    (float*)&pptr[0].v0,
 					    (float*)&pptr[1].v0);
@@ -73,10 +74,16 @@ namespace embree
 	    /* 				    (float*)&pptr[0].v2, */
 	    /* 				    (float*)&pptr[1].v3); */
 
-	    const mic_f p0 = load16f(&pptr[0]);
-	    const mic_f p1 = load16f(&pptr[1]);
+#if 1
+	     const mic_f p0 = load16f(&pptr[0]); 
+	     const mic_f p1 = load16f(&pptr[1]); 
+	     const mic_f _v2 = cast(cast(select(0x00ff,align_shift_right<8>(p0,p0),p1)) & and_mask); 
+#else
+	    const mic_f p0 = broadcast8to16f(&pptr[0].v2);
+	    const mic_f p1 = broadcast8to16f(&pptr[1].v2);
+	    const mic_f _v2 = cast(cast(select(0xff00,p1,p0)) & and_mask);
+#endif
 
-	    const mic_f _v2 = cast(cast(select(0x00ff,align_shift_right<8>(p0,p0),p1)) & and_mask);
 	    /* const mic_f _v2 = gather_4f_zlc(and_mask, */
 	    /* 				    (float*)&pptr[0].v2, */
 	    /* 				    (float*)&pptr[0].v3, */
@@ -84,25 +91,23 @@ namespace embree
 	    /* 				    (float*)&pptr[1].v3); */
 
 
-#else
-	    const mic_f _v0 = gather_4f_zlc(and_mask,
-					    (float*)&pptr[0].v0,
-					    (float*)&pptr[0].v0,
-					    (float*)&pptr[1].v0,
-					    (float*)&pptr[1].v0);
+	    /* const mic_f _v0 = gather_4f_zlc(and_mask, */
+	    /* 				    (float*)&pptr[0].v0, */
+	    /* 				    (float*)&pptr[0].v0, */
+	    /* 				    (float*)&pptr[1].v0, */
+	    /* 				    (float*)&pptr[1].v0); */
 	    
-	    const mic_f _v1 = gather_4f_zlc(and_mask,
-					    (float*)&pptr[0].v1,
-					    (float*)&pptr[0].v1,
-					    (float*)&pptr[1].v1,
-					    (float*)&pptr[1].v1);
+	    /* const mic_f _v1 = gather_4f_zlc(and_mask, */
+	    /* 				    (float*)&pptr[0].v1, */
+	    /* 				    (float*)&pptr[0].v1, */
+	    /* 				    (float*)&pptr[1].v1, */
+	    /* 				    (float*)&pptr[1].v1); */
 	      
-	    const mic_f _v2 = gather_4f_zlc(and_mask,
-					    (float*)&pptr[0].v2,
-					    (float*)&pptr[0].v3,
-					    (float*)&pptr[1].v2,
-					    (float*)&pptr[1].v3);
-#endif
+	    /* const mic_f _v2 = gather_4f_zlc(and_mask, */
+	    /* 				    (float*)&pptr[0].v2, */
+	    /* 				    (float*)&pptr[0].v3, */
+	    /* 				    (float*)&pptr[1].v2, */
+	    /* 				    (float*)&pptr[1].v3); */
 	    v0 = _v0;
 	    v1 = _v1;
 	    v2 = _v2;
@@ -115,7 +120,6 @@ namespace embree
 	    prefetch<PFHINT_L1>(tptr + 2);
 	    prefetch<PFHINT_L1>(tptr + 1); 
 	    prefetch<PFHINT_L1>(tptr + 0);  
-	      
 	    const mic_f _v0 = gather_4f_zlc(and_mask,
 					   (float*)&tptr[0].v0,
 					   (float*)&tptr[1].v0,
@@ -275,30 +279,46 @@ namespace embree
 	const mic_f zero = mic_f::zero();
 
 	mic_f v0,v1,v2;
-#if 0
+#if defined(INTERSECT_TRIANGLE_PAIRS)
 	prefetch<PFHINT_L1>(tptr + 1);
 	prefetch<PFHINT_L1>(tptr + 0); 
 
 	if (likely(curNode.isAuxFlagSet()))
 	  {
 	    const TrianglePair1 * __restrict__ const pptr = (TrianglePair1*)tptr;
-	    const mic_f _v0 = gather_4f_zlc(and_mask,
+	    const mic_f _v0 = gather_2f_zlc(and_mask,0xff00,
 					    (float*)&pptr[0].v0,
-					    (float*)&pptr[0].v0,
-					    (float*)&pptr[1].v0,
 					    (float*)&pptr[1].v0);
-	    
-	    const mic_f _v1 = gather_4f_zlc(and_mask,
+
+	    const mic_f _v1 = gather_2f_zlc(and_mask,0xff00,
 					    (float*)&pptr[0].v1,
-					    (float*)&pptr[0].v1,
-					    (float*)&pptr[1].v1,
 					    (float*)&pptr[1].v1);
+
+	    /* const mic_f _v2 = gather_2f_zlc(and_mask,0xf0f0, */
+	    /* 				    (float*)&pptr[0].v2, */
+	    /* 				    (float*)&pptr[1].v3); */
+
+	    const mic_f p0 = load16f(&pptr[0]);
+	    const mic_f p1 = load16f(&pptr[1]);
+	    const mic_f _v2 = cast(cast(select(0x00ff,align_shift_right<8>(p0,p0),p1)) & and_mask);
+
+	    /* const mic_f _v0 = gather_4f_zlc(and_mask, */
+	    /* 				    (float*)&pptr[0].v0, */
+	    /* 				    (float*)&pptr[0].v0, */
+	    /* 				    (float*)&pptr[1].v0, */
+	    /* 				    (float*)&pptr[1].v0); */
+	    
+	    /* const mic_f _v1 = gather_4f_zlc(and_mask, */
+	    /* 				    (float*)&pptr[0].v1, */
+	    /* 				    (float*)&pptr[0].v1, */
+	    /* 				    (float*)&pptr[1].v1, */
+	    /* 				    (float*)&pptr[1].v1); */
 	      
-	    const mic_f _v2 = gather_4f_zlc(and_mask,
-					    (float*)&pptr[0].v2,
-					    (float*)&pptr[0].v3,
-					    (float*)&pptr[1].v2,
-					    (float*)&pptr[1].v3);
+	    /* const mic_f _v2 = gather_4f_zlc(and_mask, */
+	    /* 				    (float*)&pptr[0].v2, */
+	    /* 				    (float*)&pptr[0].v3, */
+	    /* 				    (float*)&pptr[1].v2, */
+	    /* 				    (float*)&pptr[1].v3); */
 	    v0 = _v0;
 	    v1 = _v1;
 	    v2 = _v2;

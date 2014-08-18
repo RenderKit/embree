@@ -39,6 +39,8 @@
 
 #define MEASURE_MEMORY_ALLOCATION_TIME 0
 
+//#define MERGE_TRIANGLE_PAIRS
+
 namespace embree
 {
 #if defined(DEBUG)
@@ -604,15 +606,32 @@ namespace embree
 
 	// TODO: full scan
 	/* process triangles with single shared edge first */
-	if (neighbors[0] != 1)
+#if 1
+	int smallest = 0;
+	int smallest_neighbors = neighbors[0];
+
 	  for (size_t i=1;i<triangles;i++)
-	    if (neighbors[i] == 1)
+	    if (neighbors[i] < smallest_neighbors)
 	      {
-		std::swap(tri[0],tri[i]);
-		std::swap(neighbors[0],neighbors[i]);
-		break;
+		smallest = i;
+		smallest_neighbors = neighbors[i];
 	      }
-	
+	  if (smallest != 0)
+	    {
+	      std::swap(tri[0],tri[smallest]);
+	      std::swap(neighbors[0],neighbors[smallest]);
+	    }
+
+#else
+	if (neighbors[0] != 1)
+	   for (size_t i=1;i<triangles;i++)
+	     if (neighbors[i] == 1)
+	       {
+	 	std::swap(tri[0],tri[i]);
+	 	std::swap(neighbors[0],neighbors[i]);
+	 	break;
+	       }
+#endif	
 	/* try to find pair with tri[0] */
 	bool found = false;
 	for (size_t i=1;i<triangles;i++)
@@ -710,7 +729,7 @@ namespace embree
   {
     LockStepTaskScheduler::dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );   
 
-#if 0
+#if defined(MERGE_TRIANGLE_PAIRS)
     const size_t numGroups = scene->size();
     DBG_PRINT(numGroups);
 

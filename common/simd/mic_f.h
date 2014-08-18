@@ -447,6 +447,10 @@ namespace embree
   __forceinline mic_f broadcast4to16f(const void *f) { 
     return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_4X16,0);  
   }
+
+  __forceinline mic_f broadcast8to16f(const void *f) { 
+    return  _mm512_castpd_ps(_mm512_extload_pd(f,_MM_UPCONV_PD_NONE,_MM_BROADCAST_4X8,0));  
+  }
     
   __forceinline mic_f load16f_uint8(const unsigned char *const ptr) {
     return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_UINT8,_MM_BROADCAST_16X16,_MM_HINT_NONE),mic_f(1.0f/255.0f));  
