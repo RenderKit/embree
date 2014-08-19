@@ -185,9 +185,15 @@ namespace embree
                                                                                   ssef& tNear, ssef& tFar)
     {
       const ssef t0 = ssef(1.0f)-ray.time, t1 = ray.time;
-      const LinearSpaceSSE3f xfm = t0*node->space0 + t1*node->space1;
+#if 1
+      const AffineSpaceSSE3f xfm = t0*node->space0 + t1*node->space1; // FIXME: use LinearSpace??
       const sse3f lower = t0*t0*node->t0s0.lower + t0*t1*node->t1s0_t0s1.lower + t1*t1*node->t1s1.lower;
       const sse3f upper = t0*t0*node->t0s0.upper + t0*t1*node->t1s0_t0s1.upper + t1*t1*node->t1s1.upper;
+#else
+      const AffineSpaceSSE3f xfm = node->space0;
+      const sse3f lower = t0*node->t0s0.lower + t1*node->t1s1.lower;
+      const sse3f upper = t0*node->t0s0.upper + t1*node->t1s1.upper;
+#endif
       const BBoxSSE3f bounds(lower,upper);
 
       const sse3f dir = xfmVector(xfm,ray_dir);

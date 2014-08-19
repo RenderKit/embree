@@ -647,17 +647,19 @@ namespace embree
       }
 
       /*! Sets spaces. */
-      __forceinline void set(size_t i, const LinearSpace3fa& s0, const LinearSpace3fa& s1) 
+      __forceinline void set(size_t i, const AffineSpace3fa& s0, const AffineSpace3fa& s1) 
       {
         assert(i < N);
 
-        space0.vx.x[i] = s0.vx.x; space0.vx.y[i] = s0.vx.y; space0.vx.z[i] = s0.vx.z;
-        space0.vy.x[i] = s0.vy.x; space0.vy.y[i] = s0.vy.y; space0.vy.z[i] = s0.vy.z;
-        space0.vz.x[i] = s0.vz.x; space0.vz.y[i] = s0.vz.y; space0.vz.z[i] = s0.vz.z;
+        space0.l.vx.x[i] = s0.l.vx.x; space0.l.vx.y[i] = s0.l.vx.y; space0.l.vx.z[i] = s0.l.vx.z; 
+        space0.l.vy.x[i] = s0.l.vy.x; space0.l.vy.y[i] = s0.l.vy.y; space0.l.vy.z[i] = s0.l.vy.z;
+        space0.l.vz.x[i] = s0.l.vz.x; space0.l.vz.y[i] = s0.l.vz.y; space0.l.vz.z[i] = s0.l.vz.z; 
+        space0.p   .x[i] = s0.p   .x; space0.p   .y[i] = s0.p   .y; space0.p   .z[i] = s0.p   .z; 
 
-        space1.vx.x[i] = s1.vx.x; space1.vx.y[i] = s1.vx.y; space1.vx.z[i] = s1.vx.z;
-        space1.vy.x[i] = s1.vy.x; space1.vy.y[i] = s1.vy.y; space1.vy.z[i] = s1.vy.z;
-        space1.vz.x[i] = s1.vz.x; space1.vz.y[i] = s1.vz.y; space1.vz.z[i] = s1.vz.z;
+        space1.l.vx.x[i] = s1.l.vx.x; space1.l.vx.y[i] = s1.l.vx.y; space1.l.vx.z[i] = s1.l.vx.z;
+        space1.l.vy.x[i] = s1.l.vy.x; space1.l.vy.y[i] = s1.l.vy.y; space1.l.vy.z[i] = s1.l.vy.z;
+        space1.l.vz.x[i] = s1.l.vz.x; space1.l.vz.y[i] = s1.l.vz.y; space1.l.vz.z[i] = s1.l.vz.z;
+        space1.p   .x[i] = s1.p   .x; space1.p   .y[i] = s1.p   .y; space1.p   .z[i] = s1.p   .z; 
       }
 
       /*! Sets bounding boxes. */
@@ -695,8 +697,8 @@ namespace embree
       }
 
     public:
-      LinearSpaceSSE3f space0;   
-      LinearSpaceSSE3f space1;   
+      AffineSpaceSSE3f space0;   
+      AffineSpaceSSE3f space1;   
       BBoxSSE3f t0s0;
       BBoxSSE3f t1s0_t0s1;
       BBoxSSE3f t1s1;

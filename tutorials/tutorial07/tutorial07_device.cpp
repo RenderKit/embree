@@ -148,6 +148,36 @@ Vec3fa sampleSphere(const float u, const float v)
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
+#if 0
+
+  /* create scene */
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
+
+  /* create a hair set */
+  unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, 1, 4, 2);
+
+  int* indices = (int*) rtcMapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
+  for (size_t i=0; i<1; i++) indices[i] = 4*i;
+  rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
+  
+  const float r = 0.0f;
+  Vec3fa* buffer0 = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0);
+  buffer0[0] = Vec3fa(0,0,0,r);
+  buffer0[1] = Vec3fa(0,0,0,r);
+  buffer0[2] = Vec3fa(1,0,0,r);
+  buffer0[3] = Vec3fa(1,0,0,r);
+  rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0);
+
+  Vec3fa* buffer1 = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1);
+  buffer1[0] = Vec3fa(0,0,0,r);
+  buffer1[1] = Vec3fa(0,0,0,r);
+  buffer1[2] = Vec3fa(1,1,0,r);
+  buffer1[3] = Vec3fa(1,1,0,r);
+  rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1);
+    
+  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
+
+#else
   //scene_in->numHairSets = 0;
   scene_in->numMeshes = 0;
 
@@ -160,15 +190,25 @@ RTCScene convertScene(ISPCScene* scene_in)
     /* get ith hair set */
     ISPCHairSet* hair = scene_in->hairs[i];
 
+    const AffineSpace3fa space0 = one;
+    const AffineSpace3fa space1 = AffineSpace3fa::rotate(Vec3fa(-11.0039f,24.9046f,-4.50951f),Vec3fa(1,1,1),0.5f*float(pi));
+    const AffineSpace3fa space01 = 0.5f*space0+0.5f*space1;
+
     /* create a hair set */
     unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, 2);
-    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0,hair->v,0,sizeof(Vertex));
+    //rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0,hair->v,0,sizeof(Vertex));
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
 
-    Vec3fa* buffer1 = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1);
-    const AffineSpace3fa space = AffineSpace3fa::rotate(Vec3fa(-11.0039f,24.9046f,-4.50951f),Vec3fa(1,1,1),0.5f*float(pi));
+    Vec3fa* buffer0 = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0);
     for (size_t i=0; i<hair->numVertices; i++) {
-      Vec3fa v = xfmPoint(space,hair->v[i]); v.w = hair->v[i].w; buffer1[i] = v;
+      Vec3fa v = xfmPoint(space0,hair->v[i]); v.w = hair->v[i].w; buffer0[i] = v;
+      //Vec3fa v = xfmPoint(space01,hair->v[i]); v.w = hair->v[i].w; buffer0[i] = v;
+    }
+    rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0);
+
+    Vec3fa* buffer1 = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1);
+    for (size_t i=0; i<hair->numVertices; i++) {
+      Vec3fa v = xfmPoint(space1,hair->v[i]); v.w = hair->v[i].w; buffer1[i] = v;
     }
     rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1);
     
@@ -204,9 +244,11 @@ RTCScene convertScene(ISPCScene* scene_in)
 
     rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
   }
+#endif
 
   /* commit changes to scene */
   rtcCommit (scene_out);
+
   return scene_out;
 }
 

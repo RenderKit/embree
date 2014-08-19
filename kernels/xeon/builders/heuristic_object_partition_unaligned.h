@@ -47,8 +47,7 @@ namespace embree
       {
         PrimInfo pinfo;
         BBox3fa s0t0;
-        BBox3fa s0t1;
-        BBox3fa s1t0;
+        BBox3fa s0t1_s1t0;
         BBox3fa s1t1;
       };
       
@@ -200,8 +199,7 @@ namespace embree
 	BBox3fa centBounds;   //!< calculated centroid bounds
 	BBox3fa geomBounds;   //!< calculated geometry bounds
         BBox3fa s0t0;         //!< bounds in space0 at time t0
-        BBox3fa s0t1;         //!< bounds in space0 at time t1
-        BBox3fa s1t0;         //!< bounds in space1 at time t0
+        BBox3fa s0t1_s1t0;    //!< residual bounds
         BBox3fa s1t1;         //!< bounds in space1 at time t1
       };
       

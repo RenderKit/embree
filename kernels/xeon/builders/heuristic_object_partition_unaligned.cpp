@@ -28,7 +28,7 @@ namespace embree
       for (; i; i++)
       {
 	const Vec3fa axis1 = normalize(i->p3 - i->p0);
-	if (length(i->p3 - i->p0) > 1E-9) {
+	if (length(i->p3 - i->p0) > 1E-9f) {
 	  axis = axis1;
 	  break;
 	}
@@ -41,6 +41,7 @@ namespace embree
       /*! find first curve that defines valid direction */
       Vec3fa axis0(0,0,1);
       Vec3fa axis1(0,0,1);
+      Vec3fa axis2(0,1,0);
       BezierRefList::block_iterator_unsafe i = prims;
       for (; i; i++)
       {
@@ -55,13 +56,39 @@ namespace embree
         const Vec3fa b0 = curves->vertex(curve+0,1);
         const Vec3fa db = normalize(b3 - b0);
 
-	if (length(a3 - a0) > 1E-9 && length(b3 - b0) > 1E-9) {
-	  axis0 = da; axis1 = db;
+	if (length(a3 - a0) > 1E-9f && length(b3 - b0) > 1E-9f) {
+	  axis0 = da; axis1 = db; 
+          if (length(b3-a3) > 1E-9f) axis2 = b3-a3;
+          else if (length(b0-a0) > 1E-9f) axis2 = b0-a0;
+          else axis2 = Vec3fa(1,0,0); // FIXME: not correct
 	  break;
 	}
       }
-      const LinearSpace3fa space0 = frame(axis0).transposed();
-      const LinearSpace3fa space1 = frame(axis1).transposed();
+#if 1
+      //LinearSpace3fa space01 = frame(0.5f*axis0 + 0.5f*axis1).transposed();
+      LinearSpace3fa space0 = frame(axis0).transposed();
+      LinearSpace3fa space1 = frame(axis1).transposed();
+      //space0 = space01;
+      //space1 = space0;
+#else
+      const Vec3fa space0_dx = normalize(axis0);
+      const Vec3fa space0_dy = normalize(cross(space0_dx,axis2));
+      const Vec3fa space0_dz = normalize(cross(space0_dx,space0_dy));
+      LinearSpace3fa space0(space0_dx,space0_dz,space0_dy);
+      space0 = space0.transposed();
+
+      const Vec3fa space1_dx = normalize(axis1);
+      const Vec3fa space1_dy = normalize(cross(space1_dx,axis2));
+      const Vec3fa space1_dz = normalize(cross(space1_dx,space1_dy));
+      LinearSpace3fa space1(space1_dx,space1_dz,space1_dy);
+      space1 = space1.transposed();
+#endif 
+      //PRINT(xfmPoint(space1,axis0));
+      //PRINT(xfmPoint(space0,axis1));
+
+      //axis0*space1 + axis1*space0 = 0
+      //axis0*space1 = -axis1*space0
+
       return std::pair<LinearSpace3fa,LinearSpace3fa>(space0,space1);
     }
 
@@ -93,8 +120,7 @@ namespace embree
       size_t N = 0;
       BBox3fa centBounds = empty;
       BBox3fa geomBounds = empty;
-      BBox3fa s0t0 = empty, s0t1 = empty;
-      BBox3fa s1t0 = empty, s1t1 = empty;
+      BBox3fa s0t0 = empty, s0t1_s1t0 = empty, s1t1 = empty;
       for (BezierRefList::block_iterator_unsafe i = prims; i; i++) 
       {
 	N++;
@@ -103,16 +129,16 @@ namespace embree
 
         const BezierCurves* curves = scene->getBezierCurves(i->geomID);
         s0t0.extend(curves->bounds(spaces.first ,i->primID,0));
-        s0t1.extend(curves->bounds(spaces.first ,i->primID,1));
-        s1t0.extend(curves->bounds(spaces.second,i->primID,0));
+        //s0t1.extend(curves->bounds(spaces.first ,i->primID,1));
+        //s1t0.extend(curves->bounds(spaces.second,i->primID,0));
+        s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID));
         s1t1.extend(curves->bounds(spaces.second,i->primID,1));
       }
       
       PrimInfoMB ret;
       ret.pinfo = PrimInfo(N,geomBounds,centBounds);
       ret.s0t0 = s0t0;
-      ret.s0t1 = s0t1;
-      ret.s1t0 = s1t0;
+      ret.s0t1_s1t0 = s0t1_s1t0;
       ret.s1t1 = s1t1;
       return ret;
     }
@@ -126,8 +152,7 @@ namespace embree
       PrimInfoMB ret;
       ret.pinfo = PrimInfo(bounds.num,bounds.geomBounds,bounds.centBounds);
       ret.s0t0 = bounds.s0t0;
-      ret.s0t1 = bounds.s0t1;
-      ret.s1t0 = bounds.s1t0;
+      ret.s0t1_s1t0 = bounds.s0t1_s1t0;
       ret.s1t1 = bounds.s1t1;
       return ret;
     }
@@ -264,7 +289,7 @@ namespace embree
     }
 
     ObjectPartitionUnaligned::TaskPrimInfoMBParallel::TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const LinearSpace3fa& space0, const LinearSpace3fa& space1) 
-      : scene(scene), space0(space0), space1(space1), iter(prims), geomBounds(empty), centBounds(empty), s0t0(empty), s0t1(empty), s1t0(empty), s1t1(empty)
+      : scene(scene), space0(space0), space1(space1), iter(prims), geomBounds(empty), centBounds(empty), s0t0(empty), s0t1_s1t0(empty), s1t1(empty)
     {
       size_t numTasks = min(maxTasks,threadCount);
       TaskScheduler::executeTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_bound_parallel");
@@ -275,8 +300,7 @@ namespace embree
       size_t N = 0;
       BBox3fa centBounds = empty;
       BBox3fa geomBounds = empty;
-      BBox3fa s0t0 = empty, s0t1 = empty;
-      BBox3fa s1t0 = empty, s1t1 = empty;
+      BBox3fa s0t0 = empty, s0t1_s1t0 = empty, s1t1 = empty;
       while (BezierRefList::item* block = iter.next()) 
       {
 	N += block->size();
@@ -288,8 +312,7 @@ namespace embree
           const Bezier1& ref = block->at(i);
           const BezierCurves* curves = scene->getBezierCurves(ref.geomID);
           s0t0.extend(curves->bounds(space0,ref.primID,0));
-          s0t1.extend(curves->bounds(space0,ref.primID,1));
-          s1t0.extend(curves->bounds(space1,ref.primID,0));
+          s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID));
           s1t1.extend(curves->bounds(space1,ref.primID,1));
 	}
       }
@@ -297,8 +320,7 @@ namespace embree
       this->centBounds.extend_atomic(centBounds);
       this->geomBounds.extend_atomic(geomBounds);
       this->s0t0.extend_atomic(s0t0);
-      this->s0t1.extend_atomic(s0t1);
-      this->s1t0.extend_atomic(s1t0);
+      this->s0t1_s1t0.extend_atomic(s0t1_s1t0);
       this->s1t1.extend_atomic(s1t1);
     }
     

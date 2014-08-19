@@ -193,6 +193,7 @@ namespace embree
       /* perform standard binning in unaligned space */
       ObjectPartitionUnaligned::Split unalignedObjectSplit;
       float unalignedObjectSAH = inf;
+#if 1
       if (alignedObjectSAH > 0.7f*leafSAH) {
 	if (sinfo.size()) 
 	  unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,bounds.space,sinfo);
@@ -204,16 +205,19 @@ namespace embree
 	unalignedObjectSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*unalignedObjectSplit.splitSAH();
 	bestSAH = min(bestSAH,unalignedObjectSAH);
       }
+#endif
       
       /* perform splitting into two strands */
       StrandSplit::Split strandSplit;
       float strandSAH = inf;
+#if 1
       if (alignedObjectSAH > 0.6f*leafSAH) {
 	strandSplit = StrandSplit::find<Parallel>(threadIndex,threadCount,prims);
 	strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*strandSplit.splitSAH();
 	bestSAH = min(bestSAH,strandSAH);
       }
-      
+#endif
+ 
       /* return best split */
       if      (bestSAH == float(inf)        ) return Split();
       else if (bestSAH == alignedObjectSAH  ) return Split(alignedObjectSplit);
@@ -225,10 +229,40 @@ namespace embree
     template<bool Parallel>
     __forceinline void BVH4HairBuilderMB::processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& numTasks_o)
     {
+#if 0
+          std::pair<LinearSpace3fa,LinearSpace3fa> spaces = ObjectPartitionUnaligned::computeAlignedSpaceMB(threadIndex,threadCount,scene,task.prims); 
+          ObjectPartitionUnaligned::PrimInfoMB pinfo = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scene,task.prims,spaces);
+          const Vec3fa scale0 = 1.0f/max(Vec3fa(1E-19),pinfo.s0t0.size());
+          const Vec3fa scale1 = 1.0f/max(Vec3fa(1E-19),pinfo.s1t1.size());
+
+          AffineSpace3fa space0 = spaces.first;
+          /*space0.p -= pinfo.s0t0.lower;
+            space0 = AffineSpace3fa::scale(scale0)*space0;*/
+
+          AffineSpace3fa space1 = spaces.second;
+          /*space1.p -= pinfo.s1t1.lower;
+            space1 = AffineSpace3fa::scale(scale1)*space1;*/
+
+          /*const BBox3fa s0t0 = scale0*(pinfo.s0t0-pinfo.s0t0.lower);
+          const BBox3fa s0t1 = scale0*(pinfo.s0t1-pinfo.s0t0.lower);
+          const BBox3fa s1t0 = scale1*(pinfo.s1t0-pinfo.s1t1.lower);
+          const BBox3fa s1t1 = scale1*(pinfo.s1t1-pinfo.s1t1.lower);*/
+
+          const BBox3fa s0t0 = pinfo.s0t0;
+          const BBox3fa s0t1_s1t0 = pinfo.s0t1_s1t0;
+          const BBox3fa s1t1 = pinfo.s1t1;
+
+          PRINT(space0);
+          PRINT(space1);
+          PRINT(s0t0);
+          PRINT(s0t1_s1t0);
+          PRINT(s1t1);
+#endif
+
       /* create enforced leaf */
       const float leafSAH  = BVH4Hair::intCost*task.pinfo.leafSAH();
       const float splitSAH = BVH4Hair::travCostUnaligned*halfArea(task.bounds.bounds)+BVH4Hair::intCost*task.split.splitSAH();
-      
+
       if (task.pinfo.size() <= minLeafSize || task.depth >= BVH4Hair::maxBuildDepth || (task.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
 	*task.dst = createLargeLeaf(threadIndex,task.prims,task.pinfo,task.depth);
 	numTasks_o = 0;
@@ -287,7 +321,7 @@ namespace embree
       } while (numChildren < BVH4Hair::N);
       
       /* create aligned node */
-      if (isAligned) 
+      if (isAligned)
       {
 	BVH4Hair::AlignedNodeMB* node = bvh->allocAlignedNodeMB(threadIndex);
 	for (size_t i=0; i<numChildren; i++) 
@@ -307,11 +341,39 @@ namespace embree
 	for (size_t i=0; i<numChildren; i++) 
         {
           std::pair<LinearSpace3fa,LinearSpace3fa> spaces = ObjectPartitionUnaligned::computeAlignedSpaceMB(threadIndex,threadCount,scene,cprims[i]); 
-          node->set(i,spaces.first,spaces.second);
+          //node->set(i,spaces.first,spaces.second);
 	  ObjectPartitionUnaligned::PrimInfoMB pinfo = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scene,cprims[i],spaces);
-          const Vec3fa cl = pinfo.s0t1.lower+pinfo.s1t0.lower;
-          const Vec3fa cu = pinfo.s0t1.upper+pinfo.s1t0.upper;
-          node->set(i,pinfo.s0t0,BBox3fa(cl,cu),pinfo.s1t1);
+
+          const Vec3fa scale0 = 1.0f/max(Vec3fa(1E-19),pinfo.s0t0.size());
+          const Vec3fa scale1 = 1.0f/max(Vec3fa(1E-19),pinfo.s1t1.size());
+
+          AffineSpace3fa space0 = spaces.first;
+          /*space0.p -= pinfo.s0t0.lower;
+            space0 = AffineSpace3fa::scale(scale0)*space0;*/
+
+          AffineSpace3fa space1 = spaces.second;
+          /*space1.p -= pinfo.s1t1.lower;
+            space1 = AffineSpace3fa::scale(scale1)*space1;*/
+
+          node->set(i,space0,space1);
+
+          /*const BBox3fa s0t0 = scale0*(pinfo.s0t0-pinfo.s0t0.lower);
+          const BBox3fa s0t1 = scale0*(pinfo.s0t1-pinfo.s0t0.lower);
+          const BBox3fa s1t0 = scale1*(pinfo.s1t0-pinfo.s1t1.lower);
+          const BBox3fa s1t1 = scale1*(pinfo.s1t1-pinfo.s1t1.lower);*/
+
+          const BBox3fa s0t0 = pinfo.s0t0;
+          const BBox3fa s0t1_s1t0 = pinfo.s0t1_s1t0;
+          const BBox3fa s1t1 = pinfo.s1t1;
+          
+          node->set(i,s0t0,s0t1_s1t0,s1t1);
+          /*if (cpinfo[i].size() == 1) {
+            PRINT(space0);
+            PRINT(space1);
+            PRINT(s0t0);
+            PRINT(s0t1_s1t0);
+            PRINT(s1t1);
+            }*/
 	  new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csinfo[i],csplit[i]);
 	}
 	numTasks_o = numChildren;
