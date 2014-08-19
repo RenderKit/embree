@@ -35,6 +35,8 @@
 #  include <GL/glut.h>
 #endif
 
+float g_debug = 0.0f;
+
 namespace embree
 {
   static const double g_time0 = getSeconds();
@@ -101,6 +103,9 @@ namespace embree
     case 'w' : g_camera.move(0.0f,0.0f,+g_speed); break;
     case 's' : g_camera.move(0.0f,0.0f,-g_speed); break;
     case ' ' : g_display = !g_display; break;
+
+    case '+' : g_debug+=0.01f; PRINT(g_debug); break;
+    case '-' : g_debug-=0.01f; PRINT(g_debug); break;
 
     case '\033': case 'q': case 'Q':
       cleanup();

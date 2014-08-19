@@ -16,7 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-#if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
+#if 1 || defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
 #define renderPixelTestEyeLight renderPixelStandard
 #else
 #define renderPixelPathTrace renderPixelStandard
@@ -149,7 +149,7 @@ Vec3fa sampleSphere(const float u, const float v)
 RTCScene convertScene(ISPCScene* scene_in)
 {
   //scene_in->numHairSets = 0;
-  //scene_in->numMeshes = 0;
+  scene_in->numMeshes = 0;
 
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
@@ -161,9 +161,17 @@ RTCScene convertScene(ISPCScene* scene_in)
     ISPCHairSet* hair = scene_in->hairs[i];
 
     /* create a hair set */
-    unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
-    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
+    unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, 2);
+    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0,hair->v,0,sizeof(Vertex));
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
+
+    Vec3fa* buffer1 = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1);
+    const AffineSpace3fa space = AffineSpace3fa::rotate(Vec3fa(-11.0039f,24.9046f,-4.50951f),Vec3fa(1,1,1),0.5f*float(pi));
+    for (size_t i=0; i<hair->numVertices; i++) {
+      Vec3fa v = xfmPoint(space,hair->v[i]); v.w = hair->v[i].w; buffer1[i] = v;
+    }
+    rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1);
+    
     rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
   }
 
@@ -389,6 +397,8 @@ struct RTCRay2
 
 bool enableFilterDispatch = false;
 
+extern float g_debug;
+
 /* filter dispatch function */
 void filterDispatch(void* ptr, RTCRay2& ray) {
   if (!enableFilterDispatch) return;
@@ -416,7 +426,7 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
   ray.filter = (RTCFilterFunc) &occlusionFilter;
   ray.transparency = Vec3fa(1.0f);
   rtcOccluded(scene,*((RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
@@ -437,7 +447,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
   ray.filter = NULL; 
   
   Vec3fa color = Vec3fa(0.0f);
@@ -531,7 +541,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
-    ray.time = 0;
+    ray.time = g_debug;
     ray.filter = NULL;
     weight = weight * c/wi.w; // FIXME: use *= operator
 
@@ -564,7 +574,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   Vec3fa color = Vec3fa(0.0f);
   float weight = 1.0f;
@@ -663,7 +673,7 @@ extern "C" void device_render (int* pixels,
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
   camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
   g_accu_count++;
-  if (camera_changed) {
+  if (1 || camera_changed) {
     g_accu_count=0;
     memset(g_accu,0,width*height*sizeof(Vec3fa));
   }

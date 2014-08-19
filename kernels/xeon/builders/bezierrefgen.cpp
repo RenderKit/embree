@@ -20,8 +20,8 @@ namespace embree
 {
   namespace isa
   {
-    BezierRefGen::BezierRefGen(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>* alloc, const Scene* scene)
-      : scene(scene), alloc(alloc), pinfo(empty)
+    BezierRefGen::BezierRefGen(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>* alloc, const Scene* scene, const size_t numTimeSteps)
+      : scene(scene), numTimeSteps(numTimeSteps), alloc(alloc), pinfo(empty)
     {
       /*! parallel stage */
       size_t numTasks = min(threadCount,maxTasks);
@@ -34,8 +34,9 @@ namespace embree
     
     void BezierRefGen::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
-      ssize_t start = (taskIndex+0)*scene->numBezierCurves/taskCount;
-      ssize_t end   = (taskIndex+1)*scene->numBezierCurves/taskCount;
+      ssize_t numBezierCurves = numTimeSteps == 2 ? scene->numBezierCurves2 : scene->numBezierCurves;
+      ssize_t start = (taskIndex+0)*numBezierCurves/taskCount;
+      ssize_t end   = (taskIndex+1)*numBezierCurves/taskCount;
       ssize_t cur   = 0;
       
       PrimInfo pinfo(empty);
@@ -44,7 +45,7 @@ namespace embree
       {
 	BezierCurves* geom = (BezierCurves*) scene->get(i);
         if (geom == NULL) continue;
-	if (geom->type != BEZIER_CURVES || !geom->isEnabled()) continue;
+	if (geom->type != BEZIER_CURVES || !geom->isEnabled() || geom->numTimeSteps != numTimeSteps) continue;
 	ssize_t gstart = 0;
 	ssize_t gend = geom->numCurves;
 	ssize_t s = max(start-cur,gstart);

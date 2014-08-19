@@ -334,9 +334,8 @@ namespace embree
       for (BezierRefList::block_iterator_unsafe i = prims; i; i++) 
       {
         const BezierCurves* curves = scene->getBezierCurves(i->geomID);
-        const int curve = curves->curve(i->primID);
-        bounds0.extend(curves->bounds(curve,0));
-          bounds1.extend(curves->bounds(curve,1));
+        bounds0.extend(curves->bounds(i->primID,0));
+        bounds1.extend(curves->bounds(i->primID,1));
       }
       return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
     }
@@ -366,9 +365,8 @@ namespace embree
         {
           const Bezier1& ref = block->at(i);
           const BezierCurves* curves = scene->getBezierCurves(ref.geomID);
-          const int curve = curves->curve(ref.primID);
-          bounds0.extend(curves->bounds(curve,0));
-          bounds1.extend(curves->bounds(curve,1));
+          bounds0.extend(curves->bounds(ref.primID,0));
+          bounds1.extend(curves->bounds(ref.primID,1));
 	}
       }
       this->bounds0.extend_atomic(bounds0);

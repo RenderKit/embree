@@ -59,6 +59,43 @@ namespace embree
 #endif
     }
 
+    template<typename PrimitiveIntersector>
+    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::AlignedNodeMB* node, 
+                                                                                  const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const float time, 
+                                                                                  const size_t nearX, const size_t nearY, const size_t nearZ,
+                                                                                  ssef& tNear, ssef& tFar)
+    {
+      const BBoxSSE3f bounds = node->getBounds(time,nearX,nearY,nearZ);
+
+#if defined (__AVX2__)
+      const ssef tNearX = msub(bounds.lower.x, rdir.x, org_rdir.x);
+      const ssef tNearY = msub(bounds.lower.y, rdir.y, org_rdir.y);
+      const ssef tNearZ = msub(bounds.lower.z, rdir.z, org_rdir.z);
+      const ssef tFarX  = msub(bounds.upper.x, rdir.x, org_rdir.x);
+      const ssef tFarY  = msub(bounds.upper.y, rdir.y, org_rdir.y);
+      const ssef tFarZ  = msub(bounds.upper.z, rdir.z, org_rdir.z);
+#else
+      const ssef tNearX = (bounds.lower.x - org.x) * rdir.x;
+      const ssef tNearY = (bounds.lower.y - org.y) * rdir.y;
+      const ssef tNearZ = (bounds.lower.z - org.z) * rdir.z;
+      const ssef tFarX  = (bounds.upper.x - org.x) * rdir.x;
+      const ssef tFarY  = (bounds.upper.y - org.y) * rdir.y;
+      const ssef tFarZ  = (bounds.upper.z - org.z) * rdir.z;
+#endif
+      
+#if defined(__SSE4_1__)
+      tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
+      tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
+      const sseb vmask = cast(tNear) > cast(tFar);
+      return movemask(vmask)^((1<<BVH4Hair::N)-1);
+#else
+      tNear = max(tNearX,tNearY,tNearZ,tNear);
+      tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
+      const sseb vmask = tNear <= tFar;
+      return movemask(vmask);
+#endif
+    }
+
 #if BVH4HAIR_COMPRESS_UNALIGNED_NODES
     template<typename PrimitiveIntersector>
     __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::CompressedUnalignedNode* node, Ray& ray, 
@@ -143,6 +180,48 @@ namespace embree
     }
 
     template<typename PrimitiveIntersector>
+    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::UnalignedNodeMB* node, Ray& ray,
+                                                                                  const sse3f& ray_org, const sse3f& ray_dir, 
+                                                                                  ssef& tNear, ssef& tFar)
+    {
+      const ssef t0 = ssef(1.0f)-ray.time, t1 = ray.time;
+      const LinearSpaceSSE3f xfm = t0*node->space0 + t1*node->space1;
+      const sse3f lower = t0*t0*node->t0s0.lower + t0*t1*node->t1s0_t0s1.lower + t1*t1*node->t1s1.lower;
+      const sse3f upper = t0*t0*node->t0s0.upper + t0*t1*node->t1s0_t0s1.upper + t1*t1*node->t1s1.upper;
+      const BBoxSSE3f bounds(lower,upper);
+
+      const sse3f dir = xfmVector(xfm,ray_dir);
+      const sse3f rdir = rcp_safe(dir); 
+      const sse3f org = xfmPoint(xfm,ray_org);
+      const sse3f tLowerXYZ = (bounds.lower - org) * rdir;
+      const sse3f tUpperXYZ = (bounds.upper - org) * rdir;
+
+#if defined(__SSE4_1__)
+      const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
+      const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
+      tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
+      tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
+      const sseb vmask = tNear <= tFar;
+      return movemask(vmask);
+#else
+      const ssef tNearX = min(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tNearY = min(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tNearZ = min(tLowerXYZ.z,tUpperXYZ.z);
+      const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
+      tNear = max(tNearX,tNearY,tNearZ,tNear);
+      tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
+      const sseb vmask = tNear <= tFar;
+      return movemask(vmask);
+#endif
+    }
+
+    template<typename PrimitiveIntersector>
     void BVH4HairIntersector1<PrimitiveIntersector>::intersect(const BVH4Hair* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
@@ -197,6 +276,14 @@ namespace embree
           /*! process nodes with unaligned bounds */
           else if (unlikely(cur.isUnalignedNode()))
             mask = intersectBox(cur.unalignedNode(),ray,org,dir,tNear,tFar);
+
+          /*! process nodes with aligned bounds and motion blur */
+          else if (unlikely(cur.isAlignedNodeMB()))
+            mask = intersectBox(cur.alignedNodeMB(),org,rdir,org_rdir,ray.time,nearX,nearY,nearZ,tNear,tFar);
+
+          /*! process nodes with unaligned bounds and motion blur */
+          else if (unlikely(cur.isUnalignedNodeMB()))
+            mask = intersectBox(cur.unalignedNodeMB(),ray,org,dir,tNear,tFar);
 
           /*! otherwise this is a leaf */
           else break;
@@ -326,6 +413,14 @@ namespace embree
           else if (unlikely(cur.isUnalignedNode()))
             mask = intersectBox(cur.unalignedNode(),ray,org,dir,tNear,tFar);
 
+          /*! process nodes with aligned bounds and motion blur */
+          else if (unlikely(cur.isAlignedNodeMB()))
+            mask = intersectBox(cur.alignedNodeMB(),org,rdir,org_rdir,ray.time,nearX,nearY,nearZ,tNear,tFar);
+
+          /*! process nodes with unaligned bounds and motion blur */
+          else if (unlikely(cur.isUnalignedNodeMB()))
+            mask = intersectBox(cur.unalignedNodeMB(),ray,org,dir,tNear,tFar);
+
           /*! otherwise this is a leaf */
           else break;
 
@@ -397,5 +492,8 @@ namespace embree
 
     DEFINE_INTERSECTOR1(BVH4HairBezier1Intersector1,BVH4HairIntersector1<Bezier1Intersector1>);
     DEFINE_INTERSECTOR1(BVH4HairBezier1iIntersector1,BVH4HairIntersector1<Bezier1iIntersector1>);
+
+    //DEFINE_INTERSECTOR1(BVH4HairBezier1MBIntersector1,BVH4HairIntersector1<Bezier1Intersector1MB>);
+    DEFINE_INTERSECTOR1(BVH4HairBezier1iMBIntersector1,BVH4HairIntersector1<Bezier1iIntersector1MB>);
   }
 }

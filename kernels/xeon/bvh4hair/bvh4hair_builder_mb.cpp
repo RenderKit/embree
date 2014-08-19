@@ -27,8 +27,8 @@ namespace embree
  
   namespace isa
   {
-    template<> BVH4HairBuilderMBT<Bezier1 >::BVH4HairBuilderMBT (BVH4Hair* bvh, Scene* scene, size_t mode) : BVH4HairBuilderMB(bvh,scene,mode) {}
-    template<> BVH4HairBuilderMBT<Bezier1i>::BVH4HairBuilderMBT (BVH4Hair* bvh, Scene* scene, size_t mode) : BVH4HairBuilderMB(bvh,scene,mode) {}
+    //template<> BVH4HairBuilderMBT<Bezier1 >::BVH4HairBuilderMBT (BVH4Hair* bvh, Scene* scene, size_t mode) : BVH4HairBuilderMB(bvh,scene,mode) {}
+    template<> BVH4HairBuilderMBT<Bezier1iMB>::BVH4HairBuilderMBT (BVH4Hair* bvh, Scene* scene, size_t mode) : BVH4HairBuilderMB(bvh,scene,mode) {}
 
     BVH4HairBuilderMB::BVH4HairBuilderMB (BVH4Hair* bvh, Scene* scene, size_t mode)
       : scene(scene), minLeafSize(1), maxLeafSize(inf), enableSpatialSplits(mode > 0), bvh(bvh), remainingReplications(0)
@@ -40,7 +40,7 @@ namespace embree
     void BVH4HairBuilderMB::build(size_t threadIndex, size_t threadCount) 
     {
       /* fast path for empty BVH */
-      size_t numPrimitives = scene->numBezierCurves;
+      size_t numPrimitives = scene->numBezierCurves2;
       bvh->init(numPrimitives,numPrimitives+(size_t)(g_hair_builder_replication_factor*numPrimitives));
       if (numPrimitives == 0) return;
       numGeneratedPrims = 0;
@@ -63,11 +63,11 @@ namespace embree
 	
 	/* create initial curve list */
 	size_t numVertices = 0;
-	BezierRefGen gen(threadIndex,threadCount,&alloc,scene);
+	BezierRefGen gen(threadIndex,threadCount,&alloc,scene,2);
 	PrimInfo pinfo = gen.pinfo;
 	BezierRefList prims = gen.prims;
 	
-	bvh->numPrimitives = scene->numBezierCurves;
+	bvh->numPrimitives = numPrimitives;
 	bvh->numVertices = 0;
 	if (&bvh->primTy == &SceneBezier1i::type) bvh->numVertices = numVertices;
 	
@@ -107,7 +107,7 @@ namespace embree
 	
 	TaskScheduler::executeTask(threadIndex,threadCount,_task_build_parallel,this,threadCount,"BVH4Builder::build_parallel");
 #endif
-	
+
 	if (g_verbose >= 2) {
 	  double t1 = getSeconds();
 	  std::cout << " [DONE]" << std::endl;
@@ -366,7 +366,7 @@ namespace embree
     }
 
     /*! entry functions for the builder */
-    Builder* BVH4HairBezier1BuilderMB  (void* bvh, Scene* scene, size_t mode) { return new class BVH4HairBuilderMBT<Bezier1> ((BVH4Hair*)bvh,scene,mode); }
-    Builder* BVH4HairBezier1iBuilderMB (void* bvh, Scene* scene, size_t mode) { return new class BVH4HairBuilderMBT<Bezier1i> ((BVH4Hair*)bvh,scene,mode); }
+    //Builder* BVH4HairBezier1BuilderMB  (void* bvh, Scene* scene, size_t mode) { return new class BVH4HairBuilderMBT<Bezier1> ((BVH4Hair*)bvh,scene,mode); }
+    Builder* BVH4HairBezier1iBuilderMB (void* bvh, Scene* scene, size_t mode) { return new class BVH4HairBuilderMBT<Bezier1iMB> ((BVH4Hair*)bvh,scene,mode); }
   }
 }

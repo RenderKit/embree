@@ -102,11 +102,10 @@ namespace embree
         centBounds.extend(i->center(spaces.first));
 
         const BezierCurves* curves = scene->getBezierCurves(i->geomID);
-        const int curve = curves->curve(i->primID);
-        s0t0.extend(curves->bounds(spaces.first ,curve,0));
-        s0t1.extend(curves->bounds(spaces.first ,curve,1));
-        s1t0.extend(curves->bounds(spaces.second,curve,0));
-        s1t1.extend(curves->bounds(spaces.second,curve,1));
+        s0t0.extend(curves->bounds(spaces.first ,i->primID,0));
+        s0t1.extend(curves->bounds(spaces.first ,i->primID,1));
+        s1t0.extend(curves->bounds(spaces.second,i->primID,0));
+        s1t1.extend(curves->bounds(spaces.second,i->primID,1));
       }
       
       PrimInfoMB ret;
@@ -288,11 +287,10 @@ namespace embree
 
           const Bezier1& ref = block->at(i);
           const BezierCurves* curves = scene->getBezierCurves(ref.geomID);
-          const int curve = curves->curve(ref.primID);
-          s0t0.extend(curves->bounds(space0,curve,0));
-          s0t1.extend(curves->bounds(space0,curve,1));
-          s1t0.extend(curves->bounds(space1,curve,0));
-          s1t1.extend(curves->bounds(space1,curve,1));
+          s0t0.extend(curves->bounds(space0,ref.primID,0));
+          s0t1.extend(curves->bounds(space0,ref.primID,1));
+          s1t0.extend(curves->bounds(space1,ref.primID,0));
+          s1t1.extend(curves->bounds(space1,ref.primID,1));
 	}
       }
       atomic_add(&this->num,N);

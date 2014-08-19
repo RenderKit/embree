@@ -128,10 +128,10 @@ namespace embree
       }
 
       /*! checks if this is a leaf */
-      __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) > 1; }
+      __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) >= emptyNode; }
 
       /*! checks if this is a node */
-      __forceinline int isNode() const { return (ptr & (size_t)align_mask) <= 1; }
+      __forceinline int isNode() const { return (ptr & (size_t)align_mask) < emptyNode; }
       
       /*! checks if this is a node with aligned bounding boxes */
       __forceinline int isAlignedNode() const { return (ptr & (size_t)align_mask) == 0; }
@@ -158,8 +158,8 @@ namespace embree
       __forceinline const UnalignedNode* unalignedNode() const { assert(isUnalignedNode()); return (const UnalignedNode*)((size_t)ptr & ~(size_t)align_mask); }
 
       /*! returns aligned motion blur node pointer */
-      __forceinline       AlignedNodeMB* alignedNodeMB()       { assert(isAlignedNodeMB()); return (      AlignedNodeMB*)ptr; }
-      __forceinline const AlignedNodeMB* alignedNodeMB() const { assert(isAlignedNodeMB()); return (const AlignedNodeMB*)ptr; }
+      __forceinline       AlignedNodeMB* alignedNodeMB()       { assert(isAlignedNodeMB()); return (      AlignedNodeMB*)((size_t)ptr & ~(size_t)align_mask); }
+      __forceinline const AlignedNodeMB* alignedNodeMB() const { assert(isAlignedNodeMB()); return (const AlignedNodeMB*)((size_t)ptr & ~(size_t)align_mask); }
 
       /*! returns unaligned motion blur node pointer */
       __forceinline       UnalignedNodeMB* unalignedNodeMB()       { assert(isUnalignedNodeMB()); return (      UnalignedNodeMB*)((size_t)ptr & ~(size_t)align_mask); }
@@ -577,12 +577,12 @@ namespace embree
       }
 
       /*! Returns bounds of specified child. */
-      /*__forceinline const BBox3fa bounds(const size_t i) const { 
+      __forceinline const BBox3fa bounds0(const size_t i) const { 
         assert(i < N);
-        const Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
-        const Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
+        const Vec3fa lower(lower0_x[i],lower0_y[i],lower0_z[i]);
+        const Vec3fa upper(upper0_x[i],upper0_y[i],upper0_z[i]);
         return BBox3fa(lower,upper);
-        }*/
+      }
 
       /*! returns 4 bounding boxes */
       __forceinline const BBoxSSE3f getBounds(const float t, const size_t nearX, const size_t nearY, const size_t nearZ) const 
@@ -612,10 +612,10 @@ namespace embree
       }
 
       /*! Returns the extend of the bounds of the ith child */
-      /*__forceinline Vec3fa extend(const size_t i) const {
+      __forceinline Vec3fa extend0(const size_t i) const {
         assert(i < N);
-        return bounds(i).size();
-        }*/
+        return bounds0(i).size();
+      }
 
     public:
       ssef lower0_x;           //!< X dimension of lower bounds of all 4 children.
@@ -680,15 +680,19 @@ namespace embree
         Node::set(i,childID);
       }
 
+      /*! Returns bounds of specified child. */
+      __forceinline const BBox3fa bounds0(const size_t i) const { 
+        assert(i < N);
+        const Vec3fa lower(t0s0.lower.x[i],t0s0.lower.y[i],t0s0.lower.z[i]);
+        const Vec3fa upper(t0s0.upper.x[i],t0s0.upper.y[i],t0s0.upper.z[i]);
+        return BBox3fa(lower,upper);
+      }
+
       /*! Returns the extend of the bounds of the ith child */
-      /*__forceinline Vec3fa extend(size_t i) const {
-        assert(i<N);
-        const Vec3fa vx(naabb.l.vx.x[i],naabb.l.vx.y[i],naabb.l.vx.z[i]);
-        const Vec3fa vy(naabb.l.vy.x[i],naabb.l.vy.y[i],naabb.l.vy.z[i]);
-        const Vec3fa vz(naabb.l.vz.x[i],naabb.l.vz.y[i],naabb.l.vz.z[i]);
-        const Vec3fa p (naabb.p   .x[i],naabb.p   .y[i],naabb.p   .z[i]);
-        return rsqrt(vx*vx + vy*vy + vz*vz);
-        }*/
+      __forceinline Vec3fa extend0(size_t i) const {
+        assert(i < N);
+        return bounds0(i).size();
+      }
 
     public:
       LinearSpaceSSE3f space0;   
@@ -709,6 +713,7 @@ namespace embree
     /*! BVH4Hair instantiations */
     static Accel* BVH4HairBezier1(Scene* scene, bool highQuality);
     static Accel* BVH4HairBezier1i(Scene* scene, bool highQuality);
+    static Accel* BVH4HairBezier1iMB(Scene* scene, bool highQuality);
 
     /*! initializes the acceleration structure */
     void init (size_t numPrimitivesMin = 0, size_t numPrimitivesMax = 0);
