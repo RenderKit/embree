@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -389,6 +389,7 @@
     <ClCompile Include="bvh4mb\bvh4mb_intersector4.cpp" />
     <ClCompile Include="bvh4mb\bvh4mb_intersector8.cpp" />
     <ClCompile Include="bvh4hair\bvh4hair_builder.cpp" />
+    <ClCompile Include="bvh4hair\bvh4hair_builder_mb.cpp" />
     <ClCompile Include="bvh4hair\bvh4hair_intersector1.cpp" />
     <ClCompile Include="bvh4hair\bvh4hair_intersector4.cpp" />
     <ClCompile Include="bvh4hair\bvh4hair_intersector8.cpp" />
@@ -435,6 +436,7 @@
     <CustomBuildStep Include="bvh4mb\bvh4mb_intersector4.h" />
     <CustomBuildStep Include="bvh4mb\bvh4mb_intersector8.h" />
     <ClInclude Include="bvh4hair\bvh4hair_builder.h" />
+    <ClInclude Include="bvh4hair\bvh4hair_builder_mb.h" />
     <ClInclude Include="bvh4hair\bvh4hair_intersector1.h" />
     <ClInclude Include="bvh4hair\bvh4hair_intersector4.h" />
     <ClInclude Include="bvh4hair\bvh4hair_intersector8.h" />
