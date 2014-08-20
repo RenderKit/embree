@@ -33,12 +33,26 @@ namespace embree
     public:
       
       /*! calculates some space aligned with the bezier curves */
-      template<bool Parallel>
       static const LinearSpace3fa computeAlignedSpace(size_t threadIndex, size_t threadCount, BezierRefList& prims);
-      
-      /*! calculates some space aligned with the bezier curves */
+
+      /*! calculates some space aligned with the bezier curves for timestep t0 and t1 */
+      static const std::pair<AffineSpace3fa,AffineSpace3fa> computeAlignedSpaceMB(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims);
+
+      /*! computes bounding box of bezier curves */
       template<bool Parallel>
       static const PrimInfo computePrimInfo(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
+
+      /*! computes bounding box of bezier curves for motion blur */
+      struct PrimInfoMB 
+      {
+        PrimInfo pinfo;
+        BBox3fa s0t0;
+        BBox3fa s0t1_s1t0;
+        BBox3fa s1t1;
+      };
+      
+      template<bool Parallel>
+      static const PrimInfoMB computePrimInfoMB(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const std::pair<AffineSpace3fa,AffineSpace3fa>& spaces);
       
       /*! finds the best split */
       template<bool Parallel>
@@ -137,17 +151,17 @@ namespace embree
 	BBox3fa bounds[BINS][4]; //!< geometry bounds for each bin in each dimension
 	ssei    counts[BINS];    //!< counts number of primitives that map into the bins
       };
-      
+
       /*! task for parallel bounding calculations */
-      struct TaskBoundParallel
+      struct TaskPrimInfoParallel
       {
 	/*! construction executes the task */
-	TaskBoundParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
+	TaskPrimInfoParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
 	
       private:
 	
 	/*! parallel bounding calculations */
-	TASK_RUN_FUNCTION(TaskBoundParallel,task_bound_parallel);
+	TASK_RUN_FUNCTION(TaskPrimInfoParallel,task_bound_parallel);
 	
 	/*! state for bounding stage */
       private:
@@ -159,6 +173,34 @@ namespace embree
 	atomic_t num;         //!< number of primitives
 	BBox3fa centBounds;   //!< calculated centroid bounds
 	BBox3fa geomBounds;   //!< calculated geometry bounds
+      };
+
+      /*! task for parallel bounding calculations */
+      struct TaskPrimInfoMBParallel
+      {
+	/*! construction executes the task */
+	TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const AffineSpace3fa& space0, const AffineSpace3fa& space1);
+	
+      private:
+	
+	/*! parallel bounding calculations */
+	TASK_RUN_FUNCTION(TaskPrimInfoMBParallel,task_bound_parallel);
+	
+	/*! state for bounding stage */
+      private:
+        Scene* scene;
+	BezierRefList::iterator iter; //!< iterator for bounding stage 
+	AffineSpace3fa space0; //!< space0 for bounding calculations
+	AffineSpace3fa space1; //!< space1 for bounding calculations
+	
+	/*! output data */
+      public:
+	atomic_t num;         //!< number of primitives
+	BBox3fa centBounds;   //!< calculated centroid bounds
+	BBox3fa geomBounds;   //!< calculated geometry bounds
+        BBox3fa s0t0;         //!< bounds in space0 at time t0
+        BBox3fa s0t1_s1t0;    //!< residual bounds
+        BBox3fa s1t1;         //!< bounds in space1 at time t1
       };
       
       /*! task for parallel binning */

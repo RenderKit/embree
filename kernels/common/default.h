@@ -156,6 +156,7 @@ namespace embree
   typedef Vec2<ssef> sse2f;
   typedef Vec3<ssef> sse3f;
   typedef Vec4<ssef> sse4f;
+  typedef LinearSpace3<sse3f> LinearSpaceSSE3f;
   typedef AffineSpaceT<LinearSpace3<sse3f > > AffineSpaceSSE3f;
   typedef BBox<sse3f > BBoxSSE3f;
 #endif

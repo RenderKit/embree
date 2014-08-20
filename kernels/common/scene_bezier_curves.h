@@ -80,21 +80,89 @@ namespace embree
 	return (unsigned int)logf(r0);
       }
 
-
       /*! calculates bounding box of i'th bezier curve */
-      __forceinline BBox3fa bounds(size_t i) const 
+      __forceinline BBox3fa bounds(size_t i, size_t j = 0) const 
       {
         const int index = curve(i);
-        const float r0 = radius(index+0);
-        const float r1 = radius(index+1);
-        const float r2 = radius(index+2);
-        const float r3 = radius(index+3);
-        const Vec3fa& v0 = vertex(index+0);
-        const Vec3fa& v1 = vertex(index+1);
-        const Vec3fa& v2 = vertex(index+2);
-        const Vec3fa& v3 = vertex(index+3);
+        const float r0 = radius(index+0,j);
+        const float r1 = radius(index+1,j);
+        const float r2 = radius(index+2,j);
+        const float r3 = radius(index+3,j);
+        const Vec3fa& v0 = vertex(index+0,j);
+        const Vec3fa& v1 = vertex(index+1,j);
+        const Vec3fa& v2 = vertex(index+2,j);
+        const Vec3fa& v3 = vertex(index+3,j);
         const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
         return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
+      }
+
+      /*! calculates bounding box of i'th bezier curve */
+      __forceinline BBox3fa bounds(const AffineSpace3fa& space, size_t i, size_t j = 0) const 
+      {
+        const int index = curve(i);
+        const float r0 = radius(index+0,j);
+        const float r1 = radius(index+1,j);
+        const float r2 = radius(index+2,j);
+        const float r3 = radius(index+3,j);
+        const Vec3fa& v0 = xfmPoint(space,vertex(index+0,j));
+        const Vec3fa& v1 = xfmPoint(space,vertex(index+1,j));
+        const Vec3fa& v2 = xfmPoint(space,vertex(index+2,j));
+        const Vec3fa& v3 = xfmPoint(space,vertex(index+3,j));
+        const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
+        return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
+      }
+
+      /*! calculates residual bounding box of i'th bezier curve */
+      __forceinline BBox3fa bounds(const AffineSpace3fa& space0, const AffineSpace3fa& space1, size_t i) const 
+      {
+#if 0
+        const int index = curve(i);
+        const float r0 = radius(index+0,0) + radius(index+0,1); // FIXME: can one use max here?
+        const float r1 = radius(index+1,0) + radius(index+1,1);
+        const float r2 = radius(index+2,0) + radius(index+2,1);
+        const float r3 = radius(index+3,0) + radius(index+3,1);
+
+        const Vec3fa a0 = xfmPoint(space0,vertex(index+0,1));
+        const Vec3fa a1 = xfmPoint(space0,vertex(index+1,1));
+        const Vec3fa a2 = xfmPoint(space0,vertex(index+2,1));
+        const Vec3fa a3 = xfmPoint(space0,vertex(index+3,1));
+
+        const Vec3fa b0 = xfmPoint(space1,vertex(index+0,0));
+        const Vec3fa b1 = xfmPoint(space1,vertex(index+1,0));
+        const Vec3fa b2 = xfmPoint(space1,vertex(index+2,0));
+        const Vec3fa b3 = xfmPoint(space1,vertex(index+3,0));
+
+        const Vec3fa v0 = a0 + b0;
+        const Vec3fa v1 = a1 + b1;
+        const Vec3fa v2 = a2 + b2;
+        const Vec3fa v3 = a3 + b3;
+
+        const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
+        return enlarge(b,Vec3fa(max(r0,r1,r2,r3))); // FIXME: is radius used properly?
+#else
+
+        const int index = curve(i);
+        const float r0 = 0.5*radius(index+0,0) + 0.5*radius(index+0,1);
+        const float r1 = 0.5*radius(index+1,0) + 0.5*radius(index+1,1);
+        const float r2 = 0.5*radius(index+2,0) + 0.5*radius(index+2,1);
+        const float r3 = 0.5*radius(index+3,0) + 0.5*radius(index+3,1);
+
+        const Vec3fa p0 = 0.5f*vertex(index+0,0) + 0.5f*vertex(index+0,1);
+        const Vec3fa p1 = 0.5f*vertex(index+1,0) + 0.5f*vertex(index+1,1);
+        const Vec3fa p2 = 0.5f*vertex(index+2,0) + 0.5f*vertex(index+2,1);
+        const Vec3fa p3 = 0.5f*vertex(index+3,0) + 0.5f*vertex(index+3,1);
+
+        const AffineSpace3fa space = 0.5f*space0 + 0.5f*space1;
+        //const AffineSpace3fa space = frame(normalize(0.5f*space0.row2() + 0.5f*space1.row2())).transposed();
+        const Vec3fa v0 = xfmPoint(space,p0);
+        const Vec3fa v1 = xfmPoint(space,p1);
+        const Vec3fa v2 = xfmPoint(space,p2);
+        const Vec3fa v3 = xfmPoint(space,p3);
+
+        const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
+        return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
+
+#endif
       }
 
       __forceinline const Vec3fa *fristVertexPtr(size_t i) const {

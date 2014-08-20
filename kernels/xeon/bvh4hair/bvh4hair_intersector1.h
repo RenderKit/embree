@@ -25,7 +25,7 @@ namespace embree
   namespace isa
   {
     /*! BVH4Hair single ray traversal implementation. */
-    template<typename PrimitiveIntersector>
+    template<typename PrimitiveIntersector, int flags>
       class BVH4HairIntersector1 
     {
       /* shortcuts for frequently used types */
@@ -43,8 +43,17 @@ namespace embree
 				 const size_t nearX, const size_t nearY, const size_t nearZ,
 				 ssef& tNear, ssef& tFar);
 
+      static size_t intersectBox(const BVH4Hair::AlignedNodeMB* node, 
+                                 const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const float time, 
+                                 const size_t nearX, const size_t nearY, const size_t nearZ,
+                                 ssef& tNear, ssef& tFar);
+
       static size_t intersectBox(const BVH4Hair::CompressedUnalignedNode* node, Ray& ray, const sse3f& org, const sse3f& dir, ssef& tNear, ssef& tFar);
       static size_t intersectBox(const BVH4Hair::UncompressedUnalignedNode* node, Ray& ray, const sse3f& org, const sse3f& dir, ssef& tNear, ssef& tFar);
+
+      static size_t intersectBox(const BVH4Hair::UnalignedNodeMB* node, Ray& ray,
+                                 const sse3f& ray_org, const sse3f& ray_dir, 
+                                 ssef& tNear, ssef& tFar);
 
     public:
       static void intersect(const BVH4Hair* This, Ray& ray);
