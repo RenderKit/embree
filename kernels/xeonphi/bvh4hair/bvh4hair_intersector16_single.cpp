@@ -54,7 +54,7 @@ namespace embree
 	prefetch<PFHINT_L1>(tptr + 4);
 
 	for (size_t i=0;i<items;i++)
-	  ret |= Bezier1iIntersector16<ENABLE_INTERSECTION_FILTER>::intersect(pre_vx,pre_vy,pre_vz,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry); 
+	  ret |= Bezier1iIntersector16<ENABLE_INTERSECTION_FILTER>::intersect(pre_vx,pre_vy,pre_vz,pre.inv_ray_length,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry); 
 
 	max_dist_xyz = ray16.tfar[rayIndex];
 
@@ -85,7 +85,7 @@ namespace embree
 
 	for (size_t i=0;i<items;i++)
 	  {
-	    if (Bezier1iIntersector16<ENABLE_INTERSECTION_FILTER>::occluded(pre_vx,pre_vy,pre_vz,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry))
+	    if (Bezier1iIntersector16<ENABLE_INTERSECTION_FILTER>::occluded(pre_vx,pre_vy,pre_vz,pre.inv_ray_length,ray16,dir_xyz,org_xyz,rayIndex,tptr[i],geometry))
 	      return true;
 	  }
 
@@ -117,7 +117,7 @@ namespace embree
 	prefetch<PFHINT_L1>(tptr + 4);
 
 	for (size_t i=0;i<items;i++)
-	  ret |= Bezier1iIntersector16<ENABLE_INTERSECTION_FILTER>::intersect(pre_vx,pre_vy,pre_vz,ray,dir_xyz,org_xyz,tptr[i],geometry); // add mailboxing
+	  ret |= Bezier1iIntersector16<ENABLE_INTERSECTION_FILTER>::intersect(pre_vx,pre_vy,pre_vz,pre.inv_ray_length,ray,dir_xyz,org_xyz,tptr[i],geometry); 
 
 	max_dist_xyz = ray.tfar;
 	return ret;
@@ -147,7 +147,7 @@ namespace embree
 	prefetch<PFHINT_L1>(tptr + 4);
 
 	for (size_t i=0;i<items;i++)
-	  if (Bezier1iIntersector16<ENABLE_INTERSECTION_FILTER>::occluded(pre_vx,pre_vy,pre_vz,ray,dir_xyz,org_xyz,tptr[i],geometry))
+	  if (Bezier1iIntersector16<ENABLE_INTERSECTION_FILTER>::occluded(pre_vx,pre_vy,pre_vz,pre.inv_ray_length,ray,dir_xyz,org_xyz,tptr[i],geometry))
 	    return true;
 
 	return false;
@@ -164,7 +164,9 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4i::maxDepth+1];
 
-      LinearSpace_mic3f ray16_space = frame(ray16.dir).transposed();
+      const mic_f inv_ray_length = rsqrt(dot(ray16.dir,ray16.dir));
+      const mic3f ray16_normalized = ray16.dir * inv_ray_length;
+      LinearSpace_mic3f ray16_space = frame(ray16_normalized).transposed();
 
       /* setup */
       const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
@@ -181,7 +183,7 @@ namespace embree
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
         {
-	  Precalculations pre(ray16_space,rayIndex);
+	  Precalculations pre(ray16_space,inv_ray_length,rayIndex);
 	  DBG(std::cout << std::endl);
 	  DBG(DBG_PRINT(rayIndex));
 
@@ -250,12 +252,6 @@ namespace embree
 		}
 	      // ------------------------
 	    }	  
-      DBG(
-	  DBG_PRINT(ray16);
-	  sleep(4);
-	  exit(0);
-	  );
-
 	}
     }
 
@@ -264,9 +260,12 @@ namespace embree
     {
       /* near and node stack */
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
-      return;
 
       /* setup */
+      const mic_f inv_ray_length = rsqrt(dot(ray16.dir,ray16.dir));
+      const mic3f ray16_normalized = ray16.dir * inv_ray_length;
+      LinearSpace_mic3f ray16_space = frame(ray16_normalized).transposed();
+
       const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir16  = rcp_safe(ray16.dir);
       mic_m terminated    = !m_valid;
@@ -281,7 +280,7 @@ namespace embree
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
         {
-	  Precalculations pre(ray16,rayIndex);
+	  Precalculations pre(ray16_space,inv_ray_length,rayIndex);
 
 	  stack_node[1] = bvh->root; 
 	  size_t sindex = 2;
@@ -357,7 +356,10 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4i::maxDepth+1];
 
-      LinearSpace_mic3f ray_space = frame(mic3f(ray.dir)).transposed();
+      const mic3f ray16_dir            = mic3f(ray.dir.x,ray.dir.y,ray.dir.z);
+      const mic_f inv_ray16_length     = rsqrt(dot(ray16_dir,ray16_dir));
+      const mic3f ray16_dir_normalized = ray16_dir * inv_ray16_length;
+      LinearSpace_mic3f ray16_space    = frame(ray16_dir_normalized).transposed();
 
       /* setup */
       const mic_f inf        = mic_f(pos_inf);
@@ -370,7 +372,7 @@ namespace embree
 
       stack_node[0] = BVH4Hair::invalidNode;
 
-      Precalculations pre(ray_space,0);
+      Precalculations pre(ray16_space,inv_ray16_length,0);
 	  
       stack_node[1] = bvh->root; 
       size_t sindex = 2;
@@ -443,7 +445,10 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4i::maxDepth+1];
 
-      LinearSpace_mic3f ray_space = frame(mic3f(ray.dir)).transposed();
+      const mic3f ray16_dir            = mic3f(ray.dir.x,ray.dir.y,ray.dir.z);
+      const mic_f inv_ray16_length     = rsqrt(dot(ray16_dir,ray16_dir));
+      const mic3f ray16_dir_normalized = ray16_dir * inv_ray16_length;
+      LinearSpace_mic3f ray16_space    = frame(ray16_dir_normalized).transposed();
 
       /* setup */
       const mic_f inf        = mic_f(pos_inf);
@@ -456,7 +461,7 @@ namespace embree
 
       stack_node[0] = BVH4Hair::invalidNode;
 
-      Precalculations pre(ray_space,0);
+      Precalculations pre(ray16_space,inv_ray16_length,0);
 	  
       stack_node[1] = bvh->root; 
       size_t sindex = 2;
