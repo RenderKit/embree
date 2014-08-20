@@ -39,18 +39,12 @@ namespace embree
       {
       }
 
-  ~RayStreamLogger()
-    {
-      if (initialized)
-	{
-	  rayData.close();
-	}
-    }
+    ~RayStreamLogger();
 
   static RayStreamLogger rayStreamLogger;
 
-  void logRayIntersect(mic_i* valid, BVH4i* bvh, Ray16& ray);
-  void logRayOccluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
+  void logRay16Intersect(mic_i* valid, BVH4i* bvh, Ray16& ray);
+  void logRay16Occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
     
   };
 };
