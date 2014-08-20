@@ -31,7 +31,7 @@ namespace embree
   template< bool ENABLE_INTERSECTION_FILTER>
     struct Bezier1iLeafIntersector
     {
-      static __forceinline bool intersect(BVH4i::NodeRef curNode,
+      static __forceinline bool intersect(BVH4Hair::NodeRef curNode,
 					  const size_t rayIndex, 
 					  const mic_f &dir_xyz,
 					  const mic_f &org_xyz,
@@ -61,7 +61,7 @@ namespace embree
 	return ret;
       }
 
-      static __forceinline bool occluded(BVH4i::NodeRef curNode,
+      static __forceinline bool occluded(BVH4Hair::NodeRef curNode,
 					 const size_t rayIndex, 
 					 const mic_f &dir_xyz,
 					 const mic_f &org_xyz,
@@ -92,7 +92,7 @@ namespace embree
 	return false;
       }
 
-      static __forceinline bool intersect(BVH4i::NodeRef curNode,
+      static __forceinline bool intersect(BVH4Hair::NodeRef curNode,
 					  const mic_f &dir_xyz,
 					  const mic_f &org_xyz,
 					  const mic_f &min_dist_xyz,
@@ -125,7 +125,7 @@ namespace embree
 	return old_primID != ray.primID;
       }
 
-      static __forceinline bool occluded(BVH4i::NodeRef curNode,
+      static __forceinline bool occluded(BVH4Hair::NodeRef curNode,
 					 const mic_f &dir_xyz,
 					 const mic_f &org_xyz,
 					 const mic_f &min_dist_xyz,
@@ -230,7 +230,7 @@ namespace embree
 	      /* intersect one ray against bezier curves */
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
-	      BVH4i::NodeRef curNode4i = (unsigned int)curNode;
+	      BVH4Hair::NodeRef curNode4i = (unsigned int)curNode;
 
 	      DBG(DBG_PRINT(curNode));
 
@@ -320,7 +320,7 @@ namespace embree
 	      /* intersect one ray against bezier curves */
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
-	      BVH4i::NodeRef curNode4i = (unsigned int)curNode;
+	      BVH4Hair::NodeRef curNode4i = (unsigned int)curNode;
 
 	      const bool hit = LeafIntersector::occluded(curNode4i,
 							 rayIndex,
@@ -418,7 +418,7 @@ namespace embree
 	  /* intersect one ray against four bezier curves */
 
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
-	  BVH4i::NodeRef curNode4i = (unsigned int)curNode;
+	  BVH4Hair::NodeRef curNode4i = (unsigned int)curNode;
 	  const bool hit = LeafIntersector::intersect(curNode4i,
 						      dir_xyz,
 						      org_xyz,
@@ -505,7 +505,7 @@ namespace embree
 	  /* intersect one ray against bezier curves */
 
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
-	  BVH4i::NodeRef curNode4i = (unsigned int)curNode;
+	  BVH4Hair::NodeRef curNode4i = (unsigned int)curNode;
 	  const bool hit = LeafIntersector::occluded(curNode4i,
 						     dir_xyz,
 						     org_xyz,

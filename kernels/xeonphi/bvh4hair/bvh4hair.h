@@ -36,7 +36,10 @@ namespace embree
     static const unsigned int offset_mask      = ((unsigned int)-1) << encodingBits;
     static const unsigned int leaf_shift       = 3;
     static const unsigned int leaf_mask        = 1<<leaf_shift;  
-    static const unsigned int items_mask       = leaf_mask-1;  
+    /* static const unsigned int items_mask       = leaf_mask-1;   */
+    static const unsigned int items_mask    = (1<<(leaf_shift-1))-1;//leaf_mask-1;  
+    static const unsigned int aux_flag_mask = 1<<(leaf_shift-1);
+
     static const unsigned int alignednode_mask = 1 << (leaf_shift+1);
 
     
@@ -76,13 +79,16 @@ namespace embree
 
       __forceinline       void* node(      void* base) const { return (      void*)((      char*)base + (size_t)_id); }
       __forceinline const void* node(const void* base) const { return (const void*)((const char*)base + (size_t)_id); }
-      
+
+      __forceinline unsigned int items() const {
+        return (_id & items_mask)+1;
+      }      
       
       /*! returns leaf pointer */
       template<unsigned int scale=4>
 	__forceinline const char* leaf(const void* base, unsigned int& num) const {
         assert(isLeaf());
-        num = _id & items_mask;
+        num = items();
         return (const char*)base + (_id & offset_mask)*scale;
       }
 
@@ -101,9 +107,6 @@ namespace embree
         return _id >> encodingBits;
       }
 
-      __forceinline unsigned int items() const {
-        return _id & items_mask;
-      }
       
       __forceinline unsigned int &id() { return _id; }
     private:
@@ -263,13 +266,13 @@ namespace embree
       }
 
 
-      __forceinline void createLeaf(unsigned int offset, 
-				    unsigned int items,
-				    const size_t m)
-      {
-	assert(items <= BVH4Hair::N);
-	child(m) = (offset << encodingBits) | BVH4Hair::leaf_mask | items;
-      }
+      /* __forceinline void createLeaf(unsigned int offset,  */
+      /* 				    unsigned int items, */
+      /* 				    const size_t m) */
+      /* { */
+      /* 	assert(items <= BVH4Hair::N); */
+      /* 	child(m) = (offset << encodingBits) | BVH4Hair::leaf_mask | (items-1); */
+      /* } */
 
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { return lower[i].data; }
@@ -524,13 +527,13 @@ namespace embree
       }
 
 
-      __forceinline void createLeaf(unsigned int offset, 
-				    unsigned int items,
-				    const size_t m)
-      {
-	assert(items <= BVH4Hair::N);
-	child(m) = (offset << encodingBits) | BVH4Hair::leaf_mask | items;
-      }
+      /* __forceinline void createLeaf(unsigned int offset,  */
+      /* 				    unsigned int items, */
+      /* 				    const size_t m) */
+      /* { */
+      /* 	assert(items <= BVH4Hair::N); */
+      /* 	child(m) = (offset << encodingBits) | BVH4Hair::leaf_mask | (items-1); */
+      /* } */
 
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { return children[3+4*i]; }

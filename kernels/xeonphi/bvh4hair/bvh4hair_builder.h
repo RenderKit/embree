@@ -143,7 +143,7 @@ namespace embree
 				  unsigned int items)
       {
 	assert(items <= BVH4Hair::N);
-	const unsigned int v = (offset << BVH4Hair::encodingBits) | BVH4Hair::leaf_mask | items;
+	const unsigned int v = (offset << BVH4Hair::encodingBits) | BVH4Hair::leaf_mask | (items-1);
 	unsigned int *ptr = (unsigned int*)parentPtr;
 	*ptr = v;
       }
