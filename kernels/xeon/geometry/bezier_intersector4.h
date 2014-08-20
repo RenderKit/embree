@@ -36,8 +36,11 @@ namespace embree
 	}
       }
 
-      __forceinline Precalculations (const Ray4& ray, size_t k) {
-	ray_space[k] = frame(Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed(); // FIXME: works only with normalized ray direction
+      __forceinline Precalculations (const Ray4& ray, size_t k) 
+      {
+        Vec3fa ray_dir = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
+        depth_scale[k] = rsqrt(dot(ray_dir,ray_dir));
+	ray_space  [k] = frame(depth_scale[k]*ray_dir).transposed();
       }
 
       ssef depth_scale;
