@@ -22,11 +22,11 @@ namespace embree
 { 
   namespace isa
   {
-    template<typename PrimitiveIntersector>
-    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::AlignedNode* node, 
-                                                                                  const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, 
-                                                                                  const size_t nearX, const size_t nearY, const size_t nearZ,
-                                                                                  ssef& tNear, ssef& tFar)
+    template<typename PrimitiveIntersector, int flags>
+    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector,flags>::intersectBox(const BVH4Hair::AlignedNode* node, 
+                                                                                                          const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, 
+                                                                                                          const size_t nearX, const size_t nearY, const size_t nearZ,
+                                                                                                          ssef& tNear, ssef& tFar)
     {
       const BBoxSSE3f bounds = node->getBounds(nearX,nearY,nearZ);
 
@@ -59,8 +59,8 @@ namespace embree
 #endif
     }
 
-    template<typename PrimitiveIntersector>
-    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::AlignedNodeMB* node, 
+    template<typename PrimitiveIntersector, int flags>
+    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector,flags>::intersectBox(const BVH4Hair::AlignedNodeMB* node, 
                                                                                   const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const float time, 
                                                                                   const size_t nearX, const size_t nearY, const size_t nearZ,
                                                                                   ssef& tNear, ssef& tFar)
@@ -97,10 +97,10 @@ namespace embree
     }
 
 #if BVH4HAIR_COMPRESS_UNALIGNED_NODES
-    template<typename PrimitiveIntersector>
-    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::CompressedUnalignedNode* node, Ray& ray, 
-                                                                                  const sse3f& ray_org, const sse3f& ray_dir, 
-                                                                                  ssef& tNear, ssef& tFar)
+    template<typename PrimitiveIntersector, int flags>
+    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector,flags>::intersectBox(const BVH4Hair::CompressedUnalignedNode* node, Ray& ray, 
+                                                                                        const sse3f& ray_org, const sse3f& ray_dir, 
+                                                                                        ssef& tNear, ssef& tFar)
     {
       const LinearSpace3fa xfm = node->getXfm();
       //const Vec3fa dir = xfmVector(xfm,ray.dir);
@@ -141,8 +141,8 @@ namespace embree
     }
 #endif
 
-    template<typename PrimitiveIntersector>
-    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::UncompressedUnalignedNode* node, Ray& ray, 
+    template<typename PrimitiveIntersector, int flags>
+    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector,flags>::intersectBox(const BVH4Hair::UncompressedUnalignedNode* node, Ray& ray, 
                                                                                   const sse3f& ray_org, const sse3f& ray_dir, 
                                                                                   ssef& tNear, ssef& tFar)
     {
@@ -179,20 +179,27 @@ namespace embree
 #endif
     }
 
-    template<typename PrimitiveIntersector>
-    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector>::intersectBox(const BVH4Hair::UnalignedNodeMB* node, Ray& ray,
+    template<typename PrimitiveIntersector, int flags>
+    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector,flags>::intersectBox(const BVH4Hair::UnalignedNodeMB* node, Ray& ray,
                                                                                   const sse3f& ray_org, const sse3f& ray_dir, 
                                                                                   ssef& tNear, ssef& tFar)
     {
       const ssef t0 = ssef(1.0f)-ray.time, t1 = ray.time;
 #if 0
-      const AffineSpaceSSE3f xfm = t0*node->space0 + t1*node->space1; // FIXME: use LinearSpace??
+      const AffineSpaceSSE3f xfm = t0*node->space0 + t1*node->space1;
+      //const AffineSpaceSSE3f xfm = frame(normalize(ssef(0.5f)*node->space0.row2() + ssef(0.5f)*node->space1.row2())).transposed();
+      //const LinearSpaceSSE3f xfm = frame(normalize(t0*node->space0.l.row2() + t1*node->space1.l.row2())).transposed();
+      //const sse3f p = t0*node->space0.p + t1*node->space1.p;
       //const sse3f lower = t0*t0*node->t0s0.lower + t0*t1*node->t1s0_t0s1.lower + t1*t1*node->t1s1.lower;
       //const sse3f upper = t0*t0*node->t0s0.upper + t0*t1*node->t1s0_t0s1.upper + t1*t1*node->t1s1.upper;
       const sse3f lower = node->t1s0_t0s1.lower;
       const sse3f upper = node->t1s0_t0s1.upper;
 #else
-      const AffineSpaceSSE3f xfm = node->space0;
+      //const AffineSpaceSSE3f xfm = t0*node->space0 + t1*node->space1;
+      //const LinearSpaceSSE3f xfm = t0*node->space0.l + t1*node->space1.l;
+      //const LinearSpaceSSE3f xfm = frame(normalize(t0*node->space0.l.row2() + t1*node->space1.l.row2())).transposed();
+      //const sse3f p = t0*node->space0.p + t1*node->space1.p;
+      const LinearSpaceSSE3f xfm = node->space0.l;
       const sse3f lower = t0*node->t0s0.lower + t1*node->t1s1.lower;
       const sse3f upper = t0*node->t0s0.upper + t1*node->t1s1.upper;
 #endif
@@ -229,8 +236,8 @@ namespace embree
 #endif
     }
 
-    template<typename PrimitiveIntersector>
-    void BVH4HairIntersector1<PrimitiveIntersector>::intersect(const BVH4Hair* bvh, Ray& ray)
+    template<typename PrimitiveIntersector, int flags>
+    void BVH4HairIntersector1<PrimitiveIntersector,flags>::intersect(const BVH4Hair* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
       typename PrimitiveIntersector::Precalculations pre(ray);
@@ -278,19 +285,19 @@ namespace embree
         {
           /*! process nodes with aligned bounds */
           size_t mask;
-          if (likely(cur.isAlignedNode()))
+          if (likely((flags & 1) && cur.isAlignedNode()))
             mask = intersectBox(cur.alignedNode(),org,rdir,org_rdir,nearX,nearY,nearZ,tNear,tFar);
 
           /*! process nodes with unaligned bounds */
-          else if (unlikely(cur.isUnalignedNode()))
+          else if (unlikely((flags & 2) && cur.isUnalignedNode()))
             mask = intersectBox(cur.unalignedNode(),ray,org,dir,tNear,tFar);
 
           /*! process nodes with aligned bounds and motion blur */
-          else if (unlikely(cur.isAlignedNodeMB()))
+          else if (unlikely((flags & 4) && cur.isAlignedNodeMB()))
             mask = intersectBox(cur.alignedNodeMB(),org,rdir,org_rdir,ray.time,nearX,nearY,nearZ,tNear,tFar);
 
           /*! process nodes with unaligned bounds and motion blur */
-          else if (unlikely(cur.isUnalignedNodeMB()))
+          else if (unlikely((flags & 8) && cur.isUnalignedNodeMB()))
             mask = intersectBox(cur.unalignedNodeMB(),ray,org,dir,tNear,tFar);
 
           /*! otherwise this is a leaf */
@@ -368,8 +375,8 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    template<typename PrimitiveIntersector>
-    void BVH4HairIntersector1<PrimitiveIntersector>::occluded(const BVH4Hair* bvh, Ray& ray) 
+    template<typename PrimitiveIntersector, int flags>
+    void BVH4HairIntersector1<PrimitiveIntersector,flags>::occluded(const BVH4Hair* bvh, Ray& ray) 
     {
       /*! perform per ray precalculations required by the primitive intersector */
       typename PrimitiveIntersector::Precalculations pre(ray);
@@ -414,19 +421,19 @@ namespace embree
         {
           /*! process nodes with aligned bounds */
           size_t mask;
-          if (likely(cur.isAlignedNode()))
+          if (likely((flags & 1) && cur.isAlignedNode()))
             mask = intersectBox(cur.alignedNode(),org,rdir,org_rdir,nearX,nearY,nearZ,tNear,tFar);
 
           /*! process nodes with unaligned bounds */
-          else if (unlikely(cur.isUnalignedNode()))
+          else if ((flags & 2) && unlikely(cur.isUnalignedNode()))
             mask = intersectBox(cur.unalignedNode(),ray,org,dir,tNear,tFar);
 
           /*! process nodes with aligned bounds and motion blur */
-          else if (unlikely(cur.isAlignedNodeMB()))
+          else if ((flags & 4) && unlikely(cur.isAlignedNodeMB()))
             mask = intersectBox(cur.alignedNodeMB(),org,rdir,org_rdir,ray.time,nearX,nearY,nearZ,tNear,tFar);
 
           /*! process nodes with unaligned bounds and motion blur */
-          else if (unlikely(cur.isUnalignedNodeMB()))
+          else if ((flags & 8) && unlikely(cur.isUnalignedNodeMB()))
             mask = intersectBox(cur.unalignedNodeMB(),ray,org,dir,tNear,tFar);
 
           /*! otherwise this is a leaf */
@@ -498,10 +505,12 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR1(BVH4HairBezier1Intersector1,BVH4HairIntersector1<Bezier1Intersector1>);
-    DEFINE_INTERSECTOR1(BVH4HairBezier1iIntersector1,BVH4HairIntersector1<Bezier1iIntersector1>);
+    typedef BVH4HairIntersector1<Bezier1Intersector1,3> BVH4HairIntersector1Bezier1Intersector1;
+    typedef BVH4HairIntersector1<Bezier1iIntersector1,3> BVH4HairIntersector1Bezier1iIntersector1;
+    DEFINE_INTERSECTOR1(BVH4HairBezier1Intersector1,BVH4HairIntersector1Bezier1Intersector1);
+    DEFINE_INTERSECTOR1(BVH4HairBezier1iIntersector1,BVH4HairIntersector1Bezier1iIntersector1);
 
-    //DEFINE_INTERSECTOR1(BVH4HairBezier1MBIntersector1,BVH4HairIntersector1<Bezier1Intersector1MB>);
-    DEFINE_INTERSECTOR1(BVH4HairBezier1iMBIntersector1,BVH4HairIntersector1<Bezier1iIntersector1MB>);
+    typedef BVH4HairIntersector1<Bezier1iIntersector1MB,12> BVH4HairIntersector1Bezier1iIntersector1MB;
+    DEFINE_INTERSECTOR1(BVH4HairBezier1iMBIntersector1,BVH4HairIntersector1Bezier1iIntersector1MB);
   }
 }

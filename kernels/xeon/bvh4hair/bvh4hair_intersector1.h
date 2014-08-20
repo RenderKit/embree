@@ -25,7 +25,7 @@ namespace embree
   namespace isa
   {
     /*! BVH4Hair single ray traversal implementation. */
-    template<typename PrimitiveIntersector>
+    template<typename PrimitiveIntersector, int flags>
       class BVH4HairIntersector1 
     {
       /* shortcuts for frequently used types */

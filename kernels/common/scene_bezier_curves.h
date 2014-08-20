@@ -97,7 +97,7 @@ namespace embree
       }
 
       /*! calculates bounding box of i'th bezier curve */
-      __forceinline BBox3fa bounds(const LinearSpace3fa& space, size_t i, size_t j = 0) const 
+      __forceinline BBox3fa bounds(const AffineSpace3fa& space, size_t i, size_t j = 0) const 
       {
         const int index = curve(i);
         const float r0 = radius(index+0,j);
@@ -113,7 +113,7 @@ namespace embree
       }
 
       /*! calculates residual bounding box of i'th bezier curve */
-      __forceinline BBox3fa bounds(const LinearSpace3fa& space0, const LinearSpace3fa& space1, size_t i) const 
+      __forceinline BBox3fa bounds(const AffineSpace3fa& space0, const AffineSpace3fa& space1, size_t i) const 
       {
 #if 0
         const int index = curve(i);
@@ -152,7 +152,8 @@ namespace embree
         const Vec3fa p2 = 0.5f*vertex(index+2,0) + 0.5f*vertex(index+2,1);
         const Vec3fa p3 = 0.5f*vertex(index+3,0) + 0.5f*vertex(index+3,1);
 
-        const LinearSpace3fa space = 0.5f*space0 + 0.5f*space1;
+        const AffineSpace3fa space = 0.5f*space0 + 0.5f*space1;
+        //const AffineSpace3fa space = frame(normalize(0.5f*space0.row2() + 0.5f*space1.row2())).transposed();
         const Vec3fa v0 = xfmPoint(space,p0);
         const Vec3fa v1 = xfmPoint(space,p1);
         const Vec3fa v2 = xfmPoint(space,p2);

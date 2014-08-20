@@ -191,16 +191,16 @@ RTCScene convertScene(ISPCScene* scene_in)
     /* get ith hair set */
     ISPCHairSet* hair = scene_in->hairs[i];
 
-    //const AffineSpace3fa space0 = one;
-    //const AffineSpace3fa space1 = AffineSpace3fa::rotate(Vec3fa(-11.0039f,24.9046f,-4.50951f),Vec3fa(1,1,1),0.5f*float(pi));
-    //const AffineSpace3fa space01 = 0.5f*space0+0.5f*space1;
-
     /* create a hair set */
     unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, 1);
     rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0,hair->v,0,sizeof(Vertex));
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
 
 #if 0
+    const AffineSpace3fa space0 = one;
+    const AffineSpace3fa space1 = AffineSpace3fa::rotate(Vec3fa(-11.0039f,24.9046f,-4.50951f),Vec3fa(1,1,1),0.5f*float(pi));
+    const AffineSpace3fa space01 = 0.5f*space0+0.5f*space1;
+
     Vec3fa* buffer0 = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0);
     for (size_t i=0; i<hair->numVertices; i++) {
       Vec3fa v = xfmPoint(space0,hair->v[i]); v.w = hair->v[i].w; buffer0[i] = v;

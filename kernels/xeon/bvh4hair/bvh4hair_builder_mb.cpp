@@ -183,20 +183,25 @@ namespace embree
       float bestSAH = inf;
       const float leafSAH = BVH4Hair::intCost*float(pinfo.size())*halfArea(bounds.bounds);
       
+      const size_t threshold = 100;
+
       /* perform standard binning in aligned space */
       ObjectPartition::Split alignedObjectSplit;
       float alignedObjectSAH = inf;
 #if 1
-      alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,prims,pinfo,0); // FIXME: hardcoded 0
-      alignedObjectSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedObjectSplit.splitSAH();
-      bestSAH = min(bestSAH,alignedObjectSAH);
+      if (pinfo.size() > threshold) {
+        alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,prims,pinfo,0); // FIXME: hardcoded 0
+        alignedObjectSAH = BVH4Hair::travCostAligned*halfArea(bounds.bounds) + BVH4Hair::intCost*alignedObjectSplit.splitSAH();
+        bestSAH = min(bestSAH,alignedObjectSAH);
+      }
 #endif
       
       /* perform standard binning in unaligned space */
       ObjectPartitionUnaligned::Split unalignedObjectSplit;
       float unalignedObjectSAH = inf;
 #if 1
-      if (alignedObjectSAH > 0.7f*leafSAH) {
+      if (pinfo.size() <= threshold) {
+      //if (alignedObjectSAH > 0.7f*leafSAH) {
 	if (sinfo.size()) 
 	  unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,bounds.space,sinfo);
 	else {
@@ -213,7 +218,8 @@ namespace embree
       StrandSplit::Split strandSplit;
       float strandSAH = inf;
 #if 1
-      if (alignedObjectSAH > 0.6f*leafSAH) {
+      //if (alignedObjectSAH > 0.6f*leafSAH) {
+      if (pinfo.size() <= threshold) {
 	strandSplit = StrandSplit::find<Parallel>(threadIndex,threadCount,prims);
 	strandSAH = BVH4Hair::travCostUnaligned*halfArea(bounds.bounds) + BVH4Hair::intCost*strandSplit.splitSAH();
 	bestSAH = min(bestSAH,strandSAH);
@@ -312,9 +318,29 @@ namespace embree
 	BVH4Hair::UnalignedNodeMB* node = bvh->allocUnalignedNodeMB(threadIndex);
 	for (size_t i=0; i<numChildren; i++) 
         {
-          std::pair<LinearSpace3fa,LinearSpace3fa> spaces = ObjectPartitionUnaligned::computeAlignedSpaceMB(threadIndex,threadCount,scene,cprims[i]); 
-          node->set(i,spaces.first,spaces.second);
+          std::pair<AffineSpace3fa,AffineSpace3fa> spaces = ObjectPartitionUnaligned::computeAlignedSpaceMB(threadIndex,threadCount,scene,cprims[i]); 
 	  ObjectPartitionUnaligned::PrimInfoMB pinfo = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scene,cprims[i],spaces);
+
+          /*Vec3fa d0 = 0.5f*(pinfo.s0t0.lower+pinfo.s0t0.upper);
+          Vec3fa d1 = 0.5f*(pinfo.s1t1.lower+pinfo.s1t1.upper);
+          spaces.first.p  -= d0; pinfo.s0t0.lower -= d0; pinfo.s0t0.upper -= d0;
+          spaces.second.p -= d1; pinfo.s1t1.lower -= d1; pinfo.s1t1.upper -= d1;
+
+          Vec3fa p0 = xfmVector(spaces.first.l.transposed(),-spaces.first.p);
+          Vec3fa p1 = xfmVector(spaces.second.l.transposed(),-spaces.second.p);
+          spaces.first.p = p0;
+          spaces.second.p = p1;*/
+
+          node->set(i,spaces.first,spaces.second);
+
+          /*float r0 = max(abs(pinfo.s0t0.lower.x),abs(pinfo.s0t0.lower.y),abs(pinfo.s0t0.upper.x),abs(pinfo.s0t0.upper.y));
+          pinfo.s0t0.lower.x = pinfo.s0t0.lower.y = -r0;
+          pinfo.s0t0.upper.x = pinfo.s0t0.upper.y = +r0;
+
+          float r1 = max(abs(pinfo.s1t1.lower.x),abs(pinfo.s1t1.lower.y),abs(pinfo.s1t1.upper.x),abs(pinfo.s1t1.upper.y));
+          pinfo.s1t1.lower.x = pinfo.s1t1.lower.y = -r1;
+          pinfo.s1t1.upper.x = pinfo.s1t1.upper.y = +r1;*/
+
           node->set(i,pinfo.s0t0,pinfo.s0t1_s1t0,pinfo.s1t1);
 	  new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csinfo[i],csplit[i]);
 	}

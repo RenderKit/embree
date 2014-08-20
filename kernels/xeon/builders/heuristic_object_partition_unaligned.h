@@ -36,7 +36,7 @@ namespace embree
       static const LinearSpace3fa computeAlignedSpace(size_t threadIndex, size_t threadCount, BezierRefList& prims);
 
       /*! calculates some space aligned with the bezier curves for timestep t0 and t1 */
-      static const std::pair<LinearSpace3fa,LinearSpace3fa> computeAlignedSpaceMB(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims);
+      static const std::pair<AffineSpace3fa,AffineSpace3fa> computeAlignedSpaceMB(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims);
 
       /*! computes bounding box of bezier curves */
       template<bool Parallel>
@@ -52,7 +52,7 @@ namespace embree
       };
       
       template<bool Parallel>
-      static const PrimInfoMB computePrimInfoMB(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const std::pair<LinearSpace3fa,LinearSpace3fa>& spaces);
+      static const PrimInfoMB computePrimInfoMB(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const std::pair<AffineSpace3fa,AffineSpace3fa>& spaces);
       
       /*! finds the best split */
       template<bool Parallel>
@@ -179,7 +179,7 @@ namespace embree
       struct TaskPrimInfoMBParallel
       {
 	/*! construction executes the task */
-	TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const LinearSpace3fa& space0, const LinearSpace3fa& space1);
+	TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const AffineSpace3fa& space0, const AffineSpace3fa& space1);
 	
       private:
 	
@@ -190,8 +190,8 @@ namespace embree
       private:
         Scene* scene;
 	BezierRefList::iterator iter; //!< iterator for bounding stage 
-	LinearSpace3fa space0; //!< space0 for bounding calculations
-	LinearSpace3fa space1; //!< space1 for bounding calculations
+	AffineSpace3fa space0; //!< space0 for bounding calculations
+	AffineSpace3fa space1; //!< space1 for bounding calculations
 	
 	/*! output data */
       public:

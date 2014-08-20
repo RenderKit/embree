@@ -36,9 +36,11 @@ namespace embree
       return frame(axis).transposed();
     }
     
-    const std::pair<LinearSpace3fa,LinearSpace3fa> ObjectPartitionUnaligned::computeAlignedSpaceMB(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims)
+    const std::pair<AffineSpace3fa,AffineSpace3fa> ObjectPartitionUnaligned::computeAlignedSpaceMB(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims)
     {
       /*! find first curve that defines valid direction */
+      Vec3fa p0(0,0,0);
+      Vec3fa p1(0,0,0);
       Vec3fa axis0(0,0,1);
       Vec3fa axis1(0,0,1);
       Vec3fa axis2(0,1,0);
@@ -57,39 +59,36 @@ namespace embree
         const Vec3fa db = normalize(b3 - b0);
 
 	if (length(a3 - a0) > 1E-9f && length(b3 - b0) > 1E-9f) {
-	  axis0 = da; axis1 = db; 
+	  axis0 = da; axis1 = db; p0 = a0; p1 = b0;
           if (length(b3-a3) > 1E-9f) axis2 = b3-a3;
           else if (length(b0-a0) > 1E-9f) axis2 = b0-a0;
           else axis2 = Vec3fa(1,0,0); // FIXME: not correct
 	  break;
 	}
       }
-#if 1
+#if 0
       //LinearSpace3fa space01 = frame(0.5f*axis0 + 0.5f*axis1).transposed();
-      LinearSpace3fa space0 = frame(axis0).transposed();
-      LinearSpace3fa space1 = frame(axis1).transposed();
+      AffineSpace3fa space0 = frame(axis0).transposed();
+      AffineSpace3fa space1 = frame(axis1).transposed();
+      //space0.p = -xfmVector(space0.l,p0);
+      //space1.p = -xfmVector(space1.l,p1);
       //space0 = space01;
-      //space1 = space0;
+      space1 = space0;
 #else
       const Vec3fa space0_dx = normalize(axis0);
       const Vec3fa space0_dy = normalize(cross(space0_dx,axis2));
       const Vec3fa space0_dz = normalize(cross(space0_dx,space0_dy));
-      LinearSpace3fa space0(space0_dx,space0_dz,space0_dy);
+      LinearSpace3fa space0(space0_dz,space0_dy,space0_dx);
       space0 = space0.transposed();
 
       const Vec3fa space1_dx = normalize(axis1);
       const Vec3fa space1_dy = normalize(cross(space1_dx,axis2));
       const Vec3fa space1_dz = normalize(cross(space1_dx,space1_dy));
-      LinearSpace3fa space1(space1_dx,space1_dz,space1_dy);
+      LinearSpace3fa space1(space1_dz,space1_dy,space1_dx);
       space1 = space1.transposed();
 #endif 
-      //PRINT(xfmPoint(space1,axis0));
-      //PRINT(xfmPoint(space0,axis1));
 
-      //axis0*space1 + axis1*space0 = 0
-      //axis0*space1 = -axis1*space0
-
-      return std::pair<LinearSpace3fa,LinearSpace3fa>(space0,space1);
+      return std::pair<AffineSpace3fa,AffineSpace3fa>(space0,space1);
     }
 
     template<>
@@ -115,7 +114,7 @@ namespace embree
 
     template<>
     const ObjectPartitionUnaligned::PrimInfoMB ObjectPartitionUnaligned::computePrimInfoMB<false>(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, 
-                                                                        const std::pair<LinearSpace3fa,LinearSpace3fa>& spaces)
+                                                                        const std::pair<AffineSpace3fa,AffineSpace3fa>& spaces)
     {
       size_t N = 0;
       BBox3fa centBounds = empty;
@@ -144,7 +143,7 @@ namespace embree
     
     template<>
     const ObjectPartitionUnaligned::PrimInfoMB ObjectPartitionUnaligned::computePrimInfoMB<true>(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, 
-                                                                       const std::pair<LinearSpace3fa,LinearSpace3fa>& spaces)
+                                                                       const std::pair<AffineSpace3fa,AffineSpace3fa>& spaces)
     {
       const TaskPrimInfoMBParallel bounds(threadIndex,threadCount,scene,prims,spaces.first,spaces.second);
 
@@ -287,7 +286,7 @@ namespace embree
       return binner.best(prims,mapping);
     }
 
-    ObjectPartitionUnaligned::TaskPrimInfoMBParallel::TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const LinearSpace3fa& space0, const LinearSpace3fa& space1) 
+    ObjectPartitionUnaligned::TaskPrimInfoMBParallel::TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const AffineSpace3fa& space0, const AffineSpace3fa& space1) 
       : scene(scene), space0(space0), space1(space1), iter(prims), geomBounds(empty), centBounds(empty), s0t0(empty), s0t1_s1t0(empty), s1t1(empty)
     {
       size_t numTasks = min(maxTasks,threadCount);
@@ -312,8 +311,8 @@ namespace embree
           const BezierCurves* curves = scene->getBezierCurves(ref.geomID);
           s0t0.extend(curves->bounds(space0,ref.primID,0));
           s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID));
-          //s1t1.extend(curves->bounds(space1,ref.primID,1));
           s1t1.extend(curves->bounds(space0,ref.primID,1));
+          //s1t1.extend(curves->bounds(space1,ref.primID,1));
 	}
       }
       atomic_add(&this->num,N);
