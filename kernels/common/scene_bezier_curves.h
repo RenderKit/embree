@@ -115,6 +115,7 @@ namespace embree
       /*! calculates residual bounding box of i'th bezier curve */
       __forceinline BBox3fa bounds(const LinearSpace3fa& space0, const LinearSpace3fa& space1, size_t i) const 
       {
+#if 0
         const int index = curve(i);
         const float r0 = radius(index+0,0) + radius(index+0,1); // FIXME: can one use max here?
         const float r1 = radius(index+1,0) + radius(index+1,1);
@@ -138,6 +139,29 @@ namespace embree
 
         const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
         return enlarge(b,Vec3fa(max(r0,r1,r2,r3))); // FIXME: is radius used properly?
+#else
+
+        const int index = curve(i);
+        const float r0 = 0.5*radius(index+0,0) + 0.5*radius(index+0,1);
+        const float r1 = 0.5*radius(index+1,0) + 0.5*radius(index+1,1);
+        const float r2 = 0.5*radius(index+2,0) + 0.5*radius(index+2,1);
+        const float r3 = 0.5*radius(index+3,0) + 0.5*radius(index+3,1);
+
+        const Vec3fa p0 = 0.5f*vertex(index+0,0) + 0.5f*vertex(index+0,1);
+        const Vec3fa p1 = 0.5f*vertex(index+1,0) + 0.5f*vertex(index+1,1);
+        const Vec3fa p2 = 0.5f*vertex(index+2,0) + 0.5f*vertex(index+2,1);
+        const Vec3fa p3 = 0.5f*vertex(index+3,0) + 0.5f*vertex(index+3,1);
+
+        const LinearSpace3fa space = 0.5f*space0 + 0.5f*space1;
+        const Vec3fa v0 = xfmPoint(space,p0);
+        const Vec3fa v1 = xfmPoint(space,p1);
+        const Vec3fa v2 = xfmPoint(space,p2);
+        const Vec3fa v3 = xfmPoint(space,p3);
+
+        const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
+        return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
+
+#endif
       }
 
       __forceinline const Vec3fa *fristVertexPtr(size_t i) const {
