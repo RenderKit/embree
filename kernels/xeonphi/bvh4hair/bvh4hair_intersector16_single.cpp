@@ -161,8 +161,8 @@ namespace embree
     void BVH4HairIntersector16<LeafIntersector>::intersect(mic_i* valid_i, BVH4Hair* bvh, Ray16& ray16)
     {
       /* near and node stack */
-      __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
-      __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) float   stack_dist[3*BVH4Hair::maxDepth+1];
+      __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
 
       const mic_f inv_ray_length = rsqrt(dot(ray16.dir,ray16.dir));
       const mic3f ray16_normalized = ray16.dir * inv_ray_length;
@@ -353,8 +353,8 @@ namespace embree
     {
 
       /* near and node stack */
-      __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
-      __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) float   stack_dist[3*BVH4Hair::maxDepth+1];
+      __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
 
       const mic3f ray16_dir            = mic3f(ray.dir.x,ray.dir.y,ray.dir.z);
       const mic_f inv_ray16_length     = rsqrt(dot(ray16_dir,ray16_dir));
@@ -442,8 +442,8 @@ namespace embree
     void BVH4HairIntersector1<LeafIntersector>::occluded(BVH4Hair* bvh, Ray& ray)
     {
       /* near and node stack */
-      __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
-      __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4i::maxDepth+1];
+      __aligned(64) float   stack_dist[3*BVH4Hair::maxDepth+1];
+      __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
 
       const mic3f ray16_dir            = mic3f(ray.dir.x,ray.dir.y,ray.dir.z);
       const mic_f inv_ray16_length     = rsqrt(dot(ray16_dir,ray16_dir));

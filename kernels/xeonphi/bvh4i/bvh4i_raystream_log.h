@@ -37,7 +37,6 @@ namespace embree
   public:
   RayStreamLogger() : initialized(false), storedBVH4i(false)
       {
-	PING;
       }
 
   ~RayStreamLogger()

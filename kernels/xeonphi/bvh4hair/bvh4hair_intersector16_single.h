@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "bvh4i/bvh4i.h"
 #include "bvh4hair/bvh4hair.h"
 #include "common/ray16.h" 
 #include "common/accelset.h"
@@ -25,7 +24,7 @@ namespace embree
 {
   namespace isa
   {
-    /*! BVH4i Traverser. Packet traversal implementation for a Quad BVH. */
+    /*! BVH4Hair Traverser. Packet traversal implementation for a Quad BVH. */
     template<typename LeafIntersector>
     class BVH4HairIntersector16
     {

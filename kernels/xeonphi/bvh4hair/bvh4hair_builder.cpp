@@ -648,7 +648,7 @@ namespace embree
     /* work in multithreaded toplevel mode until sufficient subtasks got generated */    
     const size_t coreCount = (threadCount+3)/4;
     while (global_workStack.size() < coreCount &&
-	   global_workStack.size()+BVH4i::N <= SIZE_GLOBAL_WORK_STACK) 
+	   global_workStack.size()+BVH4Hair::N <= SIZE_GLOBAL_WORK_STACK) 
     {
       BuildRecord br;
       if (!global_workStack.pop_nolock_largest(br)) break;
