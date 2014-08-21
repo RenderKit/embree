@@ -520,12 +520,14 @@ namespace embree
       else      numPrimitives = scene->numTriangles;
 
       /*! set maximal amount of primitive replications for spatial split mode */
-      if (enableSpatialSplits)
-	remainingReplications = numPrimitives;
+      size_t maxPrimitives = numPrimitives;
+      if (enableSpatialSplits) {
+        maxPrimitives = max(numPrimitives,(size_t)(g_tri_builder_replication_factor*numPrimitives));
+	remainingReplications = maxPrimitives-numPrimitives;
+      }
 
       /*! initialize internal buffers of BVH */
-      bvh->init(numPrimitives+remainingReplications);
-      //alloc.init(1.4f*(numPrimitives+remainingReplications),1.4f*(numPrimitives+remainingReplications));
+      bvh->init(maxPrimitives);
 
       /*! skip build for empty scene */
       if (numPrimitives == 0) 

@@ -72,21 +72,24 @@ namespace embree
   DECLARE_SYMBOL(AccelSet::Intersector16,InstanceIntersector16);
   
   /* global settings */
-  std::string g_tri_accel = "default";        //!< acceleration structure to use for triangles
-  std::string g_tri_builder = "default";      //!< builder to use for triangles
-  std::string g_tri_traverser = "default";    //!< traverser to use for triangles
-  std::string g_tri_accel_mb = "default";     //!< acceleration structure to use for motion blur triangles
-  std::string g_tri_builder_mb = "default";   //!< builder to use for motion blur triangles
-  std::string g_tri_traverser_mb = "default";    //!< traverser to use for triangles
-  std::string g_hair_accel = "default";    //!< hair acceleration structure to use
-  std::string g_hair_builder = "default"; 
-  std::string g_hair_traverser = "default";    //!< traverser to use for hair
-  double      g_hair_builder_replication_factor = 2.0f; // FIXME: add this also for triangles
+  std::string g_tri_accel = "default";                 //!< acceleration structure to use for triangles
+  std::string g_tri_builder = "default";               //!< builder to use for triangles
+  std::string g_tri_traverser = "default";             //!< traverser to use for triangles
+  double      g_tri_builder_replication_factor = 2.0f; //!< maximally factor*N many primitives in accel
+
+  std::string g_tri_accel_mb = "default";              //!< acceleration structure to use for motion blur triangles
+  std::string g_tri_builder_mb = "default";            //!< builder to use for motion blur triangles
+  std::string g_tri_traverser_mb = "default";          //!< traverser to use for triangles
+
+  std::string g_hair_accel = "default";                //!< hair acceleration structure to use
+  std::string g_hair_builder = "default";              //!< builder to use for hair
+  std::string g_hair_traverser = "default";             //!< traverser to use for hair
+  double      g_hair_builder_replication_factor = 3.0f; //!< maximally factor*N many primitives in accel
   float       g_memory_preallocation_factor = 1.0f; 
 
-  int g_scene_flags = -1;       //!< scene flags to use
-  size_t g_verbose = 0;                   //!< verbosity of output
-  size_t g_numThreads = 0;                //!< number of threads to use in builders
+  int g_scene_flags = -1;                               //!< scene flags to use
+  size_t g_verbose = 0;                                 //!< verbosity of output
+  size_t g_numThreads = 0;                              //!< number of threads to use in builders
   size_t g_benchmark = 0;
 
   void initSettings()
@@ -94,6 +97,7 @@ namespace embree
     g_tri_accel = "default";
     g_tri_builder = "default";
     g_tri_traverser = "default";
+    g_hair_builder_replication_factor = 2.0f;
 
     g_tri_accel_mb = "default";
     g_tri_builder_mb = "default";
@@ -102,7 +106,7 @@ namespace embree
     g_hair_accel = "default";
     g_hair_builder = "default";
     g_hair_traverser = "default";
-    g_hair_builder_replication_factor = 2.0f;
+    g_hair_builder_replication_factor = 3.0f;
     
     g_memory_preallocation_factor = 1.0f;
 
@@ -122,6 +126,7 @@ namespace embree
     std::cout << "  accel         = " << g_tri_accel << std::endl;
     std::cout << "  builder       = " << g_tri_builder << std::endl;
     std::cout << "  traverser     = " << g_tri_traverser << std::endl;
+    std::cout << "  replications  = " << g_tri_builder_replication_factor << std::endl;
 
     std::cout << "motion blur triangles:" << std::endl;
     std::cout << "  accel         = " << g_tri_accel_mb << std::endl;
@@ -257,18 +262,23 @@ namespace embree
 	  else if (isa == "avxi") cpu_features = AVXI;
 	  else if (isa == "avx2") cpu_features = AVX2;
 	}
+
         else if ((tok == "tri_accel" || tok == "accel") && parseSymbol (cfg,'=',pos))
             g_tri_accel = parseIdentifier (cfg,pos);
 	else if ((tok == "tri_builder" || tok == "builder") && parseSymbol (cfg,'=',pos))
 	    g_tri_builder = parseIdentifier (cfg,pos);
 	else if ((tok == "tri_traverser" || tok == "traverser") && parseSymbol (cfg,'=',pos))
             g_tri_traverser = parseIdentifier (cfg,pos);
+	else if (tok == "tri_builder_replication_factor" && parseSymbol (cfg,'=',pos))
+            g_tri_builder_replication_factor = parseInt (cfg,pos);
+
       	else if ((tok == "tri_accel_mb" || tok == "accel_mb") && parseSymbol (cfg,'=',pos))
             g_tri_accel = parseIdentifier (cfg,pos);
 	else if ((tok == "tri_builder_mb" || tok == "builder_mb") && parseSymbol (cfg,'=',pos))
 	    g_tri_builder = parseIdentifier (cfg,pos);
         else if ((tok == "tri_traverser_mb" || tok == "traverser_mb") && parseSymbol (cfg,'=',pos))
             g_tri_traverser = parseIdentifier (cfg,pos);
+
         else if (tok == "hair_accel" && parseSymbol (cfg,'=',pos))
             g_hair_accel = parseIdentifier (cfg,pos);
 	else if (tok == "hair_builder" && parseSymbol (cfg,'=',pos))
@@ -282,6 +292,7 @@ namespace embree
             g_verbose = parseInt (cfg,pos);
 	else if (tok == "benchmark" && parseSymbol (cfg,'=',pos))
             g_benchmark = parseInt (cfg,pos);
+
         else if (tok == "flags") {
           g_scene_flags = 0;
           if (parseSymbol (cfg,'=',pos)) {

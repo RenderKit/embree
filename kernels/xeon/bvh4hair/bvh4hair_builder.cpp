@@ -23,8 +23,6 @@
 
 namespace embree
 {
-  extern double g_hair_builder_replication_factor;
- 
   namespace isa
   {
     template<> BVH4HairBuilderT<Bezier1 >::BVH4HairBuilderT (BVH4Hair* bvh, Scene* scene, size_t mode) : BVH4HairBuilder(bvh,scene,mode) {}
@@ -41,7 +39,8 @@ namespace embree
     {
       /* fast path for empty BVH */
       size_t numPrimitives = scene->numBezierCurves;
-      bvh->init(numPrimitives,numPrimitives+(size_t)(g_hair_builder_replication_factor*numPrimitives));
+      size_t maxPrimitives = max(numPrimitives,(size_t)(g_hair_builder_replication_factor*numPrimitives));
+      bvh->init(numPrimitives,maxPrimitives);
       if (numPrimitives == 0) return;
       numGeneratedPrims = 0;
       
@@ -68,7 +67,7 @@ namespace embree
 	if (&bvh->primTy == &SceneBezier1i::type) bvh->numVertices = numVertices;
 	
 	/* start recursive build */
-	remainingReplications = g_hair_builder_replication_factor*numPrimitives;
+	remainingReplications = maxPrimitives-numPrimitives;
 	bvh->bounds = pinfo.geomBounds;
 	
 #if 0
