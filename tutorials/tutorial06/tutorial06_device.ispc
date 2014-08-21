@@ -998,9 +998,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
-#if 1
-  renderPixel = renderPixelEyeLight;
-#endif
+  //renderPixel = renderPixelEyeLight;
 
 } // device_init
 

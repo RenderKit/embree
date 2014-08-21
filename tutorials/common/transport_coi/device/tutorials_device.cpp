@@ -25,6 +25,8 @@
 #include <common/COISysInfo_common.h>
 #include <common/COIEvent_common.h>
 
+const size_t EXTRA_SPACE = 2*64;
+
 extern "C" int64 get_tsc() {
   return __rdtsc();
 }
@@ -41,17 +43,10 @@ namespace embree
         positions(NULL), normals(NULL), texcoords(NULL), triangles(NULL), dir(zero), offset(zero) {}
 
     ~ISPCMesh () {
-      // DBG_PRINT(positions);
-      // DBG_PRINT(normals);
-      // DBG_PRINT(texcoords);
-      // DBG_PRINT(triangles);
-
-#if 0 // FIXME: causing double frees on MIC
-      if (positions) free(positions);
-      if (normals) free(normals);
-      if (texcoords) free(texcoords);
-      if (triangles) free(triangles);
-#endif
+      if (positions) os_free(positions,numVertices*sizeof(Vec3fa)+EXTRA_SPACE);
+      if (normals)   os_free(normals  ,numVertices*sizeof(Vec3fa)+EXTRA_SPACE);
+      if (texcoords) os_free(texcoords,numVertices*sizeof(Vec2f )+EXTRA_SPACE);
+      if (triangles) os_free(triangles,numTriangles*sizeof(OBJScene::Triangle)+EXTRA_SPACE);
       positions = NULL;
       normals   = NULL;
       texcoords = NULL;
@@ -220,7 +215,6 @@ namespace embree
     assert( in_pMiscData->numTriangles*sizeof(OBJScene::Triangle) == in_pBufferLengths[3] );
     //assert( in_pMiscData->numVertices*sizeof(Vec3fa) == in_pBufferLengths[1] );
 
-    const size_t EXTRA_SPACE = 2*64;
     mesh->positions = (Vec3fa*)os_malloc(in_pBufferLengths[0]+EXTRA_SPACE);
     mesh->normals   = (Vec3fa*)os_malloc(in_pBufferLengths[1]+EXTRA_SPACE);
     mesh->texcoords = (Vec2f* )os_malloc(in_pBufferLengths[2]+EXTRA_SPACE);
