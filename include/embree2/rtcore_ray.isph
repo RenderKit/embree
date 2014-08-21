@@ -20,14 +20,8 @@
 /*! \ingroup embree_kernel_api_ispc */
 /*! \{ */
 
-#ifdef _WIN32
-#  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
-#else
-#  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
-#endif
-
 /*! Ray structure for uniform (single) rays. */
-RTCORE_ALIGN(16) struct RTCRay1 
+struct RTCRay1 
 {
   /* ray data */
   float org[3];      //!< Ray origin
@@ -51,6 +45,7 @@ RTCORE_ALIGN(16) struct RTCRay1
   int geomID;        //!< geometry ID
   int primID;        //!< primitive ID
   int instID;        //!< instance ID
+  varying int align[0];  //!< aligns ray on stack to at least 16 bytes
 };
 
 /*! Ray structure for packets of 4 rays. */

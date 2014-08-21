@@ -756,7 +756,7 @@ extern "C" void device_render (int* pixels,
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
   camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
   g_accu_count++;
-  if (1 || camera_changed) {
+  if (camera_changed) {
     g_accu_count=0;
     memset(g_accu,0,width*height*sizeof(Vec3fa));
   }
