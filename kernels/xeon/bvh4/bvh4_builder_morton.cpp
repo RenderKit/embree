@@ -326,14 +326,9 @@ namespace embree
           
           if (slots == 4)
           {
-            /*const ssei code = bitInterleave(ax,ay,az); // FIXME: enable
+            const ssei code = bitInterleave(ax,ay,az);
             storeu4i(&dest[currentID-4],unpacklo(code,ai));
-            storeu4i(&dest[currentID-2],unpackhi(code,ai));*/
-	    const ssei code = bitInterleave(ax,ay,az);
-	    for (size_t i=0; i<slots; i++) {
-	      dest[currentID-slots+i].index = ai[i];
-	      dest[currentID-slots+i].code = code[i];
-	    }
+            storeu4i(&dest[currentID-2],unpackhi(code,ai));
             slots = 0;
           }
         }
