@@ -33,14 +33,14 @@ namespace embree
   
   void TriangleMesh::enabling() 
   { 
-    if (numTimeSteps == 1) { atomic_add(&parent->numTriangleMeshes ,1); atomic_add(&parent->numTriangles ,numTriangles); }
-    else                   { atomic_add(&parent->numTriangleMeshes2,1); atomic_add(&parent->numTriangles2,numTriangles); }
+    if (numTimeSteps == 1) { atomic_add(&parent->numTriangles ,numTriangles); }
+    else                   { atomic_add(&parent->numTriangles2,numTriangles); }
   }
   
   void TriangleMesh::disabling() 
   { 
-    if (numTimeSteps == 1) { atomic_add(&parent->numTriangleMeshes ,-1); atomic_add(&parent->numTriangles ,-numTriangles); }
-    else                   { atomic_add(&parent->numTriangleMeshes2,-1); atomic_add(&parent->numTriangles2,-numTriangles); }
+    if (numTimeSteps == 1) { atomic_add(&parent->numTriangles ,-numTriangles); }
+    else                   { atomic_add(&parent->numTriangles2,-numTriangles); }
   }
 
   void TriangleMesh::setMask (unsigned mask) 

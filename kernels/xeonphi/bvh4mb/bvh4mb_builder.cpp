@@ -33,37 +33,17 @@ namespace embree
     return builder;
   }
 
-  void BVH4mbBuilder::printBuilderName()
-  {
+  void BVH4mbBuilder::printBuilderName() {
     std::cout << "building BVH4mb with binned SAH builder (MIC) ... " << std::endl;    
   }
 
-
-  size_t BVH4mbBuilder::getNumPrimitives()
-  {
-    if (scene->numTriangleMeshes2 == 0) return 0;
-
-    /* count total number of triangles */
-    size_t primitives = 0;       
-    for (size_t i=0;i<scene->size();i++)
-      {
-	if (unlikely(scene->get(i) == NULL)) continue;
-	if (unlikely((scene->get(i)->type != TRIANGLE_MESH))) continue;
-	if (unlikely(!scene->get(i)->isEnabled())) continue;
-
-	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(i);
-	if (unlikely(mesh->numTimeSteps == 1)) continue;
-
-	primitives += mesh->numTriangles;
-      }
-    return primitives;	  
+  size_t BVH4mbBuilder::getNumPrimitives() {
+    return scene->numTriangles2;
   }
 
-  void BVH4mbBuilder::computePrimRefs(const size_t threadIndex, const size_t threadCount)
-  {
+  void BVH4mbBuilder::computePrimRefs(const size_t threadIndex, const size_t threadCount) {
     LockStepTaskScheduler::dispatchTask( task_computePrimRefsTrianglesMB, this, threadIndex, threadCount );
   }
-
 
   void BVH4mbBuilder::computePrimRefsTrianglesMB(const size_t threadID, const size_t numThreads) 
   {
