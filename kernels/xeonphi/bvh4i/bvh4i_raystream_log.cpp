@@ -17,58 +17,86 @@
 #include "bvh4i_raystream_log.h"
 #include "sys/filename.h"
 
-#define FILENAME "/home/micuser/ray16log.txt"
+#define FILENAME "/home/micuser/ray16log.bin"
 
 namespace embree
 {
   using namespace std;
 
+  enum { 
+    RAY_INTERSECT = 0,
+    RAY_OCCLUDED  = 1
+  };
+	 
+
+  RayStreamLogger::RayStreamLogger() : initialized(false)
+  {
+    int error = pthread_mutex_init(&mutex,NULL);
+  }
+
+
   RayStreamLogger::~RayStreamLogger()
     {
+      PING;
+
       if (initialized)
 	{
-	  PING;
 	  rayData.close();
 	}
     }
 
-  void RayStreamLogger::logRay16Intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+  void RayStreamLogger::openRayDataStream()
   {
-    if (!initialized)
+    FileName filename(FILENAME);
+    rayData.open(filename.c_str(),ios::out | ios::binary);
+    rayData.seekp(0, ios::beg);
+ 
+    if (!rayData)
       {
-	initialized = true;
-	FileName filename(FILENAME);
-	rayData.open(filename.c_str(),ios::out);
-
-	if (!rayData)
-	  {
-	    FATAL("could not open log stream for writing out ray data");
-	  }
-      }
-
-    const mic_m m_valid     = *(mic_i*)valid_i != mic_i(0);
-
-    rayData << "INTERSECT" << std::endl;
-    rayData << m_valid << std::endl;
-    rayData << ray16 << std::endl;
-    rayData << flush;
+	FATAL("could not open log stream for writing out ray data");
+      }    
   }
 
-  void RayStreamLogger::logRay16Occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+
+  void RayStreamLogger::logRay16Intersect(mic_i* valid_i, BVH4i* bvh, Ray16& start, Ray16& end)
   {
+    pthread_mutex_lock(&mutex);
+
     if (!initialized)
       {
+	openRayDataStream();
 	initialized = true;
-	FileName filename(FILENAME);
-	rayData.open(filename.c_str());
       }
 
-    const mic_m m_valid     = *(mic_i*)valid_i != mic_i(0);
+    LogRay16 logRay16;
 
-    rayData << "OCCLUDED" << std::endl;
-    rayData << m_valid << std::endl;
-    rayData << ray16 << std::endl;
+    logRay16.type    = RAY_INTERSECT;
+    logRay16.m_valid = *valid_i != mic_i(0);
+    logRay16.start   = start;
+    logRay16.end     = end;
+    rayData.write((char*)&logRay16 ,sizeof(logRay16));
     rayData << flush;
+    pthread_mutex_unlock(&mutex);
+  }
+
+  void RayStreamLogger::logRay16Occluded(mic_i* valid_i, BVH4i* bvh, Ray16& start, Ray16& end)
+  {
+    pthread_mutex_lock(&mutex);
+    if (!initialized)
+      {
+	openRayDataStream();
+	initialized = true;
+      }
+
+    LogRay16 logRay16;
+
+    logRay16.type    = RAY_OCCLUDED;
+    logRay16.m_valid = *valid_i != mic_i(0);
+    logRay16.start   = start;
+    logRay16.end     = end;
+    rayData.write((char*)&logRay16 ,sizeof(logRay16));
+    rayData << flush;
+    pthread_mutex_unlock(&mutex);
   }
 
   RayStreamLogger RayStreamLogger::rayStreamLogger;

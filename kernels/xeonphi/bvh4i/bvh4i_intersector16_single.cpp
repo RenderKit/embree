@@ -18,7 +18,7 @@
 #include "bvh4i_leaf_intersector.h"
 #include "bvh4i_raystream_log.h"
 
-//#define ENABLE_RAYSTREAM_LOGGER
+#define ENABLE_RAYSTREAM_LOGGER
 
 namespace embree
 {
@@ -42,7 +42,7 @@ namespace embree
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
 #if defined(ENABLE_RAYSTREAM_LOGGER)
-      RayStreamLogger::rayStreamLogger.logRay16Intersect(valid_i,bvh,ray16);
+      Ray16 old_ray16 = ray16;
 #endif
 
       /* setup */
@@ -117,6 +117,11 @@ namespace embree
 	      // ------------------------
 	    }	  
 	}
+
+#if defined(ENABLE_RAYSTREAM_LOGGER)
+      RayStreamLogger::rayStreamLogger.logRay16Intersect(valid_i,bvh,old_ray16,ray16);
+#endif
+
     }
 
     template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES>    
@@ -126,7 +131,7 @@ namespace embree
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
 #if defined(ENABLE_RAYSTREAM_LOGGER)
-      RayStreamLogger::rayStreamLogger.logRay16Occluded(valid_i,bvh,ray16);
+      Ray16 old_ray16 = ray16;
 #endif
 
       /* setup */
@@ -203,6 +208,10 @@ namespace embree
 
 
       store16i(m_valid & toMask(terminated),&ray16.geomID,0);
+
+#if defined(ENABLE_RAYSTREAM_LOGGER)
+      RayStreamLogger::rayStreamLogger.logRay16Occluded(valid_i,bvh,old_ray16,ray16);
+#endif
     }
 
     typedef BVH4iIntersector16Single< Triangle1LeafIntersector  < true >, false  > Triangle1Intersector16SingleMoellerFilter;

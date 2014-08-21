@@ -21,30 +21,45 @@
 #include "common/ray16.h" 
 #include <iostream>
 #include <fstream>
+#include <pthread.h>
 
 namespace embree
 {
   class RayStreamLogger
   {
   private:
+    pthread_mutex_t mutex;
+
     bool initialized;
-    bool storedBVH4i;
+
     std::ofstream rayData;
-    std::ofstream bvh4iData;
+    std::ofstream bvhData;
+    std::ofstream accelData;
 
     void storeBVH4i(BVH4i* bvh);
 
-  public:
-  RayStreamLogger() : initialized(false), storedBVH4i(false)
-      {
-      }
+    void openRayDataStream();
 
+  public:
+    RayStreamLogger();
     ~RayStreamLogger();
 
+    struct __aligned(64) LogRay16  {
+      unsigned int type;
+      unsigned int m_valid;
+      unsigned int dummy[14];
+      Ray16 start;
+      Ray16 end;
+
+      LogRay16() {
+	memset(this,0,sizeof(LogRay16));
+      }
+    };
+      
   static RayStreamLogger rayStreamLogger;
 
-  void logRay16Intersect(mic_i* valid, BVH4i* bvh, Ray16& ray);
-  void logRay16Occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
+  void logRay16Intersect(mic_i* valid, BVH4i* bvh, Ray16& start, Ray16& end);
+  void logRay16Occluded (mic_i* valid, BVH4i* bvh, Ray16& start, Ray16& end);
     
   };
 };
