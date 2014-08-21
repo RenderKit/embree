@@ -107,8 +107,8 @@ namespace embree
     for (size_t i=0; i<This->M; i++) {
       This->validAccels[i]->occluded16(valid,ray);
 #if defined(__MIC__)
-      sseb valid0 = ((mic_m*)valid)[0];
-      sseb hit0   = ((mic_i*)ray.geomID)[0] == mic_i(0);
+      mic_m valid0 = ((mic_m*)valid)[0];
+      mic_m hit0   = ((mic_i*)ray.geomID)[0] == mic_i(0);
       if (all(valid0,hit0)) break;
 #endif
     }

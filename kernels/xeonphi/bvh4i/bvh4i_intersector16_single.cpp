@@ -16,6 +16,9 @@
 
 #include "bvh4i_intersector16_single.h"
 #include "bvh4i_leaf_intersector.h"
+#include "bvh4i_raystream_log.h"
+
+//#define ENABLE_RAYSTREAM_LOGGER
 
 namespace embree
 {
@@ -37,6 +40,10 @@ namespace embree
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+
+#if defined(ENABLE_RAYSTREAM_LOGGER)
+      RayStreamLogger::rayStreamLogger.logRay16Intersect(valid_i,bvh,ray16);
+#endif
 
       /* setup */
       const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
@@ -117,6 +124,10 @@ namespace embree
     {
       /* near and node stack */
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+
+#if defined(ENABLE_RAYSTREAM_LOGGER)
+      RayStreamLogger::rayStreamLogger.logRay16Occluded(valid_i,bvh,ray16);
+#endif
 
       /* setup */
       const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
