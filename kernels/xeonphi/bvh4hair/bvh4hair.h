@@ -36,7 +36,10 @@ namespace embree
     static const unsigned int offset_mask      = ((unsigned int)-1) << encodingBits;
     static const unsigned int leaf_shift       = 3;
     static const unsigned int leaf_mask        = 1<<leaf_shift;  
-    static const unsigned int items_mask       = leaf_mask-1;  
+    static const unsigned int items_mask       = (1<<(leaf_shift-1))-1;
+    static const unsigned int aux_flag_mask    = 1<<(leaf_shift-1);
+
+    //static const unsigned int alignednode_mask = aux_flag_mask; 
     static const unsigned int alignednode_mask = 1 << (leaf_shift+1);
 
     
@@ -50,7 +53,7 @@ namespace embree
     static const unsigned int emptyNode = leaf_mask;
 
     /*! Invalid node */
-    static const unsigned int invalidNode = (unsigned int)-1; //0;
+    static const unsigned int invalidNode = (unsigned int)-1; 
 
     struct NodeRef
     {
@@ -76,13 +79,17 @@ namespace embree
 
       __forceinline       void* node(      void* base) const { return (      void*)((      char*)base + (size_t)_id); }
       __forceinline const void* node(const void* base) const { return (const void*)((const char*)base + (size_t)_id); }
-      
+
+      __forceinline unsigned int items() const {
+	assert( (_id & items_mask)+1 <= 4);
+        return (_id & items_mask)+1;
+      }      
       
       /*! returns leaf pointer */
       template<unsigned int scale=4>
 	__forceinline const char* leaf(const void* base, unsigned int& num) const {
         assert(isLeaf());
-        num = _id & items_mask;
+        num = items();
         return (const char*)base + (_id & offset_mask)*scale;
       }
 
@@ -101,9 +108,6 @@ namespace embree
         return _id >> encodingBits;
       }
 
-      __forceinline unsigned int items() const {
-        return _id & items_mask;
-      }
       
       __forceinline unsigned int &id() { return _id; }
     private:
@@ -257,19 +261,7 @@ namespace embree
 
       }
 
-      __forceinline void createNode(unsigned int i, const size_t m)
-      {
-	child(m) = i;
-      }
 
-
-      __forceinline void createLeaf(unsigned int offset, 
-				    unsigned int items,
-				    const size_t m)
-      {
-	assert(items <= BVH4Hair::N);
-	child(m) = (offset << encodingBits) | BVH4Hair::leaf_mask | items;
-      }
 
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { return lower[i].data; }
@@ -378,167 +370,6 @@ namespace embree
 	FATAL("not implemented");
       }
 
-    };
-
-
-    struct __aligned(64) GeneralUnalignedNode
-    {
-      mic_f matrixRowXYZW[3];
-
-      NodeRef children[16];
-
-      static float identityMatrix[16];
-      static float  invalidMatrix[16];
-
-      template<int PFHINT>
-	__forceinline void prefetchNode() const
-	{
-	  prefetch<PFHINT>((char*)this + 0 * 64);
-	  prefetch<PFHINT>((char*)this + 1 * 64);
-	  prefetch<PFHINT>((char*)this + 2 * 64);
-	  prefetch<PFHINT>((char*)this + 3 * 64);
-	}
-
-      __forceinline mic_f getRow(size_t i) const
-      {
-	return matrixRowXYZW[i];
-      }
-
-      __forceinline mic_i getChildren() const
-      {
-	return load16i((int*)children);
-      }
-
-      __forceinline void setInvalid()
-      {
-	const mic_f c0 = broadcast4to16f(&invalidMatrix[ 0]);
-	const mic_f c1 = broadcast4to16f(&invalidMatrix[ 4]);
-	const mic_f c2 = broadcast4to16f(&invalidMatrix[ 8]);
-	
-	matrixRowXYZW[0] = c0;
-	matrixRowXYZW[1] = c1;
-	matrixRowXYZW[2] = c2;
-
-	for (size_t i=0;i<16;i++)
-	  children[i] = BVH4Hair::invalidNode;
-      }
-
-      __forceinline void setIdentityMatrix() 
-      {
-	const mic_f c0 = broadcast4to16f(&identityMatrix[ 0]);
-	const mic_f c1 = broadcast4to16f(&identityMatrix[ 4]);
-	const mic_f c2 = broadcast4to16f(&identityMatrix[ 8]);
-	
-	matrixRowXYZW[0] = c0;
-	matrixRowXYZW[1] = c1;
-	matrixRowXYZW[2] = c2;
-      }
-
-      __forceinline float &matrix(const size_t row,
-				  const size_t column,
-				  const size_t matrixID) 
-      {
-	assert(matrixID < 4);
-	assert(row < 4);
-	assert(column < 3);
-	return matrixRowXYZW[column][4*matrixID+row];
-      } 
-
-      __forceinline const float &matrix(const size_t row,
-					const size_t column,
-					const size_t matrixID) const
-      {
-	assert(matrixID < 4);
-	assert(row < 4);
-	assert(column < 3);
-	return matrixRowXYZW[column][4*matrixID+row];
-      } 
-
-      __forceinline void set_scale(const float sx, 
-				   const float sy,
-				   const float sz,
-				   const size_t matrixID) 
-      {
-	matrix(0,0,matrixID) = sx;
-	matrix(1,1,matrixID) = sy;
-	matrix(2,2,matrixID) = sz;
-      } 
-
-      __forceinline void set_translation(const float tx, 
-					 const float ty,
-					 const float tz,
-					 const size_t matrixID) 
-      {
-	matrix(3,0,matrixID) = tx;
-	matrix(3,1,matrixID) = ty;
-	matrix(3,2,matrixID) = tz;
-      } 
-
-      __forceinline void setMatrix(const BBox3fa &b, const size_t m)
-      {
-	const float dx = b.upper.x - b.lower.x;
-	const float dy = b.upper.y - b.lower.y;
-	const float dz = b.upper.z - b.lower.z;
-	const float inv_dx = 1.0f / dx;
-	const float inv_dy = 1.0f / dy;
-	const float inv_dz = 1.0f / dz;
-	const float min_x = b.lower.x;
-	const float min_y = b.lower.y;
-	const float min_z = b.lower.z;
-	set_scale(inv_dx,inv_dy,inv_dz,m);
-	set_translation(-min_x*inv_dx,-min_y*inv_dy,-min_z*inv_dz,m);	
-      }
-
-      __forceinline AffineSpace3fa getAffineSpace3fa(const LinearSpace3fa &mat, BBox3fa &b)
-      {
-	AffineSpace3fa scale = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19f),b.upper-b.lower));
-	AffineSpace3fa trans = AffineSpace3fa::translate(-b.lower);
-	return  scale * trans * AffineSpace3fa(mat);
-      }
-   
-      __forceinline void setMatrix(const LinearSpace3fa &mat, BBox3fa &b, const size_t m)
-      {
-
-	AffineSpace3fa space = getAffineSpace3fa(mat,b);
-	matrix(0,0,m) = space.l.vx.x;
-	matrix(1,0,m) = space.l.vx.y;
-	matrix(2,0,m) = space.l.vx.z;
-
-	matrix(0,1,m) = space.l.vy.x;
-	matrix(1,1,m) = space.l.vy.y;
-	matrix(2,1,m) = space.l.vy.z;
-
-	matrix(0,2,m) = space.l.vz.x;
-	matrix(1,2,m) = space.l.vz.y;
-	matrix(2,2,m) = space.l.vz.z;
-
-	matrix(3,0,m) = space.p.x;
-	matrix(3,1,m) = space.p.y;
-	matrix(3,2,m) = space.p.z;
-
-      }
-
-      __forceinline void createNode(unsigned int i, const size_t m)
-      {
-	child(m) = i;
-      }
-
-
-      __forceinline void createLeaf(unsigned int offset, 
-				    unsigned int items,
-				    const size_t m)
-      {
-	assert(items <= BVH4Hair::N);
-	child(m) = (offset << encodingBits) | BVH4Hair::leaf_mask | items;
-      }
-
-      /*! Returns reference to specified child */
-      __forceinline       NodeRef& child(size_t i)       { return children[3+4*i]; }
-      __forceinline const NodeRef& child(size_t i) const { return children[3+4*i]; }
-
-      __forceinline       NodeRef& child_ref(size_t i)       { return children[i]; }
-      __forceinline const NodeRef& child_ref(size_t i) const { return children[i]; }
-     
     };
 
 

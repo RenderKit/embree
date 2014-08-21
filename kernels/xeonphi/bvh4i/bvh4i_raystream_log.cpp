@@ -17,32 +17,49 @@
 #include "bvh4i_raystream_log.h"
 #include "sys/filename.h"
 
+#define FILENAME "/home/micuser/ray16log.txt"
 
 namespace embree
 {
+  using namespace std;
 
-  void RayStreamLogger::logRayIntersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
+  RayStreamLogger::~RayStreamLogger()
+    {
+      if (initialized)
+	{
+	  PING;
+	  rayData.close();
+	}
+    }
+
+  void RayStreamLogger::logRay16Intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
   {
     if (!initialized)
       {
 	initialized = true;
-	FileName filename("raylog.txt");
-	rayData.open(filename.c_str());
+	FileName filename(FILENAME);
+	rayData.open(filename.c_str(),ios::out);
+
+	if (!rayData)
+	  {
+	    FATAL("could not open log stream for writing out ray data");
+	  }
       }
 
     const mic_m m_valid     = *(mic_i*)valid_i != mic_i(0);
 
     rayData << "INTERSECT" << std::endl;
     rayData << m_valid << std::endl;
-    rayData << ray << std::endl;
+    rayData << ray16 << std::endl;
+    rayData << flush;
   }
 
-  void RayStreamLogger::logRayOccluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray)
+  void RayStreamLogger::logRay16Occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
   {
     if (!initialized)
       {
 	initialized = true;
-	FileName filename("raylog.txt");
+	FileName filename(FILENAME);
 	rayData.open(filename.c_str());
       }
 
@@ -50,7 +67,8 @@ namespace embree
 
     rayData << "OCCLUDED" << std::endl;
     rayData << m_valid << std::endl;
-    rayData << ray << std::endl;
+    rayData << ray16 << std::endl;
+    rayData << flush;
   }
 
   RayStreamLogger RayStreamLogger::rayStreamLogger;

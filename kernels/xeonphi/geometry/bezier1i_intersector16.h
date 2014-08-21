@@ -19,7 +19,6 @@
 #include "bezier1i.h"
 #include "common/ray16.h"
 #include "geometry/filter.h"
-#include "geometry/mailbox.h"
 
 namespace embree
 {
@@ -29,15 +28,17 @@ namespace embree
 
   struct __aligned(64) Precalculations 
   {
-    __forceinline Precalculations (const Ray16& ray, const size_t k)
-      : ray_space(frame(Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed()) {} // FIXME: works only with normalized ray direction
+     /* __forceinline Precalculations (const Ray16& ray, const size_t k)  */
+     /*   : ray_space(frame(Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed()) {} // FIXME: works only with normalized ray direction  */
 
-    __forceinline Precalculations (const LinearSpace_mic3f& ls16, const size_t k)
+    __forceinline Precalculations (const LinearSpace_mic3f& ls16, const mic_f &rcp_length, const size_t k)
       : ray_space(ls16.vx.x[k],ls16.vy.x[k],ls16.vz.x[k],
 		  ls16.vx.y[k],ls16.vy.y[k],ls16.vz.y[k],
-		  ls16.vx.z[k],ls16.vy.z[k],ls16.vz.z[k])
+		  ls16.vx.z[k],ls16.vy.z[k],ls16.vz.z[k]),
+      inv_ray_length(rcp_length[k])
       {}
     __aligned(64) LinearSpace3fa ray_space;
+    mic_f inv_ray_length;
   };
 
   template< bool ENABLE_INTERSECTION_FILTER>
@@ -96,6 +97,7 @@ namespace embree
     static __forceinline bool intersect(const mic_f& pre_vx, 
 					const mic_f& pre_vy, 
 					const mic_f& pre_vz, 					
+					const mic_f& inv_ray_length,
 					Ray16& ray, 
 					const mic_f &dir_xyz,
 					const mic_f &org_xyz,
@@ -145,7 +147,7 @@ namespace embree
       const mic_f d1 = v.x*v.x + v.y*v.y;
       const mic_f u = clamp(d0*rcp_nr(d1),zero,one);
       const mic4f p = p0 + u*v;
-      const mic_f t = p.z;
+      const mic_f t = p.z * inv_ray_length;
       const mic_f d2 = p.x*p.x + p.y*p.y; 
       const mic_f r = p.w;
       const mic_f r2 = r*r;
@@ -200,7 +202,8 @@ namespace embree
 
     static __forceinline bool occluded(const mic_f& pre_vx, 
 				       const mic_f& pre_vy, 
-				       const mic_f& pre_vz, 					
+				       const mic_f& pre_vz, 	
+				       const mic_f& inv_ray_length,				
 				       const Ray16& ray, 
 				       const mic_f &dir_xyz,
 				       const mic_f &org_xyz,
@@ -249,7 +252,7 @@ namespace embree
       const mic_f d1 = v.x*v.x + v.y*v.y;
       const mic_f u = clamp(d0*rcp(d1),zero,one);
       const mic4f p = p0 + u*v;
-      const mic_f t = p.z;
+      const mic_f t = p.z * inv_ray_length;
       const mic_f d2 = p.x*p.x + p.y*p.y; 
       const mic_f r = p.w;
       const mic_f r2 = r*r;
@@ -301,6 +304,7 @@ namespace embree
     static __forceinline bool intersect(const mic_f& pre_vx, 
 					const mic_f& pre_vy, 
 					const mic_f& pre_vz, 					
+					const mic_f& inv_ray_length,
 					Ray& ray, 
 					const mic_f &dir_xyz,
 					const mic_f &org_xyz,
@@ -348,7 +352,7 @@ namespace embree
       const mic_f d1 = v.x*v.x + v.y*v.y;
       const mic_f u = clamp(d0*rcp(d1),zero,one);
       const mic4f p = p0 + u*v;
-      const mic_f t = p.z;
+      const mic_f t = p.z * inv_ray_length;
       const mic_f d2 = p.x*p.x + p.y*p.y; 
       const mic_f r = p.w;
       const mic_f r2 = r*r;
@@ -401,6 +405,7 @@ namespace embree
     static __forceinline bool occluded(const mic_f& pre_vx, 
 				       const mic_f& pre_vy, 
 				       const mic_f& pre_vz, 					
+				       const mic_f& inv_ray_length,
 				       const Ray& ray, 
 				       const mic_f &dir_xyz,
 				       const mic_f &org_xyz,
@@ -444,7 +449,7 @@ namespace embree
       const mic_f d1 = v.x*v.x + v.y*v.y;
       const mic_f u = clamp(d0*rcp(d1),zero,one);
       const mic4f p = p0 + u*v;
-      const mic_f t = p.z;
+      const mic_f t = p.z * inv_ray_length;
       const mic_f d2 = p.x*p.x + p.y*p.y; 
       const mic_f r = p.w;
       const mic_f r2 = r*r;
