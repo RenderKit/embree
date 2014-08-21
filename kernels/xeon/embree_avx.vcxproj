@@ -376,7 +376,6 @@
     <ClCompile Include="geometry\instance_intersector1.cpp" />
     <ClCompile Include="geometry\instance_intersector4.cpp" />
     <ClCompile Include="geometry\instance_intersector8.cpp" />
-    <ClCompile Include="geometry\ispc_wrapper_avx.cpp" />
     <ClCompile Include="geometry\triangle8.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_fast.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_morton.cpp" />
@@ -423,7 +422,6 @@
     <ClInclude Include="bvh8\bvh8_intersector8_chunk.h" />
     <ClInclude Include="bvh8\bvh8_intersector8_hybrid.h" />
     <ClInclude Include="bvh8\bvh8_statistics.h" />
-    <ClInclude Include="geometry\ispc_wrapper_avx.h" />
     <CustomBuildStep Include="geometry\triangle8.h" />
     <ClInclude Include="bvh4\bvh4_builder_fast.h" />
     <CustomBuildStep Include="bvh4\bvh4_builder_morton.h" />

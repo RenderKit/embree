@@ -555,7 +555,6 @@
     <ClInclude Include="geometry\filter.h" />
     <ClInclude Include="geometry\instance_intersector1.h" />
     <ClInclude Include="geometry\instance_intersector4.h" />
-    <ClInclude Include="geometry\ispc_wrapper_sse.h" />
     <ClInclude Include="geometry\mailbox.h" />
     <ClInclude Include="geometry\primitive.h" />
     <ClInclude Include="geometry\triangle1.h" />
@@ -630,7 +629,6 @@
     <ClCompile Include="geometry\bezier1i.cpp" />
     <ClCompile Include="geometry\instance_intersector1.cpp" />
     <ClCompile Include="geometry\instance_intersector4.cpp" />
-    <ClCompile Include="geometry\ispc_wrapper_sse.cpp" />
     <ClCompile Include="geometry\triangle1.cpp" />
     <ClCompile Include="geometry\triangle1v.cpp" />
     <ClCompile Include="geometry\triangle4.cpp" />

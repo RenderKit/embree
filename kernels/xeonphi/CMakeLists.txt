@@ -38,7 +38,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../common/scene_bezier_curves.cpp
   
   geometry/triangle1.cpp
-  geometry/ispc_wrapper_knc.cpp
   geometry/instance_intersector1.cpp
   geometry/instance_intersector16.cpp
 

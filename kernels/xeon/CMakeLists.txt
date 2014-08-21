@@ -64,7 +64,6 @@ ADD_ISPC_LIBRARY(embree SHARED
   geometry/triangle1v.cpp
   geometry/triangle4v.cpp
   geometry/triangle4i.cpp
-  geometry/ispc_wrapper_sse.cpp
   geometry/instance_intersector1.cpp
   geometry/instance_intersector4.cpp
   
@@ -124,7 +123,6 @@ IF (TARGET_AVX)
   builders/heuristic_fallback.cpp
 
    geometry/triangle8.cpp
-   geometry/ispc_wrapper_avx.cpp
 
    geometry/instance_intersector1.cpp
    geometry/instance_intersector4.cpp
@@ -171,8 +169,6 @@ IF (TARGET_AVX2)
     geometry/instance_intersector1.cpp
     geometry/instance_intersector4.cpp
     geometry/instance_intersector8.cpp
-		
-    geometry/ispc_wrapper_avx.cpp
 		
     bvh4/bvh4_intersector1.cpp
     bvh4/bvh4_intersector4_chunk.cpp

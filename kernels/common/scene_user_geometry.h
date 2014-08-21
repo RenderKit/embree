@@ -52,17 +52,6 @@ namespace embree
     virtual void setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc);
     virtual void setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc);
     virtual void build(size_t threadIndex, size_t threadCount) {}
-    
-  public:
-    void* ispcPtr;
-    void* ispcIntersect1;
-    void* ispcIntersect4;
-    void* ispcIntersect8;
-    void* ispcIntersect16;
-    void* ispcOccluded1;
-    void* ispcOccluded4;
-    void* ispcOccluded8;
-    void* ispcOccluded16;
   };
   
   struct Instance : public UserGeometryBase
