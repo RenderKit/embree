@@ -21,14 +21,12 @@
 #if defined(__MIC__)
 
 #define RAYSTREAM_FILENAME "/home/micuser/ray16.bin"
-#define BVH_FILENAME       "/home/micuser/bvh.bin"
-#define ACCEL_FILENAME     "/home/micuser/accel.bin"
+#define GEOMETRY_FILENAME  "/home/micuser/bvh.bin"
 
 #else
 
 #define RAYSTREAM_FILENAME "ray16.bin"
-#define BVH_FILENAME       "bvh.bin"
-#define ACCEL_FILENAME     "accel.bin"
+#define GEOMETRY_FILENAME  "geometry.bin"
 
 #endif
 
@@ -74,22 +72,49 @@ namespace embree
   {
     Scene *scene = (Scene*)ptr;
 
-    // std::ofstream bvhData;
-    // FileName bvh_filename(BVH_FILENAME);
-    // bvhData.open(bvh_filename.c_str(),ios::out | ios::binary);
-    // if (!bvhData) FATAL("could not dump bvh data to file");
-    // bvhData.seekp(0, ios::beg);
-    // bvhData.write((char*)bvh->nodePtr(),bvh->size_node);
-    // bvhData.close();
+    const size_t numGroups = scene->size();
 
-    // std::ofstream accelData;
+    size_t numTotalTriangles = 0;
 
-    // FileName accel_filename(ACCEL_FILENAME);
-    // accelData.open(accel_filename.c_str(),ios::out | ios::binary);
-    // if (!accelData) FATAL("could not dump accel data to file");
-    // accelData.seekp(0, ios::beg);
-    // accelData.write((char*)bvh->triPtr(),bvh->size_accel);
-    // accelData.close();    
+    for (size_t g=0; g<numGroups; g++) {       
+      if (unlikely(scene->get(g) == NULL)) continue;
+      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+      if (unlikely(!mesh->isEnabled())) continue;
+      if (unlikely(mesh->numTimeSteps != 1)) continue;
+      const size_t numTriangles = mesh->numTriangles;
+      numTotalTriangles += numTriangles;
+    }
+
+    DBG_PRINT(numGroups);
+    DBG_PRINT(numTotalTriangles);
+
+    std::ofstream geometryData;
+    FileName geometry_filename(GEOMETRY_FILENAME);
+    geometryData.open(geometry_filename.c_str(),ios::out | ios::binary);
+    geometryData.seekp(0, ios::beg);
+
+    if (!geometryData) FATAL("could not dump geometry data to file");
+
+    geometryData.write((char*)numGroups,sizeof(numGroups));
+    geometryData.write((char*)numTotalTriangles,sizeof(numTotalTriangles));
+
+    for (size_t g=0; g<numGroups; g++) {       
+      if (unlikely(scene->get(g) == NULL)) continue;
+      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+      if (unlikely(!mesh->isEnabled())) continue;
+      if (unlikely(mesh->numTimeSteps != 1)) continue;
+
+      geometryData.write((char*)&mesh->numVertices,sizeof(mesh->numVertices));
+      geometryData.write((char*)&mesh->vertices[0][0],sizeof(Vec3fa)*mesh->numVertices);
+
+      geometryData.write((char*)&mesh->numTriangles,sizeof(mesh->numTriangles));
+      geometryData.write((char*)&mesh->triangles[0],sizeof(TriangleMesh::Triangle)*mesh->numTriangles);
+
+
+    }
+    geometryData.close();
   }
 
   void RayStreamLogger::logRay16Intersect(const void* valid_i, void* scene, RTCRay16& start, RTCRay16& end)
