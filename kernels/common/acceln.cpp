@@ -78,7 +78,11 @@ namespace embree
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->M; i++) {
       This->validAccels[i]->occluded4(valid,ray);
-      // FIXME: exit if already hit something
+#if defined(__SSE2__)
+      sseb valid0 = ((sseb*)valid)[0];
+      sseb hit0   = ((ssei*)ray.geomID)[0] == ssei(0);
+      if (all(valid0,hit0)) break;
+#endif
     }
   }
 
@@ -87,7 +91,13 @@ namespace embree
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->M; i++) {
       This->validAccels[i]->occluded8(valid,ray);
-      // FIXME: exit if already hit something
+#if defined(__SSE2__)
+      sseb valid0 = ((sseb*)valid)[0];
+      sseb hit0   = ((ssei*)ray.geomID)[0] == ssei(0);
+      sseb valid1 = ((sseb*)valid)[1];
+      sseb hit1   = ((ssei*)ray.geomID)[1] == ssei(0);
+      if (all(valid0,hit0) && all(valid1,hit1)) break;
+#endif
     }
   }
 
@@ -96,7 +106,11 @@ namespace embree
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->M; i++) {
       This->validAccels[i]->occluded16(valid,ray);
-      // FIXME: exit if already hit something
+#if defined(__MIC__)
+      sseb valid0 = ((mic_m*)valid)[0];
+      sseb hit0   = ((mic_i*)ray.geomID)[0] == mic_i(0);
+      if (all(valid0,hit0)) break;
+#endif
     }
   }
 
