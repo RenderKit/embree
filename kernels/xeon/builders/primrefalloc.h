@@ -93,7 +93,7 @@ namespace embree
         if (ptr) os_free(ptr,end);
         ptr = (char*) os_reserve(bytesReserved);
         os_commit(ptr,bytesAllocated);
-        memset(ptr,0,bytesAllocated); // FIXME: disable
+        //memset(ptr,0,bytesAllocated);
         end = bytesReserved;
       }
     }
