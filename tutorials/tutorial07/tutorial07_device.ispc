@@ -614,15 +614,20 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int x1 = min(x0+TILE_SIZE_X,width);
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
-  int seed = tileY*numTilesX+tileX+programIndex + g_accu_count;
+  //int seed = tileY*numTilesX+tileX+programIndex + g_accu_count;
+  int seed = (tileY*numTilesX+tileX+programIndex) * g_accu_count;
 
   foreach (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    float fx = x + frand(seed);
-    float fy = y + frand(seed);
-    Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
+     float subpixel_x = frand(seed);
+     float subpixel_y = frand(seed);
+     float fx = x + subpixel_x;
+     float fy = y + subpixel_y;
+     Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
+    
     //Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
+
     /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];
     *dst = *dst + make_Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
