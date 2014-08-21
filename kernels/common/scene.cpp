@@ -17,7 +17,6 @@
 #include "scene.h"
 
 #if !defined(__MIC__)
-#include "bvh4/bvh4_builder_toplevel.h" // FIXME: remove
 #include "bvh4/bvh4.h"
 #include "bvh8/bvh8.h"
 #include "bvh4hair/bvh4hair.h"

@@ -109,11 +109,11 @@ namespace embree
   __forceinline const Vec3fa rcp_safe(const Vec3fa& a) { return rcp(zero_fix(a)); }
 
   __forceinline Vec3fa log ( const Vec3fa& a ) { 
-    return Vec3fa(logf(a.x),logf(a.y),logf(a.z)); // FIXME: use vectorized log
+    return Vec3fa(logf(a.x),logf(a.y),logf(a.z));
   }
 
   __forceinline Vec3fa exp ( const Vec3fa& a ) { 
-    return Vec3fa(expf(a.x),expf(a.y),expf(a.z)); // FIXME: use vectorized exp
+    return Vec3fa(expf(a.x),expf(a.y),expf(a.z));
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -151,7 +151,7 @@ namespace embree
 #endif
 
     __forceinline Vec3fa pow ( const Vec3fa& a, const float& b ) { 
-      return Vec3fa(powf(a.x,b),powf(a.y,b),powf(a.z,b)); // FIXME: use vectorized pow
+      return Vec3fa(powf(a.x,b),powf(a.y,b),powf(a.z,b));
     }
 
   ////////////////////////////////////////////////////////////////////////////////

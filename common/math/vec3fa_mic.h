@@ -129,11 +129,11 @@ namespace embree
   __forceinline const Vec3fa_t rcp_safe(const Vec3fa_t& a) { return rcp(zero_fix(a)); }
 
   __forceinline Vec3fa log ( const Vec3fa& a ) { 
-    return Vec3fa(logf(a.x),logf(a.y),logf(a.z)); // FIXME: use vectorized log
+    return Vec3fa(logf(a.x),logf(a.y),logf(a.z));
   }
 
   __forceinline Vec3fa exp ( const Vec3fa& a ) { 
-    return Vec3fa(expf(a.x),expf(a.y),expf(a.z)); // FIXME: use vectorized exp
+    return Vec3fa(expf(a.x),expf(a.y),expf(a.z));
   }
 
   ////////////////////////////////////////////////////////////////////////////////
