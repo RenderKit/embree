@@ -17,7 +17,10 @@
 #include "bvh4i_raystream_log.h"
 #include "sys/filename.h"
 
-#define FILENAME "/home/micuser/ray16log.bin"
+#define RAYSTREAM_FILENAME "/home/micuser/ray16log.bin"
+#define BVH_FILENAME       "/home/micuser/bvhlog.bin"
+#define ACCEL_FILENAME     "/home/micuser/accellog.bin"
+
 
 namespace embree
 {
@@ -47,16 +50,35 @@ namespace embree
 
   void RayStreamLogger::openRayDataStream()
   {
-    FileName filename(FILENAME);
+    FileName filename(RAYSTREAM_FILENAME);
     rayData.open(filename.c_str(),ios::out | ios::binary);
     rayData.seekp(0, ios::beg);
  
     if (!rayData)
       {
-	FATAL("could not open log stream for writing out ray data");
+	FATAL("could not dump ray data to file");
       }    
   }
 
+  void RayStreamLogger::storeBVH(BVH4i* bvh)
+  {
+    std::ofstream bvhData;
+    FileName bvh_filename(BVH_FILENAME);
+    bvhData.open(bvh_filename.c_str(),ios::out | ios::binary);
+    if (!bvhData) FATAL("could not dump bvh data to file");
+    bvhData.seekp(0, ios::beg);
+    bvhData.write((char*)bvh->nodePtr(),bvh->size_node);
+    bvhData.close();
+
+    std::ofstream accelData;
+
+    FileName accel_filename(ACCEL_FILENAME);
+    accelData.open(accel_filename.c_str(),ios::out | ios::binary);
+    if (!accelData) FATAL("could not dump accel data to file");
+    accelData.seekp(0, ios::beg);
+    accelData.write((char*)bvh->triPtr(),bvh->size_accel);
+    accelData.close();    
+  }
 
   void RayStreamLogger::logRay16Intersect(mic_i* valid_i, BVH4i* bvh, Ray16& start, Ray16& end)
   {
@@ -64,6 +86,7 @@ namespace embree
 
     if (!initialized)
       {
+	storeBVH(bvh);
 	openRayDataStream();
 	initialized = true;
       }
@@ -84,6 +107,7 @@ namespace embree
     pthread_mutex_lock(&mutex);
     if (!initialized)
       {
+	storeBVH(bvh);
 	openRayDataStream();
 	initialized = true;
       }

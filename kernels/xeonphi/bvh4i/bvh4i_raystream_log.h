@@ -33,10 +33,8 @@ namespace embree
     bool initialized;
 
     std::ofstream rayData;
-    std::ofstream bvhData;
-    std::ofstream accelData;
 
-    void storeBVH4i(BVH4i* bvh);
+    void storeBVH(BVH4i* bvh);
 
     void openRayDataStream();
 
