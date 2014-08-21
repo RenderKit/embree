@@ -436,7 +436,7 @@ typedef Vec3fa*_Vec3fa_ptr;
 inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 {
   const float t0 = 1.0f - t, t1 = t;
-  const ISPCHairSet* hair = g_ispc_scene->hairs[geomID]; // FIXME: works only because hairs are added first to scene
+  const ISPCHairSet* hair = g_ispc_scene->hairs[geomID];
   const Vec3fa* vertices = hair->v;
   const ISPCHair* hairs = hair->hairs;
   
