@@ -29,6 +29,11 @@
 
 #define TRACE(x) //std::cout << #x << std::endl;
 
+#if defined(__MIC__)
+//#include "bvh4i_raystream_log.h"
+//#define ENABLE_RAYSTREAM_LOGGER
+#endif
+
 namespace embree
 {
 #define CATCH_BEGIN try {
@@ -547,7 +552,16 @@ namespace embree
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,16);
 
+#if defined(ENABLE_RAYSTREAM_LOGGER)
+    RTCRay16 old_ray = ray;
+#endif
+
     ((Scene*)scene)->intersect16(valid,ray);
+
+#if defined(ENABLE_RAYSTREAM_LOGGER)
+    RayStreamLogger::rayStreamLogger.logRay16Intersect(valid,scene,old_ray,ray);
+#endif
+
 #endif
   }
   
@@ -609,7 +623,17 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,16);
+
+#if defined(ENABLE_RAYSTREAM_LOGGER)
+    RTCRay16 old_ray = ray;
+#endif
+
     ((Scene*)scene)->occluded16(valid,ray);
+
+#if defined(ENABLE_RAYSTREAM_LOGGER)
+    RayStreamLogger::rayStreamLogger.logRay16Intersect(valid,scene,old_ray,ray);
+#endif
+
 #endif
   }
   

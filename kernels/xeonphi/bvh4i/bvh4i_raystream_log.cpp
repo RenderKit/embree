@@ -15,12 +15,22 @@
 // ======================================================================== //
 
 #include "bvh4i_raystream_log.h"
+#include "common/scene.h"
 #include "sys/filename.h"
 
-#define RAYSTREAM_FILENAME "/home/micuser/ray16log.bin"
-#define BVH_FILENAME       "/home/micuser/bvhlog.bin"
-#define ACCEL_FILENAME     "/home/micuser/accellog.bin"
+#if defined(__MIC__)
 
+#define RAYSTREAM_FILENAME "/home/micuser/ray16.bin"
+#define BVH_FILENAME       "/home/micuser/bvh.bin"
+#define ACCEL_FILENAME     "/home/micuser/accel.bin"
+
+#else
+
+#define RAYSTREAM_FILENAME "ray16.bin"
+#define BVH_FILENAME       "bvh.bin"
+#define ACCEL_FILENAME     "accel.bin"
+
+#endif
 
 namespace embree
 {
@@ -60,33 +70,35 @@ namespace embree
       }    
   }
 
-  void RayStreamLogger::storeBVH(BVH4i* bvh)
+  void RayStreamLogger::storeGeometry(void* ptr)
   {
-    std::ofstream bvhData;
-    FileName bvh_filename(BVH_FILENAME);
-    bvhData.open(bvh_filename.c_str(),ios::out | ios::binary);
-    if (!bvhData) FATAL("could not dump bvh data to file");
-    bvhData.seekp(0, ios::beg);
-    bvhData.write((char*)bvh->nodePtr(),bvh->size_node);
-    bvhData.close();
+    Scene *scene = (Scene*)ptr;
 
-    std::ofstream accelData;
+    // std::ofstream bvhData;
+    // FileName bvh_filename(BVH_FILENAME);
+    // bvhData.open(bvh_filename.c_str(),ios::out | ios::binary);
+    // if (!bvhData) FATAL("could not dump bvh data to file");
+    // bvhData.seekp(0, ios::beg);
+    // bvhData.write((char*)bvh->nodePtr(),bvh->size_node);
+    // bvhData.close();
 
-    FileName accel_filename(ACCEL_FILENAME);
-    accelData.open(accel_filename.c_str(),ios::out | ios::binary);
-    if (!accelData) FATAL("could not dump accel data to file");
-    accelData.seekp(0, ios::beg);
-    accelData.write((char*)bvh->triPtr(),bvh->size_accel);
-    accelData.close();    
+    // std::ofstream accelData;
+
+    // FileName accel_filename(ACCEL_FILENAME);
+    // accelData.open(accel_filename.c_str(),ios::out | ios::binary);
+    // if (!accelData) FATAL("could not dump accel data to file");
+    // accelData.seekp(0, ios::beg);
+    // accelData.write((char*)bvh->triPtr(),bvh->size_accel);
+    // accelData.close();    
   }
 
-  void RayStreamLogger::logRay16Intersect(mic_i* valid_i, BVH4i* bvh, Ray16& start, Ray16& end)
+  void RayStreamLogger::logRay16Intersect(void* valid_i, void* scene, RTCRay16& start, RTCRay16& end)
   {
     pthread_mutex_lock(&mutex);
 
     if (!initialized)
       {
-	storeBVH(bvh);
+	storeGeometry(scene);
 	openRayDataStream();
 	initialized = true;
       }
@@ -94,7 +106,7 @@ namespace embree
     LogRay16 logRay16;
 
     logRay16.type    = RAY_INTERSECT;
-    logRay16.m_valid = *valid_i != mic_i(0);
+    logRay16.m_valid = *(mic_i*)valid_i != mic_i(0);
     logRay16.start   = start;
     logRay16.end     = end;
     rayData.write((char*)&logRay16 ,sizeof(logRay16));
@@ -102,12 +114,12 @@ namespace embree
     pthread_mutex_unlock(&mutex);
   }
 
-  void RayStreamLogger::logRay16Occluded(mic_i* valid_i, BVH4i* bvh, Ray16& start, Ray16& end)
+  void RayStreamLogger::logRay16Occluded(void* valid_i, void* scene, RTCRay16& start, RTCRay16& end)
   {
     pthread_mutex_lock(&mutex);
     if (!initialized)
       {
-	storeBVH(bvh);
+	storeGeometry(scene);
 	openRayDataStream();
 	initialized = true;
       }
@@ -115,7 +127,7 @@ namespace embree
     LogRay16 logRay16;
 
     logRay16.type    = RAY_OCCLUDED;
-    logRay16.m_valid = *valid_i != mic_i(0);
+    logRay16.m_valid = *(mic_i*)valid_i != mic_i(0);
     logRay16.start   = start;
     logRay16.end     = end;
     rayData.write((char*)&logRay16 ,sizeof(logRay16));

@@ -16,9 +16,8 @@
 
 #include "bvh4i_intersector16_single.h"
 #include "bvh4i_leaf_intersector.h"
-#include "bvh4i_raystream_log.h"
 
-#define ENABLE_RAYSTREAM_LOGGER
+
 
 namespace embree
 {
@@ -27,8 +26,6 @@ namespace embree
     
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
     static unsigned int M_LANE_7777 = 0x7777;               // needed due to compiler efficiency bug
-
-
 
     // ============================================================================================
     // ============================================================================================
@@ -41,9 +38,6 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
-#if defined(ENABLE_RAYSTREAM_LOGGER)
-      Ray16 old_ray16 = ray16;
-#endif
 
       /* setup */
       const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
@@ -118,9 +112,6 @@ namespace embree
 	    }	  
 	}
 
-#if defined(ENABLE_RAYSTREAM_LOGGER)
-      RayStreamLogger::rayStreamLogger.logRay16Intersect(valid_i,bvh,old_ray16,ray16);
-#endif
 
     }
 
@@ -129,10 +120,6 @@ namespace embree
     {
       /* near and node stack */
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
-
-#if defined(ENABLE_RAYSTREAM_LOGGER)
-      Ray16 old_ray16 = ray16;
-#endif
 
       /* setup */
       const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
@@ -209,9 +196,6 @@ namespace embree
 
       store16i(m_valid & toMask(terminated),&ray16.geomID,0);
 
-#if defined(ENABLE_RAYSTREAM_LOGGER)
-      RayStreamLogger::rayStreamLogger.logRay16Occluded(valid_i,bvh,old_ray16,ray16);
-#endif
     }
 
     typedef BVH4iIntersector16Single< Triangle1LeafIntersector  < true >, false  > Triangle1Intersector16SingleMoellerFilter;

@@ -46,4 +46,7 @@ ELSE ()
   ADD_EXECUTABLE(benchmark_xeonphi benchmark.cpp)
   TARGET_LINK_LIBRARIES(benchmark_xeonphi sys_xeonphi embree_xeonphi)
 
+  ADD_EXECUTABLE(retrace_xeonphi retrace.cpp)
+  TARGET_LINK_LIBRARIES(retrace_xeonphi sys_xeonphi embree_xeonphi)
+
 ENDIF()

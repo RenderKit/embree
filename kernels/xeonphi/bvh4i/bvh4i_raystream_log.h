@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include "bvh4i.h"
-#include "bvh4i_traversal.h"
-#include "common/ray16.h" 
+#include "../kernels/common/default.h"
+#include "embree2/rtcore_ray.h"
 #include <iostream>
 #include <fstream>
 #include <pthread.h>
@@ -34,7 +33,7 @@ namespace embree
 
     std::ofstream rayData;
 
-    void storeBVH(BVH4i* bvh);
+    void storeGeometry(void* scene);
 
     void openRayDataStream();
 
@@ -46,8 +45,8 @@ namespace embree
       unsigned int type;
       unsigned int m_valid;
       unsigned int dummy[14];
-      Ray16 start;
-      Ray16 end;
+      RTCRay16 start;
+      RTCRay16 end;
 
       LogRay16() {
 	memset(this,0,sizeof(LogRay16));
@@ -56,8 +55,8 @@ namespace embree
       
   static RayStreamLogger rayStreamLogger;
 
-  void logRay16Intersect(mic_i* valid, BVH4i* bvh, Ray16& start, Ray16& end);
-  void logRay16Occluded (mic_i* valid, BVH4i* bvh, Ray16& start, Ray16& end);
+  void logRay16Intersect(void* valid, void* scene, RTCRay16& start, RTCRay16& end);
+  void logRay16Occluded (void* valid, void* scene, RTCRay16& start, RTCRay16& end);
     
   };
 };
