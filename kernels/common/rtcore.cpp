@@ -30,7 +30,7 @@
 #define TRACE(x) //std::cout << #x << std::endl;
 
 #if defined(__MIC__)
-//#include "bvh4i_raystream_log.h"
+#include "raystream_log.h"
 //#define ENABLE_RAYSTREAM_LOGGER
 #endif
 

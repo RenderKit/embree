@@ -36,6 +36,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../common/scene_user_geometry.cpp
   ../common/scene_triangle_mesh.cpp
   ../common/scene_bezier_curves.cpp
+  ../common/raystream_log.cpp
   
   geometry/triangle1.cpp
   geometry/instance_intersector1.cpp
@@ -54,7 +55,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   bvh4i/bvh4i_intersector1.cpp
   bvh4i/bvh4i_statistics.cpp
   bvh4i/bvh4i_rotate.cpp
-  bvh4i/bvh4i_raystream_log.cpp
 
   bvh4mb/bvh4mb.cpp
   bvh4mb/bvh4mb_builder.cpp

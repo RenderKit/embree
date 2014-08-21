@@ -55,8 +55,8 @@ namespace embree
       
   static RayStreamLogger rayStreamLogger;
 
-  void logRay16Intersect(void* valid, void* scene, RTCRay16& start, RTCRay16& end);
-  void logRay16Occluded (void* valid, void* scene, RTCRay16& start, RTCRay16& end);
+  void logRay16Intersect(const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
+  void logRay16Occluded (const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
     
   };
 };

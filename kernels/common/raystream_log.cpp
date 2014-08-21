@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4i_raystream_log.h"
-#include "common/scene.h"
+#include "raystream_log.h"
+#include "scene.h"
 #include "sys/filename.h"
 
 #if defined(__MIC__)
@@ -92,7 +92,7 @@ namespace embree
     // accelData.close();    
   }
 
-  void RayStreamLogger::logRay16Intersect(void* valid_i, void* scene, RTCRay16& start, RTCRay16& end)
+  void RayStreamLogger::logRay16Intersect(const void* valid_i, void* scene, RTCRay16& start, RTCRay16& end)
   {
     pthread_mutex_lock(&mutex);
 
@@ -114,7 +114,7 @@ namespace embree
     pthread_mutex_unlock(&mutex);
   }
 
-  void RayStreamLogger::logRay16Occluded(void* valid_i, void* scene, RTCRay16& start, RTCRay16& end)
+  void RayStreamLogger::logRay16Occluded(const void* valid_i, void* scene, RTCRay16& start, RTCRay16& end)
   {
     pthread_mutex_lock(&mutex);
     if (!initialized)
