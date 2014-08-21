@@ -24,9 +24,9 @@ namespace embree
   {
     template<typename PrimitiveIntersector, int flags>
     __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector,flags>::intersectBox(const BVH4Hair::AlignedNode* node, 
-                                                                                                          const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, 
-                                                                                                          const size_t nearX, const size_t nearY, const size_t nearZ,
-                                                                                                          ssef& tNear, ssef& tFar)
+                                                                                        const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, 
+                                                                                        const size_t nearX, const size_t nearY, const size_t nearZ,
+                                                                                        ssef& tNear, ssef& tFar)
     {
       const BBoxSSE3f bounds = node->getBounds(nearX,nearY,nearZ);
 
@@ -61,9 +61,9 @@ namespace embree
 
     template<typename PrimitiveIntersector, int flags>
     __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector,flags>::intersectBox(const BVH4Hair::AlignedNodeMB* node, 
-                                                                                  const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const float time, 
-                                                                                  const size_t nearX, const size_t nearY, const size_t nearZ,
-                                                                                  ssef& tNear, ssef& tFar)
+                                                                                        const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const float time, 
+                                                                                        const size_t nearX, const size_t nearY, const size_t nearZ,
+                                                                                        ssef& tNear, ssef& tFar)
     {
       const BBoxSSE3f bounds = node->getBounds(time,nearX,nearY,nearZ);
 
@@ -96,55 +96,10 @@ namespace embree
 #endif
     }
 
-#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
     template<typename PrimitiveIntersector, int flags>
-    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector,flags>::intersectBox(const BVH4Hair::CompressedUnalignedNode* node, Ray& ray, 
+    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector,flags>::intersectBox(const BVH4Hair::UnalignedNode* node, Ray& ray, 
                                                                                         const sse3f& ray_org, const sse3f& ray_dir, 
                                                                                         ssef& tNear, ssef& tFar)
-    {
-      const LinearSpace3fa xfm = node->getXfm();
-      //const Vec3fa dir = xfmVector(xfm,ray.dir);
-      const Vec3fa dir = madd(xfm.vx,(Vec3fa)ray_dir.x,madd(xfm.vy,(Vec3fa)ray_dir.y,xfm.vz*(Vec3fa)ray_dir.z));
-      //const sse3f rdir = Vec3fa(one)/dir; 
-      const sse3f rdir = rcp_safe(dir); 
-      //const Vec3fa org = xfmPoint(xfm,ray.org);
-      const Vec3fa org = madd(xfm.vx,(Vec3fa)ray_org.x,madd(xfm.vy,(Vec3fa)ray_org.y,xfm.vz*(Vec3fa)ray_org.z));
-      const sse3f vorg  = sse3f(org);
-      const sse3f vrdir = sse3f(rdir);
-      const BBoxSSE3f bounds = node->getBounds();
-      const sse3f tLowerXYZ = (bounds.lower - vorg) * vrdir;
-      const sse3f tUpperXYZ = (bounds.upper - vorg) * vrdir;
-
-#if defined(__SSE4_1__)
-      const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
-      const ssef tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
-      const ssef tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
-      const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
-      const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
-      const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
-      tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
-      tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
-      const sseb vmask = tNear <= tFar;
-      return movemask(vmask);
-#else
-      const ssef tNearX = min(tLowerXYZ.x,tUpperXYZ.x);
-      const ssef tNearY = min(tLowerXYZ.y,tUpperXYZ.y);
-      const ssef tNearZ = min(tLowerXYZ.z,tUpperXYZ.z);
-      const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
-      const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
-      const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
-      tNear = max(tNearX,tNearY,tNearZ,tNear);
-      tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
-      const sseb vmask = tNear <= tFar;
-      return movemask(vmask);
-#endif
-    }
-#endif
-
-    template<typename PrimitiveIntersector, int flags>
-    __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector,flags>::intersectBox(const BVH4Hair::UncompressedUnalignedNode* node, Ray& ray, 
-                                                                                  const sse3f& ray_org, const sse3f& ray_dir, 
-                                                                                  ssef& tNear, ssef& tFar)
     {
       const AffineSpaceSSE3f xfm = node->naabb;
       const sse3f dir = xfmVector(xfm,ray_dir);
@@ -181,8 +136,8 @@ namespace embree
 
     template<typename PrimitiveIntersector, int flags>
     __forceinline size_t BVH4HairIntersector1<PrimitiveIntersector,flags>::intersectBox(const BVH4Hair::UnalignedNodeMB* node, Ray& ray,
-                                                                                  const sse3f& ray_org, const sse3f& ray_dir, 
-                                                                                  ssef& tNear, ssef& tFar)
+                                                                                        const sse3f& ray_org, const sse3f& ray_dir, 
+                                                                                        ssef& tNear, ssef& tFar)
     {
       const ssef t0 = ssef(1.0f)-ray.time, t1 = ray.time;
 #if 0

@@ -24,9 +24,6 @@
 #include "geometry/bezier1.h"
 #include "geometry/bezier1i.h"
 
-#define BVH4HAIR_COMPRESS_ALIGNED_NODES 0
-#define BVH4HAIR_COMPRESS_UNALIGNED_NODES 0
-
 namespace embree
 {
   /*! BVH4 with unaligned bounds. */
@@ -37,26 +34,11 @@ namespace embree
 
     /*! forward declaration of node type */
     struct Node;
-    struct CompressedAlignedNode;
-    struct UncompressedAlignedNode;
-    struct CompressedUnalignedNode;
-    struct UncompressedUnalignedNode;
-
+    struct AlignedNode;
+    struct UnalignedNode;
     struct AlignedNodeMB;
     struct UnalignedNodeMB;
     
-#if BVH4HAIR_COMPRESS_ALIGNED_NODES 
-    typedef CompressedAlignedNode AlignedNode;
-#else
-    typedef UncompressedAlignedNode AlignedNode;
-#endif
-
-#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
-    typedef CompressedUnalignedNode UnalignedNode;
-#else
-    typedef UncompressedUnalignedNode UnalignedNode;
-#endif
-
     /*! branching width of the tree */
     static const size_t N = 4;
 
@@ -103,28 +85,18 @@ namespace embree
       /*! Prefetches the node this reference points to */
       __forceinline void prefetch() const 
       {
-#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
-	prefetchL1(((char*)ptr)+0*64);
-	prefetchL1(((char*)ptr)+1*64);
-#else
 	prefetchL1(((char*)ptr)+0*64);
 	prefetchL1(((char*)ptr)+1*64);
 	prefetchL1(((char*)ptr)+2*64);
 	prefetchL1(((char*)ptr)+3*64);
-#endif
       }
 
       __forceinline void prefetch_L2() const 
       {
-#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
-	prefetchL2(((char*)ptr)+0*64);
-	prefetchL2(((char*)ptr)+1*64);
-#else
 	prefetchL2(((char*)ptr)+0*64);
 	prefetchL2(((char*)ptr)+1*64);
 	prefetchL2(((char*)ptr)+2*64);
 	prefetchL2(((char*)ptr)+3*64);
-#endif
       }
 
       /*! checks if this is a leaf */
@@ -198,101 +170,8 @@ namespace embree
       NodeRef children[N];   //!< Pointer to the children (can be a node or leaf)
     };
 
-    /*! Compressed node with aligned bounds */
-#if BVH4HAIR_COMPRESS_ALIGNED_NODES
-    struct CompressedAlignedNode : public Node
-    {
-      enum { stride = 4 };
-
-      /*! Clears the node. */
-      __forceinline void clear() 
-      {
-        offset = 0.0f; scale = 0.0f;
-        lower_x[0] = lower_x[1] = lower_x[2] = lower_x[3] = 0;
-        lower_y[0] = lower_y[1] = lower_y[2] = lower_y[3] = 0;
-        lower_z[0] = lower_z[1] = lower_z[2] = lower_z[3] = 0;
-        upper_x[0] = upper_x[1] = upper_x[2] = upper_x[3] = 0;
-        upper_y[0] = upper_y[1] = upper_y[2] = upper_y[3] = 0;
-        upper_z[0] = upper_z[1] = upper_z[2] = upper_z[3] = 0;
-        Node::clear();
-      }
-
-      /*! Sets non-axis aligned space of node and parent bounding box. */
-      __forceinline void set(const NAABBox3fa& naabb) {
-        offset = naabb.bounds.lower;
-        scale  = naabb.bounds.size()/255.0f;
-      }
-
-      /*! Sets bounding box. */
-      __forceinline void set(size_t i, const BBox3fa& bounds) 
-      {
-        assert(i < N);
-        const Vec3fa lower = select(eq_mask(scale,Vec3fa(0.0f)),0.0f,(bounds.lower-Vec3fa(offset))/Vec3fa(scale));
-        assert(lower.x >= 0.0f && lower.x <= 255.01f);
-        assert(lower.y >= 0.0f && lower.y <= 255.01f);
-        assert(lower.z >= 0.0f && lower.z <= 255.01f);
-        lower_x[i] = (unsigned char) clamp(floorf(lower.x),0.0f,255.0f);
-        lower_y[i] = (unsigned char) clamp(floorf(lower.y),0.0f,255.0f);
-        lower_z[i] = (unsigned char) clamp(floorf(lower.z),0.0f,255.0f);
-        const Vec3fa upper = select(eq_mask(scale,Vec3fa(0.0f)),0.0f,(bounds.upper-Vec3fa(offset))/Vec3fa(scale));
-        assert(upper.x >= 0.0f && upper.x <= 255.01f);
-        assert(upper.y >= 0.0f && upper.y <= 255.01f);
-        assert(upper.z >= 0.0f && upper.z <= 255.01f);
-        upper_x[i] = (unsigned char) clamp(ceilf(upper.x),0.0f,255.0f);
-        upper_y[i] = (unsigned char) clamp(ceilf(upper.y),0.0f,255.0f);
-        upper_z[i] = (unsigned char) clamp(ceilf(upper.z),0.0f,255.0f);
-      }
-
-      /*! Sets ID of child. */
-      __forceinline void set(size_t i, const NodeRef& childID) {
-        Node::set(i,childID);
-      }
-
-      /*! returns ith bounding boxes */
-      __forceinline BBox3fa getBounds(size_t i) const 
-      {
-        assert(i < N);
-        const Vec3f lower((float)lower_x[i],lower_y[i],lower_z[i]);
-        const Vec3f upper((float)upper_x[i],upper_y[i],upper_z[i]);
-        return BBox3fa(Vec3fa(offset+scale*lower),Vec3fa(offset+scale*upper));
-      }
-
-      /*! returns 4 bounding boxes */
-      __forceinline const BBoxSSE3f getBounds(const size_t nearX, const size_t nearY, const size_t nearZ) const 
-      {
-        const size_t farX  = nearX ^ 4, farY  = nearY ^ 4, farZ  = nearZ ^ 4;
-        const ssef near_x = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_x+nearX)));
-        const ssef near_y = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_y+nearY)));
-        const ssef near_z = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_z+nearZ)));
-        const ssef far_x  = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_x+farX )));
-        const ssef far_y  = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_y+farY )));
-        const ssef far_z  = ssef(_mm_cvtepu8_epi32(*(ssei*)((char*)&this->lower_z+farZ )));
-        const sse3f offset = *(Vec3fa*)&this->offset;
-        const sse3f scale  = *(Vec3fa*)&this->scale;
-        return BBoxSSE3f(scale*sse3f(near_x,near_y,near_z)+offset,
-                          scale*sse3f(far_x, far_y, far_z)+offset);
-      }
-
-      /*! Returns the extend of the bounds of the ith child */
-      __forceinline Vec3fa extend(size_t i) const {
-        assert(i < N);
-        return getBounds(i).size();
-      }
-
-    public:
-      Vec3f offset;               //!< offset to decompress bounds
-      Vec3f scale;                //!< scale  to decompress bounds
-      unsigned char lower_x[N];   //!< X dimension of lower bounds of all 4 children.
-      unsigned char upper_x[N];   //!< X dimension of upper bounds of all 4 children.
-      unsigned char lower_y[N];   //!< Y dimension of lower bounds of all 4 children.
-      unsigned char upper_y[N];   //!< Y dimension of upper bounds of all 4 children.
-      unsigned char lower_z[N];   //!< Z dimension of lower bounds of all 4 children.
-      unsigned char upper_z[N];   //!< Z dimension of upper bounds of all 4 children.
-    };
-#endif
-
     /*! Node with aligned bounds */
-    struct UncompressedAlignedNode : public Node
+    struct AlignedNode : public Node
     {
       enum { stride = sizeof(ssef) };
 
@@ -352,143 +231,8 @@ namespace embree
       ssef upper_z;           //!< Z dimension of upper bounds of all 4 children.
     };
 
-    /*! Compressed node with unaligned bounds */
-#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
-    struct CompressedUnalignedNode : public Node
-    {
-      /*! Clears the node. */
-      __forceinline void clear() 
-      {
-        xfm_vx[0] = 1; xfm_vx[1] = 0; xfm_vx[2] = 0;
-        xfm_vy[0] = 0; xfm_vy[1] = 1; xfm_vy[2] = 0;
-        xfm_vz[0] = 0; xfm_vz[1] = 0; xfm_vz[2] = 1;
-        offset = 0.0f; scale = 0.0f;
-        lower_x[0] = lower_x[1] = lower_x[2] = lower_x[3] = 1;
-        lower_y[0] = lower_y[1] = lower_y[2] = lower_y[3] = 1;
-        lower_z[0] = lower_z[1] = lower_z[2] = lower_z[3] = 1;
-        upper_x[0] = upper_x[1] = upper_x[2] = upper_x[3] = 1;
-        upper_y[0] = upper_y[1] = upper_y[2] = upper_y[3] = 1;
-        upper_z[0] = upper_z[1] = upper_z[2] = upper_z[3] = 1;
-        align[0] = align[1] = align[2] = align[3] = 0;
-        Node::clear();
-      }
-
-      /*! Sets non-axis aligned space of node and parent bounding box. */
-      __forceinline void set(const NAABBox3fa& naabb) 
-      {
-        const LinearSpace3fa& space = naabb.space;
-
-#if !defined(__WIN32__)
- 		assert(127.0f*space.vx.x >= -127.0f && 127.0f*space.vx.x <= 127.0f && truncf(127.0f*space.vx.x) == 127.0f*space.vx.x);
-		assert(127.0f*space.vx.y >= -127.0f && 127.0f*space.vx.y <= 127.0f && truncf(127.0f*space.vx.y) == 127.0f*space.vx.y);
-		assert(127.0f*space.vx.z >= -127.0f && 127.0f*space.vx.z <= 127.0f && truncf(127.0f*space.vx.z) == 127.0f*space.vx.z);
-		assert(127.0f*space.vy.x >= -127.0f && 127.0f*space.vy.x <= 127.0f && truncf(127.0f*space.vy.x) == 127.0f*space.vy.x);
-		assert(127.0f*space.vy.y >= -127.0f && 127.0f*space.vy.y <= 127.0f && truncf(127.0f*space.vy.y) == 127.0f*space.vy.y);
-		assert(127.0f*space.vy.z >= -127.0f && 127.0f*space.vy.z <= 127.0f && truncf(127.0f*space.vy.z) == 127.0f*space.vy.z);
-		assert(127.0f*space.vz.x >= -127.0f && 127.0f*space.vz.x <= 127.0f && truncf(127.0f*space.vz.x) == 127.0f*space.vz.x);
-		assert(127.0f*space.vz.y >= -127.0f && 127.0f*space.vz.y <= 127.0f && truncf(127.0f*space.vz.y) == 127.0f*space.vz.y);
-		assert(127.0f*space.vz.z >= -127.0f && 127.0f*space.vz.z <= 127.0f && truncf(127.0f*space.vz.z) == 127.0f*space.vz.z);
-#endif
-
-        const BBox3fa& bounds = naabb.bounds;
-        xfm_vx[0] = (char) (127.0f*space.vx.x); 
-        xfm_vx[1] = (char) (127.0f*space.vx.y); 
-        xfm_vx[2] = (char) (127.0f*space.vx.z); 
-        xfm_vx[3] = 0;
-        xfm_vy[0] = (char) (127.0f*space.vy.x); 
-        xfm_vy[1] = (char) (127.0f*space.vy.y); 
-        xfm_vy[2] = (char) (127.0f*space.vy.z); 
-        xfm_vy[3] = 0;
-        xfm_vz[0] = (char) (127.0f*space.vz.x); 
-        xfm_vz[1] = (char) (127.0f*space.vz.y); 
-        xfm_vz[2] = (char) (127.0f*space.vz.z); 
-        xfm_vz[3] = 0;
-        offset = 127.0f*bounds.lower;
-        scale  = (127.0f*bounds.upper-127.0f*bounds.lower)/255.0f;
-      }
-
-      /*! Sets bounding box. */
-      __forceinline void set(size_t i, const BBox3fa& bounds) 
-      {
-        assert(i < N);
-        const Vec3fa lower = select(eq_mask(scale,Vec3fa(0.0f)),0.0f,(127.0f*bounds.lower-Vec3fa(offset))/Vec3fa(scale));
-        assert(lower.x >= 0.0f && lower.x <= 255.01f); // FIXME: should be smaller than 255.0f
-        assert(lower.y >= 0.0f && lower.y <= 255.01f);
-        assert(lower.z >= 0.0f && lower.z <= 255.01f);
-        lower_x[i] = (unsigned char) clamp(floorf(lower.x),0.0f,255.0f);
-        lower_y[i] = (unsigned char) clamp(floorf(lower.y),0.0f,255.0f);
-        lower_z[i] = (unsigned char) clamp(floorf(lower.z),0.0f,255.0f);
-        const Vec3fa upper = select(eq_mask(scale,Vec3fa(0.0f)),0.0f,(127.0f*bounds.upper-Vec3fa(offset))/Vec3fa(scale));
-        assert(upper.x >= 0.0f && upper.x <= 255.01f); // FIXME: should be smaller than 255.0f
-        assert(upper.y >= 0.0f && upper.y <= 255.01f);
-        assert(upper.z >= 0.0f && upper.z <= 255.01f);
-        upper_x[i] = (unsigned char) clamp(ceilf(upper.x),0.0f,255.0f);
-        upper_y[i] = (unsigned char) clamp(ceilf(upper.y),0.0f,255.0f);
-        upper_z[i] = (unsigned char) clamp(ceilf(upper.z),0.0f,255.0f);
-      }
-
-      /*! Sets ID of child. */
-      __forceinline void set(size_t i, const NodeRef& childID) {
-        Node::set(i,childID);
-      }
-
-      /*! returns transformation */
-      __forceinline const LinearSpace3fa getXfm() const 
-      {
-        const ssef vx = ssef(_mm_cvtepi8_epi32(*(ssei*)&xfm_vx));
-        const ssef vy = ssef(_mm_cvtepi8_epi32(*(ssei*)&xfm_vy));
-        const ssef vz = ssef(_mm_cvtepi8_epi32(*(ssei*)&xfm_vz));
-        return LinearSpace3fa((Vec3fa)vx,(Vec3fa)vy,(Vec3fa)vz);
-      }
-
-      /*! returns ith bounding boxes */
-      __forceinline NAABBox3fa getBounds(size_t i) const 
-      {
-        assert(i < N);
-        const Vec3f lower((float)lower_x[i],lower_y[i],lower_z[i]);
-        const Vec3f upper((float)upper_x[i],upper_y[i],upper_z[i]);
-        return NAABBox3fa(getXfm(),BBox3fa(Vec3fa(offset+scale*lower),Vec3fa(offset+scale*upper)));
-      }
-
-      /*! returns 4 bounding boxes */
-      __forceinline BBoxSSE3f getBounds() const 
-      {
-        const ssef lower_x = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_x));
-        const ssef lower_y = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_y));
-        const ssef lower_z = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->lower_z));
-        const ssef upper_x = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_x));
-        const ssef upper_y = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_y));
-        const ssef upper_z = ssef(_mm_cvtepu8_epi32(*(ssei*)&this->upper_z));
-        const sse3f offset = *(Vec3fa*)&this->offset;
-        const sse3f scale  = *(Vec3fa*)&this->scale;
-        return BBoxSSE3f(scale*sse3f(lower_x,lower_y,lower_z)+offset,
-                          scale*sse3f(upper_x,upper_y,upper_z)+offset);
-      }
-
-      /*! Returns the extend of the bounds of the ith child */
-      __forceinline Vec3fa extend(size_t i) const {
-        assert(i < N);
-        return getBounds(i).bounds.size()/127.0f;
-      }
-
-    public:
-      char xfm_vx[4];             //!< 1st column of transformation
-      char xfm_vy[4];             //!< 2nd column of transformation
-      char xfm_vz[4];             //!< 3rd column of transformation
-      char align[4];              
-      Vec3f offset;               //!< offset to decompress bounds
-      Vec3f scale;                //!< scale  to decompress bounds
-      unsigned char lower_x[N];   //!< X dimension of lower bounds of all 4 children.
-      unsigned char lower_y[N];   //!< Y dimension of lower bounds of all 4 children.
-      unsigned char lower_z[N];   //!< Z dimension of lower bounds of all 4 children.
-      unsigned char upper_x[N];   //!< X dimension of upper bounds of all 4 children.
-      unsigned char upper_y[N];   //!< Y dimension of upper bounds of all 4 children.
-      unsigned char upper_z[N];   //!< Z dimension of upper bounds of all 4 children.
-    };
-#endif
-
     /*! Node with unaligned bounds */
-    struct UncompressedUnalignedNode : public Node
+    struct UnalignedNode : public Node
     {
       /*! Clears the node. */
       __forceinline void clear() 
@@ -545,7 +289,6 @@ namespace embree
     public:
       AffineSpaceSSE3f naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
-
 
     /*! Motion blur node with aligned bounds */
     struct AlignedNodeMB : public Node

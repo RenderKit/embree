@@ -43,8 +43,9 @@ namespace embree
 				 const size_t nearX, const size_t nearY, const size_t nearZ,
 				 ssef& tNear, ssef& tFar);
 
-      static size_t intersectBox(const BVH4Hair::CompressedUnalignedNode* node, const sse3f& org, const sse3f& dir, ssef& tNear, ssef& tFar);
-      static size_t intersectBox(const BVH4Hair::UncompressedUnalignedNode* node, const sse3f& org, const sse3f& dir, ssef& tNear, ssef& tFar);
+      static size_t intersectBox(const BVH4Hair::UnalignedNode* node, 
+                                 const sse3f& org, const sse3f& dir, 
+                                 ssef& tNear, ssef& tFar);
 
       static void intersect_k(const BVH4Hair* bvh, Ray4& ray, const size_t k);
       static void occluded_k (const BVH4Hair* bvh, Ray4& ray, const size_t k);

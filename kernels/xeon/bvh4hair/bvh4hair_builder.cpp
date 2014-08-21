@@ -50,11 +50,7 @@ namespace embree
 	double t0 = 0.0;
 	if (g_verbose >= 2) 
 	{
-	  std::cout << "building ";
-#if BVH4HAIR_COMPRESS_UNALIGNED_NODES
-	  std::cout << "Compressed";
-#endif
-	  std::cout << "BVH4Hair<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4HairBuilder ..." << std::flush;
+	  std::cout << "building BVH4Hair<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4HairBuilder ..." << std::flush;
 	  t0 = getSeconds();
 	}
 	
@@ -234,8 +230,6 @@ namespace embree
       else throw std::runtime_error("bvh4hair_builder: internal error");
     }
     
-#if !BVH4HAIR_COMPRESS_UNALIGNED_NODES
-
     template<bool Parallel>
     __forceinline void BVH4HairBuilder::processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& numTasks_o)
     {
@@ -321,121 +315,6 @@ namespace embree
 	*task.dst = bvh->encodeNode(node);
       }
     }
-
-#else
-
-	/*! scales orthonormal transformation into the range -127 to +127 */
-  __forceinline const LinearSpace3fa compressTransform(const LinearSpace3fa& xfm)
-  {
-    assert(xfm.vx.x >= -1.0f && xfm.vx.x <= 1.0f);
-    assert(xfm.vx.y >= -1.0f && xfm.vx.y <= 1.0f);
-    assert(xfm.vx.z >= -1.0f && xfm.vx.z <= 1.0f);
-    assert(xfm.vy.x >= -1.0f && xfm.vy.x <= 1.0f);
-    assert(xfm.vy.y >= -1.0f && xfm.vy.y <= 1.0f);
-    assert(xfm.vy.z >= -1.0f && xfm.vy.z <= 1.0f);
-    assert(xfm.vz.x >= -1.0f && xfm.vz.x <= 1.0f);
-    assert(xfm.vz.y >= -1.0f && xfm.vz.y <= 1.0f);
-    assert(xfm.vz.z >= -1.0f && xfm.vz.z <= 1.0f);
-    return LinearSpace3fa (clamp(trunc(127.0f*xfm.vx),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f,
-                           clamp(trunc(127.0f*xfm.vy),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f,
-                           clamp(trunc(127.0f*xfm.vz),Vec3fa(-127.0f),Vec3fa(+127.0f))/127.0f);
-  }
-
-    template<bool Parallel>
-    __forceinline void BVH4HairBuilder::processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& numTasks_o)
-    {
-      /* create enforced leaf */
-      const float leafSAH  = BVH4Hair::intCost*task.pinfo.leafSAH();
-      const float splitSAH = BVH4Hair::travCostUnaligned*halfArea(task.bounds.bounds)+BVH4Hair::intCost*task.split.splitSAH();
-
-      if (task.pinfo.size() <= minLeafSize || task.depth >= BVH4Hair::maxBuildDepth || (task.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
-	*task.dst = createLargeLeaf(threadIndex,task.prims,task.pinfo,task.depth);
-	numTasks_o = 0;
-	return;
-      }
-
-      /* compute common hair space for this node */
-      const LinearSpace3fa space = compressTransform(ObjectPartitionUnaligned::computeAlignedSpace(threadIndex,threadCount,task.prims)); 
-      task.sinfo = ObjectPartitionUnaligned::computePrimInfo<Parallel>(threadIndex,threadCount,task.prims,space);
-      
-      /*! initialize child list */
-      bool isAligned = true;
-      PrimInfo cpinfo     [BVH4Hair::N]; cpinfo [0] = task.pinfo; 
-      PrimInfo csinfo     [BVH4Hair::N]; csinfo [0] = task.sinfo; 
-      NAABBox3fa cbounds  [BVH4Hair::N]; cbounds[0] = task.bounds;
-      BezierRefList cprims[BVH4Hair::N]; cprims [0] = task.prims;
-      Split csplit        [BVH4Hair::N]; csplit [0] = task.split;        
-      size_t numChildren = 1;
-      
-      /*! split until node is full or SAH tells us to stop */
-      do {
-	
-	/*! find best child to split */
-	float bestSAH = 0; 
-	ssize_t bestChild = -1;
-	for (size_t i=0; i<numChildren; i++) 
-	{
-	  float dSAH = csplit[i].splitSAH()-cpinfo[i].leafSAH();
-	  if (cpinfo[i].size() <= minLeafSize) continue; 
-	  if (cpinfo[i].size() > maxLeafSize) dSAH = min(0.0f,dSAH); //< force split for large jobs
-	  if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
-	}
-	if (bestChild == -1) break;
-	
-	/*! split selected child */
-	PrimInfo linfo, rinfo;
-	BezierRefList lprims, rprims;
-	csplit[bestChild].split<Parallel>(threadIndex,threadCount,alloc,cprims[bestChild],lprims,linfo,rprims,rinfo);
-	const ssize_t replications = linfo.size()+rinfo.size()-cpinfo[bestChild].size(); assert(replications >= 0);
-	isAligned &= csplit[bestChild].isAligned;
-	PrimInfo lsinfo,rsinfo;
-	if (!isAligned) {
-	  lsinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,lprims,space);
-	  rsinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,rprims,space);
-	}
-	const NAABBox3fa lbounds = isAligned ? linfo.geomBounds : NAABBox3fa(space,lsinfo.geomBounds); 
-	const NAABBox3fa rbounds = isAligned ? rinfo.geomBounds : NAABBox3fa(space,rsinfo.geomBounds); 
-	const Split lsplit = find_split<Parallel>(threadIndex,threadCount,lprims,linfo,lbounds,lsinfo);
-	const Split rsplit = find_split<Parallel>(threadIndex,threadCount,rprims,rinfo,rbounds,rsinfo);
-	cprims[numChildren] = rprims; cpinfo[numChildren] = rinfo; cbounds[numChildren] = rbounds; csinfo[numChildren] = lsinfo; csplit[numChildren] = rsplit;
-	cprims[bestChild  ] = lprims; cpinfo[bestChild  ] = linfo; cbounds[bestChild  ] = lbounds; csinfo[bestChild  ] = rsinfo; csplit[bestChild  ] = lsplit;
-	if (replications) atomic_add(&remainingReplications,-replications); 
-	numChildren++;
-	
-      } while (numChildren < BVH4Hair::N);
-      
-      /* create aligned node */
-      if (isAligned) 
-      {
-	BVH4Hair::AlignedNode* node = bvh->allocAlignedNode(threadIndex);
-	for (ssize_t i=0; i<numChildren; i++) {
-	  node->set(i,cpinfo[i].geomBounds);
-	  new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csinfo[i],csplit[i]);
-	}
-	numTasks_o = numChildren;
-	*task.dst = bvh->encodeNode(node);
-      }
-      
-      /* create unaligned node */
-      else {
-	BVH4Hair::UnalignedNode* node = bvh->allocUnalignedNode(threadIndex);
-	BBox3fa b = empty; // recomputing bounds as spatial splits might generate bounds slightly due to accuracy issues
-	for (size_t i=0; i<numChildren; i++) {
-	  csinfo[i] = ObjectPartitionUnaligned::computePrimInfo<Parallel>(threadIndex,threadCount,cprims[i],space);
-	  cbounds[i] = NAABBox3fa(space,csinfo[i].geomBounds);
-	  b.extend(csinfo[i].geomBounds);
-	}
-	node->set(NAABBox3fa(space,b));
-	for (ssize_t i=numChildren-1; i>=0; i--) {
-	  node->set(i,cbounds[i].bounds);
-	  new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csinfo[i],csplit[i]);
-	}
-	numTasks_o = numChildren;
-	*task.dst = bvh->encodeNode(node);
-      }
-    }
-
-#endif
     
     void BVH4HairBuilder::recurseTask(size_t threadIndex, size_t threadCount, BuildTask& task)
     {
