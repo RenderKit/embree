@@ -33,8 +33,6 @@ namespace embree
 
     std::ofstream rayData;
 
-    void storeGeometry(void* scene);
-
     void openRayDataStream();
 
   public:
@@ -57,6 +55,7 @@ namespace embree
 
   void logRay16Intersect(const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
   void logRay16Occluded (const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
+  void dumpGeometry(void* scene);
     
   };
 };

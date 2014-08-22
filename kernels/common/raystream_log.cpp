@@ -15,13 +15,14 @@
 // ======================================================================== //
 
 #include "raystream_log.h"
-#include "scene.h"
+#include "common/scene.h"
+#include "common/scene_triangle_mesh.h"
 #include "sys/filename.h"
 
 #if defined(__MIC__)
 
 #define RAYSTREAM_FILENAME "/home/micuser/ray16.bin"
-#define GEOMETRY_FILENAME  "/home/micuser/bvh.bin"
+#define GEOMETRY_FILENAME  "/home/micuser/geometry.bin"
 
 #else
 
@@ -29,6 +30,8 @@
 #define GEOMETRY_FILENAME  "geometry.bin"
 
 #endif
+
+#define DBG(x)
 
 namespace embree
 {
@@ -68,7 +71,7 @@ namespace embree
       }    
   }
 
-  void RayStreamLogger::storeGeometry(void* ptr)
+  void RayStreamLogger::dumpGeometry(void* ptr)
   {
     Scene *scene = (Scene*)ptr;
 
@@ -86,8 +89,10 @@ namespace embree
       numTotalTriangles += numTriangles;
     }
 
-    DBG_PRINT(numGroups);
-    DBG_PRINT(numTotalTriangles);
+    DBG(
+	DBG_PRINT(numGroups);
+	DBG_PRINT(numTotalTriangles);
+	);
 
     std::ofstream geometryData;
     FileName geometry_filename(GEOMETRY_FILENAME);
@@ -96,24 +101,31 @@ namespace embree
 
     if (!geometryData) FATAL("could not dump geometry data to file");
 
-    geometryData.write((char*)numGroups,sizeof(numGroups));
-    geometryData.write((char*)numTotalTriangles,sizeof(numTotalTriangles));
+    geometryData.write((char*)&numGroups,sizeof(numGroups));
+    geometryData.write((char*)&numTotalTriangles,sizeof(numTotalTriangles));
 
     for (size_t g=0; g<numGroups; g++) {       
       if (unlikely(scene->get(g) == NULL)) continue;
       if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
-      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+      const TriangleMesh*  const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
+      DBG(
+	  DBG_PRINT( mesh->numVertices );
+	  DBG_PRINT( sizeof(Vec3fa)*mesh->numVertices );
+	  DBG_PRINT( mesh->numTriangles );
+	  DBG_PRINT( sizeof(TriangleMesh::Triangle)*mesh->numTriangles );
+	  );
+
       geometryData.write((char*)&mesh->numVertices,sizeof(mesh->numVertices));
-      geometryData.write((char*)&mesh->vertices[0][0],sizeof(Vec3fa)*mesh->numVertices);
+      geometryData.write((char*)mesh->vertices[0].getPtr(),sizeof(Vec3fa)*mesh->numVertices);
 
       geometryData.write((char*)&mesh->numTriangles,sizeof(mesh->numTriangles));
-      geometryData.write((char*)&mesh->triangles[0],sizeof(TriangleMesh::Triangle)*mesh->numTriangles);
-
-
+      geometryData.write((char*)mesh->triangles.getPtr(),sizeof(TriangleMesh::Triangle)*mesh->numTriangles);     
     }
+
+    geometryData << flush;
     geometryData.close();
   }
 
@@ -123,7 +135,6 @@ namespace embree
 
     if (!initialized)
       {
-	storeGeometry(scene);
 	openRayDataStream();
 	initialized = true;
       }
@@ -144,7 +155,6 @@ namespace embree
     pthread_mutex_lock(&mutex);
     if (!initialized)
       {
-	storeGeometry(scene);
 	openRayDataStream();
 	initialized = true;
       }
