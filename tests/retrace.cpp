@@ -26,6 +26,7 @@
 #include "embree2/rtcore.h"
 #include "embree2/rtcore_ray.h"
 #include "../kernels/common/default.h"
+#include "../kernels/common/raystream_log.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -36,16 +37,50 @@ namespace embree
 
   struct RayStreamStats
   {
-    size_t numIntersectionRays;
-    size_t numOcclusionRays;
-    size_t numIntersectChunkUtilization;
-    size_t numOcclusionChunkUtilization;
+    size_t numTotalRays;
+    size_t numRayPackets;
+    size_t numIntersectRayPackets;
+    size_t numOccludedRayPackets;
+    size_t numIntersectRays;
+    size_t numOccludedRays;
 
     RayStreamStats() {
       memset(this,0,sizeof(RayStreamStats));
     }
+
+    void add(RayStreamLogger::LogRay16 &r)
+    {
+      size_t numRays = countbits(r.m_valid);
+      numRayPackets++;
+      numTotalRays += numRays;
+      if (r.type == RayStreamLogger::RAY_INTERSECT)
+	{
+	  numIntersectRayPackets++;
+	  numIntersectRays += numRays;
+	}
+      else if (r.type == RayStreamLogger::RAY_OCCLUDED)
+	{
+	  numOccludedRayPackets++;
+	  numOccludedRays += numRays;
+	}
+      else
+	FATAL("unknown log ray type");
+
+    }
+
   };
 
+  __forceinline std::ostream &operator<<(std::ostream &o, const RayStreamStats &s)
+    {
+      o << "numTotalRays                      = " << s.numTotalRays << endl;
+      o << "numRayPackets                     = " << s.numRayPackets << endl;
+      o << "numIntersectionRays               = " << s.numIntersectRays << " [" << 100. * (double)s.numIntersectRays / s.numTotalRays << "%]" << endl;
+      o << "numOcclusionRays                  = " << s.numOccludedRays << " [" << 100. * (double)s.numOccludedRays / s.numTotalRays << "%]" << endl;
+      o << "avg. intersect packet utilization = " << 100. *  (double)s.numIntersectRays / (s.numIntersectRayPackets * 16.) << "%" << endl;
+      o << "avg. occluded  packet utilization = " << 100. *  (double)s.numOccludedRays  / (s.numOccludedRayPackets  * 16.) << "%" << endl;
+      o << "avg. total packet utilization     = " << 100. * (double)s.numTotalRays / (s.numRayPackets * 16.)  << "%" << endl;
+      return o;
+    } 
   
 
 #if !defined(__MIC__)
@@ -191,27 +226,39 @@ namespace embree
     geometryData.seekg(0, ios::end);
     streampos end = geometryData.tellg();
     size_t fileSize = end - begin;
-    DBG_PRINT(fileSize);
     char *ptr = (char*)os_malloc(fileSize);
+    geometryData.seekg(0, ios::beg);
     geometryData.read(ptr,fileSize);
     return ptr;
   }
 
-  void *loadRayStreamData(std::string &rayStreamFile)
+  void *loadRayStreamData(std::string &rayStreamFile, size_t &numLogRayStreamElements)
   {
     std::ifstream rayStreamData;
 
     rayStreamData.open(rayStreamFile.c_str(),ios::in | ios::binary);
     if (!rayStreamData) { FATAL("could not open raystream data file"); }
-      rayStreamData.seekg(0, ios::beg);
+    rayStreamData.seekg(0, ios::beg);
     streampos begin = rayStreamData.tellg();
     rayStreamData.seekg(0, ios::end);
     streampos end = rayStreamData.tellg();
     size_t fileSize = end - begin;
     char *ptr = (char*)os_malloc(fileSize);
+    rayStreamData.seekg(0, ios::beg);
     rayStreamData.read(ptr,fileSize);
+    numLogRayStreamElements = fileSize / sizeof(RayStreamLogger::LogRay16);
     return ptr;
   }
+
+  void analyseRayStreamData(RayStreamLogger::LogRay16 *r, size_t numLogRayStreamElements)
+  {
+    cout << "numLogRayStreamElements " << numLogRayStreamElements << endl;
+    RayStreamStats stats;
+    for (size_t i=0;i<numLogRayStreamElements;i++)
+      stats.add(r[i]);
+    cout << stats << endl;
+  }
+
 
   /* main function in embree namespace */
   int main(int argc, char** argv) 
@@ -234,9 +281,13 @@ namespace embree
     
     /* load ray stream data */
     cout << "loading ray stream data..." << flush;    
-    void *r = loadRayStreamData(rayStreamFileName);
+    size_t numLogRayStreamElements = 0;
+    RayStreamLogger::LogRay16 *r = (RayStreamLogger::LogRay16 *)loadRayStreamData(rayStreamFileName, numLogRayStreamElements);
     cout <<  "done" << endl << flush;
 
+    /* analyse ray stream data */
+    cout << "analyse ray stream:" << endl << flush;    
+    analyseRayStreamData(r,numLogRayStreamElements);
 
     rtcExit();
     return 0;

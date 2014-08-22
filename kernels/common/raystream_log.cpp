@@ -36,11 +36,6 @@
 namespace embree
 {
   using namespace std;
-
-  enum { 
-    RAY_INTERSECT = 0,
-    RAY_OCCLUDED  = 1
-  };
 	 
 
   RayStreamLogger::RayStreamLogger() : initialized(false)
