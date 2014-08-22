@@ -27,6 +27,7 @@ namespace embree
   class RayStreamLogger
   {
   private:
+
     pthread_mutex_t mutex;
 
     bool initialized;

@@ -51,7 +51,7 @@ namespace embree
 
   RayStreamLogger::~RayStreamLogger()
     {
-      PING;
+      //PING;
 
       if (initialized)
 	{
