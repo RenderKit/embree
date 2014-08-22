@@ -1346,6 +1346,7 @@ void renderTile(int taskIndex, int* pixels,
 
     /* calculate pixel color */
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+    //for (size_t i=0; i<9; i++) renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];
