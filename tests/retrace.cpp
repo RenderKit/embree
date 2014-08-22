@@ -27,9 +27,27 @@
 #include "embree2/rtcore_ray.h"
 #include "../kernels/common/default.h"
 #include <vector>
+#include <iostream>
+#include <fstream>
 
 namespace embree
 {
+  using namespace std;
+
+  struct RayStreamStats
+  {
+    size_t numIntersectionRays;
+    size_t numOcclusionRays;
+    size_t numIntersectChunkUtilization;
+    size_t numOcclusionChunkUtilization;
+
+    RayStreamStats() {
+      memset(this,0,sizeof(RayStreamStats));
+    }
+  };
+
+  
+
 #if !defined(__MIC__)
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8);
 #else
@@ -44,6 +62,13 @@ namespace embree
 
   std::vector<thread_t> g_threads;
   size_t numFailedTests = 0;
+
+#if defined(__MIC__)
+  std::string g_binaries_path = "/home/micuser/";
+#else
+  std::string g_binaries_path = "./";
+#endif
+
 
 #define AssertNoError() \
   if (rtcGetError() != RTC_NO_ERROR) return false;
@@ -143,15 +168,50 @@ namespace embree
       else if (tag == "-rtcore" && i+1<argc) {
         g_rtcore = argv[++i];
       }
-
+      
       /* skip unknown command line parameter */
       else {
-        std::cerr << "unknown command line parameter: " << tag << " ";
-        std::cerr << std::endl;
+
+	g_binaries_path = tag;
+        // std::cerr << "unknown command line parameter: " << tag << " ";
+        // std::cerr << std::endl;
       }
     }
   }
 
+
+  void *loadGeometryData(std::string &geometryFile)
+  {
+    std::ifstream geometryData;
+
+    geometryData.open(geometryFile.c_str(),ios::in | ios::binary);
+    if (!geometryData) { FATAL("could not open geometry data file"); }
+      geometryData.seekg(0, ios::beg);
+    streampos begin = geometryData.tellg();
+    geometryData.seekg(0, ios::end);
+    streampos end = geometryData.tellg();
+    size_t fileSize = end - begin;
+    DBG_PRINT(fileSize);
+    char *ptr = (char*)os_malloc(fileSize);
+    geometryData.read(ptr,fileSize);
+    return ptr;
+  }
+
+  void *loadRayStreamData(std::string &rayStreamFile)
+  {
+    std::ifstream rayStreamData;
+
+    rayStreamData.open(rayStreamFile.c_str(),ios::in | ios::binary);
+    if (!rayStreamData) { FATAL("could not open raystream data file"); }
+      rayStreamData.seekg(0, ios::beg);
+    streampos begin = rayStreamData.tellg();
+    rayStreamData.seekg(0, ios::end);
+    streampos end = rayStreamData.tellg();
+    size_t fileSize = end - begin;
+    char *ptr = (char*)os_malloc(fileSize);
+    rayStreamData.read(ptr,fileSize);
+    return ptr;
+  }
 
   /* main function in embree namespace */
   int main(int argc, char** argv) 
@@ -159,9 +219,24 @@ namespace embree
     /* parse command line */  
     parseCommandLine(argc,argv);
 
+    DBG_PRINT( g_binaries_path );
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
+
+    std::string geometryFileName = g_binaries_path + "geometry.bin";
+    std::string rayStreamFileName = g_binaries_path + "ray16.bin";
+
+    /* load geometry file */
+    cout << "loading geometry data..." << flush;    
+    void *g = loadGeometryData(geometryFileName);
+    cout <<  "done" << endl << flush;
+    
+    /* load ray stream data */
+    cout << "loading ray stream data..." << flush;    
+    void *r = loadRayStreamData(rayStreamFileName);
+    cout <<  "done" << endl << flush;
+
 
     rtcExit();
     return 0;

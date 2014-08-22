@@ -31,7 +31,7 @@
 
 #if defined(__MIC__)
 #include "raystream_log.h"
-//#define ENABLE_RAYSTREAM_LOGGER
+#define ENABLE_RAYSTREAM_LOGGER
 #endif
 
 namespace embree
@@ -489,7 +489,14 @@ namespace embree
     CATCH_BEGIN;
     TRACE(rtcCommit);
     VERIFY_HANDLE(scene);
+
+#if defined(ENABLE_RAYSTREAM_LOGGER)
+    RayStreamLogger::rayStreamLogger.dumpGeometry(scene);
+#endif
+
     ((Scene*)scene)->build();
+
+
     CATCH_END;
   }
   

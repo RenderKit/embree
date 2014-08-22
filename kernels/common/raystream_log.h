@@ -27,13 +27,12 @@ namespace embree
   class RayStreamLogger
   {
   private:
+
     pthread_mutex_t mutex;
 
     bool initialized;
 
     std::ofstream rayData;
-
-    void storeGeometry(void* scene);
 
     void openRayDataStream();
 
@@ -57,6 +56,7 @@ namespace embree
 
   void logRay16Intersect(const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
   void logRay16Occluded (const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
+  void dumpGeometry(void* scene);
     
   };
 };
