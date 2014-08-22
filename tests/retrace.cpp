@@ -126,72 +126,6 @@ namespace embree
     return (RTCSceneFlags) flag;
   }
 
-  RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir) 
-  {
-    RTCRay ray;
-    ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
-    ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
-    ray.tnear = 0.0f; ray.tfar = inf;
-    ray.time = 0; ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID = -1;
-    return ray;
-  }
-
-  RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir, float tnear, float tfar) 
-  {
-    RTCRay ray;
-    ray.org[0] = org.x; ray.org[1] = org.y; ray.org[2] = org.z;
-    ray.dir[0] = dir.x; ray.dir[1] = dir.y; ray.dir[2] = dir.z;
-    ray.tnear = tnear; ray.tfar = tfar;
-    ray.time = 0; ray.mask = -1;
-    ray.geomID = ray.primID = ray.instID = -1;
-    return ray;
-  }
-  
-  void setRay(RTCRay16& ray_o, int i, const RTCRay& ray_i)
-  {
-    ray_o.orgx[i] = ray_i.org[0];
-    ray_o.orgy[i] = ray_i.org[1];
-    ray_o.orgz[i] = ray_i.org[2];
-    ray_o.dirx[i] = ray_i.dir[0];
-    ray_o.diry[i] = ray_i.dir[1];
-    ray_o.dirz[i] = ray_i.dir[2];
-    ray_o.tnear[i] = ray_i.tnear;
-    ray_o.tfar[i] = ray_i.tfar;
-    ray_o.Ngx[i] = ray_i.Ng[0];
-    ray_o.Ngy[i] = ray_i.Ng[1];
-    ray_o.Ngz[i] = ray_i.Ng[2];
-    ray_o.time[i] = ray_i.time;
-    ray_o.mask[i] = ray_i.mask;
-    ray_o.geomID[i] = ray_i.geomID;
-    ray_o.primID[i] = ray_i.primID;
-    ray_o.instID[i] = ray_i.instID;
-  }
-
-
-  RTCRay getRay(RTCRay16& ray_i, int i)
-  {
-    RTCRay ray_o;
-    ray_o.org[0] = ray_i.orgx[i];
-    ray_o.org[1] = ray_i.orgy[i];
-    ray_o.org[2] = ray_i.orgz[i];
-    ray_o.dir[0] = ray_i.dirx[i];
-    ray_o.dir[1] = ray_i.diry[i];
-    ray_o.dir[2] = ray_i.dirz[i];
-    ray_o.tnear = ray_i.tnear[i];
-    ray_o.tfar = ray_i.tfar[i];
-    ray_o.Ng[0] = ray_i.Ngx[i];
-    ray_o.Ng[1] = ray_i.Ngy[i];
-    ray_o.Ng[2] = ray_i.Ngz[i];
-    ray_o.time = ray_i.time[i];
-    ray_o.mask = ray_i.mask[i];
-    ray_o.geomID = ray_i.geomID[i];
-    ray_o.primID = ray_i.primID[i];
-    ray_o.instID = ray_i.instID[i];
-    return ray_o;
-  }
-
-
   static void parseCommandLine(int argc, char** argv)
   {
     for (int i=1; i<argc; i++)
@@ -259,6 +193,35 @@ namespace embree
     cout << stats << endl;
   }
 
+  void transferGeometryData(char *g)
+  {
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,aflags);
+
+    size_t numGroups = *(size_t*)g;
+    g += sizeof(size_t);
+    size_t numTotalTriangles = *(size_t*)g;
+    g += sizeof(size_t);
+    DBG_PRINT(numGroups);
+    DBG_PRINT(numTotalTriangles);
+
+    for (size_t i=0; i<numGroups; i++) 
+      {
+	size_t numVertices = *(size_t*)g;
+	g += sizeof(size_t);
+	DBG_PRINT(numVertices);
+	size_t numTriangles = *(size_t*)g;
+	g += sizeof(size_t);
+	DBG_PRINT(numTriangles);
+	Vertex *vtx = (Vertex*)g;
+	g += sizeof(Vertex)*numVertices;
+	Triangle *tri = (Triangle *)g;
+	g += sizeof(Triangle)*numTriangles;
+	if (((size_t)g % 16) != 0)
+	  g += 16 - ((size_t)g % 16);
+      }
+    rtcCommit(scene);
+  }
+
 
   /* main function in embree namespace */
   int main(int argc, char** argv) 
@@ -270,6 +233,8 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
+
+    RayStreamLogger::rayStreamLogger.deactivate();
 
     std::string geometryFileName = g_binaries_path + "geometry.bin";
     std::string rayStreamFileName = g_binaries_path + "ray16.bin";
@@ -288,6 +253,10 @@ namespace embree
     /* analyse ray stream data */
     cout << "analyse ray stream:" << endl << flush;    
     analyseRayStreamData(r,numLogRayStreamElements);
+
+    /* transfer geometry data */
+    cout << "transfering geometry data:" << endl << flush;
+    transferGeometryData((char*)g);
 
     rtcExit();
     return 0;
