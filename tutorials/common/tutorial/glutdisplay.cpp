@@ -202,17 +202,18 @@ namespace embree
     double t0 = getSeconds();
     render(g_time0-t0,
            pixel2world.l.vx,
-           pixel2world.l.vy,
-           pixel2world.l.vz,
+           -pixel2world.l.vy,
+           pixel2world.l.vz+g_height*pixel2world.l.vy,
            pixel2world.p);
+
     double dt0 = getSeconds()-t0;
 
     if (g_display) 
     {
       /* draw pixels to screen */
       int* pixels = map();
-      glRasterPos2i(-1, 1);
-      glPixelZoom(1.0f, -1.0f);
+      //glRasterPos2i(-1, 1);
+      //glPixelZoom(1.0f, -1.0f);
       glDrawPixels(g_width,g_height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
       glutSwapBuffers();
       unmap();
