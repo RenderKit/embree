@@ -641,7 +641,7 @@ namespace embree
 
 #if defined(ENABLE_RAYSTREAM_LOGGER)
     if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
-      RayStreamLogger::rayStreamLogger.logRay16Intersect(valid,scene,old_ray,ray);
+      RayStreamLogger::rayStreamLogger.logRay16Occluded(valid,scene,old_ray,ray);
 #endif
 
 #endif
