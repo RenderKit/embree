@@ -46,8 +46,6 @@ namespace embree
 
   RayStreamLogger::~RayStreamLogger()
     {
-      //PING;
-
       if (initialized)
 	{
 	  rayData.close();
