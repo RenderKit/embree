@@ -123,6 +123,7 @@ namespace embree
 
       if ((align_check % 16) != 0)
 	FATAL("vtx alignment");
+
       geometryData.write((char*)mesh->vertices[0].getPtr(),sizeof(Vec3fa)*mesh->numVertices);
       align_check += sizeof(Vec3fa)*mesh->numVertices;
 
@@ -130,11 +131,17 @@ namespace embree
       align_check += sizeof(TriangleMesh::Triangle)*mesh->numTriangles;
       if ((align_check % 16) != 0)
 	{
+	  size_t dummy_size = 16-(align_check % 16);
 	  char dummy[16];
 	  memset(dummy,0,16);      
-	  DBG_PRINT( 16-(align_check % 16) );
-	  geometryData.write(dummy,16-(align_check % 16));
+	  DBG_PRINT( dummy_size );
+	  geometryData.write(dummy,dummy_size);
+	  align_check += dummy_size;
 	}
+
+      if ((align_check % 16) != 0)
+	FATAL("vtx alignment 2");
+
     }
 
     geometryData << flush;
