@@ -32,6 +32,8 @@
 #include <fstream>
 
 #define DBG(x) 
+#define THREADS 240
+#define FRAMES 4
 
 namespace embree
 {
@@ -332,11 +334,13 @@ namespace embree
 	if (unlikely(check))
 	  diff += check_ray_packets(index, (mic_m)r[index].m_valid,  r[index].start, r[index].end);
       }
-    if (diff)
-      {
-	DBG_PRINT(diff);
-	DBG_PRINT(100. * diff / rays);
-      }
+    DBG(
+	if (diff)
+	  {
+	    DBG_PRINT(diff);
+	    DBG_PRINT(100. * diff / rays);
+	  }
+	);
   }
 
   struct RetraceTask
@@ -350,8 +354,6 @@ namespace embree
 
   void retrace_loop_parallel(RetraceTask* task, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event)
   {
-    DBG_PRINT(threadIndex);
-    DBG_PRINT(taskIndex);
     retrace_loop(task->scene,task->r,task->numLogRayStreamElements,task->check);
   }
 
@@ -364,7 +366,7 @@ namespace embree
     rt.check = check;
     
     TaskScheduler::EventSync event;
-    TaskScheduler::Task task(&event,(TaskScheduler::runFunction)retrace_loop_parallel,&rt,MAX_MIC_THREADS,NULL,NULL,"retrace");
+    TaskScheduler::Task task(&event,(TaskScheduler::runFunction)retrace_loop_parallel,&rt,THREADS,NULL,NULL,"retrace");
     TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
     event.sync();
   }
@@ -380,6 +382,10 @@ namespace embree
     /* perform tests */
     DBG_PRINT(g_rtcore.c_str());
     rtcInit(g_rtcore.c_str());
+
+    TaskScheduler::create(THREADS);
+
+    DBG_PRINT(TaskScheduler::getNumThreads());
 
     RayStreamLogger::rayStreamLogger.deactivate();
 
@@ -407,18 +413,19 @@ namespace embree
     RTCScene scene = transferGeometryData((char*)g);
 
     /* retrace ray packets */
-    cout << "Retracing logged rays..." << flush;
-    g_counter = 0;
-    double dt = getSeconds();
-#if 0
-    launch_retrace_loop(scene,r,numLogRayStreamElements,g_check);
+    cout << "Retracing logged rays:" << flush;
+    for (size_t i=0;i<FRAMES;i++)
+      {
+	g_counter = 0;
+	double dt = getSeconds();
+#if 1
+	launch_retrace_loop(scene,r,numLogRayStreamElements,g_check);
 #else
-    retrace_loop(scene,r,numLogRayStreamElements,g_check);
+	retrace_loop(scene,r,numLogRayStreamElements,g_check);
 #endif
-    dt = getSeconds()-dt;
-    cout << "done" << endl << flush;
-    cout << "=> time " << 1000. * dt << "ms " << endl;
-    cout << "=> mrays/sec " << stats.numTotalRays / dt / 1000000. << endl;
+	dt = getSeconds()-dt;
+	cout << "frame " << i << " => time " << 1000. * dt << "ms " << stats.numTotalRays / dt / 1000000. << " mrays/sec" << endl;
+      }
 
     /* done */
     rtcExit();
