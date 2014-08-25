@@ -28,7 +28,12 @@ namespace embree
 
   /* configuration */
   static std::string g_rtcore = "";
-  
+
+  static size_t g_plot_min = 0;
+  static size_t g_plot_max = 0;
+  static size_t g_plot_step= 0;
+  static std::string g_plot_test = "";
+
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
   struct Triangle { int v0, v1, v2; };
@@ -241,6 +246,14 @@ namespace embree
       /* rtcore configuration */
       else if (tag == "-rtcore" && i+1<argc) {
         g_rtcore = argv[++i];
+      }
+
+      /* plots scalability graph */
+      else if (tag == "-plot" && i+4<argc) {
+	g_plot_min = atoi(argv[++i]);
+	g_plot_max = atoi(argv[++i]);
+	g_plot_step= atoi(argv[++i]);
+	g_plot_test= argv[++i];
       }
 
       /* skip unknown command line parameter */
@@ -665,6 +678,29 @@ namespace embree
 #endif
   }
 
+  void plot_scalability()
+  {
+    Benchmark* benchmark = NULL;
+    for (size_t i=0; i<benchmarks.size(); i++) {
+      if (benchmarks[i]->name == g_plot_test) {
+	benchmark = benchmarks[i];
+	break;
+      }
+    }
+    if (benchmark == NULL) {
+      std::cout << "unknown benchmark: " << g_plot_test << std::endl;
+      return;
+    }
+
+    for (size_t i=g_plot_min; i<=g_plot_max; i+= g_plot_step) {
+      std::string threads = std::stringOf(i);
+      rtcInit((g_rtcore+",threads="+threads).c_str());
+      double p = benchmark->run();
+      std::cout << "threads = " << i << ": " << p << " " << benchmark->unit << std::endl;
+      rtcExit();
+    }
+  }
+
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
@@ -672,6 +708,11 @@ namespace embree
 
     /* parse command line */  
     parseCommandLine(argc,argv);
+
+    if (g_plot_test != "") {
+      plot_scalability();
+      return 0;
+    }
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
