@@ -185,7 +185,8 @@ namespace embree
           build_sequential(threadIndex,threadCount);
         } 
         else {
-          if (!g_state.get()) g_state.reset(new GlobalState(threadCount));
+          if (!g_state.get() || g_state.get()->numThreads != threadCount) 
+	    g_state.reset(new GlobalState(threadCount));
           TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
         }
         dt_min = min(dt_min,dt);
@@ -206,7 +207,8 @@ namespace embree
 	build_sequential(threadIndex,threadCount);
       } 
       else {
-	if (!g_state.get()) g_state.reset(new GlobalState(threadCount));
+	if (!g_state.get() || g_state.get()->numThreads != threadCount) 
+	  g_state.reset(new GlobalState(threadCount));
 	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
       }
       

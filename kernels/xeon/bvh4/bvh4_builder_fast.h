@@ -82,13 +82,14 @@ namespace embree
       public:
 
         GlobalState (size_t numThreads) 
-	  : threadStack(new WorkStack<BuildRecord,SIZE_WORK_STACK>[numThreads]) {}
+	: numThreads(numThreads), threadStack(new WorkStack<BuildRecord,SIZE_WORK_STACK>[numThreads]) {}
         
         ~GlobalState () {
           delete[] threadStack;
         }
 
       public:
+	size_t numThreads;
 	WorkHeap<BuildRecord> heap;
         __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* threadStack;
 	ObjectPartition::ParallelBinner parallelBinner;

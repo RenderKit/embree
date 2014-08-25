@@ -61,7 +61,7 @@ namespace embree
 #endif
 
       /* create global state */
-      if (!g_state.get()) 
+      if (!g_state.get() || g_state.get()->numThreads != threadCount) 
         g_state.reset(new GlobalState(threadCount));
 
       /* delete some objects */
