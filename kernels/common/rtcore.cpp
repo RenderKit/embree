@@ -31,7 +31,7 @@
 
 #if defined(__MIC__)
 #include "raystream_log.h"
-//#define ENABLE_RAYSTREAM_LOGGER
+#define ENABLE_RAYSTREAM_LOGGER
 #endif
 
 namespace embree

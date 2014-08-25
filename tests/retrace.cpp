@@ -43,6 +43,8 @@ namespace embree
     size_t numOccludedRayPackets;
     size_t numIntersectRays;
     size_t numOccludedRays;
+    size_t num4widePackets;
+    size_t num8widePackets;
 
     RayStreamStats() {
       memset(this,0,sizeof(RayStreamStats));
@@ -65,7 +67,8 @@ namespace embree
 	}
       else
 	FATAL("unknown log ray type");
-
+      num4widePackets += (numRays+3)/4;
+      num8widePackets += (numRays+7)/8;
     }
 
   };
@@ -79,6 +82,9 @@ namespace embree
       o << "avg. intersect packet utilization = " << 100. *  (double)s.numIntersectRays / (s.numIntersectRayPackets * 16.) << "%" << endl;
       o << "avg. occluded  packet utilization = " << 100. *  (double)s.numOccludedRays  / (s.numOccludedRayPackets  * 16.) << "%" << endl;
       o << "avg. total packet utilization     = " << 100. * (double)s.numTotalRays / (s.numRayPackets * 16.)  << "%" << endl;
+      o << "avg. 4-wide packet utilization    = " << 100. * (double)s.numTotalRays / (s.num4widePackets * 4.)  << "%" << endl;
+      o << "avg. 8-wide packet utilization    = " << 100. * (double)s.numTotalRays / (s.num8widePackets * 8.)  << "%" << endl;
+
       return o;
     } 
   
@@ -89,19 +95,18 @@ namespace embree
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);
 #endif
   /* configuration */
-  static std::string g_rtcore = "";
+  static std::string g_rtcore = "-rtcore verbose=2";
 
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
   struct Triangle { int v0, v1, v2; };
 
-  std::vector<thread_t> g_threads;
-  size_t numFailedTests = 0;
+  static AtomicCounter g_counter = 0;
 
 #if defined(__MIC__)
-  std::string g_binaries_path = "/home/micuser/";
+  static std::string g_binaries_path = "/home/micuser/";
 #else
-  std::string g_binaries_path = "./";
+  static std::string g_binaries_path = "./";
 #endif
 
 
@@ -111,20 +116,6 @@ namespace embree
   if (rtcGetError() == RTC_NO_ERROR) return false;
 #define AssertError(code) \
   if (rtcGetError() != code) return false;
-
-  const size_t numSceneFlags = 64;
-
-  RTCSceneFlags getSceneFlag(size_t i) 
-  {
-    int flag = 0;                               
-    if (i & 1) flag |= RTC_SCENE_DYNAMIC;
-    if (i & 2) flag |= RTC_SCENE_COMPACT;
-    if (i & 4) flag |= RTC_SCENE_COHERENT;
-    if (i & 8) flag |= RTC_SCENE_INCOHERENT;
-    if (i & 16) flag |= RTC_SCENE_HIGH_QUALITY;
-    if (i & 32) flag |= RTC_SCENE_ROBUST;
-    return (RTCSceneFlags) flag;
-  }
 
   static void parseCommandLine(int argc, char** argv)
   {
@@ -184,16 +175,16 @@ namespace embree
     return ptr;
   }
 
-  void analyseRayStreamData(RayStreamLogger::LogRay16 *r, size_t numLogRayStreamElements)
+  RayStreamStats analyseRayStreamData(RayStreamLogger::LogRay16 *r, size_t numLogRayStreamElements)
   {
-    cout << "numLogRayStreamElements " << numLogRayStreamElements << endl;
     RayStreamStats stats;
+    cout << "numLogRayStreamElements " << numLogRayStreamElements << endl;
     for (size_t i=0;i<numLogRayStreamElements;i++)
       stats.add(r[i]);
-    cout << stats << endl;
+    return stats;
   }
 
-  void transferGeometryData(char *g)
+  RTCScene transferGeometryData(char *g)
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,aflags);
 
@@ -208,10 +199,8 @@ namespace embree
       {
 	size_t numVertices = *(size_t*)g;
 	g += sizeof(size_t);
-	DBG_PRINT(numVertices);
 	size_t numTriangles = *(size_t*)g;
 	g += sizeof(size_t);
-	DBG_PRINT(numTriangles);
 	Vertex *vtx = (Vertex*)g;
 	g += sizeof(Vertex)*numVertices;
 	Triangle *tri = (Triangle *)g;
@@ -220,8 +209,20 @@ namespace embree
 	  g += 16 - ((size_t)g % 16);
       }
     rtcCommit(scene);
+    return scene;
   }
 
+  void retrace_loop(RTCScene scene, RayStreamLogger::LogRay16 *r, size_t numLogRayStreamElements)
+  {
+    while(1)
+      {
+	const size_t index = g_counter.inc();
+	if (index > numLogRayStreamElements) break;
+	RTCRay16 &ray16 = r[index].start;
+	mic_i valid = select((mic_m)r[index].m_valid,mic_i(-1),mic_i(0));
+	rtcIntersect16(&valid,scene,ray16);
+      }
+  }
 
   /* main function in embree namespace */
   int main(int argc, char** argv) 
@@ -252,12 +253,25 @@ namespace embree
 
     /* analyse ray stream data */
     cout << "analyse ray stream:" << endl << flush;    
-    analyseRayStreamData(r,numLogRayStreamElements);
+    RayStreamStats stats = analyseRayStreamData(r,numLogRayStreamElements);
+    cout << stats << endl;
 
     /* transfer geometry data */
     cout << "transfering geometry data:" << endl << flush;
-    transferGeometryData((char*)g);
+    RTCScene scene = transferGeometryData((char*)g);
 
+    /* retrace ray packets */
+#if 0
+    g_counter = 0;
+    double dt = getSeconds();
+    retrace_loop(scene,r,numLogRayStreamElements);
+    dt = getSeconds()-dt;
+
+    cout << "time " << 1000. * dt << "ms " << endl;
+    cout << "rays/sec " << stats.numTotalRays / dt << endl;
+#endif
+
+    /* done */
     rtcExit();
     return 0;
   }
