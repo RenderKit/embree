@@ -36,14 +36,9 @@
 namespace embree
 {
   using namespace std;
-
-  enum { 
-    RAY_INTERSECT = 0,
-    RAY_OCCLUDED  = 1
-  };
 	 
 
-  RayStreamLogger::RayStreamLogger() : initialized(false)
+  RayStreamLogger::RayStreamLogger() : initialized(false), active(true)
   {
     int error = pthread_mutex_init(&mutex,NULL);
   }
@@ -51,8 +46,6 @@ namespace embree
 
   RayStreamLogger::~RayStreamLogger()
     {
-      //PING;
-
       if (initialized)
 	{
 	  rayData.close();
@@ -73,6 +66,8 @@ namespace embree
 
   void RayStreamLogger::dumpGeometry(void* ptr)
   {
+    if (!active) return;
+
     Scene *scene = (Scene*)ptr;
 
     const size_t numGroups = scene->size();
@@ -101,8 +96,11 @@ namespace embree
 
     if (!geometryData) FATAL("could not dump geometry data to file");
 
+    size_t align_check = 0;
     geometryData.write((char*)&numGroups,sizeof(numGroups));
+    align_check += sizeof(numGroups);
     geometryData.write((char*)&numTotalTriangles,sizeof(numTotalTriangles));
+    align_check += sizeof(numTotalTriangles);
 
     for (size_t g=0; g<numGroups; g++) {       
       if (unlikely(scene->get(g) == NULL)) continue;
@@ -119,10 +117,31 @@ namespace embree
 	  );
 
       geometryData.write((char*)&mesh->numVertices,sizeof(mesh->numVertices));
-      geometryData.write((char*)mesh->vertices[0].getPtr(),sizeof(Vec3fa)*mesh->numVertices);
-
+      align_check += sizeof(mesh->numVertices);
       geometryData.write((char*)&mesh->numTriangles,sizeof(mesh->numTriangles));
+      align_check += sizeof(mesh->numTriangles);
+
+      if ((align_check % 16) != 0)
+	FATAL("vtx alignment");
+
+      geometryData.write((char*)mesh->vertices[0].getPtr(),sizeof(Vec3fa)*mesh->numVertices);
+      align_check += sizeof(Vec3fa)*mesh->numVertices;
+
       geometryData.write((char*)mesh->triangles.getPtr(),sizeof(TriangleMesh::Triangle)*mesh->numTriangles);     
+      align_check += sizeof(TriangleMesh::Triangle)*mesh->numTriangles;
+      if ((align_check % 16) != 0)
+	{
+	  size_t dummy_size = 16-(align_check % 16);
+	  char dummy[16];
+	  memset(dummy,0,16);      
+	  DBG_PRINT( dummy_size );
+	  geometryData.write(dummy,dummy_size);
+	  align_check += dummy_size;
+	}
+
+      if ((align_check % 16) != 0)
+	FATAL("vtx alignment 2");
+
     }
 
     geometryData << flush;
@@ -131,6 +150,8 @@ namespace embree
 
   void RayStreamLogger::logRay16Intersect(const void* valid_i, void* scene, RTCRay16& start, RTCRay16& end)
   {
+    if (!active) return;
+
     pthread_mutex_lock(&mutex);
 
     if (!initialized)
@@ -152,6 +173,8 @@ namespace embree
 
   void RayStreamLogger::logRay16Occluded(const void* valid_i, void* scene, RTCRay16& start, RTCRay16& end)
   {
+    if (!active) return;
+
     pthread_mutex_lock(&mutex);
     if (!initialized)
       {

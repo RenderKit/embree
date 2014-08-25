@@ -637,6 +637,7 @@ float noise(float x, float y, float z)
     Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
     storeImage(image, fileName);
     unmap();
+    cleanup();
   }
 
   /* main function in embree namespace */

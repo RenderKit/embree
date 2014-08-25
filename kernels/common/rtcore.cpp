@@ -31,7 +31,7 @@
 
 #if defined(__MIC__)
 #include "raystream_log.h"
-#define ENABLE_RAYSTREAM_LOGGER
+//#define ENABLE_RAYSTREAM_LOGGER
 #endif
 
 namespace embree
@@ -491,7 +491,8 @@ namespace embree
     VERIFY_HANDLE(scene);
 
 #if defined(ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.dumpGeometry(scene);
+    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
+      RayStreamLogger::rayStreamLogger.dumpGeometry(scene);
 #endif
 
     ((Scene*)scene)->build();
@@ -566,7 +567,8 @@ namespace embree
     ((Scene*)scene)->intersect16(valid,ray);
 
 #if defined(ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.logRay16Intersect(valid,scene,old_ray,ray);
+    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
+      RayStreamLogger::rayStreamLogger.logRay16Intersect(valid,scene,old_ray,ray);
 #endif
 
 #endif
@@ -638,7 +640,8 @@ namespace embree
     ((Scene*)scene)->occluded16(valid,ray);
 
 #if defined(ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.logRay16Intersect(valid,scene,old_ray,ray);
+    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
+      RayStreamLogger::rayStreamLogger.logRay16Occluded(valid,scene,old_ray,ray);
 #endif
 
 #endif

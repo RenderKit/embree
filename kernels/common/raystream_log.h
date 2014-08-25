@@ -31,12 +31,19 @@ namespace embree
     pthread_mutex_t mutex;
 
     bool initialized;
+    bool active;
 
     std::ofstream rayData;
 
     void openRayDataStream();
 
   public:
+
+    enum { 
+      RAY_INTERSECT = 0,
+      RAY_OCCLUDED  = 1
+    };
+
     RayStreamLogger();
     ~RayStreamLogger();
 
@@ -57,6 +64,9 @@ namespace embree
   void logRay16Intersect(const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
   void logRay16Occluded (const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
   void dumpGeometry(void* scene);
-    
+
+  __forceinline void deactivate() { active = false; }
+  __forceinline bool isActive() { return active; }
+
   };
 };
