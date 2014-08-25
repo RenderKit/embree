@@ -68,6 +68,23 @@ void launch_renderTile (int numTiles,
                         int* pixels, const int width, const int height, const float time, 
                         const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY);
 
+/* parallel invokation of animateSphere function */
+typedef void (*animateSphereFunc) (int taskIndex, Vertex* vertices, 
+				   const float rcpNumTheta,
+				   const float rcpNumPhi,
+				   const Vec3fa& pos, 
+				   const float r,
+				   const float f);
+
+void launch_animateSphere(animateSphereFunc func,
+			  int taskSize, 
+			  Vertex* vertices, 
+			  const float rcpNumTheta,
+			  const float rcpNumPhi,
+			  const Vec3fa& pos, 
+			  const float r,
+			  const float f);
+
 struct Sample3f
 {
   Sample3f () {}

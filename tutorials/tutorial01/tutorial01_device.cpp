@@ -284,8 +284,8 @@ void animateSphere (int id, float time)
   const float f = 2.0f*(1.0f+0.5f*sin(time));
 
   /* loop over all vertices */
-#if 0
-  launch_animateSphere(numPhi+1,vertices,rcpNumTheta,rcpNumPhi,pos,r,f); 
+#if 1 // enables parallel execution
+  launch_animateSphere(animateSphere,numPhi+1,vertices,rcpNumTheta,rcpNumPhi,pos,r,f); 
 #else
   for (int phi = 0; phi <numPhi+1; phi++) for (int theta = 0; theta<numTheta; theta++)
   {

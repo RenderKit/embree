@@ -14,7 +14,7 @@ sed -i.backup  's/programIndex/0/g' $2
 sed -i.backup  's/extern/extern \"C\"/g' $2
 sed -i.backup  's/export/extern \"C\"/g' $2
 sed -i.backup  's/launch\[numTilesX\*numTilesY\] renderTile(/launch_renderTile(numTilesX\*numTilesY,/g' $2
-sed -i.backup  's/launch\[numPhi+1\] animateSphere(/launch_animateSphere(numPhi+1,/g' $2
+sed -i.backup  's/launch\[numPhi+1\] animateSphere(/launch_animateSphere(animateSphere,numPhi+1,/g' $2
 sed -i.backup  's/M_PI/float(pi)/g' $2
 sed -i.backup  's/\*pi\*/\*float(pi)\*/g' $2
 sed -i.backup  's/\*pi\//\*float(pi)\//g' $2
@@ -37,7 +37,7 @@ sed -i.backup  's/task void animateSphere (Vertex\* vertices,/void animateSphere
 sed -i.backup  's/Vec3f renderPixelStandard(float x, float y, const Vec3f\& vx, const Vec3f\& vy, const Vec3f\& vz, const Vec3f\& p)/Vec3fa renderPixelStandard(float x, float y, const Vec3fa\& vx, const Vec3fa\& vy, const Vec3fa\& vz, const Vec3fa\& p)/g' $2
 sed -i.backup  's/RTCIntersectFuncVarying/RTCIntersectFunc/g' $2
 sed -i.backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
-sed -i.backup  's/\#if 1 \/\/ enables parallel execution/\#if 0/g' $2
+#sed -i.backup  's/\#if 1 \/\/ enables parallel execution/\#if 0/g' $2
 sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
 
