@@ -39,11 +39,6 @@ namespace embree
   if (rtcGetError() == RTC_NO_ERROR) return false;
 #define AssertError(code) \
   if (rtcGetError() != code) return false;
-#define BUILD(name,test) {                                              \
-    double perf = test;                                                \
-    printf("%30s ... %f Mtris/s\n",name,perf*1E-6);                                 \
-	fflush(stdout);\
-  }
 
   std::vector<thread_t> g_threads;
   std::vector<thread_t> g_threads2;
@@ -324,63 +319,90 @@ namespace embree
     return geom;
   }
 
-  double rtcore_create_geometry(RTCSceneFlags sflags, RTCGeometryFlags gflags, size_t numPhi, size_t numMeshes)
+  class Benchmark
   {
-    Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
+  public:
+    const std::string name;
+    const std::string unit;
+    Benchmark (const std::string& name, const std::string& unit)
+      : name(name), unit(unit) {}
 
-    double t0 = getSeconds();
-    RTCScene scene = rtcNewScene(sflags,aflags);
+    virtual double run() = 0;
+  };
 
-    for (size_t i=0; i<numMeshes; i++) 
+  class create_geometry : public Benchmark
+  {
+  public:
+    RTCSceneFlags sflags; RTCGeometryFlags gflags; size_t numPhi; size_t numMeshes;
+    create_geometry (const std::string& name, RTCSceneFlags sflags, RTCGeometryFlags gflags, size_t numPhi, size_t numMeshes)
+      : Benchmark(name,"Mtris/s"), sflags(sflags), gflags(gflags), numPhi(numPhi), numMeshes(numMeshes) {}
+
+    double run()
     {
-      unsigned geom = rtcNewTriangleMesh (scene, gflags, mesh.triangles.size(), mesh.vertices.size());
-      memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &mesh.vertices[0], mesh.vertices.size()*sizeof(Vertex));
-      memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &mesh.triangles[0], mesh.triangles.size()*sizeof(Triangle));
-      rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
-      rtcUnmapBuffer(scene,geom,RTC_INDEX_BUFFER);
-      for (size_t i=0; i<mesh.vertices.size(); i++) {
-        mesh.vertices[i].x += 1.0f;
-        mesh.vertices[i].y += 1.0f;
-        mesh.vertices[i].z += 1.0f;
+      Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
+      
+      double t0 = getSeconds();
+      RTCScene scene = rtcNewScene(sflags,aflags);
+      
+      for (size_t i=0; i<numMeshes; i++) 
+      {
+	unsigned geom = rtcNewTriangleMesh (scene, gflags, mesh.triangles.size(), mesh.vertices.size());
+	memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &mesh.vertices[0], mesh.vertices.size()*sizeof(Vertex));
+	memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &mesh.triangles[0], mesh.triangles.size()*sizeof(Triangle));
+	rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
+	rtcUnmapBuffer(scene,geom,RTC_INDEX_BUFFER);
+	for (size_t i=0; i<mesh.vertices.size(); i++) {
+	  mesh.vertices[i].x += 1.0f;
+	  mesh.vertices[i].y += 1.0f;
+	  mesh.vertices[i].z += 1.0f;
+	}
       }
+      rtcCommit (scene);
+      double t1 = getSeconds();
+      rtcDeleteScene(scene);
+      
+      size_t numTriangles = mesh.triangles.size() * numMeshes;
+      return 1E-6*double(numTriangles)/(t1-t0);
     }
-    rtcCommit (scene);
-    double t1 = getSeconds();
-    rtcDeleteScene(scene);
-
-    size_t numTriangles = mesh.triangles.size() * numMeshes;
-    return double(numTriangles)/(t1-t0);
-  }
+  };
   
-  double rtcore_update_geometry(RTCGeometryFlags flags, size_t numPhi, size_t numMeshes)
+  class update_geometry : public Benchmark
   {
-    Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
-    RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
-
-    for (size_t i=0; i<numMeshes; i++) 
+  public:
+    RTCGeometryFlags flags; size_t numPhi; size_t numMeshes;
+    update_geometry(const std::string& name, RTCGeometryFlags flags, size_t numPhi, size_t numMeshes)
+      : Benchmark(name,"Mtris/s"), flags(flags), numPhi(numPhi), numMeshes(numMeshes) {}
+  
+    double run()
     {
-      unsigned geom = rtcNewTriangleMesh (scene, flags, mesh.triangles.size(), mesh.vertices.size());
-      memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &mesh.vertices[0], mesh.vertices.size()*sizeof(Vertex));
-      memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &mesh.triangles[0], mesh.triangles.size()*sizeof(Triangle));
-      rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
-      rtcUnmapBuffer(scene,geom,RTC_INDEX_BUFFER);
-      for (size_t i=0; i<mesh.vertices.size(); i++) {
-        mesh.vertices[i].x += 1.0f;
-        mesh.vertices[i].y += 1.0f;
-        mesh.vertices[i].z += 1.0f;
+      Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
+      RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
+      
+      for (size_t i=0; i<numMeshes; i++) 
+      {
+	unsigned geom = rtcNewTriangleMesh (scene, flags, mesh.triangles.size(), mesh.vertices.size());
+	memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &mesh.vertices[0], mesh.vertices.size()*sizeof(Vertex));
+	memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &mesh.triangles[0], mesh.triangles.size()*sizeof(Triangle));
+	rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
+	rtcUnmapBuffer(scene,geom,RTC_INDEX_BUFFER);
+	for (size_t i=0; i<mesh.vertices.size(); i++) {
+	  mesh.vertices[i].x += 1.0f;
+	  mesh.vertices[i].y += 1.0f;
+	  mesh.vertices[i].z += 1.0f;
+	}
       }
+      rtcCommit (scene);
+      
+      double t0 = getSeconds();
+      for (size_t i=0; i<numMeshes; i++) rtcUpdate(scene,i);
+      rtcCommit (scene);
+      double t1 = getSeconds();
+      rtcDeleteScene(scene);
+      
+      size_t numTriangles = mesh.triangles.size() * numMeshes;
+      return 1E-6*double(numTriangles)/(t1-t0);
     }
-    rtcCommit (scene);
-
-    double t0 = getSeconds();
-    for (size_t i=0; i<numMeshes; i++) rtcUpdate(scene,i);
-    rtcCommit (scene);
-    double t1 = getSeconds();
-    rtcDeleteScene(scene);
-
-    size_t numTriangles = mesh.triangles.size() * numMeshes;
-    return double(numTriangles)/(t1-t0);
-  }
+  };
 
   void rtcore_coherent_intersect1(RTCScene scene)
   {
@@ -589,70 +611,80 @@ namespace embree
 
     rtcDeleteScene(scene);
   }
+  
+  std::vector<Benchmark*> benchmarks;
+
+  void create_benchmarks()
+  {
+    benchmarks.push_back(new create_geometry ("create_static_geometry_120",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,6,1));
+    benchmarks.push_back(new create_geometry ("create_static_geometry_1k" ,      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,17,1));
+    benchmarks.push_back(new create_geometry ("create_static_geometry_10k",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,51,1));
+    benchmarks.push_back(new create_geometry ("create_static_geometry_100k",     RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,159,1));
+    benchmarks.push_back(new create_geometry ("create_static_geometry_1000k_1",  RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,501,1));
+    benchmarks.push_back(new create_geometry ("create_static_geometry_100k_10",  RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,159,10));
+    benchmarks.push_back(new create_geometry ("create_static_geometry_10k_100",  RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,51,100));
+    benchmarks.push_back(new create_geometry ("create_static_geometry_1k_1000" , RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,17,1000));
+#if defined(__X86_64__)
+    benchmarks.push_back(new create_geometry ("create_static_geometry_120_10000",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,6,8334));
+#endif
+
+    benchmarks.push_back(new create_geometry ("create_dynamic_geometry_120",      RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,6,1));
+    benchmarks.push_back(new create_geometry ("create_dynamic_geometry_1k" ,      RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,17,1));
+    benchmarks.push_back(new create_geometry ("create_dynamic_geometry_10k",      RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,51,1));
+    benchmarks.push_back(new create_geometry ("create_dynamic_geometry_100k",     RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,159,1));
+    benchmarks.push_back(new create_geometry ("create_dynamic_geometry_1000k_1",  RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,501,1));
+    benchmarks.push_back(new create_geometry ("create_dynamic_geometry_100k_10",  RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,159,10));
+    benchmarks.push_back(new create_geometry ("create_dynamic_geometry_10k_100",  RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,51,100));
+    benchmarks.push_back(new create_geometry ("create_dynamic_geometry_1k_1000" , RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,17,1000));
+#if defined(__X86_64__)
+    benchmarks.push_back(new create_geometry ("create_dynamic_geometry_120_10000",RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,6,8334));
+#endif
+
+    benchmarks.push_back(new update_geometry ("refit_geometry_120",      RTC_GEOMETRY_DEFORMABLE,6,1));
+    benchmarks.push_back(new update_geometry ("refit_geometry_1k" ,      RTC_GEOMETRY_DEFORMABLE,17,1));
+    benchmarks.push_back(new update_geometry ("refit_geometry_10k",      RTC_GEOMETRY_DEFORMABLE,51,1));
+    benchmarks.push_back(new update_geometry ("refit_geometry_100k",     RTC_GEOMETRY_DEFORMABLE,159,1));
+    benchmarks.push_back(new update_geometry ("refit_geometry_1000k_1",  RTC_GEOMETRY_DEFORMABLE,501,1));
+    benchmarks.push_back(new update_geometry ("refit_geometry_100k_10",  RTC_GEOMETRY_DEFORMABLE,159,10));
+    benchmarks.push_back(new update_geometry ("refit_geometry_10k_100",  RTC_GEOMETRY_DEFORMABLE,51,100));
+    benchmarks.push_back(new update_geometry ("refit_geometry_1k_1000" , RTC_GEOMETRY_DEFORMABLE,17,1000));
+#if defined(__X86_64__)
+    benchmarks.push_back(new update_geometry ("refit_geometry_120_10000",RTC_GEOMETRY_DEFORMABLE,6,8334));
+#endif
+    
+    benchmarks.push_back(new update_geometry ("update_geometry_120",      RTC_GEOMETRY_DYNAMIC,6,1));
+    benchmarks.push_back(new update_geometry ("update_geometry_1k" ,      RTC_GEOMETRY_DYNAMIC,17,1));
+    benchmarks.push_back(new update_geometry ("update_geometry_10k",      RTC_GEOMETRY_DYNAMIC,51,1));
+    benchmarks.push_back(new update_geometry ("update_geometry_100k",     RTC_GEOMETRY_DYNAMIC,159,1));
+    benchmarks.push_back(new update_geometry ("update_geometry_1000k_1",  RTC_GEOMETRY_DYNAMIC,501,1));
+    benchmarks.push_back(new update_geometry ("update_geometry_100k_10",  RTC_GEOMETRY_DYNAMIC,159,10));
+    benchmarks.push_back(new update_geometry ("update_geometry_10k_100",  RTC_GEOMETRY_DYNAMIC,51,100));
+    benchmarks.push_back(new update_geometry ("update_geometry_1k_1000" , RTC_GEOMETRY_DYNAMIC,17,1000));
+#if defined(__X86_64__)
+    benchmarks.push_back(new update_geometry ("update_geometry_120_10000",RTC_GEOMETRY_DYNAMIC,6,8334));
+#endif
+  }
 
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+    create_benchmarks();
+
     /* parse command line */  
     parseCommandLine(argc,argv);
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
-#if 1
+
     benchmark_mutex_sys();
     benchmark_barrier_sys();
-    benchmark_barrier_sys_oversubscribed();
-    
+    //benchmark_barrier_sys_oversubscribed();
     rtcore_intersect_benchmark(RTC_SCENE_STATIC, 501);
-
-    BUILD   ("create_static_geometry_120",       rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,6,1));
-    BUILD   ("create_static_geometry_1k",        rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,17,1));
-    BUILD   ("create_static_geometry_10k",       rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,51,1));
-    BUILD   ("create_static_geometry_100k",      rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,159,1));
-    BUILD   ("create_static_geometry_1000k_1",   rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,501,1));
-    BUILD   ("create_static_geometry_100k_10",   rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,159,10));
-    BUILD   ("create_static_geometry_10k_100",   rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,51,100));
-    BUILD   ("create_static_geometry_1k_1000",   rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,17,1000));
-#if defined(__X86_64__)
-    BUILD   ("create_static_geometry_120_10000", rtcore_create_geometry(RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,6,8334));
-#endif
-    BUILD   ("create_dynamic_geometry_120",       rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,6,1));
-    BUILD   ("create_dynamic_geometry_1k",        rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,17,1));
-#endif
-    BUILD   ("create_dynamic_geometry_10k",       rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,51,1));
-    BUILD   ("create_dynamic_geometry_100k",      rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,159,1));
-    BUILD   ("create_dynamic_geometry_1000k_1",   rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,501,1));
-    BUILD   ("create_dynamic_geometry_100k_10",   rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,159,10));
-    BUILD   ("create_dynamic_geometry_10k_100",   rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,51,100));
-    BUILD   ("create_dynamic_geometry_1k_1000",   rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,17,1000));
-#if defined(__X86_64__)
-    BUILD   ("create_dynamic_geometry_120_10000", rtcore_create_geometry(RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,6,8334));
-#endif
-
-    BUILD   ("refit_geometry_120",        rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,6,1));
-    BUILD   ("refit_geometry_1k",         rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,17,1));
-    BUILD   ("refit_geometry_10k",        rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,51,1));
-    BUILD   ("refit_geometry_100k",       rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,159,1));
-    BUILD   ("refit_geometry_1000k_1",    rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,501,1));
-    BUILD   ("refit_geometry_100k_10",    rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,159,10));
-    BUILD   ("refit_geometry_10k_100",    rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,51,100));
-    BUILD   ("refit_geometry_1k_1000",    rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,17,1000));
-#if defined(__X86_64__)
-    BUILD   ("refit_geometry_120_10000",  rtcore_update_geometry(RTC_GEOMETRY_DEFORMABLE,6,8334));
-#endif
-
-    BUILD   ("update_geometry_120",        rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,6,1));
-    BUILD   ("update_geometry_1k",         rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,17,1));
-    BUILD   ("update_geometry_10k",        rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,51,1));
-    BUILD   ("update_geometry_100k",       rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,159,1));
-    BUILD   ("update_geometry_1000k_1",    rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,501,1));
-    BUILD   ("update_geometry_100k_10",    rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,159,10));
-    BUILD   ("update_geometry_10k_100",    rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,51,100));
-    BUILD   ("update_geometry_1k_1000",    rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,17,1000));
-#if defined(__X86_64__)
-    BUILD   ("update_geometry_120_10000",  rtcore_update_geometry(RTC_GEOMETRY_DYNAMIC,6,8334));
-#endif
-
+    for (size_t i=0; i<benchmarks.size(); i++) {
+      Benchmark* benchmark = benchmarks[i];
+      printf("%30s ... %f %s\n",benchmark->name.c_str(),benchmark->run(),benchmark->unit.c_str());
+      fflush(stdout);
+    }
     rtcExit();
 
     return 0;

@@ -314,18 +314,30 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& vz, 
                            const Vec3fa& p)
 {
+  double t0 = getSeconds();
+
   /* animate sphere */
   for (int i=0; i<numSpheres; i++)
     animateSphere(i,time+i);
 
+  double t1 = getSeconds();
+
   /* commit changes to scene */
   rtcCommit (g_scene);
+
+  double t2 = getSeconds();
  
   /* render all pixels */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
+
+  double t3 = getSeconds();
   rtcDebug();
+
+  std::cout << "animate: " << 1000.0f*(t1-t0) << std::endl;
+  std::cout << "commit : " << 1000.0f*(t2-t1) << std::endl;
+  std::cout << "render : " << 1000.0f*(t3-t2) << std::endl;
 }
 
 /* called by the C++ code for cleanup */
