@@ -31,6 +31,8 @@
 #include <iostream>
 #include <fstream>
 
+#define DBG(x) 
+
 namespace embree
 {
   using namespace std;
@@ -95,13 +97,14 @@ namespace embree
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);
 #endif
   /* configuration */
-  static std::string g_rtcore = "-rtcore verbose=2";
+  static std::string g_rtcore = "verbose=2,threads=4";
 
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
   struct Triangle { int v0, v1, v2; };
 
   static AtomicCounter g_counter = 0;
+  static bool g_check = false;
 
 #if defined(__MIC__)
   static std::string g_binaries_path = "/home/micuser/";
@@ -128,7 +131,10 @@ namespace embree
       else if (tag == "-rtcore" && i+1<argc) {
         g_rtcore = argv[++i];
       }
-      
+
+      else if (tag == "-check") {
+        g_check = true;
+      }      
       /* skip unknown command line parameter */
       else {
 
@@ -207,21 +213,160 @@ namespace embree
 	g += sizeof(Triangle)*numTriangles;
 	if (((size_t)g % 16) != 0)
 	  g += 16 - ((size_t)g % 16);
+
+	if ((size_t)vtx % 16 != 0)
+	  FATAL("vtx array alignment");
+
+	unsigned int geometry = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, numTriangles, numVertices);
+	rtcSetBuffer(scene, geometry, RTC_VERTEX_BUFFER, vtx, 0, sizeof(Vec3fa      ));
+	rtcSetBuffer(scene, geometry, RTC_INDEX_BUFFER,  tri, 0, sizeof(Triangle));
       }
+
     rtcCommit(scene);
     return scene;
   }
 
-  void retrace_loop(RTCScene scene, RayStreamLogger::LogRay16 *r, size_t numLogRayStreamElements)
+  size_t check_ray_packets(const size_t index, const mic_m m_valid, RTCRay16 &start, RTCRay16 &end)
   {
+    mic_i start_primID = load16i(start.primID);
+    mic_i end_primID   = load16i(end.primID);
+
+    mic_i start_geomID = load16i(start.geomID);
+    mic_i end_geomID   = load16i(end.geomID);
+
+    mic_f start_u = load16f(start.u);
+    mic_f end_u   = load16f(end.u);
+
+    mic_f start_v = load16f(start.v);
+    mic_f end_v   = load16f(end.v);
+
+    mic_f start_t = load16f(start.tfar);
+    mic_f end_t   = load16f(end.tfar);
+
+    const mic_m m_primID = eq(m_valid,start_primID,end_primID);
+    const mic_m m_geomID = eq(m_valid,start_geomID,end_geomID);
+    const mic_m m_u      = eq(m_valid,start_u,end_u);
+    const mic_m m_v      = eq(m_valid,start_v,end_v);
+    const mic_m m_t      = eq(m_valid,start_t,end_t);
+
+    if ( m_primID != m_valid )
+      {
+	DBG(
+	    DBG_PRINT(index);
+	    DBG_PRINT(m_valid);
+	    DBG_PRINT(m_primID);
+	    DBG_PRINT(start_primID);
+	    DBG_PRINT(end_primID);
+	    );
+	return countbits(m_primID^m_valid);
+      }
+
+    if ( m_geomID != m_valid )
+      {
+	DBG(
+	    DBG_PRINT( index );
+	    DBG_PRINT( m_valid );
+	    DBG_PRINT( m_geomID );
+	    DBG_PRINT( start_geomID );
+	    DBG_PRINT( end_geomID );
+	    );
+	return countbits(m_geomID^m_valid);
+      }
+
+    if ( m_u != m_valid )
+      {
+	DBG(
+	    DBG_PRINT( index );
+	    DBG_PRINT( m_valid );
+	    DBG_PRINT( m_u );
+	    DBG_PRINT( start_u );
+	    DBG_PRINT( end_u );
+	    );
+	return countbits(m_u^m_valid);
+      }
+
+    if ( m_v != m_valid )
+      {
+	DBG(
+	    DBG_PRINT( index );
+	    DBG_PRINT( m_valid );
+	    DBG_PRINT( m_v );
+	    DBG_PRINT( start_v );
+	    DBG_PRINT( end_v );
+	    );
+	return countbits(m_v^m_valid);
+      }
+
+    if ( m_t != m_valid )
+      {
+	DBG(
+	    DBG_PRINT( index );
+	    DBG_PRINT( m_valid );
+	    DBG_PRINT( m_t );
+	    DBG_PRINT( start_t );
+	    DBG_PRINT( end_t );
+	    );
+	return countbits(m_t^m_valid);
+      }
+
+    return 0;
+  }
+
+
+  void retrace_loop(RTCScene scene, RayStreamLogger::LogRay16 *r, size_t numLogRayStreamElements, bool check = false)
+  {
+    size_t diff = 0;
+    size_t rays = 0;
     while(1)
       {
 	const size_t index = g_counter.inc();
 	if (index > numLogRayStreamElements) break;
 	RTCRay16 &ray16 = r[index].start;
 	mic_i valid = select((mic_m)r[index].m_valid,mic_i(-1),mic_i(0));
-	rtcIntersect16(&valid,scene,ray16);
+	rays += countbits( (mic_m)r[index].m_valid );
+	if (r[index].type == RayStreamLogger::RAY_INTERSECT)
+	  rtcIntersect16(&valid,scene,ray16);
+	else 
+	  rtcOccluded16(&valid,scene,ray16);
+
+	if (unlikely(check))
+	  diff += check_ray_packets(index, (mic_m)r[index].m_valid,  r[index].start, r[index].end);
       }
+    if (diff)
+      {
+	DBG_PRINT(diff);
+	DBG_PRINT(100. * diff / rays);
+      }
+  }
+
+  struct RetraceTask
+  {
+    RTCScene scene;
+    RayStreamLogger::LogRay16 *r;
+    size_t numLogRayStreamElements;
+    bool check;
+  };
+
+
+  void retrace_loop_parallel(RetraceTask* task, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event)
+  {
+    DBG_PRINT(threadIndex);
+    DBG_PRINT(taskIndex);
+    retrace_loop(task->scene,task->r,task->numLogRayStreamElements,task->check);
+  }
+
+  void launch_retrace_loop(RTCScene scene, RayStreamLogger::LogRay16 *r, size_t numLogRayStreamElements, bool check = false)
+  {
+    RetraceTask rt;
+    rt.scene = scene;
+    rt.r = r;
+    rt.numLogRayStreamElements = numLogRayStreamElements;
+    rt.check = check;
+    
+    TaskScheduler::EventSync event;
+    TaskScheduler::Task task(&event,(TaskScheduler::runFunction)retrace_loop_parallel,&rt,MAX_MIC_THREADS,NULL,NULL,"retrace");
+    TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
+    event.sync();
   }
 
   /* main function in embree namespace */
@@ -233,6 +378,7 @@ namespace embree
     DBG_PRINT( g_binaries_path );
 
     /* perform tests */
+    DBG_PRINT(g_rtcore.c_str());
     rtcInit(g_rtcore.c_str());
 
     RayStreamLogger::rayStreamLogger.deactivate();
@@ -261,15 +407,18 @@ namespace embree
     RTCScene scene = transferGeometryData((char*)g);
 
     /* retrace ray packets */
-#if 0
+    cout << "Retracing logged rays..." << flush;
     g_counter = 0;
     double dt = getSeconds();
-    retrace_loop(scene,r,numLogRayStreamElements);
-    dt = getSeconds()-dt;
-
-    cout << "time " << 1000. * dt << "ms " << endl;
-    cout << "rays/sec " << stats.numTotalRays / dt << endl;
+#if 0
+    launch_retrace_loop(scene,r,numLogRayStreamElements,g_check);
+#else
+    retrace_loop(scene,r,numLogRayStreamElements,g_check);
 #endif
+    dt = getSeconds()-dt;
+    cout << "done" << endl << flush;
+    cout << "=> time " << 1000. * dt << "ms " << endl;
+    cout << "=> mrays/sec " << stats.numTotalRays / dt / 1000000. << endl;
 
     /* done */
     rtcExit();
