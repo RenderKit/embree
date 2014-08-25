@@ -692,13 +692,32 @@ namespace embree
       return;
     }
 
+    //std::cout << "set terminal gif" << std::endl;
+    //std::cout << "set output\"" << benchmark->name << "\"" << std::endl;
+    std::cout << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
+    std::cout << "set samples 50, 50" << std::endl;
+    std::cout << "set title \"" << benchmark->name << "\"" << std::endl; 
+    std::cout << "set xlabel \"threads\"" << std::endl;
+    std::cout << "set ylabel \"" << benchmark->unit << "\"" << std::endl;
+    std::cout << "plot \"-\" using 0:2 title \"" << benchmark->name << "\" with lines" << std::endl;
+	
     for (size_t i=g_plot_min; i<=g_plot_max; i+= g_plot_step) {
       std::string threads = std::stringOf(i);
       rtcInit((g_rtcore+",threads="+threads).c_str());
-      double p = benchmark->run();
-      std::cout << "threads = " << i << ": " << p << " " << benchmark->unit << std::endl;
+      double pmin = inf, pmax = -float(inf), pavg = 0.0f;
+      for (size_t j=0; j<16; j++) {
+	double p = benchmark->run();
+	pmin = min(pmin,p);
+	pmax = max(pmax,p);
+	pavg = pavg + p/16.0f;
+      }
+      //std::cout << "threads = " << i << ": [" << pmin << " / " << pavg << " / " << pmax << "] " << benchmark->unit << std::endl;
+      std::cout << " " << i << " " << pmin << " " << pavg << " " << pmax << std::endl;
+      
       rtcExit();
     }
+    std::cout << "EOF" << std::endl;
+    //std::cout << "pause -1" << std::endl;
   }
 
   /* main function in embree namespace */
