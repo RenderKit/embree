@@ -134,7 +134,7 @@ namespace embree
 	  size_t dummy_size = 16-(align_check % 16);
 	  char dummy[16];
 	  memset(dummy,0,16);      
-	  DBG_PRINT( dummy_size );
+	  //DBG_PRINT( dummy_size );
 	  geometryData.write(dummy,dummy_size);
 	  align_check += dummy_size;
 	}

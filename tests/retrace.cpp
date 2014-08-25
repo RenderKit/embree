@@ -32,8 +32,7 @@
 #include <fstream>
 
 #define DBG(x) 
-#define THREADS 240
-#define FRAMES 4
+#define FRAMES 40
 
 namespace embree
 {
@@ -99,7 +98,7 @@ namespace embree
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);
 #endif
   /* configuration */
-  static std::string g_rtcore = "verbose=2,threads=4";
+  static std::string g_rtcore = "verbose=2";
 
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
@@ -107,6 +106,7 @@ namespace embree
 
   static AtomicCounter g_counter = 0;
   static bool g_check = false;
+  static size_t g_numThreads = 240;
 
 #if defined(__MIC__)
   static std::string g_binaries_path = "/home/micuser/";
@@ -137,6 +137,9 @@ namespace embree
       else if (tag == "-check") {
         g_check = true;
       }      
+      else if (tag == "-threads" && i+1<argc) {
+        g_numThreads = atoi(argv[++i]);
+      }
       /* skip unknown command line parameter */
       else {
 
@@ -315,13 +318,19 @@ namespace embree
   }
 
 
-  void retrace_loop(RTCScene scene, RayStreamLogger::LogRay16 *r, size_t numLogRayStreamElements, bool check = false)
+  void retrace_loop(RTCScene scene, 
+		    RayStreamLogger::LogRay16 *r, 
+		    size_t numLogRayStreamElements, 
+		    size_t threadID,
+		    size_t threads,
+		    bool check = false)
   {
     size_t diff = 0;
     size_t rays = 0;
+    size_t index = threadID;
     while(1)
       {
-	const size_t index = g_counter.inc();
+	//const size_t index = g_counter.inc();
 	if (index > numLogRayStreamElements) break;
 	RTCRay16 &ray16 = r[index].start;
 	mic_i valid = select((mic_m)r[index].m_valid,mic_i(-1),mic_i(0));
@@ -333,6 +342,8 @@ namespace embree
 
 	if (unlikely(check))
 	  diff += check_ray_packets(index, (mic_m)r[index].m_valid,  r[index].start, r[index].end);
+
+	index += threads;
       }
     DBG(
 	if (diff)
@@ -348,25 +359,27 @@ namespace embree
     RTCScene scene;
     RayStreamLogger::LogRay16 *r;
     size_t numLogRayStreamElements;
+    size_t threads;
     bool check;
   };
 
 
   void retrace_loop_parallel(RetraceTask* task, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event)
   {
-    retrace_loop(task->scene,task->r,task->numLogRayStreamElements,task->check);
+    retrace_loop(task->scene,task->r,task->numLogRayStreamElements,threadIndex,threadCount,task->check);
   }
 
-  void launch_retrace_loop(RTCScene scene, RayStreamLogger::LogRay16 *r, size_t numLogRayStreamElements, bool check = false)
+  void launch_retrace_loop(RTCScene scene, RayStreamLogger::LogRay16 *r, size_t numLogRayStreamElements, bool check , size_t threads )
   {
     RetraceTask rt;
     rt.scene = scene;
     rt.r = r;
     rt.numLogRayStreamElements = numLogRayStreamElements;
+    rt.threads = threads;
     rt.check = check;
     
     TaskScheduler::EventSync event;
-    TaskScheduler::Task task(&event,(TaskScheduler::runFunction)retrace_loop_parallel,&rt,THREADS,NULL,NULL,"retrace");
+    TaskScheduler::Task task(&event,(TaskScheduler::runFunction)retrace_loop_parallel,&rt,g_numThreads,NULL,NULL,"retrace");
     TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
     event.sync();
   }
@@ -381,9 +394,10 @@ namespace embree
 
     /* perform tests */
     DBG_PRINT(g_rtcore.c_str());
+    DBG_PRINT(g_numThreads);
     rtcInit(g_rtcore.c_str());
 
-    TaskScheduler::create(THREADS);
+    TaskScheduler::create(g_numThreads);
 
     DBG_PRINT(TaskScheduler::getNumThreads());
 
@@ -419,12 +433,12 @@ namespace embree
 	g_counter = 0;
 	double dt = getSeconds();
 #if 1
-	launch_retrace_loop(scene,r,numLogRayStreamElements,g_check);
+	launch_retrace_loop(scene,r,numLogRayStreamElements,g_check,g_numThreads);
 #else
 	retrace_loop(scene,r,numLogRayStreamElements,g_check);
 #endif
 	dt = getSeconds()-dt;
-	cout << "frame " << i << " => time " << 1000. * dt << "ms " << stats.numTotalRays / dt / 1000000. << " mrays/sec" << endl;
+	cout << "frame " << i << " => time " << 1000. * dt << " " << 1. / dt << " fps " << "ms " << stats.numTotalRays / dt / 1000000. << " mrays/sec" << endl;
       }
 
     /* done */
