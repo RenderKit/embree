@@ -56,6 +56,8 @@ namespace embree
     /* enable fast pthreads tasking system */
 #if defined(__MIC__)
     instance = new TaskSchedulerMIC; 
+    //instance = new TaskSchedulerSys; 
+
 #else
     instance = new TaskSchedulerSys; 
 #endif

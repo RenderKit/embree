@@ -125,7 +125,6 @@ namespace embree
       volatile unsigned int flag0;
       volatile unsigned int flag1;
       volatile unsigned int fill[16-3];
-      volatile unsigned int numThreads;
       
       LinearBarrierActive ();
 
