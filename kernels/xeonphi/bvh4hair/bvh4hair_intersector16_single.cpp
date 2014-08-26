@@ -21,7 +21,7 @@
 
 #define DBG(x) 
 
-#define EMBREE_DISABLE_HAIR 1
+//#define EMBREE_DISABLE_HAIR 0
 
 #if EMBREE_DISABLE_HAIR
 // iw, 7/4/14 - Added this workaround to enable external libraries to build
