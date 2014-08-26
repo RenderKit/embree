@@ -207,9 +207,11 @@ namespace embree
 	build_sequential(threadIndex,threadCount);
       } 
       else {
-	if (!g_state.get()) 
-	  g_state.reset(new GlobalState());
-	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
+	if (!g_state.get()) g_state.reset(new GlobalState());
+	size_t numActiveThreads = min(threadCount,getNumberOfCores());
+	TaskScheduler::enableThreads(numActiveThreads);
+        TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,numActiveThreads,"build_parallel");
+	TaskScheduler::enableThreads(threadCount);
       }
       
       /* verbose mode */

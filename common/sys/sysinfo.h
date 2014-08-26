@@ -74,6 +74,9 @@ namespace embree
   /*! return the number of logical threads of the system */
   size_t getNumberOfLogicalThreads();
   
+  /*! return the number of cores of the system */
+  size_t getNumberOfCores();
+  
   /*! returns the size of the terminal window in characters */
   int getTerminalWidth();
 }
