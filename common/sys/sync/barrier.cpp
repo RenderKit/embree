@@ -159,6 +159,11 @@ namespace embree
   }
 
   void LinearBarrierActive::init(size_t cntr) {
+    mode      = 0;
+    flag0     = 0;
+    flag1     = 0;
+    for (size_t i=0; i<cntr; i++) count0[i] = 0;
+    for (size_t i=0; i<cntr; i++) count1[i] = 0;
   }
 
   void LinearBarrierActive::wait (const size_t threadIndex, const size_t threadCount)

@@ -102,11 +102,11 @@ namespace embree
       if (needAllThreads) 
       {
         if (!g_state.get()) g_state.reset(new MortonBuilderState);
-	size_t numActiveThreads = threadCount;
-	//size_t numActiveThreads = min(threadCount,size_t(8));
-	//TaskScheduler::enableThreads(numActiveThreads);
+	//size_t numActiveThreads = threadCount;
+	size_t numActiveThreads = min(threadCount,size_t(8));
+	TaskScheduler::enableThreads(numActiveThreads);
         TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,numActiveThreads,"build_parallel_morton");
-	//TaskScheduler::enableThreads(threadCount);
+	TaskScheduler::enableThreads(threadCount);
       } else {
         build_sequential_morton(threadIndex,threadCount);
       }
