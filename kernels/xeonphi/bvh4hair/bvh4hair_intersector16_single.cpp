@@ -21,6 +21,14 @@
 
 #define DBG(x) 
 
+#define EMBREE_DISABLE_HAIR 1
+
+#if EMBREE_DISABLE_HAIR
+// iw, 7/4/14 - Added this workaround to enable external libraries to build
+// embree in a way that adds a workardoun for a compiler issue in the
+// -mmic branch of icc 13.0 (which breaks on the code that's uncommented below)
+#endif
+
 namespace embree
 {
   namespace isa
@@ -160,6 +168,9 @@ namespace embree
     template<typename LeafIntersector>    
     void BVH4HairIntersector16<LeafIntersector>::intersect(mic_i* valid_i, BVH4Hair* bvh, Ray16& ray16)
     {
+#if EMBREE_DISABLE_HAIR
+	throw std::runtime_error("hair explicitly disabled (to work aroudn compiler bug in icc 13.1.0)");
+#else 
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4Hair::maxDepth+1];
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
@@ -253,6 +264,7 @@ namespace embree
 	      // ------------------------
 	    }	  
 	}
+#endif
     }
 
     template<typename LeafIntersector>    
@@ -351,6 +363,9 @@ namespace embree
     template<typename LeafIntersector>        
     void BVH4HairIntersector1<LeafIntersector>::intersect(BVH4Hair* bvh, Ray& ray)
     {
+#if EMBREE_DISABLE_HAIR
+	throw std::runtime_error("hair explicitly disabled (to work aroudn compiler bug in icc 13.1.0)");
+#else 
 
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4Hair::maxDepth+1];
@@ -436,11 +451,15 @@ namespace embree
 	    }
 	  // ------------------------
 	}	         
+#endif
     }
 
     template<typename LeafIntersector>    
     void BVH4HairIntersector1<LeafIntersector>::occluded(BVH4Hair* bvh, Ray& ray)
     {
+#if EMBREE_DISABLE_HAIR
+	throw std::runtime_error("hair explicitly disabled (to work aroudn compiler bug in icc 13.1.0)");
+#else 
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4Hair::maxDepth+1];
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
@@ -523,6 +542,7 @@ namespace embree
 	    }
 	  // ------------------------
 	}	         
+#endif
     }
     
 
