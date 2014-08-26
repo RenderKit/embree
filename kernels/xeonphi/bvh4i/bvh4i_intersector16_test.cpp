@@ -25,17 +25,40 @@ namespace embree
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
     static unsigned int M_LANE_7777 = 0x7777;               // needed due to compiler efficiency bug
 
-    mic_f convertSOA4ftoAOS4f(const float * __restrict__ const x_ptr,
-			      const float * __restrict__ const y_ptr,
-			      const float * __restrict__ const z_ptr,
-			      const float * __restrict__ const w_ptr)
+    __forceinline void convertSOA4ftoAOS4f(const mic_f &x,
+					   const mic_f &y,
+					   const mic_f &z,
+					   const mic_f &w,
+					   Vec3fa *__restrict__ const dest)
     {
-      mic_f r = mic_f::undefined();
-      r = uload16f_low(0x1111,x_ptr,r);
-      r = uload16f_low(0x2222,y_ptr,r);
-      r = uload16f_low(0x4444,z_ptr,r);
-      r = uload16f_low(0x8888,w_ptr,r);
-      return r;
+      mic_f r0 = mic_f::undefined();
+      r0 = uload16f_low(0x1111,&x[0],r0);
+      r0 = uload16f_low(0x2222,&y[0],r0);
+      r0 = uload16f_low(0x4444,&z[0],r0);
+      r0 = uload16f_low(0x8888,&w[0],r0);
+
+      mic_f r1 = mic_f::undefined();
+      r1 = uload16f_low(0x1111,&x[4],r1);
+      r1 = uload16f_low(0x2222,&y[4],r1);
+      r1 = uload16f_low(0x4444,&z[4],r1);
+      r1 = uload16f_low(0x8888,&w[4],r1);
+
+      mic_f r2 = mic_f::undefined();
+      r2 = uload16f_low(0x1111,&x[8],r2);
+      r2 = uload16f_low(0x2222,&y[8],r2);
+      r2 = uload16f_low(0x4444,&z[8],r2);
+      r2 = uload16f_low(0x8888,&w[8],r2);
+
+      mic_f r3 = mic_f::undefined();
+      r3 = uload16f_low(0x1111,&x[12],r3);
+      r3 = uload16f_low(0x2222,&y[12],r3);
+      r3 = uload16f_low(0x4444,&z[12],r3);
+      r3 = uload16f_low(0x8888,&w[12],r3);
+
+      store16f(&dest[ 0],r0);
+      store16f(&dest[ 4],r1);
+      store16f(&dest[ 8],r2);
+      store16f(&dest[12],r3);
     }
 
     // ============================================================================================
