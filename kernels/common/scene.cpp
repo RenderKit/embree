@@ -274,7 +274,8 @@ namespace embree
   }
 
   void Scene::task_build(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) {
-    build(threadIndex,threadCount);
+    size_t numThreads = TaskScheduler::enableThreads(-1);
+    build(threadIndex,numThreads);
   }
 
   void Scene::build () 
@@ -306,7 +307,8 @@ namespace embree
     /* select fast code path if no intersection filter is present */
     accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
 
-    /* spawn build task */
+    /* spawn build task */			
+    TaskScheduler::enableThreads(1);
     TaskScheduler::EventSync event;
     new (&task) TaskScheduler::Task(&event,NULL,NULL,1,_task_build,this,"scene_build");
     TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);

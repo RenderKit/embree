@@ -137,7 +137,6 @@ namespace embree
 
     for (size_t i=0; i<N; i++) 
     {
-
       accels[i]->build(threadIndex,threadCount);
 
       if (accels[i]->bounds.empty()) continue;

@@ -412,6 +412,7 @@ namespace embree
       double t1 = getSeconds();
       rtcDeleteScene(scene);
       
+      //return 1000.0f*(t1-t0);
       size_t numTriangles = mesh.triangles.size() * numMeshes;
       return 1E-6*double(numTriangles)/(t1-t0);
     }
@@ -705,11 +706,12 @@ namespace embree
       std::string threads = std::stringOf(i);
       rtcInit((g_rtcore+",threads="+threads).c_str());
       double pmin = inf, pmax = -float(inf), pavg = 0.0f;
-      for (size_t j=0; j<16; j++) {
+      size_t N = 1;
+      for (size_t j=0; j<N; j++) {
 	double p = benchmark->run();
 	pmin = min(pmin,p);
 	pmax = max(pmax,p);
-	pavg = pavg + p/16.0f;
+	pavg = pavg + p/double(N);
       }
       //std::cout << "threads = " << i << ": [" << pmin << " / " << pavg << " / " << pmax << "] " << benchmark->unit << std::endl;
       std::cout << " " << i << " " << pmin << " " << pavg << " " << pmax << std::endl;

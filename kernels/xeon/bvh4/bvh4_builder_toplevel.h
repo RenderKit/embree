@@ -44,8 +44,8 @@ namespace embree
               
       public:
 
-        GlobalState (size_t numThreads) 
-	: numThreads(numThreads)
+        GlobalState () 
+	: numThreads(getNumberOfLogicalThreads())
 	{
           thread_workStack = new WorkStack<BuildRecord,SIZE_WORK_STACK>[numThreads];
           thread_bounds = new Centroid_Scene_AABB[numThreads];

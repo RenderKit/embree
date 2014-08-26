@@ -22,6 +22,7 @@
 #include "sysinfo.h"
 #include "tasklogger.h"
 #include "sys/sync/atomic.h"
+#include "math/math.h"
 
 #define DBG_THREADS(x)
 
@@ -41,6 +42,12 @@ namespace embree
   
   TaskScheduler* TaskScheduler::instance = NULL;
 
+  __aligned(64) void* volatile TaskScheduler::data = NULL;
+  __aligned(64) TaskScheduler::runFunction TaskScheduler::taskPtr = NULL;
+
+  __aligned(64) Barrier TaskScheduler::taskBarrier;
+  __aligned(64) AlignedAtomicCounter32 TaskScheduler::taskCounter;
+
   void TaskScheduler::create(size_t numThreads)
   {
     if (instance)
@@ -49,28 +56,31 @@ namespace embree
     /* enable fast pthreads tasking system */
 #if defined(__MIC__)
     instance = new TaskSchedulerMIC; 
-    //instance = new TaskSchedulerSys; 
 #else
     instance = new TaskSchedulerSys; 
 #endif
 
-#if 1
     instance->createThreads(numThreads);
-#else
-    instance->createThreads(1);
-    std::cout << "WARNING: Using only a single thread." << std::endl;
-#endif
   }
 
   size_t TaskScheduler::getNumThreads() 
   {
-    if (!instance) throw std::runtime_error("Embree tasks not running.");
-    return instance->numThreads;
+    if (!instance) throw std::runtime_error("Embree threads not running.");
+    return instance->numEnabledThreads;
+  }
+
+  size_t TaskScheduler::enableThreads(size_t N)
+  {
+    if (!instance) throw std::runtime_error("Embree threads not running.");
+    // if (!instance->defaultNumThreads) return; // FIXME: enable
+    N = min(N,instance->numThreads);
+    TaskScheduler::init(N);
+    return instance->numEnabledThreads = N;
   }
 
   void TaskScheduler::addTask(ssize_t threadIndex, QUEUE queue, Task* task)
   {
-    if (!instance) throw std::runtime_error("Embree tasks not running.");
+    if (!instance) throw std::runtime_error("Embree threads not running.");
     instance->add(threadIndex,queue,task);
   }
 
@@ -101,13 +111,13 @@ namespace embree
     instance->wait(threadIndex,threadCount,&event);
   }
 
-
   void TaskScheduler::waitForEvent(Event* event) {
     instance->wait(0,instance->getNumThreads(),event);
   }
 
   void TaskScheduler::destroy() 
   {
+    enableThreads(-1);
     if (instance) {
       instance->destroyThreads();
       delete instance; 
@@ -115,39 +125,31 @@ namespace embree
     }
   }
   
-  TaskScheduler::Event* TaskScheduler::getISPCEvent(ssize_t threadIndex)
-  {
-    if (!instance) throw std::runtime_error("Embree tasks not running.");
-    if (threadIndex < 0 || threadIndex >= (ssize_t)instance->numThreads)
-      throw std::runtime_error("invalid thread index");
-
-    return instance->thread2event[threadIndex].event;
-  }
-
   TaskScheduler::TaskScheduler () 
-    : terminateThreads(false), numThreads(0), thread2event(NULL) {}
+    : terminateThreads(false), defaultNumThreads(true), numThreads(0), numEnabledThreads(0), thread2event(NULL) {}
 
   void TaskScheduler::createThreads(size_t numThreads_in)
   {
     numThreads = numThreads_in;
+    defaultNumThreads = false;
 #if defined(__MIC__)
-    if (numThreads == 0) numThreads = getNumberOfLogicalThreads()-4;
+    if (numThreads == 0) {
+      numThreads = getNumberOfLogicalThreads()-4;
+      defaultNumThreads = true;
+    }
 #else
-    if (numThreads == 0) numThreads = getNumberOfLogicalThreads();
+    if (numThreads == 0) {
+      numThreads = getNumberOfLogicalThreads();
+      defaultNumThreads = true;
+    }
 #endif
+    numEnabledThreads = numThreads;
     
-    /* this mapping is only required as ISPC does not propagate task groups */
-
-    thread2event = (ThreadEvent*) alignedMalloc(numThreads*sizeof(ThreadEvent));
-
-    memset(thread2event,0,numThreads*sizeof(ThreadEvent));
-
     /* generate all threads */
     for (size_t t=0; t<numThreads; t++) {
       threads.push_back(createThread((thread_func)threadFunction,new Thread(t,numThreads,this),4*1024*1024,t));
     }
 
-    //setAffinity(0);
     TaskLogger::init(numThreads);
     taskBarrier.init(numThreads);
   }
@@ -172,12 +174,6 @@ namespace embree
     alignedFree(thread2event); thread2event = NULL;
     terminateThreads = false;
   }
-
-  __aligned(64) void* volatile TaskScheduler::data = NULL;
-  __aligned(64) TaskScheduler::runFunction TaskScheduler::taskPtr = NULL;
-
-  __aligned(64) Barrier TaskScheduler::taskBarrier;
-  __aligned(64) AlignedAtomicCounter32 TaskScheduler::taskCounter;
 
   void TaskScheduler::init(const size_t numThreads) {
     taskBarrier.init(numThreads);

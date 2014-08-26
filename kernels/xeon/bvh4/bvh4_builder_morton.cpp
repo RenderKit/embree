@@ -29,8 +29,6 @@
 
 #define DBG(x) 
 
-//#define PROFILE
-
 namespace embree 
 {
   namespace isa
@@ -99,42 +97,16 @@ namespace embree
         std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::BVH4BuilderMorton ... " << std::flush;
       
       /* do some global inits first */
-      init(threadIndex,threadCount);
-      
-#if defined(PROFILE)
-      
-      double dt_min = pos_inf;
-      double dt_avg = 0.0f;
-      double dt_max = neg_inf;
-      for (size_t i=0; i<200; i++) 
-      {
-        if (needAllThreads) 
-        {
-          if (!g_state.get()) g_state.reset(new MortonBuilderState);
-          TaskScheduler::init(threadCount);
-          TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,threadCount,"build_parallel_morton");
-        } else {
-          build_sequential_morton(threadIndex,threadCount);
-        }
-        dt_min = min(dt_min,dt);
-        dt_avg = dt_avg + dt;
-        dt_max = max(dt_max,dt);
-      }
-      dt_avg /= double(200);
-      
-      std::cout << "[DONE]" << std::endl;
-      std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << BVH4Statistics(bvh).str();
-      
-#else
-      
+      init();
+         
       if (needAllThreads) 
       {
         if (!g_state.get()) g_state.reset(new MortonBuilderState);
-        TaskScheduler::init(threadCount);
-        TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,threadCount,"build_parallel_morton");
+	size_t numActiveThreads = threadCount;
+	//size_t numActiveThreads = min(threadCount,size_t(8));
+	//TaskScheduler::enableThreads(numActiveThreads);
+        TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,numActiveThreads,"build_parallel_morton");
+	//TaskScheduler::enableThreads(threadCount);
       } else {
         build_sequential_morton(threadIndex,threadCount);
       }
@@ -149,10 +121,9 @@ namespace embree
 	BVH4Statistics stat(bvh);
 	std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
       }
-#endif
     }
     
-    void BVH4BuilderMorton::init(size_t threadIndex, size_t threadCount)
+    void BVH4BuilderMorton::init()
     {
       /* calculate size of scene */
       size_t numPrimitivesOld = numPrimitives;
@@ -1060,7 +1031,7 @@ namespace embree
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();
-
+      
       /* compute scene bounds */
       global_bounds.reset();
       TaskScheduler::dispatchTask( _computeBounds, this, threadIndex, threadCount );
@@ -1112,7 +1083,7 @@ namespace embree
       
       /* release all threads again */
       TaskScheduler::leave(threadIndex,threadCount);
-      
+
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;
     }

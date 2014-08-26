@@ -81,8 +81,9 @@ namespace embree
         ALIGNED_CLASS;
       public:
 
-        GlobalState (size_t numThreads) 
-	: numThreads(numThreads), threadStack(new WorkStack<BuildRecord,SIZE_WORK_STACK>[numThreads]) {}
+        GlobalState () : numThreads(getNumberOfLogicalThreads()) {
+	  threadStack = new WorkStack<BuildRecord,SIZE_WORK_STACK>[numThreads]; 
+        }
         
         ~GlobalState () {
           delete[] threadStack;

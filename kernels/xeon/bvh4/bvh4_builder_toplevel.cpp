@@ -61,8 +61,8 @@ namespace embree
 #endif
 
       /* create global state */
-      if (!g_state.get() || g_state.get()->numThreads != threadCount) 
-        g_state.reset(new GlobalState(threadCount));
+      if (!g_state.get()) 
+        g_state.reset(new GlobalState());
 
       /* delete some objects */
       size_t N = scene->size();
@@ -87,6 +87,8 @@ namespace embree
       /* reset bounds of each thread */
       for (size_t i=0; i<threadCount; i++)
         g_state->thread_bounds[i].reset();
+
+      //double t0 = getSeconds();
       
       /* parallel build of acceleration structures */
       if (N) TaskScheduler::executeTask(threadIndex,threadCount,_task_build_parallel,this,N,"toplevel_build_parallel");
@@ -96,11 +98,18 @@ namespace embree
       for (size_t i=0; i<allThreadBuilds.size(); i++) {
         g_state->thread_bounds[threadIndex].extend(build(threadIndex,threadCount,allThreadBuilds[i]));
       }
+
+      //double t1 = getSeconds();
       
       allThreadBuilds.clear();
       
       /* build toplevel BVH */
       build_toplevel(threadIndex,threadCount);
+
+      //double t2 = getSeconds();
+
+      //PRINT(1000.0f*(t1-t0));
+      //PRINT(1000.0f*(t2-t1));
     }
     
     void BVH4BuilderTopLevel::build_toplevel(size_t threadIndex, size_t threadCount)
@@ -123,7 +132,7 @@ namespace embree
       }
       
       /* open all large nodes */
-#if 0
+#if 1
       open_sequential();
       refs1.resize(refs.size());
 #else
@@ -448,7 +457,8 @@ namespace embree
     __forceinline void BVH4BuilderTopLevel::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
     {
       if (mode == BUILD_TOP_LEVEL && current.items() >= BUILD_RECORD_SPLIT_THRESHOLD)
-        return split_parallel(current,left,right,threadID,numThreads);		  
+        //return split_parallel(current,left,right,threadID,numThreads);		  
+	return split_sequential(current,left,right);
       else
         return split_sequential(current,left,right);
     }

@@ -23,6 +23,7 @@ namespace embree
 {
 #if defined(__SPINLOCKS__)
 #define Barrier LinearBarrierActive
+  //#define Barrier BarrierActive
 #else
 #define Barrier BarrierSys
 #endif
@@ -65,19 +66,41 @@ namespace embree
   struct __aligned(64) BarrierActive 
   {
   public:
-    BarrierActive () : cntr(0) {}
+    BarrierActive () : N(0), cntr0(0), cntr1(0) {}
     
     void init(size_t cntr) {
-      this->cntr = cntr;
+      this->N = cntr;
+      this->cntr0 = cntr;
+      this->cntr1 = cntr;
     }
 
     void wait() {
-      atomic_add((atomic_t*)&cntr,-1);
-      while (cntr != 0) __pause();
+      atomic_add((atomic_t*)&cntr0,-1);
+      while (cntr0 != 0) __pause();
+      cntr0 = N;
+      atomic_add((atomic_t*)&cntr1,-1);
+      while (cntr1 != 0) __pause();
+      cntr1 = N;
+    }
+
+    void wait (const unsigned int threadIndex, const unsigned int threadCount) {  
+      wait();   
+    }
+
+    void syncWithReduction(const size_t threadIndex, 
+                           const size_t threadCount,
+                           void (* reductionFct)(const size_t currentThreadID,
+                                                 const size_t childThreadID,
+                                                 void *ptr),
+                           void *ptr)
+    {
+      wait();
     }
 
   private:
-    volatile atomic_t cntr;
+    volatile size_t N;
+    volatile atomic_t cntr0;
+    volatile atomic_t cntr1;
     char align[64-sizeof(atomic_t)];
   };
 
@@ -102,6 +125,7 @@ namespace embree
       volatile unsigned int flag0;
       volatile unsigned int flag1;
       volatile unsigned int fill[16-3];
+      volatile unsigned int numThreads;
       
       LinearBarrierActive ();
 
