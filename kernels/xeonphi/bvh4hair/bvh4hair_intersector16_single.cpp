@@ -21,6 +21,8 @@
 
 #define DBG(x) 
 
+#define EMBREE_DISABLE_HAIR 1
+
 #if EMBREE_DISABLE_HAIR
 // iw, 7/4/14 - Added this workaround to enable external libraries to build
 // embree in a way that adds a workardoun for a compiler issue in the

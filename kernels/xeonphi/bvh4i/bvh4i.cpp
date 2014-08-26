@@ -44,6 +44,9 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16HybridMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16HybridMoellerNoFilter);
 
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16TestMoeller);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16TestMoellerNoFilter);
+
   DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iVirtualGeometryIntersector1);
   DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iVirtualGeometryIntersector1NoFilter);
 
@@ -80,6 +83,9 @@ namespace embree
 
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16HybridMoeller);
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16HybridMoellerNoFilter);
+
+    SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16TestMoeller);
+    SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16TestMoellerNoFilter);
 
     SELECT_SYMBOL_KNC(features,BVH4iVirtualGeometryIntersector1);
     SELECT_SYMBOL_KNC(features,BVH4iVirtualGeometryIntersector1NoFilter);
@@ -125,6 +131,13 @@ namespace embree
 	intersectors.intersector16          = BVH4iTriangle1Intersector16SingleMoeller;
 	intersectors.intersector16_filter   = BVH4iTriangle1Intersector16SingleMoeller;
 	intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16SingleMoellerNoFilter;
+
+      }
+    else if (g_tri_traverser == "test" ) 
+      {
+	intersectors.intersector16          = BVH4iTriangle1Intersector16TestMoeller;
+	intersectors.intersector16_filter   = BVH4iTriangle1Intersector16TestMoeller;
+	intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16TestMoellerNoFilter;
 
       }
     else throw std::runtime_error("unknown traverser "+g_tri_traverser+" for BVH4i<Triangle1>");      
