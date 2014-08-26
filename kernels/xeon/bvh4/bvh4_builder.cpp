@@ -512,8 +512,11 @@ namespace embree
 	return node;
     }
     
-    void BVH4Builder::build(size_t threadIndex, size_t threadCount) 
+    void BVH4Builder::build(size_t threadIndex, size_t threadCountOld) 
     {
+      size_t threadCount = min(threadCountOld,getNumberOfCores());
+      TaskScheduler::enableThreads(threadCount);
+
       /*! calculate number of primitives */
       size_t numPrimitives = 0;
       if (mesh) numPrimitives = mesh->numTriangles;
@@ -597,6 +600,7 @@ namespace embree
       
       /* free all temporary memory blocks */
       Alloc::global.clear();
+      TaskScheduler::enableThreads(threadCountOld);
 
       if (g_verbose >= 2 || g_benchmark) 
 	t1 = getSeconds();
