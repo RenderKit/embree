@@ -90,7 +90,6 @@ namespace embree
 
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
-
       for (size_t rayIndex4 = 0;rayIndex4<numValidRays;rayIndex4+=4)
         {
 	  stack_node[1] = bvh->root;
