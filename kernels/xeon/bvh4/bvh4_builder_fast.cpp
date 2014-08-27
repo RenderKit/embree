@@ -31,9 +31,6 @@
 
 #include <algorithm>
 
-#define THRESHOLD_FOR_SUBTREE_RECURSION 128
-#define THRESHOLD_FOR_SINGLE_THREADED 50000 // FIXME: measure if this is really optimal, maybe disable only parallel splits
-
 #define DBG(x) 
 
 //#define PROFILE
@@ -43,6 +40,9 @@ namespace embree
   namespace isa
   {
     static double dt = 0.0f;
+
+    static const size_t THRESHOLD_FOR_SUBTREE_RECURSION = 128;
+    static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; // FIXME: measure if this is really optimal, maybe disable only parallel splits
 
     std::auto_ptr<BVH4BuilderFast::GlobalState> BVH4BuilderFast::g_state(NULL);
 
@@ -838,7 +838,7 @@ namespace embree
           break;
         
         /* guarantees to create no leaves in this stage */
-        if (br.size() <= minLeafSize) {
+        if (br.size() <= max(minLeafSize,THRESHOLD_FOR_SINGLE_THREADED)) {
 	  g_state->heap.push(br);
           break;
 	}
