@@ -33,6 +33,7 @@ namespace embree
     
     /*! forward declaration of node type */
     struct Node;
+    struct NodeMB;
 
     /*! branching width of the tree */
     static const size_t N = 4;
@@ -49,11 +50,16 @@ namespace embree
     static const size_t align_mask = (1 << alignment)-1;  
     static const size_t items_mask = (1 << alignment)-1;  
 
+    /*! different supported node types */
+    static const size_t tyNode = 0;
+    static const size_t tyNodeMB = 1;
+    static const size_t tyLeaf = 2;
+
     /*! Empty node */
-    static const size_t emptyNode = 1;
+    static const size_t emptyNode = tyLeaf;
 
     /*! Invalid node, used as marker in traversal */
-    static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | 1;
+    static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | tyLeaf;
       
     /*! Maximal depth of the BVH. */
     static const size_t maxBuildDepth = 32;
@@ -61,7 +67,7 @@ namespace embree
     static const size_t maxDepth = maxBuildDepthLeaf+maxBuildDepthLeaf+maxBuildDepth;
     
     /*! Maximal number of primitive blocks in a leaf. */
-    static const size_t maxLeafBlocks = items_mask-1;
+    static const size_t maxLeafBlocks = items_mask-tyLeaf;
 
     /*! Cost of one traversal step. */
     static const int travCost = 1;
@@ -73,7 +79,7 @@ namespace embree
       __forceinline NodeRef () {}
 
       /*! Construction from integer */
-      __forceinline NodeRef (size_t ptr) : ptr(ptr) { }
+      __forceinline NodeRef (size_t ptr) : ptr(ptr) {}
 
       /*! Cast to size_t */
       __forceinline operator size_t() const { return ptr; }
@@ -94,19 +100,26 @@ namespace embree
       __forceinline bool isBarrier() const { return (ptr & barrier_mask) != 0; }
 
       /*! checks if this is a leaf */
-      __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) != 0; }
+      __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) >= tyLeaf; }
       
       /*! checks if this is a node */
-      __forceinline int isNode() const { return (ptr & (size_t)align_mask) == 0; }
+      __forceinline int isNode() const { return (ptr & (size_t)align_mask) == tyNode; }
+
+      /*! checks if this is a motion blur node */
+      __forceinline int isNodeMB() const { return (ptr & (size_t)align_mask) == tyNodeMB; }
       
       /*! returns node pointer */
       __forceinline       Node* node()       { assert(isNode()); return (      Node*)ptr; }
       __forceinline const Node* node() const { assert(isNode()); return (const Node*)ptr; }
+
+      /*! returns motion blur node pointer */
+      __forceinline       NodeMB* nodeMB()       { assert(isNodeMB()); return (      NodeMB*)ptr; }
+      __forceinline const NodeMB* nodeMB() const { assert(isNodeMB()); return (const NodeMB*)ptr; }
       
       /*! returns leaf pointer */
       __forceinline char* leaf(size_t& num) const {
         assert(isLeaf());
-        num = (ptr & (size_t)items_mask)-1;
+        num = (ptr & (size_t)items_mask)-tyLeaf;
         return (char*)(ptr & ~(size_t)align_mask);
       }
 
@@ -188,7 +201,7 @@ namespace embree
     }
 
     /*! compacts a node (moves empty children to the end) */
-    __forceinline static void compact(Node* a)
+    __forceinline static void compact(Node* a) // FIXME: do compaction also for motion blur node in builder
     {
       /* find right most filled node */
       ssize_t j=N;
@@ -206,6 +219,97 @@ namespace embree
         }
       }
     }
+
+    /*! Motion Blur Node */
+    struct NodeMB
+    {
+      /*! Clears the node. */
+      __forceinline void clear()  {
+        lower_x = lower_y = lower_z = ssef(pos_inf);
+        upper_x = upper_y = upper_z = ssef(neg_inf);
+        lower_dx = lower_dy = lower_dz = ssef(nan); // initialize with NAN and update during refit
+        upper_dx = upper_dy = upper_dz = ssef(nan);
+        children[0] = children[1] = children[2] = children[3] = emptyNode;
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const BBox3fa& bounds, NodeRef childID) {
+        lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
+        upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
+        children[i] = childID;
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, NodeRef childID) {
+	children[i] = childID;
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const BBox3fa& bounds) {
+        lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
+        upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
+      }
+
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const BBox3fa& bounds0, const BBox3fa& bounds1) 
+      {
+        lower_x[i] = bounds0.lower.x; lower_y[i] = bounds0.lower.y; lower_z[i] = bounds0.lower.z;
+        upper_x[i] = bounds0.upper.x; upper_y[i] = bounds0.upper.y; upper_z[i] = bounds0.upper.z;
+
+        /*! for empty bounds we have to avoid inf-inf=nan */
+        if (unlikely(bounds0.empty())) { 
+          lower_dx[i] = lower_dy[i] = lower_dz[i] = zero;
+          upper_dx[i] = upper_dy[i] = upper_dz[i] = zero;
+        } 
+        /*! standard case */
+        else {
+          const Vec3fa dlower = bounds1.lower-bounds0.lower;
+          const Vec3fa dupper = bounds1.upper-bounds0.upper;
+          lower_dx[i] = dlower.x; lower_dy[i] = dlower.y; lower_dz[i] = dlower.z;
+          upper_dx[i] = dupper.x; upper_dy[i] = dupper.y; upper_dz[i] = dupper.z;
+        }
+      }
+
+      /*! tests if the node has valid bounds */
+      __forceinline bool hasBounds() const {
+        return lower_dx.i[0] != cast_f2i(float(nan));
+      }
+
+      /*! Return bounding box for time 0 */
+      __forceinline BBox3fa bounds0(size_t i) const {
+        return BBox3fa(Vec3fa(lower_x[i],lower_y[i],lower_z[i]),
+                      Vec3fa(upper_x[i],upper_y[i],upper_z[i]));
+      }
+
+      /*! Return bounding box for time 1 */
+      __forceinline BBox3fa bounds1(size_t i) const {
+        return BBox3fa(Vec3fa(lower_x[i]+lower_dx[i],lower_y[i]+lower_dy[i],lower_z[i]+lower_dz[i]),
+                      Vec3fa(upper_x[i]+upper_dx[i],upper_y[i]+upper_dy[i],upper_z[i]+upper_dz[i]));
+      }
+
+      /*! Returns bounds of node. */
+      __forceinline BBox3fa bounds() const {
+        return BBox3fa(Vec3fa(reduce_min(min(lower_x,lower_x+lower_dx)),
+                             reduce_min(min(lower_y,lower_y+lower_dy)),
+                             reduce_min(min(lower_z,lower_z+lower_dz))),
+                      Vec3fa(reduce_max(max(upper_x,upper_x+upper_dx)),
+                             reduce_max(max(upper_y,upper_y+upper_dy)),
+                             reduce_max(max(upper_z,upper_z+upper_dz))));
+      }
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
+
+    public:
+      ssef lower_x, lower_dx;        //!< X dimension of lower bounds of all 4 children.
+      ssef upper_x, upper_dx;        //!< X dimension of upper bounds of all 4 children.
+      ssef lower_y, lower_dy;        //!< Y dimension of lower bounds of all 4 children.
+      ssef upper_y, upper_dy;        //!< Y dimension of upper bounds of all 4 children.
+      ssef lower_z, lower_dz;        //!< Z dimension of lower bounds of all 4 children.
+      ssef upper_z, upper_dz;        //!< Z dimension of upper bounds of all 4 children.
+      NodeRef children[4];           //!< Pointer to the 4 children (can be a node or leaf)
+    };
     
   public:
 
@@ -274,9 +378,9 @@ namespace embree
     /*! Encodes a leaf */
     __forceinline NodeRef encodeLeaf(void* tri, size_t num) {
       assert(!((size_t)tri & align_mask)); 
-      return NodeRef((size_t)tri | (1+min(num,(size_t)maxLeafBlocks)));
+      return NodeRef((size_t)tri | (tyLeaf+min(num,(size_t)maxLeafBlocks)));
     }
-
+    
   public:
     
     /*! calculates the amount of bytes allocated */

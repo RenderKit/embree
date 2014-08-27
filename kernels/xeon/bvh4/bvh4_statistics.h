@@ -22,9 +22,6 @@ namespace embree
 {
   class BVH4Statistics 
   {
-    typedef BVH4::Node Node;
-    typedef BVH4::NodeRef NodeRef;
-
   public:
 
     /* Constructor gathers statistics. */
@@ -40,14 +37,19 @@ namespace embree
     float sah() const { return bvhSAH; }
 
   private:
-    void statistics(NodeRef node, const BBox3fa& bounds, size_t& depth);
+    void statistics(BVH4::NodeRef node, const BBox3fa& bounds, size_t& depth);
 
   private:
     BVH4* bvh;
     float bvhSAH;                      //!< SAH cost of the BVH4.
     float leafSAH;                      //!< SAH cost of the BVH4.
-    size_t numNodes;                   //!< Number of internal nodes.
+
+    size_t numNodes;                   //!< Number of nodes.
+    size_t numNodesChildren;
+    size_t numNodesMB;                 //!< Number of motion blur nodes.
+    size_t numNodesMBChildren;
     size_t numLeaves;                  //!< Number of leaf nodes.
+
     size_t numPrimBlocks;              //!< Number of primitive blocks.
     size_t numPrims;                   //!< Number of primitives.
     size_t depth;                      //!< Depth of the tree.
