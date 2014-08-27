@@ -64,8 +64,17 @@ namespace embree
 
     virtual double run(size_t numThreads) = 0;
 
-    void print(size_t numThreads) {
-      printf("%30s ... %f %s\n",name.c_str(),run(numThreads),unit.c_str());
+    void print(size_t numThreads, size_t N) 
+    {
+      double pmin = inf, pmax = -float(inf), pavg = 0.0f;
+      for (size_t j=0; j<N; j++) {
+	double p = run(numThreads);
+	pmin = min(pmin,p);
+	pmax = max(pmax,p);
+	pavg = pavg + p/double(N);
+      }
+
+      printf("%30s ... [%f / %f / %f] %s\n",name.c_str(),pmin,pavg,pmax,unit.c_str());
       fflush(stdout);
     }
   };
@@ -862,7 +871,7 @@ namespace embree
 	size_t numThreads = atoi(argv[++i]);
 	std::string name = argv[++i];
 	Benchmark* benchmark = getBenchmark(name);
-	benchmark->print(numThreads);
+	benchmark->print(numThreads,64);
       }
 
       /* skip unknown command line parameter */
@@ -888,7 +897,7 @@ namespace embree
       numThreads -= 4;
 #endif
       rtcore_intersect_benchmark(RTC_SCENE_STATIC, 501);
-      for (size_t i=0; i<benchmarks.size(); i++) benchmarks[i]->print(numThreads);
+      for (size_t i=0; i<benchmarks.size(); i++) benchmarks[i]->print(numThreads,4);
     }
 
     return 0;
