@@ -30,6 +30,38 @@ namespace embree
 {
   namespace isa
   {
+    /* ray/box intersection */
+    __forceinline avxb intersectBox(const Ray8& ray, const avxf& ray_tfar, const avx3f& rdir, const BVH4::NodeMB* node, const int i, avxf& dist) 
+    {
+      const avxf lower_x = avxf(node->lower_x[i]) + ray.time * avxf(node->lower_dx[i]);
+      const avxf lower_y = avxf(node->lower_y[i]) + ray.time * avxf(node->lower_dy[i]);
+      const avxf lower_z = avxf(node->lower_z[i]) + ray.time * avxf(node->lower_dz[i]);
+      const avxf upper_x = avxf(node->upper_x[i]) + ray.time * avxf(node->upper_dx[i]);
+      const avxf upper_y = avxf(node->upper_y[i]) + ray.time * avxf(node->upper_dy[i]);
+      const avxf upper_z = avxf(node->upper_z[i]) + ray.time * avxf(node->upper_dz[i]);
+      
+      const avxf dminx = (lower_x - ray.org.x) * rdir.x;
+      const avxf dminy = (lower_y - ray.org.y) * rdir.y;
+      const avxf dminz = (lower_z - ray.org.z) * rdir.z;
+      const avxf dmaxx = (upper_x - ray.org.x) * rdir.x;
+      const avxf dmaxy = (upper_y - ray.org.y) * rdir.y;
+      const avxf dmaxz = (upper_z - ray.org.z) * rdir.z;
+      
+      const avxf dlowerx = min(dminx,dmaxx);
+      const avxf dlowery = min(dminy,dmaxy);
+      const avxf dlowerz = min(dminz,dmaxz);
+      
+      const avxf dupperx = max(dminx,dmaxx);
+      const avxf duppery = max(dminy,dmaxy);
+      const avxf dupperz = max(dminz,dmaxz);
+      
+      const avxf near = max(dlowerx,dlowery,dlowerz,ray.tnear);
+      const avxf far  = min(dupperx,duppery,dupperz,ray_tfar );
+      dist = near;
+      
+      return near <= far;
+    }
+
     template<typename PrimitiveIntersector8>
     void BVH4Intersector8Chunk<PrimitiveIntersector8>::intersect(avxb* valid_i, BVH4* bvh, Ray8& ray)
     {
@@ -72,89 +104,142 @@ namespace embree
         
         while (1)
         {
-          /* test if this is a leaf node */
-          if (unlikely(curNode.isLeaf()))
-            break;
-          
-          const avxb valid_node = ray_tfar > curDist;
-          STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
-          const Node* __restrict__ const node = curNode.node();
-          
-          /* pop of next node */
-          assert(sptr_node > stack_node);
-          sptr_node--;
-          sptr_near--;
-          curNode = *sptr_node; 
-          curDist = *sptr_near;
-          
-#pragma unroll(4)
-          for (unsigned i=0; i<BVH4::N; i++)
+          /* process normal nodes */
+          if (likely(curNode.isNode()))
           {
-            const NodeRef child = node->children[i];
-            if (unlikely(child == BVH4::emptyNode)) break;
-            
+	    const avxb valid_node = ray_tfar > curDist;
+	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+	    const Node* __restrict__ const node = curNode.node();
+	    
+	    /* pop of next node */
+	    assert(sptr_node > stack_node);
+	    sptr_node--;
+	    sptr_near--;
+	    curNode = *sptr_node; 
+	    curDist = *sptr_near;
+	    
+#pragma unroll(4)
+	    for (unsigned i=0; i<BVH4::N; i++)
+	    {
+	      const NodeRef child = node->children[i];
+	      if (unlikely(child == BVH4::emptyNode)) break;
+	      
 #if defined(__AVX2__)
-            const avxf lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
-            const avxf lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
-            const avxf lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
-            const avxf lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
-            const avxf lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
-            const avxf lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
-            const avxf lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-            const avxf lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-            const avxb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
+	      const avxf lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
+	      const avxf lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
+	      const avxf lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
+	      const avxf lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
+	      const avxf lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
+	      const avxf lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
+	      const avxf lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+	      const avxf lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+	      const avxb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
 #else
-            const avxf lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
-            const avxf lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
-            const avxf lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
-            const avxf lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
-            const avxf lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
-            const avxf lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
-            const avxf lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const avxf lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const avxb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+	      const avxf lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
+	      const avxf lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
+	      const avxf lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
+	      const avxf lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
+	      const avxf lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
+	      const avxf lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
+	      const avxf lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+	      const avxf lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+	      const avxb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
 #endif
-            
-            /* if we hit the child we choose to continue with that child if it 
-               is closer than the current next child, or we push it onto the stack */
-            if (likely(any(lhit)))
-            {
-              assert(sptr_node < stackEnd);
-              assert(child != BVH4::emptyNode);
-              const avxf childDist = select(lhit,lnearP,inf);
-              sptr_node++;
-              sptr_near++;
-              
-              /* push cur node onto stack and continue with hit child */
-              if (any(childDist < curDist))
-              {
-                *(sptr_node-1) = curNode;
-                *(sptr_near-1) = curDist; 
-                curDist = childDist;
-                curNode = child;
-              }
-              
-              /* push hit child onto stack */
-              else {
-                *(sptr_node-1) = child;
-                *(sptr_near-1) = childDist; 
-              }
-            }	      
-          }
-        }
+	      
+	      /* if we hit the child we choose to continue with that child if it 
+		 is closer than the current next child, or we push it onto the stack */
+	      if (likely(any(lhit)))
+	      {
+		assert(sptr_node < stackEnd);
+		assert(child != BVH4::emptyNode);
+		const avxf childDist = select(lhit,lnearP,inf);
+		sptr_node++;
+		sptr_near++;
+		
+		/* push cur node onto stack and continue with hit child */
+		if (any(childDist < curDist))
+		{
+		  *(sptr_node-1) = curNode;
+		  *(sptr_near-1) = curDist; 
+		  curDist = childDist;
+		  curNode = child;
+		}
+		
+		/* push hit child onto stack */
+		else {
+		  *(sptr_node-1) = child;
+		  *(sptr_near-1) = childDist; 
+		}
+	      }     
+	    }
+	  }
+	  
+	  /* process motion blur nodes */
+          else if (likely(curNode.isNodeMB()))
+	  {
+	    const avxb valid_node = ray_tfar > curDist;
+	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+	    const BVH4::NodeMB* __restrict__ const node = curNode.nodeMB();
+          
+	    /* pop of next node */
+	    assert(sptr_node > stack_node);
+	    sptr_node--;
+	    sptr_near--;
+	    curNode = *sptr_node; 
+	    curDist = *sptr_near;
+	    
+#pragma unroll(4)
+	    for (unsigned i=0; i<BVH4::N; i++)
+	    {
+	      const NodeRef child = node->child(i);
+	      if (unlikely(child == BVH4::emptyNode)) break;
+
+	      avxf lnearP;
+	      const avxb lhit = intersectBox(ray,ray_tfar,rdir,node,i,lnearP);
+	      
+	      /* if we hit the child we choose to continue with that child if it 
+		 is closer than the current next child, or we push it onto the stack */
+	      if (likely(any(lhit)))
+	      {
+		assert(sptr_node < stackEnd);
+		assert(child != BVH4::emptyNode);
+		const avxf childDist = select(lhit,lnearP,inf);
+		sptr_node++;
+		sptr_near++;
+		
+		/* push cur node onto stack and continue with hit child */
+		if (any(childDist < curDist))
+		{
+		  *(sptr_node-1) = curNode;
+		  *(sptr_near-1) = curDist; 
+		  curDist = childDist;
+		  curNode = child;
+		}
+		
+		/* push hit child onto stack */
+		else {
+		  *(sptr_node-1) = child;
+		  *(sptr_near-1) = childDist; 
+		}
+	      }	      
+	    }
+	  }
+	  else 
+	    break;
+	}
         
-        /* return if stack is empty */
-        if (unlikely(curNode == BVH4::invalidNode)) {
-          assert(sptr_node == stack_node);
-          break;
-        }
-        
-        /* intersect leaf */
-        const avxb valid_leaf = ray_tfar > curDist;
-        STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
-        size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
-        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->geometry);
-        ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
+	/* return if stack is empty */
+	if (unlikely(curNode == BVH4::invalidNode)) {
+	  assert(sptr_node == stack_node);
+	  break;
+	}
+	
+	/* intersect leaf */
+	const avxb valid_leaf = ray_tfar > curDist;
+	STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
+	size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
+	PrimitiveIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->geometry);
+	ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
       AVX_ZERO_UPPER();
     }
@@ -202,76 +287,129 @@ namespace embree
         
         while (1)
         {
-          /* test if this is a leaf node */
-          if (unlikely(curNode.isLeaf()))
-            break;
-          
-          const avxb valid_node = ray_tfar > curDist;
-          STAT3(shadow.trav_nodes,1,popcnt(valid_node),8);
-          const Node* __restrict__ const node = curNode.node();
-          
-          /* pop of next node */
-          assert(sptr_node > stack_node);
-          sptr_node--;
-          sptr_near--;
-          curNode = *sptr_node;
-          curDist = *sptr_near;
-          
-#pragma unroll(4)
-          for (unsigned i=0; i<BVH4::N; i++)
+	  /* process normal nodes */
+          if (likely(curNode.isNode()))
           {
-            const NodeRef child = node->children[i];
-            if (unlikely(child == BVH4::emptyNode)) break;
-            
+	    const avxb valid_node = ray_tfar > curDist;
+	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+	    const Node* __restrict__ const node = curNode.node();
+	    
+	    /* pop of next node */
+	    assert(sptr_node > stack_node);
+	    sptr_node--;
+	    sptr_near--;
+	    curNode = *sptr_node; 
+	    curDist = *sptr_near;
+	    
+#pragma unroll(4)
+	    for (unsigned i=0; i<BVH4::N; i++)
+	    {
+	      const NodeRef child = node->children[i];
+	      if (unlikely(child == BVH4::emptyNode)) break;
+	      
 #if defined(__AVX2__)
-            const avxf lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
-            const avxf lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
-            const avxf lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
-            const avxf lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
-            const avxf lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
-            const avxf lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
-            const avxf lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-            const avxf lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-            const avxb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
+	      const avxf lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
+	      const avxf lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
+	      const avxf lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
+	      const avxf lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
+	      const avxf lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
+	      const avxf lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
+	      const avxf lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+	      const avxf lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+	      const avxb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
 #else
-            const avxf lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
-            const avxf lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
-            const avxf lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
-            const avxf lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
-            const avxf lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
-            const avxf lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
-            const avxf lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const avxf lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const avxb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+	      const avxf lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
+	      const avxf lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
+	      const avxf lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
+	      const avxf lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
+	      const avxf lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
+	      const avxf lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
+	      const avxf lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+	      const avxf lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+	      const avxb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
 #endif
-            
-            /* if we hit the child we choose to continue with that child if it 
-               is closer than the current next child, or we push it onto the stack */
-            if (likely(any(lhit)))
-            {
-              assert(sptr_node < stackEnd);
-              assert(child != BVH4::emptyNode);
-              const avxf childDist = select(lhit,lnearP,inf);
-              sptr_node++;
-              sptr_near++;
-              
-              /* push cur node onto stack and continue with hit child */
-              if (any(childDist < curDist))
-              {
-                *(sptr_node-1) = curNode;
-                *(sptr_near-1) = curDist; 
-                curDist = childDist;
-                curNode = child;
-              }
-              
-              /* push hit child onto stack */
-              else {
-                *(sptr_node-1) = child;
-                *(sptr_near-1) = childDist; 
-              }
-            }	      
-          }
-        }
+	      
+	      /* if we hit the child we choose to continue with that child if it 
+		 is closer than the current next child, or we push it onto the stack */
+	      if (likely(any(lhit)))
+	      {
+		assert(sptr_node < stackEnd);
+		assert(child != BVH4::emptyNode);
+		const avxf childDist = select(lhit,lnearP,inf);
+		sptr_node++;
+		sptr_near++;
+		
+		/* push cur node onto stack and continue with hit child */
+		if (any(childDist < curDist))
+		{
+		  *(sptr_node-1) = curNode;
+		  *(sptr_near-1) = curDist; 
+		  curDist = childDist;
+		  curNode = child;
+		}
+		
+		/* push hit child onto stack */
+		else {
+		  *(sptr_node-1) = child;
+		  *(sptr_near-1) = childDist; 
+		}
+	      }     
+	    }
+	  }
+	  
+	  /* process motion blur nodes */
+          else if (likely(curNode.isNodeMB()))
+	  {
+	    const avxb valid_node = ray_tfar > curDist;
+	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+	    const BVH4::NodeMB* __restrict__ const node = curNode.nodeMB();
+          
+	    /* pop of next node */
+	    assert(sptr_node > stack_node);
+	    sptr_node--;
+	    sptr_near--;
+	    curNode = *sptr_node; 
+	    curDist = *sptr_near;
+	    
+#pragma unroll(4)
+	    for (unsigned i=0; i<BVH4::N; i++)
+	    {
+	      const NodeRef child = node->child(i);
+	      if (unlikely(child == BVH4::emptyNode)) break;
+
+	      avxf lnearP;
+	      const avxb lhit = intersectBox(ray,ray_tfar,rdir,node,i,lnearP);
+	      
+	      /* if we hit the child we choose to continue with that child if it 
+		 is closer than the current next child, or we push it onto the stack */
+	      if (likely(any(lhit)))
+	      {
+		assert(sptr_node < stackEnd);
+		assert(child != BVH4::emptyNode);
+		const avxf childDist = select(lhit,lnearP,inf);
+		sptr_node++;
+		sptr_near++;
+		
+		/* push cur node onto stack and continue with hit child */
+		if (any(childDist < curDist))
+		{
+		  *(sptr_node-1) = curNode;
+		  *(sptr_near-1) = curDist; 
+		  curDist = childDist;
+		  curNode = child;
+		}
+		
+		/* push hit child onto stack */
+		else {
+		  *(sptr_node-1) = child;
+		  *(sptr_near-1) = childDist; 
+		}
+	      }	      
+	    }
+	  }
+	  else 
+	    break;
+	}
         
         /* return if stack is empty */
         if (unlikely(curNode == BVH4::invalidNode)) {

@@ -260,6 +260,8 @@ namespace embree
     } intersectors;
   };
 
+#define COMMA ,
+
 #define DEFINE_INTERSECTOR1(symbol,intersector)                        \
   Accel::Intersector1 symbol((Accel::IntersectFunc)intersector::intersect, \
                              (Accel::OccludedFunc )intersector::occluded,  \

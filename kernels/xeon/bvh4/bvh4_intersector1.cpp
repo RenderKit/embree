@@ -363,7 +363,6 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-#define COMMA ,
     DEFINE_INTERSECTOR1(BVH4Bezier1Intersector1,BVH4Intersector1<0x1 COMMA Bezier1Intersector1>);
     DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1,BVH4Intersector1<0x1 COMMA Bezier1iIntersector1>);
     DEFINE_INTERSECTOR1(BVH4Triangle1Intersector1Moeller,BVH4Intersector1<0x1 COMMA Triangle1Intersector1MoellerTrumbore>);
