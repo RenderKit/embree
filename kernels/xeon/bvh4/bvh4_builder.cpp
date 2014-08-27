@@ -309,7 +309,7 @@ namespace embree
       /* free all primitive blocks */
       while (PrimRefList::item* block = prims.take())
 	alloc.free(threadIndex,block);
-      
+
       return bvh->encodeLeaf(leaf,N);
     }
     

@@ -2309,7 +2309,6 @@ namespace embree
     POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
 
-
 #if defined(__USE_RAY_MASK__)
     rtcore_ray_masks_all();
 #endif

@@ -38,13 +38,16 @@ namespace embree
     static const size_t N = 4;
 
     /*! Number of address bits the Node and primitives are aligned
-        to. Maximally 2^alignment-2 many primitive blocks per leaf are
+        to. Maximally 2^alignment-1 many primitive blocks per leaf are
         supported. */
     static const size_t alignment = 4;
 
+    /*! highest address bit is used as barrier for some algorithms */
+    static const size_t barrier_mask = (1LL << (8*sizeof(size_t)-1));
+
     /*! Masks the bits that store the number of items per leaf. */
     static const size_t align_mask = (1 << alignment)-1;  
-    static const size_t items_mask = (1 << (alignment-1))-1;  
+    static const size_t items_mask = (1 << alignment)-1;  
 
     /*! Empty node */
     static const size_t emptyNode = 1;
@@ -82,13 +85,13 @@ namespace embree
       }
 
       /*! Sets the barrier bit. */
-      __forceinline void setBarrier() { ptr |= (size_t)(1 << (alignment-1)); }
+      __forceinline void setBarrier() { ptr |= barrier_mask; }
       
       /*! Clears the barrier bit. */
-      __forceinline void clearBarrier() { ptr &= ~(size_t)(1 << (alignment-1)); }
+      __forceinline void clearBarrier() { ptr &= ~barrier_mask; }
 
       /*! Checks if this is an barrier. A barrier tells the top level tree rotations how deep to enter the tree. */
-      __forceinline int isBarrier() const { return (ptr >> (size_t)(alignment-1)) & 1; }
+      __forceinline bool isBarrier() const { return (ptr & barrier_mask) != 0; }
 
       /*! checks if this is a leaf */
       __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) != 0; }
@@ -264,6 +267,7 @@ namespace embree
 
     /*! Encodes a node */
     __forceinline NodeRef encodeNode(Node* node) { 
+      assert(!((size_t)node & align_mask)); 
       return NodeRef((size_t) node);
     }
     
