@@ -50,10 +50,9 @@ namespace embree
   MutexSys g_mutex;
   BarrierSys g_barrier;
   LinearBarrierActive g_barrier_active;
-  size_t g_num_barrier_waits = 100;
   size_t g_num_mutex_locks = 100000;
 
-  atomic_t g_atomic_mutex_locks = 0;
+  atomic_t g_atomic_cntr = 0;
 
   class Benchmark
   {
@@ -76,7 +75,7 @@ namespace embree
     {
       while (true)
 	{
-	  if (atomic_add(&g_atomic_mutex_locks,-1) < 0) break;
+	  if (atomic_add(&g_atomic_cntr,-1) < 0) break;
 	  g_mutex.lock();
 	  g_mutex.unlock();
 	}
@@ -84,7 +83,7 @@ namespace embree
     
     double run (size_t numThreads)
     {
-      g_atomic_mutex_locks = g_num_mutex_locks;
+      g_atomic_cntr = g_num_mutex_locks;
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_mutex_sys_thread,NULL,1000000,i));
       setAffinity(0);
@@ -105,13 +104,15 @@ namespace embree
   class benchmark_barrier_sys : public Benchmark
   {
   public:
+    enum { N = 100 };
+
     benchmark_barrier_sys () 
      : Benchmark("barrier_sys","ms") {}
 
     static void benchmark_barrier_sys_thread(void* ptr) 
     {
       g_barrier.wait();
-      for (size_t i=0; i<g_num_barrier_waits; i++) 
+      for (size_t i=0; i<N; i++) 
 	g_barrier.wait();
     }
     
@@ -124,15 +125,15 @@ namespace embree
       
       g_barrier.wait();
       double t0 = getSeconds();
-      for (size_t i=0; i<g_num_barrier_waits; i++) g_barrier.wait();
+      for (size_t i=0; i<N; i++) g_barrier.wait();
       double t1 = getSeconds();
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
     
-      //printf("%30s ... %f ms (%f k/s)\n","barrier_sys",1000.0f*(t1-t0)/double(g_num_barrier_waits),1E-3*g_num_barrier_waits/(t1-t0));
+      //printf("%30s ... %f ms (%f k/s)\n","barrier_sys",1000.0f*(t1-t0)/double(N),1E-3*N/(t1-t0));
       //fflush(stdout);
-      return 1000.0f*(t1-t0)/double(g_num_barrier_waits);
+      return 1000.0f*(t1-t0)/double(N);
     }
   };
 
@@ -140,16 +141,18 @@ namespace embree
 
   class benchmark_barrier_active : public Benchmark
   {
+    enum { N = 1000 };
+
   public:
     benchmark_barrier_active () 
-      : Benchmark("barrier_active","ms") {}
+      : Benchmark("barrier_active","ns") {}
 
     static void benchmark_barrier_active_thread(void* ptr) 
     {
       size_t threadIndex = (size_t) ptr;
       size_t threadCount = g_barrier_active_threads;
       g_barrier_active.wait(threadIndex,threadCount);
-      for (size_t i=0; i<g_num_barrier_waits; i++) 
+      for (size_t i=0; i<N; i++) 
 	g_barrier_active.wait(threadIndex,threadCount);
     }
   
@@ -163,7 +166,7 @@ namespace embree
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
-      for (size_t i=0; i<g_num_barrier_waits; i++) 
+      for (size_t i=0; i<N; i++) 
 	g_barrier_active.wait(0,numThreads);
       double t1 = getSeconds();
       
@@ -172,9 +175,41 @@ namespace embree
       
       g_threads.clear();
       
-      //printf("%30s ... %f ms (%f k/s)\n","barrier_active",1000.0f*(t1-t0)/double(g_num_barrier_waits),1E-3*g_num_barrier_waits/(t1-t0));
+      //printf("%30s ... %f ms (%f k/s)\n","barrier_active",1000.0f*(t1-t0)/double(N),1E-3*N/(t1-t0));
       //fflush(stdout);
-      return 1000.0f*(t1-t0)/double(g_num_barrier_waits);
+      return 1E9*(t1-t0)/double(N);
+    }
+  };
+
+  class benchmark_atomic_inc : public Benchmark
+  {
+  public:
+    enum { N = 1000000 };
+
+    benchmark_atomic_inc () 
+     : Benchmark("atomic_inc","ns") {}
+
+    static void benchmark_atomic_inc_thread(void* ptr) {
+      while (atomic_add(&g_atomic_cntr,-1) > 0);
+    }
+    
+    double run (size_t numThreads)
+    {
+      g_atomic_cntr = N;
+      for (size_t i=1; i<numThreads; i++)
+	g_threads.push_back(createThread(benchmark_atomic_inc_thread,NULL,1000000,i));
+      setAffinity(0);
+      
+      double t0 = getSeconds();
+      benchmark_atomic_inc_thread(NULL);
+      double t1 = getSeconds();
+      
+      for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
+      g_threads.clear();
+      
+      //printf("%30s ... %f ms (%f k/s)\n","mutex_sys",1000.0f*(t1-t0)/double(g_num_mutex_locks),1E-3*g_num_mutex_locks/(t1-t0));
+      //fflush(stdout);
+      return 1E9*(t1-t0)/double(N);
     }
   };
 
@@ -646,6 +681,7 @@ namespace embree
     benchmarks.push_back(new benchmark_mutex_sys());
     benchmarks.push_back(new benchmark_barrier_sys());
     benchmarks.push_back(new benchmark_barrier_active());
+    benchmarks.push_back(new benchmark_atomic_inc());
 
     benchmarks.push_back(new create_geometry ("create_static_geometry_120",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,6,1));
     benchmarks.push_back(new create_geometry ("create_static_geometry_1k" ,      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,17,1));
