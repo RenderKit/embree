@@ -63,6 +63,11 @@ namespace embree
       : name(name), unit(unit) {}
 
     virtual double run(size_t numThreads) = 0;
+
+    void print(size_t numThreads) {
+      printf("%30s ... %f %s\n",name.c_str(),run(numThreads),unit.c_str());
+      fflush(stdout);
+    }
   };
 
   class benchmark_mutex_sys : public Benchmark
@@ -370,34 +375,6 @@ namespace embree
     ray_o.geomID[i] = ray_i.geomID;
     ray_o.primID[i] = ray_i.primID;
     ray_o.instID[i] = ray_i.instID;
-  }
-
-  static void parseCommandLine(int argc, char** argv)
-  {
-    for (int i=1; i<argc; i++)
-    {
-      std::string tag = argv[i];
-      if (tag == "") return;
-
-      /* rtcore configuration */
-      else if (tag == "-rtcore" && i+1<argc) {
-        g_rtcore = argv[++i];
-      }
-
-      /* plots scalability graph */
-      else if (tag == "-plot" && i+4<argc) {
-	g_plot_min = atoi(argv[++i]);
-	g_plot_max = atoi(argv[++i]);
-	g_plot_step= atoi(argv[++i]);
-	g_plot_test= argv[++i];
-      }
-
-      /* skip unknown command line parameter */
-      else {
-        std::cerr << "unknown command line parameter: " << tag << " ";
-        std::cerr << std::endl;
-      }
-    }
   }
 
   struct Mesh {
@@ -820,20 +797,19 @@ namespace embree
 #endif
   }
 
+  Benchmark* getBenchmark(const std::string& str)
+  {
+    for (size_t i=0; i<benchmarks.size(); i++) 
+      if (benchmarks[i]->name == str) 
+	return benchmarks[i];
+
+    std::cout << "unknown benchmark: " << str << std::endl;
+    exit(1);
+  }
+
   void plot_scalability()
   {
-    Benchmark* benchmark = NULL;
-    for (size_t i=0; i<benchmarks.size(); i++) {
-      if (benchmarks[i]->name == g_plot_test) {
-	benchmark = benchmarks[i];
-	break;
-      }
-    }
-    if (benchmark == NULL) {
-      std::cout << "unknown benchmark: " << g_plot_test << std::endl;
-      return;
-    }
-
+    Benchmark* benchmark = getBenchmark(g_plot_test);
     //std::cout << "set terminal gif" << std::endl;
     //std::cout << "set output\"" << benchmark->name << "\"" << std::endl;
     std::cout << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
@@ -857,7 +833,44 @@ namespace embree
       std::cout << " " << i << " " << pmin << " " << pavg << " " << pmax << std::endl;
     }
     std::cout << "EOF" << std::endl;
-    //std::cout << "pause -1" << std::endl;
+  }
+
+  static void parseCommandLine(int argc, char** argv)
+  {
+    for (int i=1; i<argc; i++)
+    {
+      std::string tag = argv[i];
+      if (tag == "") return;
+
+      /* rtcore configuration */
+      else if (tag == "-rtcore" && i+1<argc) {
+        g_rtcore = argv[++i];
+      }
+
+      /* plots scalability graph */
+      else if (tag == "-plot" && i+4<argc) {
+	g_plot_min = atoi(argv[++i]);
+	g_plot_max = atoi(argv[++i]);
+	g_plot_step= atoi(argv[++i]);
+	g_plot_test= argv[++i];
+	plot_scalability();
+      }
+
+      /* run single benchmark */
+      else if (tag == "-run" && i+2<argc) 
+      {
+	size_t numThreads = atoi(argv[++i]);
+	std::string name = argv[++i];
+	Benchmark* benchmark = getBenchmark(name);
+	benchmark->print(numThreads);
+      }
+
+      /* skip unknown command line parameter */
+      else {
+        std::cerr << "unknown command line parameter: " << tag << " ";
+        std::cerr << std::endl;
+      }
+    }
   }
 
   /* main function in embree namespace */
@@ -868,23 +881,16 @@ namespace embree
     /* parse command line */  
     parseCommandLine(argc,argv);
 
-    if (g_plot_test != "") {
-      plot_scalability();
-      return 0;
-    }
-
-    size_t numThreads = getNumberOfLogicalThreads();
+    if (argc == 1) 
+    {
+      size_t numThreads = getNumberOfLogicalThreads();
 #if defined (__MIC__)
-    numThreads -= 4;
+      numThreads -= 4;
 #endif
-
-    rtcore_intersect_benchmark(RTC_SCENE_STATIC, 501);
-    for (size_t i=0; i<benchmarks.size(); i++) {
-      Benchmark* benchmark = benchmarks[i];
-      printf("%30s ... %f %s\n",benchmark->name.c_str(),benchmark->run(numThreads),benchmark->unit.c_str());
-      fflush(stdout);
+      rtcore_intersect_benchmark(RTC_SCENE_STATIC, 501);
+      for (size_t i=0; i<benchmarks.size(); i++) benchmarks[i]->print(numThreads);
     }
-    
+
     return 0;
   }
 }
