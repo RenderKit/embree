@@ -454,6 +454,6 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA Triangle4vIntersector4Pluecker>);
     DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA Triangle4iIntersector4Pluecker>);
     DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA VirtualAccelIntersector4>);
-    DEFINE_INTERSECTOR4(BVH4Triangle1vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA Triangle1vIntersector4MoellerTrumboreMB>);
+    DEFINE_INTERSECTOR4(BVH4Triangle1vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x10 COMMA Triangle1vIntersector4MoellerTrumboreMB>);
   }
 }

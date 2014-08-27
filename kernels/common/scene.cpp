@@ -100,6 +100,7 @@ namespace embree
 #else
     createTriangleAccel();
     accels.add(BVH4MB::BVH4MBTriangle1v(this));
+    //accels.add(BVH4::BVH4Triangle1vMB(this));
     accels.add(BVH4::BVH4UserGeometry(this));
     createHairAccel();
     accels.add(BVH4Hair::BVH4HairBezier1iMB(this,false));

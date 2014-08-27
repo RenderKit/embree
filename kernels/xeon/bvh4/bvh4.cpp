@@ -86,6 +86,7 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4Triangle1vBuilder);
   DECLARE_SCENE_BUILDER(BVH4Triangle4vBuilder);
   DECLARE_SCENE_BUILDER(BVH4Triangle4iBuilder);
+  DECLARE_SCENE_BUILDER(BVH4Triangle1vMBBuilder);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilder);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilder);
@@ -146,6 +147,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vBuilder);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vBuilder);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iBuilder);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMBBuilder);
     
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilder);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilder);
@@ -415,7 +417,7 @@ namespace embree
     return intersectors;
   }
 
-  Accel::Intersectors BVH4Triangle1vIntersectorsMB(BVH4* bvh)
+  Accel::Intersectors BVH4Triangle1vMBIntersectors(BVH4* bvh)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
@@ -550,6 +552,14 @@ namespace embree
     else if (g_tri_builder == "fast"        ) builder = BVH4Triangle1vBuilderFast(accel,scene,0);
     else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4<Triangle1v>");
         
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4::BVH4Triangle1vMB(Scene* scene)
+  {
+    BVH4* accel = new BVH4(SceneTriangle1vMB::type,scene);
+    Accel::Intersectors intersectors = BVH4Triangle1vMBIntersectors(accel);
+    Builder* builder = BVH4Triangle1vMBBuilder(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 
