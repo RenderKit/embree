@@ -432,10 +432,10 @@ namespace embree
       {
 	g_counter = 0;
 	double dt = getSeconds();
-#if 1
+#if 0
 	launch_retrace_loop(scene,r,numLogRayStreamElements,g_check,g_numThreads);
 #else
-	retrace_loop(scene,r,numLogRayStreamElements,g_check);
+	retrace_loop(scene,r,numLogRayStreamElements,0,1,g_check);
 #endif
 	dt = getSeconds()-dt;
 	cout << "frame " << i << " => time " << 1000. * dt << " " << 1. / dt << " fps " << "ms " << stats.numTotalRays / dt / 1000000. << " mrays/sec" << endl;

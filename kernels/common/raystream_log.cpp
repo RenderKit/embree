@@ -47,9 +47,9 @@ namespace embree
   RayStreamLogger::~RayStreamLogger()
     {
       if (initialized)
-	{
-	  rayData.close();
-	}
+      {
+        rayData.close();
+      }
     }
 
   void RayStreamLogger::openRayDataStream()
