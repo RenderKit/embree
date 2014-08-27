@@ -127,7 +127,7 @@ namespace embree
   }
   
   TaskScheduler::TaskScheduler () 
-    : terminateThreads(false), defaultNumThreads(true), numThreads(0), numEnabledThreads(0), thread2event(NULL) {}
+    : terminateThreads(false), defaultNumThreads(true), numThreads(0), numEnabledThreads(0) {}
 
   void TaskScheduler::createThreads(size_t numThreads_in)
   {
@@ -172,7 +172,6 @@ namespace embree
     terminate();
     for (size_t i=0; i<threads.size(); i++) join(threads[i]);
     threads.clear();
-    alignedFree(thread2event); thread2event = NULL;
     terminateThreads = false;
   }
 

@@ -49,7 +49,6 @@ namespace embree
     
     /* take next task from task list */
     TaskScheduler::Event* event = task->event;
-    thread2event[threadIndex].event = event; 
 
     DBG(
 	std::cout << "GOT TASK " << (void*)task << " : threadIndex " << threadIndex << " threadCount " << threadCount << std::endl << std::flush;

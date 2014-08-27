@@ -200,12 +200,6 @@ namespace embree
     volatile size_t numEnabledThreads;
     __forceinline bool isEnabled(size_t threadIndex) const { return threadIndex < numEnabledThreads; }
 
-    struct __aligned(64) ThreadEvent { 
-      Event* event; 
-      char align[64-sizeof(Event*)];
-    };
-    ThreadEvent* thread2event;
-
     /* for lockstep taskscheduler*/
   public:
     static const unsigned int CONTROL_THREAD_ID = 0;
