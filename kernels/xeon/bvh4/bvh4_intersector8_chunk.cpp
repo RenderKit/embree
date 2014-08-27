@@ -62,8 +62,8 @@ namespace embree
       return near <= far;
     }
 
-    template<typename PrimitiveIntersector8>
-    void BVH4Intersector8Chunk<PrimitiveIntersector8>::intersect(avxb* valid_i, BVH4* bvh, Ray8& ray)
+    template<int types, typename PrimitiveIntersector8>
+    void BVH4Intersector8Chunk<types, PrimitiveIntersector8>::intersect(avxb* valid_i, BVH4* bvh, Ray8& ray)
     {
       /* load ray */
       const avxb valid0 = *valid_i;
@@ -105,7 +105,7 @@ namespace embree
         while (1)
         {
           /* process normal nodes */
-          if (likely(curNode.isNode()))
+          if (likely((types & 0x1) && curNode.isNode()))
           {
 	    const avxb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
@@ -175,7 +175,7 @@ namespace embree
 	  }
 	  
 	  /* process motion blur nodes */
-          else if (likely(curNode.isNodeMB()))
+          else if (likely((types & 0x10) && curNode.isNodeMB()))
 	  {
 	    const avxb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
@@ -244,8 +244,8 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    template<typename PrimitiveIntersector8>
-    void BVH4Intersector8Chunk<PrimitiveIntersector8>::occluded(avxb* valid_i, BVH4* bvh, Ray8& ray)
+    template<int types, typename PrimitiveIntersector8>
+    void BVH4Intersector8Chunk<types, PrimitiveIntersector8>::occluded(avxb* valid_i, BVH4* bvh, Ray8& ray)
     {
       /* load ray */
       const avxb valid = *valid_i;
@@ -288,7 +288,7 @@ namespace embree
         while (1)
         {
 	  /* process normal nodes */
-          if (likely(curNode.isNode()))
+          if (likely((types & 0x1) && curNode.isNode()))
           {
 	    const avxb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
@@ -358,7 +358,7 @@ namespace embree
 	  }
 	  
 	  /* process motion blur nodes */
-          else if (likely(curNode.isNodeMB()))
+          else if (likely((types & 0x10) && curNode.isNodeMB()))
 	  {
 	    const avxb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
@@ -429,16 +429,16 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR8(BVH4Bezier1Intersector8Chunk, BVH4Intersector8Chunk<Bezier1Intersector8>);
-    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Chunk, BVH4Intersector8Chunk<Bezier1iIntersector8>);
-    DEFINE_INTERSECTOR8(BVH4Triangle1Intersector8ChunkMoeller, BVH4Intersector8Chunk<Triangle1Intersector8MoellerTrumbore>);
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoeller, BVH4Intersector8Chunk<Triangle4Intersector8MoellerTrumbore<true> >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<Triangle4Intersector8MoellerTrumbore<false> >);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoeller, BVH4Intersector8Chunk<Triangle8Intersector8MoellerTrumbore<true> >);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<Triangle8Intersector8MoellerTrumbore<false> >);
-    DEFINE_INTERSECTOR8(BVH4Triangle1vIntersector8ChunkPluecker, BVH4Intersector8Chunk<Triangle1vIntersector8Pluecker>);
-    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8ChunkPluecker, BVH4Intersector8Chunk<Triangle4vIntersector8Pluecker>);
-    DEFINE_INTERSECTOR8(BVH4Triangle4iIntersector8ChunkPluecker, BVH4Intersector8Chunk<Triangle4iIntersector8Pluecker>);
-    DEFINE_INTERSECTOR8(BVH4VirtualIntersector8Chunk, BVH4Intersector8Chunk<VirtualAccelIntersector8>);
+    DEFINE_INTERSECTOR8(BVH4Bezier1Intersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA Bezier1Intersector8>);
+    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA Bezier1iIntersector8>);
+    DEFINE_INTERSECTOR8(BVH4Triangle1Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA Triangle1Intersector8MoellerTrumbore>);
+    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA Triangle4Intersector8MoellerTrumbore<true> >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<0x1 COMMA Triangle4Intersector8MoellerTrumbore<false> >);
+    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA Triangle8Intersector8MoellerTrumbore<true> >);
+    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<0x1 COMMA Triangle8Intersector8MoellerTrumbore<false> >);
+    DEFINE_INTERSECTOR8(BVH4Triangle1vIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA Triangle1vIntersector8Pluecker>);
+    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA Triangle4vIntersector8Pluecker>);
+    DEFINE_INTERSECTOR8(BVH4Triangle4iIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA Triangle4iIntersector8Pluecker>);
+    DEFINE_INTERSECTOR8(BVH4VirtualIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA VirtualAccelIntersector8>);
   }
 }
