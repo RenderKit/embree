@@ -382,6 +382,8 @@ namespace embree
     ~BVH4 ();
 
     /*! BVH4 instantiations */
+    static Accel* BVH4Triangle1vMB(Scene* scene);
+
     static Accel* BVH4Bezier1(Scene* scene);
     static Accel* BVH4Bezier1i(Scene* scene);
     static Accel* BVH4Triangle1(Scene* scene);
