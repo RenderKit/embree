@@ -331,7 +331,8 @@ namespace embree
     while(1)
       {
 	//const size_t index = g_counter.inc();
-	if (index > numLogRayStreamElements) break;
+	if (index >= numLogRayStreamElements) break;
+	
 	RTCRay16 &ray16 = r[index].start;
 	mic_i valid = select((mic_m)r[index].m_valid,mic_i(-1),mic_i(0));
 	rays += countbits( (mic_m)r[index].m_valid );
