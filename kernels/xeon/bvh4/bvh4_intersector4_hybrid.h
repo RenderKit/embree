@@ -25,7 +25,7 @@ namespace embree
   namespace isa 
   {
     /*! BVH4 Hybrid Packet traversal implementation. Switched between packet and single ray traversal. */
-    template<typename PrimitiveIntersector>
+    template<int types, typename PrimitiveIntersector>
       class BVH4Intersector4Hybrid 
     {
       /* shortcuts for frequently used types */
@@ -38,10 +38,11 @@ namespace embree
       static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
 
     public:
-      static void intersect1(const BVH4* bvh, NodeRef root, size_t k, Precalculations& pre, Ray4& ray, 
-			     const sse3f& ray_org, const sse3f& ray_dir, const sse3f& ray_rdir, const ssef& ray_tnear, const ssef& ray_tfar);
-      static bool occluded1 (const BVH4* bvh, NodeRef root, size_t k, Precalculations& pre, Ray4& ray, 
-			     const sse3f& ray_org, const sse3f& ray_dir, const sse3f& ray_rdir, const ssef& ray_tnear, const ssef& ray_tfar);
+
+      static void intersect1(const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray4& ray, 
+			     const sse3f& ray_org, const sse3f& ray_dir, const sse3f& ray_rdir, const ssef& ray_tnear, const ssef& ray_tfar, const sse3i& nearXYZ);
+      static bool occluded1 (const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray4& ray, 
+			     const sse3f& ray_org, const sse3f& ray_dir, const sse3f& ray_rdir, const ssef& ray_tnear, const ssef& ray_tfar, const sse3i& nearXYZ);
 
       static void intersect(sseb* valid, BVH4* bvh, Ray4& ray);
       static void occluded (sseb* valid, BVH4* bvh, Ray4& ray);
