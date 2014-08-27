@@ -284,21 +284,17 @@ namespace embree
 	std::swap(children[i],children[j]);
 
 	std::swap(lower_x[i],lower_x[j]);
-	std::swap(lower_dx[i],lower_dx[j]);
-
 	std::swap(upper_x[i],upper_x[j]);
-	std::swap(upper_dx[i],upper_dx[j]);
-
 	std::swap(lower_y[i],lower_y[j]);
-	std::swap(lower_dy[i],lower_dy[j]);
-
 	std::swap(upper_y[i],upper_y[j]);
-	std::swap(upper_dy[i],upper_dy[j]);
-
 	std::swap(lower_z[i],lower_z[j]);
-	std::swap(lower_dz[i],lower_dz[j]);
-
 	std::swap(upper_z[i],upper_z[j]);
+	
+	std::swap(lower_dx[i],lower_dx[j]);
+	std::swap(upper_dx[i],upper_dx[j]);
+	std::swap(lower_dy[i],lower_dy[j]);
+	std::swap(upper_dy[i],upper_dy[j]);
+	std::swap(lower_dz[i],lower_dz[j]);
 	std::swap(upper_dz[i],upper_dz[j]);
       }
 
@@ -307,12 +303,20 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
     public:
-      ssef lower_x, lower_dx;        //!< X dimension of lower bounds of all 4 children.
-      ssef upper_x, upper_dx;        //!< X dimension of upper bounds of all 4 children.
-      ssef lower_y, lower_dy;        //!< Y dimension of lower bounds of all 4 children.
-      ssef upper_y, upper_dy;        //!< Y dimension of upper bounds of all 4 children.
-      ssef lower_z, lower_dz;        //!< Z dimension of lower bounds of all 4 children.
-      ssef upper_z, upper_dz;        //!< Z dimension of upper bounds of all 4 children.
+      ssef lower_x;        //!< X dimension of lower bounds of all 4 children.
+      ssef upper_x;        //!< X dimension of upper bounds of all 4 children.
+      ssef lower_y;        //!< Y dimension of lower bounds of all 4 children.
+      ssef upper_y;        //!< Y dimension of upper bounds of all 4 children.
+      ssef lower_z;        //!< Z dimension of lower bounds of all 4 children.
+      ssef upper_z;        //!< Z dimension of upper bounds of all 4 children.
+
+      ssef lower_dx;        //!< X dimension of lower bounds of all 4 children.
+      ssef upper_dx;        //!< X dimension of upper bounds of all 4 children.
+      ssef lower_dy;        //!< Y dimension of lower bounds of all 4 children.
+      ssef upper_dy;        //!< Y dimension of upper bounds of all 4 children.
+      ssef lower_dz;        //!< Z dimension of lower bounds of all 4 children.
+      ssef upper_dz;        //!< Z dimension of upper bounds of all 4 children.
+
       NodeRef children[4];           //!< Pointer to the 4 children (can be a node or leaf)
     };
 
