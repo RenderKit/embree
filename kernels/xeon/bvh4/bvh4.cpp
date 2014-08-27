@@ -284,6 +284,30 @@ namespace embree
     }
   }
 
+  std::pair<BBox3fa,BBox3fa> BVH4::refit(void* geom, NodeRef node)
+  {
+    /*! merge bounds of triangles for both time steps */
+    if (node.isLeaf()) 
+    {
+      size_t num; char* tri = node.leaf(num);
+      return primTy.update2(tri,num,geom);
+    }
+    /*! set and propagate merged bounds for both time steps */
+    else
+    {
+      NodeMB* n = node.nodeMB();
+      if (!n->hasBounds()) {
+        for (size_t i=0; i<4; i++) {
+          std::pair<BBox3fa,BBox3fa> bounds = refit(geom,n->child(i));
+          n->set(i,bounds.first,bounds.second);
+        }
+      }
+      BBox3fa bounds0 = merge(n->bounds0(0),n->bounds0(1),n->bounds0(2),n->bounds0(3));
+      BBox3fa bounds1 = merge(n->bounds1(0),n->bounds1(1),n->bounds1(2),n->bounds1(3));
+      return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
+    }
+  }
+
   Accel::Intersectors BVH4Bezier1Intersectors(BVH4* bvh)
   {
     Accel::Intersectors intersectors;

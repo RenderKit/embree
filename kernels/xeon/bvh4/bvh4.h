@@ -173,6 +173,19 @@ namespace embree
         transpose(upper_x,upper_y,upper_z,ssef(zero),bounds0.upper,bounds1.upper,bounds2.upper,bounds3.upper);
       }
 
+      /*! swap two children of the node */
+      __forceinline void swap(size_t i, size_t j)
+      {
+	assert(i<N && j<N);
+	std::swap(children[i],children[j]);
+	std::swap(lower_x[i],lower_x[j]);
+	std::swap(lower_y[i],lower_y[j]);
+	std::swap(lower_z[i],lower_z[j]);
+	std::swap(upper_x[i],upper_x[j]);
+	std::swap(upper_y[i],upper_y[j]);
+	std::swap(upper_z[i],upper_z[j]);
+      }
+
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
@@ -186,39 +199,6 @@ namespace embree
       ssef upper_z;           //!< Z dimension of upper bounds of all 4 children.
       NodeRef children[N];    //!< Pointer to the 4 children (can be a node or leaf)
     };
-
-    /*! swap the children of two nodes */
-    __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
-    {
-      assert(i<N && j<N);
-      std::swap(a->children[i],b->children[j]);
-      std::swap(a->lower_x[i],b->lower_x[j]);
-      std::swap(a->lower_y[i],b->lower_y[j]);
-      std::swap(a->lower_z[i],b->lower_z[j]);
-      std::swap(a->upper_x[i],b->upper_x[j]);
-      std::swap(a->upper_y[i],b->upper_y[j]);
-      std::swap(a->upper_z[i],b->upper_z[j]);
-    }
-
-    /*! compacts a node (moves empty children to the end) */
-    __forceinline static void compact(Node* a) // FIXME: do compaction also for motion blur node in builder
-    {
-      /* find right most filled node */
-      ssize_t j=N;
-      for (j=j-1; j>=0; j--)
-        if (a->child(j) != emptyNode)
-          break;
-
-      /* replace empty nodes with filled nodes */
-      for (ssize_t i=0; i<j; i++) {
-        if (a->child(i) == emptyNode) {
-          swap(a,i,a,j);
-          for (j=j-1; j>i; j--)
-            if (a->child(j) != emptyNode)
-              break;
-        }
-      }
-    }
 
     /*! Motion Blur Node */
     struct NodeMB
@@ -297,6 +277,31 @@ namespace embree
                              reduce_max(max(upper_z,upper_z+upper_dz))));
       }
 
+      /*! swap two children of the node */
+      __forceinline void swap(size_t i, size_t j)
+      {
+	assert(i<N && j<N);
+	std::swap(children[i],children[j]);
+
+	std::swap(lower_x[i],lower_x[j]);
+	std::swap(lower_dx[i],lower_dx[j]);
+
+	std::swap(upper_x[i],upper_x[j]);
+	std::swap(upper_dx[i],upper_dx[j]);
+
+	std::swap(lower_y[i],lower_y[j]);
+	std::swap(lower_dy[i],lower_dy[j]);
+
+	std::swap(upper_y[i],upper_y[j]);
+	std::swap(upper_dy[i],upper_dy[j]);
+
+	std::swap(lower_z[i],lower_z[j]);
+	std::swap(lower_dz[i],lower_dz[j]);
+
+	std::swap(upper_z[i],upper_z[j]);
+	std::swap(upper_dz[i],upper_dz[j]);
+      }
+
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
@@ -310,7 +315,60 @@ namespace embree
       ssef upper_z, upper_dz;        //!< Z dimension of upper bounds of all 4 children.
       NodeRef children[4];           //!< Pointer to the 4 children (can be a node or leaf)
     };
-    
+
+    /*! swap the children of two nodes */
+    __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
+    {
+      assert(i<N && j<N);
+      std::swap(a->children[i],b->children[j]);
+      std::swap(a->lower_x[i],b->lower_x[j]);
+      std::swap(a->lower_y[i],b->lower_y[j]);
+      std::swap(a->lower_z[i],b->lower_z[j]);
+      std::swap(a->upper_x[i],b->upper_x[j]);
+      std::swap(a->upper_y[i],b->upper_y[j]);
+      std::swap(a->upper_z[i],b->upper_z[j]);
+    }
+
+    /*! compacts a node (moves empty children to the end) */
+    __forceinline static void compact(Node* a)
+    {
+      /* find right most filled node */
+      ssize_t j=N;
+      for (j=j-1; j>=0; j--)
+        if (a->child(j) != emptyNode)
+          break;
+
+      /* replace empty nodes with filled nodes */
+      for (ssize_t i=0; i<j; i++) {
+        if (a->child(i) == emptyNode) {
+          a->swap(i,j);
+          for (j=j-1; j>i; j--)
+            if (a->child(j) != emptyNode)
+              break;
+        }
+      }
+    }
+
+    /*! compacts a node (moves empty children to the end) */
+    __forceinline static void compact(NodeMB* a)
+    {
+      /* find right most filled node */
+      ssize_t j=N;
+      for (j=j-1; j>=0; j--)
+        if (a->child(j) != emptyNode)
+          break;
+
+      /* replace empty nodes with filled nodes */
+      for (ssize_t i=0; i<j; i++) {
+        if (a->child(i) == emptyNode) {
+          a->swap(i,j);
+          for (j=j-1; j>i; j--)
+            if (a->child(j) != emptyNode)
+              break;
+        }
+      }
+    }
+
   public:
 
     /*! BVH4 default constructor. */
@@ -359,10 +417,17 @@ namespace embree
     /*! Clears the barrier bits of a subtree. */
     void clearBarrier(NodeRef& node);
 
+    /*! Propagate bounds for time t0 and time t1 up the tree. */
+    std::pair<BBox3fa,BBox3fa> refit(void* geom, NodeRef node);
+
     LinearAllocatorPerThread alloc;
 
     __forceinline Node* allocNode(size_t thread) {
       Node* node = (Node*) alloc.malloc(thread,sizeof(Node),1 << alignment); node->clear(); return node;
+    }
+
+    __forceinline NodeMB* allocNodeMB(size_t thread) {
+      NodeMB* node = (NodeMB*) alloc.malloc(thread,sizeof(NodeMB),1 << alignment); node->clear(); return node;
     }
 
     __forceinline char* allocPrimitiveBlocks(size_t thread, size_t num) {
@@ -373,6 +438,12 @@ namespace embree
     __forceinline NodeRef encodeNode(Node* node) { 
       assert(!((size_t)node & align_mask)); 
       return NodeRef((size_t) node);
+    }
+
+    /*! Encodes a node */
+    __forceinline NodeRef encodeNode(NodeMB* node) { 
+      assert(!((size_t)node & align_mask)); 
+      return NodeRef((size_t) node + tyNodeMB);
     }
     
     /*! Encodes a leaf */
