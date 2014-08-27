@@ -51,7 +51,7 @@ namespace embree
   BarrierSys g_barrier;
   LinearBarrierActive g_barrier_active;
   size_t g_num_mutex_locks = 100000;
-
+  size_t g_num_threads = 0;
   atomic_t g_atomic_cntr = 0;
 
   class Benchmark
@@ -137,8 +137,6 @@ namespace embree
     }
   };
 
-  static size_t g_barrier_active_threads = 0;
-
   class benchmark_barrier_active : public Benchmark
   {
     enum { N = 1000 };
@@ -150,7 +148,7 @@ namespace embree
     static void benchmark_barrier_active_thread(void* ptr) 
     {
       size_t threadIndex = (size_t) ptr;
-      size_t threadCount = g_barrier_active_threads;
+      size_t threadCount = g_num_threads;
       g_barrier_active.wait(threadIndex,threadCount);
       for (size_t i=0; i<N; i++) 
 	g_barrier_active.wait(threadIndex,threadCount);
@@ -158,7 +156,7 @@ namespace embree
   
     double run (size_t numThreads)
     {
-      g_barrier_active_threads = numThreads;
+      g_num_threads = numThreads;
       g_barrier.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_barrier_active_thread,(void*)i,1000000,i));
@@ -212,6 +210,94 @@ namespace embree
       return 1E9*(t1-t0)/double(N);
     }
   };
+
+  class benchmark_osmalloc : public Benchmark
+  {
+  public:
+    enum { N = 1000000000 };
+
+    static char* ptr;
+
+    benchmark_osmalloc () 
+     : Benchmark("osmalloc","GB/s") {}
+
+    static void benchmark_osmalloc_thread(void* arg) 
+    {
+      size_t threadIndex = (size_t) arg;
+      size_t threadCount = g_num_threads;
+      size_t start = (threadIndex+0)*N/threadCount;
+      size_t end   = (threadIndex+1)*N/threadCount;
+      for (size_t i=start; i<end; i+=64)
+	ptr[i] = 0;
+    }
+    
+    double run (size_t numThreads)
+    {
+      ptr = (char*) os_malloc(N);
+      g_num_threads = numThreads;
+      for (size_t i=1; i<numThreads; i++)
+	g_threads.push_back(createThread(benchmark_osmalloc_thread,(void*)i,1000000,i));
+      setAffinity(0);
+      
+      double t0 = getSeconds();
+      benchmark_osmalloc_thread(0);
+      double t1 = getSeconds();
+      
+      for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
+      g_threads.clear();
+      os_free(ptr,N);
+      
+      return 1E-9*double(N)/(t1-t0);
+    }
+  };
+
+  char* benchmark_osmalloc::ptr = NULL;
+
+  class benchmark_bandwidth : public Benchmark
+  {
+  public:
+    enum { N = 300000000 };
+
+    static char* ptr;
+
+    benchmark_bandwidth () 
+      : Benchmark("bandwidth","GB/s") {}
+
+    static void benchmark_bandwidth_thread(void* arg) 
+    {
+      size_t threadIndex = (size_t) arg;
+      size_t threadCount = g_num_threads;
+      size_t start = (threadIndex+0)*N/threadCount;
+      size_t end   = (threadIndex+1)*N/threadCount;
+      char p = 0;
+      for (size_t i=start; i<end; i+=64)
+	p += ptr[i];
+      volatile char out = p;
+    }
+    
+    double run (size_t numThreads)
+    {
+      ptr = (char*) os_malloc(N);
+      for (size_t i=0; i<N; i+=4096) ptr[i] = 0;
+
+      g_num_threads = numThreads;
+      for (size_t i=1; i<numThreads; i++)
+	g_threads.push_back(createThread(benchmark_bandwidth_thread,(void*)i,1000000,i));
+      setAffinity(0);
+      
+      double t0 = getSeconds();
+      benchmark_bandwidth_thread(0);
+      double t1 = getSeconds();
+      
+      for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
+      g_threads.clear();
+      os_free(ptr,N);
+      
+      return 1E-9*double(N)/(t1-t0);
+    }
+  };
+
+  char* benchmark_bandwidth::ptr = NULL;
 
   RTCRay makeRay(Vec3f org, Vec3f dir) 
   {
@@ -682,7 +768,9 @@ namespace embree
     benchmarks.push_back(new benchmark_barrier_sys());
     benchmarks.push_back(new benchmark_barrier_active());
     benchmarks.push_back(new benchmark_atomic_inc());
-
+    benchmarks.push_back(new benchmark_osmalloc());
+    benchmarks.push_back(new benchmark_bandwidth());
+ 
     benchmarks.push_back(new create_geometry ("create_static_geometry_120",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,6,1));
     benchmarks.push_back(new create_geometry ("create_static_geometry_1k" ,      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,17,1));
     benchmarks.push_back(new create_geometry ("create_static_geometry_10k",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,51,1));
@@ -758,7 +846,7 @@ namespace embree
     for (size_t i=g_plot_min; i<=g_plot_max; i+= g_plot_step) 
     {
       double pmin = inf, pmax = -float(inf), pavg = 0.0f;
-      size_t N = 16;
+      size_t N = 8;
       for (size_t j=0; j<N; j++) {
 	double p = benchmark->run(i);
 	pmin = min(pmin,p);
