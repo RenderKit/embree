@@ -57,6 +57,39 @@ namespace embree
       LogRay16() {
 	memset(this,0,sizeof(LogRay16));
       }
+
+      __forceinline void prefetchL2()
+      {
+	prefetch<PFHINT_L2>(&type);
+	const size_t cl = sizeof(RTCRay16) / 64;
+	const char *__restrict__ ptr = (char*)&start;
+#pragma unroll(cl)
+	for (size_t i=0;i<cl;i++,ptr+=64)
+	  prefetch<PFHINT_L2>(ptr);
+      }
+
+      __forceinline void prefetchL1()
+      {
+	prefetch<PFHINT_NT>(&type);
+	const size_t cl = sizeof(RTCRay16) / 64;
+	const char *__restrict__ ptr = (char*)&start;
+#pragma unroll(cl)
+	for (size_t i=0;i<cl;i++,ptr+=64)
+	  prefetch<PFHINT_NT>(ptr);
+      }
+
+      __forceinline void evict()
+      {
+	evictL2(&type);
+	const size_t cl = sizeof(RTCRay16) / 64;
+	const char *__restrict__ ptr = (char*)&start;
+#pragma unroll(cl)
+	for (size_t i=0;i<cl;i++,ptr+=64)
+	  evictL2(ptr);
+
+      }
+
+
     };
       
   static RayStreamLogger rayStreamLogger;

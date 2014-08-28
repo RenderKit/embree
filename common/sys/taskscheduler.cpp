@@ -145,7 +145,7 @@ namespace embree
     }
 #endif
     numEnabledThreads = numThreads;
-    
+
     /* generate all threads */
     for (size_t t=0; t<numThreads; t++) {
       threads.push_back(createThread((thread_func)threadFunction,new Thread(t,numThreads,this),4*1024*1024,t));
