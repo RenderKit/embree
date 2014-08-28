@@ -589,6 +589,11 @@ namespace embree
 
     static Accel* BVH4Bezier1(Scene* scene);
     static Accel* BVH4Bezier1i(Scene* scene);
+    
+    static Accel* BVH4OBBBezier1(Scene* scene, bool highQuality);
+    static Accel* BVH4OBBBezier1i(Scene* scene, bool highQuality);
+    static Accel* BVH4OBBBezier1iMB(Scene* scene, bool highQuality);
+
     static Accel* BVH4Triangle1(Scene* scene);
     static Accel* BVH4Triangle4(Scene* scene);
     static Accel* BVH4Triangle8(Scene* scene);

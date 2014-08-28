@@ -33,6 +33,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Bezier1iIntersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Bezier1Intersector1_OBB);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Bezier1iIntersector1_OBB);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4Bezier1iMBIntersector1_OBB);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle1Intersector1Moeller);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle4Intersector1Moeller);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle8Intersector1Moeller);
@@ -88,6 +89,7 @@ namespace embree
 
   DECLARE_SCENE_BUILDER(BVH4Bezier1Builder_OBB);
   DECLARE_SCENE_BUILDER(BVH4Bezier1iBuilder_OBB);
+  DECLARE_SCENE_BUILDER(BVH4Bezier1iMBBuilder_OBB);
   DECLARE_SCENE_BUILDER(BVH4Triangle1Builder);
   DECLARE_SCENE_BUILDER(BVH4Triangle4Builder);
   DECLARE_SCENE_BUILDER(BVH4Triangle8Builder);
@@ -151,6 +153,7 @@ namespace embree
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1Builder_OBB);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilder_OBB);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iMBBuilder_OBB);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1Builder);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4Builder);
     SELECT_SYMBOL_AVX(features,BVH4Triangle8Builder);
@@ -379,6 +382,17 @@ namespace embree
     intersectors.intersector16 = NULL;
     return intersectors;
   }
+
+  Accel::Intersectors BVH4Bezier1iMBIntersectors_OBB(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1 = BVH4Bezier1iMBIntersector1_OBB;
+    intersectors.intersector4 = NULL; //BVH4Bezier1iIntersector4Single_OBB;
+    intersectors.intersector8 = NULL; //BVH4Bezier1iIntersector8Single_OBB;
+    intersectors.intersector16 = NULL;
+    return intersectors;
+  }
   
   Accel::Intersectors BVH4Triangle1Intersectors(BVH4* bvh)
   {
@@ -501,17 +515,10 @@ namespace embree
 
   Accel* BVH4::BVH4Bezier1(Scene* scene)
   { 
-#if 0 // FIXME
     BVH4* accel = new BVH4(Bezier1Type::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1Intersectors(accel);
     Builder* builder = BVH4Bezier1BuilderFast(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
-#else
-    BVH4* accel = new BVH4(Bezier1Type::type,scene);
-    Accel::Intersectors intersectors = BVH4Bezier1Intersectors_OBB(accel);
-    Builder* builder = BVH4Bezier1Builder_OBB(accel,scene,0);
-    return new AccelInstance(accel,builder,intersectors);
-#endif
   }
 
   Accel* BVH4::BVH4Bezier1i(Scene* scene)
@@ -520,6 +527,32 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors(accel);
     Builder* builder = BVH4Bezier1iBuilderFast(accel,scene,0);
     scene->needVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4::BVH4OBBBezier1(Scene* scene, bool highQuality)
+  { 
+    BVH4* accel = new BVH4(Bezier1Type::type,scene);
+    Accel::Intersectors intersectors = BVH4Bezier1Intersectors_OBB(accel);
+    Builder* builder = BVH4Bezier1Builder_OBB(accel,scene,highQuality);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4::BVH4OBBBezier1i(Scene* scene, bool highQuality)
+  { 
+    BVH4* accel = new BVH4(SceneBezier1i::type,scene);
+    Accel::Intersectors intersectors = BVH4Bezier1iIntersectors_OBB(accel);
+    Builder* builder = BVH4Bezier1iBuilder_OBB(accel,scene,highQuality);
+    scene->needVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+   Accel* BVH4::BVH4OBBBezier1iMB(Scene* scene, bool highQuality)
+  { 
+    scene->needVertices = true;
+    BVH4* accel = new BVH4(Bezier1iMBType::type,scene);
+    Accel::Intersectors intersectors = BVH4Bezier1iMBIntersectors_OBB(accel);
+    Builder* builder = BVH4Bezier1iMBBuilder_OBB(accel,scene,highQuality);
     return new AccelInstance(accel,builder,intersectors);
   }
 
