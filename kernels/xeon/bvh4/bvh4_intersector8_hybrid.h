@@ -38,12 +38,6 @@ namespace embree
       static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
       
     public:
-      static void intersect1(const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, 
-			     Ray8& ray, const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ);
-      
-      static bool occluded1(const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, 
-			    Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ);
-
       static void intersect(avxb* valid, BVH4* bvh, Ray8& ray);
       static void occluded (avxb* valid, BVH4* bvh, Ray8& ray);
     };

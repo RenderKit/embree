@@ -497,6 +497,7 @@
     <ClInclude Include="bvh4\bvh4_builder_morton.h" />
     <ClInclude Include="bvh4\bvh4_builder_toplevel.h" />
     <ClInclude Include="bvh4\bvh4_intersector1.h" />
+    <ClInclude Include="bvh4\bvh4_intersector4_single.h" />
     <ClInclude Include="bvh4\bvh4_intersector4_chunk.h" />
     <ClInclude Include="bvh4\bvh4_refit.h" />
     <ClInclude Include="bvh4\bvh4_rotate.h" />
@@ -607,6 +608,7 @@
     <ClCompile Include="bvh4\bvh4_builder_morton.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_toplevel.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector1.cpp" />
+    <ClCompile Include="bvh4\bvh4_intersector4_single.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector4_chunk.cpp" />
     <ClCompile Include="bvh4\bvh4_refit.cpp" />
     <ClCompile Include="bvh4\bvh4_rotate.cpp" />

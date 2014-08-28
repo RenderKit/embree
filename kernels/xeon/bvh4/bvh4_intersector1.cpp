@@ -33,7 +33,6 @@ namespace embree
 { 
   namespace isa
   {
-    
     __forceinline size_t intersectBox(const BVH4::UnalignedNode* node, Ray& ray, 
 				      const sse3f& ray_org, const sse3f& ray_dir, 
 				      ssef& tNear, ssef& tFar)

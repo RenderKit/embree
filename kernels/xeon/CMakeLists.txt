@@ -79,6 +79,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4/bvh4_builder_binner.cpp
   bvh4/bvh4_builder_toplevel.cpp
   bvh4/bvh4_intersector1.cpp   
+  bvh4/bvh4_intersector4_single.cpp
   bvh4/bvh4_intersector4_chunk.cpp
   bvh4/bvh4_statistics.cpp
 
@@ -95,6 +96,7 @@ IF (TARGET_SSE41)
     bvh4/bvh4_builder_binner.cpp
     bvh4/bvh4_builder_toplevel.cpp
     bvh4/bvh4_intersector1.cpp   
+    bvh4/bvh4_intersector4_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp
   )
   SET_TARGET_PROPERTIES(embree_sse41 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE41}")
@@ -135,8 +137,10 @@ IF (TARGET_AVX)
    bvh4/bvh4_refit.cpp
 
    bvh4/bvh4_intersector1.cpp   
+   bvh4/bvh4_intersector4_single.cpp
    bvh4/bvh4_intersector4_chunk.cpp
    bvh4/bvh4_intersector4_hybrid.cpp
+   bvh4/bvh4_intersector8_single.cpp
    bvh4/bvh4_intersector8_chunk.cpp
    bvh4/bvh4_intersector8_hybrid.cpp
 
@@ -167,8 +171,10 @@ IF (TARGET_AVX2)
     geometry/instance_intersector8.cpp
 		
     bvh4/bvh4_intersector1.cpp
+    bvh4/bvh4_intersector4_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp
     bvh4/bvh4_intersector4_hybrid.cpp
+    bvh4/bvh4_intersector8_single.cpp
     bvh4/bvh4_intersector8_chunk.cpp
     bvh4/bvh4_intersector8_hybrid.cpp
 

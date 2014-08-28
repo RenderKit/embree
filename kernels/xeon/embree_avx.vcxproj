@@ -381,8 +381,10 @@
     <ClCompile Include="bvh4\bvh4_builder_fast.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_morton.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector1.cpp" />
+    <ClCompile Include="bvh4\bvh4_intersector4_single.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector4_chunk.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector4_hybrid.cpp" />
+    <ClCompile Include="bvh4\bvh4_intersector8_single.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector8_chunk.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector8_hybrid.cpp" />
     <ClCompile Include="bvh4mb\bvh4mb_intersector1.cpp" />
@@ -428,8 +430,10 @@
     <ClInclude Include="bvh4\bvh4_builder_fast.h" />
     <CustomBuildStep Include="bvh4\bvh4_builder_morton.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector1.h" />
+    <CustomBuildStep Include="bvh4\bvh4_intersector4_single.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector4_chunk.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector4_hybrid.h" />
+    <CustomBuildStep Include="bvh4\bvh4_intersector8_single.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector8_chunk.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector8_hybrid.h" />
     <CustomBuildStep Include="bvh4mb\bvh4mb_intersector1.h" />

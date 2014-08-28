@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -378,8 +378,10 @@
     <ClCompile Include="geometry\instance_intersector4.cpp" />
     <ClCompile Include="geometry\instance_intersector8.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector1.cpp" />
+    <ClCompile Include="bvh4\bvh4_intersector4_single.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector4_chunk.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector4_hybrid.cpp" />
+    <ClCompile Include="bvh4\bvh4_intersector8_single.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector8_chunk.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector8_hybrid.cpp" />
     <ClCompile Include="bvh4mb\bvh4mb_intersector1.cpp" />
@@ -404,8 +406,10 @@
     <CustomBuildStep Include="geometry\instance_intersector4.h" />
     <CustomBuildStep Include="geometry\instance_intersector8.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector1.h" />
+    <CustomBuildStep Include="bvh4\bvh4_intersector4_single.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector4_chunk.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector4_hybrid.h" />
+    <CustomBuildStep Include="bvh4\bvh4_intersector8_single.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector8_chunk.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector8_hybrid.h" />
     <CustomBuildStep Include="bvh4mb\bvh4mb_intersector1.h" />

@@ -21,6 +21,7 @@
 #include "common/accel.h"
 #include "common/scene.h"
 #include "geometry/primitive.h"
+#include "common/ray.h"
 
 namespace embree
 {
@@ -699,7 +700,7 @@ namespace embree
     std::vector<BVH4*> objects;
   };
 
-  // FIXME: move the below code to somewhere else
+   // FIXME: move the below code to somewhere else
   typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, BVH4*& accel, Builder*& builder); 
   typedef Builder* (*BVH4BuilderTopLevelFunc)(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
 
