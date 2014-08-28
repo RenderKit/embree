@@ -383,6 +383,8 @@ namespace embree
     
     TaskScheduler::create(g_numThreads);
 
+    DBG_PRINT(TaskScheduler::instance);
+
     CATCH_END;
   }
   
