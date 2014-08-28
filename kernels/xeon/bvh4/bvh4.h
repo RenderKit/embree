@@ -92,11 +92,13 @@ namespace embree
       __forceinline operator size_t() const { return ptr; }
 
        /*! Prefetches the node this reference points to */
-      __forceinline void prefetch() const {
+      __forceinline void prefetch(int types) const {
 	prefetchL1(((char*)ptr)+0*64);
 	prefetchL1(((char*)ptr)+1*64);
-	//prefetchL1(((char*)ptr)+2*64);
-	//prefetchL1(((char*)ptr)+3*64);
+	if (types > 0x1) {
+	  prefetchL1(((char*)ptr)+2*64);
+	  prefetchL1(((char*)ptr)+3*64);
+	}
       }
 
       /*! Sets the barrier bit. */
