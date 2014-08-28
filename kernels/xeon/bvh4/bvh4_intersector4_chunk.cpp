@@ -109,7 +109,7 @@ namespace embree
         while (1)
         {
 	  /* process normal nodes */
-          if (likely((types & 0x1) && curNode.isNode()))
+          if (likely((types & 0x1) & curNode.isNode()))
           {
 	    const sseb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
@@ -183,7 +183,7 @@ namespace embree
 	    }
 	  }
 	  /* process motion blur nodes */
-          else if (likely((types & 0x10) && curNode.isNodeMB()))
+          else if (likely((types & 0x10) & curNode.isNodeMB()))
 	  {
 	    const sseb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
@@ -296,7 +296,7 @@ namespace embree
         while (1)
         {
 	  /* process normal nodes */
-          if (likely((types & 0x1) && curNode.isNode()))
+          if (likely((types & 0x1) & curNode.isNode()))
           {
 	    const sseb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
@@ -370,7 +370,7 @@ namespace embree
 	    }
 	  }
 	  /* process motion blur nodes */
-          else if (likely((types & 0x10) && curNode.isNodeMB()))
+          else if (likely((types & 0x10) & curNode.isNodeMB()))
 	  {
 	    const sseb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
