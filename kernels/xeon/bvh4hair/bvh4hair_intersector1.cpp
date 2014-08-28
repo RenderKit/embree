@@ -203,7 +203,7 @@ namespace embree
       StackItemNearFar* stackEnd = stack+stackSize;
       stack[0].ref = bvh->root;
       stack[0].tNear = ray.tnear;
-      stack[0].tFar = ray.tfar;
+      //stack[0].tFar = ray.tfar;
             
       /*! load the ray into SIMD registers */
       const sse3f org(ray.org.x,ray.org.y,ray.org.z);
@@ -229,7 +229,8 @@ namespace embree
         stackPtr--;
         NodeRef cur = NodeRef(stackPtr->ref);
         ssef tNear = stackPtr->tNear;
-        ssef tFar = min(stackPtr->tFar,ray.tfar);
+        //ssef tFar = min(stackPtr->tFar,ray.tfar);
+	ssef tFar = ray.tfar;
         
         /*! if popped node is too far, pop next one */
         if (unlikely(_mm_cvtss_f32(tNear) > _mm_cvtss_f32(tFar)))
@@ -238,6 +239,9 @@ namespace embree
         /* downtraversal loop */
         while (true)
         {
+	  ssef tNear = ray.tnear;
+	  ssef tFar = ray.tfar;
+
           /*! process nodes with aligned bounds */
           size_t mask;
           if (likely((flags & 1) && cur.isAlignedNode()))
@@ -284,13 +288,13 @@ namespace embree
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
             if (n0 < n1) { 
-              stackPtr->ref = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++; 
-              cur = c0; tNear = n0; tFar = f0;
+              stackPtr->ref = c1; stackPtr->tNear = n1; /*stackPtr->tFar = f1;*/ stackPtr++; 
+              cur = c0; tNear = n0; //tFar = f0;
               continue; 
             }
             else { 
-              stackPtr->ref = c0; stackPtr->tNear = n0; stackPtr->tFar = f0; stackPtr++; 
-              cur = c1; tNear = n1; tFar = f1;
+              stackPtr->ref = c0; stackPtr->tNear = n0; /*stackPtr->tFar = f0;*/ stackPtr++; 
+              cur = c1; tNear = n1; //tFar = f1;
               continue; 
             }
           }
@@ -298,28 +302,28 @@ namespace embree
           /*! Here starts the slow path for 3 or 4 hit children. We push
            *  all nodes onto the stack to sort them there. */
           assert(stackPtr < stackEnd); 
-          stackPtr->ref = c0; stackPtr->tNear = n0; stackPtr->tFar = f0; stackPtr++;
+          stackPtr->ref = c0; stackPtr->tNear = n0; /*stackPtr->tFar = f0;*/ stackPtr++;
           assert(stackPtr < stackEnd); 
-          stackPtr->ref = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++;
+          stackPtr->ref = c1; stackPtr->tNear = n1; /*stackPtr->tFar = f1;*/ stackPtr++;
           
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          NodeRef c = node->child(r); c.prefetch(); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
+          NodeRef c = node->child(r); c.prefetch(); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; /*stackPtr->tFar = f2;*/ stackPtr++;
           assert(c != BVH4Hair::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
-            cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
+            cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; /*tFar = stackPtr[-1].tFar;*/ stackPtr--;
             continue;
           }
 
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
+          c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; /*stackPtr->tFar = f3;*/ stackPtr++;
           assert(c != BVH4Hair::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
-          cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
+          cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; /*tFar = stackPtr[-1].tFar;*/ stackPtr--;
         }
         
         /*! this is a leaf node */
@@ -342,7 +346,7 @@ namespace embree
       StackItemNearFar* stackEnd = stack+stackSize;
       stack[0].ref = bvh->root;
       stack[0].tNear = ray.tnear;
-      stack[0].tFar = ray.tfar;
+      //stack[0].tFar = ray.tfar;
             
       /*! load the ray into SIMD registers */
       const sse3f org(ray.org.x,ray.org.y,ray.org.z);
@@ -365,7 +369,8 @@ namespace embree
         stackPtr--;
         NodeRef cur = NodeRef(stackPtr->ref);
         ssef tNear = stackPtr->tNear;
-        ssef tFar = min(stackPtr->tFar,ray.tfar);
+        //ssef tFar = min(stackPtr->tFar,ray.tfar);
+	ssef tFar = ray.tfar;
         
         /*! if popped node is too far, pop next one */
         if (unlikely(_mm_cvtss_f32(tNear) > _mm_cvtss_f32(tFar)))
@@ -374,6 +379,9 @@ namespace embree
         /* downtraversal loop */
         while (true)
         {
+	  ssef tNear = ray.tnear;
+	  ssef tFar = ray.tfar;
+
           /*! process nodes with aligned bounds */
           size_t mask;
           if (likely((flags & 1) && cur.isAlignedNode()))
@@ -405,7 +413,7 @@ namespace embree
           NodeRef c0 = node->child(r); c0.prefetch();
 
           if (likely(mask == 0)) {
-            cur = c0; tNear = tNear[r]; tFar = tFar[r];
+            cur = c0; tNear = tNear[r]; //tFar = tFar[r];
             assert(cur != BVH4Hair::emptyNode);
             continue;
           }
@@ -418,35 +426,35 @@ namespace embree
           assert(c1 != BVH4Hair::emptyNode);
           if (likely(mask == 0)) {
             assert(stackPtr < stackEnd); 
-            if (n0 < n1) { stackPtr->ref = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++; cur = c0; tNear = n0; tFar = f0; continue; }
-            else         { stackPtr->ref = c0; stackPtr->tNear = n0; stackPtr->tFar = f0; stackPtr++; cur = c1; tNear = n1; tFar = f1; continue; }
+            if (n0 < n1) { stackPtr->ref = c1; stackPtr->tNear = n1; /*stackPtr->tFar = f1;*/ stackPtr++; cur = c0; tNear = n0; /*tFar = f0;*/ continue; }
+            else         { stackPtr->ref = c0; stackPtr->tNear = n0; /*stackPtr->tFar = f0;*/ stackPtr++; cur = c1; tNear = n1; /*tFar = f1;*/ continue; }
           }
           
           /*! Here starts the slow path for 3 or 4 hit children. We push
            *  all nodes onto the stack to sort them there. */
           assert(stackPtr < stackEnd); 
-          stackPtr->ref = c0; stackPtr->tNear = n0; stackPtr->tFar = f0; stackPtr++;
+          stackPtr->ref = c0; stackPtr->tNear = n0; /*stackPtr->tFar = f0;*/ stackPtr++;
           assert(stackPtr < stackEnd); 
-          stackPtr->ref = c1; stackPtr->tNear = n1; stackPtr->tFar = f1; stackPtr++;
+          stackPtr->ref = c1; stackPtr->tNear = n1; /*stackPtr->tFar = f1;*/ stackPtr++;
           
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          NodeRef c = node->child(r); c.prefetch(); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; stackPtr->tFar = f2; stackPtr++;
+          NodeRef c = node->child(r); c.prefetch(); float n2 = tNear[r]; float f2 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n2; /*stackPtr->tFar = f2;*/ stackPtr++;
           assert(c != BVH4Hair::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
-            cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
+            cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; /*tFar = stackPtr[-1].tFar;*/ stackPtr--;
             continue;
           }
 
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; stackPtr->tFar = f3; stackPtr++;
+          c = node->child(r); c.prefetch(); float n3 = tNear[r]; float f3 = tFar[r]; stackPtr->ref = c; stackPtr->tNear = n3; /*stackPtr->tFar = f3;*/ stackPtr++;
           assert(c != BVH4Hair::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
-          cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; tFar = stackPtr[-1].tFar; stackPtr--;
+          cur = (NodeRef) stackPtr[-1].ref; tNear = stackPtr[-1].tNear; /*tFar = stackPtr[-1].tFar;*/ stackPtr--;
         }
         
         /*! this is a leaf node */
