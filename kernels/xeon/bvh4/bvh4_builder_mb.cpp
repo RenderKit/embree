@@ -16,7 +16,7 @@
 
 #include "bvh4.h"
 #include "bvh4_builder_mb.h"
-
+#include "bvh4_statistics.h"
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
@@ -33,6 +33,8 @@ namespace embree
 {
   namespace isa
   {
+    static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; // FIXME: measure if this is really optimal, maybe disable only parallel splits
+
     template<> BVH4BuilderMBT<Triangle1vMB>::BVH4BuilderMBT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderMB(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
     template<> BVH4BuilderMBT<Triangle1vMB>::BVH4BuilderMBT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4BuilderMB(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
 
@@ -523,6 +525,16 @@ namespace embree
       if (mesh) PrimRefListGenFromGeometry<TriangleMesh>::generate(threadIndex,threadCount,&alloc,mesh ,prims,pinfo);
       else      PrimRefListGen                          ::generate(threadIndex,threadCount,&alloc,scene,TRIANGLE_MESH,2,prims,pinfo);
       
+      /* single threaded path */
+      if (pinfo.size() <= THRESHOLD_FOR_SINGLE_THREADED)
+      {
+	const Split split = find<false>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);
+	BuildRecord record(1,prims,pinfo,split,&bvh->root);
+	finish_build(threadIndex,threadCount,record);
+      }
+      else
+      {
+
       /* perform initial split */
       const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);
       const BuildRecord record(1,prims,pinfo,split,&bvh->root);
@@ -550,6 +562,7 @@ namespace embree
       
       /*! process each generated subtask in its own thread */
       TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4BuilderMB::build");
+      }
                   
       /* perform tree rotations of top part of the tree */
 /*#if ROTATE_TREE
@@ -579,7 +592,7 @@ namespace embree
       if (g_verbose >= 2) {
       	std::cout << "[DONE]" << std::endl;
 	std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
-        //std::cout << BVH4MBStatistics(bvh).str();
+        std::cout << BVH4Statistics(bvh).str();
       }
 
       /* benchmark mode */

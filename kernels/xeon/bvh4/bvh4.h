@@ -113,8 +113,8 @@ namespace embree
       __forceinline const Node* node() const { assert(isNode()); return (const Node*)ptr; }
 
       /*! returns motion blur node pointer */
-      __forceinline       NodeMB* nodeMB()       { assert(isNodeMB()); return (      NodeMB*)ptr; }
-      __forceinline const NodeMB* nodeMB() const { assert(isNodeMB()); return (const NodeMB*)ptr; }
+      __forceinline       NodeMB* nodeMB()       { assert(isNodeMB()); return (      NodeMB*)(ptr & ~(size_t)align_mask); }
+      __forceinline const NodeMB* nodeMB() const { assert(isNodeMB()); return (const NodeMB*)(ptr & ~(size_t)align_mask); }
       
       /*! returns leaf pointer */
       __forceinline char* leaf(size_t& num) const {

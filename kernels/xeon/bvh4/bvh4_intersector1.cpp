@@ -122,7 +122,7 @@ namespace embree
 	    STAT3(normal.trav_nodes,1,1,1);
 
 	    /*! single ray intersection with 4 boxes */
-	    const BVH4::NodeMB* nodeMB = cur.nodeMB(); node = cur.node();
+	    const BVH4::NodeMB* nodeMB = cur.nodeMB(); node = (const BVH4::Node*) &nodeMB->lower_dx; // FIXME: HACK
 	    const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
 	    const ssef* pNearX = (const ssef*)((const char*)nodeMB+nearX);
 	    const ssef* pNearY = (const ssef*)((const char*)nodeMB+nearY);
@@ -289,7 +289,7 @@ namespace embree
 	    STAT3(normal.trav_nodes,1,1,1);
 
 	    /*! single ray intersection with 4 boxes */
-	    const BVH4::NodeMB* nodeMB = cur.nodeMB(); node = cur.node();
+	    const BVH4::NodeMB* nodeMB = cur.nodeMB(); node = (const BVH4::Node*) &nodeMB->lower_dx;
 	    const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
 	    const ssef* pNearX = (const ssef*)((const char*)nodeMB+nearX);
 	    const ssef* pNearY = (const ssef*)((const char*)nodeMB+nearY);
