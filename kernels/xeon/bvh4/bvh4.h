@@ -34,6 +34,8 @@ namespace embree
     /*! forward declaration of node type */
     struct Node;
     struct NodeMB;
+    struct UnalignedNode;
+    struct UnalignedNodeMB;
 
     /*! branching width of the tree */
     static const size_t N = 4;
@@ -53,7 +55,9 @@ namespace embree
     /*! different supported node types */
     static const size_t tyNode = 0;
     static const size_t tyNodeMB = 1;
-    static const size_t tyLeaf = 2;
+    static const size_t tyUnalignedNode = 2;
+    static const size_t tyUnalignedNodeMB = 3;
+    static const size_t tyLeaf = 4;
 
     /*! Empty node */
     static const size_t emptyNode = tyLeaf;
@@ -107,6 +111,12 @@ namespace embree
 
       /*! checks if this is a motion blur node */
       __forceinline int isNodeMB() const { return (ptr & (size_t)align_mask) == tyNodeMB; }
+
+      /*! checks if this is a node with unaligned bounding boxes */
+      __forceinline int isUnalignedNode() const { return (ptr & (size_t)align_mask) == tyUnalignedNode; }
+
+      /*! checks if this is a motion blur node with unaligned bounding boxes */
+      __forceinline int isUnalignedNodeMB() const { return (ptr & (size_t)align_mask) == tyUnalignedNodeMB; }
       
       /*! returns node pointer */
       __forceinline       Node* node()       { assert(isNode()); return (      Node*)ptr; }
@@ -115,7 +125,15 @@ namespace embree
       /*! returns motion blur node pointer */
       __forceinline       NodeMB* nodeMB()       { assert(isNodeMB()); return (      NodeMB*)(ptr & ~(size_t)align_mask); }
       __forceinline const NodeMB* nodeMB() const { assert(isNodeMB()); return (const NodeMB*)(ptr & ~(size_t)align_mask); }
-      
+
+      /*! returns unaligned node pointer */
+      __forceinline       UnalignedNode* unalignedNode()       { assert(isUnalignedNode()); return (      UnalignedNode*)(ptr & ~(size_t)align_mask); }
+      __forceinline const UnalignedNode* unalignedNode() const { assert(isUnalignedNode()); return (const UnalignedNode*)(ptr & ~(size_t)align_mask); }
+
+      /*! returns unaligned motion blur node pointer */
+      __forceinline       UnalignedNodeMB* unalignedNodeMB()       { assert(isUnalignedNodeMB()); return (      UnalignedNodeMB*)(ptr & ~(size_t)align_mask); }
+      __forceinline const UnalignedNodeMB* unalignedNodeMB() const { assert(isUnalignedNodeMB()); return (const UnalignedNodeMB*)(ptr & ~(size_t)align_mask); }
+            
       /*! returns leaf pointer */
       __forceinline char* leaf(size_t& num) const {
         assert(isLeaf());
@@ -320,6 +338,141 @@ namespace embree
       NodeRef children[4];           //!< Pointer to the 4 children (can be a node or leaf)
     };
 
+    /*! Node with unaligned bounds */
+    struct UnalignedNode : public Node
+    {
+      /*! Clears the node. */
+      __forceinline void clear() 
+      {
+	AffineSpace3fa empty = AffineSpace3fa::scale(Vec3fa(1E+19));
+	naabb.l.vx = empty.l.vx;
+	naabb.l.vy = empty.l.vy;
+	naabb.l.vz = empty.l.vz;
+	naabb.p    = empty.p;
+        Node::clear();
+      }
+
+      /*! Sets bounding box. */
+      __forceinline void set(size_t i, const NAABBox3fa& b) 
+      {
+        assert(i < N);
+
+        AffineSpace3fa space = b.space;
+        space.p -= b.bounds.lower;
+        space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19),b.bounds.upper-b.bounds.lower))*space;
+        
+        naabb.l.vx.x[i] = space.l.vx.x;
+        naabb.l.vx.y[i] = space.l.vx.y;
+        naabb.l.vx.z[i] = space.l.vx.z;
+
+        naabb.l.vy.x[i] = space.l.vy.x;
+        naabb.l.vy.y[i] = space.l.vy.y;
+        naabb.l.vy.z[i] = space.l.vy.z;
+
+        naabb.l.vz.x[i] = space.l.vz.x;
+        naabb.l.vz.y[i] = space.l.vz.y;
+        naabb.l.vz.z[i] = space.l.vz.z;
+
+        naabb.p.x[i] = space.p.x;
+        naabb.p.y[i] = space.p.y;
+        naabb.p.z[i] = space.p.z;
+      }
+
+      /*! Sets ID of child. */
+      __forceinline void set(size_t i, const NodeRef& childID) {
+        //Node::set(i,childID);
+	assert(i < N);
+	children[i] = childID;
+      }
+
+      /*! Returns the extend of the bounds of the ith child */
+      __forceinline Vec3fa extend(size_t i) const {
+        assert(i<N);
+        const Vec3fa vx(naabb.l.vx.x[i],naabb.l.vx.y[i],naabb.l.vx.z[i]);
+        const Vec3fa vy(naabb.l.vy.x[i],naabb.l.vy.y[i],naabb.l.vy.z[i]);
+        const Vec3fa vz(naabb.l.vz.x[i],naabb.l.vz.y[i],naabb.l.vz.z[i]);
+        const Vec3fa p (naabb.p   .x[i],naabb.p   .y[i],naabb.p   .z[i]);
+        return rsqrt(vx*vx + vy*vy + vz*vz);
+      }
+
+    public:
+      AffineSpaceSSE3f naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
+      NodeRef children[4];           //!< Pointer to the 4 children (can be a node or leaf)
+    };
+
+    /*! Motion blur node with unaligned bounds */
+    struct UnalignedNodeMB : public Node
+    {
+      /*! Clears the node. */
+      __forceinline void clear() 
+      {
+        space0 = space1 = one;
+        t0s0.lower = t0s0.upper = Vec3fa(1E10);
+        t1s0_t0s1.lower = t1s0_t0s1.upper = Vec3fa(zero);
+        t1s1.lower = t1s1.upper = Vec3fa(1E10);
+        Node::clear();
+      }
+
+      /*! Sets spaces. */
+      __forceinline void set(size_t i, const AffineSpace3fa& s0, const AffineSpace3fa& s1) 
+      {
+        assert(i < N);
+
+        space0.l.vx.x[i] = s0.l.vx.x; space0.l.vx.y[i] = s0.l.vx.y; space0.l.vx.z[i] = s0.l.vx.z; 
+        space0.l.vy.x[i] = s0.l.vy.x; space0.l.vy.y[i] = s0.l.vy.y; space0.l.vy.z[i] = s0.l.vy.z;
+        space0.l.vz.x[i] = s0.l.vz.x; space0.l.vz.y[i] = s0.l.vz.y; space0.l.vz.z[i] = s0.l.vz.z; 
+        space0.p   .x[i] = s0.p   .x; space0.p   .y[i] = s0.p   .y; space0.p   .z[i] = s0.p   .z; 
+
+        space1.l.vx.x[i] = s1.l.vx.x; space1.l.vx.y[i] = s1.l.vx.y; space1.l.vx.z[i] = s1.l.vx.z;
+        space1.l.vy.x[i] = s1.l.vy.x; space1.l.vy.y[i] = s1.l.vy.y; space1.l.vy.z[i] = s1.l.vy.z;
+        space1.l.vz.x[i] = s1.l.vz.x; space1.l.vz.y[i] = s1.l.vz.y; space1.l.vz.z[i] = s1.l.vz.z;
+        space1.p   .x[i] = s1.p   .x; space1.p   .y[i] = s1.p   .y; space1.p   .z[i] = s1.p   .z; 
+      }
+
+      /*! Sets bounding boxes. */
+      __forceinline void set(size_t i, const BBox3fa& a, const BBox3fa& b, const BBox3fa& c)
+      {
+        assert(i < N);
+
+        t0s0.lower.x[i] = a.lower.x; t0s0.lower.y[i] = a.lower.y; t0s0.lower.z[i] = a.lower.z;
+        t0s0.upper.x[i] = a.upper.x; t0s0.upper.y[i] = a.upper.y; t0s0.upper.z[i] = a.upper.z;
+
+        t1s0_t0s1.lower.x[i] = b.lower.x; t1s0_t0s1.lower.y[i] = b.lower.y; t1s0_t0s1.lower.z[i] = b.lower.z;
+        t1s0_t0s1.upper.x[i] = b.upper.x; t1s0_t0s1.upper.y[i] = b.upper.y; t1s0_t0s1.upper.z[i] = b.upper.z;
+
+        t1s1.lower.x[i] = c.lower.x; t1s1.lower.y[i] = c.lower.y; t1s1.lower.z[i] = c.lower.z;
+        t1s1.upper.x[i] = c.upper.x; t1s1.upper.y[i] = c.upper.y; t1s1.upper.z[i] = c.upper.z;
+      }
+
+      /*! Sets ID of child. */
+      __forceinline void set(size_t i, const NodeRef& childID) {
+        //Node::set(i,childID);
+	assert(i < N);
+	children[i] = childID;
+      }
+
+      /*! Returns bounds of specified child. */
+      __forceinline const BBox3fa bounds0(const size_t i) const { 
+        assert(i < N);
+        const Vec3fa lower(t0s0.lower.x[i],t0s0.lower.y[i],t0s0.lower.z[i]);
+        const Vec3fa upper(t0s0.upper.x[i],t0s0.upper.y[i],t0s0.upper.z[i]);
+        return BBox3fa(lower,upper);
+      }
+
+      /*! Returns the extend of the bounds of the ith child */
+      __forceinline Vec3fa extend0(size_t i) const {
+        assert(i < N);
+        return bounds0(i).size();
+      }
+
+    public:
+      AffineSpaceSSE3f space0;   
+      AffineSpaceSSE3f space1;   
+      BBoxSSE3f t0s0;
+      BBoxSSE3f t1s0_t0s1;
+      BBoxSSE3f t1s1;
+    };
+
     /*! swap the children of two nodes */
     __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
     {
@@ -436,6 +589,16 @@ namespace embree
       NodeMB* node = (NodeMB*) alloc.malloc(thread,sizeof(NodeMB),1 << alignment); node->clear(); return node;
     }
 
+    /*! allocates a new unaligned node */
+    __forceinline UnalignedNode* allocUnalignedNode(size_t thread) {
+      UnalignedNode* node = (UnalignedNode*) alloc.malloc(thread,sizeof(UnalignedNode),1 << alignment); node->clear(); return node;
+    }
+
+    /*! allocates a new unaligned node */
+    __forceinline UnalignedNodeMB* allocUnalignedNodeMB(size_t thread) {
+      UnalignedNodeMB* node = (UnalignedNodeMB*) alloc.malloc(thread,sizeof(UnalignedNodeMB),1 << alignment); node->clear(); return node;
+    }
+
     __forceinline char* allocPrimitiveBlocks(size_t thread, size_t num) {
       return (char*) alloc.malloc(thread,num*primTy.bytes,1 << alignment);
     }
@@ -449,7 +612,17 @@ namespace embree
     /*! Encodes a node */
     __forceinline NodeRef encodeNode(NodeMB* node) { 
       assert(!((size_t)node & align_mask)); 
-      return NodeRef((size_t) node + tyNodeMB);
+      return NodeRef((size_t) node | tyNodeMB);
+    }
+
+    /*! Encodes an unaligned node */
+    __forceinline NodeRef encodeNode(UnalignedNode* node) { 
+      return NodeRef((size_t) node  + tyUnalignedNode);
+    }
+
+    /*! Encodes an unaligned motion blur node */
+    __forceinline NodeRef encodeNode(UnalignedNodeMB* node) { 
+      return NodeRef((size_t) node |  tyUnalignedNodeMB);
     }
     
     /*! Encodes a leaf */

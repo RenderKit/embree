@@ -20,8 +20,11 @@ namespace embree
 {
   BVH4Statistics::BVH4Statistics (BVH4* bvh) : bvh(bvh)
   {
-    numNodes = numNodesMB = numLeaves = numPrimBlocks = numPrims = depth = 0;
+    numNodes = numNodesMB = 0;
     numNodesChildren = numNodesMBChildren = 0;
+    numOBBNodes = numOBBNodesMB = 0;
+    numOBBNodesChildren = numOBBNodesMBChildren = 0;
+    numLeaves = numPrimBlocks = numPrims = depth = 0;
     bvhSAH = leafSAH = 0.0f;
     statistics(bvh->root,bvh->bounds,depth);
     bvhSAH /= area(bvh->bounds);
@@ -33,10 +36,12 @@ namespace embree
   {
     size_t bytesNodes = numNodes*sizeof(BVH4::Node);
     size_t bytesNodesMB = numNodesMB*sizeof(BVH4::NodeMB);
+    size_t bytesOBBNodes = numOBBNodes*sizeof(BVH4::UnalignedNode);
+    size_t bytesOBBNodesMB = numOBBNodesMB*sizeof(BVH4::UnalignedNodeMB);
     size_t bytesPrimitives = numPrimBlocks*bvh->primTy.bytes;
     size_t numVertices = bvh->numVertices;
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
-    return bytesNodes+bytesNodesMB+bytesPrimitives+bytesVertices;
+    return bytesNodes+bytesNodesMB+bytesOBBNodes+bytesOBBNodesMB+bytesPrimitives+bytesVertices;
   }
 
   std::string BVH4Statistics::str()  
@@ -44,10 +49,12 @@ namespace embree
     std::ostringstream stream;
     size_t bytesNodes = numNodes*sizeof(BVH4::Node);
     size_t bytesNodesMB = numNodesMB*sizeof(BVH4::NodeMB);
+    size_t bytesOBBNodes = numOBBNodes*sizeof(BVH4::UnalignedNode);
+    size_t bytesOBBNodesMB = numOBBNodesMB*sizeof(BVH4::UnalignedNodeMB);
     size_t bytesPrimitives = numPrimBlocks*bvh->primTy.bytes;
     size_t numVertices = bvh->numVertices;
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
-    size_t bytesTotal = bytesNodes+bytesNodesMB+bytesPrimitives+bytesVertices;
+    size_t bytesTotal = bytesNodes+bytesNodesMB+bytesOBBNodes+bytesOBBNodesMB+bytesPrimitives+bytesVertices;
     size_t bytesTotalAllocated = bvh->bytesAllocated();
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream << "  primitives = " << bvh->numPrimitives << ", vertices = " << bvh->numVertices << std::endl;
@@ -73,6 +80,22 @@ namespace embree
 	     << "(" << bytesNodesMB/1E6  << " MB) "
 	     << "(" << 100.0*double(bytesNodesMB)/double(bytesTotal) << "% of total) "
 	     << "(" << 100.0*numNodesMB/numNodesMBChildren << "% used)" 
+	     << std::endl;
+    }
+
+    if (numOBBNodes) {
+      stream << "  nodes = "  << numOBBNodes << " "
+	     << "(" << bytesOBBNodes/1E6  << " MB) "
+	     << "(" << 100.0*double(bytesOBBNodes)/double(bytesTotal) << "% of total) "
+	     << "(" << 100.0*numOBBNodes/numOBBNodesChildren << "% used)" 
+	     << std::endl;
+    }
+    
+    if (numOBBNodesMB) {
+      stream << "  nodesMB = "  << numOBBNodesMB << " "
+	     << "(" << bytesOBBNodesMB/1E6  << " MB) "
+	     << "(" << 100.0*double(bytesOBBNodesMB)/double(bytesTotal) << "% of total) "
+	     << "(" << 100.0*numOBBNodesMB/numOBBNodesMBChildren << "% used)" 
 	     << std::endl;
     }
 
@@ -127,6 +150,54 @@ namespace embree
       bvhSAH += A*BVH4::travCost;
       for (size_t i=0; i<BVH4::N; i++) {
 	if (n->child(i) != BVH4::emptyNode) numNodesMBChildren++;
+        statistics(n->child(i),n->bounds0(i),cdepth); 
+        depth=max(depth,cdepth);
+      }
+      for (size_t i=0; i<BVH4::N; i++) {
+        if (n->child(i) == BVH4::emptyNode) {
+          for (; i<BVH4::N; i++) {
+            if (n->child(i) != BVH4::emptyNode)
+	      throw std::runtime_error("invalid node");
+          }
+          break;
+        }
+      }    
+      depth++;
+      return;
+    }
+    if (node.isUnalignedNode())
+    {
+      numOBBNodes++;
+      depth = 0;
+      size_t cdepth = 0;
+      BVH4::Node* n = node.node();
+      bvhSAH += A*BVH4::travCost;
+      for (size_t i=0; i<BVH4::N; i++) {
+	if (n->child(i) != BVH4::emptyNode) numOBBNodesChildren++;
+        statistics(n->child(i),n->bounds(i),cdepth); 
+        depth=max(depth,cdepth);
+      }
+      for (size_t i=0; i<BVH4::N; i++) {
+        if (n->child(i) == BVH4::emptyNode) {
+          for (; i<BVH4::N; i++) {
+            if (n->child(i) != BVH4::emptyNode)
+	      throw std::runtime_error("invalid node");
+          }
+          break;
+        }
+      }    
+      depth++;
+      return;
+    }
+    else if (node.isUnalignedNodeMB())
+    {
+      numOBBNodesMB++;
+      depth = 0;
+      size_t cdepth = 0;
+      BVH4::NodeMB* n = node.nodeMB();
+      bvhSAH += A*BVH4::travCost;
+      for (size_t i=0; i<BVH4::N; i++) {
+	if (n->child(i) != BVH4::emptyNode) numOBBNodesMBChildren++;
         statistics(n->child(i),n->bounds0(i),cdepth); 
         depth=max(depth,cdepth);
       }

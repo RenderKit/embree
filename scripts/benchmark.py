@@ -31,7 +31,7 @@ modelDir  = ''
 tutorial = 'tutorial03'
 statDir = 'stat'
 name = ''
-modelDir = '~/models/embree'
+modelDir = '~/models/embree/benchmarking'
 
 ########################## rendering ##########################
 
@@ -45,7 +45,7 @@ def render(name,model):
   logFile = statDir + dash + base + '.log'
   if not os.path.exists(logFile):
     command = executable
-    command += ' -c ' + modelDir + dash + model + dash + model + '_regression.ecs'
+    command += ' -c ' + modelDir + dash + model + '_tutorial.ecs'
     for arg in args:
       command += ' ' + arg
     command += ' -size 1024 1024 -benchmark 4 8 > ' + logFile

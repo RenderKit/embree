@@ -46,8 +46,16 @@ namespace embree
 
     size_t numNodes;                   //!< Number of nodes.
     size_t numNodesChildren;
+
     size_t numNodesMB;                 //!< Number of motion blur nodes.
     size_t numNodesMBChildren;
+
+    size_t numOBBNodes;                   //!< Number of nodes.
+    size_t numOBBNodesChildren;
+
+    size_t numOBBNodesMB;                 //!< Number of motion blur nodes.
+    size_t numOBBNodesMBChildren;
+
     size_t numLeaves;                  //!< Number of leaf nodes.
 
     size_t numPrimBlocks;              //!< Number of primitive blocks.
