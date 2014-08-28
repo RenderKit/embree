@@ -16,13 +16,6 @@
 
 #include "sys/platform.h"
 #include "sys/ref.h"
-// #include "sys/thread.h"
-// #include "sys/sysinfo.h"
-// #include "sys/sync/barrier.h"
-// #include "sys/sync/mutex.h"
-// #include "sys/sync/condition.h"
-// #include "math/vec3.h"
-// #include "math/bbox.h"
 #include "embree2/rtcore.h"
 #include "embree2/rtcore_ray.h"
 #include "../kernels/common/default.h"
@@ -96,7 +89,7 @@ namespace embree
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);
 #endif
   /* configuration */
-  static std::string g_rtcore = "verbose=2,threads=4";
+  static std::string g_rtcore = "verbose=2,traverser=single,threads=";
 
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
@@ -133,7 +126,6 @@ namespace embree
       }      
       else if (tag == "-threads" && i+1<argc) {
         g_numThreads = atoi(argv[++i]);
-	g_rtcore += ",threads=" + g_numThreads;
       }
       /* skip unknown command line parameter */
       else {
@@ -312,6 +304,7 @@ namespace embree
     return 0;
   }
 
+#define RAY_BLOCK_SIZE 32
 
   void retrace_loop(RTCScene scene, 
 		    RayStreamLogger::LogRay16 *r, 
@@ -320,28 +313,34 @@ namespace embree
 		    size_t numThreads,
 		    bool check = false)
   {
-    const size_t startID = ((threadID+0)*numLogRayStreamElements)/numThreads;
-    const size_t endID   = ((threadID+1)*numLogRayStreamElements)/numThreads;
     size_t rays = 0;
     size_t diff = 0;
-    for (size_t index=startID;index<endID;index++)
+
+    while(1)
       {
-	RTCRay16 &ray16 = r[index].start;
-	mic_i valid = select((mic_m)r[index].m_valid,mic_i(-1),mic_i(0));
-	rays += countbits( (mic_m)r[index].m_valid );
+	size_t global_index = g_counter.add(RAY_BLOCK_SIZE);
+	if (global_index >= numLogRayStreamElements) break;
+	size_t startID = global_index;
+	size_t endID   = min(numLogRayStreamElements,startID+RAY_BLOCK_SIZE);
 
-	r[index+1].prefetchL2();
+	for (size_t index=startID;index<endID;index++)
+	  {
+	    RTCRay16 &ray16 = r[index].start;
+	    mic_i valid = select((mic_m)r[index].m_valid,mic_i(-1),mic_i(0));
+	    rays += countbits( (mic_m)r[index].m_valid );
 
-	if (r[index].type == RayStreamLogger::RAY_INTERSECT)
-	  rtcIntersect16(&valid,scene,ray16);
-	else 
-	  rtcOccluded16(&valid,scene,ray16);
+	    r[index+1].prefetchL2();
 
-	r[index].evict();
+	    if (r[index].type == RayStreamLogger::RAY_INTERSECT)
+	      rtcIntersect16(&valid,scene,ray16);
+	    else 
+	      rtcOccluded16(&valid,scene,ray16);
 
-	if (unlikely(check))
-	  diff += check_ray_packets(index, (mic_m)r[index].m_valid,  r[index].start, r[index].end);
+	    r[index].evict();
 
+	    if (unlikely(check))
+	      diff += check_ray_packets(index, (mic_m)r[index].m_valid,  r[index].start, r[index].end);
+	  }
       }
     DBG(
 	if (diff)
@@ -392,6 +391,9 @@ namespace embree
 
     /* perform tests */
     DBG_PRINT(g_rtcore.c_str());
+    g_rtcore += std::stringOf(g_numThreads);
+    DBG_PRINT(g_rtcore.c_str());
+
     DBG_PRINT(g_numThreads);
     rtcInit(g_rtcore.c_str());
 
@@ -432,8 +434,8 @@ namespace embree
     std::cout << "Retracing logged rays:" << std::flush;
     for (size_t i=0;i<FRAMES;i++)
       {
-	g_counter = 0;
 	double dt = getSeconds();
+	g_counter = 0;
 #if 1
 	launch_retrace_loop(scene,r,numLogRayStreamElements,g_check,g_numThreads);
 #else
