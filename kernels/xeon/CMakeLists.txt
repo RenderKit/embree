@@ -177,7 +177,6 @@ IF (TARGET_AVX2)
     bvh8/bvh8_intersector8_chunk.cpp   
     bvh8/bvh8_intersector8_hybrid.cpp   
 )
-
   SET_TARGET_PROPERTIES(embree_avx2 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX2}")
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx2)
 ENDIF()
