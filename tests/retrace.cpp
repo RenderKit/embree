@@ -25,7 +25,6 @@
 #include <fstream>
 
 #define DBG(x) 
-#define FRAMES 400
 
 namespace embree
 {
@@ -98,6 +97,7 @@ namespace embree
   static AtomicCounter g_counter = 0;
   static bool g_check = false;
   static size_t g_numThreads = 4;
+  static size_t g_frames = 4;
 
 #if defined(__MIC__)
   static std::string g_binaries_path = "/home/micuser/";
@@ -130,6 +130,10 @@ namespace embree
       else if (tag == "-threads" && i+1<argc) {
         g_numThreads = atoi(argv[++i]);
       }
+      else if (tag == "-frames" && i+1<argc) {
+        g_frames = atoi(argv[++i]);
+      }
+
       /* skip unknown command line parameter */
       else {
 
@@ -315,7 +319,7 @@ namespace embree
 		    size_t numLogRayStreamElements, 
 		    size_t threadID,
 		    size_t numThreads,
-		    bool check = false)
+		    bool check)
   {
     size_t rays = 0;
     size_t diff = 0;
@@ -346,13 +350,11 @@ namespace embree
 	      diff += check_ray_packets(index, (mic_m)r[index].m_valid,  r[index].ray16, verify[index].ray16);
 	  }
       }
-    DBG(
-	if (diff)
-	  {
-	    DBG_PRINT(diff);
-	    DBG_PRINT(100. * diff / rays);
-	  }
-	);
+    if (unlikely(check && diff))
+      {
+	DBG_PRINT(diff);
+	DBG_PRINT(100. * diff / rays);
+      }
   }
 
   struct RetraceTask
@@ -455,7 +457,7 @@ namespace embree
     DBG_PRINT( g_numThreads );
 
     std::cout << "Retracing logged rays:" << std::flush;
-    for (size_t i=0;i<FRAMES;i++)
+    for (size_t i=0;i<g_frames;i++)
       {
 	double dt = getSeconds();
 	g_counter = 0;

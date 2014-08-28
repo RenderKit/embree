@@ -997,8 +997,8 @@ export void device_init (uniform int8* uniform cfg)
   rtcSetErrorFunction(error_handler);
 
   /* set start render mode */
-  //renderPixel = renderPixelStandard;
-  renderPixel = renderPixelEyeLight;
+  renderPixel = renderPixelStandard;
+  //  renderPixel = renderPixelEyeLight;
 
 } // device_init
 
