@@ -113,19 +113,32 @@ namespace embree
 
       /*! checks if this is a leaf */
       __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) >= tyLeaf; }
+
+      /*! checks if this is a leaf */
+      __forceinline int isLeaf(int types) const { 
+	if      (types == 0x0001) return !isNode();
+	else if (types == 0x0010) return !isNodeMB();
+	else if (types == 0x0100) return !isUnalignedNode();
+	else if (types == 0x1000) return !isUnalignedNodeMB();
+	else return isLeaf();
+      }
       
       /*! checks if this is a node */
       __forceinline int isNode() const { return (ptr & (size_t)align_mask) == tyNode; }
+      __forceinline int isNode(int types) const { return (types == 0x1) || (types & 0x1) && isNode(); }
 
       /*! checks if this is a motion blur node */
       __forceinline int isNodeMB() const { return (ptr & (size_t)align_mask) == tyNodeMB; }
+      __forceinline int isNodeMB(int types) const { return (types == 0x10) || (types & 0x10) && isNodeMB(); }
 
       /*! checks if this is a node with unaligned bounding boxes */
       __forceinline int isUnalignedNode() const { return (ptr & (size_t)align_mask) == tyUnalignedNode; }
+      __forceinline int isUnalignedNode(int types) const { return (types == 0x100) || (types & 0x100) && isUnalignedNode(); }
 
       /*! checks if this is a motion blur node with unaligned bounding boxes */
       __forceinline int isUnalignedNodeMB() const { return (ptr & (size_t)align_mask) == tyUnalignedNodeMB; }
-      
+      __forceinline int isUnalignedNodeMB(int types) const { return (types == 0x1000) || (types & 0x1000) && isUnalignedNodeMB(); }
+
       /*! returns node pointer */
       __forceinline       Node* node()       { assert(isNode()); return (      Node*)ptr; }
       __forceinline const Node* node() const { assert(isNode()); return (const Node*)ptr; }
