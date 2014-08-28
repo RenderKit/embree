@@ -384,12 +384,6 @@
     <ClCompile Include="bvh4\bvh4_intersector8_single.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector8_chunk.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector8_hybrid.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb_intersector1.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb_intersector4.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb_intersector8.cpp" />
-    <ClCompile Include="bvh4hair\bvh4hair_intersector1.cpp" />
-    <ClCompile Include="bvh4hair\bvh4hair_intersector4.cpp" />
-    <ClCompile Include="bvh4hair\bvh4hair_intersector8.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bvh8\bvh8_intersector1.h" />
@@ -412,12 +406,6 @@
     <CustomBuildStep Include="bvh4\bvh4_intersector8_single.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector8_chunk.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector8_hybrid.h" />
-    <CustomBuildStep Include="bvh4mb\bvh4mb_intersector1.h" />
-    <CustomBuildStep Include="bvh4mb\bvh4mb_intersector4.h" />
-    <CustomBuildStep Include="bvh4mb\bvh4mb_intersector8.h" />
-    <ClInclude Include="bvh4hair\bvh4hair_intersector1.h" />
-    <ClInclude Include="bvh4hair\bvh4hair_intersector4.h" />
-    <ClInclude Include="bvh4hair\bvh4hair_intersector8.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

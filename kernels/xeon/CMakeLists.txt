@@ -82,13 +82,6 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4/bvh4_intersector4_single.cpp
   bvh4/bvh4_intersector4_chunk.cpp
   bvh4/bvh4_statistics.cpp
-
-  bvh4hair/bvh4hair.cpp
-  bvh4hair/bvh4hair_statistics.cpp
-  bvh4hair/bvh4hair_builder.cpp 
-  bvh4hair/bvh4hair_builder_mb.cpp 
-  bvh4hair/bvh4hair_intersector1.cpp
-  bvh4hair/bvh4hair_intersector4.cpp
 )
 
 IF (TARGET_SSE41) 
@@ -144,12 +137,6 @@ IF (TARGET_AVX)
    bvh4/bvh4_intersector8_chunk.cpp
    bvh4/bvh4_intersector8_hybrid.cpp
 
-   bvh4hair/bvh4hair_builder.cpp
-   bvh4hair/bvh4hair_builder_mb.cpp
-   bvh4hair/bvh4hair_intersector1.cpp
-   bvh4hair/bvh4hair_intersector4.cpp
-   bvh4hair/bvh4hair_intersector8.cpp
-
    bvh8/bvh8.cpp
    bvh8/bvh8_builder.cpp
    bvh8/bvh8_statistics.cpp
@@ -177,10 +164,6 @@ IF (TARGET_AVX2)
     bvh4/bvh4_intersector8_single.cpp
     bvh4/bvh4_intersector8_chunk.cpp
     bvh4/bvh4_intersector8_hybrid.cpp
-
-    bvh4hair/bvh4hair_intersector1.cpp
-    bvh4hair/bvh4hair_intersector4.cpp
-    bvh4hair/bvh4hair_intersector8.cpp
 
     bvh8/bvh8_intersector1.cpp   
     bvh8/bvh8_intersector4_hybrid.cpp 

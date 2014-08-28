@@ -280,7 +280,7 @@ namespace embree
       delete objects[i];
   }
 
-  void BVH4::init(size_t numPrimitives, size_t numThreads)
+  void BVH4::init(size_t numPrimitives, size_t numThreads) // FIXME: size of maximal node type should get passed
   {
     /* allocate as much memory as likely needed and reserve conservative amounts of memory */
     size_t blockSize = LinearAllocatorPerThread::allocBlockSize;
