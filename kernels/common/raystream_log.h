@@ -34,6 +34,7 @@ namespace embree
     bool active;
 
     std::ofstream rayData;
+    std::ofstream rayDataVerify;
 
     void openRayDataStream();
 
@@ -51,8 +52,7 @@ namespace embree
       unsigned int type;
       unsigned int m_valid;
       unsigned int dummy[14];
-      RTCRay16 start;
-      RTCRay16 end;
+      RTCRay16 ray16;
 
       LogRay16() {
 	memset(this,0,sizeof(LogRay16));
@@ -62,7 +62,7 @@ namespace embree
       {
 	prefetch<PFHINT_L2>(&type);
 	const size_t cl = sizeof(RTCRay16) / 64;
-	const char *__restrict__ ptr = (char*)&start;
+	const char *__restrict__ ptr = (char*)&ray16;
 #pragma unroll(cl)
 	for (size_t i=0;i<cl;i++,ptr+=64)
 	  prefetch<PFHINT_L2>(ptr);
@@ -72,7 +72,7 @@ namespace embree
       {
 	prefetch<PFHINT_NT>(&type);
 	const size_t cl = sizeof(RTCRay16) / 64;
-	const char *__restrict__ ptr = (char*)&start;
+	const char *__restrict__ ptr = (char*)&ray16;
 #pragma unroll(cl)
 	for (size_t i=0;i<cl;i++,ptr+=64)
 	  prefetch<PFHINT_NT>(ptr);
@@ -82,7 +82,7 @@ namespace embree
       {
 	evictL2(&type);
 	const size_t cl = sizeof(RTCRay16) / 64;
-	const char *__restrict__ ptr = (char*)&start;
+	const char *__restrict__ ptr = (char*)&ray16;
 #pragma unroll(cl)
 	for (size_t i=0;i<cl;i++,ptr+=64)
 	  evictL2(ptr);
