@@ -174,6 +174,10 @@ namespace embree
 	  const Node* node;
 	  ssef tNear, tFar;
 
+	  /*! stop if we found a leaf node */
+	  //if (unlikely(cur.isLeaf()))
+	  //break;
+
 	  /* process standard nodes */
           if (likely((types & 0x1) & cur.isNode())) 
 	  {
@@ -357,6 +361,10 @@ namespace embree
 	  const Node* node;
 	  ssef tNear, tFar;
 
+	  /*! stop if we found a leaf node */
+	  //if (unlikely(cur.isLeaf()))
+	  //break;
+
 	  /* process standard nodes */
           if (likely((types & 0x1) & cur.isNode())) 
 	  {
@@ -395,12 +403,12 @@ namespace embree
 	  } 
 
 	  /* process motion blur nodes */
-	  else if ((types & 0x10) & likely(cur.isNodeMB()))
+	  else if (likely((types & 0x10) & cur.isNodeMB()))
 	  {
 	    STAT3(normal.trav_nodes,1,1,1);
 
 	    /*! single ray intersection with 4 boxes */
-	    const BVH4::NodeMB* nodeMB = cur.nodeMB(); node = (const BVH4::Node*) &nodeMB->lower_dx;
+	    const BVH4::NodeMB* nodeMB = cur.nodeMB(); node = (const BVH4::Node*) &nodeMB->lower_dx; // FIXME: HACK
 	    const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
 	    const ssef* pNearX = (const ssef*)((const char*)nodeMB+nearX);
 	    const ssef* pNearY = (const ssef*)((const char*)nodeMB+nearY);
@@ -432,7 +440,7 @@ namespace embree
 	    tNear = ray.tnear; tFar = ray.tfar;
             mask = intersectBox(nodeMB,ray,org,dir,tNear,tFar);
 	  }
-	  
+
 	  /*! stop if we found a leaf */
 	  else
 	    break;
