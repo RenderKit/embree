@@ -174,8 +174,11 @@ namespace embree
 	  const Node* node;
 	  ssef tNear, tFar;
 
+	  /*! stop if we found a leaf node */
+	  if (unlikely(cur.isLeaf(types))) break;
+
 	  /* process standard nodes */
-          if (likely((types & 0x1) & cur.isNode())) 
+          if (likely(cur.isNode(types))) 
 	  {
 	    STAT3(normal.trav_nodes,1,1,1);
           
@@ -212,7 +215,7 @@ namespace embree
 	  } 
 
 	  /* process motion blur nodes */
-	  else if (likely((types & 0x10) & cur.isNodeMB()))
+	  else if (likely(cur.isNodeMB(types)))
 	  {
 	    STAT3(normal.trav_nodes,1,1,1);
 
@@ -237,23 +240,19 @@ namespace embree
 	  }
 
 	  /*! process nodes with unaligned bounds */
-          else if (unlikely((types & 0x100) & cur.isUnalignedNode())) {
+          else if (unlikely(cur.isUnalignedNode(types))) {
 	    const BVH4::UnalignedNode* nodeU = cur.unalignedNode(); node = (const BVH4::Node*) &nodeU->naabb.l.vz.x; // FIXME: HACK
 	    tNear = ray_near; tFar = ray_far;
             mask = intersectBox(nodeU,org,dir,tNear,tFar);
 	  }
 
           /*! process nodes with unaligned bounds and motion blur */
-          else if (unlikely((types & 0x1000) & cur.isUnalignedNodeMB())) {
+          else if (unlikely(cur.isUnalignedNodeMB(types))) {
 	    const BVH4::UnalignedNodeMB* nodeMB = cur.unalignedNodeMB(); node = (const BVH4::Node*) &nodeMB->t1s1; // FIXME: HACK
 	    tNear = ray_near; tFar = ray_far;
             mask = intersectBox(nodeMB,org,dir,ray.time[k],tNear,tFar);
 	  }
-
-	  /*! stop if we found a leaf */
-	  else
-	    break;
-	  
+  
 	  /*! if no child is hit, pop next node */
 	  if (unlikely(mask == 0))
 	    goto pop;
@@ -351,8 +350,11 @@ namespace embree
 	  const Node* node;
 	  ssef tNear, tFar;
 
+	  /*! stop if we found a leaf node */
+	  if (unlikely(cur.isLeaf(types))) break;
+
 	  /* process standard nodes */
-          if (likely((types & 0x1) & cur.isNode())) 
+          if (likely(cur.isNode(types))) 
 	  {
 	    STAT3(normal.trav_nodes,1,1,1);
           
@@ -389,7 +391,7 @@ namespace embree
 	  } 
 
 	  /* process motion blur nodes */
-	  else if (likely((types & 0x10) & cur.isNodeMB()))
+	  else if (likely(cur.isNodeMB(types)))
 	  {
 	    STAT3(normal.trav_nodes,1,1,1);
 
@@ -399,37 +401,33 @@ namespace embree
 	    const ssef* pNearX = (const ssef*)((const char*)nodeMB+nearX);
 	    const ssef* pNearY = (const ssef*)((const char*)nodeMB+nearY);
 	    const ssef* pNearZ = (const ssef*)((const char*)nodeMB+nearZ);
-	    const ssef tNearX = (norg.x + ssef(pNearX[0]) + ray.time[k]*pNearX[6]) * rdir.x;
-	    const ssef tNearY = (norg.y + ssef(pNearY[0]) + ray.time[k]*pNearY[6]) * rdir.y;
-	    const ssef tNearZ = (norg.z + ssef(pNearZ[0]) + ray.time[k]*pNearZ[6]) * rdir.z;
+	    const ssef tNearX = (ssef(pNearX[0]) - org.x + ray.time[k]*pNearX[6]) * rdir.x;
+	    const ssef tNearY = (ssef(pNearY[0]) - org.y + ray.time[k]*pNearY[6]) * rdir.y;
+	    const ssef tNearZ = (ssef(pNearZ[0]) - org.z + ray.time[k]*pNearZ[6]) * rdir.z;
 	    tNear = max(tNearX,tNearY,tNearZ,ray_near);
 	    const ssef* pFarX = (const ssef*)((const char*)nodeMB+farX);
 	    const ssef* pFarY = (const ssef*)((const char*)nodeMB+farY);
 	    const ssef* pFarZ = (const ssef*)((const char*)nodeMB+farZ);
-	    const ssef tFarX = (norg.x + ssef(pFarX[0]) + ray.time[k]*pFarX[6]) * rdir.x;
-	    const ssef tFarY = (norg.y + ssef(pFarY[0]) + ray.time[k]*pFarY[6]) * rdir.y;
-	    const ssef tFarZ = (norg.z + ssef(pFarZ[0]) + ray.time[k]*pFarZ[6]) * rdir.z;
+	    const ssef tFarX = (ssef(pFarX[0]) - org.x + ray.time[k]*pFarX[6]) * rdir.x;
+	    const ssef tFarY = (ssef(pFarY[0]) - org.y + ray.time[k]*pFarY[6]) * rdir.y;
+	    const ssef tFarZ = (ssef(pFarZ[0]) - org.z + ray.time[k]*pFarZ[6]) * rdir.z;
 	    tFar = min(tFarX,tFarY,tFarZ,ray_far);
 	    mask = movemask(tNear <= tFar);
 	  }
 
 	  /*! process nodes with unaligned bounds */
-          else if (unlikely((types & 0x100) & cur.isUnalignedNode())) {
+          else if (unlikely(cur.isUnalignedNode(types))) {
 	    const BVH4::UnalignedNode* nodeU = cur.unalignedNode(); node = (const BVH4::Node*) &nodeU->naabb.l.vz.x; // FIXME: HACK
 	    tNear = ray_near; tFar = ray_far;
             mask = intersectBox(nodeU,org,dir,tNear,tFar);
 	  }
 
           /*! process nodes with unaligned bounds and motion blur */
-          else if (unlikely((types & 0x1000) & cur.isUnalignedNodeMB())) {
+          else if (unlikely(cur.isUnalignedNodeMB(types))) {
 	    const BVH4::UnalignedNodeMB* nodeMB = cur.unalignedNodeMB(); node = (const BVH4::Node*) &nodeMB->t1s1; // FIXME: HACK
 	    tNear = ray_near; tFar = ray_far;
             mask = intersectBox(nodeMB,org,dir,ray.time[k],tNear,tFar);
 	  }
-
-	  /*! stop if we found a leaf */
-	  else
-	    break;
 	  
 	  /*! if no child is hit, pop next node */
 	  if (unlikely(mask == 0))
