@@ -75,6 +75,9 @@ namespace embree
 
     /*! Cost of one traversal step. */
     static const int travCost = 1;
+    static const int travCostAligned = 2;
+    static const int travCostUnaligned = 3; // FIXME: find best cost
+    static const int intCost = 6;
 
     /*! Pointer that points to a node or a list of primitives */
     struct NodeRef
@@ -92,6 +95,8 @@ namespace embree
       __forceinline void prefetch() const {
 	prefetchL1(((char*)ptr)+0*64);
 	prefetchL1(((char*)ptr)+1*64);
+	//prefetchL1(((char*)ptr)+2*64);
+	//prefetchL1(((char*)ptr)+3*64);
       }
 
       /*! Sets the barrier bit. */
@@ -155,6 +160,12 @@ namespace embree
 	for (size_t i=0; i<N; i++) children[i] = emptyNode;
       }
 
+      /*! Sets bounding box and ID of child. */
+      __forceinline void set(size_t i, const NodeRef& childID) {
+	assert(i < N);
+        children[i] = childID;
+      }
+
       /*! Sets bounding box of child. */
       __forceinline void set(size_t i, const BBox3fa& bounds) 
       {
@@ -185,6 +196,11 @@ namespace embree
         return BBox3fa(lower,upper);
       }
 
+      /*! Returns extent of bounds of specified child. */
+      __forceinline BBox3fa extend(size_t i) const {
+	return bounds(i).size();
+      }
+
       /*! Returns bounds of all children */
       __forceinline void bounds(BBox<ssef>& bounds0, BBox<ssef>& bounds1, BBox<ssef>& bounds2, BBox<ssef>& bounds3) const {
         transpose(lower_x,lower_y,lower_z,ssef(zero),bounds0.lower,bounds1.lower,bounds2.lower,bounds3.lower);
@@ -207,6 +223,21 @@ namespace embree
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
+
+      /*! verifies the node */
+      __forceinline bool verify() const  // FIXME: call in statistics
+      {
+	for (size_t i=0; i<BVH4::N; i++) {
+	  if (child(i) == BVH4::emptyNode) {
+	    for (; i<BVH4::N; i++) {
+	      if (child(i) != BVH4::emptyNode)
+		return false;
+	    }
+	    break;
+	  }
+	}
+	return true;
+      }
 
     public:
       ssef lower_x;           //!< X dimension of lower bounds of all 4 children.
@@ -285,6 +316,11 @@ namespace embree
                       Vec3fa(upper_x[i]+upper_dx[i],upper_y[i]+upper_dy[i],upper_z[i]+upper_dz[i]));
       }
 
+      /*! Returns extent of bounds of specified child. */
+      __forceinline BBox3fa extend0(size_t i) const {
+	return bounds0(i).size();
+      }
+
       /*! Returns bounds of node. */
       __forceinline BBox3fa bounds() const {
         return BBox3fa(Vec3fa(reduce_min(min(lower_x,lower_x+lower_dx)),
@@ -339,7 +375,7 @@ namespace embree
     };
 
     /*! Node with unaligned bounds */
-    struct UnalignedNode : public Node
+    struct UnalignedNode
     {
       /*! Clears the node. */
       __forceinline void clear() 
@@ -349,7 +385,8 @@ namespace embree
 	naabb.l.vy = empty.l.vy;
 	naabb.l.vz = empty.l.vz;
 	naabb.p    = empty.p;
-        Node::clear();
+	for (size_t i=0; i<N; i++) children[i] = emptyNode;
+        //Node::clear();
       }
 
       /*! Sets bounding box. */
@@ -395,13 +432,17 @@ namespace embree
         return rsqrt(vx*vx + vy*vy + vz*vz);
       }
 
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
+
     public:
       AffineSpaceSSE3f naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
       NodeRef children[4];           //!< Pointer to the 4 children (can be a node or leaf)
     };
 
     /*! Motion blur node with unaligned bounds */
-    struct UnalignedNodeMB : public Node
+    struct UnalignedNodeMB
     {
       /*! Clears the node. */
       __forceinline void clear() 
@@ -410,7 +451,8 @@ namespace embree
         t0s0.lower = t0s0.upper = Vec3fa(1E10);
         t1s0_t0s1.lower = t1s0_t0s1.upper = Vec3fa(zero);
         t1s1.lower = t1s1.upper = Vec3fa(1E10);
-        Node::clear();
+	for (size_t i=0; i<N; i++) children[i] = emptyNode;
+        //Node::clear();
       }
 
       /*! Sets spaces. */
@@ -465,12 +507,17 @@ namespace embree
         return bounds0(i).size();
       }
 
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
+
     public:
       AffineSpaceSSE3f space0;   
       AffineSpaceSSE3f space1;   
       BBoxSSE3f t0s0;
       BBoxSSE3f t1s0_t0s1;
       BBoxSSE3f t1s1;
+      NodeRef children[4];           //!< Pointer to the 4 children (can be a node or leaf)
     };
 
     /*! swap the children of two nodes */
@@ -617,7 +664,7 @@ namespace embree
 
     /*! Encodes an unaligned node */
     __forceinline NodeRef encodeNode(UnalignedNode* node) { 
-      return NodeRef((size_t) node  + tyUnalignedNode);
+      return NodeRef((size_t) node | tyUnalignedNode);
     }
 
     /*! Encodes an unaligned motion blur node */

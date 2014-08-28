@@ -33,6 +33,100 @@ namespace embree
 { 
   namespace isa
   {
+    
+    __forceinline size_t intersectBox(const BVH4::UnalignedNode* node, Ray& ray, 
+				      const sse3f& ray_org, const sse3f& ray_dir, 
+				      ssef& tNear, ssef& tFar)
+    {
+      const AffineSpaceSSE3f xfm = node->naabb;
+      const sse3f dir = xfmVector(xfm,ray_dir);
+      //const sse3f nrdir = sse3f(ssef(-1.0f))/dir;
+      const sse3f nrdir = sse3f(ssef(-1.0f))*rcp_safe(dir);
+      const sse3f org = xfmPoint(xfm,ray_org);
+      const sse3f tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
+      const sse3f tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
+      
+#if defined(__SSE4_1__)
+      const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
+      const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
+      tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
+      tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
+      const sseb vmask = tNear <= tFar;
+      return movemask(vmask);
+#else
+      const ssef tNearX = min(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tNearY = min(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tNearZ = min(tLowerXYZ.z,tUpperXYZ.z);
+      const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
+      tNear = max(tNearX,tNearY,tNearZ,tNear);
+      tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
+      const sseb vmask = tNear <= tFar;
+      return movemask(vmask);
+#endif
+    }
+
+    __forceinline size_t intersectBox(const BVH4::UnalignedNodeMB* node, Ray& ray,
+				      const sse3f& ray_org, const sse3f& ray_dir, 
+				      ssef& tNear, ssef& tFar)
+    {
+      const ssef t0 = ssef(1.0f)-ray.time, t1 = ray.time;
+#if 0
+      const AffineSpaceSSE3f xfm = t0*node->space0 + t1*node->space1;
+      //const AffineSpaceSSE3f xfm = frame(normalize(ssef(0.5f)*node->space0.row2() + ssef(0.5f)*node->space1.row2())).transposed();
+      //const LinearSpaceSSE3f xfm = frame(normalize(t0*node->space0.l.row2() + t1*node->space1.l.row2())).transposed();
+      //const sse3f p = t0*node->space0.p + t1*node->space1.p;
+      //const sse3f lower = t0*t0*node->t0s0.lower + t0*t1*node->t1s0_t0s1.lower + t1*t1*node->t1s1.lower;
+      //const sse3f upper = t0*t0*node->t0s0.upper + t0*t1*node->t1s0_t0s1.upper + t1*t1*node->t1s1.upper;
+      const sse3f lower = node->t1s0_t0s1.lower;
+      const sse3f upper = node->t1s0_t0s1.upper;
+#else
+      //const AffineSpaceSSE3f xfm = t0*node->space0 + t1*node->space1;
+      //const LinearSpaceSSE3f xfm = t0*node->space0.l + t1*node->space1.l;
+      //const LinearSpaceSSE3f xfm = frame(normalize(t0*node->space0.l.row2() + t1*node->space1.l.row2())).transposed();
+      //const sse3f p = t0*node->space0.p + t1*node->space1.p;
+      const LinearSpaceSSE3f xfm = node->space0.l;
+      const sse3f lower = t0*node->t0s0.lower + t1*node->t1s1.lower;
+      const sse3f upper = t0*node->t0s0.upper + t1*node->t1s1.upper;
+#endif
+      const BBoxSSE3f bounds(lower,upper);
+
+      const sse3f dir = xfmVector(xfm,ray_dir);
+      const sse3f rdir = rcp_safe(dir); 
+      const sse3f org = xfmPoint(xfm,ray_org);
+      const sse3f tLowerXYZ = (bounds.lower - org) * rdir;
+      const sse3f tUpperXYZ = (bounds.upper - org) * rdir;
+
+#if defined(__SSE4_1__)
+      const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
+      const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
+      tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
+      tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
+      const sseb vmask = tNear <= tFar;
+      return movemask(vmask);
+#else
+      const ssef tNearX = min(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tNearY = min(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tNearZ = min(tLowerXYZ.z,tUpperXYZ.z);
+      const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
+      const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
+      const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
+      tNear = max(tNearX,tNearY,tNearZ,tNear);
+      tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
+      const sseb vmask = tNear <= tFar;
+      return movemask(vmask);
+#endif
+    }
+
     template<int types, typename PrimitiveIntersector>
     void BVH4Intersector1<types,PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
     {
@@ -47,6 +141,8 @@ namespace embree
       stack[0].dist = neg_inf;
             
       /*! load the ray into SIMD registers */
+      const sse3f org(ray.org.x,ray.org.y,ray.org.z);
+      const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
       const sse3f norg(-ray.org.x,-ray.org.y,-ray.org.z);
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
       const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
@@ -141,6 +237,20 @@ namespace embree
 	    mask = movemask(tNear <= tFar);
 	  }
 
+	  /*! process nodes with unaligned bounds */
+          else if (unlikely((types & 0x100) && cur.isUnalignedNode())) {
+	    const BVH4::UnalignedNode* nodeU = cur.unalignedNode(); node = (const BVH4::Node*) &nodeU->naabb.l.vz.x; // FIXME: HACK
+	    tNear = ray.tnear; tFar = ray.tfar;
+            mask = intersectBox(nodeU,ray,org,dir,tNear,tFar);
+	  }
+
+          /*! process nodes with unaligned bounds and motion blur */
+          else if (unlikely((types & 0x1000) && cur.isUnalignedNodeMB())) {
+	    const BVH4::UnalignedNodeMB* nodeMB = cur.unalignedNodeMB(); node = (const BVH4::Node*) &nodeMB->t1s1; // FIXME: HACK
+	    tNear = ray.tnear; tFar = ray.tfar;
+            mask = intersectBox(nodeMB,ray,org,dir,tNear,tFar);
+	  }
+
 	  /*! stop if we found a leaf */
 	  else
 	    break;
@@ -218,6 +328,8 @@ namespace embree
       stack[0] = bvh->root;
       
       /*! load the ray into SIMD registers */
+      const sse3f org(ray.org.x,ray.org.y,ray.org.z);
+      const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
       const sse3f norg(-ray.org.x,-ray.org.y,-ray.org.z);
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
       const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
@@ -307,6 +419,20 @@ namespace embree
 	    tFar = min(tFarX,tFarY,tFarZ,ray_far);
 	    mask = movemask(tNear <= tFar);
 	  }
+
+	  /*! process nodes with unaligned bounds */
+          else if (unlikely((types & 0x100) && cur.isUnalignedNode())) {
+	    const BVH4::UnalignedNode* nodeU = cur.unalignedNode(); node = (const BVH4::Node*) &nodeU->naabb.l.vz.x; // FIXME: HACK
+	    tNear = ray.tnear; tFar = ray.tfar;
+            mask = intersectBox(nodeU,ray,org,dir,tNear,tFar);
+	  }
+
+          /*! process nodes with unaligned bounds and motion blur */
+          else if (unlikely((types & 0x1000) && cur.isUnalignedNodeMB())) {
+	    const BVH4::UnalignedNodeMB* nodeMB = cur.unalignedNodeMB(); node = (const BVH4::Node*) &nodeMB->t1s1; // FIXME: HACK
+	    tNear = ray.tnear; tFar = ray.tfar;
+            mask = intersectBox(nodeMB,ray,org,dir,tNear,tFar);
+	  }
 	  
 	  /*! stop if we found a leaf */
 	  else
@@ -366,6 +492,10 @@ namespace embree
 
     DEFINE_INTERSECTOR1(BVH4Bezier1Intersector1,BVH4Intersector1<0x1 COMMA Bezier1Intersector1>);
     DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1,BVH4Intersector1<0x1 COMMA Bezier1iIntersector1>);
+
+    DEFINE_INTERSECTOR1(BVH4Bezier1Intersector1_OBB,BVH4Intersector1<0x101 COMMA Bezier1Intersector1>);
+    DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1_OBB,BVH4Intersector1<0x101 COMMA Bezier1iIntersector1>);
+
     DEFINE_INTERSECTOR1(BVH4Triangle1Intersector1Moeller,BVH4Intersector1<0x1 COMMA Triangle1Intersector1MoellerTrumbore>);
     DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVH4Intersector1<0x1 COMMA Triangle4Intersector1MoellerTrumbore>);
 #if defined(__AVX__)

@@ -22,6 +22,10 @@ namespace embree
 {
   class BVH4Statistics 
   {
+    typedef BVH4::Node AlignedNode;
+    typedef BVH4::UnalignedNode UnalignedNode;
+    typedef BVH4::NodeRef NodeRef;
+
   public:
 
     /* Constructor gathers statistics. */
@@ -30,35 +34,25 @@ namespace embree
     /*! Convert statistics into a string */
     std::string str();
 
-    /*! memory required to store BVH4 */
-    size_t bytesUsed();
-
-    /*! returns sah cost */
     float sah() const { return bvhSAH; }
 
+    size_t bytesUsed() const;
+
   private:
-    void statistics(BVH4::NodeRef node, const BBox3fa& bounds, size_t& depth);
+    void statistics(NodeRef node, const float A, size_t& depth);
 
   private:
     BVH4* bvh;
-    float bvhSAH;                      //!< SAH cost of the BVH4.
-    float leafSAH;                      //!< SAH cost of the BVH4.
-
-    size_t numNodes;                   //!< Number of nodes.
-    size_t numNodesChildren;
-
-    size_t numNodesMB;                 //!< Number of motion blur nodes.
-    size_t numNodesMBChildren;
-
-    size_t numOBBNodes;                   //!< Number of nodes.
-    size_t numOBBNodesChildren;
-
-    size_t numOBBNodesMB;                 //!< Number of motion blur nodes.
-    size_t numOBBNodesMBChildren;
-
+    float bvhSAH;                      //!< SAH cost.
+    size_t numAlignedNodes;            //!< Number of aligned internal nodes.
+    size_t numUnalignedNodes;          //!< Number of unaligned internal nodes.
+    size_t numAlignedNodesMB;            //!< Number of aligned internal nodes.
+    size_t numUnalignedNodesMB;          //!< Number of unaligned internal nodes.
+    size_t childrenAlignedNodes;       //!< Number of children of aligned nodes
+    size_t childrenUnalignedNodes;     //!< Number of children of unaligned internal nodes.
+    size_t childrenAlignedNodesMB;       //!< Number of children of aligned nodes
+    size_t childrenUnalignedNodesMB;     //!< Number of children of unaligned internal nodes.
     size_t numLeaves;                  //!< Number of leaf nodes.
-
-    size_t numPrimBlocks;              //!< Number of primitive blocks.
     size_t numPrims;                   //!< Number of primitives.
     size_t depth;                      //!< Depth of the tree.
   };

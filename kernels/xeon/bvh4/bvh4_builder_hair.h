@@ -25,7 +25,7 @@ namespace embree
 {
   namespace isa
   {
-    class BVH4HairBuilder : public Builder
+    class BVH4BuilderHair : public Builder
     {
       ALIGNED_CLASS;
     public:
@@ -34,7 +34,7 @@ namespace embree
       void build(size_t threadIndex, size_t threadCount);
       
       /*! Constructor. */
-      BVH4HairBuilder (BVH4Hair* bvh, Scene* scene, size_t mode);
+      BVH4BuilderHair (BVH4* bvh, Scene* scene, size_t mode);
       
     protected:
       
@@ -47,7 +47,7 @@ namespace embree
       {
 	__forceinline BuildTask () {}
 	
-	__forceinline BuildTask (BVH4Hair::NodeRef* dst, size_t depth, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const PrimInfo& sinfo, const Split& split)
+	__forceinline BuildTask (BVH4::NodeRef* dst, size_t depth, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const PrimInfo& sinfo, const Split& split)
 	  : dst(dst), depth(depth), prims(prims), pinfo(pinfo), bounds(bounds), sinfo(sinfo), split(split) {}
 
       public:
@@ -57,7 +57,7 @@ namespace embree
 	}
 	
       public:
-	BVH4Hair::NodeRef* dst;
+	BVH4::NodeRef* dst;
 	size_t depth;
 	BezierRefList prims;
 	PrimInfo pinfo;
@@ -69,22 +69,22 @@ namespace embree
     private:
       
       /*! creates a leaf node */
-      virtual BVH4Hair::NodeRef createLeaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo) = 0;
+      virtual BVH4::NodeRef createLeaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo) = 0;
       
       /*! creates a large leaf that could be larger than supported by the BVH */
-      BVH4Hair::NodeRef createLargeLeaf(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo, size_t depth);
+      BVH4::NodeRef createLargeLeaf(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo, size_t depth);
     
       template<bool Parallel>
 	Split find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const PrimInfo& sinfo);
       
       /*! execute single task and create subtasks */
       template<bool Parallel>
-	void processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4Hair::N], size_t& N);
+	void processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4::N], size_t& N);
       
       /*! recursive build function for aligned and non-aligned bounds */
       void recurseTask(size_t threadIndex, size_t threadCount, BuildTask& task);
       
-      TASK_RUN_FUNCTION(BVH4HairBuilder,task_build_parallel);
+      TASK_RUN_FUNCTION(BVH4BuilderHair,task_build_parallel);
       
     public:
       Scene* scene;          //!< source
@@ -92,7 +92,7 @@ namespace embree
       size_t maxLeafSize;    //!< maximal size of a leaf
       bool enableSpatialSplits; //!< turns on spatial splits
       
-      BVH4Hair* bvh;         //!< output
+      BVH4* bvh;         //!< output
       PrimRefBlockAlloc<PrimRef> alloc;                 //!< Allocator for primitive blocks
       
       MutexSys taskMutex;
@@ -104,11 +104,11 @@ namespace embree
 
     /*! specializes the builder for different leaf types */
     template<typename Triangle>
-    class BVH4HairBuilderT : public BVH4HairBuilder
+    class BVH4BuilderHairT : public BVH4BuilderHair
     {
     public:
-      BVH4HairBuilderT (BVH4Hair* bvh, Scene* scene, size_t mode);
-      BVH4Hair::NodeRef createLeaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo);
+      BVH4BuilderHairT (BVH4* bvh, Scene* scene, size_t mode);
+      BVH4::NodeRef createLeaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo);
     };
   }
 }
