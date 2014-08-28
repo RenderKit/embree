@@ -491,6 +491,7 @@
     <ClInclude Include="..\common\stat.h" />
     <ClInclude Include="bvh4\bvh4.h" />
     <ClInclude Include="bvh4\bvh4_builder.h" />
+    <ClInclude Include="bvh4\bvh4_builder_mb.h" />
     <ClInclude Include="bvh4\bvh4_builder_binner.h" />
     <ClInclude Include="bvh4\bvh4_builder_fast.h" />
     <ClInclude Include="bvh4\bvh4_builder_morton.h" />
@@ -500,10 +501,6 @@
     <ClInclude Include="bvh4\bvh4_refit.h" />
     <ClInclude Include="bvh4\bvh4_rotate.h" />
     <ClInclude Include="bvh4\bvh4_statistics.h" />
-    <ClInclude Include="bvh4mb\bvh4mb.h" />
-    <ClInclude Include="bvh4mb\bvh4mb_builder.h" />
-    <ClInclude Include="bvh4mb\bvh4mb_intersector1.h" />
-    <ClInclude Include="bvh4mb\bvh4mb_intersector4.h" />
     <ClInclude Include="builders\bezierrefgen.h" />
     <ClInclude Include="builders\heuristic_fallback.h" />
     <ClInclude Include="builders\heuristic_object_partition.h" />
@@ -604,6 +601,7 @@
     <ClCompile Include="..\common\tasksys.cpp" />
     <ClCompile Include="bvh4\bvh4.cpp" />
     <ClCompile Include="bvh4\bvh4_builder.cpp" />
+    <ClCompile Include="bvh4\bvh4_builder_mb.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_binner.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_fast.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_morton.cpp" />
@@ -613,10 +611,6 @@
     <ClCompile Include="bvh4\bvh4_refit.cpp" />
     <ClCompile Include="bvh4\bvh4_rotate.cpp" />
     <ClCompile Include="bvh4\bvh4_statistics.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb_builder.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb_intersector1.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb_intersector4.cpp" />
     <ClCompile Include="builders\bezierrefgen.cpp" />
     <ClCompile Include="builders\heuristic_fallback.cpp" />
     <ClCompile Include="builders\heuristic_object_partition.cpp" />

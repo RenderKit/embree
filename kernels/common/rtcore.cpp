@@ -62,7 +62,6 @@ namespace embree
   /* register functions for accels */
   void BVH4Register();
   void BVH8Register();
-  void BVH4MBRegister();
   void BVH4HairRegister();
 
 #if defined(__MIC__)
@@ -370,7 +369,6 @@ namespace embree
 #else
     BVH4iRegister();
 #endif 
-    BVH4MBRegister();
     BVH4HairRegister();    
 #if defined(__TARGET_AVX__)
     if (has_feature(AVX)) {

@@ -365,6 +365,7 @@
     <ClCompile Include="builders\primrefgen.cpp" />
     <ClCompile Include="bvh4mb\bvh4mb_builder.cpp" />
     <ClCompile Include="bvh4\bvh4_builder.cpp" />
+    <ClCompile Include="bvh4\bvh4_builder_mb.cpp" />
     <ClCompile Include="bvh4\bvh4_refit.cpp" />
     <ClCompile Include="bvh8\bvh8.cpp" />
     <ClCompile Include="bvh8\bvh8_builder.cpp" />
@@ -414,6 +415,7 @@
     <CustomBuildStep Include="geometry\instance_intersector8.h" />
     <ClInclude Include="bvh4mb\bvh4mb_builder.h" />
     <ClInclude Include="bvh4\bvh4_builder.h" />
+    <ClInclude Include="bvh4\bvh4_builder_mb.h" />
     <ClInclude Include="bvh4\bvh4_refit.h" />
     <ClInclude Include="bvh8\bvh8.h" />
     <ClInclude Include="bvh8\bvh8_builder.h" />

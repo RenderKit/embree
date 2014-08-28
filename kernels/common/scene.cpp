@@ -20,7 +20,6 @@
 #include "bvh4/bvh4.h"
 #include "bvh8/bvh8.h"
 #include "bvh4hair/bvh4hair.h"
-#include "bvh4mb/bvh4mb.h"
 #else
 #include "xeonphi/bvh4i/bvh4i.h"
 #include "xeonphi/bvh4mb/bvh4mb.h"
@@ -99,7 +98,6 @@ namespace embree
 
 #else
     createTriangleAccel();
-    //accels.add(BVH4MB::BVH4MBTriangle1v(this));
     accels.add(BVH4::BVH4Triangle1vMB(this));
     accels.add(BVH4::BVH4UserGeometry(this));
     createHairAccel();
