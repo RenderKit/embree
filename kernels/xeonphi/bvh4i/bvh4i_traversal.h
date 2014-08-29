@@ -276,7 +276,6 @@ namespace embree
 	/* if a single child is hit, continue with that child */
 	curNode = ((unsigned int *)node)[pos_first];
 	if (likely(num_hitm == 1)) continue;
-#if 0        
 	/* if two children are hit, push in correct order */
 	const unsigned long pos_second = bitscan64(pos_first,hiti);
 	if (likely(num_hitm == 2))
@@ -302,7 +301,6 @@ namespace embree
 		continue;
 	      }
 	  }
-#endif        
 	/* continue with closest child and push all others */
 	const mic_f min_dist = set_min_lanes(tNear_pos);
 	const unsigned int old_sindex = sindex;
