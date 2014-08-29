@@ -45,7 +45,7 @@ namespace embree
 
     void add(RayStreamLogger::LogRay16 &r)
     {
-      size_t numRays = countbits(r.m_valid);
+      size_t numRays = countbits((mic_m)r.m_valid);
       numRayPackets++;
       numTotalRays += numRays;
       if (r.type == RayStreamLogger::RAY_INTERSECT)
@@ -312,7 +312,7 @@ namespace embree
     return 0;
   }
 
-#define RAY_BLOCK_SIZE 16
+#define RAY_BLOCK_SIZE 1
 
   void retrace_loop(RTCScene scene, 
 		    RayStreamLogger::LogRay16 *r, 
@@ -324,7 +324,6 @@ namespace embree
   {
     size_t rays = 0;
     size_t diff = 0;
-
     while(1)
       {
 	size_t global_index = g_counter.add(RAY_BLOCK_SIZE);
@@ -344,7 +343,6 @@ namespace embree
 	      rtcIntersect16(&valid,scene,ray16);
 	    else 
 	      rtcOccluded16(&valid,scene,ray16);
-
 	    r[index].evict();
 
 	    if (unlikely(check))
@@ -459,20 +457,21 @@ namespace embree
     DBG_PRINT( g_numThreads );
 
     std::cout << "Retracing logged rays:" << std::flush;
+    double avg_time = 0;
+    double mrays_sec = 0;
     for (size_t i=0;i<g_frames;i++)
       {
 	double dt = getSeconds();
 	g_counter = 0;
 	g_rays_traced = 0;
 	launch_retrace_loop(scene,r,verify,numLogRayStreamElements,g_check,g_numThreads);
-	if (g_rays_traced != stats.numTotalRays)
-	  {
-	    DBG_PRINT( g_rays_traced );
-	    DBG_PRINT( stats.numTotalRays );
-	  }
 	dt = getSeconds()-dt;
+	mrays_sec += (double)g_rays_traced / dt / 1000000.;
+#if 0
 	std::cout << "frame " << i << " => time " << 1000. * dt << " " << 1. / dt << " fps " << "ms " << stats.numTotalRays / dt / 1000000. << " mrays/sec" << std::endl;
+#endif
       }
+    std::cout << "avg. mrays/sec = " << mrays_sec / (double)g_frames << std::endl;
 
     /* done */
     rtcExit();
