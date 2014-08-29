@@ -98,6 +98,7 @@ namespace embree
   static bool g_check = false;
   static size_t g_numThreads = 4;
   static size_t g_frames = 4;
+  static AtomicCounter g_rays_traced = 0;
 
 #if defined(__MIC__)
   static std::string g_binaries_path = "/home/micuser/";
@@ -355,6 +356,7 @@ namespace embree
 	DBG_PRINT(diff);
 	DBG_PRINT(100. * diff / rays);
       }
+    g_rays_traced.add(rays);
   }
 
   struct RetraceTask
@@ -461,7 +463,13 @@ namespace embree
       {
 	double dt = getSeconds();
 	g_counter = 0;
+	g_rays_traced = 0;
 	launch_retrace_loop(scene,r,verify,numLogRayStreamElements,g_check,g_numThreads);
+	if (g_rays_traced != stats.numTotalRays)
+	  {
+	    DBG_PRINT( g_rays_traced );
+	    DBG_PRINT( stats.numTotalRays );
+	  }
 	dt = getSeconds()-dt;
 	std::cout << "frame " << i << " => time " << 1000. * dt << " " << 1. / dt << " fps " << "ms " << stats.numTotalRays / dt / 1000000. << " mrays/sec" << std::endl;
       }

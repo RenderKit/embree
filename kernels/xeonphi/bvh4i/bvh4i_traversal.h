@@ -93,6 +93,11 @@ namespace embree
 	sindex--;
 	curNode = stack_node[sindex];
 
+#ifdef __USE_STAT_COUNTERS__
+	if (!curNode.isLeaf(leaf_mask))
+	  STAT3(normal.trav_stack_nodes,1,1,1);
+#endif
+
 
 	const mic_f tNear = vreduce_max4(tLower);
 	const mic_f tFar  = vreduce_min4(tUpper);  
@@ -241,6 +246,11 @@ namespace embree
 
 	sindex--;
 	curNode = stack_node[sindex]; // early pop of next node
+
+#ifdef __USE_STAT_COUNTERS__
+	if (!curNode.isLeaf(leaf_mask))
+	  STAT3(shadow.trav_stack_nodes,1,1,1);
+#endif
 
 	const mic_f tNear = vreduce_max4(tLower);
 	const mic_f tFar  = vreduce_min4(tUpper);  

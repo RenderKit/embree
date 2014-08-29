@@ -69,10 +69,187 @@ namespace embree
     void BVH4iIntersector16Test<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
-      __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+
+
+      /* setup */
+      const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
+      const mic3f rdir16     = rcp_safe(ray16.dir);
+      const mic_f inf        = mic_f(pos_inf);
+      const mic_f zero       = mic_f::zero();
+
+      store16f(stack_dist,inf);
+
+      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+
+      stack_node[0] = BVH4i::invalidNode;
+      long rayIndex = -1;
+      while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
+        {
+	  stack_node[1] = bvh->root;
+	  size_t sindex = 2;
+
+	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+
+	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+
+	  while (1)
+	    {
+
+	      NodeRef curNode = stack_node[sindex-1];
+	      sindex--;
+
+	      traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
+								      sindex,
+								      rdir_xyz,
+								      org_rdir_xyz,
+								      min_dist_xyz,
+								      max_dist_xyz,
+								      stack_node,
+								      stack_dist,
+								      nodes,
+								      leaf_mask);
+		   
+
+
+	      /* return if stack is empty */
+	      if (unlikely(curNode == BVH4i::invalidNode)) break;
+
+	      STAT3(normal.trav_leaves,1,1,1);
+	      STAT3(normal.trav_prims,4,4,4);
+
+	      /* intersect one ray against four triangles */
+
+	      //////////////////////////////////////////////////////////////////////////////////////////////////
+	      // PING;
+	      const bool hit = LeafIntersector::intersect(curNode,
+							  rayIndex,
+							  dir_xyz,
+							  org_xyz,
+							  min_dist_xyz,
+							  max_dist_xyz,
+							  ray16,
+							  accel,
+							  (Scene*)bvh->geometry);
+									   
+	      if (hit)
+		compactStack(stack_node,stack_dist,sindex,max_dist_xyz);
+
+	      // ------------------------
+	    }	  
+	}
+    }
+
+    template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES>    
+    void BVH4iIntersector16Test<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    {
+      /* near and node stack */
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
+      const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
+      const mic3f rdir16  = rcp_safe(ray16.dir);
+      mic_m terminated    = !m_valid;
+      const mic_f inf     = mic_f(pos_inf);
+      const mic_f zero    = mic_f::zero();
+
+      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+
+      stack_node[0] = BVH4i::invalidNode;
+
+      long rayIndex = -1;
+      while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
+        {
+	  stack_node[1] = bvh->root;
+	  size_t sindex = 2;
+
+	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const mic_i v_invalidNode(BVH4i::invalidNode);
+	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+
+	  while (1)
+	    {
+	      NodeRef curNode = stack_node[sindex-1];
+	      sindex--;
+
+	      traverse_single_occluded< ENABLE_COMPRESSED_BVH4I_NODES >(curNode,
+								       sindex,
+								       rdir_xyz,
+								       org_rdir_xyz,
+								       min_dist_xyz,
+								       max_dist_xyz,
+								       stack_node,
+								       nodes,
+								       leaf_mask);
+
+	      /* return if stack is empty */
+	      if (unlikely(curNode == BVH4i::invalidNode)) break;
+
+	      STAT3(shadow.trav_leaves,1,1,1);
+	      STAT3(shadow.trav_prims,4,4,4);
+
+	      /* intersect one ray against four triangles */
+
+	      //////////////////////////////////////////////////////////////////////////////////////////////////
+
+	      const bool hit = LeafIntersector::occluded(curNode,
+							 rayIndex,
+							 dir_xyz,
+							 org_xyz,
+							 min_dist_xyz,
+							 max_dist_xyz,
+							 ray16,
+							 terminated,
+							 accel,
+							 (Scene*)bvh->geometry);
+
+	      if (unlikely(hit)) break;
+	      //////////////////////////////////////////////////////////////////////////////////////////////////
+
+	    }
+
+
+	  if (unlikely(all(toMask(terminated)))) break;
+	}
+
+
+      store16i(m_valid & toMask(terminated),&ray16.geomID,0);
+    }
+
+    typedef BVH4iIntersector16Test< Triangle1LeafIntersector  < true >, false  > Triangle1Intersector16TestMoellerFilter;
+    typedef BVH4iIntersector16Test< Triangle1LeafIntersector  < false >, false > Triangle1Intersector16TestMoellerNoFilter;
+    typedef BVH4iIntersector16Test< Triangle1mcLeafIntersector< true >, true  > Triangle1mcIntersector16TestMoellerFilter;
+    typedef BVH4iIntersector16Test< Triangle1mcLeafIntersector< false >, true > Triangle1mcIntersector16TestMoellerNoFilter;
+
+
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16TestMoeller          , Triangle1Intersector16TestMoellerFilter);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16TestMoellerNoFilter  , Triangle1Intersector16TestMoellerNoFilter);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16TestMoeller        , Triangle1mcIntersector16TestMoellerFilter);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16TestMoellerNoFilter, Triangle1mcIntersector16TestMoellerNoFilter);
+
+
+  }
+}
+
+
+/*
+
+      __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+
       const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
       const unsigned int numValidRays = countbits(m_valid);
       __aligned(64) Vec3fa dir[16];
@@ -112,7 +289,6 @@ namespace embree
 	      const mic_m m_stackDist = max_dist4 > curDist;
 	      if (unlikely(curNode == BVH4i::invalidNode))  break;
         
-	      /* cull node if behind closest hit point */
 	      if (unlikely(none(m_stackDist))) {continue;}
 
 	      const mic_m m7777 = 0x7777; 
@@ -122,17 +298,15 @@ namespace embree
     
 	      while (1)
 		{
-		  /* test if this is a leaf node */
 		  if (unlikely(curNode.isLeaf(leaf_mask))) break;
           
-		  STAT3(normal.trav_nodes,1,popcnt(ray_tfar > curDist),16);
+		  //STAT3(normal.trav_nodes,1,popcnt(ray_tfar > curDist),16);
 		  const BVH4i::Node* __restrict__ const node = curNode.node(nodes);
 
 
 		  prefetch<PFHINT_L1>((mic_f*)node + 0);           
 		  prefetch<PFHINT_L1>((mic_f*)node + 1); 
 
-		  /* pop of next node */
 		  sindex--;
 
 		  curNode = stack_node[sindex]; 	  
@@ -165,13 +339,10 @@ namespace embree
 
 		      const mic_f childDist = select(hitm,tNear,inf);
 		      const mic_m m_child_dist = lt(childDist,curDist);
-		      /* if we hit the child we choose to continue with that child if it 
-			 is closer than the current next child, or we push it onto the stack */
 
 		      if (likely(any(hitm)))
 			{
 			  sindex++;
-			  /* push cur node onto stack and continue with hit child */
 			  if (any(m_child_dist))
 			    {
 			      stack_node[sindex-1] = curNode;
@@ -179,7 +350,6 @@ namespace embree
 			      curDist = childDist;
 			      curNode = child;
 			    }              
-			  /* push hit child onto stack*/
 			  else 
 			    {
 			      stack_node[sindex-1] = child;
@@ -191,13 +361,11 @@ namespace embree
 		}		   
 
 
-	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
 	      STAT3(normal.trav_leaves,1,1,1);
 	      STAT3(normal.trav_prims,4,4,4);
 
-	      /* intersect one ray against four triangles */
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -212,24 +380,5 @@ namespace embree
 	      // ------------------------
 	    }	  
 	}
-    }
 
-    template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES>    
-    void BVH4iIntersector16Test<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
-    {
-    }
-
-    typedef BVH4iIntersector16Test< Triangle1LeafIntersector  < true >, false  > Triangle1Intersector16TestMoellerFilter;
-    typedef BVH4iIntersector16Test< Triangle1LeafIntersector  < false >, false > Triangle1Intersector16TestMoellerNoFilter;
-    typedef BVH4iIntersector16Test< Triangle1mcLeafIntersector< true >, true  > Triangle1mcIntersector16TestMoellerFilter;
-    typedef BVH4iIntersector16Test< Triangle1mcLeafIntersector< false >, true > Triangle1mcIntersector16TestMoellerNoFilter;
-
-
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16TestMoeller          , Triangle1Intersector16TestMoellerFilter);
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16TestMoellerNoFilter  , Triangle1Intersector16TestMoellerNoFilter);
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16TestMoeller        , Triangle1mcIntersector16TestMoellerFilter);
-    DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16TestMoellerNoFilter, Triangle1mcIntersector16TestMoellerNoFilter);
-
-
-  }
-}
+*/
