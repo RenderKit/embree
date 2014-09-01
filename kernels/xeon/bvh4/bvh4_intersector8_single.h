@@ -185,19 +185,19 @@ namespace embree
 	    node = cur.node();
 	    const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
 #if defined (__AVX2__)
-	    const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
-	    const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);
-	    const ssef tNearZ = msub(load4f((const char*)node+nearZ), rdir.z, org_rdir.z);
-	    const ssef tFarX  = msub(load4f((const char*)node+farX ), rdir.x, org_rdir.x);
-	    const ssef tFarY  = msub(load4f((const char*)node+farY ), rdir.y, org_rdir.y);
-	    const ssef tFarZ  = msub(load4f((const char*)node+farZ ), rdir.z, org_rdir.z);
+	    const ssef tNearX = msub(load4f((const char*)&node->lower_x+nearX), rdir.x, org_rdir.x);
+	    const ssef tNearY = msub(load4f((const char*)&node->lower_x+nearY), rdir.y, org_rdir.y);
+	    const ssef tNearZ = msub(load4f((const char*)&node->lower_x+nearZ), rdir.z, org_rdir.z);
+	    const ssef tFarX  = msub(load4f((const char*)&node->lower_x+farX ), rdir.x, org_rdir.x);
+	    const ssef tFarY  = msub(load4f((const char*)&node->lower_x+farY ), rdir.y, org_rdir.y);
+	    const ssef tFarZ  = msub(load4f((const char*)&node->lower_x+farZ ), rdir.z, org_rdir.z);
 #else
-	    const ssef tNearX = (load4f((const char*)node + nearX) - org.x) * rdir.x;
-	    const ssef tNearY = (load4f((const char*)node + nearY) - org.y) * rdir.y;
-	    const ssef tNearZ = (load4f((const char*)node + nearZ) - org.z) * rdir.z;
-	    const ssef tFarX = (load4f((const char*)node + farX) - org.x) * rdir.x;
-	    const ssef tFarY = (load4f((const char*)node + farY) - org.y) * rdir.y;
-	    const ssef tFarZ = (load4f((const char*)node + farZ) - org.z) * rdir.z;
+	    const ssef tNearX = (load4f((const char*)&node->lower_x + nearX) - org.x) * rdir.x;
+	    const ssef tNearY = (load4f((const char*)&node->lower_x + nearY) - org.y) * rdir.y;
+	    const ssef tNearZ = (load4f((const char*)&node->lower_x + nearZ) - org.z) * rdir.z;
+	    const ssef tFarX = (load4f((const char*)&node->lower_x + farX) - org.x) * rdir.x;
+	    const ssef tFarY = (load4f((const char*)&node->lower_x + farY) - org.y) * rdir.y;
+	    const ssef tFarZ = (load4f((const char*)&node->lower_x + farZ) - org.z) * rdir.z;
 #endif
 	    
 #if defined(__SSE4_1__)
@@ -221,16 +221,16 @@ namespace embree
 	    /*! single ray intersection with 4 boxes */
 	    const BVH4::NodeMB* nodeMB = cur.nodeMB(); node = (const BVH4::Node*) &nodeMB->lower_dx;
 	    const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
-	    const ssef* pNearX = (const ssef*)((const char*)nodeMB+nearX);
-	    const ssef* pNearY = (const ssef*)((const char*)nodeMB+nearY);
-	    const ssef* pNearZ = (const ssef*)((const char*)nodeMB+nearZ);
+	    const ssef* pNearX = (const ssef*)((const char*)&nodeMB->lower_x+nearX);
+	    const ssef* pNearY = (const ssef*)((const char*)&nodeMB->lower_x+nearY);
+	    const ssef* pNearZ = (const ssef*)((const char*)&nodeMB->lower_x+nearZ);
 	    const ssef tNearX = (ssef(pNearX[0]) - org.x + ray.time[k]*pNearX[6]) * rdir.x;
 	    const ssef tNearY = (ssef(pNearY[0]) - org.y + ray.time[k]*pNearY[6]) * rdir.y;
 	    const ssef tNearZ = (ssef(pNearZ[0]) - org.z + ray.time[k]*pNearZ[6]) * rdir.z;
 	    tNear = max(tNearX,tNearY,tNearZ,ray_near);
-	    const ssef* pFarX = (const ssef*)((const char*)nodeMB+farX);
-	    const ssef* pFarY = (const ssef*)((const char*)nodeMB+farY);
-	    const ssef* pFarZ = (const ssef*)((const char*)nodeMB+farZ);
+	    const ssef* pFarX = (const ssef*)((const char*)&nodeMB->lower_x+farX);
+	    const ssef* pFarY = (const ssef*)((const char*)&nodeMB->lower_x+farY);
+	    const ssef* pFarZ = (const ssef*)((const char*)&nodeMB->lower_x+farZ);
 	    const ssef tFarX = (ssef(pFarX[0]) - org.x + ray.time[k]*pFarX[6]) * rdir.x;
 	    const ssef tFarY = (ssef(pFarY[0]) - org.y + ray.time[k]*pFarY[6]) * rdir.y;
 	    const ssef tFarZ = (ssef(pFarZ[0]) - org.z + ray.time[k]*pFarZ[6]) * rdir.z;
@@ -361,19 +361,19 @@ namespace embree
 	    node = cur.node();
 	    const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
 #if defined (__AVX2__)
-	    const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
-	    const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);
-	    const ssef tNearZ = msub(load4f((const char*)node+nearZ), rdir.z, org_rdir.z);
-	    const ssef tFarX  = msub(load4f((const char*)node+farX ), rdir.x, org_rdir.x);
-	    const ssef tFarY  = msub(load4f((const char*)node+farY ), rdir.y, org_rdir.y);
-	    const ssef tFarZ  = msub(load4f((const char*)node+farZ ), rdir.z, org_rdir.z);
+	    const ssef tNearX = msub(load4f((const char*)&node->lower_x+nearX), rdir.x, org_rdir.x);
+	    const ssef tNearY = msub(load4f((const char*)&node->lower_x+nearY), rdir.y, org_rdir.y);
+	    const ssef tNearZ = msub(load4f((const char*)&node->lower_x+nearZ), rdir.z, org_rdir.z);
+	    const ssef tFarX  = msub(load4f((const char*)&node->lower_x+farX ), rdir.x, org_rdir.x);
+	    const ssef tFarY  = msub(load4f((const char*)&node->lower_x+farY ), rdir.y, org_rdir.y);
+	    const ssef tFarZ  = msub(load4f((const char*)&node->lower_x+farZ ), rdir.z, org_rdir.z);
 #else
-	    const ssef tNearX = (load4f((const char*)node + nearX) - org.x) * rdir.x;
-	    const ssef tNearY = (load4f((const char*)node + nearY) - org.y) * rdir.y;
-	    const ssef tNearZ = (load4f((const char*)node + nearZ) - org.z) * rdir.z;
-	    const ssef tFarX = (load4f((const char*)node + farX) - org.x) * rdir.x;
-	    const ssef tFarY = (load4f((const char*)node + farY) - org.y) * rdir.y;
-	    const ssef tFarZ = (load4f((const char*)node + farZ) - org.z) * rdir.z;
+	    const ssef tNearX = (load4f((const char*)&node->lower_x + nearX) - org.x) * rdir.x;
+	    const ssef tNearY = (load4f((const char*)&node->lower_x + nearY) - org.y) * rdir.y;
+	    const ssef tNearZ = (load4f((const char*)&node->lower_x + nearZ) - org.z) * rdir.z;
+	    const ssef tFarX = (load4f((const char*)&node->lower_x + farX) - org.x) * rdir.x;
+	    const ssef tFarY = (load4f((const char*)&node->lower_x + farY) - org.y) * rdir.y;
+	    const ssef tFarZ = (load4f((const char*)&node->lower_x + farZ) - org.z) * rdir.z;
 #endif
 	    
 #if defined(__SSE4_1__)
@@ -397,16 +397,16 @@ namespace embree
 	    /*! single ray intersection with 4 boxes */
 	    const BVH4::NodeMB* nodeMB = cur.nodeMB(); node = (const BVH4::Node*) &nodeMB->lower_dx;
 	    const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
-	    const ssef* pNearX = (const ssef*)((const char*)nodeMB+nearX);
-	    const ssef* pNearY = (const ssef*)((const char*)nodeMB+nearY);
-	    const ssef* pNearZ = (const ssef*)((const char*)nodeMB+nearZ);
+	    const ssef* pNearX = (const ssef*)((const char*)&nodeMB->lower_x+nearX);
+	    const ssef* pNearY = (const ssef*)((const char*)&nodeMB->lower_x+nearY);
+	    const ssef* pNearZ = (const ssef*)((const char*)&nodeMB->lower_x+nearZ);
 	    const ssef tNearX = (ssef(pNearX[0]) - org.x + ray.time[k]*pNearX[6]) * rdir.x;
 	    const ssef tNearY = (ssef(pNearY[0]) - org.y + ray.time[k]*pNearY[6]) * rdir.y;
 	    const ssef tNearZ = (ssef(pNearZ[0]) - org.z + ray.time[k]*pNearZ[6]) * rdir.z;
 	    tNear = max(tNearX,tNearY,tNearZ,ray_near);
-	    const ssef* pFarX = (const ssef*)((const char*)nodeMB+farX);
-	    const ssef* pFarY = (const ssef*)((const char*)nodeMB+farY);
-	    const ssef* pFarZ = (const ssef*)((const char*)nodeMB+farZ);
+	    const ssef* pFarX = (const ssef*)((const char*)&nodeMB->lower_x+farX);
+	    const ssef* pFarY = (const ssef*)((const char*)&nodeMB->lower_x+farY);
+	    const ssef* pFarZ = (const ssef*)((const char*)&nodeMB->lower_x+farZ);
 	    const ssef tFarX = (ssef(pFarX[0]) - org.x + ray.time[k]*pFarX[6]) * rdir.x;
 	    const ssef tFarY = (ssef(pFarY[0]) - org.y + ray.time[k]*pFarY[6]) * rdir.y;
 	    const ssef tFarZ = (ssef(pFarZ[0]) - org.z + ray.time[k]*pFarZ[6]) * rdir.z;

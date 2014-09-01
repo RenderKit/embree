@@ -165,6 +165,12 @@ namespace embree
     private:
       size_t ptr;
     };
+    
+    /*! BVH4 Base Node */
+    //struct Base Node
+    //{
+    //  NodeRef children[N];    //!< Pointer to the 4 children (can be a node or leaf)
+      //};
 
     /*! BVH4 Node */
     struct Node
@@ -256,13 +262,13 @@ namespace embree
       }
 
     public:
+      NodeRef children[N];    //!< Pointer to the 4 children (can be a node or leaf)
       ssef lower_x;           //!< X dimension of lower bounds of all 4 children.
       ssef upper_x;           //!< X dimension of upper bounds of all 4 children.
       ssef lower_y;           //!< Y dimension of lower bounds of all 4 children.
       ssef upper_y;           //!< Y dimension of upper bounds of all 4 children.
       ssef lower_z;           //!< Z dimension of lower bounds of all 4 children.
       ssef upper_z;           //!< Z dimension of upper bounds of all 4 children.
-      NodeRef children[N];    //!< Pointer to the 4 children (can be a node or leaf)
     };
 
     /*! Motion Blur Node */
@@ -373,6 +379,8 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
     public:
+      NodeRef children[4];           //!< Pointer to the 4 children (can be a node or leaf)
+
       ssef lower_x;        //!< X dimension of lower bounds of all 4 children.
       ssef upper_x;        //!< X dimension of upper bounds of all 4 children.
       ssef lower_y;        //!< Y dimension of lower bounds of all 4 children.
@@ -386,8 +394,6 @@ namespace embree
       ssef upper_dy;        //!< Y dimension of upper bounds of all 4 children.
       ssef lower_dz;        //!< Z dimension of lower bounds of all 4 children.
       ssef upper_dz;        //!< Z dimension of upper bounds of all 4 children.
-
-      NodeRef children[4];           //!< Pointer to the 4 children (can be a node or leaf)
     };
 
     /*! Node with unaligned bounds */
@@ -453,8 +459,8 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
     public:
-      AffineSpaceSSE3f naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
       NodeRef children[4];           //!< Pointer to the 4 children (can be a node or leaf)
+      AffineSpaceSSE3f naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
 
     /*! Motion blur node with unaligned bounds */
@@ -528,12 +534,12 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
     public:
+      NodeRef children[4];           //!< Pointer to the 4 children (can be a node or leaf)
       AffineSpaceSSE3f space0;   
       AffineSpaceSSE3f space1;   
       BBoxSSE3f t0s0;
       BBoxSSE3f t1s0_t0s1;
       BBoxSSE3f t1s1;
-      NodeRef children[4];           //!< Pointer to the 4 children (can be a node or leaf)
     };
 
     /*! swap the children of two nodes */
