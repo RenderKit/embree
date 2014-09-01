@@ -25,7 +25,6 @@
 #include <fstream>
 
 #define DBG(x) 
-#define FRAMES 400
 
 namespace embree
 {
@@ -46,7 +45,7 @@ namespace embree
 
     void add(RayStreamLogger::LogRay16 &r)
     {
-      size_t numRays = countbits(r.m_valid);
+      size_t numRays = countbits((mic_m)r.m_valid);
       numRayPackets++;
       numTotalRays += numRays;
       if (r.type == RayStreamLogger::RAY_INTERSECT)
@@ -89,7 +88,7 @@ namespace embree
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);
 #endif
   /* configuration */
-  static std::string g_rtcore = "verbose=2,traverser=single,threads=";
+  static std::string g_rtcore = "verbose=2,traverser=single";
 
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
@@ -98,6 +97,8 @@ namespace embree
   static AtomicCounter g_counter = 0;
   static bool g_check = false;
   static size_t g_numThreads = 4;
+  static size_t g_frames = 4;
+  static AtomicCounter g_rays_traced = 0;
 
 #if defined(__MIC__)
   static std::string g_binaries_path = "/home/micuser/";
@@ -120,6 +121,9 @@ namespace embree
       std::string tag = argv[i];
       if (tag == "") return;
 
+      else if (tag == "-rtcore" && i+1<argc) {
+        g_rtcore += std::stringOf(',') + argv[++i];
+      }
       /* rtcore configuration */
       else if (tag == "-check") {
         g_check = true;
@@ -127,6 +131,10 @@ namespace embree
       else if (tag == "-threads" && i+1<argc) {
         g_numThreads = atoi(argv[++i]);
       }
+      else if (tag == "-frames" && i+1<argc) {
+        g_frames = atoi(argv[++i]);
+      }
+
       /* skip unknown command line parameter */
       else {
 
@@ -304,18 +312,18 @@ namespace embree
     return 0;
   }
 
-#define RAY_BLOCK_SIZE 32
+#define RAY_BLOCK_SIZE 1
 
   void retrace_loop(RTCScene scene, 
 		    RayStreamLogger::LogRay16 *r, 
+		    RayStreamLogger::LogRay16 *verify, 
 		    size_t numLogRayStreamElements, 
 		    size_t threadID,
 		    size_t numThreads,
-		    bool check = false)
+		    bool check)
   {
     size_t rays = 0;
     size_t diff = 0;
-
     while(1)
       {
 	size_t global_index = g_counter.add(RAY_BLOCK_SIZE);
@@ -325,7 +333,7 @@ namespace embree
 
 	for (size_t index=startID;index<endID;index++)
 	  {
-	    RTCRay16 &ray16 = r[index].start;
+	    RTCRay16 &ray16 = r[index].ray16;
 	    mic_i valid = select((mic_m)r[index].m_valid,mic_i(-1),mic_i(0));
 	    rays += countbits( (mic_m)r[index].m_valid );
 
@@ -335,26 +343,25 @@ namespace embree
 	      rtcIntersect16(&valid,scene,ray16);
 	    else 
 	      rtcOccluded16(&valid,scene,ray16);
-
 	    r[index].evict();
 
 	    if (unlikely(check))
-	      diff += check_ray_packets(index, (mic_m)r[index].m_valid,  r[index].start, r[index].end);
+	      diff += check_ray_packets(index, (mic_m)r[index].m_valid,  r[index].ray16, verify[index].ray16);
 	  }
       }
-    DBG(
-	if (diff)
-	  {
-	    DBG_PRINT(diff);
-	    DBG_PRINT(100. * diff / rays);
-	  }
-	);
+    if (unlikely(check && diff))
+      {
+	DBG_PRINT(diff);
+	DBG_PRINT(100. * diff / rays);
+      }
+    g_rays_traced.add(rays);
   }
 
   struct RetraceTask
   {
     RTCScene scene;
     RayStreamLogger::LogRay16 *r;
+    RayStreamLogger::LogRay16 *verify;
     size_t numLogRayStreamElements;
     size_t threads;
     bool check;
@@ -363,14 +370,20 @@ namespace embree
 
   void retrace_loop_parallel(RetraceTask* task, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event)
   {
-    retrace_loop(task->scene,task->r,task->numLogRayStreamElements,threadIndex,threadCount,task->check);
+    retrace_loop(task->scene,task->r,task->verify,task->numLogRayStreamElements,threadIndex,threadCount,task->check);
   }
 
-  void launch_retrace_loop(RTCScene scene, RayStreamLogger::LogRay16 *r, size_t numLogRayStreamElements, bool check , size_t threads )
+  void launch_retrace_loop(RTCScene scene, 
+			   RayStreamLogger::LogRay16 *r, 
+			   RayStreamLogger::LogRay16 *verify, 
+			   size_t numLogRayStreamElements, 
+			   bool check , 
+			   size_t threads )
   {
     RetraceTask rt;
     rt.scene = scene;
     rt.r = r;
+    rt.verify = verify;
     rt.numLogRayStreamElements = numLogRayStreamElements;
     rt.threads = threads;
     rt.check = check;
@@ -384,6 +397,7 @@ namespace embree
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+    setAffinity(0);
     /* parse command line */  
     parseCommandLine(argc,argv);
 
@@ -391,11 +405,10 @@ namespace embree
 
     /* perform tests */
     DBG_PRINT(g_rtcore.c_str());
-    g_rtcore += std::stringOf(g_numThreads);
-    DBG_PRINT(g_rtcore.c_str());
-
-    DBG_PRINT(g_numThreads);
     rtcInit(g_rtcore.c_str());
+
+    g_numThreads = embree::TaskScheduler::getNumThreads();
+    DBG_PRINT(g_numThreads);
 
     std::cout << "RTC INIT DONE" << std::endl << std::flush;
 
@@ -406,6 +419,7 @@ namespace embree
 
     std::string geometryFileName = g_binaries_path + "geometry.bin";
     std::string rayStreamFileName = g_binaries_path + "ray16.bin";
+    std::string rayStreamVerifyFileName = g_binaries_path + "ray16_verify.bin";
 
     /* load geometry file */
     std::cout << "loading geometry data..." << std::flush;    
@@ -417,6 +431,17 @@ namespace embree
     size_t numLogRayStreamElements = 0;
     RayStreamLogger::LogRay16 *r = (RayStreamLogger::LogRay16 *)loadRayStreamData(rayStreamFileName, numLogRayStreamElements);
     std::cout <<  "done" << std::endl << std::flush;
+
+    RayStreamLogger::LogRay16 *verify = NULL;
+    if (g_check)
+      {
+	std::cout << "loading ray stream verify data..." << std::flush;    
+	size_t numElements = 0;
+	verify = (RayStreamLogger::LogRay16 *)loadRayStreamData(rayStreamVerifyFileName, numElements );
+	std::cout <<  "done" << std::endl << std::flush;
+	if (numElements != numLogRayStreamElements)
+	  FATAL("numElements != numLogRayStreamElements");
+      }
 
     /* analyse ray stream data */
     std::cout << "analyse ray stream:" << std::endl << std::flush;    
@@ -432,18 +457,21 @@ namespace embree
     DBG_PRINT( g_numThreads );
 
     std::cout << "Retracing logged rays:" << std::flush;
-    for (size_t i=0;i<FRAMES;i++)
+    double avg_time = 0;
+    double mrays_sec = 0;
+    for (size_t i=0;i<g_frames;i++)
       {
 	double dt = getSeconds();
 	g_counter = 0;
-#if 1
-	launch_retrace_loop(scene,r,numLogRayStreamElements,g_check,g_numThreads);
-#else
-	retrace_loop(scene,r,numLogRayStreamElements,0,1,g_check);
-#endif
+	g_rays_traced = 0;
+	launch_retrace_loop(scene,r,verify,numLogRayStreamElements,g_check,g_numThreads);
 	dt = getSeconds()-dt;
+	mrays_sec += (double)g_rays_traced / dt / 1000000.;
+#if 0
 	std::cout << "frame " << i << " => time " << 1000. * dt << " " << 1. / dt << " fps " << "ms " << stats.numTotalRays / dt / 1000000. << " mrays/sec" << std::endl;
+#endif
       }
+    std::cout << "avg. mrays/sec = " << mrays_sec / (double)g_frames << std::endl;
 
     /* done */
     rtcExit();

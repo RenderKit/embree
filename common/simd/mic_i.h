@@ -211,8 +211,16 @@ namespace embree
     return _mm512_mask_or_epi32(f,m,t,t); 
   }
 
-  __forceinline void xchg(mic_m m, mic_i& a, mic_i& b) { 
+  __forceinline void xchg(const mic_m &m, mic_i& a, mic_i& b) { 
     const mic_i c = a; a = select(m,b,a); b = select(m,c,b);  
+  }
+
+  __forceinline mic_m test(const mic_m &m, const mic_i& a, const mic_i& b) { 
+    return _mm512_mask_test_epi32_mask(m,a,b);
+  }
+
+  __forceinline mic_m test(const mic_i& a, const mic_i& b) { 
+    return _mm512_test_epi32_mask(a,b);
   }
 
   ////////////////////////////////////////////////////////////////////////////////

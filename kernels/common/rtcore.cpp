@@ -557,7 +557,9 @@ namespace embree
     STAT3(normal.travs,1,cnt,16);
 
 #if defined(ENABLE_RAYSTREAM_LOGGER)
-    RTCRay16 old_ray = ray;
+    RTCRay16 old_ray;
+    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
+      old_ray = ray;
 #endif
 
     ((Scene*)scene)->intersect16(valid,ray);
@@ -630,7 +632,9 @@ namespace embree
     STAT3(shadow.travs,1,cnt,16);
 
 #if defined(ENABLE_RAYSTREAM_LOGGER)
-    RTCRay16 old_ray = ray;
+    RTCRay16 old_ray;
+    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
+      old_ray = ray;
 #endif
 
     ((Scene*)scene)->occluded16(valid,ray);

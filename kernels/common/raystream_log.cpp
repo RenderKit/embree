@@ -22,12 +22,14 @@
 #if defined(__MIC__)
 
 #define RAYSTREAM_FILENAME "/home/micuser/ray16.bin"
+#define RAYSTREAM_VERIFY_FILENAME "/home/micuser/ray16_verify.bin"
 #define GEOMETRY_FILENAME  "/home/micuser/geometry.bin"
 
 #else
 
-#define RAYSTREAM_FILENAME "ray16.bin"
-#define GEOMETRY_FILENAME  "geometry.bin"
+#define RAYSTREAM_FILENAME        "ray16.bin"
+#define RAYSTREAM_VERIFY_FILENAME "ray16_verify.bin"
+#define GEOMETRY_FILENAME         "geometry.bin"
 
 #endif
 
@@ -49,19 +51,28 @@ namespace embree
       if (initialized)
       {
         rayData.close();
+        rayDataVerify.close();
       }
     }
 
   void RayStreamLogger::openRayDataStream()
   {
-    FileName filename(RAYSTREAM_FILENAME);
-    rayData.open(filename.c_str(),ios::out | ios::binary);
+    FileName rayFilename(RAYSTREAM_FILENAME);
+    rayData.open(rayFilename.c_str(),ios::out | ios::binary);
     rayData.seekp(0, ios::beg);
  
     if (!rayData)
+      FATAL("could not dump ray data to file");
+
+    FileName rayVerifyFilename(RAYSTREAM_VERIFY_FILENAME);
+    rayDataVerify.open(rayVerifyFilename.c_str(),ios::out | ios::binary);
+    rayDataVerify.seekp(0, ios::beg);
+ 
+    if (!rayDataVerify)
       {
 	FATAL("could not dump ray data to file");
       }    
+
   }
 
   void RayStreamLogger::dumpGeometry(void* ptr)
@@ -134,7 +145,6 @@ namespace embree
 	  size_t dummy_size = 16-(align_check % 16);
 	  char dummy[16];
 	  memset(dummy,0,16);      
-	  //DBG_PRINT( dummy_size );
 	  geometryData.write(dummy,dummy_size);
 	  align_check += dummy_size;
 	}
@@ -164,10 +174,15 @@ namespace embree
 
     logRay16.type    = RAY_INTERSECT;
     logRay16.m_valid = *(mic_i*)valid_i != mic_i(0);
-    logRay16.start   = start;
-    logRay16.end     = end;
+
+    logRay16.ray16   = start;
     rayData.write((char*)&logRay16 ,sizeof(logRay16));
     rayData << flush;
+
+    logRay16.ray16   = end;
+    rayDataVerify.write((char*)&logRay16 ,sizeof(logRay16));
+    rayDataVerify << flush;
+
     pthread_mutex_unlock(&mutex);
   }
 
@@ -186,10 +201,15 @@ namespace embree
 
     logRay16.type    = RAY_OCCLUDED;
     logRay16.m_valid = *(mic_i*)valid_i != mic_i(0);
-    logRay16.start   = start;
-    logRay16.end     = end;
+
+    logRay16.ray16   = start;
     rayData.write((char*)&logRay16 ,sizeof(logRay16));
     rayData << flush;
+
+    logRay16.ray16     = end;
+    rayDataVerify.write((char*)&logRay16 ,sizeof(logRay16));
+    rayDataVerify << flush;
+
     pthread_mutex_unlock(&mutex);
   }
 

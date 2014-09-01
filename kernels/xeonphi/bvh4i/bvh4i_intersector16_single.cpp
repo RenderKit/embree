@@ -111,8 +111,6 @@ namespace embree
 	      // ------------------------
 	    }	  
 	}
-
-
     }
 
     template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES>    
