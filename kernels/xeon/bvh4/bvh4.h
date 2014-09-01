@@ -278,10 +278,10 @@ namespace embree
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
-      /*! intersect 4 boxes with single ray */
+      /*! intersection with single rays */
       __forceinline size_t intersect(size_t nearX, size_t nearY, size_t nearZ,
 				     const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const ssef& tnear, const ssef& tfar, 
-				     ssef& dist)
+				     ssef& dist) const
       {
 	const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
 #if defined (__AVX2__)
@@ -314,6 +314,69 @@ namespace embree
 	dist = tNear;
 	return mask;
       }
+
+      /*! intersection with ray packet of size 4 */
+      __forceinline sseb intersect(size_t i, const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const ssef& tnear, const ssef& tfar, ssef& dist) const
+      {
+#if defined(__AVX2__)
+	const ssef lclipMinX = msub(lower_x[i],rdir.x,org_rdir.x);
+	const ssef lclipMinY = msub(lower_y[i],rdir.y,org_rdir.y);
+	const ssef lclipMinZ = msub(lower_z[i],rdir.z,org_rdir.z);
+	const ssef lclipMaxX = msub(upper_x[i],rdir.x,org_rdir.x);
+	const ssef lclipMaxY = msub(upper_y[i],rdir.y,org_rdir.y);
+	const ssef lclipMaxZ = msub(upper_z[i],rdir.z,org_rdir.z);
+#else
+	const ssef lclipMinX = (lower_x[i] - org.x) * rdir.x;
+	const ssef lclipMinY = (lower_y[i] - org.y) * rdir.y;
+	const ssef lclipMinZ = (lower_z[i] - org.z) * rdir.z;
+	const ssef lclipMaxX = (upper_x[i] - org.x) * rdir.x;
+	const ssef lclipMaxY = (upper_y[i] - org.y) * rdir.y;
+	const ssef lclipMaxZ = (upper_z[i] - org.z) * rdir.z;
+#endif
+
+#if defined(__SSE4_1__)
+	const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+	const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+	const sseb lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);      
+#else
+	
+	const ssef lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+	const ssef lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+	const sseb lhit   = max(lnearP,tnear) <= min(lfarP,tfar);      
+#endif
+	dist = lnearP;
+	return lhit;
+      }
+      
+      /*! intersection with ray packet of size 8 */
+#if defined(__AVX__)
+      __forceinline avxb intersect(size_t i, const avx3f& org, const avx3f& rdir, const avx3f& org_rdir, const avxf& tnear, const avxf& tfar, avxf& dist) const
+      {
+#if defined(__AVX2__)
+	const avxf lclipMinX = msub(lower_x[i],rdir.x,org_rdir.x);
+	const avxf lclipMinY = msub(lower_y[i],rdir.y,org_rdir.y);
+	const avxf lclipMinZ = msub(lower_z[i],rdir.z,org_rdir.z);
+	const avxf lclipMaxX = msub(upper_x[i],rdir.x,org_rdir.x);
+	const avxf lclipMaxY = msub(upper_y[i],rdir.y,org_rdir.y);
+	const avxf lclipMaxZ = msub(upper_z[i],rdir.z,org_rdir.z);
+	const avxf lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+	const avxf lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+	const avxb lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);      
+#else
+	const avxf lclipMinX = (lower_x[i] - org.x) * rdir.x;
+	const avxf lclipMinY = (lower_y[i] - org.y) * rdir.y;
+	const avxf lclipMinZ = (lower_z[i] - org.z) * rdir.z;
+	const avxf lclipMaxX = (upper_x[i] - org.x) * rdir.x;
+	const avxf lclipMaxY = (upper_y[i] - org.y) * rdir.y;
+	const avxf lclipMaxZ = (upper_z[i] - org.z) * rdir.z;
+	const avxf lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+	const avxf lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+	const avxb lhit   = max(lnearP,tnear) <= min(lfarP,tfar);      
+#endif
+	dist = lnearP;
+	return lhit;
+      }
+#endif
       
     public:
       ssef lower_x;           //!< X dimension of lower bounds of all 4 children.
@@ -431,10 +494,10 @@ namespace embree
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
-      /*! intersect 4 boxes with single ray */
+      /*! intersection with single rays */
       __forceinline size_t intersect(size_t nearX, size_t nearY, size_t nearZ,
 				     const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const ssef& tnear, const ssef& tfar, const float time,
-				     ssef& dist)
+				     ssef& dist) const
       {
 	const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
 	const ssef* pNearX = (const ssef*)((const char*)&lower_x+nearX);
@@ -455,6 +518,83 @@ namespace embree
 	dist = tNear;
 	return mask;
       }
+
+      /*! intersection with ray packet of size 4 */
+    __forceinline sseb intersect(const size_t i, const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const ssef& tnear, const ssef& tfar, const ssef& time, ssef& dist) const
+    {
+      const ssef lower_x = ssef(lower_x[i]) + time * ssef(lower_dx[i]);
+      const ssef lower_y = ssef(lower_y[i]) + time * ssef(lower_dy[i]);
+      const ssef lower_z = ssef(lower_z[i]) + time * ssef(lower_dz[i]);
+      const ssef upper_x = ssef(upper_x[i]) + time * ssef(upper_dx[i]);
+      const ssef upper_y = ssef(upper_y[i]) + time * ssef(upper_dy[i]);
+      const ssef upper_z = ssef(upper_z[i]) + time * ssef(upper_dz[i]);
+      
+#if defined(__AVX2__)
+      const ssef lclipMinX = msub(lower_x,rdir.x,org_rdir.x);
+      const ssef lclipMinY = msub(lower_y,rdir.y,org_rdir.y);
+      const ssef lclipMinZ = msub(lower_z,rdir.z,org_rdir.z);
+      const ssef lclipMaxX = msub(upper_x,rdir.x,org_rdir.x);
+      const ssef lclipMaxY = msub(upper_y,rdir.y,org_rdir.y);
+      const ssef lclipMaxZ = msub(upper_z,rdir.z,org_rdir.z);
+#else
+      const ssef lclipMinX = (lower_x - org.x) * rdir.x;
+      const ssef lclipMinY = (lower_y - org.y) * rdir.y;
+      const ssef lclipMinZ = (lower_z - org.z) * rdir.z;
+      const ssef lclipMaxX = (upper_x - org.x) * rdir.x;
+      const ssef lclipMaxY = (upper_y - org.y) * rdir.y;
+      const ssef lclipMaxZ = (upper_z - org.z) * rdir.z;
+#endif
+
+#if defined(__SSE4_1__)
+      const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+      const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+      const sseb lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);      
+#else
+      
+      const ssef lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+      const ssef lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+      const sseb lhit   = max(lnearP,tnear) <= min(lfarP,tfar);      
+#endif
+      dist = lnearP;
+      return lhit;
+    }
+
+    /*! intersection with ray packet of size 8 */
+#if defined(__AVX__)
+    __forceinline avxb intersect(const size_t i, const avx3f& org, const avx3f& rdir, const avx3f& org_rdir, const avxf& tnear, const avxf& tfar, const avxf& time, avxf& dist) const
+    {
+      const avxf lower_x = avxf(lower_x[i]) + time * avxf(lower_dx[i]);
+      const avxf lower_y = avxf(lower_y[i]) + time * avxf(lower_dy[i]);
+      const avxf lower_z = avxf(lower_z[i]) + time * avxf(lower_dz[i]);
+      const avxf upper_x = avxf(upper_x[i]) + time * avxf(upper_dx[i]);
+      const avxf upper_y = avxf(upper_y[i]) + time * avxf(upper_dy[i]);
+      const avxf upper_z = avxf(upper_z[i]) + time * avxf(upper_dz[i]);
+      
+#if defined(__AVX2__)
+      const avxf lclipMinX = msub(lower_x,rdir.x,org_rdir.x);
+      const avxf lclipMinY = msub(lower_y,rdir.y,org_rdir.y);
+      const avxf lclipMinZ = msub(lower_z,rdir.z,org_rdir.z);
+      const avxf lclipMaxX = msub(upper_x,rdir.x,org_rdir.x);
+      const avxf lclipMaxY = msub(upper_y,rdir.y,org_rdir.y);
+      const avxf lclipMaxZ = msub(upper_z,rdir.z,org_rdir.z);
+      const avxf lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+      const avxf lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+      const avxb lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);      
+#else
+      const avxf lclipMinX = (lower_x - org.x) * rdir.x;
+      const avxf lclipMinY = (lower_y - org.y) * rdir.y;
+      const avxf lclipMinZ = (lower_z - org.z) * rdir.z;
+      const avxf lclipMaxX = (upper_x - org.x) * rdir.x;
+      const avxf lclipMaxY = (upper_y - org.y) * rdir.y;
+      const avxf lclipMaxZ = (upper_z - org.z) * rdir.z;
+      const avxf lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+      const avxf lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+      const avxb lhit   = max(lnearP,tnear) <= min(lfarP,tfar);      
+#endif
+      dist = lnearP;
+      return lhit;
+    }
+#endif
 
     public:
       ssef lower_x;        //!< X dimension of lower bounds of all 4 children.
