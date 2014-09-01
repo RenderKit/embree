@@ -33,39 +33,6 @@ namespace embree
 {
   namespace isa
   {
-    /* ray/box intersection */
-    __forceinline sseb intersectBox(const Ray4& ray, const ssef& ray_tfar, const sse3f& rdir, const BVH4::NodeMB* node, const int i, ssef& dist) 
-    {
-      const ssef lower_x = ssef(node->lower_x[i]) + ray.time * ssef(node->lower_dx[i]);
-      const ssef lower_y = ssef(node->lower_y[i]) + ray.time * ssef(node->lower_dy[i]);
-      const ssef lower_z = ssef(node->lower_z[i]) + ray.time * ssef(node->lower_dz[i]);
-      const ssef upper_x = ssef(node->upper_x[i]) + ray.time * ssef(node->upper_dx[i]);
-      const ssef upper_y = ssef(node->upper_y[i]) + ray.time * ssef(node->upper_dy[i]);
-      const ssef upper_z = ssef(node->upper_z[i]) + ray.time * ssef(node->upper_dz[i]);
-      
-      const ssef dminx = (lower_x - ray.org.x) * rdir.x;
-      const ssef dminy = (lower_y - ray.org.y) * rdir.y;
-      const ssef dminz = (lower_z - ray.org.z) * rdir.z;
-      const ssef dmaxx = (upper_x - ray.org.x) * rdir.x;
-      const ssef dmaxy = (upper_y - ray.org.y) * rdir.y;
-      const ssef dmaxz = (upper_z - ray.org.z) * rdir.z;
-      
-      const ssef dlowerx = min(dminx,dmaxx);
-      const ssef dlowery = min(dminy,dmaxy);
-      const ssef dlowerz = min(dminz,dmaxz);
-      
-      const ssef dupperx = max(dminx,dmaxx);
-      const ssef duppery = max(dminy,dmaxy);
-      const ssef dupperz = max(dminz,dmaxz);
-      
-      const ssef near = max(dlowerx,dlowery,dlowerz,ray.tnear);
-      const ssef far  = min(dupperx,duppery,dupperz,ray_tfar );
-      dist = near;
-      
-      return near <= far;
-    }
-    
-
     template<int types, typename PrimitiveIntersector4>
     void BVH4Intersector4Chunk<types,PrimitiveIntersector4>::intersect(sseb* valid_i, BVH4* bvh, Ray4& ray)
     {
