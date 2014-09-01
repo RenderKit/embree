@@ -43,6 +43,8 @@ namespace embree
     cout << "    #prim_hits    = " << float(cntrs.code.normal.trav_prim_hits   )*1E-6 << "M" << std::endl;
 
 #if defined(__MIC__)
+    cout << "    #stack nodes  = " << float(cntrs.code.normal.trav_stack_nodes )*1E-6 << "M" << std::endl;
+
     size_t normal_box_hits = 0;
     for (size_t i=0;i<=16;i++) normal_box_hits += cntrs.code.normal.trav_hit_boxes[i];
     cout << "    #hit_boxes    = ";
@@ -57,6 +59,8 @@ namespace embree
       cout << "    #prim_hits  = " << float(cntrs.code.shadow.trav_prim_hits)*1E-6 << "M" << std::endl;
 
 #if defined(__MIC__)
+      cout << "    #stack nodes = " << float(cntrs.code.shadow.trav_stack_nodes )*1E-6 << "M" << std::endl;
+
       size_t shadow_box_hits = 0;
       for (size_t i=0;i<=16;i++) shadow_box_hits += cntrs.code.shadow.trav_hit_boxes[i];
       cout << "    #hit_boxes    = ";

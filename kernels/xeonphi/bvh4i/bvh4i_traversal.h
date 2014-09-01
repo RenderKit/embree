@@ -93,6 +93,11 @@ namespace embree
 	sindex--;
 	curNode = stack_node[sindex];
 
+#ifdef __USE_STAT_COUNTERS__
+	if (!curNode.isLeaf(leaf_mask))
+	  STAT3(normal.trav_stack_nodes,1,1,1);
+#endif
+
 
 	const mic_f tNear = vreduce_max4(tLower);
 	const mic_f tFar  = vreduce_min4(tUpper);  
@@ -242,6 +247,11 @@ namespace embree
 	sindex--;
 	curNode = stack_node[sindex]; // early pop of next node
 
+#ifdef __USE_STAT_COUNTERS__
+	if (!curNode.isLeaf(leaf_mask))
+	  STAT3(shadow.trav_stack_nodes,1,1,1);
+#endif
+
 	const mic_f tNear = vreduce_max4(tLower);
 	const mic_f tFar  = vreduce_min4(tUpper);  
 	hitm = le(hitm,tNear,tFar);
@@ -266,7 +276,6 @@ namespace embree
 	/* if a single child is hit, continue with that child */
 	curNode = ((unsigned int *)node)[pos_first];
 	if (likely(num_hitm == 1)) continue;
-        
 	/* if two children are hit, push in correct order */
 	const unsigned long pos_second = bitscan64(pos_first,hiti);
 	if (likely(num_hitm == 2))
@@ -292,7 +301,6 @@ namespace embree
 		continue;
 	      }
 	  }
-        
 	/* continue with closest child and push all others */
 	const mic_f min_dist = set_min_lanes(tNear_pos);
 	const unsigned int old_sindex = sindex;

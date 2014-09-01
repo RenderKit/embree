@@ -31,12 +31,20 @@ namespace embree
     pthread_mutex_t mutex;
 
     bool initialized;
+    bool active;
 
     std::ofstream rayData;
+    std::ofstream rayDataVerify;
 
     void openRayDataStream();
 
   public:
+
+    enum { 
+      RAY_INTERSECT = 0,
+      RAY_OCCLUDED  = 1
+    };
+
     RayStreamLogger();
     ~RayStreamLogger();
 
@@ -44,12 +52,44 @@ namespace embree
       unsigned int type;
       unsigned int m_valid;
       unsigned int dummy[14];
-      RTCRay16 start;
-      RTCRay16 end;
+      RTCRay16 ray16;
 
       LogRay16() {
 	memset(this,0,sizeof(LogRay16));
       }
+
+      __forceinline void prefetchL2()
+      {
+	prefetch<PFHINT_L2>(&type);
+	const size_t cl = sizeof(RTCRay16) / 64;
+	const char *__restrict__ ptr = (char*)&ray16;
+#pragma unroll(cl)
+	for (size_t i=0;i<cl;i++,ptr+=64)
+	  prefetch<PFHINT_L2>(ptr);
+      }
+
+      __forceinline void prefetchL1()
+      {
+	prefetch<PFHINT_NT>(&type);
+	const size_t cl = sizeof(RTCRay16) / 64;
+	const char *__restrict__ ptr = (char*)&ray16;
+#pragma unroll(cl)
+	for (size_t i=0;i<cl;i++,ptr+=64)
+	  prefetch<PFHINT_NT>(ptr);
+      }
+
+      __forceinline void evict()
+      {
+	evictL2(&type);
+	const size_t cl = sizeof(RTCRay16) / 64;
+	const char *__restrict__ ptr = (char*)&ray16;
+#pragma unroll(cl)
+	for (size_t i=0;i<cl;i++,ptr+=64)
+	  evictL2(ptr);
+
+      }
+
+
     };
       
   static RayStreamLogger rayStreamLogger;
@@ -57,6 +97,9 @@ namespace embree
   void logRay16Intersect(const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
   void logRay16Occluded (const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
   void dumpGeometry(void* scene);
-    
+
+  __forceinline void deactivate() { active = false; }
+  __forceinline bool isActive() { return active; }
+
   };
 };

@@ -19,8 +19,6 @@
 #if !defined(__MIC__)
 #include "bvh4/bvh4.h"
 #include "bvh8/bvh8.h"
-#include "bvh4hair/bvh4hair.h"
-#include "bvh4mb/bvh4mb.h"
 #else
 #include "xeonphi/bvh4i/bvh4i.h"
 #include "xeonphi/bvh4mb/bvh4mb.h"
@@ -99,10 +97,10 @@ namespace embree
 
 #else
     createTriangleAccel();
-    accels.add(BVH4MB::BVH4MBTriangle1v(this));
+    accels.add(BVH4::BVH4Triangle1vMB(this));
     accels.add(BVH4::BVH4UserGeometry(this));
     createHairAccel();
-    accels.add(BVH4Hair::BVH4HairBezier1iMB(this,false));
+    accels.add(BVH4::BVH4OBBBezier1iMB(this,false));
 #endif
   }
 
@@ -171,10 +169,10 @@ namespace embree
       if (isStatic()) {
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
         switch (mode) {
-        case /*0b00*/ 0: accels.add(BVH4Hair::BVH4HairBezier1(this,isHighQuality())); break;
-        case /*0b01*/ 1: accels.add(BVH4Hair::BVH4HairBezier1(this,isHighQuality())); break;
-        case /*0b10*/ 2: accels.add(BVH4Hair::BVH4HairBezier1i(this,isHighQuality())); break;
-        case /*0b11*/ 3: accels.add(BVH4Hair::BVH4HairBezier1i(this,isHighQuality())); break;
+        case /*0b00*/ 0: accels.add(BVH4::BVH4OBBBezier1(this,isHighQuality())); break;
+        case /*0b01*/ 1: accels.add(BVH4::BVH4OBBBezier1(this,isHighQuality())); break;
+        case /*0b10*/ 2: accels.add(BVH4::BVH4OBBBezier1i(this,isHighQuality())); break;
+        case /*0b11*/ 3: accels.add(BVH4::BVH4OBBBezier1i(this,isHighQuality())); break;
         }
       } 
       else 
@@ -190,8 +188,8 @@ namespace embree
     }
     else if (g_hair_accel == "bvh4.bezier1"     ) accels.add(BVH4::BVH4Bezier1(this));
     else if (g_hair_accel == "bvh4.bezier1i"    ) accels.add(BVH4::BVH4Bezier1i(this));
-    else if (g_hair_accel == "bvh4hair.bezier1" ) accels.add(BVH4Hair::BVH4HairBezier1(this,false));
-    else if (g_hair_accel == "bvh4hair.bezier1i") accels.add(BVH4Hair::BVH4HairBezier1i(this,false));
+    else if (g_hair_accel == "bvh4obb.bezier1"  ) accels.add(BVH4::BVH4OBBBezier1(this,false));
+    else if (g_hair_accel == "bvh4obb.bezier1i" ) accels.add(BVH4::BVH4OBBBezier1i(this,false));
     else throw std::runtime_error("unknown hair acceleration structure "+g_hair_accel);
   }
 
@@ -274,7 +272,8 @@ namespace embree
   }
 
   void Scene::task_build(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) {
-    build(threadIndex,threadCount);
+    size_t numThreads = TaskScheduler::enableThreads(-1);
+    build(threadIndex,numThreads);
   }
 
   void Scene::build () 
@@ -306,7 +305,8 @@ namespace embree
     /* select fast code path if no intersection filter is present */
     accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
 
-    /* spawn build task */
+    /* spawn build task */			
+    TaskScheduler::enableThreads(1);
     TaskScheduler::EventSync event;
     new (&task) TaskScheduler::Task(&event,NULL,NULL,1,_task_build,this,"scene_build");
     TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);

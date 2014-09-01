@@ -31,9 +31,6 @@
 
 #include <algorithm>
 
-#define THRESHOLD_FOR_SUBTREE_RECURSION 128
-#define THRESHOLD_FOR_SINGLE_THREADED 50000 // FIXME: measure if this is really optimal, maybe disable only parallel splits
-
 #define DBG(x) 
 
 //#define PROFILE
@@ -43,6 +40,9 @@ namespace embree
   namespace isa
   {
     static double dt = 0.0f;
+
+    static const size_t THRESHOLD_FOR_SUBTREE_RECURSION = 128;
+    static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; // FIXME: measure if this is really optimal, maybe disable only parallel splits
 
     std::auto_ptr<BVH4BuilderFast::GlobalState> BVH4BuilderFast::g_state(NULL);
 
@@ -185,7 +185,8 @@ namespace embree
           build_sequential(threadIndex,threadCount);
         } 
         else {
-          if (!g_state.get()) g_state.reset(new GlobalState(threadCount));
+	  if (!g_state.get()) 
+	    g_state.reset(new GlobalState(threadCount));
           TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
         }
         dt_min = min(dt_min,dt);
@@ -206,8 +207,11 @@ namespace embree
 	build_sequential(threadIndex,threadCount);
       } 
       else {
-	if (!g_state.get()) g_state.reset(new GlobalState(threadCount));
-	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
+	if (!g_state.get()) g_state.reset(new GlobalState());
+	size_t numActiveThreads = min(threadCount,getNumberOfCores());
+	TaskScheduler::enableThreads(numActiveThreads);
+        TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,numActiveThreads,"build_parallel");
+	TaskScheduler::enableThreads(threadCount);
       }
       
       /* verbose mode */
@@ -834,7 +838,7 @@ namespace embree
           break;
         
         /* guarantees to create no leaves in this stage */
-        if (br.size() <= minLeafSize) {
+        if (br.size() <= max(minLeafSize,THRESHOLD_FOR_SINGLE_THREADED)) {
 	  g_state->heap.push(br);
           break;
 	}

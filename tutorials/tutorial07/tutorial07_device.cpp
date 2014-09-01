@@ -37,6 +37,7 @@ extern "C" bool g_changed;
 extern "C" Vec3fa g_dirlight_direction;
 extern "C" Vec3fa g_dirlight_intensity;
 extern "C" Vec3fa g_ambient_intensity;
+extern float g_debug;
 
 /* hair material */
 Vec3fa hair_K;
@@ -509,7 +510,7 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0.0f;
+  ray.time = g_debug;
   ray.filter = (RTCFilterFunc) &occlusionFilter;
   ray.transparency = Vec3fa(1.0f);
   rtcOccluded(scene,*((RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
@@ -530,7 +531,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0.0f;
+  ray.time = g_debug;
   ray.filter = NULL; 
   
   Vec3fa color = Vec3fa(0.0f);
@@ -624,7 +625,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
-    ray.time = 0.0f;
+    ray.time = g_debug;
     ray.filter = NULL;
     weight = weight * c/wi.w; // FIXME: use *= operator
 
@@ -657,7 +658,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0.0f;
+  ray.time = g_debug;
 
   Vec3fa color = Vec3fa(0.0f);
   float weight = 1.0f;

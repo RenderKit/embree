@@ -35,6 +35,10 @@ namespace embree
   {
     typedef Triangle1vMB Primitive;
 
+    struct Precalculations {
+      __forceinline Precalculations (const Ray& ray) {}
+    };
+
     /*! Intersect a ray with the triangle and updates the hit. */
     static __forceinline void intersect(Ray& ray, const Triangle1vMB& tri, const void* geom)
     {
@@ -107,7 +111,7 @@ namespace embree
       ray.primID = primID;
     }
 
-    static __forceinline void intersect(Ray& ray, const Triangle1vMB* tri, size_t num, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Triangle1vMB* tri, size_t num, void* geom)
     {
       for (size_t i=0; i<num; i++)
         intersect(ray,tri[i],geom);
@@ -178,7 +182,7 @@ namespace embree
       return true;
     }
 
-    static __forceinline bool occluded(Ray& ray, const Triangle1vMB* tri, size_t num, void* geom) 
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Triangle1vMB* tri, size_t num, void* geom) 
     {
       for (size_t i=0; i<num; i++) 
         if (occluded(ray,tri[i],geom))

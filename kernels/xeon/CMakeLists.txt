@@ -71,25 +71,17 @@ ADD_ISPC_LIBRARY(embree SHARED
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp
   bvh4/bvh4_builder.cpp
+  bvh4/bvh4_builder_mb.cpp
+  bvh4/bvh4_builder_hair.cpp
+  bvh4/bvh4_builder_hair_mb.cpp
   bvh4/bvh4_builder_fast.cpp
   bvh4/bvh4_builder_morton.cpp
   bvh4/bvh4_builder_binner.cpp
   bvh4/bvh4_builder_toplevel.cpp
   bvh4/bvh4_intersector1.cpp   
+  bvh4/bvh4_intersector4_single.cpp
   bvh4/bvh4_intersector4_chunk.cpp
   bvh4/bvh4_statistics.cpp
-
-  bvh4mb/bvh4mb.cpp
-  bvh4mb/bvh4mb_builder.cpp
-  bvh4mb/bvh4mb_intersector1.cpp   
-  bvh4mb/bvh4mb_intersector4.cpp
-
-  bvh4hair/bvh4hair.cpp
-  bvh4hair/bvh4hair_statistics.cpp
-  bvh4hair/bvh4hair_builder.cpp 
-  bvh4hair/bvh4hair_builder_mb.cpp 
-  bvh4hair/bvh4hair_intersector1.cpp
-  bvh4hair/bvh4hair_intersector4.cpp
 )
 
 IF (TARGET_SSE41) 
@@ -97,6 +89,7 @@ IF (TARGET_SSE41)
     bvh4/bvh4_builder_binner.cpp
     bvh4/bvh4_builder_toplevel.cpp
     bvh4/bvh4_intersector1.cpp   
+    bvh4/bvh4_intersector4_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp
   )
   SET_TARGET_PROPERTIES(embree_sse41 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE41}")
@@ -131,24 +124,18 @@ IF (TARGET_AVX)
    bvh4/bvh4_builder_morton.cpp
    bvh4/bvh4_builder_fast.cpp
    bvh4/bvh4_builder.cpp
+   bvh4/bvh4_builder_mb.cpp
+   bvh4/bvh4_builder_hair.cpp
+   bvh4/bvh4_builder_hair_mb.cpp
    bvh4/bvh4_refit.cpp
 
    bvh4/bvh4_intersector1.cpp   
+   bvh4/bvh4_intersector4_single.cpp
    bvh4/bvh4_intersector4_chunk.cpp
    bvh4/bvh4_intersector4_hybrid.cpp
+   bvh4/bvh4_intersector8_single.cpp
    bvh4/bvh4_intersector8_chunk.cpp
    bvh4/bvh4_intersector8_hybrid.cpp
-
-   bvh4mb/bvh4mb_builder.cpp
-   bvh4mb/bvh4mb_intersector1.cpp   
-   bvh4mb/bvh4mb_intersector4.cpp
-   bvh4mb/bvh4mb_intersector8.cpp
-
-   bvh4hair/bvh4hair_builder.cpp
-   bvh4hair/bvh4hair_builder_mb.cpp
-   bvh4hair/bvh4hair_intersector1.cpp
-   bvh4hair/bvh4hair_intersector4.cpp
-   bvh4hair/bvh4hair_intersector8.cpp
 
    bvh8/bvh8.cpp
    bvh8/bvh8_builder.cpp
@@ -171,25 +158,18 @@ IF (TARGET_AVX2)
     geometry/instance_intersector8.cpp
 		
     bvh4/bvh4_intersector1.cpp
+    bvh4/bvh4_intersector4_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp
     bvh4/bvh4_intersector4_hybrid.cpp
+    bvh4/bvh4_intersector8_single.cpp
     bvh4/bvh4_intersector8_chunk.cpp
     bvh4/bvh4_intersector8_hybrid.cpp
-
-    bvh4mb/bvh4mb_intersector1.cpp
-    bvh4mb/bvh4mb_intersector4.cpp
-    bvh4mb/bvh4mb_intersector8.cpp
-
-    bvh4hair/bvh4hair_intersector1.cpp
-    bvh4hair/bvh4hair_intersector4.cpp
-    bvh4hair/bvh4hair_intersector8.cpp
 
     bvh8/bvh8_intersector1.cpp   
     bvh8/bvh8_intersector4_hybrid.cpp 
     bvh8/bvh8_intersector8_chunk.cpp   
     bvh8/bvh8_intersector8_hybrid.cpp   
 )
-
   SET_TARGET_PROPERTIES(embree_avx2 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX2}")
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx2)
 ENDIF()

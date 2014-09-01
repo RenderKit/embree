@@ -40,6 +40,8 @@ namespace embree
 {
   namespace isa
   {
+    static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; // FIXME: measure if this is really optimal, maybe disable only parallel splits
+
     template<> BVH4BuilderT<Triangle1 >::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1),2,inf) {}
     template<> BVH4BuilderT<Triangle4 >::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,2,2,1.0f,false,sizeof(Triangle4),4,inf) {}
 #if defined(__AVX__)
@@ -307,7 +309,7 @@ namespace embree
       /* free all primitive blocks */
       while (PrimRefList::item* block = prims.take())
 	alloc.free(threadIndex,block);
-      
+
       return bvh->encodeLeaf(leaf,N);
     }
     
@@ -512,8 +514,11 @@ namespace embree
 	return node;
     }
     
-    void BVH4Builder::build(size_t threadIndex, size_t threadCount) 
+    void BVH4Builder::build(size_t threadIndex, size_t threadCountOld) 
     {
+      size_t threadCount = min(threadCountOld,getNumberOfCores());
+      TaskScheduler::enableThreads(threadCount);
+
       /*! calculate number of primitives */
       size_t numPrimitives = 0;
       if (mesh) numPrimitives = mesh->numTriangles;
@@ -550,54 +555,74 @@ namespace embree
       if (mesh) PrimRefListGenFromGeometry<TriangleMesh>::generate(threadIndex,threadCount,&alloc,mesh ,prims,pinfo);
       else      PrimRefListGen                          ::generate(threadIndex,threadCount,&alloc,scene,TRIANGLE_MESH,1,prims,pinfo);
       
-      /* perform initial split */
-      const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);
-      const BuildRecord record(1,prims,pinfo,split,&bvh->root);
-      tasks.push_back(record); 
-      activeBuildRecords=1;
-
-      /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (tasks.size() > 0 && tasks.size() < threadCount)
+      /* single threaded path */
+      if (pinfo.size() <= THRESHOLD_FOR_SINGLE_THREADED)
       {
-	/* pop largest item for better load balancing */
-	BuildRecord task = tasks.front();
-	std::pop_heap(tasks.begin(),tasks.end());
-	tasks.pop_back();
-	activeBuildRecords--;
-	
-	/* process this item in parallel */
-	BuildRecord children[BVH4::N];
-	size_t N = createNode<true>(threadIndex,threadCount,this,task,children);
-	for (size_t i=0; i<N; i++) {
-	  tasks.push_back(children[i]);
-	  std::push_heap(tasks.begin(),tasks.end());
-	  activeBuildRecords++;
-	}
+	const Split split = find<false>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);
+	BuildRecord record(1,prims,pinfo,split,&bvh->root);
+	finish_build(threadIndex,threadCount,record);
       }
-      
-      /*! process each generated subtask in its own thread */
-      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4Builder::build");
-                  
+
+      /* multithreaded path */
+      else
+      {
+	/* perform initial split */
+	const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);
+	BuildRecord record(1,prims,pinfo,split,&bvh->root);
+	tasks.push_back(record); 
+	activeBuildRecords=1;
+
+	/* work in multithreaded toplevel mode until sufficient subtasks got generated */
+	while (tasks.size() > 0 && tasks.size() < threadCount)
+	{
+	  /* pop largest item for better load balancing */
+	  BuildRecord task = tasks.front();
+	  std::pop_heap(tasks.begin(),tasks.end());
+	  tasks.pop_back();
+	  activeBuildRecords--;
+	  
+	  /* do not generate too small subtasks */
+	  if (task.pinfo.size() <= THRESHOLD_FOR_SINGLE_THREADED) {
+	    tasks.push_back(task);
+	    activeBuildRecords++;
+	    break;
+	  }
+	  
+	  /* process this item in parallel */
+	  BuildRecord children[BVH4::N];
+	  size_t N = createNode<true>(threadIndex,threadCount,this,task,children);
+	  for (size_t i=0; i<N; i++) {
+	    tasks.push_back(children[i]);
+	    std::push_heap(tasks.begin(),tasks.end());
+	    activeBuildRecords++;
+	  }
+	}
+	
+	/*! process each generated subtask in its own thread */
+	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4Builder::build");
+      }
+
       /* perform tree rotations of top part of the tree */
 #if ROTATE_TREE
       for (int i=0; i<5; i++) 
 	BVH4Rotate::rotate(bvh,bvh->root);
 #endif
-
+      
       /* layout top nodes */
       bvh->root = layout_top_nodes(threadIndex,bvh->root);
       //bvh->clearBarrier(bvh->root);
       bvh->numPrimitives = pinfo.size();
       bvh->bounds = pinfo.geomBounds;
-
+      
 #if RESTRUCTURE_TREE
       for (int i=0; i<5; i++) 
-        restructureTree(bvh->root,0);
+	restructureTree(bvh->root,0);
 #endif
       
       /* free all temporary memory blocks */
       Alloc::global.clear();
-
+      TaskScheduler::enableThreads(threadCountOld);
+      
       if (g_verbose >= 2 || g_benchmark) 
 	t1 = getSeconds();
 

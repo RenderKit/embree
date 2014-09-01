@@ -28,7 +28,8 @@
 namespace embree
 {
   /*! Interface to different task scheduler implementations. */
-  class __hidden TaskScheduler : public RefCount
+  /* __hidden */
+  class TaskScheduler : public RefCount
   {
   public:
     struct Event;
@@ -143,6 +144,9 @@ namespace embree
     /*! returns the number of threads used */
     static size_t getNumThreads();
 
+    /*! enables specified number of threads */
+    static size_t enableThreads(size_t N);
+
     /*! add a task to the scheduler */
     static void addTask(ssize_t threadIndex, QUEUE queue, Task* task);
 
@@ -155,9 +159,6 @@ namespace embree
 
     /*! destroys the task scheduler */
     static void destroy();
-
-    /*! returns ISPC event of the thread */
-    static Event* getISPCEvent(ssize_t threadIndex);
 
     /*! waits for an event out of a task */
     static void waitForEvent(Event* event); // use only from main thread !!!
@@ -195,12 +196,10 @@ namespace embree
   protected:
     volatile bool terminateThreads;
     std::vector<thread_t> threads;
+    bool defaultNumThreads;
     size_t numThreads;
-    struct __aligned(64) ThreadEvent { 
-      Event* event; 
-      char align[64-sizeof(Event*)];
-    };
-    ThreadEvent* thread2event;
+    volatile size_t numEnabledThreads;
+    __forceinline bool isEnabled(size_t threadIndex) const { return threadIndex < numEnabledThreads; }
 
     /* for lockstep taskscheduler*/
   public:

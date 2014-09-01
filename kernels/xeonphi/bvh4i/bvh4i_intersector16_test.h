@@ -16,27 +16,26 @@
 
 #pragma once
 
-#include "bvh4mb.h"
-#include "common/stack_item.h"
-#include "common/ray4.h"
+#include "bvh4i.h"
+#include "bvh4i_traversal.h"
+#include "common/ray16.h" 
 
 namespace embree
 {
   namespace isa
   {
-    /*! BVH4MB Traverser. Packet traversal implementation for a Quad BVH. */
-    template<typename TriangleIntersector>
-      class BVH4MBIntersector4Chunk
+    /*! BVH4i traverser. Test ray traversal implementation for a BVH4i. */
+    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
+    class BVH4iIntersector16Test
     {
       /* shortcuts for frequently used types */
-      typedef typename TriangleIntersector::Precalculations Precalculations;
-      typedef typename TriangleIntersector::Primitive Triangle;
-      typedef typename BVH4MB::Base Base;
-      typedef typename BVH4MB::Node Node;
+      typedef typename BVH4i::NodeRef NodeRef;
+      typedef typename BVH4i::Node Node;
       
+
     public:
-      static void intersect(sseb* valid, BVH4MB* bvh, Ray4& ray);
-      static void occluded (sseb* valid, BVH4MB* bvh, Ray4& ray);
+      static void intersect(mic_i* valid, BVH4i* bvh, Ray16& ray);
+      static void occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
     };
   }
 }

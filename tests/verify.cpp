@@ -2275,8 +2275,6 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
-
-    //POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
     
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
@@ -2308,7 +2306,6 @@ namespace embree
     POSITIVE("overlapping_triangles",     rtcore_overlapping_triangles(100000));
     POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
-
 
 #if defined(__USE_RAY_MASK__)
     rtcore_ray_masks_all();

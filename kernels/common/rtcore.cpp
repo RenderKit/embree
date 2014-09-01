@@ -31,7 +31,7 @@
 
 #if defined(__MIC__)
 #include "raystream_log.h"
-#define ENABLE_RAYSTREAM_LOGGER
+//#define ENABLE_RAYSTREAM_LOGGER
 #endif
 
 namespace embree
@@ -62,8 +62,6 @@ namespace embree
   /* register functions for accels */
   void BVH4Register();
   void BVH8Register();
-  void BVH4MBRegister();
-  void BVH4HairRegister();
 
 #if defined(__MIC__)
   void BVH4iRegister();
@@ -370,8 +368,6 @@ namespace embree
 #else
     BVH4iRegister();
 #endif 
-    BVH4MBRegister();
-    BVH4HairRegister();    
 #if defined(__TARGET_AVX__)
     if (has_feature(AVX)) {
       BVH8Register();
@@ -491,7 +487,8 @@ namespace embree
     VERIFY_HANDLE(scene);
 
 #if defined(ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.dumpGeometry(scene);
+    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
+      RayStreamLogger::rayStreamLogger.dumpGeometry(scene);
 #endif
 
     ((Scene*)scene)->build();
@@ -560,13 +557,16 @@ namespace embree
     STAT3(normal.travs,1,cnt,16);
 
 #if defined(ENABLE_RAYSTREAM_LOGGER)
-    RTCRay16 old_ray = ray;
+    RTCRay16 old_ray;
+    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
+      old_ray = ray;
 #endif
 
     ((Scene*)scene)->intersect16(valid,ray);
 
 #if defined(ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.logRay16Intersect(valid,scene,old_ray,ray);
+    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
+      RayStreamLogger::rayStreamLogger.logRay16Intersect(valid,scene,old_ray,ray);
 #endif
 
 #endif
@@ -632,13 +632,16 @@ namespace embree
     STAT3(shadow.travs,1,cnt,16);
 
 #if defined(ENABLE_RAYSTREAM_LOGGER)
-    RTCRay16 old_ray = ray;
+    RTCRay16 old_ray;
+    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
+      old_ray = ray;
 #endif
 
     ((Scene*)scene)->occluded16(valid,ray);
 
 #if defined(ENABLE_RAYSTREAM_LOGGER)
-    RayStreamLogger::rayStreamLogger.logRay16Intersect(valid,scene,old_ray,ray);
+    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
+      RayStreamLogger::rayStreamLogger.logRay16Occluded(valid,scene,old_ray,ray);
 #endif
 
 #endif

@@ -363,8 +363,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="builders\primrefgen.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb_builder.cpp" />
     <ClCompile Include="bvh4\bvh4_builder.cpp" />
+    <ClCompile Include="bvh4\bvh4_builder_mb.cpp" />
     <ClCompile Include="bvh4\bvh4_refit.cpp" />
     <ClCompile Include="bvh8\bvh8.cpp" />
     <ClCompile Include="bvh8\bvh8_builder.cpp" />
@@ -380,18 +380,12 @@
     <ClCompile Include="bvh4\bvh4_builder_fast.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_morton.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector1.cpp" />
+    <ClCompile Include="bvh4\bvh4_intersector4_single.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector4_chunk.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector4_hybrid.cpp" />
+    <ClCompile Include="bvh4\bvh4_intersector8_single.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector8_chunk.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector8_hybrid.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb_intersector1.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb_intersector4.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb_intersector8.cpp" />
-    <ClCompile Include="bvh4hair\bvh4hair_builder.cpp" />
-    <ClCompile Include="bvh4hair\bvh4hair_builder_mb.cpp" />
-    <ClCompile Include="bvh4hair\bvh4hair_intersector1.cpp" />
-    <ClCompile Include="bvh4hair\bvh4hair_intersector4.cpp" />
-    <ClCompile Include="bvh4hair\bvh4hair_intersector8.cpp" />
     <ClCompile Include="builders\bezierrefgen.cpp" />
     <ClCompile Include="builders\heuristic_fallback.cpp" />
     <ClCompile Include="builders\heuristic_object_partition.cpp" />
@@ -412,8 +406,8 @@
     <CustomBuildStep Include="geometry\instance_intersector1.h" />
     <CustomBuildStep Include="geometry\instance_intersector4.h" />
     <CustomBuildStep Include="geometry\instance_intersector8.h" />
-    <ClInclude Include="bvh4mb\bvh4mb_builder.h" />
     <ClInclude Include="bvh4\bvh4_builder.h" />
+    <ClInclude Include="bvh4\bvh4_builder_mb.h" />
     <ClInclude Include="bvh4\bvh4_refit.h" />
     <ClInclude Include="bvh8\bvh8.h" />
     <ClInclude Include="bvh8\bvh8_builder.h" />
@@ -426,18 +420,12 @@
     <ClInclude Include="bvh4\bvh4_builder_fast.h" />
     <CustomBuildStep Include="bvh4\bvh4_builder_morton.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector1.h" />
+    <CustomBuildStep Include="bvh4\bvh4_intersector4_single.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector4_chunk.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector4_hybrid.h" />
+    <CustomBuildStep Include="bvh4\bvh4_intersector8_single.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector8_chunk.h" />
     <CustomBuildStep Include="bvh4\bvh4_intersector8_hybrid.h" />
-    <CustomBuildStep Include="bvh4mb\bvh4mb_intersector1.h" />
-    <CustomBuildStep Include="bvh4mb\bvh4mb_intersector4.h" />
-    <CustomBuildStep Include="bvh4mb\bvh4mb_intersector8.h" />
-    <ClInclude Include="bvh4hair\bvh4hair_builder.h" />
-    <ClInclude Include="bvh4hair\bvh4hair_builder_mb.h" />
-    <ClInclude Include="bvh4hair\bvh4hair_intersector1.h" />
-    <ClInclude Include="bvh4hair\bvh4hair_intersector4.h" />
-    <ClInclude Include="bvh4hair\bvh4hair_intersector8.h" />
     <ClInclude Include="builders\bezierrefgen.h" />
     <ClInclude Include="builders\heuristic_fallback.h" />
     <ClInclude Include="builders\heuristic_object_partition.h" />

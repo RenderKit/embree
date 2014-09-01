@@ -384,3 +384,51 @@ void launch_renderTile (int numTiles,
   TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
   event.sync();
 }
+
+typedef void (*animateSphereFunc) (int taskIndex, Vertex* vertices, 
+				   const float rcpNumTheta,
+				   const float rcpNumPhi,
+				   const Vec3fa& pos, 
+				   const float r,
+				   const float f);
+
+struct AnimateSphereTask
+{
+  AnimateSphereTask (animateSphereFunc func,
+		     Vertex* vertices, 
+		     const float rcpNumTheta,
+		     const float rcpNumPhi,
+		     const Vec3fa& pos, 
+		     const float r,
+		     const float f)
+    : func(func), vertices(vertices), rcpNumTheta(rcpNumTheta), rcpNumPhi(rcpNumPhi), pos(pos), r(r), f(f) {}
+
+public:
+  animateSphereFunc func;
+  Vertex* vertices;
+  const float rcpNumTheta;
+  const float rcpNumPhi;
+  const Vec3fa pos;
+  const float r;
+  const float f;
+};
+
+void animateSphere_parallel(AnimateSphereTask* task, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) {
+  task->func(taskIndex,task->vertices,task->rcpNumTheta,task->rcpNumPhi,task->pos,task->r,task->f);
+}
+
+void launch_animateSphere(animateSphereFunc func,
+			  int taskSize,
+			  Vertex* vertices, 
+			  const float rcpNumTheta,
+			  const float rcpNumPhi,
+			  const Vec3fa& pos, 
+			  const float r,
+			  const float f)
+{
+  TaskScheduler::EventSync event;
+  AnimateSphereTask parms(func,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
+  TaskScheduler::Task task(&event,(TaskScheduler::runFunction)animateSphere_parallel,&parms,taskSize,NULL,NULL,"render");
+  TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
+  event.sync();
+}

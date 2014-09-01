@@ -27,13 +27,47 @@
 #include "geometry/triangle4v_intersector4_pluecker.h"
 #include "geometry/triangle4i_intersector4.h"
 #include "geometry/virtual_accel_intersector4.h"
+#include "geometry/triangle1v_intersector4_moeller_mb.h"
 
 namespace embree
 {
   namespace isa
   {
-    template<typename PrimitiveIntersector4>
-    void BVH4Intersector4Chunk<PrimitiveIntersector4>::intersect(sseb* valid_i, BVH4* bvh, Ray4& ray)
+    /* ray/box intersection */
+    __forceinline sseb intersectBox(const Ray4& ray, const ssef& ray_tfar, const sse3f& rdir, const BVH4::NodeMB* node, const int i, ssef& dist) 
+    {
+      const ssef lower_x = ssef(node->lower_x[i]) + ray.time * ssef(node->lower_dx[i]);
+      const ssef lower_y = ssef(node->lower_y[i]) + ray.time * ssef(node->lower_dy[i]);
+      const ssef lower_z = ssef(node->lower_z[i]) + ray.time * ssef(node->lower_dz[i]);
+      const ssef upper_x = ssef(node->upper_x[i]) + ray.time * ssef(node->upper_dx[i]);
+      const ssef upper_y = ssef(node->upper_y[i]) + ray.time * ssef(node->upper_dy[i]);
+      const ssef upper_z = ssef(node->upper_z[i]) + ray.time * ssef(node->upper_dz[i]);
+      
+      const ssef dminx = (lower_x - ray.org.x) * rdir.x;
+      const ssef dminy = (lower_y - ray.org.y) * rdir.y;
+      const ssef dminz = (lower_z - ray.org.z) * rdir.z;
+      const ssef dmaxx = (upper_x - ray.org.x) * rdir.x;
+      const ssef dmaxy = (upper_y - ray.org.y) * rdir.y;
+      const ssef dmaxz = (upper_z - ray.org.z) * rdir.z;
+      
+      const ssef dlowerx = min(dminx,dmaxx);
+      const ssef dlowery = min(dminy,dmaxy);
+      const ssef dlowerz = min(dminz,dmaxz);
+      
+      const ssef dupperx = max(dminx,dmaxx);
+      const ssef duppery = max(dminy,dmaxy);
+      const ssef dupperz = max(dminz,dmaxz);
+      
+      const ssef near = max(dlowerx,dlowery,dlowerz,ray.tnear);
+      const ssef far  = min(dupperx,duppery,dupperz,ray_tfar );
+      dist = near;
+      
+      return near <= far;
+    }
+    
+
+    template<int types, typename PrimitiveIntersector4>
+    void BVH4Intersector4Chunk<types,PrimitiveIntersector4>::intersect(sseb* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* load ray */
       const sseb valid0 = *valid_i;
@@ -74,80 +108,132 @@ namespace embree
         
         while (1)
         {
-          /* test if this is a leaf node */
-          if (unlikely(curNode.isLeaf()))
-            break;
-          
-          const sseb valid_node = ray_tfar > curDist;
-          STAT3(normal.trav_nodes,1,popcnt(valid_node),4);
-          const Node* __restrict__ const node = curNode.node();
-          
-          /* pop of next node */
-          assert(sptr_node > stack_node);
-          sptr_node--;
-          sptr_near--;
-          curNode = *sptr_node;
-          curDist = *sptr_near;
+	  /* process normal nodes */
+          if (likely((types & 0x1) && curNode.isNode()))
+          {
+	    const sseb valid_node = ray_tfar > curDist;
+	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+	    const Node* __restrict__ const node = curNode.node();
+	    
+	    /* pop of next node */
+	    assert(sptr_node > stack_node);
+	    sptr_node--;
+	    sptr_near--;
+	    curNode = *sptr_node; 
+	    curDist = *sptr_near;
           
 #pragma unroll(4)
-          for (unsigned i=0; i<BVH4::N; i++)
-          {
-            const NodeRef child = node->children[i];
-            if (unlikely(child == BVH4::emptyNode)) break;
-            
+	    for (unsigned i=0; i<BVH4::N; i++)
+	    {
+	      const NodeRef child = node->children[i];
+	      if (unlikely(child == BVH4::emptyNode)) break;
+	      
 #if defined(__AVX2__)
-            const ssef lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
-            const ssef lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
-            const ssef lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
-            const ssef lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
-            const ssef lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
-            const ssef lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
+	      const ssef lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
+	      const ssef lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
+	      const ssef lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
+	      const ssef lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
+	      const ssef lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
+	      const ssef lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
 #else
-            const ssef lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
-            const ssef lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
-            const ssef lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
-            const ssef lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
-            const ssef lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
-            const ssef lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
+	      const ssef lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
+	      const ssef lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
+	      const ssef lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
+	      const ssef lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
+	      const ssef lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
+	      const ssef lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
 #endif
-
+	      
 #if defined(__SSE4_1__)
-            const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-            const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-            const sseb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
+	      const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+	      const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+	      const sseb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
 #else
-            const ssef lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const ssef lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const sseb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+	      const ssef lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+	      const ssef lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+	      const sseb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
 #endif
-            
-            /* if we hit the child we choose to continue with that child if it 
-               is closer than the current next child, or we push it onto the stack */
-            if (likely(any(lhit)))
-            {
-              assert(sptr_node < stackEnd);
-              const ssef childDist = select(lhit,lnearP,inf);
-              const NodeRef child = node->children[i];
-              assert(child != BVH4::emptyNode);
-              sptr_node++;
-              sptr_near++;
-              
-              /* push cur node onto stack and continue with hit child */
-              if (any(childDist < curDist))
-              {
-                *(sptr_node-1) = curNode;
-                *(sptr_near-1) = curDist; 
-                curDist = childDist;
-                curNode = child;
-              }
-              
-              /* push hit child onto stack */
-              else {
-                *(sptr_node-1) = child;
-                *(sptr_near-1) = childDist; 
-              }
-            }	      
-          }
+	      
+	      /* if we hit the child we choose to continue with that child if it 
+		 is closer than the current next child, or we push it onto the stack */
+	      if (likely(any(lhit)))
+	      {
+		assert(sptr_node < stackEnd);
+		const ssef childDist = select(lhit,lnearP,inf);
+		const NodeRef child = node->children[i];
+		assert(child != BVH4::emptyNode);
+		sptr_node++;
+		sptr_near++;
+		
+		/* push cur node onto stack and continue with hit child */
+		if (any(childDist < curDist))
+		{
+		  *(sptr_node-1) = curNode;
+		  *(sptr_near-1) = curDist; 
+		  curDist = childDist;
+		  curNode = child;
+		}
+		
+		/* push hit child onto stack */
+		else {
+		  *(sptr_node-1) = child;
+		  *(sptr_near-1) = childDist; 
+		}
+	      }	      
+	    }
+	  }
+	  /* process motion blur nodes */
+          else if (likely((types & 0x10) && curNode.isNodeMB()))
+	  {
+	    const sseb valid_node = ray_tfar > curDist;
+	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+	    const BVH4::NodeMB* __restrict__ const node = curNode.nodeMB();
+          
+	    /* pop of next node */
+	    assert(sptr_node > stack_node);
+	    sptr_node--;
+	    sptr_near--;
+	    curNode = *sptr_node; 
+	    curDist = *sptr_near;
+	    
+#pragma unroll(4)
+	    for (unsigned i=0; i<BVH4::N; i++)
+	    {
+	      const NodeRef child = node->child(i);
+	      if (unlikely(child == BVH4::emptyNode)) break;
+
+	      ssef lnearP;
+	      const sseb lhit = intersectBox(ray,ray_tfar,rdir,node,i,lnearP);
+	      
+	      /* if we hit the child we choose to continue with that child if it 
+		 is closer than the current next child, or we push it onto the stack */
+	      if (likely(any(lhit)))
+	      {
+		assert(sptr_node < stackEnd);
+		assert(child != BVH4::emptyNode);
+		const ssef childDist = select(lhit,lnearP,inf);
+		sptr_node++;
+		sptr_near++;
+		
+		/* push cur node onto stack and continue with hit child */
+		if (any(childDist < curDist))
+		{
+		  *(sptr_node-1) = curNode;
+		  *(sptr_near-1) = curDist; 
+		  curDist = childDist;
+		  curNode = child;
+		}
+		
+		/* push hit child onto stack */
+		else {
+		  *(sptr_node-1) = child;
+		  *(sptr_near-1) = childDist; 
+		}
+	      }	      
+	    }
+	  }
+	  else 
+	    break;
         }
         
         /* return if stack is empty */
@@ -166,8 +252,8 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    template<typename PrimitiveIntersector4>
-    void BVH4Intersector4Chunk<PrimitiveIntersector4>::occluded(sseb* valid_i, BVH4* bvh, Ray4& ray)
+    template<int types, typename PrimitiveIntersector4>
+    void BVH4Intersector4Chunk<types,PrimitiveIntersector4>::occluded(sseb* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* load ray */
       const sseb valid = *valid_i;
@@ -209,79 +295,132 @@ namespace embree
         
         while (1)
         {
-          /* test if this is a leaf node */
-          if (unlikely(curNode.isLeaf()))
-            break;
-          
-          const sseb valid_node = ray_tfar > curDist;
-          STAT3(shadow.trav_nodes,1,popcnt(valid_node),4);
-          const Node* __restrict__ const node = curNode.node();
-          
-          /* pop of next node */
-          assert(sptr_node > stack_node);
-          sptr_node--;
-          sptr_near--;
-          curNode = *sptr_node;
-          curDist = *sptr_near;
+	  /* process normal nodes */
+          if (likely((types & 0x1) && curNode.isNode()))
+          {
+	    const sseb valid_node = ray_tfar > curDist;
+	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+	    const Node* __restrict__ const node = curNode.node();
+	    
+	    /* pop of next node */
+	    assert(sptr_node > stack_node);
+	    sptr_node--;
+	    sptr_near--;
+	    curNode = *sptr_node; 
+	    curDist = *sptr_near;
           
 #pragma unroll(4)
-          for (unsigned i=0; i<BVH4::N; i++)
-          {
-            const NodeRef child = node->children[i];
-            if (unlikely(child == BVH4::emptyNode)) break;
-            
+	    for (unsigned i=0; i<BVH4::N; i++)
+	    {
+	      const NodeRef child = node->children[i];
+	      if (unlikely(child == BVH4::emptyNode)) break;
+	      
 #if defined(__AVX2__)
-            const ssef lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
-            const ssef lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
-            const ssef lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
-            const ssef lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
-            const ssef lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
-            const ssef lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
+	      const ssef lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
+	      const ssef lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
+	      const ssef lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
+	      const ssef lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
+	      const ssef lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
+	      const ssef lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
 #else
-            const ssef lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
-            const ssef lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
-            const ssef lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
-            const ssef lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
-            const ssef lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
-            const ssef lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
+	      const ssef lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
+	      const ssef lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
+	      const ssef lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
+	      const ssef lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
+	      const ssef lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
+	      const ssef lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
 #endif
-
+	      
 #if defined(__SSE4_1__)
-            const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-            const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-            const sseb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
+	      const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+	      const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+	      const sseb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
 #else
-            const ssef lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const ssef lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const sseb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+	      const ssef lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+	      const ssef lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+	      const sseb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
 #endif
-            
-            /* if we hit the child we choose to continue with that child if it 
-               is closer than the current next child, or we push it onto the stack */
-            if (likely(any(lhit)))
-            {
-              assert(sptr_node < stackEnd);
-              assert(child != BVH4::emptyNode);
-              const ssef childDist = select(lhit,lnearP,inf);
-              sptr_node++;
-              sptr_near++;
-              
-              /* push cur node onto stack and continue with hit child */
-              if (any(childDist < curDist))
-              {
-                *(sptr_node-1) = curNode;
-                *(sptr_near-1) = curDist; 
-                curDist = childDist;
-                curNode = child;
-              }
-              
-              /* push hit child onto stack */
-              else {
-                *(sptr_node-1) = child;
-                *(sptr_near-1) = childDist; 
-              }
-            }	      
-          }
+	      
+	      /* if we hit the child we choose to continue with that child if it 
+		 is closer than the current next child, or we push it onto the stack */
+	      if (likely(any(lhit)))
+	      {
+		assert(sptr_node < stackEnd);
+		const ssef childDist = select(lhit,lnearP,inf);
+		const NodeRef child = node->children[i];
+		assert(child != BVH4::emptyNode);
+		sptr_node++;
+		sptr_near++;
+		
+		/* push cur node onto stack and continue with hit child */
+		if (any(childDist < curDist))
+		{
+		  *(sptr_node-1) = curNode;
+		  *(sptr_near-1) = curDist; 
+		  curDist = childDist;
+		  curNode = child;
+		}
+		
+		/* push hit child onto stack */
+		else {
+		  *(sptr_node-1) = child;
+		  *(sptr_near-1) = childDist; 
+		}
+	      }	      
+	    }
+	  }
+	  /* process motion blur nodes */
+          else if (likely((types & 0x10) && curNode.isNodeMB()))
+	  {
+	    const sseb valid_node = ray_tfar > curDist;
+	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+	    const BVH4::NodeMB* __restrict__ const node = curNode.nodeMB();
+          
+	    /* pop of next node */
+	    assert(sptr_node > stack_node);
+	    sptr_node--;
+	    sptr_near--;
+	    curNode = *sptr_node; 
+	    curDist = *sptr_near;
+	    
+#pragma unroll(4)
+	    for (unsigned i=0; i<BVH4::N; i++)
+	    {
+	      const NodeRef child = node->child(i);
+	      if (unlikely(child == BVH4::emptyNode)) break;
+
+	      ssef lnearP;
+	      const sseb lhit = intersectBox(ray,ray_tfar,rdir,node,i,lnearP);
+	      
+	      /* if we hit the child we choose to continue with that child if it 
+		 is closer than the current next child, or we push it onto the stack */
+	      if (likely(any(lhit)))
+	      {
+		assert(sptr_node < stackEnd);
+		assert(child != BVH4::emptyNode);
+		const ssef childDist = select(lhit,lnearP,inf);
+		sptr_node++;
+		sptr_near++;
+		
+		/* push cur node onto stack and continue with hit child */
+		if (any(childDist < curDist))
+		{
+		  *(sptr_node-1) = curNode;
+		  *(sptr_near-1) = curDist; 
+		  curDist = childDist;
+		  curNode = child;
+		}
+		
+		/* push hit child onto stack */
+		else {
+		  *(sptr_node-1) = child;
+		  *(sptr_near-1) = childDist; 
+		}
+	      }	      
+	    }
+	  }
+	  else 
+	    break;
         }
         
         /* return if stack is empty */
@@ -302,18 +441,19 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR4(BVH4Bezier1Intersector4Chunk, BVH4Intersector4Chunk<Bezier1Intersector4>);
-    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Chunk, BVH4Intersector4Chunk<Bezier1iIntersector4>);
-    DEFINE_INTERSECTOR4(BVH4Triangle1Intersector4ChunkMoeller, BVH4Intersector4Chunk<Triangle1Intersector4MoellerTrumbore>);
-    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoeller, BVH4Intersector4Chunk<Triangle4Intersector4MoellerTrumbore<true> >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<Triangle4Intersector4MoellerTrumbore<false> >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1Intersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA Bezier1Intersector4>);
+    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA Bezier1iIntersector4>);
+    DEFINE_INTERSECTOR4(BVH4Triangle1Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA Triangle1Intersector4MoellerTrumbore>);
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA Triangle4Intersector4MoellerTrumbore<true> >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA Triangle4Intersector4MoellerTrumbore<false> >);
 #if defined (__AVX__)
-    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoeller, BVH4Intersector4Chunk<Triangle8Intersector4MoellerTrumbore<true> >);
-    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<Triangle8Intersector4MoellerTrumbore<false> >);
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA Triangle8Intersector4MoellerTrumbore<true> >);
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA Triangle8Intersector4MoellerTrumbore<false> >);
 #endif
-    DEFINE_INTERSECTOR4(BVH4Triangle1vIntersector4ChunkPluecker, BVH4Intersector4Chunk<Triangle1vIntersector4Pluecker>);
-    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<Triangle4vIntersector4Pluecker>);
-    DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<Triangle4iIntersector4Pluecker>);
-    DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4Intersector4Chunk<VirtualAccelIntersector4>);
+    DEFINE_INTERSECTOR4(BVH4Triangle1vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA Triangle1vIntersector4Pluecker>);
+    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA Triangle4vIntersector4Pluecker>);
+    DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA Triangle4iIntersector4Pluecker>);
+    DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA VirtualAccelIntersector4>);
+    DEFINE_INTERSECTOR4(BVH4Triangle1vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x10 COMMA Triangle1vIntersector4MoellerTrumboreMB>);
   }
 }

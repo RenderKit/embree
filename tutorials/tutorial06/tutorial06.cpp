@@ -166,14 +166,12 @@ namespace embree
   {
     resize(g_width,g_height);
     AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
-    double t0 = getSeconds();
     render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
-    double dt = getSeconds()-t0;
-    std::cout << "threads = " << g_numThreads << ", render: " << 1.0f/dt << " fps, " << dt*1000.0f << " ms" << std::endl;
     void* ptr = map();
     Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
     storeImage(image, fileName);
     unmap();
+    cleanup();
   }
 
   /* main function in embree namespace */
