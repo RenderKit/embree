@@ -33,7 +33,43 @@ namespace embree
 { 
   namespace isa
   {
-    __forceinline size_t intersectBox(const BVH4::UnalignedNode* node, Ray& ray, 
+    __forceinline size_t intersectBox(const BVH4::Node* node, size_t nearX, size_t nearY, size_t nearZ,
+				      const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const ssef& tnear, const ssef& tfar, 
+				      ssef& dist)
+    {
+      const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
+#if defined (__AVX2__)
+      const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
+      const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);
+      const ssef tNearZ = msub(load4f((const char*)node+nearZ), rdir.z, org_rdir.z);
+      const ssef tFarX  = msub(load4f((const char*)node+farX ), rdir.x, org_rdir.x);
+      const ssef tFarY  = msub(load4f((const char*)node+farY ), rdir.y, org_rdir.y);
+      const ssef tFarZ  = msub(load4f((const char*)node+farZ ), rdir.z, org_rdir.z);
+#else
+      const ssef tNearX = (load4f((const char*)node+nearX) - org.x) * rdir.x;
+      const ssef tNearY = (load4f((const char*)node+nearY) - org.y) * rdir.y;
+      const ssef tNearZ = (load4f((const char*)node+nearZ) - org.z) * rdir.z;
+      const ssef tFarX  = (load4f((const char*)node+farX ) - org.x) * rdir.x;
+      const ssef tFarY  = (load4f((const char*)node+farY ) - org.y) * rdir.y;
+      const ssef tFarZ  = (load4f((const char*)node+farZ ) - org.z) * rdir.z;
+#endif
+      
+#if defined(__SSE4_1__)
+      const ssef tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
+      const ssef tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const sseb vmask = cast(tNear) > cast(tFar);
+      const size_t mask = movemask(vmask)^0xf;
+#else
+      const ssef tNear = max(tNearX,tNearY,tNearZ,tnear);
+      const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+      const sseb vmask = tNear <= tFar;
+      const size_t mask = movemask(vmask);
+#endif
+      dist = tNear;
+      return mask;
+    }
+      
+      __forceinline size_t intersectBox(const BVH4::UnalignedNode* node, Ray& ray, 
 				      const sse3f& ray_org, const sse3f& ray_dir, 
 				      ssef& tNear, ssef& tFar)
     {
@@ -184,35 +220,8 @@ namespace embree
           
 	    /*! single ray intersection with 4 boxes */
 	    node = cur.node();
-	    const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
-#if defined (__AVX2__)
-	    const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
-	    const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);
-	    const ssef tNearZ = msub(load4f((const char*)node+nearZ), rdir.z, org_rdir.z);
-	    const ssef tFarX  = msub(load4f((const char*)node+farX ), rdir.x, org_rdir.x);
-	    const ssef tFarY  = msub(load4f((const char*)node+farY ), rdir.y, org_rdir.y);
-	    const ssef tFarZ  = msub(load4f((const char*)node+farZ ), rdir.z, org_rdir.z);
-#else
-	    const ssef tNearX = (norg.x + load4f((const char*)node+nearX)) * rdir.x;
-	    const ssef tNearY = (norg.y + load4f((const char*)node+nearY)) * rdir.y;
-	    const ssef tNearZ = (norg.z + load4f((const char*)node+nearZ)) * rdir.z;
-	    const ssef tFarX  = (norg.x + load4f((const char*)node+farX )) * rdir.x;
-	    const ssef tFarY  = (norg.y + load4f((const char*)node+farY )) * rdir.y;
-	    const ssef tFarZ  = (norg.z + load4f((const char*)node+farZ )) * rdir.z;
-#endif
-	    
-#if defined(__SSE4_1__)
-	    tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_near));
-	    tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_far ));
-	    const sseb vmask = cast(tNear) > cast(tFar);
-	    mask = movemask(vmask)^0xf;
-#else
-	    tNear = max(tNearX,tNearY,tNearZ,ray_near);
-	    tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
-	    const sseb vmask = tNear <= tFar;
-	    mask = movemask(vmask);
-#endif
-	  } 
+	    mask = intersectBox(node,nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+	  }
 
 	  /* process motion blur nodes */
 	  else if (likely(cur.isNodeMB(types)))
