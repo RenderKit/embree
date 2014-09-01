@@ -33,99 +33,6 @@ namespace embree
 { 
   namespace isa
   {
-    __forceinline size_t intersectBox(const BVH4::UnalignedNode* node, Ray& ray, 
-				      const sse3f& ray_org, const sse3f& ray_dir, 
-				      ssef& tNear, ssef& tFar)
-    {
-      const AffineSpaceSSE3f xfm = node->naabb;
-      const sse3f dir = xfmVector(xfm,ray_dir);
-      //const sse3f nrdir = sse3f(ssef(-1.0f))/dir;
-      const sse3f nrdir = sse3f(ssef(-1.0f))*rcp_safe(dir);
-      const sse3f org = xfmPoint(xfm,ray_org);
-      const sse3f tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
-      const sse3f tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
-      
-#if defined(__SSE4_1__)
-      const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
-      const ssef tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
-      const ssef tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
-      const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
-      const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
-      const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
-      tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
-      tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
-      const sseb vmask = tNear <= tFar;
-      return movemask(vmask);
-#else
-      const ssef tNearX = min(tLowerXYZ.x,tUpperXYZ.x);
-      const ssef tNearY = min(tLowerXYZ.y,tUpperXYZ.y);
-      const ssef tNearZ = min(tLowerXYZ.z,tUpperXYZ.z);
-      const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
-      const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
-      const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
-      tNear = max(tNearX,tNearY,tNearZ,tNear);
-      tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
-      const sseb vmask = tNear <= tFar;
-      return movemask(vmask);
-#endif
-    }
-
-    __forceinline size_t intersectBox(const BVH4::UnalignedNodeMB* node, Ray& ray,
-				      const sse3f& ray_org, const sse3f& ray_dir, 
-				      ssef& tNear, ssef& tFar)
-    {
-      const ssef t0 = ssef(1.0f)-ray.time, t1 = ray.time;
-#if 0
-      const AffineSpaceSSE3f xfm = t0*node->space0 + t1*node->space1;
-      //const AffineSpaceSSE3f xfm = frame(normalize(ssef(0.5f)*node->space0.row2() + ssef(0.5f)*node->space1.row2())).transposed();
-      //const LinearSpaceSSE3f xfm = frame(normalize(t0*node->space0.l.row2() + t1*node->space1.l.row2())).transposed();
-      //const sse3f p = t0*node->space0.p + t1*node->space1.p;
-      //const sse3f lower = t0*t0*node->t0s0.lower + t0*t1*node->t1s0_t0s1.lower + t1*t1*node->t1s1.lower;
-      //const sse3f upper = t0*t0*node->t0s0.upper + t0*t1*node->t1s0_t0s1.upper + t1*t1*node->t1s1.upper;
-      const sse3f lower = node->t1s0_t0s1.lower;
-      const sse3f upper = node->t1s0_t0s1.upper;
-#else
-      //const AffineSpaceSSE3f xfm = t0*node->space0 + t1*node->space1;
-      //const LinearSpaceSSE3f xfm = t0*node->space0.l + t1*node->space1.l;
-      //const LinearSpaceSSE3f xfm = frame(normalize(t0*node->space0.l.row2() + t1*node->space1.l.row2())).transposed();
-      //const sse3f p = t0*node->space0.p + t1*node->space1.p;
-      const LinearSpaceSSE3f xfm = node->space0.l;
-      const sse3f lower = t0*node->t0s0.lower + t1*node->t1s1.lower;
-      const sse3f upper = t0*node->t0s0.upper + t1*node->t1s1.upper;
-#endif
-      const BBoxSSE3f bounds(lower,upper);
-
-      const sse3f dir = xfmVector(xfm,ray_dir);
-      const sse3f rdir = rcp_safe(dir); 
-      const sse3f org = xfmPoint(xfm,ray_org);
-      const sse3f tLowerXYZ = (bounds.lower - org) * rdir;
-      const sse3f tUpperXYZ = (bounds.upper - org) * rdir;
-
-#if defined(__SSE4_1__)
-      const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
-      const ssef tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
-      const ssef tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
-      const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
-      const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
-      const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
-      tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
-      tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
-      const sseb vmask = tNear <= tFar;
-      return movemask(vmask);
-#else
-      const ssef tNearX = min(tLowerXYZ.x,tUpperXYZ.x);
-      const ssef tNearY = min(tLowerXYZ.y,tUpperXYZ.y);
-      const ssef tNearZ = min(tLowerXYZ.z,tUpperXYZ.z);
-      const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
-      const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
-      const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
-      tNear = max(tNearX,tNearY,tNearZ,tNear);
-      tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
-      const sseb vmask = tNear <= tFar;
-      return movemask(vmask);
-#endif
-    }
-
     template<int types, typename PrimitiveIntersector>
     void BVH4Intersector1<types,PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
     {
@@ -133,19 +40,18 @@ namespace embree
       Precalculations pre(ray);
 
       /*! stack state */
-      StackItemInt32<NodeRef> stack[stackSize];  //!< stack of nodes 
+      StackItemInt32<NodeRef> stack[stackSize];            //!< stack of nodes 
       StackItemInt32<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
       StackItemInt32<NodeRef>* stackEnd = stack+stackSize;
-      stack[0].ptr = bvh->root;
+      stack[0].ptr  = bvh->root;
       stack[0].dist = neg_inf;
             
       /*! load the ray into SIMD registers */
+      const Vec3fa ray_rdir = rcp_safe(ray.dir);
+      const Vec3fa ray_org_rdir = ray.org*ray_rdir;
       const sse3f org(ray.org.x,ray.org.y,ray.org.z);
       const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
-      const sse3f norg(-ray.org.x,-ray.org.y,-ray.org.z);
-      const Vec3fa ray_rdir = rcp_safe(ray.dir);
       const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-      const Vec3fa ray_org_rdir = ray.org*ray_rdir;
       const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
       const ssef  ray_near(ray.tnear);
       ssef ray_far(ray.tfar);
@@ -171,95 +77,36 @@ namespace embree
         while (true)
         {
 	  size_t mask; 
-	  const Node* node;
-	  ssef tNear, tFar;
+	  ssef tNear;
 
 	  /*! stop if we found a leaf node */
 	  if (unlikely(cur.isLeaf(types))) break;
-	  
+	  STAT3(normal.trav_nodes,1,1,1);
+
 	  /* process standard nodes */
           if (likely(cur.isNode(types)))
-	  {
-	    STAT3(normal.trav_nodes,1,1,1);
-          
-	    /*! single ray intersection with 4 boxes */
-	    node = cur.node();
-	    const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
-#if defined (__AVX2__)
-	    const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
-	    const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);
-	    const ssef tNearZ = msub(load4f((const char*)node+nearZ), rdir.z, org_rdir.z);
-	    const ssef tFarX  = msub(load4f((const char*)node+farX ), rdir.x, org_rdir.x);
-	    const ssef tFarY  = msub(load4f((const char*)node+farY ), rdir.y, org_rdir.y);
-	    const ssef tFarZ  = msub(load4f((const char*)node+farZ ), rdir.z, org_rdir.z);
-#else
-	    const ssef tNearX = (norg.x + load4f((const char*)node+nearX)) * rdir.x;
-	    const ssef tNearY = (norg.y + load4f((const char*)node+nearY)) * rdir.y;
-	    const ssef tNearZ = (norg.z + load4f((const char*)node+nearZ)) * rdir.z;
-	    const ssef tFarX  = (norg.x + load4f((const char*)node+farX )) * rdir.x;
-	    const ssef tFarY  = (norg.y + load4f((const char*)node+farY )) * rdir.y;
-	    const ssef tFarZ  = (norg.z + load4f((const char*)node+farZ )) * rdir.z;
-#endif
-	    
-#if defined(__SSE4_1__)
-	    tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_near));
-	    tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_far ));
-	    const sseb vmask = cast(tNear) > cast(tFar);
-	    mask = movemask(vmask)^0xf;
-#else
-	    tNear = max(tNearX,tNearY,tNearZ,ray_near);
-	    tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
-	    const sseb vmask = tNear <= tFar;
-	    mask = movemask(vmask);
-#endif
-	  } 
+	    mask = cur.node()->intersect(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
 
 	  /* process motion blur nodes */
 	  else if (likely(cur.isNodeMB(types)))
-	  {
-	    STAT3(normal.trav_nodes,1,1,1);
-
-	    /*! single ray intersection with 4 boxes */
-	    const BVH4::NodeMB* nodeMB = cur.nodeMB(); node = (const BVH4::Node*) &nodeMB->lower_dx; // FIXME: HACK
-	    const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
-	    const ssef* pNearX = (const ssef*)((const char*)nodeMB+nearX);
-	    const ssef* pNearY = (const ssef*)((const char*)nodeMB+nearY);
-	    const ssef* pNearZ = (const ssef*)((const char*)nodeMB+nearZ);
-	    const ssef tNearX = (norg.x + ssef(pNearX[0]) + ray.time*pNearX[6]) * rdir.x;
-	    const ssef tNearY = (norg.y + ssef(pNearY[0]) + ray.time*pNearY[6]) * rdir.y;
-	    const ssef tNearZ = (norg.z + ssef(pNearZ[0]) + ray.time*pNearZ[6]) * rdir.z;
-	    tNear = max(tNearX,tNearY,tNearZ,ray_near);
-	    const ssef* pFarX = (const ssef*)((const char*)nodeMB+farX);
-	    const ssef* pFarY = (const ssef*)((const char*)nodeMB+farY);
-	    const ssef* pFarZ = (const ssef*)((const char*)nodeMB+farZ);
-	    const ssef tFarX = (norg.x + ssef(pFarX[0]) + ray.time*pFarX[6]) * rdir.x;
-	    const ssef tFarY = (norg.y + ssef(pFarY[0]) + ray.time*pFarY[6]) * rdir.y;
-	    const ssef tFarZ = (norg.z + ssef(pFarZ[0]) + ray.time*pFarZ[6]) * rdir.z;
-	    tFar = min(tFarX,tFarY,tFarZ,ray_far);
-	    mask = movemask(tNear <= tFar);
-	  }
+	    mask = cur.nodeMB()->intersect(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time,tNear); 
 
 	  /*! process nodes with unaligned bounds */
-          else if (unlikely(cur.isUnalignedNode(types))) {
-	    const BVH4::UnalignedNode* nodeU = cur.unalignedNode(); node = (const BVH4::Node*) &nodeU->naabb.l.vz.x; // FIXME: HACK
-	    tNear = ray.tnear; tFar = ray.tfar;
-            mask = intersectBox(nodeU,ray,org,dir,tNear,tFar);
-	  }
+          else if (unlikely(cur.isUnalignedNode(types)))
+            mask = cur.unalignedNode()->intersect(org,dir,ray_near,ray_far,tNear);
 
           /*! process nodes with unaligned bounds and motion blur */
-          else if (unlikely(cur.isUnalignedNodeMB(types))) {
-	    const BVH4::UnalignedNodeMB* nodeMB = cur.unalignedNodeMB(); node = (const BVH4::Node*) &nodeMB->t1s1; // FIXME: HACK
-	    tNear = ray.tnear; tFar = ray.tfar;
-            mask = intersectBox(nodeMB,ray,org,dir,tNear,tFar);
-	  }
+          else if (unlikely(cur.isUnalignedNodeMB(types)))
+            mask = cur.unalignedNodeMB()->intersect(org,dir,ray_near,ray_far,ray.time,tNear);
 
           /*! if no child is hit, pop next node */
+	  const BVH4::BaseNode* node = cur.baseNode(types);
           if (unlikely(mask == 0))
             goto pop;
           
           /*! one child is hit, continue with that child */
-          size_t r = __bscf(mask);
-          if (likely(mask == 0)) {
+	  size_t r = __bscf(mask);
+	  if (likely(mask == 0)) {
             cur = node->child(r); cur.prefetch(types);
             assert(cur != BVH4::emptyNode);
             continue;
@@ -326,12 +173,11 @@ namespace embree
       stack[0] = bvh->root;
       
       /*! load the ray into SIMD registers */
+      const Vec3fa ray_rdir = rcp_safe(ray.dir);
+      const Vec3fa ray_org_rdir = ray.org*ray_rdir;
       const sse3f org(ray.org.x,ray.org.y,ray.org.z);
       const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
-      const sse3f norg(-ray.org.x,-ray.org.y,-ray.org.z);
-      const Vec3fa ray_rdir = rcp_safe(ray.dir);
       const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-      const Vec3fa ray_org_rdir = ray.org*ray_rdir;
       const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
       const ssef  ray_near(ray.tnear);
       ssef ray_far(ray.tfar);
@@ -353,93 +199,34 @@ namespace embree
         while (true)
         {
 	  size_t mask; 
-	  const Node* node;
-	  ssef tNear, tFar;
+	  ssef tNear;
 
 	  /*! stop if we found a leaf node */
 	  if (unlikely(cur.isLeaf(types))) break;
-	  
+	  STAT3(shadow.trav_nodes,1,1,1);
+
 	  /* process standard nodes */
           if (likely(cur.isNode(types)))
-	  {
-	    STAT3(normal.trav_nodes,1,1,1);
-          
-	    /*! single ray intersection with 4 boxes */
-	    node = cur.node();
-	    const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
-#if defined (__AVX2__)
-	    const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
-	    const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);
-	    const ssef tNearZ = msub(load4f((const char*)node+nearZ), rdir.z, org_rdir.z);
-	    const ssef tFarX  = msub(load4f((const char*)node+farX ), rdir.x, org_rdir.x);
-	    const ssef tFarY  = msub(load4f((const char*)node+farY ), rdir.y, org_rdir.y);
-	    const ssef tFarZ  = msub(load4f((const char*)node+farZ ), rdir.z, org_rdir.z);
-#else
-	    const ssef tNearX = (norg.x + load4f((const char*)node+nearX)) * rdir.x;
-	    const ssef tNearY = (norg.y + load4f((const char*)node+nearY)) * rdir.y;
-	    const ssef tNearZ = (norg.z + load4f((const char*)node+nearZ)) * rdir.z;
-	    const ssef tFarX  = (norg.x + load4f((const char*)node+farX )) * rdir.x;
-	    const ssef tFarY  = (norg.y + load4f((const char*)node+farY )) * rdir.y;
-	    const ssef tFarZ  = (norg.z + load4f((const char*)node+farZ )) * rdir.z;
-#endif
-	    
-#if defined(__SSE4_1__)
-	    tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_near));
-	    tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_far ));
-	    const sseb vmask = cast(tNear) > cast(tFar);
-	    mask = movemask(vmask)^0xf;
-#else
-	    tNear = max(tNearX,tNearY,tNearZ,ray_near);
-	    tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
-	    const sseb vmask = tNear <= tFar;
-	    mask = movemask(vmask);
-#endif
-	  } 
+	    mask = cur.node()->intersect(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
 
 	  /* process motion blur nodes */
 	  else if (likely(cur.isNodeMB(types)))
-	  {
-	    STAT3(normal.trav_nodes,1,1,1);
-
-	    /*! single ray intersection with 4 boxes */
-	    const BVH4::NodeMB* nodeMB = cur.nodeMB(); node = (const BVH4::Node*) &nodeMB->lower_dx; // FIXME: HACK
-	    const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
-	    const ssef* pNearX = (const ssef*)((const char*)nodeMB+nearX);
-	    const ssef* pNearY = (const ssef*)((const char*)nodeMB+nearY);
-	    const ssef* pNearZ = (const ssef*)((const char*)nodeMB+nearZ);
-	    const ssef tNearX = (norg.x + ssef(pNearX[0]) + ray.time*pNearX[6]) * rdir.x;
-	    const ssef tNearY = (norg.y + ssef(pNearY[0]) + ray.time*pNearY[6]) * rdir.y;
-	    const ssef tNearZ = (norg.z + ssef(pNearZ[0]) + ray.time*pNearZ[6]) * rdir.z;
-	    tNear = max(tNearX,tNearY,tNearZ,ray_near);
-	    const ssef* pFarX = (const ssef*)((const char*)nodeMB+farX);
-	    const ssef* pFarY = (const ssef*)((const char*)nodeMB+farY);
-	    const ssef* pFarZ = (const ssef*)((const char*)nodeMB+farZ);
-	    const ssef tFarX = (norg.x + ssef(pFarX[0]) + ray.time*pFarX[6]) * rdir.x;
-	    const ssef tFarY = (norg.y + ssef(pFarY[0]) + ray.time*pFarY[6]) * rdir.y;
-	    const ssef tFarZ = (norg.z + ssef(pFarZ[0]) + ray.time*pFarZ[6]) * rdir.z;
-	    tFar = min(tFarX,tFarY,tFarZ,ray_far);
-	    mask = movemask(tNear <= tFar);
-	  }
+	    mask = cur.nodeMB()->intersect(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time,tNear); 
 
 	  /*! process nodes with unaligned bounds */
-          else if (unlikely(cur.isUnalignedNode(types))) {
-	    const BVH4::UnalignedNode* nodeU = cur.unalignedNode(); node = (const BVH4::Node*) &nodeU->naabb.l.vz.x; // FIXME: HACK
-	    tNear = ray.tnear; tFar = ray.tfar;
-            mask = intersectBox(nodeU,ray,org,dir,tNear,tFar);
-	  }
+          else if (unlikely(cur.isUnalignedNode(types)))
+            mask = cur.unalignedNode()->intersect(org,dir,ray_near,ray_far,tNear);
 
           /*! process nodes with unaligned bounds and motion blur */
-          else if (unlikely(cur.isUnalignedNodeMB(types))) {
-	    const BVH4::UnalignedNodeMB* nodeMB = cur.unalignedNodeMB(); node = (const BVH4::Node*) &nodeMB->t1s1; // FIXME: HACK
-	    tNear = ray.tnear; tFar = ray.tfar;
-            mask = intersectBox(nodeMB,ray,org,dir,tNear,tFar);
-	  }
-
+          else if (unlikely(cur.isUnalignedNodeMB(types)))
+            mask = cur.unalignedNodeMB()->intersect(org,dir,ray_near,ray_far,ray.time,tNear);
+	  
           /*! if no child is hit, pop next node */
+	  const BVH4::BaseNode* node = cur.baseNode(types);
           if (unlikely(mask == 0))
             goto pop;
-          
-          /*! one child is hit, continue with that child */
+	  
+	  /*! one child is hit, continue with that child */
           size_t r = __bscf(mask);
           if (likely(mask == 0)) {
             cur = node->child(r); cur.prefetch(types); 

@@ -31,38 +31,6 @@ namespace embree
 {
   namespace isa
   {
-    /* ray/box intersection */
-    __forceinline avxb intersectBox(const Ray8& ray, const avxf& ray_tfar, const avx3f& rdir, const BVH4::NodeMB* node, const int i, avxf& dist) 
-    {
-      const avxf lower_x = avxf(node->lower_x[i]) + ray.time * avxf(node->lower_dx[i]);
-      const avxf lower_y = avxf(node->lower_y[i]) + ray.time * avxf(node->lower_dy[i]);
-      const avxf lower_z = avxf(node->lower_z[i]) + ray.time * avxf(node->lower_dz[i]);
-      const avxf upper_x = avxf(node->upper_x[i]) + ray.time * avxf(node->upper_dx[i]);
-      const avxf upper_y = avxf(node->upper_y[i]) + ray.time * avxf(node->upper_dy[i]);
-      const avxf upper_z = avxf(node->upper_z[i]) + ray.time * avxf(node->upper_dz[i]);
-      
-      const avxf dminx = (lower_x - ray.org.x) * rdir.x;
-      const avxf dminy = (lower_y - ray.org.y) * rdir.y;
-      const avxf dminz = (lower_z - ray.org.z) * rdir.z;
-      const avxf dmaxx = (upper_x - ray.org.x) * rdir.x;
-      const avxf dmaxy = (upper_y - ray.org.y) * rdir.y;
-      const avxf dmaxz = (upper_z - ray.org.z) * rdir.z;
-      
-      const avxf dlowerx = min(dminx,dmaxx);
-      const avxf dlowery = min(dminy,dmaxy);
-      const avxf dlowerz = min(dminz,dmaxz);
-      
-      const avxf dupperx = max(dminx,dmaxx);
-      const avxf duppery = max(dminy,dmaxy);
-      const avxf dupperz = max(dminz,dmaxz);
-      
-      const avxf near = max(dlowerx,dlowery,dlowerz,ray.tnear);
-      const avxf far  = min(dupperx,duppery,dupperz,ray_tfar );
-      dist = near;
-      
-      return near <= far;
-    }
-
     template<int types, typename PrimitiveIntersector8>
     void BVH4Intersector8Chunk<types, PrimitiveIntersector8>::intersect(avxb* valid_i, BVH4* bvh, Ray8& ray)
     {
@@ -124,28 +92,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      
-#if defined(__AVX2__)
-	      const avxf lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
-	      const avxf lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
-	      const avxf lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
-	      const avxf lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
-	      const avxf lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
-	      const avxf lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
-	      const avxf lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-	      const avxf lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-	      const avxb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
-#else
-	      const avxf lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
-	      const avxf lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
-	      const avxf lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
-	      const avxf lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
-	      const avxf lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
-	      const avxf lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
-	      const avxf lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-	      const avxf lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-	      const avxb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
-#endif
+	      avxf lnearP; const avxb lhit = node->intersect(i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -194,10 +141,8 @@ namespace embree
 	    {
 	      const NodeRef child = node->child(i);
 	      if (unlikely(child == BVH4::emptyNode)) break;
-
-	      avxf lnearP;
-	      const avxb lhit = intersectBox(ray,ray_tfar,rdir,node,i,lnearP);
-	      
+	      avxf lnearP; const avxb lhit = node->intersect(i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
+	      	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
 	      if (likely(any(lhit)))
@@ -307,28 +252,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      
-#if defined(__AVX2__)
-	      const avxf lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
-	      const avxf lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
-	      const avxf lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
-	      const avxf lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
-	      const avxf lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
-	      const avxf lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
-	      const avxf lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-	      const avxf lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-	      const avxb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
-#else
-	      const avxf lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
-	      const avxf lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
-	      const avxf lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
-	      const avxf lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
-	      const avxf lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
-	      const avxf lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
-	      const avxf lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-	      const avxf lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-	      const avxb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
-#endif
+	      avxf lnearP; const avxb lhit = node->intersect(i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -377,10 +301,8 @@ namespace embree
 	    {
 	      const NodeRef child = node->child(i);
 	      if (unlikely(child == BVH4::emptyNode)) break;
-
-	      avxf lnearP;
-	      const avxb lhit = intersectBox(ray,ray_tfar,rdir,node,i,lnearP);
-	      
+	      avxf lnearP; const avxb lhit = node->intersect(i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
+	      	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
 	      if (likely(any(lhit)))
