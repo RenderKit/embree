@@ -48,6 +48,26 @@ namespace embree
     RayStreamLogger();
     ~RayStreamLogger();
 
+    struct __aligned(64) LogRay1  {
+      RTCRay ray;
+
+      LogRay1() {
+	memset(this,0,sizeof(LogRay1));
+      }
+
+      __forceinline void prefetchL2()
+      {
+#if defined(__MIC__)
+	prefetch<PFHINT_L2>(&type);
+	const size_t cl = sizeof(RTCRay1) / 64;
+	const char *__restrict__ ptr = (char*)&ray;
+#pragma unroll(cl)
+	for (size_t i=0;i<cl;i++,ptr+=64)
+	  prefetch<PFHINT_L2>(ptr);
+#endif
+      }
+    };
+
     struct __aligned(64) LogRay16  {
       unsigned int type;
       unsigned int m_valid;
@@ -100,6 +120,10 @@ namespace embree
 
   void logRay16Intersect(const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
   void logRay16Occluded (const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
+
+  void logRay1Intersect(void* scene, RTCRay& start, RTCRay& end);
+  void logRay1Occluded (void* scene, RTCRay& start, RTCRay& end);
+
   void dumpGeometry(void* scene);
 
   __forceinline void deactivate() { active = false; };

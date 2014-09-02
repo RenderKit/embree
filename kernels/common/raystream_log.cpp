@@ -217,6 +217,55 @@ namespace embree
 #endif
   }
 
+ void RayStreamLogger::logRay1Intersect(void* scene, RTCRay& start, RTCRay& end)
+  {
+    if (!active) return;
+
+    pthread_mutex_lock(&mutex);
+
+    if (!initialized)
+      {
+	openRayDataStream();
+	initialized = true;
+      }
+
+    LogRay1 logRay1;
+
+    logRay1.ray   = start;
+    rayData.write((char*)&logRay1 ,sizeof(logRay1));
+    rayData << flush;
+
+    logRay1.ray   = end;
+    rayDataVerify.write((char*)&logRay1 ,sizeof(logRay1));
+    rayDataVerify << flush;
+
+    pthread_mutex_unlock(&mutex);
+  }
+
+  void RayStreamLogger::logRay1Occluded(void* scene, RTCRay& start, RTCRay& end)
+  {
+    if (!active) return;
+
+    pthread_mutex_lock(&mutex);
+    if (!initialized)
+      {
+	openRayDataStream();
+	initialized = true;
+      }
+
+    LogRay1 logRay1;
+
+    logRay1.ray   = start;
+    rayData.write((char*)&logRay1 ,sizeof(logRay1));
+    rayData << flush;
+
+    logRay1.ray     = end;
+    rayDataVerify.write((char*)&logRay1 ,sizeof(logRay1));
+    rayDataVerify << flush;
+
+    pthread_mutex_unlock(&mutex);
+  }
+
   RayStreamLogger RayStreamLogger::rayStreamLogger;
 
 };
