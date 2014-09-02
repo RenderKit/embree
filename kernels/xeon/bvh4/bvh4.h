@@ -791,29 +791,40 @@ namespace embree
 				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist)
       {
 	const ssef t0 = ssef(1.0f)-time, t1 = time;
-#if 0
-	const AffineSpaceSSE3f xfm = t0*space0 + t1*space1;
-	//const AffineSpaceSSE3f xfm = frame(normalize(ssef(0.5f)*space0.row2() + ssef(0.5f)*space1.row2())).transposed();
-	//const LinearSpaceSSE3f xfm = frame(normalize(t0*space0.l.row2() + t1*space1.l.row2())).transposed();
-	//const sse3f p = t0*space0.p + t1*space1.p;
-	//const sse3f lower = t0*t0*t0s0.lower + t0*t1*t1s0_t0s1.lower + t1*t1*t1s1.lower;
-	//const sse3f upper = t0*t0*t0s0.upper + t0*t1*t1s0_t0s1.upper + t1*t1*t1s1.upper;
-	const sse3f lower = t1s0_t0s1.lower;
-	const sse3f upper = t1s0_t0s1.upper;
-#else
-	//const AffineSpaceSSE3f xfm = t0*space0 + t1*space1;
-	//const LinearSpaceSSE3f xfm = t0*space0.l + t1*space1.l;
-	//const LinearSpaceSSE3f xfm = frame(normalize(t0*space0.l.row2() + t1*space1.l.row2())).transposed();
-	//const sse3f p = t0*space0.p + t1*space1.p;
-	const LinearSpaceSSE3f xfm = space0.l;
+#if BVH4HAIR_MB_VERSION == 0
+	const AffineSpaceSSE3f xfm = space0;
 	const sse3f lower = t0*t0s0.lower + t1*t1s1.lower;
 	const sse3f upper = t0*t0s0.upper + t1*t1s1.upper;
-#endif
-	const BBoxSSE3f bounds(lower,upper);
 	
+	const BBoxSSE3f bounds(lower,upper);
 	const sse3f dir = xfmVector(xfm,ray_dir);
 	const sse3f rdir = rcp_safe(dir); 
 	const sse3f org = xfmPoint(xfm,ray_org);
+#endif
+
+#if BVH4HAIR_MB_VERSION == 1
+	const AffineSpaceSSE3f xfm = t0*space0 + t1*space1;
+	const sse3f lower = t0*t0*t0s0.lower + t0*t1*t1s0_t0s1.lower + t1*t1*t1s1.lower;
+	const sse3f upper = t0*t0*t0s0.upper + t0*t1*t1s0_t0s1.upper + t1*t1*t1s1.upper;
+
+	const BBoxSSE3f bounds(lower,upper);
+	const sse3f dir = xfmVector(xfm,ray_dir);
+	const sse3f rdir = rcp_safe(dir); 
+	const sse3f org = xfmPoint(xfm,ray_org);
+#endif	
+
+#if BVH4HAIR_MB_VERSION == 2
+
+	const AffineSpaceSSE3f xfm(frame(normalize(t0*space0.l.row2() + t1*space1.l.row2())).transposed(), t0*space0.p+t1*space1.p);
+	const sse3f lower = t0*t0s0.lower + t1*t1s1.lower;
+	const sse3f upper = t0*t0s0.upper + t1*t1s1.upper;
+
+	const BBoxSSE3f bounds(lower,upper);
+	const sse3f dir = xfmVector(xfm,ray_dir);
+	const sse3f rdir = rcp_safe(dir); 
+	const sse3f org = xfmPoint(xfm.l,ray_org-xfm.p);
+#endif
+	
 	const sse3f tLowerXYZ = (bounds.lower - org) * rdir;
 	const sse3f tUpperXYZ = (bounds.upper - org) * rdir;
 	
@@ -824,8 +835,8 @@ namespace embree
 	const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
 	const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
 	const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
-	const ssef tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
-	const ssef tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
+	const ssef tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
+	const ssef tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar));
 	dist = tNear;
 	const sseb vmask = tNear <= tFar;
 	return movemask(vmask);
@@ -836,12 +847,54 @@ namespace embree
 	const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
 	const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
 	const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
-	const ssef tNear = max(tNearX,tNearY,tNearZ,tNear);
-	const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
-	dist = tFar;
+	const ssef tNear = max(tNearX,tNearY,tNearZ,tnear);
+	const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+	dist = tNear;
 	const sseb vmask = tNear <= tFar;
 	return movemask(vmask);
 #endif
+      }
+
+      struct Precalculations 
+      {
+	__forceinline Precalculations (const Ray& ray)
+	  : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
+	
+	float depth_scale;
+	LinearSpace3fa ray_space;
+      };
+
+       /*! intersect 4 OBBs with single ray */
+      __forceinline size_t intersectCone(Precalculations& pre, 
+					  const sse3f& ray_org, const sse3f& ray_dir, 
+					  const ssef& tnear, const ssef& tfar, const float time, ssef& dist)
+      {
+	const ssef t0 = ssef(1.0f)-time, t1 = time;
+	
+	const sse3f v0t0 = space0.l.vx, v1t0 = space0.l.vy;
+	const sse3f v0t1 = space1.l.vx, v1t1 = space1.l.vy;
+	const ssef  rt0 = space0.l.vz.x;
+	const ssef  rt1 = space1.l.vz.x;
+	const sse3f v0 = t0*v0t0 + t1*v0t1;
+	const sse3f v1 = t0*v1t0 + t1*v1t1;
+	const ssef  r  = t0*rt0 + t1*rt1;
+		
+	const sse3f p0 = xfmVector(LinearSpaceSSE3f(pre.ray_space),v0-ray_org); 
+	const sse3f p1 = xfmVector(LinearSpaceSSE3f(pre.ray_space),v1-ray_org);
+	const sse3f v = p1-p0;
+	const sse3f w = -p0;
+	const ssef d0 = w.x*v.x + w.y*v.y;
+	const ssef d1 = v.x*v.x + v.y*v.y;
+	const ssef u = clamp(d0*rcp(d1),ssef(zero),ssef(one));
+	const sse3f p = p0 + u*v;
+	//const ssef t = p.z*pre.depth_scale;
+	const ssef d2 = p.x*p.x + p.y*p.y; 
+	//const ssef r = p.w;
+	const ssef r2 = r*r;
+	sseb valid = d2 <= r2; // & avxf(ray.tnear) < t & t < avxf(ray.tfar);*/
+
+	dist = 0.0f;
+	return movemask(valid);
       }
 
     public:

@@ -41,51 +41,73 @@ namespace embree
       /*! find first curve that defines valid direction */
       Vec3fa p0(0,0,0);
       Vec3fa p1(0,0,0);
-      Vec3fa axis0(0,0,1);
-      Vec3fa axis1(0,0,1);
-      Vec3fa axis2(0,1,0);
+      Vec3fa axis0(0,0,1), axisb0(0,1,0);
+      Vec3fa axis1(0,0,1), axisb1(0,1,0);
+      //Vec3fa axis2(0,1,0);
       BezierRefList::block_iterator_unsafe i = prims;
       for (; i; i++)
       {
         const BezierCurves* curves = scene->getBezierCurves(i->geomID);
         const int curve = curves->curve(i->primID);
 
-        const Vec3fa a3 = i->p3;
-        const Vec3fa a0 = i->p0;
-	const Vec3fa da = normalize(a3 - a0);
-
+	const Vec3fa a3 = curves->vertex(curve+3,0);
+	const Vec3fa a2 = curves->vertex(curve+2,0);
+	const Vec3fa a1 = curves->vertex(curve+1,0);
+        const Vec3fa a0 = curves->vertex(curve+0,0);
+					 
         const Vec3fa b3 = curves->vertex(curve+3,1);
+	const Vec3fa b2 = curves->vertex(curve+2,1);
+	const Vec3fa b1 = curves->vertex(curve+1,1);
         const Vec3fa b0 = curves->vertex(curve+0,1);
-        const Vec3fa db = normalize(b3 - b0);
 
-	if (length(a3 - a0) > 1E-9f && length(b3 - b0) > 1E-9f) {
-	  axis0 = da; axis1 = db; p0 = a0; p1 = b0;
-          if (length(b3-a3) > 1E-9f) axis2 = b3-a3;
+	if (length(a3 - a0) > 1E-9f && length(a1 - a0) > 1E-9f &&
+	    length(b3 - b0) > 1E-9f && length(b1 - b0) > 1E-9f) 
+	{
+	  axis0 = normalize(a3 - a0); axisb0 = normalize(a1 - a0); 
+	  axis1 = normalize(b3 - b0); axisb1 = normalize(b1 - b0); 
+	  p0 = a0; p1 = b0;
+          /*if (length(b3-a3) > 1E-9f) axis2 = b3-a3;
           else if (length(b0-a0) > 1E-9f) axis2 = b0-a0;
-          else axis2 = Vec3fa(1,0,0); // FIXME: not correct
+          else axis2 = Vec3fa(1,0,0);*/ // FIXME: not correct
 	  break;
 	}
       }
-#if 0
+#if 1
       //LinearSpace3fa space01 = frame(0.5f*axis0 + 0.5f*axis1).transposed();
-      AffineSpace3fa space0 = frame(axis0).transposed();
-      AffineSpace3fa space1 = frame(axis1).transposed();
-      //space0.p = -xfmVector(space0.l,p0);
-      //space1.p = -xfmVector(space1.l,p1);
-      //space0 = space01;
-      space1 = space0;
-#else
+      //AffineSpace3fa space0 = frame(axis0).transposed();
+      //AffineSpace3fa space1 = frame(axis1).transposed();
+
       const Vec3fa space0_dx = normalize(axis0);
-      const Vec3fa space0_dy = normalize(cross(space0_dx,axis2));
+      const Vec3fa space0_dy = normalize(cross(space0_dx,axisb0));
       const Vec3fa space0_dz = normalize(cross(space0_dx,space0_dy));
       LinearSpace3fa space0(space0_dz,space0_dy,space0_dx);
       space0 = space0.transposed();
 
       const Vec3fa space1_dx = normalize(axis1);
-      const Vec3fa space1_dy = normalize(cross(space1_dx,axis2));
+      const Vec3fa space1_dy = normalize(cross(space1_dx,axisb1));
       const Vec3fa space1_dz = normalize(cross(space1_dx,space1_dy));
       LinearSpace3fa space1(space1_dz,space1_dy,space1_dx);
       space1 = space1.transposed();
+
+      //space0.p = -xfmVector(space0.l,p0);
+      //space1.p = -xfmVector(space1.l,p1);
+      //space0 = space01;
+      //space1 = space0;
+#else
+      const Vec3fa space0_dx = normalize(axis0);
+      const Vec3fa space0_dy = normalize(cross(space0_dx,axis2));
+      const Vec3fa space0_dz = normalize(cross(space0_dx,space0_dy));
+      AffineSpace3fa space0(space0_dz,space0_dy,space0_dx,zero);
+      space0.l = space0.l.transposed();
+
+      const Vec3fa space1_dx = normalize(axis1);
+      const Vec3fa space1_dy = normalize(cross(space1_dx,axis2));
+      const Vec3fa space1_dz = normalize(cross(space1_dx,space1_dy));
+      AffineSpace3fa space1(space1_dz,space1_dy,space1_dx,zero);
+      space1.l = space1.l.transposed();
+
+      space0.p = -xfmVector(space0.l,p0);
+      space1.p = -xfmVector(space1.l,p1);
 #endif 
 
       return std::pair<AffineSpace3fa,AffineSpace3fa>(space0,space1);
@@ -127,10 +149,23 @@ namespace embree
         centBounds.extend(i->center(spaces.first));
 
         const BezierCurves* curves = scene->getBezierCurves(i->geomID);
-        s0t0.extend(curves->bounds(spaces.first ,i->primID,0));
+#if BVH4HAIR_MB_VERSION == 0
+	s0t0.extend(curves->bounds(spaces.first,i->primID,0));
         s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID));
         s1t1.extend(curves->bounds(spaces.first,i->primID,1));
-        //s1t1.extend(curves->bounds(spaces.second,i->primID,1));
+#endif
+
+#if BVH4HAIR_MB_VERSION == 1
+        s0t0.extend(curves->bounds(spaces.first,i->primID,0));
+        s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID));
+	s1t1.extend(curves->bounds(spaces.second,i->primID,1));
+#endif
+
+#if BVH4HAIR_MB_VERSION == 2
+	s0t0.extend(curves->bounds(spaces.first,i->primID,0));
+        s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID));
+	s1t1.extend(curves->bounds(spaces.second,i->primID,1));
+#endif
       }
 
       PrimInfoMB ret;
@@ -309,10 +344,23 @@ namespace embree
 
           const Bezier1& ref = block->at(i);
           const BezierCurves* curves = scene->getBezierCurves(ref.geomID);
+#if BVH4HAIR_MB_VERSION == 0
           s0t0.extend(curves->bounds(space0,ref.primID,0));
           s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID));
           s1t1.extend(curves->bounds(space0,ref.primID,1));
-          //s1t1.extend(curves->bounds(space1,ref.primID,1));
+#endif
+
+#if BVH4HAIR_MB_VERSION == 1
+          s0t0.extend(curves->bounds(space0,ref.primID,0));
+          s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID));
+	  s1t1.extend(curves->bounds(space1,ref.primID,1));
+#endif
+
+#if BVH4HAIR_MB_VERSION == 2
+	  s0t0.extend(curves->bounds(space0,ref.primID,0));
+          s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID));
+	  s1t1.extend(curves->bounds(space1,ref.primID,1));
+#endif
 	}
       }
       atomic_add(&this->num,N);

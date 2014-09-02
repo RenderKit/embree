@@ -16,7 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-#if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
+#if 1 || defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
 #define renderPixelTestEyeLight renderPixelStandard
 #else
 #define renderPixelPathTrace renderPixelStandard
@@ -181,7 +181,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 #else
 
   //scene_in->numHairSets = 0;
-  //scene_in->numMeshes = 0;
+  scene_in->numMeshes = 0;
 
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
@@ -192,20 +192,29 @@ RTCScene convertScene(ISPCScene* scene_in)
     /* get ith hair set */
     ISPCHairSet* hair = scene_in->hairs[i];
 
+#if 0
+
     /* create a hair set */
     unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, 1);
     rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0,hair->v,0,sizeof(Vertex));
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
 
-#if 0
-    const AffineSpace3fa space0 = one;
-    const AffineSpace3fa space1 = AffineSpace3fa::rotate(Vec3fa(-11.0039f,24.9046f,-4.50951f),Vec3fa(1,1,1),0.5f*float(pi));
+#else
+
+    /* create a hair set */
+    unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, 2);
+    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
+
+    const AffineSpace3fa space0 = AffineSpace3fa::rotate(Vec3fa(0.0f,18.0f,0.0f),Vec3fa(0,0,1),0.1f*float(pi));
+    //const AffineSpace3fa space1 = AffineSpace3fa::rotate(Vec3fa(-11.0039f,24.9046f,-4.50951f),Vec3fa(1,1,1),0.5f*float(pi)); 
+    const AffineSpace3fa space1 = AffineSpace3fa::rotate(Vec3fa(0.0f,18.0f,0.0f),Vec3fa(0,0,1),0.2f*float(pi));
     const AffineSpace3fa space01 = 0.5f*space0+0.5f*space1;
 
     Vec3fa* buffer0 = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0);
     for (size_t i=0; i<hair->numVertices; i++) {
       Vec3fa v = xfmPoint(space0,hair->v[i]); v.w = hair->v[i].w; buffer0[i] = v;
       //Vec3fa v = xfmPoint(space01,hair->v[i]); v.w = hair->v[i].w; buffer0[i] = v;
+      //Vec3fa v = xfmPoint(space1,hair->v[i]); v.w = hair->v[i].w; buffer0[i] = v;
     }
     rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0);
 
@@ -648,6 +657,8 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
 
 Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
+  int seed = 21344*x+121233*y+234532*g_accu_count;
+
   /* initialize ray */
   RTCRay2 ray;
   ray.org = p;
@@ -659,6 +670,10 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = g_debug;
+  //ray.time = frand(seed);
+  //ray.time = 0.0f;
+  //ray.time = 0.5f;
+  //ray.time = 1.0f;
 
   Vec3fa color = Vec3fa(0.0f);
   float weight = 1.0f;
@@ -754,6 +769,7 @@ extern "C" void device_render (int* pixels,
 
   /* reset accumulator */
   bool camera_changed = g_changed; g_changed = false;
+  g_changed = true;
   camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx; // FIXME: use != operator
   camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
