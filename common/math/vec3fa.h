@@ -108,6 +108,14 @@ namespace embree
   __forceinline const Vec3fa zero_fix(const Vec3fa& a) { return _mm_blendv_ps(a, _mm_set1_ps(1E-10f), _mm_cmpeq_ps (a.m128, _mm_setzero_ps())); }
   __forceinline const Vec3fa rcp_safe(const Vec3fa& a) { return rcp(zero_fix(a)); }
 
+  __forceinline Vec3fa log ( const Vec3fa& a ) { 
+    return Vec3fa(logf(a.x),logf(a.y),logf(a.z));
+  }
+
+  __forceinline Vec3fa exp ( const Vec3fa& a ) { 
+    return Vec3fa(expf(a.x),expf(a.y),expf(a.z));
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -141,6 +149,10 @@ namespace embree
       return _mm_castsi128_ps(ci);
     }
 #endif
+
+    __forceinline Vec3fa pow ( const Vec3fa& a, const float& b ) { 
+      return Vec3fa(powf(a.x,b),powf(a.y,b),powf(a.z,b));
+    }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Ternary Operators
@@ -219,7 +231,7 @@ namespace embree
   __forceinline Vec3fa normalize( const Vec3fa& a )                  { return a*rsqrt(dot(a,a)); }
   __forceinline float  distance ( const Vec3fa& a, const Vec3fa& b ) { return length(a-b); }
   __forceinline float  halfArea ( const Vec3fa& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
-  __forceinline Vec3fa reflect  (const Vec3fa& V, const Vec3fa& N)   { return 2.0f*dot(V,N)*N-V; } // FIXME: remove
+  __forceinline Vec3fa reflect  (const Vec3fa& V, const Vec3fa& N)   { return 2.0f*dot(V,N)*N-V; } 
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Select

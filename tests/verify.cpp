@@ -487,6 +487,10 @@ namespace embree
   {
     ALIGNED_CLASS;
   public:
+    Sphere () : pos(zero), r(zero) {}
+    Sphere (const Vec3fa& pos, float r) : pos(pos), r(r) {}
+    __forceinline BBox3fa bounds() const { return BBox3fa(pos-Vec3fa(r),pos+Vec3fa(r)); }
+  public:
     Vec3fa pos;
     float r;
   };
@@ -525,12 +529,10 @@ namespace embree
   void OccludedFunc16 (const void* valid, void* ptr, RTCRay16& ray, size_t item) {
   }
 
-  unsigned addUserGeometryEmpty (RTCScene scene, const Vec3fa& pos, const float r)
+  unsigned addUserGeometryEmpty (RTCScene scene, Sphere* sphere)
   {
-    BBox3fa bounds(pos-Vec3fa(r),pos+Vec3fa(r));
+    BBox3fa bounds = sphere->bounds(); 
     unsigned geom = rtcNewUserGeometry (scene,1);
-    Sphere* sphere = new Sphere; // FIXME: get never deleted
-    sphere->pos = pos; sphere->r = r;
     rtcSetBoundsFunction(scene,geom,(RTCBoundsFunc)BoundsFunc);
     rtcSetUserData(scene,geom,sphere);
     rtcSetIntersectFunction(scene,geom,IntersectFunc);
@@ -1487,7 +1489,7 @@ namespace embree
     case 0: addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.0f); break;
     case 1: addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.1f); break;
     case 2: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1,0.0f); break;
-    case 3: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1,0.1f); break;
+      //case 3: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1,0.1f); break; // FIXME: motion blur for hair not yet implemented
     }
     rtcCommit (scene);
     
@@ -2034,8 +2036,9 @@ namespace embree
     RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
     AssertNoError();
     int geom[1024];
-    for (size_t i=0; i<1024; i++) 
-      geom[i] = -1;
+    for (size_t i=0; i<1024; i++) geom[i] = -1;
+    Sphere spheres[1024];
+    memset(spheres,0,sizeof(spheres));
 
     for (size_t i=0; i<200; i++) {
       for (size_t j=0; j<20; j++) {
@@ -2045,7 +2048,9 @@ namespace embree
           switch (rand()%3) {
           case 0: geom[index] = addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
           case 1: geom[index] = addHair  (scene,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
-          case 2: geom[index] = addUserGeometryEmpty(scene,pos,2.0f); break;
+          case 2: 
+	    spheres[index] = Sphere(pos,2.0f);
+	    geom[index] = addUserGeometryEmpty(scene,&spheres[index]); break;
           }
           AssertNoError();
         }
@@ -2125,6 +2130,7 @@ namespace embree
 
       RTCSceneFlags sflag = getSceneFlag(i); 
       RTCScene scene = rtcNewScene(sflag,aflags);
+      vector_t<Sphere*> spheres;
       AssertNoError();
 
       for (size_t j=0; j<20; j++) 
@@ -2137,9 +2143,12 @@ namespace embree
         case 0: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
         case 1: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
         case 2: addHair  (scene,RTC_GEOMETRY_STATIC,pos,2.0f,numTriangles,0.0f); break;
-        case 3: addHair  (scene,RTC_GEOMETRY_STATIC,pos,2.0f,numTriangles,1.0f); break;
-        case 4: addUserGeometryEmpty(scene,pos,2.0f); break;
+	  //case 3: addHair  (scene,RTC_GEOMETRY_STATIC,pos,2.0f,numTriangles,1.0f); break; // FIXME: motion blur for hair not yet implemented
+        case 4: {
+	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
+	  addUserGeometryEmpty(scene,sphere); break;
         }
+	}
         AssertNoError();
       }
 
@@ -2151,6 +2160,9 @@ namespace embree
 
       rtcDeleteScene (scene);
       AssertNoError();
+
+      for (size_t i=0; i<spheres.size(); i++)
+	delete spheres[i];
     }
     return true;
   }
@@ -2161,6 +2173,7 @@ namespace embree
     AssertNoError();
     int geom[1024];
     int types[1024];
+    Sphere spheres[1024];
     size_t numVertices[1024];
     for (size_t i=0; i<1024; i++)  {
       geom[i] = -1;
@@ -2193,7 +2206,7 @@ namespace embree
           case 4: geom[index] = addSphere(scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
           case 5: geom[index] = addSphere(scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
             
-          case 6: geom[index] = addUserGeometryEmpty(scene,pos,2.0f); break;
+          case 6: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(scene,&spheres[index]); break;
           }; 
           AssertNoError();
         }
@@ -2262,8 +2275,6 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
-
-    //POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
     
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
@@ -2295,7 +2306,6 @@ namespace embree
     POSITIVE("overlapping_triangles",     rtcore_overlapping_triangles(100000));
     POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
-
 
 #if defined(__USE_RAY_MASK__)
     rtcore_ray_masks_all();

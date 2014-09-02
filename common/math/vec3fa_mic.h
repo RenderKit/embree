@@ -128,6 +128,14 @@ namespace embree
   __forceinline const Vec3fa_t zero_fix( const Vec3fa_t& a ) { return _mm512_mask_blend_ps(_mm512_cmp_ps_mask(a.m512,_mm512_setzero_ps(),_MM_CMPINT_EQ), a, _mm512_set1_ps(1E-10f)); }
   __forceinline const Vec3fa_t rcp_safe(const Vec3fa_t& a) { return rcp(zero_fix(a)); }
 
+  __forceinline Vec3fa log ( const Vec3fa& a ) { 
+    return Vec3fa(logf(a.x),logf(a.y),logf(a.z));
+  }
+
+  __forceinline Vec3fa exp ( const Vec3fa& a ) { 
+    return Vec3fa(expf(a.x),expf(a.y),expf(a.z));
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////

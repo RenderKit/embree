@@ -32,16 +32,25 @@ namespace embree
     return 1;
   }
 
+  Bezier1iMBType Bezier1iMBType::type;
+
+  Bezier1iMBType::Bezier1iMBType () 
+    : PrimitiveType("bezier1imb",sizeof(Bezier1iMB),1,true,1) {} 
+  
+  size_t Bezier1iMBType::blocks(size_t x) const {
+    return x;
+  }
+    
+  size_t Bezier1iMBType::size(const char* This) const {
+    return 1;
+  }
+
   void SceneBezier1i::pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const 
   {
     Scene* scene = (Scene*) geom;
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
-#if defined(PRE_SUBDIVISION_HACK)
-    const unsigned primID = prim.primID()/8;
-#else
     const unsigned primID = prim.primID();
-#endif
     const BezierCurves* curves = scene->getBezierCurves(geomID);
     const Vec3fa& p0 = curves->vertex(curves->curve(primID));
     new (dst) Bezier1i(&p0,geomID,primID);
@@ -53,11 +62,7 @@ namespace embree
     Scene* scene = (Scene*) geom;
     const PrimRef& prim = *prims;
     const unsigned geomID = prim.geomID();
-#if defined(PRE_SUBDIVISION_HACK)
-    const unsigned primID = prim.primID()/8;
-#else
     const unsigned primID = prim.primID();
-#endif
     const BezierCurves* curves = scene->getBezierCurves(geomID);
     const int vtx = curves->curve(primID);
     const Vec3fa& p0 = curves->vertex(vtx);

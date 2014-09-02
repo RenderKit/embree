@@ -39,12 +39,12 @@ namespace embree
     static const size_t N = 4;
 
     /*! Masks the bits that store the number of items per leaf. */
-    static const unsigned int encodingBits = 4;
-    static const unsigned int offset_mask  = 0xFFFFFFFF << encodingBits;
-    static const unsigned int leaf_shift   = 3;
-    static const unsigned int leaf_mask    = 1<<leaf_shift;  
-    static const unsigned int items_mask   = leaf_mask-1;  
-    
+    static const unsigned int encodingBits  = 4;
+    static const unsigned int offset_mask   = 0xFFFFFFFF << encodingBits;
+    static const unsigned int leaf_shift    = 3;
+    static const unsigned int leaf_mask     = 1<<leaf_shift;  
+    static const unsigned int items_mask    = (1<<(leaf_shift-1))-1;//leaf_mask-1;  
+    static const unsigned int aux_flag_mask = 1<<(leaf_shift-1);
     /*! Empty node */
     static const unsigned int emptyNode = leaf_mask;
 
@@ -80,7 +80,13 @@ namespace embree
       __forceinline unsigned int isLeaf(const unsigned int mask) const { return _id & mask; }
       
       /*! checks if this is a node */
-      __forceinline unsigned isNode() const { return (_id & leaf_mask) == 0; }
+      __forceinline unsigned int isNode() const { return (_id & leaf_mask) == 0; }
+
+      /*! checks if the aux flag is set */
+      __forceinline unsigned int isAuxFlagSet() const { return _id & aux_flag_mask; }
+
+      /*! checks if the aux flag is set */
+      __forceinline unsigned int clearAuxFlag() const { return _id & (~aux_flag_mask); }
       
       /*! returns node pointer */
 
@@ -90,20 +96,30 @@ namespace embree
       
 
       __forceinline unsigned int nodeID() const { return (_id*2) / sizeof(Node);  }
+
+      __forceinline unsigned int items() const {
+        return (_id & items_mask)+1;
+      }
       
       /*! returns leaf pointer */
       template<unsigned int scale=4>
       __forceinline const char* leaf(const void* base, unsigned int& num) const {
         assert(isLeaf());
-        num = _id & items_mask;
-        return (const char*)base + (_id & offset_mask)*scale;
+        num = items();
+	if (scale == 4)
+	  return (const char*)((const int*)base + (size_t)(_id & offset_mask));
+	else
+	  return (const char*)base + (_id & offset_mask)*scale;
       }
 
       /*! returns leaf pointer */
       template<unsigned int scale=4>
       __forceinline const char* leaf(const void* base) const {
         assert(isLeaf());
-        return (const char*)base + (_id & offset_mask)*scale;
+	if (scale == 4)
+	  return (const char*)((const int*)base + (_id & offset_mask));
+	else
+	  return (const char*)base + (_id & offset_mask)*scale;
       }
 
       __forceinline unsigned int offset() const {
@@ -114,9 +130,6 @@ namespace embree
         return _id >> encodingBits;
       }
 
-      __forceinline unsigned int items() const {
-        return _id & items_mask;
-      }
       
       __forceinline unsigned int &id() { return _id; }
     private:
@@ -520,6 +533,19 @@ namespace embree
   }
 
 
+  __forceinline void createBVH4iLeaf(BVH4i::NodeRef &ref,
+				const unsigned int offset,
+				const unsigned int entries) 
+  {
+    assert(entries <= 4);
+    ref = (offset << BVH4i::encodingBits) | BVH4i::leaf_mask | (entries-1);
+  }
+
+  template<unsigned int scale>
+  __forceinline void createBVH4iNode(BVH4i::NodeRef &ref,
+				     const unsigned int index) {
+    ref = ((index*scale) << BVH4i::encodingBits);
+  }
 
 
 

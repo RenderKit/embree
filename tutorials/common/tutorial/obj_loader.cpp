@@ -93,7 +93,7 @@ namespace embree
   public:
 
     /*! Constructor. */
-    OBJLoader(const FileName& fileName, OBJScene& mesh, const Vec3fa& offset);
+    OBJLoader(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh);
 
     /*! Destruction */
     ~OBJLoader();
@@ -114,7 +114,7 @@ namespace embree
     vector_t<Vec3fa> vn;
     std::vector<Vec2f> vt;
     std::vector<std::vector<Vertex> > curGroup;
-    Vec3fa offset;
+    AffineSpace3f space;
 
     /*! Material handling. */
     int curMaterial;
@@ -129,8 +129,8 @@ namespace embree
     uint32 getVertex(std::map<Vertex,uint32>& vertexMap, OBJScene::Mesh* mesh, const Vertex& i);
   };
 
-  OBJLoader::OBJLoader(const FileName &fileName, OBJScene& mesh, const Vec3fa& offset) 
-    : path(fileName.path()), model(mesh), offset(offset)
+  OBJLoader::OBJLoader(const FileName &fileName, const AffineSpace3f& space, OBJScene& mesh) 
+    : path(fileName.path()), model(mesh), space(space)
   {
     /* open file */
     std::ifstream cin;
@@ -141,7 +141,7 @@ namespace embree
     }
 
     /* generate default material */
-    model.materials.push_back(OBJScene::Material());
+    model.materials.push_back(OBJScene::OBJMaterial());
     curMaterial = 0;
 
     char line[10000];
@@ -163,10 +163,17 @@ namespace embree
       if (token[0] == 0) continue;
 
       /*! parse position */
-      if (token[0] == 'v' && isSep(token[1]))                    { v.push_back((Vec3fa)getVec3f(token += 2)-offset); continue; }
+      if (token[0] == 'v' && isSep(token[1])) { 
+        const Vec3f p = xfmPoint(space,getVec3f(token += 2));
+        v.push_back(p); continue;
+      }
 
       /* parse normal */
-      if (token[0] == 'v' && token[1] == 'n' && isSep(token[2])) { vn.push_back((Vec3fa)getVec3f(token += 3)); continue; }
+      if (token[0] == 'v' && token[1] == 'n' && isSep(token[2])) { 
+        const Vec3f n = xfmVector(space,getVec3f(token += 3));
+        vn.push_back(n); 
+        continue; 
+      }
 
       /* parse texcoord */
       if (token[0] == 'v' && token[1] == 't' && isSep(token[2])) { vt.push_back(getVec2f(token += 3)); continue; }
@@ -244,7 +251,7 @@ namespace embree
         parseSep(token+=6);
         std::string name(token);
         material[name] = cur = model.materials.size();
-        model.materials.push_back(OBJScene::Material());
+        model.materials.push_back(OBJScene::OBJMaterial());
         continue;
       }
 
@@ -252,14 +259,14 @@ namespace embree
 
       if (!strncmp(token, "illum", 5)) { parseSep(token += 5);  continue; }
 
-      if (!strncmp(token, "d",  1)) { parseSep(token += 1);  model.materials[cur].d  = getFloat(token); continue; }
-      if (!strncmp(token, "Ns", 2)) { parseSep(token += 2);  model.materials[cur].Ns = getFloat(token); continue; }
-      if (!strncmp(token, "Ni", 2)) { parseSep(token += 2);  model.materials[cur].Ni = getFloat(token); continue; }
+      if (!strncmp(token, "d",  1)) { parseSep(token += 1);  model.materials[cur].obj().d  = getFloat(token); continue; }
+      if (!strncmp(token, "Ns", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ns = getFloat(token); continue; }
+      if (!strncmp(token, "Ni", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ni = getFloat(token); continue; }
 
-      if (!strncmp(token, "Ka", 2)) { parseSep(token += 2);  model.materials[cur].Ka = getVec3f(token); continue; }
-      if (!strncmp(token, "Kd", 2)) { parseSep(token += 2);  model.materials[cur].Kd = getVec3f(token); continue; }
-      if (!strncmp(token, "Ks", 2)) { parseSep(token += 2);  model.materials[cur].Ks = getVec3f(token); continue; }
-      if (!strncmp(token, "Tf", 2)) { parseSep(token += 2);  model.materials[cur].Tf = getVec3f(token); continue; }
+      if (!strncmp(token, "Ka", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ka = getVec3f(token); continue; }
+      if (!strncmp(token, "Kd", 2)) { parseSep(token += 2);  model.materials[cur].obj().Kd = getVec3f(token); continue; }
+      if (!strncmp(token, "Ks", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ks = getVec3f(token); continue; }
+      if (!strncmp(token, "Tf", 2)) { parseSep(token += 2);  model.materials[cur].obj().Tf = getVec3f(token); continue; }
     }
     cin.close();
   }
@@ -339,8 +346,8 @@ namespace embree
     curGroup.clear();
   }
 
-  void loadOBJ(const FileName& fileName, OBJScene& mesh_o, const Vec3fa& offset) {
-    OBJLoader loader(fileName,mesh_o,offset); 
+  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh_o) {
+    OBJLoader loader(fileName,space,mesh_o); 
   }
 }
 

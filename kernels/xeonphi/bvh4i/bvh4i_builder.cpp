@@ -39,6 +39,8 @@
 
 #define MEASURE_MEMORY_ALLOCATION_TIME 0
 
+//#define MERGE_TRIANGLE_PAIRS
+
 namespace embree
 {
 #if defined(DEBUG)
@@ -162,6 +164,7 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
+    // const size_t size_node     = (numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
     const size_t size_node     = (double)(numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
@@ -332,8 +335,8 @@ namespace embree
   void BVH4iBuilder::computePrimRefsTriangles(const size_t threadID, const size_t numThreads) 
   {
     const size_t numGroups = scene->size();
-    const size_t startID = (threadID+0)*numPrimitives/numThreads;
-    const size_t endID   = (threadID+1)*numPrimitives/numThreads;
+    const size_t startID = ((threadID+0)*numPrimitives)/numThreads;
+    const size_t endID   = ((threadID+1)*numPrimitives)/numThreads;
     
     PrimRef *__restrict__ const prims     = this->prims;
 
@@ -347,7 +350,7 @@ namespace embree
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
       const size_t numTriangles = mesh->numTriangles;
-      if (numSkipped + numTriangles > startID) break;
+      if (numSkipped + numTriangles >= startID) break;
       numSkipped += numTriangles;
     }
 
@@ -476,10 +479,268 @@ namespace embree
     store16f_ngo(acc,tri_accel);
   }
 
+
+  struct EdgeTriangle
+  {
+    unsigned int v[3];
+    unsigned int geomID;
+    unsigned int primID;
+
+    EdgeTriangle() {}
+
+    EdgeTriangle(const TriangleMesh::Triangle &tri, unsigned int gID, unsigned int pID)
+    {
+      v[0] = tri.v[0];
+      v[1] = tri.v[1];
+      v[2] = tri.v[2];
+      geomID = gID;
+      primID = pID;
+    }
+
+    size_t edge(const size_t i) const
+    {
+      assert(i < 3);
+      unsigned int a = v[i];
+      unsigned int b = v[(i+1)%3];
+      if (b < a) std::swap(a,b);
+      return (size_t)a | ((size_t)b << 32);
+    }
+
+  };
+
+  __forceinline std::ostream &operator<<(std::ostream &o, const EdgeTriangle &e)
+  {
+    o << "vtx: " << e.v[0] << " " << e.v[1] << " " << e.v[2] << std::endl;
+    o << "edge0: "  << e.edge(0) << std::endl;
+    o << "edge1: "  << e.edge(1) << std::endl;
+    o << "edge2: "  << e.edge(2) << std::endl;    
+    o << "geomID: " << e.geomID << std::endl;    
+    o << "primID: " << e.primID << std::endl;    
+    return o;  
+  }
+
+  bool shareEdge(EdgeTriangle &a, EdgeTriangle &b)
+  {
+    if (a.geomID != b.geomID) return false;
+
+    for (size_t i=0;i<3;i++)
+      for (size_t j=0;j<3;j++)
+	if (a.edge(i) == b.edge(j)) {
+	  return true;
+	}
+    return false;
+  }
+
+  int sharedEdgeIndex(EdgeTriangle &a, EdgeTriangle &b)
+  {
+    if (a.geomID != b.geomID) return false;
+
+    for (size_t i=0;i<3;i++)
+      for (size_t j=0;j<3;j++)
+	if (a.edge(i) == b.edge(j)) {
+	  return i;
+	}
+    return -1;
+  }
+
+  unsigned int getVertexNotInTriangle(EdgeTriangle &tri0, EdgeTriangle &tri1)
+  {
+    for (size_t i=0;i<3;i++)
+      {
+	if (tri1.v[i] != tri0.v[0] &&
+	    tri1.v[i] != tri0.v[1] &&
+	    tri1.v[i] != tri0.v[2]) return tri1.v[i];
+      }
+    return tri0.v[2];
+  }
+
+  struct TrianglePair
+  {
+    unsigned int v[4];
+    unsigned int geomID;
+    unsigned int primID[2];
+    unsigned int flags;
+
+    TrianglePair() {};
+
+    TrianglePair(EdgeTriangle &tri0, EdgeTriangle &tri1)
+    {
+      int sharedIndex = sharedEdgeIndex(tri0,tri1);
+      assert(sharedIndex != -1);
+      v[0] = tri0.v[(sharedIndex+0)%3];
+      v[1] = tri0.v[(sharedIndex+1)%3];
+      v[2] = tri0.v[(sharedIndex+2)%3];
+      v[3] = getVertexNotInTriangle(tri0,tri1);
+      primID[0] = tri0.primID;
+      primID[1] = tri1.primID;
+      geomID    = tri0.geomID;
+    }
+
+  };
+
+  __forceinline std::ostream &operator<<(std::ostream &o, const TrianglePair &p)
+  {
+    o << "vtx ";
+    for (size_t i=0;i<4;i++) o << p.v[i] << " ";
+    o << std::endl;
+    o << "geomID: " << p.geomID << std::endl;    
+    o << "primID[0]: " << p.primID[0] << std::endl;    
+    o << "primID[1]: " << p.primID[1] << std::endl;    
+    return o;  
+  }
+
+  unsigned int findPairs(EdgeTriangle tri[4], size_t triangles,TrianglePair *trianglePair,size_t &numTrianglePairs)
+  {
+    numTrianglePairs = 0;
+    while(triangles > 0)
+      {
+	unsigned int neighbors[4] = { 0,0,0,0 };
+
+	/* count valid neighbors per triangle */
+	for (size_t i=0;i<triangles-1;i++)
+	  for (size_t j=i+1;j<triangles;j++)
+	    if (shareEdge(tri[i],tri[j]))
+	      {
+		neighbors[i]++;
+		neighbors[j]++;
+	      }
+
+	// TODO: full scan
+	/* process triangles with single shared edge first */
+#if 1
+	int smallest = 0;
+	int smallest_neighbors = neighbors[0];
+
+	  for (size_t i=1;i<triangles;i++)
+	    if (neighbors[i] < smallest_neighbors)
+	      {
+		smallest = i;
+		smallest_neighbors = neighbors[i];
+	      }
+	  if (smallest != 0)
+	    {
+	      std::swap(tri[0],tri[smallest]);
+	      std::swap(neighbors[0],neighbors[smallest]);
+	    }
+
+#else
+	if (neighbors[0] != 1)
+	   for (size_t i=1;i<triangles;i++)
+	     if (neighbors[i] == 1)
+	       {
+	 	std::swap(tri[0],tri[i]);
+	 	std::swap(neighbors[0],neighbors[i]);
+	 	break;
+	       }
+#endif	
+	/* try to find pair with tri[0] */
+	bool found = false;
+	for (size_t i=1;i<triangles;i++)
+	  if (shareEdge(tri[0],tri[i]))
+	    {
+	      trianglePair[numTrianglePairs++] = TrianglePair(tri[0],tri[i]);
+	      tri[i] = tri[triangles-1];
+	      triangles--;
+	      tri[0] = tri[triangles-1];
+	      triangles--;
+	      found = true;	      
+	      break;
+	    }
+
+	/* no pair found create dummy pair */
+
+	if (found == false) 
+	  {
+	    trianglePair[numTrianglePairs++] = TrianglePair(tri[0],tri[0]);	    
+
+	    tri[0] = tri[triangles-1];
+	    triangles--;	    
+	  }
+	}
+
+    if (numTrianglePairs <= 2) return 1;
+    return 0;
+  }
   
+  void processLeaves(BVH4i::NodeRef &node,BVH4i::Node *nodes, Triangle1* tris, Scene *scene, PrimRef *ref, size_t &leaves, size_t &pairs)
+  {
+    if (node.isNode())
+      {
+	BVH4i::Node* n = (BVH4i::Node*)node.node((BVH4i::Node*)nodes);
+
+	for (size_t i=0; i<BVH4i::N; i++) {
+	  if (n->child(i) == BVH4i::invalidNode) { break; }
+	  processLeaves(n->child(i),nodes,tris,scene,ref,leaves,pairs); 
+	}
+      }
+    else
+      {
+	leaves++;
+	unsigned int prims = node.items();
+	unsigned int index = node.offsetIndex();
+
+#if 1
+	node.clearAuxFlag();
+
+	EdgeTriangle edgeTri[4];
+	for (size_t i=0;i<prims;i++)
+	  {
+	    const unsigned int geomID = ref[index+i].geomID();
+	    const unsigned int primID = ref[index+i].primID();
+	    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+	    edgeTri[i] = EdgeTriangle(mesh->triangle(primID),geomID,primID);
+	    //DBG_PRINT(tris[index+i]);
+
+	  }
+
+	TrianglePair trianglePair[4];
+	size_t numTrianglePairs = 0;
+	pairs += findPairs(edgeTri,prims,trianglePair,numTrianglePairs);
+
+	// DBG_PRINT(prims);
+	//DBG_PRINT(numTrianglePairs);
+	if (numTrianglePairs <= 2)
+	  for (size_t i=0;i<numTrianglePairs;i++)
+	    {
+	      //DBG_PRINT(i);
+	      
+	      TrianglePair1 &p = *(TrianglePair1*)&tris[index+i];
+	      
+
+	      const unsigned int geomID  = trianglePair[i].geomID;
+	      const unsigned int primID0 = trianglePair[i].primID[0];
+	      const unsigned int primID1 = trianglePair[i].primID[1];
+
+	      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+
+	      const Vec3fa &v0 = mesh->vertex(trianglePair[i].v[0]);
+	      const Vec3fa &v1 = mesh->vertex(trianglePair[i].v[1]);
+	      const Vec3fa &v2 = mesh->vertex(trianglePair[i].v[2]);
+	      const Vec3fa &v3 = mesh->vertex(trianglePair[i].v[3]);
+	      p = TrianglePair1(v0,v1,v2,v3,geomID,primID0,primID1,mesh->mask);
+	      node = node | BVH4i::aux_flag_mask;
+	      //DBG_PRINT(p);
+	    }
+#endif	
+	
+      }
+  }
+
   void BVH4iBuilder::createAccel(const size_t threadIndex, const size_t threadCount)
   {
     LockStepTaskScheduler::dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );   
+
+#if defined(MERGE_TRIANGLE_PAIRS)
+    const size_t numGroups = scene->size();
+    DBG_PRINT(numGroups);
+
+    size_t leaves = 0;
+    size_t pairs = 0;
+    processLeaves(bvh->root,bvh->qbvh,(Triangle1*)bvh->accel,scene,prims,leaves,pairs);
+    DBG_PRINT(leaves);
+    DBG_PRINT(pairs);
+    DBG_PRINT(100.0f * pairs / leaves);
+#endif    
   }
 
   
@@ -1092,7 +1353,7 @@ namespace embree
     
     /* create leaf */
     if (current.items() <= BVH4i::N) {
-      createLeaf(current.parentPtr,current.begin,current.items());
+      createBVH4iLeaf(*(BVH4i::NodeRef*)current.parentPtr,current.begin,current.items());
 
 #if defined(DEBUG)
       checkLeafNode(*(BVH4i::NodeRef*)current.parentPtr,current.bounds.geometry);      
@@ -1117,7 +1378,7 @@ namespace embree
 
     const size_t currentIndex = alloc.get(num64BytesBlocksPerNode);
 
-    createNode(current.parentPtr,currentIndex,numChildren);
+    createBVH4iNode<2>(*(BVH4i::NodeRef*)current.parentPtr,currentIndex);
 
     storeNodeDataUpdateParentPtrs(&node[currentIndex],children,numChildren);
 
@@ -1204,7 +1465,7 @@ namespace embree
 
     /* init used/unused nodes */
 
-    createNode(current.parentPtr,currentIndex,numChildren);
+    createBVH4iNode<2>(*(BVH4i::NodeRef*)current.parentPtr,currentIndex);
 
     storeNodeDataUpdateParentPtrs(&node[currentIndex],children,numChildren);
 

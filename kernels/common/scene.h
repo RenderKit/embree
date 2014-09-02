@@ -149,8 +149,6 @@ namespace embree
     AtomicMutex geometriesMutex;
 
   public:
-    atomic_t numTriangleMeshes;        //!< number of enabled triangle meshes // FIXME: remove
-    atomic_t numTriangleMeshes2;       //!< number of enabled motion blur triangle meshes // FIXME: remove
     atomic_t numTriangles;             //!< number of enabled triangles
     atomic_t numTriangles2;            //!< number of enabled motion blur triangles
     atomic_t numBezierCurves;                //!< number of enabled curves

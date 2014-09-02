@@ -343,7 +343,7 @@ typedef uniform Vec3fa* uniform uniform_Vec3fa_ptr;
 inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 {
   const float t0 = 1.0f - t, t1 = t;
-  const ISPCHairSet* hair = g_ispc_scene->hairs[geomID]; // FIXME: works only because hairs are added first to scene
+  const ISPCHairSet* hair = g_ispc_scene->hairs[geomID];
   const Vec3fa* vertices = hair->v;
   const ISPCHair* hairs = hair->hairs;
   
@@ -615,16 +615,24 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
   //int seed = tileY*numTilesX+tileX+programIndex + g_accu_count;
+<<<<<<< HEAD
+=======
+  int seed = (tileY*numTilesX+tileX+programIndex) * g_accu_count;
+>>>>>>> a0b87392a610b3c2924d65794d95b82a2c43fdc7
 
   foreach (y = y0 ... y1, x = x0 ... x1)
   {
    int seed = (y*width+x+programIndex) * g_accu_count;
 
     /* calculate pixel color */
-    float fx = x + frand(seed);
-    float fy = y + frand(seed);
-    Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
+     float subpixel_x = frand(seed);
+     float subpixel_y = frand(seed);
+     float fx = x + subpixel_x;
+     float fy = y + subpixel_y;
+     Vec3f color = renderPixel(fx,fy,vx,vy,vz,p);
+    
     //Vec3f color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
+
     /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];
     *dst = *dst + make_Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator

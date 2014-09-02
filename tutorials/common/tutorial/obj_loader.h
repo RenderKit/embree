@@ -21,6 +21,7 @@
 #include "sys/stl/vector.h"
 #include "math/vec2.h"
 #include "math/vec3.h"
+#include "math/affinespace.h"
 
 #include <vector>
 #include <memory>
@@ -87,16 +88,60 @@ namespace embree
       std::vector<Hair> hairs;  //!< list of hairs
     };
     
-    /*! OBJ material */
-    struct Material
+    enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_DIELECTRIC, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE, MATERIAL_MIRROR, MATERIAL_REFLECTIVE_METAL };
+
+    struct MatteMaterial
     {
     public:
-      Material ()
-      : illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(1.f) {};
+      MatteMaterial (const Vec3fa& reflectance)
+      : ty(MATERIAL_MATTE), reflectance(reflectance) {}
       
     public:
-      int illum;             /*< illumination model */
+      int ty;
+      int align[3];
+      Vec3fa reflectance;
+    };
+
+    struct MirrorMaterial
+    {
+    public:
+      MirrorMaterial (const Vec3fa& reflectance)
+      : ty(MATERIAL_MIRROR), reflectance(reflectance) {}
       
+    public:
+      int ty;
+      int align[3];
+      Vec3fa reflectance;
+    };
+
+    struct ThinDielectricMaterial
+    {
+    public:
+      ThinDielectricMaterial (const Vec3fa& transmission, const float eta, const float thickness)
+      : ty(MATERIAL_THIN_DIELECTRIC), transmission(log(transmission)*thickness), eta(eta) {}
+      
+    public:
+      int ty;
+      int align[3];
+      Vec3fa transmission;
+      float eta;
+    };
+
+    /*! OBJ material */
+    struct OBJMaterial
+    {
+    public:
+      OBJMaterial ()
+      : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(1.f) {};
+
+      OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns)
+      : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Tf(1.f) {};
+      
+    public:
+      int ty;
+      int align[3];
+
+      int illum;             /*< illumination model */
       float d;               /*< dissolve factor, 1=opaque, 0=transparent */
       float Ns;              /*< specular exponent */
       float Ni;              /*< optical density for the surface (index of refraction) */
@@ -105,6 +150,82 @@ namespace embree
       Vec3fa Kd;              /*< diffuse reflectivity */
       Vec3fa Ks;              /*< specular reflectivity */
       Vec3fa Tf;              /*< transmission filter */
+    };
+
+    struct MetalMaterial
+    {
+    public:
+      MetalMaterial (const Vec3fa& reflectance, const Vec3fa& eta, const Vec3fa& k)
+      : ty(MATERIAL_REFLECTIVE_METAL), reflectance(reflectance), eta(eta), k(k), roughness(0.0f) {}
+
+      MetalMaterial (const Vec3fa& reflectance, const Vec3fa& eta, const Vec3fa& k, const float roughness)
+      : ty(MATERIAL_METAL), reflectance(reflectance), eta(eta), k(k), roughness(roughness) {}
+      
+    public:
+      int ty;
+      int align[3];
+      
+      Vec3fa reflectance;
+      Vec3fa eta;
+      Vec3fa k;
+      float roughness;
+    };
+
+    struct VelvetMaterial
+    {
+      VelvetMaterial (const Vec3fa& reflectance, const float backScattering, const Vec3fa& horizonScatteringColor, const float horizonScatteringFallOff)
+      : ty(MATERIAL_VELVET), reflectance(reflectance), backScattering(backScattering), horizonScatteringColor(horizonScatteringColor), horizonScatteringFallOff(horizonScatteringFallOff) {}
+
+    public:
+      int ty;
+      int align[3];
+
+      Vec3fa reflectance;
+      Vec3fa horizonScatteringColor;
+      float backScattering;
+      float horizonScatteringFallOff;
+    };
+
+    struct DielectricMaterial
+    {
+      DielectricMaterial (const Vec3fa& transmissionOutside, const Vec3fa& transmissionInside, const float etaOutside, const float etaInside)
+      : ty(MATERIAL_DIELECTRIC), transmissionOutside(transmissionOutside), transmissionInside(transmissionInside), etaOutside(etaOutside), etaInside(etaInside) {}
+
+    public:
+      int ty;
+      int align[3];
+      Vec3fa transmissionOutside;
+      Vec3fa transmissionInside;
+      float etaOutside;
+      float etaInside;
+    };
+
+    struct MetallicPaintMaterial
+    {
+      MetallicPaintMaterial (const Vec3fa& shadeColor, const Vec3fa& glitterColor, float glitterSpread, float eta)
+      : ty(MATERIAL_METALLIC_PAINT), shadeColor(shadeColor), glitterColor(glitterColor), glitterSpread(glitterSpread), eta(eta) {}
+
+    public:
+      int ty;
+      int align[3];
+      Vec3fa shadeColor;
+      Vec3fa glitterColor;
+      float glitterSpread;
+      float eta;
+    };
+
+    /*! Material */
+    struct Material
+    {
+    public:
+      Material () { memset(this,0,sizeof(Material)); }
+      Material (const OBJMaterial& in) { *((OBJMaterial*)this) = in; }
+      OBJMaterial& obj() { return *(OBJMaterial*)this; }
+      
+    public:
+      int ty;
+      int align[3];
+      Vec3fa v[7];
     };
 
     struct AmbientLight
@@ -162,12 +283,12 @@ namespace embree
     vector_t<Material> materials;                      //!< material list
     std::vector<Mesh*> meshes;                         //!< list of meshes
     std::vector<HairSet*> hairsets;                    //!< list of hair sets
-    std::vector<AmbientLight> ambientLights;           //!< list of ambient lights
-    std::vector<PointLight> pointLights;               //!< list of point lights
-    std::vector<DirectionalLight> directionalLights;   //!< list of directional lights
-    std::vector<DistantLight> distantLights;           //!< list of distant lights
+    vector_t<AmbientLight> ambientLights;           //!< list of ambient lights
+    vector_t<PointLight> pointLights;               //!< list of point lights
+    vector_t<DirectionalLight> directionalLights;   //!< list of directional lights
+    vector_t<DistantLight> distantLights;           //!< list of distant lights
   };
   
   /*! read from disk */
-  void loadOBJ(const FileName& fileName, OBJScene& mesh, const Vec3fa& offset = zero);
+  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh);
 }

@@ -1,9 +1,10 @@
 <h3>What's New in Embree 2.3.2?</h3>
 <ul>
-  <li> Improved mixed AABB/OBB-BVH for hair geometry (Xeon Phi&trade)</li>
-  <li> Reduced amount of pre-allocated memory for BVH builders (Xeon Phi&trade)</li>
-  <li> New 64bit morton code builder (Xeon Phi&trade)</li>
-  <li> (Enhanced) morton code-based builders use now tree rotations to improve BVH quality (Xeon Phi&trade)</li>
+  <li> Improved mixed AABB/OBB-BVH for hair geometry (Xeon Phi&trade;)</li>
+  <li> Reduced amount of pre-allocated memory for BVH builders (Xeon Phi&trade;)</li>
+  <li> New 64bit morton code BVH builder (Xeon Phi&trade;)</li>
+  <li> (Enhanced) morton code BVH builders use now tree rotations to improve BVH quality (Xeon Phi&trade;)</li>
+  <li> Bug fixes (Xeon&trade; and Xeon Phi&trade;)</li>
 </ul>    
 
 <h3>What's New in Embree 2.3.1?</h3>
@@ -98,17 +99,94 @@ Rendering of the Crown model (crown.ecs) with 4 samples per pixel
 
 <h5>Papers:</h5>
 
-<p><a href="http://www.sci.utah.edu/~wald/Publications/2014/embree/embree.pdf">Embree - A Kernel Framework for Efficient CPU Ray Tracing (to appear at SIGGRAPH 2014)</p>
+<strong> Exploiting Local Orientation Similarity for Efficient Ray Traversal of Hair and Fur </strong>
+<br>
+Sven Woop, Carsten Benthin, Ingo Wald, Gregory S. Johnson, and Eric Tabellion
+<br>
+<i>High Performance Graphics 2014</i>
+<br>
+[<a href="papers/2014-HPG-hair.pdf">pdf</a>],
+[<a href="papers/2014-HPG-hair.pptx">pptx</a>]
 
-<p><a href="http://www.sci.utah.edu/~wald/Publications/2014/hair/hair.pdf">Exploiting Local Orientation Similarity for Efficient Ray Traversal of Hair and Fur (to appear at HPG 2014)</p>
+<br>
+<br>
+<a href="papers/2014-HPG-hair-sophie.png"><img src="papers/2014-HPG-hair-sophie-thumb.jpg"></a>
+<a href="papers/2014-HPG-hair-tiger.png"><img src="papers/2014-HPG-hair-tiger-thumb.jpg"></a>
+<a href="papers/2014-HPG-hair-tighten.png"><img src="papers/2014-HPG-hair-tighten-thumb.jpg"></a>
+<a href="papers/2014-HPG-hair-yeti.png"><img src="papers/2014-HPG-hair-yeti-thumb.jpg"></a>
 
-<p><a href="http://jcgt.org/published/0002/01/05/paper.pdf">Water-tight Ray-Triangle Intersection</p>
+<br><br>
 
-<p><a href="http://www.sci.utah.edu/~wald/Publications/2012/MICBVH/LRB-BVH.pdf">Fast Construction of SAH BVHs on the Intel Many Integrated Core (MIC) Architecture</p>
+<!------------------------------------------------------------------------------------------>
 
-<p><a href="http://www.sci.utah.edu/~wald/Publications/2011/singleray_hybrid/hybrid.pdf">Combining Single and Packet Ray Tracing for Arbitrary Ray Distributions on the Intel(R) MIC Architecture</p>
+<strong> Embree - A Kernel Framework for Efficient CPU Ray Tracing </strong>
+<br>
+Ingo Wald, Sven Woop, Carsten Benthin, Gregory S. Johnson, and Manfred Ernst
+<br>
+<i>ACM Transactions on Graphics (proceedings of ACM SIGGRAPH) 2014</i>
+<br>
+[<a href="papers/2014-Siggraph-Embree.pdf">pdf</a>],
+[<a href="papers/2014-Siggraph-Embree.bib">bib</a>]
+
+<br>
+<br>
+<a href="papers/2014-Siggraph-Embree-000.png"><img src="papers/2014-Siggraph-Embree-000-thumb.jpg"></a>
+<a href="papers/2014-Siggraph-Embree-001.png"><img src="papers/2014-Siggraph-Embree-001-thumb.jpg"></a>
+<a href="papers/2014-Siggraph-Embree-002.png"><img src="papers/2014-Siggraph-Embree-002-thumb.jpg"></a>
+<a href="papers/2014-Siggraph-Embree-003.png"><img src="papers/2014-Siggraph-Embree-003-thumb.jpg"></a>
+<a href="papers/2014-Siggraph-Embree-004.png"><img src="papers/2014-Siggraph-Embree-004-thumb.jpg"></a>
+<a href="papers/2014-Siggraph-Embree-005.png"><img src="papers/2014-Siggraph-Embree-005-thumb.jpg"></a>
+<a href="papers/2014-Siggraph-Embree-006.png"><img src="papers/2014-Siggraph-Embree-006-thumb.jpg"></a>
+
+<br><br>
+
+<!------------------------------------------------------------------------------------------>
+
+<strong>Watertight Ray/Triangle Intersection</strong>
+<br>
+Sven Woop, Carsten Benthin, Ingo Wald
+<br>
+<i>Journal of Computer Graphics Techniques (JCGT)</i>, Volume 2, Issue 1, pages 65-82, 2013.
+<br>
+[<a href="http://jcgt.org/published/0002/01/05/paper.pdf">pdf</a>],
+[<a href="http://jcgt.org/published/0002/01/05/bibtex.bib">bib</a>]
+
+<br>
+<br>
+<a href="papers/2013-JCGT-Watertight-000.png"><img src="papers/2013-JCGT-Watertight-000-thumb.jpg"></a>
+<a href="papers/2013-JCGT-Watertight-001.png"><img src="papers/2013-JCGT-Watertight-001-thumb.jpg"></a>
+
+<br><br>
+
+<!------------------------------------------------------------------------------------------>
+
+<strong>Combining Single and Packet-Ray Tracing for Arbitrary Ray Distributions on the Intel MIC Architecture</strong>
+<br>
+Carsten Benthin, Ingo Wald, Sven Woop, Manfred Ernst, William R. Mark
+<br>
+<i>IEEE Transactions on Visualization and Computer Graphics</i>, Volume 18, Issue 9, 2012
+<br>
+[<a href="http://doi.ieeecomputersociety.org/10.1109/TVCG.2011.277">pdf</a>],
+[<a href="papers/2011-TVCG-Hybrid.bib">bib</a>]
+
+<br><br>
+
+<!------------------------------------------------------------------------------------------>
+
+<strong>Fast Construction of SAH BVHs on the Intel Many Integrated Core (MIC) Architecture </strong>
+<br>
+Ingo Wald
+<br>
+<i>IEEE Transactions on Visualization and Computer Graphics</i>, 18(1), 2012, pages 47-57
+<br>
+[<a href="http://www.sci.utah.edu/~wald/Publications/2012/MICBVH/LRB-BVH.pdf">pdf</a>],
+
 
 <h5>Presentations:</h5>
+
+<p><a href="data/siggraph2014_embree_paper.pdf">Embree Paper Talk</a> at SIGGRAPH 2014</p>
+
+<p><a href="data/siggraph2014_embree_tutorial.pdf">Embree Tutorial</a> at SIGGRAPH 2014</p>
 
 <p><a href="data/embree-siggraph-2013-final.pdf">Embree 2.0 Presentation</a> at SIGGRAPH 2013</p>
 

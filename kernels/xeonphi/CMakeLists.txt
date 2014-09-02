@@ -36,9 +36,9 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../common/scene_user_geometry.cpp
   ../common/scene_triangle_mesh.cpp
   ../common/scene_bezier_curves.cpp
+  ../common/raystream_log.cpp
   
   geometry/triangle1.cpp
-  geometry/ispc_wrapper_knc.cpp
   geometry/instance_intersector1.cpp
   geometry/instance_intersector16.cpp
 
@@ -52,9 +52,11 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   bvh4i/bvh4i_intersector16_chunk.cpp
   bvh4i/bvh4i_intersector16_single.cpp
   bvh4i/bvh4i_intersector16_hybrid.cpp
+  bvh4i/bvh4i_intersector16_test.cpp
   bvh4i/bvh4i_intersector1.cpp
   bvh4i/bvh4i_statistics.cpp
   bvh4i/bvh4i_rotate.cpp
+
 
   bvh4mb/bvh4mb.cpp
   bvh4mb/bvh4mb_builder.cpp
@@ -63,9 +65,9 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   bvh4mb/bvh4mb_intersector16_hybrid.cpp
   bvh4mb/bvh4mb_intersector1.cpp
 
-  bvh4hair/bvh4hair_intersector16_single.cpp
   bvh4hair/bvh4hair_builder.cpp
   bvh4hair/bvh4hair.cpp	
+  bvh4hair/bvh4hair_intersector16_single.cpp
 )
 
 TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi)

@@ -27,9 +27,8 @@ namespace embree
     __forceinline ObjectPartition::Mapping::Mapping(const PrimInfo& pinfo) 
     {
       num = min(maxBins,size_t(4.0f + 0.05f*pinfo.size()));
-      //num = min(size_t(16),size_t(4.0f + 0.05f*pinfo.size())); // FIXME
       const ssef diag = (ssef) pinfo.centBounds.size();
-      scale = select(diag != 0.0f,rcp(diag) * ssef(0.99f*num),ssef(0.0f));
+      scale = select(diag > ssef(1E-19),rcp(diag) * ssef(0.99f*num),ssef(0.0f));
       ofs  = (ssef) pinfo.centBounds.lower;
     }
     
@@ -325,6 +324,53 @@ namespace embree
       binner.getSplitInfo(mapping,split,sinfo_o);
       return split;
     }
+
+    template<>
+    const std::pair<BBox3fa,BBox3fa> ObjectPartition::computePrimInfoMB<false>(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims)
+    {
+      BBox3fa bounds0 = empty;
+      BBox3fa bounds1 = empty;
+      for (BezierRefList::block_iterator_unsafe i = prims; i; i++) 
+      {
+        const BezierCurves* curves = scene->getBezierCurves(i->geomID);
+        bounds0.extend(curves->bounds(i->primID,0));
+        bounds1.extend(curves->bounds(i->primID,1));
+      }
+      return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
+    }
+    
+    template<>
+    const std::pair<BBox3fa,BBox3fa> ObjectPartition::computePrimInfoMB<true>(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims)
+    {
+      const TaskPrimInfoMBParallel bounds(threadIndex,threadCount,scene,prims);
+      return std::pair<BBox3fa,BBox3fa>(bounds.bounds0,bounds.bounds1);
+    }
+
+    ObjectPartition::TaskPrimInfoMBParallel::TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims) 
+      : scene(scene), iter(prims), bounds0(empty), bounds1(empty)
+    {
+      size_t numTasks = min(maxTasks,threadCount);
+      TaskScheduler::executeTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_bound_parallel");
+    }
+    
+    void ObjectPartition::TaskPrimInfoMBParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    {
+      size_t N = 0;
+      BBox3fa bounds0 = empty;
+      BBox3fa bounds1 = empty;
+      while (BezierRefList::item* block = iter.next()) 
+      {
+	for (size_t i=0; i<block->size(); i++) 
+        {
+          const Bezier1& ref = block->at(i);
+          const BezierCurves* curves = scene->getBezierCurves(ref.geomID);
+          bounds0.extend(curves->bounds(ref.primID,0));
+          bounds1.extend(curves->bounds(ref.primID,1));
+	}
+      }
+      this->bounds0.extend_atomic(bounds0);
+      this->bounds1.extend_atomic(bounds1);
+    }
     
     //////////////////////////////////////////////////////////////////////////////
     //                         Parallel Binning                                 //
@@ -430,6 +476,9 @@ namespace embree
       PrimRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
       linfo_o.reset();
       rinfo_o.reset();
+
+      size_t numLeft = 0; CentGeomBBox3fa leftBounds(empty);
+      size_t numRight = 0; CentGeomBBox3fa rightBounds(empty);
       
       while (PrimRefList::item* block = prims.take()) 
       {
@@ -441,14 +490,20 @@ namespace embree
 
 	  if (bin[dim] < pos) 
 	  {
-	    linfo_o.add(prim.bounds(),center);
+	    leftBounds.extend(prim.bounds()); numLeft++;
+	    //linfo_o.add(prim.bounds(),center);
+	    //if (++lblock->num > PrimRefBlock::blockSize)
+	    //lblock = lprims_o.insert(alloc.malloc(threadIndex));
 	    if (likely(lblock->insert(prim))) continue; 
 	    lblock = lprims_o.insert(alloc.malloc(threadIndex));
 	    lblock->insert(prim);
 	  } 
 	  else 
 	  {
-	    rinfo_o.add(prim.bounds(),center);
+	    rightBounds.extend(prim.bounds()); numRight++;
+	    //rinfo_o.add(prim.bounds(),center);
+	    //if (++rblock->num > PrimRefBlock::blockSize)
+	    //rblock = rprims_o.insert(alloc.malloc(threadIndex));
 	    if (likely(rblock->insert(prim))) continue;
 	    rblock = rprims_o.insert(alloc.malloc(threadIndex));
 	    rblock->insert(prim);
@@ -456,6 +511,9 @@ namespace embree
 	}
 	alloc.free(threadIndex,block);
       }
+
+      linfo_o.add(leftBounds.geomBounds,leftBounds.centBounds,numLeft);
+      rinfo_o.add(rightBounds.geomBounds,rightBounds.centBounds,numRight);
     }
         
     void ObjectPartition::Split::partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) const

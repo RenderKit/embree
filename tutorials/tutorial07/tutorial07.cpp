@@ -49,8 +49,10 @@ namespace embree
   static FileName hairFilename = "";
   static FileName cy_hairFilename = "";
   static FileName outFilename = "";
-  static int g_numFrames = 1;
-  static int g_skipFrames = 0;
+  static int g_skipBenchmarkFrames = 0;
+  static int g_numBenchmarkFrames = 0;
+  static bool g_interactive = true;
+
   static bool hairy_triangles = false;
   static float hairy_triangles_length = 1.0f;
   static float hairy_triangles_thickness = 0.1f;
@@ -122,7 +124,7 @@ namespace embree
 
   void tessellateHair(OBJScene& scene)
   {
-    OBJScene::Material material; material.illum = 1;
+    OBJScene::OBJMaterial material; material.illum = 1;
     int materialID = scene.materials.size();
     scene.materials.push_back(material);
 
@@ -562,12 +564,14 @@ float noise(float x, float y, float z)
       /* output filename */
       else if (tag == "-o") {
         outFilename = cin->getFileName();
+	g_interactive = false;
       }
 
       /* number of frames to render in benchmark mode */
-      else if (tag == "-frames") {
-        g_skipFrames = cin->getInt();
-        g_numFrames  = cin->getInt();
+      else if (tag == "-benchmark") {
+        g_skipBenchmarkFrames = cin->getInt();
+        g_numBenchmarkFrames  = cin->getInt();
+	g_interactive = false;
       }
 
       /* parse camera parameters */
@@ -606,37 +610,45 @@ float noise(float x, float y, float z)
     }
   }
 
+  void renderBenchmark(const FileName& fileName)
+  {
+    resize(g_width,g_height);
+    AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
+
+    double dt = 0.0f;
+    size_t numTotalFrames = g_skipBenchmarkFrames + g_numBenchmarkFrames;
+    for (size_t i=0; i<numTotalFrames; i++) 
+    {
+      double t0 = getSeconds();
+      render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
+      double t1 = getSeconds();
+      std::cout << "frame [" << i << " / " << numTotalFrames << "] ";
+      std::cout << 1.0/(t1-t0) << "fps ";
+      if (i < g_skipBenchmarkFrames) std::cout << "(skipped)";
+      std::cout << std::endl;
+      if (i >= g_skipBenchmarkFrames) dt += t1-t0;
+    }
+    std::cout << "frame [" << g_skipBenchmarkFrames << " - " << numTotalFrames << "] " << std::flush;
+    std::cout << double(g_numBenchmarkFrames)/dt << "fps " << std::endl;
+    std::cout << "BENCHMARK_RENDER " << double(g_numBenchmarkFrames)/dt << std::endl;
+  }
+
   void renderToFile(const FileName& fileName)
   {
     resize(g_width,g_height);
     AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
 
-    for (size_t i=0; i<g_skipFrames; i++) 
-      render(0.0f,
-             pixel2world.l.vx,
-             pixel2world.l.vy,
-             pixel2world.l.vz,
-             pixel2world.p);
-
-    double dt = 0.0f;
-    for (size_t i=0; i<g_numFrames; i++) 
-    {
-      std::cout << "frame [" << i << "/" << g_numFrames << "]" << std::endl;
-      double t0 = getSeconds();
-      render(0.0f,
-             pixel2world.l.vx,
-             pixel2world.l.vy,
-             pixel2world.l.vz,
-             pixel2world.p);
-      dt += getSeconds()-t0;
-    }
-    if (g_numFrames > 1) 
-      std::cout << "BENCHMARK_RENDER " << double(g_numFrames)/dt << std::endl;
+    render(0.0f,
+	   pixel2world.l.vx,
+	   pixel2world.l.vy,
+	   pixel2world.l.vz,
+	   pixel2world.p);
     
     void* ptr = map();
     Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
     storeImage(image, fileName);
     unmap();
+    cleanup();
   }
 
   /* main function in embree namespace */
@@ -667,7 +679,7 @@ float noise(float x, float y, float z)
 
     /* load scene */
     if (objFilename.str() != "" && objFilename.str() != "none")
-      loadOBJ(objFilename,g_obj_scene,offset);
+      loadOBJ(objFilename,AffineSpace3f::translate(-offset),g_obj_scene);
 
     /* load hair */
     if (hairFilename.str() != "" && hairFilename.str() != "none") {
@@ -697,17 +709,19 @@ float noise(float x, float y, float z)
     /* send model */
     set_scene(&g_obj_scene);
 
+    /* benchmark mode */
+    if (g_numBenchmarkFrames)
+      renderBenchmark(outFilename);
+    
     /* render to disk */
-    if (outFilename.str() != "") {
+    if (outFilename.str() != "") 
       renderToFile(outFilename);
-      return 0;
-    } 
 
-    /* initialize GLUT */
-    initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
-
-    /* enter the GLUT run loop */
-    enterWindowRunLoop();
+    /* interactive mode */
+    if (g_interactive) {
+      initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
+      enterWindowRunLoop();
+    }
     
     return 0;
   }

@@ -648,7 +648,7 @@ namespace embree
     /* work in multithreaded toplevel mode until sufficient subtasks got generated */    
     const size_t coreCount = (threadCount+3)/4;
     while (global_workStack.size() < coreCount &&
-	   global_workStack.size()+BVH4i::N <= SIZE_GLOBAL_WORK_STACK) 
+	   global_workStack.size()+BVH4Hair::N <= SIZE_GLOBAL_WORK_STACK) 
     {
       BuildRecord br;
       if (!global_workStack.pop_nolock_largest(br)) break;
@@ -972,8 +972,7 @@ namespace embree
     
     /* create leaf */
     if (current.items() <= MAX_ITEMS_PER_LEAF) {
-      //node[current.parentID].createLeaf(current.begin,current.items(),current.parentBoxID);
-      createLeaf(current.parentPtr,current.begin,current.items());
+      createBVH4HairLeaf(current.parentPtr,current.begin,current.items());
       return;
     }
 
@@ -990,9 +989,7 @@ namespace embree
     size_t numChildren = 1;
     const size_t currentIndex = alloc.get(1);
 
-    //node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
-
-    createNode(current.parentPtr,currentIndex);
+    createBVH4HairNode(current.parentPtr,currentIndex);
     
     node[currentIndex].prefetchNode<PFHINT_L2EX>();
 
@@ -1000,7 +997,6 @@ namespace embree
     for (size_t i=0; i<numChildren; i++) 
     {
       node[currentIndex].setMatrix(children[i].bounds.geometry, i);
-      //children[i].parentID  = currentIndex;
       children[i].parentPtr = &node[currentIndex].child(i);
       children[i].depth     = current.depth+1;
       createLeaf(children[i],alloc,threadIndex,threadCount);
@@ -1071,9 +1067,9 @@ namespace embree
     BVH4Hair::UnalignedNode *current_node = (BVH4Hair::UnalignedNode *)&node[currentIndex];
 
 #if ENABLE_AABB_NODES == 1
-    createNode(current.parentPtr,currentIndex,BVH4Hair::alignednode_mask);
+    createBVH4HairNode(current.parentPtr,currentIndex,BVH4Hair::alignednode_mask);
 #else
-    createNode(current.parentPtr,currentIndex);
+    createBVH4HairNode(current.parentPtr,currentIndex);
 #endif
 
 
@@ -1192,15 +1188,13 @@ namespace embree
     const size_t currentIndex = alloc.get(1);
     /* recurseOBB */
 
-    //node[current.parentID].createNode(&node[currentIndex],current.parentBoxID);
-
     node[currentIndex].prefetchNode<PFHINT_L2EX>();
 
     /* init used/unused nodes */
     node[currentIndex].setInvalid();
 
     // === default OBB node ===
-    createNode(current.parentPtr,currentIndex);
+    createBVH4HairNode(current.parentPtr,currentIndex);
 
     for (unsigned int i=0; i<numChildren; i++) 
       node[currentIndex].setMatrix(children[i].xfm,children[i].bounds.geometry,i);

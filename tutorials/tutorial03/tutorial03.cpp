@@ -170,6 +170,7 @@ namespace embree
     Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
     storeImage(image, fileName);
     unmap();
+    cleanup();
   }
 
   /* main function in embree namespace */
@@ -192,7 +193,7 @@ namespace embree
 
     /* load scene */
     if (filename.str() != "")
-      loadOBJ(filename,g_obj_scene);
+      loadOBJ(filename,one,g_obj_scene);
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());

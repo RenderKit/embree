@@ -52,13 +52,21 @@ namespace embree
   /* global settings */
   extern size_t g_numThreads;
   extern size_t g_verbose;
+
   extern std::string g_tri_accel;
   extern std::string g_tri_builder;
   extern std::string g_tri_traverser;
+  extern double g_tri_builder_replication_factor;
+
   extern std::string g_tri_accel_mb;
   extern std::string g_tri_builder_mb;
+  extern std::string g_tri_traverser_mb;
+
   extern std::string g_hair_accel;
   extern std::string g_hair_builder;
+  extern std::string g_hair_traverser;
+  extern double g_hair_builder_replication_factor;
+
   extern int g_scene_flags;
   extern size_t g_benchmark;
   extern float g_memory_preallocation_factor;
@@ -156,6 +164,7 @@ namespace embree
   typedef Vec2<ssef> sse2f;
   typedef Vec3<ssef> sse3f;
   typedef Vec4<ssef> sse4f;
+  typedef LinearSpace3<sse3f> LinearSpaceSSE3f;
   typedef AffineSpaceT<LinearSpace3<sse3f > > AffineSpaceSSE3f;
   typedef BBox<sse3f > BBoxSSE3f;
 #endif

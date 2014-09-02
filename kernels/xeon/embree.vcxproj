@@ -45,45 +45,52 @@
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX2|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseAVX|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <InterproceduralOptimization>true</InterproceduralOptimization>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -484,19 +491,17 @@
     <ClInclude Include="..\common\stat.h" />
     <ClInclude Include="bvh4\bvh4.h" />
     <ClInclude Include="bvh4\bvh4_builder.h" />
+    <ClInclude Include="bvh4\bvh4_builder_mb.h" />
     <ClInclude Include="bvh4\bvh4_builder_binner.h" />
     <ClInclude Include="bvh4\bvh4_builder_fast.h" />
     <ClInclude Include="bvh4\bvh4_builder_morton.h" />
     <ClInclude Include="bvh4\bvh4_builder_toplevel.h" />
     <ClInclude Include="bvh4\bvh4_intersector1.h" />
+    <ClInclude Include="bvh4\bvh4_intersector4_single.h" />
     <ClInclude Include="bvh4\bvh4_intersector4_chunk.h" />
     <ClInclude Include="bvh4\bvh4_refit.h" />
     <ClInclude Include="bvh4\bvh4_rotate.h" />
     <ClInclude Include="bvh4\bvh4_statistics.h" />
-    <ClInclude Include="bvh4mb\bvh4mb.h" />
-    <ClInclude Include="bvh4mb\bvh4mb_builder.h" />
-    <ClInclude Include="bvh4mb\bvh4mb_intersector1.h" />
-    <ClInclude Include="bvh4mb\bvh4mb_intersector4.h" />
     <ClInclude Include="builders\bezierrefgen.h" />
     <ClInclude Include="builders\heuristic_fallback.h" />
     <ClInclude Include="builders\heuristic_object_partition.h" />
@@ -548,7 +553,6 @@
     <ClInclude Include="geometry\filter.h" />
     <ClInclude Include="geometry\instance_intersector1.h" />
     <ClInclude Include="geometry\instance_intersector4.h" />
-    <ClInclude Include="geometry\ispc_wrapper_sse.h" />
     <ClInclude Include="geometry\mailbox.h" />
     <ClInclude Include="geometry\primitive.h" />
     <ClInclude Include="geometry\triangle1.h" />
@@ -575,11 +579,6 @@
     <ClInclude Include="..\..\include\embree2\rtcore_geometry_user.h" />
     <ClInclude Include="..\..\include\embree2\rtcore_ray.h" />
     <ClInclude Include="..\..\include\embree2\rtcore_scene.h" />
-    <ClInclude Include="bvh4hair\bvh4hair.h" />
-    <ClInclude Include="bvh4hair\bvh4hair_builder.h" />
-    <ClInclude Include="bvh4hair\bvh4hair_intersector1.h" />
-    <ClInclude Include="bvh4hair\bvh4hair_intersector4.h" />
-    <ClInclude Include="bvh4hair\bvh4hair_statistics.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\common\acceln.cpp" />
@@ -597,19 +596,17 @@
     <ClCompile Include="..\common\tasksys.cpp" />
     <ClCompile Include="bvh4\bvh4.cpp" />
     <ClCompile Include="bvh4\bvh4_builder.cpp" />
+    <ClCompile Include="bvh4\bvh4_builder_mb.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_binner.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_fast.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_morton.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_toplevel.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector1.cpp" />
+    <ClCompile Include="bvh4\bvh4_intersector4_single.cpp" />
     <ClCompile Include="bvh4\bvh4_intersector4_chunk.cpp" />
     <ClCompile Include="bvh4\bvh4_refit.cpp" />
     <ClCompile Include="bvh4\bvh4_rotate.cpp" />
     <ClCompile Include="bvh4\bvh4_statistics.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb_builder.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb_intersector1.cpp" />
-    <ClCompile Include="bvh4mb\bvh4mb_intersector4.cpp" />
     <ClCompile Include="builders\bezierrefgen.cpp" />
     <ClCompile Include="builders\heuristic_fallback.cpp" />
     <ClCompile Include="builders\heuristic_object_partition.cpp" />
@@ -622,17 +619,11 @@
     <ClCompile Include="geometry\bezier1i.cpp" />
     <ClCompile Include="geometry\instance_intersector1.cpp" />
     <ClCompile Include="geometry\instance_intersector4.cpp" />
-    <ClCompile Include="geometry\ispc_wrapper_sse.cpp" />
     <ClCompile Include="geometry\triangle1.cpp" />
     <ClCompile Include="geometry\triangle1v.cpp" />
     <ClCompile Include="geometry\triangle4.cpp" />
     <ClCompile Include="geometry\triangle4i.cpp" />
     <ClCompile Include="geometry\triangle4v.cpp" />
-    <ClCompile Include="bvh4hair\bvh4hair.cpp" />
-    <ClCompile Include="bvh4hair\bvh4hair_builder.cpp" />
-    <ClCompile Include="bvh4hair\bvh4hair_intersector1.cpp" />
-    <ClCompile Include="bvh4hair\bvh4hair_intersector4.cpp" />
-    <ClCompile Include="bvh4hair\bvh4hair_statistics.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ISPC Include="..\common\rtcore_ispc.ispc">

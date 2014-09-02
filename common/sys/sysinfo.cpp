@@ -280,6 +280,13 @@ namespace embree
 #endif
   }
 
+  size_t getNumberOfCores() {
+    static int nCores = -1;
+    if (nCores == -1) nCores = getNumberOfLogicalThreads(); // FIXME: detect if hyperthreading is enabled
+    if (nCores ==  0) nCores = 1;
+    return nCores;
+  }
+
   int getTerminalWidth() 
   {
     HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -352,9 +359,15 @@ namespace embree
 {
   size_t getNumberOfLogicalThreads() {
     static int nThreads = -1;
-    if (nThreads == -1)
-      nThreads = sysconf(_SC_NPROCESSORS_CONF);
+    if (nThreads == -1) nThreads = sysconf(_SC_NPROCESSORS_CONF);
     return nThreads;
+  }
+
+  size_t getNumberOfCores() {
+    static int nCores = -1;
+    if (nCores == -1) nCores = sysconf(_SC_NPROCESSORS_CONF)/2; // FIXME: detect if hyperthreading is enabled
+    if (nCores ==  0) nCores = 1;
+    return nCores;
   }
 
   int getTerminalWidth() 

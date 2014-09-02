@@ -18,21 +18,6 @@
 
 namespace embree
 {
-#if !defined (__MIC__)
-  extern AccelSet::IntersectFunc4 ispcWrapperIntersect4;
-  extern AccelSet::OccludedFunc4 ispcWrapperOccluded4;
-#endif
-
-#if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-  extern AccelSet::IntersectFunc8 ispcWrapperIntersect8;
-  extern AccelSet::OccludedFunc8 ispcWrapperOccluded8;
-#endif
-
-#if defined(__MIC__)
-  extern AccelSet::IntersectFunc16 ispcWrapperIntersect16;
-  extern AccelSet::OccludedFunc16 ispcWrapperOccluded16;
-#endif
-
   UserGeometryBase::UserGeometryBase (Scene* parent, GeometryTy ty, size_t items)
     : Geometry(parent,ty,1,RTC_GEOMETRY_STATIC), AccelSet(items)
   {
@@ -48,16 +33,10 @@ namespace embree
   }
 
   UserGeometry::UserGeometry (Scene* parent, size_t items) 
-    : UserGeometryBase(parent,USER_GEOMETRY,items),
-      ispcPtr(NULL),
-      ispcIntersect1(NULL), ispcIntersect4(NULL), ispcIntersect8(NULL), ispcIntersect16(NULL),
-      ispcOccluded1(NULL), ispcOccluded4(NULL), ispcOccluded8(NULL), ispcOccluded16(NULL) {}
+    : UserGeometryBase(parent,USER_GEOMETRY,items) {}
   
-  void UserGeometry::setUserData (void* ptr, bool ispc) 
-  {
-    if (ispc) ispcPtr = ptr;
-    else intersectors.ptr = ptr;
-    intersectors.boundsPtr = ptr;
+  void UserGeometry::setUserData (void* ptr, bool ispc) {
+    intersectors.ptr = ptr;
   }
   
   void UserGeometry::setBoundsFunction (RTCBoundsFunc bounds) {
@@ -70,41 +49,20 @@ namespace embree
 
   void UserGeometry::setIntersectFunction4 (RTCIntersectFunc4 intersect4, bool ispc) 
   {
-    if (ispc) {
-#if !defined (__MIC__)
-      intersectors.ptr = this;
-      intersectors.intersector4.intersect = ispcWrapperIntersect4;
-      ispcIntersect4 = (void*) intersect4;
-#endif
-    } else {
-      intersectors.intersector4.intersect = intersect4;
-    }
+    intersectors.intersector4.intersect = (void*)intersect4;
+    intersectors.intersector4.ispc = ispc;
   }
 
   void UserGeometry::setIntersectFunction8 (RTCIntersectFunc8 intersect8, bool ispc) 
   {
-    if (ispc) {
-#if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-      intersectors.ptr = this;
-      intersectors.intersector8.intersect = ispcWrapperIntersect8;
-      ispcIntersect8 = (void*) intersect8;
-#endif
-    } else {
-      intersectors.intersector8.intersect = intersect8;
-    }
+    intersectors.intersector8.intersect = (void*)intersect8;
+    intersectors.intersector8.ispc = ispc;
   }
 
   void UserGeometry::setIntersectFunction16 (RTCIntersectFunc16 intersect16, bool ispc) 
   {
-    if (ispc) {
-#if defined(__MIC__)
-      intersectors.ptr = this;
-      intersectors.intersector16.intersect = ispcWrapperIntersect16;
-      ispcIntersect16 = (void*) intersect16;
-#endif
-    } else {
-      intersectors.intersector16.intersect = intersect16;
-    }
+    intersectors.intersector16.intersect = (void*)intersect16;
+    intersectors.intersector16.ispc = ispc;
   }
 
   void UserGeometry::setOccludedFunction (RTCOccludedFunc occluded1, bool ispc) {
@@ -113,41 +71,20 @@ namespace embree
 
   void UserGeometry::setOccludedFunction4 (RTCOccludedFunc4 occluded4, bool ispc) 
   {
-    if (ispc) {
-#if !defined (__MIC__)
-      intersectors.ptr = this;
-      intersectors.intersector4.occluded = ispcWrapperOccluded4;
-      ispcOccluded4 = (void*) occluded4;
-#endif
-    } else {
-      intersectors.intersector4.occluded = occluded4;
-    }
+    intersectors.intersector4.occluded = (void*)occluded4;
+    intersectors.intersector4.ispc = ispc;
   }
 
   void UserGeometry::setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc) 
   {
-    if (ispc) {
-#if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-      intersectors.ptr = this;
-      intersectors.intersector8.occluded = ispcWrapperOccluded8;
-      ispcOccluded8 = (void*) occluded8;
-#endif
-    } else {
-      intersectors.intersector8.occluded = occluded8;
-    }
+    intersectors.intersector8.occluded = (void*)occluded8;
+    intersectors.intersector8.ispc = ispc;
   }
 
   void UserGeometry::setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc) 
   {
-    if (ispc) {
-#if defined(__MIC__)
-      intersectors.ptr = this;
-      intersectors.intersector16.occluded = ispcWrapperOccluded16;
-      ispcOccluded16 = (void*) occluded16;
-#endif
-    } else {
-      intersectors.intersector16.occluded = occluded16;
-    }
+    intersectors.intersector16.occluded = (void*)occluded16;
+    intersectors.intersector16.ispc = ispc;
   }
 
   extern RTCBoundsFunc InstanceBoundsFunc;
@@ -160,7 +97,6 @@ namespace embree
     : UserGeometryBase(parent,USER_GEOMETRY,1), local2world(one), world2local(one), object(object)
   {
     intersectors.ptr = this;
-    intersectors.boundsPtr = this;
     boundsFunc = InstanceBoundsFunc;
     intersectors.intersector1 = InstanceIntersector1;
     intersectors.intersector4 = InstanceIntersector4; 

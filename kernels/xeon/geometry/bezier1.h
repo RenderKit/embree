@@ -302,7 +302,7 @@ namespace embree
       
       /*! return the split curve */
       if (p0p < pos) subdivide(left_o,right_o,0.5f*(u0+u1));
-      else            subdivide(right_o,left_o,0.5f*(u0+u1));
+      else           subdivide(right_o,left_o,0.5f*(u0+u1));
       return true;
     }
 

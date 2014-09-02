@@ -22,6 +22,8 @@ FIND_PACKAGE(OpenGL REQUIRED)
 INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
 ADD_LIBRARY(tutorial STATIC 
     glutdisplay.cpp
+    xml_parser.cpp
+    xml_loader.cpp
     obj_loader.cpp
     hair_loader.cpp
     cy_hair_loader.cpp)

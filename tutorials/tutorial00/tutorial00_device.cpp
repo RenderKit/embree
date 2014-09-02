@@ -62,7 +62,7 @@ unsigned int addCube (RTCScene scene_i)
   rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
 
   /* create triangle color array */
-  colors = new Vec3fa[12];
+  colors = (Vec3fa*) alignedMalloc(12*sizeof(Vec3fa));
 
   /* set triangles and colors */
   int tri = 0;
@@ -280,7 +280,7 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
-  delete[] colors;
+  alignedFree(colors);
   rtcExit();
 }
 

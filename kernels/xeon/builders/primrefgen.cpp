@@ -24,6 +24,8 @@ namespace embree
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
+    const size_t single_threaded_primrefgen_threshold = 10000;
+
     void PrimRefListGen::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRefList& prims, PrimInfo& pinfo) {
       PrimRefListGen gen(threadIndex,threadCount,alloc,scene,ty,numTimeSteps,prims,pinfo);
     }
@@ -37,22 +39,13 @@ namespace embree
       if ((ty & BEZIER_CURVES) && (numTimeSteps & 1)) numPrimitives += scene->numBezierCurves;
       if ((ty & BEZIER_CURVES) && (numTimeSteps & 2)) numPrimitives += scene->numBezierCurves2;
       if ((ty & USER_GEOMETRY)                      ) numPrimitives += scene->numUserGeometries1;
-
-      /*if (ty & USER_GEOMETRY) { // FIXME: remove
-	for (size_t i=0; i<scene->size(); i++) {
-	  Geometry* geom =  (Geometry*) scene->get(i);
-	  if (!geom || geom->type != USER_GEOMETRY) continue;
-	  AccelSet* accel = (UserGeometryBase*) geom; 
-	  if (geom->isModified()) {
-	    accel->build(threadIndex,threadCount);
-	    geom->state = Geometry::ENABLED;
-	  }
-	}
-	}*/
-
-      /*! parallel stage */
+      
       pinfo.reset();
-      TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
+      if (numPrimitives <= single_threaded_primrefgen_threshold) 
+	task_gen_parallel(0,1,0,1,NULL);
+      else
+	TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
+
       assert(pinfo_o.size() == numPrimitives);
     }
     
@@ -143,7 +136,11 @@ namespace embree
       : geom(geom), alloc(alloc), prims_o(prims), pinfo_o(pinfo)
     {
       pinfo_o.reset();
-      TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::primrefgen");
+      if (geom->size() <= single_threaded_primrefgen_threshold)
+	task_gen_parallel(0,1,0,1,NULL);
+      else
+	TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::primrefgen");
+      
       assert(pinfo_o.size() == geom->size());
     }
     

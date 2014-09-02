@@ -17,6 +17,8 @@
 #include "bvh4i_intersector16_single.h"
 #include "bvh4i_leaf_intersector.h"
 
+
+
 namespace embree
 {
   namespace isa
@@ -24,8 +26,6 @@ namespace embree
     
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
     static unsigned int M_LANE_7777 = 0x7777;               // needed due to compiler efficiency bug
-
-
 
     // ============================================================================================
     // ============================================================================================
@@ -37,6 +37,7 @@ namespace embree
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+
 
       /* setup */
       const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
@@ -93,7 +94,7 @@ namespace embree
 	      /* intersect one ray against four triangles */
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
-
+	      // PING;
 	      const bool hit = LeafIntersector::intersect(curNode,
 							  rayIndex,
 							  dir_xyz,
@@ -192,6 +193,7 @@ namespace embree
 
 
       store16i(m_valid & toMask(terminated),&ray16.geomID,0);
+
     }
 
     typedef BVH4iIntersector16Single< Triangle1LeafIntersector  < true >, false  > Triangle1Intersector16SingleMoellerFilter;

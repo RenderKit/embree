@@ -25,6 +25,7 @@
 #include <common/COISysInfo_common.h>
 #include <common/COIEvent_common.h>
 
+
 extern "C" int64 get_tsc() {
   return __rdtsc();
 }
@@ -38,20 +39,19 @@ namespace embree
   public:
     ISPCMesh (int numTriangles, int numVertices) 
       : numTriangles(numTriangles), numVertices(numVertices),
-        positions(NULL), normals(NULL), texcoords(NULL), triangles(NULL), dir(zero), offset(zero) {}
+        positions(NULL), normals(NULL), texcoords(NULL), triangles(NULL), dir(zero), offset(zero) 
+    {
+      sizePositions = 0;
+      sizeNormals   = 0;
+      sizeTexCoords = 0;
+      sizeTriangles = 0;
+    }
 
     ~ISPCMesh () {
-      // DBG_PRINT(positions);
-      // DBG_PRINT(normals);
-      // DBG_PRINT(texcoords);
-      // DBG_PRINT(triangles);
-
-#if 0 // FIXME: causing double frees on MIC
-      if (positions) free(positions);
-      if (normals) free(normals);
-      if (texcoords) free(texcoords);
-      if (triangles) free(triangles);
-#endif
+      if (positions) os_free(positions,sizePositions);
+      if (normals)   os_free(normals  ,sizeNormals);
+      if (texcoords) os_free(texcoords,sizeTexCoords);
+      if (triangles) os_free(triangles,sizeTriangles);
       positions = NULL;
       normals   = NULL;
       texcoords = NULL;
@@ -67,6 +67,10 @@ namespace embree
     int numTriangles;
     Vec3f dir;
     float offset;
+    size_t sizePositions;
+    size_t sizeNormals;
+    size_t sizeTexCoords;
+    size_t sizeTriangles;
   };
 
   /* ISPC compatible scene */
@@ -220,15 +224,26 @@ namespace embree
     assert( in_pMiscData->numTriangles*sizeof(OBJScene::Triangle) == in_pBufferLengths[3] );
     //assert( in_pMiscData->numVertices*sizeof(Vec3fa) == in_pBufferLengths[1] );
 
-    const size_t EXTRA_SPACE = 2*64;
-    mesh->positions = (Vec3fa*)os_malloc(in_pBufferLengths[0]+EXTRA_SPACE);
-    mesh->normals   = (Vec3fa*)os_malloc(in_pBufferLengths[1]+EXTRA_SPACE);
-    mesh->texcoords = (Vec2f* )os_malloc(in_pBufferLengths[2]+EXTRA_SPACE);
-    mesh->triangles = (OBJScene::Triangle*)os_malloc(in_pBufferLengths[3]+EXTRA_SPACE);
+    mesh->positions = (Vec3fa*)os_malloc(in_pBufferLengths[0]);
+    mesh->normals   = (Vec3fa*)os_malloc(in_pBufferLengths[1]);
+    mesh->texcoords = (Vec2f* )os_malloc(in_pBufferLengths[2]);
+    mesh->triangles = (OBJScene::Triangle*)os_malloc(in_pBufferLengths[3]);
     memcpy(mesh->positions,in_ppBufferPointers[0],in_pBufferLengths[0]);
     memcpy(mesh->normals  ,in_ppBufferPointers[1],in_pBufferLengths[1]);
     memcpy(mesh->texcoords,in_ppBufferPointers[2],in_pBufferLengths[2]);
     memcpy(mesh->triangles,in_ppBufferPointers[3],in_pBufferLengths[3]);
+    mesh->sizePositions = in_pBufferLengths[0];
+    mesh->sizeNormals   = in_pBufferLengths[1];
+    mesh->sizeTexCoords = in_pBufferLengths[2];
+    mesh->sizeTriangles = in_pBufferLengths[3];
+    
+#if 0
+    DBG_PRINT( mesh->sizePositions );
+    DBG_PRINT( mesh->sizeNormals );
+    DBG_PRINT( mesh->sizeTexCoords );
+    DBG_PRINT( mesh->sizeTriangles );
+#endif
+
     g_ispc_scene->meshes[meshID] = mesh;
   }
 

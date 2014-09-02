@@ -447,6 +447,10 @@ namespace embree
   __forceinline mic_f broadcast4to16f(const void *f) { 
     return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_4X16,0);  
   }
+
+  __forceinline mic_f broadcast8to16f(const void *f) { 
+    return  _mm512_castpd_ps(_mm512_extload_pd(f,_MM_UPCONV_PD_NONE,_MM_BROADCAST_4X8,0));  
+  }
     
   __forceinline mic_f load16f_uint8(const unsigned char *const ptr) {
     return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_UINT8,_MM_BROADCAST_16X16,_MM_HINT_NONE),mic_f(1.0f/255.0f));  
@@ -499,6 +503,16 @@ namespace embree
     v = mask_and(m_00f0,v,v_mask, broadcast4to16i((const int*)ptr1));
     v = mask_and(m_0f00,v,v_mask, broadcast4to16i((const int*)ptr2));
     v = mask_and(m_f000,v,v_mask, broadcast4to16i((const int*)ptr3));
+    return cast(v);
+  }
+
+  __forceinline mic_f gather_2f_zlc(const mic_i &v_mask,
+				    const mic_m &mask,
+                                    const void *__restrict__ const ptr0,
+                                    const void *__restrict__ const ptr1) 
+  {
+    mic_i v = v_mask &  broadcast4to16i((const int*)ptr0);
+    v = mask_and(mask,v,v_mask, broadcast4to16i((const int*)ptr1));
     return cast(v);
   }
 

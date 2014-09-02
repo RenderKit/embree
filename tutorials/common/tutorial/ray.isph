@@ -35,6 +35,7 @@ struct RTCRay1
   uniform int geomID;    //!< geometry ID
   uniform int primID;    //!< primitive ID
   uniform int instID;    //!< instance ID
+  varying int align[0];  //!< aligns ray on stack to at least 16 bytes
 };
 
 /*! Ray structure. Contains all information about a ray including

@@ -27,29 +27,31 @@
 #include "geometry/triangle4v_intersector1_pluecker.h"
 #include "geometry/triangle4i_intersector1.h"
 #include "geometry/virtual_accel_intersector1.h"
+#include "geometry/triangle1v_intersector1_moeller_mb.h"
 
 namespace embree
 { 
   namespace isa
   {
-    template<typename PrimitiveIntersector>
-    void BVH4Intersector1<PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
+    template<int types, typename PrimitiveIntersector>
+    void BVH4Intersector1<types,PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray);
 
       /*! stack state */
-      StackItemInt32<NodeRef> stack[stackSize];  //!< stack of nodes 
+      StackItemInt32<NodeRef> stack[stackSize];            //!< stack of nodes 
       StackItemInt32<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
       StackItemInt32<NodeRef>* stackEnd = stack+stackSize;
-      stack[0].ptr = bvh->root;
+      stack[0].ptr  = bvh->root;
       stack[0].dist = neg_inf;
             
       /*! load the ray into SIMD registers */
-      const sse3f norg(-ray.org.x,-ray.org.y,-ray.org.z);
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
-      const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
+      const sse3f org(ray.org.x,ray.org.y,ray.org.z);
+      const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
+      const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
       const ssef  ray_near(ray.tnear);
       ssef ray_far(ray.tfar);
@@ -74,57 +76,46 @@ namespace embree
         /* downtraversal loop */
         while (true)
         {
-          /*! stop if we found a leaf */
-          if (unlikely(cur.isLeaf())) break;
-          STAT3(normal.trav_nodes,1,1,1);
-          
-          /*! single ray intersection with 4 boxes */
-          const Node* node = cur.node();
-          const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
-#if defined (__AVX2__)
-          const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
-          const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);
-          const ssef tNearZ = msub(load4f((const char*)node+nearZ), rdir.z, org_rdir.z);
-          const ssef tFarX  = msub(load4f((const char*)node+farX ), rdir.x, org_rdir.x);
-          const ssef tFarY  = msub(load4f((const char*)node+farY ), rdir.y, org_rdir.y);
-          const ssef tFarZ  = msub(load4f((const char*)node+farZ ), rdir.z, org_rdir.z);
-#else
-          const ssef tNearX = (norg.x + load4f((const char*)node+nearX)) * rdir.x;
-          const ssef tNearY = (norg.y + load4f((const char*)node+nearY)) * rdir.y;
-          const ssef tNearZ = (norg.z + load4f((const char*)node+nearZ)) * rdir.z;
-          const ssef tFarX  = (norg.x + load4f((const char*)node+farX )) * rdir.x;
-          const ssef tFarY  = (norg.y + load4f((const char*)node+farY )) * rdir.y;
-          const ssef tFarZ  = (norg.z + load4f((const char*)node+farZ )) * rdir.z;
-#endif
+	  size_t mask; 
+	  ssef tNear;
 
-#if defined(__SSE4_1__)
-          const ssef tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_near));
-          const ssef tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_far ));
-          const sseb vmask = cast(tNear) > cast(tFar);
-          size_t mask = movemask(vmask)^0xf;
-#else
-          const ssef tNear = max(tNearX,tNearY,tNearZ,ray_near);
-          const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
-          const sseb vmask = tNear <= tFar;
-          size_t mask = movemask(vmask);
-#endif
-          
+	  /*! stop if we found a leaf node */
+	  if (unlikely(cur.isLeaf(types))) break;
+	  STAT3(normal.trav_nodes,1,1,1);
+
+	  /* process standard nodes */
+          if (likely(cur.isNode(types)))
+	    mask = cur.node()->intersect(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+
+	  /* process motion blur nodes */
+	  else if (likely(cur.isNodeMB(types)))
+	    mask = cur.nodeMB()->intersect(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time,tNear); 
+
+	  /*! process nodes with unaligned bounds */
+          else if (unlikely(cur.isUnalignedNode(types)))
+            mask = cur.unalignedNode()->intersect(org,dir,ray_near,ray_far,tNear);
+
+          /*! process nodes with unaligned bounds and motion blur */
+          else if (unlikely(cur.isUnalignedNodeMB(types)))
+            mask = cur.unalignedNodeMB()->intersect(org,dir,ray_near,ray_far,ray.time,tNear);
+
           /*! if no child is hit, pop next node */
+	  const BVH4::BaseNode* node = cur.baseNode(types);
           if (unlikely(mask == 0))
             goto pop;
           
           /*! one child is hit, continue with that child */
-          size_t r = __bscf(mask);
-          if (likely(mask == 0)) {
-            cur = node->child(r); cur.prefetch();
+	  size_t r = __bscf(mask);
+	  if (likely(mask == 0)) {
+            cur = node->child(r); cur.prefetch(types);
             assert(cur != BVH4::emptyNode);
             continue;
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); c0.prefetch(); const unsigned int d0 = ((unsigned int*)&tNear)[r];
+          NodeRef c0 = node->child(r); c0.prefetch(types); const unsigned int d0 = ((unsigned int*)&tNear)[r];
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); c1.prefetch(); const unsigned int d1 = ((unsigned int*)&tNear)[r];
+          NodeRef c1 = node->child(r); c1.prefetch(types); const unsigned int d1 = ((unsigned int*)&tNear)[r];
           assert(c0 != BVH4::emptyNode);
           assert(c1 != BVH4::emptyNode);
           if (likely(mask == 0)) {
@@ -143,7 +134,7 @@ namespace embree
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          NodeRef c = node->child(r); c.prefetch(); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           assert(c != BVH4::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
@@ -154,7 +145,7 @@ namespace embree
           /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
-          c = node->child(r); c.prefetch(); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           assert(c != BVH4::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -169,8 +160,8 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    template<typename PrimitiveIntersector>
-    void BVH4Intersector1<PrimitiveIntersector>::occluded(const BVH4* bvh, Ray& ray)
+    template<int types, typename PrimitiveIntersector>
+    void BVH4Intersector1<types,PrimitiveIntersector>::occluded(const BVH4* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray);
@@ -182,10 +173,11 @@ namespace embree
       stack[0] = bvh->root;
       
       /*! load the ray into SIMD registers */
-      const sse3f norg(-ray.org.x,-ray.org.y,-ray.org.z);
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
-      const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
+      const sse3f org(ray.org.x,ray.org.y,ray.org.z);
+      const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
+      const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
       const ssef  ray_near(ray.tnear);
       ssef ray_far(ray.tfar);
@@ -206,57 +198,46 @@ namespace embree
         /* downtraversal loop */
         while (true)
         {
-          /*! stop if we found a leaf */
-          if (unlikely(cur.isLeaf())) break;
-          STAT3(shadow.trav_nodes,1,1,1);
-          
-          /*! single ray intersection with 4 boxes */
-          const Node* node = cur.node();
-          const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
-#if defined (__AVX2__)
-          const ssef tNearX = msub(load4f((const char*)node+nearX), rdir.x, org_rdir.x);
-          const ssef tNearY = msub(load4f((const char*)node+nearY), rdir.y, org_rdir.y);
-          const ssef tNearZ = msub(load4f((const char*)node+nearZ), rdir.z, org_rdir.z);
-          const ssef tFarX  = msub(load4f((const char*)node+farX ), rdir.x, org_rdir.x);
-          const ssef tFarY  = msub(load4f((const char*)node+farY ), rdir.y, org_rdir.y);
-          const ssef tFarZ  = msub(load4f((const char*)node+farZ ), rdir.z, org_rdir.z);
-#else
-          const ssef tNearX = (norg.x + load4f((const char*)node+nearX)) * rdir.x;
-          const ssef tNearY = (norg.y + load4f((const char*)node+nearY)) * rdir.y;
-          const ssef tNearZ = (norg.z + load4f((const char*)node+nearZ)) * rdir.z;
-          const ssef tFarX  = (norg.x + load4f((const char*)node+farX )) * rdir.x;
-          const ssef tFarY  = (norg.y + load4f((const char*)node+farY )) * rdir.y;
-          const ssef tFarZ  = (norg.z + load4f((const char*)node+farZ )) * rdir.z;
-#endif
-          
-#if defined(__SSE4_1__)
-          const ssef tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_near));
-          const ssef tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_far ));
-          const sseb vmask = cast(tNear) > cast(tFar);
-          size_t mask = movemask(vmask)^0xf;
-#else
-          const ssef tNear = max(tNearX,tNearY,tNearZ,ray_near);
-          const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
-          const sseb vmask = tNear <= tFar;
-          size_t mask = movemask(vmask);
-#endif
-          
+	  size_t mask; 
+	  ssef tNear;
+
+	  /*! stop if we found a leaf node */
+	  if (unlikely(cur.isLeaf(types))) break;
+	  STAT3(shadow.trav_nodes,1,1,1);
+
+	  /* process standard nodes */
+          if (likely(cur.isNode(types)))
+	    mask = cur.node()->intersect(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+
+	  /* process motion blur nodes */
+	  else if (likely(cur.isNodeMB(types)))
+	    mask = cur.nodeMB()->intersect(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time,tNear); 
+
+	  /*! process nodes with unaligned bounds */
+          else if (unlikely(cur.isUnalignedNode(types)))
+            mask = cur.unalignedNode()->intersect(org,dir,ray_near,ray_far,tNear);
+
+          /*! process nodes with unaligned bounds and motion blur */
+          else if (unlikely(cur.isUnalignedNodeMB(types)))
+            mask = cur.unalignedNodeMB()->intersect(org,dir,ray_near,ray_far,ray.time,tNear);
+	  
           /*! if no child is hit, pop next node */
+	  const BVH4::BaseNode* node = cur.baseNode(types);
           if (unlikely(mask == 0))
             goto pop;
-          
-          /*! one child is hit, continue with that child */
+	  
+	  /*! one child is hit, continue with that child */
           size_t r = __bscf(mask);
           if (likely(mask == 0)) {
-            cur = node->child(r); cur.prefetch(); 
+            cur = node->child(r); cur.prefetch(types); 
             assert(cur != BVH4::emptyNode);
             continue;
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); c0.prefetch(); const unsigned int d0 = ((unsigned int*)&tNear)[r];
+          NodeRef c0 = node->child(r); c0.prefetch(types); const unsigned int d0 = ((unsigned int*)&tNear)[r];
           r = __bscf(mask);
-          NodeRef c1 = node->child(r); c1.prefetch(); const unsigned int d1 = ((unsigned int*)&tNear)[r];
+          NodeRef c1 = node->child(r); c1.prefetch(types); const unsigned int d1 = ((unsigned int*)&tNear)[r];
           assert(c0 != BVH4::emptyNode);
           assert(c1 != BVH4::emptyNode);
           if (likely(mask == 0)) {
@@ -271,14 +252,14 @@ namespace embree
           
           /*! three children are hit */
           r = __bscf(mask);
-          cur = node->child(r); cur.prefetch();
+          cur = node->child(r); cur.prefetch(types);
           assert(cur != BVH4::emptyNode);
           if (likely(mask == 0)) continue;
           assert(stackPtr < stackEnd);
           *stackPtr = cur; stackPtr++;
           
           /*! four children are hit */
-          cur = node->child(3); cur.prefetch();
+          cur = node->child(3); cur.prefetch(types);
           assert(cur != BVH4::emptyNode);
         }
         
@@ -293,16 +274,23 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR1(BVH4Bezier1Intersector1,BVH4Intersector1<Bezier1Intersector1>);
-    DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1,BVH4Intersector1<Bezier1iIntersector1>);
-    DEFINE_INTERSECTOR1(BVH4Triangle1Intersector1Moeller,BVH4Intersector1<Triangle1Intersector1MoellerTrumbore>);
-    DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVH4Intersector1<Triangle4Intersector1MoellerTrumbore>);
+    DEFINE_INTERSECTOR1(BVH4Bezier1Intersector1,BVH4Intersector1<0x1 COMMA Bezier1Intersector1>);
+    DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1,BVH4Intersector1<0x1 COMMA Bezier1iIntersector1>);
+    
+    DEFINE_INTERSECTOR1(BVH4Bezier1Intersector1_OBB,BVH4Intersector1<0x101 COMMA Bezier1Intersector1>);
+    DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1_OBB,BVH4Intersector1<0x101 COMMA Bezier1iIntersector1>);
+    DEFINE_INTERSECTOR1(BVH4Bezier1iMBIntersector1_OBB,BVH4Intersector1<0x1010 COMMA Bezier1iIntersector1MB>);
+
+    DEFINE_INTERSECTOR1(BVH4Triangle1Intersector1Moeller,BVH4Intersector1<0x1 COMMA Triangle1Intersector1MoellerTrumbore>);
+    DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVH4Intersector1<0x1 COMMA Triangle4Intersector1MoellerTrumbore>);
 #if defined(__AVX__)
-    DEFINE_INTERSECTOR1(BVH4Triangle8Intersector1Moeller,BVH4Intersector1<Triangle8Intersector1MoellerTrumbore>);
+    DEFINE_INTERSECTOR1(BVH4Triangle8Intersector1Moeller,BVH4Intersector1<0x1 COMMA Triangle8Intersector1MoellerTrumbore>);
 #endif
-    DEFINE_INTERSECTOR1(BVH4Triangle1vIntersector1Pluecker,BVH4Intersector1<Triangle1vIntersector1Pluecker>);
-    DEFINE_INTERSECTOR1(BVH4Triangle4vIntersector1Pluecker,BVH4Intersector1<Triangle4vIntersector1Pluecker>);
-    DEFINE_INTERSECTOR1(BVH4Triangle4iIntersector1Pluecker,BVH4Intersector1<Triangle4iIntersector1Pluecker>);
-    DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<VirtualAccelIntersector1>);
+    DEFINE_INTERSECTOR1(BVH4Triangle1vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA Triangle1vIntersector1Pluecker>);
+    DEFINE_INTERSECTOR1(BVH4Triangle4vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA Triangle4vIntersector1Pluecker>);
+    DEFINE_INTERSECTOR1(BVH4Triangle4iIntersector1Pluecker,BVH4Intersector1<0x1 COMMA Triangle4iIntersector1Pluecker>);
+    DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA VirtualAccelIntersector1>);
+
+    DEFINE_INTERSECTOR1(BVH4Triangle1vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA Triangle1vIntersector1MoellerTrumboreMB>);
   }
 }

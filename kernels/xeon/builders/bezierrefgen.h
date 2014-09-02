@@ -35,7 +35,7 @@ namespace embree
     public:
       
       /*! standard constructor that schedules the task */
-      BezierRefGen (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>* alloc, const Scene* scene);
+      BezierRefGen (size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>* alloc, const Scene* scene, const size_t numTimeSteps = 1);
       
     public:
       
@@ -45,6 +45,7 @@ namespace embree
       /* input data */
     private:
       const Scene* scene;                  //!< input geometry
+      const size_t numTimeSteps;
       PrimRefBlockAlloc<Bezier1>* alloc;   //!< allocator for build primitive blocks
       
       /* intermediate data */

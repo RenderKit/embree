@@ -16,6 +16,7 @@
 
 #include "tutorial/tutorial.h"
 #include "tutorial/obj_loader.h"
+#include "tutorial/xml_loader.h"
 #include "sys/taskscheduler.h"
 #include "image/image.h"
 
@@ -170,6 +171,7 @@ namespace embree
     Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
     storeImage(image, fileName);
     unmap();
+    cleanup();
   }
 
   /* main function in embree namespace */
@@ -191,8 +193,12 @@ namespace embree
 #endif
 
     /* load scene */
-    if (filename.str() != "")
-      loadOBJ(filename,g_obj_scene);
+    if (strlwr(filename.ext()) == "obj")
+      loadOBJ(filename,one,g_obj_scene);
+    else if (strlwr(filename.ext()) == "xml")
+      loadXML(filename,one,g_obj_scene);
+    else
+      throw std::runtime_error("invalid scene type: "+strlwr(filename.ext()));
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());

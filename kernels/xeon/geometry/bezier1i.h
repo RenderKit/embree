@@ -64,6 +64,40 @@ namespace embree
     unsigned int primID;  //!< primitive ID
   };
 
+  struct Bezier1iMB
+  {
+  public:
+
+    /*! Default constructor. */
+    __forceinline Bezier1iMB () {}
+
+    /*! Construction from vertices and IDs. */
+    __forceinline Bezier1iMB (const Vec3fa* p0, const Vec3fa* p1, const unsigned int geomID, const unsigned int primID)
+      : p0(p0), p1(p1), geomID(geomID), primID(primID) {}
+
+    /*! calculate the bounds of the triangle */
+    __forceinline BBox3fa bounds0() const {
+      const BBox3fa b = merge(BBox3fa(p0[0]),BBox3fa(p0[1]),BBox3fa(p0[2]),BBox3fa(p0[3]));
+      return enlarge(b,Vec3fa(b.upper.w));
+    }
+
+    /*! fill from list */
+    __forceinline void fill(atomic_set<PrimRefBlockT<Bezier1> >::block_iterator_unsafe& iter, Scene* scene)
+    {
+      const Bezier1& curve = *iter; iter++;
+      const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID);
+      const Vec3fa& p0 = in->vertex(in->curve(curve.primID),0);
+      const Vec3fa& p1 = in->vertex(in->curve(curve.primID),1);
+      new (this) Bezier1iMB(&p0,&p1,curve.geomID,curve.primID);
+    }
+
+  public:
+    const Vec3fa* p0;      //!< pointer to first control point (x,y,z,r) for time t0
+    const Vec3fa* p1;      //!< pointer to first control point (x,y,z,r) for time t1
+    unsigned int geomID;  //!< geometry ID
+    unsigned int primID;  //!< primitive ID
+  };
+
   struct Bezier1iType : public PrimitiveType {
     Bezier1iType ();
     size_t blocks(size_t x) const;
@@ -76,5 +110,12 @@ namespace embree
     void pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const; 
     void pack(char* dst, const PrimRef* prims, size_t num, void* geom) const;
     BBox3fa update(char* prim, size_t num, void* geom) const;
+  };
+
+  struct Bezier1iMBType : public PrimitiveType {
+    static Bezier1iMBType type;
+    Bezier1iMBType ();
+    size_t blocks(size_t x) const;
+    size_t size(const char* This) const;
   };
 }
