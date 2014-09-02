@@ -824,8 +824,8 @@ namespace embree
 	const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
 	const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
 	const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
-	const ssef tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tNear));
-	const ssef tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tFar));
+	const ssef tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
+	const ssef tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar));
 	dist = tNear;
 	const sseb vmask = tNear <= tFar;
 	return movemask(vmask);
@@ -836,9 +836,9 @@ namespace embree
 	const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
 	const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
 	const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
-	const ssef tNear = max(tNearX,tNearY,tNearZ,tNear);
-	const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
-	dist = tFar;
+	const ssef tNear = max(tNearX,tNearY,tNearZ,tnear);
+	const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+	dist = tNear;
 	const sseb vmask = tNear <= tFar;
 	return movemask(vmask);
 #endif
