@@ -50,11 +50,11 @@ namespace embree
         const BezierCurves* curves = scene->getBezierCurves(i->geomID);
         const int curve = curves->curve(i->primID);
 
-        const Vec3fa a3 = i->p3;
-	const Vec3fa a2 = i->p2;
-	const Vec3fa a1 = i->p1;
-        const Vec3fa a0 = i->p0;
-
+	const Vec3fa a3 = curves->vertex(curve+3,0);
+	const Vec3fa a2 = curves->vertex(curve+2,0);
+	const Vec3fa a1 = curves->vertex(curve+1,0);
+        const Vec3fa a0 = curves->vertex(curve+0,0);
+					 
         const Vec3fa b3 = curves->vertex(curve+3,1);
 	const Vec3fa b2 = curves->vertex(curve+2,1);
 	const Vec3fa b1 = curves->vertex(curve+1,1);
@@ -150,13 +150,19 @@ namespace embree
 
         const BezierCurves* curves = scene->getBezierCurves(i->geomID);
 #if BVH4HAIR_MB_VERSION == 0
-        s0t0.extend(curves->bounds(spaces.first ,i->primID,0));
+	s0t0.extend(curves->bounds(spaces.first ,i->primID,0));
         s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID));
         s1t1.extend(curves->bounds(spaces.first,i->primID,1));
 #endif
 
 #if BVH4HAIR_MB_VERSION == 1
         s0t0.extend(curves->bounds(spaces.first ,i->primID,0));
+        s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID));
+	s1t1.extend(curves->bounds(spaces.second,i->primID,1));
+#endif
+
+#if BVH4HAIR_MB_VERSION == 2
+	s0t0.extend(curves->bounds(spaces.first ,i->primID,0));
         s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID));
 	s1t1.extend(curves->bounds(spaces.second,i->primID,1));
 #endif
@@ -341,13 +347,19 @@ namespace embree
 #if BVH4HAIR_MB_VERSION == 0
           s0t0.extend(curves->bounds(space0,ref.primID,0));
           s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID));
-          s1t1.extend(curves->bounds(space0,ref.primID,1));
+          s1t1.extend(curves->bounds(space1,ref.primID,1));
 #endif
 
 #if BVH4HAIR_MB_VERSION == 1
           s0t0.extend(curves->bounds(space0,ref.primID,0));
           s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID));
 	  s1t1.extend(curves->bounds(space1,ref.primID,1));
+#endif
+
+#if BVH4HAIR_MB_VERSION == 2
+	  s0t0.extend(curves->bounds(space0,ref.primID,0));
+          s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID));
+	  s1t1.extend(curves->bounds(space0,ref.primID,1));
 #endif
 	}
       }
