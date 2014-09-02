@@ -52,10 +52,16 @@ namespace embree
 	ssize_t e = min(end  -cur,gend  );
 	for (size_t j=s; j<e; j++) {
 	  const int ofs = geom->curve(j);
-	  const Vec3fa& p0 = geom->vertex(ofs+0);
-	  const Vec3fa& p1 = geom->vertex(ofs+1);
-	  const Vec3fa& p2 = geom->vertex(ofs+2);
-	  const Vec3fa& p3 = geom->vertex(ofs+3);
+	  Vec3fa p0 = geom->vertex(ofs+0,0);
+	  Vec3fa p1 = geom->vertex(ofs+1,0);
+	  Vec3fa p2 = geom->vertex(ofs+2,0);
+	  Vec3fa p3 = geom->vertex(ofs+3,0);
+	  /*if (numTimeSteps == 2) {
+	    p0 = 0.5f*(p0+geom->vertex(ofs+0,1));
+	    p1 = 0.5f*(p1+geom->vertex(ofs+1,1));
+	    p2 = 0.5f*(p2+geom->vertex(ofs+2,1));
+	    p3 = 0.5f*(p3+geom->vertex(ofs+3,1));
+	    }*/
 	  const Bezier1 bezier(p0,p1,p2,p3,0,1,i,j);
 	  pinfo.add(bezier.bounds(),bezier.center());
 	  if (likely(block->insert(bezier))) continue; 

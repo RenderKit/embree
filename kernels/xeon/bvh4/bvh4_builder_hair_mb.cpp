@@ -321,9 +321,12 @@ namespace embree
 	for (size_t i=0; i<numChildren; i++) 
         {
           std::pair<AffineSpace3fa,AffineSpace3fa> spaces = ObjectPartitionUnaligned::computeAlignedSpaceMB(threadIndex,threadCount,scene,cprims[i]); 
+/*#if BVH4HAIR_MB_VERSION == 0
 	  //AffineSpace3fa space01 = 0.5f*(spaces.first+spaces.second); spaces.first = spaces.second = space01;
-	  //Vec3fa dir = 0.5f*(spaces.first.l.row2() + spaces.second.l.row2());
-	  //spaces.first = spaces.second = frame(dir).transposed();
+	  Vec3fa dir = 0.5f*(spaces.first.l.row2() + spaces.second.l.row2());
+	  spaces.first = spaces.second = frame(dir).transposed();
+	  #endif*/
+
 	  ObjectPartitionUnaligned::PrimInfoMB pinfo1 = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scene,cprims[i],spaces);
 
           Vec3fa k0 = 0.5f*(pinfo1.s0t0.lower+pinfo1.s0t0.upper);

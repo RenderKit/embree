@@ -49,7 +49,7 @@
 
 namespace embree
 {
-#define BVH4HAIR_MB_VERSION 2 // FIXME: remove
+#define BVH4HAIR_MB_VERSION 1 // FIXME: remove
 
   /* global settings */
   extern size_t g_numThreads;
