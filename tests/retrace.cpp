@@ -421,8 +421,9 @@ namespace embree
     //TaskScheduler::create(g_numThreads);
     //DBG_PRINT(embree::TaskScheduler::getNumThreads());
 
+#if defined(__MIC__)
     RayStreamLogger::rayStreamLogger.deactivate();
-
+#endif
     std::string geometryFileName = g_binaries_path + "geometry.bin";
     std::string rayStreamFileName = g_binaries_path + "ray16.bin";
     std::string rayStreamVerifyFileName = g_binaries_path + "ray16_verify.bin";

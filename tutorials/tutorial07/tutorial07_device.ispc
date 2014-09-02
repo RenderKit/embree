@@ -615,10 +615,7 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
   //int seed = tileY*numTilesX+tileX+programIndex + g_accu_count;
-<<<<<<< HEAD
-=======
   int seed = (tileY*numTilesX+tileX+programIndex) * g_accu_count;
->>>>>>> a0b87392a610b3c2924d65794d95b82a2c43fdc7
 
   foreach (y = y0 ... y1, x = x0 ... x1)
   {
