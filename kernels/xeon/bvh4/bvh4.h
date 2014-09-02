@@ -791,6 +791,19 @@ namespace embree
 				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist)
       {
 	const ssef t0 = ssef(1.0f)-time, t1 = time;
+#if BVH4HAIR_MB_VERSION == 0
+	const LinearSpaceSSE3f xfm = space0.l;
+	const sse3f lower = t0*t0s0.lower + t1*t1s1.lower;
+	const sse3f upper = t0*t0s0.upper + t1*t1s1.upper;
+#endif
+
+#if BVH4HAIR_MB_VERSION == 1
+	const AffineSpaceSSE3f xfm = t0*space0 + t1*space1;
+	const sse3f lower = t0*t0*t0s0.lower + t0*t1*t1s0_t0s1.lower + t1*t1*t1s1.lower;
+	const sse3f upper = t0*t0*t0s0.upper + t0*t1*t1s0_t0s1.upper + t1*t1*t1s1.upper;
+#endif	
+
+
 #if 0
 	const AffineSpaceSSE3f xfm = t0*space0 + t1*space1;
 	//const AffineSpaceSSE3f xfm = frame(normalize(ssef(0.5f)*space0.row2() + ssef(0.5f)*space1.row2())).transposed();
@@ -800,7 +813,10 @@ namespace embree
 	//const sse3f upper = t0*t0*t0s0.upper + t0*t1*t1s0_t0s1.upper + t1*t1*t1s1.upper;
 	const sse3f lower = t1s0_t0s1.lower;
 	const sse3f upper = t1s0_t0s1.upper;
-#else
+#endif
+
+#if 0
+
 	//const AffineSpaceSSE3f xfm = t0*space0 + t1*space1;
 	//const LinearSpaceSSE3f xfm = t0*space0.l + t1*space1.l;
 	//const LinearSpaceSSE3f xfm = frame(normalize(t0*space0.l.row2() + t1*space1.l.row2())).transposed();

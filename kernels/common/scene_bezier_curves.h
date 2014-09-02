@@ -115,7 +115,7 @@ namespace embree
       /*! calculates residual bounding box of i'th bezier curve */
       __forceinline BBox3fa bounds(const AffineSpace3fa& space0, const AffineSpace3fa& space1, size_t i) const 
       {
-#if 0
+#if 1
         const int index = curve(i);
         const float r0 = radius(index+0,0) + radius(index+0,1); // FIXME: can one use max here?
         const float r1 = radius(index+1,0) + radius(index+1,1);
