@@ -69,32 +69,58 @@ namespace embree
       num8widePackets += (numRays+7)/8;
     }
 
+    void add(RayStreamLogger::LogRay1 &r)
+    {
+      numRayPackets++;
+      numTotalRays ++;
+      if (r.type == RayStreamLogger::RAY_INTERSECT)
+	{
+	  numIntersectRayPackets++;
+	  numIntersectRays++;
+	}
+      else if (r.type == RayStreamLogger::RAY_OCCLUDED)
+	{
+	  numOccludedRayPackets++;
+	  numOccludedRays++;
+	}
+      else
+	FATAL("unknown log ray type");
+      num4widePackets += 1;
+      num8widePackets += 1;
+    }
+
+    void print(size_t simd_width)
+    {
+      std::cout << "numTotalRays                      = " << numTotalRays << std::endl;
+      std::cout << "numRayPackets                     = " << numRayPackets << std::endl;
+      std::cout << "numIntersectionRays               = " << numIntersectRays << " [" << 100. * (double)numIntersectRays / numTotalRays << "%]" << std::endl;
+      std::cout << "numOcclusionRays                  = " << numOccludedRays << " [" << 100. * (double)numOccludedRays / numTotalRays << "%]" << std::endl;
+      if (simd_width > 1)
+        {
+          std::cout << "avg. intersect packet utilization = " << 100. *  (double)numIntersectRays / (numIntersectRayPackets * (double)simd_width) << "%" << std::endl;
+          std::cout << "avg. occluded  packet utilization = " << 100. *  (double)numOccludedRays  / (numOccludedRayPackets  * (double)simd_width) << "%" << std::endl;
+          std::cout << "avg. total packet utilization     = " << 100. * (double)numTotalRays / (numRayPackets * (double)simd_width)  << "%" << std::endl;
+        }
+      if (simd_width == 16)
+        {
+          std::cout << "avg. 4-wide packet utilization    = " << 100. * (double)numTotalRays / (num4widePackets * 4.)  << "%" << std::endl;
+          std::cout << "avg. 8-wide packet utilization    = " << 100. * (double)numTotalRays / (num8widePackets * 8.)  << "%" << std::endl;
+        }
+    } 
+
+
   };
 
-  __forceinline std::ostream &operator<<(std::ostream &o, const RayStreamStats &s)
-    {
-      o << "numTotalRays                      = " << s.numTotalRays << std::endl;
-      o << "numRayPackets                     = " << s.numRayPackets << std::endl;
-      o << "numIntersectionRays               = " << s.numIntersectRays << " [" << 100. * (double)s.numIntersectRays / s.numTotalRays << "%]" << std::endl;
-      o << "numOcclusionRays                  = " << s.numOccludedRays << " [" << 100. * (double)s.numOccludedRays / s.numTotalRays << "%]" << std::endl;
-      o << "avg. intersect packet utilization = " << 100. *  (double)s.numIntersectRays / (s.numIntersectRayPackets * 16.) << "%" << std::endl;
-      o << "avg. occluded  packet utilization = " << 100. *  (double)s.numOccludedRays  / (s.numOccludedRayPackets  * 16.) << "%" << std::endl;
-      o << "avg. total packet utilization     = " << 100. * (double)s.numTotalRays / (s.numRayPackets * 16.)  << "%" << std::endl;
-      o << "avg. 4-wide packet utilization    = " << 100. * (double)s.numTotalRays / (s.num4widePackets * 4.)  << "%" << std::endl;
-      o << "avg. 8-wide packet utilization    = " << 100. * (double)s.numTotalRays / (s.num8widePackets * 8.)  << "%" << std::endl;
-
-      return o;
-    } 
   
 
   /* configuration */
 
 #if !defined(__MIC__)
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8);
-  static std::string g_rtcore = "verbose=2,traverser=single";
+  static std::string g_rtcore = "verbose=2";
 #else
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);
-  static std::string g_rtcore = "verbose=2";
+  static std::string g_rtcore = "verbose=2,traverser=single";
 #endif
 
   /* vertex and triangle layout */
@@ -205,12 +231,13 @@ namespace embree
     return ptr;
   }
 
-  RayStreamStats analyseRayStreamData(RayStreamLogger::LogRay16 *r, size_t numLogRayStreamElements)
+  template<class T>
+  RayStreamStats analyseRayStreamData(void *r, size_t numLogRayStreamElements)
   {
     RayStreamStats stats;
     std::cout << "numLogRayStreamElements " << numLogRayStreamElements << std::endl;
     for (size_t i=0;i<numLogRayStreamElements;i++)
-      stats.add(r[i]);
+      stats.add(((T*)r)[i]);
     return stats;
   }
 
@@ -340,9 +367,10 @@ namespace embree
 
 #define RAY_BLOCK_SIZE 16
 
+  template<size_t SIMD_WIDTH>
   void retrace_loop(RTCScene scene, 
-		    RayStreamLogger::LogRay16 *r, 
-		    RayStreamLogger::LogRay16 *verify, 
+		    void *_raydata, 
+		    void *_raydata_verify, 
 		    size_t numLogRayStreamElements, 
 		    size_t threadID,
 		    size_t numThreads,
@@ -350,6 +378,7 @@ namespace embree
   {
     size_t rays = 0;
     size_t diff = 0;
+
     while(1)
       {
 	size_t global_index = g_counter.add(RAY_BLOCK_SIZE);
@@ -359,22 +388,34 @@ namespace embree
 
 	for (size_t index=startID;index<endID;index++)
 	  {
-#if defined(__MIC__)
-	    RTCRay16 &ray16 = r[index].ray16;
-	    mic_i valid = select((mic_m)r[index].m_valid,mic_i(-1),mic_i(0));
-	    rays += countbits( (mic_m)r[index].m_valid );
+            if (SIMD_WIDTH == 1)
+              {
+                RayStreamLogger::LogRay1 *raydata        = (RayStreamLogger::LogRay1 *)_rayData;
+                RayStreamLogger::LogRay1 *raydata_verify = (RayStreamLogger::LogRay1 *)_rayData_verify;
+                
+              }
+            else if (SIMD_WIDTH == 16)
+              {
+                RayStreamLogger::LogRay16 *raydata        = (RayStreamLogger::LogRay16 *)_rayData;
+                RayStreamLogger::LogRay16 *raydata_verify = (RayStreamLogger::LogRay16 *)_rayData_verify;
 
-	    r[index+1].prefetchL2();
+                RTCRay16 &ray16 = raydata[index].ray16;
+                mic_i valid = select((mic_m)r[index].m_valid,mic_i(-1),mic_i(0));
+                rays += countbits( (mic_m)raydata[index].m_valid );
 
-	    if (r[index].type == RayStreamLogger::RAY_INTERSECT)
-	      rtcIntersect16(&valid,scene,ray16);
-	    else 
-	      rtcOccluded16(&valid,scene,ray16);
-	    r[index].evict();
+                raydata[index+1].prefetchL2();
 
-	    if (unlikely(check))
-	      diff += check_ray16_packets(index, r[index].m_valid,  r[index].ray16, verify[index].ray16);
-#endif
+                if (raydata[index].type == RayStreamLogger::RAY_INTERSECT)
+                  rtcIntersect16(&valid,scene,ray16);
+                else 
+                  rtcOccluded16(&valid,scene,ray16);
+
+                if (unlikely(check))
+                  diff += check_ray16_packets(index, raydata[index].m_valid,  raydata[index].ray16, raydata_verify[index].ray16);
+               
+              }
+
+
 	  }
       }
     if (unlikely(check && diff))
@@ -388,38 +429,38 @@ namespace embree
   struct RetraceTask
   {
     RTCScene scene;
-    RayStreamLogger::LogRay16 *r;
-    RayStreamLogger::LogRay16 *verify;
+    void *raydata;
+    void *raydata_verify;
     size_t numLogRayStreamElements;
     size_t threads;
     bool check;
   };
 
 
-  void retrace_loop_parallel(RetraceTask* task, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event)
-  {
-    retrace_loop(task->scene,task->r,task->verify,task->numLogRayStreamElements,threadIndex,threadCount,task->check);
-  }
+  // void retrace_loop_parallel(RetraceTask* task, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event)
+  // {
+  //   retrace_loop(task->scene,task->r,task->verify,task->numLogRayStreamElements,threadIndex,threadCount,task->check);
+  // }
 
   void launch_retrace_loop(RTCScene scene, 
-			   RayStreamLogger::LogRay16 *r, 
-			   RayStreamLogger::LogRay16 *verify, 
+			   void *r, 
+			   void *verify, 
 			   size_t numLogRayStreamElements, 
 			   bool check , 
 			   size_t threads )
   {
     RetraceTask rt;
     rt.scene = scene;
-    rt.r = r;
-    rt.verify = verify;
+    rt.raydata = r;
+    rt.raydata_verify = verify;
     rt.numLogRayStreamElements = numLogRayStreamElements;
     rt.threads = threads;
     rt.check = check;
     
-    embree::TaskScheduler::EventSync event;
-    embree::TaskScheduler::Task task(&event,(TaskScheduler::runFunction)retrace_loop_parallel,&rt,g_numThreads,NULL,NULL,"retrace");
-    embree::TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
-    event.sync();
+    // embree::TaskScheduler::EventSync event;
+    // embree::TaskScheduler::Task task(&event,(TaskScheduler::runFunction)retrace_loop_parallel,&rt,g_numThreads,NULL,NULL,"retrace");
+    // embree::TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
+    // event.sync();
   }
 
   void threadEntryFct(void *ptr)
@@ -435,6 +476,9 @@ namespace embree
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    FATAL("ray stream logger still active, disable to run 'retrace'");
+#endif
     setAffinity(0);
     /* parse command line */  
     parseCommandLine(argc,argv);
@@ -452,31 +496,45 @@ namespace embree
 
     DBG_PRINT(g_numThreads);
 
-    //TaskScheduler::create(g_numThreads);
-    //DBG_PRINT(embree::TaskScheduler::getNumThreads());
-
-    /* looking for ray stream file */
-
-    std::string geometryFileName = g_binaries_path + "geometry.bin";
-    std::string rayStreamFileName = g_binaries_path;
-    std::string rayStreamVerifyFileName = g_binaries_path;
-    if (g_simd_width != 0)
-      {
-        rayStreamFileName += "ray" + std::stringOf(g_simd_width) + ".bin";
-        rayStreamVerifyFileName += "ray" + std::stringOf(g_simd_width) + "_verify.bin";
-      }
-   
     /* load geometry file */
+    std::string geometryFileName = g_binaries_path + "geometry.bin";
 
     std::cout << "loading geometry data..." << std::flush;    
     void *g = loadGeometryData(geometryFileName);
     std::cout <<  "done" << std::endl << std::flush;
 
+    /* looking for ray stream file */
+
+    std::string rayStreamFileName;
+    std::string rayStreamVerifyFileName;
+
+    if (g_simd_width != 0)
+      {
+        rayStreamFileName = g_binaries_path + "ray" + std::stringOf(g_simd_width) + ".bin";
+        rayStreamVerifyFileName = g_binaries_path + "ray" + std::stringOf(g_simd_width) + "_verify.bin";
+      }
+    else
+      {
+        /* looking for stream files in the following order: ray1.bin, ray4.bin, ray8.bin, ray16.bin */
+        for (size_t shift=0;shift<=4;shift++)
+          {
+            g_simd_width = (size_t)1 << shift;
+            DBG_PRINT(g_simd_width);
+            rayStreamFileName = "ray" + std::stringOf(g_simd_width) + ".bin";
+            rayStreamVerifyFileName = g_binaries_path + "ray" + std::stringOf(g_simd_width) + "_verify.bin";
+            if (existsFile( rayStreamFileName )) break;
+
+          }
+      }
+   
+    if (g_simd_width == 0)
+      FATAL("no valid ray stream data files found");
+
     DBG_PRINT( rayStreamFileName );
     DBG_PRINT( rayStreamVerifyFileName );
 
     if (!existsFile( rayStreamFileName )) FATAL("ray stream file does not exists!");
-
+    if (!existsFile( rayStreamVerifyFileName )) FATAL("ray stream verify file does not exists!");
 
 
     /* load ray stream data */
@@ -509,16 +567,31 @@ namespace embree
       if (numLogRayStreamElements != numLogRayStreamElementsVerify)
         FATAL("numLogRayStreamElements != numLogRayStreamElementsVerify");
 
-    exit(0);
-#if 0
     /* analyse ray stream data */
     std::cout << "analyse ray stream:" << std::endl << std::flush;    
-    RayStreamStats stats = analyseRayStreamData(raydata,numLogRayStreamElements);
-    std::cout << stats << std::endl;
+    RayStreamStats stats;
+    switch(g_simd_width)
+      {
+      case 1:
+        stats = analyseRayStreamData<RayStreamLogger::LogRay1>(raydata,numLogRayStreamElements);
+        break;
+      case 16:
+        stats = analyseRayStreamData<RayStreamLogger::LogRay16>(raydata,numLogRayStreamElements);
+        break;
+      }
+
+    stats.print(g_simd_width);
 
     /* transfer geometry data */
     std::cout << "transfering geometry data:" << std::endl << std::flush;
     RTCScene scene = transferGeometryData((char*)g);
+
+    std::cout << "creating " << g_numThreads << " for retracing rays" << std::endl << std::flush;
+    
+    exit(0);
+
+#if 0
+
 
     /* retrace ray packets */
     DBG_PRINT( g_numThreads );

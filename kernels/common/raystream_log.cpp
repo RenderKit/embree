@@ -41,7 +41,6 @@ namespace embree
 
   RayStreamLogger::~RayStreamLogger()
     {
-      std::cout << "Shutting down ray stream logger..." << std::endl;
       if (ray16)        { delete ray16;        ray16        = NULL; }
       if (ray16_verify) { delete ray16_verify; ray16_verify = NULL; }
       if (ray8)         { delete ray8;         ray8         = NULL; }

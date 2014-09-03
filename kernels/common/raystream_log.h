@@ -159,29 +159,6 @@ namespace embree
 #endif
       }
 
-      __forceinline void prefetchL1()
-      {
-#if defined(__MIC__)
-	prefetch<PFHINT_NT>(&type);
-	const size_t cl = sizeof(RTCRay16) / 64;
-	const char *__restrict__ ptr = (char*)&ray16;
-#pragma unroll(cl)
-	for (size_t i=0;i<cl;i++,ptr+=64)
-	  prefetch<PFHINT_NT>(ptr);
-#endif
-      }
-
-      __forceinline void evict()
-      {
-#if defined(__MIC__)
-	evictL2(&type);
-	const size_t cl = sizeof(RTCRay16) / 64;
-	const char *__restrict__ ptr = (char*)&ray16;
-#pragma unroll(cl)
-	for (size_t i=0;i<cl;i++,ptr+=64)
-	  evictL2(ptr);
-#endif
-      }
     };
 
       
