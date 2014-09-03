@@ -29,7 +29,7 @@
 #include <iostream>
 #include <fstream>
 
-#define DBG(x) 
+#define DBG(x) x
 
 namespace embree
 {
@@ -123,17 +123,17 @@ namespace embree
 
 #if !defined(__MIC__)
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8);
-  static std::string g_rtcore = "verbose=2";
+  static std::string g_rtcore = "verbose=2,threads=1";
 #else
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);
-  static std::string g_rtcore = "verbose=2,traverser=single";
+  static std::string g_rtcore = "verbose=2,threads=1";
 #endif
 
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
   struct Triangle { int v0, v1, v2; };
 
-  static AtomicCounter g_counter = 0;
+  static AlignedAtomicCounter32 g_counter = 0;
   static bool g_check = false;
   static size_t g_numThreads = 1;
   static size_t g_frames = 1;
@@ -218,7 +218,7 @@ namespace embree
     char *ptr = (char*)os_malloc(fileSize);
     geometryData.seekg(0, std::ios::beg);
     geometryData.read(ptr,fileSize);
-    geometryData.close();
+    //geometryData.close();
     return ptr;
   }
 
@@ -238,7 +238,7 @@ namespace embree
     rayStreamData.seekg(0, std::ios::beg);
     rayStreamData.read(ptr,fileSize);
     numLogRayStreamElements = fileSize / sizeof(T);
-    rayStreamData.close();
+    //rayStreamData.close();
     return ptr;
   }
 
@@ -268,6 +268,12 @@ namespace embree
 	size_t numVertices = *(size_t*)g;
 	g += sizeof(size_t);
 	size_t numTriangles = *(size_t*)g;
+
+        DBG(
+            DBG_PRINT(numVertices);
+            DBG_PRINT(numTriangles);
+            );
+
 	g += sizeof(size_t);
 	Vertex *vtx = (Vertex*)g;
 	g += sizeof(Vertex)*numVertices;
@@ -288,7 +294,50 @@ namespace embree
     return scene;
   }
 
-  size_t check_ray16_packets(const size_t index, const unsigned int i_valid, RTCRay16 &start, RTCRay16 &end)
+  size_t check_ray1_packets(RTCRay &start, RTCRay &end)
+  {
+
+    DBG(
+        DBG_PRINT(start.org[0]);
+        DBG_PRINT(start.org[1]);
+        DBG_PRINT(start.org[2]);
+
+        DBG_PRINT(start.dir[0]);
+        DBG_PRINT(start.dir[1]);
+        DBG_PRINT(start.dir[2]);
+
+        DBG_PRINT(start.tnear);
+        DBG_PRINT(start.tfar);
+        DBG_PRINT(start.u);
+        DBG_PRINT(start.v);
+        DBG_PRINT(start.primID);
+        DBG_PRINT(start.geomID);
+
+        DBG_PRINT(end.org[0]);
+        DBG_PRINT(end.org[1]);
+        DBG_PRINT(end.org[2]);
+
+        DBG_PRINT(end.dir[0]);
+        DBG_PRINT(end.dir[1]);
+        DBG_PRINT(end.dir[2]);
+
+        DBG_PRINT(end.tnear);
+        DBG_PRINT(end.tfar);
+        DBG_PRINT(end.u);
+        DBG_PRINT(end.v);
+        DBG_PRINT(end.primID);
+        DBG_PRINT(end.geomID);
+        );
+
+    if (start.primID != end.primID) return 1;
+    if (start.geomID != end.geomID) return 1;
+    if (start.u != end.u) return 1;
+    if (start.v != end.v) return 1;
+    if (start.tfar != end.tfar) return 1;
+    return 0;
+  }
+
+  size_t check_ray16_packets(const unsigned int i_valid, RTCRay16 &start, RTCRay16 &end)
   {
 #if defined(__MIC__)
     const mic_m m_valid = (mic_m)i_valid;
@@ -316,7 +365,6 @@ namespace embree
     if ( m_primID != m_valid )
       {
 	DBG(
-	    DBG_PRINT(index);
 	    DBG_PRINT(m_valid);
 	    DBG_PRINT(m_primID);
 	    DBG_PRINT(start_primID);
@@ -328,7 +376,6 @@ namespace embree
     if ( m_geomID != m_valid )
       {
 	DBG(
-	    DBG_PRINT( index );
 	    DBG_PRINT( m_valid );
 	    DBG_PRINT( m_geomID );
 	    DBG_PRINT( start_geomID );
@@ -340,7 +387,6 @@ namespace embree
     if ( m_u != m_valid )
       {
 	DBG(
-	    DBG_PRINT( index );
 	    DBG_PRINT( m_valid );
 	    DBG_PRINT( m_u );
 	    DBG_PRINT( start_u );
@@ -352,7 +398,6 @@ namespace embree
     if ( m_v != m_valid )
       {
 	DBG(
-	    DBG_PRINT( index );
 	    DBG_PRINT( m_valid );
 	    DBG_PRINT( m_v );
 	    DBG_PRINT( start_v );
@@ -364,7 +409,6 @@ namespace embree
     if ( m_t != m_valid )
       {
 	DBG(
-	    DBG_PRINT( index );
 	    DBG_PRINT( m_valid );
 	    DBG_PRINT( m_t );
 	    DBG_PRINT( start_t );
@@ -399,12 +443,22 @@ namespace embree
                 RayStreamLogger::LogRay1 *raydata_verify = (RayStreamLogger::LogRay1 *)g_retraceTask.raydata_verify;
 
                 RTCRay &ray = raydata[index].ray;
+
+                DBG_PRINT(index);
+
                 rays ++;
                 if (raydata[index].type == RayStreamLogger::RAY_INTERSECT)
-                  rtcIntersect(g_retraceTask.scene,ray);
+                  {
+                    rtcIntersect(g_retraceTask.scene,ray);
+                  }
                 else 
                   rtcOccluded(g_retraceTask.scene,ray);
-                
+
+                if (unlikely(g_check))
+                  {
+                    diff += check_ray1_packets(ray, raydata_verify[index].ray);                    
+                    if (diff != 0) FATAL("HERE");
+                  }
               }
             else if (SIMD_WIDTH == 16)
               {
@@ -423,7 +477,7 @@ namespace embree
                   rtcOccluded16(&valid,g_retraceTask.scene,ray16);
 #endif
                 if (unlikely(g_check))
-                  diff += check_ray16_packets(index, raydata[index].m_valid,  raydata[index].ray16, raydata_verify[index].ray16);
+                  diff += check_ray16_packets(raydata[index].m_valid,  raydata[index].ray16, raydata_verify[index].ray16);
                
               }
 
@@ -462,9 +516,9 @@ namespace embree
     size_t id = (size_t)ptr;
     setAffinity(id);
 
-    // g_mutex.lock();
-    // DBG_PRINT(id);
-    // g_mutex.unlock();
+    g_mutex.lock();
+    DBG_PRINT(id);
+    g_mutex.unlock();
 
     while(1)
       {
