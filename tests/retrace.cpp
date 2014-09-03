@@ -20,6 +20,11 @@
 #include "embree2/rtcore_ray.h"
 #include "../kernels/common/default.h"
 #include "../kernels/common/raystream_log.h"
+#include "sys/thread.h"
+#include "sys/sysinfo.h"
+#include "sys/sync/barrier.h"
+#include "sys/sync/mutex.h"
+#include "sys/sync/condition.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -98,8 +103,10 @@ namespace embree
   static bool g_check = false;
   static size_t g_numThreads = 4;
   static size_t g_frames = 4;
+  static size_t g_simd_width = 0;
   static AtomicCounter g_rays_traced = 0;
-
+  static std::vector<thread_t> g_threads;
+    
 #if defined(__MIC__)
   static std::string g_binaries_path = "/home/micuser/";
 #else
@@ -133,6 +140,9 @@ namespace embree
       }
       else if (tag == "-frames" && i+1<argc) {
         g_frames = atoi(argv[++i]);
+      }
+      else if (tag == "-simd_width" && i+1<argc) {
+        g_simd_width = atoi(argv[++i]);
       }
 
       /* skip unknown command line parameter */
@@ -398,6 +408,20 @@ namespace embree
     event.sync();
   }
 
+  void threadEntryFct(void *ptr)
+  {
+  }
+
+  void createThreads()
+  {
+    size_t numThreads = getNumberOfLogicalThreads();
+#if defined (__MIC__)
+    numThreads -= 4;
+#endif
+    for (size_t i=0; i<numThreads; i++)
+      g_threads.push_back(createThread(threadEntryFct,NULL,1000000,i));
+  }
+
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
@@ -414,20 +438,30 @@ namespace embree
     g_numThreads = embree::TaskScheduler::getNumThreads();
     DBG_PRINT(g_numThreads);
 
-    std::cout << "RTC INIT DONE" << std::endl << std::flush;
-
     //TaskScheduler::create(g_numThreads);
     //DBG_PRINT(embree::TaskScheduler::getNumThreads());
 
-    std::string geometryFileName = g_binaries_path + "geometry.bin";
-    std::string rayStreamFileName = g_binaries_path + "ray16.bin";
-    std::string rayStreamVerifyFileName = g_binaries_path + "ray16_verify.bin";
+    /* looking for ray stream file */
 
+    std::string geometryFileName = g_binaries_path + "geometry.bin";
+    std::string rayStreamFileName = g_binaries_path;
+    std::string rayStreamVerifyFileName = g_binaries_path;
+    if (g_simd_width != 0)
+      {
+        rayStreamFileName += "ray" + std::stringOf(g_simd_width) + ".bin";
+        rayStreamVerifyFileName += "ray" + std::stringOf(g_simd_width) + "_verify.bin";
+      }
+   
     /* load geometry file */
     std::cout << "loading geometry data..." << std::flush;    
     void *g = loadGeometryData(geometryFileName);
     std::cout <<  "done" << std::endl << std::flush;
-    
+
+    DBG_PRINT( rayStreamFileName );
+    DBG_PRINT( rayStreamVerifyFileName );
+
+    exit(0);
+
     /* load ray stream data */
     std::cout << "loading ray stream data..." << std::flush;    
     size_t numLogRayStreamElements = 0;

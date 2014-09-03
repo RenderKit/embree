@@ -42,7 +42,6 @@ namespace embree
 
   RayStreamLogger::RayStreamLogger()
   {
-    int error = pthread_mutex_init(&mutex,NULL);
     ray16        = new DataStream( DEFAULT_FILENAME_RAY16 );
     ray16_verify = new DataStream( DEFAULT_FILENAME_RAY16_VERIFY );
     ray8         = new DataStream( DEFAULT_FILENAME_RAY8 );
@@ -149,35 +148,14 @@ namespace embree
 
   void RayStreamLogger::logRay16Intersect(const void* valid_i, void* scene, RTCRay16& start, RTCRay16& end)
   {
-#if defined(__MIC__)
-    pthread_mutex_lock(&mutex);
+    mutex.lock();
 
     LogRay16 logRay16;
 
     logRay16.type    = RAY_INTERSECT;
-    logRay16.m_valid = *(mic_i*)valid_i != mic_i(0);
-
-    /* ray16 before intersect */
-    ray16.write((char*)&logRay16 ,sizeof(logRay16));
-
-    /* ray16 after intersect */
-    logRay16.ray16   = end;
-    ray16_verify.write((char*)&logRay16 ,sizeof(logRay16));
-
-    pthread_mutex_unlock(&mutex);
-#endif
-  }
-
-  void RayStreamLogger::logRay16Occluded(const void* valid_i, void* scene, RTCRay16& start, RTCRay16& end)
-  {
 #if defined(__MIC__)
-    pthread_mutex_lock(&mutex);
-
-    LogRay16 logRay16;
-
-    logRay16.type    = RAY_OCCLUDED;
     logRay16.m_valid = *(mic_i*)valid_i != mic_i(0);
-
+#endif
     /* ray16 before intersect */
     ray16->write((char*)&logRay16 ,sizeof(logRay16));
 
@@ -185,13 +163,32 @@ namespace embree
     logRay16.ray16   = end;
     ray16_verify->write((char*)&logRay16 ,sizeof(logRay16));
 
-    pthread_mutex_unlock(&mutex);
+    mutex.unlock();
+  }
+
+  void RayStreamLogger::logRay16Occluded(const void* valid_i, void* scene, RTCRay16& start, RTCRay16& end)
+  {
+    mutex.lock();
+
+    LogRay16 logRay16;
+
+    logRay16.type    = RAY_OCCLUDED;
+#if defined(__MIC__)
+    logRay16.m_valid = *(mic_i*)valid_i != mic_i(0);
 #endif
+    /* ray16 before intersect */
+    ray16->write((char*)&logRay16 ,sizeof(logRay16));
+
+    /* ray16 after intersect */
+    logRay16.ray16   = end;
+    ray16_verify->write((char*)&logRay16 ,sizeof(logRay16));
+
+    mutex.unlock();
   }
 
  void RayStreamLogger::logRay1Intersect(void* scene, RTCRay& start, RTCRay& end)
   {
-    pthread_mutex_lock(&mutex);
+    mutex.lock();
 
     LogRay1 logRay1;
 
@@ -205,12 +202,12 @@ namespace embree
     logRay1.ray   = end;
     ray1_verify->write((char*)&logRay1 ,sizeof(logRay1));
 
-    pthread_mutex_unlock(&mutex);
+    mutex.unlock();
   }
 
   void RayStreamLogger::logRay1Occluded(void* scene, RTCRay& start, RTCRay& end)
   {
-    pthread_mutex_lock(&mutex);
+    mutex.lock();
 
     LogRay1 logRay1;
 
@@ -224,7 +221,7 @@ namespace embree
     logRay1.ray   = end;
     ray1_verify->write((char*)&logRay1 ,sizeof(logRay1));
 
-    pthread_mutex_unlock(&mutex);
+    mutex.unlock();
   }
 
   RayStreamLogger RayStreamLogger::rayStreamLogger;

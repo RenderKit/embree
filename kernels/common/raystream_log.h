@@ -91,7 +91,7 @@ namespace embree
 
   private:
 
-    //pthread_mutex_t mutex;
+    MutexSys mutex;
 
     DataStream *ray16;
     DataStream *ray16_verify;
