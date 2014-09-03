@@ -19,20 +19,6 @@
 #include "common/scene_triangle_mesh.h"
 #include "sys/filename.h"
 
-#if defined(__MIC__)
-
-#define RAYSTREAM_FILENAME "/home/micuser/ray16.bin"
-#define RAYSTREAM_VERIFY_FILENAME "/home/micuser/ray16_verify.bin"
-#define GEOMETRY_FILENAME  "/home/micuser/geometry.bin"
-
-#else
-
-#define RAYSTREAM_FILENAME        "ray16.bin"
-#define RAYSTREAM_VERIFY_FILENAME "ray16_verify.bin"
-#define GEOMETRY_FILENAME         "geometry.bin"
-
-#endif
-
 #define DBG(x)
 
 namespace embree
@@ -55,6 +41,7 @@ namespace embree
 
   RayStreamLogger::~RayStreamLogger()
     {
+      std::cout << "Shutting down ray stream logger..." << std::endl;
       if (ray16)        { delete ray16;        ray16        = NULL; }
       if (ray16_verify) { delete ray16_verify; ray16_verify = NULL; }
       if (ray8)         { delete ray8;         ray8         = NULL; }
@@ -89,7 +76,7 @@ namespace embree
 	);
 
     std::ofstream geometryData;
-    FileName geometry_filename(GEOMETRY_FILENAME);
+    FileName geometry_filename( DEFAULT_FILENAME_GEOMETRY );
     geometryData.open(geometry_filename.c_str(),ios::out | ios::binary);
     geometryData.seekp(0, ios::beg);
 

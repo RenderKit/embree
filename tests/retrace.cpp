@@ -87,13 +87,15 @@ namespace embree
     } 
   
 
+  /* configuration */
+
 #if !defined(__MIC__)
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8);
+  static std::string g_rtcore = "verbose=2,traverser=single";
 #else
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);
+  static std::string g_rtcore = "verbose=2";
 #endif
-  /* configuration */
-  static std::string g_rtcore = "verbose=2,traverser=single";
 
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
@@ -156,6 +158,15 @@ namespace embree
   }
 
 
+  bool existsFile(std::string &filename)
+  {
+    std::ifstream file;
+    file.open(filename.c_str(),std::ios::in | std::ios::binary);
+    if (!file) return false;
+    file.close();
+    return true;    
+  }
+
   void *loadGeometryData(std::string &geometryFile)
   {
     std::ifstream geometryData;
@@ -170,9 +181,11 @@ namespace embree
     char *ptr = (char*)os_malloc(fileSize);
     geometryData.seekg(0, std::ios::beg);
     geometryData.read(ptr,fileSize);
+    geometryData.close();
     return ptr;
   }
 
+  template<class T>
   void *loadRayStreamData(std::string &rayStreamFile, size_t &numLogRayStreamElements)
   {
     std::ifstream rayStreamData;
@@ -187,7 +200,8 @@ namespace embree
     char *ptr = (char*)os_malloc(fileSize);
     rayStreamData.seekg(0, std::ios::beg);
     rayStreamData.read(ptr,fileSize);
-    numLogRayStreamElements = fileSize / sizeof(RayStreamLogger::LogRay16);
+    numLogRayStreamElements = fileSize / sizeof(T);
+    rayStreamData.close();
     return ptr;
   }
 
@@ -324,7 +338,7 @@ namespace embree
     return 0;
   }
 
-#define RAY_BLOCK_SIZE 1
+#define RAY_BLOCK_SIZE 16
 
   void retrace_loop(RTCScene scene, 
 		    RayStreamLogger::LogRay16 *r, 
@@ -414,11 +428,7 @@ namespace embree
 
   void createThreads()
   {
-    size_t numThreads = getNumberOfLogicalThreads();
-#if defined (__MIC__)
-    numThreads -= 4;
-#endif
-    for (size_t i=0; i<numThreads; i++)
+    for (size_t i=0; i<g_numThreads; i++)
       g_threads.push_back(createThread(threadEntryFct,NULL,1000000,i));
   }
 
@@ -435,7 +445,11 @@ namespace embree
     DBG_PRINT(g_rtcore.c_str());
     rtcInit(g_rtcore.c_str());
 
-    g_numThreads = embree::TaskScheduler::getNumThreads();
+    g_numThreads = getNumberOfLogicalThreads(); 
+#if defined (__MIC__)
+    g_numThreads -= 4;
+#endif
+
     DBG_PRINT(g_numThreads);
 
     //TaskScheduler::create(g_numThreads);
@@ -453,6 +467,7 @@ namespace embree
       }
    
     /* load geometry file */
+
     std::cout << "loading geometry data..." << std::flush;    
     void *g = loadGeometryData(geometryFileName);
     std::cout <<  "done" << std::endl << std::flush;
@@ -460,28 +475,45 @@ namespace embree
     DBG_PRINT( rayStreamFileName );
     DBG_PRINT( rayStreamVerifyFileName );
 
-    exit(0);
+    if (!existsFile( rayStreamFileName )) FATAL("ray stream file does not exists!");
+
+
 
     /* load ray stream data */
     std::cout << "loading ray stream data..." << std::flush;    
-    size_t numLogRayStreamElements = 0;
-    RayStreamLogger::LogRay16 *r = (RayStreamLogger::LogRay16 *)loadRayStreamData(rayStreamFileName, numLogRayStreamElements);
-    std::cout <<  "done" << std::endl << std::flush;
+    size_t numLogRayStreamElements       = 0;
+    size_t numLogRayStreamElementsVerify = 0;
 
-    RayStreamLogger::LogRay16 *verify = NULL;
-    if (g_check)
+    void *raydata        = NULL;
+    void *raydata_verify = NULL;
+
+    switch(g_simd_width)
       {
-	std::cout << "loading ray stream verify data..." << std::flush;    
-	size_t numElements = 0;
-	verify = (RayStreamLogger::LogRay16 *)loadRayStreamData(rayStreamVerifyFileName, numElements );
-	std::cout <<  "done" << std::endl << std::flush;
-	if (numElements != numLogRayStreamElements)
-	  FATAL("numElements != numLogRayStreamElements");
+      case 1:
+        raydata = loadRayStreamData<RayStreamLogger::LogRay1>(rayStreamFileName, numLogRayStreamElements);
+        if (g_check)
+          raydata_verify = loadRayStreamData<RayStreamLogger::LogRay1>(rayStreamVerifyFileName, numLogRayStreamElementsVerify); 
+        break;
+      case 16:
+        raydata = loadRayStreamData<RayStreamLogger::LogRay16>(rayStreamFileName, numLogRayStreamElements);
+        if (g_check)
+          raydata_verify = loadRayStreamData<RayStreamLogger::LogRay16>(rayStreamVerifyFileName, numLogRayStreamElementsVerify); 
+        break;
+      default:
+        FATAL("unknown SIMD width");
       }
 
+    std::cout <<  "done" << std::endl << std::flush;
+
+    if (g_check)
+      if (numLogRayStreamElements != numLogRayStreamElementsVerify)
+        FATAL("numLogRayStreamElements != numLogRayStreamElementsVerify");
+
+    exit(0);
+#if 0
     /* analyse ray stream data */
     std::cout << "analyse ray stream:" << std::endl << std::flush;    
-    RayStreamStats stats = analyseRayStreamData(r,numLogRayStreamElements);
+    RayStreamStats stats = analyseRayStreamData(raydata,numLogRayStreamElements);
     std::cout << stats << std::endl;
 
     /* transfer geometry data */
@@ -489,7 +521,6 @@ namespace embree
     RTCScene scene = transferGeometryData((char*)g);
 
     /* retrace ray packets */
-    DBG_PRINT( TaskScheduler::getNumThreads() );
     DBG_PRINT( g_numThreads );
 
     std::cout << "Retracing logged rays:" << std::flush;
@@ -508,7 +539,7 @@ namespace embree
 #endif
       }
     std::cout << "avg. mrays/sec = " << mrays_sec / (double)g_frames << std::endl;
-
+#endif
     /* done */
     rtcExit();
     return 0;

@@ -25,6 +25,8 @@
 namespace embree
 {
 
+#define DEFAULT_FILENAME_GEOMETRY      "geometry.bin"
+
 #define DEFAULT_FILENAME_RAY16         "ray16.bin"
 #define DEFAULT_FILENAME_RAY16_VERIFY  "ray16_verify.bin"
 
