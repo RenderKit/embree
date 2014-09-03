@@ -107,11 +107,17 @@ namespace embree
           std::cout << "avg. 8-wide packet utilization    = " << 100. * (double)numTotalRays / (num8widePackets * 8.)  << "%" << std::endl;
         }
     } 
-
-
   };
 
-  
+
+  struct RetraceTask
+  {
+    RTCScene scene;
+    void *raydata;
+    void *raydata_verify;
+    size_t numLogRayStreamElements;
+    bool check;
+  };  
 
   /* configuration */
 
@@ -129,11 +135,16 @@ namespace embree
 
   static AtomicCounter g_counter = 0;
   static bool g_check = false;
-  static size_t g_numThreads = 4;
-  static size_t g_frames = 4;
+  static size_t g_numThreads = 1;
+  static size_t g_frames = 1;
   static size_t g_simd_width = 0;
   static AtomicCounter g_rays_traced = 0;
   static std::vector<thread_t> g_threads;
+  static LinearBarrierActive g_barrier;
+  static bool g_exitThreads = false;
+  static RetraceTask g_retraceTask;
+  static MutexSys g_mutex;
+
     
 #if defined(__MIC__)
   static std::string g_binaries_path = "/home/micuser/";
@@ -368,37 +379,38 @@ namespace embree
 #define RAY_BLOCK_SIZE 16
 
   template<size_t SIMD_WIDTH>
-  void retrace_loop(RTCScene scene, 
-		    void *_raydata, 
-		    void *_raydata_verify, 
-		    size_t numLogRayStreamElements, 
-		    size_t threadID,
-		    size_t numThreads,
-		    bool check)
+  void retrace_loop()
   {
     size_t rays = 0;
     size_t diff = 0;
-
+    
     while(1)
       {
 	size_t global_index = g_counter.add(RAY_BLOCK_SIZE);
-	if (global_index >= numLogRayStreamElements) break;
+	if (global_index >= g_retraceTask.numLogRayStreamElements) break;
 	size_t startID = global_index;
-	size_t endID   = min(numLogRayStreamElements,startID+RAY_BLOCK_SIZE);
+	size_t endID   = min(g_retraceTask.numLogRayStreamElements,startID+RAY_BLOCK_SIZE);
 
 	for (size_t index=startID;index<endID;index++)
 	  {
             if (SIMD_WIDTH == 1)
               {
-                RayStreamLogger::LogRay1 *raydata        = (RayStreamLogger::LogRay1 *)_rayData;
-                RayStreamLogger::LogRay1 *raydata_verify = (RayStreamLogger::LogRay1 *)_rayData_verify;
+                RayStreamLogger::LogRay1 *raydata        = (RayStreamLogger::LogRay1 *)g_retraceTask.raydata;
+                RayStreamLogger::LogRay1 *raydata_verify = (RayStreamLogger::LogRay1 *)g_retraceTask.raydata_verify;
+
+                RTCRay &ray = raydata[index].ray;
+                rays ++;
+                if (raydata[index].type == RayStreamLogger::RAY_INTERSECT)
+                  rtcIntersect(g_retraceTask.scene,ray);
+                else 
+                  rtcOccluded(g_retraceTask.scene,ray);
                 
               }
             else if (SIMD_WIDTH == 16)
               {
-                RayStreamLogger::LogRay16 *raydata        = (RayStreamLogger::LogRay16 *)_rayData;
-                RayStreamLogger::LogRay16 *raydata_verify = (RayStreamLogger::LogRay16 *)_rayData_verify;
-
+                RayStreamLogger::LogRay16 *raydata        = (RayStreamLogger::LogRay16 *)g_retraceTask.raydata;
+                RayStreamLogger::LogRay16 *raydata_verify = (RayStreamLogger::LogRay16 *)g_retraceTask.raydata_verify;
+#if defined(__MIC__)
                 RTCRay16 &ray16 = raydata[index].ray16;
                 mic_i valid = select((mic_m)r[index].m_valid,mic_i(-1),mic_i(0));
                 rays += countbits( (mic_m)raydata[index].m_valid );
@@ -406,11 +418,11 @@ namespace embree
                 raydata[index+1].prefetchL2();
 
                 if (raydata[index].type == RayStreamLogger::RAY_INTERSECT)
-                  rtcIntersect16(&valid,scene,ray16);
+                  rtcIntersect16(&valid,g_retraceTask.scene,ray16);
                 else 
-                  rtcOccluded16(&valid,scene,ray16);
-
-                if (unlikely(check))
+                  rtcOccluded16(&valid,g_retraceTask.scene,ray16);
+#endif
+                if (unlikely(g_check))
                   diff += check_ray16_packets(index, raydata[index].m_valid,  raydata[index].ray16, raydata_verify[index].ray16);
                
               }
@@ -418,7 +430,7 @@ namespace embree
 
 	  }
       }
-    if (unlikely(check && diff))
+    if (unlikely(g_check && diff))
       {
 	DBG_PRINT(diff);
 	DBG_PRINT(100. * diff / rays);
@@ -426,51 +438,54 @@ namespace embree
     g_rays_traced.add(rays);
   }
 
-  struct RetraceTask
+
+
+  void renderMainLoop(size_t id)
   {
-    RTCScene scene;
-    void *raydata;
-    void *raydata_verify;
-    size_t numLogRayStreamElements;
-    size_t threads;
-    bool check;
-  };
 
+    // g_mutex.lock();        
+    // std::cout << "thread " << id << std::endl;
+    // g_mutex.unlock();    
+    switch(g_simd_width)
+      {
+      case 1:
+        retrace_loop<1>();
+        break;
+      case 16:
+        retrace_loop<16>();
+        break;
+      };
+  }
 
-  // void retrace_loop_parallel(RetraceTask* task, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event)
-  // {
-  //   retrace_loop(task->scene,task->r,task->verify,task->numLogRayStreamElements,threadIndex,threadCount,task->check);
-  // }
-
-  void launch_retrace_loop(RTCScene scene, 
-			   void *r, 
-			   void *verify, 
-			   size_t numLogRayStreamElements, 
-			   bool check , 
-			   size_t threads )
+  void threadMainLoop(void *ptr)
   {
-    RetraceTask rt;
-    rt.scene = scene;
-    rt.raydata = r;
-    rt.raydata_verify = verify;
-    rt.numLogRayStreamElements = numLogRayStreamElements;
-    rt.threads = threads;
-    rt.check = check;
+    size_t id = (size_t)ptr;
+    setAffinity(id);
+
+    // g_mutex.lock();
+    // DBG_PRINT(id);
+    // g_mutex.unlock();
+
+    while(1)
+      {
+        g_barrier.wait(id,g_numThreads);
     
-    // embree::TaskScheduler::EventSync event;
-    // embree::TaskScheduler::Task task(&event,(TaskScheduler::runFunction)retrace_loop_parallel,&rt,g_numThreads,NULL,NULL,"retrace");
-    // embree::TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
-    // event.sync();
+        if (g_exitThreads) break;
+
+        renderMainLoop(id);
+
+        g_barrier.wait(id,g_numThreads);
+      }
+
+    g_mutex.lock();
+    std::cout << "thread exit " << id << std::endl;
+    g_mutex.unlock();
   }
 
-  void threadEntryFct(void *ptr)
+  void createThreads(size_t numThreads)
   {
-  }
-
-  void createThreads()
-  {
-    for (size_t i=0; i<g_numThreads; i++)
-      g_threads.push_back(createThread(threadEntryFct,NULL,1000000,i));
+    for (size_t i=1; i<numThreads; i++)
+      g_threads.push_back(createThread(threadMainLoop,(void*)i,1000000,i));
   }
 
   /* main function in embree namespace */
@@ -479,6 +494,12 @@ namespace embree
 #if defined(__ENABLE_RAYSTREAM_LOGGER__)
     FATAL("ray stream logger still active, disable to run 'retrace'");
 #endif
+
+    g_numThreads = getNumberOfLogicalThreads(); 
+#if defined (__MIC__)
+    g_numThreads -= 4;
+#endif
+
     setAffinity(0);
     /* parse command line */  
     parseCommandLine(argc,argv);
@@ -489,10 +510,6 @@ namespace embree
     DBG_PRINT(g_rtcore.c_str());
     rtcInit(g_rtcore.c_str());
 
-    g_numThreads = getNumberOfLogicalThreads(); 
-#if defined (__MIC__)
-    g_numThreads -= 4;
-#endif
 
     DBG_PRINT(g_numThreads);
 
@@ -586,33 +603,47 @@ namespace embree
     std::cout << "transfering geometry data:" << std::endl << std::flush;
     RTCScene scene = transferGeometryData((char*)g);
 
-    std::cout << "creating " << g_numThreads << " for retracing rays" << std::endl << std::flush;
-    
-    exit(0);
-
-#if 0
+    std::cout << "using " << g_numThreads << " threads for retracing rays" << std::endl << std::flush;
+    createThreads(g_numThreads);
 
 
     /* retrace ray packets */
     DBG_PRINT( g_numThreads );
 
-    std::cout << "Retracing logged rays:" << std::flush;
+    std::cout << "Retracing logged rays:" << std::endl << std::flush;
+    g_retraceTask.scene                   = scene;
+    g_retraceTask.raydata                 = raydata;
+    g_retraceTask.raydata_verify          = raydata_verify;
+    g_retraceTask.numLogRayStreamElements = numLogRayStreamElements;
+    g_retraceTask.check                   = g_check;
+
+    
     double avg_time = 0;
     double mrays_sec = 0;
     for (size_t i=0;i<g_frames;i++)
       {
 	double dt = getSeconds();
-	g_counter = 0;
 	g_rays_traced = 0;
-	launch_retrace_loop(scene,r,verify,numLogRayStreamElements,g_check,g_numThreads);
+
+        /* retrace rays using all threads */
+	g_counter = 0;
+        g_barrier.wait(0,g_numThreads);
+        renderMainLoop(0);
+
 	dt = getSeconds()-dt;
 	mrays_sec += (double)g_rays_traced / dt / 1000000.;
-#if 0
+#if 1
 	std::cout << "frame " << i << " => time " << 1000. * dt << " " << 1. / dt << " fps " << "ms " << stats.numTotalRays / dt / 1000000. << " mrays/sec" << std::endl;
 #endif
       }
-    std::cout << "avg. mrays/sec = " << mrays_sec / (double)g_frames << std::endl;
-#endif
+    std::cout << "rays " << g_rays_traced << " avg. mrays/sec = " << mrays_sec / (double)g_frames << std::endl;
+
+    std::cout << "freeing threads..." << std::flush;
+    g_exitThreads = true;
+    g_barrier.wait(0,g_numThreads);
+    std::cout << "done" << std::endl << std::flush;
+
+
     /* done */
     rtcExit();
     return 0;
