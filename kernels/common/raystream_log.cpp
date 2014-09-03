@@ -40,45 +40,34 @@ namespace embree
   using namespace std;
 	 
 
-  RayStreamLogger::RayStreamLogger() : initialized(false), active(true)
+  RayStreamLogger::RayStreamLogger()
   {
     int error = pthread_mutex_init(&mutex,NULL);
+    ray16        = new DataStream( DEFAULT_FILENAME_RAY16 );
+    ray16_verify = new DataStream( DEFAULT_FILENAME_RAY16_VERIFY );
+    ray8         = new DataStream( DEFAULT_FILENAME_RAY8 );
+    ray8_verify  = new DataStream( DEFAULT_FILENAME_RAY8_VERIFY );
+    ray4         = new DataStream( DEFAULT_FILENAME_RAY4 );
+    ray4_verify  = new DataStream( DEFAULT_FILENAME_RAY4_VERIFY );
+    ray1         = new DataStream( DEFAULT_FILENAME_RAY1 );
+    ray1_verify  = new DataStream( DEFAULT_FILENAME_RAY1_VERIFY );
   }
 
 
   RayStreamLogger::~RayStreamLogger()
     {
-      if (initialized)
-      {
-        rayData.close();
-        rayDataVerify.close();
-      }
+      if (ray16)        { delete ray16;        ray16        = NULL; }
+      if (ray16_verify) { delete ray16_verify; ray16_verify = NULL; }
+      if (ray8)         { delete ray8;         ray8         = NULL; }
+      if (ray8_verify)  { delete ray8_verify;  ray8_verify  = NULL; }
+      if (ray4)         { delete ray4;         ray4         = NULL; }
+      if (ray4_verify)  { delete ray4_verify;  ray4_verify  = NULL; }
+      if (ray1)         { delete ray1;         ray1         = NULL; }
+      if (ray1_verify)  { delete ray1_verify;  ray1_verify  = NULL; }
     }
-
-  void RayStreamLogger::openRayDataStream()
-  {
-    FileName rayFilename(RAYSTREAM_FILENAME);
-    rayData.open(rayFilename.c_str(),ios::out | ios::binary);
-    rayData.seekp(0, ios::beg);
- 
-    if (!rayData)
-      FATAL("could not dump ray data to file");
-
-    FileName rayVerifyFilename(RAYSTREAM_VERIFY_FILENAME);
-    rayDataVerify.open(rayVerifyFilename.c_str(),ios::out | ios::binary);
-    rayDataVerify.seekp(0, ios::beg);
- 
-    if (!rayDataVerify)
-      {
-	FATAL("could not dump ray data to file");
-      }    
-
-  }
 
   void RayStreamLogger::dumpGeometry(void* ptr)
   {
-    if (!active) return;
-
     Scene *scene = (Scene*)ptr;
 
     const size_t numGroups = scene->size();
@@ -161,28 +150,19 @@ namespace embree
   void RayStreamLogger::logRay16Intersect(const void* valid_i, void* scene, RTCRay16& start, RTCRay16& end)
   {
 #if defined(__MIC__)
-    if (!active) return;
-
     pthread_mutex_lock(&mutex);
-
-    if (!initialized)
-      {
-	openRayDataStream();
-	initialized = true;
-      }
 
     LogRay16 logRay16;
 
     logRay16.type    = RAY_INTERSECT;
     logRay16.m_valid = *(mic_i*)valid_i != mic_i(0);
 
-    logRay16.ray16   = start;
-    rayData.write((char*)&logRay16 ,sizeof(logRay16));
-    rayData << flush;
+    /* ray16 before intersect */
+    ray16.write((char*)&logRay16 ,sizeof(logRay16));
 
+    /* ray16 after intersect */
     logRay16.ray16   = end;
-    rayDataVerify.write((char*)&logRay16 ,sizeof(logRay16));
-    rayDataVerify << flush;
+    ray16_verify.write((char*)&logRay16 ,sizeof(logRay16));
 
     pthread_mutex_unlock(&mutex);
 #endif
@@ -191,27 +171,19 @@ namespace embree
   void RayStreamLogger::logRay16Occluded(const void* valid_i, void* scene, RTCRay16& start, RTCRay16& end)
   {
 #if defined(__MIC__)
-    if (!active) return;
-
     pthread_mutex_lock(&mutex);
-    if (!initialized)
-      {
-	openRayDataStream();
-	initialized = true;
-      }
 
     LogRay16 logRay16;
 
     logRay16.type    = RAY_OCCLUDED;
     logRay16.m_valid = *(mic_i*)valid_i != mic_i(0);
 
-    logRay16.ray16   = start;
-    rayData.write((char*)&logRay16 ,sizeof(logRay16));
-    rayData << flush;
+    /* ray16 before intersect */
+    ray16->write((char*)&logRay16 ,sizeof(logRay16));
 
-    logRay16.ray16     = end;
-    rayDataVerify.write((char*)&logRay16 ,sizeof(logRay16));
-    rayDataVerify << flush;
+    /* ray16 after intersect */
+    logRay16.ray16   = end;
+    ray16_verify->write((char*)&logRay16 ,sizeof(logRay16));
 
     pthread_mutex_unlock(&mutex);
 #endif
@@ -219,49 +191,38 @@ namespace embree
 
  void RayStreamLogger::logRay1Intersect(void* scene, RTCRay& start, RTCRay& end)
   {
-    if (!active) return;
-
     pthread_mutex_lock(&mutex);
-
-    if (!initialized)
-      {
-	openRayDataStream();
-	initialized = true;
-      }
 
     LogRay1 logRay1;
 
-    logRay1.ray   = start;
-    rayData.write((char*)&logRay1 ,sizeof(logRay1));
-    rayData << flush;
+    logRay1.type  = RAY_INTERSECT;
 
+    /* ray before intersect */
+    logRay1.ray   = start;
+    ray1->write((char*)&logRay1 ,sizeof(logRay1));
+
+    /* ray after intersect */
     logRay1.ray   = end;
-    rayDataVerify.write((char*)&logRay1 ,sizeof(logRay1));
-    rayDataVerify << flush;
+    ray1_verify->write((char*)&logRay1 ,sizeof(logRay1));
 
     pthread_mutex_unlock(&mutex);
   }
 
   void RayStreamLogger::logRay1Occluded(void* scene, RTCRay& start, RTCRay& end)
   {
-    if (!active) return;
-
     pthread_mutex_lock(&mutex);
-    if (!initialized)
-      {
-	openRayDataStream();
-	initialized = true;
-      }
 
     LogRay1 logRay1;
 
-    logRay1.ray   = start;
-    rayData.write((char*)&logRay1 ,sizeof(logRay1));
-    rayData << flush;
+    logRay1.type  = RAY_OCCLUDED;
 
-    logRay1.ray     = end;
-    rayDataVerify.write((char*)&logRay1 ,sizeof(logRay1));
-    rayDataVerify << flush;
+    /* ray before intersect */
+    logRay1.ray   = start;
+    ray1->write((char*)&logRay1 ,sizeof(logRay1));
+
+    /* ray after intersect */
+    logRay1.ray   = end;
+    ray1_verify->write((char*)&logRay1 ,sizeof(logRay1));
 
     pthread_mutex_unlock(&mutex);
   }

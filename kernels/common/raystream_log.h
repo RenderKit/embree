@@ -24,19 +24,84 @@
 
 namespace embree
 {
+
+#define DEFAULT_FILENAME_RAY16         "ray16.bin"
+#define DEFAULT_FILENAME_RAY16_VERIFY  "ray16_verify.bin"
+
+#define DEFAULT_FILENAME_RAY8          "ray8.bin"
+#define DEFAULT_FILENAME_RAY8_VERIFY   "ray8_verify.bin"
+
+#define DEFAULT_FILENAME_RAY4          "ray4.bin"
+#define DEFAULT_FILENAME_RAY4_VERIFY   "ray4_verify.bin"
+
+#define DEFAULT_FILENAME_RAY1          "ray1.bin"
+#define DEFAULT_FILENAME_RAY1_VERIFY   "ray1_verify.bin"
+
   class RayStreamLogger
   {
+  public:
+
+
+    class DataStream {
+    private:
+      bool initialized;
+
+      std::string filename;
+      std::ofstream data;
+
+      void open() 
+      {
+        data.open(filename.c_str(),std::ios::out | std::ios::binary);
+        data.seekp(0, std::ios::beg);
+        
+        if (!data)
+          {
+            DBG_PRINT(filename);
+            FATAL("could not open data stream");
+          }
+      }
+      
+    public:
+
+    DataStream(const char *name) : initialized(false) 
+        {
+          filename = name;
+        }
+
+      ~DataStream() {
+        if (initialized)
+          {
+            data.close();
+          }
+      }
+    
+      void write(void *ptr, const size_t size)
+      {
+        if (unlikely(!initialized))
+          {
+            open();
+            initialized = true;
+          }
+
+        data.write((char*)ptr,size);
+        data << std::flush;
+      }
+
+    };
+
   private:
 
     pthread_mutex_t mutex;
 
-    bool initialized;
-    bool active;
+    DataStream *ray16;
+    DataStream *ray16_verify;
+    DataStream *ray8;
+    DataStream *ray8_verify;
+    DataStream *ray4;
+    DataStream *ray4_verify;
+    DataStream *ray1;
+    DataStream *ray1_verify;
 
-    std::ofstream rayData;
-    std::ofstream rayDataVerify;
-
-    void openRayDataStream();
 
   public:
 
@@ -49,6 +114,8 @@ namespace embree
     ~RayStreamLogger();
 
     struct __aligned(64) LogRay1  {
+      unsigned int type;
+      unsigned int dummy[3];
       RTCRay ray;
 
       LogRay1() {
@@ -125,9 +192,5 @@ namespace embree
   void logRay1Occluded (void* scene, RTCRay& start, RTCRay& end);
 
   void dumpGeometry(void* scene);
-
-  __forceinline void deactivate() { active = false; };
-  __forceinline bool isActive() { return active; };
-
   };
 };

@@ -45,8 +45,7 @@ namespace embree
 
     void add(RayStreamLogger::LogRay16 &r)
     {
-#if defined(__MIC__)
-      size_t numRays = countbits((mic_m)r.m_valid);
+      size_t numRays = popcnt((int)r.m_valid);
       numRayPackets++;
       numTotalRays += numRays;
       if (r.type == RayStreamLogger::RAY_INTERSECT)
@@ -63,7 +62,6 @@ namespace embree
 	FATAL("unknown log ray type");
       num4widePackets += (numRays+3)/4;
       num8widePackets += (numRays+7)/8;
-#endif
     }
 
   };
@@ -421,9 +419,6 @@ namespace embree
     //TaskScheduler::create(g_numThreads);
     //DBG_PRINT(embree::TaskScheduler::getNumThreads());
 
-#if defined(__MIC__)
-    RayStreamLogger::rayStreamLogger.deactivate();
-#endif
     std::string geometryFileName = g_binaries_path + "geometry.bin";
     std::string rayStreamFileName = g_binaries_path + "ray16.bin";
     std::string rayStreamVerifyFileName = g_binaries_path + "ray16_verify.bin";

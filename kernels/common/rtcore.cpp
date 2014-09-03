@@ -26,13 +26,9 @@
 #include "common/scene.h"
 #include "sys/taskscheduler.h"
 #include "sys/thread.h"
+#include "raystream_log.h"
 
 #define TRACE(x) //std::cout << #x << std::endl;
-
-#if defined(__MIC__)
-#include "raystream_log.h"
-//#define ENABLE_RAYSTREAM_LOGGER
-#endif
 
 namespace embree
 {
@@ -486,9 +482,8 @@ namespace embree
     TRACE(rtcCommit);
     VERIFY_HANDLE(scene);
 
-#if defined(ENABLE_RAYSTREAM_LOGGER)
-    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
-      RayStreamLogger::rayStreamLogger.dumpGeometry(scene);
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RayStreamLogger::rayStreamLogger.dumpGeometry(scene);
 #endif
 
     ((Scene*)scene)->build();
@@ -505,7 +500,18 @@ namespace embree
     if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)&ray) & 0x0F) process_error(RTC_INVALID_ARGUMENT,"ray not aligned to 16 bytes");   
 #endif
+
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RTCRay old_ray = ray;
+#endif
+
     ((Scene*)scene)->intersect(ray);
+
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RayStreamLogger::rayStreamLogger.logRay1Intersect(scene,old_ray,ray);
+#endif
+
+
   }
   
   RTCORE_API void rtcIntersect4 (const void* valid, RTCScene scene, RTCRay4& ray) 
@@ -556,17 +562,14 @@ namespace embree
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,16);
 
-#if defined(ENABLE_RAYSTREAM_LOGGER)
-    RTCRay16 old_ray;
-    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
-      old_ray = ray;
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RTCRay16 old_ray = ray;
 #endif
 
     ((Scene*)scene)->intersect16(valid,ray);
 
-#if defined(ENABLE_RAYSTREAM_LOGGER)
-    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
-      RayStreamLogger::rayStreamLogger.logRay16Intersect(valid,scene,old_ray,ray);
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RayStreamLogger::rayStreamLogger.logRay16Intersect(valid,scene,old_ray,ray);
 #endif
 
 #endif
@@ -580,7 +583,17 @@ namespace embree
     if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
     if (((size_t)&ray) & 0x0F) process_error(RTC_INVALID_ARGUMENT,"ray not aligned to 16 bytes");   
 #endif
+
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RTCRay old_ray = ray;
+#endif
+
     ((Scene*)scene)->occluded(ray);
+
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RayStreamLogger::rayStreamLogger.logRay1Occluded(scene,old_ray,ray);
+#endif
+
   }
   
   RTCORE_API void rtcOccluded4 (const void* valid, RTCScene scene, RTCRay4& ray) 
@@ -631,17 +644,14 @@ namespace embree
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,16);
 
-#if defined(ENABLE_RAYSTREAM_LOGGER)
-    RTCRay16 old_ray;
-    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
-      old_ray = ray;
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RTCRay16 old_ray = ray;
 #endif
 
     ((Scene*)scene)->occluded16(valid,ray);
 
-#if defined(ENABLE_RAYSTREAM_LOGGER)
-    if (unlikely(RayStreamLogger::rayStreamLogger.isActive()))
-      RayStreamLogger::rayStreamLogger.logRay16Occluded(valid,scene,old_ray,ray);
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+  RayStreamLogger::rayStreamLogger.logRay16Occluded(valid,scene,old_ray,ray);
 #endif
 
 #endif
