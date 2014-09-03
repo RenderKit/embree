@@ -20,7 +20,7 @@
 #include "embree2/rtcore_ray.h"
 #include <iostream>
 #include <fstream>
-#include <pthread.h>
+//#include <pthread.h>
 
 namespace embree
 {
@@ -91,7 +91,7 @@ namespace embree
 
   private:
 
-    pthread_mutex_t mutex;
+    //pthread_mutex_t mutex;
 
     DataStream *ray16;
     DataStream *ray16_verify;

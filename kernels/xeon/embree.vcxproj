@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -491,6 +491,8 @@
     <ClInclude Include="..\common\stat.h" />
     <ClInclude Include="bvh4\bvh4.h" />
     <ClInclude Include="bvh4\bvh4_builder.h" />
+    <ClInclude Include="bvh4\bvh4_builder_hair.h" />
+    <ClInclude Include="bvh4\bvh4_builder_hair_mb.h" />
     <ClInclude Include="bvh4\bvh4_builder_mb.h" />
     <ClInclude Include="bvh4\bvh4_builder_binner.h" />
     <ClInclude Include="bvh4\bvh4_builder_fast.h" />
@@ -596,6 +598,8 @@
     <ClCompile Include="..\common\tasksys.cpp" />
     <ClCompile Include="bvh4\bvh4.cpp" />
     <ClCompile Include="bvh4\bvh4_builder.cpp" />
+    <ClCompile Include="bvh4\bvh4_builder_hair.cpp" />
+    <ClCompile Include="bvh4\bvh4_builder_hair_mb.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_mb.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_binner.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_fast.cpp" />
