@@ -151,6 +151,7 @@ namespace embree
   static size_t g_frames = 1;
   static size_t g_simd_width = 0;
   static AlignedAtomicCounter32 g_rays_traced = 0;
+  static AlignedAtomicCounter32 g_rays_traced_diff = 0;
   static std::vector<thread_t> g_threads;
   static LinearBarrierActive g_barrier;
   static bool g_exitThreads = false;
@@ -165,45 +166,45 @@ namespace embree
 #endif
 
 
-#define AssertNoError() \
+#define AssertNoError()                                 \
   if (rtcGetError() != RTC_NO_ERROR) return false;
-#define AssertAnyError() \
+#define AssertAnyError()                                \
   if (rtcGetError() == RTC_NO_ERROR) return false;
-#define AssertError(code) \
+#define AssertError(code)                       \
   if (rtcGetError() != code) return false;
 
   static void parseCommandLine(int argc, char** argv)
   {
     for (int i=1; i<argc; i++)
-    {
-      std::string tag = argv[i];
-      if (tag == "") return;
+      {
+        std::string tag = argv[i];
+        if (tag == "") return;
 
-      else if (tag == "-rtcore" && i+1<argc) {
-        g_rtcore += std::stringOf(',') + argv[++i];
-      }
-      /* rtcore configuration */
-      else if (tag == "-check") {
-        g_check = true;
-      }      
-      else if (tag == "-threads" && i+1<argc) {
-        g_numThreads = atoi(argv[++i]);
-      }
-      else if (tag == "-frames" && i+1<argc) {
-        g_frames = atoi(argv[++i]);
-      }
-      else if (tag == "-simd_width" && i+1<argc) {
-        g_simd_width = atoi(argv[++i]);
-      }
+        else if (tag == "-rtcore" && i+1<argc) {
+          g_rtcore += std::stringOf(',') + argv[++i];
+        }
+        /* rtcore configuration */
+        else if (tag == "-check") {
+          g_check = true;
+        }      
+        else if (tag == "-threads" && i+1<argc) {
+          g_numThreads = atoi(argv[++i]);
+        }
+        else if (tag == "-frames" && i+1<argc) {
+          g_frames = atoi(argv[++i]);
+        }
+        else if (tag == "-simd_width" && i+1<argc) {
+          g_simd_width = atoi(argv[++i]);
+        }
 
-      /* skip unknown command line parameter */
-      else {
+        /* skip unknown command line parameter */
+        else {
 
-	g_binaries_path = tag;
-        // std::cerr << "unknown command line parameter: " << tag << " ";
-        // std::cerr << std::std::endl;
+          g_binaries_path = tag;
+          // std::cerr << "unknown command line parameter: " << tag << " ";
+          // std::cerr << std::std::endl;
+        }
       }
-    }
   }
 
 
@@ -230,7 +231,7 @@ namespace embree
     char *ptr = (char*)os_malloc(fileSize);
     geometryData.seekg(0, std::ios::beg);
     geometryData.read(ptr,fileSize);
-    //geometryData.close();
+    geometryData.close();
     return ptr;
   }
 
@@ -250,7 +251,7 @@ namespace embree
     rayStreamData.seekg(0, std::ios::beg);
     rayStreamData.read(ptr,fileSize);
     numLogRayStreamElements = fileSize / sizeof(T);
-    //rayStreamData.close();
+    rayStreamData.close();
     return ptr;
   }
 
@@ -285,11 +286,8 @@ namespace embree
         DBG(
             DBG_PRINT(numVertices);
             DBG_PRINT(numTriangles);
-            DBG_PRINT(sizeof(Triangle));
-            DBG_PRINT(sizeof(Vertex));
             DBG_PRINT(sizeof(Vertex)*numVertices);
             DBG_PRINT(sizeof(Triangle)*numTriangles);
-
             );
 
 	Vertex *vtx = (Vertex*)g;
@@ -704,6 +702,7 @@ namespace embree
       {
 	double dt = getSeconds();
 	g_rays_traced = 0;
+	g_rays_traced_diff = 0;
 
         /* retrace rays using all threads */
 	g_counter = 0;
@@ -713,8 +712,10 @@ namespace embree
 	dt = getSeconds()-dt;
 	mrays_sec += (double)g_rays_traced / dt / 1000000.;
 #if 1
-	std::cout << "frame " << i << " => time " << 1000. * dt << " " << 1. / dt << " fps " << "ms " << stats.numTotalRays / dt / 1000000. << " mrays/sec" << std::endl;
+	std::cout << "frame " << i << " => time " << 1000. * dt << " " << 1. / dt << " fps " << "ms " << g_rays_traced / dt / 1000000. << " mrays/sec" << std::endl;
 #endif
+        if (g_check)
+          std::cout << g_rays_traced_diff << " rays differ in result (" << 100. * g_rays_traced_diff / g_rays_traced << "%)" << std::endl;
       }
     std::cout << "rays " << g_rays_traced << " avg. mrays/sec = " << mrays_sec / (double)g_frames << std::endl;
 
