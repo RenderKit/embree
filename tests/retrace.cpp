@@ -561,12 +561,15 @@ namespace embree
                 RayStreamLogger::LogRay8 *raydata_verify = (RayStreamLogger::LogRay8 *)g_retraceTask.raydata_verify;
 
                 RTCRay8 &ray8 = raydata[index].ray8;
-                sseb valid((int)raydata[index].m_valid);
+                sseb valid[2];
+                valid[0] = ((int)(raydata[index].m_valid & 0xf));
+                valid[1] = ((int)((raydata[index].m_valid>>4) & 0xf));
+
                 rays += popcnt( (int)raydata[index].m_valid );
                 if (raydata[index].type == RayStreamLogger::RAY_INTERSECT)
-                  rtcIntersect8(&valid,g_retraceTask.scene,ray8);
+                  rtcIntersect8(valid,g_retraceTask.scene,ray8);
                 else 
-                  rtcOccluded8(&valid,g_retraceTask.scene,ray8);
+                  rtcOccluded8(valid,g_retraceTask.scene,ray8);
 
                 if (unlikely(g_check))
                   diff += check_ray8_packets(raydata[index].m_valid,  raydata[index].ray8, raydata_verify[index].ray8);

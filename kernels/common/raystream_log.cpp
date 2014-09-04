@@ -25,6 +25,14 @@ namespace embree
 {
   using namespace std;
 	 
+  unsigned int getMask(int *ptr, const size_t width)
+  {
+    unsigned int mask = 0;
+    for (size_t i=0;i<width;i++)
+      if (ptr[i] != 0)
+        mask |= (unsigned int)1 << i;
+    return mask;
+  }
 
   RayStreamLogger::RayStreamLogger()
   {
@@ -198,9 +206,8 @@ namespace embree
     LogRay8 logRay8;
 
     logRay8.type    = RAY_INTERSECT;
-#if defined(__AVX__)
-    logRay8.m_valid = movemask(*(avxb*)valid_i);
-#endif
+    logRay8.m_valid = getMask((int*)valid_i,8);
+
     /* ray8 before intersect */
     ray8->write((char*)&logRay8 ,sizeof(logRay8));
 
@@ -218,9 +225,8 @@ namespace embree
     LogRay8 logRay8;
 
     logRay8.type    = RAY_OCCLUDED;
-#if defined(__AVX__)
-    logRay8.m_valid = movemask(*(avxb*)valid_i);
-#endif
+    logRay8.m_valid = getMask((int*)valid_i,8);
+
     /* ray8 before intersect */
     ray8->write((char*)&logRay8 ,sizeof(logRay8));
 
@@ -239,7 +245,8 @@ namespace embree
     LogRay4 logRay4;
 
     logRay4.type    = RAY_INTERSECT;
-    logRay4.m_valid = movemask(*(sseb*)valid_i);
+    logRay4.m_valid = getMask((int*)valid_i,4);
+
     /* ray4 before intersect */
     ray4->write((char*)&logRay4 ,sizeof(logRay4));
 
@@ -257,7 +264,7 @@ namespace embree
     LogRay4 logRay4;
 
     logRay4.type    = RAY_OCCLUDED;
-    logRay4.m_valid = movemask(*(sseb*)valid_i);
+    logRay4.m_valid = getMask((int*)valid_i,4);
 
     /* ray4 before intersect */
     ray4->write((char*)&logRay4 ,sizeof(logRay4));
