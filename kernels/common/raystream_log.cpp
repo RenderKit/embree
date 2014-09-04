@@ -34,6 +34,15 @@ namespace embree
     return mask;
   }
 
+  unsigned int numActive(int *ptr, const size_t width)
+  {
+    unsigned int active = 0;
+    for (size_t i=0;i<width;i++)
+      if (ptr[i] != 0)
+        active++;
+    return active;
+  }
+
   RayStreamLogger::RayStreamLogger()
   {
     ray16        = new DataStream( DEFAULT_FILENAME_RAY16 );
@@ -168,6 +177,7 @@ namespace embree
     logRay16.type    = RAY_INTERSECT;
 #if defined(__MIC__)
     logRay16.m_valid = *(mic_i*)valid_i != mic_i(0);
+    logRay16.numRays = countbits(logRay16.m_valid);
 #endif
     /* ray16 before intersect */
     ray16->write((char*)&logRay16 ,sizeof(logRay16));
@@ -188,6 +198,7 @@ namespace embree
     logRay16.type    = RAY_OCCLUDED;
 #if defined(__MIC__)
     logRay16.m_valid = *(mic_i*)valid_i != mic_i(0);
+    logRay16.numRays = countbits(logRay16.m_valid);
 #endif
     /* ray16 before intersect */
     ray16->write((char*)&logRay16 ,sizeof(logRay16));
@@ -207,6 +218,7 @@ namespace embree
 
     logRay8.type    = RAY_INTERSECT;
     logRay8.m_valid = getMask((int*)valid_i,8);
+    logRay8.numRays = numActive((int*)valid_i,8);
 
     /* ray8 before intersect */
     ray8->write((char*)&logRay8 ,sizeof(logRay8));
@@ -226,6 +238,7 @@ namespace embree
 
     logRay8.type    = RAY_OCCLUDED;
     logRay8.m_valid = getMask((int*)valid_i,8);
+    logRay8.numRays = numActive((int*)valid_i,8);
 
     /* ray8 before intersect */
     ray8->write((char*)&logRay8 ,sizeof(logRay8));
@@ -246,6 +259,7 @@ namespace embree
 
     logRay4.type    = RAY_INTERSECT;
     logRay4.m_valid = getMask((int*)valid_i,4);
+    logRay4.numRays = numActive((int*)valid_i,4);
 
     /* ray4 before intersect */
     ray4->write((char*)&logRay4 ,sizeof(logRay4));
@@ -265,6 +279,7 @@ namespace embree
 
     logRay4.type    = RAY_OCCLUDED;
     logRay4.m_valid = getMask((int*)valid_i,4);
+    logRay4.numRays = numActive((int*)valid_i,4);
 
     /* ray4 before intersect */
     ray4->write((char*)&logRay4 ,sizeof(logRay4));

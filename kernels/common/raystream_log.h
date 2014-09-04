@@ -128,7 +128,8 @@ namespace embree
     struct __aligned(64) LogRay4  {
       unsigned int type;
       unsigned int m_valid;
-      unsigned int dummy[2]; /* 16 bytes alignment */
+      unsigned int numRays;
+      unsigned int dummy[1]; /* 16 bytes alignment */
       RTCRay4 ray4;
 
       LogRay4() {
@@ -139,7 +140,8 @@ namespace embree
     struct __aligned(64) LogRay8  {
       unsigned int type;
       unsigned int m_valid;
-      unsigned int dummy[6]; /* 32 bytes alignment */
+      unsigned int numRays;
+      unsigned int dummy[5]; /* 32 bytes alignment */
       RTCRay8 ray8;
 
       LogRay8() {
@@ -150,7 +152,8 @@ namespace embree
     struct __aligned(64) LogRay16  {
       unsigned int type;
       unsigned int m_valid;
-      unsigned int dummy[14]; /* 64 bytes alignment */
+      unsigned int numRays;
+      unsigned int dummy[13]; /* 64 bytes alignment */
       RTCRay16 ray16;
 
       LogRay16() {

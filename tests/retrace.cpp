@@ -20,6 +20,7 @@
 #include "embree2/rtcore_ray.h"
 #include "../kernels/common/default.h"
 #include "../kernels/common/raystream_log.h"
+#include "sys/intrinsics.h"
 #include "sys/thread.h"
 #include "sys/sysinfo.h"
 #include "sys/sync/barrier.h"
@@ -48,9 +49,10 @@ namespace embree
       memset(this,0,sizeof(RayStreamStats));
     }
 
+
     void add(RayStreamLogger::LogRay16 &r)
     {
-      size_t numRays = popcnt((int)r.m_valid);
+      size_t numRays = r.numRays;
       numRayPackets++;
       numTotalRays += numRays;
       if (r.type == RayStreamLogger::RAY_INTERSECT)
@@ -71,7 +73,7 @@ namespace embree
 
     void add(RayStreamLogger::LogRay4 &r)
     {
-      size_t numRays = popcnt((int)r.m_valid);
+      size_t numRays = r.numRays;
       numRayPackets++;
       numTotalRays += numRays;
       if (r.type == RayStreamLogger::RAY_INTERSECT)
@@ -90,7 +92,7 @@ namespace embree
 
     void add(RayStreamLogger::LogRay8 &r)
     {
-      size_t numRays = popcnt((int)r.m_valid);
+      size_t numRays = r.numRays;
       numRayPackets++;
       numTotalRays += numRays;
       if (r.type == RayStreamLogger::RAY_INTERSECT)
@@ -539,6 +541,7 @@ namespace embree
                 if (unlikely(g_check))
                   diff += check_ray1_packets(ray, raydata_verify[index].ray);                    
               }
+#if !defined(__MIC__)
             else if (SIMD_WIDTH == 4)
               {
                 RayStreamLogger::LogRay4 *raydata        = (RayStreamLogger::LogRay4 *)g_retraceTask.raydata;
@@ -574,14 +577,14 @@ namespace embree
                 if (unlikely(g_check))
                   diff += check_ray8_packets(raydata[index].m_valid,  raydata[index].ray8, raydata_verify[index].ray8);
               }
-
+#endif
             else if (SIMD_WIDTH == 16)
               {
                 RayStreamLogger::LogRay16 *raydata        = (RayStreamLogger::LogRay16 *)g_retraceTask.raydata;
                 RayStreamLogger::LogRay16 *raydata_verify = (RayStreamLogger::LogRay16 *)g_retraceTask.raydata_verify;
 #if defined(__MIC__)
                 RTCRay16 &ray16 = raydata[index].ray16;
-                mic_i valid = select((mic_m)r[index].m_valid,mic_i(-1),mic_i(0));
+                mic_i valid = select((mic_m)raydata[index].m_valid,mic_i(-1),mic_i(0));
                 rays += countbits( (mic_m)raydata[index].m_valid );
 
                 //raydata[index+1].prefetchL2();
