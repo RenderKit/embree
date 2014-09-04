@@ -86,6 +86,11 @@ IF (RTCORE_EXPORT_ALL_SYMBOLS)
  ADD_DEFINITIONS(-D__EXPORT_ALL_SYMBOLS__)
 ENDIF()
 
+SET(RTCORE_ENABLE_RAYSTREAM_LOGGER OFF CACHE BOOL "Enable ray stream logger")
+IF (RTCORE_ENABLE_RAYSTREAM_LOGGER)
+ ADD_DEFINITIONS(-D__ENABLE_RAYSTREAM_LOGGER__)
+ENDIF()
+
 ##############################################################
 # ISA configuration
 ##############################################################

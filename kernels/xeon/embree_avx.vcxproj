@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -364,6 +364,8 @@
   <ItemGroup>
     <ClCompile Include="builders\primrefgen.cpp" />
     <ClCompile Include="bvh4\bvh4_builder.cpp" />
+    <ClCompile Include="bvh4\bvh4_builder_hair.cpp" />
+    <ClCompile Include="bvh4\bvh4_builder_hair_mb.cpp" />
     <ClCompile Include="bvh4\bvh4_builder_mb.cpp" />
     <ClCompile Include="bvh4\bvh4_refit.cpp" />
     <ClCompile Include="bvh8\bvh8.cpp" />
@@ -407,6 +409,8 @@
     <CustomBuildStep Include="geometry\instance_intersector4.h" />
     <CustomBuildStep Include="geometry\instance_intersector8.h" />
     <ClInclude Include="bvh4\bvh4_builder.h" />
+    <ClInclude Include="bvh4\bvh4_builder_hair.h" />
+    <ClInclude Include="bvh4\bvh4_builder_hair_mb.h" />
     <ClInclude Include="bvh4\bvh4_builder_mb.h" />
     <ClInclude Include="bvh4\bvh4_refit.h" />
     <ClInclude Include="bvh8\bvh8.h" />

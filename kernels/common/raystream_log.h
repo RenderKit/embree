@@ -20,23 +20,90 @@
 #include "embree2/rtcore_ray.h"
 #include <iostream>
 #include <fstream>
-#include <pthread.h>
+//#include <pthread.h>
 
 namespace embree
 {
+
+#define DEFAULT_FILENAME_GEOMETRY      "geometry.bin"
+
+#define DEFAULT_FILENAME_RAY16         "ray16.bin"
+#define DEFAULT_FILENAME_RAY16_VERIFY  "ray16_verify.bin"
+
+#define DEFAULT_FILENAME_RAY8          "ray8.bin"
+#define DEFAULT_FILENAME_RAY8_VERIFY   "ray8_verify.bin"
+
+#define DEFAULT_FILENAME_RAY4          "ray4.bin"
+#define DEFAULT_FILENAME_RAY4_VERIFY   "ray4_verify.bin"
+
+#define DEFAULT_FILENAME_RAY1          "ray1.bin"
+#define DEFAULT_FILENAME_RAY1_VERIFY   "ray1_verify.bin"
+
   class RayStreamLogger
   {
+  public:
+
+
+    class DataStream {
+    private:
+      bool initialized;
+
+      std::string filename;
+      std::ofstream data;
+
+      void open() 
+      {
+        data.open(filename.c_str(),std::ios::out | std::ios::binary);
+        data.seekp(0, std::ios::beg);
+        
+        if (!data)
+          {
+            DBG_PRINT(filename);
+            FATAL("could not open data stream");
+          }
+      }
+      
+    public:
+
+    DataStream(const char *name) : initialized(false) 
+        {
+          filename = name;
+        }
+
+      ~DataStream() {
+        if (initialized)
+          {
+            data.close();
+          }
+      }
+    
+      void write(void *ptr, const size_t size)
+      {
+        if (unlikely(!initialized))
+          {
+            open();
+            initialized = true;
+          }
+
+        data.write((char*)ptr,size);
+        data << std::flush;
+      }
+
+    };
+
   private:
 
-    pthread_mutex_t mutex;
+    MutexSys mutex;
 
-    bool initialized;
-    bool active;
+    DataStream *ray16;
+    DataStream *ray16_verify;
+    DataStream *ray8;
+    DataStream *ray8_verify;
+    DataStream *ray4;
+    DataStream *ray4_verify;
+    DataStream *ray1;
+    DataStream *ray1_verify;
 
-    std::ofstream rayData;
-    std::ofstream rayDataVerify;
-
-    void openRayDataStream();
 
   public:
 
@@ -47,6 +114,28 @@ namespace embree
 
     RayStreamLogger();
     ~RayStreamLogger();
+
+    struct __aligned(64) LogRay1  {
+      unsigned int type;
+      unsigned int dummy[3];
+      RTCRay ray;
+
+      LogRay1() {
+	memset(this,0,sizeof(LogRay1));
+      }
+
+      __forceinline void prefetchL2()
+      {
+#if defined(__MIC__)
+	prefetch<PFHINT_L2>(&type);
+	const size_t cl = sizeof(RTCRay1) / 64;
+	const char *__restrict__ ptr = (char*)&ray;
+#pragma unroll(cl)
+	for (size_t i=0;i<cl;i++,ptr+=64)
+	  prefetch<PFHINT_L2>(ptr);
+#endif
+      }
+    };
 
     struct __aligned(64) LogRay16  {
       unsigned int type;
@@ -60,46 +149,27 @@ namespace embree
 
       __forceinline void prefetchL2()
       {
+#if defined(__MIC__)
 	prefetch<PFHINT_L2>(&type);
 	const size_t cl = sizeof(RTCRay16) / 64;
 	const char *__restrict__ ptr = (char*)&ray16;
 #pragma unroll(cl)
 	for (size_t i=0;i<cl;i++,ptr+=64)
 	  prefetch<PFHINT_L2>(ptr);
+#endif
       }
-
-      __forceinline void prefetchL1()
-      {
-	prefetch<PFHINT_NT>(&type);
-	const size_t cl = sizeof(RTCRay16) / 64;
-	const char *__restrict__ ptr = (char*)&ray16;
-#pragma unroll(cl)
-	for (size_t i=0;i<cl;i++,ptr+=64)
-	  prefetch<PFHINT_NT>(ptr);
-      }
-
-      __forceinline void evict()
-      {
-	evictL2(&type);
-	const size_t cl = sizeof(RTCRay16) / 64;
-	const char *__restrict__ ptr = (char*)&ray16;
-#pragma unroll(cl)
-	for (size_t i=0;i<cl;i++,ptr+=64)
-	  evictL2(ptr);
-
-      }
-
 
     };
+
       
   static RayStreamLogger rayStreamLogger;
 
   void logRay16Intersect(const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
   void logRay16Occluded (const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
+
+  void logRay1Intersect(void* scene, RTCRay& start, RTCRay& end);
+  void logRay1Occluded (void* scene, RTCRay& start, RTCRay& end);
+
   void dumpGeometry(void* scene);
-
-  __forceinline void deactivate() { active = false; }
-  __forceinline bool isActive() { return active; }
-
   };
 };

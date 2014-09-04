@@ -367,12 +367,15 @@
     <ClInclude Include="obj_loader.h" />
     <ClInclude Include="ray.h" />
     <ClInclude Include="tutorial.h" />
+    <ClInclude Include="xml_loader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cy_hair_loader.cpp" />
     <ClCompile Include="glutdisplay.cpp" />
     <ClCompile Include="hair_loader.cpp" />
     <ClCompile Include="obj_loader.cpp" />
+    <ClCompile Include="xml_loader.cpp" />
+    <ClCompile Include="xml_parser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\common\sys\sys.vcxproj">

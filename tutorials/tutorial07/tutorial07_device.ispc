@@ -619,6 +619,8 @@ task void renderTile(uniform int* uniform pixels,
 
   foreach (y = y0 ... y1, x = x0 ... x1)
   {
+   int seed = (y*width+x+programIndex) * g_accu_count;
+
     /* calculate pixel color */
      float subpixel_x = frand(seed);
      float subpixel_y = frand(seed);

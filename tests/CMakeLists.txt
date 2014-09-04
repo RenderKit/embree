@@ -36,6 +36,9 @@ IF (__XEON__)
   ADD_EXECUTABLE(benchmark benchmark.cpp)
   TARGET_LINK_LIBRARIES(benchmark sys embree)
 
+  ADD_EXECUTABLE(retrace retrace.cpp)
+  TARGET_LINK_LIBRARIES(retrace sys embree)
+
 ELSE ()
 
   INCLUDE (icc_xeonphi)
