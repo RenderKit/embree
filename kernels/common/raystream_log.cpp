@@ -19,7 +19,7 @@
 #include "common/scene_triangle_mesh.h"
 #include "sys/filename.h"
 
-#define DBG(x)
+#define DBG(x) 
 
 namespace embree
 {
@@ -99,6 +99,9 @@ namespace embree
 	  DBG_PRINT( sizeof(Vec3fa)*mesh->numVertices );
 	  DBG_PRINT( mesh->numTriangles );
 	  DBG_PRINT( sizeof(TriangleMesh::Triangle)*mesh->numTriangles );
+          DBG_PRINT( (void*)mesh->triangles.getPtr() );
+          DBG_PRINT( &mesh->triangle(0) );
+
 	  );
 
       geometryData.write((char*)&mesh->numVertices,sizeof(mesh->numVertices));
@@ -109,14 +112,30 @@ namespace embree
       if ((align_check % 16) != 0)
 	FATAL("vtx alignment");
 
-      geometryData.write((char*)mesh->vertices[0].getPtr(),sizeof(Vec3fa)*mesh->numVertices);
+      for (size_t i=0;i<mesh->numVertices;i++)
+        geometryData.write((char*)&mesh->vertex(i),sizeof(Vec3fa));
+
       align_check += sizeof(Vec3fa)*mesh->numVertices;
 
-      geometryData.write((char*)mesh->triangles.getPtr(),sizeof(TriangleMesh::Triangle)*mesh->numTriangles);     
+      DBG(
+          for (size_t i=0;i<mesh->numVertices;i++)
+            DBG_PRINT( mesh->vertex(i) );
+          );
+
+      for (size_t i=0;i<mesh->numTriangles;i++)
+        geometryData.write((char*)&mesh->triangle(i),sizeof(TriangleMesh::Triangle));     
+
       align_check += sizeof(TriangleMesh::Triangle)*mesh->numTriangles;
+
+      DBG(
+          for (size_t i=0;i<mesh->numTriangles;i++)
+            DBG_PRINT( mesh->triangle(i) );
+          );
+
       if ((align_check % 16) != 0)
 	{
 	  size_t dummy_size = 16-(align_check % 16);
+          DBG(DBG_PRINT(dummy_size));
 	  char dummy[16];
 	  memset(dummy,0,16);      
 	  geometryData.write(dummy,dummy_size);

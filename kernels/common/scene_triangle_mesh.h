@@ -175,4 +175,11 @@ namespace embree
     BufferT<Vec3fa> vertices[2];      //!< vertex array
     size_t numVertices;               //!< number of vertices
   };
+
+  __forceinline std::ostream &operator<<(std::ostream &o, const TriangleMesh::Triangle &t)
+  {
+    o << "tri " << t.v[0] << " " << t.v[1] << " " << t.v[2] << std::endl;
+    return o;
+  } 
+
 }

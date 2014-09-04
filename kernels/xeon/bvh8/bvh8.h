@@ -175,6 +175,8 @@ namespace embree
       NodeRef children[N];    //!< Pointer to the 4 children (can be a node or leaf)
     };
 
+
+
     /*! swap the children of two nodes */
     __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
     {
@@ -269,4 +271,22 @@ namespace embree
   public:
     std::vector<BVH8*> objects;
   };
+
+#if defined (__AVX__)
+
+  __forceinline std::ostream &operator<<(std::ostream &o, const BVH8::Node &n)
+  {
+    o << "lower_x " << n.lower_x << std::endl;
+    o << "upper_x " << n.upper_x << std::endl;
+    o << "lower_y " << n.lower_y << std::endl;
+    o << "upper_y " << n.upper_y << std::endl;
+    o << "lower_z " << n.lower_z << std::endl;
+    o << "upper_z " << n.upper_z << std::endl;
+    o << "children ";
+    for (size_t i=0;i<BVH8::N;i++) o << n.children[i] << " ";
+    o << std::endl;
+    return o;
+  } 
+#endif
+
 }

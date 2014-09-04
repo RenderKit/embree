@@ -165,8 +165,10 @@ namespace embree
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         PrimitiveIntersector::intersect(pre,ray,prim,num,bvh->geometry);
+
         ray_far = ray.tfar;
       }
+
       AVX_ZERO_UPPER();
     }
     

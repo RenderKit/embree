@@ -29,7 +29,7 @@
 #include <iostream>
 #include <fstream>
 
-#define DBG(x) x
+#define DBG(x) 
 
 namespace embree
 {
@@ -132,6 +132,18 @@ namespace embree
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
   struct Triangle { int v0, v1, v2; };
+
+  __forceinline std::ostream &operator<<(std::ostream &o, const Vertex &v)
+  {
+    o << "vtx " << v.x << " " << v.y << " " << v.z << " " << v.a << std::endl;
+    return o;
+  } 
+
+  __forceinline std::ostream &operator<<(std::ostream &o, const Triangle &t)
+  {
+    o << "tri " << t.v0 << " " << t.v1 << " " << t.v2 << std::endl;
+    return o;
+  } 
 
   static AlignedAtomicCounter32 g_counter = 0;
   static bool g_check = false;
@@ -268,19 +280,35 @@ namespace embree
 	size_t numVertices = *(size_t*)g;
 	g += sizeof(size_t);
 	size_t numTriangles = *(size_t*)g;
+	g += sizeof(size_t);
 
         DBG(
             DBG_PRINT(numVertices);
             DBG_PRINT(numTriangles);
+            DBG_PRINT(sizeof(Triangle));
+            DBG_PRINT(sizeof(Vertex));
+            DBG_PRINT(sizeof(Vertex)*numVertices);
+            DBG_PRINT(sizeof(Triangle)*numTriangles);
+
             );
 
-	g += sizeof(size_t);
 	Vertex *vtx = (Vertex*)g;
 	g += sizeof(Vertex)*numVertices;
 	Triangle *tri = (Triangle *)g;
 	g += sizeof(Triangle)*numTriangles;
 	if (((size_t)g % 16) != 0)
-	  g += 16 - ((size_t)g % 16);
+          {
+            DBG( DBG_PRINT( 16 - ((size_t)g % 16) ) );
+            g += 16 - ((size_t)g % 16);
+          }
+
+        DBG(
+            for (size_t i=0;i<numVertices;i++)
+              DBG_PRINT( vtx[i] );
+            
+            for (size_t i=0;i<numTriangles;i++)
+              DBG_PRINT( tri[i] );
+            );
 
 	if ((size_t)vtx % 16 != 0)
 	  FATAL("vtx array alignment");
@@ -443,8 +471,6 @@ namespace embree
                 RayStreamLogger::LogRay1 *raydata_verify = (RayStreamLogger::LogRay1 *)g_retraceTask.raydata_verify;
 
                 RTCRay &ray = raydata[index].ray;
-
-                DBG_PRINT(index);
 
                 rays ++;
                 if (raydata[index].type == RayStreamLogger::RAY_INTERSECT)
