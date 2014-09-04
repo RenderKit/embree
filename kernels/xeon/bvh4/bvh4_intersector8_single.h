@@ -25,7 +25,7 @@ namespace embree
   namespace isa 
   {
     /*! Single ray traversal for packets. */
-    template<int types, typename PrimitiveIntersector8>
+    template<int types, bool robust, typename PrimitiveIntersector8>
     class BVH4Intersector8Single 
     {
       /* shortcuts for frequently used types */
@@ -86,7 +86,7 @@ namespace embree
 
 	  /* process standard nodes */
           if (likely(cur.isNode(types)))
-	    mask = cur.node()->intersect(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+	    mask = cur.node()->intersect<robust>(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
 
 	  /* process motion blur nodes */
 	  else if (likely(cur.isNodeMB(types)))
@@ -202,7 +202,7 @@ namespace embree
 
 	  /* process standard nodes */
           if (likely(cur.isNode(types)))
-	    mask = cur.node()->intersect(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+	    mask = cur.node()->intersect<robust>(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
 
 	  /* process motion blur nodes */
 	  else if (likely(cur.isNodeMB(types)))

@@ -38,6 +38,7 @@ namespace embree
   /* configuration */
   static std::string g_rtcore = "";
   static size_t testN = 100000;
+  //static size_t testN = 10000000;
   static size_t regressionN = 200;
 
   /* vertex and triangle layout */
