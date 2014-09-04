@@ -138,7 +138,7 @@ namespace embree
   static size_t g_numThreads = 1;
   static size_t g_frames = 1;
   static size_t g_simd_width = 0;
-  static AtomicCounter g_rays_traced = 0;
+  static AlignedAtomicCounter32 g_rays_traced = 0;
   static std::vector<thread_t> g_threads;
   static LinearBarrierActive g_barrier;
   static bool g_exitThreads = false;

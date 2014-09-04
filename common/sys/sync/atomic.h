@@ -29,8 +29,9 @@ namespace embree
     __forceinline operator atomic_t() const { return data; }
 
   public:
-    __forceinline atomic_t sub( const atomic_t input ) { return atomic_add(&data,-input) - input; }
-    __forceinline atomic_t add( const atomic_t input ) { return atomic_add(&data, input) + input; }
+    __forceinline atomic_t sub( const atomic_t input ) { return atomic_add(&data,-input); }
+    __forceinline atomic_t add( const atomic_t input ) { return atomic_add(&data, input); }
+
     __forceinline friend atomic_t operator +=( AtomicCounter& value, const atomic_t input ) { return atomic_add(&value.data, +input) + input; }
     __forceinline friend atomic_t operator -=( AtomicCounter& value, const atomic_t input ) { return atomic_add(&value.data, -input) - input; }
     __forceinline friend atomic_t operator ++( AtomicCounter& value ) { return atomic_add(&value.data,  1) + 1; }
