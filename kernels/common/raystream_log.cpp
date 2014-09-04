@@ -191,6 +191,85 @@ namespace embree
     mutex.unlock();
   }
 
+  void RayStreamLogger::logRay8Intersect(const void* valid_i, void* scene, RTCRay8& start, RTCRay8& end)
+  {
+    mutex.lock();
+
+    LogRay8 logRay8;
+
+    logRay8.type    = RAY_INTERSECT;
+#if defined(__AVX__)
+    logRay8.m_valid = movemask(*(avxb*)valid_i);
+#endif
+    /* ray8 before intersect */
+    ray8->write((char*)&logRay8 ,sizeof(logRay8));
+
+    /* ray8 after intersect */
+    logRay8.ray8   = end;
+    ray8_verify->write((char*)&logRay8 ,sizeof(logRay8));
+
+    mutex.unlock();
+  }
+
+  void RayStreamLogger::logRay8Occluded(const void* valid_i, void* scene, RTCRay8& start, RTCRay8& end)
+  {
+    mutex.lock();
+
+    LogRay8 logRay8;
+
+    logRay8.type    = RAY_OCCLUDED;
+#if defined(__AVX__)
+    logRay8.m_valid = movemask(*(avxb*)valid_i);
+#endif
+    /* ray8 before intersect */
+    ray8->write((char*)&logRay8 ,sizeof(logRay8));
+
+    /* ray8 after intersect */
+    logRay8.ray8   = end;
+    ray8_verify->write((char*)&logRay8 ,sizeof(logRay8));
+
+    mutex.unlock();
+  }
+
+
+  void RayStreamLogger::logRay4Intersect(const void* valid_i, void* scene, RTCRay4& start, RTCRay4& end)
+  {
+    mutex.lock();
+
+    LogRay4 logRay4;
+
+    logRay4.type    = RAY_INTERSECT;
+    logRay4.m_valid = movemask(*(sseb*)valid_i);
+    /* ray4 before intersect */
+    ray4->write((char*)&logRay4 ,sizeof(logRay4));
+
+    /* ray4 after intersect */
+    logRay4.ray4   = end;
+    ray4_verify->write((char*)&logRay4 ,sizeof(logRay4));
+
+    mutex.unlock();
+  }
+
+  void RayStreamLogger::logRay4Occluded(const void* valid_i, void* scene, RTCRay4& start, RTCRay4& end)
+  {
+    mutex.lock();
+
+    LogRay4 logRay4;
+
+    logRay4.type    = RAY_OCCLUDED;
+    logRay4.m_valid = movemask(*(sseb*)valid_i);
+
+    /* ray4 before intersect */
+    ray4->write((char*)&logRay4 ,sizeof(logRay4));
+
+    /* ray4 after intersect */
+    logRay4.ray4   = end;
+    ray4_verify->write((char*)&logRay4 ,sizeof(logRay4));
+
+    mutex.unlock();
+  }
+
+
  void RayStreamLogger::logRay1Intersect(void* scene, RTCRay& start, RTCRay& end)
   {
     mutex.lock();

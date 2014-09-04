@@ -123,17 +123,27 @@ namespace embree
       LogRay1() {
 	memset(this,0,sizeof(LogRay1));
       }
+    };
 
-      __forceinline void prefetchL2()
-      {
-#if defined(__MIC__)
-	prefetch<PFHINT_L2>(&type);
-	const size_t cl = sizeof(RTCRay1) / 64;
-	const char *__restrict__ ptr = (char*)&ray;
-#pragma unroll(cl)
-	for (size_t i=0;i<cl;i++,ptr+=64)
-	  prefetch<PFHINT_L2>(ptr);
-#endif
+    struct __aligned(64) LogRay4  {
+      unsigned int type;
+      unsigned int m_valid;
+      unsigned int dummy[2];
+      RTCRay4 ray4;
+
+      LogRay4() {
+	memset(this,0,sizeof(LogRay4));
+      }
+    };
+
+    struct __aligned(64) LogRay8  {
+      unsigned int type;
+      unsigned int m_valid;
+      unsigned int dummy[2];
+      RTCRay8 ray8;
+
+      LogRay8() {
+	memset(this,0,sizeof(LogRay8));
       }
     };
 
@@ -146,19 +156,6 @@ namespace embree
       LogRay16() {
 	memset(this,0,sizeof(LogRay16));
       }
-
-      __forceinline void prefetchL2()
-      {
-#if defined(__MIC__)
-	prefetch<PFHINT_L2>(&type);
-	const size_t cl = sizeof(RTCRay16) / 64;
-	const char *__restrict__ ptr = (char*)&ray16;
-#pragma unroll(cl)
-	for (size_t i=0;i<cl;i++,ptr+=64)
-	  prefetch<PFHINT_L2>(ptr);
-#endif
-      }
-
     };
 
       
@@ -166,6 +163,12 @@ namespace embree
 
   void logRay16Intersect(const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
   void logRay16Occluded (const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
+
+  void logRay8Intersect(const void* valid, void* scene, RTCRay8& start, RTCRay8& end);
+  void logRay8Occluded (const void* valid, void* scene, RTCRay8& start, RTCRay8& end);
+
+  void logRay4Intersect(const void* valid, void* scene, RTCRay4& start, RTCRay4& end);
+  void logRay4Occluded (const void* valid, void* scene, RTCRay4& start, RTCRay4& end);
 
   void logRay1Intersect(void* scene, RTCRay& start, RTCRay& end);
   void logRay1Occluded (void* scene, RTCRay& start, RTCRay& end);

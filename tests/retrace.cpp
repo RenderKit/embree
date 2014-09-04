@@ -69,6 +69,45 @@ namespace embree
       num8widePackets += (numRays+7)/8;
     }
 
+    void add(RayStreamLogger::LogRay4 &r)
+    {
+      size_t numRays = popcnt((int)r.m_valid);
+      numRayPackets++;
+      numTotalRays += numRays;
+      if (r.type == RayStreamLogger::RAY_INTERSECT)
+	{
+	  numIntersectRayPackets++;
+	  numIntersectRays += numRays;
+	}
+      else if (r.type == RayStreamLogger::RAY_OCCLUDED)
+	{
+	  numOccludedRayPackets++;
+	  numOccludedRays += numRays;
+	}
+      else
+	FATAL("unknown log ray type");
+    }
+
+    void add(RayStreamLogger::LogRay8 &r)
+    {
+      size_t numRays = popcnt((int)r.m_valid);
+      numRayPackets++;
+      numTotalRays += numRays;
+      if (r.type == RayStreamLogger::RAY_INTERSECT)
+	{
+	  numIntersectRayPackets++;
+	  numIntersectRays += numRays;
+	}
+      else if (r.type == RayStreamLogger::RAY_OCCLUDED)
+	{
+	  numOccludedRayPackets++;
+	  numOccludedRays += numRays;
+	}
+      else
+	FATAL("unknown log ray type");
+      num4widePackets += (numRays+3)/4;
+    }
+
     void add(RayStreamLogger::LogRay1 &r)
     {
       numRayPackets++;
@@ -147,6 +186,7 @@ namespace embree
 
   static AlignedAtomicCounter32 g_counter = 0;
   static bool g_check = false;
+  static bool g_sde = false;
   static size_t g_numThreads = 1;
   static size_t g_frames = 1;
   static size_t g_simd_width = 0;
@@ -195,14 +235,24 @@ namespace embree
         }
         else if (tag == "-simd_width" && i+1<argc) {
           g_simd_width = atoi(argv[++i]);
+          if (g_simd_width != 1 && g_simd_width != 4 && g_simd_width != 8 && g_simd_width != 16)
+            std::cout << "only simd widths of 1,4,8, and 16 are supported" << std::endl;
+        }
+        else if (tag == "-h" || tag == "-help") {
+          std::cout << "Usage: retrace [OPTIONS] [PATH_TO_BINARY_FILES] " << std::endl;
+          std::cout << "Options:" << std::endl;
+          std::cout << "-threads N   : sets number of render threads for the retracing phase to N" << std::endl;
+          std::cout << "-frames N    : retraces rays for N frames  " << std::endl;
+          std::cout << "-check       : loads second ray stream file and validates result of rtcIntersectN/rtcOccludedN for each ray/packet" << std::endl;
+          std::cout << "-simd_width N: loads ray stream for simd width N (if existing)" << std:: endl;
+          std::cout << "-sde         : inserts markers for generating instruction traces with SDE" << std:: endl;
+          exit(0);
         }
 
         /* skip unknown command line parameter */
         else {
 
           g_binaries_path = tag;
-          // std::cerr << "unknown command line parameter: " << tag << " ";
-          // std::cerr << std::std::endl;
         }
       }
   }
@@ -363,6 +413,17 @@ namespace embree
     return 0;
   }
 
+  size_t check_ray4_packets(const unsigned int i_valid, RTCRay4 &start, RTCRay4 &end)
+  {
+    return 0;
+  }
+
+  size_t check_ray8_packets(const unsigned int i_valid, RTCRay8 &start, RTCRay8 &end)
+  {
+    return 0;
+  }
+
+
   size_t check_ray16_packets(const unsigned int i_valid, RTCRay16 &start, RTCRay16 &end)
   {
 #if defined(__MIC__)
@@ -469,21 +530,48 @@ namespace embree
                 RayStreamLogger::LogRay1 *raydata_verify = (RayStreamLogger::LogRay1 *)g_retraceTask.raydata_verify;
 
                 RTCRay &ray = raydata[index].ray;
-
                 rays ++;
                 if (raydata[index].type == RayStreamLogger::RAY_INTERSECT)
-                  {
-                    rtcIntersect(g_retraceTask.scene,ray);
-                  }
+                  rtcIntersect(g_retraceTask.scene,ray);
                 else 
                   rtcOccluded(g_retraceTask.scene,ray);
 
                 if (unlikely(g_check))
-                  {
-                    diff += check_ray1_packets(ray, raydata_verify[index].ray);                    
-                    if (diff != 0) FATAL("HERE");
-                  }
+                  diff += check_ray1_packets(ray, raydata_verify[index].ray);                    
               }
+            else if (SIMD_WIDTH == 4)
+              {
+                RayStreamLogger::LogRay4 *raydata        = (RayStreamLogger::LogRay4 *)g_retraceTask.raydata;
+                RayStreamLogger::LogRay4 *raydata_verify = (RayStreamLogger::LogRay4 *)g_retraceTask.raydata_verify;
+
+                RTCRay4 &ray4 = raydata[index].ray4;
+                sseb valid((int)raydata[index].m_valid);
+                rays += popcnt( (int)raydata[index].m_valid );
+                if (raydata[index].type == RayStreamLogger::RAY_INTERSECT)
+                  rtcIntersect4(&valid,g_retraceTask.scene,ray4);
+                else 
+                  rtcOccluded4(&valid,g_retraceTask.scene,ray4);
+
+                if (unlikely(g_check))
+                  diff += check_ray4_packets(raydata[index].m_valid,  raydata[index].ray4, raydata_verify[index].ray4);
+              }
+            else if (SIMD_WIDTH == 8)
+              {
+                RayStreamLogger::LogRay8 *raydata        = (RayStreamLogger::LogRay8 *)g_retraceTask.raydata;
+                RayStreamLogger::LogRay8 *raydata_verify = (RayStreamLogger::LogRay8 *)g_retraceTask.raydata_verify;
+
+                RTCRay8 &ray8 = raydata[index].ray8;
+                sseb valid((int)raydata[index].m_valid);
+                rays += popcnt( (int)raydata[index].m_valid );
+                if (raydata[index].type == RayStreamLogger::RAY_INTERSECT)
+                  rtcIntersect8(&valid,g_retraceTask.scene,ray8);
+                else 
+                  rtcOccluded8(&valid,g_retraceTask.scene,ray8);
+
+                if (unlikely(g_check))
+                  diff += check_ray8_packets(raydata[index].m_valid,  raydata[index].ray8, raydata_verify[index].ray8);
+              }
+
             else if (SIMD_WIDTH == 16)
               {
                 RayStreamLogger::LogRay16 *raydata        = (RayStreamLogger::LogRay16 *)g_retraceTask.raydata;
@@ -493,8 +581,8 @@ namespace embree
                 mic_i valid = select((mic_m)r[index].m_valid,mic_i(-1),mic_i(0));
                 rays += countbits( (mic_m)raydata[index].m_valid );
 
-                raydata[index+1].prefetchL2();
-
+                //raydata[index+1].prefetchL2();
+  
                 if (raydata[index].type == RayStreamLogger::RAY_INTERSECT)
                   rtcIntersect16(&valid,g_retraceTask.scene,ray16);
                 else 
@@ -502,17 +590,13 @@ namespace embree
 #endif
                 if (unlikely(g_check))
                   diff += check_ray16_packets(raydata[index].m_valid,  raydata[index].ray16, raydata_verify[index].ray16);
-               
               }
 
 
 	  }
       }
     if (unlikely(g_check && diff))
-      {
-	DBG_PRINT(diff);
-	DBG_PRINT(100. * diff / rays);
-      }
+      g_rays_traced_diff.add(diff);
     g_rays_traced.add(rays);
   }
 
@@ -520,14 +604,16 @@ namespace embree
 
   void renderMainLoop(size_t id)
   {
-
-    // g_mutex.lock();        
-    // std::cout << "thread " << id << std::endl;
-    // g_mutex.unlock();    
     switch(g_simd_width)
       {
       case 1:
         retrace_loop<1>();
+        break;
+      case 4:
+        retrace_loop<4>();
+        break;
+      case 8:
+        retrace_loop<8>();
         break;
       case 16:
         retrace_loop<16>();
@@ -540,9 +626,11 @@ namespace embree
     size_t id = (size_t)ptr;
     setAffinity(id);
 
-    g_mutex.lock();
-    DBG_PRINT(id);
-    g_mutex.unlock();
+    DBG(
+        g_mutex.lock();
+        DBG_PRINT(id);
+        g_mutex.unlock();
+        );
 
     while(1)
       {
@@ -569,10 +657,6 @@ namespace embree
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
-    FATAL("ray stream logger still active, disable to run 'retrace'");
-#endif
-
     g_numThreads = getNumberOfLogicalThreads(); 
 #if defined (__MIC__)
     g_numThreads -= 4;
@@ -647,6 +731,16 @@ namespace embree
         if (g_check)
           raydata_verify = loadRayStreamData<RayStreamLogger::LogRay1>(rayStreamVerifyFileName, numLogRayStreamElementsVerify); 
         break;
+      case 4:
+        raydata = loadRayStreamData<RayStreamLogger::LogRay4>(rayStreamFileName, numLogRayStreamElements);
+        if (g_check)
+          raydata_verify = loadRayStreamData<RayStreamLogger::LogRay4>(rayStreamVerifyFileName, numLogRayStreamElementsVerify); 
+        break;
+      case 8:
+        raydata = loadRayStreamData<RayStreamLogger::LogRay8>(rayStreamFileName, numLogRayStreamElements);
+        if (g_check)
+          raydata_verify = loadRayStreamData<RayStreamLogger::LogRay8>(rayStreamVerifyFileName, numLogRayStreamElementsVerify); 
+        break;
       case 16:
         raydata = loadRayStreamData<RayStreamLogger::LogRay16>(rayStreamFileName, numLogRayStreamElements);
         if (g_check)
@@ -670,6 +764,12 @@ namespace embree
       case 1:
         stats = analyseRayStreamData<RayStreamLogger::LogRay1>(raydata,numLogRayStreamElements);
         break;
+      case 4:
+        stats = analyseRayStreamData<RayStreamLogger::LogRay4>(raydata,numLogRayStreamElements);
+        break;
+      case 8:
+        stats = analyseRayStreamData<RayStreamLogger::LogRay8>(raydata,numLogRayStreamElements);
+        break;
       case 16:
         stats = analyseRayStreamData<RayStreamLogger::LogRay16>(raydata,numLogRayStreamElements);
         break;
@@ -689,6 +789,11 @@ namespace embree
     DBG_PRINT( g_numThreads );
 
     std::cout << "Retracing logged rays:" << std::endl << std::flush;
+
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    FATAL("ray stream logger still active, disable to run 'retrace'");
+#endif
+
     g_retraceTask.scene                   = scene;
     g_retraceTask.raydata                 = raydata;
     g_retraceTask.raydata_verify          = raydata_verify;

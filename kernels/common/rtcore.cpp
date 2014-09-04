@@ -527,7 +527,17 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,4);
+
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RTCRay4 old_ray = ray;
+#endif
+
     ((Scene*)scene)->intersect4(valid,ray);
+
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RayStreamLogger::rayStreamLogger.logRay4Intersect(valid,scene,old_ray,ray);
+#endif
+
 #endif
   }
   
@@ -544,7 +554,17 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,8);
+
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RTCRay8 old_ray = ray;
+#endif
+
     ((Scene*)scene)->intersect8(valid,ray);
+
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RayStreamLogger::rayStreamLogger.logRay8Intersect(valid,scene,old_ray,ray);
+#endif
+
 #endif
   }
   
@@ -609,7 +629,17 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,4);
+
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RTCRay4 old_ray = ray;
+#endif
+
     ((Scene*)scene)->occluded4(valid,ray);
+
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RayStreamLogger::rayStreamLogger.logRay4Occluded(valid,scene,old_ray,ray);
+#endif
+
 #endif
   }
   
@@ -626,7 +656,17 @@ namespace embree
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,8);
+
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RTCRay8 old_ray = ray;
+#endif
+
     ((Scene*)scene)->occluded8(valid,ray);
+
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    RayStreamLogger::rayStreamLogger.logRay8Occluded(valid,scene,old_ray,ray);
+#endif
+
 #endif
   }
   
