@@ -23,8 +23,8 @@ namespace embree
 {
   namespace isa
   {
-    template<int types, typename PrimitiveIntersector8>
-    void BVH4Intersector8Single<types,PrimitiveIntersector8>::intersect(avxb* valid_i, BVH4* bvh, Ray8& ray)
+    template<int types, bool robust, typename PrimitiveIntersector8>
+    void BVH4Intersector8Single<types,robust,PrimitiveIntersector8>::intersect(avxb* valid_i, BVH4* bvh, Ray8& ray)
     {
       /* load ray */
       const avxb valid0 = *valid_i;
@@ -53,8 +53,8 @@ namespace embree
     }
 
     
-    template<int types, typename PrimitiveIntersector8>
-    void BVH4Intersector8Single<types,PrimitiveIntersector8>::occluded(avxb* valid_i, BVH4* bvh, Ray8& ray)
+    template<int types, bool robust, typename PrimitiveIntersector8>
+    void BVH4Intersector8Single<types,robust, PrimitiveIntersector8>::occluded(avxb* valid_i, BVH4* bvh, Ray8& ray)
     {
       /* load ray */
       const avxb valid = *valid_i;
@@ -84,7 +84,7 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR8(BVH4Bezier1Intersector8Single_OBB, BVH4Intersector8Single<0x101 COMMA Bezier1Intersector8>);
-    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Single_OBB, BVH4Intersector8Single<0x101 COMMA Bezier1iIntersector8>);
+    DEFINE_INTERSECTOR8(BVH4Bezier1Intersector8Single_OBB, BVH4Intersector8Single<0x101 COMMA false COMMA Bezier1Intersector8>);
+    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Single_OBB, BVH4Intersector8Single<0x101 COMMA false COMMA Bezier1iIntersector8>);
   }
 }

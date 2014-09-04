@@ -38,6 +38,7 @@ namespace embree
   /* configuration */
   static std::string g_rtcore = "";
   static size_t testN = 100000;
+  //static size_t testN = 10000000;
   static size_t regressionN = 200;
 
   /* vertex and triangle layout */
@@ -440,6 +441,56 @@ namespace embree
     if (numTimeSteps >= 1) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
     if (numTimeSteps >= 2) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
     rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+    return mesh;
+  }
+
+  unsigned int addCube (RTCScene scene_i, RTCGeometryFlags flag, const Vec3fa& pos, const float r)
+  {
+    /* create a triangulated cube with 12 triangles and 8 vertices */
+    unsigned int mesh = rtcNewTriangleMesh (scene_i, flag, 12, 8);
+    
+    /* set vertices */
+    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+    vertices[0] = pos + r*Vec3fa(-1,-1,-1); 
+    vertices[1] = pos + r*Vec3fa(-1,-1,+1); 
+    vertices[2] = pos + r*Vec3fa(-1,+1,-1); 
+    vertices[3] = pos + r*Vec3fa(-1,+1,+1); 
+    vertices[4] = pos + r*Vec3fa(+1,-1,-1); 
+    vertices[5] = pos + r*Vec3fa(+1,-1,+1); 
+    vertices[6] = pos + r*Vec3fa(+1,+1,-1); 
+    vertices[7] = pos + r*Vec3fa(+1,+1,+1); 
+    rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+
+    /* set triangles and colors */
+    int tri = 0;
+    Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+    
+    // left side
+    triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
+    triangles[tri].v0 = 1; triangles[tri].v1 = 2; triangles[tri].v2 = 3; tri++;
+
+    // right side
+    triangles[tri].v0 = 4; triangles[tri].v1 = 5; triangles[tri].v2 = 6; tri++;
+    triangles[tri].v0 = 5; triangles[tri].v1 = 7; triangles[tri].v2 = 6; tri++;
+    
+    // bottom side
+    triangles[tri].v0 = 0; triangles[tri].v1 = 1; triangles[tri].v2 = 4; tri++;
+    triangles[tri].v0 = 1; triangles[tri].v1 = 5; triangles[tri].v2 = 4; tri++;
+    
+    // top side
+    triangles[tri].v0 = 2; triangles[tri].v1 = 6; triangles[tri].v2 = 3; tri++;
+    triangles[tri].v0 = 3; triangles[tri].v1 = 6; triangles[tri].v2 = 7; tri++;
+    
+    // front side
+    triangles[tri].v0 = 0; triangles[tri].v1 = 4; triangles[tri].v2 = 2; tri++;
+    triangles[tri].v0 = 2; triangles[tri].v1 = 4; triangles[tri].v2 = 6; tri++;
+    
+    // back side
+    triangles[tri].v0 = 1; triangles[tri].v1 = 3; triangles[tri].v2 = 5; tri++;
+    triangles[tri].v0 = 3; triangles[tri].v1 = 7; triangles[tri].v2 = 5; tri++;
+    
+    rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+    
     return mesh;
   }
 
@@ -1567,16 +1618,18 @@ namespace embree
     numFailedTests += !passed;
   }
 
-  void rtcore_watertight_sphere1(float pos)
+  void rtcore_watertight_closed1(const std::string& type, const Vec3fa& pos)
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-    unsigned geom = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(pos,0.0f,0.0f),2.0f,1000);
+    if      (type == "sphere") addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,1000);
+    else if (type == "cube"  ) addCube  (scene,RTC_GEOMETRY_STATIC,pos,2.0f);
     rtcCommit (scene);
+
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i++) {
       Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
       Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-      RTCRay ray = makeRay(Vec3fa(pos,0.0f,0.0f)+org,dir); 
+      RTCRay ray = makeRay(pos+org,dir); 
       rtcIntersect(scene,ray);
       numFailures += ray.primID == -1;
     }
@@ -1584,23 +1637,25 @@ namespace embree
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
-    printf("%30s ... %s (%f%%)\n","watertight_sphere1", failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    printf("%30s ... %s (%f%%)\n", ("watertight_"+type+"1").c_str(), failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
     fflush(stdout);
     numFailedTests += failed;
   }
   
-  void rtcore_watertight_sphere4(float pos)
+  void rtcore_watertight_closed4(const std::string& type, const Vec3fa& pos)
   {
-    RTCScene scene = rtcNewScene(RTCSceneFlags(RTC_SCENE_STATIC | RTC_SCENE_ROBUST),aflags);
-    unsigned geom = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(pos,0.0f,0.0f),2.0f,1000);
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
+    if      (type == "sphere") addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,1000);
+    else if (type == "cube"  ) addCube  (scene,RTC_GEOMETRY_STATIC,pos,2.0f);
     rtcCommit (scene);
+
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=4) {
       RTCRay4 ray4;
       for (size_t j=0; j<4; j++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(Vec3fa(pos,0.0f,0.0f)+org,dir); 
+        RTCRay ray = makeRay(pos+org,dir); 
         setRay(ray4,j,ray);
       }
       __aligned(16) int valid[4] = { -1,-1,-1,-1 };
@@ -1612,23 +1667,25 @@ namespace embree
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
-    printf("%30s ... %s (%f%%)\n","watertight_sphere4", failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    printf("%30s ... %s (%f%%)\n", ("watertight_"+type+"4").c_str(), failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
     fflush(stdout);
     numFailedTests += failed;
   }
 
-  void rtcore_watertight_sphere8(float pos)
+  void rtcore_watertight_closed8(const std::string& type, const Vec3fa& pos)
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-    unsigned geom = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(pos,0.0f,0.0f),2.0f,1000);
+    if      (type == "sphere") addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,1000);
+    else if (type == "cube"  ) addCube  (scene,RTC_GEOMETRY_STATIC,pos,2.0f);
     rtcCommit (scene);
+
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=8) {
       RTCRay8 ray8;
       for (size_t j=0; j<8; j++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(Vec3fa(pos,0.0f,0.0f)+org,dir); 
+        RTCRay ray = makeRay(pos+org,dir); 
         setRay(ray8,j,ray);
       }
       __aligned(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
@@ -1640,23 +1697,25 @@ namespace embree
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
-    printf("%30s ... %s (%f%%)\n","watertight_sphere8", failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    printf("%30s ... %s (%f%%)\n", ("watertight_"+type+"8").c_str(), failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
     fflush(stdout);
     numFailedTests += failed;
   }
 
-  void rtcore_watertight_sphere16(float pos)
+  void rtcore_watertight_closed16(const std::string& type, const Vec3fa& pos)
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-    unsigned geom = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(pos,0.0f,0.0f),2.0f,1000);
+    if      (type == "sphere") addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,1000);
+    else if (type == "cube"  ) addCube  (scene,RTC_GEOMETRY_STATIC,pos,2.0f);
     rtcCommit (scene);
+
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=16) {
       RTCRay16 ray16;
       for (size_t j=0; j<16; j++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
-        RTCRay ray = makeRay(Vec3fa(pos,0.0f,0.0f)+org,dir); 
+        RTCRay ray = makeRay(pos+org,dir); 
         setRay(ray16,j,ray);
       }
       __aligned(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
@@ -1668,7 +1727,7 @@ namespace embree
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
-    printf("%30s ... %s (%f%%)\n","watertight_sphere16", failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    printf("%30s ... %s (%f%%)\n", ("watertight_"+type+"16").c_str(), failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
     fflush(stdout);
     numFailedTests += failed;
   }
@@ -2321,22 +2380,27 @@ namespace embree
 
     rtcore_packet_write_test_all();
 
-    rtcore_watertight_sphere1(100000);
+    const Vec3fa pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
+    rtcore_watertight_closed1("sphere",pos);
+    rtcore_watertight_closed1("cube",pos);
     rtcore_watertight_plane1(100000);
 #if !defined(__MIC__)
-    rtcore_watertight_sphere4(100000);
+    rtcore_watertight_closed4("sphere",pos);
+    rtcore_watertight_closed4("cube",pos);
     rtcore_watertight_plane4(100000);
 #endif
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
     if (has_feature(AVX)) {
-      rtcore_watertight_sphere8(100000);
+      rtcore_watertight_closed8("sphere",pos);
+      rtcore_watertight_closed8("cube",pos);
       rtcore_watertight_plane8(100000);
     }
 #endif
 
 #if defined(__MIC__)
-    rtcore_watertight_sphere16(100000);
+    rtcore_watertight_closed16("sphere",pos);
+    rtcore_watertight_closed16("cube",pos);
     rtcore_watertight_plane16(100000);
 
 #endif

@@ -279,6 +279,7 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
       /*! intersection with single rays */
+      template<bool robust>
       __forceinline size_t intersect(size_t nearX, size_t nearY, size_t nearZ,
 				     const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const ssef& tnear, const ssef& tfar, 
 				     ssef& dist) const
@@ -299,7 +300,18 @@ namespace embree
 	const ssef tFarY  = (load4f((const char*)&lower_x+farY ) - org.y) * rdir.y;
 	const ssef tFarZ  = (load4f((const char*)&lower_x+farZ ) - org.z) * rdir.z;
 #endif
-	
+
+        if (robust) {
+          const float round_down = 1.0f-2.0f*float(ulp);
+          const float round_up   = 1.0f+2.0f*float(ulp);
+          const ssef tNear = max(tNearX,tNearY,tNearZ,tnear);
+          const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+          const sseb vmask = round_down*tNear <= round_up*tFar;
+          const size_t mask = movemask(vmask);
+          dist = tNear;
+          return mask;
+        }
+
 #if defined(__SSE4_1__)
 	const ssef tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
 	const ssef tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
@@ -316,6 +328,7 @@ namespace embree
       }
 
       /*! intersection with ray packet of size 4 */
+      template<bool robust>
       __forceinline sseb intersect(size_t i, const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const ssef& tnear, const ssef& tfar, ssef& dist) const
       {
 #if defined(__AVX2__)
@@ -334,6 +347,16 @@ namespace embree
 	const ssef lclipMaxZ = (upper_z[i] - org.z) * rdir.z;
 #endif
 
+        if (robust) {
+          const float round_down = 1.0f-2.0f*float(ulp);
+          const float round_up   = 1.0f+2.0f*float(ulp);
+          const ssef lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+          const ssef lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+          const sseb lhit   = round_down*max(lnearP,tnear) <= round_up*min(lfarP,tfar);      
+          dist = lnearP;
+          return lhit;
+        }
+
 #if defined(__SSE4_1__)
 	const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
 	const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
@@ -350,7 +373,8 @@ namespace embree
       
       /*! intersection with ray packet of size 8 */
 #if defined(__AVX__)
-      __forceinline avxb intersect(size_t i, const avx3f& org, const avx3f& rdir, const avx3f& org_rdir, const avxf& tnear, const avxf& tfar, avxf& dist) const
+      template<bool robust>
+      __forceinline avxb intersect8(size_t i, const avx3f& org, const avx3f& rdir, const avx3f& org_rdir, const avxf& tnear, const avxf& tfar, avxf& dist) const
       {
 #if defined(__AVX2__)
 	const avxf lclipMinX = msub(lower_x[i],rdir.x,org_rdir.x);
@@ -359,9 +383,6 @@ namespace embree
 	const avxf lclipMaxX = msub(upper_x[i],rdir.x,org_rdir.x);
 	const avxf lclipMaxY = msub(upper_y[i],rdir.y,org_rdir.y);
 	const avxf lclipMaxZ = msub(upper_z[i],rdir.z,org_rdir.z);
-	const avxf lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-	const avxf lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-	const avxb lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);      
 #else
 	const avxf lclipMinX = (lower_x[i] - org.x) * rdir.x;
 	const avxf lclipMinY = (lower_y[i] - org.y) * rdir.y;
@@ -369,6 +390,23 @@ namespace embree
 	const avxf lclipMaxX = (upper_x[i] - org.x) * rdir.x;
 	const avxf lclipMaxY = (upper_y[i] - org.y) * rdir.y;
 	const avxf lclipMaxZ = (upper_z[i] - org.z) * rdir.z;
+#endif
+
+        if (robust) {
+          const float round_down = 1.0f-2.0f*float(ulp);
+          const float round_up   = 1.0f+2.0f*float(ulp);
+          const avxf lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+          const avxf lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+          const avxb lhit   = round_down*max(lnearP,tnear) <= round_up*min(lfarP,tfar);      
+          dist = lnearP;
+          return lhit;
+        }
+
+#if defined(__AVX2__)
+	const avxf lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+	const avxf lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+	const avxb lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);      
+#else
 	const avxf lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
 	const avxf lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
 	const avxb lhit   = max(lnearP,tnear) <= min(lfarP,tfar);      

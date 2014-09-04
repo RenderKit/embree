@@ -25,7 +25,7 @@ namespace embree
   namespace isa 
   {
     /*! BVH4 Hybrid Packet traversal implementation. Switched between packet and single ray traversal. */
-    template<int types, typename PrimitiveIntersector>
+    template<int types, bool robust, typename PrimitiveIntersector>
       class BVH4Intersector4Hybrid 
     {
       /* shortcuts for frequently used types */

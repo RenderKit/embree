@@ -30,8 +30,8 @@ namespace embree
 {
   namespace isa
   {
-    template<int types, typename PrimitiveIntersector4>
-    void BVH4Intersector4Hybrid<types,PrimitiveIntersector4>::intersect(sseb* valid_i, BVH4* bvh, Ray4& ray)
+    template<int types, bool robust, typename PrimitiveIntersector4>
+    void BVH4Intersector4Hybrid<types,robust,PrimitiveIntersector4>::intersect(sseb* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* load ray */
       const sseb valid0 = *valid_i;
@@ -85,7 +85,7 @@ namespace embree
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-            BVH4Intersector4Single<types,PrimitiveIntersector4>::intersect1(bvh, curNode, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
+            BVH4Intersector4Single<types,robust,PrimitiveIntersector4>::intersect1(bvh, curNode, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
           }
           ray_tfar = min(ray_tfar,ray.tfar);
           continue;
@@ -113,7 +113,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      ssef lnearP; const sseb lhit = node->intersect(i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
+	      ssef lnearP; const sseb lhit = node->intersect<robust>(i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -231,8 +231,8 @@ namespace embree
     }
 
     
-    template<int types, typename PrimitiveIntersector4>
-    void BVH4Intersector4Hybrid<types,PrimitiveIntersector4>::occluded(sseb* valid_i, BVH4* bvh, Ray4& ray)
+    template<int types, bool robust, typename PrimitiveIntersector4>
+    void BVH4Intersector4Hybrid<types,robust,PrimitiveIntersector4>::occluded(sseb* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* load ray */
       const sseb valid = *valid_i;
@@ -286,7 +286,7 @@ namespace embree
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-            if (BVH4Intersector4Single<types,PrimitiveIntersector4>::occluded1(bvh,curNode,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
+            if (BVH4Intersector4Single<types,robust,PrimitiveIntersector4>::occluded1(bvh,curNode,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
               terminated[i] = -1;
           }
           if (all(terminated)) break;
@@ -316,7 +316,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      ssef lnearP; const sseb lhit = node->intersect(i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
+	      ssef lnearP; const sseb lhit = node->intersect<robust>(i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -436,12 +436,12 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoeller, BVH4Intersector4Hybrid<0x1 COMMA Triangle4Intersector4MoellerTrumbore<true> >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoellerNoFilter, BVH4Intersector4Hybrid<0x1 COMMA Triangle4Intersector4MoellerTrumbore<false> >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoeller, BVH4Intersector4Hybrid<0x1 COMMA false COMMA Triangle4Intersector4MoellerTrumbore<true> >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoellerNoFilter, BVH4Intersector4Hybrid<0x1 COMMA false COMMA Triangle4Intersector4MoellerTrumbore<false> >);
 #if defined (__AVX__)
-    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoeller, BVH4Intersector4Hybrid<0x1 COMMA Triangle8Intersector4MoellerTrumbore<true> >);
-    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoellerNoFilter, BVH4Intersector4Hybrid<0x1 COMMA Triangle8Intersector4MoellerTrumbore<false> >);
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoeller, BVH4Intersector4Hybrid<0x1 COMMA false COMMA Triangle8Intersector4MoellerTrumbore<true> >);
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoellerNoFilter, BVH4Intersector4Hybrid<0x1 COMMA false COMMA Triangle8Intersector4MoellerTrumbore<false> >);
 #endif
-    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4HybridPluecker, BVH4Intersector4Hybrid<0x1 COMMA Triangle4vIntersector4Pluecker>);
+    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4HybridPluecker, BVH4Intersector4Hybrid<0x1 COMMA true COMMA Triangle4vIntersector4Pluecker>);
   }
 }

@@ -33,8 +33,8 @@ namespace embree
 {
   namespace isa
   {
-    template<int types, typename PrimitiveIntersector4>
-    void BVH4Intersector4Chunk<types,PrimitiveIntersector4>::intersect(sseb* valid_i, BVH4* bvh, Ray4& ray)
+    template<int types, bool robust, typename PrimitiveIntersector4>
+    void BVH4Intersector4Chunk<types,robust,PrimitiveIntersector4>::intersect(sseb* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* load ray */
       const sseb valid0 = *valid_i;
@@ -94,7 +94,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      ssef lnearP; const sseb lhit = node->intersect(i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
+	      ssef lnearP; const sseb lhit = node->intersect<robust>(i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -192,8 +192,8 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    template<int types, typename PrimitiveIntersector4>
-    void BVH4Intersector4Chunk<types,PrimitiveIntersector4>::occluded(sseb* valid_i, BVH4* bvh, Ray4& ray)
+    template<int types, bool robust, typename PrimitiveIntersector4>
+    void BVH4Intersector4Chunk<types,robust,PrimitiveIntersector4>::occluded(sseb* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* load ray */
       const sseb valid = *valid_i;
@@ -254,7 +254,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      ssef lnearP; const sseb lhit = node->intersect(i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
+	      ssef lnearP; const sseb lhit = node->intersect<robust>(i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -354,19 +354,19 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR4(BVH4Bezier1Intersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA Bezier1Intersector4>);
-    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA Bezier1iIntersector4>);
-    DEFINE_INTERSECTOR4(BVH4Triangle1Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA Triangle1Intersector4MoellerTrumbore>);
-    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA Triangle4Intersector4MoellerTrumbore<true> >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA Triangle4Intersector4MoellerTrumbore<false> >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1Intersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA Bezier1Intersector4>);
+    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA Bezier1iIntersector4>);
+    DEFINE_INTERSECTOR4(BVH4Triangle1Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA Triangle1Intersector4MoellerTrumbore>);
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA Triangle4Intersector4MoellerTrumbore<true> >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA Triangle4Intersector4MoellerTrumbore<false> >);
 #if defined (__AVX__)
-    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA Triangle8Intersector4MoellerTrumbore<true> >);
-    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA Triangle8Intersector4MoellerTrumbore<false> >);
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA Triangle8Intersector4MoellerTrumbore<true> >);
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA Triangle8Intersector4MoellerTrumbore<false> >);
 #endif
-    DEFINE_INTERSECTOR4(BVH4Triangle1vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA Triangle1vIntersector4Pluecker>);
-    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA Triangle4vIntersector4Pluecker>);
-    DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA Triangle4iIntersector4Pluecker>);
-    DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA VirtualAccelIntersector4>);
-    DEFINE_INTERSECTOR4(BVH4Triangle1vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x10 COMMA Triangle1vIntersector4MoellerTrumboreMB>);
+    DEFINE_INTERSECTOR4(BVH4Triangle1vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA Triangle1vIntersector4Pluecker>);
+    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA Triangle4vIntersector4Pluecker>);
+    DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA Triangle4iIntersector4Pluecker>);
+    DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA VirtualAccelIntersector4>);
+    DEFINE_INTERSECTOR4(BVH4Triangle1vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x10 COMMA false COMMA Triangle1vIntersector4MoellerTrumboreMB>);
   }
 }

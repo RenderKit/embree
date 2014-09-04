@@ -33,8 +33,8 @@ namespace embree
 { 
   namespace isa
   {
-    template<int types, typename PrimitiveIntersector>
-    void BVH4Intersector1<types,PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
+    template<int types, bool robust, typename PrimitiveIntersector>
+    void BVH4Intersector1<types,robust,PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray);
@@ -86,7 +86,7 @@ namespace embree
 
 	  /* process standard nodes */
           if (likely(cur.isNode(types)))
-	    mask = cur.node()->intersect(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+	    mask = cur.node()->intersect<robust>(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
 
 	  /* process motion blur nodes */
 	  else if (likely(cur.isNodeMB(types)))
@@ -161,8 +161,8 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    template<int types, typename PrimitiveIntersector>
-    void BVH4Intersector1<types,PrimitiveIntersector>::occluded(const BVH4* bvh, Ray& ray)
+    template<int types, bool robust, typename PrimitiveIntersector>
+    void BVH4Intersector1<types,robust,PrimitiveIntersector>::occluded(const BVH4* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray);
@@ -208,7 +208,7 @@ namespace embree
 
 	  /* process standard nodes */
           if (likely(cur.isNode(types)))
-	    mask = cur.node()->intersect(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+	    mask = cur.node()->intersect<robust>(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
 
 	  /* process motion blur nodes */
 	  else if (likely(cur.isNodeMB(types)))
@@ -275,23 +275,23 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR1(BVH4Bezier1Intersector1,BVH4Intersector1<0x1 COMMA Bezier1Intersector1>);
-    DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1,BVH4Intersector1<0x1 COMMA Bezier1iIntersector1>);
+    DEFINE_INTERSECTOR1(BVH4Bezier1Intersector1,BVH4Intersector1<0x1 COMMA false COMMA Bezier1Intersector1>);
+    DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1,BVH4Intersector1<0x1 COMMA false COMMA Bezier1iIntersector1>);
     
-    DEFINE_INTERSECTOR1(BVH4Bezier1Intersector1_OBB,BVH4Intersector1<0x101 COMMA Bezier1Intersector1>);
-    DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1_OBB,BVH4Intersector1<0x101 COMMA Bezier1iIntersector1>);
-    DEFINE_INTERSECTOR1(BVH4Bezier1iMBIntersector1_OBB,BVH4Intersector1<0x1010 COMMA Bezier1iIntersector1MB>);
+    DEFINE_INTERSECTOR1(BVH4Bezier1Intersector1_OBB,BVH4Intersector1<0x101 COMMA false COMMA Bezier1Intersector1>);
+    DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1_OBB,BVH4Intersector1<0x101 COMMA false COMMA Bezier1iIntersector1>);
+    DEFINE_INTERSECTOR1(BVH4Bezier1iMBIntersector1_OBB,BVH4Intersector1<0x1010 COMMA false COMMA Bezier1iIntersector1MB>);
 
-    DEFINE_INTERSECTOR1(BVH4Triangle1Intersector1Moeller,BVH4Intersector1<0x1 COMMA Triangle1Intersector1MoellerTrumbore>);
-    DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVH4Intersector1<0x1 COMMA Triangle4Intersector1MoellerTrumbore>);
+    DEFINE_INTERSECTOR1(BVH4Triangle1Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA Triangle1Intersector1MoellerTrumbore>);
+    DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA Triangle4Intersector1MoellerTrumbore>);
 #if defined(__AVX__)
-    DEFINE_INTERSECTOR1(BVH4Triangle8Intersector1Moeller,BVH4Intersector1<0x1 COMMA Triangle8Intersector1MoellerTrumbore>);
+    DEFINE_INTERSECTOR1(BVH4Triangle8Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA Triangle8Intersector1MoellerTrumbore>);
 #endif
-    DEFINE_INTERSECTOR1(BVH4Triangle1vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA Triangle1vIntersector1Pluecker>);
-    DEFINE_INTERSECTOR1(BVH4Triangle4vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA Triangle4vIntersector1Pluecker>);
-    DEFINE_INTERSECTOR1(BVH4Triangle4iIntersector1Pluecker,BVH4Intersector1<0x1 COMMA Triangle4iIntersector1Pluecker>);
-    DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA VirtualAccelIntersector1>);
+    DEFINE_INTERSECTOR1(BVH4Triangle1vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA Triangle1vIntersector1Pluecker>);
+    DEFINE_INTERSECTOR1(BVH4Triangle4vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA Triangle4vIntersector1Pluecker>);
+    DEFINE_INTERSECTOR1(BVH4Triangle4iIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA Triangle4iIntersector1Pluecker>);
+    DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA false COMMA VirtualAccelIntersector1>);
 
-    DEFINE_INTERSECTOR1(BVH4Triangle1vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA Triangle1vIntersector1MoellerTrumboreMB>);
+    DEFINE_INTERSECTOR1(BVH4Triangle1vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA Triangle1vIntersector1MoellerTrumboreMB>);
   }
 }

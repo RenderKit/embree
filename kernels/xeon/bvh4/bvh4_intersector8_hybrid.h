@@ -25,7 +25,7 @@ namespace embree
   namespace isa 
   {
     /*! BVH4 Traverser. Hybrid Packet traversal implementation for a Quad BVH. */
-    template<int types, typename PrimitiveIntersector>
+    template<int types, bool robust, typename PrimitiveIntersector>
     class BVH4Intersector8Hybrid 
     {
       /* shortcuts for frequently used types */
