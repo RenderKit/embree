@@ -374,39 +374,6 @@ namespace embree
 
   size_t check_ray1_packets(RTCRay &start, RTCRay &end)
   {
-
-    DBG(
-        DBG_PRINT(start.org[0]);
-        DBG_PRINT(start.org[1]);
-        DBG_PRINT(start.org[2]);
-
-        DBG_PRINT(start.dir[0]);
-        DBG_PRINT(start.dir[1]);
-        DBG_PRINT(start.dir[2]);
-
-        DBG_PRINT(start.tnear);
-        DBG_PRINT(start.tfar);
-        DBG_PRINT(start.u);
-        DBG_PRINT(start.v);
-        DBG_PRINT(start.primID);
-        DBG_PRINT(start.geomID);
-
-        DBG_PRINT(end.org[0]);
-        DBG_PRINT(end.org[1]);
-        DBG_PRINT(end.org[2]);
-
-        DBG_PRINT(end.dir[0]);
-        DBG_PRINT(end.dir[1]);
-        DBG_PRINT(end.dir[2]);
-
-        DBG_PRINT(end.tnear);
-        DBG_PRINT(end.tfar);
-        DBG_PRINT(end.u);
-        DBG_PRINT(end.v);
-        DBG_PRINT(end.primID);
-        DBG_PRINT(end.geomID);
-        );
-
     if (start.primID != end.primID) return 1;
     if (start.geomID != end.geomID) return 1;
     if (start.u != end.u) return 1;
@@ -415,99 +382,29 @@ namespace embree
     return 0;
   }
 
-  size_t check_ray4_packets(const unsigned int i_valid, RTCRay4 &start, RTCRay4 &end)
+
+  template<class T>
+  size_t check_ray_packets(const unsigned int m_valid, T &start, T &end)
   {
-    return 0;
+    size_t diff = 0;
+    const size_t elements = sizeof(T) / (18 * 4); // 18 elements, and 4 bytes per element
+
+    for (size_t i=0;i<elements;i++)
+      {
+        if ( (((unsigned int)1 << i) & m_valid) == 0) continue;
+        if (start.primID[i] != end.primID[i]) { diff++; continue; }
+        if (start.geomID[i] != end.geomID[i]) { diff++; continue; }
+        if (start.u[i]      != end.u[i])      { diff++; continue; }
+        if (start.v[i]      != end.v[i])      { diff++; continue; }
+        if (start.tnear[i]  != end.tnear[i])  { diff++; continue; }
+        if (start.tfar[i]   != end.tfar[i])   { diff++; continue; }
+        if (start.Ngx[i]    != end.Ngx[i])    { diff++; continue; }
+        if (start.Ngy[i]    != end.Ngy[i])    { diff++; continue; }
+        if (start.Ngz[i]    != end.Ngz[i])    { diff++; continue; }
+      }
+    return diff;
   }
 
-  size_t check_ray8_packets(const unsigned int i_valid, RTCRay8 &start, RTCRay8 &end)
-  {
-    return 0;
-  }
-
-
-  size_t check_ray16_packets(const unsigned int i_valid, RTCRay16 &start, RTCRay16 &end)
-  {
-#if defined(__MIC__)
-    const mic_m m_valid = (mic_m)i_valid;
-    mic_i start_primID = load16i(start.primID);
-    mic_i end_primID   = load16i(end.primID);
-
-    mic_i start_geomID = load16i(start.geomID);
-    mic_i end_geomID   = load16i(end.geomID);
-
-    mic_f start_u = load16f(start.u);
-    mic_f end_u   = load16f(end.u);
-
-    mic_f start_v = load16f(start.v);
-    mic_f end_v   = load16f(end.v);
-
-    mic_f start_t = load16f(start.tfar);
-    mic_f end_t   = load16f(end.tfar);
-
-    const mic_m m_primID = eq(m_valid,start_primID,end_primID);
-    const mic_m m_geomID = eq(m_valid,start_geomID,end_geomID);
-    const mic_m m_u      = eq(m_valid,start_u,end_u);
-    const mic_m m_v      = eq(m_valid,start_v,end_v);
-    const mic_m m_t      = eq(m_valid,start_t,end_t);
-
-    if ( m_primID != m_valid )
-      {
-	DBG(
-	    DBG_PRINT(m_valid);
-	    DBG_PRINT(m_primID);
-	    DBG_PRINT(start_primID);
-	    DBG_PRINT(end_primID);
-	    );
-	return countbits(m_primID^m_valid);
-      }
-
-    if ( m_geomID != m_valid )
-      {
-	DBG(
-	    DBG_PRINT( m_valid );
-	    DBG_PRINT( m_geomID );
-	    DBG_PRINT( start_geomID );
-	    DBG_PRINT( end_geomID );
-	    );
-	return countbits(m_geomID^m_valid);
-      }
-
-    if ( m_u != m_valid )
-      {
-	DBG(
-	    DBG_PRINT( m_valid );
-	    DBG_PRINT( m_u );
-	    DBG_PRINT( start_u );
-	    DBG_PRINT( end_u );
-	    );
-	return countbits(m_u^m_valid);
-      }
-
-    if ( m_v != m_valid )
-      {
-	DBG(
-	    DBG_PRINT( m_valid );
-	    DBG_PRINT( m_v );
-	    DBG_PRINT( start_v );
-	    DBG_PRINT( end_v );
-	    );
-	return countbits(m_v^m_valid);
-      }
-
-    if ( m_t != m_valid )
-      {
-	DBG(
-	    DBG_PRINT( m_valid );
-	    DBG_PRINT( m_t );
-	    DBG_PRINT( start_t );
-	    DBG_PRINT( end_t );
-	    );
-	return countbits(m_t^m_valid);
-      }
-#endif
-    return 0;
-  }
 
 #define RAY_BLOCK_SIZE 16
 
@@ -549,14 +446,14 @@ namespace embree
 
                 RTCRay4 &ray4 = raydata[index].ray4;
                 sseb valid((int)raydata[index].m_valid);
-                rays += popcnt( (int)raydata[index].m_valid );
+                rays += raydata[index].numRays;
                 if (raydata[index].type == RayStreamLogger::RAY_INTERSECT)
                   rtcIntersect4(&valid,g_retraceTask.scene,ray4);
                 else 
                   rtcOccluded4(&valid,g_retraceTask.scene,ray4);
 
                 if (unlikely(g_check))
-                  diff += check_ray4_packets(raydata[index].m_valid,  raydata[index].ray4, raydata_verify[index].ray4);
+                  diff += check_ray_packets<RTCRay4>(raydata[index].m_valid,  raydata[index].ray4, raydata_verify[index].ray4);
               }
             else if (SIMD_WIDTH == 8)
               {
@@ -564,18 +461,20 @@ namespace embree
                 RayStreamLogger::LogRay8 *raydata_verify = (RayStreamLogger::LogRay8 *)g_retraceTask.raydata_verify;
 
                 RTCRay8 &ray8 = raydata[index].ray8;
-                sseb valid[2];
-                valid[0] = ((int)(raydata[index].m_valid & 0xf));
-                valid[1] = ((int)((raydata[index].m_valid>>4) & 0xf));
+                __aligned(64) sseb valid[2];
 
-                rays += popcnt( (int)raydata[index].m_valid );
+                valid[0] = sseb((int)(raydata[index].m_valid & 0xf));
+                valid[1] = sseb((int)(raydata[index].m_valid>>4));
+
+                rays += raydata[index].numRays;
+
                 if (raydata[index].type == RayStreamLogger::RAY_INTERSECT)
                   rtcIntersect8(valid,g_retraceTask.scene,ray8);
                 else 
                   rtcOccluded8(valid,g_retraceTask.scene,ray8);
 
                 if (unlikely(g_check))
-                  diff += check_ray8_packets(raydata[index].m_valid,  raydata[index].ray8, raydata_verify[index].ray8);
+                  diff += check_ray_packets<RTCRay8>(raydata[index].m_valid,  raydata[index].ray8, raydata_verify[index].ray8);
               }
 #endif
             else if (SIMD_WIDTH == 16)
@@ -585,7 +484,7 @@ namespace embree
 #if defined(__MIC__)
                 RTCRay16 &ray16 = raydata[index].ray16;
                 mic_i valid = select((mic_m)raydata[index].m_valid,mic_i(-1),mic_i(0));
-                rays += countbits( (mic_m)raydata[index].m_valid );
+                rays += raydata[index].numRays;
 
                 //raydata[index+1].prefetchL2();
   
@@ -595,7 +494,7 @@ namespace embree
                   rtcOccluded16(&valid,g_retraceTask.scene,ray16);
 #endif
                 if (unlikely(g_check))
-                  diff += check_ray16_packets(raydata[index].m_valid,  raydata[index].ray16, raydata_verify[index].ray16);
+                  diff += check_ray_packets<RTCRay16>(raydata[index].m_valid,  raydata[index].ray16, raydata_verify[index].ray16);
               }
 
 
@@ -797,7 +696,7 @@ namespace embree
     std::cout << "Retracing logged rays:" << std::endl << std::flush;
 
 #if defined(__ENABLE_RAYSTREAM_LOGGER__)
-    FATAL("ray stream logger still active, disable to run 'retrace'");
+    FATAL("ray stream logger still active, must be disabled to run 'retrace'");
 #endif
 
     g_retraceTask.scene                   = scene;
