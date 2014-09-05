@@ -138,9 +138,9 @@ namespace embree
       std::cout << "numOcclusionRays                  = " << numOccludedRays << " [" << 100. * (double)numOccludedRays / numTotalRays << "%]" << std::endl;
       if (simd_width > 1)
         {
-          std::cout << "avg. intersect packet utilization = " << 100. *  (double)numIntersectRays / (numIntersectRayPackets * (double)simd_width) << "%" << std::endl;
-          std::cout << "avg. occluded  packet utilization = " << 100. *  (double)numOccludedRays  / (numOccludedRayPackets  * (double)simd_width) << "%" << std::endl;
-          std::cout << "avg. total packet utilization     = " << 100. * (double)numTotalRays / (numRayPackets * (double)simd_width)  << "%" << std::endl;
+          std::cout << "avg. intersect " << simd_width << "-wide packet utilization = " << 100. *  (double)numIntersectRays / (numIntersectRayPackets * (double)simd_width) << "%" << std::endl;
+          std::cout << "avg. occluded " << simd_width << "-wide packet utilization = " << 100. *  (double)numOccludedRays  / (numOccludedRayPackets  * (double)simd_width) << "%" << std::endl;
+          std::cout << "avg. total " << simd_width << "-wide packet utilization     = " << 100. * (double)numTotalRays / (numRayPackets * (double)simd_width)  << "%" << std::endl;
         }
       if (simd_width == 16)
         {
@@ -195,7 +195,7 @@ namespace embree
   static AlignedAtomicCounter32 g_rays_traced = 0;
   static AlignedAtomicCounter32 g_rays_traced_diff = 0;
   static std::vector<thread_t> g_threads;
-#if 0 //!defined(__MIC__)
+#if !defined(__MIC__)
   static BarrierSys g_barrier;
 #else
   static LinearBarrierActive g_barrier;
@@ -578,10 +578,6 @@ namespace embree
 
         g_barrier.wait(id,g_numThreads);
       }
-
-    g_mutex.lock();
-    std::cout << "thread exit " << id << std::endl;
-    g_mutex.unlock();
   }
 
   void createThreads(size_t numThreads)
@@ -637,8 +633,7 @@ namespace embree
         for (size_t shift=0;shift<=4;shift++)
           {
             g_simd_width = (size_t)1 << shift;
-            DBG_PRINT(g_simd_width);
-            rayStreamFileName = "ray" + std::stringOf(g_simd_width) + ".bin";
+            rayStreamFileName = g_binaries_path + "ray" + std::stringOf(g_simd_width) + ".bin";
             rayStreamVerifyFileName = g_binaries_path + "ray" + std::stringOf(g_simd_width) + "_verify.bin";
             if (existsFile( rayStreamFileName )) break;
 
