@@ -45,14 +45,15 @@ namespace embree
 
   RayStreamLogger::RayStreamLogger()
   {
-    ray16        = new DataStream( DEFAULT_FILENAME_RAY16 );
-    ray16_verify = new DataStream( DEFAULT_FILENAME_RAY16_VERIFY );
-    ray8         = new DataStream( DEFAULT_FILENAME_RAY8 );
-    ray8_verify  = new DataStream( DEFAULT_FILENAME_RAY8_VERIFY );
-    ray4         = new DataStream( DEFAULT_FILENAME_RAY4 );
-    ray4_verify  = new DataStream( DEFAULT_FILENAME_RAY4_VERIFY );
-    ray1         = new DataStream( DEFAULT_FILENAME_RAY1 );
-    ray1_verify  = new DataStream( DEFAULT_FILENAME_RAY1_VERIFY );
+    std::string path(DEFAULT_PATH_BINARY_FILES);
+    ray16        = new DataStream( path + DEFAULT_FILENAME_RAY16 );
+    ray16_verify = new DataStream( path + DEFAULT_FILENAME_RAY16_VERIFY );
+    ray8         = new DataStream( path + DEFAULT_FILENAME_RAY8 );
+    ray8_verify  = new DataStream( path + DEFAULT_FILENAME_RAY8_VERIFY );
+    ray4         = new DataStream( path + DEFAULT_FILENAME_RAY4 );
+    ray4_verify  = new DataStream( path + DEFAULT_FILENAME_RAY4_VERIFY );
+    ray1         = new DataStream( path + DEFAULT_FILENAME_RAY1 );
+    ray1_verify  = new DataStream( path + DEFAULT_FILENAME_RAY1_VERIFY );
   }
 
 
@@ -92,7 +93,9 @@ namespace embree
 	);
 
     std::ofstream geometryData;
-    FileName geometry_filename( DEFAULT_FILENAME_GEOMETRY );
+    std::string path(DEFAULT_PATH_BINARY_FILES);
+
+    FileName geometry_filename = path + DEFAULT_FILENAME_GEOMETRY;
     geometryData.open(geometry_filename.c_str(),ios::out | ios::binary);
     geometryData.seekp(0, ios::beg);
 

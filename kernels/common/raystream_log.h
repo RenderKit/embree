@@ -25,6 +25,12 @@
 namespace embree
 {
 
+#if defined(__MIC__)
+ #define DEFAULT_PATH_BINARY_FILES      "/home/micuser/"
+#else
+ #define DEFAULT_PATH_BINARY_FILES      "./"
+#endif
+
 #define DEFAULT_FILENAME_GEOMETRY      "geometry.bin"
 
 #define DEFAULT_FILENAME_RAY16         "ray16.bin"
@@ -65,7 +71,7 @@ namespace embree
       
     public:
 
-    DataStream(const char *name) : initialized(false) 
+    DataStream(std::string name) : initialized(false) 
         {
           filename = name;
         }
