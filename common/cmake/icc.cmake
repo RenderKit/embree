@@ -24,7 +24,7 @@ SET(FLAGS_AVX2  "-xCORE-AVX2")
 
 SET(CMAKE_CXX_COMPILER "icpc")
 SET(CMAKE_C_COMPILER "icc")
-SET(CMAKE_CXX_FLAGS "-Wall -fPIC -static-intel")
+SET(CMAKE_CXX_FLAGS "-Wall -fPIC -static-intel -fasm-blocks")
 SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -g -O2 ")
 SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -no-ansi-alias -restrict -fp-model fast -fimf-precision=low -no-prec-div -no-prec-sqrt")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -g -O3 -no-ansi-alias -restrict -fp-model fast -fimf-precision=low -no-prec-div -no-prec-sqrt")

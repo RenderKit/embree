@@ -32,6 +32,12 @@
 
 #define DBG(x) 
 
+#define SSC_MARK(mark_value)     \ 
+        {__asm  mov ebx, mark_value} \
+        {__asm  _emit 0x64}          \
+        {__asm  _emit 0x67}          \
+        {__asm  _emit 0x90}
+
 namespace embree
 {
   struct RayStreamStats
@@ -746,11 +752,19 @@ namespace embree
     for (size_t i=0;i<g_frames;i++)
       {
 	double dt = getSeconds();
-	g_rays_traced = 0;
-	g_rays_traced_diff = 0;
 
         /* retrace rays using all threads */
+
+	g_rays_traced = 0;
+	g_rays_traced_diff = 0;
 	g_counter = 0;
+
+	if (g_sde)
+	  {
+	    __asm { int 3 };
+	    SSC_MARK(111);
+	  }
+
         g_barrier.wait(0,g_numThreads);
         renderMainLoop(0);
 
@@ -761,6 +775,12 @@ namespace embree
 #endif
 
         g_barrier.wait(0,g_numThreads);
+
+	if (g_sde)
+	  {
+	    __asm { int 3 };
+	    SSC_MARK(222);
+	  }
 
         if (unlikely(g_check))
           std::cout << g_rays_traced_diff << " rays differ in result (" << 100. * g_rays_traced_diff / g_rays_traced << "%)" << std::endl;
