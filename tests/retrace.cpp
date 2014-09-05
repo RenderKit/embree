@@ -164,7 +164,7 @@ namespace embree
 
 #if !defined(__MIC__)
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8);
-  static std::string g_rtcore = "verbose=2,threads=1";
+  static std::string g_rtcore = "verbose=2";
 #else
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);
   static std::string g_rtcore = "verbose=2,threads=1";
@@ -195,7 +195,12 @@ namespace embree
   static AlignedAtomicCounter32 g_rays_traced = 0;
   static AlignedAtomicCounter32 g_rays_traced_diff = 0;
   static std::vector<thread_t> g_threads;
+#if 0 //!defined(__MIC__)
+  static BarrierSys g_barrier;
+#else
   static LinearBarrierActive g_barrier;
+#endif
+
   static bool g_exitThreads = false;
   static RetraceTask g_retraceTask;
   static MutexSys g_mutex;
@@ -240,11 +245,14 @@ namespace embree
           if (g_simd_width != 1 && g_simd_width != 4 && g_simd_width != 8 && g_simd_width != 16)
             std::cout << "only simd widths of 1,4,8, and 16 are supported" << std::endl;
         }
+        else if (tag == "-sde") {
+          g_sde = true;
+        }
         else if (tag == "-h" || tag == "-help") {
           std::cout << "Usage: retrace [OPTIONS] [PATH_TO_BINARY_FILES] " << std::endl;
           std::cout << "Options:" << std::endl;
-          std::cout << "-threads N   : sets number of render threads for the retracing phase to N" << std::endl;
-          std::cout << "-frames N    : retraces rays for N frames  " << std::endl;
+          std::cout << "-threads N   : sets number of render/worker threads for the retracing phase to N" << std::endl;
+          std::cout << "-frames N    : retraces all rays N times  " << std::endl;
           std::cout << "-check       : loads second ray stream file and validates result of rtcIntersectN/rtcOccludedN for each ray/packet" << std::endl;
           std::cout << "-simd_width N: loads ray stream for simd width N (if existing)" << std:: endl;
           std::cout << "-sde         : inserts markers for generating instruction traces with SDE" << std:: endl;
@@ -338,8 +346,6 @@ namespace embree
         DBG(
             DBG_PRINT(numVertices);
             DBG_PRINT(numTriangles);
-            DBG_PRINT(sizeof(Vertex)*numVertices);
-            DBG_PRINT(sizeof(Triangle)*numTriangles);
             );
 
 	Vertex *vtx = (Vertex*)g;
@@ -348,7 +354,6 @@ namespace embree
 	g += sizeof(Triangle)*numTriangles;
 	if (((size_t)g % 16) != 0)
           {
-            DBG( DBG_PRINT( 16 - ((size_t)g % 16) ) );
             g += 16 - ((size_t)g % 16);
           }
 
@@ -428,13 +433,6 @@ namespace embree
         if (start.Ngy[i]    != end.Ngy[i])    { diff++; continue; }
         if (start.Ngz[i]    != end.Ngz[i])    { diff++; continue; }
       }
-
-    print_packet(start);
-    print_packet(end);
-
-
-
-    if (diff) exit(0);
     return diff;
   }
 
@@ -604,7 +602,6 @@ namespace embree
     /* parse command line */  
     parseCommandLine(argc,argv);
 
-    DBG_PRINT( g_binaries_path );
 
     /* perform tests */
     DBG_PRINT(g_rtcore.c_str());
@@ -613,10 +610,14 @@ namespace embree
 
     DBG_PRINT(g_numThreads);
 
+    /* binary file path */
+    g_binaries_path += "/";
+    std::cout << "binary file path = " <<  g_binaries_path << std::endl;
+
     /* load geometry file */
     std::string geometryFileName = g_binaries_path + "geometry.bin";
 
-    std::cout << "loading geometry data..." << std::flush;    
+    std::cout << "loading geometry data from file '" << geometryFileName << "'..." << std::flush;    
     void *g = loadGeometryData(geometryFileName);
     std::cout <<  "done" << std::endl << std::flush;
 
@@ -655,7 +656,7 @@ namespace embree
 
 
     /* load ray stream data */
-    std::cout << "loading ray stream data..." << std::flush;    
+    std::cout << "loading ray stream data from files '" << rayStreamFileName << "/" << rayStreamVerifyFileName << "'..." << std::flush;    
     size_t numLogRayStreamElements       = 0;
     size_t numLogRayStreamElementsVerify = 0;
 
@@ -719,6 +720,23 @@ namespace embree
     std::cout << "transfering geometry data:" << std::endl << std::flush;
     RTCScene scene = transferGeometryData((char*)g);
 
+#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+    FATAL("ray stream logger still active, must be disabled to run 'retrace'");
+#endif
+
+
+
+    /* init global tasking barrier */
+    g_barrier.init( g_numThreads );
+
+
+    g_retraceTask.scene                   = scene;
+    g_retraceTask.raydata                 = raydata;
+    g_retraceTask.raydata_verify          = raydata_verify;
+    g_retraceTask.numLogRayStreamElements = numLogRayStreamElements;
+    g_retraceTask.check                   = g_check;
+
+
     std::cout << "using " << g_numThreads << " threads for retracing rays" << std::endl << std::flush;
     createThreads(g_numThreads);
 
@@ -727,17 +745,6 @@ namespace embree
     DBG_PRINT( g_numThreads );
 
     std::cout << "Retracing logged rays:" << std::endl << std::flush;
-
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
-    FATAL("ray stream logger still active, must be disabled to run 'retrace'");
-#endif
-
-    g_retraceTask.scene                   = scene;
-    g_retraceTask.raydata                 = raydata;
-    g_retraceTask.raydata_verify          = raydata_verify;
-    g_retraceTask.numLogRayStreamElements = numLogRayStreamElements;
-    g_retraceTask.check                   = g_check;
-
     
     double avg_time = 0;
     double mrays_sec = 0;
@@ -754,10 +761,13 @@ namespace embree
 
 	dt = getSeconds()-dt;
 	mrays_sec += (double)g_rays_traced / dt / 1000000.;
-#if 1
+#if 0
 	std::cout << "frame " << i << " => time " << 1000. * dt << " " << 1. / dt << " fps " << "ms " << g_rays_traced / dt / 1000000. << " mrays/sec" << std::endl;
 #endif
-        if (g_check)
+
+        g_barrier.wait(0,g_numThreads);
+
+        if (unlikely(g_check))
           std::cout << g_rays_traced_diff << " rays differ in result (" << 100. * g_rays_traced_diff / g_rays_traced << "%)" << std::endl;
       }
     std::cout << "rays " << g_rays_traced << " avg. mrays/sec = " << mrays_sec / (double)g_frames << std::endl;
