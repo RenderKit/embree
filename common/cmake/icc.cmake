@@ -14,13 +14,14 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(FLAGS_SSE2  "-xsse2")
-SET(FLAGS_SSE3  "-xsse3")
-SET(FLAGS_SSSE3 "-xssse3")
-SET(FLAGS_SSE41 "-xsse4.1")
-SET(FLAGS_SSE42 "-xsse4.2")
-SET(FLAGS_AVX   "-xAVX")
-SET(FLAGS_AVX2  "-xCORE-AVX2")
+SET(FLAGS_SSE2   "-xsse2")
+SET(FLAGS_SSE3   "-xsse3")
+SET(FLAGS_SSSE3  "-xssse3")
+SET(FLAGS_SSE41  "-xsse4.1")
+SET(FLAGS_SSE42  "-xsse4.2")
+SET(FLAGS_AVX    "-xAVX")
+SET(FLAGS_AVX2   "-xCORE-AVX2")
+SET(FLAGS_AVX512 "-xMIC-AVX512")
 
 SET(CMAKE_CXX_COMPILER "icpc")
 SET(CMAKE_C_COMPILER "icc")

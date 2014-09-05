@@ -175,6 +175,32 @@ IF (TARGET_AVX2)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx2)
 ENDIF()
 
+
+IF (TARGET_AVX512) 
+  ADD_LIBRARY(embree_avx512 STATIC
+
+    geometry/instance_intersector1.cpp
+    geometry/instance_intersector4.cpp
+    geometry/instance_intersector8.cpp
+		
+    bvh4/bvh4_intersector1.cpp
+    bvh4/bvh4_intersector4_single.cpp
+    bvh4/bvh4_intersector4_chunk.cpp
+    bvh4/bvh4_intersector4_hybrid.cpp
+    bvh4/bvh4_intersector8_single.cpp
+    bvh4/bvh4_intersector8_chunk.cpp
+    bvh4/bvh4_intersector8_hybrid.cpp
+
+    bvh8/bvh8_intersector1.cpp   
+    bvh8/bvh8_intersector4_hybrid.cpp 
+    bvh8/bvh8_intersector8_chunk.cpp   
+    bvh8/bvh8_intersector8_hybrid.cpp   
+)
+  SET_TARGET_PROPERTIES(embree_avx512 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512}")
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512)
+ENDIF()
+
+
 TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd)
 SET_TARGET_PROPERTIES(embree PROPERTIES VERSION 2.3.2 SOVERSION 2)
 INSTALL(TARGETS embree DESTINATION lib)
