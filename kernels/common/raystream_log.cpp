@@ -180,6 +180,7 @@ namespace embree
     logRay16.numRays = countbits(logRay16.m_valid);
 #endif
     /* ray16 before intersect */
+    logRay16.ray16 = start;
     ray16->write((char*)&logRay16 ,sizeof(logRay16));
 
     /* ray16 after intersect */
@@ -201,10 +202,11 @@ namespace embree
     logRay16.numRays = countbits(logRay16.m_valid);
 #endif
     /* ray16 before intersect */
+    logRay16.ray16 = start;
     ray16->write((char*)&logRay16 ,sizeof(logRay16));
 
     /* ray16 after intersect */
-    logRay16.ray16   = end;
+    logRay16.ray16 = end;
     ray16_verify->write((char*)&logRay16 ,sizeof(logRay16));
 
     mutex.unlock();
@@ -221,10 +223,11 @@ namespace embree
     logRay8.numRays = numActive((int*)valid_i,8);
 
     /* ray8 before intersect */
+    logRay8.ray8 = start;
     ray8->write((char*)&logRay8 ,sizeof(logRay8));
 
     /* ray8 after intersect */
-    logRay8.ray8   = end;
+    logRay8.ray8 = end;
     ray8_verify->write((char*)&logRay8 ,sizeof(logRay8));
 
     mutex.unlock();
@@ -241,6 +244,7 @@ namespace embree
     logRay8.numRays = numActive((int*)valid_i,8);
 
     /* ray8 before intersect */
+    logRay8.ray8 = start;
     ray8->write((char*)&logRay8 ,sizeof(logRay8));
 
     /* ray8 after intersect */
@@ -262,6 +266,7 @@ namespace embree
     logRay4.numRays = numActive((int*)valid_i,4);
 
     /* ray4 before intersect */
+    logRay4.ray4 = start;
     ray4->write((char*)&logRay4 ,sizeof(logRay4));
 
     /* ray4 after intersect */
@@ -281,7 +286,8 @@ namespace embree
     logRay4.m_valid = getMask((int*)valid_i,4);
     logRay4.numRays = numActive((int*)valid_i,4);
 
-    /* ray4 before intersect */
+    /* ray4 before intersect */    
+    logRay4.ray4 = start;
     ray4->write((char*)&logRay4 ,sizeof(logRay4));
 
     /* ray4 after intersect */

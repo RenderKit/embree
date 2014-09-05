@@ -382,6 +382,32 @@ namespace embree
     return 0;
   }
 
+  template<class T>
+  void print(const char *name, T *ptr, const size_t N)
+  {
+    std::cout << name << " "; for (size_t i=0;i<N;i++) std::cout << ptr[i] << " "; std::cout << std::endl;
+  }
+
+  template<class T>  
+  void print_packet(T &t)
+  {
+    const size_t elements = sizeof(T) / (18 * 4); // 18 elements, and 4 bytes per element
+    print("orgx"  ,t.orgx,elements);
+    print("orgy"  ,t.orgy,elements);
+    print("orgz"  ,t.orgz,elements);
+    print("dirx"  ,t.dirx,elements);
+    print("diry"  ,t.diry,elements);
+    print("dirz"  ,t.dirz,elements);
+    print("tnear" ,t.tnear,elements);
+    print("tfar"  ,t.tfar,elements);
+    print("primID",t.primID,elements);
+    print("geomID",t.geomID,elements);
+    print("u"     ,t.u,elements);
+    print("v"     ,t.v,elements);
+    print("Ngx"   ,t.Ngx,elements);
+    print("Ngy"   ,t.Ngy,elements);
+    print("Ngz"   ,t.Ngz,elements);    
+  }
 
   template<class T>
   size_t check_ray_packets(const unsigned int m_valid, T &start, T &end)
@@ -402,6 +428,13 @@ namespace embree
         if (start.Ngy[i]    != end.Ngy[i])    { diff++; continue; }
         if (start.Ngz[i]    != end.Ngz[i])    { diff++; continue; }
       }
+
+    print_packet(start);
+    print_packet(end);
+
+
+
+    if (diff) exit(0);
     return diff;
   }
 
