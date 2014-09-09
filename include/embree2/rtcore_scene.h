@@ -63,6 +63,13 @@ RTCORE_API RTCScene rtcNewScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags);
  *  rays. */
 RTCORE_API void rtcCommit (RTCScene scene);
 
+/*! Commits the geometry of the scene. The calling thread will be used
+ *  internally as a worker thread. The function will wait until
+ *  'numThreads' threads have called this function. After initializing
+ *  or modifying geometries, this function has to get called before
+ *  tracing rays. */
+RTCORE_API void rtcCommitMT(RTCScene scene, unsigned threadID, unsigned numThreads);
+
 /*! Intersects a single ray with the scene. The ray has to be aligned
  *  to 16 bytes. This function can only be called for scenes with the
  *  RTC_INTERSECT1 flag set. */

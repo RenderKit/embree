@@ -634,7 +634,7 @@ namespace embree
 	  }
       }
 
-      LockStepTaskScheduler::syncThreads(threadID,numThreads);
+      scene->lockstep_scheduler.syncThreads(threadID,numThreads);
 
 
       /* calculate total number of items for each bucket */
@@ -702,7 +702,7 @@ namespace embree
 	evictL2(&src[i]);
       }
 
-      if (b<3) LockStepTaskScheduler::syncThreads(threadID,numThreads);
+      if (b<3) scene->lockstep_scheduler.syncThreads(threadID,numThreads);
 
     }
   }
@@ -737,7 +737,7 @@ namespace embree
     
     while (true)
     {
-      const unsigned int taskID = LockStepTaskScheduler::taskCounter.inc();
+      const unsigned int taskID = scene->lockstep_scheduler.taskCounter.inc();
       if (taskID >= numBuildRecords) break;
       
       SmallBuildRecord &br = buildRecords[taskID];
@@ -1190,7 +1190,7 @@ namespace embree
     /* compute scene bounds */
     TIMER(msec = getSeconds());
     global_bounds.reset();
-    LockStepTaskScheduler::dispatchTask( task_computeBounds, this, threadIndex, threadCount );
+    scene->lockstep_scheduler.dispatchTask( task_computeBounds, this, threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computeBounds " << 1000. * msec << " ms" << std::endl << std::flush);
     TIMER(DBG_PRINT(global_bounds));
@@ -1199,7 +1199,7 @@ namespace embree
 
     /* compute morton codes */
     TIMER(msec = getSeconds());
-    LockStepTaskScheduler::dispatchTask( task_computeMortonCodes, this, threadIndex, threadCount );   
+    scene->lockstep_scheduler.dispatchTask( task_computeMortonCodes, this, threadIndex, threadCount );   
 
     /* padding */
     MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)morton;
@@ -1216,7 +1216,7 @@ namespace embree
 
     /* sort morton codes */
     TIMER(msec = getSeconds());
-    LockStepTaskScheduler::dispatchTask( task_radixsort, this, threadIndex, threadCount );
+    scene->lockstep_scheduler.dispatchTask( task_radixsort, this, threadIndex, threadCount );
 
 #if defined(DEBUG)
     for (size_t i=1; i<((numPrimitives+7)&(-8)); i++)
@@ -1252,7 +1252,7 @@ namespace embree
     while(numBuildRecords < threadCount*3)
       {
 	numBuildRecordCounter.reset(numBuildRecords);
-	LockStepTaskScheduler::dispatchTask( task_createTopLevelTree, this, threadIndex, threadCount );
+	scene->lockstep_scheduler.dispatchTask( task_createTopLevelTree, this, threadIndex, threadCount );
 	iterations++;
 
 	if (unlikely(numBuildRecords == numBuildRecordCounter)) { break; }
@@ -1273,7 +1273,7 @@ namespace embree
     TIMER(msec = getSeconds());
     
     /* build sub-trees */
-    LockStepTaskScheduler::dispatchTask( task_recurseSubMortonTrees, this, threadIndex, threadCount );
+    scene->lockstep_scheduler.dispatchTask( task_recurseSubMortonTrees, this, threadIndex, threadCount );
 
     DBG(DBG_PRINT(atomicID));
 
@@ -1304,7 +1304,7 @@ namespace embree
     
     /* let all thread except for control thread wait for work */
     if (threadIndex != 0) {
-      LockStepTaskScheduler::dispatchTaskMainLoop(threadIndex,threadCount);
+      scene->lockstep_scheduler.dispatchTaskMainLoop(threadIndex,threadCount);
       return;
     }
 
@@ -1320,7 +1320,7 @@ namespace embree
     build_main(threadIndex,threadCount);
 
     /* end task */
-    LockStepTaskScheduler::releaseThreads(threadCount);
+    scene->lockstep_scheduler.releaseThreads(threadCount);
     
     /* stop measurement */
 #if !defined(PROFILE)

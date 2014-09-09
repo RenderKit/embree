@@ -249,27 +249,27 @@ namespace embree
   {
   public:
 
-    static void init(const size_t numThreads);
+    void init(const size_t numThreads);
 
     static const unsigned int CONTROL_THREAD_ID = 0;
 
-    __aligned(64)static AlignedAtomicCounter32 taskCounter;
-    __aligned(64) static void (* taskPtr)(void* data, const size_t threadID, const size_t numThreads);
-    __aligned(64) static void* volatile data;
+    __aligned(64) AlignedAtomicCounter32 taskCounter;
+    __aligned(64) void (* taskPtr)(void* data, const size_t threadID, const size_t numThreads);
+    __aligned(64) void* volatile data;
 
 #if defined(__MIC__)
-    static QuadTreeBarrier taskBarrier;
-    //static Barrier taskBarrier;
+    __aligned(64) QuadTreeBarrier taskBarrier;
+    //__aligned(64) Barrier taskBarrier;
 #else
-    static Barrier taskBarrier;
+    __aligned(64)Barrier taskBarrier;
 #endif
 
-    static bool dispatchTask(const size_t threadID, const size_t numThreads);
+    bool dispatchTask(const size_t threadID, const size_t numThreads);
 
-    static void dispatchTaskMainLoop(const size_t threadID, const size_t numThreads);
-    static void releaseThreads(const size_t numThreads);
+    void dispatchTaskMainLoop(const size_t threadID, const size_t numThreads);
+    void releaseThreads(const size_t numThreads);
   
-    static __forceinline bool dispatchTask(void (* task)(void* data, const size_t threadID, const size_t numThreads),
+    __forceinline bool dispatchTask(void (* task)(void* data, const size_t threadID, const size_t numThreads),
                                            void* data, 
 					   const size_t threadID,
 					   const size_t numThreads)
@@ -279,14 +279,14 @@ namespace embree
       return LockStepTaskScheduler::dispatchTask(threadID, numThreads);
     }
 
-    static void syncThreads(const size_t threadID, const size_t numThreads);
+    void syncThreads(const size_t threadID, const size_t numThreads);
 
-    static void syncThreadsWithReduction(const size_t threadID, 
-					 const size_t numThreads,
-					 void (* reductionFct)(const size_t currentThreadID,
-							       const size_t childThreadID,
-							       void *ptr),
-					 void *ptr);
+    void syncThreadsWithReduction(const size_t threadID, 
+				  const size_t numThreads,
+				  void (* reductionFct)(const size_t currentThreadID,
+							const size_t childThreadID,
+							void *ptr),
+				  void *ptr);
 
 
 

@@ -42,7 +42,7 @@ namespace embree
   }
 
   void BVH4mbBuilder::computePrimRefs(const size_t threadIndex, const size_t threadCount) {
-    LockStepTaskScheduler::dispatchTask( task_computePrimRefsTrianglesMB, this, threadIndex, threadCount );
+    scene->lockstep_scheduler.dispatchTask( task_computePrimRefsTrianglesMB, this, threadIndex, threadCount );
   }
 
   void BVH4mbBuilder::computePrimRefsTrianglesMB(const size_t threadID, const size_t numThreads) 
@@ -221,7 +221,7 @@ namespace embree
   void BVH4mbBuilder::createAccel(const size_t threadIndex, const size_t threadCount)
   {
     DBG(PING);
-    LockStepTaskScheduler::dispatchTask( task_createTriangle01AccelMB, this, threadIndex, threadCount );   
+    scene->lockstep_scheduler.dispatchTask( task_createTriangle01AccelMB, this, threadIndex, threadCount );   
   }
 
   
@@ -417,7 +417,7 @@ namespace embree
 
 	TIMER(msec = getSeconds());
 	// ------------------------
-	LockStepTaskScheduler::dispatchTask( task_refitBVH4MB, this, threadIndex, threadCount );    
+	scene->lockstep_scheduler.dispatchTask( task_refitBVH4MB, this, threadIndex, threadCount );    
 	// ------------------------
 	TIMER(msec = getSeconds()-msec);    
 	TIMER(std::cout << "refit subtrees " << 1000. * msec << " ms" << std::endl << std::flush);
@@ -440,7 +440,7 @@ namespace embree
 
     TIMER(msec = getSeconds());
 
-    //LockStepTaskScheduler::dispatchTask( task_convertToSOALayoutMB, this, threadIndex, threadCount );    
+    //scene->lockstep_scheduler.dispatchTask( task_convertToSOALayoutMB, this, threadIndex, threadCount );    
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "convert " << 1000. * msec << " ms" << std::endl << std::flush);

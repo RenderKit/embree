@@ -207,7 +207,7 @@ PRINT(CORRECT_numPrims);
     dest0.reset(0);
     dest1.reset(0);
 
-    LockStepTaskScheduler::dispatchTask( task_countAndComputePrimRefsPreSplits, this, threadIndex, threadCount );
+    scene->lockstep_scheduler.dispatchTask( task_countAndComputePrimRefsPreSplits, this, threadIndex, threadCount );
 
     /* === padding to 8-wide blocks === */
     const unsigned int preSplits        = dest1;
@@ -230,7 +230,7 @@ PRINT(CORRECT_numPrims);
 
     TIMER(msec = getSeconds());
 
-    LockStepTaskScheduler::dispatchTask( task_radixSortPreSplitIDs, this, threadIndex, threadCount );
+    scene->lockstep_scheduler.dispatchTask( task_radixSortPreSplitIDs, this, threadIndex, threadCount );
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_radixSortPreSplitIDs " << 1000. * msec << " ms" << std::endl << std::flush);
@@ -238,7 +238,7 @@ PRINT(CORRECT_numPrims);
 
     TIMER(msec = getSeconds());
 
-    LockStepTaskScheduler::dispatchTask( task_computePrimRefsFromPreSplitIDs, this, threadIndex, threadCount );
+    scene->lockstep_scheduler.dispatchTask( task_computePrimRefsFromPreSplitIDs, this, threadIndex, threadCount );
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computePrimRefsFromPreSplitIDs " << 1000. * msec << " ms" << std::endl << std::flush);
@@ -471,7 +471,7 @@ PRINT(CORRECT_numPrims);
 	    }
 	}
 
-	LockStepTaskScheduler::syncThreads(threadID,numThreads);
+	scene->lockstep_scheduler.syncThreads(threadID,numThreads);
 
 
 	/* calculate total number of items for each bucket */
@@ -537,7 +537,7 @@ PRINT(CORRECT_numPrims);
 	  evictL2(&src[i]);
 	}
 
-	if (b<3) LockStepTaskScheduler::syncThreads(threadID,numThreads);
+	if (b<3) scene->lockstep_scheduler.syncThreads(threadID,numThreads);
 
       }
   }
@@ -666,12 +666,12 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderVirtualGeometry::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
-    LockStepTaskScheduler::dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
+    scene->lockstep_scheduler.dispatchTask( task_computePrimRefsVirtualGeometry, this, threadIndex, threadCount );	
   }
 
   void BVH4iBuilderVirtualGeometry::createAccel(const size_t threadIndex, const size_t threadCount)
   {
-    LockStepTaskScheduler::dispatchTask( task_createVirtualGeometryAccel, this, threadIndex, threadCount );
+    scene->lockstep_scheduler.dispatchTask( task_createVirtualGeometryAccel, this, threadIndex, threadCount );
   }
 
   void BVH4iBuilderVirtualGeometry::computePrimRefsVirtualGeometry(const size_t threadID, const size_t numThreads) 
@@ -822,7 +822,7 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderMemoryConservative::createAccel(const size_t threadIndex, const size_t threadCount)
   {
-    LockStepTaskScheduler::dispatchTask( task_createMemoryConservativeAccel, this, threadIndex, threadCount );  
+    scene->lockstep_scheduler.dispatchTask( task_createMemoryConservativeAccel, this, threadIndex, threadCount );  
 
     // === do some padding add the end of 'accel' ===
 
