@@ -603,7 +603,7 @@ namespace embree
 
   void test_barrier_sys_thread(void* ptr) 
   {
-    for (size_t i=0; i<10000; i++) 
+    for (size_t i=0; i<1000; i++) 
     {
       atomic_add(&g_atomic0,+1);
       g_barrier.wait();
@@ -630,7 +630,7 @@ namespace embree
     setAffinity(0);
     
     bool ok = true;
-    for (size_t i=0; i<10000; i++) 
+    for (size_t i=0; i<1000; i++) 
     {
       atomic_add(&g_atomic0,+1);
       g_barrier.wait();
