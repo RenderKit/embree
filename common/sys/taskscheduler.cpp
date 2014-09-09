@@ -235,9 +235,6 @@ namespace embree
 
 //   __aligned(64) AlignedAtomicCounter32 LockStepTaskScheduler::taskCounter;
 
-  void LockStepTaskScheduler::init(const size_t numThreads) {
-    taskBarrier.init(numThreads);
-  }
 
   void LockStepTaskScheduler::syncThreads(const size_t threadID, const size_t numThreads) {
     taskBarrier.wait(threadID,numThreads);

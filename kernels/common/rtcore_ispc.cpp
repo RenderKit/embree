@@ -72,6 +72,10 @@ namespace embree
   extern "C" void ispcCommitScene (RTCScene scene) {
     return rtcCommit(scene);
   }
+
+  extern "C" void ispcCommitSceneMT (RTCScene scene, unsigned int threadID, unsigned int numThreads) {
+    return rtcCommitMT(scene,threadID,numThreads);
+  }
   
   extern "C" void ispcIntersect1 (RTCScene scene, RTCRay& ray) {
     rtcIntersect(scene,ray);

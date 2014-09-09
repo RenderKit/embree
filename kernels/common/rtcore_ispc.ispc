@@ -25,6 +25,7 @@ extern "C" void ispcSetErrorFunction (void* uniform ptr);
 extern "C" void ispcDebug();
 extern "C" RTCScene ispcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 extern "C" void ispcCommitScene (RTCScene scene);
+extern "C" void ispcCommitSceneMT (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
 extern "C" void ispcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
 extern "C" void ispcIntersect4 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcIntersect8 (void* uniform valid, RTCScene scene, void* uniform ray);
@@ -114,6 +115,10 @@ RTCScene rtcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags afl
 
 void rtcCommit (RTCScene scene) {
   ispcCommitScene(scene);
+}
+
+void rtcCommitMT (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads) {
+  ispcCommitSceneMT(scene,threadID,numThreads);
 }
 
 void rtcIntersect1 (RTCScene scene, uniform RTCRay1& ray) {
