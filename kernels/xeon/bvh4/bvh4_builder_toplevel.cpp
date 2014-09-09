@@ -72,34 +72,19 @@ namespace embree
       /* reset bounds of each thread */
       for (size_t i=0; i<threadCount; i++)
         g_state->thread_bounds[i].reset();
-
-      //double t0 = getSeconds();
       
       /* parallel build of acceleration structures */
       if (N) TaskScheduler::executeTask(threadIndex,threadCount,_task_build_parallel,this,N,"toplevel_build_parallel");
-      //for (size_t i=0; i<N; i++) g_state->thread_bounds[threadIndex].extend(build(threadIndex,threadCount,i));
       
       /* perform builds that need all threads */
-      for (size_t i=0; i<allThreadBuilds.size(); i++) {
+      for (size_t i=0; i<allThreadBuilds.size(); i++)
         g_state->thread_bounds[threadIndex].extend(build(threadIndex,threadCount,allThreadBuilds[i]));
-      }
-
-      //double t1 = getSeconds();
-      
       allThreadBuilds.clear();
       
-      /* build toplevel BVH */
-      build_toplevel(threadIndex,threadCount);
-
-      //double t2 = getSeconds();
-    }
-    
-    void BVH4BuilderTopLevel::build_toplevel(size_t threadIndex, size_t threadCount)
-    {
       /* calculate scene bounds */
       Centroid_Scene_AABB bounds; bounds.reset();
       for (size_t i=0; i<threadCount; i++)
-        bounds.extend(g_state->thread_bounds[i]);
+      bounds.extend(g_state->thread_bounds[i]);
       
       /* ignore empty scenes */
       //bvh->clear();
@@ -114,18 +99,7 @@ namespace embree
       }
       
       /* open all large nodes */
-#if 1
       open_sequential();
-      refs1.resize(refs.size());
-#else
-      global_dest = refs.size();
-      size_t M = max(size_t(2*global_dest),size_t(MIN_OPEN_SIZE));
-      refs .resize(M);
-      refs1.resize(M);
-      barrier.init(threadCount);
-      TaskScheduler::executeTask(threadIndex,threadCount,_task_open_parallel,this,threadCount,"toplevel_open_parallel");
-      refs.resize(global_dest);
-#endif
 
       prims.resize(refs.size());
       for (size_t i=0; i<refs.size(); i++) {
@@ -134,7 +108,7 @@ namespace embree
 
       BVH4TopLevelBuilderFastT::build(threadIndex,threadCount,&prims[0],prims.size());
     }
-    
+
     void BVH4BuilderTopLevel::create_object(size_t objectID)
     {
       TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);

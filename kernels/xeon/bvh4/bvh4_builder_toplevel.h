@@ -79,15 +79,11 @@ namespace embree
       /*! builder entry point */
       void build(size_t threadIndex, size_t threadCount);
       
-      void build_toplevel(size_t threadIndex, size_t threadCount);
-      
       /*! parallel rebuild of geometry */
       TASK_RUN_FUNCTION(BVH4BuilderTopLevel,task_build_parallel);
-     
-      
-      BBox3fa build (size_t threadIndex, size_t threadCount, size_t objectID);
+
       void create_object(size_t objectID);
-      
+      BBox3fa build (size_t threadIndex, size_t threadCount, size_t objectID);
       void open_sequential();
       
     public:
@@ -101,7 +97,6 @@ namespace embree
       createTriangleMeshAccelTy createTriangleMeshAccel;
       
       vector_t<BuildRef> refs;
-      vector_t<BuildRef> refs1;
       vector_t<PrimRef> prims;
       AlignedAtomicCounter32 nextRef;
     };
