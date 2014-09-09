@@ -494,11 +494,14 @@ namespace embree
 
   RTCORE_API void rtcCommitMT(RTCScene scene, unsigned int threadID, unsigned int numThreads) 
   {
+    Lock<MutexSys> lock(g_mutex);
+
     CATCH_BEGIN;
     TRACE(rtcCommitMT);
     VERIFY_HANDLE(scene);
 
-    FATAL("not yet implemented");
+    //DBG_PRINT(threadID);
+    //DBG_PRINT(numThreads);
 
 
     CATCH_END;

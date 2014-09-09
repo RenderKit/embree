@@ -42,7 +42,8 @@ namespace embree
   };
 
   void ISPCTask::run(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) {
-    func(data,threadIndex,threadCount,taskIndex,taskCount);
+
+    func(data,threadIndex,/* threadCount */ TaskScheduler::getNumThreads() ,taskIndex,taskCount);
   }
 
   void ISPCTask::finish(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) {

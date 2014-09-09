@@ -280,6 +280,13 @@ task void renderTile(uniform int* uniform pixels,
   }
 }
 
+uniform unsigned int g_numThreads = 0;
+
+task void getNumHWThreads()
+{
+ g_numThreads = threadCount;
+}
+
 task void parallelCommit()
 {
   uniform unsigned int threadID   = threadIndex;
@@ -299,7 +306,14 @@ export void device_render (uniform int* uniform pixels,
 {
   /* create scene */
   if (g_scene == NULL)
+  { 
     g_scene = convertScene(g_ispc_scene);
+#if 0
+    launch[ 1 ] getNumHWThreads(); sync;
+    print("% HW threads\n",g_numThreads);
+    launch[ g_numThreads ] parallelCommit(); sync;
+#endif
+  }
 
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
