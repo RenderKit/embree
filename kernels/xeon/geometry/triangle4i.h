@@ -123,7 +123,7 @@ namespace embree
 	  v0[i] = (Vec3f*) &mesh->vertex(tri.v[0]); 
 	  v1[i] = (int*)&mesh->vertex(tri.v[1])-(int*)v0[i]; 
 	  v2[i] = (int*)&mesh->vertex(tri.v[2])-(int*)v0[i]; 
-	  prims++;
+	  begin++;
 	} else {
 	  assert(i);
 	  geomID[i] = -1;

@@ -263,7 +263,7 @@ namespace embree
 		const avxf childDist = select(lhit,lnearP,inf);
 		sptr_node++;
 		sptr_near++;
-		
+
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
@@ -312,7 +312,7 @@ namespace embree
 		const avxf childDist = select(lhit,lnearP,inf);
 		sptr_node++;
 		sptr_near++;
-		
+
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{

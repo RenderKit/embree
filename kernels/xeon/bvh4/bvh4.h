@@ -560,27 +560,27 @@ namespace embree
       /*! intersection with ray packet of size 4 */
     __forceinline sseb intersect(const size_t i, const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const ssef& tnear, const ssef& tfar, const ssef& time, ssef& dist) const
     {
-      const ssef lower_x = ssef(lower_x[i]) + time * ssef(lower_dx[i]);
-      const ssef lower_y = ssef(lower_y[i]) + time * ssef(lower_dy[i]);
-      const ssef lower_z = ssef(lower_z[i]) + time * ssef(lower_dz[i]);
-      const ssef upper_x = ssef(upper_x[i]) + time * ssef(upper_dx[i]);
-      const ssef upper_y = ssef(upper_y[i]) + time * ssef(upper_dy[i]);
-      const ssef upper_z = ssef(upper_z[i]) + time * ssef(upper_dz[i]);
+      const ssef vlower_x = ssef(lower_x[i]) + time * ssef(lower_dx[i]);
+      const ssef vlower_y = ssef(lower_y[i]) + time * ssef(lower_dy[i]);
+      const ssef vlower_z = ssef(lower_z[i]) + time * ssef(lower_dz[i]);
+      const ssef vupper_x = ssef(upper_x[i]) + time * ssef(upper_dx[i]);
+      const ssef vupper_y = ssef(upper_y[i]) + time * ssef(upper_dy[i]);
+      const ssef vupper_z = ssef(upper_z[i]) + time * ssef(upper_dz[i]);
       
 #if defined(__AVX2__)
-      const ssef lclipMinX = msub(lower_x,rdir.x,org_rdir.x);
-      const ssef lclipMinY = msub(lower_y,rdir.y,org_rdir.y);
-      const ssef lclipMinZ = msub(lower_z,rdir.z,org_rdir.z);
-      const ssef lclipMaxX = msub(upper_x,rdir.x,org_rdir.x);
-      const ssef lclipMaxY = msub(upper_y,rdir.y,org_rdir.y);
-      const ssef lclipMaxZ = msub(upper_z,rdir.z,org_rdir.z);
+      const ssef lclipMinX = msub(vlower_x,rdir.x,org_rdir.x);
+      const ssef lclipMinY = msub(vlower_y,rdir.y,org_rdir.y);
+      const ssef lclipMinZ = msub(vlower_z,rdir.z,org_rdir.z);
+      const ssef lclipMaxX = msub(vupper_x,rdir.x,org_rdir.x);
+      const ssef lclipMaxY = msub(vupper_y,rdir.y,org_rdir.y);
+      const ssef lclipMaxZ = msub(vupper_z,rdir.z,org_rdir.z);
 #else
-      const ssef lclipMinX = (lower_x - org.x) * rdir.x;
-      const ssef lclipMinY = (lower_y - org.y) * rdir.y;
-      const ssef lclipMinZ = (lower_z - org.z) * rdir.z;
-      const ssef lclipMaxX = (upper_x - org.x) * rdir.x;
-      const ssef lclipMaxY = (upper_y - org.y) * rdir.y;
-      const ssef lclipMaxZ = (upper_z - org.z) * rdir.z;
+      const ssef lclipMinX = (vlower_x - org.x) * rdir.x;
+      const ssef lclipMinY = (vlower_y - org.y) * rdir.y;
+      const ssef lclipMinZ = (vlower_z - org.z) * rdir.z;
+      const ssef lclipMaxX = (vupper_x - org.x) * rdir.x;
+      const ssef lclipMaxY = (vupper_y - org.y) * rdir.y;
+      const ssef lclipMaxZ = (vupper_z - org.z) * rdir.z;
 #endif
 
 #if defined(__SSE4_1__)
@@ -601,30 +601,30 @@ namespace embree
 #if defined(__AVX__)
     __forceinline avxb intersect(const size_t i, const avx3f& org, const avx3f& rdir, const avx3f& org_rdir, const avxf& tnear, const avxf& tfar, const avxf& time, avxf& dist) const
     {
-      const avxf lower_x = avxf(lower_x[i]) + time * avxf(lower_dx[i]);
-      const avxf lower_y = avxf(lower_y[i]) + time * avxf(lower_dy[i]);
-      const avxf lower_z = avxf(lower_z[i]) + time * avxf(lower_dz[i]);
-      const avxf upper_x = avxf(upper_x[i]) + time * avxf(upper_dx[i]);
-      const avxf upper_y = avxf(upper_y[i]) + time * avxf(upper_dy[i]);
-      const avxf upper_z = avxf(upper_z[i]) + time * avxf(upper_dz[i]);
-      
+      const avxf vlower_x = avxf(lower_x[i]) + time * avxf(lower_dx[i]);
+      const avxf vlower_y = avxf(lower_y[i]) + time * avxf(lower_dy[i]);
+      const avxf vlower_z = avxf(lower_z[i]) + time * avxf(lower_dz[i]);
+      const avxf vupper_x = avxf(upper_x[i]) + time * avxf(upper_dx[i]);
+      const avxf vupper_y = avxf(upper_y[i]) + time * avxf(upper_dy[i]);
+      const avxf vupper_z = avxf(upper_z[i]) + time * avxf(upper_dz[i]);
+
 #if defined(__AVX2__)
-      const avxf lclipMinX = msub(lower_x,rdir.x,org_rdir.x);
-      const avxf lclipMinY = msub(lower_y,rdir.y,org_rdir.y);
-      const avxf lclipMinZ = msub(lower_z,rdir.z,org_rdir.z);
-      const avxf lclipMaxX = msub(upper_x,rdir.x,org_rdir.x);
-      const avxf lclipMaxY = msub(upper_y,rdir.y,org_rdir.y);
-      const avxf lclipMaxZ = msub(upper_z,rdir.z,org_rdir.z);
+      const avxf lclipMinX = msub(vlower_x,rdir.x,org_rdir.x);
+      const avxf lclipMinY = msub(vlower_y,rdir.y,org_rdir.y);
+      const avxf lclipMinZ = msub(vlower_z,rdir.z,org_rdir.z);
+      const avxf lclipMaxX = msub(vupper_x,rdir.x,org_rdir.x);
+      const avxf lclipMaxY = msub(vupper_y,rdir.y,org_rdir.y);
+      const avxf lclipMaxZ = msub(vupper_z,rdir.z,org_rdir.z);
       const avxf lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
       const avxf lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
       const avxb lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);      
 #else
-      const avxf lclipMinX = (lower_x - org.x) * rdir.x;
-      const avxf lclipMinY = (lower_y - org.y) * rdir.y;
-      const avxf lclipMinZ = (lower_z - org.z) * rdir.z;
-      const avxf lclipMaxX = (upper_x - org.x) * rdir.x;
-      const avxf lclipMaxY = (upper_y - org.y) * rdir.y;
-      const avxf lclipMaxZ = (upper_z - org.z) * rdir.z;
+      const avxf lclipMinX = (vlower_x - org.x) * rdir.x;
+      const avxf lclipMinY = (vlower_y - org.y) * rdir.y;
+      const avxf lclipMinZ = (vlower_z - org.z) * rdir.z;
+      const avxf lclipMaxX = (vupper_x - org.x) * rdir.x;
+      const avxf lclipMaxY = (vupper_y - org.y) * rdir.y;
+      const avxf lclipMaxZ = (vupper_z - org.z) * rdir.z;
       const avxf lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
       const avxf lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
       const avxb lhit   = max(lnearP,tnear) <= min(lfarP,tfar);      
