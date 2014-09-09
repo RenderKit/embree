@@ -302,6 +302,7 @@ namespace embree
     if (numPrimitives) bytesReserved = (bytesReserved+blockSize-1)/blockSize*blockSize + numThreads*blockSize*2;
 
     root = emptyNode;
+    bounds = empty;
     alloc.init(bytesAllocated,bytesReserved);
   }
 

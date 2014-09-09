@@ -34,42 +34,6 @@ namespace embree
       ALIGNED_CLASS;
     public:
       
-      /*! Type shortcuts */
-      typedef BVH4::Node    Node;
-      typedef BVH4::NodeRef NodeRef;
-      static const size_t SIZE_WORK_STACK = 64;
-
-      struct GlobalState
-      {
-        ALIGNED_CLASS;
-              
-      public:
-
-        GlobalState () 
-	: numThreads(getNumberOfLogicalThreads())
-	{
-          thread_workStack = new WorkStack<BuildRecord,SIZE_WORK_STACK>[numThreads];
-          thread_bounds = new Centroid_Scene_AABB[numThreads];
-        }
-        
-        ~GlobalState () {
-          delete[] thread_workStack;
-          delete[] thread_bounds;
-        }
-
-      public:
-	size_t numThreads;
-        __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK> global_workStack;
-        __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* thread_workStack;
-        LinearBarrierActive global_barrier;
-        ParallelBinner2<16> parallelBinner;  
-        Centroid_Scene_AABB* thread_bounds;
-      };
-
-      static std::auto_ptr<GlobalState> g_state;
-
-    public:
-      
       /*! Constructor. */
       BVH4BuilderTopLevel (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
       
@@ -83,7 +47,7 @@ namespace embree
       TASK_RUN_FUNCTION(BVH4BuilderTopLevel,task_build_parallel);
 
       void create_object(size_t objectID);
-      BBox3fa build (size_t threadIndex, size_t threadCount, size_t objectID);
+      void build (size_t threadIndex, size_t threadCount, size_t objectID);
       void open_sequential();
       
     public:
