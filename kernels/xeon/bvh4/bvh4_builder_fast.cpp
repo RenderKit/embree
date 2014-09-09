@@ -47,102 +47,58 @@ namespace embree
 
     std::auto_ptr<BVH4BuilderFast::GlobalState> BVH4BuilderFast::g_state(NULL);
 
-    BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, 
-				      const size_t minLeafSize, const size_t maxLeafSize)
-      : bvh(bvh), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), logSAHBlockSize(logSAHBlockSize), needVertices(needVertices), primBytes(primBytes), 
-	minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
-    {
-      needAllThreads = true;
-    }
+    BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, size_t logBlockSize, size_t logSAHBlockSize, 
+				      bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+      : bvh(bvh), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), logSAHBlockSize(logSAHBlockSize), 
+	needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize) { needAllThreads = true; }
 
-    BVH4BezierBuilderFast::BVH4BezierBuilderFast (BVH4* bvh, Scene* scene, 
-						  size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, 
-						  const size_t minLeafSize, const size_t maxLeafSize)
-      : scene(scene), geom(NULL), BVH4BuilderFast(bvh,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize) {}
+    template<typename Primitive>
+    BVH4BuilderFastT<Primitive>::BVH4BuilderFastT (BVH4* bvh, Scene* scene, size_t logBlockSize, size_t logSAHBlockSize, 
+						   bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize,bool parallel)
+      : scene(scene), BVH4BuilderFast(bvh,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize) { needAllThreads = parallel; }
     
-    BVH4BezierBuilderFast::BVH4BezierBuilderFast (BVH4* bvh, BezierCurves* geom, 
-						  size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, 
-						  const size_t minLeafSize, const size_t maxLeafSize)
-      : scene(geom->parent), geom(geom), BVH4BuilderFast(bvh,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize) 
-    {
-      needAllThreads = geom->size() > THRESHOLD_FOR_SINGLE_THREADED;
-    }
-
-    BVH4TriangleBuilderFast::BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene, 
-						      size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, 
-						      const size_t minLeafSize, const size_t maxLeafSize)
-      : scene(scene), mesh(NULL), BVH4BuilderFast(bvh,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize) {}
-
-    BVH4TriangleBuilderFast::BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* mesh, 
-						      size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, 
-						      const size_t minLeafSize, const size_t maxLeafSize)
-      : scene(mesh->parent), mesh(mesh), BVH4BuilderFast(bvh,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize) 
-    {
-      needAllThreads = mesh->numTriangles > THRESHOLD_FOR_SINGLE_THREADED;
-    }
-
-    BVH4UserGeometryBuilderFast::BVH4UserGeometryBuilderFast (BVH4* bvh, Scene* scene)
-      : scene(scene), geom(NULL),        BVH4BuilderFast(bvh,0,0,false,sizeof(AccelSetItem),1,1) {}
-
-    BVH4UserGeometryBuilderFast::BVH4UserGeometryBuilderFast (BVH4* bvh, UserGeometryBase* geom)
-      : scene(geom->parent), geom(geom), BVH4BuilderFast(bvh,0,0,false,sizeof(AccelSetItem),1,1)
-    {
-      needAllThreads = geom->size() > THRESHOLD_FOR_SINGLE_THREADED;
-    }
-
-    BVH4Bezier1BuilderFast::BVH4Bezier1BuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BezierBuilderFast(bvh,scene,0,0,false,sizeof(Bezier1),1,1) {}
-
-    BVH4Bezier1iBuilderFast::BVH4Bezier1iBuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4BezierBuilderFast(bvh,scene,0,0,false,sizeof(Bezier1i),1,1) {}
-
-    BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4TriangleBuilderFast(bvh,scene,0,0,false,sizeof(Triangle1),2,inf) {}
-
-    BVH4Triangle4BuilderFast::BVH4Triangle4BuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4TriangleBuilderFast(bvh,scene,2,2,false,sizeof(Triangle4),4,inf) {}
-
+    template<> BVH4BezierBuilderFast  <Bezier1>   ::BVH4BezierBuilderFast   (BVH4* bvh, Scene* scene) 
+      : geom(NULL), BVH4BuilderFastT<Bezier1>   (bvh,scene,0,0,false,sizeof(Bezier1),1,1,true) {}
+    template<> BVH4BezierBuilderFast  <Bezier1i>  ::BVH4BezierBuilderFast   (BVH4* bvh, Scene* scene) 
+      : geom(NULL), BVH4BuilderFastT<Bezier1i>  (bvh,scene,0,0,false,sizeof(Bezier1i),1,1,true) {}
+    template<> BVH4TriangleBuilderFast<Triangle1> ::BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene) 
+      : geom(NULL), BVH4BuilderFastT<Triangle1> (bvh,scene,0,0,false,sizeof(Triangle1),2,inf,true) {}
+    template<> BVH4TriangleBuilderFast<Triangle4> ::BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene) 
+      : geom(NULL), BVH4BuilderFastT<Triangle4> (bvh,scene,2,2,false,sizeof(Triangle4),4,inf,true) {}
 #if defined(__AVX__)
-    BVH4Triangle8BuilderFast::BVH4Triangle8BuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4TriangleBuilderFast(bvh,scene,3,2,false,sizeof(Triangle8),8,inf) {}
+    template<> BVH4TriangleBuilderFast<Triangle8> ::BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene) 
+      : geom(NULL), BVH4BuilderFastT<Triangle8> (bvh,scene,3,2,false,sizeof(Triangle8),8,inf,true) {}
 #endif
-    
-    BVH4Triangle1vBuilderFast::BVH4Triangle1vBuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4TriangleBuilderFast(bvh,scene,0,0,false,sizeof(Triangle1v),2,inf) {}
+    template<> BVH4TriangleBuilderFast<Triangle1v>::BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene) 
+      : geom(NULL), BVH4BuilderFastT<Triangle1v>(bvh,scene,0,0,false,sizeof(Triangle1v),2,inf,true) {}
+    template<> BVH4TriangleBuilderFast<Triangle4v>::BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene) 
+      : geom(NULL), BVH4BuilderFastT<Triangle4v>(bvh,scene,2,2,false,sizeof(Triangle4v),4,inf,true) {}
+    template<> BVH4TriangleBuilderFast<Triangle4i>::BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene) 
+      : geom(NULL), BVH4BuilderFastT<Triangle4i>(bvh,scene,2,2,true,sizeof(Triangle4i),4,inf,true) {}
+    template<> BVH4UserGeometryBuilderFastT<AccelSetItem>::BVH4UserGeometryBuilderFastT (BVH4* bvh, Scene* scene) 
+      : geom(NULL), BVH4BuilderFastT<AccelSetItem>(bvh,scene,0,0,false,sizeof(AccelSetItem),1,1,true) {}
 
-    BVH4Triangle4vBuilderFast::BVH4Triangle4vBuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4TriangleBuilderFast(bvh,scene,2,2,false,sizeof(Triangle4v),4,inf) {}
-    
-    BVH4Triangle4iBuilderFast::BVH4Triangle4iBuilderFast (BVH4* bvh, Scene* scene)
-      : BVH4TriangleBuilderFast(bvh,scene,2,2,true,sizeof(Triangle4i),4,inf) {}
-
-    BVH4Triangle1BuilderFast::BVH4Triangle1BuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4TriangleBuilderFast(bvh,mesh,0,0,false,sizeof(Triangle1),2,inf) {}
-
-
-    BVH4Bezier1BuilderFast::BVH4Bezier1BuilderFast (BVH4* bvh, BezierCurves* geom)
-      : BVH4BezierBuilderFast(bvh,geom,0,0,false,sizeof(Bezier1),1,1) {}
-
-    BVH4Bezier1iBuilderFast::BVH4Bezier1iBuilderFast (BVH4* bvh, BezierCurves* geom)
-      : BVH4BezierBuilderFast(bvh,geom,0,0,false,sizeof(Bezier1i),1,1) {}
-
-    BVH4Triangle4BuilderFast::BVH4Triangle4BuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4TriangleBuilderFast(bvh,mesh,2,2,false,sizeof(Triangle4),4,inf) {}
-
+    template<> BVH4BezierBuilderFast  <Bezier1>   ::BVH4BezierBuilderFast   (BVH4* bvh, BezierCurves* geom) 
+      : geom(geom), BVH4BuilderFastT<Bezier1>   (bvh,geom->parent,0,0,false,sizeof(Bezier1)   ,1,1,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
+    template<> BVH4BezierBuilderFast  <Bezier1i>  ::BVH4BezierBuilderFast   (BVH4* bvh, BezierCurves* geom) 
+      : geom(geom), BVH4BuilderFastT<Bezier1i>  (bvh,geom->parent,0,0,false,sizeof(Bezier1i)  ,1,1,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
+    template<> BVH4TriangleBuilderFast<Triangle1> ::BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* geom) 
+      : geom(geom), BVH4BuilderFastT<Triangle1> (bvh,geom->parent,0,0,false,sizeof(Triangle1) ,2,inf,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
+    template<> BVH4TriangleBuilderFast<Triangle4> ::BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* geom) 
+      : geom(geom), BVH4BuilderFastT<Triangle4> (bvh,geom->parent,2,2,false,sizeof(Triangle4) ,4,inf,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
 #if defined(__AVX__)
-    BVH4Triangle8BuilderFast::BVH4Triangle8BuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4TriangleBuilderFast(bvh,mesh,3,2,false,sizeof(Triangle8),8,inf) {}
+    template<> BVH4TriangleBuilderFast<Triangle8> ::BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* geom) 
+      : geom(geom), BVH4BuilderFastT<Triangle8> (bvh,geom->parent,3,2,false,sizeof(Triangle8) ,8,inf,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
 #endif
+    template<> BVH4TriangleBuilderFast<Triangle1v>::BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* geom) 
+      : geom(geom), BVH4BuilderFastT<Triangle1v>(bvh,geom->parent,0,0,false,sizeof(Triangle1v),2,inf,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
+    template<> BVH4TriangleBuilderFast<Triangle4v>::BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* geom) 
+      : geom(geom), BVH4BuilderFastT<Triangle4v>(bvh,geom->parent,2,2,false,sizeof(Triangle4v),4,inf,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
+    template<> BVH4TriangleBuilderFast<Triangle4i>::BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* geom) 
+      : geom(geom), BVH4BuilderFastT<Triangle4i>(bvh,geom->parent,2,2,true ,sizeof(Triangle4i),4,inf,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
+    template<> BVH4UserGeometryBuilderFastT<AccelSetItem>::BVH4UserGeometryBuilderFastT (BVH4* bvh, UserGeometryBase* geom) 
+      : geom(geom), BVH4BuilderFastT<AccelSetItem>(bvh,geom->parent,0,0,false,sizeof(AccelSetItem),1,1,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
     
-    BVH4Triangle1vBuilderFast::BVH4Triangle1vBuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4TriangleBuilderFast(bvh,mesh,0,0,false,sizeof(Triangle1v),2,inf) {}
-
-    BVH4Triangle4vBuilderFast::BVH4Triangle4vBuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4TriangleBuilderFast(bvh,mesh,2,2,false,sizeof(Triangle4v),4,inf) {}
-    
-    BVH4Triangle4iBuilderFast::BVH4Triangle4iBuilderFast (BVH4* bvh, TriangleMesh* mesh)
-      : BVH4TriangleBuilderFast(bvh,mesh,2,2,true,sizeof(Triangle4i),4,inf) {}
-   
     BVH4BuilderFast::~BVH4BuilderFast () 
     {
       if (prims) os_free(prims,bytesPrims); prims = NULL;
@@ -203,188 +159,130 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
 
-    size_t BVH4BezierBuilderFast::number_of_primitives() 
+    template<typename Primitive>
+    size_t BVH4BezierBuilderFast<Primitive>::number_of_primitives() 
     {
       if (geom) return geom->size();
-      else      return scene->numBezierCurves;
+      else      return this->scene->numBezierCurves;
     }
     
-    void BVH4BezierBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
+    template<typename Primitive>
+    void BVH4BezierBuilderFast<Primitive>::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
-      if (geom) PrimRefArrayGenFromGeometry<BezierCurves>::generate_sequential(threadIndex, threadCount, geom , prims, pinfo);
-      else      PrimRefArrayGen                          ::generate_sequential(threadIndex, threadCount, scene, BEZIER_CURVES, 1, prims, pinfo);
+      if (geom) PrimRefArrayGenFromGeometry<BezierCurves>::generate_sequential(threadIndex, threadCount, geom , this->prims, pinfo);
+      else      PrimRefArrayGen                          ::generate_sequential(threadIndex, threadCount, this->scene, BEZIER_CURVES, 1, this->prims, pinfo);
     }
 
-    void BVH4BezierBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
+    template<typename Primitive>
+    void BVH4BezierBuilderFast<Primitive>::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
     {
-      if (geom) PrimRefArrayGenFromGeometry<BezierCurves>::generate_parallel(threadIndex, threadCount, geom , prims, pinfo);
-      else      PrimRefArrayGen                          ::generate_parallel(threadIndex, threadCount, scene, BEZIER_CURVES, 1, prims, pinfo);
-    }
-    
-    // =======================================================================================================
-    // =======================================================================================================
-    // =======================================================================================================
-
-    size_t BVH4TriangleBuilderFast::number_of_primitives() 
-    {
-      if (mesh) return mesh->numTriangles;
-      else      return scene->numTriangles;
+      if (geom) PrimRefArrayGenFromGeometry<BezierCurves>::generate_parallel(threadIndex, threadCount, geom , this->prims, pinfo);
+      else      PrimRefArrayGen                          ::generate_parallel(threadIndex, threadCount, this->scene, BEZIER_CURVES, 1, this->prims, pinfo);
     }
     
-    void BVH4TriangleBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
+    template<typename Primitive>
+    size_t BVH4TriangleBuilderFast<Primitive>::number_of_primitives() 
     {
-      if (mesh) PrimRefArrayGenFromGeometry<TriangleMesh>::generate_sequential(threadIndex, threadCount, mesh , prims, pinfo);
-      else      PrimRefArrayGen                          ::generate_sequential(threadIndex, threadCount, scene, TRIANGLE_MESH, 1, prims, pinfo);
+      if (geom) return geom->numTriangles;
+      else      return this->scene->numTriangles;
+    }
+    
+    template<typename Primitive>
+    void BVH4TriangleBuilderFast<Primitive>::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
+    {
+      if (geom) PrimRefArrayGenFromGeometry<TriangleMesh>::generate_sequential(threadIndex, threadCount, geom , this->prims, pinfo);
+      else      PrimRefArrayGen                          ::generate_sequential(threadIndex, threadCount, this->scene, TRIANGLE_MESH, 1, this->prims, pinfo);
     }
 
-    void BVH4TriangleBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
+    template<typename Primitive>
+    void BVH4TriangleBuilderFast<Primitive>::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
     {
-      if (mesh) PrimRefArrayGenFromGeometry<TriangleMesh>::generate_parallel(threadIndex, threadCount, mesh , prims, pinfo);
-      else      PrimRefArrayGen                          ::generate_parallel(threadIndex, threadCount, scene, TRIANGLE_MESH, 1, prims, pinfo);
+      if (geom) PrimRefArrayGenFromGeometry<TriangleMesh>::generate_parallel(threadIndex, threadCount, geom , this->prims, pinfo);
+      else      PrimRefArrayGen                          ::generate_parallel(threadIndex, threadCount, this->scene, TRIANGLE_MESH, 1, this->prims, pinfo);
     }
 
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
 
-    size_t BVH4UserGeometryBuilderFast::number_of_primitives() 
+    template<typename Primitive>
+    size_t BVH4UserGeometryBuilderFastT<Primitive>::number_of_primitives() 
     {
       if (geom) return geom->size();
-      else      return scene->numUserGeometries1;
+      else      return this->scene->numUserGeometries1;
     }
     
-    void BVH4UserGeometryBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
+    template<typename Primitive>
+    void BVH4UserGeometryBuilderFastT<Primitive>::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
-      if (geom) PrimRefArrayGenFromGeometry<UserGeometryBase>::generate_sequential(threadIndex, threadCount, geom , prims, pinfo);
-      else      PrimRefArrayGen                              ::generate_sequential(threadIndex, threadCount, scene, USER_GEOMETRY, 1, prims, pinfo);
+      if (geom) PrimRefArrayGenFromGeometry<UserGeometryBase>::generate_sequential(threadIndex, threadCount, geom , this->prims, pinfo);
+      else      PrimRefArrayGen                              ::generate_sequential(threadIndex, threadCount, this->scene, USER_GEOMETRY, 1, this->prims, pinfo);
     }
 
-    void BVH4UserGeometryBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
+    template<typename Primitive>
+    void BVH4UserGeometryBuilderFastT<Primitive>::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
     {
-      if (geom) PrimRefArrayGenFromGeometry<UserGeometryBase>::generate_parallel(threadIndex, threadCount, geom , prims, pinfo);
-      else      PrimRefArrayGen                              ::generate_parallel(threadIndex, threadCount, scene, USER_GEOMETRY, 1, prims, pinfo);
+      if (geom) PrimRefArrayGenFromGeometry<UserGeometryBase>::generate_parallel(threadIndex, threadCount, geom , this->prims, pinfo);
+      else      PrimRefArrayGen                              ::generate_parallel(threadIndex, threadCount, this->scene, USER_GEOMETRY, 1, this->prims, pinfo);
     }
  
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4Bezier1BuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    template<typename Primitive>
+    void BVH4BuilderFastT<Primitive>::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      size_t items = Bezier1::blocks(current.size());
+      size_t items = Primitive::blocks(current.size());
       size_t start = current.begin;
             
       /* allocate leaf node */
-      Bezier1* accel = (Bezier1*) leafAlloc.malloc(items*sizeof(Bezier1));
+      Primitive* accel = (Primitive*) leafAlloc.malloc(items*sizeof(Primitive));
       *current.parent = bvh->encodeLeaf((char*)accel,items);
       
       for (size_t i=0; i<items; i++) 
 	accel[i].fill(prims,start,current.end,scene);
     }
 
-    void BVH4Bezier1iBuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4BuilderFast::createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadIndex, size_t threadCount)
     {
-      size_t items = Bezier1i::blocks(current.size());
-      size_t start = current.begin;
-            
-      /* allocate leaf node */
-      Bezier1i* accel = (Bezier1i*) leafAlloc.malloc(items*sizeof(Bezier1i));
-      *current.parent = bvh->encodeLeaf((char*)accel,items);
+      if (current.depth > BVH4::maxBuildDepthLeaf) 
+        throw std::runtime_error("depth limit reached");
       
-      for (size_t i=0; i<items; i++) 
-	accel[i].fill(prims,start,current.end,scene);
+      /* create leaf for few primitives */
+      if (current.size() <= minLeafSize) {
+        createSmallLeaf(current,leafAlloc,threadIndex);
+        return;
+      }
+      
+      /* first split level */
+      BuildRecord record0, record1;
+      splitFallback(prims,current,record0,record1);
+      
+      /* second split level */
+      BuildRecord children[4];
+      splitFallback(prims,record0,children[0],children[1]);
+      splitFallback(prims,record1,children[2],children[3]);
+
+      /* allocate node */
+      Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
+      *current.parent = bvh->encodeNode(node);
+      
+      /* recurse into each child */
+      for (size_t i=0; i<4; i++) 
+      {
+        node->set(i,children[i].geomBounds);
+        children[i].parent = &node->child(i);
+        children[i].depth = current.depth+1;
+        createLeaf(children[i],nodeAlloc,leafAlloc,threadIndex,threadCount);
+      }
+      BVH4::compact(node); // move empty nodes to the end
     }
 
-    void BVH4Triangle1BuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
-    {
-      size_t items = Triangle1::blocks(current.size());
-      size_t start = current.begin;
-            
-      /* allocate leaf node */
-      Triangle1* accel = (Triangle1*) leafAlloc.malloc(items*sizeof(Triangle1));
-      *current.parent = bvh->encodeLeaf((char*)accel,items);
-      
-      for (size_t i=0; i<items; i++) 
-	accel[i].fill(prims,start,current.end,scene);
-    }
-    
-    void BVH4Triangle4BuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
-    {
-      size_t items = Triangle4::blocks(current.size());
-      size_t start = current.begin;
-      
-      /* allocate leaf node */
-      Triangle4* accel = (Triangle4*) leafAlloc.malloc(items*sizeof(Triangle4));
-      *current.parent = bvh->encodeLeaf((char*)accel,1);
-      for (size_t i=0; i<items; i++) 
-	accel[i].fill(prims,start,current.end,scene);
-    }
-
-#if defined(__AVX__)
-
-    void BVH4Triangle8BuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
-    {
-      size_t items = Triangle8::blocks(current.size());
-      size_t start = current.begin;
-      
-      /* allocate leaf node */
-      Triangle8* accel = (Triangle8*) leafAlloc.malloc(items*sizeof(Triangle8));
-      *current.parent = bvh->encodeLeaf((char*)accel,1);
-      for (size_t i=0; i<items; i++) 
-	accel[i].fill(prims,start,current.end,scene);
-    }
-#endif
-    
-    void BVH4Triangle1vBuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
-    {
-      size_t items = Triangle1v::blocks(current.size());
-      size_t start = current.begin;
-      
-      /* allocate leaf node */
-      Triangle1v* accel = (Triangle1v*) leafAlloc.malloc(items*sizeof(Triangle1v));
-      *current.parent = bvh->encodeLeaf((char*)accel,items);
-      
-      for (size_t i=0; i<items; i++) 
-	accel[i].fill(prims,start,current.end,scene);
-    }
-    
-    void BVH4Triangle4vBuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
-    {
-      size_t items = Triangle4v::blocks(current.size());
-      size_t start = current.begin;
-      
-      /* allocate leaf node */
-      Triangle4v* accel = (Triangle4v*) leafAlloc.malloc(items*sizeof(Triangle4v));
-      *current.parent = bvh->encodeLeaf((char*)accel,1);
-      for (size_t i=0; i<items; i++) 
-	accel[i].fill(prims,start,current.end,scene);
-    }
-
-    void BVH4Triangle4iBuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
-    {
-      size_t items = Triangle4i::blocks(current.size());
-      size_t start = current.begin;
-      
-      /* allocate leaf node */
-      Triangle4i* accel = (Triangle4i*) leafAlloc.malloc(items*sizeof(Triangle4i));
-      *current.parent = bvh->encodeLeaf((char*)accel,1);
-      for (size_t i=0; i<items; i++) 
-	accel[i].fill(prims,start,current.end,scene);
-    }
-
-    void BVH4UserGeometryBuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
-    {
-      size_t items = AccelSetItem::blocks(current.size());
-      size_t start = current.begin;
-      
-      /* allocate leaf node */
-      AccelSetItem* accel = (AccelSetItem*) leafAlloc.malloc(sizeof(AccelSetItem)*items);
-      *current.parent = bvh->encodeLeaf(accel,items);
-      
-      for (size_t i=0; i<items; i++)
-	accel[i].fill(prims,start,current.end,scene);
-    }
-    
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
@@ -442,41 +340,6 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
-    
-    void BVH4BuilderFast::createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadIndex, size_t threadCount)
-    {
-      if (current.depth > BVH4::maxBuildDepthLeaf) 
-        throw std::runtime_error("depth limit reached");
-      
-      /* create leaf for few primitives */
-      if (current.size() <= minLeafSize) {
-        createSmallLeaf(current,leafAlloc,threadIndex);
-        return;
-      }
-      
-      /* first split level */
-      BuildRecord record0, record1;
-      splitFallback(prims,current,record0,record1);
-      
-      /* second split level */
-      BuildRecord children[4];
-      splitFallback(prims,record0,children[0],children[1]);
-      splitFallback(prims,record1,children[2],children[3]);
-
-      /* allocate node */
-      Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
-      *current.parent = bvh->encodeNode(node);
-      
-      /* recurse into each child */
-      for (size_t i=0; i<4; i++) 
-      {
-        node->set(i,children[i].geomBounds);
-        children[i].parent = &node->child(i);
-        children[i].depth = current.depth+1;
-        createLeaf(children[i],nodeAlloc,leafAlloc,threadIndex,threadCount);
-      }
-      BVH4::compact(node); // move empty nodes to the end
-    }
     
     __forceinline void BVH4BuilderFast::recurse_continue(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads)
     {
@@ -686,28 +549,28 @@ namespace embree
       if (g_verbose >= 2) dt = getSeconds()-t0;
     }
     
-    Builder* BVH4Bezier1BuilderFast    (void* bvh, Scene* scene, size_t mode) { return new class BVH4Bezier1BuilderFast ((BVH4*)bvh,scene); }
-    Builder* BVH4Bezier1iBuilderFast   (void* bvh, Scene* scene, size_t mode) { return new class BVH4Bezier1iBuilderFast ((BVH4*)bvh,scene); }
-    Builder* BVH4Triangle1BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle1BuilderFast ((BVH4*)bvh,scene); }
-    Builder* BVH4Triangle4BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4BuilderFast ((BVH4*)bvh,scene); }
+    Builder* BVH4Bezier1BuilderFast    (void* bvh, Scene* scene, size_t mode) { return new class BVH4BezierBuilderFast<Bezier1>  ((BVH4*)bvh,scene); }
+    Builder* BVH4Bezier1iBuilderFast   (void* bvh, Scene* scene, size_t mode) { return new class BVH4BezierBuilderFast<Bezier1i>((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle1BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle1> ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4> ((BVH4*)bvh,scene); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle8BuilderFast ((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle8BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle8> ((BVH4*)bvh,scene); }
 #endif
-    Builder* BVH4Triangle1vBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle1vBuilderFast((BVH4*)bvh,scene); }
-    Builder* BVH4Triangle4vBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4vBuilderFast((BVH4*)bvh,scene); }
-    Builder* BVH4Triangle4iBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4iBuilderFast((BVH4*)bvh,scene); }
-    Builder* BVH4UserGeometryBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4UserGeometryBuilderFast((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle1vBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle1v>((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4vBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4v>((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4iBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4i>((BVH4*)bvh,scene); }
+    Builder* BVH4UserGeometryBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4UserGeometryBuilderFastT<AccelSetItem>((BVH4*)bvh,scene); }
 
-    Builder* BVH4Bezier1MeshBuilderFast    (void* bvh, BezierCurves* geom, size_t mode) { return new class BVH4Bezier1BuilderFast ((BVH4*)bvh,geom); }
-    Builder* BVH4Bezier1iMeshBuilderFast   (void* bvh, BezierCurves* geom, size_t mode) { return new class BVH4Bezier1iBuilderFast ((BVH4*)bvh,geom); }
-    Builder* BVH4Triangle1MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle1BuilderFast ((BVH4*)bvh,mesh); }
-    Builder* BVH4Triangle4MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4BuilderFast ((BVH4*)bvh,mesh); }
+    Builder* BVH4Bezier1MeshBuilderFast    (void* bvh, BezierCurves* geom, size_t mode) { return new class BVH4BezierBuilderFast<Bezier1>  ((BVH4*)bvh,geom); }
+    Builder* BVH4Bezier1iMeshBuilderFast   (void* bvh, BezierCurves* geom, size_t mode) { return new class BVH4BezierBuilderFast<Bezier1i> ((BVH4*)bvh,geom); }
+    Builder* BVH4Triangle1MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle1> ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4> ((BVH4*)bvh,mesh); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle8BuilderFast ((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle8MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle8> ((BVH4*)bvh,mesh); }
 #endif
-    Builder* BVH4Triangle1vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle1vBuilderFast((BVH4*)bvh,mesh); }
-    Builder* BVH4Triangle4vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4vBuilderFast((BVH4*)bvh,mesh); }
-    Builder* BVH4Triangle4iMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4iBuilderFast((BVH4*)bvh,mesh); }
-    Builder* BVH4UserGeometryMeshBuilderFast   (void* bvh, UserGeometryBase* geom, size_t mode) { return new class BVH4UserGeometryBuilderFast((BVH4*)bvh,geom); }
+    Builder* BVH4Triangle1vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle1v>((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4v>((BVH4*)bvh,mesh); }
+    Builder* BVH4Triangle4iMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4i>((BVH4*)bvh,mesh); }
+    Builder* BVH4UserGeometryMeshBuilderFast   (void* bvh, UserGeometryBase* geom, size_t mode) { return new class BVH4UserGeometryBuilderFastT<AccelSetItem>((BVH4*)bvh,geom); }
   }
 }
