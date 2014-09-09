@@ -17,7 +17,6 @@
 #pragma once
 
 #include "bvh4.h"
-#include "bvh4_builder_util.h" // FIXME: remove
 #include "builders/heuristic_object_partition.h"
 #include "builders/workstack.h"
 #include "common/scene_user_geometry.h"

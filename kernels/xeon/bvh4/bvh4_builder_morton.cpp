@@ -357,7 +357,7 @@ namespace embree
         const unsigned int code = bitInterleave(bx,by,bz);
         morton[i].code  = code;
       }
-      quicksort_insertionsort_ascending<MortonID32Bit,512>(morton,current.begin,current.end-1); 
+      std::sort(morton+current.begin,morton+current.end);
       
 #if defined(DEBUG)
       for (size_t i=current.begin; i<current.end-1; i++)
