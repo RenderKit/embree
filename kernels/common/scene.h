@@ -148,6 +148,9 @@ namespace embree
     MutexSys mutex;
     AtomicMutex geometriesMutex;
 
+    /*! global lock step task scheduler */
+    __aligned(64) LockStepTaskScheduler lockstep_scheduler;
+
   public:
     atomic_t numTriangles;             //!< number of enabled triangles
     atomic_t numTriangles2;            //!< number of enabled motion blur triangles

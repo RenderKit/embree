@@ -260,7 +260,7 @@ namespace embree
     /* allocate BVH data */
     allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
     
-    LockStepTaskScheduler::init(TaskScheduler::getNumThreads()); 
+    scene->lockstep_scheduler.init(TaskScheduler::getNumThreads()); 
 
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1) )
       {
@@ -728,7 +728,7 @@ namespace embree
 
   void BVH4iBuilder::createAccel(const size_t threadIndex, const size_t threadCount)
   {
-    LockStepTaskScheduler::dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );   
+    scene->lockstep_scheduler.dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );   
 
 #if defined(MERGE_TRIANGLE_PAIRS)
     const size_t numGroups = scene->size();
@@ -795,7 +795,7 @@ namespace embree
 
     fastbin_copy<PrimRef,true>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
 
-    LockStepTaskScheduler::syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
+    scene->lockstep_scheduler.syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
     
     if (threadID == 0)
       {
@@ -1171,7 +1171,7 @@ namespace embree
     global_sharedData.left.reset();
     global_sharedData.right.reset();
      
-    LockStepTaskScheduler::dispatchTask( task_parallelBinningGlobal, this, threadID, numThreads );
+    scene->lockstep_scheduler.dispatchTask( task_parallelBinningGlobal, this, threadID, numThreads );
 
     if (unlikely(global_sharedData.split.pos == -1)) 
       split_fallback(prims,current,leftChild,rightChild);
@@ -1183,7 +1183,7 @@ namespace embree
 	global_sharedData.lCounter.reset(0);
 	global_sharedData.rCounter.reset(0); 
 
-	LockStepTaskScheduler::dispatchTask( task_parallelPartitioningGlobal, this, threadID, numThreads );
+	scene->lockstep_scheduler.dispatchTask( task_parallelPartitioningGlobal, this, threadID, numThreads );
 
 	const unsigned int mid = current.begin + global_sharedData.split.numLeft;
 
@@ -1654,7 +1654,7 @@ namespace embree
   
   void BVH4iBuilder::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
-    LockStepTaskScheduler::dispatchTask( task_computePrimRefsTriangles, this, threadIndex, threadCount );
+    scene->lockstep_scheduler.dispatchTask( task_computePrimRefsTriangles, this, threadIndex, threadCount );
   }
 
 
@@ -1673,7 +1673,7 @@ namespace embree
 
     /* all worker threads enter tasking system */
     if (threadIndex != 0) {
-      LockStepTaskScheduler::dispatchTaskMainLoop(threadIndex,threadCount); 
+      scene->lockstep_scheduler.dispatchTaskMainLoop(threadIndex,threadCount); 
       return;
     }
 
@@ -1742,13 +1742,13 @@ namespace embree
 
     /* fill per core work queues */    
     TIMER(msec = getSeconds());    
-    LockStepTaskScheduler::dispatchTask(task_fillLocalWorkQueues, this, threadIndex, threadCount );
+    scene->lockstep_scheduler.dispatchTask(task_fillLocalWorkQueues, this, threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_fillLocalWorkQueues " << 1000. * msec << " ms" << std::endl << std::flush);
 
     /* now process all created subtasks on multiple threads */    
     TIMER(msec = getSeconds());    
-    LockStepTaskScheduler::dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
+    scene->lockstep_scheduler.dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
     numNodes = atomicID;
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
@@ -1768,7 +1768,7 @@ namespace embree
     
 
     /* release all threads again */
-    LockStepTaskScheduler::releaseThreads(threadCount);
+    scene->lockstep_scheduler.releaseThreads(threadCount);
 
     /* stop measurement */
 #if !defined(PROFILE)

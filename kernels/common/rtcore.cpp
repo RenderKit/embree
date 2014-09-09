@@ -491,6 +491,18 @@ namespace embree
 
     CATCH_END;
   }
+
+  RTCORE_API void rtcCommitMT(RTCScene scene, unsigned threadID, unsigned numThreads) 
+  {
+    CATCH_BEGIN;
+    TRACE(rtcCommitMT);
+    VERIFY_HANDLE(scene);
+
+    FATAL("not yet implemented");
+
+
+    CATCH_END;
+  }
   
   RTCORE_API void rtcIntersect (RTCScene scene, RTCRay& ray) 
   {
