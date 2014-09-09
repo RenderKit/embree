@@ -144,7 +144,7 @@ namespace embree
       TaskScheduler::executeTask(threadIndex,threadCount,_task_open_parallel,this,threadCount,"toplevel_open_parallel");
       refs.resize(global_dest);
 #endif
-      bvh->init(refs.size(),threadCount+1);
+      bvh->init(sizeof(BVH4::Node),refs.size(),threadCount+1);
 
       /* start toplevel build */
       BuildRecord task; 

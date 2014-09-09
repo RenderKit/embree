@@ -69,6 +69,9 @@ namespace embree
       return bounds;
     }
 
+    /*! returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return (N+3)/4; }
+
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
     {
@@ -100,6 +103,39 @@ namespace embree
       }
       
       new (this) Triangle4i(v0,v1,v2,geomID,primID);
+    }
+
+    /*! fill triangle from triangle list */
+    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
+    {
+      ssei geomID = -1, primID = -1;
+      Vec3f* v0[4] = { NULL, NULL, NULL, NULL };
+      ssei v1 = zero, v2 = zero;
+      const PrimRef* prim = &prims[begin];
+      
+      for (size_t i=0; i<4; i++)
+      {
+	const TriangleMesh* mesh = scene->getTriangleMesh(prim->geomID());
+	const TriangleMesh::Triangle& tri = mesh->triangle(prim->primID());
+	if (begin<end) {
+	  geomID[i] = prim->geomID();
+	  primID[i] = prim->primID();
+	  v0[i] = (Vec3f*) &mesh->vertex(tri.v[0]); 
+	  v1[i] = (int*)&mesh->vertex(tri.v[1])-(int*)v0[i]; 
+	  v2[i] = (int*)&mesh->vertex(tri.v[2])-(int*)v0[i]; 
+	  prims++;
+	} else {
+	  assert(i);
+	  geomID[i] = -1;
+	  primID[i] = -1;
+	  v0[i] = v0[i-1];
+	  v1[i] = 0; 
+	  v2[i] = 0;
+	}
+	if (begin<end) prim = &prims[begin];
+      }
+      
+      new (this) Triangle4i(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
     }
 
   public:

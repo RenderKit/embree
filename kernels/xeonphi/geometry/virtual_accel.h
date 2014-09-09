@@ -16,25 +16,27 @@
 
 #pragma once
 
-#include "bvh4.h"
+#include "primitive.h"
 
 namespace embree
 {
-  namespace isa 
+  struct AccelSetItem // FIXME: rename to Object
   {
-    /* BVH4 Tree Rotations. */
-    class BVH4Rotate
+  public:
+
+    /*! fill triangle from triangle list */
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene) // FIXME: use nontemporal stores
     {
-    public:
-      typedef BVH4::Node Node;
-      typedef BVH4::NodeRef NodeRef;
-      
-    public:
-      static size_t rotate     (BVH4* bvh, NodeRef parentRef, size_t depth = 1);
-      
-#if defined(__AVX__)
-      static void   restructure(NodeRef ref, size_t depth = 1);
-#endif
-    };
-  }
+      const PrimRef& prim = prims[i];
+
+      accel = (AccelSet*) (UserGeometryBase*) scene->get(prim.geomID());
+      item  = prim.primID();
+
+      i++;
+    }
+
+  public:
+    AccelSet* accel;
+    size_t item;
+  };
 }

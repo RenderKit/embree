@@ -94,30 +94,61 @@ namespace embree
 #endif
     }
 
+    /*! returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return (N+3)/4; }
+
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
     {
-      ssei geomID = -1, primID = -1, mask = -1;
+      ssei vgeomID = -1, vprimID = -1, vmask = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<4 && prims; i++, prims++)
       {
 	const PrimRef& prim = *prims;
-	const TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
-	const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
-	const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-	const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-	const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-	geomID [i] = prim.geomID();
-	primID [i] = prim.primID(); 
-	mask   [i] = mesh->mask;
-	v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-	v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-	v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+	const size_t geomID = prim.geomID();
+        const size_t primID = prim.primID();
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const Vec3fa& p0 = mesh->vertex(tri.v[0]);
+        const Vec3fa& p1 = mesh->vertex(tri.v[1]);
+        const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+        vgeomID [i] = geomID;
+        vprimID [i] = primID;
+        vmask   [i] = mesh->mask;
+        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      new (this) Triangle4(v0,v1,v2,geomID,primID,mask);
+      Triangle4::store_nt(this,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask));
     }
 
+    /*! fill triangle from triangle list */
+    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
+    {
+      ssei vgeomID = -1, vprimID = -1, vmask = -1;
+      sse3f v0 = zero, v1 = zero, v2 = zero;
+      
+      for (size_t i=0; i<4 && begin<end; i++, begin++)
+      {
+	const PrimRef& prim = prims[begin];
+        const size_t geomID = prim.geomID();
+        const size_t primID = prim.primID();
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const Vec3fa& p0 = mesh->vertex(tri.v[0]);
+        const Vec3fa& p1 = mesh->vertex(tri.v[1]);
+        const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+        vgeomID [i] = geomID;
+        vprimID [i] = primID;
+        vmask   [i] = mesh->mask;
+        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+      }
+      Triangle4::store_nt(this,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask));
+    }
+    
   public:
     sse3f v0;      //!< Base vertex of the triangles.
     sse3f e1;      //!< 1st edge of the triangles (v0-v1).

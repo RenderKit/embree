@@ -175,107 +175,52 @@ namespace embree
       size_t numPrimitives;
     };
 
-    class BVH4BezierBuilderFast : public BVH4BuilderFast
+    template<typename Primitive>
+    class BVH4BuilderFastT : public BVH4BuilderFast
     {
     public:
-      BVH4BezierBuilderFast (BVH4* bvh, Scene* scene,       size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
-      BVH4BezierBuilderFast (BVH4* bvh, BezierCurves* geom, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
-      size_t number_of_primitives();
-      void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
-      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) ;
+      BVH4BuilderFastT (BVH4* bvh, Scene* scene, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize, bool parallel);
+      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     public:
       Scene* scene;         //!< input scene
+    };
+
+    template<typename Primitive>
+    class BVH4BezierBuilderFast : public BVH4BuilderFastT<Primitive>
+    {
+    public:
+      BVH4BezierBuilderFast (BVH4* bvh, Scene* scene);
+      BVH4BezierBuilderFast (BVH4* bvh, BezierCurves* geom);
+      size_t number_of_primitives();
+      void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
+      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
+    public:
       BezierCurves* geom;   //!< input mesh
     };
-
-    class BVH4Bezier1BuilderFast : public BVH4BezierBuilderFast
+    
+    template<typename Primitive>
+    class BVH4TriangleBuilderFast : public BVH4BuilderFastT<Primitive>
     {
     public:
-      BVH4Bezier1BuilderFast (BVH4* bvh, Scene* scene);
-      BVH4Bezier1BuilderFast (BVH4* bvh, BezierCurves* geom);
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
-    };
-
-    class BVH4Bezier1iBuilderFast : public BVH4BezierBuilderFast
-    {
-    public:
-      BVH4Bezier1iBuilderFast (BVH4* bvh, Scene* scene);
-      BVH4Bezier1iBuilderFast (BVH4* bvh, BezierCurves* geom);
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
-    };
-
-    class BVH4TriangleBuilderFast : public BVH4BuilderFast
-    {
-    public:
-      BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene,       size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
-      BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* mesh, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+      BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene);
+      BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* mesh);
       size_t number_of_primitives();
       void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
       void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) ;
     public:
-      Scene* scene;         //!< input scene
-      TriangleMesh* mesh;   //!< input mesh
+      TriangleMesh* geom;   //!< input mesh
     };
-
-    class BVH4Triangle1BuilderFast : public BVH4TriangleBuilderFast
+  
+    template<typename Primitive>
+    class BVH4UserGeometryBuilderFastT : public BVH4BuilderFastT<Primitive>
     {
     public:
-      BVH4Triangle1BuilderFast (BVH4* bvh, Scene* scene);
-      BVH4Triangle1BuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
-    };
-
-    class BVH4Triangle4BuilderFast : public BVH4TriangleBuilderFast
-    {
-    public:
-      BVH4Triangle4BuilderFast (BVH4* bvh, Scene* scene);
-      BVH4Triangle4BuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
-    };
-
-    class BVH4Triangle8BuilderFast : public BVH4TriangleBuilderFast
-    {
-    public:
-      BVH4Triangle8BuilderFast (BVH4* bvh, Scene* scene);
-      BVH4Triangle8BuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
-    };
-
-    class BVH4Triangle1vBuilderFast : public BVH4TriangleBuilderFast
-    {
-    public:
-      BVH4Triangle1vBuilderFast (BVH4* bvh, Scene* scene);
-      BVH4Triangle1vBuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
-    };
-
-    class BVH4Triangle4vBuilderFast : public BVH4TriangleBuilderFast
-    {
-    public:
-      BVH4Triangle4vBuilderFast (BVH4* bvh, Scene* scene);
-      BVH4Triangle4vBuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
-    };
-
-    class BVH4Triangle4iBuilderFast : public BVH4TriangleBuilderFast
-    {
-    public:
-      BVH4Triangle4iBuilderFast (BVH4* bvh, Scene* scene);
-      BVH4Triangle4iBuilderFast (BVH4* bvh, TriangleMesh* mesh);
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
-    };
-
-    class BVH4UserGeometryBuilderFast : public BVH4BuilderFast
-    {
-    public:
-      BVH4UserGeometryBuilderFast (BVH4* bvh, Scene* scene);
-      BVH4UserGeometryBuilderFast (BVH4* bvh, UserGeometryBase* geom);
+      BVH4UserGeometryBuilderFastT (BVH4* bvh, Scene* scene);
+      BVH4UserGeometryBuilderFastT (BVH4* bvh, UserGeometryBase* geom);
       size_t number_of_primitives();
       void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
       void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) ;
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     public:
-      Scene* scene;                    //!< input scene
       UserGeometryBase* geom;   //!< input geometry
     };
   }

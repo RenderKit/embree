@@ -150,9 +150,6 @@ namespace embree
       /* build function */
       void build(size_t threadIndex, size_t threadCount);
       
-      /*! initialized the builder */
-      void init();
-      
       /*! precalculate some per thread data */
       void initThreadState(const size_t threadID, const size_t numThreads);
       

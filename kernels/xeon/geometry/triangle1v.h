@@ -41,19 +41,49 @@ namespace embree
     __forceinline unsigned geomID() const { return v1.a; }
     __forceinline unsigned mask  () const { return v2.a; }
 
+    /*! returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return N; }
+
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
     {
       const PrimRef& prim = *prims;
-      const unsigned geomID = prim.geomID();
-      const unsigned primID = prim.primID();
-      const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+
+      const size_t geomID = prim.geomID();
+      const size_t primID = prim.primID();
+      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
       const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-      const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-      const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-      const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-      new (this ) Triangle1v(p0,p1,p2,mesh->id,primID,mesh->mask);
+      
+      const ssef p0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
+      const ssef p1 = select(0x7,(ssef)mesh->vertex(tri.v[1]),zero);
+      const ssef p2 = select(0x7,(ssef)mesh->vertex(tri.v[2]),zero);
+      
+      store4f_nt(&v0,cast(insert<3>(cast(p0),primID)));
+      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID)));
+      store4f_nt(&v2,cast(insert<3>(cast(p2),mesh->mask)));
+
       prims++;
+    }
+
+    /*! fill triangle from triangle list */
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
+    {
+      const PrimRef& prim = prims[i];
+
+      const size_t geomID = prim.geomID();
+      const size_t primID = prim.primID();
+      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+      const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+      
+      const ssef p0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
+      const ssef p1 = select(0x7,(ssef)mesh->vertex(tri.v[1]),zero);
+      const ssef p2 = select(0x7,(ssef)mesh->vertex(tri.v[2]),zero);
+      
+      store4f_nt(&v0,cast(insert<3>(cast(p0),primID)));
+      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID)));
+      store4f_nt(&v2,cast(insert<3>(cast(p2),mesh->mask)));
+
+      i++;
     }
 
   public:
