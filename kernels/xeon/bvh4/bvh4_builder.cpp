@@ -71,11 +71,6 @@ namespace embree
       bvh->alloc.shrink();
     }
 
-///////////////////////////////////////////////////////////////////////////////////////
-
-
-
-///////////////////////////////////////////////////////////////////////////////////////
     template<typename Triangle>
     typename BVH4Builder::NodeRef BVH4BuilderT<Triangle>::createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo)
     {
@@ -124,7 +119,7 @@ namespace embree
 	if (cinfo[i].size())
 	  node->set(i,cinfo[i].geomBounds,createLargeLeaf(threadIndex,cprims[i],cinfo[i],depth+1));
 
-      BVH4::compact(node); // move empty nodes to the end
+      BVH4::compact(node); // moves empty nodes to the end
       return bvh->encodeNode(node);
     }  
 
@@ -141,7 +136,7 @@ namespace embree
 	if (osplit.sah == float(inf)) return Split();
 	else return osplit;
       }
-      SpatialSplit   ::Split ssplit = SpatialSplit   ::find<PARALLEL>(threadIndex,threadCount,scene,prims,pinfo,logSAHBlockSize);
+      SpatialSplit   ::Split ssplit = SpatialSplit::find<PARALLEL>(threadIndex,threadCount,scene,prims,pinfo,logSAHBlockSize);
       const float bestSAH = min(osplit.sah,ssplit.sah);
       if      (bestSAH == osplit.sah) return osplit; 
       else if (bestSAH == ssplit.sah) return ssplit;
@@ -315,7 +310,7 @@ namespace embree
       }
 
       /*! initialize internal buffers of BVH */
-      bvh->init(maxPrimitives);
+      bvh->init(sizeof(BVH4::Node),maxPrimitives,threadCount);
 
       /*! skip build for empty scene */
       if (numPrimitives == 0) 

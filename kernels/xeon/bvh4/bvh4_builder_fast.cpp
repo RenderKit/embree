@@ -153,10 +153,10 @@ namespace embree
       /* calculate size of scene */
       size_t numPrimitivesOld = numPrimitives;
       bvh->numPrimitives = numPrimitives = number_of_primitives();
-      needAllThreads = numPrimitives > THRESHOLD_FOR_SINGLE_THREADED;
+      bool parallel = needAllThreads && numPrimitives > THRESHOLD_FOR_SINGLE_THREADED;
 	  
       /* initialize BVH */
-      bvh->init(numPrimitives, needAllThreads ? (threadCount+1) : 1); // threadCount+1 for toplevel build
+      bvh->init(sizeof(BVH4::Node),numPrimitives, parallel ? (threadCount+1) : 1); // threadCount+1 for toplevel build
 
       /* skip build for empty scene */
       if (numPrimitives == 0) 
@@ -174,36 +174,7 @@ namespace embree
         prims = (PrimRef* ) os_malloc(bytesPrims);  memset(prims,0,bytesPrims);
       }
       
-#if defined(PROFILE)
-      
-      double dt_min = pos_inf;
-      double dt_avg = 0.0f;
-      double dt_max = neg_inf;
-      for (size_t i=0; i<20; i++) 
-      {
-        if (!needAllThreads) {
-          build_sequential(threadIndex,threadCount);
-        } 
-        else {
-	  if (!g_state.get()) 
-	    g_state.reset(new GlobalState(threadCount));
-          TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"build_parallel");
-        }
-        dt_min = min(dt_min,dt);
-        dt_avg = dt_avg + dt;
-        dt_max = max(dt_max,dt);
-      }
-      dt_avg /= double(20);
-      
-      std::cout << "[DONE]" << std::endl;
-      std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << BVH4Statistics(bvh).str();
-      
-#else
-      
-      if (!needAllThreads) {
+      if (!parallel) {
 	build_sequential(threadIndex,threadCount);
       } 
       else {
@@ -225,7 +196,6 @@ namespace embree
 	BVH4Statistics stat(bvh);
 	std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
       }
-#endif
     }
 
     // =======================================================================================================

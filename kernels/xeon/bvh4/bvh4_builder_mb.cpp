@@ -502,7 +502,7 @@ namespace embree
 	remainingReplications = numPrimitives;
 
       /*! initialize internal buffers of BVH */
-      bvh->init(numPrimitives+remainingReplications);
+      bvh->init(sizeof(BVH4::NodeMB),numPrimitives+remainingReplications,threadCount);
             
       /*! skip build for empty scene */
       if (numPrimitives == 0) 

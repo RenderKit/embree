@@ -96,34 +96,6 @@ namespace embree
       if (g_verbose >= 2)
         std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::BVH4BuilderMorton ... " << std::flush;
       
-      /* do some global inits first */
-      init();
-         
-      if (needAllThreads) 
-      {
-        if (!g_state.get()) g_state.reset(new MortonBuilderState);
-	size_t numActiveThreads = min(threadCount,getNumberOfCores());
-	TaskScheduler::enableThreads(numActiveThreads);
-        TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,numActiveThreads,"build_parallel_morton");
-	TaskScheduler::enableThreads(threadCount);
-      } else {
-        build_sequential_morton(threadIndex,threadCount);
-      }
-
-      if (g_verbose >= 2) {
-        std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
-        std::cout << BVH4Statistics(bvh).str();
-      }
-
-      /* benchmark mode */
-      if (g_benchmark) {
-	BVH4Statistics stat(bvh);
-	std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
-      }
-    }
-    
-    void BVH4BuilderMorton::init()
-    {
       /* calculate size of scene */
       size_t numPrimitivesOld = numPrimitives;
       if (mesh) numPrimitives = mesh->numTriangles;
@@ -156,10 +128,32 @@ namespace embree
       /* preallocate arrays */
       if (numPrimitivesOld != numPrimitives)
       {
-	bvh->init(numPrimitives);
+	bvh->init(sizeof(BVH4::Node),numPrimitives,threadCount);
         if (morton) os_free(morton,bytesMorton);
 	bytesMorton = ((numPrimitives+7)&(-8)) * sizeof(MortonID32Bit);
         morton = (MortonID32Bit* ) os_malloc(bytesMorton); memset(morton,0,bytesMorton);
+      }
+         
+      if (needAllThreads) 
+      {
+        if (!g_state.get()) g_state.reset(new MortonBuilderState);
+	size_t numActiveThreads = min(threadCount,getNumberOfCores());
+	TaskScheduler::enableThreads(numActiveThreads);
+        TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,numActiveThreads,"build_parallel_morton");
+	TaskScheduler::enableThreads(threadCount);
+      } else {
+        build_sequential_morton(threadIndex,threadCount);
+      }
+
+      if (g_verbose >= 2) {
+        std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
+        std::cout << BVH4Statistics(bvh).str();
+      }
+
+      /* benchmark mode */
+      if (g_benchmark) {
+	BVH4Statistics stat(bvh);
+	std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
       }
     }
     

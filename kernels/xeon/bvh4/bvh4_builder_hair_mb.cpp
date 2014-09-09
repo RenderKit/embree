@@ -43,7 +43,7 @@ namespace embree
     {
       /* fast path for empty BVH */
       size_t numPrimitives = scene->numBezierCurves2;
-      bvh->init(numPrimitives,numPrimitives+(size_t)(g_hair_builder_replication_factor*numPrimitives));
+      bvh->init(sizeof(BVH4::UnalignedNodeMB),numPrimitives,numPrimitives+(size_t)(g_hair_builder_replication_factor*numPrimitives));
       if (numPrimitives == 0) return;
       numGeneratedPrims = 0;
       
