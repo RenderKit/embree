@@ -19,7 +19,6 @@
 #include "geometry/bezier1.h"
 #include "builders/primrefalloc.h"
 #include "heuristic_fallback.h"
-#include "../bvh4/bvh4_builder_util.h" // FIXME: remove
 
 namespace embree
 {

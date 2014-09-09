@@ -35,12 +35,13 @@ namespace embree
     std::auto_ptr<BVH4BuilderTopLevel::GlobalState> BVH4BuilderTopLevel::g_state(NULL);
 
     BVH4BuilderTopLevel::BVH4BuilderTopLevel (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) 
-      : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel) {}
+      : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel), BVH4TopLevelBuilderFastT(bvh) {}
     
     BVH4BuilderTopLevel::~BVH4BuilderTopLevel ()
     {
-      for (size_t i=0; i<builders.size(); i++) delete builders[i];
-      //for (size_t i=0; i<objects.size();  i++) delete objects[i];
+      for (size_t i=0; i<builders.size(); i++) 
+	delete builders[i];
+      // FIXME: delete objects here?
     }
 
     void BVH4BuilderTopLevel::build(size_t threadIndex, size_t threadCount) 
@@ -107,9 +108,6 @@ namespace embree
       build_toplevel(threadIndex,threadCount);
 
       //double t2 = getSeconds();
-
-      //PRINT(1000.0f*(t1-t0));
-      //PRINT(1000.0f*(t2-t1));
     }
     
     void BVH4BuilderTopLevel::build_toplevel(size_t threadIndex, size_t threadCount)
@@ -144,6 +142,15 @@ namespace embree
       TaskScheduler::executeTask(threadIndex,threadCount,_task_open_parallel,this,threadCount,"toplevel_open_parallel");
       refs.resize(global_dest);
 #endif
+
+      prims.resize(refs.size());
+      for (size_t i=0; i<refs.size(); i++) {
+	prims[i] = PrimRef(refs[i].bounds(),(size_t)refs[i].node);
+      }
+
+      BVH4TopLevelBuilderFastT::build(threadIndex,threadCount,&prims[0],prims.size());
+
+#if 0
       bvh->init(sizeof(BVH4::Node),refs.size(),threadCount+1);
 
       /* start toplevel build */
@@ -165,12 +172,14 @@ namespace embree
       {
         BuildRecord br;
         if (!g_state->global_workStack.pop_nolock_largest(br)) break;
+	// FIXME: stop if job too small
         recurseSAH(0,br,BUILD_TOP_LEVEL,threadIndex,threadCount);
       }
       
       /* now process all created subtasks on multiple threads */
       TaskScheduler::executeTask(threadIndex,threadCount,_task_build_subtrees,this,threadCount,"toplevel_build_subtrees");
-      
+#endif      
+
       if (g_verbose >= 2) {
         double t1 = getSeconds();
         std::cout << "[DONE]" << std::endl;
@@ -267,6 +276,7 @@ namespace embree
       }
     }
     
+#if 0
     void BVH4BuilderTopLevel::task_open_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event)
     {
       size_t N = global_dest;
@@ -536,6 +546,8 @@ namespace embree
       
       *(NodeRef*)task.parentNode = bvh->encodeNode(node);
     }
+
+#endif
 
     Builder* BVH4BuilderTopLevelFast (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
       return new BVH4BuilderTopLevel(bvh,scene,createTriangleMeshAccel);

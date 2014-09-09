@@ -31,7 +31,7 @@ namespace embree
   {
     typedef float Scalar;
     enum { N = 3 };
-    float x,y,z; union { int a; float w; };
+    float x,y,z; union { int a; unsigned u; float w; };
     
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators

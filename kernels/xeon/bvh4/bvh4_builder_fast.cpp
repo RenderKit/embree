@@ -99,6 +99,9 @@ namespace embree
     template<> BVH4UserGeometryBuilderFastT<AccelSetItem>::BVH4UserGeometryBuilderFastT (BVH4* bvh, UserGeometryBase* geom) 
       : geom(geom), BVH4BuilderFastT<AccelSetItem>(bvh,geom->parent,0,0,false,sizeof(AccelSetItem),1,1,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
     
+    BVH4TopLevelBuilderFastT::BVH4TopLevelBuilderFastT (BVH4* bvh) 
+      : prims_i(NULL), N(0), BVH4BuilderFast(bvh,0,0,false,0,1,1) {}
+
     BVH4BuilderFast::~BVH4BuilderFast () 
     {
       if (prims) os_free(prims,bytesPrims); prims = NULL;
@@ -137,6 +140,7 @@ namespace embree
       else {
 	if (!g_state.get()) g_state.reset(new GlobalState());
 	size_t numActiveThreads = min(threadCount,getNumberOfCores());
+	//size_t numActiveThreads = threadCount;
 	TaskScheduler::enableThreads(numActiveThreads);
         TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,numActiveThreads,"build_parallel");
 	TaskScheduler::enableThreads(threadCount);
@@ -229,7 +233,38 @@ namespace embree
       if (geom) PrimRefArrayGenFromGeometry<UserGeometryBase>::generate_parallel(threadIndex, threadCount, geom , this->prims, pinfo);
       else      PrimRefArrayGen                              ::generate_parallel(threadIndex, threadCount, this->scene, USER_GEOMETRY, 1, this->prims, pinfo);
     }
+
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
+    size_t BVH4TopLevelBuilderFastT::number_of_primitives() {
+      return N;
+    }
+    
+    void BVH4TopLevelBuilderFastT::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
+    {
+      for (size_t i=0; i<N; i++) {
+	pinfo.add(prims_i[i].bounds(),prims_i[i].center2());
+	prims[i] = prims_i[i];
+      }
+    }
+
+    void BVH4TopLevelBuilderFastT::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
+    {
+      for (size_t i=0; i<N; i++) {
+	pinfo.add(prims_i[i].bounds(),prims_i[i].center2());
+	prims[i] = prims_i[i];
+      }
+    }
  
+    void BVH4TopLevelBuilderFastT::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    {
+      size_t items = current.size();
+      assert(items <= 1);
+      *current.parent = (BVH4::NodeRef) prims[current.begin].ID();
+    }
+
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
@@ -319,7 +354,7 @@ namespace embree
     {
       /* use primitive array temporarily for parallel splits */
       PrimRef* tmp = (PrimRef*) bvh->alloc.curPtr();
-	  PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
+      PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
 
       /* parallel binning of centroids */
       const float sah = g_state->parallelBinner.find(pinfo,prims,tmp,logBlockSize,threadID,numThreads);
@@ -572,5 +607,7 @@ namespace embree
     Builder* BVH4Triangle4vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4v>((BVH4*)bvh,mesh); }
     Builder* BVH4Triangle4iMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4i>((BVH4*)bvh,mesh); }
     Builder* BVH4UserGeometryMeshBuilderFast   (void* bvh, UserGeometryBase* geom, size_t mode) { return new class BVH4UserGeometryBuilderFastT<AccelSetItem>((BVH4*)bvh,geom); }
+
+    //Builder* BVH4TopLevelBuilderFast   (void* bvh, PrimRef* prims, size_t N) { return new class BVH4TopLevelBuilderFastT((BVH4*)bvh,prims,N); }
   }
 }

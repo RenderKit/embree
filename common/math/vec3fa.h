@@ -31,7 +31,7 @@ namespace embree
     enum { N = 3 };
     union {
       __m128 m128;
-      struct { float x,y,z; union { int a; float w; }; };
+      struct { float x,y,z; union { int a; unsigned u; float w; }; };
     };
 
     ////////////////////////////////////////////////////////////////////////////////

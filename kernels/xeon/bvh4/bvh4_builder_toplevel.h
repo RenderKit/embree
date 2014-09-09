@@ -19,6 +19,7 @@
 #include "bvh4.h"
 #include "bvh4_builder_util.h"
 #include "bvh4_builder_binner.h"
+#include "bvh4_builder_fast.h"
 #include "common/scene_triangle_mesh.h"
 
 namespace embree
@@ -28,7 +29,7 @@ namespace embree
 
   namespace isa
   {
-    class BVH4BuilderTopLevel : public Builder
+    class BVH4BuilderTopLevel : public BVH4TopLevelBuilderFastT
     {
       ALIGNED_CLASS;
     public:
@@ -81,7 +82,7 @@ namespace embree
       void build_toplevel(size_t threadIndex, size_t threadCount);
       
       /*! parallel rebuild of geometry */
-      TASK_RUN_FUNCTION(BVH4BuilderTopLevel,task_create_parallel);
+      //TASK_RUN_FUNCTION(BVH4BuilderTopLevel,task_create_parallel);
       TASK_RUN_FUNCTION(BVH4BuilderTopLevel,task_build_parallel);
       
       
@@ -89,17 +90,17 @@ namespace embree
       void create_object(size_t objectID);
       
       void open_sequential();
-      TASK_RUN_FUNCTION(BVH4BuilderTopLevel,task_open_parallel);
-      TASK_RUN_FUNCTION(BVH4BuilderTopLevel,task_build_subtrees);
+      // TASK_RUN_FUNCTION(BVH4BuilderTopLevel,task_open_parallel);
+      //TASK_RUN_FUNCTION(BVH4BuilderTopLevel,task_build_subtrees);
       
       /*! Finishes BVH4 construction */
-      void createLeaf(BuildRecord& current, size_t threadIndex, size_t threadCount);
-      void recurse(size_t depth, BuildRecord& task, const size_t mode, const size_t threadID, const size_t numThreads);
-      void recurseSAH(size_t depth, BuildRecord& task, const size_t mode, const size_t threadID, const size_t numThreads);
+      //void createLeaf(BuildRecord& current, size_t threadIndex, size_t threadCount);
+      //void recurse(size_t depth, BuildRecord& task, const size_t mode, const size_t threadID, const size_t numThreads);
+      //void recurseSAH(size_t depth, BuildRecord& task, const size_t mode, const size_t threadID, const size_t numThreads);
       
-      void split_sequential(BuildRecord& current, BuildRecord& left, BuildRecord& right);
-      void split_parallel(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t threadID, const size_t numThreads);
-      void split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads);
+      //void split_sequential(BuildRecord& current, BuildRecord& left, BuildRecord& right);
+      //void split_parallel(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t threadID, const size_t numThreads);
+      //void split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads);
       
     public:
       BVH4* bvh;      //!< Output BVH4
@@ -110,14 +111,15 @@ namespace embree
     public:
       Scene* scene;
       createTriangleMeshAccelTy createTriangleMeshAccel;
-      size_t ofs;
+      //size_t ofs;
       
       /*! build mode */
-      enum { RECURSE = 1, BUILD_TOP_LEVEL = 3 };
+      //enum { RECURSE = 1, BUILD_TOP_LEVEL = 3 };
       
       TaskScheduler::Task task;
       vector_t<BuildRef> refs;
       vector_t<BuildRef> refs1;
+      vector_t<PrimRef> prims;
       volatile atomic_t global_dest;
       volatile float global_max_volume;
       AlignedAtomicCounter32 nextRef;

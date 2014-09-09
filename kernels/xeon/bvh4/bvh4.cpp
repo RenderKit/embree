@@ -150,7 +150,7 @@ namespace embree
     int features = getCPUFeatures();
 
     /* select builders */
-    SELECT_SYMBOL_DEFAULT_SSE41(features,BVH4BuilderTopLevelFast);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTopLevelFast);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1Builder_OBB);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilder_OBB);

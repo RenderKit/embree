@@ -24,9 +24,20 @@ namespace embree
   struct __aligned(32) PrimRef 
   {
     __forceinline PrimRef () {}
+
     __forceinline PrimRef (const BBox3fa& bounds, unsigned geomID, unsigned primID) {
       lower = bounds.lower; lower.a = geomID;
       upper = bounds.upper; upper.a = primID;
+    }
+
+    __forceinline PrimRef (const BBox3fa& bounds, size_t id) {
+#if defined(__X86_64__)
+      lower = bounds.lower; lower.u = id & 0xFFFFFFFF;
+      upper = bounds.upper; upper.u = (id >> 32) & 0xFFFFFFFF;
+#else
+      lower = bounds.lower; lower.u = id;
+      upper = bounds.upper; upper.u = 0;
+#endif
     }
 
     /*! calculates twice the center of the primitive */
@@ -44,6 +55,14 @@ namespace embree
 
     __forceinline size_t primID() const { 
       return upper.a;
+    }
+
+    __forceinline size_t ID() const { 
+#if defined(__X86_64__)
+      return size_t(lower.u) + (size_t(upper.u) << 32);
+#else
+      return size_t(lower.u);
+#endif
     }
     
 #if defined(__MIC__)

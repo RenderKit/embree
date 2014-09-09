@@ -88,7 +88,6 @@ ADD_ISPC_LIBRARY(embree SHARED
 IF (TARGET_SSE41) 
   ADD_LIBRARY(embree_sse41 STATIC
     bvh4/bvh4_builder_binner.cpp
-    bvh4/bvh4_builder_toplevel.cpp
     bvh4/bvh4_intersector1.cpp   
     bvh4/bvh4_intersector4_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp
@@ -123,6 +122,7 @@ IF (TARGET_AVX)
    geometry/instance_intersector8.cpp
 
    bvh4/bvh4_rotate.cpp
+   bvh4/bvh4_builder_toplevel.cpp
    bvh4/bvh4_builder_morton.cpp
    bvh4/bvh4_builder_fast.cpp
    bvh4/bvh4_builder.cpp

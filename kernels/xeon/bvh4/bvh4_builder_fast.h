@@ -223,5 +223,24 @@ namespace embree
     public:
       UserGeometryBase* geom;   //!< input geometry
     };
+
+    class BVH4TopLevelBuilderFastT : public BVH4BuilderFast
+    {
+    public:
+      BVH4TopLevelBuilderFastT (BVH4* bvh);
+      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+      void build(size_t threadIndex, size_t threadCount, PrimRef* prims_i, size_t N)
+      {
+	this->prims_i = prims_i;
+	this->N = N;
+	BVH4BuilderFast::build(threadIndex,threadCount);
+      }
+      size_t number_of_primitives();
+      void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
+      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
+    public:
+      PrimRef* prims_i;
+      size_t N;
+    };
   }
 }
