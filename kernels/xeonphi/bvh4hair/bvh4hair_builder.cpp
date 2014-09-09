@@ -566,8 +566,6 @@ namespace embree
     /* allocate BVH data */
     allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
 
-    scene->lockstep_scheduler.init(TaskScheduler::getNumThreads()); 
-
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1) )
       {
 	DBG(std::cout << "PARALLEL BUILD" << std::endl);

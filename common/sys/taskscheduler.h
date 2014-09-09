@@ -249,8 +249,6 @@ namespace embree
   {
   public:
 
-    void init(const size_t numThreads);
-
     static const unsigned int CONTROL_THREAD_ID = 0;
 
     __aligned(64) AlignedAtomicCounter32 taskCounter;
@@ -259,9 +257,8 @@ namespace embree
 
 #if defined(__MIC__)
     __aligned(64) QuadTreeBarrier taskBarrier;
-    //__aligned(64) Barrier taskBarrier;
 #else
-    __aligned(64)Barrier taskBarrier;
+    __aligned(64) LinearBarrierActive taskBarrier;
 #endif
 
     bool dispatchTask(const size_t threadID, const size_t numThreads);
