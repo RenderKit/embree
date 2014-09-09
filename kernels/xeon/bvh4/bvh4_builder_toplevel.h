@@ -17,22 +17,45 @@
 #pragma once
 
 #include "bvh4.h"
-#include "bvh4_builder_util.h"
-#include "bvh4_builder_binner.h"
 #include "bvh4_builder_fast.h"
 #include "common/scene_triangle_mesh.h"
 
 namespace embree
 {
-  class BuildRecord;
-  struct BuildRef;
-
   namespace isa
   {
     class BVH4BuilderTopLevel : public BVH4TopLevelBuilderFastT
     {
       ALIGNED_CLASS;
     public:
+
+      struct BuildRef
+    {
+    public:
+      __forceinline BuildRef () {}
+      
+      __forceinline BuildRef (const BBox3fa& bounds, BVH4::NodeRef node) 
+        : lower(bounds.lower), upper(bounds.upper), node(node)
+      {
+        if (node.isLeaf())
+          lower.w = 0.0f;
+        else
+          lower.w = area(this->bounds());
+      }
+      
+      __forceinline BBox3fa bounds () const {
+        return BBox3fa(lower,upper);
+      }
+      
+      friend bool operator< (const BuildRef& a, const BuildRef& b) {
+        return a.lower.w < b.lower.w;
+      }
+      
+    public:
+      Vec3fa lower;
+      Vec3fa upper;
+      BVH4::NodeRef node;
+    };
       
       /*! Constructor. */
       BVH4BuilderTopLevel (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
