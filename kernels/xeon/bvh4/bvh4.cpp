@@ -24,6 +24,7 @@
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
+#include "geometry/virtual_accel.h"
 
 #include "common/accelinstance.h"
 

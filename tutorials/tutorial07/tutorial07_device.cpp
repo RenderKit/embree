@@ -16,7 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-#if 1 || defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
+#if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
 #define renderPixelTestEyeLight renderPixelStandard
 #else
 #define renderPixelPathTrace renderPixelStandard
@@ -181,7 +181,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 #else
 
   //scene_in->numHairSets = 0;
-  scene_in->numMeshes = 0;
+  //scene_in->numMeshes = 0;
 
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
@@ -192,7 +192,7 @@ RTCScene convertScene(ISPCScene* scene_in)
     /* get ith hair set */
     ISPCHairSet* hair = scene_in->hairs[i];
 
-#if 0
+#if 1
 
     /* create a hair set */
     unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, 1);
@@ -226,45 +226,6 @@ RTCScene convertScene(ISPCScene* scene_in)
     rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1);
 #endif
 
-#if 0
-    Vec3fa a0(3,1,1);
-    Vec3fa a1(2,5,2);
-    LinearSpace3fa sa = frame(normalize(a1-a0));
-    LinearSpace3fa ia = sa.transposed();
-    Vec3fa b0 = xfmPoint(space1,a0);
-    Vec3fa b1 = xfmPoint(space1,a1);
-    LinearSpace3fa sb = frame(normalize(b1-b0));
-    LinearSpace3fa ib = sb.transposed();
-    Vec3fa c0 = 0.5f*a0 + 0.5f*b0;
-    Vec3fa c1 = 0.5f*a1 + 0.5f*b1;
-    LinearSpace3fa sc = 0.5f*sa + 0.5f*sb;
-    //LinearSpace3fa ic = sc.transposed();
-    LinearSpace3fa ic = 0.5f*ia + 0.5f*ib;
-    ic.vx = normalize(ic.vx);
-    ic.vy = normalize(ic.vy);
-    ic.vz = normalize(ic.vz);
-    PRINT(normalize(a1-a0));
-    PRINT(ia);
-    PRINT(normalize(b1-b0));
-    PRINT(ib);
-    PRINT(c1-c0);
-    PRINT(sc);
-    PRINT(ic);
-    PRINT(dot(ia.vx,ia.vy));
-    PRINT(dot(ia.vx,ia.vz));
-    PRINT(dot(ia.vy,ia.vz));
-    PRINT(dot(ib.vx,ib.vy));
-    PRINT(dot(ib.vx,ib.vz));
-    PRINT(dot(ib.vy,ib.vz));
-    PRINT(dot(ic.vx,ic.vy));
-    PRINT(dot(ic.vx,ic.vz));
-    PRINT(dot(ic.vy,ic.vz));
-
-    PRINT(xfmPoint(ia,a1)-xfmPoint(ia,a0));
-    PRINT(xfmPoint(ib,b1)-xfmPoint(ib,b0));
-    PRINT(xfmPoint(ic,c1)-xfmPoint(ic,c0));
-#endif
-    
     rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
   }
 
@@ -769,7 +730,6 @@ extern "C" void device_render (int* pixels,
 
   /* reset accumulator */
   bool camera_changed = g_changed; g_changed = false;
-  g_changed = true;
   camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx; // FIXME: use != operator
   camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator

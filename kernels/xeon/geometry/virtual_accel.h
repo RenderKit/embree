@@ -16,45 +16,30 @@
 
 #pragma once
 
-#include "virtual_accel.h"
-#include "common/ray.h"
+#include "primitive.h"
 
 namespace embree
 {
-  struct VirtualAccelIntersector1
+  struct AccelSetItem // FIXME: rename to Object
   {
-    typedef AccelSetItem Primitive;
+  public:
 
-    struct Precalculations {
-      __forceinline Precalculations (const Ray& ray) {}
-    };
+    /*! returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return N; }
 
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom) 
+    /*! fill triangle from triangle list */
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene) // FIXME: use nontemporal stores
     {
-      AVX_ZERO_UPPER();
-      prim.accel->intersect((RTCRay&)ray,prim.item);
+      const PrimRef& prim = prims[i];
+
+      accel = (AccelSet*) (UserGeometryBase*) scene->get(prim.geomID());
+      item  = prim.primID();
+
+      i++;
     }
 
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, const void* geom) 
-    {
-      for (size_t i=0; i<num; i++) 
-        intersect(pre,ray,prim[i],geom);
-    }
-
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom) 
-    {
-      AVX_ZERO_UPPER();
-      prim.accel->occluded((RTCRay&)ray,prim.item);
-      return ray.geomID == 0;
-    }
-
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, const void* geom) 
-    {
-      for (size_t i=0; i<num; i++) 
-        if (occluded(pre,ray,prim[i],geom))
-          return true;
-
-      return false;
-    }
+  public:
+    AccelSet* accel;
+    size_t item;
   };
 }

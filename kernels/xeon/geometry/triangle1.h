@@ -36,6 +36,9 @@ namespace embree
       return merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2));
     }
 
+    /*! returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return N; }
+
     /*! access hidden members */
     __forceinline unsigned int primID() const { return v0.a; }
     __forceinline unsigned int geomID() const { return v1.a; }
@@ -45,15 +48,52 @@ namespace embree
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
     {
       const PrimRef& prim = *prims;
-      const unsigned geomID = prim.geomID();
-      const unsigned primID = prim.primID();
-      const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+
+      const size_t geomID = prim.geomID();
+      const size_t primID = prim.primID();
+      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
       const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-      const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-      const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-       const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-      new (this) Triangle1(p0,p1,p2,mesh->id,primID,mesh->mask);
+      
+      const ssef p0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
+      const ssef p1 = select(0x7,(ssef)mesh->vertex(tri.v[1]),zero);
+      const ssef p2 = select(0x7,(ssef)mesh->vertex(tri.v[2]),zero);
+      
+      const ssef e1 = p0 - p1;
+      const ssef e2 = p2 - p0;	     
+      const ssef normal = cross(e1,e2);
+      
+      store4f_nt(&v0,cast(insert<3>(cast(p0),primID)));
+      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID)));
+      store4f_nt(&v2,cast(insert<3>(cast(p2),mesh->mask)));
+      store4f_nt(&Ng,cast(insert<3>(cast(normal),0)));
+
       prims++;
+    }
+
+    /*! fill triangle from triangle list */
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
+    {
+      const PrimRef& prim = prims[i];
+
+      const size_t geomID = prim.geomID();
+      const size_t primID = prim.primID();
+      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
+      const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+      
+      const ssef p0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
+      const ssef p1 = select(0x7,(ssef)mesh->vertex(tri.v[1]),zero);
+      const ssef p2 = select(0x7,(ssef)mesh->vertex(tri.v[2]),zero);
+      
+      const ssef e1 = p0 - p1;
+      const ssef e2 = p2 - p0;	     
+      const ssef normal = cross(e1,e2);
+      
+      store4f_nt(&v0,cast(insert<3>(cast(p0),primID)));
+      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID)));
+      store4f_nt(&v2,cast(insert<3>(cast(p2),mesh->mask)));
+      store4f_nt(&Ng,cast(insert<3>(cast(normal),0)));
+
+      i++;
     }
     
   public:

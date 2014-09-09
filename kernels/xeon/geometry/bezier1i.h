@@ -49,6 +49,9 @@ namespace embree
       return enlarge(b,Vec3fa(b.upper.w));
     }
 
+    /*! returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return N; }
+
     /*! fill from list */
     __forceinline void fill(atomic_set<PrimRefBlockT<Bezier1> >::block_iterator_unsafe& iter, Scene* scene)
     {
@@ -56,6 +59,19 @@ namespace embree
       const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID);
       const Vec3fa& p0 = in->vertex(in->curve(curve.primID));
       new (this) Bezier1i(&p0,curve.geomID,curve.primID);
+    }
+
+    /*! fill triangle from triangle list */
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
+    {
+      const PrimRef& prim = prims[i];
+      const size_t geomID = prim.geomID();
+      const size_t primID = prim.primID();
+      const BezierCurves* curves = scene->getBezierCurves(geomID);
+      const size_t id = curves->curve(primID);
+      const Vec3fa& p0 = curves->vertex(id+0);
+      new (this) Bezier1i(&p0,geomID,primID);
+      i++;
     }
 
   public:

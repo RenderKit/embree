@@ -244,13 +244,6 @@ namespace embree
       } intersectors;
   };
 
-
-  struct AccelSetItem {
-    AccelSet* accel;
-    size_t item;
-  };
-
-
 #define DEFINE_SET_INTERSECTOR1(symbol,intersector)                     \
   AccelSet::Intersector1 symbol((AccelSet::IntersectFunc)intersector::intersect, \
                                 (AccelSet::OccludedFunc )intersector::occluded, \

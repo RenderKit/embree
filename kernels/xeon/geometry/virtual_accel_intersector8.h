@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "common/accel.h"
+#include "virtual_accel.h"
 #include "common/ray8.h"
 
 namespace embree

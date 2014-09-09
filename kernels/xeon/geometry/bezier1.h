@@ -145,9 +145,28 @@ namespace embree
                            const unsigned int geomID, const unsigned int primID)
       : p0(p0), p1(p1), p2(p2), p3(p3), t0(t0), t1(t1), geomID(geomID), primID(primID) {}
     
+    /*! returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return N; }
+
     /*! fill from list */
     __forceinline void fill(atomic_set<PrimRefBlockT<Bezier1> >::block_iterator_unsafe& iter, Scene* scene) {
       *this = *iter; iter++; 
+    }
+
+    /*! fill triangle from triangle list */
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
+    {
+      const PrimRef& prim = prims[i];
+      const size_t geomID = prim.geomID();
+      const size_t primID = prim.primID();
+      const BezierCurves* curves = scene->getBezierCurves(geomID);
+      const size_t id = curves->curve(primID);
+      const Vec3fa& p0 = curves->vertex(id+0);
+      const Vec3fa& p1 = curves->vertex(id+1);
+      const Vec3fa& p2 = curves->vertex(id+2);
+      const Vec3fa& p3 = curves->vertex(id+3);
+      new (this) Bezier1(p0,p1,p2,p3,0.0f,1.0f,geomID,primID);
+      i++;
     }
 
     /*! returns size of t range */
