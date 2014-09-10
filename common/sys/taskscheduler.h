@@ -200,36 +200,6 @@ namespace embree
     size_t numThreads;
     volatile size_t numEnabledThreads;
     __forceinline bool isEnabled(size_t threadIndex) const { return threadIndex < numEnabledThreads; }
-
-    /* for lockstep taskscheduler*/
-  public:
-    static const unsigned int CONTROL_THREAD_ID = 0;
-
-    __aligned(64)static AlignedAtomicCounter32 taskCounter;
-    __aligned(64) static runFunction taskPtr;
-    __aligned(64) static void* volatile data;
-
-    static void init(const size_t numThreads);
-
-    static Barrier taskBarrier;
-
-    static bool dispatchTask(const size_t threadID, const size_t numThreads);
-
-    static void dispatchTaskMainLoop(const size_t threadID, const size_t numThreads);
-    static void releaseThreads(const size_t numThreads);
-  
-    static __forceinline bool dispatchTask(runFunction task,
-                                           void* data, 
-					   const size_t threadID,
-					   const size_t numThreads)
-    {
-      TaskScheduler::taskPtr = task;
-      TaskScheduler::data = data;
-      return TaskScheduler::dispatchTask(threadID, numThreads);
-    }
-
-    static void syncThreads(const size_t threadID, const size_t numThreads);
-
   };
 
 #define TASK_FUNCTION(Class,Name) \

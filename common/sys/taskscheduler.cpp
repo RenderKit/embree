@@ -42,11 +42,11 @@ namespace embree
   
   TaskScheduler* TaskScheduler::instance = NULL;
 
-  __aligned(64) void* volatile TaskScheduler::data = NULL;
-  __aligned(64) TaskScheduler::runFunction TaskScheduler::taskPtr = NULL;
+  //__aligned(64) void* volatile TaskScheduler::data = NULL;
+  //__aligned(64) TaskScheduler::runFunction TaskScheduler::taskPtr = NULL;
 
-  __aligned(64) Barrier TaskScheduler::taskBarrier;
-  __aligned(64) AlignedAtomicCounter32 TaskScheduler::taskCounter;
+  //__aligned(64) Barrier TaskScheduler::taskBarrier;
+  //__aligned(64) AlignedAtomicCounter32 TaskScheduler::taskCounter;
 
   void TaskScheduler::create(size_t numThreads)
   {
@@ -75,7 +75,7 @@ namespace embree
     if (!instance) throw std::runtime_error("Embree threads not running.");
     // if (!instance->defaultNumThreads) return; // FIXME: enable
     N = min(N,instance->numThreads);
-    TaskScheduler::init(N);
+    //TaskScheduler::init(N);
     return instance->numEnabledThreads = N;
   }
 
@@ -152,7 +152,7 @@ namespace embree
     }
 
     TaskLogger::init(numThreads);
-    taskBarrier.init(numThreads);
+    //taskBarrier.init(numThreads);
   }
 
   void TaskScheduler::threadFunction(void* ptr) try 
@@ -174,67 +174,6 @@ namespace embree
     threads.clear();
     terminateThreads = false;
   }
-
-  void TaskScheduler::init(const size_t numThreads) {
-    taskBarrier.init(numThreads);
-  }
-
-  void TaskScheduler::syncThreads(const size_t threadID, const size_t numThreads) {
-    taskBarrier.wait(threadID,numThreads);
-  }
-
-  bool TaskScheduler::enter(const size_t threadID, const size_t numThreads)
-  {
-    syncThreads(threadID, numThreads);
-
-    if (threadID == 0) return false;
-    while (true) {
-      bool dispatch = dispatchTask(threadID,numThreads);
-      if (dispatch == true) break;
-    }  
-    return true;
-  }
-
-  bool TaskScheduler::dispatchTask(const size_t threadID, const size_t numThreads)
-  {
-    if (threadID == 0)
-      taskCounter.reset(0);
-
-    syncThreads(threadID, numThreads);
-
-    if (taskPtr == NULL) 
-      return true;
-
-    (*taskPtr)((void*)data,threadID,numThreads,threadID,numThreads,NULL);
-    syncThreads(threadID, numThreads);
-    
-    return false;
-  }
-
-  void TaskScheduler::leave(const size_t threadID, const size_t numThreads)
-  {
-    taskPtr = NULL;
-    data = NULL;
-    dispatchTask(0,numThreads);  
-  }
-
-
-  // ================================================================================
-  // ================================================================================
-  // ================================================================================
-
-//   __aligned(64) void* volatile LockStepTaskScheduler::data = NULL;
-//   __aligned(64) void (* LockStepTaskScheduler::taskPtr)(void* data, const size_t threadID, const size_t numThreads) = NULL;
-
-// #if defined(__MIC__)
-//   __aligned(64) QuadTreeBarrier LockStepTaskScheduler::taskBarrier;
-//   //__aligned(64) Barrier LockStepTaskScheduler::taskBarrier;
-// #else
-//   __aligned(64) Barrier LockStepTaskScheduler::taskBarrier;
-// #endif
-
-//   __aligned(64) AlignedAtomicCounter32 LockStepTaskScheduler::taskCounter;
-
 
   void LockStepTaskScheduler::syncThreads(const size_t threadID, const size_t numThreads) {
     taskBarrier.wait(threadID,numThreads);
