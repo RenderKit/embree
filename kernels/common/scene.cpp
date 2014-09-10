@@ -277,21 +277,16 @@ namespace embree
 
   void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
-    /* all worker threads enter tasking system */
-    if (lockstep_scheduler.enter(threadIndex,threadCount))
-      return;
-
-    accels.build(threadIndex,threadCount);
-
-    lockstep_scheduler.leave(threadIndex,threadCount); // FIXME: should get called in destructor
+    LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
+    if (threadIndex == 0) accels.build(threadIndex,threadCount);
   }
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-    /* all worker threads enter tasking system */
-    if (threadCount && lockstep_scheduler.enter(threadIndex,threadCount))
-      return;
+    /* all user worker threads properly enter and leave the tasking system */
+    LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
 
+    /* allow only one build at a time */
     Lock<MutexSys> lock(mutex);
 
     if (isStatic() && isBuild()) {
@@ -324,6 +319,7 @@ namespace embree
       accels.build(threadIndex,threadCount);
 
     /* otherwise use our own threads */
+    else
     {
 #if defined(__MIC__)		
       TaskScheduler::enableThreads(1);
@@ -377,10 +373,6 @@ namespace embree
       intersectors.intersector16.intersect = NULL;
       intersectors.intersector16.occluded = NULL;
     }
-
-    /* all workers exit the tasking system again */
-    if (threadCount)
-      lockstep_scheduler.leave(threadIndex,threadCount); // FIXME: should get called in destructor
 
     if (g_verbose >= 2) {
       std::cout << "created scene intersector" << std::endl;
