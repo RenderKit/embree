@@ -125,10 +125,11 @@ namespace embree
       volatile unsigned int flag0;
       volatile unsigned int flag1;
       volatile unsigned int fill[16-3];
+      volatile unsigned int numThreads;
       
-      LinearBarrierActive ();
+      LinearBarrierActive (size_t numThreads = 0);
 
-      void init(size_t cntr);
+      void init(size_t numThreads);
 
       __forceinline void pause(unsigned int &cycles) {
 	__pause_expfalloff(cycles,MAX_MIC_BARRIER_WAIT_CYCLES);

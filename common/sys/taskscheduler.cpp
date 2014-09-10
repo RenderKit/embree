@@ -266,12 +266,18 @@ namespace embree
     }  
   }
 
-  bool LockStepTaskScheduler::dispatchTask(const size_t threadID, const size_t numThreads)
+  bool LockStepTaskScheduler::dispatchTask(const size_t threadID, size_t numThreads)
   {
-    if (threadID == 0)
+    if (threadID == 0) {
       taskCounter.reset(0);
-
+      this->numThreads = numThreads;
+    }
+    
     syncThreads(threadID, numThreads);
+    numThreads = this->numThreads;
+
+    if (threadID >= numThreads) 
+      return false;
 
     if (taskPtr) {
       (*taskPtr)((void*)data,threadID,numThreads);

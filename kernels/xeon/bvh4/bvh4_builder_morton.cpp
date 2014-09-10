@@ -137,10 +137,11 @@ namespace embree
       if (needAllThreads) 
       {
         if (!g_state.get()) g_state.reset(new MortonBuilderState);
-	//size_t numActiveThreads = min(threadCount,getNumberOfCores());
+	size_t numActiveThreads = min(threadCount,getNumberOfCores());
 	//TaskScheduler::enableThreads(numActiveThreads); // FIXME: enable
         //scheduler->dispatchTask(threadIndex,threadCount,_build_parallel_morton,this,numActiveThreads,"build_parallel_morton");
 	build_parallel_morton(threadIndex,threadCount,0,1);
+	//build_parallel_morton(threadIndex,numActiveThreads,0,1);
 	//TaskScheduler::enableThreads(threadCount); // FIXME: enable
       } else {
         build_sequential_morton(threadIndex,threadCount);
@@ -1027,7 +1028,7 @@ namespace embree
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();
-      
+
       /* compute scene bounds */
       global_bounds.reset();
       scheduler->dispatchTask( task_computeBounds, this, threadIndex, threadCount );

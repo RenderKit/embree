@@ -142,7 +142,10 @@ namespace embree
 	//size_t numActiveThreads = threadCount;
 	//TaskScheduler::enableThreads(numActiveThreads); // FIXME: enable
         //scheduler->dispatchTask(threadIndex,threadCount,_build_parallel,this,numActiveThreads,"build_parallel");
-	build_parallel(threadIndex,threadCount,0,1);
+	//scheduler->enableThreads(numActiveThreads);
+	build_parallel(threadIndex,numActiveThreads,0,1);
+	//build_parallel(threadIndex,threadCount,0,1);
+	//scheduler->enableThreads(threadCount);
 	//TaskScheduler::enableThreads(threadCount); // FIXME: enable
       }
       

@@ -149,8 +149,9 @@ namespace embree
     ((BarrierSysImplementation*) opaque)->wait();
   }
 
-  LinearBarrierActive::LinearBarrierActive () 
+  LinearBarrierActive::LinearBarrierActive (size_t numThreads_i) 
   {    
+    numThreads = numThreads_i;
     mode      = 0;
     flag0     = 0;
     flag1     = 0;
@@ -158,7 +159,9 @@ namespace embree
     for (size_t i=0; i<MAX_MIC_THREADS; i++) count1[i] = 0;
   }
 
-  void LinearBarrierActive::init(size_t cntr) {
+  void LinearBarrierActive::init(size_t cntr) 
+  {
+    numThreads = cntr;
     mode      = 0;
     flag0     = 0;
     flag1     = 0;
@@ -166,8 +169,10 @@ namespace embree
     for (size_t i=0; i<cntr; i++) count1[i] = 0;
   }
 
-  void LinearBarrierActive::wait (const size_t threadIndex, const size_t threadCount)
+  void LinearBarrierActive::wait (const size_t threadIndex, const size_t __threadCount)
   {
+    size_t threadCount = numThreads;
+
     if (mode == 0)
     {			
       if (threadIndex == 0)

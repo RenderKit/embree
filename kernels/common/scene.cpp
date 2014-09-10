@@ -32,6 +32,8 @@ namespace embree
       numTriangles(0), numTriangles2(0), numBezierCurves(0), numBezierCurves2(0), numUserGeometries1(0), 
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0)
   {
+    lockstep_scheduler.taskBarrier.init(TaskScheduler::getNumThreads());
+
     if (g_scene_flags != -1)
       flags = (RTCSceneFlags) g_scene_flags;
 

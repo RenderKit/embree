@@ -264,6 +264,7 @@ namespace embree
     __aligned(64) runFunction taskPtr;
     __aligned(64) runFunction2 taskPtr2;
     size_t numTasks;
+    size_t numThreads;
     __aligned(64) void* volatile data;
 
 #if defined(__MIC__)
@@ -275,7 +276,7 @@ namespace embree
     bool enter(size_t threadIndex, size_t threadCount);
     void leave(size_t threadIndex, size_t threadCount);
 
-    bool dispatchTask(const size_t threadID, const size_t numThreads);
+    bool dispatchTask(const size_t threadID, size_t numThreads);
 
     void dispatchTaskMainLoop(const size_t threadID, const size_t numThreads);
     void releaseThreads(const size_t numThreads);
@@ -288,7 +289,7 @@ namespace embree
       return LockStepTaskScheduler::dispatchTask(threadID, numThreads);
     }
 
-    __forceinline bool dispatchTask(const size_t threadID, const size_t numThreads, runFunction2 task, void* data, const size_t numTasks, const char* name = "noname")
+    __forceinline bool dispatchTask(const size_t threadID, const size_t numThreads, runFunction2 task, void* data, const size_t numTasks, const char* name = "")
     {
       LockStepTaskScheduler::taskPtr = NULL;
       LockStepTaskScheduler::taskPtr2 = task;

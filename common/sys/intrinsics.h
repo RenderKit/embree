@@ -684,10 +684,8 @@ __forceinline void __pause (const unsigned int cycles = 256) {
 }
 #else
 __forceinline void __pause (const int cycles = 0) {
-  _mm_pause();    
-  _mm_pause();
-  _mm_pause();
-  _mm_pause();
+  for (size_t i=0; i<8; i++)
+    _mm_pause();    
 }
 #endif
 
