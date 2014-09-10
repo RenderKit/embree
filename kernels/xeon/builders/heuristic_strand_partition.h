@@ -35,7 +35,7 @@ namespace embree
       
       /*! finds the two hair strands */
       template<bool Parallel>
-	static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves);
+	static const Split find(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& curves);
       
     private:
       
@@ -60,7 +60,7 @@ namespace embree
 	
 	/*! splitting into two sets */
 	template<bool Parallel>
-	  void split(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
+	  void split(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<Bezier1>& alloc, 
 		     BezierRefList& prims, 
 		     BezierRefList& lprims_o, PrimInfo& linfo_o, 
 		     BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
@@ -76,7 +76,7 @@ namespace embree
       struct TaskFindParallel
       {
 	/*! construction executes the task */
-	TaskFindParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims);
+	TaskFindParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims);
 	
       private:
 	
@@ -110,7 +110,7 @@ namespace embree
       struct TaskSplitParallel
       {
 	/*! construction executes the task */
-	TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, 
+	TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, 
 			  BezierRefList& prims, 
 			  BezierRefList& lprims_o, PrimInfo& linfo_o, 
 			  BezierRefList& rprims_o, PrimInfo& rinfo_o);

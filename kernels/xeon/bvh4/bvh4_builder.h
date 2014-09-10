@@ -107,6 +107,7 @@ namespace embree
       TriangleMesh* mesh;                 //!< input triangle mesh
       PrimRefBlockAlloc<PrimRef> alloc;   //!< Allocator for primitive blocks
       BVH4* bvh;                          //!< Output BVH4
+      LockStepTaskScheduler* scheduler;
 
       /*! build record task list */
     private:

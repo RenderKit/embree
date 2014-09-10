@@ -33,7 +33,7 @@ namespace embree
     template<> BVH4BuilderHairMBT<Bezier1iMB>::BVH4BuilderHairMBT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderHairMB(bvh,scene,mode) {}
 
     BVH4BuilderHairMB::BVH4BuilderHairMB (BVH4* bvh, Scene* scene, size_t mode)
-      : scene(scene), minLeafSize(1), maxLeafSize(inf), enableSpatialSplits(mode > 0), bvh(bvh), remainingReplications(0)
+      : scene(scene), minLeafSize(1), maxLeafSize(inf), enableSpatialSplits(mode > 0), bvh(bvh), scheduler(&scene->lockstep_scheduler), remainingReplications(0)
     {
       if (BVH4::maxLeafBlocks < this->maxLeafSize) 
 	this->maxLeafSize = BVH4::maxLeafBlocks;
@@ -65,7 +65,7 @@ namespace embree
 	
 	/* create initial curve list */
 	size_t numVertices = 0;
-	BezierRefGen gen(threadIndex,threadCount,&alloc,scene,2);
+	BezierRefGen gen(threadIndex,threadCount,scheduler,&alloc,scene,2);
 	PrimInfo pinfo = gen.pinfo;
 	BezierRefList prims = gen.prims;
 	
@@ -192,7 +192,7 @@ namespace embree
       float alignedObjectSAH = inf;
 #if 1
       if (pinfo.size() > threshold) {
-        alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,prims,pinfo,0); // FIXME: hardcoded 0
+        alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,scheduler,prims,pinfo,0); // FIXME: hardcoded 0
         alignedObjectSAH = BVH4::travCostAligned*halfArea(bounds.bounds) + BVH4::intCost*alignedObjectSplit.splitSAH();
         bestSAH = min(bestSAH,alignedObjectSAH);
       }
@@ -205,11 +205,11 @@ namespace embree
       if (pinfo.size() <= threshold) {
       //if (alignedObjectSAH > 0.7f*leafSAH) {
 	if (sinfo.size()) 
-	  unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,bounds.space,sinfo);
+	  unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,scheduler,prims,bounds.space,sinfo);
 	else {
-	  const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace(threadIndex,threadCount,prims); 
-	  const PrimInfo       sinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,prims,space);
-	  unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,space,sinfo);
+	  const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace(threadIndex,threadCount,scheduler,prims); 
+	  const PrimInfo       sinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,scheduler,prims,space);
+	  unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,scheduler,prims,space,sinfo);
 	}    	
 	unalignedObjectSAH = BVH4::travCostUnaligned*halfArea(bounds.bounds) + BVH4::intCost*unalignedObjectSplit.splitSAH();
 	bestSAH = min(bestSAH,unalignedObjectSAH);
@@ -222,7 +222,7 @@ namespace embree
 #if 1
       //if (alignedObjectSAH > 0.6f*leafSAH) {
       if (pinfo.size() <= threshold) {
-	strandSplit = StrandSplit::find<Parallel>(threadIndex,threadCount,prims);
+	strandSplit = StrandSplit::find<Parallel>(threadIndex,threadCount,scheduler,prims);
 	strandSAH = BVH4::travCostUnaligned*halfArea(bounds.bounds) + BVH4::intCost*strandSplit.splitSAH();
 	bestSAH = min(bestSAH,strandSAH);
       }
@@ -276,17 +276,17 @@ namespace embree
 	/*! split selected child */
 	PrimInfo linfo(empty), rinfo(empty);
 	BezierRefList lprims, rprims;
-	csplit[bestChild].split<Parallel>(threadIndex,threadCount,alloc,scene,cprims[bestChild],lprims,linfo,rprims,rinfo);
+	csplit[bestChild].split<Parallel>(threadIndex,threadCount,scheduler,alloc,scene,cprims[bestChild],lprims,linfo,rprims,rinfo);
 
 	const ssize_t replications = linfo.size()+rinfo.size()-cpinfo[bestChild].size(); assert(replications >= 0);
 	isAligned &= csplit[bestChild].isAligned;
 	LinearSpace3fa lspace,rspace;
 	PrimInfo lsinfo(empty),rsinfo(empty);
 	if (!isAligned) {
-	  lspace = ObjectPartitionUnaligned::computeAlignedSpace(threadIndex,threadCount,lprims); 
-	  rspace = ObjectPartitionUnaligned::computeAlignedSpace(threadIndex,threadCount,rprims); 
-	  lsinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,lprims,lspace);
-	  rsinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,rprims,rspace);
+	  lspace = ObjectPartitionUnaligned::computeAlignedSpace(threadIndex,threadCount,scheduler,lprims); 
+	  rspace = ObjectPartitionUnaligned::computeAlignedSpace(threadIndex,threadCount,scheduler,rprims); 
+	  lsinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,scheduler,lprims,lspace);
+	  rsinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,scheduler,rprims,rspace);
 	}
 	const NAABBox3fa lbounds = isAligned ? linfo.geomBounds : NAABBox3fa(lspace,lsinfo.geomBounds); 
 	const NAABBox3fa rbounds = isAligned ? rinfo.geomBounds : NAABBox3fa(rspace,rsinfo.geomBounds); 
@@ -306,7 +306,7 @@ namespace embree
 	BVH4::NodeMB* node = bvh->allocNodeMB(threadIndex);
 	for (size_t i=0; i<numChildren; i++) 
         {
-          std::pair<BBox3fa,BBox3fa> bounds = ObjectPartition::computePrimInfoMB<Parallel>(threadIndex,threadCount,scene,cprims[i]);
+          std::pair<BBox3fa,BBox3fa> bounds = ObjectPartition::computePrimInfoMB<Parallel>(threadIndex,threadCount,scheduler,scene,cprims[i]);
           node->set(i,bounds.first,bounds.second);
 	  new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csinfo[i],csplit[i]);
 	}
@@ -320,14 +320,14 @@ namespace embree
 	BVH4::UnalignedNodeMB* node = bvh->allocUnalignedNodeMB(threadIndex);
 	for (size_t i=0; i<numChildren; i++) 
         {
-          std::pair<AffineSpace3fa,AffineSpace3fa> spaces = ObjectPartitionUnaligned::computeAlignedSpaceMB(threadIndex,threadCount,scene,cprims[i]); 
+          std::pair<AffineSpace3fa,AffineSpace3fa> spaces = ObjectPartitionUnaligned::computeAlignedSpaceMB(threadIndex,threadCount,scheduler,scene,cprims[i]); 
 /*#if BVH4HAIR_MB_VERSION == 0
 	  //AffineSpace3fa space01 = 0.5f*(spaces.first+spaces.second); spaces.first = spaces.second = space01;
 	  Vec3fa dir = 0.5f*(spaces.first.l.row2() + spaces.second.l.row2());
 	  spaces.first = spaces.second = frame(dir).transposed();
 	  #endif*/
 
-	  ObjectPartitionUnaligned::PrimInfoMB pinfo1 = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scene,cprims[i],spaces);
+	  ObjectPartitionUnaligned::PrimInfoMB pinfo1 = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scheduler,scene,cprims[i],spaces);
 
           Vec3fa k0 = 0.5f*(pinfo1.s0t0.lower+pinfo1.s0t0.upper);
           Vec3fa k1 = 0.5f*(pinfo1.s1t1.lower+pinfo1.s1t1.upper);
@@ -336,7 +336,7 @@ namespace embree
           spaces.first.p  -= d0; pinfo1.s0t0.lower -= d0; pinfo1.s0t0.upper -= d0;
           spaces.second.p -= d1; pinfo1.s1t1.lower -= d1; pinfo1.s1t1.upper -= d1;
 
-	  ObjectPartitionUnaligned::PrimInfoMB pinfo = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scene,cprims[i],spaces);
+	  ObjectPartitionUnaligned::PrimInfoMB pinfo = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scheduler,scene,cprims[i],spaces);
 	  
 #if BVH4HAIR_MB_VERSION == 2
           Vec3fa a0 = xfmVector(spaces.first.l.transposed(),-spaces.first.p);

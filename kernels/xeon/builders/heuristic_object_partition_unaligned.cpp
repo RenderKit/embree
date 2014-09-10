@@ -20,7 +20,7 @@ namespace embree
 {
   namespace isa
   {
-    const LinearSpace3fa ObjectPartitionUnaligned::computeAlignedSpace(size_t threadIndex, size_t threadCount, BezierRefList& prims)
+    const LinearSpace3fa ObjectPartitionUnaligned::computeAlignedSpace(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims)
     {
       /*! find first curve that defines valid direction */
       Vec3fa axis(0,0,1);
@@ -36,7 +36,7 @@ namespace embree
       return frame(axis).transposed();
     }
     
-    const std::pair<AffineSpace3fa,AffineSpace3fa> ObjectPartitionUnaligned::computeAlignedSpaceMB(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims)
+    const std::pair<AffineSpace3fa,AffineSpace3fa> ObjectPartitionUnaligned::computeAlignedSpaceMB(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims)
     {
       /*! find first curve that defines valid direction */
       Vec3fa p0(0,0,0);
@@ -114,7 +114,7 @@ namespace embree
     }
 
     template<>
-    const PrimInfo ObjectPartitionUnaligned::computePrimInfo<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space)
+    const PrimInfo ObjectPartitionUnaligned::computePrimInfo<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, const LinearSpace3fa& space)
     {
       size_t num = 0;
       BBox3fa geomBounds = empty;
@@ -128,14 +128,14 @@ namespace embree
     }
     
     template<>
-    const PrimInfo ObjectPartitionUnaligned::computePrimInfo<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space)
+    const PrimInfo ObjectPartitionUnaligned::computePrimInfo<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, const LinearSpace3fa& space)
     {
-      const TaskPrimInfoParallel bounds(threadIndex,threadCount,prims,space);
+      const TaskPrimInfoParallel bounds(threadIndex,threadCount,scheduler,prims,space);
       return PrimInfo(bounds.num,bounds.geomBounds,bounds.centBounds);
     }
 
     template<>
-    const ObjectPartitionUnaligned::PrimInfoMB ObjectPartitionUnaligned::computePrimInfoMB<false>(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, 
+    const ObjectPartitionUnaligned::PrimInfoMB ObjectPartitionUnaligned::computePrimInfoMB<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims, 
                                                                         const std::pair<AffineSpace3fa,AffineSpace3fa>& spaces)
     {
       size_t N = 0;
@@ -177,10 +177,10 @@ namespace embree
     }
     
     template<>
-    const ObjectPartitionUnaligned::PrimInfoMB ObjectPartitionUnaligned::computePrimInfoMB<true>(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, 
+    const ObjectPartitionUnaligned::PrimInfoMB ObjectPartitionUnaligned::computePrimInfoMB<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims, 
                                                                        const std::pair<AffineSpace3fa,AffineSpace3fa>& spaces)
     {
-      const TaskPrimInfoMBParallel bounds(threadIndex,threadCount,scene,prims,spaces.first,spaces.second);
+      const TaskPrimInfoMBParallel bounds(threadIndex,threadCount,scheduler,scene,prims,spaces.first,spaces.second);
 
       PrimInfoMB ret;
       ret.pinfo = PrimInfo(bounds.num,bounds.geomBounds,bounds.centBounds);
@@ -313,7 +313,7 @@ namespace embree
     }
     
     template<>
-    const ObjectPartitionUnaligned::Split ObjectPartitionUnaligned::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space, const PrimInfo& pinfo)
+    const ObjectPartitionUnaligned::Split ObjectPartitionUnaligned::find<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, const LinearSpace3fa& space, const PrimInfo& pinfo)
     {
       BinInfo binner;
       const Mapping mapping(pinfo.centBounds,space);
@@ -321,7 +321,7 @@ namespace embree
       return binner.best(prims,mapping);
     }
 
-    ObjectPartitionUnaligned::TaskPrimInfoMBParallel::TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const AffineSpace3fa& space0, const AffineSpace3fa& space1) 
+    ObjectPartitionUnaligned::TaskPrimInfoMBParallel::TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims, const AffineSpace3fa& space0, const AffineSpace3fa& space1) 
       : scene(scene), space0(space0), space1(space1), iter(prims), geomBounds(empty), centBounds(empty), s0t0(empty), s0t1_s1t0(empty), s1t1(empty)
     {
       size_t numTasks = min(maxTasks,threadCount);
@@ -371,7 +371,7 @@ namespace embree
       this->s1t1.extend_atomic(s1t1);
     }
     
-    ObjectPartitionUnaligned::TaskPrimInfoParallel::TaskPrimInfoParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space) 
+    ObjectPartitionUnaligned::TaskPrimInfoParallel::TaskPrimInfoParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, const LinearSpace3fa& space) 
       : space(space), iter(prims), geomBounds(empty), centBounds(empty)
     {
       size_t numTasks = min(maxTasks,threadCount);
@@ -396,7 +396,7 @@ namespace embree
       this->geomBounds.extend_atomic(geomBounds);
     }
     
-    ObjectPartitionUnaligned::TaskBinParallel::TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, 
+    ObjectPartitionUnaligned::TaskBinParallel::TaskBinParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, 
 							       const LinearSpace3fa& space, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
       : space(space), iter(prims), geomBounds(geomBounds), centBounds(centBounds), mapping(centBounds,space)
     {
@@ -420,14 +420,14 @@ namespace embree
     }
     
     template<>
-    const ObjectPartitionUnaligned::Split ObjectPartitionUnaligned::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space, const PrimInfo& pinfo) 
+    const ObjectPartitionUnaligned::Split ObjectPartitionUnaligned::find<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, const LinearSpace3fa& space, const PrimInfo& pinfo) 
     {
       /*! then perform parallel binning */
-      return TaskBinParallel(threadIndex,threadCount,prims,space,pinfo.geomBounds,pinfo.centBounds).split;
+      return TaskBinParallel(threadIndex,threadCount,scheduler,prims,space,pinfo.geomBounds,pinfo.centBounds).split;
     }
     
     template<>
-    void ObjectPartitionUnaligned::Split::split<false>(size_t threadIndex, size_t threadCount, 
+    void ObjectPartitionUnaligned::Split::split<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
 						       PrimRefBlockAlloc<Bezier1>& alloc, 
 						       BezierRefList& prims, 
 						       BezierRefList& lprims_o, PrimInfo& linfo_o, 
@@ -465,7 +465,7 @@ namespace embree
       }
     }
     
-    ObjectPartitionUnaligned::TaskSplitParallel::TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+    ObjectPartitionUnaligned::TaskSplitParallel::TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
 								   BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o)
       : split(split), alloc(alloc), prims(prims), lprims_o(lprims_o), linfo_o(linfo_o), rprims_o(rprims_o), rinfo_o(rinfo_o)
     {
@@ -484,16 +484,16 @@ namespace embree
     
     void ObjectPartitionUnaligned::TaskSplitParallel::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
-      split->split<false>(threadIndex,threadCount,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
+      split->split<false>(threadIndex,threadCount,NULL,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
     }
     
     template<>
-    void ObjectPartitionUnaligned::Split::split<true>(size_t threadIndex, size_t threadCount, 
+    void ObjectPartitionUnaligned::Split::split<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
 						      PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
 						      BezierRefList& lprims_o, PrimInfo& linfo_o, 
 						      BezierRefList& rprims_o, PrimInfo& rinfo_o) const
     {
-      TaskSplitParallel(threadIndex,threadCount,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      TaskSplitParallel(threadIndex,threadCount,scheduler,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
     }
   }
 }

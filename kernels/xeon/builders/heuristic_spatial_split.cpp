@@ -242,7 +242,7 @@ namespace embree
     }
     
     template<>
-    const SpatialSplit::Split SpatialSplit::find<false>(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
+    const SpatialSplit::Split SpatialSplit::find<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
     {
       BinInfo binner;
       Mapping mapping(pinfo);
@@ -251,7 +251,7 @@ namespace embree
     }
 
     template<>
-    const SpatialSplit::Split SpatialSplit::find<false>(size_t threadIndex, size_t threadCount, Scene* scene, TriRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
+    const SpatialSplit::Split SpatialSplit::find<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, TriRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
     {
       BinInfo binner;
       Mapping mapping(pinfo);
@@ -264,7 +264,7 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////
    
     template<typename List>
-    SpatialSplit::TaskBinParallel<List>::TaskBinParallel(size_t threadIndex, size_t threadCount, Scene* scene, List& prims, const PrimInfo& pinfo, const Mapping& mapping, const size_t logBlockSize) 
+    SpatialSplit::TaskBinParallel<List>::TaskBinParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, List& prims, const PrimInfo& pinfo, const Mapping& mapping, const size_t logBlockSize) 
       : scene(scene), iter(prims), pinfo(pinfo), mapping(mapping)
     {
       /* parallel binning */
@@ -288,17 +288,17 @@ namespace embree
     }
     
     template<>
-    const SpatialSplit::Split SpatialSplit::find<true>(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize) 
+    const SpatialSplit::Split SpatialSplit::find<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize) 
     {
       const Mapping mapping(pinfo);
-      return TaskBinParallel<BezierRefList>(threadIndex,threadCount,scene,prims,pinfo,mapping,logBlockSize).split;
+      return TaskBinParallel<BezierRefList>(threadIndex,threadCount,scheduler,scene,prims,pinfo,mapping,logBlockSize).split;
     }
 
     template<>
-    const SpatialSplit::Split SpatialSplit::find<true>(size_t threadIndex, size_t threadCount, Scene* scene, TriRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize) 
+    const SpatialSplit::Split SpatialSplit::find<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, TriRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize) 
     {
       const Mapping mapping(pinfo);
-      return TaskBinParallel<TriRefList>(threadIndex,threadCount,scene,prims,pinfo,mapping,logBlockSize).split;
+      return TaskBinParallel<TriRefList>(threadIndex,threadCount,scheduler,scene,prims,pinfo,mapping,logBlockSize).split;
     }
     
     //////////////////////////////////////////////////////////////////////////////
@@ -306,7 +306,7 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////
     
     template<>
-    void SpatialSplit::Split::split<false>(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>& alloc, 
+    void SpatialSplit::Split::split<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<Bezier1>& alloc, 
 					   Scene* scene, BezierRefList& prims, 
 					   BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					   BezierRefList& rprims_o, PrimInfo& rinfo_o) const
@@ -379,7 +379,7 @@ namespace embree
     }
 
     template<>
-    void SpatialSplit::Split::split<false>(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>& alloc, 
+    void SpatialSplit::Split::split<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<PrimRef>& alloc, 
 					   Scene* scene, TriRefList& prims, 
 					   TriRefList& lprims_o, PrimInfo& linfo_o, 
 					   TriRefList& rprims_o, PrimInfo& rinfo_o) const
@@ -452,7 +452,7 @@ namespace embree
     }
     
     template<typename Prim>
-    SpatialSplit::TaskSplitParallel<Prim>::TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, 
+    SpatialSplit::TaskSplitParallel<Prim>::TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, 
 							     PrimRefBlockAlloc<Prim>& alloc, Scene* scene, List& prims, 
 							     List& lprims_o, PrimInfo& linfo_o, 
 							     List& rprims_o, PrimInfo& rinfo_o)
@@ -474,25 +474,25 @@ namespace embree
     template<typename Prim>
     void SpatialSplit::TaskSplitParallel<Prim>::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
-      split->split<false>(threadIndex,threadCount,alloc,scene,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
+      split->split<false>(threadIndex,threadCount,NULL,alloc,scene,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
     }
     
     template<>
-    void SpatialSplit::Split::split<true>(size_t threadIndex, size_t threadCount, 
+    void SpatialSplit::Split::split<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
 					  PrimRefBlockAlloc<Bezier1>& alloc, Scene* scene, BezierRefList& prims, 
 					  BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					  BezierRefList& rprims_o, PrimInfo& rinfo_o) const
     {
-      TaskSplitParallel<Bezier1>(threadIndex,threadCount,this,alloc,scene,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      TaskSplitParallel<Bezier1>(threadIndex,threadCount,scheduler,this,alloc,scene,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
     }
 
     template<>
-    void SpatialSplit::Split::split<true>(size_t threadIndex, size_t threadCount, 
+    void SpatialSplit::Split::split<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
 					  PrimRefBlockAlloc<PrimRef>& alloc, Scene* scene, TriRefList& prims, 
 					  TriRefList& lprims_o, PrimInfo& linfo_o, 
 					  TriRefList& rprims_o, PrimInfo& rinfo_o) const
     {
-      TaskSplitParallel<PrimRef>(threadIndex,threadCount,this,alloc,scene,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      TaskSplitParallel<PrimRef>(threadIndex,threadCount,scheduler,this,alloc,scene,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
     }
   }
 }

@@ -35,11 +35,11 @@ namespace embree
       
       /*! finds the best split */
       template<bool Parallel>
-      static const Split find(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& curves, const PrimInfo& pinfo, const size_t logBlockSize);
+      static const Split find(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& curves, const PrimInfo& pinfo, const size_t logBlockSize);
       
       /*! finds the best split */
       template<bool Parallel>
-      static const Split find(size_t threadIndex, size_t threadCount, Scene* scene, TriRefList& curves, const PrimInfo& pinfo, const size_t logBlockSize);
+      static const Split find(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, TriRefList& curves, const PrimInfo& pinfo, const size_t logBlockSize);
       
     private:
       
@@ -92,7 +92,7 @@ namespace embree
 	
 	/*! splitting into two sets */
 	template<bool Parallel>
-	  void split(size_t threadIndex, size_t threadCount,
+	  void split(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
 		     PrimRefBlockAlloc<Bezier1>& alloc, 
 		     Scene* scene, BezierRefList& curves, 
 		     BezierRefList& lprims_o, PrimInfo& linfo_o, 
@@ -100,7 +100,7 @@ namespace embree
 
 	/*! splitting into two sets */
 	template<bool Parallel>
-	  void split(size_t threadIndex, size_t threadCount,
+	  void split(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
 		     PrimRefBlockAlloc<PrimRef>& alloc, 
 		     Scene* scene, TriRefList& curves, 
 		     TriRefList& lprims_o, PrimInfo& linfo_o, 
@@ -149,7 +149,7 @@ namespace embree
       struct TaskBinParallel
       {
 	/*! construction executes the task */
-	TaskBinParallel(size_t threadIndex, size_t threadCount, Scene* scene, List& prims, const PrimInfo& pinfo, const Mapping& mapping, const size_t logBlockSize);
+	TaskBinParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, List& prims, const PrimInfo& pinfo, const Mapping& mapping, const size_t logBlockSize);
 	
       private:
 	
@@ -174,7 +174,7 @@ namespace embree
 	typedef atomic_set<PrimRefBlockT<Prim> > List;
 
 	/*! construction executes the task */
-	TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Prim>& alloc, 
+	TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<Prim>& alloc, 
 			  Scene* scene, List& prims, 
 			  List& lprims_o, PrimInfo& linfo_o, 
 			  List& rprims_o, PrimInfo& rinfo_o);

@@ -101,6 +101,7 @@ namespace embree
 
     protected:
       Scene* scene;                       //!< input geometry
+      LockStepTaskScheduler* scheduler;
       TriangleMesh* mesh;                 //!< input triangle mesh
       PrimRefBlockAlloc<PrimRef> alloc;   //!< Allocator for primitive blocks
       BVH8* bvh;                          //!< Output BVH8

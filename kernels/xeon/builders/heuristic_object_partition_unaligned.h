@@ -33,14 +33,14 @@ namespace embree
     public:
       
       /*! calculates some space aligned with the bezier curves */
-      static const LinearSpace3fa computeAlignedSpace(size_t threadIndex, size_t threadCount, BezierRefList& prims);
+      static const LinearSpace3fa computeAlignedSpace(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims);
 
       /*! calculates some space aligned with the bezier curves for timestep t0 and t1 */
-      static const std::pair<AffineSpace3fa,AffineSpace3fa> computeAlignedSpaceMB(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims);
+      static const std::pair<AffineSpace3fa,AffineSpace3fa> computeAlignedSpaceMB(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims);
 
       /*! computes bounding box of bezier curves */
       template<bool Parallel>
-      static const PrimInfo computePrimInfo(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
+      static const PrimInfo computePrimInfo(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, const LinearSpace3fa& space);
 
       /*! computes bounding box of bezier curves for motion blur */
       struct PrimInfoMB 
@@ -52,11 +52,11 @@ namespace embree
       };
       
       template<bool Parallel>
-      static const PrimInfoMB computePrimInfoMB(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const std::pair<AffineSpace3fa,AffineSpace3fa>& spaces);
+      static const PrimInfoMB computePrimInfoMB(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims, const std::pair<AffineSpace3fa,AffineSpace3fa>& spaces);
       
       /*! finds the best split */
       template<bool Parallel>
-	static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& curves, const LinearSpace3fa& space, const PrimInfo& pinfo);
+	static const Split find(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& curves, const LinearSpace3fa& space, const PrimInfo& pinfo);
       
     private:
       
@@ -115,7 +115,7 @@ namespace embree
 	
 	/*! splitting into two sets */
 	template<bool Parallel>
-	  void split(size_t threadIndex, size_t threadCount, 
+	  void split(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
 		     PrimRefBlockAlloc<Bezier1>& alloc, 
 		     BezierRefList& prims, 
 		     BezierRefList& lprims_o, PrimInfo& linfo_o, 
@@ -156,7 +156,7 @@ namespace embree
       struct TaskPrimInfoParallel
       {
 	/*! construction executes the task */
-	TaskPrimInfoParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space);
+	TaskPrimInfoParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, const LinearSpace3fa& space);
 	
       private:
 	
@@ -179,7 +179,7 @@ namespace embree
       struct TaskPrimInfoMBParallel
       {
 	/*! construction executes the task */
-	TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims, const AffineSpace3fa& space0, const AffineSpace3fa& space1);
+	TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims, const AffineSpace3fa& space0, const AffineSpace3fa& space1);
 	
       private:
 	
@@ -207,7 +207,7 @@ namespace embree
       struct TaskBinParallel
       {
 	/*! construction executes the task */
-	TaskBinParallel(size_t threadIndex, size_t threadCount, BezierRefList& prims, const LinearSpace3fa& space, const BBox3fa& geomBounds, const BBox3fa& centBounds);
+	TaskBinParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, const LinearSpace3fa& space, const BBox3fa& geomBounds, const BBox3fa& centBounds);
 	
       private:
 	
@@ -234,7 +234,7 @@ namespace embree
       struct TaskSplitParallel
       {
 	/*! construction executes the task */
-	TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, 
+	TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, 
 			  BezierRefList& prims, 
 			  BezierRefList& lprims_o, PrimInfo& linfo_o, 
 			  BezierRefList& rprims_o, PrimInfo& rinfo_o);

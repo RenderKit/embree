@@ -289,7 +289,7 @@ namespace embree
     }
 
     template<>
-    const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
+    const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
     {
       BinInfo binner;
       const Mapping mapping(pinfo);
@@ -298,7 +298,7 @@ namespace embree
     }
     
     template<>
-    const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
+    const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
     {
       BinInfo binner;
       const Mapping mapping(pinfo);
@@ -315,7 +315,7 @@ namespace embree
     }
 
     template<>
-    const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o)
+    const ObjectPartition::Split ObjectPartition::find<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o)
     {
       BinInfo binner;
       const Mapping mapping(pinfo);
@@ -326,7 +326,7 @@ namespace embree
     }
 
     template<>
-    const std::pair<BBox3fa,BBox3fa> ObjectPartition::computePrimInfoMB<false>(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims)
+    const std::pair<BBox3fa,BBox3fa> ObjectPartition::computePrimInfoMB<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims)
     {
       BBox3fa bounds0 = empty;
       BBox3fa bounds1 = empty;
@@ -340,13 +340,13 @@ namespace embree
     }
     
     template<>
-    const std::pair<BBox3fa,BBox3fa> ObjectPartition::computePrimInfoMB<true>(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims)
+    const std::pair<BBox3fa,BBox3fa> ObjectPartition::computePrimInfoMB<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims)
     {
-      const TaskPrimInfoMBParallel bounds(threadIndex,threadCount,scene,prims);
+      const TaskPrimInfoMBParallel bounds(threadIndex,threadCount,scheduler,scene,prims);
       return std::pair<BBox3fa,BBox3fa>(bounds.bounds0,bounds.bounds1);
     }
 
-    ObjectPartition::TaskPrimInfoMBParallel::TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims) 
+    ObjectPartition::TaskPrimInfoMBParallel::TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims) 
       : scene(scene), iter(prims), bounds0(empty), bounds1(empty)
     {
       size_t numTasks = min(maxTasks,threadCount);
@@ -377,7 +377,7 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////
     
     template<typename List>
-    ObjectPartition::TaskBinParallel<List>::TaskBinParallel(size_t threadIndex, size_t threadCount, List& prims, const PrimInfo& pinfo, const size_t logBlockSize) 
+    ObjectPartition::TaskBinParallel<List>::TaskBinParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, List& prims, const PrimInfo& pinfo, const size_t logBlockSize) 
       : iter(prims)
     {
       /* parallel binning */			
@@ -402,19 +402,19 @@ namespace embree
     }
     
     template<>
-    const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize) {
-      return TaskBinParallel<BezierRefList>(threadIndex,threadCount,prims,pinfo,logBlockSize).split;
+    const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize) {
+      return TaskBinParallel<BezierRefList>(threadIndex,threadCount,scheduler,prims,pinfo,logBlockSize).split;
     }
     
     template<>
-    const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize) {
-      return TaskBinParallel<PrimRefList>(threadIndex,threadCount,prims,pinfo,logBlockSize).split;
+    const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize) {
+      return TaskBinParallel<PrimRefList>(threadIndex,threadCount,scheduler,prims,pinfo,logBlockSize).split;
     }
     
     template<>
-    const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o) 
+    const ObjectPartition::Split ObjectPartition::find<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o) 
     {
-      TaskBinParallel<PrimRefList> task(threadIndex,threadCount,prims,pinfo,logBlockSize);
+      TaskBinParallel<PrimRefList> task(threadIndex,threadCount,scheduler,prims,pinfo,logBlockSize);
       task.binner.getSplitInfo(task.mapping,task.split,sinfo_o);
       return task.split;
     }
@@ -425,7 +425,7 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////
     
     template<>
-    void ObjectPartition::Split::split<false>(size_t threadIndex, size_t threadCount, 
+    void ObjectPartition::Split::split<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
 					      PrimRefBlockAlloc<Bezier1>& alloc, 
 					      BezierRefList& prims, 
 					      BezierRefList& lprims_o, PrimInfo& linfo_o, 
@@ -465,7 +465,7 @@ namespace embree
     }
     
     template<>
-    void ObjectPartition::Split::split<false>(size_t threadIndex, size_t threadCount, 
+    void ObjectPartition::Split::split<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
 					      PrimRefBlockAlloc<PrimRef>& alloc, 
 					      PrimRefList& prims, 
 					      PrimRefList& lprims_o, PrimInfo& linfo_o, 
@@ -557,7 +557,7 @@ namespace embree
     }
     
     template<typename Prim>
-    ObjectPartition::TaskSplitParallel<Prim>::TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Prim>& alloc, List& prims, 
+    ObjectPartition::TaskSplitParallel<Prim>::TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<Prim>& alloc, List& prims, 
 								List& lprims_o, PrimInfo& linfo_o, List& rprims_o, PrimInfo& rinfo_o)
       : split(split), alloc(alloc), prims(prims), lprims_o(lprims_o), linfo_o(linfo_o), rprims_o(rprims_o), rinfo_o(rinfo_o)
     {
@@ -577,25 +577,25 @@ namespace embree
     template<typename Prim>
     void ObjectPartition::TaskSplitParallel<Prim>::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
-      split->split<false>(threadIndex,threadCount,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
+      split->split<false>(threadIndex,threadCount,NULL,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
     }
     
     template<>
-    void ObjectPartition::Split::split<true>(size_t threadIndex, size_t threadCount, 
+    void ObjectPartition::Split::split<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
 					     PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
 					     BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					     BezierRefList& rprims_o, PrimInfo& rinfo_o) const
     {
-      TaskSplitParallel<Bezier1>(threadIndex,threadCount,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      TaskSplitParallel<Bezier1>(threadIndex,threadCount,scheduler,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
     }
     
     template<>
-    void ObjectPartition::Split::split<true>(size_t threadIndex, size_t threadCount, 
+    void ObjectPartition::Split::split<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
 					     PrimRefBlockAlloc<PrimRef>& alloc, PrimRefList& prims, 
 					     PrimRefList& lprims_o, PrimInfo& linfo_o, 
 					     PrimRefList& rprims_o, PrimInfo& rinfo_o) const
     {
-      TaskSplitParallel<PrimRef>(threadIndex,threadCount,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      TaskSplitParallel<PrimRef>(threadIndex,threadCount,scheduler,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
     }
     
     // =======================================================================================================

@@ -26,11 +26,11 @@ namespace embree
 
     const size_t single_threaded_primrefgen_threshold = 10000;
 
-    void PrimRefListGen::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRefList& prims, PrimInfo& pinfo) {
-      PrimRefListGen gen(threadIndex,threadCount,alloc,scene,ty,numTimeSteps,prims,pinfo);
+    void PrimRefListGen::generate(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRefList& prims, PrimInfo& pinfo) {
+      PrimRefListGen gen(threadIndex,threadCount,scheduler,alloc,scene,ty,numTimeSteps,prims,pinfo);
     }
 
-    PrimRefListGen::PrimRefListGen(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRefList& prims, PrimInfo& pinfo)
+    PrimRefListGen::PrimRefListGen(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRefList& prims, PrimInfo& pinfo)
       : scene(scene), ty(ty), numTimeSteps(numTimeSteps), alloc(alloc), numPrimitives(0), prims_o(prims), pinfo_o(pinfo)
     {
       /*! calculate number of primitives */
@@ -127,12 +127,12 @@ namespace embree
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
     template<typename Ty>
-    void PrimRefListGenFromGeometry<Ty>::generate(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Ty* geom, PrimRefList& prims, PrimInfo& pinfo) {
-      PrimRefListGenFromGeometry(threadIndex,threadCount,alloc,geom,prims,pinfo);
+    void PrimRefListGenFromGeometry<Ty>::generate(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<PrimRef>* alloc, const Ty* geom, PrimRefList& prims, PrimInfo& pinfo) {
+      PrimRefListGenFromGeometry(threadIndex,threadCount,scheduler,alloc,geom,prims,pinfo);
     }
 
     template<typename Ty>
-    PrimRefListGenFromGeometry<Ty>::PrimRefListGenFromGeometry(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<PrimRef>* alloc, const Ty* geom, PrimRefList& prims, PrimInfo& pinfo)
+    PrimRefListGenFromGeometry<Ty>::PrimRefListGenFromGeometry(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<PrimRef>* alloc, const Ty* geom, PrimRefList& prims, PrimInfo& pinfo)
       : geom(geom), alloc(alloc), prims_o(prims), pinfo_o(pinfo)
     {
       pinfo_o.reset();

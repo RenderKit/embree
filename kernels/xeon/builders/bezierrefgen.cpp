@@ -20,7 +20,7 @@ namespace embree
 {
   namespace isa
   {
-    BezierRefGen::BezierRefGen(size_t threadIndex, size_t threadCount, PrimRefBlockAlloc<Bezier1>* alloc, const Scene* scene, const size_t numTimeSteps)
+    BezierRefGen::BezierRefGen(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<Bezier1>* alloc, const Scene* scene, const size_t numTimeSteps)
       : scene(scene), numTimeSteps(numTimeSteps), alloc(alloc), pinfo(empty)
     {
       /*! parallel stage */

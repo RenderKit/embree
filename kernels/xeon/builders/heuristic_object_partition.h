@@ -36,22 +36,22 @@ namespace embree
       
       /*! finds the best split */
       template<bool Parallel>
-	static const Split find(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize);
+	static const Split find(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize);
       
       /*! finds the best split */
       template<bool Parallel>
-	static const Split find(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize);
+	static const Split find(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize);
 
       /*! finds the best split and returns extended split information */
       template<bool Parallel>
-      static const Split find(size_t threadIndex, size_t threadCount, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o);
+      static const Split find(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o);
       
       /*! finds the best split */
       static const Split find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize);
       
       /*! computes bounding box of bezier curves for motion blur */
       template<bool Parallel>
-      static const std::pair<BBox3fa,BBox3fa> computePrimInfoMB(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims);
+      static const std::pair<BBox3fa,BBox3fa> computePrimInfoMB(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims);
 
     private:
       
@@ -113,7 +113,7 @@ namespace embree
 	
 	/*! splitting into two sets */
 	template<bool Parallel>
-	  void split(size_t threadIndex, size_t threadCount, 
+	  void split(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
 		     PrimRefBlockAlloc<Bezier1>& alloc, 
 		     BezierRefList& prims, 
 		     BezierRefList& lprims_o, PrimInfo& linfo_o, 
@@ -121,7 +121,7 @@ namespace embree
 	
 	/*! splitting into two sets */
 	template<bool Parallel>
-	  void split(size_t threadIndex, size_t threadCount, 
+	  void split(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
 		     PrimRefBlockAlloc<PrimRef>& alloc, 
 		     PrimRefList& prims, 
 		     PrimRefList& lprims_o, PrimInfo& linfo_o, 
@@ -157,7 +157,7 @@ namespace embree
       struct TaskPrimInfoMBParallel
       {
 	/*! construction executes the task */
-	TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, Scene* scene, BezierRefList& prims);
+	TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims);
 	
       private:
 	
@@ -255,7 +255,7 @@ namespace embree
       struct TaskBinParallel
       {
 	/*! construction executes the task */
-	TaskBinParallel(size_t threadIndex, size_t threadCount, List& prims, const PrimInfo& pinfo, const size_t logBlockSize);
+	TaskBinParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, List& prims, const PrimInfo& pinfo, const size_t logBlockSize);
 	
       private:
 	
@@ -280,7 +280,7 @@ namespace embree
 	typedef atomic_set<PrimRefBlockT<Prim> > List;
 	
 	/*! construction executes the task */
-	TaskSplitParallel(size_t threadIndex, size_t threadCount, const Split* split, PrimRefBlockAlloc<Prim>& alloc, 
+	TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<Prim>& alloc, 
 			  List& prims, 
 			  List& lprims_o, PrimInfo& linfo_o, 
 			  List& rprims_o, PrimInfo& rinfo_o);

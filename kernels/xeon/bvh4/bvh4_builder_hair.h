@@ -93,6 +93,7 @@ namespace embree
       bool enableSpatialSplits; //!< turns on spatial splits
       
       BVH4* bvh;         //!< output
+      LockStepTaskScheduler* scheduler;
       PrimRefBlockAlloc<PrimRef> alloc;                 //!< Allocator for primitive blocks
       
       MutexSys taskMutex;

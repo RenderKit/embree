@@ -31,7 +31,7 @@ namespace embree
     template<> BVH4BuilderHairT<Bezier1i>::BVH4BuilderHairT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderHair(bvh,scene,mode) {}
 
     BVH4BuilderHair::BVH4BuilderHair (BVH4* bvh, Scene* scene, size_t mode)
-      : scene(scene), minLeafSize(1), maxLeafSize(inf), enableSpatialSplits(mode > 0), bvh(bvh), remainingReplications(0)
+      : scene(scene), minLeafSize(1), maxLeafSize(inf), enableSpatialSplits(mode > 0), bvh(bvh), scheduler(&scene->lockstep_scheduler), remainingReplications(0)
     {
       if (BVH4::maxLeafBlocks < this->maxLeafSize) 
 	this->maxLeafSize = BVH4::maxLeafBlocks;
@@ -60,7 +60,7 @@ namespace embree
 	
 	/* create initial curve list */
 	size_t numVertices = 0;
-	BezierRefGen gen(threadIndex,threadCount,&alloc,scene);
+	BezierRefGen gen(threadIndex,threadCount,scheduler,&alloc,scene);
 	PrimInfo pinfo = gen.pinfo;
 	BezierRefList prims = gen.prims;
 	
@@ -184,7 +184,7 @@ namespace embree
       /* perform standard binning in aligned space */
       ObjectPartition::Split alignedObjectSplit;
       float alignedObjectSAH = inf;
-      alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,prims,pinfo,0); // FIXME: hardcoded 0
+      alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,scheduler,prims,pinfo,0); // FIXME: hardcoded 0
       alignedObjectSAH = BVH4::travCostAligned*halfArea(bounds.bounds) + BVH4::intCost*alignedObjectSplit.splitSAH();
       bestSAH = min(bestSAH,alignedObjectSAH);
       
@@ -192,7 +192,7 @@ namespace embree
       SpatialSplit::Split alignedSpatialSplit;
       float alignedSpatialSAH = inf;
       if (enableSpatialSplits && remainingReplications > 0) {
-	alignedSpatialSplit = SpatialSplit::find<Parallel>(threadIndex,threadCount,scene,prims,pinfo,0); // FIXME: hardcoded 0
+	alignedSpatialSplit = SpatialSplit::find<Parallel>(threadIndex,threadCount,scheduler,scene,prims,pinfo,0); // FIXME: hardcoded 0
 	alignedSpatialSAH = BVH4::travCostAligned*halfArea(bounds.bounds) + BVH4::intCost*alignedSpatialSplit.splitSAH();
 	bestSAH = min(bestSAH,alignedSpatialSAH);
       }
@@ -202,11 +202,11 @@ namespace embree
       float unalignedObjectSAH = inf;
       if (alignedObjectSAH > 0.7f*leafSAH) {
 	if (sinfo.size()) 
-	  unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,bounds.space,sinfo);
+	  unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,scheduler,prims,bounds.space,sinfo);
 	else {
-	  const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace(threadIndex,threadCount,prims); 
-	  const PrimInfo       sinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,prims,space);
-	  unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,prims,space,sinfo);
+	  const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace(threadIndex,threadCount,scheduler,prims); 
+	  const PrimInfo       sinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,scheduler,prims,space);
+	  unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,scheduler,prims,space,sinfo);
 	}    	
 	unalignedObjectSAH = BVH4::travCostUnaligned*halfArea(bounds.bounds) + BVH4::intCost*unalignedObjectSplit.splitSAH();
 	bestSAH = min(bestSAH,unalignedObjectSAH);
@@ -216,7 +216,7 @@ namespace embree
       StrandSplit::Split strandSplit;
       float strandSAH = inf;
       if (alignedObjectSAH > 0.6f*leafSAH) {
-	strandSplit = StrandSplit::find<Parallel>(threadIndex,threadCount,prims);
+	strandSplit = StrandSplit::find<Parallel>(threadIndex,threadCount,scheduler,prims);
 	strandSAH = BVH4::travCostUnaligned*halfArea(bounds.bounds) + BVH4::intCost*strandSplit.splitSAH();
 	bestSAH = min(bestSAH,strandSAH);
       }
@@ -271,16 +271,16 @@ namespace embree
 	/*! split selected child */
 	PrimInfo linfo(empty), rinfo(empty);
 	BezierRefList lprims, rprims;
-	csplit[bestChild].split<Parallel>(threadIndex,threadCount,alloc,scene,cprims[bestChild],lprims,linfo,rprims,rinfo);
+	csplit[bestChild].split<Parallel>(threadIndex,threadCount,scheduler,alloc,scene,cprims[bestChild],lprims,linfo,rprims,rinfo);
 	const ssize_t replications = linfo.size()+rinfo.size()-cpinfo[bestChild].size(); assert(replications >= 0);
 	isAligned &= csplit[bestChild].isAligned;
 	LinearSpace3fa lspace,rspace;
 	PrimInfo lsinfo(empty),rsinfo(empty);
 	if (!isAligned) {
-	  lspace = ObjectPartitionUnaligned::computeAlignedSpace(threadIndex,threadCount,lprims); 
-	  rspace = ObjectPartitionUnaligned::computeAlignedSpace(threadIndex,threadCount,rprims); 
-	  lsinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,lprims,lspace);
-	  rsinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,rprims,rspace);
+	  lspace = ObjectPartitionUnaligned::computeAlignedSpace(threadIndex,threadCount,scheduler,lprims); 
+	  rspace = ObjectPartitionUnaligned::computeAlignedSpace(threadIndex,threadCount,scheduler,rprims); 
+	  lsinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,scheduler,lprims,lspace);
+	  rsinfo = ObjectPartitionUnaligned::computePrimInfo    <Parallel>(threadIndex,threadCount,scheduler,rprims,rspace);
 	}
 	const NAABBox3fa lbounds = isAligned ? linfo.geomBounds : NAABBox3fa(lspace,lsinfo.geomBounds); 
 	const NAABBox3fa rbounds = isAligned ? rinfo.geomBounds : NAABBox3fa(rspace,rsinfo.geomBounds); 
