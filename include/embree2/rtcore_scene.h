@@ -59,14 +59,14 @@ typedef struct __RTCScene {}* RTCScene;
 RTCORE_API RTCScene rtcNewScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags);
 
 /*! Commits the geometry of the scene. After initializing or modifying
- *  geometries, this function has to get called before tracing
+ *  geometries, commit has to get called before tracing
  *  rays. */
 RTCORE_API void rtcCommit (RTCScene scene);
 
-/*! Commits the geometry of the scene. The calling thread will be used
- *  internally as a worker thread. The function will wait until
+/*! Commits the geometry of the scene. The calling threads will be used
+ *  internally as a worker threads. The function will wait until
  *  'numThreads' threads have called this function. After initializing
- *  or modifying geometries, this function has to get called before
+ *  or modifying geometries, commit has to get called before
  *  tracing rays. */
 RTCORE_API void rtcCommitMT(RTCScene scene, unsigned int threadID, unsigned int numThreads);
 

@@ -55,17 +55,16 @@ typedef uniform struct __RTCScene {}* uniform RTCScene;
 RTCScene rtcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 
 /*! Commits the geometry of the scene. After initializing or modifying
- *  geometries, this function has to get called before tracing
+ *  geometries, commit has to get called before tracing
  *  rays. */
 void rtcCommit (RTCScene scene); 
 
-/*! Commits the geometry of the scene. The calling thread will be used
- *  internally as a worker thread. The function will wait until
+/*! Commits the geometry of the scene. The calling threads will be used
+ *  internally as a worker threads. The function will wait until
  *  'numThreads' threads have called this function. After initializing
- *  or modifying geometries, this function has to get called before
+ *  or modifying geometries, commit has to get called before
  *  tracing rays. */
 void rtcCommitMT(RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
-
 
 /*! Intersects a uniform ray with the scene. This function can only be
  *  called for scenes with the RTC_INTERSECT_UNIFORM flag set. The ray
