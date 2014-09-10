@@ -285,6 +285,7 @@ namespace embree
   {
     /* all user worker threads properly enter and leave the tasking system */
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
+    if (threadIndex != 0) return;
 
     /* allow only one build at a time */
     Lock<MutexSys> lock(mutex);
