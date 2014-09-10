@@ -251,7 +251,7 @@ namespace embree
 
     static const unsigned int CONTROL_THREAD_ID = 0;
 
-    BarrierActive barrier;
+    __aligned(64) BarrierActive barrier;
 
     typedef void (*runFunction)(void* data, const size_t threadID, const size_t numThreads);
     typedef void (*runFunction2)(void* data, const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks);

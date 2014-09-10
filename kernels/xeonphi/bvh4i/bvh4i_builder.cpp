@@ -231,12 +231,6 @@ namespace embree
   
   void BVH4iBuilder::build(const size_t threadIndex, const size_t threadCount) 
   {
-    mtx.lock();
-    PING;
-    DBG_PRINT(threadIndex);
-    DBG_PRINT(threadCount);    
-    mtx.unlock();
-
     if (threadIndex != 0) build_parallel(threadIndex,threadCount);
 
     const size_t totalNumPrimitives = getNumPrimitives();
@@ -264,9 +258,9 @@ namespace embree
       }
 
     /* allocate BVH data */
-    allocateData(threadCount /* TaskScheduler::getNumThreads() */ ,totalNumPrimitives);
+    allocateData(threadCount ,totalNumPrimitives);
     
-    if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && /* TaskScheduler::getNumThreads() */ threadCount > 1) )
+    if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD &&  threadCount > 1) )
       {
 	DBG(std::cout << "PARALLEL BUILD" << std::endl);
 
@@ -280,7 +274,6 @@ namespace embree
 	size_t iterations = PROFILE_ITERATIONS;
 	for (size_t i=0; i<iterations; i++) 
 	  {
-	    //TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
 	    build_parallel(threadIndex,threadCount);
 	    dt_min = min(dt_min,dt);
 	    dt_avg = dt_avg + dt;
@@ -298,7 +291,6 @@ namespace embree
 
 	build_parallel(threadIndex,threadCount);
 
-	//TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
 #endif
       }
     else

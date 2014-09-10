@@ -571,7 +571,6 @@ namespace embree
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && threadCount > 1) )
       {
 	DBG(std::cout << "PARALLEL BUILD" << std::endl);
-	//TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_hair,this,TaskScheduler::getNumThreads(),"build_parallel");
 	build_parallel(threadIndex,threadCount);
 
       }

@@ -224,7 +224,7 @@ namespace embree
       }
 
     /* allocate memory arrays */
-    allocateData(TaskScheduler::getNumThreads());
+    allocateData(threadCount);
 
 #if defined(PROFILE)
     size_t numTotalPrimitives = numPrimitives;
@@ -237,7 +237,6 @@ namespace embree
     size_t iterations = PROFILE_ITERATIONS;
     for (size_t i=0; i<iterations; i++) 
     {
-      //TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,TaskScheduler::getNumThreads(),"build_parallel_morton");
       build_parallel(threadIndex,threadCount);
 
       dt_min = min(dt_min,dt);
@@ -256,13 +255,11 @@ namespace embree
     DBG(DBG_PRINT(numPrimitives));
 
 
-    if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1))
+    if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && threadCount > 1))
       {
 #if DEBUG
-	DBG_PRINT( TaskScheduler::getNumThreads() );
 	std::cout << "PARALLEL BUILD" << std::endl << std::flush;
 #endif
-	//TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,TaskScheduler::getNumThreads(),"build_parallel");
 	build_parallel(threadIndex,threadCount);
 
       }

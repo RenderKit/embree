@@ -782,7 +782,6 @@ namespace embree
     size_t iterations = PROFILE_ITERATIONS;
     for (size_t i=0; i<iterations; i++) 
     {
-      //TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton64,this,TaskScheduler::getNumThreads(),"build_parallel_morton");
       build_parallel(threadIndex,threadCount);
 
       dt_min = min(dt_min,dt);
@@ -806,7 +805,6 @@ namespace embree
 #if DEBUG
 	std::cout << "PARALLEL BUILD" << std::endl << std::flush;
 #endif
-	//TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton64,this,TaskScheduler::getNumThreads(),"build_parallel");
 	build_parallel(threadIndex,threadCount);
 
       }

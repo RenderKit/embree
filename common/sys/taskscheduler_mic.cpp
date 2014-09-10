@@ -178,7 +178,8 @@ namespace embree
 
 	/* terminate thread */
 	if (terminateThreads) 
-	  {
+	  {	    
+	    DBG(std::cout << "terminate thread " << threadIndex << std::endl << std::flush);
 	    return;
 	  }
 
