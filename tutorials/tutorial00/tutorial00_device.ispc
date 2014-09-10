@@ -247,10 +247,10 @@ task void renderTile(uniform int* uniform pixels,
    rand_xorshift(seed);
 
     /* calculate pixel color */
-    //Vec3f color = renderPixel(x,y,vx,vy,vz,p);
+    Vec3f color = renderPixel(x,y,vx,vy,vz,p);
     //float f = ((float)rand_xorshift(seed)) * (1.0f / 4294967296.0f);
-    float f = ((float)wang_hash(seed)) * (1.0f / 4294967296.0f);
-    Vec3f color = make_Vec3f(f);
+    //float f = ((float)wang_hash(seed)) * (1.0f / 4294967296.0f);
+    //Vec3f color = make_Vec3f(f);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

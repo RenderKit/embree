@@ -34,7 +34,7 @@ namespace embree
     }
     
     BVH4Refit::BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh)
-    : builder(builder), mesh(mesh), primTy(bvh->primTy), bvh(bvh) 
+      : builder(builder), mesh(mesh), primTy(bvh->primTy), bvh(bvh), scheduler(&mesh->parent->lockstep_scheduler) 
     {
       needAllThreads = builder->needAllThreads;
     }
@@ -69,11 +69,11 @@ namespace embree
       size_t numRoots = roots.size();
       if (numRoots <= 1) {
         size_t taskID = TaskLogger::beginTask(threadIndex,"BVH4Refit::sequential",0);
-        refit_sequential(threadIndex,threadCount,NULL);
+        refit_sequential(threadIndex,threadCount);
         TaskLogger::endTask(threadIndex,taskID);
       }
       else {
-        TaskScheduler::executeTask(threadIndex,threadCount,_task_refit_parallel,this,numRoots,NULL,this,"BVH4Refit::parallel");
+        scheduler->dispatchTask(threadIndex,threadCount,_task_refit_parallel,this,numRoots,"BVH4Refit::parallel");
 	bvh->bounds = recurse_top(bvh->root);
       }
       
@@ -227,14 +227,14 @@ namespace embree
                     Vec3fa(upper_x,upper_y,upper_z));
     }
     
-    void BVH4Refit::task_refit_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void BVH4Refit::task_refit_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       NodeRef& ref = *roots[taskIndex];
       recurse_bottom(ref);
       ref.setBarrier();
     }
     
-    void BVH4Refit::refit_sequential(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) {
+    void BVH4Refit::refit_sequential(size_t threadIndex, size_t threadCount) {
       bvh->bounds = recurse_bottom(bvh->root);
     }
 

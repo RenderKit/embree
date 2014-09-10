@@ -269,7 +269,7 @@ namespace embree
     {
       /* parallel binning */
       size_t numTasks = min(maxTasks,threadCount);
-      TaskScheduler::executeTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
+      scheduler->dispatchTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
       
       /* reduction of bin informations */
       BinInfo bins = binners[0];
@@ -281,7 +281,7 @@ namespace embree
     }
     
     template<typename List>
-    void SpatialSplit::TaskBinParallel<List>::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void SpatialSplit::TaskBinParallel<List>::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       while (typename List::item* block = iter.next())
 	binners[taskIndex].bin(scene,block->base(),block->size(),pinfo,mapping);
@@ -460,7 +460,7 @@ namespace embree
     {
       /* parallel calculation of centroid bounds */
       size_t numTasks = min(maxTasks,threadCount);
-      TaskScheduler::executeTask(threadIndex,numTasks,_task_split_parallel,this,numTasks,"build::task_split_parallel");
+      scheduler->dispatchTask(threadIndex,numTasks,_task_split_parallel,this,numTasks,"build::task_split_parallel");
       
       /* reduction of bounding info */
       linfo_o = linfos[0];
@@ -472,7 +472,7 @@ namespace embree
     }
     
     template<typename Prim>
-    void SpatialSplit::TaskSplitParallel<Prim>::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void SpatialSplit::TaskSplitParallel<Prim>::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       split->split<false>(threadIndex,threadCount,NULL,alloc,scene,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
     }

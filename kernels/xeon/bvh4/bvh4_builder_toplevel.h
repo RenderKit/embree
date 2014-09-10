@@ -67,7 +67,7 @@ namespace embree
       void build(size_t threadIndex, size_t threadCount);
       
       /*! parallel rebuild of geometry */
-      TASK_RUN_FUNCTION(BVH4BuilderTopLevel,task_build_parallel);
+      TASK_SET_FUNCTION(BVH4BuilderTopLevel,task_build_parallel);
 
       void create_object(size_t objectID);
       void build (size_t threadIndex, size_t threadCount, size_t objectID);

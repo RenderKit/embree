@@ -103,7 +103,7 @@ namespace embree
 	}
 #endif
 	
-	TaskScheduler::executeTask(threadIndex,threadCount,_task_build_parallel,this,threadCount,"BVH4Builder::build_parallel");
+	scheduler->dispatchTask(threadIndex,threadCount,_task_build_parallel,this,threadCount,"BVH4Builder::build_parallel");
 #endif
 	
 	if (g_verbose >= 2) {
@@ -326,7 +326,7 @@ namespace embree
 	recurseTask(threadIndex,threadCount,tasks[i]);
     }
     
-    void BVH4BuilderHair::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void BVH4BuilderHair::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       while (numActiveTasks) 
       {

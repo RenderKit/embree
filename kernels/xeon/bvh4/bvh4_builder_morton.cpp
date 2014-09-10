@@ -137,10 +137,11 @@ namespace embree
       if (needAllThreads) 
       {
         if (!g_state.get()) g_state.reset(new MortonBuilderState);
-	size_t numActiveThreads = min(threadCount,getNumberOfCores());
-	TaskScheduler::enableThreads(numActiveThreads);
-        TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,numActiveThreads,"build_parallel_morton");
-	TaskScheduler::enableThreads(threadCount);
+	//size_t numActiveThreads = min(threadCount,getNumberOfCores());
+	//TaskScheduler::enableThreads(numActiveThreads); // FIXME: enable
+        //scheduler->dispatchTask(threadIndex,threadCount,_build_parallel_morton,this,numActiveThreads,"build_parallel_morton");
+	build_parallel_morton(threadIndex,threadCount,0,1);
+	//TaskScheduler::enableThreads(threadCount); // FIXME: enable
       } else {
         build_sequential_morton(threadIndex,threadCount);
       }
@@ -219,6 +220,8 @@ namespace embree
 
     void BVH4BuilderMorton::computeBounds(const size_t threadID, const size_t numThreads)
     {
+      initThreadState(threadID,numThreads);
+
       const ssize_t start = (threadID+0)*numPrimitives/numThreads;
       const ssize_t end   = (threadID+1)*numPrimitives/numThreads;
       
@@ -1012,14 +1015,14 @@ namespace embree
       if (g_verbose >= 2) dt = getSeconds()-t0;
     }
     
-    void BVH4BuilderMorton::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void BVH4BuilderMorton::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       /* initialize thread state */
-      initThreadState(threadIndex,threadCount);
+      //initThreadState(threadIndex,threadCount);
 
       /* all worker threads enter tasking system */
-      if (scheduler->enter(threadIndex,threadCount))
-	return;
+      //if (scheduler->enter(threadIndex,threadCount))
+      //return;
 
       /* start measurement */
       double t0 = 0.0f;
@@ -1075,7 +1078,7 @@ namespace embree
       refitTopLevel(bvh->root);
       
       /* release all threads again */
-      scheduler->leave(threadIndex,threadCount);
+      //scheduler->leave(threadIndex,threadCount);
 
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;

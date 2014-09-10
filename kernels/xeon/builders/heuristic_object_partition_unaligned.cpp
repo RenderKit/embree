@@ -325,10 +325,10 @@ namespace embree
       : scene(scene), space0(space0), space1(space1), iter(prims), geomBounds(empty), centBounds(empty), s0t0(empty), s0t1_s1t0(empty), s1t1(empty)
     {
       size_t numTasks = min(maxTasks,threadCount);
-      TaskScheduler::executeTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_bound_parallel");
+      scheduler->dispatchTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_bound_parallel");
     }
     
-    void ObjectPartitionUnaligned::TaskPrimInfoMBParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void ObjectPartitionUnaligned::TaskPrimInfoMBParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       size_t N = 0;
       BBox3fa centBounds = empty;
@@ -375,10 +375,10 @@ namespace embree
       : space(space), iter(prims), geomBounds(empty), centBounds(empty)
     {
       size_t numTasks = min(maxTasks,threadCount);
-      TaskScheduler::executeTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_bound_parallel");
+      scheduler->dispatchTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_bound_parallel");
     }
     
-    void ObjectPartitionUnaligned::TaskPrimInfoParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void ObjectPartitionUnaligned::TaskPrimInfoParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       size_t N = 0;
       BBox3fa centBounds = empty;
@@ -402,7 +402,7 @@ namespace embree
     {
       /* parallel binning */
       size_t numTasks = min(maxTasks,threadCount);
-      TaskScheduler::executeTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
+      scheduler->dispatchTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
       
       /* reduction of bin information */
       BinInfo bins = binners[0];
@@ -413,7 +413,7 @@ namespace embree
       split = bins.best(prims,mapping);
     }
     
-    void ObjectPartitionUnaligned::TaskBinParallel::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void ObjectPartitionUnaligned::TaskBinParallel::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       while (BezierRefList::item* block = iter.next())
 	binners[taskIndex].bin(block->base(),block->size(),mapping);
@@ -471,7 +471,7 @@ namespace embree
     {
       /* parallel calculation of centroid bounds */
       size_t numTasks = min(maxTasks,threadCount);
-      TaskScheduler::executeTask(threadIndex,numTasks,_task_split_parallel,this,numTasks,"build::task_split_parallel");
+      scheduler->dispatchTask(threadIndex,numTasks,_task_split_parallel,this,numTasks,"build::task_split_parallel");
       
       /* reduction of bounding info */
       linfo_o = linfos[0];
@@ -482,7 +482,7 @@ namespace embree
       }
     }
     
-    void ObjectPartitionUnaligned::TaskSplitParallel::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void ObjectPartitionUnaligned::TaskSplitParallel::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       split->split<false>(threadIndex,threadCount,NULL,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
     }

@@ -276,6 +276,17 @@ namespace embree
     build(threadIndex,numThreads);
   }
 
+  void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  {
+    /* all worker threads enter tasking system */
+    if (lockstep_scheduler.enter(threadIndex,threadCount))
+      return;
+
+    build(threadIndex,threadCount);
+
+    lockstep_scheduler.leave(threadIndex,threadCount);
+  }
+
   void Scene::build () 
   {
     Lock<MutexSys> lock(mutex);
@@ -305,12 +316,19 @@ namespace embree
     /* select fast code path if no intersection filter is present */
     accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
 
-    /* spawn build task */			
+    /* spawn build task */	
+#if defined(__MIC__)		
     TaskScheduler::enableThreads(1);
     TaskScheduler::EventSync event;
     new (&task) TaskScheduler::Task(&event,NULL,NULL,1,_task_build,this,"scene_build");
     TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
     event.sync();
+#else
+    TaskScheduler::EventSync event;
+    new (&task) TaskScheduler::Task(&event,_task_build_parallel,this,TaskScheduler::getNumThreads(),NULL,NULL,"scene_build");
+    TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
+    event.sync();
+#endif
 
     /* make static geometry immutable */
     if (isStatic()) 

@@ -40,9 +40,10 @@ namespace embree
 
       ~BVH4Refit();
 
-      TASK_COMPLETE_FUNCTION(BVH4Refit,refit_sequential);
+      //TASK_COMPLETE_FUNCTION(BVH4Refit,refit_sequential);
+      void refit_sequential(size_t threadIndex, size_t threadCount);
       
-      TASK_RUN_FUNCTION(BVH4Refit,task_refit_parallel);
+      TASK_SET_FUNCTION(BVH4Refit,task_refit_parallel);
       
     private:
       size_t annotate_tree_sizes(NodeRef& ref);
@@ -57,6 +58,7 @@ namespace embree
       //BuildSource* source;           //!< input geometry
       //void* geometry;                //!< input geometry
       TriangleMesh* mesh;
+      LockStepTaskScheduler* scheduler;
       
     public:
       const PrimitiveType& primTy;   //!< primitve type stored in BVH

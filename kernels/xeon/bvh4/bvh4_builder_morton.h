@@ -163,7 +163,7 @@ namespace embree
                               MortonID32Bit* __restrict__ const dest);
 
       /*! main build task */
-      TASK_RUN_FUNCTION(BVH4BuilderMorton,build_parallel_morton);
+      TASK_SET_FUNCTION(BVH4BuilderMorton,build_parallel_morton);
       TaskScheduler::Task task;
       
       /*! task that calculates the bounding box of the scene */

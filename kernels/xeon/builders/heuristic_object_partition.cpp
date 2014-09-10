@@ -350,10 +350,10 @@ namespace embree
       : scene(scene), iter(prims), bounds0(empty), bounds1(empty)
     {
       size_t numTasks = min(maxTasks,threadCount);
-      TaskScheduler::executeTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_bound_parallel");
+      scheduler->dispatchTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_bound_parallel");
     }
     
-    void ObjectPartition::TaskPrimInfoMBParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void ObjectPartition::TaskPrimInfoMBParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       size_t N = 0;
       BBox3fa bounds0 = empty;
@@ -383,7 +383,7 @@ namespace embree
       /* parallel binning */			
       size_t numTasks = min(maxTasks,threadCount);
       new (&mapping) Mapping(pinfo);
-      TaskScheduler::executeTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
+      scheduler->dispatchTask(threadIndex,numTasks,_task_bin_parallel,this,numTasks,"build::task_bin_parallel");
       
       /* reduction of bin informations */
       binner = binners[0];
@@ -395,7 +395,7 @@ namespace embree
     }
     
     template<typename List>
-    void ObjectPartition::TaskBinParallel<List>::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void ObjectPartition::TaskBinParallel<List>::task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       while (typename List::item* block = iter.next())
 	binners[taskIndex].bin(block->base(),block->size(),mapping);
@@ -563,7 +563,7 @@ namespace embree
     {
       /* parallel calculation of centroid bounds */
       size_t numTasks = min(maxTasks,threadCount);
-      TaskScheduler::executeTask(threadIndex,numTasks,_task_split_parallel,this,numTasks,"build::task_split_parallel");
+      scheduler->dispatchTask(threadIndex,numTasks,_task_split_parallel,this,numTasks,"build::task_split_parallel");
       
       /* reduction of bounding info */
       linfo_o = linfos[0];
@@ -575,7 +575,7 @@ namespace embree
     }
     
     template<typename Prim>
-    void ObjectPartition::TaskSplitParallel<Prim>::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void ObjectPartition::TaskSplitParallel<Prim>::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       split->split<false>(threadIndex,threadCount,NULL,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
     }

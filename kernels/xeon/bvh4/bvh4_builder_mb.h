@@ -73,8 +73,8 @@ namespace embree
       void build(size_t threadIndex, size_t threadCount);
    
       /*! build job */
-      TASK_RUN_FUNCTION_(BVH4BuilderMB,build_parallel);
-      void build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event);
+      TASK_SET_FUNCTION(BVH4BuilderMB,build_parallel);
+      //void build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount);
       
       /*! creates a leaf node */
       virtual NodeRef createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo) = 0;

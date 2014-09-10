@@ -40,7 +40,7 @@ namespace embree
     public:
       
       /*! parallel task to iterate over the primitives */
-      TASK_RUN_FUNCTION(BezierRefGen,task_gen_parallel);
+      TASK_SET_FUNCTION(BezierRefGen,task_gen_parallel);
       
       /* input data */
     private:

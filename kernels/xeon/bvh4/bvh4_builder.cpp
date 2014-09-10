@@ -256,7 +256,7 @@ namespace embree
       }
     }
 
-    void BVH4Builder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void BVH4Builder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       while (activeBuildRecords)
       {
@@ -292,10 +292,10 @@ namespace embree
 	return node;
     }
     
-    void BVH4Builder::build(size_t threadIndex, size_t threadCountOld) 
+    void BVH4Builder::build(size_t threadIndex, size_t threadCount) 
     {
-      size_t threadCount = min(threadCountOld,getNumberOfCores());
-      TaskScheduler::enableThreads(threadCount);
+      //size_t threadCount = min(threadCountOld,getNumberOfCores());
+      //TaskScheduler::enableThreads(threadCount); // FIXME: enable
 
       /*! calculate number of primitives */
       size_t numPrimitives = 0;
@@ -377,7 +377,7 @@ namespace embree
 	}
 	
 	/*! process each generated subtask in its own thread */
-	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4Builder::build");
+	scheduler->dispatchTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4Builder::build");
       }
 
       /* perform tree rotations of top part of the tree */
@@ -394,7 +394,7 @@ namespace embree
       
       /* free all temporary memory blocks */
       Alloc::global.clear();
-      TaskScheduler::enableThreads(threadCountOld);
+      //TaskScheduler::enableThreads(threadCountOld); // FIXME: enable
       
       if (g_verbose >= 2 || g_benchmark) 
 	t1 = getSeconds();

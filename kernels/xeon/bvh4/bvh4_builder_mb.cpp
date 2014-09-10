@@ -452,7 +452,7 @@ namespace embree
       }
     }
 
-    void BVH4BuilderMB::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void BVH4BuilderMB::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       while (activeBuildRecords)
       {
@@ -535,33 +535,33 @@ namespace embree
       else
       {
 
-      /* perform initial split */
-      const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);
-      const BuildRecord record(1,prims,pinfo,split,&bvh->root);
-      tasks.push_back(record); 
-      activeBuildRecords=1;
-
-      /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (tasks.size() > 0 && tasks.size() < threadCount)
-      {
-	/* pop largest item for better load balancing */
-	BuildRecord task = tasks.front();
-	std::pop_heap(tasks.begin(),tasks.end());
-	tasks.pop_back();
-	activeBuildRecords--;
+	/* perform initial split */
+	const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);
+	const BuildRecord record(1,prims,pinfo,split,&bvh->root);
+	tasks.push_back(record); 
+	activeBuildRecords=1;
 	
-	/* process this item in parallel */
-	BuildRecord children[BVH4::N];
-	size_t N = createNode<true>(threadIndex,threadCount,this,task,children);
-	for (size_t i=0; i<N; i++) {
-	  tasks.push_back(children[i]);
-	  std::push_heap(tasks.begin(),tasks.end());
-	  activeBuildRecords++;
+	/* work in multithreaded toplevel mode until sufficient subtasks got generated */
+	while (tasks.size() > 0 && tasks.size() < threadCount)
+	{
+	  /* pop largest item for better load balancing */
+	  BuildRecord task = tasks.front();
+	  std::pop_heap(tasks.begin(),tasks.end());
+	  tasks.pop_back();
+	  activeBuildRecords--;
+	  
+	  /* process this item in parallel */
+	  BuildRecord children[BVH4::N];
+	  size_t N = createNode<true>(threadIndex,threadCount,this,task,children);
+	  for (size_t i=0; i<N; i++) {
+	    tasks.push_back(children[i]);
+	    std::push_heap(tasks.begin(),tasks.end());
+	    activeBuildRecords++;
+	  }
 	}
-      }
-      
-      /*! process each generated subtask in its own thread */
-      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4BuilderMB::build");
+	
+	/*! process each generated subtask in its own thread */
+	scheduler->dispatchTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4BuilderMB::build");
       }
                   
       /* perform tree rotations of top part of the tree */

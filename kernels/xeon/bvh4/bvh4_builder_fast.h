@@ -112,9 +112,9 @@ namespace embree
       void build_sequential(size_t threadIndex, size_t threadCount);
 
     public:
-      TASK_RUN_FUNCTION(BVH4BuilderFast,computePrimRefs);
+      TASK_SET_FUNCTION(BVH4BuilderFast,computePrimRefs);
       TASK_FUNCTION(BVH4BuilderFast,buildSubTrees);
-      TASK_RUN_FUNCTION(BVH4BuilderFast,build_parallel);
+      TASK_SET_FUNCTION(BVH4BuilderFast,build_parallel);
 
     public:
 

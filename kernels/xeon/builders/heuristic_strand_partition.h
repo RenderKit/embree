@@ -81,10 +81,10 @@ namespace embree
       private:
 	
 	/*! parallel task function */
-	TASK_RUN_FUNCTION(TaskFindParallel,task_find_parallel);
+	TASK_SET_FUNCTION(TaskFindParallel,task_find_parallel);
 	
 	/*! parallel bounding calculations */
-	TASK_RUN_FUNCTION(TaskFindParallel,task_bound_parallel);
+	TASK_SET_FUNCTION(TaskFindParallel,task_bound_parallel);
 	
 	/*! state for find stage */
       private:
@@ -118,7 +118,7 @@ namespace embree
       private:
 	
 	/*! parallel split task function */
-	TASK_RUN_FUNCTION(TaskSplitParallel,task_split_parallel);
+	TASK_SET_FUNCTION(TaskSplitParallel,task_split_parallel);
 	
 	/*! input data */
       private:

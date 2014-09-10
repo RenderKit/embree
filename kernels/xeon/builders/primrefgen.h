@@ -39,7 +39,7 @@ namespace embree
       PrimRefListGen (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<PrimRef>* alloc, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRefList& prims, PrimInfo& pinfo);
             
       /*! parallel task to iterate over the primitives */
-      TASK_RUN_FUNCTION(PrimRefListGen,task_gen_parallel);
+      TASK_SET_FUNCTION(PrimRefListGen,task_gen_parallel);
       
     private:
       const Scene* scene;                  //!< input geometry
@@ -67,7 +67,7 @@ namespace embree
       PrimRefListGenFromGeometry (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<PrimRef>* alloc, const Ty* geom, PrimRefList& prims, PrimInfo& pinfo);
             
       /*! parallel task to iterate over the primitives */
-      TASK_RUN_FUNCTION(PrimRefListGenFromGeometry,task_gen_parallel);
+      TASK_SET_FUNCTION(PrimRefListGenFromGeometry,task_gen_parallel);
       
       /* input data */
     private:

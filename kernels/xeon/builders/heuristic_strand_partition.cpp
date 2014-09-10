@@ -73,7 +73,7 @@ namespace embree
       
       /* parallel calculation of 2nd axis  */
       size_t numTasks = min(maxTasks,threadCount);
-      TaskScheduler::executeTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_find_parallel");
+      scheduler->dispatchTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_find_parallel");
       
       /* select best 2nd axis */
       float bestCos = 1.0f;
@@ -82,7 +82,7 @@ namespace embree
       }
       
       /* parallel calculation of unaligned bounds */
-      TaskScheduler::executeTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_find_parallel");
+      scheduler->dispatchTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_find_parallel");
       
       /* reduce bounds calculates by tasks */
       size_t lnum = 0; BBox3fa lbounds = empty;
@@ -103,7 +103,7 @@ namespace embree
       split = Split(sah,axis0,axis1);
     }
     
-    void StrandSplit::TaskFindParallel::task_find_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void StrandSplit::TaskFindParallel::task_find_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       float bestCos = 1.0f;
       Vec3fa bestAxis1 = axis0;
@@ -125,7 +125,7 @@ namespace embree
       task_axis1[taskIndex] = bestAxis1;
     }
     
-    void StrandSplit::TaskFindParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void StrandSplit::TaskFindParallel::task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       const LinearSpace3fa space0 = frame(axis0).transposed();
       const LinearSpace3fa space1 = frame(axis1).transposed();
@@ -201,7 +201,7 @@ namespace embree
     {
       /* parallel calculation of centroid bounds */
       size_t numTasks = min(maxTasks,threadCount);
-      TaskScheduler::executeTask(threadIndex,numTasks,_task_split_parallel,this,numTasks,"build::task_split_parallel");
+      scheduler->dispatchTask(threadIndex,numTasks,_task_split_parallel,this,numTasks,"build::task_split_parallel");
       
       /* reduction of bounding info */
       linfo_o = linfos[0];
@@ -212,7 +212,7 @@ namespace embree
       }
     }
     
-    void StrandSplit::TaskSplitParallel::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void StrandSplit::TaskSplitParallel::task_split_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       split->split<false>(threadIndex,threadCount,NULL,alloc,prims,lprims_o,linfos[taskIndex],rprims_o,rinfos[taskIndex]);
     }

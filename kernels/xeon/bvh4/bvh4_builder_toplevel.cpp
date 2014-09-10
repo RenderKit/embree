@@ -62,7 +62,7 @@ namespace embree
         create_object(i);
       
       /* parallel build of acceleration structures */
-      if (N) TaskScheduler::executeTask(threadIndex,threadCount,_task_build_parallel,this,N,"toplevel_build_parallel");
+      if (N) scheduler->dispatchTask(threadIndex,threadCount,_task_build_parallel,this,N,"toplevel_build_parallel");
       
       /* perform builds that need all threads */
       for (size_t i=0; i<allThreadBuilds.size(); i++)
@@ -136,9 +136,7 @@ namespace embree
       refs[nextRef++] = BuildRef(object->bounds,object->root);
     }
     
-    void BVH4BuilderTopLevel::task_build_parallel(size_t threadIndex, size_t threadCount, 
-                                                  size_t taskIndex, size_t taskCount,
-                                                  TaskScheduler::Event* event_i)
+    void BVH4BuilderTopLevel::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount)
     {
       /* ignore meshes that need all threads */
       size_t objectID = taskIndex;

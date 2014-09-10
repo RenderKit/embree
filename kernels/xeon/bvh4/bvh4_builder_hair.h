@@ -84,7 +84,7 @@ namespace embree
       /*! recursive build function for aligned and non-aligned bounds */
       void recurseTask(size_t threadIndex, size_t threadCount, BuildTask& task);
       
-      TASK_RUN_FUNCTION(BVH4BuilderHair,task_build_parallel);
+      TASK_SET_FUNCTION(BVH4BuilderHair,task_build_parallel);
       
     public:
       Scene* scene;          //!< source

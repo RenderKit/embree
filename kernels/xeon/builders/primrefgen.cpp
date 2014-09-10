@@ -42,14 +42,14 @@ namespace embree
       
       pinfo.reset();
       if (numPrimitives <= single_threaded_primrefgen_threshold) 
-	task_gen_parallel(0,1,0,1,NULL);
+	task_gen_parallel(threadIndex,threadCount,0,1);
       else
-	TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
+	scheduler->dispatchTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
 
       assert(pinfo_o.size() == numPrimitives);
     }
     
-    void PrimRefListGen::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void PrimRefListGen::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       ssize_t start = (taskIndex+0)*numPrimitives/taskCount;
       ssize_t end   = (taskIndex+1)*numPrimitives/taskCount;
@@ -137,15 +137,15 @@ namespace embree
     {
       pinfo_o.reset();
       if (geom->size() <= single_threaded_primrefgen_threshold)
-	task_gen_parallel(0,1,0,1,NULL);
+	task_gen_parallel(threadIndex,threadCount,0,1);
       else
-	TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::primrefgen");
+	scheduler->dispatchTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::primrefgen");
       
       assert(pinfo_o.size() == geom->size());
     }
     
     template<typename Ty>
-    void PrimRefListGenFromGeometry<Ty>::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void PrimRefListGenFromGeometry<Ty>::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       ssize_t start = (taskIndex+0)*geom->size()/taskCount;
       ssize_t end   = (taskIndex+1)*geom->size()/taskCount;

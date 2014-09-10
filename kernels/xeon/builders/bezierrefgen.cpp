@@ -25,14 +25,14 @@ namespace embree
     {
       /*! parallel stage */
       size_t numTasks = min(threadCount,maxTasks);
-      TaskScheduler::executeTask(threadIndex,threadCount,_task_gen_parallel,this,numTasks,"build::bezierrefgen");
+      scheduler->dispatchTask(threadIndex,threadCount,_task_gen_parallel,this,numTasks,"build::bezierrefgen");
       
       /*! reduction stage */
       for (size_t i=0; i<numTasks; i++)
 	pinfo.merge(pinfos[i]);
     }
     
-    void BezierRefGen::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void BezierRefGen::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       ssize_t numBezierCurves = numTimeSteps == 2 ? scene->numBezierCurves2 : scene->numBezierCurves;
       ssize_t start = (taskIndex+0)*numBezierCurves/taskCount;

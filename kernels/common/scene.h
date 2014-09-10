@@ -61,6 +61,7 @@ namespace embree
 
     /*! build task */
     TASK_COMPLETE_FUNCTION(Scene,task_build);
+    TASK_RUN_FUNCTION(Scene,task_build_parallel);
     TaskScheduler::Task task;
 
     /* return number of geometries */

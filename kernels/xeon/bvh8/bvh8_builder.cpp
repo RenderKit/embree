@@ -238,7 +238,7 @@ namespace embree
       }
     }
 
-    void BVH8Builder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+    void BVH8Builder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       while (activeBuildRecords)
       {
@@ -335,7 +335,7 @@ namespace embree
       }
       
       /*! process each generated subtask in its own thread */
-      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH8Builder::build");
+      scheduler->dispatchTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH8Builder::build");
                   
       /* perform tree rotations of top part of the tree */
 #if ROTATE_TREE

@@ -240,7 +240,7 @@ namespace embree
 
 #define TASK_SET_FUNCTION(Class,Name) \
   void Name (const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks); \
-  static void task_##Name (void* data, const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks) { \
+  static void _##Name (void* data, const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks) { \
     ((Class*)data)->Name(threadID,numThreads,taskID,numTasks);			\
   }
 
@@ -288,7 +288,7 @@ namespace embree
       return LockStepTaskScheduler::dispatchTask(threadID, numThreads);
     }
 
-    __forceinline bool dispatchTask(runFunction2 task, void* data, const size_t threadID, const size_t numThreads, const size_t numTasks)
+    __forceinline bool dispatchTask(const size_t threadID, const size_t numThreads, runFunction2 task, void* data, const size_t numTasks, const char* name = "noname")
     {
       LockStepTaskScheduler::taskPtr = NULL;
       LockStepTaskScheduler::taskPtr2 = task;

@@ -161,7 +161,7 @@ namespace embree
       private:
 	
 	/*! parallel bounding calculations */
-	TASK_RUN_FUNCTION(TaskPrimInfoParallel,task_bound_parallel);
+	TASK_SET_FUNCTION(TaskPrimInfoParallel,task_bound_parallel);
 	
 	/*! state for bounding stage */
       private:
@@ -184,7 +184,7 @@ namespace embree
       private:
 	
 	/*! parallel bounding calculations */
-	TASK_RUN_FUNCTION(TaskPrimInfoMBParallel,task_bound_parallel);
+	TASK_SET_FUNCTION(TaskPrimInfoMBParallel,task_bound_parallel);
 	
 	/*! state for bounding stage */
       private:
@@ -212,7 +212,7 @@ namespace embree
       private:
 	
 	/*! parallel binning */
-	TASK_RUN_FUNCTION(TaskBinParallel,task_bin_parallel);
+	TASK_SET_FUNCTION(TaskBinParallel,task_bin_parallel);
 	
 	/*! input data */
       private:
@@ -242,7 +242,7 @@ namespace embree
       private:
 	
 	/*! parallel split task function */
-	TASK_RUN_FUNCTION(TaskSplitParallel,task_split_parallel);
+	TASK_SET_FUNCTION(TaskSplitParallel,task_split_parallel);
 	
 	/*! input data */
       private:

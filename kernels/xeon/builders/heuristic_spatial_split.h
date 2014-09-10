@@ -154,7 +154,7 @@ namespace embree
       private:
 	
 	/*! parallel binning */
-	TASK_RUN_FUNCTION(TaskBinParallel,task_bin_parallel);
+	TASK_SET_FUNCTION(TaskBinParallel,task_bin_parallel);
 	
       private:
 	Scene* scene;
@@ -182,7 +182,7 @@ namespace embree
       private:
 	
 	/*! parallel split task function */
-	TASK_RUN_FUNCTION(TaskSplitParallel,task_split_parallel);
+	TASK_SET_FUNCTION(TaskSplitParallel,task_split_parallel);
 	
 	/*! input data */
       private:
