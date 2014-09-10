@@ -55,8 +55,6 @@ namespace embree
     unsigned int newBezierCurves (RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
 
     /*! Builds acceleration structure for the scene. */
-    void build ();
-
     void build (size_t threadIndex, size_t threadCount);
 
     /*! build task */

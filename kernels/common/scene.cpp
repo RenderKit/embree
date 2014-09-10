@@ -269,13 +269,10 @@ namespace embree
     delete geometry;
   }
 
-  void Scene::build (size_t threadIndex, size_t threadCount) {
-    accels.build(threadIndex,threadCount);
-  }
-
-  void Scene::task_build(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) {
+  void Scene::task_build(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) 
+  {
     size_t numThreads = TaskScheduler::enableThreads(-1);
-    build(threadIndex,numThreads);
+    accels.build(threadIndex,threadCount);
   }
 
   void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
@@ -284,13 +281,17 @@ namespace embree
     if (lockstep_scheduler.enter(threadIndex,threadCount))
       return;
 
-    build(threadIndex,threadCount);
+    accels.build(threadIndex,threadCount);
 
-    lockstep_scheduler.leave(threadIndex,threadCount);
+    lockstep_scheduler.leave(threadIndex,threadCount); // FIXME: should get called in destructor
   }
 
-  void Scene::build () 
+  void Scene::build (size_t threadIndex, size_t threadCount) 
   {
+    /* all worker threads enter tasking system */
+    if (threadCount && lockstep_scheduler.enter(threadIndex,threadCount))
+      return;
+
     Lock<MutexSys> lock(mutex);
 
     if (isStatic() && isBuild()) {
@@ -318,19 +319,25 @@ namespace embree
     /* select fast code path if no intersection filter is present */
     accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
 
-    /* spawn build task */	
+    /* if user provided threads use them */
+    if (threadCount) 
+      accels.build(threadIndex,threadCount);
+
+    /* otherwise use our own threads */
+    {
 #if defined(__MIC__)		
-    TaskScheduler::enableThreads(1);
-    TaskScheduler::EventSync event;
-    new (&task) TaskScheduler::Task(&event,NULL,NULL,1,_task_build,this,"scene_build");
-    TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
-    event.sync();
+      TaskScheduler::enableThreads(1);
+      TaskScheduler::EventSync event;
+      new (&task) TaskScheduler::Task(&event,NULL,NULL,1,_task_build,this,"scene_build");
+      TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
+      event.sync();
 #else
-    TaskScheduler::EventSync event;
-    new (&task) TaskScheduler::Task(&event,_task_build_parallel,this,TaskScheduler::getNumThreads(),NULL,NULL,"scene_build");
-    TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
-    event.sync();
+      TaskScheduler::EventSync event;
+      new (&task) TaskScheduler::Task(&event,_task_build_parallel,this,TaskScheduler::getNumThreads(),NULL,NULL,"scene_build");
+      TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
+      event.sync();
 #endif
+    }
 
     /* make static geometry immutable */
     if (isStatic()) 
@@ -370,6 +377,10 @@ namespace embree
       intersectors.intersector16.intersect = NULL;
       intersectors.intersector16.occluded = NULL;
     }
+
+    /* all workers exit the tasking system again */
+    if (threadCount)
+      lockstep_scheduler.leave(threadIndex,threadCount); // FIXME: should get called in destructor
 
     if (g_verbose >= 2) {
       std::cout << "created scene intersector" << std::endl;

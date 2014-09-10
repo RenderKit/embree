@@ -486,8 +486,7 @@ namespace embree
     RayStreamLogger::rayStreamLogger.dumpGeometry(scene);
 #endif
 
-    ((Scene*)scene)->build();
-
+    ((Scene*)scene)->build(0,0);
 
     CATCH_END;
   }
@@ -500,9 +499,10 @@ namespace embree
     TRACE(rtcCommitMT);
     VERIFY_HANDLE(scene);
 
-    //DBG_PRINT(threadID);
-    //DBG_PRINT(numThreads);
+    if (numThreads == 0) 
+      process_error(RTC_INVALID_OPERATION,"invalid number of threads specified");
 
+    ((Scene*)scene)->build(threadID,numThreads);
 
     CATCH_END;
   }
