@@ -238,6 +238,12 @@ namespace embree
     ((Class*)data)->Name(threadID,numThreads);                          \
   }
 
+#define TASK_SET_FUNCTION(Class,Name) \
+  void Name (const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks); \
+  static void task_##Name (void* data, const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks) { \
+    ((Class*)data)->Name(threadID,numThreads,taskID,numTasks);			\
+  }
+
 #define LOCAL_TASK_FUNCTION(Class,Name) \
   void Name (const size_t localThreadID, const size_t globalThreadID);			\
   static void task_##Name (void* data, const size_t localThreadID, const size_t globalThreadID) { \
@@ -252,9 +258,12 @@ namespace embree
     static const unsigned int CONTROL_THREAD_ID = 0;
 
     typedef void (*runFunction)(void* data, const size_t threadID, const size_t numThreads);
+    typedef void (*runFunction2)(void* data, const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks);
 
     __aligned(64) AlignedAtomicCounter32 taskCounter;
     __aligned(64) runFunction taskPtr;
+    __aligned(64) runFunction2 taskPtr2;
+    size_t numTasks;
     __aligned(64) void* volatile data;
 
 #if defined(__MIC__)
@@ -274,7 +283,17 @@ namespace embree
     __forceinline bool dispatchTask(runFunction task, void* data, const size_t threadID, const size_t numThreads)
     {
       LockStepTaskScheduler::taskPtr = task;
+      LockStepTaskScheduler::taskPtr2 = NULL;
       LockStepTaskScheduler::data = data;
+      return LockStepTaskScheduler::dispatchTask(threadID, numThreads);
+    }
+
+    __forceinline bool dispatchTask(runFunction2 task, void* data, const size_t threadID, const size_t numThreads, const size_t numTasks)
+    {
+      LockStepTaskScheduler::taskPtr = NULL;
+      LockStepTaskScheduler::taskPtr2 = task;
+      LockStepTaskScheduler::data = data;
+      LockStepTaskScheduler::numTasks = numTasks;
       return LockStepTaskScheduler::dispatchTask(threadID, numThreads);
     }
 

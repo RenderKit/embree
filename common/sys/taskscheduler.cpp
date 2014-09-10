@@ -273,13 +273,23 @@ namespace embree
 
     syncThreads(threadID, numThreads);
 
-    if (taskPtr == NULL) 
-      return true;
+    if (taskPtr) {
+      (*taskPtr)((void*)data,threadID,numThreads);
+      syncThreads(threadID, numThreads);
+      return false;
+    }
 
-    (*taskPtr)((void*)data,threadID,numThreads);
-    syncThreads(threadID, numThreads);
+    if (taskPtr2) {
+      while (true) {
+	size_t taskID = taskCounter.inc();
+	if (taskID >= numTasks) break;
+	(*taskPtr2)((void*)data,threadID,numThreads,taskID,numTasks);
+      }
+      syncThreads(threadID, numThreads);
+      return false;
+    }
     
-    return false;
+    return true;
   }
 
   void LockStepTaskScheduler::leave(const size_t threadID, const size_t numThreads)
@@ -291,7 +301,9 @@ namespace embree
   void LockStepTaskScheduler::releaseThreads(const size_t numThreads)
   {
     taskPtr = NULL;
+    taskPtr2 = NULL;
     data = NULL;
+    numTasks = 0;
     dispatchTask(0,numThreads);  
   }
 
