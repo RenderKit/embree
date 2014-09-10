@@ -48,7 +48,7 @@ namespace embree
       /* build initial BVH */
       if (builder) {
         builder->build(threadIndex,threadCount);
-        if (false) { //bvh->numPrimitives > 50000) {
+        if (false) { //bvh->numPrimitives > 50000) { // FIXME: reactivate parallel refit
           annotate_tree_sizes(bvh->root);
           calculate_refit_roots();
           needAllThreads = false;
@@ -72,8 +72,10 @@ namespace embree
         refit_sequential(threadIndex,threadCount,NULL);
         TaskLogger::endTask(threadIndex,taskID);
       }
-      else
-        TaskScheduler::executeTask(threadIndex,threadCount,_task_refit_parallel,this,numRoots,_task_refit_complete,this,"BVH4Refit::parallel");
+      else {
+        TaskScheduler::executeTask(threadIndex,threadCount,_task_refit_parallel,this,numRoots,NULL,this,"BVH4Refit::parallel");
+	bvh->bounds = recurse_top(bvh->root);
+      }
       
       if (g_verbose >= 2) {
         double t1 = getSeconds();
@@ -230,10 +232,6 @@ namespace embree
       NodeRef& ref = *roots[taskIndex];
       recurse_bottom(ref);
       ref.setBarrier();
-    }
-    
-    void BVH4Refit::task_refit_complete(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) {
-      bvh->bounds = recurse_top(bvh->root);
     }
     
     void BVH4Refit::refit_sequential(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) {

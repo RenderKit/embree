@@ -43,7 +43,6 @@ namespace embree
       TASK_COMPLETE_FUNCTION(BVH4Refit,refit_sequential);
       
       TASK_RUN_FUNCTION(BVH4Refit,task_refit_parallel);
-      TASK_COMPLETE_FUNCTION(BVH4Refit,task_refit_complete);
       
     private:
       size_t annotate_tree_sizes(NodeRef& ref);
