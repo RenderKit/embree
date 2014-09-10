@@ -90,7 +90,7 @@ RTCORE_API void rtcIntersect8 (const void* valid, RTCScene scene, RTCRay8& ray);
 /*! Intersects a packet of 16 rays with the scene. The valid mask and
  *  ray have both to be aligned to 64 bytes. This function can only be
  *  called for scenes with the RTC_INTERSECT16 flag set. For
- *  performance reasons, the rtcIntersect8 function should only get
+ *  performance reasons, the rtcIntersect16 function should only get
  *  called if the CPU supports the 16-wide Xeon Phi instructions. */
 RTCORE_API void rtcIntersect16 (const void* valid, RTCScene scene, RTCRay16& ray);
 
