@@ -270,7 +270,7 @@ namespace embree
 #if defined(__MIC__)
     __aligned(64) QuadTreeBarrier taskBarrier;
 #else
-    __aligned(64) LinearBarrierActive taskBarrier;
+    __aligned(64) Barrier taskBarrier;
 #endif
 
     bool enter(size_t threadIndex, size_t threadCount);

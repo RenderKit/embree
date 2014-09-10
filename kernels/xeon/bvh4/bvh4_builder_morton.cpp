@@ -140,8 +140,8 @@ namespace embree
 	size_t numActiveThreads = min(threadCount,getNumberOfCores());
 	//TaskScheduler::enableThreads(numActiveThreads); // FIXME: enable
         //scheduler->dispatchTask(threadIndex,threadCount,_build_parallel_morton,this,numActiveThreads,"build_parallel_morton");
-	build_parallel_morton(threadIndex,threadCount,0,1);
-	//build_parallel_morton(threadIndex,numActiveThreads,0,1);
+	//build_parallel_morton(threadIndex,threadCount,0,1);
+	build_parallel_morton(threadIndex,numActiveThreads,0,1);
 	//TaskScheduler::enableThreads(threadCount); // FIXME: enable
       } else {
         build_sequential_morton(threadIndex,threadCount);
@@ -397,7 +397,8 @@ namespace embree
           const size_t index = src[i].get(shift, mask);
           radixCount[threadID][index]++;
         }
-        TaskScheduler::syncThreads(threadID,numThreads);
+        //TaskScheduler::syncThreads(threadID,numThreads);
+	barrier.wait(threadID,numThreads);
         
         /* calculate total number of items for each bucket */
         __aligned(64) size_t total[RADIX_BUCKETS];
@@ -424,7 +425,8 @@ namespace embree
           const size_t index = src[i].get(shift, mask);
           dst[offset[index]++] = src[i];
         }
-        if (b < 2) TaskScheduler::syncThreads(threadID,numThreads);
+        if (b < 2) barrier.wait(threadID,numThreads);
+	  //TaskScheduler::syncThreads(threadID,numThreads);
       }
     }
     
@@ -1045,6 +1047,7 @@ namespace embree
       }
 
       /* sort morton codes */
+      barrier.init(threadCount);
       scheduler->dispatchTask( task_radixsort, this, threadIndex, threadCount );
 
 #if defined(DEBUG)

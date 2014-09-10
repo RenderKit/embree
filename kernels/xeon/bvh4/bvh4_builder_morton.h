@@ -241,6 +241,7 @@ namespace embree
       size_t numAllocatedPrimitives;
       size_t numAllocatedNodes;
       CentGeomBBox3fa global_bounds;
+      Barrier barrier;
       //createSmallLeaf createSmallLeaf;
       //leafBounds leafBounds;
       //LockStepTaskScheduler scheduler;
