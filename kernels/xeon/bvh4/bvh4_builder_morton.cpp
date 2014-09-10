@@ -38,7 +38,7 @@ namespace embree
     std::auto_ptr<BVH4BuilderMorton::MortonBuilderState> BVH4BuilderMorton::g_state(NULL);
     
     BVH4BuilderMorton::BVH4BuilderMorton (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-      : bvh(bvh), scene(scene), mesh(mesh), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+      : bvh(bvh), scheduler(&scene->lockstep_scheduler), scene(scene), mesh(mesh), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
 	topLevelItemThreshold(0), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
     {
       needAllThreads = true;
@@ -217,7 +217,7 @@ namespace embree
       return bounds;
     }
 
-    void BVH4BuilderMorton::computeBounds(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
+    void BVH4BuilderMorton::computeBounds(const size_t threadID, const size_t numThreads)
     {
       const ssize_t start = (threadID+0)*numPrimitives/numThreads;
       const ssize_t end   = (threadID+1)*numPrimitives/numThreads;
@@ -229,22 +229,22 @@ namespace embree
         for (size_t i=start; i<end; i++)	 
           bounds.extend(mesh->bounds(i));
       }
-	  else
-	  {
-	    for (ssize_t cur=0, i=0; i<ssize_t(scene->size()); i++) 
-        {
-          TriangleMesh* geom = (TriangleMesh*) scene->get(i);
+      else
+      {
+	for (ssize_t cur=0, i=0; i<ssize_t(scene->size()); i++) 
+	{
+	  TriangleMesh* geom = (TriangleMesh*) scene->get(i);
           if (geom == NULL) continue;
-	      if (geom->type != TRIANGLE_MESH || geom->numTimeSteps != 1 || !geom->isEnabled()) continue;
-	      ssize_t gstart = 0;
-	      ssize_t gend = geom->numTriangles;
-	      ssize_t s = max(start-cur,gstart);
-	      ssize_t e = min(end  -cur,gend  );
-	      for (ssize_t j=s; j<e; j++) bounds.extend(geom->bounds(j));
-	        cur += geom->numTriangles;
-	      if (cur >= end) break;  
+	  if (geom->type != TRIANGLE_MESH || geom->numTimeSteps != 1 || !geom->isEnabled()) continue;
+	  ssize_t gstart = 0;
+	  ssize_t gend = geom->numTriangles;
+	  ssize_t s = max(start-cur,gstart);
+	  ssize_t e = min(end  -cur,gend  );
+	  for (ssize_t j=s; j<e; j++) bounds.extend(geom->bounds(j));
+	  cur += geom->numTriangles;
+	  if (cur >= end) break;  
         }
-	  }
+      }
       global_bounds.extend_atomic(bounds);    
     }
 
@@ -310,7 +310,7 @@ namespace embree
       }
     }
     
-    void BVH4BuilderMorton::computeMortonCodes(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
+    void BVH4BuilderMorton::computeMortonCodes(const size_t threadID, const size_t numThreads)
     {      
       const size_t startID = (threadID+0)*numPrimitives/numThreads;
       const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -365,7 +365,7 @@ namespace embree
 #endif	    
     }
     
-    void BVH4BuilderMorton::radixsort(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
+    void BVH4BuilderMorton::radixsort(const size_t threadID, const size_t numThreads)
     {
       const size_t startID = (threadID+0)*numPrimitives/numThreads;
       const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -424,7 +424,7 @@ namespace embree
       }
     }
     
-    void BVH4BuilderMorton::recurseSubMortonTrees(const size_t threadID, const size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
+    void BVH4BuilderMorton::recurseSubMortonTrees(const size_t threadID, const size_t numThreads)
     {
       __aligned(64) Allocator nodeAlloc(&bvh->alloc);
       __aligned(64) Allocator leafAlloc(&bvh->alloc);
@@ -1018,7 +1018,7 @@ namespace embree
       initThreadState(threadIndex,threadCount);
 
       /* all worker threads enter tasking system */
-      if (TaskScheduler::enter(threadIndex,threadCount))
+      if (scheduler->enter(threadIndex,threadCount))
 	return;
 
       /* start measurement */
@@ -1027,11 +1027,11 @@ namespace embree
       
       /* compute scene bounds */
       global_bounds.reset();
-      TaskScheduler::dispatchTask( _computeBounds, this, threadIndex, threadCount );
+      scheduler->dispatchTask( task_computeBounds, this, threadIndex, threadCount );
       bvh->bounds = global_bounds.geomBounds;
 
       /* compute morton codes */
-      TaskScheduler::dispatchTask( _computeMortonCodes, this, threadIndex, threadCount );   
+      scheduler->dispatchTask( task_computeMortonCodes, this, threadIndex, threadCount );   
 
       /* padding */
       MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc.base();
@@ -1041,7 +1041,7 @@ namespace embree
       }
 
       /* sort morton codes */
-      TaskScheduler::dispatchTask( _radixsort, this, threadIndex, threadCount );
+      scheduler->dispatchTask( task_radixsort, this, threadIndex, threadCount );
 
 #if defined(DEBUG)
       for (size_t i=1; i<numPrimitives; i++)
@@ -1069,13 +1069,13 @@ namespace embree
       /* build sub-trees */
       g_state->taskCounter = 0;
       //g_state->workStack.reset();
-      TaskScheduler::dispatchTask( _recurseSubMortonTrees, this, threadIndex, threadCount );
+      scheduler->dispatchTask( task_recurseSubMortonTrees, this, threadIndex, threadCount );
       
       /* refit toplevel part of tree */
       refitTopLevel(bvh->root);
       
       /* release all threads again */
-      TaskScheduler::leave(threadIndex,threadCount);
+      scheduler->leave(threadIndex,threadCount);
 
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;

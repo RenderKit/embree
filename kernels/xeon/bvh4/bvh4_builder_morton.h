@@ -167,16 +167,16 @@ namespace embree
       TaskScheduler::Task task;
       
       /*! task that calculates the bounding box of the scene */
-      TASK_RUN_FUNCTION(BVH4BuilderMorton,computeBounds);
+      TASK_FUNCTION(BVH4BuilderMorton,computeBounds);
       
       /*! task that calculates the morton codes for each primitive in the scene */
-      TASK_RUN_FUNCTION(BVH4BuilderMorton,computeMortonCodes);
+      TASK_FUNCTION(BVH4BuilderMorton,computeMortonCodes);
       
       /*! parallel sort of the morton codes */
-      TASK_RUN_FUNCTION(BVH4BuilderMorton,radixsort);
+      TASK_FUNCTION(BVH4BuilderMorton,radixsort);
       
       /*! task that builds a list of sub-trees */
-      TASK_RUN_FUNCTION(BVH4BuilderMorton,recurseSubMortonTrees);
+      TASK_FUNCTION(BVH4BuilderMorton,recurseSubMortonTrees);
       
     public:
       
@@ -215,6 +215,7 @@ namespace embree
       
     public:
       BVH4* bvh;               //!< Output BVH
+      LockStepTaskScheduler* scheduler;
       Scene* scene;
       TriangleMesh* mesh;
       size_t logBlockSize;
@@ -242,7 +243,7 @@ namespace embree
       CentGeomBBox3fa global_bounds;
       //createSmallLeaf createSmallLeaf;
       //leafBounds leafBounds;
-      LockStepTaskScheduler scheduler;
+      //LockStepTaskScheduler scheduler;
     };
 
     class BVH4Triangle1BuilderMorton : public BVH4BuilderMorton
