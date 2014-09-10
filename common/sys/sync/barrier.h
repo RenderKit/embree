@@ -66,41 +66,20 @@ namespace embree
   struct __aligned(64) BarrierActive 
   {
   public:
-    BarrierActive () : N(0), cntr0(0), cntr1(0) {}
+    BarrierActive () 
+      : cntr(0) {}
     
-    void init(size_t cntr) {
-      this->N = cntr;
-      this->cntr0 = cntr;
-      this->cntr1 = cntr;
+    void reset() {
+      cntr = 0;
     }
 
-    void wait() {
-      atomic_add((atomic_t*)&cntr0,-1);
-      while (cntr0 != 0) __pause();
-      cntr0 = N;
-      atomic_add((atomic_t*)&cntr1,-1);
-      while (cntr1 != 0) __pause();
-      cntr1 = N;
-    }
-
-    void wait (const unsigned int threadIndex, const unsigned int threadCount) {  
-      wait();   
-    }
-
-    void syncWithReduction(const size_t threadIndex, 
-                           const size_t threadCount,
-                           void (* reductionFct)(const size_t currentThreadID,
-                                                 const size_t childThreadID,
-                                                 void *ptr),
-                           void *ptr)
-    {
-      wait();
+    void wait (size_t numThreads) {
+      atomic_add((atomic_t*)&cntr,1);
+      while (cntr != numThreads) __pause();
     }
 
   private:
-    volatile size_t N;
-    volatile atomic_t cntr0;
-    volatile atomic_t cntr1;
+    volatile atomic_t cntr;
     char align[64-sizeof(atomic_t)];
   };
 

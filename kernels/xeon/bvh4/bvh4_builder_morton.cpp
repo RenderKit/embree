@@ -140,8 +140,8 @@ namespace embree
 	size_t numActiveThreads = min(threadCount,getNumberOfCores());
 	//TaskScheduler::enableThreads(numActiveThreads); // FIXME: enable
         //scheduler->dispatchTask(threadIndex,threadCount,_build_parallel_morton,this,numActiveThreads,"build_parallel_morton");
-	build_parallel_morton(threadIndex,threadCount,0,1);
-	//build_parallel_morton(threadIndex,numActiveThreads,0,1);
+	//build_parallel_morton(threadIndex,threadCount,0,1);
+	build_parallel_morton(threadIndex,numActiveThreads,0,1);
 	//TaskScheduler::enableThreads(threadCount); // FIXME: enable
       } else {
         build_sequential_morton(threadIndex,threadCount);

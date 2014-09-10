@@ -171,8 +171,8 @@ namespace embree
 
   void LinearBarrierActive::wait (const size_t threadIndex, const size_t __threadCount)
   {
-    //size_t threadCount = numThreads;
-    size_t threadCount = __threadCount;
+    size_t threadCount = numThreads;
+    //size_t threadCount = __threadCount;
 
     if (mode == 0)
     {			

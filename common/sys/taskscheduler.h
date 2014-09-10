@@ -260,13 +260,19 @@ namespace embree
       Init (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler)
       : threadIndex(threadIndex), threadCount(threadCount), scheduler(scheduler) 
       {
-	if (threadCount)
+	if (threadCount) 
+	{
+	  if (threadIndex == 0) scheduler->taskBarrier.init(threadCount);
+	  scheduler->barrier.wait(threadCount);
 	  scheduler->enter(threadIndex,threadCount);
+	}
       }
       
       ~Init () {
-	if (threadIndex == 0 && threadCount != 0)
+	if (threadIndex == 0 && threadCount != 0) {
+	  scheduler->barrier.reset();
 	  scheduler->leave(threadIndex,threadCount);
+	}
       }
 
       size_t threadIndex, threadCount;
@@ -274,6 +280,8 @@ namespace embree
     };
 
     static const unsigned int CONTROL_THREAD_ID = 0;
+
+    BarrierActive barrier;
 
     typedef void (*runFunction)(void* data, const size_t threadID, const size_t numThreads);
     typedef void (*runFunction2)(void* data, const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks);

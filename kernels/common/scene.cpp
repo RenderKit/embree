@@ -283,11 +283,6 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-    /*if (threadCount) {
-      Lock<MutexSys> lock(mutex);
-      lockstep_scheduler.taskBarrier.init(threadCount);
-      }*/
-
     /* all user worker threads properly enter and leave the tasking system */
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
 
