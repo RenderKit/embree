@@ -1047,7 +1047,8 @@ RTCScene convertScene(ISPCScene* scene_in)
   }
 
   /* commit changes to scene */
-  rtcCommit (scene_out);
+  rtcCommit(scene_out);
+  //rtcCommitMT (scene_out,0,1);
   return scene_out;
 } // convertScene
 
