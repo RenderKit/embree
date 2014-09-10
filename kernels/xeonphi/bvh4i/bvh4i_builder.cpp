@@ -43,9 +43,7 @@
 
 namespace embree
 {
-#if defined(DEBUG)
   extern AtomicMutex mtx;
-#endif
 
   static double dt = 0.0f;
 
@@ -233,6 +231,14 @@ namespace embree
   
   void BVH4iBuilder::build(const size_t threadIndex, const size_t threadCount) 
   {
+    mtx.lock();
+    PING;
+    DBG_PRINT(threadIndex);
+    DBG_PRINT(threadCount);    
+    mtx.unlock();
+
+    if (threadIndex != 0) build_parallel(threadIndex,threadCount);
+
     const size_t totalNumPrimitives = getNumPrimitives();
 
     /* print builder name */
@@ -258,9 +264,9 @@ namespace embree
       }
 
     /* allocate BVH data */
-    allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
+    allocateData(threadCount /* TaskScheduler::getNumThreads() */ ,totalNumPrimitives);
     
-    if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1) )
+    if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && /* TaskScheduler::getNumThreads() */ threadCount > 1) )
       {
 	DBG(std::cout << "PARALLEL BUILD" << std::endl);
 
@@ -274,7 +280,8 @@ namespace embree
 	size_t iterations = PROFILE_ITERATIONS;
 	for (size_t i=0; i<iterations; i++) 
 	  {
-	    TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
+	    //TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
+	    build_parallel(threadIndex,threadCount);
 	    dt_min = min(dt_min,dt);
 	    dt_avg = dt_avg + dt;
 	    dt_max = max(dt_max,dt);
@@ -289,7 +296,9 @@ namespace embree
 
 #else
 
-	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
+	build_parallel(threadIndex,threadCount);
+
+	//TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel,this,TaskScheduler::getNumThreads(),"build_parallel");
 #endif
       }
     else
@@ -297,7 +306,7 @@ namespace embree
 	assert( numPrimitives > 0 );
 	/* number of primitives is small, just use single threaded mode */
 	DBG(std::cout << "SERIAL BUILD" << std::endl);
-	build_parallel(0,1,0,0,NULL);
+	build_parallel(0,1);
       }
 
     if (g_verbose >= 2) {
@@ -1661,7 +1670,7 @@ namespace embree
   // =======================================================================================================
 
   
-  void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount) 
   {
     TIMER(double msec = 0.0);
 
@@ -1764,10 +1773,6 @@ namespace embree
     TIMER(std::cout << "task_finalize " << 1000. * msec << " ms" << std::endl << std::flush);
 
     
-
-    /* release all threads again */
-    scene->lockstep_scheduler.releaseThreads(threadCount);
-
     /* stop measurement */
 #if !defined(PROFILE)
     if (g_verbose >= 2) 

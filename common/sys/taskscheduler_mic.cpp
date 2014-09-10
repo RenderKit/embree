@@ -187,6 +187,7 @@ namespace embree
   }
 
   void TaskSchedulerMIC::terminate() {
+    PING;
     terminateThreads = true;
   }
 }

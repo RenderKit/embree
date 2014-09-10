@@ -55,7 +55,7 @@ namespace embree
     return (char*)_mm_malloc(size,alignment);
   }
 
-  __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) {
+  __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) {      
     ISPCTask* ispcTask = new ISPCTask((TaskScheduler::Event*)(*taskPtr),(TaskFuncType)func,data,count);
     TaskScheduler::addTask(-1, TaskScheduler::GLOBAL_BACK, &ispcTask->task);
   }

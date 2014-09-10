@@ -78,6 +78,9 @@ namespace embree
     
   protected:
 
+    void build_parallel(size_t threadIndex, size_t threadCount);
+
+    
     void allocateMemoryPools(const size_t numPrims, 
 			     const size_t numNodes,
 			     const size_t sizeNodeInBytes  = sizeof(BVH4i::Node),
@@ -91,7 +94,6 @@ namespace embree
     TASK_FUNCTION(BVH4iBuilder,createTriangle1Accel);
     TASK_FUNCTION(BVH4iBuilder,parallelBinningGlobal);
     TASK_FUNCTION(BVH4iBuilder,parallelPartitioningGlobal);
-    TASK_RUN_FUNCTION(BVH4iBuilder,build_parallel);
     LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelBinningLocal);
     LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelPartitioningLocal);
 

@@ -233,7 +233,6 @@ namespace embree
       syncThreads(threadID, numThreads);
       return false;
     }
-    
     return true;
   }
 

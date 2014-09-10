@@ -311,7 +311,8 @@ export void device_render (uniform int* uniform pixels,
 #if 0
     launch[ 1 ] getNumHWThreads(); sync;
     print("% HW threads\n",g_numThreads);
-    launch[ g_numThreads ] parallelCommit(); sync;
+    // launch[ g_numThreads ] parallelCommit(); sync;
+    launch[ 4 ] parallelCommit(); sync;
 #endif
   }
 

@@ -374,7 +374,7 @@ namespace embree
 
     if (g_verbose >= 2) 
       printSettings();
-    
+
     TaskScheduler::create(g_numThreads);
 
     CATCH_END;
