@@ -46,15 +46,15 @@ namespace embree
 
     std::auto_ptr<BVH4BuilderFast::GlobalState> BVH4BuilderFast::g_state(NULL);
 
-    BVH4BuilderFast::BVH4BuilderFast (BVH4* bvh, size_t logBlockSize, size_t logSAHBlockSize, 
+    BVH4BuilderFast::BVH4BuilderFast (LockStepTaskScheduler* scheduler, BVH4* bvh, size_t logBlockSize, size_t logSAHBlockSize, 
 				      bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-      : bvh(bvh), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), logSAHBlockSize(logSAHBlockSize), 
+      : scheduler(scheduler), bvh(bvh), numPrimitives(0), prims(NULL), bytesPrims(0), logBlockSize(logBlockSize), logSAHBlockSize(logSAHBlockSize), 
 	needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize) { needAllThreads = true; }
 
     template<typename Primitive>
     BVH4BuilderFastT<Primitive>::BVH4BuilderFastT (BVH4* bvh, Scene* scene, size_t logBlockSize, size_t logSAHBlockSize, 
 						   bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize,bool parallel)
-      : scene(scene), BVH4BuilderFast(bvh,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize) { needAllThreads = parallel; }
+      : scene(scene), BVH4BuilderFast(&scene->lockstep_scheduler,bvh,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize) { needAllThreads = parallel; }
     
     template<> BVH4BezierBuilderFast  <Bezier1>   ::BVH4BezierBuilderFast   (BVH4* bvh, Scene* scene) 
       : geom(NULL), BVH4BuilderFastT<Bezier1>   (bvh,scene,0,0,false,sizeof(Bezier1),1,1,true) {}
@@ -98,8 +98,8 @@ namespace embree
     template<> BVH4UserGeometryBuilderFastT<AccelSetItem>::BVH4UserGeometryBuilderFastT (BVH4* bvh, UserGeometryBase* geom) 
       : geom(geom), BVH4BuilderFastT<AccelSetItem>(bvh,geom->parent,0,0,false,sizeof(AccelSetItem),1,1,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
     
-    BVH4TopLevelBuilderFastT::BVH4TopLevelBuilderFastT (BVH4* bvh) 
-      : prims_i(NULL), N(0), BVH4BuilderFast(bvh,0,0,false,0,1,1) {}
+    BVH4TopLevelBuilderFastT::BVH4TopLevelBuilderFastT (LockStepTaskScheduler* scheduler, BVH4* bvh) 
+      : prims_i(NULL), N(0), BVH4BuilderFast(scheduler,bvh,0,0,false,0,1,1) {}
 
     BVH4BuilderFast::~BVH4BuilderFast () 
     {
@@ -177,10 +177,10 @@ namespace embree
     }
 
     template<typename Primitive>
-    void BVH4BezierBuilderFast<Primitive>::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
+    void BVH4BezierBuilderFast<Primitive>::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) 
     {
-      if (geom) PrimRefArrayGenFromGeometry<BezierCurves>::generate_parallel(threadIndex, threadCount, geom , this->prims, pinfo);
-      else      PrimRefArrayGen                          ::generate_parallel(threadIndex, threadCount, this->scene, BEZIER_CURVES, 1, this->prims, pinfo);
+      if (geom) PrimRefArrayGenFromGeometry<BezierCurves>::generate_parallel(threadIndex, threadCount, scheduler, geom , this->prims, pinfo);
+      else      PrimRefArrayGen                          ::generate_parallel(threadIndex, threadCount, scheduler, this->scene, BEZIER_CURVES, 1, this->prims, pinfo);
     }
     
     // =======================================================================================================
@@ -202,10 +202,10 @@ namespace embree
     }
 
     template<typename Primitive>
-    void BVH4TriangleBuilderFast<Primitive>::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
+    void BVH4TriangleBuilderFast<Primitive>::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) 
     {
-      if (geom) PrimRefArrayGenFromGeometry<TriangleMesh>::generate_parallel(threadIndex, threadCount, geom , this->prims, pinfo);
-      else      PrimRefArrayGen                          ::generate_parallel(threadIndex, threadCount, this->scene, TRIANGLE_MESH, 1, this->prims, pinfo);
+      if (geom) PrimRefArrayGenFromGeometry<TriangleMesh>::generate_parallel(threadIndex, threadCount, scheduler, geom , this->prims, pinfo);
+      else      PrimRefArrayGen                          ::generate_parallel(threadIndex, threadCount, scheduler, this->scene, TRIANGLE_MESH, 1, this->prims, pinfo);
     }
 
     // =======================================================================================================
@@ -227,10 +227,10 @@ namespace embree
     }
 
     template<typename Primitive>
-    void BVH4UserGeometryBuilderFastT<Primitive>::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
+    void BVH4UserGeometryBuilderFastT<Primitive>::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) 
     {
-      if (geom) PrimRefArrayGenFromGeometry<UserGeometryBase>::generate_parallel(threadIndex, threadCount, geom , this->prims, pinfo);
-      else      PrimRefArrayGen                              ::generate_parallel(threadIndex, threadCount, this->scene, USER_GEOMETRY, 1, this->prims, pinfo);
+      if (geom) PrimRefArrayGenFromGeometry<UserGeometryBase>::generate_parallel(threadIndex, threadCount, scheduler, geom , this->prims, pinfo);
+      else      PrimRefArrayGen                              ::generate_parallel(threadIndex, threadCount, scheduler, this->scene, USER_GEOMETRY, 1, this->prims, pinfo);
     }
 
     // =======================================================================================================
@@ -249,7 +249,7 @@ namespace embree
       }
     }
 
-    void BVH4TopLevelBuilderFastT::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) 
+    void BVH4TopLevelBuilderFastT::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) 
     {
       for (size_t i=0; i<N; i++) {
 	pinfo.add(prims_i[i].bounds(),prims_i[i].center2());
@@ -356,13 +356,13 @@ namespace embree
       PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
 
       /* parallel binning of centroids */
-      const float sah = g_state->parallelBinner.find(pinfo,prims,tmp,logBlockSize,threadID,numThreads);
+      const float sah = g_state->parallelBinner.find(pinfo,prims,tmp,logBlockSize,threadID,numThreads,scheduler);
 
       /* if we cannot find a valid split, enforce an arbitrary split */
       if (unlikely(sah == float(inf))) splitFallback(prims,current,leftChild,rightChild);
       
       /* parallel partitioning of items */
-      else g_state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads);
+      else g_state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads,scheduler);
     }
     
     __forceinline void BVH4BuilderFast::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)
@@ -460,7 +460,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4BuilderFast::buildSubTrees(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
+    void BVH4BuilderFast::buildSubTrees(size_t threadID, size_t numThreads)
     {
       __aligned(64) Allocator nodeAlloc(&bvh->alloc);
       __aligned(64) Allocator leafAlloc(&bvh->alloc);
@@ -522,7 +522,7 @@ namespace embree
     void BVH4BuilderFast::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
     {
       /* all worker threads enter tasking system */
-      if (TaskScheduler::enter(threadIndex,threadCount))
+      if (scheduler->enter(threadIndex,threadCount))
 	return;
 
       /* start measurement */
@@ -531,9 +531,9 @@ namespace embree
 
       /* calculate list of primrefs */
       PrimInfo pinfo(empty);
-      create_primitive_array_parallel(threadIndex, threadCount, pinfo);
+      create_primitive_array_parallel(threadIndex, threadCount, scheduler, pinfo);
       bvh->bounds = pinfo.geomBounds;
-      
+
       /* initialize node and leaf allocator */
       bvh->alloc.clear();
       __aligned(64) Allocator nodeAlloc(&bvh->alloc);
@@ -574,10 +574,10 @@ namespace embree
       std::sort(g_state->heap.begin(),g_state->heap.end(),BuildRecord::Greater());
 
       /* now process all created subtasks on multiple threads */
-      TaskScheduler::dispatchTask(_buildSubTrees, this, threadIndex, threadCount );
+      scheduler->dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
       
       /* release all threads again */
-      TaskScheduler::leave(threadIndex,threadCount);
+      scheduler->leave(threadIndex,threadCount);
       
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;

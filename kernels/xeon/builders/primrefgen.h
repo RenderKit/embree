@@ -83,15 +83,15 @@ namespace embree
     {
     public:   
       static void generate_sequential(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims, PrimInfo& pinfo);
-      static void generate_parallel  (size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims, PrimInfo& pinfo);
+      static void generate_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims, PrimInfo& pinfo);
       
     private:
       
       /*! standard constructor that schedules the task */
-      PrimRefArrayGen (size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel);
+      PrimRefArrayGen (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel);
             
       /*! parallel task to iterate over the primitives */
-      TASK_RUN_FUNCTION(PrimRefArrayGen,task_gen_parallel);
+      TASK_FUNCTION(PrimRefArrayGen,task_gen_parallel);
       
       /* input data */
     private:
@@ -109,15 +109,15 @@ namespace embree
     {
     public:   
       static void generate_sequential(size_t threadIndex, size_t threadCount, const Ty* geom, PrimRef* prims, PrimInfo& pinfo);
-      static void generate_parallel  (size_t threadIndex, size_t threadCount, const Ty* geom, PrimRef* prims, PrimInfo& pinfo);
+      static void generate_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Ty* geom, PrimRef* prims, PrimInfo& pinfo);
       
     private:
       
       /*! standard constructor */
-      PrimRefArrayGenFromGeometry (size_t threadIndex, size_t threadCount, const Ty* geom, PrimRef* prims_o, PrimInfo& pinfo_o);
+      PrimRefArrayGenFromGeometry (const Ty* geom, PrimRef* prims_o, PrimInfo& pinfo_o);
             
       /*! parallel task to iterate over the primitives */
-      TASK_RUN_FUNCTION(PrimRefArrayGenFromGeometry,task_gen_parallel);
+      TASK_FUNCTION(PrimRefArrayGenFromGeometry,task_gen_parallel);
       
       /* input data */
     private:

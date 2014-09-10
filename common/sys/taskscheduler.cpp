@@ -251,6 +251,13 @@ namespace embree
   }
 
 
+  bool LockStepTaskScheduler::enter(size_t threadIndex, size_t threadCount)
+  {
+    if (threadIndex == 0) return false;
+    dispatchTaskMainLoop(threadIndex,threadCount);
+    return true;
+  }
+
   void LockStepTaskScheduler::dispatchTaskMainLoop(const size_t threadID, const size_t numThreads)
   {
     while (true) {
@@ -273,6 +280,12 @@ namespace embree
     syncThreads(threadID, numThreads);
     
     return false;
+  }
+
+  void LockStepTaskScheduler::leave(const size_t threadID, const size_t numThreads)
+  {
+    assert(threadID == 0);
+    releaseThreads(numThreads);
   }
 
   void LockStepTaskScheduler::releaseThreads(const size_t numThreads)

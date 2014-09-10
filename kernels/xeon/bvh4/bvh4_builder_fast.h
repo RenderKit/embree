@@ -100,7 +100,7 @@ namespace embree
     public:
 
       /*! Constructor. */
-      BVH4BuilderFast (BVH4* bvh, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+      BVH4BuilderFast (LockStepTaskScheduler* scheduler, BVH4* bvh, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
       
       /*! Destructor */
       ~BVH4BuilderFast ();
@@ -113,7 +113,7 @@ namespace embree
 
     public:
       TASK_RUN_FUNCTION(BVH4BuilderFast,computePrimRefs);
-      TASK_RUN_FUNCTION(BVH4BuilderFast,buildSubTrees);
+      TASK_FUNCTION(BVH4BuilderFast,buildSubTrees);
       TASK_RUN_FUNCTION(BVH4BuilderFast,build_parallel);
 
     public:
@@ -125,7 +125,7 @@ namespace embree
       virtual void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo) = 0;
     
       /*! creates build primitive array (parallel version) */
-      virtual void create_primitive_array_parallel(size_t threadIndex, size_t threadCount, PrimInfo& pinfo) = 0;
+      virtual void create_primitive_array_parallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) = 0;
     
       /*! build mode */
       enum { RECURSE_SEQUENTIAL = 1, RECURSE_PARALLEL = 2, BUILD_TOP_LEVEL = 3 };
@@ -154,6 +154,7 @@ namespace embree
       static void splitFallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
     
     public:
+      LockStepTaskScheduler* scheduler;
       BVH4* bvh;                               //!< Output BVH
       size_t logBlockSize;
       size_t logSAHBlockSize;
@@ -192,7 +193,7 @@ namespace embree
       BVH4BezierBuilderFast (BVH4* bvh, BezierCurves* geom);
       size_t number_of_primitives();
       void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
-      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
+      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo);
     public:
       BezierCurves* geom;   //!< input mesh
     };
@@ -205,7 +206,7 @@ namespace embree
       BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* mesh);
       size_t number_of_primitives();
       void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
-      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) ;
+      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) ;
     public:
       TriangleMesh* geom;   //!< input mesh
     };
@@ -218,7 +219,7 @@ namespace embree
       BVH4UserGeometryBuilderFastT (BVH4* bvh, UserGeometryBase* geom);
       size_t number_of_primitives();
       void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
-      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo) ;
+      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) ;
     public:
       UserGeometryBase* geom;   //!< input geometry
     };
@@ -226,7 +227,7 @@ namespace embree
     class BVH4TopLevelBuilderFastT : public BVH4BuilderFast
     {
     public:
-      BVH4TopLevelBuilderFastT (BVH4* bvh);
+      BVH4TopLevelBuilderFastT (LockStepTaskScheduler* scheduler, BVH4* bvh);
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
       void build(size_t threadIndex, size_t threadCount, PrimRef* prims_i, size_t N)
       {
@@ -236,7 +237,7 @@ namespace embree
       }
       size_t number_of_primitives();
       void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
-      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
+      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo);
     public:
       PrimRef* prims_i;
       size_t N;

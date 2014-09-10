@@ -31,7 +31,7 @@ namespace embree
 #define MIN_OPEN_SIZE 2000
 
     BVH4BuilderTopLevel::BVH4BuilderTopLevel (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) 
-      : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel), BVH4TopLevelBuilderFastT(bvh) {}
+      : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel), BVH4TopLevelBuilderFastT(&scene->lockstep_scheduler,bvh) {}
     
     BVH4BuilderTopLevel::~BVH4BuilderTopLevel ()
     {

@@ -174,14 +174,14 @@ namespace embree
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
     void PrimRefArrayGen::generate_sequential(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o) {
-      PrimRefArrayGen(threadIndex,threadCount,scene,ty,numTimeSteps,prims_o,pinfo_o,false);
+      PrimRefArrayGen(threadIndex,threadCount,NULL,scene,ty,numTimeSteps,prims_o,pinfo_o,false);
     }
 
-    void PrimRefArrayGen::generate_parallel(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o) {
-      PrimRefArrayGen(threadIndex,threadCount,scene,ty,numTimeSteps,prims_o,pinfo_o,true);
+    void PrimRefArrayGen::generate_parallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o) {
+      PrimRefArrayGen(threadIndex,threadCount,scheduler,scene,ty,numTimeSteps,prims_o,pinfo_o,true);
     }
 
-    PrimRefArrayGen::PrimRefArrayGen(size_t threadIndex, size_t threadCount, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel)
+    PrimRefArrayGen::PrimRefArrayGen(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel)
       : scene(scene), ty(ty), numTimeSteps(numTimeSteps), numPrimitives(0), prims_o(prims_o), pinfo_o(pinfo_o)
     {
       /*! calculate number of primitives */
@@ -193,12 +193,12 @@ namespace embree
 
       /*! generate primref array */
       pinfo_o.reset();
-      if (parallel) TaskScheduler::dispatchTask(_task_gen_parallel, this, threadIndex, threadCount);
-      else          task_gen_parallel(threadIndex,threadCount,0,1,NULL);
+      if (parallel) scheduler->dispatchTask(task_task_gen_parallel, this, threadIndex, threadCount);
+      else          task_gen_parallel(0,1);
       assert(pinfo_o.size() == numPrimitives);
     }
 
-    void PrimRefArrayGen::task_gen_parallel(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
+    void PrimRefArrayGen::task_gen_parallel(size_t taskIndex, size_t taskCount)
     {
       ssize_t start = (taskIndex+0)*numPrimitives/taskCount;
       ssize_t end   = (taskIndex+1)*numPrimitives/taskCount;
@@ -272,26 +272,26 @@ namespace embree
       void PrimRefArrayGenFromGeometry<Ty>::generate_sequential(size_t threadIndex, size_t threadCount, const Ty* geom, PrimRef* prims_o, PrimInfo& pinfo_o) 
     {
       pinfo_o.reset();
-      PrimRefArrayGenFromGeometry gen(threadIndex,threadCount,geom,prims_o,pinfo_o);
-      gen.task_gen_parallel(threadIndex,threadCount,0,1,NULL);
+      PrimRefArrayGenFromGeometry gen(geom,prims_o,pinfo_o);
+      gen.task_gen_parallel(0,1);
       assert(pinfo_o.size() == geom->size());
     }
     
     template<typename Ty>
-      void PrimRefArrayGenFromGeometry<Ty>::generate_parallel(size_t threadIndex, size_t threadCount, const Ty* geom, PrimRef* prims_o, PrimInfo& pinfo_o) 
+      void PrimRefArrayGenFromGeometry<Ty>::generate_parallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Ty* geom, PrimRef* prims_o, PrimInfo& pinfo_o) 
     {
       pinfo_o.reset();
-      PrimRefArrayGenFromGeometry gen(threadIndex,threadCount,geom,prims_o,pinfo_o);
-      TaskScheduler::dispatchTask(_task_gen_parallel, &gen, threadIndex, threadCount);
+      PrimRefArrayGenFromGeometry gen(geom,prims_o,pinfo_o);
+      scheduler->dispatchTask(task_task_gen_parallel, &gen, threadIndex, threadCount);
       assert(pinfo_o.size() == geom->size());
     }
 
     template<typename Ty>
-      PrimRefArrayGenFromGeometry<Ty>::PrimRefArrayGenFromGeometry(size_t threadIndex, size_t threadCount, const Ty* geom, PrimRef* prims_o, PrimInfo& pinfo_o)
+      PrimRefArrayGenFromGeometry<Ty>::PrimRefArrayGenFromGeometry(const Ty* geom, PrimRef* prims_o, PrimInfo& pinfo_o)
       : geom(geom), prims_o(prims_o), pinfo_o(pinfo_o) {}
 
     template<typename Ty>
-      void PrimRefArrayGenFromGeometry<Ty>::task_gen_parallel(size_t threadID, size_t numThreads, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup)
+      void PrimRefArrayGenFromGeometry<Ty>::task_gen_parallel(size_t taskIndex, size_t taskCount)
     {
       ssize_t start = (taskIndex+0)*geom->size()/taskCount;
       ssize_t end   = (taskIndex+1)*geom->size()/taskCount;

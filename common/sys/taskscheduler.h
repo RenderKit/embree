@@ -251,8 +251,10 @@ namespace embree
 
     static const unsigned int CONTROL_THREAD_ID = 0;
 
+    typedef void (*runFunction)(void* data, const size_t threadID, const size_t numThreads);
+
     __aligned(64) AlignedAtomicCounter32 taskCounter;
-    __aligned(64) void (* taskPtr)(void* data, const size_t threadID, const size_t numThreads);
+    __aligned(64) runFunction taskPtr;
     __aligned(64) void* volatile data;
 
 #if defined(__MIC__)
@@ -261,15 +263,15 @@ namespace embree
     __aligned(64) LinearBarrierActive taskBarrier;
 #endif
 
+    bool enter(size_t threadIndex, size_t threadCount);
+    void leave(size_t threadIndex, size_t threadCount);
+
     bool dispatchTask(const size_t threadID, const size_t numThreads);
 
     void dispatchTaskMainLoop(const size_t threadID, const size_t numThreads);
     void releaseThreads(const size_t numThreads);
   
-    __forceinline bool dispatchTask(void (* task)(void* data, const size_t threadID, const size_t numThreads),
-                                           void* data, 
-					   const size_t threadID,
-					   const size_t numThreads)
+    __forceinline bool dispatchTask(runFunction task, void* data, const size_t threadID, const size_t numThreads)
     {
       LockStepTaskScheduler::taskPtr = task;
       LockStepTaskScheduler::data = data;
