@@ -49,7 +49,7 @@ namespace embree
     
     /* take next task from task list */
     TaskScheduler::Event* event = task->event;
-
+    
     DBG(
 	std::cout << "GOT TASK " << (void*)task << " : threadIndex " << threadIndex << " threadCount " << threadCount << std::endl << std::flush;
 	);
@@ -66,7 +66,7 @@ namespace embree
 #endif
       }
 
-    barrier.wait(threadIndex,threadCount);
+    barrier.waitForThreads(threadIndex,threadCount);
 
     DBG(std::cout << "END WORK task " << task << " threadIndex " << threadIndex << std::endl << std::flush);
   }
@@ -188,7 +188,6 @@ namespace embree
   }
 
   void TaskSchedulerMIC::terminate() {
-    PING;
     terminateThreads = true;
   }
 }
