@@ -58,7 +58,7 @@ namespace embree
       
       for (size_t i=0; i<4; i++)
       {
-        if (prim->primID(i) == -1) break;
+        if (prim->geomID(i) == -1) break;
         const unsigned geomID = prim->geomID(i);
         const unsigned primID = prim->primID(i);
         const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
@@ -95,7 +95,7 @@ namespace embree
 
       for (size_t i=0; i<4; i++)
       {
-        if (prim->primID(i) == -1) break;
+        if (prim->geomID(i) == -1) break;
         const unsigned geomID = prim->geomID(i);
         const unsigned primID = prim->primID(i);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
