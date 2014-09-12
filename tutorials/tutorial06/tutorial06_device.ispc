@@ -20,6 +20,8 @@
 
 #define __device__
 
+#define PARALLEL_COMMIT
+
 struct DifferentialGeometry
 {
   Vec3f P;
@@ -941,6 +943,7 @@ struct ISPCScene {
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene g_scene = NULL;
+uniform unsigned int g_threads = 0;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -948,6 +951,12 @@ renderPixelFunc renderPixel;
 /* occlusion filter function */
 void occlusionFilterReject(void* uniform ptr, RTCRay& ray) {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
+}
+
+/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
+task void parallelCommit(RTCScene scene)
+{
+  rtcCommitThread (scene,threadIndex,threadCount); 
 }
 
 /* error reporting function */
@@ -992,6 +1001,10 @@ export void device_init (uniform int8* uniform cfg)
 
   /* initialize ray tracing core */
   rtcInit(cfg);
+
+  /* get number of HW threads */
+  g_threads = getNumHWThreads();
+  print("% HW threads found \n",g_threads);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
@@ -1049,7 +1062,13 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   }
 
   /* commit changes to scene */
+
+#if !defined(PARALLEL_COMMIT)
   rtcCommit (scene_out);
+#else
+  launch[  g_threads ] parallelCommit(scene_out); sync;
+#endif
+
   return scene_out;
 } // convertScene
 

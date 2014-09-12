@@ -279,35 +279,15 @@ namespace embree
     accels.build(threadIndex,threadCount);
   }
 
-  MutexSys dbg;
 
   void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
-#if 0
-    dbg.lock();
-    DBG_PRINT(threadIndex);
-    dbg.unlock();
-#endif
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex == 0) accels.build(threadIndex,threadCount);
-
-#if 0
-    dbg.lock();
-    PING;
-    DBG_PRINT(threadIndex);
-    dbg.unlock();
-#endif
-
   }
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-#if 0
-    PING;
-    DBG_PRINT(threadIndex);
-    DBG_PRINT(threadCount);
-#endif
-
     /* all user worker threads properly enter and leave the tasking system */
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex != 0) return;

@@ -16,9 +16,12 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
+#define PARALLEL_COMMIT
+
 /* scene data */
 RTCScene g_scene = NULL;
 uniform Vec3f* uniform colors = NULL;
+uniform unsigned int g_threads = 0;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -42,6 +45,13 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   }
   abort();
 }
+
+/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
+task void parallelCommit(RTCScene scene)
+{
+  rtcCommitThread (scene,threadIndex,threadCount); 
+}
+
 
 /* extended ray structure that includes total transparency along the ray */
 struct RTCRay2
@@ -176,6 +186,10 @@ export void device_init (uniform int8* uniform cfg)
   /* initialize ray tracing core */
   rtcInit(cfg);
 
+  /* get number of HW threads */
+  g_threads = getNumHWThreads();
+  print("% HW threads found \n",g_threads);
+
   /* set error handler */
   rtcSetErrorFunction(error_handler);
 
@@ -189,7 +203,12 @@ export void device_init (uniform int8* uniform cfg)
   addGroundPlane(g_scene);
 
   /* commit changes to scene */
+#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
+#else
+  launch[  g_threads ] parallelCommit(g_scene); sync;
+#endif
+
 
   /* set start render mode */
   renderPixel = renderPixelStandard;

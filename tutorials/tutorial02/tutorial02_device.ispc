@@ -19,6 +19,8 @@
 const uniform int numPhi = 5;
 const uniform int numTheta = 2*numPhi;
 
+#define PARALLEL_COMMIT
+
 /* render function to use */
 renderPixelFunc renderPixel;
 
@@ -326,12 +328,23 @@ uniform Instance* uniform g_instance2 = NULL;
 uniform Instance* uniform g_instance3 = NULL;
 
 uniform Vec3f colors[5][4];
+uniform unsigned int g_threads = 0;
+
+/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
+task void parallelCommit(RTCScene scene)
+{
+  rtcCommitThread (scene,threadIndex,threadCount); 
+}
 
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
+
+  /* get number of HW threads */
+  g_threads = getNumHWThreads();
+  print("% HW threads found \n",g_threads);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
@@ -346,7 +359,11 @@ export void device_init (uniform int8* uniform cfg)
   spheres[1].p = make_Vec3f(+1, 0, 0); spheres[1].r = 0.5f;
   spheres[2].p = make_Vec3f( 0, 0,-1); spheres[2].r = 0.5f;
   spheres[3].p = make_Vec3f(-1, 0, 0); spheres[3].r = 0.5f;
+#if !defined(PARALLEL_COMMIT)
   rtcCommit(g_scene0);
+#else
+  launch[  g_threads ] parallelCommit(g_scene0); sync;
+#endif
 
   /* create scene with 4 triangulated spheres */
   g_scene1 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
@@ -354,7 +371,11 @@ export void device_init (uniform int8* uniform cfg)
   createTriangulatedSphere(g_scene1,make_Vec3f(+1, 0, 0),0.5);
   createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,-1),0.5);
   createTriangulatedSphere(g_scene1,make_Vec3f(-1, 0, 0),0.5);
+#if !defined(PARALLEL_COMMIT)
   rtcCommit(g_scene1);
+#else
+  launch[  g_threads ] parallelCommit(g_scene1); sync;
+#endif
 
   /* create scene with 2 triangulated and 2 analytical spheres */
   g_scene2 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
@@ -362,7 +383,11 @@ export void device_init (uniform int8* uniform cfg)
   createAnalyticalSphere  (g_scene2,make_Vec3f(+1, 0, 0),0.5);
   createTriangulatedSphere(g_scene2,make_Vec3f( 0, 0,-1),0.5);
   createAnalyticalSphere  (g_scene2,make_Vec3f(-1, 0, 0),0.5);
+#if !defined(PARALLEL_COMMIT)
   rtcCommit(g_scene2);
+#else
+  launch[  g_threads ] parallelCommit(g_scene2); sync;
+#endif
 
   /* instantiate geometry */
   createGroundPlane(g_scene);
@@ -502,7 +527,11 @@ export void device_render (uniform int* uniform pixels,
   updateInstance(g_scene,g_instance1);
   updateInstance(g_scene,g_instance2);
   updateInstance(g_scene,g_instance3);
+#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
+#else
+  launch[  g_threads ] parallelCommit(g_scene); sync;
+#endif
 
   /* render all pixels */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
