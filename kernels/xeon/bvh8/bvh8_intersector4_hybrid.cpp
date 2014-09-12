@@ -252,6 +252,9 @@ namespace embree
             const ssef lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
             const ssef lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
             const ssef lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
+	    const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+            const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+            const sseb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
 #else
             const ssef lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
             const ssef lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
@@ -259,18 +262,11 @@ namespace embree
             const ssef lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
             const ssef lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
             const ssef lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
+	    const ssef lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+            const ssef lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+            const sseb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);
 #endif
     
-#if defined(__SSE4_1__)
-            const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-            const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-            const sseb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
-#else
-            const ssef lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const ssef lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const sseb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
-#endif
-        
             /* if we hit the child we choose to continue with that child if it 
                is closer than the current next child, or we push it onto the stack */
             if (likely(any(lhit)))
@@ -526,6 +522,9 @@ namespace embree
             const ssef lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
             const ssef lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
             const ssef lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
+	    const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+            const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+            const sseb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);    
 #else
             const ssef lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
             const ssef lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
@@ -533,18 +532,11 @@ namespace embree
             const ssef lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
             const ssef lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
             const ssef lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
+	    const ssef lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+            const ssef lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+            const sseb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);    
 #endif
     
-#if defined(__SSE4_1__)
-            const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-            const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-            const sseb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
-#else
-            const ssef lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const ssef lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const sseb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
-#endif
-            
             /* if we hit the child we choose to continue with that child if it 
                is closer than the current next child, or we push it onto the stack */
             if (likely(any(lhit)))
