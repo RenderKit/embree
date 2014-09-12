@@ -337,3 +337,16 @@ export void device_key_pressed(uniform int key)
     g_changed = true;
   }
 }
+
+uniform unsigned int g_numThreads = 0;
+
+task void task_getNumHWThreads()
+{
+ g_numThreads = threadCount;
+}
+
+uniform unsigned int getNumHWThreads()
+{
+ launch[ 1 ] task_getNumHWThreads(); sync;
+ return g_numThreads;
+}

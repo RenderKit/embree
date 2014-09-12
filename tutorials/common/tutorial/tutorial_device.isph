@@ -66,6 +66,8 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
 
 Vec3f renderPixelEyeLight(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
 
+uniform unsigned int getNumHWThreads();
+
 #define ALIGNED_STRUCT
 
 struct Sample3f

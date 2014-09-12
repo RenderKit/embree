@@ -107,6 +107,7 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
 
 Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
+
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
@@ -279,18 +280,11 @@ task void renderTile(uniform int* uniform pixels,
   }
 }
 
-uniform unsigned int g_numThreads = 0;
 
-task void getNumHWThreads()
-{
- g_numThreads = threadCount;
-}
 
-task void parallelCommit()
+task void parallelCommit(RTCScene scene)
 {
-  uniform unsigned int threadID   = threadIndex;
-  uniform unsigned int numThreads = threadCount;
-  rtcCommitThread (g_scene,threadIndex,threadCount); 
+  rtcCommitThread (scene,threadIndex,threadCount); 
 }
 
 /* called by the C++ code to render */
@@ -307,13 +301,12 @@ export void device_render (uniform int* uniform pixels,
   if (g_scene == NULL)
   { 
     g_scene = convertScene(g_ispc_scene);
-#if 0
+#if 0 //FIXME
     rtcCommit (g_scene);
 #else
-    launch[ 1 ] getNumHWThreads(); sync;
-    print("% HW threads\n",g_numThreads);
-    launch[ g_numThreads ] parallelCommit(); sync;
-    //launch[ 4 ] parallelCommit(); sync;
+    uniform unsigned int g_threads = getNumHWThreads();
+    print("% HW threads found \n",g_threads);
+    launch[ g_threads ] parallelCommit(g_scene); sync;
 #endif
   }
 
