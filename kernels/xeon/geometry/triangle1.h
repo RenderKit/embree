@@ -28,8 +28,8 @@ namespace embree
     __forceinline Triangle1 () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Triangle1 (const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const unsigned int geomID, const unsigned int primID, const unsigned int mask)
-      : v0(v0,primID), v1(v1,geomID), v2(v2,mask), Ng(cross(v0-v1,v2-v0)) {}
+    __forceinline Triangle1 (const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const unsigned int geomID, const unsigned int primID, const unsigned int mask, const bool last)
+      : v0(v0,primID), v1(v1,geomID | (last << 31)), v2(v2,mask), Ng(cross(v0-v1,v2-v0)) { }
 
     /*! calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const {
@@ -41,16 +41,19 @@ namespace embree
 
     /*! access hidden members */
     __forceinline unsigned int primID() const { return v0.a; }
-    __forceinline unsigned int geomID() const { return v1.a; }
+    __forceinline unsigned int geomID() const { return v1.a & 0x7FFFFFFF; }
     __forceinline unsigned int mask  () const { return v2.a; }
+    __forceinline int          last  () const { return v1.a & 0x80000000; }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
     {
       const PrimRef& prim = *prims;
+      prims++;
 
-      const size_t geomID = prim.geomID();
-      const size_t primID = prim.primID();
+      const unsigned last   = !prims;
+      const unsigned geomID = prim.geomID();
+      const unsigned primID = prim.primID();
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
       const TriangleMesh::Triangle& tri = mesh->triangle(primID);
       
@@ -63,20 +66,20 @@ namespace embree
       const ssef normal = cross(e1,e2);
       
       store4f_nt(&v0,cast(insert<3>(cast(p0),primID)));
-      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID)));
+      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID | (last << 31))));
       store4f_nt(&v2,cast(insert<3>(cast(p2),mesh->mask)));
       store4f_nt(&Ng,cast(insert<3>(cast(normal),0)));
-
-      prims++;
     }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
     {
       const PrimRef& prim = prims[i];
+      i++;
 
-      const size_t geomID = prim.geomID();
-      const size_t primID = prim.primID();
+      const unsigned last = i >= end;
+      const unsigned geomID = prim.geomID();
+      const unsigned primID = prim.primID();
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
       const TriangleMesh::Triangle& tri = mesh->triangle(primID);
       
@@ -89,11 +92,9 @@ namespace embree
       const ssef normal = cross(e1,e2);
       
       store4f_nt(&v0,cast(insert<3>(cast(p0),primID)));
-      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID)));
+      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID | (last << 31))));
       store4f_nt(&v2,cast(insert<3>(cast(p2),mesh->mask)));
       store4f_nt(&Ng,cast(insert<3>(cast(normal),0)));
-
-      i++;
     }
     
   public:
@@ -112,16 +113,12 @@ namespace embree
   struct SceneTriangle1 : public Triangle1Type
   {
     static SceneTriangle1 type;
-    void pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const; 
-    void pack(char* dst, const PrimRef* prims, size_t num, void* geom) const;
     BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 
   struct TriangleMeshTriangle1 : public Triangle1Type
   {
     static TriangleMeshTriangle1 type;
-    void pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const;
-    void pack(char* dst, const PrimRef* prims, size_t num, void* geom) const;
     BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 }
