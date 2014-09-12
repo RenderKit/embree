@@ -61,6 +61,8 @@ namespace embree
 
 #if defined(__MIC__)
   void BVH4iRegister();
+  void BVH4MBRegister();
+  void BVH4HairRegister();
 #endif
 
   /*! intersector registration functions */
@@ -363,6 +365,9 @@ namespace embree
     BVH4Register();
 #else
     BVH4iRegister();
+    BVH4MBRegister();
+    BVH4HairRegister();
+
 #endif 
 #if defined(__TARGET_AVX__)
     if (has_feature(AVX)) {

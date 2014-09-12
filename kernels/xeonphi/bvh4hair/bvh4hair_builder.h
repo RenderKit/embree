@@ -134,7 +134,7 @@ namespace embree
 
     virtual std::string getStatistics();
 
-    void build_parallel(size_t threadIndex, size_t threadCount);
+    void build_main(size_t threadIndex, size_t threadCount);
 
   protected:
 

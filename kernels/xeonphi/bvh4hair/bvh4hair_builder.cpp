@@ -573,7 +573,7 @@ namespace embree
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && threadCount > 1) )
       {
 	DBG(std::cout << "PARALLEL BUILD" << std::endl);
-	build_parallel(threadIndex,threadCount);
+	build_main(threadIndex,threadCount);
 
       }
     else
@@ -581,7 +581,7 @@ namespace embree
 	/* number of primitives is small, just use single threaded mode */
 	assert( numPrimitives > 0 );
 	DBG(std::cout << "SERIAL BUILD" << std::endl);
-	build_parallel(0,1);
+	build_main(0,1);
       }
 
     if (g_verbose >= 2) {
@@ -595,7 +595,7 @@ namespace embree
 
 
 
-  void BVH4HairBuilder::build_parallel(size_t threadIndex, size_t threadCount) 
+  void BVH4HairBuilder::build_main(size_t threadIndex, size_t threadCount) 
   {
     DBG(PING);
 
