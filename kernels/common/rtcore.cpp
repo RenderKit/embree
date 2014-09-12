@@ -496,7 +496,6 @@ namespace embree
     CATCH_BEGIN;
     TRACE(rtcCommitMT);
     VERIFY_HANDLE(scene);
-
     if (numThreads == 0) 
       process_error(RTC_INVALID_OPERATION,"invalid number of threads specified");
 

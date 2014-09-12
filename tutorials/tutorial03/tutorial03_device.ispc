@@ -163,7 +163,6 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   }
 
   /* commit changes to scene */
-  rtcCommit (scene_out);
   return scene_out;
 }
 
@@ -309,10 +308,12 @@ export void device_render (uniform int* uniform pixels,
   { 
     g_scene = convertScene(g_ispc_scene);
 #if 0
+    rtcCommit (g_scene);
+#else
     launch[ 1 ] getNumHWThreads(); sync;
     print("% HW threads\n",g_numThreads);
-    // launch[ g_numThreads ] parallelCommit(); sync;
-    launch[ 4 ] parallelCommit(); sync;
+    launch[ g_numThreads ] parallelCommit(); sync;
+    //launch[ 4 ] parallelCommit(); sync;
 #endif
   }
 
