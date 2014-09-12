@@ -685,7 +685,7 @@ namespace embree
 	v2[i] = 0;
       }
     
-      new (accel) Triangle4i(v0,v1,v2,vgeomID,vprimID);
+      new (accel) Triangle4i(v0,v1,v2,vgeomID,vprimID,true);
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     

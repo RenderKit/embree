@@ -32,9 +32,8 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     __forceinline Triangle4 (const sse3f& v0, const sse3f& v1, const sse3f& v2, const ssei& geomIDs, const ssei& primIDs, const ssei& mask, const bool last)
-      : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomIDs(geomIDs), primIDs(primIDs)
+      : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomIDs(geomIDs | (last << 31)), primIDs(primIDs)
     {
-      if (last) this->geomIDs |= 0x80000000;
 #if defined(__USE_RAY_MASK__)
       this->mask = mask;
 #endif
