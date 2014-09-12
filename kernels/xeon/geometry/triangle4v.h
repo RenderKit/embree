@@ -30,7 +30,7 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     __forceinline Triangle4v (const sse3f& v0, const sse3f& v1, const sse3f& v2, const ssei& geomIDs, const ssei& primIDs, const ssei& mask, const bool last)
-      : v0(v0), v1(v1), v2(v2), geomIDs(geomIDs | (last << 31)), primIDs(primIDs)
+      : v0(v0), v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs | (last << 31))
     {
 #if defined(__USE_RAY_MASK__)
       this->mask = mask;
@@ -90,15 +90,15 @@ namespace embree
     static __forceinline size_t blocks(size_t N) { return (N+3)/4; }
 
     /*! checks if this is the last triangle in the list */
-    __forceinline int last() const { return geomIDs[0] & 0x80000000; }
+    __forceinline int last() const { return primIDs[0] & 0x80000000; }
 
     /*! returns the geometry IDs */
-    __forceinline ssei geomID() const { return geomIDs & 0x7FFFFFFF; }
-    __forceinline int  geomID(const size_t i) const { assert(i<4); return geomIDs[i] & 0x7FFFFFFF; }
+    __forceinline ssei geomID() const { return geomIDs; }
+    __forceinline int  geomID(const size_t i) const { assert(i<4); return geomIDs[i]; }
 
     /*! returns the primitive IDs */
-    __forceinline ssei primID() const { return primIDs; }
-    __forceinline int  primID(const size_t i) const { assert(i<4); return primIDs[i]; }
+    __forceinline ssei primID() const { return primIDs & 0x7FFFFFFF; }
+    __forceinline int  primID(const size_t i) const { assert(i<4); return primIDs[i] & 0x7FFFFFFF; }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)

@@ -29,7 +29,7 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     __forceinline Triangle1 (const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const unsigned int geomID, const unsigned int primID, const unsigned int mask, const bool last)
-      : v0(v0,primID), v1(v1,geomID | (last << 31)), v2(v2,mask), Ng(cross(v0-v1,v2-v0)) { }
+      : v0(v0,primID | (last << 31)), v1(v1,geomID), v2(v2,mask), Ng(cross(v0-v1,v2-v0)) { }
 
     /*! calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const {
@@ -40,10 +40,10 @@ namespace embree
     static __forceinline size_t blocks(size_t N) { return N; }
 
     /*! access hidden members */
-    __forceinline unsigned int primID() const { return v0.a; }
-    __forceinline unsigned int geomID() const { return v1.a & 0x7FFFFFFF; }
+    __forceinline unsigned int primID() const { return v0.a & 0x7FFFFFFF; }
+    __forceinline unsigned int geomID() const { return v1.a; }
     __forceinline unsigned int mask  () const { return v2.a; }
-    __forceinline int          last  () const { return v1.a & 0x80000000; }
+    __forceinline int          last  () const { return v0.a & 0x80000000; }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
@@ -65,8 +65,8 @@ namespace embree
       const ssef e2 = p2 - p0;	     
       const ssef normal = cross(e1,e2);
       
-      store4f_nt(&v0,cast(insert<3>(cast(p0),primID)));
-      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID | (last << 31))));
+      store4f_nt(&v0,cast(insert<3>(cast(p0),primID | (last << 31))));
+      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID)));
       store4f_nt(&v2,cast(insert<3>(cast(p2),mesh->mask)));
       store4f_nt(&Ng,cast(insert<3>(cast(normal),0)));
     }
@@ -91,8 +91,8 @@ namespace embree
       const ssef e2 = p2 - p0;	     
       const ssef normal = cross(e1,e2);
       
-      store4f_nt(&v0,cast(insert<3>(cast(p0),primID)));
-      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID | (last << 31))));
+      store4f_nt(&v0,cast(insert<3>(cast(p0),primID | (last << 31))));
+      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID)));
       store4f_nt(&v2,cast(insert<3>(cast(p2),mesh->mask)));
       store4f_nt(&Ng,cast(insert<3>(cast(normal),0)));
     }

@@ -29,7 +29,7 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     __forceinline Triangle1v (const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const unsigned geomID, const unsigned primID, const unsigned mask, const bool last)
-      : v0(v0,primID), v1(v1,geomID | (last << 31)), v2(v2,mask) {}
+      : v0(v0,primID | (last << 31)), v1(v1,geomID), v2(v2,mask) {}
 
     /*! calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const {
@@ -37,10 +37,10 @@ namespace embree
     }
 
     /*! access hidden members */
-    __forceinline unsigned primID() const { return v0.a; }
-    __forceinline unsigned geomID() const { return v1.a & 0x7FFFFFFF; }
+    __forceinline unsigned primID() const { return v0.a & 0x7FFFFFFF & 0x7FFFFFFF; }
+    __forceinline unsigned geomID() const { return v1.a; }
     __forceinline unsigned mask  () const { return v2.a; }
-    __forceinline int      last  () const { return v1.a & 0x80000000; }
+    __forceinline int      last  () const { return v0.a & 0x80000000; }
 
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
@@ -61,8 +61,8 @@ namespace embree
       const ssef p1 = select(0x7,(ssef)mesh->vertex(tri.v[1]),zero);
       const ssef p2 = select(0x7,(ssef)mesh->vertex(tri.v[2]),zero);
       
-      store4f_nt(&v0,cast(insert<3>(cast(p0),primID)));
-      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID | (last << 31))));
+      store4f_nt(&v0,cast(insert<3>(cast(p0),primID | (last << 31))));
+      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID)));
       store4f_nt(&v2,cast(insert<3>(cast(p2),mesh->mask)));
     }
 
@@ -82,8 +82,8 @@ namespace embree
       const ssef p1 = select(0x7,(ssef)mesh->vertex(tri.v[1]),zero);
       const ssef p2 = select(0x7,(ssef)mesh->vertex(tri.v[2]),zero);
       
-      store4f_nt(&v0,cast(insert<3>(cast(p0),primID)));
-      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID | (last << 31))));
+      store4f_nt(&v0,cast(insert<3>(cast(p0),primID | (last << 31))));
+      store4f_nt(&v1,cast(insert<3>(cast(p1),geomID)));
       store4f_nt(&v2,cast(insert<3>(cast(p2),mesh->mask)));
     }
 
@@ -123,13 +123,13 @@ namespace embree
                                 const Vec3fa& b0, const Vec3fa& b1,
                                 const Vec3fa& c0, const Vec3fa& c1, 
                                 const unsigned geomID, const unsigned primID, const unsigned mask, const bool last)
-      : v0(a0,primID), v1(b0,geomID | (last << 31)), v2(c0,mask), d0(a1-a0), d1(b1-b0), d2(c1-c0) {}
+      : v0(a0,primID | (last << 31)), v1(b0,geomID), v2(c0,mask), d0(a1-a0), d1(b1-b0), d2(c1-c0) {}
 
     /*! access hidden members */
-    __forceinline unsigned primID() const { return v0.a; }
-    __forceinline unsigned geomID() const { return v1.a & 0x7FFFFFFF; }
+    __forceinline unsigned primID() const { return v0.a & 0x7FFFFFFF; }
+    __forceinline unsigned geomID() const { return v1.a; }
     __forceinline unsigned mask  () const { return v2.a; }
-    __forceinline int      last  () const { return v1.a & 0x80000000; }
+    __forceinline int      last  () const { return v0.a & 0x80000000; }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
