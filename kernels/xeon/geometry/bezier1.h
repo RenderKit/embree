@@ -156,7 +156,7 @@ namespace embree
 
     /*! fill from list */
     __forceinline void fill(atomic_set<PrimRefBlockT<Bezier1> >::block_iterator_unsafe& iter, Scene* scene) {
-      *this = *iter; iter++; this->geom |= (!iter) << 31;
+      *this = *iter; iter++; this->prim |= (!iter) << 31;
     }
 
     /*! fill triangle from triangle list */

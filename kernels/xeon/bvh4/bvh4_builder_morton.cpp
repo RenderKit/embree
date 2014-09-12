@@ -478,7 +478,7 @@ namespace embree
         const ssef e2 = v2 - v0;	     
         const ssef normal = cross(e1,e2);
         
-        store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID | ((i==(items-1) << 31)))));
+        store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID | (((i==(items-1)) << 31)))));
         store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
         store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),mesh->mask)));
         store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0)));
@@ -595,7 +595,7 @@ namespace embree
         const ssef e2 = v2 - v0;	     
         const ssef normal = cross(e1,e2);
         
-        store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID | ((i==(items-1) << 31)))));
+        store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID | (((i==(items-1)) << 31)))));
         store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
         store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),mesh->mask)));
       }

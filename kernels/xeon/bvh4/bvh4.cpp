@@ -323,6 +323,7 @@ namespace embree
     if (node.isLeaf()) 
     {
       size_t num; char* tri = node.leaf(num);
+      if (node == BVH4::emptyNode) return std::pair<BBox3fa,BBox3fa>(empty,empty);
       return primTy.update2(tri,num,geom);
     }
     /*! set and propagate merged bounds for both time steps */
