@@ -24,22 +24,24 @@ namespace embree
   {
   public:
 
+    AccelSetItem (AccelSet* accel, unsigned item, const bool last) 
+    : accel(accel), item(item), isLast(last) {}
+
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
+
+    __forceinline bool last() const { return isLast; }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene) // FIXME: use nontemporal stores
     {
-      const PrimRef& prim = prims[i];
-
-      accel = (AccelSet*) (UserGeometryBase*) scene->get(prim.geomID());
-      item  = prim.primID();
-
-      i++;
+      const PrimRef& prim = prims[i]; i++;
+      new (this) AccelSetItem((AccelSet*) (UserGeometryBase*) scene->get(prim.geomID()), prim.primID(), i>=end);
     }
 
   public:
     AccelSet* accel;
-    size_t item;
+    unsigned item;
+    bool isLast;
   };
 }
