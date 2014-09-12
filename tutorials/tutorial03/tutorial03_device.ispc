@@ -16,6 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
+#define PARALLEL_COMMIT
+
 struct ISPCTriangle 
 {
   int v0;                /*< first triangle vertex */
@@ -81,6 +83,8 @@ struct ISPCScene
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene g_scene = NULL;
+uniform unsigned int g_threads = 0;
+
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -113,6 +117,10 @@ export void device_init (uniform int8* uniform cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
+
+  /* get number of HW threads */
+  g_threads = getNumHWThreads();
+  print("% HW threads found \n",g_threads);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
@@ -301,12 +309,10 @@ export void device_render (uniform int* uniform pixels,
   if (g_scene == NULL)
   { 
     g_scene = convertScene(g_ispc_scene);
-#if 0 //FIXME
-    rtcCommit (g_scene);
+#if !defined(PARALLEL_COMMIT)
+  rtcCommit (g_scene);
 #else
-    uniform unsigned int g_threads = getNumHWThreads();
-    print("% HW threads found \n",g_threads);
-    launch[ g_threads ] parallelCommit(g_scene); sync;
+  launch[  g_threads ] parallelCommit(g_scene); sync;
 #endif
   }
 

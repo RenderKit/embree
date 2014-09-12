@@ -601,16 +601,6 @@ namespace embree
 
     TIMER(double msec = 0.0);
 
-    /* initialize thread-local work stacks */
-    if (threadIndex % 4 == 0)
-      local_workStack[threadIndex].reset();
-
-    /* all worker threads enter tasking system */
-    if (threadIndex != 0) {
-      scene->lockstep_scheduler.dispatchTaskMainLoop(threadIndex,threadCount); 
-      return;
-    }
-
     /* start measurement */
     double t0 = 0.0f;
 #if !defined(PROFILE)
