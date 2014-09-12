@@ -1183,6 +1183,15 @@ namespace embree
   void BVH4iBuilderMorton::build_main (const size_t threadIndex, const size_t threadCount)
   { 
     DBG(PING);
+
+    /* start measurement */
+    double t0 = 0.0f;
+
+#if !defined(PROFILE)
+    if (g_verbose >= 2) 
+#endif
+      t0 = getSeconds();
+
     TIMER(std::cout << std::endl);
     TIMER(double msec = 0.0);
 
@@ -1295,6 +1304,13 @@ namespace embree
 
     bvh->root   = node->child(0); 
     bvh->bounds = node->child(0).isLeaf() ? node->bounds(0) : rootBounds;
+
+    /* stop measurement */
+#if !defined(PROFILE)
+    if (g_verbose >= 2) 
+#endif
+      dt = getSeconds()-t0;
+
   }
 
 }

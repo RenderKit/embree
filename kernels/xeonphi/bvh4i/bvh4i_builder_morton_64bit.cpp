@@ -1220,6 +1220,14 @@ namespace embree
     TIMER(std::cout << std::endl);
     TIMER(double msec = 0.0);
 
+    /* start measurement */
+    double t0 = 0.0f;
+#if !defined(PROFILE)
+    if (g_verbose >= 2) 
+#endif
+      t0 = getSeconds();
+
+
     /* init thread state */
     TIMER(msec = getSeconds());
     scene->lockstep_scheduler.dispatchTask( task_initThreadState, this, threadIndex, threadCount );
@@ -1350,8 +1358,11 @@ namespace embree
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_doTreeRotationsOnSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
-
-
+    /* stop measurement */
+#if !defined(PROFILE)
+    if (g_verbose >= 2) 
+#endif
+      dt = getSeconds()-t0;
 
   }
 

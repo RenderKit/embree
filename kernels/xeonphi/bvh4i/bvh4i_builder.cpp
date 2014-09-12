@@ -276,7 +276,7 @@ namespace embree
 	size_t iterations = PROFILE_ITERATIONS;
 	for (size_t i=0; i<iterations; i++) 
 	  {
-	    build_parallel(threadIndex,threadCount);
+	    build_main(threadIndex,threadCount);
 	    dt_min = min(dt_min,dt);
 	    dt_avg = dt_avg + dt;
 	    dt_max = max(dt_max,dt);
@@ -291,7 +291,7 @@ namespace embree
 
 #else
 
-	build_parallel(threadIndex,threadCount);
+	build_main(threadIndex,threadCount);
 
 #endif
       }
@@ -300,7 +300,7 @@ namespace embree
 	assert( numPrimitives > 0 );
 	/* number of primitives is small, just use single threaded mode */
 	DBG(std::cout << "SERIAL BUILD" << std::endl);
-	build_parallel(0,1);
+	build_main(0,1);
       }
 
     if (g_verbose >= 2) {
@@ -335,6 +335,10 @@ namespace embree
   
   void BVH4iBuilder::computePrimRefsTriangles(const size_t threadID, const size_t numThreads) 
   {
+    /* initialize thread-local work stacks */
+    if (threadID % 4 == 0)
+      local_workStack[threadID].reset();
+
     const size_t numGroups = scene->size();
     const size_t startID = ((threadID+0)*numPrimitives)/numThreads;
     const size_t endID   = ((threadID+1)*numPrimitives)/numThreads;
@@ -1664,19 +1668,9 @@ namespace embree
   // =======================================================================================================
 
   
-  void BVH4iBuilder::build_parallel(size_t threadIndex, size_t threadCount) 
+  void BVH4iBuilder::build_main(size_t threadIndex, size_t threadCount) 
   {
     TIMER(double msec = 0.0);
-
-    /* initialize thread-local work stacks */
-    if (threadIndex % 4 == 0)
-      local_workStack[threadIndex].reset();
-
-    /* all worker threads enter tasking system */
-    if (threadIndex != 0) {
-      scene->lockstep_scheduler.dispatchTaskMainLoop(threadIndex,threadCount); 
-      return;
-    }
 
     /* start measurement */
     double t0 = 0.0f;
@@ -1686,12 +1680,9 @@ namespace embree
       t0 = getSeconds();
 
     TIMER(msec = getSeconds());
-    
     /* calculate list of primrefs */
     global_bounds.reset();
-
     computePrimRefs(threadIndex,threadCount);
-
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computePrimRefs " << 1000. * msec << " ms" << std::endl << std::flush);
     TIMER(msec = getSeconds());

@@ -491,7 +491,7 @@ namespace embree
     CATCH_END;
   }
 
-  RTCORE_API void rtcCommitMT(RTCScene scene, unsigned int threadID, unsigned int numThreads) 
+  RTCORE_API void rtcCommitThread(RTCScene scene, unsigned int threadID, unsigned int numThreads) 
   {
     CATCH_BEGIN;
     TRACE(rtcCommitMT);

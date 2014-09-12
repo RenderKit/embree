@@ -290,7 +290,7 @@ task void parallelCommit()
 {
   uniform unsigned int threadID   = threadIndex;
   uniform unsigned int numThreads = threadCount;
-  rtcCommitMT (g_scene,threadIndex,threadCount); 
+  rtcCommitThread (g_scene,threadIndex,threadCount); 
 }
 
 /* called by the C++ code to render */
