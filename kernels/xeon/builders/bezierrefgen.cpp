@@ -62,7 +62,7 @@ namespace embree
 	    p2 = 0.5f*(p2+geom->vertex(ofs+2,1));
 	    p3 = 0.5f*(p3+geom->vertex(ofs+3,1));
 	    }*/
-	  const Bezier1 bezier(p0,p1,p2,p3,0,1,i,j);
+	  const Bezier1 bezier(p0,p1,p2,p3,0,1,i,j,false);
 	  pinfo.add(bezier.bounds(),bezier.center());
 	  if (likely(block->insert(bezier))) continue; 
 	  block = prims.insert(alloc->malloc(threadIndex));

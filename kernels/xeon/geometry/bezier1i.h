@@ -56,9 +56,9 @@ namespace embree
     __forceinline void fill(atomic_set<PrimRefBlockT<Bezier1> >::block_iterator_unsafe& iter, Scene* scene)
     {
       const Bezier1& curve = *iter; iter++;
-      const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID);
-      const Vec3fa& p0 = in->vertex(in->curve(curve.primID));
-      new (this) Bezier1i(&p0,curve.geomID,curve.primID);
+      const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID());
+      const Vec3fa& p0 = in->vertex(in->curve(curve.primID()));
+      new (this) Bezier1i(&p0,curve.geomID(),curve.primID());
     }
 
     /*! fill triangle from triangle list */
@@ -101,10 +101,10 @@ namespace embree
     __forceinline void fill(atomic_set<PrimRefBlockT<Bezier1> >::block_iterator_unsafe& iter, Scene* scene)
     {
       const Bezier1& curve = *iter; iter++;
-      const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID);
-      const Vec3fa& p0 = in->vertex(in->curve(curve.primID),0);
-      const Vec3fa& p1 = in->vertex(in->curve(curve.primID),1);
-      new (this) Bezier1iMB(&p0,&p1,curve.geomID,curve.primID);
+      const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID());
+      const Vec3fa& p0 = in->vertex(in->curve(curve.primID()),0);
+      const Vec3fa& p1 = in->vertex(in->curve(curve.primID()),1);
+      new (this) Bezier1iMB(&p0,&p1,curve.geomID(),curve.primID());
     }
 
   public:

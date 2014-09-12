@@ -27,34 +27,39 @@ namespace embree
     typedef Bezier1 Primitive;
     typedef BezierIntersector4::Precalculations Precalculations;
 
-    static __forceinline void intersect(Precalculations& pre, Ray4& ray, const size_t k, const Bezier1* curves, size_t num, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray4& ray, const size_t k, const Bezier1* curve, size_t num, void* geom)
     {
-      for (size_t i=0; i<num; i++) 
-        BezierIntersector4::intersect(pre,ray,k,curves[i].p0,curves[i].p1,curves[i].p2,curves[i].p3,curves[i].geomID,curves[i].primID,geom);
+      while (true) {
+        BezierIntersector4::intersect(pre,ray,k,curve->p0,curve->p1,curve->p2,curve->p3,curve->geomID(),curve->primID(),geom);
+	if (curve->last()) break;
+	curve++;
+      }
     }
 
-    static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Bezier1* curves, size_t num, void* geom)
+    static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Bezier1* curve, size_t num, void* geom)
     {
       int mask = movemask(valid_i);
-      while (mask) intersect(pre,ray,__bscf(mask),curves,num,geom);
+      while (mask) intersect(pre,ray,__bscf(mask),curve,num,geom);
     }
 
-    static __forceinline bool occluded(Precalculations& pre, Ray4& ray, const size_t k, const Bezier1* curves, size_t num, void* geom) 
+    static __forceinline bool occluded(Precalculations& pre, Ray4& ray, const size_t k, const Bezier1* curve, size_t num, void* geom) 
     {
-      for (size_t i=0; i<num; i++) 
-        if (BezierIntersector4::occluded(pre,ray,k,curves[i].p0,curves[i].p1,curves[i].p2,curves[i].p3,curves[i].geomID,curves[i].primID,geom))
-          return true;
-
+      while (true) {
+	if (BezierIntersector4::occluded(pre,ray,k,curve->p0,curve->p1,curve->p2,curve->p3,curve->geomID(),curve->primID(),geom))
+	  return true;
+	if (curve->last()) break;
+	curve++;
+      }
       return false;
     }
 
-    static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Bezier1* curves, size_t num, void* geom)
+    static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Bezier1* curve, size_t num, void* geom)
     {
       sseb valid_o = false;
       int mask = movemask(valid_i);
       while (mask) {
 	size_t k = __bscf(mask);
-	if (occluded(pre,ray,k,curves,num,geom))
+	if (occluded(pre,ray,k,curve,num,geom))
 	  valid_o[k] = -1;
       }
       return valid_o;
