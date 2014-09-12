@@ -368,19 +368,11 @@ __forceinline const ssef select(const int mask, const ssef& t, const ssef& f) {
   }
 
   __forceinline ssef load4f_nt (void* ptr) {
-#if defined (__SSE4_1__)
     return _mm_castsi128_ps(_mm_stream_load_si128((__m128i*)ptr));
-#else
-    return _mm_load_ps((float*)ptr); 
-#endif
   }
 
   __forceinline void store4f_nt (void* ptr, const ssef& v) {
-#if defined (__SSE4_1__)
     _mm_stream_ps((float*)ptr,v);
-#else
-    _mm_store_ps((float*)ptr,v);
-#endif
   }
   
   ////////////////////////////////////////////////////////////////////////////////
