@@ -32,8 +32,11 @@ namespace embree
       numTriangles(0), numTriangles2(0), numBezierCurves(0), numBezierCurves2(0), numUserGeometries1(0), 
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0)
   {
+#if !defined(__MIC__)
     lockstep_scheduler.taskBarrier.init(TaskScheduler::getNumThreads());
-
+#else
+    lockstep_scheduler.taskBarrier.init(MAX_MIC_THREADS);
+#endif
     if (g_scene_flags != -1)
       flags = (RTCSceneFlags) g_scene_flags;
 
@@ -271,20 +274,44 @@ namespace embree
 
   void Scene::task_build(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) 
   {
+    FATAL("OBSOLETE");
     size_t numThreads = TaskScheduler::enableThreads(-1);
     accels.build(threadIndex,threadCount);
   }
 
+  MutexSys dbg;
+
   void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
+#if 0
+    dbg.lock();
+    DBG_PRINT(threadIndex);
+    dbg.unlock();
+#endif
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex == 0) accels.build(threadIndex,threadCount);
+
+#if 0
+    dbg.lock();
+    PING;
+    DBG_PRINT(threadIndex);
+    dbg.unlock();
+#endif
+
   }
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
+#if 0
+    PING;
+    DBG_PRINT(threadIndex);
+    DBG_PRINT(threadCount);
+#endif
+
     /* all user worker threads properly enter and leave the tasking system */
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
+    if (threadIndex != 0) return;
+
 
     /* allow only one build at a time */
     Lock<MutexSys> lock(mutex);
@@ -321,18 +348,10 @@ namespace embree
     /* otherwise use our own threads */
     else
     {
-#if defined(__MIC__)		
-      TaskScheduler::enableThreads(1);
-      TaskScheduler::EventSync event;
-      new (&task) TaskScheduler::Task(&event,NULL,NULL,1,_task_build,this,"scene_build");
-      TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
-      event.sync();
-#else
       TaskScheduler::EventSync event;
       new (&task) TaskScheduler::Task(&event,_task_build_parallel,this,TaskScheduler::getNumThreads(),NULL,NULL,"scene_build");
       TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
       event.sync();
-#endif
     }
 
     /* make static geometry immutable */

@@ -134,7 +134,7 @@ namespace embree
 
     virtual std::string getStatistics();
 
-    void build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event);
+    void build_parallel(size_t threadIndex, size_t threadCount);
 
   protected:
 
@@ -195,7 +195,6 @@ namespace embree
     void computeUnalignedSpace( BuildRecordOBB& current );
     void computeUnalignedSpaceBounds( BuildRecordOBB& current );
 
-    TASK_RUN_FUNCTION(BVH4HairBuilder,build_parallel_hair);
     TASK_FUNCTION(BVH4HairBuilder,computePrimRefsBezierCurves);
     TASK_FUNCTION(BVH4HairBuilder,parallelBinningGlobal);
     TASK_FUNCTION(BVH4HairBuilder,parallelPartitioningGlobal);

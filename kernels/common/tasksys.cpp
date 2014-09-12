@@ -42,7 +42,6 @@ namespace embree
   };
 
   void ISPCTask::run(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) {
-
     func(data,threadIndex,/* threadCount */ TaskScheduler::getNumThreads() ,taskIndex,taskCount);
   }
 
@@ -55,7 +54,7 @@ namespace embree
     return (char*)_mm_malloc(size,alignment);
   }
 
-  __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) {
+  __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) {      
     ISPCTask* ispcTask = new ISPCTask((TaskScheduler::Event*)(*taskPtr),(TaskFuncType)func,data,count);
     TaskScheduler::addTask(-1, TaskScheduler::GLOBAL_BACK, &ispcTask->task);
   }

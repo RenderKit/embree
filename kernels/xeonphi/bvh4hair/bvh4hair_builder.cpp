@@ -544,6 +544,8 @@ namespace embree
   void BVH4HairBuilder::build(const size_t threadIndex, const size_t threadCount) 
   {
     DBG(PING);
+    if (threadIndex != 0) build_parallel(threadIndex,threadCount);
+
     const size_t totalNumPrimitives = getNumPrimitives();
 
 
@@ -564,19 +566,20 @@ namespace embree
 
 
     /* allocate BVH data */
-    allocateData(TaskScheduler::getNumThreads(),totalNumPrimitives);
+    allocateData(threadCount,totalNumPrimitives);
 
-    if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1) )
+    if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && threadCount > 1) )
       {
 	DBG(std::cout << "PARALLEL BUILD" << std::endl);
-	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_hair,this,TaskScheduler::getNumThreads(),"build_parallel");
+	build_parallel(threadIndex,threadCount);
+
       }
     else
       {
 	/* number of primitives is small, just use single threaded mode */
 	assert( numPrimitives > 0 );
 	DBG(std::cout << "SERIAL BUILD" << std::endl);
-	build_parallel_hair(0,1,0,0,NULL);
+	build_parallel(0,1);
       }
 
     if (g_verbose >= 2) {
@@ -590,7 +593,7 @@ namespace embree
 
 
 
-  void BVH4HairBuilder::build_parallel_hair(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  void BVH4HairBuilder::build_parallel(size_t threadIndex, size_t threadCount) 
   {
     DBG(PING);
 
@@ -677,9 +680,6 @@ namespace embree
     bvh4hair->bounds           = global_bounds.geometry;
     bvh4hair->unaligned_nodes  = (BVH4Hair::UnalignedNode*)node;
     bvh4hair->accel            = prims;
-
-    /* release all threads again */
-    scene->lockstep_scheduler.releaseThreads(threadCount);
 
     /* stop measurement */
     if (g_verbose >= 2) 

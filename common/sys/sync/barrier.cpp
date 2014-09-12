@@ -171,9 +171,11 @@ namespace embree
 
   void LinearBarrierActive::wait (const size_t threadIndex, const size_t __threadCount)
   {
-    size_t threadCount = numThreads;
-    //size_t threadCount = __threadCount;
+    waitForThreads(threadIndex,numThreads);
+  }
 
+  void LinearBarrierActive::waitForThreads(const size_t threadIndex, const size_t threadCount)
+  {
     if (mode == 0)
     {			
       if (threadIndex == 0)
@@ -241,6 +243,7 @@ namespace embree
       }		
     }					
   }
+
   
   void LinearBarrierActive::syncWithReduction(const size_t threadIndex, 
                                               const size_t threadCount,

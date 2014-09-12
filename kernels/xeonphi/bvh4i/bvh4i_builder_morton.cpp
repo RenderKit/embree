@@ -198,6 +198,8 @@ namespace embree
 
   void BVH4iBuilderMorton::build(size_t threadIndex, size_t threadCount) 
   {
+    if (threadIndex != 0) build_parallel(threadIndex,threadCount);
+
     if (unlikely(g_verbose >= 2))
       {
 	std::cout << "building BVH4i with 32-bit Morton builder (MIC)... " << std::flush;
@@ -222,7 +224,7 @@ namespace embree
       }
 
     /* allocate memory arrays */
-    allocateData(TaskScheduler::getNumThreads());
+    allocateData(threadCount);
 
 #if defined(PROFILE)
     size_t numTotalPrimitives = numPrimitives;
@@ -235,7 +237,7 @@ namespace embree
     size_t iterations = PROFILE_ITERATIONS;
     for (size_t i=0; i<iterations; i++) 
     {
-      TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,TaskScheduler::getNumThreads(),"build_parallel_morton");
+      build_parallel(threadIndex,threadCount);
 
       dt_min = min(dt_min,dt);
       dt_avg = dt_avg + dt;
@@ -253,13 +255,13 @@ namespace embree
     DBG(DBG_PRINT(numPrimitives));
 
 
-    if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && TaskScheduler::getNumThreads() > 1))
+    if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && threadCount > 1))
       {
 #if DEBUG
-	DBG_PRINT( TaskScheduler::getNumThreads() );
 	std::cout << "PARALLEL BUILD" << std::endl << std::flush;
 #endif
-	TaskScheduler::executeTask(threadIndex,threadCount,_build_parallel_morton,this,TaskScheduler::getNumThreads(),"build_parallel");
+	build_parallel(threadIndex,threadCount);
+
       }
     else
       {
@@ -267,7 +269,7 @@ namespace embree
 #if DEBUG
 	std::cout << "SERIAL BUILD" << std::endl << std::flush;
 #endif
-	build_parallel_morton(0,1,0,0,NULL);
+	build_parallel(0,1);
       }
 
     if (g_verbose >= 2) {
@@ -1294,7 +1296,7 @@ namespace embree
     bvh->bounds = node->child(0).isLeaf() ? node->bounds(0) : rootBounds;
   }
 
-  void BVH4iBuilderMorton::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+  void BVH4iBuilderMorton::build_parallel(size_t threadIndex, size_t threadCount) 
   {
     TIMER(double msec = 0.0);
 
@@ -1318,9 +1320,6 @@ namespace embree
 
     /* performs build of tree */
     build_main(threadIndex,threadCount);
-
-    /* end task */
-    scene->lockstep_scheduler.releaseThreads(threadCount);
     
     /* stop measurement */
 #if !defined(PROFILE)

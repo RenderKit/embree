@@ -114,7 +114,8 @@ namespace embree
 	__pause_expfalloff(cycles,MAX_MIC_BARRIER_WAIT_CYCLES);
       }
 
-      void wait (const size_t threadIndex, const size_t threadCount);
+      void wait (const size_t threadIndex, const size_t threadCount); // FIXME: remove second parameter
+      void waitForThreads(const size_t threadIndex, const size_t threadCount);
 
       void syncWithReduction(const size_t threadIndex, 
                              const size_t threadCount,
