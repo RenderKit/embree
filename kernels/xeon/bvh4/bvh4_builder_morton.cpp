@@ -560,7 +560,7 @@ namespace embree
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
       //Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask));
-      new (accel) Triangle8(v0,v1,v2,vgeomID,vprimID,vmask);
+      new (accel) Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,true);
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
 #endif
