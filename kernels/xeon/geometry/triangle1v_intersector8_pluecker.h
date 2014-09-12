@@ -35,172 +35,179 @@ namespace embree
       __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
     };
 
-    static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle1v* __restrict__ tris, size_t num, const void* geom)
+    static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle1v& tri, const void* geom)
     {
-      for (size_t i=0; i<num; i++) 
-      {
-        STAT3(normal.trav_prims,1,popcnt(valid_i),8);
-
-        /* calculate vertices relative to ray origin */
-        avxb valid = valid_i;
-        const Triangle1v& tri = tris[i];
-        const avx3f O = ray.org;
-        const avx3f D = ray.dir;
-        const avx3f v0 = avx3f(tri.v0)-O;
-        const avx3f v1 = avx3f(tri.v1)-O;
-        const avx3f v2 = avx3f(tri.v2)-O;
-
-        /* calculate triangle edges */
-        const avx3f e0 = v2-v0;
-        const avx3f e1 = v0-v1;
-        const avx3f e2 = v1-v2;
-
-        /* calculate geometry normal and denominator */
-        const avx3f Ng1 = cross(e1,e0);
-        const avx3f Ng = Ng1+Ng1;
-        const avxf den = dot(Ng,D);
-        const avxf absDen = abs(den);
-        const avxf sgnDen = signmsk(den);
-
-        /* perform edge tests */
-        const avxf U = dot(avx3f(cross(v2+v0,e0)),D) ^ sgnDen;
-        valid &= U >= 0.0f;
-        if (likely(none(valid))) continue;
-        const avxf V = dot(avx3f(cross(v0+v1,e1)),D) ^ sgnDen;
-        valid &= V >= 0.0f;
-        if (likely(none(valid))) continue;
-        const avxf W = dot(avx3f(cross(v1+v2,e2)),D) ^ sgnDen;
-        valid &= W >= 0.0f;
-        if (likely(none(valid))) continue;
+      STAT3(normal.trav_prims,1,popcnt(valid_i),8);
       
-        /* perform depth test */
-        const avxf T = dot(v0,Ng) ^ sgnDen;
-        valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
-        if (unlikely(none(valid))) continue;
-
-        /* perform backface culling */
+      /* calculate vertices relative to ray origin */
+      avxb valid = valid_i;
+      const avx3f O = ray.org;
+      const avx3f D = ray.dir;
+      const avx3f v0 = avx3f(tri.v0)-O;
+      const avx3f v1 = avx3f(tri.v1)-O;
+      const avx3f v2 = avx3f(tri.v2)-O;
+      
+      /* calculate triangle edges */
+      const avx3f e0 = v2-v0;
+      const avx3f e1 = v0-v1;
+      const avx3f e2 = v1-v2;
+      
+      /* calculate geometry normal and denominator */
+      const avx3f Ng1 = cross(e1,e0);
+      const avx3f Ng = Ng1+Ng1;
+      const avxf den = dot(Ng,D);
+      const avxf absDen = abs(den);
+      const avxf sgnDen = signmsk(den);
+      
+      /* perform edge tests */
+      const avxf U = dot(avx3f(cross(v2+v0,e0)),D) ^ sgnDen;
+      valid &= U >= 0.0f;
+      if (likely(none(valid))) return;
+      const avxf V = dot(avx3f(cross(v0+v1,e1)),D) ^ sgnDen;
+      valid &= V >= 0.0f;
+      if (likely(none(valid))) return;
+      const avxf W = dot(avx3f(cross(v1+v2,e2)),D) ^ sgnDen;
+      valid &= W >= 0.0f;
+      if (likely(none(valid))) return;
+      
+      /* perform depth test */
+      const avxf T = dot(v0,Ng) ^ sgnDen;
+      valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
+      if (unlikely(none(valid))) return;
+      
+      /* perform backface culling */
 #if defined(__BACKFACE_CULLING__)
-        valid &= den > avxf(zero);
-        if (unlikely(none(valid))) continue;
+      valid &= den > avxf(zero);
+      if (unlikely(none(valid))) return;
 #else
-        valid &= den != avxf(zero);
-        if (unlikely(none(valid))) continue;
+      valid &= den != avxf(zero);
+      if (unlikely(none(valid))) return;
 #endif
-        
-        /* ray masking test */
+      
+      /* ray masking test */
 #if defined(__USE_RAY_MASK__)
-        valid &= (tri.mask() & ray.mask) != 0;
-        if (unlikely(none(valid))) continue;
+      valid &= (tri.mask() & ray.mask) != 0;
+      if (unlikely(none(valid))) return;
 #endif
-
-        /* calculate hit information */
-        const avxf rcpAbsDen = rcp(absDen);
-        const avxf u = U*rcpAbsDen;
-        const avxf v = V*rcpAbsDen;
-        const avxf t = T*rcpAbsDen;
-        const int geomID = tri.geomID();
-        const int primID = tri.primID();
-
-        /* intersection filter test */
+      
+      /* calculate hit information */
+      const avxf rcpAbsDen = rcp(absDen);
+      const avxf u = U*rcpAbsDen;
+      const avxf v = V*rcpAbsDen;
+      const avxf t = T*rcpAbsDen;
+      const int geomID = tri.geomID();
+      const int primID = tri.primID();
+      
+      /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-        Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (unlikely(geometry->hasIntersectionFilter8())) {
-          runIntersectionFilter8(valid,geometry,ray,u,v,t,Ng,geomID,primID);
-          continue;
-        }
+      Geometry* geometry = ((Scene*)geom)->get(geomID);
+      if (unlikely(geometry->hasIntersectionFilter8())) {
+	runIntersectionFilter8(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+	return;
+      }
 #endif
+      
+      /* update hit information */
+      store8f(valid,&ray.u,u);
+      store8f(valid,&ray.v,v);
+      store8f(valid,&ray.tfar,t);
+      store8i(valid,&ray.geomID,geomID);
+      store8i(valid,&ray.primID,primID);
+      store8f(valid,&ray.Ng.x,Ng.x);
+      store8f(valid,&ray.Ng.y,Ng.y);
+      store8f(valid,&ray.Ng.z,Ng.z);
+    }
 
-        /* update hit information */
-        store8f(valid,&ray.u,u);
-        store8f(valid,&ray.v,v);
-        store8f(valid,&ray.tfar,t);
-        store8i(valid,&ray.geomID,geomID);
-        store8i(valid,&ray.primID,primID);
-        store8f(valid,&ray.Ng.x,Ng.x);
-        store8f(valid,&ray.Ng.y,Ng.y);
-        store8f(valid,&ray.Ng.z,Ng.z);
+    static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Triangle1v* __restrict__ tri, size_t num, const void* geom)
+    {
+      while (true) {
+	intersect(valid,pre,ray,*tri,geom);
+	if (tri->last()) break;
+	tri++;
       }
     }
 
-    static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle1v* __restrict__ tris, size_t num, const void* geom)
+    static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle1v& tri, const void* geom)
     {
-      avxb valid0 = valid_i;
+      STAT3(shadow.trav_prims,1,popcnt(valid0),8);
 
-      for (size_t i=0; i<num; i++) 
-      {
-        STAT3(shadow.trav_prims,1,popcnt(valid0),8);
-
-        /* calculate vertices relative to ray origin */
-        avxb valid = valid0;
-        const Triangle1v& tri = tris[i];
-        const avx3f O = ray.org;
-        const avx3f D = ray.dir;
-        const avx3f v0 = avx3f(tri.v0)-O;
-        const avx3f v1 = avx3f(tri.v1)-O;
-        const avx3f v2 = avx3f(tri.v2)-O;
-
-        /* calculate triangle edges */
-        const avx3f e0 = v2-v0;
-        const avx3f e1 = v0-v1;
-        const avx3f e2 = v1-v2;
-
-        /* calculate geometry normal and denominator */
-        const avx3f Ng1 = cross(e1,e0);
-        const avx3f Ng = Ng1+Ng1;
-        const avxf den = dot(Ng,D);
-        const avxf absDen = abs(den);
-        const avxf sgnDen = signmsk(den);
-
-        /* perform edge tests */
-        const avxf U = dot(avx3f(cross(v2+v0,e0)),D) ^ sgnDen;
-        valid &= U >= 0.0f;
-        if (likely(none(valid))) continue;
-        const avxf V = dot(avx3f(cross(v0+v1,e1)),D) ^ sgnDen;
-        valid &= V >= 0.0f;
-        if (likely(none(valid))) continue;
-        const avxf W = dot(avx3f(cross(v1+v2,e2)),D) ^ sgnDen;
-        valid &= W >= 0.0f;
-        if (likely(none(valid))) continue;
+      /* calculate vertices relative to ray origin */
+      avxb valid = valid_i;
+      const avx3f O = ray.org;
+      const avx3f D = ray.dir;
+      const avx3f v0 = avx3f(tri.v0)-O;
+      const avx3f v1 = avx3f(tri.v1)-O;
+      const avx3f v2 = avx3f(tri.v2)-O;
       
-        /* perform depth test */
-        const avxf T = dot(v0,Ng) ^ sgnDen;
-        valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
-        if (unlikely(none(valid))) continue;
-
-        /* perform backface culling */
+      /* calculate triangle edges */
+      const avx3f e0 = v2-v0;
+      const avx3f e1 = v0-v1;
+      const avx3f e2 = v1-v2;
+      
+      /* calculate geometry normal and denominator */
+      const avx3f Ng1 = cross(e1,e0);
+      const avx3f Ng = Ng1+Ng1;
+      const avxf den = dot(Ng,D);
+      const avxf absDen = abs(den);
+      const avxf sgnDen = signmsk(den);
+      
+      /* perform edge tests */
+      const avxf U = dot(avx3f(cross(v2+v0,e0)),D) ^ sgnDen;
+      valid &= U >= 0.0f;
+      if (likely(none(valid))) return valid;
+      const avxf V = dot(avx3f(cross(v0+v1,e1)),D) ^ sgnDen;
+      valid &= V >= 0.0f;
+      if (likely(none(valid))) return valid;
+      const avxf W = dot(avx3f(cross(v1+v2,e2)),D) ^ sgnDen;
+      valid &= W >= 0.0f;
+      if (likely(none(valid))) return valid;
+      
+      /* perform depth test */
+      const avxf T = dot(v0,Ng) ^ sgnDen;
+      valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
+      if (unlikely(none(valid))) return valid;
+      
+      /* perform backface culling */
 #if defined(__BACKFACE_CULLING__)
-        valid &= den > avxf(zero);
-        if (unlikely(none(valid))) continue;
+      valid &= den > avxf(zero);
+      if (unlikely(none(valid))) return valid;
 #else
-        valid &= den != avxf(zero);
-        if (unlikely(none(valid))) continue;
+      valid &= den != avxf(zero);
+      if (unlikely(none(valid))) return valid;
 #endif
-        
-        /* ray masking test */
+      
+      /* ray masking test */
 #if defined(__USE_RAY_MASK__)
-        valid &= (tri.mask() & ray.mask) != 0;
-        if (unlikely(none(valid))) continue;
+      valid &= (tri.mask() & ray.mask) != 0;
+      if (unlikely(none(valid))) return valid;
 #endif
-
-        /* intersection filter test */
+      
+      /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-        const int geomID = tri.geomID();
-        Geometry* geometry = ((Scene*)geom)->get(geomID);
-        if (unlikely(geometry->hasOcclusionFilter8()))
-        {
-          /* calculate hit information */
-          const avxf rcpAbsDen = rcp(absDen);
-          const avxf u = U*rcpAbsDen;
-          const avxf v = V*rcpAbsDen;
-          const avxf t = T*rcpAbsDen;
-          const int primID = tri.primID();
-          valid = runOcclusionFilter8(valid,geometry,ray,u,v,t,Ng,geomID,primID);
-        }
+      const int geomID = tri.geomID();
+      Geometry* geometry = ((Scene*)geom)->get(geomID);
+      if (unlikely(geometry->hasOcclusionFilter8()))
+      {
+	/* calculate hit information */
+	const avxf rcpAbsDen = rcp(absDen);
+	const avxf u = U*rcpAbsDen;
+	const avxf v = V*rcpAbsDen;
+	const avxf t = T*rcpAbsDen;
+	const int primID = tri.primID();
+	valid = runOcclusionFilter8(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+      }
 #endif
-        
-        /* update occlusion */
-        valid0 &= !valid;
+      return valid;
+    }
+
+    static __forceinline avxb occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Triangle1v* tri, size_t num, const void* geom)
+    {
+      avxb valid0 = valid;
+      while (true) {
+	valid0 &= !occluded(valid0,pre,ray,*tri,geom);
         if (none(valid0)) break;
+	if (tri->last()) break;
+	tri++;
       }
       return !valid0;
     }

@@ -115,9 +115,12 @@ namespace embree
     }
 
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Triangle1v* tri, size_t num, void* geom)
-    {
-      for (size_t i=0; i<num; i++)
-        intersect(pre,ray,tri[i],geom);
+    {						
+      while (true) {
+        intersect(pre,ray,*tri,geom);
+	if (tri->last()) break;
+	tri++;
+      }
     }
 
     /*! Test if the ray is occluded by one of the triangles. */
@@ -194,10 +197,11 @@ namespace embree
 
     static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Triangle1v* tri, size_t num, void* geom) 
     {
-      for (size_t i=0; i<num; i++) 
-        if (occluded(pre,ray,tri[i],geom))
-          return true;
-
+      while (true) {
+	if (occluded(pre,ray,*tri,geom)) return true;
+	if (tri->last()) break;
+	tri++;
+      }
       return false;
     }
   };
