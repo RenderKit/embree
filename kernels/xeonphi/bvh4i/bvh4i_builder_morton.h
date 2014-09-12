@@ -129,11 +129,11 @@ namespace embree
     /*! allocate data arrays */
     void allocateData(size_t threadCount);
 
-    /*! precalculate some per thread data */
-    void initThreadState(const size_t threadID, const size_t numThreads);
-
     /*! main build task */
-    void build_parallel(size_t threadIndex, size_t threadCount);
+    void build_main(const size_t threadID, const size_t numThreads);
+
+    /*! precalculate some per thread data */
+    TASK_FUNCTION(BVH4iBuilderMorton,initThreadState);
 
     /*! task that calculates the bounding box of the scene */
     TASK_FUNCTION(BVH4iBuilderMorton,computeBounds);
@@ -152,7 +152,6 @@ namespace embree
 
   public:
 
-    void build_main(const size_t threadID, const size_t numThreads);
 
     /*! creates a leaf node */
     BBox3fa createSmallLeaf(SmallBuildRecord& current);
@@ -311,11 +310,11 @@ namespace embree
     /*! allocate data arrays */
     void allocateData(size_t threadCount);
 
-    /*! precalculate some per thread data */
-    void initThreadState(const size_t threadID, const size_t numThreads);
+    /*! main build function */
+    void build_main(const size_t threadID, const size_t numThreads);
 
-    /*! main build task */
-    void build_parallel(size_t threadIndex, size_t threadCount);
+    /*! precalculate some per thread data */
+    TASK_FUNCTION(BVH4iBuilderMorton64Bit,initThreadState);
     
     /*! task that calculates the bounding box of the scene */
     TASK_FUNCTION(BVH4iBuilderMorton64Bit,computeBounds);
@@ -364,7 +363,6 @@ namespace embree
 
   public:
 
-    void build_main(const size_t threadID, const size_t numThreads);
 
 
   public:

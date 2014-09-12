@@ -738,7 +738,9 @@ namespace embree
 
   void BVH4iBuilderMorton64Bit::build(size_t threadIndex, size_t threadCount) 
   {
-    if (threadIndex != 0) build_parallel(threadIndex,threadCount);
+    if (threadIndex != 0) {
+      FATAL("threadIndex != 0");
+    }
 
     if (unlikely(g_verbose >= 2))
       {
@@ -782,7 +784,7 @@ namespace embree
     size_t iterations = PROFILE_ITERATIONS;
     for (size_t i=0; i<iterations; i++) 
     {
-      build_parallel(threadIndex,threadCount);
+      build_main(threadIndex,threadCount);
 
       dt_min = min(dt_min,dt);
       dt_avg = dt_avg + dt;
@@ -805,7 +807,7 @@ namespace embree
 #if DEBUG
 	std::cout << "PARALLEL BUILD" << std::endl << std::flush;
 #endif
-	build_parallel(threadIndex,threadCount);
+	build_main(threadIndex,threadCount);
 
       }
     else
@@ -814,7 +816,7 @@ namespace embree
 #if DEBUG
 	std::cout << "SERIAL BUILD" << std::endl << std::flush;
 #endif
-	build_parallel(0,1);
+	build_main(0,1);
       }
 
     if (g_verbose >= 2) {
@@ -1218,6 +1220,12 @@ namespace embree
     TIMER(std::cout << std::endl);
     TIMER(double msec = 0.0);
 
+    /* init thread state */
+    TIMER(msec = getSeconds());
+    scene->lockstep_scheduler.dispatchTask( task_initThreadState, this, threadIndex, threadCount );
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "task_initThreadState " << 1000. * msec << " ms" << std::endl << std::flush);
+
     /* compute scene bounds */
     TIMER(msec = getSeconds());
     global_bounds.reset();
@@ -1347,37 +1355,6 @@ namespace embree
 
   }
 
-  void BVH4iBuilderMorton64Bit::build_parallel(size_t threadIndex, size_t threadCount) 
-  {
-    TIMER(double msec = 0.0);
-
-    /* initialize thread state */
-    initThreadState(threadIndex,threadCount);
-    
-    /* let all thread except for control thread wait for work */
-    if (threadIndex != 0) {
-      scene->lockstep_scheduler.dispatchTaskMainLoop(threadIndex,threadCount);
-      return;
-    }
-
-    /* start measurement */
-    double t0 = 0.0f;
-
-#if !defined(PROFILE)
-    if (g_verbose >= 2) 
-#endif
-      t0 = getSeconds();
-
-    /* performs build of tree */
-    build_main(threadIndex,threadCount);
-    
-    /* stop measurement */
-#if !defined(PROFILE)
-    if (g_verbose >= 2) 
-#endif
-      dt = getSeconds()-t0;
-
-  }
 }
 
 

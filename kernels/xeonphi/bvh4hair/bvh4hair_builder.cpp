@@ -544,7 +544,9 @@ namespace embree
   void BVH4HairBuilder::build(const size_t threadIndex, const size_t threadCount) 
   {
     DBG(PING);
-    if (threadIndex != 0) build_parallel(threadIndex,threadCount);
+    if (threadIndex != 0) {
+      FATAL("threadIndex != 0");
+    }
 
     const size_t totalNumPrimitives = getNumPrimitives();
 
