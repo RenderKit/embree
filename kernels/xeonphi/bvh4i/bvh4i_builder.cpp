@@ -335,10 +335,6 @@ namespace embree
   
   void BVH4iBuilder::computePrimRefsTriangles(const size_t threadID, const size_t numThreads) 
   {
-    /* initialize thread-local work stacks */
-    if (threadID % 4 == 0)
-      local_workStack[threadID].reset();
-
     const size_t numGroups = scene->size();
     const size_t startID = ((threadID+0)*numPrimitives)/numThreads;
     const size_t endID   = ((threadID+1)*numPrimitives)/numThreads;
@@ -1757,7 +1753,15 @@ namespace embree
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_finalize " << 1000. * msec << " ms" << std::endl << std::flush);
 
-    
+#if DEBUG
+    for (size_t i=0;i<threadCount/4;i++)
+      if (!local_workStack[i].isEmpty())
+	{
+	  DBG_PRINT(i);
+	  FATAL("local_workStack[i].size() != 0");
+	}
+#endif    
+
     /* stop measurement */
 #if !defined(PROFILE)
     if (g_verbose >= 2) 

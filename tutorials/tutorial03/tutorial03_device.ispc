@@ -307,7 +307,7 @@ export void device_render (uniform int* uniform pixels,
   if (g_scene == NULL)
   { 
     g_scene = convertScene(g_ispc_scene);
-#if 1
+#if 0
     rtcCommit (g_scene);
 #else
     launch[ 1 ] getNumHWThreads(); sync;
