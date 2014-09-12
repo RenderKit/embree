@@ -312,7 +312,7 @@ namespace embree
           return mask;
         }
 
-#if defined(__AVX2__)
+#if defined(__SSE4_1__)
 	const ssef tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
 	const ssef tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
 	const sseb vmask = cast(tNear) > cast(tFar);
@@ -357,7 +357,7 @@ namespace embree
           return lhit;
         }
 
-#if defined(__AVX2__)
+#if defined(__SSE4_1__)
 	const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
 	const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
 	const sseb lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);      
@@ -574,9 +574,6 @@ namespace embree
       const ssef lclipMaxX = msub(vupper_x,rdir.x,org_rdir.x);
       const ssef lclipMaxY = msub(vupper_y,rdir.y,org_rdir.y);
       const ssef lclipMaxZ = msub(vupper_z,rdir.z,org_rdir.z);
-      const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-      const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-      const sseb lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);      
 #else
       const ssef lclipMinX = (vlower_x - org.x) * rdir.x;
       const ssef lclipMinY = (vlower_y - org.y) * rdir.y;
@@ -584,6 +581,14 @@ namespace embree
       const ssef lclipMaxX = (vupper_x - org.x) * rdir.x;
       const ssef lclipMaxY = (vupper_y - org.y) * rdir.y;
       const ssef lclipMaxZ = (vupper_z - org.z) * rdir.z;
+#endif
+
+#if defined(__SSE4_1__)
+      const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+      const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+      const sseb lhit   = maxi(lnearP,tnear) <= mini(lfarP,tfar);      
+#else
+      
       const ssef lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
       const ssef lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
       const sseb lhit   = max(lnearP,tnear) <= min(lfarP,tfar);      
@@ -718,7 +723,7 @@ namespace embree
 	const sse3f tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
 	const sse3f tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
 	
-#if defined(__AVX2__)
+#if defined(__SSE4_1__)
 	const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
 	const ssef tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
 	const ssef tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
@@ -861,7 +866,7 @@ namespace embree
 	const sse3f tLowerXYZ = (bounds.lower - org) * rdir;
 	const sse3f tUpperXYZ = (bounds.upper - org) * rdir;
 	
-#if defined(__AVX2__)
+#if defined(__SSE4_1__)
 	const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
 	const ssef tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
 	const ssef tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
