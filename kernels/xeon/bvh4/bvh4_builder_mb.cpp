@@ -467,6 +467,7 @@ namespace embree
 	continue_build(threadIndex,threadCount,record);
 	atomic_add(&activeBuildRecords,-1);
       }
+      _mm_sfence(); // make written leaves globally visible
     }
 
 #if 0
@@ -531,6 +532,7 @@ namespace embree
 	const Split split = find<false>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);
 	BuildRecord record(1,prims,pinfo,split,&bvh->root);
 	finish_build(threadIndex,threadCount,record);
+	_mm_sfence(); // make written leaves globally visible
       }
       else
       {
@@ -558,6 +560,7 @@ namespace embree
 	    std::push_heap(tasks.begin(),tasks.end());
 	    activeBuildRecords++;
 	  }
+	  _mm_sfence(); // make written leaves globally visible
 	}
 	
 	/*! process each generated subtask in its own thread */

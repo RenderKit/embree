@@ -271,6 +271,7 @@ namespace embree
 	continue_build(threadIndex,threadCount,record);
 	atomic_add(&activeBuildRecords,-1);
       }
+      _mm_sfence(); // make written leaves globally visible
     }
 
     BVH4::NodeRef BVH4Builder::layout_top_nodes(size_t threadIndex, NodeRef node)
@@ -339,6 +340,7 @@ namespace embree
 	const Split split = find<false>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);
 	BuildRecord record(1,prims,pinfo,split,&bvh->root);
 	finish_build(threadIndex,threadCount,record);
+	_mm_sfence(); // make written leaves globally visible
       }
 
       /* multithreaded path */
@@ -375,6 +377,7 @@ namespace embree
 	    activeBuildRecords++;
 	  }
 	}
+	_mm_sfence(); // make written leaves globally visible
 	
 	/*! process each generated subtask in its own thread */
 	scheduler->dispatchTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4Builder::build");
