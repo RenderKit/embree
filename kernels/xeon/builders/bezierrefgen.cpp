@@ -56,7 +56,7 @@ namespace embree
 	  Vec3fa p1 = geom->vertex(ofs+1,0);
 	  Vec3fa p2 = geom->vertex(ofs+2,0);
 	  Vec3fa p3 = geom->vertex(ofs+3,0);
-	  /*if (numTimeSteps == 2) {
+	  /*if (numTimeSteps == 2) { // FIXME: enable again
 	    p0 = 0.5f*(p0+geom->vertex(ofs+0,1));
 	    p1 = 0.5f*(p1+geom->vertex(ofs+1,1));
 	    p2 = 0.5f*(p2+geom->vertex(ofs+2,1));
