@@ -24,8 +24,6 @@
 #include "sys/sync/atomic.h"
 #include "math/math.h"
 
-#define DBG_THREADS(x)
-
 namespace embree
 {
   /* initialization structure for threads */
@@ -42,12 +40,6 @@ namespace embree
   
   TaskScheduler* TaskScheduler::instance = NULL;
 
-  //__aligned(64) void* volatile TaskScheduler::data = NULL;
-  //__aligned(64) TaskScheduler::runFunction TaskScheduler::taskPtr = NULL;
-
-  //__aligned(64) Barrier TaskScheduler::taskBarrier;
-  //__aligned(64) AlignedAtomicCounter32 TaskScheduler::taskCounter;
-
   void TaskScheduler::create(size_t numThreads)
   {
     if (instance)
@@ -55,8 +47,8 @@ namespace embree
 
     /* enable fast pthreads tasking system */
 #if defined(__MIC__)
-    instance = new TaskSchedulerMIC; /* does not work right now */
-    //instance = new TaskSchedulerSys; /* does work */
+    instance = new TaskSchedulerMIC; 
+    //instance = new TaskSchedulerSys;
 #else
     instance = new TaskSchedulerSys; 
 #endif

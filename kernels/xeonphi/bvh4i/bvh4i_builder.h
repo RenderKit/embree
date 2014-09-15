@@ -78,7 +78,7 @@ namespace embree
     
   protected:
 
-    void build_parallel(size_t threadIndex, size_t threadCount);
+    void build_main(size_t threadIndex, size_t threadCount);
 
     
     void allocateMemoryPools(const size_t numPrims, 

@@ -441,6 +441,7 @@ namespace embree
 	recurse(g_state->buildRecords[taskID],nodeAlloc,leafAlloc,RECURSE,threadID);
         g_state->buildRecords[taskID].parent->setBarrier();
       }
+      _mm_sfence(); // make written leaves globally visible
     }
     
     // =======================================================================================================
@@ -477,7 +478,7 @@ namespace embree
         const ssef e2 = v2 - v0;	     
         const ssef normal = cross(e1,e2);
         
-        store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID)));
+        store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID | (((i==(items-1)) << 31)))));
         store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
         store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),mesh->mask)));
         store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0)));
@@ -519,8 +520,7 @@ namespace embree
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask));
-      //new (accel) Triangle4(v0,v1,v2,vgeomID,vprimID,vmask);
+      Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask,true));
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
 
@@ -560,7 +560,7 @@ namespace embree
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
       //Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask));
-      new (accel) Triangle8(v0,v1,v2,vgeomID,vprimID,vmask);
+      new (accel) Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,true);
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
 #endif
@@ -595,7 +595,7 @@ namespace embree
         const ssef e2 = v2 - v0;	     
         const ssef normal = cross(e1,e2);
         
-        store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID)));
+        store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID | (((i==(items-1)) << 31)))));
         store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
         store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),mesh->mask)));
       }
@@ -636,8 +636,7 @@ namespace embree
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle4v::store_nt(accel,Triangle4v(v0,v1,v2,vgeomID,vprimID,vmask));
-      //new (accel) Triangle4v(v0,v1,v2,vgeomID,vprimID,vmask);
+      Triangle4v::store_nt(accel,Triangle4v(v0,v1,v2,vgeomID,vprimID,vmask,true));
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
 
@@ -685,7 +684,7 @@ namespace embree
 	v2[i] = 0;
       }
     
-      new (accel) Triangle4i(v0,v1,v2,vgeomID,vprimID);
+      new (accel) Triangle4i(v0,v1,v2,vgeomID,vprimID,true);
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
@@ -788,7 +787,7 @@ namespace embree
     {
       /* stop toplevel recursion at some number of items */
       if (mode == CREATE_TOP_LEVEL && current.size() <= topLevelItemThreshold) {
-        g_state->buildRecords.push_back(current);
+	g_state->buildRecords.push_back(current);
         return empty;
       }
       
@@ -1013,6 +1012,7 @@ namespace embree
       __aligned(64) Allocator nodeAlloc(&bvh->alloc);
       __aligned(64) Allocator leafAlloc(&bvh->alloc);
       recurse(br,nodeAlloc,leafAlloc,RECURSE,threadIndex);	    
+      _mm_sfence(); // make written leaves globally visible
             
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;
@@ -1069,6 +1069,7 @@ namespace embree
       __aligned(64) Allocator nodeAlloc(&bvh->alloc);
       __aligned(64) Allocator leafAlloc(&bvh->alloc);
       recurse(br,nodeAlloc,leafAlloc,CREATE_TOP_LEVEL,threadIndex);	    
+      _mm_sfence(); // make written leaves globally visible
 
       /* sort all subtasks by size */
       std::sort(g_state->buildRecords.begin(),g_state->buildRecords.end(),BuildRecord::Greater());

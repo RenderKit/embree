@@ -27,18 +27,23 @@ namespace embree
     typedef Bezier1 Primitive;
     typedef BezierIntersector1::Precalculations Precalculations;
 
-    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1* curves, size_t num, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1* curve, size_t num, void* geom)
     {
-      for (size_t i=0; i<num; i++)
-        BezierIntersector1::intersect(ray,pre,curves[i].p0,curves[i].p1,curves[i].p2,curves[i].p3,curves[i].geomID,curves[i].primID,geom);
+      while (true) {
+	BezierIntersector1::intersect(ray,pre,curve->p0,curve->p1,curve->p2,curve->p3,curve->geomID(),curve->primID(),geom);
+	if (curve->last()) break;
+	curve++;
+      }
     }
 
-    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Bezier1* curves, size_t num, void* geom) 
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Bezier1* curve, size_t num, void* geom) 
     {
-      for (size_t i=0; i<num; i++) 
-        if (BezierIntersector1::occluded(ray,pre,curves[i].p0,curves[i].p1,curves[i].p2,curves[i].p3,curves[i].geomID,curves[i].primID,geom))
-          return true;
-
+      while (true) {
+	if (BezierIntersector1::occluded(ray,pre,curve->p0,curve->p1,curve->p2,curve->p3,curve->geomID(),curve->primID(),geom)) 
+	  return true;
+	if (curve->last()) break;
+	curve++;
+      }
       return false;
     }
   };

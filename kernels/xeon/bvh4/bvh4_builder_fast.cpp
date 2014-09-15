@@ -492,6 +492,7 @@ namespace embree
 	while (g_state->threadStack[threadID].pop(br))
           recurse(br,nodeAlloc,leafAlloc,RECURSE_PARALLEL,threadID,numThreads);
       }
+      _mm_sfence(); // make written leaves globally visible
     }
 
     void BVH4BuilderFast::build_sequential(size_t threadIndex, size_t threadCount) 
@@ -518,6 +519,7 @@ namespace embree
 
       /* build BVH in single thread */
       recurse(br,nodeAlloc,leafAlloc,RECURSE_SEQUENTIAL,threadIndex,threadCount);
+      _mm_sfence(); // make written leaves globally visible
 
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;
@@ -574,6 +576,7 @@ namespace embree
 
         recurse(br,nodeAlloc,leafAlloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
       }
+      _mm_sfence(); // make written leaves globally visible
 
       std::sort(g_state->heap.begin(),g_state->heap.end(),BuildRecord::Greater());
 

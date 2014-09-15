@@ -36,101 +36,49 @@ namespace embree
     return 1;
   }
 
-  void SceneTriangle1v::pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const 
-  {
-    Scene* scene = (Scene*) geom;
-    const PrimRef& prim = *prims;
-    const unsigned geomID = prim.geomID();
-    const unsigned primID = prim.primID();
-    const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-    const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-    const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-    const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-    new (dst) Triangle1v(p0,p1,p2,mesh->id,primID,mesh->mask);
-    prims++;
-  }
-  
-  void SceneTriangle1v::pack(char* dst, const PrimRef* prims, size_t num, void* geom) const 
-  {
-    Scene* scene = (Scene*) geom;
-    const PrimRef& prim = *prims;
-    const unsigned geomID = prim.geomID();
-    const unsigned primID = prim.primID();
-    const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-    const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-    const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-    const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-    new (dst) Triangle1v(p0,p1,p2,mesh->id,primID,mesh->mask);
-    prims++;
-  }
-    
-  BBox3fa SceneTriangle1v::update(char* prim, size_t num, void* geom) const 
+  BBox3fa SceneTriangle1v::update(char* prim_i, size_t num, void* geom) const 
   {
     BBox3fa bounds = empty;
     Scene* scene = (Scene*) geom;
+    Triangle1v* prim = (Triangle1v*) prim_i;
     
-    for (size_t j=0; j<num; j++) 
+    while (true)
     {
-      Triangle1v& dst = ((Triangle1v*) prim)[j];
-      const unsigned geomID = dst.geomID();
-      const unsigned primID = dst.primID();
+      const unsigned geomID = prim->geomID();
+      const unsigned primID = prim->primID();
       const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
       const TriangleMesh::Triangle& tri = mesh->triangle(primID);
       const Vec3fa v0 = mesh->vertex(tri.v[0]);
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
       const Vec3fa v2 = mesh->vertex(tri.v[2]);
-      new (&dst) Triangle1v(v0,v1,v2,geomID,primID,mesh->mask);
+      const bool last = prim->last();
+      new (prim) Triangle1v(v0,v1,v2,geomID,primID,mesh->mask,last);
       bounds.extend(merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2)));
+      if (last) break;
+      prim++;
     }
     return bounds; 
   }
-
-  void TriangleMeshTriangle1v::pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const 
-  {
-    const PrimRef& prim = *prims;
-    const unsigned geomID = prim.geomID();
-    const unsigned primID = prim.primID();
-    const TriangleMesh* mesh = (TriangleMesh*) geom;
-    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-    const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-    const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-    const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-    new (dst) Triangle1v(p0,p1,p2,mesh->id,primID,mesh->mask);
-    prims++;
-  }
   
-  void TriangleMeshTriangle1v::pack(char* dst, const PrimRef* prims, size_t num, void* geom) const 
-  {
-    const PrimRef& prim = *prims;
-    const unsigned geomID = prim.geomID();
-    const unsigned primID = prim.primID();
-    const TriangleMesh* mesh = (TriangleMesh*) geom;
-    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-    const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-    const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-    const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-    new (dst) Triangle1v(p0,p1,p2,mesh->id,primID,mesh->mask);
-    prims++;
-  }
-  
-  BBox3fa TriangleMeshTriangle1v::update(char* prim, size_t num, void* geom) const 
+  BBox3fa TriangleMeshTriangle1v::update(char* prim_i, size_t num, void* geom) const 
   {
     BBox3fa bounds = empty;
     const TriangleMesh* mesh = (const TriangleMesh*) geom;
-    
-    for (size_t j=0; j<num; j++) 
+    Triangle1v* prim = (Triangle1v*) prim_i;
+
+    while (true)
     {
-      Triangle1v& dst = ((Triangle1v*) prim)[j];
-      const unsigned geomID = dst.geomID();
-      const unsigned primID = dst.primID();
+      const unsigned geomID = prim->geomID();
+      const unsigned primID = prim->primID();
       const TriangleMesh::Triangle& tri = mesh->triangle(primID);
       const Vec3fa v0 = mesh->vertex(tri.v[0]);
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
       const Vec3fa v2 = mesh->vertex(tri.v[2]);
-      new (&dst) Triangle1v(v0,v1,v2,geomID,primID,mesh->mask);
+      const bool last = prim->last();
+      new (prim) Triangle1v(v0,v1,v2,geomID,primID,mesh->mask,last);
       bounds.extend(merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2)));
+      if (last) break;
+      prim++;
     }
     return bounds; 
   }
@@ -146,98 +94,34 @@ namespace embree
     return 1;
   }
 
-  void SceneTriangle1vMB::pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const 
-  {
-    Scene* scene = (Scene*) geom;
-    const PrimRef& prim = *prims;
-    const unsigned geomID = prim.geomID();
-    const unsigned primID = prim.primID();
-    const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-    const Vec3fa& a0 = mesh->vertex(tri.v[0],0);
-    const Vec3fa& a1 = mesh->vertex(tri.v[0],1);
-    const Vec3fa& b0 = mesh->vertex(tri.v[1],0);
-    const Vec3fa& b1 = mesh->vertex(tri.v[1],1);
-    const Vec3fa& c0 = mesh->vertex(tri.v[2],0);
-    const Vec3fa& c1 = mesh->vertex(tri.v[2],1);
-    new (dst) Triangle1vMB(a0,a1,b0,b1,c0,c1,mesh->id,primID,mesh->mask);
-    prims++;
-  }
-    
-  void SceneTriangle1vMB::pack(char* dst, const PrimRef* prims, size_t num, void* geom) const 
-  {
-    Scene* scene = (Scene*) geom;
-    const PrimRef& prim = *prims;
-    const unsigned geomID = prim.geomID();
-    const unsigned primID = prim.primID();
-    const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-    const Vec3fa& a0 = mesh->vertex(tri.v[0],0);
-    const Vec3fa& a1 = mesh->vertex(tri.v[0],1);
-    const Vec3fa& b0 = mesh->vertex(tri.v[1],0);
-    const Vec3fa& b1 = mesh->vertex(tri.v[1],1);
-    const Vec3fa& c0 = mesh->vertex(tri.v[2],0);
-    const Vec3fa& c1 = mesh->vertex(tri.v[2],1);
-    new (dst) Triangle1vMB(a0,a1,b0,b1,c0,c1,mesh->id,primID,mesh->mask);
-    prims++;
-  }
-  
-  std::pair<BBox3fa,BBox3fa> SceneTriangle1vMB::update2(char* prim, size_t num, void* geom) const 
+  std::pair<BBox3fa,BBox3fa> SceneTriangle1vMB::update2(char* prim_i, size_t num, void* geom) const 
   {
     BBox3fa bounds0 = empty, bounds1 = empty;
-    
-    for (size_t j=0; j<num; j++) 
+    Triangle1vMB* prim = (Triangle1vMB*) prim_i;
+
+    while (true)
     {
-      const Triangle1vMB& tri = ((Triangle1vMB*) prim)[j];
-      bounds0.extend(merge(BBox3fa(tri.v0),BBox3fa(tri.v1),BBox3fa(tri.v2)));
-      bounds1.extend(merge(BBox3fa(tri.v0+tri.d0),BBox3fa(tri.v1+tri.d1),BBox3fa(tri.v2+tri.d2)));
+      bounds0.extend(merge(BBox3fa(prim->v0),BBox3fa(prim->v1),BBox3fa(prim->v2)));
+      bounds1.extend(merge(BBox3fa(prim->v0+prim->d0),BBox3fa(prim->v1+prim->d1),BBox3fa(prim->v2+prim->d2)));
+      const bool last = prim->last();
+      if (last) break;
+      prim++;
     }
     return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
   }
 
-  void TriangleMeshTriangle1vMB::pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const 
-  {
-    const PrimRef& prim = *prims;
-    const unsigned geomID = prim.geomID();
-    const unsigned primID = prim.primID();
-    const TriangleMesh* mesh = (TriangleMesh*) geom;
-    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-    const Vec3fa& a0 = mesh->vertex(tri.v[0],0);
-    const Vec3fa& a1 = mesh->vertex(tri.v[0],1);
-    const Vec3fa& b0 = mesh->vertex(tri.v[1],0);
-    const Vec3fa& b1 = mesh->vertex(tri.v[1],1);
-    const Vec3fa& c0 = mesh->vertex(tri.v[2],0);
-    const Vec3fa& c1 = mesh->vertex(tri.v[2],1);
-    new (dst) Triangle1vMB(a0,a1,b0,b1,c0,c1,mesh->id,primID,mesh->mask);
-    prims++;
-  }
-  
-  void TriangleMeshTriangle1vMB::pack(char* dst, const PrimRef* prims, size_t num, void* geom) const 
-  {
-    const PrimRef& prim = *prims;
-    const unsigned geomID = prim.geomID();
-    const unsigned primID = prim.primID();
-    const TriangleMesh* mesh = (TriangleMesh*) geom;
-    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-    const Vec3fa& a0 = mesh->vertex(tri.v[0],0);
-    const Vec3fa& a1 = mesh->vertex(tri.v[0],1);
-    const Vec3fa& b0 = mesh->vertex(tri.v[1],0);
-    const Vec3fa& b1 = mesh->vertex(tri.v[1],1);
-    const Vec3fa& c0 = mesh->vertex(tri.v[2],0);
-    const Vec3fa& c1 = mesh->vertex(tri.v[2],1);
-    new (dst) Triangle1vMB(a0,a1,b0,b1,c0,c1,mesh->id,primID,mesh->mask);
-    prims++;
-  }
-
-  std::pair<BBox3fa,BBox3fa> TriangleMeshTriangle1vMB::update2(char* prim, size_t num, void* geom) const 
+  std::pair<BBox3fa,BBox3fa> TriangleMeshTriangle1vMB::update2(char* prim_i, size_t num, void* geom) const 
   {
     BBox3fa bounds0 = empty, bounds1 = empty;
-    
-    for (size_t j=0; j<num; j++) 
+    Triangle1vMB* prim = (Triangle1vMB*) prim_i;
+
+    while (true)
     {
-      const Triangle1vMB& tri = ((Triangle1vMB*) prim)[j];
-      bounds0.extend(merge(BBox3fa(tri.v0),BBox3fa(tri.v1),BBox3fa(tri.v2)));
-      bounds1.extend(merge(BBox3fa(tri.v0+tri.d0),BBox3fa(tri.v1+tri.d1),BBox3fa(tri.v2+tri.d2)));
+      bounds0.extend(merge(BBox3fa(prim->v0),BBox3fa(prim->v1),BBox3fa(prim->v2)));
+      bounds1.extend(merge(BBox3fa(prim->v0+prim->d0),BBox3fa(prim->v1+prim->d1),BBox3fa(prim->v2+prim->d2)));
+      const bool last = prim->last();
+      if (last) break;
+      prim++;
     }
     return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
   }

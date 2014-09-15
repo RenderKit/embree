@@ -171,7 +171,7 @@ namespace embree
     double run (size_t numThreads)
     {
       g_num_threads = numThreads;
-      g_barrier.init(numThreads);
+      g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_barrier_active_thread,(void*)i,1000000,i));
       setAffinity(0);

@@ -31,8 +31,8 @@ namespace embree
     __forceinline Triangle4 () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Triangle4 (const sse3f& v0, const sse3f& v1, const sse3f& v2, const ssei& geomID, const ssei& primID, const ssei& mask)
-      : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomID(geomID), primID(primID)
+    __forceinline Triangle4 (const sse3f& v0, const sse3f& v1, const sse3f& v2, const ssei& geomIDs, const ssei& primIDs, const ssei& mask, const bool last)
+      : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomIDs(geomIDs), primIDs(primIDs | (last << 31))
     {
 #if defined(__USE_RAY_MASK__)
       this->mask = mask;
@@ -42,11 +42,11 @@ namespace embree
     /*! Returns if the specified triangle is valid. */
     __forceinline bool valid(const size_t i) const { 
       assert(i<4); 
-      return geomID[i] != -1; 
+      return geomIDs[i] != -1; 
     }
 
     /*! Returns a mask that tells which triangles are valid. */
-    __forceinline sseb valid() const { return geomID != ssei(-1); }
+    __forceinline sseb valid() const { return geomIDs != ssei(-1); }
 
     /*! Returns the number of stored triangles. */
     __forceinline size_t size() const {
@@ -87,8 +87,8 @@ namespace embree
       store4f_nt(&dst->Ng.x,src.Ng.x);
       store4f_nt(&dst->Ng.y,src.Ng.y);
       store4f_nt(&dst->Ng.z,src.Ng.z);
-      store4i_nt(&dst->geomID,src.geomID);
-      store4i_nt(&dst->primID,src.primID);
+      store4i_nt(&dst->geomIDs,src.geomIDs);
+      store4i_nt(&dst->primIDs,src.primIDs);
 #if defined(__USE_RAY_MASK__)
       store4i_nt(&dst->mask,src.mask);
 #endif
@@ -96,6 +96,17 @@ namespace embree
 
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return (N+3)/4; }
+
+    /*! checks if this is the last triangle in the list */
+    __forceinline int last() const { return primIDs[0] & 0x80000000; }
+
+    /*! returns the geometry IDs */
+    __forceinline ssei geomID() const { return geomIDs; }
+    __forceinline int  geomID(const size_t i) const { assert(i<4); return geomIDs[i]; }
+
+    /*! returns the primitive IDs */
+    __forceinline ssei primID() const { return primIDs & 0x7FFFFFFF; }
+    __forceinline int  primID(const size_t i) const { assert(i<4); return primIDs[i] & 0x7FFFFFFF; }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
@@ -120,7 +131,7 @@ namespace embree
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle4::store_nt(this,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask));
+      Triangle4::store_nt(this,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask,!prims));
     }
 
     /*! fill triangle from triangle list */
@@ -146,7 +157,7 @@ namespace embree
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle4::store_nt(this,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask));
+      Triangle4::store_nt(this,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask,begin>=end));
     }
     
   public:
@@ -154,8 +165,8 @@ namespace embree
     sse3f e1;      //!< 1st edge of the triangles (v0-v1).
     sse3f e2;      //!< 2nd edge of the triangles (v2-v0).
     sse3f Ng;      //!< Geometry normal of the triangles.
-    ssei geomID;   //!< user geometry ID
-    ssei primID;   //!< primitive ID
+    ssei geomIDs;   //!< user geometry ID
+    ssei primIDs;   //!< primitive ID
 #if defined(__USE_RAY_MASK__)
     ssei mask;     //!< geometry mask
 #endif
@@ -170,15 +181,12 @@ namespace embree
   struct SceneTriangle4 : public Triangle4Type
   {
     static SceneTriangle4 type;
-    void pack(char* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const;
-    void pack(char* dst, const PrimRef* prims, size_t num, void* geom) const;
     BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 
   struct TriangleMeshTriangle4 : public Triangle4Type
   {
     static TriangleMeshTriangle4 type;
-    void pack(char* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const;
     BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 }

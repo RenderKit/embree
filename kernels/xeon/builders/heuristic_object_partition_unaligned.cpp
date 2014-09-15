@@ -47,8 +47,8 @@ namespace embree
       BezierRefList::block_iterator_unsafe i = prims;
       for (; i; i++)
       {
-        const BezierCurves* curves = scene->getBezierCurves(i->geomID);
-        const int curve = curves->curve(i->primID);
+        const BezierCurves* curves = scene->getBezierCurves(i->geomID());
+        const int curve = curves->curve(i->primID());
 
 	const Vec3fa a3 = curves->vertex(curve+3,0);
 	const Vec3fa a2 = curves->vertex(curve+2,0);
@@ -148,23 +148,23 @@ namespace embree
         geomBounds.extend(i->bounds(spaces.first));
         centBounds.extend(i->center(spaces.first));
 
-        const BezierCurves* curves = scene->getBezierCurves(i->geomID);
+        const BezierCurves* curves = scene->getBezierCurves(i->geomID());
 #if BVH4HAIR_MB_VERSION == 0
 	s0t0.extend(curves->bounds(spaces.first,i->primID,0));
-        s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID));
+        s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID()));
         s1t1.extend(curves->bounds(spaces.first,i->primID,1));
 #endif
 
 #if BVH4HAIR_MB_VERSION == 1
-        s0t0.extend(curves->bounds(spaces.first,i->primID,0));
-        s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID));
-	s1t1.extend(curves->bounds(spaces.second,i->primID,1));
+        s0t0.extend(curves->bounds(spaces.first,i->primID(),0));
+        s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID()));
+	s1t1.extend(curves->bounds(spaces.second,i->primID(),1));
 #endif
 
 #if BVH4HAIR_MB_VERSION == 2
-	s0t0.extend(curves->bounds(spaces.first,i->primID,0));
-        s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID));
-	s1t1.extend(curves->bounds(spaces.second,i->primID,1));
+	s0t0.extend(curves->bounds(spaces.first,i->primID(),0));
+        s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID()));
+	s1t1.extend(curves->bounds(spaces.second,i->primID(),1));
 #endif
       }
 
@@ -343,23 +343,23 @@ namespace embree
 	  centBounds.extend(block->at(i).center(space0));
 
           const Bezier1& ref = block->at(i);
-          const BezierCurves* curves = scene->getBezierCurves(ref.geomID);
+          const BezierCurves* curves = scene->getBezierCurves(ref.geomID());
 #if BVH4HAIR_MB_VERSION == 0
-          s0t0.extend(curves->bounds(space0,ref.primID,0));
-          s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID));
-          s1t1.extend(curves->bounds(space0,ref.primID,1));
+          s0t0.extend(curves->bounds(space0,ref.primID(),0));
+          s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID()));
+          s1t1.extend(curves->bounds(space0,ref.primID(),1));
 #endif
 
 #if BVH4HAIR_MB_VERSION == 1
-          s0t0.extend(curves->bounds(space0,ref.primID,0));
-          s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID));
-	  s1t1.extend(curves->bounds(space1,ref.primID,1));
+          s0t0.extend(curves->bounds(space0,ref.primID(),0));
+          s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID()));
+	  s1t1.extend(curves->bounds(space1,ref.primID(),1));
 #endif
 
 #if BVH4HAIR_MB_VERSION == 2
-	  s0t0.extend(curves->bounds(space0,ref.primID,0));
-          s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID));
-	  s1t1.extend(curves->bounds(space1,ref.primID,1));
+	  s0t0.extend(curves->bounds(space0,ref.primID(),0));
+          s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID()));
+	  s1t1.extend(curves->bounds(space1,ref.primID(),1));
 #endif
 	}
       }

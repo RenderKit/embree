@@ -93,8 +93,8 @@ namespace embree
         const avxf u = U / absDen;
         const avxf v = V / absDen;
         const avxf t = T / absDen;
-        const int geomID = tri.geomID[i];
-        const int primID = tri.primID[i];
+        const int geomID = tri.geomID(i);
+        const int primID = tri.primID(i);
 
         /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
@@ -119,8 +119,10 @@ namespace embree
 
     static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Triangle4v* tri, size_t num, void* geom)
     {
-      for (size_t i=0; i<num; i++) {
-        intersect(valid,pre,ray,tri[i],geom);
+      while (true) {
+	intersect(valid,pre,ray,*tri,geom);
+	if (tri->last()) break;
+	tri++;
       }
     }
 
@@ -186,7 +188,7 @@ namespace embree
 
         /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-        const int geomID = tri.geomID[i];
+        const int geomID = tri.geomID(i);
         Geometry* geometry = ((Scene*)geom)->get(geomID);
         if (unlikely(geometry->hasOcclusionFilter8()))
         {
@@ -195,7 +197,7 @@ namespace embree
           const avxf u = U / absDen;
           const avxf v = V / absDen;
           const avxf t = T / absDen;
-          const int primID = tri.primID[i];
+          const int primID = tri.primID(i);
           valid = runOcclusionFilter8(valid,geometry,ray,u,v,t,Ng,geomID,primID);
         }
 #endif
@@ -210,9 +212,11 @@ namespace embree
     static __forceinline avxb occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Triangle4v* tri, size_t num, void* geom)
     {
       avxb valid0 = valid;
-      for (size_t i=0; i<num; i++) {
-        valid0 &= !occluded(valid0,pre,ray,tri[i],geom);
+      while (true) {
+	valid0 &= !occluded(valid0,pre,ray,*tri,geom);
         if (none(valid0)) break;
+	if (tri->last()) break;
+	tri++;
       }
       return !valid0;
     }
@@ -272,7 +276,7 @@ namespace embree
       const ssef v = V / absDen;
       const ssef t = T / absDen;
       size_t i = select_min(valid,t);
-      int geomID = tri.geomID[i];
+      int geomID = tri.geomID(i);
       
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
@@ -290,26 +294,29 @@ namespace embree
           ray.Ng.y[k] = Ng.y[i];
           ray.Ng.z[k] = Ng.z[i];
           ray.geomID[k] = geomID;
-          ray.primID[k] = tri.primID[i];
+          ray.primID[k] = tri.primID(i);
 
 #if defined(__INTERSECTION_FILTER__)
           return;
         }
 
         const Vec3fa N(Ng.x[i],Ng.y[i],Ng.z[i]);
-        if (runIntersectionFilter8(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID[i])) return;
+        if (runIntersectionFilter8(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID(i))) return;
         valid[i] = 0;
         if (unlikely(none(valid))) return;
         i = select_min(valid,t);
-        geomID = tri.geomID[i];
+        geomID = tri.geomID(i);
       }
 #endif
     }
 
     static __forceinline void intersect(Precalculations& pre, Ray8& ray, size_t k, const Triangle4v* tri, size_t num, void* geom)
     {
-      for (size_t i=0; i<num; i++)
-        intersect(pre,ray,k,tri[i],geom);
+      while (true) {
+        intersect(pre,ray,k,*tri,geom);
+	if (tri->last()) break;
+	tri++;
+      }
     }
 
     /*! Test if the ray is occluded by one of the triangles. */
@@ -366,7 +373,7 @@ namespace embree
 #if defined(__INTERSECTION_FILTER__)
 
       size_t i = select_min(valid,T);
-      int geomID = tri.geomID[i];
+      int geomID = tri.geomID(i);
 
       while (true) 
       {
@@ -378,11 +385,11 @@ namespace embree
         const ssef v = V / absDen;
         const ssef t = T / absDen;
         const Vec3fa N(Ng.x[i],Ng.y[i],Ng.z[i]);
-        if (runOcclusionFilter8(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID[i])) break;
+        if (runOcclusionFilter8(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID(i))) break;
         valid[i] = 0;
         if (unlikely(none(valid))) return false;
         i = select_min(valid,T);
-        geomID = tri.geomID[i];
+        geomID = tri.geomID(i);
       }
 #endif
 
@@ -391,10 +398,11 @@ namespace embree
 
     static __forceinline bool occluded(Precalculations& pre, Ray8& ray, size_t k, const Triangle4v* tri, size_t num, void* geom) 
     {
-      for (size_t i=0; i<num; i++) 
-        if (occluded(pre,ray,k,tri[i],geom))
-          return true;
-
+      while (true) {
+	if (occluded(pre,ray,k,*tri,geom)) return true;
+	if (tri->last()) break;
+	tri++;
+      }
       return false;
     }
   };

@@ -35,10 +35,13 @@ namespace embree
       prim.accel->intersect4(&valid_i,(RTCRay4&)ray,prim.item);
     }
 
-    static __forceinline void intersect(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* tri, size_t num, const void* geom)
+    static __forceinline void intersect(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, const void* geom)
     {
-      for (size_t i=0; i<num; i++)
-        intersect(valid,ray,tri[i],geom);
+      while (true) {
+        intersect(valid,ray,*prim,geom);
+	if (prim->last()) break;
+	prim++;
+      }
     }
 
     static __forceinline sseb occluded(const sseb& valid_i, const Ray4& ray, const Primitive& prim, const void* geom) 
@@ -48,12 +51,14 @@ namespace embree
       return ray.geomID == 0;
     }
 
-    static __forceinline sseb occluded(const sseb& valid, Precalculations& pre, const Ray4& ray, const Primitive* tri, size_t num, void* geom)
+    static __forceinline sseb occluded(const sseb& valid, Precalculations& pre, const Ray4& ray, const Primitive* prim, size_t num, void* geom)
     {
       sseb terminated = !valid;
-      for (size_t i=0; i<num; i++) {
-        terminated |= occluded(!terminated,ray,tri[i],geom);
+      while (true) {
+        terminated |= occluded(!terminated,ray,*prim,geom);
         if (all(terminated)) return terminated;
+	if (prim->last()) break;
+	prim++;
       }
       return terminated;
     }

@@ -27,18 +27,23 @@ namespace embree
     typedef Bezier1i Primitive;
     typedef BezierIntersector1::Precalculations Precalculations;
 
-    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1i* curve, size_t num, void* geom)
     {
-      for (size_t i=0; i<num; i++)
-        BezierIntersector1::intersect(ray,pre,curves[i].p[0],curves[i].p[1],curves[i].p[2],curves[i].p[3],curves[i].geomID,curves[i].primID,geom);
+      while (true) {
+        BezierIntersector1::intersect(ray,pre,curve->p[0],curve->p[1],curve->p[2],curve->p[3],curve->geomID(),curve->primID(),geom);
+	if (curve->last()) break;
+	curve++;
+      }
     }
 
-    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Bezier1i* curves, size_t num, void* geom) 
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Bezier1i* curve, size_t num, void* geom) 
     {
-      for (size_t i=0; i<num; i++) 
-        if (BezierIntersector1::occluded(ray,pre,curves[i].p[0],curves[i].p[1],curves[i].p[2],curves[i].p[3],curves[i].geomID,curves[i].primID,geom))
-          return true;
-
+      while (true) {
+	if (BezierIntersector1::occluded(ray,pre,curve->p[0],curve->p[1],curve->p[2],curve->p[3],curve->geomID(),curve->primID(),geom))
+	  return true;
+	if (curve->last()) break;
+	curve++;
+      }
       return false;
     }
   };
@@ -49,35 +54,40 @@ namespace embree
     typedef Bezier1iMB Primitive;
     typedef BezierIntersector1::Precalculations Precalculations;
 
-    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1iMB* curves, size_t num, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1iMB* curve, size_t num, void* geom)
     {
-      for (size_t i=0; i<num; i++)
+       while (true)
       {
-        const Vec3fa a0 = curves[i].p0[0], a1 = curves[i].p0[1], a2 = curves[i].p0[2], a3 = curves[i].p0[3];
-        const Vec3fa b0 = curves[i].p1[0], b1 = curves[i].p1[1], b2 = curves[i].p1[2], b3 = curves[i].p1[3];
+        const Vec3fa a0 = curve->p0[0], a1 = curve->p0[1], a2 = curve->p0[2], a3 = curve->p0[3];
+        const Vec3fa b0 = curve->p1[0], b1 = curve->p1[1], b2 = curve->p1[2], b3 = curve->p1[3];
         const float t0 = 1.0f-ray.time, t1 = ray.time;
         const Vec3fa p0 = t0*a0 + t1*b0;
         const Vec3fa p1 = t0*a1 + t1*b1;
         const Vec3fa p2 = t0*a2 + t1*b2;
         const Vec3fa p3 = t0*a3 + t1*b3;
-        BezierIntersector1::intersect(ray,pre,p0,p1,p2,p3,curves[i].geomID,curves[i].primID,geom);
+        BezierIntersector1::intersect(ray,pre,p0,p1,p2,p3,curve->geomID(),curve->primID(),geom);
+	if (curve->last()) break;
+	curve++;
       }
     }
 
-    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Bezier1iMB* curves, size_t num, void* geom) 
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Bezier1iMB* curve, size_t num, void* geom) 
     {
-      for (size_t i=0; i<num; i++) 
+      while (true) 
       {
-        const Vec3fa a0 = curves[i].p0[0], a1 = curves[i].p0[1], a2 = curves[i].p0[2], a3 = curves[i].p0[3];
-        const Vec3fa b0 = curves[i].p1[0], b1 = curves[i].p1[1], b2 = curves[i].p1[2], b3 = curves[i].p1[3];
+        const Vec3fa a0 = curve->p0[0], a1 = curve->p0[1], a2 = curve->p0[2], a3 = curve->p0[3];
+        const Vec3fa b0 = curve->p1[0], b1 = curve->p1[1], b2 = curve->p1[2], b3 = curve->p1[3];
         const float t0 = 1.0f-ray.time, t1 = ray.time;
         const Vec3fa p0 = t0*a0 + t1*b0;
         const Vec3fa p1 = t0*a1 + t1*b1;
         const Vec3fa p2 = t0*a2 + t1*b2;
         const Vec3fa p3 = t0*a3 + t1*b3;
 
-        if (BezierIntersector1::occluded(ray,pre,p0,p1,p2,p3,curves[i].geomID,curves[i].primID,geom))
+        if (BezierIntersector1::occluded(ray,pre,p0,p1,p2,p3,curve->geomID(),curve->primID(),geom))
           return true;
+
+	if (curve->last()) break;
+	curve++;
       }
       return false;
     }

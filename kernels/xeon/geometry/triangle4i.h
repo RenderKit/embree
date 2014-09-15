@@ -29,8 +29,8 @@ namespace embree
     __forceinline Triangle4i () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Triangle4i (Vec3f* base[4], const ssei& v1, const ssei& v2, const ssei& geomID, const ssei& primID)
-      : v1(v1), v2(v2), geomID(geomID), primID(primID) 
+    __forceinline Triangle4i (Vec3f* base[4], const ssei& v1, const ssei& v2, const ssei& geomIDs, const ssei& primIDs, const bool last)
+      : v1(v1), v2(v2), geomIDs(geomIDs | (last << 31)), primIDs(primIDs) 
       {
         v0[0] = base[0];
         v0[1] = base[1];
@@ -41,11 +41,11 @@ namespace embree
     /*! Returns if the specified triangle is valid. */
     __forceinline bool valid(const size_t i) const { 
       assert(i<4); 
-      return geomID[i] != -1; 
+      return geomIDs[i] != -1; 
     }
 
     /*! Returns a mask that tells which triangles are valid. */
-    __forceinline sseb valid() const { return primID != ssei(-1); }
+    __forceinline sseb valid() const { return primIDs != ssei(-1); }
 
     /*! Returns the number of stored triangles. */
     __forceinline size_t size() const { 
@@ -56,7 +56,7 @@ namespace embree
     __forceinline const BBox3fa bounds() const 
     {
       BBox3fa bounds = empty;
-      for (size_t i=0; i<4 && geomID[i] != -1; i++)
+      for (size_t i=0; i<4 && geomIDs[i] != -1; i++)
       {
 	const int* base = (int*) v0[i];
 	const Vec3fa p0 = *(Vec3fa*)(base);
@@ -71,6 +71,17 @@ namespace embree
 
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return (N+3)/4; }
+
+    /*! checks if this is the last triangle in the list */
+    __forceinline int last() const { return geomIDs[0] & 0x80000000; }
+    
+    /*! returns the geometry IDs */
+    __forceinline ssei geomID() const { return geomIDs & 0x7FFFFFFF; }
+    __forceinline int  geomID(const size_t i) const { assert(i<4); return geomIDs[i] & 0x7FFFFFFF; }
+
+    /*! returns the primitive IDs */
+    __forceinline ssei primID() const { return primIDs; }
+    __forceinline int  primID(const size_t i) const { assert(i<4); return primIDs[i]; }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
@@ -99,10 +110,10 @@ namespace embree
 	  v1[i] = 0; 
 	  v2[i] = 0;
 	}
-	if (prims) prim = *prims;
+	if (prims) prim = *prims; 
       }
       
-      new (this) Triangle4i(v0,v1,v2,geomID,primID);
+      new (this) Triangle4i(v0,v1,v2,geomID,primID,!prims); // FIXME: use non temporal store
     }
 
     /*! fill triangle from triangle list */
@@ -135,15 +146,15 @@ namespace embree
 	if (begin<end) prim = &prims[begin];
       }
       
-      new (this) Triangle4i(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
+      new (this) Triangle4i(v0,v1,v2,geomID,primID,begin>=end); // FIXME: use non temporal store
     }
 
   public:
     const Vec3f* v0[4];  //!< Pointer to 1st vertex.
     ssei v1;             //!< Offset to 2nd vertex.
     ssei v2;             //!< Offset to 3rd vertex.
-    ssei geomID;         //!< ID of mesh.
-    ssei primID;         //!< ID of primitive inside mesh.
+    ssei geomIDs;        //!< ID of mesh.
+    ssei primIDs;        //!< ID of primitive inside mesh.
   };
 
   /*! virtual interface to query information about the triangle type */
@@ -158,14 +169,12 @@ namespace embree
   struct SceneTriangle4i : public Triangle4iTy
   {
     static SceneTriangle4i type;
-    void pack(char* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const;
     BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 
   struct TriangleMeshTriangle4i : public Triangle4iTy
   {
     static TriangleMeshTriangle4i type;
-    void pack(char* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const;
     BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 }

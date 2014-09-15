@@ -19,15 +19,6 @@
 
 namespace embree
 {
-  /* The following lines are in triangle4.cpp as they need to be
-     compiled without the AVX flag. */
-
-  //SceneTriangle8 SceneTriangle8::type;
-  //TriangleMeshTriangle8 TriangleMeshTriangle8::type;
-
-  //Triangle8Type::Triangle8Type () 
-  //  : PrimitiveType("triangle8",sizeof(Triangle8),8,false,1) {} 
-
   size_t Triangle8Type::blocks(size_t x) const {
     return (x+7)/8;
   }
@@ -36,78 +27,22 @@ namespace embree
     return ((Triangle8*)This)->size();
   }
 
-  void SceneTriangle8::pack(char* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const 
-  {
-    Scene* scene = (Scene*) geom;
-    
-    avxi geomID = -1, primID = -1, mask = -1;
-    avx3f v0 = zero, v1 = zero, v2 = zero;
-    
-    for (size_t i=0; i<8 && prims; i++, prims++)
-    {
-      const PrimRef& prim = *prims;
-      const TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
-      const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
-      const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-      const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-      const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-      geomID [i] = prim.geomID();
-      primID [i] = prim.primID();
-      mask   [i] = mesh->mask;
-      v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-      v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-      v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-    }
-    new (This) Triangle8(v0,v1,v2,geomID,primID,mask);
-  }
-  
-  void SceneTriangle8::pack(char* dst, const PrimRef* prims, size_t num, void* geom) const 
-  {
-    Scene* scene = (Scene*) geom;
-    
-    size_t p = 0;
-    while (p < num)
-    {
-      avxi geomID = -1, primID = -1, mask = -1;
-      avx3f v0 = zero, v1 = zero, v2 = zero;
-      
-      for (size_t i=0; i<8 && p < num; i++, p++)
-      {
-        const PrimRef& prim = prims[p];
-        const TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
-        const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
-        const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-        geomID [i] = prim.geomID();
-        primID [i] = prim.primID();
-        mask   [i] = mesh->mask;
-        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-      }
-      new (dst) Triangle8(v0,v1,v2,geomID,primID,mask);
-      dst += sizeof(Triangle8);
-    }
-  }
-  
-  BBox3fa SceneTriangle8::update(char* prim, size_t num, void* geom) const 
+  BBox3fa SceneTriangle8::update(char* prim_i, size_t num, void* geom) const 
   {
     BBox3fa bounds = empty;
     Scene* scene = (Scene*) geom;
+    Triangle8* prim = (Triangle8*) prim_i;
     
-    for (size_t j=0; j<num; j++) 
+    while (true)
     {
-      Triangle8& dst = ((Triangle8*) prim)[j];
-      
       avxi vgeomID = -1, vprimID = -1, vmask = -1;
       avx3f v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<8; i++)
       {
-        if (dst.primID[i] == -1) break;
-        const unsigned geomID = dst.geomID[i];
-        const unsigned primID = dst.primID[i];
+        if (prim->primID(i) == -1) break;
+        const unsigned geomID = prim->geomID(i);
+        const unsigned primID = prim->primID(i);
         const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa p0 = mesh->vertex(tri.v[0]);
@@ -121,52 +56,30 @@ namespace embree
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      new (&dst) Triangle8(v0,v1,v2,vgeomID,vprimID,vmask);
+      bool last = prim->last();
+      new (prim) Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,last);
+      if (last) break;
+      prim++;
     }
     return bounds; 
   }
-
-  void TriangleMeshTriangle8::pack(char* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const 
-  {
-    TriangleMesh* mesh = (TriangleMesh*) geom;
-    
-    avxi geomID = -1, primID = -1, mask = -1;
-    avx3f v0 = zero, v1 = zero, v2 = zero;
-    
-    for (size_t i=0; i<8 && prims; i++, prims++)
-    {
-      const PrimRef& prim = *prims;
-      const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
-      const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-      const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-      const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-      geomID [i] = mesh->id;
-      primID [i] = prim.primID();
-      mask   [i] = mesh->mask;
-      v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-      v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-      v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-    }
-    new (This) Triangle8(v0,v1,v2,geomID,primID,mask);
-  }
   
-  BBox3fa TriangleMeshTriangle8::update(char* prim, size_t num, void* geom) const 
+  BBox3fa TriangleMeshTriangle8::update(char* prim_i, size_t num, void* geom) const 
   {
     BBox3fa bounds = empty;
     TriangleMesh* mesh = (TriangleMesh*) geom;
-    
+    Triangle8* prim = (Triangle8*) prim_i;
+
     for (size_t j=0; j<num; j++) 
     {
-      Triangle8& dst = ((Triangle8*) prim)[j];
-      
       avxi vgeomID = -1, vprimID = -1, vmask = -1;
       avx3f v0 = zero, v1 = zero, v2 = zero;
 
       for (size_t i=0; i<8; i++)
       {
-        if (dst.primID[i] == -1) break;
-        const unsigned geomID = dst.geomID[i];
-        const unsigned primID = dst.primID[i];
+        if (prim->primID(i) == -1) break;
+        const unsigned geomID = prim->geomID(i);
+        const unsigned primID = prim->primID(i);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa p0 = mesh->vertex(tri.v[0]);
         const Vec3fa p1 = mesh->vertex(tri.v[1]);
@@ -178,8 +91,11 @@ namespace embree
         v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-        }
-      new (&dst) Triangle8(v0,v1,v2,vgeomID,vprimID,vmask);
+      }
+      bool last = prim->last();
+      new (prim) Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,last);
+      if (last) break;
+      prim++;
     }
     return bounds; 
   }

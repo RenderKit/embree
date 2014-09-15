@@ -16,6 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
+#define PARALLEL_COMMIT
+
 /* render function to use */
 renderPixelFunc renderPixel;
 
@@ -122,6 +124,7 @@ uniform unsigned int createGroundPlane (RTCScene scene)
 /* scene data */
 RTCScene g_scene  = NULL;
 RTCScene g_scene1 = NULL;
+uniform unsigned int g_threads = 0;
 
 uniform unsigned int g_instance0 = -1;
 uniform unsigned int g_instance1 = -1;
@@ -130,11 +133,21 @@ uniform unsigned int g_instance3 = -1;
 
 uniform Vec3f colors[4][4];
 
+/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
+task void parallelCommit(RTCScene scene)
+{
+  rtcCommitThread (scene,threadIndex,threadCount); 
+}
+
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
+
+  /* get number of HW threads */
+  g_threads = getNumHWThreads();
+  print("% HW threads found \n",g_threads);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
@@ -148,7 +161,12 @@ export void device_init (uniform int8* uniform cfg)
   createTriangulatedSphere(g_scene1,make_Vec3f(+1, 0, 0),0.5);
   createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,-1),0.5);
   createTriangulatedSphere(g_scene1,make_Vec3f(-1, 0, 0),0.5);
-  rtcCommit(g_scene1);
+
+#if !defined(PARALLEL_COMMIT)
+  rtcCommit (g_scene1);
+#else
+  launch[  g_threads ] parallelCommit(g_scene1); sync;
+#endif
 
   /* instantiate geometry */
   g_instance0 = rtcNewInstance(g_scene,g_scene1);
@@ -296,7 +314,12 @@ export void device_render (uniform int* uniform pixels,
   rtcUpdate(g_scene,g_instance1);
   rtcUpdate(g_scene,g_instance2);
   rtcUpdate(g_scene,g_instance3);
+#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
+#else
+  launch[  g_threads ] parallelCommit(g_scene); sync;
+#endif
+
 
   /* render all pixels */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

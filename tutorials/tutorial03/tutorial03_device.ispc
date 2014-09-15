@@ -16,6 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
+#define PARALLEL_COMMIT
+
 struct ISPCTriangle 
 {
   int v0;                /*< first triangle vertex */
@@ -81,6 +83,8 @@ struct ISPCScene
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene g_scene = NULL;
+uniform unsigned int g_threads = 0;
+
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -107,11 +111,16 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
 
 Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
+
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
+
+  /* get number of HW threads */
+  g_threads = getNumHWThreads();
+  print("% HW threads found \n",g_threads);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
@@ -163,7 +172,6 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   }
 
   /* commit changes to scene */
-  rtcCommit (scene_out);
   return scene_out;
 }
 
@@ -280,18 +288,11 @@ task void renderTile(uniform int* uniform pixels,
   }
 }
 
-uniform unsigned int g_numThreads = 0;
 
-task void getNumHWThreads()
-{
- g_numThreads = threadCount;
-}
 
-task void parallelCommit()
+task void parallelCommit(RTCScene scene)
 {
-  uniform unsigned int threadID   = threadIndex;
-  uniform unsigned int numThreads = threadCount;
-  rtcCommitMT (g_scene,threadIndex,threadCount); 
+  rtcCommitThread (scene,threadIndex,threadCount); 
 }
 
 /* called by the C++ code to render */
@@ -308,11 +309,10 @@ export void device_render (uniform int* uniform pixels,
   if (g_scene == NULL)
   { 
     g_scene = convertScene(g_ispc_scene);
-#if 0
-    launch[ 1 ] getNumHWThreads(); sync;
-    print("% HW threads\n",g_numThreads);
-    // launch[ g_numThreads ] parallelCommit(); sync;
-    launch[ 4 ] parallelCommit(); sync;
+#if !defined(PARALLEL_COMMIT)
+  rtcCommit (g_scene);
+#else
+  launch[  g_threads ] parallelCommit(g_scene); sync;
 #endif
   }
 

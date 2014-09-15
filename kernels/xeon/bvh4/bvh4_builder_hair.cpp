@@ -76,6 +76,7 @@ namespace embree
 	const Split split = find_split(threadIndex,threadCount,prims,pinfo,pinfo.geomBounds);
 	BuildTask task(&bvh->root,0,prims,pinfo,pinfo.geomBounds,split); recurseTask(threadIndex,task);
 	/*bvh->root = recurse(threadIndex,0,prims,pinfo,pinfo.geomBounds,split);*/
+	_mm_sfence(); // make written leaves globally visible
 #else
 	const Split split = find_split<true>(threadIndex,threadCount,prims,pinfo,pinfo.geomBounds,pinfo);
 	BuildTask task(&bvh->root,0,prims,pinfo,pinfo.geomBounds,pinfo,split);
@@ -101,6 +102,7 @@ namespace embree
 	  }
 	  atomic_add(&numActiveTasks,-1);
 	}
+	_mm_sfence(); // make written leaves globally visible
 #endif
 	
 	scheduler->dispatchTask(threadIndex,threadCount,_task_build_parallel,this,threadCount,"BVH4Builder::build_parallel");
@@ -361,6 +363,7 @@ namespace embree
 	  taskMutex.unlock();
 	}
       }
+      _mm_sfence(); // make written leaves globally visible
     }
 
     /*! entry functions for the builder */
