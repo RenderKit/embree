@@ -59,6 +59,8 @@ namespace embree
       return mapped; 
     }
 
+    size_t size() { return bytes; }
+
   protected:
     char* ptr;       //!< pointer to buffer data
     size_t bytes;    //!< size of buffer in bytes
