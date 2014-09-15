@@ -233,6 +233,23 @@ namespace embree
     return geom->id;
   }
 
+  unsigned Scene::newSubdivisionMesh (RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numTimeSteps) 
+  {
+    if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
+      process_error(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+      return -1;
+    }
+
+    if (numTimeSteps == 0 || numTimeSteps > 2) {
+      process_error(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+      return -1;
+    }
+    
+    Geometry* geom = new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numTimeSteps);
+    return geom->id;
+  }
+
+
   unsigned Scene::newBezierCurves (RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {

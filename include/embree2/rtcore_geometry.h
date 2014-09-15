@@ -29,6 +29,10 @@ enum RTCBufferType {
   RTC_VERTEX_BUFFER   = 0x02000000,
   RTC_VERTEX_BUFFER0  = 0x02000000,
   RTC_VERTEX_BUFFER1  = 0x02000001,
+
+  RTC_OFFSET_BUFFER   = 0x03000000,
+  RTC_DATA_BUFFER0    = 0x04000000,
+  RTC_DATA_BUFFER1    = 0x04000001,
 };
 
 /*! \brief Supported types of matrix layout for functions involving matrices */
@@ -200,6 +204,18 @@ RTCORE_API void rtcSetOcclusionFilterFunction16 (RTCScene scene, unsigned geomID
 
 /*! \brief Deletes the geometry. */
 RTCORE_API void rtcDeleteGeometry (RTCScene scene, unsigned geomID);
+
+
+/*! \brief Creates a new subdivision mesh.  */
+
+RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene,                //!< the scene the mesh belongs to
+					   RTCGeometryFlags flags,        //!< geometry flags
+					   size_t numFaces,               //!< number of faces
+					   size_t numEdges,               //!< number of edges
+					   size_t numVertices,            //!< number of vertices
+					   size_t numTimeSteps = 1        //!< number of motion blur time steps
+  );
+
 
 /*! @} */
 

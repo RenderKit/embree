@@ -1065,4 +1065,16 @@ namespace embree
     ((Scene*)scene)->get_locked(geomID)->setOcclusionFilterFunction16(filter16);
     CATCH_END;
   }
+
+  /* new support for subdivision surfaces */
+  RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numTimeSteps) 
+  {
+    CATCH_BEGIN;
+    TRACE(rtcNewTriangleMesh);
+    VERIFY_HANDLE(scene);
+    return ((Scene*)scene)->newSubdivisionMesh(flags,numFaces,numEdges,numVertices,numTimeSteps);
+    CATCH_END;
+    return -1;
+  }
+
 }
