@@ -48,6 +48,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   ../common/scene_user_geometry.cpp
   ../common/scene_triangle_mesh.cpp
   ../common/scene_bezier_curves.cpp
+  ../common/scene_subdiv_mesh.cpp
   ../common/raystream_log.cpp
 
   builders/bezierrefgen.cpp 

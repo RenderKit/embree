@@ -21,6 +21,7 @@
 #include "scene_triangle_mesh.h"
 #include "scene_user_geometry.h"
 #include "scene_bezier_curves.h"
+#include "scene_subdiv_mesh.h"
 
 #include "common/acceln.h"
 #include "geometry.h"

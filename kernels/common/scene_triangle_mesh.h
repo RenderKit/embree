@@ -107,29 +107,6 @@ namespace embree
 #else
 	const mic_i stride = vertices[dim].getStride();
 
-	/* mic_i offset0 = stride * mic_i(tri.v[0]); */
-	/* mic_i offset1 = stride * mic_i(tri.v[1]); */
-	/* mic_i offset2 = stride * mic_i(tri.v[2]); */
-
-	/* const unsigned int off0 = offset0[0]; */
-	/* const unsigned int off1 = offset1[0]; */
-	/* const unsigned int off2 = offset2[0]; */
-
-	/* const char  *__restrict__ const base  = vertices[dim].getPtr(); */
-	/* const float *__restrict__ const vptr0 = (float*)(base + off0); */
-	/* const float *__restrict__ const vptr1 = (float*)(base + off1); */
-	/* const float *__restrict__ const vptr2 = (float*)(base + off2); */
-
-	/* if (HINT) */
-	/* { */
-	/*   prefetch<HINT>(vptr1); */
-	/*   prefetch<HINT>(vptr2); */
-	/* } */
-
-	/* const mic_f v0 = broadcast4to16f(vptr0);  */
-	/* const mic_f v1 = broadcast4to16f(vptr1);  */
-	/* const mic_f v2 = broadcast4to16f(vptr2);  */
-
 	const mic_i offset0_64 = mul_uint64(stride,mic_i(tri.v[0]));
 	const mic_i offset1_64 = mul_uint64(stride,mic_i(tri.v[1]));
 	const mic_i offset2_64 = mul_uint64(stride,mic_i(tri.v[2]));
@@ -167,7 +144,7 @@ namespace embree
     
   public:
     unsigned int mask;                //!< for masking out geometry
-    unsigned char numTimeSteps;       //!< number of time steps (1 or 2)
+    unsigned int numTimeSteps;        //!< number of time steps (1 or 2)
     
     BufferT<Triangle> triangles;      //!< array of triangles
     size_t numTriangles;              //!< number of triangles

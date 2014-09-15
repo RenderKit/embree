@@ -245,7 +245,7 @@ namespace embree
       return -1;
     }
     
-    Geometry* geom = NULL; // TODO
+    Geometry* geom = new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numTimeSteps);
     return geom->id;
   }
 
