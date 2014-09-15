@@ -320,7 +320,7 @@ namespace embree
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; 
-	const Triangle8* prim = (Triangle8*) curNode.leaf(items);
+	const Triangle* prim = (Triangle*) curNode.leaf(items);
         TriangleIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
@@ -607,8 +607,8 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8HybridMoeller,BVH8Intersector8Hybrid<Triangle8Intersector8MoellerTrumbore<true> >);
-    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8HybridMoellerNoFilter,BVH8Intersector8Hybrid<Triangle8Intersector8MoellerTrumbore<false> >);
+    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8HybridMoeller,BVH8Intersector8Hybrid<ListIntersector8_1<Triangle8Intersector8MoellerTrumbore<true COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8HybridMoellerNoFilter,BVH8Intersector8Hybrid<ListIntersector8_1<Triangle8Intersector8MoellerTrumbore<true COMMA false> > >);
   }
 }  
 

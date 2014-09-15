@@ -23,7 +23,7 @@ namespace embree
   TriangleMeshTriangle1 TriangleMeshTriangle1::type;
 
   Triangle1Type::Triangle1Type () 
-      : PrimitiveType("triangle1",sizeof(Triangle1),1,false,1) {} 
+      : PrimitiveType("triangle1",sizeof(Triangle1<listMode>),1,false,1) {} 
   
   size_t Triangle1Type::blocks(size_t x) const {
     return x;
@@ -37,7 +37,7 @@ namespace embree
   {
     BBox3fa bounds = empty;
     Scene* scene = (Scene*) geom;
-    Triangle1* prim = (Triangle1*) prim_i;
+    Triangle1<listMode>* prim = (Triangle1<listMode>*) prim_i;
     
     while (true)
     {
@@ -49,7 +49,7 @@ namespace embree
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
       const Vec3fa v2 = mesh->vertex(tri.v[2]);
       const bool last = prim->last();
-      new (prim) Triangle1(v0,v1,v2,geomID,primID,mesh->mask,last);
+      new (prim) Triangle1<listMode>(v0,v1,v2,geomID,primID,mesh->mask,last);
       bounds.extend(merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2)));
       if (last) break;
       prim++;
@@ -61,7 +61,7 @@ namespace embree
   {
     BBox3fa bounds = empty;
     const TriangleMesh* mesh = (const TriangleMesh*) geom;
-    Triangle1* prim = (Triangle1*) prim_i;
+    Triangle1<listMode>* prim = (Triangle1<listMode>*) prim_i;
     
     while (true)
     {
@@ -72,7 +72,7 @@ namespace embree
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
       const Vec3fa v2 = mesh->vertex(tri.v[2]);
       const bool last = prim->last();
-      new (prim) Triangle1(v0,v1,v2,geomID,primID,mesh->mask,last);
+      new (prim) Triangle1<listMode>(v0,v1,v2,geomID,primID,mesh->mask,last);
       bounds.extend(merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2)));
       if (last) break;
       prim++;

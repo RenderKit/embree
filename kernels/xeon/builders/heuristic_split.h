@@ -43,7 +43,7 @@ namespace embree
 	SIZE = S01 > S23 ? S01 : S23
       };
       
-      typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
+      typedef atomic_set<PrimRefBlockT<BezierPrim> > BezierRefList; //!< list of bezier primitives
       typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;   //!< list of general primitives
       
     public:
@@ -73,7 +73,7 @@ namespace embree
       
       /*! single threaded splitting into two sets */
       template<bool Parallel>
-	void split(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<Bezier1>& alloc, 
+	void split(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<BezierPrim>& alloc, 
 		   Scene* scene, BezierRefList& prims, 
 		   BezierRefList& lprims_o, PrimInfo& linfo_o, 
 		   BezierRefList& rprims_o, PrimInfo& rinfo_o) const

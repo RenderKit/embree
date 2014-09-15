@@ -47,7 +47,7 @@ namespace embree
       
       for (BezierRefList::block_iterator_unsafe i = prims; i; i++) 
       {
-	Bezier1& prim = *i;
+	BezierPrim& prim = *i;
 	const Vec3fa axisi = normalize(prim.p3-prim.p0);
 	const float cos0 = abs(dot(axisi,axis0));
 	const float cos1 = abs(dot(axisi,axis1));
@@ -112,7 +112,7 @@ namespace embree
       {
 	for (size_t i=0; i<block->size(); i++) 
 	{
-	  Bezier1& prim = block->at(i);
+	  BezierPrim& prim = block->at(i);
 	  Vec3fa axisi = prim.p3 - prim.p0;
 	  float leni = length(axisi);
 	  if (leni == 0.0f) continue;
@@ -136,7 +136,7 @@ namespace embree
       {
 	for (size_t i=0; i<block->size(); i++) 
 	{
-	  Bezier1& prim = block->at(i);
+	  BezierPrim& prim = block->at(i);
 	  const Vec3fa axisi = normalize(prim.p3-prim.p0);
 	  const float cos0 = abs(dot(axisi,axis0));
 	  const float cos1 = abs(dot(axisi,axis1));
@@ -155,7 +155,7 @@ namespace embree
     }
     
     template<>
-    void StrandSplit::Split::split<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<Bezier1>& alloc, 
+    void StrandSplit::Split::split<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<BezierPrim>& alloc, 
 					  BezierRefList& prims, 
 					  BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					  BezierRefList& rprims_o, PrimInfo& rinfo_o) const 
@@ -169,7 +169,7 @@ namespace embree
       {
 	for (size_t i=0; i<block->size(); i++) 
 	{
-	  const Bezier1& prim = block->at(i); 
+	  const BezierPrim& prim = block->at(i); 
 	  const Vec3fa axisi = normalize(prim.p3-prim.p0);
 	  const float cos0 = abs(dot(axisi,axis0));
 	  const float cos1 = abs(dot(axisi,axis1));
@@ -193,7 +193,7 @@ namespace embree
       }
     }
     
-    StrandSplit::TaskSplitParallel::TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, 
+    StrandSplit::TaskSplitParallel::TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<BezierPrim>& alloc, 
 						      BezierRefList& prims, 
 						      BezierRefList& lprims_o, PrimInfo& linfo_o, 
 						      BezierRefList& rprims_o, PrimInfo& rinfo_o)
@@ -219,7 +219,7 @@ namespace embree
     
     template<>
     void StrandSplit::Split::split<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
-					 PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+					 PrimRefBlockAlloc<BezierPrim>& alloc, BezierRefList& prims, 
 					 BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					 BezierRefList& rprims_o, PrimInfo& rinfo_o) const
     {

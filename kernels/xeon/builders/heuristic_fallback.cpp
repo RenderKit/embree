@@ -20,7 +20,7 @@ namespace embree
 {
   namespace isa
   {
-    FallBackSplit FallBackSplit::find(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+    FallBackSplit FallBackSplit::find(size_t threadIndex, PrimRefBlockAlloc<BezierPrim>& alloc, BezierRefList& prims, 
 				      BezierRefList& lprims_o, PrimInfo& linfo_o,
 				      BezierRefList& rprims_o, PrimInfo& rinfo_o)
     {
@@ -35,7 +35,7 @@ namespace embree
       {
 	for (size_t i=0; i<block->size(); i++) 
 	{
-	  const Bezier1& prim = block->at(i); 
+	  const BezierPrim& prim = block->at(i); 
 	  const BBox3fa bounds = prim.bounds();
 	  
 	  if ((num++)%2) 

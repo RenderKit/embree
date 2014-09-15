@@ -28,7 +28,7 @@ namespace embree
     struct ObjectPartitionUnaligned
     {
       struct Split;
-      typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
+      typedef atomic_set<PrimRefBlockT<BezierPrim> > BezierRefList; //!< list of bezier primitives
       
     public:
       
@@ -116,7 +116,7 @@ namespace embree
 	/*! splitting into two sets */
 	template<bool Parallel>
 	  void split(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
-		     PrimRefBlockAlloc<Bezier1>& alloc, 
+		     PrimRefBlockAlloc<BezierPrim>& alloc, 
 		     BezierRefList& prims, 
 		     BezierRefList& lprims_o, PrimInfo& linfo_o, 
 		     BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
@@ -136,7 +136,7 @@ namespace embree
 	BinInfo();
 	
 	/*! bins an array of primitives */
-	void bin (const Bezier1* prims, size_t N, const Mapping& mapping);
+	void bin (const BezierPrim* prims, size_t N, const Mapping& mapping);
 	
 	/*! bins a list of primitives */
 	void bin (BezierRefList& prims, const Mapping& mapping);
@@ -234,7 +234,7 @@ namespace embree
       struct TaskSplitParallel
       {
 	/*! construction executes the task */
-	TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, 
+	TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<BezierPrim>& alloc, 
 			  BezierRefList& prims, 
 			  BezierRefList& lprims_o, PrimInfo& linfo_o, 
 			  BezierRefList& rprims_o, PrimInfo& rinfo_o);
@@ -247,7 +247,7 @@ namespace embree
 	/*! input data */
       private:
 	const Split* split;
-	PrimRefBlockAlloc<Bezier1>& alloc;
+	PrimRefBlockAlloc<BezierPrim>& alloc;
 	BezierRefList prims;
 	PrimInfo linfos[maxTasks];
 	PrimInfo rinfos[maxTasks];

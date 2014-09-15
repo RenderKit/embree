@@ -38,8 +38,8 @@ namespace embree
       
     protected:
       
-      typedef Bezier1 PrimRef;
-      typedef PrimRefBlockT<Bezier1> PrimRefBlock;
+      typedef BezierPrim PrimRef;
+      typedef PrimRefBlockT<BezierPrim> PrimRefBlock;
       typedef atomic_set<PrimRefBlock> BezierRefList;
       
       /*! stores all info to build a subtree */

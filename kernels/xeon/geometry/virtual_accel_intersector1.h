@@ -35,33 +35,11 @@ namespace embree
       prim.accel->intersect((RTCRay&)ray,prim.item);
     }
 
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, const void* geom) 
-    {
-      while (true) {
-        intersect(pre,ray,*prim,geom);
-	if (prim->last()) break;
-	prim++;
-      }
-    }
-
     static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom) 
     {
       AVX_ZERO_UPPER();
       prim.accel->occluded((RTCRay&)ray,prim.item);
       return ray.geomID == 0;
-    }
-
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, const void* geom) 
-    {
-      while (true) 
-      {
-        if (occluded(pre,ray,*prim,geom))
-          return true;
-
-	if (prim->last()) break;
-	prim++;
-      }
-      return false;
     }
   };
 }

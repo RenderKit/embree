@@ -21,6 +21,7 @@
 namespace embree
 {
   /*! Stores 4 triangles from an indexed face set. */
+  template<bool list>
   struct Triangle4i
   {
   public:
@@ -30,7 +31,7 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     __forceinline Triangle4i (Vec3f* base[4], const ssei& v1, const ssei& v2, const ssei& geomIDs, const ssei& primIDs, const bool last)
-      : v1(v1), v2(v2), geomIDs(geomIDs | (last << 31)), primIDs(primIDs) 
+      : v1(v1), v2(v2), geomIDs(geomIDs | ((list && last) << 31)), primIDs(primIDs) // FIXME: use primID for list end tag
       {
         v0[0] = base[0];
         v0[1] = base[1];
@@ -73,11 +74,21 @@ namespace embree
     static __forceinline size_t blocks(size_t N) { return (N+3)/4; }
 
     /*! checks if this is the last triangle in the list */
-    __forceinline int last() const { return geomIDs[0] & 0x80000000; }
+    __forceinline int last() const { 
+      if (list) return geomIDs[0] & 0x80000000; 
+      else { assert(false); return 0; }
+    }
     
     /*! returns the geometry IDs */
-    __forceinline ssei geomID() const { return geomIDs & 0x7FFFFFFF; }
-    __forceinline int  geomID(const size_t i) const { assert(i<4); return geomIDs[i] & 0x7FFFFFFF; }
+    __forceinline ssei geomID() const { 
+      if (list) return geomIDs & 0x7FFFFFFF; 
+      else      return geomIDs;
+    }
+    __forceinline int  geomID(const size_t i) const { 
+      assert(i<4); 
+      if (list) return geomIDs[i] & 0x7FFFFFFF; 
+      else      return geomIDs[i];
+    }
 
     /*! returns the primitive IDs */
     __forceinline ssei primID() const { return primIDs; }

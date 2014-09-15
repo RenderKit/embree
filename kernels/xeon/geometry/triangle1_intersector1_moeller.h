@@ -31,16 +31,17 @@ namespace embree
    *  e2. The resulting algorithm is similar to the fastest one of the
    *  paper "Optimizing Ray-Triangle Intersection via Automated
    *  Search". */
+  template<bool list>
   struct Triangle1Intersector1MoellerTrumbore
   {
-    typedef Triangle1 Primitive;
+    typedef Triangle1<list> Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const Ray& ray) {}
     };
 
     /*! Intersect a ray with the triangle and updates the hit. */
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Triangle1& tri, const void* geom)
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, const void* geom)
     {
       /* load triangle */
       STAT3(normal.trav_prims,1,1,1);
@@ -111,17 +112,8 @@ namespace embree
       ray.primID = primID;
     }
 
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Triangle1* tri, size_t num, void* geom)
-    {
-      while (true) {
-        intersect(pre,ray,*tri,geom);
-	if (tri->last()) break;
-	tri++;
-      }
-    }
-
     /*! Test if the ray is occluded by one of the triangles. */
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Triangle1& tri, const void* geom)
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, const void* geom)
     {
       /* load triangle */
       STAT3(shadow.trav_prims,1,1,1);
@@ -183,16 +175,6 @@ namespace embree
 #endif
 
       return true;
-    }
-
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Triangle1* tri, size_t num, void* geom) 
-    {
-      while (true) {
-	if (occluded(pre,ray,*tri,geom)) return true;
-	if (tri->last()) break;
-	tri++;
-      }
-      return false;
     }
   };
 }

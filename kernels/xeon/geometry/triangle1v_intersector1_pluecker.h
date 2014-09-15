@@ -27,16 +27,17 @@ namespace embree
    *  Pluecker coordinates for the intersection. Due to the shift, the
    *  Pluecker coordinate calculation simplifies. The edge equations
    *  are watertight along the edge for neighboring triangles. */
+  template<bool list>
   struct Triangle1vIntersector1Pluecker
   {
-    typedef Triangle1v Primitive;
+    typedef Triangle1v<list> Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const Ray& ray) {}
     };
 
     /*! Intersect a ray with the triangle and updates the hit. */
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Triangle1v& tri, const void* geom)
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, const void* geom)
     {
       /* load triangle */
       STAT3(normal.trav_prims,1,1,1);
@@ -114,17 +115,8 @@ namespace embree
       ray.primID = primID;
     }
 
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Triangle1v* tri, size_t num, void* geom)
-    {						
-      while (true) {
-        intersect(pre,ray,*tri,geom);
-	if (tri->last()) break;
-	tri++;
-      }
-    }
-
     /*! Test if the ray is occluded by one of the triangles. */
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Triangle1v& tri, const void* geom)
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, const void* geom)
     {
       /* load triangle */
       STAT3(shadow.trav_prims,1,1,1);
@@ -193,16 +185,6 @@ namespace embree
 #endif
 
       return true;
-    }
-
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Triangle1v* tri, size_t num, void* geom) 
-    {
-      while (true) {
-	if (occluded(pre,ray,*tri,geom)) return true;
-	if (tri->last()) break;
-	tri++;
-      }
-      return false;
     }
   };
 }

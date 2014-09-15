@@ -60,8 +60,8 @@ namespace embree
         assert(sptr_node > stack_node);
         sptr_node--;
         sptr_near--;
-        NodeRef curNode = *sptr_node;
-        if (unlikely(curNode == BVH4::invalidNode)) {
+        NodeRef cur = *sptr_node;
+        if (unlikely(cur == BVH4::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -74,17 +74,17 @@ namespace embree
         while (1)
         {
           /* process normal nodes */
-          if (likely((types & 0x1) && curNode.isNode()))
+          if (likely((types & 0x1) && cur.isNode()))
           {
 	    const avxb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
-	    const Node* __restrict__ const node = curNode.node();
+	    const Node* __restrict__ const node = cur.node();
 	    
 	    /* pop of next node */
 	    assert(sptr_node > stack_node);
 	    sptr_node--;
 	    sptr_near--;
-	    curNode = *sptr_node; 
+	    cur = *sptr_node; 
 	    curDist = *sptr_near;
 	    
 #pragma unroll(4)
@@ -107,10 +107,10 @@ namespace embree
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = curNode;
+		  *(sptr_node-1) = cur;
 		  *(sptr_near-1) = curDist; 
 		  curDist = childDist;
-		  curNode = child;
+		  cur = child;
 		}
 		
 		/* push hit child onto stack */
@@ -123,17 +123,17 @@ namespace embree
 	  }
 	  
 	  /* process motion blur nodes */
-          else if (likely((types & 0x10) && curNode.isNodeMB()))
+          else if (likely((types & 0x10) && cur.isNodeMB()))
 	  {
 	    const avxb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
-	    const BVH4::NodeMB* __restrict__ const node = curNode.nodeMB();
+	    const BVH4::NodeMB* __restrict__ const node = cur.nodeMB();
           
 	    /* pop of next node */
 	    assert(sptr_node > stack_node);
 	    sptr_node--;
 	    sptr_near--;
-	    curNode = *sptr_node; 
+	    cur = *sptr_node; 
 	    curDist = *sptr_near;
 	    
 #pragma unroll(4)
@@ -156,10 +156,10 @@ namespace embree
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = curNode;
+		  *(sptr_node-1) = cur;
 		  *(sptr_near-1) = curDist; 
 		  curDist = childDist;
-		  curNode = child;
+		  cur = child;
 		}
 		
 		/* push hit child onto stack */
@@ -175,7 +175,7 @@ namespace embree
 	}
         
 	/* return if stack is empty */
-	if (unlikely(curNode == BVH4::invalidNode)) {
+	if (unlikely(cur == BVH4::invalidNode)) {
 	  assert(sptr_node == stack_node);
 	  break;
 	}
@@ -183,7 +183,8 @@ namespace embree
 	/* intersect leaf */
 	const avxb valid_leaf = ray_tfar > curDist;
 	STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
-	size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
+	if (unlikely(cur == BVH4::emptyNode)) continue;
+	size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 	PrimitiveIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->geometry);
 	ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
@@ -220,8 +221,8 @@ namespace embree
         assert(sptr_node > stack_node);
         sptr_node--;
         sptr_near--;
-        NodeRef curNode = *sptr_node;
-        if (unlikely(curNode == BVH4::invalidNode)) {
+        NodeRef cur = *sptr_node;
+        if (unlikely(cur == BVH4::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -234,17 +235,17 @@ namespace embree
         while (1)
         {
 	  /* process normal nodes */
-          if (likely((types & 0x1) && curNode.isNode()))
+          if (likely((types & 0x1) && cur.isNode()))
           {
 	    const avxb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
-	    const Node* __restrict__ const node = curNode.node();
+	    const Node* __restrict__ const node = cur.node();
 	    
 	    /* pop of next node */
 	    assert(sptr_node > stack_node);
 	    sptr_node--;
 	    sptr_near--;
-	    curNode = *sptr_node; 
+	    cur = *sptr_node; 
 	    curDist = *sptr_near;
 	    
 #pragma unroll(4)
@@ -267,10 +268,10 @@ namespace embree
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = curNode;
+		  *(sptr_node-1) = cur;
 		  *(sptr_near-1) = curDist; 
 		  curDist = childDist;
-		  curNode = child;
+		  cur = child;
 		}
 		
 		/* push hit child onto stack */
@@ -283,17 +284,17 @@ namespace embree
 	  }
 	  
 	  /* process motion blur nodes */
-          else if (likely((types & 0x10) && curNode.isNodeMB()))
+          else if (likely((types & 0x10) && cur.isNodeMB()))
 	  {
 	    const avxb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
-	    const BVH4::NodeMB* __restrict__ const node = curNode.nodeMB();
+	    const BVH4::NodeMB* __restrict__ const node = cur.nodeMB();
           
 	    /* pop of next node */
 	    assert(sptr_node > stack_node);
 	    sptr_node--;
 	    sptr_near--;
-	    curNode = *sptr_node; 
+	    cur = *sptr_node; 
 	    curDist = *sptr_near;
 	    
 #pragma unroll(4)
@@ -316,10 +317,10 @@ namespace embree
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = curNode;
+		  *(sptr_node-1) = cur;
 		  *(sptr_near-1) = curDist; 
 		  curDist = childDist;
-		  curNode = child;
+		  cur = child;
 		}
 		
 		/* push hit child onto stack */
@@ -335,7 +336,7 @@ namespace embree
 	}
         
         /* return if stack is empty */
-        if (unlikely(curNode == BVH4::invalidNode)) {
+        if (unlikely(cur == BVH4::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -343,7 +344,8 @@ namespace embree
         /* intersect leaf */
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
-        size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
+	if (unlikely(cur == BVH4::emptyNode)) continue;
+        size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
         terminated |= valid_leaf & PrimitiveIntersector8::occluded(valid_leaf,pre,ray,prim,items,bvh->geometry);
         if (all(terminated)) break;
         ray_tfar = select(terminated,neg_inf,ray_tfar);
@@ -352,17 +354,17 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR8(BVH4Bezier1Intersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA Bezier1Intersector8>);
-    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA Bezier1iIntersector8>);
-    DEFINE_INTERSECTOR8(BVH4Triangle1Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA Triangle1Intersector8MoellerTrumbore>);
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA Triangle4Intersector8MoellerTrumbore<true> >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<0x1 COMMA false COMMA Triangle4Intersector8MoellerTrumbore<false> >);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA Triangle8Intersector8MoellerTrumbore<true> >);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<0x1 COMMA false COMMA Triangle8Intersector8MoellerTrumbore<false> >);
-    DEFINE_INTERSECTOR8(BVH4Triangle1vIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA Triangle1vIntersector8Pluecker>);
-    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA Triangle4vIntersector8Pluecker>);
-    DEFINE_INTERSECTOR8(BVH4Triangle4iIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA Triangle4iIntersector8Pluecker>);
-    DEFINE_INTERSECTOR8(BVH4VirtualIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA VirtualAccelIntersector8>);
-    DEFINE_INTERSECTOR8(BVH4Triangle1vMBIntersector8ChunkMoeller, BVH4Intersector8Chunk<0x10 COMMA false COMMA Triangle1vIntersector8MoellerTrumboreMB>);
+    DEFINE_INTERSECTOR8(BVH4Bezier1Intersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<Bezier1Intersector8<true> > >);
+    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<Bezier1iIntersector8<true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle1Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<Triangle1Intersector8MoellerTrumbore<true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<Triangle4Intersector8MoellerTrumbore<true COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<Triangle4Intersector8MoellerTrumbore<true COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<Triangle8Intersector8MoellerTrumbore<true COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<Triangle8Intersector8MoellerTrumbore<true COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle1vIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA ListIntersector8<Triangle1vIntersector8Pluecker<true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA ListIntersector8<Triangle4vIntersector8Pluecker<true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4iIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA ListIntersector8<Triangle4iIntersector8Pluecker<true> > >);
+    DEFINE_INTERSECTOR8(BVH4VirtualIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<VirtualAccelIntersector8> >);
+    DEFINE_INTERSECTOR8(BVH4Triangle1vMBIntersector8ChunkMoeller, BVH4Intersector8Chunk<0x10 COMMA false COMMA ListIntersector8<Triangle1vIntersector8MoellerTrumboreMB<true> > >);
   }
 }

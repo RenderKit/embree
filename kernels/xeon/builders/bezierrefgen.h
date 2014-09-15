@@ -30,12 +30,12 @@ namespace embree
     class BezierRefGen
     {
       static const size_t maxTasks = 32;
-      typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList;
+      typedef atomic_set<PrimRefBlockT<BezierPrim> > BezierRefList;
       
     public:
       
       /*! standard constructor that schedules the task */
-      BezierRefGen (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<Bezier1>* alloc, const Scene* scene, const size_t numTimeSteps = 1);
+      BezierRefGen (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<BezierPrim>* alloc, const Scene* scene, const size_t numTimeSteps = 1);
       
     public:
       
@@ -46,7 +46,7 @@ namespace embree
     private:
       const Scene* scene;                  //!< input geometry
       const size_t numTimeSteps;
-      PrimRefBlockAlloc<Bezier1>* alloc;   //!< allocator for build primitive blocks
+      PrimRefBlockAlloc<BezierPrim>* alloc;   //!< allocator for build primitive blocks
       
       /* intermediate data */
     private:

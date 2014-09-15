@@ -32,6 +32,7 @@ namespace embree
   extern avxf coeff1[4];
 #endif
 
+  template<bool list>
   struct Bezier1i
   {
   public:
@@ -41,7 +42,7 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     __forceinline Bezier1i (const Vec3fa* p, const unsigned int geomID, const unsigned int primID, const bool last)
-      : p(p), geom(geomID), prim(primID | (last << 31)) {}
+      : p(p), geom(geomID), prim(primID | ((list && last) << 31)) {}
 
     /*! calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const {
@@ -52,15 +53,21 @@ namespace embree
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
 
-    __forceinline unsigned int primID() const { return prim & 0x7FFFFFFF; }
+    __forceinline unsigned int primID() const { 
+      if (list) return prim & 0x7FFFFFFF; 
+      else      return prim;
+    }
     __forceinline unsigned int geomID() const { return geom; }
     //__forceinline unsigned int mask  () const { return mask; } // FIXME: not implemented yet
-    __forceinline int          last  () const { return prim & 0x80000000; }
+    __forceinline int last  () const { 
+      if (list) return prim & 0x80000000; 
+      else { assert(false); return 0; }
+    }
 
     /*! fill from list */
-    __forceinline void fill(atomic_set<PrimRefBlockT<Bezier1> >::block_iterator_unsafe& iter, Scene* scene)
+    __forceinline void fill(typename atomic_set<PrimRefBlockT<BezierPrim> >::block_iterator_unsafe& iter, Scene* scene)
     {
-      const Bezier1& curve = *iter; iter++;
+      const BezierPrim& curve = *iter; iter++;
       const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID());
       const Vec3fa& p0 = in->vertex(in->curve(curve.primID()));
       new (this) Bezier1i(&p0,curve.geomID(),curve.primID(),!iter);
@@ -85,6 +92,7 @@ namespace embree
     unsigned int prim;  //!< primitive ID
   };
 
+  template<bool list>
   struct Bezier1iMB
   {
   public:
@@ -94,12 +102,18 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     __forceinline Bezier1iMB (const Vec3fa* p0, const Vec3fa* p1, const unsigned int geomID, const unsigned int primID, const bool last)
-      : p0(p0), p1(p1), geom(geomID), prim(primID | (last << 31)) {}
+      : p0(p0), p1(p1), geom(geomID), prim(primID | ((list && last) << 31)) {}
 
-    __forceinline unsigned int primID() const { return prim & 0x7FFFFFF; }
+    __forceinline unsigned int primID() const { 
+      if (list) return prim & 0x7FFFFFF; 
+      else      return prim;
+    }
     __forceinline unsigned int geomID() const { return geom; }
     //__forceinline unsigned int mask  () const { return mask; } // FIXME: not implemented yet
-    __forceinline int          last  () const { return prim & 0x80000000; }
+    __forceinline int last  () const { 
+      if (list) return prim & 0x80000000; 
+      else { assert(false); return 0; }
+    }
 
     /*! calculate the bounds of the triangle */
     __forceinline BBox3fa bounds0() const {
@@ -108,9 +122,9 @@ namespace embree
     }
 
     /*! fill from list */
-    __forceinline void fill(atomic_set<PrimRefBlockT<Bezier1> >::block_iterator_unsafe& iter, Scene* scene)
+    __forceinline void fill(typename atomic_set<PrimRefBlockT<BezierPrim> >::block_iterator_unsafe& iter, Scene* scene)
     {
-      const Bezier1& curve = *iter; iter++;
+      const BezierPrim& curve = *iter; iter++;
       const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID());
       const Vec3fa& p0 = in->vertex(in->curve(curve.primID()),0);
       const Vec3fa& p1 = in->vertex(in->curve(curve.primID()),1);

@@ -35,8 +35,8 @@ namespace embree
   {
     static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; // FIXME: measure if this is really optimal, maybe disable only parallel splits
 
-    template<> BVH4BuilderMBT<Triangle1vMB>::BVH4BuilderMBT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderMB(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
-    template<> BVH4BuilderMBT<Triangle1vMB>::BVH4BuilderMBT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4BuilderMB(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
+    template<> BVH4BuilderMBT<Triangle1vMB<listMode> >::BVH4BuilderMBT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderMB(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1v<listMode>),2,inf) {}
+    template<> BVH4BuilderMBT<Triangle1vMB<listMode> >::BVH4BuilderMBT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4BuilderMB(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1v<listMode>),2,inf) {}
 
     BVH4BuilderMB::BVH4BuilderMB (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t mode,
 				size_t logBlockSize, size_t logSAHBlockSize, float intCost, 
@@ -606,6 +606,6 @@ namespace embree
     }
     
     /*! entry functions for the builder */
-    Builder* BVH4Triangle1vMBBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderMBT<Triangle1vMB>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle1vMBBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderMBT<Triangle1vMB<listMode> >((BVH4*)bvh,scene,mode); }
   }
 }

@@ -20,7 +20,7 @@ namespace embree
 {
   namespace isa
   {
-    BezierRefGen::BezierRefGen(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<Bezier1>* alloc, const Scene* scene, const size_t numTimeSteps)
+    BezierRefGen::BezierRefGen(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<BezierPrim>* alloc, const Scene* scene, const size_t numTimeSteps)
       : scene(scene), numTimeSteps(numTimeSteps), alloc(alloc), pinfo(empty)
     {
       /*! parallel stage */
@@ -62,7 +62,7 @@ namespace embree
 	    p2 = 0.5f*(p2+geom->vertex(ofs+2,1));
 	    p3 = 0.5f*(p3+geom->vertex(ofs+3,1));
 	    }*/
-	  const Bezier1 bezier(p0,p1,p2,p3,0,1,i,j,false);
+	  const BezierPrim bezier(p0,p1,p2,p3,0,1,i,j,false);
 	  pinfo.add(bezier.bounds(),bezier.center());
 	  if (likely(block->insert(bezier))) continue; 
 	  block = prims.insert(alloc->malloc(threadIndex));

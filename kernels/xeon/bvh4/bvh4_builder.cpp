@@ -37,23 +37,23 @@ namespace embree
   {
     static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; // FIXME: measure if this is really optimal, maybe disable only parallel splits
 
-    template<> BVH4BuilderT<Triangle1 >::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1),2,inf) {}
-    template<> BVH4BuilderT<Triangle4 >::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,2,2,1.0f,false,sizeof(Triangle4),4,inf) {}
+    template<> BVH4BuilderT<Triangle1<listMode> >::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1<listMode>),2,inf) {}
+    template<> BVH4BuilderT<Triangle4<listMode> >::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,2,2,1.0f,false,sizeof(Triangle4<listMode>),4,inf) {}
 #if defined(__AVX__)
-    template<> BVH4BuilderT<Triangle8 >::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,3,2,1.0f,false,sizeof(Triangle8),8,inf) {}
+    template<> BVH4BuilderT<Triangle8<listMode> >::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,3,2,1.0f,false,sizeof(Triangle8<listMode>),8,inf) {}
 #endif
-    template<> BVH4BuilderT<Triangle1v>::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
-    template<> BVH4BuilderT<Triangle4v>::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,2,2,1.0f,false,sizeof(Triangle4v),4,inf) {}
-    template<> BVH4BuilderT<Triangle4i>::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,2,2,1.0f,true ,sizeof(Triangle4i),4,inf) {}
+    template<> BVH4BuilderT<Triangle1v<listMode> >::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1v<listMode>),2,inf) {}
+    template<> BVH4BuilderT<Triangle4v<listMode> >::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,2,2,1.0f,false,sizeof(Triangle4v<listMode>),4,inf) {}
+    template<> BVH4BuilderT<Triangle4i<listMode> >::BVH4BuilderT (BVH4* bvh, Scene* scene, size_t mode) : BVH4Builder(bvh,scene,NULL,mode,2,2,1.0f,true ,sizeof(Triangle4i<listMode>),4,inf) {}
 
-    template<> BVH4BuilderT<Triangle1 >::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1),2,inf) {}
-    template<> BVH4BuilderT<Triangle4 >::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,2,2,1.0f,false,sizeof(Triangle4),4,inf) {}
+    template<> BVH4BuilderT<Triangle1<listMode> >::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1<listMode>),2,inf) {}
+    template<> BVH4BuilderT<Triangle4<listMode> >::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,2,2,1.0f,false,sizeof(Triangle4<listMode>),4,inf) {}
 #if defined(__AVX__)
-    template<> BVH4BuilderT<Triangle8 >::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,3,2,1.0f,false,sizeof(Triangle8),8,inf) {}
+    template<> BVH4BuilderT<Triangle8<listMode> >::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,3,2,1.0f,false,sizeof(Triangle8<listMode>),8,inf) {}
 #endif
-    template<> BVH4BuilderT<Triangle1v>::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
-    template<> BVH4BuilderT<Triangle4v>::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,2,2,1.0f,false,sizeof(Triangle4v),4,inf) {}
-    template<> BVH4BuilderT<Triangle4i>::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,2,2,1.0f,true ,sizeof(Triangle4i),4,inf) {}
+    template<> BVH4BuilderT<Triangle1v<listMode> >::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1v<listMode>),2,inf) {}
+    template<> BVH4BuilderT<Triangle4v<listMode> >::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,2,2,1.0f,false,sizeof(Triangle4v<listMode>),4,inf) {}
+    template<> BVH4BuilderT<Triangle4i<listMode> >::BVH4BuilderT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4Builder(bvh,mesh->parent,mesh,mode,2,2,1.0f,true ,sizeof(Triangle4i<listMode>),4,inf) {}
 
     BVH4Builder::BVH4Builder (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t mode,
 				size_t logBlockSize, size_t logSAHBlockSize, float intCost, 
@@ -417,22 +417,22 @@ namespace embree
     }
     
     /*! entry functions for the builder */
-    Builder* BVH4Triangle1Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle1> ((BVH4*)bvh,scene,mode); }
-    Builder* BVH4Triangle4Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle4> ((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle1Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle1<listMode> > ((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle4Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle4<listMode> > ((BVH4*)bvh,scene,mode); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle8> ((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle8Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle8<listMode> > ((BVH4*)bvh,scene,mode); }
 #endif
-    Builder* BVH4Triangle1vBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle1v>((BVH4*)bvh,scene,mode); }
-    Builder* BVH4Triangle4vBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle4v>((BVH4*)bvh,scene,mode); }
-    Builder* BVH4Triangle4iBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle4i>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle1vBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle1v<listMode> >((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle4vBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle4v<listMode> >((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle4iBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderT<Triangle4i<listMode> >((BVH4*)bvh,scene,mode); }
 
-    Builder* BVH4Triangle1MeshBuilder  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle1> ((BVH4*)bvh,mesh,mode); }
-    Builder* BVH4Triangle4MeshBuilder  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle4> ((BVH4*)bvh,mesh,mode); }
+    Builder* BVH4Triangle1MeshBuilder  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle1<listMode> > ((BVH4*)bvh,mesh,mode); }
+    Builder* BVH4Triangle4MeshBuilder  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle4<listMode> > ((BVH4*)bvh,mesh,mode); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshBuilder  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle8> ((BVH4*)bvh,mesh,mode); }
+    Builder* BVH4Triangle8MeshBuilder  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle8<listMode> > ((BVH4*)bvh,mesh,mode); }
 #endif
-    Builder* BVH4Triangle1vMeshBuilder (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle1v>((BVH4*)bvh,mesh,mode); }
-    Builder* BVH4Triangle4vMeshBuilder (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle4v>((BVH4*)bvh,mesh,mode); }
-    Builder* BVH4Triangle4iMeshBuilder (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle4i>((BVH4*)bvh,mesh,mode); }
+    Builder* BVH4Triangle1vMeshBuilder (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle1v<listMode> >((BVH4*)bvh,mesh,mode); }
+    Builder* BVH4Triangle4vMeshBuilder (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle4v<listMode> >((BVH4*)bvh,mesh,mode); }
+    Builder* BVH4Triangle4iMeshBuilder (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4BuilderT<Triangle4i<listMode> >((BVH4*)bvh,mesh,mode); }
   }
 }
