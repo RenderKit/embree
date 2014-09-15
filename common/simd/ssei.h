@@ -286,11 +286,19 @@ namespace embree
   }
 
   __forceinline ssei load4i_nt (void* ptr) { 
+#if defined(__SSE4_1__)
     return _mm_stream_load_si128((__m128i*)ptr); 
+#else
+    return _mm_load_si128((__m128i*)ptr); 
+#endif
   }
 
   __forceinline void store4i_nt(void* ptr, const ssei& v) { 
+#if defined(__SSE4_1__)
     _mm_stream_ps((float*)ptr,_mm_castsi128_ps(v)); 
+#else
+    _mm_store_si128((__m128i*)ptr,v);
+#endif
   }
 
   ////////////////////////////////////////////////////////////////////////////////
