@@ -20,6 +20,7 @@
 
 namespace embree
 {
+  template<bool list>
   struct Triangle1
   {
   public:
@@ -29,7 +30,7 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     __forceinline Triangle1 (const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const unsigned int geomID, const unsigned int primID, const unsigned int mask, const bool last)
-      : v0(v0,primID | (last << 31)), v1(v1,geomID), v2(v2,mask), Ng(cross(v0-v1,v2-v0)) { }
+      : v0(v0,primID | ((list && last) << 31)), v1(v1,geomID), v2(v2,mask), Ng(cross(v0-v1,v2-v0)) { }
 
     /*! calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const {
@@ -40,10 +41,13 @@ namespace embree
     static __forceinline size_t blocks(size_t N) { return N; }
 
     /*! access hidden members */
-    __forceinline unsigned int primID() const { return v0.a & 0x7FFFFFFF; }
+    __forceinline unsigned int primID() const { if (list) return v0.a & 0x7FFFFFFF; else return v0.a; }
     __forceinline unsigned int geomID() const { return v1.a; }
     __forceinline unsigned int mask  () const { return v2.a; }
-    __forceinline int          last  () const { return v0.a & 0x80000000; }
+    __forceinline int          last  () const { 
+      if (list) return v0.a & 0x80000000; 
+      else { assert(false); return 0; }
+    }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)

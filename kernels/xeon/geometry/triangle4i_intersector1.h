@@ -23,15 +23,16 @@
 namespace embree
 {
   /*! Intersector1 for triangle4i */
+  template<bool list>
   struct Triangle4iIntersector1Pluecker
   {
-    typedef Triangle4i Primitive;
+    typedef Triangle4i<list> Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const Ray& ray) {}
     };
 
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Triangle4i& tri, const void* geom)
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, const void* geom)
     {
       /* gather vertices */
       STAT3(normal.trav_prims,1,1,1);
@@ -133,16 +134,7 @@ namespace embree
 
     }
 
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Triangle4i* tri, size_t num, void* geom)
-    {
-      while (true) {
-        intersect(pre,ray,*tri,geom);
-	if (tri->last()) break;
-	tri++;
-      }
-    }
-
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Triangle4i& tri, const void* geom)
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, const void* geom)
     {
       /* gather vertices */
       STAT3(shadow.trav_prims,1,1,1);
@@ -231,16 +223,6 @@ namespace embree
 #else
       return true;
 #endif
-    }
-
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Triangle4i* tri, size_t num, const void* geom) 
-    {
-      while (true) {
-	if (occluded(pre,ray,*tri,geom)) return true;
-	if (tri->last()) break;
-	tri++;
-      }
-      return false;
     }
   };
 }

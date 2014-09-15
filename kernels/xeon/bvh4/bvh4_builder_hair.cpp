@@ -27,8 +27,8 @@ namespace embree
 {
   namespace isa
   {
-    template<> BVH4BuilderHairT<Bezier1 >::BVH4BuilderHairT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderHair(bvh,scene,mode) {}
-    template<> BVH4BuilderHairT<Bezier1i>::BVH4BuilderHairT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderHair(bvh,scene,mode) {}
+    template<> BVH4BuilderHairT<Bezier1<listMode> >::BVH4BuilderHairT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderHair(bvh,scene,mode) {}
+    template<> BVH4BuilderHairT<Bezier1i<listMode> >::BVH4BuilderHairT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderHair(bvh,scene,mode) {}
 
     BVH4BuilderHair::BVH4BuilderHair (BVH4* bvh, Scene* scene, size_t mode)
       : scene(scene), minLeafSize(1), maxLeafSize(inf), enableSpatialSplits(mode > 0), bvh(bvh), scheduler(&scene->lockstep_scheduler), remainingReplications(0)
@@ -367,7 +367,7 @@ namespace embree
     }
 
     /*! entry functions for the builder */
-    Builder* BVH4Bezier1Builder_OBB  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderHairT<Bezier1> ((BVH4*)bvh,scene,mode); }
-    Builder* BVH4Bezier1iBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderHairT<Bezier1i> ((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Bezier1Builder_OBB  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderHairT<Bezier1<listMode> > ((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Bezier1iBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderHairT<Bezier1i<listMode> > ((BVH4*)bvh,scene,mode); }
   }
 }

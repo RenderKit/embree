@@ -24,14 +24,14 @@ namespace embree
   }
   
   size_t Triangle8Type::size(const char* This) const {
-    return ((Triangle8*)This)->size();
+    return ((Triangle8<listMode>*)This)->size();
   }
 
   BBox3fa SceneTriangle8::update(char* prim_i, size_t num, void* geom) const 
   {
     BBox3fa bounds = empty;
     Scene* scene = (Scene*) geom;
-    Triangle8* prim = (Triangle8*) prim_i;
+    Triangle8<listMode>* prim = (Triangle8<listMode>*) prim_i;
     
     while (true)
     {
@@ -57,7 +57,7 @@ namespace embree
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
       bool last = prim->last();
-      new (prim) Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,last);
+      new (prim) Triangle8<listMode>(v0,v1,v2,vgeomID,vprimID,vmask,last);
       if (last) break;
       prim++;
     }
@@ -68,9 +68,9 @@ namespace embree
   {
     BBox3fa bounds = empty;
     TriangleMesh* mesh = (TriangleMesh*) geom;
-    Triangle8* prim = (Triangle8*) prim_i;
+    Triangle8<listMode>* prim = (Triangle8<listMode>*) prim_i;
 
-    for (size_t j=0; j<num; j++) 
+    while (true)
     {
       avxi vgeomID = -1, vprimID = -1, vmask = -1;
       avx3f v0 = zero, v1 = zero, v2 = zero;
@@ -93,7 +93,7 @@ namespace embree
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
       bool last = prim->last();
-      new (prim) Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,last);
+      new (prim) Triangle8<listMode>(v0,v1,v2,vgeomID,vprimID,vmask,last);
       if (last) break;
       prim++;
     }

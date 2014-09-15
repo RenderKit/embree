@@ -27,15 +27,16 @@ namespace embree
    *  Pluecker coordinates for the intersection. Due to the shift, the
    *  Pluecker coordinate calculation simplifies. The edge equations
    *  are watertight along the edge for neighboring triangles. */
+  template<bool list>
   struct Triangle1vIntersector8Pluecker
   {
-    typedef Triangle1v Primitive;
+    typedef Triangle1v<list> Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
     };
 
-    static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle1v& tri, const void* geom)
+    static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& tri, const void* geom)
     {
       STAT3(normal.trav_prims,1,popcnt(valid_i),8);
       
@@ -118,16 +119,7 @@ namespace embree
       store8f(valid,&ray.Ng.z,Ng.z);
     }
 
-    static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Triangle1v* __restrict__ tri, size_t num, const void* geom)
-    {
-      while (true) {
-	intersect(valid,pre,ray,*tri,geom);
-	if (tri->last()) break;
-	tri++;
-      }
-    }
-
-    static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle1v& tri, const void* geom)
+    static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& tri, const void* geom)
     {
       STAT3(shadow.trav_prims,1,popcnt(valid0),8);
 
@@ -198,18 +190,6 @@ namespace embree
       }
 #endif
       return valid;
-    }
-
-    static __forceinline avxb occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Triangle1v* tri, size_t num, const void* geom)
-    {
-      avxb valid0 = valid;
-      while (true) {
-	valid0 &= !occluded(valid0,pre,ray,*tri,geom);
-        if (none(valid0)) break;
-	if (tri->last()) break;
-	tri++;
-      }
-      return !valid0;
     }
   };
 }

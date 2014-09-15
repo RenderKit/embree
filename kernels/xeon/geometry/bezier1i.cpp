@@ -22,7 +22,7 @@ namespace embree
   SceneBezier1i SceneBezier1i::type;
 
   Bezier1iType::Bezier1iType () 
-    : PrimitiveType("bezier1i",sizeof(Bezier1i),1,true,1) {} 
+    : PrimitiveType("bezier1i",sizeof(Bezier1i<listMode>),1,true,1) {} 
   
   size_t Bezier1iType::blocks(size_t x) const {
     return x;
@@ -35,7 +35,7 @@ namespace embree
   Bezier1iMBType Bezier1iMBType::type;
 
   Bezier1iMBType::Bezier1iMBType () 
-    : PrimitiveType("bezier1imb",sizeof(Bezier1iMB),1,true,1) {} 
+    : PrimitiveType("bezier1imb",sizeof(Bezier1iMB<listMode>),1,true,1) {} 
   
   size_t Bezier1iMBType::blocks(size_t x) const {
     return x;
@@ -49,7 +49,7 @@ namespace embree
   {
     BBox3fa bounds = empty;
     Scene* scene = (Scene*) geom;
-    Bezier1i* prim = (Bezier1i*) prim;
+    Bezier1i<listMode>* prim = (Bezier1i<listMode>*) prim;
     
     while (true)
     {

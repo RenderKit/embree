@@ -29,7 +29,7 @@ namespace embree
     {
       struct Split;
       typedef atomic_set<PrimRefBlockT<PrimRef> > TriRefList;    //!< list of triangles
-      typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
+      typedef atomic_set<PrimRefBlockT<BezierPrim> > BezierRefList; //!< list of bezier primitives
       
     public:
       
@@ -93,7 +93,7 @@ namespace embree
 	/*! splitting into two sets */
 	template<bool Parallel>
 	  void split(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
-		     PrimRefBlockAlloc<Bezier1>& alloc, 
+		     PrimRefBlockAlloc<BezierPrim>& alloc, 
 		     Scene* scene, BezierRefList& curves, 
 		     BezierRefList& lprims_o, PrimInfo& linfo_o, 
 		     BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
@@ -121,7 +121,7 @@ namespace embree
 	BinInfo();
 	
 	/*! bins an array of bezier primitives */
-	void bin (Scene* scene, const Bezier1* prims, size_t N, const PrimInfo& pinfo, const Mapping& mapping);
+	void bin (Scene* scene, const BezierPrim* prims, size_t N, const PrimInfo& pinfo, const Mapping& mapping);
 
 	/*! bins an array of triangles */
 	void bin(Scene* scene, const PrimRef* prims, size_t N, const PrimInfo& pinfo, const Mapping& mapping);

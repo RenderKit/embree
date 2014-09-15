@@ -26,7 +26,7 @@ namespace embree
   TriangleMeshTriangle1vMB TriangleMeshTriangle1vMB::type;
 
   Triangle1vType::Triangle1vType () 
-      : PrimitiveType("triangle1v",sizeof(Triangle1v),1,false,1) {} 
+      : PrimitiveType("triangle1v",sizeof(Triangle1v<listMode>),1,false,1) {} 
   
   size_t Triangle1vType::blocks(size_t x) const {
     return x;
@@ -40,7 +40,7 @@ namespace embree
   {
     BBox3fa bounds = empty;
     Scene* scene = (Scene*) geom;
-    Triangle1v* prim = (Triangle1v*) prim_i;
+    Triangle1v<listMode>* prim = (Triangle1v<listMode>*) prim_i;
     
     while (true)
     {
@@ -52,7 +52,7 @@ namespace embree
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
       const Vec3fa v2 = mesh->vertex(tri.v[2]);
       const bool last = prim->last();
-      new (prim) Triangle1v(v0,v1,v2,geomID,primID,mesh->mask,last);
+      new (prim) Triangle1v<listMode>(v0,v1,v2,geomID,primID,mesh->mask,last);
       bounds.extend(merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2)));
       if (last) break;
       prim++;
@@ -64,7 +64,7 @@ namespace embree
   {
     BBox3fa bounds = empty;
     const TriangleMesh* mesh = (const TriangleMesh*) geom;
-    Triangle1v* prim = (Triangle1v*) prim_i;
+    Triangle1v<listMode>* prim = (Triangle1v<listMode>*) prim_i;
 
     while (true)
     {
@@ -75,7 +75,7 @@ namespace embree
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
       const Vec3fa v2 = mesh->vertex(tri.v[2]);
       const bool last = prim->last();
-      new (prim) Triangle1v(v0,v1,v2,geomID,primID,mesh->mask,last);
+      new (prim) Triangle1v<listMode>(v0,v1,v2,geomID,primID,mesh->mask,last);
       bounds.extend(merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2)));
       if (last) break;
       prim++;
@@ -84,7 +84,7 @@ namespace embree
   }
 
   Triangle1vMBType::Triangle1vMBType () 
-  : PrimitiveType("triangle1v_mb",sizeof(Triangle1vMB),1,false,1) {} 
+  : PrimitiveType("triangle1v_mb",sizeof(Triangle1vMB<listMode>),1,false,1) {} 
   
   size_t Triangle1vMBType::blocks(size_t x) const {
     return x;
@@ -97,7 +97,7 @@ namespace embree
   std::pair<BBox3fa,BBox3fa> SceneTriangle1vMB::update2(char* prim_i, size_t num, void* geom) const 
   {
     BBox3fa bounds0 = empty, bounds1 = empty;
-    Triangle1vMB* prim = (Triangle1vMB*) prim_i;
+    Triangle1vMB<listMode>* prim = (Triangle1vMB<listMode>*) prim_i;
 
     while (true)
     {
@@ -113,7 +113,7 @@ namespace embree
   std::pair<BBox3fa,BBox3fa> TriangleMeshTriangle1vMB::update2(char* prim_i, size_t num, void* geom) const 
   {
     BBox3fa bounds0 = empty, bounds1 = empty;
-    Triangle1vMB* prim = (Triangle1vMB*) prim_i;
+    Triangle1vMB<listMode>* prim = (Triangle1vMB<listMode>*) prim_i;
 
     while (true)
     {

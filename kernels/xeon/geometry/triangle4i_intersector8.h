@@ -22,15 +22,16 @@
 namespace embree
 {
   /*! Intersector8 for triangle4i */
+  template<bool list>
   struct Triangle4iIntersector8Pluecker
   {
-    typedef Triangle4i Primitive;
+    typedef Triangle4i<list> Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
     };
 
-    static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle4i& tri, const void* geom)
+    static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& tri, const void* geom)
     {
       for (size_t i=0; i<4; i++)
       {
@@ -121,17 +122,8 @@ namespace embree
         store8f(valid,&ray.Ng.z,Ng.z);
       }
     }
-
-    static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Triangle4i* tri, size_t num, const void* geom)
-    {
-      while (true) {
-	intersect(valid,pre,ray,*tri,geom);
-	if (tri->last()) break;
-	tri++;
-      }
-    }
     
-    static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle4i& tri, const void* geom)
+    static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& tri, const void* geom)
     {
       avxb valid0 = valid_i;
 
@@ -214,18 +206,6 @@ namespace embree
         /* update occlusion */
         valid0 &= !valid;
         if (none(valid0)) break;
-      }
-      return !valid0;
-    }
-
-    static __forceinline avxb occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Triangle4i* tri, size_t num, const void* geom)
-    {
-      avxb valid0 = valid;
-      while (true) {
-	valid0 &= !occluded(valid0,pre,ray,*tri,geom);
-        if (none(valid0)) break;
-	if (tri->last()) break;
-	tri++;
       }
       return !valid0;
     }

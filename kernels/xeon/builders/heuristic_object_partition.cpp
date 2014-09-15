@@ -69,7 +69,7 @@ namespace embree
       }
     }
     
-    __forceinline void ObjectPartition::BinInfo::bin (const Bezier1* prims, size_t N, const Mapping& mapping)
+    __forceinline void ObjectPartition::BinInfo::bin (const BezierPrim* prims, size_t N, const Mapping& mapping)
     {
       for (size_t i=0; i<N; i++)
       {
@@ -362,7 +362,7 @@ namespace embree
       {
 	for (size_t i=0; i<block->size(); i++) 
         {
-          const Bezier1& ref = block->at(i);
+          const BezierPrim& ref = block->at(i);
           const BezierCurves* curves = scene->getBezierCurves(ref.geomID());
           bounds0.extend(curves->bounds(ref.primID(),0));
           bounds1.extend(curves->bounds(ref.primID(),1));
@@ -426,7 +426,7 @@ namespace embree
     
     template<>
     void ObjectPartition::Split::split<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
-					      PrimRefBlockAlloc<Bezier1>& alloc, 
+					      PrimRefBlockAlloc<BezierPrim>& alloc, 
 					      BezierRefList& prims, 
 					      BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					      BezierRefList& rprims_o, PrimInfo& rinfo_o) const
@@ -441,7 +441,7 @@ namespace embree
       {
 	for (size_t i=0; i<block->size(); i++) 
 	{
-	  const Bezier1& prim = block->at(i); 
+	  const BezierPrim& prim = block->at(i); 
 	  const Vec3fa center = prim.center2();
 	  const ssei bin = ssei(mapping.bin_unsafe(center));
 	  
@@ -582,11 +582,11 @@ namespace embree
     
     template<>
     void ObjectPartition::Split::split<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
-					     PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+					     PrimRefBlockAlloc<BezierPrim>& alloc, BezierRefList& prims, 
 					     BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					     BezierRefList& rprims_o, PrimInfo& rinfo_o) const
     {
-      TaskSplitParallel<Bezier1>(threadIndex,threadCount,scheduler,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      TaskSplitParallel<BezierPrim>(threadIndex,threadCount,scheduler,this,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
     }
     
     template<>

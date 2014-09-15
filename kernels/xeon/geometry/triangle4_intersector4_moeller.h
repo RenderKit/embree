@@ -29,17 +29,17 @@ namespace embree
    *  Intersection". In contrast to the paper we precalculate some
    *  factors and factor the calculations differently to allow
    *  precalculating the cross product e1 x e2. */
-  template<bool enableIntersectionFilter>
+  template<bool list, bool enableIntersectionFilter>
     struct Triangle4Intersector4MoellerTrumbore
   {
-    typedef Triangle4 Primitive;
+    typedef Triangle4<list> Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const sseb& valid, const Ray4& ray) {}
     };
 
     /*! Intersects a 4 rays with 4 triangles. */
-    static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Triangle4& tri, void* geom)
+    static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, void* geom)
     {
       for (size_t i=0; i<4; i++)
       {
@@ -126,17 +126,8 @@ namespace embree
       }
     }
 
-    static __forceinline void intersect(const sseb& valid, Precalculations& pre, Ray4& ray, const Triangle4* tri, size_t num, void* geom)
-    {
-      while (true) {
-	intersect(valid,pre,ray,*tri,geom);
-	if (tri->last()) break;
-	tri++;
-      }
-    }
-
     /*! Test for 4 rays if they are occluded by any of the 4 triangle. */
-    static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Triangle4& tri, void* geom)
+    static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, void* geom)
     {
       sseb valid0 = valid_i;
 
@@ -220,20 +211,8 @@ namespace embree
       return !valid0;
     }
 
-    static __forceinline sseb occluded(const sseb& valid, Precalculations& pre, Ray4& ray, const Triangle4* tri, size_t num, void* geom)
-    {
-      sseb valid0 = valid;
-      while (true) {
-	valid0 &= !occluded(valid0,pre,ray,*tri,geom);
-        if (none(valid0)) break;
-	if (tri->last()) break;
-	tri++;
-      }
-      return !valid0;
-    }
-
     /*! Intersect a ray with the 4 triangles and updates the hit. */
-    static __forceinline void intersect(Precalculations& pre, Ray4& ray, size_t k, const Triangle4& tri, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray4& ray, size_t k, const Primitive& tri, void* geom)
     {
       /* calculate denominator */
       STAT3(normal.trav_prims,1,1,1);
@@ -308,17 +287,8 @@ namespace embree
 #endif
     }
 
-    static __forceinline void intersect(Precalculations& pre, Ray4& ray, size_t k, const Triangle4* tri, size_t num, void* geom)
-    {
-      while (true) {
-        intersect(pre,ray,k,*tri,geom);
-	if (tri->last()) break;
-	tri++;
-      }
-    }
-
     /*! Test if the ray is occluded by one of the triangles. */
-    static __forceinline bool occluded(Precalculations& pre, Ray4& ray, size_t k, const Triangle4& tri, void* geom)
+    static __forceinline bool occluded(Precalculations& pre, Ray4& ray, size_t k, const Primitive& tri, void* geom)
     {
       /* calculate denominator */
       STAT3(shadow.trav_prims,1,1,1);
@@ -383,16 +353,6 @@ namespace embree
 #endif
 
       return true;
-    }
-
-    static __forceinline bool occluded(Precalculations& pre, Ray4& ray, size_t k, const Triangle4* tri, size_t num, void* geom) 
-    {
-      while (true) {
-	if (occluded(pre,ray,k,*tri,geom)) return true;
-	if (tri->last()) break;
-	tri++;
-      }
-      return false;
     }
   };
 }

@@ -29,15 +29,16 @@ namespace embree
    *  precalculate some factors and factor the calculations
    *  differently to allow precalculating the cross product e1 x
    *  e2. */
+  template<bool list>
   struct Triangle1vIntersector4MoellerTrumboreMB
   {
-    typedef Triangle1vMB Primitive;
+    typedef Triangle1vMB<list> Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const sseb& valid, const Ray4& ray) {}
     };
 
-    static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Triangle1vMB& tri, const void* geom)
+    static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, const void* geom)
     {
       STAT3(normal.trav_prims,1,popcnt(valid_i),4);
       
@@ -115,16 +116,7 @@ namespace embree
       store4f(valid,&ray.Ng.z,Ng.z);
     }
 
-    static __forceinline void intersect(const sseb& valid, Precalculations& pre, Ray4& ray, const Triangle1vMB* __restrict__ tri, size_t num, const void* geom)
-    {
-      while (true) {
-	intersect(valid,pre,ray,*tri,geom);
-	if (tri->last()) break;
-	tri++;
-      }
-    }    
-
-    static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Triangle1vMB& tri, const void* geom)
+    static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, const void* geom)
     {
       STAT3(shadow.trav_prims,1,popcnt(valid0),4);
       
@@ -190,18 +182,6 @@ namespace embree
       }
 #endif
       return valid;
-    }
-
-    static __forceinline sseb occluded(const sseb& valid, Precalculations& pre, Ray4& ray, const Triangle1vMB* tri, size_t num, void* geom)
-    {
-      sseb valid0 = valid;
-      while (true) {
-	valid0 &= !occluded(valid0,pre,ray,*tri,geom);
-        if (none(valid0)) break;
-	if (tri->last()) break;
-	tri++;
-      }
-      return !valid0;
     }
   };
 }

@@ -29,36 +29,14 @@ namespace embree
       __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
     };
 
-    static __forceinline void intersect(const avxb& valid_i, Ray8& ray, const Primitive& prim, const void* geom) 
-    {
+    static __forceinline void intersect(const avxb& valid_i, const Precalculations& pre, Ray8& ray, const Primitive& prim, const void* geom) {
       prim.accel->intersect8(&valid_i,(RTCRay8&)ray,prim.item);
     }
 
-    static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, const void* geom)
-    {
-      while (true) {
-        intersect(valid,ray,*prim,geom);
-	if (prim->last()) break;
-	prim++;
-      }
-    }
-
-    static __forceinline avxb occluded(const avxb& valid_i, const Ray8& ray, const Primitive& prim, const void* geom) 
+    static __forceinline avxb occluded(const avxb& valid_i, const Precalculations& pre, const Ray8& ray, const Primitive& prim, const void* geom) 
     {
       prim.accel->occluded8(&valid_i,(RTCRay8&)ray,prim.item);
       return ray.geomID == 0;
-    }
-
-    static __forceinline avxb occluded(const avxb& valid, Precalculations& pre, const Ray8& ray, const Primitive* prim, size_t num, const void* geom)
-    {
-      avxb terminated = !valid;
-      while (true) {
-        terminated |= occluded(!terminated,ray,*prim,geom);
-        if (all(terminated)) return terminated;
-	if (prim->last()) break;
-	prim++;
-      }
-      return terminated;
     }
   };
 }

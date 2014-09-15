@@ -145,13 +145,13 @@ namespace embree
     struct FallBackSplit
     {
       typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
-      typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList;
+      typedef atomic_set<PrimRefBlockT<BezierPrim> > BezierRefList;
       
       __forceinline FallBackSplit (const NAABBox3fa& bounds0, size_t num0, const NAABBox3fa& bounds1, size_t num1)
 	: bounds0(bounds0), num0(num0), bounds1(bounds1), num1(num1) {}
       
       /*! finds some partitioning */
-      static FallBackSplit find(size_t threadIndex, PrimRefBlockAlloc<Bezier1>& alloc, 
+      static FallBackSplit find(size_t threadIndex, PrimRefBlockAlloc<BezierPrim>& alloc, 
 				BezierRefList& prims, BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o);
       
       /*! finds some partitioning */

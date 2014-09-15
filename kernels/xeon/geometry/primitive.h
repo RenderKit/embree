@@ -20,6 +20,16 @@
 #include "common/scene.h"
 #include "builders/primrefblock.h"
 
+#include "common/ray.h"
+
+#if defined(__SSE__)
+#include "common/ray4.h"
+#endif
+
+#if defined(__AVX__)
+#include "common/ray8.h"
+#endif
+
 namespace embree
 {
   struct PrimitiveType
@@ -50,4 +60,343 @@ namespace embree
     bool   needVertices;    //!< determines if we need the vertex array
     int    intCost;         //!< cost of one ray/primitive intersection
   };
+
+  template<typename Intersector>
+  struct ListIntersector1
+  {
+    typedef typename Intersector::Primitive Primitive;
+    typedef typename Intersector::Precalculations Precalculations;
+
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom)
+    {
+      while (true) {
+        Intersector::intersect(pre,ray,*prim,geom);
+	if (prim->last()) break;
+	prim++;
+      }
+    }
+
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom) 
+    {
+      while (true) {
+	if (Intersector::occluded(pre,ray,*prim,geom))
+	  return true;
+	if (prim->last()) break;
+	prim++;
+      }
+      return false;
+    }
+  };
+
+  template<typename Intersector>
+  struct ArrayIntersector1
+  {
+    typedef typename Intersector::Primitive Primitive;
+    typedef typename Intersector::Precalculations Precalculations;
+
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom)
+    {
+      for (size_t i=0; i<num; i++)
+        Intersector::intersect(pre,ray,prim[i],geom);
+    }
+
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom) 
+    {
+      for (size_t i=0; i<num; i++) {
+	if (Intersector::occluded(pre,ray,prim,geom))
+	  return true;
+      }
+      return false;
+    }
+  };
+
+#if defined __SSE__
+
+  template<typename Intersector>
+  struct ListIntersector4
+  {
+    typedef typename Intersector::Primitive Primitive;
+    typedef typename Intersector::Precalculations Precalculations;
+
+    static __forceinline void intersect(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom)
+    {
+      while (true) {
+	Intersector::intersect(valid,pre,ray,*prim,geom);
+	if (prim->last()) break;
+	prim++;
+      }
+    }
+
+    static __forceinline sseb occluded(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom) 
+    {
+      sseb valid0 = valid;
+      while (true) {
+	valid0 &= !Intersector::occluded(valid0,pre,ray,*prim,geom);
+        if (none(valid0)) break;
+	if (prim->last()) break;
+	prim++;
+      }
+      return !valid0;
+    }
+  };
+
+  template<typename Intersector>
+  struct ArrayIntersector4
+  {
+    typedef typename Intersector::Primitive Primitive;
+    typedef typename Intersector::Precalculations Precalculations;
+
+    static __forceinline void intersect(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom)
+    {
+      for (size_t i=0; i<num; i++) {
+	Intersector::intersect(valid,pre,ray,prim[i],geom);
+      }
+    }
+
+    static __forceinline bool occluded(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom) 
+    {
+      sseb valid0 = valid;
+      for (size_t i=0; i<num; i++) {
+	valid0 &= !Intersector::occluded(valid0,pre,ray,prim[i],geom);
+        if (none(valid0)) break;
+      }
+      return !valid0;
+    }
+  };
+
+
+  template<typename Intersector>
+  struct ListIntersector4_1
+  {
+    typedef typename Intersector::Primitive Primitive;
+    typedef typename Intersector::Precalculations Precalculations;
+
+    static __forceinline void intersect(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom)
+    {
+      while (true) {
+	Intersector::intersect(valid,pre,ray,*prim,geom);
+	if (prim->last()) break;
+	prim++;
+      }
+    }
+
+    static __forceinline sseb occluded(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom) 
+    {
+      sseb valid0 = valid;
+      while (true) {
+	valid0 &= !Intersector::occluded(valid0,pre,ray,*prim,geom);
+        if (none(valid0)) break;
+	if (prim->last()) break;
+	prim++;
+      }
+      return !valid0;
+    }
+
+    static __forceinline void intersect(Precalculations& pre, Ray4& ray, size_t k, const Primitive* prim, size_t num, void* geom)
+    {
+      while (true) {
+        Intersector::intersect(pre,ray,k,*prim,geom);
+	if (prim->last()) break;
+	prim++;
+      }
+    }
+
+    static __forceinline bool occluded(Precalculations& pre, Ray4& ray, size_t k, const Primitive* prim, size_t num, void* geom) 
+    {
+      while (true) {
+	if (Intersector::occluded(pre,ray,k,*prim,geom))
+	  return true;
+	if (prim->last()) break;
+	prim++;
+      }
+      return false;
+    }
+  };
+
+  template<typename Intersector>
+  struct ArrayIntersector4_1
+  {
+    typedef typename Intersector::Primitive Primitive;
+    typedef typename Intersector::Precalculations Precalculations;
+
+    static __forceinline void intersect(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom)
+    {
+      for (size_t i=0; i<num; i++) {
+	Intersector::intersect(valid,pre,ray,prim[i],geom);
+      }
+    }
+
+    static __forceinline bool occluded(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom) 
+    {
+      sseb valid0 = valid;
+      for (size_t i=0; i<num; i++) {
+	valid0 &= !Intersector::occluded(valid0,pre,ray,prim[i],geom);
+        if (none(valid0)) break;
+      }
+      return !valid0;
+    }
+
+    static __forceinline void intersect(Precalculations& pre, Ray4& ray, size_t k, const Primitive* prim, size_t num, void* geom)
+    {
+      for (size_t i=0; i<num; i++) {
+	Intersector::intersect(pre,ray,k,prim[i],geom);
+      }
+    }
+
+    static __forceinline bool occluded(Precalculations& pre, Ray4& ray, size_t k, const Primitive* prim, size_t num, void* geom) 
+    {
+      for (size_t i=0; i<num; i++) {
+	if (Intersector::occluded(pre,ray,k,prim,geom))
+	  return true;
+      }
+      return false;
+    }
+  };
+
+#endif
+
+#if defined __AVX__
+
+  template<typename Intersector>
+  struct ListIntersector8
+  {
+    typedef typename Intersector::Primitive Primitive;
+    typedef typename Intersector::Precalculations Precalculations;
+
+    static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom)
+    {
+      while (true) {
+	Intersector::intersect(valid,pre,ray,*prim,geom);
+	if (prim->last()) break;
+	prim++;
+      }
+    }
+
+    static __forceinline avxb occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom) 
+    {
+      avxb valid0 = valid;
+      while (true) {
+	valid0 &= !Intersector::occluded(valid0,pre,ray,*prim,geom);
+        if (none(valid0)) break;
+	if (prim->last()) break;
+	prim++;
+      }
+      return !valid0;
+    }
+  };
+
+  template<typename Intersector>
+  struct ArrayIntersector8
+  {
+    typedef typename Intersector::Primitive Primitive;
+    typedef typename Intersector::Precalculations Precalculations;
+
+    static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom)
+    {
+      for (size_t i=0; i<num; i++) {
+	Intersector::intersect(valid,pre,ray,prim[i],geom);
+      }
+    }
+
+    static __forceinline bool occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom) 
+    {
+      avxb valid0 = valid;
+      for (size_t i=0; i<num; i++) {
+	valid0 &= !Intersector::occluded(valid0,pre,ray,prim[i],geom);
+        if (none(valid0)) break;
+      }
+      return !valid0;
+    }
+  };
+
+
+  template<typename Intersector>
+  struct ListIntersector8_1
+  {
+    typedef typename Intersector::Primitive Primitive;
+    typedef typename Intersector::Precalculations Precalculations;
+
+    static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom)
+    {
+      while (true) {
+	Intersector::intersect(valid,pre,ray,*prim,geom);
+	if (prim->last()) break;
+	prim++;
+      }
+    }
+
+    static __forceinline avxb occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom) 
+    {
+      avxb valid0 = valid;
+      while (true) {
+	valid0 &= !Intersector::occluded(valid0,pre,ray,*prim,geom);
+        if (none(valid0)) break;
+	if (prim->last()) break;
+	prim++;
+      }
+      return !valid0;
+    }
+
+    static __forceinline void intersect(Precalculations& pre, Ray8& ray, size_t k, const Primitive* prim, size_t num, void* geom)
+    {
+      while (true) {
+        Intersector::intersect(pre,ray,k,*prim,geom);
+	if (prim->last()) break;
+	prim++;
+      }
+    }
+
+    static __forceinline bool occluded(Precalculations& pre, Ray8& ray, size_t k, const Primitive* prim, size_t num, void* geom) 
+    {
+      while (true) {
+	if (Intersector::occluded(pre,ray,k,*prim,geom))
+	  return true;
+	if (prim->last()) break;
+	prim++;
+      }
+      return false;
+    }
+  };
+
+  template<typename Intersector>
+  struct ArrayIntersector8_1
+  {
+    typedef typename Intersector::Primitive Primitive;
+    typedef typename Intersector::Precalculations Precalculations;
+
+    static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom)
+    {
+      for (size_t i=0; i<num; i++) {
+	Intersector::intersect(valid,pre,ray,prim[i],geom);
+      }
+    }
+
+    static __forceinline bool occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom) 
+    {
+      avxb valid0 = valid;
+      for (size_t i=0; i<num; i++) {
+	valid0 &= !Intersector::occluded(valid0,pre,ray,prim[i],geom);
+        if (none(valid0)) break;
+      }
+      return !valid0;
+    }
+
+    static __forceinline void intersect(Precalculations& pre, Ray8& ray, size_t k, const Primitive* prim, size_t num, void* geom)
+    {
+      for (size_t i=0; i<num; i++) {
+	Intersector::intersect(pre,ray,k,prim[i],geom);
+      }
+    }
+
+    static __forceinline bool occluded(Precalculations& pre, Ray8& ray, size_t k, const Primitive* prim, size_t num, void* geom) 
+    {
+      for (size_t i=0; i<num; i++) {
+	if (Intersector::occluded(pre,ray,k,prim,geom))
+	  return true;
+      }
+      return false;
+    }
+  };
+
+#endif
 }

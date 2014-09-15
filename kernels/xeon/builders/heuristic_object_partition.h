@@ -30,7 +30,7 @@ namespace embree
       struct Split;
       struct SplitInfo;
       typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;   //!< list of primitives
-      typedef atomic_set<PrimRefBlockT<Bezier1> > BezierRefList; //!< list of bezier primitives
+      typedef atomic_set<PrimRefBlockT<BezierPrim> > BezierRefList; //!< list of bezier primitives
       
     public:
       
@@ -114,7 +114,7 @@ namespace embree
 	/*! splitting into two sets */
 	template<bool Parallel>
 	  void split(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
-		     PrimRefBlockAlloc<Bezier1>& alloc, 
+		     PrimRefBlockAlloc<BezierPrim>& alloc, 
 		     BezierRefList& prims, 
 		     BezierRefList& lprims_o, PrimInfo& linfo_o, 
 		     BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
@@ -185,7 +185,7 @@ namespace embree
 	void clear();
 	
 	/*! bins an array of bezier curves */
-	void bin (const Bezier1* prims, size_t N, const Mapping& mapping);
+	void bin (const BezierPrim* prims, size_t N, const Mapping& mapping);
 	
 	/*! bins an array of primitives */
 	void bin (const PrimRef* prims, size_t N, const Mapping& mapping);

@@ -22,15 +22,16 @@
 namespace embree
 {
   /*! Intersector4 for triangle4i */
+  template<bool list>
   struct Triangle4iIntersector4Pluecker
   {
-    typedef Triangle4i Primitive;
+    typedef Triangle4i<list> Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const sseb& valid, const Ray4& ray) {}
     };
 
-    static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Triangle4i& tri, const void* geom)
+    static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, const void* geom)
     {
       for (size_t i=0; i<4; i++)
       {
@@ -122,16 +123,7 @@ namespace embree
       }
     }
 
-    static __forceinline void intersect(const sseb& valid, Precalculations& pre, Ray4& ray, const Triangle4i* tri, size_t num, const void* geom)
-    {
-      while (true) {
-	intersect(valid,pre,ray,*tri,geom);
-	if (tri->last()) break;
-	tri++;
-      }
-    }
-    
-    static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Triangle4i& tri, const void* geom)
+    static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, const void* geom)
     {
       sseb valid0 = valid_i;
 
@@ -214,18 +206,6 @@ namespace embree
         /* update occlusion */
         valid0 &= !valid;
         if (none(valid0)) break;
-      }
-      return !valid0;
-    }
-
-    static __forceinline sseb occluded(const sseb& valid, Precalculations& pre, Ray4& ray, const Triangle4i* tri, size_t num, const void* geom)
-    {
-      sseb valid0 = valid;
-      while (true) {
-	valid0 &= !occluded(valid0,pre,ray,*tri,geom);
-        if (none(valid0)) break;
-	if (tri->last()) break;
-	tri++;
       }
       return !valid0;
     }

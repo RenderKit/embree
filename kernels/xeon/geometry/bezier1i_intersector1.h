@@ -21,75 +21,49 @@
 
 namespace embree
 {
-  /*! Intersector for a single ray with a bezier curve. */
+  template<bool list>
   struct Bezier1iIntersector1
   {
-    typedef Bezier1i Primitive;
+    typedef Bezier1i<list> Primitive;
     typedef BezierIntersector1::Precalculations Precalculations;
 
-    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1i* curve, size_t num, void* geom)
-    {
-      while (true) {
-        BezierIntersector1::intersect(ray,pre,curve->p[0],curve->p[1],curve->p[2],curve->p[3],curve->geomID(),curve->primID(),geom);
-	if (curve->last()) break;
-	curve++;
-      }
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom) {
+      BezierIntersector1::intersect(ray,pre,curve.p[0],curve.p[1],curve.p[2],curve.p[3],curve.geomID(),curve.primID(),geom);
     }
 
-    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Bezier1i* curve, size_t num, void* geom) 
-    {
-      while (true) {
-	if (BezierIntersector1::occluded(ray,pre,curve->p[0],curve->p[1],curve->p[2],curve->p[3],curve->geomID(),curve->primID(),geom))
-	  return true;
-	if (curve->last()) break;
-	curve++;
-      }
-      return false;
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom) {
+      return BezierIntersector1::occluded(ray,pre,curve.p[0],curve.p[1],curve.p[2],curve.p[3],curve.geomID(),curve.primID(),geom);
     }
   };
-
-  /*! Intersector for a single ray with a bezier curve. */
+  
+  template<bool list>
   struct Bezier1iIntersector1MB
   {
-    typedef Bezier1iMB Primitive;
+    typedef Bezier1iMB<list> Primitive;
     typedef BezierIntersector1::Precalculations Precalculations;
 
-    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Bezier1iMB* curve, size_t num, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom)
     {
-       while (true)
-      {
-        const Vec3fa a0 = curve->p0[0], a1 = curve->p0[1], a2 = curve->p0[2], a3 = curve->p0[3];
-        const Vec3fa b0 = curve->p1[0], b1 = curve->p1[1], b2 = curve->p1[2], b3 = curve->p1[3];
-        const float t0 = 1.0f-ray.time, t1 = ray.time;
-        const Vec3fa p0 = t0*a0 + t1*b0;
-        const Vec3fa p1 = t0*a1 + t1*b1;
-        const Vec3fa p2 = t0*a2 + t1*b2;
-        const Vec3fa p3 = t0*a3 + t1*b3;
-        BezierIntersector1::intersect(ray,pre,p0,p1,p2,p3,curve->geomID(),curve->primID(),geom);
-	if (curve->last()) break;
-	curve++;
-      }
+      const Vec3fa a0 = curve.p0[0], a1 = curve.p0[1], a2 = curve.p0[2], a3 = curve.p0[3];
+      const Vec3fa b0 = curve.p1[0], b1 = curve.p1[1], b2 = curve.p1[2], b3 = curve.p1[3];
+      const float t0 = 1.0f-ray.time, t1 = ray.time;
+      const Vec3fa p0 = t0*a0 + t1*b0;
+      const Vec3fa p1 = t0*a1 + t1*b1;
+      const Vec3fa p2 = t0*a2 + t1*b2;
+      const Vec3fa p3 = t0*a3 + t1*b3;
+      BezierIntersector1::intersect(ray,pre,p0,p1,p2,p3,curve.geomID(),curve.primID(),geom);
     }
 
-    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Bezier1iMB* curve, size_t num, void* geom) 
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom) 
     {
-      while (true) 
-      {
-        const Vec3fa a0 = curve->p0[0], a1 = curve->p0[1], a2 = curve->p0[2], a3 = curve->p0[3];
-        const Vec3fa b0 = curve->p1[0], b1 = curve->p1[1], b2 = curve->p1[2], b3 = curve->p1[3];
-        const float t0 = 1.0f-ray.time, t1 = ray.time;
-        const Vec3fa p0 = t0*a0 + t1*b0;
-        const Vec3fa p1 = t0*a1 + t1*b1;
-        const Vec3fa p2 = t0*a2 + t1*b2;
-        const Vec3fa p3 = t0*a3 + t1*b3;
-
-        if (BezierIntersector1::occluded(ray,pre,p0,p1,p2,p3,curve->geomID(),curve->primID(),geom))
-          return true;
-
-	if (curve->last()) break;
-	curve++;
-      }
-      return false;
+      const Vec3fa a0 = curve.p0[0], a1 = curve.p0[1], a2 = curve.p0[2], a3 = curve.p0[3];
+      const Vec3fa b0 = curve.p1[0], b1 = curve.p1[1], b2 = curve.p1[2], b3 = curve.p1[3];
+      const float t0 = 1.0f-ray.time, t1 = ray.time;
+      const Vec3fa p0 = t0*a0 + t1*b0;
+      const Vec3fa p1 = t0*a1 + t1*b1;
+      const Vec3fa p2 = t0*a2 + t1*b2;
+      const Vec3fa p3 = t0*a3 + t1*b3;
+      return BezierIntersector1::occluded(ray,pre,p0,p1,p2,p3,curve.geomID(),curve.primID(),geom);
     }
   };
 }

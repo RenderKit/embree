@@ -29,15 +29,16 @@ namespace embree
    *  precalculate some factors and factor the calculations
    *  differently to allow precalculating the cross product e1 x
    *  e2. */
+  template<bool list>
   struct Triangle1vIntersector8MoellerTrumboreMB
   {
-    typedef Triangle1vMB Primitive;
+    typedef Triangle1vMB<list> Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
     };
 
-    static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle1vMB& tri, const void* geom)
+    static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& tri, const void* geom)
     {
       STAT3(normal.trav_prims,1,popcnt(valid_i),8);
       
@@ -115,16 +116,7 @@ namespace embree
       store8f(valid,&ray.Ng.z,Ng.z);
     }
 
-    static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Triangle1vMB* __restrict__ tri, size_t num, const void* geom)
-    {
-      while (true) {
-	intersect(valid,pre,ray,*tri,geom);
-	if (tri->last()) break;
-	tri++;
-      }
-    }
-
-    static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Triangle1vMB& tri, const void* geom)
+    static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& tri, const void* geom)
     {
       STAT3(shadow.trav_prims,1,popcnt(valid0),8);
       
@@ -190,18 +182,6 @@ namespace embree
       }
 #endif
       return valid;
-    }
-
-    static __forceinline avxb occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Triangle1vMB* tri, size_t num, const void* geom)
-    {
-      avxb valid0 = valid;
-      while (true) {
-	valid0 &= !occluded(valid0,pre,ray,*tri,geom);
-        if (none(valid0)) break;
-	if (tri->last()) break;
-	tri++;
-      }
-      return !valid0;
     }
   };
 }

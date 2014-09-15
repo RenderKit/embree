@@ -84,7 +84,7 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR4(BVH4Bezier1Intersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA Bezier1Intersector4>);
-    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA Bezier1iIntersector4>);
+    DEFINE_INTERSECTOR4(BVH4Bezier1Intersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA ListIntersector4_1<Bezier1Intersector4<true> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA ListIntersector4_1<Bezier1iIntersector4<true> > >);
   }
 }

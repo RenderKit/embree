@@ -227,7 +227,7 @@ namespace embree
       }
     }
     
-    __forceinline void ObjectPartitionUnaligned::BinInfo::bin (const Bezier1* prims, size_t N, const Mapping& mapping)
+    __forceinline void ObjectPartitionUnaligned::BinInfo::bin (const BezierPrim* prims, size_t N, const Mapping& mapping)
     {
       for (size_t i=0; i<N; i++)
       {
@@ -342,7 +342,7 @@ namespace embree
 	  geomBounds.extend(block->at(i).bounds(space0));
 	  centBounds.extend(block->at(i).center(space0));
 
-          const Bezier1& ref = block->at(i);
+          const BezierPrim& ref = block->at(i);
           const BezierCurves* curves = scene->getBezierCurves(ref.geomID());
 #if BVH4HAIR_MB_VERSION == 0
           s0t0.extend(curves->bounds(space0,ref.primID(),0));
@@ -428,7 +428,7 @@ namespace embree
     
     template<>
     void ObjectPartitionUnaligned::Split::split<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
-						       PrimRefBlockAlloc<Bezier1>& alloc, 
+						       PrimRefBlockAlloc<BezierPrim>& alloc, 
 						       BezierRefList& prims, 
 						       BezierRefList& lprims_o, PrimInfo& linfo_o, 
 						       BezierRefList& rprims_o, PrimInfo& rinfo_o) const
@@ -442,7 +442,7 @@ namespace embree
       {
 	for (size_t i=0; i<block->size(); i++) 
 	{
-	  const Bezier1& prim = block->at(i); 
+	  const BezierPrim& prim = block->at(i); 
 	  const Vec3fa center = prim.center(mapping.space);
 	  const ssei bin = mapping.bin_unsafe(center);
 	  
@@ -465,7 +465,7 @@ namespace embree
       }
     }
     
-    ObjectPartitionUnaligned::TaskSplitParallel::TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+    ObjectPartitionUnaligned::TaskSplitParallel::TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<BezierPrim>& alloc, BezierRefList& prims, 
 								   BezierRefList& lprims_o, PrimInfo& linfo_o, BezierRefList& rprims_o, PrimInfo& rinfo_o)
       : split(split), alloc(alloc), prims(prims), lprims_o(lprims_o), linfo_o(linfo_o), rprims_o(rprims_o), rinfo_o(rinfo_o)
     {
@@ -489,7 +489,7 @@ namespace embree
     
     template<>
     void ObjectPartitionUnaligned::Split::split<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
-						      PrimRefBlockAlloc<Bezier1>& alloc, BezierRefList& prims, 
+						      PrimRefBlockAlloc<BezierPrim>& alloc, BezierRefList& prims, 
 						      BezierRefList& lprims_o, PrimInfo& linfo_o, 
 						      BezierRefList& rprims_o, PrimInfo& rinfo_o) const
     {

@@ -133,6 +133,7 @@ namespace embree
     }
   };
 
+  template<bool list>
   struct Bezier1
   {
   public:
@@ -143,20 +144,37 @@ namespace embree
     /*! Construction from vertices and IDs. */
     __forceinline Bezier1 (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const float t0, const float t1,
                            const unsigned int geomID, const unsigned int primID, const bool last)
-      : p0(p0), p1(p1), p2(p2), p3(p3), t0(t0), t1(t1), geom(geomID), prim(primID | (last << 31)) {}
+      : p0(p0), p1(p1), p2(p2), p3(p3), t0(t0), t1(t1), geom(geomID), prim((list && primID) | (last << 31)) {}
     
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
 
     /*! access hidden members */
-    __forceinline unsigned int primID() const { return prim & 0x7FFFFFFF; }
+    __forceinline unsigned int primID() const { 
+      if (list) return prim & 0x7FFFFFFF; 
+      else      return prim;
+    }
     __forceinline unsigned int geomID() const { return geom; }
     //__forceinline unsigned int mask  () const { return mask; } // FIXME: not implemented yet
-    __forceinline int          last  () const { return prim & 0x80000000; }
+    __forceinline int last  () const { 
+      if (list) return prim & 0x80000000; 
+      else { assert(false); return 0; }
+    }
 
     /*! fill from list */
-    __forceinline void fill(atomic_set<PrimRefBlockT<Bezier1> >::block_iterator_unsafe& iter, Scene* scene) {
-      *this = *iter; iter++; this->prim |= (!iter) << 31;
+    __forceinline void fill(typename atomic_set<PrimRefBlockT<Bezier1<false> > >::block_iterator_unsafe& iter, Scene* scene) {
+      //*this = *iter; 
+      Bezier1<false>& cur = *iter;
+      p0 = cur.p0;
+      p1 = cur.p1;
+      p2 = cur.p2;
+      p3 = cur.p3;
+      t0 = cur.t0; 
+      t1 = cur.t1;
+      geom = cur.geom;
+      prim = cur.prim;
+      iter++; 
+      this->prim |= (list && !iter) << 31;
     }
 
     /*! fill triangle from triangle list */
@@ -172,7 +190,7 @@ namespace embree
       const Vec3fa& p1 = curves->vertex(id+1);
       const Vec3fa& p2 = curves->vertex(id+2);
       const Vec3fa& p3 = curves->vertex(id+3);
-      new (this) Bezier1(p0,p1,p2,p3,0.0f,1.0f,geomID,primID,i>=end);
+      new (this) Bezier1<list>(p0,p1,p2,p3,0.0f,1.0f,geomID,primID,i>=end);
     }
 
     /*! returns size of t range */
@@ -246,7 +264,7 @@ namespace embree
     }
     
     /*! subdivide the bezier curve */
-    __forceinline void subdivide(Bezier1& left_o, Bezier1& right_o, const float T = 0.5f) const
+    __forceinline void subdivide(Bezier1<list>& left_o, Bezier1<list>& right_o, const float T = 0.5f) const
     {
       const Vec3fa p00 = p0;
       const Vec3fa p01 = p1;
@@ -265,12 +283,12 @@ namespace embree
       const unsigned int geomID = this->geomID();
       const unsigned int primID = this->primID();
       
-      new (&left_o ) Bezier1(p00,p10,p20,p30,t0,t01,geomID,primID,false);
-      new (&right_o) Bezier1(p30,p21,p12,p03,t01,t1,geomID,primID,false);
+      new (&left_o ) Bezier1<list>(p00,p10,p20,p30,t0,t01,geomID,primID,false);
+      new (&right_o) Bezier1<list>(p30,p21,p12,p03,t01,t1,geomID,primID,false);
     }
     
     /*! split the hair using splitting plane */
-    bool split(const Vec3fa& plane, Bezier1& left_o, Bezier1& right_o) const
+    bool split(const Vec3fa& plane, Bezier1<list>& left_o, Bezier1<list>& right_o) const
     {
       /*! test if start and end points lie on different sides of plane */
       const float p0p = dot(p0,plane)+plane.w;
@@ -286,7 +304,7 @@ namespace embree
       //while (u1-u0 > 0.0001f) 
       {
         const float tc = 0.5f*(u0+u1);
-        Bezier1 left,right; subdivide(left,right,tc);
+        Bezier1<list> left,right; subdivide(left,right,tc);
         const float lp0p = dot(left.p0,plane)+plane.w;
         const float lp3p = dot(left.p3,plane)+plane.w;
         if (lp0p <= 0.0f && lp3p >= 0.0f) { u1 = tc; continue; }
@@ -301,7 +319,7 @@ namespace embree
     }
 
     /*! split the hair using splitting plane */
-    bool split(const int dim, const float pos, Bezier1& left_o, Bezier1& right_o) const
+    bool split(const int dim, const float pos, Bezier1<list>& left_o, Bezier1<list>& right_o) const
     {
       /*! test if start and end points lie on different sides of plane */
       const float p0p = p0[dim];
@@ -317,7 +335,7 @@ namespace embree
       //while (u1-u0 > 0.0001f) 
       {
         const float tc = 0.5f*(u0+u1);
-        Bezier1 left,right; subdivide(left,right,tc);
+        Bezier1<list> left,right; subdivide(left,right,tc);
         const float lp0p = left.p0[dim];
         const float lp3p = left.p3[dim];
         if (lp0p <= pos && lp3p >= pos) { u1 = tc; continue; }
@@ -331,7 +349,7 @@ namespace embree
       return true;
     }
 
-    friend std::ostream& operator<<(std::ostream& cout, const Bezier1& b) {
+    friend std::ostream& operator<<(std::ostream& cout, const Bezier1<list>& b) {
       return std::cout << "Bezier1 { " << std::endl << 
         " p0 = " << b.p0 << ", " << std::endl <<
         " p1 = " << b.p1 << ", " << std::endl <<
@@ -359,4 +377,6 @@ namespace embree
     size_t blocks(size_t x) const;
     size_t size(const char* This) const;
   }; 
+
+  typedef Bezier1<false> BezierPrim; // FIXME: rename to BezierRef
 }

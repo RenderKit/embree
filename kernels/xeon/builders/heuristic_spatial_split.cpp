@@ -88,7 +88,7 @@ namespace embree
       }
     }
     
-    __forceinline void SpatialSplit::BinInfo::bin (Scene* scene, const Bezier1* prims, size_t N, const PrimInfo& pinfo, const Mapping& mapping)
+    __forceinline void SpatialSplit::BinInfo::bin (Scene* scene, const BezierPrim* prims, size_t N, const PrimInfo& pinfo, const Mapping& mapping)
     {
       for (size_t i=0; i<N; i++)
       {
@@ -98,11 +98,11 @@ namespace embree
 	for (size_t dim=0; dim<3; dim++) 
 	{
 	  size_t bin;
-	  Bezier1 curve = prims[i];
+	  BezierPrim curve = prims[i];
 	  for (bin=bin0[dim]; bin<bin1[dim]; bin++)
 	  {
 	    const float pos = mapping.pos(bin+1,dim);
-	    Bezier1 bincurve,restcurve; 
+	    BezierPrim bincurve,restcurve; 
 	    if (curve.split(dim,pos,bincurve,restcurve)) {
 	      bounds[bin][dim].extend(bincurve.bounds());
 	      curve = restcurve;
@@ -306,7 +306,7 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////
     
     template<>
-    void SpatialSplit::Split::split<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<Bezier1>& alloc, 
+    void SpatialSplit::Split::split<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefBlockAlloc<BezierPrim>& alloc, 
 					   Scene* scene, BezierRefList& prims, 
 					   BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					   BezierRefList& rprims_o, PrimInfo& rinfo_o) const
@@ -321,7 +321,7 @@ namespace embree
       {
 	for (size_t i=0; i<block->size(); i++) 
 	{
-	  const Bezier1& prim = block->at(i);
+	  const BezierPrim& prim = block->at(i);
 	  const int bin0 = mapping.bin(min(prim.p0,prim.p3))[dim];
 	  const int bin1 = mapping.bin(max(prim.p0,prim.p3))[dim];
 	  
@@ -346,7 +346,7 @@ namespace embree
 	  }
 	  
 	  /* split and sort to left and right */
-	  Bezier1 left,right;
+	  BezierPrim left,right;
 	  float fpos = mapping.pos(pos,dim);
 	  if (prim.split(dim,fpos,left,right)) 
 	  {
@@ -479,11 +479,11 @@ namespace embree
     
     template<>
     void SpatialSplit::Split::split<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
-					  PrimRefBlockAlloc<Bezier1>& alloc, Scene* scene, BezierRefList& prims, 
+					  PrimRefBlockAlloc<BezierPrim>& alloc, Scene* scene, BezierRefList& prims, 
 					  BezierRefList& lprims_o, PrimInfo& linfo_o, 
 					  BezierRefList& rprims_o, PrimInfo& rinfo_o) const
     {
-      TaskSplitParallel<Bezier1>(threadIndex,threadCount,scheduler,this,alloc,scene,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
+      TaskSplitParallel<BezierPrim>(threadIndex,threadCount,scheduler,this,alloc,scene,prims,lprims_o,linfo_o,rprims_o,rinfo_o);
     }
 
     template<>
