@@ -154,6 +154,7 @@ namespace embree
         
         /*! this is a leaf node */
 	STAT3(normal.trav_leaves, 1, 1, 1);
+	if (unlikely(cur == BVH4::emptyNode)) continue;
 	size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 	PrimitiveIntersector8::intersect(pre, ray, k, prim, num, bvh->geometry);
         ray_far = ray.tfar[k];
@@ -260,6 +261,7 @@ namespace embree
 	
 	/*! this is a leaf node */
 	STAT3(shadow.trav_leaves,1,1,1);
+	if (unlikely(cur == BVH4::emptyNode)) continue;
 	size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
 	if (PrimitiveIntersector8::occluded(pre,ray,k,prim,num,bvh->geometry)) {
 	  ray.geomID[k] = 0;

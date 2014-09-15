@@ -62,8 +62,8 @@ namespace embree
         assert(sptr_node > stack_node);
         sptr_node--;
         sptr_near--;
-        NodeRef curNode = *sptr_node;
-        if (unlikely(curNode == BVH4::invalidNode)) {
+        NodeRef cur = *sptr_node;
+        if (unlikely(cur == BVH4::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -76,17 +76,17 @@ namespace embree
         while (1)
         {
 	  /* process normal nodes */
-          if (likely((types & 0x1) && curNode.isNode()))
+          if (likely((types & 0x1) && cur.isNode()))
           {
 	    const sseb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
-	    const Node* __restrict__ const node = curNode.node();
+	    const Node* __restrict__ const node = cur.node();
 	    
 	    /* pop of next node */
 	    assert(sptr_node > stack_node);
 	    sptr_node--;
 	    sptr_near--;
-	    curNode = *sptr_node; 
+	    cur = *sptr_node; 
 	    curDist = *sptr_near;
           
 #pragma unroll(4)
@@ -110,10 +110,10 @@ namespace embree
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = curNode;
+		  *(sptr_node-1) = cur;
 		  *(sptr_near-1) = curDist; 
 		  curDist = childDist;
-		  curNode = child;
+		  cur = child;
 		}
 		
 		/* push hit child onto stack */
@@ -125,17 +125,17 @@ namespace embree
 	    }
 	  }
 	  /* process motion blur nodes */
-          else if (likely((types & 0x10) && curNode.isNodeMB()))
+          else if (likely((types & 0x10) && cur.isNodeMB()))
 	  {
 	    const sseb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
-	    const BVH4::NodeMB* __restrict__ const node = curNode.nodeMB();
+	    const BVH4::NodeMB* __restrict__ const node = cur.nodeMB();
           
 	    /* pop of next node */
 	    assert(sptr_node > stack_node);
 	    sptr_node--;
 	    sptr_near--;
-	    curNode = *sptr_node; 
+	    cur = *sptr_node; 
 	    curDist = *sptr_near;
 	    
 #pragma unroll(4)
@@ -158,10 +158,10 @@ namespace embree
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = curNode;
+		  *(sptr_node-1) = cur;
 		  *(sptr_near-1) = curDist; 
 		  curDist = childDist;
-		  curNode = child;
+		  cur = child;
 		}
 		
 		/* push hit child onto stack */
@@ -177,7 +177,7 @@ namespace embree
         }
         
         /* return if stack is empty */
-        if (unlikely(curNode == BVH4::invalidNode)) {
+        if (unlikely(cur == BVH4::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -185,7 +185,8 @@ namespace embree
         /* intersect leaf */
         const sseb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),4);
-        size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
+	if (unlikely(cur == BVH4::emptyNode)) continue;
+        size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
         PrimitiveIntersector4::intersect(valid_leaf,pre,ray,prim,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
@@ -222,8 +223,8 @@ namespace embree
         assert(sptr_node > stack_node);
         sptr_node--;
         sptr_near--;
-        NodeRef curNode = *sptr_node;
-        if (unlikely(curNode == BVH4::invalidNode)) {
+        NodeRef cur = *sptr_node;
+        if (unlikely(cur == BVH4::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -236,17 +237,17 @@ namespace embree
         while (1)
         {
 	  /* process normal nodes */
-          if (likely((types & 0x1) && curNode.isNode()))
+          if (likely((types & 0x1) && cur.isNode()))
           {
 	    const sseb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
-	    const Node* __restrict__ const node = curNode.node();
+	    const Node* __restrict__ const node = cur.node();
 	    
 	    /* pop of next node */
 	    assert(sptr_node > stack_node);
 	    sptr_node--;
 	    sptr_near--;
-	    curNode = *sptr_node; 
+	    cur = *sptr_node; 
 	    curDist = *sptr_near;
           
 #pragma unroll(4)
@@ -270,10 +271,10 @@ namespace embree
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = curNode;
+		  *(sptr_node-1) = cur;
 		  *(sptr_near-1) = curDist; 
 		  curDist = childDist;
-		  curNode = child;
+		  cur = child;
 		}
 		
 		/* push hit child onto stack */
@@ -285,17 +286,17 @@ namespace embree
 	    }
 	  }
 	  /* process motion blur nodes */
-          else if (likely((types & 0x10) && curNode.isNodeMB()))
+          else if (likely((types & 0x10) && cur.isNodeMB()))
 	  {
 	    const sseb valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
-	    const BVH4::NodeMB* __restrict__ const node = curNode.nodeMB();
+	    const BVH4::NodeMB* __restrict__ const node = cur.nodeMB();
           
 	    /* pop of next node */
 	    assert(sptr_node > stack_node);
 	    sptr_node--;
 	    sptr_near--;
-	    curNode = *sptr_node; 
+	    cur = *sptr_node; 
 	    curDist = *sptr_near;
 	    
 #pragma unroll(4)
@@ -318,10 +319,10 @@ namespace embree
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = curNode;
+		  *(sptr_node-1) = cur;
 		  *(sptr_near-1) = curDist; 
 		  curDist = childDist;
-		  curNode = child;
+		  cur = child;
 		}
 		
 		/* push hit child onto stack */
@@ -337,7 +338,7 @@ namespace embree
         }
         
         /* return if stack is empty */
-        if (unlikely(curNode == BVH4::invalidNode)) {
+        if (unlikely(cur == BVH4::invalidNode)) {
           assert(sptr_node == stack_node);
           break;
         }
@@ -345,7 +346,8 @@ namespace embree
         /* intersect leaf */
         const sseb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),4);
-        size_t items; const Primitive* prim = (Primitive*) curNode.leaf(items);
+	if (unlikely(cur == BVH4::emptyNode)) continue;
+        size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
         terminated |= PrimitiveIntersector4::occluded(!terminated,pre,ray,prim,items,bvh->geometry);
         if (all(terminated)) break;
         ray_tfar = select(terminated,ssef(neg_inf),ray_tfar);
