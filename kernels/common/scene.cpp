@@ -272,7 +272,7 @@ namespace embree
     delete geometry;
   }
 
-  void Scene::task_build(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event) 
+  void Scene::task_build(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)  // FIXME: remove
   {
     FATAL("OBSOLETE");
     size_t numThreads = TaskScheduler::enableThreads(-1);
@@ -291,7 +291,6 @@ namespace embree
     /* all user worker threads properly enter and leave the tasking system */
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex != 0) return;
-
 
     /* allow only one build at a time */
     Lock<MutexSys> lock(mutex);

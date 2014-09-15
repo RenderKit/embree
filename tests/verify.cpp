@@ -1543,7 +1543,7 @@ namespace embree
       //case 3: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1,0.1f); break; // FIXME: motion blur for hair not yet implemented
     }
     rtcCommit (scene);
-    
+
     for (size_t i=0; i<4; i++) 
     {
       RTCRay ray = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0));
@@ -2185,6 +2185,7 @@ namespace embree
   {
     for (size_t i=0; i<regressionN; i++) 
     {
+      srand(i*23565);
       if (i%20 == 0) std::cout << "." << std::flush;
 
       RTCSceneFlags sflag = getSceneFlag(i); 
@@ -2242,6 +2243,7 @@ namespace embree
 
     for (size_t i=0; i<regressionN; i++) 
     {
+      srand(i*23565);
       if (i%20 == 0) std::cout << "." << std::flush;
 
       for (size_t j=0; j<20; j++) 
@@ -2334,7 +2336,7 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
-    
+
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
     POSITIVE("barrier_sys",               test_barrier_sys());
@@ -2426,7 +2428,6 @@ namespace embree
     rtcore_inf("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
 #endif
 #endif
-
 
     POSITIVE("regression_static",         rtcore_regression_static());
     POSITIVE("regression_dynamic",        rtcore_regression_dynamic());

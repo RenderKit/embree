@@ -137,6 +137,7 @@ namespace embree
       if (needAllThreads) 
       {
         if (!g_state.get()) g_state.reset(new MortonBuilderState);
+	//size_t numActiveThreads = threadCount;
 	size_t numActiveThreads = min(threadCount,getNumberOfCores());
 	//TaskScheduler::enableThreads(numActiveThreads); // FIXME: enable
         //scheduler->dispatchTask(threadIndex,threadCount,_build_parallel_morton,this,numActiveThreads,"build_parallel_morton");

@@ -240,8 +240,8 @@ namespace embree
       
       ~Init () {
 	if (threadIndex == 0 && threadCount != 0) {
-	  scheduler->barrier.reset();
 	  scheduler->leave(threadIndex,threadCount);
+	  scheduler->barrier.reset();
 	}
       }
 

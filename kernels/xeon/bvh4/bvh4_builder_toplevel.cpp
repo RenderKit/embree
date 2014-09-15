@@ -65,8 +65,9 @@ namespace embree
       if (N) scheduler->dispatchTask(threadIndex,threadCount,_task_build_parallel,this,N,"toplevel_build_parallel");
       
       /* perform builds that need all threads */
-      for (size_t i=0; i<allThreadBuilds.size(); i++)
+      for (size_t i=0; i<allThreadBuilds.size(); i++) {
         build(threadIndex,threadCount,allThreadBuilds[i]);
+      }
       allThreadBuilds.clear();
       
       /* ignore empty scenes */
@@ -113,7 +114,7 @@ namespace embree
       
       /* remember meshes that need all threads to get built */
       if (builders[objectID]->needAllThreads) 
-        allThreadBuilds.push_back(objectID);
+	allThreadBuilds.push_back(objectID);
     }
     
     void BVH4BuilderTopLevel::build (size_t threadIndex, size_t threadCount, size_t objectID)

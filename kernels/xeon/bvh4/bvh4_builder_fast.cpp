@@ -138,8 +138,8 @@ namespace embree
       } 
       else {
 	if (!g_state.get()) g_state.reset(new GlobalState());
-	size_t numActiveThreads = min(threadCount,getNumberOfCores());
 	//size_t numActiveThreads = threadCount;
+	size_t numActiveThreads = min(threadCount,getNumberOfCores());
 	//TaskScheduler::enableThreads(numActiveThreads); // FIXME: enable
         //scheduler->dispatchTask(threadIndex,threadCount,_build_parallel,this,numActiveThreads,"build_parallel");
 	//scheduler->enableThreads(numActiveThreads);
