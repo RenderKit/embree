@@ -281,6 +281,6 @@ namespace embree
 #endif      
     }
     
-    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8ChunkMoeller,BVH8Intersector8Chunk<ListIntersector8<Triangle8Intersector8MoellerTrumbore<true COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8ChunkMoeller,BVH8Intersector8Chunk<LeafIterator8<Triangle8Intersector8MoellerTrumbore<LeafMode COMMA true> > >);
   }
 }  

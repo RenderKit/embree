@@ -50,21 +50,39 @@ namespace embree
     BBox3fa bounds = empty;
     Scene* scene = (Scene*) geom;
     Bezier1i* prim = (Bezier1i*) prim;
-    
-    while (true)
+
+    if (num == -1)
     {
-      const unsigned geomID = prim->geomID<1>();
-      const unsigned primID = prim->primID<1>();
-      const BezierCurves* curves = scene->getBezierCurves(geomID);
-      const int vtx = curves->curve(primID);
-      bounds.extend(curves->vertex(vtx+0));
-      bounds.extend(curves->vertex(vtx+1));
-      bounds.extend(curves->vertex(vtx+2));
-      bounds.extend(curves->vertex(vtx+3));
-      //prim->mask = curves->mask;
-      const bool last = prim->last();
-      if (last) break;
-      prim++;
+      while (true)
+      {
+	const unsigned geomID = prim->geomID<1>();
+	const unsigned primID = prim->primID<1>();
+	const BezierCurves* curves = scene->getBezierCurves(geomID);
+	const int vtx = curves->curve(primID);
+	bounds.extend(curves->vertex(vtx+0));
+	bounds.extend(curves->vertex(vtx+1));
+	bounds.extend(curves->vertex(vtx+2));
+	bounds.extend(curves->vertex(vtx+3));
+	//prim->mask = curves->mask;
+	const bool last = prim->last();
+	if (last) break;
+	prim++;
+      }
+    }
+    else
+    {
+      for (size_t i=0; i<num; i++, prim++)
+      {
+	const unsigned geomID = prim->geomID<0>();
+	const unsigned primID = prim->primID<0>();
+	const BezierCurves* curves = scene->getBezierCurves(geomID);
+	const int vtx = curves->curve(primID);
+	bounds.extend(curves->vertex(vtx+0));
+	bounds.extend(curves->vertex(vtx+1));
+	bounds.extend(curves->vertex(vtx+2));
+	bounds.extend(curves->vertex(vtx+3));
+	//prim->mask = curves->mask;
+      }
     }
     return bounds; 
   }
