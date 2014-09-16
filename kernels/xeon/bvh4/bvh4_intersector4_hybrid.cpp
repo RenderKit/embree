@@ -222,7 +222,7 @@ namespace embree
         /* intersect leaf */
         const sseb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),4);
-	if (unlikely(cur == BVH4::emptyNode)) continue;
+	if (!PrimitiveIntersector4::emptyLeafSupport && unlikely(cur == BVH4::emptyNode)) continue;
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
         PrimitiveIntersector4::intersect(valid_leaf,pre,ray,prim,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
@@ -426,7 +426,7 @@ namespace embree
         /* intersect leaf */
         const sseb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),4);
-	if (unlikely(cur == BVH4::emptyNode)) continue;
+	if (!PrimitiveIntersector4::emptyLeafSupport && unlikely(cur == BVH4::emptyNode)) continue;
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
         terminated |= PrimitiveIntersector4::occluded(!terminated,pre,ray,prim,items,bvh->geometry);
         if (all(terminated)) break;

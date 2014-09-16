@@ -29,8 +29,8 @@ namespace embree
   namespace isa
   { 
 
-    template<typename TriangleIntersector8>
-    __forceinline void BVH8Intersector8Hybrid<TriangleIntersector8>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
+    template<typename PrimitiveIntersector8>
+    __forceinline void BVH8Intersector8Hybrid<PrimitiveIntersector8>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
     {
       /*! stack state */
       StackItemInt32<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
@@ -165,15 +165,16 @@ namespace embree
         
         /*! this is a leaf node */
         STAT3(normal.trav_leaves,1,1,1);
+	if (!PrimitiveIntersector8::emptyLeafSupport && unlikely(cur == BVH8::emptyNode)) continue;
         size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
-        TriangleIntersector8::intersect(pre,ray,k,prim,num,bvh->geometry);
+        PrimitiveIntersector8::intersect(pre,ray,k,prim,num,bvh->geometry);
         rayFar = ray.tfar[k];
       }
     }
    
     
-    template<typename TriangleIntersector8>    
-    void BVH8Intersector8Hybrid<TriangleIntersector8>::intersect(avxb* valid_i, BVH8* bvh, Ray8& ray)
+    template<typename PrimitiveIntersector8>    
+    void BVH8Intersector8Hybrid<PrimitiveIntersector8>::intersect(avxb* valid_i, BVH8* bvh, Ray8& ray)
     {
       /* load ray */
       const avxb valid0 = *valid_i;
@@ -320,8 +321,9 @@ namespace embree
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; 
+	if (!PrimitiveIntersector8::emptyLeafSupport && unlikely(curNode == BVH8::emptyNode)) continue;
 	const Triangle* prim = (Triangle*) curNode.leaf(items);
-        TriangleIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->geometry);
+        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
       AVX_ZERO_UPPER();
@@ -329,8 +331,8 @@ namespace embree
     
 
 
-    template<typename TriangleIntersector8>
-    __forceinline bool BVH8Intersector8Hybrid<TriangleIntersector8>::occluded1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
+    template<typename PrimitiveIntersector8>
+    __forceinline bool BVH8Intersector8Hybrid<PrimitiveIntersector8>::occluded1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
     {
       /*! stack state */
       NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -443,8 +445,9 @@ namespace embree
         
         /*! this is a leaf node */
         STAT3(shadow.trav_leaves,1,1,1);
+	if (!PrimitiveIntersector8::emptyLeafSupport && unlikely(cur == BVH8::emptyNode)) continue;
         size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
-        if (TriangleIntersector8::occluded(pre,ray,k,prim,num,bvh->geometry)) {
+        if (PrimitiveIntersector8::occluded(pre,ray,k,prim,num,bvh->geometry)) {
           //ray.geomID = 0;
           //break;
 	  return true;
@@ -453,8 +456,8 @@ namespace embree
       return false;
     }
 
-     template<typename TriangleIntersector8>
-    void BVH8Intersector8Hybrid<TriangleIntersector8>::occluded(avxb* valid_i, BVH8* bvh, Ray8& ray)
+     template<typename PrimitiveIntersector8>
+    void BVH8Intersector8Hybrid<PrimitiveIntersector8>::occluded(avxb* valid_i, BVH8* bvh, Ray8& ray)
     {
       /* load ray */
       const avxb valid = *valid_i;
@@ -598,8 +601,9 @@ namespace embree
         /* intersect leaf */
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
+	if (!PrimitiveIntersector8::emptyLeafSupport && unlikely(curNode == BVH8::emptyNode)) continue;
         size_t items; const Triangle* prim = (Triangle*) curNode.leaf(items);
-        terminated |= TriangleIntersector8::occluded(!terminated,pre,ray,prim,items,bvh->geometry);
+        terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,prim,items,bvh->geometry);
         if (all(terminated)) break;
         ray_tfar = select(terminated,avxf(neg_inf),ray_tfar);
       }

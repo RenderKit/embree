@@ -27,8 +27,8 @@ namespace embree
   namespace isa
   {    
     
-    template<typename TriangleIntersector8>    
-    void BVH8Intersector8Chunk<TriangleIntersector8>::intersect(avxb* valid_i, BVH8* bvh, Ray8& ray)
+    template<typename PrimitiveIntersector8>    
+    void BVH8Intersector8Chunk<PrimitiveIntersector8>::intersect(avxb* valid_i, BVH8* bvh, Ray8& ray)
     {
 #if defined(__AVX__)
       
@@ -147,16 +147,17 @@ namespace embree
         /* intersect leaf */
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
+	if (!PrimitiveIntersector8::emptyLeafSupport && unlikely(curNode == BVH8::emptyNode)) continue;
         size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(items);
-        TriangleIntersector8::intersect(valid_leaf,pre,ray,tri,items,bvh->geometry);
+        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,tri,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
       AVX_ZERO_UPPER();
 #endif       
     }
     
-     template<typename TriangleIntersector8>
-    void BVH8Intersector8Chunk<TriangleIntersector8>::occluded(avxb* valid_i, BVH8* bvh, Ray8& ray)
+     template<typename PrimitiveIntersector8>
+    void BVH8Intersector8Chunk<PrimitiveIntersector8>::occluded(avxb* valid_i, BVH8* bvh, Ray8& ray)
     {
 #if defined(__AVX__)
       
@@ -271,8 +272,9 @@ namespace embree
         /* intersect leaf */
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
+	if (!PrimitiveIntersector8::emptyLeafSupport && unlikely(curNode == BVH8::emptyNode)) continue;
         size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(items);
-        terminated |= TriangleIntersector8::occluded(!terminated,pre,ray,tri,items,bvh->geometry);
+        terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,tri,items,bvh->geometry);
         if (all(terminated)) break;
         ray_tfar = select(terminated,neg_inf,ray_tfar);
       }
