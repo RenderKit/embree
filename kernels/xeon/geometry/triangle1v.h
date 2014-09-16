@@ -55,15 +55,14 @@ namespace embree
     static __forceinline size_t blocks(size_t N) { return N; }
 
     /*! fill triangle from triangle list */
-    template<bool list>
-    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
+    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
       const PrimRef& prim = *prims;
       prims++;
 
       const unsigned last = list && !prims;
-      const size_t geomID = prim.geomID<list>();
-      const size_t primID = prim.primID<list>();
+      const size_t geomID = prim.geomID();
+      const size_t primID = prim.primID();
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
       const TriangleMesh::Triangle& tri = mesh->triangle(primID);
       
@@ -77,15 +76,14 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    template<bool list>
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
     {
       const PrimRef& prim = prims[i];
       i++;
 
       const unsigned last = list && i >= end;
-      const size_t geomID = prim.geomID<list>();
-      const size_t primID = prim.primID<list>();
+      const size_t geomID = prim.geomID();
+      const size_t primID = prim.primID();
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
       const TriangleMesh::Triangle& tri = mesh->triangle(primID);
       
@@ -152,12 +150,11 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    template<bool list>
-    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
+    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
       const PrimRef& prim = *prims; prims++;
-      const unsigned geomID = prim.geomID<list>();
-      const unsigned primID = prim.primID<list>();
+      const unsigned geomID = prim.geomID();
+      const unsigned primID = prim.primID();
       const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
       const TriangleMesh::Triangle& tri = mesh->triangle(primID);
       const Vec3fa& a0 = mesh->vertex(tri.v[0],0);

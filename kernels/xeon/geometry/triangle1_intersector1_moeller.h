@@ -34,7 +34,7 @@ namespace embree
   template<bool list>
   struct Triangle1Intersector1MoellerTrumbore
   {
-    typedef Triangle1<list> Primitive;
+    typedef Triangle1 Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const Ray& ray) {}

@@ -25,7 +25,7 @@ namespace embree
   template<bool list>
     struct Bezier1iIntersector4
   {
-    typedef Bezier1i<list> Primitive;
+    typedef Bezier1i Primitive;
     typedef BezierIntersector4::Precalculations Precalculations;
 
     static __forceinline void intersect(Precalculations& pre, Ray4& ray, const size_t k, const Primitive& curve, void* geom) {

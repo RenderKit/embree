@@ -32,7 +32,7 @@ namespace embree
   template<bool list, bool enableIntersectionFilter>
     struct Triangle4Intersector4MoellerTrumbore
   {
-    typedef Triangle4<list> Primitive;
+    typedef Triangle4 Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const sseb& valid, const Ray4& ray) {}

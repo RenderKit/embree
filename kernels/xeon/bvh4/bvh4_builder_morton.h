@@ -142,7 +142,7 @@ namespace embree
       };
       
       /*! Constructor. */
-      BVH4BuilderMorton (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+      BVH4BuilderMorton (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
       
       /*! Destruction */
       ~BVH4BuilderMorton ();
@@ -224,6 +224,7 @@ namespace embree
       size_t primBytes; 
       size_t minLeafSize;
       size_t maxLeafSize;
+      size_t listMode;
 
       size_t topLevelItemThreshold;
       size_t encodeShift;
@@ -250,8 +251,8 @@ namespace embree
     class BVH4Triangle1BuilderMorton : public BVH4BuilderMorton
     {
     public:
-      BVH4Triangle1BuilderMorton (BVH4* bvh, Scene* scene);
-      BVH4Triangle1BuilderMorton (BVH4* bvh, TriangleMesh* mesh);
+      BVH4Triangle1BuilderMorton (BVH4* bvh, Scene* scene, size_t listMode);
+      BVH4Triangle1BuilderMorton (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
       BBox3fa leafBounds(NodeRef& ref) const;
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
@@ -259,8 +260,8 @@ namespace embree
     class BVH4Triangle4BuilderMorton : public BVH4BuilderMorton
     {
     public:
-      BVH4Triangle4BuilderMorton (BVH4* bvh, Scene* scene);
-      BVH4Triangle4BuilderMorton (BVH4* bvh, TriangleMesh* mesh);
+      BVH4Triangle4BuilderMorton (BVH4* bvh, Scene* scene, size_t listMode);
+      BVH4Triangle4BuilderMorton (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
       BBox3fa leafBounds(NodeRef& ref) const;
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
@@ -268,8 +269,8 @@ namespace embree
     class BVH4Triangle8BuilderMorton : public BVH4BuilderMorton
     {
     public:
-      BVH4Triangle8BuilderMorton (BVH4* bvh, Scene* scene);
-      BVH4Triangle8BuilderMorton (BVH4* bvh, TriangleMesh* mesh);
+      BVH4Triangle8BuilderMorton (BVH4* bvh, Scene* scene, size_t listMode);
+      BVH4Triangle8BuilderMorton (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
       BBox3fa leafBounds(NodeRef& ref) const;
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
@@ -277,8 +278,8 @@ namespace embree
     class BVH4Triangle1vBuilderMorton : public BVH4BuilderMorton
     {
     public:
-      BVH4Triangle1vBuilderMorton (BVH4* bvh, Scene* scene);
-      BVH4Triangle1vBuilderMorton (BVH4* bvh, TriangleMesh* mesh);
+      BVH4Triangle1vBuilderMorton (BVH4* bvh, Scene* scene, size_t listMode);
+      BVH4Triangle1vBuilderMorton (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
       BBox3fa leafBounds(NodeRef& ref) const;
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
@@ -286,8 +287,8 @@ namespace embree
     class BVH4Triangle4vBuilderMorton : public BVH4BuilderMorton
     {
     public:
-      BVH4Triangle4vBuilderMorton (BVH4* bvh, Scene* scene);
-      BVH4Triangle4vBuilderMorton (BVH4* bvh, TriangleMesh* mesh);
+      BVH4Triangle4vBuilderMorton (BVH4* bvh, Scene* scene, size_t listMode);
+      BVH4Triangle4vBuilderMorton (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
       BBox3fa leafBounds(NodeRef& ref) const;
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
@@ -295,8 +296,8 @@ namespace embree
     class BVH4Triangle4iBuilderMorton : public BVH4BuilderMorton
     {
     public:
-      BVH4Triangle4iBuilderMorton (BVH4* bvh, Scene* scene);
-      BVH4Triangle4iBuilderMorton (BVH4* bvh, TriangleMesh* mesh);
+      BVH4Triangle4iBuilderMorton (BVH4* bvh, Scene* scene, size_t listMode);
+      BVH4Triangle4iBuilderMorton (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
       BBox3fa leafBounds(NodeRef& ref) const;
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };

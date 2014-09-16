@@ -30,7 +30,7 @@ namespace embree
   template<bool list>
   struct Triangle1vIntersector4Pluecker
   {
-    typedef Triangle1v<list> Primitive;
+    typedef Triangle1v Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const sseb& valid, const Ray4& ray) {}

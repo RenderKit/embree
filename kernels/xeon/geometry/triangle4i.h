@@ -101,8 +101,7 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    template<bool list>
-    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
+    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
       ssei geomID = -1, primID = -1;
       Vec3f* v0[4] = { NULL, NULL, NULL, NULL };
@@ -111,11 +110,11 @@ namespace embree
       
       for (size_t i=0; i<4; i++)
       {
-	const TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID<list>());
-	const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID<list>());
+	const TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
+	const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
 	if (prims) {
-	  geomID[i] = prim.geomID<list>();
-	  primID[i] = prim.primID<list>();
+	  geomID[i] = prim.geomID();
+	  primID[i] = prim.primID();
 	  v0[i] = (Vec3f*) &mesh->vertex(tri.v[0]); 
 	  v1[i] = (int*)&mesh->vertex(tri.v[1])-(int*)v0[i]; 
 	  v2[i] = (int*)&mesh->vertex(tri.v[2])-(int*)v0[i]; 
@@ -135,8 +134,7 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    template<bool list>
-    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
+    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       ssei geomID = -1, primID = -1;
       Vec3f* v0[4] = { NULL, NULL, NULL, NULL };
@@ -145,11 +143,11 @@ namespace embree
       
       for (size_t i=0; i<4; i++)
       {
-	const TriangleMesh* mesh = scene->getTriangleMesh(prim->geomID<list>());
-	const TriangleMesh::Triangle& tri = mesh->triangle(prim->primID<list>());
+	const TriangleMesh* mesh = scene->getTriangleMesh(prim->geomID());
+	const TriangleMesh::Triangle& tri = mesh->triangle(prim->primID());
 	if (begin<end) {
-	  geomID[i] = prim->geomID<list>();
-	  primID[i] = prim->primID<list>();
+	  geomID[i] = prim->geomID();
+	  primID[i] = prim->primID();
 	  v0[i] = (Vec3f*) &mesh->vertex(tri.v[0]); 
 	  v1[i] = (int*)&mesh->vertex(tri.v[1])-(int*)v0[i]; 
 	  v2[i] = (int*)&mesh->vertex(tri.v[2])-(int*)v0[i]; 

@@ -115,7 +115,7 @@ namespace embree
 
     /*! returns the primitive IDs */
     template<bool list>
-    __forceinline avxi primID<list>() const { 
+    __forceinline avxi primID() const { 
       if (list) return primIDs & 0x7FFFFFFF; 
       else      return primIDs;
     }
@@ -127,8 +127,7 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    template<bool list>
-    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
+    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
       avxi vgeomID = -1, vprimID = -1, vmask = -1;
       avx3f v0 = zero, v1 = zero, v2 = zero;
@@ -136,8 +135,8 @@ namespace embree
       for (size_t i=0; i<8 && prims; i++, prims++)
       {
 	const PrimRef& prim = *prims;
-	const size_t geomID = prim.geomID<list>();
-        const size_t primID = prim.primID<list>();
+	const size_t geomID = prim.geomID();
+        const size_t primID = prim.primID();
         const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
@@ -154,8 +153,7 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    template<bool list>
-    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
+    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       avxi vgeomID = -1, vprimID = -1, vmask = -1;
       avx3f v0 = zero, v1 = zero, v2 = zero;
@@ -163,8 +161,8 @@ namespace embree
       for (size_t i=0; i<8 && begin<end; i++, begin++)
       {
 	const PrimRef& prim = prims[begin];
-        const size_t geomID = prim.geomID<list>();
-        const size_t primID = prim.primID<list>();
+        const size_t geomID = prim.geomID();
+        const size_t primID = prim.primID();
         const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
         const Vec3fa& p0 = mesh->vertex(tri.v[0]);
@@ -196,17 +194,16 @@ namespace embree
 
 #if defined (__AVX__)
 
-  template<bool list>
-  __forceinline std::ostream &operator<<(std::ostream &o, const Triangle8<list>& tri)
-    {
-      o << "v0    " << tri.v0 << std::endl;
-      o << "e1    " << tri.e1 << std::endl;
-      o << "e2    " << tri.e2 << std::endl;
-      o << "Ng    " << tri.Ng << std::endl;
-      o << "geomID" << tri.geomIDs << std::endl;
-      o << "primID" << tri.primIDs << std::endl;
-      return o;
-    }
+  __forceinline std::ostream &operator<<(std::ostream &o, const Triangle8& tri)
+  {
+    o << "v0    " << tri.v0 << std::endl;
+    o << "e1    " << tri.e1 << std::endl;
+    o << "e2    " << tri.e2 << std::endl;
+    o << "Ng    " << tri.Ng << std::endl;
+    o << "geomID" << tri.geomID<1>() << std::endl;
+    o << "primID" << tri.primID<1>() << std::endl;
+    return o;
+  }
 #endif
 
 

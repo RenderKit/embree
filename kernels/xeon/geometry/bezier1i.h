@@ -67,23 +67,23 @@ namespace embree
     }
     
     /*! fill from list */
-    template<bool list>
-    __forceinline void fill(typename atomic_set<PrimRefBlockT<BezierPrim> >::block_iterator_unsafe& iter, Scene* scene)
+    __forceinline void fill(typename atomic_set<PrimRefBlockT<BezierPrim> >::block_iterator_unsafe& iter, Scene* scene, const bool list)
     {
       const BezierPrim& curve = *iter; iter++;
-      const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID<list>());
-      const Vec3fa& p0 = in->vertex(in->curve(curve.primID<list>()));
-      new (this) Bezier1i(&p0,curve.geomID<list>(),curve.primID<list>(),list && !iter);
+      const unsigned geomID = curve.geomID<0>();
+      const unsigned primID = curve.primID<0>();
+      const BezierCurves* in = (BezierCurves*) scene->get(geomID);
+      const Vec3fa& p0 = in->vertex(in->curve(primID));
+      new (this) Bezier1i(&p0,geomID,primID,list && !iter);
     }
 
     /*! fill triangle from triangle list */
-    template<bool list>
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
     {
       const PrimRef& prim = prims[i];
       i++;
-      const size_t geomID = prim.geomID<list>();
-      const size_t primID = prim.primID<list>();
+      const size_t geomID = prim.geomID();
+      const size_t primID = prim.primID();
       const BezierCurves* curves = scene->getBezierCurves(geomID);
       const size_t id = curves->curve(primID);
       const Vec3fa& p0 = curves->vertex(id+0);
@@ -108,12 +108,12 @@ namespace embree
       : p0(p0), p1(p1), geom(geomID), prim(primID | (last << 31)) {}
 
     template<bool list>
-    __forceinline unsigned int primID<list>() const { 
+    __forceinline unsigned int primID() const { 
       if (list) return prim & 0x7FFFFFF; 
       else      return prim;
     }
     template<bool list>
-    __forceinline unsigned int geomID<list>() const { 
+    __forceinline unsigned int geomID() const { 
       return geom; 
     }
     //__forceinline unsigned int mask  () const { return mask; } // FIXME: not implemented yet
@@ -128,14 +128,15 @@ namespace embree
     }
 
     /*! fill from list */
-    template<bool list>
-    __forceinline void fill(typename atomic_set<PrimRefBlockT<BezierPrim> >::block_iterator_unsafe& iter, Scene* scene)
+    __forceinline void fill(typename atomic_set<PrimRefBlockT<BezierPrim> >::block_iterator_unsafe& iter, Scene* scene, const bool list)
     {
       const BezierPrim& curve = *iter; iter++;
-      const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID<list>());
-      const Vec3fa& p0 = in->vertex(in->curve(curve.primID<list>()),0);
-      const Vec3fa& p1 = in->vertex(in->curve(curve.primID<list>()),1);
-      new (this) Bezier1iMB(&p0,&p1,curve.geomID<list>(),curve.primID<list>(),list && !iter);
+      const unsigned geomID = curve.geomID<0>();
+      const unsigned primID = curve.primID<0>();
+      const BezierCurves* in = (BezierCurves*) scene->get(geomID);
+      const Vec3fa& p0 = in->vertex(in->curve(primID),0);
+      const Vec3fa& p1 = in->vertex(in->curve(primID),1);
+      new (this) Bezier1iMB(&p0,&p1,geomID,primID,list && !iter);
     }
 
   public:

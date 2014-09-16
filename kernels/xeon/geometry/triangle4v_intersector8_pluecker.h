@@ -24,7 +24,7 @@ namespace embree
   template<bool list>
   struct Triangle4vIntersector8Pluecker
   {
-    typedef Triangle4v<list> Primitive;
+    typedef Triangle4v Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}

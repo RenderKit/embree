@@ -35,13 +35,13 @@ namespace embree
   {
     static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; // FIXME: measure if this is really optimal, maybe disable only parallel splits
 
-    template<> BVH4BuilderMBT<Triangle1vMB<listMode> >::BVH4BuilderMBT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderMB(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1v<listMode>),2,inf) {}
-    template<> BVH4BuilderMBT<Triangle1vMB<listMode> >::BVH4BuilderMBT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4BuilderMB(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1v<listMode>),2,inf) {}
+    template<> BVH4BuilderMBT<Triangle1vMB>::BVH4BuilderMBT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderMB(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
+    template<> BVH4BuilderMBT<Triangle1vMB>::BVH4BuilderMBT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4BuilderMB(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
 
     BVH4BuilderMB::BVH4BuilderMB (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t mode,
 				size_t logBlockSize, size_t logSAHBlockSize, float intCost, 
 				bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-      : scene(scene), mesh(mesh), bvh(bvh), scheduler(&scene->lockstep_scheduler), enableSpatialSplits(mode > 0), remainingReplications(0),
+      : scene(scene), mesh(mesh), bvh(bvh), scheduler(&scene->lockstep_scheduler), enableSpatialSplits(mode & MODE_HIGH_QUALITY), listMode(mode & LIST_MODE_BITS), remainingReplications(0),
 	logBlockSize(logBlockSize), logSAHBlockSize(logSAHBlockSize), intCost(intCost), 
 	needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
      {
@@ -281,14 +281,14 @@ namespace embree
       
       /* insert all triangles */
       PrimRefList::block_iterator_unsafe iter(prims);
-      for (size_t i=0; i<N; i++) leaf[i].fill(iter,scene);
+      for (size_t i=0; i<N; i++) leaf[i].fill(iter,scene,listMode);
       assert(!iter);
       
       /* free all primitive blocks */
       while (PrimRefList::item* block = prims.take())
 	alloc.free(threadIndex,block);
       
-      return bvh->encodeLeaf(leaf,N);
+      return bvh->encodeLeaf(leaf,listMode ? listMode : N);
     }
     
     BVH4BuilderMB::NodeRef BVH4BuilderMB::createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
@@ -606,6 +606,6 @@ namespace embree
     }
     
     /*! entry functions for the builder */
-    Builder* BVH4Triangle1vMBBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderMBT<Triangle1vMB<listMode> >((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle1vMBBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderMBT<Triangle1vMB>((BVH4*)bvh,scene,mode); }
   }
 }
