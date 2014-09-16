@@ -143,7 +143,6 @@ namespace embree
       validAccels[M++] = accels[i];
     }
 
-
     if (M == 1) {
       intersectors = validAccels[0]->intersectors;
     }

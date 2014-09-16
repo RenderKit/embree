@@ -27,7 +27,7 @@ namespace embree
 {
   /*! Multi BVH with 4 children. Each node stores the bounding box of
    * it's 4 children as well as 4 child pointers. */
-  class BVH4 : public Bounded
+  class BVH4 : public AccelData
   {
     ALIGNED_CLASS;
   public:

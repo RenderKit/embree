@@ -24,11 +24,8 @@ namespace embree
   class AccelInstance : public Accel
   {
   public:
-    AccelInstance (Bounded* accel, Builder* builder, Intersectors& intersectors)
-      : accel(accel), builder(builder) 
-    {
-      this->intersectors = intersectors;
-    }
+    AccelInstance (AccelData* accel, Builder* builder, Intersectors& intersectors)
+      : accel(accel), builder(builder), Accel(intersectors) {}
 
     void immutable () {
       delete builder; builder = NULL;
@@ -36,7 +33,7 @@ namespace embree
 
     ~AccelInstance() {
       delete builder; builder = NULL; // delete builder first!
-      delete accel; accel = NULL;
+      delete accel;   accel = NULL;
     }
 
   public:
@@ -46,7 +43,7 @@ namespace embree
     }
 
   private:
-    Bounded* accel;
+    AccelData* accel;
     Builder* builder;
   };
 }

@@ -23,9 +23,7 @@
 
 namespace embree
 {
-
-
-  class BVH4Hair : public Bounded 
+  class BVH4Hair : public AccelData 
   {
   public:
     /*! branching width of the tree */
