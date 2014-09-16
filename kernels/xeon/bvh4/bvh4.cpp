@@ -30,6 +30,8 @@
 
 namespace embree
 {
+  #define listMode 1
+
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Bezier1Intersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Bezier1iIntersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Bezier1Intersector1_OBB);
@@ -520,7 +522,7 @@ namespace embree
   { 
     BVH4* accel = new BVH4(Bezier1Type::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1Intersectors(accel);
-    Builder* builder = BVH4Bezier1BuilderFast(accel,scene,0);
+    Builder* builder = BVH4Bezier1BuilderFast(accel,scene,listMode);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -528,7 +530,7 @@ namespace embree
   { 
     BVH4* accel = new BVH4(SceneBezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors(accel);
-    Builder* builder = BVH4Bezier1iBuilderFast(accel,scene,0);
+    Builder* builder = BVH4Bezier1iBuilderFast(accel,scene,listMode);
     scene->needVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -537,7 +539,7 @@ namespace embree
   { 
     BVH4* accel = new BVH4(Bezier1Type::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1Intersectors_OBB(accel);
-    Builder* builder = BVH4Bezier1Builder_OBB(accel,scene,highQuality ? MODE_HIGH_QUALITY : 0);
+    Builder* builder = BVH4Bezier1Builder_OBB(accel,scene,listMode | (highQuality ? MODE_HIGH_QUALITY : 0));
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -545,7 +547,7 @@ namespace embree
   { 
     BVH4* accel = new BVH4(SceneBezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors_OBB(accel);
-    Builder* builder = BVH4Bezier1iBuilder_OBB(accel,scene,highQuality ? MODE_HIGH_QUALITY : 0);
+    Builder* builder = BVH4Bezier1iBuilder_OBB(accel,scene,listMode | (highQuality ? MODE_HIGH_QUALITY : 0));
     scene->needVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -555,7 +557,7 @@ namespace embree
     scene->needVertices = true;
     BVH4* accel = new BVH4(Bezier1iMBType::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1iMBIntersectors_OBB(accel);
-    Builder* builder = BVH4Bezier1iMBBuilder_OBB(accel,scene,highQuality ? MODE_HIGH_QUALITY : 0);
+    Builder* builder = BVH4Bezier1iMBBuilder_OBB(accel,scene,listMode | (highQuality ? MODE_HIGH_QUALITY : 0));
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -565,11 +567,11 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
     
     Builder* builder = NULL;
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle1Builder(accel,scene,0);
-    else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle1Builder(accel,scene,MODE_HIGH_QUALITY);
-    else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle1Builder(accel,scene,0);
-    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle1BuilderMorton(accel,scene,0);
-    else if (g_tri_builder == "fast"        ) builder = BVH4Triangle1BuilderFast(accel,scene,0);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle1Builder(accel,scene,listMode);
+    else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle1Builder(accel,scene,listMode | MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle1Builder(accel,scene,listMode);
+    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle1BuilderMorton(accel,scene,listMode);
+    else if (g_tri_builder == "fast"        ) builder = BVH4Triangle1BuilderFast(accel,scene,listMode);
     else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4<Triangle1>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -586,11 +588,11 @@ namespace embree
     else throw std::runtime_error("unknown traverser "+g_tri_traverser+" for BVH4<Triangle4>");
    
     Builder* builder = NULL;
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4Builder(accel,scene,0);
-    else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle4Builder(accel,scene,MODE_HIGH_QUALITY);
-    else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle4Builder(accel,scene,0);
-    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4BuilderMorton(accel,scene,0);
-    else if (g_tri_builder == "fast"        ) builder = BVH4Triangle4BuilderFast(accel,scene,0);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4Builder(accel,scene,listMode);
+    else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle4Builder(accel,scene,listMode | MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle4Builder(accel,scene,listMode);
+    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4BuilderMorton(accel,scene,listMode);
+    else if (g_tri_builder == "fast"        ) builder = BVH4Triangle4BuilderFast(accel,scene,listMode);
     else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4<Triangle4>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -609,11 +611,11 @@ namespace embree
     else throw std::runtime_error("unknown traverser "+g_tri_traverser+" for BVH4<Triangle8>");
    
     Builder* builder = NULL;
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle8Builder(accel,scene,0);
-    else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle8Builder(accel,scene,MODE_HIGH_QUALITY);
-    else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle8Builder(accel,scene,0);
-    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle8BuilderMorton(accel,scene,0);
-    else if (g_tri_builder == "fast"        ) builder = BVH4Triangle8BuilderFast(accel,scene,0);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle8Builder(accel,scene,listMode);
+    else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle8Builder(accel,scene,listMode | MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle8Builder(accel,scene,listMode);
+    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle8BuilderMorton(accel,scene,listMode);
+    else if (g_tri_builder == "fast"        ) builder = BVH4Triangle8BuilderFast(accel,scene,listMode);
     else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4<Triangle8>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -626,11 +628,11 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Triangle1vIntersectors(accel);
 
     Builder* builder = NULL;
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle1vBuilder(accel,scene,0);
-    else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle1vBuilder(accel,scene,MODE_HIGH_QUALITY);
-    else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle1vBuilder(accel,scene,0);
-    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle1vBuilderMorton(accel,scene,0);
-    else if (g_tri_builder == "fast"        ) builder = BVH4Triangle1vBuilderFast(accel,scene,0);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle1vBuilder(accel,scene,listMode);
+    else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle1vBuilder(accel,scene,listMode | MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle1vBuilder(accel,scene,listMode);
+    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle1vBuilderMorton(accel,scene,listMode);
+    else if (g_tri_builder == "fast"        ) builder = BVH4Triangle1vBuilderFast(accel,scene,listMode);
     else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4<Triangle1v>");
         
     return new AccelInstance(accel,builder,intersectors);
@@ -640,7 +642,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(SceneTriangle1vMB::type,scene);
     Accel::Intersectors intersectors = BVH4Triangle1vMBIntersectors(accel);
-    Builder* builder = BVH4Triangle1vMBBuilder(accel,scene,0);
+    Builder* builder = BVH4Triangle1vMBBuilder(accel,scene,listMode);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -655,11 +657,11 @@ namespace embree
     else throw std::runtime_error("unknown traverser "+g_tri_traverser+" for BVH4<Triangle4>");
 
     Builder* builder = NULL;
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4vBuilder(accel,scene,0);
-    else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle4vBuilder(accel,scene,MODE_HIGH_QUALITY);
-    else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle4vBuilder(accel,scene,0);
-    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4vBuilderMorton(accel,scene,0);
-    else if (g_tri_builder == "fast"        ) builder = BVH4Triangle4vBuilderFast(accel,scene,0);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4vBuilder(accel,scene,listMode);
+    else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle4vBuilder(accel,scene,listMode | MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle4vBuilder(accel,scene,listMode);
+    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4vBuilderMorton(accel,scene,listMode);
+    else if (g_tri_builder == "fast"        ) builder = BVH4Triangle4vBuilderFast(accel,scene,listMode);
     else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4<Triangle4v>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -671,11 +673,11 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
 
     Builder* builder = NULL;
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4iBuilder(accel,scene,0);
-    else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle4iBuilder(accel,scene,MODE_HIGH_QUALITY);
-    else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle4iBuilder(accel,scene,0);
-    else if (g_tri_builder == "fast"        ) builder = BVH4Triangle4iBuilderFast(accel,scene,0);
-    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4iBuilderMorton(accel,scene,0);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4iBuilder(accel,scene,listMode);
+    else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle4iBuilder(accel,scene,listMode | MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle4iBuilder(accel,scene,listMode);
+    else if (g_tri_builder == "fast"        ) builder = BVH4Triangle4iBuilderFast(accel,scene,listMode);
+    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4iBuilderMorton(accel,scene,listMode);
     else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4<Triangle4i>");
 
     scene->needVertices = true;
@@ -686,7 +688,7 @@ namespace embree
   {
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle1::type,mesh->parent);
-    builder = BVH4Triangle1MeshBuilderMorton(accel,mesh,0);
+    builder = BVH4Triangle1MeshBuilderMorton(accel,mesh,listMode);
   } 
 
   void createTriangleMeshTriangle1(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
@@ -694,9 +696,9 @@ namespace embree
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle1::type,mesh->parent);
     switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1MeshBuilderFast(accel,mesh,0); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1MeshRefitFast(accel,mesh,0); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle1MeshBuilderMorton(accel,mesh,0); break;
+    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1MeshBuilderFast(accel,mesh,listMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1MeshRefitFast(accel,mesh,listMode); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle1MeshBuilderMorton(accel,mesh,listMode); break;
     default: throw std::runtime_error("internal error"); 
     }
   } 
@@ -706,9 +708,9 @@ namespace embree
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent);
     switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4MeshBuilderFast(accel,mesh,0); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4MeshRefitFast(accel,mesh,0); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4MeshBuilderMorton(accel,mesh,0); break;
+    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4MeshBuilderFast(accel,mesh,listMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4MeshRefitFast(accel,mesh,listMode); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4MeshBuilderMorton(accel,mesh,listMode); break;
     default: throw std::runtime_error("internal error"); 
     }
   } 
@@ -718,9 +720,9 @@ namespace embree
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle1v::type,mesh->parent);
     switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1vMeshBuilderFast(accel,mesh,0); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1vMeshRefitFast  (accel,mesh,0); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle1vMeshBuilderMorton(accel,mesh,0); break;
+    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1vMeshBuilderFast(accel,mesh,listMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1vMeshRefitFast  (accel,mesh,listMode); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle1vMeshBuilderMorton(accel,mesh,listMode); break;
     default: throw std::runtime_error("internal error"); 
     }
   } 
@@ -730,9 +732,9 @@ namespace embree
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle4v::type,mesh->parent);
     switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4vMeshBuilderFast(accel,mesh,0); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4vMeshRefitFast(accel,mesh,0); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4vMeshBuilderMorton(accel,mesh,0); break;
+    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4vMeshBuilderFast(accel,mesh,listMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4vMeshRefitFast(accel,mesh,listMode); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4vMeshBuilderMorton(accel,mesh,listMode); break;
     default: throw std::runtime_error("internal error"); 
     }
   } 
@@ -742,9 +744,9 @@ namespace embree
     if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
     accel = new BVH4(TriangleMeshTriangle4i::type,mesh->parent);
     switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4iMeshBuilderFast(accel,mesh,0); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4iMeshRefitFast(accel,mesh,0); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4iMeshBuilderMorton(accel,mesh,0); break;
+    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4iMeshBuilderFast(accel,mesh,listMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4iMeshRefitFast(accel,mesh,listMode); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4iMeshBuilderMorton(accel,mesh,listMode); break;
     default: throw std::runtime_error("internal error"); 
     }
   } 
@@ -800,7 +802,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle1SpatialSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(SceneTriangle1::type,scene);
-    Builder* builder = BVH4Triangle1Builder(accel,scene,MODE_HIGH_QUALITY);
+    Builder* builder = BVH4Triangle1Builder(accel,scene,listMode | MODE_HIGH_QUALITY);
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -808,7 +810,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle4SpatialSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(SceneTriangle4::type,scene);
-    Builder* builder = BVH4Triangle4Builder(accel,scene,MODE_HIGH_QUALITY);
+    Builder* builder = BVH4Triangle4Builder(accel,scene,listMode | MODE_HIGH_QUALITY);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -818,7 +820,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle8SpatialSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(SceneTriangle8::type,scene);
-    Builder* builder = BVH4Triangle8Builder(accel,scene,MODE_HIGH_QUALITY);
+    Builder* builder = BVH4Triangle8Builder(accel,scene,listMode | MODE_HIGH_QUALITY);
     Accel::Intersectors intersectors = BVH4Triangle8IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -828,7 +830,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle1ObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(SceneTriangle1::type,scene);
-    Builder* builder = BVH4Triangle1Builder(accel,scene,0);
+    Builder* builder = BVH4Triangle1Builder(accel,scene,listMode);
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -836,7 +838,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle4ObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(SceneTriangle4::type,scene);
-    Builder* builder = BVH4Triangle4Builder(accel,scene,0);
+    Builder* builder = BVH4Triangle4Builder(accel,scene,listMode);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -846,7 +848,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle8ObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(SceneTriangle8::type,scene);
-    Builder* builder = BVH4Triangle8Builder(accel,scene,0);
+    Builder* builder = BVH4Triangle8Builder(accel,scene,listMode);
     Accel::Intersectors intersectors = BVH4Triangle8IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -856,7 +858,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle1vObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(SceneTriangle1v::type,scene);
-    Builder* builder = BVH4Triangle1vBuilder(accel,scene,0);
+    Builder* builder = BVH4Triangle1vBuilder(accel,scene,listMode);
     Accel::Intersectors intersectors = BVH4Triangle1vIntersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -864,7 +866,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle4vObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(SceneTriangle4v::type,scene);
-    Builder* builder = BVH4Triangle4vBuilder(accel,scene,0);
+    Builder* builder = BVH4Triangle4vBuilder(accel,scene,listMode);
     Accel::Intersectors intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -872,13 +874,13 @@ namespace embree
   Accel* BVH4::BVH4Triangle4iObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(SceneTriangle4i::type,scene);
-    Builder* builder = BVH4Triangle4iBuilder(accel,scene,0);
+    Builder* builder = BVH4Triangle4iBuilder(accel,scene,listMode);
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
     scene->needVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  struct VirtualAccelObjectType : public PrimitiveType // FIXME: mode class
+  struct VirtualAccelObjectType : public PrimitiveType // FIXME: move class
   {
     VirtualAccelObjectType () 
       : PrimitiveType("object",sizeof(AccelSetItem),1,false,1) {} 
@@ -905,14 +907,14 @@ namespace embree
     intersectors.intersector4 = BVH4VirtualIntersector4Chunk;
     intersectors.intersector8 = BVH4VirtualIntersector8Chunk;
     intersectors.intersector16 = NULL;
-    Builder* builder = BVH4UserGeometryBuilderFast(accel,scene,0);
+    Builder* builder = BVH4UserGeometryBuilderFast(accel,scene,listMode);
     return new AccelInstance(accel,builder,intersectors);
   }
 
   Accel* BVH4::BVH4Triangle1ObjectSplit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle1::type,mesh->parent);
-    Builder* builder = BVH4Triangle1MeshBuilderFast(accel,mesh,0);
+    Builder* builder = BVH4Triangle1MeshBuilderFast(accel,mesh,listMode);
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -920,7 +922,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle4ObjectSplit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent);
-    Builder* builder = BVH4Triangle4MeshBuilderFast(accel,mesh,0);
+    Builder* builder = BVH4Triangle4MeshBuilderFast(accel,mesh,listMode);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -928,7 +930,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle1vObjectSplit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle1v::type,mesh->parent);
-    Builder* builder = BVH4Triangle1vMeshBuilderFast(accel,mesh,0);
+    Builder* builder = BVH4Triangle1vMeshBuilderFast(accel,mesh,listMode);
     Accel::Intersectors intersectors = BVH4Triangle1vIntersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -936,7 +938,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle4vObjectSplit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle4v::type,mesh->parent);
-    Builder* builder = BVH4Triangle4vMeshBuilderFast(accel,mesh,0);
+    Builder* builder = BVH4Triangle4vMeshBuilderFast(accel,mesh,listMode);
     Accel::Intersectors intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -944,7 +946,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle4Refit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent);
-    Builder* builder = BVH4Triangle4MeshRefitFast(accel,mesh,0);
+    Builder* builder = BVH4Triangle4MeshRefitFast(accel,mesh,listMode);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
