@@ -133,7 +133,6 @@ namespace embree
     }
   };
 
-  template<bool list>
   struct Bezier1
   {
   public:
@@ -144,53 +143,47 @@ namespace embree
     /*! Construction from vertices and IDs. */
     __forceinline Bezier1 (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const float t0, const float t1,
                            const unsigned int geomID, const unsigned int primID, const bool last)
-      : p0(p0), p1(p1), p2(p2), p3(p3), t0(t0), t1(t1), geom(geomID), prim((list && primID) | (last << 31)) {}
+      : p0(p0), p1(p1), p2(p2), p3(p3), t0(t0), t1(t1), geom(geomID), prim(primID | (last << 31)) {}
     
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
 
     /*! access hidden members */
+    template<bool list>
     __forceinline unsigned int primID() const { 
       if (list) return prim & 0x7FFFFFFF; 
       else      return prim;
     }
-    __forceinline unsigned int geomID() const { return geom; }
+    template<bool list>
+    __forceinline unsigned int geomID() const { 
+      return geom; 
+    }
     //__forceinline unsigned int mask  () const { return mask; } // FIXME: not implemented yet
-    __forceinline int last  () const { 
-      if (list) return prim & 0x80000000; 
-      else { assert(false); return 0; }
+    __forceinline int last () const { 
+      return prim & 0x80000000; 
     }
 
     /*! fill from list */
-    __forceinline void fill(typename atomic_set<PrimRefBlockT<Bezier1<false> > >::block_iterator_unsafe& iter, Scene* scene) {
-      //*this = *iter; 
-      Bezier1<false>& cur = *iter;
-      p0 = cur.p0;
-      p1 = cur.p1;
-      p2 = cur.p2;
-      p3 = cur.p3;
-      t0 = cur.t0; 
-      t1 = cur.t1;
-      geom = cur.geom;
-      prim = cur.prim;
-      iter++; 
-      this->prim |= (list && !iter) << 31;
+    template<bool list>
+    __forceinline void fill(typename atomic_set<PrimRefBlockT<Bezier1> >::block_iterator_unsafe& iter, Scene* scene) {
+      *this = *iter; iter++; this->prim |= (list && !iter) << 31;
     }
 
     /*! fill triangle from triangle list */
+    template<bool list>
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
     {
       const PrimRef& prim = prims[i];
       i++;
-      const size_t geomID = prim.geomID();
-      const size_t primID = prim.primID();
+      const size_t geomID = prim.geomID<list>();
+      const size_t primID = prim.primID<list>();
       const BezierCurves* curves = scene->getBezierCurves(geomID);
       const size_t id = curves->curve(primID);
       const Vec3fa& p0 = curves->vertex(id+0);
       const Vec3fa& p1 = curves->vertex(id+1);
       const Vec3fa& p2 = curves->vertex(id+2);
       const Vec3fa& p3 = curves->vertex(id+3);
-      new (this) Bezier1<list>(p0,p1,p2,p3,0.0f,1.0f,geomID,primID,i>=end);
+      new (this) Bezier1<list>(p0,p1,p2,p3,0.0f,1.0f,geomID,primID,list && i>=end);
     }
 
     /*! returns size of t range */
@@ -280,8 +273,8 @@ namespace embree
       const Vec3fa p30 = T0*p20 + T1*p21;
       
       const float t01 = T0*t0 + T1*t1;
-      const unsigned int geomID = this->geomID();
-      const unsigned int primID = this->primID();
+      const unsigned int geomID = this->geomID<list>();
+      const unsigned int primID = this->primID<list>();
       
       new (&left_o ) Bezier1<list>(p00,p10,p20,p30,t0,t01,geomID,primID,false);
       new (&right_o) Bezier1<list>(p30,p21,p12,p03,t01,t1,geomID,primID,false);
@@ -356,7 +349,7 @@ namespace embree
         " p2 = " << b.p2 << ", " << std::endl <<
         " p3 = " << b.p3 << ",  " << std::endl <<
         " t0 = " << b.t0 << ",  t1 = " << b.t1 << ", " << std::endl <<
-        " geomID = " << b.geomID() << ", primID = " << b.primID() << std::endl << 
+        " geomID = " << b.geomID<list>() << ", primID = " << b.primID<list>() << std::endl << 
       "}";
     }
     
@@ -378,5 +371,5 @@ namespace embree
     size_t size(const char* This) const;
   }; 
 
-  typedef Bezier1<false> BezierPrim; // FIXME: rename to BezierRef
+  typedef Bezier1 BezierPrim; // FIXME: rename to BezierRef
 }

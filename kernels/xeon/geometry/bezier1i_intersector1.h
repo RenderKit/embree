@@ -28,11 +28,11 @@ namespace embree
     typedef BezierIntersector1::Precalculations Precalculations;
 
     static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom) {
-      BezierIntersector1::intersect(ray,pre,curve.p[0],curve.p[1],curve.p[2],curve.p[3],curve.geomID(),curve.primID(),geom);
+      BezierIntersector1::intersect(ray,pre,curve.p[0],curve.p[1],curve.p[2],curve.p[3],curve.geomID<list>(),curve.primID<list>(),geom);
     }
 
     static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom) {
-      return BezierIntersector1::occluded(ray,pre,curve.p[0],curve.p[1],curve.p[2],curve.p[3],curve.geomID(),curve.primID(),geom);
+      return BezierIntersector1::occluded(ray,pre,curve.p[0],curve.p[1],curve.p[2],curve.p[3],curve.geomID<list>(),curve.primID<list>(),geom);
     }
   };
   
@@ -51,7 +51,7 @@ namespace embree
       const Vec3fa p1 = t0*a1 + t1*b1;
       const Vec3fa p2 = t0*a2 + t1*b2;
       const Vec3fa p3 = t0*a3 + t1*b3;
-      BezierIntersector1::intersect(ray,pre,p0,p1,p2,p3,curve.geomID(),curve.primID(),geom);
+      BezierIntersector1::intersect(ray,pre,p0,p1,p2,p3,curve.geomID<list>(),curve.primID<list>(),geom);
     }
 
     static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom) 
@@ -63,7 +63,7 @@ namespace embree
       const Vec3fa p1 = t0*a1 + t1*b1;
       const Vec3fa p2 = t0*a2 + t1*b2;
       const Vec3fa p3 = t0*a3 + t1*b3;
-      return BezierIntersector1::occluded(ray,pre,p0,p1,p2,p3,curve.geomID(),curve.primID(),geom);
+      return BezierIntersector1::occluded(ray,pre,p0,p1,p2,p3,curve.geomID<list>(),curve.primID<list>(),geom);
     }
   };
 }

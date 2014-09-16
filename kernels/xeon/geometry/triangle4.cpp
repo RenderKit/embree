@@ -26,14 +26,14 @@ namespace embree
   TriangleMeshTriangle4 TriangleMeshTriangle4::type;
 
   Triangle4Type::Triangle4Type () 
-  : PrimitiveType("triangle4",sizeof(Triangle4<listMode>),4,false,1) {} 
+  : PrimitiveType("triangle4",sizeof(Triangle4),4,false,1) {} 
 
 #if defined(__TARGET_AVX__)
   SceneTriangle8 SceneTriangle8::type;
   TriangleMeshTriangle8 TriangleMeshTriangle8::type;
 
   Triangle8Type::Triangle8Type () 
-  : PrimitiveType("triangle8",2*sizeof(Triangle4<listMode>),8,false,1) {}
+  : PrimitiveType("triangle8",2*sizeof(Triangle4),8,false,1) {}
 #endif
   
   size_t Triangle4Type::blocks(size_t x) const {
@@ -41,14 +41,14 @@ namespace embree
   }
   
   size_t Triangle4Type::size(const char* This) const {
-    return ((Triangle4<listMode>*)This)->size();
+    return ((Triangle4*)This)->size();
   }
   
   BBox3fa SceneTriangle4::update(char* prim_i, size_t num, void* geom) const 
   {
     BBox3fa bounds = empty;
     Scene* scene = (Scene*) geom;
-    Triangle4<listMode>* prim = (Triangle4<listMode>*)prim_i;
+    Triangle4* prim = (Triangle4*)prim_i;
 
     //for (size_t j=0; j<num; j++) 
     while (true)
@@ -75,7 +75,7 @@ namespace embree
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
       bool last = prim->last();
-      new (prim) Triangle4<listMode>(v0,v1,v2,vgeomID,vprimID,vmask,last);
+      new (prim) Triangle4(v0,v1,v2,vgeomID,vprimID,vmask,last);
       if (last) break;
       prim++;
     }
@@ -86,7 +86,7 @@ namespace embree
   {
     BBox3fa bounds = empty;
     TriangleMesh* mesh = (TriangleMesh*) geom;
-    Triangle4<listMode>* prim = (Triangle4<listMode>*)prim_i;
+    Triangle4* prim = (Triangle4*)prim_i;
 
     while (true)
     {
@@ -111,7 +111,7 @@ namespace embree
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
       bool last = prim->last();
-      new (prim) Triangle4<listMode>(v0,v1,v2,vgeomID,vprimID,vmask,last);
+      new (prim) Triangle4(v0,v1,v2,vgeomID,vprimID,vmask,last);
       if (last) break;
       prim++;
     }

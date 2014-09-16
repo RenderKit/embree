@@ -29,7 +29,7 @@ namespace embree
     typedef BezierIntersector4::Precalculations Precalculations;
 
     static __forceinline void intersect(Precalculations& pre, Ray4& ray, const size_t k, const Primitive& curve, void* geom) {
-      BezierIntersector4::intersect(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),geom);
+      BezierIntersector4::intersect(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),geom);
     }
 
     static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& curve, void* geom)
@@ -39,7 +39,7 @@ namespace embree
     }
 
     static __forceinline bool occluded(Precalculations& pre, Ray4& ray, const size_t k, const Primitive& curve, void* geom) {
-      return BezierIntersector4::occluded(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),geom);
+      return BezierIntersector4::occluded(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),geom);
     }
 
     static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& curve, void* geom)

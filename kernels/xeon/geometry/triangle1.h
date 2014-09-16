@@ -41,8 +41,8 @@ namespace embree
     static __forceinline size_t blocks(size_t N) { return N; }
 
     /*! access hidden members */
-    __forceinline unsigned int primID() const { if (list) return v0.a & 0x7FFFFFFF; else return v0.a; }
-    __forceinline unsigned int geomID() const { return v1.a; }
+    __forceinline unsigned int primID<list>() const { if (list) return v0.a & 0x7FFFFFFF; else return v0.a; }
+    __forceinline unsigned int geomID<list>() const { return v1.a; }
     __forceinline unsigned int mask  () const { return v2.a; }
     __forceinline int          last  () const { 
       if (list) return v0.a & 0x80000000; 
@@ -56,8 +56,8 @@ namespace embree
       prims++;
 
       const unsigned last   = !prims;
-      const unsigned geomID = prim.geomID();
-      const unsigned primID = prim.primID();
+      const unsigned geomID = prim.geomID<list>();
+      const unsigned primID = prim.primID<list>();
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
       const TriangleMesh::Triangle& tri = mesh->triangle(primID);
       
@@ -82,8 +82,8 @@ namespace embree
       i++;
 
       const unsigned last = i >= end;
-      const unsigned geomID = prim.geomID();
-      const unsigned primID = prim.primID();
+      const unsigned geomID = prim.geomID<list>();
+      const unsigned primID = prim.primID<list>();
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
       const TriangleMesh::Triangle& tri = mesh->triangle(primID);
       

@@ -51,8 +51,6 @@ namespace embree
 {
 #define BVH4HAIR_MB_VERSION 2 // FIXME: remove
 
-#define listMode true
-
   /* global settings */
   extern size_t g_numThreads;
   extern size_t g_verbose;
