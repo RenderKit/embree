@@ -245,7 +245,7 @@ namespace embree
       }
 
     public:
-      void* ptr;
+      Bounded* ptr;
       Intersector1 intersector1;
       Intersector4 intersector1_nofilter;
       Intersector4 intersector4;
