@@ -35,8 +35,8 @@ namespace embree
 {
   namespace isa
   {
-    template<> BVH8BuilderT<Triangle8<listMode> >::BVH8BuilderT (BVH8* bvh, Scene* scene, size_t mode) 
-      : BVH8Builder(bvh,scene,NULL,mode,3,2,1.0f,false,sizeof(Triangle8<listMode>),8,inf) {}
+    template<> BVH8BuilderT<Triangle8 >::BVH8BuilderT (BVH8* bvh, Scene* scene, size_t mode) 
+      : BVH8Builder(bvh,scene,NULL,mode,3,2,1.0f,false,sizeof(Triangle8),8,inf) {}
 
     BVH8Builder::BVH8Builder (BVH8* bvh, Scene* scene, TriangleMesh* mesh, size_t mode,
 				size_t logBlockSize, size_t logSAHBlockSize, float intCost, 
@@ -64,14 +64,14 @@ namespace embree
       
       /* insert all triangles */
       PrimRefList::block_iterator_unsafe iter(prims);
-      for (size_t i=0; i<N; i++) leaf[i].fill(iter,scene);
+      for (size_t i=0; i<N; i++) leaf[i].fill(iter,scene,listMode);
       assert(!iter);
       
       /* free all primitive blocks */
       while (PrimRefList::item* block = prims.take())
 	alloc.free(threadIndex,block);
       
-      return bvh->encodeLeaf(leaf,N);
+      return bvh->encodeLeaf(leaf,listMode ? listMode : N);
     }
     
     BVH8Builder::NodeRef BVH8Builder::createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
@@ -371,6 +371,6 @@ namespace embree
     }
     
     /*! entry functions for the builder */
-    Builder* BVH8Triangle8Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH8BuilderT<Triangle8<listMode> > ((BVH8*)bvh,scene,mode); }
+    Builder* BVH8Triangle8Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH8BuilderT<Triangle8> ((BVH8*)bvh,scene,mode); }
   }
 }

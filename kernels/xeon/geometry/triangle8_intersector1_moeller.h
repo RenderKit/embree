@@ -81,7 +81,7 @@ namespace embree
       const avxf v = V * rcpAbsDen;
       const avxf t = T * rcpAbsDen;
       size_t i = select_min(valid,t);
-      int geomID = tri.geomID(i);
+      int geomID = tri.geomID<list>(i);
       
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
@@ -99,18 +99,18 @@ namespace embree
           ray.Ng.y = tri.Ng.y[i];
           ray.Ng.z = tri.Ng.z[i];
           ray.geomID = geomID;
-          ray.primID = tri.primID(i);
+          ray.primID = tri.primID<list>(i);
 
 #if defined(__INTERSECTION_FILTER__)
           return;
         }
 
         Vec3fa Ng = Vec3fa(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
-        if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri.primID(i))) return;
+        if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri.primID<list>(i))) return;
         valid[i] = 0;
         if (none(valid)) return;
         i = select_min(valid,t);
-        geomID = tri.geomID(i);
+        geomID = tri.geomID<list>(i);
       }
 #endif
     }
@@ -159,7 +159,7 @@ namespace embree
 #if defined(__INTERSECTION_FILTER__)
 
       size_t i = select_min(valid,T);
-      int geomID = tri.geomID(i);
+      int geomID = tri.geomID<list>(i);
 
       while (true) 
       {
@@ -172,11 +172,11 @@ namespace embree
         const avxf v = V * rcpAbsDen;
         const avxf t = T * rcpAbsDen;
         const Vec3fa Ng = Vec3fa(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
-        if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri.primID(i))) break;
+        if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri.primID<list>(i))) break;
         valid[i] = 0;
         if (none(valid)) return false;
         i = select_min(valid,T);
-        geomID = tri.geomID(i);
+        geomID = tri.geomID<list>(i);
       }
 #endif
 

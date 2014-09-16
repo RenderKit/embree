@@ -53,8 +53,8 @@ namespace embree
     
     while (true)
     {
-      const unsigned geomID = prim->geomID();
-      const unsigned primID = prim->primID();
+      const unsigned geomID = prim->geomID<1>();
+      const unsigned primID = prim->primID<1>();
       const BezierCurves* curves = scene->getBezierCurves(geomID);
       const int vtx = curves->curve(primID);
       bounds.extend(curves->vertex(vtx+0));

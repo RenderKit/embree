@@ -44,8 +44,8 @@ namespace embree
     
     while (true)
     {
-      const unsigned geomID = prim->geomID();
-      const unsigned primID = prim->primID();
+      const unsigned geomID = prim->geomID<1>();
+      const unsigned primID = prim->primID<1>();
       const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
       const TriangleMesh::Triangle& tri = mesh->triangle(primID);
       const Vec3fa v0 = mesh->vertex(tri.v[0]);
@@ -68,8 +68,8 @@ namespace embree
 
     while (true)
     {
-      const unsigned geomID = prim->geomID();
-      const unsigned primID = prim->primID();
+      const unsigned geomID = prim->geomID<1>();
+      const unsigned primID = prim->primID<1>();
       const TriangleMesh::Triangle& tri = mesh->triangle(primID);
       const Vec3fa v0 = mesh->vertex(tri.v[0]);
       const Vec3fa v1 = mesh->vertex(tri.v[1]);
