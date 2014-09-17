@@ -105,6 +105,8 @@ namespace embree
 #endif
 	
 	scheduler->dispatchTask(threadIndex,threadCount,_task_build_parallel,this,threadCount,"BVH4Builder::build_parallel");
+
+        tasks.clear();
 #endif
 	
 	if (g_verbose >= 2) {

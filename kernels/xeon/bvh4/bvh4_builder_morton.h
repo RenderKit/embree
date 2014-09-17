@@ -133,9 +133,7 @@ namespace embree
         unsigned int* startGroupOffset;
         ThreadRadixCountTy* radixCount;
         
-        //size_t numBuildRecords;
 	atomic_t taskCounter;
-        //__aligned(64) BuildRecord buildRecords[NUM_TOP_LEVEL_BINS];
 	std::vector<BuildRecord> buildRecords;
         __aligned(64) WorkStack<BuildRecord,NUM_TOP_LEVEL_BINS> workStack;
         LinearBarrierActive barrier;
@@ -216,6 +214,8 @@ namespace embree
     public:
       BVH4* bvh;               //!< Output BVH
       LockStepTaskScheduler* scheduler;
+      std::auto_ptr<MortonBuilderState> state;
+
       Scene* scene;
       TriangleMesh* mesh;
       size_t logBlockSize;
@@ -229,8 +229,6 @@ namespace embree
       size_t topLevelItemThreshold;
       size_t encodeShift;
       size_t encodeMask;
-
-      static std::auto_ptr<MortonBuilderState> g_state;
             
     public:
       MortonID32Bit* __restrict__ morton;

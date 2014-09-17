@@ -35,10 +35,8 @@ namespace embree
   {
     static double dt = 0.0f;
 
-    std::auto_ptr<BVH4BuilderMorton::MortonBuilderState> BVH4BuilderMorton::g_state(NULL);
-    
     BVH4BuilderMorton::BVH4BuilderMorton (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-      : bvh(bvh), scheduler(&scene->lockstep_scheduler), scene(scene), mesh(mesh), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+      : bvh(bvh), state(NULL), scheduler(&scene->lockstep_scheduler), scene(scene), mesh(mesh), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
 	topLevelItemThreshold(0), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
     {
       needAllThreads = true;
@@ -136,14 +134,11 @@ namespace embree
          
       if (needAllThreads) 
       {
-        if (!g_state.get()) g_state.reset(new MortonBuilderState);
+        state.reset(new MortonBuilderState);
 	//size_t numActiveThreads = threadCount;
 	size_t numActiveThreads = min(threadCount,getNumberOfCores());
-	//TaskScheduler::enableThreads(numActiveThreads); // FIXME: enable
-        //scheduler->dispatchTask(threadIndex,threadCount,_build_parallel_morton,this,numActiveThreads,"build_parallel_morton");
-	//build_parallel_morton(threadIndex,threadCount,0,1);
 	build_parallel_morton(threadIndex,numActiveThreads,0,1);
-	//TaskScheduler::enableThreads(threadCount); // FIXME: enable
+        state.reset(NULL);
       } else {
         build_sequential_morton(threadIndex,threadCount);
       }
@@ -172,8 +167,8 @@ namespace embree
       if (mesh) 
       {
         /* store start group and offset */
-        g_state->startGroup[threadID] = mesh->id;
-        g_state->startGroupOffset[threadID] = startID;
+        state->startGroup[threadID] = mesh->id;
+        state->startGroupOffset[threadID] = startID;
       }
       else
       {
@@ -191,8 +186,8 @@ namespace embree
         }
         
         /* store start group and offset */
-        g_state->startGroup[threadID] = group;
-        g_state->startGroupOffset[threadID] = startID - skipped;
+        state->startGroup[threadID] = group;
+        state->startGroupOffset[threadID] = startID - skipped;
       }
     }
 
@@ -322,7 +317,7 @@ namespace embree
       
       /* store the morton codes temporarily in 'node' memory */
       MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)bvh->alloc.base();
-      computeMortonCodes(startID,endID,g_state->startGroup[threadID],g_state->startGroupOffset[threadID],dest);
+      computeMortonCodes(startID,endID,state->startGroup[threadID],state->startGroupOffset[threadID],dest);
     }
     
     void BVH4BuilderMorton::recreateMortonCodes(BuildRecord& current) const
@@ -378,7 +373,7 @@ namespace embree
       MortonID32Bit* __restrict__ mortonID[2];
       mortonID[0] = (MortonID32Bit*) morton; 
       mortonID[1] = (MortonID32Bit*) bvh->alloc.base();
-      MortonBuilderState::ThreadRadixCountTy* radixCount = g_state->radixCount;
+      MortonBuilderState::ThreadRadixCountTy* radixCount = state->radixCount;
       
       /* we need 3 iterations to process all 32 bits */
       for (size_t b=0; b<3; b++)
@@ -437,10 +432,10 @@ namespace embree
       __aligned(64) Allocator leafAlloc(&bvh->alloc);
       while (true)
       {
-        const unsigned int taskID = atomic_add(&g_state->taskCounter,1);
-        if (taskID >= g_state->buildRecords.size()) break;
-	recurse(g_state->buildRecords[taskID],nodeAlloc,leafAlloc,RECURSE,threadID);
-        g_state->buildRecords[taskID].parent->setBarrier();
+        const unsigned int taskID = atomic_add(&state->taskCounter,1);
+        if (taskID >= state->buildRecords.size()) break;
+	recurse(state->buildRecords[taskID],nodeAlloc,leafAlloc,RECURSE,threadID);
+        state->buildRecords[taskID].parent->setBarrier();
       }
       _mm_sfence(); // make written leaves globally visible
     }
@@ -789,7 +784,7 @@ namespace embree
     {
       /* stop toplevel recursion at some number of items */
       if (mode == CREATE_TOP_LEVEL && current.size() <= topLevelItemThreshold) {
-	g_state->buildRecords.push_back(current);
+	state->buildRecords.push_back(current);
         return empty;
       }
       
@@ -1097,7 +1092,7 @@ namespace embree
 #endif	    
 
       /* build and extract top-level tree */
-      g_state->buildRecords.clear();
+      state->buildRecords.clear();
       topLevelItemThreshold = (numPrimitives + threadCount-1)/(2*threadCount);
       
       BuildRecord br;
@@ -1113,11 +1108,11 @@ namespace embree
       _mm_sfence(); // make written leaves globally visible
 
       /* sort all subtasks by size */
-      std::sort(g_state->buildRecords.begin(),g_state->buildRecords.end(),BuildRecord::Greater());
+      std::sort(state->buildRecords.begin(),state->buildRecords.end(),BuildRecord::Greater());
 
       /* build sub-trees */
-      g_state->taskCounter = 0;
-      //g_state->workStack.reset();
+      state->taskCounter = 0;
+      //state->workStack.reset();
       scheduler->dispatchTask( task_recurseSubMortonTrees, this, threadIndex, threadCount );
       
       /* refit toplevel part of tree */

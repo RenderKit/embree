@@ -383,6 +383,8 @@ namespace embree
 	
 	/*! process each generated subtask in its own thread */
 	scheduler->dispatchTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH4Builder::build");
+
+        tasks.clear();
       }
 
       /* perform tree rotations of top part of the tree */

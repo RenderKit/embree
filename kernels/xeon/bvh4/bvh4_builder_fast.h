@@ -92,10 +92,8 @@ namespace embree
 	size_t numThreads;
 	WorkHeap<BuildRecord> heap;
         __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* threadStack;
-	ObjectPartition::ParallelBinner parallelBinner;
+        ObjectPartition::ParallelBinner parallelBinner;
       };
-
-      static std::auto_ptr<GlobalState> g_state;
 
     public:
 
@@ -155,6 +153,8 @@ namespace embree
     
     public:
       LockStepTaskScheduler* scheduler;
+      std::auto_ptr<GlobalState> state;
+
       BVH4* bvh;                               //!< Output BVH
       size_t listMode;
       size_t logBlockSize;
