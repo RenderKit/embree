@@ -83,6 +83,21 @@ namespace embree
     return (RTCSceneFlags) flag;
   }
 
+  const size_t numSceneGeomFlags = 32;
+
+  void getSceneGeomFlag(size_t i, RTCSceneFlags& sflags, RTCGeometryFlags& gflags) 
+  {
+    int sflag = 0, gflag = 0;
+    if (i & 4) {
+      sflag |= RTC_SCENE_DYNAMIC;
+      gflag = max(i&3,size_t(3));
+    }
+    if (i & 8) sflag |= RTC_SCENE_HIGH_QUALITY;
+    if (i & 16) sflag |= RTC_SCENE_ROBUST;
+    sflags = (RTCSceneFlags) sflag;
+    gflags = (RTCGeometryFlags) gflag;
+  }
+
   RTCRay makeRay(const Vec3fa& org, const Vec3fa& dir) 
   {
     RTCRay ray;
@@ -494,7 +509,7 @@ namespace embree
     return mesh;
   }
 
-  unsigned addHair (RTCScene scene, RTCGeometryFlags flag, const Vec3fa& pos, const float r, size_t numHairs = 1, float motion = 0.0f)
+  unsigned addHair (RTCScene scene, RTCGeometryFlags flag, const Vec3fa& pos, const float scale, const float r, size_t numHairs = 1, float motion = 0.0f)
   {
     size_t numTimeSteps = motion == 0.0f ? 1 : 2;
     unsigned geomID = rtcNewHairGeometry (scene, flag, numHairs, numHairs*4, numTimeSteps);
@@ -509,10 +524,10 @@ namespace embree
     for (size_t i=0; i<numHairs; i++) 
     {
       indices[i] = 4*i;
-      const Vec3fa p0 = pos + Vec3fa(i%7,i%13,i%31);
-      const Vec3fa p1 = p0 + Vec3fa(1,0,0);
-      const Vec3fa p2 = p0 + Vec3fa(0,1,1);
-      const Vec3fa p3 = p0 + Vec3fa(0,1,0);
+      const Vec3fa p0 = pos + scale*Vec3fa(i%7,i%13,i%31);
+      const Vec3fa p1 = p0 + scale*Vec3fa(1,0,0);
+      const Vec3fa p2 = p0 + scale*Vec3fa(0,1,1);
+      const Vec3fa p3 = p0 + scale*Vec3fa(0,1,0);
       
       if (vertices0) {
         vertices0[4*i+0] = Vec3fa(p0,r);
@@ -823,7 +838,7 @@ namespace embree
     AssertNoError();
     unsigned geom0 = addSphere(scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
     AssertNoError();
-    unsigned geom1 = addHair(scene,RTC_GEOMETRY_STATIC,Vec3fa(0,0,0),0.5f,100);
+    unsigned geom1 = addHair(scene,RTC_GEOMETRY_STATIC,Vec3fa(0,0,0),1.0f,0.5f,100);
     AssertNoError();
     rtcCommit (scene);
     AssertNoError();
@@ -926,10 +941,10 @@ namespace embree
     AssertNoError();
     unsigned geom0 = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,-1),1.0f,50);
     //unsigned geom1 = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,50);
-    unsigned geom1 = addHair  (scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,1);
+    unsigned geom1 = addHair  (scene,RTC_GEOMETRY_STATIC,Vec3fa(-1,0,+1),1.0f,1.0f,1);
     unsigned geom2 = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,-1),1.0f,50);
     //unsigned geom3 = addSphere(scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,50);
-    unsigned geom3 = addHair  (scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,1);
+    unsigned geom3 = addHair  (scene,RTC_GEOMETRY_STATIC,Vec3fa(+1,0,+1),1.0f,1.0f,1);
     AssertNoError();
 
     for (size_t i=0; i<16; i++) 
@@ -982,10 +997,10 @@ namespace embree
     Vec3fa pos3 = Vec3fa(+10,0,+10);
     unsigned geom0 = addSphere(scene,flags,pos0,1.0f,numPhi);
     //unsigned geom1 = addSphere(scene,flags,pos1,1.0f,numPhi);
-    unsigned geom1 = addHair  (scene,flags,pos1,1.0f,1);
+    unsigned geom1 = addHair  (scene,flags,pos1,1.0f,1.0f,1);
     unsigned geom2 = addSphere(scene,flags,pos2,1.0f,numPhi);
     //unsigned geom3 = addSphere(scene,flags,pos3,1.0f,numPhi);
-    unsigned geom3 = addHair  (scene,flags,pos3,1.0f,1);
+    unsigned geom3 = addHair  (scene,flags,pos3,1.0f,1.0f,1);
     AssertNoError();
     
     for (size_t i=0; i<16; i++) 
@@ -1077,10 +1092,10 @@ namespace embree
     RTCScene scene = rtcNewScene(sflags,aflags);
     unsigned geom0 = addSphere(scene,gflags,pos0,1.0f,50);
     //unsigned geom1 = addSphere(scene,gflags,pos1,1.0f,50);
-    unsigned geom1 = addHair  (scene,gflags,pos1,1.0f,1);
+    unsigned geom1 = addHair  (scene,gflags,pos1,1.0f,1.0f,1);
     unsigned geom2 = addSphere(scene,gflags,pos2,1.0f,50);
     //unsigned geom3 = addSphere(scene,gflags,pos3,1.0f,50);
-    unsigned geom3 = addHair  (scene,gflags,pos3,1.0f,1);
+    unsigned geom3 = addHair  (scene,gflags,pos3,1.0f,1.0f,1);
     rtcSetMask(scene,geom0,1);
     rtcSetMask(scene,geom1,2);
     rtcSetMask(scene,geom2,4);
@@ -1321,6 +1336,34 @@ namespace embree
     numFailedTests += !passed;
   }
 
+  bool rtcore_build(RTCSceneFlags sflags, RTCGeometryFlags gflags)
+  {
+    RTCScene scene = rtcNewScene(sflags,aflags);
+    addSphere(scene,gflags,zero,1E-24f,50);
+    //addHair(scene,gflags,zero,1E-24f,1E-26f,100,1E-26f); // FIXME: enable these
+    //addSphere(scene,gflags,zero,1E-24f,50);
+    //addHair(scene,gflags,zero,1E-24f,1E-26f,100,1E-26f);
+    rtcCommit (scene);
+    rtcDeleteScene (scene);
+    return true;
+  }
+  
+  void rtcore_build()
+  {
+    printf("%30s ... ","build");
+    bool passed = true;
+    for (int i=0; i<numSceneGeomFlags; i++) 
+    {
+      RTCSceneFlags sflags; RTCGeometryFlags gflags;
+      getSceneGeomFlag(i,sflags,gflags);
+      bool ok = rtcore_build(sflags,gflags);
+      if (ok) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
+    }
+    printf(" %s\n",true ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");
+    fflush(stdout);
+    numFailedTests += !passed;
+  }
+
   void intersectionFilter1(void* ptr, RTCRay& ray) 
   {
     if ((size_t)ptr != 123) 
@@ -1539,8 +1582,8 @@ namespace embree
     switch (type) {
     case 0: addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.0f); break;
     case 1: addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.1f); break;
-    case 2: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1,0.0f); break;
-      //case 3: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1,0.1f); break; // FIXME: motion blur for hair not yet implemented
+    case 2: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.0f); break;
+      //case 3: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.1f); break; // FIXME: motion blur for hair not yet implemented
     }
     rtcCommit (scene);
 
@@ -1843,7 +1886,7 @@ namespace embree
     size_t count = 1000/N;
     RTCScene scene = rtcNewScene(sflags,aflags);
     addSphere(scene,gflags,zero,2.0f,100);
-    addHair  (scene,gflags,zero,1.0f,100);
+    addHair  (scene,gflags,zero,1.0f,1.0f,100);
     rtcCommit (scene);
     size_t numFailures = 0;
     //size_t c0 = __rdtsc();
@@ -1903,7 +1946,7 @@ namespace embree
     size_t count = 1000/N;
     RTCScene scene = rtcNewScene(sflags,aflags);
     addSphere(scene,gflags,zero,2.0f,100);
-    addHair  (scene,gflags,zero,1.0f,100);
+    addHair  (scene,gflags,zero,1.0f,1.0f,100);
     rtcCommit (scene);
     size_t numFailures = 0;
     //size_t c0 = __rdtsc();
@@ -2106,7 +2149,7 @@ namespace embree
         if (geom[index] == -1) {
           switch (rand()%3) {
           case 0: geom[index] = addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
-          case 1: geom[index] = addHair  (scene,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
+          case 1: geom[index] = addHair  (scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10); break;
           case 2: 
 	    spheres[index] = Sphere(pos,2.0f);
 	    geom[index] = addUserGeometryEmpty(scene,&spheres[index]); break;
@@ -2202,8 +2245,8 @@ namespace embree
         switch (rand()%5) {
         case 0: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
         case 1: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-        case 2: addHair  (scene,RTC_GEOMETRY_STATIC,pos,2.0f,numTriangles,0.0f); break;
-	  //case 3: addHair  (scene,RTC_GEOMETRY_STATIC,pos,2.0f,numTriangles,1.0f); break; // FIXME: motion blur for hair not yet implemented
+        case 2: addHair  (scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
+	  //case 3: addHair  (scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; // FIXME: motion blur for hair not yet implemented
         case 4: {
 	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
 	  addUserGeometryEmpty(scene,sphere); break;
@@ -2366,6 +2409,7 @@ namespace embree
     POSITIVE("update_dynamic",            rtcore_update(RTC_GEOMETRY_DYNAMIC));
     POSITIVE("overlapping_triangles",     rtcore_overlapping_triangles(100000));
     POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
+    //rtcore_build();
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
 
 #if defined(__USE_RAY_MASK__)
