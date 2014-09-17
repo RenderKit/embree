@@ -289,14 +289,6 @@ namespace embree
     delete geometry;
   }
 
-  void Scene::task_build(size_t threadIndex, size_t threadCount, TaskScheduler::Event* event)  // FIXME: remove
-  {
-    FATAL("OBSOLETE");
-    size_t numThreads = TaskScheduler::enableThreads(-1);
-    accels.build(threadIndex,threadCount);
-  }
-
-
   void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);

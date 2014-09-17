@@ -90,7 +90,7 @@ namespace embree
     int sflag = 0, gflag = 0;
     if (i & 4) {
       sflag |= RTC_SCENE_DYNAMIC;
-      gflag = max(i&3,size_t(3));
+      gflag = min(i&3,size_t(3));
     }
     if (i & 8) sflag |= RTC_SCENE_HIGH_QUALITY;
     if (i & 16) sflag |= RTC_SCENE_ROBUST;
@@ -1340,9 +1340,9 @@ namespace embree
   {
     RTCScene scene = rtcNewScene(sflags,aflags);
     addSphere(scene,gflags,zero,1E-24f,50);
-    //addHair(scene,gflags,zero,1E-24f,1E-26f,100,1E-26f); // FIXME: enable these
-    //addSphere(scene,gflags,zero,1E-24f,50);
-    //addHair(scene,gflags,zero,1E-24f,1E-26f,100,1E-26f);
+    addHair(scene,gflags,zero,1E-24f,1E-26f,100,1E-26f);
+    addSphere(scene,gflags,zero,1E-24f,50);
+    addHair(scene,gflags,zero,1E-24f,1E-26f,100,1E-26f);
     rtcCommit (scene);
     rtcDeleteScene (scene);
     return true;
@@ -2409,7 +2409,7 @@ namespace embree
     POSITIVE("update_dynamic",            rtcore_update(RTC_GEOMETRY_DYNAMIC));
     POSITIVE("overlapping_triangles",     rtcore_overlapping_triangles(100000));
     POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
-    rtcore_build();
+    //rtcore_build();
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
 
 #if defined(__USE_RAY_MASK__)

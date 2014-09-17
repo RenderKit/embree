@@ -62,7 +62,6 @@ namespace embree
     void build (size_t threadIndex, size_t threadCount);
 
     /*! build task */
-    TASK_COMPLETE_FUNCTION(Scene,task_build);
     TASK_RUN_FUNCTION(Scene,task_build_parallel);
     TaskScheduler::Task task;
 
