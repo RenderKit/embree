@@ -44,7 +44,7 @@ namespace embree
     void force(const std::string& next) {
       std::string token = getString();
       if (token != next)
-        throw std::runtime_error("token \""+next+"\" expected but token \""+token+"\" found");
+        THROW_RUNTIME_ERROR("token \""+next+"\" expected but token \""+token+"\" found");
     }
 
     std::string getString() {

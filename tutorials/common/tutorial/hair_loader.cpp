@@ -27,7 +27,7 @@ namespace embree
   {  
     /* open hair file */
     FILE* f = fopen(fileName.c_str(),"r");
-    if (!f) throw std::runtime_error("could not open " + fileName.str());
+    if (!f) THROW_RUNTIME_ERROR("could not open " + fileName.str());
 
     char line[10000];
     fgets(line,10000,f);
@@ -74,7 +74,7 @@ namespace embree
           hairset->hairs.push_back(OBJScene::Hair(vertex_start_id + i,numCurves));
 	
         if (id != points-1) 
-          throw std::runtime_error("hair parsing error");
+          THROW_RUNTIME_ERROR("hair parsing error");
 
         numCurves++;
       }
@@ -86,10 +86,10 @@ namespace embree
   int loadHairBin(const FileName& fileName, OBJScene::HairSet* hairset, Vec3fa& offset)
   {  
     FILE* fin = fopen(fileName.c_str(),"rb");
-    if (!fin) throw std::runtime_error("could not open " + fileName.str());
+    if (!fin) THROW_RUNTIME_ERROR("could not open " + fileName.str());
     int magick; fread(&magick,sizeof(int),1,fin);
     if (magick != hair_bin_magick)
-      throw std::runtime_error("invalid binary hair file " + fileName.str());
+      THROW_RUNTIME_ERROR("invalid binary hair file " + fileName.str());
     int numHairs; fread(&numHairs,sizeof(int),1,fin);
     int numPoints; fread(&numPoints,sizeof(int),1,fin);
     int numSegments; fread(&numSegments,sizeof(int),1,fin);
@@ -231,7 +231,7 @@ namespace embree
 
 #if CONVERT_TO_BINARY
     FILE* fout = fopen(fileName.setExt(".bin").c_str(),"wb");
-    if (!fout) throw std::runtime_error("could not open " + fileName.str());
+    if (!fout) THROW_RUNTIME_ERROR("could not open " + fileName.str());
     fwrite(&hair_bin_magick,sizeof(int),1,fout);
     fwrite(&numHairs,sizeof(int),1,fout);
     fwrite(&numPoints,sizeof(int),1,fout);

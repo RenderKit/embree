@@ -78,7 +78,7 @@ namespace embree
     {
 #if defined(_DEBUG)
       if (depth >= BVH8::maxBuildDepthLeaf) 
-	throw std::runtime_error("ERROR: Loosing primitives during build.");
+	THROW_RUNTIME_ERROR("ERROR: Loosing primitives during build.");
 #endif
       
       /* create leaf for few primitives */

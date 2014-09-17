@@ -42,7 +42,7 @@ namespace embree
 #endif
     if (ext == "pfm" ) return loadPFM(fileName);
     if (ext == "ppm" ) return loadPPM(fileName);
-    throw std::runtime_error("image format " + ext + " not supported");
+    THROW_RUNTIME_ERROR("image format " + ext + " not supported");
   }
   catch (const std::exception& e) {
     std::cout << "cannot read file " << fileName << ": " << e.what() << std::endl;
@@ -83,7 +83,7 @@ namespace embree
     if (ext == "pfm" ) { storePFM(img, fileName);  return; }
     if (ext == "ppm" ) { storePPM(img, fileName);  return; }
     if (ext == "tga" ) { storeTga(img, fileName);  return; }
-    throw std::runtime_error("image format " + ext + " not supported");
+    THROW_RUNTIME_ERROR("image format " + ext + " not supported");
   }
   catch (const std::exception& e) {
     std::cout << "cannot write file " << fileName << ": " << e.what() << std::endl;

@@ -289,7 +289,7 @@ namespace embree
     void BVH4BuilderFast::createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadIndex, size_t threadCount)
     {
       if (current.depth > BVH4::maxBuildDepthLeaf) 
-        throw std::runtime_error("depth limit reached");
+        THROW_RUNTIME_ERROR("depth limit reached");
       
       /* create leaf for few primitives */
       if (current.size() <= minLeafSize) {

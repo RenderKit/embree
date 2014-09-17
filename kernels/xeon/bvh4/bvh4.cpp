@@ -570,7 +570,7 @@ namespace embree
     else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle1Builder(accel,scene,LeafMode);
     else if (g_tri_builder == "morton"      ) builder = BVH4Triangle1BuilderMorton(accel,scene,LeafMode);
     else if (g_tri_builder == "fast"        ) builder = BVH4Triangle1BuilderFast(accel,scene,LeafMode);
-    else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4<Triangle1>");
+    else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4<Triangle1>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -583,7 +583,7 @@ namespace embree
     if      (g_tri_traverser == "default") intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     else if (g_tri_traverser == "chunk"  ) intersectors = BVH4Triangle4IntersectorsChunk(accel);
     else if (g_tri_traverser == "hybrid" ) intersectors = BVH4Triangle4IntersectorsHybrid(accel);
-    else throw std::runtime_error("unknown traverser "+g_tri_traverser+" for BVH4<Triangle4>");
+    else THROW_RUNTIME_ERROR("unknown traverser "+g_tri_traverser+" for BVH4<Triangle4>");
    
     Builder* builder = NULL;
     if      (g_tri_builder == "default"     ) builder = BVH4Triangle4Builder(accel,scene,LeafMode);
@@ -591,7 +591,7 @@ namespace embree
     else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle4Builder(accel,scene,LeafMode);
     else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4BuilderMorton(accel,scene,LeafMode);
     else if (g_tri_builder == "fast"        ) builder = BVH4Triangle4BuilderFast(accel,scene,LeafMode);
-    else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4<Triangle4>");
+    else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4<Triangle4>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -606,7 +606,7 @@ namespace embree
     if      (g_tri_traverser == "default") intersectors = BVH4Triangle8IntersectorsHybrid(accel);
     else if (g_tri_traverser == "chunk"  ) intersectors = BVH4Triangle8IntersectorsChunk(accel);
     else if (g_tri_traverser == "hybrid" ) intersectors = BVH4Triangle8IntersectorsHybrid(accel);
-    else throw std::runtime_error("unknown traverser "+g_tri_traverser+" for BVH4<Triangle8>");
+    else THROW_RUNTIME_ERROR("unknown traverser "+g_tri_traverser+" for BVH4<Triangle8>");
    
     Builder* builder = NULL;
     if      (g_tri_builder == "default"     ) builder = BVH4Triangle8Builder(accel,scene,LeafMode);
@@ -614,7 +614,7 @@ namespace embree
     else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle8Builder(accel,scene,LeafMode);
     else if (g_tri_builder == "morton"      ) builder = BVH4Triangle8BuilderMorton(accel,scene,LeafMode);
     else if (g_tri_builder == "fast"        ) builder = BVH4Triangle8BuilderFast(accel,scene,LeafMode);
-    else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4<Triangle8>");
+    else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4<Triangle8>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -631,7 +631,7 @@ namespace embree
     else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle1vBuilder(accel,scene,LeafMode);
     else if (g_tri_builder == "morton"      ) builder = BVH4Triangle1vBuilderMorton(accel,scene,LeafMode);
     else if (g_tri_builder == "fast"        ) builder = BVH4Triangle1vBuilderFast(accel,scene,LeafMode);
-    else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4<Triangle1v>");
+    else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4<Triangle1v>");
         
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -652,7 +652,7 @@ namespace embree
     if      (g_tri_traverser == "default") intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
     else if (g_tri_traverser == "chunk"  ) intersectors = BVH4Triangle4vIntersectorsChunk(accel);
     else if (g_tri_traverser == "hybrid" ) intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
-    else throw std::runtime_error("unknown traverser "+g_tri_traverser+" for BVH4<Triangle4>");
+    else THROW_RUNTIME_ERROR("unknown traverser "+g_tri_traverser+" for BVH4<Triangle4>");
 
     Builder* builder = NULL;
     if      (g_tri_builder == "default"     ) builder = BVH4Triangle4vBuilder(accel,scene,LeafMode);
@@ -660,7 +660,7 @@ namespace embree
     else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle4vBuilder(accel,scene,LeafMode);
     else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4vBuilderMorton(accel,scene,LeafMode);
     else if (g_tri_builder == "fast"        ) builder = BVH4Triangle4vBuilderFast(accel,scene,LeafMode);
-    else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4<Triangle4v>");
+    else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4<Triangle4v>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -676,7 +676,7 @@ namespace embree
     else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle4iBuilder(accel,scene,LeafMode);
     else if (g_tri_builder == "fast"        ) builder = BVH4Triangle4iBuilderFast(accel,scene,LeafMode);
     else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4iBuilderMorton(accel,scene,LeafMode);
-    else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4<Triangle4i>");
+    else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4<Triangle4i>");
 
     scene->needVertices = true;
     return new AccelInstance(accel,builder,intersectors);
@@ -684,68 +684,68 @@ namespace embree
 
   void createTriangleMeshTriangle1Morton(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
   {
-    if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
+    if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle1::type,mesh->parent,LeafMode);
     builder = BVH4Triangle1MeshBuilderMorton(accel,mesh,LeafMode);
   } 
 
   void createTriangleMeshTriangle1(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
   {
-    if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
+    if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle1::type,mesh->parent,LeafMode);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1MeshBuilderFast(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1MeshRefitFast(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle1MeshBuilderMorton(accel,mesh,LeafMode); break;
-    default: throw std::runtime_error("internal error"); 
+    default: THROW_RUNTIME_ERROR("internal error"); 
     }
   } 
 
   void createTriangleMeshTriangle4(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
   {
-    if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
+    if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent,LeafMode);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4MeshBuilderFast(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4MeshRefitFast(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4MeshBuilderMorton(accel,mesh,LeafMode); break;
-    default: throw std::runtime_error("internal error"); 
+    default: THROW_RUNTIME_ERROR("internal error"); 
     }
   } 
 
   void createTriangleMeshTriangle1v(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
   {
-    if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
+    if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle1v::type,mesh->parent,LeafMode);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1vMeshBuilderFast(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1vMeshRefitFast  (accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle1vMeshBuilderMorton(accel,mesh,LeafMode); break;
-    default: throw std::runtime_error("internal error"); 
+    default: THROW_RUNTIME_ERROR("internal error"); 
     }
   } 
 
   void createTriangleMeshTriangle4v(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
   {
-    if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
+    if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle4v::type,mesh->parent,LeafMode);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4vMeshBuilderFast(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4vMeshRefitFast(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4vMeshBuilderMorton(accel,mesh,LeafMode); break;
-    default: throw std::runtime_error("internal error"); 
+    default: THROW_RUNTIME_ERROR("internal error"); 
     }
   } 
 
   void createTriangleMeshTriangle4i(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
   {
-    if (mesh->numTimeSteps != 1) throw std::runtime_error("internal error");
+    if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle4i::type,mesh->parent,LeafMode);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4iMeshBuilderFast(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4iMeshRefitFast(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4iMeshBuilderMorton(accel,mesh,LeafMode); break;
-    default: throw std::runtime_error("internal error"); 
+    default: THROW_RUNTIME_ERROR("internal error"); 
     }
   } 
 

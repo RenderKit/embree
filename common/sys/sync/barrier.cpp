@@ -56,7 +56,7 @@ namespace embree
       if (cnt0 > 1) 
       {
         if (WaitForSingleObject(events[i0], INFINITE) != WAIT_OBJECT_0)
-          throw std::runtime_error("WaitForSingleObjects failed");
+          THROW_RUNTIME_ERROR("WaitForSingleObjects failed");
       }
       
       /* the last thread starts all threads waiting at the barrier */
@@ -65,7 +65,7 @@ namespace embree
         i = 1-i;
         enterCount = barrierSize;
         if (SetEvent(events[i0]) == 0)
-          throw std::runtime_error("SetEvent failed");
+          THROW_RUNTIME_ERROR("SetEvent failed");
       }
 
       /* every thread leaving the barrier decrements this count */
@@ -76,7 +76,7 @@ namespace embree
       {
         exitCount = barrierSize;
         if (ResetEvent(events[i0]) == 0)
-          throw std::runtime_error("ResetEvent failed");
+          THROW_RUNTIME_ERROR("ResetEvent failed");
       }
     }
 

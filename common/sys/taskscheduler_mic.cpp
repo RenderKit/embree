@@ -91,7 +91,7 @@ namespace embree
 	__memory_barrier();
 	unsigned int liveIndex = (head_task_list++)&(NUM_TASKS-1);
 	__memory_barrier();
-	if (tasks[liveIndex]) throw std::runtime_error("task list full");
+	if (tasks[liveIndex]) THROW_RUNTIME_ERROR("task list full");
 	__memory_barrier();
 	assert(tasks[liveIndex] == NULL); 
 	tasks[liveIndex] = task;

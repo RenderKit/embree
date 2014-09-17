@@ -56,7 +56,7 @@ namespace embree
   /*! Parse separator. */
   static inline const char* parseSep(const char*& token) {
     size_t sep = strspn(token, " \t");
-    if (!sep) throw std::runtime_error("separator expected");
+    if (!sep) THROW_RUNTIME_ERROR("separator expected");
     return token+=sep;
   }
 
@@ -136,7 +136,7 @@ namespace embree
     std::ifstream cin;
     cin.open(fileName.c_str());
     if (!cin.is_open()) {
-      throw std::runtime_error("cannot open " + fileName.str());
+      THROW_RUNTIME_ERROR("cannot open " + fileName.str());
       return;
     }
 
@@ -255,7 +255,7 @@ namespace embree
         continue;
       }
 
-      if (!cur) throw std::runtime_error("invalid material file: newmtl expected first");
+      if (!cur) THROW_RUNTIME_ERROR("invalid material file: newmtl expected first");
 
       if (!strncmp(token, "illum", 5)) { parseSep(token += 5);  continue; }
 

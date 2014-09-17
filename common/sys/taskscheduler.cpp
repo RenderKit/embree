@@ -43,7 +43,7 @@ namespace embree
   void TaskScheduler::create(size_t numThreads)
   {
     if (instance)
-      throw std::runtime_error("Embree threads already running.");
+      THROW_RUNTIME_ERROR("Embree threads already running.");
 
     /* enable fast pthreads tasking system */
 #if defined(__MIC__)
@@ -58,13 +58,13 @@ namespace embree
 
   size_t TaskScheduler::getNumThreads() 
   {
-    if (!instance) throw std::runtime_error("Embree threads not running.");
+    if (!instance) THROW_RUNTIME_ERROR("Embree threads not running.");
     return instance->numEnabledThreads;
   }
 
   size_t TaskScheduler::enableThreads(size_t N)
   {
-    if (!instance) throw std::runtime_error("Embree threads not running.");
+    if (!instance) THROW_RUNTIME_ERROR("Embree threads not running.");
     // if (!instance->defaultNumThreads) return; // FIXME: enable
     N = min(N,instance->numThreads);
     //TaskScheduler::init(N);
@@ -73,7 +73,7 @@ namespace embree
 
   void TaskScheduler::addTask(ssize_t threadIndex, QUEUE queue, Task* task)
   {
-    if (!instance) throw std::runtime_error("Embree threads not running.");
+    if (!instance) THROW_RUNTIME_ERROR("Embree threads not running.");
     instance->add(threadIndex,queue,task);
   }
 

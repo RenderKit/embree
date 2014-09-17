@@ -198,7 +198,7 @@ namespace embree
     else if (strlwr(filename.ext()) == "xml")
       loadXML(filename,one,g_obj_scene);
     else
-      throw std::runtime_error("invalid scene type: "+strlwr(filename.ext()));
+      THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());

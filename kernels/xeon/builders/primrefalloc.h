@@ -104,7 +104,7 @@ namespace embree
     void* malloc_global(size_t bytes) 
     {
       ssize_t i = atomic_add(&cur,bytes);
-      if (unlikely(i > end)) throw std::runtime_error("build out of memory");
+      if (unlikely(i > end)) THROW_RUNTIME_ERROR("build out of memory");
       void* p = &ptr[i];
       if (i+(ssize_t)bytes > bytesAllocated)
         os_commit(p,bytes);

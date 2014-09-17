@@ -957,7 +957,7 @@ namespace embree
   {
 #if defined(DEBUG)
     if (current.depth > BVH4Hair::maxBuildDepthLeaf) 
-      throw std::runtime_error("ERROR: depth limit reached");
+      THROW_RUNTIME_ERROR("ERROR: depth limit reached");
 #endif
     
     /* create leaf */

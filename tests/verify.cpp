@@ -342,7 +342,7 @@ namespace embree
 
       /* get number of regression test iterations to perform */
       else if (tag == "-regressions") {
-        if (i+1 >= argc) throw std::runtime_error("command line parsing error");
+        if (i+1 >= argc) THROW_RUNTIME_ERROR("command line parsing error");
         regressionN = atoi(argv[++i]);
       }
 

@@ -177,7 +177,7 @@ namespace embree
         cur = 0;
         end = allocBlockSize;
         if (bytes > allocBlockSize) 
-          throw std::runtime_error("allocated block is too large");
+          THROW_RUNTIME_ERROR("allocated block is too large");
         cur += bytes;
         return &ptr[cur - bytes];
       }
@@ -233,7 +233,7 @@ namespace embree
         cur = 0;
         end = allocBlockSize;
         if (bytes > allocBlockSize) 
-          throw std::runtime_error("allocated block is too large");
+          THROW_RUNTIME_ERROR("allocated block is too large");
         cur += bytes;
         return &ptr[cur - bytes];
       }
@@ -331,7 +331,7 @@ namespace embree
       void* malloc(size_t bytes) 
       {
 	ssize_t i = atomic_add(&cur,bytes);
-	if (unlikely(i > end)) throw std::runtime_error("build out of memory");
+	if (unlikely(i > end)) THROW_RUNTIME_ERROR("build out of memory");
 	void* p = &ptr[i];
 	if (i+(ssize_t)bytes > bytesAllocated)
 	  os_commit(p,bytes);

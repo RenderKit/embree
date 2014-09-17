@@ -45,7 +45,7 @@
 #include "../version.h"
 
 #define ERROR(x) \
-  throw std::runtime_error(x)
+  THROW_RUNTIME_ERROR(x)
 
 namespace embree
 {

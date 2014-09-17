@@ -26,7 +26,7 @@ namespace embree
   void storeTga(const Ref<Image>& img, const FileName& fileName)
   {
     FILE* file = fopen(fileName.c_str(), "wb");
-    if (!file) throw std::runtime_error("error opening file " + fileName.str());
+    if (!file) THROW_RUNTIME_ERROR("error opening file " + fileName.str());
 
     fwrite_uchar(0x00, file);
     fwrite_uchar(0x00, file);

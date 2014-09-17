@@ -38,7 +38,7 @@ namespace embree
   void parseParm(Ref<Stream<Token> >& cin, std::map<std::string,std::string>& parms)
   {
     std::string name = cin->get().Identifier();
-    if (cin->get() != Token::Sym("=")) throw std::runtime_error(cin->unget().Location().str()+": symbol \"=\" expected");
+    if (cin->get() != Token::Sym("=")) THROW_RUNTIME_ERROR(cin->unget().Location().str()+": symbol \"=\" expected");
     parms[name] = cin->get().String();
   }
 
@@ -46,7 +46,7 @@ namespace embree
   Ref<XML> parseHeader(Ref<Stream<Token> >& cin)
   {
     Ref<XML> xml = new XML;
-    if (cin->get() != Token::Sym("<?")) throw std::runtime_error(cin->unget().Location().str()+": wrong XML header");
+    if (cin->get() != Token::Sym("<?")) THROW_RUNTIME_ERROR(cin->unget().Location().str()+": wrong XML header");
     xml->name = cin->get().Identifier();
     parseComments(cin);
     while (cin->peek() != Token::Sym("?>")) {
@@ -64,7 +64,7 @@ namespace embree
     xml->loc = cin->peek().Location();
 
     /* parse tag opening */
-    if (cin->get() != Token::Sym("<")) throw std::runtime_error(cin->unget().Location().str()+": tag expected");
+    if (cin->get() != Token::Sym("<")) THROW_RUNTIME_ERROR(cin->unget().Location().str()+": tag expected");
 
     xml->name = cin->get().Identifier();
     parseComments(cin);
@@ -94,9 +94,9 @@ namespace embree
     }
 
     /* parse tag closing */
-    if (cin->get() != Token::Sym("</")    ) throw std::runtime_error(cin->unget().Location().str()+": symbol \"</\" expected");
-    if (cin->get() != Token::Id(xml->name)) throw std::runtime_error(cin->unget().Location().str()+": closing "+xml->name+" expected");
-    if (cin->get() != Token::Sym(">")     ) throw std::runtime_error(cin->unget().Location().str()+": symbol \">\" expected");
+    if (cin->get() != Token::Sym("</")    ) THROW_RUNTIME_ERROR(cin->unget().Location().str()+": symbol \"</\" expected");
+    if (cin->get() != Token::Id(xml->name)) THROW_RUNTIME_ERROR(cin->unget().Location().str()+": closing "+xml->name+" expected");
+    if (cin->get() != Token::Sym(">")     ) THROW_RUNTIME_ERROR(cin->unget().Location().str()+": symbol \">\" expected");
 
     return xml;
   }
@@ -123,7 +123,7 @@ namespace embree
     parseComments(cin);
 
     if (!hasTail)
-      if (cin->peek() != Token::Eof()) throw std::runtime_error(cin->peek().Location().str()+": end of file expected");
+      if (cin->peek() != Token::Eof()) THROW_RUNTIME_ERROR(cin->peek().Location().str()+": end of file expected");
 
     return xml;
   }
@@ -195,7 +195,7 @@ namespace embree
   void emitXML(const FileName& fileName, const Ref<XML>& xml)
   {
     std::ofstream cout(fileName.c_str());
-    if (!cout.is_open()) throw std::runtime_error("cannot open file " + fileName.str() + " for writing");
+    if (!cout.is_open()) THROW_RUNTIME_ERROR("cannot open file " + fileName.str() + " for writing");
     emitXML(cout,xml);
     cout.close();
   }

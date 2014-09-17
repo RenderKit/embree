@@ -94,10 +94,10 @@ namespace embree
 	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(this));
 	    }
 
-	    else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH4i<Triangle1>");
+	    else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4i<Triangle1>");
 	  }
       }
-    else throw std::runtime_error("unknown accel "+g_tri_accel);
+    else THROW_RUNTIME_ERROR("unknown accel "+g_tri_accel);
 
 
 #else
@@ -164,7 +164,7 @@ namespace embree
 #if defined (__TARGET_AVX__)
     else if (g_tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
 #endif
-    else throw std::runtime_error("unknown triangle acceleration structure "+g_tri_accel);
+    else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+g_tri_accel);
   }
 
   void Scene::createHairAccel()
@@ -195,7 +195,7 @@ namespace embree
     else if (g_hair_accel == "bvh4.bezier1i"    ) accels.add(BVH4::BVH4Bezier1i(this));
     else if (g_hair_accel == "bvh4obb.bezier1"  ) accels.add(BVH4::BVH4OBBBezier1(this,false));
     else if (g_hair_accel == "bvh4obb.bezier1i" ) accels.add(BVH4::BVH4OBBBezier1i(this,false));
-    else throw std::runtime_error("unknown hair acceleration structure "+g_hair_accel);
+    else THROW_RUNTIME_ERROR("unknown hair acceleration structure "+g_hair_accel);
   }
 
 #endif

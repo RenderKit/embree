@@ -122,7 +122,7 @@ namespace embree
         size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
       
         if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
-          throw std::runtime_error("encoding error in morton builder");
+          THROW_RUNTIME_ERROR("encoding error in morton builder");
       }
       
       /* preallocate arrays */
@@ -701,7 +701,7 @@ namespace embree
     {
 #if defined(DEBUG)
       if (current.depth > BVH4::maxBuildDepthLeaf) 
-        throw std::runtime_error("ERROR: depth limit reached");
+        THROW_RUNTIME_ERROR("ERROR: depth limit reached");
 #endif
       
       /* create leaf for few primitives */

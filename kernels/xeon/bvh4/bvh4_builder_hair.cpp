@@ -148,7 +148,7 @@ namespace embree
     {
 #if defined(_DEBUG)
       if (depth >= BVH4::maxBuildDepthLeaf) 
-	throw std::runtime_error("ERROR: Loosing primitives during build.");
+	THROW_RUNTIME_ERROR("ERROR: Loosing primitives during build.");
 #endif
       
       /* create leaf for few primitives */
@@ -230,7 +230,7 @@ namespace embree
       else if (bestSAH == alignedSpatialSAH ) return Split(alignedSpatialSplit);
       else if (bestSAH == unalignedObjectSAH) return Split(unalignedObjectSplit);
       else if (bestSAH == strandSAH         ) return Split(strandSplit);
-      else throw std::runtime_error("bvh4hair_builder: internal error");
+      else THROW_RUNTIME_ERROR("bvh4hair_builder: internal error");
     }
     
     template<bool Parallel>

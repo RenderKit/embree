@@ -93,7 +93,7 @@ namespace embree
         if (n->child(i) == BVH8::emptyNode) {
           for (; i<BVH8::N; i++) {
             if (n->child(i) != BVH8::emptyNode)
-	      throw std::runtime_error("invalid node");
+	      THROW_RUNTIME_ERROR("invalid node");
           }
           break;
         }

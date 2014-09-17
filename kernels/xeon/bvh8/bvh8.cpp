@@ -115,7 +115,7 @@ namespace embree
     if      (g_tri_builder == "default"     ) builder = BVH8Triangle8Builder(accel,scene,0);
     else if (g_tri_builder == "spatialsplit") builder = BVH8Triangle8Builder(accel,scene,1);
     else if (g_tri_builder == "objectsplit" ) builder = BVH8Triangle8Builder(accel,scene,0);
-    else throw std::runtime_error("unknown builder "+g_tri_builder+" for BVH8<Triangle8>");
+    else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH8<Triangle8>");
     
     return new AccelInstance(accel,builder,intersectors);
   }

@@ -140,7 +140,7 @@ namespace embree
 	intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16TestMoellerNoFilter;
 
       }
-    else throw std::runtime_error("unknown traverser "+g_tri_traverser+" for BVH4i<Triangle1>");      
+    else THROW_RUNTIME_ERROR("unknown traverser "+g_tri_traverser+" for BVH4i<Triangle1>");      
     return intersectors;
   }
 
@@ -170,7 +170,7 @@ namespace embree
 	intersectors.intersector16_nofilter = BVH4iTriangle1mcIntersector16SingleMoellerNoFilter;
 
       }
-    else throw std::runtime_error("unknown traverser "+g_tri_traverser+" for BVH4i<Triangle1>");      
+    else THROW_RUNTIME_ERROR("unknown traverser "+g_tri_traverser+" for BVH4i<Triangle1>");      
     return intersectors;
   }
 

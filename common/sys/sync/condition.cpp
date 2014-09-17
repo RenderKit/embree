@@ -68,7 +68,7 @@ namespace embree
 
       /* all threads except the last one are wait in the barrier */
       if (WaitForSingleObject(event, INFINITE) != WAIT_OBJECT_0)
-        throw std::runtime_error("WaitForSingleObject failed");
+        THROW_RUNTIME_ERROR("WaitForSingleObject failed");
 
       /* atomically decrement thread count */
       mutex_in.lock();
@@ -77,7 +77,7 @@ namespace embree
       /* the last thread that left the barrier resets the event again */
       if (cnt1 == 1) {
         if (ResetEvent(event) == 0)
-          throw std::runtime_error("ResetEvent failed");
+          THROW_RUNTIME_ERROR("ResetEvent failed");
       }
     }
 
@@ -89,7 +89,7 @@ namespace embree
       /* if threads are waiting, let them continue */
       if (hasWaiters) 
         if (SetEvent(event) == 0)
-          throw std::runtime_error("SetEvent failed");
+          THROW_RUNTIME_ERROR("SetEvent failed");
     }
 
   public:

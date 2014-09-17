@@ -43,7 +43,7 @@ namespace embree
     const Ref<XML> child(const size_t id) const 
     {
       if (id >= children.size()) 
-        throw std::runtime_error (loc.str()+": XML node has no child \"" + std::stringOf(id) + "\"");
+        THROW_RUNTIME_ERROR (loc.str()+": XML node has no child \"" + std::stringOf(id) + "\"");
       return children[id];
     }
 
@@ -52,7 +52,7 @@ namespace embree
     {
       for (size_t i=0; i<children.size(); i++)
         if (children[i]->name == childID) return children[i];
-      throw std::runtime_error (loc.str()+": XML node has no child \"" + childID + "\"");
+      THROW_RUNTIME_ERROR (loc.str()+": XML node has no child \"" + childID + "\"");
     }
 
     /*! returns child by node tag without failing */

@@ -254,65 +254,65 @@ namespace embree
   //////////////////////////////////////////////////////////////////////////////
 
   template<> std::string XMLLoader::load<std::string>(const Ref<XML>& xml) {
-    if (xml->body.size() < 1) throw std::runtime_error(xml->loc.str()+": wrong string body");
+    if (xml->body.size() < 1) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong string body");
     return xml->body[0].String();
   }
 
   template<> bool XMLLoader::load<bool>(const Ref<XML>& xml, bool opt) {
     if (xml == null) return opt;
-    if (xml->body.size() != 1) throw std::runtime_error(xml->loc.str()+": wrong bool body");
+    if (xml->body.size() != 1) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong bool body");
     return xml->body[0].Int() != 0;
   }
 
   template<> int XMLLoader::load<int>(const Ref<XML>& xml) {
-    if (xml->body.size() != 1) throw std::runtime_error(xml->loc.str()+": wrong int body");
+    if (xml->body.size() != 1) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong int body");
     return xml->body[0].Int();
   }
 
   template<> Vec2i XMLLoader::load<Vec2i>(const Ref<XML>& xml) {
-    if (xml->body.size() != 2) throw std::runtime_error(xml->loc.str()+": wrong int2 body");
+    if (xml->body.size() != 2) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong int2 body");
     return Vec2i(xml->body[0].Int(),xml->body[1].Int());
   }
 
   template<> Vec3i XMLLoader::load<Vec3i>(const Ref<XML>& xml) {
-    if (xml->body.size() != 3) throw std::runtime_error(xml->loc.str()+": wrong int3 body");
+    if (xml->body.size() != 3) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong int3 body");
     return Vec3i(xml->body[0].Int(),xml->body[1].Int(),xml->body[2].Int());
   }
 
   template<> Vec4i XMLLoader::load<Vec4i>(const Ref<XML>& xml) {
-    if (xml->body.size() != 4) throw std::runtime_error(xml->loc.str()+": wrong int4 body");
+    if (xml->body.size() != 4) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong int4 body");
     return Vec4i(xml->body[0].Int(),xml->body[1].Int(),xml->body[2].Int(),xml->body[3].Int());
   }
 
   template<> float XMLLoader::load<float>(const Ref<XML>& xml) {
-    if (xml->body.size() != 1) throw std::runtime_error(xml->loc.str()+": wrong float body");
+    if (xml->body.size() != 1) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong float body");
     return xml->body[0].Float();
   }
 
   template<> float XMLLoader::load<float>(const Ref<XML>& xml, float opt) {
     if (xml == null) return opt;
-    if (xml->body.size() != 1) throw std::runtime_error(xml->loc.str()+": wrong float body");
+    if (xml->body.size() != 1) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong float body");
     return xml->body[0].Float();
   }
 
   template<> Vec2f XMLLoader::load<Vec2f>(const Ref<XML>& xml) {
-    if (xml->body.size() != 2) throw std::runtime_error(xml->loc.str()+": wrong float2 body");
+    if (xml->body.size() != 2) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong float2 body");
     return Vec2f(xml->body[0].Float(),xml->body[1].Float());
   }
 
   template<> Vec3f XMLLoader::load<Vec3f>(const Ref<XML>& xml) {
-    if (xml->body.size() != 3) throw std::runtime_error(xml->loc.str()+": wrong float3 body");
+    if (xml->body.size() != 3) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong float3 body");
     return Vec3f(xml->body[0].Float(),xml->body[1].Float(),xml->body[2].Float());
   }
 
   template<> Vec3fa XMLLoader::load<Vec3fa>(const Ref<XML>& xml, Vec3fa opt) {
     if (xml == null) return opt;
-    if (xml->body.size() != 3) throw std::runtime_error(xml->loc.str()+": wrong float3 body");
+    if (xml->body.size() != 3) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong float3 body");
     return Vec3fa(xml->body[0].Float(),xml->body[1].Float(),xml->body[2].Float());
   }
 
   template<> Vec4f XMLLoader::load<Vec4f>(const Ref<XML>& xml) {
-    if (xml->body.size() != 4) throw std::runtime_error(xml->loc.str()+": wrong float4 body");
+    if (xml->body.size() != 4) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong float4 body");
     return Vec4f(xml->body[0].Float(),xml->body[1].Float(),xml->body[2].Float(),xml->body[3].Float());
   }
 
@@ -338,7 +338,7 @@ namespace embree
       float x,y,z; sscanf(xml->parm("axis").c_str(),"%f %f %f",&x,&y,&z);
       return AffineSpace3f::rotate(Vec3f(x,y,z),deg2rad(degrees));
     } else {
-      if (xml->body.size() != 12) throw std::runtime_error(xml->loc.str()+": wrong AffineSpace body");
+      if (xml->body.size() != 12) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong AffineSpace body");
       return AffineSpace3f(LinearSpace3f(xml->body[0].Float(),xml->body[1].Float(),xml->body[ 2].Float(),
 					 xml->body[4].Float(),xml->body[5].Float(),xml->body[ 6].Float(),
 					 xml->body[8].Float(),xml->body[9].Float(),xml->body[10].Float()),
@@ -349,7 +349,7 @@ namespace embree
   char* XMLLoader::loadBinary(const Ref<XML>& xml, size_t eltSize, size_t& size)
   {
     if (!binFile) 
-      throw std::runtime_error("cannot open file "+binFileName.str()+" for reading");
+      THROW_RUNTIME_ERROR("cannot open file "+binFileName.str()+" for reading");
 
     size_t ofs = atol(xml->parm("ofs").c_str());
     fseek(binFile,long(ofs),SEEK_SET);
@@ -358,7 +358,7 @@ namespace embree
     char* data = (char*) alignedMalloc(size*eltSize);
 
     if (size != fread(data, eltSize, size, binFile)) 
-      throw std::runtime_error("error reading from binary file: "+binFileName.str());
+      THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
 
     return data;
   }
@@ -374,7 +374,7 @@ namespace embree
       data = (Vec2f*)loadBinary(xml,2*sizeof(float),size);
     } else {
       size_t elts = xml->body.size();
-      if (elts % 2 != 0) throw std::runtime_error(xml->loc.str()+": wrong vector<float2> body");
+      if (elts % 2 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<float2> body");
       size = elts/2;
       data = (Vec2f*) alignedMalloc(size*sizeof(Vec2f));
       for (size_t i=0; i<size; i++) 
@@ -398,7 +398,7 @@ namespace embree
     }
     else {
       size_t elts = xml->body.size();
-      if (elts % 3 != 0) throw std::runtime_error(xml->loc.str()+": wrong vector<float3> body");
+      if (elts % 3 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<float3> body");
       size = elts/3;
       data = (Vec3f*) alignedMalloc(size*sizeof(Vec3f));
       for (size_t i=0; i<size; i++) 
@@ -422,7 +422,7 @@ namespace embree
     }
     else {
       size_t elts = xml->body.size();
-      if (elts % 3 != 0) throw std::runtime_error(xml->loc.str()+": wrong vector<int3> body");
+      if (elts % 3 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<int3> body");
       size = elts/3;
       data = (Vec3i*) alignedMalloc(size*sizeof(Vec3i));
       for (size_t i=0; i<size; i++) 
@@ -521,7 +521,7 @@ namespace embree
       else if (entry->name == "float3" ) { material.add(name, load<Vec3f>(entry)); }
       else if (entry->name == "float4" ) { material.add(name, load<Vec4f>(entry)); }
       else if (entry->name == "texture") { material.add(name, (path + load<std::string>(entry)).str()); }
-      else throw std::runtime_error(entry->loc.str()+": invalid type: "+entry->name);
+      else THROW_RUNTIME_ERROR(entry->loc.str()+": invalid type: "+entry->name);
     }
     return material;
   }
@@ -681,7 +681,7 @@ namespace embree
       //else if (xml->parm("type") == "scene")
       //sceneMap[xml->parm("id")] = loadScene(xml->child(0));
       else 
-        throw std::runtime_error(xml->loc.str()+": unknown type: "+xml->parm("type"));
+        THROW_RUNTIME_ERROR(xml->loc.str()+": unknown type: "+xml->parm("type"));
     }
     else 
     {
@@ -695,7 +695,7 @@ namespace embree
         FileName fname = path + xml->parm("src");
         if      (fname.ext() == "xml") loadXML(path + xml->parm("src"),space,scene);
         else if (fname.ext() == "obj") loadOBJ(path + xml->parm("src"),space,scene);
-        else throw std::runtime_error("unknown file type:" + fname.str());
+        else THROW_RUNTIME_ERROR("unknown file type:" + fname.str());
       }
       //else if (xml->name == "ref") {
       //  prims = sceneMap[xml->parm("id")];
@@ -718,7 +718,7 @@ namespace embree
       else if (xml->name == "Group"           ) loadGroupNode       (xml,space);
       else if (xml->name == "Transform"       ) loadTransformNode   (xml,space);
       
-      else throw std::runtime_error(xml->loc.str()+": unknown tag: "+xml->name);
+      else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
     }
   }
 
@@ -729,7 +729,7 @@ namespace embree
     binFile = fopen(binFileName.c_str(),"rb");
 
     Ref<XML> xml = parseXML(fileName);
-    if (xml->name != "scene") throw std::runtime_error(xml->loc.str()+": invalid scene tag");
+    if (xml->name != "scene") THROW_RUNTIME_ERROR(xml->loc.str()+": invalid scene tag");
     for (size_t i=0; i<xml->children.size(); i++) {
       loadScene(xml->children[i],space);
     }

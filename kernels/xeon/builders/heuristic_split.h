@@ -84,7 +84,7 @@ namespace embree
 	  case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split<Parallel>(threadIndex,threadCount,scheduler,alloc,scene,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
 	  case STRAND_SPLIT : ((StrandSplit::    Split*)&data)->split<Parallel>(threadIndex,threadCount,scheduler,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
 	  case FALLBACK_SPLIT: FallBackSplit::find(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
-	  default: throw std::runtime_error("internal error");
+	  default: THROW_RUNTIME_ERROR("internal error");
 	  }
 	}
 
@@ -101,7 +101,7 @@ namespace embree
 	  case SPATIAL_SPLIT: ((SpatialSplit::   Split*)&data)->split<Parallel>(threadIndex,threadCount,scheduler,alloc,scene,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
 	    //case STRAND_SPLIT : ((StrandSplit::    Split*)&data)->split<Parallel>(threadIndex,threadCount,scheduler,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
 	  case FALLBACK_SPLIT: FallBackSplit::find(threadIndex,alloc,prims,lprims_o,linfo_o,rprims_o,rinfo_o); break;
-	  default: throw std::runtime_error("internal error");
+	  default: THROW_RUNTIME_ERROR("internal error");
 	  }
 	}
       

@@ -96,7 +96,7 @@ namespace embree
 
 #else  // JPEG_LIB_VERSION
 
-        throw std::runtime_error("JPEG encoding into a memory buffer requires LibJPEG 8a or higher");
+        THROW_RUNTIME_ERROR("JPEG encoding into a memory buffer requires LibJPEG 8a or higher");
 
 #endif // JPEG_LIB_VERSION
 
@@ -106,7 +106,7 @@ namespace embree
     {
 
         /*! Open the source JPEG file. */
-        FILE *file = fopen(filename.c_str(), "rb");  if (!file) throw std::runtime_error("Unable to open \"" + filename.str() + "\".");
+        FILE *file = fopen(filename.c_str(), "rb");  if (!file) THROW_RUNTIME_ERROR("Unable to open \"" + filename.str() + "\".");
 
         /*! Decompression parameters and scratch space pointers allocated by the library. */
         struct jpeg_decompress_struct cinfo;
@@ -151,7 +151,7 @@ namespace embree
     {
 
         /*! Open the target JPEG file. */
-        FILE *file = fopen(filename.c_str(), "wb");  if (!file) throw std::runtime_error("Unable to open \"" + filename.str() + "\".");
+        FILE *file = fopen(filename.c_str(), "wb");  if (!file) THROW_RUNTIME_ERROR("Unable to open \"" + filename.str() + "\".");
 
         /*! Compression parameters and scratch space pointers (allocated by the library). */
         struct jpeg_compress_struct cinfo;

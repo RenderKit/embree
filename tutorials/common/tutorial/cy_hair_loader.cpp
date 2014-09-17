@@ -69,49 +69,49 @@ namespace embree
       FILE *file;
       file = fopen( filename, "rb" );
       if ( file == NULL )
-        throw std::runtime_error("can't open file");
+        THROW_RUNTIME_ERROR("can't open file");
 
       size_t h = fread( &header, sizeof(cyHeader), 1, file );
 
       if ( h < 1 ) 
-        throw std::runtime_error("can't read header");
+        THROW_RUNTIME_ERROR("can't read header");
 
       if ( strncmp( header.signature, "HAIR", 4) != 0 ) 
-        throw std::runtime_error("wrong signature");
+        THROW_RUNTIME_ERROR("wrong signature");
 
       if ( header.bitarrays & CY_HAIR_FILE_SEGMENTS_BIT ) {
         segments = new unsigned short[ header.numStrands ];
         size_t r = fread( segments, sizeof(unsigned short), header.numStrands, file );
         if ( r < header.numStrands ) 
-          throw std::runtime_error("error reading segments");
+          THROW_RUNTIME_ERROR("error reading segments");
       }
 
       if ( header.bitarrays & CY_HAIR_FILE_POINTS_BIT ) {
         points = new float[ header.numPoints*3 ];
         size_t r = fread( points, sizeof(float), header.numPoints*3, file );
         if ( r < header.numPoints*3 ) 
-          throw std::runtime_error("error reading points");
+          THROW_RUNTIME_ERROR("error reading points");
       }
 
       if ( header.bitarrays & CY_HAIR_FILE_THICKNESS_BIT ) {
         thickness = new float[ header.numPoints ];
         size_t r = fread( thickness, sizeof(float), header.numPoints, file );
         if ( r < header.numPoints ) 
-          throw std::runtime_error("error reading thickness values");
+          THROW_RUNTIME_ERROR("error reading thickness values");
       }
 
       if ( header.bitarrays & CY_HAIR_FILE_TRANSPARENCY_BIT ) {
         transparency = new float[ header.numPoints ];
         size_t r = fread( transparency, sizeof(float), header.numPoints, file );
         if ( r < header.numPoints ) 
-          throw std::runtime_error("error reading transparency values");          
+          THROW_RUNTIME_ERROR("error reading transparency values");          
       }
 
       if ( header.bitarrays & CY_HAIR_FILE_COLORS_BIT ) {
         colors = new float[ header.numPoints*3 ];
         size_t r = fread( colors, sizeof(float), header.numPoints*3, file );
         if ( r < header.numPoints*3 ) 
-          throw std::runtime_error("error reading color values");          
+          THROW_RUNTIME_ERROR("error reading color values");          
       }
 
       fclose( file );

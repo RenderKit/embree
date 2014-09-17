@@ -35,7 +35,7 @@ namespace embree
     switch (queue) {
     case GLOBAL_FRONT: { size_t i = (--begin)&(tasks.size()-1); tasks[i] = task; break; }
     case GLOBAL_BACK : { size_t i = (end++  )&(tasks.size()-1); tasks[i] = task; break; }
-    default          : throw std::runtime_error("invalid task queue");
+    default          : THROW_RUNTIME_ERROR("invalid task queue");
     }
     
     condition.broadcast();
@@ -126,7 +126,7 @@ namespace embree
     switch (queue) {
     case GLOBAL_FRONT: { size_t i = (--begin)&(tasks.size()-1); tasks[i] = task; break; }
     case GLOBAL_BACK : { size_t i = (end++  )&(tasks.size()-1); tasks[i] = task; break; }
-    default          : throw std::runtime_error("invalid task queue");
+    default          : THROW_RUNTIME_ERROR("invalid task queue");
     }
     
     condition.broadcast();
