@@ -24,7 +24,7 @@ namespace embree
   template<bool list>
   struct Triangle4vIntersector8Pluecker
   {
-    typedef Triangle4v<list> Primitive;
+    typedef Triangle4v Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
@@ -94,8 +94,8 @@ namespace embree
         const avxf u = U / absDen;
         const avxf v = V / absDen;
         const avxf t = T / absDen;
-        const int geomID = tri.geomID(i);
-        const int primID = tri.primID(i);
+        const int geomID = tri.geomID<list>(i);
+        const int primID = tri.primID<list>(i);
 
         /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
@@ -180,7 +180,7 @@ namespace embree
 
         /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-        const int geomID = tri.geomID(i);
+        const int geomID = tri.geomID<list>(i);
         Geometry* geometry = ((Scene*)geom)->get(geomID);
         if (unlikely(geometry->hasOcclusionFilter8()))
         {
@@ -189,7 +189,7 @@ namespace embree
           const avxf u = U / absDen;
           const avxf v = V / absDen;
           const avxf t = T / absDen;
-          const int primID = tri.primID(i);
+          const int primID = tri.primID<list>(i);
           valid = runOcclusionFilter8(valid,geometry,ray,u,v,t,Ng,geomID,primID);
         }
 #endif
@@ -256,7 +256,7 @@ namespace embree
       const ssef v = V / absDen;
       const ssef t = T / absDen;
       size_t i = select_min(valid,t);
-      int geomID = tri.geomID(i);
+      int geomID = tri.geomID<list>(i);
       
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
@@ -274,18 +274,18 @@ namespace embree
           ray.Ng.y[k] = Ng.y[i];
           ray.Ng.z[k] = Ng.z[i];
           ray.geomID[k] = geomID;
-          ray.primID[k] = tri.primID(i);
+          ray.primID[k] = tri.primID<list>(i);
 
 #if defined(__INTERSECTION_FILTER__)
           return;
         }
 
         const Vec3fa N(Ng.x[i],Ng.y[i],Ng.z[i]);
-        if (runIntersectionFilter8(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID(i))) return;
+        if (runIntersectionFilter8(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID<list>(i))) return;
         valid[i] = 0;
         if (unlikely(none(valid))) return;
         i = select_min(valid,t);
-        geomID = tri.geomID(i);
+        geomID = tri.geomID<list>(i);
       }
 #endif
     }
@@ -344,7 +344,7 @@ namespace embree
 #if defined(__INTERSECTION_FILTER__)
 
       size_t i = select_min(valid,T);
-      int geomID = tri.geomID(i);
+      int geomID = tri.geomID<list>(i);
 
       while (true) 
       {
@@ -356,11 +356,11 @@ namespace embree
         const ssef v = V / absDen;
         const ssef t = T / absDen;
         const Vec3fa N(Ng.x[i],Ng.y[i],Ng.z[i]);
-        if (runOcclusionFilter8(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID(i))) break;
+        if (runOcclusionFilter8(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID<list>(i))) break;
         valid[i] = 0;
         if (unlikely(none(valid))) return false;
         i = select_min(valid,T);
-        geomID = tri.geomID(i);
+        geomID = tri.geomID<list>(i);
       }
 #endif
 

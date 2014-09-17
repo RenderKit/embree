@@ -25,7 +25,6 @@ namespace embree
   /*! Precalculated representation for 8 triangles. Stores for each
       triangle a base vertex, two edges, and the geometry normal to
       speed up intersection calculations. */
-  template<bool list>
   struct Triangle8
   {
   public:
@@ -35,7 +34,7 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     __forceinline Triangle8 (const avx3f& v0, const avx3f& v1, const avx3f& v2, const avxi& geomIDs, const avxi& primIDs, const avxi& mask, const bool last)
-      : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomIDs(geomIDs), primIDs(primIDs | ((list && last) << 31))
+      : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomIDs(geomIDs), primIDs(primIDs | (last << 31))
     {
 #if defined(__USE_RAY_MASK__)
       this->mask = mask;
@@ -105,19 +104,22 @@ namespace embree
 
     /*! checks if this is the last triangle in the list */
     __forceinline int last() const { 
-      if (list) return primIDs[0] & 0x80000000; 
-      else { assert(false); return 0; }
+      return primIDs[0] & 0x80000000; 
     }
 
     /*! returns the geometry IDs */
+    template<bool list>
     __forceinline avxi geomID() const { return geomIDs; }
+    template<bool list>
     __forceinline int  geomID(const size_t i) const { assert(i<8); return geomIDs[i]; }
 
     /*! returns the primitive IDs */
+    template<bool list>
     __forceinline avxi primID() const { 
       if (list) return primIDs & 0x7FFFFFFF; 
       else      return primIDs;
     }
+    template<bool list>
     __forceinline int  primID(const size_t i) const { 
       assert(i<8); 
       if (list) return primIDs[i] & 0x7FFFFFFF; 
@@ -125,7 +127,7 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
+    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
       avxi vgeomID = -1, vprimID = -1, vmask = -1;
       avx3f v0 = zero, v1 = zero, v2 = zero;
@@ -147,11 +149,11 @@ namespace embree
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,!prims));
+      Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,!prims && list));
     }
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
+    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       avxi vgeomID = -1, vprimID = -1, vmask = -1;
       avx3f v0 = zero, v1 = zero, v2 = zero;
@@ -173,7 +175,7 @@ namespace embree
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,!prims));
+      Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,list && !prims));
     }
 
   public:
@@ -192,17 +194,16 @@ namespace embree
 
 #if defined (__AVX__)
 
-  template<bool list>
-  __forceinline std::ostream &operator<<(std::ostream &o, const Triangle8<list>& tri)
-    {
-      o << "v0    " << tri.v0 << std::endl;
-      o << "e1    " << tri.e1 << std::endl;
-      o << "e2    " << tri.e2 << std::endl;
-      o << "Ng    " << tri.Ng << std::endl;
-      o << "geomID" << tri.geomIDs << std::endl;
-      o << "primID" << tri.primIDs << std::endl;
-      return o;
-    }
+  __forceinline std::ostream &operator<<(std::ostream &o, const Triangle8& tri)
+  {
+    o << "v0    " << tri.v0 << std::endl;
+    o << "e1    " << tri.e1 << std::endl;
+    o << "e2    " << tri.e2 << std::endl;
+    o << "Ng    " << tri.Ng << std::endl;
+    o << "geomID" << tri.geomID<1>() << std::endl;
+    o << "primID" << tri.primID<1>() << std::endl;
+    return o;
+  }
 #endif
 
 

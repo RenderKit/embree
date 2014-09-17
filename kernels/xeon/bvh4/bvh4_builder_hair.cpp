@@ -27,11 +27,11 @@ namespace embree
 {
   namespace isa
   {
-    template<> BVH4BuilderHairT<Bezier1<listMode> >::BVH4BuilderHairT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderHair(bvh,scene,mode) {}
-    template<> BVH4BuilderHairT<Bezier1i<listMode> >::BVH4BuilderHairT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderHair(bvh,scene,mode) {}
+    template<> BVH4BuilderHairT<Bezier1>::BVH4BuilderHairT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderHair(bvh,scene,mode) {}
+    template<> BVH4BuilderHairT<Bezier1i>::BVH4BuilderHairT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderHair(bvh,scene,mode) {}
 
     BVH4BuilderHair::BVH4BuilderHair (BVH4* bvh, Scene* scene, size_t mode)
-      : scene(scene), minLeafSize(1), maxLeafSize(inf), enableSpatialSplits(mode > 0), bvh(bvh), scheduler(&scene->lockstep_scheduler), remainingReplications(0)
+      : scene(scene), minLeafSize(1), maxLeafSize(inf), enableSpatialSplits(mode & MODE_HIGH_QUALITY), listMode(mode & LIST_MODE_BITS), bvh(bvh), scheduler(&scene->lockstep_scheduler), remainingReplications(0)
     {
       if (BVH4::maxLeafBlocks < this->maxLeafSize) 
 	this->maxLeafSize = BVH4::maxLeafBlocks;
@@ -135,14 +135,14 @@ namespace embree
      
       Primitive* leaf = (Primitive*) bvh->allocPrimitiveBlocks(threadIndex,N);
       BezierRefList::block_iterator_unsafe iter(prims);
-      for (size_t i=0; i<N; i++) leaf[i].fill(iter,scene);
+      for (size_t i=0; i<N; i++) leaf[i].fill(iter,scene,listMode);
       assert(!iter);
       
       /* free all primitive blocks */
       while (BezierRefList::item* block = prims.take())
 	alloc.free(threadIndex,block);
       
-      return bvh->encodeLeaf((char*)leaf,N);
+      return bvh->encodeLeaf((char*)leaf,listMode ? listMode : N);
     }
 
     BVH4::NodeRef BVH4BuilderHair::createLargeLeaf(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo, size_t depth)
@@ -367,7 +367,7 @@ namespace embree
     }
 
     /*! entry functions for the builder */
-    Builder* BVH4Bezier1Builder_OBB  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderHairT<Bezier1<listMode> > ((BVH4*)bvh,scene,mode); }
-    Builder* BVH4Bezier1iBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderHairT<Bezier1i<listMode> > ((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Bezier1Builder_OBB  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderHairT<Bezier1> ((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Bezier1iBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderHairT<Bezier1i> ((BVH4*)bvh,scene,mode); }
   }
 }

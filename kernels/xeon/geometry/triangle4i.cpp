@@ -23,39 +23,60 @@ namespace embree
   TriangleMeshTriangle4i TriangleMeshTriangle4i::type;
 
   Triangle4iTy::Triangle4iTy () 
-  : PrimitiveType("triangle4i",sizeof(Triangle4i<listMode>),4,true,1) {} 
+  : PrimitiveType("triangle4i",sizeof(Triangle4i),4,true,1) {} 
   
   size_t Triangle4iTy::blocks(size_t x) const {
     return (x+3)/4;
   }
   
   size_t Triangle4iTy::size(const char* This) const {
-    return ((Triangle4i<listMode>*)This)->size();
+    return ((Triangle4i*)This)->size();
   }
   
   BBox3fa SceneTriangle4i::update(char* prim_i, size_t num, void* geom) const 
   {
     BBox3fa bounds = empty;
     Scene* scene = (Scene*) geom;
-    Triangle4i<listMode>* prim = (Triangle4i<listMode>*) prim_i;
-    
-    while (true)
+    Triangle4i* prim = (Triangle4i*) prim_i;
+
+    if (num == -1)
     {
-      for (size_t i=0; i<4; i++)
+      while (true)
       {
-        if (prim->primID(i) == -1) break;
-        const unsigned geomID = prim->geomID(i);
-        const unsigned primID = prim->primID(i);
-        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-        const Vec3fa p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa p2 = mesh->vertex(tri.v[2]);
-        bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
+	for (size_t i=0; i<4; i++)
+	{
+	  if (prim->primID<1>(i) == -1) break;
+	  const unsigned geomID = prim->geomID<1>(i);
+	  const unsigned primID = prim->primID<1>(i);
+	  const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+	  const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+	  const Vec3fa p0 = mesh->vertex(tri.v[0]);
+	  const Vec3fa p1 = mesh->vertex(tri.v[1]);
+	  const Vec3fa p2 = mesh->vertex(tri.v[2]);
+	  bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
+	}
+	bool last = prim->last();
+	if (last) break;
+	prim++;
       }
-      bool last = prim->last();
-      if (last) break;
-      prim++;
+    }
+    else
+    {
+      for (size_t j=0; j<num; j++, prim++)
+      {
+	for (size_t i=0; i<4; i++)
+	{
+	  if (prim->primID<0>(i) == -1) break;
+	  const unsigned geomID = prim->geomID<0>(i);
+	  const unsigned primID = prim->primID<0>(i);
+	  const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+	  const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+	  const Vec3fa p0 = mesh->vertex(tri.v[0]);
+	  const Vec3fa p1 = mesh->vertex(tri.v[1]);
+	  const Vec3fa p2 = mesh->vertex(tri.v[2]);
+	  bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
+	}
+      }
     }
     return bounds; 
   }
@@ -64,27 +85,50 @@ namespace embree
   {
     BBox3fa bounds = empty;
     TriangleMesh* mesh = (TriangleMesh*) geom;
-    Triangle4i<listMode>* prim = (Triangle4i<listMode>*) prim_i;
+    Triangle4i* prim = (Triangle4i*) prim_i;
 
-    while (true)
+    if (num == -1)
     {
-      ssei vgeomID = -1, vprimID = -1, vmask = -1;
-      sse3f v0 = zero, v1 = zero, v2 = zero;
-
-      for (size_t i=0; i<4; i++)
+      while (true)
       {
-        if (prim->primID(i) == -1) break;
-        const unsigned geomID = prim->geomID(i);
-        const unsigned primID = prim->primID(i);
-        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-        const Vec3fa p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa p2 = mesh->vertex(tri.v[2]);
-        bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
+	ssei vgeomID = -1, vprimID = -1, vmask = -1;
+	sse3f v0 = zero, v1 = zero, v2 = zero;
+	
+	for (size_t i=0; i<4; i++)
+	{
+	  if (prim->primID<1>(i) == -1) break;
+	  const unsigned geomID = prim->geomID<1>(i);
+	  const unsigned primID = prim->primID<1>(i);
+	  const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+	  const Vec3fa p0 = mesh->vertex(tri.v[0]);
+	  const Vec3fa p1 = mesh->vertex(tri.v[1]);
+	  const Vec3fa p2 = mesh->vertex(tri.v[2]);
+	  bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
+	}
+	bool last = prim->last();
+	if (last) break;
+	prim++;
       }
-      bool last = prim->last();
-      if (last) break;
-      prim++;
+    }
+    else
+    {
+      for (size_t j=0; j<num; j++, prim++)
+      {
+	ssei vgeomID = -1, vprimID = -1, vmask = -1;
+	sse3f v0 = zero, v1 = zero, v2 = zero;
+	
+	for (size_t i=0; i<4; i++)
+	{
+	  if (prim->primID<0>(i) == -1) break;
+	  const unsigned geomID = prim->geomID<0>(i);
+	  const unsigned primID = prim->primID<0>(i);
+	  const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+	  const Vec3fa p0 = mesh->vertex(tri.v[0]);
+	  const Vec3fa p1 = mesh->vertex(tri.v[1]);
+	  const Vec3fa p2 = mesh->vertex(tri.v[2]);
+	  bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
+	}
+      }
     }
     return bounds; 
   }

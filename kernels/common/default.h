@@ -51,7 +51,14 @@ namespace embree
 {
 #define BVH4HAIR_MB_VERSION 2 // FIXME: remove
 
-#define listMode true
+#define MODE_HIGH_QUALITY (1<<8)
+#define LIST_MODE_BITS 0xFF
+#define LeafMode 1
+#define LeafIterator1 ListIntersector1
+#define LeafIterator4 ListIntersector4
+#define LeafIterator4_1 ListIntersector4_1
+#define LeafIterator8 ListIntersector8
+#define LeafIterator8_1 ListIntersector8_1
 
   /* global settings */
   extern size_t g_numThreads;

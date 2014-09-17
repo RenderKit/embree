@@ -44,14 +44,11 @@ namespace embree
     /*! Returns the number of stored primitives in a block. */
     virtual size_t size(const char* This) const = 0;
 
-    /*! Packs triangles taken from primitive list. */
-    virtual void pack(char* dst, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const {}
+    /*! Updates all primitives stored in a leaf */
+    virtual BBox3fa update(char* prim, size_t num, void* geom) const { return BBox3fa(empty); } // FIXME: remove
 
     /*! Updates all primitives stored in a leaf */
-    virtual BBox3fa update(char* prim, size_t num, void* geom) const { return BBox3fa(empty); }
-
-    /*! Updates all primitives stored in a leaf */
-    virtual std::pair<BBox3fa,BBox3fa> update2(char* prim, size_t num, void* geom) const { return std::pair<BBox3fa,BBox3fa>(empty,empty); }
+    virtual std::pair<BBox3fa,BBox3fa> update2(char* prim, size_t num, void* geom) const { return std::pair<BBox3fa,BBox3fa>(empty,empty); } // FIXME: remove
 
   public:
     std::string name;       //!< name of this primitive type

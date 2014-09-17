@@ -303,6 +303,6 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR1(BVH8Triangle8Intersector1Moeller,BVH8Intersector1<ListIntersector1<Triangle8Intersector1MoellerTrumbore<true> > >);
+    DEFINE_INTERSECTOR1(BVH8Triangle8Intersector1Moeller,BVH8Intersector1<LeafIterator1<Triangle8Intersector1MoellerTrumbore<LeafMode> > >);
   }
 }

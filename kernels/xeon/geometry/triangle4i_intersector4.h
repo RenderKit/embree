@@ -25,7 +25,7 @@ namespace embree
   template<bool list>
   struct Triangle4iIntersector4Pluecker
   {
-    typedef Triangle4i<list> Primitive;
+    typedef Triangle4i Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const sseb& valid, const Ray4& ray) {}
@@ -90,7 +90,7 @@ namespace embree
 
         /* ray masking test */
 #if defined(__USE_RAY_MASK__)
-        int mask = ((Scene*)geom)->getTriangleMesh(tri.geomID(i))->mask;
+        int mask = ((Scene*)geom)->getTriangleMesh(tri.geomID<list>(i))->mask;
         valid &= (mask & ray.mask) != 0;
         if (unlikely(none(valid))) continue;
 #endif
@@ -99,8 +99,8 @@ namespace embree
         const ssef u = U / absDen;
         const ssef v = V / absDen;
         const ssef t = T / absDen;
-        const int geomID = tri.geomID(i);
-        const int primID = tri.primID(i);
+        const int geomID = tri.geomID<list>(i);
+        const int primID = tri.primID<list>(i);
 
         /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
@@ -183,14 +183,14 @@ namespace embree
 
         /* ray masking test */
 #if defined(__USE_RAY_MASK__)
-        int mask = ((Scene*)geom)->getTriangleMesh(tri.geomID(i))->mask;
+        int mask = ((Scene*)geom)->getTriangleMesh(tri.geomID<list>(i))->mask;
         valid &= (mask & ray.mask) != 0;
         if (unlikely(none(valid))) continue;
 #endif
 
         /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-        const int geomID = tri.geomID(i);
+        const int geomID = tri.geomID<list>(i);
         Geometry* geometry = ((Scene*)geom)->get(geomID);
         if (unlikely(geometry->hasOcclusionFilter4()))
         {
@@ -198,7 +198,7 @@ namespace embree
           const ssef u = U / absDen;
           const ssef v = V / absDen;
           const ssef t = T / absDen;
-          const int primID = tri.primID(i);
+          const int primID = tri.primID<list>(i);
           valid = runOcclusionFilter4(valid,geometry,ray,u,v,t,Ng,geomID,primID);
         }
 #endif

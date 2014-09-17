@@ -354,17 +354,17 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR8(BVH4Bezier1Intersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<Bezier1Intersector8<true> > >);
-    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<Bezier1iIntersector8<true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle1Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<Triangle1Intersector8MoellerTrumbore<true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<Triangle4Intersector8MoellerTrumbore<true COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<Triangle4Intersector8MoellerTrumbore<true COMMA false> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<Triangle8Intersector8MoellerTrumbore<true COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<Triangle8Intersector8MoellerTrumbore<true COMMA false> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle1vIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA ListIntersector8<Triangle1vIntersector8Pluecker<true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA ListIntersector8<Triangle4vIntersector8Pluecker<true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4iIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA ListIntersector8<Triangle4iIntersector8Pluecker<true> > >);
-    DEFINE_INTERSECTOR8(BVH4VirtualIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA ListIntersector8<VirtualAccelIntersector8> >);
-    DEFINE_INTERSECTOR8(BVH4Triangle1vMBIntersector8ChunkMoeller, BVH4Intersector8Chunk<0x10 COMMA false COMMA ListIntersector8<Triangle1vIntersector8MoellerTrumboreMB<true> > >);
+    DEFINE_INTERSECTOR8(BVH4Bezier1Intersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA LeafIterator8<Bezier1Intersector8<LeafMode> > >);
+    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA LeafIterator8<Bezier1iIntersector8<LeafMode> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle1Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA LeafIterator8<Triangle1Intersector8MoellerTrumbore<LeafMode> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA LeafIterator8<Triangle4Intersector8MoellerTrumbore<LeafMode COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<0x1 COMMA false COMMA LeafIterator8<Triangle4Intersector8MoellerTrumbore<LeafMode COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA LeafIterator8<Triangle8Intersector8MoellerTrumbore<LeafMode COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<0x1 COMMA false COMMA LeafIterator8<Triangle8Intersector8MoellerTrumbore<LeafMode COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle1vIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA LeafIterator8<Triangle1vIntersector8Pluecker<LeafMode> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA LeafIterator8<Triangle4vIntersector8Pluecker<LeafMode> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4iIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA LeafIterator8<Triangle4iIntersector8Pluecker<LeafMode> > >);
+    DEFINE_INTERSECTOR8(BVH4VirtualIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA LeafIterator8<VirtualAccelIntersector8> >);
+    DEFINE_INTERSECTOR8(BVH4Triangle1vMBIntersector8ChunkMoeller, BVH4Intersector8Chunk<0x10 COMMA false COMMA LeafIterator8<Triangle1vIntersector8MoellerTrumboreMB<LeafMode> > >);
   }
 }

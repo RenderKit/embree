@@ -20,7 +20,6 @@
 
 namespace embree
 {
-  template<bool list>
   struct Triangle1v
   {
   public:
@@ -30,7 +29,7 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     __forceinline Triangle1v (const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const unsigned geomID, const unsigned primID, const unsigned mask, const bool last)
-      : v0(v0,primID | ((list && last) << 31)), v1(v1,geomID), v2(v2,mask) {}
+      : v0(v0,primID | (last << 31)), v1(v1,geomID), v2(v2,mask) {}
 
     /*! calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const {
@@ -38,24 +37,30 @@ namespace embree
     }
 
     /*! access hidden members */
-    __forceinline unsigned primID() const { if (list) return v0.a & 0x7FFFFFFF; else return v0.a; }
-    __forceinline unsigned geomID() const { return v1.a; }
+    template<bool list>
+    __forceinline unsigned primID() const { 
+      if (list) return v0.a & 0x7FFFFFFF; 
+      else      return v0.a; 
+    }
+    template<bool list>
+    __forceinline unsigned geomID() const { 
+      return v1.a; 
+    }
     __forceinline unsigned mask  () const { return v2.a; }
-    __forceinline int last  () const { 
-      if (list) return v0.a & 0x80000000; 
-      else { assert(false); return 0; }
+    __forceinline int last() const { 
+      return v0.a & 0x80000000; 
     }
 
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
+    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
       const PrimRef& prim = *prims;
       prims++;
 
-      const unsigned last   = !prims;
+      const unsigned last = list && !prims;
       const size_t geomID = prim.geomID();
       const size_t primID = prim.primID();
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
@@ -71,12 +76,12 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
     {
       const PrimRef& prim = prims[i];
       i++;
 
-      const unsigned last = i >= end;
+      const unsigned last = list && i >= end;
       const size_t geomID = prim.geomID();
       const size_t primID = prim.primID();
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
@@ -115,7 +120,6 @@ namespace embree
     BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 
-  template<bool list>
   struct Triangle1vMB
   {
   public:
@@ -128,19 +132,25 @@ namespace embree
                                 const Vec3fa& b0, const Vec3fa& b1,
                                 const Vec3fa& c0, const Vec3fa& c1, 
                                 const unsigned geomID, const unsigned primID, const unsigned mask, const bool last)
-      : v0(a0,primID | ((list && last) << 31)), v1(b0,geomID), v2(c0,mask), d0(a1-a0), d1(b1-b0), d2(c1-c0) {}
+      : v0(a0,primID | (last << 31)), v1(b0,geomID), v2(c0,mask), d0(a1-a0), d1(b1-b0), d2(c1-c0) {}
 
     /*! access hidden members */
-    __forceinline unsigned primID() const { if (list) return v0.a & 0x7FFFFFFF; else return v0.a; }
-    __forceinline unsigned geomID() const { return v1.a; }
+    template<bool list>
+    __forceinline unsigned primID() const { 
+      if (list) return v0.a & 0x7FFFFFFF; 
+      else      return v0.a; 
+    }
+    template<bool list>
+    __forceinline unsigned geomID() const { 
+      return v1.a; 
+    }
     __forceinline unsigned mask  () const { return v2.a; }
-    __forceinline int last  () const { 
-      if (list) return v0.a & 0x80000000; 
-      else { assert(false); return 0; }
+    __forceinline int last() const { 
+      return v0.a & 0x80000000; 
     }
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
+    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
       const PrimRef& prim = *prims; prims++;
       const unsigned geomID = prim.geomID();
@@ -153,7 +163,7 @@ namespace embree
       const Vec3fa& b1 = mesh->vertex(tri.v[1],1);
       const Vec3fa& c0 = mesh->vertex(tri.v[2],0);
       const Vec3fa& c1 = mesh->vertex(tri.v[2],1);
-      new (this) Triangle1vMB(a0,a1,b0,b1,c0,c1,mesh->id,primID,mesh->mask,!prims);
+      new (this) Triangle1vMB(a0,a1,b0,b1,c0,c1,mesh->id,primID,mesh->mask,list && !prims);
     }
     
   public:

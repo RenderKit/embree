@@ -100,7 +100,7 @@ namespace embree
     public:
 
       /*! Constructor. */
-      BVH4BuilderFast (LockStepTaskScheduler* scheduler, BVH4* bvh, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+      BVH4BuilderFast (LockStepTaskScheduler* scheduler, BVH4* bvh, size_t listMode, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
       
       /*! Destructor */
       ~BVH4BuilderFast ();
@@ -156,6 +156,7 @@ namespace embree
     public:
       LockStepTaskScheduler* scheduler;
       BVH4* bvh;                               //!< Output BVH
+      size_t listMode;
       size_t logBlockSize;
       size_t logSAHBlockSize;
       size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }
@@ -163,7 +164,7 @@ namespace embree
       size_t primBytes; 
       size_t minLeafSize;
       size_t maxLeafSize;
-
+      
     protected:
       TaskScheduler::Task task;
       
@@ -179,7 +180,7 @@ namespace embree
     class BVH4BuilderFastT : public BVH4BuilderFast
     {
     public:
-      BVH4BuilderFastT (BVH4* bvh, Scene* scene, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize, bool parallel);
+      BVH4BuilderFastT (BVH4* bvh, Scene* scene, size_t listMode, size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize, bool parallel);
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
     public:
       Scene* scene;         //!< input scene
@@ -189,8 +190,8 @@ namespace embree
     class BVH4BezierBuilderFast : public BVH4BuilderFastT<Primitive>
     {
     public:
-      BVH4BezierBuilderFast (BVH4* bvh, Scene* scene);
-      BVH4BezierBuilderFast (BVH4* bvh, BezierCurves* geom);
+      BVH4BezierBuilderFast (BVH4* bvh, Scene* scene, size_t listMode);
+      BVH4BezierBuilderFast (BVH4* bvh, BezierCurves* geom, size_t listMode);
       size_t number_of_primitives();
       void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
       void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo);
@@ -202,8 +203,8 @@ namespace embree
     class BVH4TriangleBuilderFast : public BVH4BuilderFastT<Primitive>
     {
     public:
-      BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene);
-      BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* mesh);
+      BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene, size_t listMode);
+      BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
       size_t number_of_primitives();
       void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
       void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) ;
@@ -215,8 +216,8 @@ namespace embree
     class BVH4UserGeometryBuilderFastT : public BVH4BuilderFastT<Primitive>
     {
     public:
-      BVH4UserGeometryBuilderFastT (BVH4* bvh, Scene* scene);
-      BVH4UserGeometryBuilderFastT (BVH4* bvh, UserGeometryBase* geom);
+      BVH4UserGeometryBuilderFastT (BVH4* bvh, Scene* scene, size_t listMode);
+      BVH4UserGeometryBuilderFastT (BVH4* bvh, UserGeometryBase* geom, size_t listMode);
       size_t number_of_primitives();
       void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
       void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) ;

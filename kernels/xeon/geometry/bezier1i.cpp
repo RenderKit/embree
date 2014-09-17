@@ -22,7 +22,7 @@ namespace embree
   SceneBezier1i SceneBezier1i::type;
 
   Bezier1iType::Bezier1iType () 
-    : PrimitiveType("bezier1i",sizeof(Bezier1i<listMode>),1,true,1) {} 
+    : PrimitiveType("bezier1i",sizeof(Bezier1i),1,true,1) {} 
   
   size_t Bezier1iType::blocks(size_t x) const {
     return x;
@@ -35,7 +35,7 @@ namespace embree
   Bezier1iMBType Bezier1iMBType::type;
 
   Bezier1iMBType::Bezier1iMBType () 
-    : PrimitiveType("bezier1imb",sizeof(Bezier1iMB<listMode>),1,true,1) {} 
+    : PrimitiveType("bezier1imb",sizeof(Bezier1iMB),1,true,1) {} 
   
   size_t Bezier1iMBType::blocks(size_t x) const {
     return x;
@@ -49,22 +49,40 @@ namespace embree
   {
     BBox3fa bounds = empty;
     Scene* scene = (Scene*) geom;
-    Bezier1i<listMode>* prim = (Bezier1i<listMode>*) prim;
-    
-    while (true)
+    Bezier1i* prim = (Bezier1i*) prim;
+
+    if (num == -1)
     {
-      const unsigned geomID = prim->geomID();
-      const unsigned primID = prim->primID();
-      const BezierCurves* curves = scene->getBezierCurves(geomID);
-      const int vtx = curves->curve(primID);
-      bounds.extend(curves->vertex(vtx+0));
-      bounds.extend(curves->vertex(vtx+1));
-      bounds.extend(curves->vertex(vtx+2));
-      bounds.extend(curves->vertex(vtx+3));
-      //prim->mask = curves->mask;
-      const bool last = prim->last();
-      if (last) break;
-      prim++;
+      while (true)
+      {
+	const unsigned geomID = prim->geomID<1>();
+	const unsigned primID = prim->primID<1>();
+	const BezierCurves* curves = scene->getBezierCurves(geomID);
+	const int vtx = curves->curve(primID);
+	bounds.extend(curves->vertex(vtx+0));
+	bounds.extend(curves->vertex(vtx+1));
+	bounds.extend(curves->vertex(vtx+2));
+	bounds.extend(curves->vertex(vtx+3));
+	//prim->mask = curves->mask;
+	const bool last = prim->last();
+	if (last) break;
+	prim++;
+      }
+    }
+    else
+    {
+      for (size_t i=0; i<num; i++, prim++)
+      {
+	const unsigned geomID = prim->geomID<0>();
+	const unsigned primID = prim->primID<0>();
+	const BezierCurves* curves = scene->getBezierCurves(geomID);
+	const int vtx = curves->curve(primID);
+	bounds.extend(curves->vertex(vtx+0));
+	bounds.extend(curves->vertex(vtx+1));
+	bounds.extend(curves->vertex(vtx+2));
+	bounds.extend(curves->vertex(vtx+3));
+	//prim->mask = curves->mask;
+      }
     }
     return bounds; 
   }

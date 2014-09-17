@@ -25,11 +25,11 @@ namespace embree
   template<bool list>
   struct Bezier1iIntersector8
   {
-    typedef Bezier1i<list> Primitive;
+    typedef Bezier1i Primitive;
     typedef BezierIntersector8::Precalculations Precalculations;
 
     static __forceinline void intersect(Precalculations& pre, Ray8& ray, const size_t k, const Primitive& curve, void* geom) {
-      BezierIntersector8::intersect(pre,ray,k,curve.p[0],curve.p[1],curve.p[2],curve.p[3],curve.geomID(),curve.primID(),geom);
+      BezierIntersector8::intersect(pre,ray,k,curve.p[0],curve.p[1],curve.p[2],curve.p[3],curve.geomID<list>(),curve.primID<list>(),geom);
     }
 
     static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& curve, void* geom)
@@ -39,7 +39,7 @@ namespace embree
     }
 
     static __forceinline bool occluded(Precalculations& pre, Ray8& ray, const size_t k, const Primitive& curve, void* geom) {
-      return BezierIntersector8::occluded(pre,ray,k,curve.p[0],curve.p[1],curve.p[2],curve.p[3],curve.geomID(),curve.primID(),geom);
+      return BezierIntersector8::occluded(pre,ray,k,curve.p[0],curve.p[1],curve.p[2],curve.p[3],curve.geomID<list>(),curve.primID<list>(),geom);
     }
 
     static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& curve, void* geom)

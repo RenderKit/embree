@@ -26,7 +26,7 @@ namespace embree
   template<bool list>
   struct Triangle4iIntersector1Pluecker
   {
-    typedef Triangle4i<list> Primitive;
+    typedef Triangle4i Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const Ray& ray) {}
@@ -92,7 +92,7 @@ namespace embree
       const ssef v = V / absDen;
       const ssef t = T / absDen;
       size_t i = select_min(valid,t);
-      int geomID = tri.geomID(i);
+      int geomID = tri.geomID<list>(i);
 
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__) || defined(__USE_RAY_MASK__)
@@ -103,7 +103,7 @@ namespace embree
           valid[i] = 0;
           if (none(valid)) return;
           i = select_min(valid,t);
-          geomID = tri.geomID(i);
+          geomID = tri.geomID<list>(i);
           continue;
         }
         if (likely(!geometry->hasIntersectionFilter1())) 
@@ -117,18 +117,18 @@ namespace embree
           ray.Ng.y = Ng.y[i];
           ray.Ng.z = Ng.z[i];
           ray.geomID = geomID;
-          ray.primID = tri.primID(i);
+          ray.primID = tri.primID<list>(i);
 
 #if defined(__INTERSECTION_FILTER__) || defined(__USE_RAY_MASK__)
           return;
         }
 
         Vec3fa N = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-        if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],N,geomID,tri.primID(i))) return;
+        if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],N,geomID,tri.primID<list>(i))) return;
         valid[i] = 0;
         if (none(valid)) return;
         i = select_min(valid,t);
-        geomID = tri.geomID(i);
+        geomID = tri.geomID<list>(i);
       }
 #endif
 
@@ -194,7 +194,7 @@ namespace embree
 
       for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
       {  
-        const int geomID = tri.geomID(i);
+        const int geomID = tri.geomID<list>(i);
         TriangleMesh* geometry = ((Scene*)geom)->getTriangleMesh(geomID);
 
 #if defined(__USE_RAY_MASK__)
@@ -215,7 +215,7 @@ namespace embree
         const ssef v = V * rcpAbsDen;
         const ssef t = T * rcpAbsDen;
         const Vec3fa N = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-        if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],N,geomID,tri.primID(i))) 
+        if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],N,geomID,tri.primID<list>(i))) 
 #endif
           return true;
       }

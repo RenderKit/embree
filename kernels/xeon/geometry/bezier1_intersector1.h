@@ -25,15 +25,15 @@ namespace embree
   template<bool list>
   struct Bezier1Intersector1
   {
-    typedef Bezier1<list> Primitive;
+    typedef Bezier1 Primitive;
     typedef BezierIntersector1::Precalculations Precalculations;
 
     static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom) {
-      BezierIntersector1::intersect(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),geom);
+      BezierIntersector1::intersect(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),geom);
     }
 
     static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom) {
-      return BezierIntersector1::occluded(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),geom);
+      return BezierIntersector1::occluded(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),geom);
     }
   };
 }

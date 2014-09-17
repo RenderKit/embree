@@ -117,6 +117,7 @@ namespace embree
       size_t minLeafSize;                 //!< minimal size of a leaf
       size_t maxLeafSize;                 //!< maximal size of a leaf
       bool enableSpatialSplits;
+      size_t listMode;
       size_t logSAHBlockSize;             //!< set to the logarithm of block size to use for SAH
       atomic_t remainingReplications;     //!< remaining replications allowed by spatial splits
       

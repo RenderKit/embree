@@ -32,7 +32,7 @@ namespace embree
   template<bool list>
   struct Triangle1Intersector8MoellerTrumbore
   {
-    typedef Triangle1<list> Primitive;
+    typedef Triangle1 Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
@@ -91,8 +91,8 @@ namespace embree
       const avxf u = U*rcpAbsDen;
       const avxf v = V*rcpAbsDen;
       const avxf t = T*rcpAbsDen;
-      const int geomID = tri.geomID();
-      const int primID = tri.primID();
+      const int geomID = tri.geomID<list>();
+      const int primID = tri.primID<list>();
       
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
@@ -165,7 +165,7 @@ namespace embree
       
       /* intersection filter test */
 #if defined(__INTERSECTION_FILTER__)
-      const int geomID = tri.geomID();
+      const int geomID = tri.geomID<list>();
       Geometry* geometry = ((Scene*)geom)->get(geomID);
       if (unlikely(geometry->hasOcclusionFilter8()))
       {
@@ -174,7 +174,7 @@ namespace embree
 	const avxf u = U*rcpAbsDen;
 	const avxf v = V*rcpAbsDen;
 	const avxf t = T*rcpAbsDen;
-	const int primID = tri.primID();
+	const int primID = tri.primID<list>();
 	valid = runOcclusionFilter8(valid,geometry,ray,u,v,t,Ng,geomID,primID);
       }
 #endif

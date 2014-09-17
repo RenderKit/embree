@@ -136,7 +136,7 @@ namespace embree
     {
       size_t num; char* tri = ref.leaf(num);
       if (unlikely(ref == BVH4::emptyNode)) return empty;
-      return bvh->primTy.update(tri,num,mesh);
+      return bvh->primTy.update(tri,LeafMode ? -1 : num,mesh);
     }
     
     __forceinline BBox3fa BVH4Refit::node_bounds(NodeRef& ref)

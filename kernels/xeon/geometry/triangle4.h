@@ -23,7 +23,6 @@ namespace embree
   /*! Precalculated representation for 4 triangles. Stores for each
       triangle a base vertex, two edges, and the geometry normal to
       speed up intersection calculations. */
-  template<bool list>
   struct Triangle4
   {
   public:
@@ -33,7 +32,7 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     __forceinline Triangle4 (const sse3f& v0, const sse3f& v1, const sse3f& v2, const ssei& geomIDs, const ssei& primIDs, const ssei& mask, const bool last)
-      : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomIDs(geomIDs), primIDs(primIDs | ((list && last) << 31))
+      : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomIDs(geomIDs), primIDs(primIDs | (last << 31))
     {
 #if defined(__USE_RAY_MASK__)
       this->mask = mask;
@@ -100,19 +99,26 @@ namespace embree
 
     /*! checks if this is the last triangle in the list */
     __forceinline int last() const { 
-      if (list) return primIDs[0] & 0x80000000; 
-      else { assert(false); return 0; }
+      return primIDs[0] & 0x80000000; 
     }
 
     /*! returns the geometry IDs */
-    __forceinline ssei geomID() const { return geomIDs; }
-    __forceinline int  geomID(const size_t i) const { assert(i<4); return geomIDs[i]; }
+    template<bool list>
+    __forceinline ssei geomID() const { 
+      return geomIDs; 
+    }
+    template<bool list>
+    __forceinline int geomID(const size_t i) const { 
+      assert(i<4); return geomIDs[i]; 
+    }
 
     /*! returns the primitive IDs */
+    template<bool list>
     __forceinline ssei primID() const { 
       if (list) return primIDs & 0x7FFFFFFF; 
       else      return primIDs;
     }
+    template<bool list>
     __forceinline int  primID(const size_t i) const { 
       assert(i<4); 
       if (list) return primIDs[i] & 0x7FFFFFFF; 
@@ -120,7 +126,7 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene)
+    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
       ssei vgeomID = -1, vprimID = -1, vmask = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
@@ -142,11 +148,11 @@ namespace embree
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle4::store_nt(this,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask,!prims));
+      Triangle4::store_nt(this,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask,list && !prims));
     }
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
+    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       ssei vgeomID = -1, vprimID = -1, vmask = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
@@ -168,7 +174,7 @@ namespace embree
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle4::store_nt(this,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask,begin>=end));
+      Triangle4::store_nt(this,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask,list && begin>=end));
     }
     
   public:

@@ -91,6 +91,7 @@ namespace embree
       size_t minLeafSize;    //!< minimal size of a leaf
       size_t maxLeafSize;    //!< maximal size of a leaf
       bool enableSpatialSplits; //!< turns on spatial splits
+      size_t listMode;
       
       BVH4* bvh;         //!< output
       LockStepTaskScheduler* scheduler;

@@ -33,10 +33,10 @@ namespace embree
     __forceinline bool last() const { return isLast; }
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene) // FIXME: use nontemporal stores
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list) // FIXME: use nontemporal stores
     {
       const PrimRef& prim = prims[i]; i++;
-      new (this) AccelSetItem((AccelSet*) (UserGeometryBase*) scene->get(prim.geomID()), prim.primID(), i>=end);
+      new (this) AccelSetItem((AccelSet*) (UserGeometryBase*) scene->get(prim.geomID()), prim.primID(), list && i>=end);
     }
 
   public:
