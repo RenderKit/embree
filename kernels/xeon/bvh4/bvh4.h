@@ -661,11 +661,10 @@ namespace embree
       /*! Clears the node. */
       __forceinline void clear() 
       {
-	AffineSpace3fa empty = AffineSpace3fa::scale(Vec3fa(1E+19));
-	naabb.l.vx = empty.l.vx;
-	naabb.l.vy = empty.l.vy;
-	naabb.l.vz = empty.l.vz;
-	naabb.p    = empty.p;
+	naabb.l.vx = Vec3fa(nan);
+	naabb.l.vy = Vec3fa(nan);
+	naabb.l.vz = Vec3fa(nan);
+	naabb.p    = Vec3fa(nan);
 	BaseNode::clear();
       }
 
@@ -726,7 +725,7 @@ namespace embree
 	const sse3f org = xfmPoint(naabb,ray_org);
 	const sse3f tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
 	const sse3f tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
-	
+
 #if defined(__SSE4_1__)
 	const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
 	const ssef tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
@@ -734,8 +733,8 @@ namespace embree
 	const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
 	const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
 	const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
-	const ssef tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-	const ssef tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar));
+	const ssef tNear  = max(tnear, tNearX,tNearY,tNearZ);
+	const ssef tFar   = min(tfar,  tFarX ,tFarY ,tFarZ );
 	const sseb vmask = tNear <= tFar;
 	dist = tNear;
 	return movemask(vmask);
@@ -746,8 +745,8 @@ namespace embree
 	const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
 	const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
 	const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
-	const ssef tNear = max(tNearX,tNearY,tNearZ,tnear);
-	const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+	const ssef tNear = max(tnear, tNearX,tNearY,tNearZ);
+	const ssef tFar  = min(tfar,  tFarX ,tFarY ,tFarZ );
 	const sseb vmask = tNear <= tFar;
 	dist = tNear;
 	return movemask(vmask);
@@ -765,9 +764,9 @@ namespace embree
       __forceinline void clear() 
       {
         space0 = space1 = one;
-        t0s0.lower = t0s0.upper = Vec3fa(1E10);
-        t1s0_t0s1.lower = t1s0_t0s1.upper = Vec3fa(zero);
-        t1s1.lower = t1s1.upper = Vec3fa(1E10);
+        t0s0.lower = t0s0.upper = Vec3fa(nan);
+        t1s0_t0s1.lower = t1s0_t0s1.upper = Vec3fa(nan);
+        t1s1.lower = t1s1.upper = Vec3fa(nan);
         BaseNode::clear();
       }
 
@@ -876,10 +875,10 @@ namespace embree
 	const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
 	const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
 	const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
-	const ssef tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-	const ssef tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar));
-	dist = tNear;
+	const ssef tNear  = max(tnear, tNearX,tNearY,tNearZ);
+	const ssef tFar   = min(tfar,  tFarX ,tFarY ,tFarZ );
 	const sseb vmask = tNear <= tFar;
+	dist = tNear;
 	return movemask(vmask);
 #else
 	const ssef tNearX = min(tLowerXYZ.x,tUpperXYZ.x);
@@ -888,10 +887,10 @@ namespace embree
 	const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
 	const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
 	const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
-	const ssef tNear = max(tNearX,tNearY,tNearZ,tnear);
-	const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
-	dist = tNear;
+	const ssef tNear = max(tnear, tNearX,tNearY,tNearZ);
+	const ssef tFar  = min(tfar,  tFarX ,tFarY ,tFarZ );
 	const sseb vmask = tNear <= tFar;
+	dist = tNear;
 	return movemask(vmask);
 #endif
       }
