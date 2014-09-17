@@ -59,7 +59,7 @@ namespace embree
     static const size_t tyNodeMB = 1;
     static const size_t tyUnalignedNode = 2;
     static const size_t tyUnalignedNodeMB = 3;
-    static const size_t tyLeaf = 4;
+    static const size_t tyLeaf = 8;
 
     /*! Empty node */
     static const size_t emptyNode = tyLeaf;
@@ -113,14 +113,14 @@ namespace embree
       __forceinline bool isBarrier() const { return (ptr & barrier_mask) != 0; }
 
       /*! checks if this is a leaf */
-      __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) >= tyLeaf; }
+      __forceinline size_t isLeaf() const { return ptr & tyLeaf; }
 
       /*! checks if this is a leaf */
       __forceinline int isLeaf(int types) const { 
 	if      (types == 0x0001) return !isNode();
-	else if (types == 0x0010) return !isNodeMB();
+	/*else if (types == 0x0010) return !isNodeMB();
 	else if (types == 0x0100) return !isUnalignedNode();
-	else if (types == 0x1000) return !isUnalignedNodeMB();
+	else if (types == 0x1000) return !isUnalignedNodeMB();*/
 	else return isLeaf();
       }
       
