@@ -77,9 +77,12 @@ namespace embree
 	remainingReplications = g_hair_builder_replication_factor*numPrimitives;
 	bvh->bounds = pinfo.geomBounds;
 	
+        Allocator nodeAlloc(&bvh->alloc);
+        Allocator leafAlloc(&bvh->alloc);
+
 #if 0
 	const Split split = find_split(threadIndex,threadCount,prims,pinfo,pinfo.geomBounds);
-	BuildTask task(&bvh->root,0,prims,pinfo,pinfo.geomBounds,split); recurseTask(threadIndex,task);
+	BuildTask task(&bvh->root,0,prims,pinfo,pinfo.geomBounds,split); recurseTask(threadIndex,nodeAlloc,leafAlloc,task);
 	_mm_sfence(); // make written leaves globally visible
 #else
 	const Split split = find_split<true>(threadIndex,threadCount,prims,pinfo,pinfo.geomBounds,pinfo);
@@ -97,7 +100,7 @@ namespace embree
 	  
 	  size_t numChildren;
 	  BuildTask ctasks[BVH4::N];
-	  processTask<true>(threadIndex,threadCount,task,ctasks,numChildren);
+	  processTask<true>(threadIndex,threadCount,nodeAlloc,leafAlloc,task,ctasks,numChildren);
 	  
 	  for (size_t i=0; i<numChildren; i++) {
 	    atomic_add(&numActiveTasks,+1);
@@ -124,7 +127,8 @@ namespace embree
     }
 
     template<typename Primitive>
-    BVH4::NodeRef BVH4BuilderHairMBT<Primitive>::createLeaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo)
+    BVH4::NodeRef BVH4BuilderHairMBT<Primitive>::createLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, 
+                                                            size_t depth, BezierRefList& prims, const PrimInfo& pinfo)
     {
       size_t N = pinfo.size();
       
@@ -139,7 +143,7 @@ namespace embree
       }
       //assert(N <= (size_t)BVH4::maxLeafBlocks);
      
-      Primitive* leaf = (Primitive*) bvh->allocPrimitiveBlocks(threadIndex,N);
+      Primitive* leaf = (Primitive*) bvh->allocPrimitiveBlocks(leafAlloc,N);
       BezierRefList::block_iterator_unsafe iter(prims);
       for (size_t i=0; i<N; i++) leaf[i].fill(iter,scene,listMode);
       assert(!iter);
@@ -151,7 +155,8 @@ namespace embree
       return bvh->encodeLeaf((char*)leaf,listMode ? listMode : N);
     }
 
-    BVH4::NodeRef BVH4BuilderHairMB::createLargeLeaf(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo, size_t depth)
+    BVH4::NodeRef BVH4BuilderHairMB::createLargeLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, 
+                                                     BezierRefList& prims, const PrimInfo& pinfo, size_t depth)
     {
 #if defined(_DEBUG)
       if (depth >= BVH4::maxBuildDepthLeaf) 
@@ -160,7 +165,7 @@ namespace embree
       
       /* create leaf for few primitives */
       if (pinfo.size() <= BVH4::maxLeafBlocks)
-	return createLeaf(threadIndex,depth,prims,pinfo);
+	return createLeaf(threadIndex,nodeAlloc,leafAlloc,depth,prims,pinfo);
       
       /* first level */
       BezierRefList prims0, prims1;
@@ -174,10 +179,10 @@ namespace embree
       FallBackSplit::find(threadIndex,alloc,prims1,cprims[2],cinfo[2],cprims[3],cinfo[3]);
       
       /*! create an inner node */
-      BVH4::Node* node = bvh->allocNode(threadIndex);
+      BVH4::Node* node = bvh->allocNode(nodeAlloc);
       for (size_t i=0; i<4; i++) {
         node->set(i,cinfo[i].geomBounds);
-        node->set(i,createLargeLeaf(threadIndex,cprims[i],cinfo[i],depth+1));
+        node->set(i,createLargeLeaf(threadIndex,nodeAlloc,leafAlloc,cprims[i],cinfo[i],depth+1));
       }
       BVH4::compact(node); // moves empty nodes to the end
       return bvh->encodeNode(node);
@@ -242,14 +247,15 @@ namespace embree
     }
     
     template<bool Parallel>
-    __forceinline void BVH4BuilderHairMB::processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4::N], size_t& numTasks_o)
+    __forceinline void BVH4BuilderHairMB::processTask(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, 
+                                                      BuildTask& task, BuildTask task_o[BVH4::N], size_t& numTasks_o)
     {
       /* create enforced leaf */
       const float leafSAH  = BVH4::intCost*task.pinfo.leafSAH();
       const float splitSAH = BVH4::travCostUnaligned*halfArea(task.bounds.bounds)+BVH4::intCost*task.split.splitSAH();
 
       if (task.pinfo.size() <= minLeafSize || task.depth >= BVH4::maxBuildDepth || (task.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
-	*task.dst = createLargeLeaf(threadIndex,task.prims,task.pinfo,task.depth);
+	*task.dst = createLargeLeaf(threadIndex,nodeAlloc,leafAlloc,task.prims,task.pinfo,task.depth);
 	numTasks_o = 0;
 	return;
       }
@@ -308,7 +314,7 @@ namespace embree
       /* create aligned node */
       if (isAligned)
       {
-	BVH4::NodeMB* node = bvh->allocNodeMB(threadIndex);
+	BVH4::NodeMB* node = bvh->allocNodeMB(nodeAlloc);
 	for (size_t i=0; i<numChildren; i++) 
         {
           std::pair<BBox3fa,BBox3fa> bounds = ObjectPartition::computePrimInfoMB<Parallel>(threadIndex,threadCount,scheduler,scene,cprims[i]);
@@ -322,7 +328,7 @@ namespace embree
       /* create unaligned node */
       else 
       {
-	BVH4::UnalignedNodeMB* node = bvh->allocUnalignedNodeMB(threadIndex);
+	BVH4::UnalignedNodeMB* node = bvh->allocUnalignedNodeMB(nodeAlloc);
 	for (size_t i=0; i<numChildren; i++) 
         {
           std::pair<AffineSpace3fa,AffineSpace3fa> spaces = ObjectPartitionUnaligned::computeAlignedSpaceMB(threadIndex,threadCount,scheduler,scene,cprims[i]); 
@@ -381,17 +387,20 @@ namespace embree
       }
     }
 
-    void BVH4BuilderHairMB::recurseTask(size_t threadIndex, size_t threadCount, BuildTask& task)
+    void BVH4BuilderHairMB::recurseTask(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, BuildTask& task)
     {
       size_t numChildren;
       BuildTask tasks[BVH4::N];
-      processTask<false>(threadIndex,threadCount,task,tasks,numChildren);
+      processTask<false>(threadIndex,threadCount,nodeAlloc,leafAlloc,task,tasks,numChildren);
       for (size_t i=0; i<numChildren; i++) 
-	recurseTask(threadIndex,threadCount,tasks[i]);
+	recurseTask(threadIndex,threadCount,nodeAlloc,leafAlloc,tasks[i]);
     }
     
     void BVH4BuilderHairMB::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
+      Allocator nodeAlloc(&bvh->alloc);
+      Allocator leafAlloc(&bvh->alloc);
+
       while (numActiveTasks) 
       {
 	taskMutex.lock();
@@ -407,7 +416,7 @@ namespace embree
 	/* recursively finish task */
 	if (task.pinfo.size() < 1024) {
 	  atomic_add(&numActiveTasks,-1);
-	  recurseTask(threadIndex,threadCount,task);
+	  recurseTask(threadIndex,threadCount,nodeAlloc,leafAlloc,task);
 	}
 	
 	/* execute task and add child tasks */
@@ -415,7 +424,7 @@ namespace embree
 	{
 	  size_t numChildren;
 	  BuildTask ctasks[BVH4::N];
-	  processTask<false>(threadIndex,threadCount,task,ctasks,numChildren);
+	  processTask<false>(threadIndex,threadCount,nodeAlloc,leafAlloc,task,ctasks,numChildren);
 	  taskMutex.lock();
 	  for (size_t i=0; i<numChildren; i++) {
 	    atomic_add(&numActiveTasks,+1);

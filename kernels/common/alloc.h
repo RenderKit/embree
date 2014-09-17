@@ -269,7 +269,7 @@ namespace embree
     {
       block.clear();
       for (size_t i=0; i<thread.size(); i++) 
-	thread[i].clear();
+        thread[i].clear();
     }
 
     /*! initializes the allocator */
@@ -278,8 +278,8 @@ namespace embree
       clear();
       const size_t numThreads = getNumberOfLogicalThreads();
       if (thread.size() != numThreads) {
-	thread.resize(numThreads);
-	for (size_t i=0; i<numThreads; i++) thread[i].alloc = this;
+        thread.resize(numThreads);
+        for (size_t i=0; i<numThreads; i++) thread[i].alloc = this;
       }
       bytesReserve = max(bytesAllocate,bytesReserve);
       size_t bytesReserved = max(bytesReserve,size_t(allocBlockSize*numThreads));

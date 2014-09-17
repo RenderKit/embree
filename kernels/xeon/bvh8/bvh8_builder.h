@@ -35,6 +35,7 @@ namespace embree
       typedef BVH8::Node    Node;
       typedef BVH8::NodeRef NodeRef;
       typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
+      typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
 
       /*! the build record stores all information to continue the build of some subtree */
       struct BuildRecord 
@@ -77,13 +78,13 @@ namespace embree
       //void build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount);
       
       /*! creates a leaf node */
-      virtual NodeRef createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo) = 0;
+      virtual NodeRef createLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, PrimRefList& prims, const PrimInfo& pinfo) = 0;
       
       /*! creates a large leaf by adding additional internal nodes */
-      NodeRef createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth);
+      NodeRef createLargeLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, PrimRefList& prims, const PrimInfo& pinfo, size_t depth);
       
       /*! copies topmost nodes to improve memory layout */
-      NodeRef layout_top_nodes(size_t threadIndex, NodeRef node);
+      NodeRef layout_top_nodes(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, NodeRef node);
 
       /*! finds best possible split for a list of triangles */
       template<bool PARALLEL>
@@ -91,13 +92,13 @@ namespace embree
 
       /*! creates a node from some build record */
       template<bool PARALLEL>
-      static size_t createNode(size_t threadIndex, size_t threadCount, BVH8Builder* parent, BuildRecord& record, BuildRecord records_o[BVH8::N]);
+      static size_t createNode(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, BVH8Builder* parent, BuildRecord& record, BuildRecord records_o[BVH8::N]);
 
       /*! continues build */
-      void continue_build(size_t threadIndex, size_t threadCount, BuildRecord& record);
+      void continue_build(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, BuildRecord& record);
 
       /*! recursively finishes build */
-      void finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record);
+      void finish_build(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, BuildRecord& record);
 
     protected:
       Scene* scene;                       //!< input geometry
@@ -137,7 +138,7 @@ namespace embree
     public:
       BVH8BuilderT (BVH8* bvh, Scene* scene, size_t mode);
       BVH8BuilderT (BVH8* bvh, TriangleMesh* mesh, size_t mode);
-      NodeRef createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo);
+      NodeRef createLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, PrimRefList& prims, const PrimInfo& pinfo);
     };
   }
 }

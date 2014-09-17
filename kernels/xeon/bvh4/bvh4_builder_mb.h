@@ -35,6 +35,7 @@ namespace embree
       typedef BVH4::Node    Node;
       typedef BVH4::NodeRef NodeRef;
       typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
+      typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
 
       /*! the build record stores all information to continue the build of some subtree */
       struct BuildRecord 
@@ -74,13 +75,12 @@ namespace embree
    
       /*! build job */
       TASK_SET_FUNCTION(BVH4BuilderMB,build_parallel);
-      //void build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount);
       
       /*! creates a leaf node */
-      virtual NodeRef createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo) = 0;
+      virtual NodeRef createLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, PrimRefList& prims, const PrimInfo& pinfo) = 0;
       
       /*! creates a large leaf by adding additional internal nodes */
-      NodeRef createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth);
+      NodeRef createLargeLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, PrimRefList& prims, const PrimInfo& pinfo, size_t depth);
       
       /*! copies topmost nodes to improve memory layout */
       NodeRef layout_top_nodes(size_t threadIndex, NodeRef node);
@@ -91,13 +91,14 @@ namespace embree
 
       /*! creates a node from some build record */
       template<bool PARALLEL>
-      static size_t createNode(size_t threadIndex, size_t threadCount, BVH4BuilderMB* parent, BuildRecord& record, BuildRecord records_o[BVH4::N]);
+      static size_t createNode(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, 
+                               BVH4BuilderMB* parent, BuildRecord& record, BuildRecord records_o[BVH4::N]);
 
       /*! continues build */
-      void continue_build(size_t threadIndex, size_t threadCount, BuildRecord& record);
+      void continue_build(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, BuildRecord& record);
 
       /*! recursively finishes build */
-      void finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record);
+      void finish_build(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, BuildRecord& record);
 
       /*! performs some brute force restructuring of the tree */
       void restructureTree(NodeRef& ref, size_t depth);
@@ -140,7 +141,7 @@ namespace embree
     public:
       BVH4BuilderMBT (BVH4* bvh, Scene* scene, size_t mode);
       BVH4BuilderMBT (BVH4* bvh, TriangleMesh* mesh, size_t mode);
-      NodeRef createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo);
+      NodeRef createLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, PrimRefList& prims, const PrimInfo& pinfo);
     };
   }
 }

@@ -56,11 +56,12 @@ namespace embree
 
     ///////////////////////////////////////////////////////////////////////////////////////
     template<typename Triangle>
-    typename BVH4BuilderMB::NodeRef BVH4BuilderMBT<Triangle>::createLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo)
+    typename BVH4BuilderMB::NodeRef BVH4BuilderMBT<Triangle>::createLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, 
+                                                                         PrimRefList& prims, const PrimInfo& pinfo)
     {
       /* allocate leaf node */
       size_t N = blocks(pinfo.size());
-      Triangle* leaf = (Triangle*) bvh->allocPrimitiveBlocks(threadIndex,N);
+      Triangle* leaf = (Triangle*) bvh->allocPrimitiveBlocks(nodeAlloc,N);
       assert(N <= (size_t)BVH4::maxLeafBlocks);
       
       /* insert all triangles */
@@ -75,7 +76,7 @@ namespace embree
       return bvh->encodeLeaf(leaf,listMode ? listMode : N);
     }
     
-    BVH4BuilderMB::NodeRef BVH4BuilderMB::createLargeLeaf(size_t threadIndex, PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
+    BVH4BuilderMB::NodeRef BVH4BuilderMB::createLargeLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
     {
 #if defined(_DEBUG)
       if (depth >= BVH4::maxBuildDepthLeaf) 
@@ -84,7 +85,7 @@ namespace embree
       
       /* create leaf for few primitives */
       if (pinfo.size() <= maxLeafSize)
-	return createLeaf(threadIndex,prims,pinfo);
+	return createLeaf(threadIndex,nodeAlloc,leafAlloc,prims,pinfo);
       
       /* first level */
       PrimRefList prims0, prims1;
@@ -98,10 +99,10 @@ namespace embree
       FallBackSplit::find(threadIndex,alloc,prims1,cprims[2],cinfo[2],cprims[3],cinfo[3]);
       
       /*! create an inner node */
-      BVH4::NodeMB* node = bvh->allocNodeMB(threadIndex);
+      BVH4::NodeMB* node = bvh->allocNodeMB(nodeAlloc);
       for (size_t i=0; i<4; i++) 
 	if (cinfo[i].size())
-	  node->set(i,cinfo[i].geomBounds,createLargeLeaf(threadIndex,cprims[i],cinfo[i],depth+1));
+	  node->set(i,cinfo[i].geomBounds,createLargeLeaf(threadIndex,nodeAlloc,leafAlloc,cprims[i],cinfo[i],depth+1));
 
       BVH4::compact(node); // move empty nodes to the end
       return bvh->encodeNode(node);
@@ -123,7 +124,8 @@ namespace embree
     }
     
     template<bool PARALLEL>
-    __forceinline size_t BVH4BuilderMB::createNode(size_t threadIndex, size_t threadCount, BVH4BuilderMB* parent, BuildRecord& record, BuildRecord records_o[BVH4::N])
+    __forceinline size_t BVH4BuilderMB::createNode(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, 
+                                                   BVH4BuilderMB* parent, BuildRecord& record, BuildRecord records_o[BVH4::N])
     {
       /*! compute leaf and split cost */
       const float leafSAH  = parent->intCost*record.pinfo.leafSAH(parent->logSAHBlockSize);
@@ -133,7 +135,7 @@ namespace embree
       
       /*! create a leaf node when threshold reached or SAH tells us to stop */
       if (record.pinfo.size() <= parent->minLeafSize || record.depth > BVH4::maxBuildDepth || (record.pinfo.size() <= parent->maxLeafSize && leafSAH <= splitSAH)) {
-	*record.dst = parent->createLargeLeaf(threadIndex,record.prims,record.pinfo,record.depth+1); return 0;
+	*record.dst = parent->createLargeLeaf(threadIndex,nodeAlloc,leafAlloc,record.prims,record.pinfo,record.depth+1); return 0;
       }
       
       /*! initialize child list */
@@ -191,7 +193,7 @@ namespace embree
       } while (numChildren < BVH4::N);
       
       /*! create an inner node */
-      BVH4::NodeMB* node = parent->bvh->allocNodeMB(threadIndex);
+      BVH4::NodeMB* node = parent->bvh->allocNodeMB(nodeAlloc);
       for (size_t i=0; i<numChildren; i++) {
 	node->set(i,records_o[i].pinfo.geomBounds);
 	records_o[i].dst = &node->child(i);
@@ -200,20 +202,20 @@ namespace embree
       return numChildren;
     }
 
-    void BVH4BuilderMB::finish_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
+    void BVH4BuilderMB::finish_build(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, BuildRecord& record)
     {
       BuildRecord children[BVH4::N];
-      size_t N = createNode<false>(threadIndex,threadCount,this,record,children);
+      size_t N = createNode<false>(threadIndex,threadCount,nodeAlloc,leafAlloc,this,record,children);
       for (size_t i=0; i<N; i++)
-	finish_build(threadIndex,threadCount,children[i]);
+	finish_build(threadIndex,threadCount,nodeAlloc,leafAlloc,children[i]);
     }
 
-    void BVH4BuilderMB::continue_build(size_t threadIndex, size_t threadCount, BuildRecord& record)
+    void BVH4BuilderMB::continue_build(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, BuildRecord& record)
     {
       /* finish small tasks */
       if (record.pinfo.size() < 4*1024) 
       {
-	finish_build(threadIndex,threadCount,record);
+	finish_build(threadIndex,threadCount,nodeAlloc,leafAlloc,record);
 /*#if ROTATE_TREE
 	for (int i=0; i<5; i++) 
 	  BVH4MBRotate::rotate(bvh,*record.dst); 
@@ -226,7 +228,7 @@ namespace embree
       else
       {
 	BuildRecord children[BVH4::N];
-	size_t N = createNode<false>(threadIndex,threadCount,this,record,children);
+	size_t N = createNode<false>(threadIndex,threadCount,nodeAlloc,leafAlloc,this,record,children);
       	taskMutex.lock();
 	for (size_t i=0; i<N; i++) {
 	  tasks.push_back(children[i]);
@@ -238,6 +240,9 @@ namespace embree
 
     void BVH4BuilderMB::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
+      Allocator nodeAlloc(&bvh->alloc);
+      Allocator leafAlloc(&bvh->alloc);
+
       while (activeBuildRecords)
       {
 	taskMutex.lock();
@@ -248,32 +253,11 @@ namespace embree
 	BuildRecord record = tasks.back();
 	tasks.pop_back();
 	taskMutex.unlock();
-	continue_build(threadIndex,threadCount,record);
+	continue_build(threadIndex,threadCount,nodeAlloc,leafAlloc,record);
 	atomic_add(&activeBuildRecords,-1);
       }
       _mm_sfence(); // make written leaves globally visible
     }
-
-#if 0
-    BVH4::NodeRef BVH4BuilderMB::layout_top_nodes(size_t threadIndex, NodeRef node)
-    {
-      if (node.isBarrier()) {
-	node.clearBarrier();
-	return node;
-      }
-      else if (!node.isLeaf()) 
-      {
-	NodeMB* src = node.node();
-	NodeMB* dst = bvh->allocNodeMB(threadIndex);
-	for (size_t i=0; i<BVH4::N; i++) {
-	  dst->set(i,src->bounds(i),layout_top_nodes(threadIndex,src->child(i)));
-	}
-	return bvh->encodeNode(dst);
-      }
-      else
-	return node;
-    }
-#endif
 
     void BVH4BuilderMB::build(size_t threadIndex, size_t threadCount) 
     {
@@ -310,12 +294,15 @@ namespace embree
       if (mesh) PrimRefListGenFromGeometry<TriangleMesh>::generate(threadIndex,threadCount,scheduler,&alloc,mesh ,prims,pinfo);
       else      PrimRefListGen                          ::generate(threadIndex,threadCount,scheduler,&alloc,scene,TRIANGLE_MESH,2,prims,pinfo);
       
+      Allocator nodeAlloc(&bvh->alloc);
+      Allocator leafAlloc(&bvh->alloc);
+
       /* single threaded path */
       if (pinfo.size() <= THRESHOLD_FOR_SINGLE_THREADED)
       {
 	const Split split = find<false>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);
 	BuildRecord record(1,prims,pinfo,split,&bvh->root);
-	finish_build(threadIndex,threadCount,record);
+	finish_build(threadIndex,threadCount,nodeAlloc,leafAlloc,record);
 	_mm_sfence(); // make written leaves globally visible
       }
       else
@@ -338,7 +325,7 @@ namespace embree
 	  
 	  /* process this item in parallel */
 	  BuildRecord children[BVH4::N];
-	  size_t N = createNode<true>(threadIndex,threadCount,this,task,children);
+	  size_t N = createNode<true>(threadIndex,threadCount,nodeAlloc,leafAlloc,this,task,children);
 	  for (size_t i=0; i<N; i++) {
 	    tasks.push_back(children[i]);
 	    std::push_heap(tasks.begin(),tasks.end());

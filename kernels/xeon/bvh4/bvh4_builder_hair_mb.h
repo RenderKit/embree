@@ -41,6 +41,7 @@ namespace embree
       typedef BezierPrim PrimRef;
       typedef PrimRefBlockT<PrimRef> PrimRefBlock;
       typedef atomic_set<PrimRefBlock> BezierRefList;
+      typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
       
       /*! stores all info to build a subtree */
       struct BuildTask
@@ -69,20 +70,20 @@ namespace embree
     private:
       
       /*! creates a leaf node */
-      virtual BVH4::NodeRef createLeaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo) = 0;
+      virtual BVH4::NodeRef createLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, size_t depth, BezierRefList& prims, const PrimInfo& pinfo) = 0;
       
       /*! creates a large leaf that could be larger than supported by the BVH */
-      BVH4::NodeRef createLargeLeaf(size_t threadIndex, BezierRefList& prims, const PrimInfo& pinfo, size_t depth);
+      BVH4::NodeRef createLargeLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, BezierRefList& prims, const PrimInfo& pinfo, size_t depth);
     
       template<bool Parallel>
 	Split find_split(size_t threadIndex, size_t threadCount, BezierRefList& prims, const PrimInfo& pinfo, const NAABBox3fa& bounds, const PrimInfo& sinfo);
       
       /*! execute single task and create subtasks */
       template<bool Parallel>
-	void processTask(size_t threadIndex, size_t threadCount, BuildTask& task, BuildTask task_o[BVH4::N], size_t& N);
+	void processTask(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, BuildTask& task, BuildTask task_o[BVH4::N], size_t& N);
       
       /*! recursive build function for aligned and non-aligned bounds */
-      void recurseTask(size_t threadIndex, size_t threadCount, BuildTask& task);
+      void recurseTask(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, BuildTask& task);
       
       TASK_SET_FUNCTION(BVH4BuilderHairMB,task_build_parallel);
       
@@ -110,7 +111,7 @@ namespace embree
     {
     public:
       BVH4BuilderHairMBT (BVH4* bvh, Scene* scene, size_t mode);
-      BVH4::NodeRef createLeaf(size_t threadIndex, size_t depth, BezierRefList& prims, const PrimInfo& pinfo);
+      BVH4::NodeRef createLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, size_t depth, BezierRefList& prims, const PrimInfo& pinfo);
     };
   }
 }

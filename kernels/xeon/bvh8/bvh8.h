@@ -233,12 +233,12 @@ namespace embree
     LinearAllocatorPerThread alloc;
 
 #if defined (__AVX__)
-    __forceinline Node* allocNode(size_t thread) {
-      Node* node = (Node*) alloc.malloc(thread,sizeof(Node),1 << alignment); node->clear(); return node;
+    __forceinline Node* allocNode(LinearAllocatorPerThread::ThreadAllocator& thread) {
+      Node* node = (Node*) thread.malloc(sizeof(Node),1 << alignment); node->clear(); return node;
     }
 
-    __forceinline char* allocPrimitiveBlocks(size_t thread, size_t num) {
-      return (char*) alloc.malloc(thread,num*primTy.bytes,1 << alignment);
+    __forceinline char* allocPrimitiveBlocks(LinearAllocatorPerThread::ThreadAllocator& thread, size_t num) {
+      return (char*) thread.malloc(num*primTy.bytes,1 << alignment);
     }
 
     /*! Encodes a node */

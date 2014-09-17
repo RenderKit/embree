@@ -1058,30 +1058,30 @@ namespace embree
 
     LinearAllocatorPerThread alloc;
 
-    __forceinline Node* allocNode(size_t thread) {
-      Node* node = (Node*) alloc.malloc(thread,sizeof(Node),1 << alignment); node->clear(); return node;
+    __forceinline Node* allocNode(LinearAllocatorPerThread::ThreadAllocator& thread) {
+      Node* node = (Node*) thread.malloc(sizeof(Node),1 << alignment); node->clear(); return node; // FIXME: why 16 bytes aligned and not 64 bytes?
     }
 
-    __forceinline NodeMB* allocNodeMB(size_t thread) {
-      NodeMB* node = (NodeMB*) alloc.malloc(thread,sizeof(NodeMB),1 << alignment); node->clear(); return node;
-    }
-
-    /*! allocates a new unaligned node */
-    __forceinline UnalignedNode* allocUnalignedNode(size_t thread) {
-      UnalignedNode* node = (UnalignedNode*) alloc.malloc(thread,sizeof(UnalignedNode),1 << alignment); node->clear(); return node;
+    __forceinline NodeMB* allocNodeMB(LinearAllocatorPerThread::ThreadAllocator& thread) {
+      NodeMB* node = (NodeMB*) thread.malloc(sizeof(NodeMB),1 << alignment); node->clear(); return node;
     }
 
     /*! allocates a new unaligned node */
-    __forceinline UnalignedNodeMB* allocUnalignedNodeMB(size_t thread) {
-      UnalignedNodeMB* node = (UnalignedNodeMB*) alloc.malloc(thread,sizeof(UnalignedNodeMB),1 << alignment); node->clear(); return node;
+    __forceinline UnalignedNode* allocUnalignedNode(LinearAllocatorPerThread::ThreadAllocator& thread) {
+      UnalignedNode* node = (UnalignedNode*) thread.malloc(sizeof(UnalignedNode),1 << alignment); node->clear(); return node;
     }
 
-    __forceinline char* allocPrimitiveBlocks(size_t thread, size_t num) {
-      return (char*) alloc.malloc(thread,num*primTy.bytes,1 << alignment);
+    /*! allocates a new unaligned node */
+    __forceinline UnalignedNodeMB* allocUnalignedNodeMB(LinearAllocatorPerThread::ThreadAllocator& thread) {
+      UnalignedNodeMB* node = (UnalignedNodeMB*) thread.malloc(sizeof(UnalignedNodeMB),1 << alignment); node->clear(); return node;
+    }
+
+    __forceinline char* allocPrimitiveBlocks(LinearAllocatorPerThread::ThreadAllocator& thread, size_t num) {
+      return (char*) thread.malloc(num*primTy.bytes,1 << alignment);
     }
 
     /*! Encodes a node */
-    __forceinline NodeRef encodeNode(Node* node) { 
+    __forceinline NodeRef encodeNode(Node* node) {  // FIXME: template these functions
       assert(!((size_t)node & align_mask)); 
       return NodeRef((size_t) node);
     }
