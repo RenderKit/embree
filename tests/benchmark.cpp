@@ -201,20 +201,30 @@ namespace embree
     benchmark_atomic_inc () 
      : Benchmark("atomic_inc","ns") {}
 
-    static void benchmark_atomic_inc_thread(void* ptr) {
+    static void benchmark_atomic_inc_thread(void* arg) 
+    {
+      size_t threadIndex = (size_t) arg;
+      size_t threadCount = g_num_threads;
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
       while (atomic_add(&g_atomic_cntr,-1) > 0);
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
     }
     
     double run (size_t numThreads)
     {
       g_atomic_cntr = N;
+
+      g_num_threads = numThreads;
+      g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
-	g_threads.push_back(createThread(benchmark_atomic_inc_thread,NULL,1000000,i));
+	g_threads.push_back(createThread(benchmark_atomic_inc_thread,(void*)i,1000000,i));
       setAffinity(0);
       
+      g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
       benchmark_atomic_inc_thread(NULL);
       double t1 = getSeconds();
+      g_barrier_active.wait(0,numThreads);
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
@@ -239,23 +249,29 @@ namespace embree
     {
       size_t threadIndex = (size_t) arg;
       size_t threadCount = g_num_threads;
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
       size_t start = (threadIndex+0)*N/threadCount;
       size_t end   = (threadIndex+1)*N/threadCount;
       for (size_t i=start; i<end; i+=64)
 	ptr[i] = 0;
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
     }
     
     double run (size_t numThreads)
     {
       ptr = (char*) os_malloc(N);
+
       g_num_threads = numThreads;
+      g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_osmalloc_thread,(void*)i,1000000,i));
       setAffinity(0);
       
+      g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
       benchmark_osmalloc_thread(0);
       double t1 = getSeconds();
+      g_barrier_active.wait(0,numThreads);
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
@@ -295,8 +311,9 @@ namespace embree
     {
       ptr = (char*) os_malloc(N);
       for (size_t i=0; i<N; i+=4096) ptr[i] = 0;
-      g_barrier_active.init(numThreads);
+
       g_num_threads = numThreads;
+      g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_bandwidth_thread,(void*)i,1000000,i));
       setAffinity(0);
