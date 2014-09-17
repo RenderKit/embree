@@ -873,8 +873,14 @@ namespace embree
     {
       BBox3fa bounds = empty;
       size_t num; Triangle1* tri = (Triangle1*) ref.leaf(num);
-      for (size_t i=0; i<num; i++)  // FIXME: have to iterate list also
-        bounds.extend(tri[i].bounds());
+      if (listMode) {
+	do {
+	  bounds.extend(tri->bounds());
+	} while (!((tri++)->last()));
+      } else {
+	for (size_t i=0; i<num; i++)  // FIXME: have to iterate list also
+	  bounds.extend(tri[i].bounds());
+      }
       return bounds;
     }
     
@@ -882,8 +888,16 @@ namespace embree
     {
       BBox3fa bounds = empty;
       size_t num; Triangle4* tri = (Triangle4*) ref.leaf(num);
-      for (size_t i=0; i<num; i++) 
-        bounds.extend(tri[i].bounds());
+      if (listMode) {
+	do {
+	  bounds.extend(tri->bounds());
+	} while (!((tri++)->last()));
+      }
+      else
+      {
+	for (size_t i=0; i<num; i++) 
+	  bounds.extend(tri[i].bounds());
+      }
       return bounds;
     }
 
@@ -892,8 +906,16 @@ namespace embree
     {
       BBox3fa bounds = empty;
       size_t num; Triangle8* tri = (Triangle8*) ref.leaf(num);
-      for (size_t i=0; i<num; i++) 
-        bounds.extend(tri[i].bounds());
+      if (listMode) {
+	do {
+	  bounds.extend(tri->bounds());
+	} while (!((tri++)->last()));
+      }
+      else
+      {
+	for (size_t i=0; i<num; i++) 
+	  bounds.extend(tri[i].bounds());
+      }
       return bounds;
     }
 #endif
@@ -902,8 +924,16 @@ namespace embree
     {
       BBox3fa bounds = empty;
       size_t num; Triangle1v* tri = (Triangle1v*) ref.leaf(num);
-      for (size_t i=0; i<num; i++) 
-        bounds.extend(tri[i].bounds());
+      if (listMode) {
+	do {
+	  bounds.extend(tri->bounds());
+	} while (!((tri++)->last()));
+      }
+      else
+      {
+	for (size_t i=0; i<num; i++) 
+	  bounds.extend(tri[i].bounds());
+      }
       return bounds;
     }
     
@@ -911,8 +941,16 @@ namespace embree
     {
       BBox3fa bounds = empty;
       size_t num; Triangle4v* tri = (Triangle4v*) ref.leaf(num);
-      for (size_t i=0; i<num; i++) 
-        bounds.extend(tri[i].bounds());
+      if (listMode) {
+	do {
+	  bounds.extend(tri->bounds());
+	} while (!((tri++)->last()));
+      }
+      else
+      {
+	for (size_t i=0; i<num; i++) 
+	  bounds.extend(tri[i].bounds());
+      }
       return bounds;
     }
 
@@ -920,8 +958,16 @@ namespace embree
     {
       BBox3fa bounds = empty;
       size_t num; Triangle4i* tri = (Triangle4i*) ref.leaf(num);
-      for (size_t i=0; i<num; i++) 
-        bounds.extend(tri[i].bounds());
+      if (listMode) {
+	do {
+	  bounds.extend(tri->bounds());
+	} while (!((tri++)->last()));
+      }
+      else
+      {
+	for (size_t i=0; i<num; i++) 
+	  bounds.extend(tri[i].bounds());
+      }
       return bounds;
     }
     
