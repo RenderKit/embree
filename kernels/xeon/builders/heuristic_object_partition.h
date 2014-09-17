@@ -130,6 +130,11 @@ namespace embree
 	/*! array partitioning */
 	void partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end,
 		       PrimInfo& left, PrimInfo& right) const;
+
+	/*! stream output */
+	friend std::ostream& operator<<(std::ostream& cout, const Split& split) {
+	  return cout << "Split { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << "}";
+	}
 	
       public:
 	float sah;       //!< SAH cost of the split

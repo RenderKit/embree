@@ -197,7 +197,7 @@ namespace embree
       if (pinfo.size() > threshold) {
         alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,scheduler,prims,pinfo,0); // FIXME: hardcoded 0
         alignedObjectSAH = BVH4::travCostAligned*halfArea(bounds.bounds) + BVH4::intCost*alignedObjectSplit.splitSAH();
-        bestSAH = min(bestSAH,alignedObjectSAH);
+        bestSAH = min(alignedObjectSAH,bestSAH);
       }
 #endif
       
@@ -215,7 +215,7 @@ namespace embree
 	  unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,scheduler,prims,space,sinfo);
 	}    	
 	unalignedObjectSAH = BVH4::travCostUnaligned*halfArea(bounds.bounds) + BVH4::intCost*unalignedObjectSplit.splitSAH();
-	bestSAH = min(bestSAH,unalignedObjectSAH);
+	bestSAH = min(unalignedObjectSAH,bestSAH);
       }
 #endif
       
@@ -227,7 +227,7 @@ namespace embree
       if (pinfo.size() <= threshold) {
 	strandSplit = StrandSplit::find<Parallel>(threadIndex,threadCount,scheduler,prims);
 	strandSAH = BVH4::travCostUnaligned*halfArea(bounds.bounds) + BVH4::intCost*strandSplit.splitSAH();
-	bestSAH = min(bestSAH,strandSAH);
+	bestSAH = min(strandSAH,bestSAH);
       }
 #endif
  

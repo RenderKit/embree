@@ -2409,7 +2409,7 @@ namespace embree
     POSITIVE("update_dynamic",            rtcore_update(RTC_GEOMETRY_DYNAMIC));
     POSITIVE("overlapping_triangles",     rtcore_overlapping_triangles(100000));
     POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
-    //rtcore_build();
+    rtcore_build();
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
 
 #if defined(__USE_RAY_MASK__)

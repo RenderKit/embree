@@ -105,6 +105,11 @@ namespace embree
 		     Scene* scene, TriRefList& curves, 
 		     TriRefList& lprims_o, PrimInfo& linfo_o, 
 		     TriRefList& rprims_o, PrimInfo& rinfo_o) const;
+
+	/*! stream output */
+	friend std::ostream& operator<<(std::ostream& cout, const Split& split) {
+	  return cout << "Split { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << "}";
+	}
 	
       public:
 	float sah;          //!< SAH cost of the split

@@ -121,9 +121,11 @@ namespace embree
       }
       SpatialSplit   ::Split ssplit = SpatialSplit   ::find<PARALLEL>(threadIndex,threadCount,scheduler,scene,prims,pinfo,logSAHBlockSize);
       const float bestSAH = min(osplit.sah,ssplit.sah);
-      if      (bestSAH == osplit.sah) return osplit; 
+      
+      if      (bestSAH == float(inf)) return Split();
+      else if (bestSAH == osplit.sah) return osplit; 
       else if (bestSAH == ssplit.sah) return ssplit;
-      else                            return Split();
+      else THROW_RUNTIME_ERROR("internal error");     
     }
     
     template<bool PARALLEL>
