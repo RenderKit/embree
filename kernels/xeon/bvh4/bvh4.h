@@ -182,6 +182,11 @@ namespace embree
     /*! BVH4 Base Node */
     struct BaseNode
     {
+      /*! Clears the node. */
+      __forceinline void clear() {
+	for (size_t i=0; i<N; i++) children[i] = emptyNode;
+      }
+
         /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
@@ -211,7 +216,7 @@ namespace embree
       __forceinline void clear() {
         lower_x = lower_y = lower_z = pos_inf; 
         upper_x = upper_y = upper_z = neg_inf;
-	for (size_t i=0; i<N; i++) children[i] = emptyNode;
+	BaseNode::clear();
       }
 
       /*! Sets bounding box and ID of child. */
@@ -434,7 +439,7 @@ namespace embree
         upper_x = upper_y = upper_z = ssef(neg_inf);
         lower_dx = lower_dy = lower_dz = ssef(nan); // initialize with NAN and update during refit
         upper_dx = upper_dy = upper_dz = ssef(nan);
-        children[0] = children[1] = children[2] = children[3] = emptyNode;
+	BaseNode::clear();
       }
 
       /*! Sets bounding box and ID of child. */
@@ -661,8 +666,7 @@ namespace embree
 	naabb.l.vy = empty.l.vy;
 	naabb.l.vz = empty.l.vz;
 	naabb.p    = empty.p;
-	for (size_t i=0; i<N; i++) children[i] = emptyNode;
-        //Node::clear();
+	BaseNode::clear();
       }
 
       /*! Sets bounding box. */
@@ -764,8 +768,7 @@ namespace embree
         t0s0.lower = t0s0.upper = Vec3fa(1E10);
         t1s0_t0s1.lower = t1s0_t0s1.upper = Vec3fa(zero);
         t1s1.lower = t1s1.upper = Vec3fa(1E10);
-	for (size_t i=0; i<N; i++) children[i] = emptyNode;
-        //Node::clear();
+        BaseNode::clear();
       }
 
       /*! Sets spaces. */
