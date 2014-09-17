@@ -122,86 +122,6 @@ namespace embree
    *  allocation scheme. The per thread allocator allocates from its
    *  current memory block or requests a new block from the slower
    *  global allocator when its block is full. */
-  class AllocatorPerThread : public AllocatorBase
-  {
-    ALIGNED_CLASS;
-
-     /*! Allocation block size. Number of bytes to request from the
-      *  base allocator when the memory block of a thread is empty. */
-    //enum { allocBlockSize = 4096*16 };
-    enum { allocBlockSize = 4*4096 };
-
-  public:
-
-    /*! Allocator default construction. */
-    AllocatorPerThread () {
-      thread = new ThreadAllocator[getNumberOfLogicalThreads()];
-    }
-
-    /*! Allocator destructor. */
-    ~AllocatorPerThread() {
-      delete[] thread; thread = NULL;
-    }
-
-    /*! Aligned memory allocation */
-    __forceinline void* malloc(size_t tinfo, size_t bytes, size_t align = 16) {
-      return thread[tinfo].malloc(bytes,align,this);
-    }
-
-    /*! clears the allocator */
-    void clear () 
-    {
-      AllocatorBase::clear();
-      for (size_t i=0; i<getNumberOfLogicalThreads(); i++) 
-        thread[i].clear();
-    }
-
-  private:
-
-     /*! Per thread structure holding the current memory block. */
-    struct __aligned(4096) ThreadAllocator 
-    {
-      ALIGNED_CLASS_(4096);
-    public:
-
-      /*! Default constructor. */
-      __forceinline ThreadAllocator () : ptr(NULL), cur(0), end(0) {}
-
-      /* Allocate aligned memory from the threads memory block. */
-      __forceinline void* malloc(size_t bytes, size_t align, AllocatorBase* alloc) 
-      {
-        cur += (align - cur) & (align-1);
-        cur += bytes;
-        if (cur <= end) return &ptr[cur - bytes];
-        ptr = (char*) alloc->malloc(allocBlockSize);
-        cur = 0;
-        end = allocBlockSize;
-        if (bytes > allocBlockSize) 
-          THROW_RUNTIME_ERROR("allocated block is too large");
-        cur += bytes;
-        return &ptr[cur - bytes];
-      }
-
-      /*! clears the allocator */
-      void clear () {
-        ptr = NULL;
-        cur = end = 0;
-      }
-
-    public:
-      char*  ptr;      //!< pointer to memory block
-      size_t cur;      //!< Current location of the allocator.
-      size_t end;      //!< End of the memory block.
-    };
-
-  private:
-    ThreadAllocator* thread;   //!< one allocator for each thread
-  };
-
-  /*! This class implements an efficient multi-threaded memory
-   *  allocation scheme. The per thread allocator allocates from its
-   *  current memory block or requests a new block from the slower
-   *  global allocator when its block is full. */
   class LinearAllocatorPerThread : public RefCount
   {
     ALIGNED_CLASS;
@@ -259,28 +179,16 @@ namespace embree
     __forceinline const void* base() const { return block.ptr; }
     __forceinline       void* curPtr()     { return block.ptr+block.cur; }
 
-    /*! Aligned memory allocation */
-    __forceinline void* malloc(size_t tinfo, size_t bytes, size_t align = 16) {
-      return thread[tinfo].malloc(bytes,align);
-    }
-
     /*! clears the allocator */
-    void clear () 
-    {
+    void clear () {
       block.clear();
-      for (size_t i=0; i<thread.size(); i++) 
-        thread[i].clear();
     }
 
     /*! initializes the allocator */
     void init (size_t bytesAllocate, size_t bytesReserve) 
     {
       clear();
-      const size_t numThreads = getNumberOfLogicalThreads();
-      if (thread.size() != numThreads) {
-        thread.resize(numThreads);
-        for (size_t i=0; i<numThreads; i++) thread[i].alloc = this;
-      }
+      const size_t numThreads = getNumberOfLogicalThreads(); // FIXME: should get passed from outside
       bytesReserve = max(bytesAllocate,bytesReserve);
       size_t bytesReserved = max(bytesReserve,size_t(allocBlockSize*numThreads));
       block.init(bytesAllocate,bytesReserved);
@@ -354,7 +262,6 @@ namespace embree
     };
 
   private:
-    std::vector<ThreadAllocator> thread;   //!< one allocator for each thread
     Block block;
   };
 }
