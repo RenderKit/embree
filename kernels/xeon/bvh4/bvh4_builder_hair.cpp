@@ -188,7 +188,7 @@ namespace embree
       float alignedObjectSAH = inf;
       alignedObjectSplit = ObjectPartition::find<Parallel>(threadIndex,threadCount,scheduler,prims,pinfo,0); // FIXME: hardcoded 0
       alignedObjectSAH = BVH4::travCostAligned*halfArea(bounds.bounds) + BVH4::intCost*alignedObjectSplit.splitSAH();
-      bestSAH = min(bestSAH,alignedObjectSAH);
+      bestSAH = min(alignedObjectSAH,bestSAH);
       
       /* perform spatial split in aligned space */
       SpatialSplit::Split alignedSpatialSplit;
@@ -196,7 +196,7 @@ namespace embree
       if (enableSpatialSplits && remainingReplications > 0) {
 	alignedSpatialSplit = SpatialSplit::find<Parallel>(threadIndex,threadCount,scheduler,scene,prims,pinfo,0); // FIXME: hardcoded 0
 	alignedSpatialSAH = BVH4::travCostAligned*halfArea(bounds.bounds) + BVH4::intCost*alignedSpatialSplit.splitSAH();
-	bestSAH = min(bestSAH,alignedSpatialSAH);
+	bestSAH = min(alignedSpatialSAH,bestSAH);
       }
       
       /* perform standard binning in unaligned space */
@@ -211,7 +211,7 @@ namespace embree
 	  unalignedObjectSplit = ObjectPartitionUnaligned::find<Parallel>(threadIndex,threadCount,scheduler,prims,space,sinfo);
 	}    	
 	unalignedObjectSAH = BVH4::travCostUnaligned*halfArea(bounds.bounds) + BVH4::intCost*unalignedObjectSplit.splitSAH();
-	bestSAH = min(bestSAH,unalignedObjectSAH);
+	bestSAH = min(unalignedObjectSAH,bestSAH);
       }
       
       /* perform splitting into two strands */
@@ -220,7 +220,7 @@ namespace embree
       if (alignedObjectSAH > 0.6f*leafSAH) {
 	strandSplit = StrandSplit::find<Parallel>(threadIndex,threadCount,scheduler,prims);
 	strandSAH = BVH4::travCostUnaligned*halfArea(bounds.bounds) + BVH4::intCost*strandSplit.splitSAH();
-	bestSAH = min(bestSAH,strandSAH);
+	bestSAH = min(strandSAH,bestSAH);
       }
 
       

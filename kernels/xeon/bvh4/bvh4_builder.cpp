@@ -136,7 +136,7 @@ namespace embree
 	if (osplit.sah == float(inf)) return Split();
 	else return osplit;
       }
-      SpatialSplit   ::Split ssplit = SpatialSplit::find<PARALLEL>(threadIndex,threadCount,scheduler,scene,prims,pinfo,logSAHBlockSize);
+      SpatialSplit::Split ssplit = SpatialSplit::find<PARALLEL>(threadIndex,threadCount,scheduler,scene,prims,pinfo,logSAHBlockSize);
       const float bestSAH = min(osplit.sah,ssplit.sah);
       if      (bestSAH == osplit.sah) return osplit; 
       else if (bestSAH == ssplit.sah) return ssplit;
