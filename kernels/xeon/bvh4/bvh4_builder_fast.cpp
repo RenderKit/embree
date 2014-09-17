@@ -527,10 +527,6 @@ namespace embree
 
     void BVH4BuilderFast::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
-      /* all worker threads enter tasking system */
-      //if (scheduler->enter(threadIndex,threadCount))
-      //return;
-
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();
@@ -582,9 +578,6 @@ namespace embree
 
       /* now process all created subtasks on multiple threads */
       scheduler->dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
-      
-      /* release all threads again */
-      //scheduler->leave(threadIndex,threadCount);
       
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;

@@ -102,7 +102,7 @@ namespace embree
     static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom) 
     {
       for (size_t i=0; i<num; i++) {
-	if (Intersector::occluded(pre,ray,prim,geom))
+	if (Intersector::occluded(pre,ray,prim[i],geom))
 	  return true;
       }
       return false;
@@ -154,7 +154,7 @@ namespace embree
       }
     }
 
-    static __forceinline bool occluded(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom) 
+    static __forceinline sseb occluded(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom) 
     {
       sseb valid0 = valid;
       for (size_t i=0; i<num; i++) {
@@ -229,7 +229,7 @@ namespace embree
       }
     }
 
-    static __forceinline bool occluded(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom) 
+    static __forceinline sseb occluded(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom) 
     {
       sseb valid0 = valid;
       for (size_t i=0; i<num; i++) {
@@ -249,7 +249,7 @@ namespace embree
     static __forceinline bool occluded(Precalculations& pre, Ray4& ray, size_t k, const Primitive* prim, size_t num, void* geom) 
     {
       for (size_t i=0; i<num; i++) {
-	if (Intersector::occluded(pre,ray,k,prim,geom))
+	if (Intersector::occluded(pre,ray,k,prim[i],geom))
 	  return true;
       }
       return false;
@@ -303,7 +303,7 @@ namespace embree
       }
     }
 
-    static __forceinline bool occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom) 
+    static __forceinline avxb occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom) 
     {
       avxb valid0 = valid;
       for (size_t i=0; i<num; i++) {
@@ -378,7 +378,7 @@ namespace embree
       }
     }
 
-    static __forceinline bool occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom) 
+    static __forceinline avxb occluded(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom) 
     {
       avxb valid0 = valid;
       for (size_t i=0; i<num; i++) {
@@ -398,7 +398,7 @@ namespace embree
     static __forceinline bool occluded(Precalculations& pre, Ray8& ray, size_t k, const Primitive* prim, size_t num, void* geom) 
     {
       for (size_t i=0; i<num; i++) {
-	if (Intersector::occluded(pre,ray,k,prim,geom))
+	if (Intersector::occluded(pre,ray,k,prim[i],geom))
 	  return true;
       }
       return false;

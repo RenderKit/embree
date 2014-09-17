@@ -177,6 +177,7 @@ namespace embree
         node->set(i,cinfo[i].geomBounds);
         node->set(i,createLargeLeaf(threadIndex,cprims[i],cinfo[i],depth+1));
       }
+      BVH4::compact(node); // moves empty nodes to the end
       return bvh->encodeNode(node);
     }  
 

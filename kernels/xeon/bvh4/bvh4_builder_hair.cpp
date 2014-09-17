@@ -75,7 +75,6 @@ namespace embree
 #if 0
 	const Split split = find_split(threadIndex,threadCount,prims,pinfo,pinfo.geomBounds);
 	BuildTask task(&bvh->root,0,prims,pinfo,pinfo.geomBounds,split); recurseTask(threadIndex,task);
-	/*bvh->root = recurse(threadIndex,0,prims,pinfo,pinfo.geomBounds,split);*/
 	_mm_sfence(); // make written leaves globally visible
 #else
 	const Split split = find_split<true>(threadIndex,threadCount,prims,pinfo,pinfo.geomBounds,pinfo);
@@ -173,6 +172,7 @@ namespace embree
         node->set(i,cinfo[i].geomBounds);
         node->set(i,createLargeLeaf(threadIndex,cprims[i],cinfo[i],depth+1));
       }
+      BVH4::compact(node); // moves empty nodes to the end
       return bvh->encodeNode(node);
     }  
 

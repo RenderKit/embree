@@ -1068,13 +1068,6 @@ namespace embree
     
     void BVH4BuilderMorton::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
-      /* initialize thread state */
-      //initThreadState(threadIndex,threadCount);
-
-      /* all worker threads enter tasking system */
-      //if (scheduler->enter(threadIndex,threadCount))
-      //return;
-
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();
@@ -1129,9 +1122,6 @@ namespace embree
       
       /* refit toplevel part of tree */
       refitTopLevel(bvh->root);
-      
-      /* release all threads again */
-      //scheduler->leave(threadIndex,threadCount);
 
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;

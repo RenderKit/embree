@@ -295,7 +295,7 @@ namespace embree
     
     void BVH4Builder::build(size_t threadIndex, size_t threadCount) 
     {
-      //size_t threadCount = min(threadCountOld,getNumberOfCores());
+      //size_t threadCount = min(threadCountOld,getNumberOfCores()); 
       //TaskScheduler::enableThreads(threadCount); // FIXME: enable
 
       /*! calculate number of primitives */
