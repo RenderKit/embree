@@ -66,6 +66,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   geometry/triangle1v.cpp
   geometry/triangle4v.cpp
   geometry/triangle4i.cpp
+  geometry/virtual_accel.cpp
   geometry/instance_intersector1.cpp
   geometry/instance_intersector4.cpp
   

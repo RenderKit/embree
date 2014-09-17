@@ -180,16 +180,13 @@ namespace embree
 #endif
   };
 
-  struct Triangle4vType : public PrimitiveType {
+  struct Triangle4vType : public PrimitiveType 
+  {
+    static Triangle4vType type;
+
     Triangle4vType ();
     size_t blocks(size_t x) const;
     size_t size(const char* This) const;
-  };
-
-  struct SceneTriangle4v : public Triangle4vType
-  {
-    static SceneTriangle4v type;
-    BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 
   struct TriangleMeshTriangle4v : public Triangle4vType

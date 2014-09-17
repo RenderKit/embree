@@ -19,66 +19,18 @@
 
 namespace embree
 {
-  SceneTriangle4i SceneTriangle4i::type;
+  Triangle4iType Triangle4iType::type;
   TriangleMeshTriangle4i TriangleMeshTriangle4i::type;
 
-  Triangle4iTy::Triangle4iTy () 
-  : PrimitiveType("triangle4i",sizeof(Triangle4i),4,true,1) {} 
+  Triangle4iType::Triangle4iType () 
+    : PrimitiveType("triangle4i",sizeof(Triangle4i),4,true,1) {} 
   
-  size_t Triangle4iTy::blocks(size_t x) const {
+  size_t Triangle4iType::blocks(size_t x) const {
     return (x+3)/4;
   }
   
-  size_t Triangle4iTy::size(const char* This) const {
+  size_t Triangle4iType::size(const char* This) const {
     return ((Triangle4i*)This)->size();
-  }
-  
-  BBox3fa SceneTriangle4i::update(char* prim_i, size_t num, void* geom) const 
-  {
-    BBox3fa bounds = empty;
-    Scene* scene = (Scene*) geom;
-    Triangle4i* prim = (Triangle4i*) prim_i;
-
-    if (num == -1)
-    {
-      while (true)
-      {
-	for (size_t i=0; i<4; i++)
-	{
-	  if (prim->primID<1>(i) == -1) break;
-	  const unsigned geomID = prim->geomID<1>(i);
-	  const unsigned primID = prim->primID<1>(i);
-	  const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-	  const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-	  const Vec3fa p0 = mesh->vertex(tri.v[0]);
-	  const Vec3fa p1 = mesh->vertex(tri.v[1]);
-	  const Vec3fa p2 = mesh->vertex(tri.v[2]);
-	  bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
-	}
-	bool last = prim->last();
-	if (last) break;
-	prim++;
-      }
-    }
-    else
-    {
-      for (size_t j=0; j<num; j++, prim++)
-      {
-	for (size_t i=0; i<4; i++)
-	{
-	  if (prim->primID<0>(i) == -1) break;
-	  const unsigned geomID = prim->geomID<0>(i);
-	  const unsigned primID = prim->primID<0>(i);
-	  const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-	  const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-	  const Vec3fa p0 = mesh->vertex(tri.v[0]);
-	  const Vec3fa p1 = mesh->vertex(tri.v[1]);
-	  const Vec3fa p2 = mesh->vertex(tri.v[2]);
-	  bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
-	}
-      }
-    }
-    return bounds; 
   }
 
   BBox3fa TriangleMeshTriangle4i::update(char* prim_i, size_t num, void* geom) const 

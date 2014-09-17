@@ -626,6 +626,7 @@
     <ClCompile Include="geometry\triangle4.cpp" />
     <ClCompile Include="geometry\triangle4i.cpp" />
     <ClCompile Include="geometry\triangle4v.cpp" />
+    <ClCompile Include="geometry\virtual_accel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ISPC Include="..\common\rtcore_ispc.ispc">

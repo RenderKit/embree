@@ -108,7 +108,7 @@ namespace embree
 
   Accel* BVH8::BVH8Triangle8(Scene* scene)
   { 
-    BVH8* accel = new BVH8(SceneTriangle8::type,scene);
+    BVH8* accel = new BVH8(Triangle8Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
     
     Builder* builder = NULL;
@@ -122,7 +122,7 @@ namespace embree
 
   Accel* BVH8::BVH8Triangle8ObjectSplit(Scene* scene)
   {
-    BVH8* accel = new BVH8(SceneTriangle8::type,scene);
+    BVH8* accel = new BVH8(Triangle8Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
     Builder* builder = BVH8Triangle8Builder(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
@@ -130,7 +130,7 @@ namespace embree
 
   Accel* BVH8::BVH8Triangle8SpatialSplit(Scene* scene)
   {
-    BVH8* accel = new BVH8(SceneTriangle8::type,scene);
+    BVH8* accel = new BVH8(Triangle8Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
     Builder* builder = BVH8Triangle8Builder(accel,scene,1);
     return new AccelInstance(accel,builder,intersectors);

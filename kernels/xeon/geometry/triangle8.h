@@ -206,17 +206,13 @@ namespace embree
   }
 #endif
 
+  struct Triangle8Type : public PrimitiveType 
+  {
+    static Triangle8Type type;
 
-  struct Triangle8Type : public PrimitiveType {
     Triangle8Type ();
     size_t blocks(size_t x) const;
     size_t size(const char* This) const;
-  };
-
-  struct SceneTriangle8 : public Triangle8Type
-  {
-    static SceneTriangle8 type;
-    BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 
   struct TriangleMeshTriangle8 : public Triangle8Type

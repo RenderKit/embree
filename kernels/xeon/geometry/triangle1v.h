@@ -103,15 +103,10 @@ namespace embree
   };
 
   struct Triangle1vType : public PrimitiveType {
+    static Triangle1vType type;
     Triangle1vType ();
     size_t blocks(size_t x) const;
     size_t size(const char* This) const;
-  };
-
-  struct SceneTriangle1v : public Triangle1vType 
-  {
-    static SceneTriangle1v type;
-    BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 
   struct TriangleMeshTriangle1v : public Triangle1vType 
@@ -176,14 +171,10 @@ namespace embree
   };
 
   struct Triangle1vMBType : public PrimitiveType {
+    static Triangle1vMBType type;
     Triangle1vMBType ();
     size_t blocks(size_t x) const;
     size_t size(const char* This) const;
-  };
-
-  struct SceneTriangle1vMB : public Triangle1vMBType
-  {
-    static SceneTriangle1vMB type;
     std::pair<BBox3fa,BBox3fa> update2(char* prim, size_t num, void* geom) const;
   };
 

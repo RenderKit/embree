@@ -561,7 +561,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle1(Scene* scene)
   { 
-    BVH4* accel = new BVH4(SceneTriangle1::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle1Type::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
     
     Builder* builder = NULL;
@@ -577,7 +577,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle4(Scene* scene)
   { 
-    BVH4* accel = new BVH4(SceneTriangle4::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle4Type::type,scene,LeafMode);
 
     Accel::Intersectors intersectors;
     if      (g_tri_traverser == "default") intersectors = BVH4Triangle4IntersectorsHybrid(accel);
@@ -600,7 +600,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle8(Scene* scene)
   { 
-    BVH4* accel = new BVH4(SceneTriangle8::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle8Type::type,scene,LeafMode);
 
     Accel::Intersectors intersectors;
     if      (g_tri_traverser == "default") intersectors = BVH4Triangle8IntersectorsHybrid(accel);
@@ -622,7 +622,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle1v(Scene* scene)
   {
-    BVH4* accel = new BVH4(SceneTriangle1v::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle1vType::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle1vIntersectors(accel);
 
     Builder* builder = NULL;
@@ -638,7 +638,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle1vMB(Scene* scene)
   {
-    BVH4* accel = new BVH4(SceneTriangle1vMB::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle1vMBType::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle1vMBIntersectors(accel);
     Builder* builder = BVH4Triangle1vMBBuilder(accel,scene,LeafMode);
     return new AccelInstance(accel,builder,intersectors);
@@ -646,7 +646,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle4v(Scene* scene)
   {
-    BVH4* accel = new BVH4(SceneTriangle4v::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle4vType::type,scene,LeafMode);
 
     Accel::Intersectors intersectors;
     if      (g_tri_traverser == "default") intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
@@ -667,7 +667,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle4i(Scene* scene)
   {
-    BVH4* accel = new BVH4(SceneTriangle4i::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle4iType::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
 
     Builder* builder = NULL;
@@ -799,7 +799,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle1SpatialSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(SceneTriangle1::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle1Type::type,scene,LeafMode);
     Builder* builder = BVH4Triangle1Builder(accel,scene,LeafMode | MODE_HIGH_QUALITY);
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
@@ -807,7 +807,7 @@ namespace embree
   
   Accel* BVH4::BVH4Triangle4SpatialSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(SceneTriangle4::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle4Type::type,scene,LeafMode);
     Builder* builder = BVH4Triangle4Builder(accel,scene,LeafMode | MODE_HIGH_QUALITY);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
@@ -817,7 +817,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle8SpatialSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(SceneTriangle8::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle8Type::type,scene,LeafMode);
     Builder* builder = BVH4Triangle8Builder(accel,scene,LeafMode | MODE_HIGH_QUALITY);
     Accel::Intersectors intersectors = BVH4Triangle8IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
@@ -827,7 +827,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle1ObjectSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(SceneTriangle1::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle1Type::type,scene,LeafMode);
     Builder* builder = BVH4Triangle1Builder(accel,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
@@ -835,7 +835,7 @@ namespace embree
   
   Accel* BVH4::BVH4Triangle4ObjectSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(SceneTriangle4::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle4Type::type,scene,LeafMode);
     Builder* builder = BVH4Triangle4Builder(accel,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
@@ -845,7 +845,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle8ObjectSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(SceneTriangle8::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle8Type::type,scene,LeafMode);
     Builder* builder = BVH4Triangle8Builder(accel,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle8IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
@@ -855,7 +855,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle1vObjectSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(SceneTriangle1v::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle1vType::type,scene,LeafMode);
     Builder* builder = BVH4Triangle1vBuilder(accel,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle1vIntersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
@@ -863,7 +863,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle4vObjectSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(SceneTriangle4v::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle4vType::type,scene,LeafMode);
     Builder* builder = BVH4Triangle4vBuilder(accel,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
@@ -871,34 +871,16 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle4iObjectSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(SceneTriangle4i::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle4iType::type,scene,LeafMode);
     Builder* builder = BVH4Triangle4iBuilder(accel,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
     scene->needVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  struct VirtualAccelObjectType : public PrimitiveType // FIXME: move class
-  {
-    VirtualAccelObjectType () 
-      : PrimitiveType("object",sizeof(AccelSetItem),1,false,1) {} 
-    
-    size_t blocks(size_t x) const {
-      return x;
-    }
-    
-    size_t size(const char* This) const {
-      return 1;
-    }
-    
-    void pack(char* This, atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, void* geom) const {}
-  };
-
-  static VirtualAccelObjectType virtual_accel_object_ty;
-
   Accel* BVH4::BVH4UserGeometry(Scene* scene)
   {
-    BVH4* accel = new BVH4(virtual_accel_object_ty,NULL,LeafMode);
+    BVH4* accel = new BVH4(VirtualAccelObjectType::type,NULL,LeafMode);
     Accel::Intersectors intersectors;
     intersectors.ptr = accel; 
     intersectors.intersector1 = BVH4VirtualIntersector1;

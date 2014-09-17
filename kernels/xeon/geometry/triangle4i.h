@@ -175,21 +175,16 @@ namespace embree
   };
 
   /*! virtual interface to query information about the triangle type */
-  struct Triangle4iTy : public PrimitiveType
+  struct Triangle4iType : public PrimitiveType
   {
-    Triangle4iTy ();
+    static Triangle4iType type;
+
+    Triangle4iType ();
     size_t blocks(size_t x) const;
     size_t size(const char* This) const;
   };
 
-  /*! virtual interface to query information about the triangle type */
-  struct SceneTriangle4i : public Triangle4iTy
-  {
-    static SceneTriangle4i type;
-    BBox3fa update(char* prim, size_t num, void* geom) const;
-  };
-
-  struct TriangleMeshTriangle4i : public Triangle4iTy
+  struct TriangleMeshTriangle4i : public Triangle4iType
   {
     static TriangleMeshTriangle4i type;
     BBox3fa update(char* prim, size_t num, void* geom) const;
