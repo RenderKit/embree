@@ -19,11 +19,6 @@
 #include "common/geometry.h"
 #include "common/buffer.h"
 
-#define HALF_EDGE_VERTEX_BITS       4
-#define HALF_EDGE_VERTEX_MASK       0xF
-#define HALF_EDGE_VERTEX_SLOT(a)  ((int32_t)(a &  HALF_EDGE_VERTEX_MASK))
-#define HALF_EDGE_FACE_INDEX(a)   ((int32_t)(a >> HALF_EDGE_VERTEX_BITS))
-#define HALF_EDGE_INDEX(a, b)     ((int64_t) a << HALF_EDGE_VERTEX_BITS | b)
 
 namespace embree
 {
@@ -54,25 +49,64 @@ namespace embree
     size_t numVertices;               //!< number of vertices
 
     
+    class HalfEdge
+    {
+    public:
+      unsigned int vtx_index;
+      unsigned int start_halfedge_id : 30;
+      unsigned int local_halfedge_id :  2;
+      unsigned int opposite;
+
+      unsigned int getStartVertexIndex() const { 
+        return vtx_index; 
+      };
+      
+      const HalfEdge &next(const HalfEdge *const halfEdges) const {
+        return halfEdges[ start_halfedge_id + ((local_halfedge_id+1)%4) ];
+      };
+
+      const HalfEdge &prev(const HalfEdge *const halfEdges) const {
+        return halfEdges[ start_halfedge_id + ((local_halfedge_id+3)%4) ];
+      };
+
+      unsigned int getEndVertexIndex(const HalfEdge *const halfEdges) const {
+        return next(halfEdges).vtx_index;
+      };
+      
+    };
+
 
 
   private:
     BufferT<Vec3fa> vertices[2];      //!< vertex array
 
-    /*! Opposing half edges adjacent to each face. */
-    BufferT<size_t> oppositeEdges;
-
-    /*! A single half edge adjacent to each vertex. */
-    BufferT<size_t> vertexEdges;
-
-    /*! Indices of the vertices composing each face. */
+    
+    /*! Indices of the vertices composing each face, provided by the application */
     BufferT<unsigned int> vertexIndices;
 
-    /*! Offsets into the vertexIndices array indexed by face. */
+    /*! Offsets into the vertexIndices array indexed by face, provided by the application */
     BufferT<unsigned int> vertexOffsets;
 
 
+    HalfEdge *halfEdges;
+
   public:
+
+    /*! Coordinates of the vertex at the given index in the mesh. */
+    __forceinline const Vec3fa &getPosition(unsigned int index, const unsigned int t = 0) const { return vertices[t][index]; }
+
+    HalfEdge *initializeHalfEdgeStructures (unsigned int &numHalfEdges);
+
+
+  };
+
+#if 0
+
+#define HALF_EDGE_VERTEX_BITS       4
+#define HALF_EDGE_VERTEX_MASK       0xF
+#define HALF_EDGE_VERTEX_SLOT(a)  ((int32_t)(a &  HALF_EDGE_VERTEX_MASK))
+#define HALF_EDGE_FACE_INDEX(a)   ((int32_t)(a >> HALF_EDGE_VERTEX_BITS))
+#define HALF_EDGE_INDEX(a, b)     ((int64_t) a << HALF_EDGE_VERTEX_BITS | b)
 
     /*! Number of edges currently contained in the mesh. */
     __forceinline size_t edgeCount() { return(vertexIndices.size() / 2); }
@@ -90,7 +124,7 @@ namespace embree
     __forceinline SubdivFace getFace(unsigned int index);
 
     /*! An offset into the vertex index array. */
-    __forceinline unsigned int getIndex(unsigned int index) { return vertexOffsets[index]; }
+    __forceinline unsigned int getFaceVertexOffset(unsigned int index) { return vertexOffsets[index]; }
 
     /*! Pointer to the vertex index array. */
     __forceinline unsigned int *getIndexBuffer() { return &vertexIndices[0]; }
@@ -115,8 +149,6 @@ namespace embree
 
     /*! Number of vertices currently contained in the mesh. */
     __forceinline size_t vertexCount() { return vertices[0].size(); }
-
-  };
 
   class SubdivVertex {
   public:
@@ -169,7 +201,7 @@ namespace embree
     __forceinline SubdivVertex getVertex(SubdivMesh *mesh, unsigned int index) const;
 
     /*! Number of vertices adjacent to the face. */
-    __forceinline unsigned int vertexCount(SubdivMesh *mesh) const { return mesh->getIndex(id + 1) - mesh->getIndex(id); }
+    __forceinline unsigned int vertexCount(SubdivMesh *mesh) const { return mesh->getFaceVertexOffset(id + 1) - mesh->getFaceVertexOffset(id); }
 
   private:
 
@@ -191,7 +223,7 @@ namespace embree
     __forceinline SubdivFace getFace(SubdivMesh *mesh) const { return mesh->getFace(HALF_EDGE_FACE_INDEX(id)); }
 
     /*! Index of the edge in the mesh. */
-    __forceinline size_t getIndex(SubdivMesh *mesh) const { return mesh->getIndex(HALF_EDGE_FACE_INDEX(id)) + HALF_EDGE_VERTEX_SLOT(id); }
+    __forceinline size_t getIndex(SubdivMesh *mesh) const { return mesh->getFaceVertexOffset(HALF_EDGE_FACE_INDEX(id)) + HALF_EDGE_VERTEX_SLOT(id); }
 
     /*! Next edge in the adjacent face. */
     __forceinline SubdivHalfEdge getNextEdge(SubdivMesh *mesh) const { return getFace(mesh).getEdge(mesh,HALF_EDGE_VERTEX_SLOT(id) + 1); }
@@ -257,12 +289,13 @@ namespace embree
 
   __forceinline SubdivHalfEdge SubdivFace::getOppositeEdge(SubdivMesh *mesh, unsigned int index) const 
     { 
-      return mesh->getOppositeEdge(mesh->getIndex(id) + index % edgeCount(mesh)); 
+      return mesh->getOppositeEdge(mesh->getFaceVertexOffset(id) + index % edgeCount(mesh)); 
     }
   
   __forceinline SubdivVertex SubdivFace::getVertex(SubdivMesh *mesh, unsigned int index) const 
     { 
-      return mesh->getVertex(mesh->getVertexIndex(mesh->getIndex(id) + index % vertexCount(mesh))); 
+      return mesh->getVertex(mesh->getVertexIndex(mesh->getFaceVertexOffset(id) + index % vertexCount(mesh))); 
     }
+#endif
 
 };

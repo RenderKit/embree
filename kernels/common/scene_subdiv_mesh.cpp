@@ -24,21 +24,31 @@ namespace embree
       mask(-1), numTimeSteps(numTimeSteps),
       numFaces(numFaces), numEdges(numEdges), numVertices(numVertices)
   {
-    // triangles.init(numTriangles,sizeof(Triangle));
     for (size_t i=0; i<numTimeSteps; i++) {
        vertices[i].init(numVertices,sizeof(Vec3fa));
      }
+
+    PING;
+    DBG_PRINT(numFaces);
+    DBG_PRINT(numEdges);
+    DBG_PRINT(numVertices);
+
+    vertexIndices.init(numEdges,sizeof(unsigned int));
+    vertexOffsets.init(numFaces,sizeof(unsigned int));
+
     enabling();
   }
   
   void SubdivMesh::enabling() 
   { 
+    FATAL("not implemented");
     // if (numTimeSteps == 1) { atomic_add(&parent->numTriangles ,numTriangles); }
     // else                   { atomic_add(&parent->numTriangles2,numTriangles); }
   }
   
   void SubdivMesh::disabling() 
   { 
+    FATAL("not implemented");
     // if (numTimeSteps == 1) { atomic_add(&parent->numTriangles ,-numTriangles); }
     // else                   { atomic_add(&parent->numTriangles2,-numTriangles); }
   }
@@ -77,8 +87,13 @@ namespace embree
 
     switch (type) {
     case RTC_INDEX_BUFFER  : 
-      //triangles.set(ptr,offset,stride); 
+      vertexIndices.set(ptr,offset,stride); 
       break;
+
+    case RTC_OFFSET_BUFFER  : 
+      vertexOffsets.set(ptr,offset,stride); 
+      break;
+
     case RTC_VERTEX_BUFFER0: 
       vertices[0].set(ptr,offset,stride); 
       if (numVertices) {
@@ -107,10 +122,11 @@ namespace embree
     }
 
     switch (type) {
-      //case RTC_INDEX_BUFFER  : return triangles  .map(parent->numMappedBuffers);
-    case RTC_VERTEX_BUFFER0: return vertices[0].map(parent->numMappedBuffers);
-    case RTC_VERTEX_BUFFER1: return vertices[1].map(parent->numMappedBuffers);
-    default                : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
+    case RTC_INDEX_BUFFER   : return vertexIndices.map(parent->numMappedBuffers);
+    case RTC_OFFSET_BUFFER  : return vertexOffsets.map(parent->numMappedBuffers);
+    case RTC_VERTEX_BUFFER0 : return vertices[0].map(parent->numMappedBuffers);
+    case RTC_VERTEX_BUFFER1 : return vertices[1].map(parent->numMappedBuffers);
+    default                 : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
     }
   }
 
@@ -122,10 +138,11 @@ namespace embree
     }
 
     switch (type) {
-      //case RTC_INDEX_BUFFER  : triangles  .unmap(parent->numMappedBuffers); break;
-    case RTC_VERTEX_BUFFER0: vertices[0].unmap(parent->numMappedBuffers); break;
-    case RTC_VERTEX_BUFFER1: vertices[1].unmap(parent->numMappedBuffers); break;
-    default                : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    case RTC_INDEX_BUFFER   : vertexIndices.unmap(parent->numMappedBuffers); break;
+    case RTC_OFFSET_BUFFER  : vertexOffsets.unmap(parent->numMappedBuffers); break;
+    case RTC_VERTEX_BUFFER0 : vertices[0].unmap(parent->numMappedBuffers); break;
+    case RTC_VERTEX_BUFFER1 : vertices[1].unmap(parent->numMappedBuffers); break;
+    default                 : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
   }
 
@@ -135,11 +152,34 @@ namespace embree
 
   void SubdivMesh::immutable () 
   {
+    FATAL("not implemented");
     // bool freeTriangles = !parent->needTriangles;
     // bool freeVertices  = !parent->needVertices;
     // if (freeTriangles) triangles.free();
     // if (freeVertices ) vertices[0].free();
     // if (freeVertices ) vertices[1].free();
+  }
+
+  SubdivMesh::HalfEdge *SubdivMesh::initializeHalfEdgeStructures (unsigned int &numHalfEdges)
+  {
+    numHalfEdges = numFaces * 4;
+
+    HalfEdge *halfEdges = (HalfEdge*)os_malloc(numHalfEdges * sizeof(HalfEdge));
+
+
+    /*! initialize all four half-edges for each face */
+    for (size_t i=0;i<numFaces;i++)
+      {
+        const unsigned int halfEdgeIndex = vertexOffsets[i];
+        for (size_t j=0;j<4;j++)
+          {
+            halfEdges[i*4+j].vtx_index         = vertexIndices[halfEdgeIndex + j];
+            halfEdges[i*4+j].start_halfedge_id = i*4;
+            halfEdges[i*4+j].local_halfedge_id = j;
+            halfEdges[i*4+j].opposite          = (unsigned int)-1;
+          }
+      }
+    return halfEdges;
   }
 
   bool SubdivMesh::verify () 
