@@ -56,8 +56,8 @@ namespace embree
         /* pop next node from stack */
         sptr_node--;
         sptr_near--;
-        NodeRef curNode = *sptr_node;
-        if (unlikely(curNode == BVH8::invalidNode)) 
+        NodeRef cur = *sptr_node;
+        if (unlikely(cur == BVH8::invalidNode)) 
           break;
         
         /* cull node if behind closest hit point */
@@ -68,17 +68,17 @@ namespace embree
         while (1)
         {
           /* test if this is a leaf node */
-          if (unlikely(curNode.isLeaf()))
+          if (unlikely(cur.isLeaf()))
             break;
           
           const avxb valid_node = ray_tfar > curDist;
           STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
-          const Node* __restrict__ const node = (BVH8::Node*)curNode.node();
+          const Node* __restrict__ const node = (BVH8::Node*)cur.node();
           
           /* pop of next node */
           sptr_node--;
           sptr_near--;
-          curNode = *sptr_node; // FIXME: this trick creates issues with stack depth
+          cur = *sptr_node; // FIXME: this trick creates issues with stack depth
           curDist = *sptr_near;
           
           for (unsigned i=0; i<BVH8::N; i++)
@@ -118,13 +118,13 @@ namespace embree
               /* push cur node onto stack and continue with hit child */
               if (any(childDist < curDist))
               {
-                *sptr_node = curNode;
+                *sptr_node = cur;
                 *sptr_near = curDist; 
 		sptr_node++;
 		sptr_near++;
 
                 curDist = childDist;
-                curNode = child;
+                cur = child;
               }
               
               /* push hit child onto stack*/
@@ -141,14 +141,14 @@ namespace embree
         }
         
         /* return if stack is empty */
-        if (unlikely(curNode == BVH8::invalidNode)) 
+        if (unlikely(cur == BVH8::invalidNode)) 
           break;
         
         /* intersect leaf */
+	assert(cur != BVH8::emptyNode);
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
-	if (!PrimitiveIntersector8::emptyLeafSupport && unlikely(curNode == BVH8::emptyNode)) continue;
-        size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(items);
+        size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
         PrimitiveIntersector8::intersect(valid_leaf,pre,ray,tri,items,bvh->geometry);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
@@ -186,8 +186,8 @@ namespace embree
         /* pop next node from stack */
         sptr_node--;
         sptr_near--;
-        NodeRef curNode = *sptr_node;
-        if (unlikely(curNode == BVH8::invalidNode)) 
+        NodeRef cur = *sptr_node;
+        if (unlikely(cur == BVH8::invalidNode)) 
           break;
         
         /* cull node if behind closest hit point */
@@ -198,17 +198,17 @@ namespace embree
         while (1)
         {
           /* test if this is a leaf node */
-          if (unlikely(curNode.isLeaf()))
+          if (unlikely(cur.isLeaf()))
             break;
           
           const avxb valid_node = ray_tfar > curDist;
           STAT3(shadow.trav_nodes,1,popcnt(valid_node),8);
-          const Node* __restrict__ const node = (Node*)curNode.node();
+          const Node* __restrict__ const node = (Node*)cur.node();
           
           /* pop of next node */
           sptr_node--;
           sptr_near--;
-          curNode = *sptr_node; // FIXME: this trick creates issues with stack depth
+          cur = *sptr_node; // FIXME: this trick creates issues with stack depth
           curDist = *sptr_near;
           
           for (unsigned i=0; i<BVH8::N; i++)
@@ -249,10 +249,10 @@ namespace embree
               /* push cur node onto stack and continue with hit child */
               if (any(childDist < curDist))
               {
-                *(sptr_node-1) = curNode;
+                *(sptr_node-1) = cur;
                 *(sptr_near-1) = curDist; 
                 curDist = childDist;
-                curNode = child;
+                cur = child;
               }
               
               /* push hit child onto stack*/
@@ -266,14 +266,14 @@ namespace embree
         }
         
         /* return if stack is empty */
-        if (unlikely(curNode == BVH8::invalidNode)) 
+        if (unlikely(cur == BVH8::invalidNode)) 
           break;
         
         /* intersect leaf */
+	assert(cur != BVH8::emptyNode);
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
-	if (!PrimitiveIntersector8::emptyLeafSupport && unlikely(curNode == BVH8::emptyNode)) continue;
-        size_t items; const Triangle* tri  = (Triangle*) curNode.leaf(items);
+        size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
         terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,tri,items,bvh->geometry);
         if (all(terminated)) break;
         ray_tfar = select(terminated,neg_inf,ray_tfar);

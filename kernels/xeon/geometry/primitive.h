@@ -63,7 +63,6 @@ namespace embree
   {
     typedef typename Intersector::Primitive Primitive;
     typedef typename Intersector::Precalculations Precalculations;
-    enum { emptyLeafSupport = false };
 
     static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom)
     {
@@ -91,7 +90,6 @@ namespace embree
   {
     typedef typename Intersector::Primitive Primitive;
     typedef typename Intersector::Precalculations Precalculations;
-    enum { emptyLeafSupport = true };
 
     static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom)
     {
@@ -116,7 +114,6 @@ namespace embree
   {
     typedef typename Intersector::Primitive Primitive;
     typedef typename Intersector::Precalculations Precalculations;
-    enum { emptyLeafSupport = false };
 
     static __forceinline void intersect(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom)
     {
@@ -145,7 +142,6 @@ namespace embree
   {
     typedef typename Intersector::Primitive Primitive;
     typedef typename Intersector::Precalculations Precalculations;
-    enum { emptyLeafSupport = true };
 
     static __forceinline void intersect(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom)
     {
@@ -171,7 +167,6 @@ namespace embree
   {
     typedef typename Intersector::Primitive Primitive;
     typedef typename Intersector::Precalculations Precalculations;
-    enum { emptyLeafSupport = false };
 
     static __forceinline void intersect(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom)
     {
@@ -220,7 +215,6 @@ namespace embree
   {
     typedef typename Intersector::Primitive Primitive;
     typedef typename Intersector::Precalculations Precalculations;
-    enum { emptyLeafSupport = true };
 
     static __forceinline void intersect(const sseb& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, void* geom)
     {
@@ -265,7 +259,6 @@ namespace embree
   {
     typedef typename Intersector::Primitive Primitive;
     typedef typename Intersector::Precalculations Precalculations;
-    enum { emptyLeafSupport = false };
 
     static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom)
     {
@@ -294,7 +287,6 @@ namespace embree
   {
     typedef typename Intersector::Primitive Primitive;
     typedef typename Intersector::Precalculations Precalculations;
-    enum { emptyLeafSupport = true };
 
     static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom)
     {
@@ -320,7 +312,6 @@ namespace embree
   {
     typedef typename Intersector::Primitive Primitive;
     typedef typename Intersector::Precalculations Precalculations;
-    enum { emptyLeafSupport = false };
 
     static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom)
     {
@@ -369,7 +360,6 @@ namespace embree
   {
     typedef typename Intersector::Primitive Primitive;
     typedef typename Intersector::Precalculations Precalculations;
-    enum { emptyLeafSupport = true };
 
     static __forceinline void intersect(const avxb& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, void* geom)
     {
