@@ -33,8 +33,8 @@ namespace embree
       return sa < sb;
     }
     
-    BVH4Refit::BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh)
-      : builder(builder), mesh(mesh), primTy(bvh->primTy), bvh(bvh), scheduler(&mesh->parent->lockstep_scheduler) 
+    BVH4Refit::BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh, bool listMode)
+      : builder(builder), listMode(listMode), mesh(mesh), primTy(bvh->primTy), bvh(bvh), scheduler(&mesh->parent->lockstep_scheduler) 
     {
       needAllThreads = builder->needAllThreads;
     }
@@ -136,7 +136,7 @@ namespace embree
     {
       size_t num; char* tri = ref.leaf(num);
       if (unlikely(ref == BVH4::emptyNode)) return empty;
-      return bvh->primTy.update(tri,LeafMode ? -1 : num,mesh);
+      return bvh->primTy.update(tri,listMode ? -1 : num,mesh);
     }
     
     __forceinline BBox3fa BVH4Refit::node_bounds(NodeRef& ref)
@@ -247,14 +247,14 @@ namespace embree
     Builder* BVH4Triangle4vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode);
     Builder* BVH4Triangle4iMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode);
 
-    Builder* BVH4Triangle1MeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle1MeshBuilderFast(accel,mesh,mode),mesh); }
-    Builder* BVH4Triangle4MeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle4MeshBuilderFast(accel,mesh,mode),mesh); }
+    Builder* BVH4Triangle1MeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle1MeshBuilderFast(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle4MeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle4MeshBuilderFast(accel,mesh,mode),mesh,mode); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle8MeshBuilderFast(accel,mesh,mode),mesh); }
+    Builder* BVH4Triangle8MeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle8MeshBuilderFast(accel,mesh,mode),mesh,mode); }
 #endif
-    Builder* BVH4Triangle1vMeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle1vMeshBuilderFast(accel,mesh,mode),mesh); }
-    Builder* BVH4Triangle4vMeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle4vMeshBuilderFast(accel,mesh,mode),mesh); }
-    Builder* BVH4Triangle4iMeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle4iMeshBuilderFast(accel,mesh,mode),mesh); }
+    Builder* BVH4Triangle1vMeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle1vMeshBuilderFast(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle4vMeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle4vMeshBuilderFast(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle4iMeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle4iMeshBuilderFast(accel,mesh,mode),mesh,mode); }
   }
 }
 

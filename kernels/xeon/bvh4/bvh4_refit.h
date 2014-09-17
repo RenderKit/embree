@@ -36,7 +36,7 @@ namespace embree
       void build(size_t threadIndex, size_t threadCount);
       
       /*! Constructor. */
-      BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh);
+      BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh, bool listMode);
 
       ~BVH4Refit();
 
@@ -59,6 +59,7 @@ namespace embree
       //void* geometry;                //!< input geometry
       TriangleMesh* mesh;
       LockStepTaskScheduler* scheduler;
+      bool listMode;
       
     public:
       const PrimitiveType& primTy;   //!< primitve type stored in BVH

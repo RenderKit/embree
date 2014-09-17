@@ -999,7 +999,7 @@ namespace embree
   public:
 
     /*! BVH4 default constructor. */
-    BVH4 (const PrimitiveType& primTy, void* geometry = NULL);
+    BVH4 (const PrimitiveType& primTy, void* geometry, bool listMode);
 
     /*! BVH4 destruction */
     ~BVH4 ();
@@ -1116,6 +1116,7 @@ namespace embree
   public:
     const PrimitiveType& primTy;       //!< primitive type stored in the BVH
     void* geometry;                    //!< pointer to additional data for primitive intersector
+    bool listMode;                     //!< true if number of leaf items not encoded in NodeRef
     NodeRef root;                      //!< Root node
     size_t numPrimitives;
     size_t numVertices;
