@@ -36,7 +36,6 @@ namespace embree
     vertexIndices.init(numEdges,sizeof(unsigned int));
     vertexOffsets.init(numFaces,sizeof(unsigned int));
 
-    enabling();
   }
   
   void SubdivMesh::enabling() 
@@ -152,12 +151,9 @@ namespace embree
 
   void SubdivMesh::immutable () 
   {
-    FATAL("not implemented");
-    // bool freeTriangles = !parent->needTriangles;
-    // bool freeVertices  = !parent->needVertices;
-    // if (freeTriangles) triangles.free();
-    // if (freeVertices ) vertices[0].free();
-    // if (freeVertices ) vertices[1].free();
+    bool freeVertices  = !parent->needVertices;
+    if (freeVertices ) vertices[0].free();
+    if (freeVertices ) vertices[1].free();
   }
 
   SubdivMesh::HalfEdge *SubdivMesh::initializeHalfEdgeStructures (unsigned int &numHalfEdges)
@@ -179,6 +175,30 @@ namespace embree
             halfEdges[i*4+j].opposite          = (unsigned int)-1;
           }
       }
+
+    /*! find opposite half-edges */
+    std::map<size_t,unsigned int> edgeMap;
+
+    for (size_t i=0;i<numHalfEdges;i++)
+      {
+        unsigned int start = halfEdges[i].getStartVertexIndex(halfEdges);
+        unsigned int end   = halfEdges[i].getEndVertexIndex(halfEdges);
+        if (end < start) std::swap(start,end);
+        size_t value = ((size_t)start << 32) | (size_t)end;
+        std::map<size_t,unsigned int>::iterator found = edgeMap.find(value);
+        if (found != edgeMap.end())
+          {
+            halfEdges[i].opposite = found->second;
+            halfEdges[ found->second ].opposite = i;
+          }
+        else
+          {
+            edgeMap[value] = i;
+          }
+      }
+
+    
+    
     return halfEdges;
   }
 

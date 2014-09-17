@@ -48,6 +48,7 @@ namespace embree
     size_t numEdges;                  //!< number of edges
     size_t numVertices;               //!< number of vertices
 
+    size_t size() { return numFaces; };
     
     class HalfEdge
     {
@@ -57,7 +58,16 @@ namespace embree
       unsigned int local_halfedge_id :  2;
       unsigned int opposite;
 
-      unsigned int getStartVertexIndex() const { 
+      bool hasOpposite() const {
+        return opposite != (unsigned int)-1;
+      };
+
+      const HalfEdge &getOppositeHalfEdge(const HalfEdge *const halfEdges) const { 
+        assert( opposite != (unsigned int)-1 );
+        return halfEdges[opposite]; 
+      };
+
+      unsigned int getStartVertexIndex(const HalfEdge *const halfEdges) const { 
         return vtx_index; 
       };
       

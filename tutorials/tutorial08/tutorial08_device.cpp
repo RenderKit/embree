@@ -143,9 +143,50 @@ void constructGroundPlane() {
 
 }
 
-void constructScene() {
+#define VERTICES 8
+#define EDGES    24
+#define FACES    (EDGES/4)
 
+Vec3fa test_vertices[] = {
+  Vec3fa(-1.0f, -1.0f, -1.0f),
+  Vec3fa( 1.0f, -1.0f, -1.0f),
+  Vec3fa( 1.0f, -1.0f,  1.0f),
+  Vec3fa(-1.0f, -1.0f,  1.0f),
+  Vec3fa(-1.0f,  1.0f, -1.0f),
+  Vec3fa( 1.0f,  1.0f, -1.0f),
+  Vec3fa( 1.0f,  1.0f,  1.0f),
+  Vec3fa(-1.0f,  1.0f,  1.0f)
+};
+
+unsigned int test_indices[EDGES] = {0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6,  0, 4, 7, 3,  4, 5, 6, 7,  0, 3, 2, 1};
+
+unsigned int test_offsets[FACES] = {0, 1, 2, 3, 4, 5};
+
+void constructScene() {
     /*! Create an Embree object to hold scene state. */
+    g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
+
+#if 1
+    unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
+
+    void *vtx_data_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER);
+    assert( vtx_data_ptr );
+    memcpy( vtx_data_ptr , test_vertices, sizeof(Vec3fa) * VERTICES);
+    rtcUnmapBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER);
+
+    void *vtx_index_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER);
+    assert( vtx_index_ptr );
+    memcpy( vtx_index_ptr , test_indices, sizeof(unsigned int) * EDGES);
+    rtcUnmapBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER);
+
+    void *vtx_offset_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER);
+    assert( vtx_offset_ptr );
+    memcpy( vtx_offset_ptr , test_offsets, sizeof(unsigned int) * FACES);
+    rtcUnmapBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER);
+
+    
+    rtcCommit(g_scene);
+#else
     g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
 
     /*! Construct a cube shaped subdivision mesh. */
@@ -156,6 +197,7 @@ void constructScene() {
 
     /*! Commit the changes to the scene state. */
     rtcxCommit(g_scene);
+#endif
 
 }
 

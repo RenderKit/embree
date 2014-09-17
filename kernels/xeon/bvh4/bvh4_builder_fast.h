@@ -20,6 +20,7 @@
 #include "builders/heuristic_object_partition.h"
 #include "builders/workstack.h"
 #include "common/scene_user_geometry.h"
+#include "common/scene_subdiv_mesh.h"
 
 namespace embree
 {
@@ -243,5 +244,20 @@ namespace embree
       PrimRef* prims_i;
       size_t N;
     };
+
+
+    template<typename Primitive>
+    class BVH4SubdivBuilderFast : public BVH4BuilderFastT<Primitive>
+    {
+    public:
+      BVH4SubdivBuilderFast (BVH4* bvh, Scene* scene, size_t listMode);
+      BVH4SubdivBuilderFast (BVH4* bvh, SubdivMesh* geom, size_t listMode);
+      size_t number_of_primitives();
+      void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
+      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo);
+    public:
+      SubdivMesh* geom;   //!< input mesh
+    };
+
   }
 }

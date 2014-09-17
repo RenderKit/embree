@@ -93,7 +93,14 @@ namespace embree
       : geom(geom), BVH4BuilderFastT<Triangle4v>(bvh,geom->parent,listMode,2,2,false,sizeof(Triangle4v),4,inf,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
     template<> BVH4TriangleBuilderFast<Triangle4i>::BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* geom, size_t listMode) 
       : geom(geom), BVH4BuilderFastT<Triangle4i>(bvh,geom->parent,listMode,2,2,true ,sizeof(Triangle4i),4,inf,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
+
     template<> BVH4UserGeometryBuilderFastT<AccelSetItem>::BVH4UserGeometryBuilderFastT (BVH4* bvh, UserGeometryBase* geom, size_t listMode) 
+      : geom(geom), BVH4BuilderFastT<AccelSetItem>(bvh,geom->parent,listMode,0,0,false,sizeof(AccelSetItem),1,1,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
+
+
+    template<> BVH4SubdivBuilderFast<AccelSetItem>::BVH4SubdivBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
+      : geom(NULL), BVH4BuilderFastT<AccelSetItem>(bvh,scene,listMode,0,0,false,sizeof(AccelSetItem),1,1,true) {}
+    template<> BVH4SubdivBuilderFast<AccelSetItem>::BVH4SubdivBuilderFast (BVH4* bvh, SubdivMesh* geom, size_t listMode) 
       : geom(geom), BVH4BuilderFastT<AccelSetItem>(bvh,geom->parent,listMode,0,0,false,sizeof(AccelSetItem),1,1,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
     
     BVH4TopLevelBuilderFastT::BVH4TopLevelBuilderFastT (LockStepTaskScheduler* scheduler, BVH4* bvh) 
@@ -229,6 +236,33 @@ namespace embree
       if (geom) PrimRefArrayGenFromGeometry<UserGeometryBase>::generate_parallel(threadIndex, threadCount, scheduler, geom , this->prims, pinfo);
       else      PrimRefArrayGen                              ::generate_parallel(threadIndex, threadCount, scheduler, this->scene, USER_GEOMETRY, 1, this->prims, pinfo);
     }
+
+
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
+    template<typename Primitive>
+    size_t BVH4SubdivBuilderFast<Primitive>::number_of_primitives() 
+    {
+      if (geom) return geom->size();
+      else      return this->scene->numUserGeometries1;
+    }
+    
+    template<typename Primitive>
+    void BVH4SubdivBuilderFast<Primitive>::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
+    {
+      // if (geom) PrimRefArrayGenFromGeometry<SubdivMesh>::generate_sequential(threadIndex, threadCount, geom , this->prims, pinfo);
+      // else      PrimRefArrayGen                              ::generate_sequential(threadIndex, threadCount, this->scene, USER_GEOMETRY, 1, this->prims, pinfo);
+    }
+
+    template<typename Primitive>
+    void BVH4SubdivBuilderFast<Primitive>::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) 
+    {
+      // if (geom) PrimRefArrayGenFromGeometry<SubdivMesh>::generate_parallel(threadIndex, threadCount, scheduler, geom , this->prims, pinfo);
+      // else      PrimRefArrayGen                              ::generate_parallel(threadIndex, threadCount, scheduler, this->scene, USER_GEOMETRY, 1, this->prims, pinfo);
+    }
+
 
     // =======================================================================================================
     // =======================================================================================================
@@ -599,5 +633,8 @@ namespace embree
     Builder* BVH4Triangle4vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4v>((BVH4*)bvh,mesh,mode); }
     Builder* BVH4Triangle4iMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4i>((BVH4*)bvh,mesh,mode); }
     Builder* BVH4UserGeometryMeshBuilderFast   (void* bvh, UserGeometryBase* geom, size_t mode) { return new class BVH4UserGeometryBuilderFastT<AccelSetItem>((BVH4*)bvh,geom,mode); }
+
+    Builder* BVH4SubdivMeshBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivBuilderFast<AccelSetItem>((BVH4*)bvh,scene,mode); }
+
   }
 }
