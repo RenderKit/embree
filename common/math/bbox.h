@@ -71,6 +71,12 @@ namespace embree
     __forceinline BBox( PosInfTy ): lower(neg_inf), upper(pos_inf) {}
   };
 
+#if defined(__SSE__)
+  template<> __forceinline bool BBox<Vec3fa>::empty() const {
+    return !all(le_mask(lower,upper));
+  }
+#endif
+
   /*! computes the center of the box */
   template<typename T> __forceinline const T center (const BBox<T>& box) { return T(.5f)*(box.lower + box.upper); }
   template<typename T> __forceinline const T center2(const BBox<T>& box) { return box.lower + box.upper; }
