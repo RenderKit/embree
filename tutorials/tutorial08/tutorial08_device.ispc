@@ -16,7 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-#define PARALLEL_COMMIT
+//#define PARALLEL_COMMIT
 
 struct ISPCTriangle 
 {
@@ -163,13 +163,14 @@ RTCScene convertTestSubdivScene()
 
   void *vtx_index_ptr = rtcMapBuffer(scene_out, subdivMeshID, RTC_INDEX_BUFFER);
   assert( vtx_index_ptr );
-  memcpy( vtx_index_ptr , test_indices, sizeof(unsigned int) * EDGES);
+  memcpy( vtx_index_ptr , test_indices, sizeof(uniform unsigned int) * EDGES);
   rtcUnmapBuffer(scene_out, subdivMeshID, RTC_INDEX_BUFFER);
 
   void *vtx_offset_ptr = rtcMapBuffer(scene_out, subdivMeshID, RTC_OFFSET_BUFFER);
   assert( vtx_offset_ptr );
-  memcpy( vtx_offset_ptr , test_offsets, sizeof(unsigned int) * FACES);
+  memcpy( vtx_offset_ptr , test_offsets, sizeof(uniform unsigned int) * FACES);
   rtcUnmapBuffer(scene_out, subdivMeshID, RTC_OFFSET_BUFFER);
+  return scene_out;
 }
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
@@ -352,6 +353,7 @@ export void device_render (uniform int* uniform pixels,
   { 
    //g_scene = convertScene(g_ispc_scene);
    g_scene = convertTestSubdivScene();
+
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
 #else

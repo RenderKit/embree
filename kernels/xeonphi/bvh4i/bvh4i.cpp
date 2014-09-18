@@ -198,7 +198,6 @@ namespace embree
 
   Accel::Intersectors BVH4iSubdivMeshIntersectors(BVH4i* bvh)
   {
-    PING;
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4iSubdivMeshIntersector1;

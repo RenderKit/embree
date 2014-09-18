@@ -492,7 +492,6 @@ namespace embree
 #endif
 
     ((Scene*)scene)->build(0,0);
-
     CATCH_END;
   }
 
