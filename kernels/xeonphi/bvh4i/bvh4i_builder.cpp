@@ -78,6 +78,10 @@ namespace embree
 	builder = new BVH4iBuilderMemoryConservative((BVH4i*)accel,geometry);
 	break;
 
+      case BVH4I_BUILDER_SUBDIV_MESH:
+	builder = new BVH4iBuilderSubdivMesh((BVH4i*)accel,geometry);
+	break;
+
       default:
 	THROW_RUNTIME_ERROR("ERROR: unknown BVH4iBuilder mode selected");	
       }

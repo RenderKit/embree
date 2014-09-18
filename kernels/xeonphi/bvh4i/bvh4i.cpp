@@ -199,11 +199,10 @@ namespace embree
   Accel::Intersectors BVH4iSubdivMeshIntersectors(BVH4i* bvh)
   {
     PING;
-    std::cout << "WARNING: NOT IMPLEMENTED YET" << std::endl;
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1  = NULL;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector1  = BVH4iSubdivMeshIntersector1;
+    intersectors.intersector16 = BVH4iSubdivMeshIntersector16;
     return intersectors;
   }
 

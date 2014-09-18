@@ -886,8 +886,15 @@ PRINT(CORRECT_numPrims);
     std::cout << "building BVH4i with Subdivision Surface SAH builder (MIC) ... " << std::endl;    
   }
 
+  void BVH4iBuilderSubdivMesh::build(const size_t threadIndex, const size_t threadCount)
+  {
+    PING;
+    BVH4iBuilder::build(threadIndex,threadCount);
+  }
+
   size_t BVH4iBuilderSubdivMesh::getNumPrimitives()
   {
+    PING;
     /* count total number of virtual objects */
     size_t numFaces = 0;       
     for (size_t i=0;i<scene->size();i++)
@@ -903,11 +910,13 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderSubdivMesh::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
+    PING;
     scene->lockstep_scheduler.dispatchTask( task_computePrimRefsSubdivMesh, this, threadIndex, threadCount );	
   }
 
   void BVH4iBuilderSubdivMesh::createAccel(const size_t threadIndex, const size_t threadCount)
   {
+    PING;
     scene->lockstep_scheduler.dispatchTask( task_createSubdivMeshAccel, this, threadIndex, threadCount );
   }
 

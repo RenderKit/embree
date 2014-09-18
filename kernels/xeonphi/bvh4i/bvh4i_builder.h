@@ -254,6 +254,7 @@ namespace embree
   public:
     BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry) {}
 
+    virtual void build            (const size_t threadIndex, const size_t threadCount);
     virtual size_t getNumPrimitives();
     virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
     virtual void createAccel    (const size_t threadIndex, const size_t threadCount);
