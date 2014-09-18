@@ -338,4 +338,9 @@ namespace embree
     ((Scene*)scene)->get(geomID)->setOcclusionFilterFunction16(filter,true);
     CATCH_END;
   }
+
+  extern "C" unsigned ispcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numTimeSteps) {
+    return rtcNewSubdivisionMesh((RTCScene)scene,flags,numFaces,numEdges,numVertices,numTimeSteps);
+  }
+
 }

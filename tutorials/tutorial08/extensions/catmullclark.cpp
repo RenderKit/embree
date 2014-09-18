@@ -50,7 +50,7 @@ void catmullClarkFaceVertex(SubdivisionMesh &mesh, const SubdivisionMesh::Face &
     Vec3f &vertexCoordinates = mesh.getVertexBuffer()[vertexIndex];
 
     /*! The new vertex is the average of the vertices adjacent to the coarse face. */
-    for (size_t i=0 ; i < coarseFace.vertexCount() ; i++) vertexCoordinates += coarseFace.getVertex(i).getCoordinates() / coarseFace.vertexCount();
+    for (size_t i=0 ; i < coarseFace.vertexCount() ; i++) vertexCoordinates += coarseFace.getVertex(i).getCoordinates() / (float)coarseFace.vertexCount();
 
     /*! Associate the new vertex with the adjacent faces in the subdivided mesh. */
     for (size_t i=0 ; i < coarseFace.vertexCount() ; i++) mesh.getIndexBuffer()[mesh.getIndex(coarseFace.getEdge(i).getIndex()) + 2] = vertexIndex;
@@ -66,13 +66,13 @@ void catmullClarkMoveVertex(SubdivisionMesh &mesh, SubdivisionMesh::HalfEdge coa
     Vec3f &vertexCoordinates = mesh.getVertexBuffer()[vertexIndex];
 
     /*! The new vertex is the average of the new face vertices adjacent to the old vertex. */
-    for (size_t i=0 ; i < valence ; i++, coarseEdge = coarseEdge.getNextVertexEdge()) vertexCoordinates += mesh.getFace(coarseEdge.getIndex()).getVertex(2).getCoordinates() / valence;
+    for (size_t i=0 ; i < valence ; i++, coarseEdge = coarseEdge.getNextVertexEdge()) vertexCoordinates += mesh.getFace(coarseEdge.getIndex()).getVertex(2).getCoordinates() / (float)valence;
 
     /*! Plus the weighted average of the new edge vertices adjacent to the old vertex. */
-    for (size_t i=0 ; i < valence ; i++, coarseEdge = coarseEdge.getNextVertexEdge()) vertexCoordinates += mesh.getFace(coarseEdge.getIndex()).getVertex(1).getCoordinates() * 2.0f / valence;
+    for (size_t i=0 ; i < valence ; i++, coarseEdge = coarseEdge.getNextVertexEdge()) vertexCoordinates += mesh.getFace(coarseEdge.getIndex()).getVertex(1).getCoordinates() * 2.0f / (float)valence;
 
     /*! Plus the coordinates of the old vertex. */
-    vertexCoordinates = (vertexCoordinates + coarseEdge.getVertex().getCoordinates() * (valence - 3.0f)) / valence;
+    vertexCoordinates = (vertexCoordinates + coarseEdge.getVertex().getCoordinates() * (valence - 3.0f)) / (float)valence;
 
     /*! Associate the new vertex with the adjacent faces in the subdivided mesh. */
     for (size_t i=0 ; i < valence ; i++, coarseEdge = coarseEdge.getNextVertexEdge()) mesh.getIndexBuffer()[mesh.getIndex(coarseEdge.getIndex()) + 0] = vertexIndex;
