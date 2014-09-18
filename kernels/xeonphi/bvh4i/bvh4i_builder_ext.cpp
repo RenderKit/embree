@@ -888,7 +888,16 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderSubdivMesh::build(const size_t threadIndex, const size_t threadCount)
   {
-    PING;
+    std::cout << "Initialize half-edge data structures..." << std::endl;
+    for (size_t i=0;i<scene->size();i++)
+      {
+	if (unlikely(scene->get(i) == NULL)) continue;
+	if (unlikely((scene->get(i)->type != SUBDIV_MESH) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
+	if (unlikely(!scene->get(i)->isEnabled())) continue;
+        SubdivMesh* geom = (SubdivMesh*) scene->get(i);
+	geom->initializeHalfEdgeStructures();
+      }
+
     BVH4iBuilder::build(threadIndex,threadCount);
   }
 

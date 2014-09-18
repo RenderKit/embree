@@ -51,12 +51,6 @@ namespace embree
 
     size_t size() const { return numFaces; };
 
-    /*! calculates the bounds of the i'th subdivision patch */
-    __forceinline BBox3fa bounds(size_t i) const 
-    {
-      PRINT("SubdivMesh::bounds not implemented");
-      return empty;
-    }
     
     class HalfEdge
     {
@@ -94,7 +88,6 @@ namespace embree
     };
 
 
-
   private:
     BufferT<Vec3fa> vertices[2];      //!< vertex array
 
@@ -115,6 +108,14 @@ namespace embree
 
     void initializeHalfEdgeStructures ();
 
+    /*! calculates the bounds of the i'th subdivision patch */
+    __forceinline BBox3fa bounds(size_t i) const 
+    {
+      BBox3fa b = empty;
+      for (size_t j=0;j<4;i++)
+	b.extend( vertices[0][halfEdges[i*4+j].vtx_index] );
+      return b;
+    }
 
   };
 

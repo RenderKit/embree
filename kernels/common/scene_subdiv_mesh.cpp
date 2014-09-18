@@ -155,6 +155,7 @@ namespace embree
 
   void SubdivMesh::initializeHalfEdgeStructures ()
   {
+    PING;
     numHalfEdges = numFaces * 4;
 
     halfEdges = (HalfEdge*)os_malloc(numHalfEdges * sizeof(HalfEdge));
