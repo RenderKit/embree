@@ -52,6 +52,19 @@ namespace embree
       int v0, v1, v2, materialID;
     };
 
+    /*! OBJ Quad */
+
+    struct Quad 
+    {
+    public:
+      Quad (int v0, int v1, int v2, int v3, int materialID) 
+      : v0(v0), v1(v1), v2(v2), v3(v3), materialID(materialID) {}
+
+    public:
+      int v0, v1, v2, v3, materialID;
+    };
+
+
     /*! Mesh. */
     struct Mesh 
     {
@@ -65,6 +78,7 @@ namespace embree
 #endif
       std::vector<Vec2f> vt;
       std::vector<Triangle> triangles;
+      std::vector<Quad> quads;
     };
 
     struct Hair
@@ -290,5 +304,5 @@ namespace embree
   };
   
   /*! read from disk */
-  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh);
+  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh, const bool onlyQuads = false);
 }
