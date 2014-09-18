@@ -36,6 +36,8 @@ namespace embree
       /*! calculate number of primitives */
       if ((ty & TRIANGLE_MESH) && (numTimeSteps & 1)) numPrimitives += scene->numTriangles;
       if ((ty & TRIANGLE_MESH) && (numTimeSteps & 2)) numPrimitives += scene->numTriangles2;
+      if ((ty & SUBDIV_MESH  ) && (numTimeSteps & 1)) numPrimitives += scene->numSubdivPatches;
+      if ((ty & SUBDIV_MESH  ) && (numTimeSteps & 2)) numPrimitives += scene->numSubdivPatches2;
       if ((ty & BEZIER_CURVES) && (numTimeSteps & 1)) numPrimitives += scene->numBezierCurves;
       if ((ty & BEZIER_CURVES) && (numTimeSteps & 2)) numPrimitives += scene->numBezierCurves2;
       if ((ty & USER_GEOMETRY)                      ) numPrimitives += scene->numUserGeometries1;
@@ -79,6 +81,24 @@ namespace embree
 	      block->insert(prim);
 	    }
 	    cur += mesh->numTriangles;
+	  }
+	  break;
+	}
+
+	  /* handle subdiv mesh */
+	case SUBDIV_MESH: {
+	  const SubdivMesh* mesh = (const SubdivMesh*)geom;
+	  if (mesh->numTimeSteps & numTimeSteps) {
+	    ssize_t s = max(start-cur,ssize_t(0));
+	    ssize_t e = min(end  -cur,ssize_t(mesh->size()));
+	    for (ssize_t j=s; j<e; j++) {
+	      const PrimRef prim(mesh->bounds(j),i,j);
+	      pinfo.add(prim.bounds(),prim.center2());
+	      if (likely(block->insert(prim))) continue; 
+	      block = prims_o.insert(alloc->malloc(threadIndex));
+	      block->insert(prim);
+	    }
+	    cur += mesh->size();
 	  }
 	  break;
 	}
@@ -167,6 +187,7 @@ namespace embree
     
     template class PrimRefListGenFromGeometry<TriangleMesh>;
     template class PrimRefListGenFromGeometry<BezierCurves>;
+    template class PrimRefListGenFromGeometry<SubdivMesh>;
     template class PrimRefListGenFromGeometry<UserGeometryBase>;
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -187,6 +208,8 @@ namespace embree
       /*! calculate number of primitives */
       if ((ty & TRIANGLE_MESH) && (numTimeSteps & 1)) numPrimitives += scene->numTriangles;
       if ((ty & TRIANGLE_MESH) && (numTimeSteps & 2)) numPrimitives += scene->numTriangles2;
+      if ((ty & SUBDIV_MESH  ) && (numTimeSteps & 1)) numPrimitives += scene->numSubdivPatches;
+      if ((ty & SUBDIV_MESH  ) && (numTimeSteps & 2)) numPrimitives += scene->numSubdivPatches2;
       if ((ty & BEZIER_CURVES) && (numTimeSteps & 1)) numPrimitives += scene->numBezierCurves;
       if ((ty & BEZIER_CURVES) && (numTimeSteps & 2)) numPrimitives += scene->numBezierCurves2;
       if ((ty & USER_GEOMETRY)                      ) numPrimitives += scene->numUserGeometries1;
@@ -225,6 +248,22 @@ namespace embree
 	      prims_o[cur+j] = prim;
 	    }
 	    cur += mesh->numTriangles;
+	  }
+	  break;
+	}
+
+	  /* handle subdivision meshes */
+	case SUBDIV_MESH: {
+	  const SubdivMesh* mesh = (const SubdivMesh*)geom;
+	  if (mesh->numTimeSteps & numTimeSteps) {
+	    ssize_t s = max(start-cur,ssize_t(0));
+	    ssize_t e = min(end  -cur,ssize_t(mesh->size()));
+	    for (ssize_t j=s; j<e; j++) {
+	      const PrimRef prim(mesh->bounds(j),i,j);
+	      pinfo.add(prim.bounds(),prim.center2());
+	      prims_o[cur+j] = prim;
+	    }
+	    cur += mesh->size();
 	  }
 	  break;
 	}
@@ -308,6 +347,7 @@ namespace embree
 
     template class PrimRefArrayGenFromGeometry<TriangleMesh>;
     template class PrimRefArrayGenFromGeometry<BezierCurves>;
+    template class PrimRefArrayGenFromGeometry<SubdivMesh>;
     template class PrimRefArrayGenFromGeometry<UserGeometryBase>;
   }
 }

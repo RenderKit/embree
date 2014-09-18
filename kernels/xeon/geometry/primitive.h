@@ -39,7 +39,7 @@ namespace embree
       : name(name), bytes(bytes), blockSize(blockSize), needVertices(needVertices), intCost(intCost) {}
 
     /*! Computes the number of blocks required to store a number of triangles. */
-    virtual size_t blocks(size_t x) const = 0;
+    virtual size_t blocks(size_t x) const = 0; // FIXME: are these still required
 
     /*! Returns the number of stored primitives in a block. */
     virtual size_t size(const char* This) const = 0;

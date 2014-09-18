@@ -48,7 +48,14 @@ namespace embree
     size_t numEdges;                  //!< number of edges
     size_t numVertices;               //!< number of vertices
 
-    size_t size() { return numFaces; };
+    size_t size() const { return numFaces; };
+
+    /*! calculates the bounds of the i'th subdivision patch */
+    __forceinline BBox3fa bounds(size_t i) const 
+    {
+      PRINT("SubdivMesh::bounds not implemented");
+      return empty;
+    }
     
     class HalfEdge
     {

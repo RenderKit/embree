@@ -35,21 +35,18 @@ namespace embree
 
     vertexIndices.init(numEdges,sizeof(unsigned int));
     vertexOffsets.init(numFaces,sizeof(unsigned int));
-
   }
   
   void SubdivMesh::enabling() 
   { 
-    FATAL("not implemented");
-    // if (numTimeSteps == 1) { atomic_add(&parent->numTriangles ,numTriangles); }
-    // else                   { atomic_add(&parent->numTriangles2,numTriangles); }
+    if (numTimeSteps == 1) { atomic_add(&parent->numSubdivPatches ,numFaces); }
+    else                   { atomic_add(&parent->numSubdivPatches2,numFaces); }
   }
   
   void SubdivMesh::disabling() 
   { 
-    FATAL("not implemented");
-    // if (numTimeSteps == 1) { atomic_add(&parent->numTriangles ,-numTriangles); }
-    // else                   { atomic_add(&parent->numTriangles2,-numTriangles); }
+    if (numTimeSteps == 1) { atomic_add(&parent->numSubdivPatches ,-numFaces); }
+    else                   { atomic_add(&parent->numSubdivPatches2,-numFaces); }
   }
 
   void SubdivMesh::setMask (unsigned mask) 

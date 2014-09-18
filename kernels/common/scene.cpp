@@ -29,7 +29,10 @@ namespace embree
 {
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
-      numTriangles(0), numTriangles2(0), numBezierCurves(0), numBezierCurves2(0), numUserGeometries1(0), 
+      numTriangles(0), numTriangles2(0), 
+      numBezierCurves(0), numBezierCurves2(0), 
+      numSubdivPatches(0), numSubdivPatches2(0), 
+      numUserGeometries1(0), 
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0)
   {
 #if !defined(__MIC__)
@@ -106,6 +109,7 @@ namespace embree
     accels.add(BVH4::BVH4UserGeometry(this));
     createHairAccel();
     accels.add(BVH4::BVH4OBBBezier1iMB(this,false));
+    accels.add(BVH4::BVH4SubdivPatch1(this));
 #endif
   }
 

@@ -24,6 +24,7 @@
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
+#include "geometry/subdivpatch1.h"
 #include "geometry/virtual_accel.h"
 
 #include "common/accelinstance.h"
@@ -114,6 +115,7 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4Triangle1vBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle4vBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle4iBuilderFast);
+  DECLARE_SCENE_BUILDER(BVH4SubdivPatch1BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4UserGeometryBuilderFast);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderFast);
@@ -186,6 +188,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderFast);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivPatch1BuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4UserGeometryMeshBuilderFast);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshRefitFast);
@@ -875,6 +878,19 @@ namespace embree
     Builder* builder = BVH4Triangle4iBuilder(accel,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
     scene->needVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4::BVH4SubdivPatch1(Scene* scene)
+  {
+    BVH4* accel = new BVH4(SubdivPatch1::type,NULL,LeafMode);
+    Accel::Intersectors intersectors;
+    intersectors.ptr = accel; 
+    intersectors.intersector1 = NULL;
+    intersectors.intersector4 = NULL;
+    intersectors.intersector8 = NULL;
+    intersectors.intersector16 = NULL;
+    Builder* builder = BVH4SubdivPatch1BuilderFast(accel,scene,LeafMode);
     return new AccelInstance(accel,builder,intersectors);
   }
 

@@ -245,7 +245,6 @@ namespace embree
       size_t N;
     };
 
-
     template<typename Primitive>
     class BVH4SubdivBuilderFast : public BVH4BuilderFastT<Primitive>
     {
