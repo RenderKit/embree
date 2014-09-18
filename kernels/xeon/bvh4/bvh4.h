@@ -435,8 +435,8 @@ namespace embree
     {
       /*! Clears the node. */
       __forceinline void clear()  {
-        lower_x = lower_y = lower_z = ssef(pos_inf);
-        upper_x = upper_y = upper_z = ssef(neg_inf);
+        lower_x = lower_y = lower_z = ssef(nan);
+        upper_x = upper_y = upper_z = ssef(nan);
         lower_dx = lower_dy = lower_dz = ssef(nan); // initialize with NAN and update during refit
         upper_dx = upper_dy = upper_dz = ssef(nan);
 	BaseNode::clear();
@@ -549,14 +549,14 @@ namespace embree
 	const ssef tNearX = (ssef(pNearX[0]) + time*pNearX[6] - org.x) * rdir.x;
 	const ssef tNearY = (ssef(pNearY[0]) + time*pNearY[6] - org.y) * rdir.y;
 	const ssef tNearZ = (ssef(pNearZ[0]) + time*pNearZ[6] - org.z) * rdir.z;
-	const ssef tNear = max(tNearX,tNearY,tNearZ,tnear);
+	const ssef tNear = max(tnear,tNearX,tNearY,tNearZ);
 	const ssef* pFarX = (const ssef*)((const char*)&lower_x+farX);
 	const ssef* pFarY = (const ssef*)((const char*)&lower_x+farY);
 	const ssef* pFarZ = (const ssef*)((const char*)&lower_x+farZ);
 	const ssef tFarX = (ssef(pFarX[0]) + time*pFarX[6] - org.x) * rdir.x;
 	const ssef tFarY = (ssef(pFarY[0]) + time*pFarY[6] - org.y) * rdir.y;
 	const ssef tFarZ = (ssef(pFarZ[0]) + time*pFarZ[6] - org.z) * rdir.z;
-	const ssef tFar = min(tFarX,tFarY,tFarZ,tfar);
+	const ssef tFar = min(tfar,tFarX,tFarY,tFarZ);
 	const size_t mask = movemask(tNear <= tFar);
 	dist = tNear;
 	return mask;
