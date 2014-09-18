@@ -1070,7 +1070,7 @@ namespace embree
   RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numTimeSteps) 
   {
     CATCH_BEGIN;
-    TRACE(rtcNewTriangleMesh);
+    TRACE(rtcNewSubdivisionMesh);
     VERIFY_HANDLE(scene);
     return ((Scene*)scene)->newSubdivisionMesh(flags,numFaces,numEdges,numVertices,numTimeSteps);
     CATCH_END;

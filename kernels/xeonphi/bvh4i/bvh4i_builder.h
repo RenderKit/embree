@@ -148,11 +148,6 @@ namespace embree
 
     const size_t num64BytesBlocksPerNode;
 
-    /* __forceinline void createNode(void *ptr, */
-    /* 				  const unsigned int index,			   */
-    /* 				  const unsigned int children = 0) { */
-    /*   *(unsigned int *)ptr = ((index*2) << BVH4i::encodingBits); */
-    /* } */
 
     __forceinline void storeNode(void *ptr,
 				 BuildRecord *__restrict__ const br,
@@ -251,4 +246,22 @@ namespace embree
     TASK_FUNCTION(BVH4iBuilderVirtualGeometry,createVirtualGeometryAccel);
     
   };
+
+  /*! derived binned-SAH builder supporting subdivision surface meshes */  
+  class BVH4iBuilderSubdivMesh : public BVH4iBuilder
+  {
+  public:
+    BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry) {}
+
+    virtual size_t getNumPrimitives();
+    virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
+    virtual void createAccel    (const size_t threadIndex, const size_t threadCount);
+    virtual void printBuilderName();
+
+  protected:
+    TASK_FUNCTION(BVH4iBuilderSubdivMesh,computePrimRefsSubdivMesh);
+    TASK_FUNCTION(BVH4iBuilderSubdivMesh,createSubdivMeshAccel);
+    
+  };
+
 }

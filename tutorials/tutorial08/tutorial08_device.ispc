@@ -115,8 +115,6 @@ Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-   print("HERE\n");
-
   /* initialize ray tracing core */
   rtcInit(cfg);
 
@@ -156,7 +154,7 @@ RTCScene convertTestSubdivScene()
 {
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
-  uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
+  uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
 
   void *vtx_data_ptr = rtcMapBuffer(scene_out, subdivMeshID, RTC_VERTEX_BUFFER);
   assert( vtx_data_ptr );
@@ -172,7 +170,6 @@ RTCScene convertTestSubdivScene()
   assert( vtx_offset_ptr );
   memcpy( vtx_offset_ptr , test_offsets, sizeof(unsigned int) * FACES);
   rtcUnmapBuffer(scene_out, subdivMeshID, RTC_OFFSET_BUFFER);
-
 }
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
@@ -350,8 +347,6 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& vz, 
                            const uniform Vec3f& p)
 {
-   print("HERE\n");
-
   /* create scene */
   if (g_scene == NULL)
   { 
