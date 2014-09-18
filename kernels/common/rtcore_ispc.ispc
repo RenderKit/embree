@@ -48,6 +48,14 @@ extern "C" uniform unsigned int ispcNewBezierCurves (RTCScene scene,
                                                               uniform size_tt numCurves,
                                                               uniform size_tt numVertices,
                                                               uniform size_tt numTimeSteps);
+
+extern "C" uniform unsigned int ispcNewSubdivisionMesh (RTCScene scene,
+                                                 uniform RTCGeometryFlags flags,
+                                                 uniform size_tt numFaces,
+                                                 uniform size_tt numEdges,
+                                                 uniform size_tt numVertices,
+                                                 uniform size_tt numTimeSteps);
+
 extern "C" void ispcSetRayMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
 extern "C" void* uniform ispcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
 extern "C" void ispcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
@@ -192,6 +200,17 @@ uniform unsigned int rtcNewHairGeometry (RTCScene scene,
 {
   return ispcNewBezierCurves (scene,flags,numCurves,numVertices,numTimeSteps);
 }
+
+uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,
+                                       uniform RTCGeometryFlags flags,
+                                       uniform size_t numFaces,
+                                       uniform size_t numEdges,
+                                       uniform size_t numVertices,
+                                       uniform size_t numTimeSteps)
+{
+  return ispcNewSubdivisionMesh(scene,flags,numFaces,numEdges,numVertices,numTimeSteps);
+}
+
 
 void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask) {
   ispcSetRayMask(scene,geomID,mask);
