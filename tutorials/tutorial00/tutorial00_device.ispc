@@ -21,7 +21,6 @@
 /* scene data */
 RTCScene g_scene = NULL;
 uniform Vec3f* uniform colors = NULL;
-uniform unsigned int g_threads = 0;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -47,11 +46,11 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
 }
 
 /* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-task void parallelCommit(RTCScene scene)
-{
+#if defined(PARALLEL_COMMIT)
+task void parallelCommit(RTCScene scene) {
   rtcCommitThread (scene,threadIndex,threadCount); 
 }
-
+#endif
 
 /* adds a cube to the scene */
 uniform unsigned int addCube (RTCScene scene_i)
@@ -136,10 +135,6 @@ export void device_init (uniform int8* uniform cfg)
   /* initialize ray tracing core */
   rtcInit(cfg);
 
-  /* get number of HW threads */
-  g_threads = getNumHWThreads();
-  print("% HW threads found \n",g_threads);
-
   /* set error handler */
   rtcSetErrorFunction(error_handler);
  
@@ -157,7 +152,7 @@ export void device_init (uniform int8* uniform cfg)
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
 #else
-  launch[  g_threads ] parallelCommit(g_scene); sync;
+  launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
 #endif
 
   /* set start render mode */

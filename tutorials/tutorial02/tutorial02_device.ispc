@@ -328,23 +328,19 @@ uniform Instance* uniform g_instance2 = NULL;
 uniform Instance* uniform g_instance3 = NULL;
 
 uniform Vec3f colors[5][4];
-uniform unsigned int g_threads = 0;
 
 /* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-task void parallelCommit(RTCScene scene)
-{
+#if defined(PARALLEL_COMMIT)
+task void parallelCommit(RTCScene scene) {
   rtcCommitThread (scene,threadIndex,threadCount); 
 }
+#endif
 
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
-
-  /* get number of HW threads */
-  g_threads = getNumHWThreads();
-  print("% HW threads found \n",g_threads);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
@@ -362,7 +358,7 @@ export void device_init (uniform int8* uniform cfg)
 #if !defined(PARALLEL_COMMIT)
   rtcCommit(g_scene0);
 #else
-  launch[  g_threads ] parallelCommit(g_scene0); sync;
+  launch[ getNumHWThreads() ] parallelCommit(g_scene0); sync;
 #endif
 
   /* create scene with 4 triangulated spheres */
@@ -374,7 +370,7 @@ export void device_init (uniform int8* uniform cfg)
 #if !defined(PARALLEL_COMMIT)
   rtcCommit(g_scene1);
 #else
-  launch[  g_threads ] parallelCommit(g_scene1); sync;
+  launch[ getNumHWThreads() ] parallelCommit(g_scene1); sync;
 #endif
 
   /* create scene with 2 triangulated and 2 analytical spheres */
@@ -386,7 +382,7 @@ export void device_init (uniform int8* uniform cfg)
 #if !defined(PARALLEL_COMMIT)
   rtcCommit(g_scene2);
 #else
-  launch[  g_threads ] parallelCommit(g_scene2); sync;
+  launch[ getNumHWThreads() ] parallelCommit(g_scene2); sync;
 #endif
 
   /* instantiate geometry */
@@ -530,7 +526,7 @@ export void device_render (uniform int* uniform pixels,
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
 #else
-  launch[  g_threads ] parallelCommit(g_scene); sync;
+  launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
 #endif
 
   /* render all pixels */

@@ -39,7 +39,7 @@ namespace embree
   public:
     ISPCMesh (int numTriangles, int numVertices) 
       : numTriangles(numTriangles), numVertices(numVertices),
-        positions(NULL), normals(NULL), texcoords(NULL), triangles(NULL), dir(zero), offset(zero) 
+        positions(NULL), positions2(NULL), normals(NULL), texcoords(NULL), triangles(NULL), dir(zero), offset(zero) 
     {
       sizePositions = 0;
       sizeNormals   = 0;
@@ -49,10 +49,12 @@ namespace embree
 
     ~ISPCMesh () {
       if (positions) os_free(positions,sizePositions);
+      if (positions2) os_free(positions2,sizePositions);
       if (normals)   os_free(normals  ,sizeNormals);
       if (texcoords) os_free(texcoords,sizeTexCoords);
       if (triangles) os_free(triangles,sizeTriangles);
       positions = NULL;
+      positions2 = NULL;
       normals   = NULL;
       texcoords = NULL;
       triangles = NULL;
@@ -60,6 +62,7 @@ namespace embree
 
   public:
     Vec3fa* positions;    //!< vertex position array
+    Vec3fa* positions2;    //!< vertex position array
     Vec3fa* normals;       //!< vertex normal array
     Vec2f* texcoords;     //!< vertex texcoord array
     OBJScene::Triangle* triangles;  //!< list of triangles
@@ -90,12 +93,14 @@ namespace embree
     ALIGNED_CLASS;
   public:
     Vec3fa *positions;   //!< hair control points (x,y,z,r)
+    Vec3fa *positions2;   //!< hair control points (x,y,z,r)
     ISPCHair *hairs;    //!< list of hairs
     int numVertices;
     int numHairs;
-    ISPCHairSet(int numHairs, int numVertices) : numHairs(numHairs),numVertices(numVertices),positions(NULL),hairs(NULL) {}
+    ISPCHairSet(int numHairs, int numVertices) : numHairs(numHairs),numVertices(numVertices),positions(NULL),positions2(NULL),hairs(NULL) {}
     ~ISPCHairSet() {
       if (positions) free(positions);
+      if (positions2) free(positions2);
       if (hairs) free(hairs);
     }
   };

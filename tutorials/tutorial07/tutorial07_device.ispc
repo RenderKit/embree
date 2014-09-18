@@ -79,6 +79,7 @@ struct ISPCHair
 struct ISPCHairSet
 {
   Vec3fa* v;       //!< hair control points (x,y,z,r)
+  Vec3fa* v2;       //!< hair control points (x,y,z,r)
   ISPCHair* hairs; //!< for each hair, index to first control point
   int numVertices;
   int numHairs;
@@ -87,6 +88,7 @@ struct ISPCHairSet
 struct ISPCMesh
 {
   Vec3fa* positions;    //!< vertex position array
+  Vec3fa* positions2;    //!< vertex position array
   Vec3fa* normals;       //!< vertex normal array
   Vec2f* texcoords;     //!< vertex texcoord array
   ISPCTriangle* triangles;  //!< list of triangles
@@ -108,7 +110,6 @@ struct ISPCScene
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene g_scene = NULL;
-uniform unsigned int g_threads = 0;
 
 /* error reporting function */
 void error_handler(const uniform RTCError code, const uniform int8* uniform str)
@@ -131,11 +132,11 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
 }
 
 /* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-task void parallelCommit(RTCScene scene)
-{
+#if defined(PARALLEL_COMMIT)
+task void parallelCommit(RTCScene scene) {
   rtcCommitThread (scene,threadIndex,threadCount); 
 }
-
+#endif
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -211,7 +212,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (scene_out);
 #else
-  launch[  g_threads ] parallelCommit(scene_out); sync;
+  launch[ getNumHWThreads() ] parallelCommit(scene_out); sync;
 #endif
 
 
@@ -243,10 +244,6 @@ export void device_init (uniform int8* uniform cfg)
 
   /* initialize ray tracing core */
   rtcInit(cfg);
-
-  /* get number of HW threads */
-  g_threads = getNumHWThreads();
-  print("% HW threads found \n",g_threads);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);

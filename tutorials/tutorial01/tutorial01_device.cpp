@@ -16,6 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+
+
 #if 0
 const int numSpheres = 1000;
 const int numPhi = 5; 
@@ -111,6 +113,13 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
   return mesh;
 }
 
+/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
+#if defined(PARALLEL_COMMIT)
+task void parallelCommit(RTCScene scene) {
+  rtcCommitThread (scene,threadIndex,threadCount); 
+}
+#endif
+
 /* adds a ground plane to the scene */
 unsigned int addGroundPlane (RTCScene scene_i)
 {
@@ -168,7 +177,11 @@ extern "C" void device_init (int8* cfg)
   colors[id] = Vec3fa(1.0f,1.0f,1.0f);
 
   /* commit changes to scene */
+#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
+#else
+  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
+#endif
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -314,30 +327,23 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& vz, 
                            const Vec3fa& p)
 {
-  //double t0 = getSeconds();
-
   /* animate sphere */
   for (int i=0; i<numSpheres; i++)
     animateSphere(i,time+i);
 
-  //double t1 = getSeconds();
-
   /* commit changes to scene */
+#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
+#else
+  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
+#endif
 
-  //double t2 = getSeconds();
  
   /* render all pixels */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
-
-  //double t3 = getSeconds();
   rtcDebug();
-
-  /*std::cout << "animate: " << 1000.0f*(t1-t0) << std::endl;
-  std::cout << "commit : " << 1000.0f*(t2-t1) << std::endl;
-  std::cout << "render : " << 1000.0f*(t3-t2) << std::endl;*/
 }
 
 /* called by the C++ code for cleanup */

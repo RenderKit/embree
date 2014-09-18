@@ -16,6 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+
+
 /* render function to use */
 renderPixelFunc renderPixel;
 
@@ -130,6 +132,13 @@ unsigned int g_instance3 = -1;
 
 Vec3fa colors[4][4];
 
+/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
+#if defined(PARALLEL_COMMIT)
+task void parallelCommit(RTCScene scene) {
+  rtcCommitThread (scene,threadIndex,threadCount); 
+}
+#endif
+
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
 {
@@ -148,7 +157,12 @@ extern "C" void device_init (int8* cfg)
   createTriangulatedSphere(g_scene1,Vec3fa(+1, 0, 0),0.5);
   createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,-1),0.5);
   createTriangulatedSphere(g_scene1,Vec3fa(-1, 0, 0),0.5);
-  rtcCommit(g_scene1);
+
+#if !defined(PARALLEL_COMMIT)
+  rtcCommit (g_scene1);
+#else
+  launch[ getNumHWThreads() ] parallelCommit(g_scene1); 
+#endif
 
   /* instantiate geometry */
   g_instance0 = rtcNewInstance(g_scene,g_scene1);
@@ -296,7 +310,12 @@ extern "C" void device_render (int* pixels,
   rtcUpdate(g_scene,g_instance1);
   rtcUpdate(g_scene,g_instance2);
   rtcUpdate(g_scene,g_instance3);
+#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
+#else
+  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
+#endif
+
 
   /* render all pixels */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
