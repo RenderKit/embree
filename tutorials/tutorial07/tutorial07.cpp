@@ -62,6 +62,7 @@ namespace embree
   static int hairy_triangles_strands_per_triangle = 1;
 
   Vec3fa offset = 0.0f;
+  Vec3fa offset_mb = 0.0f;
 
   void addHairSegment(OBJScene::Mesh& mesh, int materialID, const Vec3fa& p0, const Vec3fa& p1)
   {
@@ -539,6 +540,11 @@ float noise(float x, float y, float z)
         offset = cin->getVec3fa();
       }
 
+      /* scene offset */
+      else if (tag == "--offset_mb") {
+        offset_mb = cin->getVec3fa();
+      }
+
       /* directional light */
       else if (tag == "--dirlight") {
         g_dirlight_direction = normalize(cin->getVec3fa());
@@ -696,14 +702,14 @@ float noise(float x, float y, float z)
     if (objFilename.str() != "" && objFilename.str() != "none") {
       loadOBJ(objFilename,AffineSpace3f::translate(-offset),g_obj_scene);
       if (objFilename2.str() != "")
-        loadOBJ(objFilename2,AffineSpace3f::translate(-offset),g_obj_scene2);
+        loadOBJ(objFilename2,AffineSpace3f::translate(-offset_mb),g_obj_scene2);
     }
 
     /* load hair */
     if (hairFilename.str() != "" && hairFilename.str() != "none") {
       loadHair(hairFilename,g_obj_scene,offset);
       if (hairFilename2.str() != "")
-        loadHair(hairFilename2,g_obj_scene2,offset);
+        loadHair(hairFilename2,g_obj_scene2,offset_mb);
     }
 
     if (!g_obj_scene2.empty()) {

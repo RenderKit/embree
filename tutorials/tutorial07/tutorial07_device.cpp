@@ -411,7 +411,6 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
   ray.filter = (RTCFilterFunc) &occlusionFilter;
   ray.transparency = Vec3fa(1.0f);
   rtcOccluded(scene,*((RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
@@ -422,6 +421,7 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
 Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   int seed = 21344*x+121233*y+234532*g_accu_count;
+  float time = frand(seed);
 
   /* initialize ray */
   RTCRay2 ray;
@@ -432,7 +432,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = time;
   ray.filter = NULL; 
   
   Vec3fa color = Vec3fa(0.0f);
@@ -507,6 +507,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     shadow.dir = neg(Vec3fa(g_dirlight_direction));
     shadow.tnear = tnear_eps;
     shadow.tfar = inf;
+    shadow.time = time;
     Vec3fa T = occluded(g_scene,shadow);
     Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(Vec3fa(g_dirlight_direction)));
     color = color + weight*c*T*Vec3fa(g_dirlight_intensity); // FIXME: use += operator
@@ -526,7 +527,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
-    ray.time = 0;
+    ray.time = time;
     ray.filter = NULL;
     weight = weight * c/wi.w; // FIXME: use *= operator
 
