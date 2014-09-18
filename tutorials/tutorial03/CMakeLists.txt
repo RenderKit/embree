@@ -26,7 +26,7 @@ ENDIF()
 
 IF (NOT __XEON__ AND __HOST__)
   ADD_EXECUTABLE(tutorial03_xeonphi tutorial03.cpp)
-  TARGET_LINK_LIBRARIES(tutorial03_xeonphi tutorial image transport_host)
+  TARGET_LINK_LIBRARIES(tutorial03_xeonphi tutorial image transport_host )
 ENDIF()
 
 IF (NOT __XEON__ AND NOT __HOST__)
