@@ -38,10 +38,10 @@ void rtcxCommit(RTCScene sceneID) {
     for (size_t i=0 ; i < subdivisionLevel ; i++) catmullClarkMesh = subdivideMesh(catmullClarkMesh);
 
     /*! Triangulate the subdivided mesh. */
-    triangulateMesh(sceneID, meshID, catmullClarkMesh);
+    //triangulateMesh(sceneID, meshID, catmullClarkMesh);
 
     /*! Commit the Embree scene geometry. */
-    rtcCommit(sceneID);
+    //rtcCommit(sceneID);
 
 }
 
@@ -70,10 +70,10 @@ unsigned rtcxNewSubdivisionMesh(RTCScene sceneID, RTCGeometryFlags flags, size_t
     size_t numTriangles = (subdivisionLevel > 0) ? numEdges * ::pow(4.0, subdivisionLevel) : numFaces * 2;
 
     /*! Number of vertices in the mesh following subdivision. */
-    size_t numTriangleVertices = triangulatedMeshVertices(numFaces, numEdges, numVertices, subdivisionLevel);
+    //size_t numTriangleVertices = triangulatedMeshVertices(numFaces, numEdges, numVertices, subdivisionLevel);
 
     /*! Allocate storage for the triangle mesh corresponding to the subdivision mesh. */
-    meshID = rtcNewTriangleMesh(sceneID, flags, numTriangles, numTriangleVertices);
+    //meshID = rtcNewTriangleMesh(sceneID, flags, numTriangles, numTriangleVertices);
 
     /*! Allocate storage for the subdivision mesh. */
     subdivisionMesh = SubdivisionMesh(numFaces, numEdges, numVertices);  return(meshID);

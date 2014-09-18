@@ -24,4 +24,5 @@ size_t triangulatedMeshVertices(size_t numFaces, size_t numEdges, size_t numVert
 
 /*! Generate an Embree triangle mesh from a subdivision mesh. */
 void triangulateMesh(RTCScene sceneID, unsigned int meshID, SubdivisionMesh &mesh);
+void triangulateFace(const SubdivisionMesh::Face &face, Triangle *triangles);
 

@@ -115,6 +115,8 @@ Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
+   print("HERE\n");
+
   /* initialize ray tracing core */
   rtcInit(cfg);
 
@@ -128,6 +130,49 @@ export void device_init (uniform int8* uniform cfg)
   /* set start render mode */
   renderPixel = renderPixelStandard;
   //renderPixel = renderPixelEyeLight;	
+}
+
+#define VERTICES 8
+#define EDGES    24
+#define FACES    (EDGES/4)
+
+uniform float test_vertices[8][4] = {
+  {-1.0f, -1.0f, -1.0f, 0.0f},
+  { 1.0f, -1.0f, -1.0f, 0.0f},
+  { 1.0f, -1.0f,  1.0f, 0.0f},
+  {-1.0f, -1.0f,  1.0f, 0.0f},
+  {-1.0f,  1.0f, -1.0f, 0.0f},
+  { 1.0f,  1.0f, -1.0f, 0.0f},
+  { 1.0f,  1.0f,  1.0f, 0.0f},
+  {-1.0f,  1.0f,  1.0f, 0.0f}
+};
+
+uniform unsigned int test_indices[EDGES] = {0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6,  0, 4, 7, 3,  4, 5, 6, 7,  0, 3, 2, 1};
+
+uniform unsigned int test_offsets[FACES] = {0, 1, 2, 3, 4, 5};
+
+
+RTCScene convertTestSubdivScene()
+{
+  /* create scene */
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
+
+  void *vtx_data_ptr = rtcMapBuffer(scene_out, subdivMeshID, RTC_VERTEX_BUFFER);
+  assert( vtx_data_ptr );
+  memcpy( vtx_data_ptr , test_vertices, sizeof(uniform Vec3fa) * VERTICES);
+  rtcUnmapBuffer(scene_out, subdivMeshID, RTC_VERTEX_BUFFER);
+
+  void *vtx_index_ptr = rtcMapBuffer(scene_out, subdivMeshID, RTC_INDEX_BUFFER);
+  assert( vtx_index_ptr );
+  memcpy( vtx_index_ptr , test_indices, sizeof(unsigned int) * EDGES);
+  rtcUnmapBuffer(scene_out, subdivMeshID, RTC_INDEX_BUFFER);
+
+  void *vtx_offset_ptr = rtcMapBuffer(scene_out, subdivMeshID, RTC_OFFSET_BUFFER);
+  assert( vtx_offset_ptr );
+  memcpy( vtx_offset_ptr , test_offsets, sizeof(unsigned int) * FACES);
+  rtcUnmapBuffer(scene_out, subdivMeshID, RTC_OFFSET_BUFFER);
+
 }
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
@@ -305,10 +350,13 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& vz, 
                            const uniform Vec3f& p)
 {
+   print("HERE\n");
+
   /* create scene */
   if (g_scene == NULL)
   { 
-    g_scene = convertScene(g_ispc_scene);
+   //g_scene = convertScene(g_ispc_scene);
+   g_scene = convertTestSubdivScene();
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
 #else

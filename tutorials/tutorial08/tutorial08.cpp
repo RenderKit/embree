@@ -24,7 +24,7 @@ int subdivisionLevel = 0;
 namespace embree 
 {
   /* name of the tutorial */
-  const char* tutorialName = "tutorial03";
+  const char* tutorialName = "tutorial08";
 
   /* configuration */
   static std::string g_rtcore = "";
@@ -136,7 +136,7 @@ namespace embree
     cleanup();
   }
 
-  void tutorial08(int argc, char **argv) {
+  void main(int argc, char **argv) {
 
     /*! Parse command line options. */  
     parseCommandLine(new ParseStream(new CommandLineStream(argc, argv)), FileName());
@@ -169,7 +169,9 @@ namespace embree
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
 
       /*! Keyboard bindings. */
-      mapKeyToFunction('+', increaseSubdivisionLevel);  mapKeyToFunction('=', increaseSubdivisionLevel);  mapKeyToFunction('-', decreaseSubdivisionLevel);
+      mapKeyToFunction('+', increaseSubdivisionLevel);  
+      mapKeyToFunction('=', increaseSubdivisionLevel);  
+      mapKeyToFunction('-', decreaseSubdivisionLevel);
 
       enterWindowRunLoop();
     }
@@ -181,7 +183,7 @@ namespace embree
 int main(int argc, char** argv) {
 
   /*! Tutorial entry point. */
-  try { embree::tutorial08(argc, argv);  return(0); }
+  try { embree::main(argc, argv);  return(0); }
 
   /*! Known exception. */
   catch (const std::exception& e) { std::cout << "Error: " << e.what() << std::endl;  return(1); }

@@ -37,25 +37,4 @@ void triangulateFace(const SubdivisionMesh::Face &face, Triangle *triangles) {
 
 }
 
-void triangulateMesh(RTCScene sceneID, unsigned int meshID, SubdivisionMesh &mesh) {
-
-    /*! Map the triangle mesh vertex buffer from Embree space into user space. */
-    Vertex *vertices = (Vertex *) rtcMapBuffer(sceneID, meshID, RTC_VERTEX_BUFFER);
-
-    /*! Copy vertex data from the subdivision mesh into the triangle mesh buffer. */
-    for (size_t i=0 ; i < mesh.vertexCount() ; i++) { Vec3f p = mesh.getCoordinates(i);  vertices[i].x = p.x;  vertices[i].y = p.y;  vertices[i].z = p.z; }
-
-    /*! Unmap the triangle mesh buffer. */
-    rtcUnmapBuffer(sceneID, meshID, RTC_VERTEX_BUFFER);
-
-    /*! Map the triangle mesh index buffer from Embree space into user space. */
-    Triangle *triangles = (Triangle *) rtcMapBuffer(sceneID, meshID, RTC_INDEX_BUFFER);
-
-    /* Copy vertex indices into the triangle mesh buffer. */
-    for (size_t i=0, j=0 ; i < mesh.faceCount() ; j += mesh.getFace(i).vertexCount() - 2, i++) triangulateFace(mesh.getFace(i), &triangles[j]);
-
-    /*! Unmap the triangle mesh buffer. */
-    rtcUnmapBuffer(sceneID, meshID, RTC_INDEX_BUFFER);
-
-}
 
