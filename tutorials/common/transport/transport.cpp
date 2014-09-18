@@ -33,6 +33,7 @@ namespace embree
   struct ISPCHairSet
   {
     Vec3fa* v;     //!< hair control points (x,y,z,r)
+    Vec3fa* v2;     //!< hair control points (x,y,z,r)
     OBJScene::Hair* hairs;   
     int numVertices;
     int numHairs;
@@ -42,6 +43,7 @@ namespace embree
   struct ISPCMesh
   {
     Vec3fa* positions;    //!< vertex position array
+    Vec3fa* positions2;    //!< vertex position array
     Vec3fa* normals;       //!< vertex normal array
     Vec2f* texcoords;     //!< vertex texcoord array
     OBJScene::Triangle* triangles;  //!< list of triangles
@@ -82,6 +84,7 @@ namespace embree
   {
     ISPCHairSet* out = new ISPCHairSet;
     out->v = in->v.size() ? &in->v[0] : NULL;
+    out->v2 = in->v2.size() ? &in->v2[0] : NULL;
     out->hairs = in->hairs.size() ? &in->hairs[0] : NULL;
     out->numVertices = in->v.size();
     out->numHairs = in->hairs.size();
@@ -92,6 +95,7 @@ namespace embree
   {
     ISPCMesh* out = new ISPCMesh;
     out->positions = in->v.size() ? &in->v[0] : NULL;
+    out->positions2 = in->v2.size() ? &in->v2[0] : NULL;
     out->normals = in->vn.size() ? &in->vn[0] : NULL;
     out->texcoords = in->vt.size() ? &in->vt[0] : NULL;
     out->triangles = in->triangles.size() ? &in->triangles[0] : NULL;

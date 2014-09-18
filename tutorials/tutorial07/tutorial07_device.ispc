@@ -79,6 +79,7 @@ struct ISPCHair
 struct ISPCHairSet
 {
   Vec3fa* v;       //!< hair control points (x,y,z,r)
+  Vec3fa* v2;       //!< hair control points (x,y,z,r)
   ISPCHair* hairs; //!< for each hair, index to first control point
   int numVertices;
   int numHairs;
@@ -87,6 +88,7 @@ struct ISPCHairSet
 struct ISPCMesh
 {
   Vec3fa* positions;    //!< vertex position array
+  Vec3fa* positions2;    //!< vertex position array
   Vec3fa* normals;       //!< vertex normal array
   Vec2f* texcoords;     //!< vertex texcoord array
   ISPCTriangle* triangles;  //!< list of triangles
@@ -108,7 +110,6 @@ struct ISPCScene
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene g_scene = NULL;
-uniform unsigned int g_threads = 0;
 
 /* error reporting function */
 void error_handler(const uniform RTCError code, const uniform int8* uniform str)
@@ -131,11 +132,11 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
 }
 
 /* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-task void parallelCommit(RTCScene scene)
-{
+#if defined(PARALLEL_COMMIT)
+task void parallelCommit(RTCScene scene) {
   rtcCommitThread (scene,threadIndex,threadCount); 
 }
-
+#endif
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -167,43 +168,22 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   /* add all hair sets to the scene */
   for (uniform int i=0; i<scene_in->numHairSets; i++)
   {
-    /* get ith hair set */
     uniform ISPCHairSet* uniform hair = scene_in->hairs[i];
-
-    /* create a hair set */
-    uniform unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
+    uniform unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->v2 ? 2 : 1);
     rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(uniform Vertex));
+    if (hair->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,hair->v2,0,sizeof(uniform Vertex));
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair));
     rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&filterDispatch);
   }
 
-  /* add all meshes to the scene */
+  /* add all triangle meshes to the scene */
   for (uniform int i=0; i<scene_in->numMeshes; i++)
   {
-    /* get ith mesh */
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
-
-    /* create a triangle mesh */
-    uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
-    
-    /* set vertices */
-    uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
-    for (int j=0; j<mesh->numVertices; j++) {
-      vertices[j].x = mesh->positions[j].x;
-      vertices[j].y = mesh->positions[j].y;
-      vertices[j].z = mesh->positions[j].z;
-    }
-
-    /* set triangles */
-    uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
-    for (int j=0; j<mesh->numTriangles; j++) {
-      triangles[j].v0 = mesh->triangles[j].v0;
-      triangles[j].v1 = mesh->triangles[j].v1;
-      triangles[j].v2 = mesh->triangles[j].v2;
-    }
-    rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
-    rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
-
+    uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
+    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,mesh->positions,0,sizeof(uniform Vertex));
+    if (mesh->positions2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,mesh->positions2,0,sizeof(uniform Vertex));
+    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(uniform ISPCTriangle));
     rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&filterDispatch);
   }
 
@@ -211,9 +191,8 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (scene_out);
 #else
-  launch[  g_threads ] parallelCommit(scene_out); sync;
+  launch[ getNumHWThreads() ] parallelCommit(scene_out); sync;
 #endif
-
 
   return scene_out;
 }
@@ -243,10 +222,6 @@ export void device_init (uniform int8* uniform cfg)
 
   /* initialize ray tracing core */
   rtcInit(cfg);
-
-  /* get number of HW threads */
-  g_threads = getNumHWThreads();
-  print("% HW threads found \n",g_threads);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);

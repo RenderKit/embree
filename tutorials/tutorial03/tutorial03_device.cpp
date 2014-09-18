@@ -16,6 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+
+
 struct ISPCTriangle 
 {
   int v0;                /*< first triangle vertex */
@@ -44,6 +46,7 @@ struct ISPCMaterial
 struct ISPCMesh
 {
   Vec3fa* positions;    //!< vertex position array
+  Vec3fa* positions2;    //!< vertex position array
   Vec3fa* normals;       //!< vertex normal array
   Vec2f* texcoords;     //!< vertex texcoord array
   ISPCTriangle* triangles;  //!< list of triangles
@@ -60,12 +63,12 @@ struct ISPCHair
 
 struct ISPCHairSet
 {
- Vec3fa *positions;   //!< hair control points (x,y,z,r)
- ISPCHair *hairs;    //!< list of hairs
+ Vec3fa* positions;   //!< hair control points (x,y,z,r)
+ Vec3fa* positions2;   //!< hair control points (x,y,z,r)
+ ISPCHair* hairs;    //!< list of hairs
  int numVertices;
  int numHairs;
 };
-
 
 struct ISPCScene
 {
@@ -106,6 +109,7 @@ void error_handler(const RTCError code, const int8* str)
 }
 
 Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
+
 
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
@@ -163,7 +167,6 @@ RTCScene convertScene(ISPCScene* scene_in)
   }
 
   /* commit changes to scene */
-  rtcCommit (scene_out);
   return scene_out;
 }
 
@@ -280,6 +283,13 @@ void renderTile(int taskIndex, int* pixels,
   }
 }
 
+/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
+#if defined(PARALLEL_COMMIT)
+task void parallelCommit(RTCScene scene) {
+  rtcCommitThread (scene,threadIndex,threadCount); 
+}
+#endif
+
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
                            const int width,
@@ -292,7 +302,14 @@ extern "C" void device_render (int* pixels,
 {
   /* create scene */
   if (g_scene == NULL)
+  { 
     g_scene = convertScene(g_ispc_scene);
+#if !defined(PARALLEL_COMMIT)
+  rtcCommit (g_scene);
+#else
+  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
+#endif
+  }
 
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

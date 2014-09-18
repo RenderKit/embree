@@ -20,6 +20,8 @@
 
 
 
+
+
 struct DifferentialGeometry
 {
   Vec3fa P;
@@ -57,6 +59,7 @@ struct ISPCMaterial
 struct ISPCMesh
 {
   Vec3fa* positions;    //!< vertex position array
+  Vec3fa* positions2;    //!< vertex position array
   Vec3fa* normals;       //!< vertex normal array
   Vec2f* texcoords;     //!< vertex texcoord array
   ISPCTriangle* triangles;  //!< list of triangles
@@ -950,6 +953,13 @@ void occlusionFilterReject(void* ptr, RTCRay& ray) {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
+/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
+#if defined(PARALLEL_COMMIT)
+task void parallelCommit(RTCScene scene) {
+  rtcCommitThread (scene,threadIndex,threadCount); 
+}
+#endif
+
 /* error reporting function */
 void error_handler(const RTCError code, const int8* str)
 {
@@ -998,6 +1008,8 @@ extern "C" void device_init (int8* cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
+  //  renderPixel = renderPixelEyeLight;
+
 } // device_init
 
 RTCScene convertScene(ISPCScene* scene_in)
@@ -1047,8 +1059,13 @@ RTCScene convertScene(ISPCScene* scene_in)
   }
 
   /* commit changes to scene */
-  rtcCommit(scene_out);
-  //rtcCommitMT (scene_out,0,1);
+
+#if !defined(PARALLEL_COMMIT)
+  rtcCommit (scene_out);
+#else
+  launch[ getNumHWThreads() ] parallelCommit(scene_out); 
+#endif
+
   return scene_out;
 } // convertScene
 
@@ -1347,7 +1364,6 @@ void renderTile(int taskIndex, int* pixels,
 
     /* calculate pixel color */
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
-    //for (size_t i=0; i<9; i++) renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];

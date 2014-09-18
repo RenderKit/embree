@@ -16,6 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+
+
 #if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
 #define renderPixelTestEyeLight renderPixelStandard
 #else
@@ -37,7 +39,6 @@ extern "C" bool g_changed;
 extern "C" Vec3fa g_dirlight_direction;
 extern "C" Vec3fa g_dirlight_intensity;
 extern "C" Vec3fa g_ambient_intensity;
-extern float g_debug;
 
 /* hair material */
 Vec3fa hair_K;
@@ -78,6 +79,7 @@ struct ISPCHair
 struct ISPCHairSet
 {
   Vec3fa* v;       //!< hair control points (x,y,z,r)
+  Vec3fa* v2;       //!< hair control points (x,y,z,r)
   ISPCHair* hairs; //!< for each hair, index to first control point
   int numVertices;
   int numHairs;
@@ -86,6 +88,7 @@ struct ISPCHairSet
 struct ISPCMesh
 {
   Vec3fa* positions;    //!< vertex position array
+  Vec3fa* positions2;    //!< vertex position array
   Vec3fa* normals;       //!< vertex normal array
   Vec2f* texcoords;     //!< vertex texcoord array
   ISPCTriangle* triangles;  //!< list of triangles
@@ -128,6 +131,13 @@ void error_handler(const RTCError code, const int8* str)
   abort();
 }
 
+/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
+#if defined(PARALLEL_COMMIT)
+task void parallelCommit(RTCScene scene) {
+  rtcCommitThread (scene,threadIndex,threadCount); 
+}
+#endif
+
 /* render function to use */
 renderPixelFunc renderPixel;
 
@@ -149,37 +159,6 @@ Vec3fa sampleSphere(const float u, const float v)
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
-#if 0
-
-  /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
-
-  /* create a hair set */
-  unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, 1, 4, 2);
-
-  int* indices = (int*) rtcMapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
-  for (size_t i=0; i<1; i++) indices[i] = 4*i;
-  rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
-  
-  const float r = 0.0f;
-  Vec3fa* buffer0 = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0);
-  buffer0[0] = Vec3fa(0,0,0,r);
-  buffer0[1] = Vec3fa(0,0,0,r);
-  buffer0[2] = Vec3fa(1,0,0,r);
-  buffer0[3] = Vec3fa(1,0,0,r);
-  rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0);
-
-  Vec3fa* buffer1 = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1);
-  buffer1[0] = Vec3fa(0,0,0,r);
-  buffer1[1] = Vec3fa(0,0,0,r);
-  buffer1[2] = Vec3fa(1,1,0,r);
-  buffer1[3] = Vec3fa(1,1,0,r);
-  rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1);
-    
-  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
-
-#else
-
   //scene_in->numHairSets = 0;
   //scene_in->numMeshes = 0;
 
@@ -189,79 +168,31 @@ RTCScene convertScene(ISPCScene* scene_in)
   /* add all hair sets to the scene */
   for (int i=0; i<scene_in->numHairSets; i++)
   {
-    /* get ith hair set */
     ISPCHairSet* hair = scene_in->hairs[i];
-
-#if 1
-
-    /* create a hair set */
-    unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, 1);
-    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0,hair->v,0,sizeof(Vertex));
+    unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->v2 ? 2 : 1);
+    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
+    if (hair->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,hair->v2,0,sizeof(Vertex));
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
-
-#else
-
-    /* create a hair set */
-    unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, 2);
-    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
-
-    const AffineSpace3fa space0 = AffineSpace3fa::rotate(Vec3fa(0.0f,18.0f,0.0f),Vec3fa(0,0,1),0.1f*float(pi));
-    //const AffineSpace3fa space1 = AffineSpace3fa::rotate(Vec3fa(-11.0039f,24.9046f,-4.50951f),Vec3fa(1,1,1),0.5f*float(pi)); 
-    const AffineSpace3fa space1 = AffineSpace3fa::rotate(Vec3fa(0.0f,18.0f,0.0f),Vec3fa(0,0,1),0.2f*float(pi));
-    const AffineSpace3fa space01 = 0.5f*space0+0.5f*space1;
-
-    Vec3fa* buffer0 = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0);
-    for (size_t i=0; i<hair->numVertices; i++) {
-      Vec3fa v = xfmPoint(space0,hair->v[i]); v.w = hair->v[i].w; buffer0[i] = v;
-      //Vec3fa v = xfmPoint(space01,hair->v[i]); v.w = hair->v[i].w; buffer0[i] = v;
-      //Vec3fa v = xfmPoint(space1,hair->v[i]); v.w = hair->v[i].w; buffer0[i] = v;
-    }
-    rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER0);
-
-    Vec3fa* buffer1 = (Vec3fa*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1);
-    for (size_t i=0; i<hair->numVertices; i++) {
-      Vec3fa v = xfmPoint(space1,hair->v[i]); v.w = hair->v[i].w; buffer1[i] = v;
-      //Vec3fa v = xfmPoint(space01,hair->v[i]); v.w = hair->v[i].w; buffer1[i] = v;
-    }
-    rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1);
-#endif
-
     rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
   }
 
-  /* add all meshes to the scene */
+  /* add all triangle meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
   {
-    /* get ith mesh */
     ISPCMesh* mesh = scene_in->meshes[i];
-
-    /* create a triangle mesh */
-    unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
-    
-    /* set vertices */
-    Vertex* vertices = (Vertex*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
-    for (int j=0; j<mesh->numVertices; j++) {
-      vertices[j].x = mesh->positions[j].x;
-      vertices[j].y = mesh->positions[j].y;
-      vertices[j].z = mesh->positions[j].z;
-    }
-
-    /* set triangles */
-    Triangle* triangles = (Triangle*) rtcMapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
-    for (int j=0; j<mesh->numTriangles; j++) {
-      triangles[j].v0 = mesh->triangles[j].v0;
-      triangles[j].v1 = mesh->triangles[j].v1;
-      triangles[j].v2 = mesh->triangles[j].v2;
-    }
-    rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
-    rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
-
+    unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
+    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,mesh->positions,0,sizeof(Vertex));
+    if (mesh->positions2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,mesh->positions2,0,sizeof(Vertex));
+    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(ISPCTriangle));
     rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
   }
-#endif
 
   /* commit changes to scene */
+#if !defined(PARALLEL_COMMIT)
   rtcCommit (scene_out);
+#else
+  launch[ getNumHWThreads() ] parallelCommit(scene_out); 
+#endif
 
   return scene_out;
 }
@@ -480,7 +411,7 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = g_debug;
+  ray.time = 0;
   ray.filter = (RTCFilterFunc) &occlusionFilter;
   ray.transparency = Vec3fa(1.0f);
   rtcOccluded(scene,*((RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
@@ -501,7 +432,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = g_debug;
+  ray.time = 0;
   ray.filter = NULL; 
   
   Vec3fa color = Vec3fa(0.0f);
@@ -595,7 +526,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
-    ray.time = g_debug;
+    ray.time = 0;
     ray.filter = NULL;
     weight = weight * c/wi.w; // FIXME: use *= operator
 
@@ -618,8 +549,6 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
 
 Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  int seed = 21344*x+121233*y+234532*g_accu_count;
-
   /* initialize ray */
   RTCRay2 ray;
   ray.org = p;
@@ -630,11 +559,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = g_debug;
-  //ray.time = frand(seed);
-  //ray.time = 0.0f;
-  //ray.time = 0.5f;
-  //ray.time = 1.0f;
+  ray.time = 0;
 
   Vec3fa color = Vec3fa(0.0f);
   float weight = 1.0f;
@@ -685,16 +610,21 @@ void renderTile(int taskIndex, int* pixels,
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
   //int seed = tileY*numTilesX+tileX+0 + g_accu_count;
+  int seed = (tileY*numTilesX+tileX+0) * g_accu_count;
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
    int seed = (y*width+x+0) * g_accu_count;
 
     /* calculate pixel color */
-    float fx = x + frand(seed);
-    float fy = y + frand(seed);
-    Vec3fa color = renderPixel(fx,fy,vx,vy,vz,p);
+     float subpixel_x = frand(seed);
+     float subpixel_y = frand(seed);
+     float fx = x + subpixel_x;
+     float fy = y + subpixel_y;
+     Vec3fa color = renderPixel(fx,fy,vx,vy,vz,p);
+    
     //Vec3fa color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
+
     /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];
     *dst = *dst + Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator

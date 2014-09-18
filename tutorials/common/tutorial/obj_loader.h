@@ -29,7 +29,7 @@
 namespace embree
 {
   /*! Scene representing the OBJ file */
-  struct OBJScene 
+  struct OBJScene  // FIXME: move to separate file, name Scene
   {
     OBJScene () {}
     ~OBJScene () 
@@ -68,11 +68,15 @@ namespace embree
     /*! Mesh. */
     struct Mesh 
     {
+      void set_motion_blur(const Mesh* other);
+
 #if 1 // FIXME: have to enable this for Visual Studio compiler
-      vector_t<Vec3fa> v;
+      vector_t<Vec3fa> v;     //!< vertices
+      vector_t<Vec3fa> v2;    //!< vertices (2nd timestep)
       vector_t<Vec3fa> vn;
 #else
       std::vector<Vec3fa> v;
+      std::vector<Vec3fa> v2;
       std::vector<Vec3fa> vn;
 
 #endif
@@ -94,10 +98,14 @@ namespace embree
     /*! Hair Set. */
     struct HairSet
     {
+      void set_motion_blur(const HairSet* other);
+
 #if 1 // FIXME: have to enable this for Visual Studio compiler
       vector_t<Vec3fa> v;       //!< hair control points (x,y,z,r)
+      vector_t<Vec3fa> v2;       //!< hair control points (x,y,z,r)
 #else
       std::vector<Vec3fa> v;       //!< hair control points (x,y,z,r)
+      std::vector<Vec3fa> v2;       //!< hair control points (x,y,z,r)
 #endif
       std::vector<Hair> hairs;  //!< list of hairs
     };
@@ -292,6 +300,12 @@ namespace embree
       float radHalfAngle;  //!< Half illumination angle in radians
       float cosHalfAngle;  //!< Cosine of half illumination angle
     };
+
+    bool empty() const {
+      return meshes.size() == 0 && hairsets.size() == 0;
+    }
+
+    void set_motion_blur(OBJScene& other);
 
   public:
     vector_t<Material> materials;                      //!< material list

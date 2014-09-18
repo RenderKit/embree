@@ -45,8 +45,11 @@ namespace embree
 
   /* scene */
   OBJScene g_obj_scene;
+  OBJScene g_obj_scene2;
   static FileName objFilename = "";
+  static FileName objFilename2 = "";
   static FileName hairFilename = "";
+  static FileName hairFilename2 = "";
   static FileName cy_hairFilename = "";
   static FileName outFilename = "";
   static int g_skipBenchmarkFrames = 0;
@@ -509,9 +512,21 @@ float noise(float x, float y, float z)
         objFilename = path + cin->getFileName();
       }
 
+      /* load motion blur OBJ model */
+      else if (tag == "-i_mb") {
+        objFilename = path + cin->getFileName();
+        objFilename2 = path + cin->getFileName();
+      }
+
       /* load hair model */
       else if (tag == "--hair") {
         hairFilename = path + cin->getFileName();
+      }
+
+      /* motion blur hair model */
+      else if (tag == "--hair_mb") {
+        hairFilename = path + cin->getFileName();
+        hairFilename2 = path + cin->getFileName();
       }
 
       /* load hair model */
@@ -678,12 +693,21 @@ float noise(float x, float y, float z)
     init(g_rtcore.c_str());
 
     /* load scene */
-    if (objFilename.str() != "" && objFilename.str() != "none")
+    if (objFilename.str() != "" && objFilename.str() != "none") {
       loadOBJ(objFilename,AffineSpace3f::translate(-offset),g_obj_scene);
+      if (objFilename2.str() != "")
+        loadOBJ(objFilename2,AffineSpace3f::translate(-offset),g_obj_scene2);
+    }
 
     /* load hair */
     if (hairFilename.str() != "" && hairFilename.str() != "none") {
       loadHair(hairFilename,g_obj_scene,offset);
+      if (hairFilename2.str() != "")
+        loadHair(hairFilename2,g_obj_scene2,offset);
+    }
+
+    if (!g_obj_scene2.empty()) {
+      g_obj_scene.set_motion_blur(g_obj_scene2);
     }
 
    /* load cy_hair */
