@@ -61,6 +61,9 @@ namespace embree
     /*! Builds acceleration structure for the scene. */
     void build (size_t threadIndex, size_t threadCount);
 
+    /*! stores scene into binary file */
+    void write(std::ofstream& file);
+
     /*! build task */
     TASK_RUN_FUNCTION(Scene,task_build_parallel);
     TaskScheduler::Task task;

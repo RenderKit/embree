@@ -335,49 +335,61 @@ namespace embree
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,aflags);
 
-    size_t numGroups = *(size_t*)g;
-    g += sizeof(size_t);
-    size_t numTotalTriangles = *(size_t*)g;
-    g += sizeof(size_t);
-    DBG_PRINT(numGroups);
-    DBG_PRINT(numTotalTriangles);
+    int magick = *(size_t*)g; g += sizeof(int);
+    if (magick != 0x35238765LL) {
+      FATAL("invalid binary file");
+    }
+
+    int numGroups = *(int*)g; g += sizeof(int);
 
     for (size_t i=0; i<numGroups; i++) 
+    {
+      int type = *(int*)g; g += sizeof(int);
+
+      if (type == 1)
       {
-	size_t numVertices = *(size_t*)g;
-	g += sizeof(size_t);
-	size_t numTriangles = *(size_t*)g;
-	g += sizeof(size_t);
+	int numTimeSteps = *(int*)g; g += sizeof(int);
+	int numVertices  = *(int*)g; g += sizeof(int);
+	int numTriangles = *(int*)g; g += sizeof(int);
+	unsigned int geometry = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, numTriangles, numVertices, numTimeSteps);
 
-        DBG(
-            DBG_PRINT(numVertices);
-            DBG_PRINT(numTriangles);
-            );
+	for (size_t i=0; i<numTimeSteps; i++) {
+	  if (((size_t)g % 16) != 0) g += 16 - ((size_t)g % 16);
+	  rtcSetBuffer(scene, geometry, (RTCBufferType)(RTC_VERTEX_BUFFER0+i), g, 0, sizeof(Vec3fa));
+	  g += numVertices*sizeof(Vec3fa);
+	}
 
-	Vertex *vtx = (Vertex*)g;
-	g += sizeof(Vertex)*numVertices;
-	Triangle *tri = (Triangle *)g;
-	g += sizeof(Triangle)*numTriangles;
-	if (((size_t)g % 16) != 0)
-          {
-            g += 16 - ((size_t)g % 16);
-          }
-
-        DBG(
-            for (size_t i=0;i<numVertices;i++)
-              DBG_PRINT( vtx[i] );
-            
-            for (size_t i=0;i<numTriangles;i++)
-              DBG_PRINT( tri[i] );
-            );
-
-	if ((size_t)vtx % 16 != 0)
-	  FATAL("vtx array alignment");
-
-	unsigned int geometry = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, numTriangles, numVertices);
-	rtcSetBuffer(scene, geometry, RTC_VERTEX_BUFFER, vtx, 0, sizeof(Vec3fa      ));
-	rtcSetBuffer(scene, geometry, RTC_INDEX_BUFFER,  tri, 0, sizeof(Triangle));
+	if (((size_t)g % 16) != 0) g += 16 - ((size_t)g % 16);
+	rtcSetBuffer(scene, geometry, RTC_INDEX_BUFFER,  g, 0, sizeof(Triangle));
+	g += numTriangles*sizeof(Triangle);
       }
+
+      else if (type == 2)
+      {
+	int numTimeSteps = *(int*)g; g += sizeof(int);
+	int numVertices  = *(int*)g; g += sizeof(int);
+	int numCurves    = *(int*)g; g += sizeof(int);
+
+	unsigned int geometry = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, numCurves, numVertices, numTimeSteps);
+	
+	for (size_t i=0; i<numTimeSteps; i++) {
+	  if (((size_t)g % 16) != 0) g += 16 - ((size_t)g % 16);
+	  rtcSetBuffer(scene, geometry, (RTCBufferType)(RTC_VERTEX_BUFFER0+i), g, 0, sizeof(Vec3fa));
+	  g += numVertices*sizeof(Vec3fa);
+	}
+
+	if (((size_t)g % 16) != 0) g += 16 - ((size_t)g % 16);
+	rtcSetBuffer(scene, geometry, RTC_INDEX_BUFFER,  g, 0, sizeof(int));
+	g += numCurves*sizeof(int);
+      }
+
+      else if (type == -1) {
+      }
+
+      else {
+	FATAL("unknown geometry type");
+      }
+    }
 
     rtcCommit(scene);
     return scene;
@@ -604,11 +616,9 @@ namespace embree
     /* parse command line */  
     parseCommandLine(argc,argv);
 
-
     /* perform tests */
     DBG_PRINT(g_rtcore.c_str());
     rtcInit(g_rtcore.c_str());
-
 
     DBG_PRINT(g_numThreads);
 
@@ -618,13 +628,15 @@ namespace embree
 
     /* load geometry file */
     std::string geometryFileName = g_binaries_path + "geometry.bin";
-
     std::cout << "loading geometry data from file '" << geometryFileName << "'..." << std::flush;    
     void *g = loadGeometryData(geometryFileName);
     std::cout <<  "done" << std::endl << std::flush;
 
-    /* looking for ray stream file */
+    /* transfer geometry data */
+    std::cout << "transfering geometry data:" << std::endl << std::flush;
+    RTCScene scene = transferGeometryData((char*)g);
 
+    /* looking for ray stream file */
     std::string rayStreamFileName;
     std::string rayStreamVerifyFileName;
 
@@ -716,10 +728,6 @@ namespace embree
       }
 
     stats.print(g_simd_width);
-
-    /* transfer geometry data */
-    std::cout << "transfering geometry data:" << std::endl << std::flush;
-    RTCScene scene = transferGeometryData((char*)g);
 
 #if defined(__ENABLE_RAYSTREAM_LOGGER__)
     FATAL("ray stream logger still active, must be disabled to run 'retrace'");

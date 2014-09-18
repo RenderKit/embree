@@ -213,6 +213,12 @@ namespace embree
     }
 
   public:
+
+    virtual void write(std::ofstream& file) {
+      int type = -1; file.write((char*)&type,sizeof(type));
+    }
+
+  public:
     Scene* parent;   //!< pointer to scene this mesh belongs to
     GeometryTy type;
     ssize_t numPrimitives;    //!< number of primitives of this geometry

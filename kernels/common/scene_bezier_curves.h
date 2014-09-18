@@ -31,7 +31,9 @@ namespace embree
 
     public:
       BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps); 
-      
+    
+      void write(std::ofstream& file);
+
     public:
       void enabling();
       void disabling();
@@ -42,7 +44,7 @@ namespace embree
       void setUserData (void* ptr, bool ispc);
       void immutable ();
       bool verify ();
-      
+
     public:
 
       /*! returns number of bezier curves */

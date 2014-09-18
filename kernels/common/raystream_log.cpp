@@ -56,118 +56,28 @@ namespace embree
     ray1_verify  = new DataStream( path + DEFAULT_FILENAME_RAY1_VERIFY );
   }
 
-
   RayStreamLogger::~RayStreamLogger()
-    {
-      if (ray16)        { delete ray16;        ray16        = NULL; }
-      if (ray16_verify) { delete ray16_verify; ray16_verify = NULL; }
-      if (ray8)         { delete ray8;         ray8         = NULL; }
-      if (ray8_verify)  { delete ray8_verify;  ray8_verify  = NULL; }
-      if (ray4)         { delete ray4;         ray4         = NULL; }
-      if (ray4_verify)  { delete ray4_verify;  ray4_verify  = NULL; }
-      if (ray1)         { delete ray1;         ray1         = NULL; }
-      if (ray1_verify)  { delete ray1_verify;  ray1_verify  = NULL; }
-    }
+  {
+    if (ray16)        { delete ray16;        ray16        = NULL; }
+    if (ray16_verify) { delete ray16_verify; ray16_verify = NULL; }
+    if (ray8)         { delete ray8;         ray8         = NULL; }
+    if (ray8_verify)  { delete ray8_verify;  ray8_verify  = NULL; }
+    if (ray4)         { delete ray4;         ray4         = NULL; }
+    if (ray4_verify)  { delete ray4_verify;  ray4_verify  = NULL; }
+    if (ray1)         { delete ray1;         ray1         = NULL; }
+    if (ray1_verify)  { delete ray1_verify;  ray1_verify  = NULL; }
+  }
 
   void RayStreamLogger::dumpGeometry(void* ptr)
   {
     Scene *scene = (Scene*)ptr;
-
-    const size_t numGroups = scene->size();
-
-    size_t numTotalTriangles = 0;
-
-    for (size_t g=0; g<numGroups; g++) {       
-      if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
-      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
-      if (unlikely(!mesh->isEnabled())) continue;
-      if (unlikely(mesh->numTimeSteps != 1)) continue;
-      const size_t numTriangles = mesh->numTriangles;
-      numTotalTriangles += numTriangles;
-    }
-
-    DBG(
-	DBG_PRINT(numGroups);
-	DBG_PRINT(numTotalTriangles);
-	);
-
     std::ofstream geometryData;
     std::string path(DEFAULT_PATH_BINARY_FILES);
-
     FileName geometry_filename = path + DEFAULT_FILENAME_GEOMETRY;
     geometryData.open(geometry_filename.c_str(),ios::out | ios::binary);
     geometryData.seekp(0, ios::beg);
-
     if (!geometryData) FATAL("could not dump geometry data to file");
-
-    size_t align_check = 0;
-    geometryData.write((char*)&numGroups,sizeof(numGroups));
-    align_check += sizeof(numGroups);
-    geometryData.write((char*)&numTotalTriangles,sizeof(numTotalTriangles));
-    align_check += sizeof(numTotalTriangles);
-
-    for (size_t g=0; g<numGroups; g++) {       
-      if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
-      const TriangleMesh*  const mesh = scene->getTriangleMesh(g);
-      if (unlikely(!mesh->isEnabled())) continue;
-      if (unlikely(mesh->numTimeSteps != 1)) continue;
-
-      DBG(
-	  DBG_PRINT( mesh->numVertices );
-	  DBG_PRINT( sizeof(Vec3fa)*mesh->numVertices );
-	  DBG_PRINT( mesh->numTriangles );
-	  DBG_PRINT( sizeof(TriangleMesh::Triangle)*mesh->numTriangles );
-          DBG_PRINT( (void*)mesh->triangles.getPtr() );
-          DBG_PRINT( &mesh->triangle(0) );
-
-	  );
-
-      geometryData.write((char*)&mesh->numVertices,sizeof(mesh->numVertices));
-      align_check += sizeof(mesh->numVertices);
-      geometryData.write((char*)&mesh->numTriangles,sizeof(mesh->numTriangles));
-      align_check += sizeof(mesh->numTriangles);
-
-      if ((align_check % 16) != 0)
-	FATAL("vtx alignment");
-
-      for (size_t i=0;i<mesh->numVertices;i++)
-        geometryData.write((char*)&mesh->vertex(i),sizeof(Vec3fa));
-
-      align_check += sizeof(Vec3fa)*mesh->numVertices;
-
-      DBG(
-          for (size_t i=0;i<mesh->numVertices;i++)
-            DBG_PRINT( mesh->vertex(i) );
-          );
-
-      for (size_t i=0;i<mesh->numTriangles;i++)
-        geometryData.write((char*)&mesh->triangle(i),sizeof(TriangleMesh::Triangle));     
-
-      align_check += sizeof(TriangleMesh::Triangle)*mesh->numTriangles;
-
-      DBG(
-          for (size_t i=0;i<mesh->numTriangles;i++)
-            DBG_PRINT( mesh->triangle(i) );
-          );
-
-      if ((align_check % 16) != 0)
-	{
-	  size_t dummy_size = 16-(align_check % 16);
-          DBG(DBG_PRINT(dummy_size));
-	  char dummy[16];
-	  memset(dummy,0,16);      
-	  geometryData.write(dummy,dummy_size);
-	  align_check += dummy_size;
-	}
-
-      if ((align_check % 16) != 0)
-	FATAL("vtx alignment 2");
-
-    }
-
-    geometryData << flush;
+    scene->write(geometryData);
     geometryData.close();
   }
 

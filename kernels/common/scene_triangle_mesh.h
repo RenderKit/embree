@@ -30,7 +30,9 @@ namespace embree
     
   public:
     TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps); 
-    
+  
+    void write(std::ofstream& file);
+
     /* geometry interface */
   public:
     void enabling();
@@ -42,7 +44,7 @@ namespace embree
     void setUserData (void* ptr, bool ispc);
     void immutable ();
     bool verify ();
-    
+
   public:
 
     /*! returns number of triangles */
