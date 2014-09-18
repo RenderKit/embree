@@ -28,8 +28,8 @@ IF (__XEON__ AND BUILD_TUTORIALS_ISPC)
 ENDIF()
 
 IF (NOT __XEON__ AND __HOST__)
-  ADD_EXECUTABLE(tutorial08_xeonphi extensions/api.cpp extensions/catmullclark.cpp extensions/subdivisionmesh.cpp extensions/triangulatemesh.cpp tutorial08_device.cpp tutorial08.cpp )
-  TARGET_LINK_LIBRARIES(tutorial08_xeonphi embree tutorial image transport tutorial_device)
+  ADD_EXECUTABLE(tutorial08_xeonphi extensions/api.cpp extensions/catmullclark.cpp extensions/subdivisionmesh.cpp extensions/triangulatemesh.cpp tutorial08.cpp )
+  TARGET_LINK_LIBRARIES(tutorial08_xeonphi embree tutorial image transport_host)
 ENDIF()
 
 IF (NOT __XEON__ AND NOT __HOST__)
