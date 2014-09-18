@@ -44,7 +44,7 @@ void error_handler(const RTCError code, const char* str)
 RTCScene g_scene = NULL;
 
 /*! Requested subdivision level set in tutorial08.cpp. */
-int subdivisionLevel = 0;
+extern int subdivisionLevel;
 
 RTCRay constructRay(const Vec3fa &origin, const Vec3fa &direction, float near, float far, int originGeomID, int originPrimID) {
 
@@ -222,7 +222,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa &vx, const Vec3fa &vy,
     Vec3f color = Vec3f(0.0f), diffuse = colors[ray.geomID % 2];  color = color + diffuse * 0.5f;
 
     /*! Add contribution from the light. */
-    if (shadow.geomID) color = color + diffuse * clamp(-dot(lightVector, normalize(ray.Ng)), 0.0f, 1.0f);  return(color);
+    if (shadow.geomID) color = color + diffuse * clamp(-dot(lightVector, (Vec3f)normalize(ray.Ng)), 0.0f, 1.0f);  return(color);
 
 }
 

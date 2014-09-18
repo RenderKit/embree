@@ -20,7 +20,7 @@
 #include "sys/ref.h"
 #include "math/math.h"
 #include "math/vec3.h"
-#include "math/color.h"
+//#include "math/color.h"
 #include "math/affinespace.h"
 
 namespace embree
