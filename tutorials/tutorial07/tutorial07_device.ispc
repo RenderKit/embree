@@ -168,43 +168,22 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   /* add all hair sets to the scene */
   for (uniform int i=0; i<scene_in->numHairSets; i++)
   {
-    /* get ith hair set */
     uniform ISPCHairSet* uniform hair = scene_in->hairs[i];
-
-    /* create a hair set */
-    uniform unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices);
+    uniform unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->v2 ? 2 : 1);
     rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(uniform Vertex));
+    if (hair->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,hair->v2,0,sizeof(uniform Vertex));
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair));
     rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&filterDispatch);
   }
 
-  /* add all meshes to the scene */
+  /* add all triangle meshes to the scene */
   for (uniform int i=0; i<scene_in->numMeshes; i++)
   {
-    /* get ith mesh */
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
-
-    /* create a triangle mesh */
-    uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
-    
-    /* set vertices */
-    uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
-    for (int j=0; j<mesh->numVertices; j++) {
-      vertices[j].x = mesh->positions[j].x;
-      vertices[j].y = mesh->positions[j].y;
-      vertices[j].z = mesh->positions[j].z;
-    }
-
-    /* set triangles */
-    uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
-    for (int j=0; j<mesh->numTriangles; j++) {
-      triangles[j].v0 = mesh->triangles[j].v0;
-      triangles[j].v1 = mesh->triangles[j].v1;
-      triangles[j].v2 = mesh->triangles[j].v2;
-    }
-    rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
-    rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
-
+    uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
+    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,mesh->positions,0,sizeof(uniform Vertex));
+    if (mesh->positions2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,mesh->positions2,0,sizeof(uniform Vertex));
+    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(uniform ISPCTriangle));
     rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&filterDispatch);
   }
 
@@ -214,7 +193,6 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 #else
   launch[ getNumHWThreads() ] parallelCommit(scene_out); sync;
 #endif
-
 
   return scene_out;
 }
