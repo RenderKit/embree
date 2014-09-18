@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "tutorial/tutorial.h"
+#include "tutorial/obj_loader.h"
 #include "sys/taskscheduler.h"
 #include "image/image.h"
 
@@ -22,12 +23,23 @@ int subdivisionLevel = 0;
 
 namespace embree 
 {
+  /* name of the tutorial */
+  const char* tutorialName = "tutorial03";
+
+  /* configuration */
   static std::string g_rtcore = "";
-  static size_t g_width = 512;
-  static size_t g_height = 512;
-  static bool g_fullscreen = false;
   static size_t g_numThreads = 0;
+
+  /* output settings */
+  static size_t g_width = 1024;
+  static size_t g_height = 1024;
+  static bool g_fullscreen = false;
   static FileName outFilename = "";
+  static bool g_interactive = true;
+
+  /* scene */
+  OBJScene g_obj_scene;
+  static FileName filename = "";
 
   static void decreaseSubdivisionLevel(unsigned char key, int x, int y) {
 
@@ -63,6 +75,11 @@ namespace embree
 
       /*! Command line parameters from a file. */
       if (term == "-c") { FileName file = path + cin->getFileName();  parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path()); }
+
+      /* load OBJ model*/
+      else if (term == "-i") {
+        filename = path + cin->getFileName();
+      }
 
       /*! Camera field of view. */
       else if (term == "-fov") g_camera.fov = cin->getFloat();
@@ -132,23 +149,30 @@ namespace embree
     TaskScheduler::create(g_numThreads);
 #endif
 
+    /* load scene */
+    if (filename.str() != "")
+      loadOBJ(filename,one,g_obj_scene);
+
     /*! Initialize Embree state. */
     init(g_rtcore.c_str());
 
+
+    /* send model */
+    set_scene(&g_obj_scene);
+        
     /* render to disk */
-    if (outFilename.str() != "") {
+    if (outFilename.str() != "")
       renderToFile(outFilename);
-      return;
-    } 
+    
+    /* interactive mode */
+    if (g_interactive) {
+      initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
 
-    /*! Initialize GLUT window state. */
-    initWindowState(argc,argv,"tutorial08", g_width, g_height, g_fullscreen);
+      /*! Keyboard bindings. */
+      mapKeyToFunction('+', increaseSubdivisionLevel);  mapKeyToFunction('=', increaseSubdivisionLevel);  mapKeyToFunction('-', decreaseSubdivisionLevel);
 
-    /*! Keyboard bindings. */
-    mapKeyToFunction('+', increaseSubdivisionLevel);  mapKeyToFunction('=', increaseSubdivisionLevel);  mapKeyToFunction('-', decreaseSubdivisionLevel);
-
-    /*! Enter the main GLUT run loop. */
-    enterWindowRunLoop();
+      enterWindowRunLoop();
+    }
 
   }
 

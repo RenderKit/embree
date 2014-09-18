@@ -346,7 +346,7 @@ namespace embree
     curGroup.clear();
   }
 
-  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh_o) {
+  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh_o, const bool onlyQuads) {
     OBJLoader loader(fileName,space,mesh_o); 
   }
 
