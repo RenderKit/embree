@@ -24,7 +24,9 @@
 #include "geometry/triangle1mc_intersector16_moeller.h"
 #include "geometry/virtual_accel_intersector1.h"
 #include "geometry/virtual_accel_intersector16.h"
+#include "geometry/subdiv_intersector16.h"
 #include "geometry/filter.h"
+
 
 namespace embree
 {
@@ -400,6 +402,97 @@ namespace embree
 
         m_terminated |= m_valid_leaf & VirtualAccelIntersector16::occluded(m_valid_leaf,ray16,accel_ptr,items,geometry);
       }      
+    };
+
+
+
+  template<bool ENABLE_INTERSECTION_FILTER>
+    struct SubdivLeafIntersector
+    {
+      // ==================
+      // === single ray === 
+      // ==================
+      static __forceinline bool intersect(BVH4i::NodeRef curNode,
+					  const mic_f &dir_xyz,
+					  const mic_f &org_xyz,
+					  const mic_f &min_dist_xyz,
+					  mic_f &max_dist_xyz,
+					  Ray& ray, 
+					  const void *__restrict__ const accel,
+					  const Scene*__restrict__ const geometry)
+      {
+	unsigned int items = curNode.items();
+	unsigned int index = curNode.offsetIndex();
+	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
+	return SubdivPatchIntersector<ENABLE_INTERSECTION_FILTER>::intersect1(ray,
+									      dir_xyz,
+									      org_xyz,
+									      *patch_ptr);	
+      }
+
+      static __forceinline bool occluded(BVH4i::NodeRef curNode,
+					 const mic_f &dir_xyz,
+					 const mic_f &org_xyz,
+					 const mic_f &min_dist_xyz,
+					 const mic_f &max_dist_xyz,
+					 Ray& ray,
+					 const void *__restrict__ const accel,
+					 const Scene*__restrict__ const geometry)
+      {
+	unsigned int items = curNode.items();
+	unsigned int index = curNode.offsetIndex();
+	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
+	return SubdivPatchIntersector<ENABLE_INTERSECTION_FILTER>::occluded1(ray,
+									     dir_xyz,
+									     org_xyz,
+									     *patch_ptr);	
+      }
+
+      // ============================================
+      // ==== single ray mode for 16-wide packets ===
+      // ============================================
+      static __forceinline bool intersect(BVH4i::NodeRef curNode,
+					  const size_t rayIndex, 
+					  const mic_f &dir_xyz,
+					  const mic_f &org_xyz,
+					  const mic_f &min_dist_xyz,
+					  mic_f &max_dist_xyz,
+					  Ray16& ray16, 
+					  const void *__restrict__ const accel,
+					  const Scene*__restrict__ const geometry)
+      {
+	unsigned int items = curNode.items();
+	unsigned int index = curNode.offsetIndex();
+	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
+	return SubdivPatchIntersector<ENABLE_INTERSECTION_FILTER>::intersect16(ray16,
+									       dir_xyz,
+									       org_xyz,
+									       rayIndex,
+									       *patch_ptr);	
+      }
+
+
+      static __forceinline bool occluded(BVH4i::NodeRef curNode,
+					 const size_t rayIndex, 
+					 const mic_f &dir_xyz,
+					 const mic_f &org_xyz,
+					 const mic_f &min_dist_xyz,
+					 const mic_f &max_dist_xyz,
+					 const Ray16& ray16, 
+					 mic_m &m_terminated,
+					 const void *__restrict__ const accel,
+					 const Scene*__restrict__ const geometry)
+      {
+	unsigned int items = curNode.items();
+	unsigned int index = curNode.offsetIndex();
+	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
+	return SubdivPatchIntersector<ENABLE_INTERSECTION_FILTER>::occluded16(ray16,
+									      dir_xyz,
+									      org_xyz,
+									      rayIndex,
+									      *patch_ptr);	
+      }
+
     };
 
 };

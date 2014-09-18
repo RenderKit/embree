@@ -208,5 +208,11 @@ namespace embree
     DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16SingleMoellerNoFilter, Triangle1mcIntersector16SingleMoellerNoFilter);
 
 
+    typedef BVH4iIntersector16Single< SubdivLeafIntersector    < true  >, false > SubdivIntersector16SingleMoellerFilter;
+    typedef BVH4iIntersector16Single< SubdivLeafIntersector    < false >, false > SubdivIntersector16SingleMoellerNoFilter;
+
+    DEFINE_INTERSECTOR16   (BVH4iSubdivMeshIntersector16        , SubdivIntersector16SingleMoellerFilter);
+    DEFINE_INTERSECTOR16   (BVH4iSubdivMeshIntersector16NoFilter, SubdivIntersector16SingleMoellerNoFilter);
+
   }
 }

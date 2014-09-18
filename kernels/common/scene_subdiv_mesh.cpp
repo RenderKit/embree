@@ -153,11 +153,11 @@ namespace embree
     if (freeVertices ) vertices[1].free();
   }
 
-  SubdivMesh::HalfEdge *SubdivMesh::initializeHalfEdgeStructures (unsigned int &numHalfEdges)
+  void SubdivMesh::initializeHalfEdgeStructures ()
   {
     numHalfEdges = numFaces * 4;
 
-    HalfEdge *halfEdges = (HalfEdge*)os_malloc(numHalfEdges * sizeof(HalfEdge));
+    halfEdges = (HalfEdge*)os_malloc(numHalfEdges * sizeof(HalfEdge));
 
 
     /*! initialize all four half-edges for each face */
@@ -193,10 +193,6 @@ namespace embree
             edgeMap[value] = i;
           }
       }
-
-    
-    
-    return halfEdges;
   }
 
   bool SubdivMesh::verify () 

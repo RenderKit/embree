@@ -417,6 +417,7 @@ namespace embree
     static Accel* BVH4iVirtualGeometryBinnedSAH(Scene* scene);
     static Accel* BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene);
     static Accel* BVH4iTriangle1ObjectSplitMorton64Bit(Scene* scene);
+    static Accel* BVH4iSubdivMeshBinnedSAH(Scene* scene);
 
     /*! Calculates the SAH of the BVH */
     float sah ();

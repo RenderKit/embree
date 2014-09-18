@@ -43,7 +43,8 @@ namespace embree
       BVH4I_BUILDER_DEFAULT, 
       BVH4I_BUILDER_PRESPLITS, 
       BVH4I_BUILDER_VIRTUAL_GEOMETRY, 
-      BVH4I_BUILDER_MEMORY_CONSERVATIVE
+      BVH4I_BUILDER_MEMORY_CONSERVATIVE,
+      BVH4I_BUILDER_SUBDIV_MESH
     };
 
     static Builder* create (void* accel, void* geometry, size_t mode = BVH4I_BUILDER_DEFAULT);

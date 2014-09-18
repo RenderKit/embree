@@ -16,39 +16,65 @@
 
 #pragma once
 
-#include "common/accel.h"
-#include "common/ray.h"
+#include "subdivpatch1.h"
+#include "common/ray16.h"
+#include "geometry/filter.h"
 
 namespace embree
 {
-  struct VirtualAccelIntersector1
+
+  template< bool ENABLE_INTERSECTION_FILTER>
+  struct SubdivPatchIntersector
   {
-    typedef AccelSetItem Primitive;
+    typedef SubdivPatch1 Primitive;
 
-    static __forceinline void intersect(Ray& ray, const Primitive& prim, const void* geom) 
+
+
+    static __forceinline bool intersect16(Ray16& ray, 
+					  const mic_f &dir_xyz,
+					  const mic_f &org_xyz,
+					  const size_t k, 
+					  const SubdivPatch1& patch)
     {
-      prim.accel->intersect((RTCRay&)ray,prim.item);
+      STAT3(normal.trav_prims,1,1,1);
+
+      return true;
     }
 
-    static __forceinline void intersect(Ray& ray, const Primitive* prim, size_t num, const void* geom) 
+    static __forceinline bool occluded16(const Ray16& ray, 
+					 const mic_f &dir_xyz,
+					 const mic_f &org_xyz,
+					 const size_t k, 
+					 const SubdivPatch1& patch) 
     {
-      for (size_t i=0; i<num; i++) 
-        intersect(ray,prim[i],geom);
+      STAT3(shadow.trav_prims,1,1,1);
+      return true;
     }
 
-    static __forceinline bool occluded(Ray& ray, const Primitive& prim, const void* geom) 
+
+    // ==================================================================
+    // ==================================================================
+    // ==================================================================
+
+
+    static __forceinline bool intersect1(Ray& ray, 
+					 const mic_f &dir_xyz,
+					 const mic_f &org_xyz,
+					 const SubdivPatch1& patch)
     {
-      prim.accel->occluded((RTCRay&)ray,prim.item);
-      return ray.geomID == 0;
+      STAT3(normal.trav_prims,1,1,1);
+
+      return true;
     }
 
-    static __forceinline bool occluded(Ray& ray, const Primitive* prim, size_t num, const void* geom) 
+    static __forceinline bool occluded1(const Ray& ray, 
+					const mic_f &dir_xyz,
+					const mic_f &org_xyz,
+					const SubdivPatch1& patch) 
     {
-      for (size_t i=0; i<num; i++) 
-        if (occluded(ray,prim[i],geom))
-          return true;
-
-      return false;
+      STAT3(shadow.trav_prims,1,1,1);
+      return true;
     }
+
   };
 }

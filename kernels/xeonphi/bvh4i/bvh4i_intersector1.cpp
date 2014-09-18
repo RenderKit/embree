@@ -17,6 +17,7 @@
 #include "bvh4i_intersector1.h"
 #include "bvh4i_leaf_intersector.h"
 #include "geometry/virtual_accel_intersector1.h"
+#include "geometry/subdiv_intersector16.h"
 
 namespace embree
 {
@@ -179,6 +180,12 @@ namespace embree
 
     DEFINE_INTERSECTOR1    (BVH4iVirtualGeometryIntersector1        , VirtualIntersector1MoellerFilter);
     DEFINE_INTERSECTOR1    (BVH4iVirtualGeometryIntersector1NoFilter, VirtualIntersector1MoellerNoFilter);
+
+    typedef BVH4iIntersector1< SubdivLeafIntersector    < true  >, false > SubdivMeshIntersector1MoellerFilter;
+    typedef BVH4iIntersector1< SubdivLeafIntersector    < false >, false > SubdivMeshIntersector1MoellerNoFilter;
+
+    DEFINE_INTERSECTOR1    (BVH4iSubdivMeshIntersector1        , SubdivMeshIntersector1MoellerFilter);
+    DEFINE_INTERSECTOR1    (BVH4iSubdivMeshIntersector1NoFilter, SubdivMeshIntersector1MoellerNoFilter);
 
 
   }

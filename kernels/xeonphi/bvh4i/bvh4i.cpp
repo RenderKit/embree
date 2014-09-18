@@ -66,6 +66,11 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1mcIntersector16HybridMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1mcIntersector16HybridMoellerNoFilter);
 
+  DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iSubdivMeshIntersector1);
+  DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iSubdivMeshIntersector1NoFilter);
+
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4iSubdivMeshIntersector16);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4iSubdivMeshIntersector16NoFilter);
 
   void BVH4iRegister () 
   {
@@ -104,6 +109,13 @@ namespace embree
 
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1mcIntersector16HybridMoeller);
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1mcIntersector16HybridMoellerNoFilter);
+
+    SELECT_SYMBOL_KNC(features,BVH4iSubdivMeshIntersector1);
+    SELECT_SYMBOL_KNC(features,BVH4iSubdivMeshIntersector1NoFilter);
+
+    SELECT_SYMBOL_KNC(features,BVH4iSubdivMeshIntersector16);
+    SELECT_SYMBOL_KNC(features,BVH4iSubdivMeshIntersector16NoFilter);
+
   }
 
 
@@ -184,6 +196,17 @@ namespace embree
     return intersectors;
   }
 
+  Accel::Intersectors BVH4iSubdivMeshIntersectors(BVH4i* bvh)
+  {
+    PING;
+    std::cout << "WARNING: NOT IMPLEMENTED YET" << std::endl;
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = NULL;
+    intersectors.intersector16 = NULL;
+    return intersectors;
+  }
+
 
   Accel* BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene)
   { 
@@ -246,6 +269,14 @@ namespace embree
     Builder* builder = BVH4iBuilder::create(accel,scene,BVH4iBuilder::BVH4I_BUILDER_VIRTUAL_GEOMETRY);   
     Accel::Intersectors intersectors = BVH4iVirtualGeometryIntersectors(accel);
     return new AccelInstance(accel,builder,intersectors);    
+  }
+
+  Accel* BVH4i::BVH4iSubdivMeshBinnedSAH(Scene* scene)
+  {
+    BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);    
+    Builder* builder = BVH4iBuilder::create(accel,scene,BVH4iBuilder::BVH4I_BUILDER_SUBDIV_MESH);   
+    Accel::Intersectors intersectors = BVH4iSubdivMeshIntersectors(accel);
+    return new AccelInstance(accel,builder,intersectors);        
   }
 
   BVH4i::~BVH4i()
