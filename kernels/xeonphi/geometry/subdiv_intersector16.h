@@ -44,8 +44,6 @@ namespace embree
       STAT3(normal.trav_prims,1,1,1);
       __aligned(64) Triangle1mc tptr[4];
 
-      std::cout << patch << std::endl;
-
       Vec3fa *__restrict__ vtx0 = (Vec3fa *)&patch.getQuadVertex(0);
       prefetch<PFHINT_L1>(vtx0); 
       Vec3fa *__restrict__ vtx1 = (Vec3fa *)&patch.getQuadVertex(1);
@@ -54,6 +52,7 @@ namespace embree
       prefetch<PFHINT_L1>(vtx2); 
       Vec3fa *__restrict__ vtx3 = (Vec3fa *)&patch.getQuadVertex(3);
       prefetch<PFHINT_L1>(vtx3); 
+
 
       tptr[0] = Triangle1mc(vtx0,vtx1,vtx2,patch.geomID,patch.primID);
       tptr[1] = Triangle1mc(vtx2,vtx3,vtx0,patch.geomID,patch.primID);
