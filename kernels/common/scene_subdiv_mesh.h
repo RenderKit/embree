@@ -58,31 +58,31 @@ namespace embree
       unsigned int vtx_index;
       unsigned int start_halfedge_id : 30;
       unsigned int local_halfedge_id :  2;
-      unsigned int opposite;
+      unsigned int opposite_index;
 
       bool hasOpposite() const {
-        return opposite != (unsigned int)-1;
+        return opposite_index != (unsigned int)-1;
       };
 
-      const HalfEdge &getOppositeHalfEdge(const HalfEdge *const halfEdges) const { 
-        assert( opposite != (unsigned int)-1 );
-        return halfEdges[opposite]; 
+      HalfEdge *opposite(HalfEdge *halfEdges) const { 
+        assert( opposite_index != (unsigned int)-1 );
+        return &halfEdges[opposite_index]; 
       };
 
-      unsigned int getStartVertexIndex(const HalfEdge *const halfEdges) const { 
+      unsigned int getStartVertexIndex(HalfEdge *halfEdges) const { 
         return vtx_index; 
       };
       
-      const HalfEdge &next(const HalfEdge *const halfEdges) const {
-        return halfEdges[ start_halfedge_id + ((local_halfedge_id+1)%4) ];
+      HalfEdge *next(HalfEdge *halfEdges) const {
+        return &halfEdges[ start_halfedge_id + ((local_halfedge_id+1)%4) ];
       };
 
-      const HalfEdge &prev(const HalfEdge *const halfEdges) const {
-        return halfEdges[ start_halfedge_id + ((local_halfedge_id+3)%4) ];
+      HalfEdge *prev(HalfEdge *halfEdges) const {
+        return &halfEdges[ start_halfedge_id + ((local_halfedge_id+3)%4) ];
       };
 
-      unsigned int getEndVertexIndex(const HalfEdge *const halfEdges) const {
-        return next(halfEdges).vtx_index;
+      unsigned int getEndVertexIndex(HalfEdge *halfEdges) const {
+        return next(halfEdges)->vtx_index;
       };
       
     };
@@ -110,19 +110,41 @@ namespace embree
 
     __forceinline const HalfEdge &getHalfEdgeForQuad(unsigned int q, const unsigned int i=0) const { return halfEdges[q*4+i]; }
 
-    __forceinline const Vec3fa &getVertexForQuad(unsigned int q, const unsigned int i=0) const { 
-      return getVertexPosition( getHalfEdgeForQuad(q,i).vtx_index );
+
+    __forceinline const Vec3fa &getVertexPositionForHalfEdge(const HalfEdge &e) const { 
+      return getVertexPosition( e.vtx_index );
+    }
+
+    __forceinline const Vec3fa &getVertexPositionForQuad(unsigned int q, const unsigned int i=0) const { 
+      return getVertexPositionForHalfEdge( getHalfEdgeForQuad(q,i) );
     }
 
 
     void initializeHalfEdgeStructures ();
+
+    /*! calculates the bounds of the 1-ring associated with the vertex of the half-edge */
+    __forceinline BBox3fa bounds(HalfEdge &e) const 
+    {
+      BBox3fa b = getVertexPositionForHalfEdge( e );
+      HalfEdge *p = &e;
+      do {
+	/*! get end vertex for this half-edge. */
+	const unsigned int end_vtx_index = p->getEndVertexIndex(halfEdges);
+	b.extend( getVertexPosition( end_vtx_index ) );
+	/*! continue with next adjacent edge. */
+	p = p->opposite( halfEdges );
+	p = p->next( halfEdges );
+      } while( p != &e);
+      
+      return b;
+    }
 
     /*! calculates the bounds of the i'th subdivision patch */
     __forceinline BBox3fa bounds(size_t i) const 
     {
       BBox3fa b = empty;
       for (size_t j=0;j<4;j++)
-	b.extend( getVertexPosition(halfEdges[i*4+j].vtx_index) );
+	b.extend( bounds(halfEdges[i*4+j]) );
       return b;
     }
 
@@ -130,7 +152,7 @@ namespace embree
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivMesh::HalfEdge &h)
     {
-      o << "vtx_index " << h.vtx_index << " start_halfedge_id " << h.start_halfedge_id << " local_halfedge_id " << h.local_halfedge_id << " opposite " << h.opposite;
+      o << "vtx_index " << h.vtx_index << " start_halfedge_id " << h.start_halfedge_id << " local_halfedge_id " << h.local_halfedge_id << " opposite_index " << h.opposite_index;
       return o;
     } 
 

@@ -175,7 +175,7 @@ namespace embree
             halfEdges[i*4+j].vtx_index         = vertexIndices[halfEdgeIndex + j];
             halfEdges[i*4+j].start_halfedge_id = i*4;
             halfEdges[i*4+j].local_halfedge_id = j;
-            halfEdges[i*4+j].opposite          = (unsigned int)-1;
+            halfEdges[i*4+j].opposite_index    = (unsigned int)-1;
           }
       }
 
@@ -191,8 +191,8 @@ namespace embree
         std::map<size_t,unsigned int>::iterator found = edgeMap.find(value);
         if (found != edgeMap.end())
           {
-            halfEdges[i].opposite = found->second;
-            halfEdges[ found->second ].opposite = i;
+            halfEdges[i].opposite_index = found->second;
+            halfEdges[ found->second ].opposite_index = i;
           }
         else
           {
