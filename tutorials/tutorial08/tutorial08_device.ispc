@@ -218,6 +218,15 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   return scene_out;
 }
 
+Vec3f rndColor(const int ID) 
+{
+  int r = ((ID+13)*17*23) & 255;
+  int g = ((ID+15)*11*13) & 255;
+  int b = ((ID+17)* 7*19) & 255;
+  const float oneOver255f = 1.f/255.f;
+  return make_Vec3f(r*oneOver255f,g*oneOver255f,b*oneOver255f);
+}
+
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
@@ -239,63 +248,14 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
   
   /* shade all rays that hit something */
-  Vec3f color = make_Vec3f(0.0f);
-  Vec3f Ns = make_Vec3f(0.0f);
-
-#if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
-  uniform ISPCMesh* varying mesh = g_ispc_scene->meshes[ray.geomID];
-  uniform ISPCTriangle* varying tri = &mesh->triangles[ray.primID];
-
-  /* load material ID */
-  int materialID = tri->materialID;
-
-  /* interpolate shading normal */
-  if (mesh->normals) {
-    Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
-    Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
-    Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
-    float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-    Ns = normalize(w*n0 + u*n1 + v*n2);
-  } else {
-    Ns = normalize(ray.Ng);
-  }
-
+  Vec3f color = make_Vec3f(1.0f);
+#if 0
+    color = rndColor(ray.geomID);
 #else
-
-  int materialID = 0;
-  foreach_unique (geomID in ray.geomID) 
-  {
-    uniform ISPCMesh* uniform mesh = g_ispc_scene->meshes[geomID];
-    
-    foreach_unique (primID in ray.primID) 
-    {
-      uniform ISPCTriangle* uniform tri = &mesh->triangles[primID];
-      
-      /* load material ID */
-      materialID = tri->materialID;
-
-      /* interpolate shading normal */
-      if (mesh->normals) {
-        Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
-        Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
-        Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
-        float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-        Ns = w*n0 + u*n1 + v*n2;
-      } else {
-        Ns = normalize(ray.Ng);
-      }
-    }
-  }
-  Ns = normalize(Ns);
-#endif
-  uniform ISPCMaterial* material = &g_ispc_scene->materials[materialID];
-  color = make_Vec3f(material->Kd);
-
   /* apply ambient light */
-  Vec3f Nf = faceforward(Ns,neg(ray.dir),Ns);
-  //Vec3f Ng = normalize(ray.Ng);
-  //Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
-  color = color*dot(ray.dir,Nf);   // FIXME: *=
+  Vec3f Ng = normalize(ray.Ng);
+  color = color*abs(dot(ray.dir,Ng));   
+#endif
   return color;
 }
 

@@ -274,6 +274,7 @@ namespace embree
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);    
     Builder* builder = BVH4iBuilder::create(accel,scene,BVH4iBuilder::BVH4I_BUILDER_SUBDIV_MESH);   
     Accel::Intersectors intersectors = BVH4iSubdivMeshIntersectors(accel);
+    scene->needVertices = true;
     return new AccelInstance(accel,builder,intersectors);        
   }
 
