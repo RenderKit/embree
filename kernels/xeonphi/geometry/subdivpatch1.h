@@ -18,9 +18,18 @@
 
 #include "primitive.h"
 #include "common/scene_subdiv_mesh.h"
+#include "common/scene_subdivision.h"
 
 namespace embree
 {
+
+  class RegularCatmullClarkPatch : public RegularCatmullClarkPatchT<Vec3fa> 
+  {
+  public:
+    
+  };
+
+
   struct SubdivPatch1
   {
   public:
@@ -44,6 +53,15 @@ namespace embree
       return vertices[h->vtx_index];
     }
 
+    __forceinline void init( RegularCatmullClarkPatch& cc_patch)
+    {
+      // quad(1,1)
+      cc_patch.v[1][1] = getQuadVertex(0);
+      cc_patch.v[1][2] = getQuadVertex(1);
+      cc_patch.v[2][2] = getQuadVertex(2);
+      cc_patch.v[2][1] = getQuadVertex(3);
+
+    }
    
     const SubdivMesh::HalfEdge * first_half_edge; //!< pointer to first half edge of corresponding quad in the subdivision mesh
     const Vec3fa *vertices;                       //!< pointer to the vertex positions in the subdivison mesh
@@ -58,5 +76,7 @@ namespace embree
 
       return o;
     } 
+
+  
 
 }
