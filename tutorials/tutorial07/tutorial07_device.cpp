@@ -18,7 +18,7 @@
 
 
 
-#if 1 || defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
+#if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
 #define renderPixelTestEyeLight renderPixelStandard
 #else
 #define renderPixelPathTrace renderPixelStandard
@@ -47,6 +47,8 @@ Vec3fa hair_Kr;    //!< reflectivity of hair
 Vec3fa hair_Kt;    //!< transparency of hair
 
 void filterDispatch(void* ptr, struct RTCRay2& ray);
+
+extern "C" float g_debug;
 
 struct ISPCTriangle 
 {
@@ -170,7 +172,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   {
     ISPCHairSet* hair = scene_in->hairs[i];
 
-#if 0
+#if 1
     unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->v2 ? 2 : 1);
     rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
     if (hair->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,hair->v2,0,sizeof(Vertex));
@@ -461,7 +463,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = time;
+  ray.time = g_debug;
   ray.filter = NULL; 
   
   Vec3fa color = Vec3fa(0.0f);
@@ -536,8 +538,8 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     shadow.dir = neg(Vec3fa(g_dirlight_direction));
     shadow.tnear = tnear_eps;
     shadow.tfar = inf;
-    shadow.time = time;
-    Vec3fa T = occluded(g_scene,shadow);
+    shadow.time = g_debug;
+    Vec3fa T = one; //occluded(g_scene,shadow);
     Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(Vec3fa(g_dirlight_direction)));
     color = color + weight*c*T*Vec3fa(g_dirlight_intensity); // FIXME: use += operator
 
@@ -556,7 +558,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
-    ray.time = time;
+    ray.time = g_debug;
     ray.filter = NULL;
     weight = weight * c/wi.w; // FIXME: use *= operator
 

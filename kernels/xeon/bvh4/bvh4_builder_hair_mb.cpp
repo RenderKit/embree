@@ -332,17 +332,18 @@ namespace embree
 	for (size_t i=0; i<numChildren; i++) 
         {
           std::pair<AffineSpace3fa,AffineSpace3fa> spaces = ObjectPartitionUnaligned::computeAlignedSpaceMB(threadIndex,threadCount,scheduler,scene,cprims[i]); 
-
+	  
 #if BVH4HAIR_MB_VERSION == 0
 	  Vec3fa axis = normalize(spaces.first.l.row2()+spaces.second.l.row2());
 	  spaces.first = frame(axis).transposed();
-#endif
 	  ObjectPartitionUnaligned::PrimInfoMB pinfo = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scheduler,scene,cprims[i],spaces);
-	  
-#if BVH4HAIR_MB_VERSION == 0
-          node->set(i,spaces.first);
+	  node->set(i,spaces.first);
           node->set(i,pinfo.s0t0,pinfo.s1t1);
 #else
+	  ObjectPartitionUnaligned::PrimInfoMB pinfo1 = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scheduler,scene,cprims[i],spaces);
+	  spaces.first = BVH4::UnalignedNodeMB::normalizeSpace(spaces.first,pinfo1.s0t0);
+	  spaces.second = BVH4::UnalignedNodeMB::normalizeSpace(spaces.second,pinfo1.s1t1);
+	  ObjectPartitionUnaligned::PrimInfoMB pinfo = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scheduler,scene,cprims[i],spaces);
 	  node->set(i,spaces.first,spaces.second);
           node->set(i,pinfo.s0t0,pinfo.s0t1_s1t0,pinfo.s1t1);
 #endif

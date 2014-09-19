@@ -875,10 +875,18 @@ namespace embree
       __forceinline void clear() 
       {
         space0 = space1 = one;
-        t0s0.lower = t0s0.upper = Vec3fa(nan);
+        //t0s0.lower = t0s0.upper = Vec3fa(nan);
         t1s0_t0s1.lower = t1s0_t0s1.upper = Vec3fa(nan);
-        t1s1.lower = t1s1.upper = Vec3fa(nan);
+        //t1s1.lower = t1s1.upper = Vec3fa(nan);
         BaseNode::clear();
+      }
+
+      static __forceinline AffineSpace3fa normalizeSpace(const AffineSpace3fa& other, const BBox3fa& bounds)
+      {
+	AffineSpace3fa space = other;
+        space.p -= bounds.lower;
+        space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19),bounds.upper-bounds.lower))*space;
+	return space;
       }
 
       /*! Sets spaces. */
@@ -902,14 +910,14 @@ namespace embree
       {
         assert(i < N);
 
-        t0s0.lower.x[i] = a.lower.x; t0s0.lower.y[i] = a.lower.y; t0s0.lower.z[i] = a.lower.z;
-        t0s0.upper.x[i] = a.upper.x; t0s0.upper.y[i] = a.upper.y; t0s0.upper.z[i] = a.upper.z;
+        //t0s0.lower.x[i] = a.lower.x; t0s0.lower.y[i] = a.lower.y; t0s0.lower.z[i] = a.lower.z;
+        //t0s0.upper.x[i] = a.upper.x; t0s0.upper.y[i] = a.upper.y; t0s0.upper.z[i] = a.upper.z;
 
         t1s0_t0s1.lower.x[i] = b.lower.x; t1s0_t0s1.lower.y[i] = b.lower.y; t1s0_t0s1.lower.z[i] = b.lower.z;
         t1s0_t0s1.upper.x[i] = b.upper.x; t1s0_t0s1.upper.y[i] = b.upper.y; t1s0_t0s1.upper.z[i] = b.upper.z;
 
-        t1s1.lower.x[i] = c.lower.x; t1s1.lower.y[i] = c.lower.y; t1s1.lower.z[i] = c.lower.z;
-        t1s1.upper.x[i] = c.upper.x; t1s1.upper.y[i] = c.upper.y; t1s1.upper.z[i] = c.upper.z;
+        //t1s1.lower.x[i] = c.lower.x; t1s1.lower.y[i] = c.lower.y; t1s1.lower.z[i] = c.lower.z;
+        //t1s1.upper.x[i] = c.upper.x; t1s1.upper.y[i] = c.upper.y; t1s1.upper.z[i] = c.upper.z;
       }
 
       /*! Sets ID of child. */
@@ -922,15 +930,17 @@ namespace embree
       /*! Returns bounds of specified child. */
       __forceinline const BBox3fa bounds0(const size_t i) const { 
         assert(i < N);
-        const Vec3fa lower(t0s0.lower.x[i],t0s0.lower.y[i],t0s0.lower.z[i]);
+        /*const Vec3fa lower(t0s0.lower.x[i],t0s0.lower.y[i],t0s0.lower.z[i]);
         const Vec3fa upper(t0s0.upper.x[i],t0s0.upper.y[i],t0s0.upper.z[i]);
-        return BBox3fa(lower,upper);
+        return BBox3fa(lower,upper);*/
+	return empty; // FIXME: not implemented yet
       }
 
       /*! Returns the extend of the bounds of the ith child */
       __forceinline Vec3fa extend0(size_t i) const {
         assert(i < N);
-        return bounds0(i).size();
+        //return bounds0(i).size(); // FIXME: not implemented yet
+	return zero;
       }
 
       /*! Returns reference to specified child */
@@ -942,10 +952,14 @@ namespace embree
 				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist)
       {
 	const ssef t0 = ssef(1.0f)-time, t1 = time;
+	const sse3f t0s0_lower = zero;
+	const sse3f t0s0_upper = one;
+	const sse3f t1s1_lower = zero;
+	const sse3f t1s1_upper = one;
 
 	const AffineSpaceSSE3f xfm = t0*space0 + t1*space1;
-	const sse3f lower = t0*t0*t0s0.lower + t0*t1*t1s0_t0s1.lower + t1*t1*t1s1.lower;
-	const sse3f upper = t0*t0*t0s0.upper + t0*t1*t1s0_t0s1.upper + t1*t1*t1s1.upper;
+	const sse3f lower = t0*t0*t0s0_lower + t0*t1*t1s0_t0s1.lower + t1*t1*t1s1_lower;
+	const sse3f upper = t0*t0*t0s0_upper + t0*t1*t1s0_t0s1.upper + t1*t1*t1s1_upper;
 
 	const BBoxSSE3f bounds(lower,upper);
 	const sse3f dir = xfmVector(xfm,ray_dir);
@@ -985,9 +999,9 @@ namespace embree
     public:
       AffineSpaceSSE3f space0;   
       AffineSpaceSSE3f space1;   
-      BBoxSSE3f t0s0;
+      //BBoxSSE3f t0s0;
       BBoxSSE3f t1s0_t0s1;
-      BBoxSSE3f t1s1;
+      //BBoxSSE3f t1s1;
     };  
 
     /*! swap the children of two nodes */
