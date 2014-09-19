@@ -21,8 +21,12 @@ namespace embree
 {
   SubdivMesh::SubdivMesh (Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numTimeSteps)
     : Geometry(parent,SUBDIV_MESH,numFaces,flags), 
-      mask(-1), numTimeSteps(numTimeSteps),
-      numFaces(numFaces), numEdges(numEdges), numVertices(numVertices)
+      mask(-1), 
+      numTimeSteps(numTimeSteps),
+      numFaces(numFaces), 
+      numEdges(numEdges), 
+      numVertices(numVertices),
+      halfEdges(NULL)
   {
     for (size_t i=0; i<numTimeSteps; i++) {
        vertices[i].init(numVertices,sizeof(Vec3fa));
@@ -160,6 +164,7 @@ namespace embree
 
     halfEdges = (HalfEdge*)os_malloc(numHalfEdges * sizeof(HalfEdge));
 
+    DBG_PRINT( halfEdges );
 
     /*! initialize all four half-edges for each face */
     for (size_t i=0;i<numFaces;i++)
@@ -194,6 +199,9 @@ namespace embree
             edgeMap[value] = i;
           }
       }
+
+    for (size_t i=0;i<numHalfEdges;i++)
+      std::cout << "Half-Edge " << i << " " << halfEdges[i] << std::endl;
   }
 
   bool SubdivMesh::verify () 
