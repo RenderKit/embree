@@ -15,8 +15,8 @@
 // ======================================================================== //
 
 #include "bvh8_intersector8_chunk.h"
+#include "geometry/triangle4_intersector8_moeller.h"
 #include "geometry/triangle8_intersector8_moeller.h"
-
 
 #define DBG(x) 
 
@@ -283,6 +283,7 @@ namespace embree
 #endif      
     }
     
+    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector8ChunkMoeller,BVH8Intersector8Chunk<LeafIterator8<Triangle4Intersector8MoellerTrumbore<LeafMode COMMA true> > >);
     DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8ChunkMoeller,BVH8Intersector8Chunk<LeafIterator8<Triangle8Intersector8MoellerTrumbore<LeafMode COMMA true> > >);
   }
 }  

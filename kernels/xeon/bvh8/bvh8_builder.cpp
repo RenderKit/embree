@@ -35,6 +35,9 @@ namespace embree
 {
   namespace isa
   {
+    template<> BVH8BuilderT<Triangle4 >::BVH8BuilderT (BVH8* bvh, Scene* scene, size_t mode) 
+      : BVH8Builder(bvh,scene,NULL,mode,2,2,1.0f,false,sizeof(Triangle4),4,inf) {}
+
     template<> BVH8BuilderT<Triangle8 >::BVH8BuilderT (BVH8* bvh, Scene* scene, size_t mode) 
       : BVH8Builder(bvh,scene,NULL,mode,3,2,1.0f,false,sizeof(Triangle8),8,inf) {}
 
@@ -380,6 +383,7 @@ namespace embree
     }
     
     /*! entry functions for the builder */
+    Builder* BVH8Triangle4Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH8BuilderT<Triangle4> ((BVH8*)bvh,scene,mode); }
     Builder* BVH8Triangle8Builder  (void* bvh, Scene* scene, size_t mode) { return new class BVH8BuilderT<Triangle8> ((BVH8*)bvh,scene,mode); }
   }
 }

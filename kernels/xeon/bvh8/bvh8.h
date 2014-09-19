@@ -220,6 +220,10 @@ namespace embree
     ~BVH8 ();
 
     /*! BVH8 instantiations */
+    static Accel* BVH8Triangle4(Scene* scene);
+    static Accel* BVH8Triangle4ObjectSplit(Scene* scene);
+    static Accel* BVH8Triangle4SpatialSplit(Scene* scene);
+
     static Accel* BVH8Triangle8(Scene* scene);
     static Accel* BVH8Triangle8ObjectSplit(Scene* scene);
     static Accel* BVH8Triangle8SpatialSplit(Scene* scene);

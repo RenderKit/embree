@@ -125,10 +125,10 @@ namespace embree
         switch (mode) {
         case /*0b00*/ 0: 
 #if defined (__TARGET_AVX__)
-          if (has_feature(AVX2)) // on AVX machines BVH8 gives lower performance, only enable on AVX2!
+          if (has_feature(AVX)) // on AVX machines BVH8 gives lower performance, only enable on AVX2!
 	  {
-            if (isHighQuality()) accels.add(BVH8::BVH8Triangle8SpatialSplit(this)); 
-            else                 accels.add(BVH8::BVH8Triangle8ObjectSplit(this)); 
+            if (isHighQuality()) accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
+            else                 accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 
           }
           else 
 #endif
@@ -160,13 +160,12 @@ namespace embree
     else if (g_tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
     else if (g_tri_accel == "bvh4.triangle1")         accels.add(BVH4::BVH4Triangle1(this));
     else if (g_tri_accel == "bvh4.triangle4")         accels.add(BVH4::BVH4Triangle4(this));
-#if defined (__TARGET_AVX__)
-    else if (g_tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
-#endif
     else if (g_tri_accel == "bvh4.triangle1v")        accels.add(BVH4::BVH4Triangle1v(this));
     else if (g_tri_accel == "bvh4.triangle4v")        accels.add(BVH4::BVH4Triangle4v(this));
     else if (g_tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
 #if defined (__TARGET_AVX__)
+    else if (g_tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
+    else if (g_tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
     else if (g_tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
 #endif
     else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+g_tri_accel);

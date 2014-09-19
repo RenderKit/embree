@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh8_intersector4_hybrid.h"
+#include "geometry/triangle4_intersector4_moeller.h"
 #include "geometry/triangle8_intersector4_moeller.h"
 
 #define SWITCH_THRESHOLD 3
@@ -596,6 +597,9 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
+    DEFINE_INTERSECTOR4(BVH8Triangle4Intersector4HybridMoeller, BVH8Intersector4Hybrid<LeafIterator4_1<Triangle4Intersector4MoellerTrumbore<LeafMode COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH8Triangle4Intersector4HybridMoellerNoFilter, BVH8Intersector4Hybrid<LeafIterator4_1<Triangle4Intersector4MoellerTrumbore<LeafMode COMMA false> > >);
+
     DEFINE_INTERSECTOR4(BVH8Triangle8Intersector4HybridMoeller, BVH8Intersector4Hybrid<LeafIterator4_1<Triangle8Intersector4MoellerTrumbore<LeafMode COMMA true> > >);
     DEFINE_INTERSECTOR4(BVH8Triangle8Intersector4HybridMoellerNoFilter, BVH8Intersector4Hybrid<LeafIterator4_1<Triangle8Intersector4MoellerTrumbore<LeafMode COMMA false> > >);
   }
