@@ -379,6 +379,6 @@ namespace embree
     
     /*! entry functions for the builder */
     Builder* BVH4Triangle1vMBBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderMBT<Triangle1vMB>((BVH4*)bvh,scene,mode); }
-    Builder* BVH4Triangle14MBBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderMBT<Triangle4vMB>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle4vMBBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderMBT<Triangle4vMB>((BVH4*)bvh,scene,mode); }
   }
 }

@@ -28,6 +28,7 @@
 #include "geometry/triangle4i_intersector4.h"
 #include "geometry/virtual_accel_intersector4.h"
 #include "geometry/triangle1v_intersector4_moeller_mb.h"
+#include "geometry/triangle4v_intersector4_moeller_mb.h"
 
 namespace embree
 {
@@ -369,6 +370,8 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA LeafIterator4<Triangle4vIntersector4Pluecker<LeafMode> > >);
     DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA LeafIterator4<Triangle4iIntersector4Pluecker<LeafMode> > >);
     DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA LeafIterator4<VirtualAccelIntersector4> >);
+
     DEFINE_INTERSECTOR4(BVH4Triangle1vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x10 COMMA false COMMA LeafIterator4<Triangle1vIntersector4MoellerTrumboreMB<LeafMode> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x10 COMMA false COMMA LeafIterator4<Triangle4vMBIntersector4MoellerTrumbore<LeafMode COMMA true> > >);
   }
 }

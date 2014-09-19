@@ -25,6 +25,7 @@
 #endif
 #include "geometry/triangle1v_intersector1_pluecker.h"
 #include "geometry/triangle4v_intersector1_pluecker.h"
+#include "geometry/triangle4v_intersector1_moeller_mb.h"
 #include "geometry/triangle4i_intersector1.h"
 #include "geometry/subdivpatch1_intersector1.h"
 #include "geometry/virtual_accel_intersector1.h"
@@ -299,5 +300,6 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<VirtualAccelIntersector1> >);
 
     DEFINE_INTERSECTOR1(BVH4Triangle1vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA LeafIterator1<Triangle1vIntersector1MoellerTrumboreMB<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle4vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA LeafIterator1<Triangle4vMBIntersector1MoellerTrumbore<LeafMode> > >);
   }
 }

@@ -28,6 +28,7 @@ namespace embree
       Type ();
       size_t blocks(size_t x) const;
       size_t size(const char* This) const;
+      std::pair<BBox3fa,BBox3fa> update2(char* prim, size_t num, void* geom) const;
     };
 
     static Type type;
@@ -61,6 +62,41 @@ namespace embree
     /*! Returns the number of stored triangles. */
     __forceinline size_t size() const {
       return bitscan(~movemask(valid()));
+    }
+
+    /*! calculate the bounds of the triangles at t0 */
+    __forceinline BBox3fa bounds0() const 
+    {
+      sse3f lower = min(v0,v1,v2);
+      sse3f upper = max(v0,v1,v2);
+      const sseb mask = valid();
+      lower.x = select(mask,lower.x,ssef(pos_inf));
+      lower.y = select(mask,lower.y,ssef(pos_inf));
+      lower.z = select(mask,lower.z,ssef(pos_inf));
+      upper.x = select(mask,upper.x,ssef(neg_inf));
+      upper.y = select(mask,upper.y,ssef(neg_inf));
+      upper.z = select(mask,upper.z,ssef(neg_inf));
+      return BBox3fa(Vec3fa(reduce_min(lower.x),reduce_min(lower.y),reduce_min(lower.z)),
+		     Vec3fa(reduce_max(upper.x),reduce_max(upper.y),reduce_max(upper.z)));
+    }
+
+    /*! calculate the bounds of the triangles at t1 */
+    __forceinline BBox3fa bounds1() const 
+    {
+      const sse3f p0 = v0+d0;
+      const sse3f p1 = v1+d1;
+      const sse3f p2 = v2+d2;
+      sse3f lower = min(p0,p1,p2);
+      sse3f upper = max(p0,p1,p2);
+      const sseb mask = valid();
+      lower.x = select(mask,lower.x,ssef(pos_inf));
+      lower.y = select(mask,lower.y,ssef(pos_inf));
+      lower.z = select(mask,lower.z,ssef(pos_inf));
+      upper.x = select(mask,upper.x,ssef(neg_inf));
+      upper.y = select(mask,upper.y,ssef(neg_inf));
+      upper.z = select(mask,upper.z,ssef(neg_inf));
+      return BBox3fa(Vec3fa(reduce_min(lower.x),reduce_min(lower.y),reduce_min(lower.z)),
+		     Vec3fa(reduce_max(upper.x),reduce_max(upper.y),reduce_max(upper.z)));
     }
 
     /*! returns required number of primitive blocks for N primitives */
