@@ -119,4 +119,11 @@ namespace embree
 
   };
 
+  __forceinline std::ostream &operator<<(std::ostream &o, const SubdivMesh::HalfEdge &h)
+    {
+      o << "vtx_index " << h.vtx_index << " start_halfedge_id " << h.start_halfedge_id << " local_halfedge_id " << h.local_halfedge_id << " opposite " << h.opposite;
+      return o;
+    } 
+
+
 };

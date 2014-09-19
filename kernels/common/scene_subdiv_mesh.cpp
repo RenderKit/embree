@@ -167,6 +167,9 @@ namespace embree
         const unsigned int halfEdgeIndex = vertexOffsets[i];
         for (size_t j=0;j<4;j++)
           {
+	    DBG_PRINT( i*4+j );
+	    DBG_PRINT( vertexIndices[halfEdgeIndex + j] );
+
             halfEdges[i*4+j].vtx_index         = vertexIndices[halfEdgeIndex + j];
             halfEdges[i*4+j].start_halfedge_id = i*4;
             halfEdges[i*4+j].local_halfedge_id = j;
@@ -194,6 +197,9 @@ namespace embree
             edgeMap[value] = i;
           }
       }
+
+    for (size_t i=0;i<numHalfEdges;i++)
+      std::cout << "Half-Edge " << i << " " << halfEdges[i] << std::endl;
   }
 
   bool SubdivMesh::verify () 
