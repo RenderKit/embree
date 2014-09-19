@@ -162,7 +162,7 @@ Vec3fa sampleSphere(const float u, const float v)
 RTCScene convertScene(ISPCScene* scene_in)
 {
   //scene_in->numHairSets = 0;
-  scene_in->numMeshes = 0;
+  //scene_in->numMeshes = 0;
 
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
@@ -173,9 +173,9 @@ RTCScene convertScene(ISPCScene* scene_in)
     ISPCHairSet* hair = scene_in->hairs[i];
 
 #if 1
-    unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->v2 ? 2 : 1);
+    unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, 1); //hair->v2 ? 2 : 1);
     rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
-    if (hair->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,hair->v2,0,sizeof(Vertex));
+    //if (hair->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,hair->v2,0,sizeof(Vertex));
     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
     rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
 
@@ -463,7 +463,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = g_debug;
+  ray.time = time;
   ray.filter = NULL; 
   
   Vec3fa color = Vec3fa(0.0f);
@@ -538,7 +538,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     shadow.dir = neg(Vec3fa(g_dirlight_direction));
     shadow.tnear = tnear_eps;
     shadow.tfar = inf;
-    shadow.time = g_debug;
+    shadow.time = time;
     Vec3fa T = occluded(g_scene,shadow);
     Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(Vec3fa(g_dirlight_direction)));
     color = color + weight*c*T*Vec3fa(g_dirlight_intensity); // FIXME: use += operator
@@ -558,7 +558,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
-    ray.time = g_debug;
+    ray.time = time;
     ray.filter = NULL;
     weight = weight * c/wi.w; // FIXME: use *= operator
 
