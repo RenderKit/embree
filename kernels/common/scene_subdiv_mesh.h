@@ -122,15 +122,28 @@ namespace embree
 
     void initializeHalfEdgeStructures ();
 
-    /*! calculates the bounds of the 1-ring associated with the vertex of the half-edge */
-    __forceinline BBox3fa bounds(HalfEdge &e) const 
+    /*! calculates the bounds of the quad associated with the half-edge */
+    __forceinline BBox3fa bounds_quad(HalfEdge &e) const 
     {
-      BBox3fa b = getVertexPositionForHalfEdge( e );
+      HalfEdge *p = &e;
+      BBox3fa b = getVertexPositionForHalfEdge(*p);
+      p = p->next( halfEdges );
+      b.extend( getVertexPositionForHalfEdge(*p) );
+      p = p->next( halfEdges );
+      b.extend( getVertexPositionForHalfEdge(*p) );
+      p = p->next( halfEdges );
+      b.extend( getVertexPositionForHalfEdge(*p) );
+      return b;
+    }
+
+    /*! calculates the bounds of the 1-ring associated with the vertex of the half-edge */
+    __forceinline BBox3fa bounds_1ring(HalfEdge &e) const 
+    {
+      BBox3fa b = empty;
       HalfEdge *p = &e;
       do {
-	/*! get end vertex for this half-edge. */
-	const unsigned int end_vtx_index = p->getEndVertexIndex(halfEdges);
-	b.extend( getVertexPosition( end_vtx_index ) );
+	/*! get bounds for the adjacent quad */
+	b.extend( bounds_quad( *p ) );
 	/*! continue with next adjacent edge. */
 	p = p->opposite( halfEdges );
 	p = p->next( halfEdges );
@@ -144,7 +157,7 @@ namespace embree
     {
       BBox3fa b = empty;
       for (size_t j=0;j<4;j++)
-	b.extend( bounds(halfEdges[i*4+j]) );
+	b.extend( bounds_1ring(halfEdges[i*4+j]) );
       return b;
     }
 
