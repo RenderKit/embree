@@ -104,7 +104,16 @@ namespace embree
   public:
 
     /*! Coordinates of the vertex at the given index in the mesh. */
-    __forceinline const Vec3fa &getPosition(unsigned int index, const unsigned int t = 0) const { return vertices[t][index]; }
+    __forceinline const Vec3fa &getVertexPosition(unsigned int index, const unsigned int t = 0) const { return vertices[t][index]; }
+
+    __forceinline const Vec3fa *getVertexPositionPtr(const unsigned int t = 0) const { return &vertices[t][0]; }
+
+    __forceinline const HalfEdge &getHalfEdgeForQuad(unsigned int q, const unsigned int i=0) const { return halfEdges[q*4+i]; }
+
+    __forceinline const Vec3fa &getVertexForQuad(unsigned int q, const unsigned int i=0) const { 
+      return getVertexPosition( getHalfEdgeForQuad(q,i).vtx_index );
+    }
+
 
     void initializeHalfEdgeStructures ();
 
@@ -113,7 +122,7 @@ namespace embree
     {
       BBox3fa b = empty;
       for (size_t j=0;j<4;j++)
-	b.extend( getPosition(halfEdges[i*4+j].vtx_index) );
+	b.extend( getVertexPosition(halfEdges[i*4+j].vtx_index) );
       return b;
     }
 
