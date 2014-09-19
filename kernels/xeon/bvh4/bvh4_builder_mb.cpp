@@ -23,6 +23,7 @@
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
+#include "geometry/triangle4v_mb.h"
 
 #define ROTATE_TREE 1
 #define RESTRUCTURE_TREE 0
@@ -37,6 +38,9 @@ namespace embree
 
     template<> BVH4BuilderMBT<Triangle1vMB>::BVH4BuilderMBT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderMB(bvh,scene,NULL,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
     template<> BVH4BuilderMBT<Triangle1vMB>::BVH4BuilderMBT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4BuilderMB(bvh,mesh->parent,mesh,mode,0,0,1.0f,false,sizeof(Triangle1v),2,inf) {}
+
+    template<> BVH4BuilderMBT<Triangle4vMB>::BVH4BuilderMBT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderMB(bvh,scene,NULL,mode,2,2,1.0f,false,sizeof(Triangle4v),4,inf) {}
+    template<> BVH4BuilderMBT<Triangle4vMB>::BVH4BuilderMBT (BVH4* bvh, TriangleMesh* mesh, size_t mode) : BVH4BuilderMB(bvh,mesh->parent,mesh,mode,2,2,1.0f,false,sizeof(Triangle4v),4,inf) {}
 
     BVH4BuilderMB::BVH4BuilderMB (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t mode,
 				size_t logBlockSize, size_t logSAHBlockSize, float intCost, 
@@ -375,5 +379,6 @@ namespace embree
     
     /*! entry functions for the builder */
     Builder* BVH4Triangle1vMBBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderMBT<Triangle1vMB>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Triangle14MBBuilder (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderMBT<Triangle4vMB>((BVH4*)bvh,scene,mode); }
   }
 }

@@ -573,6 +573,7 @@
     <ClInclude Include="geometry\triangle4v.h" />
     <ClInclude Include="geometry\triangle4v_intersector1_pluecker.h" />
     <ClInclude Include="geometry\triangle4v_intersector4_pluecker.h" />
+    <ClInclude Include="geometry\triangle4v_mb.h" />
     <ClInclude Include="geometry\virtual_accel_intersector1.h" />
     <ClInclude Include="geometry\virtual_accel_intersector4.h" />
     <ClInclude Include="..\..\include\embree2\rtcore.h" />
@@ -626,6 +627,7 @@
     <ClCompile Include="geometry\triangle4.cpp" />
     <ClCompile Include="geometry\triangle4i.cpp" />
     <ClCompile Include="geometry\triangle4v.cpp" />
+    <ClCompile Include="geometry\triangle4v_mb.cpp" />
     <ClCompile Include="geometry\subdivpatch1.cpp" />
     <ClCompile Include="geometry\virtual_accel.cpp" />
   </ItemGroup>
