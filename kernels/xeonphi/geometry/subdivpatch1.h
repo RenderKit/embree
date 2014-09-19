@@ -34,6 +34,8 @@ namespace embree
   {
   public:
 
+    static int regular1RingOffsets[8][2];
+
     /*! Default constructor. */
     __forceinline SubdivPatch1 (const SubdivMesh::HalfEdge * first_half_edge,
 				const Vec3fa *vertices,
@@ -49,8 +51,25 @@ namespace embree
     {}
 
     __forceinline const Vec3fa &getQuadVertex(const unsigned int i=0) const { 
-      const SubdivMesh::HalfEdge *const h = first_half_edge + ((first_half_edge->local_halfedge_id + i)%4); // just +i should be enough
+      const SubdivMesh::HalfEdge *const h = first_half_edge + i;
       return vertices[h->vtx_index];
+    }
+
+    __forceinline unsigned int getStartVertexIndexFromHalfEdge(const SubdivMesh::HalfEdge * edge) const { 
+      return edge->vtx_index;
+    }
+
+    __forceinline const Vec3fa &getStartVertexFromHalfEdge(const SubdivMesh::HalfEdge * edge) const { 
+      return vertices[ getStartVertexIndexFromHalfEdge(edge) ];
+    }
+
+    __forceinline unsigned int getEndVertexIndexFromHalfEdge(const SubdivMesh::HalfEdge * edge) const { 
+      SubdivMesh::HalfEdge *h_base = edge->base();
+      return edge->next(h_base)->vtx_index;
+    }
+
+    __forceinline const Vec3fa &getEndVertexFromHalfEdge(const SubdivMesh::HalfEdge * edge) const { 
+      return vertices[ getEndVertexIndexFromHalfEdge(edge) ];
     }
 
     __forceinline void init( RegularCatmullClarkPatch& cc_patch)

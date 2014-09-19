@@ -85,6 +85,9 @@ namespace embree
         return next(halfEdges)->vtx_index;
       };
       
+      HalfEdge *base() const {
+	return (HalfEdge *)this - (start_halfedge_id + local_halfedge_id);
+      };
     };
 
 
