@@ -335,7 +335,7 @@ namespace embree
 	  
 #if BVH4HAIR_MB_VERSION == 0
 	  Vec3fa axis = normalize(spaces.first.l.row2()+spaces.second.l.row2());
-	  spaces.first = frame(axis).transposed();
+	  spaces.first = spaces.second = frame(axis).transposed();
 	  ObjectPartitionUnaligned::PrimInfoMB pinfo = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scheduler,scene,cprims[i],spaces);
           node->set(i,spaces.first,pinfo.s0t0,pinfo.s1t1);
 #elif BVH4HAIR_MB_VERSION == 1

@@ -40,6 +40,8 @@ namespace embree
     struct NodeSingleSpaceMB;
     struct NodeDualSpaceMB;
     struct NodeConeMB;
+#define BVH4HAIR_MB_VERSION 0
+
 #if BVH4HAIR_MB_VERSION == 0
     typedef NodeSingleSpaceMB UnalignedNodeMB;
 #elif BVH4HAIR_MB_VERSION == 1
@@ -109,6 +111,10 @@ namespace embree
 	if (types > 0x1) {
 	  prefetchL1(((char*)ptr)+2*64);
 	  prefetchL1(((char*)ptr)+3*64);
+	  /*prefetchL1(((char*)ptr)+4*64);
+	  prefetchL1(((char*)ptr)+5*64);
+	  prefetchL1(((char*)ptr)+6*64);
+	  prefetchL1(((char*)ptr)+7*64);*/
 	}
       }
 

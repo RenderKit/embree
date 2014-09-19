@@ -49,8 +49,6 @@
 
 namespace embree
 {
-#define BVH4HAIR_MB_VERSION 1 // FIXME: remove
-
 #define MODE_HIGH_QUALITY (1<<8)
 #define LIST_MODE_BITS 0xFF
 

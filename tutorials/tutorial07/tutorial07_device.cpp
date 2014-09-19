@@ -539,7 +539,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     shadow.tnear = tnear_eps;
     shadow.tfar = inf;
     shadow.time = g_debug;
-    Vec3fa T = one; //occluded(g_scene,shadow);
+    Vec3fa T = occluded(g_scene,shadow);
     Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(Vec3fa(g_dirlight_direction)));
     color = color + weight*c*T*Vec3fa(g_dirlight_intensity); // FIXME: use += operator
 
