@@ -40,6 +40,7 @@ namespace embree
     {
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray);
+      BVH4::UnalignedNodeMB::Precalculations pre1(ray);
 
       /*! stack state */
       StackItemInt32<NodeRef> stack[stackSize];            //!< stack of nodes 
@@ -99,7 +100,7 @@ namespace embree
 
           /*! process nodes with unaligned bounds and motion blur */
           else if (unlikely(cur.isUnalignedNodeMB(types)))
-            mask = cur.unalignedNodeMB()->intersect(org,dir,ray_near,ray_far,ray.time,tNear);
+            mask = cur.unalignedNodeMB()->intersect(pre1,org,dir,ray_near,ray_far,ray.time,tNear);
 
           /*! if no child is hit, pop next node */
 	  const BVH4::BaseNode* node = cur.baseNode(types);
@@ -168,6 +169,7 @@ namespace embree
     {
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray);
+      BVH4::UnalignedNodeMB::Precalculations pre1(ray);
 
       /*! stack state */
       NodeRef stack[stackSize];  //!< stack of nodes that still need to get traversed
@@ -222,7 +224,7 @@ namespace embree
 
           /*! process nodes with unaligned bounds and motion blur */
           else if (unlikely(cur.isUnalignedNodeMB(types)))
-            mask = cur.unalignedNodeMB()->intersect(org,dir,ray_near,ray_far,ray.time,tNear);
+            mask = cur.unalignedNodeMB()->intersect(pre1,org,dir,ray_near,ray_far,ray.time,tNear);
 	  
           /*! if no child is hit, pop next node */
 	  const BVH4::BaseNode* node = cur.baseNode(types);

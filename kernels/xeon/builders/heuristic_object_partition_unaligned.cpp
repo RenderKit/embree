@@ -149,23 +149,9 @@ namespace embree
         centBounds.extend(i->center(spaces.first));
 
         const BezierCurves* curves = scene->getBezierCurves(i->geomID<0>());
-#if BVH4HAIR_MB_VERSION == 0
-	s0t0.extend(curves->bounds(spaces.first,i->primID<0>(),0));
-        s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID<0>()));
-        s1t1.extend(curves->bounds(spaces.first,i->primID<0>(),1));
-#endif
-
-#if BVH4HAIR_MB_VERSION == 1
-        s0t0.extend(curves->bounds(spaces.first,i->primID<0>(),0));
-        s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID<0>()));
-	s1t1.extend(curves->bounds(spaces.second,i->primID<0>(),1));
-#endif
-
-#if BVH4HAIR_MB_VERSION == 2
 	s0t0.extend(curves->bounds(spaces.first,i->primID<0>(),0));
         s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,i->primID<0>()));
 	s1t1.extend(curves->bounds(spaces.second,i->primID<0>(),1));
-#endif
       }
 
       PrimInfoMB ret;
@@ -344,23 +330,9 @@ namespace embree
 
           const BezierPrim& ref = block->at(i);
           const BezierCurves* curves = scene->getBezierCurves(ref.geomID<0>());
-#if BVH4HAIR_MB_VERSION == 0
-          s0t0.extend(curves->bounds(space0,ref.primID<0>(),0));
-          s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID<0>()));
-          s1t1.extend(curves->bounds(space0,ref.primID<0>(),1));
-#endif
-
-#if BVH4HAIR_MB_VERSION == 1
           s0t0.extend(curves->bounds(space0,ref.primID<0>(),0));
           s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID<0>()));
 	  s1t1.extend(curves->bounds(space1,ref.primID<0>(),1));
-#endif
-
-#if BVH4HAIR_MB_VERSION == 2
-	  s0t0.extend(curves->bounds(space0,ref.primID<0>(),0));
-          s0t1_s1t0.extend(curves->bounds(space0,space1,ref.primID<0>()));
-	  s1t1.extend(curves->bounds(space1,ref.primID<0>(),1));
-#endif
 	}
       }
       atomic_add(&this->num,N);
