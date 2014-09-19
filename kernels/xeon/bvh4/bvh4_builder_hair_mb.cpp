@@ -337,15 +337,6 @@ namespace embree
 	  Vec3fa axis = normalize(spaces.first.l.row2()+spaces.second.l.row2());
 	  spaces.first = frame(axis).transposed();
 #endif
-	  ObjectPartitionUnaligned::PrimInfoMB pinfo1 = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scheduler,scene,cprims[i],spaces);
-
-          Vec3fa k0 = 0.5f*(pinfo1.s0t0.lower+pinfo1.s0t0.upper);
-          Vec3fa k1 = 0.5f*(pinfo1.s1t1.lower+pinfo1.s1t1.upper);
-	  Vec3fa d0(k0.x,k0.y,pinfo1.s0t0.lower.z);
-          Vec3fa d1(k1.x,k1.y,pinfo1.s1t1.lower.z);
-          spaces.first.p  -= d0; pinfo1.s0t0.lower -= d0; pinfo1.s0t0.upper -= d0;
-          spaces.second.p -= d1; pinfo1.s1t1.lower -= d1; pinfo1.s1t1.upper -= d1;
-
 	  ObjectPartitionUnaligned::PrimInfoMB pinfo = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scheduler,scene,cprims[i],spaces);
 	  
 #if BVH4HAIR_MB_VERSION == 0
