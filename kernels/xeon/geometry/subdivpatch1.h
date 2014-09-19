@@ -72,7 +72,7 @@ namespace embree
       const unsigned geomID = prim.geomID();
       const unsigned primID = prim.primID();
       const SubdivMesh* const mesh = scene->getSubdivMesh(geomID);
-      new (this) SubdivPatch1(NULL,&mesh->getPosition(0),geomID,primID,last); // FIXME: how to get edge from SubdivMesh?
+      new (this) SubdivPatch1(NULL,&mesh->getVertexPosition(0),geomID,primID,last); // FIXME: how to get edge from SubdivMesh?
     }
 
     /*! builder interface to fill primitive */
@@ -85,7 +85,7 @@ namespace embree
       const unsigned geomID = prim.geomID();
       const unsigned primID = prim.primID();
       const SubdivMesh* const mesh = scene->getSubdivMesh(geomID);
-      new (this) SubdivPatch1(NULL,&mesh->getPosition(0),geomID,primID,last); // FIXME: how to get edge from SubdivMesh?
+      new (this) SubdivPatch1(NULL,&mesh->getVertexPosition(0),geomID,primID,last); // FIXME: how to get edge from SubdivMesh?
     }
     
   public:

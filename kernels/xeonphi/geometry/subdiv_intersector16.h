@@ -19,62 +19,259 @@
 #include "subdivpatch1.h"
 #include "common/ray16.h"
 #include "geometry/filter.h"
+#include "triangle1mc_intersector1_moeller.h"
+#include "triangle1mc_intersector16_moeller.h"
 
 namespace embree
 {
 
   template< bool ENABLE_INTERSECTION_FILTER>
-  struct SubdivPatchIntersector
+  struct SubdivPatchIntersector16
   {
     typedef SubdivPatch1 Primitive;
 
 
 
-    static __forceinline bool intersect16(Ray16& ray, 
-					  const mic_f &dir_xyz,
-					  const mic_f &org_xyz,
-					  const size_t k, 
-					  const SubdivPatch1& patch)
-    {
-      STAT3(normal.trav_prims,1,1,1);
-
-      return true;
-    }
-
-    static __forceinline bool occluded16(const Ray16& ray, 
+    static __forceinline bool intersect1(const size_t rayIndex, 
 					 const mic_f &dir_xyz,
 					 const mic_f &org_xyz,
-					 const size_t k, 
-					 const SubdivPatch1& patch) 
-    {
-      STAT3(shadow.trav_prims,1,1,1);
-      return true;
-    }
-
-
-    // ==================================================================
-    // ==================================================================
-    // ==================================================================
-
-
-    static __forceinline bool intersect1(Ray& ray, 
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
+					 const mic_f &min_dist_xyz,
+					 mic_f &max_dist_xyz,
+					 const mic_i &and_mask,
+					 Ray16& ray16,
 					 const SubdivPatch1& patch)
     {
       STAT3(normal.trav_prims,1,1,1);
+      __aligned(64) Triangle1mc tptr[4];
 
-      return true;
+      std::cout << patch << std::endl;
+
+      Vec3fa *__restrict__ vtx0 = (Vec3fa *)&patch.getQuadVertex(0);
+      prefetch<PFHINT_L1>(vtx0); 
+      Vec3fa *__restrict__ vtx1 = (Vec3fa *)&patch.getQuadVertex(1);
+      prefetch<PFHINT_L1>(vtx1); 
+      Vec3fa *__restrict__ vtx2 = (Vec3fa *)&patch.getQuadVertex(2);
+      prefetch<PFHINT_L1>(vtx2); 
+      Vec3fa *__restrict__ vtx3 = (Vec3fa *)&patch.getQuadVertex(3);
+      prefetch<PFHINT_L1>(vtx3); 
+
+      tptr[0] = Triangle1mc(vtx0,vtx1,vtx2,patch.geomID,patch.primID);
+      tptr[1] = Triangle1mc(vtx2,vtx3,vtx0,patch.geomID,patch.primID);
+      tptr[2] = Triangle1mc(vtx0,vtx1,vtx2,patch.geomID,patch.primID);
+      tptr[3] = Triangle1mc(vtx2,vtx3,vtx0,patch.geomID,patch.primID);
+
+      const mic_f zero = mic_f::zero();
+
+
+      const mic_f v0 = gather_4f_zlc(and_mask,
+				     tptr[0].v0,
+				     tptr[1].v0,
+				     tptr[2].v0,
+				     tptr[3].v0);
+	      
+      const mic_f v1 = gather_4f_zlc(and_mask,
+				     tptr[0].v1,
+				     tptr[1].v1,
+				     tptr[2].v1,
+				     tptr[3].v1);
+	      
+      const mic_f v2 = gather_4f_zlc(and_mask,
+				     tptr[0].v2,
+				     tptr[1].v2,
+				     tptr[2].v2,
+				     tptr[3].v2);
+
+      const mic_f e1 = v1 - v0;
+      const mic_f e2 = v0 - v2;	     
+      const mic_f normal = lcross_zxy(e1,e2);
+      const mic_f org = v0 - org_xyz;
+      const mic_f odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+      const mic_f den = ldot3_zxy(dir_xyz,normal);	      
+      const mic_f rcp_den = rcp(den);
+      const mic_f uu = ldot3_zxy(e2,odzxy); 
+      const mic_f vv = ldot3_zxy(e1,odzxy); 
+      const mic_f u = uu * rcp_den;
+      const mic_f v = vv * rcp_den;
+
+#if defined(__BACKFACE_CULLING__)
+      const mic_m m_init = (mic_m)0x1111 & (den > zero);
+#else
+      const mic_m m_init = 0x1111;
+#endif
+
+      const mic_m valid_u = ge(m_init,u,zero);
+      const mic_m valid_v = ge(valid_u,v,zero);
+      const mic_m m_aperture = le(valid_v,u+v,mic_f::one()); 
+
+      const mic_f nom = ldot3_zxy(org,normal);
+
+      if (unlikely(none(m_aperture))) return false;
+      const mic_f t = rcp_den*nom;
+
+      mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
+
+      //////////////////////////////////////////////////////////////////////////////////////////////////
+
+      /* did the ray hit one of the four triangles? */
+      if (unlikely(any(m_final)))
+	{
+	  STAT3(normal.trav_prim_hits,1,1,1);
+	  max_dist_xyz  = select(m_final,t,max_dist_xyz);
+	  const mic_f min_dist = vreduce_min(max_dist_xyz);
+	  const mic_m m_dist = eq(min_dist,max_dist_xyz);
+	  const size_t vecIndex = bitscan(toInt(m_dist));
+	  const size_t triIndex = vecIndex >> 2;
+
+	  const Triangle1mc  *__restrict__ tri_ptr = tptr + triIndex;
+
+	  const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+
+                
+	  prefetch<PFHINT_L1EX>(&ray16.tfar);  
+	  prefetch<PFHINT_L1EX>(&ray16.u);
+	  prefetch<PFHINT_L1EX>(&ray16.v);
+	  prefetch<PFHINT_L1EX>(&ray16.Ng.x); 
+	  prefetch<PFHINT_L1EX>(&ray16.Ng.y); 
+	  prefetch<PFHINT_L1EX>(&ray16.Ng.z); 
+	  prefetch<PFHINT_L1EX>(&ray16.geomID);
+	  prefetch<PFHINT_L1EX>(&ray16.primID);
+
+	  max_dist_xyz = min_dist;
+
+	  const mic_f gnormalx(normal[triIndex*4+1]);
+	  const mic_f gnormaly(normal[triIndex*4+2]);
+	  const mic_f gnormalz(normal[triIndex*4+0]);
+		  
+	  compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
+	  compactustore16f_low(m_tri,&ray16.u[rayIndex],u); 
+	  compactustore16f_low(m_tri,&ray16.v[rayIndex],v); 
+	  compactustore16f_low(m_tri,&ray16.Ng.x[rayIndex],gnormalx); 
+	  compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
+	  compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
+
+	  ray16.geomID[rayIndex] = tri_ptr->geomID();
+	  ray16.primID[rayIndex] = tri_ptr->primID();
+	  return true;
+      
+	}
+      return false;
     }
 
-    static __forceinline bool occluded1(const Ray& ray, 
+    static __forceinline bool occluded1(const size_t rayIndex, 
 					const mic_f &dir_xyz,
 					const mic_f &org_xyz,
+					const mic_f &min_dist_xyz,
+					const mic_f &max_dist_xyz,
+					const mic_i &and_mask,
+					const Ray16& ray16, 
+					mic_m &m_terminated,
 					const SubdivPatch1& patch) 
     {
       STAT3(shadow.trav_prims,1,1,1);
-      return true;
-    }
 
+      __aligned(64) Triangle1mc tptr[4];
+
+      Vec3fa *__restrict__ vtx0 = (Vec3fa *)&patch.getQuadVertex(0);
+      prefetch<PFHINT_L1>(vtx0); 
+      Vec3fa *__restrict__ vtx1 = (Vec3fa *)&patch.getQuadVertex(1);
+      prefetch<PFHINT_L1>(vtx1); 
+      Vec3fa *__restrict__ vtx2 = (Vec3fa *)&patch.getQuadVertex(2);
+      prefetch<PFHINT_L1>(vtx2); 
+      Vec3fa *__restrict__ vtx3 = (Vec3fa *)&patch.getQuadVertex(3);
+      prefetch<PFHINT_L1>(vtx3); 
+
+      const mic_f zero = mic_f::zero();
+
+	      
+      const mic_f v0 = gather_4f_zlc(and_mask,
+				     tptr[0].v0,
+				     tptr[1].v0,
+				     tptr[2].v0,
+				     tptr[3].v0);
+	      
+      const mic_f v1 = gather_4f_zlc(and_mask,
+				     tptr[0].v1,
+				     tptr[1].v1,
+				     tptr[2].v1,
+				     tptr[3].v1);
+	      
+      const mic_f v2 = gather_4f_zlc(and_mask,
+				     tptr[0].v2,
+				     tptr[1].v2,
+				     tptr[2].v2,
+				     tptr[3].v2);
+
+      const mic_f e1 = v1 - v0;
+      const mic_f e2 = v0 - v2;	     
+      const mic_f normal = lcross_zxy(e1,e2);
+
+      const mic_f org = v0 - org_xyz;
+      const mic_f odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+      const mic_f den = ldot3_zxy(dir_xyz,normal);	      
+      const mic_f rcp_den = rcp(den);
+      const mic_f uu = ldot3_zxy(e2,odzxy); 
+      const mic_f vv = ldot3_zxy(e1,odzxy); 
+      const mic_f u = uu * rcp_den;
+      const mic_f v = vv * rcp_den;
+
+#if defined(__BACKFACE_CULLING__)
+      const mic_m m_init = (mic_m)0x1111 & (den > zero);
+#else
+      const mic_m m_init = 0x1111;
+#endif
+
+      const mic_m valid_u = ge((mic_m)m_init,u,zero);
+      const mic_m valid_v = ge(valid_u,v,zero);
+      const mic_m m_aperture = le(valid_v,u+v,mic_f::one()); 
+
+      const mic_f nom = ldot3_zxy(org,normal);
+      const mic_f t = rcp_den*nom;
+      if (unlikely(none(m_aperture))) return false;
+
+      mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
+
+      if (unlikely(any(m_final)))
+	{
+	  STAT3(shadow.trav_prim_hits,1,1,1);
+	  m_terminated |= mic_m::shift1[rayIndex];
+	  return true;
+	}
+      return false;
+    }
   };
+
+  template< bool ENABLE_INTERSECTION_FILTER>
+    struct SubdivPatchIntersector1
+    {
+      typedef SubdivPatch1 Primitive;
+
+      // ==================================================================
+      // ==================================================================
+      // ==================================================================
+
+
+      static __forceinline bool intersect1(const mic_f &dir_xyz,
+					   const mic_f &org_xyz,
+					   const mic_f &min_dist_xyz,
+					   mic_f &max_dist_xyz,
+					   Ray& ray, 
+					   const SubdivPatch1& patch)
+      {
+	STAT3(normal.trav_prims,1,1,1);
+
+	return true;
+      }
+
+      static __forceinline bool occluded1(const mic_f &dir_xyz,
+					  const mic_f &org_xyz,
+					  const mic_f &min_dist_xyz,
+					  const mic_f &max_dist_xyz,
+					  Ray& ray, 
+					  const SubdivPatch1& patch) 
+      {
+	STAT3(shadow.trav_prims,1,1,1);
+	return true;
+      }
+
+    };
 }

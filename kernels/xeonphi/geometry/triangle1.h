@@ -82,8 +82,13 @@ namespace embree
     Vec3fa *__restrict__ v0;
     Vec3fa *__restrict__ v1;
     Vec3fa *__restrict__ v2;
-    int geometryID;
-    int primitiveID;    
+    unsigned int geometryID;
+    unsigned int primitiveID;    
+
+    Triangle1mc() {}
+
+  Triangle1mc( Vec3fa *__restrict__ v0, Vec3fa *__restrict__ v1, Vec3fa *__restrict__ v2, unsigned int geometryID, unsigned int primitiveID ) :
+    v0(v0), v1(v1), v2(v2), geometryID(geometryID), primitiveID(primitiveID) {}
 
     __forceinline unsigned int primID() const { return primitiveID; }
     __forceinline unsigned int geomID() const { return geometryID; }

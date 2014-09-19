@@ -888,7 +888,7 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderSubdivMesh::build(const size_t threadIndex, const size_t threadCount)
   {
-    std::cout << "Initialize half-edge data structures..." << std::endl;
+    std::cout << "Initializing half-edge data structures..." << std::endl;
     for (size_t i=0;i<scene->size();i++)
       {
 	if (unlikely(scene->get(i) == NULL)) continue;
@@ -901,10 +901,24 @@ PRINT(CORRECT_numPrims);
     BVH4iBuilder::build(threadIndex,threadCount);
   }
 
-  size_t BVH4iBuilderSubdivMesh::getNumPrimitives()
+  void BVH4iBuilderSubdivMesh::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
     PING;
-    /* count total number of virtual objects */
+    size_t numPrimitivesOld = numPrimitives;
+    numPrimitives = totalNumPrimitives;
+    if (numPrimitivesOld != numPrimitives)
+      {
+	const size_t numPrims = numPrimitives+4;
+	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 
+	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
+	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(SubdivPatch1));
+      }
+  }
+
+
+  size_t BVH4iBuilderSubdivMesh::getNumPrimitives()
+  {
+    /* count total number of subdivision surface objects */
     size_t numFaces = 0;       
     for (size_t i=0;i<scene->size();i++)
       {
@@ -919,13 +933,11 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderSubdivMesh::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
-    PING;
     scene->lockstep_scheduler.dispatchTask( task_computePrimRefsSubdivMesh, this, threadIndex, threadCount );	
   }
 
   void BVH4iBuilderSubdivMesh::createAccel(const size_t threadIndex, const size_t threadCount)
   {
-    PING;
     scene->lockstep_scheduler.dispatchTask( task_createSubdivMeshAccel, this, threadIndex, threadCount );
   }
 
@@ -974,6 +986,7 @@ PRINT(CORRECT_numPrims);
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
 	  { 			    
 	    const BBox3fa bounds = subdiv_mesh->bounds(i);
+
 	    const mic_f bmin = broadcast4to16f(&bounds.lower); 
 	    const mic_f bmax = broadcast4to16f(&bounds.upper);
           
@@ -1021,9 +1034,10 @@ PRINT(CORRECT_numPrims);
     	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
     	assert(bptr->geomID() < scene->size() );
         SubdivMesh* subdiv_mesh = (SubdivMesh *) scene->get( bptr->geomID() );
-    	acc->subdiv_mesh = subdiv_mesh;
-        acc->primID = bptr->primID();
-        acc->geomID = bptr->geomID();
+    	*acc = SubdivPatch1(&subdiv_mesh->getHalfEdgeForQuad( bptr->primID() ),
+			    subdiv_mesh->getVertexPositionPtr(),
+			    bptr->geomID(),
+			    bptr->primID());
       }
   }
 
