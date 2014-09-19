@@ -112,8 +112,8 @@ namespace embree
     __forceinline BBox3fa bounds(size_t i) const 
     {
       BBox3fa b = empty;
-      for (size_t j=0;j<4;i++)
-	b.extend( vertices[0][halfEdges[i*4+j].vtx_index] );
+      for (size_t j=0;j<4;j++)
+	b.extend( getPosition(halfEdges[i*4+j].vtx_index) );
       return b;
     }
 
