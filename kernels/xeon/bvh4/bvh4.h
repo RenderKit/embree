@@ -37,7 +37,13 @@ namespace embree
     struct Node;
     struct NodeMB;
     struct UnalignedNode;
-    struct UnalignedNodeMB;
+    struct NodeSingleSpaceMB;
+    struct NodeDualSpaceMB;
+#if BVH4HAIR_MB_VERSION == 0
+    typedef NodeSingleSpaceMB UnalignedNodeMB;
+#else
+    typedef NodeDualSpaceMB UnalignedNodeMB;
+#endif
 
     /*! branching width of the tree */
     static const size_t N = 4;
@@ -757,8 +763,113 @@ namespace embree
       AffineSpaceSSE3f naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
 
-    /*! Motion blur node with unaligned bounds */
-    struct UnalignedNodeMB : public BaseNode
+    struct NodeSingleSpaceMB : public BaseNode
+    {
+      /*! Clears the node. */
+      __forceinline void clear() 
+      {
+        space0 = one;
+        b0.lower = b0.upper = Vec3fa(nan);
+        b1.lower = b1.upper = Vec3fa(nan);
+        BaseNode::clear();
+      }
+
+      /*! Sets spaces. */
+      __forceinline void set(size_t i, const AffineSpace3fa& s0) 
+      {
+        assert(i < N);
+
+        space0.l.vx.x[i] = s0.l.vx.x; space0.l.vx.y[i] = s0.l.vx.y; space0.l.vx.z[i] = s0.l.vx.z; 
+        space0.l.vy.x[i] = s0.l.vy.x; space0.l.vy.y[i] = s0.l.vy.y; space0.l.vy.z[i] = s0.l.vy.z;
+        space0.l.vz.x[i] = s0.l.vz.x; space0.l.vz.y[i] = s0.l.vz.y; space0.l.vz.z[i] = s0.l.vz.z; 
+        space0.p   .x[i] = s0.p   .x; space0.p   .y[i] = s0.p   .y; space0.p   .z[i] = s0.p   .z; 
+      }
+
+      /*! Sets bounding boxes. */
+      __forceinline void set(size_t i, const BBox3fa& a, const BBox3fa& c)
+      {
+        assert(i < N);
+
+        b0.lower.x[i] = a.lower.x; b0.lower.y[i] = a.lower.y; b0.lower.z[i] = a.lower.z;
+        b0.upper.x[i] = a.upper.x; b0.upper.y[i] = a.upper.y; b0.upper.z[i] = a.upper.z;
+
+        b1.lower.x[i] = c.lower.x; b1.lower.y[i] = c.lower.y; b1.lower.z[i] = c.lower.z;
+        b1.upper.x[i] = c.upper.x; b1.upper.y[i] = c.upper.y; b1.upper.z[i] = c.upper.z;
+      }
+
+      /*! Sets ID of child. */
+      __forceinline void set(size_t i, const NodeRef& childID) {
+        //Node::set(i,childID);
+	assert(i < N);
+	children[i] = childID;
+      }
+
+      /*! Returns bounds of specified child. */
+      __forceinline const BBox3fa bounds0(const size_t i) const { 
+        assert(i < N);
+        const Vec3fa lower(b0.lower.x[i],b0.lower.y[i],b0.lower.z[i]);
+        const Vec3fa upper(b0.upper.x[i],b0.upper.y[i],b0.upper.z[i]);
+        return BBox3fa(lower,upper);
+      }
+
+      /*! Returns the extend of the bounds of the ith child */
+      __forceinline Vec3fa extend0(size_t i) const {
+        assert(i < N);
+        return bounds0(i).size();
+      }
+
+      /*! intersect 4 OBBs with single ray */
+      __forceinline size_t intersect(const sse3f& ray_org, const sse3f& ray_dir, 
+				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist)
+      {
+	const ssef t0 = ssef(1.0f)-time, t1 = time;
+
+	const AffineSpaceSSE3f xfm = space0;
+	const sse3f lower = t0*b0.lower + t1*b1.lower;
+	const sse3f upper = t0*b0.upper + t1*b1.upper;
+	
+	const BBoxSSE3f bounds(lower,upper);
+	const sse3f dir = xfmVector(xfm,ray_dir);
+	const sse3f rdir = rcp_safe(dir); 
+	const sse3f org = xfmPoint(xfm,ray_org);
+	
+	const sse3f tLowerXYZ = (bounds.lower - org) * rdir;
+	const sse3f tUpperXYZ = (bounds.upper - org) * rdir;
+	
+#if defined(__SSE4_1__)
+	const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
+	const ssef tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
+	const ssef tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
+	const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
+	const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
+	const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
+	const ssef tNear  = max(tnear, tNearX,tNearY,tNearZ);
+	const ssef tFar   = min(tfar,  tFarX ,tFarY ,tFarZ );
+	const sseb vmask = tNear <= tFar;
+	dist = tNear;
+	return movemask(vmask);
+#else
+	const ssef tNearX = min(tLowerXYZ.x,tUpperXYZ.x);
+	const ssef tNearY = min(tLowerXYZ.y,tUpperXYZ.y);
+	const ssef tNearZ = min(tLowerXYZ.z,tUpperXYZ.z);
+	const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
+	const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
+	const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
+	const ssef tNear = max(tnear, tNearX,tNearY,tNearZ);
+	const ssef tFar  = min(tfar,  tFarX ,tFarY ,tFarZ );
+	const sseb vmask = tNear <= tFar;
+	dist = tNear;
+	return movemask(vmask);
+#endif
+      }
+
+    public:
+      AffineSpaceSSE3f space0;   
+      BBoxSSE3f b0;
+      BBoxSSE3f b1;
+    };
+
+    struct NodeDualSpaceMB : public BaseNode
     {
       /*! Clears the node. */
       __forceinline void clear() 
@@ -831,18 +942,7 @@ namespace embree
 				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist)
       {
 	const ssef t0 = ssef(1.0f)-time, t1 = time;
-#if BVH4HAIR_MB_VERSION == 0
-	const AffineSpaceSSE3f xfm = space0;
-	const sse3f lower = t0*t0s0.lower + t1*t1s1.lower;
-	const sse3f upper = t0*t0s0.upper + t1*t1s1.upper;
-	
-	const BBoxSSE3f bounds(lower,upper);
-	const sse3f dir = xfmVector(xfm,ray_dir);
-	const sse3f rdir = rcp_safe(dir); 
-	const sse3f org = xfmPoint(xfm,ray_org);
-#endif
 
-#if BVH4HAIR_MB_VERSION == 1
 	const AffineSpaceSSE3f xfm = t0*space0 + t1*space1;
 	const sse3f lower = t0*t0*t0s0.lower + t0*t1*t1s0_t0s1.lower + t1*t1*t1s1.lower;
 	const sse3f upper = t0*t0*t0s0.upper + t0*t1*t1s0_t0s1.upper + t1*t1*t1s1.upper;
@@ -851,19 +951,6 @@ namespace embree
 	const sse3f dir = xfmVector(xfm,ray_dir);
 	const sse3f rdir = rcp_safe(dir); 
 	const sse3f org = xfmPoint(xfm,ray_org);
-#endif	
-
-#if BVH4HAIR_MB_VERSION == 2
-
-	const AffineSpaceSSE3f xfm(frame(normalize(t0*space0.l.row2() + t1*space1.l.row2())).transposed(), t0*space0.p+t1*space1.p);
-	const sse3f lower = t0*t0s0.lower + t1*t1s1.lower;
-	const sse3f upper = t0*t0s0.upper + t1*t1s1.upper;
-
-	const BBoxSSE3f bounds(lower,upper);
-	const sse3f dir = xfmVector(xfm,ray_dir);
-	const sse3f rdir = rcp_safe(dir); 
-	const sse3f org = xfmPoint(xfm.l,ray_org-xfm.p);
-#endif
 	
 	const sse3f tLowerXYZ = (bounds.lower - org) * rdir;
 	const sse3f tUpperXYZ = (bounds.upper - org) * rdir;
@@ -895,55 +982,13 @@ namespace embree
 #endif
       }
 
-      struct Precalculations 
-      {
-	__forceinline Precalculations (const Ray& ray)
-	  : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
-	
-	float depth_scale;
-	LinearSpace3fa ray_space;
-      };
-
-       /*! intersect 4 OBBs with single ray */
-      __forceinline size_t intersectCone(Precalculations& pre, 
-					  const sse3f& ray_org, const sse3f& ray_dir, 
-					  const ssef& tnear, const ssef& tfar, const float time, ssef& dist)
-      {
-	const ssef t0 = ssef(1.0f)-time, t1 = time;
-	
-	const sse3f v0t0 = space0.l.vx, v1t0 = space0.l.vy;
-	const sse3f v0t1 = space1.l.vx, v1t1 = space1.l.vy;
-	const ssef  rt0 = space0.l.vz.x;
-	const ssef  rt1 = space1.l.vz.x;
-	const sse3f v0 = t0*v0t0 + t1*v0t1;
-	const sse3f v1 = t0*v1t0 + t1*v1t1;
-	const ssef  r  = t0*rt0 + t1*rt1;
-		
-	const sse3f p0 = xfmVector(LinearSpaceSSE3f(pre.ray_space),v0-ray_org); 
-	const sse3f p1 = xfmVector(LinearSpaceSSE3f(pre.ray_space),v1-ray_org);
-	const sse3f v = p1-p0;
-	const sse3f w = -p0;
-	const ssef d0 = w.x*v.x + w.y*v.y;
-	const ssef d1 = v.x*v.x + v.y*v.y;
-	const ssef u = clamp(d0*rcp(d1),ssef(zero),ssef(one));
-	const sse3f p = p0 + u*v;
-	//const ssef t = p.z*pre.depth_scale;
-	const ssef d2 = p.x*p.x + p.y*p.y; 
-	//const ssef r = p.w;
-	const ssef r2 = r*r;
-	sseb valid = d2 <= r2; // & avxf(ray.tnear) < t & t < avxf(ray.tfar);*/
-
-	dist = 0.0f;
-	return movemask(valid);
-      }
-
     public:
       AffineSpaceSSE3f space0;   
       AffineSpaceSSE3f space1;   
       BBoxSSE3f t0s0;
       BBoxSSE3f t1s0_t0s1;
       BBoxSSE3f t1s1;
-    };
+    };  
 
     /*! swap the children of two nodes */
     __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)

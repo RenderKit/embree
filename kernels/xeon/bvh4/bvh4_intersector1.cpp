@@ -40,7 +40,6 @@ namespace embree
     {
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray);
-      BVH4::UnalignedNodeMB::Precalculations pre1(ray); // FIXME: remove
 
       /*! stack state */
       StackItemInt32<NodeRef> stack[stackSize];            //!< stack of nodes 

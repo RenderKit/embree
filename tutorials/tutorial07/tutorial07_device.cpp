@@ -661,6 +661,7 @@ extern "C" void device_render (int* pixels,
 
   /* reset accumulator */
   bool camera_changed = g_changed; g_changed = false;
+  g_changed = true;
   camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx; // FIXME: use != operator
   camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator

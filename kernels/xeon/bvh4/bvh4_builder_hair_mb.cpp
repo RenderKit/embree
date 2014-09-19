@@ -332,12 +332,6 @@ namespace embree
 	for (size_t i=0; i<numChildren; i++) 
         {
           std::pair<AffineSpace3fa,AffineSpace3fa> spaces = ObjectPartitionUnaligned::computeAlignedSpaceMB(threadIndex,threadCount,scheduler,scene,cprims[i]); 
-/*#if BVH4HAIR_MB_VERSION == 0
-	  //AffineSpace3fa space01 = 0.5f*(spaces.first+spaces.second); spaces.first = spaces.second = space01;
-	  Vec3fa dir = 0.5f*(spaces.first.l.row2() + spaces.second.l.row2());
-	  spaces.first = spaces.second = frame(dir).transposed();
-	  #endif*/
-
 	  ObjectPartitionUnaligned::PrimInfoMB pinfo1 = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scheduler,scene,cprims[i],spaces);
 
           Vec3fa k0 = 0.5f*(pinfo1.s0t0.lower+pinfo1.s0t0.upper);
@@ -349,37 +343,13 @@ namespace embree
 
 	  ObjectPartitionUnaligned::PrimInfoMB pinfo = ObjectPartitionUnaligned::computePrimInfoMB<Parallel>(threadIndex,threadCount,scheduler,scene,cprims[i],spaces);
 	  
-#if BVH4HAIR_MB_VERSION == 2
-          Vec3fa a0 = xfmVector(spaces.first.l.transposed(),-spaces.first.p);
-          Vec3fa a1 = xfmVector(spaces.second.l.transposed(),-spaces.second.p);
-
-	  Vec3fa b0 = xfmVector(spaces.first .l.transposed(),Vec3fa(0.0f,0.0f,pinfo1.s0t0.upper.z)-spaces.first .p);
-          Vec3fa b1 = xfmVector(spaces.second.l.transposed(),Vec3fa(0.0f,0.0f,pinfo1.s1t1.upper.z)-spaces.second.p);
-
-          spaces.first.p = a0;
-          spaces.second.p = a1;
-
-	  /*spaces.first.l.vx = a0;
-	  spaces.first.l.vy = b0;
-
-	  spaces.second.l.vx = a1;
-	  spaces.second.l.vy = b1;*/
-
-	  float r0 = max(abs(pinfo.s0t0.lower.x),abs(pinfo.s0t0.lower.y),abs(pinfo.s0t0.upper.x),abs(pinfo.s0t0.upper.y));
-          pinfo.s0t0.lower.x = pinfo.s0t0.lower.y = -r0;
-          pinfo.s0t0.upper.x = pinfo.s0t0.upper.y = +r0;
-
-          float r1 = max(abs(pinfo.s1t1.lower.x),abs(pinfo.s1t1.lower.y),abs(pinfo.s1t1.upper.x),abs(pinfo.s1t1.upper.y));
-          pinfo.s1t1.lower.x = pinfo.s1t1.lower.y = -r1;
-          pinfo.s1t1.upper.x = pinfo.s1t1.upper.y = +r1;
-
-	  /*spaces.first.l.vz.x = r0;
-	    spaces.second.l.vz.x = r1;*/
-
-#endif
-
-          node->set(i,spaces.first,spaces.second);
+#if BVH4HAIR_MB_VERSION == 0
+          node->set(i,spaces.first);
+          node->set(i,pinfo.s0t0,pinfo.s1t1);
+#else
+	  node->set(i,spaces.first,spaces.second);
           node->set(i,pinfo.s0t0,pinfo.s0t1_s1t0,pinfo.s1t1);
+#endif
 	  new (&task_o[i]) BuildTask(&node->child(i),task.depth+1,cprims[i],cpinfo[i],cbounds[i],csinfo[i],csplit[i]);
 	}
 	numTasks_o = numChildren;
