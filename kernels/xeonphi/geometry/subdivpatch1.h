@@ -51,4 +51,12 @@ namespace embree
     unsigned int geomID;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int primID;                          //!< primitive ID of this subdivision patch
   };
+
+  __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1 &p)
+    {
+      o << "first_half_edge " << p.first_half_edge << " vertices " << p.vertices << " flags " << p.flags << " geomID " << p.geomID << " primID " << p.primID;
+
+      return o;
+    } 
+
 }

@@ -424,9 +424,11 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-	return SubdivPatchIntersector<ENABLE_INTERSECTION_FILTER>::intersect1(ray,
-									      dir_xyz,
+	return SubdivPatchIntersector1<ENABLE_INTERSECTION_FILTER>::intersect1(dir_xyz,
 									      org_xyz,
+									      min_dist_xyz,
+									      max_dist_xyz,
+									      ray,
 									      *patch_ptr);	
       }
 
@@ -442,10 +444,12 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-	return SubdivPatchIntersector<ENABLE_INTERSECTION_FILTER>::occluded1(ray,
-									     dir_xyz,
-									     org_xyz,
-									     *patch_ptr);	
+	return SubdivPatchIntersector1<ENABLE_INTERSECTION_FILTER>::occluded1(dir_xyz,
+									      org_xyz,
+									      min_dist_xyz,
+									      max_dist_xyz,
+									      ray,
+									      *patch_ptr);	
       }
 
       // ============================================
@@ -464,11 +468,16 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-	return SubdivPatchIntersector<ENABLE_INTERSECTION_FILTER>::intersect16(ray16,
-									       dir_xyz,
-									       org_xyz,
-									       rayIndex,
-									       *patch_ptr);	
+	const mic_i and_mask = broadcast4to16i(zlc4);
+
+	return SubdivPatchIntersector16<ENABLE_INTERSECTION_FILTER>::intersect1(rayIndex,
+									      dir_xyz,
+									      org_xyz,
+									      min_dist_xyz,
+									      max_dist_xyz,
+									      and_mask,
+									      ray16,
+									      *patch_ptr);	
       }
 
 
@@ -486,11 +495,17 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-	return SubdivPatchIntersector<ENABLE_INTERSECTION_FILTER>::occluded16(ray16,
-									      dir_xyz,
-									      org_xyz,
-									      rayIndex,
-									      *patch_ptr);	
+	const mic_i and_mask = broadcast4to16i(zlc4);
+
+	return SubdivPatchIntersector16<ENABLE_INTERSECTION_FILTER>::occluded1(rayIndex,
+									     dir_xyz,
+									     org_xyz,
+									     min_dist_xyz,
+									     max_dist_xyz,
+									     and_mask,
+									     ray16,
+									     m_terminated,
+									     *patch_ptr);	
       }
 
     };
