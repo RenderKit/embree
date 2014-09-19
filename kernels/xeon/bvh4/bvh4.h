@@ -39,10 +39,13 @@ namespace embree
     struct UnalignedNode;
     struct NodeSingleSpaceMB;
     struct NodeDualSpaceMB;
+    struct NodeConeMB;
 #if BVH4HAIR_MB_VERSION == 0
     typedef NodeSingleSpaceMB UnalignedNodeMB;
-#else
+#elif BVH4HAIR_MB_VERSION == 1
     typedef NodeDualSpaceMB UnalignedNodeMB;
+#elif BVH4HAIR_MB_VERSION == 2
+    typedef NodeConeMB UnalignedNodeMB;
 #endif
 
     /*! branching width of the tree */
@@ -765,36 +768,41 @@ namespace embree
 
     struct NodeSingleSpaceMB : public BaseNode
     {
+      struct Precalculations {
+	__forceinline Precalculations (const Ray& ray) {}
+      };
+
       /*! Clears the node. */
       __forceinline void clear() 
       {
         space0 = one;
-        b0.lower = b0.upper = Vec3fa(nan);
+        //b0.lower = b0.upper = Vec3fa(nan);
         b1.lower = b1.upper = Vec3fa(nan);
         BaseNode::clear();
       }
 
-      /*! Sets spaces. */
-      __forceinline void set(size_t i, const AffineSpace3fa& s0) 
+      /*! Sets space and bounding boxes. */
+      __forceinline void set(size_t i, const AffineSpace3fa& s0, const BBox3fa& a, const BBox3fa& c)
       {
         assert(i < N);
 
-        space0.l.vx.x[i] = s0.l.vx.x; space0.l.vx.y[i] = s0.l.vx.y; space0.l.vx.z[i] = s0.l.vx.z; 
-        space0.l.vy.x[i] = s0.l.vy.x; space0.l.vy.y[i] = s0.l.vy.y; space0.l.vy.z[i] = s0.l.vy.z;
-        space0.l.vz.x[i] = s0.l.vz.x; space0.l.vz.y[i] = s0.l.vz.y; space0.l.vz.z[i] = s0.l.vz.z; 
-        space0.p   .x[i] = s0.p   .x; space0.p   .y[i] = s0.p   .y; space0.p   .z[i] = s0.p   .z; 
-      }
+	AffineSpace3fa space = s0;
+        space.p -= a.lower;
+	Vec3fa scale = 1.0f/max(Vec3fa(1E-19),a.upper-a.lower);
+        space = AffineSpace3fa::scale(scale)*space;
+	BBox3fa a1((a.lower-a.lower)*scale,(a.upper-a.lower)*scale);
+	BBox3fa c1((c.lower-a.lower)*scale,(c.upper-a.lower)*scale);
 
-      /*! Sets bounding boxes. */
-      __forceinline void set(size_t i, const BBox3fa& a, const BBox3fa& c)
-      {
-        assert(i < N);
+        space0.l.vx.x[i] = space.l.vx.x; space0.l.vx.y[i] = space.l.vx.y; space0.l.vx.z[i] = space.l.vx.z; 
+        space0.l.vy.x[i] = space.l.vy.x; space0.l.vy.y[i] = space.l.vy.y; space0.l.vy.z[i] = space.l.vy.z;
+        space0.l.vz.x[i] = space.l.vz.x; space0.l.vz.y[i] = space.l.vz.y; space0.l.vz.z[i] = space.l.vz.z; 
+        space0.p   .x[i] = space.p   .x; space0.p   .y[i] = space.p   .y; space0.p   .z[i] = space.p   .z; 
 
-        b0.lower.x[i] = a.lower.x; b0.lower.y[i] = a.lower.y; b0.lower.z[i] = a.lower.z;
-        b0.upper.x[i] = a.upper.x; b0.upper.y[i] = a.upper.y; b0.upper.z[i] = a.upper.z;
+        /*b0.lower.x[i] = a1.lower.x; b0.lower.y[i] = a1.lower.y; b0.lower.z[i] = a1.lower.z;
+	  b0.upper.x[i] = a1.upper.x; b0.upper.y[i] = a1.upper.y; b0.upper.z[i] = a1.upper.z;*/
 
-        b1.lower.x[i] = c.lower.x; b1.lower.y[i] = c.lower.y; b1.lower.z[i] = c.lower.z;
-        b1.upper.x[i] = c.upper.x; b1.upper.y[i] = c.upper.y; b1.upper.z[i] = c.upper.z;
+        b1.lower.x[i] = c1.lower.x; b1.lower.y[i] = c1.lower.y; b1.lower.z[i] = c1.lower.z;
+        b1.upper.x[i] = c1.upper.x; b1.upper.y[i] = c1.upper.y; b1.upper.z[i] = c1.upper.z;
       }
 
       /*! Sets ID of child. */
@@ -807,26 +815,31 @@ namespace embree
       /*! Returns bounds of specified child. */
       __forceinline const BBox3fa bounds0(const size_t i) const { 
         assert(i < N);
-        const Vec3fa lower(b0.lower.x[i],b0.lower.y[i],b0.lower.z[i]);
+        /*const Vec3fa lower(b0.lower.x[i],b0.lower.y[i],b0.lower.z[i]);
         const Vec3fa upper(b0.upper.x[i],b0.upper.y[i],b0.upper.z[i]);
-        return BBox3fa(lower,upper);
+        return BBox3fa(lower,upper);*/
+	return empty; // FIXME: not yet implemented
       }
 
       /*! Returns the extend of the bounds of the ith child */
       __forceinline Vec3fa extend0(size_t i) const {
         assert(i < N);
-        return bounds0(i).size();
+        //return bounds0(i).size();
+	return zero; // FIXME: no yet implemented
       }
 
       /*! intersect 4 OBBs with single ray */
-      __forceinline size_t intersect(const sse3f& ray_org, const sse3f& ray_dir, 
+      __forceinline size_t intersect(const Precalculations& pre,
+				     const sse3f& ray_org, const sse3f& ray_dir, 
 				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist)
       {
 	const ssef t0 = ssef(1.0f)-time, t1 = time;
 
 	const AffineSpaceSSE3f xfm = space0;
-	const sse3f lower = t0*b0.lower + t1*b1.lower;
-	const sse3f upper = t0*b0.upper + t1*b1.upper;
+	const sse3f b0_lower = zero;
+	const sse3f b0_upper = one;
+	const sse3f lower = t0*b0_lower + t1*b1.lower;
+	const sse3f upper = t0*b0_upper + t1*b1.upper;
 	
 	const BBoxSSE3f bounds(lower,upper);
 	const sse3f dir = xfmVector(xfm,ray_dir);
@@ -863,14 +876,21 @@ namespace embree
 #endif
       }
 
+      __forceinline size_t intersect(const sse3f& ray_org, const sse3f& ray_dir, 
+				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist) { return 0; }
+
     public:
       AffineSpaceSSE3f space0;   
-      BBoxSSE3f b0;
+      //BBoxSSE3f b0;
       BBoxSSE3f b1;
     };
 
     struct NodeDualSpaceMB : public BaseNode
     {
+      struct Precalculations {
+	__forceinline Precalculations (const Ray& ray) {}
+      };
+
       /*! Clears the node. */
       __forceinline void clear() 
       {
@@ -948,7 +968,8 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
       /*! intersect 4 OBBs with single ray */
-      __forceinline size_t intersect(const sse3f& ray_org, const sse3f& ray_dir, 
+      __forceinline size_t intersect(const Precalculations& pre,
+				     const sse3f& ray_org, const sse3f& ray_dir, 
 				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist)
       {
 	const ssef t0 = ssef(1.0f)-time, t1 = time;
@@ -996,12 +1017,111 @@ namespace embree
 #endif
       }
 
+      __forceinline size_t intersect(const sse3f& ray_org, const sse3f& ray_dir, 
+				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist) { return 0; }
+
     public:
       AffineSpaceSSE3f space0;   
       AffineSpaceSSE3f space1;   
       //BBoxSSE3f t0s0;
       BBoxSSE3f t1s0_t0s1;
       //BBoxSSE3f t1s1;
+    };  
+
+    
+    struct NodeConeMB : public BaseNode
+    {
+      struct Precalculations 
+      {
+	__forceinline Precalculations (const Ray& ray)
+	  : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
+	
+	float depth_scale;
+	LinearSpace3fa ray_space;
+      };
+
+      /*! Clears the node. */
+      __forceinline void clear() 
+      {
+	v0t0 = v0t1 = ssef(nan);
+	v1t0 = v1t1 = ssef(nan);
+	rt0 =  rt1 = float(nan);
+        BaseNode::clear();
+      }
+
+      /*! Sets bounding boxes. */
+      __forceinline void set(size_t i, const Vec3fa& v0t0, const Vec3fa& v0t1, const Vec3fa& v1t0, const Vec3fa& v1t1, const float rt0, const float rt1)
+      {
+        assert(i < N);
+	this->v0t0.x[i] = v0t0.x; this->v0t0.y[i] = v0t0.y; this->v0t0.z[i] = v0t0.z;
+	this->v0t1.x[i] = v0t1.x; this->v0t1.y[i] = v0t1.y; this->v0t1.z[i] = v0t1.z;
+	this->v1t0.x[i] = v1t0.x; this->v1t0.y[i] = v1t0.y; this->v1t0.z[i] = v1t0.z;
+	this->v1t1.x[i] = v1t1.x; this->v1t1.y[i] = v1t1.y; this->v1t1.z[i] = v1t1.z;
+	this->rt0[i] = rt0;
+	this->rt1[i] = rt1;
+      }
+
+      /*! Sets ID of child. */
+      __forceinline void set(size_t i, const NodeRef& childID) {
+        //Node::set(i,childID);
+	assert(i < N);
+	children[i] = childID;
+      }
+
+      /*! Returns bounds of specified child. */
+      __forceinline const BBox3fa bounds0(const size_t i) const { 
+        assert(i < N);
+        /*const Vec3fa lower(t0s0.lower.x[i],t0s0.lower.y[i],t0s0.lower.z[i]);
+        const Vec3fa upper(t0s0.upper.x[i],t0s0.upper.y[i],t0s0.upper.z[i]);
+        return BBox3fa(lower,upper);*/
+	return empty; // FIXME: not implemented yet
+      }
+
+      /*! Returns the extend of the bounds of the ith child */
+      __forceinline Vec3fa extend0(size_t i) const {
+        assert(i < N);
+        //return bounds0(i).size(); // FIXME: not implemented yet
+	return zero;
+      }
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+      __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
+
+      /*! intersect 4 OBBs with single ray */
+      __forceinline size_t intersect(const Precalculations& pre, 
+				     const sse3f& ray_org, const sse3f& ray_dir, 
+				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist)
+      {
+	const ssef t0 = ssef(1.0f)-time, t1 = time;
+	const sse3f v0 = t0*v0t0 + t1*v0t1;
+	const sse3f v1 = t0*v1t0 + t1*v1t1;
+	const ssef  r  = t0*rt0 + t1*rt1;
+	const sse3f p0 = xfmVector(LinearSpaceSSE3f(pre.ray_space),v0-ray_org); 
+	const sse3f p1 = xfmVector(LinearSpaceSSE3f(pre.ray_space),v1-ray_org);
+	const sse3f v = p1-p0;
+	const sse3f w = -p0;
+	const ssef d0 = w.x*v.x + w.y*v.y;
+	const ssef d1 = v.x*v.x + v.y*v.y;
+	const ssef u = clamp(d0*rcp(d1),ssef(zero),ssef(one));
+	const sse3f p = p0 + u*v;
+	//const ssef t = p.z*pre.depth_scale;
+	const ssef d2 = p.x*p.x + p.y*p.y; 
+	//const ssef r = p.w;
+	const ssef r2 = r*r;
+	sseb valid = d2 <= r2; // & avxf(ray.tnear) < t & t < avxf(ray.tfar);*/
+
+	dist = 0.0f;
+	return movemask(valid);
+      }
+
+      __forceinline size_t intersect(const sse3f& ray_org, const sse3f& ray_dir, 
+				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist) { return 0; }
+
+    public:
+      sse3f v0t0, v0t1;
+      sse3f v1t0, v1t1;
+      ssef rt0, rt1;
     };  
 
     /*! swap the children of two nodes */
