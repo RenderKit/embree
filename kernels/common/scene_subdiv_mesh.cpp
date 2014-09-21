@@ -184,7 +184,7 @@ namespace embree
 
     for (size_t i=0;i<numHalfEdges;i++)
       {
-        unsigned int start = halfEdges[i].getStartVertexIndex(halfEdges);
+        unsigned int start = halfEdges[i].getStartVertexIndex();
         unsigned int end   = halfEdges[i].getEndVertexIndex(halfEdges);
         if (end < start) std::swap(start,end);
         size_t value = ((size_t)start << 32) | (size_t)end;

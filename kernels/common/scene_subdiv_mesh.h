@@ -69,7 +69,11 @@ namespace embree
         return &halfEdges[opposite_index]; 
       };
 
-      unsigned int getStartVertexIndex(HalfEdge *halfEdges) const { 
+      HalfEdge *half_circle(HalfEdge *halfEdges) const { 
+        return prev( halfEdges )->opposite( halfEdges)->prev( halfEdges )->opposite( halfEdges );
+      };
+
+      unsigned int getStartVertexIndex() const { 
         return vtx_index; 
       };
       
@@ -85,7 +89,7 @@ namespace embree
         return next(halfEdges)->vtx_index;
       };
       
-      HalfEdge *base() const {
+      HalfEdge *base() const { // requires linear and dense layout !
 	return (HalfEdge *)this - (start_halfedge_id + local_halfedge_id);
       };
     };
