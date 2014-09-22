@@ -320,7 +320,7 @@ namespace embree
     }
 
     /* verify geometry in debug mode  */
-#if defined(DEBUG)
+    /*#if defined(DEBUG)
     for (size_t i=0; i<geometries.size(); i++) {
       if (geometries[i]) {
         if (!geometries[i]->verify()) {
@@ -329,7 +329,7 @@ namespace embree
         }
       }
     }
-#endif
+    #endif*/ // FIXME: enable
 
     /* select fast code path if no intersection filter is present */
     accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);

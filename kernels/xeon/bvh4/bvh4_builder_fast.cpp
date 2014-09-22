@@ -540,7 +540,7 @@ namespace embree
 
       /* create initial build record */
       BuildRecord br;
-      br.init(pinfo,0,numPrimitives);
+      br.init(pinfo,0,pinfo.size());
       br.depth = 1;
       br.parent = &bvh->root;
 
@@ -570,7 +570,7 @@ namespace embree
 
       /* create initial build record */
       BuildRecord br;
-      br.init(pinfo,0,numPrimitives);
+      br.init(pinfo,0,pinfo.size());
       br.depth = 1;
       br.parent = &bvh->root;
       

@@ -78,7 +78,7 @@ namespace embree
         std::cout << "building BVH4<" << bvh->primTy.name << "> with toplevel SAH builder ... " << std::flush;
         t0 = getSeconds();
       }
-      
+
       /* open all large nodes */
       open_sequential();
 
@@ -134,7 +134,8 @@ namespace embree
       }
       
       /* create build primitive */
-      refs[nextRef++] = BuildRef(object->bounds,object->root);
+      if (!object->bounds.empty())
+	refs[nextRef++] = BuildRef(object->bounds,object->root);
     }
     
     void BVH4BuilderTopLevel::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount)

@@ -197,8 +197,11 @@ namespace embree
 
       if (mesh) 
       {
-        for (size_t i=0; i<mesh->numTriangles; i++)	 
-          bounds.extend(mesh->bounds(i));
+        for (size_t i=0; i<mesh->numTriangles; i++) {
+	  const BBox3fa b = mesh->bounds(i);
+	  if (!inFloatRange(b)) continue;
+          bounds.extend(b);
+	}
       }
       else
       {
@@ -208,8 +211,11 @@ namespace embree
           if (!geom || geom->type != TRIANGLE_MESH) continue;
           TriangleMesh* mesh = (TriangleMesh*) geom;
           if (mesh->numTimeSteps != 1) continue;
-          for (size_t i=0; i<mesh->numTriangles; i++)	 
-            bounds.extend(mesh->bounds(i));
+          for (size_t i=0; i<mesh->numTriangles; i++) {
+	    const BBox3fa b = mesh->bounds(i);
+	    if (!inFloatRange(b)) continue;
+	    bounds.extend(b);
+	  }
         }
       }
       return bounds;

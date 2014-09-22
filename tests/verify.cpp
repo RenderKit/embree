@@ -2239,9 +2239,17 @@ namespace embree
       for (size_t j=0; j<20; j++) 
       {
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
+#if !defined(__MIC__)
+	switch (rand()%16) {
+	case 0: pos = Vec3fa(nan); break;
+	case 1: pos = Vec3fa(inf); break;
+	case 2: pos = Vec3fa(1E30f); break;
+	default: break;
+	};
+#endif
         size_t numPhi = rand()%100;
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
-        numTriangles = rand()%(numTriangles+1);
+	numTriangles = rand()%(numTriangles+1);
         switch (rand()%5) {
         case 0: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
         case 1: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
@@ -2293,6 +2301,14 @@ namespace embree
       {
         int index = rand()%1024;
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
+#if !defined(__MIC__)
+	switch (rand()%16) {
+	case 0: pos = Vec3fa(nan); break;
+	case 1: pos = Vec3fa(inf); break;
+	case 2: pos = Vec3fa(1E30f); break;
+	default: break;
+	};
+#endif
         if (geom[index] == -1) 
         {
           int type = rand()%3;
