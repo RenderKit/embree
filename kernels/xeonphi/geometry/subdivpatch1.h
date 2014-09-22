@@ -23,6 +23,8 @@
 namespace embree
 {
 
+  #define MAX_VALENCE 16
+
   struct __aligned(64) FinalQuad
   {
     Vec3fa vtx[4];
@@ -31,11 +33,43 @@ namespace embree
     unsigned int primID;
   };
 
+  struct __aligned(64) CatmullClark1Ring
+  {
+    Vec3fa vtx;
+    Vec3fa ring[MAX_VALENCE];
+    unsigned int valence;
+
+    CatmullClark1Ring() {}
+    
+    __forceinline void init(const SubdivMesh::HalfEdge *const h,
+			    const Vec3fa *const vertices)
+    {
+      size_t i=0;
+      vtx = vertices[ h->getStartVertexIndex() ];
+      SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
+      do {
+	p = p->opposite();
+	ring[i++] = vertices[ p->getStartVertexIndex() ];
+	ring[i++] = vertices[ p->prev()->getStartVertexIndex() ];
+	/*! continue with next adjacent edge. */
+	p = p->next();
+      } while( p != h);
+      valence = i;
+    }
+  };
+
   class RegularCatmullClarkPatch : public RegularCatmullClarkPatchT<Vec3fa> 
   {
   public:
     
   };
+
+  class __aligned(64) IrregularCatmullClarkPatch
+  {
+  public:
+    CatmullClark1Ring ring[4];
+  };
+
 
 
   struct SubdivPatch1
@@ -61,6 +95,12 @@ namespace embree
       return vertices[h->vtx_index];
     }
 
+    __forceinline void init( IrregularCatmullClarkPatch& patch, const unsigned int i ) const
+    {
+      for (size_t i=0;i<4;i++)
+	patch.ring[0].init(first_half_edge + i,vertices);
+    }
+
     __forceinline void init( FinalQuad& quad ) const
     {
       quad.vtx[0] = getQuadVertex(0);
@@ -71,7 +111,8 @@ namespace embree
       // uv[1] = 
       quad.geomID = geomID;
       quad.primID = primID;
-    }
+    };
+
     __forceinline void init( RegularCatmullClarkPatch& cc_patch) const
     {
       DBG_PRINT( first_half_edge->halfedge_id );
