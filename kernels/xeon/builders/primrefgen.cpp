@@ -203,7 +203,7 @@ namespace embree
     }
 
     PrimRefArrayGen::PrimRefArrayGen(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Scene* scene, GeometryTy ty, size_t numTimeSteps, PrimRef* prims_o, PrimInfo& pinfo_o, bool parallel)
-      : scene(scene), ty(ty), numTimeSteps(numTimeSteps), numPrimitives(0), prims_o(prims_o), pinfo_o(pinfo_o)
+      : dst(NULL), scene(scene), ty(ty), numTimeSteps(numTimeSteps), numPrimitives(0), prims_o(prims_o), pinfo_o(pinfo_o)
     {
       /*! calculate number of primitives */
       if ((ty & TRIANGLE_MESH) && (numTimeSteps & 1)) numPrimitives += scene->numTriangles;
@@ -214,17 +214,50 @@ namespace embree
       if ((ty & BEZIER_CURVES) && (numTimeSteps & 2)) numPrimitives += scene->numBezierCurves2;
       if ((ty & USER_GEOMETRY)                      ) numPrimitives += scene->numUserGeometries1;
 
-      /*! generate primref array */
-      pinfo_o.reset();
-      if (parallel) scheduler->dispatchTask(task_task_gen_parallel, this, threadIndex, threadCount);
-      else          task_gen_parallel(0,1);
-      assert(pinfo_o.size() == numPrimitives);
+      /*! parallel generation of primref array */
+      if (parallel) 
+      {
+	/* calculate initial destination for each thread */
+	dst = new size_t[threadCount];
+	for (size_t i=0; i<threadCount; i++)
+	  dst[i] = i*numPrimitives/threadCount;
+
+	/* first try to generate primref array */
+	pinfo_o.reset();
+	scheduler->dispatchTask(task_task_gen_parallel, this, threadIndex, threadCount);
+	assert(pinfo_o.size() < numPrimitives);
+
+	/* calculate new destinations */
+	size_t cnt = 0;
+	for (size_t i=0; i<threadCount; i++) {
+	  size_t n = dst[i]; dst[i] = cnt; cnt += n;
+	}
+
+	/* if primitive got filtered out, run again */
+	if (cnt < numPrimitives) 
+	{
+	  pinfo_o.reset();
+	  scheduler->dispatchTask(task_task_gen_parallel, this, threadIndex, threadCount);
+	  assert(pinfo_o.size() == cnt);
+	}
+
+	delete[] dst; dst = NULL;
+      }
+
+      /*! sequential generation of primref array */
+      else 
+      {
+	pinfo_o.reset();
+	task_gen_parallel(0,1);
+	assert(pinfo_o.size() < numPrimitives);
+      }
     }
 
     void PrimRefArrayGen::task_gen_parallel(size_t taskIndex, size_t taskCount)
     {
       ssize_t start = (taskIndex+0)*numPrimitives/taskCount;
       ssize_t end   = (taskIndex+1)*numPrimitives/taskCount;
+      ssize_t dest   = dst ? dst[taskIndex] : start;
       ssize_t cur   = 0;
       
       PrimInfo pinfo(empty);
@@ -243,9 +276,11 @@ namespace embree
 	    ssize_t s = max(start-cur,ssize_t(0));
 	    ssize_t e = min(end  -cur,ssize_t(mesh->numTriangles));
 	    for (ssize_t j=s; j<e; j++) {
-	      const PrimRef prim(mesh->bounds(j),i,j);
+	      std::pair<BBox3fa,bool> bounds = mesh->validBounds(j);
+	      if (!bounds.second) continue;
+	      const PrimRef prim(bounds.first,i,j);
 	      pinfo.add(prim.bounds(),prim.center2());
-	      prims_o[cur+j] = prim;
+	      prims_o[dest++] = prim;
 	    }
 	    cur += mesh->numTriangles;
 	  }
@@ -261,7 +296,7 @@ namespace embree
 	    for (ssize_t j=s; j<e; j++) {
 	      const PrimRef prim(mesh->bounds(j),i,j);
 	      pinfo.add(prim.bounds(),prim.center2());
-	      prims_o[cur+j] = prim;
+	      prims_o[dest++] = prim;
 	    }
 	    cur += mesh->size();
 	  }
@@ -277,7 +312,7 @@ namespace embree
 	    for (ssize_t j=s; j<e; j++) {
 	      const PrimRef prim(set->bounds(j),i,j);
 	      pinfo.add(prim.bounds(),prim.center2());		
-	      prims_o[cur+j] = prim;
+	      prims_o[dest++] = prim;
 	    }
 	    cur += set->numCurves;
 	  }
@@ -292,7 +327,7 @@ namespace embree
 	  for (ssize_t j=s; j<e; j++) {
 	    const PrimRef prim(set->bounds(j),i,j);
 	    pinfo.add(prim.bounds(),prim.center2());
-	    prims_o[cur+j] = prim;
+	    prims_o[dest++] = prim;
 	  }
 	  cur += set->numItems;
 	  break;
@@ -301,6 +336,7 @@ namespace embree
 	if (cur >= end) break;  
       }
       pinfo_o.atomic_extend(pinfo);
+      if (dst) dst[taskIndex] = dest - dst[taskIndex];
     }
 
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */

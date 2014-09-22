@@ -85,6 +85,19 @@ namespace embree
       const Vec3fa& v2 = vertex(tri.v[2]);
       return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
     }
+
+    /*! checks if the i'th triangle is valid and calculates its bounds */
+    __forceinline std::pair<BBox3fa,bool> validBounds(size_t i) const 
+    {
+      const Triangle& tri = triangle(i);
+      const Vec3fa& v0 = vertex(tri.v[0]);
+      const Vec3fa& v1 = vertex(tri.v[1]);
+      const Vec3fa& v2 = vertex(tri.v[2]);
+      if (inFloatRange(v0) && inFloatRange(v1) && inFloatRange(v2))      
+	return std::pair<BBox3fa,bool>(BBox3fa(min(v0,v1,v2),max(v0,v1,v2)),true);
+      else
+	return std::pair<BBox3fa,bool>(empty,false);
+    }
     
 #if defined(__MIC__)
 

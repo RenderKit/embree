@@ -49,6 +49,13 @@
 
 namespace embree
 {
+  /* we consider floating point numbers in that range as valid input numbers */
+#define VALID_FLOAT_RANGE  1.844E18f
+
+  __forceinline bool inFloatRange(const Vec3fa& v) {
+    return all(gt_mask(v,Vec3fa_t(-VALID_FLOAT_RANGE)) & lt_mask(v,Vec3fa_t(+VALID_FLOAT_RANGE)));
+  };
+
 #define MODE_HIGH_QUALITY (1<<8)
 #define LIST_MODE_BITS 0xFF
 

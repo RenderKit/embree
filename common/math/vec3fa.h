@@ -278,4 +278,6 @@ namespace embree
   inline std::ostream& operator<<(std::ostream& cout, const Vec3fa& a) {
     return cout << "(" << a.x << ", " << a.y << ", " << a.z << ")";
   }
+  
+  typedef Vec3fa Vec3fa_t;
 }

@@ -97,6 +97,17 @@ namespace embree
   }
 
   ////////////////////////////////////////////////////////////////////////////////
+  /// Reduction Operations
+  ////////////////////////////////////////////////////////////////////////////////
+    
+  __forceinline bool reduce_and( const Vec3ba& a ) { return (a.v & 0x7) == 0x7; }
+  __forceinline bool reduce_or ( const Vec3ba& a ) { return (a.v & 0x7) != 0x0; }
+  
+  __forceinline int all(const Vec3ba& a)  { return (a.v & 0x7) == 0x7; }
+  __forceinline int any(const Vec3ba& a)  { return (a.v & 0x7) != 0x0; }
+  __forceinline int none(const Vec3ba& a) { return (a.v & 0x7) == 0x0; }
+
+  ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 

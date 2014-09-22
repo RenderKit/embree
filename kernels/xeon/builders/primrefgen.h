@@ -95,6 +95,7 @@ namespace embree
       
       /* input data */
     private:
+      size_t* dst;
       const Scene* scene;           //!< input geometry
       GeometryTy ty;                //!< types of geometry to generate
       size_t numTimeSteps;          //!< number of timesteps to generate
