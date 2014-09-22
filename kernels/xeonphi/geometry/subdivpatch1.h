@@ -36,8 +36,9 @@ namespace embree
   struct __aligned(64) CatmullClark1Ring
   {
     Vec3fa vtx;
-    Vec3fa ring[MAX_VALENCE];
+    Vec3fa ring[2*MAX_VALENCE]; // two vertices per face
     unsigned int valence;
+    unsigned int num_vtx;
 
     CatmullClark1Ring() {}
     
@@ -46,16 +47,57 @@ namespace embree
     {
       size_t i=0;
       vtx = vertices[ h->getStartVertexIndex() ];
+      DBG_PRINT( h->getStartVertexIndex() );
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
       do {
 	p = p->opposite();
 	ring[i++] = vertices[ p->getStartVertexIndex() ];
 	ring[i++] = vertices[ p->prev()->getStartVertexIndex() ];
+
+	DBG_PRINT( p->getStartVertexIndex() );
+	DBG_PRINT( p->prev()->getStartVertexIndex() );
+
 	/*! continue with next adjacent edge. */
 	p = p->next();
       } while( p != h);
-      valence = i;
+      num_vtx = i;
+      valence = i >> 1;
+      // copy first vertex to last position
+      ring[num_vtx] = ring[0];
+      assert( i+1 < MAX_VALENCE );
     }
+
+    __forceinline void CatmullClarkSubdivision(CatmullClark1Ring &dest)
+    {
+      dest.valence = valence;
+      dest.num_vtx = num_vtx;
+      Vec3fa avg_faces(0.0f,0.0f,0.0f);
+      // new face vtx
+      for (size_t i=0;i<valence;i++)
+	{
+	  const Vec3fa new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
+	  dest.ring[2*i + 1] = new_face;
+	  avg_faces += new_face;
+	}
+      // new edge vertices
+      Vec3fa avg_edges(0.0f,0.0f,0.0f);
+      for (size_t i=1;i<valence;i++)
+	{
+	  const Vec3fa new_edge = (vtx + ring[2*i] + dest.ring[2*i-1] + dest.ring[2*i+1]) * 0.25f;
+	  dest.ring[2*i + 0] = new_edge;
+	  avg_edges += new_edge;
+	}
+      dest.ring[0] = (vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
+      dest.ring[num_vtx] = dest.ring[0]; // copy to last position
+      avg_edges += dest.ring[0];
+      // new vtx
+      const float inv_valence = 1.0f / valence;
+      avg_faces *= inv_valence;
+      avg_edges *= inv_valence;
+
+      dest.vtx = (vtx + 2.0f * avg_edges + (float)(valence-3)*vtx) * inv_valence;
+    }
+
   };
 
   class RegularCatmullClarkPatch : public RegularCatmullClarkPatchT<Vec3fa> 
@@ -95,7 +137,7 @@ namespace embree
       return vertices[h->vtx_index];
     }
 
-    __forceinline void init( IrregularCatmullClarkPatch& patch, const unsigned int i ) const
+    __forceinline void init( IrregularCatmullClarkPatch& patch) const
     {
       for (size_t i=0;i<4;i++)
 	patch.ring[0].init(first_half_edge + i,vertices);

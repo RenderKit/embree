@@ -47,6 +47,12 @@ namespace embree
 
       patch.init( quad );
 
+#if 1
+      IrregularCatmullClarkPatch irreg_patch;
+      patch.init( irreg_patch );
+      exit(0);
+#endif
+
       const mic_f v0 = gather_4f_zlc(and_mask,
 				     &quad.vtx[0],
 				     &quad.vtx[0],
