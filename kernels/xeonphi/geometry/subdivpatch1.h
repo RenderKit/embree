@@ -67,7 +67,8 @@ namespace embree
       assert( i+1 < MAX_VALENCE );
     }
 
-    __forceinline void CatmullClarkSubdivision(CatmullClark1Ring &dest)
+
+    __forceinline void update(CatmullClark1Ring &dest) const
     {
       dest.valence = valence;
       dest.num_vtx = num_vtx;
@@ -110,6 +111,51 @@ namespace embree
   {
   public:
     CatmullClark1Ring ring[4];
+
+    __forceinline void init_regular(const CatmullClark1Ring &p0,
+				    const CatmullClark1Ring &p1,
+				    CatmullClark1Ring &dest0,
+				    CatmullClark1Ring &dest1) const
+    {
+      dest0.valence = 4;
+      dest0.num_vtx = 8;
+      dest0.vtx     = p0.vtx;
+      dest1.valence = 4;
+      dest1.num_vtx = 8;
+      dest1.vtx     = p1.vtx;
+
+      // 1-ring for patch0
+      dest0.ring[ 0] = p0.ring[p0.num_vtx-1];
+      dest0.ring[ 1] = p1.ring[0];
+      dest0.ring[ 2] = p1.vtx;
+      dest0.ring[ 3] = p1.ring[p1.num_vtx-4];
+      dest0.ring[ 4] = p0.ring[1];
+      dest0.ring[ 5] = p0.ring[2];
+      dest0.ring[ 6] = p0.vtx;
+      dest0.ring[ 7] = p0.ring[p0.num_vtx-2];
+      // 1-ring for patch1
+      dest1.ring[ 0] = p1.vtx;
+      dest1.ring[ 1] = p1.ring[p1.num_vtx-4];
+      dest1.ring[ 2] = p0.ring[1];
+      dest1.ring[ 3] = p0.ring[2];
+      dest1.ring[ 4] = p0.vtx;
+      dest1.ring[ 5] = p0.ring[p0.num_vtx-2];
+      dest1.ring[ 6] = p0.ring[p0.num_vtx-1];
+      dest1.ring[ 7] = p1.ring[0];
+    }
+
+    __forceinline void subdivide(IrregularCatmullClarkPatch patch[4]) const
+    {
+      ring[0].update(patch[0].ring[0]);
+      ring[1].update(patch[1].ring[1]);
+      ring[2].update(patch[2].ring[2]);
+      ring[3].update(patch[3].ring[3]);
+
+      __aligned(64) Vec3fa center = (ring[0].vtx + ring[1].vtx + ring[2].vtx + ring[3].vtx) * 0.25f;
+      __aligned(64) Vec3fa center_ring[8];
+      FATAL("HERE");
+
+    }
   };
 
 
