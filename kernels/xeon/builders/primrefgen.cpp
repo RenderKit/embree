@@ -276,9 +276,8 @@ namespace embree
 	    ssize_t s = max(start-cur,ssize_t(0));
 	    ssize_t e = min(end  -cur,ssize_t(mesh->numTriangles));
 	    for (ssize_t j=s; j<e; j++) {
-	      std::pair<BBox3fa,bool> bounds = mesh->validBounds(j);
-	      if (!bounds.second) continue;
-	      const PrimRef prim(bounds.first,i,j);
+	      if (!mesh->valid(j)) continue;
+	      const PrimRef prim(mesh->bounds(j),i,j);
 	      pinfo.add(prim.bounds(),prim.center2());
 	      prims_o[dest++] = prim;
 	    }
@@ -294,6 +293,7 @@ namespace embree
 	    ssize_t s = max(start-cur,ssize_t(0));
 	    ssize_t e = min(end  -cur,ssize_t(mesh->size()));
 	    for (ssize_t j=s; j<e; j++) {
+	      if (!mesh->valid(j)) continue;
 	      const PrimRef prim(mesh->bounds(j),i,j);
 	      pinfo.add(prim.bounds(),prim.center2());
 	      prims_o[dest++] = prim;
@@ -310,6 +310,7 @@ namespace embree
 	    ssize_t s = max(start-cur,ssize_t(0));
 	    ssize_t e = min(end  -cur,ssize_t(set->numCurves));
 	    for (ssize_t j=s; j<e; j++) {
+	      if (!set->valid(j)) continue;
 	      const PrimRef prim(set->bounds(j),i,j);
 	      pinfo.add(prim.bounds(),prim.center2());		
 	      prims_o[dest++] = prim;
@@ -326,6 +327,7 @@ namespace embree
 	  ssize_t e = min(end  -cur,ssize_t(set->numItems));
 	  for (ssize_t j=s; j<e; j++) {
 	    const PrimRef prim(set->bounds(j),i,j);
+	    if (!inFloatRange(prim.bounds())) continue;
 	    pinfo.add(prim.bounds(),prim.center2());
 	    prims_o[dest++] = prim;
 	  }

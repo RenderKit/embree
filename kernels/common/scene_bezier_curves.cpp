@@ -143,17 +143,16 @@ namespace embree
 
   bool BezierCurves::verify () 
   {
-    float range = sqrtf(0.5f*FLT_MAX);
     for (size_t i=0; i<numCurves; i++) {
       if (curves[i]+3 >= numVertices) return false;
     }
     for (size_t j=0; j<numTimeSteps; j++) {
       BufferT<Vertex>& verts = vertices[j];
       for (size_t i=0; i<numVertices; i++) {
-        if (!(verts[i].x > -range && verts[i].x < range)) return false;
-	if (!(verts[i].y > -range && verts[i].y < range)) return false;
-	if (!(verts[i].z > -range && verts[i].z < range)) return false;
-	if (!(verts[i].r > -range && verts[i].r < range)) return false;
+        if (!inFloatRange(verts[i].x)) return false;
+	if (!inFloatRange(verts[i].y)) return false;
+	if (!inFloatRange(verts[i].z)) return false;
+	if (!inFloatRange(verts[i].r)) return false;
       }
     }
     return true;

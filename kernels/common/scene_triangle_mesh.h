@@ -75,7 +75,25 @@ namespace embree
     __forceinline size_t getVertexBufferStride() const {
       return vertices[0].getBufferStride();
     }
-    
+
+    /*! check if the i'th primitive is valid */
+    __forceinline bool valid(size_t i) const 
+    {
+      const Triangle& tri = triangle(i);
+      if (tri.v[0] >= numVertices) return false;
+      if (tri.v[1] >= numVertices) return false;
+      if (tri.v[2] >= numVertices) return false;
+
+      for (size_t j=0; j<numTimeSteps; j++) {
+	const Vec3fa& v0 = vertex(tri.v[0],j);
+	const Vec3fa& v1 = vertex(tri.v[1],j);
+	const Vec3fa& v2 = vertex(tri.v[2],j);
+	if (!inFloatRange(v0) || !inFloatRange(v1) || !inFloatRange(v2))
+	  return false;
+      }
+      return true;
+    }
+
     /*! calculates the bounds of the i'th triangle */
     __forceinline BBox3fa bounds(size_t i) const 
     {
@@ -86,19 +104,6 @@ namespace embree
       return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
     }
 
-    /*! checks if the i'th triangle is valid and calculates its bounds */
-    __forceinline std::pair<BBox3fa,bool> validBounds(size_t i) const 
-    {
-      const Triangle& tri = triangle(i);
-      const Vec3fa& v0 = vertex(tri.v[0]);
-      const Vec3fa& v1 = vertex(tri.v[1]);
-      const Vec3fa& v2 = vertex(tri.v[2]);
-      if (inFloatRange(v0) && inFloatRange(v1) && inFloatRange(v2))      
-	return std::pair<BBox3fa,bool>(BBox3fa(min(v0,v1,v2),max(v0,v1,v2)),true);
-      else
-	return std::pair<BBox3fa,bool>(empty,false);
-    }
-    
 #if defined(__MIC__)
 
 

@@ -82,6 +82,31 @@ namespace embree
 	return (unsigned int)logf(r0);
       }
 
+      /*! check if the i'th primitive is valid */
+      __forceinline bool valid(size_t i) const 
+      {
+	const int index = curve(i);
+	if (index+3 >= numVertices) return false;
+
+	for (size_t j=0; j<numTimeSteps; j++) 
+	{
+	  const float r0 = radius(index+0,j);
+	  const float r1 = radius(index+1,j);
+	  const float r2 = radius(index+2,j);
+	  const float r3 = radius(index+3,j);
+	  if (!inFloatRange(r0) || !inFloatRange(r1) || !inFloatRange(r2) || !inFloatRange(r3))
+	    return false;
+
+	  const Vec3fa& v0 = vertex(index+0,j);
+	  const Vec3fa& v1 = vertex(index+1,j);
+	  const Vec3fa& v2 = vertex(index+2,j);
+	  const Vec3fa& v3 = vertex(index+3,j);
+	  if (!inFloatRange(v0) || !inFloatRange(v1) || !inFloatRange(v2) || !inFloatRange(v3))
+	    return false;
+	}
+	return true;
+      }
+
       /*! calculates bounding box of i'th bezier curve */
       __forceinline BBox3fa bounds(size_t i, size_t j = 0) const 
       {

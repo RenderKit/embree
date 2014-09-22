@@ -32,7 +32,7 @@ namespace embree
     __forceinline size_t size() const {
       return numItems;
     }
-    
+
     void enabling ();
     void disabling();
   };

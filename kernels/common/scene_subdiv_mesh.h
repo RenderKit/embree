@@ -168,6 +168,11 @@ namespace embree
       return b;
     }
 
+    /*! check if the i'th primitive is valid */
+    __forceinline bool valid(size_t i) const {
+      return true; // FIXME: implement
+    }
+
   };
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivMesh::HalfEdge &h)
