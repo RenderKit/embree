@@ -23,6 +23,14 @@
 namespace embree
 {
 
+  struct __aligned(64) FinalQuad
+  {
+    Vec3fa vtx[4];
+    Vec2f uv[2];
+    unsigned int geomID;
+    unsigned int primID;
+  };
+
   class RegularCatmullClarkPatch : public RegularCatmullClarkPatchT<Vec3fa> 
   {
   public:
@@ -53,8 +61,25 @@ namespace embree
       return vertices[h->vtx_index];
     }
 
-    __forceinline void init( RegularCatmullClarkPatch& cc_patch)
+    __forceinline void init( FinalQuad& quad ) const
     {
+      quad.vtx[0] = getQuadVertex(0);
+      quad.vtx[1] = getQuadVertex(1);
+      quad.vtx[2] = getQuadVertex(2);
+      quad.vtx[3] = getQuadVertex(3);
+      // uv[0] = 
+      // uv[1] = 
+      quad.geomID = geomID;
+      quad.primID = primID;
+    }
+    __forceinline void init( RegularCatmullClarkPatch& cc_patch) const
+    {
+      DBG_PRINT( first_half_edge->halfedge_id );
+      DBG_PRINT( first_half_edge->next()->halfedge_id );
+      DBG_PRINT( first_half_edge->next()->next()->halfedge_id );
+      DBG_PRINT( first_half_edge->next()->next()->next()->halfedge_id );
+      exit(0);
+
       // quad(0,0)
       const SubdivMesh::HalfEdge *e11 = first_half_edge->half_circle();
       const SubdivMesh::HalfEdge *e10 = e11->next();
