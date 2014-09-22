@@ -92,8 +92,8 @@ namespace embree
       avg_edges += dest.ring[0];
       // new vtx
       const float inv_valence = 1.0f / valence;
-      avg_faces *= inv_valence;
-      avg_edges *= inv_valence;
+      /* avg_faces *= inv_valence; */
+      /* avg_edges *= inv_valence; */
 
       dest.vtx = (vtx + 2.0f * avg_edges + (float)(valence-3)*vtx) * inv_valence;
     }
