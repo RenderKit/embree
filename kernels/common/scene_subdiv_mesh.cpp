@@ -172,10 +172,9 @@ namespace embree
         const unsigned int halfEdgeIndex = vertexOffsets[i];
         for (size_t j=0;j<4;j++)
           {
-            halfEdges[i*4+j].vtx_index         = vertexIndices[halfEdgeIndex + j];
-            halfEdges[i*4+j].start_halfedge_id = i*4;
-            halfEdges[i*4+j].local_halfedge_id = j;
-            halfEdges[i*4+j].opposite_index    = (unsigned int)-1;
+            halfEdges[i*4+j].vtx_index      = vertexIndices[halfEdgeIndex + j];
+            halfEdges[i*4+j].halfedge_id    = i*4+j;
+            halfEdges[i*4+j].opposite_index = (unsigned int)-1;
           }
       }
 
@@ -185,7 +184,7 @@ namespace embree
     for (size_t i=0;i<numHalfEdges;i++)
       {
         unsigned int start = halfEdges[i].getStartVertexIndex();
-        unsigned int end   = halfEdges[i].getEndVertexIndex(halfEdges);
+        unsigned int end   = halfEdges[i].getEndVertexIndex();
         if (end < start) std::swap(start,end);
         size_t value = ((size_t)start << 32) | (size_t)end;
         std::map<size_t,unsigned int>::iterator found = edgeMap.find(value);
