@@ -48,7 +48,7 @@ namespace embree
       else
 	scheduler->dispatchTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::trirefgen");
 
-      assert(pinfo_o.size() == numPrimitives);
+      assert(pinfo_o.size() <= numPrimitives);
     }
     
     void PrimRefListGen::task_gen_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
@@ -74,7 +74,9 @@ namespace embree
 	    ssize_t s = max(start-cur,ssize_t(0));
 	    ssize_t e = min(end  -cur,ssize_t(mesh->numTriangles));
 	    for (ssize_t j=s; j<e; j++) {
-	      const PrimRef prim(mesh->bounds(j),i,j);
+	      BBox3fa bounds = empty;
+	      if (!mesh->valid(j,&bounds)) continue;
+	      const PrimRef prim(bounds,i,j);
 	      pinfo.add(prim.bounds(),prim.center2());
 	      if (likely(block->insert(prim))) continue; 
 	      block = prims_o.insert(alloc->malloc(threadIndex));
@@ -92,7 +94,9 @@ namespace embree
 	    ssize_t s = max(start-cur,ssize_t(0));
 	    ssize_t e = min(end  -cur,ssize_t(mesh->size()));
 	    for (ssize_t j=s; j<e; j++) {
-	      const PrimRef prim(mesh->bounds(j),i,j);
+	      BBox3fa bounds = empty;
+	      if (!mesh->valid(j,&bounds)) continue;
+	      const PrimRef prim(bounds,i,j);
 	      pinfo.add(prim.bounds(),prim.center2());
 	      if (likely(block->insert(prim))) continue; 
 	      block = prims_o.insert(alloc->malloc(threadIndex));
@@ -110,7 +114,9 @@ namespace embree
 	    ssize_t s = max(start-cur,ssize_t(0));
 	    ssize_t e = min(end  -cur,ssize_t(set->numCurves));
 	    for (ssize_t j=s; j<e; j++) {
-	      const PrimRef prim(set->bounds(j),i,j);
+	      BBox3fa bounds = empty;
+	      if (!set->valid(j,&bounds)) continue;
+	      const PrimRef prim(bounds,i,j);
 	      pinfo.add(prim.bounds(),prim.center2());
 	      if (likely(block->insert(prim))) continue; 
 	      block = prims_o.insert(alloc->malloc(threadIndex));
@@ -127,7 +133,9 @@ namespace embree
 	  ssize_t s = max(start-cur,ssize_t(0));
 	  ssize_t e = min(end  -cur,ssize_t(set->numItems));
 	  for (ssize_t j=s; j<e; j++) {
-	    const PrimRef prim(set->bounds(j),i,j);
+	    BBox3fa bounds = empty;
+	    if (!set->valid(j,&bounds)) continue;
+	    const PrimRef prim(bounds,i,j);
 	    pinfo.add(prim.bounds(),prim.center2());
 	    if (likely(block->insert(prim))) continue; 
 	    block = prims_o.insert(alloc->malloc(threadIndex));
@@ -161,7 +169,7 @@ namespace embree
       else
 	scheduler->dispatchTask(threadIndex,threadCount,_task_gen_parallel,this,threadCount,"build::primrefgen");
       
-      assert(pinfo_o.size() == geom->size());
+      assert(pinfo_o.size() <= geom->size());
     }
     
     template<typename Ty>
@@ -176,7 +184,9 @@ namespace embree
       
       for (ssize_t j=start; j<end; j++) 
       {
-	const PrimRef prim(geom->bounds(j),geom->id,j);
+	BBox3fa bounds = empty;
+	if (!geom->valid(j,&bounds)) continue;
+	const PrimRef prim(bounds,geom->id,j);
 	pinfo.add(prim.bounds(),prim.center2());
 	if (likely(block->insert(prim))) continue; 
 	block = prims_o.insert(alloc->malloc(threadIndex));
@@ -225,7 +235,7 @@ namespace embree
 	/* first try to generate primref array */
 	pinfo_o.reset();
 	scheduler->dispatchTask(task_task_gen_parallel, this, threadIndex, threadCount);
-	assert(pinfo_o.size() < numPrimitives);
+	assert(pinfo_o.size() <= numPrimitives);
 
 	/* calculate new destinations */
 	size_t cnt = 0;
@@ -249,7 +259,7 @@ namespace embree
       {
 	pinfo_o.reset();
 	task_gen_parallel(0,1);
-	assert(pinfo_o.size() < numPrimitives);
+	assert(pinfo_o.size() <= numPrimitives);
       }
     }
 
@@ -276,8 +286,9 @@ namespace embree
 	    ssize_t s = max(start-cur,ssize_t(0));
 	    ssize_t e = min(end  -cur,ssize_t(mesh->numTriangles));
 	    for (ssize_t j=s; j<e; j++) {
-	      if (!mesh->valid(j)) continue;
-	      const PrimRef prim(mesh->bounds(j),i,j);
+	      BBox3fa bounds = empty;
+	      if (!mesh->valid(j,&bounds)) continue;
+	      const PrimRef prim(bounds,i,j);
 	      pinfo.add(prim.bounds(),prim.center2());
 	      prims_o[dest++] = prim;
 	    }
@@ -293,8 +304,9 @@ namespace embree
 	    ssize_t s = max(start-cur,ssize_t(0));
 	    ssize_t e = min(end  -cur,ssize_t(mesh->size()));
 	    for (ssize_t j=s; j<e; j++) {
-	      if (!mesh->valid(j)) continue;
-	      const PrimRef prim(mesh->bounds(j),i,j);
+	      BBox3fa bounds = empty;
+	      if (!mesh->valid(j,&bounds)) continue;
+	      const PrimRef prim(bounds,i,j);
 	      pinfo.add(prim.bounds(),prim.center2());
 	      prims_o[dest++] = prim;
 	    }
@@ -310,8 +322,9 @@ namespace embree
 	    ssize_t s = max(start-cur,ssize_t(0));
 	    ssize_t e = min(end  -cur,ssize_t(set->numCurves));
 	    for (ssize_t j=s; j<e; j++) {
-	      if (!set->valid(j)) continue;
-	      const PrimRef prim(set->bounds(j),i,j);
+	      BBox3fa bounds = empty;
+	      if (!set->valid(j,&bounds)) continue;
+	      const PrimRef prim(bounds,i,j);
 	      pinfo.add(prim.bounds(),prim.center2());		
 	      prims_o[dest++] = prim;
 	    }
@@ -326,7 +339,9 @@ namespace embree
 	  ssize_t s = max(start-cur,ssize_t(0));
 	  ssize_t e = min(end  -cur,ssize_t(set->numItems));
 	  for (ssize_t j=s; j<e; j++) {
-	    const PrimRef prim(set->bounds(j),i,j);
+	    BBox3fa bounds = empty;
+	    if (!set->valid(j,&bounds)) continue;
+	    const PrimRef prim(bounds,i,j);
 	    if (!inFloatRange(prim.bounds())) continue;
 	    pinfo.add(prim.bounds(),prim.center2());
 	    prims_o[dest++] = prim;
@@ -351,36 +366,64 @@ namespace embree
       pinfo_o.reset();
       PrimRefArrayGenFromGeometry gen(geom,prims_o,pinfo_o);
       gen.task_gen_parallel(0,1);
-      assert(pinfo_o.size() == geom->size());
+      assert(pinfo_o.size() <= geom->size());
     }
     
     template<typename Ty>
       void PrimRefArrayGenFromGeometry<Ty>::generate_parallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Ty* geom, PrimRef* prims_o, PrimInfo& pinfo_o) 
     {
-      pinfo_o.reset();
       PrimRefArrayGenFromGeometry gen(geom,prims_o,pinfo_o);
+
+      /* calculate initial destination for each thread */
+      size_t numPrimitives = geom->size();
+      gen.dst = new size_t[threadCount];
+      for (size_t i=0; i<threadCount; i++)
+	gen.dst[i] = i*numPrimitives/threadCount;
+      
+      /* first try to generate primref array */
+      pinfo_o.reset();
       scheduler->dispatchTask(task_task_gen_parallel, &gen, threadIndex, threadCount);
-      assert(pinfo_o.size() == geom->size());
+      assert(pinfo_o.size() <= numPrimitives);
+      
+      /* calculate new destinations */
+      size_t cnt = 0;
+      for (size_t i=0; i<threadCount; i++) {
+	size_t n = gen.dst[i]; gen.dst[i] = cnt; cnt += n;
+      }
+      
+      /* if primitive got filtered out, run again */
+      if (cnt < numPrimitives) 
+      {
+	pinfo_o.reset();
+	scheduler->dispatchTask(task_task_gen_parallel, &gen, threadIndex, threadCount);
+	assert(pinfo_o.size() == cnt);
+      }
+      
+      delete[] gen.dst; gen.dst = NULL;
     }
 
     template<typename Ty>
       PrimRefArrayGenFromGeometry<Ty>::PrimRefArrayGenFromGeometry(const Ty* geom, PrimRef* prims_o, PrimInfo& pinfo_o)
-      : geom(geom), prims_o(prims_o), pinfo_o(pinfo_o) {}
+	: geom(geom), prims_o(prims_o), pinfo_o(pinfo_o), dst(NULL) {}
 
     template<typename Ty>
       void PrimRefArrayGenFromGeometry<Ty>::task_gen_parallel(size_t taskIndex, size_t taskCount)
     {
       ssize_t start = (taskIndex+0)*geom->size()/taskCount;
       ssize_t end   = (taskIndex+1)*geom->size()/taskCount;
+      ssize_t dest  = dst ? dst[taskIndex] : start;
       ssize_t cur   = 0;
       
       PrimInfo pinfo(empty);
       for (ssize_t j=start; j<end; j++) {
-	const PrimRef prim(geom->bounds(j),geom->id,j);
+	BBox3fa bounds = empty;
+	if (!geom->valid(j,&bounds)) continue;
+	const PrimRef prim(bounds,geom->id,j);
 	pinfo.add(prim.bounds(),prim.center2());
-	prims_o[j] = prim;
+	prims_o[dest++] = prim;
       }
       pinfo_o.atomic_extend(pinfo);
+      if (dst) dst[taskIndex] = dest - dst[taskIndex];
     }
 
     template class PrimRefArrayGenFromGeometry<TriangleMesh>;

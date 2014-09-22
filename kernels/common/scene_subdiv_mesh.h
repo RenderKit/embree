@@ -169,8 +169,9 @@ namespace embree
     }
 
     /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i) const {
-      return true; // FIXME: implement
+    __forceinline bool valid(size_t i, BBox3fa* bbox = NULL) const {
+      if (bbox) *bbox = bounds(i);
+      return true; // FIXME: implement valid test
     }
 
   };

@@ -95,13 +95,13 @@ namespace embree
       
       /* input data */
     private:
-      size_t* dst;
       const Scene* scene;           //!< input geometry
       GeometryTy ty;                //!< types of geometry to generate
       size_t numTimeSteps;          //!< number of timesteps to generate
       size_t numPrimitives;         //!< number of generated primitives
       PrimRef* prims_o;             //!< list of build primitives
       PrimInfo& pinfo_o;            //!< bounding information of primitives
+      size_t* dst;                  //!< write-start offset for each thread
     };
 
     /*! Generates an array of triangle build primitives from some geometry. */
@@ -125,6 +125,7 @@ namespace embree
       const Ty* geom;               //!< input geometry
       PrimRef* prims_o;             //!< list of build primitives
       PrimInfo& pinfo_o;            //!< bounding information of primitives
+      size_t* dst;                  //!< write-start offset for each thread
     };
   }
 }

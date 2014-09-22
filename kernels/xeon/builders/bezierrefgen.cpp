@@ -50,7 +50,10 @@ namespace embree
 	ssize_t gend = geom->numCurves;
 	ssize_t s = max(start-cur,gstart);
 	ssize_t e = min(end  -cur,gend  );
-	for (size_t j=s; j<e; j++) {
+	for (size_t j=s; j<e; j++) 
+	{
+	  if (!geom->valid(j)) continue;
+
 	  const int ofs = geom->curve(j);
 	  Vec3fa p0 = geom->vertex(ofs+0,0);
 	  Vec3fa p1 = geom->vertex(ofs+1,0);

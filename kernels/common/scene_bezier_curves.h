@@ -83,7 +83,7 @@ namespace embree
       }
 
       /*! check if the i'th primitive is valid */
-      __forceinline bool valid(size_t i) const 
+      __forceinline bool valid(size_t i, BBox3fa* bbox = NULL) const 
       {
 	const int index = curve(i);
 	if (index+3 >= numVertices) return false;
@@ -104,6 +104,8 @@ namespace embree
 	  if (!inFloatRange(v0) || !inFloatRange(v1) || !inFloatRange(v2) || !inFloatRange(v3))
 	    return false;
 	}
+
+	if (bbox) *bbox = bounds(i);
 	return true;
       }
 

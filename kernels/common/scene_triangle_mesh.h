@@ -77,7 +77,7 @@ namespace embree
     }
 
     /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i) const 
+    __forceinline bool valid(size_t i, BBox3fa* bbox = NULL) const 
     {
       const Triangle& tri = triangle(i);
       if (tri.v[0] >= numVertices) return false;
@@ -90,6 +90,13 @@ namespace embree
 	const Vec3fa& v2 = vertex(tri.v[2],j);
 	if (!inFloatRange(v0) || !inFloatRange(v1) || !inFloatRange(v2))
 	  return false;
+      }
+
+      if (bbox) {
+	const Vec3fa& v0 = vertex(tri.v[0]);
+	const Vec3fa& v1 = vertex(tri.v[1]);
+	const Vec3fa& v2 = vertex(tri.v[2]);
+	*bbox = BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
       }
       return true;
     }

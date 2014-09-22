@@ -33,6 +33,14 @@ namespace embree
       return numItems;
     }
 
+    /*! check if the i'th primitive is valid */
+    __forceinline bool valid(size_t i, BBox3fa* bbox = NULL) const 
+    {
+      const BBox3fa b = bounds(i);
+      if (bbox) *bbox = b;
+      return inFloatRange(b);
+    }
+
     void enabling ();
     void disabling();
   };
