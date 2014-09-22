@@ -72,6 +72,10 @@ namespace embree
 	remainingReplications = maxPrimitives-numPrimitives;
 	bvh->bounds = pinfo.geomBounds;
 
+	/* return if all geometry got filtered out */
+	if (gen.pinfo.size() == 0)
+	  return;
+
         Allocator nodeAlloc(&bvh->alloc);
         Allocator leafAlloc(&bvh->alloc);
 	

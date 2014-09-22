@@ -549,6 +549,60 @@ namespace embree
     return geomID;
   }
 
+  unsigned addGarbageTriangles (RTCScene scene, RTCGeometryFlags flag, size_t numTriangles, bool motion)
+  {
+    /* create a triangulated sphere */
+    size_t numTimeSteps = motion ? 1 : 2;
+    unsigned mesh = rtcNewTriangleMesh (scene, flag, numTriangles, 3*numTriangles,numTimeSteps);
+    
+    /* map triangle and vertex buffer */
+    if (numTimeSteps >= 1) {
+      int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
+      for (size_t i=0; i<4*3*numTriangles; i++) v[i] = rand();
+      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
+    }
+    if (numTimeSteps >= 2) {
+      int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
+      for (size_t i=0; i<4*3*numTriangles; i++) v[i] = rand();
+      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
+    }
+    
+    Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+    for (size_t i=0; i<numTriangles; i++) {
+      triangles[i].v0 = 3*i+0;
+      triangles[i].v1 = 3*i+1;
+      triangles[i].v2 = 3*i+2;
+    }
+    rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+
+    return mesh;
+  }
+
+  unsigned addGarbageHair (RTCScene scene, RTCGeometryFlags flag, size_t numCurves, bool motion)
+  {
+    /* create a triangulated sphere */
+    size_t numTimeSteps = motion ? 1 : 2;
+    unsigned mesh = rtcNewHairGeometry (scene, flag, numCurves, 4*numCurves,numTimeSteps);
+    
+    /* map triangle and vertex buffer */
+    if (numTimeSteps >= 1) {
+      int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
+      for (size_t i=0; i<4*4*numCurves; i++) v[i] = rand();
+      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
+    }
+    if (numTimeSteps >= 2) {
+      int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
+      for (size_t i=0; i<4*4*numCurves; i++) v[i] = rand();
+      rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
+    }
+    
+    int* curves = (int*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+    for (size_t i=0; i<numCurves; i++) curves[i] = 4*i;
+    rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+
+    return mesh;
+  }
+
   struct Sphere
   {
     ALIGNED_CLASS;
@@ -2383,6 +2437,37 @@ namespace embree
     return true;
   }
 
+  bool rtcore_regression_garbage()
+  {
+    for (size_t i=0; i<regressionN; i++) 
+    {
+      srand(i*23565);
+      if (i%20 == 0) std::cout << "." << std::flush;
+
+      RTCSceneFlags sflag = getSceneFlag(i); 
+      RTCScene scene = rtcNewScene(sflag,aflags);
+      AssertNoError();
+
+      for (size_t j=0; j<20; j++) 
+      {
+	size_t numTriangles = rand()%256;
+        switch (rand()%4) {
+        case 0: addGarbageTriangles(scene,RTC_GEOMETRY_STATIC,numTriangles,false); break;
+	case 1: addGarbageTriangles(scene,RTC_GEOMETRY_STATIC,numTriangles,true); break;
+        case 2: addGarbageHair     (scene,RTC_GEOMETRY_STATIC,numTriangles,false); break;
+	case 3: addGarbageHair     (scene,RTC_GEOMETRY_STATIC,numTriangles,true); break;
+	}
+        AssertNoError();
+      }
+
+      rtcCommit(scene);
+      AssertNoError();
+      rtcDeleteScene (scene);
+      AssertNoError();
+    }
+    return true;
+  }
+
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
@@ -2491,6 +2576,7 @@ namespace embree
 
     POSITIVE("regression_static",         rtcore_regression_static());
     POSITIVE("regression_dynamic",        rtcore_regression_dynamic());
+    POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
 
     rtcExit();
     return numFailedTests;

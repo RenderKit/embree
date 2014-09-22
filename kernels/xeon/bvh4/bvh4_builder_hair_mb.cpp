@@ -68,7 +68,7 @@ namespace embree
 	BezierRefGen gen(threadIndex,threadCount,scheduler,&alloc,scene,2);
 	PrimInfo pinfo = gen.pinfo;
 	BezierRefList prims = gen.prims;
-	
+
 	bvh->numPrimitives = numPrimitives;
 	bvh->numVertices = 0;
 	if (&bvh->primTy == &SceneBezier1i::type) bvh->numVertices = numVertices;
@@ -77,9 +77,13 @@ namespace embree
 	remainingReplications = g_hair_builder_replication_factor*numPrimitives;
 	bvh->bounds = pinfo.geomBounds;
 	
+	/* return if all geometry got filtered out */
+	if (gen.pinfo.size() == 0)
+	  return;
+
         Allocator nodeAlloc(&bvh->alloc);
         Allocator leafAlloc(&bvh->alloc);
-
+	
 #if 0
 	const Split split = find_split(threadIndex,threadCount,prims,pinfo,pinfo.geomBounds);
 	BuildTask task(&bvh->root,0,prims,pinfo,pinfo.geomBounds,split); recurseTask(threadIndex,nodeAlloc,leafAlloc,task);
@@ -90,7 +94,7 @@ namespace embree
 	numActiveTasks = 1;
 	tasks.push_back(task);
 	std::push_heap(tasks.begin(),tasks.end());
-	
+
 #if 1
 	while (tasks.front().pinfo.size() > 200000)
 	{
