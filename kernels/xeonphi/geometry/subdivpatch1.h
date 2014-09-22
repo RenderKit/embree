@@ -153,7 +153,6 @@ namespace embree
 
       __aligned(64) Vec3fa center = (ring[0].vtx + ring[1].vtx + ring[2].vtx + ring[3].vtx) * 0.25f;
       __aligned(64) Vec3fa center_ring[8];
-      FATAL("HERE");
 
     }
   };
