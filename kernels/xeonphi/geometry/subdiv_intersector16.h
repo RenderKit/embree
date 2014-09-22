@@ -42,43 +42,29 @@ namespace embree
 					 const SubdivPatch1& patch)
     {
       STAT3(normal.trav_prims,1,1,1);
-      __aligned(64) Triangle1mc tptr[4];
-
-      Vec3fa *__restrict__ vtx0 = (Vec3fa *)&patch.getQuadVertex(0);
-      prefetch<PFHINT_L1>(vtx0); 
-      Vec3fa *__restrict__ vtx1 = (Vec3fa *)&patch.getQuadVertex(1);
-      prefetch<PFHINT_L1>(vtx1); 
-      Vec3fa *__restrict__ vtx2 = (Vec3fa *)&patch.getQuadVertex(2);
-      prefetch<PFHINT_L1>(vtx2); 
-      Vec3fa *__restrict__ vtx3 = (Vec3fa *)&patch.getQuadVertex(3);
-      prefetch<PFHINT_L1>(vtx3); 
-
-
-      tptr[0] = Triangle1mc(vtx0,vtx1,vtx2,patch.geomID,patch.primID);
-      tptr[1] = Triangle1mc(vtx2,vtx3,vtx0,patch.geomID,patch.primID);
-      tptr[2] = Triangle1mc(vtx0,vtx1,vtx2,patch.geomID,patch.primID);
-      tptr[3] = Triangle1mc(vtx2,vtx3,vtx0,patch.geomID,patch.primID);
-
+      __aligned(64) FinalQuad quad;
       const mic_f zero = mic_f::zero();
 
+      patch.init( quad );
 
       const mic_f v0 = gather_4f_zlc(and_mask,
-				     tptr[0].v0,
-				     tptr[1].v0,
-				     tptr[2].v0,
-				     tptr[3].v0);
+				     &quad.vtx[0],
+				     &quad.vtx[0],
+				     &quad.vtx[2],
+				     &quad.vtx[2]);
 	      
       const mic_f v1 = gather_4f_zlc(and_mask,
-				     tptr[0].v1,
-				     tptr[1].v1,
-				     tptr[2].v1,
-				     tptr[3].v1);
+				     &quad.vtx[1],
+				     &quad.vtx[1],
+				     &quad.vtx[3],
+				     &quad.vtx[3]);
 	      
       const mic_f v2 = gather_4f_zlc(and_mask,
-				     tptr[0].v2,
-				     tptr[1].v2,
-				     tptr[2].v2,
-				     tptr[3].v2);
+				     &quad.vtx[2],
+				     &quad.vtx[2],
+				     &quad.vtx[0],
+				     &quad.vtx[0]);
+
 
       const mic_f e1 = v1 - v0;
       const mic_f e2 = v0 - v2;	     
@@ -121,8 +107,6 @@ namespace embree
 	  const size_t vecIndex = bitscan(toInt(m_dist));
 	  const size_t triIndex = vecIndex >> 2;
 
-	  const Triangle1mc  *__restrict__ tri_ptr = tptr + triIndex;
-
 	  const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
 
                 
@@ -148,8 +132,8 @@ namespace embree
 	  compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
 	  compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
 
-	  ray16.geomID[rayIndex] = tri_ptr->geomID();
-	  ray16.primID[rayIndex] = tri_ptr->primID();
+	  ray16.geomID[rayIndex] = quad.geomID;
+	  ray16.primID[rayIndex] = quad.primID;
 	  return true;
       
 	}
@@ -168,37 +152,28 @@ namespace embree
     {
       STAT3(shadow.trav_prims,1,1,1);
 
-      __aligned(64) Triangle1mc tptr[4];
-
-      Vec3fa *__restrict__ vtx0 = (Vec3fa *)&patch.getQuadVertex(0);
-      prefetch<PFHINT_L1>(vtx0); 
-      Vec3fa *__restrict__ vtx1 = (Vec3fa *)&patch.getQuadVertex(1);
-      prefetch<PFHINT_L1>(vtx1); 
-      Vec3fa *__restrict__ vtx2 = (Vec3fa *)&patch.getQuadVertex(2);
-      prefetch<PFHINT_L1>(vtx2); 
-      Vec3fa *__restrict__ vtx3 = (Vec3fa *)&patch.getQuadVertex(3);
-      prefetch<PFHINT_L1>(vtx3); 
-
+      __aligned(64) FinalQuad quad;
       const mic_f zero = mic_f::zero();
 
-	      
+      patch.init( quad );
+
       const mic_f v0 = gather_4f_zlc(and_mask,
-				     tptr[0].v0,
-				     tptr[1].v0,
-				     tptr[2].v0,
-				     tptr[3].v0);
+				     &quad.vtx[0],
+				     &quad.vtx[0],
+				     &quad.vtx[2],
+				     &quad.vtx[2]);
 	      
       const mic_f v1 = gather_4f_zlc(and_mask,
-				     tptr[0].v1,
-				     tptr[1].v1,
-				     tptr[2].v1,
-				     tptr[3].v1);
+				     &quad.vtx[1],
+				     &quad.vtx[1],
+				     &quad.vtx[3],
+				     &quad.vtx[3]);
 	      
       const mic_f v2 = gather_4f_zlc(and_mask,
-				     tptr[0].v2,
-				     tptr[1].v2,
-				     tptr[2].v2,
-				     tptr[3].v2);
+				     &quad.vtx[2],
+				     &quad.vtx[2],
+				     &quad.vtx[0],
+				     &quad.vtx[0]);
 
       const mic_f e1 = v1 - v0;
       const mic_f e2 = v0 - v2;	     
