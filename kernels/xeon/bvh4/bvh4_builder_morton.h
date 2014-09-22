@@ -118,6 +118,7 @@ namespace embree
           numThreads = getNumberOfLogicalThreads();
           startGroup = new unsigned int[numThreads];
           startGroupOffset = new unsigned int[numThreads];
+	  dest = new size_t[numThreads];
           radixCount = (ThreadRadixCountTy*) alignedMalloc(numThreads*sizeof(ThreadRadixCountTy));
         }
 
@@ -126,11 +127,13 @@ namespace embree
           alignedFree(radixCount);
           delete[] startGroupOffset;
           delete[] startGroup;
+	  delete[] dest;
         }
 
         size_t numThreads;
         unsigned int* startGroup;
         unsigned int* startGroupOffset;
+	size_t* dest;
         ThreadRadixCountTy* radixCount;
         
 	atomic_t taskCounter;
@@ -156,7 +159,7 @@ namespace embree
 
       CentGeomBBox3fa computeBounds();
 
-      void computeMortonCodes(const size_t startID, const size_t endID, 
+      void computeMortonCodes(const size_t startID, const size_t endID, size_t& destID,
                               const size_t startGroup, const size_t startOffset, 
                               MortonID32Bit* __restrict__ const dest);
 

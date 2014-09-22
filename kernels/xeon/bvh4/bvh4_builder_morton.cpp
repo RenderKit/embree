@@ -226,8 +226,11 @@ namespace embree
       
       if (mesh) 
       {
-        for (size_t i=start; i<end; i++)	 
-          bounds.extend(mesh->bounds(i));
+        for (size_t i=start; i<end; i++) {
+	  const BBox3fa b = mesh->bounds(i);
+	  if (!inFloatRange(b)) continue;
+          bounds.extend(b);
+	}
       }
       else
       {
@@ -240,7 +243,11 @@ namespace embree
 	  ssize_t gend = geom->numTriangles;
 	  ssize_t s = max(start-cur,gstart);
 	  ssize_t e = min(end  -cur,gend  );
-	  for (ssize_t j=s; j<e; j++) bounds.extend(geom->bounds(j));
+	  for (ssize_t j=s; j<e; j++) {
+	    const BBox3fa b = geom->bounds(j);
+	    if (!inFloatRange(b)) continue;
+	    bounds.extend(b);
+	  }
 	  cur += geom->numTriangles;
 	  if (cur >= end) break;  
         }
@@ -248,7 +255,7 @@ namespace embree
       global_bounds.extend_atomic(bounds);    
     }
 
-    void BVH4BuilderMorton::computeMortonCodes(const size_t startID, const size_t endID, 
+    void BVH4BuilderMorton::computeMortonCodes(const size_t startID, const size_t endID, size_t& destID,
                                                const size_t startGroup, const size_t startOffset, 
                                                MortonID32Bit* __restrict__ const dest)
     {
@@ -257,7 +264,7 @@ namespace embree
       const ssef diag  = (ssef)global_bounds.centBounds.upper - (ssef)global_bounds.centBounds.lower;
       const ssef scale = select(diag > ssef(1E-19), rcp(diag) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
       
-      size_t currentID = startID;
+      size_t currentID = destID;
       size_t offset = startOffset;
       
       /* use SSE to calculate morton codes */
@@ -308,6 +315,7 @@ namespace embree
           dest[currentID-slots+i].code = code[i];
         }
       }
+      destID = currentID - destID;
     }
     
     void BVH4BuilderMorton::computeMortonCodes(const size_t threadID, const size_t numThreads)
@@ -317,7 +325,7 @@ namespace embree
       
       /* store the morton codes temporarily in 'node' memory */
       MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)bvh->alloc.base();
-      computeMortonCodes(startID,endID,state->startGroup[threadID],state->startGroupOffset[threadID],dest);
+      computeMortonCodes(startID,endID,state->dest[threadID],state->startGroup[threadID],state->startGroupOffset[threadID],dest);
     }
     
     void BVH4BuilderMorton::recreateMortonCodes(BuildRecord& current) const
@@ -1032,10 +1040,10 @@ namespace embree
       bvh->bounds = global_bounds.geomBounds;
 
       /* compute morton codes */
-      if (mesh)
-        computeMortonCodes(0,numPrimitives,mesh->id,0,morton);
-      else
-        computeMortonCodes(0,numPrimitives,0,0,morton);
+      size_t dst = 0;
+      if (mesh) computeMortonCodes(0,numPrimitives,dst,mesh->id,0,morton);
+      else      computeMortonCodes(0,numPrimitives,dst,0,0,morton);
+      numPrimitives = dst;
 
       /* sort morton codes */
       std::sort(&morton[0],&morton[numPrimitives]); // FIXME: use radix sort
@@ -1072,9 +1080,25 @@ namespace embree
       scheduler->dispatchTask( task_computeBounds, this, threadIndex, threadCount );
       bvh->bounds = global_bounds.geomBounds;
 
+      /* calculate initial destination for each thread */
+      for (size_t i=0; i<threadCount; i++)
+	state->dest[i] = i*numPrimitives/threadCount;
+
       /* compute morton codes */
       scheduler->dispatchTask( task_computeMortonCodes, this, threadIndex, threadCount );   
 
+      /* calculate new destinations */
+      size_t cnt = 0;
+      for (size_t i=0; i<threadCount; i++) {
+	size_t n = state->dest[i]; state->dest[i] = cnt; cnt += n;
+      }
+      
+      /* if primitive got filtered out, run again */
+      if (cnt < numPrimitives) {
+	scheduler->dispatchTask( task_computeMortonCodes, this, threadIndex, threadCount );   
+	numPrimitives = cnt;
+      }
+      
       /* padding */
       MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc.base();
       for (size_t i=numPrimitives; i<( (numPrimitives+7)&(-8) ); i++) {
