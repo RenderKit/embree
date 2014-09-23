@@ -2440,9 +2440,11 @@ namespace embree
 
   struct RegressionTask
   {
-    RegressionTask (size_t threadCount)
-      : scene(NULL), numActiveThreads(0) { barrier.init(threadCount); }
+    RegressionTask (size_t sceneIndex, size_t sceneCount, size_t threadCount)
+      : sceneIndex(sceneIndex), sceneCount(sceneCount), scene(NULL), numActiveThreads(0) { barrier.init(threadCount); }
 
+    size_t sceneIndex;
+    size_t sceneCount;
     RTCScene scene;
     BarrierSys barrier;
     volatile size_t numActiveThreads;
@@ -2464,14 +2466,17 @@ namespace embree
     RegressionTask* task = thread->task;
     if (thread->threadIndex > 0) 
     {
-      for (size_t i=0; i<regressionN; i++) 
+      for (size_t i=0; i<task->sceneCount; i++) 
       {
 	task->barrier.wait();
-	//if (thread->threadIndex < task->numActiveThreads)
-	rtcCommitThread(task->scene,thread->threadIndex,thread->threadCount);
-	
-	for (size_t i=0; i<100; i++)
-	  shootRays(task->scene);
+	if (thread->threadIndex < task->numActiveThreads) 
+	{
+	  rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+	  
+	  for (size_t i=0; i<100; i++)
+	    shootRays(task->scene);
+	}
+	task->barrier.wait();
       }
       delete thread; thread = NULL;
       return;
@@ -2488,9 +2493,9 @@ namespace embree
       numVertices[i] = 0;
     }
 
-    for (size_t i=0; i<regressionN; i++) 
+    for (size_t i=0; i<task->sceneCount; i++) 
     {
-      srand(i*23565);
+      srand(task->sceneIndex*23565+i*3242);
       if (i%20 == 0) std::cout << "." << std::flush;
 
       for (size_t j=0; j<20; j++) 
@@ -2568,14 +2573,17 @@ namespace embree
         }
       }
 
-      //task->numActiveThreads = max(size_t(1),rand() % thread->threadCount);
+      task->numActiveThreads = max(size_t(1),rand() % thread->threadCount);
       task->barrier.wait();
-      rtcCommitThread(task->scene,thread->threadIndex,thread->threadCount);
+      rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
       //AssertNoError();
 
       for (size_t i=0; i<100; i++)
         shootRays(task->scene);
+
+      task->barrier.wait();
     }
+
     rtcDeleteScene (task->scene);
     //AssertNoError();
 
@@ -2586,8 +2594,8 @@ namespace embree
 
   bool rtcore_regression_dynamic_thread_main ()
   {
-    size_t sceneID = 0;
-    for (size_t i=0; i<2; i++) 
+    size_t sceneIndex = 0;
+    while (sceneIndex < regressionN/5) 
     {
       size_t numThreads = getNumberOfLogicalThreads();
 #if defined (__MIC__)
@@ -2597,7 +2605,7 @@ namespace embree
       while (numThreads) 
       {
 	size_t N = max(size_t(1),rand()%numThreads); numThreads -= N;
-	RegressionTask* task = new RegressionTask(N);
+	RegressionTask* task = new RegressionTask(sceneIndex++,5,N);
 	
 	for (size_t i=0; i<N; i++) 
 	  g_threads.push_back(createThread(rtcore_regression_dynamic_thread,new ThreadRegressionTask(i,N,task),1000000,numThreads+i));
@@ -2654,8 +2662,7 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
-    POSITIVE("regression_dynamic_thread",rtcore_regression_dynamic_thread_main());
-
+    
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
     POSITIVE("barrier_sys",               test_barrier_sys());
@@ -2751,6 +2758,7 @@ namespace embree
 
     POSITIVE("regression_static",         rtcore_regression_static());
     POSITIVE("regression_dynamic",        rtcore_regression_dynamic());
+    POSITIVE("regression_dynamic_thread",rtcore_regression_dynamic_thread_main());
     POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
 
     rtcExit();
