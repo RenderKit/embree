@@ -320,7 +320,7 @@ namespace embree
     }
 
     /* verify geometry in debug mode  */
-#if defined(DEBUG)
+#if 0 && defined(DEBUG)
     for (size_t i=0; i<geometries.size(); i++) {
       if (geometries[i]) {
         if (!geometries[i]->verify()) {
