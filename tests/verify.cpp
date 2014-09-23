@@ -569,9 +569,9 @@ namespace embree
     
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
     for (size_t i=0; i<numTriangles; i++) {
-      triangles[i].v0 = 3*i+0;
-      triangles[i].v1 = 3*i+1;
-      triangles[i].v2 = 3*i+2;
+      triangles[i].v0 = (rand() % 32 == 0) ? rand() : 3*i+0;
+      triangles[i].v1 = (rand() % 32 == 0) ? rand() : 3*i+1;
+      triangles[i].v2 = (rand() % 32 == 0) ? rand() : 3*i+2;
     }
     rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
@@ -597,7 +597,8 @@ namespace embree
     }
     
     int* curves = (int*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    for (size_t i=0; i<numCurves; i++) curves[i] = 4*i;
+    for (size_t i=0; i<numCurves; i++) 
+      curves[i] = (rand() % 32 == 0) ? rand() : 4*i;
     rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
     return mesh;
@@ -2439,7 +2440,7 @@ namespace embree
 
   bool rtcore_regression_garbage()
   {
-    for (size_t i=0; i<regressionN; i++) 
+    for (size_t i=0; i<5*regressionN; i++) 
     {
       srand(i*23565);
       if (i%20 == 0) std::cout << "." << std::flush;
