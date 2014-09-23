@@ -16,49 +16,29 @@
 
 #pragma once
 
-#include "subdivpatch1.h"
-#include "common/ray.h"
-#include "geometry/filter.h"
+#include "subdivpatch1_intersector1.h"
 
 namespace embree
 {
 
   void subdivide_intersect1(Ray& ray,
 			    const IrregularCatmullClarkPatch &patch,
-			    const unsigned int subdiv_level = 0);
-
-  template<bool list>
-  struct SubdivPatch1Intersector1
+			    const unsigned int subdiv_level)
   {
-    typedef SubdivPatch1 Primitive;
-
-    struct Precalculations {
-      __forceinline Precalculations (const Ray& ray) {}
-    };
-
-    /*! Intersect a ray with the primitive. */
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, const void* geom)
-    {
-      STAT3(normal.trav_prims,1,1,1);
-
-      IrregularCatmullClarkPatch irregular_patch;
-      subdiv_patch.init( irregular_patch );
-
-      subdivide_intersect1(ray,irregular_patch);
-
-    }
-
-    /*! Test if the ray is occluded by the primitive */
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, const void* geom)
-    {
-      STAT3(shadow.trav_prims,1,1,1);
-
-      IrregularCatmullClarkPatch irregular_patch;
-      subdiv_patch.init( irregular_patch );
-
-      subdivide_intersect1(ray,irregular_patch);
-
-      return false;
-    }
-  };
-}
+    if (subdiv_level == 0)
+      {
+	__aligned(64) FinalQuad finalQuad;
+	patch.init( finalQuad );
+	//intersect1_quad(ray,finalQuad); // TODO: NO IMPLEMENT YET
+      }
+    else
+      {
+	IrregularCatmullClarkPatch subpatches[4];
+	patch.subdivide(subpatches);
+	for (size_t i=0;i<4;i++)
+	  subdivide_intersect1(ray,
+			       subpatches[i],
+			       subdiv_level - 1);	    
+      }   
+  }
+};

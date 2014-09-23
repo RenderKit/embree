@@ -71,6 +71,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   geometry/virtual_accel.cpp
   geometry/instance_intersector1.cpp
   geometry/instance_intersector4.cpp
+  geometry/subdivpatch1_intersector1.cpp
   
   bvh4/bvh4.cpp
   bvh4/bvh4_rotate.cpp

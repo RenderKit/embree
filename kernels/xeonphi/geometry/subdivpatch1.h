@@ -34,13 +34,14 @@ namespace embree
 				const Vec3fa *vertices,
 				unsigned int geomID,
 				unsigned int primID,
-				size_t flags = 0) 
+				unsigned int flags = 0,
+				unsigned int subdivision_level = 0) 
       : first_half_edge(first_half_edge),
       vertices(vertices),
       geomID(geomID),
       primID(primID),
-      flags(flags)
-  
+      flags(flags),
+      subdivision_level(subdivision_level)
     {}
 
     __forceinline const Vec3fa &getQuadVertex(const unsigned int i=0) const { 
@@ -123,7 +124,8 @@ namespace embree
    
     const SubdivMesh::HalfEdge * first_half_edge; //!< pointer to first half edge of corresponding quad in the subdivision mesh
     const Vec3fa *vertices;                       //!< pointer to the vertex positions in the subdivison mesh
-    size_t flags;
+    unsigned int flags;
+    unsigned int subdivision_level;
     unsigned int geomID;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int primID;                          //!< primitive ID of this subdivision patch
   };

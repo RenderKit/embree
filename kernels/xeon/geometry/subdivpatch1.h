@@ -19,6 +19,9 @@
 #include "primitive.h"
 #include "common/scene_subdivision.h"
 
+#define SUBDIVISION_LEVEL 1
+#define SUBDIVISION_FLAGS 0
+
 namespace embree
 {
   struct SubdivPatch1
@@ -42,8 +45,10 @@ namespace embree
 				const Vec3fa* vertices, 
                                 const unsigned int geom, 
 				const unsigned int prim, 
+				const unsigned int subdivision_level,
+				const unsigned int flags,
 				const bool last)
-      : first_half_edge(edge), vertices(vertices), geom(geom), prim(prim | (last << 31)) { }
+      : first_half_edge(edge), vertices(vertices), geom(geom), prim(prim | (last << 31)), subdivision_level(subdivision_level), flags(flags) { }
 
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
@@ -80,6 +85,8 @@ namespace embree
 			      subdiv_mesh->getVertexPositionPtr(),
 			      geomID,
 			      primID,
+			      SUBDIVISION_LEVEL,
+			      SUBDIVISION_FLAGS,
 			      last); 
     }
 
@@ -97,6 +104,8 @@ namespace embree
 			      subdiv_mesh->getVertexPositionPtr(),
 			      geomID,
 			      primID,
+			      SUBDIVISION_LEVEL,
+			      SUBDIVISION_FLAGS,
 			      last); 
     }
 
@@ -112,6 +121,8 @@ namespace embree
   public:
     const SubdivMesh::HalfEdge* first_half_edge;  //!< pointer to first half edge of this patch
     const Vec3fa* vertices;                       //!< pointer to vertex array
+    unsigned int subdivision_level;
+    unsigned int flags;
     unsigned int geom;                            //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int prim;                            //!< primitive ID of this subdivision patch
   };

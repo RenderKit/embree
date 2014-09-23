@@ -1016,6 +1016,8 @@ PRINT(CORRECT_numPrims);
   }
 
 
+#define SUBDIVISION_LEVEL 1
+
   void BVH4iBuilderSubdivMesh::createSubdivMeshAccel(const size_t threadID, const size_t numThreads)
   {
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
@@ -1036,7 +1038,9 @@ PRINT(CORRECT_numPrims);
     	*acc = SubdivPatch1(&subdiv_mesh->getHalfEdgeForQuad( bptr->primID() ),
 			    subdiv_mesh->getVertexPositionPtr(),
 			    bptr->geomID(),
-			    bptr->primID());
+			    bptr->primID(),
+			    0,
+			    SUBDIVISION_LEVEL);
       }
   }
 

@@ -425,11 +425,9 @@ namespace embree
 	unsigned int index = curNode.offsetIndex();
 	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
 	return SubdivPatchIntersector1<ENABLE_INTERSECTION_FILTER>::intersect1(dir_xyz,
-									      org_xyz,
-									      min_dist_xyz,
-									      max_dist_xyz,
-									      ray,
-									      *patch_ptr);	
+									       org_xyz,
+									       ray,
+									       *patch_ptr);	
       }
 
       static __forceinline bool occluded(BVH4i::NodeRef curNode,
@@ -446,8 +444,6 @@ namespace embree
 	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
 	return SubdivPatchIntersector1<ENABLE_INTERSECTION_FILTER>::occluded1(dir_xyz,
 									      org_xyz,
-									      min_dist_xyz,
-									      max_dist_xyz,
 									      ray,
 									      *patch_ptr);	
       }
@@ -468,17 +464,12 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-	const mic_i and_mask = broadcast4to16i(zlc4);
 	
 	bool hit = false;
 	for (size_t i=0;i<items;i++)
-
 	  hit |= SubdivPatchIntersector16<ENABLE_INTERSECTION_FILTER>::intersect1(rayIndex,
 										  dir_xyz,
 										  org_xyz,
-										  min_dist_xyz,
-										  max_dist_xyz,
-										  and_mask,
 										  ray16,
 										  patch_ptr[i]);
 	return hit;
@@ -499,17 +490,13 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-	const mic_i and_mask = broadcast4to16i(zlc4);
 
 	for (size_t i=0;i<items;i++)
 	  if (SubdivPatchIntersector16<ENABLE_INTERSECTION_FILTER>::occluded1(rayIndex,
-									     dir_xyz,
-									     org_xyz,
-									     min_dist_xyz,
-									     max_dist_xyz,
-									     and_mask,
-									     ray16,
-									     m_terminated,
+									      dir_xyz,
+									      org_xyz,
+									      ray16,
+									      m_terminated,
 									      patch_ptr[i])) return true;
 	return false;
       }
