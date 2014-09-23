@@ -16,7 +16,7 @@
 
 #include "bvh4_intersector8_chunk.h"
 
-#include "geometry/bezier1_intersector8.h"
+#include "geometry/bezier1v_intersector8.h"
 #include "geometry/bezier1i_intersector8.h"
 #include "geometry/triangle1_intersector8_moeller.h"
 #include "geometry/triangle4_intersector8_moeller.h"
@@ -355,7 +355,7 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR8(BVH4Bezier1Intersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA LeafIterator8<Bezier1Intersector8<LeafMode> > >);
+    DEFINE_INTERSECTOR8(BVH4Bezier1vIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA LeafIterator8<Bezier1vIntersector8<LeafMode> > >);
     DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA LeafIterator8<Bezier1iIntersector8<LeafMode> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle1Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA LeafIterator8<Triangle1Intersector8MoellerTrumbore<LeafMode> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA LeafIterator8<Triangle4Intersector8MoellerTrumbore<LeafMode COMMA true> > >);

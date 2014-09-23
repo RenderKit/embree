@@ -17,7 +17,7 @@
 #pragma once
 
 #include "geometry/primitive.h"
-#include "geometry/bezier1.h"
+#include "geometry/bezier1v.h"
 #include "builders/primrefalloc.h"
 #include "builders/heuristic_split.h"
 

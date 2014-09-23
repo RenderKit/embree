@@ -16,7 +16,7 @@
 
 #include "bvh4_intersector1.h"
 
-#include "geometry/bezier1_intersector1.h"
+#include "geometry/bezier1v_intersector1.h"
 #include "geometry/bezier1i_intersector1.h"
 #include "geometry/triangle1_intersector1_moeller.h"
 #include "geometry/triangle4_intersector1_moeller.h"
@@ -280,10 +280,10 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR1(BVH4Bezier1Intersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<Bezier1Intersector1<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Bezier1vIntersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<Bezier1vIntersector1<LeafMode> > >);
     DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<Bezier1iIntersector1<LeafMode> > >);
     
-    DEFINE_INTERSECTOR1(BVH4Bezier1Intersector1_OBB,BVH4Intersector1<0x101 COMMA false COMMA LeafIterator1<Bezier1Intersector1<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Bezier1vIntersector1_OBB,BVH4Intersector1<0x101 COMMA false COMMA LeafIterator1<Bezier1vIntersector1<LeafMode> > >);
     DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1_OBB,BVH4Intersector1<0x101 COMMA false COMMA LeafIterator1<Bezier1iIntersector1<LeafMode> > >);
     DEFINE_INTERSECTOR1(BVH4Bezier1iMBIntersector1_OBB,BVH4Intersector1<0x1010 COMMA false COMMA LeafIterator1<Bezier1iIntersector1MB<LeafMode> > >);
 

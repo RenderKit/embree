@@ -19,7 +19,7 @@
 #include "bvh4_statistics.h"
 #include "builders/primrefgen.h"
 
-#include "geometry/bezier1.h"
+#include "geometry/bezier1v.h"
 #include "geometry/bezier1i.h"
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
@@ -55,8 +55,8 @@ namespace embree
 						   bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize,bool parallel)
       : scene(scene), BVH4BuilderFast(&scene->lockstep_scheduler,bvh,listMode,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize) { needAllThreads = parallel; }
     
-    template<> BVH4BezierBuilderFast  <Bezier1>   ::BVH4BezierBuilderFast   (BVH4* bvh, Scene* scene, size_t listMode) 
-      : geom(NULL), BVH4BuilderFastT<Bezier1>   (bvh,scene,listMode,0,0,false,sizeof(Bezier1),1,1,true) {}
+    template<> BVH4BezierBuilderFast  <Bezier1v>   ::BVH4BezierBuilderFast   (BVH4* bvh, Scene* scene, size_t listMode) 
+      : geom(NULL), BVH4BuilderFastT<Bezier1v>   (bvh,scene,listMode,0,0,false,sizeof(Bezier1v),1,1,true) {}
     template<> BVH4BezierBuilderFast  <Bezier1i>  ::BVH4BezierBuilderFast   (BVH4* bvh, Scene* scene, size_t listMode) 
       : geom(NULL), BVH4BuilderFastT<Bezier1i>  (bvh,scene,listMode,0,0,false,sizeof(Bezier1i),1,1,true) {}
     template<> BVH4TriangleBuilderFast<Triangle1> ::BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
@@ -76,8 +76,8 @@ namespace embree
     template<> BVH4UserGeometryBuilderFastT<AccelSetItem>::BVH4UserGeometryBuilderFastT (BVH4* bvh, Scene* scene, size_t listMode) 
       : geom(NULL), BVH4BuilderFastT<AccelSetItem>(bvh,scene,listMode,0,0,false,sizeof(AccelSetItem),1,1,true) {}
 
-    template<> BVH4BezierBuilderFast  <Bezier1>   ::BVH4BezierBuilderFast   (BVH4* bvh, BezierCurves* geom, size_t listMode) 
-      : geom(geom), BVH4BuilderFastT<Bezier1>   (bvh,geom->parent,listMode,0,0,false,sizeof(Bezier1)   ,1,1,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
+    template<> BVH4BezierBuilderFast  <Bezier1v>   ::BVH4BezierBuilderFast   (BVH4* bvh, BezierCurves* geom, size_t listMode) 
+      : geom(geom), BVH4BuilderFastT<Bezier1v>   (bvh,geom->parent,listMode,0,0,false,sizeof(Bezier1v)   ,1,1,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
     template<> BVH4BezierBuilderFast  <Bezier1i>  ::BVH4BezierBuilderFast   (BVH4* bvh, BezierCurves* geom, size_t listMode) 
       : geom(geom), BVH4BuilderFastT<Bezier1i>  (bvh,geom->parent,listMode,0,0,false,sizeof(Bezier1i)  ,1,1,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
     template<> BVH4TriangleBuilderFast<Triangle1> ::BVH4TriangleBuilderFast (BVH4* bvh, TriangleMesh* geom, size_t listMode) 
@@ -610,7 +610,7 @@ namespace embree
       if (g_verbose >= 2) dt = getSeconds()-t0;
     }
     
-    Builder* BVH4Bezier1BuilderFast    (void* bvh, Scene* scene, size_t mode) { return new class BVH4BezierBuilderFast<Bezier1>  ((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Bezier1vBuilderFast    (void* bvh, Scene* scene, size_t mode) { return new class BVH4BezierBuilderFast<Bezier1v>  ((BVH4*)bvh,scene,mode); }
     Builder* BVH4Bezier1iBuilderFast   (void* bvh, Scene* scene, size_t mode) { return new class BVH4BezierBuilderFast<Bezier1i>((BVH4*)bvh,scene,mode); }
     Builder* BVH4Triangle1BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle1> ((BVH4*)bvh,scene,mode); }
     Builder* BVH4Triangle4BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4> ((BVH4*)bvh,scene,mode); }
@@ -622,7 +622,7 @@ namespace embree
     Builder* BVH4Triangle4iBuilderFast (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4i>((BVH4*)bvh,scene,mode); }
     Builder* BVH4UserGeometryBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4UserGeometryBuilderFastT<AccelSetItem>((BVH4*)bvh,scene,mode); }
 
-    Builder* BVH4Bezier1MeshBuilderFast    (void* bvh, BezierCurves* geom, size_t mode) { return new class BVH4BezierBuilderFast<Bezier1>  ((BVH4*)bvh,geom,mode); }
+    Builder* BVH4Bezier1vMeshBuilderFast    (void* bvh, BezierCurves* geom, size_t mode) { return new class BVH4BezierBuilderFast<Bezier1v>  ((BVH4*)bvh,geom,mode); }
     Builder* BVH4Bezier1iMeshBuilderFast   (void* bvh, BezierCurves* geom, size_t mode) { return new class BVH4BezierBuilderFast<Bezier1i> ((BVH4*)bvh,geom,mode); }
     Builder* BVH4Triangle1MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle1> ((BVH4*)bvh,mesh,mode); }
     Builder* BVH4Triangle4MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4> ((BVH4*)bvh,mesh,mode); }

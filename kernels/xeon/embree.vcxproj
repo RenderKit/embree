@@ -541,10 +541,10 @@
     <ClInclude Include="..\..\common\simd\sseb.h" />
     <ClInclude Include="..\..\common\simd\ssef.h" />
     <ClInclude Include="..\..\common\simd\ssei.h" />
-    <ClInclude Include="geometry\bezier1.h" />
-    <ClInclude Include="geometry\bezier1_intersector1.h" />
-    <ClInclude Include="geometry\bezier1_intersector4.h" />
-    <ClInclude Include="geometry\bezier1_intersector8.h" />
+    <ClInclude Include="geometry\bezier1v.h" />
+    <ClInclude Include="geometry\bezier1v_intersector1.h" />
+    <ClInclude Include="geometry\bezier1v_intersector4.h" />
+    <ClInclude Include="geometry\bezier1v_intersector8.h" />
     <ClInclude Include="geometry\bezier1i.h" />
     <ClInclude Include="geometry\bezier1i_intersector1.h" />
     <ClInclude Include="geometry\bezier1i_intersector1_recursive.h" />
@@ -620,7 +620,7 @@
     <ClCompile Include="builders\heuristic_strand_partition.cpp" />
     <ClCompile Include="builders\primrefgen.cpp" />
     <ClCompile Include="..\..\common\simd\sse.cpp" />
-    <ClCompile Include="geometry\bezier1.cpp" />
+    <ClCompile Include="geometry\bezier1v.cpp" />
     <ClCompile Include="geometry\bezier1i.cpp" />
     <ClCompile Include="geometry\instance_intersector1.cpp" />
     <ClCompile Include="geometry\instance_intersector4.cpp" />

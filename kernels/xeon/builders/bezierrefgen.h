@@ -19,7 +19,7 @@
 #include "common/scene.h"
 #include "primrefalloc.h"
 #include "primrefblock.h"
-#include "geometry/bezier1.h"
+#include "geometry/bezier1v.h"
 #include "heuristic_fallback.h"
 
 namespace embree

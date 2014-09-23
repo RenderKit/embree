@@ -16,7 +16,7 @@
 
 #include "bvh4_intersector8_single.h"
 
-#include "geometry/bezier1_intersector8.h"
+#include "geometry/bezier1v_intersector8.h"
 #include "geometry/bezier1i_intersector8.h"
 
 namespace embree
@@ -84,7 +84,7 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR8(BVH4Bezier1Intersector8Single_OBB, BVH4Intersector8Single<0x101 COMMA false COMMA LeafIterator8_1<Bezier1Intersector8<LeafMode> > >);
+    DEFINE_INTERSECTOR8(BVH4Bezier1vIntersector8Single_OBB, BVH4Intersector8Single<0x101 COMMA false COMMA LeafIterator8_1<Bezier1vIntersector8<LeafMode> > >);
     DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Single_OBB, BVH4Intersector8Single<0x101 COMMA false COMMA LeafIterator8_1<Bezier1iIntersector8<LeafMode> > >);
   }
 }

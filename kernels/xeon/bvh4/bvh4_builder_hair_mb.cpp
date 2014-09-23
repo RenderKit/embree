@@ -20,7 +20,7 @@
 #include "common/scene_bezier_curves.h"
 #include "../builders/bezierrefgen.h"
 #include <algorithm>
-#include "geometry/bezier1.h"
+#include "geometry/bezier1v.h"
 #include "geometry/bezier1i.h"
 
 namespace embree
@@ -29,7 +29,7 @@ namespace embree
  
   namespace isa
   {
-    //template<> BVH4BuilderHairMBT<Bezier1>::BVH4BuilderHairMBT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderHairMB(bvh,scene,mode) {}
+    //template<> BVH4BuilderHairMBT<Bezier1v>::BVH4BuilderHairMBT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderHairMB(bvh,scene,mode) {}
     template<> BVH4BuilderHairMBT<Bezier1iMB>::BVH4BuilderHairMBT (BVH4* bvh, Scene* scene, size_t mode) : BVH4BuilderHairMB(bvh,scene,mode) {}
 
     BVH4BuilderHairMB::BVH4BuilderHairMB (BVH4* bvh, Scene* scene, size_t mode)
@@ -428,7 +428,7 @@ namespace embree
     }
 
     /*! entry functions for the builder */
-    //Builder* BVH4Bezier1BuilderMB  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderHairMBT<Bezier1> ((BVH4*)bvh,scene,mode); }
+    //Builder* BVH4Bezier1vBuilderMB  (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderHairMBT<Bezier1v> ((BVH4*)bvh,scene,mode); }
     Builder* BVH4Bezier1iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new class BVH4BuilderHairMBT<Bezier1iMB> ((BVH4*)bvh,scene,mode); }
   }
 }

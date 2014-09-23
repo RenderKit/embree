@@ -14,20 +14,20 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bezier1.h"
+#include "bezier1v.h"
 
 namespace embree
 {
-  Bezier1Type Bezier1Type::type;
+  Bezier1vType Bezier1vType::type;
 
-  Bezier1Type::Bezier1Type () 
-    : PrimitiveType("bezier1",sizeof(Bezier1),1,true,1) {} 
+  Bezier1vType::Bezier1vType () 
+    : PrimitiveType("bezier1v",sizeof(Bezier1v),1,true,1) {} 
   
-  size_t Bezier1Type::blocks(size_t x) const {
+  size_t Bezier1vType::blocks(size_t x) const {
     return x;
   }
     
-  size_t Bezier1Type::size(const char* This) const {
+  size_t Bezier1vType::size(const char* This) const {
     return 1;
   }
 }

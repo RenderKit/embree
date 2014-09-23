@@ -133,15 +133,15 @@ namespace embree
     }
   };
 
-  struct Bezier1
+  struct Bezier1v
   {
   public:
 
     /*! Default constructor. */
-    __forceinline Bezier1 () {}
+    __forceinline Bezier1v () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Bezier1 (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const float t0, const float t1,
+    __forceinline Bezier1v (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const float t0, const float t1,
                            const unsigned int geomID, const unsigned int primID, const bool last)
       : p0(p0), p1(p1), p2(p2), p3(p3), t0(t0), t1(t1), geom(geomID), prim(primID | (last << 31)) {}
     
@@ -164,7 +164,7 @@ namespace embree
     }
 
     /*! fill from list */
-    __forceinline void fill(typename atomic_set<PrimRefBlockT<Bezier1> >::block_iterator_unsafe& iter, Scene* scene, const bool list) {
+    __forceinline void fill(typename atomic_set<PrimRefBlockT<Bezier1v> >::block_iterator_unsafe& iter, Scene* scene, const bool list) {
       *this = *iter; iter++; this->prim |= (list && !iter) << 31;
     }
 
@@ -181,7 +181,7 @@ namespace embree
       const Vec3fa& p1 = curves->vertex(id+1);
       const Vec3fa& p2 = curves->vertex(id+2);
       const Vec3fa& p3 = curves->vertex(id+3);
-      new (this) Bezier1(p0,p1,p2,p3,0.0f,1.0f,geomID,primID,list && i>=end);
+      new (this) Bezier1v(p0,p1,p2,p3,0.0f,1.0f,geomID,primID,list && i>=end);
     }
 
     /*! returns size of t range */
@@ -255,7 +255,7 @@ namespace embree
     }
     
     /*! subdivide the bezier curve */
-    __forceinline void subdivide(Bezier1& left_o, Bezier1& right_o, const float T = 0.5f) const
+    __forceinline void subdivide(Bezier1v& left_o, Bezier1v& right_o, const float T = 0.5f) const
     {
       const Vec3fa p00 = p0;
       const Vec3fa p01 = p1;
@@ -274,12 +274,12 @@ namespace embree
       const unsigned int geomID = this->geomID<0>();
       const unsigned int primID = this->primID<0>();
       
-      new (&left_o ) Bezier1(p00,p10,p20,p30,t0,t01,geomID,primID,false);
-      new (&right_o) Bezier1(p30,p21,p12,p03,t01,t1,geomID,primID,false);
+      new (&left_o ) Bezier1v(p00,p10,p20,p30,t0,t01,geomID,primID,false);
+      new (&right_o) Bezier1v(p30,p21,p12,p03,t01,t1,geomID,primID,false);
     }
     
     /*! split the hair using splitting plane */
-    bool split(const Vec3fa& plane, Bezier1& left_o, Bezier1& right_o) const
+    bool split(const Vec3fa& plane, Bezier1v& left_o, Bezier1v& right_o) const
     {
       /*! test if start and end points lie on different sides of plane */
       const float p0p = dot(p0,plane)+plane.w;
@@ -295,7 +295,7 @@ namespace embree
       //while (u1-u0 > 0.0001f) 
       {
         const float tc = 0.5f*(u0+u1);
-        Bezier1 left,right; subdivide(left,right,tc);
+        Bezier1v left,right; subdivide(left,right,tc);
         const float lp0p = dot(left.p0,plane)+plane.w;
         const float lp3p = dot(left.p3,plane)+plane.w;
         if (lp0p <= 0.0f && lp3p >= 0.0f) { u1 = tc; continue; }
@@ -310,7 +310,7 @@ namespace embree
     }
 
     /*! split the hair using splitting plane */
-    bool split(const int dim, const float pos, Bezier1& left_o, Bezier1& right_o) const
+    bool split(const int dim, const float pos, Bezier1v& left_o, Bezier1v& right_o) const
     {
       /*! test if start and end points lie on different sides of plane */
       const float p0p = p0[dim];
@@ -326,7 +326,7 @@ namespace embree
       //while (u1-u0 > 0.0001f) 
       {
         const float tc = 0.5f*(u0+u1);
-        Bezier1 left,right; subdivide(left,right,tc);
+        Bezier1v left,right; subdivide(left,right,tc);
         const float lp0p = left.p0[dim];
         const float lp3p = left.p3[dim];
         if (lp0p <= pos && lp3p >= pos) { u1 = tc; continue; }
@@ -340,8 +340,8 @@ namespace embree
       return true;
     }
 
-    friend std::ostream& operator<<(std::ostream& cout, const Bezier1& b) {
-      return std::cout << "Bezier1 { " << std::endl << 
+    friend std::ostream& operator<<(std::ostream& cout, const Bezier1v& b) {
+      return std::cout << "Bezier1v { " << std::endl << 
         " p0 = " << b.p0 << ", " << std::endl <<
         " p1 = " << b.p1 << ", " << std::endl <<
         " p2 = " << b.p2 << ", " << std::endl <<
@@ -361,13 +361,13 @@ namespace embree
     unsigned prim;      //!< primitive ID
   };
 
-  struct Bezier1Type : public PrimitiveType 
+  struct Bezier1vType : public PrimitiveType 
   {
-    static Bezier1Type type;
-    Bezier1Type ();
+    static Bezier1vType type;
+    Bezier1vType ();
     size_t blocks(size_t x) const;
     size_t size(const char* This) const;
   }; 
 
-  typedef Bezier1 BezierPrim; // FIXME: rename to BezierRef
+  typedef Bezier1v BezierPrim; // FIXME: rename to BezierRef
 }

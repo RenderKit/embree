@@ -16,16 +16,16 @@
 
 #pragma once
 
-#include "bezier1.h"
+#include "bezier1v.h"
 #include "bezier_intersector1.h"
 
 namespace embree
 {
   /*! Intersector for a single ray with a bezier curve. */
   template<bool list>
-  struct Bezier1Intersector1
+  struct Bezier1vIntersector1
   {
-    typedef Bezier1 Primitive;
+    typedef Bezier1v Primitive;
     typedef BezierIntersector1::Precalculations Precalculations;
 
     static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom) {

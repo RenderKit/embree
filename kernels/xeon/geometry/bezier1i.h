@@ -18,7 +18,7 @@
 
 #include "common/default.h"
 #include "primitive.h"
-#include "bezier1.h"
+#include "bezier1v.h"
 
 namespace embree
 {

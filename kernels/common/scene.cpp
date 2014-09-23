@@ -179,8 +179,8 @@ namespace embree
       if (isStatic()) {
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
         switch (mode) {
-        case /*0b00*/ 0: accels.add(BVH4::BVH4OBBBezier1(this,isHighQuality())); break;
-        case /*0b01*/ 1: accels.add(BVH4::BVH4OBBBezier1(this,isHighQuality())); break;
+        case /*0b00*/ 0: accels.add(BVH4::BVH4OBBBezier1v(this,isHighQuality())); break;
+        case /*0b01*/ 1: accels.add(BVH4::BVH4OBBBezier1v(this,isHighQuality())); break;
         case /*0b10*/ 2: accels.add(BVH4::BVH4OBBBezier1i(this,isHighQuality())); break;
         case /*0b11*/ 3: accels.add(BVH4::BVH4OBBBezier1i(this,isHighQuality())); break;
         }
@@ -189,16 +189,16 @@ namespace embree
       {
         int mode =  2*(int)isCompact() + 1*(int)isRobust();
         switch (mode) {
-	case /*0b00*/ 0: accels.add(BVH4::BVH4Bezier1(this)); break;
-        case /*0b01*/ 1: accels.add(BVH4::BVH4Bezier1(this)); break;
+	case /*0b00*/ 0: accels.add(BVH4::BVH4Bezier1v(this)); break;
+        case /*0b01*/ 1: accels.add(BVH4::BVH4Bezier1v(this)); break;
         case /*0b10*/ 2: accels.add(BVH4::BVH4Bezier1i(this)); break;
         case /*0b11*/ 3: accels.add(BVH4::BVH4Bezier1i(this)); break;
         }
       }   
     }
-    else if (g_hair_accel == "bvh4.bezier1"     ) accels.add(BVH4::BVH4Bezier1(this));
+    else if (g_hair_accel == "bvh4.bezier1v"    ) accels.add(BVH4::BVH4Bezier1v(this));
     else if (g_hair_accel == "bvh4.bezier1i"    ) accels.add(BVH4::BVH4Bezier1i(this));
-    else if (g_hair_accel == "bvh4obb.bezier1"  ) accels.add(BVH4::BVH4OBBBezier1(this,false));
+    else if (g_hair_accel == "bvh4obb.bezier1v" ) accels.add(BVH4::BVH4OBBBezier1v(this,false));
     else if (g_hair_accel == "bvh4obb.bezier1i" ) accels.add(BVH4::BVH4OBBBezier1i(this,false));
     else THROW_RUNTIME_ERROR("unknown hair acceleration structure "+g_hair_accel);
   }
