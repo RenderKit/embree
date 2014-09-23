@@ -53,8 +53,16 @@ Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   else return Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
-/* renders a single pixel with ambient occlusion shading */
-Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+__noinline void setray(RTCRay& ray)
+{
+  ray.u = ray.v = 0.001f;
+  ray.Ng = Vec3fa(0,1,0);
+  ray.geomID = 0;
+  ray.primID = 0;
+}
+
+/* renders a single pixel with wireframe shading */
+Vec3fa renderPixelWireframe(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -73,44 +81,15 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec
   /* return black if nothing hit */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
 
-  /* calculate hit point */
-  float intensity = 0;
-  Vec3fa hitPos = ray.org + ray.tfar*ray.dir;
+  /* calculate wireframe around triangles */
+  const float border = 0.05f;
+  Vec3fa color = Vec3fa(1.0f);
+  if (ray.u < border) color = Vec3fa(0.0f);
+  if (ray.v < border) color = Vec3fa(0.0f);
+  if (1.0f-ray.u-ray.v < border) color = Vec3fa(0.0f);
 
-  /* trace some ambient occlusion rays */
-  int seed = 34*x+12*y;
-  for (int i=0; i<32; i++) 
-  {
-    Vec3fa dir; 
-    const float oneOver10000f = 1.f/10000.f;
-    seed = 1103515245 * seed + 12345;
-    dir.x = (seed%10000)*oneOver10000f;
-    seed = 1103515245 * seed + 12345;
-    dir.y = (seed%10000)*oneOver10000f;
-    seed = 1103515245 * seed + 12345;
-    dir.z = (seed%10000)*oneOver10000f;
-    
-    /* initialize shadow ray */
-    RTCRay shadow;
-    shadow.org = hitPos;
-    shadow.dir = dir;
-    shadow.tnear = 0.001f;
-    shadow.tfar = inf;
-    shadow.geomID = 1;
-    shadow.primID = 0;
-    shadow.mask = -1;
-    shadow.time = g_debug;
-    
-    /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
-    
-    /* add light contribution */
-    intensity += shadow.geomID;
-  }
-  intensity *= 1.0f/32.0f;
-
-  /* shade pixel */
-  return Vec3fa(intensity);
+  /* perform eyelight shading */
+  return color*Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
 /* renders a single pixel with UV shading */
@@ -304,7 +283,7 @@ extern "C" void device_key_pressed(int key)
     g_changed = true;
   }    
   else if (key == GLUT_KEY_F3) {
-    renderPixel = renderPixelAmbientOcclusion;
+    renderPixel = renderPixelWireframe;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F4) {

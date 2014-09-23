@@ -52,8 +52,8 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform Vec3f& vx, const unifo
   //else return make_Vec3f(clamp(dot(ray.dir,normalize(ray.Ng))));
 }
 
-/* renders a single pixel with ambient occlusion shading */
-Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+/* renders a single pixel with wireframe shading */
+Vec3f renderPixelWireframe(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   /* initialize ray */
   RTCRay ray;
@@ -72,44 +72,15 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform Vec3f& vx, con
   /* return black if nothing hit */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
 
-  /* calculate hit point */
-  float intensity = 0;
-  Vec3f hitPos = ray.org + ray.tfar*ray.dir;
+  /* calculate wireframe around triangles */
+  const float border = 0.05f;
+  Vec3f color = make_Vec3f(1.0f);
+  if (ray.u < border) color = make_Vec3f(0.0f);
+  if (ray.v < border) color = make_Vec3f(0.0f);
+  if (1.0f-ray.u-ray.v < border) color = make_Vec3f(0.0f);
 
-  /* trace some ambient occlusion rays */
-  int seed = 34*x+12*y;
-  for (uniform int i=0; i<32; i++) 
-  {
-    Vec3f dir; 
-    const float oneOver10000f = 1.f/10000.f;
-    seed = 1103515245 * seed + 12345;
-    dir.x = (seed%10000)*oneOver10000f;
-    seed = 1103515245 * seed + 12345;
-    dir.y = (seed%10000)*oneOver10000f;
-    seed = 1103515245 * seed + 12345;
-    dir.z = (seed%10000)*oneOver10000f;
-    
-    /* initialize shadow ray */
-    RTCRay shadow;
-    shadow.org = hitPos;
-    shadow.dir = dir;
-    shadow.tnear = 0.001f;
-    shadow.tfar = inf;
-    shadow.geomID = 1;
-    shadow.primID = 0;
-    shadow.mask = -1;
-    shadow.time = 0;
-    
-    /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
-    
-    /* add light contribution */
-    intensity += shadow.geomID;
-  }
-  intensity *= 1.0f/32.0f;
-
-  /* shade pixel */
-  return make_Vec3f(intensity);
+  /* perform eyelight shading */
+  return color*make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
 /* renders a single pixel with UV shading */
@@ -303,7 +274,7 @@ export void device_key_pressed(uniform int key)
     g_changed = true;
   }
   else if (key == GLUT_KEY_F3) {
-    renderPixel = renderPixelAmbientOcclusion;
+    renderPixel = renderPixelWireframe;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F4) {
