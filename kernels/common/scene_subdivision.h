@@ -89,6 +89,12 @@ namespace embree
 	  avg_edges += new_edge;
 	}
       dest.ring[0] = (vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
+      /* DBG_PRINT(vtx); */
+      /* DBG_PRINT(ring[0]); */
+      /* DBG_PRINT(dest.ring[num_vtx-1]); */
+      /* DBG_PRINT(dest.ring[1]); */
+      /* DBG_PRINT(dest.ring[0]); */
+
       dest.ring[num_vtx] = dest.ring[0]; // copy to last position
       avg_edges += dest.ring[0];
       // new vtx
@@ -100,6 +106,15 @@ namespace embree
     }
 
   };
+
+  __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
+    {
+      o << "vtx " << c.vtx << " valence " << c.valence << " num_vtx " << c.num_vtx << " ring: " << std::endl;
+      for (size_t i=0;i<c.num_vtx;i++)
+	o << i << " -> " << c.ring[i] << std::endl;
+      return o;
+    } 
+
 
 
   class __aligned(64) IrregularCatmullClarkPatch
@@ -117,10 +132,10 @@ namespace embree
     {
       dest0.valence = 4;
       dest0.num_vtx = 8;
-      dest0.vtx     = p0.vtx;
+      dest0.vtx     = p0.ring[0];
       dest1.valence = 4;
       dest1.num_vtx = 8;
-      dest1.vtx     = p1.vtx;
+      dest1.vtx     = p0.ring[0];
 
       // 1-ring for patch0
       dest0.ring[ 0] = p0.ring[p0.num_vtx-1];
@@ -163,7 +178,19 @@ namespace embree
       ring[2].update(patch[2].ring[2]);
       ring[3].update(patch[3].ring[3]);
 
+
+
+
       init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
+
+      /* DBG_PRINT(patch[0].ring[0]); */
+      /* DBG_PRINT(patch[1].ring[1]); */
+      /* DBG_PRINT(patch[2].ring[2]); */
+      /* DBG_PRINT(patch[3].ring[3]); */
+      /* DBG_PRINT(patch[0].ring[1]); */
+      /* DBG_PRINT(patch[1].ring[0]); */
+      /* exit(0); */
+
       init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
       init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
       init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
@@ -185,6 +212,7 @@ namespace embree
       init_regular(center,center_ring,2,patch[3].ring[1]);
       init_regular(center,center_ring,4,patch[2].ring[0]);
       init_regular(center,center_ring,6,patch[1].ring[3]);
+
     }
 
     __forceinline void init( FinalQuad& quad ) const
@@ -202,6 +230,13 @@ namespace embree
   };
 
 
+  __forceinline std::ostream &operator<<(std::ostream &o, const IrregularCatmullClarkPatch &p)
+    {
+      o << "geomID " << p.geomID << " primID " << p.primID << "rings: " << std::endl;
+      for (size_t i=0;i<4;i++)
+	o << i << " -> " << p.ring[i] << std::endl;
+      return o;
+    } 
 
 
   template<typename T>

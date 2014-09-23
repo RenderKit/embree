@@ -145,7 +145,12 @@ namespace embree
 	IrregularCatmullClarkPatch irregular_patch;
 	subdiv_patch.init( irregular_patch );
 
-	IrregularCatmullClarkPatch subpatches[4];
+	/* DBG_PRINT( irregular_patch.ring[0] ); */
+	/* DBG_PRINT( irregular_patch.ring[1] ); */
+	/* DBG_PRINT( irregular_patch.ring[2] ); */
+	/* DBG_PRINT( irregular_patch.ring[3] ); */
+
+
 	bool hit = false;
       
 #if 0
@@ -153,7 +158,17 @@ namespace embree
 
 	hit |= intersect1_quad(rayIndex,dir_xyz,org_xyz,and_mask,ray16,finalQuad);      
 #else
+	IrregularCatmullClarkPatch subpatches[4];
+
 	irregular_patch.subdivide(subpatches);
+
+	/* DBG_PRINT( subpatches[0] ); */
+	/* DBG_PRINT( subpatches[1] ); */
+	/* DBG_PRINT( subpatches[2] ); */
+	/* DBG_PRINT( subpatches[3] ); */
+	/* exit(0); */
+
+
 	for (size_t i=0;i<4;i++)
 	  {
 	    subpatches[i].init( finalQuad );
