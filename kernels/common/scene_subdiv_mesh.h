@@ -177,6 +177,7 @@ namespace embree
     /*! calculates the bounds of the i'th subdivision patch */
     __forceinline BBox3fa bounds(size_t i) const 
     {
+      // FIXME: per vertex bounds would help here but will waste memory
       BBox3fa b = empty;
       for (size_t j=0;j<4;j++)
 	b.extend( bounds_1ring(halfEdges[i*4+j]) );

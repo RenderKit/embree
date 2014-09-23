@@ -20,144 +20,10 @@
 #include "common/scene_subdiv_mesh.h"
 #include "common/scene_subdivision.h"
 
+// right now everything is shared between xeon and xeon phi, so moved all stuff to common/scene_subdivision.h
+
 namespace embree
 {
-
-  #define MAX_VALENCE 16
-
-  struct __aligned(64) FinalQuad
-  {
-    Vec3fa vtx[4];
-    Vec2f uv[2];
-    unsigned int geomID;
-    unsigned int primID;
-  };
-
-  struct __aligned(64) CatmullClark1Ring
-  {
-    Vec3fa vtx;
-    Vec3fa ring[2*MAX_VALENCE]; // two vertices per face
-    unsigned int valence;
-    unsigned int num_vtx;
-
-    CatmullClark1Ring() {}
-    
-    __forceinline void init(const SubdivMesh::HalfEdge *const h,
-			    const Vec3fa *const vertices)
-    {
-      size_t i=0;
-      vtx = vertices[ h->getStartVertexIndex() ];
-      DBG_PRINT( h->getStartVertexIndex() );
-      SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
-      do {
-	p = p->opposite();
-	ring[i++] = vertices[ p->getStartVertexIndex() ];
-	ring[i++] = vertices[ p->prev()->getStartVertexIndex() ];
-
-	DBG_PRINT( p->getStartVertexIndex() );
-	DBG_PRINT( p->prev()->getStartVertexIndex() );
-
-	/*! continue with next adjacent edge. */
-	p = p->next();
-      } while( p != h);
-      num_vtx = i;
-      valence = i >> 1;
-      // copy first vertex to last position
-      ring[num_vtx] = ring[0];
-      assert( i+1 < MAX_VALENCE );
-    }
-
-
-    __forceinline void update(CatmullClark1Ring &dest) const
-    {
-      dest.valence = valence;
-      dest.num_vtx = num_vtx;
-      Vec3fa avg_faces(0.0f,0.0f,0.0f);
-      // new face vtx
-      for (size_t i=0;i<valence;i++)
-	{
-	  const Vec3fa new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
-	  dest.ring[2*i + 1] = new_face;
-	  avg_faces += new_face;
-	}
-      // new edge vertices
-      Vec3fa avg_edges(0.0f,0.0f,0.0f);
-      for (size_t i=1;i<valence;i++)
-	{
-	  const Vec3fa new_edge = (vtx + ring[2*i] + dest.ring[2*i-1] + dest.ring[2*i+1]) * 0.25f;
-	  dest.ring[2*i + 0] = new_edge;
-	  avg_edges += new_edge;
-	}
-      dest.ring[0] = (vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
-      dest.ring[num_vtx] = dest.ring[0]; // copy to last position
-      avg_edges += dest.ring[0];
-      // new vtx
-      const float inv_valence = 1.0f / valence;
-      /* avg_faces *= inv_valence; */
-      /* avg_edges *= inv_valence; */
-
-      dest.vtx = (vtx + 2.0f * avg_edges + (float)(valence-3)*vtx) * inv_valence;
-    }
-
-  };
-
-  class RegularCatmullClarkPatch : public RegularCatmullClarkPatchT<Vec3fa> 
-  {
-  public:
-    
-  };
-
-  class __aligned(64) IrregularCatmullClarkPatch
-  {
-  public:
-    CatmullClark1Ring ring[4];
-
-    __forceinline void init_regular(const CatmullClark1Ring &p0,
-				    const CatmullClark1Ring &p1,
-				    CatmullClark1Ring &dest0,
-				    CatmullClark1Ring &dest1) const
-    {
-      dest0.valence = 4;
-      dest0.num_vtx = 8;
-      dest0.vtx     = p0.vtx;
-      dest1.valence = 4;
-      dest1.num_vtx = 8;
-      dest1.vtx     = p1.vtx;
-
-      // 1-ring for patch0
-      dest0.ring[ 0] = p0.ring[p0.num_vtx-1];
-      dest0.ring[ 1] = p1.ring[0];
-      dest0.ring[ 2] = p1.vtx;
-      dest0.ring[ 3] = p1.ring[p1.num_vtx-4];
-      dest0.ring[ 4] = p0.ring[1];
-      dest0.ring[ 5] = p0.ring[2];
-      dest0.ring[ 6] = p0.vtx;
-      dest0.ring[ 7] = p0.ring[p0.num_vtx-2];
-      // 1-ring for patch1
-      dest1.ring[ 0] = p1.vtx;
-      dest1.ring[ 1] = p1.ring[p1.num_vtx-4];
-      dest1.ring[ 2] = p0.ring[1];
-      dest1.ring[ 3] = p0.ring[2];
-      dest1.ring[ 4] = p0.vtx;
-      dest1.ring[ 5] = p0.ring[p0.num_vtx-2];
-      dest1.ring[ 6] = p0.ring[p0.num_vtx-1];
-      dest1.ring[ 7] = p1.ring[0];
-    }
-
-    __forceinline void subdivide(IrregularCatmullClarkPatch patch[4]) const
-    {
-      ring[0].update(patch[0].ring[0]);
-      ring[1].update(patch[1].ring[1]);
-      ring[2].update(patch[2].ring[2]);
-      ring[3].update(patch[3].ring[3]);
-
-      __aligned(64) Vec3fa center = (ring[0].vtx + ring[1].vtx + ring[2].vtx + ring[3].vtx) * 0.25f;
-      __aligned(64) Vec3fa center_ring[8];
-
-    }
-  };
-
-
 
   struct SubdivPatch1
   {
@@ -169,7 +35,7 @@ namespace embree
 				unsigned int geomID,
 				unsigned int primID,
 				size_t flags = 0) 
-    : first_half_edge(first_half_edge),
+      : first_half_edge(first_half_edge),
       vertices(vertices),
       geomID(geomID),
       primID(primID),
@@ -185,7 +51,9 @@ namespace embree
     __forceinline void init( IrregularCatmullClarkPatch& patch) const
     {
       for (size_t i=0;i<4;i++)
-	patch.ring[0].init(first_half_edge + i,vertices);
+	patch.ring[i].init(first_half_edge + i,vertices);
+      patch.geomID = geomID;
+      patch.primID = primID;
     }
 
     __forceinline void init( FinalQuad& quad ) const
@@ -267,6 +135,5 @@ namespace embree
       return o;
     } 
 
-  
+};
 
-}

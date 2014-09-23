@@ -17,6 +17,7 @@
 #pragma once
 
 #include "primitive.h"
+#include "common/scene_subdivision.h"
 
 namespace embree
 {
@@ -37,9 +38,12 @@ namespace embree
     __forceinline SubdivPatch1 () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline SubdivPatch1 (const SubdivMesh::HalfEdge* edge, const Vec3fa* vertices, 
-                                const unsigned int geomID, const unsigned int primID, const bool last)
-      : edge(edge), vertices(vertices), geom(geomID), prim(primID | (last << 31)) { }
+    __forceinline SubdivPatch1 (const SubdivMesh::HalfEdge* edge, 
+				const Vec3fa* vertices, 
+                                const unsigned int geom, 
+				const unsigned int prim, 
+				const bool last)
+      : first_half_edge(edge), vertices(vertices), geom(geom), prim(prim | (last << 31)) { }
 
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
@@ -68,11 +72,15 @@ namespace embree
       const PrimRef& prim = *prims;
       prims++;
 
-      const unsigned last   = list && !prims;
-      const unsigned geomID = prim.geomID();
-      const unsigned primID = prim.primID();
-      const SubdivMesh* const mesh = scene->getSubdivMesh(geomID);
-      new (this) SubdivPatch1(NULL,&mesh->getVertexPosition(0),geomID,primID,last); // FIXME: how to get edge from SubdivMesh?
+      const unsigned int last   = list && !prims;
+      const unsigned int geomID = prim.geomID();
+      const unsigned int primID = prim.primID();
+      const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
+      new (this) SubdivPatch1(&subdiv_mesh->getHalfEdgeForQuad( primID ),
+			      subdiv_mesh->getVertexPositionPtr(),
+			      geomID,
+			      primID,
+			      last); 
     }
 
     /*! builder interface to fill primitive */
@@ -81,17 +89,30 @@ namespace embree
       const PrimRef& prim = prims[i];
       i++;
 
-      const unsigned last = list && i >= end;
-      const unsigned geomID = prim.geomID();
-      const unsigned primID = prim.primID();
-      const SubdivMesh* const mesh = scene->getSubdivMesh(geomID);
-      new (this) SubdivPatch1(NULL,&mesh->getVertexPosition(0),geomID,primID,last); // FIXME: how to get edge from SubdivMesh?
+      const unsigned int last = list && i >= end;
+      const unsigned int geomID = prim.geomID();
+      const unsigned int primID = prim.primID();
+      const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
+      new (this) SubdivPatch1(&subdiv_mesh->getHalfEdgeForQuad( primID ),
+			      subdiv_mesh->getVertexPositionPtr(),
+			      geomID,
+			      primID,
+			      last); 
     }
+
+    __forceinline void init( IrregularCatmullClarkPatch& patch) const
+    {
+      for (size_t i=0;i<4;i++)
+	patch.ring[i].init(first_half_edge + i,vertices);
+      patch.geomID = geom;
+      patch.primID = prim;
+    }
+
     
   public:
-    const SubdivMesh::HalfEdge* edge;       //!< pointer to first half edge of this patch
-    const Vec3fa* vertices;                 //!< pointer to vertex array
-    unsigned geom;                          //!< geometry ID of the subdivision mesh this patch belongs to
-    unsigned prim;                          //!< primitive ID of this subdivision patch
+    const SubdivMesh::HalfEdge* first_half_edge;  //!< pointer to first half edge of this patch
+    const Vec3fa* vertices;                       //!< pointer to vertex array
+    unsigned int geom;                            //!< geometry ID of the subdivision mesh this patch belongs to
+    unsigned int prim;                            //!< primitive ID of this subdivision patch
   };
 }

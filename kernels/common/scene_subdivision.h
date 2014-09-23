@@ -18,8 +18,192 @@
 
 #include "common/geometry.h"
 
+// lots of code shared between xeon and xeon phi right now
+
 namespace embree
 {
+
+#define MAX_VALENCE 16
+
+  struct __aligned(64) FinalQuad
+  {
+    Vec3fa vtx[4];
+    Vec2f uv[2];
+    unsigned int geomID;
+    unsigned int primID;
+  };
+
+  struct __aligned(64) CatmullClark1Ring
+  {
+    Vec3fa vtx;
+    Vec3fa ring[2*MAX_VALENCE]; // two vertices per face
+    unsigned int valence;
+    unsigned int num_vtx;
+
+    CatmullClark1Ring() {}
+    
+    __forceinline void init(const SubdivMesh::HalfEdge *const h,
+			    const Vec3fa *const vertices)
+    {
+      size_t i=0;
+      vtx = vertices[ h->getStartVertexIndex() ];
+      //DBG_PRINT( h->getStartVertexIndex() );
+      SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
+      do {
+	p = p->opposite();
+	ring[i++] = vertices[ p->getStartVertexIndex() ];
+	ring[i++] = vertices[ p->prev()->getStartVertexIndex() ];
+
+	//DBG_PRINT( p->getStartVertexIndex() );
+	//DBG_PRINT( p->prev()->getStartVertexIndex() );
+
+	/*! continue with next adjacent edge. */
+	p = p->next();
+      } while( p != h);
+      num_vtx = i;
+      valence = i >> 1;
+      // copy first vertex to last position
+      ring[num_vtx] = ring[0];
+      assert( i+1 < MAX_VALENCE );
+    }
+
+
+    __forceinline void update(CatmullClark1Ring &dest) const
+    {
+      dest.valence = valence;
+      dest.num_vtx = num_vtx;
+      Vec3fa avg_faces(0.0f,0.0f,0.0f);
+      // new face vtx
+      for (size_t i=0;i<valence;i++)
+	{
+	  const Vec3fa new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
+	  dest.ring[2*i + 1] = new_face;
+	  avg_faces += new_face;
+	}
+      // new edge vertices
+      Vec3fa avg_edges(0.0f,0.0f,0.0f);
+      for (size_t i=1;i<valence;i++)
+	{
+	  const Vec3fa new_edge = (vtx + ring[2*i] + dest.ring[2*i-1] + dest.ring[2*i+1]) * 0.25f;
+	  dest.ring[2*i + 0] = new_edge;
+	  avg_edges += new_edge;
+	}
+      dest.ring[0] = (vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
+      dest.ring[num_vtx] = dest.ring[0]; // copy to last position
+      avg_edges += dest.ring[0];
+      // new vtx
+      const float inv_valence = 1.0f / valence;
+      /* avg_faces *= inv_valence; */
+      /* avg_edges *= inv_valence; */
+
+      dest.vtx = (vtx + 2.0f * avg_edges + (float)(valence-3)*vtx) * inv_valence;
+    }
+
+  };
+
+
+  class __aligned(64) IrregularCatmullClarkPatch
+  {
+  public:
+    CatmullClark1Ring ring[4];
+
+    unsigned int geomID;
+    unsigned int primID;
+
+    static __forceinline void init_regular(const CatmullClark1Ring &p0,
+					   const CatmullClark1Ring &p1,
+					   CatmullClark1Ring &dest0,
+					   CatmullClark1Ring &dest1) 
+    {
+      dest0.valence = 4;
+      dest0.num_vtx = 8;
+      dest0.vtx     = p0.vtx;
+      dest1.valence = 4;
+      dest1.num_vtx = 8;
+      dest1.vtx     = p1.vtx;
+
+      // 1-ring for patch0
+      dest0.ring[ 0] = p0.ring[p0.num_vtx-1];
+      dest0.ring[ 1] = p1.ring[0];
+      dest0.ring[ 2] = p1.vtx;
+      dest0.ring[ 3] = p1.ring[p1.num_vtx-4];
+      dest0.ring[ 4] = p0.ring[1];
+      dest0.ring[ 5] = p0.ring[2];
+      dest0.ring[ 6] = p0.vtx;
+      dest0.ring[ 7] = p0.ring[p0.num_vtx-2];
+      dest0.ring[ 8] = dest0.ring[ 0]; // copy last
+      // 1-ring for patch1
+      dest1.ring[ 0] = p1.vtx;
+      dest1.ring[ 1] = p1.ring[p1.num_vtx-4];
+      dest1.ring[ 2] = p0.ring[1];
+      dest1.ring[ 3] = p0.ring[2];
+      dest1.ring[ 4] = p0.vtx;
+      dest1.ring[ 5] = p0.ring[p0.num_vtx-2];
+      dest1.ring[ 6] = p0.ring[p0.num_vtx-1];
+      dest1.ring[ 7] = p1.ring[0];
+      dest1.ring[ 8] = dest1.ring[ 0]; // copy last
+
+    }
+
+    static __forceinline void init_regular(const Vec3fa &center, const Vec3fa center_ring[8], const size_t offset, CatmullClark1Ring &dest)
+    {
+      dest.valence = 4;
+      dest.num_vtx = 8;
+      dest.vtx     = center;
+      for (size_t i=0;i<8;i++)
+	dest.ring[i] = center_ring[(offset+i)%8];
+      dest.ring[8] = dest.ring[0]; // copy last
+    }
+ 
+
+    __forceinline void subdivide(IrregularCatmullClarkPatch patch[4]) const
+    {
+      ring[0].update(patch[0].ring[0]);
+      ring[1].update(patch[1].ring[1]);
+      ring[2].update(patch[2].ring[2]);
+      ring[3].update(patch[3].ring[3]);
+
+      init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
+      init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
+      init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
+      init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
+
+      __aligned(64) Vec3fa center = (ring[0].vtx + ring[1].vtx + ring[2].vtx + ring[3].vtx) * 0.25f;
+      __aligned(64) Vec3fa center_ring[8];
+
+      // counter-clockwise
+      center_ring[0] = ring[3].ring[0];
+      center_ring[1] = ring[3].vtx;
+      center_ring[2] = ring[2].ring[0];
+      center_ring[3] = ring[2].vtx;
+      center_ring[4] = ring[1].ring[0];
+      center_ring[5] = ring[1].vtx;
+      center_ring[6] = ring[0].ring[0];
+      center_ring[7] = ring[0].vtx;
+
+      init_regular(center,center_ring,0,patch[0].ring[2]);
+      init_regular(center,center_ring,2,patch[3].ring[1]);
+      init_regular(center,center_ring,4,patch[2].ring[0]);
+      init_regular(center,center_ring,6,patch[1].ring[3]);
+    }
+
+    __forceinline void init( FinalQuad& quad ) const
+    {
+      quad.vtx[0] = ring[0].vtx;
+      quad.vtx[1] = ring[1].vtx;
+      quad.vtx[2] = ring[2].vtx;
+      quad.vtx[3] = ring[3].vtx;
+      // uv[0] = 
+      // uv[1] = 
+      quad.geomID = geomID;
+      quad.primID = primID;
+    };
+
+  };
+
+
+
+
   template<typename T>
     class RegularCatmullClarkPatchT
     {
@@ -199,5 +383,14 @@ namespace embree
 	initSubPatches(edge,face,newQuadVertex,child);
       }
     };
+
+  class RegularCatmullClarkPatch : public RegularCatmullClarkPatchT<Vec3fa> 
+  {
+  public:
+    
+  };
+
+
+
 };
 

@@ -32,15 +32,33 @@ namespace embree
     };
 
     /*! Intersect a ray with the primitive. */
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom)
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, const void* geom)
     {
       STAT3(normal.trav_prims,1,1,1);
+
+      __aligned(64) FinalQuad finalQuad;
+
+      IrregularCatmullClarkPatch irregular_patch;
+      subdiv_patch.init( irregular_patch );
+      irregular_patch.init( finalQuad );
+
+      //intersect1_quad(ray,finalQuad);      
+
     }
 
     /*! Test if the ray is occluded by the primitive */
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, const void* geom)
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, const void* geom)
     {
       STAT3(shadow.trav_prims,1,1,1);
+
+      __aligned(64) FinalQuad finalQuad;
+
+      IrregularCatmullClarkPatch irregular_patch;
+      subdiv_patch.init( irregular_patch );
+      irregular_patch.init( finalQuad );
+
+      //return occluded1_quad(ray,finalQuad);      
+
       return false;
     }
   };
