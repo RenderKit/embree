@@ -2438,6 +2438,176 @@ namespace embree
     return true;
   }
 
+  struct RegressionTask
+  {
+    RegressionTask (size_t threadCount)
+      : scene(NULL), numActiveThreads(0) { barrier.init(threadCount); }
+
+    RTCScene scene;
+    BarrierSys barrier;
+    size_t numActiveThreads;
+  };
+
+  struct ThreadRegressionTask
+  {
+    ThreadRegressionTask (size_t threadIndex, size_t threadCount, RegressionTask* task)
+      : threadIndex(threadIndex), threadCount(threadCount), task(task) {}
+
+    size_t threadIndex;
+    size_t threadCount;
+    RegressionTask* task;
+  };
+
+  void rtcore_regression_dynamic_thread(void* ptr)
+  {
+    ThreadRegressionTask* thread = (ThreadRegressionTask*) ptr;
+    RegressionTask* task = thread->task;
+    if (thread->threadIndex > 0) 
+    {
+      task->barrier.wait();
+      if (thread->threadIndex < task->numActiveThreads)
+	rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+
+      for (size_t i=0; i<100; i++)
+        shootRays(task->scene);
+
+      delete thread; thread = NULL;
+      return;
+    }
+    task->scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
+    //AssertNoError();
+    int geom[1024];
+    int types[1024];
+    Sphere spheres[1024];
+    size_t numVertices[1024];
+    for (size_t i=0; i<1024; i++)  {
+      geom[i] = -1;
+      types[i] = 0;
+      numVertices[i] = 0;
+    }
+
+    for (size_t i=0; i<regressionN; i++) 
+    {
+      srand(i*23565);
+      if (i%20 == 0) std::cout << "." << std::flush;
+
+      for (size_t j=0; j<20; j++) 
+      {
+        int index = rand()%1024;
+        Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
+#if !defined(__MIC__)
+	switch (rand()%16) {
+	case 0: pos = Vec3fa(nan); break;
+	case 1: pos = Vec3fa(inf); break;
+	case 2: pos = Vec3fa(1E30f); break;
+	default: break;
+	};
+#endif
+        if (geom[index] == -1) 
+        {
+          int type = rand()%3;
+          size_t numPhi = rand()%100;
+          size_t numTriangles = 2*2*numPhi*(numPhi-1);
+          numTriangles = rand()%(numTriangles+1);
+          types[index] = type;
+          numVertices[index] = 2*numPhi*(numPhi+1);
+          switch (type) {
+          case 0: geom[index] = addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 1: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
+          case 2: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+
+          case 3: geom[index] = addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 4: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 5: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+            
+          case 6: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(task->scene,&spheres[index]); break;
+          }; 
+          //AssertNoError();
+        }
+        else 
+        {
+          switch (types[index]) {
+          case 0:
+          case 3:
+          case 6: {
+            rtcDeleteGeometry(task->scene,geom[index]);     
+            //AssertNoError();
+            geom[index] = -1; 
+            break;
+          }
+          case 1: 
+          case 2:
+          case 4: 
+          case 5: {
+            int op = rand()%2;
+            switch (op) {
+            case 0: {
+              rtcDeleteGeometry(task->scene,geom[index]);     
+              //AssertNoError();
+              geom[index] = -1; 
+              break;
+            }
+            case 1: {
+              Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
+              for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
+              rtcUnmapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
+
+              if (types[index] == 4 || types[index] == 5) {
+                Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
+                for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
+                rtcUnmapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
+              }
+              break;
+            }
+            }
+            break;
+          }
+          }
+        }
+      }
+
+      task->numActiveThreads = max(size_t(1),rand() % thread->threadCount);
+      task->barrier.wait();
+      rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+      //AssertNoError();
+
+      for (size_t i=0; i<100; i++)
+        shootRays(task->scene);
+    }
+    rtcDeleteScene (task->scene);
+    //AssertNoError();
+
+    delete thread; thread = NULL;
+    delete task; task = NULL;
+    return;
+  }
+
+  bool rtcore_regression_dynamic_thread_main ()
+  {
+    for (size_t i=0; i<2; i++) 
+    {
+      size_t numThreads = getNumberOfLogicalThreads();
+#if defined (__MIC__)
+      numThreads -= 4;
+#endif
+      
+      while (numThreads) 
+      {
+	size_t N = max(size_t(1),rand()%numThreads); numThreads -= N;
+	RegressionTask* task = new RegressionTask(N);
+	
+	for (size_t i=0; i<N; i++) 
+	  g_threads.push_back(createThread(rtcore_regression_dynamic_thread,new ThreadRegressionTask(i,N,task),1000000,numThreads+i));
+      }
+      
+      for (size_t i=0; i<g_threads.size(); i++)
+	join(g_threads[i]);
+      
+      g_threads.clear();
+    }
+    return true;
+  }
+
   bool rtcore_regression_garbage()
   {
     for (size_t i=0; i<5*regressionN; i++) 
@@ -2478,6 +2648,8 @@ namespace embree
     /* print Embree version */
     rtcInit("verbose=1");
     rtcExit();
+
+    //POSITIVE("regression_dynamic_thread",rtcore_regression_dynamic_thread_main());
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
