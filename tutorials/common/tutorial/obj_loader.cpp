@@ -93,7 +93,7 @@ namespace embree
   public:
 
     /*! Constructor. */
-    OBJLoader(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh);
+    OBJLoader(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh, const bool onlyQuads);
 
     /*! Destruction */
     ~OBJLoader();
@@ -109,6 +109,9 @@ namespace embree
     /*! output model */
     OBJScene& model;
     
+    /*! load only quads and ignore triangles */
+    bool onlyQuads;
+
     /*! Geometry buffer. */
     vector_t<Vec3fa> v;
     vector_t<Vec3fa> vn;
@@ -129,8 +132,8 @@ namespace embree
     uint32 getVertex(std::map<Vertex,uint32>& vertexMap, OBJScene::Mesh* mesh, const Vertex& i);
   };
 
-  OBJLoader::OBJLoader(const FileName &fileName, const AffineSpace3f& space, OBJScene& mesh) 
-    : path(fileName.path()), model(mesh), space(space)
+  OBJLoader::OBJLoader(const FileName &fileName, const AffineSpace3f& space, OBJScene& mesh, const bool onlyQuads) 
+    : path(fileName.path()), model(mesh), space(space), onlyQuads(onlyQuads)
   {
     /* open file */
     std::ifstream cin;
@@ -211,6 +214,8 @@ namespace embree
       // ignore unknown stuff
     }
     flushFaceGroup();
+
+
     cin.close();
   }
 
@@ -329,6 +334,28 @@ namespace embree
     {
       /* iterate over all faces */
       const std::vector<Vertex>& face = curGroup[j];
+
+      DBG_PRINT(face.size());
+
+      /* for subdivision test scenes */
+
+      if (onlyQuads && face.size() == 4)
+	{
+	  /* only look at position indices here */
+	  uint32 v0 = face[0].v;
+	  uint32 v1 = face[1].v;
+	  uint32 v2 = face[2].v;
+	  uint32 v3 = face[3].v;
+
+	  DBG_PRINT( v0 );
+	  DBG_PRINT( v1 );
+	  DBG_PRINT( v2 );
+	  DBG_PRINT( v3 );
+
+	  mesh->quads.push_back(OBJScene::Quad(v0,v1,v2,v3,curMaterial));
+	  continue;
+	}
+
       Vertex i0 = face[0], i1 = Vertex(-1), i2 = face[1];
 
       /* triangulate the face with a triangle fan */
@@ -343,11 +370,21 @@ namespace embree
         assert(v2 < mesh->v.size());
       }
     }
+
+    /* use vertex array as it is in quad-only mode */
+    if (onlyQuads)
+      {
+	for (size_t i=0;i<v.size();i++)
+	  {
+	    mesh->v.push_back(v[i]);
+	  }
+      }
+
     curGroup.clear();
   }
 
   void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh_o, const bool onlyQuads) {
-    OBJLoader loader(fileName,space,mesh_o); 
+    OBJLoader loader(fileName,space,mesh_o,onlyQuads); 
   }
 
   void OBJScene::Mesh::set_motion_blur(const Mesh* other)

@@ -214,13 +214,13 @@ void constructScene() {
     g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
 
     /*! Construct a cube shaped subdivision mesh. */
-    constructCubeMesh();
+    //constructCubeMesh();
 
     /*! Construct a triangle mesh object for the ground plane. */
-    constructGroundPlane();
+    //constructGroundPlane();
 
     /*! Commit the changes to the scene state. */
-    rtcxCommit(g_scene);
+    //rtcxCommit(g_scene);
 #endif
 
 }

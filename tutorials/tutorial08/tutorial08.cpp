@@ -151,7 +151,7 @@ namespace embree
 
     /* load scene */
     if (filename.str() != "")
-      loadOBJ(filename,one,g_obj_scene);
+      loadOBJ(filename,one,g_obj_scene,true);
 
     /*! Initialize Embree state. */
     init(g_rtcore.c_str());
