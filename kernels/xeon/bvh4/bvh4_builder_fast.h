@@ -105,7 +105,7 @@ namespace embree
       ~BVH4BuilderFast ();
    
       /* build function */
-      void build(size_t threadIndex, size_t threadCount);
+      virtual void build(size_t threadIndex, size_t threadCount);
 
       /* single threaded build */
       void build_sequential(size_t threadIndex, size_t threadCount);
@@ -251,6 +251,8 @@ namespace embree
     public:
       BVH4SubdivBuilderFast (BVH4* bvh, Scene* scene, size_t listMode);
       BVH4SubdivBuilderFast (BVH4* bvh, SubdivMesh* geom, size_t listMode);
+      virtual void build(size_t threadIndex, size_t threadCount);
+
       size_t number_of_primitives();
       void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
       void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo);
