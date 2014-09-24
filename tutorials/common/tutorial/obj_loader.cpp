@@ -345,10 +345,10 @@ namespace embree
 	  uint32 v2 = face[2].v;
 	  uint32 v3 = face[3].v;
 
-	  DBG_PRINT( v0 );
-	  DBG_PRINT( v1 );
-	  DBG_PRINT( v2 );
-	  DBG_PRINT( v3 );
+	  // DBG_PRINT( v0 );
+	  // DBG_PRINT( v1 );
+	  // DBG_PRINT( v2 );
+	  // DBG_PRINT( v3 );
 
 	  mesh->quads.push_back(OBJScene::Quad(v0,v1,v2,v3));
 	  continue;

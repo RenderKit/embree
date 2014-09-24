@@ -42,11 +42,88 @@ void error_handler(const RTCError code, const char* str)
   exit(code);
 }
 
+struct ISPCTriangle 
+{
+  int v0;                /*< first triangle vertex */
+  int v1;                /*< second triangle vertex */
+  int v2;                /*< third triangle vertex */
+  int materialID;        /*< material of triangle */
+};
+
+struct ISPCQuad
+{
+  int v0;                /*< first triangle vertex */
+  int v1;                /*< second triangle vertex */
+  int v2;                /*< third triangle vertex */
+  int v4;                /*< fourth triangle vertex */
+};
+
+struct ISPCMaterial
+{
+  int type;
+  int align[3];
+
+  int illum;             /*< illumination model */
+  float d;               /*< dissolve factor, 1=opaque, 0=transparent */
+  float Ns;              /*< specular exponent */
+  float Ni;              /*< optical density for the surface (index of refraction) */
+  
+  Vec3fa Ka;              /*< ambient reflectivity */
+  Vec3fa Kd;              /*< diffuse reflectivity */
+  Vec3fa Ks;              /*< specular reflectivity */
+  Vec3fa Tf;              /*< transmission filter */
+  Vec3fa v[2];
+};
+
+struct ISPCMesh
+{
+  Vec3fa* positions;    //!< vertex position array
+  Vec3fa* positions2;    //!< vertex position array
+  Vec3fa* normals;       //!< vertex normal array
+  Vec2f* texcoords;     //!< vertex texcoord array
+  ISPCTriangle* triangles;  //!< list of triangles
+  ISPCQuad* quads;  //!< list of triangles
+  int numVertices;
+  int numTriangles;
+  int numQuads;
+
+  Vec3fa dir;
+  float offset;
+};
+
+struct ISPCHair
+{
+ int vertex,id;  //!< index of first control point and hair ID
+};
+
+struct ISPCHairSet
+{
+ Vec3fa* positions;   //!< hair control points (x,y,z,r)
+ Vec3fa* positions2;   //!< hair control points (x,y,z,r)
+ ISPCHair* hairs;    //!< list of hairs
+ int numVertices;
+ int numHairs;
+};
+
+struct ISPCScene
+{
+  ISPCMesh** meshes;         //!< list of meshes
+  ISPCMaterial* materials;  //!< material list
+  int numMeshes;
+  int numMaterials;
+  ISPCHairSet** hairsets;
+  int numHairSets;
+  bool animate;
+};
+
+/* scene data */
+extern "C" ISPCScene* g_ispc_scene;
+
+
 /*! Embree state identifier for the scene. */
 RTCScene g_scene = NULL;
 
 /* scene data */
-//extern "C" ISPCScene* g_ispc_scene;
 
 /*! Requested subdivision level set in tutorial08.cpp. */
 extern int subdivisionLevel;
@@ -193,28 +270,74 @@ void constructScene() {
     /*! Create an Embree object to hold scene state. */
     g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
 
-#if 1
-    unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
+    unsigned int totalNumQuads = 0;
+    if (g_ispc_scene)
+      {
+	DBG_PRINT(g_ispc_scene->numMeshes);
 
-    void *vtx_data_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER);
-    assert( vtx_data_ptr );
-    memcpy( vtx_data_ptr , test_vertices, sizeof(Vec3fa) * VERTICES);
-    rtcUnmapBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER);
+	for (int i=0; i<g_ispc_scene->numMeshes; i++)
+	  {
+	    /* get ith mesh */
+	    ISPCMesh* mesh = g_ispc_scene->meshes[i];
+	    DBG_PRINT(mesh->quads);
 
-    void *vtx_index_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER);
-    assert( vtx_index_ptr );
-    memcpy( vtx_index_ptr , test_indices, sizeof(unsigned int) * EDGES);
-    rtcUnmapBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER);
+	    if (mesh->numQuads)
+	      {
+		totalNumQuads += mesh->numQuads;
+		unsigned int *offset_buffer = new unsigned int[mesh->numQuads];
+		for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = i*4;
 
-    void *vtx_offset_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER);
-    assert( vtx_offset_ptr );
-    memcpy( vtx_offset_ptr , test_offsets, sizeof(unsigned int) * FACES);
-    rtcUnmapBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER);
+		unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, 
+								  RTC_GEOMETRY_STATIC, 
+								  mesh->numQuads, 
+								  mesh->numQuads*4, 
+								  mesh->numVertices);
 
+		void *vtx_data_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER);
+		assert( vtx_data_ptr );
+		memcpy( vtx_data_ptr , mesh->positions, sizeof(Vec3fa) * mesh->numVertices);
+		rtcUnmapBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER);
+
+		void *vtx_index_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER);
+		assert( vtx_index_ptr );
+		memcpy( vtx_index_ptr , mesh->quads, sizeof(unsigned int) * mesh->numQuads*4);
+		rtcUnmapBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER);
+
+		void *vtx_offset_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER);
+		assert( vtx_offset_ptr );
+		memcpy( vtx_offset_ptr , offset_buffer, sizeof(unsigned int) * mesh->numQuads);
+		rtcUnmapBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER);
+
+		delete offset_buffer;
+	      }
+	  }       
+      }
+    
+
+    if (totalNumQuads == 0)
+      {
+	std::cout << "Loading dummy cube..." << std::endl;
+	unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
+
+	void *vtx_data_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER);
+	assert( vtx_data_ptr );
+	memcpy( vtx_data_ptr , test_vertices, sizeof(Vec3fa) * VERTICES);
+	rtcUnmapBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER);
+
+	void *vtx_index_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER);
+	assert( vtx_index_ptr );
+	memcpy( vtx_index_ptr , test_indices, sizeof(unsigned int) * EDGES);
+	rtcUnmapBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER);
+
+	void *vtx_offset_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER);
+	assert( vtx_offset_ptr );
+	memcpy( vtx_offset_ptr , test_offsets, sizeof(unsigned int) * FACES);
+	rtcUnmapBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER);
+      }
     
     rtcCommit(g_scene);
-#else
-    g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
+
+    //g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
 
     /*! Construct a cube shaped subdivision mesh. */
     //constructCubeMesh();
@@ -224,7 +347,6 @@ void constructScene() {
 
     /*! Commit the changes to the scene state. */
     //rtcxCommit(g_scene);
-#endif
 
 }
 
@@ -308,12 +430,14 @@ extern "C" void device_init(int8 *configuration) {
     //renderPixel = renderPixelStandard;
     renderPixel = renderPixelEyeLightTest;
 
-    constructScene();
 
 }
 
 extern "C" void device_render(int *pixels, int width, int height, float time, const Vec3fa &vx, const Vec3fa &vy, const Vec3fa &vz, const Vec3fa &p) {
-
+  if (g_scene == NULL)
+    {
+      constructScene();
+    }
     /*! Refine the subdivision mesh as needed. */
     static int currentLevel = 0;  if (currentLevel != subdivisionLevel) rtcDeleteScene(g_scene), constructScene(), currentLevel = subdivisionLevel;
 
