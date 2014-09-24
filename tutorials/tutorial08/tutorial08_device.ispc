@@ -130,6 +130,7 @@ export void device_init (uniform int8* uniform cfg)
   //renderPixel = renderPixelEyeLight;	
 }
 
+
 #define VERTICES 8
 #define EDGES    24
 #define FACES    (EDGES/4)
