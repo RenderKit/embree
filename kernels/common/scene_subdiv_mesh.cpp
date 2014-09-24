@@ -197,8 +197,11 @@ namespace embree
           }
       }
 
+#if 0
     for (size_t i=0;i<numHalfEdges;i++)
       std::cout << "Half-Edge " << i << " " << halfEdges[i] << std::endl;
+#endif
+
   }
 
   bool SubdivMesh::verify () 

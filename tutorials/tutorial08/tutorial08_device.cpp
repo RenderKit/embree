@@ -415,7 +415,7 @@ Vec3fa renderPixelEyeLightTest(float x, float y, const Vec3fa& vx, const Vec3fa&
   rtcIntersect(g_scene,ray);
 
   /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0,0,1.0f);
   else return Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
 }
 

@@ -259,7 +259,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
   
   /* shade all rays that hit something */
-  Vec3f color = make_Vec3f(1.0f);
+  Vec3f color = make_Vec3f(0,0,1.0f);
 #if 0
     color = rndColor(ray.geomID);
 #else
