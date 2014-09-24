@@ -29,7 +29,21 @@ namespace embree
       {
 	__aligned(64) FinalQuad finalQuad;
 	patch.init( finalQuad );
-	//intersect1_quad(ray,finalQuad); // TODO: NO IMPLEMENT YET
+        
+	intersectTri(finalQuad.vtx[0],
+                     finalQuad.vtx[1],
+                     finalQuad.vtx[2],
+                     ray,
+                     finalQuad.geomID,
+                     finalQuad.primID,NULL); 
+
+	intersectTri(finalQuad.vtx[2],
+                     finalQuad.vtx[3],
+                     finalQuad.vtx[0],
+                     ray,
+                     finalQuad.geomID,
+                     finalQuad.primID,NULL); 
+
       }
     else
       {

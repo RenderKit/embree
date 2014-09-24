@@ -242,6 +242,21 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
 
+   template<typename Primitive>
+   void BVH4SubdivBuilderFast<Primitive>::build(size_t threadIndex, size_t threadCount)
+    {
+      PING;
+      for (size_t i=0; i<this->scene->size(); i++) 
+      {
+	const Geometry* geom = this->scene->get(i);
+        if (geom == NULL || !geom->isEnabled()) continue;
+	if (!(geom->type != SUBDIV_MESH)) continue;
+        SubdivMesh* subdiv_mesh = (SubdivMesh*)geom;
+        subdiv_mesh->initializeHalfEdgeStructures();
+      }
+      BVH4BuilderFast::build(threadIndex,threadCount);
+    }
+ 
     template<typename Primitive>
     size_t BVH4SubdivBuilderFast<Primitive>::number_of_primitives() 
     {
