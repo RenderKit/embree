@@ -110,7 +110,7 @@ namespace embree
     };
 
 
-  private:
+  public: // FIXME: make private
     BufferT<Vec3fa> vertices[2];      //!< vertex array
 
     

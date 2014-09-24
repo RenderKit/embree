@@ -305,15 +305,15 @@ namespace embree
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
 #if 0 // FIXME: remove
-    scene->getSubdivMesh(0)->initializeHalfEdgeStructures();
-    IrregularSubdividedCatmullClarkPatch* patch = new IrregularSubdividedCatmullClarkPatch(scene->getSubdivMesh(0)->halfEdges, &scene->getSubdivMesh(0)->vertex(0,0));
+    getSubdivMesh(0)->initializeHalfEdgeStructures();
+    IrregularSubdividedCatmullClarkPatch* patch = new IrregularSubdividedCatmullClarkPatch(getSubdivMesh(0)->halfEdges, getSubdivMesh(0)->getVertexPositionPtr(0));
     for (size_t i=0; i<2; i++) {
       IrregularSubdividedCatmullClarkPatch* patch1 = new IrregularSubdividedCatmullClarkPatch(); 
       patch->subdivide(patch1);
       delete patch; patch = patch1;
     }
-    const size_t width  = patch->width();
-    const size_t height = patch->height();
+    const size_t width  = patch->points.width();
+    const size_t height = patch->points.height();
     TriangleMesh* mesh = new TriangleMesh (this, RTC_GEOMETRY_STATIC, (width-1)*(height-1)*2, width*height, 1);
     for (size_t y=0; y<height; y++) {
       for (size_t x=0; x<width; x++) {
@@ -323,13 +323,13 @@ namespace embree
     for (size_t y=0; y<height-1; y++) {
       for (size_t x=0; x<width-1; x++) {
         TriangleMesh::Triangle& tri0 = mesh->triangle(2*(y*width+x)+0);
-        tri0.v0 = (y+0)*width + (x+0);
-        tri0.v1 = (y+0)*width + (x+1);
-        tri0.v2 = (y+1)*width + (x+1);
+        tri0.v[0] = (y+0)*width + (x+0);
+        tri0.v[1] = (y+0)*width + (x+1);
+        tri0.v[2] = (y+1)*width + (x+1);
         TriangleMesh::Triangle& tri1 = mesh->triangle(2*(y*width+x)+1);
-        tri1.v0 = (y+0)*width + (x+0);
-        tri1.v1 = (y+1)*width + (x+1);
-        tri1.v2 = (y+1)*width + (x+0);
+        tri1.v[0] = (y+0)*width + (x+0);
+        tri1.v[1] = (y+1)*width + (x+1);
+        tri1.v[2] = (y+1)*width + (x+0);
       }
     }
     geometries.push_back(mesh);

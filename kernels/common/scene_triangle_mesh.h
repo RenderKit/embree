@@ -53,11 +53,25 @@ namespace embree
     }
     
     /*! returns i'th triangle*/
+    __forceinline Triangle& triangle(size_t i) {
+      assert(i < numTriangles);
+      return triangles[i];
+    }
+
+    /*! returns i'th triangle*/
     __forceinline const Triangle& triangle(size_t i) const {
       assert(i < numTriangles);
       return triangles[i];
     }
     
+    /*! returns i'th vertex of j'th timestep */
+    __forceinline Vec3fa& vertex(size_t i, size_t j = 0)  
+    {
+      assert(i < numVertices);
+      assert(j < numTimeSteps);
+      return vertices[j][i];
+    }
+
     /*! returns i'th vertex of j'th timestep */
     __forceinline const Vec3fa& vertex(size_t i, size_t j = 0) const 
     {

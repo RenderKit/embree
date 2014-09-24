@@ -49,6 +49,12 @@ namespace embree
         return array[y*size_x+x];
       }
 
+      __forceinline const Vec3fa& operator() (size_t x, size_t y) const {
+        assert(x<size_x);
+        assert(y<size_y);
+        return array[y*size_x+x];
+      }
+
     private:
       T* array;
       size_t size_x, size_y;
@@ -92,23 +98,22 @@ namespace embree
         __forceinline void subdivide (Ring& dest) const
         {
           dest.N = N;
-          for (size_t i=1; i<N; i+=2) F += dest.ring[i];
-          for (size_t i=0; i<N; i+=2) R += dest.ring[i];
 
           /* compute face points */
           Vec3fa F(zero);
-          for (size_t i=1; i<N; i+=2)
+          for (size_t i=1; i<N; i+=2) {
             const Vec3fa f = 0.25f*(vtx+ring[i-1]+ring[i]+ring[i+1]); F += f;
             dest.ring[i] = f;
+          }
 
           /* compute edge points */
           Vec3fa R(zero);
           const Vec3fa r = 0.5f*(vtx+ring[0]); R += r;
-          const Vec3fa f = 0.5f*(dst.ring[N-1] + dst.ring[1]);
+          const Vec3fa f = 0.5f*(dest.ring[N-1] + dest.ring[1]);
           dest.ring[0] = 0.5f*(f+r); 
           for (size_t i=1; i<N; i+=2) {
             const Vec3fa r = 0.5f*(vtx+ring[i]); R += r;
-            const Vec3fa f = 0.5f*(dst.ring[i-1] + dst.ring[i+1]);
+            const Vec3fa f = 0.5f*(dest.ring[i-1] + dest.ring[i+1]);
             dest.ring[i] = 0.5f*(f+r); 
           }
 
@@ -128,37 +133,57 @@ namespace embree
       __forceinline Vec3fa& vedge(size_t x, size_t y) { return points(2*x-1,2*y); }
       __forceinline Vec3fa& hedge(size_t x, size_t y) { return points(2*x,2*y-1); }
       __forceinline Vec3fa& point(size_t x, size_t y) { return points(2*x-1,2*y-1); }
+      __forceinline       Vec3fa& get  (size_t x, size_t y)       { return points(x,y); }
+      __forceinline const Vec3fa& get  (size_t x, size_t y) const { return points(x,y); }
+
+      IrregularSubdividedCatmullClarkPatch () {}
 
       IrregularSubdividedCatmullClarkPatch (size_t width, size_t height) 
       {
         points.init(width,height);
       }
 
-      IrregularSubdividedCatmullClarkPatch (const SubdivMesh::HalfEdge* const h, const Vec3fa *const vertices)
+      void init (size_t width, size_t height) {
+        points.init(width,height);
+      }
+
+      IrregularSubdividedCatmullClarkPatch (const SubdivMesh::HalfEdge* h, const Vec3fa *const vertices)
       {
         points.init(3,3);
+        ring00.init(h,vertices); h = h->next();
+        ring01.init(h,vertices); h = h->next();
+        ring11.init(h,vertices); h = h->next();
+        ring10.init(h,vertices); h = h->next();
         handle_corners();
       }
 
       void handle_corners()
       {
-        point(0  ,0  ) = ring00.vtx;
-        point(0  ,N-1) = ring01.vtx;
-        point(N-1,0  ) = ring10.vtx;
-        point(N-1,N-1) = ring11.vtx;
+        size_t w = points.width();
+        size_t h = points.height();
+        
+        points(0,0) = Vec3fa(zero);
+        points(1,1) = ring00.vtx;
+        points(1,0) = ring00.first();
+        points(0,1) = ring00.last();
 
-        vedge(  1,  0) = ring00.first();
-        vedge(  1,N-1) = ring01.last();
-        vedge(N-1,N-1) = ring11.first();
-        vedge(N-1,  0) = ring10.last();
+        points(0,h-1) = Vec3fa(zero);
+        points(1,h-2) = ring01.vtx;
+        points(1,h-1) = ring01.last();
+        points(0,h-2) = ring01.first();
 
-        hedge(  0,  1) = ring00.last();
-        hedge(  0,N-1) = ring01.first();
-        hedge(N-1,N-1) = ring11.last();
-        hedge(N-1,  1) = ring10.first();
+        points(w-1,h-1) = Vec3fa(zero);
+        points(w-2,h-2) = ring11.vtx;
+        points(w-2,h-1) = ring11.first();
+        points(w-1,h-2) = ring11.last();
+
+        points(w-1,0) = Vec3fa(zero);
+        points(w-2,1) = ring10.vtx;
+        points(w-2,0) = ring10.last();
+        points(w-1,1) = ring10.first();
       }
       
-      __forceinline void subdivide(IrregularSubdividedCatmullClarkPatch* out) const
+      __forceinline void subdivide(IrregularSubdividedCatmullClarkPatch* out)
       {
         /* greate properly sized output patch */
         const size_t width  = points.width();
