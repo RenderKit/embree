@@ -123,9 +123,7 @@ namespace embree
       IrregularCatmullClarkPatch irregular_patch;
       subdiv_patch.init( irregular_patch );
 
-      DBG_PRINT(irregular_patch);
-
-      subdivide_intersect1(ray,irregular_patch);
+      subdivide_intersect1(ray,irregular_patch,subdiv_patch.subdivision_level);
 
     }
 
@@ -137,8 +135,9 @@ namespace embree
       IrregularCatmullClarkPatch irregular_patch;
       subdiv_patch.init( irregular_patch );
 
-      subdivide_intersect1(ray,irregular_patch);
-
+      subdivide_intersect1(ray,irregular_patch,subdiv_patch.subdivision_level);
+      PING;
+      FATAL("NOT IMPLEMENTED YET");
       return false;
     }
   };
