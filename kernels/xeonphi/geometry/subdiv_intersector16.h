@@ -160,7 +160,7 @@ namespace embree
 
 	hit |= intersect1_quad(rayIndex,dir_xyz,org_xyz,and_mask,ray16,finalQuad);      
 #else
-	subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,irregular_patch,2);
+	subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,irregular_patch,subdiv_patch.subdivision_level);
 #endif
 
 	return hit;

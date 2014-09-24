@@ -164,8 +164,6 @@ namespace embree
 
     halfEdges = (HalfEdge*)os_malloc(numHalfEdges * sizeof(HalfEdge));
 
-    DBG_PRINT( halfEdges );
-
     /*! initialize all four half-edges for each face */
     for (size_t i=0;i<numFaces;i++)
       {
@@ -187,7 +185,6 @@ namespace embree
         unsigned int end   = halfEdges[i].getEndVertexIndex();
         if (end < start) std::swap(start,end);
         size_t value = ((size_t)start << 32) | (size_t)end; // FIXME: does not work in 32 bit mode
-        PRINT(value);
         std::map<size_t,unsigned int>::iterator found = edgeMap.find(value);
         if (found != edgeMap.end())
           {
