@@ -184,7 +184,7 @@ Vec3fa test_vertices[] = {
 
 unsigned int test_indices[EDGES] = {0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6,  0, 4, 7, 3,  4, 5, 6, 7,  0, 3, 2, 1};
 
-unsigned int test_offsets[FACES] = {0, 1, 2, 3, 4, 5};
+unsigned int test_offsets[FACES] = {0, 4, 8, 12, 16, 20};
 
 void constructScene() {
     /*! Create an Embree object to hold scene state. */
