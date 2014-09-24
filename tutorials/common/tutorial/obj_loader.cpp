@@ -335,8 +335,6 @@ namespace embree
       /* iterate over all faces */
       const std::vector<Vertex>& face = curGroup[j];
 
-      DBG_PRINT(face.size());
-
       /* for subdivision test scenes */
 
       if (onlyQuads && face.size() == 4)
@@ -352,7 +350,7 @@ namespace embree
 	  DBG_PRINT( v2 );
 	  DBG_PRINT( v3 );
 
-	  mesh->quads.push_back(OBJScene::Quad(v0,v1,v2,v3,curMaterial));
+	  mesh->quads.push_back(OBJScene::Quad(v0,v1,v2,v3));
 	  continue;
 	}
 

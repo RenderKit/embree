@@ -47,8 +47,10 @@ namespace embree
     Vec3fa* normals;       //!< vertex normal array
     Vec2f* texcoords;     //!< vertex texcoord array
     OBJScene::Triangle* triangles;  //!< list of triangles
+    OBJScene::Quad* quads;
     int numVertices;
     int numTriangles;
+    int numQuads;
     Vec3f dir;
     float offset;
   };
@@ -99,8 +101,10 @@ namespace embree
     out->normals = in->vn.size() ? &in->vn[0] : NULL;
     out->texcoords = in->vt.size() ? &in->vt[0] : NULL;
     out->triangles = in->triangles.size() ? &in->triangles[0] : NULL;
+    out->quads = in->quads.size() ? &in->quads[0] : NULL;
     out->numVertices = in->v.size();
     out->numTriangles = in->triangles.size();
+    out->numQuads = in->quads.size();   
     out->dir = normalize(Vec3f(drand48(),drand48(),drand48())-Vec3f(0.5f));
     out->offset = 5.0f*drand48();
     return out;

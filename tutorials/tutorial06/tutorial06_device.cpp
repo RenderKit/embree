@@ -37,6 +37,14 @@ struct ISPCTriangle
   int materialID;        /*< material of triangle */
 };
 
+struct ISPCQuad
+{
+  int v0;                /*< first triangle vertex */
+  int v1;                /*< second triangle vertex */
+  int v2;                /*< third triangle vertex */
+  int v4;                /*< fourth triangle vertex */
+};
+
 enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_DIELECTRIC, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE, MATERIAL_MIRROR, MATERIAL_REFLECTIVE_METAL };
 
 struct BRDF
@@ -63,8 +71,10 @@ struct ISPCMesh
   Vec3fa* normals;       //!< vertex normal array
   Vec2f* texcoords;     //!< vertex texcoord array
   ISPCTriangle* triangles;  //!< list of triangles
+  ISPCQuad* quads;  //!< list of triangles
   int numVertices;
   int numTriangles;
+  int numQuads;
 };
 
 struct Medium

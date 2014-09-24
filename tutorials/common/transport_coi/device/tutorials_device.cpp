@@ -37,27 +37,31 @@ namespace embree
   {
     ALIGNED_CLASS;
   public:
-    ISPCMesh (int numTriangles, int numVertices) 
-      : numTriangles(numTriangles), numVertices(numVertices),
-        positions(NULL), positions2(NULL), normals(NULL), texcoords(NULL), triangles(NULL), dir(zero), offset(zero) 
+    ISPCMesh (int numTriangles, int numQuads, int numVertices) 
+      : numTriangles(numTriangles), numQuads(numQuads), numVertices(numVertices),
+        positions(NULL), positions2(NULL), normals(NULL), texcoords(NULL), triangles(NULL), quads(NULL), dir(zero), offset(zero) 
     {
       sizePositions = 0;
       sizeNormals   = 0;
       sizeTexCoords = 0;
       sizeTriangles = 0;
+      sizeQuads     = 0;
     }
 
     ~ISPCMesh () {
-      if (positions) os_free(positions,sizePositions);
+      if (positions)  os_free(positions ,sizePositions);
       if (positions2) os_free(positions2,sizePositions);
-      if (normals)   os_free(normals  ,sizeNormals);
-      if (texcoords) os_free(texcoords,sizeTexCoords);
-      if (triangles) os_free(triangles,sizeTriangles);
+      if (normals)    os_free(normals   ,sizeNormals);
+      if (texcoords)  os_free(texcoords ,sizeTexCoords);
+      if (triangles)  os_free(triangles ,sizeTriangles);
+      if (quads)      os_free(quads     ,sizeQuads);
+
       positions = NULL;
       positions2 = NULL;
       normals   = NULL;
       texcoords = NULL;
       triangles = NULL;
+      quads = NULL;
     }
 
   public:
@@ -66,14 +70,17 @@ namespace embree
     Vec3fa* normals;       //!< vertex normal array
     Vec2f* texcoords;     //!< vertex texcoord array
     OBJScene::Triangle* triangles;  //!< list of triangles
+    OBJScene::Quad* quads;  //!< list of quads
     int numVertices;
     int numTriangles;
+    int numQuads;
     Vec3f dir;
     float offset;
     size_t sizePositions;
     size_t sizeNormals;
     size_t sizeTexCoords;
     size_t sizeTriangles;
+    size_t sizeQuads;
   };
 
   /* ISPC compatible scene */
@@ -224,29 +231,40 @@ namespace embree
                                   uint16_t         in_ReturnValueLength)
   {
     size_t meshID = g_meshID++;
-    ISPCMesh* mesh = new ISPCMesh(in_pMiscData->numTriangles,in_pMiscData->numVertices);
+    // DBG_PRINT( in_pMiscData->numTriangles );
+    // DBG_PRINT( in_pMiscData->numQuads );
+    // DBG_PRINT( in_pMiscData->numVertices );
+    ISPCMesh* mesh = new ISPCMesh(in_pMiscData->numTriangles,in_pMiscData->numQuads,in_pMiscData->numVertices);
     assert( mesh );
     assert( in_pMiscData->numTriangles*sizeof(OBJScene::Triangle) == in_pBufferLengths[3] );
+    assert( in_pMiscData->numQuads*sizeof(OBJScene::Quad) == in_pBufferLengths[4] );
+
     //assert( in_pMiscData->numVertices*sizeof(Vec3fa) == in_pBufferLengths[1] );
 
     mesh->positions = (Vec3fa*)os_malloc(in_pBufferLengths[0]);
     mesh->normals   = (Vec3fa*)os_malloc(in_pBufferLengths[1]);
     mesh->texcoords = (Vec2f* )os_malloc(in_pBufferLengths[2]);
     mesh->triangles = (OBJScene::Triangle*)os_malloc(in_pBufferLengths[3]);
+    mesh->quads     = (OBJScene::Quad*)os_malloc(in_pBufferLengths[4]);
+
     memcpy(mesh->positions,in_ppBufferPointers[0],in_pBufferLengths[0]);
     memcpy(mesh->normals  ,in_ppBufferPointers[1],in_pBufferLengths[1]);
     memcpy(mesh->texcoords,in_ppBufferPointers[2],in_pBufferLengths[2]);
     memcpy(mesh->triangles,in_ppBufferPointers[3],in_pBufferLengths[3]);
+    memcpy(mesh->quads    ,in_ppBufferPointers[4],in_pBufferLengths[4]);
+
     mesh->sizePositions = in_pBufferLengths[0];
     mesh->sizeNormals   = in_pBufferLengths[1];
     mesh->sizeTexCoords = in_pBufferLengths[2];
     mesh->sizeTriangles = in_pBufferLengths[3];
+    mesh->sizeQuads     = in_pBufferLengths[4];
     
 #if 0
     DBG_PRINT( mesh->sizePositions );
     DBG_PRINT( mesh->sizeNormals );
     DBG_PRINT( mesh->sizeTexCoords );
     DBG_PRINT( mesh->sizeTriangles );
+    DBG_PRINT( mesh->sizeQuads );
 #endif
 
     g_ispc_scene->meshes[meshID] = mesh;

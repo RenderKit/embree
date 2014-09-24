@@ -56,6 +56,14 @@ struct ISPCTriangle
   int materialID;        /*< material of triangle */
 };
 
+struct ISPCQuad
+{
+  int v0;                /*< first triangle vertex */
+  int v1;                /*< second triangle vertex */
+  int v2;                /*< third triangle vertex */
+  int v4;                /*< fourth triangle vertex */
+};
+
 struct ISPCMaterial
 {
   int illum;             /*< illumination model */
@@ -87,13 +95,15 @@ struct ISPCHairSet
 
 struct ISPCMesh
 {
-  Vec3fa* positions;    //!< vertex position array
-  Vec3fa* positions2;    //!< vertex position array
-  Vec3fa* normals;       //!< vertex normal array
-  Vec2f* texcoords;     //!< vertex texcoord array
-  ISPCTriangle* triangles;  //!< list of triangles
+  uniform Vec3fa* positions;    //!< vertex position array
+  uniform Vec3fa* positions2;    //!< vertex position array
+  uniform Vec3fa* normals;       //!< vertex normal array
+  uniform Vec2f* texcoords;     //!< vertex texcoord array
+  uniform ISPCTriangle* triangles;  //!< list of triangles
+  uniform ISPCQuad* quads;  //!< list of triangles
   int numVertices;
   int numTriangles;
+  int numQuads;
 };
 
 struct ISPCScene

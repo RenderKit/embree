@@ -45,6 +45,7 @@ namespace embree
   {
     int numVertices;
     int numTriangles;
+    int numQuads;
     Vec3f dir;
     Vec3f offset;
   };

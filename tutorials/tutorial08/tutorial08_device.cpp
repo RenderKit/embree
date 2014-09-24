@@ -15,9 +15,9 @@
 // ======================================================================== //
 
 #include "tutorial/tutorial_device.h"
-#include "opensubdiv/hbr/mesh.h"
-#include "extensions/triangulatemesh.h"
-#include "extensions/subdivisionmesh.h"
+// #include "opensubdiv/hbr/mesh.h"
+// #include "extensions/triangulatemesh.h"
+// #include "extensions/subdivisionmesh.h"
 
 /*! Function used to render a pixel. */
 renderPixelFunc renderPixel;
@@ -44,6 +44,9 @@ void error_handler(const RTCError code, const char* str)
 
 /*! Embree state identifier for the scene. */
 RTCScene g_scene = NULL;
+
+/* scene data */
+//extern "C" ISPCScene* g_ispc_scene;
 
 /*! Requested subdivision level set in tutorial08.cpp. */
 extern int subdivisionLevel;
@@ -72,100 +75,100 @@ unsigned int packPixel(const Vec3f &color) {
 
 }
 
-void constructCubeFaces(OpenSubdiv::HbrMesh<Vec3f> *mesh) {
+// void constructCubeFaces(OpenSubdiv::HbrMesh<Vec3f> *mesh) {
 
-    const int32_t cubeIndices[24] = {0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6,  0, 4, 7, 3,  4, 5, 6, 7,  0, 3, 2, 1};
+//     const int32_t cubeIndices[24] = {0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6,  0, 4, 7, 3,  4, 5, 6, 7,  0, 3, 2, 1};
 
-    mesh->NewFace(4, &cubeIndices[ 0], 0);
-    mesh->NewFace(4, &cubeIndices[ 4], 0);
-    mesh->NewFace(4, &cubeIndices[ 8], 0);
-    mesh->NewFace(4, &cubeIndices[12], 0);
-    mesh->NewFace(4, &cubeIndices[16], 0);
-    mesh->NewFace(4, &cubeIndices[20], 0);
+//     mesh->NewFace(4, &cubeIndices[ 0], 0);
+//     mesh->NewFace(4, &cubeIndices[ 4], 0);
+//     mesh->NewFace(4, &cubeIndices[ 8], 0);
+//     mesh->NewFace(4, &cubeIndices[12], 0);
+//     mesh->NewFace(4, &cubeIndices[16], 0);
+//     mesh->NewFace(4, &cubeIndices[20], 0);
 
-}
+// }
 
-void constructCubeVertices(OpenSubdiv::HbrMesh<Vec3f> *mesh) {
+// void constructCubeVertices(OpenSubdiv::HbrMesh<Vec3f> *mesh) {
 
-    mesh->NewVertex(Vec3f(-1.0f, -1.0f, -1.0f));
-    mesh->NewVertex(Vec3f( 1.0f, -1.0f, -1.0f));
-    mesh->NewVertex(Vec3f( 1.0f, -1.0f,  1.0f));
-    mesh->NewVertex(Vec3f(-1.0f, -1.0f,  1.0f));
-    mesh->NewVertex(Vec3f(-1.0f,  1.0f, -1.0f));
-    mesh->NewVertex(Vec3f( 1.0f,  1.0f, -1.0f));
-    mesh->NewVertex(Vec3f( 1.0f,  1.0f,  1.0f));
-    mesh->NewVertex(Vec3f(-1.0f,  1.0f,  1.0f));
+//     mesh->NewVertex(Vec3f(-1.0f, -1.0f, -1.0f));
+//     mesh->NewVertex(Vec3f( 1.0f, -1.0f, -1.0f));
+//     mesh->NewVertex(Vec3f( 1.0f, -1.0f,  1.0f));
+//     mesh->NewVertex(Vec3f(-1.0f, -1.0f,  1.0f));
+//     mesh->NewVertex(Vec3f(-1.0f,  1.0f, -1.0f));
+//     mesh->NewVertex(Vec3f( 1.0f,  1.0f, -1.0f));
+//     mesh->NewVertex(Vec3f( 1.0f,  1.0f,  1.0f));
+//     mesh->NewVertex(Vec3f(-1.0f,  1.0f,  1.0f));
 
-}
+// }
 
-void triangulateMesh(RTCScene sceneID, unsigned int meshID, SubdivisionMesh &mesh) {
+// void triangulateMesh(RTCScene sceneID, unsigned int meshID, SubdivisionMesh &mesh) {
 
-    /*! Map the triangle mesh vertex buffer from Embree space into user space. */
-    Vertex *vertices = (Vertex *) rtcMapBuffer(sceneID, meshID, RTC_VERTEX_BUFFER);
+//     /*! Map the triangle mesh vertex buffer from Embree space into user space. */
+//     Vertex *vertices = (Vertex *) rtcMapBuffer(sceneID, meshID, RTC_VERTEX_BUFFER);
 
-    /*! Copy vertex data from the subdivision mesh into the triangle mesh buffer. */
-    for (size_t i=0 ; i < mesh.vertexCount() ; i++) { Vec3f p = mesh.getCoordinates(i);  vertices[i].x = p.x;  vertices[i].y = p.y;  vertices[i].z = p.z; }
+//     /*! Copy vertex data from the subdivision mesh into the triangle mesh buffer. */
+//     for (size_t i=0 ; i < mesh.vertexCount() ; i++) { Vec3f p = mesh.getCoordinates(i);  vertices[i].x = p.x;  vertices[i].y = p.y;  vertices[i].z = p.z; }
 
-    /*! Unmap the triangle mesh buffer. */
-    rtcUnmapBuffer(sceneID, meshID, RTC_VERTEX_BUFFER);
+//     /*! Unmap the triangle mesh buffer. */
+//     rtcUnmapBuffer(sceneID, meshID, RTC_VERTEX_BUFFER);
 
-    /*! Map the triangle mesh index buffer from Embree space into user space. */
-    Triangle *triangles = (Triangle *) rtcMapBuffer(sceneID, meshID, RTC_INDEX_BUFFER);
+//     /*! Map the triangle mesh index buffer from Embree space into user space. */
+//     Triangle *triangles = (Triangle *) rtcMapBuffer(sceneID, meshID, RTC_INDEX_BUFFER);
 
-    /* Copy vertex indices into the triangle mesh buffer. */
-    for (size_t i=0, j=0 ; i < mesh.faceCount() ; j += mesh.getFace(i).vertexCount() - 2, i++) triangulateFace(mesh.getFace(i), &triangles[j]);
+//     /* Copy vertex indices into the triangle mesh buffer. */
+//     for (size_t i=0, j=0 ; i < mesh.faceCount() ; j += mesh.getFace(i).vertexCount() - 2, i++) triangulateFace(mesh.getFace(i), &triangles[j]);
 
-    /*! Unmap the triangle mesh buffer. */
-    rtcUnmapBuffer(sceneID, meshID, RTC_INDEX_BUFFER);
+//     /*! Unmap the triangle mesh buffer. */
+//     rtcUnmapBuffer(sceneID, meshID, RTC_INDEX_BUFFER);
 
-}
+// }
 
-void constructCubeMesh() {
+// void constructCubeMesh() {
 
-    /*! The subdivision algorithm is specified by the HbrSubdivision object subtype (currently ignored). */
-    OpenSubdiv::HbrCatmarkSubdivision<Vec3f> *method = new OpenSubdiv::HbrCatmarkSubdivision<Vec3f>();
+//     /*! The subdivision algorithm is specified by the HbrSubdivision object subtype (currently ignored). */
+//     OpenSubdiv::HbrCatmarkSubdivision<Vec3f> *method = new OpenSubdiv::HbrCatmarkSubdivision<Vec3f>();
 
-    /*! Create a subdivision mesh object in OpenSubdiv. */
-    OpenSubdiv::HbrMesh<Vec3f> *mesh = new OpenSubdiv::HbrMesh<Vec3f>(method);
+//     /*! Create a subdivision mesh object in OpenSubdiv. */
+//     OpenSubdiv::HbrMesh<Vec3f> *mesh = new OpenSubdiv::HbrMesh<Vec3f>(method);
 
-    /*! Add vertices and faces to the mesh. */
-    constructCubeVertices(mesh);  constructCubeFaces(mesh);
+//     /*! Add vertices and faces to the mesh. */
+//     constructCubeVertices(mesh);  constructCubeFaces(mesh);
 
-    /*! Construct the corresponding subdivision mesh in Embree. */
-    mesh->Finish(g_scene);
+//     /*! Construct the corresponding subdivision mesh in Embree. */
+//     mesh->Finish(g_scene);
 
-    /*! The OpenSubdiv mesh is no longer needed. */
-    delete mesh;  delete method;
+//     /*! The OpenSubdiv mesh is no longer needed. */
+//     delete mesh;  delete method;
 
-}
+// }
 
-void constructGroundPlane() {
+// void constructGroundPlane() {
 
-    /*! Plane vertices. */
-    Vertex planeVertices[4] = {{-100, -2, -100, 0}, {-100, -2, 100, 0}, {100, -2, -100, 0}, {100, -2, 100, 0}};
+//     /*! Plane vertices. */
+//     Vertex planeVertices[4] = {{-100, -2, -100, 0}, {-100, -2, 100, 0}, {100, -2, -100, 0}, {100, -2, 100, 0}};
 
-    /*! Construct a triangle mesh object. */
-    unsigned int meshID = rtcNewTriangleMesh(g_scene, RTC_GEOMETRY_STATIC, 2, 4);
+//     /*! Construct a triangle mesh object. */
+//     unsigned int meshID = rtcNewTriangleMesh(g_scene, RTC_GEOMETRY_STATIC, 2, 4);
 
-    /*! Map the triangle mesh vertex buffer from Embree space into user space. */
-    Vertex *vertices = (Vertex *) rtcMapBuffer(g_scene, meshID, RTC_VERTEX_BUFFER);
+//     /*! Map the triangle mesh vertex buffer from Embree space into user space. */
+//     Vertex *vertices = (Vertex *) rtcMapBuffer(g_scene, meshID, RTC_VERTEX_BUFFER);
 
-    /*! Copy vertex data into the triangle mesh buffer. */
-    memcpy(vertices, planeVertices, 4 * sizeof(Vertex));
+//     /*! Copy vertex data into the triangle mesh buffer. */
+//     memcpy(vertices, planeVertices, 4 * sizeof(Vertex));
 
-    /*! Unmap the triangle mesh buffer. */
-    rtcUnmapBuffer(g_scene, meshID, RTC_VERTEX_BUFFER);
+//     /*! Unmap the triangle mesh buffer. */
+//     rtcUnmapBuffer(g_scene, meshID, RTC_VERTEX_BUFFER);
 
-    /*! Map the triangle mesh index buffer from Embree space into user space. */
-    Triangle *triangles = (Triangle *) rtcMapBuffer(g_scene, meshID, RTC_INDEX_BUFFER);
+//     /*! Map the triangle mesh index buffer from Embree space into user space. */
+//     Triangle *triangles = (Triangle *) rtcMapBuffer(g_scene, meshID, RTC_INDEX_BUFFER);
 
-    /*! Copy vertex indices into the triangle mesh buffer. */
-    triangles[0].v0 = 0;  triangles[0].v1 = 2;  triangles[0].v2 = 1;  triangles[1].v0 = 1;  triangles[1].v1 = 2;  triangles[1].v2 = 3;
+//     /*! Copy vertex indices into the triangle mesh buffer. */
+//     triangles[0].v0 = 0;  triangles[0].v1 = 2;  triangles[0].v2 = 1;  triangles[1].v0 = 1;  triangles[1].v1 = 2;  triangles[1].v2 = 3;
 
-    /*! Unmap the triangle mesh buffer. */
-    rtcUnmapBuffer(g_scene, meshID, RTC_INDEX_BUFFER);
+//     /*! Unmap the triangle mesh buffer. */
+//     rtcUnmapBuffer(g_scene, meshID, RTC_INDEX_BUFFER);
 
-}
+// }
 
 #define VERTICES 8
 #define EDGES    24
@@ -305,7 +308,6 @@ extern "C" void device_init(int8 *configuration) {
     //renderPixel = renderPixelStandard;
     renderPixel = renderPixelEyeLightTest;
 
-    /*! Construct a scene with a cube shaped subdivision mesh and a ground plane. */
     constructScene();
 
 }

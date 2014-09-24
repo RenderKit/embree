@@ -26,6 +26,14 @@ struct ISPCTriangle
   int materialID;        /*< material of triangle */
 };
 
+struct ISPCQuad
+{
+  int v0;                /*< first triangle vertex */
+  int v1;                /*< second triangle vertex */
+  int v2;                /*< third triangle vertex */
+  int v4;                /*< fourth triangle vertex */
+};
+
 struct ISPCMaterial
 {
   int type;
@@ -49,8 +57,10 @@ struct ISPCMesh
   uniform Vec3fa* normals;       //!< vertex normal array
   uniform Vec2f* texcoords;     //!< vertex texcoord array
   uniform ISPCTriangle* triangles;  //!< list of triangles
+  uniform ISPCQuad* quads;  //!< list of triangles
   int numVertices;
   int numTriangles;
+  int numQuads;
   Vec3f dir;
   float offset;
 };
