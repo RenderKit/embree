@@ -73,9 +73,15 @@ namespace embree
       dest.valence = valence;
       dest.num_vtx = num_vtx;
       // new face vtx
+      Vec3fa avg_faces(0.0f,0.0f,0.0f);
+      Vec3fa avg_edges(0.0f,0.0f,0.0f);
+
       for (size_t i=0;i<valence;i++)
 	{
 	  const Vec3fa new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
+	  avg_faces += dest.ring[2*i+1];
+	  avg_edges += (vtx + ring[2*i]) * 0.5f;
+
 	  dest.ring[2*i + 1] = new_face;
 	}
       // new edge vertices
@@ -85,25 +91,10 @@ namespace embree
 	  dest.ring[2*i + 0] = new_edge;
 	}
       dest.ring[0] = (vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
-      /* DBG_PRINT(vtx); */
-      /* DBG_PRINT(ring[0]); */
-      /* DBG_PRINT(dest.ring[num_vtx-1]); */
-      /* DBG_PRINT(dest.ring[1]); */
-      /* DBG_PRINT(dest.ring[0]); */
-      //avg_edges += dest.ring[0];
 
       dest.ring[num_vtx] = dest.ring[0]; // copy to last position
       // new vtx
       const float inv_valence = 1.0f / (float)valence;
-
-      Vec3fa avg_faces(0.0f,0.0f,0.0f);
-      Vec3fa avg_edges(0.0f,0.0f,0.0f);
-
-      for (size_t i=0;i<valence;i++)
-	{
-	  avg_edges += dest.ring[2*i+0];
-	  avg_faces += dest.ring[2*i+1];
-	}
 
       avg_faces *= inv_valence;
       avg_edges *= inv_valence; 
