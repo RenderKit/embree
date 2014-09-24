@@ -19,11 +19,13 @@
 #if !defined(__MIC__)
 #include "bvh4/bvh4.h"
 #include "bvh8/bvh8.h"
+#include "bvh4/bvh4_builder_subdiv.h"
 #else
 #include "xeonphi/bvh4i/bvh4i.h"
 #include "xeonphi/bvh4mb/bvh4mb.h"
 #include "xeonphi/bvh4hair/bvh4hair.h"
 #endif
+
 
 namespace embree
 {
@@ -302,6 +304,16 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
+#if 1 // FIXME: remove
+
+    Vec3fa points[3][3];
+    points[0][0] = Vec3fa(-1.0f, -1.0f, -1.0f);
+    points[0][0] = Vec3fa(-1.0f, -1.0f, -1.0f);
+
+    IrregularSubdividedCatmullClarkPatch patch;
+    
+#endif
+
     /* all user worker threads properly enter and leave the tasking system */
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex != 0) return;
