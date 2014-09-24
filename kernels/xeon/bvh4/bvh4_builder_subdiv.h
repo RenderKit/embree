@@ -21,8 +21,8 @@
 
 namespace embree
 {
-  namespace isa
-  {
+  //namespace isa
+  //{
     template<typename T>
     class Array2D
     {
@@ -44,7 +44,9 @@ namespace embree
       }
 
       __forceinline Vec3fa& operator() (size_t x, size_t y) {
-        return array[y*width+x];
+        assert(x<size_x);
+        assert(y<size_y);
+        return array[y*size_x+x];
       }
 
     private:
@@ -60,6 +62,33 @@ namespace embree
         Vec3fa ring[2*MAX_VALENCE]; //!< two vertices per face
         unsigned int N;             //!< number of vertices
         
+        __forceinline Vec3fa& first() {
+          assert(N>2);
+          return ring[2];
+        }
+
+        __forceinline Vec3fa& last() {
+          assert(N>=4);
+          return ring[N-4];
+        }
+
+        __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa *const vertices)
+        {
+          size_t i=0;
+          vtx = vertices[ h->getStartVertexIndex() ];
+          SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*)h;
+          do {
+            p = p->opposite();
+            ring[i++] = vertices[ p->getStartVertexIndex() ];
+            ring[i++] = vertices[ p->prev()->getStartVertexIndex() ];
+            
+            /*! continue with next adjacent edge. */
+            p = p->next();
+          } while( p != h);
+          N = i;
+          assert( N < MAX_VALENCE );
+        }
+
         __forceinline void subdivide (Ring& dest) const
         {
           dest.N = N;
@@ -100,49 +129,66 @@ namespace embree
       __forceinline Vec3fa& hedge(size_t x, size_t y) { return points(2*x,2*y-1); }
       __forceinline Vec3fa& point(size_t x, size_t y) { return points(2*x-1,2*y-1); }
 
-      IrregularSubdividedCatmullClarkPatch (Vec3fa patch[3][3])
+      IrregularSubdividedCatmullClarkPatch (size_t width, size_t height) 
       {
-        init(3,3);
-        for (size_t y=0; y<3; y++)
-          for (size_t x=0; x<3; x++)
-            points(x,y) = patch[y][x];
-      }
-
-      void init(size_t width, size_t height) {
         points.init(width,height);
       }
+
+      IrregularSubdividedCatmullClarkPatch (const SubdivMesh::HalfEdge* const h, const Vec3fa *const vertices)
+      {
+        points.init(3,3);
+        handle_corners();
+      }
+
+      void handle_corners()
+      {
+        point(0  ,0  ) = ring00.vtx;
+        point(0  ,N-1) = ring01.vtx;
+        point(N-1,0  ) = ring10.vtx;
+        point(N-1,N-1) = ring11.vtx;
+
+        vedge(  1,  0) = ring00.first();
+        vedge(  1,N-1) = ring01.last();
+        vedge(N-1,N-1) = ring11.first();
+        vedge(N-1,  0) = ring10.last();
+
+        hedge(  0,  1) = ring00.last();
+        hedge(  0,N-1) = ring01.first();
+        hedge(N-1,N-1) = ring11.last();
+        hedge(N-1,  1) = ring10.first();
+      }
       
-      __forceinline void subdivide(IrregularSubdividedCatmullClarkPatch& out) const
+      __forceinline void subdivide(IrregularSubdividedCatmullClarkPatch* out) const
       {
         /* greate properly sized output patch */
         const size_t width  = points.width();
         const size_t height = points.height();
-        out.init(2*width-3, 2*height-3);
+        out->init(2*width-3, 2*height-3);
 
         /* subdivide corner rings first */
-        Ring ring00b; ring00.subdivide(ring00b); ring00 = ring00b;
-        Ring ring01b; ring01.subdivide(ring01b); ring01 = ring01b;
-        Ring ring10b; ring10.subdivide(ring10b); ring10 = ring10b;
-        Ring ring11b; ring11.subdivide(ring11b); ring11 = ring11b;
+        ring00.subdivide(out->ring00);
+        ring01.subdivide(out->ring01);
+        ring10.subdivide(out->ring10);
+        ring11.subdivide(out->ring11);
 
         /* calculate face points */
         for (size_t y=0; y<height-1; y++) {
           for (size_t x=0; x<width-1; x++) {
-            out.face(x,y) = 0.25f*(get(x+0,y+0) + get(x+0,y+1) + get(x+1,y+0) + get(x+1,y+1));
+            out->face(x,y) = 0.25f*(get(x+0,y+0) + get(x+0,y+1) + get(x+1,y+0) + get(x+1,y+1));
           }
         }
 
         /* calculate vertical edge centers */
         for (size_t y=0; y<height-1; y++) {
           for (size_t x=1; x<width-1; x++) {
-            out.vedge(x,y) = 0.5f*(get(x,y)+get(x,y+1));
+            out->vedge(x,y) = 0.5f*(get(x,y)+get(x,y+1));
           }
         }
 
         /* calculate horizontal edge centers */
         for (size_t y=1; y<height-1; y++) {
           for (size_t x=0; x<width-1; x++) {
-            out.hedge(x,y) = 0.5f*(get(x,y)+get(x+1,y));
+            out->hedge(x,y) = 0.5f*(get(x,y)+get(x+1,y));
           }
         }
 
@@ -152,40 +198,27 @@ namespace embree
             const Vec3fa F = 0.25f*(face(x-1,y-1)+face(x-1,y)+face(x,y-1)+face(x,y));
             const Vec3fa R = 0.25f*(hedge(x-1,y)+hedge(x,y)+vedge(x,y-1)+vedge(x,y));
             const Vec3fa P = get(x,y);
-            out.point(x,y) = 0.25*F + 0.5*R + 0.25*P;
+            out->point(x,y) = 0.25*F + 0.5*R + 0.25*P;
           }
         }
 
         /* calculate vertical edge points */
         for (size_t y=0; y<height-1; y++) {
           for (size_t x=1; x<width-1; x++) {
-            out.vedge(x,y) = 0.5f*(vedge(x,y) + (face(x-1,y)+face(x,y)));
+            out->vedge(x,y) = 0.5f*(vedge(x,y) + (face(x-1,y)+face(x,y)));
           }
         }
 
         /* calculate horizontal edge points */
         for (size_t y=1; y<height-1; y++) {
           for (size_t x=0; x<width-1; x++) {
-            out.hedge(x,y) = 0.25f*(hedge(x,y) + (face(x,y-1)+face(x,y)));
+            out->hedge(x,y) = 0.25f*(hedge(x,y) + (face(x,y-1)+face(x,y)));
           }
         }
 
         /* copy invalid corner points from corner rings */
-        out.point(0  ,0  ) = ring00.vtx;
-        out.point(0  ,N-1) = ring01.vtx;
-        out.point(N-1,0  ) = ring10.vtx;
-        out.point(N-1,N-1) = ring11.vtx;
-
-        out.vedge(  1,  0) = ring00.first();
-        out.vedge(  1,N-1) = ring01.last();
-        out.vedge(N-1,N-1) = ring11.first();
-        out.vedge(N-1,  0) = ring10.last();
-
-        out.hedge(  0,  1) = ring00.last();
-        out.hedge(  0,N-1) = ring01.first();
-        out.hedge(N-1,N-1) = ring11.last();
-        out.hedge(N-1,  1) = ring10.first();
+        out->handle_corners();
       }
     };
-  }
+//}
 }

@@ -304,14 +304,35 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-#if 1 // FIXME: remove
-
-    Vec3fa points[3][3];
-    points[0][0] = Vec3fa(-1.0f, -1.0f, -1.0f);
-    points[0][0] = Vec3fa(-1.0f, -1.0f, -1.0f);
-
-    IrregularSubdividedCatmullClarkPatch patch;
-    
+#if 0 // FIXME: remove
+    scene->getSubdivMesh(0)->initializeHalfEdgeStructures();
+    IrregularSubdividedCatmullClarkPatch* patch = new IrregularSubdividedCatmullClarkPatch(scene->getSubdivMesh(0)->halfEdges, &scene->getSubdivMesh(0)->vertex(0,0));
+    for (size_t i=0; i<2; i++) {
+      IrregularSubdividedCatmullClarkPatch* patch1 = new IrregularSubdividedCatmullClarkPatch(); 
+      patch->subdivide(patch1);
+      delete patch; patch = patch1;
+    }
+    const size_t width  = patch->width();
+    const size_t height = patch->height();
+    TriangleMesh* mesh = new TriangleMesh (this, RTC_GEOMETRY_STATIC, (width-1)*(height-1)*2, width*height, 1);
+    for (size_t y=0; y<height; y++) {
+      for (size_t x=0; x<width; x++) {
+        mesh->vertex(y*width+x) = patch->points(x,y);
+      }
+    }
+    for (size_t y=0; y<height-1; y++) {
+      for (size_t x=0; x<width-1; x++) {
+        TriangleMesh::Triangle& tri0 = mesh->triangle(2*(y*width+x)+0);
+        tri0.v0 = (y+0)*width + (x+0);
+        tri0.v1 = (y+0)*width + (x+1);
+        tri0.v2 = (y+1)*width + (x+1);
+        TriangleMesh::Triangle& tri1 = mesh->triangle(2*(y*width+x)+1);
+        tri1.v0 = (y+0)*width + (x+0);
+        tri1.v1 = (y+1)*width + (x+1);
+        tri1.v2 = (y+1)*width + (x+0);
+      }
+    }
+    geometries.push_back(mesh);
 #endif
 
     /* all user worker threads properly enter and leave the tasking system */
