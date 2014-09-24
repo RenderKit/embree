@@ -123,6 +123,8 @@ namespace embree
       IrregularCatmullClarkPatch irregular_patch;
       subdiv_patch.init( irregular_patch );
 
+      DBG_PRINT(irregular_patch);
+
       subdivide_intersect1(ray,irregular_patch);
 
     }

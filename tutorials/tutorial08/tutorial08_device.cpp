@@ -48,7 +48,7 @@ RTCScene g_scene = NULL;
 /*! Requested subdivision level set in tutorial08.cpp. */
 extern int subdivisionLevel;
 
-RTCRay constructRay(const Vec3fa &origin, const Vec3fa &direction, float near, float far, int originGeomID, int originPrimID) {
+__forceinline RTCRay constructRay(const Vec3fa &origin, const Vec3fa &direction, float near, float far, int originGeomID, int originPrimID) {
 
     RTCRay ray;
     ray.org = origin;
@@ -273,6 +273,27 @@ extern "C" void device_cleanup() {
 
 }
 
+Vec3fa renderPixelEyeLightTest(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+{
+  /* initialize ray */
+  RTCRay ray;
+  ray.org = p;
+  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.tnear = 0.0f;
+  ray.tfar = inf;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = 0;
+
+  /* intersect ray with scene */
+  rtcIntersect(g_scene,ray);
+
+  /* shade pixel */
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
+  else return Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
+}
+
 extern "C" void device_init(int8 *configuration) {
     /*! Initialize Embree ray tracing state. */
     rtcInit(configuration);
@@ -281,7 +302,8 @@ extern "C" void device_init(int8 *configuration) {
     rtcSetErrorFunction(error_handler);
 
     /*! Set the render mode to use on entry into the run loop. */
-    renderPixel = renderPixelStandard;
+    //renderPixel = renderPixelStandard;
+    renderPixel = renderPixelEyeLightTest;
 
     /*! Construct a scene with a cube shaped subdivision mesh and a ground plane. */
     constructScene();

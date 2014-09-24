@@ -47,23 +47,17 @@ namespace embree
     {
       size_t i=0;
       vtx = vertices[ h->getStartVertexIndex() ];
-      //DBG_PRINT( h->getStartVertexIndex() );
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
       do {
 	p = p->opposite();
 	ring[i++] = vertices[ p->getStartVertexIndex() ];
 	ring[i++] = vertices[ p->prev()->getStartVertexIndex() ];
 
-	//DBG_PRINT( p->getStartVertexIndex() );
-	//DBG_PRINT( p->prev()->getStartVertexIndex() );
-
 	/*! continue with next adjacent edge. */
 	p = p->next();
       } while( p != h);
       num_vtx = i;
       valence = i >> 1;
-      // copy first vertex to last position
-      ring[num_vtx] = ring[0];
       assert( i+1 < MAX_VALENCE );
     }
 
@@ -76,14 +70,19 @@ namespace embree
       Vec3fa avg_faces(0.0f,0.0f,0.0f);
       Vec3fa avg_edges(0.0f,0.0f,0.0f);
 
-      for (size_t i=0;i<valence;i++)
+      for (size_t i=0;i<valence-1;i++)
 	{
 	  const Vec3fa new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
-	  avg_faces += dest.ring[2*i+1];
+	  avg_faces += new_face;
 	  avg_edges += (vtx + ring[2*i]) * 0.5f;
-
 	  dest.ring[2*i + 1] = new_face;
 	}
+      {
+        const Vec3fa new_face = (vtx + ring[num_vtx-2] + ring[num_vtx-1] + ring[0]) * 0.25f;
+        avg_faces += new_face;
+        avg_edges += (vtx + ring[num_vtx-2]) * 0.5f;
+        dest.ring[num_vtx-1] = new_face;
+      }
       // new edge vertices
       for (size_t i=1;i<valence;i++)
 	{
@@ -92,7 +91,6 @@ namespace embree
 	}
       dest.ring[0] = (vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
 
-      dest.ring[num_vtx] = dest.ring[0]; // copy to last position
       // new vtx
       const float inv_valence = 1.0f / (float)valence;
 
@@ -143,7 +141,6 @@ namespace embree
       dest0.ring[ 5] = p0.ring[2];
       dest0.ring[ 6] = p0.vtx;
       dest0.ring[ 7] = p0.ring[p0.num_vtx-2];
-      dest0.ring[ 8] = dest0.ring[ 0]; // copy last
       // 1-ring for patch1
       dest1.ring[ 0] = p1.vtx;
       dest1.ring[ 1] = p1.ring[p1.num_vtx-4];
@@ -153,8 +150,6 @@ namespace embree
       dest1.ring[ 5] = p0.ring[p0.num_vtx-2];
       dest1.ring[ 6] = p0.ring[p0.num_vtx-1];
       dest1.ring[ 7] = p1.ring[0];
-      dest1.ring[ 8] = dest1.ring[ 0]; // copy last
-
     }
 
     static __forceinline void init_regular(const Vec3fa &center, const Vec3fa center_ring[8], const size_t offset, CatmullClark1Ring &dest)
@@ -164,7 +159,6 @@ namespace embree
       dest.vtx     = center;
       for (size_t i=0;i<8;i++)
 	dest.ring[i] = center_ring[(offset+i)%8];
-      dest.ring[8] = dest.ring[0]; // copy last
     }
  
 
