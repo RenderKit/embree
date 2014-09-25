@@ -106,9 +106,31 @@ namespace embree
       __forceinline unsigned int getEndVertexIndex() const {
         return next()->vtx_index;
       };
-      
-    };
 
+      __forceinline unsigned int getEdgeValence() const {
+	unsigned int i=0;
+	HalfEdge *p = (HalfEdge*)this;
+	do {
+	  i ++;
+	  p = p->opposite();
+	  p = p->next();
+	} while( p != this);
+	return i;
+      };
+
+      __forceinline bool isFaceRegular() const {
+	HalfEdge *p = (HalfEdge*)this;
+	if (p->getEdgeValence() != 4) return false;
+	p = p->next();
+	if (p->getEdgeValence() != 4) return false;
+	p = p->next();
+	if (p->getEdgeValence() != 4) return false;
+	p = p->next();
+	if (p->getEdgeValence() != 4) return false;
+	return true;
+      }
+
+    };
 
   public: // FIXME: make private
     BufferT<Vec3fa> vertices[2];      //!< vertex array

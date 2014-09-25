@@ -19,8 +19,7 @@
 #include "primitive.h"
 #include "common/scene_subdivision.h"
 
-#define SUBDIVISION_LEVEL 1
-#define SUBDIVISION_FLAGS 0
+#define SUBDIVISION_LEVEL 0
 
 namespace embree
 {
@@ -37,6 +36,12 @@ namespace embree
 
   public:
 
+    enum {
+      REGULAR_PATCH = 1,
+      HAS_BORDERS   = 2,
+      HAS_CREASES   = 4
+    };
+
     /*! Default constructor. */
     __forceinline SubdivPatch1 () {}
 
@@ -46,9 +51,13 @@ namespace embree
                                 const unsigned int geom, 
 				const unsigned int prim, 
 				const unsigned int subdivision_level,
-				const unsigned int flags,
 				const bool last)
-      : first_half_edge(edge), vertices(vertices), geom(geom), prim(prim | (last << 31)), subdivision_level(subdivision_level), flags(flags) { }
+      : first_half_edge(edge), vertices(vertices), geom(geom), prim(prim | (last << 31)), subdivision_level(subdivision_level)
+    {
+      flags = 0;
+      if (first_half_edge->isFaceRegular()) 
+	flags |= REGULAR_PATCH;      
+    }
 
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
@@ -86,7 +95,6 @@ namespace embree
 			      geomID,
 			      primID,
 			      SUBDIVISION_LEVEL,
-			      SUBDIVISION_FLAGS,
 			      last); 
     }
 
@@ -105,7 +113,6 @@ namespace embree
 			      geomID,
 			      primID,
 			      SUBDIVISION_LEVEL,
-			      SUBDIVISION_FLAGS,
 			      last); 
     }
 

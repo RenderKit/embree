@@ -1016,7 +1016,7 @@ PRINT(CORRECT_numPrims);
   }
 
 
-#define SUBDIVISION_LEVEL 3
+#define SUBDIVISION_LEVEL 0
 
   void BVH4iBuilderSubdivMesh::createSubdivMeshAccel(const size_t threadID, const size_t numThreads)
   {
@@ -1037,7 +1037,6 @@ PRINT(CORRECT_numPrims);
 			    subdiv_mesh->getVertexPositionPtr(),
 			    bptr->geomID(),
 			    bptr->primID(),
-			    0,
 			    SUBDIVISION_LEVEL);
       }
   }

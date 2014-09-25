@@ -28,21 +28,28 @@ namespace embree
   struct SubdivPatch1
   {
   public:
+    enum {
+      REGULAR_PATCH = 1,
+      HAS_BORDERS   = 2,
+      HAS_CREASES   = 4
+    };
 
     /*! Default constructor. */
     __forceinline SubdivPatch1 (const SubdivMesh::HalfEdge * first_half_edge,
 				const Vec3fa *vertices,
 				unsigned int geomID,
 				unsigned int primID,
-				unsigned int flags = 0,
 				unsigned int subdivision_level = 0) 
       : first_half_edge(first_half_edge),
       vertices(vertices),
       geomID(geomID),
       primID(primID),
-      flags(flags),
       subdivision_level(subdivision_level)
-    {}
+    {
+      flags = 0;
+      if (first_half_edge->isFaceRegular()) 
+	flags |= REGULAR_PATCH;
+    }
 
     __forceinline const Vec3fa &getQuadVertex(const unsigned int i=0) const { 
       const SubdivMesh::HalfEdge *const h = first_half_edge + i;
